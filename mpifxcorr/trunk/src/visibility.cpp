@@ -348,7 +348,7 @@ void Visibility::writedata()
 
   cout << "Visibility " << visID << " is starting to write out data" << endl;
 
-  if (currentblocks == 0) //nothing to write out
+  if (monitor && currentblocks == 0) //nothing to write out
   {
     //send a message to the monitor not to expect any data this integration - if we can't get through to the monitor, close the socket
     if(sendMonitorData(false) != 0) {

@@ -180,8 +180,6 @@ int main(int argc, char *argv[])
     //work out what process we are and run accordingly
     if(myID == FxManager::MANAGERID) //im the manager
     {
-      if(monitor)
-        
       manager = new FxManager(config, numcores, datastreamids, coreids, myID, return_comm, monitor, hostname, port, monitor_skip);
       MPI_Barrier(world);
       t1 = MPI_Wtime();
