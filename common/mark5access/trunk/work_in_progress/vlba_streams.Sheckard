@@ -1,0 +1,239 @@
+From jsheckar@nrao.edu Wed Jun 13 08:48:27 2007
+Date: Wed, 13 Jun 2007 08:48:17 -0600 (MDT)
+From: Jim Sheckard <jsheckar@nrao.edu>
+To: Walter Brisken <wbrisken@nrao.edu>
+Subject: My Mark5 Info (fwd)
+
+
+Here's what I sent to the Caltech folks.  I've spared you another copy of
+mk5pcal.tar.gz.
+
+Jim
+
+
+---------- Forwarded message ----------
+Date: Wed, 6 Jun 2007 16:49:51 -0600 (MDT)
+From: Jim Sheckard <jsheckar@nrao.edu>
+To: srk@astro.caltech.edu, busch@caltech.edu
+Subject: My Mark5 Info
+
+
+Here is a compliation of my emails with Walter about using Mark5.
+In addition, I've attached the demo directory he sent to me initially
+(the mk5pcal program mentioned below).  If you think looking at the
+test test or production programs I've written will help, let me know
+and I can send those along as well.
+
+
+Initial introduction:
+
+
+> Hi Jim,
+> 
+> Below is an email I sent to another grad student to get him reading data
+> with my code.  It is quite simplistic -- just decodes the data streams and
+> puts them into arrays.  I think this is the latest version of my code and
+> it has only been briefly tested on 64 track data, so beware.  There is a
+> program attached, mk5pcal, which demonstrates its use, but the program
+> itself will be of no use to you aside from making sure things compile
+> properly.  I think the code assumes intel byte order / no guarantee this
+> works on a 64 bit machine. When you open a vlba file you will need to
+> specify some information through VLBA_stream_open, namely the number of
+> bits per sample (1 or 2) and the fanout (1, 2, or 4).  Then just keep
+> calling VLBA_stream_get_data to populate your streams.  You should follow
+> the examples in the Makefile for building your code.  I'll let you play
+> with it for now.  Early Wednesday is OK for me -- 8:30?  If it gets much
+> later than that I cannot guarantee I'll be available.  I'd rather not
+> leave it to Friday since I expect to be quite busy then preparing for a
+> trip.
+> 
+> Good luck!
+> 
+> -W
+> 
+> .......
+> 
+> 
+> Attached is code to decode VLBA/Mark4 data.  there is a .txt file with
+> minimal instruction.  I recommend you focus on mk5pcal.c for learning how
+> to use vlba_stream.[ch].
+> 
+> When you get it compiled you can try:
+> 
+> parallax<51>% ./mk5pcal pcal.in mk5pcal.2.pt
+> chan = 0 tone = 0 test = 0  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 1  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 2  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 3  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 4  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 5  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 6  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 7  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 8  amp = 0.000000  phase = -12.207648
+> chan = 0 tone = 0 test = 9  amp = 0.000000  phase = -12.207648
+> 
+> .
+> .
+> .
+> 
+> chan = 2 tone = 0 test = 0  amp = 0.014772  phase = -8.427895
+> chan = 2 tone = 0 test = 1  amp = 0.015209  phase = -10.278649
+> chan = 2 tone = 0 test = 2  amp = 0.014731  phase = -8.934099
+> chan = 2 tone = 0 test = 3  amp = 0.015057  phase = -12.036463
+> chan = 2 tone = 0 test = 4  amp = 0.014935  phase = -8.648770
+> chan = 2 tone = 0 test = 5  amp = 0.015749  phase = -10.286820
+> chan = 2 tone = 0 test = 6  amp = 0.015093  phase = -8.510610
+> chan = 2 tone = 0 test = 7  amp = 0.015004  phase = -12.121034
+> chan = 2 tone = 0 test = 8  amp = 0.015034  phase = -8.275576
+> chan = 2 tone = 0 test = 9  amp = 0.013752  phase = -6.103853
+> 
+> .
+> .
+> .
+> 
+> 
+> State counts:
+>    0 : 0.000000 0.000000 0.000000 1.000000
+>    1 : 0.000000 0.000000 0.000000 1.000000
+>    2 : 0.167705 0.331332 0.325016 0.175947
+>    3 : 0.169399 0.334079 0.331993 0.164529
+>    4 : 0.169432 0.327182 0.327799 0.175588
+>    5 : 0.172791 0.328262 0.329303 0.169645
+> 
+> .
+> .
+> .
+> 
+> (a few lines of output are shown so you can make sure your code does the
+> same).
+> 
+> A 32M data file is avail through http:
+> 
+> http://www.aoc.nrao.edu/~wbrisken/mark5/mk5pcal.2.pt
+> 
+> -W
+
+
+
+On FANOUT:
+
+> From wbrisken@aoc.nrao.edu Wed Apr  4 12:04:06 2007
+> Date: Wed, 4 Apr 2007 12:03:59 -0600 (MDT)
+> From: Walter Brisken <wbrisken@aoc.nrao.edu>
+> To: Jim Sheckard <jsheckar@nrao.edu>
+> Subject: Re: Decoding Mark5
+> 
+> 
+> In your key file you have:
+> 
+> setinit = crab21 /
+>  nchan    = 8
+>  bits     = 2
+>  bbfilter = 16.0
+>  pol      = dual
+> !  barrel   = roll_16
+>  barrel   = roll_off
+>  freqref  =   1435.10
+>  freqoff  =  -24,  -24, -8,  -8,  8,  8, 24, 24
+>  netside  =    U,   U,   U,   U,  U,  U,  U,  U
+>  pol      = dual
+> !  firstlo = 7800.10
+> !  rchan = A lchan = C
+> !  fe = '13cm','13cm'
+> !
+>  station  = vla27  /
+> endset /
+> 
+> number of bitstreams = nchan * bits == 16 for your data
+> 
+> The algorithm to detemine fanout always tries to make 32 tracks if
+> possible,
+> subject to data rate considerations -- no more than 8 mbit/sec per track
+> and
+> no less than 2 Ms/s per track.
+> 
+> Trying to put this on 32 tracks would yield fanout=2 and track rate (which
+> equal 2*bandwidth / fanout) = 16 Ms/s -- illegal because of track rate
+> 
+> Trying on 64 tracks yields fanout=4 and track_rate=8 Ms/s, which is legal.
+> 
+> Thus:
+> 
+> nchan=8
+> bits=2
+> fanout=4
+> ntrack=64
+> track_rate=8 Ms/s
+> 
+> -W
+> 
+> 
+> On Wed, 4 Apr 2007, Jim Sheckard wrote:
+> 
+> > 
+> > So far, the data is behaving itself, but I have a question:
+> > 
+> >  I'm trying to plan out how to grab up all the various bits and pieces
+> > of
+> > info I need to process the data automatically, and one thing I'm not
+> > sure
+> > how to get at is either the # of tracks, or FANOUT (since I need fanout
+> > to
+> > build get the stream).  Is there a place this info is explicitly laid
+> > out,
+> > or is it a function of datarate, that I can compute?
+> > 
+> > Thanks,
+> > Jim
+> > 
+> 
+
+
+
+
+A clarification of the Time returned:
+
+
+> From wbrisken@aoc.nrao.edu Mon Apr  9 10:41:31 2007
+> Date: Mon, 9 Apr 2007 10:41:23 -0600 (MDT)
+> From: Walter Brisken <wbrisken@aoc.nrao.edu>
+> To: Jim Sheckard <jsheckar@nrao.edu>
+> Subject: Re: Stream_Time
+> 
+> 
+> 
+> On Mon, 9 Apr 2007, Jim Sheckard wrote:
+> 
+> > 
+> > Hello again,
+> > 
+> >  I've stumbled across another question I have, I hope you don't mind.
+> > The VLBA_stream_time function looks like it returns a 'day' and a # of
+> > seconds.
+> > 
+> > What is the day variable?  When I look at our data, I get numbers like:
+> 
+> Last 3 digits of MJD
+> 
+> > 2nd Test data:  20
+> > 1st Real run : 179
+> > 2nd Real run : 180
+> > 
+> > I'm just wondering how to tie this into the date.
+> > 
+> > Also, the 'seconds' variable is the # of seconds past midnight for the
+> > day
+> > in question?  Is it based on UT, Local time?
+> 
+> UT seconds since UT midnight.
+> 
+> > Thanks!
+> > Jim
+> > 
+
+There you have it!  Hopefully this will help you get your data
+decoded.  Between Walter and I, we can likely get any kinks you run
+into along the way ironed out.
+
+Good luck!
+ Jim
