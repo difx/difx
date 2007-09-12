@@ -1,0 +1,2 @@
+Main-Class: difx.DiFXManager
+Class-Path: jmathplot.jar
