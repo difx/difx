@@ -1,0 +1,1303 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import strip, split, find, lower
+from math import pi
+from os import getcwd
+import re
+
+program = 'job2difx'
+version = '1.0'
+verdate = '20070912'
+author  = 'Walter Brisken'
+
+# TODO: choose the following with more smarts
+BufferFactor = 32
+NDataSegment = 8
+
+def usage():
+	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	print '\nA program to convert one or more VLBA correlator job scripts'
+	print 'to various DiFX input files.  Attempts are made to generate'
+	print 'output files as similar as possible to the VLBA output'
+	print '\nUsage: %s [options] <job file>' % (argv[0])
+	print '\nOptions can include:'
+	print '  List of antennas : e.g.  A=BR,KP,LA'
+	print '    Multiple antenna lists are appended, e.g.  A=BR A=KP A=LA'
+	print '    Default is all antennas in job'
+	print '  Number of channels : e.g.  nchan=32'
+	print '  FFT size : e.g.  fftsize=128\n'
+	exit(0)
+
+##### Functions that do parsing #######
+
+# return mjd from string of form 2007FEB09_11h58m41s
+def parsetime(str):
+	ms = {'JAN':0,  'FEB':31, 'MAR':59, 'APR':90, 'MAY':120,'JUN':151, \
+	      'JUL':181,'AUG':212,'SEP':243,'OCT':273,'NOV':304,'DEC':334}
+	year = int(str[0:4])
+	mon = str[4:7]
+	day = int(str[7:9])
+	h = int(str[10:12])
+	m = int(str[13:15])
+	s = int(str[16:18])
+	ly = year/4-(year+7)/4-year/100+(year+99)/100+year/400-(year+399)/400
+	doy = ms[mon]
+	if ly == -1 and doy > 40:
+		doy += 1	# leap year
+	doy += day
+	
+	mjd = doy-678576+365*(year-1)+(year-1)/4-(year-1)/100+(year-1)/400
+
+	return mjd + h/24.0 + m/1440.0 + s/86400.0
+
+def mjd2calendar(mjd):
+	jd = int(mjd)+2400000
+	l = jd + 68570
+	n = 4*l/146097
+	l = l - (146097*n + 3)/4
+	y = 4000 * (l + 1) / 1461001
+	l = l - (1461*y)/4 + 31
+	m = 80*l/2447
+	day = l - (2447*m)/80
+	l = m/11
+	month = m + 2 - 12*l
+	year = 100*(n-49) + y + l
+
+	d = mjd - int(mjd)
+	d = d*24.0
+	hour = int(d)
+	d = 60.0*(d - hour)
+	minute = int(d)
+	d = 60.0*(d - minute)
+	second = int(d+0.5)
+
+	return [year,month,day,hour,minute,second]
+
+def RA2radians(rastr):
+	ra_re = re.compile('[hms]')
+	parts = split(strip(ra_re.sub(' ', rastr)))
+	h = int(parts[0])
+	m = int(parts[1])
+	s = float(parts[2])
+
+	return (h+m/60.0+s/3600.0)*pi/12.0
+
+def Dec2radians(decstr):
+	dec_re = re.compile("""[d'"]""")
+	parts = split(strip(dec_re.sub(' ', decstr)))
+	if parts[0][0] == '-':
+		sign = -1.0
+	else:
+		sign = 1.0
+	d = abs(int(parts[0]))
+	m = int(parts[1])
+	s = float(parts[2])
+
+	return sign*(d+m/60.0+s/3600.0)*pi/180.0
+
+
+# turn an array of form (ind1,val1,ind2,val2,ind3,val3,...) into val[ind]
+def parsearray(str):
+	list = strip(str)
+	if list[0] != '(' or list[-1] != ')':
+		return []
+	s = split(list[1:-1], ',')
+	n = len(s)
+	if n % 2 == 1:
+		return []
+	max = 0
+	for i in range(0,n,2):
+		index = int(strip(s[i]))
+		if index < 0:
+			return []
+		if index > max:
+			max = index
+	arr = [0]*(max+1)
+	for i in range(0,n,2):
+		index = int(strip(s[i]))
+		arr[index] = strip(s[i+1])
+	
+	return arr
+
+def parsevalue(row, token):
+	s = split(token, '=')
+	if len(s) == 2:
+		val = strip(s[1])
+		if len(val) < 1:
+			row[strip(s[0])] = ''
+		elif val[0] == "'":
+			row[strip(s[0])] = strip(s[1])[1:-1]
+		elif val[0] == '(':
+			row[strip(s[0])] = parsearray(val)
+		else:
+			row[strip(s[0])] = val
+
+# this function makes extensive use of regular expressions to parse
+# a cjobgen job file into a structured dictionaty(table) of lists(row) of
+# dictionaries(parameter).  If this function doesn't make sense to you,
+# either don't worry or learn python regular expressions.  They really 
+# are fantastic!
+def readjob(jobfile):
+	job = {}
+	re_comment = re.compile(r"\!\*[\s\S]*?\*\!")
+	re_array   = re.compile(r"\)\s*,\s*\(")
+
+	# define token types
+	tok_table  = r"""\s\!table '(\w+)'\!\s"""
+	tok_row    = r"""\s\!row\!\s"""
+	tok_array  = r"""\s\w+\s*=\s*\([\s\S]*?\)\s"""
+	tok_string = r"""\s\w+\s*=\s*'[\s\S]*?'\s"""
+	tok_value  = r"""\s\w+\s*=\s*[^!=\s]*\s"""
+	tokens = tok_table  + '|' + \
+	         tok_row    + '|' + \
+		 tok_array  + '|' + \
+		 tok_string + '|' + \
+		 tok_value
+	re_tokens = re.compile(tokens)
+
+	S = open(jobfile).read()
+
+	# remove comment strings
+	S = re_comment.sub('', S)
+
+	# reformat arrays
+	S = re_array.sub(',', S)
+
+	# tokenize
+	n = 0
+	while(1):
+		s = re_tokens.search(S[n:])
+		if not s:
+			break
+		token = strip(s.group(0))
+
+		if token[:6] == '!table':
+			table = []
+			job[s.group(1)] = table
+			row = {}
+		elif token == '!row!':
+			table.append(row)
+			row = {}
+		else:
+			parsevalue(row, token)
+
+		n += s.span()[1] - 1
+
+	return job
+
+def printjob(job):
+	tablenames = job.keys()
+	tablenames.sort()
+	for t in tablenames:
+		print '\n\ntable=%s' % t
+		print job[t]
+
+#####
+
+def getrowbyname(job_table, antname, indexname='name'):
+	for t in job_table:
+		if t.has_key(indexname):
+			if(t[indexname] == antname):
+				return t
+	return None
+
+# generate an indexed list of antennas (0-based) and the dictionary to
+# go from antenna to index
+def obs2antennalist(job_obs):
+	antennalist = []
+	for jo in job_obs:
+		if not jo.has_key('name'):
+			continue
+		ant = jo['name']
+		if ant in antennalist:
+			continue
+		antennalist.append(ant)
+	return antennalist
+	
+def rev_list(l):
+	d = {}
+	for i in range(len(l)):
+		v = l[i]
+		d[v] = i
+	return d
+
+def obsrow2config(obsrow):
+	config = [ \
+			int(obsrow['correl_row']), \
+			int(obsrow['freq_row'  ]), \
+			int(obsrow['source_row']), \
+			int(obsrow['custom_row']) \
+	 	 ]
+	return config
+
+def generatedatastreamlist():
+	dsl = []
+	return dsl
+
+# generate time-ordered list of antenna states.  One state per
+# distinct mjd at each change in any antenna state
+def obs2statelist(job_obs, antenna_index):
+	nant = len(antenna_index)
+
+	# generate list of event mjds
+	mjds = []
+	for jo in job_obs:
+		start = parsetime(jo['start'])
+		stop  = parsetime(jo['stop'])
+		if not start in mjds:
+			mjds.append(start)
+		if not stop in mjds:
+			mjds.append(stop)
+	mjds.sort()
+
+	# make empty state structure
+	mjd_index = {}
+	statelist = []
+	for m in mjds:
+		mjd_index[m] = len(statelist)
+		configs = []
+		for i in range(nant):
+			configs.append([])
+		statelist.append([m, configs])
+
+	# populate state structure
+	for jo in job_obs:
+		start = parsetime(jo['start'])
+		stop  = parsetime(jo['stop'])
+		i1 = mjd_index[start]
+		i2 = mjd_index[stop]
+		antname = jo['name']
+		if not antenna_index.has_key(antname):
+			continue
+		a = antenna_index[antname]
+		config = obsrow2config(jo)
+		for i in range(i1, i2):
+			statelist[i][1][a] = config
+
+	return statelist
+
+# given a list of [ [config, subarray] ] and a subarray, return the config
+def findconfig(configlist, subarray):
+	for cfg in configlist:
+		if len(cfg[1]) > 0:
+			if cfg[1][0] in subarray:
+				return cfg[0]
+
+	return None
+
+# see if two subarrays are compatible.  If so return union of lists
+# else return None
+def compare_subarrays(s1, s2):
+	# duplicate s1 into t
+	t = []
+	for s in s1:
+		l = []
+		t.append(l)
+		for e in s:
+			l.append(e)
+	
+	n1 = len(s1)
+	n2 = len(s2)
+	
+	n = [-1]*n2
+	
+	# loop through s2 determining subarray correspondence
+	# populate n[] with mapping from s2 to s1, or -1 if
+	# none.
+	for i2 in range(n2):
+		e2 = s2[i2]
+		c = [0]*n1
+		for e in e2:
+			for i1 in range(n1):
+				e1 = s1[i1]
+				if e in e1:
+					c[i1] += 1
+		for i1 in range(n1):
+			if c[i1] > 0:
+				if n[i2] >= 0:
+					return None
+				else:
+					n[i2] = i1
+	
+	# look for collisions the other way
+	if n2 > 1:
+		for i in range(n2-1):
+			if n[i] < 0:
+				continue
+			for j in range(i+1, n2):
+				if n[i] == n[j]:
+					return None
+					
+	# looks ok, start populating
+	for i2 in range(n2):
+		e2 = s2[i2]
+		if n[i2] < 0:
+			e1 = []
+			t.append(e1)
+		else:
+			e1 = t[n[i2]]
+		for e in e2:
+			if not e in e1:
+				e1.append(e)
+	for e in t:
+		e.sort()
+
+	return t
+			
+	
+# look through table of subarrays looking for a match to subarray.  If found,
+# return the index, otherwise add to table and return new element index
+def getsubarray_id(table, subarray, minantennas):
+	id = []
+
+	# get members of subarray
+	sub = []
+	for s in subarray:
+		if len(s[1]) >= minantennas:
+			sub.append(s[1])
+	
+	for i in range(len(table)):
+		t = compare_subarrays(sub, table[i])
+		if t != None:
+			table[i] = t
+			id.append(i)
+	
+	if len(id) == 0:
+		table.append(sub)
+		id.append(len(table)-1)
+
+	return id
+
+def statelist2scanlist(statelist, minantennas, nant):
+	subarraylist = []
+	scanlist = []
+	nstate = len(statelist)-1
+	for i in range(nstate):
+		t1 = statelist[i][0]
+		t2 = statelist[i+1][0]
+		dt = t2-t1
+		subarrays = []
+		ant = 0
+
+		# determine subarrays within scan
+		for a in statelist[i][1]:
+			if a != []:
+				added = False
+				for s in subarrays:
+					if s[0] == a:
+						added = True
+						s[1].append(ant)
+				if not added:
+					subarrays.append([a, [ant]])
+			ant += 1
+
+		if len(subarrays) > 0:
+			sub_id = getsubarray_id(subarraylist, subarrays,  \
+						minantennas)
+			scanlist.append([i, i+1, t1, t2, nant, \
+				sub_id, subarrays])
+
+	return scanlist, subarraylist
+
+# return intersection of two lists, but return first list if second is empty
+def intersection(l1, l2):
+	if len(l2) < 1:
+		return l1
+	inter = []
+	for e in l1:
+		if e in l2:
+			inter.append(e)
+	return inter		
+
+
+def generatesubjoblist(scanlist, subarraylist):
+	subs = [-1]
+	subjobrange = [-1, -1, -1.0, -1.0, subs]
+	subjoblist = []
+	oldconfig = []
+	for i in range(len(scanlist)):
+		scan = scanlist[i]
+		config = []
+		for Y in scan[6]:
+			config.append([Y[0][0],Y[0][1],Y[0][3]])
+		print 'CONFIG =  ', config
+		intsubs = intersection(scan[5], subs)
+		if (len(intsubs) > 0) and (oldconfig == config):
+			subs = intsubs
+			subjobrange[1] = i
+			subjobrange[3] = scan[3]
+		else:
+			oldconfig = config
+			subs = scan[5]
+			subjobrange = [i, i, scan[2], scan[3], subs]
+			subjoblist.append(subjobrange)
+
+	print 'SUBJOBLIST = ', subjoblist
+
+	# Now append actual subarray list for each file index
+	for sj in subjoblist:
+		sub_id = sj[4][0]	# for now just take the first option
+		actualsubarray = []
+		subarray = subarraylist[sub_id]
+		ls = len(subarray)
+		for i in range(ls):
+			actualsubarray.append([])
+		sj.append(actualsubarray)
+		for scan in scanlist[sj[0]:sj[1]+1]:
+			for q in scan[6]:
+				for a in q[1]:
+					for i in range(ls):
+						if a in subarray[i] and not a in actualsubarray[i]:
+							actualsubarray[i].append(a)
+		for a in actualsubarray:
+			a.sort()
+							
+	return subjoblist
+		
+def findfreqrowindex(freqlist, frq, bw, sb, os):
+	n = len(freqlist)
+	for i in range(n):
+		f = freqlist[i]
+		if f[0:4] == [frq, bw, sb, os]:
+			return i
+	freqlist.append([frq, bw, sb, os, []])
+	return n
+		
+# simply go through frequency table of cjobgen script and get make a list
+# of all frequencies that are encountered
+def generatefreqlist(job_freq_row):
+	freqlist = []
+	inputlist = []
+	# to get the relevant parameter for difx, report 1/2 sample rate
+	# this allows oversampled observations to work.
+	bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
+	os = 0.5*float(job_freq_row['sample_rate'])/float(job_freq_row['bandwidth'])
+	os = int(os + 0.5)
+	enable = job_freq_row['fft_enable']
+	freq   = job_freq_row['base_freq']
+	side   = job_freq_row['net_side']
+	polar  = job_freq_row['polarization']
+	n = len(enable)
+	for i in range(1, n):
+		if enable[i] == 'YES':
+			frq = float(freq[i])/1.0e6
+			if side[i] == '1':
+				sb = 'U'
+			else:
+				sb = 'L'
+			pol = polar[i][1]
+			freqrowindex = findfreqrowindex(freqlist, \
+				frq, bw, sb, os)
+			freqrow = freqlist[freqrowindex]
+			pollist = freqrow[4]
+			if not pol in pollist:
+				pollist.append(pol)
+			inputlist.append([pol, freqrowindex])
+			
+	return freqlist, inputlist
+
+def generateallfreqlist(freq):
+	freqlist = []
+	N = 0
+
+	for job_freq_row in freq:
+		bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
+		os = 0.5*float(job_freq_row['sample_rate'])/  \
+			float(job_freq_row['bandwidth'])
+		os = int(os + 0.5)
+		enable = job_freq_row['fft_enable']
+		freq   = job_freq_row['base_freq']
+		side   = job_freq_row['net_side']
+		polar  = job_freq_row['polarization']
+		n = len(enable)
+		if N == 0:
+			N = n;
+		else:
+			if N != n:
+				print "Mixed freq row sizes! -- can't cope!"
+				exit(0)
+		for i in range(1, n):
+			if enable[i] == 'YES':
+				frq = float(freq[i])/1.0e6
+				if side[i] == '1':
+					sb = 'U'
+				else:
+					sb = 'L'
+				pol = polar[i][1]
+				freqrowindex = findfreqrowindex(freqlist, \
+						frq, bw, sb, os)
+				freqrow = freqlist[freqrowindex]
+				pollist = freqrow[4]
+				if not pol in pollist:
+					pollist.append(pol)
+			
+	return freqlist
+	
+
+# go through source list and parse out source names and their parameters.
+# return as python list of [name, ra(radians), dec(radians), calcode, qual]
+def generatesrclist(job_source):
+	srclist = []
+	for js in job_source:
+		srclist.append([ \
+					js['name'], \
+					RA2radians(js['ra']), \
+					Dec2radians(js['dec']), \
+					js['calcode'], \
+					int(js['qual']) \
+				])
+
+	return srclist
+
+####### Functions to make output DiFX tables #####
+
+def maketelescopetable(job_clock, subarray, antennalist, startmjd):
+	tele = []
+	n = len(subarray)
+	tele.append("# TELESCOPE TABLE ##!")
+	tele.append("TELESCOPE ENTRIES:  %d" % n)
+	for i in range(n):
+		ant_index = subarray[i]
+		ant = getrowbyname(job_clock, antennalist[ant_index])
+		if ant['name'] != antennalist[ant_index]:
+			print 'clock table antennas out of order'
+			return None
+		delay = float(ant['offset']) * 1.0e6
+		rate  = float(ant['rate']) * 1.0e6
+		
+		# input file references delay to start of obs
+		# job script references an arbitrary day
+		# adjust the delay so they are compatible
+		deltat = ( startmjd - parsetime(ant['time']) )*86400.0
+		delay += rate*deltat;
+		
+		tele.append("TELESCOPE NAME %d:   %s" % 
+			(i, antennalist[ant_index]))
+		tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
+		tele.append("CLOCK RATE(us/s) %d: %e" % (i, rate))
+	return tele
+
+# note that nant is the number of antennas involved in this particular
+# scan and it can be less than the number of antennas in the subarray
+def makecommontable(filebase, nant, startmjd, stopmjd):
+	dir = getcwd()
+	exectime = 86400.0*(stopmjd-startmjd)
+	startday = int(startmjd)
+	startsec = int((startmjd - startday)*86400.0 + 0.5)
+	common = []
+	common.append("# COMMON SETTINGS ##!")
+	common.append("DELAY FILENAME:     %s/%s.delay" % (dir, filebase))
+	common.append("UVW FILENAME:       %s/%s.uvw" % (dir, filebase))
+	common.append("CORE CONF FILENAME: %s/%s.threads" % (dir, filebase))
+	common.append("EXECUTE TIME (SEC): %d" % int(exectime+0.5))
+	common.append("START MJD:          %d" % startday)
+	common.append("START SECONDS:      %d" % startsec)
+	common.append("ACTIVE DATASTREAMS: %d" % nant)
+	common.append("ACTIVE BASELINES:   %d" % ( (nant-1)*nant/2 ) )
+	common.append("DATA HEADER O/RIDE: FALSE")
+	common.append("OUTPUT FORMAT:      SWIN")
+	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
+	return common
+
+def indent21_1(key1, val, i, v):
+	out = (key1 % i) + ':'
+	n = 20-len(out)
+	if n > 0:
+		out += ' '*n
+	out += (val % v)
+	return out
+
+def indent21_2(key1, val, i, j, v):
+	out = (key1 % (i, j)) + ':'
+	n = 20-len(out)
+	if n > 0:
+		out += ' '*n
+	out += (val % v)
+	return out
+
+def intTime(dt, speedUp):
+	granularity = speedUp*0.131072
+	nGran = int(dt/granularity + 0.5)
+	return granularity*nGran
+
+def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
+	custom = job['custom']
+	correl = job['correlator']
+	master = job['master']
+	speedUp = master[0]['speed_up']
+	nConf = len(setups)
+
+	minBW = 1e12
+	for f in freqlist:
+		if f[1] < minBW:
+			minBW = f[1]
+	minBW *= 1.0e6	# convert to Hz
+
+	if fftsize == 0:
+		fftsize = float(correl[config[0]]['fftsize'])
+	if nchan == 0:
+		specavg = float(correl[config[0]]['spect_avg'])
+		nchan   = float(correl[config[0]]['fftsize'])/specavg/2
+	specavg = int(fftsize/(2*nchan))
+	if specavg*nchan*2 != fftsize:
+		print 'problem with nchan and fftsize'
+		exit(0)
+
+	cfg = []
+	cfg.append("# CONFIGURATIONS ###!")
+	cfg.append("NUM CONFIGURATIONS: %d" % nConf)
+	for s in setups:
+		setupname = "FREQ%dCUST%dDOPOL%d" % (s[0], s[1], s[2])
+		timeavg = intTime(float(custom[s[1]]['time_avg']), float(speedUp))
+		
+		
+		# .2 seconds per send
+		sendLen = 0.2
+		nBlock = int(2.0*sendLen*minBW*NDataSegment/(fftsize*BufferFactor))
+		
+		cfg.append("CONFIG SOURCE:      %s" % setupname)
+		cfg.append("INT TIME (SEC):     %f" % timeavg)
+		cfg.append("NUM CHANNELS:       %d" % (fftsize/2))
+		cfg.append("BLOCKS PER SEND:    %d" % nBlock)
+		cfg.append("GUARD BLOCKS:       1")
+		cfg.append("POST-F FRINGE ROT:  FALSE")
+		cfg.append("QUAD DELAY INTERP:  TRUE")
+		cfg.append("WRITE AUTOCORRS:    TRUE")
+		# FIXME -- pulsar
+		cfg.append("PULSAR BINNING:     FALSE")
+
+		# determine total number of active datastreams
+		for j in range(nant):
+			cfg.append(indent21_1("DATASTREAM %d INDEX", "%d", j, (j+0*nant*s[0])))
+		for j in range(nant*(nant-1)/2):
+			cfg.append(indent21_1("BASELINE %d INDEX", "%d", j, j))
+
+	return cfg, specavg
+
+def makefreqtable(freqlist):
+	frq = []
+	l = len(freqlist)
+	frq.append("# FREQ TABLE #######!")
+	frq.append("FREQ ENTRIES:       %d" % l)
+	for i in range(l):
+		f = freqlist[i]
+		frq.append(indent21_1("FREQ (MHZ) %d", "%10.8f", i, f[0]))
+		frq.append(indent21_1("BW (MHZ) %d",   "%10.8f", i, f[1]))
+		frq.append(indent21_1("SIDEBAND %d", "%s",       i, f[2]))
+	return frq
+				
+def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid):
+	dst = []
+	nant = len(subarray)
+	format = job['format']
+	obs = job['obs']
+	freqtable = job['frequency']
+	nfreq = len(freqlist)
+	
+
+	print 'FREQ LIST ',freqlist
+
+	
+	dst.append("# DATASTREAM TABLE #!")
+	dst.append("DATASTREAM ENTRIES: %d" % (nant) )
+	dst.append("DATA BUFFER FACTOR: %d" % BufferFactor)
+	dst.append("NUM DATA SEGMENTS:  %d" % NDataSegment)
+
+#	for fq_num in range(nfqid):
+	for ds_num in range(nant):
+		obsrow = getrowbyname(obs, antennalist[subarray[ds_num]])
+		format_id = int(obsrow['format_row'])
+		qbits = int(format[format_id]['sample_bits'])
+		fanout = int(format[format_id]['format_mode'][-1])
+		format_name = format[format_id]['format_mode'][0:4]
+		nIF = 0
+		for p in freqtable[0]['polarization'][1:]:
+			if p[1] != ' ':
+				nIF+=1
+		tracks = fanout*qbits*nIF
+		job_freq_row = freqtable[config[1]]
+		if format_name == 'VLBA':
+			format_name = 'NATIVE_MKV_VLBA'
+		dst.append("TELESCOPE INDEX:    %d" % ds_num)
+		dst.append("TSYS:               1.0")
+		dst.append("DATA FORMAT:        %s" % format_name)
+		dst.append("FANOUT:             %d" % fanout)
+		dst.append("TRACKS:             %d" % tracks)
+		dst.append("QUANTISATION BITS:  %d" % qbits)
+		dst.append("FILTERBANK USED:    FALSE")
+		dst.append("READ FROM FILE:     TRUE")
+		dst.append("NUM FREQS:          %d" % nfreq)
+		fq_id = 0
+		bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
+		os = 0.5*float(job_freq_row['sample_rate'])/  \
+			float(job_freq_row['bandwidth'])
+		os = int(os + 0.5)
+		enable = job_freq_row['fft_enable']
+		freq   = job_freq_row['base_freq']
+		side   = job_freq_row['net_side']
+		polar  = job_freq_row['polarization']
+		fslist = []
+		SA = {'1' : 'U' , '-1' : 'L'}
+		for i in range(len(enable)):
+			if enable[i] != 'YES':
+				continue
+			f = float(freq[i])/1000000.0
+			s = SA[side[i]]
+			fs = [f, s]
+			r = findfreqrowindex(freqlist, f, bw, s, os)
+			if fs in fslist:
+				continue;
+			fslist.append(fs)
+			dst.append(indent21_1("FREQ TABLE INDEX %d", "%d", \
+				fq_id, r))
+			dst.append(indent21_1("CLK OFFSET %d (us)", "%8.6f", \
+				fq_id, 0.0))
+			dst.append(indent21_1("NUM POLS %d", "%d", \
+				fq_id, len(freqlist[r][4])))
+			fq_id += 1
+		band = 0
+		for i in range(len(enable)):
+			if enable[i] != 'YES':
+				continue
+			f = float(freq[i])/1000000.0
+			s = SA[side[i]]
+			fs = [f, s]
+			index = fslist.index(fs)
+			dst.append(indent21_1("INPUT BAND %d POL", "%s", \
+				band, polar[i][1]))
+			dst.append(indent21_1("INPUT BAND %d INDEX", "%d", \
+				band, index))
+			band += 1
+	
+	return dst
+
+def makebaselinetable(nant, freqlist, inputlist, dopolar):
+	blt = []
+	blt.append("# BASELINE TABLE ###!")
+	blt.append("BASELINE ENTRIES:   %d" % (nant*(nant-1)/2) )
+	bl_id = 0
+	nfreq = len(freqlist)
+	for i in range(0, nant-1):
+	    for j in range(i+1, nant):
+		blt.append(indent21_1("D/STREAM A INDEX %d", "%d", bl_id, i))
+		blt.append(indent21_1("D/STREAM B INDEX %d", "%d", bl_id, j))
+		blt.append(indent21_1("NUM FREQS %d", "%d", bl_id, nfreq))
+		for fq_id in range(nfreq):
+			pols = freqlist[fq_id][4]
+			npol = len(pols)
+			if dopolar:
+				npol = npol*npol
+			blt.append(indent21_2("POL PRODUCTS %d/%d", "%d", \
+				bl_id, fq_id, npol))
+			pol_id = 0
+
+			# generate list of polarization pairs
+			polpairs = []
+
+			# first the parallel hands
+			for p in pols:
+				polpairs.append([p, p])
+
+			# then cross hands, if possible
+			if dopolar and len(pols) == 2:
+				polpairs.append([pols[0], pols[1]])
+				polpairs.append([pols[1], pols[0]])
+				
+			# write out polarization pairs
+			for pol_id in range(len(polpairs)):
+				indA = inputlist.index([polpairs[pol_id][0], \
+					fq_id])
+				indB = inputlist.index([polpairs[pol_id][1], \
+					fq_id])
+				blt.append(indent21_1("D/STREAM A BAND %d", \
+					"%d", pol_id, indA))
+				blt.append(indent21_1("D/STREAM B BAND %d", \
+					"%d", pol_id, indB))
+		bl_id += 1
+
+	return blt
+
+def zero2oh(str):
+	out = ''
+	j = 0
+	for a in str:
+		if a == '-' or a == '+':
+			j+=1
+		if j == 0 and a == '0':
+			out += 'O'
+		else:
+			out += a
+
+	return out
+
+def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
+	job_tape = job['tape']
+	job_rec  = job['recorder']
+	data = []
+	data.append("# DATA TABLE #######!")
+	nant = len(subarray)
+	for s in range(nsetups):
+		for i in range(nant):
+			j = i + nant*s
+			rec = getrowbyname(job_rec, antennalist[i])
+			if rec == None:
+				print 'Antenna %s not in recorder table' % \
+					antennalist[i]
+				exit(0)
+			taperow = int(rec['tapes_row'])
+			vsn = zero2oh(job_tape[taperow]['tape_id'])
+			data.append(indent21_1("D/STREAM %d FILES", "%d", j, 1))
+			data.append(indent21_2("FILE %d/%d", "%s", j, 0, vsn))
+	return data
+
+#
+
+def makeflagtable(scans, subarray, subarray_num):
+	flag = []
+	for scan in scans:
+		ants = scan[6][subarray_num][1]
+		for a in subarray:
+			if a not in ants:
+				flag.append("%12.6f %12.6f %d" % \
+					(scan[2], scan[3], a))
+	return flag
+
+
+##
+def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg, jobstarttime, jobstoptime, subjob_num,subarray_num):
+	job_station = job['station']
+	job_eop = job['UTC']
+	job_corr = job['correlator']
+	job_master = job['master']
+	job_custom = job['custom']
+	job_freq = job['frequency']
+	calc = []
+	mjd0 = scans[0][2]
+	start = mjd2calendar(mjd0)
+	nant = len(subarray)
+	inc = 1
+
+	mountlist = {"altz":"azel", "equa":"equa", "xyns":"xy", "xyew":"xy"}
+
+	timeavg = float(job_custom[0]['time_avg'])
+
+	calc.append("JOB ID:             %s" % job_master[0]['job_id'])
+	calc.append("JOB START TIME:     %s" % jobstarttime)
+	calc.append("JOB STOP TIME:      %s" % jobstoptime)
+	calc.append("OBSCODE:            %s" % job_master[0]['obscode'])
+	session = job_master[0]['session']
+	if len(session) > 0:
+		if session[0] != ' ':
+			calc.append("SESSION:            %s" % session)
+	calc.append("SUBJOB ID:          %d" % subjob_num)
+	calc.append("SUBARRAY ID:        %d" % subarray_num)
+	calc.append("START MJD:          %12.7f" % mjd0)
+	calc.append("START YEAR:         %d" % start[0])
+	calc.append("START MONTH:        %d" % start[1])
+	calc.append("START DAY:          %d" % start[2])
+	calc.append("START HOUR:         %d" % start[3])
+	calc.append("START MINUTE:       %d" % start[4])
+	calc.append("START SECOND:       %d" % start[5])
+	calc.append("INCREMENT (SECS):   %d" % inc)
+	calc.append("NUM TELESCOPES:     %d" % nant)
+	calc.append("SPECTRAL AVG:       %d" % specavg)
+	calc.append("TAPER FUNCTION:     %s" % job_corr[0]['window'])
+
+	ant_num = 0
+	for ant_id in subarray:
+		ant_name = antennalist[ant_id]
+		stn = getrowbyname(job_station, ant_name)
+		mount = stn['axistype']
+		if mountlist.has_key(mount):
+			mount = mountlist[mount]
+		else:
+			print "Warning : unknown mount : %s" % mount
+		offset = stn['axisoff_x']
+		x = stn['x']
+		y = stn['y']
+		z = stn['z']
+		calc.append(indent21_1("TELESCOPE %d NAME", "%s", \
+			ant_num, ant_name))
+		calc.append(indent21_1("TELESCOPE %d MOUNT", "%s", \
+			ant_num, mount))
+		calc.append(indent21_1("TELESCOPE %d OFFSET (m)", "%s", \
+			ant_num, offset))
+		calc.append(indent21_1("TELESCOPE %d X (m)", "%s", \
+			ant_num, x))
+		calc.append(indent21_1("TELESCOPE %d Y (m)", "%s", \
+			ant_num, y))
+		calc.append(indent21_1("TELESCOPE %d Z (m)", "%s", \
+			ant_num, z))
+		ant_num += 1
+
+	nscan = len(scans)
+	calc.append("NUM SCANS:          %d" % nscan)
+	scan_num = 0
+	for scan in scans:
+		scanmjd0 = scan[2]
+		scanmjd1 = scan[3]
+		dur = int( (scanmjd1 - scanmjd0)*86400.0 + 0.5) / inc
+		if scan_num == len(scans)-1:
+			dur += 120
+		scanstart = int( (scanmjd0 - mjd0)*86400.0 + 0.5) / inc
+		config = findconfig(scan[6], subarray)
+		corr_id = config[0]
+		fq_id = config[1]
+		src_id = config[2]
+		custom_id = config[3]
+		job_freq_row = job_freq[fq_id]
+		os = 0.5*float(job_freq_row['sample_rate'])/float(job_freq_row['bandwidth'])
+		os = int(os + 0.5)
+		if job_corr[corr_id]['polar'] == 'YES':
+			dopolar = 1
+		else:
+			dopolar = 0
+		config_name = "FREQ%dCUST%dDOPOL%d" % (fq_id, custom_id, dopolar)
+		calc.append(indent21_1("SCAN %d POINTS", "%d", \
+			scan_num, dur))
+		calc.append(indent21_1("SCAN %d START PT", "%d", \
+			scan_num, scanstart))
+		calc.append(indent21_1("SCAN %d SRC NAME", "%s", \
+			scan_num, config_name))
+		calc.append(indent21_1("SCAN %d REAL NAME", "%s", \
+			scan_num, srclist[src_id][0]))
+		calc.append(indent21_1("SCAN %d SRC RA", "%12.10f", \
+			scan_num, srclist[src_id][1]))
+		calc.append(indent21_1("SCAN %d SRC DEC", "%12.10f", \
+			scan_num, srclist[src_id][2]))
+		calc.append(indent21_1("SCAN %d CALCODE", "%s", \
+			scan_num, srclist[src_id][3]))
+		calc.append(indent21_1("SCAN %d QUAL", "%d", \
+			scan_num, srclist[src_id][4]))
+		calc.append(indent21_1("SCAN %d OVERSAMP", "%d", \
+			scan_num, os))
+		scan_num += 1
+
+	neop = len(job_eop)
+	calc.append("NUM EOP:              %d" % neop)
+	eop_num = 0
+	for e in job_eop:
+		calc.append("EOP %d TIME (mjd):     %f" % \
+			(eop_num, parsetime(e['time'])) )
+		calc.append("EOP %d TAI_UTC (sec):  %s" % \
+			(eop_num, e['taiutc']) )
+		calc.append("EOP %d UT1_UTC (sec):  %s" % \
+			(eop_num, e['ut1utc']) )
+		calc.append("EOP %d XPOLE (arcsec): %s" % \
+			(eop_num, e['xpole']) )
+		calc.append("EOP %d YPOLE (arcsec): %s" % \
+			(eop_num, e['ypole']) )
+		eop_num += 1
+	
+	calc.append("DELAY FILENAME:     %s.delay" % filebase)
+	calc.append("UVW FILENAME:       %s.uvw" % filebase)
+		
+	return calc
+##
+
+def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=False):
+
+	# lists imply internal data structures
+	if len(antennalist) == 0:
+		antennalist = obs2antennalist(job['obs'])
+	antenna_index = rev_list(antennalist)
+	nant = len(antennalist)
+	statelist = obs2statelist(job['obs'], antenna_index)
+	scanlist, subarraylist = statelist2scanlist(statelist, 2, nant)
+	subjoblist = generatesubjoblist(scanlist, subarraylist)
+	srclist = generatesrclist(job['source'])
+
+	jobstarttime = scanlist[0][2]
+	jobstoptime  = scanlist[-1][3]
+
+	if verbose:
+		print 'antennalist = ', antennalist
+		print 'antenna_index = ', antenna_index
+		print 'sources  = ', job['source']
+
+		print '\nstatelist:'
+		for s in statelist:
+			print s
+
+		print '\nscanlist:'
+		for s in scanlist:
+			print s
+
+		print '\nsubarraylist:'
+		for s in subarraylist:
+			print s
+
+		print '\nsubjoblist:'
+		for sj in subjoblist:
+			print sj
+		print ''
+
+
+	## get down to business
+
+	stump = split(jobfile, '/')[-1][0:-3]
+
+	subjob_num = 0
+	for sj in subjoblist:
+		scan0  = sj[0]	# first scan in subarray (inclusive)
+		scan1  = sj[1]	# last scan in subarray (inclusive)
+		mjd0   = sj[2]
+		mjd1   = sj[3]
+		sub_id = sj[4][0]
+		subarrays = sj[5]
+
+		for subarray_num in range(len(subarrays)):
+			sub = subarrays[subarray_num]
+		
+			filebase = '%s.%d.%d' % (stump,subjob_num,subarray_num)
+			joblist.append(filebase)
+			
+			# a setup is a combination of freqid and customid
+			setups = []
+			maxfqid = 0
+		
+			for s in range(scan0, scan1+1):
+				config = findconfig(scanlist[s][6], sub)
+				dopolar = job['correlator'][config[0]]['polar'] == 'YES'
+				if config[1] > maxfqid:
+					maxfqid = config[1]
+				st = [config[1],config[3]]
+				if dopolar:
+					st.append(1);
+				else:
+					st.append(0);
+				if not st in setups:
+					setups.append(st)
+
+			print 'setups = ', setups
+			
+			tables = []
+			nant = len(sub)
+			config = findconfig(scanlist[scan0][6], sub)
+			dopolar = job['correlator'][config[0]]['polar'] == 'YES'
+			freqlist, inputlist = \
+				generatefreqlist(job['frequency'][config[1]])
+			allfreqlist = \
+				generateallfreqlist(job['frequency'])
+			if verbose:
+				print 'freqlist = ', freqlist
+				print 'allfreqlist = ', allfreqlist
+			tables.append( makecommontable(filebase, nant, \
+				mjd0, mjd1) )
+			ct, specavg = makeconfigutationtable(config, \
+				nant, job, setups, fftsize, nchan, freqlist)
+			tables.append(ct);
+			tables.append( makefreqtable(freqlist) )
+			tables.append( maketelescopetable(job['clock'], \
+				sub, antennalist, mjd0) )
+			tables.append( makedatastreamtable(sub, antennalist, \
+				config, job, freqlist, maxfqid+1) )
+			tables.append( makebaselinetable(nant, freqlist, \
+				inputlist, dopolar) )
+			tables.append( makedatatable(mjd0, mjd1, antennalist, \
+				sub, job, len(setups)) )
+			filename = '%s.input' % filebase
+			fp = open(filename, "w")
+			for t in tables:
+				for r in t:
+					fp.write(r+'\n')
+				fp.write('\n')
+			fp.close()
+
+			# do the calc thing
+			calctable = makecalctable(scanlist[scan0:scan1+1], \
+					sub, filebase, job, antennalist, \
+					srclist, specavg, jobstarttime, \
+					jobstoptime, subjob_num,subarray_num)
+			filename = '%s.calc' % filebase
+			fp = open(filename, "w")
+			for c in calctable:
+				fp.write(c+'\n')
+			fp.close()
+			
+			# make subarray flags
+			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
+					sub, subarray_num)
+			filename = '%s.flag' % filebase
+			fp = open(filename, "w") 
+			for f in flagtable:
+				fp.write(f+'\n')
+			fp.close()
+			
+		subjob_num += 1
+
+#############
+
+def merge(jobs):
+	# for now, just assume that we can simply order files
+	f = []
+
+	# generate sort key
+	for i in range(1,len(jobs)):
+		j = jobs.pop()
+		fmt = j['format'][0]
+		if fmt['barrel_roll'] == 'DISCUPPER':
+			R = '1'
+		else:
+			R = '0'
+		N = int(fmt['track'][1])
+		if N > 33:
+			N += 200
+		if N % 2 == 1:
+			N += 100
+		f.append(["%c%03d" % (R, N), j])
+	f.sort()
+	jobs.append(f[0][1])
+	f1 = jobs[1]['frequency']
+	l = len(f1)
+	for g in f[1:]:
+		f2 = g[1]['frequency']
+		for i in range(l):
+			for v in f2[i]['fft_enable'][1:]:
+				f1[i]['fft_enable'].append(v)
+			for v in f2[i]['base_freq'][1:]:
+				f1[i]['base_freq'].append(v)
+			for v in f2[i]['net_side'][1:]:
+				f1[i]['net_side'].append(v)
+			for v in f2[i]['polarization'][1:]:
+				f1[i]['polarization'].append(v)
+	
+
+# argument is list of ['filename', job]
+def combinejobs(jobs):
+	N = len(jobs)
+	if N < 2:
+		return
+	for i in range(1, N):
+		if len(jobs[i]) < 2:
+			continue
+		j1 = jobs[i][1]
+		m1 = j1['master'][0]
+		o1 = j1['obs']
+		s1 = j1['source']
+		f1 = j1['frequency']
+		for j in range(0, i):
+			if len(jobs[j]) < 2:
+				continue
+			j2 = jobs[j][1]
+			m2 = j2['master'][0]
+			o2 = j2['obs']
+			s2 = j2['source']
+			f2 = j2['frequency']
+			ok = (o1 == o2 and s1 == s2 and not f1 == f2)
+			for k in m2.keys():
+				if k == 'job_id':
+					continue
+				if m1[k] != m2[k]:
+					ok = False
+			if ok:
+				# jobs must match.  queue for combination
+				jobs[j].append(jobs[i].pop())
+	for j in jobs:
+		if len(j) > 2:
+			merge(j)
+
+#############
+
+def genMakefile(joblist):
+	all = "all: $(fitss)"
+	clean = "clean:\n\trm -rf $(uvws) $(threads) $(machines) $(delays) $(rates) $(flags) $(calcs) $(fitss)"
+	uvws = "uvws ="
+	inputs = "inputs ="
+	delays = "delays ="
+	rates = "rates ="
+	flags = "flags ="
+	calcs = "calc ="
+	threads = "threads ="
+	machines = "machines ="
+	fitss = "fitss ="
+	for job in joblist:
+		if job[0:3] == 'job':
+			jnum = job[3:]
+		else:
+			jnum = job
+		uvws += " %s.uvw" % job
+		threads += " %s.threads" % job
+		machines += " %s.machines" % job
+		inputs += " %s.input" % job
+		delays += " %s.delay" % job
+		rates += " %s.rates" % job
+		calcs += " %s.calc" % job
+		flags += " %s.flag" % job
+		fitss += " %s.FITS" % jnum
+
+	Makefile = open('Makefile', 'w')
+	Makefile.write(uvws+"\n\n")
+	Makefile.write(threads+"\n\n")
+	Makefile.write(machines+"\n\n")
+	Makefile.write(inputs+"\n\n")
+	Makefile.write(delays+"\n\n")
+	Makefile.write(rates+"\n\n")
+	Makefile.write(calcs+"\n\n")
+	Makefile.write(flags+"\n\n")
+	Makefile.write(fitss+"\n\n")
+	Makefile.write(all+"\n\n")
+	Makefile.write('delays: $(uvws)\n\n')
+	Makefile.write('uvws: $(uvws)\n\n')
+	Makefile.write("FITS: $(fitss)\n\n")
+	Makefile.write(clean+"\n\n")
+	for job in joblist:
+		if job[0:3] == 'job':
+			jnum = job[3:]
+		else:
+			jnum = job
+		Makefile.write("%s.uvw: %s.calc\n\tcalcif %s.calc\n\n" % (job, job, job))
+		Makefile.write("%s.machines: %s.input\n\tgenmachines %s.input\n\n" % (job, job, job))
+#		Makefile.write("%s.threads:  template.threads\n\tcp template.threads %s.threads\n\n" % (job, job))
+		Makefile.write("%s.difx: %s.uvw %s.delay %s.input %s.machines\n" % (job, job, job, job, job))
+		Makefile.write("\trm -rf %s.difx\n" % job);
+		Makefile.write("\tdate\n")
+		Makefile.write("\tmpirun -np `cat %s.machines | wc -l` --bynode --hostfile %s.machines  /users/wbrisken/src/SWcorr/trunk/difx/mpifxcorr/src/mpifxcorr `pwd`/%s.input\n" % (job, job, job))
+		Makefile.write("\tdate\n\n")
+		Makefile.write("%s.FITS: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s.FITS\n\n" % (jnum, job, job, job, job, job, job, jnum))
+
+	Makefile.close()
+
+#############
+
+if len(argv) < 2:
+	usage()
+else:
+	antennalist = []
+	fftsize = 0
+	nchan = 0
+	files = []
+	for arg in argv[1:]:
+		kv = split(arg, '=')
+		if len(kv) == 2:
+			if kv[0] == 'A':
+				ants = split(kv[1], ',')
+				for a in ants:
+					antennalist.append(a)
+			elif kv[0] == 'fftsize':
+				fftsize = int(kv[1])
+			elif kv[0] == 'nchan':
+				nchan = int(kv[1])
+		elif len(kv) == 1:
+			files.append([arg])
+		else:
+			print 'What is %s?' % arg
+			exit(0)
+
+	print 'Processing files : ', files
+			
+	# read jobs
+	for file in files:
+		job = readjob(file[0])
+		file.append(job)
+	# combine jobs if possible
+	combinejobs(files)
+	# process jobs
+	joblist = []
+	for file in files:
+		if len(file) == 2:
+			processjobfile(file[1], file[0], antennalist, \
+				fftsize, nchan, joblist, True)
+	# make Makefile
+	genMakefile(joblist)
