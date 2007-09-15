@@ -40,7 +40,7 @@ my $numdatasegments = 8;
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto,
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
-	   'input'=>\$input);
+	   'input=s'=>\$input);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -463,14 +463,16 @@ for (my $i=0; $i<@stations; $i++) {
 
 print INPUT "\n# NETWORK TABLE ####!\n";
 my $iport = 52100;
+$count = 0;
 foreach (@stations) {
-  my $istr = count2str($iport);
+  my $istr = count2str($count);
   my $tcpwin = vexant2window($_);
   print INPUT<<EOF;
 PORT NUM $istr        $iport
-TCP WINDOW SIZE $istr $tcpwin
+TCP WINDOW (KB) $istr $tcpwin
 EOF
   $iport++;
+  $count++;
 }
 
 sub num2bool {
