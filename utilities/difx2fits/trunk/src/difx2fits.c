@@ -4,12 +4,28 @@
 
 const char program[] = "difx2fits";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdata[] = "2007/05/06";
+const char version[] = "0.2";
+const char verdate[] = "2007/09/17";
 
 int usage(const char *pgm)
 {
-	fprintf(stderr, "Usage : %s <basefilename> <outfile>\n", pgm);
+	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n",
+		program, version, verdate, author);
+	fprintf(stderr, "A program to convert DiFX format data to "
+		"FITS-IDI\n\n");
+	fprintf(stderr, "Usage : %s <basefilename> <outfile>\n\n", pgm);
+	fprintf(stderr, "It is assumed that at least 3 input files exist:\n");
+	fprintf(stderr, "  <basefilename>.input    DiFX input file,\n");
+	fprintf(stderr, "  <basefilename>.uvw      DiFX UVW file, &\n");
+	fprintf(stderr, "  <basefilename>.delay    DiFX delay model.\n\n");
+	fprintf(stderr, "Two other files are optionally read:\n");
+	fprintf(stderr, "  <basefilename>.calc     Base file for calcif &\n");
+	fprintf(stderr, "  <basefilename>.rates    Extra calcif output.\n\n");
+	fprintf(stderr, "The output file <outfile> will be written in "
+		"FITS-IDI format nearly\n");
+	fprintf(stderr, "identical to that made at the VLBA HW correlator.  "
+		"The two optional files\n");
+	fprintf(stderr, "are required for full model accountability.\n\n");
 
 	return 0;
 }
@@ -49,7 +65,10 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	D = DifxInput2FitsAN(D, &keys, out);
 	D = DifxInput2FitsFQ(D, &keys, out);
 	D = DifxInput2FitsML(D, &keys, out);
-	D = DifxInput2FitsCT(D, &keys, out);
+	if(D->nEOP > 0)
+	{
+		D = DifxInput2FitsCT(D, &keys, out);
+	}
 	D = DifxInput2FitsMC(D, &keys, out);
 	D = DifxInput2FitsUV(D, &keys, filebase, out);
 	
@@ -80,8 +99,6 @@ int main(int argc, char **argv)
 			"Using UNIFORM.\n", D->taperFunction);
 		strcpy(D->taperFunction, "UNIFORM");
 	}
-
-//	printDifxInput(D);
 
 	if(fitsWriteOpen(&outfile, argv[2]) < 0)
 	{

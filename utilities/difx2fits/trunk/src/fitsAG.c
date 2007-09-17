@@ -86,20 +86,6 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	mjd = (int)(D->mjdStart);
 	mjd2fits(mjd, ref_date);
 
-	for(e = 0; e < D->nEOP; e++)
-	{
-		if(fabs(D->eop[e].mjd - mjd) < 0.01)
-		{
-			break;
-		}
-	}
-
-	if(e >= D->nEOP)
-	{
-		fprintf(stderr, "EOP entry not found for mjd=%d\n", mjd);
-		return 0;
-	}
-
 	fitsWriteFloat(out, "ARRAYX", 0.0, "");
 	fitsWriteFloat(out, "ARRAYY", 0.0, "");
 	fitsWriteFloat(out, "ARRAYZ", 0.0, "");
@@ -112,11 +98,34 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	fitsWriteString(out, "TIMESYS", "UTC", "");
 	fitsWriteFloat(out, "GSTIA0", 360.0*arrayGMST(mjd), "");
 	fitsWriteFloat(out, "DEGPDY", 360.9856449733, "");
-	fitsWriteFloat(out, "POLARX", D->eop[e].xPole, "");
-	fitsWriteFloat(out, "POLARY", D->eop[e].yPole, "");
-	fitsWriteFloat(out, "UT1UTC", D->eop[e].ut1_utc, "");
-	fitsWriteFloat(out, "IATUTC", (double)(D->eop[e].tai_utc), "");
+	
+	if(D->nEOP > 0)
+	{
+		for(e = 0; e < D->nEOP; e++)
+		{
+			if(fabs(D->eop[e].mjd - mjd) < 0.01)
+			{
+				break;
+			}
+		}
 
+		if(e >= D->nEOP)
+		{
+			fprintf(stderr, "EOP entry not found for mjd=%d\n", 
+				mjd);
+			return 0;
+		}
+
+		fitsWriteFloat(out, "POLARX", D->eop[e].xPole, "");
+		fitsWriteFloat(out, "POLARY", D->eop[e].yPole, "");
+		fitsWriteFloat(out, "UT1UTC", D->eop[e].ut1_utc, "");
+		fitsWriteFloat(out, "IATUTC", (double)(D->eop[e].tai_utc), "");
+	}
+	else
+	{
+		fitsWriteFloat(out, "IATUTC", 33.0, "");
+	}
+	
   	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
