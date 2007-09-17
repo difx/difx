@@ -357,6 +357,7 @@ DifxInput *newDifxInput()
 	D->jobStop = 0.0;
 	D->subjobId = 0;
 	D->subarrayId = 0;
+	D->specAvg = 1;
 	strcpy(D->obsCode, "DIFX");
 	strcpy(D->obsSession, "");
 	strcpy(D->taperFunction, "UNIFORM");
@@ -628,6 +629,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			D->config[c].doPolar = 0;
 		}
 	}
+
+	D->nOutChan = D->config[0].nChan;
 	
 	/* FREQ TABLE */
 	rows[N_FREQ_ROWS-1] = 0;	/* initialize start */
@@ -780,211 +783,112 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	return D;
 }
 
-static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
+static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 {
+	int i, c, p, r = 0, s, v, N;
+	int nPoint, startPoint;
+	int rows[20];
+	
 	const char initKeys[][MAX_DIFX_KEY_LEN] = 
 	{
-		"JOB ID",
-		"OBSCODE",
 		"INCREMENT (SECS)",
-		"NUM SCANS",
-		"NUM EOP"
+		"NUM SCANS"
 	};
 	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
 	
 	const char antKeys[][MAX_DIFX_KEY_LEN] =
 	{
 		"TELESCOPE %d MOUNT",
-		"TELESCOPE %d OFFSET (m)",
 		"TELESCOPE %d X (m)",
 		"TELESCOPE %d Y (m)",
-		"TELESCOPE %d Z (m)",
+		"TELESCOPE %d Z (m)"
 	};
 	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
 
-	const char eopKeys[][MAX_DIFX_KEY_LEN] =
-	{
-		"EOP %d TIME (mjd)",
-		"EOP %d TAI_UTC (sec)",
-		"EOP %d UT1_UTC (sec)",
-		"EOP %d XPOLE (arcsec)",
-		"EOP %d YPOLE (arcsec)"
-	};
-	const int N_EOP_ROWS = sizeof(eopKeys)/sizeof(eopKeys[0]);
-	
 	const char scanKeys[][MAX_DIFX_KEY_LEN] =
 	{
 		"SCAN %d POINTS",
 		"SCAN %d START PT",
 		"SCAN %d SRC NAME",
-		"SCAN %d REAL NAME",
 		"SCAN %d SRC RA",
-		"SCAN %d SRC DEC",
-		"SCAN %d CALCODE",
-		"SCAN %d QUAL"
+		"SCAN %d SRC DEC"
 	};
 	const int N_SCAN_ROWS = sizeof(scanKeys)/sizeof(scanKeys[0]);
-	
-	int rows[20];
-	int i, c, N, row;
-	int startPoint, nPoint;
-	const char *cname;
 	
 	if(!D)
 	{
 		return 0;
 	}
 
+	D->nEOP = 0;
 
-	N = DifxParametersbatchfind(cp, 0, initKeys, N_INIT_ROWS, rows);
+	N = DifxParametersbatchfind(up, 0, initKeys, N_INIT_ROWS, rows);
 	if(N < N_INIT_ROWS)
 	{
 		return 0;
 	}
 
-	D->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
-	strcpy(D->obsCode, DifxParametersvalue(cp, rows[1]));
-	D->modelInc = atof(DifxParametersvalue(cp, rows[2]));
-	D->nScan    = atoi(DifxParametersvalue(cp, rows[3]));
-	D->nEOP     = atoi(DifxParametersvalue(cp, rows[4]));
+	D->modelInc = atof(DifxParametersvalue(up, rows[0]));
+	D->nScan    = atoi(DifxParametersvalue(up, rows[1]));
 
 	D->scan  = newDifxScanArray(D->nScan);
-	D->eop   = newDifxEOPArray(D->nEOP);
-
-	row = DifxParametersfind(cp, 0, "SESSION");
-	if(row >= 0)
-	{
-		strncpy(D->obsSession, DifxParametersvalue(cp, row), 7);
-		D->obsSession[7] = 0;
-	}
-	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
-	if(row >= 0)
-	{
-		strncpy(D->taperFunction, DifxParametersvalue(cp, row), 7);
-		D->taperFunction[7] = 0;
-	}
-	row = DifxParametersfind(cp, 0, "JOB START TIME");
-	if(row >= 0)
-	{
-		D->jobStart = atof(DifxParametersvalue(cp, row));
-	}
-	row = DifxParametersfind(cp, 0, "JOB STOP TIME");
-	if(row >= 0)
-	{
-		D->jobStop = atof(DifxParametersvalue(cp, row));
-	}
-	row = DifxParametersfind(cp, 0, "SUBJOB ID");
-	if(row >= 0)
-	{
-		D->subjobId = atoi(DifxParametersvalue(cp, row));
-	}
-	row = DifxParametersfind(cp, 0, "SUBARRAY ID");
-	if(row >= 0)
-	{
-		D->subarrayId = atoi(DifxParametersvalue(cp, row));
-	}
-	row = DifxParametersfind(cp, 0, "SPECTRAL AVG");
-	if(row < 0)
-	{
-		D->specAvg = 1;
-	}
-	else
-	{
-		D->specAvg = atoi(DifxParametersvalue(cp, row));
-	}
-
-	D->nOutChan = D->config[0].nChan/D->specAvg;
-
+	
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
 	for(i = 0; i < D->nAntenna; i++)
 	{
-		N = DifxParametersbatchfind1(cp, rows[N_ANT_ROWS-1], antKeys,
+		N = DifxParametersbatchfind1(up, rows[N_ANT_ROWS-1], antKeys,
 			i, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
 			return 0;
 		}
-		strcpy(D->antenna[i].mount, DifxParametersvalue(cp, rows[0]));
-		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[1]));
-		D->antenna[i].offset[1]= 0.0;	/* FIXME */
-		D->antenna[i].offset[2]= 0.0;	/* FIXME */
-		D->antenna[i].X        = atof(DifxParametersvalue(cp, rows[2]));
-		D->antenna[i].Y        = atof(DifxParametersvalue(cp, rows[3]));
-		D->antenna[i].Z        = atof(DifxParametersvalue(cp, rows[4]));
+		strcpy(D->antenna[i].mount, DifxParametersvalue(up, rows[0]));
+		D->antenna[i].offset[0]= 0.0;	/* Default */
+		D->antenna[i].offset[1]= 0.0;	
+		D->antenna[i].offset[2]= 0.0;	
+		D->antenna[i].X        = atof(DifxParametersvalue(up, rows[1]));
+		D->antenna[i].Y        = atof(DifxParametersvalue(up, rows[2]));
+		D->antenna[i].Z        = atof(DifxParametersvalue(up, rows[3]));
 		D->antenna[i].dX       = 0.0;
 		D->antenna[i].dY       = 0.0;
 		D->antenna[i].dZ       = 0.0;
 	}
 	
-	rows[N_EOP_ROWS-1] = 0;		/* initialize start */
-	for(i = 0; i < D->nEOP; i++)
-	{
-		N = DifxParametersbatchfind1(cp, rows[N_EOP_ROWS-1], eopKeys,
-			i, N_EOP_ROWS, rows);
-		if(N < N_EOP_ROWS)
-		{
-			return 0;
-		}
-		D->eop[i].mjd     = atof(DifxParametersvalue(cp, rows[0])) + .5;
-		D->eop[i].tai_utc = atof(DifxParametersvalue(cp, rows[1])) + .5;
-		D->eop[i].ut1_utc = atof(DifxParametersvalue(cp, rows[2]));
-		D->eop[i].xPole   = atof(DifxParametersvalue(cp, rows[3]));
-		D->eop[i].yPole   = atof(DifxParametersvalue(cp, rows[4]));
-	}
-
 	rows[N_SCAN_ROWS-1] = 0;
 	for(i = 0; i < D->nScan; i++)
 	{
-		N = DifxParametersbatchfind1(cp, rows[N_SCAN_ROWS-1], scanKeys, 
+		N = DifxParametersbatchfind1(up, rows[N_SCAN_ROWS-1], scanKeys, 
 			i, N_SCAN_ROWS, rows);
 		if(N < N_SCAN_ROWS)
 		{
 			return 0;
 		}
-		nPoint               = atoi(DifxParametersvalue(cp, rows[0]));
-		startPoint           = atoi(DifxParametersvalue(cp, rows[1]));
+		nPoint               = atoi(DifxParametersvalue(up, rows[0]));
+		startPoint           = atoi(DifxParametersvalue(up, rows[1]));
 		D->scan[i].mjdStart  = D->mjdStart + 
 			startPoint*D->modelInc/86400.0;
 		D->scan[i].mjdEnd    = D->mjdStart + 
 			(startPoint+nPoint)*D->modelInc/86400.0;
 		D->scan[i].nPoint    = nPoint;
 		strncpy(D->scan[i].name, 
-			DifxParametersvalue(cp, rows[3]), 31);
+			DifxParametersvalue(up, rows[2]), 31);
 		D->scan[i].name[31]  = 0;
 		D->scan[i].model     = newDifxModelArray(D->nAntenna, nPoint);
 		D->scan[i].nAntenna  = D->nAntenna;
 		
-		D->scan[i].ra        = atof(DifxParametersvalue(cp, rows[4]));
-		D->scan[i].dec       = atof(DifxParametersvalue(cp, rows[5]));
-		strncpy(D->scan[i].calcode, 
-			DifxParametersvalue(cp, rows[6]), 3);
-		D->scan[i].calcode[3] = 0;
-		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[7]));
+		D->scan[i].ra        = atof(DifxParametersvalue(up, rows[3]));
+		D->scan[i].dec       = atof(DifxParametersvalue(up, rows[4]));
+		D->scan[i].calcode[0]= 0;
+		D->scan[i].qual      = 0;	/* Default */
 
-		cname = DifxParametersvalue(cp, rows[2]);
 		for(c = 0; c < D->nConfig; c++)
 		{
-			if(strcmp(cname, D->config[c].name) == 0)
+			if(strcmp(D->scan[i].name, D->config[c].name) == 0)
 			{
 				D->scan[i].configId = c;
 			}
 		}
-	}
 
-	return D;
-}
-
-static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
-{
-	int p, r = 0, s, v;
-	
-	if(!D)
-	{
-		return 0;
-	}
-
-	for(s = 0; s < D->nScan; s++)
-	{
 		for(p = -1; p <= D->scan[s].nPoint+1; p++)
 		{
 			r = DifxParametersfind1(up, r+1, "RELATIVE INC %d", p);
@@ -1038,6 +942,186 @@ static DifxInput *populateDelay(DifxInput *D, DifxParameters *dp)
 	}
 
 	return D;
+}
+
+static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
+{
+	const char initKeys[][MAX_DIFX_KEY_LEN] = 
+	{
+		"JOB ID",
+		"OBSCODE",
+		"NUM EOP"
+	};
+	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
+	
+	const char antKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"TELESCOPE %d OFFSET (m)"
+	};
+	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
+
+	const char eopKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"EOP %d TIME (mjd)",
+		"EOP %d TAI_UTC (sec)",
+		"EOP %d UT1_UTC (sec)",
+		"EOP %d XPOLE (arcsec)",
+		"EOP %d YPOLE (arcsec)"
+	};
+	const int N_EOP_ROWS = sizeof(eopKeys)/sizeof(eopKeys[0]);
+	
+	const char scanKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"SCAN %d SRC NAME",
+		"SCAN %d REAL NAME",
+		"SCAN %d CALCODE",
+		"SCAN %d QUAL"
+	};
+	const int N_SCAN_ROWS = sizeof(scanKeys)/sizeof(scanKeys[0]);
+	
+	int rows[20];
+	int i, c, N, row;
+	const char *cname;
+	
+	if(!D)
+	{
+		return 0;
+	}
+
+	N = DifxParametersbatchfind(cp, 0, initKeys, N_INIT_ROWS, rows);
+	if(N < N_INIT_ROWS)
+	{
+		return 0;
+	}
+
+	D->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
+	strcpy(D->obsCode, DifxParametersvalue(cp, rows[1]));
+	D->nEOP     = atoi(DifxParametersvalue(cp, rows[2]));
+
+	D->eop   = newDifxEOPArray(D->nEOP);
+
+	row = DifxParametersfind(cp, 0, "SESSION");
+	if(row >= 0)
+	{
+		strncpy(D->obsSession, DifxParametersvalue(cp, row), 7);
+		D->obsSession[7] = 0;
+	}
+	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
+	if(row >= 0)
+	{
+		strncpy(D->taperFunction, DifxParametersvalue(cp, row), 7);
+		D->taperFunction[7] = 0;
+	}
+	row = DifxParametersfind(cp, 0, "JOB START TIME");
+	if(row >= 0)
+	{
+		D->jobStart = atof(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "JOB STOP TIME");
+	if(row >= 0)
+	{
+		D->jobStop = atof(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "SUBJOB ID");
+	if(row >= 0)
+	{
+		D->subjobId = atoi(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "SUBARRAY ID");
+	if(row >= 0)
+	{
+		D->subarrayId = atoi(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "SPECTRAL AVG");
+	if(row >= 0)
+	{
+		D->specAvg = atoi(DifxParametersvalue(cp, row));
+	}
+
+	D->nOutChan = D->config[0].nChan/D->specAvg;
+
+	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
+	for(i = 0; i < D->nAntenna; i++)
+	{
+		N = DifxParametersbatchfind1(cp, rows[N_ANT_ROWS-1], antKeys,
+			i, N_ANT_ROWS, rows);
+		if(N < N_ANT_ROWS)
+		{
+			return 0;
+		}
+		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[0]));
+		D->antenna[i].offset[1]= 0.0;	/* FIXME */
+		D->antenna[i].offset[2]= 0.0;	/* FIXME */
+	}
+	
+	rows[N_EOP_ROWS-1] = 0;		/* initialize start */
+	for(i = 0; i < D->nEOP; i++)
+	{
+		N = DifxParametersbatchfind1(cp, rows[N_EOP_ROWS-1], eopKeys,
+			i, N_EOP_ROWS, rows);
+		if(N < N_EOP_ROWS)
+		{
+			return 0;
+		}
+		D->eop[i].mjd     = atof(DifxParametersvalue(cp, rows[0])) + .5;
+		D->eop[i].tai_utc = atof(DifxParametersvalue(cp, rows[1])) + .5;
+		D->eop[i].ut1_utc = atof(DifxParametersvalue(cp, rows[2]));
+		D->eop[i].xPole   = atof(DifxParametersvalue(cp, rows[3]));
+		D->eop[i].yPole   = atof(DifxParametersvalue(cp, rows[4]));
+	}
+
+	rows[N_SCAN_ROWS-1] = 0;
+	for(i = 0; i < D->nScan; i++)
+	{
+		N = DifxParametersbatchfind1(cp, rows[N_SCAN_ROWS-1], scanKeys, 
+			i, N_SCAN_ROWS, rows);
+		if(N < N_SCAN_ROWS)
+		{
+			return 0;
+		}
+		strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[1]), 31);
+		D->scan[i].name[31]  = 0;
+		strncpy(D->scan[i].calcode, 
+			DifxParametersvalue(cp, rows[2]), 3);
+		D->scan[i].calcode[3]= 0;
+		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[3]));
+
+		cname = DifxParametersvalue(cp, rows[0]);
+		for(c = 0; c < D->nConfig; c++)
+		{
+			if(strcmp(cname, D->config[c].name) == 0)
+			{
+				D->scan[i].configId = c;
+			}
+		}
+	}
+
+	return D;
+}
+
+static void estimateRate(DifxInput *D)
+{
+	int s, a, p;
+	double f;
+
+	if(!D)
+	{
+		return;
+	}
+
+	f = 0.5/D->modelInc;
+	for(s = 0; s < D->nScan; s++)
+	{
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			for(p = 0; p <= D->scan[s].nPoint; p++)
+			{
+				D->scan[s].model[a][p].dt = 
+					f*(D->scan[s].model[a][p+1].t - 
+					   D->scan[s].model[a][p-1].t);
+			}
+		}
+	}
 }
 
 static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
@@ -1180,7 +1264,7 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	rp = newDifxParametersfromfile(ratefile);
 	cp = newDifxParametersfromfile(calcfile);
 
-	if(!ip || !up || !dp || !rp || !cp)
+	if(!ip || !up || !dp)
 	{
 		deleteDifxParameters(ip);
 		deleteDifxParameters(up);
@@ -1194,10 +1278,31 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	D = DSave = newDifxInput();
 
 	D = populateInput(D, ip);
-	D = populateCalc(D, cp);
 	D = populateUVW(D, up);
 	D = populateDelay(D, dp);
-	D = populateRate(D, rp);
+	if(cp)
+	{
+		D = populateCalc(D, cp);
+	}
+	else
+	{	
+		fprintf(stderr, "Warning -- no file called %s found.  Continuing anyways\n",
+			calcfile);
+		fprintf(stderr, "  Defaults being used for many parameters\n");
+	}
+	if(rp)
+	{
+		D = populateRate(D, rp);
+	}
+	else
+	{
+		fprintf(stderr, "Warning -- no file called %s found.  Continuing anyways\n",
+			ratefile);
+		fprintf(stderr, "  Model rates will be approximate\n");
+		fprintf(stderr, "  Atmosphere values will be absent\n");
+
+		estimateRate(D);
+	}
 	D = deriveSourceTable(D);
 
 	if(!D)

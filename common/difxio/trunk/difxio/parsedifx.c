@@ -232,7 +232,7 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 	in = fopen(filename, "r");
 	if(!in)
 	{
-		fprintf(stderr, "Error -- cannot open %s for read\n", filename);
+		fprintf(stderr, "Cannot open %s for read\n", filename);
 		return 0;
 	}
 
