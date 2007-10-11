@@ -306,7 +306,7 @@ public class EditNodePanel extends DiFXPanel implements TableModelListener {
 	
 	private void updateSelectedNodes(String [] newnumthreads) {
 		int count = 0;
-		selectednodetabledata = new String[corrconfig.getNumNodes()][3];
+		selectednodetabledata = new String[corrconfig.getNumNodes()*corrconfig.getProcsPerNode()][3];
 		
 		for(int i=0;i<availablenodetabledata.length;i++) {
 			if(nodesselected[i]) {
@@ -424,7 +424,7 @@ public class EditNodePanel extends DiFXPanel implements TableModelListener {
 	
 	private void savethreadfile(String threadfilename) throws IOException {
 		PrintWriter output;
-                int numcores = Integer.parseInt(numnodesfield.getText()) - (1 + corrconfig.getNumDatastreams());
+                int numcores = corrconfig.getNumNodes()*corrconfig.getProcsPerNode() - (1 + corrconfig.getNumDatastreams());
 	
 		output = new PrintWriter(new FileWriter(threadfilename));
 		output.println("NUMBER OF CORES:    " + numcores);
