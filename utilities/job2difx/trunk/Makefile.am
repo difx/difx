@@ -2,8 +2,7 @@ SUBDIRS= calcif
 
 DIST_SUBDIRS = calcif
 
-bin_PROGRAMS = job2difx
-job2difx_SOURCES =
+dist_bin_SCRIPTS = job2difx
 
 EXTRA_DIST=autogen.sh
 
