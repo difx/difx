@@ -1,0 +1,59 @@
+      BLOCK DATA CMATHB
+      IMPLICIT None
+C
+C 1.    CMABD
+C
+C 1.1   CMABD PROGRAM SPECIFICATION
+C
+C 1.1.1 CMABD is the block data which initializes the mathematical
+C       constants.  Rather than obtaining the mathematical constants
+C       from the database, they must be initialized here because of
+C       the problems with differing representations of the constants
+C       in ASCII and binary.
+C
+C 1.1.2 RESTRICTIONS - NONE
+C
+C 1.1.3 REFERENCES - CHEMICAL RUBBER COMPANY HANDBOOK
+C
+C 1.2   CMABD PROGRAM INTERFACE
+C
+C 1.2.1 CALLING SEQUENCE - NONE
+C 
+C 1.2.2 COMMON BLOCK
+C 
+      Real*8         PI, TWOPI, HALFPI, CONVD, CONVDS, CONVHS, SECDAY 
+      COMMON /CMATH/ PI, TWOPI, HALFPI, CONVD, CONVDS, CONVHS, SECDAY 
+C 
+C     VARIABLES "TO": 
+C 
+C     1. PI     - THE MATHEMATICAL CONSTANT PI (UNITLESS) 
+C     2. TWOPI  - PI * 2.0D0 (UNITLESS) 
+C     3. HALFPI - PI / 2.0D0 (UNITLESS) 
+C     4. CONVD  - THE CONVERSION FACTOR FROM DEGREES TO RADIANS (RAD/DEG) 
+C     5. CONVDS - THE CONVERSION FACTOR FROM ARCSECONDS TO RADIANS
+C                 (RAD/ARCSECOND) 
+C     6. CONVHS - THE CONVERSION FACTOR FROM TIME SECONDS TO RADIANS
+C                 (RADIANS / TIME SECOND) 
+C     7. SECDAY - THE NUMBER OF TIME SECONDS PER DAY (SECONDS / DAY)
+C 
+C     VARIABLES "FROM": NONE
+C 
+C 1.2.3 PROGRAM SPECIFICATIONS -
+C 
+      DATA PI     /3.1415926535897932D0/, 
+     1     TWOPI  /6.2831853071795865D0/, 
+     2     HALFPI /1.5707963267948966D0/, 
+     3     CONVD  /1.7453292519943296D-02/, 
+     4     CONVDS /4.8481368110953599D-06/, 
+     5     CONVHS /7.2722052166430399D-05/, 
+     6     SECDAY /8.6400D04/ 
+C 
+C 1.2.4 CONSTANTS USED - PI, TWOPI, HALFPI, CONVD, CONVDS, CONVHS, SECDAY 
+C 
+C 1.2.5 PROGRAMMER - BRUCE SCHUPLER 02/15/78
+C                    SAVITA GOEL    06/04/87 (CDS FOR A900) 
+C                    David Gordon 94.04.14 Converted to Implicit None
+C 
+C 1.3   PROGRAM STRUCTURE - NONE
+C 
+      END 
