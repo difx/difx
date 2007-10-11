@@ -1,0 +1,27 @@
+#! /bin/csh
+# a shell script to start CalcServer
+
+echo "terminate CALCServer that is currently running on" `hostname`
+killall CalcServer
+
+echo "reset environment variables for CALCServer"
+unsetenv CALC_USER
+unsetenv WET_ATM
+unsetenv JPLEPH
+unsetenv SERVERLOG
+setenv CALC_USER C
+setenv WET_ATM Y
+setenv JPLEPH @prefix@/share/CalcServer/JPLEPH
+setenv SERVERLOG ON
+setenv HORIZONS_FILENAME @prefix@/share/CalcServer/Horizons.lis
+setenv HORIZONS_SRCNAME TSTCURVE
+
+pushd /tmp
+
+echo "starting new CalcServer on" `hostname`
+@prefix@/bin/CalcServer &
+echo "checking that the CalcServer responds"
+echo "  "
+@prefix@/bin/checkCalcServer `hostname` 
+
+popd
