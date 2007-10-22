@@ -1,10 +1,3 @@
-/*  @(#)CALC5Server.c  version 1.4  created 93/11/02 12:57:09
-                fetched from SCCS 99/06/30 15:53:19
-%% RPC server returns interferometer delay, delay rate
-LANGUAGE: C 
-ENVIRONMENT: UNIX
-:: CALCServer
-*/
 #include "MATHCNST.H"
 #include "STDDEFS.H"
 #include <rpc/rpc.h>
@@ -51,7 +44,7 @@ int  n_Horizons_rows;
 int  ilog_Horizons = 1;
 int  iparallax = 1;
 char Horizons_srcname[24];
-char Horizons_filename[64];
+char Horizons_filename[256];
 
 int  ifirst, ilogdate = 1;
 FILE  *flog;
@@ -294,7 +287,7 @@ SVCXPRT *pTransport;
     double  delay, rate, atmos[4], datmos[4], radtime, u, v, w;
     double  accel, risetime, settime, xelev[2], relev[2], xaz[2], raz[2];
     double  mjd_time, partials[28], outval;
-    char    *destdotaddr, mjd_str[24], filename[64], hostname[24];
+    char    *destdotaddr, mjd_str[24], filename[256], hostname[24];
 
     tp = &timep;
     time (tp);
@@ -504,7 +497,7 @@ int main (int argc, char *argv[])
 {
     SVCXPRT *pTransport;    /* transport handle */
     time_t  timep, *tp;
-    char    filename[64], card[200], word[20], *cp, *b_ptr;
+    char    filename[256], card[200], word[20], *cp, *b_ptr;
     int     i, nbytes, ilength, irow;
     double  rarad, decrad, rahr, ramn, rasc, decdeg, decmn, decsc, decsign;
     FILE    *fp;
