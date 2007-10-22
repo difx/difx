@@ -1,16 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include "difx2fits.h"
+#include "../config.h"
 
-const char program[] = "difx2fits";
-const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "2007/09/17";
+const char program[] = PACKAGE_NAME;
+const char author[]  = PACKAGE_BUGREPORT;
+const char version[] = VERSION;
 
 int usage(const char *pgm)
 {
-	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n",
-		program, version, verdate, author);
+	fprintf(stderr, "\n%s ver. %s   %s\n\n",
+		program, version, author);
 	fprintf(stderr, "A program to convert DiFX format data to "
 		"FITS-IDI\n\n");
 	fprintf(stderr, "Usage : %s <basefilename> <outfile>\n\n", pgm);

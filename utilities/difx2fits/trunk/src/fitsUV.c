@@ -607,7 +607,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 			for(k = 0; k < dv->nComplex; k++)
 			{
 				/* swap phase/uvw for FITS-IDI conformance */
-				if(k % 3 == 1)
+				if(k % 3 == 1 && !LSB)
 				{
 					dv->data[index+k] -= 
 						dv->spectrum[dv->nComplex*i+k];
