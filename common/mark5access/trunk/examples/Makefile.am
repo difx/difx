@@ -6,5 +6,8 @@ LDADD = \
 
 test_mark5_stream_SOURCES = test_mark5_stream.c
 
-noinst_PROGRAMS = \
-	test_mark5_stream
+m5d_SOURCES = m5d.c
+
+bin_PROGRAMS = \
+	test_mark5_stream \
+	m5d

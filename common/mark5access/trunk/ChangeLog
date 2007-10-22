@@ -1,0 +1,8 @@
+Version 1.0.1
+* Fix new_mark5_format_from_stream()
+
+Version 1.0
+* Support of VLBA, Mark4 & Mark5B formats
+* Support File and Memory streams
+* Support "pure" unpacking -- no frame validation
+* Big and Little Endian support

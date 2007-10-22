@@ -3,7 +3,7 @@
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
+ *   the Free Software Foundation; either version 3 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
@@ -26,13 +26,15 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include "mark5access/mark5_stream.h"
 
 #define MAX_MARK5_STREAM_FILES	20	/* probably way too small */
 
 struct mark5_stream_file
 {
-	long long offset;
+	int64_t offset;
+	int64_t filesize;
 	char files[MAX_MARK5_STREAM_FILES][256];
 	int nfiles;
 	int buffersize;
@@ -40,18 +42,80 @@ struct mark5_stream_file
 	int curfile;
 	int fetchsize;
 	int in;
-	uint32_t *buffer;
-	uint32_t *start;
-	uint32_t *end;
-	uint32_t *last;
+	uint8_t *buffer;
+	uint8_t *start;
+	uint8_t *end;
+	uint8_t *last;
 };
 
-static int mark5_stream_file_init(struct mark5_stream *vs)
+/* loads fetchsize bytes into memory */
+static int mark5_stream_file_fill(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
+	struct stat fileStatus;
 	int n;
+	char fn[64];
 
-	F = (struct mark5_stream_file *)(vs->inputdata);
+	F = (struct mark5_stream_file *)(ms->inputdata);
+
+	n = read(F->in, F->start, F->fetchsize);
+	
+	while(n < F->fetchsize)
+	{
+		close(F->in);
+		F->in = 0;
+		F->curfile++;
+		strncpy(fn, F->files[F->curfile], 64);
+		fn[63] = 0;
+		
+		sprintf(ms->streamname, "File-%d/%d=%s", F->curfile,
+			F->nfiles, fn);
+		if(F->curfile >= F->nfiles)
+		{
+			break;
+		}
+		F->in = open64(F->files[F->curfile], O_RDONLY);
+		if(F->in < 0)
+		{
+			fprintf(stderr, "File cannot be opened : %s\n",
+				F->files[F->curfile]);
+			return -1;
+		}
+		if(fstat(F->in, &fileStatus) < 0)
+		{
+			fprintf(stderr, "Error looking at file : %s\n",
+				F->files[F->curfile]);
+			return -1;
+		}
+
+		F->filesize = fileStatus.st_size;
+		n += read(F->in, F->start+n, F->fetchsize-n);
+	}
+	
+	if(n < ms->framebytes)
+	{
+		ms->readposition = -1;
+		return -1;
+	}
+	
+	if(n < F->fetchsize)
+	{
+		F->last = F->start + n;
+	}
+
+	return n;
+}
+
+static int mark5_stream_file_init(struct mark5_stream *ms)
+{
+	struct mark5_stream_file *F;
+	char fn[64];
+
+	F = (struct mark5_stream_file *)(ms->inputdata);
+
+	strncpy(fn, F->files[0], 64);
+	fn[63] = 0;
+	sprintf(ms->streamname, "File-1/1=%s", fn);
 
 	F->curfile = 0;
 	F->buffer = 0;
@@ -59,120 +123,99 @@ static int mark5_stream_file_init(struct mark5_stream *vs)
 	F->start = 0;
 	F->end = 0;
 	F->fetchsize = 0;
-	F->in = open64(F->files[0], O_RDONLY);
-	if(!F->in)
-	{
-		fprintf(stderr, "mark5_stream_file_init: "
-			"File not found : %s\n",
-			F->files[0]);
-		return -1;
-	}
 	lseek(F->in, F->offset, SEEK_SET);
-	F->buffer = (uint32_t *)malloc(F->buffersize);
+	F->buffer = (uint8_t *)malloc(F->buffersize);
 	F->start = F->buffer;
+	ms->datawindow = F->buffer;
+	ms->datawindowsize = F->buffersize;
 
-	n = read(F->in, F->buffer, F->buffersize);
-	if(n < F->buffersize)
-	{
-		fprintf(stderr, "mark5_stream_file_init: "
-			"File too short : %s\n",
-			F->files[0]);
-		return -1;
-	}
-
-	vs->frame = F->buffer;
+	read(F->in, F->buffer, F->buffersize);
 
 	return 0;
 }
 
-static int mark5_stream_file_next(struct mark5_stream *vs)
+static int mark5_stream_file_next(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
-	int nframes, n;
+	int nframes, status;
 
-	F = (struct mark5_stream_file *)(vs->inputdata);
+	F = (struct mark5_stream_file *)(ms->inputdata);
 
 	if(F->fetchsize == 0)	/* finish some initialization */
 	{
-		F->start = (uint32_t *)((char *)(F->buffer) +
-			vs->frameoffset);
-		nframes = (F->buffersize - vs->frameoffset)/vs->gulpsize;
-		F->fetchsize = nframes*vs->gulpsize;
-		F->end = F->start + F->fetchsize/4;
+		F->start = F->buffer + ms->frameoffset;
+		nframes = (F->buffersize - ms->frameoffset)/ms->framebytes;
+		F->fetchsize = nframes*ms->framebytes;
+		F->end = F->start + F->fetchsize;
 		F->last = F->end;
 
 		/* back up stream a bit to load whole frames */
-		lseek(F->in, F->offset + vs->frameoffset + F->fetchsize, 
+		lseek(F->in, F->offset + ms->frameoffset + F->fetchsize, 
 			SEEK_SET);
 	}
 
 	/* usually this is all that needs to be done */
-	vs->frame += vs->gulpsize/4;
+	ms->frame += ms->framebytes;
 	
-	if(vs->frame + vs->gulpsize/4 > F->end)
+	if(ms->frame + ms->framebytes > F->end)
 	{
-		vs->frame = F->start;
-		n = read(F->in, F->start, F->fetchsize);
-		
-		while(n < F->fetchsize)
-		{
-			close(F->in);
-			F->in = 0;
-			F->curfile++;
-			if(F->curfile >= F->nfiles)
-			{
-				break;
-			}
-			F->in = open64(F->files[F->curfile], O_RDONLY);
-			if(!F->in)
-			{
-				break;
-			}
-			n += read(F->in, F->start+n, F->fetchsize-n);
-		}
-		
-		if(n < vs->gulpsize)
+		ms->frame = F->start;
+
+		status = mark5_stream_file_fill(ms);
+		if(status < 0)
 		{
 			return -1;
 		}
-		
-		if(n < F->fetchsize)
-		{
-			F->last = F->start + n;
-		}
-		
-		return vs->gulpsize;
 	}
 
-	if(vs->frame + vs->gulpsize/4 > F->last)
+	if(ms->frame + ms->framebytes > F->last)
+	{
+		ms->readposition = -1;
+		return -1;
+	}
+
+	return ms->framebytes;
+}
+
+static int mark5_stream_file_seek(struct mark5_stream *ms, int64_t framenum)
+{
+	struct mark5_stream_file *F;
+	int64_t pos;
+	int nframes, status;
+
+	F = (struct mark5_stream_file *)(ms->inputdata);
+	
+	pos = framenum*ms->framebytes + ms->frameoffset;
+
+	/* FIXME -- look into other files? */
+	if(framenum < 0 || pos > F->filesize)	
 	{
 		return -1;
 	}
 
-	return vs->gulpsize;
-}
+	F->start = F->buffer;
+	nframes = (F->buffersize)/ms->framebytes;
+	F->fetchsize = nframes*ms->framebytes;
+	F->end = F->start + F->fetchsize;
+	F->last = F->end;
+	ms->frame = F->start;
 
-static int mark5_stream_file_prev(struct mark5_stream *vs)
-{
-	struct mark5_stream_file *F;
+	lseek(F->in, pos, SEEK_SET);
 
-	F = (struct mark5_stream_file *)(vs->inputdata);
-
-	vs->frame -= vs->gulpsize/4;
-	if(vs->frame < F->start)
+	status = mark5_stream_file_fill(ms);
+	if(status < 0)
 	{
-		vs->frame += vs->gulpsize/4;
 		return -1;
 	}
 
 	return 0;
 }
 
-static int mark5_stream_file_final(struct mark5_stream *vs)
+static int mark5_stream_file_final(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
 
-	F = (struct mark5_stream_file *)(vs->inputdata);
+	F = (struct mark5_stream_file *)(ms->inputdata);
 
 	if(F->in)
 	{
@@ -188,44 +231,76 @@ static int mark5_stream_file_final(struct mark5_stream *vs)
 	return 0;
 }
 
-struct mark5_stream *mark5_stream_file_open(const char *filename,
-	long long offset, int bits, int fanout)
+struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
+	int64_t offset)
 {
-	struct mark5_stream_generic V;
+	struct mark5_stream_generic *V;
 	struct mark5_stream_file *F;
+	struct stat fileStatus;
+	int in;
 
+	in = open64(filename, O_RDONLY);
+
+	if(in < 0)
+	{
+		fprintf(stderr, "File cannot be opened : %s\n", filename);
+		return 0;
+	}
+	if(fstat(in, &fileStatus) < 0)
+	{
+		fprintf(stderr, "Error looking at file : %s\n", filename);
+		close(in);
+		return 0;
+	}
+
+	V = (struct mark5_stream_generic *)malloc(
+		sizeof(struct mark5_stream_generic));
 	F = (struct mark5_stream_file *)malloc(
 		sizeof(struct mark5_stream_file));
 	strcpy(F->files[0], filename);
+
+	F->in = in;
+	F->filesize = fileStatus.st_size;
 	F->nfiles = 1;
-	F->buffersize = 1<<20;	/* 1MB seems like a reasonable default */
+	F->buffersize = F->filesize > 1<<20 ? 1<<20 : F->filesize;
 	F->offset = offset;
 
-	V.init = mark5_stream_file_init;
-	V.next = mark5_stream_file_next;
-	V.prev = mark5_stream_file_prev;
-	V.final = mark5_stream_file_final;
-	V.inputdata = F;
+	V->init_stream = mark5_stream_file_init;
+	V->next = mark5_stream_file_next;
+	V->seek = mark5_stream_file_seek;
+	V->final_stream = mark5_stream_file_final;
+	V->inputdata = F;
 
-	return mark5_stream_generic_open(&V, bits, fanout);
+	return V;
 }
 
-void mark5_stream_file_add_infile(struct mark5_stream *vs, const char *filename)
+int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 {
 	struct mark5_stream_file *F;
+	char fn[64];
 
-	if(vs->init != mark5_stream_file_init)
+	if(ms->init_stream != mark5_stream_file_init)
 	{
 		fprintf(stderr, "mark5_stream_add_infile: "
 			"Wrong stream type!\n");
-		return;
+		return -1;
 	}
 
-	F = (struct mark5_stream_file *)(vs->inputdata);
+	F = (struct mark5_stream_file *)(ms->inputdata);
 
 	if(F->nfiles < MAX_MARK5_STREAM_FILES)
 	{
 		strcpy(F->files[F->nfiles], filename);
 		F->nfiles++;
+		strncpy(fn, filename, 64);
+		fn[64] = 0;
+		sprintf(ms->streamname, "File-%d/%d=%-64s", F->curfile,
+			F->nfiles, fn);
+	
+		return F->nfiles;
+	}
+	else
+	{
+		return -1;
 	}
 }

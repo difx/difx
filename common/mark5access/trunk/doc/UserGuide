@@ -1,0 +1,578 @@
+
+
+                   mark5_access Library User Guide
+
+                  Walter Brisken <wbrisken@nrao.edu>
+
+                 National Radio Astronomy Observatory
+
+                           October 7, 2007
+
+
+0 Introduction
+~~~~~~~~~~~~~~
+
+VLBI baseband data is now almost universally recorded onto hard discs 
+allowing easy access to baseband data.  Several formats exist each with 
+possibly with many different modes.  This library makes the decoding of 
+VLBI data very easy.  The library is written in pure C and has no 
+dependencies on other libraries.  It is designed to be extended by
+users to handle cases that this library cannot handle natively.
+
+This first version of mark5_access focuses only on decoding of baseband
+data.  Future versions may include higher-level features such as 
+handling of scan directories, state counting / pulse cal extraction, ...
+
+
+1 Sample use case
+~~~~~~~~~~~~~~~~~
+
+This document starts with a simple use case that opens a file 
+containing VLBI baseband data, prints out a summary of the file,
+decodes a few samples, performs a trivial calculation, and closes the 
+stream.  Example programs that use mark5access can be found in the 
+/examples subdirectory of the package distribution.
+
+
+1.1 Source code
+
+/* This file is called mark5sum.c */
+
+#include <stdio.h>
+#include <mark5access.h>
+
+double getSomeData(const char *filename, int nsamp, int nloop)
+{
+	int offset;	/* start reading at the start of the file */
+	float **data;	/* place to accumulate data */
+	double sum = 0.0;
+	int l, i, j;
+
+	/* declare a pointer to the mark5_stream structure that will 
+	 * be used throughout the example */
+	struct mark5_stream *ms;
+
+	/* open a file stream with given filename
+	 * create a VLBA format structure
+	 * pass both to create an entire mark5_stream structure
+	 *
+	 * This is hardwired to open a 256 Mbps stream with 8 channels
+	 * sampled at 2 bits with a fanout of 4.  This implies a 64 
+	 * track mode.
+	 */
+	ms = new_mark5_stream(
+		new_mark5_stream_file(filename, offset),
+		new_mark5_format_vlba(256, 8, 2, 4) );
+
+	/* if successful, ms will point to the mark5_stream structure.
+	 * if not, all allocated resources will be freed and a null
+	 * pointer will be returned.
+	 */
+
+	if(ms == 0)
+	{
+		fprintf(stderr, "Problem creating mark5_stream\n");
+		return 0;
+	}
+
+	/* optional : fix the mjd date ambiguity */
+	mark5_stream_fix_mjd(ms, 52345);
+
+	/* optional : print to stdout the parameters of this structure */
+	mark5_stream_print(ms);
+
+	/* allocate memory for output data array 
+	 * the number of channels to be read is stored as ms->nchan.
+	 */
+	data = (float **)malloc(ms->nchan * sizeof(float **));
+	for(j = 0; j < ms->nchan; j++)
+	{
+		data[j] = (float *)malloc(nsamp*sizeof(float));
+	}
+
+	/* loop over the calculation.  Decoding will continue from where the
+	 * previous decoding left off.  
+	 *
+	 * WARNING : depending on the format (and in this case, the fanout)
+	 * nsamp must be a multiple of 1, 2, 4, or 8
+	 */
+        if(nsamp % ms->samplegranularity != 0)
+	{
+		fprintf(stderr, "WARNING -- decoding a nonstandard number "
+			"of samples.  Expect bogus results\n");
+	}
+	 
+	for(l = 0; l < nloop; l++)
+	{
+		/* read nsamp samples from each channel and fill into data */
+		mark5_stream_decode(ms, nsamp, data);
+
+		/* do some silly calculation with the data */
+		for(j = 0; j < ms->nchan; j++)
+		{
+			for(i = 0; i < nsamp; i++)
+			{
+				sum += data[j][i];
+			}
+		}
+	}
+
+	/* now clean up */
+
+	for(j = 0; j < nchan; j++)
+	{
+		free(data[j]);
+	}
+	free(data);
+
+	/* cause file to be closed, memory freed */
+	delete_mark5_stream(ms);
+
+	return sum;
+}
+
+int main(int argc, char **argv)
+{
+	double sum;
+	int nsamp = 1000;
+	int nloop = 100;
+	
+	sum = getSomeData(argv[1], nsamp, nloop);
+
+	printf("sum = %f\n", sum);
+
+	return 0;
+}
+
+
+1.2 Building instructions
+
+These instructions assume that the library is installed and that
+the pkg_config program is installed and configured (with the 
+PKG_CONFIG_PATH environment variable properly set if not installed into
+a default location).
+
+To compile the this program:
+
+  gcc mark5sum.c -c `pkg-config --cflags mark5access
+
+And to link it:
+
+  gcc mark5sum.o -o mark5sum `pkg-config --libs mark5access`
+
+If pkg-config is not installed properly, compilation can be done by
+explicitly adding include and library paths to the command lines above,
+respectively:
+
+  gcc mark5sum.c -c -I/usr/local/include/mark5access-1.0
+  gcc mark5sum.o -o mark5sum -L/usr/local/lib -lmark5access-1.0
+
+The use of pkg-config is encouraged as it will continue to work even if
+additional dependencies are added to mark5access in the future.
+
+
+2 General structure of the library
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In order to maintain flexibility a generalized "stream" structure 
+(struct mark5_stream_generic) and a generalized "format" structure
+(struct mark5_format_generic) are used to hide details of of a stream
+and format respectively.  All decoding is done with functions pointed
+to by these structures.  This allows user-defined extensions to this
+library to be made without any changes to the core of the library.  
+The combined information from these two structure types is used
+by new_mark5_stream to populate a (struct mark5_stream) structure.  
+The structure maintains a current read pointer, initially set to the
+beginning of the stream and incremented with decoding and copying 
+functions.  The general structure assumes a frame-based packaging of
+VLBI data.  For data formats that do not have periodic inserted 
+headers the decoder will optionally allow an artifical frame size to
+be specified.  The implications of the choice of of frame size is
+mostly in the granularity of the seek function and the minimum 
+resident data size.  Reasonalble frame sizes might be 1k to 1M.
+
+
+3 API reference
+~~~~~~~~~~~~~~~
+
+3.1 struct mark5_stream
+
+The portion of a mark5_stream structure that is intended for read-only
+access by the calling program is shown below.  No calling program should
+modify any of these values, but read access is allowed and is useful
+in many cases.
+
+struct mark5_stream
+{
+        char streamname[80];    /* name of stream */
+        char formatname[80];    /* name of format */
+        enum Mark5Format format;/* format id */
+	int Mbps;               /* total data rate */
+        int nchan;              /* # of data channels; all will be decoded */
+        int nbit;               /* quantization bits of data */
+        int samplegranularity;  /* decoding and copying must be in mults of */
+        int mjd;                /* date of first found frame */
+        int sec, ns;            /* time of first found frame */
+        int samprate;           /* (Hz) of de-fanned stream */
+        int frameoffset;        /* bytes into stream of first frame */
+        int framesamples;       /* number of samples per chan in a frame */
+        int framens;            /* nanoseconds per frame */
+        int framebytes;         /* total number of bytes in a frame */
+        int databytes;          /* bytes of data in a frame, incl. data */
+                                /*   replacement headers */
+        long long framenum;     /* current complete frame, start at 0 */
+}
+
+
+3.1.1 struct mark5_stream *new_mark5_stream(
+	struct mark5_stream_generic *s,
+        struct mark5_format_generic *f)
+
+A function to allocate and populate a (struct mark5_stream).  "s" and "f"
+must be pointers to dynamically allocated (struct mark5_stream_generic)
+and (struct mark5_format_generic) respectively.  If either "s" or "f" is
+a null pointer, or the stream_init() or format_init() functions 
+of these structures respectively returns an error (< 0) then a
+null pointer will be returned and the stream_final() and format_final()
+functions will be called to free resources pointed to by non-null
+pointers.
+
+
+3.1.2 void delete_mark5_stream(struct mark5_stream *ms)
+
+Function to close an open mark5 stream and free all associated 
+resources.
+
+
+3.1.3 int mark5_stream_print(const struct mark5_stream *ms)
+
+Function that prints to stdout various parameters contained in 
+the (struct mark5_stream) pointed to by "ms".  Returns -1 on error
+(ie, "ms" is null) or 0 otherwise.
+
+
+3.1.4 int mark5_stream_get_frame_time(struct mark5_stream *ms,
+        int *mjd, int *sec, int *ns)
+
+Function that returns the day/time of the most recent frame header
+read.  Returns Modfied Julian Day, seconds since midnight of this
+day, and nanoseconds since this second into "mjd", "sec", "ns".  Values
+corresponding to null pointers will not be returned.  Note that
+for many formats the mjd cannot be faithfully derived from the data
+without application of a reference date (see mark5_stream_fix_mjd 
+below).  Returns -1 on failure (ie, null ms) and 0 on success.
+
+
+3.1.5 int mark5_stream_get_sample_time(struct mark5_stream *ms,
+        int *mjd, int *sec, int *ns)
+
+Function that returns the day/time of the next sample to be decoded.  
+Returns Modfied Julian Day, seconds since midnight of this
+day, and nanoseconds since this second into "mjd", "sec", "ns".  Values
+corresponding to null pointers will not be returned.  Note that
+for many formats the mjd cannot be faithfully derived from the data
+without application of a reference date (see mark5_stream_fix_mjd 
+below).  Returns -1 on failure (ie, null ms) and 0 on success.
+
+
+3.1.6 int mark5_stream_fix_mjd(struct mark5_stream *ms, int refmjd)
+
+Function that resolves a date ambiguity based on a provided
+reference date, "refmjd".  In most cases a reference date accurate 
+to a few hundred days is sufficient.  Return values are: -1 on error,
+0 on success, but no change, >0 on success, with a change.
+
+
+3.1.7 int mark5_stream_seek(struct mark5_stream *ms, 
+	int mjd, int sec, int ns)
+
+Function that attempts to advance the read pointer to the specified
+time (mjd, sec, ns).  This will fail if a time outside the stream
+range is specified, if the particular mark5_stream_generic does
+not support seeking, or if the operation is not permitted.  The
+new read pointer may be up to one frame length earlier than requested;
+the new read pointer will always point to a frame start.  It is
+suggested to call mark5_stream_get_sample_time() to determine the
+actual time seeked to.  Returns -1 on failure, 0 on success.
+
+
+3.1.8 int mark5_stream_copy(struct mark5_stream *ms, 
+	int nbytes, char *data)
+
+Function that copies the "nbytes" bytes of raw stream data to a memory 
+location pointed to by "data".  The read pointer is incremented so that
+the next mark5_stream_copy call (or one of the decode functions below)
+will start from where this call leaves off.  A failure, such as 
+reaching the end of the stream, will result in a return value of -1.
+Otherwise 0 is returned.  Note that some formats have a required 
+granularity in nbytes.  If "nbytes" is not a multiple of this, -1 will 
+be returned.  In general, this granularity in bytes can be calculated as
+follows:
+
+	bytegranularity = ms->samplegranularity*ms->nbit*ms->nchan/8
+
+
+3.1.9 int mark5_stream_decode(struct mark5_stream *ms, 
+	int nsamp, float **data)
+
+This function decodes "nsamp" values of each channel, starting at the
+current read pointer, placing output into a 2D array that has been 
+already been allocated and pointed to by "data".  The first dimension
+of "data[][]" must be at least ms->nchan.  The second dimension must be
+at least "nsamp".  The read pointer is advanced to point at the first 
+unread sample.  "nsamp" must be a multiple of ms->samplegranularity or 
+bogus results will occur.
+
+
+3.1.10 int mark5_stream_decode_double(struct mark5_stream *ms, 
+	int nsamp, double **data)
+
+This function calls mark5_stream_decode and converts, in place, the
+32 bit floats into 64 bit doubles.  
+
+
+3.1.11 int mark5_stream_decode_complex(struct mark5_stream *ms,
+	int nsamp, vlba_float_complex **data)
+
+This function calls mark5_stream_decode and converts, in place, the
+32 bit floats into 2x 32 bit complex numbers.  The vlba_float_complex
+type is a typedef of (float complex) if complex.h is included.  Otherwise
+it is defined as (struct {float re, float im}).
+
+
+3.1.12 int mark5_stream_decode_double_complex(struct mark5_stream *ms,
+	int nsamp, vlba_double_complex **data)
+
+This function calls mark5_stream_decode and converts, in place, the
+32 bit floats into 2x 64 bit complex numbers.  The vlba_double_complex
+type is a typedef of (double complex) if complex.h is included.  Otherwise
+it is defined as (struct {double re, double im}).
+
+
+3.2 Built-in streams
+
+Currently mark5_access allows data to be decoded from streams that are
+based on an array in memory or files on disk.  Adding additional input
+streams, such as a network-based stream for eVLBI should be straight 
+forward.
+
+
+3.2.1 Memory
+
+The memory based stream allows baseband data stored in RAM to be used
+as a data stream.
+
+
+3.2.1.1 struct mark5_stream_generic *new_mark5_stream_memory(void *data,
+	uint32_t nbytes)
+
+This function creates a memory stream starting at memory location "data"
+with total of "nbytes" bytes.  Note that if the amount of data is too
+small to verify the format being decoded initialization of this stream
+will fail.  The minimum data amount depends on the format.
+
+
+3.2.2 File
+
+The file based strem allows one or more files to be decoded as a single
+stream of VLBI data.  If multiple files are specified the data is
+assumed to be contiguous across the files in the order they are added,
+as if one big file were split into multiple smaller ones.
+
+3.2.2.1 struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
+	int64_t offset)
+
+Creates a file stream starting "offset" bytes into file "filename".
+
+
+3.2.2.2 int mark5_stream_file_add_infile(struct mark5_stream *ms,
+	const char *filename);
+
+Adds "filename" to the list of files to be read as part of this file stream.
+Note that this function takes a pointer to a fully initialized (struct 
+mark5_stream).  This function will fail if the stream is not a file stream or
+if more than 256 files are queued.  On failure -1 is returned.  Otherwise
+the number of files queued (and hence "filename"'s location in the queue)
+is returned.
+
+
+3.2.3 Unpacker
+
+Unpacker is a pseudo-stream that allows decoding baseband data at memory
+locations that are provided at the time of unpacking.  No stream resources
+are accessed until decoding is attempted.  The use of this pseudo-stream
+comes with some limitations: 1. no check is done to ensure the data is
+of the format being decoded;  2. the data pointer must point to the start
+of a frame; 3. date and time cannot be extracted.  This functionality is
+meant to be used in conjunction with mark5_stream_copy.  There is no
+concept of a read pointer with this pseudo-stream.
+
+
+3.2.3.1 struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
+
+This function makes a new pseudo-stream.  "noheaders" should be set to 0
+if the data to be later unpacked is in its original form and should be 1
+if the data to be later unpacked has its headers stripped.  When used in
+conjunction with mark5_stream_copy, "noheaders" should be set to 1.  The
+(struct mark5_stream_generic) that the return value points to should be
+passed to new_mark5_stream.
+
+
+3.2.3.2 int mark5_unpack(struct mark5_stream *ms, void *packed, 
+	float **unpacked, int nsamp)
+
+This function unpacks data at memory location "packed" into a 2-D
+floating point array "unpacked", of minimum dimensions ms->nchan * "nsamp".
+"nsamp" must be a multiple of ms->samplegranularity or results may be bogus.
+
+
+3.3 Built in formats
+
+In order to maintain similarity with existing mode nomenclature, all modes 
+will be parameterized by the triplet: Mbps-nChannels-nBits (e.g., 256-8-2).  
+For some formats additional parameters that must be provided to full 
+specify the mode (such as fanout for Mark4 and VLBA formats).  Any of the
+built-in formats can be constructed with a call to the following function.
+In some cases one or more of the triplet can be specified as zero with its
+value discovered by looking at the data itself.  This possibility is format
+dependent.  If the zeroed values cannot be determined, the constructure
+will return a null pointer.
+
+
+3.3.1 struct mark5_format_generic *new_mark5_format_from_string(
+	const char *formatname)
+
+A function to create a (struct mark5_format_generic) representing one of
+the built-in formats.  The string pointed to by "formatname" should be of
+the form:  FORMAT-Mbps-nChannels-nBits.  Examples for the three formats
+currently built into mark5acces include: "VLBA1_4-256-4-2", 
+"MKIV1_2-128-8-2", "Mark5B-1024-16-2".  Note that the string is case 
+insensitive.  Also note here that in the case of VLBA and Mark4 (MKIV) the
+fanout is built into the FORMAT portion of "formatname".
+
+
+3.3.2 VLBA
+
+VLBA format is originally a tape-based format.  Data are arranged in 
+frames of length 20160 words with word sizes of 8, 16, 32, or 64 bits
+(equal to the number of "tracks").  Frame headers do not replace data and
+include a header of length 96 bytes preceding the data and a trailer of
+length 64 words, leaving 20000 samples per track.  VLBA format modes are
+parameterized by three numbers : nbit-ntrack-fanout.  nbit is the number 
+of bits per sample and can be 1 or 2.  ntrack is the number of fanned-out
+digital data streams recorded and is equal to the word size in bits (so
+can be 8, 16, 32, or 64.  Data from a single channel can be "fanned out"
+1, 2 or 4 times.  The total number of channels recorded is always
+nchan = ntrack/nbit/fanout.
+
+
+3.3.2.1 struct mark5_format_generic *new_mark5_format_vlba(int Mbps,
+	int nchannel, int nbit, int fanout)
+
+This function creates and populates a (struct mark5_format_generic) and
+returns a pointer to it.  A null pointer is returned if an illegal mode
+is specified.  
+
+
+3.3.3 Mark4
+
+Mark4 format is very similar to VLBA format.  The major difference is
+that the headers replace data -- that is all frames are 20000 words in
+length with the first 96 and last 64 words of data overwritten with
+header information.  On decoding, these portions of data are masked
+and a value of 0.0 is placed in the decoded data stream.  Mark3 format
+is a subset of the Mark4 format modes.
+
+
+3.3.3.1 struct mark5_format_generic *new_mark5_format_mark4(int Mbps,
+	int nchannel, int nbit, int fanout)
+
+This function creates and populates a (struct mark5_format_generic) and
+returns a pointer to it.  A null pointer is returned if an illegal mode
+is specified.  
+
+
+3.3.4 Mark5B
+
+Mark5B is a disk-based format.  Because of its backwards-compatibility
+with VLBA format, periodic headers are inserted into the data stream.
+Word sizes are always 32 bits; the frame headers are 4 words in length.
+The number of bitstreams is always nchannel*nbit and the effective
+fanout is given by 32/(nchannel*nbit).
+
+
+3.3.4.1 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
+	int nchannel, int nbit)
+
+This function creates and populates a (struct mark5_format_generic) and
+returns a pointer to it.  A null pointer is returned if an illegal mode
+is specified.
+
+
+3.4 Format determination
+
+Certain aspects of data format can be determined by examing the baseband
+data.  Not all mode parameters for a given format can be determined without
+outside information.  The following structure contains the information
+that can be determined:
+
+struct mark5_format
+{
+        enum Mark5Format format;  /* format type */
+        int frameoffset;          /* bytes from stream start to 1st frame */
+        int framebytes;           /* bytes in a frame */
+        int framens;              /* duration of a frame in nanosec */
+        int mjd, sec, ns;         /* date and time of first frame */
+        int ntrack;               /* for Mark4 and VLBA formats only */
+};
+
+
+3.4.1 struct mark5_format *new_mark5_format_from_stream(struct 
+	mark5_stream_generic *s)
+
+This function takes a pointer to a (struct mark5_stream_generic) and
+returns a pointer to a newly allocated (struct mark5_format).  If no
+known format is found, a null pointer is returned.
+
+
+3.4.2 void delete_mark5_format(struct mark5_format *mf)
+
+Function to free resources of an allocated (struct mark5_format).
+
+
+3.5 Compatibility functions
+
+The predecessor to mark5_access (vlba_utils) only read data from a disc
+stream and determined the format on the fly.  It only supported Mark4 and
+VLBA formats.  In order to make conversion to use of this library easier
+a compatible function is provided.  Also four constants are provided to
+make porting easier.  This compatibility functionality is likely to go 
+away in future releases.
+
+
+3.5.1 Compatibility constants
+
+#define PAYLOADSIZE 20000
+#define FRAMESIZE   20160
+
+#define VLBA_FRAMESIZE  20160
+#define MARK4_FRAMESIZE 20000
+
+
+3.5.2 struct mark5_stream *mark5_stream_open(const char *filename,
+	int nbit, int fanout, int64_t offset)
+
+Creates a (struct mark5_stream) and returns a pointer to it.  A null return
+value indicates an error occurred (either file not found, or no known format
+is consistent with the data in the file).
+
+
+4 Known limitations
+~~~~~~~~~~~~~~~~~~~
+
+Certain aspects have not been tested as of this release.  These include:
+* All Mark5B modes
+* Mark4 modes with 8, 16, or 64 tracks
+* Seeking
+
+

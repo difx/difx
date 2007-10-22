@@ -3,7 +3,7 @@
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
+ *   the Free Software Foundation; either version 3 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
@@ -26,1369 +26,631 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <fcntl.h>
 #include "mark5access/mark5_stream.h"
 
-uint32_t *modbits=0;
-uint64_t *modbits64=0;
 
-void initmodbits()
+int mark5_stream_next_frame(struct mark5_stream *ms)
 {
-	int i, n, k;
-	unsigned int ff[16] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
-	
-	if(!modbits) 
-	{
-		modbits = (uint32_t *)malloc(PAYLOADSIZE*sizeof(uint32_t));
-	}
-	if(!modbits64) 
-	{
-		modbits64 = (uint64_t *)malloc(PAYLOADSIZE*sizeof(uint64_t));
-	}
-	
-	for(i = 0; i < PAYLOADSIZE; i++)
-	{
-		k = ff[10] ^ ff[12] ^ ff[13] ^ ff[15];
-		for(n = 15; n > 0; n--) ff[n] = ff[n-1];
-		ff[0] = k;
-		modbits[i] = k*0xFFFFFFFF;
-		modbits64[i] = k*0xFFFFFFFFFFFFFFFFLL;
-		if(i % 8 == 7) /* Skip the parity bit */
-		{
-			k = ff[10] ^ ff[12] ^ ff[13] ^ ff[15];
-			for(n = 15; n > 0; n--) ff[n] = ff[n-1];
-			ff[0] = k;
-		}
-	}
-}
-
-static int findfirstframe8(uint32_t *data, int samples)
-{
-	int i, j;
-	uint8_t *dat;
-
-	dat = (uint8_t *)data;
-
-	for(i = 1; i < samples-32; i++)
-	{
-		if(dat[i-1])
-		{
-			continue;
-		}
-		for(j = 0; j < 32; j++)
-		{
-			if(dat[i+j] != 0xFF)
-			{
-				break;
-			}
-		}
-		if(j == 32)
-		{
-			return i;
-		}
-	}
-
-	return -1;
-}
-
-static int findfirstframe16(uint32_t *data, int samples)
-{
-	int i, j;
-	uint16_t *dat;
-
-	dat = (uint16_t *)data;
-
-	for(i = 1; i < samples-32; i++)
-	{
-		if(dat[i-1]) 
-		{
-			continue;
-		}
-		for(j = 0; j < 32; j++)
-		{
-			if(dat[i+j] != 0xFFFF)
-			{
-				break;
-			}
-		}
-		if(j == 32)
-		{
-			return i*2;
-		}
-	}
-
-	return -1;
-}
-
-static int findfirstframe32(uint32_t *data, int samples)
-{
-	int i, j;
-
-	for(i = 1; i < samples-32; i++)
-	{
-		if(data[i-1])
-		{
-			continue;
-		}
-		for(j = 0; j < 32; j++)
-		{
-			if(data[i+j] != 0xFFFFFFFF)
-			{
-				break;
-			}
-		}
-		if(j == 32)
-		{
-			return i*4;
-		}
-	}
-
-	return -1;
-}
-
-static int findfirstframe64(uint32_t *data, int samples)
-{
-	int i, j;
-
-	for(i = 2; i < 2*samples-64; i++)
-	{
-		if(data[i-1] || data[i-2])
-		{
-			continue;
-		}
-		for(j = 0; j < 64; j++)
-		{
-			if(data[i+j] != 0xFFFFFFFF && data[i+j] != 0xFFEFFFFF) 
-			{
-				break;
-			}
-		}
-		if(j == 64)
-		{
-			return i*4;
-		}
-	}
-
-	return -1;
-}
-
-
-static void extractnibbles8(const unsigned int *data, int track,
-	int numnibbles, char *nibbles)
-{
-	uint32_t mask;
-	int i, b;
-	const uint8_t *dat;
-
-	dat = (uint8_t *)data;
-
-	mask = 1 << track;
-
-	for(i = 0; i < numnibbles; i++)
-	{
-		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
-		{
-			nibbles[i] += (dat[4*i+3-b] & mask) ? (1<<b) : 0;
-		}
-	}
-}
-
-static void extractnibbles16(const unsigned int *data, int track,
-	int numnibbles, char *nibbles)
-{
-	uint32_t mask;
-	int i, b;
-	const uint16_t *dat;
-
-	dat = (uint16_t *)data;
-
-	mask = 1 << track;
-
-	for(i = 0; i < numnibbles; i++)
-	{
-		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
-		{
-			nibbles[i] += (dat[4*i+3-b] & mask) ? (1<<b) : 0;
-		}
-	}
-}
-
-static void extractnibbles32(const unsigned int *data, int track,
-	int numnibbles, char *nibbles)
-{
-	uint32_t mask;
-	int i, b;
-
-	mask = 1 << track;
-
-	for(i = 0; i < numnibbles; i++)
-	{
-		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
-		{
-			nibbles[i] += (data[4*i+3-b] & mask) ? (1<<b) : 0;
-		}
-	}
-}
-
-static void extractnibbles64(const unsigned int *data, int track,
-	int numnibbles, char *nibbles)
-{
-	uint64_t mask;
-	int i, b;
-	const uint64_t *dat;
-
-	dat = (uint64_t *)data;
-
-	mask = 1LL << track;
-
-	for(i = 0; i < numnibbles; i++)
-	{
-		nibbles[i] = 0;
-		for(b = 0; b < 4; b++)
-		{
-			nibbles[i] += (dat[4*i+3-b] & mask) ? (1<<b) : 0;
-		}
-	}
-}
-
-static void mark5_stream_frame_time_mark4(const struct mark5_stream *vs, 
-	double *mjd, double *sec)
-{
-	char nibs[13];
-	const double lastdig[] = {0.0, 0.00125, 0.0025, 0.00375, 0.0, 0.005,
-				  0.00625, 0.0075, 0.00875, 0.0};
-
-	switch(vs->tracks)
-	{
-	case 8:
-		extractnibbles8(vs->frame+vs->tracks, 0, 13, nibs);
-		break;
-	case 16:
-		extractnibbles16(vs->frame+vs->tracks, 0, 13, nibs);
-		break;
-	case 32:
-		extractnibbles32(vs->frame+vs->tracks, 0, 13, nibs);
-		break;
-	case 64:
-		extractnibbles64(vs->frame+vs->tracks, 0, 13, nibs);
-		break;
-	default:
-		return;
-	}
-
-	/* For now assume between years 2000 and 2010 */
-	if(mjd) 
-	{
-		*mjd = 51544 + 365*nibs[0] + 100*nibs[1] + 10*nibs[2] +nibs[3]
-			+ (int)(nibs[0]/4);
-	}
-
-	if(sec)
-	{
-		*sec = nibs[4]*36000 + nibs[5]*3600 + nibs[6]*600 + nibs[7]*60
-			+ nibs[8]*10 + nibs[9] + nibs[10]/10.0 + nibs[11]/100.0
-			+ lastdig[(unsigned int)(nibs[12])];
-	}
-}
-
-static void mark5_stream_frame_time_vlba(const struct mark5_stream *vs, 
-	double *mjd, double *sec)
-{
-	char nibs[12];
-
-	switch(vs->tracks)
-	{
-	case 8:
-		extractnibbles8(vs->frame+vs->tracks, 0, 12, nibs);
-		break;
-	case 16:
-		extractnibbles16(vs->frame+vs->tracks, 0, 12, nibs);
-		break;
-	case 32:
-		extractnibbles32(vs->frame+vs->tracks, 0, 12, nibs);
-		break;
-	case 64:
-		extractnibbles64(vs->frame+vs->tracks, 0, 12, nibs);
-		break;
-	default:
-		return;
-	}
-
-	if(mjd)
-	{
-		*mjd = nibs[0]*100 + nibs[1]*10 + nibs[2];
-	}
-	if(sec) 
-	{
-		*sec = nibs[3]*10000 + nibs[4]*1000 + nibs[5]*100 + nibs[6]*10
-	        	+ nibs[7] + nibs[8]/10.0 + nibs[9]/100.0 
-			+ nibs[10]/1000.0 + nibs[11]/10000.0;
-	}
-}
-
-void mark5_stream_frame_time(const struct mark5_stream *vs, double *mjd, 
-	double *sec)
-{
-	if(vs->format == FORMAT_VLBA)
-	{
-		mark5_stream_frame_time_vlba(vs, mjd, sec);
-	}
-	else if(vs->format == FORMAT_MARK4)
-	{
-		mark5_stream_frame_time_mark4(vs, mjd, sec);
-	}
-}
-
-void mark5_stream_time(const struct mark5_stream *vs, double *mjd, double *sec)
-{
-	mark5_stream_frame_time(vs, mjd, sec);
-	
-	*sec += (double)vs->read_position*(double)vs->frametime/PAYLOADSIZE;
-	
-	/* The first bit of data in a frame should be timetagged as if it
-	 * were 160 samples into the stream.  Thus 64 samples extra need to be
-	 * added.
-	 */
-	if(vs->format == FORMAT_MARK4)
-	{
-		*sec += 64.0*(double)vs->frametime/PAYLOADSIZE;
-	}
-}
-
-int prev_frame(struct mark5_stream *vs)
-{
-	int status;
-	
-	if(vs->prev)
-	{
-		status = vs->prev(vs);
-		if(status >= 0)
-		{
-			vs->framenum--;
-			vs->payload = vs->frame + vs->payload_offset;
-		}
-		return status;
-	}
-	else	/* rewinding was not possible */
-	{
-		return -1;
-	}
-}
-
-int next_frame(struct mark5_stream *vs)
-{
-	int i, n;
+	int n;
 
 	/* call specialized function to ready next frame */
-	n = vs->next(vs);
+	n = ms->next(ms);
 
 	/* are we at end of file(s)? */
-	if(n != vs->gulpsize)
+	if(n < 0)
 	{
-		vs->payload = 0;
+		ms->payload = 0;
+		
 		return -1;
 	}
 	
 	/* successfully got new frame, so increment it */
-	vs->framenum++;
+	ms->framenum++;
+	ms->readposition = 0;
 
-	/* check for sync -- just a minimal check */
-	for(i = 0; i < vs->tracks; i++) 
+	/* validate frame */
+	/* FIXME -- do I add this later or not?
+	   ms->validate(ms);
+	 */
+
+
+	/* set payload pointer to point to start of actual data */
+	if(ms->frame)
 	{
-		if(vs->frame[i] != 0xFFFFFFFF && 
-		   vs->frame[i] != 0xFFEFFFFF)
+		ms->payload = ms->frame + ms->payloadoffset;
+	}
+
+	return 0;
+}
+
+static int set_stream(struct mark5_stream *ms, 
+	const struct mark5_stream_generic *s)
+{
+	if(s && ms)
+	{
+		ms->init_stream = s->init_stream;
+		ms->final_stream = s->final_stream;
+		ms->next = s->next;
+		ms->seek = s->seek;
+		ms->inputdata = s->inputdata;
+
+		if(!s->init_stream || !s->next)
 		{
-			fprintf(stderr, "Sync not found in frame %d\n",
-				vs->framenum);
-			vs->payload = 0;
 			return -1;
 		}
+
+		return 0;
 	}
-	
-	vs->payload = vs->frame + vs->payload_offset;
+
+	return -1;
+}
+
+static int set_format(struct mark5_stream *ms, 
+	const struct mark5_format_generic *f)
+{
+	if(f && ms)
+	{
+		ms->init_format = f->init_format;
+		ms->final_format = f->final_format;
+		ms->decode = f->decode;
+		ms->validate = f->validate;
+		ms->gettime = f->gettime;
+		ms->fixmjd = f->fixmjd;
+		ms->formatdata = f->formatdata;
+		ms->Mbps = f->Mbps;
+		ms->nchan = f->nchan;
+		ms->nbit = f->nbit;
+
+		if(!f->init_format || !f->decode || !f->gettime)
+		{
+			return -1;
+		}
+		
+		return 0;
+	}
+
+	return -1;
+}
+
+static int copy_format(const struct mark5_stream *ms,
+	struct mark5_format *mf)
+{
+	mf->frameoffset = ms->frameoffset;
+	mf->framebytes  = ms->framebytes;
+	mf->framens     = ms->framens;
+	mf->mjd         = ms->mjd;
+	mf->sec         = ms->sec;
+	mf->ns          = ms->ns;
 
 	return 0;
 }
 
-void mark5_stream_set_basebits(struct mark5_stream *vs, int nchan, 
-	const int *basebits)
+static int mark5_format_init(struct mark5_stream *ms)
 {
-	int maxchan, c, delta;
+	ms->framenum = 0;
+	ms->readposition = 0;
+	ms->frame = 0;
+	ms->payload = 0;
+	ms->framens = 0;
+	ms->samprate = 0;
+	ms->mjd = 0;
+	ms->sec = 0;
+	ms->ns = 0;
 
-	maxchan = vs->tracks / (vs->bits*vs->fanout);
-
-	if(nchan > maxchan)
-	{
-		fprintf(stderr, "mark5_stream_set_basebits: "
-			"nchan > maxchan (%d)\n", maxchan);
-		exit(0);
-	}
-
-	if(vs->basebits)
-	{
-		free(vs->basebits);
-	}
-	
-	if(nchan == 0) 
-	{
-		nchan = maxchan;
-		basebits = 0;
-	}
-
-	if(!basebits)	/* set defaults */
-	{
-		vs->nchan = nchan;
-		vs->basebits = (int *)malloc(nchan*sizeof(int));
-		switch(vs->tracks)
-		{
-		case 8:
-		case 16:
-			delta = vs->bits*vs->fanout;
-			for(c = 0; c < nchan; c++)
-			{
-				vs->basebits[c] = c*delta;
-			}
-			break;
-		case 32:
-			delta = 2*vs->bits*vs->fanout;
-			for(c = 0; c < nchan; c++)
-			{
-				if(c < maxchan/2)	/* Evens */
-				{
-					vs->basebits[c] = c*delta;
-				}
-				else			/* Odds */
-				{
-					vs->basebits[c] = (c-maxchan/2)*delta+1;
-				}
-			}
-			break;
-		case 64:
-			delta = 2*vs->bits*vs->fanout;
-			for(c = 0; c < nchan; c++)
-			{
-				int q;
-
-				q = 4*c / maxchan;
-
-				switch(q)
-				{
-				case 0: /* boardset 1 evens */
-					vs->basebits[c] = c*delta;
-					break;
-				case 1: /* boardset 1 odds */
-					vs->basebits[c] = (c-maxchan/4)*delta+1;
-					break;
-				case 2: /* boardset 2 evens */
-					vs->basebits[c] = (c-maxchan/4)*delta;
-					break;
-				case 3: /* boardset 2 odds */
-					vs->basebits[c] = (c-maxchan/2)*delta+1;
-					break;
-				}
-			}
-			break;
-		default:
-			fprintf(stderr, "mark5_stream_set_basebits: "
-				"bad number of tracks\n");
-			exit(0);
-		}
-	}
-	else
-	{
-		vs->nchan = nchan;
-		vs->basebits = (int *)malloc(nchan*sizeof(int));
-		for(c = 0; c < nchan; c++)
-		{
-			vs->basebits[c] = basebits[c];
-		}
-	}
-
+	return ms->init_format(ms);
 }
 
-static int mark5_stream_decode_tracks(struct mark5_stream *vs)
+/* Compatibility function */
+struct mark5_stream *mark5_stream_open(const char *filename, 
+	int nbit, int fanout, int64_t offset)
 {
-	int bufsize;
-	int i;
-
-	bufsize = VLBA_FRAMESIZE+1024;
-
-	i = findfirstframe64(vs->frame, 2*bufsize); 
-	if(i >= 0) vs->tracks = 64;
-	else
+	struct mark5_stream_generic *s;
+	struct mark5_format_generic *f;
+	struct mark5_stream *ms;
+	int status, ntrack;
+	
+	s = new_mark5_stream_file(filename, offset);
+	if(!s)
 	{
-		i = findfirstframe32(vs->frame, bufsize); 
-		if(i >= 0) vs->tracks = 32;
-		else
+		return 0;
+	}
+	
+	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
+	memset(ms, 0, sizeof(struct mark5_stream));
+	
+	if(set_stream(ms, s) < 0)
+	{
+		fprintf(stderr, "mark5_stream_open: Incomplete stream.\n");
+		
+		return 0;
+	}
+
+	status = s->init_stream(ms);
+	if(status < 0)
+	{
+		delete_mark5_stream(ms);
+		fprintf(stderr, "mark5_open_stream: init_stream() failed\n");
+		
+		return 0;
+	}
+
+	/* Now go through known formats, looking for a match with the data */
+	
+	/* VLBA modes */
+	for(ntrack = 8; ntrack <= 64; ntrack*=2)
+	{
+		f = new_mark5_format_vlba(0, nbit*ntrack*fanout, nbit, fanout);
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
 		{
-			i = findfirstframe16(vs->frame, bufsize); 
-			if(i >= 0) vs->tracks = 16;
-			else 
+			if(f->final_format)
 			{
-				i = findfirstframe8(vs->frame, bufsize); 
-				if(i >= 0) vs->tracks = 8;
-				else return 0;
+				f->final_format(ms);
 			}
-		}
-	}
-	
-	vs->frameoffset = i;
-	vs->frame = (uint32_t *)(((char *)(vs->frame)) + i);
-	
-	return vs->tracks;
-}
-
-static void mark5_stream_decode_format(struct mark5_stream *vs)
-{
-	int i;
-	uint32_t *data;
-	int sync;
-	
-	vs->gulpsize = VLBA_FRAMESIZE*vs->tracks/8 + 4*vs->tracks;
-
-	data = vs->frame;
-	
-	sync = 1;
-	for(i = 0; i < vs->tracks; i++)
-	{
-		if(data[i+VLBA_FRAMESIZE*vs->tracks/32] != 0xFFFFFFFF &&
-		   data[i+VLBA_FRAMESIZE*vs->tracks/32] != 0xFFEFFFFF)
-		{
-			sync = 0;
-		}
-	}
-	if(sync)
-	{
-		vs->format = FORMAT_VLBA;
-		vs->gulpsize = VLBA_FRAMESIZE*vs->tracks/8;
-		vs->payload = vs->frame + (3*vs->tracks);
-		vs->firstvalid = 0;
-		vs->lastvalid = PAYLOADSIZE-1;
-	}
-	else
-	{
-		sync = 1;
-		for(i = 0; i < vs->tracks; i++)
-		{
-			if(data[i+PAYLOADSIZE*vs->tracks/32] != 0xFFFFFFFF)
-			{
-				sync = 0;
-			}
-		}
-		if(sync)
-		{
-			vs->format = FORMAT_MARK4;
-			vs->gulpsize = PAYLOADSIZE*vs->tracks/8;
-			vs->payload = vs->frame;
-			vs->firstvalid = 96;
-			vs->lastvalid = PAYLOADSIZE-1-64;
-		}
-		else 
-		{
-			vs->format = FORMAT_UNKNOWN;
-			vs->payload = vs->frame;
-			vs->firstvalid = vs->lastvalid = 0;
-		}
-	}
-
-	vs->payload_offset = vs->payload - vs->frame;
-}
-
-void mark5_stream_clear_statecount(struct mark5_stream *vs)
-{
-	int c, i;
-
-	for(c = 0; c < 16; c++)
-	{
-		for(i = 0; i < 4; i++) 
-		{
-			vs->statecount[c][i] = 0;
-		}
-	}
-}
-
-void mark5_stream_print_statecount(struct mark5_stream *vs)
-{
-	int nchan, c, i;
-	double total;
-
-	nchan = vs->tracks/vs->fanout/vs->bits;
-
-	printf("State counts:\n");
-
-	for(c = 0; c < nchan; c++)
-	{
-		total = 0.0;
-		if(vs->bits == 1)
-		{
-			for(i = 0; i < 2; i++) 
-			{
-				total += vs->statecount[c][i];
-			}
-			printf("  %2d : %f %f\n", c, 
-				vs->statecount[c][1]/total,
-				vs->statecount[c][0]/total);
+			free(f);
 		}
 		else
 		{
-			for(i = 0; i < 4; i++) 
-			{
-				total += vs->statecount[c][i];
-			}
-			printf("  %2d : %f %f %f %f\n", c, 
-				vs->statecount[c][0]/total,
-				vs->statecount[c][2]/total,
-				vs->statecount[c][1]/total,
-				vs->statecount[c][3]/total);
+			strcat(ms->formatname, "-Auto");
+			return ms;
 		}
+	}
+	
+	/* Mark4 modes */
+	for(ntrack = 8; ntrack <= 64; ntrack*=2)
+	{
+		f = new_mark5_format_mark4(0, nbit*ntrack*fanout, nbit, fanout);
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		else
+		{
+			strcat(ms->formatname, "-Auto");
+			return ms;
+		}
+	}
+	
+	/* No match found */
+	delete_mark5_stream(ms);
+
+	return 0;
+}
+
+struct mark5_format_generic *new_mark5_format_from_string(
+	const char *formatname)
+{
+	int a, b, c, d;
+
+	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_vlba(b, c, d, a);
+	}
+	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_mark4(b, c, d, a);
+	}
+	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
+	{
+		if(sscanf(formatname+7, "%d-%d-%d", &a, &b, &c) != 3)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_mark5b(a, b, c);
+	}
+	else
+	{
+		fprintf(stderr, "Unknown format : %s\n", formatname);
+
+		return 0;
 	}
 }
 
-struct mark5_stream *mark5_stream_generic_open(struct mark5_stream_generic *V, 
-	int bits, int fanout)
+struct mark5_format *new_mark5_format_from_stream(
+	struct mark5_stream_generic *s)
 {
-	struct mark5_stream *vs;
-	double dt, sec1, mjd1;
+	struct mark5_stream *ms;
+	struct mark5_format_generic *f;
+	struct mark5_format *mf;
+	int status, ntrack;
+	
+	if(!s)
+	{
+		return 0;
+	}
+	
+	mf = (struct mark5_format *)malloc(sizeof(struct mark5_format));
+	memset(mf, 0, sizeof(struct mark5_format));
+	
+	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
+	memset(ms, 0, sizeof(struct mark5_stream));
+	
+	if(set_stream(ms, s) < 0)
+	{
+		fprintf(stderr, "new_mark5_format_from_stream: "
+				"Incomplete stream.\n");
+		
+		return 0;
+	}
+
+	status = s->init_stream(ms);
+	if(status < 0)
+	{
+		delete_mark5_stream(ms);
+		fprintf(stderr, "new_mark5_format_from_stream: "
+				"init_stream() failed\n");
+		
+		return 0;
+	}
+
+	/* Now go through known formats, looking for a match with the data */
+	
+	/* VLBA modes */
+	for(ntrack = 8; ntrack <= 64; ntrack*=2)
+	{
+		f = new_mark5_format_vlba(0, ntrack, 1, 1);
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		else
+		{
+			copy_format(ms, mf);
+			mf->format = MK5_FORMAT_VLBA;
+			mf->ntrack = ntrack;
+			delete_mark5_stream(ms);
+			
+			return mf;
+		}
+	}
+	
+	/* Mark4 modes */
+	for(ntrack = 8; ntrack <= 64; ntrack*=2)
+	{
+		f = new_mark5_format_mark4(0, ntrack, 1, 1);
+		set_format(ms, f);
+		status = mark5_format_init(ms);
+		if(status < 0)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		else
+		{
+			copy_format(ms, mf);
+			mf->format = MK5_FORMAT_MARK4;
+			mf->ntrack = ntrack;
+			delete_mark5_stream(ms);
+			
+			return mf;
+		}
+	}
+
+	/* Mark5b */
+	f = new_mark5_format_mark5b(0, 16, 2);
+	set_format(ms, f);
+	status = mark5_format_init(ms);
+	if(status < 0)
+	{
+		if(f->final_format)
+		{
+			f->final_format(ms);
+		}
+		free(f);
+	}
+	else
+	{
+		copy_format(ms, mf);
+		mf->format = MK5_FORMAT_MARK5B;
+		mf->ntrack = 0;
+		delete_mark5_stream(ms);
+		
+		return mf;
+	}
+
+	
+	/* No match found */
+	free(mf);
+	delete_mark5_stream(ms);
+
+	return 0;
+}
+
+void delete_mark5_format(struct mark5_format *mf)
+{
+	if(mf)
+	{
+		free(mf);
+	}
+}
+
+struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s, 
+	struct mark5_format_generic *f)
+{
+	struct mark5_stream *ms;
+	int status;
+	int failed = 0;
+
+	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
+	memset(ms, 0, sizeof(struct mark5_stream));
+	ms->format = MK5_FORMAT_UNKNOWN;
+	
+	if(!ms)
+	{
+		fprintf(stderr, "Error allocating memory for mark5_stream\n");
+		
+		return 0;
+	}
+	
+	if(set_stream(ms, s) < 0)
+	{
+		fprintf(stderr, "new_mark5_stream: Incomplete stream.\n");
+		failed = 1;
+	}
+	if(set_format(ms, f) < 0)
+	{
+		fprintf(stderr, "new_mark5_stream: Incomplete format.\n");
+		failed = 1;
+	}
+
+	if(failed)
+	{
+		if(f)
+		{
+			if(f->final_format)
+			{
+				f->final_format(ms);
+			}
+			free(f);
+		}
+		free(ms);
+		
+		return 0;
+	}
+
+	status = s->init_stream(ms);
+	if(status < 0)
+	{
+		delete_mark5_stream(ms);
+		fprintf(stderr, "new_mark5_format: init_stream() failed\n");
+		
+		return 0;
+	}
+
+	status = mark5_format_init(ms);
+	if(status < 0)
+	{
+		fprintf(stderr, "new_mark5_stream: init_format(%s) failed\n",
+			ms->formatname);
+		delete_mark5_stream(ms);
+		
+		return 0;
+	}
+
+	return ms;
+}
+
+void delete_mark5_stream(struct mark5_stream *ms)
+{
+	if(ms)
+	{
+		if(ms->final_stream)
+		{
+			ms->final_stream(ms);
+		}
+		if(ms->final_format)
+		{
+			ms->final_format(ms);
+		}
+		free(ms);
+	}
+}
+
+int mark5_stream_get_frame_time(struct mark5_stream *ms, 
+	int *mjd, int *sec, int *ns)
+{
+	if(!ms)
+	{
+		return -1;
+	}
+	return ms->gettime(ms, mjd, sec, ns);
+}
+
+int mark5_stream_get_sample_time(struct mark5_stream *ms, 
+	int *mjd, int *sec, int *ns)
+{
 	int status;
 
-	if(!V->init || !V->next)
+	if(!ms)
 	{
-		fprintf(stderr, "Incomplete mark5_stream_generic type\n");
-		return 0;
+		return -1;
 	}
+	status = ms->gettime(ms, mjd, sec, ns);
 
-	if(!modbits)
-	{
-		initmodbits();
-	}
-	
-	vs = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
-	vs->frame = 0;
-	vs->bits = bits;
-	vs->fanout = fanout;
-	vs->basebits = 0;
-	vs->read_position = 0;
-	vs->init = V->init;
-	vs->next = V->next;
-	vs->prev = V->prev;
-	vs->final = V->final;
-	vs->inputdata = V->inputdata;
-
-	status = vs->init(vs);
 	if(status < 0)
 	{
-		if(vs->final)
-		{
-			vs->final(vs);
-		}
-		free(vs);
-		fprintf(stderr, "mark5_stream_generic_open: init() failed\n");
-		return 0;
-	}
-	
-	if(mark5_stream_decode_tracks(vs) < 8)
-	{
-		if(vs->final)
-		{
-			vs->final(vs);
-		}
-		free(vs);
-		fprintf(stderr, "mark5_stream_generic_open: "
-			"Cannot find sync word\n");
-		return 0;
+		return status;
 	}
 
-	mark5_stream_decode_format(vs);
-	if(vs->format == FORMAT_UNKNOWN)
+	if(ns)
 	{
-		if(vs->final)
+		*ns += (ms->framens/ms->databytes)*ms->readposition;
+	}
+
+	return 0;
+}
+
+int mark5_stream_print(const struct mark5_stream *ms)
+{
+	printf("Mark5 stream: %p\n", ms);
+	if(!ms)
+	{
+		return -1;
+	}
+	printf("  Stream = %s\n", ms->streamname);
+	printf("  Format = %s = %d\n", ms->formatname, ms->format);
+	if(ms->mjd >= 0)
+	{
+		printf("  Start mjd/sec = %d %05d.%09d\n", ms->mjd, ms->sec, ms->ns);
+		printf("  frame duration = %d ns\n", ms->framens);
+		printf("  framenum = %Ld\n", ms->framenum);
+	}
+	if(ms->samprate > 0)
+	{
+		printf("  Sample Rate = %d Hz\n", ms->samprate);
+	}
+	printf("  offset = %d\n", ms->frameoffset);
+	printf("  framebytes = %d bytes\n", ms->framebytes);
+	printf("  datasize = %d bytes\n", ms->databytes);
+	printf("  sample granularity = %d\n", ms->samplegranularity);
+	printf("  payload offset = %d\n", ms->payloadoffset);
+	printf("  read position = %d\n", ms->readposition);
+	if(ms->datawindow)
+	{
+		printf("  data window size = %Ld bytes\n", ms->datawindowsize);
+	}
+
+	return 0;
+}
+
+int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, int ns)
+{
+	int status;
+	int64_t jumpns, n;
+
+	if(!ms)
+	{
+		return -1;
+	}
+	if(ms->seek)
+	{
+		jumpns = 86400000000000LL*(mjd - ms->mjd) 
+		       + 1000000000LL*(sec - ms->sec)
+		       + (ns - ms->sec);
+
+		if(jumpns < 0) /* before start of stream */
 		{
-			vs->final(vs);
+			return -1;
 		}
-		free(vs);
-		fprintf(stderr, "mark5_stream_generic_open: "
-			"Unknown format or corrupt data\n");
+		n = jumpns / ms->framens;
+
+		status = ms->seek(ms, n);
+
+		if(status < 0)
+		{
+			return -1;
+		}
+
+		ms->framenum = n;
+
+		/* FIXME -- validate here? */
+
 		return 0;
 	}
-	
-	/* try backing up one frame in case initial sync was missed */
-	if(prev_frame(vs) >= 0)
+	else
 	{
-		vs->framenum = 0;
-		vs->frameoffset -= vs->gulpsize;
+		return -1;
+	}
+}
+
+int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data)
+{
+	int nleft, q;
+
+	if(!ms)
+	{
+		return -1;
+	}
+	if(ms->readposition < 0)
+	{
+		return -1;
 	}
 
-	/* Now determine times of two frames to get timing info */
-	mark5_stream_frame_time(vs, &vs->mjd, &vs->sec);
-
-	status = next_frame(vs);
-	if(status < 0)
+	q = ms->samplegranularity*ms->nchan*ms->nbit/8;
+	if(nbytes % q != 0)
 	{
-		if(vs->final)
+		return -1;
+	}
+
+	while(1)
+	{
+		nleft = ms->databytes - ms->readposition;
+		if(nleft > nbytes)
 		{
-			vs->final(vs);
+			memcpy(data, ms->payload+ms->readposition, nbytes);
+			return 0;
 		}
-		free(vs);
-		fprintf(stderr, "mark5_stream_generic_open: next() failed\n");
-		return 0;
+		memcpy(data, ms->payload+ms->readposition, nleft);
+		if(ms->next(ms) < 0)
+		{
+			if(nbytes == nleft)
+			{
+				return 0;
+			}
+			else
+			{
+				return -1;
+			}
+		}
+		nbytes -= nleft;
+		data += nleft;
 	}
-	
-	mark5_stream_frame_time(vs, &mjd1, &sec1);
 
-	dt = sec1 - vs->sec;
-	if(dt < 0.0) 
+	return 0;
+}
+
+/*********************** data decode routines **********************/
+
+
+int mark5_stream_decode(struct mark5_stream *ms, int nsamp, float **data)
+{
+	if(!ms)
 	{
-		dt += 86400.0;
+		return -1;
 	}
-	
-	vs->frametime = dt; 
-	vs->samprate = (int)(fanout*PAYLOADSIZE/dt + 0.5);
-	
-	/* after getting time interval, back up to reset pointer, if possible.
-	 * otherwise, call this frame 0 
+	if(ms->readposition < 0)
+	{
+		return -1;
+	}
+
+	/* In order to ensure expected behavior, must unpack multiples of
+	 * ms->samplegranularity
 	 */
-	if(prev_frame(vs) < 0)
-	{
-		vs->sec = sec1;
-		vs->mjd = mjd1;
-		vs->framenum = 0;
-	}
-
-	mark5_stream_clear_statecount(vs);
-	
-	mark5_stream_set_basebits(vs, 0, 0);
-
-	/* to populate the deprecated "fileoffset" member */
-	vs->fileoffset = vs->frameoffset;
-
-	return vs;
-}
-
-void mark5_stream_close(struct mark5_stream *vs)
-{
-	if(vs)
-	{
-		if(vs->final)
-		{
-			vs->final(vs);
-		}
-		if(vs->basebits)
-		{
-			free(vs->basebits);
-		}
-		free(vs);
-	}
-}
-
-void mark5_stream_print(const struct mark5_stream *vs)
-{
-	printf("mark5_stream : %p\n", vs);
-	if(vs)
-	{
-		printf("  mjd = %d\n", (int)(vs->mjd));
-		printf("  sec = %f\n", vs->sec);
-		printf("  samprate = %f\n", vs->samprate);
-		printf("  frameoffset = %d\n", vs->frameoffset);
-		printf("  framesize = %d\n", vs->gulpsize);
-		printf("  tracks = %d\n", vs->tracks);
-		printf("  bits = %d\n", vs->bits);
-		printf("  fanout = %d\n", vs->fanout);
-		printf("  format = %d\n", vs->format);
-		printf("  nchan = %d\n", vs->nchan);
-		printf("  payload offset = %d\n", vs->payload_offset);
-	}
-	printf("\n");
-}
-
-/*********************** data unpack routines **********************/
-
-static int mark5_stream_get_data_2bit8(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[4] = {-3.3359, 1.0, -1.0, 3.3359};
-	uint8_t *buf, p;
-	int i, o, s, c, m, f;
-	int index;
-
-	buf = (uint8_t *)(vs->payload);
-	if(buf == 0)
+	if(nsamp % ms->samplegranularity != 0)
 	{
 		return -1;
 	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-			{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+f;
-					m = s + vs->fanout;
-					index = ((p>>s)&1) + (((p>>m)&1)<<1);
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint8_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
+	return ms->decode(ms, nsamp, data);
 }
 
-static int mark5_stream_get_data_1bit8(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[2] = {1.0, -1.0};
-	uint8_t *buf, p;
-	int i, o, s, c, f;
-	int index;
-
-	buf = (uint8_t *)(vs->payload);
-	if(buf == 0)
-	{
-		return -1;
-	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-			{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+f;
-					index = (p>>s)&1;
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint8_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_2bit16(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[4] = {-3.3359, 1.0, -1.0, 3.3359};
-	uint16_t *buf, p;
-	int i, o, s, c, m, f;
-	int index;
-
-	buf = (uint16_t *)(vs->payload);
-	if(buf == 0)
-	{
-		return -1;
-	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+f;
-					m = s + vs->fanout;
-					index = ((p>>s)&1) + (((p>>m)&1)<<1);
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint16_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_1bit16(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[2] = {1.0, -1.0};
-	uint16_t *buf, p;
-	int i, o, s, c, f;
-	int index;
-
-	buf = (uint16_t *)(vs->payload);
-	if(buf == 0)
-	{
-		return -1;
-	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+f;
-					index = (p>>s)&1;
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint16_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_2bit32(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[4] = {-3.3359, 1.0, -1.0, 3.3359};
-	uint32_t *buf, p;
-	int i, o, s, c, m, f;
-	int index;
-
-	buf = vs->payload;
-	if(buf == 0)
-	{
-		return -1;
-	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-			{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+2*f;
-					m = s + 2*vs->fanout;
-					index = ((p>>s)&1) + (((p>>m)&1)<<1);
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = vs->payload;
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_1bit32(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[2] = {1.0, -1.0};
-	uint32_t *buf, p;
-	int i, o, s, c, f;
-	int index;
-
-	buf = vs->payload;
-	if(buf == 0)
-	{
-		return -1;
-	}
-
-	o = vs->read_position;
-
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+2*f;
-					index = (p>>s)&1;
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = vs->payload;
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_2bit64(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[4] = {-3.3359, 1.0, -1.0, 3.3359};
-	uint64_t *buf, p;
-	int f, o, i, m, s, c;
-	int index;
-
-	buf = (uint64_t *)(vs->payload);
-	if(buf == 0)
-	{
-		return -1;
-	}
-	
-	o = vs->read_position;
-	
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits64[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-			{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+2*f;
-					m = s + 2*vs->fanout;
-					index = ((p>>s)&1) + (((p>>m)&1)<<1);
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint64_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-static int mark5_stream_get_data_1bit64(struct mark5_stream *vs, int nsamp, 
-	float **data)
-{
-	const float lut[2] = {1.0, -1.0};
-	uint64_t *buf, p;
-	int f, o, i, s, c;
-	int index;
-
-	buf = (uint64_t *)(vs->payload);
-	if(buf == 0)
-	{
-		return -1;
-	}
-	
-	o = vs->read_position;
-	
-	for(i = 0; i < nsamp; i+=vs->fanout)
-	{
-		if(o < vs->firstvalid || o > vs->lastvalid)
-		{
-			for(f = 0; f < vs->fanout; f++) 
-		    	{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					data[c][i+f] = 0.0;
-				}
-			}
-		}
-		else
-		{
-			if(vs->format == FORMAT_VLBA)
-			{
-				p = buf[o] ^ modbits64[o];
-			}
-			else
-			{
-				p = buf[o];
-			}
-			for(f = 0; f < vs->fanout; f++) 
-			{
-				for(c = 0; c < vs->nchan; c++)
-				{
-					s = vs->basebits[c]+2*f;
-					index = (p>>s)&1;
-					data[c][i+f] = lut[index];
-					vs->statecount[c][index]++;
-				}
-			}
-		}
-
-		o++;
-		if(o >= PAYLOADSIZE)
-		{
-			if(next_frame(vs) < 0)
-			{
-				return -1;
-			}
-			buf = (uint64_t *)(vs->payload);
-			o = 0;
-		}
-	}
-
-	vs->read_position = o;
-
-	return 0;
-}
-
-
-int mark5_stream_get_data(struct mark5_stream *vs, int nsamp, float **data)
-{
-	if(vs->bits == 2) 
-	{
-		switch(vs->tracks)
-		{
-		case 8:
-			return mark5_stream_get_data_2bit8(vs, nsamp, data);
-		case 16:
-			return mark5_stream_get_data_2bit16(vs, nsamp, data);
-		case 32:
-			return mark5_stream_get_data_2bit32(vs, nsamp, data);
-		case 64:
-			return mark5_stream_get_data_2bit64(vs, nsamp, data);
-		default:
-			return 0;
-		}
-	}
-	else if(vs->bits == 1)
-	{
-		switch(vs->tracks)
-		{
-		case 8:
-			return mark5_stream_get_data_1bit8(vs, nsamp, data);
-		case 16:
-			return mark5_stream_get_data_1bit16(vs, nsamp, data);
-		case 32:
-			return mark5_stream_get_data_1bit32(vs, nsamp, data);
-		case 64:
-			return mark5_stream_get_data_1bit64(vs, nsamp, data);
-		default:
-			return 0;
-		}
-	}
-	else 
-	{
-		fprintf(stderr, "mark5_stream_get_data: only 1 or 2 bits "
-				"allowed now\n");
-		return -1;
-	}
-}
-
-int mark5_stream_get_data_double(struct mark5_stream *vs, int nsamp, 
+int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp, 
 	double **data)
 {
 	double *d;
@@ -1397,14 +659,14 @@ int mark5_stream_get_data_double(struct mark5_stream *vs, int nsamp,
 	int i;
 	int r;
 	
-	r = mark5_stream_get_data(vs, nsamp, (float **)data);
+	r = mark5_stream_decode(ms, nsamp, (float **)data);
 	if(r) 
 	{
 		return r;
 	}
 
 	/* convert in place */
-	for(c = 0; c < vs->nchan; c++)
+	for(c = 0; c < ms->nchan; c++)
 	{
 		d = data[c]+nsamp;
 		f = ((float *)(data[c]))+nsamp;
@@ -1419,23 +681,23 @@ int mark5_stream_get_data_double(struct mark5_stream *vs, int nsamp,
 	return 0;
 }
 
-int mark5_stream_get_data_complex(struct mark5_stream *vs, int nsamp, 
-	vlba_float_complex **data)
+int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp, 
+	mark5_float_complex **data)
 {
-	vlba_float_complex *fc;
+	mark5_float_complex *fc;
 	float *f;
 	int c;
 	int i;
 	int r;
 	
-	r = mark5_stream_get_data(vs, nsamp, (float **)data);
+	r = mark5_stream_decode(ms, nsamp, (float **)data);
 	if(r) 
 	{
 		return r;
 	}
 
 	/* convert in place */
-	for(c = 0; c < vs->nchan; c++)
+	for(c = 0; c < ms->nchan; c++)
 	{
 		fc = data[c]+nsamp;
 		f = ((float *)(data[c]))+nsamp;
@@ -1451,23 +713,23 @@ int mark5_stream_get_data_complex(struct mark5_stream *vs, int nsamp,
 	return 0;
 }
 
-int mark5_stream_get_data_double_complex(struct mark5_stream *vs, int nsamp, 
-	vlba_double_complex **data)
+int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, 
+	mark5_double_complex **data)
 {
-	vlba_double_complex *dc;
+	mark5_double_complex *dc;
 	float *f;
 	int c;
 	int i;
 	int r;
 	
-	r = mark5_stream_get_data(vs, nsamp, (float **)data);
+	r = mark5_stream_decode(ms, nsamp, (float **)data);
 	if(r) 
 	{
 		return r;
 	}
 
 	/* convert in place */
-	for(c = 0; c < vs->nchan; c++)
+	for(c = 0; c < ms->nchan; c++)
 	{
 		dc = data[c]+nsamp;
 		f = ((float *)(data[c]))+nsamp;
@@ -1481,4 +743,25 @@ int mark5_stream_get_data_double_complex(struct mark5_stream *vs, int nsamp,
 	}
 
 	return 0;
+}
+
+
+/* Returns: -1 on error
+ *           0 on success with no change
+ *          >0 on success with change
+ */
+int mark5_stream_fix_mjd(struct mark5_stream *ms, int refmjd)
+{
+	if(!ms)
+	{
+		return -1;
+	}
+	if(ms->fixmjd)
+	{
+		return ms->fixmjd(ms, refmjd);
+	}
+	else
+	{
+		return 0;
+	}
 }

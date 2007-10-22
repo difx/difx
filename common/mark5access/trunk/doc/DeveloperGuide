@@ -1,0 +1,262 @@
+
+
+                 mark5_access Library Developer Guide
+
+                  Walter Brisken <wbrisken@nrao.edu>
+
+                 National Radio Astronomy Observatory
+
+                           October 7, 2007
+
+
+0 Introduction
+~~~~~~~~~~~~~~
+
+mark5_access is designed to be extended to other stream types and formats
+without recompilation of the core library.  I encourage useful additions
+to be added to the library by sending a patch to wbrisken@nrao.edu.  
+Certain functions, such as new_mark5_format_from_stream and 
+mark5_stream_open currently only work on formats that are built into
+the core library.  The easiest way to make your own stream or format
+is to base it on the architecture of a simple existing stream or format.
+If you are to make a new stream or format, please ensure that it is
+both 32 and 64 bit clean and runs correctly on big- and little-endian 
+machines.
+
+1 The stream framework
+~~~~~~~~~~~~~~~~~~~~~~
+
+The (struct mark5_stream_generic) is defined by the following structure:
+
+struct mark5_stream_generic
+{
+        int (*init_stream)(struct mark5_stream *ms);	/* required */
+        int (*final_stream)(struct mark5_stream *ms);	/* required */
+        int (*next)(struct mark5_stream *ms);		/* required */
+        int (*seek)(struct mark5_stream *ms, int64_t framenum);
+        void *inputdata;
+};
+
+It contains pointers to 4 functions that do stream-specific processing
+and a pointer to a stream-specific (and private) data structure that
+contains internal state information.  Only three functions are required.
+Any unused optional pointer (data or function) should be null.
+
+
+1.1 Making a new stream
+
+To make a new stream type, only a single public function needs to be
+written -- a constructor that returns a pointer to a newly allocated
+(struct mark5_stream_generic).  This function should take as arguments
+any parameters needed to characterize the stream.
+
+The various functions pointed to by function pointers in (struct
+mark5_stream_generic) must follow some strict rules to ensure proper
+functionality.  All of these functions take as an argument a pointer
+to the (struct mark5_stream) that is built from a generic stream and
+a generic format.  The "input_data" pointer can point to private data 
+and is for use only by the functions associated with the particular
+stream.  If no such data is needed, the pointer should be set to null.
+
+All functions should assume that the caller has already copied the 
+pointer to inputdata.  See mark5_stream_memory.c for a simple example.
+
+
+1.1.1 struct mark5_stream_generic *new_mark5_stream_XXX(...)
+
+The constructor function may take any number of arguments of any type
+and should be able to specify the characteristics of the stream to be
+opened.  This function is required to do the following:
+
+  * Allocate a (struct mark5_stream_generic) using malloc
+
+  	M = (struct mark5_stream_memory *)malloc(
+		sizeof(struct mark5_stream_memory));
+
+  * Allocate private storage, or set inputdata to null.  Typically 
+  	stream parameters will be copied into the private structure.
+
+  * Set all function pointers to the stream functions to appropriate
+  	values, or to null for optional functions that are not 
+	used.
+
+  * Return the pointer to the allocated (struct mark5_stream_generic)
+
+A return value of 0 should be issued if the parameters don't specify a
+legal mode of the format.
+
+
+1.1.2 int (*init_stream)(struct mark5_stream *ms)
+
+This required function must set appropriate initial values for the following
+(struct mark5_stream) parameters:
+
+    datawindow:	A pointer to the memory location where in-core
+			data resides
+    datawindowsize:	The length in bytes of the in-core memory
+
+And optionally:
+
+    streamname:		A string descibing the stream type
+
+This is a good place to initialize state variables stored in the private
+structure pointed to by "inputdata", such as information about the low
+level aspects of the stream, includes freeing the private structure 
+itself.  A negative return value shall indicate an error -- construction 
+of a mark5_stream will cease at this point and call final_stream().  A
+return value of 0 indicates success.
+
+
+1.1.3 int (*final_stream)(struct mark5_stream *ms)
+
+This required function is responsible for closing any open files or sockets
+and freeing any memory that was allocated in the private data area.  This
+includes freeing the private structure itself.  A return value of 0 indicates
+success; return value less than 0 indcates a problem in reversing the
+initialization.
+
+
+1.1.4 int (*next)(struct mark5_stream *ms)
+
+This required function simply reassigns the "frame" pointer to the memory
+location of the next complete frame.  If required by the stream, this 
+function is responsible for loading more data into RAM.  If the next
+frame is not complete, the return value shall be -1.  Otherwise 0 shall be
+returned.
+
+
+1.1.5 int (*seek)(struct mark5_stream *ms, int64_t framenum)
+
+This optional function sets the "frame" pointer to the beginning of frame
+number "framenum", where framenum=0 is the first complete frame of the
+stream.  In many cases, this will require (re)loading of data from 
+a disc or similar depending on the nature of the stream.  Return value 
+of -1 shall indicate that this is not possible; 0 should be returned on 
+success.
+
+
+2 The format framework
+~~~~~~~~~~~~~~~~~~~~~~
+
+The (struct mark5_format_generic) is defined as follows:
+
+struct mark5_format_generic
+{
+        int (*init_format)(struct mark5_stream *ms);    /* required */
+        int (*final_format)(struct mark5_stream *ms);   /* required */
+        int (*decode)(struct mark5_stream *ms,          /* required */
+                int nsamp, float **data);
+        int (*gettime)(const struct mark5_stream *ms,   /* required */
+                int *mjd, int *sec, int *ns);
+        int (*fixmjd)(struct mark5_stream *ms, int refmjd);
+        int (*validate)(const struct mark5_stream *ms); /* not yet used */
+        void *formatdata;
+	int Mbps, nchan, nbit;	/* The triplet */
+};
+
+The structure consists of four required functions, one optional function,
+one possible function to add to future capabilities, and a pointer to 
+a private data structure.
+
+
+2.1 Making a new format
+
+Making a new format is very similar to making a new stream (see sec 1.1
+above).  All format functions should assume that the pointer to the private 
+data has already been set and allocated by the format constructor function.
+See mark5_format_mark5b.c for the simplest format.  Note that the choice
+of the decode() function depends on the mode of the format.  This allows
+for algorithm tuning on a mode by mode basis.
+
+
+2.1.1 struct mark5_format_generic *new_mark5_format_YYY(...)
+
+This is the constructor function for the new format.  It can take any
+number of arguments.  It is up to the constructor to choose among the
+various decoding algorithms based on the parameters passed to this 
+function.  The selection is made simply by assigning the "decode" function
+pointer to the appropriate function.
+
+
+2.1.2 int (*init_format)(struct mark5_stream *ms)
+
+The init function is responsible for doing any format initialization
+that requires the associated stream to be already initialized.  For
+example, it is usual to determine the offset to the first frame in the
+stream in this function.  Several parameters of "ms" must be set:
+
+    nchan:		the total number of channels represented by this format
+    nbit:		the number of bits per sample
+    samplegranularity:	all decodes and copies must be a multiple of this #
+    framebytes:		the length in bytes of a data frame
+    databytes:		the number of bytes in the frame representing data
+    payloadoffset:	the number of bytes to skip at the beginning of a 
+    				frame to get to data
+    framesamples:       the number of samples from each channel in one frame
+    format:		the format number type (enum Mark5Format)
+
+and only if "datawindow" is a non-null pointer
+
+    frameoffset:        the number of bytes to the first frame in the stream
+    frame		the pointer to the beginning of the first frame
+    payload		the pointer to the first data byte in the first frame
+    mjd, sec, ns	the time of the first frame
+    samprate		the number of samples per channel per second
+
+and optionally (but suggested)
+
+    formatname:		a text string containing the name of the format
+
+The return value should be 0 on success and -1 on failure.
+
+
+2.1.3 int (*final_format)(struct mark5_stream *ms)
+
+This required function is responsible for freeing any memory that was 
+allocated in the private data area.  This includes freeing the private 
+structure itself.  A return value of 0 indicates success; return value 
+less than 0 indcates a problem in reversing the initialization.
+
+
+2.1.4 int (*decode)(struct mark5_stream *ms, int nsamp, float **data)
+
+A decode function loops starts decoding at the read pointer 
+(ms->payload + ms->read_position) and decodes data into output float
+arrays pointed to by "data".  "data" should be a two dimensional matrix
+with minimum size ms->nchan by nsamp.  Decode functions must detect end
+of frames and request a call of the next function (with a call of
+mark5_stream_next_frame(ms) ).  Note that this funtion may change
+the location of ms->payload so this will need to be updated after each
+call.  Note also that mark5_stream_next_frame() may return -1 indicating
+end of data.  It is crutial that this function sets the value of
+ms->read_position before exiting to point at the next unread value
+before exiting, otherwise future calls to mark5_stream_decode() or
+mark5_stream_copy() will return incorrect data.  On end of data, this
+function should return a value of -1.  Otherwise 0 should be returned.
+
+
+2.1.5 int (*gettime)(const struct mark5_stream *ms, 
+	int *mjd, int *sec, int *ns)
+
+This is a required function that returns the time associated with the first
+sample of the current frame.  The returned time is in three parts: the
+Modified Julian Day, integer number of seconds since midnight, and integer
+number of nanoseconds since this second.  Null pointers for any combination
+of these three must be supported.  The portions of time represented by
+pointers with null value will not be returned.  A value of 0 should be
+returned on success, and -1 on failure.
+
+
+2.1.6 int (*fixmjd)(struct mark5_stream *ms, int refmjd)
+
+An optional function to overcome potential ambiguities in date that is
+common in VLBI formats.  Return values are as follows: -1 on error, 0
+on success without change, >0 on success with a change in the mjd.
+
+
+2.1.7 int (*validate)(const struct mark5_stream *ms)
+
+The intention of this function is to provide a mechanism to verify that
+the a valid frame begins at the ms->frame pointer.  This mechanism is
+yet to be implemented.
+

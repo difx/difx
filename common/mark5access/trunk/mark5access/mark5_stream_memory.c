@@ -3,7 +3,7 @@
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
+ *   the Free Software Foundation; either version 3 of the License, or     *
  *   (at your option) any later version.                                   *
  *                                                                         *
  *   This program is distributed in the hope that it will be useful,       *
@@ -23,81 +23,89 @@
 
 struct mark5_stream_memory
 {
-	uint32_t *start;
-	uint32_t *end;			/* derived by init() */
-	unsigned long length;
+	uint8_t *start;
+	uint8_t *end;			/* derived by init() */
+	uint32_t nbytes;
 };
 
-static int mark5_stream_memory_init(struct mark5_stream *vs)
+static int mark5_stream_memory_init(struct mark5_stream *ms)
 {
-	uint32_t *start;
-	unsigned long length;
+	uint8_t *start;
+	uint32_t nbytes;
 
-	start = ((struct mark5_stream_memory *)(vs->inputdata))->start;
-	length = ((struct mark5_stream_memory *)(vs->inputdata))->length;
+	sprintf(ms->streamname, "Memory");
 
-	((struct mark5_stream_memory *)(vs->inputdata))->end = start + length/4;
-	
-	vs->frame = start;
+	start = ((struct mark5_stream_memory *)(ms->inputdata))->start;
+	nbytes = ((struct mark5_stream_memory *)(ms->inputdata))->nbytes;
+
+	ms->datawindow = start;
+	ms->datawindowsize = nbytes;
+
+	((struct mark5_stream_memory *)(ms->inputdata))->end = start + nbytes;
 	
 	return 0;
 }
 
-static int mark5_stream_memory_next(struct mark5_stream *vs)
+static int mark5_stream_memory_next(struct mark5_stream *ms)
 {
-	uint32_t *end;
+	uint8_t *end;
 
-	end = ((struct mark5_stream_memory *)(vs->inputdata))->end;
+	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
 	
-	vs->frame += vs->gulpsize/4;
-	if(vs->frame + vs->gulpsize/4 > end)
+	ms->frame += ms->framebytes;
+	if(ms->frame + ms->framebytes > end)
 	{
+		ms->readposition = -1;
 		return -1;
 	}
 
-	return vs->gulpsize;
+	return ms->framebytes;
 }
 
-static int mark5_stream_memory_prev(struct mark5_stream *vs)
+static int mark5_stream_memory_seek(struct mark5_stream *ms, int64_t framenum)
 {
-	uint32_t *start;
+	uint8_t *start, *end;
+	
+	start = ((struct mark5_stream_memory *)(ms->inputdata))->start;
+	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
 
-	start = ((struct mark5_stream_memory *)(vs->inputdata))->start;
-	vs->frame -= vs->gulpsize/4;
-	if(vs->frame < start)
+	ms->frame = start + ms->frameoffset + framenum*ms->framebytes;
+	if(framenum < 0 || ms->frame + ms->framebytes > end)
 	{
-		vs->frame += vs->gulpsize/4;
+		ms->readposition = -1;
+
 		return -1;
 	}
+
+	return 0;
+}
+
+static int mark5_stream_memory_final(struct mark5_stream *ms)
+{
+	free(ms->inputdata);
 	
 	return 0;
 }
 
-static int mark5_stream_memory_final(struct mark5_stream *vs)
+struct mark5_stream_generic *new_mark5_stream_memory(void *data, 
+	uint32_t nbytes)
 {
-	free(vs->inputdata);
-	
-	return 0;
-}
-
-
-struct mark5_stream *mark5_stream_memory_open(void *data, unsigned long length,
-	int bits, int fanout)
-{
-	struct mark5_stream_generic V;
+	struct mark5_stream_generic *s;
 	struct mark5_stream_memory *M;
 
+	s = (struct mark5_stream_generic *)malloc(
+		sizeof(struct mark5_stream_generic));
 	M = (struct mark5_stream_memory *)malloc(
 		sizeof(struct mark5_stream_memory));
-	M->start = (uint32_t *)data;
-	M->length = length;
+	M->start = (uint8_t *)data;
+	M->nbytes = nbytes;
 
-	V.init = mark5_stream_memory_init;
-	V.next = mark5_stream_memory_next;
-	V.prev = mark5_stream_memory_prev;
-	V.final = mark5_stream_memory_final;
-	V.inputdata = M;
+	s->init_stream = mark5_stream_memory_init;
+	s->next = mark5_stream_memory_next;
+	s->seek = mark5_stream_memory_seek;
+	s->final_stream = mark5_stream_memory_final;
+	s->inputdata = M;
 
-	return mark5_stream_generic_open(&V, bits, fanout);
+	return s;
 }
 

@@ -6,6 +6,8 @@ dnl --------------------------------
 AC_INIT(mark5access.h)
 AM_CONFIG_HEADER(config.h)
 
+AC_C_BIGENDIAN
+
 dnl -----------------------------------------------
 dnl Package name and version number (user defined)
 dnl -----------------------------------------------
@@ -13,9 +15,9 @@ dnl -----------------------------------------------
 GENERIC_LIBRARY_NAME=mark5access
 
 #release versioning
-GENERIC_MAJOR_VERSION=0
-GENERIC_MINOR_VERSION=1
-GENERIC_MICRO_VERSION=0
+GENERIC_MAJOR_VERSION=1
+GENERIC_MINOR_VERSION=0
+GENERIC_MICRO_VERSION=1
 
 #API version (often = GENERIC_MAJOR_VERSION.GENERIC_MINOR_VERSION)
 GENERIC_API_VERSION=1.0
@@ -71,6 +73,7 @@ dnl -----------------------------------------------
 AC_OUTPUT(Makefile \
           mark5access.pc \
           mark5access/Makefile \
-	  tests/Makefile
+	  examples/Makefile \
+	  doc/Makefile
 )
 

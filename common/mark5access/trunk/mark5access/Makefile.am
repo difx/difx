@@ -1,7 +1,14 @@
 ## Source directory
 
 h_sources = mark5_stream.h
-c_sources = mark5_stream.c  mark5_stream_file.c  mark5_stream_memory.c  mark5_unpack.c
+c_sources = \
+	mark5_stream.c \
+	mark5_stream_file.c \
+	mark5_stream_memory.c \
+	mark5_stream_unpacker.c \
+	mark5_format_vlba.c \
+	mark5_format_mark4.c \
+	mark5_format_mark5b.c
 
 library_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)/$(GENERIC_LIBRARY_NAME)
 library_include_HEADERS = $(h_sources)
