@@ -176,7 +176,7 @@ C
 C     PUT the PEP utility text messages.
       CALL PUTA ('PEP MESS      ', LPEPU, 40, 1, 1 )
       CALL PUTA ('PEP TAPE      ', LPEPT, 64, 1, 1 )
-      CALL PUTA ('JPL FILE      ', JPL_eph, 48, 1, 1)
+      CALL PUTA ('JPL FILE      ', JPL_eph, 256, 1, 1)
 C
 C   See if debug is requested.
       IF(KPEPD .ne. 0) Then

@@ -8,7 +8,7 @@ C     (GSFC: length=34, JPL_eph = '/data18/mk3/src/calc9.0/JPL.DE403 ')
 C   
 C       Character*34 JPL_eph
 C       Parameter (JPL_eph = '/data18/mk3/src/calc9.0/JPL.DE403 ')
-       Character*48 JPL_eph
+       Character*256 JPL_eph
        Common /JPLfile/ JPL_eph
 C      
 C      Jpl_eph path and file name are entered through a CALL GETENV in
