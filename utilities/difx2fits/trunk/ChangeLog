@@ -1,4 +1,9 @@
 
+Version 1.2
+* Fix sign of gdelay, grate in MC table, and subtract off the atmosphere.
+* FFT_SIZE fix in MC table
+* Update automake a bit
+
 Version 1.1
 * Don't require .calc, .rates files
 

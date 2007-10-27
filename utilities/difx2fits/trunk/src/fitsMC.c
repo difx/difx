@@ -85,7 +85,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPolar, "");
-	fitsWriteInteger(out, "FFT_SIZE", D->config[0].nChan*D->specAvg*2, "");
+	fitsWriteInteger(out, "FFT_SIZE", D->nOutChan*D->specAvg*2, "");
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, 
@@ -102,7 +102,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   sourceId = D->scan[s].sourceId + 1;
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
-	      time = D->scan[s].mjdStart - (int)D->mjdStart +
+	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
 	      	D->modelInc*p/86400.0;
 		
 	      for(ant = 0; ant < D->nAntenna; ant++)
@@ -111,12 +111,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	        pBuf = fitsbuf;
 
 		/* in general, convert from (us) to (sec) */
-		delay = D->scan[s].model[ant][p].t  * 1.0e-6;
-		drate = D->scan[s].model[ant][p].dt * 1.0e-6;
 		atmos = D->scan[s].model[ant][p].a  * 1.0e-6;
 		arate = D->scan[s].model[ant][p].da * 1.0e-6;
+		/* here correct the sign of delay, and remove atmos portion of it. */
+		delay = -D->scan[s].model[ant][p].t  * 1.0e-6 - atmos;
+		drate = -D->scan[s].model[ant][p].dt * 1.0e-6 - arate;
+		
 		crate = D->antenna[ant].rate  * 1.0e-6;
-		clock = D->antenna[ant].delay * 1.0e-6 + crate*time*86400.0;
+		clock = D->antenna[ant].delay * 1.0e-6 + crate*D->modelInc*p;
           
 	  	/* TIME */
 		bcopy((char *)&time, pBuf, sizeof(time));

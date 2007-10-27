@@ -1,5 +1,5 @@
-AC_INIT(difx2fits, 1.1, Walter Brisken <wbrisken@nrao.edu>)
-AM_CONFIG_HEADER(config.h)
+AC_INIT([difx2fits], [1.2], [Walter Brisken <wbrisken@nrao.edu>])
+AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
 
@@ -8,7 +8,10 @@ AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 PKG_CHECK_MODULES(DIFXIO, difxio)
-LIBS=${DIFXIO_LIBS}
-CFLAGS=${DIFXIO_CFLAGS}
+LIBS="${LIBS} ${DIFXIO_LIBS}"
+CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS}"
 
-AC_OUTPUT(Makefile src/Makefile)
+AC_OUTPUT([ \
+	Makefile \
+	src/Makefile\
+])
