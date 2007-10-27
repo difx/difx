@@ -1,12 +1,12 @@
-SUBDIRS= $(GENERIC_LIBRARY_NAME) examples
+SUBDIRS = mark5access examples
 
-DIST_SUBDIRS = $(GENERIC_LIBRARY_NAME) examples doc
+DIST_SUBDIRS = mark5access examples doc
 
-library_includedir=$(includedir)/$(GENERIC_LIBRARY_NAME)-$(GENERIC_API_VERSION)
+library_includedir = $(includedir)
 library_include_HEADERS = mark5access.h
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = $(GENERIC_LIBRARY_NAME).pc
+pkgconfig_DATA = mark5access.pc
 
-EXTRA_DIST=autogen.sh TODO
+EXTRA_DIST = TODO
 

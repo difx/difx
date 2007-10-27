@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: mark5access
 Description: library to parse difx input and output files
 Requires: 
-Version: @VERSION@
-Libs: -L${libdir} -lmark5access-1.0
-Cflags: -I${includedir}/mark5access-1.0 
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lmark5access
+Cflags: -I${includedir}

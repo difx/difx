@@ -1,1 +1,3 @@
-EXTRA_DIST=UserGuide DeveloperGuide
+EXTRA_DIST = \
+	UserGuide \
+	DeveloperGuide
