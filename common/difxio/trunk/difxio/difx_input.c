@@ -1,3 +1,22 @@
+/***************************************************************************
+ *   Copyright (C) 2007 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -785,7 +804,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 {
-	int i, c, p, r = 0, s, v, N;
+	int i, c, p, r = 0, v, N;
 	int nPoint, startPoint;
 	int rows[20];
 	
@@ -889,16 +908,16 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			}
 		}
 
-		for(p = -1; p <= D->scan[s].nPoint+1; p++)
+		for(p = -1; p <= D->scan[i].nPoint+1; p++)
 		{
 			r = DifxParametersfind1(up, r+1, "RELATIVE INC %d", p);
 			if(r < 0)
 			{
 				fprintf(stderr, "UVW row not found : %d %d\n",
-					s, p);
+					i, p);
 				return 0;
 			}
-			v = parseUVWs(D->scan[s].model, D->nAntenna, p,
+			v = parseUVWs(D->scan[i].model, D->nAntenna, p,
 				DifxParametersvalue(up, r));
 			if(v < 0)
 			{

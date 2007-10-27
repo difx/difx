@@ -6,6 +6,6 @@ includedir=@includedir@
 Name: difxio
 Description: library to parse difx input and output files
 Requires: 
-Version: @VERSION@
-Libs: -L${libdir} -ldifxio-1.0
-Cflags: -I${includedir}/difxio-1.0 
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -ldifxio
+Cflags: -I${includedir}
