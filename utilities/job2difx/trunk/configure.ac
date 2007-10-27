@@ -1,16 +1,17 @@
-AC_INIT(job2difx, 1.0, wbrisken@nrao.edu)
+AC_INIT([job2difx], [1.1], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE
 
-C_PROG_CC
+AC_PROG_CC
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
-
-dnl AC_PROG_C
 
 PKG_CHECK_MODULES(DIFXIO, difxio)
 LIBS=${DIFXIO_LIBS}
 CFLAGS=${DIFXIO_CFLAGS}
 
-AC_OUTPUT(Makefile calcif/Makefile)
+AC_OUTPUT([ \
+	Makefile \
+	calcif/Makefile \
+])

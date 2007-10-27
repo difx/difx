@@ -7,13 +7,14 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.0'
-verdate = '20070912'
+version = '1.1'
+verdate = '20071027'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
 BufferFactor = 32
 NDataSegment = 8
+MaxEOP = 5
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
@@ -975,9 +976,12 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 		scan_num += 1
 
 	neop = len(job_eop)
+	if neop > MaxEOP:
+		neop = MaxEOP
 	calc.append("NUM EOP:              %d" % neop)
 	eop_num = 0
-	for e in job_eop:
+	for i in range(neop):
+		e = job_eop[i]:
 		calc.append("EOP %d TIME (mjd):     %f" % \
 			(eop_num, parsetime(e['time'])) )
 		calc.append("EOP %d TAI_UTC (sec):  %s" % \

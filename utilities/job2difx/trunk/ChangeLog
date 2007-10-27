@@ -1,0 +1,17 @@
+
+job2difx
+~~~~~~~~
+Version 1.1
+* Restrict max num of eop to 5 since calcif balks with more
+
+Version 1.0
+* Initial version
+
+calcif
+~~~~~~
+Version 1.1
+* Ignore more than 5 EOPs
+
+Version 1.0
+* Initial version
+

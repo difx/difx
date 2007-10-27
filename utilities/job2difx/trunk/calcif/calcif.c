@@ -500,8 +500,10 @@ int main (int argc, char *argv[])
 	  break;
 	case E_TIME:
 	  printf("Eop Time\n");
-	  sprintf(Data_Map[entry].tag, EOP_TIME, which_eop); 
-	  if(processStateData(&Data_Map[entry], dp, 
+	  if(which_eop < MAX_EOPS)
+	  {
+	    sprintf(Data_Map[entry].tag, EOP_TIME, which_eop); 
+	    if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.e_time[which_eop], 
 			      u_fd, r_fd ,d_fd))
 	    {
@@ -509,12 +511,15 @@ int main (int argc, char *argv[])
 	      state = NOOP;
 	      break;
 	    }
+	  }
 	  state = E_TAI_UTC;
 	  break;
 	case E_TAI_UTC:
 	  printf("Eop tai utc\n");
-	  sprintf(Data_Map[entry].tag, EOP_TAI_UTC, which_eop); 
-	  if(processStateData(&Data_Map[entry], dp, 
+	  if(which_eop < MAX_EOPS)
+	  {
+	    sprintf(Data_Map[entry].tag, EOP_TAI_UTC, which_eop); 
+	    if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.e_tai_utc[which_eop], 
 			      u_fd, r_fd ,d_fd))
 	    {
@@ -522,12 +527,15 @@ int main (int argc, char *argv[])
 	      state = NOOP;
 	      break;
 	    }
+	  }
 	  state = E_UT1_UTC;
 	  break;
 	case E_UT1_UTC:
 	  printf("Eop ut1 utc\n");
-	  sprintf(Data_Map[entry].tag, EOP_UT1_UTC, which_eop); 
-	  if(processStateData(&Data_Map[entry], dp, 
+	  if(which_eop < MAX_EOPS)
+	  {
+	    sprintf(Data_Map[entry].tag, EOP_UT1_UTC, which_eop); 
+	    if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.e_ut1_utc[which_eop], 
 			      u_fd, r_fd ,d_fd))
 	    {
@@ -535,12 +543,15 @@ int main (int argc, char *argv[])
 	      state = NOOP;
 	      break;
 	    }
+	  }
 	  state = E_XPOLE;
 	  break;
 	case E_XPOLE:
 	  printf("Eop xpole\n");
-	  sprintf(Data_Map[entry].tag, EOP_XPOLE, which_eop); 
-	  if(processStateData(&Data_Map[entry], dp, 
+	  if(which_eop < MAX_EOPS)
+	  {
+	    sprintf(Data_Map[entry].tag, EOP_XPOLE, which_eop); 
+	    if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.e_xpole[which_eop], 
 			      u_fd, r_fd ,d_fd))
 	    {
@@ -548,12 +559,15 @@ int main (int argc, char *argv[])
 	      state = NOOP;
 	      break;
 	    }
+	  }
 	  state = E_YPOLE;
 	  break;
 	case E_YPOLE:
 	  printf("Eop ypole\n");
-	  sprintf(Data_Map[entry].tag, EOP_YPOLE, which_eop); 
-	  if(processStateData(&Data_Map[entry], dp, 
+	  if(which_eop < MAX_EOPS)
+	  {
+	    sprintf(Data_Map[entry].tag, EOP_YPOLE, which_eop); 
+	    if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.e_ypole[which_eop], 
 			      u_fd, r_fd ,d_fd))
 	    {
@@ -561,6 +575,7 @@ int main (int argc, char *argv[])
 	      state = NOOP;
 	      break;
 	    }
+	  }
 	  if (++which_eop < num_eops)
 	    state = E_TIME;
 	  else
