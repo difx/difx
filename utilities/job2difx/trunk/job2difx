@@ -981,7 +981,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	calc.append("NUM EOP:              %d" % neop)
 	eop_num = 0
 	for i in range(neop):
-		e = job_eop[i]:
+		e = job_eop[i]
 		calc.append("EOP %d TIME (mjd):     %f" % \
 			(eop_num, parsetime(e['time'])) )
 		calc.append("EOP %d TAI_UTC (sec):  %s" % \
