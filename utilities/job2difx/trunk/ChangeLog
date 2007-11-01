@@ -11,6 +11,8 @@ calcif
 ~~~~~~
 Version 1.1
 * Ignore more than 5 EOPs
+* HACK -- make sure that "time" of data request is integer number of seconds.
+      This is not the proper fix, but it works within the scope of the project.
 
 Version 1.0
 * Initial version

@@ -843,7 +843,7 @@ static getCALC_res *getCalcData(TS_CALC_PARAMS c_params,
   char   axistypea[6];
   char   stnnameb[8];
   char   axistypeb[6];
-  int i;
+  int i, t;
   double mjd_date;
   double mjd;
   struct getCALC_arg request_args;
@@ -860,6 +860,11 @@ static getCALC_res *getCalcData(TS_CALC_PARAMS c_params,
   mjd += time_incr;
   request_args.time = modf(mjd, &mjd_date);
   request_args.date = (int)mjd_date;
+
+  /* WARNING HACK HERE -- this is to force the "time" portion to be an integer number of seconds */
+  t = (int)(request_args.time*86400.0 + 0.5);
+  request_args.time = t/86400.0;
+  
   /* Fill in EOP information */
   for (i=0; i<MAX_EOPS; i++)
     {
