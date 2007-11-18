@@ -1,4 +1,4 @@
-AC_INIT([difx2fits], [1.2], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difx2fits], [1.4], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE

@@ -47,6 +47,7 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	int g, i, c, v;
 	int nHand;
 	int polMask = 0;
+	int verbose = 0;
 
 	dv = (DifxVis *)malloc(sizeof(DifxVis));
 
@@ -59,10 +60,13 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 
 	glob(globstr, 0, 0, &dv->globbuf);
 	dv->nFile = dv->globbuf.gl_pathc;
-	printf("%d visibility files to be read:\n", dv->nFile);
-	for(g = 0; g < dv->nFile; g++)
+	if(verbose)
 	{
-		printf("File %d : %s\n", g+1, dv->globbuf.gl_pathv[g]);
+		printf("%d visibility files to be read:\n", dv->nFile);
+		for(g = 0; g < dv->nFile; g++)
+		{
+			printf("File %d : %s\n", g+1, dv->globbuf.gl_pathv[g]);
+		}
 	}
 
 	dv->dp = 0;
@@ -118,8 +122,6 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 		}
 	}
 
-	printf("polMask = %x\n", polMask);
-
 	/* check for polarization confusion */
 	if( ((polMask & 0x0F) > 0 && (polMask & 0xF0) > 0) || polMask == 0 )
 	{
@@ -145,8 +147,6 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	{
 		dv->polStart = -6;
 	}
-
-	printf("polStart = %d\n", dv->polStart);
 
 	dv->spectrum = (float *)malloc(dv->maxChan*dv->nComplex*
 		dv->D->specAvg*sizeof(complex float));
@@ -198,8 +198,6 @@ void deleteDifxVis(DifxVis *dv)
 	}
 	
 	free(dv);
-
-	printf("Deleted DifxVis\n");
 }
 
 static int getPolId(const DifxVis *dv, const char *polPair)
@@ -240,12 +238,12 @@ int DifxVisNextFile(DifxVis *dv)
 		printf("No more files.  Must be done!\n");
 		return -1;
 	}
-	printf("Opening file %d / %d : %s\n", dv->curFile+1, dv->nFile,
+	printf("    File %d / %d : %s\n", dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
 	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 	if(!dv->in)
 	{
-		printf("Error opening file : %s\n", 
+		fprintf(stderr, "Error opening file : %s\n", 
 			dv->globbuf.gl_pathv[dv->curFile]);
 		return -1;
 	}
@@ -446,6 +444,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 	int specAvg;
 	int swap;
 	float vis_scale;
+	double scale;
 	char dateStr[12];
 	char fluxFormFloat[8];
 	char gateFormInt[8];
@@ -473,6 +472,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 	};
 
 	vis_scale = 1.0;
+
+	scale = 1.0/(dv->D->config[0].IF[0].bw*6.25e6*
+		dv->D->config[0].tInt*dv->D->specAvg);
 
 	nWeight = dv->nFreq*dv->maxPol;
 
@@ -609,12 +611,12 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 				/* swap phase/uvw for FITS-IDI conformance */
 				if(k % 3 == 1 && !LSB)
 				{
-					dv->data[index+k] -= 
+					dv->data[index+k] -= scale*
 						dv->spectrum[dv->nComplex*i+k];
 				}
 				else
 				{
-					dv->data[index+k] += 
+					dv->data[index+k] += scale*
 						dv->spectrum[dv->nComplex*i+k];
 				}
 			}

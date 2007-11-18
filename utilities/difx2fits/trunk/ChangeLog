@@ -1,3 +1,9 @@
+Version 1.4
+* Summarize tables at end
+* allow --no-model option
+
+Version 1.3
+* Amplitude scaling
 
 Version 1.2
 * Fix sign of gdelay, grate in MC table, and subtract off the atmosphere.

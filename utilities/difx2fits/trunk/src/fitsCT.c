@@ -136,26 +136,57 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 
 	fitsWriteEnd(out);
 
-	for(e = 0; e < D->nEOP; e++)
+	if(D->nEOP > 0)
 	{
-		row.time    = D->eop[e].mjd - (int)D->mjdStart;
-		row.ut1_utc = D->eop[e].ut1_utc;
-		row.iat_utc = D->eop[e].tai_utc;
-		row.a1_iat  = 0.0;
-		row.ut1Type = 'X';
-		row.wobX    = D->eop[e].xPole;
-		row.wobY    = D->eop[e].yPole;
-		row.wobType = 'X';
-		row.dPsi    = 0.0;
-		row.ddPsi   = 0.0;
-		row.dEps    = 0.0;
-		row.ddEps   = 0.0;
-
-		if(swap)
+		for(e = 0; e < D->nEOP; e++)
 		{
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
+			row.time    = D->eop[e].mjd - (int)D->mjdStart;
+			row.ut1_utc = D->eop[e].ut1_utc;
+			row.iat_utc = D->eop[e].tai_utc;
+			row.a1_iat  = 0.0;
+			row.ut1Type = 'X';
+			row.wobX    = D->eop[e].xPole;
+			row.wobY    = D->eop[e].yPole;
+			row.wobType = 'X';
+			row.dPsi    = 0.0;
+			row.ddPsi   = 0.0;
+			row.dEps    = 0.0;
+			row.ddEps   = 0.0;
+
+			if(swap)
+			{
+				FitsBinRowByteSwap(columns, 
+					NELEMENTS(columns), &row);
+			}
+			fitsWriteBinRow(out, (char *)&row);
 		}
-		fitsWriteBinRow(out, (char *)&row);
+	}
+	else
+	{
+		fprintf(stderr, "Warning -- setting EOPs to zero\n");
+		for(e = 0; e < 5; e++)
+		{
+			row.time    = e-2;
+			row.ut1_utc = 0.0;
+			row.iat_utc = 33;
+			row.a1_iat  = 0.0;
+			row.ut1Type = 'X';
+			row.wobX    = 0.0;
+			row.wobY    = 0.0;
+			row.wobType = 'X';
+			row.dPsi    = 0.0;
+			row.ddPsi   = 0.0;
+			row.dEps    = 0.0;
+			row.ddEps   = 0.0;
+
+			if(swap)
+			{
+				FitsBinRowByteSwap(columns, 
+					NELEMENTS(columns), &row);
+			}
+			fitsWriteBinRow(out, (char *)&row);
+
+		}
 	}
 
 	return D;
