@@ -1,10 +1,9 @@
-AC_INIT([difx2fits], [1.4], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difx2fits], [1.5], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
-AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 PKG_CHECK_MODULES(DIFXIO, difxio)
