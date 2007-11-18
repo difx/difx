@@ -1,3 +1,5 @@
+1.2
+* Fixed array indexing issue
 
 1.1
 * Improved auto*, changed library name a little

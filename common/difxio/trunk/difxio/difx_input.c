@@ -482,6 +482,12 @@ static int parseUVWs(DifxModel **model, int nAntenna, int row,
 	int a;
 	int n = 0, l;
 	double u, v, w;
+
+	if(*model == 0)
+	{
+		fprintf(stderr, "Error : parseUVWs : model is 0\n");
+		exit(0);
+	}
 	
 	for(a = 0; a < nAntenna; a++)
 	{
@@ -507,6 +513,12 @@ static int parseDelays(DifxModel **model, int nAntenna, int row,
 	int n = 0, l;
 	double t;
 
+	if(*model == 0)
+	{
+		fprintf(stderr, "Error : parseDelays : model is 0\n");
+		exit(0);
+	}
+	
 	for(a = 0; a < nAntenna; a++)
 	{
 		if(sscanf(str+n, "%lf%n", &t, &l) < 1)
@@ -529,6 +541,12 @@ static int parseRates(DifxModel **model, int nAntenna, int row,
 	int n = 0, l;
 	double rate, dry, wet; /* units: us/s, us, us */
 
+	if(*model == 0)
+	{
+		fprintf(stderr, "Error : parseRates : model is 0\n");
+		exit(0);
+	}
+	
 	for(a = 0; a < nAntenna; a++)
 	{
 		if(sscanf(str+n, "%lf%lf%lf%n", &rate, &dry, &wet, &l) < 1)
@@ -1001,7 +1019,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	int rows[20];
 	int i, c, N, row;
 	const char *cname;
-	
+	int findconfig = 0;
+
 	if(!D)
 	{
 		return 0;
@@ -1066,7 +1085,16 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			i, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
-			return 0;
+			if(i == 0)
+			{
+				fprintf(stderr, "Warning -- no antenna axis "
+					"offsets available\n");
+				break;
+			}
+			else
+			{
+				return 0;
+			}
 		}
 		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[0]));
 		D->antenna[i].offset[1]= 0.0;	/* FIXME */
@@ -1096,7 +1124,17 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			i, N_SCAN_ROWS, rows);
 		if(N < N_SCAN_ROWS)
 		{
-			return 0;
+			if(i == 0)
+			{
+				fprintf(stderr, "Warning -- no scan attributes "
+					"available\n");
+				findconfig = 1;
+				break;
+			}
+			else
+			{
+				return 0;
+			}
 		}
 		strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[1]), 31);
 		D->scan[i].name[31]  = 0;
@@ -1111,9 +1149,49 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			if(strcmp(cname, D->config[c].name) == 0)
 			{
 				D->scan[i].configId = c;
+				break;
+			}
+		}
+		if(c == D->nConfig)
+		{
+			fprintf(stderr, "Error -- source without config! "
+				"id=%d  name=%s  realname=%s\n",
+				i, cname, D->scan[i].name);
+			return 0;
+		}
+	}
+
+	if(findconfig)
+	{
+		for(i = 0; i < D->nScan; i++)
+		{
+			for(c = 0; c < D->nConfig; c++)
+			{
+				if(strcmp(D->scan[i].name,
+					D->config[c].name) == 0)
+				{
+					D->scan[i].configId = c;
+					break;
+				}
+			}
+			if(c == D->nConfig) for(c = 0; c < D->nConfig; c++)
+			{
+				if(strcmp("DEFAULT", D->config[c].name) == 0)
+				{
+					D->scan[i].configId = c;
+					break;
+				}
+			}
+			if(c == D->nConfig)
+			{
+				fprintf(stderr, "Error -- source without "
+					"config! id=%d  name=%s\n",
+					i, D->scan[i].name);
+				return 0;
 			}
 		}
 	}
+
 
 	return D;
 }
