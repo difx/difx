@@ -1,3 +1,10 @@
+Version 1.7
+* support scaling parameter
+
+Version 1.6
+* Respect .flag file
+* print more information
+
 Version 1.5
 * Fix up configure.ac a bit more
 

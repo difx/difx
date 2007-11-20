@@ -235,7 +235,6 @@ int DifxVisNextFile(DifxVis *dv)
 	dv->curFile++;
 	if(dv->curFile >= dv->nFile)
 	{
-		printf("No more files.  Must be done!\n");
 		return -1;
 	}
 	printf("    File %d / %d : %s\n", dv->curFile+1, dv->nFile,
@@ -408,10 +407,10 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	return 0;
 }
 
-int RecordIsValid(const DifxVis *dv)
+int RecordIsInvalid(const DifxVis *dv)
 {
 	int i, n;
-	int valid=0;
+	int invalid=1;
 	const float *d;
 
 	d = dv->data;
@@ -422,19 +421,50 @@ int RecordIsValid(const DifxVis *dv)
 		if(!finite(d[i]))
 		{
 			printf("Warning -- record with !finite value\n");
-			return 0;
+			return 1;
 		}
 		/* don't look at weight in deciding whether data is valid */
 		if((d[i] != 0.0) && (i % dv->nComplex != 2))
 		{
-			valid = 1;
+			invalid = 0;
 		}
 	}
 	
-	return valid;
+	return invalid;
 }
 
-int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
+int RecordIsFlagged(const DifxVis *dv)
+{
+	double mjd;
+	int a1, a2;
+	int i;
+
+	if(dv->D->nFlag <= 0)
+	{
+		return 0;
+	}
+
+	a1  = dv->baseline/256 - 1;
+	a2  = dv->baseline%256 - 1;
+	mjd = dv->mjd;
+
+	for(i = 0; i < dv->D->nFlag; i++)
+	{
+		if(dv->D->flag[i].mjd1 <= mjd &&
+		   dv->D->flag[i].mjd2 >= mjd)
+		{
+			if(dv->D->flag[i].antId == a1 ||
+			   dv->D->flag[i].antId == a2)
+			{
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
+int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 {
 	int first = 1;
 	int v;
@@ -452,6 +482,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 	int LSB;
 	int n_row_bytes;
 	int nWeight;
+	int nInvalid = 0;
+	int nFlagged = 0;
+	int nWritten = 0;
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -473,8 +506,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 
 	vis_scale = 1.0;
 
-	scale = 1.0/(dv->D->config[0].IF[0].bw*6.25e6*
-		dv->D->config[0].tInt*dv->D->specAvg);
+	if(s > 0.0)
+	{
+		scale = s;
+	}
+	else
+	{
+		scale = 1.0/(dv->D->config[0].IF[0].bw*6.25e6*
+			dv->D->config[0].tInt*dv->D->specAvg);
+	}
 
 	nWeight = dv->nFreq*dv->maxPol;
 
@@ -563,7 +603,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 			}
 			else
 			{
-				if(RecordIsValid(dv))
+				if(RecordIsInvalid(dv))
+				{
+					nInvalid++;
+				}
+				else if(RecordIsFlagged(dv))
+				{
+					nFlagged++;
+				}
+				else
 				{
 					for(i=0; i < dv->nFreq*dv->maxPol; i++)
 					{
@@ -577,6 +625,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 					}
 					fitsWriteBinRow(dv->out, 
 						(char *)dv->record);
+					nWritten++;
 				}
 			}
 			v = DifxVisCollectRandomParams(dv);
@@ -624,7 +673,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 	}
 
 	/* write that last bit of data */
-	if(RecordIsValid(dv))
+	if(RecordIsInvalid(dv))
+	{
+		nInvalid++;
+	}
+	else if(RecordIsFlagged(dv))
+	{
+		nFlagged++;
+	}
+	else
 	{
 		for(i = 0; i < dv->nFreq*dv->maxPol; i++)
 		{
@@ -636,14 +693,19 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys)
 				dv->record);
 		}
 		fitsWriteBinRow(dv->out, (char *)dv->record);
+		nWritten++;
 	}
+
+	printf("    %d flagged records dropped\n", nFlagged);
+	printf("    %d invalid records dropped\n", nInvalid);
+	printf("    %d records written\n", nWritten);
 
 	return 0;
 }
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, const char *filebase,
-	struct fitsPrivate *out)
+	struct fitsPrivate *out, double scale)
 {
 	DifxVis *dv;
 	
@@ -658,7 +720,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		return 0;
 	}
 
-	DifxVisConvert(dv, p_fits_keys);
+	DifxVisConvert(dv, p_fits_keys, scale);
 
 	deleteDifxVis(dv);
 
