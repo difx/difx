@@ -1,23 +1,25 @@
 .PHONY : all clean
 
-TARGETS := vlba_stream vlba_unpack
+TARGETS = libvlba_utils.a test_vlba_stream
+
+vlba_stream_objs = vlba_stream.o vlba_unpack.o vlba_stream_memory.o vlba_stream_file.o
 
 all   : $(TARGETS)
 
-clean : $(TARGETS)
-	rm -f *.o $^
+libvlba_utils.a: $(vlba_stream_objs)
 
-CC  = gcc
-CXX = g++
-F77 = g77
+test_vlba_stream: libvlba_utils.a test_vlba_stream.o
+	gcc -o test_vlba_stream test_vlba_stream.o libvlba_utils.a
 
-INCS = -I.
-LIBS = -L.
+clean : 
+	rm -f *.o $(TARGETS)
 
-vlba_stream : vlba_stream.c
-	$(CXX) -fPIC -DVLBAFLOAT -c $(INCS) -o $@.o $^ $(LIBS)
-	ar r libvlba_utils.a vlba_stream.o
+CFLAGS = -O2 -Wall -fPIC 
 
-vlba_unpack : vlba_unpack.c
-	$(CXX) -fPIC -DVLBAFLOAT -c $(INCS) -o $@.o $^ $(LIBS)
-	ar r libvlba_utils.a vlba_unpack.o
+libvlba_utils.a: $(vlba_stream_objs)
+	ar r libvlba_utils.a $(vlba_stream_objs)
+
+vlba_stream.o: vlba_stream.h
+vlba_unpack.o: vlba_stream.h
+vlba_stream_memory.o: vlba_stream.h
+vlba_stream_file.o: vlba_stream.h
