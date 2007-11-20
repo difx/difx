@@ -364,12 +364,14 @@ DifxInput *newDifxInput()
 	D->nScan = 0;
 	D->nSource = 0;
 	D->nEOP = 0;
+	D->nFlag = 0;
 	D->config = 0;
 	D->freq = 0;
 	D->antenna = 0;
 	D->scan = 0;
 	D->source = 0;
 	D->eop = 0;
+	D->flag = 0;
 	D->jobId = 0;
 	D->refFreq = 0.0;
 	D->jobStart = 0.0;
@@ -411,6 +413,10 @@ void deleteDifxInput(DifxInput *D)
 		if(D->eop)
 		{
 			deleteDifxEOPArray(D->eop);
+		}
+		if(D->flag)
+		{
+			free(D->flag);
 		}
 		free(D);
 	}
@@ -1280,6 +1286,45 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 	return D;
 }
 
+static int populateFlags(DifxInput *D, const char *flagfile)
+{
+	FILE *in;
+	double mjd1, mjd2;
+	int i, n=0, a, p;
+
+	in = fopen(flagfile, "r");
+	if(!in)
+	{
+		return 0;
+	}
+
+	p = fscanf(in, "%d", &n);
+	if(p == 1 && n > 0 && n < 10000)
+	{
+		D->nFlag = n;
+		D->flag = (DifxAntennaFlag *)malloc(n*sizeof(DifxAntennaFlag));
+		for(i = 0; i < n; i++)
+		{
+			p = fscanf(in, "%lf%lf%d", &mjd1, &mjd2, &a);
+			if(p == 3)
+			{
+				D->flag[i].mjd1  = mjd1;
+				D->flag[i].mjd2  = mjd2;
+				D->flag[i].antId = a;
+			}
+		}
+	}
+	else if(n > 0)
+	{
+		fprintf(stderr, "populateFlags : unreasonable "
+			"number of flags : %d\n", n);
+	}
+
+	fclose(in);
+
+	return n;
+}
+
 /* take DifxInput structure and derive the source table.
  * Also derive sourceId and configId for each scan
  */
@@ -1348,12 +1393,14 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	char delayfile[256];
 	char ratefile[256];
 	char calcfile[256];
+	char flagfile[256];
 
 	sprintf(inputfile, "%s.input", fileprefix);
 	sprintf(uvwfile,   "%s.uvw",   fileprefix);
 	sprintf(delayfile, "%s.delay", fileprefix);
 	sprintf(ratefile,  "%s.rate",  fileprefix);
 	sprintf(calcfile,  "%s.calc",  fileprefix);
+	sprintf(flagfile,  "%s.flag",  fileprefix);
 
 	ip = newDifxParametersfromfile(inputfile);
 	up = newDifxParametersfromfile(uvwfile);
@@ -1411,6 +1458,8 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	deleteDifxParameters(up);
 	deleteDifxParameters(dp);
 	deleteDifxParameters(cp);
+
+	populateFlags(D, flagfile);
 	
 	return D;
 }

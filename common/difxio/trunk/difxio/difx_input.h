@@ -109,6 +109,12 @@ typedef struct
 
 typedef struct
 {
+	double mjd1, mjd2;	/* (day) */
+	int antId;		/* antenna number */
+} DifxAntennaFlag;
+
+typedef struct
+{
 	double jobStart;	/* cjobgen job start time (mjd) */
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */
@@ -118,20 +124,21 @@ typedef struct
 	int subjobId;		/* difx specific sub-job id */
 	int subarrayId;		/* sub array number of the specified sub-job */
 	char obsCode[8];	/* project name */
-	char obsSession[8];	/* project session (ie, A, B, C1) */
+	char obsSession[8];	/* project session (e.g., A, B, C1) */
 	char taperFunction[8];	/* usually "UNIFORM" */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int specAvg;		/* number of channels to average */
 	int nOutChan;		/* number of channels to write to FITS */
 	char calcServer[32];	/* name of calc server */
 	
-	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP;
+	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
 	DifxScan	*scan;
 	DifxSource	*source;
 	DifxEOP		*eop;
+	DifxAntennaFlag *flag;
 } DifxInput;
 
 
