@@ -1,6 +1,17 @@
+joblist
+~~~~~~~
+Version 1.2
+* Initial version
 
 job2difx
 ~~~~~~~~
+Version 1.3
+* .flag file updates 
+
+Version 1.2
+* allmachines target
+* TSYS=0.0 to drive non-scaled output
+
 Version 1.1
 * Restrict max num of eop to 5 since calcif balks with more
 
@@ -9,6 +20,10 @@ Version 1.0
 
 calcif
 ~~~~~~
+Version 1.2
+* Handle CALC_SERVER env var, and command line value.
+* Improved help info
+
 Version 1.1
 * Ignore more than 5 EOPs
 * HACK -- make sure that "time" of data request is integer number of seconds.
