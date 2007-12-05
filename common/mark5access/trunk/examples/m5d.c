@@ -52,6 +52,9 @@ int decode(const char *filename, const char *formatname, const char *f,
 	float **data;
 	int i, j, k, status;
 	long long chunk = 1024;
+	long long total, unpacked;
+
+	total = unpacked = 0;
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
@@ -90,6 +93,11 @@ int decode(const char *filename, const char *formatname, const char *f,
 			printf("<EOF>\n", status);
 			//break;
 		}
+		else
+		{
+			total += chunk;
+			unpacked += status;
+		}
 
 		for(j = 0; j < chunk; j++)
 		{
@@ -100,6 +108,8 @@ int decode(const char *filename, const char *formatname, const char *f,
 			printf("\n");
 		}
 	}
+
+	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
 
 	for(i = 0; i < ms->nchan; i++)
 	{

@@ -1,3 +1,7 @@
+Version 1.1.0
+* Start of K5 support -- not yet usable
+* Implement blanking: look for fill pattern and decode to all zeros.
+
 Version 1.0.1
 * Fix new_mark5_format_from_stream()
 

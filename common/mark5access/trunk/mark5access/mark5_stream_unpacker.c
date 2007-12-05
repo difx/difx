@@ -25,12 +25,20 @@ static int mark5_stream_unpacker_next(struct mark5_stream *ms)
 {
 	ms->payload += ms->framebytes;
 
+	/* successfully got new frame, so increment it */
+	ms->framenum++;
+	ms->readposition = 0;
+
 	return 0;
 }
 
 static int mark5_stream_unpacker_next_noheaders(struct mark5_stream *ms)
 {
 	ms->payload += ms->databytes;
+
+	/* successfully got new frame, so increment it */
+	ms->framenum++;
+	ms->readposition = 0;
 
 	return 0;
 }

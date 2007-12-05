@@ -49,7 +49,16 @@ enum Mark5Format
 	MK5_FORMAT_MARK4   =  1,
 	MK5_FORMAT_MARK5B  =  2,
 	MK5_FORMAT_MARK5CB =  3,
-	MK5_FORMAT_MARK5C  =  4		/* Not Yet Implemented */
+	MK5_FORMAT_MARK5C  =  4,		/* Not Yet Implemented */
+	MK5_FORMAT_K5      =  5
+};
+
+#define MAXBLANKZONES	32
+
+enum Mark5Blanker
+{
+	MK5_BLANKER_NONE  = 0,
+	MK5_BLANKER_MARK5 = 1
 };
 
 struct mark5_stream
@@ -81,6 +90,11 @@ struct mark5_stream
 	uint8_t *datawindow;	    /* pointer to data window */
 	int readposition;	    /* index into frame of current read */
 
+	/* data blanking */
+	int log2blankzonesize;
+	int blankzonestartvalid[MAXBLANKZONES];
+	int blankzoneendvalid[MAXBLANKZONES];
+	int (*blanker)(struct mark5_stream *ms);
 
 	/* stream commands and data pointer */
 	int (*init_stream)(struct mark5_stream *ms);
@@ -144,6 +158,9 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, int ns);
 
 int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data);
 
+int mark5_stream_set_blanker(struct mark5_stream *ms,
+	enum Mark5Blanker blanker);
+
 int mark5_stream_decode(struct mark5_stream *ms, int nsamp, float **data);
 
 int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp, 
@@ -198,10 +215,31 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, 
 	int nchan, int nbit);
 
+/*   K5 format */
+
+struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
+	int submode);
+
 /*   Generate format from a string description */
 
 struct mark5_format_generic *new_mark5_format_from_string(
 	const char *formatname);
+
+
+/* DATA BLANKING ALGORITHMS */
+
+/* The null blanker */
+
+int blanker_none(struct mark5_stream *ms);
+
+/* Blanker for generic data stored on Mark5 modules */
+
+int blanker_mark5(struct mark5_stream *ms);
+
+/* Blanker for Mark4 data stored on Mark5 modules */
+
+int blanker_mark4(struct mark5_stream *ms);
+
 
 /* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA ITSELF */
 

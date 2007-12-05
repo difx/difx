@@ -27,6 +27,8 @@
 #include <string.h>
 #include "mark5access/mark5_stream.h"
 
+#define MK5B_PAYLOADSIZE 10000
+
 const uint32_t mark5bSync       = 0xABADDEED;
 const uint32_t mark5cCompatSync = 0xF00FF00F;	/* FIXME: replace with actual */
 
@@ -39,15 +41,20 @@ struct mark5_format_mark5b
 	int kday;	/* kilo-mjd -- ie 51000, 52000, ... */
 };
 
-float lut1bit[256][8];
-float lut2bit[256][4];
-
+static float lut1bit[256][8];
+static float lut2bit[256][4];
+static float zeros[8];
 
 static void initluts()
 {
 	int b, i, s, m, l;
 	const float lut2level[2] = {1.0, -1.0};
 	const float lut4level[4] = {-HiMag, 1.0, -1.0, HiMag};
+
+	for(i = 0; i < 8; i++)
+	{
+		zeros[i] = 0.0;
+	}
 
 	for(b = 0; b < 256; b++)
 	{
@@ -218,13 +225,23 @@ static int mark5b_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -243,7 +260,7 @@ static int mark5b_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
 		o++;
 		data[0][o] = fp[7];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -256,7 +273,7 @@ static int mark5b_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp-8*nblank;
 }
 
 static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
@@ -265,13 +282,23 @@ static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -286,7 +313,7 @@ static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
 		data[0][o] = fp[6];
 		data[1][o] = fp[7];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -299,7 +326,7 @@ static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - 4*nblank;
 }
 
 static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
@@ -308,13 +335,23 @@ static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -327,7 +364,7 @@ static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
 		data[2][o] = fp[6];
 		data[3][o] = fp[7];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -340,7 +377,7 @@ static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - 2*nblank;
 }
 
 static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
@@ -349,13 +386,23 @@ static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -367,7 +414,7 @@ static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
 		data[6][o] = fp[6];
 		data[7][o] = fp[7];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -380,46 +427,55 @@ static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
 
 static int mark5b_decode_16bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
 	uint8_t *buf;
-	float *fp;
+	float *fp0, *fp1;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
-		i++;
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 2;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i++;
+		}
 
-		data[0][o]  = fp[0];
-		data[1][o]  = fp[1];
-		data[2][o]  = fp[2];
-		data[3][o]  = fp[3];
-		data[4][o]  = fp[4];
-		data[5][o]  = fp[5];
-		data[6][o]  = fp[6];
-		data[7][o]  = fp[7];
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
 
-		fp = lut1bit[buf[i]];
-		i++;
-
-		data[8][o]  = fp[0];
-		data[9][o]  = fp[1];
-		data[10][o] = fp[2];
-		data[11][o] = fp[3];
-		data[12][o] = fp[4];
-		data[13][o] = fp[5];
-		data[14][o] = fp[6];
-		data[15][o] = fp[7];
-
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -432,70 +488,75 @@ static int mark5b_decode_16bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
 
 static int mark5b_decode_32bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
 	uint8_t *buf;
-	float *fp;
+	float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut1bit[buf[i]];
-		i++;
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 4;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i++;
+			fp2 = lut1bit[buf[i]];
+			i++;
+			fp3 = lut1bit[buf[i]];
+			i++;
+		}
 
-		data[0][o]  = fp[0];
-		data[1][o]  = fp[1];
-		data[2][o]  = fp[2];
-		data[3][o]  = fp[3];
-		data[4][o]  = fp[4];
-		data[5][o]  = fp[5];
-		data[6][o]  = fp[6];
-		data[7][o]  = fp[7];
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
+		data[16][o] = fp2[0];
+		data[17][o] = fp2[1];
+		data[18][o] = fp2[2];
+		data[19][o] = fp2[3];
+		data[20][o] = fp2[4];
+		data[21][o] = fp2[5];
+		data[22][o] = fp2[6];
+		data[23][o] = fp2[7];
+		data[24][o] = fp3[0];
+		data[25][o] = fp3[1];
+		data[26][o] = fp3[2];
+		data[27][o] = fp3[3];
+		data[28][o] = fp3[4];
+		data[29][o] = fp3[5];
+		data[30][o] = fp3[6];
+		data[31][o] = fp3[7];
 
-		fp = lut1bit[buf[i]];
-		i++;
-
-		data[8][o]  = fp[0];
-		data[9][o]  = fp[1];
-		data[10][o] = fp[2];
-		data[11][o] = fp[3];
-		data[12][o] = fp[4];
-		data[13][o] = fp[5];
-		data[14][o] = fp[6];
-		data[15][o] = fp[7];
-
-		fp = lut1bit[buf[i]];
-		i++;
-
-		data[16][o] = fp[0];
-		data[17][o] = fp[1];
-		data[18][o] = fp[2];
-		data[19][o] = fp[3];
-		data[20][o] = fp[4];
-		data[21][o] = fp[5];
-		data[22][o] = fp[6];
-		data[23][o] = fp[7];
-
-		fp = lut1bit[buf[i]];
-		i++;
-
-		data[24][o] = fp[0];
-		data[25][o] = fp[1];
-		data[26][o] = fp[2];
-		data[27][o] = fp[3];
-		data[28][o] = fp[4];
-		data[29][o] = fp[5];
-		data[30][o] = fp[6];
-		data[31][o] = fp[7];
-
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -508,8 +569,10 @@ static int mark5b_decode_32bitstream_1bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
+
+/************************ 2-bit decoders *********************/
 
 static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	float **data)
@@ -517,13 +580,23 @@ static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut2bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -534,7 +607,7 @@ static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
 		o++;
 		data[0][o] = fp[3];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -547,7 +620,7 @@ static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - 4*nblank;
 }
 
 static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
@@ -556,13 +629,23 @@ static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut2bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -571,7 +654,7 @@ static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
 		data[0][o] = fp[2];
 		data[1][o] = fp[3];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -584,7 +667,7 @@ static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - 2*nblank;
 }
 
 static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
@@ -593,13 +676,23 @@ static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	uint8_t *buf;
 	float *fp;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut2bit[buf[i]];
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
 		i++;
 
 		data[0][o] = fp[0];
@@ -607,7 +700,7 @@ static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
 		data[2][o] = fp[2];
 		data[3][o] = fp[3];
 
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -620,38 +713,46 @@ static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
 
 static int mark5b_decode_16bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
 	uint8_t *buf;
-	float *fp;
+	float *fp0, *fp1;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut2bit[buf[i]];
-		i++;
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 2;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+		}
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp1[0];
+		data[5][o] = fp1[1];
+		data[6][o] = fp1[2];
+		data[7][o] = fp1[3];
 
-		data[0][o] = fp[0];
-		data[1][o] = fp[1];
-		data[2][o] = fp[2];
-		data[3][o] = fp[3];
-
-		fp = lut2bit[buf[i]];
-		i++;
-
-		data[4][o] = fp[0];
-		data[5][o] = fp[1];
-		data[6][o] = fp[2];
-		data[7][o] = fp[3];
-
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -664,54 +765,59 @@ static int mark5b_decode_16bitstream_2bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
 
 static int mark5b_decode_32bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
 	uint8_t *buf;
-	float *fp;
+	float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
+	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 
 	for(o = 0; o < nsamp; o++)
 	{
-		fp = lut2bit[buf[i]];
-		i++;
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 4;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+			fp2 = lut2bit[buf[i]];
+			i++;
+			fp3 = lut2bit[buf[i]];
+			i++;
+		}
 
-		data[0][o]  = fp[0];
-		data[1][o]  = fp[1];
-		data[2][o]  = fp[2];
-		data[3][o]  = fp[3];
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp1[0];
+		data[5][o]  = fp1[1];
+		data[6][o]  = fp1[2];
+		data[7][o]  = fp1[3];
+		data[8][o]  = fp2[0];
+		data[9][o]  = fp2[1];
+		data[10][o] = fp2[2];
+		data[11][o] = fp2[3];
+		data[12][o] = fp3[0];
+		data[13][o] = fp3[1];
+		data[14][o] = fp3[2];
+		data[15][o] = fp3[3];
 
-		fp = lut2bit[buf[i]];
-		i++;
-
-		data[4][o]  = fp[0];
-		data[5][o]  = fp[1];
-		data[6][o]  = fp[2];
-		data[7][o]  = fp[3];
-
-		fp = lut2bit[buf[i]];
-		i++;
-
-		data[8][o]  = fp[0];
-		data[9][o]  = fp[1];
-		data[10][o] = fp[2];
-		data[11][o] = fp[3];
-
-		fp = lut2bit[buf[i]];
-		i++;
-
-		data[12][o] = fp[0];
-		data[13][o] = fp[1];
-		data[14][o] = fp[2];
-		data[15][o] = fp[3];
-
-		if(i >= 10000)
+		if(i >= MK5B_PAYLOADSIZE)
 		{
 			if(mark5_stream_next_frame(ms) < 0)
 			{
@@ -724,7 +830,7 @@ static int mark5b_decode_32bitstream_2bit(struct mark5_stream *ms, int nsamp,
 
 	ms->readposition = i;
 
-	return 0;
+	return nsamp - nblank;
 }
 
 /******************************************************************/
@@ -758,18 +864,28 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		return -1;
 	}
 
-	bytes = ms->datawindowsize > (1<<20) ? (1<<20) : ms->datawindowsize;
-
 	f = (struct mark5_format_mark5b *)(ms->formatdata);
 
 	ms->samplegranularity = 32/f->nbitstream;
 	ms->framebytes = 10016;
 	ms->databytes = 10000;
 	ms->payloadoffset = 16;
-	ms->framesamples = 2500*32/f->nbitstream;
+	ms->framesamples = ms->databytes*8/f->nbitstream;
+	ms->blanker = blanker_mark5;
 	if(ms->datawindow)
 	{
-		/* look for normal Mark5B sync word */
+		if(ms->datawindowsize < ms->framebytes)
+		{
+			fprintf(stderr, "Warning : Mark5B format does not "
+				"support data windows smaller than a frame.\n");
+			return -1;
+		}
+
+		/* look through entire data window, up to 1Mibytes */
+		bytes = ms->datawindowsize < (1<<20) ?
+			ms->datawindowsize : (1<<20);
+
+		/* first look for normal Mark5B sync word */
 		ms->frameoffset = findfirstframe(ms->datawindow, bytes,
 			mark5bSync);
 
@@ -779,7 +895,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		}
 		else if(ms->Mbps > 0)
 		{
-			/* look for Mark5C compatibility mode sync word */
+			/* then look for Mark5C compatibility mode sync word */
 			ms->frameoffset = findfirstframe(ms->datawindow, bytes,
 				mark5cCompatSync);
 			if(ms->frameoffset >= 0)
@@ -867,7 +983,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	static int first = 1;
 	struct mark5_format_generic *f;
 	struct mark5_format_mark5b *m;
-	int decoderindex=0;
+	int decoderindex = 0;
 	int nbitstream;
 
 	nbitstream = nchan*nbit;

@@ -6,7 +6,7 @@
 
                  National Radio Astronomy Observatory
 
-                           October 7, 2007
+                           December 4, 2007
 
 
 0 Introduction
@@ -321,7 +321,11 @@ already been allocated and pointed to by "data".  The first dimension
 of "data[][]" must be at least ms->nchan.  The second dimension must be
 at least "nsamp".  The read pointer is advanced to point at the first 
 unread sample.  "nsamp" must be a multiple of ms->samplegranularity or 
-bogus results will occur.
+bogus results will occur.  If the stream reaches end of media, a negative
+value will be returned.  On success, the number of samples decoded will be
+returned; samples that are blanked due to playback problems or data 
+replacement headers will not be counted, so this number will in general be
+less than or equal to "nsamp".
 
 
 3.1.10 int mark5_stream_decode_double(struct mark5_stream *ms, 

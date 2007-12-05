@@ -43,7 +43,6 @@ struct mark5_stream_file
 	int fetchsize;
 	int in;
 	uint8_t *buffer;
-	uint8_t *start;
 	uint8_t *end;
 	uint8_t *last;
 };
@@ -58,7 +57,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
-	n = read(F->in, F->start, F->fetchsize);
+	n = read(F->in, F->buffer, F->fetchsize);
 	
 	while(n < F->fetchsize)
 	{
@@ -89,7 +88,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		}
 
 		F->filesize = fileStatus.st_size;
-		n += read(F->in, F->start+n, F->fetchsize-n);
+		n += read(F->in, F->buffer+n, F->fetchsize-n);
 	}
 	
 	if(n < ms->framebytes)
@@ -100,7 +99,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 	
 	if(n < F->fetchsize)
 	{
-		F->last = F->start + n;
+		F->last = F->buffer + n;
 	}
 
 	return n;
@@ -120,12 +119,11 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 	F->curfile = 0;
 	F->buffer = 0;
 	F->last = 0;
-	F->start = 0;
+	F->buffer = 0;
 	F->end = 0;
 	F->fetchsize = 0;
 	lseek(F->in, F->offset, SEEK_SET);
 	F->buffer = (uint8_t *)malloc(F->buffersize);
-	F->start = F->buffer;
 	ms->datawindow = F->buffer;
 	ms->datawindowsize = F->buffersize;
 
@@ -143,10 +141,9 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 
 	if(F->fetchsize == 0)	/* finish some initialization */
 	{
-		F->start = F->buffer + ms->frameoffset;
-		nframes = (F->buffersize - ms->frameoffset)/ms->framebytes;
+		nframes = (F->buffersize)/ms->framebytes; 
 		F->fetchsize = nframes*ms->framebytes;
-		F->end = F->start + F->fetchsize;
+		F->end = F->buffer + F->fetchsize;
 		F->last = F->end;
 
 		/* back up stream a bit to load whole frames */
@@ -159,7 +156,7 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 	
 	if(ms->frame + ms->framebytes > F->end)
 	{
-		ms->frame = F->start;
+		ms->frame = F->buffer;
 
 		status = mark5_stream_file_fill(ms);
 		if(status < 0)
@@ -174,7 +171,24 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 		return -1;
 	}
 
+	/* successfully got new frame, so increment it */
+	ms->framenum++;
+	ms->readposition = 0;
+
 	return ms->framebytes;
+}
+
+static int mark5_stream_file_next_subframe(struct mark5_stream *ms)
+{
+	struct mark5_stream_file *F;
+	int nframes, status;
+
+	F = (struct mark5_stream_file *)(ms->inputdata);
+	
+	if(F->fetchsize == 0)	/* finish some initialization */
+	{
+		
+	}
 }
 
 static int mark5_stream_file_seek(struct mark5_stream *ms, int64_t framenum)
@@ -193,12 +207,11 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, int64_t framenum)
 		return -1;
 	}
 
-	F->start = F->buffer;
 	nframes = (F->buffersize)/ms->framebytes;
 	F->fetchsize = nframes*ms->framebytes;
-	F->end = F->start + F->fetchsize;
+	F->end = F->buffer + F->fetchsize;
 	F->last = F->end;
-	ms->frame = F->start;
+	ms->frame = F->buffer;
 
 	lseek(F->in, pos, SEEK_SET);
 

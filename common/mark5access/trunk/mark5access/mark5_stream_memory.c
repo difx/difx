@@ -59,6 +59,10 @@ static int mark5_stream_memory_next(struct mark5_stream *ms)
 		return -1;
 	}
 
+	/* successfully got new frame, so increment it */
+	ms->framenum++;
+	ms->readposition = 0;
+
 	return ms->framebytes;
 }
 

@@ -44,15 +44,13 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 		return -1;
 	}
 	
-	/* successfully got new frame, so increment it */
-	ms->framenum++;
-	ms->readposition = 0;
-
 	/* validate frame */
 	/* FIXME -- do I add this later or not?
 	   ms->validate(ms);
 	 */
-
+	
+	/* blank bad data if any */
+	ms->blanker(ms);
 
 	/* set payload pointer to point to start of actual data */
 	if(ms->frame)
@@ -256,6 +254,24 @@ struct mark5_format_generic *new_mark5_format_from_string(
 
 		return new_mark5_format_mark5b(a, b, c);
 	}
+	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d", &a, &b, &c) != 3)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_k5(a, b, c, 1);
+	}
+	else if(strncasecmp(formatname, "K5-", 3) == 0)
+	{
+		if(sscanf(formatname+3, "%d-%d-%d", &a, &b, &c) != 3)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_k5(a, b, c, 0);
+	}
 	else
 	{
 		fprintf(stderr, "Unknown format : %s\n", formatname);
@@ -375,6 +391,28 @@ struct mark5_format *new_mark5_format_from_stream(
 		return mf;
 	}
 
+	/* k5 */
+	f = new_mark5_format_k5(0, 0, 0, -1);
+	set_format(ms, f);
+	status = mark5_format_init(ms);
+	if(status < 0)
+	{
+		if(f->final_format)
+		{
+			f->final_format(ms);
+		}
+		free(f);
+	}
+	else
+	{
+		copy_format(ms, mf);
+		mf->format = MK5_FORMAT_K5;
+		mf->ntrack = 0;
+		delete_mark5_stream(ms);
+		
+		return mf;
+	}
+
 	
 	/* No match found */
 	free(mf);
@@ -420,6 +458,8 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 		failed = 1;
 	}
 
+	ms->blanker = blanker_none;
+
 	if(failed)
 	{
 		if(f)
@@ -453,6 +493,8 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 		
 		return 0;
 	}
+
+	ms->blanker(ms);
 
 	return ms;
 }
@@ -626,6 +668,24 @@ int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data)
 	return 0;
 }
 
+int mark5_stream_set_blanker(struct mark5_stream *ms, 
+	enum Mark5Blanker blanker)
+{
+	switch(blanker)
+	{
+	case MK5_BLANKER_NONE:
+		ms->blanker = blanker_none;
+		break;
+	case MK5_BLANKER_MARK5:
+		ms->blanker = blanker_mark5;
+		break;
+	default:
+		return -1;
+	}
+
+	return ms->blanker(ms);
+}
+
 /*********************** data decode routines **********************/
 
 
@@ -660,7 +720,7 @@ int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp,
 	int r;
 	
 	r = mark5_stream_decode(ms, nsamp, (float **)data);
-	if(r) 
+	if(r < 0) 
 	{
 		return r;
 	}
@@ -678,7 +738,7 @@ int mark5_stream_decode_double(struct mark5_stream *ms, int nsamp,
 		}
 	}
 
-	return 0;
+	return r;
 }
 
 int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp, 
@@ -691,7 +751,7 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 	int r;
 	
 	r = mark5_stream_decode(ms, nsamp, (float **)data);
-	if(r) 
+	if(r < 0) 
 	{
 		return r;
 	}
@@ -710,7 +770,7 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 		}
 	}
 
-	return 0;
+	return r;
 }
 
 int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, 
@@ -723,7 +783,7 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp,
 	int r;
 	
 	r = mark5_stream_decode(ms, nsamp, (float **)data);
-	if(r) 
+	if(r < 0) 
 	{
 		return r;
 	}
@@ -742,7 +802,7 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp,
 		}
 	}
 
-	return 0;
+	return r;
 }
 
 
