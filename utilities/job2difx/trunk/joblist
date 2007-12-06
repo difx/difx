@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+
+from sys import argv, exit
+from glob import glob
+from string import split, strip, find
+
+program = 'joblist'
+version = '1.2'
+verdate = '20071101'
+author  = 'Walter Brisken'
+
+showstatus = 1
+
+def usage():
+	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	exit(0)
+
+def hasfits(input):
+	s = split(input, 'job')
+	if len(s) == 1:
+		f = s[0]
+	elif len(s) == 2:
+		f = s[0] + s[1]
+	else:
+		b = s[0]
+		for q in s[1:-1]:
+			b = b + 'job' + q
+		f = b + s[-1]
+
+	fitsfile = f[:-5]+'FITS'
+	
+	if len(glob(fitsfile)) > 0:
+		return 1
+	
+	return 0
+
+def genband(fq):
+	band = ''
+	bands = [ \
+		[300.0, 400.0, 'P'], \
+		[400.0, 800.0, '6'], \
+		[1000.0, 2000.0, 'L'], \
+		[2000.0, 4000.0, 'S'], \
+		[4000.0, 7000.0, 'C'], \
+		[7000.0, 10000.0, 'X'], \
+		[10000.0, 16000.0, 'U'], \
+		[16000.0, 26500.0, 'K'], \
+		[26000.0, 38000.0, 'A'], \
+		[38000.0, 50000.0, 'Q'], \
+		[75000.0, 98000.0, 'W'] ]
+		
+	for b in bands:
+		ok = 1
+		for f in fq:
+			if f > b[0] and f < b[1] and ok:
+				band = band + b[2]
+				ok = 0
+	while len(band) < 2:
+		band = band + ' '
+
+	return band
+	
+def getstat(input):
+	base = input[0:-5]
+	g = glob(base+'*')
+
+	files = [['calc', 'c'], \
+		 ['machines', 'm'], \
+		 ['threads', 't'], \
+		 ['uvw', 'u'], \
+		 ['delay', 'd'], \
+		 ['rate', 'r'], \
+		 ['difx', 'v']]
+
+	s = '['
+	for f in files:
+		if base+f[0] in g:
+			s = s + f[1]
+		else:
+			s = s + ' '
+	if hasfits(input):
+		s = s + 'F'
+	else:
+		s = s + ' '
+	s = s + ']'
+	return s
+	
+def summarize(input, i, n, dotree):
+	if i == n-1:
+		c = '`'
+	else:
+		c = '|'
+	s = split(input, '/')
+	data = open(input).readlines()
+	if showstatus:
+		stat = getstat(input)
+	else:
+		stat = ' '
+	sum = ''
+	ants = ''
+	nfreq = 0
+	nbit = 0
+	bw = 0
+	npol = 0
+	fq = []
+	nsec = 0
+	for d in data:
+		if d[:19] == 'EXECUTE TIME (SEC):':
+			nsec = int(d[20:])
+			sum = sum + (' %6ds' % int(d[20:]))
+		if d[:14] == 'TELESCOPE NAME':
+			ants = ants + strip(d[20:]) + ','
+		if d[:13] == 'FREQ ENTRIES:':
+			nfreq = int(d[20:])
+		if d[:18] == 'QUANTISATION BITS:':
+			nbit = int(d[20:])
+		if d[:9]  == 'BW (MHZ) ':
+			bw = int(float(d[20:]))
+		if d[:11] == 'FREQ (MHZ) ':
+			fq.append(float(d[20:]))
+		if d[:17] == 'POL PRODUCTS 0/0:':
+			npol = int(d[20:])
+			
+	if npol == 4:
+		nchan = nfreq*2
+	else:
+		nchan = nfreq*npol
+
+	tripple = '%d-%d-%d' % (bw*nchan*nbit*2, nchan, nbit)
+			
+	band = genband(fq)
+	
+	sum = '%s %s%6ds %8s  %s' % (stat, band, nsec, tripple, ants[:-1])
+	if dotree:
+		tree = '%c- ' % c
+	else:
+		tree = ''
+	print '%s%s %s' % (tree, s[-1], sum)
+	
+def run(path, dotree):
+	if dotree:
+		print path
+	inputs = glob(path+'/*.input')
+	inputs.sort()
+	n = len(inputs)
+	for i in range(n):
+		summarize(inputs[i], i, n, dotree)
+
+paths = []
+
+if len(argv) == 1:
+	paths.append('.')
+else:
+	for a in argv[1:]:
+		if a[0] == '-':
+			if a == '-h' or a == '--help':
+				usage()
+		else:
+			paths.append(a)
+
+if len(paths) > 1:
+	dotree = 1
+else:
+	dotree = 0
+
+for p in paths:
+	run(p, dotree)

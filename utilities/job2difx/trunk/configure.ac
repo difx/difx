@@ -1,10 +1,9 @@
-AC_INIT([job2difx], [1.1], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([job2difx], [1.2], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE
 
 AC_PROG_CC
-AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
 PKG_CHECK_MODULES(DIFXIO, difxio)

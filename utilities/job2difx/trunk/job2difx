@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from sys import argv, exit
 from string import strip, split, find, lower
@@ -7,8 +7,8 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.1'
-verdate = '20071027'
+version = '1.3'
+verdate = '20071119'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
@@ -576,7 +576,7 @@ def maketelescopetable(job_clock, subarray, antennalist, startmjd):
 		tele.append("TELESCOPE NAME %d:   %s" % 
 			(i, antennalist[ant_index]))
 		tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
-		tele.append("CLOCK RATE(us/s) %d: %e" % (i, rate))
+		tele.append("CLOCK RATE(us/s) %d: %s" % (i, rate))
 	return tele
 
 # note that nant is the number of antennas involved in this particular
@@ -721,7 +721,7 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid):
 		if format_name == 'VLBA':
 			format_name = 'NATIVE_MKV_VLBA'
 		dst.append("TELESCOPE INDEX:    %d" % ds_num)
-		dst.append("TSYS:               1.0")
+		dst.append("TSYS:               0.0")
 		dst.append("DATA FORMAT:        %s" % format_name)
 		dst.append("FANOUT:             %d" % fanout)
 		dst.append("TRACKS:             %d" % tracks)
@@ -858,10 +858,11 @@ def makeflagtable(scans, subarray, subarray_num):
 	flag = []
 	for scan in scans:
 		ants = scan[6][subarray_num][1]
-		for a in subarray:
+		for i in range(len(subarray)):
+			a = subarray[i]
 			if a not in ants:
 				flag.append("%12.6f %12.6f %d" % \
-					(scan[2], scan[3], a))
+					(scan[2], scan[3], i))
 	return flag
 
 
@@ -1123,11 +1124,13 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 			# make subarray flags
 			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
 					sub, subarray_num)
-			filename = '%s.flag' % filebase
-			fp = open(filename, "w") 
-			for f in flagtable:
-				fp.write(f+'\n')
-			fp.close()
+			if len(flagtable) > 0:
+				filename = '%s.flag' % filebase
+				fp = open(filename, "w") 
+				fp.write("%d\n" % len(flagtable))
+				for f in flagtable:
+					fp.write(f+'\n')
+				fp.close()
 			
 		subjob_num += 1
 
@@ -1202,11 +1205,34 @@ def combinejobs(jobs):
 		if len(j) > 2:
 			merge(j)
 
+
+def dupsched(job, masterant):
+	obs = job['obs']
+	ants = []
+	masterobs = []
+	for row in obs:
+		ant = row['name']
+		if ant == masterant:
+			masterobs.append(row)
+		if not ant in ants:
+			ants.append(ant)
+	obs = []
+	for ant in ants:
+		for row in masterobs:
+			r = {}
+			for k in row.keys():
+				if k == 'name':
+					r['name'] = ant
+				else:
+					r[k] = row[k]
+			obs.append(r)
+	job['obs'] = obs
+
 #############
 
 def genMakefile(joblist):
 	all = "all: $(fitss)"
-	clean = "clean:\n\trm -rf $(uvws) $(threads) $(machines) $(delays) $(rates) $(flags) $(calcs) $(fitss)"
+	clean = "clean:\n\trm -rf $(uvws)\n\trm -rf $(threads)\n\trm -rf $(machines)\n\trm -rf $(delays)\n\trm -rf $(rates)\n\trm -rf $(flags)\n\trm -rf $(calcs)\n\trm -rf $(fitss)"
 	uvws = "uvws ="
 	inputs = "inputs ="
 	delays = "delays ="
@@ -1226,7 +1252,7 @@ def genMakefile(joblist):
 		machines += " %s.machines" % job
 		inputs += " %s.input" % job
 		delays += " %s.delay" % job
-		rates += " %s.rates" % job
+		rates += " %s.rate" % job
 		calcs += " %s.calc" % job
 		flags += " %s.flag" % job
 		fitss += " %s.FITS" % jnum
@@ -1245,6 +1271,8 @@ def genMakefile(joblist):
 	Makefile.write('delays: $(uvws)\n\n')
 	Makefile.write('uvws: $(uvws)\n\n')
 	Makefile.write("FITS: $(fitss)\n\n")
+	Makefile.write('allmachines:\n')
+	Makefile.write('\tgenmachines $(inputs)\n\n')
 	Makefile.write(clean+"\n\n")
 	for job in joblist:
 		if job[0:3] == 'job':
@@ -1272,6 +1300,7 @@ else:
 	fftsize = 0
 	nchan = 0
 	files = []
+	masterant = ''
 	for arg in argv[1:]:
 		kv = split(arg, '=')
 		if len(kv) == 2:
@@ -1279,6 +1308,8 @@ else:
 				ants = split(kv[1], ',')
 				for a in ants:
 					antennalist.append(a)
+			elif kv[0] == 'M':
+				masterant = kv[1]
 			elif kv[0] == 'fftsize':
 				fftsize = int(kv[1])
 			elif kv[0] == 'nchan':
@@ -1294,7 +1325,12 @@ else:
 	# read jobs
 	for file in files:
 		job = readjob(file[0])
+		# dup master antenna's schedule to other ants
+		if masterant != '':
+			dupsched(job, masterant)
 		file.append(job)
+
+
 	# combine jobs if possible
 	combinejobs(files)
 	# process jobs

@@ -14,7 +14,6 @@ make install
 To install from a fresh svn checkout, run the following:
 
 aclocal
-libtoolize --copy --force
 autoconf
 autoheader
 automake -a
