@@ -121,6 +121,11 @@ int blanker_mark5(struct mark5_stream *ms)
 	int nblanked = 0;
 	int off;
 
+	if(!ms->frame)
+	{
+		return 0;
+	}
+
 	off = ms->payloadoffset;
 
 	/* To be compatible with Mark5B and VLBA/Mark4 formats, the

@@ -25,7 +25,7 @@
 
 int blanker_none(struct mark5_stream *ms)
 {
-	ms->log2blankzonesize = 32;
+	ms->log2blankzonesize = 31;
 	ms->blankzonestartvalid[0] = 0;
 	ms->blankzoneendvalid[0] = 1<<31;
 

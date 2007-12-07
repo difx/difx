@@ -2187,7 +2187,9 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	ms->payloadoffset = 12*f->ntrack;
 	ms->framesamples = 20000*f->fanout;
 	ms->format = MK5_FORMAT_VLBA;
+/*
 	ms->blanker = blanker_mark5;
+*/
 	if(ms->datawindow)
 	{
 		if(ms->datawindowsize < ms->framebytes)

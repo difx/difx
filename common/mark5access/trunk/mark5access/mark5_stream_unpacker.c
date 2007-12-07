@@ -48,6 +48,8 @@ static int mark5_stream_unpacker_init(struct mark5_stream *ms)
 	ms->frame = 0;
 	ms->datawindow = 0;
 	ms->datawindowsize = 0;
+	ms->blanker = blanker_none;
+	ms->log2blankzonesize = 31;
 	ms->mjd = -1;
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
