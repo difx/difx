@@ -153,8 +153,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 		return 0;
 	}
 	
-	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
-	memset(ms, 0, sizeof(struct mark5_stream));
+	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
 	
 	if(set_stream(ms, s) < 0)
 	{
@@ -177,7 +176,8 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_vlba(0, nbit*ntrack*fanout, nbit, fanout);
+		f = new_mark5_format_vlba(0, ntrack/(nbit*fanout), 
+			nbit, fanout);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -198,7 +198,8 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	/* Mark4 modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_mark4(0, nbit*ntrack*fanout, nbit, fanout);
+		f = new_mark5_format_mark4(0, ntrack/(nbit*fanout), 
+			nbit, fanout);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -293,11 +294,9 @@ struct mark5_format *new_mark5_format_from_stream(
 		return 0;
 	}
 	
-	mf = (struct mark5_format *)malloc(sizeof(struct mark5_format));
-	memset(mf, 0, sizeof(struct mark5_format));
+	mf = (struct mark5_format *)calloc(1, sizeof(struct mark5_format));
 	
-	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
-	memset(ms, 0, sizeof(struct mark5_stream));
+	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
 	
 	if(set_stream(ms, s) < 0)
 	{
@@ -436,8 +435,8 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	int status;
 	int failed = 0;
 
-	ms = (struct mark5_stream *)malloc(sizeof(struct mark5_stream));
-	memset(ms, 0, sizeof(struct mark5_stream));
+	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
+
 	ms->format = MK5_FORMAT_UNKNOWN;
 	
 	if(!ms)

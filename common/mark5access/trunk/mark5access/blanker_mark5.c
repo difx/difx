@@ -173,12 +173,6 @@ int blanker_mark5(struct mark5_stream *ms)
 			}
 		}
 
-		fprintf(stderr, "blanker[%d] (%d:%d) %d %d  %d\n", zone,
-			startOK, endOK, 
-			ms->blankzonestartvalid[zone],
-			ms->blankzoneendvalid[zone],
-			nblanked);
-
 		zone++;
 	}
 
