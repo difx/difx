@@ -46,6 +46,7 @@ static int mark5_stream_unpacker_next_noheaders(struct mark5_stream *ms)
 static int mark5_stream_unpacker_init(struct mark5_stream *ms)
 {
 	ms->frame = 0;
+	ms->payload = 0;
 	ms->datawindow = 0;
 	ms->datawindowsize = 0;
 	ms->blanker = blanker_none;
@@ -89,6 +90,8 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, 
 	int nsamp)
 {
+	ms->blanker(ms);
+
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (uint8_t *)packed;

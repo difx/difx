@@ -119,23 +119,24 @@ int blanker_mark5(struct mark5_stream *ms)
 	uint64_t *data;
 	int startOK, endOK, zone=0;
 	int nblanked = 0;
-	int off;
 
-	if(!ms->frame)
+	if(!ms->payload)
 	{
+		ms->log2blankzonesize = 31;
+		ms->blankzonestartvalid[0] = 0;
+		ms->blankzoneendvalid[0] = 0;
+
 		return 0;
 	}
-
-	off = ms->payloadoffset;
 
 	/* To be compatible with Mark5B and VLBA/Mark4 formats, the
 	 * following must be either 14 or 15.
 	 */
 	ms->log2blankzonesize = 15;	/* 32768 bytes in size */
 	zonesize = 1 << (ms->log2blankzonesize-3);
-	nword = ms->framebytes/8;
+	nword = ms->databytes/8;
 
-	data = (uint64_t *)ms->frame;
+	data = (uint64_t *)ms->payload;
 
 	for(b = 0; b < nword; b += zonesize)
 	{
@@ -163,18 +164,18 @@ int blanker_mark5(struct mark5_stream *ms)
 		{
 			ms->blankzonestartvalid[zone] = 0;
 			ms->blankzoneendvalid[zone] = 
-				findfirstinvalid(data, b, e) - off;
-			nblanked += (e*8 - (ms->blankzoneendvalid[zone] + off));
+				findfirstinvalid(data, b, e);
+			nblanked += (e*8 - (ms->blankzoneendvalid[zone]));
 		}
 		else
 		{
 			ms->blankzonestartvalid[zone] =
-				findfirstvalid(data, b, e) - off;
+				findfirstvalid(data, b, e);
 			ms->blankzoneendvalid[zone] = 1<<30;
 			if(ms->blankzonestartvalid[zone] > b*8)
 			{
 				nblanked += (ms->blankzonestartvalid[zone] 
-					+ off - b*8);
+					- b*8);
 			}
 		}
 

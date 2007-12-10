@@ -50,9 +50,8 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 	 */
 	
 	/* blank bad data if any */
-/*
 	ms->blanker(ms);
-*/
+
 	/* set payload pointer to point to start of actual data */
 	if(ms->frame)
 	{

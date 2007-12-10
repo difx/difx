@@ -17,10 +17,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE
-#endif
-
 #include "mark5access/mark5_stream.h"
 
 /* Same as generic mark5 blanker, but also make sure start and end of each 
@@ -40,7 +36,7 @@ int blanker_mark4(struct mark5_stream *ms)
 	delta = s - ms->blankzonestartvalid[0];
 	if(delta > 0)
 	{
-		r -= delta;
+		r += delta;
 	}
 	delta = ms->blankzoneendvalid[z] - e;
 	if(delta > 0)
@@ -49,7 +45,7 @@ int blanker_mark4(struct mark5_stream *ms)
 		{
 			delta = 64*ms->framebytes/20000;
 		}
-		r -= delta;
+		r += delta;
 	}
 
 	ms->blankzonestartvalid[0] = s;
