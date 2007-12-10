@@ -51,8 +51,9 @@ struct mark5_stream_file
 static int mark5_stream_file_fill(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
-	struct stat fileStatus;
+	struct stat64 fileStatus;
 	int n;
+	int err;
 	char fn[64];
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
@@ -76,14 +77,15 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		F->in = open64(F->files[F->curfile], O_RDONLY);
 		if(F->in < 0)
 		{
-			fprintf(stderr, "File cannot be opened : %s\n",
+			fprintf(stderr, "File cannot be opened (2) : %s\n",
 				F->files[F->curfile]);
 			return -1;
 		}
-		if(fstat(F->in, &fileStatus) < 0)
+		err = fstat64(F->in, &fileStatus);
+		if(err < 0)
 		{
-			fprintf(stderr, "Error looking at file : %s\n",
-				F->files[F->curfile]);
+			fprintf(stderr, "Error looking at file (2) : %s : %d\n",
+				F->files[F->curfile], err);
 			return -1;
 		}
 
@@ -249,19 +251,25 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 {
 	struct mark5_stream_generic *V;
 	struct mark5_stream_file *F;
-	struct stat fileStatus;
+	struct stat64 fileStatus;
 	int in;
+	int err;
 
 	in = open64(filename, O_RDONLY);
 
 	if(in < 0)
 	{
-		fprintf(stderr, "File cannot be opened : %s\n", filename);
+		fprintf(stderr, "File cannot be opened (1) : %s\n", filename);
+		printf("in = %d\n", in);
+		perror("perror");
 		return 0;
 	}
-	if(fstat(in, &fileStatus) < 0)
+	err = fstat64(in, &fileStatus);
+	if(err < 0)
 	{
-		fprintf(stderr, "Error looking at file : %s\n", filename);
+		fprintf(stderr, "Error looking at file (1) : %s : %d\n", filename, err);
+		printf("in = %d\n", in);
+		perror("perror");
 		close(in);
 		return 0;
 	}
