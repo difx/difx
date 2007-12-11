@@ -243,18 +243,25 @@ int blanker_mark4(struct mark5_stream *ms);
 
 /* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA ITSELF */
 
-/* contains information that can be determined by a glance at data */
+/* contains information that can be determined by a glance at data or name */
 struct mark5_format
 {
 	enum Mark5Format format;  /* format type */
+	int Mbps, nchan, nbit;
 	int frameoffset;	  /* bytes from stream start to 1st frame */
 	int framebytes;		  /* bytes in a frame */
 	int framens;		  /* duration of a frame in nanosec */
 	int mjd, sec, ns;	  /* date and time of first frame */
 	int ntrack;		  /* for Mark4 and VLBA formats only */
+	int fanout;		  /* for Mark4 and VLBA formats only */
 };
 
-struct mark5_format *new_mark5_format_from_stream(struct mark5_stream_generic *s);
+const char *mark5_stream_list_formats();
+
+struct mark5_format *new_mark5_format_from_name(const char *formatname);
+
+struct mark5_format *new_mark5_format_from_stream(
+	struct mark5_stream_generic *s);
 
 void delete_mark5_format(struct mark5_format *mf);
 

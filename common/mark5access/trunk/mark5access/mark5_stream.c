@@ -119,6 +119,9 @@ static int copy_format(const struct mark5_stream *ms,
 	mf->mjd         = ms->mjd;
 	mf->sec         = ms->sec;
 	mf->ns          = ms->ns;
+	mf->Mbps        = ms->Mbps;
+	mf->nchan       = ms->nchan;
+	mf->nbit        = ms->nbit;
 
 	return 0;
 }
@@ -281,6 +284,89 @@ struct mark5_format_generic *new_mark5_format_from_string(
 	}
 }
 
+/* a string containg a list of supported formats */
+const char *mark5_stream_list_formats()
+{
+	return "VLBA1_*-*-*-*, MKIV1_*-*-*-*, MARK5B-*-*-*";
+}
+                                                                                /* given a format string, populate a structure with info about format */
+struct mark5_format *new_mark5_format_from_name(const char *formatname)
+{
+	int a=1, b=0, c=0, d=0, ntrack=0;
+	int framebytes, framens;
+	struct mark5_format *f;
+	enum Mark5Format F;
+
+	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VLBA;
+		framebytes = 2520*a*c*d;
+		framens = (20000*a*c*d)/b;
+		ntrack = a*c*d;
+	}
+	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_MARK4;
+		framebytes = 2500*a*c*d;
+		framens = (20000*a*c*d)/b;
+		ntrack = a*c*d;
+	}
+	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
+	{
+		if(sscanf(formatname+7, "%d-%d-%d", &b, &c, &d) != 3)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_MARK5B;
+		framebytes = 10000;
+		framens = 80000/b;
+	}
+	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d", &b, &c, &d) != 3)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_K5;
+		framebytes = 32 + 1000000*b/8;
+		framens = 1000000000;
+	}
+	else if(strncasecmp(formatname, "K5-", 3) == 0)
+	{
+		if(sscanf(formatname+3, "%d-%d-%d", &b, &c, &d) != 3)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_K5;
+		framebytes = 8 + 1000000*b/8;
+		framens = 1000000000;
+	}
+	else
+	{
+		return 0;
+	}
+
+	f = (struct mark5_format *)calloc(1, sizeof(struct mark5_format));
+	f->format = F;
+	f->fanout = a;
+	f->Mbps = b;
+	f->nchan = c;
+	f->nbit = d;
+	f->framebytes = framebytes;
+	f->ntrack = ntrack;
+	f->framens = framens;
+
+	return f;
+}
+
 struct mark5_format *new_mark5_format_from_stream(
 	struct mark5_stream_generic *s)
 {
@@ -337,6 +423,7 @@ struct mark5_format *new_mark5_format_from_stream(
 			copy_format(ms, mf);
 			mf->format = MK5_FORMAT_VLBA;
 			mf->ntrack = ntrack;
+			mf->fanout = ntrack/(ms->nbit*ms->nchan);
 			delete_mark5_stream(ms);
 			
 			return mf;
@@ -362,6 +449,7 @@ struct mark5_format *new_mark5_format_from_stream(
 			copy_format(ms, mf);
 			mf->format = MK5_FORMAT_MARK4;
 			mf->ntrack = ntrack;
+			mf->fanout = ntrack/(ms->nbit*ms->nchan);
 			delete_mark5_stream(ms);
 			
 			return mf;
@@ -825,3 +913,4 @@ int mark5_stream_fix_mjd(struct mark5_stream *ms, int refmjd)
 		return 0;
 	}
 }
+
