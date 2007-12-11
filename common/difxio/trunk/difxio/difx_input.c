@@ -26,15 +26,9 @@
 DifxIF *newDifxIFArray(int nIF)
 {
 	DifxIF *di;
-	int i;
 
-	di = (DifxIF *)malloc(nIF*sizeof(DifxConfig));
+	di = (DifxIF *)calloc(nIF, sizeof(DifxConfig));
 	
-	for(i = 0; i < nIF; i++)
-	{
-		di[i].nPol = 0;
-	}
-
 	return di;
 }
 
@@ -72,14 +66,10 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	DifxConfig *dc;
 	int c;
 
-	dc = (DifxConfig *)malloc(nConfig*sizeof(DifxConfig));
+	dc = (DifxConfig *)calloc(nConfig, sizeof(DifxConfig));
 	for(c = 0; c < nConfig; c++)
 	{
-		dc[c].name[0] = 0;
-		dc[c].nIF = 0;
-		dc[c].IF = 0;
 		dc[c].doPolar = -1;
-		dc[c].clockOffset = 0;
 	}
 	
 	return dc;
@@ -129,7 +119,7 @@ DifxFreq *newDifxFreqArray(int nFreq)
 {
 	DifxFreq *df;
 
-	df = (DifxFreq *)malloc(nFreq*sizeof(DifxFreq));
+	df = (DifxFreq *)calloc(nFreq, sizeof(DifxFreq));
 
 	return df;
 }
@@ -154,15 +144,8 @@ void printDifxFreq(const DifxFreq *df)
 DifxAntenna *newDifxAntennaArray(int nAntenna)
 {
 	DifxAntenna* da;
-	int a;
 
-	da = (DifxAntenna *)malloc(nAntenna*sizeof(DifxAntenna));
-	for(a = 0; a < nAntenna; a++)
-	{
-		da[a].name[0] = 0;
-		da[a].mount[0] = 0;
-		da[a].vsn[0] = 0;
-	}
+	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
 	
 	return da;
 }
@@ -193,11 +176,9 @@ DifxSource *newDifxSourceArray(int nSource)
 	DifxSource *ds;
 	int s;
 
-	ds = (DifxSource *)malloc(nSource*sizeof(DifxSource));
+	ds = (DifxSource *)calloc(nSource, sizeof(DifxSource));
 	for(s = 0; s < nSource; s++)
 	{
-		ds[s].name[0] = 0;
-		ds[s].calcode[0] = 0;
 		ds[s].configId = -1;
 	}
 	
@@ -234,10 +215,7 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint)
 
 	for(a = 0; a < nAntenna; a++)
 	{
-		dm[a] = (DifxModel *)malloc(N*sizeof(DifxModel));
-
-		/* init to zero */
-		memset(dm[a], 0, N*sizeof(DifxModel));
+		dm[a] = (DifxModel *)calloc(N, sizeof(DifxModel));
 
 		/* offset the array so we can index -1 */
 		dm[a]++;
@@ -276,11 +254,9 @@ DifxScan *newDifxScanArray(int nScan)
 	DifxScan *ds;
 	int s;
 
-	ds = (DifxScan *)malloc(nScan*sizeof(DifxScan));
+	ds = (DifxScan *)calloc(nScan, sizeof(DifxScan));
 	for(s = 0; s < nScan; s++)
 	{
-		ds[s].model = 0;
-		ds[s].name[0] = 0;
 		ds[s].configId = -1;
 		ds[s].sourceId = -1;
 	}
@@ -330,7 +306,7 @@ DifxEOP *newDifxEOPArray(int nEOP)
 {
 	DifxEOP *de;
 
-	de = (DifxEOP *)malloc(nEOP*sizeof(DifxEOP));
+	de = (DifxEOP *)calloc(nEOP, sizeof(DifxEOP));
 
 	return de;
 }
@@ -357,30 +333,9 @@ DifxInput *newDifxInput()
 {
 	DifxInput *D;
 
-	D = (DifxInput *)malloc(sizeof(DifxInput));
-	D->nConfig = 0;
-	D->nFreq = 0;
-	D->nAntenna = 0;
-	D->nScan = 0;
-	D->nSource = 0;
-	D->nEOP = 0;
-	D->nFlag = 0;
-	D->config = 0;
-	D->freq = 0;
-	D->antenna = 0;
-	D->scan = 0;
-	D->source = 0;
-	D->eop = 0;
-	D->flag = 0;
-	D->jobId = 0;
-	D->refFreq = 0.0;
-	D->jobStart = 0.0;
-	D->jobStop = 0.0;
-	D->subjobId = 0;
-	D->subarrayId = 0;
+	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
 	strcpy(D->obsCode, "DIFX");
-	strcpy(D->obsSession, "");
 	strcpy(D->taperFunction, "UNIFORM");
 
 	return D;
@@ -745,10 +700,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			(D->nAntenna+1)*sizeof(double));
 		for(a = 0; a < D->nAntenna; a++)
 		{
-			D->config[c].clockOffset[a] = (double *)malloc(
-				D->config[c].nIF*sizeof(double));
-			memset(D->config[c].clockOffset[a], 0,
-				D->config[c].nIF*sizeof(double));
+			D->config[c].clockOffset[a] = (double *)calloc(
+				D->config[c].nIF, sizeof(double));
 		}
 		D->config[c].clockOffset[D->nAntenna] = 0; /* null terminate */
 		

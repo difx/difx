@@ -29,21 +29,13 @@ DifxParameters *newDifxParameters()
 	DifxParameters *dp;
 	DifxRow *row;
 	int alloc_rows;
-	int i;
 
+	/* initial size of array, will grow if needed */
 	alloc_rows = 100;
 
-	dp = (DifxParameters *)malloc(sizeof(DifxParameters));
-	dp->num_rows = 0;
+	dp = (DifxParameters *)calloc(1, sizeof(DifxParameters));
 	dp->alloc_rows = alloc_rows;
-	dp->rows = (DifxRow *)malloc(alloc_rows*sizeof(DifxRow));
-	for(i = 0; i < alloc_rows; i++)
-	{
-		row = dp->rows + i;
-		row->line = 0;
-		row->key = 0;
-		row->value = 0;
-	}
+	dp->rows = (DifxRow *)calloc(alloc_rows, sizeof(DifxRow));
 
 	return dp;
 }
@@ -173,8 +165,7 @@ static void parserow(DifxRow *row)
 	}
 	else
 	{
-		row->value = (char *)malloc(2);
-		row->value[0] = 0;
+		row->value = (char *)calloc(2, 1);
 	}
 }
 
