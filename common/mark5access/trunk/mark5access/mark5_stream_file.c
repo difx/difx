@@ -29,7 +29,7 @@
 #include <sys/stat.h>
 #include "mark5access/mark5_stream.h"
 
-#define MAX_MARK5_STREAM_FILES	20	/* probably way too small */
+#define MAX_MARK5_STREAM_FILES	32	/* probably way too small */
 
 struct mark5_stream_file
 {
@@ -77,15 +77,19 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		F->in = open64(F->files[F->curfile], O_RDONLY);
 		if(F->in < 0)
 		{
-			fprintf(stderr, "File cannot be opened (2) : %s\n",
-				F->files[F->curfile]);
+			fprintf(stderr, "File cannot be opened (2) : <%s> : "
+				"in = %d\n",
+				F->files[F->curfile], F->in);
+			perror(0);
 			return -1;
 		}
 		err = fstat64(F->in, &fileStatus);
 		if(err < 0)
 		{
-			fprintf(stderr, "Error looking at file (2) : %s : %d\n",
+			fprintf(stderr, "Error looking at file (2) : "
+				"<%s> : err = %d\n",
 				F->files[F->curfile], err);
+			perror(0);
 			return -1;
 		}
 
@@ -191,6 +195,8 @@ static int mark5_stream_file_next_subframe(struct mark5_stream *ms)
 	{
 		
 	}
+
+	return 0;
 }
 
 static int mark5_stream_file_seek(struct mark5_stream *ms, int64_t framenum)
@@ -259,17 +265,17 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 
 	if(in < 0)
 	{
-		fprintf(stderr, "File cannot be opened (1) : %s\n", filename);
-		printf("in = %d\n", in);
-		perror("perror");
+		fprintf(stderr, "File cannot be opened (1) : <%s> : in = %d\n", 
+			filename, in);
+		perror(0);
 		return 0;
 	}
 	err = fstat64(in, &fileStatus);
 	if(err < 0)
 	{
-		fprintf(stderr, "Error looking at file (1) : %s : %d\n", filename, err);
-		printf("in = %d\n", in);
-		perror("perror");
+		fprintf(stderr, "Error looking at file (1) : <%s> : "
+			"err = %d\n", filename, err);
+		perror(0);
 		close(in);
 		return 0;
 	}

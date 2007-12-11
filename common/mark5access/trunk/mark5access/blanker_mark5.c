@@ -122,7 +122,7 @@ int blanker_mark5(struct mark5_stream *ms)
 
 	if(!ms->payload)
 	{
-		ms->log2blankzonesize = 31;
+		ms->log2blankzonesize = 30;
 		ms->blankzonestartvalid[0] = 0;
 		ms->blankzoneendvalid[0] = 0;
 

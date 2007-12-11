@@ -50,7 +50,7 @@ static int mark5_stream_unpacker_init(struct mark5_stream *ms)
 	ms->datawindow = 0;
 	ms->datawindowsize = 0;
 	ms->blanker = blanker_none;
-	ms->log2blankzonesize = 31;
+	ms->log2blankzonesize = 30;
 	ms->mjd = -1;
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
@@ -90,8 +90,6 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, 
 	int nsamp)
 {
-	ms->blanker(ms);
-
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (uint8_t *)packed;
@@ -102,5 +100,7 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 	}
 	ms->readposition = 0;
 	
+	ms->blanker(ms);
+
 	return ms->decode(ms, nsamp, unpacked);
 }

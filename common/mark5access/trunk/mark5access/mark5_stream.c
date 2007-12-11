@@ -494,7 +494,7 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	}
 
 	ms->blanker(ms);
-	ms->log2blankzonesize = 31;
+	ms->log2blankzonesize = 30;
 
 	return ms;
 }
