@@ -1,6 +1,7 @@
 1.3
 * Load in flag file
 * use calloc where appropriate
+* support generalized DATA FORMAT
 
 1.2
 * Fixed array indexing issue

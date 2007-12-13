@@ -571,7 +571,9 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	const int N_VSN_ROWS = sizeof(vsnKeys)/sizeof(vsnKeys[0]);
 	
 	int rows[20];	/* must be long enough for biggest of above */
-	int a, p, i, k, b, c, r, N;
+	int a, p, i, k, l, b, c, r, N;
+	int qb;
+	const char *ptr;
 	
 	if(!D)
 	{
@@ -685,13 +687,43 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	{
 		for(a = 0; a < D->nAntenna; a++)
 		{
-			r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
+			r = DifxParametersfind(ip, r+1, "DATA FORMAT");
+			qb = 0;
 			if(r < 0)
 			{
+				fprintf(stderr, "DATA FORMAT not found\n");
 				return 0;
 			}
+
+			/* FIXME -- do this properly some day */
+			ptr = DifxParametersvalue(ip, r);
+			l = strlen(ptr);
+			if(l > 8)
+			{
+				if(strcmp(ptr+l-2, "-1") == 0)
+				{
+					qb = 1;
+				}
+				else if(strcmp(ptr+l-2, "-2") == 0)
+				{
+					qb = 2;
+				}
+			}
+			
+			if(qb == 0)
+			{
+				r = DifxParametersfind(ip, r+1, 
+					"QUANTIZATION BITS");
+				if(r < 0)
+				{
+					fprintf(stderr, 
+				"Cannot determine quantization bits\n");
+					return 0;
+				}
+				qb = atoi(DifxParametersvalue(ip, r));
+			}
 		}
-		D->config[c].quantBits = atoi(DifxParametersvalue(ip, r));
+		D->config[c].quantBits = qb;
 		r = DifxParametersfind(ip, r+1, "NUM FREQS");
 		D->config[c].nIF = atoi(DifxParametersvalue(ip, r));
 		D->config[c].IF = newDifxIFArray(D->config[c].nIF);
@@ -711,6 +743,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 				"FREQ TABLE INDEX %d", b);
 			if(r < 0)
 			{
+				fprintf(stderr, "FREQ TABLE INDEX not found\n");
 				return 0;
 			}
 			i = atoi(DifxParametersvalue(ip, r));
