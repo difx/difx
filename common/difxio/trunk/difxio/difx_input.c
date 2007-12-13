@@ -713,7 +713,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			if(qb == 0)
 			{
 				r = DifxParametersfind(ip, r+1, 
-					"QUANTIZATION BITS");
+					"QUANTISATION BITS");
 				if(r < 0)
 				{
 					fprintf(stderr, 
