@@ -304,7 +304,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
-		new_mark5_format_from_string(formatname) );
+		new_mark5_format_generic_from_string(formatname) );
 
 	if(!ms)
 	{

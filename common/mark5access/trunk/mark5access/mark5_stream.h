@@ -222,7 +222,7 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 
 /*   Generate format from a string description */
 
-struct mark5_format_generic *new_mark5_format_from_string(
+struct mark5_format_generic *new_mark5_format_generic_from_string(
 	const char *formatname);
 
 
@@ -241,7 +241,7 @@ int blanker_mark5(struct mark5_stream *ms);
 int blanker_mark4(struct mark5_stream *ms);
 
 
-/* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA ITSELF */
+/* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA OR DESCRIPTION */
 
 /* contains information that can be determined by a glance at data or name */
 struct mark5_format
@@ -250,6 +250,7 @@ struct mark5_format
 	int Mbps, nchan, nbit;
 	int frameoffset;	  /* bytes from stream start to 1st frame */
 	int framebytes;		  /* bytes in a frame */
+	int databytes;		  /* bytes of data in a frame */
 	int framens;		  /* duration of a frame in nanosec */
 	int mjd, sec, ns;	  /* date and time of first frame */
 	int ntrack;		  /* for Mark4 and VLBA formats only */

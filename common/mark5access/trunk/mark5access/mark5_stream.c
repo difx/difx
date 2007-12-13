@@ -115,6 +115,7 @@ static int copy_format(const struct mark5_stream *ms,
 {
 	mf->frameoffset = ms->frameoffset;
 	mf->framebytes  = ms->framebytes;
+	mf->databytes   = ms->databytes;
 	mf->framens     = ms->framens;
 	mf->mjd         = ms->mjd;
 	mf->sec         = ms->sec;
@@ -226,7 +227,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	return 0;
 }
 
-struct mark5_format_generic *new_mark5_format_from_string(
+struct mark5_format_generic *new_mark5_format_generic_from_string(
 	const char *formatname)
 {
 	int a, b, c, d;
@@ -293,7 +294,7 @@ const char *mark5_stream_list_formats()
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
 {
 	int a=1, b=0, c=0, d=0, ntrack=0;
-	int framebytes, framens;
+	int databytes, framebytes, framens;
 	struct mark5_format *f;
 	enum Mark5Format F;
 
@@ -304,6 +305,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_VLBA;
+		databytes = 2500*a*c*d;
 		framebytes = 2520*a*c*d;
 		framens = (20000*a*c*d)/b;
 		ntrack = a*c*d;
@@ -315,7 +317,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK4;
-		framebytes = 2500*a*c*d;
+		databytes = 2500*a*c*d;
+		framebytes = databytes;
 		framens = (20000*a*c*d)/b;
 		ntrack = a*c*d;
 	}
@@ -326,8 +329,9 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_MARK5B;
-		framebytes = 10000;
-		framens = 80000/b;
+		databytes = 10000;
+		framebytes = databytes+16;
+		framens = 8*databytes/b;
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
@@ -336,7 +340,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_K5;
-		framebytes = 32 + 1000000*b/8;
+		databytes = 1000000*b/8;
+		framebytes = 32 + databytes;
 		framens = 1000000000;
 	}
 	else if(strncasecmp(formatname, "K5-", 3) == 0)
@@ -346,7 +351,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			return 0;
 		}
 		F = MK5_FORMAT_K5;
-		framebytes = 8 + 1000000*b/8;
+		databytes = 1000000*b/8;
+		framebytes = 8 + databytes;
 		framens = 1000000000;
 	}
 	else
@@ -361,6 +367,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	f->nchan = c;
 	f->nbit = d;
 	f->framebytes = framebytes;
+	f->databytes = databytes;
 	f->ntrack = ntrack;
 	f->framens = framens;
 
