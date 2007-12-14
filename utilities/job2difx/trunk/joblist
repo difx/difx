@@ -5,8 +5,8 @@ from glob import glob
 from string import split, strip, find
 
 program = 'joblist'
-version = '1.2'
-verdate = '20071101'
+version = '1.3'
+verdate = '20071213'
 author  = 'Walter Brisken'
 
 showstatus = 1
@@ -104,6 +104,7 @@ def summarize(input, i, n, dotree):
 	npol = 0
 	fq = []
 	nsec = 0
+	trippel = ''
 	for d in data:
 		if d[:19] == 'EXECUTE TIME (SEC):':
 			nsec = int(d[20:])
@@ -120,17 +121,22 @@ def summarize(input, i, n, dotree):
 			fq.append(float(d[20:]))
 		if d[:17] == 'POL PRODUCTS 0/0:':
 			npol = int(d[20:])
+		if d[:11] == 'DATA FORMAT':
+			p = find(d[20:], '-')
+			if p > 0:
+				trippel = strip(d[p+21:])
 			
 	if npol == 4:
 		nchan = nfreq*2
 	else:
 		nchan = nfreq*npol
 
-	tripple = '%d-%d-%d' % (bw*nchan*nbit*2, nchan, nbit)
+	if trippel == '':
+		trippel = '%d-%d-%d' % (bw*nchan*nbit*2, nchan, nbit)
 			
 	band = genband(fq)
 	
-	sum = '%s %s%6ds %8s  %s' % (stat, band, nsec, tripple, ants[:-1])
+	sum = '%s %s%6ds %8s  %s' % (stat, band, nsec, trippel, ants[:-1])
 	if dotree:
 		tree = '%c- ' % c
 	else:

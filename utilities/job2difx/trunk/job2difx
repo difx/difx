@@ -7,8 +7,8 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.3'
-verdate = '20071119'
+version = '1.4'
+verdate = '20071213'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
@@ -718,14 +718,12 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid):
 				nIF+=1
 		tracks = fanout*qbits*nIF
 		job_freq_row = freqtable[config[1]]
-		if format_name == 'VLBA':
-			format_name = 'NATIVE_MKV_VLBA'
+		Mbps = int(freqtable[0]['sample_rate'])*nIF*qbits/1000000
+		format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
 		dst.append("TELESCOPE INDEX:    %d" % ds_num)
 		dst.append("TSYS:               0.0")
 		dst.append("DATA FORMAT:        %s" % format_name)
-		dst.append("FANOUT:             %d" % fanout)
-		dst.append("TRACKS:             %d" % tracks)
-		dst.append("QUANTISATION BITS:  %d" % qbits)
+		dst.append("DATA SOURCE:        %s" % "MODULE")
 		dst.append("FILTERBANK USED:    FALSE")
 		dst.append("READ FROM FILE:     TRUE")
 		dst.append("NUM FREQS:          %d" % nfreq)
