@@ -307,7 +307,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		F = MK5_FORMAT_VLBA;
 		databytes = 2500*a*c*d;
 		framebytes = 2520*a*c*d;
-		framens = (20000*a*c*d)/b;
+		framens = 1000*((20000*a*c*d)/b);
 		ntrack = a*c*d;
 	}
 	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
@@ -319,7 +319,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		F = MK5_FORMAT_MARK4;
 		databytes = 2500*a*c*d;
 		framebytes = databytes;
-		framens = (20000*a*c*d)/b;
+		framens = 1000*((20000*a*c*d)/b);
 		ntrack = a*c*d;
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
@@ -331,7 +331,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		F = MK5_FORMAT_MARK5B;
 		databytes = 10000;
 		framebytes = databytes+16;
-		framens = 8*databytes/b;
+		framens = 1000*(8*databytes/b);
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
