@@ -889,7 +889,7 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
 
   // Check we will not read past end of file
   bufferinfo[buffersegment].validbytes = 0;
-  ptr = (char*)&databuffer[(buffersegment*bufferbytes)/numdatasegments];
+  ptr = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
 
   status = readnetwork(socketnumber, ptr, bytestoread, &nread);
 
@@ -995,7 +995,7 @@ void DataStream::diskToMemory(int buffersegment)
   waitForBuffer(buffersegment);
   
   //read some data
-  input.read((char*)&databuffer[(buffersegment*bufferbytes)/numdatasegments], readbytes);
+  input.read((char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)], readbytes);
   bufferinfo[buffersegment].validbytes = input.gcount();
   readnanoseconds += bufferinfo[buffersegment].nsinc;
   readseconds += readnanoseconds/1000000000;

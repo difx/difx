@@ -261,7 +261,7 @@ void Core::execute()
 void Core::pulsarScale(int index)
 {
   int status, findex, currentoutputbands, resultindex = 0;
-  
+
   //do the pulsar scaling
   for(int i=0;i<numbaselines;i++)
   {
@@ -274,7 +274,7 @@ void Core::pulsarScale(int index)
           pulsarscale[2*l] = (procslots[index].bincounts[k][j][l] > 0)?float(config->getBlocksPerSend(procslots[index].configindex))/float(procslots[index].bincounts[k][j][l]):0.0;
           pulsarscale[2*l+1] = pulsarscale[2*l];
         }
-        for(int p=0;p<config->getBNumPolProducts(procslots[index].configindex,j,k);p++)
+        for(int p=0;p<config->getBNumPolProducts(procslots[index].configindex,i,j);p++)
         {
           status = vectorMul_f32_I(pulsarscale, (f32*)&(procslots[index].results[resultindex]), 2*procslots[index].numchannels + 2);
           if(status != vecNoErr)
@@ -614,7 +614,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             {
               for(int l=0;l<procslots[index].numchannels+1;l++)
               {
-                cindex = resultindex + p*procslots[index].numpulsarbins*(procslots[index].numchannels+1) + bins[config->getBFreqIndex(procslots[index].configindex, j, k)][l]*(procslots[index].numchannels+1) + l;
+                //cindex = resultindex + p*procslots[index].numpulsarbins*(procslots[index].numchannels+1) + bins[config->getBFreqIndex(procslots[index].configindex, j, k)][l]*(procslots[index].numchannels+1) + l;
+                cindex = resultindex + bins[config->getBFreqIndex(procslots[index].configindex, j, k)][l]*config->getBNumPolProducts(procslots[index].configindex,j,k)*(procslots[index].numchannels+1) + p*(procslots[index].numchannels+1) + l;
                 threadresults[cindex].re += pulsarscratchspace[l].re;
                 threadresults[cindex].im += pulsarscratchspace[l].im;
               }
