@@ -1004,6 +1004,13 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 	# lists imply internal data structures
 	if len(antennalist) == 0:
 		antennalist = obs2antennalist(job['obs'])
+	else:
+		alist = []
+		Alist = obs2antennalist(job['obs'])
+		for a in antennalist:
+			if a in Alist:
+				alist.append(a)
+		antennalist = alist
 	antenna_index = rev_list(antennalist)
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
