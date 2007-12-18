@@ -25,6 +25,8 @@ def usage():
 
 
 def sniff(files, refant, nrec, nchan):
+	system('rm -f summary wtsfile.lis.sum xcbandfile.lis wtsfile.lis logfile.lis datafile.lis xcbandmax.ps xcbandfile.ps wtsfile.ps apdfile.ps apd.delays acbandsum.ps acbandfile.lis')
+
 	filebase = ['log', 'wts', 'acband', 'xcband', 'data']
 	nf = len(filebase)
 	outlists = ['']*nf
@@ -63,8 +65,6 @@ refant = ''
 files = []
 nrec = 16
 nchan = 16
-
-system('rm summary wtsfile.lis.sum xcbandfile.lis wtsfile.lis logfile.lis datafile.lis xcbandmax.ps xcbandfile.ps wtsfile.ps apdfile.ps apd.delays acbandsum.ps acbandfile.lis')
 
 for arg in argv[1:]:
 	kv = split(arg, '=')
