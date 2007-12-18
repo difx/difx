@@ -5,13 +5,12 @@ use Astro::Time;
 use strict;
 use Cwd;
 
-if (@ARGV != 6)
+if (@ARGV != 5)
 {
-  die "Usage: createcrosspulseprofileinput.pl <t1directory1>:[directory2]:[]:[] <t2directory1>:[t2directory2]:[]:[] <delayfilename> <sourcename> <1/calculation duty cycle> <outputfilename>\n";
+  die "Usage: createcrosspulseprofileinput.pl <t1directory1>:[directory2]:[]:[] <delayfilename> <sourcename> <1/calculation duty cycle> <outputfilename>\n";
 }
 
 my $dir1name = shift;
-my $dir2name = shift;
 my $delayfile = shift;
 my $source = shift;
 my $inversedutycycle = shift;
@@ -19,7 +18,6 @@ my $outputfile = shift;
 my $i;
 my $j;
 my @dir1names;
-my @dir2names;
 my $f;
 my $d;
 my $count;
@@ -44,13 +42,9 @@ print(O pack("A20", "DELAY FILENAME: "), "$delayfile\n");
 print(O pack("A20", "OUTPUT PREFIX: "), "\n");
 print(O pack("A20", "INT TIME (SEC): "), "\n");
 print(O pack("A20", "TELESCOPE 1 NAME: "), "\n");
-print(O pack("A20", "TELESCOPE 2 NAME: "), "\n");
 print(O pack("A20", "MODE 1: "), "\n");
-print(O pack("A20", "MODE 2: "), "\n");
 print(O pack("A20", "CLK 1 DELAY (us): "), "\n");
 print(O pack("A20", "CLK 1 RATE (us/s): "), "\n");
-print(O pack("A20", "CLK 2 DELAY (us): "), "\n");
-print(O pack("A20", "CLK 2 RATE (us/s): "), "\n");
 print(O pack("A20", "NUMBER OF BANDS: "), "\n");
 print(O pack("A20", "NUMBER OF FREQS: "), "\n");
 print(O pack("A20", "BANDWIDTH (MHZ): "), "\n");
@@ -83,35 +77,6 @@ foreach $d (@dir1names)
   closedir(DIR);
 }
 
-@dir2names = split(/:/, $dir2name);
-$count2 = 0;
-foreach $d (@dir1names)
-{
-  if(!opendir(DIR, $d))
-  {
-    print "Warning - could not open directory $d\n";
-    print(O pack("A20A*", "D/STREAM $i FILES:", "0\n"));
-    next; #Note skip to next directory
-  }
-  @files = sort readdir(DIR);
-  foreach $f (@files)
-  {
-    if($f=~/lba/ || $f=~/k5/) #hopefully its an lba, mk5 or k5 data file
-    {
-      if(&isActiveSource($f))
-      {
-        $count2++;
-      }
-    }
-  }
-  closedir(DIR);
-}
-
-if($count1 != $count2)
-{
-    die "Data file count must be equal!  It was $count1 vs $count2";
-}
-
 print(O pack("A20A*", "NUM DATA FILES:", "$count1\n"));
 $count = 0;
 foreach $d (@dir1names)
@@ -129,29 +94,6 @@ foreach $d (@dir1names)
       if(&isActiveSource($f))
       {
         print(O pack("A20A*", "T1 DATA FILE $count", "$d/$f\n"));
-        $count++;
-      }
-    }
-  }
-  closedir(DIR);
-}
-
-$count = 0;
-foreach $d (@dir2names)
-{
-  if(!opendir(DIR, $d))
-  {
-    print "Warning - could not open directory $d\n";
-    next; #Note skip to next directory
-  }
-  @files = sort readdir(DIR);
-  foreach $f (@files)
-  {
-    if($f=~/lba/ || $f=~/k5/) #hopefully its an lba, mk5 or k5 data file
-    {
-      if(&isActiveSource($f))
-      {
-        print(O pack("A20A*", "T2 DATA FILE $count", "$d/$f\n"));
         $count++;
       }
     }

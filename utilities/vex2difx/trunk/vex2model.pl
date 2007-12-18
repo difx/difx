@@ -147,10 +147,16 @@ BEGIN {
 	       Pt => 'PT' ,
 	       Sc => 'SC' ,
 	       Ka => 'KAS' ,
+               Ef => 'EFLSBERG' ,
 	       Wf => 'WESTFORD' ,
 	       Wz => 'WETTZELL' ,
 	       Wb => 'WBK' ,
 	       Jb => 'JDB' ,
+               On => 'ONSALA85' ,
+               Mc => 'MEDICINA' ,
+               Nt => 'NOTO' ,
+               Tr => 'TORUN' ,
+               Cm => 'CAMBG32M' ,
               );
 }
 
