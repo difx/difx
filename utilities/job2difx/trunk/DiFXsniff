@@ -10,6 +10,7 @@ verdate = '20071218'
 author  = 'Walter Brisken'
 
 def run(pgm, args):
+	print pgm
 	p = popen(pgm, 'w')
 	for a in args:
 		p.write('%s\n' % a)
@@ -32,7 +33,7 @@ def sniff(files, refant, nrec, nchan):
 	outlists = ['']*nf
 	n = 0
 	for f in files:
-		cmd = 'FITSsniffer %s %s ALL %d %d 1 1' % (f,refant,nrec,nchan)
+		cmd = 'FITSsniffer %s %s ALL %d %d 1 1 > /dev/null' % (f,refant,nrec,nchan)
 		print cmd
 		system(cmd)
 		for i in range(nf):
@@ -53,10 +54,9 @@ def sniff(files, refant, nrec, nchan):
 		
 	run('plotwt',  ['wtsfile.lis', 'wtsfile.ps/vps'])
 	run('plotbp',  ['xcbandfile.lis', 'xcbandfile.ps/vps', ''])
-	run('plotbp',  ['acbandfile.lis', 'acbandfile.lis/vps', ''])
+	run('plotbp',  ['acbandfile.lis', 'acbandfile.ps/vps', ''])
 	run('plotapd', ['datafile.lis', 'apdfile.ps/vps', 'ALL', 'ALL'])
 	cmd = 'lister'
-	print cmd
 	system(cmd)
 
 #############################
