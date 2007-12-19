@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+from sys import argv
+from os import system
+
+for a in argv[1:]:
+	m5 = 'mark5fx%02d' % int(a)
+	system('ssh %s EndM5' % m5)
