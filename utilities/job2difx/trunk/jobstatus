@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+
+from sys import argv, exit
+from glob import glob
+from string import split, strip, find, rfind
+import os
+import stat
+
+program = 'jobstatus'
+version = '1.0'
+verdate = '20071219'
+author  = 'Walter Brisken'
+
+def usage():
+	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	exit(0)
+
+def getelapsed(file1, file2, N):
+	P = os.popen('head -c %d %s' % (256, file1), 'r')
+	D1 = P.read(256)
+	P.close()
+	P = os.popen('tail -c %d %s' % (N, file2), 'r')
+	D2 = P.read(N)
+	P.close()
+	p1 = find(D1, "MJD:      ");
+	p2 = rfind(D2, "MJD:      ");
+	
+	if p1 < 0 or p2 < 0:
+		return -1;
+	S1 = D1[p1:p1+57]
+	S2 = D2[p2:p2+57]
+	m1 = int(strip(S1[5:25]))
+	m2 = int(strip(S2[5:25]))
+	s1 = float(strip(S1[41:]))
+	s2 = float(strip(S2[41:]))
+
+	return (m2-m1)*86400.0+s2-s1
+	
+def summarize(input):
+	s = split(input, '/')
+	data = open(input).readlines()
+	ants = []
+	nsec = 0
+	trippel = ''
+	for d in data:
+		if d[:19] == 'EXECUTE TIME (SEC):':
+			nsec = int(d[20:])
+		if d[:14] == 'TELESCOPE NAME':
+			ants.append(strip(d[20:]))
+		if d[:11] == 'DATA FORMAT':
+			p = find(d[20:], '-')
+			if p > 0:
+				trippel = strip(d[p+21:])
+			
+	return [nsec, ants, trippel]
+
+def gettimes(input):
+	difx = input[0:-6]+'.difx'
+	dir = glob(difx)
+	if len(dir) == 0:
+		return [-1, 0, 0]
+	file = glob(difx+'/*')
+	if len(file) == 0:
+		return [-1, 0, 0]
+	S = os.stat(dir[0])
+	dtime = S[stat.ST_CTIME]
+	S = os.stat(file[-1])
+	ftime = S[stat.ST_CTIME]
+	fsize = S[stat.ST_SIZE]
+	elapsed = getelapsed(file[0], file[-1], 10000)
+	return [ftime - dtime, fsize, elapsed]
+	
+	
+def run(path):
+	inputs = glob(path+'/*.input')
+	inputs.sort()
+	n = len(inputs)
+	SS = []
+	AA = []
+	su = []
+	sectot = 0.0
+	secdone = 0.0
+	ttot = 0.0
+	tdone = 0.0
+	wtime = 0.0
+	
+	for i in range(n):
+		S = summarize(inputs[i])
+		A = gettimes(inputs[i])
+		nsta = len(S[1])
+		if A[2] > 0:
+			A[2] += 5
+			if A[2] > S[0]:
+				A[2] = S[0]
+		if A[2] > 0 and A[0] > 0:
+			speedup = float(A[2])/float(A[0])
+			wtime += A[0]
+		else:
+			speedup = 0
+		sectot += nsta*S[0]
+		secdone += nsta*A[2]
+		ttot += S[0]
+		tdone += A[2]
+	
+		su.append(speedup)
+		SS.append(S)
+		AA.append(A)
+	
+	
+	for i in range(n):
+		A = AA[i]
+		S = SS[i]
+		speedup = su[i]
+		nsta = len(S[1])
+		fn = split(inputs[i], '/')[-1][0:-6]
+		fraction = 100*A[2]/S[0]
+		sta = "%s  %4.1f min   ns=%d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, nsta, speedup, fraction)
+		if fraction > 3 and fraction < 100:
+			tremain = S[0]*(1.0 - fraction/100.0)/speedup
+			sta += '  %4.1f min left' % (tremain/60.0)
+		print sta
+			
+		
+	fraction = int(100*secdone/sectot)
+	print "Total job time      = %4.1f min" % (ttot/60.0)
+	print "Fraction complete   = %3d%%" % fraction
+	jremain = ttot - tdone
+	if tdone > 0:
+		wremain = jremain*wtime/tdone
+		print "Job time remaining  = %4.1f min" % (jremain/60.0)
+		print "Wall time remaining = %4.1f min" % (wremain/60.0)
+		print "Average speedup     = %4.2f" % (tdone/wtime)
+
+if len(argv) == 1:
+	paths = ['.']
+else:
+	paths = [argv[1]]
+
+for p in paths:
+	run(p)

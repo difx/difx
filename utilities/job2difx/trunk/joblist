@@ -141,7 +141,7 @@ def summarize(input, i, n, dotree):
 		tree = '%c- ' % c
 	else:
 		tree = ''
-	print '%s%s %s' % (tree, s[-1], sum)
+	print '%s%s %s' % (tree, s[-1][0:-6], sum)
 	
 def run(path, dotree):
 	if dotree:
