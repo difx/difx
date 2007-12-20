@@ -23,7 +23,7 @@ def getelapsed(file1, file2, N):
 	D2 = P.read(N)
 	P.close()
 	p1 = find(D1, "MJD:      ");
-	p2 = rfind(D2, "MJD:      ");
+	p2 = rfind(D2[:-50], "MJD:      ");
 	
 	if p1 < 0 or p2 < 0:
 		return -1;
@@ -114,8 +114,8 @@ def run(path):
 		nsta = len(S[1])
 		fn = split(inputs[i], '/')[-1][0:-6]
 		fraction = 100*A[2]/S[0]
-		sta = "%s  %4.1f min   ns=%d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, nsta, speedup, fraction)
-		if fraction > 3 and fraction < 100:
+		sta = "%s  %4.1f min  %s  ns=%d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, S[2], nsta, speedup, fraction)
+		if A[2] > 10 and fraction < 100:
 			tremain = S[0]*(1.0 - fraction/100.0)/speedup
 			sta += '  %4.1f min left' % (tremain/60.0)
 		print sta
