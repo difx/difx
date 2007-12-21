@@ -14,8 +14,8 @@ int usage(const char *pgm)
 		program, version, author);
 	fprintf(stderr, "A program to convert DiFX format data to "
 		"FITS-IDI\n\n");
-	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile>\n\n", 
-		pgm);
+	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile> "
+		"[<calfile>]\n\n", pgm);
 	fprintf(stderr, "It is assumed that at least 3 input files exist:\n");
 	fprintf(stderr, "  <basefilename>.input    DiFX input file\n");
 	fprintf(stderr, "  <basefilename>.uvw      DiFX UVW file\n");
@@ -66,10 +66,17 @@ int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
 	const char *filebase, struct fitsPrivate *out, int write_model,
-	double scale)
+	double scale, const char *calfilename)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
+	FILE *calfile;
+
+	if(calfilename)
+	{
+		calfile = fopen(calfilename, "r");
+		printf("ct = %s -> %p\n", calfilename, calfile);
+	}
 
 	populateFitsKeywords(D, &keys);
 	
@@ -133,8 +140,22 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%d bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	if(calfile)
+	{
+		printf("  FG -- flag                ");
+		fflush(stdout);
+		D = DifxInput2FitsFG(D, &keys, out, calfile);
+		printf("%d bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
+
 	printf("                            -----\n");
 	printf("  Total                     %d bytes\n", last_bytes);
+
+	if(calfile)
+	{
+		fclose(calfile);
+	}
 	
 	return D;
 }
@@ -143,7 +164,7 @@ int main(int argc, char **argv)
 {
 	DifxInput *D;
 	struct fitsPrivate outfile;
-	const char *basefile=0, *fitsfile=0;
+	const char *basefile=0, *fitsfile=0, *calfilename=0;
 	int writemodel = 1;
 	int i;
 	double scale = 0.0;
@@ -175,6 +196,10 @@ int main(int argc, char **argv)
 		else if(fitsfile == 0)
 		{
 			fitsfile = argv[i];
+		}
+		else if(calfilename == 0)
+		{
+			calfilename = argv[i];
 		}
 		else
 		{
@@ -209,7 +234,8 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(DifxInput2FitsTables(D, basefile, &outfile, writemodel, scale) == D)
+	if(DifxInput2FitsTables(D, basefile, &outfile, writemodel, scale,
+		calfilename) == D)
 	{
 		printf("\nConversion successful\n");
 	}
