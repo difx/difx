@@ -27,12 +27,14 @@ def getelapsed(file1, file2, N):
 	
 	if p1 < 0 or p2 < 0:
 		return -1;
-	S1 = D1[p1:p1+57]
-	S2 = D2[p2:p2+57]
-	m1 = int(strip(S1[5:25]))
-	m2 = int(strip(S2[5:25]))
-	s1 = float(strip(S1[41:]))
-	s2 = float(strip(S2[41:]))
+
+	S1 = split(D1[p1:p1+80], '\n')
+	S2 = split(D2[p2:p2+80], '\n')
+
+	m1 = int(strip(S1[0][5:]))
+	m2 = int(strip(S2[0][5:]))
+	s1 = float(strip(S1[1][9:]))
+	s2 = float(strip(S2[1][9:]))
 
 	return (m2-m1)*86400.0+s2-s1
 	
@@ -114,7 +116,7 @@ def run(path):
 		nsta = len(S[1])
 		fn = split(inputs[i], '/')[-1][0:-6]
 		fraction = 100*A[2]/S[0]
-		sta = "%s  %4.1f min  %s  ns=%d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, S[2], nsta, speedup, fraction)
+		sta = "%s  %4.1f min  %s  ns=%2d  su=%5.2f  %3d%%" % (fn, S[0]/60.0, S[2], nsta, speedup, fraction)
 		if A[2] > 10 and fraction < 100:
 			tremain = S[0]*(1.0 - fraction/100.0)/speedup
 			sta += '  %4.1f min left' % (tremain/60.0)

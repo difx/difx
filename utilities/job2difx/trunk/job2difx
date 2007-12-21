@@ -573,8 +573,12 @@ def maketelescopetable(job_clock, subarray, antennalist, startmjd):
 		deltat = ( startmjd - parsetime(ant['time']) )*86400.0
 		delay += rate*deltat;
 		
-		tele.append("TELESCOPE NAME %d:   %s" % 
-			(i, antennalist[ant_index]))
+		if i < 10:
+			tele.append("TELESCOPE NAME %d:   %s" % \
+				(i, antennalist[ant_index]))
+		else:
+			tele.append("TELESCOPE NAME %d:  %s" % \
+				(i, antennalist[ant_index]))
 		tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
 		tele.append("CLOCK RATE(us/s) %d: %s" % (i, rate))
 	return tele
