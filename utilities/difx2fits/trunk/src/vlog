@@ -1,0 +1,305 @@
+#!/usr/bin/env python
+
+from string import split, strip, find
+from sys import argv, stdout
+
+def getlist(sections, header):
+	s = split(header)
+	sec = s[2]
+	ant = s[-2]
+	if not sections.has_key(sec):
+		sections[sec] = {}
+	S = sections[sec]
+	S[ant] = []
+	return S[ant]
+
+def chop(filename):
+	sections = {}
+	current = []
+	for D in open(filename, "r").readlines():
+		d = strip(D)
+		if find(d, ' -----') > 0:
+			current = getlist(sections, d)
+		elif len(d) > 0:
+			current.append(d)
+	return sections
+
+def parsetime(str):
+	s = split(str, '-')
+	t = split(s[1], ':')
+	return int(s[0]) + float(t[0])/24.0 + float(t[1])/1440.0 + \
+		float(t[2])/86400.0
+
+def makeWX(sections, antenna):
+	if not sections.has_key('Weather'):
+		return None
+	if not sections['Weather'].has_key(antenna):
+		return None
+	W = sections['Weather'][antenna]
+	table = []
+	for w in W:
+		if w[0] == '*':
+			continue
+		s = split(w)
+		if len(s) < 8:
+			continue
+		t = parsetime(s[0])
+		table.append('%9.7f %s %s %s %s %s %s' % \
+			(t, s[1], s[2], s[3], s[4], s[5], s[7]))
+	return table
+
+def getReasonRanges(reason, bbc):
+	# bbc contains:  [[polid, bandid, bbc# sb]]
+	s = split(reason[1:-1])
+	bad = []
+	if s[0] == 'channel' and s[2] == 'bbc':
+		chan = int(s[1])
+		for b in bbc:
+			if chan == b[2]:
+				bad.append([b[0], b[1]])
+	return bad
+
+def makeFG(sections, BBCs, antenna):
+	if not sections.has_key('Edit'):
+		return None
+	if not sections['Edit'].has_key(antenna):
+		return None
+	bbc = BBCs[antenna]
+	F = sections['Edit'][antenna]
+	flags = []
+	key = "ant_name='%s'" % antenna
+	for f in F:
+		s = split(f)
+		if s[0] == key:
+			t = split(split(s[1], '=')[1], ',')
+			t1 = parsetime('%s-%s:%s:%s' % (t[0], t[1], t[2], t[3]))
+			t2 = parsetime('%s-%s:%s:%s' % (t[4], t[5], t[6], t[7]))
+			p = find(f, 'reason=')
+			p1 = p+9
+			p2 = p1 + find(f[p1:], "'")
+			reason = f[p1-2:p2+1]
+			bad = getReasonRanges(reason, bbc)
+			if bad == []:
+				bad = [['ALL', -1]]
+			for b in bad:
+				flags.append('%9.7f %9.7f %s %d %s' % (t1, t2, b[0], b[1], reason))
+	return flags
+
+def getTones(data):
+	tones = {}
+	polct = {}
+	bandno = {}
+	pols = []
+	nt = 1
+	nb = 1
+	for d in data:
+		if d[1] == 'T':
+			info = []
+			s = split(d)
+			chanpol = s[1]+s[2]+s[3]
+			chan = int(s[1])
+			pol = s[3][1]
+			if not pol in pols:
+				pols.append(pol)
+			polnum = pols.index(pol)+1
+			if not bandno.has_key(chanpol):
+				if polct.has_key(pol):
+					polct[pol] += 1
+					if polct[pol] > nb:
+						nb = polct[pol]
+				else:
+					polct[pol] = 1
+				bandno[chanpol] = [polct[pol], 1]
+			else:
+				bandno[chanpol][1] += 1
+				if bandno[chanpol][1] > nt:
+					nt = bandno[chanpol][1]
+			bandnum = bandno[chanpol][0]
+			tonenum = bandno[chanpol][1]
+			info.append(chan)
+			info.append(pol)
+			info.append(s[4])
+			info.append(int(s[5]))
+			info.append(s[6])
+			info.append(s[7])
+			info.append(tonenum)
+			info.append(bandnum)
+			info.append(polnum)
+			tones[s[0]] = info
+	return tones, nt, nb, len(pols)
+
+def makeScans(scanlist):
+	scans = []
+	for S in scanlist:
+		if S[0] == '!':
+			continue;
+		s = split(S)
+		scans.append([s[0], parsetime(s[1]), parsetime(s[2])])
+	return scans
+
+def getSource(scanlist, time):
+	for s in scanlist:
+		if time >= s[1] and time <= s[2]:
+			return s[0]
+	return 'None'
+
+def makePC(sections, antenna):
+	if not sections.has_key('PulseCal'):
+		return None
+	if not sections['PulseCal'].has_key(antenna):
+		return None
+	P = sections['PulseCal'][antenna]
+	Scans = makeScans(sections['Scan'][antenna])
+		
+	p = 0
+	while P[p] != '/':
+		p += 1
+
+	tones, nt, nb, np = getTones(P[:p])
+
+	table = []
+
+	A = [[[]]]
+	for row in P[p:]:
+		s = split(row)
+		if s[0] == '!':
+			continue
+		if len(s) != 5:
+			continue
+		if s[2] == "'CC'":
+			current = []
+			Time = parsetime(s[0]+'-'+s[1])
+			current.append(Time)
+			current.append(0.0)
+			if s[3] == '-Inf' or s[3] == 'Inf':
+				s[3] = '999.9'
+			current.append(s[3])
+			current.append(s[4])
+			current.append(getSource(Scans, Time))
+			A = []
+			for x in range(np):
+				A.append([])
+				for y in range(nb):
+					A[x].append([])
+					for z in range(nt):	
+						A[x][y].append(['0','0','0'])
+			current.append(A)
+			table.append(current)
+		else:
+			row = tones[s[2]]
+			A[row[8]-1][row[7]-1][row[6]-1] = [row[2], s[3], s[4]]
+	
+	pc = []
+	pc.append('%d %d %d' % (nt, nb, np))
+	for t in table:
+		line = '%9.7f %d %s %s %s ' % (t[0], t[1], t[2], t[3], t[4])
+		for z in range(np):
+			for y in range(nb):
+				for x in range(nt):
+					line += '%s %s %s ' % ( \
+						t[5][z][y][x][0],
+						t[5][z][y][x][1],
+						t[5][z][y][x][2])
+		pc.append(line)
+	return pc
+
+def makeTY(sections, antenna):
+	if not sections.has_key('Tsys'):
+		return None, None
+	if not sections['Tsys'].has_key(antenna):
+		return None, None
+	T = sections['Tsys'][antenna]
+	bbctable = []
+	l = len(T)
+	if l > 50:
+		l = 50
+	pols = {}
+	for i in range(l):
+		s = split(T[i])
+		if len(s) != 11:
+			continue;
+		pol = s[4]
+		sb = s[6]
+		if s[0] == '!' and s[3] in ['A','B','C','D'] and pol in ['RCP', 'LCP'] and sb in ['U', 'L']:
+			if pols.has_key(pol):
+				pols[pol] += 1
+			else:
+				pols[pol] = 1
+			bbctable.append([pol, pols[pol], int(s[5]), s[6]]) # polid, bandid, bbc# sb
+
+	name = 'None'
+	nif = len(bbctable)
+	npol = len(pols)
+
+	map = []
+	for b in range(nif):
+		for p in pols:
+			for rn in range(len(bbctable)):
+				if b+1 == bbctable[rn][1] and p == bbctable[rn][0]:
+					map.append(rn)
+	
+	table = []
+
+	for t in T:
+		s = split(t)
+		if len(s) == 5:
+			n = split(s[3], '/')
+			if len(n) != 2:
+				print 'Cannot handle %s\n' % t
+				continue
+			name = n[0]
+		elif len(s) == nif+4:
+			if s[nif+2] != '!':
+				continue
+			row = '%10.7f %s' % (parsetime(s[0]+'-'+s[1]+':0'), name)
+			for i in range(nif):
+				row += ' '
+				row += s[2+map[i]]
+			table.append(row)
+
+	return table, bbctable
+
+def writetable(table, filename, ants, tablename):
+	f = open(filename, 'w')
+	stdout.write('%s:' % tablename)
+	for a in ants:
+		if table.has_key(a):
+			t = table[a]
+			stdout.write(' %s' % a)
+			for row in t:
+				f.write('%s %s\n' % (a, row))
+	f.close()
+	stdout.write('\n')
+
+sections = chop(argv[1])
+ants = split(argv[2], ',')
+
+BBCs = {}
+TYs  = {}
+PCs  = {}
+WXs  = {}
+FGs  = {}
+for a in ants:
+	ty, bbc = makeTY(sections, a)
+	if ty != None:
+		BBCs[a] = bbc
+		TYs[a] = ty
+	pc = makePC(sections, a)
+	if pc != None:
+		PCs[a] = pc
+	wx = makeWX(sections, a)
+	if wx != None:
+		WXs[a] = wx
+
+for a in ants:
+	if BBCs.has_key(a):
+		fg = makeFG(sections, BBCs, a)
+		if fg == None:
+			continue
+		FGs[a] = fg
+
+writetable(FGs, 'flag', ants, 'FG')
+writetable(TYs, 'tsys', ants, 'TY')
+writetable(WXs, 'weather', ants, 'WX')
+writetable(PCs, 'pcal', ants, 'PC')
+
