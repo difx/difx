@@ -139,7 +139,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 
 	nColumn = NELEMENTS(columns);
 	
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* malloc space for storing table in FITS format */
 	if ((fitsbuf = (char *)malloc (n_row_bytes)) == 0)
@@ -290,8 +290,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	
 			if(swap)
 			{
-				FitsBinRowByteSwap(columns, 
-					NELEMENTS(columns), &fitsbuf);
+				FitsBinRowByteSwap(columns, nColumns, &fitsbuf);
 			}
 			fitsWriteBinRow(out, fitsbuf);
 		}

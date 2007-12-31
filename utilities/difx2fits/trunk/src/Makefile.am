@@ -13,6 +13,9 @@ difx2fits_SOURCES = \
 	fitsSO.c \
 	fitsUV.c \
 	fitsFG.c \
+	fitsTY.c \
+	fitsPC.c \
+	fitsWX.c \
 	mjd2str.c \
 	time2str.c \
 	byteorder.h \
