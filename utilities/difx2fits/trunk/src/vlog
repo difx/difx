@@ -1,7 +1,21 @@
 #!/usr/bin/env python
 
+from sys import argv, stdout, exit
 from string import split, strip, find
-from sys import argv, stdout
+
+program = 'vlog'
+version = 1.0
+verdate = '20071231'
+author  = 'Walter Brisken'
+
+def usage():
+	print '\n%s ver. %s   %s %s\n' % (program, version, verdate, author)
+	print 'A program to preprocess the cal files to simiplfy difx2fits.\n'
+	print 'Usage: %s <TSM file> [<antenna list>]\n' % (argv[0])
+	print '  <TSM file> is <project>cal.vlba'
+	print '  <antenna list> is a comma separated list of antennas with'
+	print '          no spaces, e.g., FD,GB,Y\n'
+	exit(0)
 
 def getlist(sections, header):
 	s = split(header)
@@ -38,7 +52,7 @@ def makeWX(sections, antenna):
 	W = sections['Weather'][antenna]
 	table = []
 	for w in W:
-		if w[0] == '*':
+		if w[0] in ['*', '!']:
 			continue
 		s = split(w)
 		if len(s) < 8:
@@ -49,14 +63,14 @@ def makeWX(sections, antenna):
 	return table
 
 def getReasonRanges(reason, bbc):
-	# bbc contains:  [[polid, bandid, bbc# sb]]
+	# bbc contains:  [[polid, bandid, bbc#, sb, polnum]]
 	s = split(reason[1:-1])
 	bad = []
 	if s[0] == 'channel' and s[2] == 'bbc':
 		chan = int(s[1])
 		for b in bbc:
 			if chan == b[2]:
-				bad.append([b[0], b[1]])
+				bad.append([b[4], b[1]])
 	return bad
 
 def makeFG(sections, BBCs, antenna):
@@ -80,9 +94,9 @@ def makeFG(sections, BBCs, antenna):
 			reason = f[p1-2:p2+1]
 			bad = getReasonRanges(reason, bbc)
 			if bad == []:
-				bad = [['ALL', -1]]
+				bad = [[-1, -1]]
 			for b in bad:
-				flags.append('%9.7f %9.7f %s %d %s' % (t1, t2, b[0], b[1], reason))
+				flags.append('%9.7f %9.7f %d %d %s' % (t1, t2, b[0], b[1], reason))
 	return flags
 
 def getTones(data):
@@ -210,6 +224,7 @@ def makeTY(sections, antenna):
 		return None, None
 	T = sections['Tsys'][antenna]
 	bbctable = []
+	numpols = 0
 	l = len(T)
 	if l > 50:
 		l = 50
@@ -222,10 +237,11 @@ def makeTY(sections, antenna):
 		sb = s[6]
 		if s[0] == '!' and s[3] in ['A','B','C','D'] and pol in ['RCP', 'LCP'] and sb in ['U', 'L']:
 			if pols.has_key(pol):
-				pols[pol] += 1
+				pols[pol][0] += 1
 			else:
-				pols[pol] = 1
-			bbctable.append([pol, pols[pol], int(s[5]), s[6]]) # polid, bandid, bbc# sb
+				numpols += 1
+				pols[pol] = [1, numpols]
+			bbctable.append([pol, pols[pol][0], int(s[5]), s[6], pols[pol][1]]) # polid, bandid, bbc#, sb, polnum
 
 	name = 'None'
 	nif = len(bbctable)
@@ -271,8 +287,28 @@ def writetable(table, filename, ants, tablename):
 	f.close()
 	stdout.write('\n')
 
+def findantennas(sections):
+	ants = []
+	for s in sections:
+		for a in sections[s].keys():
+			if not a in ants:
+				ants.append(a)
+	ants.sort()
+	return ants
+
+# -- main() -----------------
+
+if len(argv) < 2:
+	usage()
+
 sections = chop(argv[1])
-ants = split(argv[2], ',')
+
+if len(argv) > 2:
+	ants = split(argv[2], ',')
+else:
+	ants = findantennas(sections)
+
+print 'processing antennas : ', ants
 
 BBCs = {}
 TYs  = {}

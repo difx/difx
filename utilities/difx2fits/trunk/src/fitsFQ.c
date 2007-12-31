@@ -26,7 +26,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	int nColumn;
 	char *fitsbuf, *p_fitsbuf;
 	int row;
-	int no_bands;
+	int no_band;
 	int swap;
 
 	if(D == 0)
@@ -36,11 +36,11 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 
 	swap = (byteorder() == BO_LITTLE_ENDIAN);
 	
-	no_bands = p_fits_keys->no_band;
+	no_band = p_fits_keys->no_band;
 
-	sprintf(bandFormDouble, "%1dD", no_bands);  
-	sprintf(bandFormFloat, "%1dE", no_bands);  
-	sprintf(bandFormInt, "%1dJ", no_bands);  
+	sprintf(bandFormDouble, "%1dD", no_band);  
+	sprintf(bandFormFloat, "%1dE", no_band);  
+	sprintf(bandFormInt, "%1dJ", no_band);  
 
 	nColumn = NELEMENTS(columns);
 
@@ -69,13 +69,12 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 
 		/* FREQ_ID */
 		{
-			bcopy((char *)&freqId, p_fitsbuf,
-			sizeof(freqId));     
+			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));     
 			p_fitsbuf += sizeof(freqId);
 		}
 		
 		/* BANDFREQ */
-		for (i = 0; i < no_bands; i++)
+		for (i = 0; i < no_band; i++)
 		{
 			double bandfreq = (D->config[row].IF[i].freq - 
 				D->refFreq) * 1.0e6;
@@ -85,7 +84,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		}
 
 		/* CH_WIDTH */
-		for (i = 0; i < no_bands; i++)
+		for (i = 0; i < no_band; i++)
 		{
 			float ch_width = (D->config[row].IF[i].bw / 
 				D->nOutChan) * 1.0e6;
@@ -94,7 +93,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		}
 
 		/* TOTAL_BANDWIDTH */
-		for (i = 0; i < no_bands; i++)
+		for (i = 0; i < no_band; i++)
 		{
 			float total_bw = D->config[row].IF[i].bw * 1.0e6;
 			bcopy((char *)&total_bw, p_fitsbuf, sizeof(total_bw));
@@ -102,7 +101,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		}
 
 		/* SIDEBAND */
-		for (i = 0; i < no_bands; i++)
+		for (i = 0; i < no_band; i++)
 		{
 			int32_t netside;
 			netside = D->config[row].IF[i].sideband == 'U' ? 1 : -1;
@@ -111,7 +110,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		}
 
 		/* BB_CHAN */
-		for (i = 0; i < no_bands; i++)
+		for (i = 0; i < no_band; i++)
 		{
 			/*
 			* set to zero since AIPS doesn't care. To be
@@ -129,7 +128,7 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		fitsWriteBinRow(out, fitsbuf);
 	}
 
-	/* close the output and return */
+	/* free buffer and return */
 	free(fitsbuf);
 
 	return D;

@@ -20,3 +20,5 @@ difx2fits_SOURCES = \
 	fits.h \
 	fitsUV.h \
 	other.h
+
+dist_bin_SCRIPTS = vlog

@@ -7,8 +7,10 @@
 #include "other.h"
 
 
-static void cpstr(char *dest, const char *src)
+static void cpstr(char *dest, const char *src, int n)
 {
+	int i = 0;
+	
 	dest[0] = 0;
 
 	if(*src == 0)
@@ -28,6 +30,11 @@ static void cpstr(char *dest, const char *src)
 	{
 		*dest = *src;
 		dest++;
+		i++;
+		if(i > n)
+		{
+			return;
+		}
 		if(!*src)
 		{
 			*dest = 0;
@@ -36,101 +43,55 @@ static void cpstr(char *dest, const char *src)
 		src++;
 	}
 	*dest = 0;
+	for(; i < n; i++)
+	{
+		*dest = ' ';
+		dest++;
+	}
 }
 
 static int parseflag(char *line, int refday, char *antname, float timerange[2], 
-	char *reason)
+	char *reason, int *polId, int *bandId)
 {
 	char *s;
-	int d1, h1, m1, s1, d2, h2, m2, s2;
+	int l;
+	int n;
 
-	s = strstr(line, "ant_name");
-	if(!s) 
-	{
-		return 0;
-	}
-	cpstr(antname, s+9);
-	
-	s = strstr(line, "reason");
-	if(!s) 
-	{
-		return 0;
-	}
-	cpstr(reason, s+7);
-	
-	s = strstr(line, "timerang=");
-	if(!s)
-	{
-		return 0;
-	}
-	if(sscanf(s+9, "%d,%d,%d,%d,%d,%d,%d,%d", 
-		&d1, &h1, &m1, &s1,
-		&d2, &h2, &m2, &s2) != 8)
-	{
-		return 0;
-	}
-	timerange[0] = d1-refday + h1/24.0 + m1/1440.0 + s1/86400.0;
-	timerange[1] = d2-refday + h2/24.0 + m2/1440.0 + s2/86400.0;
+	n = sscanf(line, "%s%f%f%d%d%n", antname, timerange+0, timerange+1,
+		polId, bandId, &l);
 
+	if(n < 5)
+	{
+		return 0;
+	}
+
+	timerange[0] -= refday;
+	timerange[1] -= refday;
+	
+	cpstr(reason, line+n, 40);
+	
 	return 1;
 }
 
-const int setant(const DifxInput *D, int ants[2], const char *antname)
+const int getAntId(const DifxInput *D, const char *antname)
 {
 	int a;
-	
-	ants[1] = 0;
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		if(strcmp(D->antenna[a].name, antname) == 0)
 		{
-			ants[0] = a;
-			return 0;
+			return a+1;
 		}
 	}
 
 	return -1;
 }
 
-const int setbandpol(const DifxInput *D, int bands[2], int pflags[4],
-	const char *reason)
-{
-	int i, bbc;
-	
-	bands[0] = 1;
-	bands[1] = D->nFreq;
-	for(i = 0; i < 4; i++)
-	{
-		pflags[i] = 1;
-	}
-
-	if(strncmp("channel", reason, 7) == 0)
-	{
-		bbc = reason[8] - '0';
-	}
-
-	return 0;
-}
-
 const DifxInput *DifxInput2FitsFG(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	FILE *calfile)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	/* define the columns in the FITS "FLAG" Table */
-	struct __attribute__((packed)) FITS_flag
-	{
-		int source_id;
-		int array;
-		int ants[2];
-		int freqid;
-		float timerange[2];	/* days since ref day */
-		int bands[2];
-		int chans[2];
-		int pflags[4];
-		char reason[40];
-		int severity;
-	} fg_row;
+	char bandFormInt[4];
 
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -140,7 +101,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 		{"ANTS", "2J", "antenna id from antennas tbl"},
 		{"FREQID", "1J", "freq id from frequency tbl"},
 		{"TIMERANG", "2E", "time flag condition begins, ends", "DAYS"},
-		{"BANDS", "2J", "band range to be flagged"},
+		{"BANDS", bandFormInt, "true if the baseband is bad"},
 		{"CHANS", "2J", "channel range to be flagged"},
 		{"PFLAGS", "4J", "flag array for polarization"},
 		{"REASON", "40A", "reason for data to be flagged bad"},
@@ -149,15 +110,27 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 
 	int nColumn;
 	int n_row_bytes, irow;
-	char *fitsbuf;
+	char *fitsbuf, *p_fitsbuf;
 	double start, stop;
 	int swap;
 	char line[1000];
 	char reason[64], antname[10];
 	int refday;
-	int i;
-
-	if(!calfile || D == 0)
+	int i, no_band;
+	float timerange[2];
+	int chans[2];
+	int polId, bandId, baselineId[2], sourceId, freqId, arrayId;
+	int severity;
+	int polMask[4], bandMask[32];
+	FILE *in;
+	
+	no_band = p_fits_keys->no_band;
+	
+	sprintf(bandFormInt, "%1dJ", no_band);
+	
+	in = fopen("flag", "r");
+	
+	if(!in || D == 0)
 	{
 		return D;
 	}
@@ -177,7 +150,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "FLAG");
 
 	arrayWriteKeys (p_fits_keys, out);
-	fitsWriteInteger(out, "TABREV", 1, "");
+	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
 	start = D->mjdStart - (int)D->mjdStart;
@@ -185,79 +158,148 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 
 	mjd2dayno((int)(D->mjdStart), &refday);
 	
+	/* some constant values */
+	sourceId = 0;
+	freqId = 0;
+	arrayId = 0;
+	severity = -1;
+	chans[0] = chans[1] = 0;
+	polMask[2] = polMask[3] = 1;
+	baselineId[1] = 0;
+	
 	for(;;)
 	{
-		fgets(line, 999, calfile);
-		if(feof(calfile))
+		fgets(line, 999, in);
+		if(feof(in))
 		{
 			return;
 		}
 			
-		if(strncmp(line+1, " ----- ", 7) == 0 &&
-		   strncmp(line+8, "Edit data", 9) != 0)
-		{
-			return;
-		}
-		if(line[0] == '!')
+		/* ignore possible comment lines */
+		if(line[0] == '#')
 		{
 			continue;
 		}
-		else if(parseflag(line, refday, antname, fg_row.timerange, 
-			reason))
+		else if(parseflag(line, refday, antname, timerange, 
+			reason, &polId, &bandId))
 		{
 			if(strncmp(reason, "recorder", 8) == 0)
 			{
 				continue;
 			}
+			
 			if(strcmp(reason, "observing system idle") == 0)
 			{
-				fg_row.timerange[1] = 1.0;
+				timerange[1] = 1.0;
 			}
 			
-			if(fg_row.timerange[0] > stop ||
-			   fg_row.timerange[1] < start)
+			if(timerange[0] > stop ||
+			   timerange[1] < start)
 			{
 				continue;
 			}
-			if(fg_row.timerange[0] < start)
+			
+			if(timerange[0] < start)
 			{
-				fg_row.timerange[0] = start;
+				timerange[0] = start;
 			}
-			if(fg_row.timerange[1] > stop)
+			if(timerange[1] > stop)
 			{
-				fg_row.timerange[1] = stop;
+				timerange[1] = stop;
 			}
 
-			fg_row.source_id = 0;
-			fg_row.array = 0;
-			fg_row.freqid = 0;
-			fg_row.chans[0] = 0;
-			fg_row.chans[1] = 0;
-			fg_row.severity = -1;
+			baselineId[0] = getAntId(D, antname);
+			if(baselineId[0] < 0)
+			{
+				continue;
+			}
+
+			p_fitsbuf = fitsbuf;
+
+			/* SOURCE_ID */
+			bcopy((char *)&sourceId, p_fitsbuf, sizeof(sourceId));
+			p_fitsbuf += sizeof(sourceId);
+
+			/* ARRAY */
+			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
+			p_fitsbuf += sizeof(arrayId);
+
+			/* ANTENNAS */
+			bcopy((char *)baselineId, p_fitsbuf, 
+				sizeof(baselineId));
+			p_fitsbuf += sizeof(baselineId);
+
+			/* FREQ_ID */
+			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
+			p_fitsbuf += sizeof(freqId);
+
+			/* TIMERANGE */
+			bcopy((char *)timerange, p_fitsbuf, sizeof(timerange));
+			p_fitsbuf += sizeof(timerange);
+
+			/* BANDS */
+			if(bandId < 0)
+			{
+				for(i = 0; i < no_band; i++)
+				{
+					bandMask[i] = 1;
+				}
+			}
+			else
+			{
+				for(i = 0; i < no_band; i++)
+				{
+					bandMask[i] = 0;
+				}
+				bandMask[bandId-1] = 0;
+			}
+			bcopy((char *)bandMask, p_fitsbuf, sizeof(int)*no_band);
+			p_fitsbuf += sizeof(int)*no_band;
+
+			/* CHANNELS */
+			bcopy((char *)&chans, p_fitsbuf, sizeof(chans));
+			p_fitsbuf += sizeof(chans);
+
+			/* POLARIZATION FLAGS */
+			if(polId < 0)
+			{
+				polMask[0] = 1;
+				polMask[1] = 1;
+			}
+			else if(polId == 1)
+			{
+				polMask[0] = 1;
+				polMask[1] = 0;
+			}
+			else
+			{
+				polMask[0] = 0;
+				polMask[1] = 1;
+			}
+			bcopy((char *)polMask, p_fitsbuf, sizeof(polMask));
+			p_fitsbuf += sizeof(polMask);
+
+			/* REASON */
+			bcopy(reason, p_fitsbuf, 40);
+			p_fitsbuf += 40;
+
+			/* SEVERITY */
+			bcopy((char *)&severity, p_fitsbuf, sizeof(severity));
+			p_fitsbuf += sizeof(severity);
+
 	
-			if(setant(D, fg_row.ants,  antname) < 0)
-			{
-				continue;
-			}
-			if(setbandpol(D, fg_row.bands, fg_row.pflags, 
-				reason) < 0)
-			{
-				continue;
-			}
-			for(i = 0; i < 40; i++)
-			{
-				fg_row.reason[i] = 0;
-			}
-			strncpy(fg_row.reason, reason, 40);
-			
 			if(swap)
 			{
 				FitsBinRowByteSwap(columns, 
-					NELEMENTS(columns), &fg_row);
+					NELEMENTS(columns), &fitsbuf);
 			}
-			fitsWriteBinRow(out, (char *)&fg_row);
+			fitsWriteBinRow(out, fitsbuf);
 		}
 	}
+
+	/* close the file, free memory, and return */
+	fclose(in);
+	free(fitsbuf);
 
 	return D;
 }

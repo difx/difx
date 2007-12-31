@@ -66,17 +66,11 @@ int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
 	const char *filebase, struct fitsPrivate *out, int write_model,
-	double scale, const char *calfilename)
+	double scale)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
 	FILE *calfile;
-
-	if(calfilename)
-	{
-		calfile = fopen(calfilename, "r");
-		printf("ct = %s -> %p\n", calfilename, calfile);
-	}
 
 	populateFitsKeywords(D, &keys);
 	
@@ -140,23 +134,15 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%d bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	if(calfile)
-	{
-		printf("  FG -- flag                ");
-		fflush(stdout);
-		D = DifxInput2FitsFG(D, &keys, out, calfile);
-		printf("%d bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
-	}
+	printf("  FG -- flag                ");
+	fflush(stdout);
+	D = DifxInput2FitsFG(D, &keys, out);
+	printf("%d bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
 
 	printf("                            -----\n");
 	printf("  Total                     %d bytes\n", last_bytes);
 
-	if(calfile)
-	{
-		fclose(calfile);
-	}
-	
 	return D;
 }
 
@@ -234,8 +220,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(DifxInput2FitsTables(D, basefile, &outfile, writemodel, scale,
-		calfilename) == D)
+	if(DifxInput2FitsTables(D, basefile, &outfile, writemodel, scale) == D)
 	{
 		printf("\nConversion successful\n");
 	}
