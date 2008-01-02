@@ -140,6 +140,18 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%d bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  TY -- system temperature  ");
+	fflush(stdout);
+	D = DifxInput2FitsTY(D, &keys, out);
+	printf("%d bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
+	printf("  WX -- weather             ");
+	fflush(stdout);
+	D = DifxInput2FitsWX(D, &keys, out);
+	printf("%d bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("                            -----\n");
 	printf("  Total                     %d bytes\n", last_bytes);
 
