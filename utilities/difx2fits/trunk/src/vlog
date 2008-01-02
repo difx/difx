@@ -264,10 +264,12 @@ def makeTY(sections, antenna):
 				print 'Cannot handle %s\n' % t
 				continue
 			name = n[0]
+			ta = split(s[4], '/')
+			dt = parsetime(ta[1])-parsetime(ta[0])
 		elif len(s) == nif+4:
 			if s[nif+2] != '!':
 				continue
-			row = '%10.7f %s' % (parsetime(s[0]+'-'+s[1]+':0'), name)
+			row = '%10.7f %9.7f' % (parsetime(s[0]+'-'+s[1]+':0'), dt)
 			for i in range(nif):
 				row += ' '
 				row += s[2+map[i]]

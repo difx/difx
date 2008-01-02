@@ -50,7 +50,7 @@ static void cpstr(char *dest, const char *src, int n)
 	}
 }
 
-static int parseflag(char *line, int refday, char *antname, float timerange[2], 
+static int parseFlag(char *line, int refday, char *antname, float timerange[2], 
 	char *reason, int *polId, int *bandId)
 {
 	char *s;
@@ -71,21 +71,6 @@ static int parseflag(char *line, int refday, char *antname, float timerange[2],
 	cpstr(reason, line+n, 40);
 	
 	return 1;
-}
-
-const int getAntId(const DifxInput *D, const char *antname)
-{
-	int a;
-
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		if(strcmp(D->antenna[a].name, antname) == 0)
-		{
-			return a+1;
-		}
-	}
-
-	return -1;
 }
 
 const DifxInput *DifxInput2FitsFG(const DifxInput *D,
@@ -180,7 +165,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 		{
 			continue;
 		}
-		else if(parseflag(line, refday, antname, timerange, 
+		else if(parseFlag(line, refday, antname, timerange, 
 			reason, &polId, &bandId))
 		{
 			if(strncmp(reason, "recorder", 8) == 0)
@@ -208,8 +193,8 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 				timerange[1] = stop;
 			}
 
-			baselineId[0] = getAntId(D, antname);
-			if(baselineId[0] < 0)
+			baselineId[0] = DifxInputGetAntennaId(D, antname) + 1;
+			if(baselineId[0] <= 0)
 			{
 				continue;
 			}
@@ -290,7 +275,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	
 			if(swap)
 			{
-				FitsBinRowByteSwap(columns, nColumns, &fitsbuf);
+				FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
 			}
 			fitsWriteBinRow(out, fitsbuf);
 		}
