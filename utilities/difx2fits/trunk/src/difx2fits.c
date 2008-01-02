@@ -146,6 +146,12 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%d bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  PC -- phase cal           ");
+	fflush(stdout);
+	D = DifxInput2FitsPC(D, &keys, out);
+	printf("%d bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("  WX -- weather             ");
 	fflush(stdout);
 	D = DifxInput2FitsWX(D, &keys, out);

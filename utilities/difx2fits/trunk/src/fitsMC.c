@@ -76,8 +76,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	}
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	/* malloc space for storing table in FITS order */
-	if ((fitsbuf = (char *)malloc (nRowBytes)) == (char *)NULL)
+	/* calloc space for storing table in FITS order */
+	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == (char *)NULL)
 	{
 		return 0;
 	}

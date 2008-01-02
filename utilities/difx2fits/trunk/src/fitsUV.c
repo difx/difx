@@ -27,7 +27,7 @@ static int DifxVisInitData(DifxVis *dv)
 		return -1;
 	}
 	n = dv->nFreq*dv->maxPol + dv->nData;
-	dv->record = malloc(n*sizeof(float) + sizeof(struct UVrow));
+	dv->record = calloc(n*sizeof(float) + sizeof(struct UVrow), 1);
 	if(dv->record == 0)
 	{
 		return -2;
@@ -49,7 +49,7 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	int polMask = 0;
 	int verbose = 0;
 
-	dv = (DifxVis *)malloc(sizeof(DifxVis));
+	dv = (DifxVis *)calloc(1, sizeof(DifxVis));
 
 	if(!dv)
 	{
@@ -148,8 +148,8 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 		dv->polStart = -6;
 	}
 
-	dv->spectrum = (float *)malloc(dv->maxChan*dv->nComplex*
-		dv->D->specAvg*sizeof(complex float));
+	dv->spectrum = (float *)calloc(dv->maxChan*dv->nComplex*
+		dv->D->specAvg, sizeof(complex float));
 
 	dv->dp = newDifxParameters();
 

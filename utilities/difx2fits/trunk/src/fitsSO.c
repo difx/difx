@@ -103,7 +103,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	src_row.pmra = src_row.pmdec = 0.0;
 	src_row.epoch = 2000.0;
 
-	if((fitsbuf = (char *)malloc(n_row_bytes)) == 0)
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}

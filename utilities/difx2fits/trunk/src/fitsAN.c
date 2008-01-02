@@ -65,8 +65,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 
 	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
-	/* malloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)malloc (n_row_bytes)) == 0)
+	/* calloc space for storing table in FITS format */
+	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}

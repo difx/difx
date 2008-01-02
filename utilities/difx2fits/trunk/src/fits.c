@@ -52,8 +52,8 @@ int fitsWriteOpen		/* create FITS file and open it for writing */
             
     cluster = 8192;
 
-    /* malloc buffer */
-    if ((pFile->buf = (char *)malloc (cluster)) == 0)
+    /* calloc buffer */
+    if ((pFile->buf = (char *)calloc (cluster, 1)) == 0)
 	return -1;
 
     /* open stream */

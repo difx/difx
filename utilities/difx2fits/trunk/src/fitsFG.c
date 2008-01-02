@@ -126,8 +126,8 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
-	/* malloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)malloc (n_row_bytes)) == 0)
+	/* calloc space for storing table in FITS format */
+	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
@@ -157,7 +157,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 		fgets(line, 999, in);
 		if(feof(in))
 		{
-			return;
+			break;
 		}
 			
 		/* ignore possible comment lines */

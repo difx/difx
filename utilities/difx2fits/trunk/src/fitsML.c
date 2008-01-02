@@ -119,8 +119,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes,
 		     "INTERFEROMETER_MODEL");
   
-	/* malloc space for storing table in FITS order */
-	if ((fitsbuf = (char *)malloc (nRowBytes)) == (char *)NULL)
+	/* calloc space for storing table in FITS order */
+	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == (char *)NULL)
 	{
 		return 0;
 	}

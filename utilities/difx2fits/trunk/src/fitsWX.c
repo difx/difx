@@ -30,7 +30,7 @@ static int parseWeather(const char *line, WXrow *wx, char *ant)
 	return 1;
 }
 
-const DifxInput *DifxInput2FitsPC(const DifxInput *D,
+const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/*  define the flag FITS table columns */
@@ -68,8 +68,8 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
-	/* malloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)malloc (n_row_bytes)) == 0)
+	/* calloc space for storing table in FITS format */
+	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
@@ -87,7 +87,7 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 		fgets(line, 999, in);
 		if(feof(in))
 		{
-			return;
+			break;
 		}
 			
 		/* ignore possible comment lines */

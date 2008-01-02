@@ -173,10 +173,16 @@ def makePC(sections, antenna):
 
 	table = []
 
+	dt = 0;
+
 	A = [[[]]]
-	for row in P[p:]:
+	for row in P:
 		s = split(row)
 		if s[0] == '!':
+			if len(s) == 5:
+				ta = split(s[4], '/')
+				if len(ta) == 2:
+					dt = parsetime(ta[1]) - parsetime(ta[0])
 			continue
 		if len(s) != 5:
 			continue
@@ -184,12 +190,11 @@ def makePC(sections, antenna):
 			current = []
 			Time = parsetime(s[0]+'-'+s[1])
 			current.append(Time)
-			current.append(0.0)
+			current.append(dt)
 			if s[3] == '-Inf' or s[3] == 'Inf':
 				s[3] = '999.9'
 			current.append(s[3])
 			current.append(s[4])
-			current.append(getSource(Scans, Time))
 			A = []
 			for x in range(np):
 				A.append([])
@@ -204,16 +209,16 @@ def makePC(sections, antenna):
 			A[row[8]-1][row[7]-1][row[6]-1] = [row[2], s[3], s[4]]
 	
 	pc = []
-	pc.append('%d %d %d' % (nt, nb, np))
+	pc.append('# %d %d %d' % (nt, nb, np))
 	for t in table:
-		line = '%9.7f %d %s %s %s ' % (t[0], t[1], t[2], t[3], t[4])
+		line = '%9.7f %9.7f %s %s ' % (t[0], t[1], t[2], t[3])
 		for z in range(np):
 			for y in range(nb):
 				for x in range(nt):
 					line += '%s %s %s ' % ( \
-						t[5][z][y][x][0],
-						t[5][z][y][x][1],
-						t[5][z][y][x][2])
+						t[4][z][y][x][0],
+						t[4][z][y][x][1],
+						t[4][z][y][x][2])
 		pc.append(line)
 	return pc
 
@@ -285,7 +290,10 @@ def writetable(table, filename, ants, tablename):
 			t = table[a]
 			stdout.write(' %s' % a)
 			for row in t:
-				f.write('%s %s\n' % (a, row))
+				if row[0] == '#':
+					f.write('%s\n' % row)
+				else:
+					f.write('%s %s\n' % (a, row))
 	f.close()
 	stdout.write('\n')
 

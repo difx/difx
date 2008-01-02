@@ -47,8 +47,8 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	/* determine size of FITS record to be written */
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	/* malloc space for storing table in FITS format */
-	if((fitsbuf = (char *)malloc(nRowBytes)) == 0)
+	/* calloc space for storing table in FITS format */
+	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
 	{
 		return 0;
 	}
