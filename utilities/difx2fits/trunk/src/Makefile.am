@@ -2,19 +2,20 @@ bin_PROGRAMS = difx2fits
 difx2fits_SOURCES = \
 	byteorder.c \
 	difx2fits.c \
+	fits.c \
+	fitsHeader.c \
 	fitsAG.c \
 	fitsAN.c \
-	fits.c \
 	fitsCT.c \
+	fitsFG.c \
 	fitsFQ.c \
-	fitsHeader.c \
+	fitsGC.c \
 	fitsMC.c \
 	fitsML.c \
-	fitsSO.c \
-	fitsUV.c \
-	fitsFG.c \
-	fitsTY.c \
 	fitsPC.c \
+	fitsSO.c \
+	fitsTY.c \
+	fitsUV.c \
 	fitsWX.c \
 	mjd2str.c \
 	time2str.c \

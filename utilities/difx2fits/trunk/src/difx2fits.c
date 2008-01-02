@@ -158,6 +158,12 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%d bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  GC -- gain curve          ");
+	fflush(stdout);
+	D = DifxInput2FitsGC(D, &keys, out);
+	printf("%d bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("                            -----\n");
 	printf("  Total                     %d bytes\n", last_bytes);
 

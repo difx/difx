@@ -78,6 +78,9 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
+	fitsWriteString(out, "MAPFUNC", "", "");
+	fitsWriteString(out, "WVR_TYPE", "", "");
+	fitsWriteString(out, "ION_TYPE", "", "");
 	fitsWriteEnd(out);
 
 	fitsbuf = (char *)(&wx);

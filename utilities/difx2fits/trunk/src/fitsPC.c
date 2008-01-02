@@ -131,7 +131,14 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	
 	swap = (byteorder() == BO_LITTLE_ENDIAN);
 
-	nColumn = NELEMENTS(columns);
+	if(no_pol == 2)
+	{
+		nColumn = NELEMENTS(columns);
+	}
+	else
+	{
+		nColumn = NELEMENTS(columns) - 5;
+	}
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
@@ -146,6 +153,8 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "PHASE-CAL");
 
 	arrayWriteKeys (p_fits_keys, out);
+	fitsWriteInteger(out, "NO_POL", no_pol, "");
+	fitsWriteInteger(out, "NO_TONES", no_tone, "");
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 

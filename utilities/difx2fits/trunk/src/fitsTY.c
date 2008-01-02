@@ -68,7 +68,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	float ty1[16], ty2[16], tant[16];
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
-	int i, np;
+	int i, np, nPol;
 	double t;
 	float dt;
 	FILE *in;
@@ -76,6 +76,8 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	no_band = p_fits_keys->no_band;
 	
 	sprintf(bandFormFloat, "%dE", no_band);
+
+	swap = (byteorder() == BO_LITTLE_ENDIAN);
 	
 	in = fopen("tsys", "r");
 	
@@ -84,9 +86,34 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 		return D;
 	}
 
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
+	/* learn number of polarizations */
+	do
+	{
+		fgets(line, 999, in);
+		if(feof(in))
+		{
+			fclose(in);
+			return D;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
 
-	nColumn = NELEMENTS(columns);
+		nPol = parseTsys(line, no_band, antenna, &t, &dt, 
+			&sourceId, ty1, ty2);
+	}
+	while(nPol <= 0);
+	fseek(in, 0, SEEK_SET);
+
+	if(nPol == 2)
+	{
+		nColumn = NELEMENTS(columns);
+	}
+	else
+	{
+		nColumn = NELEMENTS(columns) - 2;
+	}
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
@@ -101,6 +128,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "TSYS");
 
 	arrayWriteKeys (p_fits_keys, out);
+	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
@@ -129,9 +157,10 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 			np = parseTsys(line, no_band, antenna, 
 				&t, &dt, &sourceId, ty1, ty2);
 		
-			if(np < 1)
+			if(np != nPol)
 			{
-				printf("Tsys error : %s\n", line);
+				fprintf(stderr, "TSYS Pol mismatch %d != %d\n", 
+					np, nPol);
 				continue;
 			}
 			
