@@ -8,9 +8,39 @@
 
 static int parsePulseCal(const char *line, 
 	int no_pol, int no_band, int no_tone, 
-	char *antname, double *t, float *dt, double *ccal,
+	char *antName, double *t, float *dt, double *ccal,
 	double freqs[][16], float pcalR[][16], float pcalI[][16])
 {
+	int n, p;
+	int pol, band, tone;
+	double A;
+	float B, C;
+
+	n = sscanf("%s%lf%f%lf%n", antName, &t, &dt, &ccal, &p);
+	if(n != 4)
+	{
+		return -1;
+	}
+	line += p;
+	
+	for(pol = 0; pol < no_pol; pol++)
+	{
+		for(band = 0; band < no_band; band++)
+		{
+			for(tone = 0; tone < no_tone; tone++)
+			{
+				n = sscanf(line, "%lf%f%f%n", &A, &B, &C, &p);
+				if(n < 3)
+				{
+					return -1;
+				}
+				freqs[pol][tone + band*no_tone] = A;
+				pcalR[pol][tone + band*no_tone] = B;
+				pcalI[pol][tone + band*no_tone] = C;
+				line += p;
+			}
+		}
+	}
 
 	return 0;
 }
