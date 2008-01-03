@@ -576,11 +576,13 @@ def maketelescopetable(job_clock, subarray, antennalist, startmjd):
 		if i < 10:
 			tele.append("TELESCOPE NAME %d:   %s" % \
 				(i, antennalist[ant_index]))
+			tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
+			tele.append("CLOCK RATE(us/s) %d: %s" % (i, rate))
 		else:
 			tele.append("TELESCOPE NAME %d:  %s" % \
 				(i, antennalist[ant_index]))
-		tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
-		tele.append("CLOCK RATE(us/s) %d: %s" % (i, rate))
+			tele.append("CLOCK DELAY (us) %d:%s" % (i, delay))
+			tele.append("CLOCK RATE(us/s) %d:%s" % (i, rate))
 	return tele
 
 # note that nant is the number of antennas involved in this particular
