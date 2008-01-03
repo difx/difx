@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 #include "other.h"
 
 static int parseTsys(const char *line, int no_band, char *antenna, 
@@ -61,7 +61,6 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	int nColumn;
 	int n_row_bytes, irow;
 	char *fitsbuf, *p_fitsbuf;
-	int swap;
 	int refday;
 	char line[1000];
 	char antenna[20];
@@ -77,8 +76,6 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	
 	sprintf(bandFormFloat, "%dE", no_band);
 
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
-	
 	in = fopen("tsys", "r");
 	
 	if(!in || D == 0)
@@ -219,11 +216,10 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 					no_band*sizeof(float));
 				p_fitsbuf += no_band*sizeof(float);
 			}
-		
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
-			}
+
+#ifndef WORDS_BIGENDIAN
+			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+#endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
 	}

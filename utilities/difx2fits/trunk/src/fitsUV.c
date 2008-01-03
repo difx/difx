@@ -3,8 +3,8 @@
 #include <string.h>
 #include <strings.h>
 #include <glob.h>
+#include "config.h"
 #include "fitsUV.h"
-#include "byteorder.h"
 
 	
 static int DifxVisInitData(DifxVis *dv)
@@ -472,7 +472,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	int changed;
 	int i, k;
 	int specAvg;
-	int swap;
 	float vis_scale;
 	double scale;
 	char dateStr[12];
@@ -584,8 +583,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 
 	/* now loop over visibility records and write out rows */
 	
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
-
 	specAvg = dv->D->specAvg;
 
 	for(;;)
@@ -617,12 +614,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 					{
 						dv->weight[i] = 1.0;
 					}
-					if(swap)
-					{
-						FitsBinRowByteSwap(columns, 
-							NELEMENTS(columns), 
-							dv->record);
-					}
+#ifndef WORDS_BIGENDIAN
+					FitsBinRowByteSwap(columns, 
+						NELEMENTS(columns), dv->record);
+#endif
 					fitsWriteBinRow(dv->out, 
 						(char *)dv->record);
 					nWritten++;
@@ -687,11 +682,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 		{
 			dv->weight[i] = 1.0;
 		}
-		if(swap)
-		{
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), 
-				dv->record);
-		}
+#ifndef WORDS_BIGENDIAN
+		FitsBinRowByteSwap(columns, NELEMENTS(columns), dv->record);
+#endif
 		fitsWriteBinRow(dv->out, (char *)dv->record);
 		nWritten++;
 	}

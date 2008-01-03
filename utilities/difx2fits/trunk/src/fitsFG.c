@@ -2,53 +2,9 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 #include "other.h"
-
-
-static void cpstr(char *dest, const char *src, int n)
-{
-	int i = 0;
-	
-	dest[0] = 0;
-
-	if(*src == 0)
-	{
-		return;
-	}
-	while(*src != '\'')
-	{
-		src++;
-		if(!*src)
-		{
-			return;
-		}
-	}
-	src++;
-	while(*src != '\'')
-	{
-		*dest = *src;
-		dest++;
-		i++;
-		if(i > n)
-		{
-			return;
-		}
-		if(!*src)
-		{
-			*dest = 0;
-			return;
-		}
-		src++;
-	}
-	*dest = 0;
-	for(; i < n; i++)
-	{
-		*dest = ' ';
-		dest++;
-	}
-}
 
 static int parseFlag(char *line, int refday, char *antname, float timerange[2], 
 	char *reason, int *polId, int *bandId)
@@ -68,7 +24,7 @@ static int parseFlag(char *line, int refday, char *antname, float timerange[2],
 	timerange[0] -= refday;
 	timerange[1] -= refday;
 	
-	cpstr(reason, line+n, 40);
+	copyQuotedString(reason, line+n, 40);
 	
 	return 1;
 }
@@ -97,7 +53,6 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	int n_row_bytes, irow;
 	char *fitsbuf, *p_fitsbuf;
 	double start, stop;
-	int swap;
 	char line[1000];
 	char reason[64], antname[10];
 	int refday;
@@ -119,8 +74,6 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	{
 		return D;
 	}
-
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
 
 	nColumn = NELEMENTS(columns);
 	
@@ -178,8 +131,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 				timerange[1] = 1.0;
 			}
 			
-			if(timerange[0] > stop ||
-			   timerange[1] < start)
+			if(timerange[0] > stop || timerange[1] < start)
 			{
 				continue;
 			}
@@ -272,11 +224,9 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 			bcopy((char *)&severity, p_fitsbuf, sizeof(severity));
 			p_fitsbuf += sizeof(severity);
 
-	
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
-			}
+#ifndef WORDS_BIGENDIAN	
+			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+#endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
 	}

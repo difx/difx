@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 
 const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
@@ -27,15 +27,12 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	char *fitsbuf, *p_fitsbuf;
 	int row;
 	int no_band;
-	int swap;
 
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
-	
 	no_band = p_fits_keys->no_band;
 
 	sprintf(bandFormDouble, "%1dD", no_band);  
@@ -121,10 +118,9 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 			bcopy((char *)&bb_chan, p_fitsbuf, sizeof(bb_chan));
 			p_fitsbuf += sizeof(bb_chan);
 		}
-		if(swap)
-		{
-			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
-		}
+#ifndef WORDS_BIGENDIAN
+		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+#endif
 		fitsWriteBinRow(out, fitsbuf);
 	}
 

@@ -1,6 +1,5 @@
 bin_PROGRAMS = difx2fits
 difx2fits_SOURCES = \
-	byteorder.c \
 	difx2fits.c \
 	fits.c \
 	fitsHeader.c \
@@ -19,7 +18,7 @@ difx2fits_SOURCES = \
 	fitsWX.c \
 	mjd2str.c \
 	time2str.c \
-	byteorder.h \
+	textutils.c \
 	difx2fits.h \
 	fits.h \
 	fitsUV.h \

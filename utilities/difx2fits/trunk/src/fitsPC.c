@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 #include "other.h"
 
 static int parsePulseCal(const char *line, 
@@ -77,7 +77,6 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	int nColumn;
 	int n_row_bytes, irow;
 	char *fitsbuf, *p_fitsbuf;
-	int swap;
 	char line[1000];
 	char antName[20];
 	int no_band, no_tone, no_pol;
@@ -129,8 +128,6 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	sprintf(toneFormFloat,  "%dE", no_tone*no_band);
 	sprintf(toneFormDouble, "%dD", no_tone*no_band);
 	
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
-
 	if(no_pol == 2)
 	{
 		nColumn = NELEMENTS(columns);
@@ -258,10 +255,9 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 				p_fitsbuf += no_tone*no_band*sizeof(float);
 			}
 			
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
-			}
+#ifndef WORDS_BIGENDIAN
+			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+#endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
 	}

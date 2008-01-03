@@ -1,8 +1,8 @@
 #include <math.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 
 
 static double arrayGMST(int mjd)
@@ -69,14 +69,11 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	int n_row_bytes;
 	int i, a, e, mjd;
 	struct AGrow row;
-	int swap;
 
 	if(D == 0)
 	{
 		return 0;
 	}
-
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
 
 	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
@@ -164,10 +161,9 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		{
 			row.offset[i] = D->antenna[a].offset[i];
 		}
-		if(swap)
-		{
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
-		}
+#ifndef WORDS_BIGENDIAN
+		FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
+#endif
 		fitsWriteBinRow(out, (char *)&row);
 	}
 	

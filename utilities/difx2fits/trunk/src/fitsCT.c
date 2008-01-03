@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 
 
 /*
@@ -92,7 +92,6 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	};
 	
 	int n_row_bytes;
-	int swap;
 	int e;
 
 	if(D == 0)
@@ -100,8 +99,6 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 		return 0;
 	}
 	
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
-
 	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
 	fitsWriteBinTable(out, NELEMENTS(columns), columns, n_row_bytes,
@@ -153,11 +150,9 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 			row.dEps    = 0.0;
 			row.ddEps   = 0.0;
 
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, 
-					NELEMENTS(columns), &row);
-			}
+#ifndef WORDS_BIGENDIAN
+			FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
+#endif
 			fitsWriteBinRow(out, (char *)&row);
 		}
 	}
@@ -179,11 +174,9 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 			row.dEps    = 0.0;
 			row.ddEps   = 0.0;
 
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, 
-					NELEMENTS(columns), &row);
-			}
+#ifndef WORDS_BIGENDIAN
+			FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
+#endif
 			fitsWriteBinRow(out, (char *)&row);
 
 		}

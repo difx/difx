@@ -14,4 +14,7 @@ char *rad2str(double, char *, char *);
 char *rad2strg(double, char *, char *, int);
 char *timeMjd2str(double, char *);
 
+/* textutils.c */
+void copyQuotedString(char *dest, const char *src, int n);
+
 #endif

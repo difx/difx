@@ -3,7 +3,6 @@
 #include <sys/types.h>
 #include <strings.h>
 #include "difx2fits.h"
-#include "byteorder.h"
 #include "other.h"
 
 

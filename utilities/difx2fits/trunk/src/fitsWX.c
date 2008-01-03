@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 #include "other.h"
 
 typedef struct __attribute__((packed))
@@ -51,7 +51,6 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	int n_row_bytes, irow;
 	char *fitsbuf;
 	char ant[64];
-	int swap;
 	char line[1000];
 	FILE *in;
 	
@@ -61,8 +60,6 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	{
 		return D;
 	}
-
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
 
 	nColumn = NELEMENTS(columns);
 	
@@ -111,10 +108,9 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 			}
 			wx.dt = 0.0;
 
-			if(swap)
-			{
-				FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
-			}
+#ifndef WORDS_BIGENDIAN
+			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+#endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
 	}

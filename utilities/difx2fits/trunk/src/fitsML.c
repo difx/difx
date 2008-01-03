@@ -3,8 +3,8 @@
 #include <sys/types.h>
 #include <strings.h>
 #include <sys/time.h>
+#include "config.h"
 #include "difx2fits.h"
-#include "byteorder.h"
 
 #define array_N_POLY 6
 
@@ -78,7 +78,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int nRowBytes;
 	char strng[80];
 	int i, j, k, p, s, ant;
-	int swap;
 	double ppoly[array_MAX_BANDS][array_N_POLY];
 	double gpoly[array_N_POLY];
 	double prate[array_MAX_BANDS][array_N_POLY];
@@ -93,8 +92,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	{
 		return 0;
 	}
-
-	swap = (byteorder() == BO_LITTLE_ENDIAN);
 
 	nBand = p_fits_keys->no_band;
 	nPolar = D->config[0].IF[0].nPol;
@@ -282,10 +279,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		} /* Polar loop */
       
 		/* write buffer to output file */
-		if(swap)
-		{
-			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
-		}
+#ifndef WORDS_BIGENDIAN
+		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+#endif
 		fitsWriteBinRow(out, fitsbuf);
 		
 	     } /* Antenna loop */
