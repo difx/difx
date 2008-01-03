@@ -68,12 +68,11 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
 	int i, np, nPol=0;
-	double t;
+	double t, mjd;
 	float dt;
 	FILE *in;
 	
 	no_band = p_fits_keys->no_band;
-	
 	sprintf(bandFormFloat, "%dE", no_band);
 
 	in = fopen("tsys", "r");
@@ -113,7 +112,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
@@ -151,6 +150,14 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 		{
 			np = parseTsys(line, no_band, antenna, 
 				&t, &dt, ty1, ty2);
+
+			/* discard records outside time range */
+			mjd = t-refday+(int)(D->mjdStart);
+			if(mjd < D->mjdStart || 
+			   mjd > D->mjdStart+D->duration/86400.0)
+			{
+				continue;
+			}
 		
 			if(np != nPol)
 			{
@@ -159,14 +166,14 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 				continue;
 			}
 			
+			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antenna) + 1;
 			if(antId <= 0)
 			{
 				continue;
 			}
 
-			sourceId = DifxInputGetSourceId(D, 
-				t-refday+(int)(D->mjdStart) ) + 1;
+			sourceId = DifxInputGetSourceId(D, mjd) + 1;
 		
 			p_fitsbuf = fitsbuf;
 		
@@ -187,7 +194,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 			p_fitsbuf += sizeof(arrayId);
 
 			/* ANTENNA */
-			bcopy((char *)antId, p_fitsbuf, sizeof(antId));
+			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
 			p_fitsbuf += sizeof(antId);
 
 			/* FREQ_ID */
@@ -204,12 +211,12 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 
 			if(np > 1)
 			{
-				/* TSYS_1 */
-				bcopy((char *)ty1, p_fitsbuf, 
+				/* TSYS_2 */
+				bcopy((char *)ty2, p_fitsbuf, 
 					no_band*sizeof(float));
 				p_fitsbuf += no_band*sizeof(float);
 
-				/* TANT_1 */
+				/* TANT_2 */
 				bcopy((char *)tant, p_fitsbuf, 
 					no_band*sizeof(float));
 				p_fitsbuf += no_band*sizeof(float);

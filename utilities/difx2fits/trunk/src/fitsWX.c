@@ -66,7 +66,7 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
@@ -117,7 +117,6 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 
 	/* close the file, free memory, and return */
 	fclose(in);
-	free(fitsbuf);
 
 	return D;
 }
