@@ -17,7 +17,8 @@
 
 typedef struct
 {
-	int mjd1, mjd2, band;
+	float mjd1, mjd2;
+	int band;
 	char antName[4];
 	int nfreq, npoly, ndpfu, ntime;
 	float freq[2];
@@ -44,7 +45,7 @@ static const float bandEdges[NBANDS+1] =
 
 /* freq in MHz, t in days since ref day */
 static int getGainRow(GainRow *G, int nRow, const char *antName,
-	double freq, int mjd)
+	double freq, float mjd)
 {
 	int i, r;
 	int bestr = -1;
@@ -104,7 +105,7 @@ static int testAntenna(const char *token, char *value)
 		return -1;
 	}
 	sprintf(matcher, " %s ", token);
-	if(strstr(matcher, antennas) != 0)
+	if(strstr(antennas, matcher) != 0)
 	{
 		strcpy(value, token);
 	}
@@ -232,7 +233,7 @@ static int parseGC(const char *filename, int row, GainRow *G)
 				ctr = &G[row].npoly;
 				max = MAXTAB;
 			}
-			else if(strcasecmp(token, "TIME") == 0)
+			else if(strcasecmp(token, "TIMERANG") == 0)
 			{
 				val = G[row].time;
 				ctr = &G[row].ntime;
@@ -262,7 +263,7 @@ static int parseGC(const char *filename, int row, GainRow *G)
 		{
 			if(ctr)
 			{
-				*ctr++;
+				(*ctr)++;
 			}
 			action = 1;
 			c = 0;
@@ -290,8 +291,6 @@ static int parseGC(const char *filename, int row, GainRow *G)
 				c = getNoQuote(c, in, token);
 			}
 
-			printf("TOKEN: <%s> (%d)\n", token, c);
-
 			if(c == EOF)
 			{
 				continue;
@@ -301,15 +300,14 @@ static int parseGC(const char *filename, int row, GainRow *G)
 			{
 				if(val && ctr)
 				{
-					if(*ctr > max)
+					if((*ctr) > max)
 					{
 						fprintf(stderr, 
-							"Too many values\n");
+					"Too many values %d>%d\n", *ctr, max);
 					}
 					else
 					{
-						val[*ctr-1] = atof(token);
-						*ctr++;
+						val[(*ctr)-1] = atof(token);
 					}
 				}
 				action = 0;
@@ -331,22 +329,24 @@ static int parseGC(const char *filename, int row, GainRow *G)
 	return row;
 }
 
-static int GainRowsSetTime(GainRow *G, int nRow)
+static void GainRowsSetTimeBand(GainRow *G, int nRow)
 {
 	int i, j;
 	double freq;
 
 	for(i = 0; i < nRow; i++)
 	{
-		if(G[i].npoly == 0 || G[i].nfreq == 0 || 
-		   G[i].ntime == 0 || G[i].ndpfu == 0)
+		if(G[i].npoly != 0 && G[i].nfreq != 0 && 
+		   G[i].ntime != 0 && G[i].ndpfu != 0)
 		{
 			G[i].mjd1 = ymd2mjd(G[i].time[0], 
 					    G[i].time[1], 
-					    G[i].time[2]);
+					    G[i].time[2]) + 
+					    G[i].time[3]/24.0;
 			G[i].mjd2 = ymd2mjd(G[i].time[4], 
 					    G[i].time[5], 
-					    G[i].time[6]);
+					    G[i].time[6]) +
+					    G[i].time[7]/24.0;
 		}
 		for(j = 0; j < NBANDS; j++)
 		{
@@ -365,8 +365,8 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	GainRow *G;
 	int nRow;
 	char bandFormInt[4];
-	char bandFormFloat[6];
-	char tabFormFloat[6];
+	char bandFormFloat[4];
+	char tabFormFloat[4];
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -406,6 +406,7 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	int bad;
 	int mjd;
 	double freq;
+	int messages = 0;
 
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G || !D)
@@ -430,12 +431,6 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	}
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
-	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
-	{
-		return 0;
-	}
-
 	nRow = parseGC("/home/jansky3/vlbaops/TCAL/vlba_gains.key", 0, G);
 	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.ar", nRow, G);
 	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.eb", nRow, G);
@@ -447,7 +442,22 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 		return D;
 	}
 
-	GainRowsSetTime(G, nRow);
+	/* calloc space for storing table in FITS format */
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	{
+		free(G);
+		return 0;
+	}
+
+	/* spew out the table header */
+	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "GAIN_CURVE");
+	arrayWriteKeys(p_fits_keys, out);
+	fitsWriteInteger(out, "NO_POL", no_pol, "");
+	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");
+	fitsWriteInteger(out, "TABREV", 1, "");
+	fitsWriteEnd(out);
+
+	GainRowsSetTimeBand(G, nRow);
 
 	for(i = 0; i < MAXTAB*MAXIFS; i++)
 	{
@@ -460,7 +470,7 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	}
 	arrayId = 0;
 	freqId = 0;
-	mjd = D->mjdStart;
+	mjd = D->mjdStart + 0.5*D->duration/86400.0;
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
@@ -474,8 +484,13 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 			r = getGainRow(G, nRow, antName, freq, mjd);
 			if(r < 0)
 			{
-				fprintf(stderr, "Ant %s IF %d -- no gain\n",
-					antName, i+1);
+				if(messages == 0)
+				{
+					printf("\n");
+				}
+				fprintf(stderr, "    No gain curve for %s\n",
+					antName);
+				messages++;
 				bad = 1;
 				break;
 			}
@@ -497,7 +512,7 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 		p_fitsbuf = fitsbuf;
 		
 		/* ANTENNA_NO */
-		bcopy((char *)antId, p_fitsbuf, sizeof(antId));
+		bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
 		p_fitsbuf += sizeof(antId);
 
 		/* ARRAY */
@@ -547,7 +562,7 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 		}
 
 #ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 		fitsWriteBinRow(out, fitsbuf);
 	}
@@ -555,6 +570,11 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	/* free allocated memory */
 	free(fitsbuf);
 	free(G);
+
+	if(messages > 0)
+	{
+		printf("                            ");
+	}
 
 	return D;
 }

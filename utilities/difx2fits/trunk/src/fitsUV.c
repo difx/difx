@@ -689,9 +689,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 		nWritten++;
 	}
 
-	printf("    %d flagged records dropped\n", nFlagged);
-	printf("    %d invalid records dropped\n", nInvalid);
-	printf("    %d records written\n", nWritten);
+	printf("      %d flagged records dropped\n", nFlagged);
+	printf("      %d invalid records dropped\n", nInvalid);
+	printf("      %d records written\n", nWritten);
 
 	return 0;
 }

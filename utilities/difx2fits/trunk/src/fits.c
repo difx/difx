@@ -588,48 +588,43 @@ int FitsBinRowByteSwap(const struct fitsBinTableColumn *columns, int nColumns,
 	{
 		sscanf(columns[n].p_repeat_type, "%d%c", &q, &c);
 		t = fitsTypeSize(c);
-		if(t == 1) 
+		for(b = 0; b < q; b++)
 		{
-			cdata += q;	/* No swapping */
-		}
-		else 
-		{
-			for(b = 0; b < q; b++)
+			switch(t)
 			{
-				switch(t)
-				{
-				case 2:
-					temp = *cdata;
-					*cdata = *(cdata+1);
-					*(cdata+1) = temp;
-					break;
-				case 4:
-					temp = *cdata;
-					*cdata = *(cdata+3);
-					*(cdata+3) = temp;
-					temp = *(cdata+1);
-					*(cdata+1) = *(cdata+2);
-					*(cdata+2) = temp;
-					break;
-				case 8:
-					temp = *cdata;
-					*cdata = *(cdata+7);
-					*(cdata+7) = temp;
-					temp = *(cdata+1);
-					*(cdata+1) = *(cdata+6);
-					*(cdata+6) = temp;
-					temp = *(cdata+2);
-					*(cdata+2) = *(cdata+5);
-					*(cdata+5) = temp;
-					temp = *(cdata+3);
-					*(cdata+3) = *(cdata+4);
-					*(cdata+4) = temp;
-					break;
-				default:
-					return 0;
-				}
-				cdata += t;
+			case 1:
+				break;	/* no swapping */
+			case 2:
+				temp = *cdata;
+				*cdata = *(cdata+1);
+				*(cdata+1) = temp;
+				break;
+			case 4:
+				temp = *cdata;
+				*cdata = *(cdata+3);
+				*(cdata+3) = temp;
+				temp = *(cdata+1);
+				*(cdata+1) = *(cdata+2);
+				*(cdata+2) = temp;
+				break;
+			case 8:
+				temp = *cdata;
+				*cdata = *(cdata+7);
+				*(cdata+7) = temp;
+				temp = *(cdata+1);
+				*(cdata+1) = *(cdata+6);
+				*(cdata+6) = temp;
+				temp = *(cdata+2);
+				*(cdata+2) = *(cdata+5);
+				*(cdata+5) = temp;
+				temp = *(cdata+3);
+				*(cdata+3) = *(cdata+4);
+				*(cdata+4) = temp;
+				break;
+			default:
+				return 0;
 			}
+			cdata += t;
 		}
 	}	
 	return 1;

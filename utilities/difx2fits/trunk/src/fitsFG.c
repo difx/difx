@@ -223,7 +223,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 			p_fitsbuf += sizeof(severity);
 
 #ifndef WORDS_BIGENDIAN	
-			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
