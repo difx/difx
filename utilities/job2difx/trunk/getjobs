@@ -1,0 +1,72 @@
+#!/usr/bin/env python
+
+from sys import argv, exit
+from os import getcwd, system
+from glob import glob
+from string import split
+
+program = 'getjobs'
+version = '1.0'
+verdate = '20080102'
+author  = 'Walter Brisken'
+
+projectdir = '/home/vlbiobs/astronomy'
+
+def usage():
+	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	print '\nA program to copy the needed files from a VLBA project for'
+	print 'software correlation with DiFX'
+	print '\nUsage: %s [options] <project> [<root dir>]' % argv[0]
+	print '\n  options can include:'
+	print '    -h  or  --help      Print this help message and exit.'
+	print '\n  <project> is the VLBA project code, including segment.'
+	print '      Example: bg160 or bw088r'
+	print '\n  <root dir> is path in which to create a new subdirectory'
+	print '      called <project>.  Default is the current directory.\n'
+	exit(0)
+
+def getdir(project):
+	g = glob('%s/*/%s' % (projectdir, project))
+	if len(g) == 1:
+		return g[0]
+	else:
+		print 'Sorry, project %s not in %s.' % (project, projectdir)
+		return None
+
+project = None
+basedir = None
+
+for arg in argv[1:]:
+	kv = split(arg, '=')
+	if len(kv) == 2:
+		pass
+	elif len(kv) == 1:
+		if arg[0] == '-':
+			if arg == '-h' or arg == '--help':
+				usage()
+		if project == None:
+			project = arg
+		elif basedir == None:
+			basedir = arg
+		else:
+			usage()
+	else:
+		usage()
+
+if project == None:
+	usage()
+
+if basedir == None:
+	basedir = getcwd()
+
+prjdir = getdir(project)
+
+newdir = basedir+'/'+project
+
+system('mkdir -p %s' % newdir)
+system('cp %s/jobs/*.fx %s' % (prjdir, newdir))
+calfile = glob('%s/%scal.vlba.*' % (prjdir, project))[0]
+system('cp %s %s' % (calfile, newdir))
+if calfile[-3:] == '.gz':
+	system('gunzip %s/%scal.vlba.gz' % (newdir, project))
+system('cd %s ; vlog %scal.vlba' % (newdir, project))
