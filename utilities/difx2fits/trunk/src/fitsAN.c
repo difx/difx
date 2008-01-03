@@ -32,17 +32,17 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	{
 		{"TIME", "1D", "time of center of interval", "DAYS"},
 		{"TIME_INTERVAL", "1E", "row interval", "DAYS"},
-		{"ANNAME", "8A", "station name"},
-		{"ANTENNA_NO", "1J", "antenna number"},
-		{"ARRAY", "1J", "array id number"},
-		{"FREQID", "1J", "frequency id number"},
-		{"NO_LEVELS", "1J", "number of digitizer levels"},
-		{"POLTYA", "1A", "feed A poln. code"},
+		{"ANNAME", "8A", "station name", ""},
+		{"ANTENNA_NO", "1J", "antenna number", ""},
+		{"ARRAY", "1J", "array id number", ""},
+		{"FREQID", "1J", "frequency id number", ""},
+		{"NO_LEVELS", "1J", "number of digitizer levels", ""},
+		{"POLTYA", "1A", "feed A poln. code", ""},
 		{"POLAA", bandFormFloat, "feed A position angle", "DEGREES"},
-		{"POLCALA", bandFormFloat, "feed A poln. cal. parameter"},
-		{"POLTYB", "1A", "feed B poln. code"},
+		{"POLCALA", bandFormFloat, "feed A poln. cal. parameter", ""},
+		{"POLTYB", "1A", "feed B poln. code", ""},
 		{"POLAB", bandFormFloat, "feed B position angle", "DEGREES"},
-		{"POLCALB", bandFormFloat, "feed B poln. cal. parameter"}
+		{"POLCALB", bandFormFloat, "feed B poln. cal. parameter", ""}
 	};
 
 	int nColumn;

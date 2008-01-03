@@ -1,6 +1,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <sys/types.h>
+#include <string.h>
 #include <strings.h>
 #include "config.h"
 #include "difx2fits.h"
@@ -9,7 +10,6 @@
 static int parseFlag(char *line, int refday, char *antname, float timerange[2], 
 	char *reason, int *polId, int *bandId)
 {
-	char *s;
 	int l;
 	int n;
 
@@ -37,20 +37,20 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"SOURCE_ID", "1J", "source id number from source tbl"},
-		{"ARRAY", "1J", "????"},
-		{"ANTS", "2J", "antenna id from antennas tbl"},
-		{"FREQID", "1J", "freq id from frequency tbl"},
+		{"SOURCE_ID", "1J", "source id number from source tbl", ""},
+		{"ARRAY", "1J", "????", ""},
+		{"ANTS", "2J", "antenna id from antennas tbl", ""},
+		{"FREQID", "1J", "freq id from frequency tbl", ""},
 		{"TIMERANG", "2E", "time flag condition begins, ends", "DAYS"},
-		{"BANDS", bandFormInt, "true if the baseband is bad"},
-		{"CHANS", "2J", "channel range to be flagged"},
-		{"PFLAGS", "4J", "flag array for polarization"},
-		{"REASON", "40A", "reason for data to be flagged bad"},
-		{"SEVERITY", "1J", "severity code"}
+		{"BANDS", bandFormInt, "true if the baseband is bad", ""},
+		{"CHANS", "2J", "channel range to be flagged", ""},
+		{"PFLAGS", "4J", "flag array for polarization", ""},
+		{"REASON", "40A", "reason for data to be flagged bad", ""},
+		{"SEVERITY", "1J", "severity code", ""}
 	};
 
 	int nColumn;
-	int n_row_bytes, irow;
+	int n_row_bytes;
 	char *fitsbuf, *p_fitsbuf;
 	double start, stop;
 	char line[1000];
@@ -65,8 +65,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	FILE *in;
 	
 	no_band = p_fits_keys->no_band;
-	
-	sprintf(bandFormInt, "%1dJ", no_band);
+	sprintf(bandFormInt, "%dJ", no_band);
 	
 	in = fopen("flag", "r");
 	
@@ -76,7 +75,6 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	}
 
 	nColumn = NELEMENTS(columns);
-	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */

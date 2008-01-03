@@ -1,19 +1,21 @@
 Version 1.8
+* Python script 'vlog' added to split cal file
 * Create flag table from cal file
+* Use autoconf endianness detection -- remove byteorder.[ch]
 
 Version 1.7
 * support scaling parameter
 
 Version 1.6
 * Respect .flag file
-* print more information
+* Print more information
 
 Version 1.5
 * Fix up configure.ac a bit more
 
 Version 1.4
 * Summarize tables at end
-* allow --no-model option
+* Allow --no-model option
 
 Version 1.3
 * Amplitude scaling

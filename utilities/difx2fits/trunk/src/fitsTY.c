@@ -7,11 +7,11 @@
 #include "other.h"
 
 static int parseTsys(const char *line, int no_band, char *antenna, 
-	double *t, float *dt, int *sourceId, float *ty1, float *ty2)
+	double *t, float *dt, float *ty1, float *ty2)
 {
 	int p, n, i;
 
-	n = sscanf(line, "%s%lf%f%n", antenna, &t, &dt, &p);
+	n = sscanf(line, "%s%lf%f%n", antenna, t, dt, &p);
 	if(n != 3)
 	{
 		return 0;
@@ -48,10 +48,10 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	{
 		{"TIME", "1D", "time of center of interval", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span of datum", "DAYS"},
-		{"SOURCE_ID", "1J", "source id number from source tbl"},
-		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl"},
-		{"ARRAY", "1J", "????"},
-		{"FREQID", "1J", "freq id from frequency tbl"},
+		{"SOURCE_ID", "1J", "source id number from source tbl", ""},
+		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", ""},
+		{"ARRAY", "1J", "????", ""},
+		{"FREQID", "1J", "freq id from frequency tbl", ""},
 		{"TSYS_1", bandFormFloat, "system temperature", "K"},
 		{"TANT_1", bandFormFloat, "antenna temperature", "K"},
 		{"TSYS_2", bandFormFloat, "system temperature", "K"},
@@ -59,7 +59,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	};
 
 	int nColumn;
-	int n_row_bytes, irow;
+	int n_row_bytes;
 	char *fitsbuf, *p_fitsbuf;
 	int refday;
 	char line[1000];
@@ -67,7 +67,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	float ty1[16], ty2[16], tant[16];
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
-	int i, np, nPol;
+	int i, np, nPol=0;
 	double t;
 	float dt;
 	FILE *in;
@@ -84,7 +84,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	}
 
 	/* learn number of polarizations */
-	do
+	while(nPol <= 0)
 	{
 		fgets(line, 999, in);
 		if(feof(in))
@@ -97,10 +97,8 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 			continue;
 		}
 
-		nPol = parseTsys(line, no_band, antenna, &t, &dt, 
-			&sourceId, ty1, ty2);
+		nPol = parseTsys(line, no_band, antenna, &t, &dt, ty1, ty2);
 	}
-	while(nPol <= 0);
 	fseek(in, 0, SEEK_SET);
 
 	if(nPol == 2)
@@ -152,7 +150,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 		else 
 		{
 			np = parseTsys(line, no_band, antenna, 
-				&t, &dt, &sourceId, ty1, ty2);
+				&t, &dt, ty1, ty2);
 		
 			if(np != nPol)
 			{

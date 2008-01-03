@@ -56,12 +56,12 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	/* define the antenna geometry FITS table columns */
 	static struct fitsBinTableColumn columns[] =
 	{
-		{"ANNAME", "8A", "station name"},
+		{"ANNAME", "8A", "station name", ""},
 		{"STABXYZ", "3D", "station offset from array origin", "METERS"},
 		{"DERXYZ", "3E", "first order derivs of STABXYZ", "M/SEC"},
-		{"ORBPARM", "0D", "orbital parameters"},
-		{"NOSTA", "1J", "station id number"},
-		{"MNTSTA", "1J", "antenna mount type"},
+		{"ORBPARM", "0D", "orbital parameters", ""},
+		{"NOSTA", "1J", "station id number", ""},
+		{"MNTSTA", "1J", "antenna mount type", ""},
 		{"STAXOF", "3E", "axis offset, x, y, z", "METERS"}
 	};
 

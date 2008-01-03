@@ -70,7 +70,6 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
-	FILE *calfile;
 
 	populateFitsKeywords(D, &keys);
 	
@@ -78,32 +77,32 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  Header                    ");
 	fflush(stdout);
-	D = DifxInput2FitsHeader(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	D = DifxInput2FitsHeader(D, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  AG -- array geometry      ");
 	fflush(stdout);
 	D = DifxInput2FitsAG(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  SO -- source              ");
 	fflush(stdout);
 	D = DifxInput2FitsSO(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  AN -- antenna             ");
 	fflush(stdout);
 	D = DifxInput2FitsAN(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  FQ -- frequency           ");
 	fflush(stdout);
 	D = DifxInput2FitsFQ(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	if(write_model)
@@ -111,61 +110,61 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 		printf("  ML -- model               ");
 		fflush(stdout);
 		D = DifxInput2FitsML(D, &keys, out);
-		printf("%d bytes\n", out->bytes_written - last_bytes);
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
 		last_bytes = out->bytes_written;
 	}
 
 	printf("  CT -- correlator (eop)    ");
 	fflush(stdout);
 	D = DifxInput2FitsCT(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  MC -- model components    ");
 	fflush(stdout);
 	D = DifxInput2FitsMC(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
 	D = DifxInput2FitsUV(D, &keys, filebase, out, scale);
 	printf("                            ");
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  FG -- flag                ");
 	fflush(stdout);
 	D = DifxInput2FitsFG(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  TY -- system temperature  ");
 	fflush(stdout);
 	D = DifxInput2FitsTY(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  PC -- phase cal           ");
 	fflush(stdout);
 	D = DifxInput2FitsPC(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  WX -- weather             ");
 	fflush(stdout);
 	D = DifxInput2FitsWX(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("  GC -- gain curve          ");
 	fflush(stdout);
 	D = DifxInput2FitsGC(D, &keys, out);
-	printf("%d bytes\n", out->bytes_written - last_bytes);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
 	printf("                            -----\n");
-	printf("  Total                     %d bytes\n", last_bytes);
+	printf("  Total                     %lld bytes\n", last_bytes);
 
 	return D;
 }

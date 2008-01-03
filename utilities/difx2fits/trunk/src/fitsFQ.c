@@ -14,12 +14,12 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 
 	struct fitsBinTableColumn columns[] =
 	{
-		{"FREQID", "1J", "FREQID number in uv data"},
+		{"FREQID", "1J", "FREQID number in uv data", ""},
 		{"BANDFREQ", bandFormDouble, "frequency offset", "HZ"},
 		{"CH_WIDTH", bandFormFloat, "spectral channel bandwidth", "HZ"},
 		{"TOTAL_BANDWIDTH", bandFormFloat, "total bw of a BAND", "HZ"},
-		{"SIDEBAND", bandFormInt, "sideband of each BAND"},
-		{"BB_CHAN", bandFormInt, "baseband channel number (1-16)"}
+		{"SIDEBAND", bandFormInt, "sideband of each BAND", ""},
+		{"BB_CHAN", bandFormInt, "baseband channel number (1-16)", ""}
 	};
 
 	int nRowBytes;

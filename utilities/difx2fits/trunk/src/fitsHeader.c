@@ -16,8 +16,8 @@ double timeMjd()
 	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
 }
 
-const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+const DifxInput *DifxInput2FitsHeader(const DifxInput *D, 
+	struct fitsPrivate *out)
 {
 	char ref_date[12];
 	char str[64], strng[132];

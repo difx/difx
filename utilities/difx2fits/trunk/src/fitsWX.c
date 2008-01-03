@@ -18,7 +18,7 @@ static int parseWeather(const char *line, WXrow *wx, char *ant)
 {
 	int n;
 
-	n = sscanf(line, "%s%lf%f%f%f%f%f%f", line, ant, 
+	n = sscanf(line, "%s%lf%f%f%f%f%f", ant, 
 		&wx->time, &wx->temp, &wx->pres, &wx->dewpt,
 		&wx->wspeed, &wx->wdir);
 
@@ -38,7 +38,7 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	{
 		{"TIME", "1D", "time of measurement", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
-		{"ANTENNA_NO", "1J", "antenna id from antennas tbl"},
+		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", ""},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
 		{"PRESSURE", "1E", "atmospheric pressure", "MILLIBARS"},
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
@@ -48,7 +48,7 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 
 	WXrow wx;
 	int nColumn;
-	int n_row_bytes, irow;
+	int n_row_bytes;
 	char *fitsbuf;
 	char ant[64];
 	char line[1000];

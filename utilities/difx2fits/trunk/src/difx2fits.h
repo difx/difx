@@ -7,7 +7,7 @@
 #define array_MAX_BANDS 32
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
