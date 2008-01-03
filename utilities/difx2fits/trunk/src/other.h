@@ -17,4 +17,8 @@ char *timeMjd2str(double, char *);
 /* textutils.c */
 void copyQuotedString(char *dest, const char *src, int n);
 
+/* ymd2mjd.c */
+int ymd2mjd(int yr, int mo, int day);
+int ymd2doy(int yr, int mo, int day);
+
 #endif

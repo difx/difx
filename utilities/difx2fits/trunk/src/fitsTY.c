@@ -186,7 +186,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
 			p_fitsbuf += sizeof(arrayId);
 
-			/* ANTENNAS */
+			/* ANTENNA */
 			bcopy((char *)antId, p_fitsbuf, sizeof(antId));
 			p_fitsbuf += sizeof(antId);
 

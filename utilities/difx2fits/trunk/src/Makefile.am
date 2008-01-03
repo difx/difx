@@ -19,6 +19,7 @@ difx2fits_SOURCES = \
 	mjd2str.c \
 	time2str.c \
 	textutils.c \
+	ymd2mjd.c \
 	difx2fits.h \
 	fits.h \
 	fitsUV.h \
