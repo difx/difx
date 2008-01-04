@@ -6,28 +6,98 @@
 #include "difx2fits.h"
 #include "other.h"
 
-static int parsePulseCal(const char *line, 
-	int no_pol, int no_band, int no_tone, 
-	char *antName, double *t, float *dt, double *ccal,
-	double freqs[][16], float pcalR[][16], float pcalI[][16])
+/* go through pcal file, determine maximum shape of pcal info needed for our
+ * time range.
+ */
+int getShape(const char *filename, double t1, double t2,
+		int *no_pol, int *no_band, int *no_tone)
 {
-	int n, p;
-	int pol, band, tone;
-	double A;
-	float B, C;
+	FILE *in;
+	char line[1000];
+	int n, np, nb, nt;
+	double t;
 
-	n = sscanf(line, "%s%lf%f%lf%n", antName, t, dt, ccal, &p);
-	if(n != 4)
+	in = fopen(filename, "r");
+	if(!in)
 	{
 		return -1;
 	}
+	
+	for(;;)
+	{
+		fgets(line, 999, in);
+		if(feof(in))
+		{
+			break;
+		}
+		n = sscanf(line, "%*s%lf%*f%*f%d%d%d", t, &np, &nb, &nt);
+		if(n != 4)
+		{
+			continue;
+		}
+		if(t >= t1 && t <= t2)
+		{
+			if(np > *no_pol)
+			{
+				*no_pol = np;
+			}
+			if(nb > *no_band)
+			{
+				*no_band = nb;
+			}
+			if(nt > *no_tone)
+			{
+				*no_tone = nt;
+			}
+		}
+		
+	}
+	fclose(in);
+
+	return 0;
+}
+
+static int parsePulseCal(const char *line, 
+	int no_pol, int no_band, int no_tone, 
+	char *antName, double *t, float *dt, double *ccal,
+	double freqs[][64], float pcalR[][64], float pcalI[][64], 
+	float states[][64])
+{
+	int np, nb, nt, ns;
+	int n, p;
+	int pol, band, tone, state;
+	double A;
+	float B, C;
+
+	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%n", antName, t, dt, ccal, 
+		&np, &nb, &nt, &ns, &p);
+	if(n != 8)
+	{
+		return -1;
+	}
+
+	*ccal *= 1e-12;
+
 	line += p;
 	
-	for(pol = 0; pol < no_pol; pol++)
+	if(np > no_pol || nb > no_band || nt > no_tone)
 	{
-		for(band = 0; band < no_band; band++)
+		return -2;
+	}
+
+	for(n = 0; n < no_tone*no_band; n++)
+	{
+		freqs[0][n] = freqs[1][n] = 0.0;
+		pcalR[0][n] = pcalR[1][n] = 0.0;
+		pcalI[0][n] = pcalI[1][n] = 0.0;
+	}
+
+	/* Read in pulse cal information */
+	for(pol = 0; pol < np; pol++)
+	{
+		for(band = 0; band < nb; band++)
 		{
-			for(tone = 0; tone < no_tone; tone++)
+			for(tone = 0; tone < nt; tone++)
 			{
 				n = sscanf(line, "%lf%f%f%n", &A, &B, &C, &p);
 				if(n < 3)
@@ -37,6 +107,31 @@ static int parsePulseCal(const char *line,
 				freqs[pol][tone + band*no_tone] = A;
 				pcalR[pol][tone + band*no_tone] = B;
 				pcalI[pol][tone + band*no_tone] = C;
+				line += p;
+			}
+		}
+	}
+	
+	/* Read in state count information */
+	for(pol = 0; pol < no_pol; pol++)
+	{
+		for(band = 0; band < no_band; band++)
+		{
+			for(state = 0; state < 4; state++)
+			{
+				if(state < ns)
+				{
+					n = sscanf(line, "%f%n", &B, &p);
+					if(n < 1)
+					{
+						return -1;
+					}
+				}
+				else
+				{
+					B = 0.0;
+				}
+				states[pol][state + band*4] = B;
 				line += p;
 			}
 		}
@@ -84,46 +179,42 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	double t;
 	float dt;
 	double ccal;
-	double freqs[2][16];
+	double freqs[2][64];
 	double mjd, mjdStop;
-	float pcalR[2][16], pcalI[2][16];
-	float states[64];
-	float pcalRate[16];
+	float pcalR[2][64], pcalI[2][64];
+	float states[2][64];
+	float pcalRate[64];
 	int antId, arrayId, sourceId, freqId;
 	int refday;
-	int i;
+	int i, v;
+	double f;
 	FILE *in;
 	
 	no_band = p_fits_keys->no_band;
-	
-	in = fopen("pcal", "r");
-	
-	if(!in || D == 0)
+	no_pol = 1;
+	no_tone = 0;
+
+	if(D == 0)
 	{
 		return D;
 	}
 
-	fgets(line, 999, in);
-	if(line[0] != '#' || feof(in))
+	mjd2dayno((int)(D->mjdStart), &refday);
+	mjdStop = D->mjdStart + D->duration/86400.0;
+
+	/* get the maximum dimensions possibly needed */
+	f = D->mjdStart - (int)(D->mjdStart);
+	v = getShape("pcal", refday+f, refday+f+D->duration/86400.0,
+		&no_pol, &no_band, &no_tone);
+
+	if(v < 0)
 	{
-		fprintf(stderr, "Error parsing pcal file\n");
-		fclose(in);
 		return D;
 	}
+
+	in = fopen("pcal", "r");
 	
-	if(sscanf(line, "%*s%d%d%d", &no_tone, &nb, &no_pol) != 3)
-	{
-		fprintf(stderr, "Error getting geometery of pcal\n");
-		fclose(in);
-		return D;
-	}
-	if(no_band != nb)
-	{
-		fprintf(stderr, "number of IFs disagrees %d != %d\n",
-			no_band, nb);
-		fclose(in);
-		return D;
-	}
+	fgets(line, 999, in);
 
 	sprintf(stateFormFloat, "%dE", 4*no_band);
 	sprintf(toneFormFloat,  "%dE", no_tone*no_band);
@@ -146,8 +237,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		return 0;
 	}
 
-	mjd2dayno((int)(D->mjdStart), &refday);
-	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "PHASE-CAL");
 	arrayWriteKeys (p_fits_keys, out);
@@ -159,15 +248,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	/* set defaults */
 	for(i = 0; i < 64; i++)
 	{
-		states[i] = 0;
-	}
-	for(i = 0; i < 16; i++)
-	{
 		pcalRate[i] = 0;
 	}
 	arrayId = 0;
 	freqId = 1;
-	
+
 	for(;;)
 	{
 		fgets(line, 999, in);
@@ -183,10 +268,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 		else 
 		{
-			parsePulseCal(line, no_pol, no_band, no_tone, 
-				antName, &t, &dt, &ccal, freqs, pcalR, pcalI);
+			v = parsePulseCal(line, no_pol, no_band, no_tone, 
+				antName, &t, &dt, &ccal, freqs, pcalR, pcalI,
+				states);
 
-			ccal *= 1e-12;
+			if(v < 0)
+			{
+				continue;
+			}
+
 			antId = DifxInputGetAntennaId(D, antName) + 1;
 			t -= refday;
 			mjd = t + (int)(D->mjdStart);
@@ -236,7 +326,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			for(i = 0; i < no_pol; i++)
 			{
 				/* STATE COUNTS */
-				bcopy((char *)states, p_fitsbuf, 
+				bcopy((char *)states[i], p_fitsbuf, 
 					4*no_band*sizeof(float));
 				p_fitsbuf += 4*no_band*sizeof(float);
 
