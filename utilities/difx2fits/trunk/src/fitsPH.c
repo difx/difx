@@ -30,7 +30,7 @@ int getShape(const char *filename, double t1, double t2,
 		{
 			break;
 		}
-		n = sscanf(line, "%*s%lf%*f%*f%d%d%d", t, &np, &nb, &nt);
+		n = sscanf(line, "%*s%lf%*f%*f%d%d%d", &t, &np, &nb, &nt);
 		if(n != 4)
 		{
 			continue;
