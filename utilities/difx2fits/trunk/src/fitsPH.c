@@ -85,6 +85,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float dt;
 	double ccal;
 	double freqs[2][16];
+	double mjd;
 	float pcalR[2][16], pcalI[2][16];
 	float states[64];
 	float pcalRate[16];
@@ -186,16 +187,21 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				antName, &t, &dt, &ccal, freqs, pcalR, pcalI);
 
 			ccal *= 1e-12;
-			
 			antId = DifxInputGetAntennaId(D, antName) + 1;
-			
+			mjd = t-refday+(int)(D->mjdStart);
+
 			if(antId <= 0)
 			{
 				continue;
 			}
 
-			sourceId = DifxInputGetSourceId(D,
-				t-refday+(int)(D->mjdStart) ) + 1;
+			if(mjd < D->mjdStart || 
+			   mjd > D->mjdStart+D->duration/86400.0)
+			{
+				continue;
+			}
+
+			sourceId = DifxInputGetSourceId(D, mjd) + 1;
 
 			p_fitsbuf = fitsbuf;
 		
