@@ -37,7 +37,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
-const DifxInput *DifxInput2FitsTY(const DifxInput *D,
+const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,

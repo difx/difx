@@ -145,9 +145,9 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  TY -- system temperature  ");
+	printf("  TS -- system temperature  ");
 	fflush(stdout);
-	D = DifxInput2FitsTY(D, &keys, out);
+	D = DifxInput2FitsTS(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
