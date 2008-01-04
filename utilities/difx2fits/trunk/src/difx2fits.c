@@ -133,12 +133,6 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  WR -- weather             ");
-	fflush(stdout);
-	D = DifxInput2FitsWR(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
-
 	printf("  FG -- flag                ");
 	fflush(stdout);
 	D = DifxInput2FitsFG(D, &keys, out);
@@ -157,9 +151,15 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  WR -- weather             ");
+	fflush(stdout);
+	D = DifxInput2FitsWR(D, &keys, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("  GN -- gain curve          ");
 	fflush(stdout);
-//	D = DifxInput2FitsGN(D, &keys, out);
+	D = DifxInput2FitsGN(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

@@ -128,7 +128,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	fitsWriteEnd(out);
 
 	freqId = 1;
-	arrayId = 0;
+	arrayId = 1;
 	for(i = 0; i < 16; i++)
 	{
 		((unsigned int *)tant)[i] = -1;	/* set to NaN */
@@ -190,13 +190,13 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			bcopy((char *)&sourceId, p_fitsbuf, sizeof(sourceId));
 			p_fitsbuf += sizeof(sourceId);
 
-			/* ARRAY */
-			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
-			p_fitsbuf += sizeof(arrayId);
-
 			/* ANTENNA */
 			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
 			p_fitsbuf += sizeof(antId);
+
+			/* ARRAY */
+			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
+			p_fitsbuf += sizeof(arrayId);
 
 			/* FREQ_ID */
 			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));

@@ -34,7 +34,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"TIME", "1E", "time of measurement", "DAYS"},
+		{"TIME", "1D", "time of measurement", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
 		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", 0},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
@@ -42,7 +42,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
 		{"WIND_VELOCITY", "1E", "wind velocity", "M/SEC"},
 		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"},
-		{"WVR_H", "0E", "", ""},
+		{"WVR_H2O", "0E", "", ""},
 		{"IONOS_ELECTRON", "0E", "", ""}
 	};
 
@@ -55,7 +55,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	char line[1000];
 	double mjd, mjdStop;
 	int antId, refday;
-	float t, dt;
+	double t;
+	float dt;
 	FILE *in;
 	
 	in = fopen("weather", "r");
@@ -87,9 +88,9 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "WEATHER");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
-//	fitsWriteString(out, "MAPFUNC", " ", "");
-//	fitsWriteString(out, "WVR_TYPE", " ", "");
-//	fitsWriteString(out, "ION_TYPE", " ", "");
+	fitsWriteString(out, "MAPFUNC", " ", "");
+	fitsWriteString(out, "WVR_TYPE", " ", "");
+	fitsWriteString(out, "ION_TYPE", " ", "");
 	fitsWriteEnd(out);
 	
 	for(;;)
@@ -128,7 +129,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 				continue;
 			}
 			
-			mjd = wr.time + (int)(D->mjdStart);
+			mjd = t + (int)(D->mjdStart);
 			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;

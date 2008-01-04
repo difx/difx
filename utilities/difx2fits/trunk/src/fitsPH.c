@@ -141,7 +141,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
@@ -150,7 +150,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "PHASE-CAL");
-
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", no_pol, "");
 	fitsWriteInteger(out, "NO_TONES", no_tone, "");

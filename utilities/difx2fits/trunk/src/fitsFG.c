@@ -78,13 +78,12 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
 	{
 		return 0;
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "FLAG");
-
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
