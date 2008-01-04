@@ -1,6 +1,7 @@
 Version 1.8
 * Python script 'vlog' added to split cal file
-* Create flag table from cal file
+* Use vlog output to generate FG, TS, PH, WX tables (WX is suspect)
+* Use gain curve files to generate GC (from env var GAIN_CURVE_PATH)
 * Use autoconf endianness detection -- remove byteorder.[ch]
 
 Version 1.7

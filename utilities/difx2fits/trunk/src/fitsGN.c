@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <strings.h>
+#include <glob.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
@@ -359,6 +360,45 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 	}
 }
 
+int loadGainCurves(GainRow *G)
+{
+	char *path;
+	char pattern[256];
+	glob_t files;
+	int nRow = 0;
+	unsigned int f;
+	
+	path = getenv("GAIN_CURVE_PATH");
+	if(path == 0)
+	{
+		printf("\n    GAIN_CURVE_PATH not set -- skipping GN table.\n");
+		printf("                            ");
+		return -1;
+	}
+	
+	memset((char *)&files, sizeof(glob_t), 0);
+	sprintf(pattern, "%s/*", path);
+	glob(pattern, 0, 0, &files);
+	if(files.gl_pathc == 0)
+	{
+		printf("\n    No files found in $GAIN_CURVE_PATH\n");
+		printf("                            ");
+		return -2;
+	}
+	
+	for(f = 0; f < files.gl_pathc; f++)
+	{
+		nRow = parseGN(files.gl_pathv[f], nRow, G);
+	}
+
+	if(nRow > 0)
+	{
+		GainRowsSetTimeBand(G, nRow);
+	}
+
+	return nRow;
+}
+
 const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
@@ -431,11 +471,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	}
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
-	nRow = parseGN("/home/jansky3/vlbaops/TCAL/vlba_gains.key", 0, G);
-	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.ar", nRow, G);
-	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.eb", nRow, G);
-	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.gb", nRow, G);
-	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.y" , nRow, G);
+	nRow = loadGainCurves(G);
 	if(nRow < 0)
 	{
 		free(G);
@@ -456,8 +492,6 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
-
-	GainRowsSetTimeBand(G, nRow);
 
 	for(i = 0; i < MAXTAB*MAXIFS; i++)
 	{
