@@ -45,7 +45,7 @@ static int parsePulseCal(const char *line,
 	return 0;
 }
 
-const DifxInput *DifxInput2FitsPC(const DifxInput *D,
+const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char stateFormFloat[4];
@@ -57,21 +57,21 @@ const DifxInput *DifxInput2FitsPC(const DifxInput *D,
 	{
 		{"TIME", "1D", "time of center of interval", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span of datum", "DAYS"},
-		{"SOURCE_ID", "1J", "source id number from source tbl", ""},
-		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", ""},
-		{"ARRAY", "1J", "????", ""},
-		{"FREQID", "1J", "freq id from frequency tbl", ""},
+		{"SOURCE_ID", "1J", "source id number from source tbl", 0},
+		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", 0},
+		{"ARRAY", "1J", "????", 0},
+		{"FREQID", "1J", "freq id from frequency tbl", 0},
 		{"CABLE_CAL", "1D", "cable length calibration", "SECONDS"},
-		{"STATE_1", stateFormFloat, "state counts (4 per baseband)",""},
+		{"STATE_1", stateFormFloat, "state counts (4 per baseband)", 0},
 		{"PC_FREQ_1", toneFormDouble, "Pcal recorded frequency", "Hz"},
-		{"PC_REAL_1", toneFormFloat, "Pcal real", ""},
-		{"PC_IMAG_1", toneFormFloat, "Pcal imag", ""},
-		{"PC_RATE_1", toneFormFloat, "Pcal rate", ""},
-		{"STATE_2", stateFormFloat, "state counts (4 per baseband)",""},
+		{"PC_REAL_1", toneFormFloat, "Pcal real", 0},
+		{"PC_IMAG_1", toneFormFloat, "Pcal imag", 0},
+		{"PC_RATE_1", toneFormFloat, "Pcal rate", 0},
+		{"STATE_2", stateFormFloat, "state counts (4 per baseband)", 0},
 		{"PC_FREQ_2", toneFormDouble, "Pcal recorded frequency", "Hz"},
-		{"PC_REAL_2", toneFormFloat, "Pcal real", ""},
-		{"PC_IMAG_2", toneFormFloat, "Pcal imag", ""},
-		{"PC_RATE_2", toneFormFloat, "Pcal rate", ""}
+		{"PC_REAL_2", toneFormFloat, "Pcal real", 0},
+		{"PC_IMAG_2", toneFormFloat, "Pcal imag", 0},
+		{"PC_RATE_2", toneFormFloat, "Pcal rate", 0}
 	};
 
 	int nColumn;

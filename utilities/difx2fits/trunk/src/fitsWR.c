@@ -12,9 +12,9 @@ typedef struct __attribute__((packed))
 	float dt;
 	int ant;
 	float temp, pres, dewpt, wspeed, wdir;
-} WXrow;
+} WRrow;
 
-static int parseWeather(const char *line, WXrow *wx, char *ant)
+static int parseWeather(const char *line, WRrow *wx, char *ant)
 {
 	int n;
 
@@ -30,7 +30,7 @@ static int parseWeather(const char *line, WXrow *wx, char *ant)
 	return 1;
 }
 
-const DifxInput *DifxInput2FitsWX(const DifxInput *D,
+const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/*  define the flag FITS table columns */
@@ -38,15 +38,17 @@ const DifxInput *DifxInput2FitsWX(const DifxInput *D,
 	{
 		{"TIME", "1D", "time of measurement", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
-		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", ""},
+		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", 0},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
 		{"PRESSURE", "1E", "atmospheric pressure", "MILLIBARS"},
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
 		{"WIND_VELOCITY", "1E", "wind velocity", "M/SEC"},
-		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"}
+		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"},
+		{"WVR_H", "0E", "", 0},
+		{"IONOS_ELECTRON", "0E", "", 0}
 	};
 
-	WXrow wx;
+	WRrow wx;
 	int nColumn;
 	int n_row_bytes;
 	char *fitsbuf;

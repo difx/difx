@@ -182,7 +182,7 @@ static int getQuote(FILE *in, char *token)
 	}
 }
 
-static int parseGC(const char *filename, int row, GainRow *G)
+static int parseGN(const char *filename, int row, GainRow *G)
 {
 	FILE *in;
 	int c = 0;
@@ -359,7 +359,7 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 	}
 }
 
-const DifxInput *DifxInput2FitsGC(const DifxInput *D,
+const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	GainRow *G;
@@ -371,24 +371,24 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", ""},
-		{"ARRAY", "1J", "????", ""},
-		{"FREQID", "1J", "freq id from frequency tbl", ""}, 
-		{"TYPE_1", bandFormInt, "gain curve type", ""},
-		{"NTERM_1", bandFormInt, "number of terms", ""},
-		{"X_TYP_1", bandFormInt, "abscissa type of plot", ""},
-		{"Y_TYP_1", bandFormInt, "second axis of 3d plot", ""},
-		{"X_VAL_1", bandFormFloat, "For tabulated curves", ""},
-		{"Y_VAL_1", tabFormFloat, "For tabulated curves", ""},
-		{"GAIN_1", tabFormFloat, "Gain curve", ""},
+		{"ANTENNA_NO", "1J", "antenna id from array geom. tbl", 0},
+		{"ARRAY", "1J", "????", 0},
+		{"FREQID", "1J", "freq id from frequency tbl", 0}, 
+		{"TYPE_1", bandFormInt, "gain curve type", 0},
+		{"NTERM_1", bandFormInt, "number of terms", 0},
+		{"X_TYP_1", bandFormInt, "abscissa type of plot", 0},
+		{"Y_TYP_1", bandFormInt, "second axis of 3d plot", 0},
+		{"X_VAL_1", bandFormFloat, "For tabulated curves", 0},
+		{"Y_VAL_1", tabFormFloat, "For tabulated curves", 0},
+		{"GAIN_1", tabFormFloat, "Gain curve", 0},
 		{"SENS_1", bandFormFloat, "Sensitivity", "K/JY"},
-		{"TYPE_2", bandFormInt, "gain curve type", ""},
-		{"NTERM_2", bandFormInt, "number of terms", ""},
-		{"X_TYP_2", bandFormInt, "abscissa type of plot", ""},
-		{"Y_TYP_2", bandFormInt, "second axis of 3d plot", ""},
-		{"X_VAL_2", bandFormFloat, "For tabulated curves", ""},
-		{"Y_VAL_2", tabFormFloat, "For tabulated curves", ""},
-		{"GAIN_2", tabFormFloat, "Gain curve", ""},
+		{"TYPE_2", bandFormInt, "gain curve type", 0},
+		{"NTERM_2", bandFormInt, "number of terms", 0},
+		{"X_TYP_2", bandFormInt, "abscissa type of plot", 0},
+		{"Y_TYP_2", bandFormInt, "second axis of 3d plot", 0},
+		{"X_VAL_2", bandFormFloat, "For tabulated curves", 0},
+		{"Y_VAL_2", tabFormFloat, "For tabulated curves", 0},
+		{"GAIN_2", tabFormFloat, "Gain curve", 0},
 		{"SENS_2", bandFormFloat, "Sensitivity", "K/JY"}
 	};
 	
@@ -431,11 +431,11 @@ const DifxInput *DifxInput2FitsGC(const DifxInput *D,
 	}
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
-	nRow = parseGC("/home/jansky3/vlbaops/TCAL/vlba_gains.key", 0, G);
-	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.ar", nRow, G);
-	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.eb", nRow, G);
-	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.gb", nRow, G);
-	nRow = parseGC("/home/jansky3/vlbaops/TCAL/gain.y" , nRow, G);
+	nRow = parseGN("/home/jansky3/vlbaops/TCAL/vlba_gains.key", 0, G);
+	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.ar", nRow, G);
+	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.eb", nRow, G);
+	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.gb", nRow, G);
+	nRow = parseGN("/home/jansky3/vlbaops/TCAL/gain.y" , nRow, G);
 	if(nRow < 0)
 	{
 		free(G);

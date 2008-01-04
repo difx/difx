@@ -8,14 +8,14 @@ difx2fits_SOURCES = \
 	fitsCT.c \
 	fitsFG.c \
 	fitsFQ.c \
-	fitsGC.c \
+	fitsGN.c \
 	fitsMC.c \
 	fitsML.c \
-	fitsPC.c \
+	fitsPH.c \
 	fitsSO.c \
 	fitsTY.c \
 	fitsUV.c \
-	fitsWX.c \
+	fitsWR.c \
 	mjd2str.c \
 	time2str.c \
 	textutils.c \

@@ -493,13 +493,13 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 		{"WW--SIN", "1E", "w", "SECONDS"},
 		{"DATE", "1D", "Julian day at 0 hr current day", "DAYS"},
 		{"TIME", "1D", "IAT time", "DAYS"},
-		{"BASELINE", "1J", "baseline: ant1*256 + ant2", ""},
-		{"FILTER", "1J", "filter id number", ""},
-		{"SOURCE", "1J", "source id number from source tbl", ""},
-		{"FREQID", "1J", "freq id number from frequency tbl", ""},
+		{"BASELINE", "1J", "baseline: ant1*256 + ant2", 0},
+		{"FILTER", "1J", "filter id number", 0},
+		{"SOURCE", "1J", "source id number from source tbl", 0},
+		{"FREQID", "1J", "freq id number from frequency tbl", 0},
 		{"INTTIM", "1E", "time span of datum", "SECONDS"},
-		{"WEIGHT", weightFormFloat, "weights proportional to time", ""},
-		{"GATEID", gateFormInt, "gate id from gate model table", ""},
+		{"WEIGHT", weightFormFloat, "weights proportional to time", 0},
+		{"GATEID", gateFormInt, "gate id from gate model table", 0},
 		{"FLUX", fluxFormFloat, "data matrix", "UNCALIB"}
 	};
 

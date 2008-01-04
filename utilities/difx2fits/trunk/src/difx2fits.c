@@ -81,6 +81,7 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+#if 0
 	printf("  AG -- array geometry      ");
 	fflush(stdout);
 	D = DifxInput2FitsAG(D, &keys, out);
@@ -133,6 +134,7 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+#endif	
 	printf("  FG -- flag                ");
 	fflush(stdout);
 	D = DifxInput2FitsFG(D, &keys, out);
@@ -145,21 +147,21 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  PC -- phase cal           ");
+	printf("  PH -- phase cal           ");
 	fflush(stdout);
-	D = DifxInput2FitsPC(D, &keys, out);
+	D = DifxInput2FitsPH(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  WX -- weather             ");
+	printf("  WR -- weather             ");
 	fflush(stdout);
-	D = DifxInput2FitsWX(D, &keys, out);
+	D = DifxInput2FitsWR(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  GC -- gain curve          ");
+	printf("  GN -- gain curve          ");
 	fflush(stdout);
-	D = DifxInput2FitsGC(D, &keys, out);
+	D = DifxInput2FitsGN(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

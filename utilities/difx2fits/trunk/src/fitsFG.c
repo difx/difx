@@ -37,16 +37,16 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"SOURCE_ID", "1J", "source id number from source tbl", ""},
-		{"ARRAY", "1J", "????", ""},
-		{"ANTS", "2J", "antenna id from antennas tbl", ""},
-		{"FREQID", "1J", "freq id from frequency tbl", ""},
+		{"SOURCE_ID", "1J", "source id number from source tbl", 0},
+		{"ARRAY", "1J", "????", 0},
+		{"ANTS", "2J", "antenna id from antennas tbl", 0},
+		{"FREQID", "1J", "freq id from frequency tbl", 0},
 		{"TIMERANG", "2E", "time flag condition begins, ends", "DAYS"},
-		{"BANDS", bandFormInt, "true if the baseband is bad", ""},
-		{"CHANS", "2J", "channel range to be flagged", ""},
-		{"PFLAGS", "4J", "flag array for polarization", ""},
-		{"REASON", "40A", "reason for data to be flagged bad", ""},
-		{"SEVERITY", "1J", "severity code", ""}
+		{"BANDS", bandFormInt, "true if the baseband is bad", 0},
+		{"CHANS", "2J", "channel range to be flagged", 0},
+		{"PFLAGS", "4J", "flag array for polarization", 0},
+		{"REASON", "40A", "reason for data to be flagged bad", 0},
+		{"SEVERITY", "1J", "severity code", 0}
 	};
 
 	int nColumn;
