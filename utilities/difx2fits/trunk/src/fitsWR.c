@@ -122,6 +122,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 			}
 			
 			t = wr.time - refday;
+			dt = 0.0;
 			
 			antId = DifxInputGetAntennaId(D, antName) + 1;
 			if(antId <= 0)
