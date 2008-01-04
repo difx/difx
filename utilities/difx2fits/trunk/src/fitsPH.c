@@ -167,7 +167,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		pcalRate[i] = 0;
 	}
 	arrayId = 0;
-	freqId = 0;
+	freqId = 1;
 	
 	for(;;)
 	{

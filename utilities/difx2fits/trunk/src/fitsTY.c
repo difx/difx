@@ -120,11 +120,11 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	mjd2dayno((int)(D->mjdStart), &refday);
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "TSYS");
-
-	arrayWriteKeys (p_fits_keys, out);
+	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, 
+		"SYSTEM_TEMPERATURE");
+	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
-	fitsWriteInteger(out, "TABREV", 2, "");
+	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
 	freqId = 0;

@@ -587,6 +587,10 @@ int FitsBinRowByteSwap(const struct fitsBinTableColumn *columns, int nColumns,
 	for(n = 0; n < nColumns; n++)
 	{
 		sscanf(columns[n].p_repeat_type, "%d%c", &q, &c);
+		if(q <= 0)
+		{
+			continue;
+		}
 		t = fitsTypeSize(c);
 		for(b = 0; b < q; b++)
 		{

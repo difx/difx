@@ -6,11 +6,9 @@
 #include "difx2fits.h"
 #include "other.h"
 
-typedef struct __attribute__((packed))
+typedef struct 
 {
 	double time;
-	float dt;
-	int antId;
 	float temp, pres, dewpt, wspeed, wdir;
 } WRrow;
 
@@ -21,7 +19,7 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 	n = sscanf(line, "%s%lf%f%f%f%f%f", antName, 
 		&wr->time, &wr->temp, &wr->pres, &wr->dewpt,
 		&wr->wspeed, &wr->wdir);
-
+			
 	if(n != 7)
 	{
 		return 0;
@@ -36,7 +34,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
 	{
-		{"TIME", "1D", "time of measurement", "DAYS"},
+		{"TIME", "1E", "time of measurement", "DAYS"},
 		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
 		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", 0},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
@@ -44,19 +42,20 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
 		{"WIND_VELOCITY", "1E", "wind velocity", "M/SEC"},
 		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"},
-		{"WVR_H", "0E", "", 0},
-		{"IONOS_ELECTRON", "0E", "", 0}
+		{"WVR_H", "0E", "", ""},
+		{"IONOS_ELECTRON", "0E", "", ""}
 	};
 
 	WRrow wr;
 	int i;
 	int nColumn;
 	int n_row_bytes;
-	char *fitsbuf;
+	char *fitsbuf, *p_fitsbuf;
 	char antName[64];
 	char line[1000];
 	double mjd, mjdStop;
-	int refday;
+	int antId, refday;
+	float t, dt;
 	FILE *in;
 	
 	in = fopen("weather", "r");
@@ -70,6 +69,12 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
 
+	/* calloc space for storing table in FITS format */
+	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	{
+		return 0;
+	}
+
 	mjd2dayno((int)(D->mjdStart), &refday);
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
@@ -80,15 +85,12 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "WEATHER");
-
-	arrayWriteKeys (p_fits_keys, out);
+	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
-	fitsWriteString(out, "MAPFUNC", "", "");
-	fitsWriteString(out, "WVR_TYPE", "", "");
-	fitsWriteString(out, "ION_TYPE", "", "");
+//	fitsWriteString(out, "MAPFUNC", " ", "");
+//	fitsWriteString(out, "WVR_TYPE", " ", "");
+//	fitsWriteString(out, "ION_TYPE", " ", "");
 	fitsWriteEnd(out);
-
-	fitsbuf = (char *)(&wr);
 	
 	for(;;)
 	{
@@ -118,11 +120,10 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 				continue;
 			}
 			
-			wr.dt = 0.0;
-			wr.time -= refday;
+			t = wr.time - refday;
 			
-			wr.antId = DifxInputGetAntennaId(D, antName) + 1;
-			if(wr.antId <= 0)
+			antId = DifxInputGetAntennaId(D, antName) + 1;
+			if(antId <= 0)
 			{
 				continue;
 			}
@@ -133,6 +134,40 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 				continue;
 			}
 
+			p_fitsbuf = fitsbuf;
+
+			/* TIME */
+			bcopy((char *)&t, p_fitsbuf, sizeof(t));
+			p_fitsbuf += sizeof(t);
+
+			/* TIME INTERVAL */
+			bcopy((char *)&dt, p_fitsbuf, sizeof(dt));
+			p_fitsbuf += sizeof(dt);
+			
+			/* ANTENNA_NO */
+			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
+			p_fitsbuf += sizeof(antId);
+
+			/* TEMPERATURE */
+			bcopy((char *)&wr.temp, p_fitsbuf, sizeof(wr.temp));
+			p_fitsbuf += sizeof(wr.temp);
+
+			/* PRESSURE */
+			bcopy((char *)&wr.pres, p_fitsbuf, sizeof(wr.pres));
+			p_fitsbuf += sizeof(wr.pres);
+
+			/* DEW POINT */
+			bcopy((char *)&wr.dewpt, p_fitsbuf, sizeof(wr.dewpt));
+			p_fitsbuf += sizeof(wr.dewpt);
+
+			/* WIND SPEED */
+			bcopy((char *)&wr.wspeed, p_fitsbuf, sizeof(wr.wspeed));
+			p_fitsbuf += sizeof(wr.wspeed);
+
+			/* WIND DIRECTION */
+			bcopy((char *)&wr.wdir, p_fitsbuf, sizeof(wr.wdir));
+			p_fitsbuf += sizeof(wr.wdir);
+
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
@@ -142,6 +177,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 	/* close the file, free memory, and return */
 	fclose(in);
+	free(fitsbuf);
 
 	return D;
 }
