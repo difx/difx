@@ -497,7 +497,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 			nTerm[i] = G[r].npoly;
 			for(j = 0; j < MAXTAB; j++)
 			{
-				gain[j] = (j < nTerm[i]) ? G[r].poly[j] : 0.0;
+				gain[i*MAXTAB + j] = 
+					(j < nTerm[i]) ? G[r].poly[j] : 0.0;
 			}
 			for(p = 0; p < no_pol; p++)
 			{

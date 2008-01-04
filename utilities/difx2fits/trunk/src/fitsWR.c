@@ -10,19 +10,19 @@ typedef struct __attribute__((packed))
 {
 	double time;
 	float dt;
-	int ant;
+	int antId;
 	float temp, pres, dewpt, wspeed, wdir;
 } WRrow;
 
-static int parseWeather(const char *line, WRrow *wx, char *ant)
+static int parseWeather(const char *line, WRrow *wr, char *antName)
 {
 	int n;
 
-	n = sscanf(line, "%s%lf%f%f%f%f%f", ant, 
-		&wx->time, &wx->temp, &wx->pres, &wx->dewpt,
-		&wx->wspeed, &wx->wdir);
+	n = sscanf(line, "%s%lf%f%f%f%f%f", antName, 
+		&wr->time, &wr->temp, &wr->pres, &wr->dewpt,
+		&wr->wspeed, &wr->wdir);
 
-	if(n < 8)
+	if(n != 7)
 	{
 		return 0;
 	}
@@ -48,12 +48,15 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		{"IONOS_ELECTRON", "0E", "", 0}
 	};
 
-	WRrow wx;
+	WRrow wr;
+	int i;
 	int nColumn;
 	int n_row_bytes;
 	char *fitsbuf;
-	char ant[64];
+	char antName[64];
 	char line[1000];
+	double mjd, mjdStop;
+	int refday;
 	FILE *in;
 	
 	in = fopen("weather", "r");
@@ -66,6 +69,9 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	nColumn = NELEMENTS(columns);
 	
 	n_row_bytes = FitsBinTableSize(columns, nColumn);
+
+	mjd2dayno((int)(D->mjdStart), &refday);
+	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	/* calloc space for storing table in FITS format */
 	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
@@ -82,7 +88,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	fitsWriteString(out, "ION_TYPE", "", "");
 	fitsWriteEnd(out);
 
-	fitsbuf = (char *)(&wx);
+	fitsbuf = (char *)(&wr);
 	
 	for(;;)
 	{
@@ -99,19 +105,36 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		}
 		else 
 		{
-			if(parseWeather(line, &wx, ant) == 0)
+			/* take out * from line */
+			for(i = 0; line[i]; i++)
+			{
+				if(line[i] == '*')
+				{
+					line[i] = ' ';
+				}
+			}
+			if(parseWeather(line, &wr, antName) == 0)
 			{
 				continue;
 			}
-			wx.ant = DifxInputGetAntennaId(D, ant) + 1;
-			if(wx.ant >= 0)
+			
+			wr.dt = 0.0;
+			wr.time -= refday;
+			
+			wr.antId = DifxInputGetAntennaId(D, antName) + 1;
+			if(wr.antId <= 0)
 			{
 				continue;
 			}
-			wx.dt = 0.0;
+			
+			mjd = wr.time + (int)(D->mjdStart);
+			if(mjd < D->mjdStart || mjd > mjdStop)
+			{
+				continue;
+			}
 
 #ifndef WORDS_BIGENDIAN
-			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
 		}

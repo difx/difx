@@ -68,7 +68,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
 	int i, np, nPol=0;
-	double t, mjd;
+	double t, mjd, mjdStop;
 	float dt;
 	FILE *in;
 	
@@ -118,6 +118,7 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 	}
 
 	mjd2dayno((int)(D->mjdStart), &refday);
+	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "TSYS");
 
@@ -152,9 +153,9 @@ const DifxInput *DifxInput2FitsTY(const DifxInput *D,
 				&t, &dt, ty1, ty2);
 
 			/* discard records outside time range */
-			mjd = t-refday+(int)(D->mjdStart);
-			if(mjd < D->mjdStart || 
-			   mjd > D->mjdStart+D->duration/86400.0)
+			t -= refday;
+			mjd = t + (int)(D->mjdStart);
+			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;
 			}

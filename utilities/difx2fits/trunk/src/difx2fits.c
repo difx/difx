@@ -81,7 +81,6 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-#if 0
 	printf("  AG -- array geometry      ");
 	fflush(stdout);
 	D = DifxInput2FitsAG(D, &keys, out);
@@ -134,7 +133,6 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-#endif	
 	printf("  FG -- flag                ");
 	fflush(stdout);
 	D = DifxInput2FitsFG(D, &keys, out);

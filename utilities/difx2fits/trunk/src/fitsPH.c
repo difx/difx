@@ -16,7 +16,7 @@ static int parsePulseCal(const char *line,
 	double A;
 	float B, C;
 
-	n = sscanf("%s%lf%f%lf%n", antName, &t, &dt, &ccal, &p);
+	n = sscanf(line, "%s%lf%f%lf%n", antName, t, dt, ccal, &p);
 	if(n != 4)
 	{
 		return -1;
@@ -85,7 +85,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float dt;
 	double ccal;
 	double freqs[2][16];
-	double mjd;
+	double mjd, mjdStop;
 	float pcalR[2][16], pcalI[2][16];
 	float states[64];
 	float pcalRate[16];
@@ -147,6 +147,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	mjd2dayno((int)(D->mjdStart), &refday);
+	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "PHASE-CAL");
 
@@ -188,15 +189,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 			ccal *= 1e-12;
 			antId = DifxInputGetAntennaId(D, antName) + 1;
-			mjd = t-refday+(int)(D->mjdStart);
+			t -= refday;
+			mjd = t + (int)(D->mjdStart);
 
 			if(antId <= 0)
 			{
 				continue;
 			}
 
-			if(mjd < D->mjdStart || 
-			   mjd > D->mjdStart+D->duration/86400.0)
+			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;
 			}
@@ -222,7 +223,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			p_fitsbuf += sizeof(arrayId);
 
 			/* ANTENNAS */
-			bcopy((char *)antId, p_fitsbuf, sizeof(antId));
+			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
 			p_fitsbuf += sizeof(antId);
 
 			/* FREQ_ID */
@@ -262,7 +263,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 			
 #ifndef WORDS_BIGENDIAN
-			FitsBinRowByteSwap(columns, nColumn, &fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
 		}
