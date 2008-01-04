@@ -1476,3 +1476,23 @@ int DifxInputGetSourceId(const DifxInput *D, double mjd)
 	return D->scan[D->nScan-1].sourceId;
 }
 
+/* return 0-based index of antName, or -1 if not in array */
+int DifxInputGetAntennaId(const DifxInput *D, const char *antName)
+{
+	int a;
+	
+	if(!D)
+	{
+		return -1;
+	}
+
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		if(strcmp(D->antenna[a].name, antName) == 0)
+		{
+			return a;
+		}
+	}
+
+	return -1;
+}
