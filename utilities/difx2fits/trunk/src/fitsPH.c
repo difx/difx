@@ -175,7 +175,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char line[1000];
 	char antName[20];
 	int no_band, no_tone, no_pol;
-	int nb;
 	double t;
 	float dt;
 	double ccal;

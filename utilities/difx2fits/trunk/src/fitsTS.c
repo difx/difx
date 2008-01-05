@@ -36,13 +36,16 @@ static int getShape(const char *filename, double t1, double t2,
 		{
 			continue;
 		}
-		if(np > *no_pol)
+		if(t >= t1 && t <= t2)
 		{
-			*no_pol = np;
-		}
-		if(nb > *no_band)
-		{
-			*no_band = nb;
+			if(np > *no_pol)
+			{
+				*no_pol = np;
+			}
+			if(nb > *no_band)
+			{
+				*no_band = nb;
+			}
 		}
 	}
 	fclose(in);
