@@ -6,32 +6,83 @@
 #include "difx2fits.h"
 #include "other.h"
 
-static int parseTsys(const char *line, int no_band, char *antenna, 
-	double *t, float *dt, float *ty1, float *ty2)
+static int getShape(const char *filename, double t1, double t2,
+	int *no_pol, int *no_band)
 {
-	int p, n, i;
+	FILE *in;
+	char line[1000];
+	double t;
+	int np, nb, n;
 
-	n = sscanf(line, "%s%lf%f%n", antenna, t, dt, &p);
-	if(n != 3)
+	in = fopen(filename, "r");
+	if(in == 0)
 	{
-		return 0;
+		return -1;
 	}
-	for(i = 0; i < no_band; i++)
+
+	for(;;)
 	{
-		line += p;
-		n = sscanf(line, "%f%n", ty1+i, &p);
-		if(n != 1)
+		fgets(line, 999, in);
+		if(feof(in))
 		{
-			return 0;
+			break;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		n = sscanf(line, "%*s%lf%*f%d%d", &t, &np, &nb);
+		if(n != 3)
+		{
+			continue;
+		}
+		if(np > *no_pol)
+		{
+			*no_pol = np;
+		}
+		if(nb > *no_band)
+		{
+			*no_band = nb;
 		}
 	}
-	for(i = 0; i < no_band; i++)
+	fclose(in);
+
+	return 1;
+}
+
+/* ant D.O.Y. dur(days) nPol nBand (tsys)[nBand*nPol] (band)[nBand] */
+static int parseTsys(const char *line, int no_pol, int no_band, char *antenna, 
+	double *t, float *dt, float ty[][16])
+{
+	int p, n, i, j, np, nb;
+	float A;
+
+	n = sscanf(line, "%s%lf%f%d%d%n", antenna, t, dt, &np, &nb, &p);
+	if(n != 5)
 	{
-		line += p;
-		n = sscanf(line, "%f%n", ty2+i, &p);
-		if(n != 1)
+		return -1;
+	}
+	if(np > no_pol || nb > no_band)
+	{
+		return -2;
+	}
+
+	for(i = 0; i < 16; i++)
+	{
+		ty[0][i] = ty[1][i] = 0.0;
+	}
+
+	for(i = 0; i < np; i++)
+	{
+		for(j = 0; j < nb; j++)
 		{
-			return 1;
+			line += p;
+			n = sscanf(line, "%f%n", &A, &p);
+			if(n != 1)
+			{
+				return -3;
+			}
+			ty[i][j] = A;
 		}
 	}
 	
@@ -64,43 +115,41 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int refday;
 	char line[1000];
 	char antenna[20];
-	float ty1[16], ty2[16], tant[16];
+	float ty[2][16], tant[16];
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
-	int i, np, nPol=0;
+	int i, no_pol=0;
+	int v;
+	double f;
 	double t, mjd, mjdStop;
 	float dt;
 	FILE *in;
 	
 	no_band = p_fits_keys->no_band;
+	no_pol = 0;
+
 	sprintf(bandFormFloat, "%dE", no_band);
 
-	in = fopen("tsys", "r");
-	
-	if(!in || D == 0)
+	if(D == 0)
 	{
 		return D;
 	}
 
-	/* learn number of polarizations */
-	while(nPol <= 0)
+	mjd2dayno((int)(D->mjdStart), &refday);
+
+	/* get the maximum dimensions possibly needed */
+	f = D->mjdStart - (int)(D->mjdStart);
+	v = getShape("tsys", refday+f, refday+f+D->duration/86400.0,
+		&no_pol, &no_band);
+
+	if(v < 0)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
-		{
-			fclose(in);
-			return D;
-		}
-		if(line[0] == '#')
-		{
-			continue;
-		}
-
-		nPol = parseTsys(line, no_band, antenna, &t, &dt, ty1, ty2);
+		return D;
 	}
-	fseek(in, 0, SEEK_SET);
 
-	if(nPol == 2)
+	in = fopen("tsys", "r");
+
+	if(no_pol == 2)
 	{
 		nColumn = NELEMENTS(columns);
 	}
@@ -117,13 +166,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		return 0;
 	}
 
-	mjd2dayno((int)(D->mjdStart), &refday);
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, 
 		"SYSTEM_TEMPERATURE");
 	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", nPol, "");
+	fitsWriteInteger(out, "NO_POL", no_pol, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
@@ -149,8 +197,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		}
 		else 
 		{
-			np = parseTsys(line, no_band, antenna, 
-				&t, &dt, ty1, ty2);
+			parseTsys(line, no_pol, no_band, antenna, 
+				&t, &dt, ty);
 
 			/* discard records outside time range */
 			t -= refday;
@@ -160,13 +208,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				continue;
 			}
 		
-			if(np != nPol)
-			{
-				fprintf(stderr, "TSYS Pol mismatch %d != %d\n", 
-					np, nPol);
-				continue;
-			}
-			
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antenna) + 1;
 			if(antId <= 0)
@@ -202,22 +243,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
 			p_fitsbuf += sizeof(freqId);
 
-			/* TSYS_1 */
-			bcopy((char *)ty1, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			/* TANT_1 */
-			bcopy((char *)tant, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			if(np > 1)
+			for(i = 0; i < no_pol; i++)
 			{
-				/* TSYS_2 */
-				bcopy((char *)ty2, p_fitsbuf, 
+				/* TSYS */
+				bcopy((char *)(ty[i]), p_fitsbuf, 
 					no_band*sizeof(float));
 				p_fitsbuf += no_band*sizeof(float);
 
-				/* TANT_2 */
+				/* TANT */
 				bcopy((char *)tant, p_fitsbuf, 
 					no_band*sizeof(float));
 				p_fitsbuf += no_band*sizeof(float);

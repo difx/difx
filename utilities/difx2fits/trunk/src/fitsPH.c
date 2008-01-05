@@ -9,7 +9,7 @@
 /* go through pcal file, determine maximum shape of pcal info needed for our
  * time range.
  */
-int getShape(const char *filename, double t1, double t2,
+int static getShape(const char *filename, double t1, double t2,
 		int *no_pol, int *no_band, int *no_tone)
 {
 	FILE *in;

@@ -89,58 +89,16 @@ def makeFG(sections, BBCs, antenna):
 			t1 = parsetime('%s-%s:%s:%s' % (t[0], t[1], t[2], t[3]))
 			t2 = parsetime('%s-%s:%s:%s' % (t[4], t[5], t[6], t[7]))
 			p = find(f, 'reason=')
-			p1 = p+9
+			p1 = p + 9
 			p2 = p1 + find(f[p1:], "'")
 			reason = f[p1-2:p2+1]
 			bad = getReasonRanges(reason, bbc)
 			if bad == []:
 				bad = [[-1, -1]]
 			for b in bad:
-				flags.append('%9.7f %9.7f %d %d %s' % (t1, t2, b[0], b[1], reason))
+				flags.append('%9.7f %9.7f %d %d %s' % \
+					(t1, t2, b[0], b[1], reason) )
 	return flags
-
-def getTones(data):
-	tones = {}
-	polct = {}
-	bandno = {}
-	pols = []
-	nt = 1
-	nb = 1
-	for d in data:
-		if d[1] == 'T':
-			info = []
-			s = split(d)
-			chanpol = s[1]+s[2]+s[3]
-			chan = int(s[1])
-			pol = s[3][1]
-			if not pol in pols:
-				pols.append(pol)
-			polnum = pols.index(pol)+1
-			if not bandno.has_key(chanpol):
-				if polct.has_key(pol):
-					polct[pol] += 1
-					if polct[pol] > nb:
-						nb = polct[pol]
-				else:
-					polct[pol] = 1
-				bandno[chanpol] = [polct[pol], 1]
-			else:
-				bandno[chanpol][1] += 1
-				if bandno[chanpol][1] > nt:
-					nt = bandno[chanpol][1]
-			bandnum = bandno[chanpol][0]
-			tonenum = bandno[chanpol][1]
-			info.append(chan)
-			info.append(pol)
-			info.append(s[4])
-			info.append(int(s[5]))
-			info.append(s[6])
-			info.append(s[7])
-			info.append(tonenum)
-			info.append(bandnum)
-			info.append(polnum)
-			tones[s[0]] = info
-	return tones, nt, nb, len(pols)
 
 
 def makeScans(scanlist):
@@ -295,66 +253,68 @@ def makePH(sections, antenna):
 	return PH
 
 
-def OldmakePC(sections, antenna):
-	if not sections.has_key('PulseCal'):
-		return None
-	if not sections['PulseCal'].has_key(antenna):
-		return None
-	P = sections['PulseCal'][antenna]
-	Scans = makeScans(sections['Scan'][antenna])
-		
-	p = 0
-	while P[p] != '/':
-		p += 1
+def makeTS(sections, antenna):
+	if not sections.has_key('Tsys'):
+		return None, None
+	if not sections['Tsys'].has_key(antenna):
+		return None, None
+	TsysData = sections['Tsys'][antenna]
 
-	tones, nt, nb, np = getTones(P[:p])
+	TS = []
+	TS.append("# ant D.O.Y. dur(days) nPol nBand (tsys)[nBand*nPol] (band)[nBand]");
 
-	table = []
+	IFconfig = []
+	pols = {}
+	nBand = 0
+	nPol = 0
 
-	dt = 0;
-
-	A = [[[]]]
-	for row in P:
+	for row in TsysData:
 		s = split(row)
-		if s[0] == '!':
-			continue
-		if len(s) != 5:
-			continue
-		if s[2] == "'CC'":
-			current = []
-			Time = parsetime(s[0]+'-'+s[1])
-			current.append(Time)
-			dt = float(s[4])/86400.0
-			current.append(dt)
-			if s[3] == '-Inf' or s[3] == 'Inf':
-				s[3] = '999.9'
-			current.append(s[3])
-			A = []
-			for x in range(np):
-				A.append([])
-				for y in range(nb):
-					A[x].append([])
-					for z in range(nt):	
-						A[x][y].append(['0','0','0'])
-			current.append(A)
-			table.append(current)
-		else:
-			row = tones[s[2]]
-			A[row[8]-1][row[7]-1][row[6]-1] = [row[2], s[3], s[4]]
-	
-	pc = []
-	pc.append('# %d %d %d' % (nt, nb, np))
-	for t in table:
-		line = '%9.7f %9.7f %s ' % (t[0], t[1], t[2])
-		for z in range(np):
-			for y in range(nb):
-				for x in range(nt):
-					line += '%s %s %s ' % ( \
-						t[3][z][y][x][0],
-						t[3][z][y][x][1],
-						t[3][z][y][x][2])
-		pc.append(line)
-	return pc
+		# check for a comment line with vital info
+		if s[0] == '!' and len(s) == 11 and \
+				s[3] in ['A', 'B', 'C', 'D'] and \
+				s[6] in ['U', 'L'] and s[8][-1] == 'M':
+			if s[1] == '1':	# reset on channel 1
+				IFconfig = []
+				pols = {}
+				nBand = 0
+				nPol = 0
+				TsysData = None
+				Receiver = None
+			pol = s[4]
+			if pol in pols:
+				pols[pol][1] += 1
+				if nBand < pols[pol][1]+1:
+					nBand = pols[pol][1]+1
+			else:
+				pols[pol] = [nPol, 0]
+				nPol += 1
+				if nBand < 1:
+					nBand = 1
+			IFconfig.append([s[2], s[4], s[5], s[6], \
+				pols[pol][0], pols[pol][1]])
+		elif row[0] == 'TSYS':
+			pass
+		elif row[0] != '!' and len(s) == 4+nBand*nPol:
+			if TsysData == None:
+				TsysData = [0.0]*(nPol*nBand)
+			if Receiver == None:
+				Receiver = ['']*nBand
+			t = parsetime(s[0]+'-'+s[1]+':0')
+			dt = 0.0
+			for i in range(len(IFconfig)):
+				index = IFconfig[i][4] + nPol*IFconfig[i][5]
+				TsysData[index] = s[2+i]
+				index = IFconfig[i][4]
+				Receiver[index] = IFconfig[i][0]
+			line = "%10.7f %9.7f %d %d" % (t, dt, nPol, nBand)
+			for ts in TsysData:
+				line += (' '+ts)
+			for rec in Receiver:
+				line += (' '+rec)
+			TS.append(line)
+
+	return TS
 
 def makeTY(sections, antenna):
 	if not sections.has_key('Tsys'):
@@ -455,15 +415,15 @@ else:
 print 'processing antennas : ', ants
 
 BBCs = {}
-TYs  = {}
+TSs  = {}
 PHs  = {}
 WXs  = {}
 FGs  = {}
 for a in ants:
-	ty, bbc = makeTY(sections, a)
-	if ty != None:
-		BBCs[a] = bbc
-		TYs[a] = ty
+	ts = makeTS(sections, a)
+	if ts != None:
+		#BBCs[a] = bbc
+		TSs[a] = ts
 	ph = makePH(sections, a)
 	if ph != None:
 		PHs[a] = ph
@@ -471,15 +431,15 @@ for a in ants:
 	if wx != None:
 		WXs[a] = wx
 
-for a in ants:
-	if BBCs.has_key(a):
-		fg = makeFG(sections, BBCs, a)
-		if fg == None:
-			continue
-		FGs[a] = fg
+#for a in ants:
+#	if BBCs.has_key(a):
+#		fg = makeFG(sections, BBCs, a)
+#		if fg == None:
+#			continue
+#		FGs[a] = fg
 
 writetable(FGs, 'flag', ants, 'FG')
-writetable(TYs, 'tsys', ants, 'TY')
+writetable(TSs, 'tsys', ants, 'TS')
 writetable(WXs, 'weather', ants, 'WX')
 writetable(PHs, 'pcal', ants, 'PH')
 
