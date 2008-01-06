@@ -62,16 +62,15 @@ def makeWX(sections, antenna):
 			(t, s[1], s[2], s[3], s[4], s[5], s[7]))
 	return table
 
-def getReasonRanges(reason, bbc):
-	# bbc contains:  [[polid, bandid, bbc#, sb, polnum]]
-	s = split(reason[1:-1])
-	bad = []
-	if s[0] == 'channel' and s[2] == 'bbc':
-		chan = int(s[1])
-		for b in bbc:
-			if chan == b[2]:
-				bad.append([b[4], b[1]])
-	return bad
+def bbcflag(flags, bbc, t1, t2, chan, reason):
+	for b in bbc:
+		T1 = max(t1, b[0])
+		T2 = min(t2, b[1])
+		if T1 < T2:
+			for c in bbc[2:]:
+				if c[0] == chan:
+					flags.append('%9.7f %9.7f %d %d %s' % \
+						(T1, T2, c[1], c[2], reason))
 
 def makeFG(sections, BBCs, antenna):
 	if not sections.has_key('Edit'):
@@ -92,12 +91,12 @@ def makeFG(sections, BBCs, antenna):
 			p1 = p + 9
 			p2 = p1 + find(f[p1:], "'")
 			reason = f[p1-2:p2+1]
-			bad = getReasonRanges(reason, bbc)
-			if bad == []:
-				bad = [[-1, -1]]
-			for b in bad:
-				flags.append('%9.7f %9.7f %d %d %s' % \
-					(t1, t2, b[0], b[1], reason) )
+			r = split(reason[1:-1])
+			if r[0] == 'channel' and r[2] == 'bbc':
+				bbcflag(flags, bbc, t1, t2, r[1], reason)
+			else:
+				flags.append('%9.7f %9.7f -1 -1 %s' % \
+					(t1, t2, reason) )
 	return flags
 
 
@@ -267,6 +266,9 @@ def makeTS(sections, antenna):
 	pols = {}
 	nBand = 0
 	nPol = 0
+	timerange = (0.0, 0.0)
+	BBCmap = []
+	BBCrow = []
 
 	for row in TsysData:
 		s = split(row)
@@ -293,6 +295,12 @@ def makeTS(sections, antenna):
 					nBand = 1
 			IFconfig.append([s[2], s[4], s[5], s[6], \
 				pols[pol][0], pols[pol][1]])
+			BBCrow.append([s[5], pols[pol][0], pols[pol][1]])
+		elif s[0] == '!' and len(s) == 5:
+			tr = split(s[4], '/')
+			if len(tr) == 2 and s[1] == antenna:
+				BBCrow = [parsetime(tr[0]), parsetime(tr[1])]
+				BBCmap.append(BBCrow)
 		elif row[0] == 'TSYS':
 			pass
 		elif row[0] != '!' and len(s) == 4+nBand*nPol:
@@ -313,68 +321,7 @@ def makeTS(sections, antenna):
 			for rec in Receiver:
 				line += (' '+rec)
 			TS.append(line)
-
-	return TS
-
-def makeTY(sections, antenna):
-	if not sections.has_key('Tsys'):
-		return None, None
-	if not sections['Tsys'].has_key(antenna):
-		return None, None
-	T = sections['Tsys'][antenna]
-	bbctable = []
-	numpols = 0
-	l = len(T)
-	if l > 50:
-		l = 50
-	pols = {}
-	for i in range(l):
-		s = split(T[i])
-		if len(s) != 11:
-			continue;
-		pol = s[4]
-		sb = s[6]
-		if s[0] == '!' and s[3] in ['A','B','C','D'] and pol in ['RCP', 'LCP'] and sb in ['U', 'L']:
-			if pols.has_key(pol):
-				pols[pol][0] += 1
-			else:
-				numpols += 1
-				pols[pol] = [1, numpols]
-			bbctable.append([pol, pols[pol][0], int(s[5]), s[6], pols[pol][1]]) # polid, bandid, bbc#, sb, polnum
-
-	name = 'None'
-	nif = len(bbctable)
-	npol = len(pols)
-
-	map = []
-	for b in range(nif):
-		for p in pols:
-			for rn in range(len(bbctable)):
-				if b+1 == bbctable[rn][1] and p == bbctable[rn][0]:
-					map.append(rn)
-	
-	table = []
-
-	for t in T:
-		s = split(t)
-		if len(s) == 5:
-			n = split(s[3], '/')
-			if len(n) != 2:
-				print 'Cannot handle %s\n' % t
-				continue
-			name = n[0]
-			ta = split(s[4], '/')
-			dt = parsetime(ta[1])-parsetime(ta[0])
-		elif len(s) == nif+4:
-			if s[nif+2] != '!':
-				continue
-			row = '%10.7f %9.7f' % (parsetime(s[0]+'-'+s[1]+':0'), dt)
-			for i in range(nif):
-				row += ' '
-				row += s[2+map[i]]
-			table.append(row)
-
-	return table, bbctable
+	return TS, BBCmap
 
 def writetable(table, filename, ants, tablename):
 	f = open(filename, 'w')
@@ -420,9 +367,9 @@ PHs  = {}
 WXs  = {}
 FGs  = {}
 for a in ants:
-	ts = makeTS(sections, a)
+	ts, bbc = makeTS(sections, a)
 	if ts != None:
-		#BBCs[a] = bbc
+		BBCs[a] = bbc
 		TSs[a] = ts
 	ph = makePH(sections, a)
 	if ph != None:
@@ -431,12 +378,12 @@ for a in ants:
 	if wx != None:
 		WXs[a] = wx
 
-#for a in ants:
-#	if BBCs.has_key(a):
-#		fg = makeFG(sections, BBCs, a)
-#		if fg == None:
-#			continue
-#		FGs[a] = fg
+for a in ants:
+	if BBCs.has_key(a):
+		fg = makeFG(sections, BBCs, a)
+		if fg == None:
+			continue
+		FGs[a] = fg
 
 writetable(FGs, 'flag', ants, 'FG')
 writetable(TSs, 'tsys', ants, 'TS')
