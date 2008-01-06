@@ -67,7 +67,7 @@ def bbcflag(flags, bbc, t1, t2, chan, reason):
 		T1 = max(t1, b[0])
 		T2 = min(t2, b[1])
 		if T1 < T2:
-			for c in bbc[2:]:
+			for c in b[2:]:
 				if c[0] == chan:
 					flags.append('%9.7f %9.7f %d %d %s' % \
 						(T1, T2, c[1], c[2], reason))
@@ -251,6 +251,24 @@ def makePH(sections, antenna):
 			action = 2
 	return PH
 
+def fixBBCmap(B):
+	out = []
+	last = None
+	for b in B:
+		done = 0
+		if last != None:
+			if len(b) > 3:
+				if last[2:] == b[2:]:
+					last[1] = b[1]
+					done = 1;
+
+			else:
+				last[1] = b[1]
+				done = 1
+		if not done:
+			out.append(b)
+			last = b
+	return out
 
 def makeTS(sections, antenna):
 	if not sections.has_key('Tsys'):
@@ -321,6 +339,7 @@ def makeTS(sections, antenna):
 			for rec in Receiver:
 				line += (' '+rec)
 			TS.append(line)
+	BBCmap = fixBBCmap(BBCmap)
 	return TS, BBCmap
 
 def writetable(table, filename, ants, tablename):
