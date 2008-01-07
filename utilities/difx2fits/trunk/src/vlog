@@ -12,9 +12,9 @@ def usage():
 	print '\n%s ver. %s   %s %s\n' % (program, version, verdate, author)
 	print 'A program to preprocess the cal files to simiplfy difx2fits.\n'
 	print 'Usage: %s <TSM file> [<antenna list>]\n' % (argv[0])
-	print '  <TSM file> is <project>cal.vlba'
+	print '  <TSM file> is <project>cal.vlba  [must be uncompressed]'
 	print '  <antenna list> is a comma separated list of antennas with'
-	print '          no spaces, e.g., FD,GB,Y\n'
+	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
 	exit(0)
 
 def getlist(sections, header):
@@ -44,23 +44,24 @@ def parsetime(str):
 	return int(s[0]) + float(t[0])/24.0 + float(t[1])/1440.0 + \
 		float(t[2])/86400.0
 
-def makeWX(sections, antenna):
+def makeWR(sections, antenna):
 	if not sections.has_key('Weather'):
 		return None
 	if not sections['Weather'].has_key(antenna):
 		return None
-	W = sections['Weather'][antenna]
-	table = []
-	for w in W:
+	WeatherData = sections['Weather'][antenna]
+	WR = []
+	WR.append("# Ant D.O.Y. temp(C) pressure(mbar) dewpoint(C) windspeed(m/s) winddir(degrees) rain(cm) gust(m/s)")
+	for w in WeatherData:
 		if w[0] in ['*', '!']:
 			continue
 		s = split(w)
 		if len(s) < 8:
 			continue
 		t = parsetime(s[0])
-		table.append('%9.7f %s %s %s %s %s %s' % \
-			(t, s[1], s[2], s[3], s[4], s[5], s[7]))
-	return table
+		WR.append('%9.7f %s %s %s %s %s %s %s' % \
+			(t, s[1], s[2], s[3], s[4], s[5], s[6], s[7]))
+	return WR
 
 def bbcflag(flags, bbc, t1, t2, chan, reason):
 	for b in bbc:
@@ -78,10 +79,11 @@ def makeFG(sections, BBCs, antenna):
 	if not sections['Edit'].has_key(antenna):
 		return None
 	bbc = BBCs[antenna]
-	F = sections['Edit'][antenna]
-	flags = []
+	FlagData = sections['Edit'][antenna]
+	FG = []
+	FG.append("# Ant D.O.Y.start D.O.Y.end polId bandId reason")
 	key = "ant_name='%s'" % antenna
-	for f in F:
+	for f in FlagData:
 		s = split(f)
 		if s[0] == key:
 			t = split(split(s[1], '=')[1], ',')
@@ -93,27 +95,12 @@ def makeFG(sections, BBCs, antenna):
 			reason = f[p1-2:p2+1]
 			r = split(reason[1:-1])
 			if r[0] == 'channel' and r[2] == 'bbc':
-				bbcflag(flags, bbc, t1, t2, r[1], reason)
+				bbcflag(FG, bbc, t1, t2, r[1], reason)
 			else:
-				flags.append('%9.7f %9.7f -1 -1 %s' % \
+				FG.append('%9.7f %9.7f -1 -1 %s' % \
 					(t1, t2, reason) )
-	return flags
+	return FG
 
-
-def makeScans(scanlist):
-	scans = []
-	for S in scanlist:
-		if S[0] == '!':
-			continue;
-		s = split(S)
-		scans.append([s[0], parsetime(s[1]), parsetime(s[2])])
-	return scans
-
-def getSource(scanlist, time):
-	for s in scanlist:
-		if time >= s[1] and time <= s[2]:
-			return s[0]
-	return 'None'
 
 def countTones(ToneTable, StateTable):
 	# [chan, sb, pol, freq; polnum, bandnum, tonenum]
@@ -172,7 +159,7 @@ def makePH(sections, antenna):
 	PulseCalData = sections['PulseCal'][antenna]
 	
 	PH = []
-	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (freq, re, im)[nPol*nBand*nTone] (state count)[nPol*nBand*nState]')
+	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (freq, mag, phase(degrees))[nPol][nBand][nTone] (state count)[nPol][nBand][nState]')
 
 	action = 0	# 0 == nothing
 			# 1 = ToneTable
@@ -383,7 +370,7 @@ print 'processing antennas : ', ants
 BBCs = {}
 TSs  = {}
 PHs  = {}
-WXs  = {}
+WRs  = {}
 FGs  = {}
 for a in ants:
 	ts, bbc = makeTS(sections, a)
@@ -393,9 +380,9 @@ for a in ants:
 	ph = makePH(sections, a)
 	if ph != None:
 		PHs[a] = ph
-	wx = makeWX(sections, a)
+	wx = makeWR(sections, a)
 	if wx != None:
-		WXs[a] = wx
+		WRs[a] = wx
 
 for a in ants:
 	if BBCs.has_key(a):
@@ -404,8 +391,8 @@ for a in ants:
 			continue
 		FGs[a] = fg
 
-writetable(FGs, 'flag', ants, 'FG')
-writetable(TSs, 'tsys', ants, 'TS')
-writetable(WXs, 'weather', ants, 'WX')
-writetable(PHs, 'pcal', ants, 'PH')
+writetable(FGs, 'flag',    ants, 'FG')
+writetable(TSs, 'tsys',    ants, 'TS')
+writetable(WRs, 'weather', ants, 'WR')
+writetable(PHs, 'pcal',    ants, 'PH')
 

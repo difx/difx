@@ -105,8 +105,8 @@ static int parsePulseCal(const char *line,
 					return -1;
 				}
 				freqs[pol][tone + band*no_tone] = A;
-				pcalR[pol][tone + band*no_tone] = B;
-				pcalI[pol][tone + band*no_tone] = C;
+				pcalR[pol][tone + band*no_tone] = B*cos(C*M_PI/180.0);
+				pcalI[pol][tone + band*no_tone] = B*sin(C*M_PI/180.0);
 				line += p;
 			}
 		}
