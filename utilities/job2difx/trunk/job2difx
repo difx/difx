@@ -1282,8 +1282,6 @@ def genMakefile(joblist):
 	Makefile.write('delays: $(uvws)\n\n')
 	Makefile.write('uvws: $(uvws)\n\n')
 	Makefile.write("FITS: $(fitss)\n\n")
-	Makefile.write('allmachines:\n')
-	Makefile.write('\tgenmachines $(inputs)\n\n')
 	Makefile.write(clean+"\n\n")
 	for job in joblist:
 		if job[0:3] == 'job':

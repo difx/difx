@@ -28,3 +28,5 @@ After an svn update, these steps do not need to be rerun.  usually just
 to run "autoreconf" before compiling again.  If that doesn't work,
 one can always fall back on the above sequence of commands.
 
+To run calcif, environment variable CALC_SERVER needs to be set to
+the name of the computer running calcserver.
