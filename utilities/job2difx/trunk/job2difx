@@ -1066,7 +1066,8 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 		for subarray_num in range(len(subarrays)):
 			sub = subarrays[subarray_num]
 		
-			filebase = '%s.%d.%d' % (stump,subjob_num,subarray_num)
+			filebase = '%s.%02d.%d' % \
+				(stump,subjob_num,subarray_num)
 			joblist.append(filebase)
 			
 			# a setup is a combination of freqid and customid

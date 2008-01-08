@@ -1,0 +1,398 @@
+#!/usr/bin/env python
+
+from sys import argv, stdout, exit
+from string import split, strip, find
+
+program = 'vlog'
+version = 1.0
+verdate = '20071231'
+author  = 'Walter Brisken'
+
+def usage():
+	print '\n%s ver. %s   %s %s\n' % (program, version, verdate, author)
+	print 'A program to preprocess the cal files to simiplfy difx2fits.\n'
+	print 'Usage: %s <TSM file> [<antenna list>]\n' % (argv[0])
+	print '  <TSM file> is <project>cal.vlba  [must be uncompressed]'
+	print '  <antenna list> is a comma separated list of antennas with'
+	print '          no spaces, e.g., FD,GB,Y.  Default -- all ants.\n'
+	exit(0)
+
+def getlist(sections, header):
+	s = split(header)
+	sec = s[2]
+	ant = s[-2]
+	if not sections.has_key(sec):
+		sections[sec] = {}
+	S = sections[sec]
+	S[ant] = []
+	return S[ant]
+
+def chop(filename):
+	sections = {}
+	current = []
+	for D in open(filename, "r").readlines():
+		d = strip(D)
+		if find(d, ' -----') > 0:
+			current = getlist(sections, d)
+		elif len(d) > 0:
+			current.append(d)
+	return sections
+
+def parsetime(str):
+	s = split(str, '-')
+	t = split(s[1], ':')
+	return int(s[0]) + float(t[0])/24.0 + float(t[1])/1440.0 + \
+		float(t[2])/86400.0
+
+def makeWR(sections, antenna):
+	if not sections.has_key('Weather'):
+		return None
+	if not sections['Weather'].has_key(antenna):
+		return None
+	WeatherData = sections['Weather'][antenna]
+	WR = []
+	WR.append("# Ant D.O.Y. temp(C) pressure(mbar) dewpoint(C) windspeed(m/s) winddir(degrees) rain(cm) gust(m/s)")
+	for w in WeatherData:
+		if w[0] in ['*', '!']:
+			continue
+		s = split(w)
+		if len(s) < 8:
+			continue
+		t = parsetime(s[0])
+		WR.append('%9.7f %s %s %s %s %s %s %s' % \
+			(t, s[1], s[2], s[3], s[4], s[5], s[6], s[7]))
+	return WR
+
+def bbcflag(flags, bbc, t1, t2, chan, reason):
+	for b in bbc:
+		T1 = max(t1, b[0])
+		T2 = min(t2, b[1])
+		if T1 < T2:
+			for c in b[2:]:
+				if c[0] == chan:
+					flags.append('%9.7f %9.7f %d %d %s' % \
+						(T1, T2, c[1], c[2], reason))
+
+def makeFG(sections, BBCs, antenna):
+	if not sections.has_key('Edit'):
+		return None
+	if not sections['Edit'].has_key(antenna):
+		return None
+	bbc = BBCs[antenna]
+	FlagData = sections['Edit'][antenna]
+	FG = []
+	FG.append("# Ant D.O.Y.start D.O.Y.end polId bandId reason")
+	key = "ant_name='%s'" % antenna
+	for f in FlagData:
+		s = split(f)
+		if s[0] == key:
+			t = split(split(s[1], '=')[1], ',')
+			t1 = parsetime('%s-%s:%s:%s' % (t[0], t[1], t[2], t[3]))
+			t2 = parsetime('%s-%s:%s:%s' % (t[4], t[5], t[6], t[7]))
+			p = find(f, 'reason=')
+			p1 = p + 9
+			p2 = p1 + find(f[p1:], "'")
+			reason = f[p1-2:p2+1]
+			r = split(reason[1:-1])
+			if r[0] == 'channel' and r[2] == 'bbc':
+				bbcflag(FG, bbc, t1, t2, r[1], reason)
+			else:
+				FG.append('%9.7f %9.7f -1 -1 %s' % \
+					(t1, t2, reason) )
+	return FG
+
+
+def countTones(ToneTable, StateTable):
+	# [chan, sb, pol, freq; polnum, bandnum, tonenum]
+	polList  = []
+	bandnums = {}
+	polCount = {}
+	nTone  = 1
+	nBand  = 1
+	nPol   = 0
+	nState = 0
+	keys = ToneTable.keys()
+	keys.sort()
+	for key in keys:
+		T = ToneTable[key]
+		pol = T[2]
+		chanpol = T[0]+T[1]+T[2]
+		chan = T[0]
+		if not pol in polList:
+			polList.append(pol)
+			nPol += 1
+		polnum = polList.index(pol)
+		if chanpol in bandnums:
+			bandnums[chanpol][1] += 1
+			if bandnums[chanpol][1]+1 > nTone:
+				nTone = bandnums[chanpol][1]+1
+		else:
+			if pol in polCount:
+				polCount[pol] += 1
+				if polCount[pol]+1 > nBand:
+					nBand = polCount[pol]+1
+			else:
+				polCount[pol] = 0
+			bandnums[chanpol] = [polCount[pol], 0]
+		T.append(polList.index(pol))	# polnum
+		T.append(bandnums[chanpol][0])	# bandnum
+		T.append(bandnums[chanpol][1])	# tonenum
+
+	# [chan, sb, pol, nState; polnum, bandnum]
+	keys = StateTable.keys()
+	for key in keys:
+		S = StateTable[key]
+		if S[3] > nState:
+			nState = S[3]
+		pol = S[2]
+		chanpol = S[0]+S[1]+S[2]
+		S.append(polList.index(pol))	# polnum
+		S.append(bandnums[chanpol][0])	# bandnum
+
+	return nPol, nBand, nTone, nState
+
+def makePH(sections, antenna):
+	if not sections.has_key('PulseCal'):
+		return None
+	if not sections['PulseCal'].has_key(antenna):
+		return None
+	PulseCalData = sections['PulseCal'][antenna]
+	
+	PH = []
+	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (freq, mag, phase(degrees))[nPol][nBand][nTone] (state count)[nPol][nBand][nState]')
+
+	action = 0	# 0 == nothing
+			# 1 = ToneTable
+			# 2 = pulsecal data
+			# 3 = write row
+
+			# [bandnum, polnum, tonenum] are zero-based
+	ToneTable = {}	# [chan, sb, pol, freq; polnum, bandnum, tonenum]
+	StateTable = {}	# [chan, sb, pol, nState; polnum, bandnum]
+	ToneData = []
+	StateData = []
+	lastKey = None
+
+	for row in PulseCalData:
+		if row[0] == '!':
+			continue
+		s = split(row)
+		if len(s) == 0:
+			continue
+
+		if s[0] == '/' and action == 1:	# process ToneTable
+			nPol, nBand, nTone, nState = \
+				countTones(ToneTable, StateTable)
+		elif s[0] == 'FREQUENCY':  # start (re)population of ToneTable
+			action = 1
+			ToneTable = {}
+			StateTable = {}
+		elif s[0] == 'PULSE-CAL':  # start data row(s)
+			action = 2
+		elif action == 1 and len(s) == 8:
+			key = s[0][1:-1]
+			if s[2] == "'U'" or s[2] == "'L'":
+				if float(s[4]) < 1.0:
+					StateTable[key] = [ \
+						s[1], s[2][1:-1], \
+						s[3][1:-1], 1 << int(s[5])]
+				else:
+					ToneTable[key] = [ \
+						s[1], s[2][1:-1], \
+						s[3][1:-1], s[4]]
+				lastKey = key
+		elif action == 2 and len(s) >= 4:
+			key = s[2][1:-1]
+			if key == lastKey:
+				action = 3
+			if key == 'CC':
+				ToneData = [['', '', '']]*(nPol*nBand*nTone)
+				StateData = ['']*(nPol*nBand*nState)
+				t = parsetime(s[0]+'-'+s[1])
+				ccal = s[3]
+				if ccal == '-Inf' or ccal == 'Inf':
+					ccal = '999.9'
+				dt = float(s[4])/86400.0
+			elif key in ToneTable:
+				T = ToneTable[key]
+				pol  = T[4]
+				band = T[5]
+				tone = T[6]
+				index = tone + nTone*(band + nBand*pol)
+				ToneData[index] = [T[3], s[3], s[4]]
+			elif key in StateTable:
+				S = StateTable[key]
+				pol  = S[4]
+				band = S[5]
+				for state in range(S[3]):
+					index = state+nState*(band + nBand*pol)
+					StateData[index] = s[3+state]
+		if action == 3:
+			line = '%10.7f %9.7f %s %d %d %d %d' % \
+				(t, dt, ccal, nPol, nBand, nTone, nState)
+			for T in ToneData:
+				line += (' %s %s %s' % (T[0], T[1], T[2]))
+			for S in StateData:
+				line += (' ' + S)
+			PH.append(line)
+			action = 2
+	return PH
+
+def fixBBCmap(B):
+	out = []
+	last = None
+	for b in B:
+		done = 0
+		if last != None:
+			if len(b) > 3:
+				if last[2:] == b[2:]:
+					last[1] = b[1]
+					done = 1;
+
+			else:
+				last[1] = b[1]
+				done = 1
+		if not done:
+			out.append(b)
+			last = b
+	return out
+
+def makeTS(sections, antenna):
+	if not sections.has_key('Tsys'):
+		return None, None
+	if not sections['Tsys'].has_key(antenna):
+		return None, None
+	TsysData = sections['Tsys'][antenna]
+
+	TS = []
+	TS.append("# ant D.O.Y. dur(days) nPol nBand (tsys)[nBand*nPol] (band)[nBand]");
+
+	IFconfig = []
+	pols = {}
+	nBand = 0
+	nPol = 0
+	timerange = (0.0, 0.0)
+	BBCmap = []
+	BBCrow = []
+
+	for row in TsysData:
+		s = split(row)
+		# check for a comment line with vital info
+		if s[0] == '!' and len(s) == 11 and \
+				s[3] in ['A', 'B', 'C', 'D'] and \
+				s[6] in ['U', 'L'] and s[8][-1] == 'M':
+			if s[1] == '1':	# reset on channel 1
+				IFconfig = []
+				pols = {}
+				nBand = 0
+				nPol = 0
+				TsysData = None
+				Receiver = None
+			pol = s[4]
+			if pol in pols:
+				pols[pol][1] += 1
+				if nBand < pols[pol][1]+1:
+					nBand = pols[pol][1]+1
+			else:
+				pols[pol] = [nPol, 0]
+				nPol += 1
+				if nBand < 1:
+					nBand = 1
+			IFconfig.append([s[2], s[4], s[5], s[6], \
+				pols[pol][0], pols[pol][1]])
+			BBCrow.append([s[5], pols[pol][0], pols[pol][1]])
+		elif s[0] == '!' and len(s) == 5:
+			tr = split(s[4], '/')
+			if len(tr) == 2 and s[1] == antenna:
+				BBCrow = [parsetime(tr[0]), parsetime(tr[1])]
+				BBCmap.append(BBCrow)
+		elif row[0] == 'TSYS':
+			pass
+		elif row[0] != '!' and len(s) == 4+nBand*nPol:
+			if TsysData == None:
+				TsysData = [0.0]*(nPol*nBand)
+			if Receiver == None:
+				Receiver = ['']*nBand
+			t = parsetime(s[0]+'-'+s[1]+':0')
+			dt = 0.0
+			for i in range(len(IFconfig)):
+				index = IFconfig[i][4] + nPol*IFconfig[i][5]
+				TsysData[index] = s[2+i]
+				index = IFconfig[i][4]
+				Receiver[index] = IFconfig[i][0]
+			line = "%10.7f %9.7f %d %d" % (t, dt, nPol, nBand)
+			for ts in TsysData:
+				line += (' '+ts)
+			for rec in Receiver:
+				line += (' '+rec)
+			TS.append(line)
+	BBCmap = fixBBCmap(BBCmap)
+	return TS, BBCmap
+
+def writetable(table, filename, ants, tablename):
+	f = open(filename, 'w')
+	stdout.write('%s:' % tablename)
+	for a in ants:
+		if table.has_key(a):
+			t = table[a]
+			stdout.write(' %s' % a)
+			for row in t:
+				if row[0] == '#':
+					f.write('%s\n' % row)
+				else:
+					f.write('%s %s\n' % (a, row))
+	f.close()
+	stdout.write('\n')
+
+def findantennas(sections):
+	ants = []
+	for s in sections:
+		for a in sections[s].keys():
+			if not a in ants:
+				ants.append(a)
+	ants.sort()
+	return ants
+
+# -- main() -----------------
+
+if len(argv) < 2:
+	usage()
+
+sections = chop(argv[1])
+
+if len(argv) > 2:
+	ants = split(argv[2], ',')
+else:
+	ants = findantennas(sections)
+
+print 'processing antennas : ', ants
+
+BBCs = {}
+TSs  = {}
+PHs  = {}
+WRs  = {}
+FGs  = {}
+for a in ants:
+	ts, bbc = makeTS(sections, a)
+	if ts != None:
+		BBCs[a] = bbc
+		TSs[a] = ts
+	ph = makePH(sections, a)
+	if ph != None:
+		PHs[a] = ph
+	wx = makeWR(sections, a)
+	if wx != None:
+		WRs[a] = wx
+
+for a in ants:
+	if BBCs.has_key(a):
+		fg = makeFG(sections, BBCs, a)
+		if fg == None:
+			continue
+		FGs[a] = fg
+
+writetable(FGs, 'flag',    ants, 'FG')
+writetable(TSs, 'tsys',    ants, 'TS')
+writetable(WRs, 'weather', ants, 'WR')
+writetable(PHs, 'pcal',    ants, 'PH')
+

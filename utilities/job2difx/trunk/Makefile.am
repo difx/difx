@@ -9,5 +9,6 @@ dist_bin_SCRIPTS = \
 	jobstatus \
 	DiFXsniff \
 	mk5take \
-	mk5return
+	mk5return \
+	vlog
 
