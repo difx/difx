@@ -84,7 +84,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double grate[array_N_POLY];
 	int32_t sourceId, freqId;
 	double time;
-	int nPolar;
+	int nPol;
 	char *pBuf;
 	DifxModel *M;
 
@@ -94,7 +94,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	}
 
 	nBand = p_fits_keys->no_band;
-	nPolar = D->config[0].IF[0].nPol;
+	nPol = D->nPol;
   
 	/* set FITS header to reflect number of bands in observation */
 	sprintf(bandFormDouble, "%dD", array_N_POLY * nBand);  
@@ -102,7 +102,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
   
   
 	/* determine size of records for FITS file */
-	if(nPolar == 2)
+	if(nPol == 2)
 	{
 		nColumn = NELEMENTS (columns);
 	}
@@ -233,7 +233,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 			}
 		}
 
-		for (i = 0; i < nPolar; i++)
+		for (i = 0; i < nPol; i++)
 		{
 			/* PDELAY */
 			{

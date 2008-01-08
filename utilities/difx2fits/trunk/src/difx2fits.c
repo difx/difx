@@ -44,22 +44,40 @@ int usage(const char *pgm)
 int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
 	strcpy(keys->obscode, D->obsCode);
-	keys->no_stkd = (1+D->config[0].doPolar)*D->config[0].IF[0].nPol;
-	if(D->config[0].IF[0].pol[0] == 'L')
+	keys->no_stkd = D->nPolar;
+	switch(D->polPair[0])
 	{
-		keys->stk_1 = -2;
+		case 'R':
+			keys->stk_1 = -1;
+			break;
+		case 'L':
+			keys->stk_1 = -2;
+			break;
+		case 'X':
+			keys->stk_1 = -5;
+			break;
+		case 'Y':
+			keys->stk_1 = -6;
+			break;
+		default:
+			fprintf(stderr, "Error -- unknown polarization (%c)\n", 
+				D->polPair[0]);
+			exit(0);
 	}
-	else
-	{
-		keys->stk_1 = -1;
-	}
-	keys->no_band = D->config[0].nIF;
+	keys->no_band = D->nIF;
 	keys->no_chan = D->nOutChan;
 	keys->ref_freq = D->refFreq*1.0e6;
 	keys->ref_date = D->mjdStart;
-	keys->chan_bw = 1.0e6*D->config[0].IF[0].bw/D->nOutChan;
+	keys->chan_bw = 1.0e6*D->chanBW/D->nOutChan;
 	keys->ref_pixel = 0.5 + 1.0/(2.0*D->specAvg);
-	keys->no_pol = D->config[0].IF[0].nPol;
+	if(D->nPolar > 1)
+	{
+		keys->no_pol = 2;
+	}
+	else
+	{
+		keys->no_pol = 1;
+	}
 	
 	return 0;
 }
@@ -226,6 +244,14 @@ int main(int argc, char **argv)
 	if(!D)
 	{
 		fprintf(stderr, "Cannot proceed.  Aborting\n");
+		return 0;
+	}
+
+	if(D->nIF <= 0 || D->nPolar <= 0)
+	{
+		fprintf(stderr, "Data geometry changes during obs, cannot "
+			"make into FITS.");
+		deleteDifxInput(D);
 		return 0;
 	}
 

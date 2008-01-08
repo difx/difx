@@ -27,6 +27,9 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	char *fitsbuf, *p_fitsbuf;
 	int row;
 	int no_band;
+	int i;
+	int freqId;
+
 
 	if(D == 0)
 	{
@@ -56,10 +59,15 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
+	freqId = 0;
+
 	for(row = 0; row < D->nConfig; row++)
 	{
-		int i;
-		int freqId = row + 1;
+		if(D->config[row].freqId < freqId)
+		{
+			continue;
+		}
+		freqId = D->config[row].freqId + 1;
 
 		/* pointer to the buffer for FITS records */
 		p_fitsbuf = fitsbuf;
@@ -75,7 +83,6 @@ const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
 		{
 			double bandfreq = (D->config[row].IF[i].freq - 
 				D->refFreq) * 1.0e6;
-
 			bcopy((char *)&bandfreq, p_fitsbuf, sizeof(bandfreq));
 			p_fitsbuf += sizeof(bandfreq);
 		}

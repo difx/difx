@@ -43,7 +43,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	int nColumn;
  	int nRowBytes;
 	char *pBuf, *fitsbuf;
-	int nBand, nPolar;
+	int nBand, nPol;
 	int i, j, s, p, ant;
 	int32_t stnId;
 	int32_t arrayId;
@@ -62,8 +62,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	nBand = p_fits_keys->no_band;
 	sprintf (bandFormFloat, "%1dE", nBand);  
   
-	nPolar = D->config[0].doPolar ? 2 : 1;
-	if(nPolar == 2)
+	nPol = D->nPol;
+	if(nPol == 2)
 	{
 		nColumn = NELEMENTS (columns);
 	}
@@ -81,7 +81,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
   
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", nPolar, "");
+	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "FFT_SIZE", D->nOutChan*D->specAvg*2, "");
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
@@ -153,7 +153,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		bcopy((char *)&drate, pBuf, sizeof(drate));
 		pBuf += sizeof(drate);
 	  
-		for (j = 0; j < nPolar; j++)
+		for (j = 0; j < nPol; j++)
                 {
 			/* CLOCK OFFSET */
 			bcopy((char *)&clock, pBuf, sizeof(clock));

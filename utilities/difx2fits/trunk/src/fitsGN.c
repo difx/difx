@@ -435,7 +435,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	int nColumn;
 	int n_row_bytes;
 	char *fitsbuf, *p_fitsbuf;
-	int r, a, i, j, p, no_band, no_pol;
+	int c, r, a, i, j, p, no_band, no_pol;
 	const char *antName;
 	float NaNs[MAXTAB*MAXIFS];
 	int Twos[MAXIFS], Zeros[MAXIFS];
@@ -455,8 +455,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		return D;
 	}
 	
-	no_pol = D->config[0].IF[0].nPol;
-	no_band = p_fits_keys->no_band;
+	no_pol = D->nPol;
+	no_band = D->nIF;
 	sprintf(bandFormInt, "%dJ", no_band);
 	sprintf(bandFormFloat, "%dE", no_band);
 	sprintf(tabFormFloat, "%dE", MAXTAB*no_band);
@@ -503,7 +503,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		Zeros[i] = 0;
 	}
 	arrayId = 1;
-	freqId = 1;
+	freqId = 0;
 	mjd = D->mjdStart + 0.5*D->duration/86400.0;
 
 	for(a = 0; a < D->nAntenna; a++)
@@ -512,94 +512,102 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		antId = a+1;
 		bad = 0;
 
-		for(i = 0; i < no_band; i++)
+		for(c = 0; c < D->nConfig; c++)
 		{
-			freq = D->config[0].IF[i].freq;	/* MHz */
-			r = getGainRow(G, nRow, antName, freq, mjd);
-			if(r < 0)
+			if(D->config[c].freqId < freqId)
 			{
-				if(messages == 0)
+				continue;	/* this freqId done already */
+			}
+			freqId = D->config[c].freqId + 1;
+			for(i = 0; i < no_band; i++)
+			{
+				freq = D->config[c].IF[i].freq;	/* MHz */
+				r = getGainRow(G, nRow, antName, freq, mjd);
+				if(r < 0)
 				{
-					printf("\n");
+					if(messages == 0)
+					{
+						printf("\n");
+					}
+					fprintf(stderr, "    No gain curve for %s\n",
+						antName);
+					messages++;
+					bad = 1;
+					break;
 				}
-				fprintf(stderr, "    No gain curve for %s\n",
-					antName);
-				messages++;
-				bad = 1;
-				break;
+				nTerm[i] = G[r].npoly;
+				for(j = 0; j < MAXTAB; j++)
+				{
+					gain[i*MAXTAB + j] = 
+						(j < nTerm[i]) ? G[r].poly[j] : 0.0;
+				}
+				for(p = 0; p < no_pol; p++)
+				{
+					sens[p][i] = G[r].dpfu[p];
+				}
 			}
-			nTerm[i] = G[r].npoly;
-			for(j = 0; j < MAXTAB; j++)
+			if(bad == 1)
 			{
-				gain[i*MAXTAB + j] = 
-					(j < nTerm[i]) ? G[r].poly[j] : 0.0;
+				continue;
 			}
+			
+			p_fitsbuf = fitsbuf;
+			
+			/* ANTENNA_NO */
+			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
+			p_fitsbuf += sizeof(antId);
+
+			/* ARRAY */
+			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
+			p_fitsbuf += sizeof(arrayId);
+
+			/* FREQ_ID */
+			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
+			p_fitsbuf += sizeof(freqId);
+
 			for(p = 0; p < no_pol; p++)
 			{
-				sens[p][i] = G[r].dpfu[p];
+				/* TYPE */
+				bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
+				p_fitsbuf += no_band*sizeof(float);
+
+				/* NTERM */
+				bcopy((char *)nTerm, p_fitsbuf, no_band*sizeof(int));
+				p_fitsbuf += no_band*sizeof(int);
+
+				/* X_TYP */
+				bcopy((char *)Zeros, p_fitsbuf, no_band*sizeof(float));
+				p_fitsbuf += no_band*sizeof(float);
+
+				/* Y_TYP */
+				bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
+				p_fitsbuf += no_band*sizeof(float);
+
+				/* X_VAL */
+				bcopy((char *)NaNs, p_fitsbuf, no_band*sizeof(float));
+				p_fitsbuf += no_band*sizeof(float);
+
+				/* Y_VAL */
+				bcopy((char *)NaNs, p_fitsbuf, 
+					MAXTAB*no_band*sizeof(float));
+				p_fitsbuf += MAXTAB*no_band*sizeof(float);
+
+				/* GAIN */
+				bcopy((char *)gain, p_fitsbuf, 
+					MAXTAB*no_band*sizeof(float));
+				p_fitsbuf += MAXTAB*no_band*sizeof(float);
+
+				/* SENSITIVITY */
+				bcopy((char *)(sens[p]), p_fitsbuf, 
+					no_band*sizeof(float));
+				p_fitsbuf += no_band*sizeof(float);
 			}
-		}
-		if(bad == 1)
-		{
-			continue;
-		}
-		
-		p_fitsbuf = fitsbuf;
-		
-		/* ANTENNA_NO */
-		bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
-		p_fitsbuf += sizeof(antId);
-
-		/* ARRAY */
-		bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
-		p_fitsbuf += sizeof(arrayId);
-
-		/* FREQ_ID */
-		bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
-		p_fitsbuf += sizeof(freqId);
-
-		for(p = 0; p < no_pol; p++)
-		{
-			/* TYPE */
-			bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			/* NTERM */
-			bcopy((char *)nTerm, p_fitsbuf, no_band*sizeof(int));
-			p_fitsbuf += no_band*sizeof(int);
-
-			/* X_TYP */
-			bcopy((char *)Zeros, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			/* Y_TYP */
-			bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			/* X_VAL */
-			bcopy((char *)NaNs, p_fitsbuf, no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-
-			/* Y_VAL */
-			bcopy((char *)NaNs, p_fitsbuf, 
-				MAXTAB*no_band*sizeof(float));
-			p_fitsbuf += MAXTAB*no_band*sizeof(float);
-
-			/* GAIN */
-			bcopy((char *)gain, p_fitsbuf, 
-				MAXTAB*no_band*sizeof(float));
-			p_fitsbuf += MAXTAB*no_band*sizeof(float);
-
-			/* SENSITIVITY */
-			bcopy((char *)(sens[p]), p_fitsbuf, 
-				no_band*sizeof(float));
-			p_fitsbuf += no_band*sizeof(float);
-		}
 
 #ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
-		fitsWriteBinRow(out, fitsbuf);
+			fitsWriteBinRow(out, fitsbuf);
+		}
 	}
 
 	/* free allocated memory */

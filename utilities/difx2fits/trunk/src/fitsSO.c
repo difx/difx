@@ -78,7 +78,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	}
 
 	nColumn = NELEMENTS(columns);
-	no_bands = D->config[0].nIF;
+	no_bands = D->nIF;
 
 	sprintf(bandFormFloat, "%1dE", no_bands);
 	sprintf(bandFormDouble, "%1dD", no_bands); 

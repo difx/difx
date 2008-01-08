@@ -45,7 +45,7 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	DifxVis *dv;
 	char globstr[256];
 	int g, i, c, v;
-	int nHand;
+	int nPol;
 	int polMask = 0;
 	int verbose = 0;
 
@@ -88,16 +88,16 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	dv->nComplex = 2;	/* for now don't write weights */
 	for(c = 0; c < D->nConfig; c++)
 	{
-		nHand = D->config[c].doPolar ? 2 : 1;
-		if(D->config[c].nIF > dv->nFreq)
+		nPol = D->nPol;
+		if(D->nIF > dv->nFreq)
 		{
-			dv->nFreq = D->config[c].nIF;
+			dv->nFreq = D->nIF;
 		}
-		for(i = 0; i < D->config[c].nIF; i++)
+		for(i = 0; i < D->nIF; i++)
 		{
-			if(D->config[c].IF[i].nPol*nHand > dv->maxPol)
+			if(D->config[c].IF[i].nPol*nPol > dv->maxPol)
 			{
-				dv->maxPol = D->config[c].IF[i].nPol*nHand;
+				dv->maxPol = D->config[c].IF[i].nPol*nPol;
 			}
 			if(D->config[c].IF[i].pol[0] == 'R' ||
 			   D->config[c].IF[i].pol[1] == 'R')
@@ -505,13 +505,14 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 
 	vis_scale = 1.0;
 
+	/* FIXME -- nees love here! */
 	if(s > 0.0)
 	{
 		scale = s;
 	}
 	else
 	{
-		scale = 1.0/(dv->D->config[0].IF[0].bw*6.25e6*
+		scale = 1.0/(dv->D->chanBW*6.25e6*
 			dv->D->config[0].tInt*dv->D->specAvg);
 	}
 
@@ -559,7 +560,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	fitsWriteInteger(dv->out, "MAXIS3", dv->D->nOutChan, "");
 	fitsWriteString(dv->out, "CTYPE3", "FREQ", "");
 	fitsWriteFloat(dv->out, "CDELT3", 
-		dv->D->config[0].IF[0].bw*1.0e6/dv->D->nOutChan, "");
+		dv->D->chanBW*1.0e6/dv->D->nOutChan, "");
 	fitsWriteFloat(dv->out, "CRPIX3", p_fits_keys->ref_pixel, "");
 	fitsWriteFloat(dv->out, "CRVAL3", dv->D->refFreq*1000000.0, "");
 	fitsWriteInteger(dv->out, "MAXIS4", dv->nFreq, "");
