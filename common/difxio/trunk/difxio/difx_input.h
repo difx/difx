@@ -51,6 +51,7 @@ typedef struct
 	DifxIF *IF;
 	double **clockOffset;	/* (us) [nAntenna][nIF] add to antenna.delay */
 	int quantBits;		/* 1 or 2 */
+	int freqId;		/* 0-based number -- uniq IF[] index */
 } DifxConfig;
 
 typedef struct
@@ -130,6 +131,18 @@ typedef struct
 	int specAvg;		/* number of channels to average */
 	int nOutChan;		/* number of channels to write to FITS */
 	char calcServer[32];	/* name of calc server */
+
+	int nIF;		/* 0 if different in configs */
+	int nPol;		/* 0 if different in configs */
+				/* Otherwise, should be 1 or 2 */
+	int doPolar;		/* 0 if not, 1 if so */
+	int nPolar;		/* 0 if different in configs */
+				/* 1 for single pol obs */
+				/* 2 for dual pol, parallel hands only */
+				/* 4 for full pol */
+	double chanBW;		/* MHz common channel bandwidth. 0 if differ */
+	int quantBits;		/* 0 if if different in configs; or 1 or 2 */
+	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
 	DifxConfig	*config;

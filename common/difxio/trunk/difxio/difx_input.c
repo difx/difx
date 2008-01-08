@@ -328,7 +328,7 @@ void printDifxEOP(const DifxEOP *de)
 }
 
 
-/* allocate empty structure */
+/* allocate empty structure, do minimal initialization */
 DifxInput *newDifxInput()
 {
 	DifxInput *D;
@@ -572,7 +572,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	
 	int rows[20];	/* must be long enough for biggest of above */
 	int a, p, i, k, l, b, c, r, N;
-	int qb;
+	int qb = 0;
 	const char *ptr;
 	
 	if(!D)
@@ -1370,6 +1370,206 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 	return D;
 }
 
+static void setGlobalValues(DifxInput *D)
+{
+	int i, c, p, n, nIF, nPol;
+	int doPolar, qb;
+	double bw;
+	char pol[2];
+
+	if(!D)
+	{
+		return;
+	}
+	
+	D->nIF = -1;
+	D->nPol = 0;
+	D->doPolar = 0;
+	D->nPolar = -1;
+	D->chanBW = -1.0;
+	D->quantBits = -1;
+	for(i = 0; i < 4; i++)
+	{
+		D->polPair[i] = 0;
+	}
+
+	for(c = 0; c < D->nConfig; c++)
+	{
+		nIF = D->config[c].nIF;
+		qb  = D->config[c].quantBits;
+		if(D->nIF < 0)
+		{
+			D->nIF = nIF;
+		}
+		else if(D->nIF != nIF)
+		{
+			D->quantBits = D->nIF = D->nPolar = 0;
+			D->chanBW = 0.0;
+			strcpy(D->polPair, "  ");
+			return;
+		}
+		if(D->quantBits < 0)
+		{
+			D->quantBits = qb;
+		}
+		else if(D->quantBits != qb)
+		{
+			D->quantBits = D->nIF = D->nPolar = 0;
+			D->chanBW = 0.0;
+			strcpy(D->polPair, "  ");
+			return;
+		}
+		doPolar = D->config[c].doPolar;
+		for(i = 0; i < nIF; i++)
+		{
+			nPol   = D->config[c].IF[i].nPol;
+			bw     = D->config[c].IF[i].bw;
+			pol[0] = D->config[c].IF[i].pol[0];
+			pol[1] = D->config[c].IF[i].pol[1];
+			if(doPolar)
+			{
+				nPol *= 2;
+			}
+			if(D->nPolar < 0)
+			{
+				D->nPolar = nPol;
+			}
+			else if(D->nPolar != nPol)
+			{
+				D->quantBits = D->nIF = D->nPolar = 0;
+				D->chanBW = 0.0;
+				strcpy(D->polPair, "  ");
+				return; 
+			}
+			if(D->chanBW < 0.0)
+			{
+				D->chanBW = bw;
+			}
+			else if(D->chanBW != bw)
+			{
+				D->quantBits = D->nIF = D->nPolar = 0;
+				D->chanBW = 0.0;
+				strcpy(D->polPair, "  ");
+				return; 
+			}
+			if(nPol > 0)
+			{
+				n = nPol > 1 ? 2 : 1;
+				if(D->polPair[0] == 0)
+				{
+					for(p = 0; p < n; p++)
+					{
+						D->polPair[p] = pol[p];
+					}
+				}
+				else for(p = 0; p < n; p++)
+				{
+					if(D->polPair[p] != pol[p])
+					{
+						D->quantBits = D->nIF = D->nPolar = 0;
+						D->chanBW = 0.0;
+						strcpy(D->polPair, "  ");
+						return; 
+					}
+				}
+			}
+		}
+	}
+	if(D->nPolar == 4)
+	{
+		D->nPol = 2;
+		D->doPolar = 1;
+	}
+	else
+	{
+		D->nPol = D->nPolar;
+		D->doPolar = 0;
+	}
+}
+
+static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
+{
+	int i, p;
+	
+	if(C1->nIF != C2->nIF)
+	{
+		return 0;
+	}
+
+	for(i = 0; i < C1->nIF; i++)
+	{
+		if(C1->IF[i].freq != C2->IF[i].freq)
+		{
+			return 0;
+		}
+		if(C1->IF[i].bw != C2->IF[i].bw)
+		{
+			return 0;
+		}
+		if(C1->IF[i].sideband != C2->IF[i].sideband)
+		{
+			return 0;
+		}
+		if(C1->IF[i].nPol != C2->IF[i].nPol)
+		{
+			return 0;
+		}
+		for(p = 0; p < C1->IF[i].nPol; p++)
+		{
+			if(C1->IF[i].pol[p] != C2->IF[i].pol[p])
+			{
+				return 0;
+			}
+		}
+	}
+
+	return 1;
+}
+
+static int calcFreqIds(DifxInput *D)
+{
+	int c, d;
+	int nFQ = 0;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(D->nConfig < 1)
+	{
+		return 0;
+	}
+	
+	D->config[0].freqId = nFQ;
+	nFQ++;
+	
+	if(D->nConfig < 2)
+	{
+		return 0;
+	}
+
+	for(c = 1; c < D->nConfig; c++)
+	{
+		D->config[c].freqId = -1;
+		for(d = 0; d < c; d++)
+		{
+			if(sameFQ(&(D->config[c]), &(D->config[d])))
+			{
+				D->config[c].freqId = D->config[d].freqId;
+				d = c; /* terminate inner loop */
+			}
+		}
+		if(D->config[c].freqId == -1)
+		{
+			D->config[c].freqId = nFQ;
+			nFQ++;
+		}
+	}
+
+	return nFQ;
+}
+
 DifxInput *loadDifxInput(const char *fileprefix)
 {
 	DifxParameters *ip, *up, *dp, *rp, *cp;
@@ -1434,6 +1634,9 @@ DifxInput *loadDifxInput(const char *fileprefix)
 		estimateRate(D);
 	}
 	D = deriveSourceTable(D);
+
+	setGlobalValues(D);
+	calcFreqIds(D);
 
 	if(!D)
 	{

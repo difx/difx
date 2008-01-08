@@ -27,7 +27,6 @@
 DifxParameters *newDifxParameters()
 {
 	DifxParameters *dp;
-	DifxRow *row;
 	int alloc_rows;
 
 	/* initial size of array, will grow if needed */
