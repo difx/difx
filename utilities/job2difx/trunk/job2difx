@@ -665,9 +665,11 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
 		timeavg = intTime(float(custom[s[1]]['time_avg']), float(speedUp))
 		
 		
-		# .2 seconds per send
-		sendLen = 0.2
+		# .25 seconds per send
+		sendLen = 0.262144
 		nBlock = int(2.0*sendLen*minBW*NDataSegment/(fftsize*BufferFactor))
+		nn = int(timeavg/sendLen - 0.01) + 1
+		timeavg = sendLen*nn
 		
 		cfg.append("CONFIG SOURCE:      %s" % setupname)
 		cfg.append("INT TIME (SEC):     %f" % timeavg)
@@ -1148,13 +1150,13 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 			# make subarray flags
 			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
 					sub, subarray_num)
-			if len(flagtable) > 0:
-				filename = '%s.flag' % filebase
-				fp = open(filename, "w") 
-				fp.write("%d\n" % len(flagtable))
-				for f in flagtable:
-					fp.write(f+'\n')
-				fp.close()
+#			if len(flagtable) > 0:
+#				filename = '%s.flag' % filebase
+#				fp = open(filename, "w") 
+#				fp.write("%d\n" % len(flagtable))
+#				for f in flagtable:
+#					fp.write(f+'\n')
+#				fp.close()
 			
 		subjob_num += 1
 
