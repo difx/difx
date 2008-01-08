@@ -276,6 +276,7 @@ def obs2statelist(job_obs, antenna_index):
 		for i in range(i1, i2):
 			statelist[i][1][a] = config
 
+	# statelist = [ [mjd, [ [corrow, freqrow, sourcerow, customrow][nAnt] ][nEvent]
 	return statelist
 
 # given a list of [ [config, subarray] ] and a subarray, return the config
@@ -412,8 +413,9 @@ def intersection(l1, l2):
 	return inter		
 
 
-def generatesubjoblist(scanlist, subarraylist):
+def generatesubjoblist(scanlist, subarraylist, job):
 	subs = [-1]
+	job_freq = job['frequency']
 	subjobrange = [-1, -1, -1.0, -1.0, subs]
 	subjoblist = []
 	oldconfig = []
@@ -421,7 +423,9 @@ def generatesubjoblist(scanlist, subarraylist):
 		scan = scanlist[i]
 		config = []
 		for Y in scan[6]:
-			config.append([Y[0][0],Y[0][1],Y[0][3]])
+			#config.append([Y[0][0], Y[0][3]])
+			config.append([Y[0][0], Y[0][1], Y[0][3]])
+		print scan[6]
 		print 'CONFIG =  ', config
 		intsubs = intersection(scan[5], subs)
 		if (len(intsubs) > 0) and (oldconfig == config):
@@ -498,11 +502,12 @@ def generatefreqlist(job_freq_row):
 			
 	return freqlist, inputlist
 
-def generateallfreqlist(freq):
+def generateallfreqlist(job_freq, setups):
 	freqlist = []
 	N = 0
 
-	for job_freq_row in freq:
+	for s in setups:
+		job_freq_row = job_freq[s[0]]
 		bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
 		os = 0.5*float(job_freq_row['sample_rate'])/  \
 			float(job_freq_row['bandwidth'])
@@ -654,6 +659,7 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
 	cfg = []
 	cfg.append("# CONFIGURATIONS ###!")
 	cfg.append("NUM CONFIGURATIONS: %d" % nConf)
+	k = 0
 	for s in setups:
 		setupname = "FREQ%dCUST%dDOPOL%d" % (s[0], s[1], s[2])
 		timeavg = intTime(float(custom[s[1]]['time_avg']), float(speedUp))
@@ -676,7 +682,8 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
 
 		# determine total number of active datastreams
 		for j in range(nant):
-			cfg.append(indent21_1("DATASTREAM %d INDEX", "%d", j, (j+0*nant*s[0])))
+			cfg.append(indent21_1("DATASTREAM %d INDEX", "%d", j, k))
+			k += 1
 		for j in range(nant*(nant-1)/2):
 			cfg.append(indent21_1("BASELINE %d INDEX", "%d", j, j))
 
@@ -694,12 +701,12 @@ def makefreqtable(freqlist):
 		frq.append(indent21_1("SIDEBAND %d", "%s",       i, f[2]))
 	return frq
 				
-def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid):
+def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, setups):
 	dst = []
 	nant = len(subarray)
 	format = job['format']
-	obs = job['obs']
-	freqtable = job['frequency']
+	job_obs = job['obs']
+	job_freq = job['frequency']
 	nfreq = len(freqlist)
 	
 
@@ -707,73 +714,78 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid):
 
 	
 	dst.append("# DATASTREAM TABLE #!")
-	dst.append("DATASTREAM ENTRIES: %d" % (nant) )
+	dst.append("DATASTREAM ENTRIES: %d" % (nant*len(setups)) )
 	dst.append("DATA BUFFER FACTOR: %d" % BufferFactor)
 	dst.append("NUM DATA SEGMENTS:  %d" % NDataSegment)
 
-#	for fq_num in range(nfqid):
-	for ds_num in range(nant):
-		obsrow = getrowbyname(obs, antennalist[subarray[ds_num]])
-		format_id = int(obsrow['format_row'])
-		qbits = int(format[format_id]['sample_bits'])
-		fanout = int(format[format_id]['format_mode'][-1])
-		format_name = format[format_id]['format_mode'][0:4]
-		nIF = 0
-		for p in freqtable[0]['polarization'][1:]:
-			if p[1] != ' ':
-				nIF+=1
-		tracks = fanout*qbits*nIF
-		job_freq_row = freqtable[config[1]]
-		Mbps = int(freqtable[0]['sample_rate'])*nIF*qbits/1000000
-		format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
-		dst.append("TELESCOPE INDEX:    %d" % ds_num)
-		dst.append("TSYS:               0.0")
-		dst.append("DATA FORMAT:        %s" % format_name)
-		dst.append("DATA SOURCE:        %s" % "MODULE")
-		dst.append("FILTERBANK USED:    FALSE")
-		dst.append("READ FROM FILE:     TRUE")
-		dst.append("NUM FREQS:          %d" % nfreq)
-		fq_id = 0
-		bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
-		os = 0.5*float(job_freq_row['sample_rate'])/  \
-			float(job_freq_row['bandwidth'])
-		os = int(os + 0.5)
-		enable = job_freq_row['fft_enable']
-		freq   = job_freq_row['base_freq']
-		side   = job_freq_row['net_side']
-		polar  = job_freq_row['polarization']
-		fslist = []
-		SA = {'1' : 'U' , '-1' : 'L'}
-		for i in range(len(enable)):
-			if enable[i] != 'YES':
-				continue
-			f = float(freq[i])/1000000.0
-			s = SA[side[i]]
-			fs = [f, s]
-			r = findfreqrowindex(freqlist, f, bw, s, os)
-			if fs in fslist:
-				continue;
-			fslist.append(fs)
-			dst.append(indent21_1("FREQ TABLE INDEX %d", "%d", \
-				fq_id, r))
-			dst.append(indent21_1("CLK OFFSET %d (us)", "%8.6f", \
-				fq_id, 0.0))
-			dst.append(indent21_1("NUM POLS %d", "%d", \
-				fq_id, len(freqlist[r][4])))
-			fq_id += 1
-		band = 0
-		for i in range(len(enable)):
-			if enable[i] != 'YES':
-				continue
-			f = float(freq[i])/1000000.0
-			s = SA[side[i]]
-			fs = [f, s]
-			index = fslist.index(fs)
-			dst.append(indent21_1("INPUT BAND %d POL", "%s", \
-				band, polar[i][1]))
-			dst.append(indent21_1("INPUT BAND %d INDEX", "%d", \
-				band, index))
-			band += 1
+	Q = 0
+	fq_id = 0
+
+	for setup in setups:
+		Q += fq_id
+		job_freq_row = job_freq[setup[0]]
+		for ds_num in range(nant):
+			obsrow = getrowbyname(job_obs, antennalist[subarray[ds_num]])
+			format_id = int(obsrow['format_row'])
+			qbits = int(format[format_id]['sample_bits'])
+			fanout = int(format[format_id]['format_mode'][-1])
+			format_name = format[format_id]['format_mode'][0:4]
+			nIF = 0
+			for p in job_freq[0]['polarization'][1:]:
+				if p[1] != ' ':
+					nIF+=1
+			tracks = fanout*qbits*nIF
+			Mbps = int(job_freq[0]['sample_rate'])*nIF*qbits/1000000
+			format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
+			dst.append("TELESCOPE INDEX:    %d" % ds_num)
+			dst.append("TSYS:               0.0")
+			dst.append("DATA FORMAT:        %s" % format_name)
+			dst.append("DATA SOURCE:        %s" % "MODULE")
+			dst.append("FILTERBANK USED:    FALSE")
+			dst.append("READ FROM FILE:     TRUE")
+			dst.append("NUM FREQS:          %d" % nfreq)
+			fq_id = 0
+			bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
+			os = 0.5*float(job_freq_row['sample_rate'])/  \
+				float(job_freq_row['bandwidth'])
+			os = int(os + 0.5)
+			enable = job_freq_row['fft_enable']
+			freq   = job_freq_row['base_freq']
+			side   = job_freq_row['net_side']
+			polar  = job_freq_row['polarization']
+			fslist = []
+			SA = {'1' : 'U' , '-1' : 'L'}
+			
+			for i in range(len(enable)):
+				if enable[i] != 'YES':
+					continue
+				f = float(freq[i])/1000000.0
+				s = SA[side[i]]
+				fs = [f, s]
+				#r = findfreqrowindex(freqlist, f, bw, s, os)
+				if fs in fslist:
+					continue;
+				fslist.append(fs)
+				dst.append(indent21_1("FREQ TABLE INDEX %d", "%d", \
+					fq_id, fq_id + Q))
+				dst.append(indent21_1("CLK OFFSET %d (us)", "%8.6f", \
+					fq_id, 0.0))
+				dst.append(indent21_1("NUM POLS %d", "%d", \
+					fq_id, len(freqlist[fq_id][4])))
+				fq_id += 1
+			band = 0
+			for i in range(len(enable)):
+				if enable[i] != 'YES':
+					continue
+				f = float(freq[i])/1000000.0
+				s = SA[side[i]]
+				fs = [f, s]
+				index = fslist.index(fs)
+				dst.append(indent21_1("INPUT BAND %d POL", "%s", \
+					band, polar[i][1]))
+				dst.append(indent21_1("INPUT BAND %d INDEX", "%d", \
+					band, index))
+				band += 1
 	
 	return dst
 
@@ -1021,7 +1033,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
 	scanlist, subarraylist = statelist2scanlist(statelist, 2, nant)
-	subjoblist = generatesubjoblist(scanlist, subarraylist)
+	subjoblist = generatesubjoblist(scanlist, subarraylist, job)
 	srclist = generatesrclist(job['source'])
 
 	jobstarttime = scanlist[0][2]
@@ -1096,7 +1108,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 			freqlist, inputlist = \
 				generatefreqlist(job['frequency'][config[1]])
 			allfreqlist = \
-				generateallfreqlist(job['frequency'])
+				generateallfreqlist(job['frequency'], setups)
 			if verbose:
 				print 'freqlist = ', freqlist
 				print 'allfreqlist = ', allfreqlist
@@ -1105,11 +1117,11 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 			ct, specavg = makeconfigutationtable(config, \
 				nant, job, setups, fftsize, nchan, freqlist)
 			tables.append(ct);
-			tables.append( makefreqtable(freqlist) )
+			tables.append( makefreqtable(allfreqlist) )
 			tables.append( maketelescopetable(job['clock'], \
 				sub, antennalist, mjd0) )
 			tables.append( makedatastreamtable(sub, antennalist, \
-				config, job, freqlist, maxfqid+1) )
+				config, job, freqlist, maxfqid+1, setups) )
 			tables.append( makebaselinetable(nant, freqlist, \
 				inputlist, dopolar) )
 			tables.append( makedatatable(mjd0, mjd1, antennalist, \
