@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 #include <complex.h>
-#include "difxio/parsedifx.h"
+#include "parsedifx.h"
 
 typedef struct
 {
