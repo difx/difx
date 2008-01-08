@@ -18,7 +18,7 @@
  ***************************************************************************/
 
 #include <stdlib.h>
-#include "mark5access/mark5_stream.h"
+#include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
