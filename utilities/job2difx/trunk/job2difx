@@ -857,6 +857,7 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 	data.append("# DATA TABLE #######!")
 	nant = len(subarray)
 	for s in range(nsetups):
+		n = 0
 		for ant_id in subarray:
 			j = ant_id + nant*s
 			rec = getrowbyname(job_rec, antennalist[ant_id])
@@ -866,8 +867,9 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 				exit(0)
 			taperow = int(rec['tapes_row'])
 			vsn = zero2oh(job_tape[taperow]['tape_id'])
-			data.append(indent21_1("D/STREAM %d FILES", "%d", j, 1))
-			data.append(indent21_2("FILE %d/%d", "%s", j, 0, vsn))
+			data.append(indent21_1("D/STREAM %d FILES", "%d", n, 1))
+			data.append(indent21_2("FILE %d/%d", "%s", n, 0, vsn))
+			n += 1
 	return data
 
 #
