@@ -43,6 +43,7 @@ def summarize(input):
 	data = open(input).readlines()
 	ants = []
 	nsec = 0
+	tInt = 1.0
 	trippel = ''
 	for d in data:
 		if d[:19] == 'EXECUTE TIME (SEC):':
@@ -53,8 +54,10 @@ def summarize(input):
 			p = find(d[20:], '-')
 			if p > 0:
 				trippel = strip(d[p+21:])
+		if d[:14] == 'INT TIME (SEC)':
+			tInt = float(d[20:])
 			
-	return [nsec, ants, trippel]
+	return [nsec, ants, trippel, tInt]
 
 def gettimes(input):
 	difx = input[0:-6]+'.difx'
@@ -70,7 +73,7 @@ def gettimes(input):
 	ftime = S[stat.ST_CTIME]
 	fsize = S[stat.ST_SIZE]
 	elapsed = getelapsed(file[0], file[-1], 10000)
-	return [ftime - dtime, fsize, elapsed]
+	return [float(ftime - dtime), fsize, float(elapsed)]
 	
 	
 def run(path):
@@ -90,12 +93,14 @@ def run(path):
 		S = summarize(inputs[i])
 		A = gettimes(inputs[i])
 		nsta = len(S[1])
-		if A[2] > 0:
-			A[2] += 5
+		if A[2] > 0.0:
+			A[2] += S[3]
+			if A[2] > 0.9*S[0]:
+				A[2] += (S[3]*1.5)
 			if A[2] > S[0]:
 				A[2] = S[0]
-		if A[2] > 0 and A[0] > 0:
-			speedup = float(A[2])/float(A[0])
+		if A[2] > 0.0 and A[0] > 0.0:
+			speedup = A[2]/A[0]
 			wtime += A[0]
 		else:
 			speedup = 0

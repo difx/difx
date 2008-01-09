@@ -857,12 +857,12 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 	data.append("# DATA TABLE #######!")
 	nant = len(subarray)
 	for s in range(nsetups):
-		for i in range(nant):
-			j = i + nant*s
-			rec = getrowbyname(job_rec, antennalist[i])
+		for ant_id in subarray:
+			j = ant_id + nant*s
+			rec = getrowbyname(job_rec, antennalist[ant_id])
 			if rec == None:
 				print 'Antenna %s not in recorder table' % \
-					antennalist[i]
+					antennalist[ant_id]
 				exit(0)
 			taperow = int(rec['tapes_row'])
 			vsn = zero2oh(job_tape[taperow]['tape_id'])
