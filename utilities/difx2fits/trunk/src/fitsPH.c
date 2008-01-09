@@ -104,7 +104,7 @@ static int parsePulseCal(const char *line,
 				{
 					return -1;
 				}
-				freqs[pol][tone + band*no_tone] = A;
+				freqs[pol][tone + band*no_tone] = A*1.0e6;
 				pcalR[pol][tone + band*no_tone] = B*cos(C*M_PI/180.0);
 				pcalI[pol][tone + band*no_tone] = B*sin(C*M_PI/180.0);
 				line += p;
@@ -249,7 +249,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		pcalRate[i] = 0;
 	}
-	arrayId = 0;
+	arrayId = 1;
 	freqId = 1;
 
 	for(;;)
@@ -306,13 +306,13 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			bcopy((char *)&sourceId, p_fitsbuf, sizeof(sourceId));
 			p_fitsbuf += sizeof(sourceId);
 
-			/* ARRAY */
-			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
-			p_fitsbuf += sizeof(arrayId);
-
 			/* ANTENNAS */
 			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
 			p_fitsbuf += sizeof(antId);
+
+			/* ARRAY */
+			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
+			p_fitsbuf += sizeof(arrayId);
 
 			/* FREQ_ID */
 			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
