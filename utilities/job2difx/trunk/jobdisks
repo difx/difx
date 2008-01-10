@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+program = 'jobdisks'
+version = '1.0'
+verdate = '20080110'
+author  = 'Walter Brisken'
