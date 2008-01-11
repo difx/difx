@@ -7,7 +7,7 @@ from string import split
 
 program = 'getjobs'
 version = '1.0'
-verdate = '20080102'
+verdate = '20080110'
 author  = 'Walter Brisken'
 
 projectdir = '/home/vlbiobs/astronomy'
@@ -19,6 +19,7 @@ def usage():
 	print '\nUsage: %s [options] <project> [<root dir>]' % argv[0]
 	print '\n  options can include:'
 	print '    -h  or  --help      Print this help message and exit.'
+	print '    -f  or  --force     Allow overwrite contents of new directory.'
 	print '\n  <project> is the VLBA project code, including segment.'
 	print '      Example: bg160 or bw088r'
 	print '\n  <root dir> is path in which to create a new subdirectory'
@@ -35,6 +36,7 @@ def getdir(project):
 
 project = None
 basedir = None
+force   = False
 
 for arg in argv[1:]:
 	kv = split(arg, '=')
@@ -44,6 +46,8 @@ for arg in argv[1:]:
 		if arg[0] == '-':
 			if arg == '-h' or arg == '--help':
 				usage()
+			if arg == '-f' or arg == '--force':
+				force = True
 		if project == None:
 			project = arg
 		elif basedir == None:
@@ -63,10 +67,20 @@ prjdir = getdir(project)
 
 newdir = basedir+'/'+project
 
+if not force:
+	if len(glob(newdir)) > 0:
+		print "Won't clobber existing directory.  Use -f to force"
+		exit(0)
+
 system('mkdir -p %s' % newdir)
 system('cp %s/jobs/*.fx %s' % (prjdir, newdir))
-calfile = glob('%s/%scal.vlba.*' % (prjdir, project))[0]
-system('cp %s %s' % (calfile, newdir))
-if calfile[-3:] == '.gz':
-	system('gunzip %s/%scal.vlba.gz' % (newdir, project))
-system('cd %s ; vlog %scal.vlba' % (newdir, project))
+calfiles = glob('%s/%scal.vlba.*' % (prjdir, project))
+if len(calfiles) == 0:
+	print 'Warning -- no cal.vlba file found in %s' % prjdir
+	print '  continuing anyway'
+else:
+	calfile = calfiles[0]
+	system('cp %s %s' % (calfile, newdir))
+	if calfile[-3:] == '.gz':
+		system('gunzip %s/%scal.vlba.gz' % (newdir, project))
+	system('cd %s ; vlog %scal.vlba' % (newdir, project))
