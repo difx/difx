@@ -52,6 +52,7 @@ def fillmodlist(antlist, modlist):
 def printmodlist(files, antlist, modlist):
 	nf = len(files)
 	na = len(antlist)
+	antsused = []
 	nspace = len(files[0])-6-4+2+3
 	out = 'FILE' + (' '*nspace)
 	for a in range(na):
@@ -64,7 +65,8 @@ def printmodlist(files, antlist, modlist):
 			change = False
 			if modlist[f][ant] == fill:
 				change = False
-			elif f == 0:
+			elif a not in antsused:
+				antsused.append(a)
 				change = True
 			elif modlist[f][ant] != modlist[f-1][ant] and \
 			     modlist[f-1][ant] != fill:
