@@ -1,0 +1,181 @@
+#!/bin/env python
+
+from string import split, strip, find
+from sys import argv, exit
+from os import popen, getenv
+from threading import Thread
+
+program = 'genmachines'
+author  = 'Walter Brisken'
+version = '0.5'
+verdate = '20071101'
+
+mk5list = '/home/parallax/bin/mk5list'
+
+def usage():
+	print '%s ver. %s  %s %s\n' % (program, version, author, verdate)
+	print 'Usage : %s <input file 1> [<input file 2> [ ... ] ]' % argv[0]
+	print '\nEnv. Var. DIFX_MACHINES must point to the machines file\n'
+
+def getvsns(inputfile):
+	vsns = []
+	input = open(inputfile).readlines()
+	for i in input:
+		if i[0:5] == 'FILE ':
+			s = split(i, ':')
+			if len(s) == 2:
+				vsns.append(strip(s[1]))
+	return vsns
+
+def readmachines():
+	machines = []
+	cores = []
+	machinesfile = getenv('DIFX_MACHINES')
+	if machinesfile == None:
+		print 'DIFX_MACHINES env var not defined!  Quitting.';
+		exit(1)
+	lines = open(machinesfile).readlines()
+	for l in lines:
+		if l[0] == '#':
+			continue
+		s = split(strip(l))
+		if len(s) == 2:
+			machines.append(s[0])
+			cores.append(int(s[1]))
+	return machines,cores
+
+def gethostname():
+	o = popen('hostname', 'r')
+	host = strip(o.readline())
+	o.close()
+	return host
+
+class querythread(Thread):
+	def __init__(self, machine):
+		Thread.__init__(self)
+		self.machine = machine
+		self.result = ''
+	def run(self):
+		cmd = 'ssh %s %s 2>&1' % (self.machine, mk5list)
+		o = popen(cmd, 'r') 
+		lines = o.readlines()
+		o.close()
+		self.result = strip(lines[-1])
+
+def mk5query(machines):
+	qlist = []
+	results = []
+	for m in machines:
+		if m[0:5] == 'mark5':
+			qt = querythread(m)
+			qlist.append(qt)
+			qt.start()
+	for qt in qlist:
+		qt.join()
+		results.append([qt.machine, qt.result])
+	return results
+
+def writethreads(basename):
+	o = open(basename+'threads', 'w')
+	o.write('NUMBER OF CORES: 1\n')
+	o.write('1\n')
+	o.close()
+
+def conflict(nodes):
+	if len(nodes) < 2:
+		return False
+	L = []
+	for n in nodes:
+		L.append(n)
+	L.sort()
+	for i in range(1, len(L)):
+		if L[i-1] == L[i]:
+			return True;
+	return False
+
+def writemachines(basename, hostname, machines, cores, results, vsns):
+	dsnodes = []
+	for v in vsns:
+		ok = 0
+		for r in results:
+			if find(r[1], v) > 0:
+				dsnodes.append(r[0])
+				ok = 1
+		if ok == 0:
+			print 'module %s not found in machines!' % v
+			return 1
+
+	if conflict(dsnodes):
+		print 'resource conflict'
+		return 1
+
+	# write file
+	o = open(basename+'machines', 'w')
+	# head node
+	o.write('%s slots=1 max-slots=1\n' % hostname)
+	# datastream nodes
+	for d in dsnodes:
+		M = machines.index(d)
+		if cores[M] > 2:
+			m = cores[M] - 2
+		else:
+			m = 1
+		o.write('%s slots=1 max-slots=%d\n' % \
+			(d, m))
+	# core nodes
+	for m in range(len(machines)):
+		if machines[m] in dsnodes:
+			continue
+		if cores[m] < 1:
+			continue
+		o.write('%s slots=1 max-slots=%d\n' % \
+			(machines[m], cores[m]))
+		if cores[m] > 1:
+			for c in range(cores[m]-1):
+				o.write('#\n')
+	o.close()
+	return 0
+
+def run():
+	machines,cores = readmachines()
+
+	hostname = gethostname()
+	if not hostname in machines:
+		print 'ERROR: hostname not in machines file : %s' % machinesfile
+		exit(1)
+
+	qresults = mk5query(machines)
+
+	v = 1
+
+	for infile in argv[1:]:
+		results = []
+		for q in qresults:
+			r = []
+			for s in q:
+				r.append(s)
+			results.append(r)
+
+		basename = infile[0:-5]
+		if basename + 'input' != infile:
+			print 'expecting input file'
+			exit(1)
+					
+		vsns = getvsns(infile)
+		
+		v = writemachines(basename, hostname, machines, cores, results, vsns)
+		writethreads(basename)
+
+		results.sort()
+
+		for r in results:
+			print r[0], r[1]
+
+	return v
+
+if len(argv) < 2:
+	usage()
+else:
+	v = run()
+	if v != 0:
+		exit(v)
