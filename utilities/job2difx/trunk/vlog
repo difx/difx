@@ -265,7 +265,7 @@ def makeTS(sections, antenna):
 	TsysData = sections['Tsys'][antenna]
 
 	TS = []
-	TS.append("# ant D.O.Y. dur(days) nPol nBand (tsys)[nBand*nPol] (band)[nBand]");
+	TS.append("# ant D.O.Y. dur(days) nPol nBand (tsys)[nPol][nBand] (band)[nPol][nBand]");
 
 	IFconfig = []
 	pols = {}
@@ -312,13 +312,12 @@ def makeTS(sections, antenna):
 			if TsysData == None:
 				TsysData = [0.0]*(nPol*nBand)
 			if Receiver == None:
-				Receiver = ['']*nBand
+				Receiver = ['']*(nPol*nBand)
 			t = parsetime(s[0]+'-'+s[1]+':0')
 			dt = 0.0
 			for i in range(len(IFconfig)):
 				index = IFconfig[i][4] + nPol*IFconfig[i][5]
 				TsysData[index] = s[2+i]
-				index = IFconfig[i][4]
 				Receiver[index] = IFconfig[i][0]
 			line = "%10.7f %9.7f %d %d" % (t, dt, nPol, nBand)
 			for ts in TsysData:
