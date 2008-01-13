@@ -13,6 +13,12 @@ showstatus = 1
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	print '\nA program to list information about DiFX job files\n'
+	print 'Usage: [options] [<dir 1> [<dir 2> [ ... ] ] ]\n'
+	print '<dir> is a directory containing .input files.  Many directories can be'
+	print '      listed.  If no directory is listed, the current directory is assumed.\n'
+	print 'options can include:'
+	print '   -h or --help  : print this usage information\n'
 	exit(0)
 
 def hasfits(input):
