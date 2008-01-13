@@ -53,10 +53,12 @@ def printmodlist(files, antlist, modlist):
 	nf = len(files)
 	na = len(antlist)
 	antsused = []
+	lastused = {}
 	nspace = len(files[0])-6-4+2+3
 	out = 'FILE' + (' '*nspace)
 	for a in range(na):
 		out += ('%-10s' % antlist[a])
+		lastused[antlist[a]] = 'X'
 	print out
 	for f in range(nf):
 		out = files[f][:-6]
@@ -68,9 +70,10 @@ def printmodlist(files, antlist, modlist):
 			elif a not in antsused:
 				antsused.append(a)
 				change = True
-			elif modlist[f][ant] != modlist[f-1][ant] and \
-			     modlist[f-1][ant] != fill:
+				lastused[ant] = modlist[f][ant]
+			elif modlist[f][ant] != lastused[ant]:
 				change = True
+				lastused[ant] = modlist[f][ant]
 			if change:
 				out += ' *'
 			else:
@@ -81,6 +84,9 @@ def printmodlist(files, antlist, modlist):
 def printchangelist(files, antlist, modlist):
 	nf = len(files)
 	na = len(antlist)
+	lastused = {}
+	for ant in antlist:
+		lastused[ant] = 'X'
 	for f in range(nf):
 		jobchange = False
 		for a in range(na):
@@ -90,9 +96,10 @@ def printchangelist(files, antlist, modlist):
 				change = False
 			elif f == 0:
 				change = True
-			elif modlist[f][ant] != modlist[f-1][ant] and \
-			     modlist[f-1][ant] != fill:
+				lastused[ant] = modlist[f][ant]
+			elif modlist[f][ant] != lastused[ant]:
 				change = True
+				lastused[ant] = modlist[f][ant]
 			if change:
 				if not jobchange:
 					jobchange = True
