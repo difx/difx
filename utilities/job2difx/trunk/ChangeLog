@@ -62,8 +62,11 @@ Version 1.0
 
 genmachines
 ~~~~~~~~~~~
-Version 1.0
+Version 0.5
 * First version in this package
+
+Version 0.6
+* Much improved user interface, support more general machinesfile
 
 jobdisks
 ~~~~~~~~

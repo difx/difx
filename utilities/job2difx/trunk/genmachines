@@ -4,18 +4,30 @@ from string import split, strip, find
 from sys import argv, exit
 from os import popen, getenv
 from threading import Thread
+from glob import glob
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.5'
-verdate = '20071101'
+version = '0.6'
+verdate = '20080114'
 
 mk5list = '/home/parallax/bin/mk5list'
 
 def usage():
-	print '%s ver. %s  %s %s\n' % (program, version, author, verdate)
-	print 'Usage : %s <input file 1> [<input file 2> [ ... ] ]' % argv[0]
-	print '\nEnv. Var. DIFX_MACHINES must point to the machines file\n'
+	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
+	print '\nA program to find required Mark5 modules and write the machines file'
+	print 'appropriate for a particular DiFX job.'
+	print '\nUsage : %s [options] <input file 1> [<input file 2> [ ... ] ]' % argv[0]
+	print '\noptions can include:'
+	print '\n  -h or --help'
+	print '          print this usage info and exit'
+	print '\n  -m <machinesfile> or --machines <machinesfile>'
+	print '          use <machinesfile> instead of $DIFX_MACHINES'
+	print '\n<input file> is a DiFX .input file.  If multiple files are provided, each is'
+	print '    processed individually to produce its own .machines file.'
+	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
+	print 'is specifided.\n'
+	exit(1)
 
 def getvsns(inputfile):
 	vsns = []
@@ -27,22 +39,24 @@ def getvsns(inputfile):
 				vsns.append(strip(s[1]))
 	return vsns
 
-def readmachines():
+def readmachines(machinesfile):
 	machines = []
 	cores = []
-	machinesfile = getenv('DIFX_MACHINES')
-	if machinesfile == None:
-		print 'DIFX_MACHINES env var not defined!  Quitting.';
-		exit(1)
+	ismk5 = {}
 	lines = open(machinesfile).readlines()
 	for l in lines:
-		if l[0] == '#':
-			continue
-		s = split(strip(l))
-		if len(s) == 2:
+		l = split(strip(l), '#')[0]
+		s = split(l)
+		if len(s) >= 2:
 			machines.append(s[0])
 			cores.append(int(s[1]))
-	return machines,cores
+			if s[0][:5] == 'mark5':
+				ismk5[s[0]] = 1
+			else:
+				ismk5[s[0]] = 0
+		if len(s) >= 3:
+			ismk5[s[0]] = int(s[2])
+	return machines,cores,ismk5
 
 def gethostname():
 	o = popen('hostname', 'r')
@@ -62,11 +76,11 @@ class querythread(Thread):
 		o.close()
 		self.result = strip(lines[-1])
 
-def mk5query(machines):
+def mk5query(machines, ismk5):
 	qlist = []
 	results = []
 	for m in machines:
-		if m[0:5] == 'mark5':
+		if ismk5[m]:
 			qt = querythread(m)
 			qlist.append(qt)
 			qt.start()
@@ -95,6 +109,7 @@ def conflict(nodes):
 
 def writemachines(basename, hostname, machines, cores, results, vsns):
 	dsnodes = []
+	quit = False
 	for v in vsns:
 		ok = 0
 		for r in results:
@@ -102,11 +117,15 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 				dsnodes.append(r[0])
 				ok = 1
 		if ok == 0:
-			print 'module %s not found in machines!' % v
-			return 1
+			print 'module %s not found!' % v
+			quit = True
 
 	if conflict(dsnodes):
 		print 'resource conflict'
+		quit = True
+
+	if quit:
+		print 'genmachines quitting.'
 		return 1
 
 	# write file
@@ -136,19 +155,19 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 	o.close()
 	return 0
 
-def run():
-	machines,cores = readmachines()
+def run(files, machinesfile):
+	machines,cores,ismk5 = readmachines(machinesfile)
 
 	hostname = gethostname()
 	if not hostname in machines:
 		print 'ERROR: hostname not in machines file : %s' % machinesfile
 		exit(1)
 
-	qresults = mk5query(machines)
+	qresults = mk5query(machines, ismk5)
 
 	v = 1
 
-	for infile in argv[1:]:
+	for infile in files:
 		results = []
 		for q in qresults:
 			r = []
@@ -176,6 +195,45 @@ def run():
 if len(argv) < 2:
 	usage()
 else:
-	v = run()
+	files = []
+	machinesfile = getenv('DIFX_MACHINES')
+	
+	a = 1
+	while a < len(argv):
+		arg = argv[a]
+		if arg == '-h' or arg == '--help':
+			usage()
+		elif arg == '-m' or arg == '--machinesfile':
+			a += 1
+			if a >= len(argv):
+				print 'No machinesfile specified!'
+				exit(1)
+			machinesfile = argv[a]
+		else:
+			files.append(arg)
+		a += 1
+
+	if len(files) < 1:
+		usage()
+
+	quit = False
+	for f in files:
+		if len(glob(f)) != 1:
+			print 'File %s not found' % f
+			quit = True
+		
+	if machinesfile == None:
+		print 'DIFX_MACHINES env var not defined!';
+		quit = True
+
+	if len(glob(machinesfile)) != 1:
+		print 'Machinesfile %s not found.' % machinesfile
+		quit = True
+		
+	if quit:
+		print 'genmachines quitting.'
+		exit(1)
+		
+	v = run(files, machinesfile)
 	if v != 0:
 		exit(v)

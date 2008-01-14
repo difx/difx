@@ -23,11 +23,12 @@ def usage():
 	print 'output files as similar as possible to the VLBA output'
 	print '\nUsage: %s [options] <job file>' % (argv[0])
 	print '\nOptions can include:'
-	print '  List of antennas : e.g.  A=BR,KP,LA'
+	print '\n  -h or --help  print this help into and exit'
+	print '\n  List of antennas : e.g.  A=BR,KP,LA'
 	print '    Multiple antenna lists are appended, e.g.  A=BR A=KP A=LA'
 	print '    Default is all antennas in job'
-	print '  Number of channels : e.g.  nchan=32'
-	print '  FFT size : e.g.  fftsize=128\n'
+	print '\n  Number of channels : e.g.  nchan=32'
+	print '\n  FFT size : e.g.  fftsize=128\n'
 	exit(0)
 
 ##### Functions that do parsing #######
@@ -922,9 +923,9 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	calc.append("START MINUTE:       %d" % start[4])
 	calc.append("START SECOND:       %d" % start[5])
 	calc.append("INCREMENT (SECS):   %d" % inc)
-	calc.append("NUM TELESCOPES:     %d" % nant)
 	calc.append("SPECTRAL AVG:       %d" % specavg)
 	calc.append("TAPER FUNCTION:     %s" % job_corr[0]['window'])
+	calc.append("NUM TELESCOPES:     %d" % nant)
 
 	ant_num = 0
 	for ant_id in subarray:
@@ -1340,6 +1341,8 @@ else:
 				fftsize = int(kv[1])
 			elif kv[0] == 'nchan':
 				nchan = int(kv[1])
+		elif arg == '-h' or arg == '--help':
+			usage()
 		elif len(kv) == 1:
 			files.append([arg])
 		else:
