@@ -2,10 +2,11 @@
 
 from sys import argv, exit
 from string import find, strip, split
+from glob import glob
 
 program = 'jobdisks'
-version = '1.0'
-verdate = '20080110'
+version = '1.1'
+verdate = '20080114'
 author  = 'Walter Brisken'
 
 
@@ -14,18 +15,36 @@ fill = '   --   '
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
 	print '\nA program to list all the modules used in a project'
-	print '\nUsage: %s [options] [<input 1> [ <input 2> ... ] ] ]' \
+	print '\nUsage: %s [options] [<file 1> [ <file 2> ... ] ] ]' \
 		% (argv[0])
-	print '\n<input X> is an input file.  Any number of files can be listed.  If no'
-	print '          files are listed, all .input files in the current directory are used.'
+	print '\n<file X> is either a .fx correlator job script file or a .input DiFX input'
+	print '          file.  Any number of files can be listed.  If no files are listed,'
+	print '          all .input files in the current directory are used.  If still no'
+	print '          files are found, all the .fx files in the directory are used.'
 	print '\nOptions can include:\n'
 	print '    -h or --help     Print this help info\n'
 	print '    -c or --changes  Print module changes only\n'
 	print 'Example:  jobdisks\n'
 	print 'Example:  jobdisks job1420.*.input\n'
+	print 'Example:  jobdisks *.fx\n'
 	exit(0)
 
-def getmodules(filename, antlist):
+def getmodules_fx(filename, antlist):
+	mods = {}
+	data = open(filename).readlines()
+	for d in data:
+		if d[:7] == 'tape_id':
+			s = split(d)
+			ant = s[-2]
+			mod = s[2]
+			if not ant in antlist:
+				antlist.append(ant)
+			
+			mods[ant] = mod
+	return mods
+	
+
+def getmodules_input(filename, antlist):
 	mods = {}
 	ants = []
 	data = open(filename).readlines()
@@ -45,6 +64,15 @@ def getmodules(filename, antlist):
 			n += 1
 	return mods
 
+def getmodules(filename, antlist):
+	if filename[-3:] == '.fx':
+		return getmodules_fx(filename, antlist)
+	elif filename[-6:] == '.input':
+		return getmodules_input(filename, antlist)
+	else:
+		print 'Unknown filetype : %s. Ignoring.' % filename
+		return []
+
 # use '-' to indicate no module for that station
 def fillmodlist(antlist, modlist):
 	for m in modlist:
@@ -58,13 +86,21 @@ def printmodlist(files, antlist, modlist):
 	antsused = []
 	lastused = {}
 	nspace = len(files[0])-6-4+2+3
+	if files[0][-3:] == '.fx':
+		nspace += 3
 	out = 'FILE' + (' '*nspace)
 	for a in range(na):
 		out += ('%-10s' % antlist[a])
 		lastused[antlist[a]] = 'X'
+	out = strip(out)
 	print out
 	for f in range(nf):
-		out = files[f][:-6]
+		if files[f][-6:] == '.input':
+			out = files[f][:-6]
+		elif files[f][-3:] == '.fx':
+			out = files[f][:-3]
+		else:
+			out = files[f]
 		for a in range(na):
 			ant = antlist[a]
 			change = False
@@ -82,6 +118,7 @@ def printmodlist(files, antlist, modlist):
 			else:
 				out += '  '
 			out += modlist[f][ant]
+		out = strip(out)
 		print out
 
 def printchangelist(files, antlist, modlist):
@@ -106,9 +143,36 @@ def printchangelist(files, antlist, modlist):
 			if change:
 				if not jobchange:
 					jobchange = True
-					print files[f][:-6]
+					if files[f][-6:] == '.input':
+						out = files[f][:-6]
+					elif files[f][-3:] == '.fx':
+						out = files[f][:-3]
+					else:
+						out = files[f]
+					print out
 				print '  %-2s %s' % (ant, modlist[f][ant])
 	
+def checkfiles(files):
+	types = {}
+	quit = False
+
+	for f in files:
+		if len(glob(f)) < 1:
+			print 'File not found : %s' % f
+			quit = True
+		else:
+			if f[-3:] == '.fx':
+				types['.fx'] = True
+			elif f[-6:] == '.input':
+				types['.input'] = True
+			else:
+				types[f] = True
+			
+	if len(types) > 1:
+		print 'Mixture of types encountered.'
+		quit = True
+	if quit:
+		exit(0)
 
 def getmoduleset(files):
 	antlist = []
@@ -125,25 +189,29 @@ def getmoduleset(files):
 
 mode = 'Modules'
 
-if len(argv) < 2:
-	usage()
-else:
-	files = []
-	masterant = ''
-	for arg in argv[1:]:
-		if arg == '-h' or arg == '--help':
-			usage()
-		elif arg == '-c' or arg == '--changes':
-			mode = 'Changes'
+files = []
+masterant = ''
+for arg in argv[1:]:
+	if arg == '-h' or arg == '--help':
+		usage()
+	elif arg == '-c' or arg == '--changes':
+		mode = 'Changes'
+	else:
+		if arg[-6:] == '.input' or arg[-3:] == '.fx':
+			files.append(arg)
 		else:
-			if arg[-6:] == '.input':
-				files.append(arg)
-			else:
-				print 'unknown file type : %s' % arg
-				exit(0)
+			print 'unknown file type : %s' % arg
+			exit(0)
 
 if len(files) < 1:
 	files = glob('*.input')
+	if len(files) < 1:
+		files = glob('*.fx')
+		if len(files) < 1:
+			print 'No files found.  Quitting.'
+			exit(0)
+
+checkfiles(files)
 
 antlist, modlist = getmoduleset(files)
 
