@@ -9,7 +9,7 @@ dist_bin_SCRIPTS = \
 	jobdisks \
 	joblist \
 	jobstatus \
-	DiFXsniff \
+	difxsniff \
 	mk5take \
 	mk5return \
 	vlog

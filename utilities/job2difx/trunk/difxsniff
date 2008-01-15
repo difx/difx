@@ -19,8 +19,9 @@ def run(pgm, args):
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
 	print '\nA program to "sniff" FITS files made by DiFX\n'
-	print 'Usage: ./job2difx [options] <refant> <file1> [<file2> [...] ]'
+	print 'Usage: ./difxsniff [options] <refant> <file1> [<file2> [...] ]'
 	print '\nOptions can include:'
+	print '  -h or --help : print this info and quit.'
 	print '  Number of channels : e.g.  nchan=32 [default 16]'	
 	print '  Number of records  : e.g.  nrec=32  [default 16]\n'	
 
