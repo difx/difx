@@ -876,8 +876,6 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	{
 		if(ms->datawindowsize < ms->framebytes)
 		{
-			fprintf(stderr, "Warning : Mark5B format does not "
-				"support data windows smaller than a frame.\n");
 			return -1;
 		}
 
@@ -948,7 +946,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		}
 		else
 		{
-			fprintf(stderr, "Warning -- rate calc. suspect\n");
+			fprintf(stderr, "Warning -- rate calc. suspect %d\n",
+				ns1);
 		}
 	}
 

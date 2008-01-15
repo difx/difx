@@ -34,6 +34,7 @@ AC_OUTPUT([ \
 	Makefile \
 	mark5access.pc \
 	mark5access/Makefile \
+	bbsum/Makefile \
 	examples/Makefile \
 	doc/Makefile \
 ])

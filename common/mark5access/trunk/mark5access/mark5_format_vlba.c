@@ -2194,8 +2194,6 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	{
 		if(ms->datawindowsize < ms->framebytes)
 		{
-			fprintf(stderr, "Warning : VLBA format does not "
-				"support data windows smaller than a frame.\n");
 			return -1;
 		}
 

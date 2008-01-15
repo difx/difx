@@ -184,10 +184,11 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 	return ms->framebytes;
 }
 
+/* Work in progress */
 static int mark5_stream_file_next_subframe(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
-	int nframes, status;
+	/* int nframes, status; */
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 	

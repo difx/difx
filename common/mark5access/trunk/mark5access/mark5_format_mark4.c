@@ -2167,8 +2167,6 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	{
 		if(ms->datawindowsize < ms->framebytes)
 		{
-			fprintf(stderr, "Warning : Mark4 format does not "
-				"support data windows smaller than a frame.\n");
 			return -1;
 		}
 
