@@ -149,7 +149,15 @@ def run(path):
 if len(argv) == 1:
 	paths = ['.']
 else:
-	paths = [argv[1]]
+	paths = []
+	for a in argv:
+		if a == '-h' or a == '--help':
+			usage()
+		elif a[0] == '-':
+			print 'Unknown option %s .  Quitting' % a
+			exit(0)
+		else:
+			paths.append(a)
 
 for p in paths:
 	run(p)

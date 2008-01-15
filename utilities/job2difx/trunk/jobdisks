@@ -15,7 +15,7 @@ fill = '   --   '
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
 	print '\nA program to list all the modules used in a project'
-	print '\nUsage: %s [options] [<file 1> [ <file 2> ... ] ] ]' \
+	print '\nUsage: %s [options] [<file 1> [<file 2> ... ] ] ]' \
 		% (argv[0])
 	print '\n<file X> is either a .fx correlator job script file or a .input DiFX input'
 	print '          file.  Any number of files can be listed.  If no files are listed,'

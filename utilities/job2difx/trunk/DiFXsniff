@@ -4,7 +4,7 @@ from sys import argv, exit
 from os import popen, system
 from string import strip, split, find, lower
 
-program = 'DiFXsniff'
+program = 'difxsniff'
 version = '1.0'
 verdate = '20071218'
 author  = 'Walter Brisken'
@@ -58,6 +58,12 @@ def sniff(files, refant, nrec, nchan):
 	run('plotapd', ['datafile.lis', 'apdfile.ps/vps', 'ALL', 'ALL'])
 	cmd = 'lister'
 	system(cmd)
+	sdir = 'sniffer/%s' % refant
+	cmd = 'mkdir -p %s' % sdir
+	system(cmd)
+	cmd = 'mv xcband* wtsfile.* logfile.lis datafile.lis acband* summary apd.delays %s' % sdir
+	system(cmd)
+
 
 #############################
 
