@@ -634,7 +634,7 @@ def intTime(dt, speedUp):
 	nGran = int(dt/granularity + 0.5)
 	return granularity*nGran
 
-def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
+def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freqlist):
 	custom = job['custom']
 	correl = job['correlator']
 	master = job['master']
@@ -663,8 +663,10 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, freqlist):
 	k = 0
 	for s in setups:
 		setupname = "FREQ%dCUST%dDOPOL%d" % (s[0], s[1], s[2])
-		timeavg = intTime(float(custom[s[1]]['time_avg']), float(speedUp))
-		
+		if tint > 0.0:
+			timeavg = tint
+		else:
+			timeavg = intTime(float(custom[s[1]]['time_avg']), float(speedUp))
 		
 		# .25 seconds per send
 		sendLen = 0.262144
@@ -1022,7 +1024,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	return calc
 ##
 
-def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=False):
+def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, joblist, verbose=False):
 
 	# lists imply internal data structures
 	if len(antennalist) == 0:
@@ -1120,7 +1122,8 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, joblist, verbose=F
 			tables.append( makecommontable(filebase, nant, \
 				mjd0, mjd1) )
 			ct, specavg = makeconfigutationtable(config, \
-				nant, job, setups, fftsize, nchan, freqlist)
+				nant, job, setups, fftsize, nchan, tint, \
+				freqlist)
 			tables.append(ct);
 			tables.append( makefreqtable(allfreqlist) )
 			tables.append( maketelescopetable(job['clock'], \
@@ -1326,6 +1329,7 @@ else:
 	antennalist = []
 	fftsize = 0
 	nchan = 0
+	tint = 0.0
 	files = []
 	masterant = ''
 	for arg in argv[1:]:
@@ -1341,6 +1345,8 @@ else:
 				fftsize = int(kv[1])
 			elif kv[0] == 'nchan':
 				nchan = int(kv[1])
+			elif kv[0] == 'tint':
+				tint = float(kv[1])
 		elif arg == '-h' or arg == '--help':
 			usage()
 		elif len(kv) == 1:
@@ -1367,6 +1373,6 @@ else:
 	for file in files:
 		if len(file) == 2:
 			processjobfile(file[1], file[0], antennalist, \
-				fftsize, nchan, joblist, True)
+				fftsize, nchan, tint, joblist, True)
 	# make Makefile
 	genMakefile(joblist)

@@ -19,11 +19,13 @@ def run(pgm, args):
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
 	print '\nA program to "sniff" FITS files made by DiFX\n'
-	print 'Usage: ./difxsniff [options] <refant> <file1> [<file2> [...] ]'
+	print 'Usage: ./difxsniff [options] <refants> <file1> [<file2> [...] ]'
 	print '\nOptions can include:'
 	print '  -h or --help : print this info and quit.'
 	print '  Number of channels : e.g.  nchan=32 [default 16]'	
 	print '  Number of records  : e.g.  nrec=32  [default 16]\n'	
+	print 'refants is a comma separated list of antennas to use as refants\n'
+	print 'each "file" is a FITS file made by difx2fits\n'
 
 
 def sniff(files, refant, nrec, nchan):
@@ -83,9 +85,6 @@ for arg in argv[1:]:
 	elif len(kv) == 1:
 		if refant == '':
 			refant = arg
-			if len(refant) > 8 or lower(refant[:4]) == 'fits':
-				print '%s is not an antenna name!' % refant
-				exit(0)
 		else:
 			files.append(arg)
 	else:
@@ -95,4 +94,11 @@ for arg in argv[1:]:
 if len(files) < 1:
 	usage()
 else:
-	sniff(files, refant, nrec, nchan)
+	refants = split(refant, ',')
+	for ra in refants:
+		if len(ra) > 2:
+			print '%s is not an antenna name!' % refant
+			exit(0)
+
+	for ra in refants:
+		sniff(files, ra, nrec, nchan)
