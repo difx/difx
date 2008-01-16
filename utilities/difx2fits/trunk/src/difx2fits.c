@@ -14,8 +14,8 @@ int usage(const char *pgm)
 		program, version, author);
 	fprintf(stderr, "A program to convert DiFX format data to "
 		"FITS-IDI\n\n");
-	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile> "
-		"[<calfile>]\n\n", pgm);
+	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile>\n\n", 
+		pgm);
 	fprintf(stderr, "It is assumed that at least 3 input files exist:\n");
 	fprintf(stderr, "  <basefilename>.input    DiFX input file\n");
 	fprintf(stderr, "  <basefilename>.uvw      DiFX UVW file\n");
@@ -117,9 +117,9 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  FQ -- frequency           ");
+	printf("  FR -- frequency           ");
 	fflush(stdout);
-	D = DifxInput2FitsFQ(D, &keys, out);
+	D = DifxInput2FitsFR(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
 {
 	DifxInput *D;
 	struct fitsPrivate outfile;
-	const char *basefile=0, *fitsfile=0, *calfilename=0;
+	const char *basefile=0, *fitsfile=0;
 	int writemodel = 1;
 	int i;
 	double scale = 0.0;
@@ -223,10 +223,6 @@ int main(int argc, char **argv)
 		else if(fitsfile == 0)
 		{
 			fitsfile = argv[i];
-		}
-		else if(calfilename == 0)
-		{
-			calfilename = argv[i];
 		}
 		else
 		{

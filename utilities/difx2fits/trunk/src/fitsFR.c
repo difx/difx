@@ -5,7 +5,7 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
+const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char bandFormDouble[4];

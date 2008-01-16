@@ -18,7 +18,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
-const DifxInput *DifxInput2FitsFQ(const DifxInput *D,
+const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
