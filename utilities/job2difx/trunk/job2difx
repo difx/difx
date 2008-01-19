@@ -747,7 +747,6 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 			dst.append("DATA FORMAT:        %s" % format_name)
 			dst.append("DATA SOURCE:        %s" % "MODULE")
 			dst.append("FILTERBANK USED:    FALSE")
-			dst.append("READ FROM FILE:     TRUE")
 			dst.append("NUM FREQS:          %d" % nfreq)
 			fq_id = 0
 			bw = float(job_freq_row['sample_rate'])/2.0e6	# bw in MHz
