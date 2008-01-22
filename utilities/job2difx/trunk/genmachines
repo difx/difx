@@ -11,19 +11,19 @@ author  = 'Walter Brisken'
 version = '0.6'
 verdate = '20080114'
 
-mk5list = '/home/parallax/bin/mk5list'
+mk5list = 'mk5list'
 
 def usage():
 	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
 	print '\nA program to find required Mark5 modules and write the machines file'
 	print 'appropriate for a particular DiFX job.'
-	print '\nUsage : %s [options] <input file 1> [<input file 2> [ ... ] ]' % argv[0]
+	print '\nUsage : %s [options] <input 1> [<input 2> [ ... ] ]' % argv[0]
 	print '\noptions can include:'
 	print '\n  -h or --help'
 	print '          print this usage info and exit'
 	print '\n  -m <machinesfile> or --machines <machinesfile>'
 	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\n<input file> is a DiFX .input file.  If multiple files are provided, each is'
+	print '\n<input> is a DiFX .input file.  If multiple files are provided, each is'
 	print '    processed individually to produce its own .machines file.'
 	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
 	print 'is specifided.\n'
