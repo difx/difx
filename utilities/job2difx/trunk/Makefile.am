@@ -12,5 +12,6 @@ dist_bin_SCRIPTS = \
 	difxsniff \
 	mk5take \
 	mk5return \
+	listmodules \
 	vlog
 

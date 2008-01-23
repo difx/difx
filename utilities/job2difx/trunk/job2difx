@@ -29,6 +29,8 @@ def usage():
 	print '    Default is all antennas in job'
 	print '\n  Number of channels : e.g.  nchan=32'
 	print '\n  FFT size : e.g.  fftsize=128\n'
+	print '\n  Integration time : e.g.  tint=0.5'
+	print '\n  Minimum subarray size : e.g.  minsub=5'
 	exit(0)
 
 ##### Functions that do parsing #######
@@ -670,6 +672,9 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 		
 		# .25 seconds per send
 		sendLen = 0.262144
+		while sendLen > timeavg:
+			sendLen /= 2.0
+			
 		nBlock = int(2.0*sendLen*minBW*NDataSegment/(fftsize*BufferFactor))
 		nn = int(timeavg/sendLen - 0.01) + 1
 		timeavg = sendLen*nn
@@ -1023,7 +1028,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	return calc
 ##
 
-def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, joblist, verbose=False):
+def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist, verbose=False):
 
 	# lists imply internal data structures
 	if len(antennalist) == 0:
@@ -1038,7 +1043,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, joblist, ver
 	antenna_index = rev_list(antennalist)
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
-	scanlist, subarraylist = statelist2scanlist(statelist, 2, nant)
+	scanlist, subarraylist = statelist2scanlist(statelist, minsubarraysize, nant)
 	subjoblist = generatesubjoblist(scanlist, subarraylist, job)
 	srclist = generatesrclist(job['source'])
 
@@ -1329,6 +1334,7 @@ else:
 	fftsize = 0
 	nchan = 0
 	tint = 0.0
+	minsubarraysize = 3
 	files = []
 	masterant = ''
 	for arg in argv[1:]:
@@ -1346,6 +1352,8 @@ else:
 				nchan = int(kv[1])
 			elif kv[0] == 'tint':
 				tint = float(kv[1])
+			elif kv[0] == 'minsub':
+				minsubarraysize = float(kv[1])
 		elif arg == '-h' or arg == '--help':
 			usage()
 		elif len(kv) == 1:
@@ -1372,6 +1380,7 @@ else:
 	for file in files:
 		if len(file) == 2:
 			processjobfile(file[1], file[0], antennalist, \
-				fftsize, nchan, tint, joblist, True)
+				fftsize, nchan, tint, minsubarraysize, \
+				joblist, True)
 	# make Makefile
 	genMakefile(joblist)

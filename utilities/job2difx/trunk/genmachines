@@ -114,8 +114,11 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 		ok = 0
 		for r in results:
 			if find(r[1], v) > 0:
-				dsnodes.append(r[0])
-				ok = 1
+				if r[1][0:6] == 'In use'
+					print '%s in use' % v
+				else:
+					dsnodes.append(r[0])
+					ok = 1
 		if ok == 0:
 			print 'module %s not found!' % v
 			quit = True
@@ -141,6 +144,9 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 			m = 1
 		o.write('%s slots=1 max-slots=%d\n' % \
 			(d, m))
+		if m > 1:
+			for i in range(m-1):
+				o.write('#\n')
 	# core nodes
 	for m in range(len(machines)):
 		if machines[m] in dsnodes:

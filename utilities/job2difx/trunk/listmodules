@@ -1,0 +1,125 @@
+#!/bin/env python
+
+from string import split, strip, find
+from sys import argv, exit
+from os import popen, getenv
+from threading import Thread
+from glob import glob
+
+program = 'listmodules'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20080114'
+
+mk5list = 'mk5list'
+
+def usage():
+	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
+	print '\nA program to find required Mark5 modules and write the machines file'
+	print 'appropriate for a particular DiFX job.'
+	print '\nUsage : %s [options]' % argv[0]
+	print '\noptions can include:'
+	print '\n  -h or --help'
+	print '          print this usage info and exit'
+	print '\n  -m <machinesfile> or --machines <machinesfile>'
+	print '          use <machinesfile> instead of $DIFX_MACHINES'
+	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
+	print 'is specifided.\n'
+	exit(1)
+
+
+def readmachines(machinesfile):
+	machines = []
+	cores = []
+	ismk5 = {}
+	lines = open(machinesfile).readlines()
+	for l in lines:
+		l = split(strip(l), '#')[0]
+		s = split(l)
+		if len(s) >= 2:
+			machines.append(s[0])
+			cores.append(int(s[1]))
+			if s[0][:5] == 'mark5':
+				ismk5[s[0]] = 1
+			else:
+				ismk5[s[0]] = 0
+		if len(s) >= 3:
+			ismk5[s[0]] = int(s[2])
+	return machines,cores,ismk5
+
+def gethostname():
+	o = popen('hostname', 'r')
+	host = strip(o.readline())
+	o.close()
+	return host
+
+class querythread(Thread):
+	def __init__(self, machine):
+		Thread.__init__(self)
+		self.machine = machine
+		self.result = ''
+	def run(self):
+		cmd = 'ssh %s %s 2>&1' % (self.machine, mk5list)
+		o = popen(cmd, 'r') 
+		lines = o.readlines()
+		o.close()
+		self.result = strip(lines[-1])
+
+def mk5query(machines, ismk5):
+	qlist = []
+	results = []
+	for m in machines:
+		if ismk5[m]:
+			qt = querythread(m)
+			qlist.append(qt)
+			qt.start()
+	for qt in qlist:
+		qt.join()
+		results.append([qt.machine, qt.result])
+	return results
+
+
+def run(machinesfile):
+	machines,cores,ismk5 = readmachines(machinesfile)
+
+	hostname = gethostname()
+	if not hostname in machines:
+		print 'ERROR: hostname not in machines file : %s' % machinesfile
+		exit(1)
+
+	results = mk5query(machines, ismk5)
+	results.sort()
+
+	for r in results:
+		print r[0], r[1]
+
+machinesfile = getenv('DIFX_MACHINES')
+
+a = 1
+while a < len(argv):
+	arg = argv[a]
+	if arg == '-h' or arg == '--help':
+		usage()
+	elif arg == '-m' or arg == '--machinesfile':
+		a += 1
+		if a >= len(argv):
+			print 'No machinesfile specified!'
+			exit(1)
+		machinesfile = argv[a]
+	a += 1
+
+quit = False
+	
+if machinesfile == None:
+	print 'DIFX_MACHINES env var not defined!';
+	quit = True
+
+if len(glob(machinesfile)) != 1:
+	print 'Machinesfile %s not found.' % machinesfile
+	quit = True
+	
+if quit:
+	print 'listmoduels quitting.'
+	exit(1)
+	
+v = run(machinesfile)
