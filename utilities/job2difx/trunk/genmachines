@@ -114,7 +114,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 		ok = 0
 		for r in results:
 			if find(r[1], v) > 0:
-				if r[1][0:6] == 'In use'
+				if r[1][0:6] == 'In use':
 					print '%s in use' % v
 				else:
 					dsnodes.append(r[0])
