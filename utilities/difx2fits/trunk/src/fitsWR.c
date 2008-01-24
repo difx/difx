@@ -9,18 +9,18 @@
 typedef struct 
 {
 	double time;
-	float temp, pres, dewpt, wspeed, wdir;
+	float temp, pres, dewpt, wspeed, wdir, wgust, precip;
 } WRrow;
 
 static int parseWeather(const char *line, WRrow *wr, char *antName)
 {
 	int n;
 
-	n = sscanf(line, "%s%lf%f%f%f%f%f", antName, 
+	n = sscanf(line, "%s%lf%f%f%f%f%f%f%f", antName, 
 		&wr->time, &wr->temp, &wr->pres, &wr->dewpt,
-		&wr->wspeed, &wr->wdir);
+		&wr->wspeed, &wr->wdir, &wr->precip, &wr->wgust);
 			
-	if(n != 7)
+	if(n != 9)
 	{
 		return 0;
 	}
@@ -42,6 +42,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
 		{"WIND_VELOCITY", "1E", "wind velocity", "M/SEC"},
 		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"},
+		{"WIND_GUST", "1E", "wind gust", "M/SEC"},
+		{"PRECIPITATION", "1E", "integrated rain since midnight", "CM"},
 		{"WVR_H2O", "0E", "", ""},
 		{"IONOS_ELECTRON", "0E", "", ""}
 	};
@@ -169,6 +171,14 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 			/* WIND DIRECTION */
 			bcopy((char *)&wr.wdir, p_fitsbuf, sizeof(wr.wdir));
 			p_fitsbuf += sizeof(wr.wdir);
+
+			/* WIND GUST */
+			bcopy((char *)&wr.wgust, p_fitsbuf, sizeof(wr.wgust));
+			p_fitsbuf += sizeof(wr.wgust);
+
+			/* PRECIPITATION */
+			bcopy((char *)&wr.precip, p_fitsbuf, sizeof(wr.precip));
+			p_fitsbuf += sizeof(wr.precip);
 
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
