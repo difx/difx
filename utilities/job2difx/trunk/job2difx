@@ -907,8 +907,6 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	nant = len(subarray)
 	inc = 1
 
-	mountlist = {"altz":"azel", "equa":"equa", "xyns":"xy", "xyew":"xy"}
-
 	timeavg = float(job_custom[0]['time_avg'])
 
 	calc.append("JOB ID:             %s" % job_master[0]['job_id'])
@@ -938,10 +936,6 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 		ant_name = antennalist[ant_id]
 		stn = getrowbyname(job_station, ant_name)
 		mount = stn['axistype']
-		if mountlist.has_key(mount):
-			mount = mountlist[mount]
-		else:
-			print "Warning : unknown mount : %s" % mount
 		offset = stn['axisoff_x']
 		x = stn['x']
 		y = stn['y']
