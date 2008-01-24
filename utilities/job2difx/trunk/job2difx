@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from sys import argv, exit
-from string import strip, split, find, lower
+from string import strip, split, find, lower, upper
 from math import pi
 from os import getcwd
 import re
@@ -1024,6 +1024,13 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 
 def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist, verbose=False):
 
+	job_master = job['master']
+	obscode = job_master[0]['obscode']
+	session = job_master[0]['session']
+	if len(session) > 0:
+		if session[0] != ' ':
+			obscode = obscode + session
+
 	# lists imply internal data structures
 	if len(antennalist) == 0:
 		antennalist = obs2antennalist(job['obs'])
@@ -1085,7 +1092,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 		
 			filebase = '%s.%02d.%d' % \
 				(stump,subjob_num,subarray_num)
-			joblist.append(filebase)
+			joblist.append([filebase, upper(obscode)])
 			
 			# a setup is a combination of freqid and customid
 			setups = []
@@ -1272,11 +1279,14 @@ def genMakefile(joblist):
 	threads = "threads ="
 	machines = "machines ="
 	fitss = "fitss ="
-	for job in joblist:
+	
+	for jobinfo in joblist:
+		job = jobinfo[0]
 		if job[0:3] == 'job':
 			jnum = job[3:]
 		else:
 			jnum = job
+		fitsfile = '%s.%s.FITS' % (jobinfo[1], jnum)
 		uvws += " %s.uvw" % job
 		threads += " %s.threads" % job
 		machines += " %s.machines" % job
@@ -1285,7 +1295,7 @@ def genMakefile(joblist):
 		rates += " %s.rate" % job
 		calcs += " %s.calc" % job
 		flags += " %s.flag" % job
-		fitss += " %s.FITS" % jnum
+		fitss += " %s" % fitsfile
 
 	Makefile = open('Makefile', 'w')
 	Makefile.write(uvws+"\n\n")
@@ -1302,11 +1312,14 @@ def genMakefile(joblist):
 	Makefile.write('uvws: $(uvws)\n\n')
 	Makefile.write("FITS: $(fitss)\n\n")
 	Makefile.write(clean+"\n\n")
-	for job in joblist:
+	for jobinfo in joblist:
+		job = jobinfo[0]
 		if job[0:3] == 'job':
 			jnum = job[3:]
 		else:
 			jnum = job
+		obscode = jobinfo[1]
+		fitsfile = '%s.%s.FITS' % (obscode, jnum)
 		Makefile.write("%s.uvw: %s.calc\n\tcalcif %s.calc\n\n" % (job, job, job))
 		Makefile.write("%s.machines: %s.input\n\tgenmachines %s.input\n\n" % (job, job, job))
 #		Makefile.write("%s.threads:  template.threads\n\tcp template.threads %s.threads\n\n" % (job, job))
@@ -1315,7 +1328,7 @@ def genMakefile(joblist):
 		Makefile.write("\tdate\n")
 		Makefile.write("\tmpirun -np `cat %s.machines | wc -l` --bynode --hostfile %s.machines  /users/wbrisken/src/SWcorr/trunk/difx/mpifxcorr/src/mpifxcorr `pwd`/%s.input\n" % (job, job, job))
 		Makefile.write("\tdate\n\n")
-		Makefile.write("%s.FITS: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s.FITS\n\n" % (jnum, job, job, job, job, job, job, jnum))
+		Makefile.write("%s: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s\n\n" % (fitsfile, job, job, job, job, job, job, fitsfile))
 
 	Makefile.close()
 
@@ -1376,5 +1389,5 @@ else:
 			processjobfile(file[1], file[0], antennalist, \
 				fftsize, nchan, tint, minsubarraysize, \
 				joblist, True)
-	# make Makefile
+		# make Makefile
 	genMakefile(joblist)
