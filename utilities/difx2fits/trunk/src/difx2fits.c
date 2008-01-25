@@ -33,6 +33,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --no-model\n");
 	fprintf(stderr, "  -n               Don't write model (ML) table\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v               Be verbose\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --scale <scale>\n");
 	fprintf(stderr, "  -s      <scale>  Scale visibility data "
 			"by <scale>\n");
@@ -195,6 +198,7 @@ int main(int argc, char **argv)
 	int writemodel = 1;
 	int i;
 	double scale = 0.0;
+	int verbose = 0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -204,6 +208,11 @@ int main(int argc, char **argv)
 			   strcmp(argv[i], "-n") == 0)
 			{
 				writemodel = 0;
+			}
+			if(strcmp(argv[i], "--verbose") == 0 ||
+			   strcmp(argv[i], "-v") == 0)
+			{
+				verbose = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -243,10 +252,15 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	if(verbose)
+	{
+		printDifxInput(D);
+	}
+
 	if(D->nIF <= 0 || D->nPolar <= 0)
 	{
 		fprintf(stderr, "Data geometry changes during obs, cannot "
-			"make into FITS.");
+			"make into FITS.\n");
 		deleteDifxInput(D);
 		return 0;
 	}
