@@ -122,6 +122,10 @@ void printDifxConfig(const DifxConfig *dc)
 	for(i = 0; dc->indexBL[i] >= 0; i++)
 	{
 		printf(" %d", dc->indexBL[i]);
+		if(i % 12 == 11 && dc->indexBL[i+1] >= 0)
+		{
+			printf("\n                  ");
+		}
 	}
 	printf("\n");
 	printf("    frequency to IF map =");
@@ -980,14 +984,14 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		for(b = 0; b < D->activeBaselines; b++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
-				"BASELINE %d INDEX", a);
+				"BASELINE %d INDEX", b);
 			if(r < 0)
 			{
 				fprintf(stderr, 
-					"BASELINE %d INDEX not found\n", a);
+					"BASELINE %d INDEX not found\n", b);
 				return 0;
 			}
-			D->config[c].indexBL[a] = 
+			D->config[c].indexBL[b] = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 	}
@@ -1047,83 +1051,6 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
 		D->antenna[a].vsn[8] = 0;
-	}
-
-	/* BASELINE TABLE */
-	r = DifxParametersfind(ip, 0, "BASELINE ENTRIES");
-	D->nBaseline = atoi(DifxParametersvalue(ip, r));
-	D->baseline = newDifxBaselineArray(D->nBaseline);
-
-	for(b = 0; b < D->nBaseline; b++)
-	{
-		r = DifxParametersfind1(ip, r+1, "D/STREAM A INDEX %d", b);
-		if(r < 0)
-		{
-			fprintf(stderr, "D/STREAM A INDEX %d not found\n", b);
-			return 0;
-		}
-		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
-		r = DifxParametersfind1(ip, r+1, "D/STREAM B INDEX %d", b);
-		if(r < 0)
-		{
-			fprintf(stderr, "D/STREAM B INDEX %d not found\n", b);
-			return 0;
-		}
-		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
-		r = DifxParametersfind1(ip, r+1, "NUM FREQS %d", b);
-		if(r < 0)
-		{
-			fprintf(stderr, "NUM FREQS %d not found\n", b);
-			return 0;
-		}
-		D->baseline[b].nFreq = atoi(DifxParametersvalue(ip, r));
-		D->baseline[b].nPolProd = (int *)calloc(D->baseline[b].nFreq,
-			sizeof(int));
-		D->baseline[b].recChanA = (int **)calloc(D->baseline[b].nFreq,
-			sizeof(int *));
-		D->baseline[b].recChanB = (int **)calloc(D->baseline[b].nFreq,
-			sizeof(int *));
-		
-		for(f = 0; f < D->baseline[b].nFreq; f++)
-		{
-			r = DifxParametersfind2(ip, r+1, "POL PRODUCTS %d/%d",
-				b, f);
-			if(r < 0)
-			{
-				fprintf(stderr, "POL PRODUCTS %d/%d "
-					"not found\n", b, f);
-				return 0;
-			}
-			D->baseline[b].nPolProd[f] =
-				atoi(DifxParametersvalue(ip, r));
-			D->baseline[b].recChanA[f] = (int *)calloc(
-				D->baseline[b].nPolProd[f], sizeof(int));
-			D->baseline[b].recChanB[f] = (int *)calloc(
-				D->baseline[b].nPolProd[f], sizeof(int));
-			for(p = 0; p < D->baseline[b].nPolProd[f]; p++)
-			{
-				r = DifxParametersfind1(ip, r+1, 
-					"D/STREAM A BAND %d", p);
-				if(r < 0)
-				{
-					fprintf(stderr, "D/STREAM A BAND %d "
-						"not found\n", p);
-					return 0;
-				}
-				D->baseline[b].recChanA[f][p] =
-					atoi(DifxParametersvalue(ip, r));
-				r = DifxParametersfind1(ip, r+1, 
-					"D/STREAM B BAND %d", p);
-				if(r < 0)
-				{
-					fprintf(stderr, "D/STREAM B BAND %d "
-						"not found\n", p);
-					return 0;
-				}
-				D->baseline[b].recChanB[f][p] =
-					atoi(DifxParametersvalue(ip, r));
-			}
-		}
 	}
 
 	/* DATASTREAM TABLE */
@@ -1232,7 +1159,85 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 	}
 
-	
+	/* BASELINE TABLE */
+	r = DifxParametersfind(ip, 0, "BASELINE ENTRIES");
+	D->nBaseline = atoi(DifxParametersvalue(ip, r));
+	D->baseline = newDifxBaselineArray(D->nBaseline);
+
+	for(b = 0; b < D->nBaseline; b++)
+	{
+		r = DifxParametersfind1(ip, r+1, "D/STREAM A INDEX %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "D/STREAM A INDEX %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
+		r = DifxParametersfind1(ip, r+1, "D/STREAM B INDEX %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "D/STREAM B INDEX %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
+		r = DifxParametersfind1(ip, r+1, "NUM FREQS %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "NUM FREQS %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].nFreq = atoi(DifxParametersvalue(ip, r));
+		D->baseline[b].nPolProd = (int *)calloc(D->baseline[b].nFreq,
+			sizeof(int));
+		D->baseline[b].recChanA = (int **)calloc(D->baseline[b].nFreq,
+			sizeof(int *));
+		D->baseline[b].recChanB = (int **)calloc(D->baseline[b].nFreq,
+			sizeof(int *));
+		
+		for(f = 0; f < D->baseline[b].nFreq; f++)
+		{
+			r = DifxParametersfind2(ip, r+1, "POL PRODUCTS %d/%d",
+				b, f);
+			if(r < 0)
+			{
+				fprintf(stderr, "POL PRODUCTS %d/%d "
+					"not found\n", b, f);
+				return 0;
+			}
+			D->baseline[b].nPolProd[f] =
+				atoi(DifxParametersvalue(ip, r));
+			D->baseline[b].recChanA[f] = (int *)calloc(
+				D->baseline[b].nPolProd[f], sizeof(int));
+			D->baseline[b].recChanB[f] = (int *)calloc(
+				D->baseline[b].nPolProd[f], sizeof(int));
+			for(p = 0; p < D->baseline[b].nPolProd[f]; p++)
+			{
+				r = DifxParametersfind1(ip, r+1, 
+					"D/STREAM A BAND %d", p);
+				if(r < 0)
+				{
+					fprintf(stderr, "D/STREAM A BAND %d "
+						"not found\n", p);
+					return 0;
+				}
+				D->baseline[b].recChanA[f][p] =
+					atoi(DifxParametersvalue(ip, r));
+				r = DifxParametersfind1(ip, r+1, 
+					"D/STREAM B BAND %d", p);
+				if(r < 0)
+				{
+					fprintf(stderr, "D/STREAM B BAND %d "
+						"not found\n", p);
+					return 0;
+				}
+				D->baseline[b].recChanB[f][p] =
+					atoi(DifxParametersvalue(ip, r));
+			}
+		}
+	}
+
+
+	/* Derive some useful tables and values */
 	for(c = 0; c < D->nConfig; c++)
 	{
 		/* determine number of bits, or zero if different among
