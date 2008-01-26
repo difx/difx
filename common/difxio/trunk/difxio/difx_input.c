@@ -77,21 +77,19 @@ DifxConfig *newDifxConfigArray(int nConfig)
 
 void deleteDifxConfigArray(DifxConfig *dc)
 {
-	int a;
-
 	if(dc)
 	{
 		if(dc->IF)
 		{
 			free(dc->IF);
 		}
-		if(dc->clockOffset)
+		if(dc->indexDS)
 		{
-			for(a = 0; dc->clockOffset[a]; a++)
-			{
-				free(dc->clockOffset[a]);
-			}
-			free(dc->clockOffset);
+			free(dc->indexDS);
+		}
+		if(dc->freqId2IF)
+		{
+			free(dc->freqId2IF);
 		}
 		free(dc);
 	}
@@ -106,12 +104,90 @@ void printDifxConfig(const DifxConfig *dc)
 	printf("    postFFringe = %d\n", dc->postFFringe);
 	printf("    quadDelayInterp = %d\n", dc->quadDelayInterp);
 	printf("    pulsarBinning = %d\n", dc->pulsarBinning);
+	printf("    polarization [%d] = %c%c\n", 
+		dc->nPol, dc->pol[0], dc->pol[1]);
 	printf("    doPolar = %d\n", dc->doPolar);
 	printf("    quantization bits = %d\n", dc->quantBits);
+	printf("    datastream ids =");
+	for(i = 0; dc->indexDS[i] >= 0; i++)
+	{
+		printf(" %d", dc->indexDS[i]);
+	}
+	printf("\n");
+	printf("    frequency to IF map =");
+	for(i = 0; dc->freqId2IF[i] >= 0; i++)
+	{
+		printf(" %d", dc->freqId2IF[i]);
+	}
+	printf("\n");
 	for(i = 0; i < dc->nIF; i++)
 	{
 		printDifxIF(dc->IF+i);
 	}
+}
+
+DifxDSEntry *newDifxDSEntryArray(int nDSEntry)
+{
+	DifxDSEntry *ds;
+
+	ds = (DifxDSEntry *)calloc(nDSEntry, sizeof(DifxDSEntry));
+
+	return ds;
+}
+
+void deleteDifxDSEntryArray(DifxDSEntry *ds, int nDSEntry)
+{
+	int e;
+
+	if(ds)
+	{
+		for(e = 0; e < nDSEntry; e++)
+		{
+			if(ds[e].nPol)
+			{
+				free(ds[e].nPol);
+			}
+			if(ds[e].freqId)
+			{
+				free(ds[e].freqId);
+			}
+			if(ds[e].clockOffset)
+			{
+				free(ds[e].clockOffset);
+			}
+			if(ds[e].RCfreqId)
+			{
+				free(ds[e].RCfreqId);
+			}
+			if(ds[e].RCpolName)
+			{
+				free(ds[e].RCpolName);
+			}
+		}
+		free(ds);
+	}
+}
+
+void printDifxDSEntry(const DifxDSEntry *ds)
+{
+	int f;
+	printf("  Difx Datastream Entry[antId=%d] : %p\n", ds->antId, ds);
+	printf("    format = %s\n", ds->dataFormat);
+	printf("    quantization bits = %d\n", ds->quantBits);
+	printf("    nFreq = %d\n", ds->nFreq);
+	printf("    nRecChan = %d\n", ds->nRecChan);
+	printf("    (freqId, nPol)[freq] =");
+	for(f = 0; f < ds->nFreq; f++)
+	{
+		printf(" (%d, %d)", ds->freqId[f], ds->nPol[f]);
+	}
+	printf("\n");
+	printf("    (freqId, pol)[recchan] =");
+	for(f = 0; f < ds->nRecChan; f++)
+	{
+		printf(" (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
+	}
+	printf("\n");
 }
 
 
@@ -349,6 +425,10 @@ void deleteDifxInput(DifxInput *D)
 		{
 			deleteDifxConfigArray(D->config);
 		}
+		if(D->dsentry)
+		{
+			deleteDifxDSEntryArray(D->dsentry, D->nDSEntry);
+		}
 		if(D->freq)
 		{
 			deleteDifxFreqArray(D->freq);
@@ -433,6 +513,12 @@ void printDifxInput(const DifxInput *D)
 		printDifxEOP(D->eop + i);
 	}
 
+	printf("  nDataStreamEntries = %d\n", D->nDSEntry);
+	for(i = 0; i < D->nDSEntry; i++)
+	{
+		printDifxDSEntry(D->dsentry + i);
+	}
+	
 	printf("\n");
 }
 
@@ -524,6 +610,140 @@ static int parseRates(DifxModel **model, int nAntenna, int row,
 	return a;
 }
 
+/* add x to list of integers if not already in list.  return new list size */
+static int addtolist(int *list, int x, int n)
+{
+	int i;
+	
+	if(n < 0)
+	{
+		return n;
+	}
+	if(n == 0)
+	{
+		list[0] = x;
+		return 1;
+	}
+	for(i = 0; i < n; i++)
+	{
+		if(list[i] == x)
+		{
+			return n;
+		}
+	}
+	list[n] = x;
+
+	return n+1;
+}
+
+static int makeFreqId2IFmap(DifxInput *D, int configId)
+{
+	DifxConfig *dc;
+	DifxDSEntry *ds;
+	int *freqIds;
+	int p, a, f, c, i;
+	int maxFreqId=0;
+	int nPol = 0;
+	int haspol[4] = {0, 0, 0, 0};	/* indices are: 0-R, 1-L, 2-X, 3-Y */
+
+	dc = D->config + configId;
+	dc->nIF = 0;
+
+	freqIds = (int *)malloc(sizeof(int)*D->nFreq);
+
+	/* go through datastreams associates with this config and collect all
+	 * distinct Freq table ids
+	 */
+	for(a = 0; dc->indexDS[a] >= 0; a++)
+	{
+		ds = D->dsentry + dc->indexDS[a];
+		for(f = 0; f < ds->nFreq; f++)
+		{
+			dc->nIF = addtolist(freqIds, ds->freqId[f], dc->nIF);
+			if(ds->freqId[f] > maxFreqId)
+			{
+				maxFreqId = ds->freqId[f];
+			}
+		}
+	}
+	dc->freqId2IF = (int *)calloc((maxFreqId+2), sizeof(int));
+	dc->freqId2IF[maxFreqId+1] = -1;
+
+	/* determine which polarizations are present.  All IFs in this 
+	 * config will maintain slots for all polariazations, even if
+	 * this ends up making wasted space in FITS files
+	 */
+	for(a = 0; dc->indexDS[a] >= 0; a++)
+	{
+		ds = D->dsentry + dc->indexDS[a];
+		for(c = 0; c < ds->nRecChan; c++)
+		{
+			switch(ds->RCpolName[c])
+			{
+				case 'R': 
+					haspol[0] = 1; 
+					break;
+				case 'L': 
+					haspol[1] = 1; 
+					break;
+				case 'X': 
+					haspol[2] = 1; 
+					break;
+				case 'Y': 
+					haspol[3] = 1; 
+					break;
+				default:
+					fprintf(stderr, "Unknown pol %c\n",
+						ds->RCpolName[c]);
+					return -1;
+			}
+		}
+	}
+	for(p = 0; p < 4; p++)
+	{
+		nPol += haspol[p];
+	}
+	if(nPol != 1 && nPol != 2)
+	{
+		fprintf(stderr, "Weird number of polarizations: %d\n", nPol);
+		return -1;
+	}
+	dc->nPol = nPol;
+	p = 0;
+	dc->pol[1] = ' ';
+	if(haspol[0])
+	{
+		dc->pol[p++] = 'R';
+	}
+	if(haspol[1])
+	{
+		dc->pol[p++] = 'L';
+	}
+	if(haspol[2])
+	{
+		dc->pol[p++] = 'X';
+	}
+	if(haspol[3])
+	{
+		dc->pol[p++] = 'Y';
+	}
+
+	dc->IF = newDifxIFArray(dc->nIF);
+	for(i = 0; i < dc->nIF; i++)
+	{
+		f = freqIds[i];
+		dc->freqId2IF[f]   = i;
+		dc->IF[i].freq     = D->freq[f].freq;
+		dc->IF[i].bw       = D->freq[f].bw;
+		dc->IF[i].sideband = D->freq[f].sideband;
+		dc->IF[i].nPol     = nPol;
+		dc->IF[i].pol[0]   = dc->pol[0];
+		dc->IF[i].pol[1]   = dc->pol[1];
+	}
+
+	return 0;
+}
+
 static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 {
 	const char initKeys[][MAX_DIFX_KEY_LEN] =
@@ -571,12 +791,14 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	const int N_VSN_ROWS = sizeof(vsnKeys)/sizeof(vsnKeys[0]);
 	
 	int rows[20];	/* must be long enough for biggest of above */
-	int a, p, i, k, l, b, c, r, N;
+	int e, a, i, l, b, c, r=0, N;
 	int qb = 0;
-	const char *ptr;
+	int nRecChan;
+	DifxDSEntry *ds;
 	
 	if(!D)
 	{
+		fprintf(stderr, "populateInput: D = 0\n");
 		return 0;
 	}
 
@@ -584,6 +806,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	N = DifxParametersbatchfind(ip, 0, initKeys, N_INIT_ROWS, rows);
 	if(N < N_INIT_ROWS)
 	{
+		fprintf(stderr, "populateInput: N < N_INIT_ROWS %d < %d\n",
+			N, N_INIT_ROWS);
 		return 0;
 	}
 
@@ -608,6 +832,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			configKeys, N_CONFIG_ROWS, rows);
 		if(N < N_CONFIG_ROWS)
 		{
+			fprintf(stderr, "populateInput: N < N_CONFIG_ROWS %d "
+				"< %d\n", N, N_CONFIG_ROWS);
 			return 0;
 		}
 		strcpy(D->config[c].name,   DifxParametersvalue(ip, rows[0]));
@@ -628,6 +854,28 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		{
 			D->config[c].doPolar = 0;
 		}
+
+		/* initialize datastream index array */
+		D->config[c].indexDS = 
+			(int *)malloc(sizeof(int)*(D->nAntenna + 1));
+		for(a = 0; a <= D->nAntenna; a++)
+		{
+			D->config[c].indexDS[a] = -1;
+		}
+
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			r = DifxParametersfind1(ip, r+1, 
+				"DATASTREAM %d INDEX", a);
+			if(r < 0)
+			{
+				fprintf(stderr, 
+					"DATASTREAM %d INDEX not found\n", a);
+				return 0;
+			}
+			D->config[c].indexDS[a] = 
+				atoi(DifxParametersvalue(ip, r));
+		}
 	}
 
 	D->nOutChan = D->config[0].nChan;
@@ -640,6 +888,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			b, N_FREQ_ROWS, rows);
 		if(N < N_FREQ_ROWS)
 		{
+			fprintf(stderr, "populateInput: N < N_FREQ_ROWS %d "
+				"< %d\n", N, N_FREQ_ROWS);
 			return 0;
 		}
 		D->freq[b].freq     = atof(DifxParametersvalue(ip, rows[0]));
@@ -660,6 +910,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			a, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
+			fprintf(stderr, "populateInput: N < N_ANT_ROWS %d "
+				"< %d\n", N, N_ANT_ROWS);
 			return 0;
 		}
 		strcpy(D->antenna[a].name, DifxParametersvalue(ip, rows[0]));
@@ -675,6 +927,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			a, N_VSN_ROWS, rows);
 		if(N < N_VSN_ROWS)
 		{
+			fprintf(stderr, "populateInput: N < N_VSN_ROWS %d "
+				"< %d\n", N, N_VSN_ROWS);
 			return 0;
 		}
 		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
@@ -683,130 +937,138 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 	/* DATASTREAM TABLE */
 	r = DifxParametersfind(ip, 0, "DATASTREAM ENTRIES");
-	for(c = 0; c < D->nConfig; c++)
+	D->nDSEntry = atoi(DifxParametersvalue(ip, r));
+	D->dsentry = newDifxDSEntryArray(D->nDSEntry);
+
+	for(e = 0; e < D->nDSEntry; e++)
 	{
-		for(a = 0; a < D->nAntenna; a++)
+		r = DifxParametersfind(ip, r+1, "TELESCOPE INDEX");
+		if(r < 0)
 		{
-			r = DifxParametersfind(ip, r+1, "DATA FORMAT");
-			qb = 0;
-			if(r < 0)
-			{
-				fprintf(stderr, "DATA FORMAT not found\n");
-				return 0;
-			}
-
-			/* FIXME -- do this properly some day */
-			ptr = DifxParametersvalue(ip, r);
-			l = strlen(ptr);
-			if(l > 8)
-			{
-				if(strcmp(ptr+l-2, "-1") == 0)
-				{
-					qb = 1;
-				}
-				else if(strcmp(ptr+l-2, "-2") == 0)
-				{
-					qb = 2;
-				}
-			}
-			
-			if(qb == 0)
-			{
-				r = DifxParametersfind(ip, r+1, 
-					"QUANTISATION BITS");
-				if(r < 0)
-				{
-					fprintf(stderr, 
-				"Cannot determine quantization bits\n");
-					return 0;
-				}
-				qb = atoi(DifxParametersvalue(ip, r));
-			}
+			fprintf(stderr, "TELESCOPE INDEX not found\n");
+			return 0;
 		}
-		D->config[c].quantBits = qb;
-		r = DifxParametersfind(ip, r+1, "NUM FREQS");
-		D->config[c].nIF = atoi(DifxParametersvalue(ip, r));
-		D->config[c].IF = newDifxIFArray(D->config[c].nIF);
-
-		D->config[c].clockOffset = (double **)malloc(
-			(D->nAntenna+1)*sizeof(double));
-		for(a = 0; a < D->nAntenna; a++)
-		{
-			D->config[c].clockOffset[a] = (double *)calloc(
-				D->config[c].nIF, sizeof(double));
-		}
-		D->config[c].clockOffset[D->nAntenna] = 0; /* null terminate */
+		D->dsentry[e].antId = atoi(DifxParametersvalue(ip, r));
 		
-		for(b = 0; b < D->config[c].nIF; b++)
+		r = DifxParametersfind(ip, r+1, "DATA FORMAT");
+		if(r < 0)
 		{
-			r = DifxParametersfind1(ip, r+1, 
-				"FREQ TABLE INDEX %d", b);
+			fprintf(stderr, "DATA FORMAT not found\n");
+			return 0;
+		}
+		strncpy(D->dsentry[e].dataFormat,
+			DifxParametersvalue(ip, r), 31);
+	
+		D->dsentry[e].quantBits = -1;
+		l = strlen(D->dsentry[e].dataFormat);
+		if(l > 8)
+		{
+			/* do this more formally someday... */
+			if(strcmp(D->dsentry[e].dataFormat+l-2, "-1") == 0)
+			{
+				D->dsentry[e].quantBits = 1;
+			}
+			else if(strcmp(D->dsentry[e].dataFormat+l-2, "-2") == 0)
+			{
+				D->dsentry[e].quantBits = 2;
+			}
+			else
+			{
+				D->dsentry[e].quantBits = 0;
+			}
+		}
+		if(D->dsentry[e].quantBits < 0)
+		{
+			r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
 			if(r < 0)
 			{
-				fprintf(stderr, "FREQ TABLE INDEX not found\n");
+				fprintf(stderr, 
+					"Cannot determine quantization bits\n");
 				return 0;
 			}
-			i = atoi(DifxParametersvalue(ip, r));
-			if(i >= D->nFreq)
-			{
-				fprintf(stderr, "Freq index out of range\n");
-				return 0;
-			}
-			D->config[c].IF[b].freq     = D->freq[i].freq;
-			D->config[c].IF[b].bw       = D->freq[i].bw;
-			D->config[c].IF[b].sideband = D->freq[i].sideband;
-
-			r = DifxParametersfind1(ip, r+1, 
-				"NUM POLS %d", b);
-			D->config[c].IF[b].nPol = 
+			D->dsentry[e].quantBits = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 		
-		k = 0;
-		for(b = 0; b < D->config[c].nIF; b++)
+
+		r = DifxParametersfind(ip, r+1, "NUM FREQS");
+		if(r < 0)
 		{
-			for(p = 0; p < D->config[c].IF[b].nPol; p++)
-			{
-				r = DifxParametersfind1(ip, r+1,
-					"INPUT BAND %d POL", k);
-				k++;
-				D->config[c].IF[b].pol[p] =
-					DifxParametersvalue(ip, r)[0];
-			}
+			fprintf(stderr, "NUM FREQS not found\n");
+			return 0;
+		}
+		D->dsentry[e].nFreq = atoi(DifxParametersvalue(ip, r));
+		D->dsentry[e].nPol = (int *)calloc(D->dsentry[e].nFreq,
+			sizeof(int));
+		D->dsentry[e].freqId = (int *)calloc(D->dsentry[e].nFreq,
+			sizeof(int));
+		D->dsentry[e].clockOffset = (double *)calloc(
+			D->dsentry[e].nFreq, sizeof(double));
+
+		nRecChan = 0;
+		for(i = 0; i < D->dsentry[e].nFreq; i++)
+		{
+			r = DifxParametersfind1(ip, r+1, 
+				"FREQ TABLE INDEX %d", i);
+			D->dsentry[e].freqId[i] = 
+				atoi(DifxParametersvalue(ip, r));
+			r = DifxParametersfind1(ip, r+1, 
+				"CLK OFFSET %d (us)", i);
+			D->dsentry[e].clockOffset[i] =
+				atof(DifxParametersvalue(ip, r));
+			r = DifxParametersfind1(ip, r+1, 
+				"NUM POLS %d", i);
+			D->dsentry[e].nPol[i] = 
+				atoi(DifxParametersvalue(ip, r));
+			nRecChan += D->dsentry[e].nPol[i];
+		}
+		D->dsentry[e].nRecChan = nRecChan;
+		D->dsentry[e].RCfreqId = (int *)calloc(D->dsentry[e].nRecChan,
+			sizeof(int));
+		D->dsentry[e].RCpolName = (char *)calloc(D->dsentry[e].nRecChan,
+			sizeof(char));
+
+		for(i = 0; i < nRecChan; i++)
+		{
+			r = DifxParametersfind1(ip, r+1,
+				"INPUT BAND %d POL", i);
+			D->dsentry[e].RCpolName[i] = 
+				DifxParametersvalue(ip, r)[0];
+			r = DifxParametersfind1(ip, r+1,
+				"INPUT BAND %d INDEX", i);
+			a = atoi(DifxParametersvalue(ip, r));
+			D->dsentry[e].RCfreqId[i] = D->dsentry[e].freqId[a];
 		}
 	}
 
-	/* Go back and get independent clock offsets for each ant/IF */
-	r = DifxParametersfind(ip, 0, "DATASTREAM ENTRIES");
+	
 	for(c = 0; c < D->nConfig; c++)
 	{
+		/* determine number of bits, or zero if different among
+		 * antennas */
+		D->config[c].quantBits = -1;
 		for(a = 0; a < D->nAntenna; a++)
 		{
-			r = DifxParametersfind(ip, r+1, "TELESCOPE INDEX");
-			if(r < 0)
+			qb = 0;
+			e = D->config[c].indexDS[a];
+			if(e < 0)
 			{
-				fprintf(stderr, "Antenna index not found\n");
-				return 0;
+				continue;
 			}
-			if(a != atoi(DifxParametersvalue(ip, r)))
+			ds = D->dsentry + e;
+			if(qb == 0)
 			{
-				fprintf(stderr, "Antenna index mismatch\n");
-				return 0;
+				qb = ds->quantBits;
 			}
-
-			for(b = 0; b < D->config[c].nIF; b++)
+			else if(qb != ds->quantBits)
 			{
-				r = DifxParametersfind1(ip, r+1, 
-					"CLK OFFSET %d (us)", b);
-				if(r < 0)
-				{
-					fprintf(stderr, "No CLK OFFSET\n");
-					return 0;
-				}
-				D->config[c].clockOffset[a][b] = 
-					atof(DifxParametersvalue(ip, r));
+				qb = -1;
+				break;
 			}
 		}
+		D->config[c].quantBits = qb;
+
+		makeFreqId2IFmap(D, c);
 	}
 
 	return D;
@@ -1375,6 +1637,8 @@ static void setGlobalValues(DifxInput *D)
 	int i, c, p, n, nIF, nPol;
 	int doPolar, qb;
 	double bw;
+	int hasR = 0;
+	int hasL = 0;
 	char pol[2];
 
 	if(!D)
@@ -1388,25 +1652,15 @@ static void setGlobalValues(DifxInput *D)
 	D->nPolar = -1;
 	D->chanBW = -1.0;
 	D->quantBits = -1;
-	for(i = 0; i < 4; i++)
-	{
-		D->polPair[i] = 0;
-	}
+	strcpy(D->polPair, "  ");
 
 	for(c = 0; c < D->nConfig; c++)
 	{
 		nIF = D->config[c].nIF;
 		qb  = D->config[c].quantBits;
-		if(D->nIF < 0)
+		if(D->nIF < nIF)
 		{
 			D->nIF = nIF;
-		}
-		else if(D->nIF != nIF)
-		{
-			D->quantBits = D->nIF = D->nPolar = 0;
-			D->chanBW = 0.0;
-			strcpy(D->polPair, "  ");
-			return;
 		}
 		if(D->quantBits < 0)
 		{
@@ -1414,12 +1668,13 @@ static void setGlobalValues(DifxInput *D)
 		}
 		else if(D->quantBits != qb)
 		{
-			D->quantBits = D->nIF = D->nPolar = 0;
-			D->chanBW = 0.0;
-			strcpy(D->polPair, "  ");
-			return;
+			D->quantBits = 0;
 		}
 		doPolar = D->config[c].doPolar;
+		if(D->doPolar < doPolar)
+		{
+			D->doPolar = doPolar;
+		}
 		for(i = 0; i < nIF; i++)
 		{
 			nPol   = D->config[c].IF[i].nPol;
@@ -1430,16 +1685,9 @@ static void setGlobalValues(DifxInput *D)
 			{
 				nPol *= 2;
 			}
-			if(D->nPolar < 0)
+			if(D->nPolar < nPol)
 			{
 				D->nPolar = nPol;
-			}
-			else if(D->nPolar != nPol)
-			{
-				D->quantBits = D->nIF = D->nPolar = 0;
-				D->chanBW = 0.0;
-				strcpy(D->polPair, "  ");
-				return; 
 			}
 			if(D->chanBW < 0.0)
 			{
@@ -1449,27 +1697,21 @@ static void setGlobalValues(DifxInput *D)
 			{
 				D->quantBits = D->nIF = D->nPolar = 0;
 				D->chanBW = 0.0;
-				strcpy(D->polPair, "  ");
 				return; 
 			}
 			if(nPol > 0)
 			{
 				n = nPol > 1 ? 2 : 1;
-				if(D->polPair[0] == 0)
+				for(p = 0; p < n; p++)
 				{
-					for(p = 0; p < n; p++)
+					switch(pol[p])
 					{
-						D->polPair[p] = pol[p];
-					}
-				}
-				else for(p = 0; p < n; p++)
-				{
-					if(D->polPair[p] != pol[p])
-					{
-						D->quantBits = D->nIF = D->nPolar = 0;
-						D->chanBW = 0.0;
-						strcpy(D->polPair, "  ");
-						return; 
+						case 'R':
+							hasR = 1;
+							break;
+						case 'L':
+							hasL = 1;
+							break;
 					}
 				}
 			}
@@ -1484,6 +1726,21 @@ static void setGlobalValues(DifxInput *D)
 	{
 		D->nPol = D->nPolar;
 		D->doPolar = 0;
+	}
+	if(hasR)
+	{
+		D->polPair[0] = 'R';
+		if(hasL)
+		{
+			D->polPair[1] = 'L';
+		}
+	}
+	else
+	{
+		if(hasL)
+		{
+			D->polPair[0] = 'L';
+		}
 	}
 }
 

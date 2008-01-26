@@ -22,6 +22,7 @@
 
 #define DIFX_SESSION_LEN	4
 
+/* Straight from DiFX frequency table */
 typedef struct
 {
 	double freq;		/* (MHz) */
@@ -29,6 +30,7 @@ typedef struct
 	char sideband;		/* U or L */
 } DifxFreq;
 
+/* To become a FITS IF */
 typedef struct
 {
 	double freq;		/* (MHz) */
@@ -38,6 +40,7 @@ typedef struct
 	char pol[2];		/* polarization codes : L R X or Y. */
 } DifxIF;
 
+/* From DiFX config table, with additional derived information */
 typedef struct
 {
 	double tInt;		/* integration time (sec) */
@@ -46,13 +49,34 @@ typedef struct
 	int postFFringe;	/* 0 or 1 */
 	int quadDelayInterp;	/* 0 or 1 */
 	int pulsarBinning;	/* 0 or 1 */
+	int nPol;		/* number of pols in datastreams (1 or 2) */
+	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
-	int nIF;
-	DifxIF *IF;
-	double **clockOffset;	/* (us) [nAntenna][nIF] add to antenna.delay */
+	int nIF;		/* number of FITS IFs to create */
+	DifxIF *IF;		/* FITS IF definitions */
 	int quantBits;		/* 1 or 2 */
+	int nRecChan;		/* number of recorded channels */
 	int freqId;		/* 0-based number -- uniq IF[] index */
+	int *indexDS;		/* 0-based; [antId] data stream table index */
+				/* -1 terminated */
+	int *freqId2IF;		/* map from freq table index to IF */
+	
 } DifxConfig;
+
+typedef struct
+{
+	int antId;
+	char dataFormat[32];
+	int quantBits;		/* quantization bits */
+	int nFreq;		/* num freqs from this datastream */
+	int nRecChan;		/* number of base band channels recorded */
+	int *nPol;		/* [freq] */
+	int *freqId;		/* [freq] index to DifxFreq table */
+	double *clockOffset;	/* (us) [freq] */
+	
+	int *RCfreqId;		/* [recChan] index to DifxFreq table */
+	char *RCpolName;	/* [recChan] Polarization name (R, L, X or Y) */
+} DifxDSEntry;
 
 typedef struct
 {
@@ -132,11 +156,10 @@ typedef struct
 	int nOutChan;		/* number of channels to write to FITS */
 	char calcServer[32];	/* name of calc server */
 
-	int nIF;		/* 0 if different in configs */
-	int nPol;		/* 0 if different in configs */
-				/* Otherwise, should be 1 or 2 */
+	int nIF;		/* maximum num IF across configs */
+	int nPol;		/* maximum num pol across configs */
 	int doPolar;		/* 0 if not, 1 if so */
-	int nPolar;		/* 0 if different in configs */
+	int nPolar;		/* nPol*(doPolar+1) */
 				/* 1 for single pol obs */
 				/* 2 for dual pol, parallel hands only */
 				/* 4 for full pol */
@@ -145,6 +168,7 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
+	int nDSEntry;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -152,6 +176,7 @@ typedef struct
 	DifxSource	*source;
 	DifxEOP		*eop;
 	DifxAntennaFlag *flag;
+	DifxDSEntry	*dsentry;
 } DifxInput;
 
 
