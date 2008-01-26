@@ -87,6 +87,10 @@ void deleteDifxConfigArray(DifxConfig *dc)
 		{
 			free(dc->indexDS);
 		}
+		if(dc->indexBL)
+		{
+			free(dc->indexBL);
+		}
 		if(dc->freqId2IF)
 		{
 			free(dc->freqId2IF);
@@ -114,6 +118,12 @@ void printDifxConfig(const DifxConfig *dc)
 		printf(" %d", dc->indexDS[i]);
 	}
 	printf("\n");
+	printf("    baseline ids =");
+	for(i = 0; dc->indexBL[i] >= 0; i++)
+	{
+		printf(" %d", dc->indexBL[i]);
+	}
+	printf("\n");
 	printf("    frequency to IF map =");
 	for(i = 0; dc->freqId2IF[i] >= 0; i++)
 	{
@@ -125,6 +135,7 @@ void printDifxConfig(const DifxConfig *dc)
 		printDifxIF(dc->IF+i);
 	}
 }
+
 
 DifxDSEntry *newDifxDSEntryArray(int nDSEntry)
 {
@@ -188,6 +199,73 @@ void printDifxDSEntry(const DifxDSEntry *ds)
 		printf(" (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
 	}
 	printf("\n");
+}
+
+
+DifxBaseline *newDifxBaselineArray(int nBaseline)
+{
+	DifxBaseline *db;
+
+	db = (DifxBaseline *)calloc(nBaseline, sizeof(DifxBaseline));
+
+	return db;
+}
+
+void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
+{
+	int b, f;
+	
+	if(db)
+	{
+		for(b = 0; b < nBaseline; b++)
+		{
+			if(db[b].nPolProd)
+			{
+				free(db[b].nPolProd);
+			}
+			if(db[b].recChanA)
+			{
+				for(f = 0; f < db[b].nFreq; f++)
+				{
+					if(db[b].recChanA[f])
+					{
+						free(db[b].recChanA[f]);
+					}
+				}
+				free(db[b].recChanA);
+			}
+			if(db[b].recChanB)
+			{
+				for(f = 0; f < db[b].nFreq; f++)
+				{
+					if(db[b].recChanB[f])
+					{
+						free(db[b].recChanB[f]);
+					}
+				}
+				free(db[b].recChanB);
+			}
+		}
+		free(db);
+	}
+}
+
+void printDifxBaseline(const DifxBaseline *db)
+{
+	int f;
+	
+	printf("  Difx Baseline : %p\n", db);
+	printf("    datastream indices = %d %d\n", db->dsA, db->dsB);
+	printf("    nFreq = %d\n", db->nFreq);
+	if(db->nPolProd)
+	{
+		printf("    nPolProd[freq] =");
+		for(f = 0; f < db->nFreq; f++)
+		{
+			printf(" %d", db->nPolProd[f]);
+		}
+		printf("\n");
+	}
 }
 
 
@@ -518,6 +596,12 @@ void printDifxInput(const DifxInput *D)
 	{
 		printDifxDSEntry(D->dsentry + i);
 	}
+
+	if(D->nBaseline > 1)
+	{
+		printDifxBaseline(D->baseline + 0);
+		printDifxBaseline(D->baseline + 1);
+	}
 	
 	printf("\n");
 }
@@ -751,6 +835,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		"EXECUTE TIME (SEC)",
 		"START MJD",
 		"START SECONDS",
+		"ACTIVE DATASTREAMS",
+		"ACTIVE BASELINES",
 		"NUM CONFIGURATIONS",
 		"FREQ ENTRIES",
 		"TELESCOPE ENTRIES"
@@ -791,7 +877,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	const int N_VSN_ROWS = sizeof(vsnKeys)/sizeof(vsnKeys[0]);
 	
 	int rows[20];	/* must be long enough for biggest of above */
-	int e, a, i, l, b, c, r=0, N;
+	int e, a, f, p, i, l, b, c, r=0, N;
 	int qb = 0;
 	int nRecChan;
 	DifxDSEntry *ds;
@@ -815,10 +901,14 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	D->duration = atoi(DifxParametersvalue(ip, rows[0]));
 	D->mjdStart = atoi(DifxParametersvalue(ip, rows[1])) +
 		      atof(DifxParametersvalue(ip, rows[2]))/86400.0;
+	D->activeDatastreams =
+		      atoi(DifxParametersvalue(ip, rows[3]));
+	D->activeBaselines =
+		      atoi(DifxParametersvalue(ip, rows[4]));
 
-	D->nConfig  = atoi(DifxParametersvalue(ip, rows[3]));
-	D->nFreq    = atoi(DifxParametersvalue(ip, rows[4]));
-	D->nAntenna = atoi(DifxParametersvalue(ip, rows[5]));
+	D->nConfig  = atoi(DifxParametersvalue(ip, rows[5]));
+	D->nFreq    = atoi(DifxParametersvalue(ip, rows[6]));
+	D->nAntenna = atoi(DifxParametersvalue(ip, rows[7]));
 
 	D->config   = newDifxConfigArray(D->nConfig);
 	D->freq     = newDifxFreqArray(D->nFreq);
@@ -857,13 +947,14 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 		/* initialize datastream index array */
 		D->config[c].indexDS = 
-			(int *)malloc(sizeof(int)*(D->nAntenna + 1));
-		for(a = 0; a <= D->nAntenna; a++)
+			(int *)malloc(sizeof(int)*(D->activeDatastreams + 1));
+		for(a = 0; a <= D->activeDatastreams; a++)
 		{
 			D->config[c].indexDS[a] = -1;
 		}
 
-		for(a = 0; a < D->nAntenna; a++)
+		/* populate datastream index array */
+		for(a = 0; a < D->activeDatastreams; a++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"DATASTREAM %d INDEX", a);
@@ -874,6 +965,29 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 				return 0;
 			}
 			D->config[c].indexDS[a] = 
+				atoi(DifxParametersvalue(ip, r));
+		}
+
+		/* initialize baseline index array */
+		D->config[c].indexBL =
+			(int *)malloc(sizeof(int)*(D->activeBaselines+1));
+		for(b = 0; b <= D->activeBaselines; b++)
+		{
+			D->config[c].indexBL[b] = -1;
+		}
+
+		/* populate baseline index array */
+		for(b = 0; b < D->activeBaselines; b++)
+		{
+			r = DifxParametersfind1(ip, r+1, 
+				"BASELINE %d INDEX", a);
+			if(r < 0)
+			{
+				fprintf(stderr, 
+					"BASELINE %d INDEX not found\n", a);
+				return 0;
+			}
+			D->config[c].indexBL[a] = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 	}
@@ -933,6 +1047,83 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
 		D->antenna[a].vsn[8] = 0;
+	}
+
+	/* BASELINE TABLE */
+	r = DifxParametersfind(ip, 0, "BASELINE ENTRIES");
+	D->nBaseline = atoi(DifxParametersvalue(ip, r));
+	D->baseline = newDifxBaselineArray(D->nBaseline);
+
+	for(b = 0; b < D->nBaseline; b++)
+	{
+		r = DifxParametersfind1(ip, r+1, "D/STREAM A INDEX %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "D/STREAM A INDEX %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
+		r = DifxParametersfind1(ip, r+1, "D/STREAM B INDEX %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "D/STREAM B INDEX %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
+		r = DifxParametersfind1(ip, r+1, "NUM FREQS %d", b);
+		if(r < 0)
+		{
+			fprintf(stderr, "NUM FREQS %d not found\n", b);
+			return 0;
+		}
+		D->baseline[b].nFreq = atoi(DifxParametersvalue(ip, r));
+		D->baseline[b].nPolProd = (int *)calloc(D->baseline[b].nFreq,
+			sizeof(int));
+		D->baseline[b].recChanA = (int **)calloc(D->baseline[b].nFreq,
+			sizeof(int *));
+		D->baseline[b].recChanB = (int **)calloc(D->baseline[b].nFreq,
+			sizeof(int *));
+		
+		for(f = 0; f < D->baseline[b].nFreq; f++)
+		{
+			r = DifxParametersfind2(ip, r+1, "POL PRODUCTS %d/%d",
+				b, f);
+			if(r < 0)
+			{
+				fprintf(stderr, "POL PRODUCTS %d/%d "
+					"not found\n", b, f);
+				return 0;
+			}
+			D->baseline[b].nPolProd[f] =
+				atoi(DifxParametersvalue(ip, r));
+			D->baseline[b].recChanA[f] = (int *)calloc(
+				D->baseline[b].nPolProd[f], sizeof(int));
+			D->baseline[b].recChanB[f] = (int *)calloc(
+				D->baseline[b].nPolProd[f], sizeof(int));
+			for(p = 0; p < D->baseline[b].nPolProd[f]; p++)
+			{
+				r = DifxParametersfind1(ip, r+1, 
+					"D/STREAM A BAND %d", p);
+				if(r < 0)
+				{
+					fprintf(stderr, "D/STREAM A BAND %d "
+						"not found\n", p);
+					return 0;
+				}
+				D->baseline[b].recChanA[f][p] =
+					atoi(DifxParametersvalue(ip, r));
+				r = DifxParametersfind1(ip, r+1, 
+					"D/STREAM B BAND %d", p);
+				if(r < 0)
+				{
+					fprintf(stderr, "D/STREAM B BAND %d "
+						"not found\n", p);
+					return 0;
+				}
+				D->baseline[b].recChanB[f][p] =
+					atoi(DifxParametersvalue(ip, r));
+			}
+		}
 	}
 
 	/* DATASTREAM TABLE */
@@ -1047,7 +1238,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		/* determine number of bits, or zero if different among
 		 * antennas */
 		D->config[c].quantBits = -1;
-		for(a = 0; a < D->nAntenna; a++)
+		for(a = 0; a < D->activeDatastreams; a++)
 		{
 			qb = 0;
 			e = D->config[c].indexDS[a];

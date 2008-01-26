@@ -59,6 +59,7 @@ typedef struct
 	int freqId;		/* 0-based number -- uniq IF[] index */
 	int *indexDS;		/* 0-based; [antId] data stream table index */
 				/* -1 terminated */
+	int *indexBL;		/* baseline table indicies for this config */
 	int *freqId2IF;		/* map from freq table index to IF */
 	
 } DifxConfig;
@@ -77,6 +78,15 @@ typedef struct
 	int *RCfreqId;		/* [recChan] index to DifxFreq table */
 	char *RCpolName;	/* [recChan] Polarization name (R, L, X or Y) */
 } DifxDSEntry;
+
+typedef struct
+{
+	int dsA, dsB;		/* indices to datastream table */
+	int nFreq;
+	int *nPolProd;		/* [freq] */
+	int **recChanA;		/* [freq][productIndex] */
+	int **recChanB;		/* [freq][productIndex] */
+} DifxBaseline;
 
 typedef struct
 {
@@ -145,6 +155,8 @@ typedef struct
 	double mjdStart;	/* subjob start time (mjd) */
 	double duration;	/* subjob observe duration (sec) */
 	double modelInc;	/* model (delay, uvw) interval */
+	int activeDatastreams;
+	int activeBaselines;
 	int jobId;		/* correlator job number */
 	int subjobId;		/* difx specific sub-job id */
 	int subarrayId;		/* sub array number of the specified sub-job */
@@ -168,7 +180,7 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDSEntry;
+	int nDSEntry, nBaseline;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -177,6 +189,7 @@ typedef struct
 	DifxEOP		*eop;
 	DifxAntennaFlag *flag;
 	DifxDSEntry	*dsentry;
+	DifxBaseline    *baseline;
 } DifxInput;
 
 
