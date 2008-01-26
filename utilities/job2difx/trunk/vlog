@@ -67,11 +67,12 @@ def bbcflag(flags, bbc, t1, t2, chan, reason):
 	for b in bbc:
 		T1 = max(t1, b[0])
 		T2 = min(t2, b[1])
+		nBBC = len(b) - 2
 		if T1 < T2:
-			for c in b[2:]:
-				if c[0] == chan:
-					flags.append('%9.7f %9.7f %d %d %s' % \
-						(T1, T2, c[1], c[2], reason))
+			for i in range(nBBC):
+				if b[i+2][0:-1] == chan:
+					flags.append('%9.7f %9.7f %d %s' % \
+						(T1, T2, i, reason))
 
 def makeFG(sections, BBCs, antenna):
 	if not sections.has_key('Edit'):
@@ -81,7 +82,7 @@ def makeFG(sections, BBCs, antenna):
 	bbc = BBCs[antenna]
 	FlagData = sections['Edit'][antenna]
 	FG = []
-	FG.append("# Ant D.O.Y.start D.O.Y.end polId bandId reason")
+	FG.append("# Ant D.O.Y.start D.O.Y.end RecChan reason")
 	key = "ant_name='%s'" % antenna
 	for f in FlagData:
 		s = split(f)
@@ -97,13 +98,12 @@ def makeFG(sections, BBCs, antenna):
 			if r[0] == 'channel' and r[2] == 'bbc':
 				bbcflag(FG, bbc, t1, t2, r[1], reason)
 			else:
-				FG.append('%9.7f %9.7f -1 -1 %s' % \
+				FG.append('%9.7f %9.7f -1 %s' % \
 					(t1, t2, reason) )
 	return FG
 
 
 def countTones(ToneTable, StateTable):
-
 	polList  = []
 	bandnums = {}
 	polCount = {}
@@ -198,15 +198,26 @@ def countTones(ToneTable, StateTable):
 
 	return nPol, nBand, nTone, nState
 
-def makePH(sections, antenna):
+def bbc2recChan(bbcName, t, bbcMap):
+	for b in bbcMap:
+		if t >= b[0] and t < b[1]:
+			nBBC = len(b) - 2
+			for i in range(nBBC):
+				if b[i+2] == bbcName:
+					return '%d' % i
+	return '-1'
+	
+
+def makePH(sections, BBCs, antenna):
 	if not sections.has_key('PulseCal'):
 		return None
 	if not sections['PulseCal'].has_key(antenna):
 		return None
 	PulseCalData = sections['PulseCal'][antenna]
+	bbc = BBCs[antenna]
 	
 	PH = []
-	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (bbc, freq, mag, phase(degrees))[nPol][nBand][nTone] (bbc, state count)[nPol][nBand][nState];  bbc is name (1-based + sideband)')
+	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (RecChan, freq, mag, phase(degrees))[nPol][nBand][nTone] (RecChan, stateCount[nState])[nPol][nBand];  RecChan is recorder channel num (0-based)')
 
 	action = 0	# 0 == nothing
 			# 1 = ToneTable
@@ -266,43 +277,30 @@ def makePH(sections, antenna):
 				band = T[5]
 				tone = T[6]
 				index = tone + nTone*(band + nBand*pol)
-				ToneData[index] = [T[0]+T[1], T[3], s[3], s[4]]
+				ToneData[index] = [bbc2recChan(T[0]+T[1], t, bbc), T[3], s[3], s[4]]
 			elif key in StateTable:
 				S = StateTable[key]
 				pol  = S[4]
 				band = S[5]
 				for state in range(S[3]):
 					index = state+nState*(band + nBand*pol)
-					StateData[index] = [S[0]+S[1], s[3+state]]
+					if state == 0:
+						StateData[index] = [bbc2recChan(S[0]+S[1], t, bbc), s[3+state]]
+					else:
+						StateData[index] = ['X', s[3+state]]
 		if action == 3:
 			line = '%10.7f %9.7f %s %d %d %d %d' % \
 				(t, dt, ccal, nPol, nBand, nTone, nState)
 			for T in ToneData:
 				line += ('  %s %s %s %s' % (T[0], T[1], T[2], T[3]))
 			for S in StateData:
-				line += ('  %s %s' % (S[0], S[1]))
+				if S[0] == 'X':
+					line += (' %s' % S[1])
+				else:
+					line += ('  %s %s' % (S[0], S[1]))
 			PH.append(line)
 			action = 2
 	return PH
-
-def fixBBCmap(B):
-	out = []
-	last = None
-	for b in B:
-		done = 0
-		if last != None:
-			if len(b) > 3:
-				if last[2:] == b[2:]:
-					last[1] = b[1]
-					done = 1;
-
-			else:
-				last[1] = b[1]
-				done = 1
-		if not done:
-			out.append(b)
-			last = b
-	return out
 
 def makeTS(sections, antenna):
 	if not sections.has_key('Tsys'):
@@ -312,15 +310,15 @@ def makeTS(sections, antenna):
 	TsysData = sections['Tsys'][antenna]
 
 	TS = []
-	TS.append("# ant D.O.Y. dur(days) nPol nBand (tsys)[nPol][nBand] (band)[nPol][nBand]");
+	TS.append("# ant D.O.Y. dur(days) nRecChan (tsys, band)[nPol][nBand]");
 
-	IFconfig = []
-	pols = {}
-	nBand = 0
-	nPol = 0
+	recvName = []
+	nRecChan = 0
 	timerange = (0.0, 0.0)
 	BBCmap = []
-	BBCrow = []
+	BBCrow = [0, 0]
+	t0 = 0
+	t1 = 0
 
 	for row in TsysData:
 		s = split(row)
@@ -329,51 +327,30 @@ def makeTS(sections, antenna):
 				s[3] in ['A', 'B', 'C', 'D'] and \
 				s[6] in ['U', 'L'] and s[8][-1] == 'M':
 			if s[1] == '1':	# reset on channel 1
-				IFconfig = []
-				pols = {}
-				nBand = 0
-				nPol = 0
-				TsysData = None
-				Receiver = None
-			pol = s[4]
-			if pol in pols:
-				pols[pol][1] += 1
-				if nBand < pols[pol][1]+1:
-					nBand = pols[pol][1]+1
-			else:
-				pols[pol] = [nPol, 0]
-				nPol += 1
-				if nBand < 1:
-					nBand = 1
-			IFconfig.append([s[2], s[4], s[5], s[6], \
-				pols[pol][0], pols[pol][1], s[1]])
-			BBCrow.append([s[5], pols[pol][0], pols[pol][1]])
+				recvName = []
+				nRecChan = 0
+				BBCrow[1] = t0
+				BBCrow = [t0, t1]
+				BBCmap.append(BBCrow)
+			recvName.append(s[2])
+			BBCrow.append(s[5]+s[6])
+			nRecChan += 1
 		elif s[0] == '!' and len(s) == 5:
 			tr = split(s[4], '/')
 			if len(tr) == 2 and s[1] == antenna:
-				BBCrow = [parsetime(tr[0]), parsetime(tr[1])]
-				BBCmap.append(BBCrow)
+				t0 = parsetime(tr[0])
+				t1 = parsetime(tr[1])
+				BBCrow[1] = t1
 		elif row[0] == 'TSYS':
 			pass
-		elif row[0] != '!' and len(s) == 4+nBand*nPol:
-			if TsysData == None:
-				TsysData = [0.0]*(nPol*nBand)
-			if Receiver == None:
-				Receiver = ['']*(nPol*nBand)
+		elif row[0] != '!' and len(s) == 4+nRecChan:
 			t = parsetime(s[0]+'-'+s[1]+':0')
 			dt = 0.0
-			for i in range(len(IFconfig)):
-				index = IFconfig[i][4] + nPol*IFconfig[i][5]
-				TsysData[index] = "%s%s %s %s" % \
-					(IFconfig[i][2], IFconfig[i][3], IFconfig[i][6], s[2+i])
-				Receiver[index] = IFconfig[i][0]
-			line = "%10.7f %9.7f %d %d" % (t, dt, nPol, nBand)
-			for ts in TsysData:
-				line += ('  '+ts)
-			for rec in Receiver:
-				line += ('  '+rec)
+			line = "%10.7f %9.7f %d" % (t, dt, nRecChan)
+			for i in range(nRecChan):
+				line += ('  %s %s' % (s[2+i], recvName[i]))
 			TS.append(line)
-	BBCmap = fixBBCmap(BBCmap)
+
 	return TS, BBCmap
 
 def writetable(table, filename, ants, tablename):
@@ -424,9 +401,6 @@ for a in ants:
 	if ts != None:
 		BBCs[a] = bbc
 		TSs[a] = ts
-	ph = makePH(sections, a)
-	if ph != None:
-		PHs[a] = ph
 	wx = makeWR(sections, a)
 	if wx != None:
 		WRs[a] = wx
@@ -437,6 +411,9 @@ for a in ants:
 		if fg == None:
 			continue
 		FGs[a] = fg
+		ph = makePH(sections, BBCs, a)
+		if ph != None:
+			PHs[a] = ph
 
 writetable(FGs, 'flag',    ants, 'FG')
 writetable(TSs, 'tsys',    ants, 'TS')
