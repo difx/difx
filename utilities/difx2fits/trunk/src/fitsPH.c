@@ -6,15 +6,14 @@
 #include "difx2fits.h"
 #include "other.h"
 
-/* go through pcal file, determine maximum shape of pcal info needed for our
- * time range.
+
+/* go through pcal file, determine maximum number of tones.
  */
-int static getShape(const char *filename, double t1, double t2,
-		int *no_pol, int *no_band, int *no_tone)
+static int getNTone(const char *filename, double t1, double t2)
 {
 	FILE *in;
 	char line[1000];
-	int n, np, nb, nt;
+	int n, nt, nTone=0;
 	double t;
 
 	in = fopen(filename, "r");
@@ -30,68 +29,67 @@ int static getShape(const char *filename, double t1, double t2,
 		{
 			break;
 		}
-		n = sscanf(line, "%*s%lf%*f%*f%d%d%d", &t, &np, &nb, &nt);
-		if(n != 4)
+		n = sscanf(line, "%*s%lf%*f%*f%*d%*d%d", &t, &nt);
+		if(n != 2)
 		{
 			continue;
 		}
 		if(t >= t1 && t <= t2)
 		{
-			if(np > *no_pol)
+			if(nt > nTone)
 			{
-				*no_pol = np;
-			}
-			if(nb > *no_band)
-			{
-				*no_band = nb;
-			}
-			if(nt > *no_tone)
-			{
-				*no_tone = nt;
+				nTone = nt;
 			}
 		}
 		
 	}
 	fclose(in);
 
-	return 0;
+	return nTone;
 }
 
 static int parsePulseCal(const char *line, 
-	int no_pol, int no_band, int no_tone, 
-	char *antName, double *t, float *dt, double *ccal,
-	double freqs[][64], float pcalR[][64], float pcalI[][64], 
-	float states[][64])
+	int *antId, double *t, float *dt, double *ccal,
+	double freqs[2][64], float pcalR[2][64], float pcalI[2][64], 
+	float states[2][64], const DifxInput *D, int configId)
 {
 	int np, nb, nt, ns;
-	int n, p;
-	int pol, band, tone, state;
+	int nRecChan, recChan;
+	int n, p, i, v;
+	int polId, bandId, tone, state;
+	int pol, band;
 	double A;
 	float B, C;
+	char antName[20];
 
-	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%n", antName, t, dt, ccal, 
-		&np, &nb, &nt, &ns, &p);
+	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, t, dt, ccal, 
+		&np, &nb, &nt, &ns, &nRecChan, &p);
 	if(n != 8)
 	{
 		return -1;
+	}
+	
+	*antId = DifxInputGetAntennaId(D, antName);
+	if(*antId < 0)
+	{
+		return -1;
+	}
+
+	for(pol = 0; pol < 2; pol++)
+	{
+		for(i = 0; i < 64; i++)
+		{
+			freqs[pol][i] = 0.0;
+			pcalR[pol][i] = 0.0;
+			pcalI[pol][i] = 0.0;
+			states[pol][i] = 0.0;
+		}
 	}
 
 	*ccal *= 1e-12;
 
 	line += p;
 	
-	if(np > no_pol || nb > no_band || nt > no_tone)
-	{
-		return -2;
-	}
-
-	for(n = 0; n < no_tone*no_band; n++)
-	{
-		freqs[0][n] = freqs[1][n] = 0.0;
-		pcalR[0][n] = pcalR[1][n] = 0.0;
-		pcalI[0][n] = pcalI[1][n] = 0.0;
-	}
-
 	/* Read in pulse cal information */
 	for(pol = 0; pol < np; pol++)
 	{
@@ -99,24 +97,50 @@ static int parsePulseCal(const char *line,
 		{
 			for(tone = 0; tone < nt; tone++)
 			{
-				n = sscanf(line, "%lf%f%f%n", &A, &B, &C, &p);
-				if(n < 3)
+				n = sscanf(line, "%d%lf%f%f%n", 
+					&recChan, &A, &B, &C, &p);
+				if(n < 4)
 				{
 					return -1;
 				}
-				freqs[pol][tone + band*no_tone] = A*1.0e6;
-				pcalR[pol][tone + band*no_tone] = B*cos(C*M_PI/180.0);
-				pcalI[pol][tone + band*no_tone] = B*sin(C*M_PI/180.0);
+				if(recChan < 0)
+				{
+					continue;
+				}
+				v = DifxConfigRecChan2IFPol(D, configId,
+					*antId, recChan, &bandId, &polId);
+				if(bandId < 0 || polId < 0)
+				{
+					fprintf(stderr, "Error: derived "
+						"bandId and polId (%d,%d) are "
+						"not legit.  From "
+						"recChan=%d.\n",
+						bandId, polId, recChan);
+				}
+				if(v < 0)
+				{
+					continue;
+				}
+				freqs[polId][tone + bandId*nt] = A*1.0e6;
+				pcalR[polId][tone + bandId*nt] = 
+					B*cos(C*M_PI/180.0);
+				pcalI[polId][tone + bandId*nt] = 
+					B*sin(C*M_PI/180.0);
 				line += p;
 			}
 		}
 	}
 	
 	/* Read in state count information */
-	for(pol = 0; pol < no_pol; pol++)
+	for(pol = 0; pol < np; pol++)
 	{
-		for(band = 0; band < no_band; band++)
+		for(band = 0; band < nb; band++)
 		{
+			n = sscanf(line, "%d%n", &recChan, &p);
+			v = DifxConfigRecChan2IFPol(D, configId,
+				*antId, recChan, &bandId, &polId);
+			
+			line += p;
 			for(state = 0; state < 4; state++)
 			{
 				if(state < ns)
@@ -131,7 +155,7 @@ static int parsePulseCal(const char *line,
 				{
 					B = 0.0;
 				}
-				states[pol][state + band*4] = B;
+				states[polId][state + bandId*4] = B;
 				line += p;
 			}
 		}
@@ -173,7 +197,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int n_row_bytes;
 	char *fitsbuf, *p_fitsbuf;
 	char line[1000];
-	char antName[20];
 	int no_band, no_tone, no_pol;
 	double t;
 	float dt;
@@ -184,14 +207,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float states[2][64];
 	float pcalRate[64];
 	int antId, arrayId, sourceId, freqId;
+	int configId = 0;	/* fix to zero for now */
+	int FITSantId = 0;
 	int refday;
 	int i, v;
 	double f;
 	FILE *in;
 	
 	no_band = p_fits_keys->no_band;
-	no_pol = 1;
-	no_tone = 0;
+	no_pol = D->nPol;
 
 	if(D == 0)
 	{
@@ -203,10 +227,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	/* get the maximum dimensions possibly needed */
 	f = D->mjdStart - (int)(D->mjdStart);
-	v = getShape("pcal", refday+f, refday+f+D->duration/86400.0,
-		&no_pol, &no_band, &no_tone);
+	no_tone = getNTone("pcal", refday+f, refday+f+D->duration/86400.0);
 
-	if(v < 0)
+	if(no_tone < 0)
 	{
 		return D;
 	}
@@ -267,24 +290,21 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 		else 
 		{
-			v = parsePulseCal(line, no_pol, no_band, no_tone, 
-				antName, &t, &dt, &ccal, freqs, pcalR, pcalI,
-				states);
+			v = parsePulseCal(line, 
+				&antId, &t, &dt, &ccal, freqs, pcalR, pcalI,
+				states, D, configId);
 
 			if(v < 0)
 			{
 				continue;
 			}
-
-			antId = DifxInputGetAntennaId(D, antName) + 1;
-			t -= refday;
-			mjd = t + (int)(D->mjdStart);
-
-			if(antId <= 0)
+			if(antId < 0)
 			{
 				continue;
 			}
-
+			FITSantId = antId + 1;
+			t -= refday;
+			mjd = t + (int)(D->mjdStart);
 			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;
@@ -307,8 +327,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			p_fitsbuf += sizeof(sourceId);
 
 			/* ANTENNAS */
-			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
-			p_fitsbuf += sizeof(antId);
+			bcopy((char *)&FITSantId, p_fitsbuf, sizeof(FITSantId));
+			p_fitsbuf += sizeof(FITSantId);
 
 			/* ARRAY */
 			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));

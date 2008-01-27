@@ -6,90 +6,32 @@
 #include "difx2fits.h"
 #include "other.h"
 
-static int getShape(const char *filename, double t1, double t2,
-	int *no_pol, int *no_band)
+
+/* ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan] */
+static int parseTsys(const char *line, char *antenna, 
+	double *t, float *dt, float ty[])
 {
-	FILE *in;
-	char line[1000];
-	double t;
-	int np, nb, n;
-
-	in = fopen(filename, "r");
-	if(in == 0)
-	{
-		return -1;
-	}
-
-	for(;;)
-	{
-		fgets(line, 999, in);
-		if(feof(in))
-		{
-			break;
-		}
-		if(line[0] == '#')
-		{
-			continue;
-		}
-		n = sscanf(line, "%*s%lf%*f%d%d", &t, &np, &nb);
-		if(n != 3)
-		{
-			continue;
-		}
-		if(t >= t1 && t <= t2)
-		{
-			if(np > *no_pol)
-			{
-				*no_pol = np;
-			}
-			if(nb > *no_band)
-			{
-				*no_band = nb;
-			}
-		}
-	}
-	fclose(in);
-
-	return 1;
-}
-
-/* ant D.O.Y. dur(days) nPol nBand (tsys)[nBand*nPol] (band)[nBand] */
-static int parseTsys(const char *line, int no_pol, int no_band, char *antenna, 
-	double *t, float *dt, float ty[][16])
-{
-	int p, n, i, j, np, nb;
+	int p, n, i, nRecChan;
 	float A;
 
-	n = sscanf(line, "%s%lf%f%d%d%n", antenna, t, dt, &np, &nb, &p);
-	if(n != 5)
+	n = sscanf(line, "%s%lf%f%d%n", antenna, t, dt, &nRecChan, &p);
+	if(n != 4)
 	{
 		return -1;
 	}
-	if(np > no_pol || nb > no_band)
-	{
-		return -2;
-	}
 
-	for(i = 0; i < 16; i++)
+	for(i = 0; i < nRecChan; i++)
 	{
-		ty[0][i] = ty[1][i] = 0.0;
-	}
-
-	for(i = 0; i < np; i++)
-	{
-		for(j = 0; j < nb; j++)
+		line += p;
+		n = sscanf(line, "%f%*s%n", &A, &p);
+		if(n != 2)
 		{
-			line += p;
-			n = sscanf(line, "%f%n", &A, &p);
-			if(n != 1)
-			{
-				return -3;
-			}
-			ty[i][j] = A;
+			return -2;
 		}
+		ty[i] = A;
 	}
 	
-	return 2;
+	return nRecChan;
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
@@ -118,18 +60,21 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int refday;
 	char line[1000];
 	char antenna[20];
-	float ty[2][16], tant[16];
+	float tyRecChan[16], ty[2][16], tant[16];
 	int no_band;
 	int sourceId, freqId, arrayId, antId;
-	int i, no_pol=0;
+	int configId = 0;	/* only support one config now */
+	int i, j, no_pol=0;
+	int bandId, polId;
+	int nRecChan;
 	int v;
 	double f;
 	double t, mjd, mjdStop;
 	float dt;
 	FILE *in;
 	
-	no_band = p_fits_keys->no_band;
-	no_pol = 0;
+	no_band = D->nIF;
+	no_pol = D->nPol;
 
 	sprintf(bandFormFloat, "%dE", no_band);
 
@@ -142,13 +87,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 	/* get the maximum dimensions possibly needed */
 	f = D->mjdStart - (int)(D->mjdStart);
-	v = getShape("tsys", refday+f, refday+f+D->duration/86400.0,
-		&no_pol, &no_band);
-
-	if(v < 0)
-	{
-		return D;
-	}
 
 	in = fopen("tsys", "r");
 
@@ -200,8 +138,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		}
 		else 
 		{
-			parseTsys(line, no_pol, no_band, antenna, 
-				&t, &dt, ty);
+			nRecChan = parseTsys(line, antenna, &t, &dt, tyRecChan);
 
 			/* discard records outside time range */
 			t -= refday;
@@ -219,6 +156,33 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 
 			sourceId = DifxInputGetSourceId(D, mjd) + 1;
+
+			for(j = 0; j < 2; j++)
+			{
+				for(i = 0; i < 16; i++)
+				{
+					ty[j][i] = 0;
+				}
+			}
+
+			v = 0;
+			for(i = 0; i < nRecChan && v >= 0; i++)
+			{
+				v = DifxConfigRecChan2IFPol(D, configId,
+					antId, i, &bandId, &polId);
+				if(bandId < 0 || polId < 0)
+				{
+					fprintf(stderr, "Error: derived "
+						"bandId and polId (%d,%d) are "
+						"not legit.  From "
+						"recChan=%d.\n", 
+						bandId, polId, i);
+				}
+			}
+			if(v < 0)
+			{
+				continue;
+			}
 		
 			p_fitsbuf = fitsbuf;
 		

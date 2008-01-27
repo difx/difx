@@ -16,7 +16,7 @@ static int parseFlag(char *line, int refday, char *antName, float timerange[2],
 	n = sscanf(line, "%s%f%f%d%n", antName, timerange+0, timerange+1,
 		recChan, &l);
 
-	if(n < 5)
+	if(n < 4)
 	{
 		return 0;
 	}
