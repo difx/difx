@@ -42,7 +42,6 @@ typedef struct
 	struct UVrow *record;
 	float *weight;
 	float *data;
-	unsigned char ****FreqNum2bandId;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, const char *filebase, 
