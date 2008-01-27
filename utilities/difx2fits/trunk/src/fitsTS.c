@@ -11,8 +11,9 @@
 static int parseTsys(const char *line, char *antenna, 
 	double *t, float *dt, float ty[])
 {
-	int p, n, i, nRecChan;
-	float A;
+	int p;
+	int n, i, nRecChan;
+	float tsys;
 
 	n = sscanf(line, "%s%lf%f%d%n", antenna, t, dt, &nRecChan, &p);
 	if(n != 4)
@@ -23,12 +24,12 @@ static int parseTsys(const char *line, char *antenna,
 	for(i = 0; i < nRecChan; i++)
 	{
 		line += p;
-		n = sscanf(line, "%f%*s%n", &A, &p);
-		if(n != 2)
+		n = sscanf(line, "%f%*s%n", &tsys, &p);
+		if(n != 1)
 		{
 			return -2;
 		}
-		ty[i] = A;
+		ty[i] = tsys;
 	}
 	
 	return nRecChan;
@@ -68,6 +69,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int bandId, polId;
 	int nRecChan;
 	int v;
+	int FITSantId;
 	double f;
 	double t, mjd, mjdStop;
 	float dt;
@@ -149,8 +151,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 		
 			/* discard records for unused antennas */
-			antId = DifxInputGetAntennaId(D, antenna) + 1;
-			if(antId <= 0)
+			antId = DifxInputGetAntennaId(D, antenna);
+			if(antId < 0)
 			{
 				continue;
 			}
@@ -165,6 +167,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				}
 			}
 
+			/* Take the recorder channel order data and populate
+			 * into [polId][bandId] order
+			 */
 			v = 0;
 			for(i = 0; i < nRecChan && v >= 0; i++)
 			{
@@ -178,11 +183,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 						"recChan=%d.\n", 
 						bandId, polId, i);
 				}
+				ty[polId][bandId] = tyRecChan[i];
 			}
 			if(v < 0)
 			{
 				continue;
 			}
+
+			FITSantId = antId + 1;
 		
 			p_fitsbuf = fitsbuf;
 		
@@ -199,8 +207,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			p_fitsbuf += sizeof(sourceId);
 
 			/* ANTENNA */
-			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
-			p_fitsbuf += sizeof(antId);
+			bcopy((char *)&FITSantId, p_fitsbuf, sizeof(FITSantId));
+			p_fitsbuf += sizeof(FITSantId);
 
 			/* ARRAY */
 			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));

@@ -64,15 +64,16 @@ static int parsePulseCal(const char *line,
 
 	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, t, dt, ccal, 
 		&np, &nb, &nt, &ns, &nRecChan, &p);
-	if(n != 8)
+	if(n != 9)
 	{
 		return -1;
 	}
+	line += p;
 	
 	*antId = DifxInputGetAntennaId(D, antName);
 	if(*antId < 0)
 	{
-		return -1;
+		return -2;
 	}
 
 	for(pol = 0; pol < 2; pol++)
@@ -88,8 +89,6 @@ static int parsePulseCal(const char *line,
 
 	*ccal *= 1e-12;
 
-	line += p;
-	
 	/* Read in pulse cal information */
 	for(pol = 0; pol < np; pol++)
 	{
@@ -101,8 +100,9 @@ static int parsePulseCal(const char *line,
 					&recChan, &A, &B, &C, &p);
 				if(n < 4)
 				{
-					return -1;
+					return -3;
 				}
+				line += p;
 				if(recChan < 0)
 				{
 					continue;
@@ -126,7 +126,6 @@ static int parsePulseCal(const char *line,
 					B*cos(C*M_PI/180.0);
 				pcalI[polId][tone + bandId*nt] = 
 					B*sin(C*M_PI/180.0);
-				line += p;
 			}
 		}
 	}
@@ -137,10 +136,9 @@ static int parsePulseCal(const char *line,
 		for(band = 0; band < nb; band++)
 		{
 			n = sscanf(line, "%d%n", &recChan, &p);
+			line += p;
 			v = DifxConfigRecChan2IFPol(D, configId,
 				*antId, recChan, &bandId, &polId);
-			
-			line += p;
 			for(state = 0; state < 4; state++)
 			{
 				if(state < ns)
@@ -148,15 +146,15 @@ static int parsePulseCal(const char *line,
 					n = sscanf(line, "%f%n", &B, &p);
 					if(n < 1)
 					{
-						return -1;
+						return -4;
 					}
+					line += p;
 				}
 				else
 				{
 					B = 0.0;
 				}
 				states[polId][state + bandId*4] = B;
-				line += p;
 			}
 		}
 	}
@@ -293,16 +291,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			v = parsePulseCal(line, 
 				&antId, &t, &dt, &ccal, freqs, pcalR, pcalI,
 				states, D, configId);
-
 			if(v < 0)
 			{
 				continue;
 			}
-			if(antId < 0)
-			{
-				continue;
-			}
-			FITSantId = antId + 1;
+
 			t -= refday;
 			mjd = t + (int)(D->mjdStart);
 			if(mjd < D->mjdStart || mjd > mjdStop)
@@ -310,7 +303,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				continue;
 			}
 
+			if(antId < 0)
+			{
+				continue;
+			}
+
 			sourceId = DifxInputGetSourceId(D, mjd) + 1;
+
+			FITSantId = antId + 1;
 
 			p_fitsbuf = fitsbuf;
 		

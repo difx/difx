@@ -127,6 +127,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			}
 
 			antId = DifxInputGetAntennaId(D, antName);
+			if(antId < 0)
+			{
+				continue;
+			}
 
 			/* convert the recorder channel number into FITS
 			 * useful values -- the IF index (bandId) and the
@@ -141,6 +145,9 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 					line);
 				continue;
 			}
+
+//			printf("\n %d:  %d -> %d, %d", antId, recChan,
+//				bandId, polId);
 			
 			if(strcmp(reason, "observing system idle") == 0)
 			{
@@ -162,10 +169,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			}
 
 			baselineId[0] = antId + 1;
-			if(baselineId[0] <= 0)
-			{
-				continue;
-			}
 
 			p_fitsbuf = fitsbuf;
 
