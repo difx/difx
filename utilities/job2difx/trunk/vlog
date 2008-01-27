@@ -204,8 +204,8 @@ def bbc2recChan(bbcName, t, bbcMap):
 			nBBC = len(b) - 2
 			for i in range(nBBC):
 				if b[i+2] == bbcName:
-					return '%d' % i
-	return '-1'
+					return ('%d' % i), nBBC
+	return '-1', 0
 	
 
 def makePH(sections, BBCs, antenna):
@@ -217,7 +217,7 @@ def makePH(sections, BBCs, antenna):
 	bbc = BBCs[antenna]
 	
 	PH = []
-	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState (RecChan, freq, mag, phase(degrees))[nPol][nBand][nTone] (RecChan, stateCount[nState])[nPol][nBand];  RecChan is recorder channel num (0-based)')
+	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState nRecChan (RecChan, freq, mag, phase(degrees))[nPol][nBand][nTone] (RecChan, stateCount[nState])[nPol][nBand];  RecChan is recorder channel num (0-based)')
 
 	action = 0	# 0 == nothing
 			# 1 = ToneTable
@@ -229,6 +229,7 @@ def makePH(sections, BBCs, antenna):
 	StateTable = {}	# [chan, sb, pol, nState; polnum, bandnum]
 	ToneData = []
 	StateData = []
+	nBBC = 0
 	lastKey = None
 
 	for row in PulseCalData:
@@ -264,8 +265,15 @@ def makePH(sections, BBCs, antenna):
 			if key == lastKey:
 				action = 3
 			if key == 'CC':
-				ToneData = [['X', '0', '0', '0']]*(nPol*nBand*nTone)
-				StateData = [['X', '0']]*(nPol*nBand*nState)
+				ToneData = []
+				for i in range(nPol*nBand*nTone):
+					initial = ['0']*4
+					initial[0] = -1
+					ToneData.append(initial)
+				StateData = []
+				for i in range(nPol*nBand):
+					zeros = ['0']*nState
+					StateData.append(['-1', zeros])
 				t = parsetime(s[0]+'-'+s[1])
 				ccal = s[3]
 				if ccal == '-Inf' or ccal == 'Inf':
@@ -277,27 +285,28 @@ def makePH(sections, BBCs, antenna):
 				band = T[5]
 				tone = T[6]
 				index = tone + nTone*(band + nBand*pol)
-				ToneData[index] = [bbc2recChan(T[0]+T[1], t, bbc), T[3], s[3], s[4]]
+				recChan, nBBC = bbc2recChan(T[0]+T[1], t, bbc)
+				ToneData[index] = [recChan, T[3], s[3], s[4]]
 			elif key in StateTable:
 				S = StateTable[key]
 				pol  = S[4]
 				band = S[5]
 				for state in range(S[3]):
-					index = state+nState*(band + nBand*pol)
-					if state == 0:
-						StateData[index] = [bbc2recChan(S[0]+S[1], t, bbc), s[3+state]]
-					else:
-						StateData[index] = ['X', s[3+state]]
+					index = band + nBand*pol
+					StateData[index][0], nBBC = \
+						bbc2recChan(S[0]+S[1], t, bbc)
+					StateData[index][1][state] = \
+						s[3+state]
 		if action == 3:
-			line = '%10.7f %9.7f %s %d %d %d %d' % \
-				(t, dt, ccal, nPol, nBand, nTone, nState)
+			line = '%10.7f %9.7f %s %d %d %d %d %d' % \
+				(t, dt, ccal, nPol, nBand, nTone, nState, nBBC)
 			for T in ToneData:
 				line += ('  %s %s %s %s' % (T[0], T[1], T[2], T[3]))
 			for S in StateData:
-				if S[0] == 'X':
-					line += (' %s' % S[1])
-				else:
-					line += ('  %s %s' % (S[0], S[1]))
+				if len(S[1]) > 0:
+					line += ('  %s' % S[0])
+					for s in S[1]:
+						line += (' %s' % s)
 			PH.append(line)
 			action = 2
 	return PH
@@ -310,7 +319,7 @@ def makeTS(sections, antenna):
 	TsysData = sections['Tsys'][antenna]
 
 	TS = []
-	TS.append("# ant D.O.Y. dur(days) nRecChan (tsys, band)[nPol][nBand]");
+	TS.append("# ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan]");
 
 	recvName = []
 	nRecChan = 0
