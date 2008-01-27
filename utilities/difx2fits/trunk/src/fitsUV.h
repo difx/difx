@@ -30,9 +30,9 @@ typedef struct
 	int baseline;
 	int configId;
 	int sourceId;
-	int freqId;			/* DiFX configId or AIPS freqId */
-	int IFnum;			/* which BB channel */
-	int polId;
+	int freqId;			/* DiFX configId or FITS freqId */
+	int bandId;			/* FITS IF index, 0-based */
+	int polId;			/* FITS polarization index, 0-based */
 	int nChan, nPol, nFreq;
 	int maxChan, maxPol;
 	int polStart;			/* start of polarization FITS axis */
@@ -42,6 +42,7 @@ typedef struct
 	struct UVrow *record;
 	float *weight;
 	float *data;
+	unsigned char ****FreqNum2bandId;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, const char *filebase, 

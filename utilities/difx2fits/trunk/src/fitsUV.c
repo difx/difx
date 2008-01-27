@@ -6,7 +6,126 @@
 #include "config.h"
 #include "fitsUV.h"
 
+/* assumes map is a heirarchical array, each array being null terminated. */
+static void deleteFreqNum2bandId(unsigned char ***map)
+{
+	int a1, a2;
 	
+	if(map)
+	{
+		for(a1 = 0; map[a1]; a1++)
+		{
+			for(a2 = 0; map[a1][a2]; a2++)
+			{
+				free(map[a1][a2]);
+			}
+			free(map[a1]);
+		}
+		free(map);
+	}
+}
+
+static void printFreqNum2bandId(unsigned char ***map, int nAnt, int nChan)
+{
+	int a1, a2, c;
+
+	printf("nAnt = %d  nChan = %d\n", nAnt, nChan);
+
+	for(a2 = 0; a2 < nAnt; a2++)
+	{
+		for(c = 0; c < nChan; c++)
+		{
+			for(a1 = 0; a1 < nAnt; a1++)
+			{
+				printf("%2d", map[a1][a2][c]);
+			}
+			printf("   ");
+		}
+		printf("\n");
+	}
+}
+
+static unsigned char ***makeFreqNum2bandId(const DifxInput *D, int configId)
+{
+	unsigned char ***map;
+	DifxConfig *dc;
+	DifxBaseline *db;
+	DifxDSEntry *ds;
+	int blId;
+	int a, b,  d, f;
+	int a1, a2;
+	int rcA, rcB, fqA, fqB, bandId, nFreq;
+
+	if(!D)
+	{
+		fprintf(stderr, "makeFreqNum2bandId: D = 0\n");
+		return 0;
+	}
+	if(!D->config || D->nConfig <= configId || configId < 0)
+	{
+		return 0;
+	}
+	dc = D->config + configId;
+
+	/* map[Antenna1][Antenna2][recChan] -- all indices 0-based */
+	/* allocate first two dimensions larger than needed for null pads */
+	map = (unsigned char ***)calloc(D->nAntenna+1, 
+		sizeof(unsigned char **));
+	for(a1 = 0; a1 < D->nAntenna; a1++)
+	{
+		map[a1] = (unsigned char **)calloc(D->nAntenna+1,
+			sizeof(unsigned char *));
+		for(a2 = 0; a2 < D->nAntenna; a2++)
+		{
+			map[a1][a2] = (unsigned char *)calloc(dc->nIF, 
+				sizeof(unsigned char));
+		}
+	}
+
+	/* Fill in cross corr terms */
+	for(b = 0; b < D->activeBaselines; b++)
+	{
+		blId = dc->indexBL[b];
+		db = D->baseline + blId;
+		a1 = D->dsentry[db->dsA].antId;
+		a2 = D->dsentry[db->dsB].antId;
+		nFreq = db->nFreq;
+		for(f = 0; f < nFreq; f++)
+		{
+			rcA = db->recChanA[f][0];
+			rcB = db->recChanB[f][0];
+			fqA = D->dsentry[db->dsA].RCfreqId[rcA];
+			fqB = D->dsentry[db->dsB].RCfreqId[rcB];
+			if(fqA != fqB)
+			{
+				fprintf(stderr, "Baseline %d-%d freq %d "
+					"correlates different freqs!\n",
+					a1, a2, f);
+			}
+			bandId = dc->freqId2IF[fqA];
+			map[a1][a2][f] = bandId;
+		}
+	}
+
+	/* Fill in auto corr terms */
+	for(d = 0; d < D->activeDatastreams; d++)
+	{
+		ds = D->dsentry + dc->indexDS[d];
+		a = ds->antId;
+		nFreq = ds->nFreq;
+		for(f = 0; f < nFreq; f++)
+		{
+			bandId = dc->freqId2IF[ds->freqId[f]];
+			map[a][a][f] = bandId;
+		}
+	}
+
+	printf("Config %d map:\n", configId);
+	printFreqNum2bandId(map, D->nAntenna, dc->nIF);
+
+	return map;
+}
+
 static int DifxVisInitData(DifxVis *dv)
 {
 	int n;
@@ -169,11 +288,27 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 		return 0;
 	}
 
+	/* Allocate baseline/recChan to bandId maps */
+	dv->FreqNum2bandId = (unsigned char ****)calloc(D->nConfig,
+		sizeof(unsigned char ***));
+	for(c = 0; c < D->nConfig; c++)
+	{
+		dv->FreqNum2bandId[c] = makeFreqNum2bandId(D, c);
+	}
+	
+	if(dv->FreqNum2bandId == 0)
+	{
+		fprintf(stderr, "Failed to make FreqNum2bandId\n");
+		return 0;
+	}
+
 	return dv;
 }
 
 void deleteDifxVis(DifxVis *dv)
 {
+	int c;
+	
 	if(!dv)
 	{
 		return;
@@ -196,11 +331,19 @@ void deleteDifxVis(DifxVis *dv)
 	{
 		free(dv->record);
 	}
+	if(dv->FreqNum2bandId)
+	{
+		for(c = 0; c < dv->D->nConfig; c++)
+		{
+			deleteFreqNum2bandId(dv->FreqNum2bandId[c]);
+		}
+		free(dv->FreqNum2bandId);
+	}
 	
 	free(dv);
 }
 
-static int getPolId(const DifxVis *dv, const char *polPair)
+static int getPolProdId(const DifxVis *dv, const char *polPair)
 {
 	int p;
 	char polSeq[8][4] = {"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
@@ -269,11 +412,13 @@ int DifxVisNewUVData(DifxVis *dv)
 	const int N_DIFX_ROWS = sizeof(difxKeys)/sizeof(difxKeys[0]);
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N;
+	int a1, a2;
 	int bl, c;
 	double mjd;
 	int changed = 0;
 	int nFloat;
 	char line[100];
+	int freqNum;
 
 	resetDifxParameters(dv->dp);
 
@@ -308,8 +453,8 @@ int DifxVisNewUVData(DifxVis *dv)
 	mjd          = atoi(DifxParametersvalue(dv->dp, rows[1])) +
 	               atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
 	c            = atoi(DifxParametersvalue(dv->dp, rows[3]));
-	dv->IFnum    = atoi(DifxParametersvalue(dv->dp, rows[5]));
-	dv->polId    = getPolId(dv, DifxParametersvalue(dv->dp, rows[6]));
+	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
+
 
 	dv->sourceId = DifxInputGetSourceId(dv->D, mjd);
 	if(dv->sourceId < 0)
@@ -318,6 +463,12 @@ int DifxVisNewUVData(DifxVis *dv)
 	}
 
 	dv->freqId = dv->D->source[dv->sourceId].configId;
+
+	/* FIXME -- is the below baseline to antenna map completely general? */
+	a1  = bl/256 - 1;
+	a2  = bl%256 - 1;
+	dv->bandId   = dv->FreqNum2bandId[dv->freqId][a1][a2][freqNum];
+	dv->polId    = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
 	
 	/* if weights are written the data volume is 3/2 as large */
 	nFloat       = atoi(DifxParametersvalue(dv->dp, rows[7])) > 0 ? 3 : 2;
@@ -343,12 +494,12 @@ int DifxVisNewUVData(DifxVis *dv)
 		dv->tInt = dv->D->config[c].tInt;
 	}
 
-	if(dv->IFnum <  0 || dv->IFnum >= dv->nFreq ||
+	if(dv->bandId <  0 || dv->bandId >= dv->nFreq ||
 	   dv->polId <  0 || dv->polId >= dv->maxPol ||
 	   dv->nChan <= 0 || dv->nChan >  dv->maxChan)
 	{
 		fprintf(stderr, "Parameter problem: %d %d  %d %d  %d %d\n",
-			dv->IFnum, dv->nFreq,
+			dv->bandId, dv->nFreq,
 			dv->polId, dv->maxPol,
 			dv->nChan, dv->maxChan);
 		return -6;
@@ -636,19 +787,19 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			/* blank array */
 			memset(dv->data, 0, dv->nData*sizeof(float));
 		}
-		LSB = dv->D->config[dv->configId].IF[dv->IFnum].sideband == 'L';
+		LSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
 		for(i = 0; i < dv->nChan*dv->D->specAvg; i++)
 		{
 			if(LSB)
 			{
 				int j;
 				j = dv->nChan*dv->D->specAvg - 1 - i;
-				index = ((dv->IFnum*dv->nChan + j/specAvg)*
+				index = ((dv->bandId*dv->nChan + j/specAvg)*
 					dv->maxPol+dv->polId)*dv->nComplex;
 			}
 			else
 			{
-				index = ((dv->IFnum*dv->nChan + i/specAvg)*
+				index = ((dv->bandId*dv->nChan + i/specAvg)*
 					dv->maxPol+dv->polId)*dv->nComplex;
 			}
 			for(k = 0; k < dv->nComplex; k++)
