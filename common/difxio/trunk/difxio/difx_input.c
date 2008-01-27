@@ -23,6 +23,127 @@
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
 
+
+
+/* assumes map is a heirarchical array, each array being null terminated. */
+static void deleteBaselineFreq2IF(int ***map)
+{
+	int a1, a2;
+	
+	if(map)
+	{
+		for(a1 = 0; map[a1]; a1++)
+		{
+			for(a2 = 0; map[a1][a2]; a2++)
+			{
+				free(map[a1][a2]);
+			}
+			free(map[a1]);
+		}
+		free(map);
+	}
+}
+
+static void printBaselineFreq2IF(int ***map, int nAnt, int nChan)
+{
+	int a1, a2, c;
+
+	printf("      nAnt = %d  nChan = %d\n", nAnt, nChan);
+
+	for(a2 = 0; a2 < nAnt; a2++)
+	{
+		printf("      ");
+		for(c = 0; c < nChan; c++)
+		{
+			for(a1 = 0; a1 < nAnt; a1++)
+			{
+				printf("%2d", map[a1][a2][c]);
+			}
+			printf("   ");
+		}
+		printf("\n");
+	}
+}
+
+static int makeBaselineFreq2IF(DifxInput *D, int configId)
+{
+	int ***map;
+	DifxConfig *dc;
+	DifxBaseline *db;
+	DifxDSEntry *ds;
+	int blId;
+	int a, b,  d, f;
+	int a1, a2;
+	int rcA, rcB, fqA, fqB, bandId, nFreq;
+
+	if(!D)
+	{
+		fprintf(stderr, "makeBaselineFreq2IF: D = 0\n");
+		return -1;
+	}
+	if(!D->config || D->nConfig <= configId || configId < 0)
+	{
+		fprintf(stderr, "makeBaselineFreq2IF: "
+			"configId problem.\n");
+		return -1;
+	}
+	dc = D->config + configId;
+
+	/* map[Antenna1][Antenna2][recChan] -- all indices 0-based */
+	/* allocate first two dimensions larger than needed for null pads */
+	map = (int ***)calloc(D->nAntenna+1, sizeof(int **));
+	for(a1 = 0; a1 < D->nAntenna; a1++)
+	{
+		map[a1] = (int **)calloc(D->nAntenna+1, sizeof(int *));
+		for(a2 = 0; a2 < D->nAntenna; a2++)
+		{
+			map[a1][a2] = (int *)calloc(dc->nIF, sizeof(int));
+		}
+	}
+	dc->baselineFreq2IF = map;
+
+	/* Fill in cross corr terms */
+	for(b = 0; b < D->activeBaselines; b++)
+	{
+		blId = dc->indexBL[b];
+		db = D->baseline + blId;
+		a1 = D->dsentry[db->dsA].antId;
+		a2 = D->dsentry[db->dsB].antId;
+		nFreq = db->nFreq;
+		for(f = 0; f < nFreq; f++)
+		{
+			rcA = db->recChanA[f][0];
+			rcB = db->recChanB[f][0];
+			fqA = D->dsentry[db->dsA].RCfreqId[rcA];
+			fqB = D->dsentry[db->dsB].RCfreqId[rcB];
+			if(fqA != fqB)
+			{
+				fprintf(stderr, "Baseline %d-%d freq %d "
+					"correlates different freqs!\n",
+					a1, a2, f);
+			}
+			bandId = dc->freqId2IF[fqA];
+			map[a1][a2][f] = bandId;
+		}
+	}
+
+	/* Fill in auto corr terms */
+	for(d = 0; d < D->activeDatastreams; d++)
+	{
+		ds = D->dsentry + dc->indexDS[d];
+		a = ds->antId;
+		nFreq = ds->nFreq;
+		for(f = 0; f < nFreq; f++)
+		{
+			bandId = dc->freqId2IF[ds->freqId[f]];
+			map[a][a][f] = bandId;
+		}
+	}
+
+	return 0;
+}
+
+
 DifxIF *newDifxIFArray(int nIF)
 {
 	DifxIF *di;
@@ -95,6 +216,10 @@ void deleteDifxConfigArray(DifxConfig *dc)
 		{
 			free(dc->freqId2IF);
 		}
+		if(dc->baselineFreq2IF)
+		{
+			deleteBaselineFreq2IF(dc->baselineFreq2IF);
+		}
 		free(dc);
 	}
 }
@@ -102,6 +227,8 @@ void deleteDifxConfigArray(DifxConfig *dc)
 void printDifxConfig(const DifxConfig *dc)
 {
 	int i;
+	int nAnt;
+
 	printf("  Difx Config [%s] : %p\n", dc->name, dc);
 	printf("    tInt  = %f sec\n", dc->tInt);
 	printf("    nChan = %d\n", dc->nChan);
@@ -138,6 +265,12 @@ void printDifxConfig(const DifxConfig *dc)
 	{
 		printDifxIF(dc->IF+i);
 	}
+
+	/* count number of antennas in the array first */
+	for(nAnt = 0; dc->baselineFreq2IF[nAnt]; nAnt++);
+	
+	printf("    baselineFreq2IF map:\n");
+	printBaselineFreq2IF(dc->baselineFreq2IF, nAnt, dc->nIF);
 }
 
 
@@ -833,72 +966,31 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	return 0;
 }
 
-static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
+static DifxInput *parseDifxInputCommonTable(DifxInput *D, 
+	const DifxParameters *ip)
 {
-	const char initKeys[][MAX_DIFX_KEY_LEN] =
+	const char commonKeys[][MAX_DIFX_KEY_LEN] =
 	{
 		"EXECUTE TIME (SEC)",
 		"START MJD",
 		"START SECONDS",
 		"ACTIVE DATASTREAMS",
-		"ACTIVE BASELINES",
-		"NUM CONFIGURATIONS",
-		"FREQ ENTRIES",
-		"TELESCOPE ENTRIES"
+		"ACTIVE BASELINES"
 	};
-	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
+	const int N_COMMON_ROWS = sizeof(commonKeys)/sizeof(commonKeys[0]);
+	int N;
+	int rows[N_COMMON_ROWS];
 	
-	const char configKeys[][MAX_DIFX_KEY_LEN] =
+	if(!D || !ip)
 	{
-		"CONFIG SOURCE",
-		"INT TIME (SEC)",
-		"NUM CHANNELS",
-		"POST-F FRINGE ROT",
-		"QUAD DELAY INTERP",
-		"PULSAR BINNING"
-	};
-	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
-	
-	const char freqKeys[][MAX_DIFX_KEY_LEN] =
-	{
-		"FREQ (MHZ) %d",
-		"BW (MHZ) %d",
-		"SIDEBAND %d"
-	};
-	const int N_FREQ_ROWS = sizeof(freqKeys)/sizeof(freqKeys[0]);
-	
-	const char antKeys[][MAX_DIFX_KEY_LEN] =
-	{
-		"TELESCOPE NAME %d",
-		"CLOCK DELAY (us) %d",
-		"CLOCK RATE(us/s) %d"
-	};
-	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
-
-	const char vsnKeys[][MAX_DIFX_KEY_LEN] = 
-	{
-		"FILE %d/0"
-	};
-	const int N_VSN_ROWS = sizeof(vsnKeys)/sizeof(vsnKeys[0]);
-	
-	int rows[20];	/* must be long enough for biggest of above */
-	int e, a, f, p, i, l, b, c, r=0, N;
-	int qb = 0;
-	int nRecChan;
-	DifxDSEntry *ds;
-	
-	if(!D)
-	{
-		fprintf(stderr, "populateInput: D = 0\n");
 		return 0;
 	}
 
-	/* COMMON SETTINGS */
-	N = DifxParametersbatchfind(ip, 0, initKeys, N_INIT_ROWS, rows);
-	if(N < N_INIT_ROWS)
+	N = DifxParametersbatchfind(ip, 0, commonKeys, N_COMMON_ROWS, rows);
+	if(N < N_COMMON_ROWS)
 	{
-		fprintf(stderr, "populateInput: N < N_INIT_ROWS %d < %d\n",
-			N, N_INIT_ROWS);
+		fprintf(stderr, "populateInput: N < N_COMMON_ROWS %d < %d\n",
+			N, N_COMMON_ROWS);
 		return 0;
 	}
 
@@ -911,15 +1003,38 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	D->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[4]));
 
-	D->nConfig  = atoi(DifxParametersvalue(ip, rows[5]));
-	D->nFreq    = atoi(DifxParametersvalue(ip, rows[6]));
-	D->nAntenna = atoi(DifxParametersvalue(ip, rows[7]));
+	return D;
+}	
 
+static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
+	const DifxParameters *ip)
+{
+	const char configKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"CONFIG SOURCE",
+		"INT TIME (SEC)",
+		"NUM CHANNELS",
+		"POST-F FRINGE ROT",
+		"QUAD DELAY INTERP",
+		"PULSAR BINNING"
+	};
+	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
+	int a, b, c, r, N;
+	int rows[N_CONFIG_ROWS];
+
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
+	r = DifxParametersfind(ip, 0, "NUM CONFIGURATIONS");
+	if(r < 0)
+	{
+		fprintf(stderr, "NUM CONFIGURATIONS not found\n");
+		return 0;
+	}
+	D->nConfig  = atoi(DifxParametersvalue(ip, r));
 	D->config   = newDifxConfigArray(D->nConfig);
-	D->freq     = newDifxFreqArray(D->nFreq);
-	D->antenna  = newDifxAntennaArray(D->nAntenna);
-
-	/* CONFIGURATIONS */
 	rows[N_CONFIG_ROWS-1] = 0;	/* initialize start */
 	for(c = 0; c < D->nConfig; c++)
 	{
@@ -927,7 +1042,8 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			configKeys, N_CONFIG_ROWS, rows);
 		if(N < N_CONFIG_ROWS)
 		{
-			fprintf(stderr, "populateInput: N < N_CONFIG_ROWS %d "
+			fprintf(stderr, "parseDifxInputConfigurations: "
+				"N < N_CONFIG_ROWS %d "
 				"< %d\n", N, N_CONFIG_ROWS);
 			return 0;
 		}
@@ -997,9 +1113,35 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 	}
 
-	D->nOutChan = D->config[0].nChan;
+	return D;
+}
+
+static DifxInput *parseDifxInputFreqTable(DifxInput *D, 
+	const DifxParameters *ip)
+{
+	const char freqKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"FREQ (MHZ) %d",
+		"BW (MHZ) %d",
+		"SIDEBAND %d"
+	};
+	const int N_FREQ_ROWS = sizeof(freqKeys)/sizeof(freqKeys[0]);
+	int b, r, N;
+	int rows[N_FREQ_ROWS];
 	
-	/* FREQ TABLE */
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
+	r = DifxParametersfind(ip, 0, "FREQ ENTRIES");
+	if(r < 0)
+	{
+		fprintf(stderr, "FREQ ENTRIES not found\n");
+		return 0;
+	}
+	D->nFreq    = atoi(DifxParametersvalue(ip, r));
+	D->freq     = newDifxFreqArray(D->nFreq);
 	rows[N_FREQ_ROWS-1] = 0;	/* initialize start */
 	for(b = 0; b < D->nFreq; b++)
 	{
@@ -1014,14 +1156,38 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		D->freq[b].freq     = atof(DifxParametersvalue(ip, rows[0]));
 		D->freq[b].bw       = atof(DifxParametersvalue(ip, rows[1]));
 		D->freq[b].sideband = DifxParametersvalue(ip, rows[2])[0];
+	}
+	
+	return D;
+}
 
-		if(D->freq[b].freq < D->refFreq || D->refFreq <= 0.0)
-		{
-			D->refFreq = D->freq[b].freq;
-		}
+static DifxInput *parseDifxInputTelescopeTable(DifxInput *D, 
+	const DifxParameters *ip)
+{
+	const char antKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"TELESCOPE NAME %d",
+		"CLOCK DELAY (us) %d",
+		"CLOCK RATE(us/s) %d"
+	};
+	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
+	int a, r, N;
+	int rows[N_ANT_ROWS];
+
+	if(!D || !ip)
+	{
+		return 0;
 	}
 
-	/* TELESCOPE TABLE */
+	r = DifxParametersfind(ip, 0, "TELESCOPE ENTRIES");
+	if(r < 0)
+	{
+		fprintf(stderr, "TELESCOPE ENTRIES not found\n");
+		return 0;
+	}
+	D->nAntenna = atoi(DifxParametersvalue(ip, r));
+	D->antenna  = newDifxAntennaArray(D->nAntenna);
+
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
 	for(a = 0; a < D->nAntenna; a++)
 	{
@@ -1038,23 +1204,21 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		D->antenna[a].rate  = atof(DifxParametersvalue(ip, rows[2]));
 	}
 
-	/* DATA TABLE */
-	rows[N_VSN_ROWS-1] = 0;		/* initialize start */
-	for(a = 0; a < D->nAntenna; a++)
+	return D;
+}
+
+/* FIXME -- some of this should move to deriving function */
+static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
+	const DifxParameters *ip)
+{
+	int a, e, i, l, r;
+	int nRecChan;
+
+	if(!D || !ip)
 	{
-		N = DifxParametersbatchfind1(ip, rows[N_VSN_ROWS-1], vsnKeys,
-			a, N_VSN_ROWS, rows);
-		if(N < N_VSN_ROWS)
-		{
-			fprintf(stderr, "populateInput: N < N_VSN_ROWS %d "
-				"< %d\n", N, N_VSN_ROWS);
-			return 0;
-		}
-		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
-		D->antenna[a].vsn[8] = 0;
+		return 0;
 	}
 
-	/* DATASTREAM TABLE */
 	r = DifxParametersfind(ip, 0, "DATASTREAM ENTRIES");
 	D->nDSEntry = atoi(DifxParametersvalue(ip, r));
 	D->dsentry = newDifxDSEntryArray(D->nDSEntry);
@@ -1160,7 +1324,19 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 	}
 
-	/* BASELINE TABLE */
+	return D;
+}
+
+static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
+	const DifxParameters *ip)
+{
+	int b, f, p, r;
+	
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
 	r = DifxParametersfind(ip, 0, "BASELINE ENTRIES");
 	D->nBaseline = atoi(DifxParametersvalue(ip, r));
 	D->baseline = newDifxBaselineArray(D->nBaseline);
@@ -1237,16 +1413,77 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 	}
 
+	return D;
+}
 
-	/* Derive some useful tables and values */
+static DifxInput *parseDifxInputDataTable(DifxInput *D, 
+	const DifxParameters *ip)
+{
+	const char dataKeys[][MAX_DIFX_KEY_LEN] = 
+	{
+		"FILE %d/0"
+	};
+	const int N_DATA_ROWS = sizeof(dataKeys)/sizeof(dataKeys[0]);
+	int a, N;
+	int rows[N_DATA_ROWS];
+
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
+	rows[N_DATA_ROWS-1] = 0;		/* initialize start */
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		N = DifxParametersbatchfind1(ip, rows[N_DATA_ROWS-1], dataKeys,
+			a, N_DATA_ROWS, rows);
+		if(N < N_DATA_ROWS)
+		{
+			fprintf(stderr, "populateInput: N < N_DATA_ROWS %d "
+				"< %d\n", N, N_DATA_ROWS);
+			return 0;
+		}
+		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
+		D->antenna[a].vsn[8] = 0;
+	}
+
+	return D;
+}
+
+static DifxInput *deriveDifxInputValues(DifxInput *D)
+{
+	int a, b, c, e, qb, nOutChan = 0;
+	DifxDSEntry *ds;
+	
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(D->nConfig < 1)
+	{
+		fprintf(stderr, "deriveDifxInputValues : nConfig < 1\n");
+		return 0;
+	}
+
+	/* Set reference frequency to the lowest of the freqs */
+	D->refFreq = 0.0;
+	for(b = 0; b < D->nFreq; b++)
+	{
+		if(D->freq[b].freq < D->refFreq || D->refFreq <= 0.0)
+		{
+			D->refFreq = D->freq[b].freq;
+		}
+	}
+
 	for(c = 0; c < D->nConfig; c++)
 	{
 		/* determine number of bits, or zero if different among
 		 * antennas */
 		D->config[c].quantBits = -1;
+		qb = 0;
 		for(a = 0; a < D->activeDatastreams; a++)
 		{
-			qb = 0;
 			e = D->config[c].indexDS[a];
 			if(e < 0)
 			{
@@ -1265,8 +1502,67 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 		}
 		D->config[c].quantBits = qb;
 
-		makeFreqId2IFmap(D, c);
+		if(nOutChan == 0)
+		{
+			nOutChan = D->config[c].nChan;
+		}
+		else if(nOutChan != D->config[c].nChan)
+		{
+			nOutChan = -1;
+		}
 	}
+
+	for(c = 0; c < D->nConfig; c++)
+	{
+		makeFreqId2IFmap(D, c);
+		makeBaselineFreq2IF(D, c);
+	}
+
+	if(nOutChan == -1)
+	{
+		fprintf(stderr, "deriveDifxInputValues: nOutChan changes "
+			"between configs\n");
+		return 0;
+	}
+	else
+	{
+		D->nOutChan = nOutChan;
+	}
+
+	return D;
+}
+
+static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
+{
+	if(!D || !ip)
+	{
+		fprintf(stderr, "populateInput: D = 0 or ip = 0\n");
+		return 0;
+	}
+
+	/* COMMON SETTINGS */
+	D = parseDifxInputCommonTable(D, ip);
+	
+	/* CONFIGURATIONS */
+	D = parseDifxInputConfigurationTable(D, ip);
+	
+	/* FREQ TABLE */
+	D = parseDifxInputFreqTable(D, ip);
+
+	/* TELESCOPE TABLE */
+	D = parseDifxInputTelescopeTable(D, ip);
+	
+	/* DATASTREAM TABLE */
+	D = parseDifxInputDataStreamTable(D, ip);
+
+	/* BASELINE TABLE */
+	D = parseDifxInputBaselineTable(D, ip);
+
+	/* DATA TABLE */
+	D = parseDifxInputDataTable(D, ip);
+
+	/* Derived tables and values */
+	D = deriveDifxInputValues(D);
 
 	return D;
 }
@@ -1892,7 +2188,6 @@ static void setGlobalValues(DifxInput *D)
 			}
 			else if(D->chanBW != bw)
 			{
-				D->quantBits = D->nIF = D->nPolar = 0;
 				D->chanBW = 0.0;
 				return; 
 			}

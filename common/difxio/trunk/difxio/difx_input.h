@@ -61,6 +61,7 @@ typedef struct
 				/* -1 terminated */
 	int *indexBL;		/* baseline table indicies for this config */
 	int *freqId2IF;		/* map from freq table index to IF */
+	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF */
 	
 } DifxConfig;
 
