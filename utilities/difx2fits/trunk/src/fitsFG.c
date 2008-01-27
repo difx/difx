@@ -7,14 +7,14 @@
 #include "difx2fits.h"
 #include "other.h"
 
-static int parseFlag(char *line, int refday, char *antname, float timerange[2], 
-	char *reason, int *polId, int *bandId)
+static int parseFlag(char *line, int refday, char *antName, float timerange[2], 
+	char *reason, int *recChan)
 {
 	int l;
 	int n;
 
-	n = sscanf(line, "%s%f%f%d%d%n", antname, timerange+0, timerange+1,
-		polId, bandId, &l);
+	n = sscanf(line, "%s%f%f%d%n", antName, timerange+0, timerange+1,
+		recChan, &l);
 
 	if(n < 5)
 	{
@@ -24,7 +24,7 @@ static int parseFlag(char *line, int refday, char *antname, float timerange[2],
 	timerange[0] -= refday;
 	timerange[1] -= refday;
 	
-	copyQuotedString(reason, line+n, 40);
+	copyQuotedString(reason, line+l, 40);
 	
 	return 1;
 }
@@ -54,12 +54,15 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 	char *fitsbuf, *p_fitsbuf;
 	double start, stop;
 	char line[1000];
-	char reason[64], antname[10];
+	char reason[64], antName[10];
 	int refday;
-	int i, no_band;
+	int i, v, no_band;
 	float timerange[2];
 	int chans[2];
 	int polId, bandId, baselineId[2], sourceId, freqId, arrayId;
+	int recChan;
+	int configId = 0;	/* currently only support 1 config */
+	int antId;
 	int severity;
 	int polMask[4], bandMask[32];
 	FILE *in;
@@ -115,11 +118,27 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 		{
 			continue;
 		}
-		else if(parseFlag(line, refday, antname, timerange, 
-			reason, &polId, &bandId))
+		else if(parseFlag(line, refday, antName, timerange, 
+			reason, &recChan))
 		{
 			if(strncmp(reason, "recorder", 8) == 0)
 			{
+				continue;
+			}
+
+			antId = DifxInputGetAntennaId(D, antName);
+
+			/* convert the recorder channel number into FITS
+			 * useful values -- the IF index (bandId) and the
+			 * polarization index (polId).  Both are zero-based
+			 * numbers, with -1 implying "all values"
+			 */
+			v = DifxConfigRecChan2IFPol(D, configId,
+				antId, recChan, &bandId, &polId);
+			if(v < 0)
+			{
+				fprintf(stderr, "Flag row ignored: %s \n",
+					line);
 				continue;
 			}
 			
@@ -142,7 +161,7 @@ const DifxInput *DifxInput2FitsFG(const DifxInput *D,
 				timerange[1] = stop;
 			}
 
-			baselineId[0] = DifxInputGetAntennaId(D, antname) + 1;
+			baselineId[0] = antId + 1;
 			if(baselineId[0] <= 0)
 			{
 				continue;
