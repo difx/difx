@@ -114,7 +114,7 @@ def summarize(input, i, n, dotree):
 	for d in data:
 		if d[:19] == 'EXECUTE TIME (SEC):':
 			nsec = int(d[20:])
-			sum = sum + (' %6ds' % int(d[20:]))
+			sum = sum + (' %4.1fmin' % (float(nsec)/60.))
 		if d[:14] == 'TELESCOPE NAME':
 			ants = ants + strip(d[20:]) + ','
 		if d[:13] == 'FREQ ENTRIES:':
@@ -142,7 +142,7 @@ def summarize(input, i, n, dotree):
 			
 	band = genband(fq)
 	
-	sum = '%s %s%6ds %8s  %s' % (stat, band, nsec, trippel, ants[:-1])
+	sum = '%s %s%6.1fm %8s  %s' % (stat, band, nsec/60., trippel, ants[:-1])
 	if dotree:
 		tree = '%c- ' % c
 	else:
