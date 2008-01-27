@@ -601,10 +601,11 @@ void printDifxInput(const DifxInput *D)
 		printDifxDSEntry(D->dsentry + i);
 	}
 
+	printf("  nBaselineEntries = %d\n", D->nBaseline);
+	for(i = 0; i < D->nBaseline; i++)
 	if(D->nBaseline > 1)
 	{
-		printDifxBaseline(D->baseline + 0);
-		printDifxBaseline(D->baseline + 1);
+		printDifxBaseline(D->baseline + i);
 	}
 	
 	printf("\n");
@@ -1172,7 +1173,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 			fprintf(stderr, "D/STREAM A INDEX %d not found\n", b);
 			return 0;
 		}
-		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
+		D->baseline[b].dsA = atoi(DifxParametersvalue(ip, r));
 		r = DifxParametersfind1(ip, r+1, "D/STREAM B INDEX %d", b);
 		if(r < 0)
 		{
@@ -2151,4 +2152,58 @@ int DifxInputGetAntennaId(const DifxInput *D, const char *antName)
 	}
 
 	return -1;
+}
+
+int DifxConfigGetPolId(const DifxConfig *dc, char polName)
+{
+	if(dc->pol[0] == polName)
+	{
+		return 0;
+	}
+	if(dc->pol[1] == polName)
+	{
+		return 1;
+	}
+	return -1;
+}
+
+int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
+	int antId, int recChan, int *bandId, int *polId)
+{
+	DifxConfig *dc;
+	DifxDSEntry *ds;
+	int dsId;
+	
+	
+	if(recChan < 0 || antId < 0)
+	{
+		*bandId = -1;
+		*polId = -1;
+		return 0;
+	}
+	
+	if(!D)
+	{
+		return -1;
+	}
+	if(configId < 0 || configId >= D->nConfig)
+	{
+		return -1;
+	}
+
+	dc = D->config + configId;
+	dsId = dc->indexDS[antId];
+	ds = D->dsentry + dsId;
+
+	if(recChan >= ds->nRecChan)
+	{
+		fprintf(stderr, "DifxConfigRecChan2IFPol : recChan=%d out"
+			" of range\n", recChan);
+		return -1;
+	}
+	
+	*bandId = ds->RCfreqId[recChan];
+	*polId = DifxConfigGetPolId(dc, ds->RCpolName[recChan]);
+
+	return 0;
 }

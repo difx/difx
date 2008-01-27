@@ -199,5 +199,8 @@ void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *fileprefix);
 int DifxInputGetSourceId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
+int DifxConfigGetPolId(const DifxConfig *dc, char polName);
+int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
+	int antId, int recChan, int *bandId, int *polId);
 
 #endif
