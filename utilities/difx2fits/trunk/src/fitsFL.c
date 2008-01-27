@@ -29,7 +29,7 @@ static int parseFlag(char *line, int refday, char *antName, float timerange[2],
 	return 1;
 }
 
-const DifxInput *DifxInput2FitsFG(const DifxInput *D,
+const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	char bandFormInt[4];

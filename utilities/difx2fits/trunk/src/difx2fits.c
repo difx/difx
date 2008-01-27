@@ -154,9 +154,9 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  FG -- flag                ");
+	printf("  FL -- flag                ");
 	fflush(stdout);
-	D = DifxInput2FitsFG(D, &keys, out);
+	D = DifxInput2FitsFL(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

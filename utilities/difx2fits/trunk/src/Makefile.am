@@ -6,7 +6,7 @@ difx2fits_SOURCES = \
 	fitsAG.c \
 	fitsAN.c \
 	fitsCT.c \
-	fitsFG.c \
+	fitsFL.c \
 	fitsFR.c \
 	fitsGN.c \
 	fitsMC.c \
