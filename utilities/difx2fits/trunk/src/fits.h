@@ -6,6 +6,10 @@
 #include <stdio.h>
 #include "other.h"
 
+#define FITS_WRITE_ITEM(item, buffer)  { bcopy((char *)(&(item)), buffer, sizeof(item)); buffer += sizeof(item); }
+
+#define FITS_WRITE_ARRAY(array, buffer, n)  { bcopy((char *)((array)), buffer, n*sizeof((array)[0])); buffer += n*sizeof((array)[0]); }
+
 /* Structs for describing FITS data types: */
 
 struct fitsBinTableColumn
