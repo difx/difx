@@ -74,7 +74,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
+	fitsbuf = (char *)calloc(nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}

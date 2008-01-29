@@ -42,17 +42,21 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 	int nColumn;
  	int nRowBytes;
-	char *pBuf, *fitsbuf;
+	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int i, j, s, p, ant;
-	int32_t stnId;
+	int i, b, j, s, p, ant;
+	int32_t antId;
 	int32_t arrayId;
 	int32_t sourceId;
 	int32_t freqId;
+	float LOOffset[array_MAX_BANDS];
+	float LORate[array_MAX_BANDS];
+	float dispDelay;
+	float dispDelayRate;
 	double time;      
-	double delay, drate;
-	double atmos, arate;
-	double clock, crate;
+	double delay, delayRate;
+	double atmosDelay, atmosRate;
+	double clock, clockRate;
 
 	if(D == 0)
 	{
@@ -65,16 +69,17 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	nPol = D->nPol;
 	if(nPol == 2)
 	{
-		nColumn = NELEMENTS (columns);
+		nColumn = NELEMENTS(columns);
 	}
 	else	/* don't populate last 6 columns if not full polar */
 	{
-		nColumn = NELEMENTS (columns) - 6;
+		nColumn = NELEMENTS(columns) - 6;
 	}
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS order */
-	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == (char *)NULL)
+	fitsbuf = (char *)calloc(nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}
@@ -91,6 +96,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 1, "");
 	
 	fitsWriteEnd(out);
+              
+	for(b = 0; b < nBand; b++)
+	{
+		LOOffset[b] = 0.0;
+		LORate[b] = 0.0;
+	}
+	dispDelay = 0.0;
+	dispDelayRate = 0.0;
 
 	arrayId = 1;
 	for(s = 0; s < D->nScan; s++)
@@ -104,97 +117,41 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		
 	      for(ant = 0; ant < D->nAntenna; ant++)
 	      {
-		stnId = ant + 1;
-	        pBuf = fitsbuf;
+		antId = ant + 1;
+	        p_fitsbuf = fitsbuf;
 
 		/* in general, convert from (us) to (sec) */
-		atmos = D->scan[s].model[ant][p].a  * 1.0e-6;
-		arate = D->scan[s].model[ant][p].da * 1.0e-6;
-		/* here correct the sign of delay, and remove atmos portion of it. */
-		delay = -D->scan[s].model[ant][p].t  * 1.0e-6 - atmos;
-		drate = -D->scan[s].model[ant][p].dt * 1.0e-6 - arate;
+		atmosDelay = D->scan[s].model[ant][p].a  * 1.0e-6;
+		atmosRate = D->scan[s].model[ant][p].da * 1.0e-6;
+		/* here correct the sign of delay, and remove atmospheric
+		 * portion of it. */
+		delay = -D->scan[s].model[ant][p].t  * 1.0e-6 - atmosDelay;
+		delayRate = -D->scan[s].model[ant][p].dt * 1.0e-6 - atmosRate;
 		
-		crate = D->antenna[ant].rate  * 1.0e-6;
-		clock = D->antenna[ant].delay * 1.0e-6 + crate*D->modelInc*p;
+		clockRate = D->antenna[ant].rate  * 1.0e-6;
+		clock = D->antenna[ant].delay * 1.0e-6 + 
+			clockRate*D->modelInc*p;
           
-	  	/* TIME */
-		bcopy((char *)&time, pBuf, sizeof(time));
-		pBuf += sizeof(time);
-		
-		/* SOURCE ID */
-		bcopy((char *)&sourceId, pBuf, sizeof(sourceId));
-		pBuf += sizeof(sourceId);
-		
-		/* STATION ID */
-		bcopy((char *)&stnId, pBuf, sizeof(stnId));
-		pBuf += sizeof(stnId);
-		
-		/* ARRAY ID */
-		bcopy((char *)&arrayId, pBuf, sizeof(arrayId));
-		pBuf += sizeof(arrayId);
-		
-		/* FREQ ID */
-		bcopy((char *)&freqId, pBuf, sizeof(freqId));
-		pBuf += sizeof(freqId);
-		
-		/* ATMOSPHERE DELAY */
-		bcopy((char *)&atmos, pBuf, sizeof(atmos));
-		pBuf += sizeof(atmos);
-		
-		/* ATMOSPHERE RATE */
-		bcopy((char *)&arate, pBuf, sizeof(arate));
-		pBuf += sizeof(arate);
-		
-		/* TOTAL DELAY */
-		bcopy((char *)&delay, pBuf, sizeof(delay));
-		pBuf += sizeof(delay);
-		
-		/* TOTAL RATE */
-		bcopy((char *)&drate, pBuf, sizeof(drate));
-		pBuf += sizeof(drate);
+		FITS_WRITE_ITEM (time, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
+		FITS_WRITE_ITEM (antId, p_fitsbuf);
+		FITS_WRITE_ITEM (arrayId, p_fitsbuf);
+		FITS_WRITE_ITEM (freqId, p_fitsbuf);
+		FITS_WRITE_ITEM (atmosDelay, p_fitsbuf);
+		FITS_WRITE_ITEM (atmosRate, p_fitsbuf);
+		FITS_WRITE_ITEM (delay, p_fitsbuf);
+		FITS_WRITE_ITEM (delayRate, p_fitsbuf);
 	  
-		for (j = 0; j < nPol; j++)
+		for(j = 0; j < nPol; j++)
                 {
-			/* CLOCK OFFSET */
-			bcopy((char *)&clock, pBuf, sizeof(clock));
-			pBuf += sizeof(clock);
-              		
-			/* CLOCK OFFSET RATE */
-			bcopy((char *)&crate, pBuf, sizeof(crate));
-			pBuf += sizeof(crate);
-              
-			/* LO OFFSET */
-			for (i = 0; i < nBand; i++)
-			{
-				float zero = 0.0;
-				bcopy((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-              		}
-			
-			/* LO OFFSET RATE */
-			for (i = 0; i < nBand; i++)
-			{
-				float zero = 0.0;
-				bcopy((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-              		}
-			
-			/* DISP  -- set to zero like VLBA correlator */
-			{
-				float zero = 0.0;
-				bcopy((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-			}
-
-			/* DDISP  -- set to zero like VLBA correlator */
-			{
-				float zero = 0.0;
-				bcopy((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-			}
+			FITS_WRITE_ITEM (clock, p_fitsbuf);
+			FITS_WRITE_ITEM (clockRate, p_fitsbuf);
+			FITS_WRITE_ARRAY(LOOffset, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(LORate, p_fitsbuf, nBand);
+			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
+			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
 		} /* Polar loop */
       
-		/* write buffer to output file */
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
