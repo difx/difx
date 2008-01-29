@@ -276,6 +276,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	int nFloat;
 	char line[100];
 	int freqNum;
+	int configId;
 
 	resetDifxParameters(dv->dp);
 

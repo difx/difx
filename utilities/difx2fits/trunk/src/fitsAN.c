@@ -54,10 +54,11 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	nBand = D->nIF;
 	sprintf(bandFormFloat, "%1dE", nBand);
 
-	nRowBytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == 0)
+	fitsbuf = (char *)calloc (nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}
@@ -116,8 +117,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 			FITS_WRITE_ARRAY(polCalB, p_fitsbuf, nBand);
 
 #ifndef WORDS_BIGENDIAN
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), 
-				fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
 		}

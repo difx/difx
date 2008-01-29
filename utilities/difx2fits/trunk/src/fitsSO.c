@@ -8,36 +8,9 @@
 const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	/*  structure that defines the columns in the FITS "Source Table" */
-	struct FITS_source
-	{
-		int             src_id;
-		char            source[16];
-		int             qual;
-		char            calcode[4];
-		int             freq_id;
-		float           iflux;
-		float           qflux;
-		float           uflux;
-		float           vflux;
-		float           alpha;
-		double          freqoff[array_MAX_BANDS];
-		double          raepo;
-		double          decepo;
-		double          epoch;
-		double          raapp;
-		double          decapp;
-		double          sysvel[array_MAX_BANDS];
-		char            veltyp[8];
-		char            veldef[8];
-		double          restfreq[array_MAX_BANDS];
-		double          pmra;
-		double          pmdec;
-		float           parallax;
-	} src_row;
-
 	char bandFormDouble[4];
 	char bandFormFloat[4];
+
 	struct fitsBinTableColumn columns[] =
 	{
 		{"ID_NO.", "1J", "source id number", 0},
@@ -67,185 +40,123 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	};
 
 	int nColumn;
-	int n_row_bytes;
-	int no_bands;
-	int irow, i;
+	int nRowBytes;
+	int nBand;
+	int b, s;
 	char *fitsbuf;
+	char *p_fitsbuf;
+	char sourceName[16];
+	int sourceId;
+	int freqId;
+	int configId;
+	int qual;
+	char calCode[4];
+	float fluxI[array_MAX_BANDS];
+	float fluxQ[array_MAX_BANDS];
+	float fluxU[array_MAX_BANDS];
+	float fluxV[array_MAX_BANDS];
+	float alpha[array_MAX_BANDS];
+	double freqOffset[array_MAX_BANDS];
+	double RAEpoch, decEpoch;	/* position of Epoch */
+	double RAApp, decApp;		/* apparent position */
+	double epoch;
+	double sysVel[array_MAX_BANDS];
+	double restFreq[array_MAX_BANDS];
+	char velType[8];
+	char velDef[8];
+	double muRA;			/* proper motion */
+	double muDec;
+	float parallax;
 	
 	if(D == 0)
 	{
 		return 0;
 	}
 
+	nBand = D->nIF;
+	sprintf(bandFormFloat, "%1dE", nBand);
+	sprintf(bandFormDouble, "%1dD", nBand); 
+
 	nColumn = NELEMENTS(columns);
-	no_bands = D->nIF;
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	sprintf(bandFormFloat, "%1dE", no_bands);
-	sprintf(bandFormDouble, "%1dD", no_bands); 
-
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
 	
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "SOURCE");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SOURCE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 	
-	src_row.iflux = src_row.qflux = src_row.uflux = 0.0;
-	src_row.vflux = src_row.alpha = 0.0;
+	/* no knowledge of these from inputs */
+	for(b = 0; b < nBand; b++)
+	{
+		sysVel[b] = 0.0;
+		fluxI[b] = 0.0;
+		fluxQ[b] = 0.0;
+		fluxU[b] = 0.0;
+		fluxV[b] = 0.0;
+		alpha[b] = 0.0;
+		restFreq[b] = p_fits_keys->ref_freq;
+	}
 
-	src_row.parallax = 0.0;
-	strcpypad(src_row.veltyp, "GEOCENTR", 8);
-	strcpypad(src_row.veldef, "OPTICAL", 8);
-	src_row.pmra = src_row.pmdec = 0.0;
-	src_row.epoch = 2000.0;
+	strcpypad(velType, "GEOCENTR", 8);
+	strcpypad(velDef, "OPTICAL", 8);
 
-	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	fitsbuf = (char *)calloc(nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}
-
-	for (irow = 0; irow < D->nSource; irow++)
+	
+	for (s = 0; s < D->nSource; s++)
 	{
-		char *p_fitsbuf = fitsbuf;
+		p_fitsbuf = fitsbuf;
 
-		src_row.src_id = irow + 1;
-		src_row.qual = D->source[irow].qual;
-		strcpypad(src_row.calcode, D->source[irow].calcode, 4);
-		src_row.raepo = D->source[irow].ra * 180.0 / M_PI;
-		src_row.decepo = D->source[irow].dec * 180.0 / M_PI;
-		src_row.raapp = src_row.raepo;
-		src_row.decapp = src_row.decepo;
-		src_row.freq_id = D->source[irow].configId + 1;
+		muRA = 0.0;
+		muDec = 0.0;
+		parallax = 0.0;
+		epoch = 2000.0;
+		sourceId = s + 1;	/* FITS sourceId is 1-based */
+		qual = D->source[s].qual;
+		strcpypad(calCode, D->source[s].calCode, 4);
+		RAEpoch = D->source[s].ra * 180.0 / M_PI;
+		decEpoch = D->source[s].dec * 180.0 / M_PI;
+		RAApp = RAEpoch;
+		decApp = decEpoch;
+		configId = D->source[s].configId;
+		freqId = D->config[configId].freqId + 1;  /* FITS 1-based */
+		strcpypad(sourceName, D->source[s].name, 16);
 
-		/* load the SO table buffer */
-
-		/* src_id */
-		bcopy ((char *) &(src_row.src_id), p_fitsbuf, 
-			sizeof (src_row.src_id));
-		p_fitsbuf += sizeof (src_row.src_id);
-
-		/* source */
-		strcpypad(p_fitsbuf, D->source[irow].name, 16);
-		p_fitsbuf += 16;
-
-		/* qual */
-		bcopy ((char *) &(src_row.qual), p_fitsbuf, sizeof (src_row.qual));
-		p_fitsbuf += sizeof (src_row.qual);
-
-		/* calcode */
-		strcpypad(p_fitsbuf, src_row.calcode, sizeof (src_row.calcode));
-		p_fitsbuf += sizeof (src_row.calcode);
-
-		/* freq_id */
-		bcopy ((char *) &(src_row.freq_id), p_fitsbuf, sizeof (src_row.freq_id));
-		p_fitsbuf += sizeof (src_row.freq_id);
-
-		for (i = 0; i < no_bands; i++)
-		{
-			/* iflux */
-			bcopy ((char *) &(src_row.iflux), p_fitsbuf,
-			sizeof (src_row.iflux));
-			p_fitsbuf += sizeof (src_row.iflux);
-
-			/* qflux */
-			bcopy ((char *) &(src_row.qflux), p_fitsbuf,
-			sizeof (src_row.qflux));
-			p_fitsbuf += sizeof (src_row.qflux);
-
-			/* uflux */
-			bcopy ((char *) &(src_row.uflux), p_fitsbuf,
-			sizeof (src_row.uflux));
-			p_fitsbuf += sizeof (src_row.uflux);
-
-			/* vflux */
-			bcopy ((char *) &(src_row.vflux), p_fitsbuf,
-			sizeof (src_row.vflux));
-			p_fitsbuf += sizeof (src_row.vflux);
-
-			/* alpha */
-			bcopy ((char *) &(src_row.alpha), p_fitsbuf,
-			sizeof (src_row.alpha));
-			p_fitsbuf += sizeof (src_row.alpha);
-
-			/* freqoff */
-			src_row.freqoff[i] = 0.0;
-			bcopy ((char *) &(src_row.freqoff[i]), p_fitsbuf,
-			sizeof (src_row.freqoff[i]));
-			p_fitsbuf += sizeof (src_row.freqoff[i]);
-		}
-
-		/* raepo */
-		bcopy ((char *) &(src_row.raepo), p_fitsbuf, 
-			sizeof (src_row.raepo));
-		p_fitsbuf += sizeof (src_row.raepo);
-
-		/* decepo */
-		bcopy ((char *) &(src_row.decepo), p_fitsbuf, 
-			sizeof (src_row.decepo));
-		p_fitsbuf += sizeof (src_row.decepo);
-
-		/* epoch */
-		bcopy ((char *) &(src_row.epoch), p_fitsbuf, 
-			sizeof (src_row.epoch));
-		p_fitsbuf += sizeof (src_row.epoch);
-
-		/* raapp */
-		bcopy ((char *) &(src_row.raapp), p_fitsbuf, 
-			sizeof (src_row.raapp));
-		p_fitsbuf += sizeof (src_row.raapp);
-
-		/* decapp */
-		bcopy ((char *) &(src_row.decapp), p_fitsbuf, 
-			sizeof (src_row.decapp));
-		p_fitsbuf += sizeof (src_row.decapp);
-
-		/* sysvel */
-		for (i=0; i<no_bands; i++, p_fitsbuf+=sizeof(src_row.sysvel[i]))
-		{
-			src_row.sysvel[i] = 0.0;
-			bcopy ((char *) &(src_row.sysvel[i]), p_fitsbuf,
-				sizeof (src_row.sysvel[i]));
-		}
-
-		/* veltyp */
-		strcpypad(p_fitsbuf, src_row.veltyp, sizeof (src_row.veltyp));
-		p_fitsbuf += sizeof (src_row.veltyp);
-
-		/* veldef */
-		strcpypad(p_fitsbuf, src_row.veldef, sizeof (src_row.veldef));
-		p_fitsbuf += sizeof (src_row.veldef);
-
-		/* restfreq */
-		for (i = 0; i < no_bands; i++, p_fitsbuf += 
-			sizeof (src_row.restfreq[i]))
-		{
-			src_row.restfreq[i] = p_fits_keys->ref_freq;
-			bcopy ((char *) &(src_row.restfreq[i]), p_fitsbuf,
-			sizeof (src_row.restfreq[i]));
-		}
-
-		/* pmra */
-		bcopy ((char *) &(src_row.pmra), p_fitsbuf, 
-			sizeof (src_row.pmra));
-		p_fitsbuf += sizeof (src_row.pmra);
-
-		/* pmdec */
-		bcopy ((char *) &(src_row.pmdec), p_fitsbuf, 
-			sizeof (src_row.pmdec));
-		p_fitsbuf += sizeof (src_row.pmdec);
-
-		/* parallax */
-		bcopy ((char *) &(src_row.parallax), p_fitsbuf,
-		sizeof (src_row.parallax));
-		p_fitsbuf += sizeof (src_row.parallax);
+		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceName, p_fitsbuf);
+		FITS_WRITE_ITEM (qual, p_fitsbuf);
+		FITS_WRITE_ITEM (calCode, p_fitsbuf);
+		FITS_WRITE_ITEM (freqId , p_fitsbuf);
+		FITS_WRITE_ARRAY(fluxI, p_fitsbuf, nBand);
+		FITS_WRITE_ARRAY(fluxQ, p_fitsbuf, nBand);
+		FITS_WRITE_ARRAY(fluxU, p_fitsbuf, nBand);
+		FITS_WRITE_ARRAY(fluxV, p_fitsbuf, nBand);
+		FITS_WRITE_ARRAY(alpha, p_fitsbuf, nBand);
+		FITS_WRITE_ARRAY(freqOffset, p_fitsbuf, nBand);
+		FITS_WRITE_ITEM (RAEpoch, p_fitsbuf);
+		FITS_WRITE_ITEM (decEpoch, p_fitsbuf);
+		FITS_WRITE_ITEM (epoch, p_fitsbuf);
+		FITS_WRITE_ITEM (RAApp, p_fitsbuf);
+		FITS_WRITE_ITEM (decApp, p_fitsbuf);
+		FITS_WRITE_ARRAY(sysVel, p_fitsbuf, nBand);
+		FITS_WRITE_ITEM (velType, p_fitsbuf);
+		FITS_WRITE_ITEM (velDef, p_fitsbuf);
+		FITS_WRITE_ARRAY(restFreq, p_fitsbuf, nBand);
+		FITS_WRITE_ITEM (muRA, p_fitsbuf);
+		FITS_WRITE_ITEM (muDec, p_fitsbuf);
+		FITS_WRITE_ITEM (parallax, p_fitsbuf);
 
 #ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, NELEMENTS(columns), fitsbuf);
+		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 		fitsWriteBinRow (out, fitsbuf);
 	}
-	free (fitsbuf);
-	
+
+	free(fitsbuf);
 
 	return D;
 }	
