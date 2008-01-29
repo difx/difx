@@ -91,7 +91,8 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 		{"DDEPS",   "1D", "CT derivative of DEPS","rad/sec"}
 	};
 	
-	int n_row_bytes;
+	int nRowBytes;
+	int nColumn;
 	int e;
 
 	if(D == 0)
@@ -99,10 +100,10 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 		return 0;
 	}
 	
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	nColumn = NELEMENTS(columns);
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, NELEMENTS(columns), columns, n_row_bytes,
-		"CALC");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteString (out, "C_SRVR", D->calcServer, "");
@@ -175,7 +176,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 			row.ddEps   = 0.0;
 
 #ifndef WORDS_BIGENDIAN
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);
+			FitsBinRowByteSwap(columns, nColumn, &row);
 #endif
 			fitsWriteBinRow(out, (char *)&row);
 

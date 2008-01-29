@@ -44,7 +44,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
  	int nRowBytes;
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int i, b, j, s, p, ant;
+	int b, j, s, p, ant;
 	int32_t antId;
 	int32_t arrayId;
 	int32_t sourceId;
