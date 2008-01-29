@@ -704,3 +704,16 @@ void strcpypad(char *dest, const char *src, int n)
 		}
 	}
 }
+
+void testFitsBufBytes(int dPointer, int nRowBytes, const char *tableName)
+{
+	/* Do a sanity check.  This is mainly for developers */
+	if(dPointer != nRowBytes)
+	{
+		fprintf(stderr, "\n%s table : p_fitsbuf - fitsbuf != "
+			"nRowBytes : %d %d\n", tableName,
+			dPointer, nRowBytes);
+		fprintf(stderr, "This program has a bug!\n");
+		exit(0);
+	}
+}

@@ -151,6 +151,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
 			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
 		} /* Polar loop */
+
+      		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "MC");
       
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);

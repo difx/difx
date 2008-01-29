@@ -13,7 +13,6 @@ static int parseTsys(const char *line, char *antName,
 {
 	int p;
 	int n, i, nRecChan;
-	float tsys;
 
 	n = sscanf(line, "%s%lf%f%d%n", antName, time, timeInt, &nRecChan, &p);
 	if(n != 4)
@@ -60,7 +59,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int refDay;
 	char line[1000];
 	char antName[20];
-	float tSysRecChan[16], tSys[2][16], tAnt[16];
+	float tSysRecChan[array_MAX_BANDS];
+	float tSys[2][array_MAX_BANDS];
+	float tAnt[2][array_MAX_BANDS];
 	int nBand;
 	int configId, sourceId;
 	int i, j, nPol=0;
@@ -122,7 +123,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	arrayId1 = 1;
 	for(i = 0; i < 16; i++)
 	{
-		((unsigned int *)tAnt)[i] = -1;	/* set to NaN */
+		((unsigned int *)tAnt[0])[i] = -1;	/* set to NaN */
+		((unsigned int *)tAnt[1])[i] = -1;	/* set to NaN */
 	}
 	
 	for(;;)
@@ -208,9 +210,11 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 			for(i = 0; i < nPol; i++)
 			{
-				FITS_WRITE_ARRAY(tSys, p_fitsbuf, nBand);
-				FITS_WRITE_ARRAY(tAnt, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(tSys[i], p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(tAnt[i], p_fitsbuf, nBand);
 			}
+
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "TS");
 
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);

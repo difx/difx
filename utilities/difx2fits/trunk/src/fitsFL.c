@@ -49,7 +49,7 @@ static int parseFlag(char *line, int refDay, char *antName, float timeRange[2],
 
 
 
-static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, 
+static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
 	struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
 	char *p_fitsbuf;
@@ -103,6 +103,8 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf,
 	FITS_WRITE_ITEM (polMask, p_fitsbuf);		  /* POLARIZATIONS */
 	FITS_WRITE_ARRAY(FL->reason, p_fitsbuf, 40);	  /* REASON */
 	FITS_WRITE_ITEM (FL->severity, p_fitsbuf);	  /* SEVERITY */
+
+	testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "FL");
 	
 #ifndef WORDS_BIGENDIAN	
 	FitsBinRowByteSwap(columns, nColumn, fitsbuf);
@@ -251,7 +253,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 
 			FL.baselineId1[0] = antId + 1;
 
-			writeFLrow(out, fitsbuf, columns, nColumn, &FL);
+			writeFLrow(out, fitsbuf, nRowBytes, 
+				columns, nColumn, &FL);
 		}
 	}
 
@@ -260,9 +263,18 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	FL.timeRange[1] = stop;
 	strcpy(FL.reason, "This Band/Pol not observed");
 
-	dc = D->config + configId;
-	for(d = 0; dc->indexDS[d] >= 0; d++)
+	FL.freqId1 = 0;
+	for(configId = 0; configId < D->nConfig; configId++)
 	{
+	    /* want to loop only over unique freqIds */
+	    if(D->config[configId].freqId < FL.freqId1)
+	    {
+	    	continue;       /* this freqId1 done already */
+	    }
+	    FL.freqId1 = D->config[configId].freqId + 1;
+	    dc = D->config + configId;
+	    for(d = 0; dc->indexDS[d] >= 0; d++)
+	    {
 		ds = D->dsentry + dc->indexDS[d];
 		FL.baselineId1[0] = ds->antId + 1;
 
@@ -304,11 +316,12 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				{
 					FL.bandId = i;
 					FL.polId = p;
-					writeFLrow(out, fitsbuf, 
+					writeFLrow(out, fitsbuf, nRowBytes,
 						columns, nColumn, &FL);
 				}
 			}
 		}
+	    }
 	}
 
 	/* close the file, free memory, and return */

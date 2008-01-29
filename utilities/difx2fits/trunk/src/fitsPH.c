@@ -215,7 +215,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float timeInt;
 	double cableCal;
 	double freqs[2][array_MAX_TONES];
-	double mjd, mjdStop;
+	double mjdStop;
 	float pulseCalRe[2][array_MAX_TONES];
 	float pulseCalIm[2][array_MAX_TONES];
 	float stateCount[2][array_MAX_TONES];
@@ -341,6 +341,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				FITS_WRITE_ARRAY(pulseCalRate[i], p_fitsbuf,
 					nTone*nBand);
 			}
+
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "PH");
 			
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);

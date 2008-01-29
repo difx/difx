@@ -97,6 +97,8 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		FITS_WRITE_ARRAY(netSide, p_fitsbuf, nBand);  /* SIDEBAND */
 		FITS_WRITE_ARRAY(bbChan, p_fitsbuf, nBand);   /* BB_CHAN */
 
+		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "FR");
+
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif

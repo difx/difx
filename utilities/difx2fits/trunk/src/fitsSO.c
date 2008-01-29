@@ -150,6 +150,8 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
 
+		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SO");
+
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif

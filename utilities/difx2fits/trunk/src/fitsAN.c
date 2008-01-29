@@ -118,6 +118,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 			FITS_WRITE_ARRAY(polAB, p_fitsbuf, nBand);
 			FITS_WRITE_ARRAY(polCalB, p_fitsbuf, nBand);
 
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "AN");
+
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif

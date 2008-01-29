@@ -432,7 +432,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	};
 	
 	int nColumn;
-	int n_row_bytes;
+	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
 	int c, r, a, i, j, p, nBand, nPol;
 	const char *antName;
@@ -471,7 +471,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	{
 		nColumn = NELEMENTS(columns) - 8;
 	}
-	n_row_bytes = FitsBinTableSize(columns, nColumn);
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	nRow = loadGainCurves(G);
 	if(nRow < 0)
@@ -481,14 +481,14 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	}
 
 	/* calloc space for storing table in FITS format */
-	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
 	{
 		free(G);
 		return 0;
 	}
 
 	/* spew out the table header */
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "GAIN_CURVE");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GAIN_CURVE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");
@@ -574,6 +574,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 					nBand*MAXTAB);
 				FITS_WRITE_ARRAY(sens[p], p_fitsbuf, nBand);
 			}
+
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "GN");
 
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);

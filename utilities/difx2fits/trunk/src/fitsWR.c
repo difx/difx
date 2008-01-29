@@ -155,6 +155,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 			FITS_WRITE_ITEM(wr.windGust, p_fitsbuf);
 			FITS_WRITE_ITEM(wr.precipitation, p_fitsbuf);
 
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "WR");
+
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif

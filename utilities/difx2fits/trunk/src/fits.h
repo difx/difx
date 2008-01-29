@@ -100,5 +100,6 @@ int mjd2fits(int, char *);
 void arrayWriteKeys(struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *p_fitsfile);
 void strcpypad(char *dest, const char *src, int n);
+void testFitsBufBytes(int dPointer, int nRowBytes, const char *tableName);
 
 #endif
