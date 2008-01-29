@@ -9,7 +9,7 @@
 typedef struct 
 {
 	double time;
-	float temp, pres, dewpt, wspeed, wdir, wgust, precip;
+	float temp, pressure, dewPoint, windSpeed, windDir, windGust, precipitation;
 } WRrow;
 
 static int parseWeather(const char *line, WRrow *wr, char *antName)
@@ -17,9 +17,9 @@ static int parseWeather(const char *line, WRrow *wr, char *antName)
 	int n;
 
 	n = sscanf(line, "%s%lf%f%f%f%f%f%f%f", antName, 
-		&wr->time, &wr->temp, &wr->pres, &wr->dewpt,
-		&wr->wspeed, &wr->wdir, &wr->precip, &wr->wgust);
-			
+		&wr->time, &wr->temp, &wr->pressure, &wr->dewPoint,
+		&wr->windSpeed, &wr->windDir, &wr->precipitation, 
+		&wr->windGust);
 	if(n != 9)
 	{
 		return 0;
@@ -35,10 +35,11 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fitsBinTableColumn columns[] =
 	{
 		{"TIME", "1D", "time of measurement", "DAYS"},
-		{"TIME_INTERVAL", "1E", "time span over which data applies", "DAYS"},
+		{"TIME_INTERVAL", "1E", "time span over which data applies", 
+			"DAYS"},
 		{"ANTENNA_NO", "1J", "antenna id from antennas tbl", 0},
 		{"TEMPERATURE", "1E", "ambient temperature", "CENTIGRADE"},
-		{"PRESSURE", "1E", "atmospheric pressure", "MILLIBARS"},
+		{"PRESSURE", "1E", "atmospheric pressuresure", "MILLIBARS"},
 		{"DEWPOINT", "1E", "dewpoint", "CENTIGRADE"},
 		{"WIND_VELOCITY", "1E", "wind velocity", "M/SEC"},
 		{"WIND_DIRECTION", "1E", "wind direction", "DEGREES"},
@@ -51,14 +52,14 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	WRrow wr;
 	int i;
 	int nColumn;
-	int n_row_bytes;
+	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
 	char antName[64];
 	char line[1000];
 	double mjd, mjdStop;
-	int antId, refday;
-	double t;
-	float dt;
+	int antId, refDay;
+	double time;
+	float timeInt;
 	FILE *in;
 	
 	in = fopen("weather", "r");
@@ -70,24 +71,24 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 	nColumn = NELEMENTS(columns);
 	
-	n_row_bytes = FitsBinTableSize(columns, nColumn);
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
 	{
 		return 0;
 	}
 
-	mjd2dayno((int)(D->mjdStart), &refday);
+	mjd2dayno((int)(D->mjdStart), &refDay);
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	/* calloc space for storing table in FITS format */
-	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
 	{
 		return 0;
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "WEATHER");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "WEATHER");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteString(out, "MAPFUNC", " ", "");
@@ -123,8 +124,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 				continue;
 			}
 			
-			t = wr.time - refday;
-			dt = 0.0;
+			time = wr.time - refDay;
+			timeInt = 0.0;
 			
 			antId = DifxInputGetAntennaId(D, antName) + 1;
 			if(antId <= 0)
@@ -132,7 +133,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 				continue;
 			}
 			
-			mjd = t + (int)(D->mjdStart);
+			mjd = time + (int)(D->mjdStart);
 			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;
@@ -140,45 +141,16 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 			p_fitsbuf = fitsbuf;
 
-			/* TIME */
-			bcopy((char *)&t, p_fitsbuf, sizeof(t));
-			p_fitsbuf += sizeof(t);
-
-			/* TIME INTERVAL */
-			bcopy((char *)&dt, p_fitsbuf, sizeof(dt));
-			p_fitsbuf += sizeof(dt);
-			
-			/* ANTENNA_NO */
-			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
-			p_fitsbuf += sizeof(antId);
-
-			/* TEMPERATURE */
-			bcopy((char *)&wr.temp, p_fitsbuf, sizeof(wr.temp));
-			p_fitsbuf += sizeof(wr.temp);
-
-			/* PRESSURE */
-			bcopy((char *)&wr.pres, p_fitsbuf, sizeof(wr.pres));
-			p_fitsbuf += sizeof(wr.pres);
-
-			/* DEW POINT */
-			bcopy((char *)&wr.dewpt, p_fitsbuf, sizeof(wr.dewpt));
-			p_fitsbuf += sizeof(wr.dewpt);
-
-			/* WIND SPEED */
-			bcopy((char *)&wr.wspeed, p_fitsbuf, sizeof(wr.wspeed));
-			p_fitsbuf += sizeof(wr.wspeed);
-
-			/* WIND DIRECTION */
-			bcopy((char *)&wr.wdir, p_fitsbuf, sizeof(wr.wdir));
-			p_fitsbuf += sizeof(wr.wdir);
-
-			/* WIND GUST */
-			bcopy((char *)&wr.wgust, p_fitsbuf, sizeof(wr.wgust));
-			p_fitsbuf += sizeof(wr.wgust);
-
-			/* PRECIPITATION */
-			bcopy((char *)&wr.precip, p_fitsbuf, sizeof(wr.precip));
-			p_fitsbuf += sizeof(wr.precip);
+			FITS_WRITE_ITEM(time, p_fitsbuf);
+			FITS_WRITE_ITEM(timeInt, p_fitsbuf);
+			FITS_WRITE_ITEM(antId, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.temp, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.pressure, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.dewPoint, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.windSpeed, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.windDir, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.windGust, p_fitsbuf);
+			FITS_WRITE_ITEM(wr.precipitation, p_fitsbuf);
 
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
