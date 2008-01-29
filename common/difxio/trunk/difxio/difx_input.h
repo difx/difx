@@ -56,7 +56,7 @@ typedef struct
 	DifxIF *IF;		/* FITS IF definitions */
 	int quantBits;		/* 1 or 2 */
 	int nRecChan;		/* number of recorded channels */
-	int freqId;		/* 0-based number -- uniq IF[] index */
+	int freqId;		/* 0-based number -- uniq FITS IF[] index */
 	int *indexDS;		/* 0-based; [antId] data stream table index */
 				/* -1 terminated */
 	int *indexBL;		/* baseline table indicies for this config */
@@ -105,7 +105,7 @@ typedef struct
 {
 	double ra, dec;		/* radians */
 	char name[32];		/* source name */
-	char calcode[4];	/* usually only 1 char long */
+	char calCode[4];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
 	int configId;		/* to determine freqId */
 } DifxSource;
@@ -125,7 +125,7 @@ typedef struct
 	double mjdEnd;		/* (day) */
 	double ra, dec;		/* (radians) */
 	char name[32];		/* name of source */
-	char calcode[4];	/* usually only 1 digit */
+	char calCode[4];	/* usually only 1 digit */
 	int qual;		/* source qualifier */
 	int sourceId;		/* 0, 1, ... nScan-1 */
 	int configId;		/* 0, 1, ... nConfig-1 */

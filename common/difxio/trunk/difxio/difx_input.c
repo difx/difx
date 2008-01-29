@@ -489,7 +489,7 @@ void printDifxSource(const DifxSource *ds)
 	printf("  DifxSource [%s] : %p\n", ds->name, ds);
 	printf("    RA  =  %10.7f\n", ds->ra);
 	printf("    Dec = %+11.7f\n", ds->dec);
-	printf("    Calcode = %s\n", ds->calcode);
+	printf("    Calcode = %s\n", ds->calCode);
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    ConfigId = %d\n", ds->configId);
 }
@@ -577,7 +577,7 @@ void printDifxScan(const DifxScan *ds)
 	printf("  DifxScan [%s] : %p\n", ds->name, ds);
 	printf("    Start = MJD %12.6f\n", ds->mjdStart);
 	printf("    End   = MJD %12.6f\n", ds->mjdEnd);
-	printf("    Calcode = %s\n", ds->calcode);
+	printf("    Calcode = %s\n", ds->calCode);
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    nPoint = %d\n", ds->nPoint);
 	printf("    nAntenna %d\n", ds->nAntenna);
@@ -1662,7 +1662,7 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		
 		D->scan[i].ra        = atof(DifxParametersvalue(up, rows[3]));
 		D->scan[i].dec       = atof(DifxParametersvalue(up, rows[4]));
-		D->scan[i].calcode[0]= 0;
+		D->scan[i].calCode[0]= 0;
 		D->scan[i].qual      = 0;	/* Default */
 
 		for(c = 0; c < D->nConfig; c++)
@@ -1885,9 +1885,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 		strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[1]), 31);
 		D->scan[i].name[31]  = 0;
-		strncpy(D->scan[i].calcode, 
+		strncpy(D->scan[i].calCode, 
 			DifxParametersvalue(cp, rows[2]), 3);
-		D->scan[i].calcode[3]= 0;
+		D->scan[i].calCode[3]= 0;
 		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[3]));
 
 		cname = DifxParametersvalue(cp, rows[0]);
@@ -2098,7 +2098,7 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 			   D->source[i].dec      == D->scan[s].dec &&
 			   D->source[i].qual     == D->scan[s].qual &&
 			   D->source[i].configId == D->scan[s].configId &&
-			   strcmp(D->source[i].calcode, D->scan[s].calcode) 
+			   strcmp(D->source[i].calCode, D->scan[s].calCode) 
 			   	== 0 &&
 			   strcmp(D->source[i].name, D->scan[s].name) == 0)
 			{
@@ -2109,7 +2109,7 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 		if(i >= n)
 		{
 			strcpy(D->source[n].name, D->scan[s].name);
-			strcpy(D->source[i].calcode, D->scan[s].calcode);
+			strcpy(D->source[i].calCode, D->scan[s].calCode);
 			D->source[n].ra       = D->scan[s].ra;
 			D->source[n].dec      = D->scan[s].dec;
 			D->source[n].qual     = D->scan[s].qual;
