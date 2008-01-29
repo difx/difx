@@ -25,8 +25,13 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	int nRowBytes;
 	int nColumn;
 	char *fitsbuf, *p_fitsbuf;
+	double bandFreq[array_MAX_BANDS];
+	float chanBW[array_MAX_BANDS];
+	float bandBW[array_MAX_BANDS];
+	int32_t netSide[array_MAX_BANDS];
+	int32_t bbChan[array_MAX_BANDS];
 	int row;
-	int no_band;
+	int nBand;
 	int i;
 	int freqId;
 
@@ -36,11 +41,11 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		return 0;
 	}
 
-	no_band = p_fits_keys->no_band;
+	nBand = p_fits_keys->no_band;
 
-	sprintf(bandFormDouble, "%1dD", no_band);  
-	sprintf(bandFormFloat, "%1dE", no_band);  
-	sprintf(bandFormInt, "%1dJ", no_band);  
+	sprintf(bandFormDouble, "%1dD", nBand);  
+	sprintf(bandFormFloat, "%1dE", nBand);  
+	sprintf(bandFormInt, "%1dJ", nBand);  
 
 	nColumn = NELEMENTS(columns);
 
@@ -69,62 +74,28 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		}
 		freqId = D->config[row].freqId + 1;
 
+		for(i = 0; i < nBand; i++)
+		{
+			bandFreq[i] = (D->config[row].IF[i].freq -
+				D->refFreq) * 1.0e6;
+			chanBW[i] = (D->config[row].IF[i].bw /
+				D->nOutChan) * 1.0e6;
+			bandBW[i] = D->config[row].IF[i].bw * 1.0e6;
+			netSide[i] = (D->config[row].IF[i].sideband 
+				== 'U' ? 1 : -1);
+			bbChan[i] = 0;	/* vistigial */
+		}
+		
 		/* pointer to the buffer for FITS records */
 		p_fitsbuf = fitsbuf;
 
-		/* FREQ_ID */
-		{
-			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));     
-			p_fitsbuf += sizeof(freqId);
-		}
-		
-		/* BANDFREQ */
-		for (i = 0; i < no_band; i++)
-		{
-			double bandfreq = (D->config[row].IF[i].freq - 
-				D->refFreq) * 1.0e6;
-			bcopy((char *)&bandfreq, p_fitsbuf, sizeof(bandfreq));
-			p_fitsbuf += sizeof(bandfreq);
-		}
+		FITS_WRITE_ITEM (freqId, p_fitsbuf);          /* FREQ_ID */
+		FITS_WRITE_ARRAY(bandFreq, p_fitsbuf, nBand); /* BANDFREQ */
+		FITS_WRITE_ARRAY(chanBW, p_fitsbuf, nBand);   /* CH_WIDTH */
+		FITS_WRITE_ARRAY(bandBW, p_fitsbuf, nBand);   /* BANDWIDTH */
+		FITS_WRITE_ARRAY(netSide, p_fitsbuf, nBand);  /* SIDEBAND */
+		FITS_WRITE_ARRAY(bbChan, p_fitsbuf, nBand);   /* BB_CHAN */
 
-		/* CH_WIDTH */
-		for (i = 0; i < no_band; i++)
-		{
-			float ch_width = (D->config[row].IF[i].bw / 
-				D->nOutChan) * 1.0e6;
-			bcopy((char *)&ch_width, p_fitsbuf, sizeof(ch_width));
-			p_fitsbuf += sizeof(ch_width);
-		}
-
-		/* TOTAL_BANDWIDTH */
-		for (i = 0; i < no_band; i++)
-		{
-			float total_bw = D->config[row].IF[i].bw * 1.0e6;
-			bcopy((char *)&total_bw, p_fitsbuf, sizeof(total_bw));
-			p_fitsbuf += sizeof(total_bw);
-		}
-
-		/* SIDEBAND */
-		for (i = 0; i < no_band; i++)
-		{
-			int32_t netside;
-			netside = D->config[row].IF[i].sideband == 'U' ? 1 : -1;
-			bcopy((char *)&netside, p_fitsbuf, sizeof (netside));
-			p_fitsbuf += sizeof(netside);
-		}
-
-		/* BB_CHAN */
-		for (i = 0; i < no_band; i++)
-		{
-			/*
-			* set to zero since AIPS doesn't care. To be
-			* removed in a future CORR/AIPS update
-			*/
-			int bb_chan = 0;      
-
-			bcopy((char *)&bb_chan, p_fitsbuf, sizeof(bb_chan));
-			p_fitsbuf += sizeof(bb_chan);
-		}
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
