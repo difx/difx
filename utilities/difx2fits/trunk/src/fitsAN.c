@@ -8,24 +8,6 @@
 const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	/* define the columns in the FITS "ANTENNA" characteristics Table */
-	struct FITS_antenna
-	{
-		double time;
-		float time_int;
-		char anname[8];
-		int ant_no;
-		int array_id;
-		int freq_id;
-		int no_levels;
-		char poltya;
-		float polaa[array_MAX_BANDS];
-		float polcala[array_MAX_BANDS];
-		char poltyb;
-		float polab[array_MAX_BANDS];
-		float polcalb[array_MAX_BANDS];
-	} ac_row;
-
 	/*  define the antenna characteristic FITS table columns */
 	char bandFormFloat[4];
 	struct fitsBinTableColumn columns[] =
@@ -46,12 +28,22 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	};
 
 	int nColumn;
-	int no_bands;
-	int n_row_bytes, irow;
+	int nBand;
+	int nRowBytes;
 	char *fitsbuf;
 	double start, stop;
 	char *p_fitsbuf;
-	int i, c;
+	int a, b, c;
+	char antName[8];
+	double time;
+	float timeInt;
+	int antId, arrayId, freqId, nLevel;
+	char polTypeA;
+	float polAA[array_MAX_BANDS];
+	float polCalA[array_MAX_BANDS];
+	char polTypeB;
+	float polAB[array_MAX_BANDS];
+	float polCalB[array_MAX_BANDS];
 
 	if(D == 0)
 	{
@@ -59,18 +51,18 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	}
 
 	nColumn = NELEMENTS(columns);
-	no_bands = D->nIF;
-	sprintf(bandFormFloat, "%1dE", no_bands);
+	nBand = D->nIF;
+	sprintf(bandFormFloat, "%1dE", nBand);
 
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	nRowBytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
 	/* calloc space for storing table in FITS format */
-	if ((fitsbuf = (char *)calloc (n_row_bytes, 1)) == 0)
+	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == 0)
 	{
 		return 0;
 	}
 	
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "ANTENNA");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "ANTENNA");
 
 	arrayWriteKeys (p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
@@ -81,87 +73,51 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	start = D->mjdStart - (int)D->mjdStart;
 	stop = start + D->duration/86400.0;
 
-	ac_row.array_id = 1;
-	ac_row.freq_id = 0;
-	ac_row.no_levels = 1 << (D->quantBits);
-	ac_row.poltya = 'R';
-	ac_row.poltyb = 'L';
-	ac_row.time = 0.5 * (stop + start);
-	ac_row.time_int = stop - start;
-	for(i=0; i<no_bands; i++)
+	arrayId = 1;
+	freqId = 0;
+	nLevel = 1 << (D->quantBits);
+	polTypeA = 'R';
+	polTypeB = 'L';
+	time = 0.5 * (stop + start);
+	timeInt = stop - start;
+	for(b = 0; b < nBand; b++)
 	{
-		ac_row.polaa[i] = 0.0;
-		ac_row.polcala[i] = 0.0;
-		ac_row.polab[i] = 0.0;
-		ac_row.polcalb[i] = 0.0;
+		polAA[b] = 0.0;
+		polCalA[b] = 0.0;
+		polAB[b] = 0.0;
+		polCalB[b] = 0.0;
 	}
 
 	for(c = 0; c < D->nConfig; c++)
 	{
-		if(D->config[c].freqId < ac_row.freq_id)
+		if(D->config[c].freqId < freqId)
 		{
 			continue;	/* already got this freqid */
 		}
-		ac_row.freq_id = D->config[c].freqId + 1;
-		for(irow = 0; irow < D->nAntenna; irow++)
+		freqId = D->config[c].freqId + 1; /* FITS fqId starts at 1 */
+		for(a = 0; a < D->nAntenna; a++)
 		{
 			p_fitsbuf = fitsbuf;
-			ac_row.ant_no = irow + 1;
+			antId = a + 1;	  /* FITS antId starts at 1 */
+			strcpypad(antName, D->antenna[a].name, 8);
 
-			/* TIME */
-			bcopy ((char *)&ac_row.time, p_fitsbuf, sizeof(ac_row.time));
-			p_fitsbuf += sizeof(ac_row.time);
-
-			/* TIME_INT */
-			bcopy ((char *)&ac_row.time_int, p_fitsbuf, sizeof(ac_row.time_int));
-			p_fitsbuf += sizeof(ac_row.time_int);
-
-			/* ANNAME */
-			strcpypad(p_fitsbuf, D->antenna[irow].name, 8);
-			p_fitsbuf += 8;
-
-			/* ANT_NO */
-			bcopy ((char *)&ac_row.ant_no, p_fitsbuf, sizeof(ac_row.ant_no));
-			p_fitsbuf += sizeof(ac_row.ant_no);
-
-			/* ARRAY_ID */
-			bcopy ((char *)&ac_row.array_id, p_fitsbuf, sizeof(ac_row.array_id));
-			p_fitsbuf += sizeof(ac_row.array_id);
-
-			/* FREQ_ID */
-			bcopy ((char *)&ac_row.freq_id, p_fitsbuf, sizeof(ac_row.freq_id));
-			p_fitsbuf += sizeof(ac_row.freq_id);
-
-			/* NO_LEVELS */
-			bcopy ((char *)&ac_row.no_levels, p_fitsbuf, sizeof(ac_row.no_levels));
-			p_fitsbuf += sizeof(ac_row.no_levels);
-
-			/* POLTYA */
-			bcopy ((char *)&ac_row.poltya, p_fitsbuf, sizeof(ac_row.poltya));
-			p_fitsbuf += sizeof(ac_row.poltya);
-
-			/* POLAA */
-			bcopy((char *)&ac_row.polaa[i], p_fitsbuf, no_bands*sizeof(ac_row.polaa[i]));
-			p_fitsbuf += no_bands*sizeof(ac_row.polaa[i]);
-
-			/* POLCALA */
-			bcopy((char *)&ac_row.polcala[i], p_fitsbuf, no_bands*sizeof(ac_row.polcala[i]));
-			p_fitsbuf += no_bands*sizeof(ac_row.polcala[i]);
-
-			/* POLTYB */
-			bcopy((char *)&ac_row.poltyb, p_fitsbuf, sizeof(ac_row.poltyb));
-			p_fitsbuf += sizeof(ac_row.poltyb);
-
-			/* POLAB */
-			bcopy((char *)&ac_row.polab[i], p_fitsbuf, no_bands*sizeof(ac_row.polab[i]));
-			p_fitsbuf += no_bands*sizeof(ac_row.polab[i]);
-
-			/* POLCALB */
-			bcopy((char *)&ac_row.polcalb[i], p_fitsbuf, no_bands*sizeof(ac_row.polcalb[i]));
-			p_fitsbuf += no_bands*sizeof(ac_row.polcalb[i]);
+			FITS_WRITE_ITEM (time, p_fitsbuf);
+			FITS_WRITE_ITEM (timeInt, p_fitsbuf);
+			FITS_WRITE_ARRAY(antName, p_fitsbuf, 8);
+			FITS_WRITE_ITEM (antId, p_fitsbuf);
+			FITS_WRITE_ITEM (arrayId, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId, p_fitsbuf);
+			FITS_WRITE_ITEM (nLevel, p_fitsbuf);
+			FITS_WRITE_ITEM (polTypeA, p_fitsbuf);
+			FITS_WRITE_ARRAY(polAA, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(polCalA, p_fitsbuf, nBand);
+			FITS_WRITE_ITEM (polTypeB, p_fitsbuf);
+			FITS_WRITE_ARRAY(polAB, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(polCalB, p_fitsbuf, nBand);
 
 #ifndef WORDS_BIGENDIAN
-			FitsBinRowByteSwap(columns, NELEMENTS(columns), fitsbuf);
+			FitsBinRowByteSwap(columns, NELEMENTS(columns), 
+				fitsbuf);
 #endif
 			fitsWriteBinRow(out, fitsbuf);
 		}

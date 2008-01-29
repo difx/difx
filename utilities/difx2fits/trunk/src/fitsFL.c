@@ -49,7 +49,7 @@ static int parseFlag(char *line, int refDay, char *antName, float timeRange[2],
 
 
 static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, 
-	struct fitsBinTableColumn *columns, int nColumn, FlagDatum *FL)
+	struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
 	char *p_fitsbuf;
 	int polMask[4], bandMask[array_MAX_BANDS];

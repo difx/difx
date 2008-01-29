@@ -319,13 +319,14 @@ int DifxVisNewUVData(DifxVis *dv)
 		return -4;
 	}
 
-	dv->freqId = dv->D->source[dv->sourceId].configId;
+	configId = dv->D->source[dv->sourceId].configId;
+	dv->freqId = dv->D->config[configId].freqId;
 
 	/* FIXME -- is the below baseline to antenna map completely general? */
 	a1 = bl/256 - 1;
 	a2 = bl%256 - 1;
 
-	dv->bandId = dv->D->config[dv->freqId].baselineFreq2IF[a1][a2][freqNum];
+	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
 	
 	/* if weights are written the data volume is 3/2 as large */

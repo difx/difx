@@ -68,6 +68,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 
 	for(row = 0; row < D->nConfig; row++)
 	{
+		/* only write one row per unique frequency ID */
 		if(D->config[row].freqId < freqId)
 		{
 			continue;
