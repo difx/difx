@@ -8,14 +8,14 @@
 
 
 /* ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan] */
-static int parseTsys(const char *line, char *antenna, 
-	double *t, float *dt, float ty[])
+static int parseTsys(const char *line, char *antName, 
+	double *time, float *timeInt, float tSys[])
 {
 	int p;
 	int n, i, nRecChan;
 	float tsys;
 
-	n = sscanf(line, "%s%lf%f%d%n", antenna, t, dt, &nRecChan, &p);
+	n = sscanf(line, "%s%lf%f%d%n", antName, time, timeInt, &nRecChan, &p);
 	if(n != 4)
 	{
 		return -1;
@@ -24,12 +24,11 @@ static int parseTsys(const char *line, char *antenna,
 	for(i = 0; i < nRecChan; i++)
 	{
 		line += p;
-		n = sscanf(line, "%f%*s%n", &tsys, &p);
+		n = sscanf(line, "%f%*s%n", tSys + i, &p);
 		if(n != 1)
 		{
 			return -2;
 		}
-		ty[i] = tsys;
 	}
 	
 	return nRecChan;
@@ -56,43 +55,43 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	};
 
 	int nColumn;
-	int n_row_bytes;
+	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
-	int refday;
+	int refDay;
 	char line[1000];
-	char antenna[20];
-	float tyRecChan[16], ty[2][16], tant[16];
-	int no_band;
-	int sourceId, freqId, arrayId, antId;
+	char antName[20];
+	float tSysRecChan[16], tSys[2][16], tAnt[16];
+	int nBand;
 	int configId = 0;	/* only support one config now */
-	int i, j, no_pol=0;
-	int bandId, polId;
+	int i, j, nPol=0;
+	int bandId, polId, antId;
 	int nRecChan;
 	int v;
-	int FITSantId;
 	double f;
-	double t, mjd, mjdStop;
-	float dt;
+	double time, mjd, mjdStop;
+	float timeInt;
 	FILE *in;
+	/* The following are 1-based indices for writing to FITS */
+	int32_t sourceId1, freqId1, arrayId1, antId1;
 	
-	no_band = D->nIF;
-	no_pol = D->nPol;
+	nBand = D->nIF;
+	nPol = D->nPol;
 
-	sprintf(bandFormFloat, "%dE", no_band);
+	sprintf(bandFormFloat, "%dE", nBand);
 
 	if(D == 0)
 	{
 		return D;
 	}
 
-	mjd2dayno((int)(D->mjdStart), &refday);
+	mjd2dayno((int)(D->mjdStart), &refDay);
 
 	/* get the maximum dimensions possibly needed */
 	f = D->mjdStart - (int)(D->mjdStart);
 
 	in = fopen("tsys", "r");
 
-	if(no_pol == 2)
+	if(nPol == 2)
 	{
 		nColumn = NELEMENTS(columns);
 	}
@@ -101,28 +100,29 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		nColumn = NELEMENTS(columns) - 2;
 	}
 	
-	n_row_bytes = FitsBinTableSize(columns, nColumn);
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* calloc space for storing table in FITS format */
-	if((fitsbuf = (char *)calloc(n_row_bytes, 1)) == 0)
+	fitsbuf = (char *)calloc(nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}
 
 	mjdStop = D->mjdStart + D->duration/86400.0;
 
-	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, 
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, 
 		"SYSTEM_TEMPERATURE");
 	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", no_pol, "");
+	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
-	freqId = 1;
-	arrayId = 1;
+	freqId1 = 1;
+	arrayId1 = 1;
 	for(i = 0; i < 16; i++)
 	{
-		((unsigned int *)tant)[i] = -1;	/* set to NaN */
+		((unsigned int *)tAnt)[i] = -1;	/* set to NaN */
 	}
 	
 	for(;;)
@@ -140,30 +140,31 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		}
 		else 
 		{
-			nRecChan = parseTsys(line, antenna, &t, &dt, tyRecChan);
+			nRecChan = parseTsys(line, antName, &time, 
+				&timeInt, tSysRecChan);
 
 			/* discard records outside time range */
-			t -= refday;
-			mjd = t + (int)(D->mjdStart);
+			time -= refDay;
+			mjd = time + (int)(D->mjdStart);
 			if(mjd < D->mjdStart || mjd > mjdStop)
 			{
 				continue;
 			}
 		
 			/* discard records for unused antennas */
-			antId = DifxInputGetAntennaId(D, antenna);
+			antId = DifxInputGetAntennaId(D, antName);
 			if(antId < 0)
 			{
 				continue;
 			}
 
-			sourceId = DifxInputGetSourceId(D, mjd) + 1;
+			sourceId1 = DifxInputGetSourceId(D, mjd) + 1;
 
 			for(j = 0; j < 2; j++)
 			{
 				for(i = 0; i < 16; i++)
 				{
-					ty[j][i] = 0;
+					tSys[j][i] = 0;
 				}
 			}
 
@@ -183,52 +184,28 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 						"recChan=%d.\n", 
 						bandId, polId, i);
 				}
-				ty[polId][bandId] = tyRecChan[i];
+				tSys[polId][bandId] = tSysRecChan[i];
 			}
 			if(v < 0)
 			{
 				continue;
 			}
 
-			FITSantId = antId + 1;
+			antId1 = antId + 1;	/* 1-based value for FITS */
 		
 			p_fitsbuf = fitsbuf;
 		
-			/* TIME */
-			bcopy((char *)&t, p_fitsbuf, sizeof(t));
-			p_fitsbuf += sizeof(t);
-		
-			/* TIME INTERVAL */
-			bcopy((char *)&dt, p_fitsbuf, sizeof(dt));
-			p_fitsbuf += sizeof(dt);
-		
-			/* SOURCE_ID */
-			bcopy((char *)&sourceId, p_fitsbuf, sizeof(sourceId));
-			p_fitsbuf += sizeof(sourceId);
+			FITS_WRITE_ITEM (time, p_fitsbuf);
+			FITS_WRITE_ITEM (timeInt, p_fitsbuf);
+			FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
+			FITS_WRITE_ITEM (antId1, p_fitsbuf);
+			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
-			/* ANTENNA */
-			bcopy((char *)&FITSantId, p_fitsbuf, sizeof(FITSantId));
-			p_fitsbuf += sizeof(FITSantId);
-
-			/* ARRAY */
-			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
-			p_fitsbuf += sizeof(arrayId);
-
-			/* FREQ_ID */
-			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
-			p_fitsbuf += sizeof(freqId);
-
-			for(i = 0; i < no_pol; i++)
+			for(i = 0; i < nPol; i++)
 			{
-				/* TSYS */
-				bcopy((char *)(ty[i]), p_fitsbuf, 
-					no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
-
-				/* TANT */
-				bcopy((char *)tant, p_fitsbuf, 
-					no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
+				FITS_WRITE_ARRAY(tSys, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(tAnt, p_fitsbuf, nBand);
 			}
 
 #ifndef WORDS_BIGENDIAN
