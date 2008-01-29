@@ -84,7 +84,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double grate[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
-	int32_t sourceId, freqId, arrayId, antId;
+	int configId;
+	int32_t sourceId1, freqId1, arrayId1, antId1;
 	double time;
 	float timeInt;
 	int nPol;
@@ -157,8 +158,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	for(s = 0; s < D->nScan; s++)
 	{
-	   freqId = D->scan[s].configId + 1;
-	   sourceId = D->scan[s].sourceId + 1;
+	   configId = D->scan[s].configId;
+	   freqId1 = D->config[configId].freqId + 1;
+	   sourceId1 = D->scan[s].sourceId + 1;
 	   
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
@@ -184,7 +186,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		{
 			double freq;
 
-			freq = D->config[freqId-1].IF[j].freq * 1.0e6;
+			freq = D->config[freqId1-1].IF[j].freq * 1.0e6;
 			for(k = 0; k < array_N_POLY; k++)
 			{
 				/* FIXME -- is this right? */
@@ -192,14 +194,14 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 				prate[j][k] = grate[k]*freq;
 			}
 		}
-		antId = ant + 1;
+		antId1 = ant + 1;
 
 		FITS_WRITE_ITEM (time, p_fitsbuf);
 		FITS_WRITE_ITEM (timeInt, p_fitsbuf);
-		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
-		FITS_WRITE_ITEM (antId, p_fitsbuf);
-		FITS_WRITE_ITEM (arrayId, p_fitsbuf);
-		FITS_WRITE_ITEM (freqId, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
+		FITS_WRITE_ITEM (antId1, p_fitsbuf);
+		FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+		FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 		FITS_WRITE_ITEM (faraday, p_fitsbuf);
 		FITS_WRITE_ARRAY(freqVar, p_fitsbuf, nBand);
 

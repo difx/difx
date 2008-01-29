@@ -57,10 +57,12 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	char antName[64];
 	char line[1000];
 	double mjd, mjdStop;
-	int antId, refDay;
+	int refDay;
 	double time;
 	float timeInt;
 	FILE *in;
+	/* 1-based index for FITS below */
+	int32_t antId1;
 	
 	in = fopen("weather", "r");
 	
@@ -128,8 +130,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 			time = wr.time - refDay;
 			timeInt = 0.0;
 			
-			antId = DifxInputGetAntennaId(D, antName) + 1;
-			if(antId <= 0)
+			antId1 = DifxInputGetAntennaId(D, antName) + 1;
+			if(antId1 <= 0)
 			{
 				continue;
 			}
@@ -144,7 +146,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 
 			FITS_WRITE_ITEM(time, p_fitsbuf);
 			FITS_WRITE_ITEM(timeInt, p_fitsbuf);
-			FITS_WRITE_ITEM(antId, p_fitsbuf);
+			FITS_WRITE_ITEM(antId1, p_fitsbuf);
 			FITS_WRITE_ITEM(wr.temp, p_fitsbuf);
 			FITS_WRITE_ITEM(wr.pressure, p_fitsbuf);
 			FITS_WRITE_ITEM(wr.dewPoint, p_fitsbuf);

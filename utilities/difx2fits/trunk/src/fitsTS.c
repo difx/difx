@@ -62,7 +62,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	char antName[20];
 	float tSysRecChan[16], tSys[2][16], tAnt[16];
 	int nBand;
-	int configId = 0;	/* only support one config now */
+	int configId, sourceId;
 	int i, j, nPol=0;
 	int bandId, polId, antId;
 	int nRecChan;
@@ -146,10 +146,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			/* discard records outside time range */
 			time -= refDay;
 			mjd = time + (int)(D->mjdStart);
-			if(mjd < D->mjdStart || mjd > mjdStop)
-			{
-				continue;
-			}
 		
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antName);
@@ -158,7 +154,13 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				continue;
 			}
 
-			sourceId1 = DifxInputGetSourceId(D, mjd) + 1;
+			sourceId = DifxInputGetSourceId(D, mjd);
+			if(sourceId < 0)	/* not in scan? */
+			{
+				continue;
+			}
+			configId = D->source[sourceId].configId;
+			freqId1 = D->config[configId].freqId + 1;
 
 			for(j = 0; j < 2; j++)
 			{
@@ -191,7 +193,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				continue;
 			}
 
-			antId1 = antId + 1;	/* 1-based value for FITS */
+			/* 1-based values for FITS */
+			antId1 = antId + 1;
+			sourceId1 = sourceId + 1;
 		
 			p_fitsbuf = fitsbuf;
 		

@@ -45,10 +45,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
 	int b, j, s, p, ant;
-	int32_t antId;
-	int32_t arrayId;
-	int32_t sourceId;
-	int32_t freqId;
+	int configId;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
@@ -57,6 +54,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate;
+	/* 1-based indices for FITS file */
+	int32_t antId1, arrayId1, sourceId1, freqId1;
 
 	if(D == 0)
 	{
@@ -105,11 +104,12 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	dispDelay = 0.0;
 	dispDelayRate = 0.0;
 
-	arrayId = 1;
+	arrayId1 = 1;
 	for(s = 0; s < D->nScan; s++)
 	{
-	   freqId = D->scan[s].configId + 1;
-	   sourceId = D->scan[s].sourceId + 1;
+	   configId = D->scan[s].configId;
+	   freqId1 = D->config[configId].freqId + 1;
+	   sourceId1 = D->scan[s].sourceId + 1;
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
 	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
@@ -117,7 +117,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		
 	      for(ant = 0; ant < D->nAntenna; ant++)
 	      {
-		antId = ant + 1;
+		antId1 = ant + 1;
 	        p_fitsbuf = fitsbuf;
 
 		/* in general, convert from (us) to (sec) */
@@ -133,10 +133,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 			clockRate*D->modelInc*p;
           
 		FITS_WRITE_ITEM (time, p_fitsbuf);
-		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
-		FITS_WRITE_ITEM (antId, p_fitsbuf);
-		FITS_WRITE_ITEM (arrayId, p_fitsbuf);
-		FITS_WRITE_ITEM (freqId, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
+		FITS_WRITE_ITEM (antId1, p_fitsbuf);
+		FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+		FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 		FITS_WRITE_ITEM (atmosDelay, p_fitsbuf);
 		FITS_WRITE_ITEM (atmosRate, p_fitsbuf);
 		FITS_WRITE_ITEM (delay, p_fitsbuf);

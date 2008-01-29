@@ -10,15 +10,16 @@
 
 typedef struct
 {
-	int nBand;
-	int sourceId;
-	int arrayId;
-	int baselineId[2];
-	int freqId;
-	float timeRange[2];
 	int bandId;
-	int chanRange[2];
 	int polId;
+	int nBand;
+	/* names ending in 1 are 1-based indices for FITS */
+	int32_t sourceId1;
+	int32_t arrayId1;
+	int32_t baselineId1[2];
+	int32_t freqId1;
+	float timeRange[2];
+	int32_t chanRange1[2];
 	char reason[64];
 	int severity;
 } FlagDatum;
@@ -92,13 +93,13 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf,
 		polMask[1] = 1;
 	}
 
-	FITS_WRITE_ITEM (FL->sourceId, p_fitsbuf);	  /* SOURCE ID */
-	FITS_WRITE_ITEM (FL->arrayId, p_fitsbuf);	  /* ARRAY ID */
-	FITS_WRITE_ITEM (FL->baselineId, p_fitsbuf);	  /* ANTENNA IDS */
-	FITS_WRITE_ITEM (FL->freqId, p_fitsbuf);	  /* FREQ ID */
+	FITS_WRITE_ITEM (FL->sourceId1, p_fitsbuf);	  /* SOURCE ID */
+	FITS_WRITE_ITEM (FL->arrayId1, p_fitsbuf);	  /* ARRAY ID */
+	FITS_WRITE_ITEM (FL->baselineId1, p_fitsbuf);	  /* ANTENNA IDS */
+	FITS_WRITE_ITEM (FL->freqId1, p_fitsbuf);	  /* FREQ ID */
 	FITS_WRITE_ITEM (FL->timeRange, p_fitsbuf);	  /* TIME RANAGE */
 	FITS_WRITE_ARRAY(bandMask, p_fitsbuf, FL->nBand); /* BANDS */
-	FITS_WRITE_ITEM (FL->chanRange, p_fitsbuf);	  /* CHANNELS */
+	FITS_WRITE_ITEM (FL->chanRange1, p_fitsbuf);	  /* CHANNELS */
 	FITS_WRITE_ITEM (polMask, p_fitsbuf);		  /* POLARIZATIONS */
 	FITS_WRITE_ARRAY(FL->reason, p_fitsbuf, 40);	  /* REASON */
 	FITS_WRITE_ITEM (FL->severity, p_fitsbuf);	  /* SEVERITY */
@@ -179,13 +180,13 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	mjd2dayno((int)(D->mjdStart), &refDay);
 	
 	/* some constant values */
-	FL.sourceId = 0;
-	FL.freqId = 0;
-	FL.arrayId = 0;
+	FL.sourceId1 = 0;
+	FL.freqId1 = 0;
+	FL.arrayId1 = 0;
 	FL.severity = -1;
-	FL.chanRange[0] = 0;
-	FL.chanRange[1] = 0;
-	FL.baselineId[1] = 0;
+	FL.chanRange1[0] = 0;
+	FL.chanRange1[1] = 0;
+	FL.baselineId1[1] = 0;
 	
 	/* Write flags from file "flag" */
 	for(;;)
@@ -248,7 +249,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				FL.timeRange[1] = stop;
 			}
 
-			FL.baselineId[0] = antId + 1;
+			FL.baselineId1[0] = antId + 1;
 
 			writeFLrow(out, fitsbuf, columns, nColumn, &FL);
 		}
@@ -263,7 +264,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	for(d = 0; dc->indexDS[d] >= 0; d++)
 	{
 		ds = D->dsentry + dc->indexDS[d];
-		FL.baselineId[0] = ds->antId + 1;
+		FL.baselineId1[0] = ds->antId + 1;
 
 		/* populate a "presense" matrix. */
 		for(p = 0; p < dc->nPol; p++)

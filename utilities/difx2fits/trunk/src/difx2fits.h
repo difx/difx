@@ -5,6 +5,7 @@
 #include "fits.h"
 
 #define array_MAX_BANDS 32
+#define array_MAX_TONES	64
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	struct fitsPrivate *out);
