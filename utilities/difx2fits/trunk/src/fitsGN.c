@@ -13,7 +13,6 @@
 #define MAXENTRIES	5000
 #define MAXTOKEN	512
 #define MAXTAB		6
-#define MAXIFS		16
 #define NBANDS		11
 
 typedef struct
@@ -21,10 +20,10 @@ typedef struct
 	float mjd1, mjd2;
 	int band;
 	char antName[4];
-	int nfreq, npoly, ndpfu, ntime;
+	int nFreq, nPoly, nDPFU, nTime;
 	float freq[2];
 	float poly[MAXTAB];
-	float dpfu[2];
+	float DPFU[2];
 	float time[8];
 } GainRow;
 	
@@ -218,26 +217,26 @@ static int parseGN(const char *filename, int row, GainRow *G)
 		{
 			if(strcasecmp(token, "DPFU") == 0)
 			{
-				val = G[row].dpfu;
-				ctr = &G[row].ndpfu;
+				val = G[row].DPFU;
+				ctr = &G[row].nDPFU;
 				max = 2;
 			}
 			else if(strcasecmp(token, "FREQ") == 0)
 			{
 				val = G[row].freq;
-				ctr = &G[row].nfreq;
+				ctr = &G[row].nFreq;
 				max = 2;
 			}
 			else if(strcasecmp(token, "POLY") == 0)
 			{
 				val = G[row].poly;
-				ctr = &G[row].npoly;
+				ctr = &G[row].nPoly;
 				max = MAXTAB;
 			}
 			else if(strcasecmp(token, "TIMERANG") == 0)
 			{
 				val = G[row].time;
-				ctr = &G[row].ntime;
+				ctr = &G[row].nTime;
 				max = 8;
 			}
 			else
@@ -337,8 +336,8 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 
 	for(i = 0; i < nRow; i++)
 	{
-		if(G[i].npoly != 0 && G[i].nfreq != 0 && 
-		   G[i].ntime != 0 && G[i].ndpfu != 0)
+		if(G[i].nPoly != 0 && G[i].nFreq != 0 && 
+		   G[i].nTime != 0 && G[i].nDPFU != 0)
 		{
 			G[i].mjd1 = ymd2mjd(G[i].time[0], 
 					    G[i].time[1], 
@@ -435,13 +434,16 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	int nColumn;
 	int n_row_bytes;
 	char *fitsbuf, *p_fitsbuf;
-	int c, r, a, i, j, p, no_band, no_pol;
+	int c, r, a, i, j, p, nBand, nPol;
 	const char *antName;
-	float NaNs[MAXTAB*MAXIFS];
-	int Twos[MAXIFS], Zeros[MAXIFS];
-	int nTerm[MAXIFS];
-	float gain[MAXTAB*MAXIFS];
-	float sens[2][MAXIFS];
+	float xVal[array_MAX_BANDS];
+	float yVal[MAXTAB*array_MAX_BANDS];
+	int32_t curveType [array_MAX_BANDS];
+	int32_t xType[array_MAX_BANDS];
+	int32_t yType[array_MAX_BANDS];
+	int32_t nTerm[array_MAX_BANDS];
+	float gain[MAXTAB*array_MAX_BANDS];
+	float sens[2][array_MAX_BANDS];
 	int antId, freqId, arrayId;
 	int bad;
 	int mjd;
@@ -454,13 +456,13 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		return D;
 	}
 	
-	no_pol = D->nPol;
-	no_band = D->nIF;
-	sprintf(bandFormInt, "%dJ", no_band);
-	sprintf(bandFormFloat, "%dE", no_band);
-	sprintf(tabFormFloat, "%dE", MAXTAB*no_band);
+	nPol = D->nPol;
+	nBand = D->nIF;
+	sprintf(bandFormInt, "%dJ", nBand);
+	sprintf(bandFormFloat, "%dE", nBand);
+	sprintf(tabFormFloat, "%dE", MAXTAB*nBand);
 	
-	if(no_pol == 2)
+	if(nPol == 2)
 	{
 		nColumn = NELEMENTS(columns);
 	}
@@ -487,19 +489,21 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	/* spew out the table header */
 	fitsWriteBinTable(out, nColumn, columns, n_row_bytes, "GAIN_CURVE");
 	arrayWriteKeys(p_fits_keys, out);
-	fitsWriteInteger(out, "NO_POL", no_pol, "");
+	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "NO_TABS", MAXTAB, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
 
-	for(i = 0; i < MAXTAB*MAXIFS; i++)
+	for(i = 0; i < array_MAX_BANDS; i++)
 	{
-		((int *)NaNs)[i] = -1;
+		curveType[i] = 2;
+		xType[i] = 0;
+		yType[i] = 2;
+		((int *)xVal)[i] = -1;	/* NaN */
 	}
-	for(i = 0; i < MAXIFS; i++)
+	for(i = 0; i < array_MAX_BANDS*MAXTAB; i++)
 	{
-		Twos[i] = 2;
-		Zeros[i] = 0;
+		((int *)yVal)[i] = -1;	/* NaN */
 	}
 	arrayId = 1;
 	freqId = 0;
@@ -518,7 +522,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 				continue;	/* this freqId done already */
 			}
 			freqId = D->config[c].freqId + 1;
-			for(i = 0; i < no_band; i++)
+			for(i = 0; i < nBand; i++)
 			{
 				freq = D->config[c].IF[i].freq;	/* MHz */
 				r = getGainRow(G, nRow, antName, freq, mjd);
@@ -534,15 +538,15 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 					bad = 1;
 					break;
 				}
-				nTerm[i] = G[r].npoly;
+				nTerm[i] = G[r].nPoly;
 				for(j = 0; j < MAXTAB; j++)
 				{
-					gain[i*MAXTAB + j] = 
-						(j < nTerm[i]) ? G[r].poly[j] : 0.0;
+					gain[i*MAXTAB + j] = (j < nTerm[i]) ? 
+						G[r].poly[j] : 0.0;
 				}
-				for(p = 0; p < no_pol; p++)
+				for(p = 0; p < nPol; p++)
 				{
-					sens[p][i] = G[r].dpfu[p];
+					sens[p][i] = G[r].DPFU[p];
 				}
 			}
 			if(bad == 1)
@@ -552,54 +556,22 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 			
 			p_fitsbuf = fitsbuf;
 			
-			/* ANTENNA_NO */
-			bcopy((char *)&antId, p_fitsbuf, sizeof(antId));
-			p_fitsbuf += sizeof(antId);
+			FITS_WRITE_ITEM (antId, p_fitsbuf);
+			FITS_WRITE_ITEM (arrayId, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId, p_fitsbuf);
 
-			/* ARRAY */
-			bcopy((char *)&arrayId, p_fitsbuf, sizeof(arrayId));
-			p_fitsbuf += sizeof(arrayId);
-
-			/* FREQ_ID */
-			bcopy((char *)&freqId, p_fitsbuf, sizeof(freqId));
-			p_fitsbuf += sizeof(freqId);
-
-			for(p = 0; p < no_pol; p++)
+			for(p = 0; p < nPol; p++)
 			{
-				/* TYPE */
-				bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
-
-				/* NTERM */
-				bcopy((char *)nTerm, p_fitsbuf, no_band*sizeof(int));
-				p_fitsbuf += no_band*sizeof(int);
-
-				/* X_TYP */
-				bcopy((char *)Zeros, p_fitsbuf, no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
-
-				/* Y_TYP */
-				bcopy((char *)Twos, p_fitsbuf, no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
-
-				/* X_VAL */
-				bcopy((char *)NaNs, p_fitsbuf, no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
-
-				/* Y_VAL */
-				bcopy((char *)NaNs, p_fitsbuf, 
-					MAXTAB*no_band*sizeof(float));
-				p_fitsbuf += MAXTAB*no_band*sizeof(float);
-
-				/* GAIN */
-				bcopy((char *)gain, p_fitsbuf, 
-					MAXTAB*no_band*sizeof(float));
-				p_fitsbuf += MAXTAB*no_band*sizeof(float);
-
-				/* SENSITIVITY */
-				bcopy((char *)(sens[p]), p_fitsbuf, 
-					no_band*sizeof(float));
-				p_fitsbuf += no_band*sizeof(float);
+				FITS_WRITE_ARRAY(curveType, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(nTerm, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(xType, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(yType, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(xVal, p_fitsbuf, nBand);
+				FITS_WRITE_ARRAY(yVal, p_fitsbuf, 
+					nBand*MAXTAB);
+				FITS_WRITE_ARRAY(gain, p_fitsbuf,
+					nBand*MAXTAB);
+				FITS_WRITE_ARRAY(sens[p], p_fitsbuf, nBand);
 			}
 
 #ifndef WORDS_BIGENDIAN
