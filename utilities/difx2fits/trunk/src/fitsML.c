@@ -76,17 +76,22 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int nBand;
 	int nColumn;
 	int nRowBytes;
-	char strng[80];
+	char str[80];
 	int i, j, k, p, s, ant;
 	double ppoly[array_MAX_BANDS][array_N_POLY];
 	double gpoly[array_N_POLY];
 	double prate[array_MAX_BANDS][array_N_POLY];
 	double grate[array_N_POLY];
-	int32_t sourceId, freqId;
+	float freqVar[array_MAX_BANDS];
+	float faraday;
+	int32_t sourceId, freqId, arrayId, antId;
 	double time;
+	float timeInt;
 	int nPol;
-	char *pBuf;
+	char *p_fitsbuf;
 	DifxModel *M;
+	float dispDelay;
+	float dispDelayRate;
 
 	if(D == 0)
 	{
@@ -100,15 +105,14 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	sprintf(bandFormDouble, "%dD", array_N_POLY * nBand);  
 	sprintf(bandFormFloat, "%dE", nBand);  
   
-  
 	/* determine size of records for FITS file */
 	if(nPol == 2)
 	{
-		nColumn = NELEMENTS (columns);
+		nColumn = NELEMENTS(columns);
 	}
 	else  /* don't populate last 6 columns if not full polar */
 	{
-		nColumn = NELEMENTS (columns) - 6;
+		nColumn = NELEMENTS(columns) - 6;
 	}
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
@@ -117,7 +121,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		     "INTERFEROMETER_MODEL");
   
 	/* calloc space for storing table in FITS order */
-	if ((fitsbuf = (char *)calloc (nRowBytes, 1)) == (char *)NULL)
+	fitsbuf = (char *)calloc (nRowBytes, 1);
+	if(fitsbuf == 0)
 	{
 		return 0;
 	}
@@ -130,14 +135,25 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	fitsWriteInteger(out, "NO_POL", p_fits_keys->no_pol, "");
 	fitsWriteFloat(out, "GSTIA0", 0.0, "");
 	fitsWriteFloat(out, "DEGPDY", 0.0, "");
-	mjd2fits(p_fits_keys->ref_date, strng);
-	fitsWriteString(out, "RDATE", strng, "");
-	mjd2fits((int)current_mjd(), strng);
-	fitsWriteString(out, "CDATE", strng, ""); 
+	mjd2fits(p_fits_keys->ref_date, str);
+	fitsWriteString(out, "RDATE", str, "");
+	mjd2fits((int)current_mjd(), str);
+	fitsWriteString(out, "CDATE", str, ""); 
 	fitsWriteInteger(out, "NPOLY", array_N_POLY, "");
 	fitsWriteFloat(out, "REVISION", 1.00, "");
 
 	fitsWriteEnd(out);
+
+	timeInt = D->modelInc / 86400.0;
+
+	/* some values that are always zero */
+	dispDelay = 0.0;
+	dispDelayRate = 0.0;
+	faraday = 0.0;
+	for(i = 0; i < nBand; i++)
+	{
+		freqVar[i] = 0.0;
+	}
 
 	for(s = 0; s < D->nScan; s++)
 	{
@@ -151,7 +167,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	      
 	      for(ant = 0; ant < D->nAntenna; ant++)
 	      {
-		pBuf = fitsbuf;
+		p_fitsbuf = fitsbuf;
 	      
 		M = D->scan[s].model[ant];
 		calcPolynomial(gpoly, M[p-1].t, M[p].t, M[p+1].t, M[p+2].t, 
@@ -176,109 +192,29 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 				prate[j][k] = grate[k]*freq;
 			}
 		}
+		antId = ant + 1;
 
-		/* TIME */
-		{
-			bcopy ((char *)&time, pBuf, sizeof (time));
-			pBuf += sizeof (time);
-		}
+		FITS_WRITE_ITEM (time, p_fitsbuf);
+		FITS_WRITE_ITEM (timeInt, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
+		FITS_WRITE_ITEM (antId, p_fitsbuf);
+		FITS_WRITE_ITEM (arrayId, p_fitsbuf);
+		FITS_WRITE_ITEM (freqId, p_fitsbuf);
+		FITS_WRITE_ITEM (faraday, p_fitsbuf);
+		FITS_WRITE_ARRAY(freqVar, p_fitsbuf, nBand);
 
-		/* TIME_INTERVAL */
+		for(i = 0; i < nPol; i++)
 		{
-			float time_int = D->modelInc / 86400.0; 
-			bcopy ((char *)&time_int, pBuf, sizeof (time_int));
-			pBuf += sizeof (time_int);
-		}
-
-		/* SOURCE_ID */
-		{
-			bcopy ((char *)&sourceId, pBuf, sizeof (sourceId));
-			pBuf += sizeof (sourceId);
-		}
-
-		/* ANTENNA_NO */
-		{
-			int32_t stn_id = ant + 1;
-			bcopy ((char *)&stn_id, pBuf, sizeof (stn_id));
-			pBuf += sizeof (stn_id);
-		}
-
-		/* ARRAY */
-		{
-			int32_t array = 1;
-			bcopy ((char *)&array, pBuf, sizeof (array));
-			pBuf += sizeof (array);
-		}
-
-		/* FREQID */
-		{
-			bcopy ((char *)&freqId, pBuf, sizeof (freqId));
-			pBuf += sizeof (freqId);
-		}
-		
-		/* I.FAR.ROT  -- set to zero like VLBA correlator */
-		{
-			float faraday = 0.0;
-			bcopy ((char *)&faraday, pBuf, sizeof (faraday));
-			pBuf += sizeof (faraday);
-		}
-
-		/* FREQ.VAR  -- set to zero like VLBA correlator */
-		{
-			float zero = 0.0;
-			for (i = 0; i < nBand; i++)
-			{
-				bcopy ((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-			}
-		}
-
-		for (i = 0; i < nPol; i++)
-		{
-			/* PDELAY */
-			{
-				bcopy((char *)ppoly[0], pBuf, 
-					nBand*array_N_POLY*sizeof(double));
-				pBuf += nBand*array_N_POLY*sizeof(double);
-			}
-			
-			/* GDELAY */
-			{
-				bcopy((char *)gpoly, pBuf, 
-					array_N_POLY*sizeof(double));
-				pBuf += array_N_POLY*sizeof(double);
-			}
-			
-			/* PRATE */
-			{
-				bcopy((char *)prate[0], pBuf, 
-					nBand*array_N_POLY*sizeof(double));
-				pBuf += nBand*array_N_POLY*sizeof(double);
-			}
-			
-			/* GRATE */
-			{
-				bcopy((char *)grate, pBuf, 
-					array_N_POLY*sizeof(double));
-				pBuf += array_N_POLY*sizeof(double);
-			}
-			
-			/* DISP  -- set to zero like VLBA correlator */
-			{
-				float zero = 0.0;
-				bcopy ((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-			}
-
-			/* DDISP  -- set to zero like VLBA correlator */
-			{
-				float zero = 0.0;
-				bcopy ((char *)&zero, pBuf, sizeof (zero));
-				pBuf += sizeof (zero);
-			}
+			FITS_WRITE_ARRAY(ppoly[0], p_fitsbuf,
+				nBand*array_N_POLY);
+			FITS_WRITE_ARRAY(gpoly, p_fitsbuf, array_N_POLY);
+			FITS_WRITE_ARRAY(prate[0], p_fitsbuf,
+				nBand*array_N_POLY);
+			FITS_WRITE_ARRAY(grate, p_fitsbuf, array_N_POLY);
+			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
+			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
 		} /* Polar loop */
       
-		/* write buffer to output file */
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
@@ -289,7 +225,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	} /* Scan loop */
   
 	/* release buffer space */
-	free (fitsbuf);
+	free(fitsbuf);
 
 	return D;
 }
