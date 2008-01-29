@@ -33,8 +33,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	int row;
 	int nBand;
 	int i;
-	int freqId;
-
+	int32_t freqId1;	/* 1-based index for FITS file */
 
 	if(D == 0)
 	{
@@ -65,16 +64,16 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
-	freqId = 0;
+	freqId1 = 0;
 
 	for(row = 0; row < D->nConfig; row++)
 	{
 		/* only write one row per unique frequency ID */
-		if(D->config[row].freqId < freqId)
+		if(D->config[row].freqId < freqId1)
 		{
 			continue;
 		}
-		freqId = D->config[row].freqId + 1;
+		freqId1 = D->config[row].freqId + 1;
 
 		for(i = 0; i < nBand; i++)
 		{
@@ -91,7 +90,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		/* pointer to the buffer for FITS records */
 		p_fitsbuf = fitsbuf;
 
-		FITS_WRITE_ITEM (freqId, p_fitsbuf);          /* FREQ_ID */
+		FITS_WRITE_ITEM (freqId1, p_fitsbuf);          /* FREQ_ID */
 		FITS_WRITE_ARRAY(bandFreq, p_fitsbuf, nBand); /* BANDFREQ */
 		FITS_WRITE_ARRAY(chanBW, p_fitsbuf, nBand);   /* CH_WIDTH */
 		FITS_WRITE_ARRAY(bandBW, p_fitsbuf, nBand);   /* BANDWIDTH */

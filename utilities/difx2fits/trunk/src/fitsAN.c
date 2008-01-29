@@ -37,13 +37,15 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	char antName[8];
 	double time;
 	float timeInt;
-	int antId, arrayId, freqId, nLevel;
 	char polTypeA;
 	float polAA[array_MAX_BANDS];
 	float polCalA[array_MAX_BANDS];
 	char polTypeB;
 	float polAB[array_MAX_BANDS];
 	float polCalB[array_MAX_BANDS];
+	int32_t nLevel;
+	/* 1-based indices for FITS file */
+	int32_t antId1, arrayId1, freqId1;
 
 	if(D == 0)
 	{
@@ -74,8 +76,8 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	start = D->mjdStart - (int)D->mjdStart;
 	stop = start + D->duration/86400.0;
 
-	arrayId = 1;
-	freqId = 0;
+	arrayId1 = 1;
+	freqId1 = 0;
 	nLevel = 1 << (D->quantBits);
 	polTypeA = 'R';
 	polTypeB = 'L';
@@ -91,23 +93,23 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 
 	for(c = 0; c < D->nConfig; c++)
 	{
-		if(D->config[c].freqId < freqId)
+		if(D->config[c].freqId < freqId1)
 		{
 			continue;	/* already got this freqid */
 		}
-		freqId = D->config[c].freqId + 1; /* FITS fqId starts at 1 */
+		freqId1 = D->config[c].freqId + 1; /* FITS fqId starts at 1 */
 		for(a = 0; a < D->nAntenna; a++)
 		{
 			p_fitsbuf = fitsbuf;
-			antId = a + 1;	  /* FITS antId starts at 1 */
+			antId1 = a + 1;	  /* FITS antId1 starts at 1 */
 			strcpypad(antName, D->antenna[a].name, 8);
 
 			FITS_WRITE_ITEM (time, p_fitsbuf);
 			FITS_WRITE_ITEM (timeInt, p_fitsbuf);
 			FITS_WRITE_ARRAY(antName, p_fitsbuf, 8);
-			FITS_WRITE_ITEM (antId, p_fitsbuf);
-			FITS_WRITE_ITEM (arrayId, p_fitsbuf);
-			FITS_WRITE_ITEM (freqId, p_fitsbuf);
+			FITS_WRITE_ITEM (antId1, p_fitsbuf);
+			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 			FITS_WRITE_ITEM (nLevel, p_fitsbuf);
 			FITS_WRITE_ITEM (polTypeA, p_fitsbuf);
 			FITS_WRITE_ARRAY(polAA, p_fitsbuf, nBand);

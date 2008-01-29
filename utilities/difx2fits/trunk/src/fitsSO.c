@@ -46,8 +46,6 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	char *fitsbuf;
 	char *p_fitsbuf;
 	char sourceName[16];
-	int sourceId;
-	int freqId;
 	int configId;
 	int qual;
 	char calCode[4];
@@ -67,6 +65,8 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	double muRA;			/* proper motion */
 	double muDec;
 	float parallax;
+	/* 1-based indices for FITS file */
+	int32_t sourceId1, freqId1;
 	
 	if(D == 0)
 	{
@@ -115,7 +115,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
-		sourceId = s + 1;	/* FITS sourceId is 1-based */
+		sourceId1 = s + 1;	/* FITS sourceId1 is 1-based */
 		qual = D->source[s].qual;
 		strcpypad(calCode, D->source[s].calCode, 4);
 		RAEpoch = D->source[s].ra * 180.0 / M_PI;
@@ -123,14 +123,14 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		RAApp = RAEpoch;
 		decApp = decEpoch;
 		configId = D->source[s].configId;
-		freqId = D->config[configId].freqId + 1;  /* FITS 1-based */
+		freqId1 = D->config[configId].freqId + 1;  /* FITS 1-based */
 		strcpypad(sourceName, D->source[s].name, 16);
 
-		FITS_WRITE_ITEM (sourceId, p_fitsbuf);
+		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
 		FITS_WRITE_ITEM (sourceName, p_fitsbuf);
 		FITS_WRITE_ITEM (qual, p_fitsbuf);
 		FITS_WRITE_ITEM (calCode, p_fitsbuf);
-		FITS_WRITE_ITEM (freqId , p_fitsbuf);
+		FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 		FITS_WRITE_ARRAY(fluxI, p_fitsbuf, nBand);
 		FITS_WRITE_ARRAY(fluxQ, p_fitsbuf, nBand);
 		FITS_WRITE_ARRAY(fluxU, p_fitsbuf, nBand);

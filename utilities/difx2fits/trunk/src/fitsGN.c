@@ -444,11 +444,12 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	int32_t nTerm[array_MAX_BANDS];
 	float gain[MAXTAB*array_MAX_BANDS];
 	float sens[2][array_MAX_BANDS];
-	int antId, freqId, arrayId;
 	int bad;
 	int mjd;
 	double freq;
 	int messages = 0;
+	/* 1-based indices for FITS file */
+	int32_t antId1, freqId1, arrayId1;
 
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G || !D)
@@ -505,23 +506,23 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	{
 		((int *)yVal)[i] = -1;	/* NaN */
 	}
-	arrayId = 1;
-	freqId = 0;
+	arrayId1 = 1;
+	freqId1 = 0;
 	mjd = D->mjdStart + 0.5*D->duration/86400.0;
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		antName = D->antenna[a].name;
-		antId = a+1;
+		antId1 = a + 1;
 		bad = 0;
 
 		for(c = 0; c < D->nConfig; c++)
 		{
-			if(D->config[c].freqId < freqId)
+			if(D->config[c].freqId < freqId1)
 			{
-				continue;	/* this freqId done already */
+				continue;	/* this freqId1 done already */
 			}
-			freqId = D->config[c].freqId + 1;
+			freqId1 = D->config[c].freqId + 1;
 			for(i = 0; i < nBand; i++)
 			{
 				freq = D->config[c].IF[i].freq;	/* MHz */
@@ -556,9 +557,9 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 			
 			p_fitsbuf = fitsbuf;
 			
-			FITS_WRITE_ITEM (antId, p_fitsbuf);
-			FITS_WRITE_ITEM (arrayId, p_fitsbuf);
-			FITS_WRITE_ITEM (freqId, p_fitsbuf);
+			FITS_WRITE_ITEM (antId1, p_fitsbuf);
+			FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
 
 			for(p = 0; p < nPol; p++)
 			{
