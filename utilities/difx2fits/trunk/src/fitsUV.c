@@ -483,14 +483,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	int changed;
 	int i, k;
 	int specAvg;
-	float vis_scale;
+	float visScale;
 	double scale;
 	char dateStr[12];
 	char fluxFormFloat[8];
 	char gateFormInt[8];
 	char weightFormFloat[8];
-	int LSB;
-	int n_row_bytes;
+	int isLSB;	/* boolean -- true if lower side band */
+	int nRowBytes;
+	int nColumn;
 	int nWeight;
 	int nInvalid = 0;
 	int nFlagged = 0;
@@ -514,7 +515,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 		{"FLUX", fluxFormFloat, "data matrix", "UNCALIB"}
 	};
 
-	vis_scale = 1.0;
+	visScale = 1.0;
 
 	/* FIXME -- nees love here! */
 	if(s > 0.0)
@@ -534,10 +535,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	sprintf(gateFormInt, "%dJ", 0);
 	sprintf(fluxFormFloat, "%dE", dv->nData);
 
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	nColumn = NELEMENTS(columns);
+	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(dv->out, NELEMENTS(columns), columns,
-		n_row_bytes, "UV_DATA");
+	fitsWriteBinTable(dv->out, nColumn, columns, nRowBytes, "UV_DATA");
 	fitsWriteInteger(dv->out, "NMATRIX", 1, "");
 
 	/* get the job ref_date from the fits_keyword struct, convert it into
@@ -551,7 +552,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	arrayWriteKeys(p_fits_keys, dv->out);
 	
 	fitsWriteInteger(dv->out, "TABREV", 2, "ARRAY changed to FILTER");
-	fitsWriteFloat(dv->out, "VIS_SCAL", vis_scale, "");
+	fitsWriteFloat(dv->out, "VIS_SCAL", visScale, "");
 
 	fitsWriteString(dv->out, "SORT", "T*", "");
 
@@ -627,8 +628,8 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 						dv->weight[i] = 1.0;
 					}
 #ifndef WORDS_BIGENDIAN
-					FitsBinRowByteSwap(columns, 
-						NELEMENTS(columns), dv->record);
+					FitsBinRowByteSwap(columns, nColumn, 
+						dv->record);
 #endif
 					fitsWriteBinRow(dv->out, 
 						(char *)dv->record);
@@ -647,10 +648,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			/* blank array */
 			memset(dv->data, 0, dv->nData*sizeof(float));
 		}
-		LSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
+		isLSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
 		for(i = 0; i < dv->nChan*dv->D->specAvg; i++)
 		{
-			if(LSB)
+			if(isLSB)
 			{
 				int j;
 				j = dv->nChan*dv->D->specAvg - 1 - i;
@@ -665,7 +666,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			for(k = 0; k < dv->nComplex; k++)
 			{
 				/* swap phase/uvw for FITS-IDI conformance */
-				if(k % 3 == 1 && !LSB)
+				if(k % 3 == 1 && !isLSB)
 				{
 					dv->data[index+k] -= scale*
 						dv->spectrum[dv->nComplex*i+k];
@@ -695,7 +696,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			dv->weight[i] = 1.0;
 		}
 #ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, NELEMENTS(columns), dv->record);
+		FitsBinRowByteSwap(columns, nColumn, dv->record);
 #endif
 		fitsWriteBinRow(dv->out, (char *)dv->record);
 		nWritten++;

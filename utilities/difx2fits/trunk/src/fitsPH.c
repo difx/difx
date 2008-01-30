@@ -13,7 +13,7 @@ static int getNTone(const char *filename, double t1, double t2)
 {
 	FILE *in;
 	char line[1000];
-	int n, nt, nTone=0;
+	int n, nTone, maxnTone=0;
 	double t;
 
 	in = fopen(filename, "r");
@@ -29,23 +29,23 @@ static int getNTone(const char *filename, double t1, double t2)
 		{
 			break;
 		}
-		n = sscanf(line, "%*s%lf%*f%*f%*d%*d%d", &t, &nt);
+		n = sscanf(line, "%*s%lf%*f%*f%*d%*d%d", &t, &nTone);
 		if(n != 2)
 		{
 			continue;
 		}
 		if(t >= t1 && t <= t2)
 		{
-			if(nt > nTone)
+			if(nTone > maxnTone)
 			{
-				nTone = nt;
+				maxnTone = nTone;
 			}
 		}
 		
 	}
 	fclose(in);
 
-	return nTone;
+	return maxnTone;
 }
 
 static int parsePulseCal(const char *line, 
@@ -63,6 +63,7 @@ static int parsePulseCal(const char *line,
 	int pol, band;
 	int sourceId;
 	double A;
+	const char *L = line;
 	float B, C;
 	double mjd;
 	char antName[20];
@@ -134,6 +135,7 @@ static int parsePulseCal(const char *line,
 				}
 				if(v < 0)
 				{
+					printf("line = %s\n", L);
 					continue;
 				}
 				freqs[polId][tone + bandId*nt] = A*1.0e6;
@@ -145,31 +147,38 @@ static int parsePulseCal(const char *line,
 		}
 	}
 	
-	/* Read in state count information */
-	for(pol = 0; pol < np; pol++)
+	if(ns > 0)
 	{
-		for(band = 0; band < nb; band++)
+		/* Read in state count information */
+		for(pol = 0; pol < np; pol++)
 		{
-			n = sscanf(line, "%d%n", &recChan, &p);
-			line += p;
-			v = DifxConfigRecChan2IFPol(D, *configId,
-				*antId, recChan, &bandId, &polId);
-			for(state = 0; state < 4; state++)
+			for(band = 0; band < nb; band++)
 			{
-				if(state < ns)
+				n = sscanf(line, "%d%n", &recChan, &p);
+				line += p;
+				v = DifxConfigRecChan2IFPol(D, *configId,
+					*antId, recChan, &bandId, &polId);
+				if(v < 0)
 				{
-					n = sscanf(line, "%f%n", &B, &p);
-					if(n < 1)
+					printf("off=%d, line = %s\n", line-L, L);
+				}
+				for(state = 0; state < 4; state++)
+				{
+					if(state < ns)
 					{
-						return -5;
+						n = sscanf(line, "%f%n", &B, &p);
+						if(n < 1)
+						{
+							return -5;
+						}
+						line += p;
 					}
-					line += p;
+					else
+					{
+						B = 0.0;
+					}
+					stateCount[polId][state + bandId*4] = B;
 				}
-				else
-				{
-					B = 0.0;
-				}
-				stateCount[polId][state + bandId*4] = B;
 			}
 		}
 	}

@@ -17,6 +17,7 @@ struct __attribute__((packed)) UVrow
 	float data[0];	/* this takes no room in the "sizeof" operation */
 };
 
+/* Information useful for tracking properies of visibility records */
 typedef struct
 {
 	glob_t globbuf;
