@@ -15,6 +15,7 @@ author  = 'Walter Brisken'
 BufferFactor = 32
 NDataSegment = 8
 MaxEOP = 5
+verbose = 0
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
@@ -23,7 +24,8 @@ def usage():
 	print 'output files as similar as possible to the VLBA output'
 	print '\nUsage: %s [options] <job file>' % (argv[0])
 	print '\nOptions can include:'
-	print '\n  -h or --help  print this help into and exit'
+	print '\n  -h or --help     print this help into and exit'
+	print '\n  -v or --verbose  spew lots of info to the screen'
 	print '\n  List of antennas : e.g.  A=BR,KP,LA'
 	print '    Multiple antenna lists are appended, e.g.  A=BR A=KP A=LA'
 	print '    Default is all antennas in job'
@@ -429,8 +431,9 @@ def generatesubjoblist(scanlist, subarraylist, job):
 		for Y in scan[6]:
 			#config.append([Y[0][0], Y[0][3]])
 			config.append([Y[0][0], Y[0][1], Y[0][3]])
-		print scan[6]
-		print 'CONFIG =  ', config
+		if verbose:
+			print scan[6]
+			print 'CONFIG =  ', config
 		intsubs = intersection(scan[5], subs)
 		if (len(intsubs) > 0) and (oldconfig == config):
 			subs = intsubs
@@ -441,8 +444,8 @@ def generatesubjoblist(scanlist, subarraylist, job):
 			subs = scan[5]
 			subjobrange = [i, i, scan[2], scan[3], subs]
 			subjoblist.append(subjobrange)
-
-	print 'SUBJOBLIST = ', subjoblist
+	if verbose:
+		print 'SUBJOBLIST = ', subjoblist
 
 	# Now append actual subarray list for each file index
 	for sj in subjoblist:
@@ -745,8 +748,8 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 	nfreq = len(freqlist)
 	
 
-	print 'FREQ LIST ',freqlist
-
+	if verbose:
+		print 'FREQ LIST ',freqlist
 	
 	dst.append("# DATASTREAM TABLE #!")
 	dst.append("DATASTREAM ENTRIES: %d" % (nant*len(setups)) )
@@ -821,7 +824,7 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 				trackNum = int(trackList[i])
 				band = track2recChan(format_name, trackNum)
 				inputBandList.append([band, polar[i][1], index, trackNum])
-			# print input band descriptions in record channel order
+			# write input band descriptions in record channel order
 			inputBandList.sort()
 			for b in inputBandList:
 				dst.append(indent21_1("INPUT BAND %d POL", \
@@ -1055,7 +1058,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	return calc
 ##
 
-def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist, verbose=False):
+def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist):
 
 	job_master = job['master']
 	obscode = job_master[0]['obscode']
@@ -1084,7 +1087,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 	jobstarttime = scanlist[0][2]
 	jobstoptime  = scanlist[-1][3]
 
-	if verbose:
+	if verbose > 1:
 		print 'antennalist = ', antennalist
 		print 'antenna_index = ', antenna_index
 		print 'sources  = ', job['source']
@@ -1144,7 +1147,8 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				if not st in setups:
 					setups.append(st)
 
-			print 'setups = ', setups
+			if verbose:
+				print 'setups = ', setups
 			
 			tables = []
 			nant = len(sub)
@@ -1154,7 +1158,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				generatefreqlist(job['frequency'][config[1]])
 			allfreqlist = \
 				generateallfreqlist(job['frequency'], setups)
-			if verbose:
+			if verbose > 1:
 				print 'freqlist = ', freqlist
 				print 'allfreqlist = ', allfreqlist
 			tables.append( makecommontable(filebase, nant, \
@@ -1209,6 +1213,10 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 def merge(jobs):
 	rankList = []
 
+	jobIds = []
+	for j in jobs[1:]:
+		jobIds.append(int(j['master'][0]['job_id']))
+	
 	# generate sort key
 	for i in range(1,len(jobs)):
 		# keep popping of jobs until the list is empty
@@ -1229,6 +1237,8 @@ def merge(jobs):
 	jobs.append(rankList[0][1])
 	freq1 = jobs[1]['frequency']
 	form1 = jobs[1]['format']
+	print 'Merging jobs ', jobIds, 'into one job: ',  \
+		int(jobs[1]['master'][0]['job_id'])
 	l = len(freq1)
 	# the first ranked job will be the master.  Append other parallel
 	# jobs to this one.
@@ -1389,6 +1399,7 @@ else:
 	fftsize = 0
 	nchan = 0
 	tint = 0.0
+	verbose = 0
 	minsubarraysize = 3
 	files = []
 	masterant = ''
@@ -1411,6 +1422,8 @@ else:
 				minsubarraysize = float(kv[1])
 		elif arg == '-h' or arg == '--help':
 			usage()
+		elif arg == '-v' or arg == '--verbose':
+			verbose = verbose + 1
 		elif len(kv) == 1:
 			files.append([arg])
 		else:
@@ -1436,6 +1449,6 @@ else:
 		if len(file) == 2:
 			processjobfile(file[1], file[0], antennalist, \
 				fftsize, nchan, tint, minsubarraysize, \
-				joblist, True)
+				joblist)
 		# make Makefile
 	genMakefile(joblist)
