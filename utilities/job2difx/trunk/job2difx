@@ -55,6 +55,7 @@ def parsetime(str):
 
 	return mjd + h/24.0 + m/1440.0 + s/86400.0
 
+
 def mjd2calendar(mjd):
 	jd = int(mjd)+2400000
 	l = jd + 68570
@@ -559,6 +560,30 @@ def generatesrclist(job_source):
 
 	return srclist
 
+def track2recChan(formatName, trackNum):
+	if formatName[0:4] in ['VLBA', 'MKIV']:
+		fanout = int(formatName[6])
+		triple = split(formatName[8:], '-')
+		nChan = int(triple[1])
+		nBit = int(triple[2])
+		delta = fanout*nBit*2
+		if trackNum < 34:
+			if trackNum % 2 == 0:
+				return (trackNum-2)/delta
+			else:
+				return (trackNum+29)/delta
+		else:
+			if trackNum % 2 == 0:
+				return (trackNum+30)/delta
+			else:
+				return (trackNum+61)/delta
+	elif formatName[0:4] == 'MK5B':
+		return trackNum
+	else:
+		return -1
+		
+
+
 ####### Functions to make output DiFX tables #####
 
 def maketelescopetable(job_clock, subarray, antennalist, startmjd):
@@ -747,6 +772,9 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 			tracks = fanout*qbits*nIF
 			Mbps = int(job_freq[0]['sample_rate'])*nIF*qbits/1000000
 			format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
+			
+			trackList = format[format_id]['track']
+			
 			dst.append("TELESCOPE INDEX:    %d" % ds_num)
 			dst.append("TSYS:               0.0")
 			dst.append("DATA FORMAT:        %s" % format_name)
@@ -764,7 +792,7 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 			polar  = job_freq_row['polarization']
 			fslist = []
 			SA = {'1' : 'U' , '-1' : 'L'}
-			
+
 			for i in range(len(enable)):
 				if enable[i] != 'YES':
 					continue
@@ -775,14 +803,14 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 				if fs in fslist:
 					continue;
 				fslist.append(fs)
-				dst.append(indent21_1("FREQ TABLE INDEX %d", "%d", \
-					fq_id, fq_id + Q))
-				dst.append(indent21_1("CLK OFFSET %d (us)", "%8.6f", \
-					fq_id, 0.0))
+				dst.append(indent21_1("FREQ TABLE INDEX %d", \
+					"%d", fq_id, fq_id + Q))
+				dst.append(indent21_1("CLK OFFSET %d (us)", \
+					"%8.6f", fq_id, 0.0))
 				dst.append(indent21_1("NUM POLS %d", "%d", \
 					fq_id, len(freqlist[fq_id][4])))
 				fq_id += 1
-			band = 0
+			inputBandList = []
 			for i in range(len(enable)):
 				if enable[i] != 'YES':
 					continue
@@ -790,11 +818,16 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, nfqid, set
 				s = SA[side[i]]
 				fs = [f, s]
 				index = fslist.index(fs)
-				dst.append(indent21_1("INPUT BAND %d POL", "%s", \
-					band, polar[i][1]))
-				dst.append(indent21_1("INPUT BAND %d INDEX", "%d", \
-					band, index))
-				band += 1
+				trackNum = int(trackList[i])
+				band = track2recChan(format_name, trackNum)
+				inputBandList.append([band, polar[i][1], index, trackNum])
+			# print input band descriptions in record channel order
+			inputBandList.sort()
+			for b in inputBandList:
+				dst.append(indent21_1("INPUT BAND %d POL", \
+					"%s", b[0], b[1]))
+				dst.append(indent21_1("INPUT BAND %d INDEX", \
+					"%d", b[0], b[2]))
 	
 	return dst
 
@@ -1174,11 +1207,11 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 #############
 
 def merge(jobs):
-	# for now, just assume that we can simply order files
-	f = []
+	rankList = []
 
 	# generate sort key
 	for i in range(1,len(jobs)):
+		# keep popping of jobs until the list is empty
 		j = jobs.pop()
 		fmt = j['format'][0]
 		if fmt['barrel_roll'] == 'DISCUPPER':
@@ -1190,22 +1223,37 @@ def merge(jobs):
 			N += 200
 		if N % 2 == 1:
 			N += 100
-		f.append(["%c%03d" % (R, N), j])
-	f.sort()
-	jobs.append(f[0][1])
-	f1 = jobs[1]['frequency']
-	l = len(f1)
-	for g in f[1:]:
-		f2 = g[1]['frequency']
+		rankList.append(["%c%03d" % (R, N), j])
+	rankList.sort()
+	# push only the master job back onto the list
+	jobs.append(rankList[0][1])
+	freq1 = jobs[1]['frequency']
+	form1 = jobs[1]['format']
+	l = len(freq1)
+	# the first ranked job will be the master.  Append other parallel
+	# jobs to this one.
+	for g in rankList[1:]:
+		freq2 = g[1]['frequency']
+		form2 = g[1]['format']
 		for i in range(l):
-			for v in f2[i]['fft_enable'][1:]:
-				f1[i]['fft_enable'].append(v)
-			for v in f2[i]['base_freq'][1:]:
-				f1[i]['base_freq'].append(v)
-			for v in f2[i]['net_side'][1:]:
-				f1[i]['net_side'].append(v)
-			for v in f2[i]['polarization'][1:]:
-				f1[i]['polarization'].append(v)
+			if form2[i]['barrel_roll'] == 'DISCUPPER':
+				delta = 32
+			else:
+				delta = 0
+			for v in freq2[i]['fft_enable'][1:]:
+				freq1[i]['fft_enable'].append(v)
+			for v in freq2[i]['base_freq'][1:]:
+				freq1[i]['base_freq'].append(v)
+			for v in freq2[i]['net_side'][1:]:
+				freq1[i]['net_side'].append(v)
+			for v in freq2[i]['polarization'][1:]:
+				freq1[i]['polarization'].append(v)
+			for v in form2[i]['track'][1:]:
+				if v != '-1':
+					newtrack = delta + int(v)
+				else:
+					newtrack = int(v)
+				form1[i]['track'].append('%s' % newtrack)
 	
 
 # argument is list of ['filename', job]
