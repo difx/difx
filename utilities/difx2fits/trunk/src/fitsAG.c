@@ -1,4 +1,6 @@
+#include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
 #include "config.h"
@@ -45,7 +47,7 @@ struct __attribute__((packed)) AGrow
 	char name[8];
 	double x, y, z;
 	float dx, dy, dz;
-	int32_t antId;
+	int32_t antId1;
 	int32_t mountType;
 	float offset[3];
 };
@@ -66,7 +68,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	};
 
 	char ref_date[12];
-	int n_row_bytes;
+	int nRowBytes;
 	int i, a, e, mjd;
 	struct AGrow row;
 
@@ -75,9 +77,17 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		return 0;
 	}
 
-	n_row_bytes = FitsBinTableSize(columns, NELEMENTS(columns));
+	nRowBytes = FitsBinTableSize(columns, NELEMENTS(columns));
 
-	fitsWriteBinTable(out, NELEMENTS(columns), columns, n_row_bytes,
+	/* A warning for developers */
+	if(nRowBytes != sizeof(row))
+	{
+		fprintf(stderr, "AG table : nRowBytes != sizeof(row) : "
+			"%d != %d\n", nRowBytes, sizeof(row));
+		exit(0);
+	}
+
+	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes,
 		"ARRAY_GEOMETRY");
 
 	mjd = (int)(D->mjdStart);
@@ -136,7 +146,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		row.dx = D->antenna[a].dX;
 		row.dy = D->antenna[a].dY;
 		row.dz = D->antenna[a].dZ;
-		row.antId = a+1;
+		row.antId1 = a+1;
 		if(strcasecmp(D->antenna[a].mount, "xyew") == 0)
 		{
 			row.mountType = 4;

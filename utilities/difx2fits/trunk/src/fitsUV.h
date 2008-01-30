@@ -10,7 +10,8 @@ struct __attribute__((packed)) UVrow
 {
 	float U, V, W;
 	double jd, iat;
-	int32_t baseline, filter, sourceId, freqId;
+	int32_t baseline, filter;
+	int32_t sourceId1, freqId1;	/* 1-based FITS indices */
 	float intTime;
 	/* FIXME -- no pulsar gate id! */
 	float data[0];	/* this takes no room in the "sizeof" operation */

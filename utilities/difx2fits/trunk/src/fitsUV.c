@@ -411,9 +411,9 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	/* note antennaIds, sourceId, freqId are 1-based in FITS */
 	dv->record->baseline = dv->baseline;
 	dv->record->filter = 0;
-	dv->record->sourceId = dv->sourceId + 1;
-	dv->record->freqId   = dv->freqId + 1;
-	dv->record->intTime  = dv->tInt;
+	dv->record->sourceId1 = dv->sourceId + 1;
+	dv->record->freqId1   = dv->freqId + 1;
+	dv->record->intTime   = dv->tInt;
 
 	return 0;
 }
