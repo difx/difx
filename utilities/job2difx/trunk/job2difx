@@ -1370,6 +1370,7 @@ def genMakefile(joblist):
 	Makefile.write('uvws: $(uvws)\n\n')
 	Makefile.write("FITS: $(fitss)\n\n")
 	Makefile.write(clean+"\n\n")
+	fitslist = []
 	for jobinfo in joblist:
 		job = jobinfo[0]
 		if job[0:3] == 'job':
@@ -1377,6 +1378,7 @@ def genMakefile(joblist):
 		else:
 			jnum = job
 		obscode = jobinfo[1]
+		fitslist.append('%s.%s.FITS' % (obscode, jnum))
 		fitsfile = '%s.%s.FITS' % (obscode, jnum)
 		Makefile.write("%s.uvw: %s.calc\n\tcalcif %s.calc\n\n" % (job, job, job))
 		Makefile.write("%s.machines: %s.input\n\tgenmachines %s.input\n\n" % (job, job, job))
@@ -1389,6 +1391,8 @@ def genMakefile(joblist):
 		Makefile.write("\tmpirun -np `cat %s.machines | wc -l` --bynode --hostfile %s.machines  /users/wbrisken/src/SWcorr/trunk/difx/mpifxcorr/src/mpifxcorr `pwd`/%s.input\n" % (job, job, job))
 		Makefile.write("\tdate\n\n")
 		Makefile.write("%s: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s\n\n" % (fitsfile, job, job, job, job, job, job, fitsfile))
+	for i in range(len(fitslist)):
+		Makefile.write("\n%d : %s\n" % ((i+1), fitslist[i]))
 
 	Makefile.close()
 
