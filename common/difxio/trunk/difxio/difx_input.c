@@ -2493,7 +2493,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	if(recChan >= ds->nRecChan)
 	{
 		fprintf(stderr, "DifxConfigRecChan2IFPol : recChan=%d out"
-			" of range\n", recChan);
+			" of range %d\n", recChan, ds->nRecChan);
 		return -1;
 	}
 	
