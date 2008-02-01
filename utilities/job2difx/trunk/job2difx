@@ -937,6 +937,10 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	job_master = job['master']
 	job_custom = job['custom']
 	job_freq = job['frequency']
+	if 'spacecraft' in job:
+		job_spacecraft = job['spacecraft']
+	else:
+		job_spacecraft = []
 	calc = []
 	mjd0 = scans[0][2]
 	start = mjd2calendar(mjd0)
@@ -1051,6 +1055,38 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 		calc.append("EOP %d YPOLE (arcsec): %s" % \
 			(eop_num, e['ypole']) )
 		eop_num += 1
+
+	spacecraft = {}
+	for row in job_spacecraft:
+		name = row['spacecraft']
+		if not name in spacecraft:
+			spacecraft[name] = []
+		spacecraft[name].append(row)
+
+	calc.append("NUM SPACECRAFT     :%d" % len(spacecraft))
+	n = 0
+	for sc in spacecraft:
+		calc.append(indent21_1("SPACECRAFT %d NAME", "%s", n, sc))
+		calc.append(indent21_1("SPACECRAFT %d ROWS", "%d", n, \
+			len(spacecraft[sc])))
+		m = 0
+		for row in spacecraft[sc]:
+			t = parsetime(row['time'])
+			orbX = row['orb_x']
+			orbY = row['orb_y']
+			orbZ = row['orb_z']
+			velX = row['vel_x']
+			velY = row['vel_y']
+			velZ = row['vel_z']
+			
+			rowData = '%13.8f %s %s %s %s %s %s' % \
+				(t, orbX, orbY, orbZ, velX, velY, velZ)
+			calc.append(indent21_2("SPACECRAFT %d ROW %d", "%s", \
+				n, m, rowData))
+			
+			m += 1
+		n += 1
+
 	
 	calc.append("DELAY FILENAME:     %s.delay" % filebase)
 	calc.append("UVW FILENAME:       %s.uvw" % filebase)
