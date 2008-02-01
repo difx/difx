@@ -12,7 +12,7 @@ difx2fits_SOURCES = \
 	fitsMC.c \
 	fitsML.c \
 	fitsPH.c \
-	fitsSO.c \
+	fitsSU.c \
 	fitsTS.c \
 	fitsUV.c \
 	fitsWR.c \

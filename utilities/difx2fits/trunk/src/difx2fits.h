@@ -13,7 +13,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
-const DifxInput *DifxInput2FitsSO(const DifxInput *D,
+const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsAN(const DifxInput *D,

@@ -108,9 +108,9 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  SO -- source              ");
+	printf("  SU -- source              ");
 	fflush(stdout);
-	D = DifxInput2FitsSO(D, &keys, out);
+	D = DifxInput2FitsSU(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
