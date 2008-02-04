@@ -99,6 +99,7 @@ typedef struct
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
 	char vsn[12];		/* vsn for module */
+	int spacecraftId;	/* -1 if not a spacecraft */
 } DifxAntenna;
 
 typedef struct
@@ -108,6 +109,7 @@ typedef struct
 	char calCode[4];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
 	int configId;		/* to determine freqId */
+	int spacecraftId;	/* -1 if not spacecraft */
 } DifxSource;
 
 typedef struct
@@ -142,6 +144,21 @@ typedef struct
 	double ut1_utc;		/* (sec) */
 	double xPole, yPole;	/* (arcsec) */
 } DifxEOP;
+
+typedef struct
+{
+	int mjd;
+	double fracDay;
+	long double X, Y, Z;	/* (m) */
+	long double dX, dY, dZ;	/* (m/sec) */
+} sixVector;
+
+typedef struct
+{
+	char name[32];		/* name of spacecraft */
+	int nPoints;		/* number of entries in ephemeris */
+	sixVector *pos;		/* array of positions and velocoties */
+} DifxSpacecraft;
 
 typedef struct
 {
@@ -181,7 +198,7 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDSEntry, nBaseline;
+	int nDSEntry, nBaseline, nSpacecraft;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -191,6 +208,7 @@ typedef struct
 	DifxAntennaFlag *flag;
 	DifxDSEntry	*dsentry;
 	DifxBaseline    *baseline;
+	DifxSpacecraft	*spacecraft;
 } DifxInput;
 
 

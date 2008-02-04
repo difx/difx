@@ -435,8 +435,13 @@ void printDifxFreq(const DifxFreq *df)
 DifxAntenna *newDifxAntennaArray(int nAntenna)
 {
 	DifxAntenna* da;
+	int a;
 
 	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
+	for(a = 0; a < nAntenna; a++)
+	{
+		da[a].spacecraftId = -1;
+	}
 	
 	return da;
 }
@@ -459,6 +464,7 @@ void printDifxAntenna(const DifxAntenna *da)
 		da->offset[0], da->offset[1], da->offset[2]);
 	printf("    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
 	printf("    VSN = %s\n", da->vsn);
+	printf("    SpacecraftId = %d\n", da->spacecraftId);
 }
 
 
@@ -471,6 +477,7 @@ DifxSource *newDifxSourceArray(int nSource)
 	for(s = 0; s < nSource; s++)
 	{
 		ds[s].configId = -1;
+		ds[s].spacecraftId = -1;
 	}
 	
 	return ds;
@@ -492,6 +499,7 @@ void printDifxSource(const DifxSource *ds)
 	printf("    Calcode = %s\n", ds->calCode);
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    ConfigId = %d\n", ds->configId);
+	printf("    SpacecraftId = %d\n", ds->spacecraftId);
 }
 
 
@@ -597,6 +605,11 @@ DifxEOP *newDifxEOPArray(int nEOP)
 {
 	DifxEOP *de;
 
+	if(nEOP == 0)
+	{
+		return 0;
+	}
+
 	de = (DifxEOP *)calloc(nEOP, sizeof(DifxEOP));
 
 	return de;
@@ -613,11 +626,57 @@ void deleteDifxEOPArray(DifxEOP *de)
 void printDifxEOP(const DifxEOP *de)
 {
 	printf("  DifxEOP [%d] : %p\n", (int)(de->mjd + 0.5), de);
+	if(!de)
+	{
+		return;
+	}
 	printf("    TAI - UTC = %d sec\n", de->tai_utc);
 	printf("    UT1 - UTC = %9.6f sec\n", de->ut1_utc);
 	printf("    Pole X, Y = %8.6f, %8.6f arcsec\n", de->xPole, de->yPole);
 }
 
+
+DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft)
+{
+	DifxSpacecraft *ds;
+	
+	if(nSpacecraft == 0)
+	{
+		return 0;
+	}
+	
+	ds = (DifxSpacecraft *)calloc(nSpacecraft, sizeof(DifxSpacecraft));
+
+	return ds;
+}
+
+void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft)
+{
+	int s;
+
+	if(ds)
+	{
+		for(s = 0; s < nSpacecraft; s++)
+		{
+			if(ds[s].pos)
+			{
+				free(ds[s].pos);
+			}
+		}
+		free(ds);
+	}
+}
+
+void printDifxSpacecraft(const DifxSpacecraft *ds)
+{
+	printf("  DifxSpacecraft : %p\n", ds);
+	if(!ds)
+	{
+		return;
+	}
+	printf("    Name = %s\n", ds->name);
+	printf("    Num points = %d\n", ds->nPoints);
+}
 
 /* allocate empty structure, do minimal initialization */
 DifxInput *newDifxInput()
@@ -739,6 +798,12 @@ void printDifxInput(const DifxInput *D)
 	if(D->nBaseline > 1)
 	{
 		printDifxBaseline(D->baseline + i);
+	}
+
+	printf("  nSpacecraft = %d\n", D->nSpacecraft);
+	for(i = 0; i < D->nSpacecraft; i++)
+	{
+		printDifxSpacecraft(D->spacecraft + i);
 	}
 	
 	printf("\n");
@@ -1734,7 +1799,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		"JOB ID",
 		"OBSCODE",
-		"NUM EOP"
+		"NUM EOP",
+		"NUM SPACECRAFT"
 	};
 	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
 	
@@ -1762,11 +1828,21 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		"SCAN %d QUAL"
 	};
 	const int N_SCAN_ROWS = sizeof(scanKeys)/sizeof(scanKeys[0]);
+
+	const char spacecraftKeys[][MAX_DIFX_KEY_LEN] =
+	{
+		"SPACECRAFT %d NAME",
+		"SPACECRAFT %d ROWS"
+	};
+	const int N_SPACECRAFT_ROWS = 
+		sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
 	
 	int rows[20];
-	int i, c, N, row;
+	int i, c, s, N, row, n;
 	const char *cname;
+	const char *str;
 	int findconfig = 0;
+	double time;
 
 	if(!D)
 	{
@@ -1779,11 +1855,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		return 0;
 	}
 
-	D->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
-	strcpy(D->obsCode, DifxParametersvalue(cp, rows[1]));
-	D->nEOP     = atoi(DifxParametersvalue(cp, rows[2]));
+	D->jobId       = atoi(DifxParametersvalue(cp, rows[0]));
+	strcpy(D->obsCode,    DifxParametersvalue(cp, rows[1]));
+	D->nEOP        = atoi(DifxParametersvalue(cp, rows[2]));
+	D->nSpacecraft = atoi(DifxParametersvalue(cp, rows[3]));
 
-	D->eop   = newDifxEOPArray(D->nEOP);
+	D->eop         = newDifxEOPArray(D->nEOP);
+	D->spacecraft  = newDifxSpacecraftArray(D->nSpacecraft);
 
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
@@ -1908,6 +1986,56 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 	}
 
+	rows[N_SPACECRAFT_ROWS-1] = 0;
+	if(D->nSpacecraft > 0) for(s = 0; s < D->nSpacecraft; s++)
+	{
+		N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], 
+			spacecraftKeys, i, N_SPACECRAFT_ROWS, rows);
+		if(N < N_SPACECRAFT_ROWS)
+		{
+			fprintf(stderr, "Spacecraft %d table screwed up\n", s);
+			return 0;
+		}
+		strcpy(D->spacecraft[s].name, DifxParametersvalue(cp, rows[0]));
+		D->spacecraft[s].nPoints = 
+			atoi(DifxParametersvalue(cp, rows[1]));
+		D->spacecraft[s].pos = (sixVector *)calloc(
+			D->spacecraft[s].nPoints, sizeof(sixVector));
+		row = rows[N_SPACECRAFT_ROWS-1];
+		for(i = 0; i < D->spacecraft[s].nPoints; i++)
+		{
+			row = DifxParametersfind2(cp, row+1,
+				"SPACECRAFT %d ROW %d", s, i);
+			if(row < 0)
+			{
+				fprintf(stderr, "Spacecraft %d table, row %d"
+					" screwed up\n", s, i);
+				return 0;
+			}
+			str = DifxParametersvalue(cp, row);
+			n = sscanf(str, "%lf%Lf%Lf%Lf%Lf%Lf%Lf",
+				&time,
+				&(D->spacecraft[s].pos[row].X),
+				&(D->spacecraft[s].pos[row].Y),
+				&(D->spacecraft[s].pos[row].Z),
+				&(D->spacecraft[s].pos[row].dX),
+				&(D->spacecraft[s].pos[row].dY),
+				&(D->spacecraft[s].pos[row].dZ));
+			if(n != 7)
+			{
+				fprintf(stderr, "Spacecraft %d table, row %d"
+					" screwed up\n", s, i);
+				return 0;
+			}
+			D->spacecraft[s].pos[row].mjd = (int)time;
+			time -= D->spacecraft[s].pos[row].mjd;
+			/* Force to be exactly on second boundary */
+			D->spacecraft[s].pos[row].fracDay = 
+				((int)(time*86400.0 + 0.5))/86400.0;
+		}
+	}
+
+	/* FIXME -- move to global section ??? see 2 paragraphs above */
 	if(findconfig)
 	{
 		for(i = 0; i < D->nScan; i++)
@@ -2234,6 +2362,8 @@ static void setGlobalValues(DifxInput *D)
 			D->polPair[0] = 'L';
 		}
 	}
+
+	/* FIXME -- match up spacecraft with source/antenna */
 }
 
 static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
