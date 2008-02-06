@@ -1063,7 +1063,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 			spacecraft[name] = []
 		spacecraft[name].append(row)
 
-	calc.append("NUM SPACECRAFT     :%d" % len(spacecraft))
+	calc.append("NUM SPACECRAFT:     %d" % len(spacecraft))
 	n = 0
 	for sc in spacecraft:
 		calc.append(indent21_1("SPACECRAFT %d NAME", "%s", n, sc))
