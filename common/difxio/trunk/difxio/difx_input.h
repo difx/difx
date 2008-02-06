@@ -157,7 +157,7 @@ typedef struct
 {
 	char name[32];		/* name of spacecraft */
 	int nPoints;		/* number of entries in ephemeris */
-	sixVector *pos;		/* array of positions and velocoties */
+	sixVector *pos;		/* array of positions and velocities */
 } DifxSpacecraft;
 
 typedef struct

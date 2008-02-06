@@ -1990,7 +1990,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	if(D->nSpacecraft > 0) for(s = 0; s < D->nSpacecraft; s++)
 	{
 		N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], 
-			spacecraftKeys, i, N_SPACECRAFT_ROWS, rows);
+			spacecraftKeys, s, N_SPACECRAFT_ROWS, rows);
 		if(N < N_SPACECRAFT_ROWS)
 		{
 			fprintf(stderr, "Spacecraft %d table screwed up\n", s);
@@ -2015,22 +2015,22 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			str = DifxParametersvalue(cp, row);
 			n = sscanf(str, "%lf%Lf%Lf%Lf%Lf%Lf%Lf",
 				&time,
-				&(D->spacecraft[s].pos[row].X),
-				&(D->spacecraft[s].pos[row].Y),
-				&(D->spacecraft[s].pos[row].Z),
-				&(D->spacecraft[s].pos[row].dX),
-				&(D->spacecraft[s].pos[row].dY),
-				&(D->spacecraft[s].pos[row].dZ));
+				&(D->spacecraft[s].pos[i].X),
+				&(D->spacecraft[s].pos[i].Y),
+				&(D->spacecraft[s].pos[i].Z),
+				&(D->spacecraft[s].pos[i].dX),
+				&(D->spacecraft[s].pos[i].dY),
+				&(D->spacecraft[s].pos[i].dZ));
 			if(n != 7)
 			{
 				fprintf(stderr, "Spacecraft %d table, row %d"
 					" screwed up\n", s, i);
 				return 0;
 			}
-			D->spacecraft[s].pos[row].mjd = (int)time;
-			time -= D->spacecraft[s].pos[row].mjd;
+			D->spacecraft[s].pos[i].mjd = (int)time;
+			time -= D->spacecraft[s].pos[i].mjd;
 			/* Force to be exactly on second boundary */
-			D->spacecraft[s].pos[row].fracDay = 
+			D->spacecraft[s].pos[i].fracDay = 
 				((int)(time*86400.0 + 0.5))/86400.0;
 		}
 	}

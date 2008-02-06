@@ -1,3 +1,6 @@
+1.6
+* Add support for spacecraft.  Much cleanup of code
+
 1.5
 * Add top level parameters to DifxInput that are used specifically for FITS
 
