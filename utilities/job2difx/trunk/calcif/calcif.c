@@ -36,6 +36,7 @@ static struct timeval TIMEOUT = {10, 0};
 #define SCAN_POINTS      "SCAN %d POINTS"
 #define SCAN_START_PT    "SCAN %d START PT"
 #define SCAN_SRC_NAME    "SCAN %d SRC NAME"
+#define SCAN_REAL_NAME   "SCAN %d REAL NAME"
 #define SCAN_SRC_RA      "SCAN %d SRC RA"
 #define SCAN_SRC_DEC     "SCAN %d SRC DEC"
 #define NUM_EOP          "NUM EOP"
@@ -47,6 +48,10 @@ static struct timeval TIMEOUT = {10, 0};
 #define DELAY_FILENAME   "DELAY FILENAME"
 #define UVW_FILENAME     "UVW FILENAME"
 #define RELATIVE_INC     "RELATIVE INC %d:"
+#define NUM_SPACECRAFT   "NUM SPACECRAFT"
+#define SPACECRAFT_NAME  "SPACECRAFT %d NAME"
+#define SPACECRAFT_ROWS  "SPACECRAFT %d ROWS"
+#define SPACECRAFT_DATA  "SPACECRAFT %d ROW %d"
 
 #define CALC_DATA 0x0
 #define UVW_DATA  0x1
@@ -59,11 +64,13 @@ static struct timeval TIMEOUT = {10, 0};
 
 #define MAX_TELESCOPES 10
 #define MAX_SCANS 100
-#define MAX_POINTS 1000
 #define MAX_EOPS 5
+#define MAX_SPACECRAFT 10
+#define MAX_SPACECRAFT_ROWS 10000
 
-#define T_NAME_SIZE 8 /*telescope name size+1 */
-#define T_MNT_SIZE 8 /* telsccope mount size+1 */
+#define T_NAME_SIZE 32 /* max telescope name size+1 */
+#define T_MNT_SIZE 32  /* max telsccope mount size+1 */
+#define SC_NAME_SIZE 32
 #define SRC_NAME_SIZE 128
 
 #define U_FNAME_SIZE 64
@@ -75,11 +82,19 @@ static struct timeval TIMEOUT = {10, 0};
 
 char CALC_SERVER[128] = "localhost";
 
+typedef struct
+{
+	int mjd;
+	long double fracDay;
+	long double X, Y, Z, dX, dY, dZ;
+} SpacecraftPos;
+
 typedef enum
 {
   STRING = 1,
   INT,
-  FLOAT
+  FLOAT,
+  SPACECRAFT_POS
 } TE_DATA_TYPES;
 
 /* 
@@ -113,9 +128,14 @@ typedef enum
   S_POINTS,
   S_START_PT, 
   S_SRC_NAME, 
+  S_REAL_NAME,
   S_SRC_RA,   
   S_SRC_DEC, 
   GET_CALC,
+  N_SC,
+  SC_NAME,
+  SC_ROWS,
+  SC_DATA,
   NOOP,
   MAX_STATES
 } TE_STATES;
@@ -135,6 +155,7 @@ typedef struct
   char   t_name[MAX_TELESCOPES][T_NAME_SIZE]; /* telescope name */
   char   t_mount[MAX_TELESCOPES][T_MNT_SIZE]; /* telescope mount type */
   char   source_name[SRC_NAME_SIZE];
+  char   real_name[SRC_NAME_SIZE];
   double t_offset[MAX_TELESCOPES];
   double t_x[MAX_TELESCOPES];
   double t_y[MAX_TELESCOPES]; 
@@ -144,6 +165,11 @@ typedef struct
   double e_ut1_utc[MAX_EOPS];
   double e_xpole[MAX_EOPS];
   double e_ypole[MAX_EOPS];
+  int nSpacecraft;
+  SpacecraftPos sc_pos[MAX_SPACECRAFT][MAX_SPACECRAFT_ROWS];
+  char   sc_name[MAX_SPACECRAFT][SC_NAME_SIZE];
+  int    sc_rows[MAX_SPACECRAFT];
+  
   double declination;
   double r_ascension;
   double mjd;
@@ -197,10 +223,14 @@ int main (int argc, char *argv[])
   int num_telescopes; 
   int num_scans; 
   int num_eops; 
+  int num_spacecraft;
   int num_points;
   int which_telescope=0;
   int which_scan=0;
   int which_eop=0;
+  int which_spacecraft=0;
+  int which_sc_point=0;
+
   char *serv = 0;
   char uvw_fname[U_FNAME_SIZE], 
     delay_fname[D_FNAME_SIZE], 
@@ -233,6 +263,7 @@ int main (int argc, char *argv[])
       {SCAN_POINTS,     S_POINTS, NULL,INT,   UVW_DATA|RATE_DATA|DELAY_DATA},
       {SCAN_START_PT,   S_START_PT, NULL,INT, UVW_DATA|RATE_DATA|DELAY_DATA},
       {SCAN_SRC_NAME,   S_SRC_NAME, NULL,STRING, UVW_DATA|RATE_DATA|DELAY_DATA},
+      {SCAN_REAL_NAME,  S_REAL_NAME, NULL,STRING, CALC_DATA},
       {SCAN_SRC_RA,     S_SRC_RA,  NULL,FLOAT, UVW_DATA|RATE_DATA},
       {SCAN_SRC_DEC,    S_SRC_DEC, NULL,FLOAT, UVW_DATA|RATE_DATA},
       {NUM_EOP,         N_EOP,     NULL,INT, CALC_DATA},
@@ -240,7 +271,11 @@ int main (int argc, char *argv[])
       {EOP_TAI_UTC,     E_TAI_UTC, NULL,FLOAT, CALC_DATA},
       {EOP_UT1_UTC,     E_UT1_UTC, NULL,FLOAT, CALC_DATA},
       {EOP_XPOLE,       E_XPOLE,   NULL,  FLOAT, CALC_DATA},
-      {EOP_YPOLE,       E_YPOLE,   NULL,  FLOAT, CALC_DATA}
+      {EOP_YPOLE,       E_YPOLE,   NULL,  FLOAT, CALC_DATA},
+      {NUM_SPACECRAFT,  N_SC,      NULL, INT, CALC_DATA},
+      {SPACECRAFT_NAME, SC_NAME,   NULL, STRING, CALC_DATA},
+      {SPACECRAFT_ROWS, SC_ROWS,   NULL, INT, CALC_DATA},
+      {SPACECRAFT_DATA, SC_DATA,   NULL, SPACECRAFT_POS, CALC_DATA}
     };
   int num_dmap_entries = sizeof(Data_Map)/sizeof(TS_DATA_MAP);
   
@@ -629,7 +664,77 @@ int main (int argc, char *argv[])
 	  if (++which_eop < num_eops)
 	    state = E_TIME;
 	  else
-	    state = N_SCANS;
+	    state = N_SC;
+	  break;
+	case N_SC:
+	  printf("Num Spacecraft\n");
+	  if(processStateData(&Data_Map[entry], dp, 
+			      (void *)&num_spacecraft, 
+			      u_fd, r_fd ,d_fd))
+	    {
+	      printf("calcif-E-notice : no spacecraft data found\n");
+	      num_spacecraft = 0;
+	      Calc_Params.nSpacecraft = 0;
+	      state = N_SCANS;
+	      break;
+	    }
+	  which_spacecraft = 0;
+	  if(num_spacecraft > MAX_SPACECRAFT)
+	  {
+	    printf("calcif-E-problem : too many spacecraft\n");
+	    state = NOOP;
+	    break;
+	  }
+	  Calc_Params.nSpacecraft = num_spacecraft;
+	  state = SC_NAME;
+	  break;
+	case SC_NAME:
+	  printf("Spacecraft Name\n");
+	  sprintf(Data_Map[entry].tag, SPACECRAFT_NAME, which_spacecraft); 
+	  if(processStateData(&Data_Map[entry], dp, 
+			      Calc_Params.sc_name[which_spacecraft], 
+			      u_fd, r_fd ,d_fd))
+	    {
+	      printf("calcif-E-problem with spacecraft_name processing\n");
+	      state = NOOP;
+	      break;
+	    }
+	  state = SC_ROWS;
+	  break;
+	case SC_ROWS:
+	  printf("Spacecraft Rows\n");
+	  sprintf(Data_Map[entry].tag, SPACECRAFT_ROWS, which_spacecraft); 
+	  if(processStateData(&Data_Map[entry], dp,
+	  		      &(Calc_Params.sc_rows[which_spacecraft]),
+	  		      u_fd, r_fd ,d_fd))
+	    {
+	      printf("calcif-E-problem with spacecraft_rows processing\n");
+	      state = NOOP;
+	      break;
+	    }
+	  which_sc_point = 0;
+	  state = SC_DATA;
+	  break;
+	case SC_DATA:
+	  sprintf(Data_Map[entry].tag, SPACECRAFT_DATA, which_spacecraft, which_sc_point); 
+	  if(processStateData(&Data_Map[entry], dp,
+	  		      &(Calc_Params.sc_pos[which_spacecraft][which_sc_point]),
+	  		      u_fd, r_fd ,d_fd))
+	    {
+	      printf("calcif-E-problem with spacecraft_data processing\n");
+	      state = NOOP;
+	      break;
+	    }
+	  which_sc_point++;
+	  if(which_sc_point >= Calc_Params.sc_rows[which_spacecraft])
+	  {
+	    which_sc_point = 0;
+	    which_spacecraft++;
+	    if(which_spacecraft >= num_spacecraft)
+	      state = N_SCANS;
+	    else
+	      state = SC_NAME;
+	  }
 	  break;
 	case N_SCANS:
 	  printf("Num Scans\n");
@@ -674,12 +779,24 @@ int main (int argc, char *argv[])
 	  printf("Source Name\n");
 	  sprintf(Data_Map[entry].tag, SCAN_SRC_NAME, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
-			      (void *)&Calc_Params.source_name, 
+			      Calc_Params.source_name, 
 			      u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with source name \n");
 	      state = NOOP;
 	      break;
+	    }
+	  state = S_REAL_NAME;
+	  break;
+	case S_REAL_NAME:
+	  printf("Real Name\n");
+	  sprintf(Data_Map[entry].tag, SCAN_REAL_NAME, which_scan); 
+	  if(processStateData(&Data_Map[entry], dp, 
+			      Calc_Params.real_name, 
+			      u_fd, r_fd ,d_fd))
+	    {
+	      printf("calcif-E-warning no real name, assuming same as src name\n");
+	      strcpy(Calc_Params.real_name, Calc_Params.source_name);
 	    }
 	  state = S_SRC_RA;
 	  break;
@@ -874,9 +991,147 @@ static int processStateData(TS_DATA_MAP *dm ,
 	{
 	  strcpy(c_data, DifxParametersvalue(dp, i));
 	}
+      if (dm->d_type == SPACECRAFT_POS)
+        {
+		const char *str;
+		int n;
+		double time;
+		SpacecraftPos *sp;
+
+		sp = (SpacecraftPos *)c_data;
+		str = DifxParametersvalue(dp, i);
+		n = sscanf(str, "%lf%Lf%Lf%Lf%Lf%Lf%Lf",
+			&time,
+			&(sp->X),  &(sp->Y),  &(sp->Z),
+			&(sp->dX), &(sp->dY), &(sp->dZ));
+		sp->mjd = (int)time;
+		time -= sp->mjd;
+		sp->fracDay = ((int)(time*86400.0 + 0.5))/86400.0L;
+
+		/* convert rates from m/s to m/day for local calculations */
+		sp->dX *= 86400.0L;
+		sp->dY *= 86400.0L;
+		sp->dZ *= 86400.0L;
+	}
     }
   return(0);
 }
+
+static void evalPoly(long double poly[4], long double t, long double *V, long double *dV)
+{
+	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
+	*dV = poly[1] + t*(2.0L*poly[2] + 3.0L*t*poly[3]);
+}
+
+int calcSpacecraftPosition(const TS_CALC_PARAMS *c_params,
+	struct getCALC_arg *request_args, int spacecraftId)
+{
+	int nRow;
+	const SpacecraftPos *pos;
+	long double t0, t1, tMod, t, deltat;
+	long double xPoly[4], yPoly[4], zPoly[4];
+	int r, r0, r1;
+	long double X, Y, Z, dX, dY, dZ;
+	long double R2, D;
+	double muRA, muDec;
+	
+	nRow = c_params->sc_rows[spacecraftId];
+	pos = &(c_params->sc_pos[spacecraftId][0]);
+	
+	tMod = request_args->date + request_args->time;
+	
+	/* first find interpolation points */
+	t0 = 0.0;
+	t1 = pos[0].mjd + pos[0].fracDay;
+	for(r = 1; r < nRow; r++)
+	{
+		t0 = t1;
+		t1 = pos[r].mjd + pos[r].fracDay;
+		if(t0 <= tMod && tMod <= t1)
+		{
+			break;
+		}
+	}
+	if(r == nRow)
+	{
+		return -1;
+	}
+
+	/* calculate polynomial for X, Y, Z */
+	r0 = r-1;
+	r1 = r;
+	deltat = t1 - t0;
+	t = (tMod - t0)/deltat; /* time, fraction of interval, between 0 and 1 */
+
+	xPoly[0] = pos[r0].X;
+	xPoly[1] = pos[r0].dX*deltat;
+	xPoly[2] = -3.0L*(pos[r0].X-pos[r1].X) - (2.0L*pos[r0].dX+pos[r1].dX)*deltat;
+	xPoly[3] =  2.0L*(pos[r0].X-pos[r1].X) + (    pos[r0].dX+pos[r1].dX)*deltat;
+	yPoly[0] = pos[r0].Y;
+	yPoly[1] = pos[r0].dY*deltat;
+	yPoly[2] = -3.0L*(pos[r0].Y-pos[r1].Y) - (2.0L*pos[r0].dY+pos[r1].dY)*deltat;
+	yPoly[3] =  2.0L*(pos[r0].Y-pos[r1].Y) + (    pos[r0].dY+pos[r1].dY)*deltat;
+	zPoly[0] = pos[r0].Z;
+	zPoly[1] = pos[r0].dZ*deltat;
+	zPoly[2] = -3.0L*(pos[r0].Z-pos[r1].Z) - (2.0L*pos[r0].dZ+pos[r1].dZ)*deltat;
+	zPoly[3] =  2.0L*(pos[r0].Z-pos[r1].Z) + (    pos[r0].dZ+pos[r1].dZ)*deltat;
+
+	evalPoly(xPoly, t, &X, &dX);
+	evalPoly(yPoly, t, &Y, &dY);
+	evalPoly(zPoly, t, &Z, &dZ);
+
+	/* convert to m/day */
+	dX /= deltat;
+	dY /= deltat;
+	dZ /= deltat;
+
+	/* Hack here -- this makes much smoother output! */
+	dX = pos[r0].dX + t*(pos[r1].dX - pos[r0].dX);
+	dY = pos[r0].dY + t*(pos[r1].dY - pos[r0].dY);
+	dZ = pos[r0].dZ + t*(pos[r1].dZ - pos[r0].dZ);
+
+	D = sqrtl(X*X + Y*Y + Z*Z);
+	R2 = X*X + Y*Y;
+
+	/* proper motion in radians/day */
+	muRA = (X*dY - Y*dX)/R2;
+	muDec = (R2*dZ - X*Z*dX - Y*Z*dY)/(D*D*sqrtl(R2));
+	
+	/* convert to arcsec/yr */
+	muRA *= (180.0*3600.0/M_PI)*365.24;
+	muDec *= (180.0*3600.0/M_PI)*365.24;
+
+	request_args->ra  =  atan2(Y, X);
+	request_args->dec =  atan2(Z, D);
+	request_args->dra  = muRA;
+	request_args->ddec = muDec;
+	request_args->parallax = 3.08568025e16/D;
+        request_args->depoch = tMod;
+
+	return 0;
+}
+
+int getSpacecraftId(const TS_CALC_PARAMS *c_params, const char *src_name, const char *real_name)
+{
+	int s;
+
+	if(c_params->nSpacecraft <= 0)
+	{
+		return -1;
+	}
+
+	for(s = 0; s < c_params->nSpacecraft; s++)
+	{
+		if(strcmp(src_name, c_params->sc_name[s]) == 0 ||
+		   strcmp(real_name, c_params->sc_name[s]) == 0)
+		{
+			return s;
+		}
+	}
+	
+	return -1;
+}
+  
 
 /*
  * Here we copy the information we've parsed from the .calc file
@@ -894,6 +1149,7 @@ static getCALC_res *getCalcData(TS_CALC_PARAMS c_params,
   char   stnnameb[8];
   char   axistypeb[6];
   int i, t;
+  int spacecraftId;
   double mjd_date;
   double mjd;
   struct getCALC_arg request_args;
@@ -926,14 +1182,23 @@ static getCALC_res *getCalcData(TS_CALC_PARAMS c_params,
     }
   
   /* source information */
-  request_args.source = c_params.source_name;
-  request_args.ra  =  c_params.r_ascension;
-  request_args.dec =  c_params.declination;
   
-  request_args.dra  = 0.0;
-  request_args.ddec = 0.0;
-  request_args.depoch = 0.0;
-  request_args.parallax = 0.0;
+  request_args.source = c_params.source_name;
+  spacecraftId = getSpacecraftId(&c_params, c_params.source_name, c_params.real_name);
+  
+  if(spacecraftId < 0)
+  {
+    request_args.ra  =  c_params.r_ascension;
+    request_args.dec =  c_params.declination;
+    request_args.dra  = 0.0;
+    request_args.ddec = 0.0;
+    request_args.parallax = 0.0;
+    request_args.depoch = 0.0;
+  }
+  else
+  {
+    calcSpacecraftPosition(&c_params, &request_args, spacecraftId);
+  }
   
   request_args.pressure_a = 0.0;
   request_args.pressure_b = 0.0;
