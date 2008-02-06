@@ -73,7 +73,7 @@ if not force:
 		exit(0)
 
 system('mkdir -p %s' % newdir)
-system('cp %s/jobs/*.fx %s' % (prjdir, newdir))
+system('cp %s/jobs/job*.fx %s' % (prjdir, newdir))
 calfiles = glob('%s/%scal.vlba.*' % (prjdir, project))
 if len(calfiles) == 0:
 	print 'Warning -- no cal.vlba file found in %s' % prjdir
