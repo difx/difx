@@ -10,7 +10,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 {
 	struct fitsBinTableColumn columns[] =
 	{
-		{"SPACECR", "16A", "spacecraft name"},
+		{"SPACECR", "16A", "spacecraft name", 0},
 		{"TIME",    "1D",  "UT time", "DAYS"},
 		{"ORBXYZ",  "3D",  "geocentric coordinates", "METERS"},
 		{"VELXYZ",  "3D",  "velcity vector", "METERS/SEC"}

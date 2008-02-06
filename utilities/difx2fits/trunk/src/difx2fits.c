@@ -147,6 +147,12 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  SO -- spacecraft orbit    ");
+	fflush(stdout);
+	D = DifxInput2FitsSO(D, &keys, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
 	D = DifxInput2FitsUV(D, &keys, filebase, out, scale);
@@ -181,12 +187,6 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("  GN -- gain curve          ");
 	fflush(stdout);
 	D = DifxInput2FitsGN(D, &keys, out);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
-
-	printf("  SO -- spacecraft orbit    ");
-	fflush(stdout);
-	D = DifxInput2FitsSO(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

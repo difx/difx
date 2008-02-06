@@ -2,6 +2,7 @@ Version 1.8
 * Use vlog output to generate FG, TS, PH, WX tables (WX is suspect)
 * Use gain curve files to generate GC (from env var GAIN_CURVE_PATH)
 * Use autoconf endianness detection -- remove byteorder.[ch]
+* Write spacecraft orbit table
 
 Version 1.7
 * support scaling parameter
