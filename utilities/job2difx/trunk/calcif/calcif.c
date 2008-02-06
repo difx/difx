@@ -82,6 +82,8 @@ static struct timeval TIMEOUT = {10, 0};
 
 char CALC_SERVER[128] = "localhost";
 
+int verbose = 0;
+
 typedef struct
 {
 	int mjd;
@@ -200,6 +202,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h                      Print this help and quit\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v                      Be more verbose in operation\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --server <servername>\n");
 	fprintf(stderr, "  -s       <servername>   Use <servername> as calcserver\n\n");
 	fprintf(stderr, "      By default 'localhost' will be the calcserver.  An "
@@ -293,6 +298,11 @@ int main (int argc, char *argv[])
 		   strcmp(argv[i], "-h") == 0)
 		{
 			return usage(argv[0]);
+		}
+		if(strcmp(argv[i], "--verbose") == 0 ||
+		   strcmp(argv[i], "-v") == 0)
+		{
+			verbose++;
 		}
 		else if(i+1 < argc)
 		{
@@ -392,7 +402,7 @@ int main (int argc, char *argv[])
       switch (state)
 	{
 	case MJD:
-	  printf("MJD\n");
+	  if(verbose) printf("MJD\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.mjd, u_fd, r_fd ,d_fd))
 	    {
@@ -405,7 +415,7 @@ int main (int argc, char *argv[])
 	  break;
 	  
 	case YEAR:
-	  printf("Year\n");
+	  if(verbose) printf("Year\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with Year processing \n");
@@ -415,7 +425,7 @@ int main (int argc, char *argv[])
 	  state = MONTH;
 	  break;
 	case MONTH:
-	  printf("Month\n");
+	  if(verbose) printf("Month\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with month processing \n");
@@ -425,7 +435,7 @@ int main (int argc, char *argv[])
 	  state = DAY;
 	  break;
 	case DAY:
-	  printf("Day\n");
+	  if(verbose) printf("Day\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with day processing \n");
@@ -435,7 +445,7 @@ int main (int argc, char *argv[])
 	  state = HOUR;
 	  break;
 	case HOUR:
-	  printf("Hour\n");
+	  if(verbose) printf("Hour\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with hour processing \n");
@@ -445,7 +455,7 @@ int main (int argc, char *argv[])
 	  state = MINUTE;
 	  break;
 	case MINUTE:
-	  printf("Minute\n");
+	  if(verbose) printf("Minute\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with minute processing \n");
@@ -455,7 +465,7 @@ int main (int argc, char *argv[])
 	  state = SECOND;
 	  break;
 	case SECOND:
-	  printf("Second\n");
+	  if(verbose) printf("Second\n");
 	  if(processStateData(&Data_Map[entry], dp, (void *)NULL, u_fd, r_fd ,d_fd))
 	    {
 	      printf("calcif-E-problem with second processing \n");
@@ -465,7 +475,7 @@ int main (int argc, char *argv[])
 	  state = INCR;
 	  break;
 	case INCR:
-	  printf("Increment\n");
+	  if(verbose) printf("Increment\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.increment, u_fd, r_fd ,d_fd))
 	    {
@@ -476,7 +486,7 @@ int main (int argc, char *argv[])
 	  state = N_TELESCOPES;
 	  break;
 	case N_TELESCOPES:
-	  printf("Num Telescopes\n");
+	  if(verbose) printf("Num Telescopes\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&num_telescopes, u_fd, r_fd ,d_fd))
 	    {
@@ -488,7 +498,7 @@ int main (int argc, char *argv[])
 	  state = T_NAME;
 	  break;
 	case T_NAME:
-	  printf("Telescope name\n");
+	  if(verbose) printf("Telescope name\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_NAME, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)Calc_Params.t_name[which_telescope], 
@@ -501,7 +511,7 @@ int main (int argc, char *argv[])
 	  state = T_MOUNT;
 	  break;
 	case T_MOUNT:
-	  printf("Telescope Mount\n");
+	  if(verbose) printf("Telescope Mount\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_MOUNT, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)Calc_Params.t_mount[which_telescope], 
@@ -514,7 +524,7 @@ int main (int argc, char *argv[])
 	  state = T_OFFSET;
 	  break;
 	case T_OFFSET:
-	  printf("Telescope Offset\n");
+	  if(verbose) printf("Telescope Offset\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_OFFSET, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.t_offset[which_telescope], 
@@ -527,7 +537,7 @@ int main (int argc, char *argv[])
 	  state = T_X;
 	  break;
 	case T_X:
-	  printf("Telescope X\n");
+	  if(verbose) printf("Telescope X\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_X, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.t_x[which_telescope], 
@@ -540,7 +550,7 @@ int main (int argc, char *argv[])
 	  state = T_Y;
 	  break;
 	case T_Y:
-	  printf("Telescope Y\n");
+	  if(verbose) printf("Telescope Y\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_Y, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.t_y[which_telescope], 
@@ -553,7 +563,7 @@ int main (int argc, char *argv[])
 	  state = T_Z;
 	  break;
 	case T_Z:
-	  printf("Telescope Z\n");
+	  if(verbose) printf("Telescope Z\n");
 	  sprintf(Data_Map[entry].tag, TELESCOPE_Z, which_telescope); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.t_z[which_telescope], 
@@ -571,7 +581,7 @@ int main (int argc, char *argv[])
 	  
 	  break;
 	case N_EOP:
-	  printf("Num EOPs\n");
+	  if(verbose) printf("Num EOPs\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&num_eops, 
 			      u_fd, r_fd ,d_fd))
@@ -584,7 +594,7 @@ int main (int argc, char *argv[])
 	  state = E_TIME;
 	  break;
 	case E_TIME:
-	  printf("Eop Time\n");
+	  if(verbose) printf("Eop Time\n");
 	  if(which_eop < MAX_EOPS)
 	  {
 	    sprintf(Data_Map[entry].tag, EOP_TIME, which_eop); 
@@ -600,7 +610,7 @@ int main (int argc, char *argv[])
 	  state = E_TAI_UTC;
 	  break;
 	case E_TAI_UTC:
-	  printf("Eop tai utc\n");
+	  if(verbose) printf("Eop tai utc\n");
 	  if(which_eop < MAX_EOPS)
 	  {
 	    sprintf(Data_Map[entry].tag, EOP_TAI_UTC, which_eop); 
@@ -616,7 +626,7 @@ int main (int argc, char *argv[])
 	  state = E_UT1_UTC;
 	  break;
 	case E_UT1_UTC:
-	  printf("Eop ut1 utc\n");
+	  if(verbose) printf("Eop ut1 utc\n");
 	  if(which_eop < MAX_EOPS)
 	  {
 	    sprintf(Data_Map[entry].tag, EOP_UT1_UTC, which_eop); 
@@ -632,7 +642,7 @@ int main (int argc, char *argv[])
 	  state = E_XPOLE;
 	  break;
 	case E_XPOLE:
-	  printf("Eop xpole\n");
+	  if(verbose) printf("Eop xpole\n");
 	  if(which_eop < MAX_EOPS)
 	  {
 	    sprintf(Data_Map[entry].tag, EOP_XPOLE, which_eop); 
@@ -648,7 +658,7 @@ int main (int argc, char *argv[])
 	  state = E_YPOLE;
 	  break;
 	case E_YPOLE:
-	  printf("Eop ypole\n");
+	  if(verbose) printf("Eop ypole\n");
 	  if(which_eop < MAX_EOPS)
 	  {
 	    sprintf(Data_Map[entry].tag, EOP_YPOLE, which_eop); 
@@ -667,7 +677,7 @@ int main (int argc, char *argv[])
 	    state = N_SC;
 	  break;
 	case N_SC:
-	  printf("Num Spacecraft\n");
+	  if(verbose) printf("Num Spacecraft\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&num_spacecraft, 
 			      u_fd, r_fd ,d_fd))
@@ -679,6 +689,11 @@ int main (int argc, char *argv[])
 	      break;
 	    }
 	  which_spacecraft = 0;
+	  if(num_spacecraft <= 0)
+	  {
+	    state = N_SCANS;
+	    break;
+	  }
 	  if(num_spacecraft > MAX_SPACECRAFT)
 	  {
 	    printf("calcif-E-problem : too many spacecraft\n");
@@ -689,7 +704,7 @@ int main (int argc, char *argv[])
 	  state = SC_NAME;
 	  break;
 	case SC_NAME:
-	  printf("Spacecraft Name\n");
+	  if(verbose) printf("Spacecraft Name\n");
 	  sprintf(Data_Map[entry].tag, SPACECRAFT_NAME, which_spacecraft); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      Calc_Params.sc_name[which_spacecraft], 
@@ -702,7 +717,7 @@ int main (int argc, char *argv[])
 	  state = SC_ROWS;
 	  break;
 	case SC_ROWS:
-	  printf("Spacecraft Rows\n");
+	  if(verbose) printf("Spacecraft Rows\n");
 	  sprintf(Data_Map[entry].tag, SPACECRAFT_ROWS, which_spacecraft); 
 	  if(processStateData(&Data_Map[entry], dp,
 	  		      &(Calc_Params.sc_rows[which_spacecraft]),
@@ -737,7 +752,7 @@ int main (int argc, char *argv[])
 	  }
 	  break;
 	case N_SCANS:
-	  printf("Num Scans\n");
+	  if(verbose) printf("Num Scans\n");
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&num_scans, 
 			      u_fd, r_fd ,d_fd))
@@ -750,7 +765,7 @@ int main (int argc, char *argv[])
 	  state = S_POINTS;
 	  break;
 	case S_POINTS:
-	  printf("Scan Points\n");
+	  if(verbose) printf("Scan Points\n");
 	  sprintf(Data_Map[entry].tag, SCAN_POINTS, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&num_points, 
@@ -763,7 +778,7 @@ int main (int argc, char *argv[])
 	  state = S_START_PT;
 	  break;
 	case S_START_PT:
-	  printf("Scan Start Point\n");
+	  if(verbose) printf("Scan Start Point\n");
 	  sprintf(Data_Map[entry].tag, SCAN_START_PT, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.scan_start_pt, 
@@ -776,7 +791,7 @@ int main (int argc, char *argv[])
 	  state = S_SRC_NAME;
 	  break;
 	case S_SRC_NAME:
-	  printf("Source Name\n");
+	  if(verbose) printf("Source Name\n");
 	  sprintf(Data_Map[entry].tag, SCAN_SRC_NAME, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      Calc_Params.source_name, 
@@ -789,7 +804,7 @@ int main (int argc, char *argv[])
 	  state = S_REAL_NAME;
 	  break;
 	case S_REAL_NAME:
-	  printf("Real Name\n");
+	  if(verbose) printf("Real Name\n");
 	  sprintf(Data_Map[entry].tag, SCAN_REAL_NAME, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      Calc_Params.real_name, 
@@ -801,7 +816,7 @@ int main (int argc, char *argv[])
 	  state = S_SRC_RA;
 	  break;
 	case S_SRC_RA:
-	  printf("Right Ascension \n");
+	  if(verbose) printf("Right Ascension \n");
 	  sprintf(Data_Map[entry].tag, SCAN_SRC_RA, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.r_ascension, 
@@ -814,7 +829,7 @@ int main (int argc, char *argv[])
 	  state = S_SRC_DEC;
 	  break;
 	case S_SRC_DEC:
-	  printf("Declination \n");
+	  if(verbose) printf("Declination \n");
 	  sprintf(Data_Map[entry].tag, SCAN_SRC_DEC, which_scan); 
 	  if(processStateData(&Data_Map[entry], dp, 
 			      (void *)&Calc_Params.declination, 
@@ -979,12 +994,18 @@ static int processStateData(TS_DATA_MAP *dm ,
     {
       if (dm->d_type == INT)
 	{
-	  printf("%s = %d\n", dp->rows[i].key, atoi(DifxParametersvalue(dp, i)));
+	  if(verbose)
+	  {
+	    printf("%s = %d\n", dp->rows[i].key, atoi(DifxParametersvalue(dp, i)));
+	  }
 	  *(int *)c_data = atoi(DifxParametersvalue(dp, i));
 	}
       if (dm->d_type == FLOAT)
 	{
-	  printf("%s = %f\n", dp->rows[i].key, atof(DifxParametersvalue(dp, i)));
+	  if(verbose)
+	  {
+	    printf("%s = %f\n", dp->rows[i].key, atof(DifxParametersvalue(dp, i)));
+	  }
 	  *(double *)c_data = atof(DifxParametersvalue(dp, i));
 	}
       if (dm->d_type == STRING)
