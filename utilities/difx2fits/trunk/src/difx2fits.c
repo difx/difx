@@ -184,6 +184,12 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  SO -- spacecraft orbit    ");
+	fflush(stdout);
+	D = DifxInput2FitsSO(D, &keys, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("                            -----\n");
 	printf("  Total                     %lld bytes\n", last_bytes);
 

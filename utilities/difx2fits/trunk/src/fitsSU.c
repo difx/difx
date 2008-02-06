@@ -107,7 +107,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		return 0;
 	}
 	
-	for (s = 0; s < D->nSource; s++)
+	for(s = 0; s < D->nSource; s++)
 	{
 		p_fitsbuf = fitsbuf;
 
@@ -150,12 +150,12 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
 
-		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SO");
+		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SU");
 
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
-		fitsWriteBinRow (out, fitsbuf);
+		fitsWriteBinRow(out, fitsbuf);
 	}
 
 	free(fitsbuf);
