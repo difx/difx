@@ -1799,8 +1799,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		"JOB ID",
 		"OBSCODE",
-		"NUM EOP",
-		"NUM SPACECRAFT"
+		"NUM EOP"
 	};
 	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
 	
@@ -1858,10 +1857,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	D->jobId       = atoi(DifxParametersvalue(cp, rows[0]));
 	strcpy(D->obsCode,    DifxParametersvalue(cp, rows[1]));
 	D->nEOP        = atoi(DifxParametersvalue(cp, rows[2]));
-	D->nSpacecraft = atoi(DifxParametersvalue(cp, rows[3]));
 
 	D->eop         = newDifxEOPArray(D->nEOP);
-	D->spacecraft  = newDifxSpacecraftArray(D->nSpacecraft);
 
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
@@ -1984,6 +1981,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				i, cname, D->scan[i].name);
 			return 0;
 		}
+	}
+
+	row = DifxParametersfind(cp, 0, "NUM SPACECRAFT");
+	if(row >= 0)
+	{
+		D->nSpacecraft = atoi(DifxParametersvalue(cp, row));
+		D->spacecraft  = newDifxSpacecraftArray(D->nSpacecraft);
 	}
 
 	rows[N_SPACECRAFT_ROWS-1] = 0;
