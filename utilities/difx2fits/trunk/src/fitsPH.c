@@ -238,13 +238,13 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 	
-	nBand = D->nIF;
-	nPol = D->nPol;
-
 	if(D == 0)
 	{
 		return D;
 	}
+
+	nBand = D->nIF;
+	nPol = D->nPol;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
 	mjdStop = D->mjdStart + D->duration/86400.0;
@@ -259,6 +259,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	in = fopen("pcal", "r");
+	if(!in)
+	{
+		return D;
+	}
 	
 	fgets(line, 999, in);
 

@@ -75,22 +75,26 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	/* The following are 1-based indices for writing to FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
 	
-	nBand = D->nIF;
-	nPol = D->nPol;
-
-	sprintf(bandFormFloat, "%dE", nBand);
-
 	if(D == 0)
 	{
 		return D;
 	}
 
+	in = fopen("tsys", "r");
+	if(!in)
+	{
+		return D;
+	}
+
+	nBand = D->nIF;
+	nPol = D->nPol;
+
+	sprintf(bandFormFloat, "%dE", nBand);
+
 	mjd2dayno((int)(D->mjdStart), &refDay);
 
 	/* get the maximum dimensions possibly needed */
 	f = D->mjdStart - (int)(D->mjdStart);
-
-	in = fopen("tsys", "r");
 
 	if(nPol == 2)
 	{
