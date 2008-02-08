@@ -16,7 +16,9 @@ int usage(const char *pgm)
 		"FITS-IDI\n\n");
 	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile>\n\n", 
 		pgm);
-	fprintf(stderr, "It is assumed that at least 3 input files exist:\n");
+	fprintf(stderr, "It assumed that SWIN format visibility file(s) to be converted live\n");
+	fprintf(stderr, "in directory <basefilename>.difx/\n");
+	fprintf(stderr, "It is also assumed that at least 3 additional files exist:\n");
 	fprintf(stderr, "  <basefilename>.input    DiFX input file\n");
 	fprintf(stderr, "  <basefilename>.uvw      DiFX UVW file\n");
 	fprintf(stderr, "  <basefilename>.delay    DiFX delay model\n\n");
