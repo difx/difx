@@ -142,6 +142,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns):
 			m = cores[M] - 2
 		else:
 			m = 1
+		m = cores[M]
 		o.write('%s slots=1 max-slots=%d\n' % \
 			(d, m))
 		if m > 1:

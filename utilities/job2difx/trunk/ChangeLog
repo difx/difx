@@ -17,6 +17,7 @@ Version 1.4
 * Support(i.e. generate) full generic format types
 * Allow .fx files without all listed antennas to work
 * Fix nant>10 problem
+* Copy spacecraft table
 
 Version 1.3
 * .flag file updates 

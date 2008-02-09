@@ -64,7 +64,7 @@ def sniff(files, refant, nrec, nchan):
 	sdir = 'sniffer/%s' % refant
 	cmd = 'mkdir -p %s' % sdir
 	system(cmd)
-	cmd = 'mv xcband* wtsfile.* logfile.lis datafile.lis acband* summary apd.delays %s' % sdir
+	cmd = 'mv xcband* wtsfile.* logfile.lis datafile.lis acband* summary apd* %s' % sdir
 	system(cmd)
 
 

@@ -418,6 +418,14 @@ def intersection(l1, l2):
 			inter.append(e)
 	return inter		
 
+def remove_phamtoms(scanlist, minantennas):
+	for s in scanlist:
+		newsubarrays = []
+		subarrays = s[6]
+		for sa in subarrays:
+			if len(sa[1]) >= minantennas:
+				newsubarrays.append(sa)
+		s[6] = newsubarrays
 
 def generatesubjoblist(scanlist, subarraylist, job):
 	subs = [-1]
@@ -1117,6 +1125,8 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
 	scanlist, subarraylist = statelist2scanlist(statelist, minsubarraysize, nant)
+	remove_phamtoms(scanlist, minsubarraysize)
+
 	subjoblist = generatesubjoblist(scanlist, subarraylist, job)
 	srclist = generatesrclist(job['source'])
 
@@ -1234,13 +1244,13 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 			# make subarray flags
 			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
 					sub, subarray_num)
-#			if len(flagtable) > 0:
-#				filename = '%s.flag' % filebase
-#				fp = open(filename, "w") 
-#				fp.write("%d\n" % len(flagtable))
-#				for f in flagtable:
-#					fp.write(f+'\n')
-#				fp.close()
+			if len(flagtable) > 0:
+				filename = '%s.flag' % filebase
+				fp = open(filename, "w") 
+				fp.write("%d\n" % len(flagtable))
+				for f in flagtable:
+					fp.write(f+'\n')
+				fp.close()
 			
 		subjob_num += 1
 

@@ -878,7 +878,7 @@ int main (int argc, char *argv[])
 		{
 		  time_incr = ((Calc_Params.scan_start_pt+i)*Calc_Params.increment)/86400.0;
 		  p_result = getCalcData(Calc_Params, time_incr, j, cl);
-		  if (++call_cnt%8==0)
+		  if (++call_cnt%8==0 && verbose)
 		    printf("\r%d",call_cnt); /*entertain user */
 		  /* 
 		   * Write per telescope uvw, rate, and delay information
