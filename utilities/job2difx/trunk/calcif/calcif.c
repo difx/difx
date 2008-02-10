@@ -1123,7 +1123,7 @@ int calcSpacecraftPosition(const TS_CALC_PARAMS *c_params,
 	muDec *= (180.0*3600.0/M_PI)*365.24;
 
 	request_args->ra  =  atan2(Y, X);
-	request_args->dec =  atan2(Z, R2);
+	request_args->dec =  atan2(Z, sqrtl(R2));
 	request_args->dra  = muRA;
 	request_args->ddec = muDec;
 	request_args->parallax = 3.08568025e16/D;
