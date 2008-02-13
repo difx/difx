@@ -170,6 +170,8 @@ def countTones(ToneTable, StateTable):
 						nBand = polCount[pol] + 1
 				else:
 					polCount[pol] = 0
+				if nBand == 0:
+					nBand = 1
 				bandnums[chanpol] = [polCount[pol], 0]
 
 	toneIndex = {}
