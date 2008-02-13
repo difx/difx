@@ -217,7 +217,7 @@ def makePH(sections, BBCs, antenna):
 		return None
 	PulseCalData = sections['PulseCal'][antenna]
 	bbc = BBCs[antenna]
-	
+
 	PH = []
 	PH.append('# Ant D.O.Y. dur(days) C.Cal nPol nBand nTone nState nRecChan (RecChan, freq, mag, phase(degrees))[nPol][nBand][nTone] (RecChan, stateCount[nState])[nPol][nBand];  RecChan is recorder channel num (0-based)')
 
@@ -336,7 +336,13 @@ def makeTS(sections, antenna):
 		# check for a comment line with vital info
 		if s[0] == '!' and len(s) == 11 and \
 				s[3] in ['A', 'B', 'C', 'D'] and \
-				s[6] in ['U', 'L'] and s[8][-1] == 'M':
+				s[6] in ['U', 'L'] and s[8][-1] in ['M', 'K']:
+			# calculate net side band, rather than use the supplied
+			# BBC sideband:
+			if s[9][0] == '-':
+				s[6] = 'L'
+			else:
+				s[6] = 'U'
 			if s[1] == '1':	# reset on channel 1
 				recvName = []
 				nRecChan = 0
