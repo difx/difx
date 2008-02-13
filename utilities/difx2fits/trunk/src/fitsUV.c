@@ -45,7 +45,6 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	DifxVis *dv;
 	char globstr[256];
 	int g, i, c, v;
-	int nPol;
 	int polMask = 0;
 	int verbose = 0;
 
@@ -83,22 +82,17 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 	dv->sourceId = -1;
 	dv->baseline = -1;
 	dv->maxChan = D->nOutChan;
-	dv->maxPol = 0;
+	dv->maxPol = D->nPolar;
 	dv->nFreq = 0;
 	dv->nComplex = 2;	/* for now don't write weights */
 	for(c = 0; c < D->nConfig; c++)
 	{
-		nPol = D->nPol;
 		if(D->nIF > dv->nFreq)
 		{
 			dv->nFreq = D->nIF;
 		}
 		for(i = 0; i < D->nIF; i++)
 		{
-			if(D->config[c].IF[i].nPol*nPol > dv->maxPol)
-			{
-				dv->maxPol = D->config[c].IF[i].nPol*nPol;
-			}
 			if(D->config[c].IF[i].pol[0] == 'R' ||
 			   D->config[c].IF[i].pol[1] == 'R')
 			{

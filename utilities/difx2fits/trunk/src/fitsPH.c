@@ -79,12 +79,18 @@ static int parsePulseCal(const char *line,
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
 
+	if(mjd < D->mjdStart || mjd > D->mjdStart + D->duration/86400.0)
+	{
+		return -1;
+	}
+
 	sourceId = DifxInputGetSourceId(D, mjd);
 	if(sourceId < 0)	/* not in scan */
 	{
 		return -2;
 	}
 	*configId = D->source[sourceId].configId;
+	nRecChan = D->config[*configId].nRecChan;
 	
 	*antId = DifxInputGetAntennaId(D, antName);
 	if(*antId < 0)
@@ -119,30 +125,29 @@ static int parsePulseCal(const char *line,
 					return -4;
 				}
 				line += p;
-				if(recChan < 0)
+				if(recChan < 0 || recChan >= nRecChan)
 				{
 					continue;
 				}
 				v = DifxConfigRecChan2IFPol(D, *configId,
 					*antId, recChan, &bandId, &polId);
-				if(bandId < 0 || polId < 0)
+				if(v >= 0)
 				{
-					fprintf(stderr, "Error: derived "
-						"bandId and polId (%d,%d) are "
-						"not legit.  From "
-						"recChan=%d.\n",
-						bandId, polId, recChan);
+					if(bandId < 0 || polId < 0)
+					{
+						fprintf(stderr, "Error: derived "
+							"bandId and polId (%d,%d) are "
+							"not legit.  From "
+							"recChan=%d.\n",
+							bandId, polId, recChan);
+						continue;
+					}
+					freqs[polId][tone + bandId*nt] = A*1.0e6;
+					pulseCalRe[polId][tone + bandId*nt] = 
+						B*cos(C*M_PI/180.0);
+					pulseCalIm[polId][tone + bandId*nt] = 
+						B*sin(C*M_PI/180.0);
 				}
-				if(v < 0)
-				{
-					printf("line = %s\n", L);
-					continue;
-				}
-				freqs[polId][tone + bandId*nt] = A*1.0e6;
-				pulseCalRe[polId][tone + bandId*nt] = 
-					B*cos(C*M_PI/180.0);
-				pulseCalIm[polId][tone + bandId*nt] = 
-					B*sin(C*M_PI/180.0);
 			}
 		}
 	}
@@ -158,10 +163,6 @@ static int parsePulseCal(const char *line,
 				line += p;
 				v = DifxConfigRecChan2IFPol(D, *configId,
 					*antId, recChan, &bandId, &polId);
-				if(v < 0)
-				{
-					printf("off=%d, line = %s\n", line-L, L);
-				}
 				for(state = 0; state < 4; state++)
 				{
 					if(state < ns)
@@ -224,7 +225,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float timeInt;
 	double cableCal;
 	double freqs[2][array_MAX_TONES];
-	double mjdStop;
 	float pulseCalRe[2][array_MAX_TONES];
 	float pulseCalIm[2][array_MAX_TONES];
 	float stateCount[2][array_MAX_TONES];
@@ -247,7 +247,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	nPol = D->nPol;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
-	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	/* get the maximum dimensions possibly needed */
 	f = D->mjdStart - (int)(D->mjdStart);

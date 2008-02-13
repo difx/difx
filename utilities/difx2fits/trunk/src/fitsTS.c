@@ -152,6 +152,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			/* discard records outside time range */
 			time -= refDay;
 			mjd = time + (int)(D->mjdStart);
+			sourceId = DifxInputGetSourceId(D, mjd);
+			if(sourceId < 0 || mjd < D->mjdStart || 
+				mjd > D->mjdStart + D->duration/86400.0)
+			{
+				continue;
+			}
 		
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antName);
@@ -160,13 +166,13 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				continue;
 			}
 
-			sourceId = DifxInputGetSourceId(D, mjd);
-			if(sourceId < 0)	/* not in scan? */
-			{
-				continue;
-			}
 			configId = D->source[sourceId].configId;
 			freqId1 = D->config[configId].freqId + 1;
+
+			if(nRecChan > D->config[configId].nRecChan)
+			{
+				nRecChan = D->config[configId].nRecChan;
+			}
 
 			for(j = 0; j < 2; j++)
 			{
@@ -179,11 +185,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			/* Take the recorder channel order data and populate
 			 * into [polId][bandId] order
 			 */
-			v = 0;
-			for(i = 0; i < nRecChan && v >= 0; i++)
+			for(i = 0; i < nRecChan; i++)
 			{
 				v = DifxConfigRecChan2IFPol(D, configId,
 					antId, i, &bandId, &polId);
+				if(v < 0)
+				{
+					continue;
+				}
 				if(bandId < 0 || polId < 0)
 				{
 					fprintf(stderr, "Error: derived "
@@ -193,10 +202,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 						bandId, polId, i);
 				}
 				tSys[polId][bandId] = tSysRecChan[i];
-			}
-			if(v < 0)
-			{
-				continue;
 			}
 
 			/* 1-based values for FITS */
