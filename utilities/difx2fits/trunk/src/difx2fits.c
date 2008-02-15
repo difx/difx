@@ -260,7 +260,7 @@ int main(int argc, char **argv)
 			basefile);
 		return 0;
 	}
-	D = updateDifxInput(basefile);
+	D = updateDifxInput(D);
 	if(!D)
 	{
 		fprintf(stderr, "updateDifxInput failed.  Aborting\n");
