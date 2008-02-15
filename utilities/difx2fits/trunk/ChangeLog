@@ -1,3 +1,6 @@
+Version 1.9
+* Use difxio >= 1.7
+
 Version 1.8
 * Use vlog output to generate FG, TS, PH, WX tables (WX is suspect)
 * Use gain curve files to generate GC (from env var GAIN_CURVE_PATH)

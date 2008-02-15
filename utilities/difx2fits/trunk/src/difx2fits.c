@@ -256,7 +256,14 @@ int main(int argc, char **argv)
 	D = loadDifxInput(basefile);
 	if(!D)
 	{
-		fprintf(stderr, "Cannot proceed.  Aborting\n");
+		fprintf(stderr, "loadDifxInput failed on <%s>.  Aborting\n",
+			basefile);
+		return 0;
+	}
+	D = updateDifxInput(basefile);
+	if(!D)
+	{
+		fprintf(stderr, "updateDifxInput failed.  Aborting\n");
 		return 0;
 	}
 
