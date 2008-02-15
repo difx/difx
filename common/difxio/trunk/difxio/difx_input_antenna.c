@@ -1,0 +1,144 @@
+/***************************************************************************
+ *   Copyright (C) 2008 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "difxio/difx_input.h"
+
+
+DifxAntenna *newDifxAntennaArray(int nAntenna)
+{
+	DifxAntenna* da;
+	int a;
+
+	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
+	for(a = 0; a < nAntenna; a++)
+	{
+		da[a].spacecraftId = -1;
+	}
+	
+	return da;
+}
+
+void deleteDifxAntennaArray(DifxAntenna *da)
+{
+	if(da)
+	{
+		free(da);
+	}
+}
+
+void printDifxAntenna(const DifxAntenna *da)
+{
+	printf("  DifxAntenna [%s] : %p\n", da->name, da);
+	printf("    Delay = %f us\n", da->delay);
+	printf("    Rate = %e us/s\n", da->rate);
+	printf("    Mount = %s\n", da->mount);
+	printf("    Offset = %f, %f, %f m\n", 
+		da->offset[0], da->offset[1], da->offset[2]);
+	printf("    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
+	printf("    VSN = %s\n", da->vsn);
+	printf("    SpacecraftId = %d\n", da->spacecraftId);
+}
+
+int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
+{
+	if(strcmp(da1->name,  da2->name ) == 0 &&
+	   strcmp(da1->mount, da2->mount) == 0 &&
+	   fabs(da1->X - da2->X) < 1.0 &&
+	   fabs(da1->Y - da2->Y) < 1.0 &&
+	   fabs(da1->Z - da2->Z) < 1.0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
+{
+	int i;
+	
+	strcpy(dest->name, src->name);
+	dest->delay = src->delay;
+	dest->rate  = src->rate;
+	strcpy(dest->mount, src->mount);
+	for(i = 0; i < 3; i++)
+	{
+		dest->offset[i] = src->offset[i];
+	}
+	dest->X  = src->X;
+	dest->Y  = src->Y;
+	dest->Z  = src->Z;
+	dest->dX = src->dX;
+	dest->dY = src->dY;
+	dest->dZ = src->dZ;
+	strcpy(dest->vsn, src->vsn);
+}
+
+DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
+	const DifxAntenna *da2, int nda2, int *antIdRemap)
+{
+	int nda;
+	int i, j;
+	DifxAntenna *da;
+
+	nda = nda1;
+
+	/* first identify entries that differ and assign new freqIds to them */
+	for(j = 0; j < nda2; j++)
+	{
+		for(i = 0; i < nda1; i++)
+		{
+			if(isSameDifxAntenna(da1 + i, da2 + j))
+			{
+				antIdRemap[j] = i;
+				break;
+			}
+		}
+		if(i == nda1)
+		{
+			antIdRemap[j] = nda;
+			nda++;
+		}
+	}
+
+	da = newDifxAntennaArray(nda);
+	
+	/* now copy da1 */
+	for(i = 0; i < nda1; i++)
+	{
+		copyDifxAntenna(da + i, da1 + i);
+	}
+
+	/* now copy unique members of da2 */
+	for(j = 0; j < nda2; j++)
+	{
+		if(antIdRemap[j] >= nda1)
+		{
+			copyDifxAntenna(da + antIdRemap[j], da2 + j);
+		}
+	}
+
+	return da;
+}
+

@@ -27,7 +27,7 @@ typedef struct
 {
 	double freq;		/* (MHz) */
 	double bw;		/* (MHz) */
-	char sideband;		/* U or L */
+	char sideband;		/* U or L -- net sideband */
 } DifxFreq;
 
 /* To become a FITS IF */
@@ -35,7 +35,7 @@ typedef struct
 {
 	double freq;		/* (MHz) */
 	double bw;		/* (MHz) */
-	char sideband;		/* U or L */
+	char sideband;		/* U or L -- net sideband */
 	int nPol;
 	char pol[2];		/* polarization codes : L R X or Y. */
 } DifxIF;
@@ -91,7 +91,7 @@ typedef struct
 
 typedef struct
 {
-	char name[32];
+	char name[32];		/* null terminated */
 	double delay;		/* (us) at start of job */
 	double rate;		/* (us/s) */
 	char mount[8];		/* azel, ... */
@@ -211,12 +211,30 @@ typedef struct
 	DifxSpacecraft	*spacecraft;
 } DifxInput;
 
+/* DifxFreq functions */
+DifxFreq *newDifxFreqArray(int nFreq);
+void deleteDifxFreqArray(DifxFreq *df);
+void printDifxFreq(const DifxFreq *df);
+int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
+void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
+DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
+	const DifxFreq *df2, int ndf2, int *freqIdRemap);
+
+/* DifxAntenna functions */
+DifxAntenna *newDifxAntennaArray(int nAntenna);
+void deleteDifxAntennaArray(DifxAntenna *da);
+void printDifxAntenna(const DifxAntenna *da);
+int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
+void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
+DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
+	const DifxAntenna *da2, int nda2, int *antIdRemap);
 
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *fileprefix);
 DifxInput *updateDifxInput(DifxInput *D);
+DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2);
 int DifxInputGetSourceId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);

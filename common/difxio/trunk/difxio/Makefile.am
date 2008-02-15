@@ -4,6 +4,9 @@ h_sources = \
 	parsevis.h
 c_sources = \
 	difx_input.c \
+	difx_input_merge.c \
+	difx_input_freq.c \
+	difx_input_antenna.c \
 	parsedifx.c \
 	parsevis.c
 

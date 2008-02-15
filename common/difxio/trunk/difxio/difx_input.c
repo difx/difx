@@ -406,68 +406,6 @@ void printDifxBaseline(const DifxBaseline *db)
 }
 
 
-DifxFreq *newDifxFreqArray(int nFreq)
-{
-	DifxFreq *df;
-
-	df = (DifxFreq *)calloc(nFreq, sizeof(DifxFreq));
-
-	return df;
-}
-
-void deleteDifxFreqArray(DifxFreq *df)
-{
-	if(df)
-	{
-		free(df);
-	}
-}
-
-void printDifxFreq(const DifxFreq *df)
-{
-	printf("  Difx Freq : %p\n", df);
-	printf("    Freq = %f MHz\n", df->freq);
-	printf("    Bandwidth = %f MHz\n", df->bw);
-	printf("    Sideband = %c\n", df->sideband);
-}
-
-
-DifxAntenna *newDifxAntennaArray(int nAntenna)
-{
-	DifxAntenna* da;
-	int a;
-
-	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
-	for(a = 0; a < nAntenna; a++)
-	{
-		da[a].spacecraftId = -1;
-	}
-	
-	return da;
-}
-
-void deleteDifxAntennaArray(DifxAntenna *da)
-{
-	if(da)
-	{
-		free(da);
-	}
-}
-
-void printDifxAntenna(const DifxAntenna *da)
-{
-	printf("  DifxAntenna [%s] : %p\n", da->name, da);
-	printf("    Delay = %f us\n", da->delay);
-	printf("    Rate = %e us/s\n", da->rate);
-	printf("    Mount = %s\n", da->mount);
-	printf("    Offset = %f, %f, %f m\n", 
-		da->offset[0], da->offset[1], da->offset[2]);
-	printf("    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	printf("    VSN = %s\n", da->vsn);
-	printf("    SpacecraftId = %d\n", da->spacecraftId);
-}
-
-
 DifxSource *newDifxSourceArray(int nSource)
 {
 	DifxSource *ds;
@@ -1635,9 +1573,6 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	/* DATA TABLE */
 	D = parseDifxInputDataTable(D, ip);
 
-	/* Derived tables and values */
-	D = deriveDifxInputValues(D);
-
 	return D;
 }
 
@@ -2507,6 +2442,7 @@ static int calcFreqIds(DifxInput *D)
 
 DifxInput *updateDifxInput(DifxInput *D)
 {
+	D = deriveDifxInputValues(D);
 	D = deriveSourceTable(D);
 	setGlobalValues(D);
 	calcFreqIds(D);
