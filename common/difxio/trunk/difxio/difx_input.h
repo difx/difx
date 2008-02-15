@@ -48,7 +48,7 @@ typedef struct
 	char name[32];
 	int postFFringe;	/* 0 or 1 */
 	int quadDelayInterp;	/* 0 or 1 */
-	int pulsarBinning;	/* 0 or 1 */
+	int pulsarId;		/* -1 if not pulsar */
 	int nPol;		/* number of pols in datastreams (1 or 2) */
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
@@ -168,6 +168,11 @@ typedef struct
 
 typedef struct
 {
+	int nBin;		/* number of pulsar bins */
+} DifxPulsar;
+
+typedef struct
+{
 	double jobStart;	/* cjobgen job start time (mjd) */
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */
@@ -198,7 +203,7 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDatastream, nBaseline, nSpacecraft;
+	int nDatastream, nBaseline, nSpacecraft, nPulsar;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -209,6 +214,7 @@ typedef struct
 	DifxDatastream	*datastream;
 	DifxBaseline    *baseline;
 	DifxSpacecraft	*spacecraft;
+	DifxPulsar	*pulsar;
 } DifxInput;
 
 /* DifxFreq functions */
@@ -250,7 +256,35 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap);
 
+/* DifxConfig functions */
+DifxConfig *newDifxConfigArray(int nConfig);
+void deleteDifxConfigArray(DifxConfig *dc);
+void printDifxConfig(const DifxConfig *dc);
+int DifxConfigGetPolId(const DifxConfig *dc, char polName);
+int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
+	int antennaId, int recChan, int *bandId, int *polId);
 
+/* DifxModel functions */
+DifxModel **newDifxModelArray(int nAntenna, int nPoint);
+void deleteDifxModelArray(DifxModel **dm, int nAntenna);
+void printDifxModel(const DifxModel *dm);
+
+/* DifxScan functions */
+DifxScan *newDifxScanArray(int nScan);
+void deleteDifxScanArray(DifxScan *ds, int nScan);
+void printDifxScan(const DifxScan *ds);
+
+/* DifxEOP functions */
+DifxEOP *newDifxEOPArray(int nEOP);
+void deleteDifxEOPArray(DifxEOP *de);
+void printDifxEOP(const DifxEOP *de);
+
+/* DifxSpacecraft functions */
+DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
+void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft);
+void printDifxSpacecraft(const DifxSpacecraft *ds);
+
+/* DifxInput functions */
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
@@ -259,8 +293,5 @@ DifxInput *updateDifxInput(DifxInput *D);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2);
 int DifxInputGetSourceId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
-int DifxConfigGetPolId(const DifxConfig *dc, char polName);
-int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
-	int antId, int recChan, int *bandId, int *polId);
 
 #endif

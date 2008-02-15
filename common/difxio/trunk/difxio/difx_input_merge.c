@@ -28,10 +28,12 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	DifxInput *D;
 	int i;
 	
-	int *freqIdRemap;
-	int *antennaIdRemap;
-	int *baselineIdRemap;
-	int *datastreamIdRemap;
+	int *freqIdRemap = 0;
+	int *antennaIdRemap = 0;
+	int *baselineIdRemap = 0;
+	int *datastreamIdRemap = 0;
+	int *pulsarIdRemap = 0;
+	int *configIdRemap = 0;
 
 	if(!D1 || !D2)
 	{
@@ -43,6 +45,11 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
 	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
 	datastreamIdRemap = (int *)calloc(D2->nDatastream, sizeof(int));
+	if(D2->nPulsar > 0)
+	{
+		pulsarIdRemap = (int *)calloc(D2->nPulsar, sizeof(int));
+	}
+	configIdRemap     = (int *)calloc(D2->nConfig, sizeof(int));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -93,11 +100,22 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
+	/* merge DifxPulsar table */
+	/* FIXME -- pulsar table does not yet exist */
+
+	/* merge DifxConfig table */
+
+
 	/* clean up */
 	free(freqIdRemap);
 	free(antennaIdRemap);
 	freq(baselineIdRemap);
 	free(datastreamIdRemap);
+	if(pulsarIdRemap)
+	{
+		free(pulsarIdRemap);
+	}
+	free(configIdRemap);
 
 	return D;
 }

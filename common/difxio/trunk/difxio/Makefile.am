@@ -9,6 +9,11 @@ c_sources = \
 	difx_input_antenna.c \
 	difx_input_baseline.c \
 	difx_input_datastream.c \
+	difx_input_config.c \
+	difx_input_model.c \
+	difx_input_scan.c \
+	difx_input_eop.c \
+	difx_input_spacecraft.c \
 	parsedifx.c \
 	parsevis.c
 
