@@ -508,7 +508,7 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint)
 	DifxModel **dm;
 	int a, N;
 
-	dm = (DifxModel **)malloc(nAntenna*sizeof(DifxModel *));
+	dm = (DifxModel **)calloc(nAntenna, sizeof(DifxModel *));
 
 	N = nPoint + 3;
 
@@ -936,7 +936,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	dc = D->config + configId;
 	dc->nIF = 0;
 
-	freqIds = (int *)malloc(sizeof(int)*D->nFreq);
+	freqIds = (int *)calloc(D->nFreq, sizeof(int));
 
 	/* go through datastreams associates with this config and collect all
 	 * distinct Freq table ids
@@ -953,7 +953,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 			}
 		}
 	}
-
+	
 	/* Allocate space */
 	if(dc->freqId2IF)
 	{
@@ -2183,7 +2183,7 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 	if(p == 1 && n > 0 && n < 10000)
 	{
 		D->nFlag = n;
-		D->flag = (DifxAntennaFlag *)malloc(n*sizeof(DifxAntennaFlag));
+		D->flag = (DifxAntennaFlag *)calloc(n, sizeof(DifxAntennaFlag));
 		for(i = 0; i < n; i++)
 		{
 			p = fscanf(in, "%lf%lf%d", &mjd1, &mjd2, &a);
@@ -2309,6 +2309,7 @@ static void setOrbitingAntennas(DifxInput *D)
 
 	return;
 }
+
 
 static void setGlobalValues(DifxInput *D)
 {
@@ -2504,6 +2505,16 @@ static int calcFreqIds(DifxInput *D)
 	return nFQ;
 }
 
+DifxInput *updateDifxInput(DifxInput *D)
+{
+	D = deriveSourceTable(D);
+	setGlobalValues(D);
+	calcFreqIds(D);
+	setOrbitingAntennas(D);
+	
+	return D;
+}
+
 DifxInput *loadDifxInput(const char *fileprefix)
 {
 	DifxParameters *ip, *up, *dp, *rp, *cp;
@@ -2580,16 +2591,6 @@ DifxInput *loadDifxInput(const char *fileprefix)
 
 	populateFlags(D, flagfile);
 	
-	return D;
-}
-
-DifxInput *updateDifxInput(DifxInput *D)
-{
-	D = deriveSourceTable(D);
-	setOrbitingAntennas(D);
-	setGlobalValues(D);
-	calcFreqIds(D);
-
 	return D;
 }
 
