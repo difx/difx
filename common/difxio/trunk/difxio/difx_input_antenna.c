@@ -96,7 +96,7 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 }
 
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antIdRemap)
+	const DifxAntenna *da2, int nda2, int *antennaIdRemap)
 {
 	int nda;
 	int i, j;
@@ -104,20 +104,20 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 
 	nda = nda1;
 
-	/* first identify entries that differ and assign new freqIds to them */
+	/* first identify entries that differ and assign new antennaIds */
 	for(j = 0; j < nda2; j++)
 	{
 		for(i = 0; i < nda1; i++)
 		{
 			if(isSameDifxAntenna(da1 + i, da2 + j))
 			{
-				antIdRemap[j] = i;
+				antennaIdRemap[j] = i;
 				break;
 			}
 		}
 		if(i == nda1)
 		{
-			antIdRemap[j] = nda;
+			antennaIdRemap[j] = nda;
 			nda++;
 		}
 	}
@@ -133,9 +133,9 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	/* now copy unique members of da2 */
 	for(j = 0; j < nda2; j++)
 	{
-		if(antIdRemap[j] >= nda1)
+		if(antennaIdRemap[j] >= nda1)
 		{
-			copyDifxAntenna(da + antIdRemap[j], da2 + j);
+			copyDifxAntenna(da + antennaIdRemap[j], da2 + j);
 		}
 	}
 

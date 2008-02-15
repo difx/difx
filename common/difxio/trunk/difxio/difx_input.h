@@ -78,7 +78,7 @@ typedef struct
 	
 	int *RCfreqId;		/* [recChan] index to DifxFreq table */
 	char *RCpolName;	/* [recChan] Polarization name (R, L, X or Y) */
-} DifxDSEntry;
+} DifxDatastream;
 
 typedef struct
 {
@@ -198,7 +198,7 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDSEntry, nBaseline, nSpacecraft;
+	int nDatastream, nBaseline, nSpacecraft;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -206,7 +206,7 @@ typedef struct
 	DifxSource	*source;
 	DifxEOP		*eop;
 	DifxAntennaFlag *flag;
-	DifxDSEntry	*dsentry;
+	DifxDatastream	*datastream;
 	DifxBaseline    *baseline;
 	DifxSpacecraft	*spacecraft;
 } DifxInput;
@@ -227,7 +227,27 @@ void printDifxAntenna(const DifxAntenna *da);
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antIdRemap);
+	const DifxAntenna *da2, int nda2, int *antennaIdRemap);
+
+/* DifxBaseline functions */
+DifxBaseline *newDifxBaselineArray(int nBaseline);
+void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline);
+void printDifxBaseline(const DifxBaseline *db);
+int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2);
+void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src);
+DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
+	const DifxBaseline *db2, int ndb2, int *baselineIdRemap);
+
+/* DifxDatastream functions */
+DifxDatastream *newDifxDatastreamArray(int nDatastream);
+void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream);
+void printDifxDatastream(const DifxDatastream *ds);
+int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2);
+void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src);
+DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
+	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
+	const int *freqIdRemap, const int *antIdRemap);
+
 
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);

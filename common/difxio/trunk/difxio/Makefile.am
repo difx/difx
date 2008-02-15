@@ -7,6 +7,8 @@ c_sources = \
 	difx_input_merge.c \
 	difx_input_freq.c \
 	difx_input_antenna.c \
+	difx_input_baseline.c \
+	difx_input_datastream.c \
 	parsedifx.c \
 	parsevis.c
 

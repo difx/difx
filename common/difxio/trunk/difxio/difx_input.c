@@ -70,7 +70,7 @@ static int makeBaselineFreq2IF(DifxInput *D, int configId)
 	int ***map;
 	DifxConfig *dc;
 	DifxBaseline *db;
-	DifxDSEntry *ds;
+	DifxDatastream *ds;
 	int blId;
 	int a, b,  d, f;
 	int a1, a2;
@@ -107,15 +107,15 @@ static int makeBaselineFreq2IF(DifxInput *D, int configId)
 	{
 		blId = dc->indexBL[b];
 		db = D->baseline + blId;
-		a1 = D->dsentry[db->dsA].antId;
-		a2 = D->dsentry[db->dsB].antId;
+		a1 = D->datastream[db->dsA].antId;
+		a2 = D->datastream[db->dsB].antId;
 		nFreq = db->nFreq;
 		for(f = 0; f < nFreq; f++)
 		{
 			rcA = db->recChanA[f][0];
 			rcB = db->recChanB[f][0];
-			fqA = D->dsentry[db->dsA].RCfreqId[rcA];
-			fqB = D->dsentry[db->dsB].RCfreqId[rcB];
+			fqA = D->datastream[db->dsA].RCfreqId[rcA];
+			fqB = D->datastream[db->dsB].RCfreqId[rcB];
 			if(fqA != fqB)
 			{
 				fprintf(stderr, "Baseline %d-%d freq %d "
@@ -130,7 +130,7 @@ static int makeBaselineFreq2IF(DifxInput *D, int configId)
 	/* Fill in auto corr terms */
 	for(d = 0; d < D->activeDatastreams; d++)
 	{
-		ds = D->dsentry + dc->indexDS[d];
+		ds = D->datastream + dc->indexDS[d];
 		a = ds->antId;
 		nFreq = ds->nFreq;
 		for(f = 0; f < nFreq; f++)
@@ -271,138 +271,6 @@ void printDifxConfig(const DifxConfig *dc)
 	
 	printf("    baselineFreq2IF map:\n");
 	printBaselineFreq2IF(dc->baselineFreq2IF, nAnt, dc->nIF);
-}
-
-
-DifxDSEntry *newDifxDSEntryArray(int nDSEntry)
-{
-	DifxDSEntry *ds;
-
-	ds = (DifxDSEntry *)calloc(nDSEntry, sizeof(DifxDSEntry));
-
-	return ds;
-}
-
-void deleteDifxDSEntryArray(DifxDSEntry *ds, int nDSEntry)
-{
-	int e;
-
-	if(ds)
-	{
-		for(e = 0; e < nDSEntry; e++)
-		{
-			if(ds[e].nPol)
-			{
-				free(ds[e].nPol);
-			}
-			if(ds[e].freqId)
-			{
-				free(ds[e].freqId);
-			}
-			if(ds[e].clockOffset)
-			{
-				free(ds[e].clockOffset);
-			}
-			if(ds[e].RCfreqId)
-			{
-				free(ds[e].RCfreqId);
-			}
-			if(ds[e].RCpolName)
-			{
-				free(ds[e].RCpolName);
-			}
-		}
-		free(ds);
-	}
-}
-
-void printDifxDSEntry(const DifxDSEntry *ds)
-{
-	int f;
-	printf("  Difx Datastream Entry[antId=%d] : %p\n", ds->antId, ds);
-	printf("    format = %s\n", ds->dataFormat);
-	printf("    quantization bits = %d\n", ds->quantBits);
-	printf("    nFreq = %d\n", ds->nFreq);
-	printf("    nRecChan = %d\n", ds->nRecChan);
-	printf("    (freqId, nPol)[freq] =");
-	for(f = 0; f < ds->nFreq; f++)
-	{
-		printf(" (%d, %d)", ds->freqId[f], ds->nPol[f]);
-	}
-	printf("\n");
-	printf("    (freqId, pol)[recchan] =");
-	for(f = 0; f < ds->nRecChan; f++)
-	{
-		printf(" (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
-	}
-	printf("\n");
-}
-
-
-DifxBaseline *newDifxBaselineArray(int nBaseline)
-{
-	DifxBaseline *db;
-
-	db = (DifxBaseline *)calloc(nBaseline, sizeof(DifxBaseline));
-
-	return db;
-}
-
-void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
-{
-	int b, f;
-	
-	if(db)
-	{
-		for(b = 0; b < nBaseline; b++)
-		{
-			if(db[b].nPolProd)
-			{
-				free(db[b].nPolProd);
-			}
-			if(db[b].recChanA)
-			{
-				for(f = 0; f < db[b].nFreq; f++)
-				{
-					if(db[b].recChanA[f])
-					{
-						free(db[b].recChanA[f]);
-					}
-				}
-				free(db[b].recChanA);
-			}
-			if(db[b].recChanB)
-			{
-				for(f = 0; f < db[b].nFreq; f++)
-				{
-					if(db[b].recChanB[f])
-					{
-						free(db[b].recChanB[f]);
-					}
-				}
-				free(db[b].recChanB);
-			}
-		}
-		free(db);
-	}
-}
-
-void printDifxBaseline(const DifxBaseline *db)
-{
-	int f;
-	
-	printf("  Difx Baseline : %p\n", db);
-	printf("    datastream indices = %d %d\n", db->dsA, db->dsB);
-	printf("    nFreq = %d\n", db->nFreq);
-	if(db->nPolProd)
-	{
-		printf("    nPolProd[freq] =");
-		for(f = 0; f < db->nFreq; f++)
-		{
-			printf(" %d", db->nPolProd[f]);
-		}
-		printf("\n");
-	}
 }
 
 
@@ -637,9 +505,9 @@ void deleteDifxInput(DifxInput *D)
 		{
 			deleteDifxConfigArray(D->config);
 		}
-		if(D->dsentry)
+		if(D->datastream)
 		{
-			deleteDifxDSEntryArray(D->dsentry, D->nDSEntry);
+			deleteDifxDatastreamArray(D->datastream, D->nDatastream);
 		}
 		if(D->freq)
 		{
@@ -725,10 +593,10 @@ void printDifxInput(const DifxInput *D)
 		printDifxEOP(D->eop + i);
 	}
 
-	printf("  nDataStreamEntries = %d\n", D->nDSEntry);
-	for(i = 0; i < D->nDSEntry; i++)
+	printf("  nDataStreamEntries = %d\n", D->nDatastream);
+	for(i = 0; i < D->nDatastream; i++)
 	{
-		printDifxDSEntry(D->dsentry + i);
+		printDifxDatastream(D->datastream + i);
 	}
 
 	printf("  nBaselineEntries = %d\n", D->nBaseline);
@@ -864,7 +732,7 @@ static int addtolist(int *list, int x, int n)
 static int makeFreqId2IFmap(DifxInput *D, int configId)
 {
 	DifxConfig *dc;
-	DifxDSEntry *ds;
+	DifxDatastream *ds;
 	int *freqIds;
 	int p, a, f, c, i;
 	int maxFreqId=0;
@@ -881,7 +749,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	 */
 	for(a = 0; dc->indexDS[a] >= 0; a++)
 	{
-		ds = D->dsentry + dc->indexDS[a];
+		ds = D->datastream + dc->indexDS[a];
 		for(f = 0; f < ds->nFreq; f++)
 		{
 			dc->nIF = addtolist(freqIds, ds->freqId[f], dc->nIF);
@@ -906,7 +774,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	 */
 	for(a = 0; dc->indexDS[a] >= 0; a++)
 	{
-		ds = D->dsentry + dc->indexDS[a];
+		ds = D->datastream + dc->indexDS[a];
 		for(c = 0; c < ds->nRecChan; c++)
 		{
 			switch(ds->RCpolName[c])
@@ -1228,10 +1096,10 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 	}
 
 	r = DifxParametersfind(ip, 0, "DATASTREAM ENTRIES");
-	D->nDSEntry = atoi(DifxParametersvalue(ip, r));
-	D->dsentry = newDifxDSEntryArray(D->nDSEntry);
+	D->nDatastream = atoi(DifxParametersvalue(ip, r));
+	D->datastream = newDifxDatastreamArray(D->nDatastream);
 
-	for(e = 0; e < D->nDSEntry; e++)
+	for(e = 0; e < D->nDatastream; e++)
 	{
 		r = DifxParametersfind(ip, r+1, "TELESCOPE INDEX");
 		if(r < 0)
@@ -1239,7 +1107,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "TELESCOPE INDEX not found\n");
 			return 0;
 		}
-		D->dsentry[e].antId = atoi(DifxParametersvalue(ip, r));
+		D->datastream[e].antId = atoi(DifxParametersvalue(ip, r));
 		
 		r = DifxParametersfind(ip, r+1, "DATA FORMAT");
 		if(r < 0)
@@ -1247,28 +1115,28 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "DATA FORMAT not found\n");
 			return 0;
 		}
-		strncpy(D->dsentry[e].dataFormat,
+		strncpy(D->datastream[e].dataFormat,
 			DifxParametersvalue(ip, r), 31);
 	
-		D->dsentry[e].quantBits = -1;
-		l = strlen(D->dsentry[e].dataFormat);
+		D->datastream[e].quantBits = -1;
+		l = strlen(D->datastream[e].dataFormat);
 		if(l > 8)
 		{
 			/* do this more formally someday... */
-			if(strcmp(D->dsentry[e].dataFormat+l-2, "-1") == 0)
+			if(strcmp(D->datastream[e].dataFormat+l-2, "-1") == 0)
 			{
-				D->dsentry[e].quantBits = 1;
+				D->datastream[e].quantBits = 1;
 			}
-			else if(strcmp(D->dsentry[e].dataFormat+l-2, "-2") == 0)
+			else if(strcmp(D->datastream[e].dataFormat+l-2, "-2") == 0)
 			{
-				D->dsentry[e].quantBits = 2;
+				D->datastream[e].quantBits = 2;
 			}
 			else
 			{
-				D->dsentry[e].quantBits = 0;
+				D->datastream[e].quantBits = 0;
 			}
 		}
-		if(D->dsentry[e].quantBits < 0)
+		if(D->datastream[e].quantBits < 0)
 		{
 			r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
 			if(r < 0)
@@ -1277,7 +1145,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 					"Cannot determine quantization bits\n");
 				return 0;
 			}
-			D->dsentry[e].quantBits = 
+			D->datastream[e].quantBits = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 		
@@ -1288,47 +1156,47 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "NUM FREQS not found\n");
 			return 0;
 		}
-		D->dsentry[e].nFreq = atoi(DifxParametersvalue(ip, r));
-		D->dsentry[e].nPol = (int *)calloc(D->dsentry[e].nFreq,
+		D->datastream[e].nFreq = atoi(DifxParametersvalue(ip, r));
+		D->datastream[e].nPol = (int *)calloc(D->datastream[e].nFreq,
 			sizeof(int));
-		D->dsentry[e].freqId = (int *)calloc(D->dsentry[e].nFreq,
+		D->datastream[e].freqId = (int *)calloc(D->datastream[e].nFreq,
 			sizeof(int));
-		D->dsentry[e].clockOffset = (double *)calloc(
-			D->dsentry[e].nFreq, sizeof(double));
+		D->datastream[e].clockOffset = (double *)calloc(
+			D->datastream[e].nFreq, sizeof(double));
 
 		nRecChan = 0;
-		for(i = 0; i < D->dsentry[e].nFreq; i++)
+		for(i = 0; i < D->datastream[e].nFreq; i++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"FREQ TABLE INDEX %d", i);
-			D->dsentry[e].freqId[i] = 
+			D->datastream[e].freqId[i] = 
 				atoi(DifxParametersvalue(ip, r));
 			r = DifxParametersfind1(ip, r+1, 
 				"CLK OFFSET %d (us)", i);
-			D->dsentry[e].clockOffset[i] =
+			D->datastream[e].clockOffset[i] =
 				atof(DifxParametersvalue(ip, r));
 			r = DifxParametersfind1(ip, r+1, 
 				"NUM POLS %d", i);
-			D->dsentry[e].nPol[i] = 
+			D->datastream[e].nPol[i] = 
 				atoi(DifxParametersvalue(ip, r));
-			nRecChan += D->dsentry[e].nPol[i];
+			nRecChan += D->datastream[e].nPol[i];
 		}
-		D->dsentry[e].nRecChan = nRecChan;
-		D->dsentry[e].RCfreqId = (int *)calloc(D->dsentry[e].nRecChan,
+		D->datastream[e].nRecChan = nRecChan;
+		D->datastream[e].RCfreqId = (int *)calloc(D->datastream[e].nRecChan,
 			sizeof(int));
-		D->dsentry[e].RCpolName = (char *)calloc(D->dsentry[e].nRecChan,
+		D->datastream[e].RCpolName = (char *)calloc(D->datastream[e].nRecChan,
 			sizeof(char));
 
 		for(i = 0; i < nRecChan; i++)
 		{
 			r = DifxParametersfind1(ip, r+1,
 				"INPUT BAND %d POL", i);
-			D->dsentry[e].RCpolName[i] = 
+			D->datastream[e].RCpolName[i] = 
 				DifxParametersvalue(ip, r)[0];
 			r = DifxParametersfind1(ip, r+1,
 				"INPUT BAND %d INDEX", i);
 			a = atoi(DifxParametersvalue(ip, r));
-			D->dsentry[e].RCfreqId[i] = D->dsentry[e].freqId[a];
+			D->datastream[e].RCfreqId[i] = D->datastream[e].freqId[a];
 		}
 	}
 
@@ -1461,7 +1329,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
 	int a, b, c, e, qb, nOutChan = 0;
-	DifxDSEntry *ds;
+	DifxDatastream *ds;
 	
 	if(!D)
 	{
@@ -1497,7 +1365,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 			{
 				continue;
 			}
-			ds = D->dsentry + e;
+			ds = D->datastream + e;
 			if(qb == 0)
 			{
 				qb = ds->quantBits;
@@ -2594,7 +2462,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antId, int recChan, int *bandId, int *polId)
 {
 	DifxConfig *dc;
-	DifxDSEntry *ds;
+	DifxDatastream *ds;
 	int dsId;
 	
 	
@@ -2616,7 +2484,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 
 	dc = D->config + configId;
 	dsId = dc->indexDS[antId];
-	ds = D->dsentry + dsId;
+	ds = D->datastream + dsId;
 
 	if(recChan >= ds->nRecChan)
 	{
