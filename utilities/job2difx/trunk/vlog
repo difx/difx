@@ -4,7 +4,7 @@ from sys import argv, stdout, exit
 from string import split, strip, find
 
 program = 'vlog'
-version = 1.0
+version = 1.1
 verdate = '20071231'
 author  = 'Walter Brisken'
 
