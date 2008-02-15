@@ -31,6 +31,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	int *freqIdRemap;
 	int *antennaIdRemap;
 	int *baselineIdRemap;
+	int *datastreamIdRemap;
 
 	if(!D1 || !D2)
 	{
@@ -38,9 +39,10 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	}
 
 	/* allocate some scratch space */
-	freqIdRemap     = (int *)calloc(D2->nFreq, sizeof(int));
-	antennaIdRemap  = (int *)calloc(D2->nAntenna, sizeof(int));
-	baselineIdRemap = (int *)calloc(D2->nBaseline, sizeof(int));
+	freqIdRemap       = (int *)calloc(D2->nFreq, sizeof(int));
+	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
+	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
+	datastreamIdRemap = (int *)calloc(D2->nDatastream, sizeof(int));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -78,12 +80,24 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
+	/* merge DifxDatastream table */
+	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 
+		D1->nDatastream, D2->datastream, D2->nDatastream,
+		datastreamIdRemap, freqIdRemap, antennaIdRemap);
+	D->nDatastream = D1->nDatastream;
+	for(i = 0; i < D2->nDatastream; i++)
+	{
+		if(datastreamIdRemap[i]+1 > D->nDatastream)
+		{
+			D->nDatastream = datastreamIdRemap[i]+1;
+		}
+	}
 
 	/* clean up */
-
 	free(freqIdRemap);
 	free(antennaIdRemap);
 	freq(baselineIdRemap);
+	free(datastreamIdRemap);
 
 	return D;
 }

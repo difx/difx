@@ -87,18 +87,133 @@ void printDifxDatastream(const DifxDatastream *ds)
 	printf("\n");
 }
 
-int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2)
+int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
+	const int *freqIdRemap, const int *antennaIdRemap)
 {
-	return 0;
+	int f, c;
+	
+	if(dd1->antId != antennaIdRemap[dd2->antId] ||
+	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
+	   dd1->nFreq != dd2->nFreq ||
+	   dd1->nRecChan != dd2->nRecChan)
+	{
+		return 0;
+	}
+	for(f = 0; f < dd1->nFreq; f++)
+	{
+		if(dd1->nPol[f] != dd2->nPol[f] ||
+		   dd1->freqId[f] != freqIdRemap[dd2->freqId[f]])
+		{
+			return 0;
+		}
+	}
+	for(c = 0; c < dd1->nRecChan; c++)
+	{
+		if(dd1->RCfreqId[c]  != freqIdRemap[dd2->RCfreqId[c]] ||
+		   dd1->RCpolName[c] != dd2->RCpolName[c])
+		{
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
-void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src)
+void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
+	const int *freqIdRemap, const int *antennaIdRemap)
 {
+	int f, c;
+	
+	if(antennaIdRemap != 0)
+	{
+		dest->antId = antennaIdRemap[src->antId];
+	}
+	else
+	{
+		dest->antId = src->antId;
+	}
+	strcpy(dest->dataFormat, src->dataFormat);
+	dest->quantBits = src->quantBits;
+	dest->nFreq = src->nFreq;
+	dest->nRecChan = src->nRecChan;
+	dest->nPol = (int *)calloc(dest->nFreq, sizeof(int));
+	dest->freqId = (int *)calloc(dest->nFreq, sizeof(int));
+	dest->clockOffset = (double *)calloc(dest->nFreq, sizeof(double));
+	dest->RCfreqId = (int *)calloc(dest->nRecChan, sizeof(int));
+	dest->RCpolName = (char *)calloc(dest->nRecChan, sizeof(char));
+	for(f = 0; f < dest->nFreq; f++)
+	{
+		dest->nPol[f] = src->nPol[f];
+		if(freqIdRemap)
+		{
+			dest->freqId[f] = freqIdRemap[src->freqId[f]];
+		}
+		else
+		{
+			dest->freqId[f] = src->freqId[f];
+		}
+		dest->clockOffset[f] = src->clockOffset[f];
+	}
+	for(c = 0; c < dest->nRecChan; c++)
+	{
+		if(freqIdRemap)
+		{
+			dest->RCfreqId[c] = freqIdRemap[src->RCfreqId[c]];
+		}
+		else
+		{
+			dest->RCfreqId[c] = src->RCfreqId[c];
+		}
+		dest->RCpolName[c] = src->RCpolName[c];
+	}
 }
 
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
-	const int *freqIdRemap, const int *antIdRemap)
+	const int *freqIdRemap, const int *antennaIdRemap)
 {
-	return 0;
+	int ndd;
+	int i, j;
+	DifxDatastream *dd;
+
+	ndd = ndd1;
+
+	/* first identify entries that differ and assign new datastreamIds */
+	for(j = 0; j < ndd2; j++)
+	{
+		for(i = 0; i < ndd1; i++)
+		{
+			if(isSameDifxDatastream(dd1 + i, dd2 + j,
+				freqIdRemap, antennaIdRemap))
+			{
+				datastreamIdRemap[j] = i;
+				break;
+			}
+		}
+		if(i == ndd1)
+		{
+			datastreamIdRemap[j] = ndd;
+			ndd++;
+		}
+	}
+
+	dd = newDifxDatastreamArray(ndd);
+	
+	/* now copy dd1 */
+	for(i = 0; i < ndd1; i++)
+	{
+		copyDifxDatastream(dd + i, dd1 + i, 0, 0);
+	}
+
+	/* now copy unique members of dd2 */
+	for(j = 0; j < ndd2; j++)
+	{
+		if(datastreamIdRemap[j] >= ndd1)
+		{
+			copyDifxDatastream(dd + datastreamIdRemap[j], dd2 + j,
+				freqIdRemap, antennaIdRemap);
+		}
+	}
+
+	return dd;
 }

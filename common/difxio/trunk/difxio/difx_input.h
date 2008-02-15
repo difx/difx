@@ -242,11 +242,13 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
 void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream);
 void printDifxDatastream(const DifxDatastream *ds);
-int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2);
-void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src);
+int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
+	const int *freqIdRemap, const int *antennaIdRemap);
+void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
+	const int *freqIdRemap, const int *antennaIdRemap);
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
-	const int *freqIdRemap, const int *antIdRemap);
+	const int *freqIdRemap, const int *antennaIdRemap);
 
 
 DifxInput *newDifxInput();

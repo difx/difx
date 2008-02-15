@@ -120,15 +120,19 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2)
 
 void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src)
 {
-	int f, p;
+	int f, p, nProd;
 
 	dest->dsA   = src->dsA;
 	dest->dsB   = src->dsB;
 	dest->nFreq = src->nFreq;
+	dest->nPolProd = (int *)calloc(dest->nFreq, sizeof(int));
 	for(f = 0; f < dest->nFreq; f++)
 	{
 		dest->nPolProd[f] = src->nPolProd[f];
-		for(p = 0; p < dest->nPolProd[f]; p++)
+		nProd = dest->nPolProd[f];
+		dest->recChanA[f] = (int *)calloc(nProd, sizeof(int));
+		dest->recChanB[f] = (int *)calloc(nProd, sizeof(int));
+		for(p = 0; p < nProd; p++)
 		{
 			dest->recChanA[f][p] = src->recChanA[f][p];
 			dest->recChanB[f][p] = src->recChanB[f][p];
