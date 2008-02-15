@@ -216,6 +216,7 @@ DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *fileprefix);
+DifxInput *updateDifxInput(DifxInput *D);
 int DifxInputGetSourceId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);

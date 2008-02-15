@@ -953,6 +953,12 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 			}
 		}
 	}
+
+	/* Allocate space */
+	if(dc->freqId2IF)
+	{
+		free(dc->freqId2IF);
+	}
 	dc->freqId2IF = (int *)calloc((maxFreqId+2), sizeof(int));
 	dc->freqId2IF[maxFreqId+1] = -1;
 
@@ -1272,7 +1278,6 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 	return D;
 }
 
-/* FIXME -- some of this should move to deriving function */
 static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 	const DifxParameters *ip)
 {
@@ -1564,6 +1569,10 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 				qb = -1;
 				break;
 			}
+		}
+		if(qb < 0)
+		{
+			qb = 0;
 		}
 		D->config[c].quantBits = qb;
 
@@ -2039,7 +2048,6 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 	}
 
-	/* FIXME -- move to global section ??? see 2 paragraphs above */
 	if(findconfig)
 	{
 		for(i = 0; i < D->nScan; i++)
@@ -2203,7 +2211,7 @@ static int populateFlags(DifxInput *D, const char *flagfile)
  */
 static DifxInput *deriveSourceTable(DifxInput *D)
 {
-	int i, n=0, s;
+	int i, n=0, s, sc;
 
 	if(!D)
 	{
@@ -2254,7 +2262,52 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 
 	D->nSource = n;
 
+	/* Look for spacecraft */
+	if(D->nSpacecraft > 0 && D->nSource > 0)
+	{
+		for(s = 0; s < D->nSource; s++)
+		{
+			for(sc = 0; sc < D->nSpacecraft; sc++)
+			{
+				if(strcmp(D->spacecraft[sc].name,
+				          D->source[s].name) == 0)
+				{
+					D->source[s].spacecraftId = sc;
+					break;
+				}
+			}
+		}
+	}
+
 	return D;
+}
+	
+static void setOrbitingAntennas(DifxInput *D)
+{
+	int a, sc;
+
+	if(!D)
+	{
+		return;
+	}
+	
+	if(D->nSpacecraft > 0 && D->nAntenna > 0)
+	{
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			for(sc = 0; sc < D->nSpacecraft; sc++)
+			{
+				if(strcmp(D->spacecraft[sc].name,
+				          D->antenna[a].name) == 0)
+				{
+					D->antenna[a].spacecraftId = sc;
+					break;
+				}
+			}
+		}
+	}
+
+	return;
 }
 
 static void setGlobalValues(DifxInput *D)
@@ -2366,8 +2419,6 @@ static void setGlobalValues(DifxInput *D)
 			D->polPair[0] = 'L';
 		}
 	}
-
-	/* FIXME -- match up spacecraft with source/antenna */
 }
 
 static int sameFQ(const DifxConfig *C1, const DifxConfig *C2)
@@ -2509,17 +2560,13 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	}
 	else
 	{
-		fprintf(stderr, "Warning -- no file called %s found.  Continuing anyways\n",
-			ratefile);
+		fprintf(stderr, "Warning -- no file called %s found.  "
+				"Continuing anyways\n", ratefile);
 		fprintf(stderr, "  Model rates will be approximate\n");
 		fprintf(stderr, "  Atmosphere values will be absent\n");
 
 		estimateRate(D);
 	}
-	D = deriveSourceTable(D);
-
-	setGlobalValues(D);
-	calcFreqIds(D);
 
 	if(!D)
 	{
@@ -2533,6 +2580,16 @@ DifxInput *loadDifxInput(const char *fileprefix)
 
 	populateFlags(D, flagfile);
 	
+	return D;
+}
+
+DifxInput *updateDifxInput(DifxInput *D)
+{
+	D = deriveSourceTable(D);
+	setOrbitingAntennas(D);
+	setGlobalValues(D);
+	calcFreqIds(D);
+
 	return D;
 }
 
