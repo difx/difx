@@ -149,7 +149,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	FILE *in;
 	FlagDatum FL;
 	DifxConfig *dc;
-	DifxDSEntry *ds;
+	DifxDatastream *ds;
 	
 	FL.nBand = p_fits_keys->no_band;
 	sprintf(bandFormInt, "%dJ", FL.nBand);
