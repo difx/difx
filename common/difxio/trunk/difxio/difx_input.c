@@ -1359,12 +1359,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			return 0;
 		}
 		strcpy(D->spacecraft[s].name, DifxParametersvalue(cp, rows[0]));
-		D->spacecraft[s].nPoints = 
+		D->spacecraft[s].nPoint = 
 			atoi(DifxParametersvalue(cp, rows[1]));
 		D->spacecraft[s].pos = (sixVector *)calloc(
-			D->spacecraft[s].nPoints, sizeof(sixVector));
+			D->spacecraft[s].nPoint, sizeof(sixVector));
 		row = rows[N_SPACECRAFT_ROWS-1];
-		for(i = 0; i < D->spacecraft[s].nPoints; i++)
+		for(i = 0; i < D->spacecraft[s].nPoint; i++)
 		{
 			row = DifxParametersfind2(cp, row+1,
 				"SPACECRAFT %d ROW %d", s, i);

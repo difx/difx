@@ -37,6 +37,26 @@ DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft)
 	return ds;
 }
 
+DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
+{
+	DifxSpacecraft *dest;
+	int s;
+
+	dest = newDifxSpacecraftArray(n);
+
+	for(s = 0; s < n; s++)
+	{
+		strcpy(dest[s].name, src[s].name);
+		dest[s].nPoint = src[s].nPoint;
+		dest[s].pos = (sixVector *)calloc(dest[s].nPoint,
+			sizeof(sixVector));
+		memcpy(dest[s].pos, src[s].pos, 
+			dest[s].nPoint*sizeof(sixVector));
+	}
+
+	return dest;
+}
+
 void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft)
 {
 	int s;
@@ -62,6 +82,107 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 		return;
 	}
 	printf("    Name = %s\n", ds->name);
-	printf("    Num points = %d\n", ds->nPoints);
+	printf("    Num points = %d\n", ds->nPoint);
 }
 
+static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
+{
+	strcpy(dest->name, src->name);
+	dest->nPoint = src->nPoint;
+	dest->pos = (sixVector *)calloc(dest->nPoint, sizeof(sixVector));
+	memcpy(dest->pos, src->pos, dest->nPoint*sizeof(sixVector));
+}
+
+static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
+	const DifxSpacecraft *src2)
+{
+	strcpy(dest->name, src1->name);
+	dest->nPoint = 0;
+	/* FIXME -- write me! */
+}
+
+/* note: returns number of spacecraft on call stack */
+DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
+	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds)
+{
+	DifxSpacecraft *ds;
+	int i, j;
+
+	if(nds1 <= 0 && nds2 <= 0)
+	{
+		*nds = 0;
+		return 0;
+	}
+
+	if(nds2 <= 0)
+	{
+		*nds = nds1;
+		return dupDifxSpacecraftArray(ds1, nds1);
+	}
+
+	if(nds1 <= 0)
+	{
+		*nds = nds2;
+		for(i = 0; i < nds2; i++)
+		{
+			spacecraftIdRemap[i] = i;
+		}
+		return dupDifxSpacecraftArray(ds2, nds2);
+	}
+
+	/* both have spacecraft tables, so do the merge */
+
+	*nds = nds1;
+
+	/* first identify entries that differ and assign new spacecraftIds */
+	for(j = 0; j < nds2; j++)
+	{
+		for(i = 0; i < nds1; i++)
+		{
+			if(strcmp(ds1->name, ds2->name) == 0)
+			{
+				spacecraftIdRemap[j] = i;
+				break;
+			}
+		}
+		if(i == nds1)
+		{
+			spacecraftIdRemap[j] = *nds;
+			(*nds)++;
+		}
+	}
+
+	ds = newDifxSpacecraftArray(*nds);
+
+	for(i = 0; i < nds1; i++)
+	{
+		/* see if the spacecraft is common to both input tables */
+		for(j = 0; j < nds2; j++)
+		{
+			if(spacecraftIdRemap[j] == i)
+			{
+				break;
+			}
+		}
+		if(j < nds2)	/* yes -- both have it! */
+		{
+			mergeSpacecraft(ds + i, ds1 + i, ds2 + j);
+		}
+		else		/* no -- just in first table */
+		{
+			copySpacecraft(ds + i, ds1 + i);
+		}
+	}
+
+	/* finally go through input table 2 and copy unique ones */
+	for(j = 0; j < nds2; j++)
+	{
+		i = spacecraftIdRemap[j];
+		if(i >= nds1) /* it is unique to second input */
+		{
+			copySpacecraft(ds + i, ds2 + j);
+		}
+	}
+
+	return ds;
+}

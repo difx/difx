@@ -159,7 +159,7 @@ typedef struct
 typedef struct
 {
 	char name[32];		/* name of spacecraft */
-	int nPoints;		/* number of entries in ephemeris */
+	int nPoint;		/* number of entries in ephemeris */
 	sixVector *pos;		/* array of positions and velocities */
 } DifxSpacecraft;
 
@@ -303,8 +303,11 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 
 /* DifxSpacecraft functions */
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
+DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n);
 void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
+DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
+	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);
@@ -334,6 +337,7 @@ void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *fileprefix);
 DifxInput *updateDifxInput(DifxInput *D);
+int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2);
 int DifxInputGetSourceId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);

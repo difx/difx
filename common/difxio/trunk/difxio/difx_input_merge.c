@@ -22,6 +22,11 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 
+/* FIXME -- add condition structure */
+int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
+{
+	return 1;
+}
 
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 {
@@ -34,6 +39,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	int *datastreamIdRemap = 0;
 	int *pulsarIdRemap = 0;
 	int *configIdRemap = 0;
+	int *spacecraftIdRemap = 0;
 
 	if(!D1 || !D2)
 	{
@@ -50,9 +56,16 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		pulsarIdRemap = (int *)calloc(D2->nPulsar, sizeof(int));
 	}
 	configIdRemap     = (int *)calloc(D2->nConfig, sizeof(int));
+	if(D2->nSpacecraft > 0)
+	{
+		spacecraftIdRemap = (int *)calloc(D2->nSpacecraft, sizeof(int));
+	}
 
 	/* allocate the big D */
 	D = newDifxInput();
+
+	/* copy over / merge some of DifxInput top level parameters */
+	/* FIXME */
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -130,6 +143,11 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
 		&(D->nEOP));
 	
+	/* merge DifxSpacecraft table */
+	D->spacecraft = mergeDifxSpacecraft(D1->spacecraft, D1->nSpacecraft,
+		D2->spacecraft, D2->nSpacecraft,
+		spacecraftIdRemap, &(D->nSpacecraft));
+
 	/* merge DifxAntennaFlag table */
 	D->flag = mergeDifxAntennaFlagArrays(D1->flag, D1->nFlag,
 		D2->flag, D2->nFlag, antennaIdRemap);
@@ -145,6 +163,10 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		free(pulsarIdRemap);
 	}
 	free(configIdRemap);
+	if(spacecraftIdRemap)
+	{
+		free(spacecraftIdRemap);
+	}
 
 	return D;
 }
