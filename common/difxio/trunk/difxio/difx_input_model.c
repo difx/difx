@@ -51,10 +51,12 @@ void deleteDifxModelArray(DifxModel **dm, int nAntenna)
 	{
 		for(a = 0; a < nAntenna; a++)
 		{
-			/* free memory from actual start of array */
-			dm[a]--;
-
-			free(dm[a]);
+			if(dm[a])
+			{
+				/* free memory from actual start of array */
+				dm[a]--;
+				free(dm[a]);
+			}
 		}
 		free(dm);
 	}

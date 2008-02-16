@@ -135,8 +135,9 @@ typedef struct
 	int configId;		/* 0, 1, ... nConfig-1 */
 	int nPoint;		/* number of points modeled for scan */
 	int nAntenna;
-	DifxModel **model;	/* indexed by [ant][inc] */
-				/* NOTE : inc can be [-1 .. nPoint+1] ! */
+	DifxModel **model;	/* indexed by [ant][point] */
+				/* NOTE : point is over [-1 .. nPoint+1] ! */
+				/* NOTE : model[ant] can be zero -> no data */
 } DifxScan;
 
 typedef struct
@@ -285,6 +286,11 @@ void printDifxModel(const DifxModel *dm);
 DifxScan *newDifxScanArray(int nScan);
 void deleteDifxScanArray(DifxScan *ds, int nScan);
 void printDifxScan(const DifxScan *ds);
+void copyDifxScan(DifxScan *dest, const DifxScan *src,
+	const int *antennaIdRemap, const int *configIdRemap);
+DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
+	const DifxScan *ds2, int nds2,
+	const int *antennaIdRemap, const int *configIdRemap);
 
 /* DifxEOP functions */
 DifxEOP *newDifxEOPArray(int nEOP);
