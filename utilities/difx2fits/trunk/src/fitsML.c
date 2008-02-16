@@ -167,11 +167,18 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
 	      	D->modelInc*p/86400.0;
 	      
-	      for(ant = 0; ant < D->nAntenna; ant++)
+	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
 	      {
+		M = D->scan[s].model[ant];
+
+		/* skip antennas with no model data */
+		if(M == 0)
+		{
+		  continue;
+		}
+
 		p_fitsbuf = fitsbuf;
 	      
-		M = D->scan[s].model[ant];
 		calcPolynomial(gpoly, M[p-1].t, M[p].t, M[p+1].t, M[p+2].t, 
 			D->modelInc);
 		

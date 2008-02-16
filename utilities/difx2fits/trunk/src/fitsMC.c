@@ -115,8 +115,12 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
 	      	D->modelInc*p/86400.0;
 		
-	      for(ant = 0; ant < D->nAntenna; ant++)
+	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
 	      {
+	      	if(D->scan[s].model[ant] == 0)
+		{
+		  continue;
+		}
 		antId1 = ant + 1;
 	        p_fitsbuf = fitsbuf;
 
