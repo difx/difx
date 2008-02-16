@@ -75,9 +75,9 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 	const DifxFreq *df2, int ndf2, int *freqIdRemap)
 {
+	DifxFreq *df;
 	int ndf;
 	int i, j;
-	DifxFreq *df;
 
 	ndf = ndf1;
 

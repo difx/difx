@@ -101,7 +101,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 	dc->baselineFreq2IF = map;
 
 	/* Fill in cross corr terms */
-	for(b = 0; b < D->activeBaselines; b++)
+	for(b = 0; b < dc->nBaseline; b++)
 	{
 		baselineId = dc->baselineId[b];
 		db = D->baseline + baselineId;
@@ -126,7 +126,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 	}
 
 	/* Fill in auto corr terms */
-	for(d = 0; d < D->activeDatastreams; d++)
+	for(d = 0; d < dc->nDatastream; d++)
 	{
 		dd = D->datastream + dc->datastreamId[d];
 		a = dd->antennaId;

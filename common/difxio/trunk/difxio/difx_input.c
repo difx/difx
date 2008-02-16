@@ -23,7 +23,6 @@
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
 
-
 /* allocate empty structure, do minimal initialization */
 DifxInput *newDifxInput()
 {
@@ -31,8 +30,6 @@ DifxInput *newDifxInput()
 
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
-	strcpy(D->obsCode, "DIFX");
-	strcpy(D->taperFunction, "UNIFORM");
 
 	return D;
 }
@@ -74,6 +71,10 @@ void deleteDifxInput(DifxInput *D)
 		{
 			deleteDifxAntennaFlagArray(D->flag);
 		}
+		if(D->job)
+		{
+			deleteDifxJobArray(D->job);
+		}
 		free(D);
 	}
 }
@@ -87,16 +88,12 @@ void printDifxInput(const DifxInput *D)
 	{
 		return;
 	}
-	printf("  Job ID = %d\n", D->jobId);
-	printf("  Project = %s\n", D->obsCode);
-	if(D->obsSession[0])
+
+	printf("  nJob = %d\n", D->nJob);
+	for(i = 0; i < D->nJob; i++)
 	{
-		printf("  Session = %s\n", D->obsSession);
+		printDifxJob(D->job + i);
 	}
-	printf("  Start = MJD %12.6f\n", D->mjdStart);
-	printf("  Duration = %f sec\n", D->duration);
-	printf("  Model Inc = %f sec\n", D->modelInc);
-	printf("  Ref. Freq. = %f MHz\n", D->refFreq);
 
 	printf("  nConfig = %d\n", D->nConfig);
 	for(i = 0; i < D->nConfig; i++)
@@ -413,12 +410,12 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	}
 
 	/* Initialize some of the structures */
-	D->duration = atoi(DifxParametersvalue(ip, rows[0]));
-	D->mjdStart = atoi(DifxParametersvalue(ip, rows[1])) +
+	D->job->duration = atoi(DifxParametersvalue(ip, rows[0]));
+	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[1])) +
 		      atof(DifxParametersvalue(ip, rows[2]))/86400.0;
-	D->activeDatastreams =
+	D->job->activeDatastreams =
 		      atoi(DifxParametersvalue(ip, rows[3]));
-	D->activeBaselines =
+	D->job->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[4]));
 
 	return D;
@@ -472,6 +469,8 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[3])));
 		D->config[c].quadDelayInterp = 
 			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[4])));
+		D->config[c].nDatastream  = D->job->activeDatastreams;
+		D->config[c].nBaseline    = D->job->activeBaselines;
 		/*
 		D->config[c].pulsarBinning = 
 			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[5])));
@@ -487,15 +486,15 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		}
 
 		/* initialize datastream index array */
-		D->config[c].datastreamId = 
-			(int *)malloc(sizeof(int)*(D->activeDatastreams + 1));
-		for(a = 0; a <= D->activeDatastreams; a++)
+		D->config[c].datastreamId = (int *)malloc(sizeof(int)*
+			(D->config[c].nDatastream + 1));
+		for(a = 0; a <= D->nDatastream; a++)
 		{
 			D->config[c].datastreamId[a] = -1;
 		}
 
 		/* populate datastream index array */
-		for(a = 0; a < D->activeDatastreams; a++)
+		for(a = 0; a < D->config[c].nDatastream; a++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"DATASTREAM %d INDEX", a);
@@ -510,15 +509,15 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		}
 
 		/* initialize baseline index array; -1 terminated */
-		D->config[c].baselineId =
-			(int *)malloc(sizeof(int)*(D->activeBaselines+1));
-		for(b = 0; b <= D->activeBaselines; b++)
+		D->config[c].baselineId = (int *)malloc(sizeof(int)*
+			(D->config[c].nBaseline+1));
+		for(b = 0; b <= D->config[c].nBaseline; b++)
 		{
 			D->config[c].baselineId[b] = -1;
 		}
 
 		/* populate baseline index array */
-		for(b = 0; b < D->activeBaselines; b++)
+		for(b = 0; b < D->config[c].nBaseline; b++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"BASELINE %d INDEX", b);
@@ -901,7 +900,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		 * antennas */
 		D->config[c].quantBits = -1;
 		qb = 0;
-		for(a = 0; a < D->activeDatastreams; a++)
+		for(a = 0; a < D->config[c].nDatastream; a++)
 		{
 			e = D->config[c].datastreamId[a];
 			if(e < 0)
@@ -949,7 +948,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 	}
 	else
 	{
-		D->nOutChan = nOutChan;
+		D->nOutChan = nOutChan/D->specAvg;
 	}
 
 	return D;
@@ -1032,8 +1031,8 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		return 0;
 	}
 
-	D->modelInc = atof(DifxParametersvalue(up, rows[0]));
-	D->nScan    = atoi(DifxParametersvalue(up, rows[1]));
+	D->job->modelInc = atof(DifxParametersvalue(up, rows[0]));
+	D->nScan         = atoi(DifxParametersvalue(up, rows[1]));
 
 	D->scan  = newDifxScanArray(D->nScan);
 	
@@ -1069,10 +1068,10 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		}
 		nPoint               = atoi(DifxParametersvalue(up, rows[0]));
 		startPoint           = atoi(DifxParametersvalue(up, rows[1]));
-		D->scan[i].mjdStart  = D->mjdStart + 
-			startPoint*D->modelInc/86400.0;
-		D->scan[i].mjdEnd    = D->mjdStart + 
-			(startPoint+nPoint)*D->modelInc/86400.0;
+		D->scan[i].mjdStart  = D->job->mjdStart + 
+			startPoint*D->job->modelInc/86400.0;
+		D->scan[i].mjdEnd    = D->job->mjdStart + 
+			(startPoint+nPoint)*D->job->modelInc/86400.0;
 		D->scan[i].nPoint    = nPoint;
 		strncpy(D->scan[i].name, 
 			DifxParametersvalue(up, rows[2]), 31);
@@ -1209,9 +1208,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		return 0;
 	}
 
-	D->jobId       = atoi(DifxParametersvalue(cp, rows[0]));
-	strcpy(D->obsCode,    DifxParametersvalue(cp, rows[1]));
-	D->nEOP        = atoi(DifxParametersvalue(cp, rows[2]));
+	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
+	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
+	D->nEOP          = atoi(DifxParametersvalue(cp, rows[2]));
 
 	if(D->nEOP > 0)
 	{
@@ -1221,34 +1220,34 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
 	{
-		strncpy(D->obsSession, DifxParametersvalue(cp, row), 7);
-		D->obsSession[7] = 0;
+		strncpy(D->job->obsSession, DifxParametersvalue(cp, row), 7);
+		D->job->obsSession[7] = 0;
 	}
 	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
 	if(row >= 0)
 	{
-		strncpy(D->taperFunction, DifxParametersvalue(cp, row), 7);
-		D->taperFunction[7] = 0;
+		strncpy(D->job->taperFunction, DifxParametersvalue(cp, row), 7);
+		D->job->taperFunction[7] = 0;
 	}
 	row = DifxParametersfind(cp, 0, "JOB START TIME");
 	if(row >= 0)
 	{
-		D->jobStart = atof(DifxParametersvalue(cp, row));
+		D->job->jobStart = atof(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "JOB STOP TIME");
 	if(row >= 0)
 	{
-		D->jobStop = atof(DifxParametersvalue(cp, row));
+		D->job->jobStop = atof(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "SUBJOB ID");
 	if(row >= 0)
 	{
-		D->subjobId = atoi(DifxParametersvalue(cp, row));
+		D->job->subjobId = atoi(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "SUBARRAY ID");
 	if(row >= 0)
 	{
-		D->subarrayId = atoi(DifxParametersvalue(cp, row));
+		D->job->subarrayId = atoi(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "SPECTRAL AVG");
 	if(row >= 0)
@@ -1442,7 +1441,7 @@ static void estimateRate(DifxInput *D)
 		return;
 	}
 
-	f = 0.5/D->modelInc;
+	f = 0.5/D->job->modelInc;
 	for(s = 0; s < D->nScan; s++)
 	{
 		for(a = 0; a < D->nAntenna; a++)
@@ -1470,12 +1469,12 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 	r = DifxParametersfind(rp, 0, "CALC SERVER");
 	if(r < 0)
 	{
-		strcpy(D->calcServer, "unknown");
+		strcpy(D->job->calcServer, "unknown");
 	}
 	else
 	{
-		strncpy(D->calcServer, DifxParametersvalue(rp, r), 32);
-		D->calcServer[31] = 0;
+		strncpy(D->job->calcServer, DifxParametersvalue(rp, r), 32);
+		D->job->calcServer[31] = 0;
 	}
 
 	r = 0;
@@ -1501,7 +1500,7 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 		}
 
 		/* compute atm rate based on atm delay */
-		f = 0.5/D->modelInc;
+		f = 0.5/D->job->modelInc;
 		for(a = 0; a < D->nAntenna; a++)
 		{
 			for(p = 0; p < D->scan[s].nPoint+1; p++)
@@ -1902,6 +1901,11 @@ DifxInput *loadDifxInput(const char *fileprefix)
 
 	D = DSave = newDifxInput();
 
+	/* When creating a DifxInput via this function, there will always
+	 * be a single DifxJob
+	 */
+	D->job = newDifxJobArray(1);
+	D->nJob = 1;
 	D = populateInput(D, ip);
 	D = populateUVW(D, up);
 	D = populateDelay(D, dp);
@@ -1944,7 +1948,8 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	return D;
 }
 
-int DifxInputGetSourceId(const DifxInput *D, double mjd)
+/* return -1 if no suitable source found */
+int DifxInputGetSourceId(const DifxInput *D, double mjd, int jobId)
 {
 	int s;
 
@@ -1953,21 +1958,20 @@ int DifxInputGetSourceId(const DifxInput *D, double mjd)
 		return -1;
 	}
 
-	if(mjd <= D->mjdStart)  /* return first source */
+	if(mjd <= D->job[jobId].mjdStart) 
 	{
-		return D->scan[0].sourceId;
+		return -1;
 	}
 
 	for(s = 0; s < D->nScan; s++)
 	{
-		if(mjd < D->scan[s].mjdEnd)
+		if(mjd < D->scan[s].mjdEnd && D->scan[s].jobId == jobId)
 		{
 			return D->scan[s].sourceId;
 		}
 	}
 
-	/* return last scan as last resort */
-	return D->scan[D->nScan-1].sourceId;
+	return -1;
 }
 
 /* return 0-based index of antName, or -1 if not in array */

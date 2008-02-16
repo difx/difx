@@ -22,10 +22,34 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 
+
 /* FIXME -- add condition structure */
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
+	if(D1->specAvg != D2->specAvg)
+	{
+		return 0;
+	}
+	
 	return 1;
+}
+
+static int printRemap(const char *name, const int *Remap, int n)
+{
+	int i;
+	printf("%s Remap =", name);
+	if(n == 0 || Remap == 0)
+	{
+		printf(" Null\n");
+	}
+	else
+	{
+		for(i = 0; i < n; i++)
+		{
+			printf(" %d", Remap[i]);
+		}
+		printf("\n");
+	}
 }
 
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
@@ -33,6 +57,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	DifxInput *D;
 	int i;
 	
+	int *jobIdRemap = 0;
 	int *freqIdRemap = 0;
 	int *antennaIdRemap = 0;
 	int *baselineIdRemap = 0;
@@ -47,6 +72,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	}
 
 	/* allocate some scratch space */
+	jobIdRemap        = (int *)calloc(D2->nJob, sizeof(int));
 	freqIdRemap       = (int *)calloc(D2->nFreq, sizeof(int));
 	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
 	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
@@ -65,7 +91,12 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	D = newDifxInput();
 
 	/* copy over / merge some of DifxInput top level parameters */
-	/* FIXME */
+	D->specAvg = D1->specAvg;
+
+	/* merge DifxJob table */
+	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
+		jobIdRemap);
+	D->nJob = D1->nJob + D2->nJob;
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -135,9 +166,8 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 
 	/* merge DifxScan table */
 	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan,
-		D2->scan, D2->nScan, antennaIdRemap,configIdRemap);
+		D2->scan, D2->nScan, jobIdRemap, antennaIdRemap, configIdRemap);
 	D->nScan = D1->nScan + D2->nScan; /* assumption is no common scans */
-
 
 	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
@@ -153,7 +183,18 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		D2->flag, D2->nFlag, antennaIdRemap);
 	D->nFlag = D1->nFlag + D2->nFlag;
 
+	/* print remappings */
+	printRemap("jobId", jobIdRemap, D2->nJob);
+	printRemap("freqId", freqIdRemap, D2->nFreq);
+	printRemap("antennaId", antennaIdRemap, D2->nAntenna);
+	printRemap("baselineId", baselineIdRemap, D2->nBaseline);
+	printRemap("datastreamId", datastreamIdRemap, D2->nDatastream);
+	printRemap("pulsarId", pulsarIdRemap, D2->nPulsar);
+	printRemap("configId", configIdRemap, D2->nConfig);
+	printRemap("spacecraftId", spacecraftIdRemap, D2->nSpacecraft);
+	
 	/* clean up */
+	free(jobIdRemap);
 	free(freqIdRemap);
 	free(antennaIdRemap);
 	free(baselineIdRemap);

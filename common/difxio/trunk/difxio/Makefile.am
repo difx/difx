@@ -5,6 +5,7 @@ h_sources = \
 c_sources = \
 	difx_input.c \
 	difx_input_merge.c \
+	difx_input_job.c \
 	difx_input_freq.c \
 	difx_input_antenna.c \
 	difx_input_baseline.c \

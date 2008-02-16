@@ -54,6 +54,8 @@ typedef struct
 	int doPolar;		/* >0 if cross hands to be correlated */
 	int quantBits;		/* 1 or 2 */
 	int nRecChan;		/* number of recorded channels */
+	int nDatastream;	/* number of datastreams attached */
+	int nBaseline;		/* number of baselines */
 	int *datastreamId;	/* 0-based; [antennaId] datastream table indx */
 				/* -1 terminated */
 	int *baselineId;	/* baseline table indicies for this config */
@@ -133,6 +135,7 @@ typedef struct
 	int qual;		/* source qualifier */
 	int sourceId;		/* 0, 1, ... nScan-1 */
 	int configId;		/* 0, 1, ... nConfig-1 */
+	int jobId;		/* 0, 1, ... nJob-1 */
 	int nPoint;		/* number of points modeled for scan */
 	int nAntenna;
 	DifxModel **model;	/* indexed by [ant][point] */
@@ -181,18 +184,22 @@ typedef struct
 	double mjdStart;	/* subjob start time (mjd) */
 	double duration;	/* subjob observe duration (sec) */
 	double modelInc;	/* model (delay, uvw) interval */
-	int activeDatastreams;
-	int activeBaselines;
 	int jobId;		/* correlator job number */
 	int subjobId;		/* difx specific sub-job id */
 	int subarrayId;		/* sub array number of the specified sub-job */
 	char obsCode[8];	/* project name */
 	char obsSession[8];	/* project session (e.g., A, B, C1) */
 	char taperFunction[8];	/* usually "UNIFORM" */
+	char calcServer[32];	/* name of calc server */
+	int activeDatastreams;
+	int activeBaselines;
+} DifxJob;
+
+typedef struct
+{
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int specAvg;		/* number of channels to average */
 	int nOutChan;		/* number of channels to write to FITS */
-	char calcServer[32];	/* name of calc server */
 
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */
@@ -206,7 +213,8 @@ typedef struct
 	char polPair[4];	/* "  " if different in configs */
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDatastream, nBaseline, nSpacecraft, nPulsar;
+	int nDatastream, nBaseline, nSpacecraft, nPulsar, nJob;
+	DifxJob		*job;
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
@@ -219,6 +227,14 @@ typedef struct
 	DifxSpacecraft	*spacecraft;	/* optional table */
 	DifxPulsar	*pulsar;	/* optional table */
 } DifxInput;
+
+/* DifxJob functions */
+DifxJob *newDifxJobArray(int nJob);
+void deleteDifxJobArray(DifxJob *dj);
+void printDifxJob(const DifxJob *dj);
+void copyDifxJob(DifxJob *dest, const DifxJob *src);
+DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
+	const DifxJob *dj2, int ndj2, int *jobIdRemap);
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);
@@ -288,9 +304,11 @@ DifxScan *newDifxScanArray(int nScan);
 void deleteDifxScanArray(DifxScan *ds, int nScan);
 void printDifxScan(const DifxScan *ds);
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *antennaIdRemap, const int *configIdRemap);
+	const int *jobIdRemap, const int *antennaIdRemap, 
+	const int *configIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2,
+	const int *jobIdRemap,
 	const int *antennaIdRemap, const int *configIdRemap);
 
 /* DifxEOP functions */
@@ -339,7 +357,7 @@ DifxInput *loadDifxInput(const char *fileprefix);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2);
-int DifxInputGetSourceId(const DifxInput *D, double mjd);
+int DifxInputGetSourceId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
 
 #endif

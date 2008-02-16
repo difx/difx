@@ -76,7 +76,8 @@ void printDifxScan(const DifxScan *ds)
 }
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *antennaIdRemap, const int *configIdRemap)
+	const int *jobIdRemap, const int *antennaIdRemap, 
+	const int *configIdRemap)
 {
 	int i, srcAntenna, destAntenna;
 
@@ -89,6 +90,14 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	for(i = 0; i < 4; i++)
 	{
 		dest->calCode[i] = src->calCode[i];
+	}
+	if(jobIdRemap)
+	{
+		dest->jobId = jobIdRemap[src->jobId];
+	}
+	else
+	{
+		dest->jobId = src->jobId;
 	}
 	if(configIdRemap)
 	{
@@ -127,7 +136,8 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
  */
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, 
-	const int *antennaIdRemap, const int *configIdRemap)
+	const int *jobIdRemap, const int *antennaIdRemap, 
+	const int *configIdRemap)
 {
 	DifxScan *ds;
 	int i=0, i1=0, i2=0, src;
@@ -170,14 +180,14 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		/* do the copy and increments */
 		if(src == 1)
 		{
-			copyDifxScan(ds + i, ds1 + i1, 0, 0);
+			copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
 			i++;
 			i1++;
 		}
 		else
 		{
 			copyDifxScan(ds + i, ds2 + i2,
-				antennaIdRemap, configIdRemap);
+				jobIdRemap, antennaIdRemap, configIdRemap);
 			i++;
 			i2++;
 		}

@@ -97,8 +97,9 @@ static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
 	const DifxSpacecraft *src2)
 {
 	strcpy(dest->name, src1->name);
-	dest->nPoint = 0;
-	/* FIXME -- write me! */
+	
+	/* FIXME -- write me! for now just copy the first one found */
+	copySpacecraft(dest, src1);
 }
 
 /* note: returns number of spacecraft on call stack */
