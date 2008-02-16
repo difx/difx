@@ -16,6 +16,7 @@ c_sources = \
 	difx_input_spacecraft.c \
 	difx_input_if.c \
 	difx_input_source.c \
+	difx_input_flag.c \
 	parsedifx.c \
 	parsevis.c
 

@@ -47,7 +47,8 @@ void deleteDifxInput(DifxInput *D)
 		}
 		if(D->datastream)
 		{
-			deleteDifxDatastreamArray(D->datastream, D->nDatastream);
+			deleteDifxDatastreamArray(D->datastream, 
+				D->nDatastream);
 		}
 		if(D->freq)
 		{
@@ -71,7 +72,7 @@ void deleteDifxInput(DifxInput *D)
 		}
 		if(D->flag)
 		{
-			free(D->flag);
+			deleteDifxAntennaFlagArray(D->flag);
 		}
 		free(D);
 	}
@@ -1531,7 +1532,7 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 	if(p == 1 && n > 0 && n < 10000)
 	{
 		D->nFlag = n;
-		D->flag = (DifxAntennaFlag *)calloc(n, sizeof(DifxAntennaFlag));
+		D->flag = newDifxAntennaFlagArray(D->nFlag);
 		for(i = 0; i < n; i++)
 		{
 			p = fscanf(in, "%lf%lf%d", &mjd1, &mjd2, &a);

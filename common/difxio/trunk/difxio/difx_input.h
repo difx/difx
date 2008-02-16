@@ -319,6 +319,15 @@ void deleteBaselineFreq2IF(int ***map);
 void printBaselineFreq2IF(int ***map, int nAnt, int nChan);
 int makeBaselineFreq2IF(DifxInput *D, int configId);
 
+/* DifxAntennaFlag functions */
+DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag);
+void deleteDifxAntennaFlagArray(DifxAntennaFlag *df);
+void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
+	const int *antennaIdRemap);
+DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
+	int ndf1, const DifxAntennaFlag *df2, int ndf2, 
+	const int *antennaIdRemap);
+
 /* DifxInput functions */
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);

@@ -126,10 +126,14 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	D->nScan = D1->nScan + D2->nScan; /* assumption is no common scans */
 
 
-	/* merge DifxEOPtable */
+	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
 		&(D->nEOP));
 	
+	/* merge DifxAntennaFlag table */
+	D->flag = mergeDifxAntennaFlagArrays(D1->flag, D1->nFlag,
+		D2->flag, D2->nFlag, antennaIdRemap);
+	D->nFlag = D1->nFlag + D2->nFlag;
 
 	/* clean up */
 	free(freqIdRemap);
