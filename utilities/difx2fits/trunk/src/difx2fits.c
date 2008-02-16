@@ -26,12 +26,21 @@ int usage(const char *pgm)
 	fprintf(stderr, "  <basefilename>.calc     Base file for calcif \n");
 	fprintf(stderr, "  <basefilename>.rates    Extra calcif output\n");
 	fprintf(stderr, "  <basefilename>.flag     Antenna-based flagging\n\n");
+	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
+	fprintf(stderr, "  flag, tsys, pcal, weather\n");
+	fprintf(stderr, "If these are present in the current directory, they "
+		"will be used to\n");
+	fprintf(stderr, "form the FL, TS, PH and WR tables\n\n");
+	fprintf(stderr, "If env variable GAIN_CURVE_PATH is set, gain curves "
+		"will be looked for\n");
+	fprintf(stderr, "and turned into a GN table\n\n");
+		
 	fprintf(stderr, "The output file <outfile> will be written in "
 		"FITS-IDI format nearly\n");
 	fprintf(stderr, "identical to that made at the VLBA HW correlator.  "
-		"The first two optional files\n");
-	fprintf(stderr, "are required for full model accountability.\n\n");
-	fprintf(stderr, "options can include:\n");
+		"The first two optional\n");
+	fprintf(stderr, "files are required for full model accountability.\n");
+	fprintf(stderr, "\noptions can include:\n");
 	fprintf(stderr, "  --no-model\n");
 	fprintf(stderr, "  -n               Don't write model (ML) table\n");
 	fprintf(stderr, "\n");
