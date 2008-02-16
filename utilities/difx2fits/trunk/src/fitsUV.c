@@ -458,8 +458,8 @@ int RecordIsFlagged(const DifxVis *dv)
 		if(dv->D->flag[i].mjd1 <= mjd &&
 		   dv->D->flag[i].mjd2 >= mjd)
 		{
-			if(dv->D->flag[i].antId == a1 ||
-			   dv->D->flag[i].antId == a2)
+			if(dv->D->flag[i].antennaId == a1 ||
+			   dv->D->flag[i].antennaId == a2)
 			{
 				return 1;
 			}

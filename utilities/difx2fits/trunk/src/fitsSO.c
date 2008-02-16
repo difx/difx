@@ -32,7 +32,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		return 0;
 	}
 
-	if(D->nSpacecraft == 0)
+	if(D->nSpacecraft == 0 || !D->spacecraft)
 	{
 		return D;
 	}
@@ -55,7 +55,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	{
 		strcpypad(name, D->spacecraft[s].name, 16);
 
-		for(p = 0; p < D->spacecraft[s].nPoints; p++)
+		for(p = 0; p < D->spacecraft[s].nPoint; p++)
 		{
 			pos = D->spacecraft[s].pos + p;
 			time = pos->mjd + pos->fracDay;

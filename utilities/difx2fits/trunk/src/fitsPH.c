@@ -63,7 +63,6 @@ static int parsePulseCal(const char *line,
 	int pol, band;
 	int sourceId;
 	double A;
-	const char *L = line;
 	float B, C;
 	double mjd;
 	char antName[20];

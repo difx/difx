@@ -143,7 +143,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int hasData[2][array_MAX_BANDS];
 	int recChan;
 	int configId = 0;	/* currently only support 1 config */
-	int antId;
+	int antennaId;
 	char polName;
 	int freqNum;
 	FILE *in;
@@ -212,8 +212,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				continue;
 			}
 
-			antId = DifxInputGetAntennaId(D, antName);
-			if(antId < 0)
+			antennaId = DifxInputGetAntennaId(D, antName);
+			if(antennaId < 0)
 			{
 				continue;
 			}
@@ -224,7 +224,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			 * numbers, with -1 implying "all values"
 			 */
 			v = DifxConfigRecChan2IFPol(D, configId,
-				antId, recChan, &FL.bandId, &FL.polId);
+				antennaId, recChan, &FL.bandId, &FL.polId);
 			if(v < 0)
 			{
 				fprintf(stderr, "Flag row ignored: %s \n",
@@ -251,7 +251,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				FL.timeRange[1] = stop;
 			}
 
-			FL.baselineId1[0] = antId + 1;
+			FL.baselineId1[0] = antennaId + 1;
 
 			writeFLrow(out, fitsbuf, nRowBytes, 
 				columns, nColumn, &FL);
@@ -273,10 +273,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	    }
 	    FL.freqId1 = D->config[configId].freqId + 1;
 	    dc = D->config + configId;
-	    for(d = 0; dc->indexDS[d] >= 0; d++)
+	    for(d = 0; dc->datastreamId[d] >= 0; d++)
 	    {
-		ds = D->dsentry + dc->indexDS[d];
-		FL.baselineId1[0] = ds->antId + 1;
+		ds = D->datastream + dc->datastreamId[d];
+		FL.baselineId1[0] = ds->antennaId + 1;
 
 		/* populate a "presense" matrix. */
 		for(p = 0; p < dc->nPol; p++)

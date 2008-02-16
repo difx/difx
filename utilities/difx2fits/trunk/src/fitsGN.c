@@ -450,6 +450,13 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	int messages = 0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, freqId1, arrayId1;
+	union
+	{
+		int32_t i32;
+		float f;
+	} nan;
+
+	nan.i32 = -1;
 
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G || !D)
@@ -500,11 +507,11 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		curveType[i] = 2;
 		xType[i] = 0;
 		yType[i] = 2;
-		((int *)xVal)[i] = -1;	/* NaN */
+		xVal[i] = nan.f;	/* NaN */
 	}
 	for(i = 0; i < array_MAX_BANDS*MAXTAB; i++)
 	{
-		((int *)yVal)[i] = -1;	/* NaN */
+		yVal[i] = nan.f;	/* NaN */
 	}
 	arrayId1 = 1;
 	freqId1 = 0;
