@@ -1661,12 +1661,13 @@ static void setOrbitingAntennas(DifxInput *D)
 
 static void setGlobalValues(DifxInput *D)
 {
-	int i, c, p, n, nIF, nPol;
+	int i, j, c, p, n, nIF, nPol;
 	int doPolar, qb;
 	double bw;
 	int hasR = 0;
 	int hasL = 0;
 	char pol[2];
+	double mjdStop;
 
 	if(!D)
 	{
@@ -1680,6 +1681,21 @@ static void setGlobalValues(DifxInput *D)
 	D->chanBW = -1.0;
 	D->quantBits = -1;
 	strcpy(D->polPair, "  ");
+
+	D->mjdStart = D->mjdStop = D->job->mjdStart;
+
+	for(j = 0; j < D->nJob; j++)
+	{
+		if(D->job[j].mjdStart < D->mjdStart)
+		{
+			D->mjdStart = D->job[j].mjdStart;
+		}
+		mjdStop = D->job[j].mjdStart + D->job[j].duration/86400.0;
+		if(mjdStop > D->mjdStop)
+		{
+			D->mjdStop = mjdStop;
+		}
+	}
 
 	for(c = 0; c < D->nConfig; c++)
 	{
@@ -1864,7 +1880,7 @@ DifxInput *updateDifxInput(DifxInput *D)
 	return D;
 }
 
-DifxInput *loadDifxInput(const char *fileprefix)
+DifxInput *loadDifxInput(const char *filePrefix)
 {
 	DifxParameters *ip, *up, *dp, *rp, *cp;
 	DifxInput *D, *DSave;
@@ -1875,12 +1891,12 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	char calcfile[256];
 	char flagfile[256];
 
-	sprintf(inputfile, "%s.input", fileprefix);
-	sprintf(uvwfile,   "%s.uvw",   fileprefix);
-	sprintf(delayfile, "%s.delay", fileprefix);
-	sprintf(ratefile,  "%s.rate",  fileprefix);
-	sprintf(calcfile,  "%s.calc",  fileprefix);
-	sprintf(flagfile,  "%s.flag",  fileprefix);
+	sprintf(inputfile, "%s.input", filePrefix);
+	sprintf(uvwfile,   "%s.uvw",   filePrefix);
+	sprintf(delayfile, "%s.delay", filePrefix);
+	sprintf(ratefile,  "%s.rate",  filePrefix);
+	sprintf(calcfile,  "%s.calc",  filePrefix);
+	sprintf(flagfile,  "%s.flag",  filePrefix);
 
 	ip = newDifxParametersfromfile(inputfile);
 	up = newDifxParametersfromfile(uvwfile);
@@ -1906,6 +1922,7 @@ DifxInput *loadDifxInput(const char *fileprefix)
 	 */
 	D->job = newDifxJobArray(1);
 	D->nJob = 1;
+	strcpy(D->job->fileBase, filePrefix);
 	D = populateInput(D, ip);
 	D = populateUVW(D, up);
 	D = populateDelay(D, dp);
@@ -1949,7 +1966,7 @@ DifxInput *loadDifxInput(const char *fileprefix)
 }
 
 /* return -1 if no suitable source found */
-int DifxInputGetSourceId(const DifxInput *D, double mjd, int jobId)
+int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
 {
 	int s;
 
@@ -1974,8 +1991,44 @@ int DifxInputGetSourceId(const DifxInput *D, double mjd, int jobId)
 	return -1;
 }
 
+/* return -1 if no suitable source found */
+int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
+	int antennaId)
+{
+	int a, c, d, s;
+
+	if(!D)
+	{
+		return -1;
+	}
+
+	for(s = 0; s < D->nScan; s++)
+	{
+		if(mjd <  D->scan[s].mjdEnd   &&
+		   mjd >= D->scan[s].mjdStart)
+		{
+			c = D->scan[s].configId;
+			if(c < 0)
+			{
+				continue;
+			}
+			for(d = 0; d < D->config[c].nDatastream; d++)
+			{
+				a = D->datastream[d].antennaId;
+				
+				if(a == antennaId)
+				{
+					return D->scan[s].sourceId;
+				}
+			}
+		}
+	}
+
+	return -1;
+}
+
 /* return 0-based index of antName, or -1 if not in array */
-int DifxInputGetAntennaId(const DifxInput *D, const char *antName)
+int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName)
 {
 	int a;
 	
@@ -1986,7 +2039,7 @@ int DifxInputGetAntennaId(const DifxInput *D, const char *antName)
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
-		if(strcmp(D->antenna[a].name, antName) == 0)
+		if(strcmp(D->antenna[a].name, antennaName) == 0)
 		{
 			return a;
 		}

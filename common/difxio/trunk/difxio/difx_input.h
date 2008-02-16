@@ -172,7 +172,7 @@ typedef struct
 	int antennaId;		/* antenna number */
 } DifxAntennaFlag;
 
-typedef struct
+typedef struct			/* FIXME -- dummy structure for now */
 {
 	int nBin;		/* number of pulsar bins */
 } DifxPulsar;
@@ -191,12 +191,15 @@ typedef struct
 	char obsSession[8];	/* project session (e.g., A, B, C1) */
 	char taperFunction[8];	/* usually "UNIFORM" */
 	char calcServer[32];	/* name of calc server */
+	char fileBase[256];	/* base filename for this job table */
 	int activeDatastreams;
 	int activeBaselines;
 } DifxJob;
 
 typedef struct
 {
+	double mjdStart;	/* start of combined dataset */
+	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int specAvg;		/* number of channels to average */
 	int nOutChan;		/* number of channels to write to FITS */
@@ -353,11 +356,13 @@ DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1,
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
-DifxInput *loadDifxInput(const char *fileprefix);
+DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2);
-int DifxInputGetSourceId(const DifxInput *D, double mjd, int jobId);
-int DifxInputGetAntennaId(const DifxInput *D, const char *antName);
+int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
+int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
+	int antennaId);
+int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 
 #endif
