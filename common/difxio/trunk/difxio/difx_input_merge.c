@@ -103,6 +103,21 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
+	/* merge DifxConfig table */
+	D->config = mergeDifxConfigArrays(D1->config, D1->nConfig, 
+		D2->config, D2->nConfig, configIdRemap, 
+		baselineIdRemap, datastreamIdRemap,
+		pulsarIdRemap);
+	D->nConfig = D1->nConfig;
+	for(i = 0; i < D2->nConfig; i++)
+	{
+		if(configIdRemap[i]+1 > D->nConfig)
+		{
+			D->nConfig = configIdRemap[i]+1;
+		}
+	}
+
+
 	/* merge DifxPulsar table */
 	/* FIXME -- pulsar table does not yet exist */
 

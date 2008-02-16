@@ -52,15 +52,16 @@ typedef struct
 	int nPol;		/* number of pols in datastreams (1 or 2) */
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
-	int nIF;		/* number of FITS IFs to create */
-	DifxIF *IF;		/* FITS IF definitions */
 	int quantBits;		/* 1 or 2 */
 	int nRecChan;		/* number of recorded channels */
-	int freqId;		/* 0-based number -- uniq FITS IF[] index */
 	int *datastreamId;	/* 0-based; [antennaId] datastream table indx */
 				/* -1 terminated */
 	int *baselineId;	/* baseline table indicies for this config */
 				/* -1 terminated */
+	
+	int nIF;		/* number of FITS IFs to create */
+	DifxIF *IF;		/* FITS IF definitions */
+	int freqId;		/* 0-based number -- uniq FITS IF[] index */
 	int *freqId2IF;		/* map from freq table index to IF */
 	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF */
 	
@@ -265,7 +266,15 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId);
 int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
-	const int *baselineIdRemap, const int *datastreamIdRemap);
+	const int *baselineIdRemap, const int *datastreamIdRemap,
+	const int *pulsarIdRemap);
+void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
+	const int *baselineIdRemap, const int *datastreamIdRemap,
+	const int *pulsarIdRemap);
+DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
+	const DifxConfig *dc2, int ndc2, int *configIdRemap,
+	const int *baselineIdRemap, const int *datastreamIdRemap,
+	const int *pulsarIdRemap);
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);

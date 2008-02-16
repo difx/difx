@@ -170,7 +170,8 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 }
 
 int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
-	const int *baselineIdRemap, const int *datastreamIdRemap)
+	const int *baselineIdRemap, const int *datastreamIdRemap, 
+	const int *pulsarIdRemap)
 {
 	int i, db1, db2, dd1, dd2;
 
@@ -182,6 +183,20 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 	   dc1->nRecChan   != dc2->nRecChan)
 	{
 		return 0;
+	}
+	if(pulsarIdRemap && dc2->pulsarId >= 0)
+	{
+		if(dc1->pulsarId != pulsarIdRemap[dc2->pulsarId])
+		{
+			return 0;
+		}
+	}
+	else
+	{
+		if(dc1->pulsarId != dc2->pulsarId)
+		{
+			return 0;
+		}
 	}
 
 	for(i = 0; i < dc1->nPol; i++)
@@ -239,4 +254,122 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 	}
 
 	return 1;
+}
+
+void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
+	const int *baselineIdRemap, const int *datastreamIdRemap, 
+	const int *pulsarIdRemap)
+{
+	int i, n;
+
+	dest->tInt = src->tInt;
+	dest->nChan = src->nChan;
+	strcpy(dest->name, src->name);
+	dest->postFFringe = src->postFFringe;
+	dest->quadDelayInterp = src->quadDelayInterp;
+	if(pulsarIdRemap && src->pulsarId >= 0)
+	{
+		dest->pulsarId = pulsarIdRemap[src->pulsarId];
+	}
+	else
+	{
+		dest->pulsarId = src->pulsarId;
+	}
+	dest->nPol = src->nPol;
+	for(i = 0; i < dest->nPol; i++)
+	{
+		dest->pol[i] = src->pol[i];
+	}
+	dest->doPolar = src->doPolar;
+	dest->quantBits = src->quantBits;
+	dest->nRecChan = src->nRecChan;
+	for(n = 0; src->baselineId[n]; n++) ; /* count baselines */
+	dest->baselineId = (int *)calloc(n+1, sizeof(int));
+	dest->baselineId[n] = -1;
+	if(baselineIdRemap)
+	{
+		for(i = 0; i < n; i++)
+		{
+			dest->baselineId[i] = 
+				baselineIdRemap[src->baselineId[i]];
+		}
+	}
+	else
+	{
+		for(i = 0; i < n; i++)
+		{
+			dest->baselineId[i] = src->baselineId[i];
+		}
+	}
+	for(n = 0; src->datastreamId[n]; n++) ; /* count datastreams */
+	dest->datastreamId = (int *)calloc(n+1, sizeof(int));
+	dest->datastreamId[n] = -1;
+	if(datastreamIdRemap)
+	{
+		for(i = 0; i < n; i++)
+		{
+			dest->datastreamId[i] = 
+				datastreamIdRemap[src->datastreamId[i]];
+		}
+	}
+	else
+	{
+		for(i = 0; i < n; i++)
+		{
+			dest->datastreamId[i] = src->datastreamId[i];
+		}
+	}
+}
+
+DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
+	const DifxConfig *dc2, int ndc2, int *configIdRemap,
+	const int *baselineIdRemap, const int *datastreamIdRemap,
+	const int *pulsarIdRemap)
+{
+	int ndc;
+	int i, j;
+	DifxConfig *dc;
+
+	ndc = ndc1;
+
+	/* first identify entries that differ and assign new configIds */
+	for(j = 0; j < ndc2; j++)
+	{
+		for(i = 0; i < ndc1; i++)
+		{
+			if(isSameDifxConfig(dc1 + i, dc2 + j,
+				baselineIdRemap, datastreamIdRemap,
+				pulsarIdRemap))
+			{
+				configIdRemap[j] = i;
+				break;
+			}
+		}
+		if(i == ndc1)
+		{
+			configIdRemap[j] = ndc;
+			ndc++;
+		}
+	}
+
+	dc = newDifxConfigArray(ndc);
+	
+	/* now copy df1 */
+	for(i = 0; i < ndc1; i++)
+	{
+		copyDifxConfig(dc + i, dc1 + i, 0, 0, 0);
+	}
+
+	/* now copy unique members of df2 */
+	for(j = 0; j < ndc2; j++)
+	{
+		if(configIdRemap[j] >= ndc1)
+		{
+			copyDifxConfig(dc + configIdRemap[j], dc2 + j,
+				baselineIdRemap, datastreamIdRemap, 
+				pulsarIdRemap);
+		}
+	}
+
+	return dc;
 }
