@@ -78,25 +78,25 @@ static int parsePulseCal(const char *line,
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
 
-	if(mjd < D->mjdStart || mjd > D->mjdStart + D->duration/86400.0)
+	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
 		return -1;
 	}
 
-	sourceId = DifxInputGetSourceId(D, mjd);
-	if(sourceId < 0)	/* not in scan */
+	*antId = DifxInputGetAntennaId(D, antName);
+	if(*antId < 0)
 	{
 		return -2;
+	}
+
+	sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, *antId);
+	if(sourceId < 0)	/* not in scan */
+	{
+		return -3;
 	}
 	*configId = D->source[sourceId].configId;
 	nRecChan = D->config[*configId].nRecChan;
 	
-	*antId = DifxInputGetAntennaId(D, antName);
-	if(*antId < 0)
-	{
-		return -3;
-	}
-
 	for(pol = 0; pol < 2; pol++)
 	{
 		for(i = 0; i < array_MAX_TONES; i++)
@@ -232,7 +232,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int antId;
 	int refDay;
 	int i, v;
-	double f;
+	double start, stop;
 	FILE *in;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
@@ -248,8 +248,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	mjd2dayno((int)(D->mjdStart), &refDay);
 
 	/* get the maximum dimensions possibly needed */
-	f = D->mjdStart - (int)(D->mjdStart);
-	nTone = getNTone("pcal", refDay+f, refDay+f+D->duration/86400.0);
+	start = D->mjdStart - (int)(D->mjdStart);
+	stop  = D->mjdStop  - (int)(D->mjdStart);
+	nTone = getNTone("pcal", refDay + start, refDay + stop);
 
 	if(nTone < 0)
 	{

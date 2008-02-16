@@ -84,8 +84,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double grate[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
-	int configId;
-	int32_t sourceId1, freqId1, arrayId1, antId1;
+	int configId, jobId;
 	double time;
 	float timeInt;
 	int nPol;
@@ -93,6 +92,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	DifxModel *M;
 	float dispDelay;
 	float dispDelayRate;
+	double modelInc;
+	/* 1-based indices for FITS */
+	int32_t sourceId1, freqId1, arrayId1, antId1;
 
 	if(D == 0)
 	{
@@ -145,8 +147,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	fitsWriteEnd(out);
 
-	timeInt = D->modelInc / 86400.0;
-
 	/* some values that are always zero */
 	dispDelay = 0.0;
 	dispDelayRate = 0.0;
@@ -158,14 +158,17 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	for(s = 0; s < D->nScan; s++)
 	{
+	   jobId = D->scan[s].jobId;
 	   configId = D->scan[s].configId;
 	   freqId1 = D->config[configId].freqId + 1;
 	   sourceId1 = D->scan[s].sourceId + 1;
+
+	   modelInc = D->job[jobId].modelInc;
+	   timeInt = modelInc / 86400.0;
 	   
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
-	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
-	      	D->modelInc*p/86400.0;
+	      time = D->scan[s].mjdStart - (int)D->mjdStart + timeInt*p;
 	      
 	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
 	      {
@@ -180,7 +183,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		p_fitsbuf = fitsbuf;
 	      
 		calcPolynomial(gpoly, M[p-1].t, M[p].t, M[p+1].t, M[p+2].t, 
-			D->modelInc);
+			modelInc);
 		
 		/* All others are derived from gpoly */
 		for(k = 1; k < array_N_POLY; k++)

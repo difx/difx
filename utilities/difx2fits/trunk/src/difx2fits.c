@@ -48,7 +48,7 @@ int usage(const char *pgm)
 
 int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
-	strcpy(keys->obscode, D->obsCode);
+	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
 	switch(D->polPair[0])
 	{
@@ -88,8 +88,7 @@ int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 }
 
 const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
-	const char *filebase, struct fitsPrivate *out, int write_model,
-	double scale)
+	struct fitsPrivate *out, int write_model, double scale)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -157,7 +156,7 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, filebase, out, scale);
+	D = DifxInput2FitsUV(D, &keys, out, scale);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
@@ -280,11 +279,11 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(strcmp(D->taperFunction, "UNIFORM") != 0)
+	if(strcmp(D->job->taperFunction, "UNIFORM") != 0)
 	{
 		fprintf(stderr, "Taper func %s not supported.  "
-			"Using UNIFORM.\n", D->taperFunction);
-		strcpy(D->taperFunction, "UNIFORM");
+			"Using UNIFORM.\n", D->job->taperFunction);
+		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 
 	if(fitsWriteOpen(&outfile, fitsfile) < 0)
@@ -294,7 +293,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(DifxInput2FitsTables(D, basefile, &outfile, writemodel, scale) == D)
+	if(DifxInput2FitsTables(D, &outfile, writemodel, scale) == D)
 	{
 		printf("\nConversion successful\n");
 	}

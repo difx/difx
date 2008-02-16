@@ -106,7 +106,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "CALC");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 2, "");
-	fitsWriteString (out, "C_SRVR", D->calcServer, "");
+	fitsWriteString (out, "C_SRVR", D->job->calcServer, "");
 	fitsWriteString (out, "C_VERSN", "9.1", "");
 	fitsWriteString (out, "A_VERSN", "2.2", "");
 	fitsWriteString (out, "I_VERSN", "0.0", "");

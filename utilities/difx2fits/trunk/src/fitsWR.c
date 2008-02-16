@@ -56,7 +56,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	char *fitsbuf, *p_fitsbuf;
 	char antName[64];
 	char line[1000];
-	double mjd, mjdStop;
+	double mjd;
 	int refDay;
 	double time;
 	float timeInt;
@@ -83,7 +83,6 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	}
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
-	mjdStop = D->mjdStart + D->duration/86400.0;
 
 	/* calloc space for storing table in FITS format */
 	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
@@ -137,7 +136,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 			}
 			
 			mjd = time + (int)(D->mjdStart);
-			if(mjd < D->mjdStart || mjd > mjdStop)
+			if(mjd < D->mjdStart || mjd > D->mjdStop)
 			{
 				continue;
 			}

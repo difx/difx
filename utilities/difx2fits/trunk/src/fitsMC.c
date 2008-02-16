@@ -54,6 +54,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate;
+	int jobId;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -91,7 +92,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, 
 		"Version of FFT twiddle table used");
-	fitsWriteString(out, "TAPER_FN", D->taperFunction, "");
+	fitsWriteString(out, "TAPER_FN", D->job->taperFunction, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
 	
 	fitsWriteEnd(out);
@@ -110,10 +111,11 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   configId = D->scan[s].configId;
 	   freqId1 = D->config[configId].freqId + 1;
 	   sourceId1 = D->scan[s].sourceId + 1;
+	   jobId = D->scan[s].jobId;
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
 	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
-	      	D->modelInc*p/86400.0;
+	      	D->job[jobId].modelInc*p/86400.0;
 		
 	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
 	      {
@@ -134,7 +136,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		
 		clockRate = D->antenna[ant].rate  * 1.0e-6;
 		clock = D->antenna[ant].delay * 1.0e-6 + 
-			clockRate*D->modelInc*p;
+			clockRate*D->job[jobId].modelInc*p;
           
 		FITS_WRITE_ITEM (time, p_fitsbuf);
 		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);

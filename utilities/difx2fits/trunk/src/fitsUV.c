@@ -39,14 +39,38 @@ static int DifxVisInitData(DifxVis *dv)
 	return 0;
 }
 
-DifxVis *newDifxVis(const DifxInput *D, const char *filebase, 
-	struct fitsPrivate *out)
+static startGlob(DifxVis *dv)
+{
+	char globstr[256];
+	int verbose = 0;
+	int g;
+
+	sprintf(globstr, "%s.difx/DIFX*", dv->D->job[0].fileBase);
+
+	if(dv->jobId > 0)
+	{
+		globfree(&dv->globbuf);
+	}
+	glob(globstr, 0, 0, &dv->globbuf);
+	dv->nFile = dv->globbuf.gl_pathc;
+	if(verbose)
+	{
+		printf("jobId=%d  %d visibility files to be read:\n", 
+			dv->jobId, dv->nFile);
+		for(g = 0; g < dv->nFile; g++)
+		{
+			printf("File %d : %s\n", g+1, dv->globbuf.gl_pathv[g]);
+		}
+	}
+	
+	dv->globbuf.gl_offs = 0;
+}
+
+DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 {
 	DifxVis *dv;
-	char globstr[256];
-	int g, i, c, v;
+	int i, c, v;
 	int polMask = 0;
-	int verbose = 0;
 
 	dv = (DifxVis *)calloc(1, sizeof(DifxVis));
 
@@ -55,28 +79,16 @@ DifxVis *newDifxVis(const DifxInput *D, const char *filebase,
 		return 0;
 	}
 	
-	sprintf(globstr, "%s.difx/DIFX*", filebase);
-
-	glob(globstr, 0, 0, &dv->globbuf);
-	dv->nFile = dv->globbuf.gl_pathc;
-	if(verbose)
-	{
-		printf("%d visibility files to be read:\n", dv->nFile);
-		for(g = 0; g < dv->nFile; g++)
-		{
-			printf("File %d : %s\n", g+1, dv->globbuf.gl_pathv[g]);
-		}
-	}
-
+	dv->jobId = 0;
+	dv->curFile = -1;
+	startGlob(dv);
 	dv->dp = 0;
 	dv->spectrum = 0;
 	dv->data = 0;
 	dv->record = 0;
 	dv->nData = 0;
-	dv->curFile = -1;
 	dv->in = 0;
 	dv->out = out;
-	dv->globbuf.gl_offs = 0;
 	dv->D = D;
 	dv->configId = -1;
 	dv->sourceId = -1;
@@ -229,9 +241,17 @@ int DifxVisNextFile(DifxVis *dv)
 	dv->curFile++;
 	if(dv->curFile >= dv->nFile)
 	{
-		return -1;
+		dv->jobId++;
+		if(dv->jobId >= dv->D->nJob)
+		{
+			return -1;
+		}
+		startGlob(dv);
+		dv->curFile = 0;
 	}
-	printf("    File %d / %d : %s\n", dv->curFile+1, dv->nFile,
+	printf("    JobId %d/%d File %d/%d : %s\n", 
+		dv->jobId, dv->D->nJob,
+		dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
 	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 	if(!dv->in)
@@ -308,7 +328,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 
 
-	dv->sourceId = DifxInputGetSourceId(dv->D, mjd);
+	dv->sourceId = DifxInputGetSourceIdByJobId(dv->D, mjd, dv->jobId);
 	if(dv->sourceId < 0)
 	{
 		return -4;
@@ -704,7 +724,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 }
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, const char *filebase,
+	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, double scale)
 {
 	DifxVis *dv;
@@ -714,7 +734,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		return 0;
 	}
 
-	dv = newDifxVis(D, filebase, out);
+	dv = newDifxVis(D, out);
 	if(!dv)
 	{
 		return 0;

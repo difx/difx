@@ -22,6 +22,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	char ref_date[12];
 	char str[64], strng[132];
 	char local_time[48];
+	int j;
 
 	if(D == 0)
 	{
@@ -40,7 +41,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteString(out, "OBJECT", "BINARYTB", "");
 	fitsWriteString(out, "TELESCOP", "VLBA", "");
 	fitsWriteString(out, "DIFX", "1.0-VLBA", "");
-	fitsWriteString(out, "OBSERVER", D->obsCode, "");
+	fitsWriteString(out, "OBSERVER", D->job->obsCode, "");
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
 	mjd2fits ((int)timeMjd (), strng);
@@ -58,38 +59,43 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	sprintf (strng, "LOG FILE : /To/be/implemented");
 	fitsWriteComment(out, "HISTORY", strng);
 
-	sprintf (strng, "OBSCODE : %s", D->obsCode);
+	sprintf (strng, "OBSCODE : %s", D->job->obsCode);
 	fitsWriteComment(out, "HISTORY", strng);
 
-	if(D->obsSession[0])
+	if(D->job->obsSession[0])
 	{
-		sprintf (strng, "SESSION : %s", D->obsSession);
+		sprintf (strng, "SESSION : %s", D->job->obsSession);
 		fitsWriteComment(out, "HISTORY", strng);
 	}
 	
-	sprintf (strng, "JOBNUM : %d", D->jobId);
-	fitsWriteComment(out, "HISTORY", strng);
-
-	sprintf (strng, "DIFXJOB : %d.%d.%d", 
-		D->jobId, D->subjobId, D->subarrayId);
-	fitsWriteComment(out, "HISTORY", strng);
-
-	time2str(D->jobStart, "", str);
-	sprintf (strng, "JOBSTART : %s", str);
-	fitsWriteComment(out, "HISTORY", strng);
-
-	time2str(D->jobStop, "", str);
-	sprintf (strng, "JOBSTOP : %s", str);
+	sprintf (strng, "JOBNUM : %d", D->job->jobId);
 	fitsWriteComment(out, "HISTORY", strng);
 
 	time2str(D->mjdStart, "", str);
-	sprintf (strng, "FILESTART : %s", str);
+	sprintf (strng, "JOBSTART : %s", str);
 	fitsWriteComment(out, "HISTORY", strng);
 
-	time2str(D->mjdStart+D->duration/86400.0, "", str);
-	sprintf (strng, "FILESTOP  : %s", str);
+	time2str(D->mjdStop, "", str);
+	sprintf (strng, "JOBSTOP : %s", str);
 	fitsWriteComment(out, "HISTORY", strng);
 
+	for(j = 0; j < D->nJob; j++)
+	{
+		sprintf (strng, "DIFXJOB : %d.%d.%d", 
+			D->job[j].jobId, D->job[j].subjobId, 
+			D->job[j].subarrayId);
+		fitsWriteComment(out, "HISTORY", strng);
+
+		time2str(D->job[j].mjdStart, "", str);
+		sprintf (strng, "FILESTART : %s", str);
+		fitsWriteComment(out, "HISTORY", strng);
+
+		time2str(D->job[j].mjdStart + D->job[j].duration/86400.0, 
+			"", str);
+		sprintf (strng, "FILESTOP  : %s", str);
+		fitsWriteComment(out, "HISTORY", strng);
+	}
+	
 	fitsWriteEnd(out);
 
 	return D;

@@ -74,7 +74,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	fitsWriteEnd(out);
 
 	start = D->mjdStart - (int)D->mjdStart;
-	stop = start + D->duration/86400.0;
+	stop  = D->mjdStop  - (int)D->mjdStart; 
 
 	arrayId1 = 1;
 	freqId1 = 0;

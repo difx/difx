@@ -30,6 +30,7 @@ typedef struct
 	double mjd;
 	float tInt;
 	int baseline;
+	int jobId;
 	int configId;
 	int sourceId;
 	int freqId;			/* DiFX configId or FITS freqId */
@@ -46,8 +47,7 @@ typedef struct
 	float *data;
 } DifxVis;
 
-DifxVis *newDifxVis(const DifxInput *D, const char *filebase, 
-	struct fitsPrivate *out);
+DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
 int DifxVisNewUVData(DifxVis *dv);

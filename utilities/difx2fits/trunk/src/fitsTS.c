@@ -69,7 +69,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int nRecChan;
 	int v;
 	double f;
-	double time, mjd, mjdStop;
+	double time, mjd;
 	float timeInt;
 	FILE *in;
 	/* The following are 1-based indices for writing to FITS */
@@ -114,8 +114,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		return 0;
 	}
 
-	mjdStop = D->mjdStart + D->duration/86400.0;
-
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, 
 		"SYSTEM_TEMPERATURE");
 	arrayWriteKeys(p_fits_keys, out);
@@ -149,16 +147,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			nRecChan = parseTsys(line, antName, &time, 
 				&timeInt, tSysRecChan);
 
-			/* discard records outside time range */
-			time -= refDay;
-			mjd = time + (int)(D->mjdStart);
-			sourceId = DifxInputGetSourceId(D, mjd);
-			if(sourceId < 0 || mjd < D->mjdStart || 
-				mjd > D->mjdStart + D->duration/86400.0)
-			{
-				continue;
-			}
-		
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antName);
 			if(antId < 0)
@@ -166,6 +154,17 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 				continue;
 			}
 
+			/* discard records outside time range */
+			time -= refDay;
+			mjd = time + (int)(D->mjdStart);
+			sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, 
+				antId);
+			if(sourceId < 0 || mjd < D->mjdStart || 
+				mjd > D->mjdStop)
+			{
+				continue;
+			}
+		
 			configId = D->source[sourceId].configId;
 			freqId1 = D->config[configId].freqId + 1;
 

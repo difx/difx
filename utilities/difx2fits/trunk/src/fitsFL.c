@@ -177,7 +177,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	fitsWriteEnd(out);
 
 	start = D->mjdStart - (int)D->mjdStart;
-	stop = start + D->duration/86400.0;
+	stop  = D->mjdStop  - (int)D->mjdStart;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
 	

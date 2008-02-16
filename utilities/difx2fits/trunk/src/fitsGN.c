@@ -515,7 +515,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	}
 	arrayId1 = 1;
 	freqId1 = 0;
-	mjd = D->mjdStart + 0.5*D->duration/86400.0;
+	mjd = 0.5*(D->mjdStart + D->mjdStop);
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
