@@ -51,6 +51,9 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	}
 	configIdRemap     = (int *)calloc(D2->nConfig, sizeof(int));
 
+	/* allocate the big D */
+	D = newDifxInput();
+
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
 		D2->freq, D2->nFreq, freqIdRemap);
@@ -109,7 +112,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	/* clean up */
 	free(freqIdRemap);
 	free(antennaIdRemap);
-	freq(baselineIdRemap);
+	free(baselineIdRemap);
 	free(datastreamIdRemap);
 	if(pulsarIdRemap)
 	{

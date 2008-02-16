@@ -57,9 +57,10 @@ typedef struct
 	int quantBits;		/* 1 or 2 */
 	int nRecChan;		/* number of recorded channels */
 	int freqId;		/* 0-based number -- uniq FITS IF[] index */
-	int *indexDS;		/* 0-based; [antId] data stream table index */
+	int *datastreamId;	/* 0-based; [antennaId] datastream table indx */
 				/* -1 terminated */
-	int *indexBL;		/* baseline table indicies for this config */
+	int *baselineId;	/* baseline table indicies for this config */
+				/* -1 terminated */
 	int *freqId2IF;		/* map from freq table index to IF */
 	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF */
 	
@@ -67,7 +68,7 @@ typedef struct
 
 typedef struct
 {
-	int antId;
+	int antennaId;
 	char dataFormat[32];
 	int quantBits;		/* quantization bits */
 	int nFreq;		/* num freqs from this datastream */
@@ -163,7 +164,7 @@ typedef struct
 typedef struct
 {
 	double mjd1, mjd2;	/* (day) */
-	int antId;		/* antenna number */
+	int antennaId;		/* antenna number */
 } DifxAntennaFlag;
 
 typedef struct
@@ -263,6 +264,8 @@ void printDifxConfig(const DifxConfig *dc);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId);
+int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
+	const int *baselineIdRemap, const int *datastreamIdRemap);
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);
@@ -283,6 +286,19 @@ void printDifxEOP(const DifxEOP *de);
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
 void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
+
+/* DifxSource functions */
+DifxSource *newDifxSourceArray(int nSource);
+void deleteDifxSourceArray(DifxSource *ds);
+void printDifxSource(const DifxSource *ds);
+
+/* DifxIF functions */
+DifxIF *newDifxIFArray(int nIF);
+void deleteDifxIFArray(DifxIF *di);
+void printDifxIF(const DifxIF *di);
+void deleteBaselineFreq2IF(int ***map);
+void printBaselineFreq2IF(int ***map, int nAnt, int nChan);
+int makeBaselineFreq2IF(DifxInput *D, int configId);
 
 /* DifxInput functions */
 DifxInput *newDifxInput();

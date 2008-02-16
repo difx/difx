@@ -68,7 +68,8 @@ void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream)
 void printDifxDatastream(const DifxDatastream *ds)
 {
 	int f;
-	printf("  Difx Datastream Entry[antId=%d] : %p\n", ds->antId, ds);
+	printf("  Difx Datastream Entry[antennaId=%d] : %p\n", 
+		ds->antennaId, ds);
 	printf("    format = %s\n", ds->dataFormat);
 	printf("    quantization bits = %d\n", ds->quantBits);
 	printf("    nFreq = %d\n", ds->nFreq);
@@ -92,7 +93,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 {
 	int f, c;
 	
-	if(dd1->antId != antennaIdRemap[dd2->antId] ||
+	if(dd1->antennaId != antennaIdRemap[dd2->antennaId] ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
 	   dd1->nFreq != dd2->nFreq ||
 	   dd1->nRecChan != dd2->nRecChan)
@@ -126,11 +127,11 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	
 	if(antennaIdRemap != 0)
 	{
-		dest->antId = antennaIdRemap[src->antId];
+		dest->antennaId = antennaIdRemap[src->antennaId];
 	}
 	else
 	{
-		dest->antId = src->antId;
+		dest->antennaId = src->antennaId;
 	}
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;

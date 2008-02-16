@@ -24,198 +24,6 @@
 #include "difxio/parsedifx.h"
 
 
-
-/* assumes map is a heirarchical array, each array being null terminated. */
-static void deleteBaselineFreq2IF(int ***map)
-{
-	int a1, a2;
-	
-	if(map)
-	{
-		for(a1 = 0; map[a1]; a1++)
-		{
-			for(a2 = 0; map[a1][a2]; a2++)
-			{
-				free(map[a1][a2]);
-			}
-			free(map[a1]);
-		}
-		free(map);
-	}
-}
-
-static void printBaselineFreq2IF(int ***map, int nAnt, int nChan)
-{
-	int a1, a2, c;
-
-	printf("      nAnt = %d  nChan = %d\n", nAnt, nChan);
-
-	for(a2 = 0; a2 < nAnt; a2++)
-	{
-		printf("      ");
-		for(c = 0; c < nChan; c++)
-		{
-			for(a1 = 0; a1 < nAnt; a1++)
-			{
-				printf("%2d", map[a1][a2][c]);
-			}
-			printf("   ");
-		}
-		printf("\n");
-	}
-}
-
-static int makeBaselineFreq2IF(DifxInput *D, int configId)
-{
-	int ***map;
-	DifxConfig *dc;
-	DifxBaseline *db;
-	DifxDatastream *ds;
-	int blId;
-	int a, b,  d, f;
-	int a1, a2;
-	int rcA, rcB, fqA, fqB, bandId, nFreq;
-
-	if(!D)
-	{
-		fprintf(stderr, "makeBaselineFreq2IF: D = 0\n");
-		return -1;
-	}
-	if(!D->config || D->nConfig <= configId || configId < 0)
-	{
-		fprintf(stderr, "makeBaselineFreq2IF: "
-			"configId problem.\n");
-		return -1;
-	}
-	dc = D->config + configId;
-
-	/* map[Antenna1][Antenna2][recChan] -- all indices 0-based */
-	/* allocate first two dimensions larger than needed for null pads */
-	map = (int ***)calloc(D->nAntenna+1, sizeof(int **));
-	for(a1 = 0; a1 < D->nAntenna; a1++)
-	{
-		map[a1] = (int **)calloc(D->nAntenna+1, sizeof(int *));
-		for(a2 = 0; a2 < D->nAntenna; a2++)
-		{
-			map[a1][a2] = (int *)calloc(dc->nIF, sizeof(int));
-		}
-	}
-	dc->baselineFreq2IF = map;
-
-	/* Fill in cross corr terms */
-	for(b = 0; b < D->activeBaselines; b++)
-	{
-		blId = dc->indexBL[b];
-		db = D->baseline + blId;
-		a1 = D->datastream[db->dsA].antId;
-		a2 = D->datastream[db->dsB].antId;
-		nFreq = db->nFreq;
-		for(f = 0; f < nFreq; f++)
-		{
-			rcA = db->recChanA[f][0];
-			rcB = db->recChanB[f][0];
-			fqA = D->datastream[db->dsA].RCfreqId[rcA];
-			fqB = D->datastream[db->dsB].RCfreqId[rcB];
-			if(fqA != fqB)
-			{
-				fprintf(stderr, "Baseline %d-%d freq %d "
-					"correlates different freqs!\n",
-					a1, a2, f);
-			}
-			bandId = dc->freqId2IF[fqA];
-			map[a1][a2][f] = bandId;
-		}
-	}
-
-	/* Fill in auto corr terms */
-	for(d = 0; d < D->activeDatastreams; d++)
-	{
-		ds = D->datastream + dc->indexDS[d];
-		a = ds->antId;
-		nFreq = ds->nFreq;
-		for(f = 0; f < nFreq; f++)
-		{
-			bandId = dc->freqId2IF[ds->freqId[f]];
-			map[a][a][f] = bandId;
-		}
-	}
-
-	return 0;
-}
-
-
-DifxIF *newDifxIFArray(int nIF)
-{
-	DifxIF *di;
-
-	di = (DifxIF *)calloc(nIF, sizeof(DifxConfig));
-	
-	return di;
-}
-
-void deleteDifxIFArray(DifxIF *di)
-{
-	if(di)
-	{
-		free(di);
-	}
-}
-
-void printDifxIF(const DifxIF *di)
-{
-	printf("    Difx IF : %p\n", di);
-	printf("      Freq = %f MHz\n", di->freq);
-	printf("      Bandwidth = %f MHz\n", di->bw);
-	printf("      Sideband = %c\n", di->sideband);
-	if(di->nPol == 1)
-	{
-		printf("      Pol = %c\n", di->pol[0]);
-	}
-	else if(di->nPol == 2)
-	{
-		printf("      Pols = %c, %c\n", di->pol[0], di->pol[1]);
-	}
-	else
-	{
-		printf("      nPol = %d\n", di->nPol);
-	}
-}
-
-
-DifxSource *newDifxSourceArray(int nSource)
-{
-	DifxSource *ds;
-	int s;
-
-	ds = (DifxSource *)calloc(nSource, sizeof(DifxSource));
-	for(s = 0; s < nSource; s++)
-	{
-		ds[s].configId = -1;
-		ds[s].spacecraftId = -1;
-	}
-	
-	return ds;
-}
-
-void deleteDifxSourceArray(DifxSource *ds)
-{
-	if(ds)
-	{
-		free(ds);
-	}
-}
-
-void printDifxSource(const DifxSource *ds)
-{
-	printf("  DifxSource [%s] : %p\n", ds->name, ds);
-	printf("    RA  =  %10.7f\n", ds->ra);
-	printf("    Dec = %+11.7f\n", ds->dec);
-	printf("    Calcode = %s\n", ds->calCode);
-	printf("    Qualifier = %d\n", ds->qual);
-	printf("    ConfigId = %d\n", ds->configId);
-	printf("    SpacecraftId = %d\n", ds->spacecraftId);
-}
-
 /* allocate empty structure, do minimal initialization */
 DifxInput *newDifxInput()
 {
@@ -479,9 +287,9 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	/* go through datastreams associates with this config and collect all
 	 * distinct Freq table ids
 	 */
-	for(a = 0; dc->indexDS[a] >= 0; a++)
+	for(a = 0; dc->datastreamId[a] >= 0; a++)
 	{
-		ds = D->datastream + dc->indexDS[a];
+		ds = D->datastream + dc->datastreamId[a];
 		for(f = 0; f < ds->nFreq; f++)
 		{
 			dc->nIF = addtolist(freqIds, ds->freqId[f], dc->nIF);
@@ -504,9 +312,9 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	 * config will maintain slots for all polariazations, even if
 	 * this ends up making wasted space in FITS files
 	 */
-	for(a = 0; dc->indexDS[a] >= 0; a++)
+	for(a = 0; dc->datastreamId[a] >= 0; a++)
 	{
-		ds = D->datastream + dc->indexDS[a];
+		ds = D->datastream + dc->datastreamId[a];
 		for(c = 0; c < ds->nRecChan; c++)
 		{
 			switch(ds->RCpolName[c])
@@ -678,11 +486,11 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		}
 
 		/* initialize datastream index array */
-		D->config[c].indexDS = 
+		D->config[c].datastreamId = 
 			(int *)malloc(sizeof(int)*(D->activeDatastreams + 1));
 		for(a = 0; a <= D->activeDatastreams; a++)
 		{
-			D->config[c].indexDS[a] = -1;
+			D->config[c].datastreamId[a] = -1;
 		}
 
 		/* populate datastream index array */
@@ -696,16 +504,16 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 					"DATASTREAM %d INDEX not found\n", a);
 				return 0;
 			}
-			D->config[c].indexDS[a] = 
+			D->config[c].datastreamId[a] = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 
-		/* initialize baseline index array */
-		D->config[c].indexBL =
+		/* initialize baseline index array; -1 terminated */
+		D->config[c].baselineId =
 			(int *)malloc(sizeof(int)*(D->activeBaselines+1));
 		for(b = 0; b <= D->activeBaselines; b++)
 		{
-			D->config[c].indexBL[b] = -1;
+			D->config[c].baselineId[b] = -1;
 		}
 
 		/* populate baseline index array */
@@ -719,7 +527,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 					"BASELINE %d INDEX not found\n", b);
 				return 0;
 			}
-			D->config[c].indexBL[b] = 
+			D->config[c].baselineId[b] = 
 				atoi(DifxParametersvalue(ip, r));
 		}
 	}
@@ -841,7 +649,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "TELESCOPE INDEX not found\n");
 			return 0;
 		}
-		D->datastream[e].antId = atoi(DifxParametersvalue(ip, r));
+		D->datastream[e].antennaId = atoi(DifxParametersvalue(ip, r));
 		
 		r = DifxParametersfind(ip, r+1, "DATA FORMAT");
 		if(r < 0)
@@ -1094,7 +902,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		qb = 0;
 		for(a = 0; a < D->activeDatastreams; a++)
 		{
-			e = D->config[c].indexDS[a];
+			e = D->config[c].datastreamId[a];
 			if(e < 0)
 			{
 				continue;
@@ -1728,7 +1536,7 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 			{
 				D->flag[i].mjd1  = mjd1;
 				D->flag[i].mjd2  = mjd2;
-				D->flag[i].antId = a;
+				D->flag[i].antennaId = a;
 			}
 		}
 	}

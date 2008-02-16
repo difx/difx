@@ -46,13 +46,13 @@ void deleteDifxConfigArray(DifxConfig *dc)
 		{
 			free(dc->IF);
 		}
-		if(dc->indexDS)
+		if(dc->datastreamId)
 		{
-			free(dc->indexDS);
+			free(dc->datastreamId);
 		}
-		if(dc->indexBL)
+		if(dc->baselineId)
 		{
-			free(dc->indexBL);
+			free(dc->baselineId);
 		}
 		if(dc->freqId2IF)
 		{
@@ -82,16 +82,16 @@ void printDifxConfig(const DifxConfig *dc)
 	printf("    doPolar = %d\n", dc->doPolar);
 	printf("    quantization bits = %d\n", dc->quantBits);
 	printf("    datastream ids =");
-	for(i = 0; dc->indexDS[i] >= 0; i++)
+	for(i = 0; dc->datastreamId[i] >= 0; i++)
 	{
-		printf(" %d", dc->indexDS[i]);
+		printf(" %d", dc->datastreamId[i]);
 	}
 	printf("\n");
 	printf("    baseline ids =");
-	for(i = 0; dc->indexBL[i] >= 0; i++)
+	for(i = 0; dc->baselineId[i] >= 0; i++)
 	{
-		printf(" %d", dc->indexBL[i]);
-		if(i % 12 == 11 && dc->indexBL[i+1] >= 0)
+		printf(" %d", dc->baselineId[i]);
+		if(i % 12 == 11 && dc->baselineId[i+1] >= 0)
 		{
 			printf("\n                  ");
 		}
@@ -153,7 +153,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	}
 
 	dc = D->config + configId;
-	datastreamId = dc->indexDS[antennaId];
+	datastreamId = dc->datastreamId[antennaId];
 	ds = D->datastream + datastreamId;
 
 	if(recChan >= ds->nRecChan)
@@ -167,4 +167,76 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	*polId = DifxConfigGetPolId(dc, ds->RCpolName[recChan]);
 
 	return 0;
+}
+
+int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
+	const int *baselineIdRemap, const int *datastreamIdRemap)
+{
+	int i, db1, db2, dd1, dd2;
+
+	if(dc1->tInt       != dc2->tInt ||
+	   dc1->nChan      != dc2->nChan ||
+	   dc1->pulsarId   != dc2->pulsarId ||
+	   dc1->nPol       != dc2->nPol ||
+	   dc1->doPolar    != dc2->doPolar ||
+	   dc1->nRecChan   != dc2->nRecChan)
+	{
+		return 0;
+	}
+
+	for(i = 0; i < dc1->nPol; i++)
+	{
+		if(dc1->pol[i] != dc2->pol[i])
+		{
+			return 0;
+		}
+	}
+
+	for(i = 0; ; i++)
+	{
+		db1 = dc1->datastreamId[i];
+		db2 = dc2->datastreamId[i];
+		if(db1 < 0 || db2 < 0)
+		{
+			/* both tables better run out at same time! */
+			if(db1 != db2)
+			{
+				return 0;
+			}
+			break;
+		}
+		if(baselineIdRemap)
+		{
+			db2 = baselineIdRemap[db2];
+		}
+		if(db1 != db2)
+		{
+			return 0;
+		}
+	}
+
+	for(i = 0; ; i++)
+	{
+		dd1 = dc1->datastreamId[i];
+		dd2 = dc2->datastreamId[i];
+		if(dd1 < 0 || dd2 < 0)
+		{
+			/* both tables better run out at same time! */
+			if(dd1 != dd2)
+			{
+				return 0;
+			}
+			break;
+		}
+		if(datastreamIdRemap)
+		{
+			dd2 = baselineIdRemap[dd2];
+		}
+		if(dd1 != dd2)
+		{
+			return 0;
+		}
+	}
+
+	return 1;
 }
