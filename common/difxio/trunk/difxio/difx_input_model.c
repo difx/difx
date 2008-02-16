@@ -43,6 +43,21 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint)
 	return dm;
 }
 
+/* duplicate list of DifxModels */
+DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint)
+{
+	DifxModel *dest;
+
+	dest = (DifxModel *)calloc(nPoint+3, sizeof(DifxModel));
+	
+	/* offset array as per above */
+	dest++;
+
+	memcpy(dest-1, src-1, (nPoint+3)*sizeof(DifxModel));
+
+	return dest;
+}
+
 void deleteDifxModelArray(DifxModel **dm, int nAntenna)
 {
 	int a;

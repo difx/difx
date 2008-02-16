@@ -111,69 +111,75 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 		}
 	}
 
-	/* allocate space for model info and copy from original.  This is
-	 * somewhat brute force, low level stuff */
+	/* allocate space for model info and copy from original. */
 	dest->model = (DifxModel **)calloc(dest->nAntenna, sizeof(DifxModel *));
 	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 	{
 		destAntenna = antennaIdRemap[srcAntenna];
 
-		/* FIXME -- move below to dupDifxModelColumn */
-		dest->model[destAntenna] = (DifxModel *)calloc(dest->nPoint+3,
-			sizeof(DifxModel));
-		dest->model[destAntenna]++;
-		memcpy(dest->model[destAntenna]-1, src->model[srcAntenna]-1,
-			(dest->nPoint+3)*sizeof(DifxModel));
+		dest->model[destAntenna] = dupDifxModelColumn(
+			src->model[srcAntenna], dest->nPoint);
 	}
 }
 
-/* FIXME -- should I merge sort the two lists to keep maximal ordering? */
+/* Merge sort the two lists of scans.  This is intended to allow merging of
+ * more than two DifxInputs in any order.
+ */
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, 
 	const int *antennaIdRemap, const int *configIdRemap)
 {
 	DifxScan *ds;
-	int i;
-	int swapOrder = 0;
+	int i=0, i1=0, i2=0, src;
 
 	ds = newDifxScanArray(nds1+nds2);
 
-	/* swap ds1 and ds2 if ds1 comes later */
-	/* treat each scanarray separately -- assign each a Remap
-	 * for antennaIds and configIds, set to Null for at least one */
-	if(nds1 > 0 && nds2 > 0)
+	for(;;)
 	{
-		if(ds1[0].mjdStart > ds2[0].mjdStart)
+		if(i1 >= nds1)
 		{
-			swapOrder = 1;
+			i1 = -1;
 		}
-	}
+		if(i2 >= nds2)
+		{
+			i2 = -1;
+		}
+		if(i1 < 0 && i2 < 0)
+		{
+			break;
+		}
 
-	if(swapOrder)
-	{
-		/* write ds2 first */
-		for(i = 0; i < nds2; i++)
+		/* determine which ScanArray to take from */
+		if(i1 == -1)
 		{
-			copyDifxScan(ds + i, ds2 + i,
+			src = 2;
+		}
+		else if(i2 == -1)
+		{
+			src = 1;
+		}
+		else if(ds1[i1].mjdStart <= ds2[0].mjdStart)
+		{
+			src = 1;
+		}
+		else
+		{
+			src = 2;
+		}
+
+		/* do the copy and increments */
+		if(src == 1)
+		{
+			copyDifxScan(ds + i, ds1 + i1, 0, 0);
+			i++;
+			i1++;
+		}
+		else
+		{
+			copyDifxScan(ds + i, ds2 + i2,
 				antennaIdRemap, configIdRemap);
-		}
-		for(i = 0; i < nds1; i++)
-		{
-			copyDifxScan(ds + nds2 + i, ds1 + i, 
-				0, 0);
-		}
-	}
-	else
-	{
-		for(i = 0; i < nds1; i++)
-		{
-			copyDifxScan(ds + i, ds1 + i, 
-				0, 0);
-		}
-		for(i = 0; i < nds2; i++)
-		{
-			copyDifxScan(ds + nds1 + i, ds2 + i,
-				antennaIdRemap, configIdRemap);
+			i++;
+			i2++;
 		}
 	}
 

@@ -210,14 +210,14 @@ typedef struct
 	DifxConfig	*config;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
-	DifxScan	*scan;
+	DifxScan	*scan;		/* assumed in time order */
 	DifxSource	*source;
-	DifxEOP		*eop;
-	DifxAntennaFlag *flag;
+	DifxEOP		*eop;		/* assumed one per day, optional */
+	DifxAntennaFlag *flag;		/* optional table */
 	DifxDatastream	*datastream;
 	DifxBaseline    *baseline;
-	DifxSpacecraft	*spacecraft;
-	DifxPulsar	*pulsar;
+	DifxSpacecraft	*spacecraft;	/* optional table */
+	DifxPulsar	*pulsar;	/* optional table */
 } DifxInput;
 
 /* DifxFreq functions */
@@ -279,6 +279,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);
+DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint);
 void deleteDifxModelArray(DifxModel **dm, int nAntenna);
 void printDifxModel(const DifxModel *dm);
 
@@ -296,6 +297,9 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 DifxEOP *newDifxEOPArray(int nEOP);
 void deleteDifxEOPArray(DifxEOP *de);
 void printDifxEOP(const DifxEOP *de);
+void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
+DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
+	const DifxEOP *de2, int nde2, int *nde);
 
 /* DifxSpacecraft functions */
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);

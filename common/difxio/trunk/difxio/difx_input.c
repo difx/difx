@@ -128,7 +128,7 @@ void printDifxInput(const DifxInput *D)
 	}
 
 	printf("  nEOP = %d\n", D->nEOP);
-	for(i = 0; i < D->nEOP; i++)
+	if(D->eop) for(i = 0; i < D->nEOP; i++)
 	{
 		printDifxEOP(D->eop + i);
 	}
@@ -1212,7 +1212,10 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	strcpy(D->obsCode,    DifxParametersvalue(cp, rows[1]));
 	D->nEOP        = atoi(DifxParametersvalue(cp, rows[2]));
 
-	D->eop         = newDifxEOPArray(D->nEOP);
+	if(D->nEOP > 0)
+	{
+		D->eop = newDifxEOPArray(D->nEOP);
+	}
 
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
@@ -1278,7 +1281,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	}
 	
 	rows[N_EOP_ROWS-1] = 0;		/* initialize start */
-	for(i = 0; i < D->nEOP; i++)
+	if(D->eop) for(i = 0; i < D->nEOP; i++)
 	{
 		N = DifxParametersbatchfind1(cp, rows[N_EOP_ROWS-1], eopKeys,
 			i, N_EOP_ROWS, rows);
@@ -1345,7 +1348,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	}
 
 	rows[N_SPACECRAFT_ROWS-1] = 0;
-	if(D->nSpacecraft > 0) for(s = 0; s < D->nSpacecraft; s++)
+	if(D->spacecraft) for(s = 0; s < D->nSpacecraft; s++)
 	{
 		N = DifxParametersbatchfind1(cp, rows[N_SPACECRAFT_ROWS-1], 
 			spacecraftKeys, s, N_SPACECRAFT_ROWS, rows);

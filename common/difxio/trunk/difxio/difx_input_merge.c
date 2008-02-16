@@ -103,6 +103,9 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
+	/* merge DifxPulsar table */
+	/* FIXME -- pulsar table does not yet exist */
+
 	/* merge DifxConfig table */
 	D->config = mergeDifxConfigArrays(D1->config, D1->nConfig, 
 		D2->config, D2->nConfig, configIdRemap, 
@@ -117,12 +120,16 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
+	/* merge DifxScan table */
+	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan,
+		D2->scan, D2->nScan, antennaIdRemap,configIdRemap);
+	D->nScan = D1->nScan + D2->nScan; /* assumption is no common scans */
 
-	/* merge DifxPulsar table */
-	/* FIXME -- pulsar table does not yet exist */
 
-	/* merge DifxConfig table */
-
+	/* merge DifxEOPtable */
+	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
+		&(D->nEOP));
+	
 
 	/* clean up */
 	free(freqIdRemap);
