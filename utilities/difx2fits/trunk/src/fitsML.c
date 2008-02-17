@@ -31,6 +31,7 @@ void calcPolynomial(double gpoly[array_N_POLY],
 	}
 
 	/* FIXME -- for now just assume linear! */
+	a = d = 0.0; /* line to prevent compiler warning */
 
 	/* don't convert to convert to seconds from nanosec */
 	gpoly[0] = b * 1.0e-6;
@@ -77,7 +78,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	char str[80];
-	int i, j, k, p, s, ant;
+	int i, j, k, p, s, antId;
 	double ppoly[array_MAX_BANDS][array_N_POLY];
 	double gpoly[array_N_POLY];
 	double prate[array_MAX_BANDS][array_N_POLY];
@@ -93,6 +94,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	float dispDelay;
 	float dispDelayRate;
 	double modelInc;
+	double start;
+	double freq;
 	/* 1-based indices for FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
 
@@ -147,6 +150,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	fitsWriteEnd(out);
 
+	arrayId1 = 1;
+
 	/* some values that are always zero */
 	dispDelay = 0.0;
 	dispDelayRate = 0.0;
@@ -165,18 +170,20 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	   modelInc = D->job[jobId].modelInc;
 	   timeInt = modelInc / 86400.0;
+	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
 	   
 	   for(p = 0; p < D->scan[s].nPoint; p++)
 	   {
-	      time = D->scan[s].mjdStart - (int)D->mjdStart + timeInt*p;
+	      time = start + timeInt*p;
 	      
-	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
+	      for(antId = 0; antId < D->scan[s].nAntenna; antId++)
 	      {
-		M = D->scan[s].model[ant];
+		M = D->scan[s].model[antId];
 
 		/* skip antennas with no model data */
 		if(M == 0)
 		{
+		  printf("\n    Warning : skipping antId %d", antId);
 		  continue;
 		}
 
@@ -194,8 +201,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		
 		for(j = 0; j < nBand; j++)
 		{
-			double freq;
-
 			freq = D->config[freqId1-1].IF[j].freq * 1.0e6;
 			for(k = 0; k < array_N_POLY; k++)
 			{
@@ -204,7 +209,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 				prate[j][k] = grate[k]*freq;
 			}
 		}
-		antId1 = ant + 1;
+		antId1 = antId + 1;
 
 		FITS_WRITE_ITEM (time, p_fitsbuf);
 		FITS_WRITE_ITEM (timeInt, p_fitsbuf);

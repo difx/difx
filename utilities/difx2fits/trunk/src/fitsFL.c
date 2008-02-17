@@ -273,8 +273,13 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	    }
 	    FL.freqId1 = D->config[configId].freqId + 1;
 	    dc = D->config + configId;
-	    for(d = 0; dc->datastreamId[d] >= 0; d++)
+	    for(d = 0; d < dc->nDatastream; d++)
 	    {
+		if(dc->datastreamId[d] < 0)
+		{
+			continue;
+		}
+
 		ds = D->datastream + dc->datastreamId[d];
 		FL.baselineId1[0] = ds->antennaId + 1;
 

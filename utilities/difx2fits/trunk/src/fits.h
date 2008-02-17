@@ -80,7 +80,7 @@ int fitsWriteBinTable (struct fitsPrivate *, int,
 	const struct fitsBinTableColumn *, int, const char *);
 int fitsWriteClose (struct fitsPrivate *);
 int fitsWriteComment (struct fitsPrivate *, const char *, const char *); 
-int fitsWriteData (struct fitsPrivate *, int, const char *); 
+int fitsWriteData (struct fitsPrivate *, unsigned int, const char *); 
 int fitsWriteDouble (struct fitsPrivate *, char *, double, char *);
 int fitsWriteEnd (struct fitsPrivate *);
 int fitsWriteFloat (struct fitsPrivate *, const char *, double, const char *); 

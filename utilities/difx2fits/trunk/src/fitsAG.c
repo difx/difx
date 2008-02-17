@@ -83,7 +83,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	if(nRowBytes != sizeof(row))
 	{
 		fprintf(stderr, "AG table : nRowBytes != sizeof(row) : "
-			"%d != %u\n", nRowBytes, sizeof(row));
+			"%d != %u\n", nRowBytes, (unsigned int)(sizeof(row)));
 		exit(0);
 	}
 

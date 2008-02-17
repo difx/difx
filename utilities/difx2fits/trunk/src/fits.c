@@ -511,8 +511,8 @@ static int fitsWriteEndTable
 int fitsWriteData
     (
     struct fitsPrivate *pFile,	/* pointer to FITS file control struct */
-    int size,			/* number of bytes to write */
-    const char *pData			/* buffer to copy from */
+    unsigned int size,		/* number of bytes to write */
+    const char *pData		/* buffer to copy from */
     )
 /*
  * RETURNS OK = 0 | ERROR = -1
