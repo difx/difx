@@ -48,15 +48,15 @@ void deleteDifxJobArray(DifxJob *dj)
 
 void printDifxJob(const DifxJob *dj)
 {
-	printf("  Job ID = %d\n", dj->jobId);
-	printf("  Project = %s\n", dj->obsCode);
+	printf("    Job ID = %d\n", dj->jobId);
+	printf("    Project = %s\n", dj->obsCode);
 	if(dj->obsSession[0])
 	{
-		printf("  Session = %s\n", dj->obsSession);
+		printf("    Session = %s\n", dj->obsSession);
 	}
-	printf("  Start = MJD %12.6f\n", dj->mjdStart);
-	printf("  Duration = %f sec\n", dj->duration);
-	printf("  Model Inc = %f sec\n", dj->modelInc);
+	printf("    Start = MJD %12.6f\n", dj->mjdStart);
+	printf("    Duration = %f sec\n", dj->duration);
+	printf("    Model Inc = %f sec\n", dj->modelInc);
 }
 
 void copyDifxJob(DifxJob *dest, const DifxJob *src)

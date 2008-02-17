@@ -89,6 +89,9 @@ void printDifxInput(const DifxInput *D)
 		return;
 	}
 
+	printf("  mjdStart = %14.8f\n", D->mjdStart);
+	printf("  mjdStop  = %14.8f\n", D->mjdStop);
+
 	printf("  nJob = %d\n", D->nJob);
 	for(i = 0; i < D->nJob; i++)
 	{
@@ -285,8 +288,13 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	/* go through datastreams associates with this config and collect all
 	 * distinct Freq table ids
 	 */
-	for(a = 0; dc->datastreamId[a] >= 0; a++)
+	for(a = 0; a < dc->nDatastream; a++)
 	{
+		if(dc->datastreamId[a] < 0)
+		{
+			continue;
+		}
+		
 		ds = D->datastream + dc->datastreamId[a];
 		for(f = 0; f < ds->nFreq; f++)
 		{
@@ -310,8 +318,13 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	 * config will maintain slots for all polariazations, even if
 	 * this ends up making wasted space in FITS files
 	 */
-	for(a = 0; dc->datastreamId[a] >= 0; a++)
+	for(a = 0; a < dc->nDatastream; a++)
 	{
+		if(dc->datastreamId[a] < 0)
+		{
+			continue;
+		}
+
 		ds = D->datastream + dc->datastreamId[a];
 		for(c = 0; c < ds->nRecChan; c++)
 		{
@@ -377,6 +390,8 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 		dc->IF[i].pol[0]   = dc->pol[0];
 		dc->IF[i].pol[1]   = dc->pol[1];
 	}
+
+	free(freqIds);
 
 	return 0;
 }

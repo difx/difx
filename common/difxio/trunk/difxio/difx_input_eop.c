@@ -69,7 +69,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 {
 	DifxEOP *de;
 	int mjdMin=-1, mjdMax=-1;
-	int i=0, i1=0, i2=0;
+	int i, i1=0, i2=0;
 	int src;
 
 	if(nde1 == 0 && nde2 == 0)
@@ -105,7 +105,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 		}
 	}
 
-	if(mjdMax - mjdMin + 1 > nde1 + nde2)
+	if(mjdMax - mjdMin + 1 < nde1 + nde2)
 	{
 		*nde = mjdMax - mjdMin + 1;
 	}
@@ -118,6 +118,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 
 	/* now merge sort the EOPs, omitting duplicates */
 
+	i = 0;
 	for(;;)
 	{
 		if(i1 >= nde1)
@@ -173,4 +174,6 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 
 	/* in case the output count was an overestimate: */
 	*nde = i;
+
+	return de;
 }

@@ -126,6 +126,8 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src)
 	dest->dsB   = src->dsB;
 	dest->nFreq = src->nFreq;
 	dest->nPolProd = (int *)calloc(dest->nFreq, sizeof(int));
+	dest->recChanA = (int **)calloc(dest->nFreq, sizeof(int *));
+	dest->recChanB = (int **)calloc(dest->nFreq, sizeof(int *));
 	for(f = 0; f < dest->nFreq; f++)
 	{
 		dest->nPolProd[f] = src->nPolProd[f];

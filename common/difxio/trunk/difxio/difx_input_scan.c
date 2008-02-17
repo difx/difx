@@ -64,8 +64,8 @@ void printDifxScan(const DifxScan *ds)
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    nPoint = %d\n", ds->nPoint);
 	printf("    nAntenna %d\n", ds->nAntenna);
-	printf("    Source ID = %d\n", ds->sourceId);
-	printf("    Config ID = %d\n", ds->configId);
+	printf("    SourceId = %d\n", ds->sourceId);
+	printf("    ConfigId = %d\n", ds->configId);
 	if(ds->nPoint > 1 && ds->nAntenna > 1)
 	{
 		printDifxModel(ds->model[0] - 1);
@@ -113,7 +113,14 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->nAntenna = src->nAntenna;
 	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 	{
-		destAntenna = antennaIdRemap[srcAntenna];
+		if(antennaIdRemap)
+		{
+			destAntenna = antennaIdRemap[srcAntenna];
+		}
+		else
+		{
+			destAntenna = srcAntenna;
+		}
 		if(destAntenna+1 > dest->nAntenna)
 		{
 			dest->nAntenna = destAntenna+1;
@@ -124,7 +131,14 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->model = (DifxModel **)calloc(dest->nAntenna, sizeof(DifxModel *));
 	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 	{
-		destAntenna = antennaIdRemap[srcAntenna];
+		if(antennaIdRemap)
+		{
+			destAntenna = antennaIdRemap[srcAntenna];
+		}
+		else
+		{
+			destAntenna = srcAntenna;
+		}
 
 		dest->model[destAntenna] = dupDifxModelColumn(
 			src->model[srcAntenna], dest->nPoint);

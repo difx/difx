@@ -81,14 +81,14 @@ void printDifxConfig(const DifxConfig *dc)
 		dc->nPol, dc->pol[0], dc->pol[1]);
 	printf("    doPolar = %d\n", dc->doPolar);
 	printf("    quantization bits = %d\n", dc->quantBits);
-	printf("    datastream ids =");
-	for(i = 0; dc->datastreamId[i] >= 0; i++)
+	printf("    datastream ids [%d] =", dc->nDatastream);
+	for(i = 0; i < dc->nDatastream; i++)
 	{
 		printf(" %d", dc->datastreamId[i]);
 	}
 	printf("\n");
-	printf("    baseline ids =");
-	for(i = 0; dc->baselineId[i] >= 0; i++)
+	printf("    baseline ids [%d] =", dc->nBaseline);
+	for(i = 0; i < dc->nBaseline; i++)
 	{
 		printf(" %d", dc->baselineId[i]);
 		if(i % 12 == 11 && dc->baselineId[i+1] >= 0)
@@ -97,22 +97,32 @@ void printDifxConfig(const DifxConfig *dc)
 		}
 	}
 	printf("\n");
-	printf("    frequency to IF map =");
-	for(i = 0; dc->freqId2IF[i] >= 0; i++)
+	if(dc->freqId2IF)
 	{
-		printf(" %d", dc->freqId2IF[i]);
+		printf("    frequency to IF map =");
+		for(i = 0; dc->freqId2IF[i] >= 0; i++)
+		{
+			printf(" %d", dc->freqId2IF[i]);
+		}
+		printf("\n");
 	}
-	printf("\n");
-	for(i = 0; i < dc->nIF; i++)
+	printf("    nIF = %d\n", dc->nIF);
+	if(dc->nIF > 0)
 	{
-		printDifxIF(dc->IF+i);
+		for(i = 0; i < dc->nIF; i++)
+		{
+			printDifxIF(dc->IF+i);
+		}
 	}
 
-	/* count number of antennas in the array first */
-	for(nAnt = 0; dc->baselineFreq2IF[nAnt]; nAnt++);
-	
-	printf("    baselineFreq2IF map:\n");
-	printBaselineFreq2IF(dc->baselineFreq2IF, nAnt, dc->nIF);
+	if(dc->baselineFreq2IF)
+	{
+		/* count number of antennas in the array first */
+		for(nAnt = 0; dc->baselineFreq2IF[nAnt]; nAnt++);
+		
+		printf("    baselineFreq2IF map:\n");
+		printBaselineFreq2IF(dc->baselineFreq2IF, nAnt, dc->nIF);
+	}
 }
 
 
@@ -175,12 +185,13 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 {
 	int i, db1, db2, dd1, dd2;
 
-	if(dc1->tInt       != dc2->tInt ||
-	   dc1->nChan      != dc2->nChan ||
-	   dc1->pulsarId   != dc2->pulsarId ||
-	   dc1->nPol       != dc2->nPol ||
-	   dc1->doPolar    != dc2->doPolar ||
-	   dc1->nRecChan   != dc2->nRecChan)
+	if(dc1->tInt        != dc2->tInt ||
+	   dc1->doPolar     != dc2->doPolar ||
+	   dc1->nChan       != dc2->nChan ||
+	   dc1->pulsarId    != dc2->pulsarId ||
+	   dc1->nRecChan    != dc2->nRecChan ||
+	   dc1->nBaseline   != dc2->nBaseline ||
+	   dc1->nDatastream != dc2->nDatastream)
 	{
 		return 0;
 	}
@@ -199,18 +210,10 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 		}
 	}
 
-	for(i = 0; i < dc1->nPol; i++)
+	for(i = 0; i < dc1->nBaseline; i++)
 	{
-		if(dc1->pol[i] != dc2->pol[i])
-		{
-			return 0;
-		}
-	}
-
-	for(i = 0; ; i++)
-	{
-		db1 = dc1->datastreamId[i];
-		db2 = dc2->datastreamId[i];
+		db1 = dc1->baselineId[i];
+		db2 = dc2->baselineId[i];
 		if(db1 < 0 || db2 < 0)
 		{
 			/* both tables better run out at same time! */
@@ -230,7 +233,7 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 		}
 	}
 
-	for(i = 0; ; i++)
+	for(i = 0; i < dc1->nDatastream; i++)
 	{
 		dd1 = dc1->datastreamId[i];
 		dd2 = dc2->datastreamId[i];
@@ -245,7 +248,7 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 		}
 		if(datastreamIdRemap)
 		{
-			dd2 = baselineIdRemap[dd2];
+			dd2 = datastreamIdRemap[dd2];
 		}
 		if(dd1 != dd2)
 		{
@@ -283,7 +286,10 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	dest->doPolar = src->doPolar;
 	dest->quantBits = src->quantBits;
 	dest->nRecChan = src->nRecChan;
-	for(n = 0; src->baselineId[n]; n++) ; /* count baselines */
+	dest->nBaseline = src->nBaseline;
+	dest->nDatastream = src->nDatastream;
+
+	n = dest->nBaseline;
 	dest->baselineId = (int *)calloc(n+1, sizeof(int));
 	dest->baselineId[n] = -1;
 	if(baselineIdRemap)
@@ -301,7 +307,8 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 			dest->baselineId[i] = src->baselineId[i];
 		}
 	}
-	for(n = 0; src->datastreamId[n]; n++) ; /* count datastreams */
+	
+	n = dest->nDatastream;
 	dest->datastreamId = (int *)calloc(n+1, sizeof(int));
 	dest->datastreamId[n] = -1;
 	if(datastreamIdRemap)
