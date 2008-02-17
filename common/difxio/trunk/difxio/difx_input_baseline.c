@@ -89,12 +89,25 @@ void printDifxBaseline(const DifxBaseline *db)
 	}
 }
 
-int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2)
+int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
+	const int *datastreamIdRemap)
 {
 	int f, p;
+	int ds2A, ds2B;
 
-	if(db1->dsA   != db2->dsA || 
-	   db1->dsB   != db2->dsB ||
+	if(datastreamIdRemap)
+	{
+		ds2A = datastreamIdRemap[db2->dsA];
+		ds2B = datastreamIdRemap[db2->dsB];
+	}
+	else
+	{
+		ds2A = db2->dsA;
+		ds2B = db2->dsB;
+	}
+
+	if(db1->dsA   != ds2A || 
+	   db1->dsB   != ds2B ||
 	   db1->nFreq != db2->nFreq)
 	{
 		return 0;
@@ -118,12 +131,21 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2)
 	return 1;
 }
 
-void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src)
+void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
+	const int *datastreamIdRemap)
 {
 	int f, p, nProd;
 
-	dest->dsA   = src->dsA;
-	dest->dsB   = src->dsB;
+	if(datastreamIdRemap)
+	{
+		dest->dsA   = datastreamIdRemap[src->dsA];
+		dest->dsB   = datastreamIdRemap[src->dsB];
+	}
+	else
+	{
+		dest->dsA = src->dsA;
+		dest->dsB = src->dsB;
+	}
 	dest->nFreq = src->nFreq;
 	dest->nPolProd = (int *)calloc(dest->nFreq, sizeof(int));
 	dest->recChanA = (int **)calloc(dest->nFreq, sizeof(int *));
@@ -143,7 +165,8 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src)
 }
 
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
-	const DifxBaseline *db2, int ndb2, int *baselineIdRemap)
+	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
+	const int *datastreamIdRemap)
 {
 	int ndb;
 	int i, j;
@@ -156,7 +179,8 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	{
 		for(i = 0; i < ndb1; i++)
 		{
-			if(isSameDifxBaseline(db1 + i, db2 + j))
+			if(isSameDifxBaseline(db1 + i, db2 + j,
+				datastreamIdRemap))
 			{
 				baselineIdRemap[j] = i;
 				break;
@@ -174,7 +198,7 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	/* now copy db1 */
 	for(i = 0; i < ndb1; i++)
 	{
-		copyDifxBaseline(db + i, db1 + i);
+		copyDifxBaseline(db + i, db1 + i, 0);
 	}
 
 	/* now copy unique members of db2 */
@@ -182,7 +206,8 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	{
 		if(baselineIdRemap[j] >= ndb1)
 		{
-			copyDifxBaseline(db + baselineIdRemap[j], db2 + j);
+			copyDifxBaseline(db + baselineIdRemap[j], db2 + j,
+				datastreamIdRemap);
 		}
 	}
 

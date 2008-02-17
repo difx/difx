@@ -8,8 +8,8 @@ c_sources = \
 	difx_input_job.c \
 	difx_input_freq.c \
 	difx_input_antenna.c \
-	difx_input_baseline.c \
 	difx_input_datastream.c \
+	difx_input_baseline.c \
 	difx_input_config.c \
 	difx_input_model.c \
 	difx_input_scan.c \

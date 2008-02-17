@@ -34,7 +34,7 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	return 1;
 }
 
-static int printRemap(const char *name, const int *Remap, int n)
+static void printRemap(const char *name, const int *Remap, int n)
 {
 	int i;
 	printf("%s Remap =", name);
@@ -60,8 +60,8 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	int *jobIdRemap = 0;
 	int *freqIdRemap = 0;
 	int *antennaIdRemap = 0;
-	int *baselineIdRemap = 0;
 	int *datastreamIdRemap = 0;
+	int *baselineIdRemap = 0;
 	int *pulsarIdRemap = 0;
 	int *configIdRemap = 0;
 	int *spacecraftIdRemap = 0;
@@ -75,8 +75,8 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	jobIdRemap        = (int *)calloc(D2->nJob, sizeof(int));
 	freqIdRemap       = (int *)calloc(D2->nFreq, sizeof(int));
 	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
-	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
 	datastreamIdRemap = (int *)calloc(D2->nDatastream, sizeof(int));
+	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
 	if(D2->nPulsar > 0)
 	{
 		pulsarIdRemap = (int *)calloc(D2->nPulsar, sizeof(int));
@@ -122,18 +122,6 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		}
 	}
 
-	/* merge DifxBaseline table */
-	D->baseline = mergeDifxBaselineArrays(D1->baseline, D1->nBaseline,
-		D2->baseline, D2->nBaseline, baselineIdRemap);
-	D->nBaseline = D1->nBaseline;
-	for(i = 0; i < D2->nBaseline; i++)
-	{
-		if(baselineIdRemap[i]+1 > D->nBaseline)
-		{
-			D->nBaseline = baselineIdRemap[i]+1;
-		}
-	}
-
 	/* merge DifxDatastream table */
 	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 
 		D1->nDatastream, D2->datastream, D2->nDatastream,
@@ -144,6 +132,19 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 		if(datastreamIdRemap[i]+1 > D->nDatastream)
 		{
 			D->nDatastream = datastreamIdRemap[i]+1;
+		}
+	}
+
+	/* merge DifxBaseline table */
+	D->baseline = mergeDifxBaselineArrays(D1->baseline, D1->nBaseline,
+		D2->baseline, D2->nBaseline, baselineIdRemap,
+		datastreamIdRemap);
+	D->nBaseline = D1->nBaseline;
+	for(i = 0; i < D2->nBaseline; i++)
+	{
+		if(baselineIdRemap[i]+1 > D->nBaseline)
+		{
+			D->nBaseline = baselineIdRemap[i]+1;
 		}
 	}
 
@@ -187,8 +188,8 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	printRemap("jobId", jobIdRemap, D2->nJob);
 	printRemap("freqId", freqIdRemap, D2->nFreq);
 	printRemap("antennaId", antennaIdRemap, D2->nAntenna);
-	printRemap("baselineId", baselineIdRemap, D2->nBaseline);
 	printRemap("datastreamId", datastreamIdRemap, D2->nDatastream);
+	printRemap("baselineId", baselineIdRemap, D2->nBaseline);
 	printRemap("pulsarId", pulsarIdRemap, D2->nPulsar);
 	printRemap("configId", configIdRemap, D2->nConfig);
 	printRemap("spacecraftId", spacecraftIdRemap, D2->nSpacecraft);
@@ -197,8 +198,8 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 	free(jobIdRemap);
 	free(freqIdRemap);
 	free(antennaIdRemap);
-	free(baselineIdRemap);
 	free(datastreamIdRemap);
+	free(baselineIdRemap);
 	if(pulsarIdRemap)
 	{
 		free(pulsarIdRemap);

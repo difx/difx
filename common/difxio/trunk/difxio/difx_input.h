@@ -257,15 +257,6 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	const DifxAntenna *da2, int nda2, int *antennaIdRemap);
 
-/* DifxBaseline functions */
-DifxBaseline *newDifxBaselineArray(int nBaseline);
-void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline);
-void printDifxBaseline(const DifxBaseline *db);
-int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2);
-void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src);
-DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
-	const DifxBaseline *db2, int ndb2, int *baselineIdRemap);
-
 /* DifxDatastream functions */
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
 void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream);
@@ -277,6 +268,18 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap);
+
+/* DifxBaseline functions */
+DifxBaseline *newDifxBaselineArray(int nBaseline);
+void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline);
+void printDifxBaseline(const DifxBaseline *db);
+int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
+	const int *datastreamIdRemap);
+void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
+	const int *datastreamIdRemap);
+DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
+	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
+	const int *datastreamIdRemap);
 
 /* DifxConfig functions */
 DifxConfig *newDifxConfigArray(int nConfig);

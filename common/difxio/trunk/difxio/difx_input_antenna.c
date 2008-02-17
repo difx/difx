@@ -61,8 +61,7 @@ void printDifxAntenna(const DifxAntenna *da)
 
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 {
-	if(strcmp(da1->name,  da2->name ) == 0 &&
-	   strcmp(da1->mount, da2->mount) == 0 &&
+	if(strcmp(da1->name, da2->name) == 0 &&
 	   fabs(da1->X - da2->X) < 1.0 &&
 	   fabs(da1->Y - da2->Y) < 1.0 &&
 	   fabs(da1->Z - da2->Z) < 1.0)
