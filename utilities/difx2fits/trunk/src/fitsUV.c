@@ -39,13 +39,13 @@ static int DifxVisInitData(DifxVis *dv)
 	return 0;
 }
 
-static startGlob(DifxVis *dv)
+static void startGlob(DifxVis *dv)
 {
 	char globstr[256];
 	int verbose = 0;
 	int g;
 
-	sprintf(globstr, "%s.difx/DIFX*", dv->D->job[0].fileBase);
+	sprintf(globstr, "%s.difx/DIFX*", dv->D->job[dv->jobId].fileBase);
 
 	if(dv->jobId > 0)
 	{
@@ -79,6 +79,7 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 		return 0;
 	}
 	
+	dv->D = D;
 	dv->jobId = 0;
 	dv->curFile = -1;
 	startGlob(dv);
@@ -89,7 +90,6 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	dv->nData = 0;
 	dv->in = 0;
 	dv->out = out;
-	dv->D = D;
 	dv->configId = -1;
 	dv->sourceId = -1;
 	dv->baseline = -1;
@@ -250,7 +250,7 @@ int DifxVisNextFile(DifxVis *dv)
 		dv->curFile = 0;
 	}
 	printf("    JobId %d/%d File %d/%d : %s\n", 
-		dv->jobId, dv->D->nJob,
+		dv->jobId+1, dv->D->nJob,
 		dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
 	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
