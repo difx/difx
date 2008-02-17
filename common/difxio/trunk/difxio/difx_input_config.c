@@ -91,10 +91,6 @@ void printDifxConfig(const DifxConfig *dc)
 	for(i = 0; i < dc->nBaseline; i++)
 	{
 		printf(" %d", dc->baselineId[i]);
-		if(i % 12 == 11 && dc->baselineId[i+1] >= 0)
-		{
-			printf("\n                  ");
-		}
 	}
 	printf("\n");
 	if(dc->freqId2IF)
