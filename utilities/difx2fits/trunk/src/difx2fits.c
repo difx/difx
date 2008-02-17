@@ -14,18 +14,20 @@ int usage(const char *pgm)
 		program, version, author);
 	fprintf(stderr, "A program to convert DiFX format data to "
 		"FITS-IDI\n\n");
-	fprintf(stderr, "Usage : %s [options] <basefilename> <outfile>\n\n", 
-		pgm);
-	fprintf(stderr, "It assumed that SWIN format visibility file(s) to be converted live\n");
-	fprintf(stderr, "in directory <basefilename>.difx/\n");
-	fprintf(stderr, "It is also assumed that at least 3 additional files exist:\n");
-	fprintf(stderr, "  <basefilename>.input    DiFX input file\n");
-	fprintf(stderr, "  <basefilename>.uvw      DiFX UVW file\n");
-	fprintf(stderr, "  <basefilename>.delay    DiFX delay model\n\n");
+	fprintf(stderr, "Usage : %s [options] <baseFilename1> "
+		"[<baseFilename2> ... ] <outfile>\n\n", pgm);
+	fprintf(stderr, "It assumed that SWIN format visibility file(s) "
+		"to be converted live\n");
+	fprintf(stderr, "in directory <baseFilename>.difx/\n");
+	fprintf(stderr, "It is also assumed that at least 3 additional "
+		"files exist:\n");
+	fprintf(stderr, "  <baseFilename>.input    DiFX input file\n");
+	fprintf(stderr, "  <baseFilename>.uvw      DiFX UVW file\n");
+	fprintf(stderr, "  <baseFilename>.delay    DiFX delay model\n\n");
 	fprintf(stderr, "Three other files are optionally read:\n");
-	fprintf(stderr, "  <basefilename>.calc     Base file for calcif \n");
-	fprintf(stderr, "  <basefilename>.rates    Extra calcif output\n");
-	fprintf(stderr, "  <basefilename>.flag     Antenna-based flagging\n\n");
+	fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
+	fprintf(stderr, "  <baseFilename>.rates    Extra calcif output\n");
+	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
 	fprintf(stderr, "  flag, tsys, pcal, weather\n");
 	fprintf(stderr, "If these are present in the current directory, they "
@@ -49,7 +51,7 @@ int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --scale <scale>\n");
 	fprintf(stderr, "  -s      <scale>  Scale visibility data "
-			"by <scale>\n");
+		"by <scale>\n");
 	fprintf(stderr, "\n");
 
 	return 0;
@@ -208,13 +210,14 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 int main(int argc, char **argv)
 {
-	DifxInput *D;
+	DifxInput *D, *D1, *D2;
 	struct fitsPrivate outfile;
-	const char *basefile=0, *fitsfile=0;
+	const char *baseFile[1024], *fitsFile=0;
 	int writemodel = 1;
 	int i;
 	double scale = 0.0;
 	int verbose = 0;
+	int nBaseFile = 0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -241,33 +244,52 @@ int main(int argc, char **argv)
 				}
 			}
 		}
-		else if(basefile == 0)
-		{
-			basefile = argv[i];
-		}
-		else if(fitsfile == 0)
-		{
-			fitsfile = argv[i];
-		}
 		else
 		{
-			return usage(argv[0]);
+			if(fitsFile)
+			{
+				baseFile[nBaseFile] = fitsFile;
+				nBaseFile++;
+			}
+			fitsFile = argv[i];
 		}
 	}
 
-
-	if(basefile == 0 || fitsfile == 0)
+	if(nBaseFile == 0 || fitsFile == 0)
 	{
 		return usage(argv[0]);
 	}
 
-	D = loadDifxInput(basefile);
-	if(!D)
+	D = 0;
+
+	for(i = 0; i < nBaseFile; i++)
 	{
-		fprintf(stderr, "loadDifxInput failed on <%s>.  Aborting\n",
-			basefile);
-		return 0;
+		printf("Loading %s\n", baseFile[i]);
+		D2 = loadDifxInput(baseFile[i]);
+		if(!D2)
+		{
+			fprintf(stderr, "loadDifxInput failed on <%s>.\n",
+				baseFile[i]);
+			return 0;
+		}
+		if(D)
+		{
+			D1 = D;
+			printf("Merging %s\n", baseFile[i]);
+			D = mergeDifxInputs(D1, D2);
+			if(!D)
+			{
+				fprintf(stderr, "merging failed on <%s>.\n",
+					baseFile[i]);
+				return 0;
+			}
+		}
+		else
+		{
+			D = D2;
+		}
 	}
+
 	D = updateDifxInput(D);
 	if(!D)
 	{
@@ -295,7 +317,7 @@ int main(int argc, char **argv)
 		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 
-	if(fitsWriteOpen(&outfile, fitsfile) < 0)
+	if(fitsWriteOpen(&outfile, fitsFile) < 0)
 	{
 		deleteDifxInput(D);
 		fprintf(stderr, "Cannot open output file\n");
