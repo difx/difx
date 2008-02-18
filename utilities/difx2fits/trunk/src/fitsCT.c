@@ -1,4 +1,3 @@
-#include <math.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -159,7 +158,8 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	}
 	else
 	{
-		fprintf(stderr, "Warning -- setting EOPs to zero\n");
+		printf("\n    Warning -- setting EOPs to zero\n");
+		printf("                            ");
 		for(e = 0; e < 5; e++)
 		{
 			row.time    = e-2;

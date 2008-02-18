@@ -4,7 +4,12 @@
 #define __FITS_H__
 
 #include <stdio.h>
+#include <math.h>
 #include "other.h"
+
+#ifndef M_PI
+#define M_PI           3.14159265358979323846
+#endif
 
 #define FITS_WRITE_ITEM(item, buffer)  { bcopy((char *)(&(item)), buffer, sizeof(item)); buffer += sizeof(item); }
 

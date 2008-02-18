@@ -443,7 +443,7 @@ int RecordIsInvalid(const DifxVis *dv)
 
 	for(i = 0; i < n; i++)
 	{
-		if(!finite(d[i]))
+		if(isnan(d[i]) || isinf(d[i]))
 		{
 			printf("Warning -- record with !finite value\n");
 			return 1;
