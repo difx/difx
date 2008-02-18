@@ -55,8 +55,6 @@ static void printRemap(const char *name, const int *Remap, int n)
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 {
 	DifxInput *D;
-	int i;
-	
 	int *jobIdRemap = 0;
 	int *freqIdRemap = 0;
 	int *antennaIdRemap = 0;
@@ -95,80 +93,40 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 
 	/* merge DifxJob table */
 	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
-		jobIdRemap);
-	D->nJob = D1->nJob + D2->nJob;
+		jobIdRemap, &(D->nJob));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
-		D2->freq, D2->nFreq, freqIdRemap);
-	D->nFreq = D1->nFreq;
-	for(i = 0; i < D2->nFreq; i++)
-	{
-		if(freqIdRemap[i]+1 > D->nFreq)
-		{
-			D->nFreq = freqIdRemap[i]+1;
-		}
-	}
+		D2->freq, D2->nFreq, freqIdRemap, &(D->nFreq));
 
 	/* merge DifxAntenna table */
 	D->antenna = mergeDifxAntennaArrays(D1->antenna, D1->nAntenna,
-		D2->antenna, D2->nAntenna, antennaIdRemap);
-	D->nAntenna = D1->nAntenna;
-	for(i = 0; i < D2->nAntenna; i++)
-	{
-		if(antennaIdRemap[i]+1 > D->nAntenna)
-		{
-			D->nAntenna = antennaIdRemap[i]+1;
-		}
-	}
+		D2->antenna, D2->nAntenna, antennaIdRemap, &(D->nAntenna));
 
 	/* merge DifxDatastream table */
 	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 
 		D1->nDatastream, D2->datastream, D2->nDatastream,
-		datastreamIdRemap, freqIdRemap, antennaIdRemap);
-	D->nDatastream = D1->nDatastream;
-	for(i = 0; i < D2->nDatastream; i++)
-	{
-		if(datastreamIdRemap[i]+1 > D->nDatastream)
-		{
-			D->nDatastream = datastreamIdRemap[i]+1;
-		}
-	}
+		datastreamIdRemap, freqIdRemap, antennaIdRemap,
+		&(D->nDatastream));
 
 	/* merge DifxBaseline table */
 	D->baseline = mergeDifxBaselineArrays(D1->baseline, D1->nBaseline,
 		D2->baseline, D2->nBaseline, baselineIdRemap,
-		datastreamIdRemap);
-	D->nBaseline = D1->nBaseline;
-	for(i = 0; i < D2->nBaseline; i++)
-	{
-		if(baselineIdRemap[i]+1 > D->nBaseline)
-		{
-			D->nBaseline = baselineIdRemap[i]+1;
-		}
-	}
+		datastreamIdRemap, &(D->nBaseline));
 
 	/* merge DifxPulsar table */
-	/* FIXME -- pulsar table does not yet exist */
+	D->pulsar = mergeDifxPulsarArrays(D1->pulsar, D1->nPulsar,
+		D2->pulsar, D2->nPulsar, pulsarIdRemap, &(D->nPulsar));
 
 	/* merge DifxConfig table */
 	D->config = mergeDifxConfigArrays(D1->config, D1->nConfig, 
 		D2->config, D2->nConfig, configIdRemap, 
-		baselineIdRemap, datastreamIdRemap,
-		pulsarIdRemap);
-	D->nConfig = D1->nConfig;
-	for(i = 0; i < D2->nConfig; i++)
-	{
-		if(configIdRemap[i]+1 > D->nConfig)
-		{
-			D->nConfig = configIdRemap[i]+1;
-		}
-	}
+		baselineIdRemap, datastreamIdRemap, pulsarIdRemap, 
+		&(D->nConfig));
 
 	/* merge DifxScan table */
-	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan,
-		D2->scan, D2->nScan, jobIdRemap, antennaIdRemap, configIdRemap);
-	D->nScan = D1->nScan + D2->nScan; /* assumption is no common scans */
+	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan, D2->scan, D2->nScan,
+		jobIdRemap, antennaIdRemap, configIdRemap, &(D->nScan));
 
 	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
@@ -181,8 +139,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 
 	/* merge DifxAntennaFlag table */
 	D->flag = mergeDifxAntennaFlagArrays(D1->flag, D1->nFlag,
-		D2->flag, D2->nFlag, antennaIdRemap);
-	D->nFlag = D1->nFlag + D2->nFlag;
+		D2->flag, D2->nFlag, antennaIdRemap, &(D->nFlag));
 
 	/* print remappings */
 	printRemap("jobId", jobIdRemap, D2->nJob);

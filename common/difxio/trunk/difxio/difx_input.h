@@ -40,6 +40,22 @@ typedef struct
 	char pol[2];		/* polarization codes : L R X or Y. */
 } DifxIF;
 
+typedef struct
+{
+	char fileName[256];	/* filename containing polyco data */
+} DifxPolyco;
+
+typedef struct
+{
+	char fileName[256];	/* pulsar config filename */
+	int nPolyco;		/* number of polyco structures in file */
+	DifxPolyco *polyco;	/* individual polyco file contents */
+	int nBin;		/* number of pulsar bins */
+	double *binEnd;		/* [bin] end phase [0.0, 1.0) of bin */
+	double *binWeight;	/* [bin] weight to apply to bin */
+	int scrunch;		/* 1 = yes, 0 = no */
+} DifxPulsar;
+
 /* From DiFX config table, with additional derived information */
 typedef struct
 {
@@ -172,11 +188,6 @@ typedef struct
 	int antennaId;		/* antenna number */
 } DifxAntennaFlag;
 
-typedef struct			/* FIXME -- dummy structure for now */
-{
-	int nBin;		/* number of pulsar bins */
-} DifxPulsar;
-
 typedef struct
 {
 	double jobStart;	/* cjobgen job start time (mjd) */
@@ -237,7 +248,7 @@ void deleteDifxJobArray(DifxJob *dj);
 void printDifxJob(const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap);
+	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj);
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);
@@ -246,7 +257,7 @@ void printDifxFreq(const DifxFreq *df);
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
-	const DifxFreq *df2, int ndf2, int *freqIdRemap);
+	const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf);
 
 /* DifxAntenna functions */
 DifxAntenna *newDifxAntennaArray(int nAntenna);
@@ -255,7 +266,8 @@ void printDifxAntenna(const DifxAntenna *da);
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antennaIdRemap);
+	const DifxAntenna *da2, int nda2, int *antennaIdRemap,
+	int *nda);
 
 /* DifxDatastream functions */
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
@@ -267,7 +279,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	const int *freqIdRemap, const int *antennaIdRemap);
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
-	const int *freqIdRemap, const int *antennaIdRemap);
+	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
@@ -279,7 +291,23 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 	const int *datastreamIdRemap);
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
-	const int *datastreamIdRemap);
+	const int *datastreamIdRemap, int *ndb);
+
+/* DifxPolyco functions */
+DifxPolyco *newDifxPolycoArray(int nPolyco);
+void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco);
+void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
+DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
+
+/* DifxPulsar functions */
+DifxPulsar *newDifxPulsarArray(int nPulsar);
+DifxPulsar *growDifxPulsarArray(DifxPulsar *dp, int origSize);
+void deleteDifxPulsarArray(DifxPulsar *dp, int nPulsar);
+void printDifxPulsar(const DifxPulsar *dp);
+int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2);
+DifxPulsar *dupDifxPulsarArray(const DifxPulsar *src, int nPulsar);
+DifxPulsar *mergeDifxPulsarArrays(const DifxPulsar *dp1, int ndp1,
+	const DifxPulsar *dp2, int ndp2, int *pulsarIdRemap, int *ndp);
 
 /* DifxConfig functions */
 DifxConfig *newDifxConfigArray(int nConfig);
@@ -297,7 +325,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
-	const int *pulsarIdRemap);
+	const int *pulsarIdRemap, int *ndc);
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);
@@ -313,9 +341,8 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	const int *jobIdRemap, const int *antennaIdRemap, 
 	const int *configIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
-	const DifxScan *ds2, int nds2,
-	const int *jobIdRemap,
-	const int *antennaIdRemap, const int *configIdRemap);
+	const DifxScan *ds2, int nds2, const int *jobIdRemap,
+	const int *antennaIdRemap, const int *configIdRemap, int *nds);
 
 /* DifxEOP functions */
 DifxEOP *newDifxEOPArray(int nEOP);
@@ -353,7 +380,7 @@ void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
 	const int *antennaIdRemap);
 DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
 	int ndf1, const DifxAntennaFlag *df2, int ndf2, 
-	const int *antennaIdRemap);
+	const int *antennaIdRemap, int *ndf);
 
 /* DifxInput functions */
 DifxInput *newDifxInput();

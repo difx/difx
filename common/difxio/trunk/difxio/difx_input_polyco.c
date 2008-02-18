@@ -23,62 +23,37 @@
 #include "difxio/difx_input.h"
 
 
-DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag)
+DifxPolyco *newDifxPolycoArray(int nPolyco)
 {
-	DifxAntennaFlag *df;
+	DifxPolyco *dp;
 
-	if(nFlag == 0)
-	{
-		return 0;
-	}
+	dp = (DifxPolyco *)calloc(nPolyco, sizeof(DifxPolyco));
 
-	df = (DifxAntennaFlag *)calloc(nFlag, sizeof(DifxAntennaFlag));
-
-	return df;
+	return dp;
 }
 
-void deleteDifxAntennaFlagArray(DifxAntennaFlag *df)
+void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco)
 {
-	if(df)
-	{
-		free(df);
-	}
+	/* FIXME -- implement fully! */
+	free(dp);
 }
 
-void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
-	const int *antennaIdRemap)
+void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
 {
-	memcpy(dest, src, sizeof(DifxAntennaFlag));
-	if(antennaIdRemap)
-	{
-		dest->antennaId = antennaIdRemap[dest->antennaId];
-	}
+	/* FIXME -- implement fully! */
+	strcpy(dest->fileName, src->fileName);
 }
 
-DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
-	int ndf1, const DifxAntennaFlag *df2, int ndf2, 
-	const int *antennaIdRemap, int *ndf)
+DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco)
 {
-	DifxAntennaFlag *df;
-	int i;
+	DifxPolyco *dp;
+	int p;
 
-	*ndf = ndf1 + ndf2;
-	if(*ndf <= 0)
+	dp = newDifxPolycoArray(nPolyco);
+	for(p = 0; p < nPolyco; p++)
 	{
-		return 0;
+		copyDifxPolyco(dp + p, src + p);
 	}
 
-	df = newDifxAntennaFlagArray(*ndf);
-
-	if(ndf1 > 0) for(i = 0; i < ndf1; i++)
-	{
-		copyDifxAntennaFlag(df + i, df1 + i, 0);
-	}
-	if(ndf2 > 0) for(i = 0; i < ndf2; i++)
-	{
-		copyDifxAntennaFlag(df + ndf1 + i, df2 + i,
-			antennaIdRemap);
-	}
-
-	return df;
+	return dp;
 }

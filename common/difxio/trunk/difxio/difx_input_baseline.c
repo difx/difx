@@ -166,13 +166,12 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
-	const int *datastreamIdRemap)
+	const int *datastreamIdRemap, int *ndb)
 {
-	int ndb;
 	int i, j;
 	DifxBaseline *db;
 
-	ndb = ndb1;
+	*ndb = ndb1;
 
 	/* first identify entries that differ and assign new baselineIds */
 	for(j = 0; j < ndb2; j++)
@@ -188,12 +187,12 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 		}
 		if(i == ndb1)
 		{
-			baselineIdRemap[j] = ndb;
-			ndb++;
+			baselineIdRemap[j] = *ndb;
+			(*ndb)++;
 		}
 	}
 
-	db = newDifxBaselineArray(ndb);
+	db = newDifxBaselineArray(*ndb);
 	
 	/* now copy db1 */
 	for(i = 0; i < ndb1; i++)

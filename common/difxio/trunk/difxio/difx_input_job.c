@@ -64,9 +64,9 @@ void copyDifxJob(DifxJob *dest, const DifxJob *src)
 	memcpy(dest, src, sizeof(DifxJob));
 }
 
-/* simply append dj2 after dj1 */
+/* simply append dj2 after dj1 return new size on call stack : ndj */
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap)
+	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj)
 {
 	DifxJob *dj;
 	int i;
@@ -76,7 +76,8 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 		jobIdRemap[i] = ndj1 + i;
 	}
 	
-	dj = newDifxJobArray(ndj1 + ndj2);
+	*ndj = ndj1 + ndj2;
+	dj = newDifxJobArray(*ndj);
 
 	for(i = 0; i < ndj1; i++)
 	{

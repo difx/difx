@@ -327,13 +327,12 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
-	const int *pulsarIdRemap)
+	const int *pulsarIdRemap, int *ndc)
 {
-	int ndc;
 	int i, j;
 	DifxConfig *dc;
 
-	ndc = ndc1;
+	*ndc = ndc1;
 
 	/* first identify entries that differ and assign new configIds */
 	for(j = 0; j < ndc2; j++)
@@ -350,12 +349,12 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 		}
 		if(i == ndc1)
 		{
-			configIdRemap[j] = ndc;
-			ndc++;
+			configIdRemap[j] = *ndc;
+			(*ndc)++;
 		}
 	}
 
-	dc = newDifxConfigArray(ndc);
+	dc = newDifxConfigArray(*ndc);
 	
 	/* now copy df1 */
 	for(i = 0; i < ndc1; i++)

@@ -151,12 +151,13 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, 
 	const int *jobIdRemap, const int *antennaIdRemap, 
-	const int *configIdRemap)
+	const int *configIdRemap, int *nds)
 {
 	DifxScan *ds;
 	int i=0, i1=0, i2=0, src;
 
-	ds = newDifxScanArray(nds1+nds2);
+	*nds = nds1 + nds2;
+	ds = newDifxScanArray(*nds);
 
 	for(;;)
 	{

@@ -436,6 +436,12 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	return D;
 }	
 
+/* return -1 on a failure */
+static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
+{
+	return -1;
+}
+
 static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 	const DifxParameters *ip)
 {
@@ -486,10 +492,26 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[4])));
 		D->config[c].nDatastream  = D->job->activeDatastreams;
 		D->config[c].nBaseline    = D->job->activeBaselines;
-		/*
-		D->config[c].pulsarBinning = 
-			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[5])));
-		*/
+
+		/* pulsar stuff */
+		if(strcmp(DifxParametersvalue(ip, rows[5]), "TRUE") == 0)
+		{
+			r = DifxParametersfind(ip, rows[5], 
+				"PULSAR CONFIG FILE");
+			if(r <= 0)
+			{
+				fprintf(stderr, "input file row %d : "
+					"PULSAR CONFIG FILE expected\n",
+					rows[5] + 2);
+				return 0;
+			}
+			D->config[c].pulsarId = loadPulsarConfigFile(D,
+				DifxParametersvalue(ip, r));
+			if(D->config[c].pulsarId < 0)
+			{
+				return 0;
+			}
+		}
 		N = strlen(D->config[c].name);
 		if(D->config[c].name[N-1] == '1')
 		{

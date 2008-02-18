@@ -96,13 +96,12 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 }
 
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
-	const DifxAntenna *da2, int nda2, int *antennaIdRemap)
+	const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda)
 {
-	int nda;
 	int i, j;
 	DifxAntenna *da;
 
-	nda = nda1;
+	*nda = nda1;
 
 	/* first identify entries that differ and assign new antennaIds */
 	for(j = 0; j < nda2; j++)
@@ -117,12 +116,12 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 		}
 		if(i == nda1)
 		{
-			antennaIdRemap[j] = nda;
-			nda++;
+			antennaIdRemap[j] = *nda;
+			(*nda)++;
 		}
 	}
 
-	da = newDifxAntennaArray(nda);
+	da = newDifxAntennaArray(*nda);
 	
 	/* now copy da1 */
 	for(i = 0; i < nda1; i++)

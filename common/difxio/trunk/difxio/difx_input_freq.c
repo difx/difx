@@ -69,17 +69,17 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 	dest->sideband = src->sideband;
 }
 
-/* merge two DifxFreq tables into an new one.  dfRemap will contain the
+/* merge two DifxFreq tables into an new one.  freqIdRemap will contain the
  * mapping from df2's old freq entries to that of the merged set
  */
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
-	const DifxFreq *df2, int ndf2, int *freqIdRemap)
+	const DifxFreq *df2, int ndf2, int *freqIdRemap,
+	int *ndf)
 {
 	DifxFreq *df;
-	int ndf;
 	int i, j;
 
-	ndf = ndf1;
+	*ndf = ndf1;
 
 	/* first identify entries that differ and assign new freqIds to them */
 	for(j = 0; j < ndf2; j++)
@@ -94,25 +94,23 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 		}
 		if(i == ndf1)
 		{
-			freqIdRemap[j] = ndf;
-			ndf++;
+			freqIdRemap[j] = *ndf;
+			(*ndf)++;
 		}
 	}
 
-	df = newDifxFreqArray(ndf);
-	
-	/* now copy df1 */
+	/* Allocate and copy */
+	df = newDifxFreqArray(*ndf);
 	for(i = 0; i < ndf1; i++)
 	{
 		copyDifxFreq(df + i, df1 + i);
 	}
-
-	/* now copy unique members of df2 */
 	for(j = 0; j < ndf2; j++)
 	{
-		if(freqIdRemap[j] >= ndf1)
+		i = freqIdRemap[j];
+		if(i >= ndf1)
 		{
-			copyDifxFreq(df + freqIdRemap[j], df2 + j);
+			copyDifxFreq(df + i, df2 + j);
 		}
 	}
 

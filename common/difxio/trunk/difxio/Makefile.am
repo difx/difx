@@ -18,6 +18,8 @@ c_sources = \
 	difx_input_if.c \
 	difx_input_source.c \
 	difx_input_flag.c \
+	difx_input_polyco.c \
+	difx_input_pulsar.c \
 	parsedifx.c \
 	parsevis.c
 

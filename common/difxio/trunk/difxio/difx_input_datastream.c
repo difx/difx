@@ -171,13 +171,12 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
-	const int *freqIdRemap, const int *antennaIdRemap)
+	const int *freqIdRemap, const int *antennaIdRemap, int *ndd)
 {
-	int ndd;
 	int i, j;
 	DifxDatastream *dd;
 
-	ndd = ndd1;
+	*ndd = ndd1;
 
 	/* first identify entries that differ and assign new datastreamIds */
 	for(j = 0; j < ndd2; j++)
@@ -193,12 +192,12 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 		}
 		if(i == ndd1)
 		{
-			datastreamIdRemap[j] = ndd;
-			ndd++;
+			datastreamIdRemap[j] = *ndd;
+			(*ndd)++;
 		}
 	}
 
-	dd = newDifxDatastreamArray(ndd);
+	dd = newDifxDatastreamArray(*ndd);
 	
 	/* now copy dd1 */
 	for(i = 0; i < ndd1; i++)
