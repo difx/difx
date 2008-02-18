@@ -504,7 +504,7 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		dp->scrunch = 1;
 	}
 
-	for(i = 0; i < dp->nBin; dp++)
+	for(i = 0; i < dp->nBin; i++)
 	{
 		r = DifxParametersfind1(pp, r, "BIN PHASE END %d", i);
 		if(r < 0)
@@ -1215,6 +1215,17 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			if(strcmp(D->scan[i].name, D->config[c].name) == 0)
 			{
 				D->scan[i].configId = c;
+			}
+		}
+
+		if(D->scan[i].configId == -1)
+		{
+			for(c = 0; c < D->nConfig; c++)
+			{
+				if(strcmp("DEFAULT", D->config[c].name) == 0)
+				{
+					D->scan[i].configId = c;
+				}
 			}
 		}
 
