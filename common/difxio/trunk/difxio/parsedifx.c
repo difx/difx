@@ -225,7 +225,8 @@ int DifxParametersaddrow(DifxParameters *dp, const char *line)
 	row = &dp->rows[dp->num_rows];
 	dp->num_rows++;
 
-	row->line = strdup(line);
+	row->line = (char *)malloc(strlen(line)+1);
+	strcpy(row->line, line);
 
 	parserow(row);
 
