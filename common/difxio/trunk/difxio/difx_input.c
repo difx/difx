@@ -152,6 +152,12 @@ void printDifxInput(const DifxInput *D)
 	{
 		printDifxSpacecraft(D->spacecraft + i);
 	}
+
+	printf("  nPulsar = %d\n", D->nPulsar);
+	for(i = 0; i < D->nPulsar; i++)
+	{
+		printDifxPulsar(D->pulsar + i);
+	}
 	
 	printf("\n");
 }
@@ -439,7 +445,90 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 /* return -1 on a failure */
 static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 {
-	return -1;
+	DifxParameters *pp;
+	DifxPulsar *dp;
+	int i, r;
+
+	pp = newDifxParametersfromfile(fileName);
+	if(!pp)
+	{
+		fprintf(stderr, "Problem opening or reading %s\n", fileName);
+		return -1;
+	}
+
+	D->pulsar = growDifxPulsarArray(D->pulsar, D->nPulsar);
+	dp = D->pulsar + D->nPulsar;
+
+	r = DifxParametersfind(pp, 0, "NUM POLYCO FILES");
+	if(r < 0)
+	{
+		deleteDifxParameters(pp);
+		fprintf(stderr, "NUM POLYCO FILES not found\n");
+		return -1;
+	}
+	dp->nPolyco = atoi(DifxParametersvalue(pp, r));
+	dp->polyco = newDifxPolycoArray(dp->nPolyco);
+
+	for(i = 0; i < dp->nPolyco; i++)
+	{
+		r = DifxParametersfind1(pp, r, "POLYCO FILE %d", i);
+		if(r < 0)
+		{
+			deleteDifxParameters(pp);
+			fprintf(stderr, "POLYCO FILE %d not found\n", i);
+			return -1;
+		}
+		strcpy(dp->polyco[i].fileName, DifxParametersvalue(pp, r));
+	}
+
+	r = DifxParametersfind(pp, 0, "NUM PULSAR BINS");
+	if(r < 0)
+	{
+		deleteDifxParameters(pp);
+		fprintf(stderr, "NUM PULSAR BINS not found\n");
+		return -1;
+	}
+	dp->nBin = atoi(DifxParametersvalue(pp, r));
+	dp->binEnd = (double *)calloc(dp->nBin, sizeof(double));
+	dp->binWeight = (double *)calloc(dp->nBin, sizeof(double));
+
+	r = DifxParametersfind(pp, 0, "SCRUNCH OUTPUT");
+	if(r < 0)
+	{
+		deleteDifxParameters(pp);
+		fprintf(stderr, "SCRUNCH OUTPUT not found\n");
+		return -1;
+	}
+	if(strcmp(DifxParametersvalue(pp, r), "TRUE") == 0)
+	{
+		dp->scrunch = 1;
+	}
+
+	for(i = 0; i < dp->nBin; dp++)
+	{
+		r = DifxParametersfind1(pp, r, "BIN PHASE END %d", i);
+		if(r < 0)
+		{
+			deleteDifxParameters(pp);
+			fprintf(stderr, "BIN PHASE END %d not found\n", i);
+			return -1;
+		}
+		dp->binEnd[i] = atof(DifxParametersvalue(pp, r));
+
+		r = DifxParametersfind1(pp, r, "BIN WEIGHT %d", i);
+		if(r < 0)
+		{
+			deleteDifxParameters(pp);
+			fprintf(stderr, "BIN WEIGHT %d not found\n", i);
+			return -1;
+		}
+		dp->binWeight[i] = atof(DifxParametersvalue(pp, r));
+	}
+
+	D->nPulsar++;
+	deleteDifxParameters(pp);
+
+	return D->nPulsar-1;
 }
 
 static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
@@ -1921,25 +2010,25 @@ DifxInput *loadDifxInput(const char *filePrefix)
 {
 	DifxParameters *ip, *up, *dp, *rp, *cp;
 	DifxInput *D, *DSave;
-	char inputfile[256];
-	char uvwfile[256];
-	char delayfile[256];
-	char ratefile[256];
-	char calcfile[256];
-	char flagfile[256];
+	char inputFile[256];
+	char uvwFile[256];
+	char delayFile[256];
+	char rateFile[256];
+	char calcFile[256];
+	char flagFile[256];
 
-	sprintf(inputfile, "%s.input", filePrefix);
-	sprintf(uvwfile,   "%s.uvw",   filePrefix);
-	sprintf(delayfile, "%s.delay", filePrefix);
-	sprintf(ratefile,  "%s.rate",  filePrefix);
-	sprintf(calcfile,  "%s.calc",  filePrefix);
-	sprintf(flagfile,  "%s.flag",  filePrefix);
+	sprintf(inputFile, "%s.input", filePrefix);
+	sprintf(uvwFile,   "%s.uvw",   filePrefix);
+	sprintf(delayFile, "%s.delay", filePrefix);
+	sprintf(rateFile,  "%s.rate",  filePrefix);
+	sprintf(calcFile,  "%s.calc",  filePrefix);
+	sprintf(flagFile,  "%s.flag",  filePrefix);
 
-	ip = newDifxParametersfromfile(inputfile);
-	up = newDifxParametersfromfile(uvwfile);
-	dp = newDifxParametersfromfile(delayfile);
-	rp = newDifxParametersfromfile(ratefile);
-	cp = newDifxParametersfromfile(calcfile);
+	ip = newDifxParametersfromfile(inputFile);
+	up = newDifxParametersfromfile(uvwFile);
+	dp = newDifxParametersfromfile(delayFile);
+	rp = newDifxParametersfromfile(rateFile);
+	cp = newDifxParametersfromfile(calcFile);
 
 	if(!ip || !up || !dp)
 	{
@@ -1970,7 +2059,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	else
 	{	
 		fprintf(stderr, "Warning -- no file called %s found.  Continuing anyways\n",
-			calcfile);
+			calcFile);
 		fprintf(stderr, "  Defaults being used for many parameters\n");
 	}
 	if(rp)
@@ -1980,7 +2069,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	else
 	{
 		fprintf(stderr, "Warning -- no file called %s found.  "
-				"Continuing anyways\n", ratefile);
+				"Continuing anyways\n", rateFile);
 		fprintf(stderr, "  Model rates will be approximate\n");
 		fprintf(stderr, "  Atmosphere values will be absent\n");
 
@@ -1997,7 +2086,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(dp);
 	deleteDifxParameters(cp);
 
-	populateFlags(D, flagfile);
+	populateFlags(D, flagFile);
 	
 	return D;
 }

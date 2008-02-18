@@ -120,7 +120,7 @@ DifxPulsar *dupDifxPulsarArray(const DifxPulsar *src, int nPulsar)
 }
 
 /* merge two DifxPulsar tables into an new one.  pulsarIdRemap will contain the
- * mapping from df2's old freq entries to that of the merged set
+ * mapping from dp2's old indices to that of the merged set
  */
 DifxPulsar *mergeDifxPulsarArrays(const DifxPulsar *dp1, int ndp1,
 	const DifxPulsar *dp2, int ndp2, int *pulsarIdRemap, int *ndp)
