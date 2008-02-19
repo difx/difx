@@ -91,6 +91,11 @@ void printDifxInput(const DifxInput *D)
 
 	printf("  mjdStart = %14.8f\n", D->mjdStart);
 	printf("  mjdStop  = %14.8f\n", D->mjdStop);
+	printf("  FFT size = %d\n", D->nFFT);
+	printf("  Input Channels = %d\n", D->nInChan);
+	printf("  Start Channel = %d\n", D->startChan);
+	printf("  Spectral Avg = %d\n", D->specAvg);
+	printf("  Output Channels = %d\n", D->nOutChan);
 
 	printf("  nJob = %d\n", D->nJob);
 	for(i = 0; i < D->nJob; i++)
@@ -996,7 +1001,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int a, b, c, e, qb, nOutChan = 0;
+	int a, b, c, e, qb, nChan = 0, nc;
 	DifxDatastream *ds;
 	
 	if(!D)
@@ -1050,13 +1055,13 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		}
 		D->config[c].quantBits = qb;
 
-		if(nOutChan == 0)
+		if(nChan == 0)
 		{
-			nOutChan = D->config[c].nChan;
+			nChan = D->config[c].nChan;
 		}
-		else if(nOutChan != D->config[c].nChan)
+		else if(nChan != D->config[c].nChan)
 		{
-			nOutChan = -1;
+			nChan = -1;
 		}
 	}
 
@@ -1066,15 +1071,21 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		makeBaselineFreq2IF(D, c);
 	}
 
-	if(nOutChan == -1)
+	if(nChan == -1)
 	{
-		fprintf(stderr, "deriveDifxInputValues: nOutChan changes "
+		fprintf(stderr, "deriveDifxInputValues: nChan changes "
 			"between configs\n");
 		return 0;
 	}
 	else
 	{
-		D->nOutChan = nOutChan/D->specAvg;
+		nc = nChan - D->startChan;
+		if(D->nOutChan <= 0 || D->nOutChan > nc/D->specAvg)
+		{
+			D->nOutChan = nc/D->specAvg;
+		}
+		D->nFFT = nChan*2;
+		D->nInChan = nChan;
 	}
 
 	return D;
@@ -1391,8 +1402,16 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		D->specAvg = atoi(DifxParametersvalue(cp, row));
 	}
-
-	D->nOutChan = D->config[0].nChan/D->specAvg;
+	row = DifxParametersfind(cp, 0, "OUTPUT CHANNELS");
+	if(row >= 0)
+	{
+		D->nOutChan = atoi(DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "START CHANNEL");
+	if(row >= 0)
+	{
+		D->startChan = atoi(DifxParametersvalue(cp, row));
+	}
 
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
 	for(i = 0; i < D->nAntenna; i++)

@@ -212,8 +212,11 @@ typedef struct
 	double mjdStart;	/* start of combined dataset */
 	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
+	int startChan;		/* first (unaveraged) channel to write */
 	int specAvg;		/* number of channels to average */
+	int nInChan;		/* number of correlated channels */
 	int nOutChan;		/* number of channels to write to FITS */
+	int nFFT;		/* size of FFT used */
 
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */

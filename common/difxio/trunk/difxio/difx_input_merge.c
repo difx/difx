@@ -26,7 +26,11 @@
 /* FIXME -- add condition structure */
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
-	if(D1->specAvg != D2->specAvg)
+	if(D1->specAvg != D2->specAvg ||
+	   D1->nFFT != D2->nFFT ||
+	   D1->startChan != D2->startChan ||
+	   D1->nInChan != D2->nInChan ||
+	   D1->nOutChan != D2->nOutChan)
 	{
 		return 0;
 	}
@@ -90,6 +94,26 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2)
 
 	/* copy over / merge some of DifxInput top level parameters */
 	D->specAvg = D1->specAvg;
+	D->nFFT = D1->nFFT;
+	D->startChan = D1->startChan;
+	D->nInChan = D1->nInChan;
+	D->nOutChan = D1->nOutChan;
+	if(D1->mjdStart < D2->mjdStart)
+	{
+		D->mjdStart = D1->mjdStart;
+	}
+	else
+	{
+		D->mjdStart = D2->mjdStart;
+	}
+	if(D1->mjdStop > D2->mjdStop)
+	{
+		D->mjdStop = D1->mjdStop;
+	}
+	else
+	{
+		D->mjdStop = D2->mjdStop;
+	}
 
 	/* merge DifxJob table */
 	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
