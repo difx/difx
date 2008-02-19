@@ -21,20 +21,21 @@ static int DifxVisInitData(DifxVis *dv)
 		free(dv->record);
 	}
 
-	dv->nData = dv->nComplex*dv->nFreq*dv->maxPol*dv->maxChan;
+	/* size of output data record */
+	dv->nData = dv->nComplex*dv->nFreq*dv->D->nPolar*dv->D->nOutChan;
 	if(dv->nData <= 0)
 	{
 		return -1;
 	}
-	n = dv->nFreq*dv->maxPol + dv->nData;
+	n = dv->nFreq*dv->D->nPolar + dv->nData;
 	dv->record = calloc(n*sizeof(float) + sizeof(struct UVrow), 1);
 	if(dv->record == 0)
 	{
 		return -2;
 	}
 	dv->weight = dv->record->data;
-	/* FIXME -- here add a similar thing for gateid */
-	dv->data = dv->weight + (dv->nFreq*dv->maxPol);
+	/* FIXME -- here add a similar thing for gateId */
+	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
 
 	return 0;
 }
@@ -93,9 +94,9 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	dv->configId = -1;
 	dv->sourceId = -1;
 	dv->baseline = -1;
-	dv->maxChan = D->nOutChan;
-	dv->maxPol = D->nPolar;
 	dv->nFreq = 0;
+
+	/* FIXME! */
 	dv->nComplex = 2;	/* for now don't write weights */
 	for(c = 0; c < D->nConfig; c++)
 	{
@@ -154,8 +155,8 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 		dv->polStart = -6;
 	}
 
-	dv->spectrum = (float *)calloc(dv->maxChan*dv->nComplex*
-		dv->D->specAvg, sizeof(complex float));
+	/* room for input vis record: 3 for real, imag, weight */
+	dv->spectrum = (float *)calloc(3*dv->D->nInChan, sizeof(float));
 
 	dv->dp = newDifxParameters();
 
@@ -164,7 +165,7 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	{
 		fprintf(stderr, "Error %d allocating %d + %d bytes\n",
 			v, (int)(sizeof(struct UVrow)),
-			dv->nComplex*dv->nFreq*dv->maxPol*dv->maxChan);
+			dv->nComplex*dv->nFreq*dv->D->nPolar*dv->D->nOutChan);
 		deleteDifxVis(dv);
 		return 0;
 	}
@@ -217,7 +218,7 @@ static int getPolProdId(const DifxVis *dv, const char *polPair)
 		{
 			p = (p+1) + dv->polStart;
 			
-			if(p < 0 || p >= dv->maxPol)
+			if(p < 0 || p >= dv->D->nPolar)
 			{
 				return -1;
 			}
@@ -287,7 +288,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	int bl, c;
 	double mjd;
 	int changed = 0;
-	int nFloat;
+	int nFloat, readSize;
 	char line[100];
 	int freqNum;
 	int configId;
@@ -346,6 +347,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	
 	/* if weights are written the data volume is 3/2 as large */
 	nFloat       = atoi(DifxParametersvalue(dv->dp, rows[7])) > 0 ? 3 : 2;
+	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
 	{
 		changed = 1;
@@ -364,18 +366,15 @@ int DifxVisNewUVData(DifxVis *dv)
 			return -5;
 		}
 		dv->configId = c;
-		dv->nChan = dv->D->nOutChan;
 		dv->tInt = dv->D->config[c].tInt;
 	}
 
 	if(dv->bandId <  0 || dv->bandId >= dv->nFreq  ||
-	   dv->polId  <  0 || dv->polId  >= dv->maxPol ||
-	   dv->nChan  <= 0 || dv->nChan  >  dv->maxChan)
+	   dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
 	{
-		fprintf(stderr, "Parameter problem: %d %d  %d %d  %d %d\n",
+		fprintf(stderr, "Parameter problem: %d %d  %d %d\n",
 			dv->bandId, dv->nFreq,
-			dv->polId, dv->maxPol,
-			dv->nChan, dv->maxChan);
+			dv->polId, dv->D->nPolar);
 		return -6;
 	}
 
@@ -387,8 +386,8 @@ int DifxVisNewUVData(DifxVis *dv)
 	}
 	
 	/* read in the binary formatted visibility spectrum */
-	v = fread(dv->spectrum, sizeof(float), dv->nChan*nFloat*dv->D->specAvg, dv->in);
-	if(v < dv->nChan)
+	v = fread(dv->spectrum, sizeof(float), readSize, dv->in);
+	if(v < readSize)
 	{
 		return -8;
 	}
@@ -396,7 +395,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	/* reorder data and set weights if weights not provided */
 	if(nFloat < dv->nComplex)
 	{
-		for(i = 3*dv->nChan*dv->D->specAvg-3; i > 0; i-=3)
+		for(i = 3*dv->D->nInChan-3; i > 0; i -= 3)
 		{
 			i1 = i*2/3;
 			dv->spectrum[i+2] = 1.0;                 /* weight */
@@ -504,6 +503,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	char gateFormInt[8];
 	char weightFormFloat[8];
 	int isLSB;	/* boolean -- true if lower side band */
+	int startChan, stopChan;
 	int nRowBytes;
 	int nColumn;
 	int nWeight;
@@ -542,7 +542,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			dv->D->config[0].tInt*dv->D->specAvg);
 	}
 
-	nWeight = dv->nFreq*dv->maxPol;
+	nWeight = dv->nFreq*dv->D->nPolar;
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -578,7 +578,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	fitsWriteFloat(dv->out, "CDELT1", 1.0, "");
 	fitsWriteFloat(dv->out, "CRPIX1", 1.0, "");
 	fitsWriteFloat(dv->out, "CRVAL1", 1.0, "");
-	fitsWriteInteger(dv->out, "MAXIS2", dv->maxPol, "");
+	fitsWriteInteger(dv->out, "MAXIS2", dv->D->nPolar, "");
 	fitsWriteString(dv->out, "CTYPE2", "STOKES", "");
 	fitsWriteFloat(dv->out, "CDELT2", -1.0, "");
 	fitsWriteFloat(dv->out, "CRPIX2", 1.0, "");
@@ -586,7 +586,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	fitsWriteInteger(dv->out, "MAXIS3", dv->D->nOutChan, "");
 	fitsWriteString(dv->out, "CTYPE3", "FREQ", "");
 	fitsWriteFloat(dv->out, "CDELT3", 
-		dv->D->chanBW*1.0e6/dv->D->nOutChan, "");
+		dv->D->chanBW*dv->D->specAvg*1.0e6/dv->D->nInChan, "");
 	fitsWriteFloat(dv->out, "CRPIX3", p_fits_keys->ref_pixel, "");
 	fitsWriteFloat(dv->out, "CRVAL3", dv->D->refFreq*1000000.0, "");
 	fitsWriteInteger(dv->out, "MAXIS4", dv->nFreq, "");
@@ -637,7 +637,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 				}
 				else
 				{
-					for(i=0; i < dv->nFreq*dv->maxPol; i++)
+					for(i=0; i < dv->nFreq*dv->D->nPolar; i++)
 					{
 						dv->weight[i] = 1.0;
 					}
@@ -663,19 +663,23 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 			memset(dv->data, 0, dv->nData*sizeof(float));
 		}
 		isLSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
-		for(i = 0; i < dv->nChan*dv->D->specAvg; i++)
+		startChan = dv->D->startChan;
+		stopChan = startChan + dv->D->nOutChan*dv->D->specAvg;
+		for(i = startChan; i < stopChan; i++)
 		{
 			if(isLSB)
 			{
 				int j;
-				j = dv->nChan*dv->D->specAvg - 1 - i;
-				index = ((dv->bandId*dv->nChan + j/specAvg)*
-					dv->maxPol+dv->polId)*dv->nComplex;
+				j = stopChan - 1 - i;
+				index = ((dv->bandId*dv->D->nOutChan + 
+					j/specAvg)*
+					dv->D->nPolar+dv->polId)*dv->nComplex;
 			}
 			else
 			{
-				index = ((dv->bandId*dv->nChan + i/specAvg)*
-					dv->maxPol+dv->polId)*dv->nComplex;
+				index = ((dv->bandId*dv->D->nOutChan + 
+					(i-startChan)/specAvg)*
+					dv->D->nPolar+dv->polId)*dv->nComplex;
 			}
 			for(k = 0; k < dv->nComplex; k++)
 			{
@@ -705,7 +709,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	}
 	else
 	{
-		for(i = 0; i < dv->nFreq*dv->maxPol; i++)
+		for(i = 0; i < dv->nFreq*dv->D->nPolar; i++)
 		{
 			dv->weight[i] = 1.0;
 		}

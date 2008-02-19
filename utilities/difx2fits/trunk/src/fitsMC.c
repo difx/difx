@@ -86,7 +86,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
-	fitsWriteInteger(out, "FFT_SIZE", D->nOutChan*D->specAvg*2, "");
+	fitsWriteInteger(out, "FFT_SIZE", D->nFFT, "");
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, 

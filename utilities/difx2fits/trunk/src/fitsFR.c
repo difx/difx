@@ -78,18 +78,21 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		{
 			bandFreq[i] = (D->config[row].IF[i].freq -
 				D->refFreq) * 1.0e6;
-			chanBW[i] = (D->config[row].IF[i].bw /
-				D->nOutChan) * 1.0e6;
-			bandBW[i] = D->config[row].IF[i].bw * 1.0e6;
+			chanBW[i] = (D->config[row].IF[i].bw * D->specAvg/
+				D->nInChan) * 1.0e6;
+			bandBW[i] = chanBW[i]*D->nOutChan;
 			netSide[i] = (D->config[row].IF[i].sideband 
 				== 'U' ? 1 : -1);
 			bbChan[i] = 0;	/* vistigial */
+			/* correct for skipping some channels */
+			bandFreq[i] += netSide[i]*D->config[row].IF[i].bw*
+				D->startChan / (double)(D->nInChan);
 		}
 		
 		/* pointer to the buffer for FITS records */
 		p_fitsbuf = fitsbuf;
 
-		FITS_WRITE_ITEM (freqId1, p_fitsbuf);          /* FREQ_ID */
+		FITS_WRITE_ITEM (freqId1, p_fitsbuf);         /* FREQ_ID */
 		FITS_WRITE_ARRAY(bandFreq, p_fitsbuf, nBand); /* BANDFREQ */
 		FITS_WRITE_ARRAY(chanBW, p_fitsbuf, nBand);   /* CH_WIDTH */
 		FITS_WRITE_ARRAY(bandBW, p_fitsbuf, nBand);   /* BANDWIDTH */

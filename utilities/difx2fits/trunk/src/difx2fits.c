@@ -218,6 +218,10 @@ int main(int argc, char **argv)
 	double scale = 0.0;
 	int verbose = 0;
 	int nBaseFile = 0;
+	/* some overrides */
+	int specAvg = 0;
+	int nOutChan = 0;
+	int startChan = 0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -241,6 +245,24 @@ int main(int argc, char **argv)
 					i++;
 					scale = atof(argv[i]);
 					printf("Scaling data by %f\n", scale);
+				}
+				if(strcmp(argv[i], "--average") == 0 ||
+				   strcmp(argv[i], "-a") == 0)
+				{
+					i++;
+					specAvg = atoi(argv[i]);
+				}
+				if(strcmp(argv[i], "--outchans") == 0 ||
+				   strcmp(argv[i], "-o") == 0)
+				{
+					i++;
+					nOutChan = atoi(argv[i]);
+				}
+				if(strcmp(argv[i], "--beginchan") == 0 ||
+				   strcmp(argv[i], "-b") == 0)
+				{
+					i++;
+					startChan = atoi(argv[i]);
 				}
 			}
 		}
@@ -272,11 +294,34 @@ int main(int argc, char **argv)
 				baseFile[i]);
 			return 0;
 		}
+		if(specAvg)
+		{
+			D2->specAvg = specAvg;
+		}
+		if(nOutChan)
+		{
+			D2->nOutChan = nOutChan;
+		}
+		if(startChan)
+		{
+			D2->startChan = startChan;
+		}
 		if(D)
 		{
 			D1 = D;
 			printf("Merging %s\n", baseFile[i]);
-			D = mergeDifxInputs(D1, D2);
+			if(areDifxInputsMergable(D1, D2))
+			{
+				D = mergeDifxInputs(D1, D2);
+			}
+			else
+			{
+				D = 0;
+				fprintf(stderr, 
+					"file to merge is incompatible\n");
+			}
+			deleteDifxInput(D1);
+			deleteDifxInput(D2);
 			if(!D)
 			{
 				fprintf(stderr, "merging failed on <%s>.\n",

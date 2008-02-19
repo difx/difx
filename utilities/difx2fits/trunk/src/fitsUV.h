@@ -36,10 +36,9 @@ typedef struct
 	int freqId;			/* DiFX configId or FITS freqId */
 	int bandId;			/* FITS IF index, 0-based */
 	int polId;			/* FITS polarization index, 0-based */
-	int nChan, nPol, nFreq;
-	int maxChan, maxPol;
+	int nPol, nFreq;
 	int polStart;			/* start of polarization FITS axis */
-	float *spectrum;		/* visibility spectrum */
+	float *spectrum;		/* input visibility spectrum */
 	int nData;
 	int nComplex;
 	struct UVrow *record;
