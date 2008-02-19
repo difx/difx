@@ -118,8 +118,14 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(world, &myID);
   MPI_Comm_dup(world, &return_comm);
   char * mpihost = getenv("HOSTNAME");
+  if (mpihost==NULL) {
+    mpihost = getenv("HOST");
+    if (mpihost==NULL) {
+    mpihost = "undefined";
+    }
+  } 
   cout << "MPI Process " << myID << " is running on host " << mpihost << endl;
-  
+
   if(argc == 3)
   {
     if(!(argv[2][0]=='-' && argv[2][1]=='M'))
