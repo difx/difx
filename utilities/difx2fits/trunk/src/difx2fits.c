@@ -43,15 +43,24 @@ int usage(const char *pgm)
 		"The first two optional\n");
 	fprintf(stderr, "files are required for full model accountability.\n");
 	fprintf(stderr, "\noptions can include:\n");
-	fprintf(stderr, "  --no-model\n");
-	fprintf(stderr, "  -n               Don't write model (ML) table\n");
+	fprintf(stderr, "  --average <nchan>\n");
+	fprintf(stderr, "  -a        <nchan>   Average <nchan> channels\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --verbose\n");
-	fprintf(stderr, "  -v               Be verbose\n");
+	fprintf(stderr, "  --beginchan <chan>\n");
+	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --no-model\n");
+	fprintf(stderr, "  -n                  Don't write model (ML) table\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --outchans <nchan>\n");
+	fprintf(stderr, "  -o         <nchan>  Write <nchan> channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --scale <scale>\n");
-	fprintf(stderr, "  -s      <scale>  Scale visibility data "
+	fprintf(stderr, "  -s      <scale>     Scale visibility data "
 		"by <scale>\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
 
 	return 0;
@@ -235,7 +244,7 @@ int main(int argc, char **argv)
 			if(strcmp(argv[i], "--verbose") == 0 ||
 			   strcmp(argv[i], "-v") == 0)
 			{
-				verbose = 1;
+				verbose++;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -286,7 +295,10 @@ int main(int argc, char **argv)
 
 	for(i = 0; i < nBaseFile; i++)
 	{
-		printf("Loading %s\n", baseFile[i]);
+		if(verbose > 0)
+		{
+			printf("Loading %s\n", baseFile[i]);
+		}
 		D2 = loadDifxInput(baseFile[i]);
 		if(!D2)
 		{
@@ -309,16 +321,19 @@ int main(int argc, char **argv)
 		if(D)
 		{
 			D1 = D;
-			printf("Merging %s\n", baseFile[i]);
+			if(verbose > 0)
+			{
+				printf("Merging %s\n", baseFile[i]);
+			}
 			if(areDifxInputsMergable(D1, D2))
 			{
-				D = mergeDifxInputs(D1, D2);
+				D = mergeDifxInputs(D1, D2, verbose);
 			}
 			else
 			{
 				D = 0;
-				fprintf(stderr, 
-					"file to merge is incompatible\n");
+				fprintf(stderr, "%s is incompatible with "
+					"other inputs\n", baseFile[i]);
 			}
 			deleteDifxInput(D1);
 			deleteDifxInput(D2);
@@ -342,7 +357,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(verbose)
+	if(verbose > 1)
 	{
 		printDifxInput(D);
 	}
