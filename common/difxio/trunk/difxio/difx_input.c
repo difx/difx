@@ -1419,7 +1419,15 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "START CHANNEL");
 	if(row >= 0)
 	{
-		D->startChan = atoi(DifxParametersvalue(cp, row));
+		nch = atof(DifxParametersvalue(cp, row));
+		if(nch >= 1)
+		{
+			D->startChan = nch;
+		}
+		else
+		{
+			D->startChan = D->config[0].nChan*nch;
+		}
 	}
 
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
