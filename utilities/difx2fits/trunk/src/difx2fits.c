@@ -229,7 +229,7 @@ int main(int argc, char **argv)
 	int nBaseFile = 0;
 	/* some overrides */
 	int specAvg = 0;
-	int nOutChan = 0;
+	float nOutChan = 0.0;
 	int startChan = 0;
 
 	for(i = 1; i < argc; i++)
@@ -265,7 +265,7 @@ int main(int argc, char **argv)
 				   strcmp(argv[i], "-o") == 0)
 				{
 					i++;
-					nOutChan = atoi(argv[i]);
+					nOutChan = atof(argv[i]);
 				}
 				if(strcmp(argv[i], "--beginchan") == 0 ||
 				   strcmp(argv[i], "-b") == 0)
@@ -310,9 +310,13 @@ int main(int argc, char **argv)
 		{
 			D2->specAvg = specAvg;
 		}
-		if(nOutChan)
+		if(nOutChan >= 1)
 		{
 			D2->nOutChan = nOutChan;
+		}
+		else if(nOutChan > 0.0) /* interpret in fractional sense */
+		{
+			D2->nOutChan = D2->config[0].nChan*nOutChan/specAvg;
 		}
 		if(startChan)
 		{
