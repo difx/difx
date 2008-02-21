@@ -1,3 +1,5 @@
+#define _LARGE_FILE_SOURCE
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -254,7 +256,7 @@ int DifxVisNextFile(DifxVis *dv)
 		dv->jobId+1, dv->D->nJob,
 		dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
-	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
+	dv->in = fopen64(dv->globbuf.gl_pathv[dv->curFile], "r");
 	if(!dv->in)
 	{
 		fprintf(stderr, "Error opening file : %s\n", 

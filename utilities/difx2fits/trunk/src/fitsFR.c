@@ -86,7 +86,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 			bbChan[i] = 0;	/* vistigial */
 			/* correct for skipping some channels */
 			bandFreq[i] += netSide[i]*D->config[row].IF[i].bw*
-				D->startChan / (double)(D->nInChan);
+				D->startChan * 1.0e6 / (double)(D->nInChan);
 		}
 		
 		/* pointer to the buffer for FITS records */

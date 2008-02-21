@@ -316,7 +316,7 @@ int main(int argc, char **argv)
 		}
 		else if(nOutChan > 0.0) /* interpret in fractional sense */
 		{
-			D2->nOutChan = D2->config[0].nChan*nOutChan/specAvg;
+			D2->nOutChan = D2->config[0].nChan*nOutChan/D2->specAvg;
 		}
 		if(startChan)
 		{
