@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 	/* some overrides */
 	int specAvg = 0;
 	float nOutChan = 0.0;
-	int startChan = 0;
+	float startChan = 0.0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -271,7 +271,7 @@ int main(int argc, char **argv)
 				   strcmp(argv[i], "-b") == 0)
 				{
 					i++;
-					startChan = atoi(argv[i]);
+					startChan = atof(argv[i]);
 				}
 			}
 		}
@@ -318,9 +318,13 @@ int main(int argc, char **argv)
 		{
 			D2->nOutChan = D2->config[0].nChan*nOutChan/D2->specAvg;
 		}
-		if(startChan)
+		if(startChan >= 1)
 		{
 			D2->startChan = startChan;
+		}
+		else if(startChan > 0.0)
+		{
+			D2->startChan = (D2->config[0].nChan*startChan) + 0.5;
 		}
 		if(D)
 		{
