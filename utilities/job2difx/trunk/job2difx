@@ -955,6 +955,10 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	nant = len(subarray)
 	inc = 1
 
+	# determine oversampling
+	osamp = int(job_freq[0]['sample_rate'])/ \
+		(2*int(job_freq[0]['bandwidth'))
+
 	timeavg = float(job_custom[0]['time_avg'])
 
 	calc.append("JOB ID:             %s" % job_master[0]['job_id'])
@@ -976,6 +980,8 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	calc.append("START SECOND:       %d" % start[5])
 	calc.append("INCREMENT (SECS):   %d" % inc)
 	calc.append("SPECTRAL AVG:       %d" % specavg)
+	if osamp > 1:
+		calc.append("OUTPUT CHANNELS:    %f" % (1.0/os))
 	calc.append("TAPER FUNCTION:     %s" % job_corr[0]['window'])
 	calc.append("NUM TELESCOPES:     %d" % nant)
 
