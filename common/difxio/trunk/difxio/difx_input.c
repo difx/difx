@@ -1301,7 +1301,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		"JOB ID",
 		"OBSCODE",
-		"NUM EOP"
+		"NUM EOP",
+		"NUM SCANS"
 	};
 	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
 	
@@ -1329,6 +1330,17 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		"SCAN %d QUAL"
 	};
 	const int N_SCAN_ROWS = sizeof(scanKeys)/sizeof(scanKeys[0]);
+	
+	const char scanKeys2[][MAX_DIFX_KEY_LEN] =
+	{
+		"SCAN %d REAL NAME %d",
+		"SCAN %d ANTLIST %d",
+		"SCAN %d SRC RA %d",
+		"SCAN %d SRC DEC %d",
+		"SCAN %d CALCODE %d",
+		"SCAN %d QUAL %d"
+	};
+	const int N_SCAN2_ROWS = sizeof(scanKeys)/sizeof(scanKeys[0]);
 
 	const char spacecraftKeys[][MAX_DIFX_KEY_LEN] =
 	{
@@ -1339,12 +1351,17 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
 	
 	int rows[20];
-	int i, c, s, N, row, n;
+	int a, i, j, k, c, s, N, row, n, p;
 	const char *cname;
 	const char *str;
+	const char *antlist;
 	int findconfig = 0;
 	float nch;
 	double time;
+	int nSubScan = 0;
+	int nSubarray;
+	DifxScan *old_scan;
+	int old_nScan;
 
 	if(!D)
 	{
@@ -1361,9 +1378,22 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
 	D->nEOP          = atoi(DifxParametersvalue(cp, rows[2]));
 
+	if(D->nScan != atoi(DifxParametersvalue(cp, rows[3])))
+	{
+		fprintf(stderr, ".calc NUM SCANS = %d; .delay NUM SCANS = %d\n",
+			atoi(DifxParametersvalue(cp, rows[2])), D->nScan);
+		return 0;
+	}
+
 	if(D->nEOP > 0)
 	{
 		D->eop = newDifxEOPArray(D->nEOP);
+	}
+
+	row = DifxParametersfind(cp, 0, "NUM SUBSCANS");
+	if(row >= 0)
+	{
+		nSubScan = atoi(DifxParametersvalue(cp, row));
 	}
 
 	row = DifxParametersfind(cp, 0, "SESSION");
@@ -1469,9 +1499,11 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->eop[i].yPole   = atof(DifxParametersvalue(cp, rows[4]));
 	}
 
-	rows[N_SCAN_ROWS-1] = 0;
-	for(i = 0; i < D->nScan; i++)
+	if(nSubScan == 0)
 	{
+	    rows[N_SCAN_ROWS-1] = 0;
+	    for(i = 0; i < D->nScan; i++)
+	    {
 		N = DifxParametersbatchfind1(cp, rows[N_SCAN_ROWS-1], scanKeys, 
 			i, N_SCAN_ROWS, rows);
 		if(N < N_SCAN_ROWS)
@@ -1490,10 +1522,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 		strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[1]), 31);
 		D->scan[i].name[31]  = 0;
+		D->scan[i].ra = atof(DifxParametersvalue(cp, rows[2]));
+		D->scan[i].dec = atof(DifxParametersvalue(cp, rows[3]));
 		strncpy(D->scan[i].calCode, 
-			DifxParametersvalue(cp, rows[2]), 3);
+			DifxParametersvalue(cp, rows[4]), 3);
 		D->scan[i].calCode[3]= 0;
-		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[3]));
+		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[5]));
 
 		cname = DifxParametersvalue(cp, rows[0]);
 		for(c = 0; c < D->nConfig; c++)
@@ -1511,6 +1545,112 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				i, cname, D->scan[i].name);
 			return 0;
 		}
+	    }
+	}
+	else
+	{
+	    old_nScan = D->nScan;
+	    old_scan = D->scan;
+	    D->nScan = nSubScan;
+	    D->scan = newDifxScanArray(D->nScan);
+	    k = 0;
+
+	    rows[N_SCAN2_ROWS-1] = 0;
+	    for(i = 0; i < old_nScan; i++)
+	    {
+		row = DifxParametersfind1(cp, rows[N_SCAN2_ROWS-1], 
+		    "SCAN %d SUBARRAYS", i);
+		if(row < 0)
+		{
+		    if(i == 0)
+		    {
+			fprintf(stderr, "Warning -- no scan attributes "
+				"available\n");
+			findconfig = 1;
+			break;
+		    }
+		    else
+		    {
+			fprintf(stderr, "SCAN %d SUBARRAYS not found\n", i);
+			return 0;
+		    }
+		}
+
+		row = DifxParametersfind1(cp, row, "SCAN %d SRC NAME", i);
+		if(row < 0)
+		{
+		    fprintf(stderr, "SCAN %d SRC NAME not found\n", i);
+		    return 0;
+		}
+		cname = DifxParametersvalue(cp, row);
+
+		nSubarray = atoi(DifxParametersvalue(cp, row));
+		for(j = 0; j < nSubarray; j++)
+		{
+		    copyDifxScan(D->scan + k, old_scan + i, 0, 0, 0);
+		    memcpy(D->scan + k, old_scan + i, sizeof(DifxScan));
+		    D->scan[k].model = (DifxModel **)calloc(
+			D->scan[k].nAntenna, sizeof(DifxModel *));
+	    	    rows[N_SCAN2_ROWS-1] = row;
+		    N = DifxParametersbatchfind2(cp, rows[N_SCAN2_ROWS-1], 
+			scanKeys2, i, j, N_SCAN2_ROWS, rows);
+		    if(N < N_SCAN2_ROWS)
+		    {
+			fprintf(stderr, "Scan %d subarray %d: data not found\n",
+				i, j);
+			return 0;
+		    }
+		    strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[0]), 
+			31);
+		    D->scan[i].name[31]  = 0;
+		    strncpy(D->scan[i].calCode, 
+			DifxParametersvalue(cp, rows[2]), 3);
+		    D->scan[i].calCode[3]= 0;
+		    D->scan[i].qual = atoi(DifxParametersvalue(cp, rows[3]));
+
+		    antlist = DifxParametersvalue(cp, rows[1]);
+		    while(sscanf(antlist, "%d%n", &a, &p) > 0)
+		    {
+			if(a < 0 || a > D->scan[k].nAntenna)
+			{
+			    fprintf(stderr, "Ant num out of range : %s\n",
+				DifxParametersvalue(cp, rows[1]));
+			    return 0;
+			}
+			antlist += p;
+			/* move the model column over */
+			if(old_scan[i].model[a] == 0)
+			{
+			    fprintf(stderr, "Ant %d in > 1 subarray : %s\n",
+				a, DifxParametersvalue(cp, rows[1]));
+			    return 0;
+			}
+
+			D->scan[k].model[a] = old_scan[i].model[a];
+			old_scan[i].model[a] = 0;
+		    }
+
+		    for(c = 0; c < D->nConfig; c++)
+		    {
+			if(strcmp(cname, D->config[c].name) == 0)
+			{
+				D->scan[i].configId = c;
+				break;
+			}
+		    }
+		    if(c == D->nConfig)
+		    {
+			fprintf(stderr, "Error -- source without config! "
+				"id=%d  name=%s  realname=%s\n",
+				i, cname, D->scan[i].name);
+			return 0;
+		    }
+		
+		    k++;
+		}
+	    }
+
+	    deleteDifxScanArray(old_scan, old_nScan);
 	}
 
 	row = DifxParametersfind(cp, 0, "NUM SPACECRAFT");
@@ -2177,8 +2317,13 @@ int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd,
 
 	for(s = 0; s < D->nScan; s++)
 	{
+		if(D->scan[s].nAntenna <= antennaId)
+		{
+			continue;
+		}
 		if(mjd <  D->scan[s].mjdEnd   &&
-		   mjd >= D->scan[s].mjdStart)
+		   mjd >= D->scan[s].mjdStart &&
+		   D->scan[s].model[antennaId] != 0)
 		{
 			c = D->scan[s].configId;
 			if(c < 0)

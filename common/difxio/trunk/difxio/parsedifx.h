@@ -80,5 +80,8 @@ int DifxParametersbatchfind(const DifxParameters *dp, int start,
 	const char keys[][MAX_DIFX_KEY_LEN], int n, int rows[]);
 int DifxParametersbatchfind1(const DifxParameters *dp, int start,
 	const char keys[][MAX_DIFX_KEY_LEN], int index1, int n, int rows[]);
+int DifxParametersbatchfind2(const DifxParameters *dp, int start,
+	const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2,
+	int n, int rows[]);
 
 #endif

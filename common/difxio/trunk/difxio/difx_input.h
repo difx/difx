@@ -203,6 +203,8 @@ typedef struct
 	char taperFunction[8];	/* usually "UNIFORM" */
 	char calcServer[32];	/* name of calc server */
 	char fileBase[256];	/* base filename for this job table */
+	int *antennaIdRemap;	/* remapping of antennas from this job to
+                                   the full set of antennas, or 0 */
 	int activeDatastreams;
 	int activeBaselines;
 } DifxJob;
@@ -249,9 +251,10 @@ typedef struct
 DifxJob *newDifxJobArray(int nJob);
 void deleteDifxJobArray(DifxJob *dj);
 void printDifxJob(const DifxJob *dj);
-void copyDifxJob(DifxJob *dest, const DifxJob *src);
+void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj);
+	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
+	const int *antennaIdRemap, int *ndj);
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);

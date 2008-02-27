@@ -116,17 +116,17 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		D->mjdStop = D2->mjdStop;
 	}
 
+	/* merge DifxAntenna table */
+	D->antenna = mergeDifxAntennaArrays(D1->antenna, D1->nAntenna,
+		D2->antenna, D2->nAntenna, antennaIdRemap, &(D->nAntenna));
+
 	/* merge DifxJob table */
 	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
-		jobIdRemap, &(D->nJob));
+		jobIdRemap, antennaIdRemap, &(D->nJob));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
 		D2->freq, D2->nFreq, freqIdRemap, &(D->nFreq));
-
-	/* merge DifxAntenna table */
-	D->antenna = mergeDifxAntennaArrays(D1->antenna, D1->nAntenna,
-		D2->antenna, D2->nAntenna, antennaIdRemap, &(D->nAntenna));
 
 	/* merge DifxDatastream table */
 	D->datastream = mergeDifxDatastreamArrays(D1->datastream, 

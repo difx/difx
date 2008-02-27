@@ -413,3 +413,28 @@ int DifxParametersbatchfind1(const DifxParameters *dp, int start,
 
 	return n;
 }
+
+/* return number of found symbols */
+int DifxParametersbatchfind2(const DifxParameters *dp, int start, 
+	const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2,
+	int n, int rows[])
+{
+	int i;
+	int s;
+
+	s = start;
+	for(i = 0; i < n; i++)
+	{
+		rows[i] = DifxParametersfind2(dp, s, keys[i], index1, index2);
+		if(rows[i] < 0)
+		{
+			fprintf(stderr, "Parameter not found: ");
+			fprintf(stderr, keys[i], index1, index2);
+			fprintf(stderr, "\n");
+			return i;
+		}
+		s = rows[i] + 1;
+	}
+
+	return n;
+}

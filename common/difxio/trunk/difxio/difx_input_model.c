@@ -48,6 +48,11 @@ DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint)
 {
 	DifxModel *dest;
 
+	if(src == 0)
+	{
+		return 0;
+	}
+
 	dest = (DifxModel *)calloc(nPoint+3, sizeof(DifxModel));
 	
 	/* offset array as per above */

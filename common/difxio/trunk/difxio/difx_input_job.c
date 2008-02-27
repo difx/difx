@@ -42,6 +42,10 @@ void deleteDifxJobArray(DifxJob *dj)
 {
 	if(dj)
 	{
+		if(dj->antennaIdRemap)
+		{
+			free(dj->antennaIdRemap);
+		}
 		free(dj);
 	}
 }
@@ -59,14 +63,45 @@ void printDifxJob(const DifxJob *dj)
 	printf("    Model Inc = %f sec\n", dj->modelInc);
 }
 
-void copyDifxJob(DifxJob *dest, const DifxJob *src)
+void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap)
 {
+	int a;
+	
 	memcpy(dest, src, sizeof(DifxJob));
+
+	if(antennaIdRemap == 0 && src->antennaIdRemap == 0)
+	{
+		dest->antennaIdRemap = 0;
+	}
+	else
+	{
+		dest->antennaIdRemap = (int *)calloc(dest->activeDatastreams,
+			sizeof(int));
+
+		for(a = 0; a < dest->activeDatastreams; a++)
+		{
+			if(src->antennaIdRemap)
+			{
+				dest->antennaIdRemap[a] = 
+					src->antennaIdRemap[a];
+			}
+			else
+			{
+				dest->antennaIdRemap[a] = a;
+			}
+			if(antennaIdRemap)
+			{
+				dest->antennaIdRemap[a] = 
+					antennaIdRemap[dest->antennaIdRemap[a]];
+			}
+		}
+	} 
 }
 
 /* simply append dj2 after dj1 return new size on call stack : ndj */
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj)
+	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
+	const int *antennaIdRemap, int *ndj)
 {
 	DifxJob *dj;
 	int i;
@@ -81,11 +116,11 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 
 	for(i = 0; i < ndj1; i++)
 	{
-		copyDifxJob(dj + i, dj1 + i);
+		copyDifxJob(dj + i, dj1 + i, 0);
 	}
 	for(i = 0; i < ndj2; i++)
 	{
-		copyDifxJob(dj + ndj1 + i, dj2 + i);
+		copyDifxJob(dj + ndj1 + i, dj2 + i, antennaIdRemap);
 	}
 
 	return dj;
