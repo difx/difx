@@ -133,7 +133,7 @@ private:
   void writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, int writeweights, float buvw[3]);
 
   int visID, expermjd, experseconds, integrationsamples, currentstartseconds, currentstartsamples, offset, offsetperintegration, blocksthisintegration, blocksamples, numvisibilities, numdatastreams, numbaselines, numchannels, currentblocks, resultlength, currentconfigindex, samplespersecond, maxproducts, executeseconds, autocorrincrement;
-  bool first, monitor;
+  bool first, monitor, pulsarbinon;
   int * mon_socket;
   int monitor_skip;
   int portnum;
@@ -145,6 +145,11 @@ private:
   cf32 * rpfitsarray;
   Configuration * config;
   const string * polnames;
+  f32 *** binweightsums;
+  cf32 *** binscales;
+  f32 * binweightdivisor;
+  int ** pulsarbins;
+  Polyco * polyco;
   int *** baselinepoloffsets;
   int *** datastreampolbandoffsets;
 };

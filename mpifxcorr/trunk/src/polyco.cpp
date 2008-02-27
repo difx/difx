@@ -271,14 +271,15 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
     minlofreq = lofrequencies[0]; //first work out the minimum frequency
     for(int i=1;i<numfreqs;i++)
     {
-        if(lofrequencies[i] < minlofreq)
+        if(lofrequencies[i] < minlofreq) {
             minlofreq = lofrequencies[i];
+        }
     }
     maxdeltafreq = maxdeltaphase/(dm*DM_CONSTANT_SECS/(minlofreq*minlofreq));
 
     //now, we need to make sure our required valid length is not longer than the validity time we've just worked out
     if(maxdeltafreq/freqgradient < calclengthmins)
-      cerr << "Error - Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << endl;
+      cerr << "Error - Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << ", maxdeltaphase is " << maxdeltaphase << ", minbinwidth is " << minbinwidth << ", freqgradient is " << freqgradient << ", maxdeltafreq is " << maxdeltafreq << ", dm is " << dm << ", minlofreq is " << minlofreq << endl;
 
     //work out the initial dmphasecorrect array and set the lastphasecalctime
     calculateDMPhaseOffsets(calclengthmins/2);

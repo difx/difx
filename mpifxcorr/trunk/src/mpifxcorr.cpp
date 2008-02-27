@@ -22,6 +22,7 @@
 #include "core.h"
 #include "datastream.h"
 #include "mk5.h"
+#include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include <sys/socket.h>
 #include <netdb.h>
@@ -29,16 +30,16 @@
 #include <arpa/inet.h>
 
 //setup monitoring socket
-int setup_net(char *hostname, int port, int window_size, int *sock) {
+int setup_net(char *monhostname, int port, int window_size, int *sock) {
   int status;
   unsigned long ip_addr;
   struct hostent     *hostptr;
   struct linger      linger = {1, 1};
   struct sockaddr_in server;    /* Socket address */
 
-  hostptr = gethostbyname(hostname);
+  hostptr = gethostbyname(monhostname);
   if (hostptr==NULL) {
-    printf("Failed to look up hostname %s\n", hostname);
+    printf("Failed to look up monhostname %s\n", monhostname);
     return(1);
   }
   
@@ -106,7 +107,9 @@ int main(int argc, char *argv[])
   int * datastreamids;
   bool monitor = false;
   string monitoropt;
-  char * hostname = new char[128];
+  int nameslength = 1;
+  char * monhostname = new char[nameslength];
+  char * mpihost = new char[nameslength];
   int port, monitor_skip;
 
 
@@ -117,20 +120,17 @@ int main(int argc, char *argv[])
   MPI_Comm_size(world, &numprocs);
   MPI_Comm_rank(world, &myID);
   MPI_Comm_dup(world, &return_comm);
-  char * mpihost = getenv("HOSTNAME");
-  if (mpihost==NULL) {
-    mpihost = getenv("HOST");
-    if (mpihost==NULL) {
-    mpihost = "undefined";
-    }
-  } 
+  struct utsname ugnm;
+  if (uname(&ugnm) >=0)
+    strncpy(mpihost, ugnm.nodename, nameslength);
+  mpihost[nameslength-1] = '\0';
   cout << "MPI Process " << myID << " is running on host " << mpihost << endl;
-
+  
   if(argc == 3)
   {
     if(!(argv[2][0]=='-' && argv[2][1]=='M'))
     {
-      std::cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<hostname>:port[:monitor_skip]]" << endl;
+      std::cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
       return EXIT_FAILURE;
     }
     monitor = true;
@@ -147,11 +147,11 @@ int main(int argc, char *argv[])
       port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
       monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
     }
-    strcpy(hostname, monitoropt.substr(2,colindex1-2).c_str());
+    strcpy(monhostname, monitoropt.substr(2,colindex1-2).c_str());
   }
   else if(argc != 2)
   {
-    std::cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<hostname>:port[:monitor_skip]]" << endl;
+    std::cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
     return EXIT_FAILURE;
   }
 
@@ -188,7 +188,7 @@ int main(int argc, char *argv[])
     //work out what process we are and run accordingly
     if(myID == FxManager::MANAGERID) //im the manager
     {
-      manager = new FxManager(config, numcores, datastreamids, coreids, myID, return_comm, monitor, hostname, port, monitor_skip);
+      manager = new FxManager(config, numcores, datastreamids, coreids, myID, return_comm, monitor, monhostname, port, monitor_skip);
       MPI_Barrier(world);
       t1 = MPI_Wtime();
       manager->execute();

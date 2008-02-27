@@ -19,6 +19,10 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   string line;
   bool found;
   ifstream input(uvwfilename.c_str());
+  if(!input.is_open() || input.bad()) {
+    cerr << "Error opening uvw file " << uvwfilename << " - aborting!!!" << endl;
+    exit(1);
+  }
 
   config->getinputline(&input, &line, "START YEAR");
   year = atoi(line.c_str());

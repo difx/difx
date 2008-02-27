@@ -821,8 +821,16 @@ void Configuration::processDatastreamTable(ifstream * input)
     getline(coreinput, line);
     for(int i=0;i<maxlines;i++)
     {
-      numprocessthreads[numcoreconfs++] = atoi(line.c_str());
-      getline(coreinput, line);
+      if(coreinput.eof())
+      {
+        cerr << "Warning - hit the end of the file! Setting the numthread for Core " << i << " to 1" << endl;
+        numprocessthreads[numcoreconfs++] = 1;
+      }
+      else
+      {
+        numprocessthreads[numcoreconfs++] = atoi(line.c_str());
+        getline(coreinput, line);
+      }
     }
   }
   coreinput.close();
@@ -1096,7 +1104,7 @@ void Configuration::processPulsarConfig(string filename, int configindex)
 
 void Configuration::setPolycoFreqInfo(int configindex)
 {
-  datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
+  /*datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
   double * frequencies = new double[d.numfreqs];
   double bandwidth = freqtable[d.freqtableindices[0]].bandwidth;
   for(int i=0;i<d.numfreqs;i++)
@@ -1108,6 +1116,20 @@ void Configuration::setPolycoFreqInfo(int configindex)
   for(int i=0;i<configs[configindex].numpolycos;i++)
   {
     configs[configindex].polycos[i]->setFrequencyValues(d.numfreqs, frequencies, bandwidth);
+  }
+  delete [] frequencies;*/
+  datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
+  double * frequencies = new double[datastreamtablelength];
+  double bandwidth = freqtable[d.freqtableindices[0]].bandwidth;
+  for(int i=0;i<datastreamtablelength;i++)
+  {
+    frequencies[i] = freqtable[i].bandedgefreq;
+    if(freqtable[i].lowersideband)
+      frequencies[i] -= freqtable[i].bandwidth;
+  }
+  for(int i=0;i<configs[configindex].numpolycos;i++)
+  {
+    configs[configindex].polycos[i]->setFrequencyValues(freqtablelength, frequencies, bandwidth);
   }
   delete [] frequencies;
 }

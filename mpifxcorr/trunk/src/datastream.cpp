@@ -1018,8 +1018,10 @@ void DataStream::processDelayFile(string delayfilename)
 
   //read in the delays and store in the Telescope objects
   ifstream delayinput(delayfilename.c_str(),ios::in);
-  if(!delayinput.is_open() || delayinput.bad())
-    cerr << "Error opening delay file!!!" << endl;
+  if(!delayinput.is_open() || delayinput.bad()) {
+    cerr << "Error opening delay file " << delayfilename << " - aborting!!!" << endl;
+    exit(1);
+  }
 
   config->getinputline(&delayinput, &line, "START YEAR");
   year = atoi(line.c_str());

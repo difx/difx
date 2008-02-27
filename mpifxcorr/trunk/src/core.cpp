@@ -28,7 +28,7 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   startmjd = config->getStartMJD();
   startseconds = config->getStartSeconds();
 
-  pulsarscale = vectorAlloc_f32(2*config->getMaxNumChannels() + 2);
+  //pulsarscale = vectorAlloc_f32(2*config->getMaxNumChannels() + 2);
 
   //work out the biggest ovearhead from any of the active configurations
   maxguardratio = 1.0;
@@ -149,7 +149,7 @@ Core::~Core()
     delete [] procslots[i].controlbuffer;
     vectorFree(procslots[i].results);
   }
-  vectorFree(pulsarscale);
+  //vectorFree(pulsarscale);
   delete [] processthreads;
   delete [] processconds;
   delete [] processthreadinitialised;
@@ -206,8 +206,8 @@ void Core::execute()
     receivedata(numreceived++ % RECEIVE_RING_LENGTH, &terminate);
     
     //send the results back, after pulsar scaling if necessary
-    if(config->pulsarBinOn(procslots[numreceived%RECEIVE_RING_LENGTH].configindex) && !procslots[numreceived%RECEIVE_RING_LENGTH].scrunchoutput)
-      pulsarScale(numreceived%RECEIVE_RING_LENGTH);
+    //if(config->pulsarBinOn(procslots[numreceived%RECEIVE_RING_LENGTH].configindex) && !procslots[numreceived%RECEIVE_RING_LENGTH].scrunchoutput)
+    //  pulsarScale(numreceived%RECEIVE_RING_LENGTH);
     MPI_Ssend(procslots[numreceived%RECEIVE_RING_LENGTH].results, procslots[numreceived%RECEIVE_RING_LENGTH].resultlength*2, MPI_FLOAT, FxManager::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
 
     //zero the results buffer for this slot and set the status back to valid
@@ -258,10 +258,11 @@ void Core::execute()
   cout << "CORE " << mpiid << " terminating" << endl;
 }
 
+/*
 void Core::pulsarScale(int index)
 {
   int status, findex, currentoutputbands, resultindex = 0;
-
+  //cout << "Core " << mpiid << " about to pulsar scale!" << endl;
   //do the pulsar scaling
   for(int i=0;i<numbaselines;i++)
   {
@@ -284,6 +285,7 @@ void Core::pulsarScale(int index)
       }
     }
   }
+  //cout << "Core " << mpiid << " finished pulsar scaling!" << endl;
 
   //clear the bincounts
   if(config->pulsarBinOn(procslots[index].configindex))
@@ -298,7 +300,9 @@ void Core::pulsarScale(int index)
       }
     }
   }
+  //cout << "Core " << mpiid << " finished clearing bin counts!" << endl;
 }
+*/
 
 void * Core::launchNewProcessThread(void * tdata)
 {
@@ -317,8 +321,7 @@ void Core::loopprocess(int threadid)
   cf32 * threadresults = vectorAlloc_cf32(maxresultlength);
   cf32 * pulsarscratchspace;
   cf32 ***** pulsaraccumspace;
-  cf32*** scrunchscale;
-  
+
   pulsarbin = false;
   somepulsarbin = false;
   maxpolycos = 0;
@@ -349,17 +352,6 @@ void Core::loopprocess(int threadid)
     pulsarscratchspace = vectorAlloc_cf32(maxchan+1);
     if(scrunch) //need separate accumulation space
     {
-      scrunchscale = new cf32**[maxfreqs];
-      for(int i=0;i<maxfreqs;i++)
-      {
-        scrunchscale[i] = new cf32*[maxbins];
-        for(int j=0;j<maxbins;j++)
-        {
-          scrunchscale[i][j] = vectorAlloc_cf32(maxchan+1);
-          for(int k=0;k<maxchan+1;k++)
-            scrunchscale[i][j][k].im = 0.0;
-        }
-      }
       pulsaraccumspace = new cf32****[numbaselines];
       createPulsarAccumSpace(pulsaraccumspace, procslots[0].configindex, -1); //don't need to delete old space
     }
@@ -408,7 +400,7 @@ void Core::loopprocess(int threadid)
     }
 
     //process our section of responsibility for this time range
-    processdata(numprocessed++ % RECEIVE_RING_LENGTH, threadid, startblock, numblocks, modes, currentpolyco, threadresults, bins, pulsarscratchspace, pulsaraccumspace, scrunchscale);
+    processdata(numprocessed++ % RECEIVE_RING_LENGTH, threadid, startblock, numblocks, modes, currentpolyco, threadresults, bins, pulsarscratchspace, pulsaraccumspace);
 
     //if the configuration changes from this segment to the next, change our setup accordingly
     if(procslots[numprocessed%RECEIVE_RING_LENGTH].configindex != lastconfigindex)
@@ -452,13 +444,6 @@ void Core::loopprocess(int threadid)
     {
       createPulsarAccumSpace(pulsaraccumspace, -1, procslots[(numprocessed+1)%RECEIVE_RING_LENGTH].configindex);
       delete [] pulsaraccumspace;
-      for(int i=0;i<maxfreqs;i++)
-      {
-        for(int j=0;j<maxbins;j++)
-          vectorFree(scrunchscale[i][j]);
-        delete [] scrunchscale[i];
-      }
-      delete [] scrunchscale;
     }
   }
   vectorFree(threadresults);
@@ -529,7 +514,7 @@ void Core::receivedata(int index, bool * terminate)
   }
 }
 
-void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace, cf32*** scrunchscale)
+void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace)
 {
   int status, perr, resultindex, currentnumoutputbands, cindex, maxproducts;
   double offsetmins;
@@ -641,41 +626,50 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   if(procslots[index].pulsarbin)
     polycobincounts = currentpolyco->getBinCounts();
 
-  //if we are scrunching pulsars, do that from scratch space to results
-  if(procslots[index].pulsarbin && procslots[index].scrunchoutput)
+  //if we are pulsar binning, do the necessary scaling (from scratch space to results if scrunching, otherwise in-place)
+  if(procslots[index].pulsarbin)
   {
     resultindex = 0;
-    currentblockspersendfloat = float(config->getBlocksPerSend(procslots[index].configindex));
-    //do the scrunch
-    for(int i=0;i<config->getMaxNumFreqs(procslots[index].configindex);i++)
-    {
-      for(int j=0;j<procslots[index].numpulsarbins;j++)
-      {
-        binweight = currentpolyco->getBinWeights()[j]*currentblockspersendfloat;
-        for(int k=0;k<procslots[index].numchannels+1;k++)
-        {
-          scrunchscale[i][j][k].re = (polycobincounts[j][i][k] > 0)?binweight/float(polycobincounts[j][i][k]):0.0;
-        }
-      }
-    }
+    f64 * binweights = currentpolyco->getBinWeights();
     for(int i=0;i<numbaselines;i++)
     {
       for(int j=0;j<config->getBNumFreqs(procslots[index].configindex, i);j++)
       {
-        for(int k=0;k<config->getBNumPolProducts(procslots[index].configindex,i,j);k++)
+        if(procslots[index].scrunchoutput)
         {
-          for(int l=0;l<procslots[index].numpulsarbins;l++)
+          for(int k=0;k<config->getBNumPolProducts(procslots[index].configindex,i,j);k++)
           {
-            //add weighted contribution from this bin
-            status = vectorAddProduct_cf32(scrunchscale[config->getBFreqIndex(procslots[index].configindex, i, j)][l], pulsaraccumspace[i][j][k][l], &(threadresults[resultindex]), procslots[index].numchannels+1);
-            if(status != vecNoErr)
-              cerr << "Error trying to scrunch!!!" << endl;
-            //zero the accumulation space for next time
-            status = vectorZero_cf32(pulsaraccumspace[i][j][k][l], procslots[index].numchannels+1);
-            if(status != vecNoErr)
-              cerr << "Error trying to zero pulsaraccumspace!!!" << endl;
+            for(int l=0;l<procslots[index].numpulsarbins;l++)
+            {
+              //Scale the accumulation space, and scrunch it into the results vector
+              status = vectorMulC_f32_I((f32)(binweights[l]), (f32*)(pulsaraccumspace[i][j][k][l]), 2*procslots[index].numchannels+2);
+              if(status != vecNoErr)
+                cerr << "Error trying to scale for scrunch!!!" << endl;
+              status = vectorAdd_cf32_I(pulsaraccumspace[i][j][k][l], &(threadresults[resultindex]), procslots[index].numchannels+1);
+              if(status != vecNoErr)
+                cerr << "Error trying to accumulate for scrunch!!!" << endl;
+  
+              //zero the accumulation space for next time
+              status = vectorZero_cf32(pulsaraccumspace[i][j][k][l], procslots[index].numchannels+1);
+              if(status != vecNoErr)
+                cerr << "Error trying to zero pulsaraccumspace!!!" << endl;
+            }
+            resultindex += procslots[index].numchannels+1;
           }
-          resultindex += procslots[index].numchannels+1;
+        }
+        else
+        {
+          for(int k=0;k<procslots[index].numpulsarbins;k++)
+          {
+            for(int l=0;l<config->getBNumPolProducts(procslots[index].configindex,i,j);l++)
+            {
+              //Scale the bin
+              status = vectorMulC_f32_I((f32)(binweights[k]), (f32*)(&(threadresults[resultindex])), 2*procslots[index].numchannels+2);
+              if(status != vecNoErr)
+                cerr << "Error trying to scale pulsar binned (non-scrunched) results!!!" << endl;
+              resultindex += procslots[index].numchannels+1;
+            }
+          }
         }
       }
     }
@@ -715,19 +709,21 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       }
     }
   }
+
   //add the bin counts if we're pulsar binning but not scrunching
-  if(config->pulsarBinOn(procslots[index].configindex) && !procslots[index].scrunchoutput)
-  {
-    for(int i=0;i<procslots[index].numpulsarbins;i++)
-    {
-      for(int j=0;j<config->getMaxNumFreqs(procslots[index].configindex);j++)
-      {
-        status = vectorAdd_s32_I((currentpolyco->getBinCounts())[i][j], procslots[index].bincounts[i][j], procslots[index].numchannels+1);
-        if(status != vecNoErr)
-          cerr << "Error trying to copy bin counts!!!" << endl;
-      }
-    }
-  }
+  //if(config->pulsarBinOn(procslots[index].configindex) && !procslots[index].scrunchoutput)
+  //{
+  //  for(int i=0;i<procslots[index].numpulsarbins;i++)
+  //  {
+  //    for(int j=0;j<config->getMaxNumFreqs(procslots[index].configindex);j++)
+  //    {
+  //      status = vectorAdd_s32_I((currentpolyco->getBinCounts())[i][j], procslots[index].bincounts[i][j], procslots[index].numchannels+1);
+  //      if(status != vecNoErr)
+  //        cerr << "Error trying to copy bin counts!!!" << endl;
+  //    }
+  //  }
+  //}
+
   //clear the bin count if necessary
   if(config->pulsarBinOn(procslots[index].configindex))
     currentpolyco->incrementBinCount();

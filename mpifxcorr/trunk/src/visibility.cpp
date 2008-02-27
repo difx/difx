@@ -68,18 +68,42 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
 
 Visibility::~Visibility()
 {
-  /*for(int i=0;i<<numbaselines+numtelescopes;i++)
-  {
-    for(int j=0;j<numfreqs*numproducts;j++)
-      vectorFree(results[i][j]);
-    delete [] results[i];
-  }
-  delete [] results;*/
   vectorFree(results);
+  vectorFree(rpfitsarray);
+
   for(int i=0;i<numdatastreams;i++)
     delete [] autocorrcalibs[i];
   delete [] autocorrcalibs;
-  vectorFree(rpfitsarray);
+
+  for(int i=0;i<numbaselines;i++)
+  {
+    for(int j=0;j<config->getBNumFreqs(currentconfigindex, i);j++)
+      delete [] baselinepoloffsets[i][j];
+    delete [] baselinepoloffsets[i];
+  }
+  delete [] baselinepoloffsets;
+
+  for(int i=0;i<numdatastreams;i++)
+  {
+    for(int j=0;j<config->getDNumFreqs(currentconfigindex, i);j++)
+      delete [] datastreampolbandoffsets[i][j];
+    delete [] datastreampolbandoffsets[i];
+  }
+  delete [] datastreampolbandoffsets;
+
+  if(pulsarbinon) {
+    for(int i=0;i<config->getFreqTableLength();i++) {
+      for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++)
+        vectorFree(binweightsums[i][j]);
+      for(int j=0;j<config->scrunchOutputOn(currentconfigindex)?1:config->getNumPulsarBins(currentconfigindex);j++)
+        vectorFree(binscales[i][j]);
+      delete [] binweightsums[i];
+      delete [] binscales[i];
+    }
+    delete [] binweightsums;
+    delete [] binscales;
+    vectorFree(binweightdivisor);
+  }
 }
 
 bool Visibility::addData(cf32* blockresult)
@@ -106,6 +130,23 @@ void Visibility::increment()
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
     cerr << "Error trying to zero when incrementing visibility " << visID << endl;
+
+  if(pulsarbinon) {
+    for(int i=0;i<config->getFreqTableLength();i++) {
+      for(int j=0;j<config->getNumChannels(currentconfigindex);j++) {
+        if(config->scrunchOutputOn(currentconfigindex))
+        {
+          binweightsums[i][j][0] = 0.0;
+        }
+        else
+        {
+          status = vectorZero_f32(binweightsums[i][j], config->getNumPulsarBins(currentconfigindex));
+          if(status != vecNoErr)
+            cerr << "Error trying to zero binweightsums when incrementing visibility " << visID << endl;
+        }
+      }
+    }
+  }
 }
 
 void Visibility::updateTime()
@@ -136,7 +177,6 @@ void Visibility::updateTime()
   }
   if(configindex != currentconfigindex && currentstartseconds < executeseconds)
   {
-    currentconfigindex = configindex;
     changeConfig(currentconfigindex);
   }
 }
@@ -348,10 +388,11 @@ void Visibility::writedata()
 
   cout << "Visibility " << visID << " is starting to write out data" << endl;
 
-  if (monitor && currentblocks == 0) //nothing to write out
+  if(currentblocks == 0) //nothing to write out
   {
-    //send a message to the monitor not to expect any data this integration - if we can't get through to the monitor, close the socket
-    if(sendMonitorData(false) != 0) {
+    //if required, send a message to the monitor not to expect any data this integration - 
+    //if we can't get through to the monitor, close the socket
+    if(monitor && sendMonitorData(false) != 0) {
       cerr << "tried to send a header only to monitor and it failed - closing socket!" << endl;
       close(*mon_socket);
       *mon_socket = -1;
@@ -436,7 +477,62 @@ void Visibility::writedata()
       }
     }
   }
-  
+
+  //if necessary, work out the scaling factors for pulsar binning
+  if(pulsarbinon) {
+    int numblocks;
+    int mjd = expermjd + (experseconds + currentstartseconds)/86400;
+    double mjdfrac = (double((experseconds + currentstartseconds)%86400) + double((currentstartsamples)/(2000000.0*config->getDBandwidth(currentconfigindex,0,0))))/86400.0;
+    double fftminutes = double(config->getNumChannels(currentconfigindex))/(60000000.0*config->getDBandwidth(currentconfigindex,0,0));
+    polyco = Polyco::getCurrentPolyco(currentconfigindex, mjd, mjdfrac, config->getPolycos(currentconfigindex), config->getNumPolycos(currentconfigindex));
+    double * binweights = polyco->getBinWeights();
+
+    numblocks = integrationsamples/blocksamples;
+    if(offset + offsetperintegration >= blocksamples/2) numblocks++;
+    polyco->setTime(mjd, mjdfrac);
+    for(int i=0;i<numblocks*config->getBlocksPerSend(currentconfigindex);i++) {
+      polyco->getBins(i*fftminutes, pulsarbins);
+      for(int j=0;j<config->getFreqTableLength();j++) {
+        for(int k=0;k<config->getNumChannels(currentconfigindex)+1;k++) {
+          if(config->scrunchOutputOn(currentconfigindex)) {
+            binweightsums[j][k][0] += binweights[pulsarbins[j][k]];
+          }
+          else {
+            binweightsums[j][k][pulsarbins[j][k]] += binweights[pulsarbins[j][k]];
+          }
+        }
+      }
+    }
+    cout << "Done calculating weight sums" << endl;
+    for(int i=0;i<config->getFreqTableLength();i++) {
+      for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++) {
+        for(int k=0;k<(config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);k++)
+            binscales[i][k][j].re = binscales[i][k][j].im = binweightsums[i][j][k] / binweightdivisor[k];
+      }
+    }
+    cout << "Done calculating scales" << endl;
+
+    //do the calibration - should address the weight here as well!
+    count = 0;
+    for(int i=0;i<numbaselines;i++) //do each baseline
+    {
+      for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++) //do each frequency
+      {
+        for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++) //do each product of this frequency eg RR,LL,RL,LR
+        {
+          for(int b=0;b<binloop;b++)
+          {
+            status = vectorMul_f32_I((f32*)(binscales[config->getBFreqIndex(currentconfigindex, i, j)][b]), (f32*)(&(results[count])), 2*(numchannels+1));
+            if(status != vecNoErr)
+              cerr << "Error trying to pulsar amplitude calibrate the baseline data!!!" << endl;
+            count += numchannels+1;
+          }
+        }
+      }
+    }
+    cout << "Done the in-place multiplication" << endl;
+  }
+
   //all calibrated, now just need to write out
   if(config->getOutputFormat() == Configuration::RPFITS)
     writerpfits();
@@ -791,6 +887,9 @@ void Visibility::changeConfig(int configindex)
     autocorrcalibs = new cf32*[numdatastreams];
     baselinepoloffsets = new int**[numbaselines];
     datastreampolbandoffsets = new int**[numdatastreams];
+    binweightsums = new f32**[config->getFreqTableLength()];
+    binscales = new cf32**[config->getFreqTableLength()];
+    pulsarbins = new s32*[config->getFreqTableLength()];
   }
   else
   {
@@ -810,10 +909,23 @@ void Visibility::changeConfig(int configindex)
       delete [] datastreampolbandoffsets[i];
     }
     vectorFree(rpfitsarray);
+    if(pulsarbinon) {
+      for(int i=0;i<config->getFreqTableLength();i++) {
+        for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++)
+          vectorFree(binweightsums[i][j]);
+        for(int j=0;j<config->scrunchOutputOn(configindex)?1:config->getNumPulsarBins(configindex);j++)
+          vectorFree(binscales[i][j]);
+        vectorFree(pulsarbins[i]);
+        delete [] binweightsums[i];
+        delete [] binscales[i];
+      }
+      vectorFree(binweightdivisor);
+    }
   }
 
   //get the new parameters for this configuration from the config object
   currentconfigindex = configindex;
+  pulsarbinon = config->pulsarBinOn(configindex);
   numchannels = config->getNumChannels(configindex);
   samplespersecond = int(2000000*config->getDBandwidth(configindex, 0, 0) + 0.5);
   integrationsamples = int(2000000*config->getDBandwidth(configindex, 0, 0)*config->getIntTime(configindex) + 0.5);
@@ -848,7 +960,7 @@ void Visibility::changeConfig(int configindex)
           cerr << "Error - could not find a polarisation pair, will be put in position " << maxproducts << "!!!" << endl;
           baselinepoloffsets[i][j][k] = maxproducts-1;
         }
-      }   
+      }
     }
   }
 
@@ -881,6 +993,43 @@ void Visibility::changeConfig(int configindex)
       }
     }
   }
+
   //allocate the rpfits array
   rpfitsarray = vectorAlloc_cf32(maxproducts*(numchannels+1));
+
+  //create the pulsar bin weight accumulation arrays
+  if(pulsarbinon) {
+    double fftsecs = double(config->getNumChannels(currentconfigindex))/(1000000.0*config->getDBandwidth(currentconfigindex,0,0));
+    polyco = Polyco::getCurrentPolyco(configindex, expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0, config->getPolycos(configindex), config->getNumPolycos(configindex));
+    //polyco->setTime(expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0);
+    if(config->scrunchOutputOn(configindex)) {
+      binweightdivisor = vectorAlloc_f32(1);
+      binweightdivisor[0] = 0.0;
+      for (int i=0;i<config->getNumPulsarBins(configindex);i++)
+      {
+        binweightdivisor[0] += polyco->getBinWeightTimesWidth(i)*config->getIntTime(configindex)/fftsecs;
+      }
+      binweightdivisor[0] /= double(config->getNumPulsarBins(configindex));
+    }
+    else {
+      binweightdivisor = vectorAlloc_f32(config->getNumPulsarBins(configindex));
+      for (int i=0;i<config->getNumPulsarBins(configindex);i++)
+      {
+        binweightdivisor[i] = polyco->getBinWeightTimesWidth(i)*config->getIntTime(configindex)/fftsecs;
+      }
+    }
+    for(int i=0;i<config->getFreqTableLength();i++) {
+      binweightsums[i] = new f32*[config->getNumChannels(configindex)+1];
+      binscales[i] = new cf32*[config->scrunchOutputOn(configindex)?1:config->getNumPulsarBins(configindex)];
+      pulsarbins[i] = vectorAlloc_s32(config->getNumChannels(configindex)+1);
+      for(int j=0;j<config->getNumChannels(configindex)+1;j++) {
+        if(config->scrunchOutputOn(configindex))
+          binweightsums[i][j] = vectorAlloc_f32(1);
+        else
+          binweightsums[i][j] = vectorAlloc_f32(config->getNumPulsarBins(configindex));
+      }
+      for(int j=0;j<(config->scrunchOutputOn(configindex)?1:config->getNumPulsarBins(configindex));j++)
+        binscales[i][j] = vectorAlloc_cf32(config->getNumChannels(configindex) + 1);
+    }
+  }
 }
