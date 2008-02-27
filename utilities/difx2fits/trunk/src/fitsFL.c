@@ -226,8 +226,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				antennaId, recChan, &FL.bandId, &FL.polId);
 			if(v < 0)
 			{
-				fprintf(stderr, "Flag row ignored: %s \n",
-					line);
 				continue;
 			}
 

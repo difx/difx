@@ -84,6 +84,7 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	
 	dv->D = D;
 	dv->jobId = 0;
+	dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
 	dv->curFile = -1;
 	startGlob(dv);
 	dv->dp = 0;
@@ -249,6 +250,7 @@ int DifxVisNextFile(DifxVis *dv)
 		{
 			return -1;
 		}
+		dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
 		startGlob(dv);
 		dv->curFile = 0;
 	}
@@ -330,8 +332,19 @@ int DifxVisNewUVData(DifxVis *dv)
 	c            = atoi(DifxParametersvalue(dv->dp, rows[3]));
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 
+	/* FIXME -- is the below baseline to antenna map completely general? */
+	a1 = bl/256 - 1;
+	a2 = bl%256 - 1;
 
-	dv->sourceId = DifxInputGetSourceIdByJobId(dv->D, mjd, dv->jobId);
+	/* see if we need to remap this baseline */
+	if(dv->antennaIdRemap)
+	{
+		a1 = dv->antennaIdRemap[a1];
+		a2 = dv->antennaIdRemap[a2];
+		bl = (a1+1)*256 + (a2+1);
+	}
+
+	dv->sourceId = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
 	if(dv->sourceId < 0)
 	{
 		return -4;
@@ -339,10 +352,6 @@ int DifxVisNewUVData(DifxVis *dv)
 
 	configId = dv->D->source[dv->sourceId].configId;
 	dv->freqId = dv->D->config[configId].freqId;
-
-	/* FIXME -- is the below baseline to antenna map completely general? */
-	a1 = bl/256 - 1;
-	a2 = bl%256 - 1;
 
 	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));

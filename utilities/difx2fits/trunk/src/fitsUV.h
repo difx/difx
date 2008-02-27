@@ -30,6 +30,7 @@ typedef struct
 	double mjd;
 	float tInt;
 	int baseline;
+	int *antennaIdRemap;		/* to convert baseline number */
 	int jobId;
 	int configId;
 	int sourceId;
