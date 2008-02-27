@@ -268,6 +268,296 @@ static int mark5_format_mark4_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /*********************** data unpack routines **********************/
 
+static int mark4_decode_1bit_1track_fanout1(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark4_decode_1bit_2track_fanout1(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark4_decode_1bit_2track_fanout2(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+static int mark4_decode_1bit_4track_fanout1(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark4_decode_1bit_4track_fanout2(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[2];
+		o++;
+		data[0][o] = fp[1];
+		data[1][o] = fp[3];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int mark4_decode_1bit_4track_fanout4(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+		o++;
+		data[0][o] = fp[2];
+		o++;
+		data[0][o] = fp[3];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
 
 static int mark4_decode_1bit_8track_fanout1(struct mark5_stream *ms, int nsamp,
 	float **data)
@@ -1293,6 +1583,147 @@ static int mark4_decode_1bit_64track_fanout4(struct mark5_stream *ms, int nsamp,
 
 /************************ 2-bit decoders *********************/
 
+static int mark4_decode_2bit_2track_fanout1(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit1[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark4_decode_2bit_4track_fanout1(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit1[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark4_decode_2bit_4track_fanout2(struct mark5_stream *ms, int nsamp,
+	float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] ||
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit2[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[1];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
 static int mark4_decode_2bit_8track_fanout1(struct mark5_stream *ms, int nsamp,
 	float **data)
 {
@@ -2265,7 +2696,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else if(nbit == 2)
 	{
-		decoderindex += 12;
+		decoderindex += 21;
 	}
 	else
 	{
@@ -2273,25 +2704,37 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		return 0;
 	}
 
-	if(ntrack == 8)
+	if(ntrack == 1)
 	{
 		decoderindex += 0;
 	}
-	else if(ntrack == 16)
+	else if(ntrack == 2)
 	{
 		decoderindex += 3;
 	}
-	else if(ntrack == 32)
+	else if(ntrack == 4)
 	{
 		decoderindex += 6;
 	}
-	else if(ntrack == 64)
+	else if(ntrack == 8)
 	{
 		decoderindex += 9;
 	}
+	else if(ntrack == 16)
+	{
+		decoderindex += 12;
+	}
+	else if(ntrack == 32)
+	{
+		decoderindex += 15;
+	}
+	else if(ntrack == 64)
+	{
+		decoderindex += 18;
+	}
 	else
 	{
-		fprintf(stderr, "ntrack must be 8, 16, 32 or 64\n");
+		fprintf(stderr, "ntrack must be 2^n : n = 0..6\n");
 		return 0;
 	}
 
@@ -2333,30 +2776,40 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	f->validate = one;
 	switch(decoderindex)
 	{
-		case 0 : f->decode = mark4_decode_1bit_8track_fanout1; break;
-		case 1 : f->decode = mark4_decode_1bit_8track_fanout2; break;
-		case 2 : f->decode = mark4_decode_1bit_8track_fanout4; break;
-		case 3 : f->decode = mark4_decode_1bit_16track_fanout1; break;
-		case 4 : f->decode = mark4_decode_1bit_16track_fanout2; break;
-		case 5 : f->decode = mark4_decode_1bit_16track_fanout4; break;
-		case 6 : f->decode = mark4_decode_1bit_32track_fanout1; break;
-		case 7 : f->decode = mark4_decode_1bit_32track_fanout2; break;
-		case 8 : f->decode = mark4_decode_1bit_32track_fanout4; break;
-		case 9 : f->decode = mark4_decode_1bit_64track_fanout1; break;
-		case 10: f->decode = mark4_decode_1bit_64track_fanout2; break;
-		case 11: f->decode = mark4_decode_1bit_64track_fanout4; break;
-		case 12: f->decode = mark4_decode_2bit_8track_fanout1; break;
-		case 13: f->decode = mark4_decode_2bit_8track_fanout2; break;
-		case 14: f->decode = mark4_decode_2bit_8track_fanout4; break;
-		case 15: f->decode = mark4_decode_2bit_16track_fanout1; break;
-		case 16: f->decode = mark4_decode_2bit_16track_fanout2; break;
-		case 17: f->decode = mark4_decode_2bit_16track_fanout4; break;
-		case 18: f->decode = mark4_decode_2bit_32track_fanout1; break;
-		case 19: f->decode = mark4_decode_2bit_32track_fanout2; break;
-		case 20: f->decode = mark4_decode_2bit_32track_fanout4; break;
-		case 21: f->decode = mark4_decode_2bit_64track_fanout1; break;
-		case 22: f->decode = mark4_decode_2bit_64track_fanout2; break;
-		case 23: f->decode = mark4_decode_2bit_64track_fanout4; break;
+		case 0 : f->decode = mark4_decode_1bit_1track_fanout1; break;
+		case 3 : f->decode = mark4_decode_1bit_2track_fanout1; break;
+		case 4 : f->decode = mark4_decode_1bit_2track_fanout2; break;
+		case 6 : f->decode = mark4_decode_1bit_4track_fanout1; break;
+		case 7 : f->decode = mark4_decode_1bit_4track_fanout2; break;
+		case 8 : f->decode = mark4_decode_1bit_4track_fanout4; break;
+		case 9 : f->decode = mark4_decode_1bit_8track_fanout1; break;
+		case 10: f->decode = mark4_decode_1bit_8track_fanout2; break;
+		case 11: f->decode = mark4_decode_1bit_8track_fanout4; break;
+		case 12: f->decode = mark4_decode_1bit_16track_fanout1; break;
+		case 13: f->decode = mark4_decode_1bit_16track_fanout2; break;
+		case 14: f->decode = mark4_decode_1bit_16track_fanout4; break;
+		case 15: f->decode = mark4_decode_1bit_32track_fanout1; break;
+		case 16: f->decode = mark4_decode_1bit_32track_fanout2; break;
+		case 17: f->decode = mark4_decode_1bit_32track_fanout4; break;
+		case 18: f->decode = mark4_decode_1bit_64track_fanout1; break;
+		case 19: f->decode = mark4_decode_1bit_64track_fanout2; break;
+		case 20: f->decode = mark4_decode_1bit_64track_fanout4; break;
+		case 24: f->decode = mark4_decode_2bit_2track_fanout1; break;
+		case 27: f->decode = mark4_decode_2bit_4track_fanout1; break;
+		case 28: f->decode = mark4_decode_2bit_4track_fanout2; break;
+		case 30: f->decode = mark4_decode_2bit_8track_fanout1; break;
+		case 31: f->decode = mark4_decode_2bit_8track_fanout2; break;
+		case 32: f->decode = mark4_decode_2bit_8track_fanout4; break;
+		case 33: f->decode = mark4_decode_2bit_16track_fanout1; break;
+		case 34: f->decode = mark4_decode_2bit_16track_fanout2; break;
+		case 35: f->decode = mark4_decode_2bit_16track_fanout4; break;
+		case 36: f->decode = mark4_decode_2bit_32track_fanout1; break;
+		case 37: f->decode = mark4_decode_2bit_32track_fanout2; break;
+		case 38: f->decode = mark4_decode_2bit_32track_fanout4; break;
+		case 39: f->decode = mark4_decode_2bit_64track_fanout1; break;
+		case 40: f->decode = mark4_decode_2bit_64track_fanout2; break;
+		case 41: f->decode = mark4_decode_2bit_64track_fanout4; break;
+		default: f->decode = 0;
 	}
 
 	return f;
