@@ -7,7 +7,7 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.4'
+version = '1.5'
 verdate = '20071213'
 author  = 'Walter Brisken'
 
@@ -856,6 +856,7 @@ def makebaselinetable(job, nant, freqlist, dopolar, setups):
 	blt.append("# BASELINE TABLE ###!")
 	blt.append("BASELINE ENTRIES:   %d" % (len(setups)*(nant*(nant-1)/2)) )
 	bl_id = 0
+	deltaAnt = 0
 	for setup in setups:
 	  job_freq_row = job_freq[setup[0]]
 	  enable = job_freq_row['fft_enable']
@@ -884,8 +885,10 @@ def makebaselinetable(job, nant, freqlist, dopolar, setups):
 	  
 	  for i in range(0, nant-1):
 	    for j in range(i+1, nant):
-		blt.append(indent21_1("D/STREAM A INDEX %d", "%d", bl_id, i))
-		blt.append(indent21_1("D/STREAM B INDEX %d", "%d", bl_id, j))
+		dsA = i + deltaAnt
+		dsB = j + deltaAnt
+		blt.append(indent21_1("D/STREAM A INDEX %d", "%d", bl_id, dsA))
+		blt.append(indent21_1("D/STREAM B INDEX %d", "%d", bl_id, dsB))
 		blt.append(indent21_1("NUM FREQS %d", "%d", bl_id, nfreq))
 		ind = 0
 		for fq in range(len(fslist)):
@@ -924,7 +927,7 @@ def makebaselinetable(job, nant, freqlist, dopolar, setups):
 				pol_id += 1
 			ind += len(pols)
 		bl_id += 1
-
+	  deltaAnt += nant
 	return blt
 
 def zero2oh(str):
@@ -1324,14 +1327,15 @@ def merge(jobs):
 	form1 = jobs[1]['format']
 	print 'Merging jobs ', jobIds, 'into one job: ',  \
 		int(jobs[1]['master'][0]['job_id'])
-	l = len(freq1)
+	nFreq1 = len(freq1)
+	nForm1 = len(form1)
 	# the first ranked job will be the master.  Append other parallel
 	# jobs to this one.
 	for g in rankList[1:]:
 		freq2 = g[1]['frequency']
 		form2 = g[1]['format']
-		for i in range(l):
-			if form2[i]['barrel_roll'] == 'DISCUPPER':
+		for i in range(nFreq1):
+			if form2[0]['barrel_roll'] == 'DISCUPPER':
 				delta = 32
 			else:
 				delta = 0
@@ -1343,6 +1347,7 @@ def merge(jobs):
 				freq1[i]['net_side'].append(v)
 			for v in freq2[i]['polarization'][1:]:
 				freq1[i]['polarization'].append(v)
+		for i in range(nForm1):
 			for v in form2[i]['track'][1:]:
 				if v != '-1':
 					newtrack = delta + int(v)

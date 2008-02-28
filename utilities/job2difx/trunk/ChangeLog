@@ -13,6 +13,10 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.5
+* Produce .input files with multiple configs
+* fix bug in merging -- files with multiple formats
+
 Version 1.4
 * Support(i.e. generate) full generic format types
 * Allow .fx files without all listed antennas to work
