@@ -420,7 +420,7 @@ def intersection(l1, l2):
 			inter.append(e)
 	return inter		
 
-def remove_phamtoms(scanlist, minantennas):
+def remove_phantoms(scanlist, minantennas):
 	for s in scanlist:
 		newsubarrays = []
 		subarrays = s[6]
@@ -429,7 +429,7 @@ def remove_phamtoms(scanlist, minantennas):
 				newsubarrays.append(sa)
 		s[6] = newsubarrays
 
-def generatesubjoblist(scanlist, subarraylist, job):
+def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 	subs = [-1]
 	job_freq = job['frequency']
 	subjobrange = [-1, -1, -1.0, -1.0, subs]
@@ -474,8 +474,12 @@ def generatesubjoblist(scanlist, subarraylist, job):
 					for i in range(ls):
 						if a in subarray[i] and not a in actualsubarray[i]:
 							actualsubarray[i].append(a)
+		ss = []
 		for a in actualsubarray:
-			a.sort()
+			if len(a) > minsubarraysize:
+				ss.append(a)
+		ss.sort()
+		sj[5] = ss
 							
 	return subjoblist
 		
@@ -1023,7 +1027,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	calc.append("INCREMENT (SECS):   %d" % inc)
 	calc.append("SPECTRAL AVG:       %d" % specavg)
 	if osamp > 1:
-		calc.append("OUTPUT CHANNELS:    %f" % (1.0/os))
+		calc.append("OUTPUT CHANNELS:    %f" % (1.0/osamp))
 	calc.append("TAPER FUNCTION:     %s" % job_corr[0]['window'])
 	calc.append("NUM TELESCOPES:     %d" % nant)
 
@@ -1173,9 +1177,9 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
 	scanlist, subarraylist = statelist2scanlist(statelist, minsubarraysize, nant)
-	remove_phamtoms(scanlist, minsubarraysize)
+#	remove_phantoms(scanlist, minsubarraysize)
 
-	subjoblist = generatesubjoblist(scanlist, subarraylist, job)
+	subjoblist = generatesubjoblist(scanlist, subarraylist, job, minsubarraysize)
 	srclist = generatesrclist(job['source'])
 
 	jobstarttime = scanlist[0][2]
