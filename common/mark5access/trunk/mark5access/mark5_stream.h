@@ -197,6 +197,9 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders);
 int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 	int nsamp);
 
+int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
+	int offsetsamples, float **unpacked, int nsamp);
+
 
 /* SPECIFIC FORMAT TYPES */
 
