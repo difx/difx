@@ -280,14 +280,14 @@ int DifxVisNewUVData(DifxVis *dv)
 		"SOURCE INDEX",
 		"FREQ INDEX",
 		"POLARISATION PAIR",
-		"WEIGHTS WRITTEN",
+		"DATA WEIGHT",
 		"U (METRES)",
 		"V (METRES)",
 		"W (METRES)"
 	};
 	const int N_DIFX_ROWS = sizeof(difxKeys)/sizeof(difxKeys[0]);
 	int rows[N_DIFX_ROWS];
-	int i, i1, v, N;
+	int i, i1, v, N, index;
 	int a1, a2;
 	int bl, c;
 	double mjd;
@@ -364,6 +364,8 @@ int DifxVisNewUVData(DifxVis *dv)
 		changed = 1;
 		dv->baseline = bl;
 
+		index = dv->freqId + dv->nFreq*dv->polId;
+		dv->weight[index] = atof(DifxParametersvalue(dv->dp, rows[7]));
 		/* swap phase/uvw for FITS-IDI conformance */
 		dv->U = -atof(DifxParametersvalue(dv->dp, rows[8]));
 		dv->V = -atof(DifxParametersvalue(dv->dp, rows[9]));
@@ -648,10 +650,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 				}
 				else
 				{
-					for(i=0; i < dv->nFreq*dv->D->nPolar; i++)
-					{
-						dv->weight[i] = 1.0;
-					}
 #ifndef WORDS_BIGENDIAN
 					FitsBinRowByteSwap(columns, nColumn, 
 						dv->record);
@@ -720,10 +718,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 	}
 	else
 	{
-		for(i = 0; i < dv->nFreq*dv->D->nPolar; i++)
-		{
-			dv->weight[i] = 1.0;
-		}
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, nColumn, dv->record);
 #endif
