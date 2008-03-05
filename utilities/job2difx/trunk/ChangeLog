@@ -69,11 +69,15 @@ Version 1.1
 
 genmachines
 ~~~~~~~~~~~
-Version 0.5
-* First version in this package
+Version 0.7
+* Write meaningful, and correct, threads file
+* settable verbosity and overheadcores
 
 Version 0.6
 * Much improved user interface, support more general machinesfile
+
+Version 0.5
+* First version in this package
 
 jobdisks
 ~~~~~~~~
