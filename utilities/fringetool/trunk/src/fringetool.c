@@ -9,8 +9,8 @@
 #define MAX_FREQ 16
 
 const char program[] = "fringetool";
-const char version[] = "1.1";
-const char verdate[] = "20070913";
+const char version[] = "1.2";
+const char verdate[] = "20080304";
 const char author[]  = "Brisken, w/Whiteis, sharing the blame";
 
 int usage(const char *pgm)
@@ -36,6 +36,7 @@ int fringe(const char *v_filename, const char *i_filename)
 	int nfreq;
 	double bw[MAX_FREQ];
 	double peak;
+	double w;
 	double max_pk;
 	double phase = 1000.0;
 	double delay;
@@ -95,7 +96,7 @@ int fringe(const char *v_filename, const char *i_filename)
          * - writing sanitized results to file
          */
 	 
-	fprintf(out, "# Time         BL   Pol  FQ     Delay  Phase      Amp\n");
+	fprintf(out, "# Time         BL   Pol  FQ     Delay  Phase      Amp   Weight\n");
 	fprintf(out, "# (mjd)                         (nSec) (deg)\n");
 	for(;;)
 	{
@@ -119,6 +120,8 @@ int fringe(const char *v_filename, const char *i_filename)
 	  fi = atoi(DifxParametersvalue(vis->params, i));
 	  i = DifxParametersfind(vis->params, 0, "POLARISATION PAIR");
 	  p = DifxParametersvalue(vis->params, i);
+	  i = DifxParametersfind(vis->params, 0, "DATA WEIGHT");
+	  w = atof(DifxParametersvalue(vis->params, i));
 #ifdef NOTNOW
 	  bl = atoi(vis->params->rows[0].value); /* Baseline */
 	  fi = atoi(vis->params->rows[5].value); /* Freq Idx */
@@ -127,10 +130,10 @@ int fringe(const char *v_filename, const char *i_filename)
 	  //	  printDifxParameters(vis->params);
 	  for(k = 0; k < nchan; k++)
 	    {
-	      i_data[k][REAL] = creal(vis->visdata[k]); /*Save real */
-	      i_data[k][IMAG] = cimag(vis->visdata[k]); /* Save imaginary */
+	      i_data[k][REAL] = creal(vis->visdata[k])/nchan; /* Save real */
+	      i_data[k][IMAG] = cimag(vis->visdata[k])/nchan; /* Save im */
 	    }
-	  fftw_execute(f_plan); /* do fft for this baseline, polarization, freq*/
+	  fftw_execute(f_plan); /* do fft for this baseline, pol, freq*/
 	  /* Scan the output data, save the channel with max magnitude */
 	  max_pk = 0.0;
 	  for (k = 0; k < nchan; k++)
@@ -154,8 +157,8 @@ int fringe(const char *v_filename, const char *i_filename)
 	  else
 	    lag_bin = chan;
 	  delay = (lag_bin/bw[fi])*1e3;
-	  fprintf(out, "%12.6f  %4d  %2s  %2d  %10.4lf %+7.3lf %8.3lf\n", 
-		  mjd + sec/86400.0, bl, p, fi, delay, phase,  max_pk);
+	  fprintf(out, "%12.6f  %4d  %2s  %2d  %10.4lf %+10.3lf %10.6lf %9.3f\n", 
+		  mjd + sec/86400.0, bl, p, fi, delay, phase, max_pk, w);
 	}
 
 	fclose(out);
