@@ -1301,8 +1301,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		"JOB ID",
 		"OBSCODE",
-		"NUM EOP",
-		"NUM SCANS"
+		"NUM SCANS",
+		"NUM EOP"
 	};
 	const int N_INIT_ROWS = sizeof(initKeys)/sizeof(initKeys[0]);
 	
@@ -1376,9 +1376,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
 	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
-	D->nEOP          = atoi(DifxParametersvalue(cp, rows[2]));
+	D->nEOP          = atoi(DifxParametersvalue(cp, rows[3]));
 
-	if(D->nScan != atoi(DifxParametersvalue(cp, rows[3])))
+	if(D->nScan != atoi(DifxParametersvalue(cp, rows[2])))
 	{
 		fprintf(stderr, ".calc NUM SCANS = %d; .delay NUM SCANS = %d\n",
 			atoi(DifxParametersvalue(cp, rows[2])), D->nScan);
