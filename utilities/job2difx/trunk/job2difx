@@ -7,7 +7,7 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.5'
+version = '1.6'
 verdate = '20071213'
 author  = 'Walter Brisken'
 
@@ -643,7 +643,7 @@ def makecommontable(filebase, nAntenna, startmjd, stopmjd):
 	common.append("START SECONDS:      %d" % startsec)
 	common.append("ACTIVE DATASTREAMS: %d" % nAntenna)
 	common.append("ACTIVE BASELINES:   %d" % ( (nAntenna-1)*nAntenna/2 ) )
-	common.append("DATA HEADER O/RIDE: FALSE")
+	common.append("VIS BUFFER LENGTH:  128")
 	common.append("OUTPUT FORMAT:      SWIN")
 	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
 	return common
@@ -719,6 +719,8 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 		cfg.append("CONFIG SOURCE:      %s" % setupname)
 		cfg.append("INT TIME (SEC):     %f" % timeavg)
 		cfg.append("NUM CHANNELS:       %d" % (fftsize/2))
+		cfg.append("CHANNELS TO AVERAGE:1")
+		cfg.append("OVERSAMPLE FACTOR:  1")
 		cfg.append("BLOCKS PER SEND:    %d" % nBlock)
 		cfg.append("GUARD BLOCKS:       1")
 		cfg.append("POST-F FRINGE ROT:  FALSE")
@@ -801,14 +803,21 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, setups):
 					nIF+=1
 			tracks = fanout*qbits*nIF
 			Mbps =int(job_freq_row['sample_rate'])*nIF*qbits/1000000
-			format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
+			#format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
 			
+			if format_name == "VLBA":
+				framesize = qbits*nIF*fanout*2520
+			else:
+				framesize = qbits*nIF*fanout*2500
+
 			trackList = format[format_id]['track']
 			
 
 			dst.append("TELESCOPE INDEX:    %d" % ds_num)
 			dst.append("TSYS:               0.0")
 			dst.append("DATA FORMAT:        %s" % format_name)
+			dst.append("QUANTISATION BITS:  %d" % qbits)
+			dst.append("DATA FRAME SIZE:    %d" % framesize)
 			dst.append("DATA SOURCE:        %s" % "MODULE")
 			dst.append("FILTERBANK USED:    FALSE")
 			dst.append("NUM FREQS:          %d" % len(fslist))

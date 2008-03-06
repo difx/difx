@@ -13,6 +13,9 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.6
+* Support change in difx input file format.
+
 Version 1.5
 * Produce .input files with multiple configs
 * fix bug in merging -- files with multiple formats
