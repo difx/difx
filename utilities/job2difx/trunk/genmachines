@@ -164,7 +164,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 			extrathreads.append(cores[m] - (overheadcores+1))
 		else:
 			maxslots = 1
-		o.write('%s slots=1 max-slots=m\n' % \
+		o.write('%s slots=1 max-slots=%d\n' % \
 			(d, maxslots))
 	# core nodes
 	for m in range(len(machines)):
@@ -208,7 +208,7 @@ def run(files, machinesfile, overheadcores, verbose):
 			vsns, overheadcores, verbose)
 		if len(t) == 0:
 			return 1
-		writethreads(t)
+		writethreads(basename, t)
 
 		results.sort()
 
