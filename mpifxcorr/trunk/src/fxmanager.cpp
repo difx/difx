@@ -46,7 +46,8 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   int perr;
   const string * polnames;
 
-  /* set the PIPE signal handler to 'catch_pipe' */  signal(SIGPIPE, catch_pipe);
+  /* set the PIPE signal handler to 'catch_pipe' */
+  signal(SIGPIPE, catch_pipe);
 
   numdatastreams = config->getNumDataStreams();
   startmjd = config->getStartMJD();
@@ -542,7 +543,7 @@ void FxManager::writeheader()
       if_.if_simul[i] = 1; //don't know what these do...?
       if_.if_chain[i] = 1;
       doubles_.if_bw[i] = config->getFreqTableBandwidth(i)*1000000; //convert from MHz to Hz
-      doubles_.if_ref[i] = (config->getFreqTableLowerSideband(i))?config->getNumChannels(config->getFirstNaturalConfigIndex(j)):0;
+      doubles_.if_ref[i] = (config->getFreqTableLowerSideband(i))?config->getNumChannels(config->getFirstNaturalConfigIndex(j))+1.0:1.0;
       doubles_.if_freq[i] = config->getFreqTableFreq(i)*1000000; //convert from MHz to Hz
       for(int j=0;j<numproducts;j++)
         config->makeFortranString((config->circularPolarisations())?CIRCULAR_POL_NAMES[j]:LINEAR_POL_NAMES[j], STOKES_NAME_LENGTH, &(names_.if_cstok[(4*i + j)*STOKES_NAME_LENGTH]));
