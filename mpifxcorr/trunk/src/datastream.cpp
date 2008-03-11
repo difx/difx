@@ -794,7 +794,7 @@ int DataStream::openframe()
 
   // Read filename size then ignore it
   if (fnamesize>LBA_HEADER_LENGTH) {
-    realloc(buf, fnamesize);
+    buf = (char *)realloc(buf, fnamesize);
   }
   status = readnetwork(socketnumber, buf, fnamesize, &nread);
   if (status==-1) { // Error reading socket
