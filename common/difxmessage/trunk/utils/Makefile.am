@@ -4,3 +4,12 @@ INCLUDES = \
 LDADD = \
 	$(top_builddir)/difxmessage/libdifxmessage.la
 
+bin_PROGRAMS = \
+	testdifxmessagesend \
+	testdifxmessagereceive
+
+testdifxmessagesend_SOURCES = \
+	testdifxmessagesend.c
+
+testdifxmessagereceive_SOURCES = \
+	testdifxmessagereceive.c

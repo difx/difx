@@ -43,7 +43,12 @@ typedef struct
 
 
 int difxMessageInit(const char *identifier);
+void difxMessagePrint();
 
-int difxSend(const char *message);
+int difxMessageSend(const char *message);
+
+int difxMessageReceiveOpen();
+int difxMessageReceiveClose(int sock);
+int difxMessageReceive(int sock, char *message, int maxlen, char *from);
 
 #endif

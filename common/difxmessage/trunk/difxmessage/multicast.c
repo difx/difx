@@ -13,17 +13,20 @@ int MulticastSend(const char *group, int port, const char *message)
 	int fd, l;
 	unsigned char ttl=6;	/* time-to-live.  Max hops before discard */
 
-	if( (fd=socket(AF_INET,SOCK_DGRAM,0)) < 0 )
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	if(fd < 0)
 	{
 		return -1;
 	}
 
 	setsockopt(fd, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(ttl));
 
-	memset(&addr,0,sizeof(addr));
-	addr.sin_family=AF_INET;
-	addr.sin_addr.s_addr=inet_addr(group);
-	addr.sin_port=htons(port);
+	l = strlen(message);
+
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = inet_addr(group);
+	addr.sin_port = htons(port);
 	l = sendto(fd, message, l, 0, (struct sockaddr *)&addr, sizeof(addr));
 
 	close(fd);

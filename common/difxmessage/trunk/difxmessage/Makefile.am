@@ -1,6 +1,6 @@
 if WITH_EXPAT
 expat_files = \
-	difxreceive.c
+	difxparse.c
 else
 expat_files =
 endif
@@ -11,6 +11,7 @@ h_sources = \
 c_sources = \
 	multicast.c \
 	difxsend.c \
+	difxreceive.c \
 	difxmessageinit.c 
 
 library_includedir = $(includedir)/difxmessage

@@ -10,7 +10,7 @@ int difxMessagePort = -1;
 char difxMessageIdentifier[128] = "";
 char difxMessageHostname[32] = "";
 
-const char difxMessageDefaultGroup[] = "125.0.0.1";
+const char difxMessageDefaultGroup[] = "225.0.0.1";
 const int difxMessageDefaultPort = 10000;
 
 int difxMessageInit(const char *identifier)
@@ -39,4 +39,11 @@ int difxMessageInit(const char *identifier)
 	}
 
 	return 0;
+}
+
+void difxMessagePrint()
+{
+	printf("difxMessage: %s\n", difxMessageIdentifier);
+	printf("  group/port = %s/%d\n", difxMessageGroup, difxMessagePort);
+	printf("  hostname = %s\n", difxMessageHostname);
 }
