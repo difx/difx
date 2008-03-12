@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "../difxmessage.h"
 
 int MulticastSend(const char *group, int port, const char *message)
 {

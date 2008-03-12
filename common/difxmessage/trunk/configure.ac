@@ -27,6 +27,24 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AM_SANITY_CHECK
 
+dnl **********************************************************
+dnl **** Look for expat libraries                         ****
+dnl **** cause xml parsing to be built if found.          ****
+dnl **********************************************************
+expat_enabled=true
+AC_CHECK_HEADER([expat.h],
+		[AC_DEFINE([HAVE_EXPAT_H], 1, [1=has expat])],
+		[expat_enabled=false])
+if test ${expat_enabled} = true; then
+	EXPAT_LIBS="-lexpat"
+else
+	EXPAT_LIBS=""
+fi
+AM_CONDITIONAL(WITH_EXPAT, $expat_enabled)
+dnl **********************************************************
+
+LIBS=${EXPAT_LIBS}
+
 AC_OUTPUT([
 	Makefile \
 	difxmessage.pc \
