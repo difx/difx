@@ -48,7 +48,8 @@ static int getNTone(const char *filename, double t1, double t2)
 }
 
 static int parsePulseCal(const char *line, 
-	int *antId, double *time, float *timeInt, double *cableCal,
+	int *antId, int *sourceId,
+	double *time, float *timeInt, double *cableCal,
 	double freqs[2][array_MAX_TONES], 
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
@@ -60,7 +61,6 @@ static int parsePulseCal(const char *line,
 	int n, p, i, v;
 	int polId, bandId, tone, state;
 	int pol, band;
-	int sourceId;
 	double A;
 	float B, C;
 	double mjd;
@@ -88,12 +88,12 @@ static int parsePulseCal(const char *line,
 		return -2;
 	}
 
-	sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, *antId);
-	if(sourceId < 0)	/* not in scan */
+	*sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, *antId);
+	if(*sourceId < 0)	/* not in scan */
 	{
 		return -3;
 	}
-	*configId = D->source[sourceId].configId;
+	*configId = D->source[*sourceId].configId;
 	nRecChan = D->config[*configId].nRecChan;
 	
 	for(pol = 0; pol < 2; pol++)
@@ -228,7 +228,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float stateCount[2][array_MAX_TONES];
 	float pulseCalRate[2][array_MAX_TONES];
 	int configId;
-	int antId;
+	int antId, sourceId;
 	int refDay;
 	int i, v;
 	double start, stop;
@@ -318,7 +318,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		}
 		else 
 		{
-			v = parsePulseCal(line, &antId, &time, &timeInt, 
+			v = parsePulseCal(line, &antId, &sourceId, &time, &timeInt, 
 				&cableCal, freqs, pulseCalRe, pulseCalIm,
 				stateCount, refDay, D, &configId);
 			if(v < 0)
@@ -327,6 +327,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 
 			freqId1 = D->config[configId].freqId + 1;
+			sourceId1 = sourceId + 1;
 			antId1 = antId + 1;
 
 			p_fitsbuf = fitsbuf;
@@ -343,14 +344,17 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			{
 				FITS_WRITE_ARRAY(stateCount[i], p_fitsbuf,
 					4*nBand);
-				FITS_WRITE_ARRAY(freqs[i], p_fitsbuf,
-					nTone*nBand);
-				FITS_WRITE_ARRAY(pulseCalRe[i], p_fitsbuf,
-					nTone*nBand);
-				FITS_WRITE_ARRAY(pulseCalIm[i], p_fitsbuf,
-					nTone*nBand);
-				FITS_WRITE_ARRAY(pulseCalRate[i], p_fitsbuf,
-					nTone*nBand);
+				if(nTone > 0)
+				{
+					FITS_WRITE_ARRAY(freqs[i],
+						p_fitsbuf, nTone*nBand);
+					FITS_WRITE_ARRAY(pulseCalRe[i], 
+						p_fitsbuf, nTone*nBand);
+					FITS_WRITE_ARRAY(pulseCalIm[i], 
+						p_fitsbuf, nTone*nBand);
+					FITS_WRITE_ARRAY(pulseCalRate[i], 
+						p_fitsbuf, nTone*nBand);
+				}
 			}
 
 			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "PH");
