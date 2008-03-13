@@ -355,9 +355,11 @@ int DifxVisNewUVData(DifxVis *dv)
 
 	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
-	
-	/* if weights are written the data volume is 3/2 as large */
-	nFloat       = atoi(DifxParametersvalue(dv->dp, rows[7])) > 0 ? 3 : 2;
+	dv->weight[dv->bandId + dv->nFreq*dv->polId] = atof(DifxParametersvalue(dv->dp, rows[7]));
+
+	/* if chan weights are written the data volume is 3/2 as large */
+	/* for now, force nFloat = 2 (one weight for entire vis record) */
+	nFloat     = 2;
 	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
 	{
@@ -365,7 +367,6 @@ int DifxVisNewUVData(DifxVis *dv)
 		dv->baseline = bl;
 
 		index = dv->freqId + dv->nFreq*dv->polId;
-		dv->weight[index] = atof(DifxParametersvalue(dv->dp, rows[7]));
 		/* swap phase/uvw for FITS-IDI conformance */
 		dv->U = -atof(DifxParametersvalue(dv->dp, rows[8]));
 		dv->V = -atof(DifxParametersvalue(dv->dp, rows[9]));
@@ -554,6 +555,8 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 		scale = 1.0/(dv->D->chanBW*6.25e6*
 			dv->D->config[0].tInt*dv->D->specAvg);
 	}
+
+	scale = 1.0;
 
 	nWeight = dv->nFreq*dv->D->nPolar;
 
