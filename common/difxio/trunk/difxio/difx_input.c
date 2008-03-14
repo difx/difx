@@ -760,7 +760,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 	const DifxParameters *ip)
 {
-	int a, e, i, l, r;
+	int a, e, i, r;
 	int nRecChan;
 
 	if(!D || !ip)
@@ -791,35 +791,11 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 		strncpy(D->datastream[e].dataFormat,
 			DifxParametersvalue(ip, r), 31);
 	
-		D->datastream[e].quantBits = -1;
-		l = strlen(D->datastream[e].dataFormat);
-		if(l > 8)
+		r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
+		if(r < 0)
 		{
-			/* do this more formally someday... */
-			if(strcmp(D->datastream[e].dataFormat+l-2, "-1") == 0)
-			{
-				D->datastream[e].quantBits = 1;
-			}
-			else if(strcmp(D->datastream[e].dataFormat+l-2, "-2") == 0)
-			{
-				D->datastream[e].quantBits = 2;
-			}
-			else
-			{
-				D->datastream[e].quantBits = 0;
-			}
-		}
-		if(D->datastream[e].quantBits < 0)
-		{
-			r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
-			if(r < 0)
-			{
-				fprintf(stderr, 
-					"Cannot determine quantization bits\n");
-				return 0;
-			}
-			D->datastream[e].quantBits = 
-				atoi(DifxParametersvalue(ip, r));
+			fprintf(stderr, "Cannot determine quantization bits\n");
+			return 0;
 		}
 		
 
@@ -1326,6 +1302,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		"SCAN %d SRC NAME",
 		"SCAN %d REAL NAME",
+		"SCAN %d SRC RA",
+		"SCAN %d SRC DEC",
 		"SCAN %d CALCODE",
 		"SCAN %d QUAL"
 	};

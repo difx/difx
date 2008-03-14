@@ -69,7 +69,6 @@ typedef struct
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
 	int quantBits;		/* 1 or 2 */
-	int nRecChan;		/* number of recorded channels */
 	int nDatastream;	/* number of datastreams attached */
 	int nBaseline;		/* number of baselines */
 	int *datastreamId;	/* 0-based; [antennaId] datastream table indx */

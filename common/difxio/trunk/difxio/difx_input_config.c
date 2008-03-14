@@ -183,7 +183,6 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
 	   dc1->doPolar     != dc2->doPolar ||
 	   dc1->nChan       != dc2->nChan ||
 	   dc1->pulsarId    != dc2->pulsarId ||
-	   dc1->nRecChan    != dc2->nRecChan ||
 	   dc1->nBaseline   != dc2->nBaseline ||
 	   dc1->nDatastream != dc2->nDatastream)
 	{
@@ -279,7 +278,6 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	}
 	dest->doPolar = src->doPolar;
 	dest->quantBits = src->quantBits;
-	dest->nRecChan = src->nRecChan;
 	dest->nBaseline = src->nBaseline;
 	dest->nDatastream = src->nDatastream;
 
