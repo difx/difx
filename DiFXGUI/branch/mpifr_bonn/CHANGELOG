@@ -1,0 +1,7 @@
+20.2.2008: modified readsetup in DiFXgui.java:
+ 	- CORR_ROOT environment no longer needs to be set. 
+	- The COMMANDS.CONFIG file is expected to lie in the same directory as the jar file.
+	- The commands in COMMANDS.CONFIG need to be absolte path names.
+	- Introduced new COMMADS.CONFIG parameter: VEX2MODELLIST CMD
+	- Introduced new COMMADS.CONFIG parameter: MPIFXCORR CMD
+	
