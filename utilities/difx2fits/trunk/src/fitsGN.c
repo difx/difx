@@ -513,11 +513,11 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		yVal[i] = nan.f;	/* NaN */
 	}
 	arrayId1 = 1;
-	freqId1 = 0;
 	mjd = 0.5*(D->mjdStart + D->mjdStop);
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
+		freqId1 = 0;
 		antName = D->antenna[a].name;
 		antId1 = a + 1;
 		bad = 0;

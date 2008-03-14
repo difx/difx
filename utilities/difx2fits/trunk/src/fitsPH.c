@@ -94,7 +94,6 @@ static int parsePulseCal(const char *line,
 		return -3;
 	}
 	*configId = D->source[*sourceId].configId;
-	nRecChan = D->config[*configId].nRecChan;
 	
 	for(pol = 0; pol < 2; pol++)
 	{

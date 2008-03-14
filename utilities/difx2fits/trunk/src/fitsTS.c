@@ -163,14 +163,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			{
 				continue;
 			}
-		
+
 			configId = D->source[sourceId].configId;
 			freqId1 = D->config[configId].freqId + 1;
-
-			if(nRecChan > D->config[configId].nRecChan)
-			{
-				nRecChan = D->config[configId].nRecChan;
-			}
 
 			for(j = 0; j < 2; j++)
 			{
