@@ -476,8 +476,8 @@ def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 							actualsubarray[i].append(a)
 		ss = []
 		for a in actualsubarray:
-			if len(a) > minsubarraysize:
-				ss.append(a)
+			#if len(a) > minsubarraysize:
+			ss.append(a)
 		ss.sort()
 		sj[5] = ss
 							
@@ -803,7 +803,6 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, setups):
 					nIF+=1
 			tracks = fanout*qbits*nIF
 			Mbps =int(job_freq_row['sample_rate'])*nIF*qbits/1000000
-			#format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
 			
 			if format_name == "VLBA":
 				framesize = qbits*nIF*fanout*2520
@@ -821,6 +820,8 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, setups):
 			dst.append("DATA SOURCE:        %s" % "MODULE")
 			dst.append("FILTERBANK USED:    FALSE")
 			dst.append("NUM FREQS:          %d" % len(fslist))
+
+			format_name += ('1_%d-%d-%d-%d' % (fanout, Mbps, nIF, qbits))
 
 			fq = 0
 			for fs in fslist:
