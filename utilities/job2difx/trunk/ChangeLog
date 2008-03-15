@@ -13,6 +13,10 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.7
+* scale nchan by oversamp factor
+* allow visbufferlength to be overridden.  default now 32
+
 Version 1.6
 * Support change in difx input file format.
 

@@ -7,7 +7,7 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.6'
+version = '1.7'
 verdate = '20071213'
 author  = 'Walter Brisken'
 
@@ -17,6 +17,7 @@ NDataSegment = 8
 MaxEOP = 5
 verbose = 0
 multiconfig = 1
+visbufferlength = 32
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
@@ -643,7 +644,7 @@ def makecommontable(filebase, nAntenna, startmjd, stopmjd):
 	common.append("START SECONDS:      %d" % startsec)
 	common.append("ACTIVE DATASTREAMS: %d" % nAntenna)
 	common.append("ACTIVE BASELINES:   %d" % ( (nAntenna-1)*nAntenna/2 ) )
-	common.append("VIS BUFFER LENGTH:  128")
+	common.append("VIS BUFFER LENGTH:  %d" % visbufferlength)
 	common.append("OUTPUT FORMAT:      SWIN")
 	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
 	return common
@@ -675,6 +676,7 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 	custom = job['custom']
 	correl = job['correlator']
 	master = job['master']
+	job_freq = job['frequency']
 	speedUp = master[0]['speed_up']
 	nConf = len(setups)
 
@@ -687,6 +689,10 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 	if fftsize == 0:
 		fftsize = float(correl[config[0]]['fftsize'])
 	if nchan == 0:
+		# determine oversampling
+		osamp = int(job_freq[0]['sample_rate'])/ \
+			(2*int(job_freq[0]['bandwidth']))
+		fftsize *= osamp
 		specavg = float(correl[config[0]]['spect_avg'])
 		nchan   = float(correl[config[0]]['fftsize'])/specavg/2
 	specavg = int(fftsize/(2*nchan))
@@ -1530,6 +1536,8 @@ else:
 				tint = float(kv[1])
 			elif kv[0] == 'minsub':
 				minsubarraysize = float(kv[1])
+			elif kv[0] == 'vb':
+				visbufferlength = float(kv[1])
 		elif arg == '-h' or arg == '--help':
 			usage()
 		elif arg == '-v' or arg == '--verbose':
