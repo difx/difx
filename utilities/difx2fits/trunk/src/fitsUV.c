@@ -274,6 +274,22 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		"V (METRES)",
 		"W (METRES)"
 	};
+
+	const char difxKeysOrig[][MAX_DIFX_KEY_LEN] = 
+	{
+		"BASELINE NUM",
+		"MJD",
+		"SECONDS",
+		"CONFIG INDEX",
+		"SOURCE INDEX",
+		"FREQ INDEX",
+		"POLARISATION PAIR",
+		"WEIGHTS WRITTEN",
+		"U (METRES)",
+		"V (METRES)",
+		"W (METRES)"
+	};
+
 	const int N_DIFX_ROWS = sizeof(difxKeys)/sizeof(difxKeys[0]);
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N, index;
@@ -309,7 +325,16 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	}
 
 	/* parse the text header */
-	N = DifxParametersbatchfind(dv->dp, 0, difxKeys, N_DIFX_ROWS, rows);
+	if(dv->D->inputFileVersion == 0)
+	{
+		N = DifxParametersbatchfind(dv->dp, 0, difxKeys, 
+			N_DIFX_ROWS, rows);
+	}
+	else
+	{
+		N = DifxParametersbatchfind(dv->dp, 0, difxKeysOrig, 
+			N_DIFX_ROWS, rows);
+	}
 	if(N < N_DIFX_ROWS)
 	{
 		return -3;
@@ -350,7 +375,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
-	dv->weight[dv->bandId + dv->nFreq*dv->polId] = atof(DifxParametersvalue(dv->dp, rows[7]));
+	if(dv->D->inputFileVersion == 0)
+	{
+		dv->weight[dv->bandId + dv->nFreq*dv->polId] = 
+			atof(DifxParametersvalue(dv->dp, rows[7]));
+	}
+	else
+	{
+		dv->weight[dv->bandId + dv->nFreq*dv->polId] = 1.0;
+	}
 
 	/* if chan weights are written the data volume is 3/2 as large */
 	/* for now, force nFloat = 2 (one weight for entire vis record) */
