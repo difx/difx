@@ -1435,7 +1435,7 @@ def dupsched(job, masterant):
 
 #############
 
-def genMakefile(joblist):
+def genMakefile(joblist, verbose):
 	all = "all: $(fitss)"
 	clean = "clean:\n\trm -rf $(uvws)\n\trm -rf $(threads)\n\trm -rf $(machines)\n\trm -rf $(delays)\n\trm -rf $(rates)\n\trm -rf $(flags)\n\trm -rf $(calcs)\n\trm -rf $(fitss)"
 	uvws = "uvws ="
@@ -1447,9 +1447,19 @@ def genMakefile(joblist):
 	threads = "threads ="
 	machines = "machines ="
 	fitss = "fitss ="
+	cfitss = "cfitss ="
+	cjobs = {}
+	
+	if verbose > 1:
+		print 'Makefile: JOBLIST=', joblist
 	
 	for jobinfo in joblist:
 		job = jobinfo[0]
+		cjob = jobinfo[1]+'.'+split(job, '.')[0][3:]
+		if cjobs.has_key(cjob):
+			cjobs[cjob].append(job)
+		else:
+			cjobs[cjob] = [job]
 		if job[0:3] == 'job':
 			jnum = job[3:]
 		else:
@@ -1464,7 +1474,12 @@ def genMakefile(joblist):
 		calcs += " %s.calc" % job
 		flags += " %s.flag" % job
 		fitss += " %s" % fitsfile
-
+	
+	fitskeys = cjobs.keys()
+	fitskeys.sort()
+	for k in fitskeys:
+		cfitss += " %s.FITS" % k
+	
 	Makefile = open('Makefile', 'w')
 	Makefile.write(uvws+"\n\n")
 	Makefile.write(threads+"\n\n")
@@ -1475,10 +1490,12 @@ def genMakefile(joblist):
 	Makefile.write(calcs+"\n\n")
 	Makefile.write(flags+"\n\n")
 	Makefile.write(fitss+"\n\n")
+	Makefile.write(cfitss+"\n\n")
 	Makefile.write(all+"\n\n")
 	Makefile.write('delays: $(uvws)\n\n')
 	Makefile.write('uvws: $(uvws)\n\n')
-	Makefile.write("FITS: $(fitss)\n\n")
+	Makefile.write("FITS: $(cfitss)\n\n")
+	
 	Makefile.write(clean+"\n\n")
 	fitslist = []
 	for jobinfo in joblist:
@@ -1503,6 +1520,17 @@ def genMakefile(joblist):
 		Makefile.write("%s: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s\n\n" % (fitsfile, job, job, job, job, job, job, fitsfile))
 	for i in range(len(fitslist)):
 		Makefile.write("\n%d : %s\n" % ((i+1), fitslist[i]))
+
+	Makefile.write("\n")
+
+	for k in fitskeys:
+		deps = ''
+		roots = ''
+		for d in cjobs[k]:
+			deps += ' %s.difx' % d
+			roots += ' %s' % d
+		Makefile.write('%s.FITS:%s\n' % (k, deps))
+		Makefile.write('\tdifx2fits %s %s.FITS\n\n' % (roots, k))
 
 	Makefile.close()
 
@@ -1575,4 +1603,4 @@ else:
 				fftsize, nchan, tint, minsubarraysize, \
 				joblist)
 		# make Makefile
-	genMakefile(joblist)
+	genMakefile(joblist, verbose)

@@ -16,6 +16,7 @@ job2difx
 Version 1.7
 * scale nchan by oversamp factor
 * allow visbufferlength to be overridden.  default now 32
+* combine multiple subjobs into one in job2difx (does not work on subarrays)
 
 Version 1.6
 * Support change in difx input file format.
