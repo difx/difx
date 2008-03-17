@@ -13,5 +13,6 @@ dist_bin_SCRIPTS = \
 	mk5take \
 	mk5return \
 	listmodules \
+	listcpus \
 	vlog
 

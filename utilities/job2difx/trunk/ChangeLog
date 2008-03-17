@@ -97,3 +97,8 @@ listmodules
 ~~~~~~~~~~~
 Version 0.1
 * First (rough but usable) version
+
+listcpus
+~~~~~~~~
+Version 0.1
+* First (rough but usable) version

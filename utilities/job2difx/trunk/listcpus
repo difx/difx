@@ -1,0 +1,121 @@
+#!/bin/env python
+
+from string import split, strip, find
+from sys import argv, exit
+from os import popen, getenv
+from threading import Thread
+from glob import glob
+
+program = 'listcpus'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20080317'
+
+mk5list = 'mk5list'
+
+def usage():
+	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
+	print '\nA program to list CPU info for SW corr machines'
+	print '\nUsage : %s [options]' % argv[0]
+	print '\noptions can include:'
+	print '\n  -h or --help'
+	print '          print this usage info and exit'
+	print '\n  -v or --verbose'
+	print '          increase verbosity of output'
+	print '\n  -m <machinesfile> or --machines <machinesfile>'
+	print '          use <machinesfile> instead of $DIFX_MACHINES'
+	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
+	print 'is specifided.\n'
+	exit(1)
+
+
+def readmachines(machinesfile, verbose):
+	machines = []
+	lines = open(machinesfile).readlines()
+	for l in lines:
+		l = split(strip(l), '#')[0]
+		s = split(l)
+		if len(s) >= 2:
+			machines.append(s[0])
+	if verbose > 0:
+		print 'MACHINES = ', machines
+
+	return machines
+
+class querythread(Thread):
+	def __init__(self, machine):
+		Thread.__init__(self)
+		self.machine = machine
+		self.result = ''
+	def run(self):
+		cmd = 'ssh %s cat /proc/cpuinfo 2>&1' % (self.machine)
+		o = popen(cmd, 'r') 
+		lines = o.readlines()
+		o.close()
+		self.result = []
+		for l in lines:
+			s = split(l, ':')
+			if strip(s[0]) == 'model name':
+				self.result.append(strip(s[1]))
+
+def query(machines):
+	qlist = []
+	results = []
+	for m in machines:
+		qt = querythread(m)
+		qlist.append(qt)
+		qt.start()
+	for qt in qlist:
+		qt.join()
+		results.append([qt.machine, qt.result])
+	return results
+
+def run(machinesfile, verbose):
+	machines = readmachines(machinesfile, verbose)
+
+	results = query(machines)
+
+	results.sort()
+
+	for r in results:
+		print r[0]
+		for rr in r[1]:
+			print '  ', rr
+	
+	return 0
+
+machinesfile = getenv('DIFX_MACHINES')
+verbose = 0
+
+a = 1
+while a < len(argv):
+	arg = argv[a]
+	if arg == '-h' or arg == '--help':
+		usage()
+	elif arg == '-v' or arg == '--verbose':
+		verbose += 1
+	elif arg == '-m' or arg == '--machinesfile':
+		a += 1
+		if a >= len(argv):
+			print 'No machinesfile specified!'
+			exit(1)
+		machinesfile = argv[a]
+	a += 1
+
+quit = False
+
+if machinesfile == None:
+	print 'DIFX_MACHINES env var not defined!';
+	quit = True
+
+if len(glob(machinesfile)) != 1:
+	print 'Machinesfile %s not found.' % machinesfile
+	quit = True
+	
+if quit:
+	print 'genmachines quitting.'
+	exit(1)
+	
+v = run(machinesfile, verbose)
+if v != 0:
+	exit(v)
