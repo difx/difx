@@ -340,7 +340,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	}
 	if(verbose > 1 && s != dv->sourceId)
 	{
-		printf("\n        MJD=%11.5f  Source change : Id=%d Name=%s", 
+		printf("        MJD=%11.5f  Source change : Id=%d Name=%s\n", 
 			mjd, s, dv->D->source[s].name);
 	}
 
