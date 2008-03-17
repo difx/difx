@@ -447,6 +447,13 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	D->job->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[4]));
 
+	if(DifxParametersfind(ip, 0, "DATA HEADER O/RIDE") > 0)
+	{
+		printf("Warning -- parsing old version of input file.\n");
+		printf("  Watch out for unusual behavior!\n");
+		D->inputFileVersion = 1;	/* pre-Perth Merge version */
+	}
+
 	return D;
 }	
 

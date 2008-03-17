@@ -210,6 +210,7 @@ typedef struct
 
 typedef struct
 {
+	int inputFileVersion;	/* version of input file to parse. 0=current */
 	double mjdStart;	/* start of combined dataset */
 	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
