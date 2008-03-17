@@ -45,6 +45,19 @@ void deleteDifxAntennaFlagArray(DifxAntennaFlag *df)
 	}
 }
 
+void printDifxAntennaFlagArray(const DifxAntennaFlag *df, int nf)
+{
+	int f;
+
+	printf("  Difx Antenna Flag : %p\n", df);
+	for(f = 0; f < nf; f++)
+	{
+		printf("    Flag: AntId=%d  times %12.6f to %12.6f\n", 
+			df[f].antennaId,
+			df[f].mjd1, df[f].mjd2);
+	}
+}
+
 void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
 	const int *antennaIdRemap)
 {

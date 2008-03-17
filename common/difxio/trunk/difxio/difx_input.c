@@ -163,6 +163,9 @@ void printDifxInput(const DifxInput *D)
 	{
 		printDifxPulsar(D->pulsar + i);
 	}
+
+	printf("  nFlags = %d\n", D->nFlag);
+	printDifxAntennaFlagArray(D->flag, D->nFlag);
 	
 	printf("\n");
 }
