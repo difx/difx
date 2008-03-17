@@ -50,7 +50,7 @@ typedef struct
 DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
-int DifxVisNewUVData(DifxVis *dv);
+int DifxVisNewUVData(DifxVis *dv, int verbose);
 
 
 #endif

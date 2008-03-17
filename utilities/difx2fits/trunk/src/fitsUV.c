@@ -45,8 +45,6 @@ static int DifxVisInitData(DifxVis *dv)
 static void startGlob(DifxVis *dv)
 {
 	char globstr[256];
-	int verbose = 0;
-	int g;
 
 	sprintf(globstr, "%s.difx/DIFX*", dv->D->job[dv->jobId].fileBase);
 
@@ -56,15 +54,6 @@ static void startGlob(DifxVis *dv)
 	}
 	glob(globstr, 0, 0, &dv->globbuf);
 	dv->nFile = dv->globbuf.gl_pathc;
-	if(verbose)
-	{
-		printf("jobId=%d  %d visibility files to be read:\n", 
-			dv->jobId, dv->nFile);
-		for(g = 0; g < dv->nFile; g++)
-		{
-			printf("File %d : %s\n", g+1, dv->globbuf.gl_pathv[g]);
-		}
-	}
 	
 	dv->globbuf.gl_offs = 0;
 }
@@ -269,7 +258,7 @@ int DifxVisNextFile(DifxVis *dv)
 	return 0;
 }
 	
-int DifxVisNewUVData(DifxVis *dv)
+int DifxVisNewUVData(DifxVis *dv, int verbose)
 {
 	const char difxKeys[][MAX_DIFX_KEY_LEN] = 
 	{
@@ -289,7 +278,7 @@ int DifxVisNewUVData(DifxVis *dv)
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N, index;
 	int a1, a2;
-	int bl, c;
+	int bl, c, s;
 	double mjd;
 	int changed = 0;
 	int nFloat, readSize;
@@ -344,12 +333,18 @@ int DifxVisNewUVData(DifxVis *dv)
 		bl = (a1+1)*256 + (a2+1);
 	}
 
-	dv->sourceId = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
-	if(dv->sourceId < 0)
+	s = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
+	if(s < 0)
 	{
 		return -4;
 	}
+	if(verbose > 1 && s != dv->sourceId)
+	{
+		printf("\n        MJD=%11.5f  Source change : Id=%d Name=%s", 
+			mjd, s, dv->D->source[s].name);
+	}
 
+	dv->sourceId = s;
 	configId = dv->D->source[dv->sourceId].configId;
 	dv->freqId = dv->D->config[configId].freqId;
 
@@ -502,7 +497,8 @@ int RecordIsFlagged(const DifxVis *dv)
 	return 0;
 }
 
-int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
+int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
+	int verbose)
 {
 	int first = 1;
 	int v;
@@ -630,7 +626,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 
 	for(;;)
 	{
-		changed = DifxVisNewUVData(dv);
+		changed = DifxVisNewUVData(dv, verbose);
 		if(changed < 0)	/* done! */
 		{
 			break;
@@ -737,7 +733,8 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s)
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
-	struct fitsPrivate *out, double scale)
+	struct fitsPrivate *out, double scale,
+	int verbose)
 {
 	DifxVis *dv;
 	
@@ -752,7 +749,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		return 0;
 	}
 
-	DifxVisConvert(dv, p_fits_keys, scale);
+	DifxVisConvert(dv, p_fits_keys, scale, verbose);
 
 	deleteDifxVis(dv);
 

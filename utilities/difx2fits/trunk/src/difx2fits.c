@@ -8,7 +8,7 @@ const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
 
-int usage(const char *pgm)
+static int usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s\n\n",
 		program, version, author);
@@ -66,7 +66,7 @@ int usage(const char *pgm)
 	return 0;
 }
 
-int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
+static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
@@ -107,8 +107,8 @@ int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	return 0;
 }
 
-const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
-	struct fitsPrivate *out, int write_model, double scale)
+static const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
+	struct fitsPrivate *out, int write_model, double scale, int verbose)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -176,7 +176,7 @@ const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, scale);
+	D = DifxInput2FitsUV(D, &keys, out, scale, verbose);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
@@ -392,7 +392,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(DifxInput2FitsTables(D, &outfile, writemodel, scale) == D)
+	if(DifxInput2FitsTables(D, &outfile, writemodel, scale, verbose) == D)
 	{
 		printf("\nConversion successful\n");
 	}
