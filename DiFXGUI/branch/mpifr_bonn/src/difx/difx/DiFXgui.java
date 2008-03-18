@@ -17,14 +17,16 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
+import java.awt.BorderLayout;
+
 
 public class DiFXgui
-    extends JFrame implements ActionListener, ChangeListener
+    extends JFrame implements  ChangeListener
 {
 
     private static final String INIFILE = "COMMANDS.CONFIG";
 
-    private JTabbedPane displayarea;
+    private JTabbedPane displayarea = new JTabbedPane();
     private DiFXPanel lastselectedpanel;
     private PulsarPanel pulsarpanel;
     private CorrSummaryPanel corrsummarypanel;
@@ -36,10 +38,6 @@ public class DiFXgui
     private EditFreqPanel editfreqpanel;
     private JMenuBar mainmenubar;
     private JMenu pulsarmenu, mainmenu, modelmenu, advancedmenu;
-    private JMenuItem[] pulsarmenuitems;
-    private JMenuItem[] mainmenuitems;
-    private JMenuItem[] modelmenuitems;
-    private JMenuItem[] advancedmenuitems;
     private JFileChooser vexchooser, corrconfigchooser;
     private FileFilter vexfilter, corrconfigfilter;
     private String queuegatewaymachine;
@@ -50,146 +48,76 @@ public class DiFXgui
     getpbsnodescommand, getqueuescommand, vex2modetimelistcommand;
     private CorrelationConfig corrconfig;
 
+    JMenuItem mitExit = new JMenuItem();
+    JMenuItem mitOpen = new JMenuItem();
+    JMenuItem mitSave = new JMenuItem();
+    JMenuItem mitSaveAs = new JMenuItem();
+    JMenuItem mitNew = new JMenuItem();
+    JMenuItem mitNewFromVex = new JMenuItem();
+    JMenuItem mitCalcFromVex = new JMenuItem();
+    JMenuItem mitCalcManual = new JMenuItem();
+    JMenuItem mitAddCalcStation = new JMenuItem();
+    JMenuItem mitOpenBinconfig = new JMenuItem();
+    JMenuItem mitOpenCube = new JMenuItem();
+    JMenuItem mitSaveBinconfig = new JMenuItem();
+    JMenuItem mitTrimMatchConfig = new JMenuItem();
+    JMenuItem mitAddCalcSource = new JMenuItem();
+    JMenuItem mitTrimMatchTimerange = new JMenuItem();
+    JMenuItem mitTrimMatchMode = new JMenuItem();
+    BorderLayout borderLayout1 = new BorderLayout();
     public DiFXgui() throws HeadlessException
     {
         super("DiFX GUI");
 
-        //create the correlation config object
-        corrconfig = new CorrelationConfig(this);
-
-        //read in the commands from the default setup file
-        readsetup();
-
-        //create the filechoosers
-        vexchooser = new JFileChooser();
-        vexfilter = new FileFilter()
+        try
         {
-            public boolean accept(File f)
+            //create the correlation config object
+            corrconfig = new CorrelationConfig(this);
+
+            //read in the commands from the default setup file
+            readsetup();
+
+            //create the filechoosers
+            vexchooser = new JFileChooser();
+            vexfilter = new FileFilter()
             {
-                return f.getName().endsWith(".skd") ||
-                    f.getName().endsWith("vex") || f.isDirectory();
-            }
+                public boolean accept(File f)
+                {
+                    return f.getName().endsWith(".skd") ||
+                        f.getName().endsWith("vex") || f.isDirectory();
+                }
 
-            public String getDescription()
+                public String getDescription()
+                {
+                    return "VEX configuration files";
+                }
+            };
+            vexchooser.addChoosableFileFilter(vexfilter);
+            vexchooser.setFileFilter(vexfilter);
+            corrconfigchooser = new JFileChooser();
+            corrconfigfilter = new FileFilter()
             {
-                return "VEX configuration files";
-            }
-        };
-        vexchooser.addChoosableFileFilter(vexfilter);
-        vexchooser.setFileFilter(vexfilter);
-        corrconfigchooser = new JFileChooser();
-        corrconfigfilter = new FileFilter()
-        {
-            public boolean accept(File f)
-            {
-                return f.getName().endsWith(".input") || f.isDirectory();
-            }
+                public boolean accept(File f)
+                {
+                    return f.getName().endsWith(".input") || f.isDirectory();
+                }
 
-            public String getDescription()
-            {
-                return "Correlation configuration files";
-            }
-        };
-        corrconfigchooser.addChoosableFileFilter(corrconfigfilter);
-        corrconfigchooser.setFileFilter(corrconfigfilter);
+                public String getDescription()
+                {
+                    return "Correlation configuration files";
+                }
+            };
+            corrconfigchooser.addChoosableFileFilter(corrconfigfilter);
+            corrconfigchooser.setFileFilter(corrconfigfilter);
 
-        // set up the tabbed panels to be used
-        displayarea = new JTabbedPane();
-        displayarea.addChangeListener(this);
+            jbInit();
 
-        pulsarpanel = new PulsarPanel(this, corrconfig);
-        corrsummarypanel = new CorrSummaryPanel(this, corrconfig);
-        editcommonpanel = new EditCommonPanel(this, corrconfig);
-        editconfigpanel = new EditConfigPanel(this, corrconfig);
-        editdatastreampanel = new EditDatastreamPanel(this, corrconfig);
-        editbaselinepanel = new EditBaselinePanel(this, corrconfig);
-        editnodepanel = new EditNodePanel(this, corrconfig);
-        editfreqpanel = new EditFreqPanel(this, corrconfig);
-
-        lastselectedpanel = corrsummarypanel;
-
-        displayarea.add("Correlation Summary", corrsummarypanel);
-
-        displayarea.add("Common Settings", editcommonpanel);
-        displayarea.add("Config Settings", editconfigpanel);
-        displayarea.add("Datastream Settings", editdatastreampanel);
-        displayarea.add("Baseline Settings", editbaselinepanel);
-        displayarea.add("Frequency Settings", editfreqpanel);
-        displayarea.add("Node Settings", editnodepanel);
-        displayarea.add("Pulsar", pulsarpanel);
-        displayarea.setSelectedComponent(corrsummarypanel);
-        add(displayarea);
-
-        // setup the menubar
-        mainmenubar = new JMenuBar();
-        pulsarmenu = new JMenu("Pulsar");
-        mainmenu = new JMenu("Main");
-        modelmenu = new JMenu("Model");
-        advancedmenu = new JMenu("Advanced");
-
-        //create the "main" menu
-        String[] mainmenustrings =
-            {
-            "Open existing configuration file",
-            "Create new configuration file from vex file",
-            "Create new blank configuration file",
-            "Save configuration file", "Save configuration file as", "Exit"};
-        mainmenuitems = new JMenuItem[mainmenustrings.length];
-        for (int i = 0; i < mainmenustrings.length; i++)
-        {
-            mainmenuitems[i] = new JMenuItem(mainmenustrings[i]);
-            mainmenuitems[i].addActionListener(this);
-            mainmenu.add(mainmenuitems[i]);
+            setGuiInputState(false);
         }
-
-        //create the pulsar menu
-        String[] pulsarmenustrings =
-            {
-            "Open binconfig file", "Open pulsarcube file",
-            "Save binconfig file"};
-        pulsarmenuitems = new JMenuItem[pulsarmenustrings.length];
-        for (int i = 0; i < pulsarmenustrings.length; i++)
+        catch (Exception ex)
         {
-            pulsarmenuitems[i] = new JMenuItem(pulsarmenustrings[i]);
-            pulsarmenuitems[i].addActionListener(this);
-            pulsarmenu.add(pulsarmenuitems[i]);
+            ex.printStackTrace();
         }
-
-        //create the model menu
-        String[] modelmenustrings =
-            {
-            "Generate model using CALC from a vex file",
-            "Generate model using CALC manually",
-            "Add a station to the CALC database",
-            "Add a source to the CALC database"};
-        modelmenuitems = new JMenuItem[modelmenustrings.length];
-        for (int i = 0; i < modelmenustrings.length; i++)
-        {
-            modelmenuitems[i] = new JMenuItem(modelmenustrings[i]);
-            modelmenuitems[i].addActionListener(this);
-            modelmenu.add(modelmenuitems[i]);
-        }
-
-        //create the advanced menu
-        String[] advancedmenustrings =
-            {
-            "Trim datafile selection to match configs",
-            "Trim datafile selection to match correlation timerange",
-            "Trim datafile selections to match a mode"};
-        advancedmenuitems = new JMenuItem[advancedmenustrings.length];
-        for (int i = 0; i < advancedmenustrings.length; i++)
-        {
-            advancedmenuitems[i] = new JMenuItem(advancedmenustrings[i]);
-            advancedmenuitems[i].addActionListener(this);
-            advancedmenu.add(advancedmenuitems[i]);
-        }
-
-        //add all the menus to the menubar
-        mainmenubar.add(mainmenu);
-        mainmenubar.add(modelmenu);
-        mainmenubar.add(pulsarmenu);
-        mainmenubar.add(advancedmenu);
-        setJMenuBar(mainmenubar);
     }
 
     public static String getGetNodesCommand()
@@ -358,46 +286,6 @@ public class DiFXgui
         }
     }
 
-    public void actionPerformed(ActionEvent e)
-    {
-        Object source = e.getSource();
-
-        if (source == pulsarmenuitems[0])
-            pulsarpanel.openBinConfigFile();
-        else if (source == pulsarmenuitems[1])
-            pulsarpanel.openPulsarCubeFile();
-        else if (source == pulsarmenuitems[2])
-            pulsarpanel.saveBinConfigFile(true);
-
-        else if (source == mainmenuitems[0])
-            loadCorrConfigFile();
-        else if (source == mainmenuitems[1])
-            createConfigFile(true);
-        else if (source == mainmenuitems[2])
-            createConfigFile(false);
-        else if (source == mainmenuitems[3])
-            corrconfig.saveCorrConfigFile();
-        else if (source == mainmenuitems[4])
-            saveCorrConfigFileAs();
-        else if (source == mainmenuitems[5])
-            closegui();
-
-        else if (source == modelmenuitems[0])
-            createModelFiles(true);
-        else if (source == modelmenuitems[1])
-            createModelFiles(false);
-        else if (source == modelmenuitems[2])
-            addCalcStation();
-        else if (source == modelmenuitems[3])
-            addCalcSource();
-
-        else if (source == advancedmenuitems[0])
-            trimDataFilesBySource();
-        else if (source == advancedmenuitems[1])
-            trimDataFilesByTimerange();
-        else if (source == advancedmenuitems[2])
-            trimDataFilesByMode();
-    }
 
     public void stateChanged(ChangeEvent e)
     {
@@ -597,7 +485,7 @@ public class DiFXgui
                     }
                     else if (!skipextrapolate &&
                              line.indexOf(
-                        "EOP FILE NOT UP TO DATE - INTERPOLATING") >=
+                                 "EOP FILE NOT UP TO DATE - INTERPOLATING") >=
                              0)
                     {
                         returnval = JOptionPane.showConfirmDialog(this, "The EOP file is not up to date and CALC must extrapolate from old EOPs - do you want to continue?  (Suggested course of action: Select NO and run update_eops in your $CALCDB directory)",
@@ -947,5 +835,475 @@ public class DiFXgui
         }
         else
             System.exit(0);
+    }
+
+    private void setGuiInputState (boolean enable)
+    {
+        // disable tab panes
+        displayarea.setEnabled(enable);
+
+        // disable buttons
+        lastselectedpanel.commitchangebutton.setEnabled(enable);
+        lastselectedpanel.launchbutton.setEnabled(enable);
+        lastselectedpanel.consistencycheckbutton.setEnabled(enable);
+
+    }
+
+    /**
+     * Initializiation of gui components
+     * @throws Exception
+     */
+    private void jbInit() throws Exception
+    {
+
+        displayarea.addChangeListener(this);
+
+        pulsarpanel = new PulsarPanel(this, corrconfig);
+        corrsummarypanel = new CorrSummaryPanel(this, corrconfig);
+        editcommonpanel = new EditCommonPanel(this, corrconfig);
+        editconfigpanel = new EditConfigPanel(this, corrconfig);
+        editdatastreampanel = new EditDatastreamPanel(this, corrconfig);
+        editbaselinepanel = new EditBaselinePanel(this, corrconfig);
+        editnodepanel = new EditNodePanel(this, corrconfig);
+        editfreqpanel = new EditFreqPanel(this, corrconfig);
+
+
+
+        lastselectedpanel = corrsummarypanel;
+        mitExit.setText("Exit");
+        mitExit.addActionListener(new DiFXgui_mitExit_actionAdapter(this));
+        mitSaveAs.addActionListener(new DiFXgui_mitSaveAs_actionAdapter(this));
+        mitSaveAs.setText("Save config file as");
+        mitSave.addActionListener(new DiFXgui_mitSave_actionAdapter(this));
+        mitSave.setText("Save config file");
+        mitOpen.addActionListener(new DiFXgui_mitOpen_actionAdapter(this));
+        mitNew.addActionListener(new DiFXgui_mitNew_actionAdapter(this));
+        mitNewFromVex.addActionListener(new DiFXgui_mitNewFromVex_actionAdapter(this));
+        mitNewFromVex.setText("Create new config file from vex");
+        mitNew.setText("Create new blank config file");
+        mitOpen.setText("Open existing config file");
+        mitOpenBinconfig.setText("Open binconfig file");
+        mitOpenBinconfig.addActionListener(new
+            DiFXgui_mitOpenBinconfig_actionAdapter(this));
+        mitOpenCube.setText("Open pulsarcube file");
+        mitOpenCube.addActionListener(new DiFXgui_mitOpenCube_actionAdapter(this));
+        mitSaveBinconfig.setText("Save binconfig file");
+        mitSaveBinconfig.addActionListener(new
+            DiFXgui_mitSaveBinconfig_actionAdapter(this));
+        mitCalcFromVex.setText("Generate model using CALC from a vex file");
+        mitCalcFromVex.addActionListener(new
+                                         DiFXgui_mitCalcFromVex_actionAdapter(this));
+        mitCalcManual.setText("Generate model using CALC manually");
+        mitCalcManual.addActionListener(new DiFXgui_mitCalcManual_actionAdapter(this));
+        mitAddCalcStation.setText("Add a station to the CALC database");
+        mitAddCalcStation.addActionListener(new
+            DiFXgui_mitAddCalcStation_actionAdapter(this));
+        mitAddCalcSource.setText("Add a source to the CALC database");
+        mitAddCalcSource.addActionListener(new
+            DiFXgui_mitAddCalcSource_actionAdapter(this));
+        mitTrimMatchConfig.setText("Trim datafile selection to match configs");
+        mitTrimMatchConfig.addActionListener(new
+            DiFXgui_mitTrimMatchConfig_actionAdapter(this));
+        mitTrimMatchTimerange.setText(
+            "Trim datafile selection to match correlation timerange");
+        mitTrimMatchTimerange.addActionListener(new
+            DiFXgui_mitTrimMatchTimerange_actionAdapter(this));
+        mitTrimMatchMode.setText("Trim datafile selections to match a mode");
+        mitTrimMatchMode.addActionListener(new
+            DiFXgui_mitTrimMatchMode_actionAdapter(this));
+        this.getContentPane().setLayout(borderLayout1);
+        this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        this.addWindowListener(new DiFXgui_this_windowAdapter(this));
+        // add panes to the tab panel
+        displayarea.add("Correlation Summary", corrsummarypanel);
+        displayarea.add("Common Settings", editcommonpanel);
+        displayarea.add("Config Settings", editconfigpanel);
+        displayarea.add("Datastream Settings", editdatastreampanel);
+        displayarea.add("Baseline Settings", editbaselinepanel);
+        displayarea.add("Frequency Settings", editfreqpanel);
+        displayarea.add("Node Settings", editnodepanel);
+        displayarea.add("Pulsar", pulsarpanel); // creates the menu
+        mainmenubar = new JMenuBar();
+        pulsarmenu = new JMenu("Pulsar");
+        mainmenu = new JMenu("Main");
+        modelmenu = new JMenu("Model");
+        advancedmenu = new JMenu("Advanced");
+
+
+        mainmenu.add(mitOpen);
+        mainmenu.add(mitNewFromVex);
+        mainmenu.add(mitNew);
+        mainmenu.add(mitSave);
+        mainmenu.add(mitSaveAs);
+        mainmenu.add(mitExit);
+        pulsarmenu.add(mitOpenBinconfig);
+        pulsarmenu.add(mitOpenCube);
+        pulsarmenu.add(mitSaveBinconfig);
+
+        modelmenu.add(mitCalcFromVex);
+        modelmenu.add(mitCalcManual);
+
+        modelmenu.add(mitAddCalcStation);
+        modelmenu.add(mitAddCalcSource);
+
+        //add all the menus to the menubar
+        mainmenubar.add(mainmenu);
+        mainmenubar.add(modelmenu);
+        mainmenubar.add(pulsarmenu);
+        mainmenubar.add(advancedmenu);
+        advancedmenu.add(mitTrimMatchConfig);
+        advancedmenu.add(mitTrimMatchTimerange);
+        advancedmenu.add(mitTrimMatchMode);
+        this.getContentPane().add(displayarea, java.awt.BorderLayout.CENTER);
+
+         this.setJMenuBar(mainmenubar);
+    }
+
+    public void mitExit_actionPerformed(ActionEvent e)
+    {
+        closegui();
+    }
+
+    public void mitSaveAs_actionPerformed(ActionEvent e)
+    {
+        saveCorrConfigFileAs();
+    }
+
+    public void mitSave_actionPerformed(ActionEvent e)
+    {
+        corrconfig.saveCorrConfigFile();
+    }
+
+    public void mitOpen_actionPerformed(ActionEvent e)
+    {
+        loadCorrConfigFile();
+        /** @todo set enbaled only if no errors have occured */
+        setGuiInputState(true);
+    }
+
+    public void mitNew_actionPerformed(ActionEvent e)
+    {
+
+        createConfigFile(false);
+        /** @todo set enbaled only if no errors have occured */
+        setGuiInputState(true);
+    }
+
+    public void mitNewFromVex_actionPerformed(ActionEvent e)
+    {
+
+        createConfigFile(true);
+        /** @todo set enbaled only if no errors have occured */
+        setGuiInputState(true);
+    }
+
+    public void mitOpenBinconfig_actionPerformed(ActionEvent e)
+    {
+        pulsarpanel.openBinConfigFile();
+    }
+
+    public void mitOpenCube_actionPerformed(ActionEvent e)
+    {
+        pulsarpanel.openPulsarCubeFile();
+    }
+
+    public void mitSaveBinconfig_actionPerformed(ActionEvent e)
+    {
+        pulsarpanel.saveBinConfigFile(true);
+    }
+
+    public void mitCalcFromVex_actionPerformed(ActionEvent e)
+    {
+        createModelFiles(true);
+    }
+
+    public void mitCalcManual_actionPerformed(ActionEvent e)
+    {
+        createModelFiles(false);
+    }
+
+    public void mitAddCalcStation_actionPerformed(ActionEvent e)
+    {
+        addCalcStation();
+    }
+
+    public void mitAddCalcSource_actionPerformed(ActionEvent e)
+    {
+        addCalcSource();
+    }
+
+    public void mitTrimMatchConfig_actionPerformed(ActionEvent e)
+    {
+        trimDataFilesBySource();
+    }
+
+    public void mitTrimMatchTimerange_actionPerformed(ActionEvent e)
+    {
+        trimDataFilesByTimerange();
+    }
+
+    public void mitTrimMatchMode_actionPerformed(ActionEvent e)
+    {
+        trimDataFilesByMode();
+    }
+
+    public void this_windowClosing(WindowEvent e)
+    {
+        closegui();
+    }
+}
+
+class DiFXgui_this_windowAdapter
+    extends WindowAdapter
+{
+    private DiFXgui adaptee;
+    DiFXgui_this_windowAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void windowClosing(WindowEvent e)
+    {
+        adaptee.this_windowClosing(e);
+    }
+}
+
+class DiFXgui_mitTrimMatchMode_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitTrimMatchMode_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitTrimMatchMode_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitTrimMatchTimerange_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitTrimMatchTimerange_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitTrimMatchTimerange_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitTrimMatchConfig_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitTrimMatchConfig_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitTrimMatchConfig_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitCalcManual_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitCalcManual_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitCalcManual_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitAddCalcStation_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitAddCalcStation_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitAddCalcStation_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitAddCalcSource_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitAddCalcSource_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitAddCalcSource_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitCalcFromVex_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitCalcFromVex_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitCalcFromVex_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitSaveBinconfig_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitSaveBinconfig_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitSaveBinconfig_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitOpenCube_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitOpenCube_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitOpenCube_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitOpenBinconfig_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitOpenBinconfig_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitOpenBinconfig_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitOpen_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitOpen_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitOpen_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitNew_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitNew_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitNew_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitNewFromVex_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitNewFromVex_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitNewFromVex_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitSave_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitSave_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitSave_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitExit_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitExit_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitExit_actionPerformed(e);
+    }
+}
+
+class DiFXgui_mitSaveAs_actionAdapter
+    implements ActionListener
+{
+    private DiFXgui adaptee;
+    DiFXgui_mitSaveAs_actionAdapter(DiFXgui adaptee)
+    {
+        this.adaptee = adaptee;
+    }
+
+    public void actionPerformed(ActionEvent e)
+    {
+        adaptee.mitSaveAs_actionPerformed(e);
     }
 }
