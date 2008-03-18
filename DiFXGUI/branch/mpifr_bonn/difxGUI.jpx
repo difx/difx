@@ -45,7 +45,9 @@
 <property category="sys" name="Version" value="1.0"/>
 <property category="sys" name="VersionLabel" value="@version"/>
 <property category="sys" name="WorkingDirectory" value="."/>
+<property category="sys" name="palette.bean.chooser.beans" value="javax.swing.JMenuItem;"/>
 <property category="sys" name="uidesign.size.difx.CorrSummaryPanel" value="442,308"/>
+<property category="sys" name="uidesign.size.difx.DiFXgui" value="604,300"/>
 <property category="sys" name="uidesign.size.difx.EditCommonPanel" value="569,478"/>
 <node name="DifXGUI" type="Archive">
 <property category="archiving" name="archiverClass" value="com.borland.jbuilder.wizard.archive.ApplicationArchiver"/>

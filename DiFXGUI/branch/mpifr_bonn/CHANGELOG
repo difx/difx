@@ -1,3 +1,7 @@
+18.3.2008: 
+	- application closes when close button is clicked (DiFXgui.java)
+	- tab panes / buttons are disbaled as long as no new/open operation is performed by the user (DiFXgui.java)
+	- code cleanup. Make code conform to JBuilder GUI Designer (DiFXgui.java)
 20.2.2008: modified readsetup in DiFXgui.java:
  	- CORR_ROOT environment no longer needs to be set. 
 	- The COMMANDS.CONFIG file is expected to lie in the same directory as the jar file.
