@@ -686,6 +686,8 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 			minBW = f[1]
 	minBW *= 1.0e6	# convert to Hz
 
+	osamp = 1
+
 	if fftsize == 0:
 		fftsize = float(correl[config[0]]['fftsize'])
 	if nchan == 0:
@@ -695,8 +697,8 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 		fftsize *= osamp
 		specavg = float(correl[config[0]]['spect_avg'])
 		nchan   = float(correl[config[0]]['fftsize'])/specavg/2
-	specavg = int(fftsize/(2*nchan))
-	if specavg*nchan*2 != fftsize:
+	specavg = int(fftsize/(2*nchan*osamp))
+	if specavg*nchan*osamp*2 != fftsize:
 		print 'problem with nchan and fftsize'
 		exit(0)
 
