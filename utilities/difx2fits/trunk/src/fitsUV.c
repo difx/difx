@@ -361,6 +361,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	s = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
 	if(s < 0)
 	{
+		fread(dv->spectrum, sizeof(float), readSize, dv->in);
 		return -4;
 	}
 	if(verbose > 1 && s != dv->sourceId)
@@ -660,7 +661,11 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	for(;;)
 	{
 		changed = DifxVisNewUVData(dv, verbose);
-		if(changed < 0)	/* done! */
+		if(changed == -4)    /* probably an autocorr of unused ant */
+		{
+			continue;
+		}
+		else if(changed < 0) /* done! */
 		{
 			break;
 		}
@@ -783,6 +788,11 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	}
 
 	DifxVisConvert(dv, p_fits_keys, scale, verbose);
+
+	if(dv->jobId != dv->D->nJob && dv->curFile != dv->nFile)
+	{
+		printf("\n\nWARNING : Not all files were converted!\n");
+	}
 
 	deleteDifxVis(dv);
 

@@ -95,6 +95,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double modelInc;
 	double start;
 	double freq;
+	int *skip;
+	int skipped=0;
 	/* 1-based indices for FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
 
@@ -160,6 +162,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		freqVar[i] = 0.0;
 	}
 
+	skip = (int *)calloc(D->nAntenna, sizeof(int));
+
 	for(s = 0; s < D->nScan; s++)
 	{
 	   jobId = D->scan[s].jobId;
@@ -182,9 +186,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		/* skip antennas with no model data */
 		if(M == 0)
 		{
-		  printf("\n    Warning : skipping antId %d", antId);
+		  if(skip[antId] == 0)
+		  {
+		    printf("\n    Warning : skipping antId %d", antId);
+		    skipped++;
+		  }
+		  skip[antId]++;
 		  continue;
 		}
+
 
 		p_fitsbuf = fitsbuf;
 	      
@@ -241,9 +251,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	     } /* Antenna loop */
 	   } /* Intervals in scan loop */
 	} /* Scan loop */
+
+  	if(skipped)
+	{
+		printf("\n                            ");
+	}
   
 	/* release buffer space */
 	free(fitsbuf);
+	free(skip);
 
 	return D;
 }
