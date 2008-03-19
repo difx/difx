@@ -189,7 +189,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			src = 1;
 		}
-		else if(ds1[i1].mjdStart <= ds2[0].mjdStart)
+		else if(ds1[i1].mjdStart <= ds2[i2].mjdStart)
 		{
 			src = 1;
 		}

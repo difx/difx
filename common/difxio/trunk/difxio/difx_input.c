@@ -1114,7 +1114,8 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 	int i, c, p, r = 0, v, N;
 	int nPoint, startPoint;
 	int rows[20];
-	
+	double mjdStop;
+
 	const char initKeys[][MAX_DIFX_KEY_LEN] = 
 	{
 		"INCREMENT (SECS)",
@@ -1179,6 +1180,8 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		D->antenna[i].dY       = 0.0;
 		D->antenna[i].dZ       = 0.0;
 	}
+
+	mjdStop = D->job->mjdStart + D->job->duration/86400.0;
 	
 	rows[N_SCAN_ROWS-1] = 0;
 	for(i = 0; i < D->nScan; i++)
@@ -1195,6 +1198,10 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			startPoint*D->job->modelInc/86400.0;
 		D->scan[i].mjdEnd    = D->job->mjdStart + 
 			(startPoint+nPoint)*D->job->modelInc/86400.0;
+		if(D->scan[i].mjdEnd > mjdStop)
+		{
+			D->scan[i].mjdEnd = mjdStop;
+		}
 		D->scan[i].nPoint    = nPoint;
 		strncpy(D->scan[i].name, 
 			DifxParametersvalue(up, rows[2]), 31);
