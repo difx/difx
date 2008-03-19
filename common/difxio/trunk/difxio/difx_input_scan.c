@@ -68,10 +68,16 @@ void printDifxScan(const DifxScan *ds)
 	printf("    ConfigId = %d\n", ds->configId);
 	if(ds->nPoint > 1 && ds->nAntenna > 1)
 	{
-		printDifxModel(ds->model[0] - 1);
-		printDifxModel(ds->model[0]);
-		printDifxModel(ds->model[1] - 1);
-		printDifxModel(ds->model[1]);
+		if(ds->model[0])
+		{
+			printDifxModel(ds->model[0] - 1);
+			printDifxModel(ds->model[0]);
+		}
+		if(ds->model[1])
+		{
+			printDifxModel(ds->model[1] - 1);
+			printDifxModel(ds->model[1]);
+		}
 	}
 }
 
