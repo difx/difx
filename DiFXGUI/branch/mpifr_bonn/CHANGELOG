@@ -1,3 +1,7 @@
+19.3.2008:
+	- added navigation treeview to the summary panel (CorrSummaryPanel.java)
+	- removed scrollbar from the CorrSummaryPanel. Instead we use the DiFXPanel's scrollbar. (CorrSummaryPanel.java)
+	- Code cleanup. Make code conform to JBuilder GUI Designer (CorrSummaryPanel.java)
 18.3.2008: 
 	- application closes when close button is clicked (DiFXgui.java)
 	- tab panes / buttons are disbaled as long as no new/open operation is performed by the user (DiFXgui.java)
