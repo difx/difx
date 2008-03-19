@@ -18,7 +18,8 @@ import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.swing.filechooser.FileFilter;
 import java.awt.BorderLayout;
-
+import javax.swing.BorderFactory;
+import java.awt.Color;
 
 public class DiFXgui
     extends JFrame implements  ChangeListener
@@ -65,6 +66,7 @@ public class DiFXgui
     JMenuItem mitTrimMatchTimerange = new JMenuItem();
     JMenuItem mitTrimMatchMode = new JMenuItem();
     BorderLayout borderLayout1 = new BorderLayout();
+
     public DiFXgui() throws HeadlessException
     {
         super("DiFX GUI");
@@ -112,6 +114,7 @@ public class DiFXgui
 
             jbInit();
 
+            // disable controls until new/open operation by the user
             setGuiInputState(false);
         }
         catch (Exception ex)
@@ -914,6 +917,7 @@ public class DiFXgui
         this.getContentPane().setLayout(borderLayout1);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         this.addWindowListener(new DiFXgui_this_windowAdapter(this));
+        displayarea.setBorder(BorderFactory.createLineBorder(Color.black));
         // add panes to the tab panel
         displayarea.add("Correlation Summary", corrsummarypanel);
         displayarea.add("Common Settings", editcommonpanel);
