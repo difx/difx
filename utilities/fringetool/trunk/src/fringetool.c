@@ -32,7 +32,7 @@ int fringe(const char *v_filename, const char *i_filename)
 	int chan = 999;
 	int nchan;
 	int mjd;
-	int sec;
+	float sec;
 	int nfreq;
 	double bw[MAX_FREQ];
 	double peak;
@@ -112,7 +112,7 @@ int fringe(const char *v_filename, const char *i_filename)
 	  i = DifxParametersfind(vis->params, 0, "MJD");
 	  mjd = atoi(DifxParametersvalue(vis->params, i));
 	  i = DifxParametersfind(vis->params, 0, "SECONDS");
-	  sec = atoi(DifxParametersvalue(vis->params, i));
+	  sec = atof(DifxParametersvalue(vis->params, i));
 	  /* Get baseline, frequency index and polarity */
 	  i = DifxParametersfind(vis->params, 0, "BASELINE NUM");
 	  bl = atoi(DifxParametersvalue(vis->params, i));
@@ -133,6 +133,7 @@ int fringe(const char *v_filename, const char *i_filename)
 	      i_data[k][REAL] = creal(vis->visdata[k])/nchan; /* Save real */
 	      i_data[k][IMAG] = cimag(vis->visdata[k])/nchan; /* Save im */
 	    }
+
 	  fftw_execute(f_plan); /* do fft for this baseline, pol, freq*/
 	  /* Scan the output data, save the channel with max magnitude */
 	  max_pk = 0.0;
