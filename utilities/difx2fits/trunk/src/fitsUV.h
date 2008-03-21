@@ -40,6 +40,7 @@ typedef struct
 	int nPol, nFreq;
 	int polStart;			/* start of polarization FITS axis */
 	float *spectrum;		/* input visibility spectrum */
+	float recweight;
 	int nData;
 	int nComplex;
 	struct UVrow *record;

@@ -23,7 +23,7 @@ static int DifxVisInitData(DifxVis *dv)
 		free(dv->record);
 	}
 
-	/* size of output data record */
+	/* size of output data record (in floats) */
 	dv->nData = dv->nComplex*dv->nFreq*dv->D->nPolar*dv->D->nOutChan;
 	if(dv->nData <= 0)
 	{
@@ -44,9 +44,13 @@ static int DifxVisInitData(DifxVis *dv)
 
 static void startGlob(DifxVis *dv)
 {
-	char globstr[256];
+	char *globstr;
+	const char suffix[] = ".difx/DIFX*";
 
-	sprintf(globstr, "%s.difx/DIFX*", dv->D->job[dv->jobId].fileBase);
+	globstr = calloc(strlen(dv->D->job[dv->jobId].fileBase)+
+		strlen(suffix)+8, 1);
+
+	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].fileBase, suffix);
 
 	if(dv->jobId > 0)
 	{
@@ -56,6 +60,8 @@ static void startGlob(DifxVis *dv)
 	dv->nFile = dv->globbuf.gl_pathc;
 	
 	dv->globbuf.gl_offs = 0;
+
+	free(globstr);
 }
 
 DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
@@ -88,8 +94,10 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	dv->baseline = -1;
 	dv->nFreq = 0;
 
-	/* FIXME! */
+	/* For now, the difx format only provides 1 weight for the entire
+	 * vis record, so we don't need weights per channel */
 	dv->nComplex = 2;	/* for now don't write weights */
+	
 	for(c = 0; c < D->nConfig; c++)
 	{
 		if(D->nIF > dv->nFreq)
@@ -201,8 +209,9 @@ void deleteDifxVis(DifxVis *dv)
 
 static int getPolProdId(const DifxVis *dv, const char *polPair)
 {
+	const char polSeq[8][4] = 
+		{"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
 	int p;
-	char polSeq[8][4] = {"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
 
 	for(p = 0; p < 8; p++)
 	{
@@ -346,6 +355,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	c            = atoi(DifxParametersvalue(dv->dp, rows[3]));
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 
+	/* FIXME -- look at sourceId in the record as a check */
+
 	/* FIXME -- is the below baseline to antenna map completely general? */
 	a1 = bl/256 - 1;
 	a2 = bl%256 - 1;
@@ -376,14 +387,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
+
+	/* stash the weight for later incorporation into a record */
 	if(dv->D->inputFileVersion == 0)
 	{
-		dv->weight[dv->bandId + dv->nFreq*dv->polId] = 
-			atof(DifxParametersvalue(dv->dp, rows[7]));
+		dv->recweight = atof(DifxParametersvalue(dv->dp, rows[7]));
 	}
 	else
 	{
-		dv->weight[dv->bandId + dv->nFreq*dv->polId] = 1.0;
+		dv->recweight = 1.0;
 	}
 
 	/* if chan weights are written the data volume is 3/2 as large */
@@ -445,8 +457,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 			dv->spectrum[i+1] = dv->spectrum[i1+1];  /* imag */
 			dv->spectrum[i]   = dv->spectrum[i1];    /* real */
 		}
-		/* The first one needs no reordering, but needs weight */
+		/* The first element needs no reordering, but needs weight */
 		dv->spectrum[2] = 1.0;
+	}
+
+	/* scale data by weight */
+	for(i = 0; i < dv->D->nInChan; i++)
+	{
+		dv->spectrum[i*dv->nComplex] *= dv->recweight;
+		dv->spectrum[i*dv->nComplex+1] *= dv->recweight;
 	}
 
 	return changed;
@@ -454,22 +473,21 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 int DifxVisCollectRandomParams(const DifxVis *dv)
 {
-	const double C=2.99792458e8;	/* speed of light in m/s */
+	const double cLight=2.99792458e8;	/* speed of light in m/s */
 	
-	dv->record->U = dv->U/C;
-	dv->record->V = dv->V/C;
-	dv->record->W = dv->W/C;
+	dv->record->U		= dv->U/cLight;
+	dv->record->V		= dv->V/cLight;
+	dv->record->W		= dv->W/cLight;
 
-	/* FIXME -- are two these correct ? */
-	dv->record->jd = 2400000.5 + (int)dv->mjd;
-	dv->record->iat = dv->mjd - (int)dv->mjd;
+	dv->record->jd		= 2400000.5 + (int)dv->mjd;
+	dv->record->iat		= dv->mjd - (int)dv->mjd;
 
-	/* note antennaIds, sourceId, freqId are 1-based in FITS */
-	dv->record->baseline = dv->baseline;
-	dv->record->filter = 0;
-	dv->record->sourceId1 = dv->sourceId + 1;
-	dv->record->freqId1   = dv->freqId + 1;
-	dv->record->intTime   = dv->tInt;
+	/* reminder: antennaIds, sourceId, freqId are 1-based in FITS */
+	dv->record->baseline	= dv->baseline;
+	dv->record->filter	= 0;
+	dv->record->sourceId1	= dv->sourceId + 1;
+	dv->record->freqId1	= dv->freqId + 1;
+	dv->record->intTime	= dv->tInt;
 
 	return 0;
 }
@@ -487,7 +505,12 @@ int RecordIsInvalid(const DifxVis *dv)
 	{
 		if(isnan(d[i]) || isinf(d[i]))
 		{
-			printf("Warning -- record with !finite value\n");
+
+			printf("Warning -- record with !finite value: ");
+			printf("a1=%d a1=%d mjd=%13.7f\n",
+				dv->baseline/256 - 1,
+				dv->baseline%256 - 1,
+				dv->mjd);
 			return 1;
 		}
 		/* don't look at weight in deciding whether data is valid */
@@ -582,11 +605,17 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	}
 	else
 	{
-		scale = 1.0/(dv->D->chanBW*6.25e6*
-			dv->D->config[0].tInt*dv->D->specAvg);
+		if(dv->D->inputFileVersion == 0)
+		{
+			scale = 1.0;
+		}
+		else
+		{
+			scale = 1.0/(dv->D->chanBW*6.25e6*
+				dv->D->config[0].tInt*dv->D->specAvg);
+		}
 	}
 
-	scale = 1.0;
 
 	nWeight = dv->nFreq*dv->D->nPolar;
 
@@ -669,33 +698,30 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		{
 			break;
 		}
-		if(changed)
+		if(changed) /* we need to write out a block of visibilities */
 		{
-			if(first)
+			if(RecordIsInvalid(dv))
+			{
+				nInvalid++;
+			}
+			else if(RecordIsFlagged(dv))
+			{
+				nFlagged++;
+			}
+			else if(first)
 			{
 				first = 0;
 			}
 			else
 			{
-				if(RecordIsInvalid(dv))
-				{
-					nInvalid++;
-				}
-				else if(RecordIsFlagged(dv))
-				{
-					nFlagged++;
-				}
-				else
-				{
 #ifndef WORDS_BIGENDIAN
-					FitsBinRowByteSwap(columns, nColumn, 
-						dv->record);
+				FitsBinRowByteSwap(columns, nColumn, 
+					dv->record);
 #endif
-					fitsWriteBinRow(dv->out, 
-						(char *)dv->record);
-					nWritten++;
-				}
+				fitsWriteBinRow(dv->out, (char *)dv->record);
+				nWritten++;
 			}
+			
 			v = DifxVisCollectRandomParams(dv);
 			if(v < 0)
 			{
@@ -711,6 +737,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		isLSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
 		startChan = dv->D->startChan;
 		stopChan = startChan + dv->D->nOutChan*dv->D->specAvg;
+
+		dv->weight[dv->D->nPolar*dv->bandId + dv->polId] = 
+			dv->recweight;
+		
 		for(i = startChan; i < stopChan; i++)
 		{
 			if(isLSB)

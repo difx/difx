@@ -224,6 +224,7 @@ int main(int argc, char **argv)
 	const char *baseFile[1024], *fitsFile=0;
 	int writemodel = 1;
 	int i;
+	int pretend = 0;
 	double scale = 0.0;
 	int verbose = 0;
 	int nBaseFile = 0;
@@ -245,6 +246,11 @@ int main(int argc, char **argv)
 			   strcmp(argv[i], "-v") == 0)
 			{
 				verbose++;
+			}
+			if(strcmp(argv[i], "--pretend") == 0 ||
+			   strcmp(argv[i], "-p") == 0)
+			{
+				pretend = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -385,20 +391,24 @@ int main(int argc, char **argv)
 		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 
-	if(fitsWriteOpen(&outfile, fitsFile) < 0)
+	if(!pretend)
 	{
-		deleteDifxInput(D);
-		fprintf(stderr, "Cannot open output file\n");
-		return 0;
+		if(fitsWriteOpen(&outfile, fitsFile) < 0)
+		{
+			deleteDifxInput(D);
+			fprintf(stderr, "Cannot open output file\n");
+			return 0;
+		}
+
+		if(DifxInput2FitsTables(D, &outfile, writemodel, 
+			scale, verbose) == D)
+		{
+			printf("\nConversion successful\n");
+		}
+		
+		fitsWriteClose(&outfile);
 	}
 
-	if(DifxInput2FitsTables(D, &outfile, writemodel, scale, verbose) == D)
-	{
-		printf("\nConversion successful\n");
-	}
-
-	fitsWriteClose(&outfile);
-	
 	deleteDifxInput(D);
 	
 	return 0;
