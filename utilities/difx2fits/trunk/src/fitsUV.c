@@ -357,7 +357,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	/* FIXME -- look at sourceId in the record as a check */
 
-	/* FIXME -- is the below baseline to antenna map completely general? */
 	a1 = bl/256 - 1;
 	a2 = bl%256 - 1;
 
@@ -492,10 +491,9 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	return 0;
 }
 
-int RecordIsInvalid(const DifxVis *dv)
+static int RecordIsInvalid(const DifxVis *dv)
 {
 	int i, n;
-	int invalid=1;
 	const float *d;
 
 	d = dv->data;
@@ -513,6 +511,22 @@ int RecordIsInvalid(const DifxVis *dv)
 				dv->mjd);
 			return 1;
 		}
+	}
+	
+	return 0;
+}
+
+static int RecordIsZero(const DifxVis *dv)
+{
+	int i, n;
+	int invalid=1;
+	const float *d;
+
+	d = dv->data;
+	n = dv->nData;
+
+	for(i = 0; i < n; i++)
+	{
 		/* don't look at weight in deciding whether data is valid */
 		if((d[i] != 0.0) && (i % dv->nComplex != 2))
 		{
@@ -523,7 +537,7 @@ int RecordIsInvalid(const DifxVis *dv)
 	return invalid;
 }
 
-int RecordIsFlagged(const DifxVis *dv)
+static int RecordIsFlagged(const DifxVis *dv)
 {
 	double mjd;
 	int a1, a2;
@@ -576,6 +590,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	int nWeight;
 	int nInvalid = 0;
 	int nFlagged = 0;
+	int nZero = 0;
 	int nWritten = 0;
 
 	/* define the columns in the UV data FITS Table */
@@ -598,22 +613,24 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 	visScale = 1.0;
 
-	/* FIXME -- nees love here! */
-	if(s > 0.0)
+	if(dv->D->inputFileVersion == 0)
 	{
-		scale = s;
+		scale = 1.0;
 	}
 	else
 	{
-		if(dv->D->inputFileVersion == 0)
+		scale = 1.0/(dv->D->chanBW*6.25e6*
+			dv->D->config[0].tInt*dv->D->specAvg);
+	}
+
+	if(s > 0.0)
+	{
+		if(verbose > 0)
 		{
-			scale = 1.0;
+			printf("      Overriding scale factor %e with %e\n",
+				scale, s);
 		}
-		else
-		{
-			scale = 1.0/(dv->D->chanBW*6.25e6*
-				dv->D->config[0].tInt*dv->D->specAvg);
-		}
+		scale = s;
 	}
 
 
@@ -708,6 +725,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 			{
 				nFlagged++;
 			}
+			else if(RecordIsZero(dv))
+			{
+				nZero++;
+			}
 			else if(first)
 			{
 				first = 0;
@@ -725,9 +746,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 			v = DifxVisCollectRandomParams(dv);
 			if(v < 0)
 			{
-				fprintf(stderr,
-				  "Error in DifxVisCollectRandomParams : %d\n", 
-				  v);
+				fprintf(stderr, "Error in "
+					"DifxVisCollectRandomParams : "
+					"return value = %d\n", v);
 				return -3;
 			}
 
@@ -783,6 +804,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	{
 		nFlagged++;
 	}
+	else if(RecordIsZero(dv))
+	{
+		nZero++;
+	}
 	else
 	{
 #ifndef WORDS_BIGENDIAN
@@ -792,9 +817,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		nWritten++;
 	}
 
-	printf("      %d flagged records dropped\n", nFlagged);
 	printf("      %d invalid records dropped\n", nInvalid);
+	printf("      %d flagged records dropped\n", nFlagged);
+	printf("      %d all zero records dripped\n", nZero);
 	printf("      %d records written\n", nWritten);
+	if(verbose > 1)
+	{
+		printf("        Note : 1 record is all data from 1 baseline\n");
+		printf("        for 1 timestamp\n");
+	}
 
 	return 0;
 }
