@@ -11,7 +11,7 @@ char difxMessageIdentifier[128] = "";
 char difxMessageHostname[32] = "";
 
 const char difxMessageDefaultGroup[] = "225.0.0.1";
-const int difxMessageDefaultPort = 10000;
+const int difxMessageDefaultPort = 50200;
 
 int difxMessageInit(const char *identifier)
 {
