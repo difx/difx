@@ -6,10 +6,14 @@ LDADD = \
 
 bin_PROGRAMS = \
 	testdifxmessagesend \
-	testdifxmessagereceive
+	testdifxmessagereceive \
+	loadmon
 
 testdifxmessagesend_SOURCES = \
 	testdifxmessagesend.c
 
 testdifxmessagereceive_SOURCES = \
 	testdifxmessagereceive.c
+
+loadmon_SOURCES = \
+	loadmon.c

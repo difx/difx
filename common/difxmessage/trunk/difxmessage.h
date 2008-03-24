@@ -1,6 +1,11 @@
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /**** LOW LEVEL MULTICAST FUNCTIONS ****/
 
 /* single function for send.  returns message length on success, or -1 */
@@ -46,9 +51,15 @@ int difxMessageInit(const char *identifier);
 void difxMessagePrint();
 
 int difxMessageSend(const char *message);
+int difxMessageSendProcessState(const char *state);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
