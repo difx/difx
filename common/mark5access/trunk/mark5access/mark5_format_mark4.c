@@ -218,7 +218,7 @@ static int mark5_format_mark4_frame_time(const struct mark5_stream *ms,
 
 	if(mjd)
 	{
-		*mjd = 51544 + 365*nibs[0] + nibs[1]*100
+		*mjd = 51543 + 365*nibs[0] + nibs[1]*100
 			+ nibs[2]*10 + nibs[3] + (int)(nibs[0]/4);
 	}
 	if(sec) 
