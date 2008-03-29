@@ -35,6 +35,7 @@ int main(int argc, char **argv)
 		strcpy(timestr, ctime(&t));
 		timestr[strlen(timestr)-1] = 0;
 		printf("[%s %s] %s\n", timestr, from, message);
+		fflush(stdout);
 	}
 
 	difxMessageReceiveClose(sock);

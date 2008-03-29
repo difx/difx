@@ -22,10 +22,8 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 /**** DIFX SPECIFIC FUNCTIONS AND DATA TYPES ****/
 
-/* Note! Keep this in sync with const char Mk5StatusStrings[][24] in
- * difxmessagemark5.c
- */
-enum Mk5Status
+/* Note! Keep this in sync with Mk5StateStrings[][24] in difxmessage.c */
+enum Mk5State
 {
 	MARK5_STATE_OPENING,
 	MARK5_STATE_OPEN, 
@@ -37,20 +35,35 @@ enum Mk5Status
 	MARK5_STATE_ERROR
 };
 
-extern const char Mk5StatusStrings[][24];
+extern const char Mk5StateStrings[][24];
 
 typedef struct
 {
-	enum Mk5Status state;
+	enum Mk5State state;
 	char vsnA[10];
 	char vsnB[10];
-	unsigned long status;
+	unsigned int status;
 	char activeBank;
 	int scanNumber;
 	long long position;	/* play pointer */
 	float rate;		/* Mbps */
 	double dataMJD;
 } DifxMessageMk5Status;
+
+/* Note! Keep this in sync with DifxStateStrings[][24] in difxmessage.c */
+enum DifxState
+{
+	DIFX_STATE_SPAWNING,	/* Issued by mpirun wrapper */
+	DIFX_STATE_STARTING,	/* fxmanager just started */
+	DIFX_STATE_RUNNING,	/* Accompanied by visibility info */
+	DIFX_STATE_ENDING,	/* Normal end of job */
+	DIFX_STATE_DONE,	/* Normal end to DiFX */
+	DIFX_STATE_ABORTING,	/* Unplanned early end doe to runtime error */
+	DIFX_STATE_TERMINATING,	/* Caught SIGINT, closing down */
+	DIFX_STATE_TERMINATED
+};
+
+extern const char DifxStateStrings[][24];
 
 typedef struct
 {
@@ -64,7 +77,8 @@ void difxMessagePrint();
 
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
-int difxMessageSendMark5State(const DifxMessageMk5Status *mk5state);
+int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
+int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxError(const char *errorString, int severity);
 

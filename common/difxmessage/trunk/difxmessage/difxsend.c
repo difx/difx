@@ -69,7 +69,7 @@ int difxMessageSendDifxError(const char *errorString, int severity)
 	return difxMessageSend(message);
 }
 
-int difxMessageSendMark5State(const DifxMessageMk5Status *mk5state)
+int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 {
 	char message[1000];
 	char body[700];
@@ -79,26 +79,50 @@ int difxMessageSendMark5State(const DifxMessageMk5Status *mk5state)
 		"<mark5Status>"
 		  "<bankAVSN>%s</bankAVSN>"
 		  "<bankBVSN>%s</bankBVSN>"
-		  "<statusWord>%08x</statusWord>"
+		  "<statusWord>0x%08ux</statusWord>"
 		  "<activeBank>%c</activeBank>"
-		  "<moduleState>%s</moduleState>"
+		  "<state>%s</state>"
 		  "<scanNumber>%d</scanNumber>"
 		  "<position>%lld</position>"
 		  "<playRate>%7.3f</playRate>"
 		  "<dataMJD>%13.7f</dataMJD>"
 		"</mark5Status>",
 
-		mk5state->vsnA,
-		mk5state->vsnB,
-		mk5state->status,
-		mk5state->activeBank,
-		Mk5StatusStrings[mk5state->state],
-		mk5state->scanNumber,
-		mk5state->position,
-		mk5state->rate,
-		mk5state->dataMJD);
+		mk5status->vsnA,
+		mk5status->vsnB,
+		mk5status->status,
+		mk5status->activeBank,
+		Mk5StateStrings[mk5status->state],
+		mk5status->scanNumber,
+		mk5status->position,
+		mk5status->rate,
+		mk5status->dataMJD);
 
 	sprintf(message, difxMessageXMLFormat, "Mark5StatusMessage", 
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
+	double visMJD)
+{
+	char message[1000];
+	char body[700];
+
+	sprintf(body,
+		
+		"<difxStatus>"
+		  "<state>%s</state>"
+		  "<message>%s<message>"
+		  "<visibilityMJD>%13.7f</visibilityMJD>"
+		"</difxStatus>",
+
+		DifxStateStrings[state],
+		stateMessage,
+		visMJD);
+
+	sprintf(message, difxMessageXMLFormat, "DifxStatusMessage", 
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);
