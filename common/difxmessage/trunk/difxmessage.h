@@ -22,36 +22,51 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 /**** DIFX SPECIFIC FUNCTIONS AND DATA TYPES ****/
 
-enum Mk5StatusState 
+/* Note! Keep this in sync with const char Mk5StatusStrings[][24] in
+ * difxmessagemark5.c
+ */
+enum Mk5Status
 {
-	Mk5Open, 
-	Mk5Close, 
-	Mk5GetDir, 
-	Mk5Playing, 
-	Mk5Idle, 
-	Mk5Error
+	MARK5_STATE_OPENING,
+	MARK5_STATE_OPEN, 
+	MARK5_STATE_CLOSE, 
+	MARK5_STATE_GETDIR, 
+	MARK5_STATE_GOTDIR, 
+	MARK5_STATE_PLAY, 
+	MARK5_STATE_IDLE, 
+	MARK5_STATE_ERROR
 };
+
+extern const char Mk5StatusStrings[][24];
 
 typedef struct
 {
-	char identifier[128];
-	int datastreamId;	/* > 0 if part of mpifxcorr, otherwise 0 */
-	int seqNum;
+	enum Mk5Status state;
 	char vsnA[10];
 	char vsnB[10];
 	unsigned long status;
 	char activeBank;
+	int scanNumber;
 	long long position;	/* play pointer */
 	float rate;		/* Mbps */
-	double playMJD;
+	double dataMJD;
 } DifxMessageMk5Status;
 
+typedef struct
+{
+	float cpuLoad;
+	int totalMemory;
+	int usedMemory;
+} DifxMessageLoad;
 
-int difxMessageInit(const char *identifier);
+int difxMessageInit(int mpiId, const char *identifier);
 void difxMessagePrint();
 
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
+int difxMessageSendMark5State(const DifxMessageMk5Status *mk5state);
+int difxMessageSendLoad(const DifxMessageLoad *load);
+int difxMessageSendDifxError(const char *errorString, int severity);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);

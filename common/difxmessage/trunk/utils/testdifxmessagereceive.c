@@ -8,11 +8,11 @@ int main(int argc, char **argv)
 {
 	int sock;
 	int l;
-	char message[256], from[32];
+	char message[1024], from[32];
 	time_t t;
 	char timestr[32];
 
-	difxMessageInit(argv[0]);
+	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
 	sock = difxMessageReceiveOpen();
@@ -20,7 +20,7 @@ int main(int argc, char **argv)
 	for(;;)
 	{
 		from[0] = 0;
-		l = difxMessageReceive(sock, message, 255, from);
+		l = difxMessageReceive(sock, message, 1023, from);
 		if(l < 0)
 		{
 			usleep(100000);

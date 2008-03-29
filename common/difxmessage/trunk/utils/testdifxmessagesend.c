@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 	char message[256];
 	int r;
 	
-	difxMessageInit(argv[0]);
+	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
 	for(;;)

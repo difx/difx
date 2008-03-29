@@ -12,7 +12,8 @@ c_sources = \
 	multicast.c \
 	difxsend.c \
 	difxreceive.c \
-	difxmessageinit.c 
+	difxmessageinit.c \
+	difxmessagemark5.c
 
 library_includedir = $(includedir)/difxmessage
 library_include_HEADERS = $(h_sources)

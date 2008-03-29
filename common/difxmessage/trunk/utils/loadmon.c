@@ -9,6 +9,7 @@ int doload(const char *host)
 	FILE *in;
 	float l1, l5, l15;
 	char line[100];
+	DifxMessageLoad load;
 
 	in = fopen("/proc/loadavg", "r");
 	if(!in)
@@ -23,11 +24,12 @@ int doload(const char *host)
 	sscanf(line, "%f%f%f", &l1, &l5, &l15);
 
 	fclose(in);
-
-	sprintf(message, "%s Load1min=%5.3f Load5min=%5.3f Load15min=%5.3f", 
-		host, l1, l5, l15);
-
-	return difxMessageSend(message);
+	
+	load.cpuLoad = l1;
+	load.totalMemory = 1;
+	load.usedMemory = 0;
+	
+	return difxMessageSendLoad(&load);
 }
 
 int main(int argc, char **argv)
@@ -35,7 +37,7 @@ int main(int argc, char **argv)
 	int interval = 20;	/* in seconds */
 	char host[128];
 
-	difxMessageInit(argv[0]);
+	difxMessageInit(-1, "loadmon");
 	difxMessagePrint();
 	
 	gethostname(host, 127);

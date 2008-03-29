@@ -7,5 +7,8 @@ extern char difxMessageGroup[16];
 extern int difxMessagePort;
 extern char difxMessageIdentifier[MAX_DIFX_MESSAGE_IDENTIFER];
 extern char difxMessageHostname[32];
+extern int difxMessageMpiProcessId;
+extern char difxMessageXMLFormat[256];
+extern int difxMessageSequenceNumber;
 
 #endif

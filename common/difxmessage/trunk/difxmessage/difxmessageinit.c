@@ -9,15 +9,23 @@ char difxMessageGroup[16] = "";
 int difxMessagePort = -1; 
 char difxMessageIdentifier[128] = "";
 char difxMessageHostname[32] = "";
+int difxMessageMpiProcessId = -1;
+char difxMessageXMLFormat[256] = "";
+int difxMessageSequenceNumber = 0;
 
 const char difxMessageDefaultGroup[] = "225.0.0.1";
 const int difxMessageDefaultPort = 50200;
 
-int difxMessageInit(const char *identifier)
+int difxMessageInit(int mpiId, const char *identifier)
 {
 	const char *envstr;
+
+	difxMessageSequenceNumber = 0;
+	
 	strncpy(difxMessageIdentifier, identifier, MAX_DIFX_MESSAGE_IDENTIFER);
 	difxMessageIdentifier[MAX_DIFX_MESSAGE_IDENTIFER-1] = 0;
+
+	difxMessageMpiProcessId = mpiId;
 
 	strcpy(difxMessageGroup, difxMessageDefaultGroup);
 	difxMessagePort = difxMessageDefaultPort;
@@ -38,6 +46,26 @@ int difxMessageInit(const char *identifier)
 		difxMessagePort = atoi(envstr);
 	}
 
+	sprintf(difxMessageXMLFormat, 
+		
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		"<difxMessage>"
+		  "<header>"
+		    "<from>%s</from>"
+		    "<mpiProcessId>%d</mpiProcessId>"
+		    "<identifier>%s</identifier>"
+		    "<type>%%s</type>"
+		  "</header>"
+		  "<body>"
+		    "<seqNumber>%%d</seqNumber>"
+		    "%%s"
+		  "</body>"
+		"</difxMessage>\n",
+		
+		difxMessageHostname, 
+		difxMessageMpiProcessId,
+		difxMessageIdentifier);
+
 	return 0;
 }
 
@@ -46,4 +74,6 @@ void difxMessagePrint()
 	printf("difxMessage: %s\n", difxMessageIdentifier);
 	printf("  group/port = %s/%d\n", difxMessageGroup, difxMessagePort);
 	printf("  hostname = %s\n", difxMessageHostname);
+	printf("  identifier = %s / %d\n", difxMessageIdentifier, 
+		difxMessageMpiProcessId);
 }
