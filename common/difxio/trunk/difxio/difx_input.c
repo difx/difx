@@ -807,7 +807,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "Cannot determine quantization bits\n");
 			return 0;
 		}
-		
+		D->datastream[e].quantBits = atoi(DifxParametersvalue(ip, r));
 
 		r = DifxParametersfind(ip, r+1, "NUM FREQS");
 		if(r < 0)
