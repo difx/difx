@@ -649,7 +649,6 @@ def makecommontable(filebase, nAntenna, startmjd, stopmjd):
 	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
 	return common
 
-# FIXME -- trunc key at 20 chars
 def indent21_1(key1, val, i, v):
 	out = (key1 % i) + ':'
 	n = 20-len(out)
@@ -658,12 +657,31 @@ def indent21_1(key1, val, i, v):
 	out += (val % v)
 	return out
 
-# FIXME -- trunc key at 20 chars
 def indent21_2(key1, val, i, j, v):
 	out = (key1 % (i, j)) + ':'
 	n = 20-len(out)
 	if n > 0:
 		out += ' '*n
+	out += (val % v)
+	return out
+
+def indent21_1trunc(key1, val, i, v):
+	out = (key1 % i) + ':'
+	n = 20-len(out)
+	if n > 0:
+		out += ' '*n
+	if len(out) > 20:
+		out = out[:20]
+	out += (val % v)
+	return out
+
+def indent21_2trunc(key1, val, i, j, v):
+	out = (key1 % (i, j)) + ':'
+	n = 20-len(out)
+	if n > 0:
+		out += ' '*n
+	if len(out) > 20:
+		out = out[:20]
 	out += (val % v)
 	return out
 
@@ -716,7 +734,7 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 				float(speedUp))
 		
 		# .25 seconds per send
-		sendLen = 0.262144
+		sendLen = 0.262144*2
 		while sendLen > timeavg:
 			sendLen /= 2.0
 			
@@ -909,8 +927,8 @@ def makebaselinetable(job, nant, freqlist, dopolar, setups):
 	    for j in range(i+1, nant):
 		dsA = i + deltaAnt
 		dsB = j + deltaAnt
-		blt.append(indent21_1("D/STREAM A INDEX %d", "%d", bl_id, dsA))
-		blt.append(indent21_1("D/STREAM B INDEX %d", "%d", bl_id, dsB))
+		blt.append(indent21_1trunc("D/STREAM A INDEX %d", "%d", bl_id, dsA))
+		blt.append(indent21_1trunc("D/STREAM B INDEX %d", "%d", bl_id, dsB))
 		blt.append(indent21_1("NUM FREQS %d", "%d", bl_id, nfreq))
 		ind = 0
 		for fq in range(len(fslist)):
@@ -971,10 +989,9 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 	data = []
 	data.append("# DATA TABLE #######!")
 	nant = len(subarray)
+	n = 0
 	for s in range(nsetups):
-		n = 0
 		for ant_id in subarray:
-			j = ant_id + nant*s
 			rec = getrowbyname(job_rec, antennalist[ant_id])
 			if rec == None:
 				print 'Antenna %s not in recorder table' % \

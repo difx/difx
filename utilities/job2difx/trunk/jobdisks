@@ -211,6 +211,8 @@ if len(files) < 1:
 			print 'No files found.  Quitting.'
 			exit(0)
 
+files.sort()
+
 checkfiles(files)
 
 antlist, modlist = getmoduleset(files)

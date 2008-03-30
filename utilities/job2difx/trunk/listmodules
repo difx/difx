@@ -82,11 +82,6 @@ def mk5query(machines, ismk5):
 def run(machinesfile):
 	machines,cores,ismk5 = readmachines(machinesfile)
 
-	hostname = gethostname()
-	if not hostname in machines:
-		print 'ERROR: hostname not in machines file : %s' % machinesfile
-		exit(1)
-
 	results = mk5query(machines, ismk5)
 	results.sort()
 
