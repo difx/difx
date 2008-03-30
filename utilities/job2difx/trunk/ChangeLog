@@ -17,6 +17,7 @@ Version 1.7
 * scale nchan by oversamp factor
 * allow visbufferlength to be overridden.  default now 32
 * combine multiple subjobs into one in job2difx (does not work on subarrays)
+* change to 0.5 seconds of data default
 
 Version 1.6
 * Support change in difx input file format.
@@ -103,3 +104,8 @@ listcpus
 ~~~~~~~~
 Version 0.1
 * First (rough but usable) version
+
+startdifx
+~~~~~~~~~
+Version 0.1
+* First version

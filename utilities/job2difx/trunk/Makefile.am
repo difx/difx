@@ -14,5 +14,6 @@ dist_bin_SCRIPTS = \
 	mk5return \
 	listmodules \
 	listcpus \
+	startdifx \
 	vlog
 

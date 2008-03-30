@@ -1,0 +1,162 @@
+#!/bin/env python
+
+PROGRAM = 'startdifx'
+VERSION = '0.1'
+VERDATE = '20080330'
+AUTHOR  = 'Walter Brisken'
+
+defaultgroup = "225.0.0.1"
+defaultport  = 50200
+
+from sys import argv, exit
+from os import popen, getcwd, system, getenv
+from os.path import isfile, isdir
+from string import split, strip
+import socket
+
+def usage():
+	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+	print 'A program to simplify the launching of mpifxcorr, specialy tuned'
+	print 'for NRAO-DiFX usage.\n'
+	print 'Usage: startdifx [optionx] <jobbase1> [<jobbase2> [ ... ] ]\n'
+	print 'option can include:\n'
+	print '  -h or --help'
+	print '          print this usage info and exit\n'
+	print '  -f or --force'
+	print '          force running even if output file exists\n'
+	print '  -a or --automachines'
+	print '          will run genmachines if needed\n'
+	print '  -g or --genmachines'
+	print '          will run genmachines even if not needed\n'
+	print '  -n or --nomachines'
+	print '          will not run genmachines, even if needed [default]\n'
+	print '<jobbaseX> is the file prefix for a DiFX input file (not including .input)\n'
+	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
+	print 'can be used to override the default group/port of %s/%d\n' % \
+		(defaultgroup, defaultport)
+	exit(0)
+
+def sendmessage(filebase, state, statusmessage):
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultgroup
+	
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultport
+	else:
+		port = int(port)
+		
+	identifier = split(filebase, '/')[-1]
+	
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 6)
+
+	message = \
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+		"<difxMessage>" \
+		  "<header>" \
+		    "<from>%s</from>" \
+		    "<mpiProcessId>-1</mpiProcessId>" \
+		    "<identifier>%s</identifier>" \
+		    "<type>DifxStatusMessage</type>" \
+		  "</header>" \
+		  "<body>" \
+		    "<seqNumber>-1</seqNumber>" \
+		    "<difxStatus>" \
+		      "<state>%s</state>" \
+		      "<message>%s</message>" \
+		      "<visibilityMJD>0</visibilityMJD>" \
+		    "</difxStatus>" \
+		  "</body>" \
+		"</difxMessage>\n" % \
+		(socket.gethostname(), identifier, state, statusmessage)
+	
+	sock.sendto(message, (group, port) )
+	
+
+# verify presense of .machines file
+def domachines(filebase, machinespolicy):
+	fn = filebase + '.machines'
+	if not isfile(fn):
+		if machinespolicy == 1:
+			system('genmachines %s.input' % filebase)
+			if not isfile(fn):
+				return 0
+		else:
+			return 0
+	return len(open(fn).readlines())
+
+def run(filebase, machinespolicy, deletepolicy):
+	out = popen('which mpifxcorr').readlines()
+	if len(out) != 1:
+		return 'Error: mpifxcorr not found'
+	pgm = strip(out[0])
+
+	if not isfile(filebase+'.input'):
+		return 'Error: input file %s.input not found' % filebase
+	
+	if not isfile(filebase+'.uvw') or not isfile(filebase+'.delay'):
+		return 'Error: model not available for %s' % filebase
+	
+	if isdir(filebase+'.difx') or isfile(filebase+'.difx'):
+		if deletepolicy == 1:
+			print 'Removing %s.difx' % filebase
+			sendmessage(filebase, 'Info', 'Deleting %s.difx' % filebase)
+			system('rm -rf %s.difx' % filebase)
+		else:
+			return 'Error: output file %s.difx exists' % filebase
+	
+	np = domachines(filebase, machinespolicy)
+	if np <= 0:
+		return 'Error: %s.machines not found' % filebase
+
+	cmd = 'mpirun -np %d --bynode --hostfile %s.machines mpifxcorr %s.input' % (np, filebase, filebase)
+
+	sendmessage(filebase, 'Spawning', 'Spawning %d processes' % np)
+	print 'Executing: ', cmd
+	system(cmd)
+	sendmessage(filebase, 'MpiDone', '')
+
+	return None
+
+if len(argv) < 2:
+	usage()
+
+machinespolicy = 0
+deletepolicy = 0
+filebaselist = []
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a == '-h' or a == '--help':
+			usage()
+		elif a == '-g' or a == '--genmachines':
+			machinespolicy = 2
+		elif a == '-a' or a == '--automachines':
+			machinespolicy = 1
+		elif a == '-n' or a == '--nomachines':
+			machinespolicy = 0
+		elif a == '-f' or a == '--force':
+			deletepolicy = 1
+	else:
+		if a[0] == '/':
+			filebaselist.append(a)
+		else:
+			filebaselist.append(getcwd() + '/' + a)
+
+if len(filebaselist) < 1:
+	usage()
+
+if machinespolicy == 2:
+	filelist = ''
+	for filebase in filebaselist:
+		filelist = filelist + ' ' + filebase + '.input'
+	system('genmachines %s', filelist)
+	
+for filebase in filebaselist:
+	v = run(filebase, machinespolicy, deletepolicy)
+
+	if v != None:
+		sendmessage(filebase, 'ABORTED', v)
+		print v
