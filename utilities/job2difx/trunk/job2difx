@@ -440,6 +440,8 @@ def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 		scan = scanlist[i]
 		config = []
 		for Y in scan[6]:
+			if len(Y[1]) < minsubarraysize:
+				continue;
 			if multiconfig:
 				config.append([Y[0][0], Y[0][3]])
 			else:
