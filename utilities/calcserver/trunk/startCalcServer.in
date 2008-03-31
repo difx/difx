@@ -19,7 +19,7 @@ setenv HORIZONS_SRCNAME TSTCURVE
 pushd /tmp
 
 echo "starting new CalcServer on" `hostname`
-@prefix@/bin/CalcServer &
+@prefix@/bin/CalcServer > /dev/null &
 echo "checking that the CalcServer responds"
 echo "  "
 @prefix@/bin/checkCalcServer `hostname` 
