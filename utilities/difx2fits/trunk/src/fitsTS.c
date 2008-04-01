@@ -73,6 +73,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	FILE *in;
 	/* The following are 1-based indices for writing to FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
+
+	/* a portable way to set NaNs that is compatible with FITS */
+	union
+	{
+		int32_t i32;
+		float f;
+	} nan;
+	nan.i32 = -1;
 	
 	if(D == 0)
 	{
@@ -124,8 +132,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	arrayId1 = 1;
 	for(i = 0; i < 16; i++)
 	{
-		((unsigned int *)tAnt[0])[i] = -1;	/* set to NaN */
-		((unsigned int *)tAnt[1])[i] = -1;	/* set to NaN */
+		tAnt[0][i] = nan.f;	/* set to NaN */
+		tAnt[1][i] = nan.f;	/* set to NaN */
 	}
 	
 	for(;;)
@@ -194,7 +202,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 						"recChan=%d.\n", 
 						bandId, polId, i);
 				}
-				tSys[polId][bandId] = tSysRecChan[i];
+				if(tSysRecChan[i] < 990.0)
+				{
+					tSys[polId][bandId] = tSysRecChan[i];
+				}
+				else
+				{
+					tSys[polId][bandId] = nan.f;
+				}
 			}
 
 			/* 1-based values for FITS */

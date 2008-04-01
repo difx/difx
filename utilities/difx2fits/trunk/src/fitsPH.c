@@ -65,6 +65,13 @@ static int parsePulseCal(const char *line,
 	float B, C;
 	double mjd;
 	char antName[20];
+	
+	union
+	{
+		int32_t i32;
+		float f;
+	} nan;
+	nan.i32 = -1;
 
 	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
 		cableCal, &np, &nb, &nt, &ns, &nRecChan, &p);
@@ -73,6 +80,11 @@ static int parsePulseCal(const char *line,
 		return -1;
 	}
 	line += p;
+
+	if(*cableCal > 999.89 && *cableCal < 999.91)
+	{
+		*cableCal = nan.f;
+	}
 
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
@@ -140,10 +152,21 @@ static int parsePulseCal(const char *line,
 						continue;
 					}
 					freqs[polId][tone + bandId*nt] = A*1.0e6;
-					pulseCalRe[polId][tone + bandId*nt] = 
+					if((B >= 999.89 && B < 999.91) ||
+					   (C >= 999.89 && C < 999.91))
+					{
+					  pulseCalRe[polId][tone + bandId*nt] = 
+						nan.f;
+					  pulseCalIm[polId][tone + bandId*nt] = 
+						nan.f;
+					}
+					else
+					{
+					  pulseCalRe[polId][tone + bandId*nt] = 
 						B*cos(C*M_PI/180.0);
-					pulseCalIm[polId][tone + bandId*nt] = 
+					  pulseCalIm[polId][tone + bandId*nt] = 
 						B*sin(C*M_PI/180.0);
+					}
 				}
 			}
 		}
@@ -234,7 +257,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	FILE *in;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
-	
+
 	if(D == 0)
 	{
 		return D;
