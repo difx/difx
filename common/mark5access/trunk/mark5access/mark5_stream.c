@@ -133,7 +133,7 @@ static int mark5_format_init(struct mark5_stream *ms)
 	ms->readposition = 0;
 	ms->frame = 0;
 	ms->payload = 0;
-	ms->framens = 0;
+	ms->framens = 0.0;
 	ms->samprate = 0;
 	ms->mjd = 0;
 	ms->sec = 0;
@@ -294,7 +294,8 @@ const char *mark5_stream_list_formats()
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
 {
 	int a=1, b=0, c=0, d=0, ntrack=0;
-	int databytes, framebytes, framens;
+	int databytes, framebytes;
+	double framens;
 	struct mark5_format *f;
 	enum Mark5Format F;
 
@@ -331,7 +332,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		F = MK5_FORMAT_MARK5B;
 		databytes = 10000;
 		framebytes = databytes+16;
-		framens = 1000*(8*databytes/b);
+		framens = 1000.0*(8.0*databytes/(double)b);
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
@@ -611,7 +612,7 @@ void delete_mark5_stream(struct mark5_stream *ms)
 }
 
 int mark5_stream_get_frame_time(struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	if(!ms)
 	{
@@ -621,7 +622,7 @@ int mark5_stream_get_frame_time(struct mark5_stream *ms,
 }
 
 int mark5_stream_get_sample_time(struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	int status;
 
@@ -655,8 +656,8 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	printf("  Format = %s = %d\n", ms->formatname, ms->format);
 	if(ms->mjd >= 0)
 	{
-		printf("  Start mjd/sec = %d %05d.%09d\n", ms->mjd, ms->sec, ms->ns);
-		printf("  frame duration = %d ns\n", ms->framens);
+		printf("  Start mjd/sec = %d %05d.%012.3f\n", ms->mjd, ms->sec, ms->ns);
+		printf("  frame duration = %8.2f ns\n", ms->framens);
 		printf("  framenum = %Ld\n", ms->framenum);
 	}
 	if(ms->samprate > 0)
@@ -677,10 +678,11 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	return 0;
 }
 
-int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, int ns)
+int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 {
 	int status;
-	int64_t jumpns, n;
+	double jumpns;
+	int64_t n;
 
 	if(!ms)
 	{
@@ -690,7 +692,7 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, int ns)
 	{
 		jumpns = 86400000000000LL*(mjd - ms->mjd) 
 		       + 1000000000LL*(sec - ms->sec)
-		       + (ns - ms->sec);
+		       + (ns - ms->ns);
 
 		if(jumpns < 0) /* before start of stream */
 		{

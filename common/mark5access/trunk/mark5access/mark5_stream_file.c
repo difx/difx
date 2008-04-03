@@ -129,7 +129,7 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 	F->end = 0;
 	F->fetchsize = 0;
 	lseek(F->in, F->offset, SEEK_SET);
-	F->buffer = (uint8_t *)malloc(F->buffersize);
+	F->buffer = (uint8_t *)calloc(1, F->buffersize);
 	ms->datawindow = F->buffer;
 	ms->datawindowsize = F->buffersize;
 
@@ -281,9 +281,9 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 		return 0;
 	}
 
-	V = (struct mark5_stream_generic *)malloc(
+	V = (struct mark5_stream_generic *)calloc(1,
 		sizeof(struct mark5_stream_generic));
-	F = (struct mark5_stream_file *)malloc(
+	F = (struct mark5_stream_file *)calloc(1,
 		sizeof(struct mark5_stream_file));
 	strcpy(F->files[0], filename);
 

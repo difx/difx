@@ -130,7 +130,7 @@ static void initmodulate()
 	
 	if(!modulate) 
 	{
-		modulate = (uint32_t *)malloc(PAYLOADSIZE*sizeof(uint32_t));
+		modulate = (uint32_t *)calloc(PAYLOADSIZE, sizeof(uint32_t));
 	}
 	
 	for(i = 0; i < PAYLOADSIZE; i++)
@@ -237,7 +237,7 @@ static void extractnibbles(const uint8_t *data, int ntracks, int numnibbles,
 }
 
 static int mark5_stream_frame_time_vlba(const struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	char nibs[12];
 	struct mark5_format_vlba *v;
@@ -2610,7 +2610,8 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	struct mark5_format_vlba *f;
 	int bytes;
 	int tol=5;
-	int mjd1, sec1, ns1;
+	int mjd1, sec1;
+	double ns1;
 	int datarate;
 	int nRealTrack;
 
@@ -2797,9 +2798,9 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 		return 0;
 	}
 
-	v = (struct mark5_format_vlba *)malloc(
+	v = (struct mark5_format_vlba *)calloc(1,
 		sizeof(struct mark5_format_vlba));
-	f = (struct mark5_format_generic *)malloc(
+	f = (struct mark5_format_generic *)calloc(1,
 		sizeof(struct mark5_format_generic));
 
 	v->ntrack = ntrack;

@@ -30,8 +30,8 @@
 #define NSUBMODE	2
 #define MAXHEADERSIZE	32
 
-const k5headersize[NSUBMODE] = {8, 32};		/* bytes */
-const k5headersync[NSUBMODE] = {0x8B, 0x8C};
+const int k5headersize[NSUBMODE] = {8, 32};		/* bytes */
+const int k5headersync[NSUBMODE] = {0x8B, 0x8C};
 const char k5formatname[NSUBMODE][10] = {"K5", "K5_32"};
 const int k5samprate[16] = {
 	40000,
@@ -83,7 +83,7 @@ static int findfirstframe(const uint8_t *data, int *submode)
 }
 
 static int stream_frame_time_k5(const struct mark5_stream *ms,
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	struct format_k5 *k;
 	const uint8_t *buf;
@@ -93,7 +93,7 @@ static int stream_frame_time_k5(const struct mark5_stream *ms,
 	
 	if(ns)
 	{
-		*ns = 0;
+		*ns = 0.0;
 	}
 	if(sec)
 	{
@@ -299,7 +299,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	ms->framebytes = ms->databytes + k5headersize[k->submode];
 	ms->framesamples = 1000000*ms->Mbps/(ms->nbit*ms->nchan);
 	ms->samprate = ms->framesamples;
-	ms->framens = 1000000000;
+	ms->framens = 1000000000.0;
 
 	ms->samplegranularity = 8/(ms->nbit*ms->nchan);
 	if(ms->samplegranularity < 1)
@@ -388,8 +388,8 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 {
 	struct format_k5 *k;
 	struct mark5_format_generic *f;
-	k = (struct format_k5 *)malloc(sizeof(struct format_k5));
-	f = (struct mark5_format_generic *)malloc(
+	k = (struct format_k5 *)calloc(1, sizeof(struct format_k5));
+	f = (struct mark5_format_generic *)calloc(1, 
 	        sizeof(struct mark5_format_generic));
 
 	k->days = 0;

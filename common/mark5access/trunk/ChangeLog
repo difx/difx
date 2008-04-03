@@ -1,3 +1,6 @@
+Version 1.2.0
+* fix some Mark5B issues.  This required changing ns to be a double throughout.
+
 Version 1.1.3
 * fix datestamp on mark4 data -- subtract 1 day (Jan 0, not Jan 1 is the zeroth day of year)
 

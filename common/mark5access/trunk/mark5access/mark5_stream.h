@@ -72,11 +72,12 @@ struct mark5_stream
 	int nbit;		/* quantization bits of data */
 	int samplegranularity;	/* decoding and copying must be in mults of */
 	int mjd;		/* date of first found frame */
-	int sec, ns;		/* time of first found frame */
+	int sec;		/* time of first found frame */
+	double ns;		/* ns portion of time of first frame */
 	int samprate;		/* (Hz) of de-fanned stream */
 	int frameoffset;	/* bytes into stream of first frame */
 	int framesamples;	/* number of samples per chan in a frame */
-	int framens;		/* nanoseconds per frame */
+	double framens;		/* nanoseconds per frame */
 	int framebytes;		/* total number of bytes in a frame */
 	int databytes;		/* bytes of data in a frame, incl. data */
 				/*   replacement headers */
@@ -109,7 +110,7 @@ struct mark5_stream
 	int (*decode)(struct mark5_stream *ms, int nsamp, float **data);
 	int (*validate)(const struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, int *mjd, 
-		int *sec, int *ns);
+		int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
 	void *formatdata;
 };
@@ -131,7 +132,7 @@ struct mark5_format_generic
 		int nsamp, float **data); 
 	int (*validate)(const struct mark5_stream *ms);	/* not yet used */
 	int (*gettime)(const struct mark5_stream *ms, 	/* required */
-		int *mjd, int *sec, int *ns);
+		int *mjd, int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
 	void *formatdata;
 	int Mbps;
@@ -147,14 +148,14 @@ void delete_mark5_stream(struct mark5_stream *ms);
 int mark5_stream_print(const struct mark5_stream *ms);
 
 int mark5_stream_get_frame_time(struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns);
+	int *mjd, int *sec, double *ns);
 
 int mark5_stream_get_sample_time(struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns);
+	int *mjd, int *sec, double *ns);
 
 int mark5_stream_fix_mjd(struct mark5_stream *ms, int refmjd);
 
-int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, int ns);
+int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns);
 
 int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data);
 
@@ -254,8 +255,9 @@ struct mark5_format
 	int frameoffset;	  /* bytes from stream start to 1st frame */
 	int framebytes;		  /* bytes in a frame */
 	int databytes;		  /* bytes of data in a frame */
-	int framens;		  /* duration of a frame in nanosec */
-	int mjd, sec, ns;	  /* date and time of first frame */
+	double framens;		  /* duration of a frame in nanosec */
+	int mjd, sec;		  /* date and time of first frame */
+	double ns;		  /* nanosec portion of first frame time */
 	int ntrack;		  /* for Mark4 and VLBA formats only */
 	int fanout;		  /* for Mark4 and VLBA formats only */
 };

@@ -90,7 +90,7 @@ int decode(const char *filename, const char *formatname, const char *f,
 		
 		if(status < 0)
 		{
-			printf("<EOF>\n", status);
+			printf("<EOF> status=%d\n", status);
 			//break;
 		}
 		else

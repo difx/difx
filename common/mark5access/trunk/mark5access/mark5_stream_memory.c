@@ -97,9 +97,9 @@ struct mark5_stream_generic *new_mark5_stream_memory(void *data,
 	struct mark5_stream_generic *s;
 	struct mark5_stream_memory *M;
 
-	s = (struct mark5_stream_generic *)malloc(
+	s = (struct mark5_stream_generic *)calloc(1,
 		sizeof(struct mark5_stream_generic));
-	M = (struct mark5_stream_memory *)malloc(
+	M = (struct mark5_stream_memory *)calloc(1,
 		sizeof(struct mark5_stream_memory));
 	M->start = (uint8_t *)data;
 	M->nbytes = nbytes;

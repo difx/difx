@@ -200,7 +200,7 @@ static void extractnibbles(const uint8_t *data, int ntracks, int numnibbles,
 }
 
 static int mark5_format_mark4_frame_time(const struct mark5_stream *ms, 
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	char nibs[13];
 	struct mark5_format_mark4 *v;
@@ -2576,7 +2576,8 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	struct mark5_format_mark4 *f;
 	int bytes;
 	int tol=5;
-	int mjd1, sec1, ns1;
+	int mjd1, sec1;
+	double ns1;
 	int datarate;
 
 	if(!ms)
@@ -2756,9 +2757,9 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		return 0;
 	}
 
-	v = (struct mark5_format_mark4 *)malloc(
+	v = (struct mark5_format_mark4 *)calloc(1,
 		sizeof(struct mark5_format_mark4));
-	f = (struct mark5_format_generic *)malloc(
+	f = (struct mark5_format_generic *)calloc(1,
 		sizeof(struct mark5_format_generic));
 
 	v->ntrack = ntrack;

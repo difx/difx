@@ -113,16 +113,18 @@ static int findfirstframe(const uint8_t *data, int bytes, uint32_t syncword)
 }
 
 static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_mark5b *m;
 	const uint8_t *buf;
-	int i;
+	int i, framenum;
 	uint8_t nibs[16];
 
 	m = (struct mark5_format_mark5b *)(ms->formatdata);
 
 	buf = ms->frame + 8;
+
+	framenum = ms->frame[4] + (ms->frame[5] & 0x7F)*256;
 
 	for(i = 0; i < 4; i++)
 	{
@@ -143,18 +145,24 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 	}
 	if(ns)
 	{
-		*ns = nibs[8]*100000000 + nibs[9]*10000000 + nibs[10]*1000000
-			+ nibs[11]*100000;
-
-		/* "unround" the number */
-		*ns = 156250*((*ns+156249)/156250);
+		if(ms->framens > 0)
+		{
+			*ns = ms->framens*framenum;
+		}
+		else
+		{
+			*ns = nibs[8]*100000000 + nibs[9]*10000000 
+				+ nibs[10]*1000000+ nibs[11]*100000;
+			/* "unround" the number */
+			*ns = 156250*(((int)(*ns)+156249)/156250);
+		}
 	}
 
 	return 0;
 }
 
 static int mark5_stream_frame_time_mark5cb(const struct mark5_stream *ms,
-	int *mjd, int *sec, int *ns)
+	int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_mark5b *m;
 	const uint8_t *buf;
@@ -854,9 +862,11 @@ static int mark5_format_mark5b_make_formatname(struct mark5_stream *ms)
 static int mark5_format_mark5b_init(struct mark5_stream *ms)
 {
 	struct mark5_format_mark5b *f;
-	int mjd1, sec1, ns1;
+	int mjd1, sec1;
+	double ns1;
 	int datarate;
 	int bytes;
+	int k;
 
 	if(!ms)
 	{
@@ -872,6 +882,10 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	ms->payloadoffset = 16;
 	ms->framesamples = ms->databytes*8/f->nbitstream;
 	ms->blanker = blanker_mark5;
+	if(ms->Mbps > 0)
+	{
+		ms->framens = 80000000.0/ms->Mbps;
+	}
 	if(ms->datawindow)
 	{
 		if(ms->datawindowsize < ms->framebytes)
@@ -916,38 +930,56 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->payload = ms->frame + ms->payloadoffset;
 
 		ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
-		ms->frame += ms->framebytes;
-		ms->gettime(ms, &mjd1, &sec1, &ns1);
-		ms->frame -= ms->framebytes;
-
-		/* assume frame time less than 1 second, integer number of
-		 * frames per second
-		 */
-		if(ns1 != ms->ns)
+		
+		if(ms->Mbps > 0)
 		{
-			ms->framens = ns1 - ms->ns;
-			if(ms->framens <= 0)
-			{
-				ms->framens += 1000000000;
-			}
 			ms->samprate = ms->framesamples*
-				(1000000000/ms->framens);
-			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
-			if(datarate != ms->Mbps)
-			{
-				if(ms->Mbps > 0)
-				{
-					fprintf(stderr, "Warning -- data rate "
-						"disagrees : %d != %d\n",
-						datarate, ms->Mbps);
-				}
-				ms->Mbps = datarate;
-			}
+				(1000000000.0/ms->framens);
 		}
 		else
 		{
-			fprintf(stderr, "Warning -- rate calc. suspect %d\n",
-				ns1);
+			k = 8;
+			while((k+2)*ms->framebytes > ms->datawindowsize && k>1)
+			{
+				k /= 2;
+			}
+			ms->frame += k*ms->framebytes;
+			ms->gettime(ms, &mjd1, &sec1, &ns1);
+			ms->frame -= k*ms->framebytes;
+
+			/* assume frame time less than 1 second, integer number of
+			 * frames per second
+			 */
+			if(ns1 != ms->ns)
+			{
+				ms->framens = (ns1 - ms->ns)/k;
+
+				/* get time again so ms->framens is used */
+				ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+
+				if(ms->framens <= 0)
+				{
+					ms->framens += 1000000000;
+				}
+				ms->samprate = ms->framesamples*
+					(1000000000/ms->framens);
+				datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
+				if(datarate != ms->Mbps)
+				{
+					if(ms->Mbps > 0)
+					{
+						fprintf(stderr, "Warning -- data rate "
+							"disagrees : %d != %d\n",
+							datarate, ms->Mbps);
+					}
+					ms->Mbps = datarate;
+				}
+			}
+			else
+			{
+				fprintf(stderr, "Warning -- rate calc. "
+					"suspect ns0=ns1=%f k=%d\n", ns1, k);
+			}
 		}
 	}
 
@@ -1045,13 +1077,12 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		return 0;
 	}
 
-	m = (struct mark5_format_mark5b *)malloc(
+	m = (struct mark5_format_mark5b *)calloc(1, 
 		sizeof(struct mark5_format_mark5b));
-	f = (struct mark5_format_generic *)malloc(
+	f = (struct mark5_format_generic *)calloc(1, 
 		sizeof(struct mark5_format_generic));
 
 	m->nbitstream = nbitstream;
-	m->kday = 0;
 
 	f->Mbps = Mbps;
 	f->nchan = nchan;
