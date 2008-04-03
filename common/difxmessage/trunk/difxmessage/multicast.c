@@ -11,7 +11,7 @@ int MulticastSend(const char *group, int port, const char *message)
 {
 	struct sockaddr_in addr;
 	int fd, l;
-	unsigned char ttl=6;	/* time-to-live.  Max hops before discard */
+	unsigned char ttl=3;	/* time-to-live.  Max hops before discard */
 
 	fd = socket(AF_INET, SOCK_DGRAM, 0);
 	if(fd < 0)

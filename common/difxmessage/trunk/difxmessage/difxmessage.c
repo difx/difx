@@ -24,5 +24,7 @@ const char DifxStateStrings[][24] =
 	"Done",
 	"Aborting",
 	"Terminating",
-	"Terminated"
+	"Terminated",
+	"Info",
+	"MpiDone"
 };

@@ -60,7 +60,9 @@ enum DifxState
 	DIFX_STATE_DONE,	/* Normal end to DiFX */
 	DIFX_STATE_ABORTING,	/* Unplanned early end doe to runtime error */
 	DIFX_STATE_TERMINATING,	/* Caught SIGINT, closing down */
-	DIFX_STATE_TERMINATED
+	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
+	DIFX_STATE_INFO,	/* Just an informative message */
+	DIFX_STATE_MPIDONE	/* mpi process has finished */
 };
 
 extern const char DifxStateStrings[][24];

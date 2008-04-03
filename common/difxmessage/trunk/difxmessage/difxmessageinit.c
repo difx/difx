@@ -13,7 +13,7 @@ int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
 int difxMessageSequenceNumber = 0;
 
-const char difxMessageDefaultGroup[] = "225.0.0.1";
+const char difxMessageDefaultGroup[] = "224.2.2.1";
 const int difxMessageDefaultPort = 50200;
 
 int difxMessageInit(int mpiId, const char *identifier)

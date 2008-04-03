@@ -114,7 +114,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 		
 		"<difxStatus>"
 		  "<state>%s</state>"
-		  "<message>%s<message>"
+		  "<message>%s</message>"
 		  "<visibilityMJD>%13.7f</visibilityMJD>"
 		"</difxStatus>",
 
