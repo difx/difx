@@ -50,7 +50,7 @@ enum Mark5Format
 	MK5_FORMAT_MARK5B  =  2,
 	MK5_FORMAT_MARK5CB =  3,
 	MK5_FORMAT_MARK5C  =  4,		/* Not Yet Implemented */
-	MK5_FORMAT_K5      =  5
+	MK5_FORMAT_K5      =  5			/* Not Yet Implemented */
 };
 
 #define MAXBLANKZONES	32

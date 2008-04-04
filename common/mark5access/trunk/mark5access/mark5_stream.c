@@ -656,7 +656,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	printf("  Format = %s = %d\n", ms->formatname, ms->format);
 	if(ms->mjd >= 0)
 	{
-		printf("  Start mjd/sec = %d %05d.%012.3f\n", ms->mjd, ms->sec, ms->ns);
+		printf("  Start mjd/sec = %d %05d.%013.3f\n", ms->mjd, ms->sec, ms->ns);
 		printf("  frame duration = %8.2f ns\n", ms->framens);
 		printf("  framenum = %Ld\n", ms->framenum);
 	}

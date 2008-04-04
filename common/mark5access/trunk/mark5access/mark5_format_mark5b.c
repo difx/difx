@@ -112,6 +112,11 @@ static int findfirstframe(const uint8_t *data, int bytes, uint32_t syncword)
 	return -1;
 }
 
+static int mark5_stream_frame_num_mark5b(const struct mark5_stream *ms)
+{
+	return ms->frame[4] + (ms->frame[5] & 0x7F)*256;
+}
+
 static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 	int *mjd, int *sec, double *ns)
 {
@@ -124,7 +129,7 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 
 	buf = ms->frame + 8;
 
-	framenum = ms->frame[4] + (ms->frame[5] & 0x7F)*256;
+	framenum = mark5_stream_frame_num_mark5b(ms);
 
 	for(i = 0; i < 4; i++)
 	{
@@ -175,7 +180,7 @@ static int mark5_stream_frame_time_mark5cb(const struct mark5_stream *ms,
 	buf = ms->frame + 8;
 	
 	/* 15 lowest bits of second 32-bit word */
-	n = buf[4] + ((buf[5] & 0x7F) << 8);
+	n = mark5_stream_frame_num_mark5b(ms);
 
 	buf = ms->frame + 8;
 
@@ -866,7 +871,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	double ns1;
 	int datarate;
 	int bytes;
-	int k;
+	int k, df, framenum;
 
 	if(!ms)
 	{
@@ -947,8 +952,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 			ms->gettime(ms, &mjd1, &sec1, &ns1);
 			ms->frame -= k*ms->framebytes;
 
-			/* assume frame time less than 1 second, integer number of
-			 * frames per second
+			/* assume frame time less than 1 second, integer number
+			 * of frames per second
 			 */
 			if(ns1 != ms->ns)
 			{
@@ -980,6 +985,22 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				fprintf(stderr, "Warning -- rate calc. "
 					"suspect ns0=ns1=%f k=%d\n", ns1, k);
 			}
+		}
+	}
+
+	/* see if we need to advance a small number of frames to make the
+	 * first one start at integer nanosec
+	 */
+	k = ms->Mbps/1024;
+	if(k > 0)
+	{
+		framenum = mark5_stream_frame_num_mark5b(ms);
+		df = k - framenum % k;
+		if(df != k)
+		{
+			ms->frame += df*ms->framebytes;
+			ms->frameoffset += df*ms->framebytes;
+			ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
 		}
 	}
 
