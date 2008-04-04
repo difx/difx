@@ -79,6 +79,7 @@ struct mark5_stream
 	int frameoffset;	/* bytes into stream of first frame */
 	int framesamples;	/* number of samples per chan in a frame */
 	double framens;		/* nanoseconds per frame */
+	int gframens;		/* integer ns for framegranularity frames */
 	int framebytes;		/* total number of bytes in a frame */
 	int databytes;		/* bytes of data in a frame, incl. data */
 				/*   replacement headers */

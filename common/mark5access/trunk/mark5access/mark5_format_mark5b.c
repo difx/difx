@@ -1013,6 +1013,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->framegranularity = 1;
 	}
 
+	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
+
 	mark5_format_mark5b_make_formatname(ms);
 
 	return 0;

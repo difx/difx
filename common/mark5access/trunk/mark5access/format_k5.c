@@ -361,6 +361,7 @@ static int format_k5_init(struct mark5_stream *ms)
 		case 7 : ms->decode = k5_decode_4bitstream_8bit; break;
 	}
 	
+	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
 	format_k5_make_formatname(ms);
 

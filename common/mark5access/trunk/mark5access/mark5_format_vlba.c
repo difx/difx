@@ -2694,6 +2694,9 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 			fprintf(stderr, "Warning -- rate calc. suspect\n");
 		}
 	}
+
+	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
+
 	mark5_format_vlba_make_formatname(ms);
 
 	return 0;

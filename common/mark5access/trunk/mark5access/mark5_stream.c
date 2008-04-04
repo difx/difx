@@ -670,6 +670,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	printf("  datasize = %d bytes\n", ms->databytes);
 	printf("  sample granularity = %d\n", ms->samplegranularity);
 	printf("  frame granularity = %d\n", ms->framegranularity);
+	printf("  gframens = %d\n", ms->gframens);
 	printf("  payload offset = %d\n", ms->payloadoffset);
 	printf("  read position = %d\n", ms->readposition);
 	if(ms->datawindow)
