@@ -71,9 +71,10 @@ struct mark5_stream
 	int nchan;		/* # of data channels; all will be decoded */
 	int nbit;		/* quantization bits of data */
 	int samplegranularity;	/* decoding and copying must be in mults of */
+	int framegranularity;	/* min num of frames to have int. ns length */
 	int mjd;		/* date of first found frame */
 	int sec;		/* time of first found frame */
-	double ns;		/* ns portion of time of first frame */
+	int ns;			/* ns portion of time of first frame */
 	int samprate;		/* (Hz) of de-fanned stream */
 	int frameoffset;	/* bytes into stream of first frame */
 	int framesamples;	/* number of samples per chan in a frame */
@@ -256,8 +257,7 @@ struct mark5_format
 	int framebytes;		  /* bytes in a frame */
 	int databytes;		  /* bytes of data in a frame */
 	double framens;		  /* duration of a frame in nanosec */
-	int mjd, sec;		  /* date and time of first frame */
-	double ns;		  /* nanosec portion of first frame time */
+	int mjd, sec, ns;	  /* date and time of first frame */
 	int ntrack;		  /* for Mark4 and VLBA formats only */
 	int fanout;		  /* for Mark4 and VLBA formats only */
 };

@@ -2576,8 +2576,8 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	struct mark5_format_mark4 *f;
 	int bytes;
 	int tol=5;
-	int mjd1, sec1;
-	double ns1;
+	int mjd1, sec1, ns1;
+	double dns, dns1;
 	int datarate;
 
 	if(!ms)
@@ -2594,7 +2594,10 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	ms->payloadoffset = 0;
 	ms->framesamples = 20000*f->fanout;
 	ms->format = MK5_FORMAT_MARK4;
+	ms->framegranularity = 1;
+
 	ms->blanker = blanker_mark4;
+	
 	if(ms->datawindow)
 	{
 		if(ms->datawindowsize < ms->framebytes)
@@ -2615,10 +2618,12 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns + 0.5);
 		ms->frame += ms->framebytes;
-		ms->gettime(ms, &mjd1, &sec1, &ns1);
+		ms->gettime(ms, &mjd1, &sec1, &dns1);
 		ms->frame -= ms->framebytes;
+		ns1 = (int)(dns1 + 0.5);
 
 		/* assume frame time less than 1 second, integer number of
 		 * frames per second

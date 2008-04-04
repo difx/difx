@@ -2610,8 +2610,8 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	struct mark5_format_vlba *f;
 	int bytes;
 	int tol=5;
-	int mjd1, sec1;
-	double ns1;
+	int mjd1, sec1, ns1;
+	double dns1, dns;
 	int datarate;
 	int nRealTrack;
 
@@ -2634,6 +2634,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	ms->payloadoffset = 12*nRealTrack;
 	ms->framesamples = 20000*f->fanout;
 	ms->format = MK5_FORMAT_VLBA;
+	ms->framegranularity = 1;
 
 	ms->blanker = blanker_mark5;
 
@@ -2657,9 +2658,11 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns+0.5);
 		ms->frame += ms->framebytes;
-		ms->gettime(ms, &mjd1, &sec1, &ns1);
+		ms->gettime(ms, &mjd1, &sec1, &dns1);
+		ns1 = (int)(dns1 + 0.5);
 		ms->frame -= ms->framebytes;
 
 		/* assume frame time less than 1 second, integer number of

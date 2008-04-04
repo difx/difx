@@ -656,7 +656,8 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	printf("  Format = %s = %d\n", ms->formatname, ms->format);
 	if(ms->mjd >= 0)
 	{
-		printf("  Start mjd/sec = %d %05d.%013.3f\n", ms->mjd, ms->sec, ms->ns);
+		printf("  Start mjd/sec = %d %05d.%09d\n", 
+			ms->mjd, ms->sec, ms->ns);
 		printf("  frame duration = %8.2f ns\n", ms->framens);
 		printf("  framenum = %Ld\n", ms->framenum);
 	}
@@ -668,6 +669,7 @@ int mark5_stream_print(const struct mark5_stream *ms)
 	printf("  framebytes = %d bytes\n", ms->framebytes);
 	printf("  datasize = %d bytes\n", ms->databytes);
 	printf("  sample granularity = %d\n", ms->samplegranularity);
+	printf("  frame granularity = %d\n", ms->framegranularity);
 	printf("  payload offset = %d\n", ms->payloadoffset);
 	printf("  read position = %d\n", ms->readposition);
 	if(ms->datawindow)

@@ -204,6 +204,7 @@ static int format_k5_init(struct mark5_stream *ms)
         struct format_k5 *k;
 	int nbit, nchan, rate, Mbps, submode;
 	int decoderindex = 0;
+	double dns;
 
 	if(!ms)
 	{
@@ -212,6 +213,8 @@ static int format_k5_init(struct mark5_stream *ms)
 	}
 
 	k = (struct format_k5 *)(ms->formatdata);
+
+	ms->framegranularity = 1;
 
 	if(ms->datawindow)
 	{
@@ -250,7 +253,8 @@ static int format_k5_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns + 0.5);
 
 		nbit = 1 << (k->header[6] >> 6);
 		nchan = (k->header[6] & 0x02) ? 4 : 1;

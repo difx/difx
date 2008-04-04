@@ -867,8 +867,8 @@ static int mark5_format_mark5b_make_formatname(struct mark5_stream *ms)
 static int mark5_format_mark5b_init(struct mark5_stream *ms)
 {
 	struct mark5_format_mark5b *f;
-	int mjd1, sec1;
-	double ns1;
+	int mjd1, sec1, ns1;
+	double dns, dns1;
 	int datarate;
 	int bytes;
 	int k, df, framenum;
@@ -934,7 +934,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow + ms->frameoffset;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns + 0.5);
 		
 		if(ms->Mbps > 0)
 		{
@@ -949,7 +950,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				k /= 2;
 			}
 			ms->frame += k*ms->framebytes;
-			ms->gettime(ms, &mjd1, &sec1, &ns1);
+			ms->gettime(ms, &mjd1, &sec1, &dns1);
+			ns1 = (int)(dns1 + 0.5);
 			ms->frame -= k*ms->framebytes;
 
 			/* assume frame time less than 1 second, integer number
@@ -960,7 +962,8 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				ms->framens = (ns1 - ms->ns)/k;
 
 				/* get time again so ms->framens is used */
-				ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+				ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+				ms->ns = (int)(dns + 0.5);
 
 				if(ms->framens <= 0)
 				{
@@ -983,7 +986,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 			else
 			{
 				fprintf(stderr, "Warning -- rate calc. "
-					"suspect ns0=ns1=%f k=%d\n", ns1, k);
+					"suspect ns0=ns1=%d k=%d\n", ns1, k);
 			}
 		}
 	}
@@ -1000,8 +1003,14 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		{
 			ms->frame += df*ms->framebytes;
 			ms->frameoffset += df*ms->framebytes;
-			ms->gettime(ms, &ms->mjd, &ms->sec, &ms->ns);
+			ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+			ms->ns = (int)(dns + 0.5);
 		}
+		ms->framegranularity = k;
+	}
+	else
+	{
+		ms->framegranularity = 1;
 	}
 
 	mark5_format_mark5b_make_formatname(ms);
