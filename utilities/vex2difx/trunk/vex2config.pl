@@ -6,7 +6,7 @@ use Astro::Time;
 
 use POSIX qw(floor);
 
-sub vexant2calc ($);
+sub vexant2calc($);
 sub vexant2clock ($);
 sub vexant2window ($);
 sub count2str ($;$);
@@ -19,8 +19,10 @@ $Astro::Time::StrZero = 2;
 
 use strict;
 
-my $nchannel = 256;
-my $tint = 1;
+my %antnames;
+
+my $nchannel = 128;
+my $tint = 2;
 my $crosspol = 0;
 my $evlbi = 0;
 my $auto = 1;
@@ -29,18 +31,21 @@ my $postf = 0;
 my $starttime = undef;
 my $input = undef;
 
-my $blockspersend = 250;
+my $blockspersend = undef;
 my $guardblock = 1;
 my $autocorr = 1;
 my $outputformat = 'RPFITS';
 my $pulsar = 0;
-my $databufferfactor = 32;
-my $numdatasegments = 8;
+my $databufferfactor = 256;
+my $numdatasegments = 16;
+my $atca = 'WXXX';
 
-GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 
+GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto,
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input);
+
+$antnames{At} = 'CAT' . uc($atca);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -127,6 +132,10 @@ if (defined $starttime) { # Assume experiment is < 24 hours
 
 my $start_seconds = int(($sched_start-$start_mjd)*60*60*24+0.5);
 my $nbaseline = $ntel*($ntel-1)/2;
+
+if (!defined $blockspersend) {
+    $blockspersend = 160000/$nchannel;
+}
 
 # Open input file (which is our output...)
 open(INPUT, '>', $input) || die "Failed to open $input: $!\n";
@@ -265,7 +274,7 @@ foreach (@stations) {
     warn "Skipping $_ in DataStream table\n";
     next;
   }
-  my $tsys = getTsys(vexant2calc($_), $globalfreq[0]->freq->unit('MHz')->value);
+  my $tsys = getTsys($_, $globalfreq[0]->freq->unit('MHz')->value);
   print INPUT<<EOF;
 TELESCOPE INDEX:    $index
 TSYS:               $tsys
@@ -396,6 +405,8 @@ EOF
       next if $ch1->done;
       my $i1 = $ch1->index;
       my $i2 = findchanmatch($ch1, $localfreq{$ant2}, 0);
+
+      next if (! defined $i2);
       $ch1->done(1);
 
       $baselinefreqs[$nfreq] = [];
@@ -408,6 +419,8 @@ EOF
 	if ($ch1->globalindex==$ch3->globalindex) {
 	  $i1 = $ch3->index;
 	  $i2 = findchanmatch($ch3, $localfreq{$ant2}, 0);
+
+	  next if (!defined $i2);
 	  $ch3->done(1);
 
 	  push @{$baselinefreqs[$nfreq]}, [$i1, $i2];
@@ -416,8 +429,9 @@ EOF
 	    foreach my $cc ($ch1, $ch3) {
 	      $i1 = $cc->index;
 	      $i2 = findchanmatch($cc, $localfreq{$ant2}, 1);
-
-	      push @{$baselinefreqs[$nfreq]}, [$i1, $i2];
+	      
+	      push @{$baselinefreqs[$nfreq]}, [$i1, $i2] 
+		  if (defined $i2);
 	    }
 	  }
 	}
@@ -496,7 +510,7 @@ sub getTsys ($$) {
     my $antennaname = shift @_;
     my $freq = shift @_;
 
-    if($antennaname eq "PKS")
+    if($antennaname eq "Pa")
     {
 	if($freq < 1500) { return 40; }
 	elsif ($freq < 1800) { return 42; }
@@ -508,7 +522,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 370; }
 	else { return 810; }
     }
-    elsif($antennaname eq "CATWXXX")
+    elsif($antennaname eq "At")
     {
 	if($freq < 1500) { return 68; }
 	elsif ($freq < 1800) { return 68; }
@@ -520,7 +534,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return -1; }
 	else { return 106; }
     }
-    elsif($antennaname eq "MOPRA")
+    elsif($antennaname eq "Mp")
     {
 	if($freq < 1500) { return 340; }
 	elsif ($freq < 1800) { return 340; }
@@ -532,7 +546,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 1300; }
         else { return 900; }
     }
-    elsif($antennaname eq "HOB")
+    elsif($antennaname eq "Ho")
     {
 	if($freq < 1500) { return 470; }
 	elsif ($freq < 1800) { return 420; }
@@ -544,7 +558,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 1200; }
 	else { return 1800; }
     }
-    elsif($antennaname eq "CED")
+    elsif($antennaname eq "Cd")
     {
 	if($freq < 1500) { return -1; }
 	elsif ($freq < 1800) { return -1; }
@@ -556,7 +570,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 750; }
 	else { return 2500; }
     }
-    elsif($antennaname eq "DSS43")
+    elsif($antennaname eq "Ti")
     {
 	if($freq < 1500) { return -1; }
 	elsif ($freq < 1800) { return 23; }
@@ -568,7 +582,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return -1; }
 	else { return 60; }
     }
-    elsif($antennaname eq "HART")
+    elsif($antennaname eq "Hh")
     {
 	if($freq < 1500) { return -1; }
 	elsif ($freq < 1800) { return 200; }
@@ -580,7 +594,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 480; }
 	else { return -1; }
     }
-    elsif($antennaname eq "KASHIMA")
+    elsif($antennaname eq "Ka")
     {
 	if($freq < 1500) { return 170; }
 	elsif ($freq < 1800) { return 170; }
@@ -597,7 +611,6 @@ sub getTsys ($$) {
 }
 
 
-my %antnames;
 BEGIN {
   %antnames = (Pa => 'PKS',
 	       At => 'CATWXXX',
