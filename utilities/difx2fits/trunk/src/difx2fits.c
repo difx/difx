@@ -93,7 +93,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	keys->no_chan = D->nOutChan;
 	keys->ref_freq = D->refFreq*1.0e6;
 	keys->ref_date = D->mjdStart;
-	keys->chan_bw = 1.0e6*D->chanBW/D->nOutChan;
+	keys->chan_bw = 1.0e6*D->chanBW*D->specAvg/D->nInChan;
 	keys->ref_pixel = 0.5 + 1.0/(2.0*D->specAvg);
 	if(D->nPolar > 1)
 	{
