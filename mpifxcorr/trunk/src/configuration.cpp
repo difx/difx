@@ -741,7 +741,7 @@ void Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = K5;
     else
     {
-      cerr << "Unnkown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, MKIV, NZ and K5) - assuming LBASTD!!!" << endl;
+      cerr << "Unnkown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, MKV, NZ and K5) - assuming LBASTD!!!" << endl;
       datastreamtable[i].format = LBASTD;
     }
     getinputline(input, &line, "QUANTISATION BITS");
