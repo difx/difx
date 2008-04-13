@@ -1,5 +1,8 @@
 getjobs
 ~~~~~~~
+Version 1.1
+* copy log file
+
 Version 1.0
 * Initial version
 
@@ -13,6 +16,9 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.8
+* put shelf location in .calc
+
 Version 1.7
 * scale nchan by oversamp factor
 * allow visbufferlength to be overridden.  default now 32

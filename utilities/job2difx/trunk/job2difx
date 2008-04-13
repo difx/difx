@@ -7,8 +7,8 @@ from os import getcwd
 import re
 
 program = 'job2difx'
-version = '1.7'
-verdate = '20071213'
+version = '1.8'
+verdate = '20080413'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
