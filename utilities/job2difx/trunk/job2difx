@@ -1006,6 +1006,7 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 			n += 1
 	return data
 
+
 #
 
 def makeflagtable(scans, subarray, subarray_num):
@@ -1021,6 +1022,22 @@ def makeflagtable(scans, subarray, subarray_num):
 
 
 ##
+def getshelves(antennalist, subarray, job):
+	job_tape = job['tape']
+	job_rec  = job['recorder']
+	data = {}
+	nant = len(subarray)
+	for ant_id in subarray:
+		rec = getrowbyname(job_rec, antennalist[ant_id])
+		if rec == None:
+			print 'Antenna %s not in recorder table' % \
+				antennalist[ant_id]
+			exit(0)
+		taperow = int(rec['tapes_row'])
+		shelf = job_tape[taperow]['shelfLoc']
+		data[ant_id] = shelf
+	return data
+
 def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg, jobstarttime, jobstoptime, subjob_num,subarray_num):
 	job_station = job['station']
 	job_eop = job['UTC']
@@ -1037,6 +1054,9 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	start = mjd2calendar(mjd0)
 	nant = len(subarray)
 	inc = 1
+
+	# get shelf info
+	shelves = getshelves(antennalist, subarray, job)
 
 	# determine oversampling
 	osamp = int(job_freq[0]['sample_rate'])/ \
@@ -1089,6 +1109,8 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 			ant_num, y))
 		calc.append(indent21_1("TELESCOPE %d Z (m)", "%s", \
 			ant_num, z))
+		calc.append(indent21_1("TELESCOPE %d SHELF", "%s", \
+			ant_num, shelves[ant_id]))
 		ant_num += 1
 
 	nscan = len(scans)
