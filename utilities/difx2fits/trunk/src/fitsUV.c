@@ -615,7 +615,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 	if(dv->D->inputFileVersion == 0)
 	{
-		scale = 1.0;
+		scale = dv->D->nOutChan*dv->D->specAvg/(3.125*dv->D->nInChan);
 	}
 	else
 	{

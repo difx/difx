@@ -12,7 +12,7 @@
 #define MAXENTRIES	5000
 #define MAXTOKEN	512
 #define MAXTAB		6
-#define NBANDS		11
+#define NBANDS		12
 
 typedef struct
 {
@@ -30,13 +30,14 @@ static const float bandEdges[NBANDS+1] =
 {
 	0, 	/* 90cm P  */
 	450,	/* 50cm    */
-	900, 	/* 20cm L  */
+	900, 	/* 21cm L  */
+	1550, 	/* 18cm L  */
 	2000,	/* 13cm S  */
 	4000,	/* 6cm  C  */
 	6000,	/* 4cm  X  */
 	10000,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
-	26000, 	/* 9mm  Ka */
+	26000, 	/*      Ka */
 	40000,	/* 7mm  Q  */
 	70000,	/* 3mm  W  */
 	100000
