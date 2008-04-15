@@ -961,6 +961,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 	const int N_DATA_ROWS = sizeof(dataKeys)/sizeof(dataKeys[0]);
 	int a, N;
 	int rows[N_DATA_ROWS];
+	const char *value;
 
 	if(!D || !ip)
 	{
@@ -970,16 +971,18 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 	rows[N_DATA_ROWS-1] = 0;		/* initialize start */
 	for(a = 0; a < D->nAntenna; a++)
 	{
+		strcpy(D->antenna[a].vsn, "none");
 		N = DifxParametersbatchfind1(ip, rows[N_DATA_ROWS-1], dataKeys,
 			a, N_DATA_ROWS, rows);
-		if(N < N_DATA_ROWS)
+		if(N == N_DATA_ROWS)
 		{
-			fprintf(stderr, "populateInput: N < N_DATA_ROWS %d "
-				"< %d\n", N, N_DATA_ROWS);
-			return 0;
+			value = DifxParametersvalue(ip, rows[0]);
+			if(strlen(value) == 8)
+			{
+				strncpy(D->antenna[a].vsn, value, 8);
+				D->antenna[a].vsn[8] = 0;
+			}
 		}
-		strncpy(D->antenna[a].vsn, DifxParametersvalue(ip, rows[0]), 8);
-		D->antenna[a].vsn[8] = 0;
 	}
 
 	return D;
