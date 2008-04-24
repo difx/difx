@@ -7,6 +7,7 @@ from glob import glob
 import socket
 import struct
 from xml.parsers import expat
+from copy import deepcopy
 
 
 program = 'genmachines'
@@ -20,7 +21,7 @@ def usage():
 	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
 	print '\nA program to find required Mark5 modules and write the machines file'
 	print 'appropriate for a particular DiFX job.'
-	print '\nUsage : %s [options] <input 1> [<input 2> [ ... ] ]' % argv[0]
+	print '\nUsage : %s [options] <input>' % argv[0]
 	print '\noptions can include:'
 	print '\n  -h or --help'
 	print '          print this usage info and exit'
@@ -30,8 +31,7 @@ def usage():
 	print '          set overheadcores to <ohc>, default = 1'
 	print '\n  -m <machinesfile> or --machines <machinesfile>'
 	print '          use <machinesfile> instead of $DIFX_MACHINES'
-	print '\n<input> is a DiFX .input file.  If multiple files are provided, each is'
-	print '    processed individually to produce its own .machines file.'
+	print '\n<input> is a DiFX .input file.'
 	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
 	print 'is specifided.\n'
 	exit(1)
@@ -75,16 +75,20 @@ class Parser:
     def getinfo(self):
         return [self.unit, self.vsnA, self.vsnB, self.state]
 
-def getmodules(maxtime):
+def getVsnsByMulticast(maxtime, modlist, verbose):
 	dt = 0.2
 	t = 0.0
+
+	missing = deepcopy(modlist)
+
+	# First send out a call for VSNs
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
 	sock.sendto("VSN?", ("224.2.2.1", 50201))
 
+	# Now listen for responses, until either time runs out or we get all we need
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	#s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
 	s.bind(('', 50200))
 	mreq = struct.pack("4sl", socket.inet_aton("224.2.2.1"), socket.INADDR_ANY)
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
@@ -94,19 +98,30 @@ def getmodules(maxtime):
 	while t < maxtime:
 		try:
 			message = s.recv(1024)
-			print message
+			if verbose > 1:
+				print message
 			p = Parser()
 			p.feed(message)
 			info = p.getinfo()
 			results.append(info)
+			if info[1] in missing and info[1] in missing:
+				conflicts.append(info)
+			if info[1] in missing:
+				missing.remove(info[1])
+			if info[2] in missing:
+				missing.remove(info[2])
 			p.close()
 
 		except socket.timeout:
 			t += dt
 
-	return results
+	results.sort()
+	conflicts.sort()
+	missing.sort()
 
-def getvsns(inputfile):
+	return results, conflicts, missing
+
+def getVsnsFromInputFile(inputfile):
 	vsns = []
 	nds = 0
 	input = open(inputfile).readlines()
@@ -149,30 +164,12 @@ def readmachines(machinesfile, verbose):
 
 	return machines,cores,ismk5
 
-def gethostname():
-	o = popen('hostname', 'r')
-	host = strip(o.readline())
-	o.close()
-	return host
-
 def writethreads(basename, threads):
 	o = open(basename+'threads', 'w')
 	o.write('NUMBER OF CORES:    %d\n' % len(threads))
 	for t in threads:
 		o.write('%d\n' % t)
 	o.close()
-
-def conflict(nodes):
-	if len(nodes) < 2:
-		return False
-	L = []
-	for n in nodes:
-		L.append(n)
-	L.sort()
-	for i in range(1, len(L)):
-		if L[i-1] == L[i]:
-			return True;
-	return False
 
 def writemachines(basename, hostname, machines, cores, results, vsns, \
 	overheadcores, verbose):
@@ -181,26 +178,9 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 	extrathreads = []
 	quit = False
 	for v in vsns:
-		ok = 0
-		units in results.keys()
-		units.sort()
-		for u in units
-			r = results[u]
-			print r
+		for r in results:
 			if r[1] == v or r[2] == v:
 				dsnodes.append(r[0])
-				ok = 1
-		if ok == 0:
-			print 'module %s not found!' % v
-			quit = True
-
-	if conflict(dsnodes):
-		print 'resource conflict'
-		quit = True
-
-	if quit:
-		print 'genmachines quitting.'
-		return []
 
 	# write file
 	o = open(basename+'machines', 'w')
@@ -237,99 +217,109 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 	return threads
 
 def run(files, machinesfile, overheadcores, verbose):
-	machines,cores,ismk5 = readmachines(machinesfile, verbose)
+	ok = True
 
-	hostname = gethostname()
+	machines, cores, ismk5 = readmachines(machinesfile, verbose)
+
+	hostname = socket.gethostname()
 	if not hostname in machines:
 		print 'ERROR: hostname not in machines file : %s' % machinesfile
 		exit(1)
 
-	#qresults = mk5query(machines, ismk5)
-	qresults = getmodules(5)
+	infile = files[0]
 
-	for infile in files:
-		results = {}
-		for q in qresults:
-			if q[3] == 'Idle':
-				r = []
-				if q[1] != 'none':
-					r.append(q[1])
-				if q[2] != 'none':
-					r.append(q[2])
-				results[q[0]] = r
+	basename = infile[0:-5]
+	if basename + 'input' != infile:
+		print 'expecting input file'
+		exit(1)
+				
+	vsns = getVsnsFromInputFile(infile)
 
-		basename = infile[0:-5]
-		if basename + 'input' != infile:
-			print 'expecting input file'
-			exit(1)
-					
-		vsns = getvsns(infile)
+	results, conflicts, missing = getVsnsByMulticast(5, vsns, verbose)
 
-		t = writemachines(basename, hostname, machines, cores, results, \
-			vsns, overheadcores, verbose)
-		if len(t) == 0:
-			return 1
-		writethreads(basename, t)
-
-		results.sort()
-
+	if verbose > 0:
+		print 'Modules:'
 		for r in results:
-			print r[0], r[1]
+			print '%-10s : %10s %10s' % (r[0], r[1], r[2])
+
+	if len(conflicts) > 0:
+		ok = False
+		print 'Module conflicts:'
+		for c in conflicts:
+			print '%-10s : %10s %10s' % (c[0], c[1], c[2])
+	
+	if len(missing) > 0:
+		ok = False
+		print 'Missing modules:'
+		for m in missing:
+			print '  %s' % m
+
+	if not ok:
+		return 1
+
+	t = writemachines(basename, hostname, machines, cores, results, \
+		vsns, overheadcores, verbose)
+
+	if len(t) == 0:
+		return 1
+	writethreads(basename, t)
+
+	results.sort()
 
 	return 0
 
 if len(argv) < 2:
 	usage()
-else:
-	files = []
-	machinesfile = getenv('DIFX_MACHINES')
-	overheadcores = 1
-	verbose = 0
-	
-	a = 1
-	while a < len(argv):
-		arg = argv[a]
-		if arg == '-h' or arg == '--help':
-			usage()
-		elif arg == '-v' or arg == '--verbose':
-			verbose += 1
-		elif arg == '-m' or arg == '--machinesfile':
-			a += 1
-			if a >= len(argv):
-				print 'No machinesfile specified!'
-				exit(1)
-			machinesfile = argv[a]
-		elif arg == '-o' or arg == '--overheadcores':
-			a += 1
-			if a >= len(argv):
-				print 'No overhead cores specified1'
-				exit(1)
-			overheadcores = int(argv[a])
-		else:
-			files.append(arg)
-		a += 1
 
-	if len(files) < 1:
+files = []
+machinesfile = getenv('DIFX_MACHINES')
+overheadcores = 1
+verbose = 0
+
+a = 1
+while a < len(argv):
+	arg = argv[a]
+	if arg == '-h' or arg == '--help':
 		usage()
+	elif arg == '-v' or arg == '--verbose':
+		verbose += 1
+	elif arg == '-m' or arg == '--machinesfile':
+		a += 1
+		if a >= len(argv):
+			print 'No machinesfile specified!'
+			exit(1)
+		machinesfile = argv[a]
+	elif arg == '-o' or arg == '--overheadcores':
+		a += 1
+		if a >= len(argv):
+			print 'No overhead cores specified1'
+			exit(1)
+		overheadcores = int(argv[a])
+	else:
+		files.append(arg)
+	a += 1
 
-	quit = False
-	for f in files:
-		if len(glob(f)) != 1:
-			print 'File %s not found' % f
-			quit = True
-		
-	if machinesfile == None:
-		print 'DIFX_MACHINES env var not defined!';
-		quit = True
+if len(files) != 1:
+	usage()
 
-	if len(glob(machinesfile)) != 1:
-		print 'Machinesfile %s not found.' % machinesfile
+quit = False
+for f in files:
+	if len(glob(f)) != 1:
+		print 'File %s not found' % f
 		quit = True
-		
-	if quit:
-		print 'genmachines quitting.'
-		exit(1)
-		
-	v = run(files, machinesfile, overheadcores, verbose)
-	if v != 0:
-		exit(v)
+	
+if machinesfile == None:
+	print 'DIFX_MACHINES env var not defined!';
+	quit = True
+
+elif len(glob(machinesfile)) != 1:
+	print 'Machinesfile %s not found.' % machinesfile
+	quit = True
+	
+if quit:
+	print 'genmachines quitting.'
+	exit(1)
+	
+v = run(files, machinesfile, overheadcores, verbose)
+if v != 0:
+	exit(v)
