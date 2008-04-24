@@ -157,7 +157,7 @@ def readmachines(machinesfile, verbose):
 					ismk5[s[0]] = 1
 				else:
 					ismk5[s[0]] = 0
-	if verbose > 0:
+	if verbose > 1:
 		print 'MACHINES = ', machines
 		print 'CORES    = ', cores
 		print 'IS MK5   = ', ismk5
@@ -238,15 +238,15 @@ def run(files, machinesfile, overheadcores, verbose):
 	results, conflicts, missing = getVsnsByMulticast(5, vsns, verbose)
 
 	if verbose > 0:
-		print 'Modules:'
+		print 'Found modules:'
 		for r in results:
-			print '%-10s : %10s %10s' % (r[0], r[1], r[2])
+			print '  %-10s : %10s %10s   %s' % (r[0], r[1], r[2], r[3])
 
 	if len(conflicts) > 0:
 		ok = False
 		print 'Module conflicts:'
 		for c in conflicts:
-			print '%-10s : %10s %10s' % (c[0], c[1], c[2])
+			print '  %-10s : %10s %10s' % (c[0], c[1], c[2])
 	
 	if len(missing) > 0:
 		ok = False
@@ -262,9 +262,8 @@ def run(files, machinesfile, overheadcores, verbose):
 
 	if len(t) == 0:
 		return 1
-	writethreads(basename, t)
 
-	results.sort()
+	writethreads(basename, t)
 
 	return 0
 
@@ -319,6 +318,9 @@ elif len(glob(machinesfile)) != 1:
 if quit:
 	print 'genmachines quitting.'
 	exit(1)
+
+if verbose > 0:
+	print 'DIFX_MACHINES -> %s' % machinesfile
 	
 v = run(files, machinesfile, overheadcores, verbose)
 if v != 0:
