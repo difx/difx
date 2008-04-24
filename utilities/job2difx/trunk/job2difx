@@ -1035,6 +1035,8 @@ def getshelves(antennalist, subarray, job):
 			exit(0)
 		taperow = int(rec['tapes_row'])
 		shelf = job_tape[taperow]['shelfLoc']
+		if shelf == 'fwd_err':
+			shelf = 'None'
 		data[ant_id] = shelf
 	return data
 
@@ -1282,6 +1284,9 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 
 		for subarray_num in range(len(subarrays)):
 			sub = subarrays[subarray_num]
+
+			if len(sub) == 0:
+				continue
 		
 			filebase = '%s.%02d.%d' % \
 				(stump,subjob_num,subarray_num)

@@ -81,7 +81,9 @@ def domachines(filebase, machinespolicy):
 	fn = filebase + '.machines'
 	if not isfile(fn):
 		if machinespolicy == 1:
-			system('genmachines %s.input' % filebase)
+			v = system('genmachines %s.input' % filebase)
+			if v != 0:
+				return 0
 			if not isfile(fn):
 				return 0
 		else:
@@ -161,3 +163,4 @@ for filebase in filebaselist:
 	if v != None:
 		sendmessage(filebase, 'ABORTED', v)
 		print v
+		exit(1)
