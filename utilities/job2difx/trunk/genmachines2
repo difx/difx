@@ -1,6 +1,6 @@
 #!/bin/env python
 
-from string import split, strip, find
+from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv
 from glob import glob
@@ -10,12 +10,10 @@ from xml.parsers import expat
 from copy import deepcopy
 
 
-program = 'genmachines'
+program = 'genmachines2'
 author  = 'Walter Brisken'
 version = '0.7'
 verdate = '20080114'
-
-mk5list = 'mk5list'
 
 def usage():
 	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
@@ -48,6 +46,7 @@ class Parser:
 	self.state = 'Unknown'
 	self.unit = 'unknown'
 	self.tmp = ''
+	self.ok = False
 
     def feed(self, data):
         self._parser.Parse(data, 0)
@@ -57,23 +56,33 @@ class Parser:
         del self._parser # get rid of circular references
 
     def start(self, tag, attrs):
-        pass
+        if tag == 'mark5Status':
+		self.ok = True
 
     def end(self, tag):
-        if tag == 'bankAVSN':
-		self.vsnA = self.tmp
-        if tag == 'bankBVSN':
-		self.vsnB = self.tmp
+        if tag == 'bankAVSN' and self.ok:
+		if len(self.tmp) != 8:
+			self.vsnA = 'none'
+		else:
+			self.vsnA = upper(self.tmp)
+        if tag == 'bankBVSN' and self.ok:
+		if len(self.tmp) != 8:
+			self.vsnB = 'none'
+		else:
+			self.vsnB = upper(self.tmp)
 	if tag == 'from':
-		self.unit = self.tmp
-	if tag == 'state':
+		self.unit = lower(self.tmp)
+	if tag == 'state' and self.ok:
 		self.state = self.tmp
 
     def data(self, data):
         self.tmp = data
 
     def getinfo(self):
-        return [self.unit, self.vsnA, self.vsnB, self.state]
+	if self.ok:
+        	return [self.unit, self.vsnA, self.vsnB, self.state]
+	else:
+		return ['unknown', 'none', 'none', 'Unknown']
 
 def getVsnsByMulticast(maxtime, modlist, verbose):
 	dt = 0.2
@@ -95,6 +104,7 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	s.settimeout(dt)
 	conflicts = []
 	results = []
+	machines = []
 	while t < maxtime:
 		try:
 			message = s.recv(1024)
@@ -103,14 +113,19 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 			p = Parser()
 			p.feed(message)
 			info = p.getinfo()
+			p.close()
+			if info[0] == 'unknown':
+				continue
+			if info[0] in machines:
+				continue
+			machines.append(info[0])
 			results.append(info)
-			if info[1] in missing and info[1] in missing:
+			if info[1] in missing and info[2] in missing:
 				conflicts.append(info)
 			if info[1] in missing:
 				missing.remove(info[1])
 			if info[2] in missing:
 				missing.remove(info[2])
-			p.close()
 
 		except socket.timeout:
 			t += dt
