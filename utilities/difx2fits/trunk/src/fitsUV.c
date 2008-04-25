@@ -819,7 +819,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 	printf("      %d invalid records dropped\n", nInvalid);
 	printf("      %d flagged records dropped\n", nFlagged);
-	printf("      %d all zero records dripped\n", nZero);
+	printf("      %d all zero records dropped\n", nZero);
 	printf("      %d records written\n", nWritten);
 	if(verbose > 1)
 	{
