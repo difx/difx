@@ -11,7 +11,12 @@ const char Mk5StateStrings[][24] =
 	"GotDirectory",
 	"Play",
 	"Idle",
-	"Error"
+	"Error",
+	"Busy",
+	"Initializing",
+	"Resetting",
+	"Rebooting",
+	"PowerOff"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
@@ -25,6 +30,5 @@ const char DifxStateStrings[][24] =
 	"Aborting",
 	"Terminating",
 	"Terminated",
-	"Info",
 	"MpiDone"
 };

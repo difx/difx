@@ -32,7 +32,12 @@ enum Mk5State
 	MARK5_STATE_GOTDIR, 
 	MARK5_STATE_PLAY, 
 	MARK5_STATE_IDLE, 
-	MARK5_STATE_ERROR
+	MARK5_STATE_ERROR,
+	MARK5_STATE_BUSY,
+	MARK5_STATE_INITIALIZING,
+	MARK5_STATE_RESETTING,
+	MARK5_STATE_REBOOTING,
+	MARK5_STATE_POWEROFF
 };
 
 extern const char Mk5StateStrings[][24];
@@ -45,6 +50,7 @@ typedef struct
 	unsigned int status;
 	char activeBank;
 	int scanNumber;
+	char scanName[64];
 	long long position;	/* play pointer */
 	float rate;		/* Mbps */
 	double dataMJD;
@@ -58,10 +64,9 @@ enum DifxState
 	DIFX_STATE_RUNNING,	/* Accompanied by visibility info */
 	DIFX_STATE_ENDING,	/* Normal end of job */
 	DIFX_STATE_DONE,	/* Normal end to DiFX */
-	DIFX_STATE_ABORTING,	/* Unplanned early end doe to runtime error */
+	DIFX_STATE_ABORTING,	/* Unplanned early end due to runtime error */
 	DIFX_STATE_TERMINATING,	/* Caught SIGINT, closing down */
 	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
-	DIFX_STATE_INFO,	/* Just an informative message */
 	DIFX_STATE_MPIDONE	/* mpi process has finished */
 };
 
@@ -82,7 +87,8 @@ int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD);
 int difxMessageSendLoad(const DifxMessageLoad *load);
-int difxMessageSendDifxError(const char *errorString, int severity);
+int difxMessageSendDifxError(const char *errorMessage, int severity);
+int difxMessageSendDifxInfo(const char *infoMessage);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
