@@ -282,8 +282,8 @@ static void VLBA_stream_frame_time_mark4(const struct VLBA_stream *vs,
 	/* For now assume between years 2000 and 2010 */
 	if(mjd) 
 	{
-		*mjd = 51544 + 365*nibs[0] + 100*nibs[1] + 10*nibs[2] +nibs[3]
-			+ (int)(nibs[0]/4);
+		*mjd = 51543 + 365*nibs[0] + 100*nibs[1] + 10*nibs[2] +nibs[3]
+			+ (int)((nibs[0]+3)/4);
 	}
 
 	if(sec)
