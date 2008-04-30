@@ -310,6 +310,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	char line[100];
 	int freqNum;
 	int configId;
+	fpos_t pos;
 
 	resetDifxParameters(dv->dp);
 
@@ -346,6 +347,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	}
 	if(N < N_DIFX_ROWS)
 	{
+		fgetpos(dv->in, &pos);
+		printf("pos = %d\n", pos);
 		return -3;
 	}
 
@@ -371,6 +374,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	s = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
 	if(s < 0)
 	{
+		nFloat = 2;
+		readSize = nFloat * dv->D->nInChan;
 		fread(dv->spectrum, sizeof(float), readSize, dv->in);
 		return -4;
 	}
@@ -399,7 +404,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	/* if chan weights are written the data volume is 3/2 as large */
 	/* for now, force nFloat = 2 (one weight for entire vis record) */
-	nFloat     = 2;
+	nFloat = 2;
 	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
 	{
