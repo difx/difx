@@ -196,6 +196,14 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 		for r in results:
 			if r[1] == v or r[2] == v:
 				dsnodes.append(r[0])
+	
+	for d in dsnodes:
+		if not d in machines:
+			print '%s not enabled in machines file' % d
+			quit = True
+
+	if quit:
+		return []
 
 	# write file
 	o = open(basename+'machines', 'w')

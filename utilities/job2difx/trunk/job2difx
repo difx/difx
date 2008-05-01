@@ -3,7 +3,7 @@
 from sys import argv, exit
 from string import strip, split, find, lower, upper
 from math import pi
-from os import getcwd
+from os import getcwd, system
 import re
 
 program = 'job2difx'
@@ -1361,6 +1361,10 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				for f in flagtable:
 					fp.write(f+'\n')
 				fp.close()
+
+			# delete .machines .threads .uvw ...files if they exist
+			cmd = '/bin/rm -f %s.machines %s.threads %s.uvw %s.rate %s.delay' % (filebase, filebase, filebase, filebase, filebase)
+			system(cmd)
 			
 		subjob_num += 1
 

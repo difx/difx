@@ -18,6 +18,7 @@ job2difx
 ~~~~~~~~
 Version 1.8
 * put shelf location in .calc
+* delete possibly existing .threads .machines .uvw .delay .rate files
 
 Version 1.7
 * scale nchan by oversamp factor
