@@ -16,6 +16,10 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.9
+* new (defaut) option for multiple configurations -- multiple passes
+* some clean-up
+
 Version 1.8
 * put shelf location in .calc
 * delete possibly existing .threads .machines .uvw .delay .rate files

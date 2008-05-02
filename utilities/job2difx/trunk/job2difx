@@ -7,8 +7,8 @@ from os import getcwd, system
 import re
 
 program = 'job2difx'
-version = '1.8'
-verdate = '20080413'
+version = '1.9'
+verdate = '20080502'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
@@ -16,7 +16,7 @@ BufferFactor = 32
 NDataSegment = 8
 MaxEOP = 5
 verbose = 0
-multiconfig = 1
+multiconfig = 2
 visbufferlength = 32
 
 def usage():
@@ -28,6 +28,8 @@ def usage():
 	print '\nOptions can include:'
 	print '\n  -h or --help            print this help into and exit'
 	print '\n  -s or --single-config   allow only 1 config per job'
+	print '\n  -p or --multi-pass      handle multiple configs in passes'
+	print '\n  -m or --multi-config    multiple configs per job [flakey]'
 	print '\n  -v or --verbose         spew lots of info to the screen'
 	print '\n  List of antennas : e.g.  A=BR,KP,LA'
 	print '    Multiple antenna lists are appended, e.g.  A=BR A=KP A=LA'
@@ -144,7 +146,7 @@ def parsevalue(row, token):
 			row[strip(s[0])] = val
 
 # this function makes extensive use of regular expressions to parse
-# a cjobgen job file into a structured dictionaty(table) of lists(row) of
+# a cjobgen job file into a structured dictionary(table) of lists(row) of
 # dictionaries(parameter).  If this function doesn't make sense to you,
 # either don't worry or learn python regular expressions.  They really 
 # are fantastic!
@@ -421,15 +423,6 @@ def intersection(l1, l2):
 			inter.append(e)
 	return inter		
 
-def remove_phantoms(scanlist, minantennas):
-	for s in scanlist:
-		newsubarrays = []
-		subarrays = s[6]
-		for sa in subarrays:
-			if len(sa[1]) >= minantennas:
-				newsubarrays.append(sa)
-		s[6] = newsubarrays
-
 def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 	subs = [-1]
 	job_freq = job['frequency']
@@ -442,7 +435,7 @@ def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 		for Y in scan[6]:
 			if len(Y[1]) < minsubarraysize:
 				continue;
-			if multiconfig:
+			if multiconfig > 0:
 				config.append([Y[0][0], Y[0][3]])
 			else:
 				config.append([Y[0][0], Y[0][1], Y[0][3]])
@@ -596,61 +589,6 @@ def track2recChan(formatName, trackNum):
 
 ####### Functions to make output DiFX tables #####
 
-def maketelescopetable(job_clock, subarray, antennalist, startmjd):
-	tele = []
-	nTelescope = len(subarray)
-	tele.append("# TELESCOPE TABLE ##!")
-	tele.append("TELESCOPE ENTRIES:  %d" % nTelescope)
-	for i in range(nTelescope):
-		ant_index = subarray[i]
-		ant = getrowbyname(job_clock, antennalist[ant_index])
-		if ant['name'] != antennalist[ant_index]:
-			print 'clock table antennas out of order'
-			return None
-		delay = float(ant['offset']) * 1.0e6
-		rate  = float(ant['rate']) * 1.0e6
-		
-		# input file references delay to start of obs
-		# job script references an arbitrary day
-		# adjust the delay so they are compatible
-		deltat = ( startmjd - parsetime(ant['time']) )*86400.0
-		delay += rate*deltat;
-		
-		if i < 10:
-			tele.append("TELESCOPE NAME %d:   %s" % \
-				(i, antennalist[ant_index]))
-			tele.append("CLOCK DELAY (us) %d: %s" % (i, delay))
-			tele.append("CLOCK RATE(us/s) %d: %s" % (i, rate))
-		else:
-			tele.append("TELESCOPE NAME %d:  %s" % \
-				(i, antennalist[ant_index]))
-			tele.append("CLOCK DELAY (us) %d:%s" % (i, delay))
-			tele.append("CLOCK RATE(us/s) %d:%s" % (i, rate))
-	return tele
-
-def makecommontable(filebase, nAntenna, startmjd, stopmjd):
-	dir = getcwd()
-	exectime = 86400.0*(stopmjd-startmjd)
-	startday = int(startmjd)
-
-	# FIXME! When moving to fractional start time, change below!
-	startsec = int((startmjd - startday)*86400.0 + 0.5)
-	
-	common = []
-	common.append("# COMMON SETTINGS ##!")
-	common.append("DELAY FILENAME:     %s/%s.delay" % (dir, filebase))
-	common.append("UVW FILENAME:       %s/%s.uvw" % (dir, filebase))
-	common.append("CORE CONF FILENAME: %s/%s.threads" % (dir, filebase))
-	common.append("EXECUTE TIME (SEC): %d" % int(exectime+0.5))
-	common.append("START MJD:          %d" % startday)
-	common.append("START SECONDS:      %d" % startsec)
-	common.append("ACTIVE DATASTREAMS: %d" % nAntenna)
-	common.append("ACTIVE BASELINES:   %d" % ( (nAntenna-1)*nAntenna/2 ) )
-	common.append("VIS BUFFER LENGTH:  %d" % visbufferlength)
-	common.append("OUTPUT FORMAT:      SWIN")
-	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
-	return common
-
 def indent21_1(key1, val, i, v):
 	out = (key1 % i) + ':'
 	n = 20-len(out)
@@ -686,6 +624,58 @@ def indent21_2trunc(key1, val, i, j, v):
 		out = out[:20]
 	out += (val % v)
 	return out
+
+def maketelescopetable(job_clock, subarray, antennalist, startmjd):
+	tele = []
+	nTelescope = len(subarray)
+	tele.append("# TELESCOPE TABLE ##!")
+	tele.append("TELESCOPE ENTRIES:  %d" % nTelescope)
+	for i in range(nTelescope):
+		ant_index = subarray[i]
+		ant = getrowbyname(job_clock, antennalist[ant_index])
+		if ant['name'] != antennalist[ant_index]:
+			print 'clock table antennas out of order'
+			return None
+		delay = float(ant['offset']) * 1.0e6
+		rate  = float(ant['rate']) * 1.0e6
+		
+		# input file references delay to start of obs
+		# job script references an arbitrary day
+		# adjust the delay so they are compatible
+		deltat = ( startmjd - parsetime(ant['time']) )*86400.0
+		delay += rate*deltat;
+		
+		tele.append(indent21_1("TELESCOPE NAME %d", "%s", \
+			i, antennalist[ant_index]))
+		tele.append(indent21_1("CLOCK DELAY (us) %d", "%s", \
+			i, delay))
+		tele.append(indent21_1("CLOCK RATE(us/s) %d", "%s", \
+			i, rate))
+
+	return tele
+
+def makecommontable(filebase, nAntenna, startmjd, stopmjd):
+	dir = getcwd()
+	exectime = 86400.0*(stopmjd-startmjd)
+	startday = int(startmjd)
+
+	# FIXME! When moving to fractional start time, change below!
+	startsec = int((startmjd - startday)*86400.0 + 0.5)
+	
+	common = []
+	common.append("# COMMON SETTINGS ##!")
+	common.append("DELAY FILENAME:     %s/%s.delay" % (dir, filebase))
+	common.append("UVW FILENAME:       %s/%s.uvw" % (dir, filebase))
+	common.append("CORE CONF FILENAME: %s/%s.threads" % (dir, filebase))
+	common.append("EXECUTE TIME (SEC): %d" % int(exectime+0.5))
+	common.append("START MJD:          %d" % startday)
+	common.append("START SECONDS:      %d" % startsec)
+	common.append("ACTIVE DATASTREAMS: %d" % nAntenna)
+	common.append("ACTIVE BASELINES:   %d" % ( (nAntenna-1)*nAntenna/2 ) )
+	common.append("VIS BUFFER LENGTH:  %d" % visbufferlength)
+	common.append("OUTPUT FORMAT:      SWIN")
+	common.append("OUTPUT FILENAME:    %s/%s.difx" % (dir, filebase))
+	return common
 
 def intTime(dt, speedUp):
 	granularity = speedUp*0.131072
@@ -1006,9 +996,6 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 			n += 1
 	return data
 
-
-#
-
 def makeflagtable(scans, subarray, subarray_num):
 	flag = []
 	for scan in scans:
@@ -1020,8 +1007,6 @@ def makeflagtable(scans, subarray, subarray_num):
 					(scan[2], scan[3], i))
 	return flag
 
-
-##
 def getshelves(antennalist, subarray, job):
 	job_tape = job['tape']
 	job_rec  = job['recorder']
@@ -1213,7 +1198,8 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	calc.append("UVW FILENAME:       %s.uvw" % filebase)
 		
 	return calc
-##
+	
+#**********************************
 
 def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist):
 
@@ -1238,7 +1224,6 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 	nant = len(antennalist)
 	statelist = obs2statelist(job['obs'], antenna_index)
 	scanlist, subarraylist = statelist2scanlist(statelist, minsubarraysize, nant)
-#	remove_phantoms(scanlist, minsubarraysize)
 
 	subjoblist = generatesubjoblist(scanlist, subarraylist, job, minsubarraysize)
 	srclist = generatesrclist(job['source'])
@@ -1288,10 +1273,6 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 			if len(sub) == 0:
 				continue
 		
-			filebase = '%s.%02d.%d' % \
-				(stump,subjob_num,subarray_num)
-			joblist.append([filebase, upper(obscode)])
-			
 			# a setup is a combination of freqid and customid
 			setups = []
 		
@@ -1308,67 +1289,78 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 
 			if verbose:
 				print 'setups = ', setups
-			
-			tables = []
-			nant = len(sub)
-			config = findconfig(scanlist[scan0][6], sub)
-			dopolar = job['correlator'][config[0]]['polar'] == 'YES'
-			freqlist = \
-				generatefreqlist(job['frequency'], setups)
-			if verbose > 1:
-				print 'freqlist = ', freqlist
-			tables.append( makecommontable(filebase, nant, \
-				mjd0, mjd1) )
-			ct, specavg = makeconfigutationtable(config, \
-				nant, job, setups, fftsize, nchan, tint, \
-				freqlist)
-			tables.append(ct);
-			tables.append( makefreqtable(freqlist) )
-			tables.append( maketelescopetable(job['clock'], \
-				sub, antennalist, mjd0) )
-			tables.append( makedatastreamtable(sub, antennalist, \
-				config, job, freqlist, setups) )
-			tables.append( makebaselinetable(job, nant, \
-				freqlist, dopolar, setups) )
-			tables.append( makedatatable(mjd0, mjd1, antennalist, \
-				sub, job, len(setups)) )
-			filename = '%s.input' % filebase
-			fp = open(filename, "w")
-			for t in tables:
-				for r in t:
-					fp.write(r+'\n')
-				fp.write('\n')
-			fp.close()
-
-			# do the calc thing
-			calctable = makecalctable(scanlist[scan0:scan1+1], \
-					sub, filebase, job, antennalist, \
-					srclist, specavg, jobstarttime, \
-					jobstoptime, subjob_num,subarray_num)
-			filename = '%s.calc' % filebase
-			fp = open(filename, "w")
-			for c in calctable:
-				fp.write(c+'\n')
-			fp.close()
-			
-			# make subarray flags
-			filename = '%s.flag' % filebase
-			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
-					sub, subarray_num)
-			if len(flagtable) > 0:
-				fp = open(filename, "w") 
-				fp.write("%d\n" % len(flagtable))
-				for f in flagtable:
-					fp.write(f+'\n')
-				fp.close()
+		
+			setupgroups = []
+			if multiconfig == 2:
+				for s in setups:
+					setupgroups.append([s])
 			else:
-				system('rm -f %s' % filename)
-
-			# delete .machines .threads .uvw ...files if they exist
-			cmd = '/bin/rm -f %s.machines %s.threads %s.uvw %s.rate %s.delay' % (filebase, filebase, filebase, filebase, filebase)
-			system(cmd)
+				setupgroups = [setups]
+	
+			for setups in setupgroups:
+				filebase = '%s.%03d' % (stump, subjob_num)
+				joblist.append([filebase, upper(obscode)])
 			
-		subjob_num += 1
+				tables = []
+				nant = len(sub)
+				config = findconfig(scanlist[scan0][6], sub)
+				dopolar = job['correlator'][config[0]]['polar'] == 'YES'
+				freqlist = \
+					generatefreqlist(job['frequency'], setups)
+				if verbose > 1:
+					print 'freqlist = ', freqlist
+				tables.append( makecommontable(filebase, nant, \
+					mjd0, mjd1) )
+				ct, specavg = makeconfigutationtable(config, \
+					nant, job, setups, fftsize, nchan, tint, \
+					freqlist)
+				tables.append(ct);
+				tables.append( makefreqtable(freqlist) )
+				tables.append( maketelescopetable(job['clock'], \
+					sub, antennalist, mjd0) )
+				tables.append( makedatastreamtable(sub, antennalist, \
+					config, job, freqlist, setups) )
+				tables.append( makebaselinetable(job, nant, \
+					freqlist, dopolar, setups) )
+				tables.append( makedatatable(mjd0, mjd1, antennalist, \
+					sub, job, len(setups)) )
+				filename = '%s.input' % filebase
+				fp = open(filename, "w")
+				for t in tables:
+					for r in t:
+						fp.write(r+'\n')
+					fp.write('\n')
+				fp.close()
+
+				# do the calc thing
+				calctable = makecalctable(scanlist[scan0:scan1+1], \
+						sub, filebase, job, antennalist, \
+						srclist, specavg, jobstarttime, \
+						jobstoptime, subjob_num,subarray_num)
+				filename = '%s.calc' % filebase
+				fp = open(filename, "w")
+				for c in calctable:
+					fp.write(c+'\n')
+				fp.close()
+				
+				# make subarray flags
+				filename = '%s.flag' % filebase
+				flagtable = makeflagtable(scanlist[scan0:scan1+1], \
+						sub, subarray_num)
+				if len(flagtable) > 0:
+					fp = open(filename, "w") 
+					fp.write("%d\n" % len(flagtable))
+					for f in flagtable:
+						fp.write(f+'\n')
+					fp.close()
+				else:
+					system('rm -f %s' % filename)
+
+				# delete .machines .threads .uvw ...files if they exist
+				cmd = '/bin/rm -f %s.machines %s.threads %s.uvw %s.rate %s.delay' % (filebase, filebase, filebase, filebase, filebase)
+				system(cmd)
+				
+				subjob_num += 1
 
 #############
 
@@ -1627,6 +1619,10 @@ else:
 			verbose = verbose + 1
 		elif arg == '-s' or arg == '--single-config':
 			multiconfig = 0
+		elif arg == '-m' or arg == '--multi-config':
+			multiconfig = 0
+		elif arg == '-p' or arg == '--multi-pass':
+			multiconfig = 2
 		elif len(kv) == 1:
 			files.append([arg])
 		else:
