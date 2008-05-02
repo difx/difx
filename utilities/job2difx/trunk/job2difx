@@ -1352,15 +1352,17 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 			fp.close()
 			
 			# make subarray flags
+			filename = '%s.flag' % filebase
 			flagtable = makeflagtable(scanlist[scan0:scan1+1], \
 					sub, subarray_num)
 			if len(flagtable) > 0:
-				filename = '%s.flag' % filebase
 				fp = open(filename, "w") 
 				fp.write("%d\n" % len(flagtable))
 				for f in flagtable:
 					fp.write(f+'\n')
 				fp.close()
+			else:
+				system('rm -f %s' % filename)
 
 			# delete .machines .threads .uvw ...files if they exist
 			cmd = '/bin/rm -f %s.machines %s.threads %s.uvw %s.rate %s.delay' % (filebase, filebase, filebase, filebase, filebase)
