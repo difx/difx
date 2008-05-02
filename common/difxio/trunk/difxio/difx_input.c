@@ -1499,6 +1499,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 
 	if(nSubScan == 0)
 	{
+	    k = 0;
 	    rows[N_SCAN_ROWS-1] = 0;
 	    for(i = 0; i < D->nScan; i++)
 	    {
@@ -1518,32 +1519,37 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				return 0;
 			}
 		}
-		strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[1]), 31);
-		D->scan[i].name[31]  = 0;
-		D->scan[i].ra = atof(DifxParametersvalue(cp, rows[2]));
-		D->scan[i].dec = atof(DifxParametersvalue(cp, rows[3]));
-		strncpy(D->scan[i].calCode, 
+		strncpy(D->scan[k].name, DifxParametersvalue(cp, rows[1]), 31);
+		D->scan[k].name[31] = 0;
+		D->scan[k].ra = atof(DifxParametersvalue(cp, rows[2]));
+		D->scan[k].dec = atof(DifxParametersvalue(cp, rows[3]));
+		strncpy(D->scan[k].calCode, 
 			DifxParametersvalue(cp, rows[4]), 3);
-		D->scan[i].calCode[3]= 0;
-		D->scan[i].qual      = atoi(DifxParametersvalue(cp, rows[5]));
+		D->scan[k].calCode[3] = 0;
+		D->scan[k].qual = atoi(DifxParametersvalue(cp, rows[5]));
 
 		cname = DifxParametersvalue(cp, rows[0]);
 		for(c = 0; c < D->nConfig; c++)
 		{
 			if(strcmp(cname, D->config[c].name) == 0)
 			{
-				D->scan[i].configId = c;
+				D->scan[k].configId = c;
 				break;
 			}
 		}
 		if(c == D->nConfig)
 		{
-			fprintf(stderr, "Error -- source without config! "
-				"id=%d  name=%s  realname=%s\n",
-				i, cname, D->scan[i].name);
-			return 0;
+			fprintf(stderr, "Warning: ingoring source without "
+				"config! id=%d  name=%s  realname=%s\n",
+				i, cname, D->scan[k].name);
+			//return 0;
+		}
+		else
+		{
+			k++;
 		}
 	    }
+	    D->nScan = k;
 	}
 	else
 	{
