@@ -51,6 +51,7 @@ typedef struct
 	int nZero;
 	int nWritten;
 	int changed;
+	int first;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);

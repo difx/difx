@@ -89,6 +89,7 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
 	dv->nComplex = 2;	/* for now don't write weights */
+	dv->first = 1;
 	
 	for(c = 0; c < D->nConfig; c++)
 	{
@@ -568,7 +569,6 @@ static int RecordIsFlagged(const DifxVis *dv)
 int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	int verbose)
 {
-	int first = 1;
 	int v;
 	int index;
 	int i, k;
@@ -717,9 +717,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 			{
 				dv->nZero++;
 			}
-			else if(first)
+			else if(dv->first)
 			{
-				first = 0;
+				dv->first = 0;
 			}
 			else
 			{
