@@ -78,25 +78,13 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	}
 	
 	dv->D = D;
-	dv->jobId = 0;
 	dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
 	dv->curFile = -1;
 	startGlob(dv);
-	dv->dp = 0;
-	dv->spectrum = 0;
-	dv->data = 0;
-	dv->record = 0;
-	dv->nData = 0;
-	dv->in = 0;
 	dv->out = out;
 	dv->configId = -1;
 	dv->sourceId = -1;
 	dv->baseline = -1;
-	dv->nFreq = 0;
-	dv->nInvalid = 0;
-	dv->nFlagged = 0;
-	dv->nZero = 0;
-	dv->nWritten = 0;
 
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
@@ -583,7 +571,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	int first = 1;
 	int v;
 	int index;
-	int changed;
 	int i, k;
 	int specAvg;
 	float visScale;
@@ -711,16 +698,12 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 	for(;;)
 	{
-		changed = DifxVisNewUVData(dv, verbose);
-		if(changed == -4)    /* probably an autocorr of unused ant */
+		dv->changed = DifxVisNewUVData(dv, verbose);
+		if(dv->changed == -4)  /* probably an autocorr of unused ant */
 		{
 			continue;
 		}
-		else if(changed < 0) /* done! */
-		{
-			break;
-		}
-		if(changed) /* we need to write out a block of visibilities */
+		if(dv->changed != 0)   /* we need to write out a block of vis */
 		{
 			if(RecordIsInvalid(dv))
 			{
@@ -747,7 +730,9 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 				fitsWriteBinRow(dv->out, (char *)dv->record);
 				dv->nWritten++;
 			}
-			
+		}
+		if(dv->changed > 0)
+		{
 			v = DifxVisCollectRandomParams(dv);
 			if(v < 0)
 			{
@@ -759,6 +744,10 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 			/* blank array */
 			memset(dv->data, 0, dv->nData*sizeof(float));
+		}
+		if(dv->changed < 0) /* done! */
+		{
+			break;
 		}
 		isLSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
 		startChan = dv->D->startChan;
@@ -798,28 +787,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 				}
 			}
 		}
-	}
-
-	/* write that last bit of data */
-	if(RecordIsInvalid(dv))
-	{
-		dv->nInvalid++;
-	}
-	else if(RecordIsFlagged(dv))
-	{
-		dv->nFlagged++;
-	}
-	else if(RecordIsZero(dv))
-	{
-		dv->nZero++;
-	}
-	else
-	{
-#ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, dv->record);
-#endif
-		fitsWriteBinRow(dv->out, (char *)dv->record);
-		dv->nWritten++;
 	}
 
 	printf("      %d invalid records dropped\n", dv->nInvalid);

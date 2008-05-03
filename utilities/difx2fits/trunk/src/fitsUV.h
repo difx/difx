@@ -50,6 +50,7 @@ typedef struct
 	int nFlagged;
 	int nZero;
 	int nWritten;
+	int changed;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);
