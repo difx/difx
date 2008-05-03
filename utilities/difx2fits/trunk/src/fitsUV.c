@@ -93,6 +93,10 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	dv->sourceId = -1;
 	dv->baseline = -1;
 	dv->nFreq = 0;
+	dv->nInvalid = 0;
+	dv->nFlagged = 0;
+	dv->nZero = 0;
+	dv->nWritten = 0;
 
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
@@ -593,10 +597,6 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	int nRowBytes;
 	int nColumn;
 	int nWeight;
-	int nInvalid = 0;
-	int nFlagged = 0;
-	int nZero = 0;
-	int nWritten = 0;
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -724,15 +724,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		{
 			if(RecordIsInvalid(dv))
 			{
-				nInvalid++;
+				dv->nInvalid++;
 			}
 			else if(RecordIsFlagged(dv))
 			{
-				nFlagged++;
+				dv->nFlagged++;
 			}
 			else if(RecordIsZero(dv))
 			{
-				nZero++;
+				dv->nZero++;
 			}
 			else if(first)
 			{
@@ -745,7 +745,7 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 					dv->record);
 #endif
 				fitsWriteBinRow(dv->out, (char *)dv->record);
-				nWritten++;
+				dv->nWritten++;
 			}
 			
 			v = DifxVisCollectRandomParams(dv);
@@ -803,15 +803,15 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	/* write that last bit of data */
 	if(RecordIsInvalid(dv))
 	{
-		nInvalid++;
+		dv->nInvalid++;
 	}
 	else if(RecordIsFlagged(dv))
 	{
-		nFlagged++;
+		dv->nFlagged++;
 	}
 	else if(RecordIsZero(dv))
 	{
-		nZero++;
+		dv->nZero++;
 	}
 	else
 	{
@@ -819,13 +819,13 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		FitsBinRowByteSwap(columns, nColumn, dv->record);
 #endif
 		fitsWriteBinRow(dv->out, (char *)dv->record);
-		nWritten++;
+		dv->nWritten++;
 	}
 
-	printf("      %d invalid records dropped\n", nInvalid);
-	printf("      %d flagged records dropped\n", nFlagged);
-	printf("      %d all zero records dropped\n", nZero);
-	printf("      %d records written\n", nWritten);
+	printf("      %d invalid records dropped\n", dv->nInvalid);
+	printf("      %d flagged records dropped\n", dv->nFlagged);
+	printf("      %d all zero records dropped\n", dv->nZero);
+	printf("      %d records written\n", dv->nWritten);
 	if(verbose > 1)
 	{
 		printf("        Note : 1 record is all data from 1 baseline\n");

@@ -46,6 +46,10 @@ typedef struct
 	struct UVrow *record;
 	float *weight;
 	float *data;
+	int nInvalid;
+	int nFlagged;
+	int nZero;
+	int nWritten;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);
