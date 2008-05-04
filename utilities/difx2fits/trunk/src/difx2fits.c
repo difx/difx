@@ -364,7 +364,13 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(verbose > 2)
+	{
+		printDifxInput(D);
+	}
+
 	D = updateDifxInput(D);
+
 	if(!D)
 	{
 		fprintf(stderr, "updateDifxInput failed.  Aborting\n");

@@ -70,10 +70,11 @@ int DifxVisNextFile(DifxVis *dv)
 	dv->curFile++;
 	if(dv->curFile >= dv->nFile)
 	{
+		printf("    JobId %d done.\n", dv->jobId);
 		return -1;
 	}
-	printf("    JobId %d/%d File %d/%d : %s\n", 
-		dv->jobId+1, dv->D->nJob,
+	printf("    JobId %d File %d/%d : %s\n", 
+		dv->jobId,
 		dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
 	dv->in = fopen64(dv->globbuf.gl_pathv[dv->curFile], "r");
@@ -400,15 +401,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
 	{
-		/* don't get all excited and signify a change on first rec */
-		if(dv->first)
-		{
-			dv->first = 0;
-		}
-		else
-		{
-			changed = 1;
-		}
+		changed = 1;
 		dv->baseline = bl;
 
 		index = dv->freqId + dv->nFreq*dv->polId;
@@ -426,6 +419,14 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		}
 		dv->configId = c;
 		dv->tInt = dv->D->config[c].tInt;
+	}
+
+	/* don't get all excited and signify a change on first rec */
+	if(changed && dv->first)
+	{
+		dv->first = 0;
+		changed = 0;
+		DifxVisCollectRandomParams(dv);
 	}
 
 	if(dv->bandId <  0 || dv->bandId >= dv->nFreq  ||
@@ -609,6 +610,11 @@ static int storevis(DifxVis *dv)
 	int i, j, k, index;
 
 	D = dv->D;
+
+	if(dv->configId < 0)
+	{
+		return -1;
+	}
 	
 	isLSB = D->config[dv->configId].IF[dv->bandId].sideband == 'L';
 	startChan = D->startChan;
@@ -653,6 +659,11 @@ static int storevis(DifxVis *dv)
 
 static int readvisrecord(DifxVis *dv, int verbose)
 {
+	/* blank array */
+	memset(dv->data, 0, dv->nData*sizeof(float));
+
+	dv->changed = 0;
+
 	while(!dv->changed)
 	{
 		if(!dv->first && dv->changed >= 0)
@@ -845,7 +856,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 			fitsWriteBinRow(out, (char *)dv->record);
 			nWritten++;
 		}
-		if(dv[j].changed < 0)
+		if(dv->changed < 0)
 		{
 			deleteDifxVis(dv);
 			nJob--;
@@ -861,9 +872,6 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 					"return value = %d\n", v);
 				return -3;
 			}
-
-			/* blank array */
-			memset(dv->data, 0, dv->nData*sizeof(float));
 
 			readvisrecord(dv, verbose);
 		}
