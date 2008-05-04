@@ -46,22 +46,18 @@ def getmodules_fx(filename, antlist):
 
 def getmodules_input(filename, antlist):
 	mods = {}
-	ants = []
 	data = open(filename).readlines()
-	n = 0
+	ant = 'XXX'
 	for d in data:
 		if d[:14] == 'TELESCOPE NAME':
 			ant = strip(d[20:])
-			ants.append(ant)
-			if not ant in antlist:
+			if ant in antlist:
+				ant = 'XXX'
+			else:
 				antlist.append(ant)
 		elif d[:5] == 'FILE ':
-			if len(ants) <= n:
-				print '%s: more FILES than TELESCOPES!' % \
-					filename
-				exit(0)
-			mods[ants[n]] = strip(d[20:])
-			n += 1
+			if ant != 'XXX':
+				mods[ant] = split(strip(d[20:]))[0]
 	return mods
 
 def getmodules(filename, antlist):
