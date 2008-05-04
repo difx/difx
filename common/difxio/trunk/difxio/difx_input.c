@@ -1897,8 +1897,6 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 		return 0;
 	}
 
-	printf("D->nScan = %d\n", D->nScan); fflush(stdout);
-
 	/* for now be wasteful and allocate enough memory for each
 	 * scan to be its own source 
 	 */
