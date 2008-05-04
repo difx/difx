@@ -25,7 +25,6 @@ typedef struct
 	const DifxInput *D;
 	DifxParameters *dp;
 	FILE *in;
-	struct fitsPrivate *out;
 	double U, V, W;
 	double mjd;
 	float tInt;
@@ -46,15 +45,12 @@ typedef struct
 	struct UVrow *record;
 	float *weight;
 	float *data;
-	int nInvalid;
-	int nFlagged;
-	int nZero;
-	int nWritten;
 	int changed;
 	int first;
+	double scale;
 } DifxVis;
 
-DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out);
+DifxVis *newDifxVis(const DifxInput *D, int jobId);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
 int DifxVisNewUVData(DifxVis *dv, int verbose);

@@ -1,3 +1,7 @@
+Version 2.0
+* New visibility writing code -- will merge multiple input files
+  into single FITS file in time order.
+
 Version 1.9
 * Use difxio >= 1.7
 

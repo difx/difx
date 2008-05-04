@@ -42,7 +42,7 @@ static int DifxVisInitData(DifxVis *dv)
 	return 0;
 }
 
-static void startGlob(DifxVis *dv)
+static void DifxVisStartGlob(DifxVis *dv)
 {
 	char *globstr;
 	const char suffix[] = ".difx/DIFX*";
@@ -52,10 +52,6 @@ static void startGlob(DifxVis *dv)
 
 	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].fileBase, suffix);
 
-	if(dv->jobId > 0)
-	{
-		globfree(&dv->globbuf);
-	}
 	glob(globstr, 0, 0, &dv->globbuf);
 	dv->nFile = dv->globbuf.gl_pathc;
 	
@@ -64,7 +60,34 @@ static void startGlob(DifxVis *dv)
 	free(globstr);
 }
 
-DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
+int DifxVisNextFile(DifxVis *dv)
+{
+	if(dv->in)
+	{
+		fclose(dv->in);
+		dv->in = 0;
+	}
+	dv->curFile++;
+	if(dv->curFile >= dv->nFile)
+	{
+		return -1;
+	}
+	printf("    JobId %d/%d File %d/%d : %s\n", 
+		dv->jobId+1, dv->D->nJob,
+		dv->curFile+1, dv->nFile,
+		dv->globbuf.gl_pathv[dv->curFile]);
+	dv->in = fopen64(dv->globbuf.gl_pathv[dv->curFile], "r");
+	if(!dv->in)
+	{
+		fprintf(stderr, "Error opening file : %s\n", 
+			dv->globbuf.gl_pathv[dv->curFile]);
+		return -1;
+	}
+
+	return 0;
+}
+
+DifxVis *newDifxVis(const DifxInput *D, int jobId)
 {
 	DifxVis *dv;
 	int i, c, v;
@@ -76,15 +99,23 @@ DifxVis *newDifxVis(const DifxInput *D, struct fitsPrivate *out)
 	{
 		return 0;
 	}
+
+	if(jobId < 0 || jobId >= D->nJob)
+	{
+		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n",
+			jobId, D->nJob);
+		return 0;
+	}
 	
+	dv->jobId = jobId;
 	dv->D = D;
 	dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
 	dv->curFile = -1;
-	startGlob(dv);
-	dv->out = out;
+	DifxVisStartGlob(dv);
 	dv->configId = -1;
 	dv->sourceId = -1;
 	dv->baseline = -1;
+	dv->scale = 1.0;
 
 	/* For now, the difx format only provides 1 weight for the entire
 	 * vis record, so we don't need weights per channel */
@@ -200,6 +231,7 @@ void deleteDifxVis(DifxVis *dv)
 	free(dv);
 }
 
+
 static int getPolProdId(const DifxVis *dv, const char *polPair)
 {
 	const char polSeq[8][4] = 
@@ -226,39 +258,6 @@ static int getPolProdId(const DifxVis *dv, const char *polPair)
 	return -2;
 }
 
-int DifxVisNextFile(DifxVis *dv)
-{
-	if(dv->in)
-	{
-		fclose(dv->in);
-		dv->in = 0;
-	}
-	dv->curFile++;
-	if(dv->curFile >= dv->nFile)
-	{
-		dv->jobId++;
-		if(dv->jobId >= dv->D->nJob)
-		{
-			return -1;
-		}
-		dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
-		startGlob(dv);
-		dv->curFile = 0;
-	}
-	printf("    JobId %d/%d File %d/%d : %s\n", 
-		dv->jobId+1, dv->D->nJob,
-		dv->curFile+1, dv->nFile,
-		dv->globbuf.gl_pathv[dv->curFile]);
-	dv->in = fopen64(dv->globbuf.gl_pathv[dv->curFile], "r");
-	if(!dv->in)
-	{
-		fprintf(stderr, "Error opening file : %s\n", 
-			dv->globbuf.gl_pathv[dv->curFile]);
-		return -1;
-	}
-
-	return 0;
-}
 	
 int DifxVisNewUVData(DifxVis *dv, int verbose)
 {
@@ -401,7 +400,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
 	{
-		changed = 1;
+		/* don't get all excited and signify a change on first rec */
+		if(dv->first)
+		{
+			dv->first = 0;
+		}
+		else
+		{
+			changed = 1;
+		}
 		dv->baseline = bl;
 
 		index = dv->freqId + dv->nFreq*dv->polId;
@@ -566,24 +573,123 @@ static int RecordIsFlagged(const DifxVis *dv)
 	return 0;
 }
 
-int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
-	int verbose)
+static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
+{
+	double scale;
+
+	if(D->inputFileVersion == 0)
+	{
+		scale = D->nOutChan*D->specAvg/(3.125*D->nInChan);
+	}
+	else
+	{
+		scale = 1.0/(D->chanBW*6.25e6*
+			D->config[0].tInt*D->specAvg);
+	}
+
+	if(s > 0.0)
+	{
+		if(verbose > 0)
+		{
+			printf("      Overriding scale factor %e with %e\n",
+				scale, s);
+		}
+		scale = s;
+	}
+
+	return scale;
+}
+
+static int storevis(DifxVis *dv)
+{
+	const DifxInput *D;
+	int isLSB;
+	int startChan;
+	int stopChan;
+	int i, j, k, index;
+
+	D = dv->D;
+	
+	isLSB = D->config[dv->configId].IF[dv->bandId].sideband == 'L';
+	startChan = D->startChan;
+	stopChan = startChan + D->nOutChan*D->specAvg;
+
+	dv->weight[D->nPolar*dv->bandId + dv->polId] = 
+		dv->recweight;
+	
+	for(i = startChan; i < stopChan; i++)
+	{
+		if(isLSB)
+		{
+			j = stopChan - 1 - i;
+			index = ((dv->bandId*D->nOutChan + 
+				j/D->specAvg)*
+				D->nPolar+dv->polId)*dv->nComplex;
+		}
+		else
+		{
+			index = ((dv->bandId*D->nOutChan + 
+				(i-startChan)/D->specAvg)*
+				D->nPolar+dv->polId)*dv->nComplex;
+		}
+		for(k = 0; k < dv->nComplex; k++)
+		{
+			/* swap phase/uvw for FITS-IDI conformance */
+			if(k % 3 == 1 && !isLSB)
+			{
+				dv->data[index+k] -= dv->scale*
+					dv->spectrum[dv->nComplex*i+k];
+			}
+			else
+			{
+				dv->data[index+k] += dv->scale*
+					dv->spectrum[dv->nComplex*i+k];
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int readvisrecord(DifxVis *dv, int verbose)
+{
+	while(!dv->changed)
+	{
+		if(!dv->first && dv->changed >= 0)
+		{
+			storevis(dv);
+		}
+		do	/* skip over any unneeded autocorrelations */
+		{
+			dv->changed = DifxVisNewUVData(dv, verbose);
+		} while(dv->changed == -4);
+	}
+
+	return 0;
+}
+
+int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys, 
+	struct fitsPrivate *out, double s, int verbose)
 {
 	int v;
-	int index;
-	int i, k;
-	int specAvg;
-	float visScale;
-	double scale;
+	int j;
+	float visScale = 1.0;
 	char dateStr[12];
 	char fluxFormFloat[8];
 	char gateFormInt[8];
 	char weightFormFloat[8];
-	int isLSB;	/* boolean -- true if lower side band */
-	int startChan, stopChan;
 	int nRowBytes;
 	int nColumn;
 	int nWeight;
+	int nJob, bestj;
+	int nInvalid = 0;
+	int nFlagged = 0;
+	int nZero = 0;
+	int nWritten = 0;
+	double mjd, bestmjd;
+	double scale;
+	DifxVis **dvs;
+	DifxVis *dv;
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -603,30 +709,27 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 		{"FLUX", fluxFormFloat, "data matrix", "UNCALIB"}
 	};
 
-	visScale = 1.0;
+	/* allocate one DifxVis per job */
 
-	if(dv->D->inputFileVersion == 0)
-	{
-		scale = dv->D->nOutChan*dv->D->specAvg/(3.125*dv->D->nInChan);
-	}
-	else
-	{
-		scale = 1.0/(dv->D->chanBW*6.25e6*
-			dv->D->config[0].tInt*dv->D->specAvg);
-	}
+	scale = getDifxScaleFactor(D, s, verbose);
 
-	if(s > 0.0)
+	dvs = (DifxVis **)calloc(D->nJob, sizeof(DifxVis *));
+	for(j = 0; j < D->nJob; j++)
 	{
-		if(verbose > 0)
+		dvs[j] = newDifxVis(D, j);
+		if(!dvs[j])
 		{
-			printf("      Overriding scale factor %e with %e\n",
-				scale, s);
+			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
+				j, D->nJob);
+			return 0;
 		}
-		scale = s;
+		dvs[j]->scale = scale;
 	}
 
+	/* for now set dv to the first job's structure */
+	dv = dvs[0];
 
-	nWeight = dv->nFreq*dv->D->nPolar;
+	nWeight = dv->nFreq*D->nPolar;
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -636,102 +739,119 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(dv->out, nColumn, columns, nRowBytes, "UV_DATA");
-	fitsWriteInteger(dv->out, "NMATRIX", 1, "");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "UV_DATA");
+	fitsWriteInteger(out, "NMATRIX", 1, "");
 
 	/* get the job ref_date from the fits_keyword struct, convert it into
 	   a FITS string and save it in the FITS header */
-	mjd2fits((int)dv->D->mjdStart, dateStr);
-	fitsWriteString(dv->out, "DATE-OBS", dateStr, "");
+	mjd2fits((int)D->mjdStart, dateStr);
+	fitsWriteString(out, "DATE-OBS", dateStr, "");
 
-	fitsWriteString(dv->out, "TELESCOP", "VLBA", "");
-	fitsWriteString(dv->out, "OBSERVER", "PLUTO", "");
+	fitsWriteString(out, "TELESCOP", "VLBA", "");
+	fitsWriteString(out, "OBSERVER", "PLUTO", "");
 	
-	arrayWriteKeys(p_fits_keys, dv->out);
+	arrayWriteKeys(p_fits_keys, out);
 	
-	fitsWriteInteger(dv->out, "TABREV", 2, "ARRAY changed to FILTER");
-	fitsWriteFloat(dv->out, "VIS_SCAL", visScale, "");
+	fitsWriteInteger(out, "TABREV", 2, "ARRAY changed to FILTER");
+	fitsWriteFloat(out, "VIS_SCAL", visScale, "");
 
-	fitsWriteString(dv->out, "SORT", "T*", "");
+	fitsWriteString(out, "SORT", "T*", "");
 
 	/* define the data matrix columns */
-	fitsWriteInteger(dv->out, "MAXIS", 6, "");
-	fitsWriteInteger(dv->out, "MAXIS1", dv->nComplex, "");
+	fitsWriteInteger(out, "MAXIS", 6, "");
+	fitsWriteInteger(out, "MAXIS1", dv->nComplex, "");
 
-	fitsWriteString(dv->out, "CTYPE1", "COMPLEX", "");
-	fitsWriteFloat(dv->out, "CDELT1", 1.0, "");
-	fitsWriteFloat(dv->out, "CRPIX1", 1.0, "");
-	fitsWriteFloat(dv->out, "CRVAL1", 1.0, "");
-	fitsWriteInteger(dv->out, "MAXIS2", dv->D->nPolar, "");
-	fitsWriteString(dv->out, "CTYPE2", "STOKES", "");
-	fitsWriteFloat(dv->out, "CDELT2", -1.0, "");
-	fitsWriteFloat(dv->out, "CRPIX2", 1.0, "");
-	fitsWriteFloat(dv->out, "CRVAL2", (float)dv->polStart, "");
-	fitsWriteInteger(dv->out, "MAXIS3", dv->D->nOutChan, "");
-	fitsWriteString(dv->out, "CTYPE3", "FREQ", "");
-	fitsWriteFloat(dv->out, "CDELT3", 
-		dv->D->chanBW*dv->D->specAvg*1.0e6/dv->D->nInChan, "");
-	fitsWriteFloat(dv->out, "CRPIX3", p_fits_keys->ref_pixel, "");
-	fitsWriteFloat(dv->out, "CRVAL3", dv->D->refFreq*1000000.0, "");
-	fitsWriteInteger(dv->out, "MAXIS4", dv->nFreq, "");
-	fitsWriteString(dv->out, "CTYPE4", "BAND", "");
-	fitsWriteFloat(dv->out, "CDELT4", 1.0, "");
-	fitsWriteFloat(dv->out, "CRPIX4", 1.0, "");
-	fitsWriteFloat(dv->out, "CRVAL4", 1.0, "");
-	fitsWriteInteger(dv->out, "MAXIS5", 1, "");
-	fitsWriteString(dv->out, "CTYPE5", "RA", "");
-	fitsWriteFloat(dv->out, "CDELT5", 0.0, "");
-	fitsWriteFloat(dv->out, "CRPIX5", 1.0, "");
-	fitsWriteFloat(dv->out, "CRVAL5", 0.0, "");
-	fitsWriteInteger(dv->out, "MAXIS6", 1, "");
-	fitsWriteString(dv->out, "CTYPE6", "DEC", "");
-	fitsWriteFloat(dv->out, "CDELT6", 0.0, "");
-	fitsWriteFloat(dv->out, "CRPIX6", 1.0, "");
-	fitsWriteFloat(dv->out, "CRVAL6", 0.0, "");
-	fitsWriteLogical(dv->out, "TMATX11", 1, "");
+	fitsWriteString(out, "CTYPE1", "COMPLEX", "");
+	fitsWriteFloat(out, "CDELT1", 1.0, "");
+	fitsWriteFloat(out, "CRPIX1", 1.0, "");
+	fitsWriteFloat(out, "CRVAL1", 1.0, "");
+	fitsWriteInteger(out, "MAXIS2", D->nPolar, "");
+	fitsWriteString(out, "CTYPE2", "STOKES", "");
+	fitsWriteFloat(out, "CDELT2", -1.0, "");
+	fitsWriteFloat(out, "CRPIX2", 1.0, "");
+	fitsWriteFloat(out, "CRVAL2", (float)dv->polStart, "");
+	fitsWriteInteger(out, "MAXIS3", D->nOutChan, "");
+	fitsWriteString(out, "CTYPE3", "FREQ", "");
+	fitsWriteFloat(out, "CDELT3", 
+		D->chanBW*D->specAvg*1.0e6/D->nInChan, "");
+	fitsWriteFloat(out, "CRPIX3", p_fits_keys->ref_pixel, "");
+	fitsWriteFloat(out, "CRVAL3", D->refFreq*1000000.0, "");
+	fitsWriteInteger(out, "MAXIS4", dv->nFreq, "");
+	fitsWriteString(out, "CTYPE4", "BAND", "");
+	fitsWriteFloat(out, "CDELT4", 1.0, "");
+	fitsWriteFloat(out, "CRPIX4", 1.0, "");
+	fitsWriteFloat(out, "CRVAL4", 1.0, "");
+	fitsWriteInteger(out, "MAXIS5", 1, "");
+	fitsWriteString(out, "CTYPE5", "RA", "");
+	fitsWriteFloat(out, "CDELT5", 0.0, "");
+	fitsWriteFloat(out, "CRPIX5", 1.0, "");
+	fitsWriteFloat(out, "CRVAL5", 0.0, "");
+	fitsWriteInteger(out, "MAXIS6", 1, "");
+	fitsWriteString(out, "CTYPE6", "DEC", "");
+	fitsWriteFloat(out, "CDELT6", 0.0, "");
+	fitsWriteFloat(out, "CRPIX6", 1.0, "");
+	fitsWriteFloat(out, "CRVAL6", 0.0, "");
+	fitsWriteLogical(out, "TMATX11", 1, "");
 	
-	fitsWriteEnd(dv->out);
+	fitsWriteEnd(out);
 
-	/* now loop over visibility records and write out rows */
-	
-	specAvg = dv->D->specAvg;
 
-	for(;;)
+	nJob = D->nJob;
+
+	/* First prime each structure with some data */
+	for(j = 0; j < nJob; j++)
 	{
-		dv->changed = DifxVisNewUVData(dv, verbose);
-		if(dv->changed == -4)  /* probably an autocorr of unused ant */
+		readvisrecord(dvs[j], verbose);
+	}
+
+	/* Now loop until done, looking at */
+	while(nJob > 0)
+	{
+		bestmjd = 1.0e9;
+		bestj = 0;
+		for(j = 0; j < nJob; j++)
 		{
-			continue;
+			dv = dvs[j];
+			mjd = (int)(dv->record->jd - 2400000.0) + 
+				dv->record->iat;
+			if(mjd < bestmjd)
+			{
+				bestmjd = mjd;
+				bestj = j;
+			}
 		}
-		if(dv->changed != 0)   /* we need to write out a block of vis */
+		dv = dvs[bestj];
+
+		/* dv now points to earliest data. */
+
+		if(RecordIsInvalid(dv))
 		{
-			if(RecordIsInvalid(dv))
-			{
-				dv->nInvalid++;
-			}
-			else if(RecordIsFlagged(dv))
-			{
-				dv->nFlagged++;
-			}
-			else if(RecordIsZero(dv))
-			{
-				dv->nZero++;
-			}
-			else if(dv->first)
-			{
-				dv->first = 0;
-			}
-			else
-			{
+			nInvalid++;
+		}
+		else if(RecordIsFlagged(dv))
+		{
+			nFlagged++;
+		}
+		else if(RecordIsZero(dv))
+		{
+			nZero++;
+		}
+		else
+		{
 #ifndef WORDS_BIGENDIAN
-				FitsBinRowByteSwap(columns, nColumn, 
-					dv->record);
+			FitsBinRowByteSwap(columns, nColumn, 
+				dv->record);
 #endif
-				fitsWriteBinRow(dv->out, (char *)dv->record);
-				dv->nWritten++;
-			}
+			fitsWriteBinRow(out, (char *)dv->record);
+			nWritten++;
 		}
-		if(dv->changed > 0)
+		if(dv[j].changed < 0)
+		{
+			deleteDifxVis(dv);
+			nJob--;
+			dvs[bestj] = dvs[nJob];
+		}
+		else
 		{
 			v = DifxVisCollectRandomParams(dv);
 			if(v < 0)
@@ -744,60 +864,22 @@ int DifxVisConvert(DifxVis *dv, struct fits_keywords *p_fits_keys, double s,
 
 			/* blank array */
 			memset(dv->data, 0, dv->nData*sizeof(float));
-		}
-		if(dv->changed < 0) /* done! */
-		{
-			break;
-		}
-		isLSB = dv->D->config[dv->configId].IF[dv->bandId].sideband == 'L';
-		startChan = dv->D->startChan;
-		stopChan = startChan + dv->D->nOutChan*dv->D->specAvg;
 
-		dv->weight[dv->D->nPolar*dv->bandId + dv->polId] = 
-			dv->recweight;
-		
-		for(i = startChan; i < stopChan; i++)
-		{
-			if(isLSB)
-			{
-				int j;
-				j = stopChan - 1 - i;
-				index = ((dv->bandId*dv->D->nOutChan + 
-					j/specAvg)*
-					dv->D->nPolar+dv->polId)*dv->nComplex;
-			}
-			else
-			{
-				index = ((dv->bandId*dv->D->nOutChan + 
-					(i-startChan)/specAvg)*
-					dv->D->nPolar+dv->polId)*dv->nComplex;
-			}
-			for(k = 0; k < dv->nComplex; k++)
-			{
-				/* swap phase/uvw for FITS-IDI conformance */
-				if(k % 3 == 1 && !isLSB)
-				{
-					dv->data[index+k] -= scale*
-						dv->spectrum[dv->nComplex*i+k];
-				}
-				else
-				{
-					dv->data[index+k] += scale*
-						dv->spectrum[dv->nComplex*i+k];
-				}
-			}
+			readvisrecord(dv, verbose);
 		}
 	}
 
-	printf("      %d invalid records dropped\n", dv->nInvalid);
-	printf("      %d flagged records dropped\n", dv->nFlagged);
-	printf("      %d all zero records dropped\n", dv->nZero);
-	printf("      %d records written\n", dv->nWritten);
+	printf("      %d invalid records dropped\n", nInvalid);
+	printf("      %d flagged records dropped\n", nFlagged);
+	printf("      %d all zero records dropped\n", nZero);
+	printf("      %d records written\n", nWritten);
 	if(verbose > 1)
 	{
 		printf("        Note : 1 record is all data from 1 baseline\n");
 		printf("        for 1 timestamp\n");
 	}
+
+	free(dvs);
 
 	return 0;
 }
@@ -807,27 +889,12 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fitsPrivate *out, double scale,
 	int verbose)
 {
-	DifxVis *dv;
-	
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	dv = newDifxVis(D, out);
-	if(!dv)
-	{
-		return 0;
-	}
-
-	DifxVisConvert(dv, p_fits_keys, scale, verbose);
-
-	if(dv->jobId != dv->D->nJob && dv->curFile != dv->nFile)
-	{
-		printf("\n\nWARNING : Not all files were converted!\n");
-	}
-
-	deleteDifxVis(dv);
+	DifxVisConvert(D, p_fits_keys, out, scale, verbose);
 
 	return D;
 }
