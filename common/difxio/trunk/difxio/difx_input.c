@@ -294,6 +294,13 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	int nPol = 0;
 	int haspol[4] = {0, 0, 0, 0};	/* indices are: 0-R, 1-L, 2-X, 3-Y */
 
+	if(configId < 0)
+	{
+		fprintf(stderr, "Warning: makeFreqId2IFmap: configId = %d\n",
+			configId);
+		return 0;
+	}
+
 	dc = D->config + configId;
 	dc->nIF = 0;
 
@@ -1543,6 +1550,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				"config! id=%d  name=%s  realname=%s\n",
 				i, cname, D->scan[k].name);
 			//return 0;
+			k++;
 		}
 		else
 		{
@@ -1888,6 +1896,8 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 		fprintf(stderr, "No scans to work with!\n");
 		return 0;
 	}
+
+	printf("D->nScan = %d\n", D->nScan); fflush(stdout);
 
 	/* for now be wasteful and allocate enough memory for each
 	 * scan to be its own source 

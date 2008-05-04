@@ -104,7 +104,15 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 	for(b = 0; b < dc->nBaseline; b++)
 	{
 		baselineId = dc->baselineId[b];
+		if(baselineId < 0 || baselineId >= D->nBaseline)
+		{
+			printf("Error! baselineId=%d\n", baselineId);
+		}
 		db = D->baseline + baselineId;
+		if(db->dsA < 0 || db->dsB < 0)
+		{	
+			printf("Error! dsA=%d dsB=%d\n", db->dsA, db->dsB);
+		}
 		a1 = D->datastream[db->dsA].antennaId;
 		a2 = D->datastream[db->dsB].antennaId;
 		if(a1 < 0 || a1 >= D->nAntenna)
@@ -154,7 +162,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		for(f = 0; f < nFreq; f++)
 		{
 			bandId = dc->freqId2IF[dd->freqId[f]];
-			map[a][a][dd->freqId[f]] = bandId;
+			map[a][a][f] = bandId;
 		}
 	}
 

@@ -1,4 +1,4 @@
-AC_INIT([difxio], [1.7], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxio], [2.0], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 

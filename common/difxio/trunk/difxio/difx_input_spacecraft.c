@@ -140,7 +140,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	{
 		for(i = 0; i < nds1; i++)
 		{
-			if(strcmp(ds1->name, ds2->name) == 0)
+			if(strcmp(ds1[i].name, ds2[j].name) == 0)
 			{
 				spacecraftIdRemap[j] = i;
 				break;

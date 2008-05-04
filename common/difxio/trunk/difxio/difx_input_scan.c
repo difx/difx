@@ -105,7 +105,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	{
 		dest->jobId = src->jobId;
 	}
-	if(configIdRemap)
+	if(configIdRemap && src->configId >= 0)
 	{
 		dest->configId = configIdRemap[src->configId];
 	}
@@ -201,18 +201,26 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		/* do the copy and increments */
 		if(src == 1)
 		{
-			copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
-			i++;
+			if(ds1[i1].configId >= 0)
+			{
+				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
+				i++;
+			}
 			i1++;
 		}
 		else
 		{
-			copyDifxScan(ds + i, ds2 + i2,
-				jobIdRemap, antennaIdRemap, configIdRemap);
-			i++;
+			if(ds2[i2].configId >= 0)
+			{
+				copyDifxScan(ds + i, ds2 + i2, jobIdRemap, 
+					antennaIdRemap, configIdRemap);
+				i++;
+			}
 			i2++;
 		}
 	}
+
+	*nds = i;
 
 	return ds;
 }
