@@ -12,6 +12,7 @@ sub vexant2window ($);
 sub count2str ($;$);
 sub getTsys ($$);
 sub findchanmatch ($$$);
+sub arraygrep ($@);
 sub Usage ();
 
 $Astro::Time::StrSep = ':';
@@ -39,11 +40,13 @@ my $pulsar = 0;
 my $databufferfactor = 256;
 my $numdatasegments = 16;
 my $atca = 'WXXX';
+my $new = 0;
+my @activestations = ();
 
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto,
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
-	   'input=s'=>\$input);
+	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new);
 
 $antnames{At} = 'CAT' . uc($atca);
 
@@ -96,8 +99,26 @@ foreach (@scans) {
 }
 
 my @stations = $vex->stationlist;
+if (@activestations==0) {
+  @activestations = @stations;
+  warn "Using all stations\n";
+} else {
+  my @tmp = @activestations;
+  @activestations = ();
+  foreach (@tmp) {
+    my $i;
+    if (defined ($i = arraygrep($_,@stations))) {
+      push @activestations, $stations[$i];
+    } else {
+      warn "Warning: $_ not in vexfile - ignoring\n";
+    }
+  }
+  if (@activestations<2) {
+    die "Not enough passed antenna\n";
+  }
+}
 my $ntel = scalar(@stations);
-
+my $nactive = scalar(@activestations);
 
 $input = "$exper.input"if (!defined $input);
 
@@ -131,10 +152,11 @@ if (defined $starttime) { # Assume experiment is < 24 hours
 }
 
 my $start_seconds = int(($sched_start-$start_mjd)*60*60*24+0.5);
-my $nbaseline = $ntel*($ntel-1)/2;
+my $nactivebaseline = $nactive*($nactive-1)/2;
+my $ntotalbaseline = $ntel*($ntel-1)/2;
 
 if (!defined $blockspersend) {
-    $blockspersend = 160000/$nchannel;
+    $blockspersend = sprintf("%.0f", 160000/$nchannel);
 }
 
 # Open input file (which is our output...)
@@ -148,9 +170,15 @@ CORE CONF FILENAME: $pwd/${exper}.threads
 EXECUTE TIME (SEC): $duration
 START MJD:          $start_mjd
 START SECONDS:      $start_seconds
-ACTIVE DATASTREAMS: $ntel
-ACTIVE BASELINES:   $nbaseline
-DATA HEADER O/RIDE: FALSE
+ACTIVE DATASTREAMS: $nactive
+ACTIVE BASELINES:   $nactivebaseline
+EOF
+if ($new) {
+  print INPUT "VIS BUFFER LENGTH:  8\n";
+} else {
+  print INPUT "DATA HEADER O/RIDE: FALSE\n";
+}
+print INPUT<<EOF;
 OUTPUT FORMAT:      $outputformat
 OUTPUT FILENAME:    $pwd/${exper}.rpf
 
@@ -165,6 +193,14 @@ NUM CONFIGURATIONS: 1
 CONFIG SOURCE:      DEFAULT
 INT TIME (SEC):     $tint
 NUM CHANNELS:       $nchannel
+EOF
+if ($new) {
+  print INPUT<<EOF;
+CHANNELS TO AVERAGE:1
+OVERSAMPLE FACTOR:  1
+EOF
+}
+print INPUT<<EOF;
 BLOCKS PER SEND:    $blockspersend
 GUARD BLOCKS:       $guardblock
 POST-F FRINGE ROT:  $postf
@@ -174,16 +210,39 @@ PULSAR BINNING:     FALSE
 EOF
 
 # BUG: This will break with > 10 telescopes
+my $ndone = 0;
 for (my $i=0; $i<$ntel; $i++) {
-  print INPUT "DATASTREAM $i INDEX: $i\n"
+  if (defined arraygrep($stations[$i], @activestations)) {
+    print INPUT "DATASTREAM $ndone INDEX: $i\n";
+    $ndone++;
+  }
 }
-for (my $i=0; $i<$nbaseline; $i++) {
-  printf INPUT "BASELINE %-9s  $i\n", sprintf('%d INDEX:', $i);
+if ($ndone != $nactive) {
+  die "Internal error. Number active datastreams not consistent\n";
+}
+
+$ndone = 0;
+my $bnum = -$ntel;
+for (my $i=0; $i<$ntel-1; $i++) {
+  $bnum += ($ntel-$i);
+
+  next if (!defined arraygrep($stations[$i], @activestations));
+
+  for (my $j=$i+1; $j<$ntel; $j++) {
+    next if (!defined arraygrep($stations[$j], @activestations));
+
+    printf(INPUT "BASELINE %-10s %d\n", sprintf('%d INDEX:', $ndone),
+	   $bnum+$j-$i-1);
+    $ndone++;
+  }
+}
+if ($ndone != $nactivebaseline) {
+  die "Internal error. Number active baselines not consistent\n";
 }
 
 # Frequency Table
 
-# Determine uniq frequencies (& sindband)
+# Determine uniq frequencies (& sideband)
 
 my %uniqfreq = ();
 my @globalfreq = ();
@@ -275,21 +334,47 @@ foreach (@stations) {
     next;
   }
   my $tsys = getTsys($_, $globalfreq[0]->freq->unit('MHz')->value);
+
+
+  my $format;
+  my $framesize=1;
+# Mark5 frame size:
+#   VLBA 20160*ntrack/8
+#   MKIV 20000*ntrack/8
+#   MK5B 10000
+  if ($stationmodes->{$_}->record_transport_type eq 'S2') {
+    $format = 'LBAVSOP';
+  } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5A') {
+    $format = 'MKIV';
+    $framesize = 160000;
+  } else {
+    $format = 'UNKNOWN';
+  }
+
   print INPUT<<EOF;
 TELESCOPE INDEX:    $index
 TSYS:               $tsys
-DATA FORMAT:        LBAVSOP
+DATA FORMAT:        $format
 QUANTISATION BITS:  2
+EOF
+  if ($new) {
+    my $source = 'FILE';
+    $source = 'EVLBI' if ($evlbi);
+    print INPUT<<EOF;
+DATA FRAME SIZE:    $framesize
+DATA SOURCE:        $source
 FILTERBANK USED:    FALSE
 EOF
-
-  if ($evlbi) {
-    print INPUT "READ FROM FILE:     FALSE\n";
   } else {
-    print INPUT "READ FROM FILE:     TRUE\n";
-  }
+    my $source = 'TRUE';
+    $source = 'FALSE' if ($evlbi);
 
-  # Need to reference input bands based on Frequency table
+    print INPUT<<EOF;
+FILTERBANK USED:    FALSE
+READ FROM FILE:     $source;
+EOF
+  }
+# Need to reference input bands based on Frequency table
   my @chans = $stationmodes->{$_}->chan_def;
   my @localfreq;
   foreach (@chans) {
@@ -372,7 +457,7 @@ EOF
 print INPUT<<EOF;
 
 # BASELINE TABLE ###!
-BASELINE ENTRIES:   $nbaseline
+BASELINE ENTRIES:   $ntotalbaseline
 EOF
 
 
@@ -445,7 +530,7 @@ EOF
     my $ifreq = 0;
     foreach (@baselinefreqs) {
       my $npol = scalar(@$_);
-      printf INPUT "POL PRODUCTS $bindex/$ifreq:   $npol\n";
+      printf INPUT "POL PRODUCTS %-6s $npol\n", sprintf("$bindex/$ifreq:");
       my $band = 0;
       foreach (@$_) {
 	my $i1 = $_->[0];
@@ -594,7 +679,7 @@ sub getTsys ($$) {
 	elsif ($freq < 15000) { return 480; }
 	else { return -1; }
     }
-    elsif($antennaname eq "Ka")
+    elsif($antennaname eq "Ks")
     {
 	if($freq < 1500) { return 170; }
 	elsif ($freq < 1800) { return 170; }
@@ -605,6 +690,17 @@ sub getTsys ($$) {
 	elsif ($freq < 10000) { return 232; }
 	elsif ($freq < 15000) { return -1; }
 	else { return 853; }
+    }
+    elsif($antennaname eq "Sh")
+    {
+	if($freq < 1500) { return -1; }
+	elsif ($freq < 1800) { return -1; }
+	elsif ($freq < 2500) { return -1; }
+	elsif ($freq < 5000) { return -1; }
+	elsif ($freq < 8000) { return -1; }
+	elsif ($freq < 10000) { return 900; }
+	elsif ($freq < 15000) { return -1; }
+	else { return -1; }
     }
     else
     { 	return 1; }
@@ -629,7 +725,8 @@ BEGIN {
                Ov => 'OV' ,
                Pt => 'PT' ,
                Sc => 'SC' ,
-               Ka => 'KAS' ,
+               Ks => 'KAS' ,
+               Sh => 'SHANGHAI' ,
                Ef => 'EFLSBERG' ,
                Wf => 'WESTFORD' ,
                Wz => 'WETTZELL' ,
@@ -725,6 +822,23 @@ EOF
   exit(1);
 }
 
+sub arraygrep ($@) {
+  my $val = shift;
+
+  #print "Looking for $val in @_\n";
+
+  foreach (my $i=0; $i<scalar(@_); $i++) {
+    #print "    Check $_[$i]\n";
+    if (uc($val) eq uc($_[$i])) {
+      #print "       YES\n";
+      return $i 
+    }
+    #print "       NO\n";
+  }
+  #print " None found\n";
+  return undef;
+}
+
 package FreqChan;
 use Carp;
 use Astro::Vex qw( make_field );
@@ -771,3 +885,4 @@ BEGIN {
   make_field('globalindex', 'GLOBALINDEX');
   make_field('done', 'DONE');
 }
+
