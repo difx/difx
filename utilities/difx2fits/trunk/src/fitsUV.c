@@ -353,8 +353,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	/* FIXME -- look at sourceId in the record as a check */
 
-	a1 = bl/256 - 1;
-	a2 = bl%256 - 1;
+	a1 = (bl/256) - 1;
+	a2 = (bl%256) - 1;
 
 	/* see if we need to remap this baseline */
 	if(dv->antennaIdRemap)
@@ -512,8 +512,8 @@ static int RecordIsInvalid(const DifxVis *dv)
 
 			printf("Warning -- record with !finite value: ");
 			printf("a1=%d a1=%d mjd=%13.7f\n",
-				dv->baseline/256 - 1,
-				dv->baseline%256 - 1,
+				(dv->record->baseline/256) - 1,
+				(dv->record->baseline%256) - 1,
 				dv->mjd);
 			return 1;
 		}
@@ -554,8 +554,8 @@ static int RecordIsFlagged(const DifxVis *dv)
 		return 0;
 	}
 
-	a1  = dv->baseline/256 - 1;
-	a2  = dv->baseline%256 - 1;
+	a1  = (dv->record->baseline/256) - 1;
+	a2  = (dv->record->baseline%256) - 1;
 	mjd = dv->mjd;
 
 	for(i = 0; i < dv->D->nFlag; i++)
