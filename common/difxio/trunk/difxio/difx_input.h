@@ -129,6 +129,7 @@ typedef struct
 	int qual;		/* source qualifier */
 	int configId;		/* to determine freqId */
 	int spacecraftId;	/* -1 if not spacecraft */
+	int fitsSourceId;	/* 0-based FITS source id */
 } DifxSource;
 
 typedef struct

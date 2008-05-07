@@ -1,5 +1,6 @@
 2.0
 * some changes needed for difx2fits 2.0.
+* implement fits source ids
 * bug fixes around the board
 
 1.6

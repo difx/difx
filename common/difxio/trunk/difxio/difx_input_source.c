@@ -34,6 +34,7 @@ DifxSource *newDifxSourceArray(int nSource)
 	{
 		ds[s].configId = -1;
 		ds[s].spacecraftId = -1;
+		ds[s].fitsSourceId = -1;
 	}
 	
 	return ds;
@@ -56,5 +57,6 @@ void printDifxSource(const DifxSource *ds)
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    ConfigId = %d\n", ds->configId);
 	printf("    SpacecraftId = %d\n", ds->spacecraftId);
+	printf("    FITS SourceId = %d\n", ds->fitsSourceId);
 }
 

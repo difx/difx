@@ -1954,6 +1954,91 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 
 	return D;
 }
+
+/* The following function is only here to override the following function
+ * in testing */
+static DifxInput *setFitsSourceIds(DifxInput *D)
+{
+	int i;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(D->nSource < 1 || D->source == 0)
+	{
+		fprintf(stderr, "No sources to work with!\n");
+		return 0;
+	}
+
+	for(i = 0; i < D->nSource; i++)
+	{
+		D->source[i].fitsSourceId = i;
+	}
+
+	return D;
+}
+
+static DifxInput *deriveFitsSourceIds(DifxInput *D)
+{
+	int a, i, j, match, n=0, ci, cj;
+	int *fs;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(D->nSource < 1 || D->source == 0)
+	{
+		fprintf(stderr, "No sources to work with!\n");
+		return 0;
+	}
+
+	fs = (int *)calloc(D->nSource, sizeof(int));
+
+	for(i = 0; i < D->nSource; i++)
+	{
+		ci = D->source[i].configId;
+		if(ci < 0)
+		{
+			D->source[i].fitsSourceId = -1;
+			continue;
+		}
+		match = -1;
+		if(n > 0) for(a = 0; a < n; a++)
+		{
+			j = fs[a];
+			cj = D->source[j].configId;
+			if(D->source[i].ra       == D->source[j].ra  &&
+			   D->source[i].dec      == D->source[j].dec &&
+			   D->source[i].qual     == D->source[j].qual &&
+			   D->config[ci].freqId  == D->config[cj].freqId &&
+			   strcmp(D->source[i].calCode, D->source[j].calCode) 
+			   	== 0 &&
+			   strcmp(D->source[i].name, D->source[j].name) == 0)
+			{
+				match = a;
+				break;
+			}
+		}
+		if(match < 0)
+		{
+			D->source[i].fitsSourceId = n;
+			fs[n] = i;
+			n++;
+		}
+		else
+		{
+			D->source[i].fitsSourceId = match;
+		}
+	}
+
+	free(fs);
+	
+	return D;
+}
 	
 static void setOrbitingAntennas(DifxInput *D)
 {
@@ -2198,6 +2283,8 @@ DifxInput *updateDifxInput(DifxInput *D)
 {
 	D = deriveDifxInputValues(D);
 	D = deriveSourceTable(D);
+	D = deriveFitsSourceIds(D);
+	//D = setFitsSourceIds(D);
 	setGlobalValues(D);
 	calcFreqIds(D);
 	setOrbitingAntennas(D);
