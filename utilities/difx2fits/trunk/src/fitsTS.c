@@ -214,7 +214,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 			/* 1-based values for FITS */
 			antId1 = antId + 1;
-			sourceId1 = sourceId + 1;
+			sourceId1 = D->source[sourceId].fitsSourceId + 1;
 		
 			p_fitsbuf = fitsbuf;
 		

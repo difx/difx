@@ -1,6 +1,8 @@
 Version 2.0
 * New visibility writing code -- will merge multiple input files
   into single FITS file in time order.
+* use fitsSourceId to keep the source table as small as possible, without
+  repeats
 
 Version 1.9
 * Use difxio >= 1.7

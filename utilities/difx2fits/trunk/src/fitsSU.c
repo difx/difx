@@ -66,6 +66,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	float parallax;
 	/* 1-based indices for FITS file */
 	int32_t sourceId1, freqId1;
+	int *fitsSource;
+	int i, nFitsSource;
 	
 	if(D == 0)
 	{
@@ -106,15 +108,41 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		return 0;
 	}
 	
+	fitsSource = (int *)malloc(D->nSource*sizeof(int));
 	for(s = 0; s < D->nSource; s++)
 	{
+		fitsSource[s] = -1;
+	}
+	nFitsSource = -1;
+	for(s = 0; s < D->nSource; s++)
+	{
+		i = D->source[s].fitsSourceId;
+		if(fitsSource[i] < 0)
+		{
+			fitsSource[i] = s;
+			if(i > nFitsSource)
+			{
+				nFitsSource = i;
+			}
+		}
+	}
+	nFitsSource++;
+
+	for(i = 0; i < nFitsSource; i++)
+	{
+		s = fitsSource[i];
+		if(s < 0)
+		{
+			fprintf(stderr, "Error -- s = -1\n");
+			continue;
+		}
 		p_fitsbuf = fitsbuf;
 
 		muRA = 0.0;
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
-		sourceId1 = s + 1;	/* FITS sourceId1 is 1-based */
+		sourceId1 = i + 1;	/* FITS sourceId1 is 1-based */
 		qual = D->source[s].qual;
 		strcpypad(calCode, D->source[s].calCode, 4);
 		RAEpoch = D->source[s].ra * 180.0 / M_PI;
@@ -158,6 +186,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	}
 
 	free(fitsbuf);
+	free(fitsSource);
 
 	return D;
 }	

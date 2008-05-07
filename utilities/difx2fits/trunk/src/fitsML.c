@@ -169,7 +169,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   jobId = D->scan[s].jobId;
 	   configId = D->scan[s].configId;
 	   freqId1 = D->config[configId].freqId + 1;
-	   sourceId1 = D->scan[s].sourceId + 1;
+	   sourceId1 = D->source[D->scan[s].sourceId].fitsSourceId + 1;
 
 	   modelInc = D->job[jobId].modelInc;
 	   timeInt = modelInc / 86400.0;
