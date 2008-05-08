@@ -584,8 +584,6 @@ def track2recChan(formatName, trackNum):
 		return trackNum
 	else:
 		return -1
-		
-
 
 ####### Functions to make output DiFX tables #####
 
@@ -624,6 +622,74 @@ def indent21_2trunc(key1, val, i, j, v):
 		out = out[:20]
 	out += (val % v)
 	return out
+		
+############## Pulsar functions ##################
+
+def isGated(job, config):
+	if not job.has_key('gate'):
+		return False
+	gate = job['gate']
+	for g in gate:
+		if config[0] == int(g['correl_row']) and \
+		   config[1] == int(g['freq_row']) and \
+		   config[2] == int(g['source_row']) and \
+		   config[3] == int(g['custom_row']):
+			return True
+	return False
+
+def getPulsars(job, correl_row, freq_row, custom_row):
+	if not job.has_key('gate'):
+		return False
+	gate = job['gate']
+	psrs = []
+	for g in gate:
+		srcId = int(g['source_row'])
+		if srcId in psrs:
+			continue
+		if correl_row == int(g['correl_row']) and \
+		   freq_row   == int(g['freq_row']) and \
+		   custom_row == int(g['custom_row']):
+			psrs.append(srcId)
+		
+	return psrs
+
+def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase):
+	dir = getcwd()
+
+	psrbase = '%s/%s.%d.%d.%d.%d' % (dir, filebase, correl_row, freq_row, custom_row, source_row)
+
+	filename = psrbase + '.pulsar'
+
+	rows = []
+	for i in range(len(gate)):
+		g = gate[i]
+		if correl_row == int(g['correl_row']) and \
+		   freq_row   == int(g['freq_row']) and \
+		   custom_row == int(g['custom_row']) and \
+		   source_row == int(g['source_row']):
+			rows.append(i)
+	npoly = len(rows)
+
+	psrtable = []
+	psrtable.append('NUM POLYCO FILES:   %d' % npoly)
+	for p in range(npoly):
+		polycofile = '%s.polyco.%d' % (psrbase, p)
+		psrtable.append(indent21_1('POLYCO FILE %d', '%s', \
+			p, polycofile))
+	psrtable.append('NUM PULSAR BINS:    1')
+	psrtable.append('SCRUNCH OUTPUT:     FALSE')
+
+	if len(psrtable) > 0:
+		fp = open(filename, "w") 
+		for pl in psrtable:
+			fp.write(pl+'\n')
+		fp.close()
+	else:
+		system('rm -f %s' % filename)
+
+	return filename
+
+###########################################
 
 def maketelescopetable(job_clock, subarray, antennalist, startmjd):
 	tele = []
@@ -682,13 +748,12 @@ def intTime(dt, speedUp):
 	nGran = int(dt/granularity + 0.5)
 	return granularity*nGran
 
-def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freqlist):
+def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freqlist, filebase):
 	custom = job['custom']
 	correl = job['correlator']
 	master = job['master']
 	job_freq = job['frequency']
 	speedUp = master[0]['speed_up']
-	nConf = len(setups)
 
 	minBW = 1e12
 	for f in freqlist:
@@ -712,49 +777,71 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 		print 'problem with nchan and fftsize'
 		exit(0)
 
+	psrs = []
+	nConf = 0
+	for s in setups:
+		psrlist = getPulsars(job, config[0], s[0], s[1])
+		psrlist.insert(0, -1)
+		nConf += len(psrlist)
+		psrs.append(psrlist)
+
 	cfg = []
 	cfg.append("# CONFIGURATIONS ###!")
 	cfg.append("NUM CONFIGURATIONS: %d" % nConf)
 	datastreamId = 0
 	baselineId = 0
-	for s in setups:
-		setupname = "FREQ%dCUST%dDOPOL%d" % (s[0], s[1], s[2])
-		if tint > 0.0:
-			timeavg = tint
-		else:
-			timeavg = intTime(float(custom[s[1]]['time_avg']), \
-				float(speedUp))
-		
-		# .25 seconds per send
-		sendLen = 0.262144*2
-		while sendLen > timeavg:
-			sendLen /= 2.0
-			
-		nBlock = int(2.0*sendLen*minBW*NDataSegment/(fftsize*BufferFactor))
-		nn = int(timeavg/sendLen - 0.01) + 1
-		timeavg = sendLen*nn
-		
-		cfg.append("CONFIG SOURCE:      %s" % setupname)
-		cfg.append("INT TIME (SEC):     %f" % timeavg)
-		cfg.append("NUM CHANNELS:       %d" % (fftsize/2))
-		cfg.append("CHANNELS TO AVERAGE:1")
-		cfg.append("OVERSAMPLE FACTOR:  1")
-		cfg.append("BLOCKS PER SEND:    %d" % nBlock)
-		cfg.append("GUARD BLOCKS:       1")
-		cfg.append("POST-F FRINGE ROT:  FALSE")
-		cfg.append("QUAD DELAY INTERP:  TRUE")
-		cfg.append("WRITE AUTOCORRS:    TRUE")
-		# FIXME -- pulsar
-		cfg.append("PULSAR BINNING:     FALSE")
 
-		for j in range(nant):
-			cfg.append(indent21_1("DATASTREAM %d INDEX", "%d", \
-				j, datastreamId))
-			datastreamId += 1
-		for j in range(nant*(nant-1)/2):
-			cfg.append(indent21_1("BASELINE %d INDEX", "%d", \
-				j, baselineId))
-			baselineId += 1
+	for setupnum in range(len(setups)):
+		s = setups[setupnum]
+		for psr in psrs[setupnum]:
+			setupname = "FREQ%dCUST%dDOPOL%d" % (s[0], s[1], s[2])
+			if psr >= 0:
+				setupname += 'PSR%d' % psr
+			if tint > 0.0:
+				timeavg = tint
+			else:
+				timeavg = intTime(float(custom[s[1]]['time_avg']), \
+					float(speedUp))
+			
+			# .25 seconds per send
+			sendLen = 0.262144*2
+			while sendLen > timeavg:
+				sendLen /= 2.0
+				
+			nBlock = int(2.0*sendLen*minBW*NDataSegment/(fftsize*BufferFactor))
+			nn = int(timeavg/sendLen - 0.01) + 1
+			timeavg = sendLen*nn
+			
+			cfg.append("CONFIG SOURCE:      %s" % setupname)
+			cfg.append("INT TIME (SEC):     %f" % timeavg)
+			cfg.append("NUM CHANNELS:       %d" % (fftsize/2))
+			cfg.append("CHANNELS TO AVERAGE:1")
+			cfg.append("OVERSAMPLE FACTOR:  1")
+			cfg.append("BLOCKS PER SEND:    %d" % nBlock)
+			cfg.append("GUARD BLOCKS:       1")
+			cfg.append("POST-F FRINGE ROT:  FALSE")
+			cfg.append("QUAD DELAY INTERP:  TRUE")
+			cfg.append("WRITE AUTOCORRS:    TRUE")
+			# FIXME -- pulsar
+			if psr >= 0:
+				psrFile = makepulsarfile(job['gate'], config[0], s[0], s[1], psr, filebase);
+				cfg.append("PULSAR BINNING:     TRUE")
+				cfg.append("PULSAR CONFIG FILE: %s" % psrFile)
+			else:
+				cfg.append("PULSAR BINNING:     FALSE")
+
+			nDatastream = 0
+			nBaseline = 0
+			for j in range(nant):
+				cfg.append(indent21_1("DATASTREAM %d INDEX", "%d", \
+					j, datastreamId + nDatastream))
+				nDatastream += 1
+			for j in range(nant*(nant-1)/2):
+				cfg.append(indent21_1("BASELINE %d INDEX", "%d", \
+					j, baselineId + nBaseline))
+				nBaseline += 1
+		datastreamId += nDatastream
+		baselineId += nBaseline
 
 	return cfg, specavg
 
@@ -1123,6 +1210,8 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 		else:
 			dopolar = 0
 		config_name = "FREQ%dCUST%dDOPOL%d" % (fq_id, custom_id, dopolar)
+		if isGated(job, config):
+			config_name += 'PSR%d' % src_id
 		calc.append(indent21_1("SCAN %d POINTS", "%d", \
 			scan_num, dur))
 		calc.append(indent21_1("SCAN %d START PT", "%d", \
@@ -1313,7 +1402,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 					mjd0, mjd1) )
 				ct, specavg = makeconfigutationtable(config, \
 					nant, job, setups, fftsize, nchan, tint, \
-					freqlist)
+					freqlist, filebase)
 				tables.append(ct);
 				tables.append( makefreqtable(freqlist) )
 				tables.append( maketelescopetable(job['clock'], \
