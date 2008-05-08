@@ -86,6 +86,11 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
+
+	for(i = 0; i < array_MAX_BANDS; i++)
+	{
+		freqOffset[i] = 0.0;
+	}
 	
 	/* no knowledge of these from inputs */
 	for(b = 0; b < nBand; b++)
