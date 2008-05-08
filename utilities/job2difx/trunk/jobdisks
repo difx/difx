@@ -47,16 +47,20 @@ def getmodules_fx(filename, antlist):
 def getmodules_input(filename, antlist):
 	mods = {}
 	data = open(filename).readlines()
-	ant = 'XXX'
+	ants = []
 	for d in data:
 		if d[:14] == 'TELESCOPE NAME':
 			ant = strip(d[20:])
+			ants.append(ant)
 			if ant in antlist:
-				ant = 'XXX'
+				pass
+				#ant = 'XXX'
 			else:
 				antlist.append(ant)
 		elif d[:5] == 'FILE ':
-			if ant != 'XXX':
+			if len(ants) > 0:
+				ant = ants[0]
+				ants.remove(ant)
 				mods[ant] = split(strip(d[20:]))[0]
 	return mods
 
