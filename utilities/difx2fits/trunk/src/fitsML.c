@@ -99,6 +99,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int skipped=0;
 	/* 1-based indices for FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
+	double clockRate;
 
 	if(D == 0)
 	{
@@ -195,12 +196,17 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		  continue;
 		}
 
-
 		p_fitsbuf = fitsbuf;
-	      
-		calcPolynomial(gpoly, M[p-1].t, M[p].t, M[p+1].t, M[p+2].t, 
-			modelInc);
-		
+	       
+		calcPolynomial(gpoly,
+			-M[p-1].t, -M[p  ].t, -M[p+1].t, -M[p+2].t, modelInc);
+
+		clockRate = D->antenna[antId].rate * 1.0e-6;
+
+		gpoly[0] -= (D->antenna[antId].delay * 1.0e-6 +
+			clockRate*D->job[jobId].modelInc*p);
+		gpoly[1] -= clockRate;		
+
 		/* All others are derived from gpoly */
 		for(k = 1; k < array_N_POLY; k++)
 		{
