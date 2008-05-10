@@ -232,8 +232,8 @@ static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /************************* decode routines **************************/
 
-static int mark5b_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_1bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -289,8 +289,102 @@ static int mark5b_decode_1bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_1bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[2];
+		o++;
+		data[0][o] = fp[4];
+		o++;
+		data[0][o] = fp[6];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp-8*nblank;
+}
+
+static int mark5b_decode_1bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[4];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp-8*nblank;
+}
+
+static int mark5b_decode_2bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -342,8 +436,99 @@ static int mark5b_decode_2bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_2bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		o++;
+		data[0][o] = fp[4];
+		data[1][o] = fp[5];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int mark5b_decode_2bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int mark5b_decode_4bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -393,8 +578,100 @@ static int mark5b_decode_4bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_4bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int mark5b_decode_4bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i+=2;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int mark5b_decode_8bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -443,8 +720,108 @@ static int mark5b_decode_8bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_8bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i+=2;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+		data[4][o] = fp[4];
+		data[5][o] = fp[5];
+		data[6][o] = fp[6];
+		data[7][o] = fp[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_8bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut1bit[buf[i]];
+		}
+		i+=4;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+		data[4][o] = fp[4];
+		data[5][o] = fp[5];
+		data[6][o] = fp[6];
+		data[7][o] = fp[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_16bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1;
@@ -504,8 +881,130 @@ static int mark5b_decode_16bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_16bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 4;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i+=3;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_16bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 8;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i+=7;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_32bitstream_1bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -585,10 +1084,172 @@ static int mark5b_decode_32bitstream_1bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - nblank;
 }
 
+static int mark5b_decode_32bitstream_1bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 8;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i++;
+			fp2 = lut1bit[buf[i]];
+			i++;
+			fp3 = lut1bit[buf[i]];
+			i+=5;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
+		data[16][o] = fp2[0];
+		data[17][o] = fp2[1];
+		data[18][o] = fp2[2];
+		data[19][o] = fp2[3];
+		data[20][o] = fp2[4];
+		data[21][o] = fp2[5];
+		data[22][o] = fp2[6];
+		data[23][o] = fp2[7];
+		data[24][o] = fp3[0];
+		data[25][o] = fp3[1];
+		data[26][o] = fp3[2];
+		data[27][o] = fp3[3];
+		data[28][o] = fp3[4];
+		data[29][o] = fp3[5];
+		data[30][o] = fp3[6];
+		data[31][o] = fp3[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_32bitstream_1bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 16;
+		}
+		else
+		{
+			fp0 = lut1bit[buf[i]];
+			i++;
+			fp1 = lut1bit[buf[i]];
+			i++;
+			fp2 = lut1bit[buf[i]];
+			i++;
+			fp3 = lut1bit[buf[i]];
+			i+=13;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp0[4];
+		data[5][o]  = fp0[5];
+		data[6][o]  = fp0[6];
+		data[7][o]  = fp0[7];
+		data[8][o]  = fp1[0];
+		data[9][o]  = fp1[1];
+		data[10][o] = fp1[2];
+		data[11][o] = fp1[3];
+		data[12][o] = fp1[4];
+		data[13][o] = fp1[5];
+		data[14][o] = fp1[6];
+		data[15][o] = fp1[7];
+		data[16][o] = fp2[0];
+		data[17][o] = fp2[1];
+		data[18][o] = fp2[2];
+		data[19][o] = fp2[3];
+		data[20][o] = fp2[4];
+		data[21][o] = fp2[5];
+		data[22][o] = fp2[6];
+		data[23][o] = fp2[7];
+		data[24][o] = fp3[0];
+		data[25][o] = fp3[1];
+		data[26][o] = fp3[2];
+		data[27][o] = fp3[3];
+		data[28][o] = fp3[4];
+		data[29][o] = fp3[5];
+		data[30][o] = fp3[6];
+		data[31][o] = fp3[7];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
 /************************ 2-bit decoders *********************/
 
-static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_2bitstream_2bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -636,8 +1297,96 @@ static int mark5b_decode_2bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_2bitstream_2bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		o++;
+		data[0][o] = fp[2];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int mark5b_decode_2bitstream_2bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int mark5b_decode_4bitstream_2bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -683,8 +1432,96 @@ static int mark5b_decode_4bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_4bitstream_2bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i++;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int mark5b_decode_4bitstream_2bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i+=2;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int mark5b_decode_8bitstream_2bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
@@ -729,8 +1566,100 @@ static int mark5b_decode_8bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_8bitstream_2bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i+=2;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_8bitstream_2bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp = zeros;
+			nblank++;
+		}
+		else
+		{
+			fp = lut2bit[buf[i]];
+		}
+		i+=4;
+
+		data[0][o] = fp[0];
+		data[1][o] = fp[1];
+		data[2][o] = fp[2];
+		data[3][o] = fp[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_16bitstream_2bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1;
@@ -781,8 +1710,112 @@ static int mark5b_decode_16bitstream_2bit(struct mark5_stream *ms, int nsamp,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit(struct mark5_stream *ms, int nsamp,
-	float **data)
+static int mark5b_decode_16bitstream_2bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 4;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i+=3;
+		}
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp1[0];
+		data[5][o] = fp1[1];
+		data[6][o] = fp1[2];
+		data[7][o] = fp1[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_16bitstream_2bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = zeros;
+			nblank++;
+			i += 8;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i+=7;
+		}
+		data[0][o] = fp0[0];
+		data[1][o] = fp0[1];
+		data[2][o] = fp0[2];
+		data[3][o] = fp0[3];
+		data[4][o] = fp1[0];
+		data[5][o] = fp1[1];
+		data[6][o] = fp1[2];
+		data[7][o] = fp1[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_32bitstream_2bit_oversamp1(struct mark5_stream *ms,
+	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3;
@@ -811,6 +1844,136 @@ static int mark5b_decode_32bitstream_2bit(struct mark5_stream *ms, int nsamp,
 			i++;
 			fp3 = lut2bit[buf[i]];
 			i++;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp1[0];
+		data[5][o]  = fp1[1];
+		data[6][o]  = fp1[2];
+		data[7][o]  = fp1[3];
+		data[8][o]  = fp2[0];
+		data[9][o]  = fp2[1];
+		data[10][o] = fp2[2];
+		data[11][o] = fp2[3];
+		data[12][o] = fp3[0];
+		data[13][o] = fp3[1];
+		data[14][o] = fp3[2];
+		data[15][o] = fp3[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_32bitstream_2bit_oversamp2(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 8;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+			fp2 = lut2bit[buf[i]];
+			i++;
+			fp3 = lut2bit[buf[i]];
+			i+=5;
+		}
+
+		data[0][o]  = fp0[0];
+		data[1][o]  = fp0[1];
+		data[2][o]  = fp0[2];
+		data[3][o]  = fp0[3];
+		data[4][o]  = fp1[0];
+		data[5][o]  = fp1[1];
+		data[6][o]  = fp1[2];
+		data[7][o]  = fp1[3];
+		data[8][o]  = fp2[0];
+		data[9][o]  = fp2[1];
+		data[10][o] = fp2[2];
+		data[11][o] = fp2[3];
+		data[12][o] = fp3[0];
+		data[13][o] = fp3[1];
+		data[14][o] = fp3[2];
+		data[15][o] = fp3[3];
+
+		if(i >= MK5B_PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int mark5b_decode_32bitstream_2bit_oversamp4(struct mark5_stream *ms,
+	int nsamp, float **data)
+{
+	uint8_t *buf;
+	float *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		if(i <  ms->blankzonestartvalid[0] ||
+		   i >= ms->blankzoneendvalid[0])
+		{
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			nblank++;
+			i += 16;
+		}
+		else
+		{
+			fp0 = lut2bit[buf[i]];
+			i++;
+			fp1 = lut2bit[buf[i]];
+			i++;
+			fp2 = lut2bit[buf[i]];
+			i++;
+			fp3 = lut2bit[buf[i]];
+			i+=13;
 		}
 
 		data[0][o]  = fp0[0];
@@ -1057,10 +2220,21 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		first = 0;
 	}
 
-	if(oversamp != 1)
+	if(oversamp == 1)
 	{
-		fprintf(stderr, "oversamp must be 1\n");
-		return 0;
+		decoderindex += 0;
+	}
+	else if(oversamp == 2)
+	{
+		decoderindex += 12;
+	}
+	else if(oversamp == 4)
+	{
+		decoderindex += 24;
+	}
+	else
+	{
+		fprintf(stderr, "oversamp must be 1, 2 or 4\n");
 	}
 
 	if(nbit == 1)
@@ -1134,17 +2308,42 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->oversamp = oversamp;
 	switch(decoderindex)
 	{
-		case 0 : f->decode = mark5b_decode_1bitstream_1bit; break;
-		case 1 : f->decode = mark5b_decode_2bitstream_1bit; break;
-		case 2 : f->decode = mark5b_decode_4bitstream_1bit; break;
-		case 3 : f->decode = mark5b_decode_8bitstream_1bit; break;
-		case 4 : f->decode = mark5b_decode_16bitstream_1bit; break;
-		case 5 : f->decode = mark5b_decode_32bitstream_1bit; break;
-		case 7 : f->decode = mark5b_decode_2bitstream_2bit; break;
-		case 8 : f->decode = mark5b_decode_4bitstream_2bit; break;
-		case 9 : f->decode = mark5b_decode_8bitstream_2bit; break;
-		case 10: f->decode = mark5b_decode_16bitstream_2bit; break;
-		case 11: f->decode = mark5b_decode_32bitstream_2bit; break;
+		case 0 : f->decode = mark5b_decode_1bitstream_1bit_oversamp1; break;
+		case 1 : f->decode = mark5b_decode_2bitstream_1bit_oversamp1; break;
+		case 2 : f->decode = mark5b_decode_4bitstream_1bit_oversamp1; break;
+		case 3 : f->decode = mark5b_decode_8bitstream_1bit_oversamp1; break;
+		case 4 : f->decode = mark5b_decode_16bitstream_1bit_oversamp1; break;
+		case 5 : f->decode = mark5b_decode_32bitstream_1bit_oversamp1; break;
+
+		case 7 : f->decode = mark5b_decode_2bitstream_2bit_oversamp1; break;
+		case 8 : f->decode = mark5b_decode_4bitstream_2bit_oversamp1; break;
+		case 9 : f->decode = mark5b_decode_8bitstream_2bit_oversamp1; break;
+		case 10: f->decode = mark5b_decode_16bitstream_2bit_oversamp1; break;
+		case 11: f->decode = mark5b_decode_32bitstream_2bit_oversamp1; break;
+		case 12: f->decode = mark5b_decode_1bitstream_1bit_oversamp2; break;
+		case 13: f->decode = mark5b_decode_2bitstream_1bit_oversamp2; break;
+		case 14: f->decode = mark5b_decode_4bitstream_1bit_oversamp2; break;
+		case 15: f->decode = mark5b_decode_8bitstream_1bit_oversamp2; break;
+		case 16: f->decode = mark5b_decode_16bitstream_1bit_oversamp2; break;
+		case 17: f->decode = mark5b_decode_32bitstream_1bit_oversamp2; break;
+
+		case 19: f->decode = mark5b_decode_2bitstream_2bit_oversamp2; break;
+		case 20: f->decode = mark5b_decode_4bitstream_2bit_oversamp2; break;
+		case 21: f->decode = mark5b_decode_8bitstream_2bit_oversamp2; break;
+		case 22: f->decode = mark5b_decode_16bitstream_2bit_oversamp2; break;
+		case 23: f->decode = mark5b_decode_32bitstream_2bit_oversamp2; break;
+		case 24: f->decode = mark5b_decode_1bitstream_1bit_oversamp4; break;
+		case 25: f->decode = mark5b_decode_2bitstream_1bit_oversamp4; break;
+		case 26: f->decode = mark5b_decode_4bitstream_1bit_oversamp4; break;
+		case 27: f->decode = mark5b_decode_8bitstream_1bit_oversamp4; break;
+		case 28: f->decode = mark5b_decode_16bitstream_1bit_oversamp4; break;
+		case 29: f->decode = mark5b_decode_32bitstream_1bit_oversamp4; break;
+
+		case 31: f->decode = mark5b_decode_2bitstream_2bit_oversamp4; break;
+		case 32: f->decode = mark5b_decode_4bitstream_2bit_oversamp4; break;
+		case 33: f->decode = mark5b_decode_8bitstream_2bit_oversamp4; break;
+		case 34: f->decode = mark5b_decode_16bitstream_2bit_oversamp4; break;
+		case 35: f->decode = mark5b_decode_32bitstream_2bit_oversamp4; break;
 	}
 
 	return f;

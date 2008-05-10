@@ -6934,90 +6934,90 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		case 39 : f->decode = mark4_decode_2bit_64track_fanout1_oversamp1; break;
 		case 40 : f->decode = mark4_decode_2bit_64track_fanout2_oversamp1; break;
 		case 41 : f->decode = mark4_decode_2bit_64track_fanout4_oversamp1; break;
-		case 42 : f->decode = mark4_decode_1bit_1track_fanout1_oversamp1; break;
+		case 42 : f->decode = mark4_decode_1bit_1track_fanout1_oversamp2; break;
                         
                         
-		case 45 : f->decode = mark4_decode_1bit_2track_fanout1_oversamp1; break;
-		case 46 : f->decode = mark4_decode_1bit_2track_fanout2_oversamp1; break;
+		case 45 : f->decode = mark4_decode_1bit_2track_fanout1_oversamp2; break;
+		case 46 : f->decode = mark4_decode_1bit_2track_fanout2_oversamp2; break;
 		        
-		case 48 : f->decode = mark4_decode_1bit_4track_fanout1_oversamp1; break;
-		case 49 : f->decode = mark4_decode_1bit_4track_fanout2_oversamp1; break;
-		case 50 : f->decode = mark4_decode_1bit_4track_fanout4_oversamp1; break;
-		case 51 : f->decode = mark4_decode_1bit_8track_fanout1_oversamp1; break;
-		case 52 : f->decode = mark4_decode_1bit_8track_fanout2_oversamp1; break;
-		case 53 : f->decode = mark4_decode_1bit_8track_fanout4_oversamp1; break;
-		case 54 : f->decode = mark4_decode_1bit_16track_fanout1_oversamp1; break;
-		case 55 : f->decode = mark4_decode_1bit_16track_fanout2_oversamp1; break;
-		case 56 : f->decode = mark4_decode_1bit_16track_fanout4_oversamp1; break;
-		case 57 : f->decode = mark4_decode_1bit_32track_fanout1_oversamp1; break;
-		case 58 : f->decode = mark4_decode_1bit_32track_fanout2_oversamp1; break;
-		case 59 : f->decode = mark4_decode_1bit_32track_fanout4_oversamp1; break;
-		case 60 : f->decode = mark4_decode_1bit_64track_fanout1_oversamp1; break;
-		case 61 : f->decode = mark4_decode_1bit_64track_fanout2_oversamp1; break;
-		case 62 : f->decode = mark4_decode_1bit_64track_fanout4_oversamp1; break;
-		        
-		        
-		        
-		case 66 : f->decode = mark4_decode_2bit_2track_fanout1_oversamp1; break;
+		case 48 : f->decode = mark4_decode_1bit_4track_fanout1_oversamp2; break;
+		case 49 : f->decode = mark4_decode_1bit_4track_fanout2_oversamp2; break;
+		case 50 : f->decode = mark4_decode_1bit_4track_fanout4_oversamp2; break;
+		case 51 : f->decode = mark4_decode_1bit_8track_fanout1_oversamp2; break;
+		case 52 : f->decode = mark4_decode_1bit_8track_fanout2_oversamp2; break;
+		case 53 : f->decode = mark4_decode_1bit_8track_fanout4_oversamp2; break;
+		case 54 : f->decode = mark4_decode_1bit_16track_fanout1_oversamp2; break;
+		case 55 : f->decode = mark4_decode_1bit_16track_fanout2_oversamp2; break;
+		case 56 : f->decode = mark4_decode_1bit_16track_fanout4_oversamp2; break;
+		case 57 : f->decode = mark4_decode_1bit_32track_fanout1_oversamp2; break;
+		case 58 : f->decode = mark4_decode_1bit_32track_fanout2_oversamp2; break;
+		case 59 : f->decode = mark4_decode_1bit_32track_fanout4_oversamp2; break;
+		case 60 : f->decode = mark4_decode_1bit_64track_fanout1_oversamp2; break;
+		case 61 : f->decode = mark4_decode_1bit_64track_fanout2_oversamp2; break;
+		case 62 : f->decode = mark4_decode_1bit_64track_fanout4_oversamp2; break;
 		        
 		        
-		case 69 : f->decode = mark4_decode_2bit_4track_fanout1_oversamp1; break;
-		case 70 : f->decode = mark4_decode_2bit_4track_fanout2_oversamp1; break;
 		        
-		case 72 : f->decode = mark4_decode_2bit_8track_fanout1_oversamp1; break;
-		case 73 : f->decode = mark4_decode_2bit_8track_fanout2_oversamp1; break;
-		case 74 : f->decode = mark4_decode_2bit_8track_fanout4_oversamp1; break;
-		case 75 : f->decode = mark4_decode_2bit_16track_fanout1_oversamp1; break;
-		case 76 : f->decode = mark4_decode_2bit_16track_fanout2_oversamp1; break;
-		case 77 : f->decode = mark4_decode_2bit_16track_fanout4_oversamp1; break;
-		case 78 : f->decode = mark4_decode_2bit_32track_fanout1_oversamp1; break;
-		case 79 : f->decode = mark4_decode_2bit_32track_fanout2_oversamp1; break;
-		case 80 : f->decode = mark4_decode_2bit_32track_fanout4_oversamp1; break;
-		case 81 : f->decode = mark4_decode_2bit_64track_fanout1_oversamp1; break;
-		case 82 : f->decode = mark4_decode_2bit_64track_fanout2_oversamp1; break;
-		case 83 : f->decode = mark4_decode_2bit_64track_fanout4_oversamp1; break;
-		case 84 : f->decode = mark4_decode_1bit_1track_fanout1_oversamp1; break;
+		case 66 : f->decode = mark4_decode_2bit_2track_fanout1_oversamp2; break;
+		        
+		        
+		case 69 : f->decode = mark4_decode_2bit_4track_fanout1_oversamp2; break;
+		case 70 : f->decode = mark4_decode_2bit_4track_fanout2_oversamp2; break;
+		        
+		case 72 : f->decode = mark4_decode_2bit_8track_fanout1_oversamp2; break;
+		case 73 : f->decode = mark4_decode_2bit_8track_fanout2_oversamp2; break;
+		case 74 : f->decode = mark4_decode_2bit_8track_fanout4_oversamp2; break;
+		case 75 : f->decode = mark4_decode_2bit_16track_fanout1_oversamp2; break;
+		case 76 : f->decode = mark4_decode_2bit_16track_fanout2_oversamp2; break;
+		case 77 : f->decode = mark4_decode_2bit_16track_fanout4_oversamp2; break;
+		case 78 : f->decode = mark4_decode_2bit_32track_fanout1_oversamp2; break;
+		case 79 : f->decode = mark4_decode_2bit_32track_fanout2_oversamp2; break;
+		case 80 : f->decode = mark4_decode_2bit_32track_fanout4_oversamp2; break;
+		case 81 : f->decode = mark4_decode_2bit_64track_fanout1_oversamp2; break;
+		case 82 : f->decode = mark4_decode_2bit_64track_fanout2_oversamp2; break;
+		case 83 : f->decode = mark4_decode_2bit_64track_fanout4_oversamp2; break;
+		case 84 : f->decode = mark4_decode_1bit_1track_fanout1_oversamp4; break;
                         
                         
-		case 87 : f->decode = mark4_decode_1bit_2track_fanout1_oversamp1; break;
-		case 88 : f->decode = mark4_decode_1bit_2track_fanout2_oversamp1; break;
+		case 87 : f->decode = mark4_decode_1bit_2track_fanout1_oversamp4; break;
+		case 88 : f->decode = mark4_decode_1bit_2track_fanout2_oversamp4; break;
 		        
-		case 90 : f->decode = mark4_decode_1bit_4track_fanout1_oversamp1; break;
-		case 91 : f->decode = mark4_decode_1bit_4track_fanout2_oversamp1; break;
-		case 92 : f->decode = mark4_decode_1bit_4track_fanout4_oversamp1; break;
-		case 93 : f->decode = mark4_decode_1bit_8track_fanout1_oversamp1; break;
-		case 94 : f->decode = mark4_decode_1bit_8track_fanout2_oversamp1; break;
-		case 95 : f->decode = mark4_decode_1bit_8track_fanout4_oversamp1; break;
-		case 96 : f->decode = mark4_decode_1bit_16track_fanout1_oversamp1; break;
-		case 97 : f->decode = mark4_decode_1bit_16track_fanout2_oversamp1; break;
-		case 98 : f->decode = mark4_decode_1bit_16track_fanout4_oversamp1; break;
-		case 99 : f->decode = mark4_decode_1bit_32track_fanout1_oversamp1; break;
-		case 100: f->decode = mark4_decode_1bit_32track_fanout2_oversamp1; break;
-		case 101: f->decode = mark4_decode_1bit_32track_fanout4_oversamp1; break;
-		case 102: f->decode = mark4_decode_1bit_64track_fanout1_oversamp1; break;
-		case 103: f->decode = mark4_decode_1bit_64track_fanout2_oversamp1; break;
-		case 104: f->decode = mark4_decode_1bit_64track_fanout4_oversamp1; break;
-		        
-		        
-		        
-		case 108: f->decode = mark4_decode_2bit_2track_fanout1_oversamp1; break;
+		case 90 : f->decode = mark4_decode_1bit_4track_fanout1_oversamp4; break;
+		case 91 : f->decode = mark4_decode_1bit_4track_fanout2_oversamp4; break;
+		case 92 : f->decode = mark4_decode_1bit_4track_fanout4_oversamp4; break;
+		case 93 : f->decode = mark4_decode_1bit_8track_fanout1_oversamp4; break;
+		case 94 : f->decode = mark4_decode_1bit_8track_fanout2_oversamp4; break;
+		case 95 : f->decode = mark4_decode_1bit_8track_fanout4_oversamp4; break;
+		case 96 : f->decode = mark4_decode_1bit_16track_fanout1_oversamp4; break;
+		case 97 : f->decode = mark4_decode_1bit_16track_fanout2_oversamp4; break;
+		case 98 : f->decode = mark4_decode_1bit_16track_fanout4_oversamp4; break;
+		case 99 : f->decode = mark4_decode_1bit_32track_fanout1_oversamp4; break;
+		case 100: f->decode = mark4_decode_1bit_32track_fanout2_oversamp4; break;
+		case 101: f->decode = mark4_decode_1bit_32track_fanout4_oversamp4; break;
+		case 102: f->decode = mark4_decode_1bit_64track_fanout1_oversamp4; break;
+		case 103: f->decode = mark4_decode_1bit_64track_fanout2_oversamp4; break;
+		case 104: f->decode = mark4_decode_1bit_64track_fanout4_oversamp4; break;
 		        
 		        
-		case 111: f->decode = mark4_decode_2bit_4track_fanout1_oversamp1; break;
-		case 112: f->decode = mark4_decode_2bit_4track_fanout2_oversamp1; break;
 		        
-		case 114: f->decode = mark4_decode_2bit_8track_fanout1_oversamp1; break;
-		case 115: f->decode = mark4_decode_2bit_8track_fanout2_oversamp1; break;
-		case 116: f->decode = mark4_decode_2bit_8track_fanout4_oversamp1; break;
-		case 117: f->decode = mark4_decode_2bit_16track_fanout1_oversamp1; break;
-		case 118: f->decode = mark4_decode_2bit_16track_fanout2_oversamp1; break;
-		case 119: f->decode = mark4_decode_2bit_16track_fanout4_oversamp1; break;
-		case 120: f->decode = mark4_decode_2bit_32track_fanout1_oversamp1; break;
-		case 121: f->decode = mark4_decode_2bit_32track_fanout2_oversamp1; break;
-		case 122: f->decode = mark4_decode_2bit_32track_fanout4_oversamp1; break;
-		case 123: f->decode = mark4_decode_2bit_64track_fanout1_oversamp1; break;
-		case 124: f->decode = mark4_decode_2bit_64track_fanout2_oversamp1; break;
-		case 125: f->decode = mark4_decode_2bit_64track_fanout4_oversamp1; break;
+		case 108: f->decode = mark4_decode_2bit_2track_fanout1_oversamp4; break;
+		        
+		        
+		case 111: f->decode = mark4_decode_2bit_4track_fanout1_oversamp4; break;
+		case 112: f->decode = mark4_decode_2bit_4track_fanout2_oversamp4; break;
+		        
+		case 114: f->decode = mark4_decode_2bit_8track_fanout1_oversamp4; break;
+		case 115: f->decode = mark4_decode_2bit_8track_fanout2_oversamp4; break;
+		case 116: f->decode = mark4_decode_2bit_8track_fanout4_oversamp4; break;
+		case 117: f->decode = mark4_decode_2bit_16track_fanout1_oversamp4; break;
+		case 118: f->decode = mark4_decode_2bit_16track_fanout2_oversamp4; break;
+		case 119: f->decode = mark4_decode_2bit_16track_fanout4_oversamp4; break;
+		case 120: f->decode = mark4_decode_2bit_32track_fanout1_oversamp4; break;
+		case 121: f->decode = mark4_decode_2bit_32track_fanout2_oversamp4; break;
+		case 122: f->decode = mark4_decode_2bit_32track_fanout4_oversamp4; break;
+		case 123: f->decode = mark4_decode_2bit_64track_fanout1_oversamp4; break;
+		case 124: f->decode = mark4_decode_2bit_64track_fanout2_oversamp4; break;
+		case 125: f->decode = mark4_decode_2bit_64track_fanout4_oversamp4; break;
 		default:  f->decode = 0;
 	}
 

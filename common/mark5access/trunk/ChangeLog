@@ -1,3 +1,6 @@
+Version 1.2.1
+* add oversampling (factors 1, 2, 4) support to mark4 vlba mark5 formats
+
 Version 1.2.0
 * fix some Mark5B issues.  This required changing ns to be a double throughout.
 
