@@ -98,6 +98,7 @@ static int set_format(struct mark5_stream *ms,
 		ms->Mbps = f->Mbps;
 		ms->nchan = f->nchan;
 		ms->nbit = f->nbit;
+		ms->oversamp = f->oversamp;
 
 		if(!f->init_format || !f->decode || !f->gettime)
 		{
@@ -181,7 +182,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
 		f = new_mark5_format_vlba(0, ntrack/(nbit*fanout), 
-			nbit, fanout);
+			nbit, fanout, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -203,7 +204,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
 		f = new_mark5_format_mark4(0, ntrack/(nbit*fanout), 
-			nbit, fanout);
+			nbit, fanout, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -239,7 +240,25 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 			return 0;
 		}
 
-		return new_mark5_format_vlba(b, c, d, a);
+		return new_mark5_format_vlba(b, c, d, a, 1);
+	}
+	else if(strncasecmp(formatname, "VLBA2_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_vlba(b, c, d, a, 2);
+	}
+	else if(strncasecmp(formatname, "VLBA4_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_vlba(b, c, d, a, 4);
 	}
 	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
 	{
@@ -248,7 +267,25 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 			return 0;
 		}
 
-		return new_mark5_format_mark4(b, c, d, a);
+		return new_mark5_format_mark4(b, c, d, a, 1);
+	}
+	else if(strncasecmp(formatname, "MKIV2_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_mark4(b, c, d, a, 2);
+	}
+	else if(strncasecmp(formatname, "MKIV4_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_mark4(b, c, d, a, 4);
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
 	{
@@ -257,7 +294,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 			return 0;
 		}
 
-		return new_mark5_format_mark5b(a, b, c);
+		return new_mark5_format_mark5b(a, b, c, 1);
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
@@ -298,6 +335,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	double framens;
 	struct mark5_format *f;
 	enum Mark5Format F;
+	int oversamp = 1;
 
 	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
 	{
@@ -311,6 +349,32 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000*((20000*a*c*d)/b);
 		ntrack = a*c*d;
 	}
+	else if(strncasecmp(formatname, "VLBA2_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VLBA;
+		databytes = 2500*a*c*d;
+		framebytes = 2520*a*c*d;
+		framens = 1000*((20000*a*c*d)/b);
+		ntrack = a*c*d;
+		oversamp = 2;
+	}
+	else if(strncasecmp(formatname, "VLBA4_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VLBA;
+		databytes = 2500*a*c*d;
+		framebytes = 2520*a*c*d;
+		framens = 1000*((20000*a*c*d)/b);
+		ntrack = a*c*d;
+		oversamp = 4;
+	}
 	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
 	{
 		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
@@ -322,6 +386,32 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framebytes = databytes;
 		framens = 1000*((20000*a*c*d)/b);
 		ntrack = a*c*d;
+	}
+	else if(strncasecmp(formatname, "MKIV2_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_MARK4;
+		databytes = 2500*a*c*d;
+		framebytes = databytes;
+		framens = 1000*((20000*a*c*d)/b);
+		ntrack = a*c*d;
+		oversamp = 2;
+	}
+	else if(strncasecmp(formatname, "MKIV4_", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_MARK4;
+		databytes = 2500*a*c*d;
+		framebytes = databytes;
+		framens = 1000*((20000*a*c*d)/b);
+		ntrack = a*c*d;
+		oversamp = 4;
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
 	{
@@ -371,6 +461,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	f->databytes = databytes;
 	f->ntrack = ntrack;
 	f->framens = framens;
+	f->oversamp = oversamp;
 
 	return f;
 }
@@ -415,7 +506,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	/* VLBA modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_vlba(0, ntrack, 1, 1);
+		f = new_mark5_format_vlba(0, ntrack, 1, 1, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -441,7 +532,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	/* Mark4 modes */
 	for(ntrack = 8; ntrack <= 64; ntrack*=2)
 	{
-		f = new_mark5_format_mark4(0, ntrack, 1, 1);
+		f = new_mark5_format_mark4(0, ntrack, 1, 1, 1);
 		set_format(ms, f);
 		status = mark5_format_init(ms);
 		if(status < 0)
@@ -465,7 +556,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	}
 
 	/* Mark5b */
-	f = new_mark5_format_mark5b(0, 16, 2);
+	f = new_mark5_format_mark5b(0, 16, 2, 1);
 	set_format(ms, f);
 	status = mark5_format_init(ms);
 	if(status < 0)
@@ -534,6 +625,7 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
 
 	ms->format = MK5_FORMAT_UNKNOWN;
+	ms->oversamp = 1;
 	
 	if(!ms)
 	{

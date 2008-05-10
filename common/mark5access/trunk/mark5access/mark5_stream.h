@@ -84,6 +84,7 @@ struct mark5_stream
 	int databytes;		/* bytes of data in a frame, incl. data */
 				/*   replacement headers */
 	int64_t framenum;	/* current complete frame, start at 0 */
+	int oversamp;		/* oversampling factor */
 
 	/* internal state parameters -- not to be used by users */
 	uint8_t *frame;
@@ -140,6 +141,7 @@ struct mark5_format_generic
 	int Mbps;
 	int nchan;
 	int nbit;
+	int oversamp;					/* oversampling factor */
 };
 
 struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
@@ -209,17 +211,17 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
 /*   VLBA format */
 
 struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
-	int nbit, int fanout);
+	int nbit, int fanout, int oversamp);
 
 /*   Mark4 format */
 
 struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
-	int nbit, int fanout);
+	int nbit, int fanout, int oversamp);
 
 /*   Mark5B format */
 
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, 
-	int nchan, int nbit);
+	int nchan, int nbit, int oversamp);
 
 /*   K5 format */
 
@@ -261,6 +263,7 @@ struct mark5_format
 	int mjd, sec, ns;	  /* date and time of first frame */
 	int ntrack;		  /* for Mark4 and VLBA formats only */
 	int fanout;		  /* for Mark4 and VLBA formats only */
+	int oversamp;
 };
 
 const char *mark5_stream_list_formats();

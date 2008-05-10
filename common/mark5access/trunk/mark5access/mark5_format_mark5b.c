@@ -881,11 +881,11 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	f = (struct mark5_format_mark5b *)(ms->formatdata);
 
-	ms->samplegranularity = 32/f->nbitstream;
+	ms->samplegranularity = 32/(f->nbitstream*ms->oversamp);
 	ms->framebytes = 10016;
 	ms->databytes = 10000;
 	ms->payloadoffset = 16;
-	ms->framesamples = ms->databytes*8/f->nbitstream;
+	ms->framesamples = ms->databytes*8/(f->nbitstream*ms->oversamp);
 	ms->blanker = blanker_mark5;
 	if(ms->Mbps > 0)
 	{
@@ -1041,7 +1041,7 @@ static int one(const struct mark5_stream *ms)
 }
 
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
-	int nchan, int nbit)
+	int nchan, int nbit, int oversamp)
 {
 	static int first = 1;
 	struct mark5_format_generic *f;
@@ -1055,6 +1055,12 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	{
 		initluts();
 		first = 0;
+	}
+
+	if(oversamp != 1)
+	{
+		fprintf(stderr, "oversamp must be 1\n");
+		return 0;
 	}
 
 	if(nbit == 1)
@@ -1125,6 +1131,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->final_format = mark5_format_mark5b_final;
 	f->fixmjd = mark5_format_mark5b_fixmjd;
 	f->validate = one;
+	f->oversamp = oversamp;
 	switch(decoderindex)
 	{
 		case 0 : f->decode = mark5b_decode_1bitstream_1bit; break;
