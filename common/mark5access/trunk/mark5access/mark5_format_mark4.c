@@ -6678,6 +6678,10 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	f = (struct mark5_format_mark4 *)(ms->formatdata);
 
 	ms->samplegranularity = f->fanout;
+	if(ms->samplegranularity <= 0)
+	{
+		ms->samplegranularity = 1;
+	}
 	ms->framebytes = 20000*f->ntrack/8;
 	ms->databytes = 20000*f->ntrack/8;
 	ms->payloadoffset = 0;

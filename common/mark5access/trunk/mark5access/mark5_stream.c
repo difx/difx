@@ -235,7 +235,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 	if(strncasecmp(formatname, "VLBA", 4) == 0)
 	{
-		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 4)
+		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 5)
 		{
 			return 0;
 		}
@@ -244,30 +244,12 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 	}
 	else if(strncasecmp(formatname, "MKIV", 4) == 0)
 	{
-		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 4)
+		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 5)
 		{
 			return 0;
 		}
 
 		return new_mark5_format_mark4(b, c, d, a, e);
-	}
-	else if(strncasecmp(formatname, "MKIV2_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-
-		return new_mark5_format_mark4(b, c, d, a, 2);
-	}
-	else if(strncasecmp(formatname, "MKIV4_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-
-		return new_mark5_format_mark4(b, c, d, a, 4);
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
 	{

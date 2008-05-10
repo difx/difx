@@ -2045,6 +2045,10 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	f = (struct mark5_format_mark5b *)(ms->formatdata);
 
 	ms->samplegranularity = 32/(f->nbitstream*ms->oversamp);
+	if(ms->samplegranularity <= 0)
+	{
+		ms->samplegranularity = 1;
+	}
 	ms->framebytes = 10016;
 	ms->databytes = 10000;
 	ms->payloadoffset = 16;

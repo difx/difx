@@ -6719,6 +6719,10 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 		nRealTrack = 8;
 	}
 	ms->samplegranularity = f->fanout/ms->oversamp;
+	if(ms->samplegranularity <= 0)
+	{
+		ms->samplegranularity = 1;
+	}
 	ms->framebytes = 20160*nRealTrack/8;
 	ms->databytes = 20000*nRealTrack/8;
 	ms->payloadoffset = 12*nRealTrack;
