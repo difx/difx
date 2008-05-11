@@ -260,6 +260,15 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 		return new_mark5_format_mark5b(a, b, c, 1);
 	}
+	else if(strncasecmp(formatname, "Mark5B", 6) == 0)
+	{
+		if(sscanf(formatname+6, "%d-%d-%d-%d", &e, &a, &b, &c) != 4)
+		{
+			return 0;
+		}
+
+		return new_mark5_format_mark5b(a, b, c, e);
+	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
 		if(sscanf(formatname+6, "%d-%d-%d", &a, &b, &c) != 3)
