@@ -13,6 +13,7 @@ dist_bin_SCRIPTS = \
 	difxsniff \
 	mk5take \
 	mk5return \
+	mk5mon \
 	listmodules \
 	listcpus \
 	startdifx \
