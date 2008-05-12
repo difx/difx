@@ -6966,13 +6966,13 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	{
 		decoderindex += 42;
 	}
-	else if(oversamp == 4 || oversamp == 8 || oversamp == 16)
+	else if(oversamp % 4 == 0) /* all multiples of 4 are handed here */
 	{
 		decoderindex += 84;
 	}
 	else
 	{
-		fprintf(stderr, "oversamp must be 1, 2, 4, 8, or 16\n");
+		fprintf(stderr, "oversamp must be 1, 2 or a mult of 4\n");
 	}
 
 	if(nbit == 1)

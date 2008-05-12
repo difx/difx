@@ -2298,13 +2298,13 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	{
 		decoderindex += 12;
 	}
-	else if(oversamp == 4 || oversamp == 8 || oversamp == 16)
+	else if(oversamp % 4 == 0)  /* all mults of 4 */
 	{
 		decoderindex += 24;
 	}
 	else
 	{
-		fprintf(stderr, "oversamp must be 1, 2 or 4\n");
+		fprintf(stderr, "oversamp must be 1, 2 or a mult of 4\n");
 	}
 
 	if(nbit == 1)
@@ -2376,6 +2376,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->fixmjd = mark5_format_mark5b_fixmjd;
 	f->validate = one;
 	f->oversamp = oversamp;
+	f->decode = 0;
 	switch(decoderindex)
 	{
 		case 0 : f->decode = mark5b_decode_1bitstream_1bit_oversamp1; break;
@@ -2405,7 +2406,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		case 24: /* special case needing explicit oversamp4 case */
 			if(oversamp == 4)
 			 f->decode = mark5b_decode_1bitstream_1bit_oversamp4; 
-			else
+			else if(oversamp % 8 == 0)
 			 f->decode = mark5b_decode_1bitstream_1bit_oversamp8; 
 			break;
 		case 25: f->decode = mark5b_decode_2bitstream_1bit_oversamp4; break;
@@ -2419,6 +2420,12 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		case 33: f->decode = mark5b_decode_8bitstream_2bit_oversamp4; break;
 		case 34: f->decode = mark5b_decode_16bitstream_2bit_oversamp4; break;
 		case 35: f->decode = mark5b_decode_32bitstream_2bit_oversamp4; break;
+	}
+
+	if(f->decode == 0)
+	{
+		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		return 0;
 	}
 
 	return f;
