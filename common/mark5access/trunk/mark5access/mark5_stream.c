@@ -124,12 +124,14 @@ static int copy_format(const struct mark5_stream *ms,
 	mf->Mbps        = ms->Mbps;
 	mf->nchan       = ms->nchan;
 	mf->nbit        = ms->nbit;
+	mf->oversamp	= ms->oversamp;
 
 	return 0;
 }
 
 static int mark5_format_init(struct mark5_stream *ms)
 {
+	ms->oversamp = 1;
 	ms->framenum = 0;
 	ms->readposition = 0;
 	ms->frame = 0;
@@ -298,21 +300,21 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*, MKIV1_*-*-*-*, MARK5B-*-*-*";
+	return "VLBA*_*-*-*-*, MKIV*_*-*-*-*, MARK5B*-*-*-*";
 }
                                                                                 /* given a format string, populate a structure with info about format */
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
 {
-	int a=1, b=0, c=0, d=0, ntrack=0;
+	int a=1, b=0, c=0, d=0, e=0, ntrack=0;
 	int databytes, framebytes;
 	double framens;
 	struct mark5_format *f;
 	enum Mark5Format F;
 	int oversamp = 1;
 
-	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
+	if(strncasecmp(formatname, "VLBA", 4) == 0)
 	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 5)
 		{
 			return 0;
 		}
@@ -320,37 +322,12 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		databytes = 2500*a*c*d;
 		framebytes = 2520*a*c*d;
 		framens = 1000*((20000*a*c*d)/b);
+		oversamp = e;
 		ntrack = a*c*d;
 	}
-	else if(strncasecmp(formatname, "VLBA2_", 6) == 0)
+	else if(strncasecmp(formatname, "MKIV", 4) == 0)
 	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_VLBA;
-		databytes = 2500*a*c*d;
-		framebytes = 2520*a*c*d;
-		framens = 1000*((20000*a*c*d)/b);
-		ntrack = a*c*d;
-		oversamp = 2;
-	}
-	else if(strncasecmp(formatname, "VLBA4_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_VLBA;
-		databytes = 2500*a*c*d;
-		framebytes = 2520*a*c*d;
-		framens = 1000*((20000*a*c*d)/b);
-		ntrack = a*c*d;
-		oversamp = 4;
-	}
-	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
+		if(sscanf(formatname+4, "%d_%d-%d-%d-%d", &e, &a, &b, &c, &d) != 5)
 		{
 			return 0;
 		}
@@ -358,33 +335,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		databytes = 2500*a*c*d;
 		framebytes = databytes;
 		framens = 1000*((20000*a*c*d)/b);
+		oversamp = e;
 		ntrack = a*c*d;
-	}
-	else if(strncasecmp(formatname, "MKIV2_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_MARK4;
-		databytes = 2500*a*c*d;
-		framebytes = databytes;
-		framens = 1000*((20000*a*c*d)/b);
-		ntrack = a*c*d;
-		oversamp = 2;
-	}
-	else if(strncasecmp(formatname, "MKIV4_", 6) == 0)
-	{
-		if(sscanf(formatname+6, "%d-%d-%d-%d", &a, &b, &c, &d) != 4)
-		{
-			return 0;
-		}
-		F = MK5_FORMAT_MARK4;
-		databytes = 2500*a*c*d;
-		framebytes = databytes;
-		framens = 1000*((20000*a*c*d)/b);
-		ntrack = a*c*d;
-		oversamp = 4;
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
 	{
@@ -396,6 +348,18 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		databytes = 10000;
 		framebytes = databytes+16;
 		framens = 1000.0*(8.0*databytes/(double)b);
+	}
+	else if(strncasecmp(formatname, "Mark5B", 6) == 0)
+	{
+		if(sscanf(formatname+7, "%d-%d-%d-%d", &e, &b, &c, &d) != 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_MARK5B;
+		databytes = 10000;
+		framebytes = databytes+16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		oversamp = e;
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
