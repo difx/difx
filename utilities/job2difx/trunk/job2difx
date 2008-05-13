@@ -704,6 +704,11 @@ def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase)
 			rows.append(i)
 	npoly = len(rows)
 
+	gate_open   = float(gate[rows[0]]['onPhase'][1])
+	gate_close  = float(gate[rows[0]]['offPhase'][1])
+	gate_open  -= int(gate_open)
+	gate_close -= int(gate_close)
+
 	psrtable = []
 	psrtable.append('NUM POLYCO FILES:   %d' % npoly)
 	for p in range(npoly):
@@ -712,8 +717,12 @@ def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase)
 			p, polycofile))
 		psrname = 'psr%d%d%d%d' % (correl_row, freq_row, custom_row, source_row)
 		makepolycofile(polycofile, gate[rows[p]], psrname)
-	psrtable.append('NUM PULSAR BINS:    1')
-	psrtable.append('SCRUNCH OUTPUT:     FALSE')
+	psrtable.append('NUM PULSAR BINS:    2')
+	psrtable.append('SCRUNCH OUTPUT:     TRUE')
+	psrtable.append('BIN PHASE END 0:    %8.6f' % gate_close)
+	psrtable.append('BIN WEIGHT 0:       1.0')
+	psrtable.append('BIN PHASE END 1:    %8.6f' % gate_open)
+	psrtable.append('BIN WEIGHT 1:       0.0')
 
 	if len(psrtable) > 0:
 		fp = open(filename, "w") 
