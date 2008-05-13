@@ -7,17 +7,38 @@
 const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	char bandFormFloat[8], polyFormDouble[8];
+
 	struct fitsBinTableColumn columns[] =
 	{
-		{"FIXME",   "16A", "fixme", 0}
+		{"GATEID",    "1J", "id of this row", 0},
+		{"START",     "1D", "time of model start", "MJD"},
+		{"STOP",      "1D", "time of model stop", "MJD"},
+		{"SOURCE",    "1J", "sourde id from sources tbl", 0},
+		{"FREQID",    "1J", "frequency id from frequency tbl", 0},
+		{"DISP",      "1D", "dispersion measure. PC/CM^3", 0},
+		{"ON_PHASE",  bandFormFloat, "phase gate opens by band", 0},
+		{"OFF_PHASE", bandFormFloat, "phase gate closess by band", 0},
+		{"REF_FREQ",  "1D", "reference frequency, HZ", 0},
+		{"MODEL",     polyFormDouble, "gate control polynomial, PHASE", 0}
 	};
 
 	int nColumn;
 	int nRowBytes;
 	char *fitsbuf;
 	char *p_fitsbuf;
-	int p;
-	
+	int nBand, nPoly;
+	float *onPhase, *offPhase;
+	double *poly;
+	const DifxPulsar *dp;
+	const DifxPolyco *pc;
+	int32_t gateId1;
+	int32_t sourceId1;
+	int32_t freqId1;
+	double start, stop, dm, refFreq;
+	double f;
+	int psr, p, i, c;
+
 	if(D == 0)
 	{
 		return 0;
@@ -28,12 +49,24 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		return D;
 	}
 
-	printf("WARNING -- Pulsar table not ready yet\n");
+	nBand = p_fits_keys->no_band;
+	nPoly = DifxPulsarArrayGetMaxPolyOrder(D->pulsar, D->nPulsar);
+	if(nPoly < 2)
+	{
+		nPoly = 2;
+	}
+
+	onPhase  = (float *)calloc(nBand, sizeof(float));
+	offPhase = (float *)calloc(nBand, sizeof(float));
+	poly     = (double *)calloc(nPoly, sizeof(double));
+
+	sprintf(bandFormFloat,  "%1dE", nBand);  
+	sprintf(polyFormDouble, "%1dD", nPoly);  
 
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATE_MODEL");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEMODL");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
@@ -44,20 +77,67 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		return 0;
 	}
 	
-#if 0
-	for(p = 0; p < D->nPulsar; p++)
+	gateId1 = 0;
+
+	for(psr = 0; psr < D->nPulsar; psr++)
 	{
+		dp = D->pulsar + psr;
+		if(dp->nBin > 1) for(i = 0; i < nBand; i++)
+		{
+			onPhase[i]  = dp->binEnd[1];
+			offPhase[i] = dp->binEnd[0];
+		}
+		for(p = 0; p < dp->nPolyco; p++)
+		{
+			sourceId1 = 0;	/* FIXME */
+			freqId1 = 0;	/* FIXME */
+			gateId1++;
+			pc = dp->polyco + p;
 
-		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "GM");
+			dm = pc->dm;
+			refFreq = pc->refFreq*1.0e6;	/* convert to Hz */
+			start = pc->mjd - pc->nBlk/2880.0;
+			stop  = pc->mjd + pc->nBlk/2880.0;
 
+			f = 1.0;
+			for(c = 0; c < pc->nCoef; c++)
+			{
+				poly[c] = pc->coef[c]*f;
+				f /= 60.0;
+			}
+			if(c < nPoly) for(; c < nPoly; c++)
+			{
+				poly[c] = 0.0;
+			}
+			poly[0] += pc->p0;
+			poly[1] += pc->f0;
+
+			/* pointer to the buffer for FITS records */
+			p_fitsbuf = fitsbuf;
+
+			FITS_WRITE_ITEM (gateId1, p_fitsbuf);
+			FITS_WRITE_ITEM (start, p_fitsbuf);
+			FITS_WRITE_ITEM (stop, p_fitsbuf);
+			FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
+			FITS_WRITE_ITEM (freqId1, p_fitsbuf);
+			FITS_WRITE_ITEM (dm, p_fitsbuf);
+			FITS_WRITE_ARRAY(onPhase, p_fitsbuf, nBand);
+			FITS_WRITE_ARRAY(offPhase, p_fitsbuf, nBand);
+			FITS_WRITE_ITEM (refFreq, p_fitsbuf);
+			FITS_WRITE_ARRAY(poly, p_fitsbuf, nBand);
+
+			testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "GM");
 #ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+			FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
-		fitsWriteBinRow(out, fitsbuf);
+			fitsWriteBinRow(out, fitsbuf);
+		}
 	}
 
-#endif
 	free(fitsbuf);
+	free(onPhase);
+	free(offPhase);
+	free(poly);
 
 	return D;
 }	

@@ -33,7 +33,7 @@ const DifxInput *DifxInput2FitsGD(const DifxInput *D,
 	nColumn = NELEMENTS(columns);
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATE_DELAY");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "GATEDUTY");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteEnd(out);
