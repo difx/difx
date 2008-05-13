@@ -43,7 +43,9 @@ typedef struct
 typedef struct
 {
 	char fileName[256];	/* filename containing polyco data */
-	double dm, refFreq, mjd;
+	double dm;		/* pc/cm^3 */
+	double refFreq;		/* MHz */
+	double mjd;
 	int nCoef, nBlk;
 	double p0, f0;
 	double *coef;
@@ -311,6 +313,7 @@ void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco);
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
 int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename);
+int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco);
 
 /* DifxPulsar functions */
 DifxPulsar *newDifxPulsarArray(int nPulsar);
@@ -321,6 +324,7 @@ int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2);
 DifxPulsar *dupDifxPulsarArray(const DifxPulsar *src, int nPulsar);
 DifxPulsar *mergeDifxPulsarArrays(const DifxPulsar *dp1, int ndp1,
 	const DifxPulsar *dp2, int ndp2, int *pulsarIdRemap, int *ndp);
+int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar);
 
 /* DifxConfig functions */
 DifxConfig *newDifxConfigArray(int nConfig);

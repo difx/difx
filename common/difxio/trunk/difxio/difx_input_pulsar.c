@@ -81,6 +81,28 @@ void printDifxPulsar(const DifxPulsar *dp)
 	}
 }
 
+int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar)
+{
+	int p;
+	int n, max=0;
+
+	if(nPulsar == 0)
+	{
+		return 0;
+	}
+
+	for(p = 0; p < nPulsar; p++)
+	{
+		n = DifxPolycoArrayGetMaxPolyOrder(dp[p].polyco, dp[p].nPolyco);
+		if(n > max)
+		{
+			max = n;
+		}
+	}
+
+	return max;
+}
+
 int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2)
 {
 	if(strcmp(dp1->fileName, dp2->fileName) == 0)

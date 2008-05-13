@@ -64,7 +64,7 @@ void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco)
 		p = dp + i;
 		printf("      Polyco file = %s\n", p->fileName);
 		printf("      D.M. = %f\n", p->dm);
-		printf("      refFreq = %f\n", p->refFreq);
+		printf("      refFreq = %f MHz\n", p->refFreq);
 		printf("      mjd mid = %f\n", p->mjd);
 		printf("      nBlk = %d\n", p->nBlk);
 		printf("      P0 = %f turns\n", p->p0);
@@ -75,6 +75,22 @@ void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco)
 			printf("        %22.16e\n", p->coef[c]);
 		}
 	}
+}
+
+int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco)
+{
+	int max = 0;
+	int p;
+
+	for(p = 0; p < nPolyco; p++)
+	{
+		if(dp[p].nCoef > max)
+		{
+			max = dp[p].nCoef;
+		}
+	}
+
+	return max;
 }
 
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
