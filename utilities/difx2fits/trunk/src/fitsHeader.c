@@ -40,7 +40,6 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteLogical(out, "BLOCKED", 1, "");
 	fitsWriteString(out, "OBJECT", "BINARYTB", "");
 	fitsWriteString(out, "TELESCOP", "VLBA", "");
-	fitsWriteString(out, "DIFX", "1.0-VLBA", "");
 	fitsWriteString(out, "OBSERVER", D->job->obsCode, "");
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
@@ -55,6 +54,9 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	strcpy(strng, "OPENED FITS FILE : ");
 	strcat(strng, local_time);
 	fitsWriteComment(out, "HISTORY", strng);
+
+	fitsWriteComment(out, "HISTORY", "CORRELATOR = 'DIFX'");
+	fitsWriteComment(out, "HISTORY", "CORRVERS = 'NRAO-DIFX 1.1'");
 
 	sprintf (strng, "LOG FILE : /To/be/implemented");
 	fitsWriteComment(out, "HISTORY", strng);

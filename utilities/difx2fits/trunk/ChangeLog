@@ -3,6 +3,10 @@ Version 2.0
   into single FITS file in time order.
 * use fitsSourceId to keep the source table as small as possible, without
   repeats
+* fix delay values in ML (IM) table
+* fix uninitialized freq offset vals in SU table
+* use difxio >= 2.0
+* start of pulsar table support
 
 Version 1.9
 * Use difxio >= 1.7

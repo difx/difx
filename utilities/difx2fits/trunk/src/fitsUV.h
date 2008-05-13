@@ -54,6 +54,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
 int DifxVisNewUVData(DifxVis *dv, int verbose);
+int DifxVisCollectRandomParams(const DifxVis *dv);
 
 
 #endif
