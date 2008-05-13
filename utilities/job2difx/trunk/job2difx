@@ -2,7 +2,7 @@
 
 from sys import argv, exit
 from string import strip, split, find, lower, upper
-from math import pi
+from math import pi, ceil
 from os import getcwd, system
 import re
 
@@ -653,6 +653,40 @@ def getPulsars(job, correl_row, freq_row, custom_row):
 		
 	return psrs
 
+def makepolycofile(filename, gaterow, name):
+	st0 = gaterow['start']
+	st1 = gaterow['stop']
+	t0 = parsetime(st0)
+	t1 = parsetime(st1)
+	c = []
+	for v in gaterow['coefficient']:
+		c.append(float(v))
+	f = 3600.0
+	for i in range(3,len(c)):
+		c[i] *= f;
+		f *= 60.0
+	dm = float(gaterow['dispersion'])
+	freq = float(gaterow['refFreq'])*1.0e-6
+	dur = ceil((t1-t0)*1440 + 0.5)
+	mjd = (t0 + t1)/2.0
+	day = st0[7:9] + '-' + st0[4:7] + '-' + st0[2:4]
+	x = mjd - int(mjd)
+	hr = int(x*24.0)
+	x -= hr/24.0
+	mi = int(x*1440.0)
+	x -= mi/1440.0;
+	se = x*86400.0
+	ti = '%02d%02d%05.2f' % (hr, mi, se)
+	psr = []
+	psr.append('%-11s%s  %s   %15.11f    %17.6f  0.000  0.000' % (name, day, ti, mjd, dm))
+	psr.append('   %17.6f %17.12f    0  %3d    6 %9.3f 00000  0.0000' % (c[1], c[2], dur, freq))
+	psr.append(' %23.16e  %23.16e  %23.16e' % (0.0,  0.0,  c[3]))
+	psr.append(' %23.16e  %23.16e  %23.16e' % (c[4], c[5], c[6]))
+	out = open(filename, 'w')
+	for p in psr:
+		out.write(p + '\n')
+	out.close()
+
 def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase):
 	dir = getcwd()
 
@@ -676,6 +710,8 @@ def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase)
 		polycofile = '%s.polyco.%d' % (psrbase, p)
 		psrtable.append(indent21_1('POLYCO FILE %d', '%s', \
 			p, polycofile))
+		psrname = 'psr%d%d%d%d' % (correl_row, freq_row, custom_row, source_row)
+		makepolycofile(polycofile, gate[rows[p]], psrname)
 	psrtable.append('NUM PULSAR BINS:    1')
 	psrtable.append('SCRUNCH OUTPUT:     FALSE')
 
