@@ -157,9 +157,9 @@ int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename)
 		fclose(in);
 		return -1;
 	}
-	r = sscanf(buffer, "%*d%lf%lf%*d%d%d", 
-		&dp->p0, &dp->f0, &dp->nBlk, &dp->nCoef);
-	if(r != 4)
+	r = sscanf(buffer, "%*d%lf%lf%*d%d%d%lf", 
+		&dp->p0, &dp->f0, &dp->nBlk, &dp->nCoef, &dp->refFreq);
+	if(r != 5)
 	{
 		fprintf(stderr, "Error parsing [%s] from %s\n",
 			buffer, filename);

@@ -2,6 +2,7 @@
 * some changes needed for difx2fits 2.0.
 * implement fits source ids
 * bug fixes around the board
+* finish initial pulsar support
 
 1.6
 * Add support for spacecraft.  Much cleanup of code

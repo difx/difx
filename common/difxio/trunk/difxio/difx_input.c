@@ -491,6 +491,8 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	dp->nPolyco = atoi(DifxParametersvalue(pp, r));
 	dp->polyco = newDifxPolycoArray(dp->nPolyco);
 
+	strcpy(dp->fileName, fileName);
+
 	for(i = 0; i < dp->nPolyco; i++)
 	{
 		r = DifxParametersfind1(pp, r, "POLYCO FILE %d", i);
