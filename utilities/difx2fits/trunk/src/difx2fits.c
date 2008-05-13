@@ -174,6 +174,18 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
+	printf("  GD -- pulsar gate delay   ");
+	fflush(stdout);
+	D = DifxInput2FitsGD(D, &keys, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
+	printf("  GM -- pulsar gate model   ");
+	fflush(stdout);
+	D = DifxInput2FitsGM(D, &keys, out);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
+
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
 	D = DifxInput2FitsUV(D, &keys, out, scale, verbose);

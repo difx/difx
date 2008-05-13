@@ -8,6 +8,8 @@ difx2fits_SOURCES = \
 	fitsCT.c \
 	fitsFL.c \
 	fitsFR.c \
+	fitsGD.c \
+	fitsGM.c \
 	fitsGN.c \
 	fitsMC.c \
 	fitsML.c \

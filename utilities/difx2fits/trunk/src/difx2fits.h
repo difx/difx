@@ -53,4 +53,10 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
+const DifxInput *DifxInput2FitsGD(const DifxInput *D,
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+
+const DifxInput *DifxInput2FitsGM(const DifxInput *D,
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+
 #endif
