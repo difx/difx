@@ -43,6 +43,10 @@ typedef struct
 typedef struct
 {
 	char fileName[256];	/* filename containing polyco data */
+	double dm, refFreq, mjd;
+	int nCoef, nBlk;
+	double p0, f0;
+	double *coef;
 } DifxPolyco;
 
 typedef struct
@@ -303,8 +307,10 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 /* DifxPolyco functions */
 DifxPolyco *newDifxPolycoArray(int nPolyco);
 void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco);
+void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco);
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
+int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename);
 
 /* DifxPulsar functions */
 DifxPulsar *newDifxPulsarArray(int nPulsar);

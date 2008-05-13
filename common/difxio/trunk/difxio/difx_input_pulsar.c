@@ -74,9 +74,10 @@ void printDifxPulsar(const DifxPulsar *dp)
 	if(dp)
 	{
 		printf("    Filename : %s\n", dp->fileName);
-		printf("    Number of polycos : %d\n", dp->nPolyco);
 		printf("    Number of bins : %d\n", dp->nBin);
 		printf("    Scrunch : %d\n", dp->scrunch);
+		printf("    Number of polycos : %d\n", dp->nPolyco);
+		printDifxPolycoArray(dp->polyco, dp->nPolyco);
 	}
 }
 

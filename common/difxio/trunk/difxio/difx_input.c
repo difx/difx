@@ -500,7 +500,13 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 			fprintf(stderr, "POLYCO FILE %d not found\n", i);
 			return -1;
 		}
-		strcpy(dp->polyco[i].fileName, DifxParametersvalue(pp, r));
+		r = loadPulsarPolycoFile(&dp->polyco[i], 
+			DifxParametersvalue(pp, r));
+		if(r < 0)
+		{
+			deleteDifxParameters(pp);
+			return -1;
+		}
 	}
 
 	r = DifxParametersfind(pp, 0, "NUM PULSAR BINS");
@@ -521,7 +527,7 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		fprintf(stderr, "SCRUNCH OUTPUT not found\n");
 		return -1;
 	}
-	if(strcmp(DifxParametersvalue(pp, r), "TRUE") == 0)
+	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE") == 0)
 	{
 		dp->scrunch = 1;
 	}
