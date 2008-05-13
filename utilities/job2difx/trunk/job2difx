@@ -687,8 +687,10 @@ def makepolycofile(filename, gaterow, name):
 		out.write(p + '\n')
 	out.close()
 
-def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebase):
+def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebasein):
 	dir = getcwd()
+
+	filebase = split(filebasein, '.')[0]
 
 	psrbase = '%s/%s.%d.%d.%d.%d' % (dir, filebase, correl_row, freq_row, custom_row, source_row)
 
