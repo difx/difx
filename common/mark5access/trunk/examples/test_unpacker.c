@@ -1,0 +1,151 @@
+/***************************************************************************
+ *   Copyright (C) 2008 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "../mark5access/mark5_stream.h"
+
+int usage(const char *pgm)
+{
+	printf("Usage : %s <format> [<n>]\n", pgm);
+
+	return 0;
+}
+
+int conf(float ***data, struct mark5_stream **ms, const char *format, int samples, int os)
+{
+	char fmt[100];
+	int i;
+
+	if(os == 1)
+	{
+		strcpy(fmt, format);
+	}
+	else
+	{
+		sprintf(fmt, "%s/%d", format, os);
+	}
+	printf("Initialize %s\n", fmt);
+
+	*ms = new_mark5_stream(
+		new_mark5_stream_unpacker(0),
+		new_mark5_format_generic_from_string(fmt) );
+	
+	if(!*ms)
+	{
+		return -1;
+	}
+	
+	mark5_stream_print(*ms);
+	
+	*data = (float **)malloc((*ms)->nchan*sizeof(float *));
+	for(i = 0; i < (*ms)->nchan; i++)
+	{
+		(*data)[i] = (float *)malloc(samples*sizeof(float));
+	}
+
+	return 0;
+}
+
+int main(int argc, char **argv)
+{
+	int n = 32, N = 10000000;
+	int offsetsamples = 0;
+	float **os1, **os2, **os4, **os8;
+	struct mark5_stream *ms1, *ms2, *ms4, *ms8;
+	char *data;
+	char line[1000], str[1000];
+	int i, c;
+	char v;
+
+	if(argc < 2)
+	{
+		return usage(argv[0]);
+	}
+
+	if(argc > 2)
+	{
+		sscanf(argv[2], "%d", &n);
+	}
+	if(argc > 3)
+	{
+		scanf(argv[3], "%d", &offsetsamples);
+	}
+
+	printf("format = %s  n = %d  o = %s\n", argv[1], n, offsetsamples);
+
+	conf(&os1, &ms1, argv[1], n, 1); 
+	conf(&os2, &ms2, argv[1], n, 2); 
+	conf(&os4, &ms4, argv[1], n, 4); 
+	conf(&os8, &ms8, argv[1], n, 8); 
+
+	data = (char *)malloc(N);
+	for(i = 0; i < N; i++)
+	{
+		data[i] = (i % 11) + 2*(i % 121);
+	}
+
+	mark5_unpack_with_offset(ms1, data, offsetsamples, os1, n);
+	mark5_unpack_with_offset(ms2, data, offsetsamples, os2, n/2);
+	mark5_unpack_with_offset(ms4, data, offsetsamples, os4, n/4);
+	mark5_unpack_with_offset(ms8, data, offsetsamples, os8, n/8);
+
+	for(i = 0; i < n; i++)
+	{
+		line[0] = 0;
+		for(c = 0; c < ms1->nchan; c++)
+		{
+			sprintf(str, "%3.0f ", os1[c][i]);
+			strcat(line, str);
+		}
+		if(i % 2 == 0)
+		{
+			strcat(line, "   . ");
+			for(c = 0; c < ms2->nchan; c++)
+			{
+				v = os2[c][i/2] == os1[c][i] ? ' ' : 'x';
+				sprintf(str, "%3.0f%c", os2[c][i/2], v);
+				strcat(line, str);
+			}
+		}
+		if(i % 4 == 0)
+		{
+			strcat(line, "  . ");
+			for(c = 0; c < ms4->nchan; c++)
+			{
+				v = os4[c][i/4] == os1[c][i] ? ' ' : 'x';
+				sprintf(str, "%3.0f%c", os4[c][i/4], v);
+				strcat(line, str);
+			}
+		}
+		if(i % 8 == 0)
+		{
+			strcat(line, "  . ");
+			for(c = 0; c < ms8->nchan; c++)
+			{
+				v = os8[c][i/8] == os1[c][i] ? ' ' : 'x';
+				sprintf(str, "%3.0f%c", os8[c][i/8], v);
+				strcat(line, str);
+			}
+		}
+		printf("%s\n", line);
+	}
+
+	return 0;
+}

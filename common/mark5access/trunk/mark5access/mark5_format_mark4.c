@@ -340,7 +340,7 @@ static int mark4_decode_1bit_1track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 
@@ -480,7 +480,7 @@ static int mark4_decode_1bit_2track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -765,7 +765,7 @@ static int mark4_decode_1bit_4track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1209,7 +1209,7 @@ static int mark4_decode_1bit_8track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1693,7 +1693,7 @@ static int mark4_decode_1bit_16track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp0 = lut1bit[buf[i]];
 			i++;
 			fp1 = lut1bit[buf[i]];
-			i+=3;
+			i += 3;
 		}
 		m++;
 
@@ -2295,7 +2295,7 @@ static int mark4_decode_1bit_32track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp2 = lut1bit[buf[i]];
 			i++;
 			fp3 = lut1bit[buf[i]];
-			i+=5;
+			i += 5;
 		}
 		m++;
 
@@ -3079,7 +3079,7 @@ static int mark4_decode_1bit_64track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp6 = lut1bit[buf[i]];
 			i++;
 			fp7 = lut1bit[buf[i]];
-			i+=9;
+			i += 9;
 		}
 		m++;
 
@@ -4035,7 +4035,7 @@ static int mark4_decode_2bit_2track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut2bit1[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 
@@ -4175,7 +4175,7 @@ static int mark4_decode_2bit_4track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut2bit1[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -4460,7 +4460,7 @@ static int mark4_decode_2bit_8track_fanout1_oversamp2(struct mark5_stream *ms,
 		{
 			fp = lut2bit1[buf[i]];
 		}
-		i+=2;
+		i += 2;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -4913,7 +4913,7 @@ static int mark4_decode_2bit_16track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp0 = lut2bit1[buf[i]];
 			i++;
 			fp1 = lut2bit1[buf[i]];
-			i+=3;
+			i += 3;
 		}
 		m++;
 
@@ -5453,7 +5453,7 @@ static int mark4_decode_2bit_32track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp2 = lut2bit2[buf[i]];
 			i++;
 			fp3 = lut2bit2[buf[i]];
-			i+=5;
+			i += 5;
 		}
 		m++;
 
@@ -6102,7 +6102,7 @@ static int mark4_decode_2bit_64track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp6 = lut2bit2[buf[i]];
 			i++;
 			fp7 = lut2bit2[buf[i]];
-			i+=9;
+			i += 9;
 		}
 		m++;
 
@@ -6778,7 +6778,7 @@ static int mark5_format_mark4_make_formatname(struct mark5_stream *ms)
 
 	f = (struct mark5_format_mark4 *)(ms->formatdata);
 	
-	sprintf(ms->formatname, "MKIV%d_%d-%d-%d-%d", ms->oversamp,
+	sprintf(ms->formatname, "MKIV1_%d-%d-%d-%d/%d",
 		f->fanout, ms->Mbps, ms->nchan, ms->nbit);
 
 	return 0;
