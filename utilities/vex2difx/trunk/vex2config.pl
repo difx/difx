@@ -345,7 +345,11 @@ foreach (@stations) {
   if ($stationmodes->{$_}->record_transport_type eq 'S2') {
     $format = 'LBAVSOP';
   } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5A') {
-    $format = 'MKIV';
+    if ($new) {
+      $format = 'MKIV';
+    } else {
+      $format = 'MKV';
+    }
     $framesize = 160000;
   } else {
     $format = 'UNKNOWN';
@@ -355,12 +359,12 @@ foreach (@stations) {
 TELESCOPE INDEX:    $index
 TSYS:               $tsys
 DATA FORMAT:        $format
-QUANTISATION BITS:  2
 EOF
   if ($new) {
     my $source = 'FILE';
     $source = 'EVLBI' if ($evlbi);
     print INPUT<<EOF;
+QUANTISATION BITS:  2
 DATA FRAME SIZE:    $framesize
 DATA SOURCE:        $source
 FILTERBANK USED:    FALSE
@@ -368,10 +372,14 @@ EOF
   } else {
     my $source = 'TRUE';
     $source = 'FALSE' if ($evlbi);
-
+    if ($stationmodes->{$_}->record_transport_type eq 'Mark5A') {
+      printf INPUT ("FANOUT:             4\n");
+    }
+  
     print INPUT<<EOF;
+QUANTISATION BITS:  2
 FILTERBANK USED:    FALSE
-READ FROM FILE:     $source;
+READ FROM FILE:     $source
 EOF
   }
 # Need to reference input bands based on Frequency table
