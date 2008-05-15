@@ -2167,7 +2167,7 @@ static int vlba_decode_1bit_16track_fanout4_oversamp4(struct mark5_stream *ms,
 	i = ms->readposition;
 	m = i/2;
 	osf = ms->oversamp/2 - 1;
-	osf = ms->oversamp/4;
+	osf2 = ms->oversamp/4;
 
 	for(o = 0; o < nsamp; o++)
 	{

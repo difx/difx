@@ -31,7 +31,7 @@ int usage(const char *pgm)
 int conf(float ***data, struct mark5_stream **ms, const char *format, int samples, int os)
 {
 	char fmt[100];
-	int i;
+	int i, j;
 
 	if(os == 1)
 	{
@@ -44,7 +44,7 @@ int conf(float ***data, struct mark5_stream **ms, const char *format, int sample
 	printf("Initialize %s\n", fmt);
 
 	*ms = new_mark5_stream(
-		new_mark5_stream_unpacker(0),
+		new_mark5_stream_unpacker(1),
 		new_mark5_format_generic_from_string(fmt) );
 	
 	if(!*ms)
@@ -58,6 +58,10 @@ int conf(float ***data, struct mark5_stream **ms, const char *format, int sample
 	for(i = 0; i < (*ms)->nchan; i++)
 	{
 		(*data)[i] = (float *)malloc(samples*sizeof(float));
+		for(j = 0; j < samples; j++)
+		{
+			(*data)[i][j] = j;
+		}
 	}
 
 	return 0;
@@ -70,7 +74,7 @@ int main(int argc, char **argv)
 	float **os1, **os2, **os4, **os8;
 	struct mark5_stream *ms1, *ms2, *ms4, *ms8;
 	char *data;
-	char line[1000], str[1000];
+	char line[2000], str[2000];
 	int i, c;
 	char v;
 
@@ -85,10 +89,10 @@ int main(int argc, char **argv)
 	}
 	if(argc > 3)
 	{
-		scanf(argv[3], "%d", &offsetsamples);
+		sscanf(argv[3], "%d", &offsetsamples);
 	}
 
-	printf("format = %s  n = %d  o = %s\n", argv[1], n, offsetsamples);
+	fprintf(stderr, "format = %s  n = %d  o = %d\n", argv[1], n, offsetsamples);
 
 	conf(&os1, &ms1, argv[1], n, 1); 
 	conf(&os2, &ms2, argv[1], n, 2); 
@@ -101,10 +105,15 @@ int main(int argc, char **argv)
 		data[i] = (i % 11) + 2*(i % 121);
 	}
 
-	mark5_unpack_with_offset(ms1, data, offsetsamples, os1, n);
-	mark5_unpack_with_offset(ms2, data, offsetsamples, os2, n/2);
-	mark5_unpack_with_offset(ms4, data, offsetsamples, os4, n/4);
-	mark5_unpack_with_offset(ms8, data, offsetsamples, os8, n/8);
+	printf("0\n");
+	mark5_unpack_with_offset(ms1, data, offsetsamples,   os1, n);
+	printf("1\n");
+	mark5_unpack_with_offset(ms2, data, offsetsamples/2, os2, (n+1)/2);
+	printf("2\n");
+	mark5_unpack_with_offset(ms4, data, offsetsamples/4, os4, (n+3)/4);
+	printf("3\n");
+	mark5_unpack_with_offset(ms8, data, offsetsamples/8, os8, (n+7)/8);
+	printf("4\n");
 
 	for(i = 0; i < n; i++)
 	{

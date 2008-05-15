@@ -6104,7 +6104,7 @@ static int mark4_decode_2bit_64track_fanout1_oversamp2(struct mark5_stream *ms,
 			fp7 = lut2bit2[buf[i]];
 			i += 9;
 		}
-		m++;
+		m += 2;
 
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp0[2];
@@ -6161,14 +6161,15 @@ static int mark4_decode_2bit_64track_fanout1_oversamp4(struct mark5_stream *ms,
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
-	int o, i, m, osf;
+	int o, i, m, osf, osf2;
 	int zone;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
 	m = i/8;
-	osf = ms->oversamp*4 - 7;
+	osf = ms->oversamp*8 - 7;
+	osf2 = ms->oversamp;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -6213,7 +6214,7 @@ static int mark4_decode_2bit_64track_fanout1_oversamp4(struct mark5_stream *ms,
 			fp7 = lut2bit2[buf[i]];
 		}
 		i += osf;
-		m++;
+		m += osf2;
 
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp0[2];
@@ -6447,7 +6448,7 @@ static int mark4_decode_2bit_64track_fanout2_oversamp4(struct mark5_stream *ms,
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
-	int o, i, m, osf;
+	int o, i, m, osf, osf2;
 	int zone;
 	int nblank = 0;
 
@@ -6455,6 +6456,7 @@ static int mark4_decode_2bit_64track_fanout2_oversamp4(struct mark5_stream *ms,
 	i = ms->readposition;
 	m = i/8;
 	osf = ms->oversamp*4 - 7;
+	osf2 = ms->oversamp/2;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -6499,7 +6501,7 @@ static int mark4_decode_2bit_64track_fanout2_oversamp4(struct mark5_stream *ms,
 			fp7 = lut2bit3[buf[i]];
 		}
 		i += osf;
-		m++;
+		m += osf2;
 		
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp1[0];
@@ -6779,7 +6781,7 @@ static int mark5_format_mark4_make_formatname(struct mark5_stream *ms)
 	f = (struct mark5_format_mark4 *)(ms->formatdata);
 	
 	sprintf(ms->formatname, "MKIV1_%d-%d-%d-%d/%d",
-		f->fanout, ms->Mbps, ms->nchan, ms->nbit);
+		f->fanout, ms->Mbps, ms->nchan, ms->nbit, ms->oversamp);
 
 	return 0;
 }
