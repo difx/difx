@@ -232,7 +232,7 @@ static int mark5_format_mark5b_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /************************* decode routines **************************/
 
-static int mark5b_decode_1bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_1bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -289,7 +289,7 @@ static int mark5b_decode_1bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_1bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -338,7 +338,7 @@ static int mark5b_decode_1bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_1bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -383,17 +383,17 @@ static int mark5b_decode_1bitstream_1bit_oversamp4(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_1bitstream_1bit_oversamp8(struct mark5_stream *ms,
+static int mark5b_decode_1bitstream_1bit_decimation8(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp/8;
+	df = ms->decimation/8;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -407,7 +407,7 @@ static int mark5b_decode_1bitstream_1bit_oversamp8(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 
@@ -427,7 +427,7 @@ static int mark5b_decode_1bitstream_1bit_oversamp8(struct mark5_stream *ms,
 	return nsamp-8*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -480,7 +480,7 @@ static int mark5b_decode_2bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -527,17 +527,17 @@ static int mark5b_decode_2bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp/4;
+	df = ms->decimation/4;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -551,7 +551,7 @@ static int mark5b_decode_2bitstream_1bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -572,7 +572,7 @@ static int mark5b_decode_2bitstream_1bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -623,7 +623,7 @@ static int mark5b_decode_4bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -669,17 +669,17 @@ static int mark5b_decode_4bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp/2;
+	df = ms->decimation/2;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -693,7 +693,7 @@ static int mark5b_decode_4bitstream_1bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -716,7 +716,7 @@ static int mark5b_decode_4bitstream_1bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -766,7 +766,7 @@ static int mark5b_decode_8bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -816,17 +816,17 @@ static int mark5b_decode_8bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp;
+	df = ms->decimation;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -840,7 +840,7 @@ static int mark5b_decode_8bitstream_1bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -867,7 +867,7 @@ static int mark5b_decode_8bitstream_1bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -928,7 +928,7 @@ static int mark5b_decode_16bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -989,17 +989,17 @@ static int mark5b_decode_16bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp*2 - 1;
+	df = ms->decimation*2 - 1;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1017,7 +1017,7 @@ static int mark5b_decode_16bitstream_1bit_oversamp4(struct mark5_stream *ms,
 			i++;
 			fp1 = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp0[1];
@@ -1052,7 +1052,7 @@ static int mark5b_decode_16bitstream_1bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1133,7 +1133,7 @@ static int mark5b_decode_32bitstream_1bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1214,17 +1214,17 @@ static int mark5b_decode_32bitstream_1bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_1bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp*4 - 3;
+	df = ms->decimation*4 - 3;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1250,7 +1250,7 @@ static int mark5b_decode_32bitstream_1bit_oversamp4(struct mark5_stream *ms,
 			i++;
 			fp3 = lut1bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp0[1];
@@ -1303,7 +1303,7 @@ static int mark5b_decode_32bitstream_1bit_oversamp4(struct mark5_stream *ms,
 
 /************************ 2-bit decoders *********************/
 
-static int mark5b_decode_2bitstream_2bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1352,7 +1352,7 @@ static int mark5b_decode_2bitstream_2bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_2bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_2bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1397,17 +1397,17 @@ static int mark5b_decode_2bitstream_2bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_2bitstream_2bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_2bitstream_2bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp/4;
+	df = ms->decimation/4;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1421,7 +1421,7 @@ static int mark5b_decode_2bitstream_2bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 
@@ -1441,7 +1441,7 @@ static int mark5b_decode_2bitstream_2bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - 4*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1488,7 +1488,7 @@ static int mark5b_decode_4bitstream_2bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_2bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1532,17 +1532,17 @@ static int mark5b_decode_4bitstream_2bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_4bitstream_2bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_4bitstream_2bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp/2;
+	df = ms->decimation/2;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1556,7 +1556,7 @@ static int mark5b_decode_4bitstream_2bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1577,7 +1577,7 @@ static int mark5b_decode_4bitstream_2bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - 2*nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1623,7 +1623,7 @@ static int mark5b_decode_8bitstream_2bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_2bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1669,17 +1669,17 @@ static int mark5b_decode_8bitstream_2bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_8bitstream_2bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_8bitstream_2bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp;
+	df = ms->decimation;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1693,7 +1693,7 @@ static int mark5b_decode_8bitstream_2bit_oversamp4(struct mark5_stream *ms,
 		{
 			fp = lut2bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o] = fp[0];
 		data[1][o] = fp[1];
@@ -1716,7 +1716,7 @@ static int mark5b_decode_8bitstream_2bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1768,7 +1768,7 @@ static int mark5b_decode_16bitstream_2bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1820,17 +1820,17 @@ static int mark5b_decode_16bitstream_2bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_16bitstream_2bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp*2 - 1;
+	df = ms->decimation*2 - 1;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -1848,7 +1848,7 @@ static int mark5b_decode_16bitstream_2bit_oversamp4(struct mark5_stream *ms,
 			i++;
 			fp1 = lut2bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 		data[0][o] = fp0[0];
 		data[1][o] = fp0[1];
 		data[2][o] = fp0[2];
@@ -1874,7 +1874,7 @@ static int mark5b_decode_16bitstream_2bit_oversamp4(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_oversamp1(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -1939,7 +1939,7 @@ static int mark5b_decode_32bitstream_2bit_oversamp1(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_oversamp2(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
@@ -2004,17 +2004,17 @@ static int mark5b_decode_32bitstream_2bit_oversamp2(struct mark5_stream *ms,
 	return nsamp - nblank;
 }
 
-static int mark5b_decode_32bitstream_2bit_oversamp4(struct mark5_stream *ms,
+static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
 	uint8_t *buf;
 	float *fp0, *fp1, *fp2, *fp3;
-	int o, i, osf;
+	int o, i, df;
 	int nblank = 0;
 
 	buf = ms->payload;
 	i = ms->readposition;
-	osf = ms->oversamp*4 - 3;
+	df = ms->decimation*4 - 3;
 
 	for(o = 0; o < nsamp; o++)
 	{
@@ -2040,7 +2040,7 @@ static int mark5b_decode_32bitstream_2bit_oversamp4(struct mark5_stream *ms,
 			i++;
 			fp3 = lut2bit[buf[i]];
 		}
-		i += osf;
+		i += df;
 
 		data[0][o]  = fp0[0];
 		data[1][o]  = fp0[1];
@@ -2110,7 +2110,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	f = (struct mark5_format_mark5b *)(ms->formatdata);
 
-	ms->samplegranularity = 32/(f->nbitstream*ms->oversamp);
+	ms->samplegranularity = 32/(f->nbitstream*ms->decimation);
 	if(ms->samplegranularity <= 0)
 	{
 		ms->samplegranularity = 1;
@@ -2118,7 +2118,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	ms->framebytes = 10016;
 	ms->databytes = 10000;
 	ms->payloadoffset = 16;
-	ms->framesamples = ms->databytes*8/(f->nbitstream*ms->oversamp);
+	ms->framesamples = ms->databytes*8/(f->nbitstream*ms->decimation);
 	ms->blanker = blanker_mark5;
 	if(ms->Mbps > 0)
 	{
@@ -2274,7 +2274,7 @@ static int one(const struct mark5_stream *ms)
 }
 
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
-	int nchan, int nbit, int oversamp)
+	int nchan, int nbit, int decimation)
 {
 	static int first = 1;
 	struct mark5_format_generic *f;
@@ -2290,21 +2290,21 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		first = 0;
 	}
 
-	if(oversamp == 1)
+	if(decimation == 1)
 	{
 		decoderindex += 0;
 	}
-	else if(oversamp == 2)
+	else if(decimation == 2)
 	{
 		decoderindex += 12;
 	}
-	else if(oversamp % 4 == 0)  /* all mults of 4 */
+	else if(decimation % 4 == 0)  /* all mults of 4 */
 	{
 		decoderindex += 24;
 	}
 	else
 	{
-		fprintf(stderr, "oversamp must be 1, 2 or a mult of 4\n");
+		fprintf(stderr, "decimation must be 1, 2 or a mult of 4\n");
 	}
 
 	if(nbit == 1)
@@ -2375,51 +2375,51 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->final_format = mark5_format_mark5b_final;
 	f->fixmjd = mark5_format_mark5b_fixmjd;
 	f->validate = one;
-	f->oversamp = oversamp;
+	f->decimation = decimation;
 	f->decode = 0;
 	switch(decoderindex)
 	{
-		case 0 : f->decode = mark5b_decode_1bitstream_1bit_oversamp1; break;
-		case 1 : f->decode = mark5b_decode_2bitstream_1bit_oversamp1; break;
-		case 2 : f->decode = mark5b_decode_4bitstream_1bit_oversamp1; break;
-		case 3 : f->decode = mark5b_decode_8bitstream_1bit_oversamp1; break;
-		case 4 : f->decode = mark5b_decode_16bitstream_1bit_oversamp1; break;
-		case 5 : f->decode = mark5b_decode_32bitstream_1bit_oversamp1; break;
+		case 0 : f->decode = mark5b_decode_1bitstream_1bit_decimation1; break;
+		case 1 : f->decode = mark5b_decode_2bitstream_1bit_decimation1; break;
+		case 2 : f->decode = mark5b_decode_4bitstream_1bit_decimation1; break;
+		case 3 : f->decode = mark5b_decode_8bitstream_1bit_decimation1; break;
+		case 4 : f->decode = mark5b_decode_16bitstream_1bit_decimation1; break;
+		case 5 : f->decode = mark5b_decode_32bitstream_1bit_decimation1; break;
 
-		case 7 : f->decode = mark5b_decode_2bitstream_2bit_oversamp1; break;
-		case 8 : f->decode = mark5b_decode_4bitstream_2bit_oversamp1; break;
-		case 9 : f->decode = mark5b_decode_8bitstream_2bit_oversamp1; break;
-		case 10: f->decode = mark5b_decode_16bitstream_2bit_oversamp1; break;
-		case 11: f->decode = mark5b_decode_32bitstream_2bit_oversamp1; break;
-		case 12: f->decode = mark5b_decode_1bitstream_1bit_oversamp2; break;
-		case 13: f->decode = mark5b_decode_2bitstream_1bit_oversamp2; break;
-		case 14: f->decode = mark5b_decode_4bitstream_1bit_oversamp2; break;
-		case 15: f->decode = mark5b_decode_8bitstream_1bit_oversamp2; break;
-		case 16: f->decode = mark5b_decode_16bitstream_1bit_oversamp2; break;
-		case 17: f->decode = mark5b_decode_32bitstream_1bit_oversamp2; break;
+		case 7 : f->decode = mark5b_decode_2bitstream_2bit_decimation1; break;
+		case 8 : f->decode = mark5b_decode_4bitstream_2bit_decimation1; break;
+		case 9 : f->decode = mark5b_decode_8bitstream_2bit_decimation1; break;
+		case 10: f->decode = mark5b_decode_16bitstream_2bit_decimation1; break;
+		case 11: f->decode = mark5b_decode_32bitstream_2bit_decimation1; break;
+		case 12: f->decode = mark5b_decode_1bitstream_1bit_decimation2; break;
+		case 13: f->decode = mark5b_decode_2bitstream_1bit_decimation2; break;
+		case 14: f->decode = mark5b_decode_4bitstream_1bit_decimation2; break;
+		case 15: f->decode = mark5b_decode_8bitstream_1bit_decimation2; break;
+		case 16: f->decode = mark5b_decode_16bitstream_1bit_decimation2; break;
+		case 17: f->decode = mark5b_decode_32bitstream_1bit_decimation2; break;
 
-		case 19: f->decode = mark5b_decode_2bitstream_2bit_oversamp2; break;
-		case 20: f->decode = mark5b_decode_4bitstream_2bit_oversamp2; break;
-		case 21: f->decode = mark5b_decode_8bitstream_2bit_oversamp2; break;
-		case 22: f->decode = mark5b_decode_16bitstream_2bit_oversamp2; break;
-		case 23: f->decode = mark5b_decode_32bitstream_2bit_oversamp2; break;
-		case 24: /* special case needing explicit oversamp4 case */
-			if(oversamp == 4)
-			 f->decode = mark5b_decode_1bitstream_1bit_oversamp4; 
-			else if(oversamp % 8 == 0)
-			 f->decode = mark5b_decode_1bitstream_1bit_oversamp8; 
+		case 19: f->decode = mark5b_decode_2bitstream_2bit_decimation2; break;
+		case 20: f->decode = mark5b_decode_4bitstream_2bit_decimation2; break;
+		case 21: f->decode = mark5b_decode_8bitstream_2bit_decimation2; break;
+		case 22: f->decode = mark5b_decode_16bitstream_2bit_decimation2; break;
+		case 23: f->decode = mark5b_decode_32bitstream_2bit_decimation2; break;
+		case 24: /* special case needing explicit decimation4 case */
+			if(decimation == 4)
+			 f->decode = mark5b_decode_1bitstream_1bit_decimation4; 
+			else if(decimation % 8 == 0)
+			 f->decode = mark5b_decode_1bitstream_1bit_decimation8; 
 			break;
-		case 25: f->decode = mark5b_decode_2bitstream_1bit_oversamp4; break;
-		case 26: f->decode = mark5b_decode_4bitstream_1bit_oversamp4; break;
-		case 27: f->decode = mark5b_decode_8bitstream_1bit_oversamp4; break;
-		case 28: f->decode = mark5b_decode_16bitstream_1bit_oversamp4; break;
-		case 29: f->decode = mark5b_decode_32bitstream_1bit_oversamp4; break;
+		case 25: f->decode = mark5b_decode_2bitstream_1bit_decimation4; break;
+		case 26: f->decode = mark5b_decode_4bitstream_1bit_decimation4; break;
+		case 27: f->decode = mark5b_decode_8bitstream_1bit_decimation4; break;
+		case 28: f->decode = mark5b_decode_16bitstream_1bit_decimation4; break;
+		case 29: f->decode = mark5b_decode_32bitstream_1bit_decimation4; break;
 
-		case 31: f->decode = mark5b_decode_2bitstream_2bit_oversamp4; break;
-		case 32: f->decode = mark5b_decode_4bitstream_2bit_oversamp4; break;
-		case 33: f->decode = mark5b_decode_8bitstream_2bit_oversamp4; break;
-		case 34: f->decode = mark5b_decode_16bitstream_2bit_oversamp4; break;
-		case 35: f->decode = mark5b_decode_32bitstream_2bit_oversamp4; break;
+		case 31: f->decode = mark5b_decode_2bitstream_2bit_decimation4; break;
+		case 32: f->decode = mark5b_decode_4bitstream_2bit_decimation4; break;
+		case 33: f->decode = mark5b_decode_8bitstream_2bit_decimation4; break;
+		case 34: f->decode = mark5b_decode_16bitstream_2bit_decimation4; break;
+		case 35: f->decode = mark5b_decode_32bitstream_2bit_decimation4; break;
 	}
 
 	if(f->decode == 0)

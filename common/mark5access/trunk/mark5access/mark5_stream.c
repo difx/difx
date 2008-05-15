@@ -98,7 +98,7 @@ static int set_format(struct mark5_stream *ms,
 		ms->Mbps = f->Mbps;
 		ms->nchan = f->nchan;
 		ms->nbit = f->nbit;
-		ms->oversamp = f->oversamp;
+		ms->decimation = f->decimation;
 
 		if(!f->init_format || !f->decode || !f->gettime)
 		{
@@ -124,7 +124,7 @@ static int copy_format(const struct mark5_stream *ms,
 	mf->Mbps        = ms->Mbps;
 	mf->nchan       = ms->nchan;
 	mf->nbit        = ms->nbit;
-	mf->oversamp	= ms->oversamp;
+	mf->decimation	= ms->decimation;
 
 	return 0;
 }
@@ -325,7 +325,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	double framens;
 	struct mark5_format *f;
 	enum Mark5Format F;
-	int oversamp = 1;
+	int decimation = 1;
 	int r;
 
 	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
@@ -341,7 +341,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000*((20000*a*c*d)/b);
 		if(r > 4)
 		{
-			oversamp = e;
+			decimation = e;
 		}
 		ntrack = a*c*d;
 	}
@@ -358,7 +358,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000*((20000*a*c*d)/b);
 		if(r > 4)
 		{
-			oversamp = e;
+			decimation = e;
 		}
 		ntrack = a*c*d;
 	}
@@ -375,7 +375,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000.0*(8.0*databytes/(double)b);
 		if(r > 3)
 		{
-			oversamp = e;
+			decimation = e;
 		}
 	}
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
@@ -391,7 +391,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000000000;
 		if(r > 3)
 		{
-			oversamp = e;
+			decimation = e;
 		}
 	}
 	else if(strncasecmp(formatname, "K5-", 3) == 0)
@@ -407,7 +407,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		framens = 1000000000;
 		if(r > 3)
 		{
-			oversamp = e;
+			decimation = e;
 		}
 	}
 	else
@@ -425,7 +425,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	f->databytes = databytes;
 	f->ntrack = ntrack;
 	f->framens = framens;
-	f->oversamp = oversamp;
+	f->decimation = decimation;
 
 	return f;
 }
@@ -791,7 +791,7 @@ int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data)
 		return -1;
 	}
 
-	q = ms->samplegranularity*ms->nchan*ms->nbit*ms->oversamp/8;
+	q = ms->samplegranularity*ms->nchan*ms->nbit*ms->decimation/8;
 	if(nbytes % q != 0)
 	{
 		return -1;

@@ -1,3 +1,6 @@
+Version 1.2.2
+* rename oversampling to decimation
+
 Version 1.2.1
 * add oversampling (factors 1, 2, 4, 8+) support to mark4 vlba mark5 formats
 
