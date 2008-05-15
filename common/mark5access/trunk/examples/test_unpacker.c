@@ -19,11 +19,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../mark5access/mark5_stream.h"
 
 int usage(const char *pgm)
 {
-	printf("Usage : %s <format> [<n>]\n", pgm);
+	printf("Usage : %s <format> [<n> [<offset>] ]\n", pgm);
+	printf("\n  <format> is something like VLBA1_4-128-8-2\n");
+	printf("\n  <n>      is samples to look at [default 32]\n");
+	printf("\n  <offset> is samples to slip [default 0]\n\n");
 
 	return 0;
 }
@@ -125,31 +129,31 @@ int main(int argc, char **argv)
 		}
 		if(i % 2 == 0)
 		{
-			strcat(line, "   . ");
+			strcat(line, "  . ");
 			for(c = 0; c < ms2->nchan; c++)
 			{
-				v = os2[c][i/2] == os1[c][i] ? ' ' : 'x';
-				sprintf(str, "%3.0f%c", os2[c][i/2], v);
+				v = os2[c][i/2] == os1[c][i] ? ' ' : '!';
+				sprintf(str, "%2.0f%c", os2[c][i/2], v);
 				strcat(line, str);
 			}
 		}
 		if(i % 4 == 0)
 		{
-			strcat(line, "  . ");
+			strcat(line, " . ");
 			for(c = 0; c < ms4->nchan; c++)
 			{
-				v = os4[c][i/4] == os1[c][i] ? ' ' : 'x';
-				sprintf(str, "%3.0f%c", os4[c][i/4], v);
+				v = os4[c][i/4] == os1[c][i] ? ' ' : '!';
+				sprintf(str, "%2.0f%c", os4[c][i/4], v);
 				strcat(line, str);
 			}
 		}
 		if(i % 8 == 0)
 		{
-			strcat(line, "  . ");
+			strcat(line, " . ");
 			for(c = 0; c < ms8->nchan; c++)
 			{
-				v = os8[c][i/8] == os1[c][i] ? ' ' : 'x';
-				sprintf(str, "%3.0f%c", os8[c][i/8], v);
+				v = os8[c][i/8] == os1[c][i] ? ' ' : '!';
+				sprintf(str, "%2.0f%c", os8[c][i/8], v);
 				strcat(line, str);
 			}
 		}
