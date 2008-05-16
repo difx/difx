@@ -351,7 +351,11 @@ foreach (@stations) {
       $format = 'MKV';
     }
     $framesize = 160000;
+  } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5B') {
+    $format = 'MARK5B';
+    $framesize = 10016;
   } else {
+    warn sprintf("Do not support %s\n", $stationmodes->{$_}->record_transport_type);
     $format = 'UNKNOWN';
   }
 
