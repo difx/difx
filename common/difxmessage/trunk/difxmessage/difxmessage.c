@@ -32,3 +32,14 @@ const char DifxStateStrings[][24] =
 	"Terminated",
 	"MpiDone"
 };
+
+/* Note! Keep this in sync with enum DifxMessageType in difxmessage.h */
+const char DifxMessageTypeStrings[][24] =
+{
+	"Unknown",
+	"DifxLoadMessage",
+	"DifxErrorMessage",
+	"Mark5StatusMessage",
+	"DifxStatusMessage",
+	"DifxInfoMessage"
+};

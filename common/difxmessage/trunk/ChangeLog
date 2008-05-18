@@ -1,3 +1,8 @@
 Version 0.1  20080311
 ~~~~~~~~~~~
 Initial version
+
+Version 0.2  20080518
+~~~~~~~~~~~
+Add XML parsing routines
+More structured document types

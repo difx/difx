@@ -42,20 +42,6 @@ enum Mk5State
 
 extern const char Mk5StateStrings[][24];
 
-typedef struct
-{
-	enum Mk5State state;
-	char vsnA[10];
-	char vsnB[10];
-	unsigned int status;
-	char activeBank;
-	int scanNumber;
-	char scanName[64];
-	long long position;	/* play pointer */
-	float rate;		/* Mbps */
-	double dataMJD;
-} DifxMessageMk5Status;
-
 /* Note! Keep this in sync with DifxStateStrings[][24] in difxmessage.c */
 enum DifxState
 {
@@ -72,6 +58,34 @@ enum DifxState
 
 extern const char DifxStateStrings[][24];
 
+/* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
+enum DifxMessageType
+{
+	DIFX_MESSAGE_UNKNOWN,
+	DIFX_MESSAGE_LOAD,
+	DIFX_MESSAGE_ERROR,
+	DIFX_MESSAGE_MARK5STATUS,
+	DIFX_MESSAGE_STATUS,
+	DIFX_MESSAGE_INFO,
+	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
+};
+
+extern const char DifxMessageTypeStrings[][24];
+
+typedef struct
+{
+	enum Mk5State state;
+	char vsnA[10];
+	char vsnB[10];
+	unsigned int status;
+	char activeBank;
+	int scanNumber;
+	char scanName[64];
+	long long position;	/* play pointer */
+	float rate;		/* Mbps */
+	double dataMJD;
+} DifxMessageMk5Status;
+
 typedef struct
 {
 	float cpuLoad;
@@ -79,8 +93,48 @@ typedef struct
 	int usedMemory;
 } DifxMessageLoad;
 
+typedef struct
+{
+	char message[1000];
+	int severity;
+} DifxMessageError;
+
+typedef struct
+{
+	enum DifxState state;
+	char message[1000];
+	double mjd;
+} DifxMessageStatus;
+
+typedef struct
+{
+	char message[1000];
+} DifxMessageInfo;
+
+typedef struct
+{
+	enum DifxMessageType type;
+	char from[32];
+	char to[32][32];
+	int nTo;
+	char identifier[32];
+	int mpiId;
+	union
+	{
+		DifxMessageMk5Status	mk5status;
+		DifxMessageLoad		load;
+		DifxMessageError	error;
+		DifxMessageStatus	status;
+		DifxMessageInfo		info;
+	} body;
+	int _xml_level;			/* internal use only */
+	char _xml_element[5][32];	/* internal use only */
+	int _xml_error_count;
+} DifxMessageGeneric;
+
 int difxMessageInit(int mpiId, const char *identifier);
 void difxMessagePrint();
+void difxMessageGetMulticastGroupPort(char *group, int *port);
 
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
@@ -93,6 +147,8 @@ int difxMessageSendDifxInfo(const char *infoMessage);
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
+
+int difxMessageParse(DifxMessageGeneric *G, const char *message);
 
 #ifdef __cplusplus
 }

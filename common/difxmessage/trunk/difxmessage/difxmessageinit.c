@@ -77,3 +77,9 @@ void difxMessagePrint()
 	printf("  identifier = %s / %d\n", difxMessageIdentifier, 
 		difxMessageMpiProcessId);
 }
+
+void difxMessageGetMulticastGroupPort(char *group, int *port)
+{
+	strcpy(group, difxMessageGroup);
+	*port = difxMessagePort;
+}
