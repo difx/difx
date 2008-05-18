@@ -1,3 +1,4 @@
+#include <string.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
@@ -14,9 +15,41 @@ static void *controlMultiListen(void *ptr)
 	port++;
 	sock = openMultiCastSocket(group, port);
 	
-	for(;;)
+	while(!D->dieNow)
 	{
 		n = MultiCastReceive(sock, message, 1999, from);
+
+		if(n > 0)
+		{
+			if(strncmp(message, "VSN?", 4) == 0)
+			{
+				Mk5Daemon_getModules(D);
+			}
+			else if(strncmp(message, "QUIT", 4) == 0)
+			{
+				D->dieNow = 1;
+			}
+			else if(strncmp(message, "LOAD", 4) == 0)
+			{
+				Mk5Daemon_loadMon(D);
+			}
+			else if(strncmp(message, "RESET", 5) == 0)
+			{
+				Mk5Daemon_resetMark5A(D);
+			}
+			else if(strncmp(message, "StartM5", 7) == 0)
+			{
+				Mk5Daemon_startMark5A(D);
+				printf("5");
+			}
+			else if(strncmp(message, "StopM5", 6) == 0)
+			{
+				Mk5Daemon_stopMark5A(D);
+				printf("6");
+			}
+		}
+
+		printf("c");fflush(stdout);
 	}
 
 	closeMultiCastSocket(sock);

@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <time.h>
+#include <signal.h>
 #include <difxmessage.h>
 #include <expat.h>
 #include "mk5daemon.h"
@@ -12,7 +14,11 @@ const char verdate[] = "2008 May 17";
 
 const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
+const char headNode[] = "swc000";
 
+int *signalDie = 0;
+typedef void (*sighandler_t)(int);
+sighandler_t oldsigintHandler;
 
 int usage(int argc, char **argv)
 {
@@ -42,39 +48,74 @@ Mk5Daemon *newMk5Daemon()
 	D->log = newLogger();
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 20;	/* seconds */
-	D->dieNow = 0;
+	gethostname(D->hostName, 32);
+	printf("[%s]", D->hostName);
+	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
+	Mk5Daemon_startControl(D);
+	pthread_mutex_init(&D->processLock, 0);
 
 	return D;
 }
 
 void deleteMk5Daemon(Mk5Daemon *D)
 {
+	signalDie = 0;
 	if(D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
+		Mk5Daemon_stopControl(D);
 		deleteLogger(D->log);
 		/* FIXME -- kill running processes */
 		free(D);
 	}
 }
 
+void sigintHandler(int j)
+{
+	printf("s");fflush(stdout);
+	if(signalDie)
+	{
+		*signalDie = 1;
+	}
+	signal(SIGINT, oldsigintHandler);
+}
+
 int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
+	time_t t, lastTime;
 
-	setuid(0);
+	//setuid(0);
 	difxMessageInit(-1, program);
 
 	D = newMk5Daemon();
 
-	for(;;)	/* program event loop */
+	oldsigintHandler = signal(SIGINT, sigintHandler);
+
+	lastTime = time(0);
+
+	while(!D->dieNow)	/* program event loop */
 	{
-		sleep(1);
+		t = time(0);
+		if(t != lastTime)
+		{
+			lastTime = t;
+			if(lastTime % D->loadMonInterval == 0)
+			{
+				Mk5Daemon_loadMon(D);
+				printf("t");
+			}
+			printf(".");fflush(stdout);
+		}
+
+		usleep(200000);
 	}
+	printf("x");fflush(stdout);
 
 	deleteMk5Daemon(D);
+	printf("y");fflush(stdout);
 
 	return 0;
 }

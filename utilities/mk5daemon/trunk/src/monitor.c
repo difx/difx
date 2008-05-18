@@ -13,9 +13,10 @@ static void *monitorMultiListen(void *ptr)
 	difxMessageGetMulticastGroupPort(group, &port);
 	sock = openMultiCastSocket(group, port);
 	
-	for(;;)
+	while(!D->dieNow)
 	{
 		n = MultiCastReceive(sock, message, 1999, from);
+		printf("m"); fflush(stdout);
 	}
 
 	closeMultiCastSocket(sock);

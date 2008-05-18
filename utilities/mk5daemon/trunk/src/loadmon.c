@@ -1,13 +1,14 @@
 #include <stdio.h>
+#include <string.h>
 #include <difxmessage.h>
+#include "mk5daemon.h"
 
-int Mk5Daemon_loadMon()
+int Mk5Daemon_loadMon(Mk5Daemon *D)
 {
 	char message[1024];
 	FILE *in;
 	float l1, l5, l15;
 	char line[100];
-	DifxMessageLoad load;
 	int memused=0, memtot=0;
 	char key[100];
 	int val;
@@ -52,9 +53,9 @@ int Mk5Daemon_loadMon()
 	}
 	fclose(in);
 	
-	load.cpuLoad = l1;
-	load.totalMemory = memtot;
-	load.usedMemory = memused;
+	D->load.cpuLoad = l1;
+	D->load.totalMemory = memtot;
+	D->load.usedMemory = memused;
 	
-	return difxMessageSendLoad(&load);
+	return difxMessageSendLoad(&D->load);
 }
