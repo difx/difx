@@ -124,6 +124,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	int n;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
+	dm.activeBank = ' ';
 
 	/* don't let the process type change while getting vsns */
 	pthread_mutex_lock(&D->processLock);

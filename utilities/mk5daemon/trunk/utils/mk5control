@@ -1,0 +1,47 @@
+#!/bin/env python
+
+from string import split, strip, find, upper, lower
+from sys import argv, exit
+from os import popen, getenv
+import socket
+
+def sendCommand(cmd, units):
+	src = socket.gethostname()
+	dest = ''
+	for u in units:
+		if len(u) == 2:
+			name = 'mark5fx' + u
+		elif len(u) == 3:
+			name = 'swc' + u
+		else:
+			name = u
+		dest += '<to>%s</to>' % name
+	message = \
+	  '<?xml version="1.0" encoding="UTF-8"?>\n' \
+	  '<difxMessage>' \
+	    '<header>' \
+	      '<from>%s</from>' \
+	      '%s' \
+	      '<mpiProcessId>-1</mpiProcessId>' \
+	      '<identifier>mk5control</identifier>' \
+	      '<type>DifxCommand</type>' \
+	    '</header>' \
+	    '<body>' \
+	      '<seqNumber>0</seqNumber>' \
+	      '<difxCommand>' \
+	        '<command>%s</command>' \
+	      '</difxCommand>' \
+	    '</body>' \
+	  '</difxMessage>' % (src, dest, cmd)
+
+	print message
+
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
+	sock.sendto(message, ('224.2.2.1', 50200))
+
+if len(argv) < 3:
+	print 'usage : %s <command> <machines>' % argv[0]
+	exit(0)
+
+sendCommand(argv[1], argv[2:])

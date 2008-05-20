@@ -7,7 +7,6 @@ mk5daemon_SOURCES = \
 	loadmon.c \
 	logger.c \
 	mark5a.c \
-	control.c \
 	monitor.c \
 	modules.c \
 	mk5daemon.c

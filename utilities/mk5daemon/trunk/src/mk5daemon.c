@@ -10,7 +10,7 @@
 
 const char program[] = "mk5daemon";
 const char version[] = "0.1";
-const char verdate[] = "2008 May 17";
+const char verdate[] = "2008 May 20";
 
 const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
@@ -49,10 +49,8 @@ Mk5Daemon *newMk5Daemon()
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 20;	/* seconds */
 	gethostname(D->hostName, 32);
-	printf("[%s]", D->hostName);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
-	Mk5Daemon_startControl(D);
 	pthread_mutex_init(&D->processLock, 0);
 
 	return D;
@@ -65,7 +63,6 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
-		Mk5Daemon_stopControl(D);
 		deleteLogger(D->log);
 		/* FIXME -- kill running processes */
 		free(D);
@@ -74,7 +71,6 @@ void deleteMk5Daemon(Mk5Daemon *D)
 
 void sigintHandler(int j)
 {
-	printf("s");fflush(stdout);
 	if(signalDie)
 	{
 		*signalDie = 1;
@@ -86,11 +82,16 @@ int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
 	time_t t, lastTime;
+	char logMessage[128];
 
 	//setuid(0);
 	difxMessageInit(-1, program);
 
 	D = newMk5Daemon();
+
+	sprintf(logMessage, "Starting %s ver. %s  %s\n",
+		program, version, verdate);
+	Logger_logData(D->log, logMessage);
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
 
@@ -105,17 +106,17 @@ int main(int argc, char **argv)
 			if(lastTime % D->loadMonInterval == 0)
 			{
 				Mk5Daemon_loadMon(D);
-				printf("t");
 			}
-			printf(".");fflush(stdout);
 		}
 
 		usleep(200000);
 	}
-	printf("x");fflush(stdout);
+
+	sprintf(logMessage, "Stopping %s ver. %s  %s\n",
+		program, version, verdate);
+	Logger_logData(D->log, logMessage);
 
 	deleteMk5Daemon(D);
-	printf("y");fflush(stdout);
 
 	return 0;
 }

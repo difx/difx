@@ -17,5 +17,6 @@ CFLAGS="${CFLAGS} ${DIFXMESSAGE_CFLAGS} ${STREAMSTOR_CFLAGS}"
 
 AC_OUTPUT([ \
 	Makefile \
-	src/Makefile\
+	src/Makefile \
+	utils/Makefile \
 ])

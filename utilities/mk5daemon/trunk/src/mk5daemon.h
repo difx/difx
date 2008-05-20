@@ -9,6 +9,7 @@ enum ProcessType
 	PROCESS_NONE = 0,
 	PROCESS_RESET,
 	PROCESS_MARK5,
+	PROCESS_DATASTREAM,
 	PROCESS_SSERASE
 };
 
@@ -33,8 +34,6 @@ int Mk5Daemon_loadMon(Mk5Daemon *D);
 void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
-void Mk5Daemon_startControl(Mk5Daemon *D);
-void Mk5Daemon_stopControl(Mk5Daemon *D);
 void Mk5Daemon_startMark5A(Mk5Daemon *D);
 void Mk5Daemon_stopMark5A(Mk5Daemon *D);
 void Mk5Daemon_resetMark5A(Mk5Daemon *D);
