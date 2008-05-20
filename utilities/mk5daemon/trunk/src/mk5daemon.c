@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
@@ -96,6 +97,12 @@ int main(int argc, char **argv)
 	oldsigintHandler = signal(SIGINT, sigintHandler);
 
 	lastTime = time(0);
+
+	if(strncasecmp(D->hostName, "mark5", 5) == 0)
+	{
+		sleep(15);
+		Mk5Daemon_startMark5A(D);
+	}
 
 	while(!D->dieNow)	/* program event loop */
 	{

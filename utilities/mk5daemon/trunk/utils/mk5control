@@ -1,15 +1,20 @@
 #!/bin/env python
 
-from string import split, strip, find, upper, lower
+from string import lower
 from sys import argv, exit
-from os import popen, getenv
+from os import getenv
 import socket
 
-def sendCommand(cmd, units):
+defaultDifxMessagePort = 50200
+defaultDifxMessageGroup = '224.2.2.1'
+
+def sendCommand(cmd, units, verbose):
 	src = socket.gethostname()
 	dest = ''
 	for u in units:
-		if len(u) == 2:
+		if lower(u) == 'all':
+			name = 'all'
+		elif len(u) == 2:
 			name = 'mark5fx' + u
 		elif len(u) == 3:
 			name = 'swc' + u
@@ -34,14 +39,24 @@ def sendCommand(cmd, units):
 	    '</body>' \
 	  '</difxMessage>' % (src, dest, cmd)
 
-	print message
+	if verbose:
+		print message
+
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultDifxMessagePort
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultDifxMessageGroup
 
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-	sock.sendto(message, ('224.2.2.1', 50200))
+	sock.sendto(message, (group, port))
 
 if len(argv) < 3:
 	print 'usage : %s <command> <machines>' % argv[0]
 	exit(0)
 
-sendCommand(argv[1], argv[2:])
+sendCommand(argv[1], argv[2:], False)
