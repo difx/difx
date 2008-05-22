@@ -1,8 +1,8 @@
 #!/bin/env python
 
 PROGRAM = 'startdifx'
-VERSION = '0.1'
-VERDATE = '20080330'
+VERSION = '0.2'
+VERDATE = '20080522'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"

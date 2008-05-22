@@ -10,10 +10,10 @@ from xml.parsers import expat
 from copy import deepcopy
 
 
-program = 'genmachines2'
+program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.8'
-verdate = '20080521'
+version = '0.9'
+verdate = '20080522'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'

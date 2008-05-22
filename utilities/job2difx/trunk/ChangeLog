@@ -89,6 +89,10 @@ Version 1.1
 
 genmachines
 ~~~~~~~~~~~
+Version 0.9
+* genmachines2 is now genmachines
+* the old genmachines is now genmachines.old and is not installed
+
 Version 0.7
 * Write meaningful, and correct, threads file
 * settable verbosity and overheadcores
