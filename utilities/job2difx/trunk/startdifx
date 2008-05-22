@@ -9,7 +9,7 @@ defaultgroup = "224.2.2.1"
 defaultport  = 50200
 defaultttl   = 3
 
-genmachines = 'genmachines2 -v'
+genmachines = 'genmachines -v'
 
 from sys import argv, exit
 from os import popen, getcwd, system, getenv
@@ -128,7 +128,7 @@ def run(filebase, machinespolicy, deletepolicy):
 if len(argv) < 2:
 	usage()
 
-machinespolicy = 0
+machinespolicy = 2
 deletepolicy = 0
 filebaselist = []
 
@@ -155,8 +155,11 @@ if len(filebaselist) < 1:
 
 if machinespolicy == 2:
 	filelist = ''
+	machlist = ''
 	for filebase in filebaselist:
 		filelist = filelist + ' ' + filebase + '.input'
+		machlist = machlist + ' ' + filebase + '.machines'
+	system('rm %s' % machlist)
 	system('%s %s' % (genmachines, filelist))
 	
 for filebase in filebaselist:

@@ -4,7 +4,6 @@ DIST_SUBDIRS = calcif
 
 dist_bin_SCRIPTS = \
 	genmachines \
-	genmachines2 \
 	getjobs \
 	job2difx \
 	jobdisks \

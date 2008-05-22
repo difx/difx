@@ -12,8 +12,12 @@ from copy import deepcopy
 
 program = 'genmachines2'
 author  = 'Walter Brisken'
-version = '0.7'
-verdate = '20080114'
+version = '0.8'
+verdate = '20080521'
+
+defaultDifxMessagePort = 50200
+defaultDifxMessageGroup = '224.2.2.1'
+
 
 def usage():
 	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
@@ -84,22 +88,58 @@ class Parser:
 	else:
 		return ['unknown', 'none', 'none', 'Unknown']
 
+def vsn_request():
+	src = socket.gethostname()
+	dest = '<to>mark5</to>'
+	cmd = 'getvsn'
+
+	message = \
+	  '<?xml version="1.0" encoding="UTF-8"?>\n' \
+	  '<difxMessage>' \
+	    '<header>' \
+	      '<from>%s</from>' \
+	      '%s' \
+	      '<mpiProcessId>-1</mpiProcessId>' \
+	      '<identifier>mk5control</identifier>' \
+	      '<type>DifxCommand</type>' \
+	    '</header>' \
+	    '<body>' \
+	      '<seqNumber>0</seqNumber>' \
+	      '<difxCommand>' \
+	        '<command>%s</command>' \
+	      '</difxCommand>' \
+	    '</body>' \
+	  '</difxMessage>' % (src, dest, cmd)
+
+	return message
+
 def getVsnsByMulticast(maxtime, modlist, verbose):
 	dt = 0.2
 	t = 0.0
 
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultDifxMessagePort
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultDifxMessageGroup
+
 	missing = deepcopy(modlist)
+
+	message = vsn_request()
 
 	# First send out a call for VSNs
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, 2)
-	sock.sendto("VSN?", ("224.2.2.1", 50201))
+	sock.sendto(message, (group, port))
 
 	# Now listen for responses, until either time runs out or we get all we need
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-	s.bind(('', 50200))
-	mreq = struct.pack("4sl", socket.inet_aton("224.2.2.1"), socket.INADDR_ANY)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 	s.settimeout(dt)
 	conflicts = []
