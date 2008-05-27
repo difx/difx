@@ -270,7 +270,7 @@ print INPUT "\n";
 @globalfreq = sort {return 0} @globalfreq;
 my $nfreq = scalar(@globalfreq);
 print INPUT "# FREQ TABLE #######!\n";
-printf INPUT "FREQ ENTRIES:     %3d\n", $nfreq;
+printf INPUT "FREQ ENTRIES:       %d\n", $nfreq;
 $count = 0;
 foreach (@globalfreq) {
   $_->index($count);
