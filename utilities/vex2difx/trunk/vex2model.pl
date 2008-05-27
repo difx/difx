@@ -157,6 +157,7 @@ BEGIN {
                Nt => 'NOTO' ,
                Tr => 'TORUN' ,
                Cm => 'CAMBG32M' ,
+	       Kk => 'KOKEE' ,
               );
 }
 
