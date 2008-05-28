@@ -10,6 +10,7 @@ sub vexant2calc($);
 sub vexant2clock ($);
 sub vexant2window ($);
 sub count2str ($;$);
+sub count2str2 ($$;$);
 sub getTsys ($$);
 sub findchanmatch ($$$);
 sub arraygrep ($@);
@@ -35,18 +36,21 @@ my $input = undef;
 my $blockspersend = undef;
 my $guardblock = 1;
 my $autocorr = 1;
-my $outputformat = 'RPFITS';
+my $swin = 0;
 my $pulsar = 0;
 my $databufferfactor = 256;
 my $numdatasegments = 16;
 my $atca = 'WXXX';
 my $new = 0;
+my $perth = 0;
 my @activestations = ();
 
+
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
-	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto,
+	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
-	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new);
+	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
+	   'swin'=>\$swin, 'perth'=>\$perth);
 
 $antnames{At} = 'CAT' . uc($atca);
 
@@ -55,6 +59,16 @@ if (@ARGV!=1 && @ARGV!=2) {
 }
 
 $quadf = 0 if ($postf);
+$new = 1 if ($perth);
+
+my ($outputformat, $filetype);
+if ($swin) {
+  $outputformat = 'SWIN';
+  $filetype = 'difx';
+} else {
+  $outputformat = 'RPFITS';
+  $filetype = 'rpf';
+}
 
 my $vexname = shift;
 
@@ -83,7 +97,7 @@ my @scans = $vex->sched;
 my $sched_start = $scans[0]->start;
 my $sched_stop = $scans[0]->stop;
 
-my ($count, $countstr);
+my ($count, $countstr, $countstr2, $offset);
 
 # Modes used in the schedule
 my %modes = ();
@@ -180,7 +194,7 @@ if ($new) {
 }
 print INPUT<<EOF;
 OUTPUT FORMAT:      $outputformat
-OUTPUT FILENAME:    $pwd/${exper}.rpf
+OUTPUT FILENAME:    $pwd/${exper}.$filetype
 
 EOF
 
@@ -200,6 +214,10 @@ CHANNELS TO AVERAGE:1
 OVERSAMPLE FACTOR:  1
 EOF
 }
+if ($perth) {
+  print INPUT "DECIMATION FACTOR:  1";
+}
+
 print INPUT<<EOF;
 BLOCKS PER SEND:    $blockspersend
 GUARD BLOCKS:       $guardblock
@@ -268,7 +286,7 @@ print INPUT "\n";
 @globalfreq = sort {return 0} @globalfreq;
 my $nfreq = scalar(@globalfreq);
 print INPUT "# FREQ TABLE #######!\n";
-printf INPUT "FREQ ENTRIES:     %3d\n", $nfreq;
+printf INPUT "FREQ ENTRIES:       %d\n", $nfreq;
 $count = 0;
 foreach (@globalfreq) {
   $_->index($count);
@@ -439,10 +457,13 @@ EOF
     } else {
       $npol = 1;
     }
+    $countstr = count2str($ifreq);
+    $countstr2 = count2str2($ifreq, "(us)", 9);
+    $offset = '0.000';
 print INPUT<<EOF;
-FREQ TABLE INDEX $ifreq: $index
-CLK OFFSET $ifreq (us):  0.000
-NUM POLS $ifreq:         $npol
+FREQ TABLE INDEX $countstr$index
+CLK OFFSET $countstr2$offset
+NUM POLS $countstr        $npol
 EOF
     $ifreq++;
   }
@@ -451,9 +472,11 @@ EOF
   foreach (@localfreq) {
     my $index = $_->index;
     my $pol = $_->pol;
+    my $ib1 = count2str2($count, "POL", 9);
+    my $ib2 = count2str2($count, "INDEX", 9);
     print INPUT<<EOF;
-INPUT BAND $count POL:   $pol
-INPUT BAND $count INDEX: $index
+INPUT BAND $ib1$pol
+INPUT BAND $ib2$index
 EOF
     $_->globalindex($_->index); # Re-index for baseline selection
     $_->index($count);
@@ -600,7 +623,14 @@ sub count2str ($;$) {
   my ($count, $ndig) = @_;
   $ndig = 3 if (!defined $ndig);
   my $format = sprintf('%%-%ds', $ndig);
-  return sprintf($format, sprintf("%d:", $_[0]));
+  return sprintf($format, sprintf("%d:", $count));
+}
+
+sub count2str2 ($$;$) {
+  my ($count, $extra, $ndig) = @_;
+  $ndig = 3 if (!defined $ndig);
+  my $format = sprintf('%%-%ds', $ndig);
+  return sprintf($format, sprintf("%d %s:", $count, $extra));
 }
 
 sub getTsys ($$) {
@@ -796,7 +826,7 @@ sub vexant2window ($) {
   if (exists $anttcpwindow{$ant}) {
     return $anttcpwindow{$ant};
   } else {
-    return -1;
+    return 0;
   }
 }
 
