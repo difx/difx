@@ -468,7 +468,7 @@ void Core::receivedata(int index, bool * terminate)
     procslots[index].keepprocessing = false;
     return; //note return here!!!
   }
-
+  //cout << "Core " << mpiid << " is receiving time " << procslots[index].offsets[0] << ", " << procslots[index].offsets[1] << endl;
   //work out if the source has changed, and if so, whether we need to change the modes and baselines
   currentconfigindex = config->getConfigIndex(procslots[index].offsets[0]);
   if(procslots[index].configindex != currentconfigindex)

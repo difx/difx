@@ -177,7 +177,7 @@ void Visibility::updateTime()
   }
   if(configindex != currentconfigindex && currentstartseconds < executeseconds)
   {
-    changeConfig(currentconfigindex);
+    changeConfig(configindex);
   }
 }
 
@@ -503,11 +503,12 @@ void Visibility::writedata()
         }
       }
     }
-    cout << "Done calculating weight sums" << endl;
+    int runto = (config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++) {
-        for(int k=0;k<(config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);k++)
+        for(int k=0;k<runto;k++) {
             binscales[i][k][j].re = binscales[i][k][j].im = binweightsums[i][j][k] / binweightdivisor[k];
+        }
       }
     }
     cout << "Done calculating scales" << endl;
@@ -913,7 +914,8 @@ void Visibility::changeConfig(int configindex)
       for(int i=0;i<config->getFreqTableLength();i++) {
         for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++)
           vectorFree(binweightsums[i][j]);
-        for(int j=0;j<config->scrunchOutputOn(configindex)?1:config->getNumPulsarBins(configindex);j++)
+        int runto = config->scrunchOutputOn(currentconfigindex)?1:config->getNumPulsarBins(currentconfigindex);
+        for(int j=0;j<runto;j++)
           vectorFree(binscales[i][j]);
         vectorFree(pulsarbins[i]);
         delete [] binweightsums[i];

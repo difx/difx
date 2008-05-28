@@ -94,6 +94,9 @@ void DataStream::initialise()
     //set up all the parameters in this bufferinfo slot
     updateConfig(i);
     bufferinfo[i].numsent = 0;
+    bufferinfo[i].seconds = 0;
+    bufferinfo[i].nanoseconds = 0;
+    bufferinfo[i].validbytes = 0;
     bufferinfo[i].datarequests = new MPI_Request[maxsendspersegment];
     bufferinfo[i].controlrequests = new MPI_Request[maxsendspersegment];
     bufferinfo[i].controlbuffer = new f64*[maxsendspersegment];
@@ -167,6 +170,7 @@ void DataStream::execute()
           cerr << "Error copying in the DataStream data buffer!!!" << endl;
       }
 
+      //cout << "Datastream " << mpiid << " is sending time " << offsetsec << ", " << offsetns << " to core " << targetcore << endl;
       if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] == -1.0)
       {
         //bad or no data, don't waste time sending full length of junk
@@ -541,16 +545,19 @@ void DataStream::loopfileread()
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);
   filesread[bufferinfo[0].configindex]++;
-  diskToMemory(numread++);
-  diskToMemory(numread++);
+  if(keepreading) {
+    diskToMemory(numread++);
+    diskToMemory(numread++);
   perr = pthread_mutex_lock(&(bufferlock[numread]));
   if(perr != 0)
     cerr << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
+  }
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
     cerr << "Datastream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
-  diskToMemory(numread++);
+  if(keepreading)
+    diskToMemory(numread++);
 
   lastvalidsegment = (numread-1)%numdatasegments;
   while((bufferinfo[lastvalidsegment].configindex < 0 || filesread[bufferinfo[lastvalidsegment].configindex] <= confignumfiles[bufferinfo[lastvalidsegment].configindex]) && keepreading)
@@ -604,9 +611,11 @@ void DataStream::loopfileread()
   }
   if(input.is_open())
     input.close();
-  perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
-  if(perr != 0)
-    cerr << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+  if(numread > 0) {
+    perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
+    if(perr != 0)
+      cerr << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+  }
 
   cout << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
