@@ -38,13 +38,18 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 		  "<cpuLoad>%4.2f</cpuLoad>"
 		  "<totalMemory>%d</totalMemory>"
 		  "<usedMemory>%d</usedMemory>"
+		  "<netRXRate>%d</netRXRate>"
+		  "<netTXRate>%d</netTXRate>"
 		"</difxLoad>",
 
 		load->cpuLoad,
 		load->totalMemory,
-		load->usedMemory);
+		load->usedMemory,
+		load->netRXRate,
+		load->netTXRate);
 
-	sprintf(message, difxMessageXMLFormat, "DifxLoadMessage", 
+	sprintf(message, difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_LOAD],
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);
@@ -65,7 +70,8 @@ int difxMessageSendDifxError(const char *errorMessage, int severity)
 		errorMessage, 
 		severity);
 
-	sprintf(message, difxMessageXMLFormat, "DifxErrorMessage", 
+	sprintf(message, difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_ERROR],
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);
@@ -139,7 +145,8 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 		mk5status->rate,
 		mk5status->dataMJD);
 
-	sprintf(message, difxMessageXMLFormat, "Mark5StatusMessage", 
+	sprintf(message, difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);
@@ -163,7 +170,8 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 		stateMessage,
 		visMJD);
 
-	sprintf(message, difxMessageXMLFormat, "DifxStatusMessage", 
+	sprintf(message, difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_STATUS],
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);
@@ -182,7 +190,28 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 
 		infoMessage);
 
-	sprintf(message, difxMessageXMLFormat, "DifxInfoMessage", 
+	sprintf(message, difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_INFO],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxCommand(const char *command)
+{
+	char message[1000];
+	char body[700];
+
+	sprintf(body,
+		
+		"<difxCommand>"
+		  "<command>%s</command>"
+		"</difxCommand>",
+
+		command);
+
+	sprintf(message, difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
 		difxMessageSequenceNumber++, body);
 	
 	return difxMessageSend(message);

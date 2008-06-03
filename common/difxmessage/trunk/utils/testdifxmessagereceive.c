@@ -11,6 +11,7 @@ int main(int argc, char **argv)
 	char message[1024], from[32];
 	time_t t;
 	char timestr[32];
+	DifxMessageGeneric G;
 
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
@@ -27,6 +28,8 @@ int main(int argc, char **argv)
 			continue;
 		}
 		message[l] = 0;
+		difxMessageParse(&G, message);
+		difxMessageGenericPrint(&G);
 		if(strncmp(message, "exit", 4) == 0)
 		{
 			break;
