@@ -580,12 +580,15 @@ static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 
 	if(D->inputFileVersion == 0)
 	{
-		scale = D->nOutChan*D->specAvg/(3.125*D->nInChan);
+		scale = 7.15*D->nOutChan*D->specAvg/(3.125*D->nInChan);
 	}
 	else
 	{
-		scale = 1.0/(D->chanBW*6.25e6*
-			D->config[0].tInt*D->specAvg);
+		scale = 7.15/(D->chanBW*6.25e6*D->config[0].tInt*D->specAvg);
+	}
+	if(D->quantBits == 2)
+	{
+		scale /= (3.3359*3.3359);
 	}
 
 	if(s > 0.0)
