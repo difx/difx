@@ -10,43 +10,35 @@ from xml.parsers import expat
 from copy import deepcopy
 import curses
 
-program = 'mk5mon'
+program = 'cpumon'
 author  = 'Walter Brisken'
 version = '0.1'
-verdate = '20080500'
+verdate = '20080604'
 
 def usage():
 	exit(1)
 
-class Mk5state:
+class DifxLoad:
 
 	def __init__(self):
+		self.cpuLoad = 0.0
+		self.totalMemory = 0
+		self.usedMemory = 0
+		self.netRXRate = 0
+		self.netTXRate = 0
 		self.ok    = False
 		self.pid   = 0
 		self.id    = ''
 		self.mk5   = ''
 		self.seq   = 0
-		self.vsnA  = 'none'
-		self.vsnB  = 'none'
-		self.bank  = ' '
-		self.state = 'Unknown'
-		self.scan  = 0
-		self.name  = ''
-		self.pos   = 0L
-		self.rate  = 0.0
-		self.date  = 0.0
 
 	def getstring(self):
 		if self.ok:
-			b1 = ' '
-			b2 = ' '
-			if self.bank == 'A':
-				b1 = '*'
-			elif self.bank == 'B':
-				b2 = '*'
-			str = '%10s %c%8s %c%8s %14s %7.2f %11d %3d %15s %12.6f ' % \
-				(self.mk5, b1, self.vsnA, b2, self.vsnB, self.state, \
-				 self.rate, self.pos, self.scan, self.name, self.date)
+			rx = self.netRXRate*8./1000000
+			tx = self.netTXRate*8./1000000
+			str = '%10s %4.2f  %8d/%-8d  %8.4f  %8.4f' % \
+				(self.mk5, self.cpuLoad, self.usedMemory, \
+					self.totalMemory, rx, tx)
 		else:
 			str = ''
 		return str
@@ -61,7 +53,7 @@ class Parser:
 		self._parser.StartElementHandler = self.start
 		self._parser.EndElementHandler = self.end
 		self._parser.CharacterDataHandler = self.data
-		self.info = Mk5state()
+		self.info = DifxLoad()
 		self.tmp = ''
 
 	def feed(self, data):
@@ -78,34 +70,20 @@ class Parser:
 		pass
 
 	def end(self, tag):
-		if tag == 'mark5Status':
+		if tag == 'difxLoad':
 			self.info.ok = True
-		if tag == 'bankAVSN':
-			if len(self.tmp) != 8:
-				self.info.vsnA = 'none'
-			else:
-				self.info.vsnA = upper(self.tmp)
-		if tag == 'bankBVSN':
-			if len(self.tmp) != 8:
-				self.info.vsnB = 'none'
-			else:
-				self.info.vsnB = upper(self.tmp)
 		if tag == 'from':
 			self.info.mk5 = lower(self.tmp)
-		if tag == 'state':
-			self.info.state = self.tmp
-		if tag == 'playRate':
-			self.info.rate = float(self.tmp)
-		if tag == 'dataMJD':
-			self.info.date = float(self.tmp)
-		if tag == 'pos':
-			self.info.pos = int(self.tmp)
-		if tag == 'scanNumber':
-			self.info.scan = int(self.tmp)
-		if tag == 'scanName':
-			self.info.name = self.tmp
-		if tag == 'activeBank':
-			self.info.bank = self.tmp
+		if tag == 'cpuLoad':
+			self.info.cpuLoad = float(self.tmp)
+		if tag == 'totalMemory':
+			self.info.totalMemory = int(self.tmp)
+		if tag == 'usedMemory':
+			self.info.usedMemory = int(self.tmp)
+		if tag == 'netRXRate':
+			self.info.netRXRate = int(self.tmp)
+		if tag == 'netTXRate':
+			self.info.netTXRate = int(self.tmp)
 
 	def data(self, data):
 		self.tmp = data
@@ -188,30 +166,5 @@ def listen():
 		d.newdata([machine, str])
 	d.close()
 
-
-def readmachines(machinesfile, verbose):
-	machines = []
-	cores = []
-	ismk5 = {}
-	lines = open(machinesfile).readlines()
-	for l in lines:
-		l = split(strip(l), '#')[0]
-		s = split(l)
-		if len(s) >= 2:
-			machines.append(s[0])
-			cores.append(int(s[1]))
-			if len(s) >= 3:
-				ismk5[s[0]] = int(s[2])
-			else:
-				if s[0][:5] == 'mark5':
-					ismk5[s[0]] = 1
-				else:
-					ismk5[s[0]] = 0
-	if verbose > 1:
-		print 'MACHINES = ', machines
-		print 'CORES    = ', cores
-		print 'IS MK5   = ', ismk5
-
-	return machines,cores,ismk5
 
 listen()
