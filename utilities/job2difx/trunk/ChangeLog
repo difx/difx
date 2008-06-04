@@ -124,3 +124,7 @@ startdifx
 ~~~~~~~~~
 Version 0.1
 * First version
+Version 0.2
+* Record execute time
+* Fancier mpirun call
+* Run calcif if necessary

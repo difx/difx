@@ -15,6 +15,7 @@ from sys import argv, exit
 from os import popen, getcwd, system, getenv
 from os.path import isfile, isdir
 from string import split, strip
+from time import time
 import socket
 
 def usage():
@@ -33,6 +34,8 @@ def usage():
 	print '          will run genmachines even if not needed\n'
 	print '  -n or --nomachines'
 	print '          will not run genmachines, even if needed [default]\n'
+	print '  -u or --dont-calc'
+	print '          will not run calcif, even if needed\n'
 	print '<jobbaseX> is the file prefix for a DiFX input file (not including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
 	print 'can be used to override the default group/port of %s/%d\n' % \
@@ -92,7 +95,7 @@ def domachines(filebase, machinespolicy):
 			return 0
 	return len(open(fn).readlines())
 
-def run(filebase, machinespolicy, deletepolicy):
+def run(filebase, machinespolicy, deletepolicy, makeuvw):
 	out = popen('which mpifxcorr').readlines()
 	if len(out) != 1:
 		return 'Error: mpifxcorr not found'
@@ -102,7 +105,10 @@ def run(filebase, machinespolicy, deletepolicy):
 		return 'Error: input file %s.input not found' % filebase
 	
 	if not isfile(filebase+'.uvw') or not isfile(filebase+'.delay'):
-		return 'Error: model not available for %s' % filebase
+		if makeuvw and isfile(filebase+'.calc'):
+			system('calcif %s.calc' % filebase)
+		else:
+			return 'Error: model not available for %s' % filebase
 	
 	if isdir(filebase+'.difx') or isfile(filebase+'.difx'):
 		if deletepolicy == 1:
@@ -116,11 +122,14 @@ def run(filebase, machinespolicy, deletepolicy):
 	if np <= 0:
 		return 'Error: %s.machines not found' % filebase
 
-	cmd = 'mpirun -np %d --bynode --hostfile %s.machines mpifxcorr %s.input' % (np, filebase, filebase)
+	cmd = 'mpirun -np %d --bynode --hostfile %s.machines --mca btl ^udapl,openib --mca mpi_yield_when_idle 1  mpifxcorr %s.input' % (np, filebase, filebase)
 
 	sendmessage(filebase, 'Spawning', 'Spawning %d processes' % np)
 	print 'Executing: ', cmd
+	t0 = time()
 	system(cmd)
+	t1 = time()
+	print 'Elapsed time (s) =', t1-t0
 	sendmessage(filebase, 'MpiDone', '')
 
 	return None
@@ -130,6 +139,7 @@ if len(argv) < 2:
 
 machinespolicy = 2
 deletepolicy = 0
+makeuvw = True
 filebaselist = []
 
 for a in argv[1:]:
@@ -144,6 +154,8 @@ for a in argv[1:]:
 			machinespolicy = 0
 		elif a == '-f' or a == '--force':
 			deletepolicy = 1
+		elif a == '-u' or a == '--dont-calc':
+			makeuvw = False
 	else:
 		if a[0] == '/':
 			filebaselist.append(a)
@@ -163,7 +175,7 @@ if machinespolicy == 2:
 	system('%s %s' % (genmachines, filelist))
 	
 for filebase in filebaselist:
-	v = run(filebase, machinespolicy, deletepolicy)
+	v = run(filebase, machinespolicy, deletepolicy, makeuvw)
 
 	if v != None:
 		sendmessage(filebase, 'ABORTED', v)
