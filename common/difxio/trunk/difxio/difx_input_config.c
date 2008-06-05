@@ -159,7 +159,18 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	}
 
 	dc = D->config + configId;
-	datastreamId = dc->datastreamId[antennaId];
+	for(datastreamId = 0; datastreamId < dc->nDatastream; datastreamId++)
+	{
+		if(antennaId == dc->datastreamId[datastreamId])
+		{
+			break;
+		}
+	}
+	if(datastreamId == dc->nDatastream)
+	{
+		return -4;
+	}
+
 	ds = D->datastream + datastreamId;
 
 	if(recChan >= ds->nRecChan)

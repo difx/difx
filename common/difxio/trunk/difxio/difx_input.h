@@ -412,6 +412,9 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId);
+int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
+int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
+	int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 
 #endif

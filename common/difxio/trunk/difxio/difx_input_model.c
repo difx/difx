@@ -85,7 +85,10 @@ void deleteDifxModelArray(DifxModel **dm, int nAntenna)
 void printDifxModel(const DifxModel *dm)
 {
 	printf("    DifxModel : %p\n", dm);
-	printf("      U, V, W = %f %f %f m\n", dm->u, dm->v, dm->w);
-	printf("      Delay   = %f us\n", dm->t);
+	if(dm)
+	{
+		printf("      U, V, W = %f %f %f m\n", dm->u, dm->v, dm->w);
+		printf("      Delay   = %f us\n", dm->t);
+	}
 }
 

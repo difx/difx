@@ -2386,9 +2386,9 @@ DifxInput *loadDifxInput(const char *filePrefix)
 }
 
 /* return -1 if no suitable source found */
-int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
+int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 {
-	int s;
+	int scanId;
 
 	if(!D)
 	{
@@ -2400,56 +2400,89 @@ int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
 		return -1;
 	}
 
-	for(s = 0; s < D->nScan; s++)
+	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
-		if(mjd < D->scan[s].mjdEnd && D->scan[s].jobId == jobId)
+		if(mjd < D->scan[scanId].mjdEnd && 
+		   D->scan[scanId].jobId == jobId)
 		{
-			return D->scan[s].sourceId;
+			return scanId;
 		}
 	}
 
 	return -1;
 }
 
-/* return -1 if no suitable source found */
-int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
+/* return -1 if no suitable scan found */
+int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId)
 {
-	int a, c, d, s;
+	int ant, c, scanId;
+	const DifxConfig *config;
 
 	if(!D)
 	{
 		return -1;
 	}
 
-	for(s = 0; s < D->nScan; s++)
+	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
-		if(D->scan[s].nAntenna <= antennaId)
+		c = D->scan[scanId].configId;
+		if(c < 0)
 		{
 			continue;
 		}
-		if(mjd <  D->scan[s].mjdEnd   &&
-		   mjd >= D->scan[s].mjdStart &&
-		   D->scan[s].model[antennaId] != 0)
+		config = D->config + c;
+		for(ant = 0; ant < D->scan[scanId].nAntenna; ant++)
 		{
-			c = D->scan[s].configId;
-			if(c < 0)
+			if(antennaId == config->datastreamId[ant])
 			{
-				continue;
+				break;
 			}
-			for(d = 0; d < D->config[c].nDatastream; d++)
-			{
-				a = D->datastream[d].antennaId;
-				
-				if(a == antennaId)
-				{
-					return D->scan[s].sourceId;
-				}
-			}
+		}
+		if(ant == D->scan[scanId].nAntenna)
+		{
+			continue;
+		}
+		if(mjd <  D->scan[scanId].mjdEnd   &&
+		   mjd >= D->scan[scanId].mjdStart &&
+		   D->scan[scanId].model[ant] != 0)
+		{
+			return scanId;
 		}
 	}
 
 	return -1;
+}
+
+int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
+{
+	int scanId;
+
+	scanId = DifxInputGetScanIdByJobId(D, mjd, jobId);
+	if(scanId < 0)
+	{
+		return -1;
+	}
+	else
+	{
+		return D->scan[scanId].sourceId;
+	}
+}
+
+int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
+	int antennaId)
+{
+	int scanId;
+
+	scanId = DifxInputGetSourceIdByAntennaId(D, mjd, antennaId);
+	if(scanId < 0)
+	{
+		return -1;
+	}
+	else
+	{
+		return D->scan[scanId].sourceId;
+	}
 }
 
 /* return 0-based index of antName, or -1 if not in array */

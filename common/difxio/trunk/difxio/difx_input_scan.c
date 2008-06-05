@@ -117,36 +117,12 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 
 	/* figure out how many antennas needed in this scan */
 	dest->nAntenna = src->nAntenna;
-	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
-	{
-		if(antennaIdRemap)
-		{
-			destAntenna = antennaIdRemap[srcAntenna];
-		}
-		else
-		{
-			destAntenna = srcAntenna;
-		}
-		if(destAntenna+1 > dest->nAntenna)
-		{
-			dest->nAntenna = destAntenna+1;
-		}
-	}
 
 	/* allocate space for model info and copy from original. */
 	dest->model = (DifxModel **)calloc(dest->nAntenna, sizeof(DifxModel *));
 	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 	{
-		if(antennaIdRemap)
-		{
-			destAntenna = antennaIdRemap[srcAntenna];
-		}
-		else
-		{
-			destAntenna = srcAntenna;
-		}
-
-		dest->model[destAntenna] = dupDifxModelColumn(
+		dest->model[srcAntenna] = dupDifxModelColumn(
 			src->model[srcAntenna], dest->nPoint);
 	}
 }

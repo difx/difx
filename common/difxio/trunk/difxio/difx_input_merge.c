@@ -173,7 +173,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		D2->flag, D2->nFlag, antennaIdRemap, &(D->nFlag));
 
 	/* print remappings */
-	if(verbose > 0)
+	if(verbose > 1)
 	{
 		printRemap("jobId", jobIdRemap, D2->nJob);
 		printRemap("freqId", freqIdRemap, D2->nFreq);
