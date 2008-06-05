@@ -38,6 +38,8 @@ static int DifxVisInitData(DifxVis *dv)
 	dv->weight = dv->record->data;
 	/* FIXME -- here add a similar thing for gateId */
 	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
+	dv->sourceId = -1;
+	dv->scanId = -1;
 
 	return 0;
 }
@@ -115,6 +117,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 	DifxVisStartGlob(dv);
 	dv->configId = -1;
 	dv->sourceId = -1;
+	dv->scanId = -1;
 	dv->baseline = -1;
 	dv->scale = 1.0;
 
@@ -296,7 +299,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N, index;
 	int a1, a2;
-	int bl, c, s;
+	int bl, c, scanId;
 	double mjd;
 	int changed = 0;
 	int nFloat, readSize;
@@ -364,22 +367,25 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		bl = (a1+1)*256 + (a2+1);
 	}
 
-	s = DifxInputGetSourceIdByAntennaId(dv->D, mjd, a1);
-	if(s < 0)
+	scanId = DifxInputGetScanIdByAntennaId(dv->D, mjd, a1);
+	if(scanId < 0)
 	{
 		nFloat = 2;
 		readSize = nFloat * dv->D->nInChan;
 		fread(dv->spectrum, sizeof(float), readSize, dv->in);
 		return -4;
 	}
-	if(verbose > 1 && s != dv->sourceId)
+
+	if(verbose >= 1 && scanId != dv->scanId)
 	{
-		printf("        MJD=%11.5f  Source change : Id=%d Name=%s\n", 
-			mjd, s, dv->D->source[s].name);
+		printf("        MJD=%11.5f jobId=%d Scan change : Id=%d "
+			"Source=%s\n", 
+			mjd, dv->jobId, scanId, dv->D->scan[scanId].name);
 	}
 
-	dv->sourceId = s;
-	configId = dv->D->source[dv->sourceId].configId;
+	dv->scanId = scanId;
+	dv->sourceId = dv->D->scan[scanId].sourceId;
+	configId = dv->D->scan[scanId].configId;
 	dv->freqId = dv->D->config[configId].freqId;
 
 	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];

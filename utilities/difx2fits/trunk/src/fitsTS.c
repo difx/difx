@@ -62,7 +62,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	float tSys[2][array_MAX_BANDS];
 	float tAnt[2][array_MAX_BANDS];
 	int nBand;
-	int configId, sourceId;
+	int configId, sourceId, scanId;
 	int i, j, nPol=0;
 	int bandId, polId, antId;
 	int nRecChan;
@@ -164,15 +164,19 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			/* discard records outside time range */
 			time -= refDay;
 			mjd = time + (int)(D->mjdStart);
-			sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, 
-				antId);
+			scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
+			if(scanId < 0)
+			{
+				continue;
+			}
+			sourceId = D->scan[scanId].sourceId;
 			if(sourceId < 0 || mjd < D->mjdStart || 
 				mjd > D->mjdStop)
 			{
 				continue;
 			}
 
-			configId = D->source[sourceId].configId;
+			configId = D->scan[scanId].configId;
 			freqId1 = D->config[configId].freqId + 1;
 
 			for(j = 0; j < 2; j++)

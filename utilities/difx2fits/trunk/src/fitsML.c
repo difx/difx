@@ -77,7 +77,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	char str[80];
-	int i, j, k, p, s, antId;
+	int a, i, j, k, p, s, antId;
 	double ppoly[array_MAX_BANDS][array_N_POLY];
 	double gpoly[array_N_POLY];
 	double prate[array_MAX_BANDS][array_N_POLY];
@@ -180,9 +180,10 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   {
 	      time = start + timeInt*p;
 	      
-	      for(antId = 0; antId < D->scan[s].nAntenna; antId++)
+	      for(a = 0; a < D->scan[s].nAntenna; a++)
 	      {
-		M = D->scan[s].model[antId];
+		M = D->scan[s].model[a];
+		antId = D->config[configId].datastreamId[a];
 
 		/* skip antennas with no model data */
 		if(M == 0)

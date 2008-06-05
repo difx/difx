@@ -33,6 +33,7 @@ typedef struct
 	int jobId;
 	int configId;
 	int sourceId;
+	int scanId;
 	int freqId;			/* DiFX configId or FITS freqId */
 	int bandId;			/* FITS IF index, 0-based */
 	int polId;			/* FITS polarization index, 0-based */

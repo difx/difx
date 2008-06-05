@@ -174,7 +174,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  GD -- pulsar gate delay   ");
+	printf("  GD -- pulsar gate duty    ");
 	fflush(stdout);
 	D = DifxInput2FitsGD(D, &keys, out);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
@@ -254,6 +254,11 @@ int main(int argc, char **argv)
 			{
 				writemodel = 0;
 			}
+			if(strcmp(argv[i], "--quiet") == 0 ||
+			   strcmp(argv[i], "-q") == 0)
+			{
+				verbose++;
+			}
 			if(strcmp(argv[i], "--verbose") == 0 ||
 			   strcmp(argv[i], "-v") == 0)
 			{
@@ -313,7 +318,7 @@ int main(int argc, char **argv)
 
 	for(i = 0; i < nBaseFile; i++)
 	{
-		if(verbose > 0)
+		if(verbose > 1)
 		{
 			printf("Loading %s\n", baseFile[i]);
 		}
@@ -347,7 +352,7 @@ int main(int argc, char **argv)
 		if(D)
 		{
 			D1 = D;
-			if(verbose > 0)
+			if(verbose > 1)
 			{
 				printf("Merging %s\n", baseFile[i]);
 			}
@@ -421,13 +426,22 @@ int main(int argc, char **argv)
 		if(DifxInput2FitsTables(D, &outfile, writemodel, 
 			scale, verbose) == D)
 		{
-			printf("\nConversion successful\n");
+			printf("\nConversion successful\n\n");
 		}
 		
 		fitsWriteClose(&outfile);
 	}
 
 	deleteDifxInput(D);
+
+	if(nBaseFile > 1)
+	{
+		printf("*** Warning -- combining multiple files with difx2fits "
+			"is still a beta\nfeature.  Please check your results "
+			"carefully and report problems to\n%s.  Please always "
+			"include the output\nof difx2fits -v -v with any "
+			"error report.  Have a groovy day.\n\n", author);
+	}
 	
 	return 0;
 }

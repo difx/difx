@@ -61,6 +61,7 @@ static int parsePulseCal(const char *line,
 	int n, p, i, v;
 	int polId, bandId, tone, state;
 	int pol, band;
+	int scanId;
 	double A;
 	float B, C;
 	double mjd;
@@ -100,12 +101,18 @@ static int parsePulseCal(const char *line,
 		return -2;
 	}
 
-	*sourceId = DifxInputGetSourceIdByAntennaId(D, mjd, *antId);
-	if(*sourceId < 0)	/* not in scan */
+	scanId = DifxInputGetScanIdByAntennaId(D, mjd, *antId);
+	if(scanId < 0)
+	{	
+		return -3;
+	}
+
+	*sourceId = D->scan[scanId].sourceId;
+	*configId = D->scan[scanId].configId;
+	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
 		return -3;
 	}
-	*configId = D->source[*sourceId].configId;
 	
 	for(pol = 0; pol < 2; pol++)
 	{
