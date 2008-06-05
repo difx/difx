@@ -12,7 +12,7 @@ my $p4pg;
 my $machinefile;
 my $numproc;
 my $evlbi = 0;
-my $offset = 1; # Offset in minutes for start time
+my $offset = 30; # Offset in minutes for start time
 
 GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 'np=i'=>\$numproc,
 	   'evlbi'=>\$evlbi, 'offset=i'=>\$offset);
@@ -79,7 +79,14 @@ checkfile('Thread file', $threads);
 
 if ($evlbi) {
   my $startmjd = now2mjd();
-  $startmjd = (floor($startmjd*24*60)+$offset)/(24*60);
+  {
+      my ($day, $month, $year, $ut) = mjd2cal($startmjd);
+      my $hms = turn2str($ut,'H',0);
+      print "Current time $hms\n";
+  }
+
+
+  $startmjd = ceil(($startmjd*24*60*60+$offset)/60)/(24*60);
 
   $mjd += $seconds/(60*60*24);
 
@@ -109,6 +116,7 @@ if ($evlbi) {
   } else {
     $outfile .= "-$filetime";
   }
+  printf "Will start at %02d:%02d:%02d\n", $hour, $min, $sec;
 
   # Rewrite the output file
   my $output;
@@ -138,6 +146,7 @@ if ($evlbi) {
   close(OUTPUT);
 
   $input = $output;
+
 }
 
 die "Rpfits file $outfile already exists!\n" if (-e $outfile);
@@ -149,6 +158,7 @@ if (defined $p4pg) {
   $options = "-machinefile $machinefile -np $numproc";
 }
 
+#my $exec = "/home/vlbi/difx/bin/mpirun --prefix /home/vlbi/difx $options $mpifxcorr $input";
 my $exec = "mpirun $options $mpifxcorr $input";
 print "$exec\n";
 system $exec;
