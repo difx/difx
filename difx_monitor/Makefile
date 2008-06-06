@@ -12,10 +12,12 @@ CXX = mpicxx -g
 CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
 F77 = g77
 
-IPPROOT = /usr/local/intel/ipp41/ia32_itanium/
+IPPROOT = /opt/intel/ipp/5.2/ia32
 
-INCS = -I$(CORR_ROOT)/mpifxcorr/src/ -I$(IPPROOT)/include -I$(CORR_ROOT)/vlba_utils/ -I/usr/local/pgplot
-LIBS = -L$(CORR_ROOT)/mpifxcorr/src/ -L$(IPPROOT)/sharedlib -L$(IPPROOT)/sharedlib/linux32 -L$(CORR_ROOT)/vlba_utils/ -lmpifxcorr -lvlba_utils -lippvm -lguide -lipps -lippcore -L/usr/local/pgplot -lcpgplot -lpgplot -L/usr/X11R6/lib -lX11 -lg2c
+CORR_ROOT=..
+
+INCS = -I$(CORR_ROOT)/mpifxcorr/branches/mark5-evlbi/src/ -I$(IPPROOT)/include -I$(CORR_ROOT)/common/mark5access/trunk -I/usr/local/pgplot
+LIBS = -L$(CORR_ROOT)/mpifxcorr/branches/mark5-evlbi/src -L$(IPPROOT)/sharedlib -L$(IPPROOT)/sharedlib/linux32 -L$(CORR_ROOT)/lib -lmark5access -lmpifxcorr -lippvm -lguide -lipps -lippcore -L/usr/local/pgplot -lcpgplot -lpgplot -L/usr/X11R6/lib -lX11 -lg2c -lpng
 
 difx_monitor : difx_monitor.cpp
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS)
