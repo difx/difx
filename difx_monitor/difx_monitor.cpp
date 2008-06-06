@@ -223,7 +223,7 @@ void plot_results()
           //plot something - data is from resultbuffer[at] to resultbuffer[at+numchannels+1]
           cout << "Plotting baseline " << i << ", freq " << j << ", bin " << b << ", polproduct " << k << endl;
 
-	  sprintf(pgplotname, "/home/ssi/cphillip/public_html/lbalive/lba-%d-f%d-p%d-b%d.gif/gif",
+	  sprintf(pgplotname, "lba-%d-f%d-p%d-b%d.png/png",
 		  i, j, k, b);
 	  status = cpgbeg(0,pgplotname,1,3);
 	  if (status != 1) {
@@ -290,11 +290,11 @@ void plot_results()
           cout << "Polarisation pair is " << firstpol << otherpol << endl;
 
 	if (j==0) {
-	  sprintf(pgplotname, "/home/ssi/cphillip/public_html/lbalive/lba-auto%d-b%d.gif/gif",
+	  sprintf(pgplotname, "lba-auto%d-b%d.png/png",
 		  i, k);
 	  status = cpgbeg(0,pgplotname,1,1);
 	} else {
-	  sprintf(pgplotname, "/home/ssi/cphillip/public_html/lbalive/lba-autocross%d-b%d.gif/gif",
+	  sprintf(pgplotname, "lba-autocross%d-b%d.png/png",
 		  i, k);
 	  status = cpgbeg(0,pgplotname,1,2);
 	}
