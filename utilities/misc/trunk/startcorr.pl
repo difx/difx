@@ -12,10 +12,12 @@ my $p4pg;
 my $machinefile;
 my $numproc;
 my $evlbi = 0;
+my $monitor = undef;
 my $offset = 30; # Offset in minutes for start time
 
-GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 'np=i'=>\$numproc,
-	   'evlbi'=>\$evlbi, 'offset=i'=>\$offset);
+GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 
+           'np=i'=>\$numproc, 'evlbi'=>\$evlbi, 'offset=i'=>\$offset,
+	   'monitor=s'=>\$monitor);
 
 # Check passed files exist etc
 
@@ -151,15 +153,21 @@ if ($evlbi) {
 
 die "Rpfits file $outfile already exists!\n" if (-e $outfile);
 
-my $options;
+my $mpioptions;
 if (defined $p4pg) {
-  $options = "-p4pg $p4pg";
+  $mpioptions = "-p4pg $p4pg";
 } else {
-  $options = "-machinefile $machinefile -np $numproc";
+  $mpioptions = "-machinefile $machinefile -np $numproc";
 }
 
-#my $exec = "/home/vlbi/difx/bin/mpirun --prefix /home/vlbi/difx $options $mpifxcorr $input";
-my $exec = "mpirun $options $mpifxcorr $input";
+my $difx_options = '';
+if ($monitor) {
+  $difx_options .= " -M${monitor}:9999:1";
+}
+
+#my $exec = "/home/vlbi/difx/bin/mpirun --prefix /home/vlbi/difx $mpioptions $mpifxcorr $input";
+#system "update_apsr";
+my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
 print "$exec\n";
 system $exec;
 
