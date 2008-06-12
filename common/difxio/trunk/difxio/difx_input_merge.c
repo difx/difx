@@ -44,6 +44,26 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	return 1;
 }
 
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
+{
+	int f;
+
+	if(D1->nFreq != D2->nFreq)
+	{
+		return 0;
+	}
+
+	for(f = 0; f < D1->nFreq; f++)
+	{
+		if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 static void printRemap(const char *name, const int *Remap, int n)
 {
 	int i;

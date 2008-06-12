@@ -407,6 +407,7 @@ void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
+int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	int verbose);
 int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId);

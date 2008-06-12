@@ -200,3 +200,69 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 
 	return ds;
 }
+
+#if 0
+
+/* this is a complicated thought in progress */
+
+
+int DifxScansAppendable(const DifxScan *ds1, const DifxScan *ds2)
+{
+	if(!ds1 || !ds2)
+	{
+		fprintf(stderr, "ERROR : DifxScansAppendable : null input\n");
+		return 0;
+	}
+
+	if(ds1->sourceId == ds2->sourceId &&
+	   ds1->configId == ds2->configId &&
+	   ds1->jobId    == ds2->jobId)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+/* concattenate consecutive compatible scans */
+int simplifyDifxScanArray(DifxScan *scans, int *nScan)
+{
+	int i, j, n;
+
+	if(*nScan < 2)
+	{
+		return 0;
+	}
+
+	j = 0;				/* dest pointer */
+	for(i = 1; i < *nScan; i++)	/* src pointer */
+	{
+		if(DifxScansAppendable(scans+j, scans+i))
+		{
+			scans[j].mjdEnd = scans[i].mjdEnd;
+			n = scans[j].nPoint + scans[i].nPoint;
+			for(a = 0; a < scans[j].nAntenna; a++)
+			{
+				scans[j].model[a]--;
+				scans[j].model[a] = (DifxModel *)realloc(
+					scans[j].model[a],
+					(n+3)*sizeof(DifxModel));
+				memcpy(scans[j].model[a]+scans[j].nPoint,
+					scans[i].model[a]
+				scans[j].model[a]++;
+			}
+			scans[j].nPoint = n;
+		}
+		else
+		{
+			j++;
+		}
+	}
+
+	*nScan = j+1;
+
+	return 0;
+}
+
+
+#endif
