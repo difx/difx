@@ -84,10 +84,10 @@ def getstat(input):
 			s = s + f[1]
 		else:
 			s = s + ' '
-	if hasfits(input):
-		s = s + 'F'
-	else:
-		s = s + ' '
+	#if hasfits(input):
+	#	s = s + 'F'
+	#else:
+	#	s = s + ' '
 	s = s + ']'
 	return s
 	

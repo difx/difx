@@ -10,6 +10,7 @@ defaultport  = 50200
 defaultttl   = 3
 
 genmachines = 'genmachines -v'
+calcif      = 'calcif'
 
 from sys import argv, exit
 from os import popen, getcwd, system, getenv
@@ -84,8 +85,12 @@ def sendmessage(filebase, state, statusmessage):
 # verify presense of .machines file
 def domachines(filebase, machinespolicy):
 	fn = filebase + '.machines'
+
+	if machinespolicy == 2:
+		system('rm %s', fn)
+
 	if not isfile(fn):
-		if machinespolicy == 1:
+		if machinespolicy > 0:
 			v = system('%s %s.input' % (genmachines, filebase))
 			if v != 0:
 				return 0
@@ -106,7 +111,7 @@ def run(filebase, machinespolicy, deletepolicy, makeuvw):
 	
 	if not isfile(filebase+'.uvw') or not isfile(filebase+'.delay'):
 		if makeuvw and isfile(filebase+'.calc'):
-			system('calcif %s.calc' % filebase)
+			system('%s %s.calc' % (calcif, filebase))
 		else:
 			return 'Error: model not available for %s' % filebase
 	
@@ -164,15 +169,6 @@ for a in argv[1:]:
 
 if len(filebaselist) < 1:
 	usage()
-
-if machinespolicy == 2:
-	filelist = ''
-	machlist = ''
-	for filebase in filebaselist:
-		filelist = filelist + ' ' + filebase + '.input'
-		machlist = machlist + ' ' + filebase + '.machines'
-	system('rm %s' % machlist)
-	system('%s %s' % (genmachines, filelist))
 	
 for filebase in filebaselist:
 	v = run(filebase, machinespolicy, deletepolicy, makeuvw)

@@ -145,7 +145,8 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	conflicts = []
 	results = []
 	machines = []
-	while t < maxtime:
+	notidle = []
+	while t < maxtime and len(missing) > 0:
 		try:
 			message = s.recv(1024)
 			if verbose > 1:
@@ -164,8 +165,12 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 				conflicts.append(info)
 			if info[1] in missing:
 				missing.remove(info[1])
+				if info[3] != 'Idle':
+					notidle.append(info[1])
 			if info[2] in missing:
 				missing.remove(info[2])
+				if info[3] != 'Idle':
+					notidle.append(info[2])
 
 		except socket.timeout:
 			t += dt
@@ -173,8 +178,9 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 	results.sort()
 	conflicts.sort()
 	missing.sort()
+	notidle.sort()
 
-	return results, conflicts, missing
+	return results, conflicts, missing, notidle
 
 def getVsnsFromInputFile(inputfile):
 	vsns = []
@@ -298,7 +304,7 @@ def run(files, machinesfile, overheadcores, verbose):
 				
 	vsns = getVsnsFromInputFile(infile)
 
-	results, conflicts, missing = getVsnsByMulticast(5, vsns, verbose)
+	results, conflicts, missing, notidle = getVsnsByMulticast(5, vsns, verbose)
 
 	if verbose > 0:
 		print 'Found modules:'
@@ -316,6 +322,12 @@ def run(files, machinesfile, overheadcores, verbose):
 		print 'Missing modules:'
 		for m in missing:
 			print '  %s' % m
+
+	if len(notidle) > 0:
+		ok = False
+		print 'Modules not ready:'
+		for n in notidle:
+			print '  %s' % n
 
 	if not ok:
 		return 1

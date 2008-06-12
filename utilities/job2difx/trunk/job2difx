@@ -1147,6 +1147,9 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 def makeflagtable(scans, subarray, subarray_num):
 	flag = []
 	for scan in scans:
+		if len(scan[6]) <= subarray_num:
+			print 'Warning : makeflagtable: subarray_num too big', subarray_num
+			continue
 		ants = scan[6][subarray_num][1]
 		for i in range(len(subarray)):
 			a = subarray[i]
@@ -1432,6 +1435,9 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 		
 			for s in range(scan0, scan1+1):
 				config = findconfig(scanlist[s][6], sub)
+				if config == None:
+					print 'Warning: NULL config for ', scanlist[s][6], sub
+					continue
 				dopolar = job['correlator'][config[0]]['polar'] == 'YES'
 				st = [config[1], config[3]]
 				if dopolar:
@@ -1458,6 +1464,9 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				tables = []
 				nant = len(sub)
 				config = findconfig(scanlist[scan0][6], sub)
+				if config == None:
+					print 'Warning: NULL config for ', scanlist[scan0][6], sub
+					continue
 				dopolar = job['correlator'][config[0]]['polar'] == 'YES'
 				freqlist = \
 					generatefreqlist(job['frequency'], setups)
