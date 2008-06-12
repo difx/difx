@@ -5,13 +5,16 @@
 
 int Mk5Daemon_loadMon(Mk5Daemon *D)
 {
+	static long long lastRX=0, lastTX=0;
+	long long curRX=0, curTX=0;
+	long long d;
 	char message[1024];
 	FILE *in;
 	float l1, l5, l15;
 	char line[100];
 	int memused=0, memtot=0;
 	char key[100];
-	int val;
+	int val, v;
 
 	/* LOAD */
 	in = fopen("/proc/loadavg", "r");
@@ -49,6 +52,45 @@ int Mk5Daemon_loadMon(Mk5Daemon *D)
 		   strcmp(key, "Cached:") == 0)
 		{
 			memused -= val;
+		}
+	}
+	fclose(in);
+
+	/* NETWORK */
+	in = fopen("/proc/net/dev", "r");
+	if(!in)
+	{
+		return -1;
+	}
+	for(;;)
+	{
+		fgets(line, 99, in);
+		if(feof(in))
+		{
+			break;
+		}
+		if(strncmp(line, "  eth0:", 7) == 0)
+		{
+			curRX = curTX = 0;
+			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", 
+				&curRX, &curTX);
+			if(lastRX > 0 && lastTX > 0) 
+			{
+				d = curRX - lastRX;
+				if(d < 0)
+				{
+					d += 1LL<<32;
+				}
+				D->load.netRXRate = d/D->loadMonInterval;
+				d = curTX - lastTX;
+				if(d < 0)
+				{
+					d += 1LL<<32;
+				}
+				D->load.netTXRate = d/D->loadMonInterval;
+			}
+			lastRX = curRX;
+			lastTX = curTX;
 		}
 	}
 	fclose(in);

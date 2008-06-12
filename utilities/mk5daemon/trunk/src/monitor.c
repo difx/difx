@@ -67,11 +67,16 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		/* FIXME raise hell if process != PROCESS_NONE */
 		D->process = PROCESS_DATASTREAM;
+
+		/* update timestamp of last update */
+		D->lastMpifxcorrUpdate = time(0);
 	}
 
 	if(G->body.mk5status.state == MARK5_STATE_CLOSE)
 	{
 		D->process = PROCESS_NONE;
+
+		D->lastMpifxcorrUpdate = 0;
 	}
 }
 
@@ -92,7 +97,10 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	if(strcasecmp(cmd, "GetVSN") == 0)
 	{
-		Mk5Daemon_getModules(D);
+		if(D->isMk5)
+		{
+			Mk5Daemon_getModules(D);
+		}
 	}
 	else if(strcasecmp(cmd, "GetLoad") == 0)
 	{
@@ -100,15 +108,41 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 	else if(strncasecmp(cmd, "ResetMark5", 10) == 0)
 	{
-		Mk5Daemon_resetMark5A(D);
+		if(D->isMk5)
+		{
+			Mk5Daemon_resetMark5A(D);
+			Mk5Daemon_getModules(D);
+		}
 	}
 	else if(strcasecmp(cmd, "StartMark5A") == 0)
 	{
-		Mk5Daemon_startMark5A(D);
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMark5A(D);
+		}
 	}
 	else if(strcasecmp(cmd, "StopMark5A") == 0)
 	{
-		Mk5Daemon_stopMark5A(D);
+		if(D->isMk5)
+		{
+			Mk5Daemon_stopMark5A(D);
+		}
+	}
+	else if(strcasecmp(cmd, "Reboot") == 0)
+	{
+		Mk5Daemon_reboot(D);
+	}
+	else if(strcasecmp(cmd, "Poweroff") == 0)
+	{
+		Mk5Daemon_poweroff(D);
+	}
+	else if(strcasecmp(cmd, "Clear") == 0)
+	{
+		D->process = PROCESS_NONE;
+	}
+	else if(strcasecmp(cmd, "stopmk5daemon") == 0)
+	{
+		D->dieNow = 1;
 	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
@@ -147,6 +181,11 @@ static void *monitorMultiListen(void *ptr)
 			default:
 				break;
 			}
+		}
+		if(D->process == PROCESS_MARK5_DONE)
+		{
+			/* should only happen if mark5a is killed externally */
+			Mk5Daemon_stopMark5A(D);
 		}
 	}
 

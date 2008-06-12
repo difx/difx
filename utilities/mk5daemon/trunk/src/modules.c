@@ -10,7 +10,7 @@
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
-int XLR_get_modules(char *vsna, char *vsnb)
+int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 {
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
@@ -19,21 +19,26 @@ int XLR_get_modules(char *vsna, char *vsnb)
 	xlrRC = XLROpen(1, &xlrDevice);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("ERROR Cannot open streamstor card\n");
+		Logger_logData(D->log, "ERROR: XLR_get_modules: "
+			"Cannot open streamstor card\n");
 		return 1;
 	}
 
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("ERROR Cannot set SkipCheckDir\n");
+		Logger_logData(D->log, "ERROR: XLR_get_modules: "
+			"Cannot set SkipCheckDir\n");
 		return 1;
 	}
 	
+	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		vsna[0] = 0;
+		vsnb[0] = 0;
+		Logger_logData(D->log, "ERROR: XLR_get_modules: "
+			"BANK_B XLRGetBankStatus Failed");
 	}
 	else
 	{
@@ -53,6 +58,8 @@ int XLR_get_modules(char *vsna, char *vsnb)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		vsna[0] = 0;
+		Logger_logData(D->log, "ERROR: XLR_get_modules: "
+			"BANK_A XLRGetBankStatus Failed");
 	}
 	else
 	{
@@ -122,19 +129,19 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 {
 	DifxMessageMk5Status dm;
 	int n;
+	char vsnA[16], vsnB[16];
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	dm.activeBank = ' ';
 
 	/* don't let the process type change while getting vsns */
 	pthread_mutex_lock(&D->processLock);
 
+	vsnA[0] = vsnB[0] = 0;
+
 	switch(D->process)
 	{
 	case PROCESS_NONE:
-		n = XLR_get_modules(dm.vsnA, dm.vsnB);
-		strncpy(D->vsnA, dm.vsnA, 8);
-		strncpy(D->vsnB, dm.vsnB, 8);
+		n = XLR_get_modules(vsnA, vsnB, D);
 		if(n == 0)
 		{
 			dm.state = MARK5_STATE_IDLE;
@@ -145,9 +152,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		break;
 	case PROCESS_MARK5:
-		n = Mark5A_get_modules(dm.vsnA, dm.vsnB);
-		strncpy(D->vsnA, dm.vsnA, 8);
-		strncpy(D->vsnB, dm.vsnB, 8);
+		n = Mark5A_get_modules(vsnA, vsnB);
 		if(n == 0)
 		{
 			dm.state = MARK5_STATE_BUSY;
@@ -161,6 +166,11 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		dm.state = MARK5_STATE_BUSY;
 		break;
 	}
+
+	strncpy(D->vsnA, vsnA, 8);
+	strncpy(D->vsnB, vsnB, 8);
+	strncpy(dm.vsnA, vsnA, 8);
+	strncpy(dm.vsnB, vsnB, 8);
 	
 	pthread_mutex_unlock(&D->processLock);
 

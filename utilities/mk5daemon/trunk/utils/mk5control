@@ -1,6 +1,6 @@
 #!/bin/env python
 
-from string import lower
+from string import lower, split
 from sys import argv, exit
 from os import getenv
 import socket
@@ -59,4 +59,25 @@ if len(argv) < 3:
 	print 'usage : %s <command> <machines>' % argv[0]
 	exit(0)
 
-sendCommand(argv[1], argv[2:], False)
+machines = []
+for a in argv[2:]:
+	s = split(a, '-')
+	if len(s) == 1:
+		machines.append(a)
+	elif len(s) == 2:
+		if len(s[0]) != len(s[1]):
+			print 'bad syntax: ', a
+			exit(0)
+		m = int(s[0])
+		n = int(s[1])
+		if len(s[0]) == 2:
+			for i in range(m, n+1):
+				machines.append('%02d' % i)
+		elif len(s[0]) == 3:
+			for i in range(m, n+1):
+				machines.append('%03d' % i)
+		else:
+			print 'bad syntax: ', a
+			exit(0)
+
+sendCommand(argv[1], machines, False)
