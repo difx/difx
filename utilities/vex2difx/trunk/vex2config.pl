@@ -23,7 +23,7 @@ use strict;
 
 my %antnames;
 
-my $nchannel = 128;
+my $nchannel = 64;
 my $tint = 2;
 my $crosspol = 0;
 my $evlbi = 0;
@@ -38,11 +38,12 @@ my $guardblock = 1;
 my $autocorr = 1;
 my $swin = 0;
 my $pulsar = 0;
-my $databufferfactor = 256;
-my $numdatasegments = 16;
+my $databufferfactor = undef;
+my $numdatasegments = 32;
 my $atca = 'WXXX';
 my $new = 0;
 my $perth = 0;
+my $requested_duration = undef;
 my @activestations = ();
 
 
@@ -50,7 +51,7 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
-	   'swin'=>\$swin, 'perth'=>\$perth);
+	   'swin'=>\$swin, 'perth'=>\$perth, 'duration=i'=>\$requested_duration);
 
 $antnames{At} = 'CAT' . uc($atca);
 
@@ -60,6 +61,10 @@ if (@ARGV!=1 && @ARGV!=2) {
 
 $quadf = 0 if ($postf);
 $new = 1 if ($perth);
+
+if (!defined $databufferfactor) {
+  $databufferfactor = 256*256/$nchannel;
+}
 
 my ($outputformat, $filetype);
 if ($swin) {
@@ -165,12 +170,22 @@ if (defined $starttime) { # Assume experiment is < 24 hours
   }
 }
 
+if (defined $requested_duration) {
+  if ($requested_duration>$duration) {
+    warn "Duration $requested_duration too long ignoring\n";
+  } else {
+    $duration = $requested_duration;
+  }
+}
+
 my $start_seconds = int(($sched_start-$start_mjd)*60*60*24+0.5);
 my $nactivebaseline = $nactive*($nactive-1)/2;
 my $ntotalbaseline = $ntel*($ntel-1)/2;
 
 if (!defined $blockspersend) {
-    $blockspersend = sprintf("%.0f", 160000/$nchannel);
+    #$blockspersend = sprintf("%.0f", 160000/$nchannel);
+    #$blockspersend = sprintf("%.0f", 80000/$nchannel);
+    $blockspersend = 1250;
 }
 
 # Open input file (which is our output...)
@@ -346,6 +361,10 @@ NUM DATA SEGMENTS:  $numdatasegments
 EOF
 
 my $index = 0;
+
+my $iport = 52100;
+my %ports = ();
+
 foreach (@stations) {
   if (! exists $stationmodes->{$_}) {
     warn "Skipping $_ in DataStream table\n";
@@ -368,7 +387,8 @@ foreach (@stations) {
     } else {
       $format = 'MKV';
     }
-    $framesize = 160000;
+    #$framesize = 160000;
+    $framesize = 80000;
   } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5B') {
     $format = 'MARK5B';
     $framesize = 10016;
@@ -485,8 +505,15 @@ EOF
   $index++;
 
   $localfreq{$_} = [@localfreq];
-}
 
+  if ($stationmodes->{$_}->record_transport_type eq 'Mark5A' ||
+      $stationmodes->{$_}->record_transport_type eq 'Mark5B') {
+    $ports{$_} = 2630;
+  } else {
+    $ports{$_} = $iport;
+    $iport++;
+  }
+}
 # Baseline table
 
 print INPUT<<EOF;
@@ -596,13 +623,12 @@ for (my $i=0; $i<@stations; $i++) {
 }
 
 print INPUT "\n# NETWORK TABLE ####!\n";
-my $iport = 52100;
 $count = 0;
 foreach (@stations) {
   my $istr = count2str($count);
   my $tcpwin = vexant2window($_);
   print INPUT<<EOF;
-PORT NUM $istr        $iport
+PORT NUM $istr        $ports{$_}
 TCP WINDOW (KB) $istr $tcpwin
 EOF
   $iport++;
@@ -785,21 +811,25 @@ BEGIN {
 
 my %antclockoffsets;
 BEGIN {
-  %antclockoffsets = (Pa => 0.0 ,
-                      At => -52.0,
+  %antclockoffsets = (Pa => -2.58 ,
+                      At => -55.31,
                       Mp => -1.5,
                       Ho => -10.6,
                       Cd => 1.05,
                       Ti => -2.0,
+                      Sh => -5.0,
+		      Ks => 1.55,
                      );
 }
 
 my %anttcpwindow;
 BEGIN {
-  %anttcpwindow = (Pa => 64,
+  %anttcpwindow = (Pa => 0,
 		   At => 512,
-		   Mp => 512,
-		   Ho => 512);
+		   Mp => 1512,
+		   Ho => 512,
+		   Sh => -1500,
+		   Ks => -1500);
 }
 
 sub vexant2calc ($) {
