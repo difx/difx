@@ -5,8 +5,35 @@ from sys import argv, exit
 from os import getenv
 import socket
 
+program = 'mk5command'
+version = '0.2'
+author  = 'Walter Brisken <wbrisken@nrao.edu>'
+verdate = '20080613'
+
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
+
+def usage(pgm):
+	print '%s ver. %s  %s %s\n' % (program, version, author, verdate)
+	print 'A program that talks to the mk5daemon programs running on the'
+	print 'software correlator computers, including the mark5s.\n'
+	print 'usage : %s <command> <machines>\n' % pgm
+	print '<command> can be one of the following (case insensitive):'
+	print '  GetVSN -- tell Mark5 unit to report is modules'
+	print '  ResetMark5 -- runs SSReset followed by ssopen on Mark5'
+	print '  StartMark5A -- starts the Mark5A program'
+	print '  StopMark5A -- stops the Mark5A program'
+	print '  Reboot -- reboots the machine'
+	print '  Poweroff -- powers off the machine'
+	print '  Clear -- used to clear errant "busy" state'
+	print '  stopmk5daemon -- tell the mk5daemon program to quit\n'
+	print '<machines> is a list of cluster members to receive the message;'
+	print '  the format is as follows:'
+	print '    general: the explicit computer hostname, or "all" for all'
+	print '    mark5 units:  01 through 24, or "mark5" for all'
+	print '    processor node:  000 though 999, or "swc" for all'
+	print '    ranges are allowed:  12-18 or 001-010\n'
+	
 
 def sendCommand(cmd, units, verbose):
 	src = socket.gethostname()
@@ -56,7 +83,7 @@ def sendCommand(cmd, units, verbose):
 	sock.sendto(message, (group, port))
 
 if len(argv) < 3:
-	print 'usage : %s <command> <machines>' % argv[0]
+	usage(argv[0])
 	exit(0)
 
 machines = []

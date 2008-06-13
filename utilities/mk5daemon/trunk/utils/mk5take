@@ -1,0 +1,10 @@
+#!/bin/env python
+
+from os import system
+from sys import argv
+
+cmd = 'mk5control stopmark5a'
+for a in argv[1:]:
+	cmd = cmd + ' %s' % a
+
+system(cmd)
