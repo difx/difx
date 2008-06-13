@@ -10,10 +10,6 @@ dist_bin_SCRIPTS = \
 	joblist \
 	jobstatus \
 	difxsniff \
-	mk5take \
-	mk5return \
-	mk5mon \
-	cpumon \
 	listmodules \
 	listcpus \
 	startdifx \
