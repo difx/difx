@@ -87,7 +87,7 @@ def domachines(filebase, machinespolicy):
 	fn = filebase + '.machines'
 
 	if machinespolicy == 2:
-		system('rm %s', fn)
+		system('rm %s' % fn)
 
 	if not isfile(fn):
 		if machinespolicy > 0:
