@@ -246,9 +246,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    cpu load = %f\n", G->body.load.cpuLoad);
 		printf("    total memory = %d kiB\n", G->body.load.totalMemory);
 		printf("    used memory = %d kiB\n", G->body.load.usedMemory);
-		printf("    network Receive Rate = %d B/s", 
+		printf("    network Receive Rate = %d B/s\n", 
 			G->body.load.netRXRate);
-		printf("    network Transmit Rate = %d B/s", 
+		printf("    network Transmit Rate = %d B/s\n", 
 			G->body.load.netTXRate);
 		break;
 	case DIFX_MESSAGE_ERROR:

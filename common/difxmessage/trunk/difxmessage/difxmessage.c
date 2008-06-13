@@ -42,5 +42,6 @@ const char DifxMessageTypeStrings[][24] =
 	"Mark5StatusMessage",
 	"DifxStatusMessage",
 	"DifxInfoMessage",
-	"DifxCommand"
+	"DifxDatastreamMessage",
+	"DifxCommand",
 };

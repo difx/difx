@@ -153,10 +153,24 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 }
 
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
-	double visMJD)
+	double visMJD, int numdatastreams, float *weight)
 {
-	char message[1000];
+	char message[1500], weightstr[1200];
 	char body[700];
+	int i, n;
+	
+	weightstr[0] = 0;
+	n = 0;
+
+	for(i = 0; i < numdatastreams; i++)
+	{
+		if(weight[i] >= 0)
+		{
+			n += sprintf(weightstr + n, 
+				"<weight ant=\"%d\" wt=\"%5.3f\"/>", 
+				i, weight[i]);
+		}
+	}
 
 	sprintf(body,
 		
@@ -164,11 +178,13 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 		  "<state>%s</state>"
 		  "<message>%s</message>"
 		  "<visibilityMJD>%13.7f</visibilityMJD>"
+		  "%s"
 		"</difxStatus>",
 
 		DifxStateStrings[state],
 		stateMessage,
-		visMJD);
+		visMJD,
+		weightstr);
 
 	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_STATUS],

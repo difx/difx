@@ -9,6 +9,10 @@ bin_PROGRAMS = \
 	testdifxmessagereceive \
 	loadmon
 
+dist_bin_SCRIPTS = \
+	mk5mon \
+	cpumon
+
 testdifxmessagesend_SOURCES = \
 	testdifxmessagesend.c
 

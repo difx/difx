@@ -69,6 +69,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_MARK5STATUS,
 	DIFX_MESSAGE_STATUS,
 	DIFX_MESSAGE_INFO,
+	DIFX_MESSAGE_DATASTREAM,
 	DIFX_MESSAGE_COMMAND,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
@@ -88,6 +89,11 @@ typedef struct
 	float rate;		/* Mbps */
 	double dataMJD;
 } DifxMessageMk5Status;
+
+typedef struct
+{
+	
+} DifxMessageDatastream;
 
 typedef struct
 {
@@ -130,7 +136,7 @@ typedef struct
 	char identifier[32];
 	int mpiId;
 	int seqNumber;
-	/* FIXME -- add time of receipt */
+	/* FIXME -- add time of receipt ?? */
 	union
 	{
 		DifxMessageMk5Status	mk5status;
@@ -138,6 +144,7 @@ typedef struct
 		DifxMessageError	error;
 		DifxMessageStatus	status;
 		DifxMessageInfo		info;
+		DifxMessageDatastream	datastream;
 		DifxMessageCommand	command;
 	} body;
 	int _xml_level;			/* internal use only */
@@ -152,7 +159,7 @@ void difxMessageGetMulticastGroupPort(char *group, int *port);
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
-int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD);
+int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD, int numdatastreams, float *weight);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxError(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);

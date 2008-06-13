@@ -1,0 +1,170 @@
+#!/bin/env python
+
+from string import split, strip, find, upper, lower
+from sys import argv, exit
+from os import popen, getenv
+from glob import glob
+import socket
+import struct
+from xml.parsers import expat
+from copy import deepcopy
+import curses
+
+program = 'cpumon'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20080604'
+
+def usage():
+	exit(1)
+
+class DifxLoad:
+
+	def __init__(self):
+		self.cpuLoad = 0.0
+		self.totalMemory = 0
+		self.usedMemory = 0
+		self.netRXRate = 0
+		self.netTXRate = 0
+		self.ok    = False
+		self.pid   = 0
+		self.id    = ''
+		self.mk5   = ''
+		self.seq   = 0
+
+	def getstring(self):
+		if self.ok:
+			rx = self.netRXRate*8./1000000
+			tx = self.netTXRate*8./1000000
+			str = '%10s %4.2f  %8d/%-8d  %8.4f  %8.4f' % \
+				(self.mk5, self.cpuLoad, self.usedMemory, \
+					self.totalMemory, rx, tx)
+		else:
+			str = ''
+		return str
+
+	def getmk5(self):
+		return self.mk5
+
+class Parser:
+
+	def __init__(self):
+		self._parser = expat.ParserCreate()
+		self._parser.StartElementHandler = self.start
+		self._parser.EndElementHandler = self.end
+		self._parser.CharacterDataHandler = self.data
+		self.info = DifxLoad()
+		self.tmp = ''
+
+	def feed(self, data):
+		try:
+			self._parser.Parse(data, 0)
+		except expat.ExpatError:
+			print '\n\n XXX %s XXX' % data 
+
+	def close(self):
+		self._parser.Parse("", 1) # end of data
+		del self._parser # get rid of circular references
+
+	def start(self, tag, attrs):
+		pass
+
+	def end(self, tag):
+		if tag == 'difxLoad':
+			self.info.ok = True
+		if tag == 'from':
+			self.info.mk5 = lower(self.tmp)
+		if tag == 'cpuLoad':
+			self.info.cpuLoad = float(self.tmp)
+		if tag == 'totalMemory':
+			self.info.totalMemory = int(self.tmp)
+		if tag == 'usedMemory':
+			self.info.usedMemory = int(self.tmp)
+		if tag == 'netRXRate':
+			self.info.netRXRate = int(self.tmp)
+		if tag == 'netTXRate':
+			self.info.netTXRate = int(self.tmp)
+
+	def data(self, data):
+		self.tmp = data
+
+	def getinfo(self):
+		return self.info.getmk5(), self.info.getstring()
+
+class Display:
+
+	def __init__(self):
+		self.info = {}
+		self.rows = {}
+		self.curs = curses.initscr()
+		curses.noecho()
+		curses.cbreak()
+		self.curs.keypad(1)
+		self.curs.refresh()
+
+	def close(self):
+		curses.nocbreak()
+		self.curs.keypad(0)
+		curses.echo()
+		curses.endwin()
+
+	def displayrow(self, info, row):
+		self.curs.addstr(row, 0, info)
+		self.curs.refresh()
+
+	def displayall(self):
+		keys = self.rows.keys()
+		for k in keys:
+			self.curs.addstr(self.rows[k], 0, self.info[k])
+		self.curs.refresh()
+
+	def newdata(self, data):
+		k = data[0]
+		if self.rows.has_key(k):
+			self.info[k] = data[1]
+			self.displayrow(self.info[k], self.rows[k])
+		else:
+			self.rows[k] = 0
+			self.info[k] = data[1]
+			keys = self.rows.keys()
+			keys.sort()
+			i = 0
+			for k in keys:
+				self.rows[k] = i
+				i += 1
+			self.displayall()
+
+def listen():
+	dt = 0.0
+	t = 0
+	maxtime = 6000
+
+	# Now listen for responses, until either time runs out or we get all we need
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', 50200))
+	mreq = struct.pack("4sl", socket.inet_aton("224.2.2.1"), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	s.settimeout(0.2)
+	d = Display()
+	while t < maxtime:
+		try:
+			message = s.recv(1024)
+		except socket.timeout:
+			t += dt
+			continue
+
+		if message[0] != '<':
+			continue
+
+		p = Parser()
+		p.feed(message)
+		machine, str = p.getinfo()
+		p.close()
+		if len(str) < 10:
+			continue
+		d.newdata([machine, str])
+	d.close()
+
+
+listen()
