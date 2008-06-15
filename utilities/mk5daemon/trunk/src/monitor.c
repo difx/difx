@@ -6,9 +6,6 @@
 int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	int t;
-	int ismk5;
-
-	ismk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
 
 	if(G->nTo < 1)
 	{
@@ -25,7 +22,7 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 		{
 			return 1;
 		}
-		if(ismk5)
+		if(D->isMk5)
 		{
 			if(strcasecmp("mark5", G->to[t]) == 0)
 			{
@@ -63,9 +60,16 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 	strncpy(D->vsnB, G->body.mk5status.vsnB, 8);
 	D->vsnB[8] = 0;
 
-	if(G->body.mk5status.state == MARK5_STATE_OPENING)
+	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
+	   G->body.mk5status.state == MARK5_STATE_OPEN ||
+	   G->body.mk5status.state == MARK5_STATE_PLAY ||
+	   G->body.mk5status.state == MARK5_STATE_GETDIR ||
+	   G->body.mk5status.state == MARK5_STATE_GOTDIR)
 	{
-		/* FIXME raise hell if process != PROCESS_NONE */
+		if(D->process == PROCESS_NONE)
+		{
+			Logger_logData(D->log, "mpifxcorr started");
+		}
 		D->process = PROCESS_DATASTREAM;
 
 		/* update timestamp of last update */
@@ -75,6 +79,7 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(G->body.mk5status.state == MARK5_STATE_CLOSE)
 	{
 		D->process = PROCESS_NONE;
+		Logger_logData(D->log, "mpifxcorr finished");
 
 		D->lastMpifxcorrUpdate = 0;
 	}
@@ -143,6 +148,11 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
 		printf("[%s]\n", cmd);
+	}
+	else
+	{
+		sprintf(logMessage, "Command=%s not recognized!\n", cmd);
+		Logger_logData(D->log, logMessage);
 	}
 }
 

@@ -10,8 +10,8 @@
 #include "logger.h"
 
 const char program[] = "mk5daemon";
-const char version[] = "0.2";
-const char verdate[] = "2008 May 22";
+const char version[] = "0.3";
+const char verdate[] = "2008 June 15";
 
 const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
@@ -116,14 +116,14 @@ int main(int argc, char **argv)
 	Mk5Daemon *D;
 	time_t t, lastTime, firstTime;
 	char logMessage[128];
-	int mk5start = 1;
+	int startmk5a = 1;
 	int i;
 
 	if(argc > 1) for(i = 1; i < argc; i++)
 	{
 		if(strcmp(argv[i], "-n") == 0)
 		{
-			mk5start = 0;
+			startmk5a = 0;
 		}
 	}
 
@@ -176,19 +176,33 @@ int main(int argc, char **argv)
 			D->process == PROCESS_DATASTREAM)
 		{
 			pthread_mutex_lock(&D->processLock);
-			if(running("mpifxcorr"))
+			if(!running("mpifxcorr"))
 			{
-				/* FIXME -- make note of this */
+				sprintf(logMessage, "Detected premature end of "
+					"mpifxorr at %d", t);
+				Logger_logData(D->log, logMessage);
 				D->process = PROCESS_NONE;
+			}
+			else
+			{
+				/* note that it is still alive */
+				D->lastMpifxcorrUpdate = t;
 			}
 			pthread_mutex_unlock(&D->processLock);
 		}
 
-		if(t - firstTime > 15 && mk5start && D->isMk5 &&
+		if(t - firstTime > 15 && D->isMk5 &&
 			strncasecmp(D->hostName, "mark5", 5) == 0)
 		{
-			Mk5Daemon_startMark5A(D);
-			mk5start = 0;
+			if(startmk5a)
+			{
+				Mk5Daemon_startMark5A(D);
+				startmk5a = 0;
+			}
+			else
+			{
+				Mk5Daemon_getModules(D);
+			}
 		}
 
 		usleep(200000);
