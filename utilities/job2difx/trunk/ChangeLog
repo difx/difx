@@ -63,6 +63,10 @@ Version 1.0
 
 calcif
 ~~~~~~
+Version 1.5
+* allow -a for globbing all .calc files or a list of files.
+* don't rerun if unnecessary, unless -f is used
+
 Version 1.2
 * Handle CALC_SERVER env var, and command line value.
 * Improved help info
