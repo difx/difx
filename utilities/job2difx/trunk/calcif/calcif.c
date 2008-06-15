@@ -375,9 +375,13 @@ static int processFile(const char *i_fname, int doforce)
   int which_spacecraft=0;
   int which_sc_point=0;
 
+  char uvw_tname[U_FNAME_SIZE], 
+    delay_tname[D_FNAME_SIZE], 
+    rate_tname[R_FNAME_SIZE];
   char uvw_fname[U_FNAME_SIZE], 
     delay_fname[D_FNAME_SIZE], 
     rate_fname[R_FNAME_SIZE];
+  char cmd[1024];
   double time_incr;
   struct getCALC_res *p_result;
 
@@ -429,19 +433,24 @@ static int processFile(const char *i_fname, int doforce)
   i = DifxParametersfind(dp, 0, UVW_FILENAME);
   if (i >= 0)
     {
-      strcpy (uvw_fname, DifxParametersvalue(dp, i));
+      strcpy(uvw_fname, DifxParametersvalue(dp, i));
+      sprintf(uvw_tname, "/tmp/calcif-%s", uvw_fname);
       printf("%s = %s\n", dp->rows[i].key, uvw_fname);
       /* Make rate filename from uvw file */
       strcpy(rate_fname, uvw_fname);
       *strstr(rate_fname, ".uvw") = 0x00;
       strcat(rate_fname, ".rate");
+      strcpy(rate_tname, uvw_tname);
+      *strstr(rate_tname, ".uvw") = 0x00;
+      strcat(rate_tname, ".rate");
       printf("RATE FILENAME = %s\n", rate_fname);
     }
   /*delay file */
   i = DifxParametersfind(dp, 0, DELAY_FILENAME);
   if (i >= 0)
     {
-      strcpy (delay_fname, DifxParametersvalue(dp, i));
+      strcpy(delay_fname, DifxParametersvalue(dp, i));
+      sprintf(delay_tname, "/tmp/calcif-%s", delay_fname);
       printf("%s = %s\n", dp->rows[i].key, delay_fname);
     }
 
@@ -454,19 +463,28 @@ static int processFile(const char *i_fname, int doforce)
     return 1;
   }
   
-  u_fd = fopen(uvw_fname, "w");
+  /* erase any existing file to reduce possible confusion */
+  /* new files will be constructed in /tmp and moved when finished */
+  sprintf(cmd, "rm -f %s", uvw_fname);
+  system(cmd);
+  sprintf(cmd, "rm -f %s", delay_fname);
+  system(cmd);
+  sprintf(cmd, "rm -f %s", rate_fname);
+  system(cmd);
+
+  u_fd = fopen(uvw_tname, "w");
   if (!u_fd)
     {
       perror("Calcif-E-cannot open uvw file: \n");
       exit(1);
     }
-  d_fd = fopen(delay_fname, "w");
+  d_fd = fopen(delay_tname, "w");
   if (!d_fd)
     {
       perror("Calcif-E-cannot open delay file: \n");
       exit(1);
     }
-  r_fd = fopen(rate_fname, "w");
+  r_fd = fopen(rate_tname, "w");
   if (!r_fd)
     {
       perror("Calcif-E-cannot open rate file: \n");
@@ -1035,6 +1053,13 @@ static int processFile(const char *i_fname, int doforce)
   fclose(r_fd);
   
   clnt_destroy (cl);
+
+  sprintf(cmd, "mv %s %s", uvw_tname, uvw_fname);
+  system(cmd);
+  sprintf(cmd, "mv %s %s", delay_tname, delay_fname);
+  system(cmd);
+  sprintf(cmd, "mv %s %s", rate_tname, rate_fname);
+  system(cmd);
 
   deleteDifxParameters(dp);
   
