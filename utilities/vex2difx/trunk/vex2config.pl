@@ -43,15 +43,18 @@ my $numdatasegments = 32;
 my $atca = 'WXXX';
 my $new = 0;
 my $perth = 0;
+my $monitor = 0;
 my $requested_duration = undef;
-my @activestations = ();
 
+my @activestations = ();
 
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
-	   'swin'=>\$swin, 'perth'=>\$perth, 'duration=i'=>\$requested_duration);
+	   'swin'=>\$swin, 'perth'=>\$perth, 'monitor'=>\$monitor, 
+	   'duration=i'=>\$requested_duration, 'swin'=>\$swin, 'perth'=>\$perth);
+
 
 $antnames{At} = 'CAT' . uc($atca);
 
@@ -118,6 +121,7 @@ foreach (@scans) {
 }
 
 my @stations = $vex->stationlist;
+
 if (@activestations==0) {
   @activestations = @stations;
   warn "Using all stations\n";
@@ -256,17 +260,27 @@ if ($ndone != $nactive) {
 
 $ndone = 0;
 my $bnum = -$ntel;
+my @bactive = (); # List of active baselines
 for (my $i=0; $i<$ntel-1; $i++) {
   $bnum += ($ntel-$i);
 
-  next if (!defined arraygrep($stations[$i], @activestations));
+  if (!defined arraygrep($stations[$i], @activestations)) {
+    for (my $j=$i+1; $j<$ntel; $j++) {
+      push @bactive, 0;
+    }
+    next;
+  }
 
   for (my $j=$i+1; $j<$ntel; $j++) {
-    next if (!defined arraygrep($stations[$j], @activestations));
+    if (!defined arraygrep($stations[$j], @activestations)) {
+      push @bactive, 0;
+    } else {
+      push @bactive, 1;
 
-    printf(INPUT "BASELINE %-10s %d\n", sprintf('%d INDEX:', $ndone),
-	   $bnum+$j-$i-1);
-    $ndone++;
+      printf(INPUT "BASELINE %-10s %d\n", sprintf('%d INDEX:', $ndone),
+	     $bnum+$j-$i-1);
+      $ndone++;
+    }
   }
 }
 if ($ndone != $nactivebaseline) {
@@ -308,6 +322,7 @@ foreach (@globalfreq) {
   my $freq = $_->freq->unit('MHz')->value;
   my $bandwidth = $_->bandwidth->unit('MHz')->value;
   my $sideband = $_->sideband;
+  my $pol = $_->pol;
   $countstr = count2str($count);
 print INPUT<<EOF;
 FREQ (MHZ) $countstr      $freq
@@ -427,6 +442,7 @@ EOF
 # Need to reference input bands based on Frequency table
   my @chans = $stationmodes->{$_}->chan_def;
   my @localfreq;
+
   foreach (@chans) {
     my $found=0;
     my $i = 0;
@@ -501,8 +517,11 @@ EOF
     $_->globalindex($_->index); # Re-index for baseline selection
     $_->index($count);
     $count++;
+
   }
   $index++;
+
+
 
   $localfreq{$_} = [@localfreq];
 
@@ -522,6 +541,7 @@ print INPUT<<EOF;
 BASELINE ENTRIES:   $ntotalbaseline
 EOF
 
+my @monitorbaselines = ();
 
 my @baselines = @stations;
 
@@ -531,6 +551,10 @@ while (scalar(@baselines)>1) {
   my $ant1 = shift @baselines;
   my $nant2 = $nant1+1;
   foreach my $ant2 (@baselines) {
+    my @baselinechans = ();
+    foreach (@globalfreq) {
+      push @baselinechans, [0, 0];
+    }
 
     my $bstr = count2str($bindex);
     print INPUT<<EOF;
@@ -549,12 +573,19 @@ EOF
     # Loop through ant1 channels and look for matchs in ant2 channels
     my $found = 0;
     foreach my $ch1 (@{$localfreq{$ant1}}) {
+
       next if $ch1->done;
       my $i1 = $ch1->index;
       my $i2 = findchanmatch($ch1, $localfreq{$ant2}, 0);
 
       next if (! defined $i2);
       $ch1->done(1);
+
+      if ($ch1->pol eq 'R') {
+	$baselinechans[$ch1->globalindex][0] = 1;
+      } else {
+	$baselinechans[$ch1->globalindex][1] = 1;
+      }
 
       $baselinefreqs[$nfreq] = [];
       push @{$baselinefreqs[$nfreq]}, [$i1, $i2];
@@ -569,6 +600,12 @@ EOF
 
 	  next if (!defined $i2);
 	  $ch3->done(1);
+
+	  if ($ch3->pol eq 'R') {
+	    $baselinechans[$ch3->globalindex][0] = 1;
+	  } else {
+	    $baselinechans[$ch3->globalindex][1] = 1;
+	  }
 
 	  push @{$baselinefreqs[$nfreq]}, [$i1, $i2];
 	  
@@ -608,6 +645,9 @@ EOF
 	$ifreq++;
     }
 
+    push @monitorbaselines, ["$ant1-$ant2", @baselinechans];
+
+
     $bindex++;
     $nant2++;
   }
@@ -633,6 +673,88 @@ TCP WINDOW (KB) $istr $tcpwin
 EOF
   $iport++;
   $count++;
+}
+
+if ($monitor) {
+  my @plots = ();
+
+  open(HTML, '>', 'index.html') || die "Failed to open index.html for writing: $!\n";
+print HTML<<EOF;
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+  <title>$exper</title>
+</head>
+<body>
+<h2 style="text-align: center;">$exper</h2>
+<table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td></td>
+EOF
+
+  foreach (@globalfreq) {
+    printf(HTML "       <th style=\"text-align: center; background-color: rgb(204, 255, 255);\"> %s</th>", $_->freq->unit('MHz')->value);
+  }
+
+  for (my $i=0; $i<@bactive; $i++)  {
+    next if (! $bactive[$i]);
+    my $bname = shift @{$monitorbaselines[$i]};
+
+    print HTML<<EOF;
+       <tr>
+         <th style=\"text-align: center; background-color: rgb(204, 255, 255);\">$bname</th>
+
+EOF
+
+    for (my $j=0; $j<@globalfreq; $j++) {
+      my $title = sprintf("$bname %s", $globalfreq[$j]->freq);
+      print HTML "<td style=\"text-align: center;\">";
+      if ($monitorbaselines[$i][$j][0]) {
+	print HTML "<a href=\"lba-$i-f$j-p0.html\">RCP</a> ";
+	push @plots, ["lba-$i-f$j-p0.html", "lba-$i-f$j-p0-b0.png", "$title RCP"];
+      }
+      if ($monitorbaselines[$i][$j][1]) {
+	print HTML " <a href=\"lba-$i-f$j-p0.html\">LCP</a>";
+	push @plots, ["lba-$i-f$j-p1.html", "lba-$i-f$j-p1-b0.png", "$title LCP"];
+      }
+      print HTML "</td>\n";
+    }
+    print HTML "</tr>\n";
+  }
+
+  print HTML<<EOF;
+ </tbody>
+</table>
+</body>
+</html>
+EOF
+
+  close(HTML);
+
+  foreach (@plots) {
+    my ($html, $png, $title) = @$_;
+
+    open(HTML, '>', $html) || die "Failed to open $html for writing: $!\n";
+
+    print HTML<<EOF;
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+  <meta content="text/html; charset=ISO-8859-1" http-equiv="content-type">
+  <meta http-equiv="Refresh" content="2">
+  <title>$exper $title</title>
+</head>
+<body>
+
+ <img src="$png">
+
+</body>
+</html>
+EOF
+    close(HTML);
+  }
 }
 
 sub num2bool {
@@ -826,7 +948,7 @@ my %anttcpwindow;
 BEGIN {
   %anttcpwindow = (Pa => 0,
 		   At => 512,
-		   Mp => 1512,
+		   Mp => 350,
 		   Ho => 512,
 		   Sh => -1500,
 		   Ks => -1500);
