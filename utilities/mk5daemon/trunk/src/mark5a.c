@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 #include "mk5daemon.h"
 
 static void *mark5Arun(void *ptr)
@@ -15,6 +16,8 @@ static void *mark5Arun(void *ptr)
 
 	pin = popen(command, "r");
 
+	D->lastMark5AUpdate = time(0);
+
 	for(;;)
 	{
 		fgets(str, 999, pin);
@@ -25,6 +28,7 @@ static void *mark5Arun(void *ptr)
 			break;
 		}
 		Logger_logData(D->log, str);
+		D->lastMark5AUpdate = time(0);
 		/* Once ready, get modules */
 		if(strncmp(str, "Mark5A Ready.", 13) == 0)
 		{
@@ -62,6 +66,13 @@ void Mk5Daemon_startMark5A(Mk5Daemon *D)
 void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 {
 	const char command[] = "killall -s INT Mark5A";
+
+	/* if Mark5A got usage in last 3 seconds, don't allow */
+	if(time(0) - D->lastMark5AUpdate < 3)
+	{
+		Logger_logData(D->log, "Killing of Mark5A denied");
+		return;
+	}
 
 	pthread_mutex_lock(&D->processLock);
 

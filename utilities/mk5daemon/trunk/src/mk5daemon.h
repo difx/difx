@@ -29,6 +29,7 @@ typedef struct
 	char vsnA[10], vsnB[10];
 	char hostName[32];
 	time_t lastMpifxcorrUpdate;
+	time_t lastMark5AUpdate;
 	int isMk5;
 } Mk5Daemon;
 
