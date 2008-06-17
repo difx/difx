@@ -133,3 +133,7 @@ Version 0.2
 * Record execute time
 * Fancier mpirun call
 * Run calcif if necessary
+Version 0.3
+* make fits if wanted
+* can run on input files
+* small fixes

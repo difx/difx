@@ -1,8 +1,8 @@
 #!/bin/env python
 
 PROGRAM = 'startdifx'
-VERSION = '0.2'
-VERDATE = '20080522'
+VERSION = '0.3'
+VERDATE = '20080617'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -11,6 +11,7 @@ defaultttl   = 3
 
 genmachines = 'genmachines -v'
 calcif      = 'calcif'
+difx2fits   = 'difx2fits -v'
 
 from sys import argv, exit
 from os import popen, getcwd, system, getenv
@@ -22,9 +23,9 @@ import socket
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
 	print 'A program to simplify the launching of mpifxcorr, specialy tuned'
-	print 'for NRAO-DiFX usage.\n'
-	print 'Usage: startdifx [optionx] <jobbase1> [<jobbase2> [ ... ] ]\n'
-	print 'option can include:\n'
+	print 'for NRAO-DiFX usage.  It can also cause model and FITS to be made.\n'
+	print 'Usage: startdifx [options] <input1> [<input2> [ ... ] ]\n'
+	print 'options can include:\n'
 	print '  -h or --help'
 	print '          print this usage info and exit\n'
 	print '  -f or --force'
@@ -32,12 +33,14 @@ def usage():
 	print '  -a or --automachines'
 	print '          will run genmachines if needed\n'
 	print '  -g or --genmachines'
-	print '          will run genmachines even if not needed\n'
+	print '          will run genmachines even if not needed [default]\n'
 	print '  -n or --nomachines'
-	print '          will not run genmachines, even if needed [default]\n'
-	print '  -u or --dont-calc'
+	print '          will not run genmachines, even if needed\n'
+	print '  -d or --dont-calc'
 	print '          will not run calcif, even if needed\n'
-	print '<jobbaseX> is the file prefix for a DiFX input file (not including .input)\n'
+	print '  -F or --fits'
+	print '          generate 1 fits file per job at end of each\n'
+	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
 	print 'can be used to override the default group/port of %s/%d\n' % \
 		(defaultgroup, defaultport)
@@ -145,6 +148,7 @@ if len(argv) < 2:
 machinespolicy = 2
 deletepolicy = 0
 makeuvw = True
+makefits = False
 filebaselist = []
 
 for a in argv[1:]:
@@ -159,13 +163,18 @@ for a in argv[1:]:
 			machinespolicy = 0
 		elif a == '-f' or a == '--force':
 			deletepolicy = 1
-		elif a == '-u' or a == '--dont-calc':
+		elif a == '-d' or a == '--dont-calc':
 			makeuvw = False
+		elif a == '-F' or a == '--fits':
+			makefits = True
 	else:
-		if a[0] == '/':
+		fb = a
+		if fb[-6:] == '.input':
+			fb = a[:-6]
+		if fb[0] == '/':
 			filebaselist.append(a)
 		else:
-			filebaselist.append(getcwd() + '/' + a)
+			filebaselist.append(getcwd() + '/' + fb)
 
 if len(filebaselist) < 1:
 	usage()
@@ -177,3 +186,5 @@ for filebase in filebaselist:
 		sendmessage(filebase, 'ABORTED', v)
 		print v
 		exit(1)
+	elif makefits == True:
+		system('%s %s %s.FITS' % (difx2fits, filebase, filebase))
