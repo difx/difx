@@ -28,6 +28,7 @@ static void *mark5Arun(void *ptr)
 			break;
 		}
 		Logger_logData(D->log, str);
+		Logger_logData(D->log, "\n");
 		D->lastMark5AUpdate = time(0);
 		/* Once ready, get modules */
 		if(strncmp(str, "Mark5A Ready.", 13) == 0)
@@ -35,7 +36,7 @@ static void *mark5Arun(void *ptr)
 			Mk5Daemon_getModules(D);
 		}
 	}
-	Logger_logData(D->log, "Mark5A stopped");
+	Logger_logData(D->log, "Mark5A stopped\n");
 	D->process = PROCESS_MARK5_DONE;
 
 	pthread_exit(0);
@@ -70,7 +71,7 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 	/* if Mark5A got usage in last 3 seconds, don't allow */
 	if(time(0) - D->lastMark5AUpdate < 3)
 	{
-		Logger_logData(D->log, "Killing of Mark5A denied");
+		Logger_logData(D->log, "Killing of Mark5A denied\n");
 		return;
 	}
 

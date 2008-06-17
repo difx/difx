@@ -68,7 +68,7 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		if(D->process == PROCESS_NONE)
 		{
-			Logger_logData(D->log, "mpifxcorr started");
+			Logger_logData(D->log, "mpifxcorr started\n");
 		}
 		D->process = PROCESS_DATASTREAM;
 
@@ -79,7 +79,7 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(G->body.mk5status.state == MARK5_STATE_CLOSE)
 	{
 		D->process = PROCESS_NONE;
-		Logger_logData(D->log, "mpifxcorr finished");
+		Logger_logData(D->log, "mpifxcorr finished\n");
 
 		D->lastMpifxcorrUpdate = 0;
 	}

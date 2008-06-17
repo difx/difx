@@ -100,7 +100,7 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 	D->load.totalMemory = memtot;
 	D->load.usedMemory = memused;
 
-	sprintf(logMessage, "LOAD: %13.7f %4.2f %d %d %5.3f %5.3f", mjd,
+	sprintf(logMessage, "LOAD: %13.7f %4.2f %d %d %5.3f %5.3f\n", mjd,
 		D->load.cpuLoad, D->load.usedMemory, D->load.totalMemory,
 		D->load.netRXRate*8.0e-6, D->load.netTXRate*8.0e-6);
 	

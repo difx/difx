@@ -38,7 +38,7 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	{
 		vsnb[0] = 0;
 		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"BANK_B XLRGetBankStatus Failed");
+			"BANK_B XLRGetBankStatus Failed\n");
 	}
 	else
 	{
@@ -59,7 +59,7 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	{
 		vsna[0] = 0;
 		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"BANK_A XLRGetBankStatus Failed");
+			"BANK_A XLRGetBankStatus Failed\n");
 	}
 	else
 	{
