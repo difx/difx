@@ -9,9 +9,11 @@ typedef struct
 	FILE *out;
 	time_t lastTime;
 	pthread_mutex_t lock;
+	char logPath[256];
+	char hostName[32];
 } Logger;
 
-Logger *newLogger();
+Logger *newLogger(const char *logPath);
 void deleteLogger(Logger *log);
 int Logger_logData(Logger *log, const char *message);
 

@@ -1,4 +1,4 @@
-AC_INIT([mk5daemon], [0.1], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mk5daemon], [0.4], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE

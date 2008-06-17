@@ -7,37 +7,63 @@
 #include <difxmessage.h>
 #include <expat.h>
 #include "mk5daemon.h"
+#include "../config.h"
 #include "logger.h"
 
-const char program[] = "mk5daemon";
-const char version[] = "0.3";
-const char verdate[] = "2008 June 15";
+const char program[] = PACKAGE_NAME;
+const char author[]  = PACKAGE_BUGREPORT;
+const char version[] = VERSION;
 
 const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
+const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
 
 int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
 
-int usage(int argc, char **argv)
+int usage(const char *pgm)
 {
-	printf("\n%s version %s\n\n", program, version);
-	printf("Walter Brisken %s\n\n", verdate);
-	printf("logged to /tmp/<year>_<doy>.mark5log\n\n");
+	fprintf(stderr, "\n%s ver. %s   %s\n\n",
+		program, version, author);
+	fprintf(stderr, "A program to control Mark5A, handle Mark5 allocation "
+		"manage VSNs, and\n");
+	fprintf(stderr, "log all of the above.  Root permissions required.\n");
+	fprintf(stderr, "\nUsage : %s [options]\n\n", pgm);
+	fprintf(stderr, "options can include:\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h             Print this help message\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --no-mark5a\n");
+	fprintf(stderr, "  -n             Don't automatically start Mark5A\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --log-path <path>\n");
+	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "Note: This program responds to the following "
+			"environment variables:\n");
+	fprintf(stderr, "  DIFX_LOG_DIR : change log path from default [%s]\n",
+		DefaultLogPath);
+	fprintf(stderr, "  DIFX_MESSAGE_GROUP : change multicast group "
+		"from default [%s]\n", DefaultDifxGroup);
+	fprintf(stderr, "  DIFX_MESSAGE_PORT : change multicast port "
+		"from default [%d]\n", DefaultDifxMonitorPort);
+	fprintf(stderr, "  STREAMSTOR_BIB_PATH : change streamstor firmware "
+		"path from default\n");
+	fprintf(stderr, "\n");
 
 	return 0;
 }
 
-Mk5Daemon *newMk5Daemon()
+Mk5Daemon *newMk5Daemon(const char *logPath)
 {
 	Mk5Daemon *D;
 	char message[80];
 
 	D = (Mk5Daemon *)calloc(1, sizeof(Mk5Daemon));
 	
-	D->log = newLogger();
+	D->log = newLogger(logPath);
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 10;	/* seconds */
 	gethostname(D->hostName, 32);
@@ -118,12 +144,48 @@ int main(int argc, char **argv)
 	char logMessage[128];
 	int startmk5a = 1;
 	int i;
+	char logPath[256];
+	const char *p;
+	double mjd;
+
+	p = getenv("DIFX_LOG_PATH");
+	if(p)
+	{
+		sprintf(logPath, p);
+	}
+	else
+	{
+		strcpy(logPath, DefaultLogPath);
+	}
 
 	if(argc > 1) for(i = 1; i < argc; i++)
 	{
-		if(strcmp(argv[i], "-n") == 0)
+		if(strcmp(argv[i], "-n") == 0 ||
+		   strcmp(argv[i], "--no-mark5a") == 0)
 		{
 			startmk5a = 0;
+		}
+		if(strcmp(argv[i], "-h") == 0 ||
+		   strcmp(argv[i], "--help") == 0)
+		{
+			return usage(argv[0]);
+		}
+		else if(i < argc-1)
+		{
+			if(strcmp(argv[i], "-l") == 0 ||
+			   strcmp(argv[i], "--log-path") == 0)
+			{
+				i++;
+				strcpy(logPath, argv[i]);
+			}
+			else
+			{
+				return usage(argv[0]);
+			}
+		}
+		else
+		{
+			return usage(argv[0]);
 		}
 	}
 
@@ -133,14 +195,13 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 1);
+	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
 	difxMessageInit(-1, program);
 
-	D = newMk5Daemon();
+	D = newMk5Daemon(logPath);
 
-	sprintf(logMessage, "Starting %s ver. %s  %s\n",
-		program, version, verdate);
+	sprintf(logMessage, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, logMessage);
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
@@ -155,7 +216,8 @@ int main(int argc, char **argv)
 			lastTime = t;
 			if(lastTime % D->loadMonInterval == 0)
 			{
-				Mk5Daemon_loadMon(D);
+				mjd = 40587.0 + t/86400.0;
+				Mk5Daemon_loadMon(D, mjd);
 			}
 			if(lastTime % 2 == 0 && D->isMk5)
 			{
@@ -208,8 +270,7 @@ int main(int argc, char **argv)
 		usleep(200000);
 	}
 
-	sprintf(logMessage, "Stopping %s ver. %s  %s\n",
-		program, version, verdate);
+	sprintf(logMessage, "Stopping %s ver. %s  %s\n", program, version);
 	Logger_logData(D->log, logMessage);
 
 	deleteMk5Daemon(D);

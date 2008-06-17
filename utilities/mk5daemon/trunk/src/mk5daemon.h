@@ -34,7 +34,7 @@ typedef struct
 
 extern const char headNode[];
 
-int Mk5Daemon_loadMon(Mk5Daemon *D);
+int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
 void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);

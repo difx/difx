@@ -3,7 +3,7 @@
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
-int Mk5Daemon_loadMon(Mk5Daemon *D)
+int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 {
 	static long long lastRX=0, lastTX=0;
 	long long curRX=0, curTX=0;
@@ -14,6 +14,7 @@ int Mk5Daemon_loadMon(Mk5Daemon *D)
 	char line[100];
 	int memused=0, memtot=0;
 	char key[100];
+	char logMessage[256];
 	int val, v;
 
 	/* LOAD */
@@ -98,6 +99,12 @@ int Mk5Daemon_loadMon(Mk5Daemon *D)
 	D->load.cpuLoad = l1;
 	D->load.totalMemory = memtot;
 	D->load.usedMemory = memused;
+
+	sprintf(logMessage, "LOAD: %13.7f %4.2f %d %d %5.3f %5.3f", mjd,
+		D->load.cpuLoad, D->load.usedMemory, D->load.totalMemory,
+		D->load.netRXRate*8.0e-6, D->load.netTXRate*8.0e-6);
+	
+	Logger_logData(D->log, logMessage);
 	
 	return difxMessageSendLoad(&D->load);
 }
