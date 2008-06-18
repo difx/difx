@@ -22,10 +22,13 @@ static void *mark5Arun(void *ptr)
 	{
 		fgets(str, 999, pin);
 		str[999] = 0;
-		/* FIXME -- look at str for "Ready" and "ERROR" */
 		if(feof(pin))
 		{
 			break;
+		}
+		if(strstr("ERROR", str) != 0)
+		{
+			difxMessageSendDifxError(str, 1);
 		}
 		Logger_logData(D->log, str);
 		Logger_logData(D->log, "\n");
