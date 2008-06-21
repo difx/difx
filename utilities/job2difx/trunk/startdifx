@@ -150,6 +150,7 @@ deletepolicy = 0
 makeuvw = True
 makefits = False
 filebaselist = []
+cwd = getcwd()
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -168,13 +169,14 @@ for a in argv[1:]:
 		elif a == '-F' or a == '--fits':
 			makefits = True
 	else:
-		fb = a
-		if fb[-6:] == '.input':
+		if a[-6:] == '.input':
 			fb = a[:-6]
+		else:
+			fb = a
 		if fb[0] == '/':
 			filebaselist.append(a)
 		else:
-			filebaselist.append(getcwd() + '/' + fb)
+			filebaselist.append(cwd + '/' + fb)
 
 if len(filebaselist) < 1:
 	usage()

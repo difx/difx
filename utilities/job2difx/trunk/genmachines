@@ -12,8 +12,8 @@ from copy import deepcopy
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.9'
-verdate = '20080522'
+version = '0.10'
+verdate = '20080620'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -33,6 +33,8 @@ def usage():
 	print '          set overheadcores to <ohc>, default = 1'
 	print '\n  -m <machinesfile> or --machines <machinesfile>'
 	print '          use <machinesfile> instead of $DIFX_MACHINES'
+	print '\n  -n or --no-threads'
+	print '          don\'t write a .threads file'
 	print '\n<input> is a DiFX .input file.'
 	print '\nEnv. Var. DIFX_MACHINES must point to the machines file if no <machinesfile>'
 	print 'is specifided.\n'
@@ -285,7 +287,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 		threads.append(e)
 	return threads
 
-def run(files, machinesfile, overheadcores, verbose):
+def run(files, machinesfile, overheadcores, verbose, dothreads):
 	ok = True
 
 	machines, cores, ismk5 = readmachines(machinesfile, verbose)
@@ -338,7 +340,8 @@ def run(files, machinesfile, overheadcores, verbose):
 	if len(t) == 0:
 		return 1
 
-	writethreads(basename, t)
+	if dothreads:
+		writethreads(basename, t)
 
 	return 0
 
@@ -349,6 +352,7 @@ files = []
 machinesfile = getenv('DIFX_MACHINES')
 overheadcores = 1
 verbose = 0
+dothreads = True
 
 a = 1
 while a < len(argv):
@@ -357,6 +361,8 @@ while a < len(argv):
 		usage()
 	elif arg == '-v' or arg == '--verbose':
 		verbose += 1
+	elif arg == '-n' or arg == '--no-threads':
+		dothreads = False
 	elif arg == '-m' or arg == '--machinesfile':
 		a += 1
 		if a >= len(argv):
@@ -397,6 +403,6 @@ if quit:
 if verbose > 0:
 	print 'DIFX_MACHINES -> %s' % machinesfile
 	
-v = run(files, machinesfile, overheadcores, verbose)
+v = run(files, machinesfile, overheadcores, verbose, dothreads)
 if v != 0:
 	exit(v)

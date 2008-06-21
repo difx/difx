@@ -311,6 +311,10 @@ int main (int argc, char *argv[])
   {
   	glob("*.calc", 0, 0, &globbuf);
 	nfiles = globbuf.gl_pathc;
+	if(nfiles <= 0)
+	{
+		printf("no .calc files found.  Did you run job2difx yet?\n\n");
+	}
 	for(i = 0; i < nfiles; i++)
 	{
 		skipped = processFile(globbuf.gl_pathv[i], doforce);

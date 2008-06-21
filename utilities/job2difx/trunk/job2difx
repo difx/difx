@@ -16,7 +16,7 @@ BufferFactor = 32
 NDataSegment = 8
 MaxEOP = 5
 verbose = 0
-multiconfig = 2
+multiconfig = 0
 visbufferlength = 32
 spectrunc = 2	# do this much spectral truncation before doing decimation
 
@@ -28,7 +28,7 @@ def usage():
 	print '\nUsage: %s [options] <job file>' % (argv[0])
 	print '\nOptions can include:'
 	print '\n  -h or --help            print this help into and exit'
-	print '\n  -s or --single-config   allow only 1 config per job'
+	print '\n  -s or --single-config   allow only 1 config per job [default]'
 	print '\n  -p or --multi-pass      handle multiple configs in passes'
 	print '\n  -m or --multi-config    multiple configs per job [flakey]'
 	print '\n  -v or --verbose         spew lots of info to the screen'
