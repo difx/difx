@@ -1,0 +1,32 @@
+00000000 KATMC, KATMD, KAXOC, KAXOD, KCORC, KCORD, KDNPC, KDNPD,
+00000000 KETDC, KETDD, KIONC, KIOND, KNUTC, KNUTD, KPREC, KPRED,
+00000000 KRELC, KRELD, KSITC, KSITD, KSTRC, KSTRD, KUT1C, KUT1D,
+00000000 KWOBC, KWOBD, KUTCC, KUTCD, KATIC, KATID, KCTIC, KCTID,
+00000000 KPEPC, KPEPD, KDIUC, KDIUD, KM20C, KM20D, KROSC, KROSD,
+00000000 KSTEC, KSTED, KSUNC, KSUND, KSARC, KSARD, KTHEC, KTHED,
+00000000 KMATC, KMATD, KVECC, KVECD, KOCEC, KOCED, KASTC, KASTD,
+000000   KSTAC, KSTAD, KPLXC, KPLXD, KPANC, KPAND 
+*
+*         Flags named KXXXD control the debug output during
+*         the XXX module execution. KXXXD = 0, debug off.
+*
+*         Flags named KXXXC are control flags for each module.
+*         Set KXXXC = 1 to turn off a module.
+*
+TIDALUT1      1                short-period tidal-terms flag    (ut1i) 
+DELTFLAG      1                group dly = 1, phase dly = 2      (CORI)
+NDELAY        1                n delay channels
+NRATE         1                n rate channels
+COR DATA      0.0              solar corona  aelec  rad/sec**2   (CORI)
+              0.0              belec 2nd term,      rad/sec**2
+REF FREQ      5010.0d+6        array indep dly freqs Hz          (pang)
+DNP DATA      1.0              diurnal polar motion scale ellips (DNPI)
+ETD DATA      0.0              etide  lag angle rads             (ETDI)
+              0.60967          love number h
+              0.085            love number l
+EPHEPOCH      2000             ephmeris ref epoch  years       (pepi)
+DPSI          0.0              nutation in longitude rad       (pep)
+              0.0              ct time deriv  rad/sec
+DEPS          0.0              nutation in obliquity rad       (pep)
+              0.0              ct time deriv  rad/sec
+ 

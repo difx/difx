@@ -1,0 +1,20 @@
+#!/bin/csh
+
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.00
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.01
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.02
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.03
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.04
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.05
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.06
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.07
+#wget -N ftp://hpiers.obspm.fr/iers/eop/eopc04_05/eopc04.08
+wget -N ftp://hpiers.obspm.fr/iers/bul/bulc/UTC-TAI.history -O UTC-TAI.dat
+
+#perl -i -p -e "s/\-0./\ \-./g" eopc04.0?
+#perl -i -p -e "s/\ 0./\ \ ./g" eopc04.0?
+
+rm -f usno_finals.erp
+wget http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/usno_finals.erp
+
+./check_tai.py
