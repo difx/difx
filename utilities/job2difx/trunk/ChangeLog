@@ -2,6 +2,8 @@ getjobs
 ~~~~~~~
 Version 1.1
 * copy log file
+Version 1.2
+* warn about case sensitive and don't make directory if not found
 
 Version 1.0
 * Initial version

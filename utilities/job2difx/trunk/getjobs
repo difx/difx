@@ -6,8 +6,8 @@ from glob import glob
 from string import split
 
 program = 'getjobs'
-version = '1.1'
-verdate = '20080413'
+version = '1.2'
+verdate = '20080622'
 author  = 'Walter Brisken'
 
 projectdir = '/home/vlbiobs/astronomy'
@@ -32,7 +32,8 @@ def getdir(project):
 		return g[0]
 	else:
 		print 'Sorry, project %s not in %s.' % (project, projectdir)
-		return None
+		print '\nNote -- project names are case sensitive.\n'
+		exit(0)
 
 project = None
 basedir = None
