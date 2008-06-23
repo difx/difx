@@ -1,12 +1,16 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <glob.h>
 #include "difx2fits.h"
 #include "../config.h"
 
 const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
+
+#define MAX_INPUT_FILES 4096
+
 
 static int usage(const char *pgm)
 {
@@ -15,7 +19,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "A program to convert DiFX format data to "
 		"FITS-IDI\n\n");
 	fprintf(stderr, "Usage : %s [options] <baseFilename1> "
-		"[<baseFilename2> ... ] <outfile>\n\n", pgm);
+		"[<baseFilename2> ... ] [<outfile>]\n\n", pgm);
 	fprintf(stderr, "It assumed that SWIN format visibility file(s) "
 		"to be converted live\n");
 	fprintf(stderr, "in directory <baseFilename>.difx/\n");
@@ -43,6 +47,9 @@ static int usage(const char *pgm)
 		"The first two optional\n");
 	fprintf(stderr, "files are required for full model accountability.\n");
 	fprintf(stderr, "\noptions can include:\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h                  Print this help message\n"); 
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --average <nchan>\n");
 	fprintf(stderr, "  -a        <nchan>   Average <nchan> channels\n");
 	fprintf(stderr, "\n");
@@ -64,6 +71,205 @@ static int usage(const char *pgm)
 	fprintf(stderr, "\n");
 
 	return 0;
+}
+
+struct CommandLineOptions
+{
+	char *fitsFile;
+	char *baseFile[MAX_INPUT_FILES];
+	int nBaseFile;
+	int writemodel;
+	int pretend;
+	double scale;
+	int verbose;
+	/* some overrides */
+	int specAvg;
+	int doalldifx;
+	float nOutChan;
+	float startChan;
+};
+
+struct CommandLineOptions *newCommandLineOptions()
+{
+	struct CommandLineOptions *opts;
+
+	opts = (struct CommandLineOptions *)calloc(1, 
+		sizeof(struct CommandLineOptions));
+	
+	opts->writemodel = 1;
+
+	return opts;
+}
+
+void deleteCommandLineOptions(struct CommandLineOptions *opts)
+{
+	int i;
+
+	if(opts)
+	{
+		if(opts->nBaseFile > 0)
+		{
+			for(i = 0; i < opts->nBaseFile; i++)
+			{
+				free(opts->baseFile[i]);
+			}
+		}
+		if(opts->fitsFile)
+		{
+			free(opts->fitsFile);
+		}
+		free(opts);
+	}
+}
+
+struct CommandLineOptions *parseCommandLine(int argc, char **argv)
+{
+	struct CommandLineOptions *opts;
+	int i, l;
+	glob_t globbuf;
+
+	opts = newCommandLineOptions();
+
+	for(i = 1; i < argc; i++)
+	{
+		if(argv[i][0] == '-')
+		{
+			if(strcmp(argv[i], "--no-model") == 0 ||
+			   strcmp(argv[i], "-n") == 0)
+			{
+				opts->writemodel = 0;
+			}
+			else if(strcmp(argv[i], "--quiet") == 0 ||
+			        strcmp(argv[i], "-q") == 0)
+			{
+				opts->verbose++;
+			}
+			else if(strcmp(argv[i], "--difx") == 0 ||
+			        strcmp(argv[i], "-d") == 0)
+			{
+				opts->doalldifx++;
+			}
+			else if(strcmp(argv[i], "--verbose") == 0 ||
+			        strcmp(argv[i], "-v") == 0)
+			{
+				opts->verbose++;
+			}
+			else if(strcmp(argv[i], "--pretend") == 0 ||
+			        strcmp(argv[i], "-p") == 0)
+			{
+				opts->pretend = 1;
+			}
+			else if(strcmp(argv[i], "--help") == 0 ||
+			        strcmp(argv[i], "-h") == 0)
+			{
+				deleteCommandLineOptions(opts);
+				return 0;
+			}
+			else if(i+1 < argc) /* one parameter arguments */
+			{
+				if(strcmp(argv[i], "--scale") == 0 ||
+				   strcmp(argv[i], "-s") == 0)
+				{
+					i++;
+					opts->scale = atof(argv[i]);
+					printf("Scaling data by %f\n", 
+						opts->scale);
+				}
+				else if(strcmp(argv[i], "--average") == 0 ||
+				        strcmp(argv[i], "-a") == 0)
+				{
+					i++;
+					opts->specAvg = atoi(argv[i]);
+				}
+				else if(strcmp(argv[i], "--outchans") == 0 ||
+				        strcmp(argv[i], "-o") == 0)
+				{
+					i++;
+					opts->nOutChan = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--beginchan") == 0 ||
+				        strcmp(argv[i], "-b") == 0)
+				{
+					i++;
+					opts->startChan = atof(argv[i]);
+				}
+				else
+				{
+					printf("Unknown param %s\n", argv[i]);
+					deleteCommandLineOptions(opts);
+					return 0;
+				}
+			}
+			else
+			{
+				printf("Unknown param %s\n", argv[i]);
+				deleteCommandLineOptions(opts);
+				return 0;
+			}
+		}
+		else
+		{
+			if(opts->nBaseFile >= MAX_INPUT_FILES)
+			{
+				printf("Error -- too many input files!\n");
+				printf("Max = %d\n", MAX_INPUT_FILES);
+				deleteCommandLineOptions(opts);
+				return 0;
+			}
+			l = strlen(argv[i]);
+			if(l > 5 && strcasecmp(argv[i]+l-5, ".FITS") == 0)
+			{
+				opts->fitsFile = strdup(argv[i]);
+			}
+			else
+			{
+				opts->baseFile[opts->nBaseFile] = 
+					strdup(argv[i]);
+				opts->nBaseFile++;
+			}
+		}
+	}
+
+	if((opts->nBaseFile >  0 && opts->doalldifx >  0) ||
+	   (opts->nBaseFile == 0 && opts->doalldifx == 0))
+	{
+		deleteCommandLineOptions(opts);
+		return 0;
+	}
+
+	if(opts->doalldifx)
+	{
+		glob("*.difx", 0, 0, &globbuf);
+		if(globbuf.gl_pathc > MAX_INPUT_FILES)
+		{
+			printf("Error -- too many input files!\n");
+			printf("Max = %d\n", MAX_INPUT_FILES);
+			deleteCommandLineOptions(opts);
+			return 0;
+		}
+		opts->nBaseFile = globbuf.gl_pathc;
+		for(i = 0; i < opts->nBaseFile; i++)
+		{
+			opts->baseFile[i] = strdup(globbuf.gl_pathv[i]);
+		}
+		globfree(&globbuf);
+	}
+
+	/* if input file ends in .difx, trim it */
+	for(i = 0; i < opts->nBaseFile; i++)
+	{
+		l = strlen(opts->baseFile[i]);
+		if(l < 6)
+		{
+			continue;
+		}
+		if(strcmp(opts->baseFile[i]+l-5, ".difx") == 0)
+		{
+			opts->baseFile[i][l-5] = 0;
+		}
+	}
+
+	return opts;
 }
 
 static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
@@ -229,149 +435,75 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	return D;
 }
 
-int main(int argc, char **argv)
+int convertFits(struct CommandLineOptions *opts, int passNum)
 {
 	DifxInput *D, *D1, *D2;
 	struct fitsPrivate outfile;
-	const char *baseFile[1024], *fitsFile=0;
-	int writemodel = 1;
+	char outFitsName[256];
 	int i;
-	int pretend = 0;
-	double scale = 0.0;
-	int verbose = 0;
-	int nBaseFile = 0;
-	/* some overrides */
-	int specAvg = 0;
-	float nOutChan = 0.0;
-	float startChan = 0.0;
-
-	for(i = 1; i < argc; i++)
-	{
-		if(argv[i][0] == '-')
-		{
-			if(strcmp(argv[i], "--no-model") == 0 ||
-			   strcmp(argv[i], "-n") == 0)
-			{
-				writemodel = 0;
-			}
-			if(strcmp(argv[i], "--quiet") == 0 ||
-			   strcmp(argv[i], "-q") == 0)
-			{
-				verbose++;
-			}
-			if(strcmp(argv[i], "--verbose") == 0 ||
-			   strcmp(argv[i], "-v") == 0)
-			{
-				verbose++;
-			}
-			if(strcmp(argv[i], "--pretend") == 0 ||
-			   strcmp(argv[i], "-p") == 0)
-			{
-				pretend = 1;
-			}
-			else if(i+1 < argc) /* one parameter arguments */
-			{
-				if(strcmp(argv[i], "--scale") == 0 ||
-				   strcmp(argv[i], "-s") == 0)
-				{
-					i++;
-					scale = atof(argv[i]);
-					printf("Scaling data by %f\n", scale);
-				}
-				if(strcmp(argv[i], "--average") == 0 ||
-				   strcmp(argv[i], "-a") == 0)
-				{
-					i++;
-					specAvg = atoi(argv[i]);
-				}
-				if(strcmp(argv[i], "--outchans") == 0 ||
-				   strcmp(argv[i], "-o") == 0)
-				{
-					i++;
-					nOutChan = atof(argv[i]);
-				}
-				if(strcmp(argv[i], "--beginchan") == 0 ||
-				   strcmp(argv[i], "-b") == 0)
-				{
-					i++;
-					startChan = atof(argv[i]);
-				}
-			}
-		}
-		else
-		{
-			if(fitsFile)
-			{
-				baseFile[nBaseFile] = fitsFile;
-				nBaseFile++;
-			}
-			fitsFile = argv[i];
-		}
-	}
-
-	if(nBaseFile == 0 || fitsFile == 0)
-	{
-		return usage(argv[0]);
-	}
+	int nConverted = 0;
 
 	D = 0;
 
-	for(i = 0; i < nBaseFile; i++)
+	for(i = 0; i < opts->nBaseFile; i++)
 	{
-		if(verbose > 1)
+		if(opts->baseFile[i] == 0)
 		{
-			printf("Loading %s\n", baseFile[i]);
+			continue;
 		}
-		D2 = loadDifxInput(baseFile[i]);
+
+		if(opts->verbose > 1)
+		{
+			printf("Loading %s\n", opts->baseFile[i]);
+		}
+		D2 = loadDifxInput(opts->baseFile[i]);
 		if(!D2)
 		{
 			fprintf(stderr, "loadDifxInput failed on <%s>.\n",
-				baseFile[i]);
+				opts->baseFile[i]);
 			return 0;
 		}
-		if(specAvg)
+		if(opts->specAvg)
 		{
-			D2->specAvg = specAvg;
+			D2->specAvg = opts->specAvg;
 		}
-		if(nOutChan >= 1)
+		if(opts->nOutChan >= 1)
 		{
-			D2->nOutChan = nOutChan;
+			D2->nOutChan = opts->nOutChan;
 		}
-		else if(nOutChan > 0.0) /* interpret in fractional sense */
+		else if(opts->nOutChan > 0.0) /* interpret in fractional sense */
 		{
-			D2->nOutChan = D2->config[0].nChan*nOutChan/D2->specAvg;
+			D2->nOutChan = D2->config[0].nChan*opts->nOutChan/D2->specAvg;
 		}
-		if(startChan >= 1)
+		if(opts->startChan >= 1)
 		{
-			D2->startChan = startChan;
+			D2->startChan = opts->startChan;
 		}
-		else if(startChan > 0.0)
+		else if(opts->startChan > 0.0)
 		{
-			D2->startChan = (D2->config[0].nChan*startChan) + 0.5;
+			D2->startChan = (D2->config[0].nChan*opts->startChan) + 0.5;
 		}
 		if(D)
 		{
 			D1 = D;
-			if(verbose > 1)
+
+			if(!areDifxInputsMergable(D1, D2) ||
+			   !areDifxInputsCompatible(D1, D2))
 			{
-				printf("Merging %s\n", baseFile[i]);
+				deleteDifxInput(D2);
+				continue;
 			}
-			if(areDifxInputsMergable(D1, D2))
+			else if(opts->verbose > 1)
 			{
-				D = mergeDifxInputs(D1, D2, verbose);
+				printf("Merging %s\n", opts->baseFile[i]);
 			}
-			else
-			{
-				D = 0;
-				fprintf(stderr, "%s is incompatible with "
-					"other inputs\n", baseFile[i]);
-			}
-			deleteDifxInput(D1);
-			deleteDifxInput(D2);
+
+			D = mergeDifxInputs(D1, D2, opts->verbose);
+
 			if(!D)
 			{
-				fprintf(stderr, "merging failed on <%s>.\n",
-					baseFile[i]);
+				fprintf(stderr, "Merging failed on <%s>.\n",
+					opts->baseFile[i]);
 				return 0;
 			}
 		}
@@ -379,9 +511,29 @@ int main(int argc, char **argv)
 		{
 			D = D2;
 		}
+		opts->baseFile[i] = 0;
+		nConverted++;
 	}
 
-	if(verbose > 2)
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(opts->fitsFile)
+	{
+		strcpy(outFitsName, opts->fitsFile);
+	}
+	else
+	{
+		sprintf(outFitsName, "%s%s.%d.FITS",
+			D->job[0].obsCode,
+			D->job[0].obsSession,
+			passNum);
+	}
+
+
+	if(opts->verbose > 2)
 	{
 		printDifxInput(D);
 	}
@@ -394,7 +546,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	if(verbose > 1)
+	if(opts->verbose > 1)
 	{
 		printDifxInput(D);
 	}
@@ -414,17 +566,17 @@ int main(int argc, char **argv)
 		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 
-	if(!pretend)
+	if(!opts->pretend)
 	{
-		if(fitsWriteOpen(&outfile, fitsFile) < 0)
+		if(fitsWriteOpen(&outfile, outFitsName) < 0)
 		{
 			deleteDifxInput(D);
 			fprintf(stderr, "Cannot open output file\n");
 			return 0;
 		}
 
-		if(DifxInput2FitsTables(D, &outfile, writemodel, 
-			scale, verbose) == D)
+		if(DifxInput2FitsTables(D, &outfile, opts->writemodel, 
+			opts->scale, opts->verbose) == D)
 		{
 			printf("\nConversion successful\n\n");
 		}
@@ -434,14 +586,53 @@ int main(int argc, char **argv)
 
 	deleteDifxInput(D);
 
-	if(nBaseFile > 1)
+	return nConverted;
+}
+
+int main(int argc, char **argv)
+{
+	struct CommandLineOptions *opts;
+	int nConverted = 0;
+	int n, nFits = 0;
+
+	opts = parseCommandLine(argc, argv);
+	if(opts == 0)
 	{
+		return usage(argv[0]);
+	}
+
+	for(;;)
+	{
+		n = convertFits(opts, nFits);
+		if(n <= 0)
+		{
+			break;
+		}
+		nConverted += n;
+		nFits++;
+	}
+
+	printf("%d of %d jobs converted to %d FITS files\n", nConverted,
+		opts->nBaseFile, nFits);
+
+	if(nConverted != opts->nBaseFile)
+	{
+		printf("\n*** Warning -- not all input files converted!\n");
+	}
+
+	if(opts->nBaseFile > 1)
+	{
+		printf("\n");
 		printf("*** Warning -- combining multiple files with difx2fits "
 			"is still a beta\nfeature.  Please check your results "
 			"carefully and report problems to\n%s.  Please always "
 			"include the output\nof difx2fits -v -v with any "
-			"error report.  Have a groovy day.\n\n", author);
+			"error report.  Have a groovy day.\n", author);
 	}
+
+	printf("\n");
 	
+	deleteCommandLineOptions(opts);
+
 	return 0;
 }

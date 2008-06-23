@@ -3,6 +3,7 @@
 
 #include <complex.h>
 #include <math.h>
+#include <glob.h>
 #include "difxio/parsedifx.h"
 #include "difx2fits.h"
 

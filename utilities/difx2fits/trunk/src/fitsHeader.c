@@ -42,6 +42,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteString(out, "TELESCOP", "VLBA", "");
 	fitsWriteString(out, "OBSERVER", D->job->obsCode, "");
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
+	fitsWriteString(out, "CORRELAT", "DIFX", "");
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
 	mjd2fits ((int)timeMjd (), strng);
 	fitsWriteString(out, "DATE-MAP", strng, "Correlation date");

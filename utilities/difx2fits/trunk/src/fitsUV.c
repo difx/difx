@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <string.h>
 #include <strings.h>
-#include <glob.h>
 #include "config.h"
 #include "fitsUV.h"
 
