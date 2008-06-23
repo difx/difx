@@ -1,0 +1,93 @@
+#!/bin/env python
+
+from string import split, strip, find, upper, lower
+from sys import argv, exit
+from os import popen, getenv
+from glob import glob
+import socket
+import struct
+from xml.parsers import expat
+from copy import deepcopy
+from time import asctime
+
+program = 'errormon'
+author  = 'Walter Brisken'
+version = '0.1'
+verdate = '20080618'
+
+defaultDifxMessagePort = 50200
+defaultDifxMessageGroup = '224.2.2.1'
+
+
+class Parser:
+
+    def __init__(self):
+        self._parser = expat.ParserCreate()
+        self._parser.StartElementHandler = self.start
+        self._parser.EndElementHandler = self.end
+        self._parser.CharacterDataHandler = self.data
+	self.message = ''
+	self.severity = -1
+	self.tmp = ''
+	self.ok = False
+	self.unit = ''
+
+    def feed(self, data):
+        self._parser.Parse(data, 0)
+
+    def close(self):
+        self._parser.Parse("", 1) # end of data
+        del self._parser # get rid of circular references
+
+    def start(self, tag, attrs):
+        if tag == 'difxError':
+		self.ok = True
+
+    def end(self, tag):
+        if tag == 'errorMessage' and self.ok:
+		self.message = self.tmp
+	if tag == 'severity':
+		self.severity = int(self.tmp)
+	if tag == 'from':
+		self.unit = lower(self.tmp)
+
+    def data(self, data):
+        self.tmp = data
+
+    def getinfo(self):
+	if self.ok:
+        	return '%-10s %1d %s' % (self.unit, self.severity, self.message)
+	else:
+		return ''
+
+def run():
+	
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultDifxMessagePort
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultDifxMessageGroup
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	#s.settimeout(dt)
+
+	while 1:
+		try:
+			message = s.recv(1024)
+			p = Parser()
+			p.feed(message)
+			info = p.getinfo()
+			p.close()
+			if len(info) > 0:
+				print asctime(), info
+		except socket.timeout:
+			pass
+
+run()

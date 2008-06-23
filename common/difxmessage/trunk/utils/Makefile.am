@@ -10,7 +10,8 @@ bin_PROGRAMS = \
 
 dist_bin_SCRIPTS = \
 	mk5mon \
-	cpumon
+	cpumon \
+	errormon
 
 testdifxmessagesend_SOURCES = \
 	testdifxmessagesend.c
