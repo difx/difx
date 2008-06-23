@@ -127,7 +127,36 @@ int main(int argc, char **argv)
 	long long offset = 0;
 	long long n;
 
-	if(argc < 4)
+	if(argc == 2)
+	{
+		struct mark5_format *mf;
+		int bufferlen = 1<<11;
+		char *buffer;
+		FILE *in;
+
+		buffer = malloc(bufferlen);
+		
+		in = fopen(argv[1], "r");
+		fread(buffer, bufferlen, 1, in);
+		
+		mf = new_mark5_format_from_stream(
+			new_mark5_stream_memory(buffer, bufferlen/2));
+
+		print_mark5_format(mf);
+		delete_mark5_format(mf);
+
+		mf = new_mark5_format_from_stream(
+			new_mark5_stream_memory(buffer, bufferlen/2));
+
+		print_mark5_format(mf);
+		delete_mark5_format(mf);
+
+		free(buffer);
+
+		return 0;
+	}
+
+	else if(argc < 4)
 	{
 		return usage(argv[0]);
 	}

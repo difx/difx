@@ -566,9 +566,28 @@ struct mark5_format *new_mark5_format_from_stream(
 	
 	/* No match found */
 	free(mf);
-	delete_mark5_stream(ms);
+	free(ms);
 
 	return 0;
+}
+
+void print_mark5_format(const struct mark5_format *mf)
+{
+	printf("mark5_format : %x\n", mf);
+	if(!mf)
+	{
+		return;
+	}
+	printf("  Mbps = %d\n", mf->Mbps);
+	printf("  nchan = %d\n", mf->nchan);
+	printf("  nbit = %d\n", mf->nbit);
+	printf("  frameoffset = %d\n", mf->frameoffset);
+	printf("  framebytes = %d\n", mf->framebytes);
+	printf("  framens = %f\n", mf->framens);
+	printf("  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
+	printf("  ntrack = %d\n", mf->ntrack);
+	printf("  fanout = %d\n", mf->fanout);
+	printf("  decimation = %d\n", mf->decimation);
 }
 
 void delete_mark5_format(struct mark5_format *mf)

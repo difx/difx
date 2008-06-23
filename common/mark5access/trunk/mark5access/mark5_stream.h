@@ -275,6 +275,8 @@ struct mark5_format *new_mark5_format_from_stream(
 
 void delete_mark5_format(struct mark5_format *mf);
 
+void print_mark5_format(const struct mark5_format *mf);
+
 
 /* BELOW HERE USER BEWARE -- If you are using any functionality defined
  * below this comment then your code may not function properly with
