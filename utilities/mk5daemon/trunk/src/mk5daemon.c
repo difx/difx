@@ -144,6 +144,7 @@ int main(int argc, char **argv)
 	char logMessage[128];
 	int startmk5a = 1;
 	int i;
+	int justStarted = 1;
 	char logPath[256];
 	const char *p;
 	double mjd;
@@ -165,7 +166,7 @@ int main(int argc, char **argv)
 		{
 			startmk5a = 0;
 		}
-		if(strcmp(argv[i], "-h") == 0 ||
+		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
 		{
 			return usage(argv[0]);
@@ -261,10 +262,11 @@ int main(int argc, char **argv)
 				Mk5Daemon_startMark5A(D);
 				startmk5a = 0;
 			}
-			else
+			else if(justStarted)
 			{
 				Mk5Daemon_getModules(D);
 			}
+			justStarted = 0;
 		}
 
 		usleep(200000);

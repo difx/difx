@@ -31,7 +31,6 @@ static void *mark5Arun(void *ptr)
 			difxMessageSendDifxError(str, 1);
 		}
 		Logger_logData(D->log, str);
-		Logger_logData(D->log, "\n");
 		D->lastMark5AUpdate = time(0);
 		/* Once ready, get modules */
 		if(strncmp(str, "Mark5A Ready.", 13) == 0)

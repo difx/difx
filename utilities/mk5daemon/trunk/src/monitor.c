@@ -112,7 +112,6 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		if(D->isMk5)
 		{
 			Mk5Daemon_resetMark5A(D);
-			Mk5Daemon_getModules(D);
 		}
 	}
 	else if(strcasecmp(cmd, "StartMark5A") == 0)

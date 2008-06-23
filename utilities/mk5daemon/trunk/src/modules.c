@@ -29,7 +29,8 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	{
 		Logger_logData(D->log, "ERROR: XLR_get_modules: "
 			"Cannot set SkipCheckDir\n");
-		return 1;
+		XLRClose(xlrDevice);
+		return 0;
 	}
 	
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
@@ -40,18 +41,14 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		Logger_logData(D->log, "ERROR: XLR_get_modules: "
 			"BANK_B XLRGetBankStatus Failed\n");
 	}
-	else
+	else if(bank_stat.Label[8] == '/')
 	{
 		strncpy(vsnb, bank_stat.Label, 16);
-		vsnb[15] = 0;
-		if(vsnb[8] == '/')
-		{
-			vsnb[8] = 0;
-		}
-		else
-		{
-			vsnb[0] = 0;
-		}
+		vsnb[8] = 0;
+	}
+	else
+	{
+		vsnb[0] = 0;
 	}
 
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
@@ -61,18 +58,14 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		Logger_logData(D->log, "ERROR: XLR_get_modules: "
 			"BANK_A XLRGetBankStatus Failed\n");
 	}
-	else
+	else if(bank_stat.Label[8] == '/')
 	{
 		strncpy(vsna, bank_stat.Label, 16);
-		vsna[15] = 0;
-		if(vsna[8] == '/')
-		{
-			vsna[8] = 0;
-		}
-		else
-		{
-			vsna[0] = 0;
-		}
+		vsna[8] = 0;
+	}
+	else
+	{
+		vsna[0] = 0;
 	}
 
 	XLRClose(xlrDevice);
