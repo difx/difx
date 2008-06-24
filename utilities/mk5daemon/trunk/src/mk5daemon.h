@@ -10,8 +10,8 @@ enum ProcessType
 	PROCESS_NONE = 0,
 	PROCESS_RESET,
 	PROCESS_MARK5,
-	PROCESS_MARK5_DONE,
 	PROCESS_DATASTREAM,
+	PROCESS_MK5DIR,
 	PROCESS_SSERASE
 };
 
@@ -24,6 +24,7 @@ typedef struct
 	pthread_t monitorThread;
 	pthread_t controlThread;
 	pthread_mutex_t processLock;
+	int processDone;
 	int loadMonInterval;		/* seconds */
 	int dieNow;
 	char vsnA[10], vsnB[10];
@@ -44,5 +45,6 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D);
 void Mk5Daemon_resetMark5A(Mk5Daemon *D);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
+void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank);
 
 #endif

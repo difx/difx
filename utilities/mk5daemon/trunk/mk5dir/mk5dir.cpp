@@ -10,6 +10,8 @@ const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
 
+int verbose = 0;
+
 int usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s\n\n", program, version, author);
@@ -39,7 +41,10 @@ void dirCallback(int scan, int nscan, int status, void *data)
 	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
 	difxMessageSendMark5Status(mk5status);
 
-	printf("%d/%d %d\n", scan, nscan, status);
+	if(verbose)
+	{
+		printf("%d/%d %d\n", scan, nscan, status);
+	}
 }
 
 int main(int argc, char **argv)
@@ -54,7 +59,6 @@ int main(int argc, char **argv)
 	char vsn[16] = "";
 	int v;
 	int a;
-	int verbose = 0;
 
 	if(argc < 2)
 	{
@@ -167,10 +171,48 @@ int main(int argc, char **argv)
 	memset(&module, 0, sizeof(module));
 	module.bank = -1;
 
-	v = getCachedMark5Module(&module, xlrDevice, mjdnow, vsn, mk5dirpath, &dirCallback, &mk5status);
-	if(v < 0)
+	if(strcmp(vsn, "AB") == 0)
 	{
-		printf("Module not found : %s\n", vsn);
+		if(strlen(mk5status.vsnA) == 8)
+		{
+			getCachedMark5Module(&module, xlrDevice, mjdnow, 
+				mk5status.vsnA, mk5dirpath, &dirCallback, 
+				&mk5status);
+			if(verbose > 0)
+			{
+				printMark5Module(&module);
+			}
+		}
+
+		memset(&module, 0, sizeof(module));
+		module.bank = -1;
+
+		if(strlen(mk5status.vsnB) == 8)
+		{
+			getCachedMark5Module(&module, xlrDevice, mjdnow, 
+				mk5status.vsnB, mk5dirpath, &dirCallback, 
+				&mk5status);
+			if(verbose > 0)
+			{
+				printMark5Module(&module);
+			}
+		}
+	}
+	else
+	{
+		if(strlen(vsn) == 8)
+		{
+			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+				vsn, mk5dirpath, &dirCallback, &mk5status);
+			if(v < 0)
+			{
+				printf("Module not found : %s\n", vsn);
+			}
+			else if(verbose > 0)
+			{
+				printMark5Module(&module);
+			}
+		}
 	}
 
 	XLRClose(xlrDevice);
@@ -182,10 +224,6 @@ int main(int argc, char **argv)
 	mk5status.activeBank = ' ';
 	difxMessageSendMark5Status(&mk5status);
 	
-	if(verbose > 0)
-	{
-		printMark5Module(&module);
-	}
 
 	return 0;
 }

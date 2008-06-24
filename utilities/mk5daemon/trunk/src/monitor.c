@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
@@ -144,6 +145,27 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		D->dieNow = 1;
 	}
+	else if(strcasecmp(cmd, "getdirA") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMk5Dir(D, "A");
+		}
+	}
+	else if(strcasecmp(cmd, "getdirB") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMk5Dir(D, "B");
+		}
+	}
+	else if(strcasecmp(cmd, "getdir") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMk5Dir(D, "AB");
+		}
+	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
 		printf("[%s]\n", cmd);
@@ -187,11 +209,16 @@ static void *monitorMultiListen(void *ptr)
 				break;
 			}
 		}
-		if(D->process == PROCESS_MARK5_DONE)
+		if(D->processDone)
 		{
-			/* should only happen if mark5a is killed externally */
-			Mk5Daemon_stopMark5A(D);
-		}
+			pthread_mutex_lock(&D->processLock);
+			pthread_join(D->processThread, 0);
+			D->process = PROCESS_NONE;
+			D->processDone = 0;
+			pthread_mutex_unlock(&D->processLock);
+			usleep(100000);
+			Mk5Daemon_getModules(D);
+		}	
 	}
 
 	difxMessageReceiveClose(sock);

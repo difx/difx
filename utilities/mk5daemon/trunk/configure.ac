@@ -13,7 +13,7 @@ AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage)
 PKG_CHECK_MODULES(STREAMSTOR, streamstor)
 PKG_CHECK_MODULES(M5ACCESS, mark5access)
-LIBS="${LIBS} ${M5ACCESS_LIBS} ${STREAMSTOR_LIBS} /home/swc/difx/lib/libdifxmessage.a"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a"
 CFLAGS="${CFLAGS} ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${STREAMSTOR_CFLAGS}"
 CXXFLAGS="${CFLAGS}"
 

@@ -39,7 +39,7 @@ static void *mark5Arun(void *ptr)
 		}
 	}
 	Logger_logData(D->log, "Mark5A stopped\n");
-	D->process = PROCESS_MARK5_DONE;
+	D->processDone = 1;
 
 	pthread_exit(0);
 
@@ -83,17 +83,20 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 	{
 		system(command);
 	}
-	if(D->process == PROCESS_MARK5 || 
-	   D->process == PROCESS_MARK5_DONE)
+#if 0
+	if(D->process == PROCESS_MARK5)
 	{
 		pthread_join(D->processThread, 0);
 		D->process = PROCESS_NONE;
+		D->processDone = 0;
 	}
 	pthread_mutex_unlock(&D->processLock);
 
 	usleep(300000);
 
 	Mk5Daemon_getModules(D);
+
+#endif
 }
 
 void Mk5Daemon_resetMark5A(Mk5Daemon *D)

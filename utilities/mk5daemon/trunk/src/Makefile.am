@@ -9,4 +9,5 @@ mk5daemon_SOURCES = \
 	mark5a.c \
 	monitor.c \
 	modules.c \
+	getdir.c \
 	mk5daemon.c
