@@ -98,7 +98,7 @@ class Parser:
 			self.info.rate = float(self.tmp)
 		if tag == 'dataMJD':
 			self.info.date = float(self.tmp)
-		if tag == 'pos':
+		if tag == 'position':
 			self.info.pos = int(self.tmp)
 		if tag == 'scanNumber':
 			self.info.scan = int(self.tmp)
