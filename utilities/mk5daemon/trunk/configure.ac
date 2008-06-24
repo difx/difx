@@ -1,4 +1,4 @@
-AC_INIT([mk5daemon], [0.4], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mk5daemon], [0.5], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AM_INIT_AUTOMAKE
@@ -12,11 +12,16 @@ AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 
 PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage)
 PKG_CHECK_MODULES(STREAMSTOR, streamstor)
-LIBS="${LIBS} ${STREAMSTOR_LIBS} /home/swc/difx/lib/libdifxmessage.a"
-CFLAGS="${CFLAGS} ${DIFXMESSAGE_CFLAGS} ${STREAMSTOR_CFLAGS}"
+PKG_CHECK_MODULES(M5ACCESS, mark5access)
+LIBS="${LIBS} ${M5ACCESS_LIBS} ${STREAMSTOR_LIBS} /home/swc/difx/lib/libdifxmessage.a"
+CFLAGS="${CFLAGS} ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${STREAMSTOR_CFLAGS}"
+CXXFLAGS="${CFLAGS}"
+
+echo "CFLAGS=" $CFLAGS
 
 AC_OUTPUT([ \
 	Makefile \
 	src/Makefile \
 	utils/Makefile \
+	mk5dir/Makefile
 ])
