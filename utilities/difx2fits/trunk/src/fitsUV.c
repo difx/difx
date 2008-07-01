@@ -583,9 +583,10 @@ static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 {
 	double scale;
 
-	if(D->inputFileVersion == 0)
+	if(D->inputFileVersion == 0) /* Perth merge and after */
 	{
-		scale = 7.15*D->nOutChan*D->specAvg/(3.125*D->nInChan);
+		//scale = 7.15*D->nOutChan*D->specAvg/(3.125*D->nInChan);
+		scale = 4.576*D->nOutChan/D->nInChan;
 	}
 	else
 	{
