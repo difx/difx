@@ -477,7 +477,8 @@ def generatesubjoblist(scanlist, subarraylist, job, minsubarraysize):
 		for a in actualsubarray:
 			#if len(a) > minsubarraysize:
 			ss.append(a)
-		ss.sort()
+		for sss in ss:
+			sss.sort()
 		sj[5] = ss
 							
 	return subjoblist
