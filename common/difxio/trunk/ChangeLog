@@ -1,3 +1,7 @@
+2.1
+* a possible bug fix
+* support for sorting antennas into alpha order
+
 2.0
 * some changes needed for difx2fits 2.0.
 * implement fits source ids

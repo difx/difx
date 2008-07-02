@@ -77,10 +77,10 @@ typedef struct
 	int quantBits;		/* 1 or 2 */
 	int nDatastream;	/* number of datastreams attached */
 	int nBaseline;		/* number of baselines */
-	int *datastreamId;	/* 0-based; [antennaId] datastream table indx */
-				/* -1 terminated */
+	int *datastreamId;	/* 0-based; datastream table indx */
+				/* -1 terminated [ds # < nDatastream]  */
 	int *baselineId;	/* baseline table indicies for this config */
-				/* -1 terminated */
+				/* -1 terminated [bl # < nBaseline] */
 	
 	int nIF;		/* number of FITS IFs to create */
 	DifxIF *IF;		/* FITS IF definitions */
@@ -117,6 +117,7 @@ typedef struct
 typedef struct
 {
 	char name[32];		/* null terminated */
+	int origId;		/* antennaId before a sort */
 	double delay;		/* (us) at start of job */
 	double rate;		/* (us/s) */
 	char mount[8];		/* azel, ... */
@@ -161,6 +162,7 @@ typedef struct
 	int nPoint;		/* number of points modeled for scan */
 	int nAntenna;
 	DifxModel **model;	/* indexed by [ant][point] */
+				/* ant is index of DifxAntenna */
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
 				/* NOTE : model[ant] can be zero -> no data */
 } DifxScan;
@@ -191,7 +193,7 @@ typedef struct
 typedef struct
 {
 	double mjd1, mjd2;	/* (day) */
-	int antennaId;		/* antenna number */
+	int antennaId;		/* antenna number (index to D->antenna) */
 } DifxAntennaFlag;
 
 typedef struct
@@ -417,5 +419,6 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
+int DifxInputSortAntennas(DifxInput *D, int verbose);
 
 #endif

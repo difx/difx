@@ -309,6 +309,8 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	/* go through datastreams associates with this config and collect all
 	 * distinct Freq table ids
 	 */
+	
+	/* here "a" is "datastream # within configuration", not "antenna" */
 	for(a = 0; a < dc->nDatastream; a++)
 	{
 		if(dc->datastreamId[a] < 0)
@@ -339,6 +341,8 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	 * config will maintain slots for all polariazations, even if
 	 * this ends up making wasted space in FITS files
 	 */
+
+	/* here "a" is "datastream # within configuration", not "antenna" */
 	for(a = 0; a < dc->nDatastream; a++)
 	{
 		if(dc->datastreamId[a] < 0)
@@ -644,12 +648,15 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		/* initialize datastream index array */
 		D->config[c].datastreamId = (int *)malloc(sizeof(int)*
 			(D->config[c].nDatastream + 1));
+		
+		/* here "a" is "datastream # within conf", not "antenna" */
 		for(a = 0; a <= D->nDatastream; a++)
 		{
 			D->config[c].datastreamId[a] = -1;
 		}
 
 		/* populate datastream index array */
+		/* here "a" is "datastream # within conf", not "antenna" */
 		for(a = 0; a < D->config[c].nDatastream; a++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
@@ -1035,6 +1042,8 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		 * antennas */
 		D->config[c].quantBits = -1;
 		qb = 0;
+
+		/* here "a" is "datastream # within conf", not "antenna" */
 		for(a = 0; a < D->config[c].nDatastream; a++)
 		{
 			e = D->config[c].datastreamId[a];
@@ -2416,7 +2425,7 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId)
 {
-	int ant, c, scanId;
+	int a, c, scanId, dsId, antId;
 	const DifxConfig *config;
 
 	if(!D)
@@ -2427,25 +2436,42 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
 		c = D->scan[scanId].configId;
-		if(c < 0)
+		if(c < 0 || c >= D->nConfig)
 		{
 			continue;
 		}
 		config = D->config + c;
-		for(ant = 0; ant < D->scan[scanId].nAntenna; ant++)
+
+		/* here "a" is "datastream # within conf.", not "antenanId" */
+		for(a = 0; a < config->nDatastream; a++)
 		{
-			if(antennaId == config->datastreamId[ant])
+			dsId = config->datastreamId[a];
+			if(dsId < 0 || 
+			   dsId >= D->nDatastream ||
+			   dsId >= config->nDatastream)
+			{
+				continue;
+			}
+			
+			antId = D->datastream[dsId].antennaId;
+			if(antId < 0 || antId >= D->nAntenna)
+			{
+				continue;
+			}
+			
+			if(antennaId == antId)
 			{
 				break;
 			}
 		}
-		if(ant == D->scan[scanId].nAntenna)
+		if(a == config->nDatastream)
 		{
 			continue;
 		}
+		
 		if(mjd <  D->scan[scanId].mjdEnd   &&
 		   mjd >= D->scan[scanId].mjdStart &&
-		   D->scan[scanId].model[ant] != 0)
+		   D->scan[scanId].model[antId] != 0)
 		{
 			return scanId;
 		}
@@ -2459,7 +2485,7 @@ int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
 	int scanId;
 
 	scanId = DifxInputGetScanIdByJobId(D, mjd, jobId);
-	if(scanId < 0)
+	if(scanId < 0 || scanId >= D->nScan)
 	{
 		return -1;
 	}
@@ -2474,8 +2500,8 @@ int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd,
 {
 	int scanId;
 
-	scanId = DifxInputGetSourceIdByAntennaId(D, mjd, antennaId);
-	if(scanId < 0)
+	scanId = DifxInputGetScanIdByAntennaId(D, mjd, antennaId);
+	if(scanId < 0 || scanId >= D->nScan)
 	{
 		return -1;
 	}
@@ -2504,4 +2530,165 @@ int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName)
 	}
 
 	return -1;
+}
+
+static int AntennaCompare(const void *a1, const void *a2)
+{
+	DifxAntenna *A1, *A2;
+
+	A1 = (DifxAntenna *)a1;
+	A2 = (DifxAntenna *)a2;
+
+	return strcmp(A1->name, A2->name);
+}
+
+/* go through antenna table and reorder.  Then clean up the collateral
+ * damage */ 
+int DifxInputSortAntennas(DifxInput *D, int verbose)
+{
+	int a, s, d, f, c, j, a1, a2;
+	int *old2new;
+	int *new2old;
+	int ***BF;
+	int *R;
+	DifxModel **m;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(D->nAntenna < 2)
+	{
+		return -1;
+	}
+	
+	old2new = (int *)calloc(D->nAntenna, sizeof(int));
+	new2old = (int *)calloc(D->nAntenna, sizeof(int));
+	
+	/* sort antenna table and derive reorder table */
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		D->antenna[a].origId = a;
+	}
+
+	if(verbose > 0)
+	{
+		printf("Pre-sort :");
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			printf(" %s", D->antenna[a].name);
+		}
+	}
+	qsort(D->antenna, D->nAntenna, sizeof(DifxAntenna), AntennaCompare);
+	if(verbose > 0)
+	{
+		printf("Post-sort:");
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			printf(" %s", D->antenna[a].name);
+		}
+	}
+
+	/* look for no-sort condition and leave successfully if no sort done */
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		old2new[D->antenna[a].origId] = a;
+		new2old[a] = D->antenna[a].origId;
+		if(D->antenna[a].origId != a)
+		{
+			break;
+		}
+	}
+	if(a == D->nAntenna)
+	{
+		free(new2old);
+		free(old2new);
+		return 0;
+	}
+
+	/* OK -- antennas have been reordered.  Fix the tables. */
+
+	/* 1. Datastream table */
+	for(d = 0; d < D->nDatastream; d++)
+	{
+		D->datastream[d].antennaId =
+			old2new[D->datastream[d].antennaId];
+	}
+
+	/* 2. Flags */
+	for(f = 0; f < D->nFlag; f++)
+	{
+		D->flag[f].antennaId = old2new[D->flag[f].antennaId];
+	}
+
+	/* 3. Scans */
+	m = (DifxModel **)calloc(D->nAntenna, sizeof(DifxModel *));
+	for(s = 0; s < D->nScan; s++)
+	{
+		for(a = 0; a < D->scan[s].nAntenna; a++)
+		{
+			m[a] = D->scan[s].model[a];
+		}
+		for(a = 0; a < D->scan[s].nAntenna; a++)
+		{
+			D->scan[s].model[a] = m[old2new[a]];
+		}
+	}
+	free(m);
+
+	/* 4. Jobs */
+	for(j = 0; j < D->nJob; j++)
+	{
+		R = D->job[j].antennaIdRemap;
+		if(R == 0)
+		{
+			R = (int *)calloc(D->nAntenna, sizeof(int));
+			D->job[j].antennaIdRemap = R;
+			for(a = 0; a < D->nAntenna; a++)
+			{
+				R[a] = old2new[a];
+			}
+		}
+		else
+		{
+			for(a = 0; a < D->nAntenna; a++)
+			{
+				R[a] = old2new[R[a]];
+			}
+		}
+	}
+
+	/* 5. Config */
+	BF = (int ***)calloc(D->nAntenna, sizeof(int **));
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		BF[a] = (int **)calloc(D->nAntenna, sizeof(int *));
+	}
+	for(c = 0; c < D->nConfig; c++)
+	{
+		for(a1 = 0; a1 < D->nAntenna; a1++)
+		{
+			for(a2 = 0; a2 < D->nAntenna; a2++)
+			{
+				BF[a1][a2] = 
+					D->config[c].baselineFreq2IF[a1][a2];
+			}
+		}
+		for(a1 = 0; a1 < D->nAntenna; a1++)
+		{
+			for(a2 = 0; a2 < D->nAntenna; a2++)
+			{
+				D->config[c].baselineFreq2IF[a1][a2] =
+					BF[old2new[a1]][old2new[a2]];
+			}
+		}
+	}
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		free(BF[a]);
+	}
+	free(BF);
+
+	/* success */
+	return 0;
 }
