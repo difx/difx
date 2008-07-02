@@ -2595,7 +2595,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	/* look for no-sort condition and leave successfully if no sort done */
 	for(a = 0; a < D->nAntenna; a++)
 	{
-		printf("%d %d\n", a, D->antenna[a].origId);
 		old2new[D->antenna[a].origId] = a;
 		new2old[a] = D->antenna[a].origId;
 		if(D->antenna[a].origId != a)
@@ -2608,22 +2607,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		free(new2old);
 		free(old2new);
 		return 0;
-	}
-
-	if(verbose > 0)
-	{
-		printf("old2new  :");
-		for(a = 0; a < D->nAntenna; a++)
-		{
-			printf(" %d", old2new[a]);
-		}
-		printf("\n");
-		printf("new2old  :");
-		for(a = 0; a < D->nAntenna; a++)
-		{
-			printf(" %d", new2old[a]);
-		}
-		printf("\n");
 	}
 
 	/* OK -- antennas have been reordered.  Fix the tables. */
