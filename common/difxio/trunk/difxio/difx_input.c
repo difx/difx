@@ -2425,7 +2425,7 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId)
 {
-	int a, c, scanId, dsId, antId;
+	int a, c, scanId, dsId, antId=0;
 	const DifxConfig *config;
 
 	if(!D)
@@ -2552,6 +2552,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	int ***BF;
 	int *R;
 	DifxModel **m;
+	int changed = 0;
 
 	if(!D)
 	{
@@ -2578,6 +2579,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		{
 			printf(" %s", D->antenna[a].name);
 		}
+		printf("\n");
 	}
 	qsort(D->antenna, D->nAntenna, sizeof(DifxAntenna), AntennaCompare);
 	if(verbose > 0)
@@ -2587,41 +2589,59 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		{
 			printf(" %s", D->antenna[a].name);
 		}
+		printf("\n");
 	}
 
 	/* look for no-sort condition and leave successfully if no sort done */
 	for(a = 0; a < D->nAntenna; a++)
 	{
+		printf("%d %d\n", a, D->antenna[a].origId);
 		old2new[D->antenna[a].origId] = a;
 		new2old[a] = D->antenna[a].origId;
 		if(D->antenna[a].origId != a)
 		{
-			break;
+			changed++;
 		}
 	}
-	if(a == D->nAntenna)
+	if(changed == 0)
 	{
 		free(new2old);
 		free(old2new);
 		return 0;
 	}
 
+	if(verbose > 0)
+	{
+		printf("old2new  :");
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			printf(" %d", old2new[a]);
+		}
+		printf("\n");
+		printf("new2old  :");
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			printf(" %d", new2old[a]);
+		}
+		printf("\n");
+	}
+
 	/* OK -- antennas have been reordered.  Fix the tables. */
 
-	/* 1. Datastream table */
+	/* 1. Datastream table -- must be working */
 	for(d = 0; d < D->nDatastream; d++)
 	{
 		D->datastream[d].antennaId =
 			old2new[D->datastream[d].antennaId];
 	}
 
-	/* 2. Flags */
+	/* 2. Flags -- tested and confirmed to work */
 	for(f = 0; f < D->nFlag; f++)
 	{
 		D->flag[f].antennaId = old2new[D->flag[f].antennaId];
 	}
 
-	/* 3. Scans */
+	/* 3. Scans -- tested and confirmed to work */
 	m = (DifxModel **)calloc(D->nAntenna, sizeof(DifxModel *));
 	for(s = 0; s < D->nScan; s++)
 	{
@@ -2631,12 +2651,12 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		}
 		for(a = 0; a < D->scan[s].nAntenna; a++)
 		{
-			D->scan[s].model[a] = m[old2new[a]];
+			D->scan[s].model[old2new[a]] = m[a];
 		}
 	}
 	free(m);
 
-	/* 4. Jobs */
+	/* 4. Jobs -- must be working */
 	for(j = 0; j < D->nJob; j++)
 	{
 		R = D->job[j].antennaIdRemap;
@@ -2658,7 +2678,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		}
 	}
 
-	/* 5. Config */
+	/* 5. Config -- tested and confirmed to work */
 	BF = (int ***)calloc(D->nAntenna, sizeof(int **));
 	for(a = 0; a < D->nAntenna; a++)
 	{
@@ -2679,7 +2699,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 			for(a2 = 0; a2 < D->nAntenna; a2++)
 			{
 				D->config[c].baselineFreq2IF[a1][a2] =
-					BF[old2new[a1]][old2new[a2]];
+					BF[new2old[a1]][new2old[a2]];
 			}
 		}
 	}
