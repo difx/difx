@@ -1,3 +1,6 @@
+Version 2.1
+* Sorts by antenna name by default.  override with -k
+
 Version 2.0
 * New visibility writing code -- will merge multiple input files
   into single FITS file in time order.

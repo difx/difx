@@ -66,6 +66,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -s      <scale>     Scale visibility data "
 		"by <scale>\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --keep-order\n");
+	fprintf(stderr, "  -k                  Keep antenna order\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
@@ -87,6 +90,7 @@ struct CommandLineOptions
 	int doalldifx;
 	float nOutChan;
 	float startChan;
+	int keepOrder;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -164,6 +168,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				deleteCommandLineOptions(opts);
 				return 0;
+			}
+			else if (strcmp(argv[i], "--keep-order") == 0 ||
+				 strcmp(argv[i], "-k") == 0)
+			{
+				opts->keepOrder = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -568,6 +577,11 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 	if(!opts->pretend)
 	{
+		if(!opts->keepOrder)
+		{
+			DifxInputSortAntennas(D, opts->verbose);
+		}
+
 		if(fitsWriteOpen(&outfile, outFitsName) < 0)
 		{
 			deleteDifxInput(D);
