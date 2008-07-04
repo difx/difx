@@ -293,22 +293,30 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 {
 	struct getCALC_arg *request;
 	struct CalcResults results;
-	int i, j, v;
+	int i, j, s, v;
 	int mjd;
+	int jobStart, inc;
 	double sec, subInc;
 	double lastsec = -1;
 	DifxPolyModel *im;
+	DifxModel *model;
 	DifxScan *scan;
 	DifxSource *source;
 	DifxAntenna *antenna;
-	int nInt;
+	DifxJob *job;
+	int nInt, deltat;
 	int spacecraftId = -1;
 	int sourceId;
 
+	job = D->job;
 	antenna = D->antenna + antId;
 	scan = D->scan + scanId;
 	im = scan->im[antId];
+	model = scan->model[antId];
 	nInt = scan->nPoly;
+	mjd = (int)(job->mjdStart);
+	jobStart = (int)(86400.0*(job->mjdStart - mjd + 0.5));
+	inc = (int)(job->modelInc + 0.5);
 	sourceId = scan->sourceId;
 	source = D->source + sourceId;
 	subInc = p->increment/(double)(p->order);
@@ -371,6 +379,33 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 	}
 
 	/* use polynomial to calculate uvw and delay for difx */
+	for(i = -1; i <= scan->nPoint+1; i++)
+	{
+		/* seconds since beginning of midnight of the day in 
+		 * which this job started */
+		s = jobStart + (scan->startPoint + i)*inc;
+
+		/* get offset */
+		deltat = s % p->increment;
+
+		/* get polynomial index */
+		j = s/p->increment;
+		if(j < 0)
+		{
+			deltat -= j*p->increment;
+			j = 0;
+		}
+
+		model[i].u    = evaluatePoly(im[j].u,          p->order+1, deltat);
+		model[i].v    = evaluatePoly(im[j].v,          p->order+1, deltat);
+		model[i].w    = evaluatePoly(im[j].w,          p->order+1, deltat);
+		model[i].t    = evaluatePoly(im[j].delay,      p->order+1, deltat);
+		model[i].dry  = evaluatePoly(im[j].dry,        p->order+1, deltat);
+		model[i].wet  = evaluatePoly(im[j].wet,        p->order+1, deltat);
+		model[i].dt   = evaluatePolyDeriv(im[j].delay, p->order+1, deltat);
+		model[i].ddry = evaluatePolyDeriv(im[j].dry,   p->order+1, deltat);
+		model[i].dwet = evaluatePolyDeriv(im[j].wet,   p->order+1, deltat);
+	}
 
 	return 0;
 }
@@ -393,6 +428,8 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 	job = D->job;
 	antenna = D->antenna;
 	scan = D->scan + scanId;
+
+	scan->model = newDifxModelArray(scan->nAntenna, scan->nPoint);
 
 	scan->im = (DifxPolyModel **)calloc(scan->nAntenna, 
 		sizeof(DifxPolyModel *));
