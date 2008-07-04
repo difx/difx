@@ -15,6 +15,6 @@ typedef struct
 } CalcParams;
 
 int difxCalcInit(const DifxInput *D, CalcParams *p);
-int difxCalc(DifxInput *D, const CalcParams *p);
+int difxCalc(DifxInput *D, CalcParams *p);
 
 #endif

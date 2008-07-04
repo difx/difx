@@ -1,7 +1,12 @@
+#include <stdio.h>
+#include <math.h>
 #include "MATHCNST.H"
 #include "difxcalc.h"
+#include "poly.h"
 
 #define MAX_EOPS 5
+
+/* FIXME check mount type azel/altz */
 
 static struct timeval TIMEOUT = {10, 0};
 
@@ -152,6 +157,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 {
 	double ra, dec;
 	int i;
+	enum clnt_stat clnt_stat;
 
 	if(p->delta > 0.0)
 	{
@@ -166,7 +172,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 
 	for(i = 0; i < results->nRes; i++)
 	{
-		memset(results->res+i, 0, sizeof(struct clnt_res));
+		memset(results->res+i, 0, sizeof(struct getCALC_res));
 	}
 	clnt_stat = clnt_call(p->clnt, GETCALC,
 		(xdrproc_t)xdr_getCALC_arg, 
@@ -179,14 +185,14 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 		fprintf(stderr, "clnt_call failed!\n");
 		return -1;
 	}
-	if(result.error)
+	if(results->res[0].error)
 	{
 		fprintf(stderr,"An error occured: %s\n",
-			result.getCALC_res_u.errmsg);
+			results->res[0].getCALC_res_u.errmsg);
 		return -2;
 	}
 	
-	if(p->nRes == 3)
+	if(results->nRes == 3)
 	{
 		ra  = request->ra;
 		dec = request->dec;
@@ -205,16 +211,16 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 			fprintf(stderr, "clnt_call failed!\n");
 			return -1;
 		}
-		if(result.error)
+		if(results->res[1].error)
 		{
 			fprintf(stderr,"An error occured: %s\n",
-				result.getCALC_res_u.errmsg);
+				results->res[1].getCALC_res_u.errmsg);
 			return -2;
 		}
 
 		/* calculate delay offset in Dec */
 		request->ra  = ra;
-		request->dec = dec + delta;
+		request->dec = dec + p->delta;
 		clnt_stat = clnt_call(p->clnt, GETCALC,
 			(xdrproc_t)xdr_getCALC_arg, 
 			(caddr_t)request,
@@ -226,10 +232,10 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 			fprintf(stderr, "clnt_call failed!\n");
 			return -1;
 		}
-		if(result.error)
+		if(results->res[2].error)
 		{
 			fprintf(stderr,"An error occured: %s\n",
-				result.getCALC_res_u.errmsg);
+				results->res[2].getCALC_res_u.errmsg);
 			return -2;
 		}
 		
@@ -245,22 +251,22 @@ int extractCalcResults(DifxPolyModel *im, int index,
 {
 	struct getCALC_res *res0, *res1, *res2;
 
-	res0 = &results->res[0]
-	res1 = &results->res[1]
-	res2 = &results->res[2]
+	res0 = &results->res[0];
+	res1 = &results->res[1];
+	res2 = &results->res[2];
 	
-	im->delay[index] = res0->getCALC_res_u.record.delay*1e6;
+	im->delay[index] = res0->getCALC_res_u.record.delay[0]*1e6;
 	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
 	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
 	if(results->nRes == 3)
 	{
 		im->u[index] = (C_LIGHT/results->delta)*
-			(res1->getCALC_res_u.record.delay - 
-			 res0->getCALC_res_u.record.delay);
+			(res1->getCALC_res_u.record.delay[0] - 
+			 res0->getCALC_res_u.record.delay[0]);
 		im->v[index] = (C_LIGHT/results->delta)*
-			(res2->getCALC_res_u.record.delay - 
-			 res0->getCALC_res_u.record.delay);
-		im->w[index] = C_LIGHT*res0->getCALC_res_u.record.delay;
+			(res2->getCALC_res_u.record.delay[0] - 
+			 res0->getCALC_res_u.record.delay[0]);
+		im->w[index] = C_LIGHT*res0->getCALC_res_u.record.delay[0];
 	}
 	else
 	{
@@ -272,19 +278,29 @@ int extractCalcResults(DifxPolyModel *im, int index,
 	return 0;
 }
 
+void computePolyModel(DifxPolyModel *im, double deltaT)
+{
+	computePoly(im->delay, im->order, deltaT);
+	computePoly(im->dry,   im->order, deltaT);
+	computePoly(im->wet,   im->order, deltaT);
+	computePoly(im->u,     im->order, deltaT);
+	computePoly(im->v,     im->order, deltaT);
+	computePoly(im->w,     im->order, deltaT);
+}
+
 /* antenna here is a pointer to a particular antenna object */
-static int antennaCalc(int scanId, int antId, DifxInput *D, const CalcParams *p)
+static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 {
 	struct getCALC_arg *request;
 	struct CalcResults results;
-	int i, v;
+	int i, j, v;
 	int mjd;
 	double sec, subInc;
 	double lastsec = -1;
 	DifxPolyModel *im;
 	DifxScan *scan;
 	DifxSource *source;
-	const DifxAntenna *antenna;
+	DifxAntenna *antenna;
 	int nInt;
 	int spacecraftId = -1;
 	int sourceId;
@@ -294,17 +310,17 @@ static int antennaCalc(int scanId, int antId, DifxInput *D, const CalcParams *p)
 	im = scan->im[antId];
 	nInt = scan->nPoly;
 	sourceId = scan->sourceId;
-	source - D->source + sourceId;
+	source = D->source + sourceId;
 	subInc = p->increment/(double)(p->order);
-	request = &(p->calcRequest);
+	request = &(p->request);
 	spacecraftId = source->spacecraftId;
 
-	request->stnnameb = antenna->name;
+	request->station_b = antenna->name;
 	request->b_x = antenna->X;
 	request->b_y = antenna->Y;
 	request->b_z = antenna->Z;
-	request->axis_typeb = antenna->mount;
-	request->axis_off_b = offset[0];
+	request->axis_type_b = antenna->mount;
+	request->axis_off_b = antenna->offset[0];
 
 	request->source = source->name;
 	if(spacecraftId < 0)
@@ -320,8 +336,8 @@ static int antennaCalc(int scanId, int antId, DifxInput *D, const CalcParams *p)
 	for(i = 0; i < nInt; i++)
 	{
 		request->date = im[i].mjd;
-		sec = im[i]->sec;
-		for(j = 0; j < nSubInt; j++)
+		sec = im[i].sec;
+		for(j = 0; j <= p->order; j++)
 		{
 			request->time = sec/86400.0;
 			
@@ -341,7 +357,7 @@ static int antennaCalc(int scanId, int antId, DifxInput *D, const CalcParams *p)
 				}
 			}
 			/* use result to populate tabulated values */
-			extractCalcResults(&im[i], j, results);
+			extractCalcResults(&im[i], j, &results);
 
 			lastsec = sec;
 			sec += subInc;
@@ -351,13 +367,13 @@ static int antennaCalc(int scanId, int antId, DifxInput *D, const CalcParams *p)
 				request->date++;
 			}
 		}
-		computePoly(&im[i]);
+		computePolyModel(&im[i], subInc);
 	}
 
 	return 0;
 }
 
-static int scanCalc(int scanId, const DifxInput *D, const CalcParams *p)
+static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 {
 	DifxPolyModel *im;
 	int antId;
@@ -367,13 +383,14 @@ static int scanCalc(int scanId, const DifxInput *D, const CalcParams *p)
 	int inc;
 	int int1, int2;	/* polynomial intervals */
 	int nInt;
+	int i;
 	DifxJob *job;
 	DifxAntenna *antenna;
 	DifxScan *scan;
 
 	job = D->job;
 	antenna = D->antenna;
-	scan = D->scan[scanId];
+	scan = D->scan + scanId;
 
 	scan->im = (DifxPolyModel **)calloc(scan->nAntenna, 
 		sizeof(DifxPolyModel *));
@@ -418,7 +435,7 @@ static int scanCalc(int scanId, const DifxInput *D, const CalcParams *p)
 	}
 }
 
-int difxCalc(DifxInput *D, const CalcParams *p)
+int difxCalc(DifxInput *D, CalcParams *p)
 {
 	int scanId;
 	DifxScan *scan;
@@ -442,7 +459,7 @@ int difxCalc(DifxInput *D, const CalcParams *p)
 			fprintf(stderr, "Error! scan %d: too many antennas!\n",
 				scanId);
 		}
-		scanCalc(scanId, D, const CalcParams *p);
+		scanCalc(scanId, D, p);
 	}
 
 	return 0;
