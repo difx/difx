@@ -370,6 +370,8 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		computePolyModel(&im[i], subInc);
 	}
 
+	/* use polynomial to calculate uvw and delay for difx */
+
 	return 0;
 }
 

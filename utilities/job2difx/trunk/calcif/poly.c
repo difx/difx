@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "poly.h"
 
 #define MAX_MODEL_ORDER 10
 
@@ -36,11 +37,28 @@ void computePoly(double *p, int n, double d)
 	}
 }
 
+/* Use Cramer's rule to evaluate polynomial */
+double evaluatePoly(double *p, int n, double x)
+{
+	double y;
+	int i;
+
+	y = p[n-1];
+
+	for(i = n-2; i >= 0; i--)
+	{
+		y = x*y + p[i];
+	}
+
+	return y;
+}
+
+#if 0
 int main(int argc, char **argv)
 {
 	double p[10], d[10];
-	int i, j, n=0;
-	double delta = 1.0, x, xx;
+	int i, n=0;
+	double delta = 2.0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -50,14 +68,7 @@ int main(int argc, char **argv)
 
 	for(i = 0; i < n; i++)
 	{
-		d[i] = 0;
-		x = i*delta;
-		xx = 1.0;
-		for(j = 0; j < n; j++)
-		{
-			d[i] += p[j]*xx;
-			xx *= x;
-		}
+		d[i] = evaluatePoly(p, n, i*delta);
 	}
 
 	for(i = 0; i < n; i++)
@@ -76,3 +87,4 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+#endif

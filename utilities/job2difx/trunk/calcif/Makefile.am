@@ -6,6 +6,8 @@ calcif2_SOURCES = \
 	difxcalc.h \
 	CALC_xdr.c \
 	CALCServer.h \
+	poly.c \
+	poly.h \
 	MATHCNST.H
 
 calcif_SOURCES = \
