@@ -21,6 +21,7 @@
 #define __DIFX_INPUT_H__
 
 #define DIFX_SESSION_LEN	4
+#define MAX_MODEL_ORDER		5
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -150,6 +151,20 @@ typedef struct
 
 typedef struct
 {
+	int mjd;		/* day of start of polynomial validity */
+	int sec;		/* time (sec) of start of validity */
+	int order;		/* order of polynomial -> order+1 terms! */
+	int validDuration;	/* (seconds), from mjd, sec */
+	double delay[MAX_MODEL_ORDER+1];	/* (us/sec^n); n=[0, order] */
+	double dry[MAX_MODEL_ORDER+1];		/* (us/sec^n) */
+	double wet[MAX_MODEL_ORDER+1];		/* (us/sec^n) */
+	double u[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
+	double v[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
+	double w[MAX_MODEL_ORDER+1];		/* (m/sec^n) */
+} DifxPolyModel;
+
+typedef struct
+{
 	double mjdStart;	/* (day) */
 	double mjdEnd;		/* (day) */
 	double ra, dec;		/* (radians) */
@@ -160,11 +175,17 @@ typedef struct
 	int configId;		/* 0, 1, ... nConfig-1 */
 	int jobId;		/* 0, 1, ... nJob-1 */
 	int nPoint;		/* number of points modeled for scan */
+	int startPoint;		/* absolute "point number" of first model */
 	int nAntenna;
 	DifxModel **model;	/* indexed by [ant][point] */
 				/* ant is index of DifxAntenna */
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
 				/* NOTE : model[ant] can be zero -> no data */
+	int nPoly;
+	DifxPolyModel **im;	/* indexed by [ant][poly] */
+				/* ant is index of DifxAntenna */
+				/*   poly ranges over [0 .. nPoly-1] */
+				/* NOTE : im[ant] can be zero -> no data */
 } DifxScan;
 
 typedef struct
@@ -407,6 +428,7 @@ DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
 DifxInput *loadDifxInput(const char *filePrefix);
+DifxInput *loadDifxCalc(const char *filePrefix);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2);

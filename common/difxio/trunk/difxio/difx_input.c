@@ -1221,6 +1221,8 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		}
 		nPoint               = atoi(DifxParametersvalue(up, rows[0]));
 		startPoint           = atoi(DifxParametersvalue(up, rows[1]));
+		D->scan[i].nPoint    = nPoint;
+		D->scan[i].startPoint= startPoint;
 		D->scan[i].mjdStart  = D->job->mjdStart + 
 			startPoint*D->job->modelInc/86400.0;
 		D->scan[i].mjdEnd    = D->job->mjdStart + 
@@ -1328,7 +1330,11 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	
 	const char antKeys[][MAX_DIFX_KEY_LEN] =
 	{
-		"TELESCOPE %d OFFSET (m)"
+		"TELESCOPE %d MOUNT",
+		"TELESCOPE %d OFFSET (m)",
+		"TELESCOPE %d X (m)",
+		"TELESCOPE %d Y (m)",
+		"TELESCOPE %d Z (m)"
 	};
 	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
 
@@ -1344,6 +1350,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	
 	const char scanKeys[][MAX_DIFX_KEY_LEN] =
 	{
+		"SCAN %d POINTS",
+		"SCAN %d START PT",
 		"SCAN %d SRC NAME",
 		"SCAN %d REAL NAME",
 		"SCAN %d SRC RA",
@@ -1382,6 +1390,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	double time;
 	int nSubScan = 0;
 	int nSubarray;
+	int nPoint, startPoint;
+	double modelInc;
 	DifxScan *old_scan;
 	int old_nScan;
 
@@ -1399,6 +1409,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
 	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
 	D->nEOP          = atoi(DifxParametersvalue(cp, rows[3]));
+
+	if(D->nScan == 0)
+	{
+		D->nScan = atoi(DifxParametersvalue(cp, rows[2]));
+		D->scan = newDifxScanArray(D->nScan);
+	}
 
 	if(D->nScan != atoi(DifxParametersvalue(cp, rows[2])))
 	{
@@ -1450,6 +1466,17 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		D->job->subarrayId = atoi(DifxParametersvalue(cp, row));
 	}
+	row = DifxParametersfind(cp, 0, "INCREMENT (SECS)");
+	if(row >= 0)
+	{
+		modelInc = atof(DifxParametersvalue(cp, row));
+		if(D->job->modelInc > 0.0 && D->job->modelInc != modelInc)
+		{
+			sprintf(stderr, "SEVERE : modelInc disagrees!\n");
+			return 0;
+		}
+		D->job->modelInc = modelInc;
+	}
 	row = DifxParametersfind(cp, 0, "SPECTRAL AVG");
 	if(row >= 0)
 	{
@@ -1482,6 +1509,20 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 	}
 
+	if(D->nAntenna == 0)
+	{
+		row = DifxParametersfind(cp, 0, "NUM TELESCOPES");
+		if(row >= 0)
+		{
+			D->nAntenna = atoi(DifxParametersvalue(cp, row));
+		}
+		else
+		{
+			fprintf(stderr, "NUM TELESCOPES not defined\n");
+			return 0;
+		}
+	}
+
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
 	for(i = 0; i < D->nAntenna; i++)
 	{
@@ -1500,9 +1541,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				return 0;
 			}
 		}
-		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[0]));
+		strcpy(D->antenna[i].mount, DifxParametersvalue(cp, rows[0]));
+		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[1]));
 		D->antenna[i].offset[1]= 0.0;	/* FIXME */
 		D->antenna[i].offset[2]= 0.0;	/* FIXME */
+		D->antenna[i].X        = atof(DifxParametersvalue(cp, rows[2]));
+		D->antenna[i].Y        = atof(DifxParametersvalue(cp, rows[3]));
+		D->antenna[i].Z        = atof(DifxParametersvalue(cp, rows[4]));
 	}
 	
 	rows[N_EOP_ROWS-1] = 0;		/* initialize start */
@@ -1543,16 +1588,24 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				return 0;
 			}
 		}
-		strncpy(D->scan[k].name, DifxParametersvalue(cp, rows[1]), 31);
+		nPoint               = atoi(DifxParametersvalue(cp, rows[0]));
+		startPoint           = atoi(DifxParametersvalue(cp, rows[1]));
+		D->scan[i].nPoint    = nPoint;
+		D->scan[i].startPoint= startPoint;
+		D->scan[i].mjdStart  = D->job->mjdStart + 
+			startPoint*D->job->modelInc/86400.0;
+		D->scan[i].mjdEnd    = D->job->mjdStart + 
+			(startPoint+nPoint)*D->job->modelInc/86400.0;
+		strncpy(D->scan[k].name, DifxParametersvalue(cp, rows[3]), 31);
 		D->scan[k].name[31] = 0;
-		D->scan[k].ra = atof(DifxParametersvalue(cp, rows[2]));
-		D->scan[k].dec = atof(DifxParametersvalue(cp, rows[3]));
+		D->scan[k].ra = atof(DifxParametersvalue(cp, rows[4]));
+		D->scan[k].dec = atof(DifxParametersvalue(cp, rows[5]));
 		strncpy(D->scan[k].calCode, 
-			DifxParametersvalue(cp, rows[4]), 3);
+			DifxParametersvalue(cp, rows[6]), 3);
 		D->scan[k].calCode[3] = 0;
-		D->scan[k].qual = atoi(DifxParametersvalue(cp, rows[5]));
+		D->scan[k].qual = atoi(DifxParametersvalue(cp, rows[7]));
 
-		cname = DifxParametersvalue(cp, rows[0]);
+		cname = DifxParametersvalue(cp, rows[2]);
 		for(c = 0; c < D->nConfig; c++)
 		{
 			if(strcmp(cname, D->config[c].name) == 0)
@@ -2390,6 +2443,49 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(cp);
 
 	populateFlags(D, flagFile);
+	
+	return D;
+}
+
+DifxInput *loadDifxCalc(const char *filePrefix)
+{
+	DifxParameters *ip, *cp;
+	DifxInput *D, *DSave;
+	char inputFile[256];
+	char calcFile[256];
+
+	sprintf(inputFile, "%s.input", filePrefix);
+	sprintf(calcFile,  "%s.calc",  filePrefix);
+
+	ip = newDifxParametersfromfile(inputFile);
+	cp = newDifxParametersfromfile(calcFile);
+
+	if(!ip)
+	{
+		deleteDifxParameters(ip);
+		deleteDifxParameters(cp);
+		
+		return 0;
+	}
+
+	D = DSave = newDifxInput();
+
+	/* When creating a DifxInput via this function, there will always
+	 * be a single DifxJob
+	 */
+	D->job = newDifxJobArray(1);
+	D->nJob = 1;
+	strcpy(D->job->fileBase, filePrefix);
+	D = populateInput(D, ip);
+	D = populateCalc(D, cp);
+
+	if(!D)
+	{
+		deleteDifxInput(DSave);
+	}
+	
+	deleteDifxParameters(ip);
+	deleteDifxParameters(cp);
 	
 	return D;
 }

@@ -63,6 +63,7 @@ void printDifxScan(const DifxScan *ds)
 	printf("    Calcode = %s\n", ds->calCode);
 	printf("    Qualifier = %d\n", ds->qual);
 	printf("    nPoint = %d\n", ds->nPoint);
+	printf("    startPoint = %d\n", ds->startPoint);
 	printf("    nAntenna %d\n", ds->nAntenna);
 	printf("    SourceId = %d\n", ds->sourceId);
 	printf("    ConfigId = %d\n", ds->configId);
