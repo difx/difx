@@ -145,8 +145,10 @@ typedef struct
 	double u, v, w;		/* baseline (m) */
 	double t;		/* delay (us) */
 	double dt;		/* rate (us/s) */
-	double a;		/* atmosphere delay (us) */
-	double da;		/* atmosphere rate (us/s) */
+	double dry;		/* dry atmosphere delay (us) */
+	double wet;		/* wet atmosphere delay (us) */
+	double ddry;		/* dry atmosphere rate (us/s) */
+	double dwet;		/* wet atmosphere rate (us/s) */
 } DifxModel;
 
 typedef struct

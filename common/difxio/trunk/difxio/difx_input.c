@@ -252,7 +252,8 @@ static int parseRates(DifxModel **model, int nAntenna, int row,
 		}
 		n += l;
 		model[a][row].dt = rate;
-		model[a][row].a  = dry + wet;	/* add wet and dry */
+		model[a][row].dry  = dry;
+		model[a][row].wet  = wet;
 	}
 	
 	return a;
@@ -1894,15 +1895,18 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 			}
 		}
 
-		/* compute atm rate based on atm delay */
+		/* compute atm rates based on atm delays */
 		f = 0.5/D->job->modelInc;
 		for(a = 0; a < D->nAntenna; a++)
 		{
 			for(p = 0; p < D->scan[s].nPoint+1; p++)
 			{
-				D->scan[s].model[a][p].da = 
-				       f*( D->scan[s].model[a][p+1].a -
-					   D->scan[s].model[a][p-1].a);
+				D->scan[s].model[a][p].ddry = 
+				       f*( D->scan[s].model[a][p+1].dry -
+					   D->scan[s].model[a][p-1].dry);
+				D->scan[s].model[a][p].dwet = 
+				       f*( D->scan[s].model[a][p+1].wet -
+					   D->scan[s].model[a][p-1].wet);
 			}
 		}
 	}
