@@ -126,8 +126,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	        p_fitsbuf = fitsbuf;
 
 		/* in general, convert from (us) to (sec) */
-		atmosDelay = D->scan[s].model[ant][p].a  * 1.0e-6;
-		atmosRate = D->scan[s].model[ant][p].da * 1.0e-6;
+		atmosDelay = (D->scan[s].model[ant][p].dry
+			     +D->scan[s].model[ant][p].wet)* 1.0e-6;
+		atmosRate  = (D->scan[s].model[ant][p].ddry
+			     +D->scan[s].model[ant][p].dwet)* 1.0e-6;
 		/* here correct the sign of delay, and remove atmospheric
 		 * portion of it. */
 		delay = -D->scan[s].model[ant][p].t  * 1.0e-6 - atmosDelay;
