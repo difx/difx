@@ -627,6 +627,7 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 		failed = 1;
 	}
 
+	ms->log2blankzonesize = 30;
 	ms->blanker = blanker_none;
 
 	if(failed)
@@ -664,7 +665,6 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	}
 
 	ms->blanker(ms);
-	ms->log2blankzonesize = 30;
 
 	return ms;
 }

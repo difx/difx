@@ -120,9 +120,10 @@ int blanker_mark5(struct mark5_stream *ms)
 	int startOK, endOK, zone=0;
 	int nblanked = 0;
 
+	ms->log2blankzonesize = 15;	/* 32768 bytes in size */
+
 	if(!ms->payload)
 	{
-		ms->log2blankzonesize = 30;
 		ms->blankzonestartvalid[0] = 0;
 		ms->blankzoneendvalid[0] = 0;
 
@@ -132,7 +133,6 @@ int blanker_mark5(struct mark5_stream *ms)
 	/* To be compatible with Mark5B and VLBA/Mark4 formats, the
 	 * following must be either 14 or 15.
 	 */
-	ms->log2blankzonesize = 15;	/* 32768 bytes in size */
 	zonesize = 1 << (ms->log2blankzonesize-3);
 	nword = ms->databytes/8;
 
