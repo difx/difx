@@ -138,9 +138,10 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	for(i = 0; i < nchan; i++)
 	{
+		fprintf(out, "%f ", (double)i*ms->samprate/(2.0e6*nchan));
 		for(j = 0; j < ms->nchan; j++)
 		{
-			fprintf(out, "%f ", f*spec[j][i]);
+			fprintf(out, " %f", f*spec[j][i]);
 		}
 		fprintf(out, "\n");
 	}
