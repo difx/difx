@@ -1,3 +1,8 @@
+Version 1.2.3
+* fix minor bug in blanking code -- end of header not blanked on first frame
+  of mark4 format
+* add m5spec -- a spectrometer test program.  Needs fftw3 to compile.
+
 Version 1.2.2
 * rename oversampling to decimation
 
