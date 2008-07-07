@@ -1,7 +1,8 @@
 h_sources = \
 	difx_input.h \
 	parsedifx.h \
-	parsevis.h
+	parsevis.h \
+	difx_write.h
 c_sources = \
 	difx_input.c \
 	difx_input_merge.c \
@@ -20,6 +21,8 @@ c_sources = \
 	difx_input_flag.c \
 	difx_input_polyco.c \
 	difx_input_pulsar.c \
+	difx_write.c \
+	difx_write_delay.c \
 	parsedifx.c \
 	parsevis.c
 

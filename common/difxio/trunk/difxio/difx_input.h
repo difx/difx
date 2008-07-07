@@ -445,4 +445,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 
+/* Writing functions */
+int writeDifxDelay(const DifxInput *D, const char *filename);
+
 #endif
