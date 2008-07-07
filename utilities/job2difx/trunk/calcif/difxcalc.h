@@ -9,7 +9,9 @@ typedef struct
 	int order;
 	int increment;	/* seconds */
 	double delta;	/* (rad) step size for dtau/dl and dtau/dm */
-	char server[64];
+	char calcServer[64];
+	int calcProgram;
+	int calcVersion;
 	struct getCALC_arg request;
 	CLIENT *clnt;
 } CalcParams;

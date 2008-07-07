@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include "config.h"
 #include "difxcalc.h"
+#include "CALCServer.h"
 
 #define MAX_FILES	2048
 
@@ -24,6 +25,8 @@ typedef struct
 	int force;
 	int doall;
 	char calcServer[32];
+	int calcProgram;
+	int calcVersion;
 	int nFile;
 	char *files[MAX_FILES];
 } CommandLineOptions;
@@ -197,6 +200,9 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		}
 	}
 
+	opts->calcVersion = CALCVERS;
+	opts->calcProgram = CALCPROG;
+
 	return opts;
 }
 
@@ -204,20 +210,42 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	CalcParams *p)
 {
 	DifxInput *D;
+	int v;
 
 	D = loadDifxCalc(prefix);
 	D = updateDifxInput(D);
 	
 	if(D)
 	{
+		strncpy(D->job->calcServer, opts->calcServer, 31);
+		D->job->calcServer[31] = 0;
+		D->job->calcProgram = opts->calcProgram;
+		D->job->calcVersion = opts->calcVersion;
 
 		if(opts->verbose > 1)
 		{
 			printDifxInput(D);
 		}
 
-		difxCalcInit(D, p);
-		difxCalc(D, p);
+		v = difxCalcInit(D, p);
+		if(v < 0)
+		{
+			deleteDifxInput(D);
+			printf("difxCalcInit returned %d\n", v);
+			return -1;
+		}
+		v = difxCalc(D, p);
+		if(v < 0)
+		{
+			deleteDifxInput(D);
+			printf("difxCalc returned %d\n", v);
+			return -1;
+		}
+
+		writeDifxDelay(D, "delay");
+//		writeDifxRate(D, "rate");
+		writeDifxUVW(D, "uvw");
+		writeDifxIM(D, "im");
 
 		deleteDifxInput(D);
 
@@ -229,18 +257,43 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	}
 }
 
+void deleteCalcParams(CalcParams *p)
+{
+	free(p);
+}
+
 CalcParams *newCalcParams(const CommandLineOptions *opts)
 {
 	CalcParams *p;
 
 	p = (CalcParams *)calloc(1, sizeof(CalcParams));
 
-	return p;
-}
+	p->increment = 120;
+	p->order = 5;
 
-void deleteCalcParams(CalcParams *p)
-{
-	free(p);
+	p->delta = 0.0001;
+
+	strncpy(p->calcServer, opts->calcServer, 31);
+	p->calcServer[31] = 0;
+	p->calcProgram = opts->calcProgram;
+	p->calcVersion = opts->calcVersion;
+
+	p->clnt = clnt_create(p->calcServer, p->calcProgram, p->calcVersion, 
+		"tcp");
+	if(!p->clnt)
+	{
+		clnt_pcreateerror(p->calcServer);
+		printf("ERROR: rpc clnt_create fails for host : %-s\n",
+			p->calcServer);
+		deleteCalcParams(p);
+		return 0;
+	}
+	if(opts->verbose > 1)
+	{
+		printf("RPC client created\n");
+	}
+
+	return p;
 }
 
 int run(const CommandLineOptions *opts)

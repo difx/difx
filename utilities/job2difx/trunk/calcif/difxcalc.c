@@ -59,6 +59,8 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 		return -1;
 	}
 
+	printf("difxCalcInit complete\n");
+
 	return 0;
 }
 
@@ -191,7 +193,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 			results->res[0].getCALC_res_u.errmsg);
 		return -2;
 	}
-	
+
 	if(results->nRes == 3)
 	{
 		ra  = request->ra;
@@ -242,7 +244,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 		request->ra  = ra;
 		request->dec = dec;
 	}
-
+	
 	return 0;
 }
 
@@ -254,15 +256,16 @@ int extractCalcResults(DifxPolyModel *im, int index,
 	res0 = &results->res[0];
 	res1 = &results->res[1];
 	res2 = &results->res[2];
+
 	
-	im->delay[index] = res0->getCALC_res_u.record.delay[0]*1e6;
-	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
-	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
+	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1e6;
+	im->dry[index] = -res0->getCALC_res_u.record.dry_atmos[0]*1e6;
+	im->wet[index] = -res0->getCALC_res_u.record.wet_atmos[0]*1e6;
 	if(results->nRes == 3)
 	{
 		im->u[index] = (C_LIGHT/results->delta)*
-			(res1->getCALC_res_u.record.delay[0] - 
-			 res0->getCALC_res_u.record.delay[0]);
+			(res0->getCALC_res_u.record.delay[0] - 
+			 res1->getCALC_res_u.record.delay[0]);
 		im->v[index] = (C_LIGHT/results->delta)*
 			(res2->getCALC_res_u.record.delay[0] - 
 			 res0->getCALC_res_u.record.delay[0]);
@@ -280,12 +283,12 @@ int extractCalcResults(DifxPolyModel *im, int index,
 
 void computePolyModel(DifxPolyModel *im, double deltaT)
 {
-	computePoly(im->delay, im->order, deltaT);
-	computePoly(im->dry,   im->order, deltaT);
-	computePoly(im->wet,   im->order, deltaT);
-	computePoly(im->u,     im->order, deltaT);
-	computePoly(im->v,     im->order, deltaT);
-	computePoly(im->w,     im->order, deltaT);
+	computePoly(im->delay, im->order+1, deltaT);
+	computePoly(im->dry,   im->order+1, deltaT);
+	computePoly(im->wet,   im->order+1, deltaT);
+	computePoly(im->u,     im->order+1, deltaT);
+	computePoly(im->v,     im->order+1, deltaT);
+	computePoly(im->w,     im->order+1, deltaT);
 }
 
 /* antenna here is a pointer to a particular antenna object */
@@ -297,7 +300,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 	int mjd;
 	int jobStart, inc;
 	double sec, subInc;
-	double lastsec = -1;
+	double lastsec = -1000;
 	DifxPolyModel *im;
 	DifxModel *model;
 	DifxScan *scan;
@@ -315,7 +318,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 	model = scan->model[antId];
 	nInt = scan->nPoly;
 	mjd = (int)(job->mjdStart);
-	jobStart = (int)(86400.0*(job->mjdStart - mjd + 0.5));
+	jobStart = (int)(86400.0*(job->mjdStart - mjd) + 0.5);
 	inc = (int)(job->modelInc + 0.5);
 	sourceId = scan->sourceId;
 	source = D->source + sourceId;
@@ -348,7 +351,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		for(j = 0; j <= p->order; j++)
 		{
 			request->time = sec/86400.0;
-			
+
 			/* call calc if we didn't just for this time */
 			if(fabs(lastsec - sec) > 1.0e-6)
 			{
@@ -360,11 +363,13 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 				v = callCalc(request, &results, p);
 				if(v < 0)
 				{
+					printf("Bad: callCalc = %d\n", v);
 					/* oops -- an error! */
 					return -1;
 				}
 			}
 			/* use result to populate tabulated values */
+
 			extractCalcResults(&im[i], j, &results);
 
 			lastsec = sec;
@@ -372,7 +377,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 			if(sec >= 86400.0)
 			{
 				sec -= 86400.0;
-				request->date++;
+				request->date += 1;
 			}
 		}
 		computePolyModel(&im[i], subInc);
@@ -385,16 +390,19 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		 * which this job started */
 		s = jobStart + (scan->startPoint + i)*inc;
 
-		/* get offset */
-		deltat = s % p->increment;
-
 		/* get polynomial index */
-		j = s/p->increment;
+		j = s/p->increment - (jobStart + scan->startPoint)/p->increment;
+		
 		if(j < 0)
 		{
-			deltat -= j*p->increment;
 			j = 0;
 		}
+		if(j >= nInt)
+		{
+			j = nInt - 1;
+		}
+		
+		deltat = s - im[j].sec - (im[j].mjd - mjd)*86400;
 
 		model[i].u    = evaluatePoly(im[j].u,          p->order+1, deltat);
 		model[i].v    = evaluatePoly(im[j].v,          p->order+1, deltat);
@@ -402,6 +410,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		model[i].t    = evaluatePoly(im[j].delay,      p->order+1, deltat);
 		model[i].dry  = evaluatePoly(im[j].dry,        p->order+1, deltat);
 		model[i].wet  = evaluatePoly(im[j].wet,        p->order+1, deltat);
+		continue;
 		model[i].dt   = evaluatePolyDeriv(im[j].delay, p->order+1, deltat);
 		model[i].ddry = evaluatePolyDeriv(im[j].dry,   p->order+1, deltat);
 		model[i].dwet = evaluatePolyDeriv(im[j].wet,   p->order+1, deltat);
@@ -429,20 +438,21 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 	antenna = D->antenna;
 	scan = D->scan + scanId;
 
+	scan->nAntenna = D->nAntenna;
 	scan->model = newDifxModelArray(scan->nAntenna, scan->nPoint);
 
 	scan->im = (DifxPolyModel **)calloc(scan->nAntenna, 
 		sizeof(DifxPolyModel *));
 
 	mjd = (int)(job->mjdStart);
-	jobStart = (int)(86400.0*(job->mjdStart - mjd + 0.5));
+	jobStart = (int)(86400.0*(job->mjdStart - mjd) + 0.5);
 
 	inc = (int)(job->modelInc + 0.5);
 
 	sec1 = jobStart + scan->startPoint*inc; 
 	sec2 = sec1 + scan->nPoint*inc;
 	int1 = sec1/p->increment;
-	int2 = (sec2 + inc - 1)/p->increment;
+	int2 = (sec2 + p->increment - 1)/p->increment;
 	nInt = int2 - int1;
 	scan->nPoly = nInt;
 
@@ -451,7 +461,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 		scan->im[antId] = (DifxPolyModel *)calloc(nInt, 
 			sizeof(DifxPolyModel));
 		im = scan->im[antId];
-		sec = sec1;
+		sec = int1*p->increment;
 		mjd = (int)(job->mjdStart);
 		
 		for(i = 0; i < nInt; i++)
@@ -460,11 +470,11 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 			im[i].mjd = mjd;
 			im[i].sec = sec;
 			im[i].order = p->order;
-			im[i].validDuration = inc;
-			sec += inc;
-			if(sec > 86400.0)
+			im[i].validDuration = p->increment;
+			sec += p->increment;
+			if(sec >= 86400)
 			{
-				sec -= 86400.0;
+				sec -= 86400;
 				mjd++;
 			}
 		}
@@ -472,6 +482,8 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 		/* call calc to derive delay, etc... polys */
 		antennaCalc(scanId, antId, D, p);
 	}
+
+	return 0;
 }
 
 int difxCalc(DifxInput *D, CalcParams *p)
@@ -492,11 +504,6 @@ int difxCalc(DifxInput *D, CalcParams *p)
 			fprintf(stderr, "Error! scan %d: model already "
 				"exists\n", scanId);
 			return -2;
-		}
-		if(scan->nAntenna > D->nAntenna)
-		{
-			fprintf(stderr, "Error! scan %d: too many antennas!\n",
-				scanId);
 		}
 		scanCalc(scanId, D, p);
 	}
