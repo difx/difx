@@ -86,9 +86,9 @@ double evaluatePolyDeriv(double *p, int n, double x)
 #if 0
 int main(int argc, char **argv)
 {
-	double p[10], d[10];
+	double p[10], d[10], dd[10];
 	int i, n=0;
-	double delta = 2.0;
+	double delta = 1.0;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -99,11 +99,12 @@ int main(int argc, char **argv)
 	for(i = 0; i < n; i++)
 	{
 		d[i] = evaluatePoly(p, n, i*delta);
+		dd[i] = evaluatePolyDeriv(p, n, i*delta);
 	}
 
 	for(i = 0; i < n; i++)
 	{
-		printf("%d %f %f\n", i, p[i], d[i]);
+		printf("%d %f %f %f\n", i, p[i], d[i], dd[i]);
 	}
 
 	printf("\n");

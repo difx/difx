@@ -243,7 +243,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		}
 
 		writeDifxDelay(D, "delay");
-//		writeDifxRate(D, "rate");
+		writeDifxRate(D, "rate");
 		writeDifxUVW(D, "uvw");
 		writeDifxIM(D, "im");
 

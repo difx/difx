@@ -259,8 +259,8 @@ int extractCalcResults(DifxPolyModel *im, int index,
 
 	
 	im->delay[index] = -res0->getCALC_res_u.record.delay[0]*1e6;
-	im->dry[index] = -res0->getCALC_res_u.record.dry_atmos[0]*1e6;
-	im->wet[index] = -res0->getCALC_res_u.record.wet_atmos[0]*1e6;
+	im->dry[index] = res0->getCALC_res_u.record.dry_atmos[0]*1e6;
+	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
 	if(results->nRes == 3)
 	{
 		im->u[index] = (C_LIGHT/results->delta)*
@@ -410,7 +410,6 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		model[i].t    = evaluatePoly(im[j].delay,      p->order+1, deltat);
 		model[i].dry  = evaluatePoly(im[j].dry,        p->order+1, deltat);
 		model[i].wet  = evaluatePoly(im[j].wet,        p->order+1, deltat);
-		continue;
 		model[i].dt   = evaluatePolyDeriv(im[j].delay, p->order+1, deltat);
 		model[i].ddry = evaluatePolyDeriv(im[j].dry,   p->order+1, deltat);
 		model[i].dwet = evaluatePolyDeriv(im[j].wet,   p->order+1, deltat);

@@ -10,4 +10,6 @@ void computePoly(double *p, int n, double d);
 /* Use Cramer's rule to evaluate polynomial */
 double evaluatePoly(double *p, int n, double x);
 
+double evaluatePolyDeriv(double *p, int n, double x);
+
 #endif
