@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 		mk5status.vsnB[8] = 0;
 		if(strcasecmp(vsn, "B") == 0)
 		{
-			strcpy(vsn, mk5status.vsnA);
+			strcpy(vsn, mk5status.vsnB);
 		}
 	}
 	else

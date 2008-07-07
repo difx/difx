@@ -242,7 +242,6 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 	}
 
 	free(buffer);
-	printf("\n");
 
 	return 0;
 }
@@ -284,8 +283,6 @@ void printMark5Module(const struct Mark5Module *module)
 			scan->framespersecond,
 			scan->duration);
 	}
-
-	printf("\n");
 }
 
 int loadMark5Module(struct Mark5Module *module, const char *filename)
