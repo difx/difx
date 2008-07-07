@@ -86,7 +86,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	const int *jobIdRemap, const int *antennaIdRemap, 
 	const int *configIdRemap)
 {
-	int i, srcAntenna, destAntenna;
+	int i, srcAntenna;
 
 	dest->mjdStart = src->mjdStart;
 	dest->mjdEnd   = src->mjdEnd;

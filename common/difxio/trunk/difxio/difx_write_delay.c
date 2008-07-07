@@ -28,12 +28,20 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 	DifxConfig *config;
 	int a, s, i;
 	int l;
-	char value[1024], temp[32];
+	char value[1024];
 
 	if(!D)
 	{
 		return -1;
 	}
+
+	if(D->nJob != 1)
+	{
+		fprintf(stderr, "writeDifxDelay: nJob = %d (not 1)\n", 
+			D->nJob);
+		return -1;
+	}
+
 	if(D->nAntenna < 1 || !D->job || D->nScan < 0)
 	{
 		return 0;

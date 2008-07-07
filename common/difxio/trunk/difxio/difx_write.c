@@ -105,27 +105,6 @@ int writeDifxLine(FILE *out, const char *key, const char *value)
 	return 0;
 }
 
-int writeDifxLineInt(FILE *out, const char *key, int value)
-{
-	char v[32];
-
-	sprintf(v, "%d", value);
-
-	return writeDifxLine(out, key, v);
-}
-
-int writeDifxLineInt1(FILE *out, const char *key, int i1, int value)
-{
-	char v[32];
-	char k[128];
-
-	sprintf(v, "%d", value);
-
-	sprintf(k, key, i1);
-	
-	return writeDifxLine(out, k, v);
-}
-
 int writeDifxLine1(FILE *out, const char *key, int i1, const char *value)
 {
 	char k[128];
@@ -155,9 +134,66 @@ int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3,
 	return writeDifxLine(out, k, value);
 }
 
+int writeDifxLineInt(FILE *out, const char *key, int value)
+{
+	char v[32];
+
+	sprintf(v, "%d", value);
+
+	return writeDifxLine(out, key, v);
+}
+
+int writeDifxLineInt1(FILE *out, const char *key, int i1, int value)
+{
+	char v[32];
+	char k[128];
+
+	sprintf(v, "%d", value);
+
+	sprintf(k, key, i1);
+	
+	return writeDifxLine(out, k, v);
+}
+
+int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value)
+{
+	char v[32];
+	char k[128];
+
+	sprintf(v, "%d", value);
+
+	sprintf(k, key, i1, i2);
+	
+	return writeDifxLine(out, k, v);
+}
+
+int writeDifxLineArray(FILE *out, const char *key, double *array, int n)
+{
+	char v[1024];
+	int i, l;
+
+	l = 0;
+	for(i = 0; i < n; i++)
+	{
+		l += sprintf(v+l, "%18e\t", array[i]);
+	}
+
+	return writeDifxLine(out, key, v);
+}
+
+int writeDifxLineArray1(FILE *out, const char *key, int i1, double *array,
+	int n)
+{
+	char k[128];
+
+	sprintf(k, key, i1);
+	
+	return writeDifxLineArray(out, k, array, n);
+}
+
 int writeDifxDateLines(FILE *out, double mjd)
 {
-	int yr, mo, da, hr, mi, se;
+	int yr=0, mo=0, da=0, hr, mi, se;
 	int mjdint;
 	double mjdfrac;
 	

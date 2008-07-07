@@ -2047,6 +2047,7 @@ static DifxInput *deriveSourceTable(DifxInput *D)
 	return D;
 }
 
+#if 0
 /* The following function is only here to override the following function
  * in testing */
 static DifxInput *setFitsSourceIds(DifxInput *D)
@@ -2071,6 +2072,7 @@ static DifxInput *setFitsSourceIds(DifxInput *D)
 
 	return D;
 }
+#endif
 
 static DifxInput *deriveFitsSourceIds(DifxInput *D)
 {

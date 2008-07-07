@@ -240,6 +240,8 @@ typedef struct
                                    the full set of antennas, or 0 */
 	int activeDatastreams;
 	int activeBaselines;
+	int polyOrder;		/* polynomial model order */
+	int polyInterval;	/* (sec) length of valid polynomial */
 } DifxJob;
 
 typedef struct
@@ -451,5 +453,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose);
 int writeDifxDelay(const DifxInput *D, const char *filename);
 int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxRate(const DifxInput *D, const char *filename);
+int writeDifxIM(const DifxInput *D, const char *filename);
 
 #endif

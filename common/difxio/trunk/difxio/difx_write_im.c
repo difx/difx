@@ -21,15 +21,13 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
-int writeDifxUVW(const DifxInput *D, const char *filename)
+int writeDifxIM(const DifxInput *D, const char *filename)
 {
 	FILE *out;
 	DifxScan *scan;
-	DifxSource *source;
 	DifxConfig *config;
-	int a, s, i;
-	int l;
-	char value[1024];
+	int a, s, p;
+	int refAnt, order;
 
 	if(!D)
 	{
@@ -38,7 +36,7 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 
 	if(D->nJob != 1)
 	{
-		fprintf(stderr, "writeDifxUVW: nJob = %d (not 1)\n", 
+		fprintf(stderr, "writeDifxIM: nJob = %d (not 1)\n", 
 			D->nJob);
 		return -1;
 	}
@@ -56,22 +54,15 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 	}
 
 	writeDifxDateLines(out, D->job->mjdStart);
-
-	writeDifxLineInt(out, "INCREMENT (SECS)", (int)(D->job->modelInc+0.5));
+	
+	writeDifxLineInt(out, "POLYNOMIAL ORDER", D->job->polyOrder);
+	writeDifxLineInt(out, "INTERVAL (SECS)", D->job->polyInterval);
 
 	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		writeDifxLine1(out, "TELESCOPE %d NAME", a, D->antenna[a].name);
-		writeDifxLine1(out, "TELESCOPE %d MOUNT", a, 
-			D->antenna[a].mount);
-		sprintf(value, "%6.4f", D->antenna[a].X);
-		writeDifxLine1(out, "TELESCOPE %d X (m)", a, value);
-		sprintf(value, "%6.4f", D->antenna[a].Y);
-		writeDifxLine1(out, "TELESCOPE %d Y (m)", a, value);
-		sprintf(value, "%6.4f", D->antenna[a].Z);
-		writeDifxLine1(out, "TELESCOPE %d Z (m)", a, value);
 	}
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
@@ -80,27 +71,50 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 	{
 		scan = D->scan + s;
 		config = D->config + scan->configId;
-		source = D->source + scan->sourceId;
-		writeDifxLineInt1(out, "SCAN %d POINTS", s, scan->nPoint);
-		writeDifxLineInt1(out, "SCAN %d START PT", s,
-			scan->startPoint);
+
 		writeDifxLine1(out, "SCAN %d SRC NAME", s, config->name);
-		sprintf(value, "%12.10f", source->ra);
-		writeDifxLine1(out, "SCAN %d SRC RA", s, value);
-		sprintf(value, "%12.10f", source->dec);
-		writeDifxLine1(out, "SCAN %d SRC DEC", s, value);
-		for(i = -1; i <= scan->nPoint+1; i++)
+		
+		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
 		{
-			value[0] = 0;
-			l = 0;
-			for(a = 0; a < D->nAntenna; a++)
+			if(scan->im[refAnt])
 			{
-				l += sprintf(value+l, "%7.6f\t%7.6f\t%7.6f\t", 
-					scan->model[a][i].u,
-					scan->model[a][i].v,
-					scan->model[a][i].w);
+				break;
 			}
-			writeDifxLine1(out, "RELATIVE INC %d", i, value);
+		}
+		if(refAnt == scan->nAntenna)
+		{
+			writeDifxLineInt1(out, "SCAN %d NUM POLY", s, 0);
+			continue;
+		}
+
+		writeDifxLineInt1(out, "SCAN %d NUM POLY", s, scan->nPoly);
+		
+		for(p = 0; p < scan->nPoly; p++)
+		{
+			writeDifxLineInt2(out, "SCAN %d POLY %d MJD",
+				s, p, scan->im[refAnt][p].mjd);
+			writeDifxLineInt2(out, "SCAN %d POLY %d SEC",
+				s, p, scan->im[refAnt][p].sec);
+			for(a = 0; a < scan->nAntenna; a++)
+			{
+				if(scan->im[a] == 0)
+				{
+					continue;
+				}
+				order = scan->im[a][p].order;
+				writeDifxLineArray1(out, "ANT %d DELAY (us)", 
+					a, scan->im[a][p].delay, order);
+				writeDifxLineArray1(out, "ANT %d DRY (us)", 
+					a, scan->im[a][p].dry, order);
+				writeDifxLineArray1(out, "ANT %d WET (us)", 
+					a, scan->im[a][p].wet, order);
+				writeDifxLineArray1(out, "ANT %d U (m)",
+					a, scan->im[a][p].u, order);
+				writeDifxLineArray1(out, "ANT %d V (m)",
+					a, scan->im[a][p].v, order);
+				writeDifxLineArray1(out, "ANT %d W (m)",
+					a, scan->im[a][p].w, order);
+			}
 		}
 	}
 
