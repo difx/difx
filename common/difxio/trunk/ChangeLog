@@ -1,3 +1,6 @@
+2.2
+* partial write support.  So far: delay, uvw and rate files
+
 2.1
 * a possible bug fix
 * support for sorting antennas into alpha order

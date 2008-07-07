@@ -37,4 +37,6 @@ int writeDifxLine2(FILE *out, const char *key, int i1, int i2,
 int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, 
 	const char *value);
 
+int writeDifxDateLines(FILE *out, double mjd);
+
 #endif

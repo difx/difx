@@ -1872,6 +1872,24 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 		strncpy(D->job->calcServer, DifxParametersvalue(rp, r), 32);
 		D->job->calcServer[31] = 0;
 	}
+	r = DifxParametersfind(rp, 0, "CALC PROGRAM");
+	if(r < 0)
+	{
+		D->job->calcProgram = -1;
+	}
+	else
+	{
+		D->job->calcProgram = atoi(DifxParametersvalue(rp, r));
+	}
+	r = DifxParametersfind(rp, 0, "CALC VERSION");
+	if(r < 0)
+	{
+		D->job->calcVersion = -1;
+	}
+	else
+	{
+		D->job->calcVersion = atoi(DifxParametersvalue(rp, r));
+	}
 
 	r = 0;
 

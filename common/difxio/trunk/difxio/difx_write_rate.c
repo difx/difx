@@ -26,6 +26,7 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 	FILE *out;
 	DifxScan *scan;
 	DifxSource *source;
+	DifxConfig *config;
 	int a, s, i;
 	int l;
 	char value[1024], temp[64];
@@ -46,12 +47,13 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
-	/* FIXME : calc stuff */
+	writeDifxLine(out, "CALC SERVER", D->job->calcServer);
+	writeDifxLineInt(out, "CALC PROGRAM", D->job->calcProgram);
+	writeDifxLineInt(out, "CALC VERSION", D->job->calcVersion);
 
-	/* FIXME : date/time */
+	writeDifxDateLines(out, D->job->mjdStart);
 
-	sprintf(value, "%8.6f", D->job->modelInc);
-	writeDifxLine(out, "INCREMENT (SECS)", value);
+	writeDifxLineInt(out, "INCREMENT (SECS)", (int)(D->job->modelInc+0.5));
 
 	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
 
@@ -60,10 +62,10 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 		writeDifxLine1(out, "TELESCOPE %d NAME", a, D->antenna[a].name);
 		writeDifxLine1(out, "TELESCOPE %d MOUNT", a, 
 			D->antenna[a].mount);
-		sprintf(value, "%6.4f", D->antenna[a].offset[1]);
+		sprintf(value, "%6.4f", D->antenna[a].offset[0]);
 		writeDifxLine1(out, "TELESCOPE %d OFFSET (m)", a, value);
 		sprintf(value, "%6.4f", D->antenna[a].X);
-		writedifxline1(out, "TELESCOPE %d X (m)", a, value);
+		writeDifxLine1(out, "TELESCOPE %d X (m)", a, value);
 		sprintf(value, "%6.4f", D->antenna[a].Y);
 		writeDifxLine1(out, "TELESCOPE %d Y (m)", a, value);
 		sprintf(value, "%6.4f", D->antenna[a].Z);
@@ -75,15 +77,16 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 	for(s = 0; s < D->nScan; s++)
 	{
 		scan = D->scan + s;
+		config = D->config + scan->configId;
 		source = D->source + scan->sourceId;
 		writeDifxLineInt1(out, "SCAN %d POINTS", s, scan->nPoint);
 		writeDifxLineInt1(out, "SCAN %d START PT", s,
 			scan->startPoint);
-		writeDifxLine1(out, "SCAN %d SRC NAME", s, scan->name);
+		writeDifxLine1(out, "SCAN %d SRC NAME", s, config->name);
 		sprintf(value, "%12.10f", source->ra);
-		writeDifxLine1(out, "SCAN %d RA", s, value);
+		writeDifxLine1(out, "SCAN %d SRC RA", s, value);
 		sprintf(value, "%12.10f", source->dec);
-		writeDifxLine1(out, "SCAN %d DEC", s, value);
+		writeDifxLine1(out, "SCAN %d SRC DEC", s, value);
 		for(i = -1; i <= scan->nPoint+1; i++)
 		{
 			value[0] = 0;

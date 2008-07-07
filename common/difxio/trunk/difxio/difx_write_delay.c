@@ -25,6 +25,7 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 {
 	FILE *out;
 	DifxScan *scan;
+	DifxConfig *config;
 	int a, s, i;
 	int l;
 	char value[1024], temp[32];
@@ -45,10 +46,9 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
-	/* FIXME : date/time */
-
-	sprintf(value, "%8.6f", D->job->modelInc);
-	writeDifxLine(out, "INCREMENT (SECS)", value);
+	writeDifxDateLines(out, D->job->mjdStart);
+	
+	writeDifxLineInt(out, "INCREMENT (SECS)", (int)(D->job->modelInc+0.5));
 
 	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
 
@@ -62,10 +62,11 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 	for(s = 0; s < D->nScan; s++)
 	{
 		scan = D->scan + s;
+		config = D->config + scan->configId;
 		writeDifxLineInt1(out, "SCAN %d POINTS", s, scan->nPoint);
 		writeDifxLineInt1(out, "SCAN %d START PT", s,
 			scan->startPoint);
-		writeDifxLine1(out, "SCAN %d SRC NAME", s, scan->name);
+		writeDifxLine1(out, "SCAN %d SRC NAME", s, config->name);
 		for(i = -1; i <= scan->nPoint+1; i++)
 		{
 			value[0] = 0;

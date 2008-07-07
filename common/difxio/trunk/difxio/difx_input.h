@@ -233,6 +233,8 @@ typedef struct
 	char obsSession[8];	/* project session (e.g., A, B, C1) */
 	char taperFunction[8];	/* usually "UNIFORM" */
 	char calcServer[32];	/* name of calc server */
+	int calcVersion;	/* version number of calc server */
+	int calcProgram;	/* RPC program id of calc server */
 	char fileBase[256];	/* base filename for this job table */
 	int *antennaIdRemap;	/* remapping of antennas from this job to
                                    the full set of antennas, or 0 */
