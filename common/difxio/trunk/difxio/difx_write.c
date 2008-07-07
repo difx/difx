@@ -175,7 +175,7 @@ int writeDifxLineArray(FILE *out, const char *key, double *array, int n)
 	l = 0;
 	for(i = 0; i < n; i++)
 	{
-		l += sprintf(v+l, "%18e\t", array[i]);
+		l += sprintf(v+l, "%22.15e\t", array[i]);
 	}
 
 	return writeDifxLine(out, key, v);

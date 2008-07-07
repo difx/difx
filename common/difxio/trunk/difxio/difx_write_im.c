@@ -103,17 +103,17 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 				}
 				order = scan->im[a][p].order;
 				writeDifxLineArray1(out, "ANT %d DELAY (us)", 
-					a, scan->im[a][p].delay, order);
+					a, scan->im[a][p].delay, order+1);
 				writeDifxLineArray1(out, "ANT %d DRY (us)", 
-					a, scan->im[a][p].dry, order);
+					a, scan->im[a][p].dry, order+1);
 				writeDifxLineArray1(out, "ANT %d WET (us)", 
-					a, scan->im[a][p].wet, order);
+					a, scan->im[a][p].wet, order+1);
 				writeDifxLineArray1(out, "ANT %d U (m)",
-					a, scan->im[a][p].u, order);
+					a, scan->im[a][p].u, order+1);
 				writeDifxLineArray1(out, "ANT %d V (m)",
-					a, scan->im[a][p].v, order);
+					a, scan->im[a][p].v, order+1);
 				writeDifxLineArray1(out, "ANT %d W (m)",
-					a, scan->im[a][p].w, order);
+					a, scan->im[a][p].w, order+1);
 			}
 		}
 	}

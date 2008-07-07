@@ -451,8 +451,8 @@ int DifxInputSortAntennas(DifxInput *D, int verbose);
 
 /* Writing functions */
 int writeDifxDelay(const DifxInput *D, const char *filename);
-int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxRate(const DifxInput *D, const char *filename);
+int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxIM(const DifxInput *D, const char *filename);
 
 #endif
