@@ -1473,7 +1473,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		modelInc = atof(DifxParametersvalue(cp, row));
 		if(D->job->modelInc > 0.0 && D->job->modelInc != modelInc)
 		{
-			sprintf(stderr, "SEVERE : modelInc disagrees!\n");
+			fprintf(stderr, "SEVERE : modelInc disagrees!\n");
 			return 0;
 		}
 		D->job->modelInc = modelInc;

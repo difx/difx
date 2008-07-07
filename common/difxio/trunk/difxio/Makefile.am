@@ -23,6 +23,8 @@ c_sources = \
 	difx_input_pulsar.c \
 	difx_write.c \
 	difx_write_delay.c \
+	difx_write_uvw.c \
+	difx_write_rate.c \
 	parsedifx.c \
 	parsevis.c
 
