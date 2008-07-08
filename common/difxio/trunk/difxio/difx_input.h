@@ -179,13 +179,11 @@ typedef struct
 	int nPoint;		/* number of points modeled for scan */
 	int startPoint;		/* absolute "point number" of first model */
 	int nAntenna;
-	/* FIXME!!! -- [ant] index not used uniformly! */
-	DifxModel **model;	/* indexed by [ant][point] */
-				/* ant is index of DifxAntenna */
+	DifxModel **model;	/* indexed by [dsId][point] */
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
 				/* NOTE : model[ant] can be zero -> no data */
 	int nPoly;
-	DifxPolyModel **im;	/* indexed by [ant][poly] */
+	DifxPolyModel **im;	/* indexed by [dsId][poly] */
 				/* ant is index of DifxAntenna */
 				/*   poly ranges over [0 .. nPoly-1] */
 				/* NOTE : im[ant] can be zero -> no data */
@@ -379,6 +377,12 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint);
 DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint);
 void deleteDifxModelArray(DifxModel **dm, int nAntenna);
 void printDifxModel(const DifxModel *dm);
+
+/* DifxPolyModel functions */
+DifxPolyModel **newDifxPolyModelArray(int nAntenna, int nPoly);
+DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
+void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna);
+void printDifxPolyModel(const DifxPolyModel *dpm);
 
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);

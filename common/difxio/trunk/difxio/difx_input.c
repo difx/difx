@@ -1893,10 +1893,9 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
 	return D;
 }
 
-int parsePoly1(DifxParameters *p, int row, char *key, int i1,
+int parsePoly1(DifxParameters *p, int r, char *key, int i1,
 	double *array, int n)
 {
-	int r;
 	const char *v;
 	int i, l, m;
 	double d;
@@ -1929,7 +1928,7 @@ int parsePoly1(DifxParameters *p, int row, char *key, int i1,
 
 static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 {
-	int a, p, r, s, nPoly, nScan;
+	int a, p, r, s, nScan;
 	DifxScan *scan;
 	int mjd, sec;
 	int order, interval;
@@ -2025,14 +2024,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 		}
 
 		scan->nPoly = atoi(DifxParametersvalue(mp, r));
-
-		scan->im = (DifxPolyModel **)calloc(scan->nAntenna,
-			sizeof(DifxPolyModel *));
-		for(a = 0; a < D->nAntenna; a++)
-		{
-			scan->im[a] = (DifxPolyModel *)calloc(scan->nPoly,
-				sizeof(DifxPolyModel));
-		}
+		scan->im = newDifxPolyModelArray(scan->nAntenna, scan->nPoly);
 
 		for(p = 0; p < scan->nPoly; p++)
 		{

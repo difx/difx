@@ -13,6 +13,7 @@ c_sources = \
 	difx_input_baseline.c \
 	difx_input_config.c \
 	difx_input_model.c \
+	difx_input_poly_model.c \
 	difx_input_scan.c \
 	difx_input_eop.c \
 	difx_input_spacecraft.c \

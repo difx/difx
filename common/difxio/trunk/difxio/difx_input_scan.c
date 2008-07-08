@@ -50,6 +50,11 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 				deleteDifxModelArray(ds[s].model, 
 					ds[s].nAntenna);
 			}
+			if(ds[s].im)
+			{
+				deleteDifxPolyModelArray(ds[s].im,
+					ds[s].nAntenna);
+			}
 		}
 		free(ds);
 	}
