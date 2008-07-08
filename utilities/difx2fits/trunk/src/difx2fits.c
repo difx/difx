@@ -492,6 +492,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		{
 			D2->startChan = (D2->config[0].nChan*opts->startChan) + 0.5;
 		}
+
 		if(D)
 		{
 			D1 = D;

@@ -1,4 +1,5 @@
 bin_PROGRAMS = difx2fits
+
 difx2fits_SOURCES = \
 	difx2fits.c \
 	fits.c \

@@ -1,3 +1,6 @@
+Version 2.2
+* Use .im file to generate ML table if file exists
+
 Version 2.1
 * Sorts by antenna name by default.  override with -k
 
