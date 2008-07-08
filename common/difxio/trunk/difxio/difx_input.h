@@ -179,6 +179,7 @@ typedef struct
 	int nPoint;		/* number of points modeled for scan */
 	int startPoint;		/* absolute "point number" of first model */
 	int nAntenna;
+	/* FIXME!!! -- [ant] index not used uniformly! */
 	DifxModel **model;	/* indexed by [ant][point] */
 				/* ant is index of DifxAntenna */
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
