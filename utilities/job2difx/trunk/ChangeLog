@@ -63,6 +63,15 @@ jobstatus
 Version 1.0
 * Initial version
 
+calcif2
+~~~~~~~
+Version 0.1
+* complete rewrite of calcif.  Differences from calcif:
+  - generates polynomial model by default
+  - corrects for aberration by default
+  - allows any mount type
+  - much improved integration with difxio library
+
 calcif
 ~~~~~~
 Version 1.5

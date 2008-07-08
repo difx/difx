@@ -252,11 +252,11 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	char delayfile[256];
 	char calcfile[256];
 
-	sprintf(imfile,    "%s..im",    prefix);
-	sprintf(uvwfile,   "%s..uvw",   prefix);
-	sprintf(ratefile,  "%s..rate",  prefix);
-	sprintf(delayfile, "%s..delay", prefix);
-	sprintf(calcfile,  "%s..calc",  prefix);
+	sprintf(imfile,    "%s.im",    prefix);
+	sprintf(uvwfile,   "%s.uvw",   prefix);
+	sprintf(ratefile,  "%s.rate",  prefix);
+	sprintf(delayfile, "%s.delay", prefix);
+	sprintf(calcfile,  "%s.calc",  prefix);
 
 	if(opts->force == 0 &&
 	   skipFile(calcfile, imfile) &&

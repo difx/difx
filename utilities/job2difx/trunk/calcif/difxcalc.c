@@ -497,6 +497,7 @@ int difxCalc(DifxInput *D, CalcParams *p)
 {
 	int scanId;
 	DifxScan *scan;
+	DifxJob *job;
 
 	if(!D)
 	{
@@ -506,6 +507,10 @@ int difxCalc(DifxInput *D, CalcParams *p)
 	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
 		scan = D->scan + scanId;
+		job = D->job;
+
+		job->polyOrder = p->order;
+		job->polyInterval = p->increment;
 		if(scan->im)
 		{
 			fprintf(stderr, "Error! scan %d: model already "
