@@ -64,22 +64,30 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	return 0;
 }
 
+static void evalPoly(long double poly[4], long double t, long double *V, long double *dV)
+{
+	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
+	*dV = poly[1] + t*(2.0L*poly[2] + 3.0L*t*poly[3]);
+}
+
 static int calcSpacecraftPosition(const DifxInput *D,
 	struct getCALC_arg *request, int spacecraftId)
 {
-#if 0
-FIXME -- cleanup and move to difxio!
+	/* FIXME -- move to difxio! */
 	int nRow;
-	const SpacecraftPos *pos;
+	DifxSpacecraft *sc;
+	const sixVector *pos;
 	long double t0, t1, tMod, t, deltat;
 	long double xPoly[4], yPoly[4], zPoly[4];
 	int r, r0, r1;
 	long double X, Y, Z, dX, dY, dZ;
-	long double R2, D;
+	long double r2, d;
 	double muRA, muDec;
 	
-	nRow = c_params->sc_rows[spacecraftId];
-	pos = &(c_params->sc_pos[spacecraftId][0]);
+	sc = D->spacecraft + spacecraftId;
+
+	nRow = sc->nPoint;
+	pos = sc->pos;
 	
 	tMod = request->date + request->time;
 	
@@ -133,24 +141,24 @@ FIXME -- cleanup and move to difxio!
 	dY = pos[r0].dY + t*(pos[r1].dY - pos[r0].dY);
 	dZ = pos[r0].dZ + t*(pos[r1].dZ - pos[r0].dZ);
 
-	D = sqrtl(X*X + Y*Y + Z*Z);
-	R2 = X*X + Y*Y;
+	d = sqrtl(X*X + Y*Y + Z*Z);
+	r2 = X*X + Y*Y;
 
 	/* proper motion in radians/day */
-	muRA = (X*dY - Y*dX)/R2;
-	muDec = (R2*dZ - X*Z*dX - Y*Z*dY)/(D*D*sqrtl(R2));
+	muRA = (X*dY - Y*dX)/r2;
+	muDec = (r2*dZ - X*Z*dX - Y*Z*dY)/(d*d*sqrtl(r2));
 	
 	/* convert to arcsec/yr */
 	muRA *= (180.0*3600.0/M_PI)*365.24;
 	muDec *= (180.0*3600.0/M_PI)*365.24;
 
 	request->ra  =  atan2(Y, X);
-	request->dec =  atan2(Z, sqrtl(R2));
+	request->dec =  atan2(Z, sqrtl(r2));
 	request->dra  = muRA;
 	request->ddec = muDec;
-	request->parallax = 3.08568025e16/D;
+	request->parallax = 3.08568025e16/d;
         request->depoch = tMod;
-#endif
+
 	return 0;
 }
 

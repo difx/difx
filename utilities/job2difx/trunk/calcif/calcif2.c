@@ -24,6 +24,7 @@ typedef struct
 	int verbose;
 	int force;
 	int doall;
+	double delta;	/* derivative step size, radians. <0 for noaber */
 	char calcServer[32];
 	int calcProgram;
 	int calcVersion;
@@ -50,6 +51,9 @@ int usage()
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f                      Force recalc\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --noaber\n");
+	fprintf(stderr, "  -n                      Don't do aberration, etc, corrections\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --all\n");
 	fprintf(stderr, "  -a                      Do all calc files found\n");
@@ -90,6 +94,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	char *cs;
 
 	opts = (CommandLineOptions *)calloc(1, sizeof(CommandLineOptions));
+	opts->delta = 0.0001;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -109,6 +114,11 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			        strcmp(argv[i], "--all") == 0)
 			{
 				opts->doall = 1;
+			}
+			else if(strcmp(argv[i], "-n") == 0 ||
+				strcmp(argv[i], "--noaber") == 0)
+			{
+				opts->delta = -1.0;
 			}
 			else if(strcmp(argv[i], "-h") == 0 ||
 				strcmp(argv[i], "--help") == 0)
@@ -206,11 +216,57 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	return opts;
 }
 
+/* return 1 if f2 exists and is older than f1 */
+int skipFile(const char *f1, const char *f2)
+{
+	struct stat s1, s2;
+	int r1, r2;
+
+	r2 = stat(f2, &s2);
+	if(r2 != 0)
+	{
+		return 0;
+	}
+	r1 = stat(f1, &s1);
+	if(r1 != 0)
+	{
+		return 0;
+	}
+
+	if(s2.st_mtime > s1.st_mtime)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
 int runfile(const char *prefix, const CommandLineOptions *opts,
 	CalcParams *p)
 {
 	DifxInput *D;
 	int v;
+	char imfile[256];
+	char uvwfile[256];
+	char ratefile[256];
+	char delayfile[256];
+	char calcfile[256];
+
+	sprintf(imfile,    "%s..im",    prefix);
+	sprintf(uvwfile,   "%s..uvw",   prefix);
+	sprintf(ratefile,  "%s..rate",  prefix);
+	sprintf(delayfile, "%s..delay", prefix);
+	sprintf(calcfile,  "%s..calc",  prefix);
+
+	if(opts->force == 0 &&
+	   skipFile(calcfile, imfile) &&
+	   skipFile(calcfile, uvwfile) &&
+	   skipFile(calcfile, ratefile) &&
+	   skipFile(calcfile, delayfile))
+	{
+		printf("skipping %s due to file ages\n", prefix);
+		return 0;
+	}
 
 	D = loadDifxCalc(prefix);
 	D = updateDifxInput(D);
@@ -242,10 +298,10 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 			return -1;
 		}
 
-		writeDifxDelay(D, "delay");
-		writeDifxRate(D, "rate");
-		writeDifxUVW(D, "uvw");
-		writeDifxIM(D, "im");
+		writeDifxDelay(D, delayfile);
+		writeDifxRate(D,  ratefile);
+		writeDifxUVW(D,   uvwfile);
+		writeDifxIM(D,    imfile);
 
 		deleteDifxInput(D);
 
@@ -270,8 +326,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 
 	p->increment = 120;
 	p->order = 5;
-
-	p->delta = 0.0001;
+	p->delta = opts->delta;
 
 	strncpy(p->calcServer, opts->calcServer, 31);
 	p->calcServer[31] = 0;
