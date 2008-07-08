@@ -86,14 +86,14 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	float faraday;
 	int configId, jobId;
 	double time;
-	float timeInt, polyInt;
-	int nPol;
+	float timeInt;
+	int nPol, np;
 	char *p_fitsbuf;
-	DifxScan *scan;
-	DifxJob *job;
-	DifxConfig *config;
-	DifxModel *M;
-	DifxPolyModel *P;
+	const DifxScan *scan;
+	const DifxJob *job;
+	const DifxConfig *config;
+	const DifxModel *M;
+	const DifxPolyModel *P;
 	float dispDelay;
 	float dispDelayRate;
 	double modelInc;
@@ -182,45 +182,78 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   sourceId1 = D->source[scan->sourceId].fitsSourceId + 1;
 
 	   modelInc = job->modelInc;
-	   timeInt = modelInc / 86400.0;
 	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
-	   polyInt = job->polyInterval / 86400.0;
 	   
-	   if(scan->im) for(p = 0; p < scan->nPoly; p++)
+	   if(scan->im)
 	   {
-	      printf("\n    Scan %d -- using polynomial model", s);
-	      printed++;
+	   	np = scan->nPoly;
+		timeInt = job->polyInterval / 86400.0;
+	      	printf("\n    Scan %d -- using polynomial model", s);
+	        printed++;
+	   }
+	   else
+	   {
+	   	np = scan->nPoint;
+	   	timeInt = modelInc / 86400.0;
+	   }
+
+	   for(p = 0; p < np; p++)
+	   {
 	      for(a = 0; a < scan->nAntenna; a++)
 	      {
-	       	P = scan->im[a];
 		antId = config->datastreamId[a];
-	       
-	        /* skip antennas with no model data */
-		if(P == 0)
+		antId1 = antId + 1;
+
+	        if(scan->im)  /* use polynomial model */
 		{
-		  if(skip[antId] == 0)
+		  if(scan->im[a] == 0)
 		  {
-		    printf("\n    Warning : skipping antId %d", antId);
-		    printed++;
-		    skipped++;
+		      if(skip[antId] == 0)
+		      {
+		        printf("\n    Warning : skipping antId %d", antId);
+		        skip[antId]++;
+		        printed++;
+		        skipped++;
+		      }
+		      continue;
 		  }
-		  skip[antId]++;
-		  continue;
-		}
-	        time = P->mjd - (int)(job->mjdStart) + P->sec/86400.0;
-		deltat = (P->mjd - job->mjdStart)*86400.0 + P->sec;
+	       	
+		  P = scan->im[a] + p;
 
-		p_fitsbuf = fitsbuf;
-	       
-	        for(k = 0; k < array_N_POLY; k++)
+	          time = P->mjd - (int)(job->mjdStart) + P->sec/86400.0;
+		  deltat = (P->mjd - job->mjdStart)*86400.0 + P->sec;
+
+	          for(k = 0; k < array_N_POLY; k++)
+		  {
+		    gpoly[k] = P->delay[k]*1.0e-6;
+		  }
+		}
+		else	   /* use tabulated model */
 		{
-		  gpoly[k] = P->delay[k] * 1.0e-6;
+		  if(scan->model[a] == 0)
+		  {
+		      if(skip[antId] == 0)
+		      {
+		        printf("\n    Warning : skipping antId %d", antId);
+		        skip[antId]++;
+		        printed++;
+		        skipped++;
+		      }
+		      continue;
+		  }
+	       	
+		  M = scan->model[a] + p;
+		  
+		  time = start + timeInt*p;
+		  deltat = modelInc*p;
+
+		  calcPolynomial(gpoly,
+			-M[p-1].t, -M[p].t, -M[p+1].t, -M[p+2].t, modelInc);
 		}
 
-		clockRate = D->antenna[antId].rate * 1.0e-6;
+		clockRate = D->antenna[antId].rate*1.0e-6;
 
-		gpoly[0] -= (D->antenna[antId].delay * 1.0e-6 +
-			clockRate*deltat);
+		gpoly[0] -= (D->antenna[antId].delay*1.0e-6 + clockRate*deltat);
 		gpoly[1] -= clockRate;		
 
 		/* All others are derived from gpoly */
@@ -232,97 +265,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		
 		for(j = 0; j < nBand; j++)
 		{
-			freq = config->IF[j].freq * 1.0e6;
+			freq = config->IF[j].freq*1.0e6;
 			for(k = 0; k < array_N_POLY; k++)
 			{
-				/* FIXME -- is this right? */
 				ppoly[j][k] = gpoly[k]*freq;
 				prate[j][k] = grate[k]*freq;
 			}
-		}
-		antId1 = antId + 1;
-
-		FITS_WRITE_ITEM (time, p_fitsbuf);
-		FITS_WRITE_ITEM (polyInt, p_fitsbuf);
-		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
-		FITS_WRITE_ITEM (antId1, p_fitsbuf);
-		FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
-		FITS_WRITE_ITEM (freqId1, p_fitsbuf);
-		FITS_WRITE_ITEM (faraday, p_fitsbuf);
-		FITS_WRITE_ARRAY(freqVar, p_fitsbuf, nBand);
-
-		for(i = 0; i < nPol; i++)
-		{
-			FITS_WRITE_ARRAY(ppoly[0], p_fitsbuf,
-				nBand*array_N_POLY);
-			FITS_WRITE_ARRAY(gpoly, p_fitsbuf, array_N_POLY);
-			FITS_WRITE_ARRAY(prate[0], p_fitsbuf,
-				nBand*array_N_POLY);
-			FITS_WRITE_ARRAY(grate, p_fitsbuf, array_N_POLY);
-			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
-			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);
-		} /* Polar loop */
-
-		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "ML");
-      
-#ifndef WORDS_BIGENDIAN
-		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
-#endif
-		fitsWriteBinRow(out, fitsbuf);
-		
-	      } /* end antenna loop for poly model */
-	   } /* end poly model for loop */
-	   else for(p = 0; p < scan->nPoint; p++)
-	   {
-	      time = start + timeInt*p;
-	      
-	      for(a = 0; a < scan->nAntenna; a++)
-	      {
-		M = scan->model[a];
-		antId = config->datastreamId[a];
-
-		/* skip antennas with no model data */
-		if(M == 0)
-		{
-		  if(skip[antId] == 0)
-		  {
-		    printf("\n    Warning : skipping antId %d", antId);
-		    printed++;
-		    skipped++;
-		  }
-		  skip[antId]++;
-		  continue;
 		}
 
 		p_fitsbuf = fitsbuf;
-	       
-		calcPolynomial(gpoly,
-			-M[p-1].t, -M[p  ].t, -M[p+1].t, -M[p+2].t, modelInc);
-
-		clockRate = D->antenna[antId].rate * 1.0e-6;
-
-		gpoly[0] -= (D->antenna[antId].delay * 1.0e-6 +
-			clockRate*job->modelInc*p);
-		gpoly[1] -= clockRate;		
-
-		/* All others are derived from gpoly */
-		for(k = 1; k < array_N_POLY; k++)
-		{
-			grate[k-1] = k*gpoly[k];
-		}
-		grate[array_N_POLY-1] = 0.0;
-		
-		for(j = 0; j < nBand; j++)
-		{
-			freq = config->IF[j].freq * 1.0e6;
-			for(k = 0; k < array_N_POLY; k++)
-			{
-				/* FIXME -- is this right? */
-				ppoly[j][k] = gpoly[k]*freq;
-				prate[j][k] = grate[k]*freq;
-			}
-		}
-		antId1 = antId + 1;
 
 		FITS_WRITE_ITEM (time, p_fitsbuf);
 		FITS_WRITE_ITEM (timeInt, p_fitsbuf);
@@ -352,8 +303,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 #endif
 		fitsWriteBinRow(out, fitsbuf);
 		
-	     } /* Antenna loop */
-	   } /* Intervals in scan loop (tabulated model) */
+	      } /* end antenna loop */
+	   } /* end model loop */
 	} /* Scan loop */
 
   	if(printed)

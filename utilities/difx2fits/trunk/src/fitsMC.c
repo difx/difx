@@ -43,13 +43,18 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
  	int nRowBytes;
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int b, j, s, p, ant;
+	int b, j, s, p, np, ant;
 	int configId;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
 	float dispDelayRate;
-	double time;      
+	const DifxConfig *config;
+	const DifxScan *scan;
+	const DifxJob *job;
+	const DifxModel *M;
+	const DifxPolyModel *P;
+	double time, deltat;      
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate;
@@ -107,38 +112,77 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	arrayId1 = 1;
 	for(s = 0; s < D->nScan; s++)
 	{
-	   configId = D->scan[s].configId;
-	   freqId1 = D->config[configId].freqId + 1;
-	   sourceId1 = D->source[D->scan[s].sourceId].fitsSourceId + 1;
+	   scan = D->scan + s;
+	   configId = scan->configId;
+	   config = D->config + configId;
+	   freqId1 = config->freqId + 1;
+	   sourceId1 = D->source[scan->sourceId].fitsSourceId + 1;
 	   jobId = D->scan[s].jobId;
-	   for(p = 0; p < D->scan[s].nPoint; p++)
+	   job = D->job + jobId;
+
+	   if(scan->im)
 	   {
-	      time = D->scan[s].mjdStart - (int)D->mjdStart + 
-	      	D->job[jobId].modelInc*p/86400.0;
-		
-	      for(ant = 0; ant < D->scan[s].nAntenna; ant++)
+	   	np = scan->nPoly;
+	   }
+	   else
+	   {
+	   	np = scan->nPoint;
+	   }
+
+	   for(p = 0; p < np; p++)
+	   {
+	      for(ant = 0; ant < scan->nAntenna; ant++)
 	      {
-	      	if(D->scan[s].model[ant] == 0)
+		antId1 = config->datastreamId[ant] + 1;
+
+		if(scan->im)  /* use polynomial model */
 		{
-		  continue;
+		  if(scan->im[ant] == 0)
+		  {
+		    continue;
+		  }
+
+		  P = scan->im[ant] + p;
+
+		  time = P->mjd - (int)(job->mjdStart) + P->sec/86400.0;
+		  deltat = (P->mjd - job->mjdStart)*86400.0 + P->sec;
+
+		  /* in general, convert from (us) to (sec) */
+		  atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
+		  atmosRate  = (P->dry[1] + P->wet[1])*1.0e-6;
+
+		  /* here correct the sign of delay, and remove atmospheric
+		   * portion of it. */
+		  delay     = -P->delay[0]*1.0e-6 - atmosDelay;
+		  delayRate = -P->delay[1]*1.0e-6 - atmosRate;
 		}
-		antId1 = ant + 1;
+		else	   /* use tabulated model */
+		{
+		  if(scan->model[ant] == 0)
+		  {
+		    continue;
+		  }
+
+		  M = scan->model[ant] + p;
+	          
+		  time = scan->mjdStart - (int)D->mjdStart + job->modelInc*p/86400.0;
+		  deltat = job->modelInc*p;
+
+		  /* in general, convert from (us) to (sec) */
+		  atmosDelay = (M->dry  + M->wet)*1.0e-6;
+		  atmosRate  = (M->ddry + M->dwet)*1.0e-6;
+		  
+		  /* here correct the sign of delay, and remove atmospheric
+		   * portion of it. */
+		  delay     = -M->t*1.0e-6  - atmosDelay;
+		  delayRate = -M->dt*1.0e-6 - atmosRate;
+		}
+		
+		clockRate = D->antenna[ant].rate*1.0e-6;
+		clock     = D->antenna[ant].delay*1.0e-6 + clockRate*deltat;
+          
 	        p_fitsbuf = fitsbuf;
 
-		/* in general, convert from (us) to (sec) */
-		atmosDelay = (D->scan[s].model[ant][p].dry
-			     +D->scan[s].model[ant][p].wet)* 1.0e-6;
-		atmosRate  = (D->scan[s].model[ant][p].ddry
-			     +D->scan[s].model[ant][p].dwet)* 1.0e-6;
-		/* here correct the sign of delay, and remove atmospheric
-		 * portion of it. */
-		delay = -D->scan[s].model[ant][p].t  * 1.0e-6 - atmosDelay;
-		delayRate = -D->scan[s].model[ant][p].dt * 1.0e-6 - atmosRate;
-		
-		clockRate = D->antenna[ant].rate  * 1.0e-6;
-		clock = D->antenna[ant].delay * 1.0e-6 + 
-			clockRate*D->job[jobId].modelInc*p;
-          
 		FITS_WRITE_ITEM (time, p_fitsbuf);
 		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
 		FITS_WRITE_ITEM (antId1, p_fitsbuf);
