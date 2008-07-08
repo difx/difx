@@ -1852,6 +1852,234 @@ static void estimateRate(DifxInput *D)
 	}
 }
 
+static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
+{
+	int r;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	r = DifxParametersfind(p, 0, "CALC SERVER");
+	if(r < 0)
+	{
+		strcpy(D->job->calcServer, "unknown");
+	}
+	else
+	{
+		strncpy(D->job->calcServer, DifxParametersvalue(p, r), 32);
+		D->job->calcServer[31] = 0;
+	}
+	r = DifxParametersfind(p, 0, "CALC PROGRAM");
+	if(r < 0)
+	{
+		D->job->calcProgram = -1;
+	}
+	else
+	{
+		D->job->calcProgram = atoi(DifxParametersvalue(p, r));
+	}
+	r = DifxParametersfind(p, 0, "CALC VERSION");
+	if(r < 0)
+	{
+		D->job->calcVersion = -1;
+	}
+	else
+	{
+		D->job->calcVersion = atoi(DifxParametersvalue(p, r));
+	}
+
+	return D;
+}
+
+int parsePoly1(DifxParameters *p, int row, char *key, int i1,
+	double *array, int n)
+{
+	int r;
+	const char *v;
+	int i, l, m;
+	double d;
+
+	if(r < 0)
+	{
+		return -1;
+	}
+
+	r = DifxParametersfind1(p, r, key, i1);
+	if(r < 0)
+	{
+		return -1;
+	}
+
+	v = DifxParametersvalue(p, r);
+	m = 0;
+	for(i = 0; i < n; i++)
+	{
+		if(sscanf(v+m, "%lf%n", &d, &l) < 1)
+		{
+			return -1;
+		}
+		m += l;
+		array[i] = d;
+	}
+
+	return r;
+}
+
+static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
+{
+	int a, p, r, s, nPoly, nScan;
+	DifxScan *scan;
+	int mjd, sec;
+	int order, interval;
+
+	if(!D)
+	{
+		return 0;
+	}
+
+	if(!mp)
+	{
+		return D;
+	}
+
+	D = parseCalcServerInfo(D, mp);
+
+	r = DifxParametersfind(mp, 0, "POLYNOMIAL ORDER");
+	if(r < 0)
+	{
+		fprintf(stderr, "IM: POLYNOMIAL ORDER not found\n");
+		return 0;
+	}
+	order = atoi(DifxParametersvalue(mp, r));
+	D->job->polyOrder = order;
+
+
+	r = DifxParametersfind(mp, 0, "INTERVAL (SECS)");
+	if(r < 0)
+	{
+		fprintf(stderr, "IM: INTERVAL (SECS) not found\n");
+		return 0;
+	}
+	interval = atoi(DifxParametersvalue(mp, r));
+	D->job->polyInterval = interval;
+	
+	
+	r = DifxParametersfind(mp, 0, "NUM TELESCOPES");
+	if(r < 0)
+	{
+		fprintf(stderr, "IM: NUM TELESCOPES not found\n");
+		return 0;
+	}
+
+	/* Verify antennas match */
+	if(D->nAntenna != atoi(DifxParametersvalue(mp, r)))
+	{
+		fprintf(stderr, "IM: NUM TELESCOPE disagrees : %d != %d\n",
+			D->nAntenna, atoi(DifxParametersvalue(mp, r)));
+		return 0;
+	}
+	
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		r = DifxParametersfind1(mp, r+1, "TELESCOPE %d NAME", a);
+		if(r < 0)
+		{
+			fprintf(stderr, "IM: TELESCOPE %d NAME not found\n", a);
+			return 0;
+		}
+		if(strcmp(D->antenna[a].name, DifxParametersvalue(mp, r)))
+		{
+			fprintf(stderr, "IM: Antenna order/name mismatch\n");
+			return 0;
+		}
+	}
+	
+	/* Now get the models! */
+	r = DifxParametersfind(mp, 0, "NUM SCANS");
+	if(r < 0)
+	{
+		fprintf(stderr, "IM: NUM SCANS not found\n");
+		return 0;
+	}
+
+	nScan = atoi(DifxParametersvalue(mp, r));
+	if(D->nScan != nScan)
+	{
+		fprintf(stderr, "IM: NUM SCANS disagrees\n");
+		return 0;
+	}
+
+	for(s = 0; s < nScan; s++)
+	{
+		/* FIXME -- validate source name, ... */
+
+		scan = D->scan + s;
+
+		r = DifxParametersfind1(mp, r, "SCAN %d NUM POLY", s);
+		if(r < 0)
+		{
+			fprintf(stderr, "IM: Malformed scan\n");
+			return 0;
+		}
+
+		scan->nPoly = atoi(DifxParametersvalue(mp, r));
+
+		scan->im = (DifxPolyModel **)calloc(scan->nAntenna,
+			sizeof(DifxPolyModel *));
+		for(a = 0; a < D->nAntenna; a++)
+		{
+			scan->im[a] = (DifxPolyModel *)calloc(scan->nPoly,
+				sizeof(DifxPolyModel));
+		}
+
+		for(p = 0; p < scan->nPoly; p++)
+		{
+			r = DifxParametersfind2(mp, r, "SCAN %d POLY %d MJD",
+				s, p);
+			if(r < 0)
+			{
+				return 0;
+			}
+			mjd = atoi(DifxParametersvalue(mp, r));
+			r = DifxParametersfind2(mp, r, "SCAN %d POLY %d SEC",
+				s, p);
+			if(r < 0)
+			{
+				return 0;
+			}
+			sec = atoi(DifxParametersvalue(mp, r));
+
+			for(a = 0; a < D->nAntenna; a++)
+			{
+				scan->im[a][p].mjd = mjd;
+				scan->im[a][p].sec = sec;
+				scan->im[a][p].order = order;
+				scan->im[a][p].validDuration = interval;
+				r = parsePoly1(mp, r, "ANT %d DELAY (us)", a,
+					scan->im[a][p].delay, order+1);
+				r = parsePoly1(mp, r, "ANT %d DRY (us)", a,
+					scan->im[a][p].dry, order+1);
+				r = parsePoly1(mp, r, "ANT %d WET (us)", a,
+					scan->im[a][p].wet, order+1);
+				r = parsePoly1(mp, r, "ANT %d U (m)", a,
+					scan->im[a][p].u, order+1);
+				r = parsePoly1(mp, r, "ANT %d V (m)", a,
+					scan->im[a][p].v, order+1);
+				r = parsePoly1(mp, r, "ANT %d W (m)", a,
+					scan->im[a][p].w, order+1);
+				if(r < 0)
+				{
+					return 0;
+				}
+			}
+		}
+	}
+
+	return D;
+}
+
 static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 {
 	int a, p, r = 0, s, v;
@@ -1862,36 +2090,7 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 		return 0;
 	}
 
-	r = DifxParametersfind(rp, 0, "CALC SERVER");
-	if(r < 0)
-	{
-		strcpy(D->job->calcServer, "unknown");
-	}
-	else
-	{
-		strncpy(D->job->calcServer, DifxParametersvalue(rp, r), 32);
-		D->job->calcServer[31] = 0;
-	}
-	r = DifxParametersfind(rp, 0, "CALC PROGRAM");
-	if(r < 0)
-	{
-		D->job->calcProgram = -1;
-	}
-	else
-	{
-		D->job->calcProgram = atoi(DifxParametersvalue(rp, r));
-	}
-	r = DifxParametersfind(rp, 0, "CALC VERSION");
-	if(r < 0)
-	{
-		D->job->calcVersion = -1;
-	}
-	else
-	{
-		D->job->calcVersion = atoi(DifxParametersvalue(rp, r));
-	}
-
-	r = 0;
+	D = parseCalcServerInfo(D, rp);
 
 	for(s = 0; s < D->nScan; s++)
 	{
@@ -2388,7 +2587,7 @@ DifxInput *updateDifxInput(DifxInput *D)
 
 DifxInput *loadDifxInput(const char *filePrefix)
 {
-	DifxParameters *ip, *up, *dp, *rp, *cp;
+	DifxParameters *ip, *up, *dp, *rp, *cp, *mp;
 	DifxInput *D, *DSave;
 	char inputFile[256];
 	char uvwFile[256];
@@ -2396,6 +2595,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	char rateFile[256];
 	char calcFile[256];
 	char flagFile[256];
+	char modelFile[256];
 
 	sprintf(inputFile, "%s.input", filePrefix);
 	sprintf(uvwFile,   "%s.uvw",   filePrefix);
@@ -2403,12 +2603,14 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	sprintf(rateFile,  "%s.rate",  filePrefix);
 	sprintf(calcFile,  "%s.calc",  filePrefix);
 	sprintf(flagFile,  "%s.flag",  filePrefix);
+	sprintf(modelFile, "%s.ium",   filePrefix);
 
 	ip = newDifxParametersfromfile(inputFile);
 	up = newDifxParametersfromfile(uvwFile);
 	dp = newDifxParametersfromfile(delayFile);
 	rp = newDifxParametersfromfile(rateFile);
 	cp = newDifxParametersfromfile(calcFile);
+	mp = newDifxParametersfromfile(modelFile);
 
 	if(!ip || !up || !dp)
 	{
@@ -2455,6 +2657,11 @@ DifxInput *loadDifxInput(const char *filePrefix)
 
 		estimateRate(D);
 	}
+	if(mp)
+	{
+		D = populateIM(D, mp);
+		printf("Interferometer model %s being used\n", modelFile);
+	}
 
 	if(!D)
 	{
@@ -2465,6 +2672,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(up);
 	deleteDifxParameters(dp);
 	deleteDifxParameters(cp);
+	deleteDifxParameters(mp);
 
 	populateFlags(D, flagFile);
 	
