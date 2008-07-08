@@ -1954,7 +1954,6 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	order = atoi(DifxParametersvalue(mp, r));
 	D->job->polyOrder = order;
 
-
 	r = DifxParametersfind(mp, 0, "INTERVAL (SECS)");
 	if(r < 0)
 	{
@@ -2066,6 +2065,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 					return 0;
 				}
 			}
+			//printf("XX %e %e %e %e\n", scan->im[0][p].delay[0], scan->im[0][p].delay[1], scan->im[0][p].delay[2], scan->im[a][p].delay[3]);
 		}
 	}
 
@@ -2595,7 +2595,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	sprintf(rateFile,  "%s.rate",  filePrefix);
 	sprintf(calcFile,  "%s.calc",  filePrefix);
 	sprintf(flagFile,  "%s.flag",  filePrefix);
-	sprintf(modelFile, "%s.ium",   filePrefix);
+	sprintf(modelFile, "%s.im",   filePrefix);
 
 	ip = newDifxParametersfromfile(inputFile);
 	up = newDifxParametersfromfile(uvwFile);
