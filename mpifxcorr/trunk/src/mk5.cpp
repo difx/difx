@@ -157,10 +157,11 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   frameseconds = vs->sec;
 
   readseconds = 86400*(frameday-corrstartday) + int(frameseconds-corrstartseconds) + intclockseconds;
-  if(frameseconds < corrstartseconds) //handle rounding error for negative numbers
-    readseconds--;
   readnanoseconds = int(1000000000.0*(frameseconds-int(frameseconds)) + 0.5);
-  cout << "The frame start day is " << frameday << ", the frame start seconds is " << frameseconds << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
+  if(frameseconds < corrstartseconds && readnanoseconds != 0) //handle rounding error for negative numbers
+    readseconds--;
+  cout << "The frame start day is " << frameday << ", the frame start seconds is " << frameseconds << ", corrstartseconds is " << corrstartseconds << " while readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << ", intclockseconds is " << intclockseconds << endl;
+  cout << "int(frameseconds-corrstartseconds) is " << int(frameseconds-corrstartseconds) << endl;
 
   //close vlbastream
   VLBA_stream_close(vs);

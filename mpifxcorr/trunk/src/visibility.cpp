@@ -459,7 +459,7 @@ void Visibility::writedata()
   {
     for(int i=0;i<numdatastreams;i++) //do each datastream
     {
-      for(int j=0;j<2;j++) //the parallel, and the cross product for which this band is the first
+      for(int j=0;j<autocorrincrement;j++) //the parallel, and the cross product for which this band is the first
       {
         for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) //for each band
         {
