@@ -93,6 +93,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	int nRowBytes;
 	int nColumn;
 	int e;
+	const DifxEOP *eop;
 
 	if(D == 0)
 	{
@@ -137,13 +138,15 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	{
 		for(e = 0; e < D->nEOP; e++)
 		{
-			row.time    = D->eop[e].mjd - (int)D->mjdStart;
-			row.ut1_utc = D->eop[e].ut1_utc;
-			row.iat_utc = D->eop[e].tai_utc;
+			eop = D->eop + e;
+
+			row.time    = eop->mjd - (int)D->mjdStart;
+			row.ut1_utc = eop->ut1_utc;
+			row.iat_utc = eop->tai_utc;
 			row.a1_iat  = 0.0;
 			row.ut1Type = 'X';
-			row.wobX    = D->eop[e].xPole;
-			row.wobY    = D->eop[e].yPole;
+			row.wobX    = eop->xPole;
+			row.wobY    = eop->yPole;
 			row.wobType = 'X';
 			row.dPsi    = 0.0;
 			row.ddPsi   = 0.0;

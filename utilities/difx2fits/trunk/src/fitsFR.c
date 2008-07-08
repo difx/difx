@@ -29,10 +29,12 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	float bandBW[array_MAX_BANDS];
 	int32_t netSide[array_MAX_BANDS];
 	int32_t bbChan[array_MAX_BANDS];
-	int row;
+	int configId;
 	int nBand;
 	int i;
 	int32_t freqId1;	/* 1-based index for FITS file */
+	const DifxConfig *config;
+	const DifxIF *IF;
 
 	if(D == 0)
 	{
@@ -65,28 +67,28 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 
 	freqId1 = 0;
 
-	for(row = 0; row < D->nConfig; row++)
+	for(configId = 0; configId < D->nConfig; configId++)
 	{
+		config = D->config + configId;
+
 		/* only write one row per unique frequency ID */
-		if(D->config[row].freqId < freqId1)
+		if(config->freqId < freqId1)
 		{
 			continue;
 		}
-		freqId1 = D->config[row].freqId + 1;
+		freqId1 = config->freqId + 1;
 
 		for(i = 0; i < nBand; i++)
 		{
-			bandFreq[i] = (D->config[row].IF[i].freq -
-				D->refFreq) * 1.0e6;
-			chanBW[i] = (D->config[row].IF[i].bw * D->specAvg/
-				D->nInChan) * 1.0e6;
+			IF = config->IF + i;
+			bandFreq[i] = (IF->freq - D->refFreq)*1.0e6;
+			chanBW[i] = (IF->bw*D->specAvg/D->nInChan)*1.0e6;
 			bandBW[i] = chanBW[i]*D->nOutChan;
-			netSide[i] = (D->config[row].IF[i].sideband 
-				== 'U' ? 1 : -1);
+			netSide[i] = ( IF->sideband == 'U' ? 1 : -1 );
 			bbChan[i] = 0;	/* vistigial */
 			/* correct for skipping some channels */
-			bandFreq[i] += netSide[i]*D->config[row].IF[i].bw*
-				D->startChan * 1.0e6 / (double)(D->nInChan);
+			bandFreq[i] += netSide[i]*IF->bw*
+				D->startChan*1.0e6/(double)(D->nInChan);
 		}
 		
 		/* pointer to the buffer for FITS records */

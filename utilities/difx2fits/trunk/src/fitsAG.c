@@ -70,6 +70,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	int nRowBytes;
 	int i, a, e, mjd;
 	struct AGrow row;
+	const DifxAntenna *antenna;
 
 	if(D == 0)
 	{
@@ -138,27 +139,29 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
-		strcpypad(row.name, D->antenna[a].name, 8);
-		row.x = D->antenna[a].X;
-		row.y = D->antenna[a].Y;
-		row.z = D->antenna[a].Z;
-		row.dx = D->antenna[a].dX;
-		row.dy = D->antenna[a].dY;
-		row.dz = D->antenna[a].dZ;
+		antenna = D->antenna + a;
+
+		strcpypad(row.name, antenna->name, 8);
+		row.x = antenna->X;
+		row.y = antenna->Y;
+		row.z = antenna->Z;
+		row.dx = antenna->dX;
+		row.dy = antenna->dY;
+		row.dz = antenna->dZ;
 		row.antId1 = a+1;
-		if(strcasecmp(D->antenna[a].mount, "xyew") == 0)
+		if(strcasecmp(antenna->mount, "xyew") == 0)
 		{
 			row.mountType = 4;
 		}
-		else if(strcasecmp(D->antenna[a].mount, "xyns") == 0)
+		else if(strcasecmp(antenna->mount, "xyns") == 0)
 		{
 			row.mountType = 3;
 		}
-		else if(strcasecmp(D->antenna[a].mount, "spac") == 0)
+		else if(strcasecmp(antenna->mount, "spac") == 0)
 		{
 			row.mountType = 2;
 		}
-		else if(strcasecmp(D->antenna[a].mount, "equa") == 0)
+		else if(strcasecmp(antenna->mount, "equa") == 0)
 		{
 			row.mountType = 1;
 		}
@@ -168,7 +171,7 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		}
 		for(i = 0; i < 3; i++)
 		{
-			row.offset[i] = D->antenna[a].offset[i];
+			row.offset[i] = antenna->offset[i];
 		}
 #ifndef WORDS_BIGENDIAN
 		FitsBinRowByteSwap(columns, NELEMENTS(columns), &row);

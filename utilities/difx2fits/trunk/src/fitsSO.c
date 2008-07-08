@@ -57,6 +57,7 @@ const DifxInput *DifxInput2FitsSO(const DifxInput *D,
 		for(p = 0; p < D->spacecraft[s].nPoint; p++)
 		{
 			pos = D->spacecraft[s].pos + p;
+
 			time = pos->mjd + pos->fracDay;
 			xyz[0] = pos->X;
 			xyz[1] = pos->Y;

@@ -41,7 +41,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	int nBand;
-	int b, s;
+	int b, sourceId;
 	char *fitsbuf;
 	char *p_fitsbuf;
 	char sourceName[16];
@@ -68,7 +68,9 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	int32_t sourceId1, freqId1;
 	int *fitsSource;
 	int i, nFitsSource;
-	
+	const DifxSource *source;
+	const DifxConfig *config;
+
 	if(D == 0)
 	{
 		return 0;
@@ -114,17 +116,17 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	}
 	
 	fitsSource = (int *)malloc(D->nSource*sizeof(int));
-	for(s = 0; s < D->nSource; s++)
+	for(sourceId = 0; sourceId < D->nSource; sourceId++)
 	{
-		fitsSource[s] = -1;
+		fitsSource[sourceId] = -1;
 	}
 	nFitsSource = -1;
-	for(s = 0; s < D->nSource; s++)
+	for(sourceId = 0; sourceId < D->nSource; sourceId++)
 	{
-		i = D->source[s].fitsSourceId;
+		i = D->source[sourceId].fitsSourceId;
 		if(fitsSource[i] < 0)
 		{
-			fitsSource[i] = s;
+			fitsSource[i] = sourceId;
 			if(i > nFitsSource)
 			{
 				nFitsSource = i;
@@ -135,28 +137,39 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 
 	for(i = 0; i < nFitsSource; i++)
 	{
-		s = fitsSource[i];
-		if(s < 0)
+		sourceId = fitsSource[i];
+		if(sourceId < 0)
 		{
-			fprintf(stderr, "Error -- s = -1\n");
+			fprintf(stderr, "Error: sourceId = -1\n");
 			continue;
 		}
-		p_fitsbuf = fitsbuf;
+
+		source = D->source + sourceId;
+		configId = source->configId;
+		if(configId < 0 || configId >= D->nConfig)
+		{
+			fprintf(stderr, "Error: configId out of range = %d\n",
+				configId);
+			continue;
+		}
+
+		config = D->config + configId;
 
 		muRA = 0.0;
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
-		sourceId1 = i + 1;	/* FITS sourceId1 is 1-based */
-		qual = D->source[s].qual;
-		strcpypad(calCode, D->source[s].calCode, 4);
-		RAEpoch = D->source[s].ra * 180.0 / M_PI;
-		decEpoch = D->source[s].dec * 180.0 / M_PI;
+		sourceId1 = sourceId + 1;	/* FITS sourceId1 is 1-based */
+		qual = source->qual;
+		strcpypad(calCode, source->calCode, 4);
+		RAEpoch = source->ra * 180.0 / M_PI;
+		decEpoch = source->dec * 180.0 / M_PI;
 		RAApp = RAEpoch;
 		decApp = decEpoch;
-		configId = D->source[s].configId;
-		freqId1 = D->config[configId].freqId + 1;  /* FITS 1-based */
-		strcpypad(sourceName, D->source[s].name, 16);
+		freqId1 = config->freqId + 1;  /* FITS 1-based */
+		strcpypad(sourceName, source->name, 16);
+
+		p_fitsbuf = fitsbuf;
 
 		FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
 		FITS_WRITE_ITEM (sourceName, p_fitsbuf);
