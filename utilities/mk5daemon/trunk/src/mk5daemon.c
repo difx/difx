@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 		usleep(200000);
 	}
 
-	sprintf(logMessage, "Stopping %s ver. %s  %s\n", program, version);
+	sprintf(logMessage, "Stopping %s ver. %s\n", program, version);
 	Logger_logData(D->log, logMessage);
 
 	deleteMk5Daemon(D);

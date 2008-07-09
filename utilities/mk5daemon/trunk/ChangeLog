@@ -15,3 +15,8 @@ Version 0.4
 Version 0.5
 ~~~~~~~~~~~
 * add mk5dir
+
+Version 0.6
+~~~~~~~~~~~
+* fix stopmark5a hang -- mutex not unlocked
+* fix die on quit -- unused %s

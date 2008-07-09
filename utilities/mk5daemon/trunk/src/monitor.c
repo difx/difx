@@ -140,6 +140,10 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strcasecmp(cmd, "Clear") == 0)
 	{
 		D->process = PROCESS_NONE;
+		if(D->isMk5)
+		{
+			Mk5Daemon_getModules(D);
+		}
 	}
 	else if(strcasecmp(cmd, "stopmk5daemon") == 0)
 	{
@@ -212,10 +216,13 @@ static void *monitorMultiListen(void *ptr)
 		if(D->processDone)
 		{
 			pthread_mutex_lock(&D->processLock);
+
 			pthread_join(D->processThread, 0);
 			D->process = PROCESS_NONE;
 			D->processDone = 0;
+			
 			pthread_mutex_unlock(&D->processLock);
+			
 			usleep(100000);
 			Mk5Daemon_getModules(D);
 		}	

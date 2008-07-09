@@ -76,27 +76,14 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 		Logger_logData(D->log, "Killing of Mark5A denied\n");
 		return;
 	}
-
 	pthread_mutex_lock(&D->processLock);
 
 	if(D->process == PROCESS_MARK5)
 	{
 		system(command);
 	}
-#if 0
-	if(D->process == PROCESS_MARK5)
-	{
-		pthread_join(D->processThread, 0);
-		D->process = PROCESS_NONE;
-		D->processDone = 0;
-	}
+
 	pthread_mutex_unlock(&D->processLock);
-
-	usleep(300000);
-
-	Mk5Daemon_getModules(D);
-
-#endif
 }
 
 void Mk5Daemon_resetMark5A(Mk5Daemon *D)
