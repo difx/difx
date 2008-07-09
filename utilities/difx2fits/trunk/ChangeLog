@@ -1,6 +1,7 @@
 Version 2.2
 * Use .im file to generate ML, MC table if file exists
-* Improvements to FR, ML, MC, AG, CT, SU tables
+* Minor improvements to FR, ML, MC, AG, CT, SU, GN, TS, FL tables
+* Fix MC table -- index to model is dsId, not antId
 
 Version 2.1
 * Sorts by antenna name by default.  override with -k

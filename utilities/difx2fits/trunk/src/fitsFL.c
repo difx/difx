@@ -147,8 +147,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int freqNum;
 	FILE *in;
 	FlagDatum FL;
-	DifxConfig *dc;
-	DifxDatastream *ds;
+	const DifxConfig *dc;
+	const DifxDatastream *ds;
 	
 	FL.nBand = p_fits_keys->no_band;
 	sprintf(bandFormInt, "%dJ", FL.nBand);
@@ -263,13 +263,14 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	FL.freqId1 = 0;
 	for(configId = 0; configId < D->nConfig; configId++)
 	{
+	    dc = D->config + configId;
+
 	    /* want to loop only over unique freqIds */
-	    if(D->config[configId].freqId < FL.freqId1)
+	    if(dc->freqId < FL.freqId1)
 	    {
 	    	continue;       /* this freqId1 done already */
 	    }
-	    FL.freqId1 = D->config[configId].freqId + 1;
-	    dc = D->config + configId;
+	    FL.freqId1 = dc->freqId + 1;
 	    for(d = 0; d < dc->nDatastream; d++)
 	    {
 		if(dc->datastreamId[d] < 0)

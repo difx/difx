@@ -70,6 +70,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	double f;
 	double time, mjd;
 	float timeInt;
+	const DifxScan *scan;
 	FILE *in;
 	/* The following are 1-based indices for writing to FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
@@ -169,14 +170,16 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			{
 				continue;
 			}
-			sourceId = D->scan[scanId].sourceId;
+			scan = D->scan + scanId;
+
+			sourceId = scan->sourceId;
 			if(sourceId < 0 || mjd < D->mjdStart || 
 				mjd > D->mjdStop)
 			{
 				continue;
 			}
 
-			configId = D->scan[scanId].configId;
+			configId = scan->configId;
 			freqId1 = D->config[configId].freqId + 1;
 
 			for(j = 0; j < 2; j++)

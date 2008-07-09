@@ -450,6 +450,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	int messages = 0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, freqId1, arrayId1;
+	const DifxConfig *config;
 	union
 	{
 		int32_t i32;
@@ -525,14 +526,16 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 
 		for(c = 0; c < D->nConfig; c++)
 		{
-			if(D->config[c].freqId < freqId1)
+			config = D->config + c;
+
+			if(config->freqId < freqId1)
 			{
 				continue;	/* this freqId1 done already */
 			}
-			freqId1 = D->config[c].freqId + 1;
+			freqId1 = config->freqId + 1;
 			for(i = 0; i < nBand; i++)
 			{
-				freq = D->config[c].IF[i].freq;	/* MHz */
+				freq = config->IF[i].freq;	/* MHz */
 				r = getGainRow(G, nRow, antName, freq, mjd);
 				if(r < 0)
 				{
