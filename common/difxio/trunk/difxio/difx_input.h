@@ -410,6 +410,8 @@ void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
 DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
+int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
+	sixVector *interpolatedPosition);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);

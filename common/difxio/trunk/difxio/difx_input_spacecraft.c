@@ -187,3 +187,84 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 
 	return ds;
 }
+
+
+static void evalPoly(long double poly[4], long double t, long double *V)
+{
+	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
+}
+
+int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
+	sixVector *interpolatedPosition)
+{
+	int nRow;
+	const sixVector *pos;
+	long double t0, t1, tMod, t, deltat;
+	long double xPoly[4], yPoly[4], zPoly[4];
+	int r, r0, r1;
+	long double X, Y, Z, dX, dY, dZ;
+	
+	nRow = sc->nPoint;
+	pos = sc->pos;
+	
+	tMod = mjd + fracMjd;
+	
+	/* first find interpolation points */
+	t0 = 0.0;
+	t1 = pos[0].mjd + pos[0].fracDay;
+	for(r = 1; r < nRow; r++)
+	{
+		t0 = t1;
+		t1 = pos[r].mjd + pos[r].fracDay;
+		if(t0 <= tMod && tMod <= t1)
+		{
+			break;
+		}
+	}
+	if(r == nRow)
+	{
+		return -1;
+	}
+
+	/* calculate polynomial for X, Y, Z */
+	r0 = r-1;
+	r1 = r;
+	deltat = t1 - t0;
+	t = (tMod - t0)/deltat; /* time, fraction of interval, between 0 and 1 */
+
+	xPoly[0] = pos[r0].X;
+	xPoly[1] = pos[r0].dX*deltat;
+	xPoly[2] = -3.0L*(pos[r0].X-pos[r1].X) - (2.0L*pos[r0].dX+pos[r1].dX)*deltat;
+	xPoly[3] =  2.0L*(pos[r0].X-pos[r1].X) + (    pos[r0].dX+pos[r1].dX)*deltat;
+	yPoly[0] = pos[r0].Y;
+	yPoly[1] = pos[r0].dY*deltat;
+	yPoly[2] = -3.0L*(pos[r0].Y-pos[r1].Y) - (2.0L*pos[r0].dY+pos[r1].dY)*deltat;
+	yPoly[3] =  2.0L*(pos[r0].Y-pos[r1].Y) + (    pos[r0].dY+pos[r1].dY)*deltat;
+	zPoly[0] = pos[r0].Z;
+	zPoly[1] = pos[r0].dZ*deltat;
+	zPoly[2] = -3.0L*(pos[r0].Z-pos[r1].Z) - (2.0L*pos[r0].dZ+pos[r1].dZ)*deltat;
+	zPoly[3] =  2.0L*(pos[r0].Z-pos[r1].Z) + (    pos[r0].dZ+pos[r1].dZ)*deltat;
+
+	evalPoly(xPoly, t, &X);
+	evalPoly(yPoly, t, &Y);
+	evalPoly(zPoly, t, &Z);
+
+	/* linear interpolation of velocity gives smoother results than
+	 * evaluating derivative polynomial.  Why??? 
+	 */
+	dX = pos[r0].dX + t*(pos[r1].dX - pos[r0].dX);
+	dY = pos[r0].dY + t*(pos[r1].dY - pos[r0].dY);
+	dZ = pos[r0].dZ + t*(pos[r1].dZ - pos[r0].dZ);
+
+	interpolatedPosition->mjd = mjd;
+	interpolatedPosition->fracDay = fracMjd;
+	interpolatedPosition->X = X;
+	interpolatedPosition->Y = Y;
+	interpolatedPosition->Z = Z;
+	interpolatedPosition->dX = dX;
+	interpolatedPosition->dY = dY;
+	interpolatedPosition->dZ = dZ;
+
+	return r;
+}
+
