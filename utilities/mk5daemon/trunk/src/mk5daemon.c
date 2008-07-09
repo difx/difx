@@ -88,11 +88,18 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
-		deleteLogger(D->log);
 		if(D->process == PROCESS_MARK5)
 		{
 			Mk5Daemon_stopMark5A(D);
+			while(!D->processDone)
+			{
+				usleep(100000);
+			}
+			pthread_mutex_lock(&D->processLock);
+			pthread_join(D->processThread, 0);
+			pthread_mutex_unlock(&D->processLock);
 		}
+		deleteLogger(D->log);
 		free(D);
 	}
 }
