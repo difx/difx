@@ -308,8 +308,13 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 			{
 				if(spacecraftId >= 0)
 				{
-					calcSpacecraftPosition(D, 
+					v = calcSpacecraftPosition(D, 
 						request, spacecraftId);
+					if(v < 0)
+					{
+						printf("Spacecraft %d table out of time range\n", spacecraftId);
+						return -1;
+					}
 				}
 				v = callCalc(request, &results, p);
 				if(v < 0)
@@ -379,7 +384,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 	int inc;
 	int int1, int2;	/* polynomial intervals */
 	int nInt;
-	int i;
+	int i, v;
 	DifxJob *job;
 	DifxAntenna *antenna;
 	DifxScan *scan;
@@ -430,7 +435,11 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 		}
 
 		/* call calc to derive delay, etc... polys */
-		antennaCalc(scanId, antId, D, p);
+		v = antennaCalc(scanId, antId, D, p);
+		if(v < 0)
+		{
+			return -1;
+		}
 	}
 
 	return 0;
@@ -439,6 +448,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 int difxCalc(DifxInput *D, CalcParams *p)
 {
 	int scanId;
+	int v;
 	DifxScan *scan;
 	DifxJob *job;
 
@@ -456,11 +466,15 @@ int difxCalc(DifxInput *D, CalcParams *p)
 		job->polyInterval = p->increment;
 		if(scan->im)
 		{
-			fprintf(stderr, "Error! scan %d: model already "
+			fprintf(stderr, "Error: scan %d: model already "
 				"exists\n", scanId);
 			return -2;
 		}
-		scanCalc(scanId, D, p);
+		v = scanCalc(scanId, D, p);
+		if(v < 0)
+		{
+			return -1;
+		}
 	}
 
 	return 0;
