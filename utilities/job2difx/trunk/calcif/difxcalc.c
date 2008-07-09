@@ -64,100 +64,43 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	return 0;
 }
 
-static void evalPoly(long double poly[4], long double t, long double *V, long double *dV)
-{
-	*V = poly[0] + t*(poly[1] + t*(poly[2] + t*poly[3]));
-	*dV = poly[1] + t*(2.0L*poly[2] + 3.0L*t*poly[3]);
-}
-
 static int calcSpacecraftPosition(const DifxInput *D,
 	struct getCALC_arg *request, int spacecraftId)
 {
-	/* FIXME -- move to difxio! */
 	int nRow;
 	DifxSpacecraft *sc;
-	const sixVector *pos;
-	long double t0, t1, tMod, t, deltat;
-	long double xPoly[4], yPoly[4], zPoly[4];
-	int r, r0, r1;
-	long double X, Y, Z, dX, dY, dZ;
+	sixVector pos;
+	int r;
 	long double r2, d;
 	double muRA, muDec;
 	
 	sc = D->spacecraft + spacecraftId;
 
-	nRow = sc->nPoint;
-	pos = sc->pos;
-	
-	tMod = request->date + request->time;
-	
-	/* first find interpolation points */
-	t0 = 0.0;
-	t1 = pos[0].mjd + pos[0].fracDay;
-	for(r = 1; r < nRow; r++)
-	{
-		t0 = t1;
-		t1 = pos[r].mjd + pos[r].fracDay;
-		if(t0 <= tMod && tMod <= t1)
-		{
-			break;
-		}
-	}
-	if(r == nRow)
+	r = evaluateDifxSpacecraft(sc, request->date, request->time, &pos);
+	if(r < 0)
 	{
 		return -1;
 	}
 
-	/* calculate polynomial for X, Y, Z */
-	r0 = r-1;
-	r1 = r;
-	deltat = t1 - t0;
-	t = (tMod - t0)/deltat; /* time, fraction of interval, between 0 and 1 */
-
-	xPoly[0] = pos[r0].X;
-	xPoly[1] = pos[r0].dX*deltat;
-	xPoly[2] = -3.0L*(pos[r0].X-pos[r1].X) - (2.0L*pos[r0].dX+pos[r1].dX)*deltat;
-	xPoly[3] =  2.0L*(pos[r0].X-pos[r1].X) + (    pos[r0].dX+pos[r1].dX)*deltat;
-	yPoly[0] = pos[r0].Y;
-	yPoly[1] = pos[r0].dY*deltat;
-	yPoly[2] = -3.0L*(pos[r0].Y-pos[r1].Y) - (2.0L*pos[r0].dY+pos[r1].dY)*deltat;
-	yPoly[3] =  2.0L*(pos[r0].Y-pos[r1].Y) + (    pos[r0].dY+pos[r1].dY)*deltat;
-	zPoly[0] = pos[r0].Z;
-	zPoly[1] = pos[r0].dZ*deltat;
-	zPoly[2] = -3.0L*(pos[r0].Z-pos[r1].Z) - (2.0L*pos[r0].dZ+pos[r1].dZ)*deltat;
-	zPoly[3] =  2.0L*(pos[r0].Z-pos[r1].Z) + (    pos[r0].dZ+pos[r1].dZ)*deltat;
-
-	evalPoly(xPoly, t, &X, &dX);
-	evalPoly(yPoly, t, &Y, &dY);
-	evalPoly(zPoly, t, &Z, &dZ);
-
-	/* convert to m/day */
-	dX /= deltat;
-	dY /= deltat;
-	dZ /= deltat;
-
-	/* Hack here -- this makes much smoother output! */
-	dX = pos[r0].dX + t*(pos[r1].dX - pos[r0].dX);
-	dY = pos[r0].dY + t*(pos[r1].dY - pos[r0].dY);
-	dZ = pos[r0].dZ + t*(pos[r1].dZ - pos[r0].dZ);
-
-	d = sqrtl(X*X + Y*Y + Z*Z);
-	r2 = X*X + Y*Y;
+	r2 = pos.X*pos.X + pos.Y*pos.Y;
+	d = sqrtl(r2 + pos.Z*pos.Z);
 
 	/* proper motion in radians/day */
-	muRA = (X*dY - Y*dX)/r2;
-	muDec = (r2*dZ - X*Z*dX - Y*Z*dY)/(d*d*sqrtl(r2));
+	muRA = (pos.X*pos.dY - pos.Y*pos.dX)/r2;
+	muDec = (r2*pos.dZ - pos.X*pos.Z*pos.dX - pos.Y*pos.Z*pos.dY)/
+		(d*d*sqrtl(r2));
 	
 	/* convert to arcsec/yr */
+	/* FIXME -- use formal definition of year here! */
 	muRA *= (180.0*3600.0/M_PI)*365.24;
 	muDec *= (180.0*3600.0/M_PI)*365.24;
 
-	request->ra  =  atan2(Y, X);
-	request->dec =  atan2(Z, sqrtl(r2));
+	request->ra  =  atan2(pos.Y, pos.X);
+	request->dec =  atan2(pos.Z, sqrtl(r2));
 	request->dra  = muRA;
 	request->ddec = muDec;
 	request->parallax = 3.08568025e16/d;
-        request->depoch = tMod;
+        request->depoch = pos.mjd + pos.fracDay;
 
 	return 0;
 }
