@@ -57,11 +57,10 @@ struct fitsPrivate
     {
     FILE *fp;
     char filename[256];
-    int bytes_written;
+    long long bytes_written;
     int row_bytes;
-    int naxis2_offset;
+    fpos_t naxis2_offset;
     int rows_written;
-    char *buf;
     };
 
 

@@ -243,12 +243,12 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		  }
 	       	
 		  M = scan->model[a] + p;
-		  
+
 		  time = start + timeInt*p;
 		  deltat = modelInc*p;
 
 		  calcPolynomial(gpoly,
-			-M[p-1].t, -M[p].t, -M[p+1].t, -M[p+2].t, modelInc);
+			-M[-1].t, -M[0].t, -M[1].t, -M[2].t, modelInc);
 		}
 
 		clockRate = D->antenna[antId].rate*1.0e-6;

@@ -56,8 +56,14 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --beginchan <chan>\n");
 	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --difx\n");
+	fprintf(stderr, "   -d                  Run on all .difx files in directory\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --no-model\n");
 	fprintf(stderr, "  -n                  Don't write model (ML) table\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --dont-combine\n");
+	fprintf(stderr, "  -1                  Don't combine jobs\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --outchans <nchan>\n");
 	fprintf(stderr, "  -o         <nchan>  Write <nchan> channels\n");
@@ -91,6 +97,7 @@ struct CommandLineOptions
 	float nOutChan;
 	float startChan;
 	int keepOrder;
+	int dontCombine;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -158,6 +165,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->verbose++;
 			}
+			else if(strcmp(argv[i], "--dont-combine") == 0 ||
+			        strcmp(argv[i], "-1") == 0)
+			{
+				opts->dontCombine = 1;
+			}
 			else if(strcmp(argv[i], "--pretend") == 0 ||
 			        strcmp(argv[i], "-p") == 0)
 			{
@@ -166,6 +178,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--help") == 0 ||
 			        strcmp(argv[i], "-h") == 0)
 			{
+				usage(program);
 				deleteCommandLineOptions(opts);
 				return 0;
 			}
@@ -262,6 +275,13 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			opts->baseFile[i] = strdup(globbuf.gl_pathv[i]);
 		}
 		globfree(&globbuf);
+	}
+
+	if(opts->nBaseFile > 0 && opts->dontCombine && opts->fitsFile)
+	{
+		printf("Error -- Cannot supply output filename for multiple output files\n");
+		deleteCommandLineOptions(opts);
+		return 0;
 	}
 
 	/* if input file ends in .difx, trim it */
@@ -523,23 +543,15 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		}
 		opts->baseFile[i] = 0;
 		nConverted++;
+		if(opts->dontCombine)
+		{
+			break;
+		}
 	}
 
 	if(!D)
 	{
 		return 0;
-	}
-
-	if(opts->fitsFile)
-	{
-		strcpy(outFitsName, opts->fitsFile);
-	}
-	else
-	{
-		sprintf(outFitsName, "%s%s.%d.FITS",
-			D->job[0].obsCode,
-			D->job[0].obsSession,
-			passNum);
 	}
 
 
@@ -576,6 +588,18 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		strcpy(D->job->taperFunction, "UNIFORM");
 	}
 
+	if(opts->fitsFile)
+	{
+		strcpy(outFitsName, opts->fitsFile);
+	}
+	else
+	{
+		sprintf(outFitsName, "%s%s.%d.FITS",
+			D->job[0].obsCode,
+			D->job[0].obsSession,
+			passNum);
+	}
+
 	if(!opts->pretend)
 	{
 		if(!opts->keepOrder)
@@ -610,10 +634,15 @@ int main(int argc, char **argv)
 	int nConverted = 0;
 	int n, nFits = 0;
 
+	if(argc < 2)
+	{
+		return usage(argv[0]);
+	}
+
 	opts = parseCommandLine(argc, argv);
 	if(opts == 0)
 	{
-		return usage(argv[0]);
+		return 0;
 	}
 
 	for(;;)
@@ -635,7 +664,7 @@ int main(int argc, char **argv)
 		printf("\n*** Warning -- not all input files converted!\n");
 	}
 
-	if(opts->nBaseFile > 1)
+	if(opts->nBaseFile > nFits) 
 	{
 		printf("\n");
 		printf("*** Warning -- combining multiple files with difx2fits "

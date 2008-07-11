@@ -1,11 +1,13 @@
 /* Stolen from arrayFits.c */
 
+#include "fits.h"
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 #include <ctype.h>
-#include "fits.h"
 
 /* forward declarations */
 static int fitsWriteZeroes (struct fitsPrivate *);
@@ -28,7 +30,8 @@ int fitsReadOpen		/* open FITS file for reading only */
     if ((pFile->fp = fopen (pFile->filename, "r")) == 0)
 	return -1;
 	
-    pFile->bytes_written = pFile->rows_written = 0; 
+    pFile->bytes_written = 0LL;
+    pFile->rows_written = 0; 
 
     return 0;
 }
@@ -42,37 +45,18 @@ int fitsWriteOpen		/* create FITS file and open it for writing */
     )
 /*
  * RETURNS OK = 0 | ERROR = -1
- *
- * Open a file pointer for buffered I/O.  Malloc the buffer here, it will be 
- * freed when file is closed.  The buffer size is one cluster to maximize 
- * transfer rates to disk.
  */
 {
-    unsigned int cluster;     /* size of disk cluster in bytes */
-            
-    cluster = 8192;
-
-    /* calloc buffer */
-    if ((pFile->buf = (char *)calloc (cluster, 1)) == 0)
-	return -1;
-
     /* open stream */
     if ((pFile->fp = fopen (filename, "w")) == 0)
         { 
 	printf("fitsWriteOpen: fopen() error");  
-        free (pFile->buf);
-        return -1;
-        }
-
-    /* associate buffer with stream */
-    if (setvbuf (pFile->fp, pFile->buf, _IOFBF, cluster) != 0)
-        {
-        free (pFile->buf);
         return -1;
         }
 
     strcpy (pFile->filename, filename);
-    pFile->bytes_written = pFile->rows_written = 0; 
+    pFile->bytes_written = 0LL;
+    pFile->rows_written = 0; 
 
     return 0;
 }
@@ -86,7 +70,7 @@ int fitsWriteClose		/* close FITS file */
 /*
  * RETURNS OK = 0 | ERROR = -1
  *
- * Zero pad the file, free the stream buffer, and close the file stream.
+ * Zero pad the file
  */
 {
     int status;
@@ -96,7 +80,7 @@ int fitsWriteClose		/* close FITS file */
         return -1;
 
     status = fclose(pFile->fp);
-    free (pFile->buf);
+
     return (status);
 }
 
@@ -139,7 +123,7 @@ int fitsWriteTable
     if (fitsWriteInteger (pFile, "NAXIS1", row_bytes, "") == -1)
 	return -1;
 
-    pFile->naxis2_offset = pFile->bytes_written;
+    fgetpos(pFile->fp, &pFile->naxis2_offset);
 
     if (fitsWriteInteger (pFile, "NAXIS2", 0,
 			  "[number of rows is initially zero]") == -1)
@@ -238,7 +222,7 @@ int fitsWriteBinTable
     if (fitsWriteInteger (pFile, "NAXIS1", row_bytes, "") == -1)
 	return -1;
 
-    pFile->naxis2_offset = pFile->bytes_written;
+    fgetpos(pFile->fp, &pFile->naxis2_offset);
 
     if (fitsWriteInteger (pFile, "NAXIS2", 0, 
 			  "[number of rows is initially zero]") == -1)
@@ -437,7 +421,7 @@ int fitsWriteEnd
  */
 {
     fitsWriteComment (pFile, "END", "");
-    while ((pFile->bytes_written % 2880) != 0)
+    while ((pFile->bytes_written % 2880LL) != 0)
 	if (fitsWriteComment (pFile, "", "") == -1)
 	    return -1;
     return 0;
@@ -455,7 +439,7 @@ static int fitsWriteZeroes
  * Zero pad the FITS file out to next 2880 byte boundary.
  */
 {
-    int pad = 2880 - pFile->bytes_written % 2880;
+    int pad = 2880 - pFile->bytes_written % 2880LL;
 
     /* terminate table if one is still in progress */
     if (pFile->rows_written != 0
@@ -465,7 +449,7 @@ static int fitsWriteZeroes
     if (pad != 0 && pad != 2880)
 	{
 	char zero[2880];
-	memset (zero, '\0' , pad);
+	memset(zero, 0 , pad);
 	if (fitsWriteData (pFile, pad, zero) == -1)
 	    return -1;
 	}
@@ -486,8 +470,12 @@ static int fitsWriteEndTable
  * the file.
  */
 {
+    fpos_t offset;
+
+    fgetpos(pFile->fp, &offset);
+
     /* move read/write position to NAXIS2 field */
-    if (fseek (pFile->fp, pFile->naxis2_offset, SEEK_SET) != 0)
+    if (fsetpos(pFile->fp, &pFile->naxis2_offset) != 0)
 	return -1;
 
     /* write NAXIS2 field */
@@ -496,10 +484,10 @@ static int fitsWriteEndTable
 
     /* decrement bytes written count because fitsWriteInteger() bumped it 
        and this is re-write not append */
-    pFile->bytes_written -= 80;
+    pFile->bytes_written -= 80LL;
 
     /* reset read/write position to file end */
-    if (fseek (pFile->fp, 0, SEEK_END) != 0)
+    if (fsetpos(pFile->fp, &offset) != 0)
 	return -1;
 
     pFile->rows_written = 0;

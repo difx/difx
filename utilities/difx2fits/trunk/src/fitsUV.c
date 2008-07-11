@@ -1,5 +1,5 @@
-#define _LARGE_FILE_SOURCE
-#define _GNU_SOURCE
+#include "fits.h"
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -78,7 +78,7 @@ int DifxVisNextFile(DifxVis *dv)
 		dv->jobId,
 		dv->curFile+1, dv->nFile,
 		dv->globbuf.gl_pathv[dv->curFile]);
-	dv->in = fopen64(dv->globbuf.gl_pathv[dv->curFile], "r");
+	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 	if(!dv->in)
 	{
 		fprintf(stderr, "Error opening file : %s\n", 
@@ -305,7 +305,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	char line[100];
 	int freqNum;
 	int configId;
-	fpos_t pos;
 
 	resetDifxParameters(dv->dp);
 
@@ -342,8 +341,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	}
 	if(N < N_DIFX_ROWS)
 	{
-		fgetpos(dv->in, &pos);
-		printf("pos = %d\n", pos);
+		printf("ERROR: N=%d < N_DIFX_ROWS=%d\n", N, N_DIFX_ROWS);
 		return -3;
 	}
 
@@ -377,7 +375,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 
 	if(verbose >= 1 && scanId != dv->scanId)
 	{
-		printf("        MJD=%11.5f jobId=%d Scan change : Id=%d "
+		printf("        MJD=%11.5f jobId=%d scanId=%d "
 			"Source=%s\n", 
 			mjd, dv->jobId, scanId, dv->D->scan[scanId].name);
 	}
