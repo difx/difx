@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 			if(!running("mpifxcorr"))
 			{
 				sprintf(logMessage, "Detected premature end of "
-					"mpifxorr at %d\n", t);
+					"mpifxcorr at %d\n", t);
 				Logger_logData(D->log, logMessage);
 				D->process = PROCESS_NONE;
 			}
