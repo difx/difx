@@ -76,6 +76,7 @@ def getstat(input):
 		 ['uvw', 'u'], \
 		 ['delay', 'd'], \
 		 ['rate', 'r'], \
+		 ['im', 'i'], \
 		 ['difx', 'v']]
 
 	s = '['

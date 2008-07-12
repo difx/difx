@@ -10,7 +10,7 @@ defaultport  = 50200
 defaultttl   = 3
 
 genmachines = 'genmachines -v'
-calcif      = 'calcif'
+calcif      = 'calcif2'
 difx2fits   = 'difx2fits -v'
 
 from sys import argv, exit
