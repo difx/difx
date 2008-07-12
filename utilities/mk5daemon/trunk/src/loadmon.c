@@ -2,99 +2,63 @@
 #include <string.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
+#include "proc.h"
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 {
-	static long long lastRX=0, lastTX=0;
-	long long curRX=0, curTX=0;
+	long long curRX, curTX;
 	long long d;
 	char message[1024];
-	FILE *in;
 	float l1, l5, l15;
-	char line[100];
-	int memused=0, memtot=0;
-	char key[100];
+	int memused, memtot;
 	char logMessage[256];
-	int val, v;
+	int v;
 
 	/* LOAD */
-	in = fopen("/proc/loadavg", "r");
-	if(!in)
+	v = procGetCPU(&l1, &l5, &l15);
+	if(v < 0)
 	{
-		return -1;
+		return v;
 	}
-
-	fgets(line, 99, in);
-	sscanf(line, "%f%f%f", &l1, &l5, &l15);
-
-	fclose(in);
 
 	/* MEMORY USAGE */
-	in = fopen("/proc/meminfo", "r");
-	if(!in)
+	v = procGetMem(&memused, &memtot);
+	if(v < 0)
 	{
-		return -1;
+		return v;
 	}
-	for(;;)
-	{
-		fgets(line, 99, in);
-		if(feof(in))
-		{
-			break;
-		}
-		sscanf(line, "%s%d", key, &val);
-		if(strcmp(key, "MemTotal:") == 0)
-		{
-			memtot = val;
-			memused += val;
-		}
-		if(strcmp(key, "MemFree:") == 0 ||
-		   strcmp(key, "Buffers:") == 0 ||
-		   strcmp(key, "Cached:") == 0)
-		{
-			memused -= val;
-		}
-	}
-	fclose(in);
 
 	/* NETWORK */
-	in = fopen("/proc/net/dev", "r");
-	if(!in)
+	v = procGetNet(&curRX, &curTX);
+	if(v < 0)
 	{
-		return -1;
+		return v;
 	}
-	for(;;)
+
+	/* on 32 bit machines, proc stores only 32 bit values */
+	if(D->lastRX > 0 || D->lastTX > 0) 
 	{
-		fgets(line, 99, in);
-		if(feof(in))
+		d = curRX - D->lastRX;
+		if(d < 0)
 		{
-			break;
+			d += 1LL<<32;
 		}
-		if(strncmp(line, "  eth0:", 7) == 0)
+		D->load.netRXRate = d/D->loadMonInterval;
+		d = curTX - D->lastTX;
+		if(d < 0)
 		{
-			curRX = curTX = 0;
-			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", 
-				&curRX, &curTX);
-			if(lastRX > 0 && lastTX > 0) 
-			{
-				d = curRX - lastRX;
-				if(d < 0)
-				{
-					d += 1LL<<32;
-				}
-				D->load.netRXRate = d/D->loadMonInterval;
-				d = curTX - lastTX;
-				if(d < 0)
-				{
-					d += 1LL<<32;
-				}
-				D->load.netTXRate = d/D->loadMonInterval;
-			}
-			lastRX = curRX;
-			lastTX = curTX;
+			d += 1LL<<32;
 		}
+		D->load.netTXRate = d/D->loadMonInterval;
 	}
-	fclose(in);
+	else
+	{
+		D->load.netRXRate = 0;
+		D->load.netTXRate = 0;
+	}
+
+	D->lastRX = curRX;
+	D->lastTX = curTX;
 	
 	D->load.cpuLoad = l1;
 	D->load.totalMemory = memtot;

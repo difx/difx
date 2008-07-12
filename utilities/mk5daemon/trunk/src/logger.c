@@ -76,7 +76,7 @@ int Logger_logData(Logger *log, const char *message)
 
 		if(t/86400 != log->lastTime/86400)
 		{
-			Logger_newFile(log, mjd);
+			Logger_newFile(log, (int)(mjd+0.1));
 		}
 		log->lastTime = t;
 		fprintf(log->out, "\n");

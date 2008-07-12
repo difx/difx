@@ -32,6 +32,7 @@ typedef struct
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
 	int isMk5;
+	long long lastRX, lastTX;
 } Mk5Daemon;
 
 extern const char headNode[];
