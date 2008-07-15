@@ -19,6 +19,7 @@
 #include <math.h>
 #include <cpgplot.h>
 #include <string>
+#include <sstream>
 #include "architecture.h"
 #include "configuration.h"
 
@@ -34,7 +35,7 @@ int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 Configuration * config;
 int port, socketnumber, currentconfigindex, maxresultlength, buffersize, atseconds, bufferindex;
 int resultlength, numchannels;
-double intseconds = 10.0;
+double intseconds = 1;
 //IppsFFTSpec_C_32fc* fftspec;
 IppsFFTSpec_R_32f* fftspec;
 cf32 ** resultbuffer;
@@ -144,6 +145,10 @@ void plot_results()
 {
   char pgplotname[256];
   char polpair[3];
+  char timestr[10];
+  const char* cstr;
+  string sourcename;
+  ostringstream ss;
   f32 temp;
 
   polpair[2] = 0;
@@ -186,6 +191,7 @@ void plot_results()
 
   cout << "Plotting time " << atseconds << endl;
   int at = 0;
+  //int sourceindex = config->getSourceIndex
   for(int i=0;i<config->getNumBaselines();i++)
   {
     int ds1index = config->getBDataStream1Index(currentconfigindex, i);
@@ -229,15 +235,67 @@ void plot_results()
 	  if (status != 1) {
 	    cout << "Error opening pgplot device: " << pgplotname << endl;
 	  } else {
-	    float max, min;
+	    float max, min, delta;
 	    int c;
 	    
 	    cpgscr(0,1,1,1);
 	    cpgscr(1,0,0,0);
 
+            // Plot lags
+	    ippsMax_32f(lags, numchannels*2, &max);
+	    ippsMin_32f(lags, numchannels*2, &min);
+	    delta = (max-min)*0.05;
+	    min -= delta;
+	    max += delta;
+
+	    cpgsch(1.5);
+	    cpgsci(1);
+            cpgenv(0,numchannels*2,min,max,0,0);
+            cpglab("Channel", "Correlation coefficient", "");
+            cpgsci(2);
+            cpgline(numchannels*2, xval, lags);
+
+	    // Annotate
+
+	    config->getUVW()->getSourceName(config->getStartMJD(), 
+		     atseconds+config->getStartSeconds(),sourcename);
+
+	    cpgsci(4);
+	    cpgsch(2.5);
+	    ss << config->getDStationName(currentconfigindex, ds1index) 
+	       << "-" 
+	       <<  config->getDStationName(currentconfigindex, ds2index)
+	       << "  " << sourcename; 
+	    cpgmtxt("T", -1.5,0.02, 0, ss.str().c_str());	    
+	    ss.str("");
+
+	    cpgmtxt("T", -1.5,0.97,1,polpair);
+
+	    ss << config->getFreqTableFreq(freqindex) << " MHz";
+	    cpgmtxt("T", -2.6,0.97,1,ss.str().c_str());	    
+	    ss.str("");
+
+	    int seconds = atseconds+config->getStartSeconds();
+	    int hours = seconds/3600;
+	    seconds -= hours*3600;
+	    int minutes = seconds/60;
+	    seconds %= 60;
+	    sprintf(timestr, "%02d:%02d:%02d", hours, minutes, seconds);
+	    cpgmtxt("T", -1.5,0.90,1,timestr);
+
+	    //ss << hours << ":" << minutes << ":" << seconds;
+	    //cpgmtxt("T", -1.5,0.90,1,ss.str().c_str());
+	    //ss.str("");
+
+	    cpgsch(1.5);
+	    cpgsci(1);
+
 	    // Plot Amplitude
 	    ippsMax_32f(&amplitude[at], numchannels, &max);
 	    ippsMin_32f(&amplitude[at], numchannels, &min);
+	    delta = (max-min)*0.05;
+	    min -= delta;
+	    max += delta;
 
 	    cpgsci(1);
 	    cpgenv(0,numchannels,min,max,0,0);
@@ -254,15 +312,6 @@ void plot_results()
 	    cpgpt(numchannels, xval, &phase[at], 17);
 	    cpgsch(1);
 
-            // Plot lags
-	    ippsMax_32f(lags, numchannels*2, &max);
-	    ippsMin_32f(lags, numchannels*2, &min);
-
-	    cpgsci(1);
-            cpgenv(0,numchannels*2,min,max,0,0);
-            cpglab("Channel", "Correlation coefficient", "");
-            cpgsci(2);
-            cpgline(numchannels*2, xval, lags);
 
 	    cpgend();
 	  }
