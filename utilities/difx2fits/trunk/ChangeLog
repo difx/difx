@@ -1,6 +1,7 @@
 Version 2.3
 * Support for writing FITS files larger than 2 GiB
 * Option to force each input file into its own output file
+* Version for NRAO-DiFX 1.1
 
 Version 2.2
 * Use .im file to generate ML, MC table if file exists
