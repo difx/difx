@@ -9,7 +9,8 @@ enum ProcessType
 {
 	PROCESS_NONE = 0,
 	PROCESS_RESET,
-	PROCESS_MARK5,
+	PROCESS_SSOPEN,
+	PROCESS_MARK5A,
 	PROCESS_DATASTREAM,
 	PROCESS_MK5DIR,
 	PROCESS_SSERASE
@@ -33,6 +34,8 @@ typedef struct
 	time_t lastMark5AUpdate;
 	int isMk5;
 	long long lastRX, lastTX;
+	int idleCount;
+	int nXLROpen;
 } Mk5Daemon;
 
 extern const char headNode[];

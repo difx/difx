@@ -104,3 +104,35 @@ int procGetCPU(float *l1, float *l5, float *l15)
 
 	return 0;
 }
+
+int procGetStreamstor(int *busy)
+{
+	FILE *in;
+	char line[100];
+
+	*busy = 0;
+
+	in = fopen("/proc/loadavg", "r");
+	if(!in)
+	{
+		return -1;
+	}
+
+	for(;;)
+	{
+		fgets(line, 99, in);
+		if(feof(in))
+		{
+			break;
+		}
+		if(strncmp(line, "windrvr6 ", 9) == 0)
+		{
+			sscanf(line+9, "%*d %d", &busy);
+			break;
+		}
+	}
+
+	fclose(in);
+
+	return 0;
+}

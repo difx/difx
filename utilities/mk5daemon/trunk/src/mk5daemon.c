@@ -9,6 +9,7 @@
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
+#include "proc.h"
 
 const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
@@ -88,7 +89,7 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
-		if(D->process == PROCESS_MARK5)
+		if(D->process == PROCESS_MARK5A)
 		{
 			Mk5Daemon_stopMark5A(D);
 			while(!D->processDone)
@@ -104,6 +105,7 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	}
 }
 
+/* FIXME -- move to a /proc query */
 int running(const char *name)
 {
 	FILE *in;
@@ -150,8 +152,9 @@ int main(int argc, char **argv)
 	time_t t, lastTime, firstTime;
 	char logMessage[128];
 	int startmk5a = 1;
-	int i;
+	int i, v, busy;
 	int justStarted = 1;
+	int halfInterval;
 	char logPath[256];
 	const char *p;
 	double mjd;
@@ -197,6 +200,12 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(fork())
+	{
+		printf("Spawned\n");
+		return 0;
+	}
+
 	if(setuid(0) != 0)
 	{
 		fprintf(stderr, "Need suid root permission.  Bailing.\n");
@@ -216,6 +225,8 @@ int main(int argc, char **argv)
 
 	firstTime = lastTime = time(0);
 
+	halfInterval = D->loadMonInterval/2;
+
 	while(!D->dieNow)	/* program event loop */
 	{
 		t = time(0);
@@ -230,9 +241,20 @@ int main(int argc, char **argv)
 			if(lastTime % 2 == 0 && D->isMk5)
 			{
 				pthread_mutex_lock(&D->processLock);
+				if(D->process != PROCESS_RESET &&
+				   (running("ssopen") || running("SSReset")))
+				{
+					D->process = PROCESS_SSOPEN;
+					D->idleCount = 0;
+				}
+				else if(D->process == PROCESS_SSOPEN)
+				{
+					D->process = PROCESS_NONE;
+				}
 				if(running("SSErase"))
 				{
 					D->process = PROCESS_SSERASE;
+					D->idleCount = 0;
 				}
 				else if(D->process == PROCESS_SSERASE)
 				{
@@ -240,6 +262,36 @@ int main(int argc, char **argv)
 				}
 				pthread_mutex_unlock(&D->processLock);
 			}
+#ifdef STREAMSTOR_NOT_BROKEN
+			if(lastTime % D->loadMonInterval == halfInterval)
+			{
+				v = procGetStreamstor(&busy);
+				if(v < 0 || busy > 0)
+				{
+					D->idleCount = 0;
+				}
+				else
+				{
+					D->idleCount++;
+				}
+				if(D->idleCount > 3 && 
+				   D->process != PROCESS_NONE)
+				{
+					Mk5Daemon_getModules(D);
+					D->process = PROCESS_NONE;
+				}
+				/* FIXME -- cannot do this since streamstor
+				 * dies after 300 times here! 
+				 * Ticket #639-6459049 
+				 */
+				if((D->idleCount > 2 || 
+				    D->process == PROCESS_MARK5A) &&
+				   D->isMk5)
+				{
+					Mk5Daemon_getModules(D);
+				}
+			}
+#endif
 		}
 
 		if(t != 0 && t - D->lastMpifxcorrUpdate > 20 &&

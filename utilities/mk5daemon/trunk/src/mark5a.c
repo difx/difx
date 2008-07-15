@@ -11,6 +11,7 @@ static void *mark5Arun(void *ptr)
 	Mk5Daemon *D;
 	FILE *pin;
 	char str[1000];
+	int started = 0;
 
 	D = (Mk5Daemon *)ptr;
 
@@ -33,9 +34,12 @@ static void *mark5Arun(void *ptr)
 		Logger_logData(D->log, str);
 		D->lastMark5AUpdate = time(0);
 		/* Once ready, get modules */
-		if(strncmp(str, "Mark5A Ready.", 13) == 0)
+		if(!started &&
+		   strncmp(str, "Mark5A Ready.", 13) == 0)
 		{
+			D->nXLROpen++;
 			Mk5Daemon_getModules(D);
+			started=1;
 		}
 	}
 	Logger_logData(D->log, "Mark5A stopped\n");
@@ -60,7 +64,7 @@ void Mk5Daemon_startMark5A(Mk5Daemon *D)
 	if(D->process == PROCESS_NONE)
 	{
 		v = pthread_create(&D->processThread, 0, &mark5Arun, D);
-		D->process = PROCESS_MARK5;
+		D->process = PROCESS_MARK5A;
 	}
 
 	pthread_mutex_unlock(&D->processLock);
@@ -78,7 +82,7 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 	}
 	pthread_mutex_lock(&D->processLock);
 
-	if(D->process == PROCESS_MARK5)
+	if(D->process == PROCESS_MARK5A)
 	{
 		system(command);
 	}

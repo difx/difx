@@ -15,20 +15,37 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
+	XLR_ERROR_CODE xlrError;
+	char message[100+(XLR_ERROR_LENGTH)];
+	char xlrErrorStr[XLR_ERROR_LENGTH];
 	
 	xlrRC = XLROpen(1, &xlrDevice);
+	D->nXLROpen++;
 	if(xlrRC != XLR_SUCCESS)
 	{
-		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"Cannot open streamstor card\n");
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(xlrErrorStr, xlrError);
+		sprintf(message, "ERROR: XLR_get_modules: "
+			"Cannot open streamstor card.  N=%d "
+			"Error=%u (%s)\n",
+			D->nXLROpen,
+			xlrError,
+			xlrErrorStr);
+		Logger_logData(D->log, message);
 		return 1;
 	}
 
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"Cannot set SkipCheckDir\n");
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(xlrErrorStr, xlrError);
+		sprintf(message, "ERROR: XLR_get_modules: "
+			"Cannot set SkipCheckDir.  N=%d "
+			"Error=%u (%s)\n",
+			xlrError,
+			xlrErrorStr);
+		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
 		return 0;
 	}
@@ -38,8 +55,16 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		vsnb[0] = 0;
-		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"BANK_B XLRGetBankStatus Failed\n");
+
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(xlrErrorStr, xlrError);
+		sprintf(message, "ERROR: XLR_get_modules: "
+			"BANK_B XLRGetBankStatus failed.  N=%d "
+			"Error=%u (%s)\n",
+			D->nXLROpen,
+			xlrError,
+			xlrErrorStr);
+		Logger_logData(D->log, message);
 	}
 	else if(bank_stat.Label[8] == '/')
 	{
@@ -55,8 +80,16 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		vsna[0] = 0;
-		Logger_logData(D->log, "ERROR: XLR_get_modules: "
-			"BANK_A XLRGetBankStatus Failed\n");
+
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(xlrErrorStr, xlrError);
+		sprintf(message, "ERROR: XLR_get_modules: "
+			"BANK_A XLRGetBankStatus failed.  N=%d "
+			"Error=%u (%s)\n",
+			D->nXLROpen,
+			xlrError,
+			xlrErrorStr);
+		Logger_logData(D->log, message);
 	}
 	else if(bank_stat.Label[8] == '/')
 	{
@@ -69,6 +102,10 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	}
 
 	XLRClose(xlrDevice);
+
+	sprintf(message, "XLR VSNs: <%s> <%s> N=%d\n",
+		vsna, vsnb, D->nXLROpen);
+	Logger_logData(D->log, message);
 
 	return 0;
 }
@@ -144,7 +181,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 			dm.state = MARK5_STATE_ERROR;
 		}
 		break;
-	case PROCESS_MARK5:
+	case PROCESS_MARK5A:
 		n = Mark5A_get_modules(vsnA, vsnB);
 		if(n == 0)
 		{
