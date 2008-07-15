@@ -216,6 +216,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --all\n");
 	fprintf(stderr, "  -a                      Do all calc files found\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --yes\n");
+	fprintf(stderr, "  -y                      Really run calcif? \n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --server <servername>\n");
 	fprintf(stderr, "  -s       <servername>   Use <servername> as calcserver\n\n");
 	fprintf(stderr, "      By default 'localhost' will be the calcserver.  An "
@@ -223,6 +226,10 @@ static int usage(const char *pgm)
 	fprintf(stderr, "      variable CALC_SERVER can be used to override that.  The "
 		"command line\n");
 	fprintf(stderr, "      overrides all.\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "NOTE: You should be using calcif2, unless you have a "
+		"particular reason\nto use calcif.  Please run with -y if you want "
+		"to run calcif\n");
 	fprintf(stderr, "\n");
 
 	return 0;
@@ -239,6 +246,7 @@ int main (int argc, char *argv[])
   int skipped;
   int nskipped = 0;
   glob_t globbuf;
+  int yes = 0;
   
   serv = getenv("CALC_SERVER");
   if(serv)
@@ -259,6 +267,11 @@ int main (int argc, char *argv[])
 		   strcmp(argv[i], "-v") == 0)
 		{
 			verbose++;
+		}
+		if(strcmp(argv[i], "--yes") == 0 ||
+		   strcmp(argv[i], "-y") == 0)
+		{
+			yes = 1;
 		}
 		if(strcmp(argv[i], "--all") == 0 ||
 		   strcmp(argv[i], "-a") == 0)
@@ -285,6 +298,13 @@ int main (int argc, char *argv[])
 		i_fname[nfiles] = argv[i];
 		nfiles++;
 	}
+  }
+
+  if(!yes)
+  {
+  	usage(argv[0]);
+  	printf("Will not run without -y or --yes\n\n");
+	return 0;
   }
 
   if((nfiles == 0 && doall == 0) || (nfiles > 0 && doall > 0))

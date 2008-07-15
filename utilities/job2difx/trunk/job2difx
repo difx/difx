@@ -865,12 +865,14 @@ def makeconfigutationtable(config, nant, job, setups, fftsize, nchan, tint, freq
 					float(speedUp))
 			
 			# .25 seconds per send
-			sendLen = 0.262144*2
+			sendLen = 0.262144
 			while sendLen > timeavg:
 				sendLen /= 2.0
 				
 			nBlock = int(2.0*sendLen*minBW*NDataSegment/(decim*fftsize*BufferFactor))
-			nn = int(timeavg/sendLen - 0.01) + 1
+			nn = int(timeavg/sendLen + 0.99)
+			if nn == 0:
+				nn = 1
 			timeavg = sendLen*nn
 			
 			cfg.append("CONFIG SOURCE:      %s" % setupname)
