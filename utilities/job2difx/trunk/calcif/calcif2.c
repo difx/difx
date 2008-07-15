@@ -51,6 +51,9 @@ int usage()
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                      Be more verbose in operation\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --quiet\n");
+	fprintf(stderr, "  -q                      Be less verbose in operation\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --force\n");
 	fprintf(stderr, "  -f                      Force recalc\n");
 	fprintf(stderr, "\n");
@@ -115,6 +118,11 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			   strcmp(argv[i], "--verbose") == 0)
 			{
 				opts->verbose++;
+			}
+			if(strcmp(argv[i], "-q") == 0 ||
+			   strcmp(argv[i], "--quiet") == 0)
+			{
+				opts->verbose--;
 			}
 			else if(strcmp(argv[i], "-f") == 0 ||
 				strcmp(argv[i], "--force") == 0)
@@ -431,7 +439,7 @@ int run(const CommandLineOptions *opts)
 				opts->files[i][l-5] = 0;
 			}
 		}
-		if(opts->verbose > 0)
+		if(opts->verbose >= 0)
 		{
 			printf("Processing file %d/%d = %s\n",
 				i+1, opts->nFile, opts->files[i]);

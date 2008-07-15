@@ -19,6 +19,7 @@ verbose = 0
 multiconfig = 0
 visbufferlength = 32
 spectrunc = 2	# do this much spectral truncation before doing decimation
+calcif = "calcif2"
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
@@ -1719,7 +1720,7 @@ def genMakefile(joblist, verbose):
 		obscode = jobinfo[1]
 		fitslist.append('%s.%s.FITS' % (obscode, jnum))
 		fitsfile = '%s.%s.FITS' % (obscode, jnum)
-		Makefile.write("%s.uvw: %s.calc\n\tcalcif %s.calc\n\n" % (job, job, job))
+		Makefile.write("%s.uvw: %s.calc\n\t%s %s.calc\n\n" % (job, job, calcif, job))
 		Makefile.write("%s.machines: %s.input\n\tgenmachines %s.input\n\n" % (job, job, job))
 #		Makefile.write("%s.threads:  template.threads\n\tcp template.threads %s.threads\n\n" % (job, job))
 #		Makefile.write("%s.difx: %s.uvw %s.delay %s.input %s.machines\n" % (job, job, job, job, job))
@@ -1826,4 +1827,4 @@ else:
 				fftsize, nchan, tint, minsubarraysize, \
 				joblist)
 		# make Makefile
-	genMakefile(joblist, verbose)
+	#genMakefile(joblist, verbose)

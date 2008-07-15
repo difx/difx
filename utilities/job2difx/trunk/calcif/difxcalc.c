@@ -59,8 +59,6 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 		return -1;
 	}
 
-	printf("difxCalcInit complete\n");
-
 	return 0;
 }
 
