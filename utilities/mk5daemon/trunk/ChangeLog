@@ -26,3 +26,4 @@ Version 0.7
 * separate out proc.[ch]
 * function to look for windrvr use
 * periodically report VSNs
+* This version is for NRAO-DiFX 1.1
