@@ -1,3 +1,6 @@
+2.3
+* No change -- this is the version for NRAO-DiFX 1.1
+
 2.2
 * partial write support.  So far: delay, uvw, rate and im files
 
