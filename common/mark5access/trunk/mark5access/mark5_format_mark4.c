@@ -6821,6 +6821,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	{
 		if(ms->datawindowsize < ms->framebytes)
 		{
+		        fprintf(stderr, "mark5_format_mark4_init: datawindowsize < framebytes\n");
 			return -1;
 		}
 
@@ -6831,6 +6832,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 			f->ntrack, tol);
 		if(ms->frameoffset < 0)
 		{
+		        fprintf(stderr, "mark5_format_mark4_init: frameoffset<0\n");
 			return -1;
 		}
 
