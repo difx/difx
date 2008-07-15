@@ -606,15 +606,14 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	int failed = 0;
 
 	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
-
-	ms->format = MK5_FORMAT_UNKNOWN;
-	
-	if(!ms)
+       	if(!ms)
 	{
 		fprintf(stderr, "Error allocating memory for mark5_stream\n");
 		
 		return 0;
 	}
+
+	ms->format = MK5_FORMAT_UNKNOWN;
 	
 	if(set_stream(ms, s) < 0)
 	{
@@ -649,7 +648,8 @@ struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
 	if(status < 0)
 	{
 		delete_mark5_stream(ms);
-		fprintf(stderr, "new_mark5_format: init_stream() failed\n");
+		fprintf(stderr, "new_mark5_format: init_stream(%s) failed\n",
+			ms->formatname);
 		
 		return 0;
 	}
