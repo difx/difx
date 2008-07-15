@@ -2124,6 +2124,9 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	{
 		ms->framens = 80000000.0/ms->Mbps;
 	}
+
+	mark5_format_mark5b_make_formatname(ms);
+
 	if(ms->datawindow)
 	{
 		if(ms->datawindowsize < ms->framebytes)
@@ -2247,8 +2250,6 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	}
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
-
-	mark5_format_mark5b_make_formatname(ms);
 
 	return 0;
 }
