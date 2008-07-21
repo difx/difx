@@ -44,7 +44,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
 	int b, j, s, p, np, ant;
-	int configId;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
@@ -58,7 +57,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate;
-	int jobId;
+	int configId, jobId, dsId, antId;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -131,8 +130,16 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 	   for(p = 0; p < np; p++)
 	   {
+	      /* loop over original .input file antenna list */
 	      for(ant = 0; ant < scan->nAntenna; ant++)
 	      {
+	        dsId = config->ant2dsId[ant];
+		if(dsId < 0 || dsId >= D->nDatastream)
+		{
+			continue;
+		}
+		antId = D->datastream[dsId].antennaId;
+
 		antId1 = config->datastreamId[ant] + 1;
 
 		if(scan->im)  /* use polynomial model */

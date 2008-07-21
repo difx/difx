@@ -57,7 +57,12 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteComment(out, "HISTORY", strng);
 
 	fitsWriteComment(out, "HISTORY", "CORRELATOR = 'DIFX'");
-	fitsWriteComment(out, "HISTORY", "CORRVERS = 'NRAO-DIFX 1.1'");
+
+	if(D->job->difxVersion[0])
+	{
+		sprintf(strng, "CORRVERS = %s", D->job->difxVersion);
+		fitsWriteComment(out, "HISTORY", strng);
+	}
 
 	sprintf (strng, "LOG FILE : /To/be/implemented");
 	fitsWriteComment(out, "HISTORY", strng);

@@ -111,7 +111,6 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 	
 	dv->jobId = jobId;
 	dv->D = D;
-	dv->antennaIdRemap = dv->D->job[dv->jobId].antennaIdRemap;
 	dv->curFile = -1;
 	DifxVisStartGlob(dv);
 	dv->configId = -1;
@@ -261,6 +260,28 @@ static int getPolProdId(const DifxVis *dv, const char *polPair)
 	return -2;
 }
 
+
+/* Use Cramer's rule to evaluate polynomial */
+static double evalPoly(const double *p, int n, double x)
+{
+	double y;
+	int i;
+
+	if(n == 1)
+	{
+		return p[0];
+	}
+
+	y = p[n-1];
+
+	for(i = n-2; i >= 0; i--)
+	{
+		y = x*y + p[i];
+	}
+
+	return y;
+}
+
 	
 int DifxVisNewUVData(DifxVis *dv, int verbose)
 {
@@ -298,13 +319,18 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N, index;
 	int a1, a2;
-	int bl, c, scanId;
-	double mjd;
+	int bl, scanId;
+	double mjd, dt, dt2;
 	int changed = 0;
 	int nFloat, readSize;
 	char line[100];
 	int freqNum;
 	int configId;
+	const DifxConfig *config;
+	const DifxScan *scan;
+	const DifxPolyModel *im1, *im2;
+	int terms1, terms2, n;
+	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
 
 	resetDifxParameters(dv->dp);
 
@@ -348,23 +374,13 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	bl           = atoi(DifxParametersvalue(dv->dp, rows[0]));
 	mjd          = atoi(DifxParametersvalue(dv->dp, rows[1])) +
 	               atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
-	c            = atoi(DifxParametersvalue(dv->dp, rows[3]));
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 
 	/* FIXME -- look at sourceId in the record as a check */
+	/* FIXME -- look at configId in the record as a check */
 
-	a1 = (bl/256) - 1;
-	a2 = (bl%256) - 1;
-
-	/* see if we need to remap this baseline */
-	if(dv->antennaIdRemap)
-	{
-		a1 = dv->antennaIdRemap[a1];
-		a2 = dv->antennaIdRemap[a2];
-		bl = (a1+1)*256 + (a2+1);
-	}
-
-	scanId = DifxInputGetScanIdByAntennaId(dv->D, mjd, a1);
+	/* scanId at middle of integration */
+	scanId = DifxInputGetScanIdByJobId(dv->D, mjd, dv->jobId);
 	if(scanId < 0)
 	{
 		nFloat = 2;
@@ -373,19 +389,57 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		return -4;
 	}
 
+	scan = dv->D->scan + scanId;
+	configId = scan->configId;
+	config = dv->D->config + configId;
+
+	/* see if it is still the same scan at the edges of integration */
+	dt2 = config->tInt/(86400.0*2.001);  
+	if(scan->mjdStart > mjd-dt2 || scan->mjdEnd < mjd+dt2)
+	{
+		/* Nope! */
+		dv->flagTransition = 1;
+	}
+	else
+	{
+		dv->flagTransition = 0;
+	}
+
+	aa1 = a1 = (bl/256) - 1;
+	aa2 = a2 = (bl%256) - 1;
+
+	if(a1 < 0 || a1 >= config->nAntenna ||
+	   a2 < 0 || a2 >= config->nAntenna)
+	{
+		printf("Error! Illegal baseline %d -> %s-%s\n", bl, a1, a2);
+		return -8;
+	}
+
+	/* translate from .input file antId to index for D->antenna via dsId */
+	d1 = config->ant2dsId[a1];
+	d2 = config->ant2dsId[a2];
+	if(d1 < 0 || d1 >= dv->D->nDatastream || 
+	   d2 < 0 || d2 >= dv->D->nDatastream)
+	{
+		printf("Error! baseline %d -> datastreams %d-%d\n",
+			bl, d1, d2);
+		return -9;
+	}
+	a1 = dv->D->datastream[d1].antennaId;
+	a2 = dv->D->datastream[d2].antennaId;
+	bl = (a1+1)*256 + (a2+1);
+	
 	if(verbose >= 1 && scanId != dv->scanId)
 	{
 		printf("        MJD=%11.5f jobId=%d scanId=%d "
 			"Source=%s\n", 
-			mjd, dv->jobId, scanId, dv->D->scan[scanId].name);
+			mjd, dv->jobId, scanId, scan->name);
 	}
 
 	dv->scanId = scanId;
-	dv->sourceId = dv->D->scan[scanId].sourceId;
-	configId = dv->D->scan[scanId].configId;
-	dv->freqId = dv->D->config[configId].freqId;
-
-	dv->bandId = dv->D->config[configId].baselineFreq2IF[a1][a2][freqNum];
+	dv->sourceId = scan->sourceId;
+	dv->freqId = config->freqId;
+	dv->bandId = config->baselineFreq2IF[aa1][aa2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
 
 	/* stash the weight for later incorporation into a record */
@@ -406,22 +460,55 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	{
 		changed = 1;
 		dv->baseline = bl;
+		dv->mjd = mjd;
 
 		index = dv->freqId + dv->nFreq*dv->polId;
+
 		/* swap phase/uvw for FITS-IDI conformance */
 		dv->U = -atof(DifxParametersvalue(dv->dp, rows[8]));
 		dv->V = -atof(DifxParametersvalue(dv->dp, rows[9]));
 		dv->W = -atof(DifxParametersvalue(dv->dp, rows[10]));
-		dv->mjd = mjd;
+
+		/* recompute from polynomials if possible */
+#if 0
+		/* Note -- this code is not ready yet */
+		if(scan->im)
+		{
+			/* FIXME -- need to rereference a1 and a2... */
+			im1 = scan->im[a1];
+			im2 = scan->im[a2];
+			if(im1 && im2)
+			{
+				n = getDifxScanIMIndex(scan, mjd, &dt);
+				if(n < 0)
+				{
+					fprintf(stderr, "Error -- interferometer model index out of range! scanId=%d mjd=%12.6f\n",
+					scanId, mjd);
+				}
+				else
+				{
+					terms1 = im1->order + 1;
+					terms2 = im2->order + 1;
+					dv->U = evalPoly(im2[n].u, terms2, dt) 
+					       -evalPoly(im1[n].u, terms1, dt);
+					dv->V = evalPoly(im2[n].v, terms2, dt) 
+					       -evalPoly(im1[n].v, terms1, dt);
+					dv->W = evalPoly(im2[n].w, terms2, dt) 
+					       -evalPoly(im1[n].w, terms1, dt);
+				}
+			}
+		}
+#endif
 	}
-	if(c != dv->configId)
+
+	if(configId != dv->configId)
 	{
 		if(!changed)	/* cannot change config within integration */
 		{
 			return -5;
 		}
-		dv->configId = c;
-		dv->tInt = dv->D->config[c].tInt;
+		dv->configId = configId;
+		dv->tInt = config->tInt;
 	}
 
 	/* don't get all excited and signify a change on first rec */
@@ -544,6 +631,11 @@ static int RecordIsZero(const DifxVis *dv)
 	}
 	
 	return invalid;
+}
+
+static int RecordIsTransitioning(const DifxVis *dv)
+{
+	return dv->flagTransition;
 }
 
 static int RecordIsFlagged(const DifxVis *dv)
@@ -703,6 +795,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	int nInvalid = 0;
 	int nFlagged = 0;
 	int nZero = 0;
+	int nTrans = 0;
 	int nWritten = 0;
 	double mjd, bestmjd;
 	double scale;
@@ -854,6 +947,10 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 		{
 			nZero++;
 		}
+		else if(RecordIsTransitioning(dv))
+		{
+			nTrans++;
+		}
 		else
 		{
 #ifndef WORDS_BIGENDIAN
@@ -887,6 +984,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	printf("      %d invalid records dropped\n", nInvalid);
 	printf("      %d flagged records dropped\n", nFlagged);
 	printf("      %d all zero records dropped\n", nZero);
+	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d records written\n", nWritten);
 	if(verbose > 1)
 	{

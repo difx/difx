@@ -50,6 +50,7 @@ typedef struct
 	int changed;
 	int first;
 	double scale;
+	int flagTransition;
 } DifxVis;
 
 DifxVis *newDifxVis(const DifxInput *D, int jobId);

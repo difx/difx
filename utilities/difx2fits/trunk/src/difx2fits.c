@@ -57,7 +57,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --difx\n");
-	fprintf(stderr, "   -d                  Run on all .difx files in directory\n");
+	fprintf(stderr, "   -d                 Run on all .difx files in directory\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --no-model\n");
 	fprintf(stderr, "  -n                  Don't write model (ML) table\n");
@@ -77,6 +77,8 @@ static int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --override-version  Ignore difx versions\n");
 	fprintf(stderr, "\n");
 
 	return 0;
@@ -98,6 +100,7 @@ struct CommandLineOptions
 	float startChan;
 	int keepOrder;
 	int dontCombine;
+	int overrideVersion;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -186,6 +189,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				 strcmp(argv[i], "-k") == 0)
 			{
 				opts->keepOrder = 1;
+			}
+			else if (strcmp(argv[i], "--override-version") == 0)
+			{
+				opts->overrideVersion = 1;
 			}
 			else if(i+1 < argc) /* one parameter arguments */
 			{
@@ -471,6 +478,13 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 	char outFitsName[256];
 	int i;
 	int nConverted = 0;
+	const char *difxVersion;
+
+	difxVersion = getenv("DIFX_VERSION");
+	if(!difxVersion)
+	{
+		printf("Warning: env. var. DIFX_VERSION is not set\n");
+	}
 
 	D = 0;
 
@@ -568,6 +582,29 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		return 0;
 	}
 
+	if(difxVersion && D->job->difxVersion[0])
+	{
+		if(strncmp(difxVersion, D->job->difxVersion, 63))
+		{
+			fprintf(stderr, "Attempting to run difx2fits from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
+			if(opts->overrideVersion)
+			{
+				fprintf(stderr, "Continuing because of --override-version but not setting a version\n");
+				D->job->difxVersion[0] = 0;
+			}
+			else
+			{
+				fprintf(stderr, "Not converting.\n");
+				deleteDifxInput(D);
+				return 0;
+			}
+		}
+	}
+	else if(!D->job->difxVersion[0])
+	{
+		fprintf(stderr, "Warning -- working on unversioned job\n");
+	}
+
 	if(opts->verbose > 1)
 	{
 		printDifxInput(D);
@@ -605,6 +642,11 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		if(!opts->keepOrder)
 		{
 			DifxInputSortAntennas(D, opts->verbose);
+		}
+
+		if(opts->verbose > 2)
+		{
+			printDifxInput(D);
 		}
 
 		if(fitsWriteOpen(&outfile, outFitsName) < 0)

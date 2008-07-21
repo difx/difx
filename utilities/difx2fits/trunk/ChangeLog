@@ -1,6 +1,11 @@
+Version 2.4
+* Post NRAO-DiFX 1.1 dev branch
+
 Version 2.3
 * Support for writing FITS files larger than 2 GiB
 * Option to force each input file into its own output file
+* Pay attention to difx versions
+* Don't write out vis records that occur over a scan change
 * Version for NRAO-DiFX 1.1
 
 Version 2.2

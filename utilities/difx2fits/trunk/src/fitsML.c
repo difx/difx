@@ -84,7 +84,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double grate[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
-	int configId, jobId;
+	int configId, jobId, dsId;
 	double time;
 	float timeInt;
 	int nPol, np;
@@ -201,7 +201,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   {
 	      for(a = 0; a < scan->nAntenna; a++)
 	      {
-		antId = config->datastreamId[a];
+		dsId = config->ant2dsId[a];
+		if(dsId < 0 || dsId >= D->nDatastream)
+		{
+			continue;
+		}
+		/* convert to D->antenna[] index ... */
+		antId = D->datastream[dsId].antennaId;
+
+		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
 	        if(scan->im)  /* use polynomial model */
