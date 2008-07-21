@@ -88,8 +88,7 @@ void printDifxScan(const DifxScan *ds)
 }
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *antennaIdRemap, 
-	const int *configIdRemap)
+	const int *jobIdRemap, const int *configIdRemap)
 {
 	int i, srcAntenna;
 
@@ -120,18 +119,27 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 		dest->configId = src->configId;
 	}
 	dest->nPoint   = src->nPoint;
+	dest->nPoly    = src->nPoly;
 
 	/* figure out how many antennas needed in this scan */
 	dest->nAntenna = src->nAntenna;
 
 	/* allocate space for model info and copy from original. */
-	dest->model = (DifxModel **)calloc(dest->nAntenna, 
-		sizeof(DifxModel *));
-	for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
+	if(src->model)
 	{
-		dest->model[srcAntenna] = dupDifxModelColumn(
-			src->model[srcAntenna], dest->nPoint);
+		dest->model = (DifxModel **)calloc(dest->nAntenna, 
+			sizeof(DifxModel *));
+		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
+		{
+			dest->model[srcAntenna] = dupDifxModelColumn(
+				src->model[srcAntenna], dest->nPoint);
+		}
 	}
+	else
+	{
+		dest->model = 0;
+	}
+
 	if(src->im)
 	{
 		dest->im = (DifxPolyModel **)calloc(dest->nAntenna, 
@@ -142,14 +150,17 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 				src->im[srcAntenna], dest->nPoly);
 		}
 	}
+	else
+	{
+		dest->im = 0;
+	}
 }
 
 /* Merge sort the two lists of scans.  This is intended to allow merging of
  * more than two DifxInputs in any order.
  */
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
-	const DifxScan *ds2, int nds2, 
-	const int *jobIdRemap, const int *antennaIdRemap, 
+	const DifxScan *ds2, int nds2, const int *jobIdRemap, 
 	const int *configIdRemap, int *nds)
 {
 	DifxScan *ds;
@@ -196,7 +207,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			if(ds1[i1].configId >= 0)
 			{
-				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
+				copyDifxScan(ds + i, ds1 + i1, 0, 0);
 				i++;
 			}
 			i1++;
@@ -206,7 +217,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 			if(ds2[i2].configId >= 0)
 			{
 				copyDifxScan(ds + i, ds2 + i2, jobIdRemap, 
-					antennaIdRemap, configIdRemap);
+					configIdRemap);
 				i++;
 			}
 			i2++;
@@ -216,6 +227,56 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	*nds = i;
 
 	return ds;
+}
+
+/* dt in seconds */
+int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
+{
+	int i;
+	double m1, m2;
+	const DifxPolyModel *dp, *im;
+
+	if(!ds)
+	{
+		return -1;
+	}
+	if(!ds->im || ds->nPoly < 1)
+	{
+		return -1;
+	}
+
+	/* be sure to find an antenna with model data */
+	for(i = 0; i < ds->nAntenna; i++)
+	{
+		im = ds->im[i];
+		if(im)
+		{
+			break;
+		}
+	}
+
+	if(!im)
+	{
+		return -1;
+	}
+
+	for(i = 0; i < ds->nPoly; i++)
+	{
+		dp = im + i;
+		m1 = dp->mjd + dp->sec/86400.0;
+		m2 = m1 + dp->validDuration/86400.0;
+		if(mjd >= m1 && mjd <= m2)
+		{
+			if(dt)
+			{
+				*dt = (mjd - m1)*86400.0;
+			}
+			return i;
+		}
+	}
+
+	/* outside range */
+	return -1;
 }
 
 #if 0

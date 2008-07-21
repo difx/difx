@@ -23,6 +23,28 @@
 #define DIFX_SESSION_LEN	4
 #define MAX_MODEL_ORDER		5
 
+/* Notes about antenna numbering
+ *
+ * antennaId will typically refer to the index to the DifxInput array called
+ * antenna[].  In general, this list will not be in the same order as the
+ * antennas as listed in .input file TELESCOPE tables due to both sorting
+ * and combining of multiple jobs.
+ *
+ * Some arrays take as indicies the original antenna index as found in .input
+ * files.  These are:  DifxConfig.baselineFreq2IF[][][] and
+ * DifxConfig.ant2dsId[][]
+ */
+
+enum AberCorr
+{
+	AberCorrUncorrected = 0,
+	AberCorrApproximate,
+	AberCorrExact,
+	NumAberCorrOptions
+};
+
+extern const char aberCorrStrings[][16];
+
 /* Straight from DiFX frequency table */
 typedef struct
 {
@@ -76,6 +98,7 @@ typedef struct
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
 	int quantBits;		/* 1 or 2 */
+	int nAntenna;
 	int nDatastream;	/* number of datastreams attached */
 	int nBaseline;		/* number of baselines */
 	int *datastreamId;	/* 0-based; datastream table indx */
@@ -87,13 +110,19 @@ typedef struct
 	DifxIF *IF;		/* FITS IF definitions */
 	int freqId;		/* 0-based number -- uniq FITS IF[] index */
 	int *freqId2IF;		/* map from freq table index to IF */
-	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF */
+
+	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF 
+				 * Indices are antenna numbers from .difx/ */
+	int *ant2dsId;		/* map from .input file antenna# to internal
+				 * DifxDatastream Id. [0..nAntenna-1]
+				 * this should be used only in conjunction
+				 * with .difx/ antenna numbers! */
 	
 } DifxConfig;
 
 typedef struct
 {
-	int antennaId;
+	int antennaId;		/* index to D->antenna */
 	char dataFormat[32];
 	int quantBits;		/* quantization bits */
 	int nFreq;		/* num freqs from this datastream */
@@ -179,12 +208,13 @@ typedef struct
 	int nPoint;		/* number of points modeled for scan */
 	int startPoint;		/* absolute "point number" of first model */
 	int nAntenna;
-	DifxModel **model;	/* indexed by [dsId][point] */
+	DifxModel **model;	/* indexed by [ant][point] */
+				/* ant is index of antenna in .input file */
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
 				/* NOTE : model[ant] can be zero -> no data */
 	int nPoly;
-	DifxPolyModel **im;	/* indexed by [dsId][poly] */
-				/* ant is index of DifxAntenna */
+	DifxPolyModel **im;	/* indexed by [amt][poly] */
+				/* ant is index of antenna in .input file */
 				/*   poly ranges over [0 .. nPoly-1] */
 				/* NOTE : im[ant] can be zero -> no data */
 } DifxScan;
@@ -220,6 +250,7 @@ typedef struct
 
 typedef struct
 {
+	char difxVersion[64];	/* Name of difx version in .calc file */
 	double jobStart;	/* cjobgen job start time (mjd) */
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */
@@ -235,12 +266,11 @@ typedef struct
 	int calcVersion;	/* version number of calc server */
 	int calcProgram;	/* RPC program id of calc server */
 	char fileBase[256];	/* base filename for this job table */
-	int *antennaIdRemap;	/* remapping of antennas from this job to
-                                   the full set of antennas, or 0 */
 	int activeDatastreams;
 	int activeBaselines;
 	int polyOrder;		/* polynomial model order */
 	int polyInterval;	/* (sec) length of valid polynomial */
+	enum AberCorr aberCorr;	/* level of correction for aberration */
 } DifxJob;
 
 typedef struct
@@ -286,10 +316,9 @@ typedef struct
 DifxJob *newDifxJobArray(int nJob);
 void deleteDifxJobArray(DifxJob *dj);
 void printDifxJob(const DifxJob *dj);
-void copyDifxJob(DifxJob *dest, const DifxJob *src, const int *antennaIdRemap);
+void copyDifxJob(DifxJob *dest, const DifxJob *src);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
-	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
-	const int *antennaIdRemap, int *ndj);
+	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj);
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);
@@ -357,13 +386,11 @@ int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar);
 /* DifxConfig functions */
 DifxConfig *newDifxConfigArray(int nConfig);
 void deleteDifxConfigArray(DifxConfig *dc);
+void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 void printDifxConfig(const DifxConfig *dc);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId);
-int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
-	const int *baselineIdRemap, const int *datastreamIdRemap,
-	const int *pulsarIdRemap);
 void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap);
@@ -389,11 +416,11 @@ DifxScan *newDifxScanArray(int nScan);
 void deleteDifxScanArray(DifxScan *ds, int nScan);
 void printDifxScan(const DifxScan *ds);
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *antennaIdRemap, 
-	const int *configIdRemap);
+	const int *jobIdRemap, const int *configIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, const int *jobIdRemap,
-	const int *antennaIdRemap, const int *configIdRemap, int *nds);
+	const int *configIdRemap, int *nds);
+int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
 
 /* DifxEOP functions */
 DifxEOP *newDifxEOPArray(int nEOP);

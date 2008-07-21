@@ -1,5 +1,12 @@
+2.4
+* Post NRAO-DiFX 1.1 dev branch
+
 2.3
-* No change -- this is the version for NRAO-DiFX 1.1
+* Support new keywords : ABERRATION CORR (.im) and DIFX VERSION (.calc)
+* Fix mapping of autocorrelation frequency ids
+* Revamp antenna indexing
+* support for different ordering of telescopes in the input files
+* This is the version for NRAO-DiFX 1.1
 
 2.2
 * partial write support.  So far: delay, uvw, rate and im files

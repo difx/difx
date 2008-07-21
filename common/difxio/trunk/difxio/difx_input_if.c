@@ -71,7 +71,8 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 	DifxDatastream *dd;
 	int baselineId;
 	int a, b,  d, f;
-	int a1, a2;
+	int a1, a2, nAnt;
+	int ddf;
 	int rcA, rcB, fqA, fqB, bandId, nFreq;
 
 	if(!D)
@@ -87,13 +88,21 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 	}
 	dc = D->config + configId;
 
+	if(dc->ant2dsId == 0)
+	{
+		fprintf(stderr, "makeBaselineFreq2IF: ant2dsId = 0\n");
+		return -1;
+	}
+
+	nAnt = dc->nAntenna;
+
 	/* map[Antenna1][Antenna2][recChan] -- all indices 0-based */
 	/* allocate first two dimensions larger than needed for null pads */
-	map = (int ***)calloc(D->nAntenna+1, sizeof(int **));
-	for(a1 = 0; a1 < D->nAntenna; a1++)
+	map = (int ***)calloc(nAnt+1, sizeof(int **));
+	for(a1 = 0; a1 < nAnt; a1++)
 	{
-		map[a1] = (int **)calloc(D->nAntenna+1, sizeof(int *));
-		for(a2 = 0; a2 < D->nAntenna; a2++)
+		map[a1] = (int **)calloc(nAnt+1, sizeof(int *));
+		for(a2 = 0; a2 < nAnt; a2++)
 		{
 			map[a1][a2] = (int *)calloc(dc->nIF, sizeof(int));
 		}
@@ -113,12 +122,24 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		{	
 			printf("Error! dsA=%d dsB=%d\n", db->dsA, db->dsB);
 		}
-		a1 = D->datastream[db->dsA].antennaId;
-		a2 = D->datastream[db->dsB].antennaId;
-		if(a1 < 0 || a1 >= D->nAntenna)
+		for(a1 = 0; a1 < nAnt; a1++) 
+		{
+			if(dc->ant2dsId[a1] == db->dsA)
+			{
+				break;
+			}
+		}
+		if(a1 < 0 || a1 >= nAnt)
 		{
 			printf("Error! makeBaselineFreq2IF : a1=%d nA=%d",
 				a1, D->nAntenna);
+		}
+		for(a2 = 0; a2 < nAnt; a2++) 
+		{
+			if(dc->ant2dsId[a2] == db->dsB)
+			{
+				break;
+			}
 		}
 		if(a2 < 0 || a2 >= D->nAntenna)
 		{
@@ -148,27 +169,38 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		}
 	}
 
+
 	/* Fill in auto corr terms */
 	for(d = 0; d < dc->nDatastream; d++)
 	{
 		dd = D->datastream + dc->datastreamId[d];
-		a = dd->antennaId;
-		if(a < 0 || a >= D->nAntenna)
+		for(a = 0; a < nAnt; a++)
 		{
-			printf("Error! makeBaselineFreq2IF : a=%d nA=%d",
-				a, D->nAntenna);
+			if(dc->ant2dsId[a] == dc->datastreamId[d])
+			{
+				break;
+			}
+		}
+		if(a < 0 || a >= nAnt)
+		{
+			printf("Warning! makeBaselineFreq2IF : a=%d nA=%d\n",
+				a, nAnt);
+			continue;
 		}
 		nFreq = dd->nFreq;
 		for(f = 0; f < nFreq; f++)
 		{
-			bandId = dc->freqId2IF[dd->freqId[f]];
-			map[a][a][f] = bandId;
+			ddf = dd->freqId[f];
+			if(ddf >= 0 && ddf < dc->nIF)
+			{
+				bandId = dc->freqId2IF[ddf];
+				map[a][a][ddf] = bandId;
+			}
 		}
 	}
 
 	return 0;
 }
-
 
 DifxIF *newDifxIFArray(int nIF)
 {

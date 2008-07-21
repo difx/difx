@@ -57,6 +57,8 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	
 	writeDifxLineInt(out, "POLYNOMIAL ORDER", D->job->polyOrder);
 	writeDifxLineInt(out, "INTERVAL (SECS)", D->job->polyInterval);
+	writeDifxLine(out, "ABERRATION CORR", 
+		aberCorrStrings[D->job->aberCorr]);
 
 	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
 

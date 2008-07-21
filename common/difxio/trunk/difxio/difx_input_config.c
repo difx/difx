@@ -62,6 +62,10 @@ void deleteDifxConfigArray(DifxConfig *dc)
 		{
 			deleteBaselineFreq2IF(dc->baselineFreq2IF);
 		}
+		if(dc->ant2dsId)
+		{
+			free(dc->ant2dsId);
+		}
 		free(dc);
 	}
 }
@@ -102,6 +106,15 @@ void printDifxConfig(const DifxConfig *dc)
 		}
 		printf("\n");
 	}
+	if(dc->ant2dsId)
+	{
+		printf("    ant2dsId[%d] =", dc->nAntenna);
+		for(i = 0; i < dc->nAntenna; i++)
+		{
+			printf(" %d", dc->ant2dsId[i]);
+		}
+		printf("\n");
+	}
 	printf("    nIF = %d\n", dc->nIF);
 	if(dc->nIF > 0)
 	{
@@ -135,12 +148,14 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 	return -1;
 }
 
+/* antennaId is the index to D->antenna */
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId)
 {
 	DifxConfig *dc;
 	DifxDatastream *ds;
 	int datastreamId;
+	int d;
 	
 	if(recChan < 0 || antennaId < 0)
 	{
@@ -161,17 +176,23 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	dc = D->config + configId;
 	for(datastreamId = 0; datastreamId < dc->nDatastream; datastreamId++)
 	{
-		if(antennaId == dc->datastreamId[datastreamId])
+		/* get index to D->datastream from local ds index */
+		d = dc->datastreamId[datastreamId];
+		if(d < 0 || d >= D->nDatastream)
+		{
+			continue;
+		}
+		ds = D->datastream + d;
+		/* now compare the absolute antennaIds */
+		if(antennaId == ds->antennaId)
 		{
 			break;
 		}
 	}
-	if(datastreamId == dc->nDatastream)
+	if(datastreamId >= dc->nDatastream)
 	{
 		return -4;
 	}
-
-	ds = D->datastream + datastreamId;
 
 	if(recChan >= ds->nRecChan)
 	{
@@ -184,90 +205,34 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	return 0;
 }
 
-int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2,
-	const int *baselineIdRemap, const int *datastreamIdRemap, 
-	const int *pulsarIdRemap)
-{
-	int i, db1, db2, dd1, dd2;
-
-	if(dc1->tInt        != dc2->tInt ||
-	   dc1->doPolar     != dc2->doPolar ||
-	   dc1->nChan       != dc2->nChan ||
-	   dc1->pulsarId    != dc2->pulsarId ||
-	   dc1->nBaseline   != dc2->nBaseline ||
-	   dc1->nDatastream != dc2->nDatastream)
-	{
-		return 0;
-	}
-	if(pulsarIdRemap && dc2->pulsarId >= 0)
-	{
-		if(dc1->pulsarId != pulsarIdRemap[dc2->pulsarId])
-		{
-			return 0;
-		}
-	}
-	else
-	{
-		if(dc1->pulsarId != dc2->pulsarId)
-		{
-			return 0;
-		}
-	}
-
-	for(i = 0; i < dc1->nBaseline; i++)
-	{
-		db1 = dc1->baselineId[i];
-		db2 = dc2->baselineId[i];
-		if(db1 < 0 || db2 < 0)
-		{
-			/* both tables better run out at same time! */
-			if(db1 != db2)
-			{
-				return 0;
-			}
-			break;
-		}
-		if(baselineIdRemap)
-		{
-			db2 = baselineIdRemap[db2];
-		}
-		if(db1 != db2)
-		{
-			return 0;
-		}
-	}
-
-	for(i = 0; i < dc1->nDatastream; i++)
-	{
-		dd1 = dc1->datastreamId[i];
-		dd2 = dc2->datastreamId[i];
-		if(dd1 < 0 || dd2 < 0)
-		{
-			/* both tables better run out at same time! */
-			if(dd1 != dd2)
-			{
-				return 0;
-			}
-			break;
-		}
-		if(datastreamIdRemap)
-		{
-			dd2 = datastreamIdRemap[dd2];
-		}
-		if(dd1 != dd2)
-		{
-			return 0;
-		}
-	}
-
-	return 1;
-}
-
 void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	const int *baselineIdRemap, const int *datastreamIdRemap, 
 	const int *pulsarIdRemap)
 {
-	int i, n;
+	int i, n, a;
+
+	dest->nAntenna = src->nAntenna;
+	if(src->ant2dsId)
+	{
+		dest->ant2dsId = (int *)malloc((src->nAntenna+1)*sizeof(int));
+		for(a = 0; a < src->nAntenna; a++)
+		{
+			if(src->ant2dsId[a] < 0)
+			{
+				dest->ant2dsId[a] = src->ant2dsId[a];
+			}
+			else if(datastreamIdRemap) 
+			{
+				dest->ant2dsId[a] = 
+					datastreamIdRemap[src->ant2dsId[a]];
+			}
+			else
+			{
+				dest->ant2dsId[a] = src->ant2dsId[a];
+			}
+		}
+		dest->ant2dsId[src->nAntenna] = -1;
+	}
 
 	dest->tInt = src->tInt;
 	dest->nChan = src->nChan;
@@ -341,35 +306,21 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 
 	*ndc = ndc1;
 
-	/* first identify entries that differ and assign new configIds */
 	for(j = 0; j < ndc2; j++)
 	{
-		for(i = 0; i < ndc1; i++)
-		{
-			if(isSameDifxConfig(dc1 + i, dc2 + j,
-				baselineIdRemap, datastreamIdRemap,
-				pulsarIdRemap))
-			{
-				configIdRemap[j] = i;
-				break;
-			}
-		}
-		if(i == ndc1)
-		{
-			configIdRemap[j] = *ndc;
-			(*ndc)++;
-		}
+		configIdRemap[j] = *ndc;
+		(*ndc)++;
 	}
 
 	dc = newDifxConfigArray(*ndc);
 	
-	/* now copy df1 */
+	/* copy df1 */
 	for(i = 0; i < ndc1; i++)
 	{
 		copyDifxConfig(dc + i, dc1 + i, 0, 0, 0);
 	}
 
-	/* now copy unique members of df2 */
+	/* copy df2 */
 	for(j = 0; j < ndc2; j++)
 	{
 		if(configIdRemap[j] >= ndc1)

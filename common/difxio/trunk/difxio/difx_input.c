@@ -79,6 +79,38 @@ void deleteDifxInput(DifxInput *D)
 	}
 }
 
+void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds)
+{
+	int a, maxa = 0, d;
+
+	if(dc->ant2dsId)
+	{
+		free(dc->ant2dsId);
+	}
+
+	for(d = 0; d < dc->nDatastream; d++)
+	{
+		a = ds[dc->datastreamId[d]].antennaId;
+		if(a > maxa)
+		{
+			maxa = a;
+		}
+	}
+
+	dc->nAntenna = maxa+1;
+	dc->ant2dsId = (int *)malloc((maxa+2)*sizeof(int));
+	for(a = 0; a < maxa; a++)
+	{
+		dc->ant2dsId[a] = -1;
+	}
+
+	for(d = 0; d < dc->nDatastream; d++)
+	{
+		a = ds[dc->datastreamId[d]].antennaId;
+		dc->ant2dsId[a] = dc->datastreamId[d];
+	}
+}
+
 void printDifxInput(const DifxInput *D)
 {
 	int i;
@@ -171,10 +203,10 @@ void printDifxInput(const DifxInput *D)
 }
 
 
-static int parseUVWs(DifxModel **model, int nAntenna, int row, 
+static int parseUVWs(DifxModel **model, int nAntenna, int *antMap, int row, 
 	const char *str)
 {
-	int a;
+	int a, antId;
 	int n = 0, l;
 	double u, v, w;
 
@@ -193,18 +225,29 @@ static int parseUVWs(DifxModel **model, int nAntenna, int row,
 			return 0;
 		}
 		n += l;
-		model[a][row].u = u;
-		model[a][row].v = v;
-		model[a][row].w = w;
+		if(antMap)
+		{
+			antId = antMap[a];
+		}
+		else
+		{
+			antId = a;
+		}
+		if(antId >= 0)
+		{
+			model[antId][row].u = u;
+			model[antId][row].v = v;
+			model[antId][row].w = w;
+		}
 	}
 
 	return 0;
 }
 
-static int parseDelays(DifxModel **model, int nAntenna, int row, 
+static int parseDelays(DifxModel **model, int nAntenna, int *antMap, int row, 
 	const char *str)
 {
-	int a;
+	int a, antId;
 	int n = 0, l;
 	double t;
 
@@ -223,16 +266,27 @@ static int parseDelays(DifxModel **model, int nAntenna, int row,
 			return 0;
 		}
 		n += l;
-		model[a][row].t = t;
+		if(antMap)
+		{
+			antId = antMap[a];
+		}
+		else
+		{
+			antId = a;
+		}
+		if(antId >= 0)
+		{
+			model[antId][row].t = t;
+		}
 	}
 	
 	return a;
 }
 
-static int parseRates(DifxModel **model, int nAntenna, int row, 
+static int parseRates(DifxModel **model, int nAntenna, int *antMap, int row, 
 	const char *str)
 {
-	int a;
+	int a, antId;
 	int n = 0, l;
 	double rate, dry, wet; /* units: us/s, us, us */
 
@@ -251,12 +305,85 @@ static int parseRates(DifxModel **model, int nAntenna, int row,
 			return 0;
 		}
 		n += l;
-		model[a][row].dt = rate;
-		model[a][row].dry  = dry;
-		model[a][row].wet  = wet;
+		if(antMap)
+		{
+			antId = antMap[a];
+		}
+		else
+		{
+			antId = a;
+		}
+		if(antId >= 0)
+		{
+			model[antId][row].dt  = rate;
+			model[antId][row].dry = dry;
+			model[antId][row].wet = wet;
+		}
 	}
 	
 	return a;
+}
+
+static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
+{
+	int r, nTel, nFound, t, a;
+	int *antMap;
+
+	r = DifxParametersfind(p, 0, "NUM TELESCOPES");
+	if(r >= 0)
+	{
+		nTel = atoi(DifxParametersvalue(p, r));
+	}
+	else
+	{
+		fprintf(stderr, "deriveAntMap: NUM TELESCOPES not defined\n");
+		return 0;
+	}
+	
+	if(nTel < D->nAntenna)
+	{
+		fprintf(stderr, "deriveAntMap: NUM TELESCOPES too small: \n"
+			"%d < %d\n", nTel, D->nAntenna);
+	}
+
+	antMap = (int *)malloc(nTel* sizeof(int));
+
+	nFound = 0;
+	for(t = 0; t < nTel; t++)
+	{
+		r = DifxParametersfind1(p, r+1, "TELESCOPE %d NAME", t);
+		if(r < 0)
+		{
+			fprintf(stderr, "deriveAntMap: TELESCOPE %d NAME not "
+				"found\n", t);
+			free(antMap);
+			return 0;
+		}
+		a = DifxInputGetAntennaId(D, DifxParametersvalue(p, r));
+		if(a < 0)
+		{
+			antMap[t] = -1;
+		}
+		else
+		{
+			antMap[t] = a;
+			nFound++;
+		}
+	}
+
+	if(nFound < D->nAntenna)
+	{
+		fprintf(stderr, "deriveAntMap: too few antenna name matches\n");
+		free(antMap);
+		return 0;
+	}
+
+	if(nTelescope)
+	{
+		*nTelescope = nTel;
+	}
+
+	return antMap;
 }
 
 /* add x to list of integers if not already in list.  return new list size */
@@ -1139,10 +1266,11 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 {
-	int i, c, p, r = 0, v, N;
+	int a, i, c, p, r = 0, v, N, nTel;
 	int nPoint, startPoint;
 	int rows[20];
 	double mjdStop;
+	int *antMap;
 
 	const char initKeys[][MAX_DIFX_KEY_LEN] = 
 	{
@@ -1175,6 +1303,13 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 		return 0;
 	}
 
+	antMap = deriveAntMap(D, up, &nTel);
+	if(antMap == 0)
+	{
+		fprintf(stderr, "populateUVW: deriveAntMap failed\n");
+		return 0;
+	}
+
 	D->nEOP = 0;
 
 	N = DifxParametersbatchfind(up, 0, initKeys, N_INIT_ROWS, rows);
@@ -1195,18 +1330,25 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			i, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
+			free(antMap);
 			return 0;
 		}
-		strcpy(D->antenna[i].mount, DifxParametersvalue(up, rows[0]));
-		D->antenna[i].offset[0]= 0.0;	/* Default */
-		D->antenna[i].offset[1]= 0.0;	
-		D->antenna[i].offset[2]= 0.0;	
-		D->antenna[i].X        = atof(DifxParametersvalue(up, rows[1]));
-		D->antenna[i].Y        = atof(DifxParametersvalue(up, rows[2]));
-		D->antenna[i].Z        = atof(DifxParametersvalue(up, rows[3]));
-		D->antenna[i].dX       = 0.0;
-		D->antenna[i].dY       = 0.0;
-		D->antenna[i].dZ       = 0.0;
+		a = antMap[i];
+		if(a < 0)
+		{
+			printf("populateUVW: ignoring TELESCOPE %d\n", i);
+			continue;
+		}
+		strcpy(D->antenna[a].mount, DifxParametersvalue(up, rows[0]));
+		D->antenna[a].offset[0]= 0.0;	/* Default */
+		D->antenna[a].offset[1]= 0.0;	
+		D->antenna[a].offset[2]= 0.0;	
+		D->antenna[a].X        = atof(DifxParametersvalue(up, rows[1]));
+		D->antenna[a].Y        = atof(DifxParametersvalue(up, rows[2]));
+		D->antenna[a].Z        = atof(DifxParametersvalue(up, rows[3]));
+		D->antenna[a].dX       = 0.0;
+		D->antenna[a].dY       = 0.0;
+		D->antenna[a].dZ       = 0.0;
 	}
 
 	mjdStop = D->job->mjdStart + D->job->duration/86400.0;
@@ -1218,6 +1360,7 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			i, N_SCAN_ROWS, rows);
 		if(N < N_SCAN_ROWS)
 		{
+			free(antMap);
 			return 0;
 		}
 		nPoint               = atoi(DifxParametersvalue(up, rows[0]));
@@ -1270,17 +1413,21 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			{
 				fprintf(stderr, "UVW row not found : %d %d\n",
 					i, p);
+				free(antMap);
 				return 0;
 			}
-			v = parseUVWs(D->scan[i].model, D->nAntenna, p,
+			v = parseUVWs(D->scan[i].model, nTel, antMap, p,
 				DifxParametersvalue(up, r));
 			if(v < 0)
 			{
 				fprintf(stderr, "UVW parse error\n");
+				free(antMap);
 				return 0;
 			}
 		}
 	}
+
+	free(antMap);
 
 	return D;
 }
@@ -1288,9 +1435,18 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 static DifxInput *populateDelay(DifxInput *D, DifxParameters *dp)
 {
 	int p, r = 0, s, v;
+	int nTel;
+	int *antMap;
 	
 	if(!D)
 	{
+		return 0;
+	}
+
+	antMap = deriveAntMap(D, dp, &nTel);
+	if(antMap == 0)
+	{
+		fprintf(stderr, "populateDelay: deriveAntMap failed\n");
 		return 0;
 	}
 
@@ -1303,17 +1459,21 @@ static DifxInput *populateDelay(DifxInput *D, DifxParameters *dp)
 			{
 				fprintf(stderr, "Delay row not found : %d %d\n",
 					s, p);
+				free(antMap);
 				return 0;
 			}
-			v = parseDelays(D->scan[s].model, D->nAntenna, p,
+			v = parseDelays(D->scan[s].model, nTel, antMap, p,
 				DifxParametersvalue(dp, r));
 			if(v < 0)
 			{
 				fprintf(stderr, "Delay parse error\n");
+				free(antMap);
 				return 0;
 			}
 		}
 	}
+
+	free(antMap);
 
 	return D;
 }
@@ -1331,6 +1491,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	
 	const char antKeys[][MAX_DIFX_KEY_LEN] =
 	{
+		"TELESCOPE %d NAME",
 		"TELESCOPE %d MOUNT",
 		"TELESCOPE %d OFFSET (m)",
 		"TELESCOPE %d X (m)",
@@ -1395,6 +1556,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	double modelInc;
 	DifxScan *old_scan;
 	int old_nScan;
+	int nFound, nTel;
 
 	if(!D)
 	{
@@ -1410,6 +1572,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
 	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
 	D->nEOP          = atoi(DifxParametersvalue(cp, rows[3]));
+
+	if(D->nAntenna == 0)
+	{
+		fprintf(stderr, "Error: populateCalc: D->nAntenna == 0\n");
+		return 0;
+	}
 
 	if(D->nScan == 0)
 	{
@@ -1427,6 +1595,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	if(D->nEOP > 0)
 	{
 		D->eop = newDifxEOPArray(D->nEOP);
+	}
+
+	row = DifxParametersfind(cp, 0, "DIFX VERSION");
+	if(row > 0)
+	{
+		strncpy(D->job->difxVersion, DifxParametersvalue(cp, row), 63);
+		D->job->difxVersion[63] = 0;
 	}
 
 	row = DifxParametersfind(cp, 0, "NUM SUBSCANS");
@@ -1510,22 +1685,26 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 	}
 
-	if(D->nAntenna == 0)
+	row = DifxParametersfind(cp, 0, "NUM TELESCOPES");
+	if(row >= 0)
 	{
-		row = DifxParametersfind(cp, 0, "NUM TELESCOPES");
-		if(row >= 0)
-		{
-			D->nAntenna = atoi(DifxParametersvalue(cp, row));
-		}
-		else
-		{
-			fprintf(stderr, "NUM TELESCOPES not defined\n");
-			return 0;
-		}
+		nTel = atoi(DifxParametersvalue(cp, row));
+	}
+	else
+	{
+		fprintf(stderr, "populateCalc: NUM TELESCOPES not defined\n");
+		return 0;
+	}
+	
+	if(nTel < D->nAntenna)
+	{
+		fprintf(stderr, "populateCalc: NUM TELESCOPES too small: \n"
+			"%d < %d\n", nTel, D->nAntenna);
 	}
 
 	rows[N_ANT_ROWS-1] = 0;		/* initialize start */
-	for(i = 0; i < D->nAntenna; i++)
+	nFound = 0;
+	for(i = 0; i < nTel; i++)
 	{
 		N = DifxParametersbatchfind1(cp, rows[N_ANT_ROWS-1], antKeys,
 			i, N_ANT_ROWS, rows);
@@ -1542,15 +1721,29 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				return 0;
 			}
 		}
-		strcpy(D->antenna[i].mount, DifxParametersvalue(cp, rows[0]));
-		D->antenna[i].offset[0]= atof(DifxParametersvalue(cp, rows[1]));
-		D->antenna[i].offset[1]= 0.0;	/* FIXME */
-		D->antenna[i].offset[2]= 0.0;	/* FIXME */
-		D->antenna[i].X        = atof(DifxParametersvalue(cp, rows[2]));
-		D->antenna[i].Y        = atof(DifxParametersvalue(cp, rows[3]));
-		D->antenna[i].Z        = atof(DifxParametersvalue(cp, rows[4]));
+		a = DifxInputGetAntennaId(D, DifxParametersvalue(cp, rows[0]));
+		if(a < 0)
+		{
+			fprintf(stderr, "populateCalc: skipping telescope \n"
+				"table entry %d\n", i);
+			continue;
+		}
+		nFound++;
+		strcpy(D->antenna[a].mount, DifxParametersvalue(cp, rows[1]));
+		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
+		D->antenna[a].offset[1]= 0.0;	/* FIXME */
+		D->antenna[a].offset[2]= 0.0;	/* FIXME */
+		D->antenna[a].X        = atof(DifxParametersvalue(cp, rows[3]));
+		D->antenna[a].Y        = atof(DifxParametersvalue(cp, rows[4]));
+		D->antenna[a].Z        = atof(DifxParametersvalue(cp, rows[5]));
 	}
 	
+	if(nFound < D->nAntenna)
+	{
+		fprintf(stderr, "populateCalc: too few antenna matches\n");
+		return 0;
+	}
+
 	rows[N_EOP_ROWS-1] = 0;		/* initialize start */
 	if(D->eop) for(i = 0; i < D->nEOP; i++)
 	{
@@ -1670,7 +1863,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		nSubarray = atoi(DifxParametersvalue(cp, row));
 		for(j = 0; j < nSubarray; j++)
 		{
-		    copyDifxScan(D->scan + k, old_scan + i, 0, 0, 0);
+		    copyDifxScan(D->scan + k, old_scan + i, 0, 0);
 		    memcpy(D->scan + k, old_scan + i, sizeof(DifxScan));
 		    D->scan[k].model = (DifxModel **)calloc(
 			D->scan[k].nAntenna, sizeof(DifxModel *));
@@ -1928,10 +2121,12 @@ int parsePoly1(DifxParameters *p, int r, char *key, int i1,
 
 static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 {
-	int a, p, r, s, nScan;
+	int a, t, p, r, s, nScan, nTel;
 	DifxScan *scan;
 	int mjd, sec;
 	int order, interval;
+	enum AberCorr ac;
+	int *antMap;
 
 	if(!D)
 	{
@@ -1941,6 +2136,13 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	if(!mp)
 	{
 		return D;
+	}
+
+	antMap = deriveAntMap(D, mp, &nTel);
+	if(antMap == 0)
+	{
+		fprintf(stderr, "populateIM: deriveAntMap failed\n");
+		return 0;
 	}
 
 	D = parseCalcServerInfo(D, mp);
@@ -1958,6 +2160,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	if(r < 0)
 	{
 		fprintf(stderr, "IM: INTERVAL (SECS) not found\n");
+		free(antMap);
 		return 0;
 	}
 	interval = atoi(DifxParametersvalue(mp, r));
@@ -1965,40 +2168,26 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	
 	
 	r = DifxParametersfind(mp, 0, "NUM TELESCOPES");
+
+	r = DifxParametersfind(mp, 0, "ABERRATION CORR");
 	if(r < 0)
 	{
-		fprintf(stderr, "IM: NUM TELESCOPES not found\n");
-		return 0;
+		fprintf(stderr, "Assuming aberration not corrected\n");
+	}
+	for(ac = 0; ac < NumAberCorrOptions; ac++)
+	{
+		if(strcmp(aberCorrStrings[ac], DifxParametersvalue(mp, r)) == 0)
+		{
+			D->job->aberCorr = ac;
+		}
 	}
 
-	/* Verify antennas match */
-	if(D->nAntenna != atoi(DifxParametersvalue(mp, r)))
-	{
-		fprintf(stderr, "IM: NUM TELESCOPE disagrees : %d != %d\n",
-			D->nAntenna, atoi(DifxParametersvalue(mp, r)));
-		return 0;
-	}
-	
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		r = DifxParametersfind1(mp, r+1, "TELESCOPE %d NAME", a);
-		if(r < 0)
-		{
-			fprintf(stderr, "IM: TELESCOPE %d NAME not found\n", a);
-			return 0;
-		}
-		if(strcmp(D->antenna[a].name, DifxParametersvalue(mp, r)))
-		{
-			fprintf(stderr, "IM: Antenna order/name mismatch\n");
-			return 0;
-		}
-	}
-	
 	/* Now get the models! */
 	r = DifxParametersfind(mp, 0, "NUM SCANS");
 	if(r < 0)
 	{
 		fprintf(stderr, "IM: NUM SCANS not found\n");
+		free(antMap);
 		return 0;
 	}
 
@@ -2006,6 +2195,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	if(D->nScan != nScan)
 	{
 		fprintf(stderr, "IM: NUM SCANS disagrees\n");
+		free(antMap);
 		return 0;
 	}
 
@@ -2019,6 +2209,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 		if(r < 0)
 		{
 			fprintf(stderr, "IM: Malformed scan\n");
+			free(antMap);
 			return 0;
 		}
 
@@ -2031,6 +2222,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 				s, p);
 			if(r < 0)
 			{
+				free(antMap);
 				return 0;
 			}
 			mjd = atoi(DifxParametersvalue(mp, r));
@@ -2038,27 +2230,33 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 				s, p);
 			if(r < 0)
 			{
+				free(antMap);
 				return 0;
 			}
 			sec = atoi(DifxParametersvalue(mp, r));
 
-			for(a = 0; a < D->nAntenna; a++)
+			for(t = 0; t < nTel; t++)
 			{
+				a = antMap[t];
+				if(a < 0)
+				{
+					continue;
+				}
 				scan->im[a][p].mjd = mjd;
 				scan->im[a][p].sec = sec;
 				scan->im[a][p].order = order;
 				scan->im[a][p].validDuration = interval;
-				r = parsePoly1(mp, r, "ANT %d DELAY (us)", a,
+				r = parsePoly1(mp, r, "ANT %d DELAY (us)", t,
 					scan->im[a][p].delay, order+1);
-				r = parsePoly1(mp, r, "ANT %d DRY (us)", a,
+				r = parsePoly1(mp, r, "ANT %d DRY (us)", t,
 					scan->im[a][p].dry, order+1);
-				r = parsePoly1(mp, r, "ANT %d WET (us)", a,
+				r = parsePoly1(mp, r, "ANT %d WET (us)", t,
 					scan->im[a][p].wet, order+1);
-				r = parsePoly1(mp, r, "ANT %d U (m)", a,
+				r = parsePoly1(mp, r, "ANT %d U (m)", t,
 					scan->im[a][p].u, order+1);
-				r = parsePoly1(mp, r, "ANT %d V (m)", a,
+				r = parsePoly1(mp, r, "ANT %d V (m)", t,
 					scan->im[a][p].v, order+1);
-				r = parsePoly1(mp, r, "ANT %d W (m)", a,
+				r = parsePoly1(mp, r, "ANT %d W (m)", t,
 					scan->im[a][p].w, order+1);
 				if(r < 0)
 				{
@@ -2069,20 +2267,31 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 		}
 	}
 
+	free(antMap);
+
 	return D;
 }
 
 static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 {
-	int a, p, r = 0, s, v;
+	int i, a, p, r = 0, s, v;
 	double f;
+	int nTel;
+	int *antMap;
 	
+	D = parseCalcServerInfo(D, rp);
+
 	if(!D)
 	{
 		return 0;
 	}
 
-	D = parseCalcServerInfo(D, rp);
+	antMap = deriveAntMap(D, rp, &nTel);
+	if(antMap == 0)
+	{
+		fprintf(stderr, "populateRate: deriveAntMap failed\n");
+		return 0;
+	}
 
 	for(s = 0; s < D->nScan; s++)
 	{
@@ -2093,13 +2302,15 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 			{
 				fprintf(stderr, "Rate row not found : %d %d\n",
 					s, p);
+				free(antMap);
 				return 0;
 			}
-			v = parseRates(D->scan[s].model, D->nAntenna, p,
+			v = parseRates(D->scan[s].model, nTel, antMap, p,
 				DifxParametersvalue(rp, r));
 			if(v < 0)
 			{
 				fprintf(stderr, "Rate parse error\n");
+				free(antMap);
 				return 0;
 			}
 		}
@@ -2119,6 +2330,8 @@ static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 			}
 		}
 	}
+
+	free(antMap);
 
 	return D;
 }
@@ -2588,6 +2801,7 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	char calcFile[256];
 	char flagFile[256];
 	char modelFile[256];
+	int c;
 
 	sprintf(inputFile, "%s.input", filePrefix);
 	sprintf(uvwFile,   "%s.uvw",   filePrefix);
@@ -2667,6 +2881,10 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(mp);
 
 	populateFlags(D, flagFile);
+	for(c = 0; c < D->nConfig; c++)
+	{
+		DifxConfigMapAntennas(D->config + c, D->datastream);
+	}
 	
 	return D;
 }
@@ -2677,6 +2895,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	DifxInput *D, *DSave;
 	char inputFile[256];
 	char calcFile[256];
+	int c;
 
 	sprintf(inputFile, "%s.input", filePrefix);
 	sprintf(calcFile,  "%s.calc",  filePrefix);
@@ -2710,6 +2929,11 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	
 	deleteDifxParameters(ip);
 	deleteDifxParameters(cp);
+
+	for(c = 0; c < D->nConfig; c++)
+	{
+		DifxConfigMapAntennas(D->config + c, D->datastream);
+	}
 	
 	return D;
 }
@@ -2742,10 +2966,11 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 }
 
 /* return -1 if no suitable scan found */
+/* FIXME -- this function is ill-posed */
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId)
 {
-	int a, c, scanId, dsId, antId=0;
+	int d, c, scanId, dsId, antId=0;
 	const DifxConfig *config;
 
 	if(!D)
@@ -2762,10 +2987,10 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 		}
 		config = D->config + c;
 
-		/* here "a" is "datastream # within conf.", not "antenanId" */
-		for(a = 0; a < config->nDatastream; a++)
+		/* here "d" is "datastream # within conf.", not "antenanId" */
+		for(d = 0; d < config->nDatastream; d++)
 		{
-			dsId = config->datastreamId[a];
+			dsId = config->datastreamId[d];
 			if(dsId < 0 || 
 			   dsId >= D->nDatastream ||
 			   dsId >= config->nDatastream)
@@ -2784,7 +3009,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 				break;
 			}
 		}
-		if(a == config->nDatastream)
+		if(d == config->nDatastream)
 		{
 			continue;
 		}
@@ -2868,9 +3093,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 {
 	int a, s, d, f, c, j, a1, a2;
 	int *old2new;
-	int *new2old;
-	int ***BF;
-	int *R;
 	DifxModel **m;
 	int changed = 0;
 
@@ -2884,7 +3106,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	}
 	
 	old2new = (int *)calloc(D->nAntenna, sizeof(int));
-	new2old = (int *)calloc(D->nAntenna, sizeof(int));
 	
 	/* sort antenna table and derive reorder table */
 	for(a = 0; a < D->nAntenna; a++)
@@ -2916,7 +3137,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		old2new[D->antenna[a].origId] = a;
-		new2old[a] = D->antenna[a].origId;
 		if(D->antenna[a].origId != a)
 		{
 			changed++;
@@ -2924,7 +3144,6 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	}
 	if(changed == 0)
 	{
-		free(new2old);
 		free(old2new);
 		return 0;
 	}
@@ -2944,73 +3163,7 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 		D->flag[f].antennaId = old2new[D->flag[f].antennaId];
 	}
 
-	/* 3. Scans -- tested and confirmed to work */
-	m = (DifxModel **)calloc(D->nAntenna, sizeof(DifxModel *));
-	for(s = 0; s < D->nScan; s++)
-	{
-		for(a = 0; a < D->scan[s].nAntenna; a++)
-		{
-			m[a] = D->scan[s].model[a];
-		}
-		for(a = 0; a < D->scan[s].nAntenna; a++)
-		{
-			D->scan[s].model[old2new[a]] = m[a];
-		}
-	}
-	free(m);
-
-	/* 4. Jobs -- must be working */
-	for(j = 0; j < D->nJob; j++)
-	{
-		R = D->job[j].antennaIdRemap;
-		if(R == 0)
-		{
-			R = (int *)calloc(D->nAntenna, sizeof(int));
-			D->job[j].antennaIdRemap = R;
-			for(a = 0; a < D->nAntenna; a++)
-			{
-				R[a] = old2new[a];
-			}
-		}
-		else
-		{
-			for(a = 0; a < D->nAntenna; a++)
-			{
-				R[a] = old2new[R[a]];
-			}
-		}
-	}
-
-	/* 5. Config -- tested and confirmed to work */
-	BF = (int ***)calloc(D->nAntenna, sizeof(int **));
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		BF[a] = (int **)calloc(D->nAntenna, sizeof(int *));
-	}
-	for(c = 0; c < D->nConfig; c++)
-	{
-		for(a1 = 0; a1 < D->nAntenna; a1++)
-		{
-			for(a2 = 0; a2 < D->nAntenna; a2++)
-			{
-				BF[a1][a2] = 
-					D->config[c].baselineFreq2IF[a1][a2];
-			}
-		}
-		for(a1 = 0; a1 < D->nAntenna; a1++)
-		{
-			for(a2 = 0; a2 < D->nAntenna; a2++)
-			{
-				D->config[c].baselineFreq2IF[a1][a2] =
-					BF[new2old[a1]][new2old[a2]];
-			}
-		}
-	}
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		free(BF[a]);
-	}
-	free(BF);
+	free(old2new);
 
 	/* success */
 	return 0;

@@ -30,7 +30,9 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	   D1->nFFT != D2->nFFT ||
 	   D1->startChan != D2->startChan ||
 	   D1->nInChan != D2->nInChan ||
-	   D1->nOutChan != D2->nOutChan)
+	   D1->nOutChan != D2->nOutChan ||
+	   D1->job->aberCorr != D2->job->aberCorr ||
+	   strncmp(D1->job->difxVersion, D2->job->difxVersion, 64))
 	{
 		return 0;
 	}
@@ -148,7 +150,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 
 	/* merge DifxJob table */
 	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
-		jobIdRemap, antennaIdRemap, &(D->nJob));
+		jobIdRemap, &(D->nJob));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -177,7 +179,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 
 	/* merge DifxScan table */
 	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan, D2->scan, D2->nScan,
-		jobIdRemap, antennaIdRemap, configIdRemap, &(D->nScan));
+		jobIdRemap, configIdRemap, &(D->nScan));
 
 	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
