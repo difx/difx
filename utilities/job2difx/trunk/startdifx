@@ -2,7 +2,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '0.3'
-VERDATE = '20080617'
+VERDATE = '20080718'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -18,6 +18,7 @@ from os import popen, getcwd, system, getenv
 from os.path import isfile, isdir
 from string import split, strip
 from time import time
+from glob import glob
 import socket
 
 def usage():
@@ -40,11 +41,39 @@ def usage():
 	print '          will not run calcif, even if needed\n'
 	print '  -F or --fits'
 	print '          generate 1 fits file per job at end of each\n'
+	print '  --override-version'
+	print '          ignore difx version differences\n'
 	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
 	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
 	print 'can be used to override the default group/port of %s/%d\n' % \
 		(defaultgroup, defaultport)
 	exit(0)
+
+def getjobdifxversion(filebase):
+	files = glob(filebase+'.calc')
+	if len(files) < 1:
+		return None
+	d = open(files[0]).readlines()
+	for l in d:
+		if l[:12] == 'DIFX VERSION':
+			return strip(l[20:])
+
+def testdifxversion(filebase, override):
+	jobver = getjobdifxversion(filebase)
+	ver    = getenv('DIFX_VERSION')
+	if ver == None:
+		print 'Warning: env. var. DIFX_VERSION not defined!'
+	if jobver == None:
+		print 'Warning: %s.calc does not contain version info' %filebase
+	if ver != None and jobver != None and ver != jobver:
+		print 'Warning: $DIFX_VERSION and job version mismatch'
+		print '    <%s> != <%s>' % (ver, jobver)
+		if override:
+			print 'Continuing anyway due to --override-version'
+		else:
+			print 'Quitting since --override-version not specified'
+			exit(0)
+	
 
 def sendmessage(filebase, state, statusmessage):
 	group = getenv('DIFX_MESSAGE_GROUP')
@@ -103,7 +132,9 @@ def domachines(filebase, machinespolicy):
 			return 0
 	return len(open(fn).readlines())
 
-def run(filebase, machinespolicy, deletepolicy, makeuvw):
+def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
+	testdifxversion(filebase, override)
+
 	out = popen('which mpifxcorr').readlines()
 	if len(out) != 1:
 		return 'Error: mpifxcorr not found'
@@ -151,6 +182,7 @@ makeuvw = True
 makefits = False
 filebaselist = []
 cwd = getcwd()
+override = False
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -168,6 +200,8 @@ for a in argv[1:]:
 			makeuvw = False
 		elif a == '-F' or a == '--fits':
 			makefits = True
+		elif a == '--override-version':
+			override = True
 	else:
 		if a[-6:] == '.input':
 			fb = a[:-6]
@@ -182,7 +216,7 @@ if len(filebaselist) < 1:
 	usage()
 	
 for filebase in filebaselist:
-	v = run(filebase, machinespolicy, deletepolicy, makeuvw)
+	v = run(filebase, machinespolicy, deletepolicy, makeuvw, override)
 
 	if v != None:
 		sendmessage(filebase, 'ABORTED', v)

@@ -367,6 +367,11 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 		model[i].dt   = evaluatePolyDeriv(im[j].delay, p->order+1, deltat);
 		model[i].ddry = evaluatePolyDeriv(im[j].dry,   p->order+1, deltat);
 		model[i].dwet = evaluatePolyDeriv(im[j].wet,   p->order+1, deltat);
+
+		if(model[i].t < 0.0 && !p->allowNegDelay)
+		{
+			model[i].t = 0.0;
+		}
 	}
 
 	return 0;
@@ -462,6 +467,14 @@ int difxCalc(DifxInput *D, CalcParams *p)
 
 		job->polyOrder = p->order;
 		job->polyInterval = p->increment;
+		if(p->delta > 0.0)
+		{
+			job->aberCorr = AberCorrExact;
+		}
+		else
+		{
+			job->aberCorr = AberCorrUncorrected;
+		}
 		if(scan->im)
 		{
 			fprintf(stderr, "Error: scan %d: model already "

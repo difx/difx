@@ -12,6 +12,7 @@ typedef struct
 	char calcServer[64];
 	int calcProgram;
 	int calcVersion;
+	int allowNegDelay;
 	struct getCALC_arg request;
 	CLIENT *clnt;
 } CalcParams;

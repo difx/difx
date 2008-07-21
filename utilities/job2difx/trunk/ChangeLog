@@ -10,18 +10,26 @@ Version 1.0
 
 joblist
 ~~~~~~~
+Version 1.4
+* More help info
+* For NRAO-DiFX 1.1
+
 Version 1.3
-* support full generic format types
+* Support full generic format types
 
 Version 1.2
 * Initial version
 
 job2difx
 ~~~~~~~~
+Version 1.10
+* more complete removal of old files if ovewrwriting previous job2difx run
+* put DIFX VERSION in .calc file
+* version for NRAO-DiFX 1.1
+
 Version 1.9
 * new (defaut) option for multiple configurations -- multiple passes
 * some clean-up
-* version for NRAO-DiFX 1.1
 
 Version 1.8
 * put shelf location in .calc
@@ -66,6 +74,9 @@ Version 1.0
 
 calcif2
 ~~~~~~~
+Version 0.2
+* by default zero negative delays
+
 Version 0.1
 * complete rewrite of calcif.  Differences from calcif:
   - generates polynomial model by default
@@ -148,4 +159,5 @@ Version 0.2
 Version 0.3
 * make fits if wanted
 * can run on input files
+* look at DIFX_VERSION
 * small fixes

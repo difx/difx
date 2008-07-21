@@ -16,7 +16,7 @@
 
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char verdate[] = "20080703";
 
 typedef struct
@@ -31,7 +31,9 @@ typedef struct
 	int nFile;
 	int polyOrder;
 	int polyInterval;	/* (sec) */
+	int allowNegDelay;
 	char *files[MAX_FILES];
+	int overrideVersion;
 } CommandLineOptions;
 
 int usage()
@@ -63,11 +65,16 @@ int usage()
 	fprintf(stderr, "  --all\n");
 	fprintf(stderr, "  -a                      Do all calc files found\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --allow-neg-delay\n");
+	fprintf(stderr, "  -z                      Don't zero negative delays\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --order <n>\n");
 	fprintf(stderr, "  -o      <n>             Use <n>th order polynomial [5]\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --interval <int>\n");
 	fprintf(stderr, "  -i         <int>        New delay poly every <int> sec. [120]\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --override-version      Ignore difx versions\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --server <servername>\n");
 	fprintf(stderr, "  -s       <servername>   Use <servername> as calcserver\n\n");
@@ -134,6 +141,11 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			{
 				opts->doall = 1;
 			}
+			else if(strcmp(argv[i], "-z") == 0 ||
+			        strcmp(argv[i], "--allow-neg-delay") == 0)
+			{
+				opts->allowNegDelay = 1;
+			}
 			else if(strcmp(argv[i], "-n") == 0 ||
 				strcmp(argv[i], "--noaber") == 0)
 			{
@@ -145,6 +157,10 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				usage();
 				deleteCommandLineOptions(opts);
 				return 0;
+			}
+			else if(strcmp(argv[i], "--override-version") == 0)
+			{
+				opts->overrideVersion = 1;
 			}
 			else if(i+1 < argc)
 			{
@@ -308,12 +324,15 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	char ratefile[256];
 	char delayfile[256];
 	char calcfile[256];
+	const char *difxVersion;
 
 	sprintf(imfile,    "%s.im",    prefix);
 	sprintf(uvwfile,   "%s.uvw",   prefix);
 	sprintf(ratefile,  "%s.rate",  prefix);
 	sprintf(delayfile, "%s.delay", prefix);
 	sprintf(calcfile,  "%s.calc",  prefix);
+
+	difxVersion = getenv("DIFX_VERSION");
 
 	if(opts->force == 0 &&
 	   skipFile(calcfile, imfile) &&
@@ -330,6 +349,28 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	
 	if(D)
 	{
+		if(difxVersion && D->job->difxVersion[0])
+		{
+			if(strncmp(difxVersion, D->job->difxVersion, 63))
+			{
+				printf("Attempting to run calcif2 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
+				if(opts->overrideVersion)
+				{
+					fprintf(stderr, "Continuing because of --override-version\n");
+				}
+				else
+				{
+					fprintf(stderr, "Won't run without --override-version.\n");
+					deleteDifxInput(D);
+					return -1;
+				}
+			}
+		}
+		else if(!D->job->difxVersion[0])
+		{
+			printf("Warning -- working on unversioned job\n");
+		}
+
 		strncpy(D->job->calcServer, opts->calcServer, 31);
 		D->job->calcServer[31] = 0;
 		D->job->calcProgram = opts->calcProgram;
@@ -389,6 +430,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	p->calcServer[31] = 0;
 	p->calcProgram = opts->calcProgram;
 	p->calcVersion = opts->calcVersion;
+	p->allowNegDelay = opts->allowNegDelay;
 
 	p->clnt = clnt_create(p->calcServer, p->calcProgram, p->calcVersion, 
 		"tcp");

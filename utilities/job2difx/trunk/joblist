@@ -5,8 +5,8 @@ from glob import glob
 from string import split, strip, find
 
 program = 'joblist'
-version = '1.3'
-verdate = '20071213'
+version = '1.4'
+verdate = '20080718'
 author  = 'Walter Brisken'
 
 showstatus = 1
@@ -19,6 +19,16 @@ def usage():
 	print '      listed.  If no directory is listed, the current directory is assumed.\n'
 	print 'options can include:'
 	print '   -h or --help  : print this usage information\n'
+	print '\nThe characters printed within [ ] indicated the following:'
+	print '  c  .calc       model parameters and others'
+	print '  m  .machines   MPI input file -- cluster configuration'
+	print '  t  .threads    how many processing threads per core node'
+	print '  u  .uvw        tabulation of baseline vectors'
+	print '  d  .delay      tabulation of delay model'
+	print '  r  .rate       tabulation of delay rate and atmosphere'
+	print '  i  .im         polynomials for delay, u,v,w, and atmosphere'
+	print '  v  .difx/      visibilities produced by mpifxcorr\n'
+
 	exit(0)
 
 def hasfits(input):

@@ -38,7 +38,7 @@ void computePoly(double *p, int n, double d)
 }
 
 /* Use Cramer's rule to evaluate polynomial */
-double evaluatePoly(double *p, int n, double x)
+double evaluatePoly(const double *p, int n, double x)
 {
 	double y;
 	int i;
@@ -58,7 +58,7 @@ double evaluatePoly(double *p, int n, double x)
 	return y;
 }
 
-double evaluatePolyDeriv(double *p, int n, double x)
+double evaluatePolyDeriv(const double *p, int n, double x)
 {
 	double y;
 	int i;

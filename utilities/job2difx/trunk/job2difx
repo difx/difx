@@ -3,12 +3,12 @@
 from sys import argv, exit
 from string import strip, split, find, lower, upper
 from math import pi, ceil
-from os import getcwd, system
+from os import getcwd, system, getenv
 import re
 
 program = 'job2difx'
 version = '1.10'
-verdate = '20080516'
+verdate = '20080717'
 author  = 'Walter Brisken'
 
 # TODO: choose the following with more smarts
@@ -1180,7 +1180,7 @@ def getshelves(antennalist, subarray, job):
 		data[ant_id] = shelf
 	return data
 
-def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg, jobstarttime, jobstoptime, subjob_num,subarray_num):
+def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg, jobstarttime, jobstoptime, subjob_num, subarray_num, difxversion):
 	job_station = job['station']
 	job_eop = job['UTC']
 	job_corr = job['correlator']
@@ -1218,6 +1218,8 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	if len(session) > 0:
 		if session[0] != ' ':
 			calc.append("SESSION:            %s" % session)
+	if difxversion != None:
+		calc.append("DIFX VERSION:       %s" % difxversion)
 	calc.append("SUBJOB ID:          %d" % subjob_num)
 	calc.append("SUBARRAY ID:        %d" % subarray_num)
 	calc.append("START MJD:          %12.7f" % mjd0)
@@ -1362,7 +1364,7 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	
 #**********************************
 
-def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist):
+def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarraysize, joblist, difxversion):
 
 	job_master = job['master']
 	obscode = job_master[0]['obscode']
@@ -1461,6 +1463,10 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 			else:
 				setupgroups = [setups]
 	
+			# delete .machines .threads .uvw ...files if they exist
+			cmd = '/bin/rm -f %s.???.machines %s.???.threads %s.???.uvw %s.???.rate %s.???.delay %s.???.im' % (stump, stump, stump, stump, stump, stump)
+			system(cmd)
+			
 			for setups in setupgroups:
 				filebase = '%s.%03d' % (stump, subjob_num)
 				joblist.append([filebase, upper(obscode)])
@@ -1503,7 +1509,7 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				calctable = makecalctable(scanlist[scan0:scan1+1], \
 						sub, filebase, job, antennalist, \
 						srclist, specavg, jobstarttime, \
-						jobstoptime, subjob_num,subarray_num)
+						jobstoptime, subjob_num,subarray_num, difxversion)
 				filename = '%s.calc' % filebase
 				fp = open(filename, "w")
 				for c in calctable:
@@ -1523,10 +1529,6 @@ def processjobfile(job, jobfile, antennalist, fftsize, nchan, tint, minsubarrays
 				else:
 					system('rm -f %s' % filename)
 
-				# delete .machines .threads .uvw ...files if they exist
-				cmd = '/bin/rm -f %s.machines %s.threads %s.uvw %s.rate %s.delay' % (filebase, filebase, filebase, filebase, filebase)
-				system(cmd)
-				
 				subjob_num += 1
 
 #############
@@ -1761,6 +1763,9 @@ else:
 	minsubarraysize = 3
 	files = []
 	masterant = ''
+	difxversion = getenv('DIFX_VERSION')
+	if difxversion == None:
+		print 'Warning: DIFX_VERSION env. var. not defined.'
 	for arg in argv[1:]:
 		kv = split(arg, '=')
 		if len(kv) == 2:
@@ -1825,6 +1830,6 @@ else:
 		if len(file) == 2:
 			processjobfile(file[1], file[0], antennalist, \
 				fftsize, nchan, tint, minsubarraysize, \
-				joblist)
+				joblist, difxversion)
 		# make Makefile
 	#genMakefile(joblist, verbose)
