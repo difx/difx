@@ -236,8 +236,8 @@ static void extractnibbles(const uint8_t *data, int ntracks, int numnibbles,
 	}
 }
 
-static int mark5_stream_frame_time_vlba(const struct mark5_stream *ms, 
-	int *mjd, int *sec, double *ns)
+static int mark5_format_vlba_frame_time_int(const struct mark5_stream *ms, 
+	int *mjd, int *sec, int *ns)
 {
 	char nibs[12];
 	struct mark5_format_vlba *v;
@@ -273,6 +273,77 @@ static int mark5_stream_frame_time_vlba(const struct mark5_stream *ms,
 	}
 
 	return 0;
+}
+
+/* return in more general double value for ns */
+static int mark5_format_vlba_frame_time(const struct mark5_stream *ms, 
+	int *mjd, int *sec, double *ns)
+{
+	int ins, v;
+
+	v = mark5_format_vlba_frame_time_int(ms, mjd, sec, &ins);
+
+	*ns = ins;
+
+	return v;
+}
+
+static int mark5_format_vlba_validate(const struct mark5_stream *ms)
+{
+	struct mark5_format_vlba *v;
+	int ntrack, t, e=0;
+	uint32_t *data;
+	int mjd_d, mjd_t, sec_d, sec_t;
+	int ns_d;
+	int64_t ns_t;
+
+	if(!ms)
+	{
+		printf("mark5_format_vlba_validate: ms=0\n");
+		return 0;
+	}
+
+	v = (struct mark5_format_vlba *)(ms->formatdata);
+	ntrack = v->ntrack;
+	data = (uint32_t *)ms->frame;
+	for(t = 0; t < ntrack; t++)
+	{
+		if(data[t] != 0xFFFFFFFFUL)
+		{
+			e++;
+		}
+	}
+
+	if(e > 0)
+	{
+		printf("mark5_format_vlba_validate: e=%d\n", e);
+		return 0;
+	}
+
+	if(ms->mjd && ms->framenum % ms->framegranularity == 0)
+	{
+		mark5_format_vlba_frame_time_int(ms, &mjd_d, &sec_d, &ns_d);
+
+		ns_t = (int64_t)(ms->framenum)*(int64_t)(ms->gframens/ms->framegranularity) + (int64_t)(ms->ns);
+		sec_t = ns_t / 1000000000L;
+		ns_t -= (int64_t)sec_t * 1000000000L;
+		sec_t += ms->sec;
+		mjd_t = sec_t / 86400;
+		sec_t -= mjd_t * 86400;
+		mjd_t += ms->mjd;
+
+		if(mjd_t != mjd_d || sec_t != sec_d || ns_t != ns_d)
+		{
+			printf("VLBA validate[%lld]: %d %d %d : %d %d %lld\n", 
+				ms->framenum, 
+				mjd_d, sec_d, ns_d, 
+				mjd_t, sec_t, ns_t);
+		}
+	}
+
+	/* Verify time? */
+
+	return 1;
 }
 
 static int mark5_format_vlba_fixmjd(struct mark5_stream *ms, int refmjd)
@@ -7070,11 +7141,11 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
-	f->gettime = mark5_stream_frame_time_vlba;
+	f->gettime = mark5_format_vlba_frame_time;
 	f->fixmjd = mark5_format_vlba_fixmjd;
 	f->init_format = mark5_format_vlba_init;
 	f->final_format = mark5_format_vlba_final;
-	f->validate = one;
+	f->validate = mark5_format_vlba_validate;
 	f->decimation = decimation;
 	switch(decoderindex)
 	{

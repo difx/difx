@@ -31,7 +31,7 @@
 
 int mark5_stream_next_frame(struct mark5_stream *ms)
 {
-	int n;
+	int n, v;
 
 	/* call specialized function to ready next frame */
 	n = ms->next(ms);
@@ -44,10 +44,21 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 		return -1;
 	}
 	
-	/* validate frame */
-	/* FIXME -- do I add this later or not?
-	   ms->validate(ms);
-	 */
+	if(ms->frame)
+	{
+		/* validate frame */
+		v = ms->validate(ms);
+		if(!v)
+		{
+			ms->nvalidatefail++;
+			ms->consecutivefails++;
+		}
+		else
+		{
+			ms->nvalidatepass++;
+			ms->consecutivefails = 0;
+		}
+	}
 	
 	/* blank bad data if any */
 	ms->blanker(ms);
@@ -673,6 +684,11 @@ void delete_mark5_stream(struct mark5_stream *ms)
 {
 	if(ms)
 	{
+		if(ms->nvalidatefail > 0)
+		{
+			printf("Warning: %d validation failures\n",
+				ms->nvalidatefail);
+		}
 		if(ms->final_stream)
 		{
 			ms->final_stream(ms);

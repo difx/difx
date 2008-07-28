@@ -2,6 +2,10 @@ Version 1.2.3
 * fix minor bug in blanking code -- end of header not blanked on first frame
   of mark4 format
 * add m5spec -- a spectrometer test program.  Needs fftw3 to compile.
+* allow offsets > 2 GiB
+* add m5test -- look for problems in data files
+* add consecutivefails.  
+* fix to file stream type -- sometimes 1 frame would be skipped
 * This is the version for NRAO-DiFX version 1.1
 
 Version 1.2.2

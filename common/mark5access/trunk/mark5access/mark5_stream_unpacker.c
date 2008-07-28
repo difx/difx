@@ -90,12 +90,26 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, 
 	int nsamp)
 {
+	int v;
+
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (uint8_t *)packed;
 	}
 	else
 	{
+		ms->frame = (uint8_t *)packed;
+		v = ms->validate(ms);
+		if(!v)
+		{
+			ms->nvalidatefail++;
+		}
+		else
+		{
+			ms->nvalidatepass++;
+		}
+		ms->frame = 0;
+
 		ms->payload = (uint8_t *)packed + ms->payloadoffset;
 	}
 	ms->readposition = 0;
@@ -108,12 +122,26 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed, 
 	int offsetsamples, float **unpacked, int nsamp)
 {
+	int v;
+
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (uint8_t *)packed;
 	}
 	else
 	{
+		ms->frame = (uint8_t *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
+		v = ms->validate(ms);
+		if(!v)
+		{
+			ms->nvalidatefail++;
+		}
+		else
+		{
+			ms->nvalidatepass++;
+		}
+		ms->frame = 0;
+
 		ms->payload = (uint8_t *)packed + ms->payloadoffset;
 	}
 	/* add to offset the integer number of frames */

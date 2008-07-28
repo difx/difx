@@ -85,6 +85,9 @@ struct mark5_stream
 				/*   replacement headers */
 	int64_t framenum;	/* current complete frame, start at 0 */
 	int decimation;		/* decimation factor */
+	int nvalidatefail;	/* number of times frame validation failed */
+	int nvalidatepass;	/* number of times frame validation passed */
+	int consecutivefails;	/* number of validations failed in a row */
 
 	/* internal state parameters -- not to be used by users */
 	uint8_t *frame;
@@ -133,7 +136,7 @@ struct mark5_format_generic
 	int (*final_format)(struct mark5_stream *ms);	/* required */
 	int (*decode)(struct mark5_stream *ms, 		/* required */
 		int nsamp, float **data); 
-	int (*validate)(const struct mark5_stream *ms);	/* not yet used */
+	int (*validate)(const struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, 	/* required */
 		int *mjd, int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);

@@ -17,9 +17,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <complex.h>
 #include <stdlib.h>
 #include <complex.h>
 #include <fftw3.h>
+#include <math.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5spec";
@@ -54,14 +56,15 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 {
 	struct mark5_stream *ms;
 	double **data, **spec;
-	fftw_complex *zdata;
+	fftw_complex **zdata, **zx;
 	int c, i, j, k, status;
-	int chunk;
+	int chunk, nif;
 	long long total, unpacked;
 	FILE *out;
 	fftw_plan *plan;
 	double re, im;
 	double f, sum;
+	double x, y;
 
 	chunk = 2*nchan;
 
@@ -77,20 +80,27 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		return 0;
 	}
 
-	data = (double **)malloc(ms->nchan*sizeof(double *));
-	spec = (double **)malloc(ms->nchan*sizeof(double *));
-	zdata = (fftw_complex *)malloc((nchan+1)*sizeof(fftw_complex));
-	plan = (fftw_plan *)malloc(ms->nchan*sizeof(fftw_plan));
-	for(i = 0; i < ms->nchan; i++)
+	nif = ms->nchan;
+
+	data = (double **)malloc(nif*sizeof(double *));
+	spec = (double **)malloc(nif*sizeof(double *));
+	zdata = (fftw_complex **)malloc(nif*sizeof(fftw_complex *));
+	plan = (fftw_plan *)malloc(nif*sizeof(fftw_plan));
+	zx = (fftw_complex **)malloc((nif/2)*sizeof(fftw_complex *));
+	for(i = 0; i < nif; i++)
 	{
 		data[i] = (double *)malloc((chunk+2)*sizeof(double));
-		spec[i] = (double *)calloc(nchan,    sizeof(double));
+		spec[i] = (double *)calloc(nchan, sizeof(double));
+		zdata[i] = (fftw_complex *)malloc((nchan+1)*sizeof(fftw_complex));
 		plan[i] = fftw_plan_dft_r2c_1d(nchan*2, data[i],
-			(fftw_complex *)zdata, FFTW_MEASURE);
+			(fftw_complex *)zdata[i], FFTW_MEASURE);
+	}
+	for(i = 0; i < nif/2; i++)
+	{
+		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
 	}
 
 	mark5_stream_print(ms);
-
 
 	for(j = 0; j < nint; j++)
 	{
@@ -100,22 +110,42 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		{
 			break;
 		}
+		else if(status < chunk)
+		{
+			continue;
+		}
 		else
 		{
 			total += chunk;
 			unpacked += status;
 		}
 
-		for(c = 0; c < ms->nchan; c++)
+		if(ms->consecutivefails > 5)
+		{
+			break;
+		}
+
+		for(i = 0; i < nif; i++)
 		{
 			/* FFT */
-			fftw_execute(plan[c]);
+			fftw_execute(plan[i]);
+		}
 
-			for(i = 0; i < nchan; i++)
+		for(i = 0; i < nif; i++)
+		{
+			for(c = 0; c < nchan; c++)
 			{
-				re = creal(zdata[i]);
-				im = cimag(zdata[i]);
-				spec[c][i] += re*re + im*im;
+				re = creal(zdata[i][c]);
+				im = cimag(zdata[i][c]);
+				spec[i][c] += re*re + im*im;
+			}
+		}
+
+		for(i = 0; i < nif/2; i++)
+		{
+			for(c = 0; c < nchan; c++)
+			{
+				zx[i][c] += zdata[2*i][c]*~zdata[(2*i+3)%nif][c];
 			}
 		}
 	}
@@ -126,34 +156,46 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	/* normalize */
 	sum = 0.0;
-	for(i = 0; i < nchan; i++)
+	for(c = 0; c < nchan; c++)
 	{
-		for(j = 0; j < ms->nchan; j++)
+		for(i = 0; i < nif; i++)
 		{
-			sum += spec[j][i];
+			sum += spec[i][c];
 		}
 	}
 
-	f = ms->nchan*nchan/sum;
+	f = nif*nchan/sum;
 
-	for(i = 0; i < nchan; i++)
+	for(c = 0; c < nchan; c++)
 	{
-		fprintf(out, "%f ", (double)i*ms->samprate/(2.0e6*nchan));
-		for(j = 0; j < ms->nchan; j++)
+		fprintf(out, "%f ", (double)c*ms->samprate/(2.0e6*nchan));
+		for(i = 0; i < nif; i++)
 		{
-			fprintf(out, " %f", f*spec[j][i]);
+			fprintf(out, " %f", f*spec[i][c]);
+		}
+		for(i = 0; i < nif/2; i++)
+		{
+			x = creal(zx[i][c])*f;
+			y = cimag(zx[i][c])*f;
+			fprintf(out, "  %f %f", sqrt(x*x+y*y), atan2(y, x));
 		}
 		fprintf(out, "\n");
 	}
 
 	fclose(out);
 
-	for(i = 0; i < ms->nchan; i++)
+	for(i = 0; i < nif; i++)
 	{
 		free(data[i]);
+		free(zdata[i]);
 		free(spec[i]);
 		fftw_destroy_plan(plan[i]);
 	}
+	for(i = 0; i < nif/2; i++)
+	{
+		free(zx[i]);
+	}
+	free(zx);
 	free(data);
 	free(zdata);
 	free(spec);
@@ -205,6 +247,10 @@ int main(int argc, char **argv)
 
 	nchan = atol(argv[3]);
 	nint  = atol(argv[4]);
+	if(nint <= 0)
+	{
+		nint = 2000000000L;
+	}
 
 	if(argc > 7)
 	{

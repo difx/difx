@@ -13,6 +13,7 @@ endif
 bin_PROGRAMS = \
 	test_mark5_stream \
 	test_unpacker \
+	m5test \
 	m5d \
 	$(fftw_programs)
 
@@ -24,6 +25,9 @@ test_unpacker_SOURCES = \
 
 m5d_SOURCES = \
 	m5d.c
+
+m5test_SOURCES = \
+	m5test.c
 
 m5spec_SOURCES = \
 	m5spec.c

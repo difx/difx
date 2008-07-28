@@ -25,12 +25,14 @@
 
 int blanker_mark4(struct mark5_stream *ms)
 {
-	int r, s, e, z, delta;
+	int r, s, e, z, delta, n;
 
 	r = blanker_mark5(ms);
 
-	s = 96*ms->framebytes/20000;
-	e = 19936*ms->framebytes/20000;
+	n = ms->framebytes/20000;
+
+	s = 96*n;
+	e = 19936*n;
 	z = e >> ms->log2blankzonesize;
 
 	delta = s - ms->blankzonestartvalid[0];
@@ -43,7 +45,7 @@ int blanker_mark4(struct mark5_stream *ms)
 	{
 		if(delta > ms->framebytes)
 		{
-			delta = 64*ms->framebytes/20000;
+			delta = 64*n;
 		}
 		r += delta;
 	}
