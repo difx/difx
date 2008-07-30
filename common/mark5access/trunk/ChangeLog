@@ -6,7 +6,7 @@ Version 1.2.3
 * add m5test -- look for problems in data files
 * add consecutivefails.  
 * fix to file stream type -- sometimes 1 frame would be skipped
-* This is the version for NRAO-DiFX version 1.1
+* fix to mark4 decoding -- sample offset was wrong.  stupid data replacement!
 
 Version 1.2.2
 * rename oversampling to decimation

@@ -310,13 +310,14 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 	{
 		if(data[t] != 0xFFFFFFFFUL)
 		{
+			printf("<%s %d %d>", ms->streamname, t, data[t]);
 			e++;
 		}
 	}
 
 	if(e > 0)
 	{
-		printf("mark5_format_vlba_validate: e=%d\n", e);
+		printf("mark5_format_vlba_validate[%s]: e=%d\n", ms->streamname, e);
 		return 0;
 	}
 

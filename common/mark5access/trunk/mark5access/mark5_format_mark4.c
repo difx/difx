@@ -276,7 +276,7 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 	if(e > 0)
 	{
-//		printf("mark5_format_mark4_validate: e=%d\n", e);
+		printf("mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
 		return 0;
 	}
 
@@ -6780,7 +6780,7 @@ static int mark4_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms
 {
 	uint64_t *buf, bits;
 	float *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
-	int o, i, df;;
+	int o, i, df;
 	int zone, l2;
 	int nblank = 0;
 	uint8_t *bytes;
@@ -6880,7 +6880,13 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	}
 	ms->framebytes = 20000*f->ntrack/8;
 	ms->databytes = 20000*f->ntrack/8;
-	ms->payloadoffset = 0;
+	
+	/* YES -- the following is a negative number *
+	 * This is OK because the mark4 blanker will prevent access before
+	 * element 0
+	 */
+	ms->payloadoffset = (VALIDEND-20000)*f->ntrack/8;
+	
 	ms->framesamples = 20000*f->fanout;
 	ms->format = MK5_FORMAT_MARK4;
 	ms->framegranularity = 1;

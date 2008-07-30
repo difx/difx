@@ -145,7 +145,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		{
 			for(c = 0; c < nchan; c++)
 			{
-				zx[i][c] += zdata[2*i][c]*~zdata[(2*i+3)%nif][c];
+				zx[i][c] += zdata[2*i][c]*~zdata[2*i+1][c];
 			}
 		}
 	}

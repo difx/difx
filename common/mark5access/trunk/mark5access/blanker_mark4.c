@@ -22,36 +22,22 @@
 /* Same as generic mark5 blanker, but also make sure start and end of each 
  * frame is blanked.
  */
-
 int blanker_mark4(struct mark5_stream *ms)
 {
-	int r, s, e, z, delta, n;
+	int r, s, delta, n;
 
 	r = blanker_mark5(ms);
 
 	n = ms->framebytes/20000;
 
-	s = 96*n;
-	e = 19936*n;
-	z = e >> ms->log2blankzonesize;
+	s = 160*n;
 
 	delta = s - ms->blankzonestartvalid[0];
 	if(delta > 0)
 	{
+		ms->blankzonestartvalid[0] = s;
 		r += delta;
 	}
-	delta = ms->blankzoneendvalid[z] - e;
-	if(delta > 0)
-	{
-		if(delta > ms->framebytes)
-		{
-			delta = 64*n;
-		}
-		r += delta;
-	}
-
-	ms->blankzonestartvalid[0] = s;
-	ms->blankzoneendvalid[z] = e; 
 
 	return r;
 }
