@@ -245,14 +245,13 @@ if ($evlbi) {
 	$status = send_data("udp=0", $recorder);
 	die "Failed to turn off UDP on $recorder\n" if (!defined $status);
 	if ($tcpwin[$i]>0) {
-	  $status = send_data("remote_window_size=$tcpwin[$i]", $recorder);
+	  $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
 	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
 	}
       } 
-
       $status = send_data("record_time=${duration}s", $recorder);
       die "Failed to set recording time on $recorder\n" if (!defined $status);
-      $status = send_data("evbi=on", $recorder);
+      $status = send_data("evlbi=on", $recorder);
       die "Failed to turn on evlbi mode $recorder\n" if (!defined $status);
       $status = send_data("filesize=2s", $recorder);
       die "Failed to set filesize on $recorder\n" if (!defined $status);
@@ -260,6 +259,9 @@ if ($evlbi) {
       die "Failed to set round start off, on $recorder\n" if (!defined $status);
       $status = send_data("bandwidth=$bandwidth", $recorder);
       die "Failed to set bandwidth on $recorder\n" if (!defined $status);
+
+      $status = send_data("filename_prefix=$telescopes[$i]", $recorder);
+      die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
 
       if ($format[$i] eq 'MARK5B') {
 	$status = send_data("mark5b=on", $recorder);
@@ -275,7 +277,7 @@ if ($evlbi) {
       die "Failed to launch recorder on $recorder\n" if (!defined $status);
 
       # Turn off evlbi
-      $status = send_data("evbi=off", $recorder);
+      $status = send_data("evlbi=off", $recorder);
       warn "Failed to turn off evlbi mode $recorder\n" if (!defined $status);
       $status = send_data("filesize=10s", $recorder);
       die "Failed to set filesize on $recorder\n" if (!defined $status);
