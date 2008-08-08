@@ -185,3 +185,86 @@ int blanker_mark5(struct mark5_stream *ms)
 
 	return nblanked;
 }
+
+int blanker_mark4(struct mark5_stream *ms)
+{
+	int b, e, zonesize, nword, n, s, delta;
+	uint64_t *data;
+	int startOK, endOK, zone=0;
+	int nblanked = 0;
+
+	ms->log2blankzonesize = 15;	/* 32768 bytes in size */
+
+	if(!ms->payload)
+	{
+		ms->blankzonestartvalid[0] = 0;
+		ms->blankzoneendvalid[0] = 0;
+
+		return 0;
+	}
+
+	n = ms->framebytes/20000;
+	s = 160*n;
+
+	zonesize = 1 << (ms->log2blankzonesize-3);
+	nword = ms->databytes/8;
+
+	data = (uint64_t *)ms->payload;
+
+	for(b = 0; b < nword; b += zonesize)
+	{
+		e = b + zonesize;
+		if(e > nword)
+		{
+			e = nword;
+		}
+		if(b == 0) /* don't look at data with negative indices */
+		{
+			b = 20*n;
+		}
+
+		startOK = data[b] != MARK5_FILL_WORD64;
+		endOK   = data[e-1] != MARK5_FILL_WORD64;
+
+		if(startOK && endOK)
+		{
+			ms->blankzonestartvalid[zone] = 0;
+			ms->blankzoneendvalid[zone] = 1<<30;
+		}
+		else if(!startOK && !endOK)
+		{
+			ms->blankzonestartvalid[zone] = 1<<30;
+			ms->blankzoneendvalid[zone] = 0;
+			nblanked += (e-b)*8;
+		}
+		else if(startOK)
+		{
+			ms->blankzonestartvalid[zone] = 0;
+			ms->blankzoneendvalid[zone] = 
+				findfirstinvalid(data, b, e);
+			nblanked += (e*8 - (ms->blankzoneendvalid[zone]));
+		}
+		else
+		{
+			ms->blankzonestartvalid[zone] =
+				findfirstvalid(data, b, e);
+			ms->blankzoneendvalid[zone] = 1<<30;
+			if(ms->blankzonestartvalid[zone] > b*8)
+			{
+				nblanked += (ms->blankzonestartvalid[zone] 
+					- b*8);
+			}
+		}
+
+		zone++;
+	}
+
+	delta = s - ms->blankzonestartvalid[0];
+	if(delta > 0)
+	{
+		ms->blankzonestartvalid[0] = s;
+		nblanked += delta;
+	}
+
+	return nblanked;
+}

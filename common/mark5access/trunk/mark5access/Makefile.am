@@ -10,8 +10,7 @@ c_sources = \
 	mark5_format_mark5b.c \
 	format_k5.c \
 	blanker_none.c \
-	blanker_mark5.c \
-	blanker_mark4.c
+	blanker_mark5.c
 
 library_includedir = $(includedir)/mark5access
 library_include_HEADERS = $(h_sources)
