@@ -45,7 +45,7 @@ static const float bandEdges[NBANDS+1] =
 
 /* freq in MHz, t in days since ref day */
 static int getGainRow(GainRow *G, int nRow, const char *antName,
-	double freq, float mjd)
+	double freq, double mjd)
 {
 	int i, r;
 	int bestr = -1;
@@ -70,11 +70,11 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 
 	for(r = 0; r < nRow; r++)
 	{
-		if(mjd <= G[r].mjd1 || mjd > G[r].mjd2)
+		if(strcmp(antName, G[r].antName) != 0)
 		{
 			continue;
 		}
-		if(strcmp(antName, G[r].antName) != 0)
+		if(mjd <= G[r].mjd1 || mjd > G[r].mjd2)
 		{
 			continue;
 		}
@@ -445,7 +445,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	float gain[MAXTAB*array_MAX_BANDS];
 	float sens[2][array_MAX_BANDS];
 	int bad;
-	int mjd;
+	double mjd;
 	double freq;
 	int messages = 0;
 	/* 1-based indices for FITS file */
@@ -543,7 +543,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 					{
 						printf("\n");
 					}
-					fprintf(stderr, "    No gain curve for %s\n",
+					fprintf(stderr, "    No gain curve for station '%s'\n",
 						antName);
 					messages++;
 					bad = 1;

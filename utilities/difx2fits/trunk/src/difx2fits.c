@@ -681,6 +681,11 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
+	if(getenv("DIFX_GROUP_ID"))
+	{
+		umask(2);
+	}
+
 	opts = parseCommandLine(argc, argv);
 	if(opts == 0)
 	{

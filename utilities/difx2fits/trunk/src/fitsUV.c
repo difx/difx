@@ -35,7 +35,7 @@ static int DifxVisInitData(DifxVis *dv)
 		return -2;
 	}
 	dv->weight = dv->record->data;
-	/* FIXME -- here add a similar thing for gateId */
+	/* FIXME -- here add a similar thing for gateId? */
 	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
 	dv->sourceId = -1;
 	dv->scanId = -1;
@@ -411,7 +411,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	if(a1 < 0 || a1 >= config->nAntenna ||
 	   a2 < 0 || a2 >= config->nAntenna)
 	{
-		printf("Error! Illegal baseline %d -> %s-%s\n", bl, a1, a2);
+		printf("Error: illegal baseline %d -> %s-%s\n", bl, a1, a2);
 		return -8;
 	}
 
@@ -421,7 +421,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	if(d1 < 0 || d1 >= dv->D->nDatastream || 
 	   d2 < 0 || d2 >= dv->D->nDatastream)
 	{
-		printf("Error! baseline %d -> datastreams %d-%d\n",
+		printf("Error: baseline %d -> datastreams %d-%d\n",
 			bl, d1, d2);
 		return -9;
 	}
@@ -456,7 +456,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	/* for now, force nFloat = 2 (one weight for entire vis record) */
 	nFloat = 2;
 	readSize = nFloat * dv->D->nInChan;
-	if(bl != dv->baseline || fabs(mjd -  dv->mjd) > 1.0/86400000.0)
+	if(bl != dv->baseline || fabs(mjd - dv->mjd) > 1.0/86400000.0)
 	{
 		changed = 1;
 		dv->baseline = bl;
@@ -470,19 +470,23 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		dv->W = -atof(DifxParametersvalue(dv->dp, rows[10]));
 
 		/* recompute from polynomials if possible */
-#if 0
-		/* Note -- this code is not ready yet */
 		if(scan->im)
 		{
-			/* FIXME -- need to rereference a1 and a2... */
-			im1 = scan->im[a1];
-			im2 = scan->im[a2];
+			double u,v,w;
+
+			u = dv->U;
+			v = dv->V;
+			w = dv->W;
+
+			/* use .difx/ antenna indices for model tables */
+			im1 = scan->im[aa1];
+			im2 = scan->im[aa2];
 			if(im1 && im2)
 			{
 				n = getDifxScanIMIndex(scan, mjd, &dt);
 				if(n < 0)
 				{
-					fprintf(stderr, "Error -- interferometer model index out of range! scanId=%d mjd=%12.6f\n",
+					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n",
 					scanId, mjd);
 				}
 				else
@@ -497,8 +501,16 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 					       -evalPoly(im1[n].w, terms1, dt);
 				}
 			}
+
+			if((fabs(u - dv->U) > 10.0 ||
+			    fabs(v - dv->V) > 10.0 ||
+			    fabs(w - dv->W) > 10.0) && 
+			    !dv->flagTransition) 
+			{
+				printf("Warning: UVW diff: %d %d %d-%d %f %f  %f %f  %f %f  %f %f\n", 
+					scanId, n, aa1, aa2, mjd, dt, u, dv->U, v, dv->V, w, dv->W);
+			}
 		}
-#endif
 	}
 
 	if(configId != dv->configId)
