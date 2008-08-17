@@ -1,11 +1,11 @@
 #include "fits.h"
 
 #include <stdlib.h>
-#include <sys/types.h>
 #include <string.h>
 #include <strings.h>
 #include "config.h"
 #include "fitsUV.h"
+#include "sniffer.h"
 
 
 static int DifxVisInitData(DifxVis *dv)
@@ -813,6 +813,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	double scale;
 	DifxVis **dvs;
 	DifxVis *dv;
+	Sniffer *S;
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -844,6 +845,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
 				j, D->nJob);
+			deleteSniffer(S);
 			return 0;
 		}
 		dvs[j]->scale = scale;
@@ -853,6 +855,9 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	dv = dvs[0];
 
 	nWeight = dv->nFreq*D->nPolar;
+
+	/* Start up sniffer -- FIXME -- get file name right */
+	S = newSniffer(D, dv->nComplex, D->job[dv->jobId].fileBase, 30.0);
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -965,6 +970,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 		}
 		else
 		{
+			feedSnifferFITS(S, dv->record);
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, 
 				dv->record);
@@ -986,6 +992,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 				fprintf(stderr, "Error in "
 					"DifxVisCollectRandomParams : "
 					"return value = %d\n", v);
+				deleteSniffer(S);
 				return -3;
 			}
 
@@ -1005,6 +1012,8 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	}
 
 	free(dvs);
+
+	deleteSniffer(S);
 
 	return 0;
 }

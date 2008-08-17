@@ -16,6 +16,7 @@ typedef struct
 struct _Sniffer
 {
 	FILE *apd;
+	FILE *wts;
 	double solInt;			/* (sec) FFT interval */
 	double bw;			/* (MHz) IF bandwidth */
 	double deltaT;			/* (sec) grid spacing */
@@ -147,6 +148,8 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S->nChan = D->nOutChan;
 	S->nTime = solInt/tMax;
 	S->solInt = tMax * S->nTime;
+	
+	/* Open fringe fit file */
 	sprintf(filename, "%s.apd", filebase);
 	S->apd = fopen(filename, "w");
 	if(!S->apd)
@@ -156,6 +159,18 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		return 0;
 	}
 	fprintf(S->apd, "%s\n", D->job->obsCode);
+
+	/* Open weights file */
+	sprintf(filename, "%s.wts", filebase);
+	S->wts = fopen(filename, "w");
+	if(!S->wts)
+	{
+		fprintf(stderr, "Cannot open %s for write\n", filename);
+		deleteSniffer(S);
+		return 0;
+	}
+	fprintf(S->wts, "%s\n", D->job->obsCode);
+	
 	S->accum = (Accumulator **)malloc(
 		S->nAntenna*sizeof(Accumulator *));
 	for(a1 = 0; a1 < S->nAntenna; a1++)
@@ -192,6 +207,11 @@ void deleteSniffer(Sniffer *S)
 		{
 			fclose(S->apd);
 			S->apd = 0;
+		}
+		if(S->wts)
+		{
+			fclose(S->wts);
+			S->wts = 0;
 		}
 		if(S->accum)
 		{
@@ -245,109 +265,141 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	double a2, max2, x, y;
 	double amp, phase, delay, rate;
 	double peak[3];
+	double w;
 
 	if(A->sourceId < 0)
 	{
 		return 0;
 	}
 
-	if((A->a1 != 4 && A->a2 != 4) || A->a1 == A->a2)
-	//if(A->a1 == A->a2)
+	if(A->a1 == A->a2) /* Autocorrelation? */
 	{
-		return 0;
-	}
-	/* fringe fit */
+		/* weights file */
+		fprintf(S->wts, "%d %f %d %s %d",
+			(int)mjd, 24.0*(mjd-(int)mjd), A->a1+1,
+			S->D->antenna[A->a1].name,
+			A->nBBC);
 
-	fprintf(S->apd, "%d %f %d %s %d %d %s %s %d",
-		(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-		S->D->source[A->sourceId].name, A->a1+1, A->a2+1,
-		S->D->antenna[A->a1].name,
-		S->D->antenna[A->a2].name,
-		A->nBBC);
-
-	for(bbc = 0; bbc < A->nBBC; bbc++)
-	{
-		if(A->nRec[bbc] < S->nTime/2 || A->weightSum[bbc] == 0.0)
+		for(bbc = 0; bbc < A->nBBC; bbc++)
 		{
-			fprintf(S->apd, " 0 0 0 0");
-			continue;
-		}
-		array = A->spectrum[bbc];
-		memset(S->fftbuffer, 0, 
-			S->fft_nx*S->fft_ny*sizeof(fftw_complex));
-		for(j = 0; j < A->nTime; j++)
-		{
-			for(i = 0; i < A->nChan; i++)
+			if(A->nRec[bbc] == 0)
 			{
-				S->fftbuffer[j*S->fft_nx + i] = array[j][i];
+				w = 0.0;
 			}
-		}
-		fftw_execute(S->plan);
-
-		max2 = 0.0;
-		besti = bestj = 0;
-		for(j = 0; j < S->fft_ny; j++)
-		{
-			for(i = 0; i < S->fft_nx; i++)
+			else
 			{
-				z = S->fftbuffer[j*S->fft_nx + i];
-				a2 = z*~z;
-				if(a2 > max2)
+				w = A->weightSum[bbc]/A->nRec[bbc];
+			}
+			fprintf(S->wts, " %5.3f", w);
+		}
+		fprintf(S->wts, "\n");
+	}
+
+	else
+	{
+		/* fringe fit */
+
+		/* FIXME -- choose refant here? */
+		if(A->a1 != 4 && A->a2 != 4)
+		{
+			/* Note Return here! */
+			return 0;
+		}
+
+		fprintf(S->apd, "%d %f %d %s %d %d %s %s %d",
+			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
+			S->D->source[A->sourceId].name, A->a1+1, A->a2+1,
+			S->D->antenna[A->a1].name,
+			S->D->antenna[A->a2].name,
+			A->nBBC);
+
+		for(bbc = 0; bbc < A->nBBC; bbc++)
+		{
+			if(A->nRec[bbc] < S->nTime/2 || 
+			   A->weightSum[bbc] == 0.0)
+			{
+				fprintf(S->apd, " 0 0 0 0");
+				continue;
+			}
+			array = A->spectrum[bbc];
+			memset(S->fftbuffer, 0, 
+				S->fft_nx*S->fft_ny*sizeof(fftw_complex));
+			for(j = 0; j < A->nTime; j++)
+			{
+				for(i = 0; i < A->nChan; i++)
 				{
-					besti = i;
-					bestj = j;
-					max2 = a2;
+					S->fftbuffer[j*S->fft_nx + i] = 
+						array[j][i];
 				}
 			}
-		}
-		z = S->fftbuffer[bestj*S->fft_nx + besti];
-		phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-		amp = sqrt(max2);
-		peak[1] = amp;
-		if(besti == 0)
-		{
-			z = S->fftbuffer[(bestj+1)*S->fft_nx - 1];
-		}
-		else
-		{
-			z = S->fftbuffer[bestj*S->fft_nx + besti - 1];
-		}
-		peak[0] = sqrt(z*~z);
-		if(besti == S->fft_nx-1)
-		{
-			z = S->fftbuffer[bestj*S->fft_nx];
-		}
-		else
-		{
-			z = S->fftbuffer[bestj*S->fft_nx + besti + 1];
-		}
-		peak[2] = sqrt(z*~z);
-		delay = peakup(peak, besti, 
-			S->fft_nx, S->bw*S->fftOversample/1000.0);
-		if(bestj == 0)
-		{
-			z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx + besti];
-		}
-		else
-		{
-			z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
-		}
-		peak[0] = sqrt(z*~z);
-		if(bestj == S->fft_ny-1)
-		{
-			z = S->fftbuffer[besti];
-		}
-		else
-		{
-			z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
-		}
-		peak[2] = sqrt(z*~z);
-		rate = peakup(peak, bestj, 
-			S->fft_ny, S->solInt*S->fftOversample);
+			fftw_execute(S->plan);
 
-		fprintf(S->apd, " %f %f %f %f", delay, amp/A->weightSum[bbc], phase, rate);
+			max2 = 0.0;
+			besti = bestj = 0;
+			for(j = 0; j < S->fft_ny; j++)
+			{
+				for(i = 0; i < S->fft_nx; i++)
+				{
+					z = S->fftbuffer[j*S->fft_nx + i];
+					a2 = z*~z;
+					if(a2 > max2)
+					{
+						besti = i;
+						bestj = j;
+						max2 = a2;
+					}
+				}
+			}
+			z = S->fftbuffer[bestj*S->fft_nx + besti];
+			phase = (180.0/M_PI)*atan2(cimag(z), creal(z));
+			amp = sqrt(max2);
+			peak[1] = amp;
+			if(besti == 0)
+			{
+				z = S->fftbuffer[(bestj+1)*S->fft_nx - 1];
+			}
+			else
+			{
+				z = S->fftbuffer[bestj*S->fft_nx + besti - 1];
+			}
+			peak[0] = sqrt(z*~z);
+			if(besti == S->fft_nx-1)
+			{
+				z = S->fftbuffer[bestj*S->fft_nx];
+			}
+			else
+			{
+				z = S->fftbuffer[bestj*S->fft_nx + besti + 1];
+			}
+			peak[2] = sqrt(z*~z);
+			delay = peakup(peak, besti, 
+				S->fft_nx, S->bw*S->fftOversample/1000.0);
+			if(bestj == 0)
+			{
+				z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
+			}
+			else
+			{
+				z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
+			}
+			peak[0] = sqrt(z*~z);
+			if(bestj == S->fft_ny-1)
+			{
+				z = S->fftbuffer[besti];
+			}
+			else
+			{
+				z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
+			}
+			peak[2] = sqrt(z*~z);
+			rate = peakup(peak, bestj, 
+				S->fft_ny, S->solInt*S->fftOversample);
+
+			fprintf(S->apd, " %f %f %f %f", delay, 
+				amp/A->weightSum[bbc], phase, rate);
+		}
+		fprintf(S->apd, "\n");
 	}
-	fprintf(S->apd, "\n");
 
 	return 0;
 }

@@ -21,11 +21,13 @@ difx2fits_SOURCES = \
 	fitsUV.c \
 	fitsWR.c \
 	mjd2str.c \
+	sniffer.c \
 	time2str.c \
 	textutils.c \
 	ymd2mjd.c \
 	difx2fits.h \
 	fits.h \
 	fitsUV.h \
-	other.h
+	other.h \
+	sniffer.h
 
