@@ -4,7 +4,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include "vex.h"
+#include "../vex.h"
 #include "vex.tab.h"
 
 #define  ALLOC_SIZE 32

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "vex.h"
+#include "../vex.h"
 
 #define YYDEBUG 1
 

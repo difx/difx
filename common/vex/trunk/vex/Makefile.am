@@ -24,7 +24,6 @@ libvex_la_SOURCES = \
 	vexf.c \
 	vexf_put.c \
 	vex_get.c \
-	vex.h \
 	vex_put.c \
 	vex_util.c \
 	vex.y \

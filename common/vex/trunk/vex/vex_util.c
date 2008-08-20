@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "vex.h"
+#include "../vex.h"
 #include "vex.tab.h"
 
 #define NEWSTRUCT(PTR,TYPE)	struct TYPE *PTR;\

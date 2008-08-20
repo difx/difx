@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "vex.h"
+#include "../vex.h"
 #include "vex.tab.h"
 extern struct vex *vex_ptr;
 

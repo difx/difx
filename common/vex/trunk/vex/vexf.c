@@ -14,7 +14,7 @@ typedef int ftnlen;
 typedef double doublereal;
 #endif
 
-#include "vex.h"
+#include "../vex.h"
 #include "vex.tab.h"
 
 #define LOOKUP(found,units,table,out)	{ int i; if(!found)\

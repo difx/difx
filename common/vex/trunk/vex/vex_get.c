@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "vex.h"
+#include "../vex.h"
 #include "vex.tab.h"
 
 #define TRUE 1
