@@ -169,6 +169,12 @@ def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
 	system(cmd)
 	t1 = time()
 	print 'Elapsed time (s) =', t1-t0
+	groupId = getenv('DIFX_GROUP_ID')
+	if groupId != None:
+		cmd = 'chown :%s %s.difx/*' % (groupId, filebase)
+		system(cmd)
+		cmd = 'chmod g+w %s.difx/*' % filebase
+		system(cmd)
 	sendmessage(filebase, 'MpiDone', '')
 
 	return None

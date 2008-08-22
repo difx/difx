@@ -2,7 +2,7 @@
 
 from string import split, strip, find, upper, lower
 from sys import argv, exit
-from os import popen, getenv
+from os import popen, getenv, umask
 from glob import glob
 import socket
 import struct
@@ -353,6 +353,8 @@ machinesfile = getenv('DIFX_MACHINES')
 overheadcores = 1
 verbose = 0
 dothreads = True
+if getenv('DIFX_GROUP_ID'):
+	umask(2)
 
 a = 1
 while a < len(argv):

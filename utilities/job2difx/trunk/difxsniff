@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
 from sys import argv, exit
-from os import popen, system
+from os import chdir, popen, system
 from string import strip, split, find, lower
 
 program = 'difxsniff'
-version = '1.0'
+version = '2.0'
 verdate = '20071218'
 author  = 'Walter Brisken'
 
@@ -22,83 +22,111 @@ def usage():
 	print 'Usage: ./difxsniff [options] <refants> <file1> [<file2> [...] ]'
 	print '\nOptions can include:'
 	print '  -h or --help : print this info and quit.'
-	print '  Number of channels : e.g.  nchan=32 [default 16]'	
-	print '  Number of records  : e.g.  nrec=32  [default 16]\n'	
-	print 'refants is a comma separated list of antennas to use as refants\n'
 	print 'each "file" is a FITS file made by difx2fits\n'
 
+def sniff(filebases, refants, dir):
 
-def sniff(files, refant, nrec, nchan):
-	system('rm -f summary wtsfile.lis.sum xcbandfile.lis wtsfile.lis logfile.lis datafile.lis xcbandmax.ps xcbandfile.ps wtsfile.ps apdfile.ps apd.delays acbandsum.ps acbandfile.lis')
+	if len(dir) > 0:
+		system('mkdir -p ' + dir)
 
-	filebase = ['log', 'wts', 'acband', 'xcband', 'data']
-	nf = len(filebase)
-	outlists = ['']*nf
-	n = 0
-	for f in files:
-		cmd = 'FITSsniffer %s %s ALL %d %d 1 1 > /dev/null' % (f,refant,nrec,nchan)
-		print cmd
-		system(cmd)
-		for i in range(nf):
-			a = filebase[i]+'file.lis'
-			b = '/tmp/%sfile.lis.%d' % (filebase[i], n)
-			cmd = 'mv %s %s' % (a, b)
-			print cmd
-			system(cmd)
-			outlists[i]+=(' '+b)
-		n = n+1
-	for i in range(nf):
-		cmd = 'cat%s > %sfile.lis' % (outlists[i], filebase[i])
-		print cmd
-		system(cmd)
-		cmd = 'rm%s' % outlists[i]
-		print cmd
-		system(cmd)
-		
-	run('plotwt',  ['wtsfile.lis', 'wtsfile.ps/vps'])
-	run('plotbp',  ['xcbandfile.lis', 'xcbandfile.ps/vps', ''])
-	run('plotbp',  ['acbandfile.lis', 'acbandfile.ps/vps', ''])
+	# make apdfile
+	apd = open(dir+'datafile.lis', 'w')
+	first = 1
+	for f in filebases:
+		data = open(f+'.apd', 'r').readlines()
+		if first:
+			first = 0
+			apd.write(data[0])
+		for d in data[1:]:
+			for r in refants:
+				if find(d, r) > 0:
+					apd.write(d)
+					break
+	apd.close()
+
+	# make wtsfile
+	wts = open(dir+'wtsfile.lis.sum', 'w')
+	first = 1
+	for f in filebases:
+		data = open(f+'.wts', 'r').readlines()
+		if first:
+			first = 0
+			wts.write(data[0])
+		for d in data[1:]:
+			wts.write(d)
+	wts.close()
+
+	# make acbandfile
+	acb = open(dir+'acbandfile.lis', 'w')
+	for f in filebases:
+		data = open(f+'.acb', 'r').readlines()
+		for d in data:
+			acb.write(d)
+	acb.close()
+
+	# make xcbandfile
+	xcb = open(dir+'xcbandfile.lis', 'w')
+	for f in filebases:
+		data = open(f+'.xcb', 'r').readlines()
+		l = len(data)
+		i = 0
+		while(i < l):
+			v = split(data[i])
+			nif = int(v[-1])
+			nch = int(v[-3])
+			n = 2 + nif + nif*nch
+			hasref = 0
+			for r in refants:
+				if find(data[i+2+nif], r):
+					hasref += 1
+			if hasref > 0:
+				for j in range(i, i+n):
+					xcb.write(data[j])
+			i += n
+	xcb.close()
+	
+	if len(dir) > 0:
+		chdir(dir)
+
 	run('plotapd', ['datafile.lis', 'apdfile.ps/vps', 'ALL', 'ALL'])
-	cmd = 'lister'
-	system(cmd)
-	sdir = 'sniffer/%s' % refant
-	cmd = 'mkdir -p %s' % sdir
-	system(cmd)
-	cmd = 'mv xcband* wtsfile.* logfile.lis datafile.lis acband* summary apd* %s' % sdir
-	system(cmd)
-
-
-#############################
-
-refant = ''
+	run('plotwt',  ['wtsfile.lis.sum', 'wtsfile.ps/vps'])
+	run('plotbp',  ['acbandfile.lis', 'acbandfile.ps/vps', ''])
+	run('plotbp',  ['xcbandfile.lis', 'xcbandfile.ps/vps', ''])
+	
 files = []
-nrec = 16
-nchan = 16
+refants = []
+dir = 'sniffer/'
 
-for arg in argv[1:]:
-	kv = split(arg, '=')
-	if len(kv) == 2:
-		if lower(kv[0]) == 'nrec':
-			nrec = int(kv[1])
-		elif lower(kv[0]) == 'nchan':
-			nchan = int(kv[1])
-	elif len(kv) == 1:
-		if refant == '':
-			refant = arg
-		else:
-			files.append(arg)
-	else:
-		print 'What is %s?' % arg
-		exit(0)
-
-if len(files) < 1:
-	usage()
-else:
-	refants = split(refant, ',')
-	for ra in refants:
-		if len(ra) > 2:
-			print '%s is not an antenna name!' % refant
+for a in argv[1:]:
+	p = find(a, '.FITS')
+	if p > 0:
+		files.append(a[:p])
+	elif find(a, '.') >= 0 and len(a) > 2:
+		files.append(a)
+	elif find(a, '/') > 0:
+		dir = a
+	elif a[0] == '-':
+		if a == '-h' or a == '--help':
+			usage()
 			exit(0)
+		else:
+			print 'Error: unknown option : ' + a
+	else:
+		refants.append(a)
 
-	for ra in refants:
-		sniff(files, ra, nrec, nchan)
+if len(files) == 0:
+	print 'Error: no input files provided.'
+	exit(0)
+
+if len(refants) == 0:
+	print 'Error: no refants provided.'
+	exit(0)
+
+if dir[-1] != '/':
+	dir += '/'
+
+if len(refants) == 1:
+	dir += refants[0] + '/'
+
+sniff(files, refants, dir)
+

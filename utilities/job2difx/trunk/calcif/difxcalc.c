@@ -201,6 +201,7 @@ int extractCalcResults(DifxPolyModel *im, int index,
 	struct CalcResults *results)
 {
 	struct getCALC_res *res0, *res1, *res2;
+	double d, dx, dy;
 
 	res0 = &results->res[0];
 	res1 = &results->res[1];
@@ -212,13 +213,20 @@ int extractCalcResults(DifxPolyModel *im, int index,
 	im->wet[index] = res0->getCALC_res_u.record.wet_atmos[0]*1e6;
 	if(results->nRes == 3)
 	{
-		im->u[index] = (C_LIGHT/results->delta)*
-			(res0->getCALC_res_u.record.delay[0] - 
-			 res1->getCALC_res_u.record.delay[0]);
-		im->v[index] = (C_LIGHT/results->delta)*
-			(res2->getCALC_res_u.record.delay[0] - 
-			 res0->getCALC_res_u.record.delay[0]);
-		im->w[index] = C_LIGHT*res0->getCALC_res_u.record.delay[0];
+		/* compute u, v, w by taking angular derivative of geometric delay */
+		d =  res0->getCALC_res_u.record.delay[0] -
+		     res0->getCALC_res_u.record.wet_atmos[0] -
+		     res0->getCALC_res_u.record.dry_atmos[0];
+		dx = res1->getCALC_res_u.record.delay[0] -
+		     res1->getCALC_res_u.record.wet_atmos[0] -
+		     res1->getCALC_res_u.record.dry_atmos[0];
+		dy = res2->getCALC_res_u.record.delay[0] -
+		     res2->getCALC_res_u.record.wet_atmos[0] -
+		     res2->getCALC_res_u.record.dry_atmos[0];
+
+		im->u[index] = (C_LIGHT/results->delta)*(d-dx);
+		im->v[index] = (C_LIGHT/results->delta)*(dy-d);
+		im->w[index] = C_LIGHT*d;
 	}
 	else
 	{

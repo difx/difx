@@ -4,9 +4,7 @@ Version 1.1
 * copy log file
 Version 1.2
 * warn about case sensitive and don't make directory if not found
-
-Version 1.0
-* Initial version
+* respect DIFX_GROUP_ID and set permissions
 
 joblist
 ~~~~~~~
@@ -25,6 +23,10 @@ job2difx
 Version 1.10
 * more complete removal of old files if ovewrwriting previous job2difx run
 * put DIFX VERSION in .calc file
+* merge .flag file rows when possible
+* fix bin ordering for pulsars.  Still something awry here.
+* remove all Makefile stuff
+* respect DIFX_GROUP_ID and set permissions
 * version for NRAO-DiFX 1.1
 
 Version 1.9
@@ -76,6 +78,8 @@ calcif2
 ~~~~~~~
 Version 0.2
 * by default zero negative delays
+* don't include atmosphere in UVW calculation
+* respect DIFX_GROUP_ID and set permissions
 
 Version 0.1
 * complete rewrite of calcif.  Differences from calcif:
@@ -90,6 +94,7 @@ Version 1.5
 * allow -a for globbing all .calc files or a list of files.
 * don't rerun if unnecessary, unless -f is used
 * generate files in /tmp and move when complete to prevent partial files
+* respect DIFX_GROUP_ID and set permissions
 
 Version 1.2
 * Handle CALC_SERVER env var, and command line value.
@@ -120,6 +125,7 @@ genmachines
 Version 0.9
 * genmachines2 is now genmachines
 * the old genmachines is now genmachines.old and is not installed
+* respect DIFX_GROUP_ID and set permissions
 
 Version 0.7
 * Write meaningful, and correct, threads file
@@ -161,3 +167,4 @@ Version 0.3
 * can run on input files
 * look at DIFX_VERSION
 * small fixes
+* respect DIFX_GROUP_ID and set permissions

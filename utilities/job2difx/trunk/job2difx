@@ -3,7 +3,7 @@
 from sys import argv, exit
 from string import strip, split, find, lower, upper
 from math import pi, ceil
-from os import getcwd, system, getenv
+from os import getcwd, system, getenv, umask
 import re
 
 program = 'job2difx'
@@ -19,7 +19,6 @@ verbose = 0
 multiconfig = 0
 visbufferlength = 32
 spectrunc = 2	# do this much spectral truncation before doing decimation
-calcif = "calcif2"
 
 def usage():
 	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
@@ -730,10 +729,16 @@ def makepulsarfile(gate, correl_row, freq_row, custom_row, source_row, filebasei
 		makepolycofile(polycofile, gate[rows[p]], psrname)
 	psrtable.append('NUM PULSAR BINS:    2')
 	psrtable.append('SCRUNCH OUTPUT:     TRUE')
-	psrtable.append('BIN PHASE END 0:    %8.6f' % gate_close)
-	psrtable.append('BIN WEIGHT 0:       1.0')
-	psrtable.append('BIN PHASE END 1:    %8.6f' % gate_open)
-	psrtable.append('BIN WEIGHT 1:       0.0')
+	if(gate_close < gate_open):
+		psrtable.append('BIN PHASE END 0:    %8.6f' % gate_close)
+		psrtable.append('BIN WEIGHT 0:       1.0')
+		psrtable.append('BIN PHASE END 1:    %8.6f' % gate_open)
+		psrtable.append('BIN WEIGHT 1:       0.0')
+	else:
+		psrtable.append('BIN PHASE END 0:    %8.6f' % gate_open)
+		psrtable.append('BIN WEIGHT 0:       0.0')
+		psrtable.append('BIN PHASE END 1:    %8.6f' % gate_close)
+		psrtable.append('BIN WEIGHT 1:       1.0')
 
 	if len(psrtable) > 0:
 		fp = open(filename, "w") 
@@ -1019,7 +1024,12 @@ def makedatastreamtable(subarray, antennalist, config, job, freqlist, setups):
 				inputBandList.append([band, polar[i][1], index, trackNum])
 			# write input band descriptions in record channel order
 			inputBandList.sort()
+			last = -1
 			for b in inputBandList:
+				if b[0] == last:
+					print '*** Warning: two INPUT BANDs with same index'
+					print 'Did someone forget DISCUPPER in a .fx file?'
+				last = b[0]
 				dst.append(indent21_1("INPUT BAND %d POL", \
 					"%s", b[0], b[1]))
 				dst.append(indent21_1("INPUT BAND %d INDEX", \
@@ -1148,8 +1158,31 @@ def makedatatable(mjd0, mjd1, antennalist, subarray, job, nsetups):
 			n += 1
 	return data
 
+def mergeflags(flags):
+	af = {}
+	for f in flags:
+		a = f[2]
+		if af.has_key(a):
+			if f[0] <= af[a][-1][1] + 1.0/86400.0:
+				# extend previous flag
+				af[a][-1][1] = f[1]
+			else:
+				af[a].append([f[0], f[1], f[2]])
+		else:
+			af[a] = [f]
+	flags = []
+	keys = af.keys()
+	keys.sort()
+	for key in keys:
+		a = af[key]
+		for f in a:
+			flags.append(f)
+	return flags
+	
+
 def makeflagtable(scans, subarray, subarray_num):
 	flag = []
+	flags = []
 	for scan in scans:
 		if len(scan[6]) <= subarray_num:
 			print 'Warning : makeflagtable: subarray_num too big', subarray_num
@@ -1158,8 +1191,12 @@ def makeflagtable(scans, subarray, subarray_num):
 		for i in range(len(subarray)):
 			a = subarray[i]
 			if a not in ants:
-				flag.append("%12.6f %12.6f %d" % \
-					(scan[2], scan[3], i))
+				flags.append([scan[2], scan[3], i])
+
+	flags = mergeflags(flags)
+	for f in flags:
+		flag.append("%12.6f %12.6f %d" % \
+			(f[0], f[1], f[2]))
 	return flag
 
 def getshelves(antennalist, subarray, job):
@@ -1650,108 +1687,6 @@ def dupsched(job, masterant):
 
 #############
 
-def genMakefile(joblist, verbose):
-	all = "all: $(fitss)"
-	clean = "clean:\n\trm -rf $(uvws)\n\trm -rf $(threads)\n\trm -rf $(machines)\n\trm -rf $(delays)\n\trm -rf $(rates)\n\trm -rf $(flags)\n\trm -rf $(calcs)\n\trm -rf $(fitss)"
-	uvws = "uvws ="
-	inputs = "inputs ="
-	delays = "delays ="
-	rates = "rates ="
-	flags = "flags ="
-	calcs = "calc ="
-	threads = "threads ="
-	machines = "machines ="
-	fitss = "fitss ="
-	cfitss = "cfitss ="
-	cjobs = {}
-	
-	if verbose > 1:
-		print 'Makefile: JOBLIST=', joblist
-	
-	for jobinfo in joblist:
-		job = jobinfo[0]
-		cjob = jobinfo[1]+'.'+split(job, '.')[0][3:]
-		if cjobs.has_key(cjob):
-			cjobs[cjob].append(job)
-		else:
-			cjobs[cjob] = [job]
-		if job[0:3] == 'job':
-			jnum = job[3:]
-		else:
-			jnum = job
-		fitsfile = '%s.%s.FITS' % (jobinfo[1], jnum)
-		uvws += " %s.uvw" % job
-		threads += " %s.threads" % job
-		machines += " %s.machines" % job
-		inputs += " %s.input" % job
-		delays += " %s.delay" % job
-		rates += " %s.rate" % job
-		calcs += " %s.calc" % job
-		flags += " %s.flag" % job
-		fitss += " %s" % fitsfile
-	
-	fitskeys = cjobs.keys()
-	fitskeys.sort()
-	for k in fitskeys:
-		cfitss += " %s.FITS" % k
-	
-	Makefile = open('Makefile', 'w')
-	Makefile.write(uvws+"\n\n")
-	Makefile.write(threads+"\n\n")
-	Makefile.write(machines+"\n\n")
-	Makefile.write(inputs+"\n\n")
-	Makefile.write(delays+"\n\n")
-	Makefile.write(rates+"\n\n")
-	Makefile.write(calcs+"\n\n")
-	Makefile.write(flags+"\n\n")
-	Makefile.write(fitss+"\n\n")
-	Makefile.write(cfitss+"\n\n")
-	Makefile.write(all+"\n\n")
-	Makefile.write('delays: $(uvws)\n\n')
-	Makefile.write('uvws: $(uvws)\n\n')
-	Makefile.write("FITS: $(cfitss)\n\n")
-	
-	Makefile.write(clean+"\n\n")
-	fitslist = []
-	for jobinfo in joblist:
-		job = jobinfo[0]
-		if job[0:3] == 'job':
-			jnum = job[3:]
-		else:
-			jnum = job
-		obscode = jobinfo[1]
-		fitslist.append('%s.%s.FITS' % (obscode, jnum))
-		fitsfile = '%s.%s.FITS' % (obscode, jnum)
-		Makefile.write("%s.uvw: %s.calc\n\t%s %s.calc\n\n" % (job, job, calcif, job))
-		Makefile.write("%s.machines: %s.input\n\tgenmachines %s.input\n\n" % (job, job, job))
-#		Makefile.write("%s.threads:  template.threads\n\tcp template.threads %s.threads\n\n" % (job, job))
-#		Makefile.write("%s.difx: %s.uvw %s.delay %s.input %s.machines\n" % (job, job, job, job, job))
-		Makefile.write("%s.difx: %s.uvw %s.delay %s.input\n" % (job, job, job, job))
-		Makefile.write("\t#genmachines %s.input\n\n" % job)
-		Makefile.write("\t#rm -rf %s.difx\n" % job)
-		Makefile.write("\tdate\n")
-		Makefile.write("\t#mpirun -np `cat %s.machines | wc -l` --bynode --hostfile %s.machines  /users/wbrisken/src/SWcorr/trunk/difx/mpifxcorr/src/mpifxcorr `pwd`/%s.input\n" % (job, job, job))
-		Makefile.write("\tstartdifx -a -f %s\n" % job)
-		Makefile.write("\tdate\n\n")
-		Makefile.write("%s: %s.difx %s.uvw %s.delay %s.rate %s.calc \n\tdifx2fits %s %s\n\n" % (fitsfile, job, job, job, job, job, job, fitsfile))
-	for i in range(len(fitslist)):
-		Makefile.write("\n%d : %s\n" % ((i+1), fitslist[i]))
-
-	Makefile.write("\n")
-
-	for k in fitskeys:
-		deps = ''
-		roots = ''
-		for d in cjobs[k]:
-			deps += ' %s.difx' % d
-			roots += ' %s' % d
-		Makefile.write('%s.FITS:%s\n' % (k, deps))
-		Makefile.write('\tdifx2fits %s %s.FITS\n\n' % (roots, k))
-
-	Makefile.close()
-
-#############
-
 if len(argv) < 2:
 	usage()
 else:
@@ -1811,6 +1746,9 @@ else:
 		minsubarraysize = len(antennalist)
 		print 'min subarray size reduced to ', minsubarraysize
 			
+	if getenv('DIFX_GROUP_ID'):
+		umask(2)
+
 	print 'Processing files : ', files
 
 	# read jobs
@@ -1831,5 +1769,3 @@ else:
 			processjobfile(file[1], file[0], antennalist, \
 				fftsize, nchan, tint, minsubarraysize, \
 				joblist, difxversion)
-		# make Makefile
-	#genMakefile(joblist, verbose)

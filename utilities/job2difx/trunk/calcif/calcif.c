@@ -254,6 +254,11 @@ int main (int argc, char *argv[])
   	strcpy(CALC_SERVER, serv);
   }
 
+  if(getenv("DIFX_GROUP_ID"))
+  {
+        umask(2);
+  }
+
   for(i = 1; i < argc; i++)
   {
   	if(argv[i][0] == '-')

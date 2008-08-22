@@ -455,6 +455,11 @@ int run(const CommandLineOptions *opts)
 	CalcParams *p;
 	int i, l;
 
+	if(getenv("DIFX_GROUP_ID"))
+	{
+		umask(2);
+	}
+
 	if(opts == 0)
 	{
 		return -1;

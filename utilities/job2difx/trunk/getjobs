@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from sys import argv, exit
-from os import getcwd, system
+from os import getcwd, system, getenv
 from glob import glob
 from string import split
 
@@ -86,3 +86,13 @@ else:
 	if calfile[-3:] == '.gz':
 		system('gunzip %s/%scal.vlba.gz' % (newdir, project))
 	system('cd %s ; vlog %scal.vlba' % (newdir, project))
+
+# set ownership of everything at the end
+groupId = getenv('DIFX_GROUP_ID')
+if groupId != None:
+	cmd = 'chown -R :%s %s' % (groupId, newdir)
+	system(cmd)
+	cmd = 'chmod -R g+w %s' % newdir
+	system(cmd)
+	cmd = 'chmod +s %s' % newdir
+	system(cmd)
