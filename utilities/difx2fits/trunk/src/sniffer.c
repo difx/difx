@@ -135,6 +135,13 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	char filename[256];
 	int a1, a2, i, c;
 	double tMax = 0.0;
+	FILE *log;
+
+	/* write summary to log file */
+	sprintf(filename, "%s.log", filebase);
+	log = fopen(filename, "w");
+	fprintDifxInputSummary(log, D);
+	fclose(log);
 
 	for(c = 0; c < D->nConfig; c++)
 	{
@@ -149,7 +156,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S->deltaT = tMax;
 	S->deltaF = D->chanBW;
 	S->bw = D->chanBW;
-	S->fftOversample = 6;
+	S->fftOversample = 3;
 
 	S->nAntenna = D->nAntenna;
 	S->D = D;
@@ -217,6 +224,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	}
 
 	/* Prepare FFT stuff */
+
 	S->fft_nx = S->fftOversample*S->nChan;
 	S->fft_ny = S->fftOversample*S->nTime;
 	S->fftbuffer = (fftw_complex*)fftw_malloc(S->fft_nx*S->fft_ny*
@@ -224,15 +232,12 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S->plan = fftw_plan_dft_2d(S->fft_ny, S->fft_nx, S->fftbuffer,
 		S->fftbuffer, FFTW_FORWARD, FFTW_MEASURE);
 
-	printf("bw = %f fft=%dx%d solInt=%f\n", S->bw, S->fft_nx, S->fft_ny, S->solInt);
-
 	return S;
 }
 
 void deleteSniffer(Sniffer *S)
 {
 	int a, i;
-	printf("bw = %f fft=%dx%d solInt=%f\n", S->bw, S->fft_nx, S->fft_ny, S->solInt);
 
 	if(S)
 	{
@@ -273,7 +278,6 @@ void deleteSniffer(Sniffer *S)
 		{
 			fftw_destroy_plan(S->plan);
 		}
-		printf("Sniffer stopping.  %d records processed\n", S->nRec);
 		free(S);
 	}
 }
@@ -604,6 +608,11 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	int configId, sourceId;
 	float weight;
 	int stride, offset, bbc, index;
+
+	if(!S)
+	{
+		return 0;
+	}
 
 	sourceId = data->sourceId1-1;
 

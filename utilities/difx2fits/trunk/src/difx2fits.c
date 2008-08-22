@@ -75,6 +75,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --keep-order\n");
 	fprintf(stderr, "  -k                  Keep antenna order\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --dont-sniff\n");
+	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
@@ -101,6 +104,7 @@ struct CommandLineOptions
 	int keepOrder;
 	int dontCombine;
 	int overrideVersion;
+	int sniff;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -111,6 +115,7 @@ struct CommandLineOptions *newCommandLineOptions()
 		sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
+	opts->sniff = 1;
 
 	return opts;
 }
@@ -167,6 +172,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-v") == 0)
 			{
 				opts->verbose++;
+			}
+			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
+				strcmp(argv[i], "-x") == 0)
+			{
+				opts->sniff = 0;
 			}
 			else if(strcmp(argv[i], "--dont-combine") == 0 ||
 			        strcmp(argv[i], "-1") == 0)
@@ -350,7 +360,8 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 }
 
 static const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
-	struct fitsPrivate *out, int write_model, double scale, int verbose)
+	struct fitsPrivate *out, int write_model, double scale, int verbose,
+	int sniff)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -430,7 +441,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, scale, verbose);
+	D = DifxInput2FitsUV(D, &keys, out, scale, verbose, sniff);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
@@ -657,7 +668,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		}
 
 		if(DifxInput2FitsTables(D, &outfile, opts->writemodel, 
-			opts->scale, opts->verbose) == D)
+			opts->scale, opts->verbose, opts->sniff) == D)
 		{
 			printf("\nConversion successful\n\n");
 		}

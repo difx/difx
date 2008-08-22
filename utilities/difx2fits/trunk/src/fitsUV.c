@@ -790,8 +790,9 @@ static int readvisrecord(DifxVis *dv, int verbose)
 	return 0;
 }
 
-int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys, 
-	struct fitsPrivate *out, double s, int verbose)
+static int DifxVisConvert(const DifxInput *D, 
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
+	double s, int verbose, int sniff)
 {
 	int v;
 	int j;
@@ -813,7 +814,7 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 	double scale;
 	DifxVis **dvs;
 	DifxVis *dv;
-	Sniffer *S;
+	Sniffer *S = 0;
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -856,8 +857,12 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 
 	nWeight = dv->nFreq*D->nPolar;
 
-	/* Start up sniffer -- FIXME -- get file name right */
-	S = newSniffer(D, dv->nComplex, D->job[dv->jobId].fileBase, 30.0);
+	/* Start up sniffer */
+	if(sniff)
+	{
+		S = newSniffer(D, dv->nComplex, 
+			D->job[dv->jobId].fileBase, 30.0);
+	}
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -1021,14 +1026,14 @@ int DifxVisConvert(const DifxInput *D, struct fits_keywords *p_fits_keys,
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, double scale,
-	int verbose)
+	int verbose, int sniff)
 {
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	DifxVisConvert(D, p_fits_keys, out, scale, verbose);
+	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniff);
 
 	return D;
 }
