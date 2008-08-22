@@ -49,7 +49,7 @@ void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco)
 	}
 }
 
-void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco)
+void fprintDifxPolycoArray(FILE *fp, const DifxPolyco *dp, int nPolyco)
 {
 	const DifxPolyco *p;
 	int i, c;
@@ -62,19 +62,24 @@ void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco)
 	for(i = 0; i < nPolyco; i++)
 	{
 		p = dp + i;
-		printf("      Polyco file = %s\n", p->fileName);
-		printf("      D.M. = %f\n", p->dm);
-		printf("      refFreq = %f MHz\n", p->refFreq);
-		printf("      mjd mid = %f\n", p->mjd);
-		printf("      nBlk = %d\n", p->nBlk);
-		printf("      P0 = %f turns\n", p->p0);
-		printf("      F0 = %f Hz\n", p->f0);
-		printf("      nCoef = %d\n", p->nCoef);
+		fprintf(fp, "      Polyco file = %s\n", p->fileName);
+		fprintf(fp, "      D.M. = %f\n", p->dm);
+		fprintf(fp, "      refFreq = %f MHz\n", p->refFreq);
+		fprintf(fp, "      mjd mid = %f\n", p->mjd);
+		fprintf(fp, "      nBlk = %d\n", p->nBlk);
+		fprintf(fp, "      P0 = %f turns\n", p->p0);
+		fprintf(fp, "      F0 = %f Hz\n", p->f0);
+		fprintf(fp, "      nCoef = %d\n", p->nCoef);
 		for(c = 0; c < p->nCoef; c++)
 		{
-			printf("        %22.16e\n", p->coef[c]);
+			fprintf(fp, "        %22.16e\n", p->coef[c]);
 		}
 	}
+}
+
+void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco)
+{
+	fprintDifxPolycoArray(stdout, dp, nPolyco);
 }
 
 int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco)

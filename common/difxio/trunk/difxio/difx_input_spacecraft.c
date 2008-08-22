@@ -74,15 +74,20 @@ void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft)
 	}
 }
 
-void printDifxSpacecraft(const DifxSpacecraft *ds)
+void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds)
 {
-	printf("  DifxSpacecraft : %p\n", ds);
+	fprintf(fp, "  DifxSpacecraft : %p\n", ds);
 	if(!ds)
 	{
 		return;
 	}
-	printf("    Name = %s\n", ds->name);
-	printf("    Num points = %d\n", ds->nPoint);
+	fprintf(fp, "    Name = %s\n", ds->name);
+	fprintf(fp, "    Num points = %d\n", ds->nPoint);
+}
+
+void printDifxSpacecraft(const DifxSpacecraft *ds)
+{
+	fprintDifxSpacecraft(stdout, ds);
 }
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)

@@ -68,17 +68,22 @@ void deleteDifxPulsarArray(DifxPulsar *dp, int nPulsar)
 	free(dp);
 }
 
-void printDifxPulsar(const DifxPulsar *dp)
+void fprintDifxPulsar(FILE *fp, const DifxPulsar *dp)
 {
-	printf("  Difx Pulsar : %p\n", dp);
+	fprintf(fp, "  Difx Pulsar : %p\n", dp);
 	if(dp)
 	{
-		printf("    Filename = %s\n", dp->fileName);
-		printf("    Number of bins = %d\n", dp->nBin);
-		printf("    Scrunch = %d\n", dp->scrunch);
-		printf("    Number of polycos : %d\n", dp->nPolyco);
+		fprintf(fp, "    Filename = %s\n", dp->fileName);
+		fprintf(fp, "    Number of bins = %d\n", dp->nBin);
+		fprintf(fp, "    Scrunch = %d\n", dp->scrunch);
+		fprintf(fp, "    Number of polycos : %d\n", dp->nPolyco);
 		printDifxPolycoArray(dp->polyco, dp->nPolyco);
 	}
+}
+
+void printDifxPulsar(const DifxPulsar *dp)
+{
+	fprintDifxPulsar(stdout, dp);
 }
 
 int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar)

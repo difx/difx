@@ -60,31 +60,49 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 	}
 }
 
-void printDifxScan(const DifxScan *ds)
+void fprintDifxScan(FILE *fp, const DifxScan *ds)
 {
-	printf("  DifxScan [%s] : %p\n", ds->name, ds);
-	printf("    Start = MJD %12.6f\n", ds->mjdStart);
-	printf("    End   = MJD %12.6f\n", ds->mjdEnd);
-	printf("    Calcode = %s\n", ds->calCode);
-	printf("    Qualifier = %d\n", ds->qual);
-	printf("    nPoint = %d\n", ds->nPoint);
-	printf("    startPoint = %d\n", ds->startPoint);
-	printf("    nAntenna %d\n", ds->nAntenna);
-	printf("    SourceId = %d\n", ds->sourceId);
-	printf("    ConfigId = %d\n", ds->configId);
+	fprintf(fp, "  DifxScan [%s] : %p\n", ds->name, ds);
+	fprintf(fp, "    Start = MJD %12.6f\n", ds->mjdStart);
+	fprintf(fp, "    End   = MJD %12.6f\n", ds->mjdEnd);
+	fprintf(fp, "    Calcode = %s\n", ds->calCode);
+	fprintf(fp, "    Qualifier = %d\n", ds->qual);
+	fprintf(fp, "    nPoint = %d\n", ds->nPoint);
+	fprintf(fp, "    startPoint = %d\n", ds->startPoint);
+	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
+	fprintf(fp, "    SourceId = %d\n", ds->sourceId);
+	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 	if(ds->nPoint > 1 && ds->nAntenna > 1)
 	{
 		if(ds->model[0])
 		{
-			printDifxModel(ds->model[0] - 1);
-			printDifxModel(ds->model[0]);
+			fprintDifxModel(fp, ds->model[0] - 1);
+			fprintDifxModel(fp, ds->model[0]);
 		}
 		if(ds->model[1])
 		{
-			printDifxModel(ds->model[1] - 1);
-			printDifxModel(ds->model[1]);
+			fprintDifxModel(fp, ds->model[1] - 1);
+			fprintDifxModel(fp, ds->model[1]);
 		}
 	}
+}
+
+void printDifxScan(const DifxScan *ds)
+{
+	fprintDifxScan(stdout, ds);
+}
+
+void fprintDifxScanSummary(FILE *fp, const DifxScan *ds)
+{
+	fprintf(fp, "  Start=%12.6f end=%12.6f source=%s\n", 
+		ds->mjdStart, ds->mjdEnd, ds->name);
+	fprintf(fp, "    SourceId = %d\n", ds->sourceId);
+	fprintf(fp, "    ConfigId = %d\n", ds->configId);
+}
+
+void printDifxScanSummary(const DifxScan *ds)
+{
+	fprintDifxScanSummary(stdout, ds);
 }
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src,

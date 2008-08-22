@@ -46,17 +46,43 @@ void deleteDifxAntennaArray(DifxAntenna *da)
 	}
 }
 
+void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
+{
+	fprintf(fp, "  DifxAntenna [%s] : %p\n", da->name, da);
+	fprintf(fp, "    Delay = %f us\n", da->delay);
+	fprintf(fp, "    Rate = %e us/s\n", da->rate);
+	fprintf(fp, "    Mount = %s\n", da->mount);
+	fprintf(fp, "    Offset = %f, %f, %f m\n", 
+		da->offset[0], da->offset[1], da->offset[2]);
+	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
+	fprintf(fp, "    VSN = %s\n", da->vsn);
+	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
+}
+
 void printDifxAntenna(const DifxAntenna *da)
 {
-	printf("  DifxAntenna [%s] : %p\n", da->name, da);
-	printf("    Delay = %f us\n", da->delay);
-	printf("    Rate = %e us/s\n", da->rate);
-	printf("    Mount = %s\n", da->mount);
-	printf("    Offset = %f, %f, %f m\n", 
+	fprintDifxAntenna(stdout, da);
+}
+
+void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
+{
+	fprintf(fp, "  %s\n", da->name);
+	fprintf(fp, "    Clock: Delay = %f us  Rate = %e us/s\n", 
+		da->delay, da->rate);
+	fprintf(fp, "    Mount = %s\n", da->mount);
+	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
-	printf("    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	printf("    VSN = %s\n", da->vsn);
-	printf("    SpacecraftId = %d\n", da->spacecraftId);
+	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
+	fprintf(fp, "    VSN = %s\n", da->vsn);
+	if(da->spacecraftId >= 0)
+	{
+		fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
+	}
+}
+
+void printDifxAntennaSummary(const DifxAntenna *da)
+{
+	fprintDifxAntennaSummary(stdout, da);
 }
 
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)

@@ -23,6 +23,8 @@
 #define DIFX_SESSION_LEN	4
 #define MAX_MODEL_ORDER		5
 
+#include <stdio.h>
+
 /* Notes about antenna numbering
  *
  * antennaId will typically refer to the index to the DifxInput array called
@@ -316,6 +318,7 @@ typedef struct
 DifxJob *newDifxJobArray(int nJob);
 void deleteDifxJobArray(DifxJob *dj);
 void printDifxJob(const DifxJob *dj);
+void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	const DifxJob *dj2, int ndj2, int *jobIdRemap, int *ndj);
@@ -324,6 +327,7 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 DifxFreq *newDifxFreqArray(int nFreq);
 void deleteDifxFreqArray(DifxFreq *df);
 void printDifxFreq(const DifxFreq *df);
+void fprintDifxFreq(FILE *fp, const DifxFreq *df);
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
@@ -333,6 +337,7 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da);
 void printDifxAntenna(const DifxAntenna *da);
+void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
@@ -343,6 +348,7 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
 void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream);
 void printDifxDatastream(const DifxDatastream *ds);
+void fprintDifxDatastream(FILE *fp, const DifxDatastream *ds);
 int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	const int *freqIdRemap, const int *antennaIdRemap);
 void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
@@ -355,6 +361,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 DifxBaseline *newDifxBaselineArray(int nBaseline);
 void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline);
 void printDifxBaseline(const DifxBaseline *db);
+void fprintDifxBaseline(FILE *fp, const DifxBaseline *db);
 int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 	const int *datastreamIdRemap);
 void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
@@ -367,6 +374,7 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 DifxPolyco *newDifxPolycoArray(int nPolyco);
 void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco);
 void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco);
+void fprintDifxPolycoArray(FILE *fp, const DifxPolyco *dp, int nPolyco);
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
 int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename);
@@ -377,6 +385,7 @@ DifxPulsar *newDifxPulsarArray(int nPulsar);
 DifxPulsar *growDifxPulsarArray(DifxPulsar *dp, int origSize);
 void deleteDifxPulsarArray(DifxPulsar *dp, int nPulsar);
 void printDifxPulsar(const DifxPulsar *dp);
+void fprintDifxPulsar(FILE *fp, const DifxPulsar *dp);
 int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2);
 DifxPulsar *dupDifxPulsarArray(const DifxPulsar *src, int nPulsar);
 DifxPulsar *mergeDifxPulsarArrays(const DifxPulsar *dp1, int ndp1,
@@ -388,6 +397,9 @@ DifxConfig *newDifxConfigArray(int nConfig);
 void deleteDifxConfigArray(DifxConfig *dc);
 void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 void printDifxConfig(const DifxConfig *dc);
+void fprintDifxConfig(FILE *fp, const DifxConfig *dc);
+void printDifxConfigSummary(const DifxConfig *dc);
+void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId);
@@ -404,17 +416,22 @@ DifxModel **newDifxModelArray(int nAntenna, int nPoint);
 DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint);
 void deleteDifxModelArray(DifxModel **dm, int nAntenna);
 void printDifxModel(const DifxModel *dm);
+void fprintDifxModel(FILE *fp, const DifxModel *dm);
 
 /* DifxPolyModel functions */
 DifxPolyModel **newDifxPolyModelArray(int nAntenna, int nPoly);
 DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
 void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna);
 void printDifxPolyModel(const DifxPolyModel *dpm);
+void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm);
 
 /* DifxScan functions */
 DifxScan *newDifxScanArray(int nScan);
 void deleteDifxScanArray(DifxScan *ds, int nScan);
 void printDifxScan(const DifxScan *ds);
+void fprintDifxScan(FILE *fp, const DifxScan *ds);
+void printDifxScanSummary(const DifxScan *ds);
+void fprintDifxScanSummary(FILE *fp, const DifxScan *ds);
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	const int *jobIdRemap, const int *configIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
@@ -426,6 +443,9 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
 DifxEOP *newDifxEOPArray(int nEOP);
 void deleteDifxEOPArray(DifxEOP *de);
 void printDifxEOP(const DifxEOP *de);
+void fprintDifxEOP(FILE *fp, const DifxEOP *de);
+void printDifxEOPSummary(const DifxEOP *de);
+void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	const DifxEOP *de2, int nde2, int *nde);
@@ -435,6 +455,7 @@ DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
 DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n);
 void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft);
 void printDifxSpacecraft(const DifxSpacecraft *ds);
+void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds);
 DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
 int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
@@ -444,19 +465,27 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 DifxSource *newDifxSourceArray(int nSource);
 void deleteDifxSourceArray(DifxSource *ds);
 void printDifxSource(const DifxSource *ds);
+void fprintDifxSource(FILE *fp, const DifxSource *ds);
+void printDifxSourceSummary(const DifxSource *ds);
+void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds);
 
 /* DifxIF functions */
 DifxIF *newDifxIFArray(int nIF);
 void deleteDifxIFArray(DifxIF *di);
 void printDifxIF(const DifxIF *di);
+void fprintDifxIF(FILE *fp, const DifxIF *di);
+void printDifxIFSummary(const DifxIF *di);
+void fprintDifxIFSummary(FILE *fp, const DifxIF *di);
 void deleteBaselineFreq2IF(int ***map);
 void printBaselineFreq2IF(int ***map, int nAnt, int nChan);
+void fprintBaselineFreq2IF(FILE *fp, int ***map, int nAnt, int nChan);
 int makeBaselineFreq2IF(DifxInput *D, int configId);
 
 /* DifxAntennaFlag functions */
 DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag);
 void deleteDifxAntennaFlagArray(DifxAntennaFlag *df);
 void printDifxAntennaFlagArray(const DifxAntennaFlag *df, int nf);
+void fprintDifxAntennaFlagArray(FILE *fp, const DifxAntennaFlag *df, int nf);
 void copyDifxAntennaFlag(DifxAntennaFlag *dest, const DifxAntennaFlag *src,
 	const int *antennaIdRemap);
 DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1, 
@@ -467,6 +496,9 @@ DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1,
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);
+void fprintDifxInput(FILE *fp, const DifxInput *D);
+void printDifxInputSummary(const DifxInput *D);
+void fprintDifxInputSummary(FILE *fp, const DifxInput *D);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *loadDifxCalc(const char *filePrefix);
 DifxInput *updateDifxInput(DifxInput *D);

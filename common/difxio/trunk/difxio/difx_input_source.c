@@ -48,15 +48,37 @@ void deleteDifxSourceArray(DifxSource *ds)
 	}
 }
 
-void printDifxSource(const DifxSource *ds)
+void fprintDifxSource(FILE *fp, const DifxSource *ds)
 {
-	printf("  DifxSource [%s] : %p\n", ds->name, ds);
-	printf("    RA  =  %10.7f\n", ds->ra);
-	printf("    Dec = %+11.7f\n", ds->dec);
-	printf("    Calcode = %s\n", ds->calCode);
-	printf("    Qualifier = %d\n", ds->qual);
-	printf("    ConfigId = %d\n", ds->configId);
-	printf("    SpacecraftId = %d\n", ds->spacecraftId);
-	printf("    FITS SourceId = %d\n", ds->fitsSourceId);
+	fprintf(fp, "  DifxSource [%s] : %p\n", ds->name, ds);
+	fprintf(fp, "    RA  =  %10.7f\n", ds->ra);
+	fprintf(fp, "    Dec = %+11.7f\n", ds->dec);
+	fprintf(fp, "    Calcode = %s\n", ds->calCode);
+	fprintf(fp, "    Qualifier = %d\n", ds->qual);
+	fprintf(fp, "    ConfigId = %d\n", ds->configId);
+	fprintf(fp, "    SpacecraftId = %d\n", ds->spacecraftId);
+	fprintf(fp, "    FITS SourceId = %d\n", ds->fitsSourceId);
 }
 
+void printDifxSource(const DifxSource *ds)
+{
+	fprintDifxSource(stdout, ds);
+}
+
+void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds)
+{
+	fprintf(fp, "  %s\n", ds->name);
+	fprintf(fp, "    RA  =  %10.7f\n", ds->ra);
+	fprintf(fp, "    Dec = %+11.7f\n", ds->dec);
+	fprintf(fp, "    Calcode = %s\n", ds->calCode);
+	fprintf(fp, "    Qualifier = %d\n", ds->qual);
+	if(ds->spacecraftId >= 0)
+	{
+		fprintf(fp, "    SpacecraftId = %d\n", ds->spacecraftId);
+	}
+}
+
+void printDifxSourceSummary(const DifxSource *ds)
+{
+	fprintDifxSourceSummary(stdout, ds);
+}

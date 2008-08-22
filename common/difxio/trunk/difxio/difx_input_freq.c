@@ -40,12 +40,17 @@ void deleteDifxFreqArray(DifxFreq *df)
 	}
 }
 
+void fprintDifxFreq(FILE *fp, const DifxFreq *df)
+{
+	fprintf(fp, "  Difx Freq : %p\n", df);
+	fprintf(fp, "    Freq = %f MHz\n", df->freq);
+	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
+	fprintf(fp, "    Sideband = %c\n", df->sideband);
+}
+
 void printDifxFreq(const DifxFreq *df)
 {
-	printf("  Difx Freq : %p\n", df);
-	printf("    Freq = %f MHz\n", df->freq);
-	printf("    Bandwidth = %f MHz\n", df->bw);
-	printf("    Sideband = %c\n", df->sideband);
+	fprintDifxFreq(stdout, df);
 }
 
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)

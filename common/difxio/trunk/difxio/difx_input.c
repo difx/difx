@@ -111,97 +111,185 @@ void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds)
 	}
 }
 
-void printDifxInput(const DifxInput *D)
+void fprintDifxInput(FILE *fp, const DifxInput *D)
 {
 	int i;
 
-	printf("DifxInput : %p\n", D);
+	fprintf(fp, "DifxInput : %p\n", D);
 	if(!D)
 	{
 		return;
 	}
 
-	printf("  mjdStart = %14.8f\n", D->mjdStart);
-	printf("  mjdStop  = %14.8f\n", D->mjdStop);
-	printf("  FFT size = %d\n", D->nFFT);
-	printf("  Input Channels = %d\n", D->nInChan);
-	printf("  Start Channel = %d\n", D->startChan);
-	printf("  Spectral Avg = %d\n", D->specAvg);
-	printf("  Output Channels = %d\n", D->nOutChan);
+	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
+	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
+	fprintf(fp, "  FFT size = %d\n", D->nFFT);
+	fprintf(fp, "  Input Channels = %d\n", D->nInChan);
+	fprintf(fp, "  Start Channel = %d\n", D->startChan);
+	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
+	fprintf(fp, "  Output Channels = %d\n", D->nOutChan);
 
-	printf("  nJob = %d\n", D->nJob);
+	fprintf(fp, "  nJob = %d\n", D->nJob);
 	for(i = 0; i < D->nJob; i++)
 	{
-		printDifxJob(D->job + i);
+		fprintDifxJob(fp, D->job + i);
 	}
 
-	printf("  nConfig = %d\n", D->nConfig);
+	fprintf(fp, "  nConfig = %d\n", D->nConfig);
 	for(i = 0; i < D->nConfig; i++)
 	{
-		printDifxConfig(D->config + i);
+		fprintDifxConfig(fp, D->config + i);
 	}
 
-	printf("  nFreq = %d\n", D->nFreq);
+	fprintf(fp, "  nFreq = %d\n", D->nFreq);
 	for(i = 0; i < D->nFreq; i++)
 	{
-		printDifxFreq(D->freq + i);
+		fprintDifxFreq(fp, D->freq + i);
 	}
 
-	printf("  nAntenna = %d\n", D->nAntenna);
+	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
 	for(i = 0; i < D->nAntenna; i++)
 	{
-		printDifxAntenna(D->antenna + i);
+		fprintDifxAntenna(fp, D->antenna + i);
 	}
 
-	printf("  nSource = %d\n", D->nSource);
+	fprintf(fp, "  nSource = %d\n", D->nSource);
 	for(i = 0; i < D->nSource; i++)
 	{
-		printDifxSource(D->source + i);
+		fprintDifxSource(fp, D->source + i);
 	}
 
-	printf("  nScan = %d\n", D->nScan);
+	fprintf(fp, "  nScan = %d\n", D->nScan);
 	for(i = 0; i < D->nScan; i++)
 	{
-		printDifxScan(D->scan + i);
+		fprintDifxScan(fp, D->scan + i);
 	}
 
-	printf("  nEOP = %d\n", D->nEOP);
+	fprintf(fp, "  nEOP = %d\n", D->nEOP);
 	if(D->eop) for(i = 0; i < D->nEOP; i++)
 	{
-		printDifxEOP(D->eop + i);
+		fprintDifxEOP(fp, D->eop + i);
 	}
 
-	printf("  nDataStreamEntries = %d\n", D->nDatastream);
+	fprintf(fp, "  nDataStreamEntries = %d\n", D->nDatastream);
 	for(i = 0; i < D->nDatastream; i++)
 	{
-		printDifxDatastream(D->datastream + i);
+		fprintDifxDatastream(fp, D->datastream + i);
 	}
 
-	printf("  nBaselineEntries = %d\n", D->nBaseline);
+	fprintf(fp, "  nBaselineEntries = %d\n", D->nBaseline);
 	for(i = 0; i < D->nBaseline; i++)
 	if(D->nBaseline > 1)
 	{
-		printDifxBaseline(D->baseline + i);
+		fprintDifxBaseline(fp, D->baseline + i);
 	}
 
-	printf("  nSpacecraft = %d\n", D->nSpacecraft);
+	fprintf(fp, "  nSpacecraft = %d\n", D->nSpacecraft);
 	for(i = 0; i < D->nSpacecraft; i++)
 	{
-		printDifxSpacecraft(D->spacecraft + i);
+		fprintDifxSpacecraft(fp, D->spacecraft + i);
 	}
 
-	printf("  nPulsar = %d\n", D->nPulsar);
+	fprintf(fp, "  nPulsar = %d\n", D->nPulsar);
 	for(i = 0; i < D->nPulsar; i++)
 	{
-		printDifxPulsar(D->pulsar + i);
+		fprintDifxPulsar(fp, D->pulsar + i);
 	}
 
-	printf("  nFlags = %d\n", D->nFlag);
-	printDifxAntennaFlagArray(D->flag, D->nFlag);
+	fprintf(fp, "  nFlags = %d\n", D->nFlag);
+	fprintDifxAntennaFlagArray(fp, D->flag, D->nFlag);
 	
-	printf("\n");
+	fprintf(fp, "\n");
 }
 
+void printDifxInput(const DifxInput *D)
+{
+	fprintDifxInput(stdout, D);
+}
+
+void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
+{
+	int i;
+
+	fprintf(fp, "Summary\n", D);
+	if(!D)
+	{
+		return;
+	}
+
+	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
+	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
+	fprintf(fp, "  FFT size = %d\n", D->nFFT);
+	fprintf(fp, "  Input Channels = %d\n", D->nInChan);
+	fprintf(fp, "  Start Channel = %d\n", D->startChan);
+	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
+	fprintf(fp, "  Output Channels = %d\n", D->nOutChan);
+
+	fprintf(fp, "  nJob = %d\n", D->nJob);
+	for(i = 0; i < D->nJob; i++)
+	{
+		fprintDifxJob(fp, D->job + i);
+	}
+
+	fprintf(fp, "  nConfig = %d\n", D->nConfig);
+	for(i = 0; i < D->nConfig; i++)
+	{
+		fprintDifxConfigSummary(fp, D->config + i);
+	}
+
+	fprintf(fp, "  nAntenna = %d\n", D->nAntenna);
+	for(i = 0; i < D->nAntenna; i++)
+	{
+		fprintDifxAntennaSummary(fp, D->antenna + i);
+	}
+
+	fprintf(fp, "  nSource = %d\n", D->nSource);
+	for(i = 0; i < D->nSource; i++)
+	{
+		fprintDifxSourceSummary(fp, D->source + i);
+	}
+
+	fprintf(fp, "  nScan = %d\n", D->nScan);
+	for(i = 0; i < D->nScan; i++)
+	{
+		fprintDifxScanSummary(fp, D->scan + i);
+	}
+
+	fprintf(fp, "  nEOP = %d\n", D->nEOP);
+	if(D->eop) for(i = 0; i < D->nEOP; i++)
+	{
+		fprintDifxEOPSummary(fp, D->eop + i);
+	}
+
+	if(D->nSpacecraft > 0)
+	{
+		fprintf(fp, "  nSpacecraft = %d\n", D->nSpacecraft);
+	}
+	for(i = 0; i < D->nSpacecraft; i++)
+	{
+		fprintDifxSpacecraft(fp, D->spacecraft + i);
+	}
+
+	if(D->nPulsar > 0)
+	{
+		fprintf(fp, "  nPulsar = %d\n", D->nPulsar);
+	}
+	for(i = 0; i < D->nPulsar; i++)
+	{
+		fprintDifxPulsar(fp, D->pulsar + i);
+	}
+
+	if(D->nFlag > 0)
+	{
+		fprintf(fp, "  nFlags = %d\n", D->nFlag);
+		fprintDifxAntennaFlagArray(fp, D->flag, D->nFlag);
+	}
+}
+
+void printDifxInputSummary(const DifxInput *D)
+{
+	fprintDifxInputSummary(stdout, D);
+}
 
 static int parseUVWs(DifxModel **model, int nAntenna, int *antMap, int row, 
 	const char *str)
@@ -1000,10 +1088,22 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 		{
 			r = DifxParametersfind1(ip, r+1,
 				"INPUT BAND %d POL", i);
+			if(r < 0)
+			{
+				printf("parseDifxInputDataStreamTable: "
+					"INPUT BAND %d POL not found\n", i);
+				return 0;
+			}
 			D->datastream[e].RCpolName[i] = 
 				DifxParametersvalue(ip, r)[0];
 			r = DifxParametersfind1(ip, r+1,
 				"INPUT BAND %d INDEX", i);
+			if(r < 0)
+			{
+				printf("parseDifxInputDataStreamTable: "
+					"INPUT BAND %d INDEX not found\n", i);
+				return 0;
+			}
 			a = atoi(DifxParametersvalue(ip, r));
 			D->datastream[e].RCfreqId[i] = D->datastream[e].freqId[a];
 		}
@@ -2866,7 +2966,6 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	if(mp)
 	{
 		D = populateIM(D, mp);
-		printf("Interferometer model %s being used\n", modelFile);
 	}
 
 	if(!D)
@@ -2925,6 +3024,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	if(!D)
 	{
 		deleteDifxInput(DSave);
+		return 0;
 	}
 	
 	deleteDifxParameters(ip);

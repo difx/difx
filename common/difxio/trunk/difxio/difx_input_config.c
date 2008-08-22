@@ -70,57 +70,57 @@ void deleteDifxConfigArray(DifxConfig *dc)
 	}
 }
 
-void printDifxConfig(const DifxConfig *dc)
+void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 {
 	int i;
 	int nAnt;
 
-	printf("  Difx Config [%s] : %p\n", dc->name, dc);
-	printf("    tInt  = %f sec\n", dc->tInt);
-	printf("    nChan = %d\n", dc->nChan);
-	printf("    postFFringe = %d\n", dc->postFFringe);
-	printf("    quadDelayInterp = %d\n", dc->quadDelayInterp);
-	printf("    pulsarId = %d\n", dc->pulsarId);
-	printf("    polarization [%d] = %c%c\n", 
+	fprintf(fp, "  Difx Config [%s] : %p\n", dc->name, dc);
+	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
+	fprintf(fp, "    nChan = %d\n", dc->nChan);
+	fprintf(fp, "    postFFringe = %d\n", dc->postFFringe);
+	fprintf(fp, "    quadDelayInterp = %d\n", dc->quadDelayInterp);
+	fprintf(fp, "    pulsarId = %d\n", dc->pulsarId);
+	fprintf(fp, "    polarization [%d] = %c%c\n", 
 		dc->nPol, dc->pol[0], dc->pol[1]);
-	printf("    doPolar = %d\n", dc->doPolar);
-	printf("    quantization bits = %d\n", dc->quantBits);
-	printf("    datastream ids [%d] =", dc->nDatastream);
+	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
+	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
+	fprintf(fp, "    datastream ids [%d] =", dc->nDatastream);
 	for(i = 0; i < dc->nDatastream; i++)
 	{
-		printf(" %d", dc->datastreamId[i]);
+		fprintf(fp, " %d", dc->datastreamId[i]);
 	}
-	printf("\n");
-	printf("    baseline ids [%d] =", dc->nBaseline);
+	fprintf(fp, "\n");
+	fprintf(fp, "    baseline ids [%d] =", dc->nBaseline);
 	for(i = 0; i < dc->nBaseline; i++)
 	{
-		printf(" %d", dc->baselineId[i]);
+		fprintf(fp, " %d", dc->baselineId[i]);
 	}
-	printf("\n");
+	fprintf(fp, "\n");
 	if(dc->freqId2IF)
 	{
-		printf("    frequency to IF map =");
+		fprintf(fp, "    frequency to IF map =");
 		for(i = 0; dc->freqId2IF[i] >= 0; i++)
 		{
-			printf(" %d", dc->freqId2IF[i]);
+			fprintf(fp, " %d", dc->freqId2IF[i]);
 		}
-		printf("\n");
+		fprintf(fp, "\n");
 	}
 	if(dc->ant2dsId)
 	{
-		printf("    ant2dsId[%d] =", dc->nAntenna);
+		fprintf(fp, "    ant2dsId[%d] =", dc->nAntenna);
 		for(i = 0; i < dc->nAntenna; i++)
 		{
-			printf(" %d", dc->ant2dsId[i]);
+			fprintf(fp, " %d", dc->ant2dsId[i]);
 		}
-		printf("\n");
+		fprintf(fp, "\n");
 	}
-	printf("    nIF = %d\n", dc->nIF);
+	fprintf(fp, "    nIF = %d\n", dc->nIF);
 	if(dc->nIF > 0)
 	{
 		for(i = 0; i < dc->nIF; i++)
 		{
-			printDifxIF(dc->IF+i);
+			fprintDifxIF(fp, dc->IF+i);
 		}
 	}
 
@@ -129,11 +129,43 @@ void printDifxConfig(const DifxConfig *dc)
 		/* count number of antennas in the array first */
 		for(nAnt = 0; dc->baselineFreq2IF[nAnt]; nAnt++);
 		
-		printf("    baselineFreq2IF map:\n");
-		printBaselineFreq2IF(dc->baselineFreq2IF, nAnt, dc->nIF);
+		fprintf(fp, "    baselineFreq2IF map:\n");
+		fprintBaselineFreq2IF(fp, dc->baselineFreq2IF, nAnt, dc->nIF);
 	}
 }
 
+void printDifxConfig(const DifxConfig *dc)
+{
+	fprintDifxConfig(stdout, dc);
+}
+
+void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
+{
+	int i;
+	int nAnt;
+
+	fprintf(fp, "  Difx Config [%s]\n", dc->name);
+	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
+	fprintf(fp, "    nChan = %d\n", dc->nChan);
+	if(dc->pulsarId >= 0)
+	{
+		fprintf(fp, "    pulsarId = %d\n", dc->pulsarId);
+	}
+	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
+	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
+	if(dc->nIF > 0)
+	{
+		for(i = 0; i < dc->nIF; i++)
+		{
+			fprintDifxIFSummary(fp, dc->IF+i);
+		}
+	}
+}
+
+void printDifxConfigSummary(const DifxConfig *dc)
+{
+	fprintDifxConfigSummary(stdout, dc);
+}
 
 int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 {

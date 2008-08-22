@@ -82,13 +82,18 @@ void deleteDifxModelArray(DifxModel **dm, int nAntenna)
 	}
 }
 
-void printDifxModel(const DifxModel *dm)
+void fprintDifxModel(FILE *fp, const DifxModel *dm)
 {
-	printf("    DifxModel : %p\n", dm);
+	fprintf(fp, "    DifxModel : %p\n", dm);
 	if(dm)
 	{
-		printf("      U, V, W = %f %f %f m\n", dm->u, dm->v, dm->w);
-		printf("      Delay   = %f us\n", dm->t);
+		fprintf(fp, "      U, V, W = %f %f %f m\n", 
+			dm->u, dm->v, dm->w);
+		fprintf(fp, "      Delay   = %f us\n", dm->t);
 	}
 }
 
+void printDifxModel(const DifxModel *dm)
+{
+	fprintDifxModel(stdout, dm);
+}

@@ -42,25 +42,30 @@ void deleteBaselineFreq2IF(int ***map)
 	}
 }
 
-void printBaselineFreq2IF(int ***map, int nAnt, int nChan)
+void fprintBaselineFreq2IF(FILE *fp, int ***map, int nAnt, int nChan)
 {
 	int a1, a2, c;
 
-	printf("      nAnt = %d  nChan = %d\n", nAnt, nChan);
+	fprintf(fp, "      nAnt = %d  nChan = %d\n", nAnt, nChan);
 
 	for(a2 = 0; a2 < nAnt; a2++)
 	{
-		printf("      ");
+		fprintf(fp, "      ");
 		for(c = 0; c < nChan; c++)
 		{
 			for(a1 = 0; a1 < nAnt; a1++)
 			{
-				printf("%2d", map[a1][a2][c]);
+				fprintf(fp, "%2d", map[a1][a2][c]);
 			}
-			printf("   ");
+			fprintf(fp, "   ");
 		}
-		printf("\n");
+		fprintf(fp, "\n");
 	}
+}
+
+void printBaselineFreq2IF(int ***map, int nAnt, int nChan)
+{
+	fprintBaselineFreq2IF(stdout, map, nAnt, nChan);
 }
 
 int makeBaselineFreq2IF(DifxInput *D, int configId)
@@ -115,12 +120,13 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		baselineId = dc->baselineId[b];
 		if(baselineId < 0 || baselineId >= D->nBaseline)
 		{
-			printf("Error! baselineId=%d\n", baselineId);
+			fprintf(stderr, "Error! baselineId=%d\n", baselineId);
 		}
 		db = D->baseline + baselineId;
 		if(db->dsA < 0 || db->dsB < 0)
 		{	
-			printf("Error! dsA=%d dsB=%d\n", db->dsA, db->dsB);
+			fprintf(stderr, "Error! dsA=%d dsB=%d\n", 
+				db->dsA, db->dsB);
 		}
 		for(a1 = 0; a1 < nAnt; a1++) 
 		{
@@ -131,7 +137,8 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		}
 		if(a1 < 0 || a1 >= nAnt)
 		{
-			printf("Error! makeBaselineFreq2IF : a1=%d nA=%d",
+			fprintf(stderr, 
+				"Error! makeBaselineFreq2IF : a1=%d nA=%d",
 				a1, D->nAntenna);
 		}
 		for(a2 = 0; a2 < nAnt; a2++) 
@@ -143,7 +150,8 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		}
 		if(a2 < 0 || a2 >= D->nAntenna)
 		{
-			printf("Error! makeBaselineFreq2IF : a2=%d nA=%d",
+			fprintf(stderr,
+				"Error! makeBaselineFreq2IF : a2=%d nA=%d",
 				a2, D->nAntenna);
 		}
 		nFreq = db->nFreq;
@@ -161,7 +169,8 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 			}
 			if(fqA < 0 || fqA >= D->nFreq)
 			{
-				printf("Error! makeBaselineFreq2IF : f=%d nF=%d",
+				fprintf(stderr,"Error! "
+					"makeBaselineFreq2IF : f=%d nF=%d",
 					fqA, D->nFreq);
 			}
 			bandId = dc->freqId2IF[fqA];
@@ -183,7 +192,8 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		}
 		if(a < 0 || a >= nAnt)
 		{
-			printf("Warning! makeBaselineFreq2IF : a=%d nA=%d\n",
+			fprintf(stderr,
+				"Warning! makeBaselineFreq2IF : a=%d nA=%d\n",
 				a, nAnt);
 			continue;
 		}
@@ -219,23 +229,53 @@ void deleteDifxIFArray(DifxIF *di)
 	}
 }
 
-void printDifxIF(const DifxIF *di)
+void fprintDifxIF(FILE *fp, const DifxIF *di)
 {
-	printf("    Difx IF : %p\n", di);
-	printf("      Freq = %f MHz\n", di->freq);
-	printf("      Bandwidth = %f MHz\n", di->bw);
-	printf("      Sideband = %c\n", di->sideband);
+	fprintf(fp, "    Difx IF : %p\n", di);
+	fprintf(fp, "      Freq = %f MHz\n", di->freq);
+	fprintf(fp, "      Bandwidth = %f MHz\n", di->bw);
+	fprintf(fp, "      Sideband = %c\n", di->sideband);
 	if(di->nPol == 1)
 	{
-		printf("      Pol = %c\n", di->pol[0]);
+		fprintf(fp, "      Pol = %c\n", di->pol[0]);
 	}
 	else if(di->nPol == 2)
 	{
-		printf("      Pols = %c, %c\n", di->pol[0], di->pol[1]);
+		fprintf(fp, "      Pols = %c, %c\n", di->pol[0], di->pol[1]);
 	}
 	else
 	{
-		printf("      nPol = %d\n", di->nPol);
+		fprintf(fp, "      nPol = %d\n", di->nPol);
 	}
 }
 
+void printDifxIF(const DifxIF *di)
+{
+	fprintDifxIF(stdout, di);
+}
+
+void fprintDifxIFSummary(FILE *fp, const DifxIF *di)
+{
+	char pols[8];
+
+	if(di->nPol == 1)
+	{
+		sprintf(pols, "(%c)", di->pol[0]);
+	}
+	else if(di->nPol == 2)
+	{
+		sprintf(pols, "(%c,%c)", di->pol[0], di->pol[1]);
+	}
+	else
+	{
+		sprintf(pols, "(%d)", di->nPol);
+	}
+
+	fprintf(fp, "    Freq=%f MHz  BW=%f MHz Sideband=%c Pols=%s\n",
+		di->freq, di->bw, di->sideband, pols);
+}
+
+void printDifxIFSummary(const DifxIF *di)
+{
+	fprintDifxIFSummary(stdout, di);
+}

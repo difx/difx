@@ -71,12 +71,17 @@ void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna)
 	}
 }
 
-void printDifxPolyModel(const DifxPolyModel *dpm)
+void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm)
 {
-	printf("    DifxPolyModel : %p\n", dpm);
+	fprintf(fp, "    DifxPolyModel : %p\n", dpm);
 	if(dpm)
 	{
-		printf("        mjd, sec = %d, %d\n", dpm->mjd, dpm->sec);
-		printf("        delay = %22.15e", dpm->delay[0]);
+		fprintf(fp, "        mjd, sec = %d, %d\n", dpm->mjd, dpm->sec);
+		fprintf(fp, "        delay = %22.15e", dpm->delay[0]);
 	}
+}
+
+void printDifxPolyModel(const DifxPolyModel *dpm)
+{
+	fprintDifxPolyModel(stdout, dpm);
 }

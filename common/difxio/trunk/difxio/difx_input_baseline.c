@@ -71,22 +71,27 @@ void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
 	}
 }
 
-void printDifxBaseline(const DifxBaseline *db)
+void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
 {
 	int f;
 	
-	printf("  Difx Baseline : %p\n", db);
-	printf("    datastream indices = %d %d\n", db->dsA, db->dsB);
-	printf("    nFreq = %d\n", db->nFreq);
+	fprintf(fp, "  Difx Baseline : %p\n", db);
+	fprintf(fp, "    datastream indices = %d %d\n", db->dsA, db->dsB);
+	fprintf(fp, "    nFreq = %d\n", db->nFreq);
 	if(db->nPolProd)
 	{
-		printf("    nPolProd[freq] =");
+		fprintf(fp, "    nPolProd[freq] =");
 		for(f = 0; f < db->nFreq; f++)
 		{
-			printf(" %d", db->nPolProd[f]);
+			fprintf(fp, " %d", db->nPolProd[f]);
 		}
-		printf("\n");
+		fprintf(fp, "\n");
 	}
+}
+
+void printDifxBaseline(const DifxBaseline *db)
+{
+	fprintDifxBaseline(stdout, db);
 }
 
 int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,

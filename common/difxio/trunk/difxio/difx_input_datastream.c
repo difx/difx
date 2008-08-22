@@ -65,27 +65,32 @@ void deleteDifxDatastreamArray(DifxDatastream *ds, int nDatastream)
 	}
 }
 
-void printDifxDatastream(const DifxDatastream *ds)
+void fprintDifxDatastream(FILE *fp, const DifxDatastream *ds)
 {
 	int f;
-	printf("  Difx Datastream Entry[antennaId=%d] : %p\n", 
+	fprintf(fp, "  Difx Datastream Entry[antennaId=%d] : %p\n", 
 		ds->antennaId, ds);
-	printf("    format = %s\n", ds->dataFormat);
-	printf("    quantization bits = %d\n", ds->quantBits);
-	printf("    nFreq = %d\n", ds->nFreq);
-	printf("    nRecChan = %d\n", ds->nRecChan);
-	printf("    (freqId, nPol)[freq] =");
+	fprintf(fp, "    format = %s\n", ds->dataFormat);
+	fprintf(fp, "    quantization bits = %d\n", ds->quantBits);
+	fprintf(fp, "    nFreq = %d\n", ds->nFreq);
+	fprintf(fp, "    nRecChan = %d\n", ds->nRecChan);
+	fprintf(fp, "    (freqId, nPol)[freq] =");
 	for(f = 0; f < ds->nFreq; f++)
 	{
-		printf(" (%d, %d)", ds->freqId[f], ds->nPol[f]);
+		fprintf(fp, " (%d, %d)", ds->freqId[f], ds->nPol[f]);
 	}
-	printf("\n");
-	printf("    (freqId, pol)[recchan] =");
+	fprintf(fp, "\n");
+	fprintf(fp, "    (freqId, pol)[recchan] =");
 	for(f = 0; f < ds->nRecChan; f++)
 	{
-		printf(" (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
+		fprintf(fp, " (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
 	}
-	printf("\n");
+	fprintf(fp, "\n");
+}
+
+void printDifxDatastream(const DifxDatastream *ds)
+{
+	fprintDifxDatastream(stdout, ds);
 }
 
 int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
