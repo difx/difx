@@ -4,12 +4,15 @@
 
 typedef struct
 {
-	fftw_complex ***spectrum;	/* [IF][Time][Chan] */
+	fftw_complex ***spectrum;	/* [BBC][Time][Chan] */
 	int a1, a2, sourceId;
 	double mjdStart, mjdMax;
 	int nTime, nChan;
 	int nBBC;
 	double *weightSum;
+	double *weightMin;
+	double *weightMax;
+	double *lastDump;
 	int *nRec;
 } Accumulator;
 
@@ -17,6 +20,8 @@ struct _Sniffer
 {
 	FILE *apd;
 	FILE *wts;
+	FILE *acb;
+	FILE *xcb;
 	double solInt;			/* (sec) FFT interval */
 	double bw;			/* (MHz) IF bandwidth */
 	double deltaT;			/* (sec) grid spacing */
@@ -45,10 +50,12 @@ void resetAccumulator(Accumulator *A)
 			memset(A->spectrum[i][t], 0, 
 				A->nChan*sizeof(fftw_complex));
 		}
+		A->weightMin[i] = 1000.0;
+		A->weightMax[i] = 0.0;
+		A->weightSum[i] = 0.0;
 	}
 	A->mjdStart = 0;
 	memset(A->nRec, 0, A->nBBC*sizeof(int));
-	memset(A->weightSum, 0, A->nBBC*sizeof(double));
 }
 
 Accumulator *newAccumulatorArray(Sniffer *S, int n)
@@ -79,6 +86,9 @@ Accumulator *newAccumulatorArray(Sniffer *S, int n)
 		}
 		A[a].nRec = (int *)calloc(nBBC, sizeof(int));
 		A[a].weightSum = (double *)calloc(nBBC, sizeof(double));
+		A[a].weightMin = (double *)calloc(nBBC, sizeof(double));
+		A[a].weightMax = (double *)calloc(nBBC, sizeof(double));
+		A[a].lastDump = (double *)calloc(S->D->nSource, sizeof(double));
 		A[a].sourceId = -1;
 	}
 
@@ -109,6 +119,9 @@ void deleteAccumulatorArray(Accumulator *A, int n)
 			free(A[a].spectrum);
 			free(A[a].nRec);
 			free(A[a].weightSum);
+			free(A[a].weightMin);
+			free(A[a].weightMax);
+			free(A[a].lastDump);
 		}
 	}
 
@@ -169,7 +182,27 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		deleteSniffer(S);
 		return 0;
 	}
-	fprintf(S->wts, "%s\n", D->job->obsCode);
+	fprintf(S->wts, "PLOTWT summary: %s\n", D->job->obsCode);
+
+	/* Open acband file */
+	sprintf(filename, "%s.acb", filebase);
+	S->acb = fopen(filename, "w");
+	if(!S->acb)
+	{
+		fprintf(stderr, "Cannot open %s for write\n", filename);
+		deleteSniffer(S);
+		return 0;
+	}
+
+	/* Open xcband file */
+	sprintf(filename, "%s.xcb", filebase);
+	S->xcb = fopen(filename, "w");
+	if(!S->xcb)
+	{
+		fprintf(stderr, "Cannot open %s for write\n", filename);
+		deleteSniffer(S);
+		return 0;
+	}
 	
 	S->accum = (Accumulator **)malloc(
 		S->nAntenna*sizeof(Accumulator *));
@@ -212,6 +245,16 @@ void deleteSniffer(Sniffer *S)
 		{
 			fclose(S->wts);
 			S->wts = 0;
+		}
+		if(S->acb)
+		{
+			fclose(S->acb);
+			S->acb = 0;
+		}
+		if(S->xcb)
+		{
+			fclose(S->xcb);
+			S->xcb = 0;
 		}
 		if(S->accum)
 		{
@@ -259,20 +302,123 @@ double peakup(double peak[3], int i, int n, double w)
 
 static int dump(Sniffer *S, Accumulator *A, double mjd)
 {
-	int bbc, i, j, besti, bestj;
+	int bbc, i, j, p, a1, a2, besti, bestj;
 	fftw_complex **array;
 	fftw_complex z;
-	double a2, max2, x, y;
+	double amp2, max2, x, y;
 	double amp, phase, delay, rate;
 	double peak[3];
 	double w;
+	char startStr[32], stopStr[32];
+	FILE *fp;
+	const DifxConfig *config;
+	const DifxIF *IF;
+	char pol, side;
+	double freq;
+	int chan=1, b, f, t;
+	int maxNRec = 0;
 
-	if(A->sourceId < 0)
+	if(A->sourceId < 0 || S->configId < 0)
 	{
 		return 0;
 	}
 
-	if(A->a1 == A->a2) /* Autocorrelation? */
+	config = S->D->config + S->configId;
+
+	a1 = A->a1;
+	a2 = A->a2;
+
+	for(b = 0; b < A->nBBC; b++)
+	{
+		if(A->nRec[b] > maxNRec)
+		{
+			maxNRec = A->nRec[b];
+		}
+	}
+
+	/* dump XC/AC bandpass at most every 15 minutes each source,
+	   and only if at least 1 IF has >= 75% valid records */
+	if(A->mjdStart > A->lastDump[A->sourceId] + 15.0/1440.0 &&
+	   maxNRec >= A->nTime*3/4)
+	{
+		A->lastDump[A->sourceId] = A->mjdStart;
+
+		srvMjd2str(A->mjdStart, startStr);
+		srvMjd2str(A->mjdMax, stopStr);
+
+		if(a1 == a2)	/* Autocorrelation? */
+		{
+			fp = S->acb;
+		}
+		else			/* Cross corr? */
+		{
+			fp = S->xcb;
+		}
+
+		fprintf(fp, "timerange: %s %s obscode: %s chans: %d x %d\n",
+			startStr, stopStr, S->D->job->obsCode,
+			S->D->nOutChan, A->nBBC);
+		fprintf(fp, "source: %s bandw: %6.3f MHz\n",
+			S->D->source[A->sourceId].name, S->bw);
+		for(i = 0; i < S->nIF; i++)
+		{
+			IF = config->IF + i;
+			freq = IF->freq/1000.0;	/* freq in GHz */
+			side = IF->sideband;
+			for(p = 0; p < S->nPol; p++)
+			{
+				pol = IF->pol[p];
+				fprintf(fp, "bandfreq: %9.6f GHz polar: %c%c side: %c bbchan: 0\n",
+					freq, pol, pol, side);
+			}
+		}
+		
+		if(a1 == a2)	/* Autocorrelation? */
+		{
+			for(b = 0; b < A->nBBC; b++)
+			{
+				for(f = 0; f < A->nChan; f++)
+				{
+					z = 0.0;
+					for(t = 0; t < A->nTime; t++)
+					{
+						z += A->spectrum[b][t][f];
+					}
+					z /= A->weightSum[b];
+					fprintf(fp, "%2d %s %5d %6.3f\n",
+						a1+1, S->D->antenna[a1].name,
+						chan, creal(z));
+					chan++;
+				}
+			}
+		}
+		else		/* Cross corr? */
+		{
+			for(b = 0; b < A->nBBC; b++)
+			{
+				for(f = 0; f < A->nChan; f++)
+				{
+					z = 0.0;
+					for(t = 0; t < A->nTime; t++)
+					{
+						z += A->spectrum[b][t][f];
+					}
+					z /= A->weightSum[b];
+					x = creal(z);
+					y = cimag(z);
+					fprintf(fp, "%2d %2d %s %s %5d %6.3f %6.3f\n",
+						a1+1, a2+1, 
+						S->D->antenna[a1].name,
+						S->D->antenna[a2].name,
+						chan, sqrt(x*x+y*y), 
+						atan2(y, x)*180.0/M_PI);
+					chan++;
+				}
+			}
+		}
+	}
+
+	if(a1 == a2) /* Autocorrelation? */
 	{
 		/* weights file */
 		fprintf(S->wts, "%d %f %d %s %d",
@@ -292,6 +438,30 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			}
 			fprintf(S->wts, " %5.3f", w);
 		}
+		for(bbc = 0; bbc < A->nBBC; bbc++)
+		{
+			if(A->nRec[bbc] == 0)
+			{
+				w = 0.0;
+			}
+			else
+			{
+				w = A->weightMin[bbc];
+			}
+			fprintf(S->wts, " %5.3f", w);
+		}
+		for(bbc = 0; bbc < A->nBBC; bbc++)
+		{
+			if(A->nRec[bbc] == 0)
+			{
+				w = 0.0;
+			}
+			else
+			{
+				w = A->weightMax[bbc];
+			}
+			fprintf(S->wts, " %5.3f", w);
+		}
 		fprintf(S->wts, "\n");
 	}
 
@@ -299,18 +469,11 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	{
 		/* fringe fit */
 
-		/* FIXME -- choose refant here? */
-		if(A->a1 != 4 && A->a2 != 4)
-		{
-			/* Note Return here! */
-			return 0;
-		}
-
 		fprintf(S->apd, "%d %f %d %s %d %d %s %s %d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
-			S->D->source[A->sourceId].name, A->a1+1, A->a2+1,
-			S->D->antenna[A->a1].name,
-			S->D->antenna[A->a2].name,
+			S->D->source[A->sourceId].name, a1+1, a2+1,
+			S->D->antenna[a1].name,
+			S->D->antenna[a2].name,
 			A->nBBC);
 
 		for(bbc = 0; bbc < A->nBBC; bbc++)
@@ -341,12 +504,12 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 				for(i = 0; i < S->fft_nx; i++)
 				{
 					z = S->fftbuffer[j*S->fft_nx + i];
-					a2 = z*~z;
-					if(a2 > max2)
+					amp2 = z*~z;
+					if(amp2 > max2)
 					{
 						besti = i;
 						bestj = j;
-						max2 = a2;
+						max2 = amp2;
 					}
 				}
 			}
@@ -420,6 +583,14 @@ static int add(Accumulator *A, int bbc, int index, float weight,
 
 	A->nRec[bbc]++;
 	A->weightSum[bbc] += weight;
+	if(weight > A->weightMax[bbc])
+	{
+		A->weightMax[bbc] = weight;
+	}
+	if(weight < A->weightMin[bbc])
+	{
+		A->weightMin[bbc] = weight;
+	}
 
 	return A->nRec[bbc];
 }

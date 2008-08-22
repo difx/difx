@@ -5,6 +5,7 @@
 */
 
 /* includes */
+#include <stdio.h>
 #include <math.h>
 #include <ctype.h>
 #include <string.h>
@@ -75,6 +76,35 @@ char *time2str
     mjd2str (mjd, pOutStr);
     strcat (pOutStr, " ");
     rad2str (rads, formatStr, tempStr);
+    strcat (pOutStr, tempStr);
+
+    return (poriginal);
+}
+/*******************************************************************************
+*/
+char *srvMjd2str
+    (
+    double inTime,	/* date/time (MJD w/ fractional day) to be converted */
+    char *pOutStr	/* pointer to returned string */
+    )
+/*
+ * RETURNS original pointer to given string
+ *
+ * Output format:   54235 07h00m02.5s
+ */
+{
+    char *poriginal = pOutStr;  /* hold output string address for return */
+    long mjd;
+    double rads;
+    char tempStr[40];
+
+    /* separate date (MJD) and time (radian) parts */
+    mjd = (int)inTime;
+    rads = (inTime - (double)mjd) * 2.0*M_PI;
+
+    /* build date string */
+    sprintf(pOutStr, "%d ", mjd);
+    rad2str (rads, "h", tempStr);
     strcat (pOutStr, tempStr);
 
     return (poriginal);

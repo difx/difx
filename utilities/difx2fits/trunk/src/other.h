@@ -13,6 +13,7 @@ char *time2str(double, char *, char *);
 char *rad2str(double, char *, char *);
 char *rad2strg(double, char *, char *, int);
 char *timeMjd2str(double, char *);
+char *srvMjd2str(double inTime, char *pOutStr);
 
 /* textutils.c */
 void copyQuotedString(char *dest, const char *src, int n);
