@@ -6,7 +6,7 @@ from string import strip, split, find, lower
 
 program = 'difxsniff'
 version = '2.0'
-verdate = '20071218'
+verdate = '20080826'
 author  = 'Walter Brisken'
 
 def run(pgm, args):
