@@ -28,10 +28,21 @@
 #include <errno.h>
 #include "mark5access/mark5_stream.h"
 
+static void mark5_stream_blank_frame(struct mark5_stream *ms)
+{
+	int z;
+
+	for(z = 0; z < MAXBLANKZONES; z++)
+	{
+		ms->blankzonestartvalid[z] = 1<<30;
+		ms->blankzoneendvalid[z] = 0;
+	}
+}
 
 int mark5_stream_next_frame(struct mark5_stream *ms)
 {
-	int n, v;
+	int n;
+	int v = 1;
 
 	/* call specialized function to ready next frame */
 	n = ms->next(ms);
@@ -61,7 +72,14 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 	}
 	
 	/* blank bad data if any */
-	ms->blanker(ms);
+	if(v)
+	{
+		ms->blanker(ms);
+	}
+	else /* blank entire frame if validity check fails */
+	{
+		mark5_stream_blank_frame(ms);
+	}
 
 	/* set payload pointer to point to start of actual data */
 	if(ms->frame)

@@ -19,6 +19,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "mark5access/mark5_stream.h"
 
 static int mark5_stream_unpacker_next(struct mark5_stream *ms)
@@ -91,6 +92,7 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 	int nsamp)
 {
 	int v;
+	int c;
 
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
@@ -102,7 +104,13 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 		v = ms->validate(ms);
 		if(!v)
 		{
+			/* If validation fails, blank entire block of data */
 			ms->nvalidatefail++;
+			for(c = 0; c < ms->nchan; c++)
+			{
+				memset(unpacked[c], 0, nsamp*sizeof(float));
+			}
+			return 0;
 		}
 		else
 		{

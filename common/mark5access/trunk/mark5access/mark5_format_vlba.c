@@ -158,6 +158,16 @@ int countbits(uint8_t v)
 	return c;
 }
 
+int countbits32(uint32_t v)
+{
+	unsigned int c; // c accumulates the total bits set in v
+	for (c = 0; v; c++)
+	{
+		v &= v - 1; // clear the least significant bit set
+	}
+	return c;
+}
+
 /* Look for the first occurance (lowest offset >= 0) of the following pattern:
  *
  * 32*tracks bits set at offset bytes
@@ -308,16 +318,17 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 	data = (uint32_t *)ms->frame;
 	for(t = 0; t < ntrack; t++)
 	{
-		if(data[t] != 0xFFFFFFFFUL)
+		/* allow 1 of every 32 bits to be incorrect */
+		if(countbits32(data[t]) < 31)
 		{
-			printf("<%s %d %d>", ms->streamname, t, data[t]);
+//			printf("<%s %d %d>", ms->streamname, t, data[t]);
 			e++;
 		}
 	}
 
 	if(e > 0)
 	{
-		printf("mark5_format_vlba_validate[%s]: e=%d\n", ms->streamname, e);
+//		printf("mark5_format_vlba_validate[%s]: e=%d\n", ms->streamname, e);
 		return 0;
 	}
 
@@ -335,14 +346,13 @@ static int mark5_format_vlba_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || ns_t != ns_d)
 		{
-			printf("VLBA validate[%lld]: %d %d %d : %d %d %lld\n", 
-				ms->framenum, 
-				mjd_d, sec_d, ns_d, 
-				mjd_t, sec_t, ns_t);
+			return 0;
+//			printf("VLBA validate[%lld]: %d %d %d : %d %d %lld\n", 
+//				ms->framenum, 
+//				mjd_d, sec_d, ns_d, 
+//				mjd_t, sec_t, ns_t);
 		}
 	}
-
-	/* Verify time? */
 
 	return 1;
 }
