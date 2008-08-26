@@ -8,3 +8,7 @@ Add XML parsing routines
 More structured document types
 Add generic document union and associated processing
 NRAO-DiFX version 1.1
+
+Version 0.3  20080715
+~~~~~~~~~~~
+New branch version post version 1.1

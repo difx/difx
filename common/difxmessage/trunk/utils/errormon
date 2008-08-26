@@ -31,6 +31,7 @@ class Parser:
 	self.tmp = ''
 	self.ok = False
 	self.unit = ''
+	self.id = ''
 
     def feed(self, data):
         self._parser.Parse(data, 0)
@@ -50,13 +51,15 @@ class Parser:
 		self.severity = int(self.tmp)
 	if tag == 'from':
 		self.unit = lower(self.tmp)
+	if tag == 'identifier':
+		self.id = self.tmp
 
     def data(self, data):
         self.tmp = data
 
     def getinfo(self):
 	if self.ok:
-        	return '%-10s %1d %s' % (self.unit, self.severity, self.message)
+        	return '%-10s %s %1d %s' % (self.unit, self.id, self.severity, self.message)
 	else:
 		return ''
 

@@ -1,4 +1,4 @@
-AC_INIT([difxmessage], [0.2], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxmessage], [0.3], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 
