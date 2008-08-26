@@ -389,7 +389,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 						z += A->spectrum[b][t][f];
 					}
 					z /= A->weightSum[b];
-					fprintf(fp, "%2d %s %5d %6.3f\n",
+					fprintf(fp, "%2d %3s %5d %5.3f\n",
 						a1+1, S->D->antenna[a1].name,
 						chan, creal(z));
 					chan++;
@@ -410,7 +410,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 					z /= A->weightSum[b];
 					x = creal(z);
 					y = cimag(z);
-					fprintf(fp, "%2d %2d %s %s %5d %6.3f %6.3f\n",
+					fprintf(fp, "%2d %2d %3s %3s %5d %5.3f %8.3f\n",
 						a1+1, a2+1, 
 						S->D->antenna[a1].name,
 						S->D->antenna[a2].name,
@@ -425,7 +425,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	if(a1 == a2) /* Autocorrelation? */
 	{
 		/* weights file */
-		fprintf(S->wts, "%d %f %d %s %d",
+		fprintf(S->wts, "%5d %8.5f %2d %3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->a1+1,
 			S->D->antenna[A->a1].name,
 			A->nBBC);
@@ -473,7 +473,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	{
 		/* fringe fit */
 
-		fprintf(S->apd, "%d %f %d %s %d %d %s %s %d",
+		fprintf(S->apd, "%5d %8.5f %2d %10s %2d %2d %3s %3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
 			S->D->source[A->sourceId].name, a1+1, a2+1,
 			S->D->antenna[a1].name,
@@ -562,8 +562,11 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			rate = peakup(peak, bestj, 
 				S->fft_ny, S->solInt*S->fftOversample);
 
-			fprintf(S->apd, " %f %f %f %f", delay, 
-				amp/A->weightSum[bbc], phase, rate);
+			fprintf(S->apd, " %10.4f %6.4f %10.4f %10.6f", 
+				delay, 
+				2.0*amp/(A->weightSum[bbc]*S->nChan), 
+				phase, 
+				rate);
 		}
 		fprintf(S->apd, "\n");
 	}

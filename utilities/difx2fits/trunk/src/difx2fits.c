@@ -104,7 +104,7 @@ struct CommandLineOptions
 	int keepOrder;
 	int dontCombine;
 	int overrideVersion;
-	int sniff;
+	double sniffTime;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -115,7 +115,7 @@ struct CommandLineOptions *newCommandLineOptions()
 		sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
-	opts->sniff = 1;
+	opts->sniffTime = 30.0;
 
 	return opts;
 }
@@ -176,7 +176,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
 				strcmp(argv[i], "-x") == 0)
 			{
-				opts->sniff = 0;
+				opts->sniffTime = -1.0;
 			}
 			else if(strcmp(argv[i], "--dont-combine") == 0 ||
 			        strcmp(argv[i], "-1") == 0)
@@ -361,7 +361,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 static const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
 	struct fitsPrivate *out, int write_model, double scale, int verbose,
-	int sniff)
+	double sniffTime)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -441,7 +441,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, scale, verbose, sniff);
+	D = DifxInput2FitsUV(D, &keys, out, scale, verbose, sniffTime);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
@@ -668,7 +668,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		}
 
 		if(DifxInput2FitsTables(D, &outfile, opts->writemodel, 
-			opts->scale, opts->verbose, opts->sniff) == D)
+			opts->scale, opts->verbose, opts->sniffTime) == D)
 		{
 			printf("\nConversion successful\n\n");
 		}

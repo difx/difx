@@ -792,11 +792,11 @@ static int readvisrecord(DifxVis *dv, int verbose)
 
 static int DifxVisConvert(const DifxInput *D, 
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	double s, int verbose, int sniff)
+	double s, int verbose, double sniffTime)
 {
-	int v;
-	int j;
+	int i, j, l, v;
 	float visScale = 1.0;
+	char fileBase[200];
 	char dateStr[12];
 	char fluxFormFloat[8];
 	char gateFormInt[8];
@@ -858,10 +858,19 @@ static int DifxVisConvert(const DifxInput *D,
 	nWeight = dv->nFreq*D->nPolar;
 
 	/* Start up sniffer */
-	if(sniff)
+	if(sniffTime > 0.0)
 	{
-		S = newSniffer(D, dv->nComplex, 
-			D->job[dv->jobId].fileBase, 30.0);
+		strcpy(fileBase, out->filename);
+		l = strlen(fileBase);
+		for(i = l-1; i > 0; i--)
+		{
+			if(fileBase[i] == '.')
+			{
+				fileBase[i] = 0;
+				break;
+			}
+		}
+		S = newSniffer(D, dv->nComplex, fileBase, sniffTime);
 	}
 
 	/* set the number of weight and flux values*/
@@ -1026,14 +1035,14 @@ static int DifxVisConvert(const DifxInput *D,
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, double scale,
-	int verbose, int sniff)
+	int verbose, double sniffTime)
 {
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniff);
+	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime);
 
 	return D;
 }
