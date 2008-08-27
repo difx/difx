@@ -449,6 +449,7 @@ void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	const DifxEOP *de2, int nde2, int *nde);
+int writeDifxEOPArray(FILE *out, int nEOP, DifxEOP *de);
 
 /* DifxSpacecraft functions */
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
@@ -520,5 +521,6 @@ int writeDifxDelay(const DifxInput *D, const char *filename);
 int writeDifxRate(const DifxInput *D, const char *filename);
 int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxIM(const DifxInput *D, const char *filename);
+int writeDifxCalc(const DifxInput *D, const char *filename);
 
 #endif

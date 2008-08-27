@@ -17,46 +17,37 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef __DIFX_WRITE_H__
-#define __DIFX_WRITE_H__
+#include <stdlib.h>
+#include <string.h>
+#include "difxio/difx_write.h"
 
-#include <stdio.h>
-#include "difxio/difx_input.h"
+int writeDifxCalc(const DifxInput *D, const char *filename)
+{
+	FILE *out;
 
-int writeDifxLine(FILE *out, const char *key, const char *value);
+	if(!D)
+	{
+		return -1;
+	}
 
-int writeDifxLine1(FILE *out, const char *key, int i1, const char *value);
+	out = fopen(filename, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Cannot open %s for write\n", filename);
+		return -1;
+	}
 
-int writeDifxLine2(FILE *out, const char *key, int i1, int i2, 
-	const char *value);
+	/* FIXME */
+	writeDifxLineDouble(out, "START MJD", "%13.7f", D->mjdStart);
+	writeDifxDateLines(out, D->mjdStart);
 
-int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3, 
-	const char *value);
+	/* FIXME */
 
+	writeDifxEOPArray(out, D->nEOP, D->eop);
 
-int writeDifxLineInt(FILE *out, const char *key, int value);
+	/* FIXME */
 
-int writeDifxLineInt1(FILE *out, const char *key, int i1, int value);
+	fclose(out);
 
-int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value);
-
-
-int writeDifxLineDouble(FILE *out, const char *key, const char *format, 
-        double value);
-
-int writeDifxLineDouble1(FILE *out, const char *key, int i1, 
-	const char *format, double value);
-
-int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
-	const char *format, double value);
-
-
-int writeDifxLineArray(FILE *out, const char *key, double *array, int n);
-
-int writeDifxLineArray1(FILE *out, const char *key, int i1, double *array,
-	int n);
-
-
-int writeDifxDateLines(FILE *out, double mjd);
-
-#endif
+	return 0;
+}

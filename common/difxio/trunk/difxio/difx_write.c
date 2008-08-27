@@ -167,6 +167,69 @@ int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value)
 	return writeDifxLine(out, k, v);
 }
 
+int writeDifxLineDouble(FILE *out, const char *key, const char *format, 
+	double value)
+{
+	char v[32];
+
+	if(!format)
+	{
+		format = "%f";
+	}
+	if(!format[0])
+	{
+		format = "%f";
+	}
+
+	sprintf(v, format, value);
+
+	return writeDifxLine(out, key, v);
+}
+
+int writeDifxLineDouble1(FILE *out, const char *key, int i1, 
+	const char *format, double value)
+{
+	char v[32];
+	char k[128];
+
+	if(!format)
+	{
+		format = "%f";
+	}
+	if(!format[0])
+	{
+		format = "%f";
+	}
+
+	sprintf(v, format, value);
+
+	sprintf(k, key, i1);
+	
+	return writeDifxLine(out, k, v);
+}
+
+int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
+	const char *format, double value)
+{
+	char v[32];
+	char k[128];
+
+	if(!format)
+	{
+		format = "%f";
+	}
+	if(!format[0])
+	{
+		format = "%f";
+	}
+
+	sprintf(v, format, value);
+
+	sprintf(k, key, i1, i2);
+	
+	return writeDifxLine(out, k, v);
+}
+
 int writeDifxLineArray(FILE *out, const char *key, double *array, int n)
 {
 	char v[1024];

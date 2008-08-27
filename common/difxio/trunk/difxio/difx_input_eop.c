@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxEOP *newDifxEOPArray(int nEOP)
@@ -195,4 +196,27 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	*nde = i;
 
 	return de;
+}
+
+/* returns number of lines written */
+int writeDifxEOPArray(FILE *out, int nEOP, DifxEOP *de)
+{
+	int i = 0;
+
+	writeDifxLineInt(out, "NUM EOP", nEOP);
+	for(i = 0; i < nEOP; i++)
+	{
+		writeDifxLineInt1(out, "EOP %d TIME (mjd)", i, 
+			de[i].mjd);
+		writeDifxLineInt1(out, "EOP %d TAI_UTC (sec)", i, 
+			de[i].tai_utc);
+		writeDifxLineDouble1(out, "EOP %d UT1_UTC (sec)", i,
+			"%8.6f", de[i].ut1_utc);
+		writeDifxLineDouble1(out, "EOP %d XPOLE (arcsec)", i,
+			"%8.6f", de[i].xPole);
+		writeDifxLineDouble1(out, "EOP %d YPOLE (arcsec)", i,
+			"%8.6f", de[i].yPole);
+	}
+
+	return 5*nEOP + 1;
 }
