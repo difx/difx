@@ -188,17 +188,17 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		}
 		if(doOffset)
 		{
-			writeDifxDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
+			writeDifxLineDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
 				"%6.4f", da[i].offset[0]);
 			n++;
 		}
 		if(doCoords)
 		{
-			writeDifxDouble1(out, "TELESCOPE %d X (m)", i,
+			writeDifxLineDouble1(out, "TELESCOPE %d X (m)", i,
 				"%6.4f", da[i].X);
-			writeDifxDouble1(out, "TELESCOPE %d Y (m)", i,
+			writeDifxLineDouble1(out, "TELESCOPE %d Y (m)", i,
 				"%6.4f", da[i].Y);
-			writeDifxDouble1(out, "TELESCOPE %d Z (m)", i,
+			writeDifxLineDouble1(out, "TELESCOPE %d Z (m)", i,
 				"%6.4f", da[i].Z);
 			n += 3;
 		}

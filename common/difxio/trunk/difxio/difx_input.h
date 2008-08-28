@@ -215,7 +215,7 @@ typedef struct
 				/* NOTE : point is over [-1 .. nPoint+1] ! */
 				/* NOTE : model[ant] can be zero -> no data */
 	int nPoly;
-	DifxPolyModel **im;	/* indexed by [amt][poly] */
+	DifxPolyModel **im;	/* indexed by [ant][poly] */
 				/* ant is index of antenna in .input file */
 				/*   poly ranges over [0 .. nPoly-1] */
 				/* NOTE : im[ant] can be zero -> no data */

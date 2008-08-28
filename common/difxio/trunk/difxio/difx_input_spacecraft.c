@@ -276,12 +276,29 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 {
 	int n;
+	int i, j;
+	char value[256];
+	const sixVector *V;
 
 	writeDifxLineInt(out, "NUM SPACECRAFT", nSpacecraft);
 	n = 1;
-	if(nSpacecraft > 0)
+	if(nSpacecraft > 0) for(i = 0; i < nSpacecraft; i++)
 	{
-		fprintf(stderr, "ERROR! writeDifxSpacecraftArray: implement me!\n");
+		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
+		writeDifxLine1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
+		for(j = 0; j < ds[i].nPoint; j++)
+		{
+			V = ds[i].pos + j;
+			sprintf(value, "%13.8f %18.14e %18.14e %18.14e "
+					"%18.14e %18.14e %18.14e", 
+				V->mjd + V->fracDay, 
+				V->X, V->Y, V->Z,
+				V->dX, V->dY, V->dZ);
+			writeDifxLine2(out, "SPACECRAFT %d ROW %d", 
+				i, j, value);
+		}
+		n += (ds[i].nPoint + 2);
+
 		return -1;
 	}
 
