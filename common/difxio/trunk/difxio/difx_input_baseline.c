@@ -217,3 +217,39 @@ DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 
 	return db;
 }
+
+int writeDifxBaselineArray(FILE *out, int nBaseline, const DifxBaseline *db)
+{
+	int i, f, p;
+	int n;
+	const DifxBaseline *b;
+
+	writeDifxLineInt(out, "BASELINE ENTRIES", nBaseline);
+	n = 1;
+
+	for(i = 0; i < nBaseline; i++)
+	{
+		b = db + i;
+		writeDifxLineInt1(out, "D/STREAM A INDEX %d", i, b->dsA);
+		writeDifxLineInt1(out, "D/STREAM B INDEX %d", i, b->dsB);
+		writeDifxLineInt1(out, "NUM FREQS %d", i, b->nFreq);
+		n += 3;
+
+		for(f = 0; f < b->nFreq; f++)
+		{
+			writeDifxLineInt2(out, "POL PRODUCTS %d/%d", i, f,
+				b->nPolProd[f]);
+			n++;
+			for(p = 0; p < b->nPolProd[f]; p++)
+			{
+				writeDifxLineInt1(out, "D/STREAM A BAND %d", p,
+					b->recChanA[f][p]);
+				writeDifxLineInt1(out, "D/STREAM B BAND %d", p,
+					b->recChanB[f][p]);
+				n += 2;
+			}
+		}
+	}
+
+	return n;
+}

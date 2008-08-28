@@ -391,6 +391,7 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc)
 		writeDifxLineInt(out, "GUARD BLOCKS", config->guardBlocks);
 		writeDifxLine(out, "POST-F FRINGE ROT", "FALSE");
 		writeDifxLine(out, "QUAD DELAY INTERP", "TRUE");
+		writeDifxLine(out, "WRITE AUTOCORRS", "TRUE");
 		if(config->pulsarId >= 0)
 		{
 			writeDifxLine(out, "PULSAR BINNING", "TRUE");

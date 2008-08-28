@@ -384,6 +384,7 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
 	const int *datastreamIdRemap, int *ndb);
+int writeDifxBaselineArray(FILE *out, int nBaseline, const DifxBaseline *db);
 
 /* DifxPolyco functions */
 DifxPolyco *newDifxPolycoArray(int nPolyco);

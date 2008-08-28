@@ -173,12 +173,26 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 	int n;	/* number of lines written */
 	int i;
 
-	writeDifxLineInt(out, "NUM TELESCOPES", nAntenna);
+	if(doClock)
+	{
+		writeDifxLineInt(out, "TELESCOPE ENTRIES", nAntenna);
+	}
+	else
+	{
+		writeDifxLineInt(out, "NUM TELESCOPES", nAntenna);
+	}
 	n = 1;
 
 	for(i = 0; i < nAntenna; i++)
 	{
-		writeDifxLine1(out, "TELESCOPE %d NAME", i, da[i].name);
+		if(doClock)
+		{
+			writeDifxLine1(out, "TELESCOPE NAME %d", i, da[i].name);
+		}
+		else
+		{
+			writeDifxLine1(out, "TELESCOPE %d NAME", i, da[i].name);
+		}
 		n++;
 		if(doMount)
 		{
