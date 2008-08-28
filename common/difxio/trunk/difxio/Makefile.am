@@ -6,22 +6,22 @@ h_sources = \
 c_sources = \
 	difx_input.c \
 	difx_input_merge.c \
-	difx_input_job.c \
-	difx_input_freq.c \
-	difx_input_antenna.c \
-	difx_input_datastream.c \
-	difx_input_baseline.c \
-	difx_input_config.c \
-	difx_input_model.c \
-	difx_input_poly_model.c \
-	difx_input_scan.c \
-	difx_input_eop.c \
-	difx_input_spacecraft.c \
-	difx_input_if.c \
-	difx_input_source.c \
-	difx_input_flag.c \
-	difx_input_polyco.c \
-	difx_input_pulsar.c \
+	difx_job.c \
+	difx_freq.c \
+	difx_antenna.c \
+	difx_datastream.c \
+	difx_baseline.c \
+	difx_config.c \
+	difx_model.c \
+	difx_poly_model.c \
+	difx_scan.c \
+	difx_eop.c \
+	difx_spacecraft.c \
+	difx_if.c \
+	difx_source.c \
+	difx_flag.c \
+	difx_polyco.c \
+	difx_pulsar.c \
 	difx_write.c \
 	difx_write_delay.c \
 	difx_write_uvw.c \

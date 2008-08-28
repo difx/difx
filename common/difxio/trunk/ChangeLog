@@ -1,6 +1,7 @@
 2.4 
 * Post NRAO-DiFX 1.1 developments
-* Ability to write .calc files -- untested as of now
+* Ability to write .calc and .input files
+* Mass renaming of .c source files
 
 2.3
 * Support new keywords : ABERRATION CORR (.im) and DIFX VERSION (.calc)
