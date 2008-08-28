@@ -57,7 +57,7 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 
 	writeDifxLineInt(out, "INCREMENT (SECS)", (int)(D->job->modelInc+0.5));
 
-	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 0, 1);
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 0, 1, 0, 0);
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
 

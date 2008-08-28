@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxDatastream *newDifxDatastreamArray(int nDatastream)
@@ -221,4 +221,37 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	}
 
 	return dd;
+}
+
+int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
+{
+	int i;
+	char pol[2];
+
+	pol[1] = 0;
+
+	writeDifxLineInt(out, "TELESCOPE INDEX", dd->antennaId);
+	writeDifxLineDouble(out, "TSYS", "%5.2f", dd->tSys);
+	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
+	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
+	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
+	writeDifxLine(out, "DATA SOURCE", dd->dataSource);
+	writeDifxLine(out, "FILTERBANK USED", "FALSE");
+	writeDifxLineInt(out, "NUM FREQS", dd->nFreq);
+	for(i = 0; i < dd->nFreq; i++)
+	{
+		writeDifxLineInt1(out, "FREQ TABLE INDEX %d", i, dd->freqId[i]);
+		writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, 
+			"%8.6f", dd->clockOffset[i]);
+		writeDifxLineInt1(out, "NUM POLS %d", i, dd->nPol[i]);
+	}
+	for(i = 0; i < dd->nRecChan; i++)
+	{
+		pol[0] = dd->RCpolName[i];
+		writeDifxLine1(out, "INPUT BAND %d POL", i, pol);
+		writeDifxLineInt1(out, "INPUT BAND %d INDEX", i, 
+			dd->RCfreqId[i]);
+	}
+
+	return 8 + 3*dd->nFreq + 2*dd->nRecChan;
 }

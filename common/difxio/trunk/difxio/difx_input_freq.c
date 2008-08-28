@@ -122,3 +122,25 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 	return df;
 }
 
+int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
+{
+	int n;
+	int i;
+	char sb[2];
+
+	writeDifxLineInt(out, "FREQ ENTRIES", nFreq);
+	n = 1;
+	sb[1] = 0;
+
+	for(i = 0; i < nFreq; i++)
+	{
+		writeDifxLineDouble1(out, "FREQ (MHZ) %d", i, 
+			"%10.8f", df[i].freq);
+		writeDifxLineDouble1(out, "BW (MHZ) %d", i,
+			"%10.8f", df[i].bw);
+		sb[0] = df[i].sideband;
+		writeDifxLine1(out, "SIDEBAND %d", i, sb);
+	}
+
+	return n;
+}

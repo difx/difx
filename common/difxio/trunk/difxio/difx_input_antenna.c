@@ -168,7 +168,7 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 }
 
 int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, 
-	int doMount, int doOffset, int doCoords)
+	int doMount, int doOffset, int doCoords, int doClock, int doShelf)
 {
 	int n;	/* number of lines written */
 	int i;
@@ -201,6 +201,20 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 			writeDifxLineDouble1(out, "TELESCOPE %d Z (m)", i,
 				"%6.4f", da[i].Z);
 			n += 3;
+		}
+		if(doClock)
+		{
+			writeDifxLineDouble1(out, "CLOCK DELAY (us) %d", i,
+				"%14.12f", da[i].delay);
+			writeDifxLineDouble1(out, "CLOCK RATE(us/s) %d", i,
+				"%10.8e", da[i].rate);
+			n += 2;
+		}
+		if(doShelf)
+		{
+			writeDifxLine1(out, "TELESCOPE %d SHELF", i,
+				da[i].shelf);
+			n++;
 		}
 	}
 

@@ -60,7 +60,7 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	writeDifxLine(out, "ABERRATION CORR", 
 		aberCorrStrings[D->job->aberCorr]);
 
-	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0);
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0, 0, 0);
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
 

@@ -28,6 +28,7 @@ c_sources = \
 	difx_write_rate.c \
 	difx_write_im.c \
 	difx_write_calc.c \
+	difx_write_input.c \
 	parsedifx.c \
 	parsevis.c
 

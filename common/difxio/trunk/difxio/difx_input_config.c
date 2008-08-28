@@ -365,3 +365,54 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 
 	return dc;
 }
+
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc)
+{
+	int i, j;
+	int n;
+	const DifxConfig *config;
+
+	writeDifxLineInt(out, "NUM CONFIGURATIONS", nConfig);
+	n = 1;
+
+	for(i = 0; i < nConfig; i++)
+	{
+		config = dc + i;
+
+		writeDifxLine(out, "CONFIG SOURCE", config->name);
+		writeDifxLineDouble(out, "INT TIME (SEC)", "%8.6f",
+			config->tInt);
+		writeDifxLineInt(out, "NUM CHANNELS", config->nChan);
+		writeDifxLineInt(out, "CHANNELS TO AVERAGE", config->specAvg);
+		writeDifxLineInt(out, "OVERSAMPLE FACTOR", config->overSamp);
+		writeDifxLineInt(out, "DECIMATION FACTOR", config->decimation);
+		writeDifxLineInt(out, "BLOCKS PER SEND", 
+			config->blocksPerSend);
+		writeDifxLineInt(out, "GUARD BLOCKS", config->guardBlocks);
+		writeDifxLine(out, "POST-F FRINGE ROT", "FALSE");
+		writeDifxLine(out, "QUAD DELAY INTERP", "TRUE");
+		if(config->pulsarId >= 0)
+		{
+			writeDifxLine(out, "PULSAR BINNING", "TRUE");
+			/* FIXME : more stuff here */
+		}
+		else
+		{
+			writeDifxLine(out, "PULSAR BINNING", "FALSE");
+		}
+		for(j = 0; j < config->nDatastream; j++)
+		{
+			writeDifxLineInt1(out, "DATASTREAM %d INDEX", j,
+				config->datastreamId[j]);
+		}
+		for(j = 0; j < config->nBaseline; j++)
+		{
+			writeDifxLineInt1(out, "BASELINE %d INDEX", j,
+				config->baselineId[j]);
+		}
+
+		n += (10 + config->nDatastream + config->nBaseline);
+	}
+
+	return n;
+}

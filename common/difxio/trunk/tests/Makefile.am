@@ -4,7 +4,7 @@ INCLUDES = \
 LDADD = \
         $(top_builddir)/difxio/libdifxio.la
 
-noinst_PROGRAMS = \
+bin_PROGRAMS = \
 	testdifxinput \
 	testparsedifx \
 	testparsevis

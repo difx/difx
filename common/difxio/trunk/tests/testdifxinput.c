@@ -18,7 +18,18 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	D = updateDifxInput(D);
+	if(!D)
+	{
+		fprintf(stderr, "update failed: D == 0.  quitting\n");
+		return 0;
+	}
+
 	printDifxInput(D);
+
+	writeDifxCalc(D, "calc.out");
+	writeDifxInput(D, "input.out");
+
 	deleteDifxInput(D);
 
 	return 0;

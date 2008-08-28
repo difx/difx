@@ -789,6 +789,11 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		"CONFIG SOURCE",
 		"INT TIME (SEC)",
 		"NUM CHANNELS",
+		"CHANNELS TO AVERAGE",
+		"OVERSAMPLE FACTOR",
+		"DECIMATION FACTOR",
+		"BLOCKS PER SEND",
+		"GUARD BLOCKS",
 		"POST-F FRINGE ROT",
 		"QUAD DELAY INTERP",
 		"PULSAR BINNING"
@@ -796,6 +801,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
 	int a, b, c, r, N;
 	int rows[N_CONFIG_ROWS];
+	DifxConfig *dc;
 
 	if(!D || !ip)
 	{
@@ -813,6 +819,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 	rows[N_CONFIG_ROWS-1] = 0;	/* initialize start */
 	for(c = 0; c < D->nConfig; c++)
 	{
+		dc = D->config + c;
 		N = DifxParametersbatchfind(ip, rows[N_CONFIG_ROWS-1], 
 			configKeys, N_CONFIG_ROWS, rows);
 		if(N < N_CONFIG_ROWS)
@@ -822,15 +829,21 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"< %d\n", N, N_CONFIG_ROWS);
 			return 0;
 		}
-		strcpy(D->config[c].name,   DifxParametersvalue(ip, rows[0]));
-		D->config[c].tInt  =   atof(DifxParametersvalue(ip, rows[1]));
-		D->config[c].nChan =   atoi(DifxParametersvalue(ip, rows[2]));
-		D->config[c].postFFringe = 
-			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[3])));
-		D->config[c].quadDelayInterp = 
-			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[4])));
-		D->config[c].nDatastream  = D->job->activeDatastreams;
-		D->config[c].nBaseline    = D->job->activeBaselines;
+		strcpy(dc->name,         DifxParametersvalue(ip, rows[0]));
+		dc->tInt          = atof(DifxParametersvalue(ip, rows[1]));
+		dc->nChan         = atoi(DifxParametersvalue(ip, rows[2]));
+		dc->specAvg       = atoi(DifxParametersvalue(ip, rows[3]));
+		dc->overSamp      = atoi(DifxParametersvalue(ip, rows[4]));
+		dc->decimation    = atoi(DifxParametersvalue(ip, rows[5]));
+		dc->blocksPerSend = atoi(DifxParametersvalue(ip, rows[6]));
+		dc->guardBlocks   = atoi(DifxParametersvalue(ip, rows[7]));
+		
+		dc->postFFringe = 
+			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[8])));
+		dc->quadDelayInterp = 
+			abs(strcmp("FALSE", DifxParametersvalue(ip, rows[9])));
+		dc->nDatastream  = D->job->activeDatastreams;
+		dc->nBaseline    = D->job->activeBaselines;
 
 		/* pulsar stuff */
 		if(strcmp(DifxParametersvalue(ip, rows[5]), "TRUE") == 0)
@@ -844,36 +857,36 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 					rows[5] + 2);
 				return 0;
 			}
-			D->config[c].pulsarId = loadPulsarConfigFile(D,
+			dc->pulsarId = loadPulsarConfigFile(D,
 				DifxParametersvalue(ip, r));
-			if(D->config[c].pulsarId < 0)
+			if(dc->pulsarId < 0)
 			{
 				return 0;
 			}
 		}
-		N = strlen(D->config[c].name);
-		if(D->config[c].name[N-1] == '1')
+		N = strlen(dc->name);
+		if(dc->name[N-1] == '1')
 		{
-			D->config[c].doPolar = 1;
+			dc->doPolar = 1;
 		}
 		else
 		{
-			D->config[c].doPolar = 0;
+			dc->doPolar = 0;
 		}
 
 		/* initialize datastream index array */
-		D->config[c].datastreamId = (int *)malloc(sizeof(int)*
-			(D->config[c].nDatastream + 1));
+		dc->datastreamId = (int *)malloc(sizeof(int)*
+			(dc->nDatastream + 1));
 		
 		/* here "a" is "datastream # within conf", not "antenna" */
 		for(a = 0; a <= D->nDatastream; a++)
 		{
-			D->config[c].datastreamId[a] = -1;
+			dc->datastreamId[a] = -1;
 		}
 
 		/* populate datastream index array */
 		/* here "a" is "datastream # within conf", not "antenna" */
-		for(a = 0; a < D->config[c].nDatastream; a++)
+		for(a = 0; a < dc->nDatastream; a++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"DATASTREAM %d INDEX", a);
@@ -883,20 +896,18 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 					"DATASTREAM %d INDEX not found\n", a);
 				return 0;
 			}
-			D->config[c].datastreamId[a] = 
-				atoi(DifxParametersvalue(ip, r));
+			dc->datastreamId[a] = atoi(DifxParametersvalue(ip, r));
 		}
 
 		/* initialize baseline index array; -1 terminated */
-		D->config[c].baselineId = (int *)malloc(sizeof(int)*
-			(D->config[c].nBaseline+1));
-		for(b = 0; b <= D->config[c].nBaseline; b++)
+		dc->baselineId = (int *)malloc(sizeof(int)* (dc->nBaseline+1));
+		for(b = 0; b <= dc->nBaseline; b++)
 		{
-			D->config[c].baselineId[b] = -1;
+			dc->baselineId[b] = -1;
 		}
 
 		/* populate baseline index array */
-		for(b = 0; b < D->config[c].nBaseline; b++)
+		for(b = 0; b < dc->nBaseline; b++)
 		{
 			r = DifxParametersfind1(ip, r+1, 
 				"BASELINE %d INDEX", b);
@@ -906,8 +917,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 					"BASELINE %d INDEX not found\n", b);
 				return 0;
 			}
-			D->config[c].baselineId[b] = 
-				atoi(DifxParametersvalue(ip, r));
+			dc->baselineId[b] = atoi(DifxParametersvalue(ip, r));
 		}
 	}
 
@@ -1008,7 +1018,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 	const DifxParameters *ip)
 {
-	int a, e, i, r;
+	int a, e, i, r, r2;
 	int nRecChan;
 
 	if(!D || !ip)
@@ -1017,8 +1027,25 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 	}
 
 	r = DifxParametersfind(ip, 0, "DATASTREAM ENTRIES");
+	if(r < 0)
+	{
+		fprintf(stderr, "Cannot find DATASTREAM TABLE\n");
+		return 0;
+	}
 	D->nDatastream = atoi(DifxParametersvalue(ip, r));
 	D->datastream = newDifxDatastreamArray(D->nDatastream);
+
+	r2 = DifxParametersfind(ip, r+1, "DATA BUFFER FACTOR");
+	if(r2 > 0)
+	{
+		D->dataBufferFactor = atoi(DifxParametersvalue(ip, r2));
+	}
+
+	r2 = DifxParametersfind(ip, r+1, "NUM DATA SEGMENTS");
+	if(r2 > 0)
+	{
+		D->nDataSegments = atoi(DifxParametersvalue(ip, r2));
+	}
 
 	for(e = 0; e < D->nDatastream; e++)
 	{
@@ -1046,6 +1073,25 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			return 0;
 		}
 		D->datastream[e].quantBits = atoi(DifxParametersvalue(ip, r));
+
+		r = DifxParametersfind(ip, r+1, "DATA FRAME SIZE");
+		if(r < 0)
+		{
+			fprintf(stderr, "Cannot determine data frame size\n");
+			return 0;
+		}
+		D->datastream[e].dataFrameSize = 
+			atoi(DifxParametersvalue(ip, r));
+
+		r = DifxParametersfind(ip, r+1, "DATA SOURCE");
+		if(r < 0)
+		{
+			fprintf(stderr, "Cannot determine data source\n");
+			return 0;
+		}
+		strncpy(D->datastream[e].dataSource, 
+			DifxParametersvalue(ip, r), 31);
+		D->datastream[e].dataSource[31] = 0;
 
 		r = DifxParametersfind(ip, r+1, "NUM FREQS");
 		if(r < 0)
@@ -1836,6 +1882,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->antenna[a].X        = atof(DifxParametersvalue(cp, rows[3]));
 		D->antenna[a].Y        = atof(DifxParametersvalue(cp, rows[4]));
 		D->antenna[a].Z        = atof(DifxParametersvalue(cp, rows[5]));
+		row = DifxParametersfind1(cp, 0, "TELESCOPE %d SHELF", a);
+		if(row > 0)
+		{
+			strcpy(D->antenna[a].shelf, 
+				DifxParametersvalue(cp, row));
+		}
 	}
 	
 	if(nFound < D->nAntenna)

@@ -63,7 +63,7 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxLineDouble(out, "INCREMENT (SECS)", "%1.0f", D->job->modelInc);
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
 	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
-	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1);
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);
 	writeDifxScanArray(out, D->nScan, D->scan, D->config, 1, 1, 1);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
@@ -74,7 +74,7 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	sprintf(value, "%s.rate", filebase);
 	writeDifxLine(out, "RATE FILENAME", value);
 	sprintf(value, "%s.im", filebase);
-	writeDifxLine(out, "Im FILENAME", value);
+	writeDifxLine(out, "IM FILENAME", value);
 
 	fclose(out);
 

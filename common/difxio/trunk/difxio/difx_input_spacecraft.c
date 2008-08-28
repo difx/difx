@@ -285,7 +285,7 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 	if(nSpacecraft > 0) for(i = 0; i < nSpacecraft; i++)
 	{
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
-		writeDifxLine1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
+		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
 		for(j = 0; j < ds[i].nPoint; j++)
 		{
 			V = ds[i].pos + j;

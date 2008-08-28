@@ -90,9 +90,14 @@ typedef struct
 /* From DiFX config table, with additional derived information */
 typedef struct
 {
+	char name[32];		/* name for configuration */
 	double tInt;		/* integration time (sec) */
 	int nChan;
-	char name[32];
+	int specAvg;		/* This is averaging within mpifxcorr -- NYI */
+	int overSamp;
+	int decimation;
+	int blocksPerSend;
+	int guardBlocks;
 	int postFFringe;	/* 0 or 1 */
 	int quadDelayInterp;	/* 0 or 1 */
 	int pulsarId;		/* -1 if not pulsar */
@@ -125,8 +130,11 @@ typedef struct
 typedef struct
 {
 	int antennaId;		/* index to D->antenna */
-	char dataFormat[32];
+	float tSys;		/* 0.0 for NRAO DiFX */
+	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
 	int quantBits;		/* quantization bits */
+	int dataFrameSize;	/* size of formatted data frame */
+	char dataSource[32];	/* MODULE, FILE, NET, other? */
 	int nFreq;		/* num freqs from this datastream */
 	int nRecChan;		/* number of base band channels recorded */
 	int *nPol;		/* [freq] */
@@ -157,6 +165,7 @@ typedef struct
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
 	char vsn[12];		/* vsn for module */
+	char shelf[20];		/* shelf location of module */
 	int spacecraftId;	/* -1 if not a spacecraft */
 } DifxAntenna;
 
@@ -282,7 +291,7 @@ typedef struct
 	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
 	int startChan;		/* first (unaveraged) channel to write */
-	int specAvg;		/* number of channels to average */
+	int specAvg;		/* number of channels to average post corr. */
 	int nInChan;		/* number of correlated channels */
 	int nOutChan;		/* number of channels to write to FITS */
 	int nFFT;		/* size of FFT used */
@@ -297,6 +306,8 @@ typedef struct
 	double chanBW;		/* MHz common channel bandwidth. 0 if differ */
 	int quantBits;		/* 0 if if different in configs; or 1 or 2 */
 	char polPair[4];	/* "  " if different in configs */
+	int dataBufferFactor;
+	int nDataSegments;
 	
 	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP, nFlag;
 	int nDatastream, nBaseline, nSpacecraft, nPulsar, nJob;
@@ -332,6 +343,7 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 	const DifxFreq *df2, int ndf2, int *freqIdRemap, int *ndf);
+int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 
 /* DifxAntenna functions */
 DifxAntenna *newDifxAntennaArray(int nAntenna);
@@ -344,7 +356,7 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	const DifxAntenna *da2, int nda2, int *antennaIdRemap,
 	int *nda);
 int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
-        int doMount, int doOffset, int doCoords);
+        int doMount, int doOffset, int doCoords, int doClock, int doShelf);
 
 /* DifxDatastream functions */
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
@@ -358,6 +370,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
+int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
@@ -412,6 +425,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap, int *ndc);
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc);
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);
@@ -529,5 +543,6 @@ int writeDifxRate(const DifxInput *D, const char *filename);
 int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxIM(const DifxInput *D, const char *filename);
 int writeDifxCalc(const DifxInput *D, const char *filename);
+int writeDifxInput(const DifxInput *D, const char *filename);
 
 #endif
