@@ -343,6 +343,8 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	const DifxAntenna *da2, int nda2, int *antennaIdRemap,
 	int *nda);
+int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
+        int doMount, int doOffset, int doCoords);
 
 /* DifxDatastream functions */
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
@@ -438,6 +440,10 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, const int *jobIdRemap,
 	const int *configIdRemap, int *nds);
 int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
+int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
+	const DifxConfig *dc,int doRealName, int doCoords, int doExtra);
+int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
+	const DifxConfig *dc, int doRealName, int doCoords, int doExtra);
 
 /* DifxEOP functions */
 DifxEOP *newDifxEOPArray(int nEOP);
@@ -449,7 +455,7 @@ void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de);
 void copyDifxEOP(DifxEOP *dest, const DifxEOP *src);
 DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	const DifxEOP *de2, int nde2, int *nde);
-int writeDifxEOPArray(FILE *out, int nEOP, DifxEOP *de);
+int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de);
 
 /* DifxSpacecraft functions */
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft);
@@ -461,6 +467,7 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	const DifxSpacecraft *ds2, int nds2, int *spacecraftIdRemap, int *nds);
 int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 	sixVector *interpolatedPosition);
+int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);

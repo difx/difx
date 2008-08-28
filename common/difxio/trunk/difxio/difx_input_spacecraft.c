@@ -20,7 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft)
@@ -273,3 +273,17 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 	return r;
 }
 
+int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
+{
+	int n;
+
+	writeDifxLineInt(out, "NUM SPACECRAFT", nSpacecraft);
+	n = 1;
+	if(nSpacecraft > 0)
+	{
+		fprintf(stderr, "ERROR! writeDifxSpacecraftArray: implement me!\n");
+		return -1;
+	}
+
+	return n;
+}

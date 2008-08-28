@@ -167,3 +167,42 @@ DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	return da;
 }
 
+int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da, 
+	int doMount, int doOffset, int doCoords)
+{
+	int n;	/* number of lines written */
+	int i;
+
+	writeDifxLineInt(out, "NUM TELESCOPES", nAntenna);
+	n = 1;
+
+	for(i = 0; i < nAntenna; i++)
+	{
+		writeDifxLine1(out, "TELESCOPE %d NAME", i, da[i].name);
+		n++;
+		if(doMount)
+		{
+			writeDifxLine1(out, "TELESCOPE %d MOUNT", i,
+				da[i].mount);
+			n++;
+		}
+		if(doOffset)
+		{
+			writeDifxDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
+				"%6.4f", da[i].offset[0]);
+			n++;
+		}
+		if(doCoords)
+		{
+			writeDifxDouble1(out, "TELESCOPE %d X (m)", i,
+				"%6.4f", da[i].X);
+			writeDifxDouble1(out, "TELESCOPE %d Y (m)", i,
+				"%6.4f", da[i].Y);
+			writeDifxDouble1(out, "TELESCOPE %d Z (m)", i,
+				"%6.4f", da[i].Z);
+			n += 3;
+		}
+	}
+
+	return n;
+}

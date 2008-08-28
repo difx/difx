@@ -60,12 +60,7 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	writeDifxLine(out, "ABERRATION CORR", 
 		aberCorrStrings[D->job->aberCorr]);
 
-	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
-
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		writeDifxLine1(out, "TELESCOPE %d NAME", a, D->antenna[a].name);
-	}
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 0, 0, 0);
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
 

@@ -24,9 +24,7 @@
 int writeDifxUVW(const DifxInput *D, const char *filename)
 {
 	FILE *out;
-	DifxScan *scan;
-	DifxSource *source;
-	DifxConfig *config;
+	const DifxScan *scan;
 	int a, s, i;
 	int l;
 	char value[1024];
@@ -59,36 +57,16 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 
 	writeDifxLineInt(out, "INCREMENT (SECS)", (int)(D->job->modelInc+0.5));
 
-	writeDifxLineInt(out, "NUM TELESCOPES", D->nAntenna);
-
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		writeDifxLine1(out, "TELESCOPE %d NAME", a, D->antenna[a].name);
-		writeDifxLine1(out, "TELESCOPE %d MOUNT", a, 
-			D->antenna[a].mount);
-		sprintf(value, "%6.4f", D->antenna[a].X);
-		writeDifxLine1(out, "TELESCOPE %d X (m)", a, value);
-		sprintf(value, "%6.4f", D->antenna[a].Y);
-		writeDifxLine1(out, "TELESCOPE %d Y (m)", a, value);
-		sprintf(value, "%6.4f", D->antenna[a].Z);
-		writeDifxLine1(out, "TELESCOPE %d Z (m)", a, value);
-	}
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 0, 1);
 
 	writeDifxLineInt(out, "NUM SCANS", D->nScan);
 
 	for(s = 0; s < D->nScan; s++)
 	{
 		scan = D->scan + s;
-		config = D->config + scan->configId;
-		source = D->source + scan->sourceId;
-		writeDifxLineInt1(out, "SCAN %d POINTS", s, scan->nPoint);
-		writeDifxLineInt1(out, "SCAN %d START PT", s,
-			scan->startPoint);
-		writeDifxLine1(out, "SCAN %d SRC NAME", s, config->name);
-		sprintf(value, "%12.10f", source->ra);
-		writeDifxLine1(out, "SCAN %d SRC RA", s, value);
-		sprintf(value, "%12.10f", source->dec);
-		writeDifxLine1(out, "SCAN %d SRC DEC", s, value);
+
+		writeDifxScan(out, scan, s, D->config, 0, 1, 0);
+
 		for(i = -1; i <= scan->nPoint+1; i++)
 		{
 			value[0] = 0;

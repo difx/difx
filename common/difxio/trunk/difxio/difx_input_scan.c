@@ -297,6 +297,63 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 	return -1;
 }
 
+/* dc must point to the base of a configuration array */
+int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
+	const DifxConfig *dc, int doRealName, int doCoords, int doExtra)
+{
+	const DifxConfig *config;
+	int n;
+
+	config = dc + ds->configId;
+
+	writeDifxLineInt1(out, "SCAN %d POINTS", scanId, ds->nPoint);
+	writeDifxLineInt1(out, "SCAN %d START PT", scanId, ds->startPoint);
+	writeDifxLine1(out, "SCAN %d SRC NAME", scanId, config->name);
+	n = 3;
+	
+	if(doRealName)
+	{
+		writeDifxLine1(out, "SCAN %d REAL NAME", scanId, ds->name);
+		n++;
+	}
+	
+	if(doCoords)
+	{
+		writeDifxLineDouble1(out, "SCAN %d SRC RA", scanId,
+			"%12.10f", ds->ra);
+		writeDifxLineDouble1(out, "SCAN %d SRC DEC", scanId,
+			"%12.10f", ds->dec);
+		n += 2;
+	}
+
+	if(doExtra)
+	{
+		writeDifxLine1(out, "SCAN %d CALCODE", scanId,
+			ds->calCode);
+		writeDifxLineInt1(out, "SCAN %d QUAL", scanId,
+			ds->qual);
+		n += 2;
+	}
+
+	return n;
+}
+
+int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
+	const DifxConfig *dc,  int doRealName, int doCoords, int doExtra)
+{
+	int i;
+	int n;
+
+	writeDifxLineInt(out, "NUM SCANS", nScan);
+	n = 1;
+
+	for(i = 0; i < nScan; i++)
+	{
+		n += writeDifxScan(out, ds, i, dc, 
+			doRealName, doCoords, doExtra);
+	}
+}
+
 #if 0
 
 /* this is a complicated thought in progress */

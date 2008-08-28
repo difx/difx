@@ -24,10 +24,24 @@
 int writeDifxCalc(const DifxInput *D, const char *filename)
 {
 	FILE *out;
+	char filebase[256];
+	char value[256];
+	int i, l;
 
 	if(!D)
 	{
 		return -1;
+	}
+
+	strcpy(filebase, filename);
+	l = strlen(filebase);
+	for(i = l-1; i > 0; i++)
+	{
+		if(filebase[i] == '.')
+		{
+			filebase[i] = 0;
+			break;
+		}
 	}
 
 	out = fopen(filename, "w");
@@ -37,15 +51,30 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
-	/* FIXME */
+	writeDifxLineInt(out, "JOB ID", D->job->jobId);
+	writeDifxLineDouble(out, "JOB START TIME", "%13.7f", D->job->jobStart);
+	writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", D->job->jobStop);
+	writeDifxLine(out, "OBSCODE", D->job->obsCode);
+	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
+	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
+	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
 	writeDifxLineDouble(out, "START MJD", "%13.7f", D->mjdStart);
 	writeDifxDateLines(out, D->mjdStart);
-
-	/* FIXME */
-
+	writeDifxLineDouble(out, "INCREMENT (SECS)", "%1.0f", D->job->modelInc);
+	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
+	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
+	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1);
+	writeDifxScanArray(out, D->nScan, D->scan, D->config, 1, 1, 1);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
-
-	/* FIXME */
+	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
+	sprintf(value, "%s.delay", filebase);
+	writeDifxLine(out, "DELAY FILENAME", value);
+	sprintf(value, "%s.uvw", filebase);
+	writeDifxLine(out, "UVW FILENAME", value);
+	sprintf(value, "%s.rate", filebase);
+	writeDifxLine(out, "RATE FILENAME", value);
+	sprintf(value, "%s.im", filebase);
+	writeDifxLine(out, "Im FILENAME", value);
 
 	fclose(out);
 

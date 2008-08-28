@@ -199,7 +199,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 }
 
 /* returns number of lines written */
-int writeDifxEOPArray(FILE *out, int nEOP, DifxEOP *de)
+int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de)
 {
 	int i = 0;
 
