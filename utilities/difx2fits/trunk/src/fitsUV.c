@@ -5,8 +5,9 @@
 #include <strings.h>
 #include "config.h"
 #include "fitsUV.h"
+#ifdef HAVE_FFTW
 #include "sniffer.h"
-
+#endif
 
 static int DifxVisInitData(DifxVis *dv)
 {
@@ -814,7 +815,9 @@ static int DifxVisConvert(const DifxInput *D,
 	double scale;
 	DifxVis **dvs;
 	DifxVis *dv;
+#ifdef HAVE_FFTW
 	Sniffer *S = 0;
+#endif
 
 	/* define the columns in the UV data FITS Table */
 	struct fitsBinTableColumn columns[] =
@@ -846,7 +849,9 @@ static int DifxVisConvert(const DifxInput *D,
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
 				j, D->nJob);
+#ifdef HAVE_FFTW
 			deleteSniffer(S);
+#endif
 			return 0;
 		}
 		dvs[j]->scale = scale;
@@ -870,7 +875,9 @@ static int DifxVisConvert(const DifxInput *D,
 				break;
 			}
 		}
+#ifdef HAVE_FFTW
 		S = newSniffer(D, dv->nComplex, fileBase, sniffTime);
+#endif
 	}
 
 	/* set the number of weight and flux values*/
@@ -984,7 +991,9 @@ static int DifxVisConvert(const DifxInput *D,
 		}
 		else
 		{
+#ifdef HAVE_FFTW
 			feedSnifferFITS(S, dv->record);
+#endif
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, 
 				dv->record);
@@ -1006,7 +1015,9 @@ static int DifxVisConvert(const DifxInput *D,
 				fprintf(stderr, "Error in "
 					"DifxVisCollectRandomParams : "
 					"return value = %d\n", v);
+#ifdef HAVE_FFTW
 				deleteSniffer(S);
+#endif
 				return -3;
 			}
 
@@ -1027,7 +1038,9 @@ static int DifxVisConvert(const DifxInput *D,
 
 	free(dvs);
 
+#ifdef HAVE_FFTW
 	deleteSniffer(S);
+#endif
 
 	return 0;
 }

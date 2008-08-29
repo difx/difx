@@ -1,5 +1,13 @@
 bin_PROGRAMS = difx2fits
 
+if WITH_FFTW
+fftw_sources = \
+	sniffer.c \
+	sniffer.h
+else
+fftw_sources =
+endif
+
 difx2fits_SOURCES = \
 	difx2fits.c \
 	fits.c \
@@ -21,7 +29,6 @@ difx2fits_SOURCES = \
 	fitsUV.c \
 	fitsWR.c \
 	mjd2str.c \
-	sniffer.c \
 	time2str.c \
 	textutils.c \
 	ymd2mjd.c \
@@ -29,5 +36,5 @@ difx2fits_SOURCES = \
 	fits.h \
 	fitsUV.h \
 	other.h \
-	sniffer.h
+	$(fftw_sources)
 
