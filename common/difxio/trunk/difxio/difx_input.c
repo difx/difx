@@ -1804,6 +1804,10 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		D->specAvg = atoi(DifxParametersvalue(cp, row));
 	}
+	else
+	{
+		D->specAvg = 1;
+	}
 	row = DifxParametersfind(cp, 0, "OUTPUT CHANNELS");
 	if(row >= 0)
 	{
@@ -2207,30 +2211,20 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
 	}
 
 	r = DifxParametersfind(p, 0, "CALC SERVER");
-	if(r < 0)
-	{
-		strcpy(D->job->calcServer, "unknown");
-	}
-	else
+	if(r >= 0)
 	{
 		strncpy(D->job->calcServer, DifxParametersvalue(p, r), 32);
 		D->job->calcServer[31] = 0;
 	}
+
 	r = DifxParametersfind(p, 0, "CALC PROGRAM");
-	if(r < 0)
-	{
-		D->job->calcProgram = -1;
-	}
-	else
+	if(r >= 0)
 	{
 		D->job->calcProgram = atoi(DifxParametersvalue(p, r));
 	}
+
 	r = DifxParametersfind(p, 0, "CALC VERSION");
-	if(r < 0)
-	{
-		D->job->calcVersion = -1;
-	}
-	else
+	if(r >= 0)
 	{
 		D->job->calcVersion = atoi(DifxParametersvalue(p, r));
 	}

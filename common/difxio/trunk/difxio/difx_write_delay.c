@@ -71,7 +71,7 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 			l = 0;
 			for(a = 0; a < D->nAntenna; a++)
 			{
-				l += sprintf(value+l, "%12.10f \t", 
+				l += sprintf(value+l, "%17.15f \t", 
 					scan->model[a][i].t);
 			}
 			writeDifxLine1(out, "RELATIVE INC %d", i, value);

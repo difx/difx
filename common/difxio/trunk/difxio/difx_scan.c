@@ -320,9 +320,9 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 	if(doCoords)
 	{
 		writeDifxLineDouble1(out, "SCAN %d SRC RA", scanId,
-			"%12.10f", ds->ra);
+			"%17.15f", ds->ra);
 		writeDifxLineDouble1(out, "SCAN %d SRC DEC", scanId,
-			"%12.10f", ds->dec);
+			"%17.15f", ds->dec);
 		n += 2;
 	}
 

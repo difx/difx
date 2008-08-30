@@ -203,23 +203,23 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		if(doOffset)
 		{
 			writeDifxLineDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
-				"%6.4f", da[i].offset[0]);
+				"%8.6f", da[i].offset[0]);
 			n++;
 		}
 		if(doCoords)
 		{
 			writeDifxLineDouble1(out, "TELESCOPE %d X (m)", i,
-				"%6.4f", da[i].X);
+				"%8.6f", da[i].X);
 			writeDifxLineDouble1(out, "TELESCOPE %d Y (m)", i,
-				"%6.4f", da[i].Y);
+				"%8.6f", da[i].Y);
 			writeDifxLineDouble1(out, "TELESCOPE %d Z (m)", i,
-				"%6.4f", da[i].Z);
+				"%8.6f", da[i].Z);
 			n += 3;
 		}
 		if(doClock)
 		{
 			writeDifxLineDouble1(out, "CLOCK DELAY (us) %d", i,
-				"%14.12f", da[i].delay);
+				"%17.15f", da[i].delay);
 			writeDifxLineDouble1(out, "CLOCK RATE(us/s) %d", i,
 				"%10.8e", da[i].rate);
 			n += 2;

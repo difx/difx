@@ -78,7 +78,7 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 			for(a = 0; a < D->nAntenna; a++)
 			{
 				l += sprintf(value+l, 
-					"%12.10f\t%14.12f\t%14.12f\t", 
+					"%17.15f\t%17.15f\t%17.15f\t", 
 					scan->model[a][i].dt,
 					scan->model[a][i].dry,
 					scan->model[a][i].wet);

@@ -73,7 +73,7 @@ int writeDifxUVW(const DifxInput *D, const char *filename)
 			l = 0;
 			for(a = 0; a < D->nAntenna; a++)
 			{
-				l += sprintf(value+l, "%7.6f\t%7.6f\t%7.6f\t", 
+				l += sprintf(value+l, "%8.6f\t%8.6f\t%8.6f\t", 
 					scan->model[a][i].u,
 					scan->model[a][i].v,
 					scan->model[a][i].w);

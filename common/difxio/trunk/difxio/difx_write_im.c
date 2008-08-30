@@ -53,6 +53,10 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
+	writeDifxLine(out, "CALC SERVER", D->job->calcServer);
+	writeDifxLineInt(out, "CALC PROGRAM", D->job->calcProgram);
+	writeDifxLineInt(out, "CALC VERSION", D->job->calcVersion);
+
 	writeDifxDateLines(out, D->job->mjdStart);
 	
 	writeDifxLineInt(out, "POLYNOMIAL ORDER", D->job->polyOrder);

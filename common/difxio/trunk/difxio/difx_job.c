@@ -40,6 +40,9 @@ DifxJob *newDifxJobArray(int nJob)
 	{
 		strcpy(dj[j].obsCode, "DIFX");
 		strcpy(dj[j].taperFunction, "UNIFORM");
+		strcpy(dj[j].calcServer, "UNKNOWN");
+		dj[j].calcProgram = -1;
+		dj[j].calcVersion = -1;
 	}
 
 	return dj;
