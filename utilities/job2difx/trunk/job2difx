@@ -7,7 +7,7 @@ from os import getcwd, system, getenv, umask
 import re
 
 program = 'job2difx'
-version = '1.10'
+version = '1.11'
 verdate = '20080717'
 author  = 'Walter Brisken'
 
@@ -1271,6 +1271,11 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 	if osamp > 1:
 		calc.append("OUTPUT CHANNELS:    %f" % (1.0/trunc))
 	calc.append("TAPER FUNCTION:     %s" % job_corr[0]['window'])
+	calc.append("DELAY FILENAME:     %s.delay" % filebase)
+	calc.append("UVW FILENAME:       %s.uvw" % filebase)
+	calc.append("RATE FILENAME:      %s.rate" % filebase)
+	calc.append("IM FILENAME:        %s.im" % filebase)
+		
 	calc.append("NUM TELESCOPES:     %d" % nant)
 
 	ant_num = 0
@@ -1331,16 +1336,14 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 			scan_num, config_name))
 		calc.append(indent21_1("SCAN %d REAL NAME", "%s", \
 			scan_num, srclist[src_id][0]))
-		calc.append(indent21_1("SCAN %d SRC RA", "%12.10f", \
+		calc.append(indent21_1("SCAN %d SRC RA", "%17.15f", \
 			scan_num, srclist[src_id][1]))
-		calc.append(indent21_1("SCAN %d SRC DEC", "%12.10f", \
+		calc.append(indent21_1("SCAN %d SRC DEC", "%17.15f", \
 			scan_num, srclist[src_id][2]))
 		calc.append(indent21_1("SCAN %d CALCODE", "%s", \
 			scan_num, srclist[src_id][3]))
 		calc.append(indent21_1("SCAN %d QUAL", "%d", \
 			scan_num, srclist[src_id][4]))
-		calc.append(indent21_1("SCAN %d OVERSAMP", "%d", \
-			scan_num, os))
 		scan_num += 1
 
 	neop = len(job_eop)
@@ -1394,9 +1397,6 @@ def makecalctable(scans, subarray, filebase, job, antennalist, srclist, specavg,
 		n += 1
 
 	
-	calc.append("DELAY FILENAME:     %s.delay" % filebase)
-	calc.append("UVW FILENAME:       %s.uvw" % filebase)
-		
 	return calc
 	
 #**********************************

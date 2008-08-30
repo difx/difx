@@ -20,6 +20,9 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+Version 1.11
+* Post NRAO-DiFX 1.1
+
 Version 1.10
 * more complete removal of old files if ovewrwriting previous job2difx run
 * put DIFX VERSION in .calc file
@@ -27,6 +30,7 @@ Version 1.10
 * fix bin ordering for pulsars.  Still something awry here.
 * remove all Makefile stuff
 * respect DIFX_GROUP_ID and set permissions
+* increase precision for RA and DEC strings
 * version for NRAO-DiFX 1.1
 
 Version 1.9
