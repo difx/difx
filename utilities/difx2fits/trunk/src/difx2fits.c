@@ -28,9 +28,10 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  <baseFilename>.input    DiFX input file\n");
 	fprintf(stderr, "  <baseFilename>.uvw      DiFX UVW file\n");
 	fprintf(stderr, "  <baseFilename>.delay    DiFX delay model\n\n");
-	fprintf(stderr, "Three other files are optionally read:\n");
+	fprintf(stderr, "Four other files are optionally read:\n");
 	fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
-	fprintf(stderr, "  <baseFilename>.rates    Extra calcif output\n");
+	fprintf(stderr, "  <baseFilename>.rate     Extra calcif output\n");
+	fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
 	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
 	fprintf(stderr, "  flag, tsys, pcal, weather\n");
@@ -75,9 +76,11 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --keep-order\n");
 	fprintf(stderr, "  -k                  Keep antenna order\n");
 	fprintf(stderr, "\n");
+#ifdef HAVE_FFTW
 	fprintf(stderr, "  --dont-sniff\n");
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
 	fprintf(stderr, "\n");
+#endif
 	fprintf(stderr, "  --verbose\n");
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
