@@ -378,6 +378,32 @@ sub greaterthanequal {
   }
 }
 
+sub compare {
+  my ($a, $b, $swapped) = @_;
+  # If the second argument is just a plain scaler assume it has the same units
+  # as the first and do a simple add;
+  if (ref $b ne 'Astro::Quanta') {
+    return $a->value <=> $b;
+  }
+
+  # Get the type and factor for the two arguments
+  my ($atype, $afactor) = matchunit($a->unit);
+
+  # Get the type and factor for the two arguments
+  my ($btype, $bfactor) = matchunit($b->unit);
+
+  if ($btype ne $atype) {
+    carp "Cannot compare $a to $b ";
+    return undef;
+  }
+
+  if ($swapped) { # Unlikely but you never know
+    die "Not implemented ";
+  } else {
+    return $a->value <=> $b->value*$bfactor/$afactor;
+  }
+}
+
 use overload
   '""' => \&pretty,
   '+'  => \&plus,
@@ -391,6 +417,7 @@ use overload
   '<'  => \&lessthan,
   '<=' => \&lessthanequal,
   '>'  => \&greaterthan,
-  '>='  => \&greaterthanequal;
+  '>='  => \&greaterthanequal,
+  '<=>'  => \&compare;
 
 1;
