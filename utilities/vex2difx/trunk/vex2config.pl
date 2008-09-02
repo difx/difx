@@ -45,6 +45,7 @@ my $new = 0;
 my $perth = 0;
 my $monitor = 0;
 my $requested_duration = undef;
+my $files = undef;
 
 my @activestations = ();
 
@@ -53,7 +54,7 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
 	   'swin'=>\$swin, 'perth'=>\$perth, 'monitor'=>\$monitor, 
-	   'duration=i'=>\$requested_duration, 'swin'=>\$swin, 'perth'=>\$perth);
+	   'duration=i'=>\$requested_duration, 'files=s'=>\$files);
 
 
 $antnames{At} = 'CAT' . uc($atca);
@@ -83,6 +84,12 @@ my $vexname = shift;
 die "$vexname does not exist!\n" if (! -e $vexname);
 die "$vexname is not a plain file!\n" if (! -f $vexname);
 die "$vexname not readable!\n" if (! -r $vexname);
+
+if (defined $files) {
+  die "$files does not exist!\n" if (! -e $files);
+  die "$files is not a plain file!\n" if (! -f $files);
+  die "$files not readable!\n" if (! -r $files);
+}
 
 my $vex = new Astro::Vex($vexname);
 
@@ -312,7 +319,7 @@ foreach (@modenames) {
 }
 print INPUT "\n";
 
-@globalfreq = sort {return 0} @globalfreq;
+@globalfreq = sort {$a->freq <=> $b->freq} @globalfreq;
 my $nfreq = scalar(@globalfreq);
 print INPUT "# FREQ TABLE #######!\n";
 printf INPUT "FREQ ENTRIES:       %d\n", $nfreq;
@@ -402,8 +409,8 @@ foreach (@stations) {
     } else {
       $format = 'MKV';
     }
-    #$framesize = 160000;
-    $framesize = 80000;
+    $framesize = 160000;
+    #$framesize = 80000;
   } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5B') {
     $format = 'MARK5B';
     $framesize = 10016;
@@ -658,8 +665,15 @@ EOF
 # Datafile table
 
 print INPUT "\n# DATA TABLE #######\n";
-for (my $i=0; $i<@stations; $i++) {
-  printf INPUT "D/STREAM %-10s 0\n", sprintf '%d FILES:', $i;
+if (defined $files) {
+  open(FILES, $files) || die "Could not open $files: $!\n";
+  print INPUT <FILES>;
+  print INPUT "\n";
+  close(FILES);
+} else {
+  for (my $i=0; $i<@stations; $i++) {
+    printf INPUT "D/STREAM %-10s 0\n", sprintf '%d FILES:', $i;
+  }
 }
 
 print INPUT "\n# NETWORK TABLE ####!\n";
@@ -933,14 +947,15 @@ BEGIN {
 
 my %antclockoffsets;
 BEGIN {
-  %antclockoffsets = (Pa => -2.58 ,
+  %antclockoffsets = (Pa => -2.48,
                       At => -55.31,
-                      Mp => -1.5,
-                      Ho => -10.6,
+                      Mp => -1.22,
+                      Ho => -3,
                       Cd => 1.05,
                       Ti => -2.0,
-                      Sh => -5.0,
-		      Ks => 1.55,
+                      Sh => -7.4,
+		      Ks => 1.95,
+		      Hh => -1,
                      );
 }
 
