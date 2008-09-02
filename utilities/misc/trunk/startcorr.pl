@@ -22,7 +22,7 @@ my $machinefile;
 my $numproc;
 my $evlbi = 0;
 my $monitor = undef;
-my $offset = 30; # Offset in minutes for start time
+my $offset = 30; # Offset in seconds for start time
 my $debug = 0;
 
 GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 
@@ -201,9 +201,16 @@ if ($monitor) {
   $difx_options .= " -M${monitor}:9999:1";
 }
 
+my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
+print "$exec\n";
+system $exec if (!$debug);
+
 # Launch ATNF evlbi clients
 my $status;
-if ($evlbi) {
+if (0 & $evlbi) {
+  
+  print "******Waiting for DiFX to start\n";
+  sleep($offset*0.8);
 
   my %rec_hosts = ();
   open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
@@ -291,9 +298,6 @@ if ($evlbi) {
   }
 }
 
-my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
-print "$exec\n";
-system $exec if (!$debug);
 
 sub checkfile ($$) {
   my ($type, $file) = @_;
