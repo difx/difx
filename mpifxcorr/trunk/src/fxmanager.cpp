@@ -9,6 +9,14 @@
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
  ***************************************************************************/
+
+//===============================================================================
+// URL                : $HeadURL$
+// Revision           : $LastChangedRevision$
+// Last Changed by    : $Author$
+// Change date        : $LastChangedDate$
+//===============================================================================
+
 #include "fxmanager.h"
 #include <iostream>
 #include "datastream.h"
