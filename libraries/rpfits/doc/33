@@ -1,0 +1,77 @@
+Replied: Fri, 19 Mar 1999 16:15:09 +1100
+Replied: lstavele
+Replied: mkesteve
+Replied: Warwick.Wilson@atnf.CSIRO.AU
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Wed, 17 Mar 1999 13:06:41 +1100
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id NAA14304;
+	Wed, 17 Mar 1999 13:06:40 +1100 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with SMTP id NAA04656;
+	Wed, 17 Mar 1999 13:06:40 +1100 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA14631; Wed, 17 Mar 1999 12:04:49 +1000
+Message-Id: <9903170204.AA14631@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: lstavele@atnf.CSIRO.AU, mkesteve@atnf.CSIRO.AU, wwilson@atnf.CSIRO.AU
+Subject: Re: REFBEAM, etc. 
+Date: Wed, 17 Mar 99 12:04:42 +1000
+X-Mts: smtp
+
+>I wasn't aware that sc_cal was used in this way!  There's nothing about it in
+>the rpfits documentation.
+
+Well, you can believe me that it is.  Whether it belongs in the rpfits
+documentation or the multibeam documentation is debatable.
+
+The format is:
+
+c SPECIAL FORMAT - for Multibeam at Parkes
+c
+c       QUANTITY   1:   0		i.e. antenna number = 0
+c       QUANTITY   2:   azimuth
+c       QUANTITY   3:   elevation
+c       QUANTITY   4:   parallactic angle
+c       QUANTITY   5:   focus_y
+c       QUANTITY   6:   focus_z
+c       QUANTITY   7:   focus_r
+c       QUANTITY   8:   temperature
+c       QUANTITY   9:   pressure
+c       QUANTITY  10:   humidity
+c       QUANTITY  11:   wind speed
+c       QUANTITY  12:   wind direction
+c       QUANTITY  13-16:  time of measurement of cal signals in Jy (ascii)
+c Added 17 March 1999
+c       QUANTITY  17:   reference beam
+c
+
+There are also extra quantities written for each antenna:
+c
+c       QUANTITY  15:   Calibration signal size in Jy - pol A
+c       QUANTITY  16:   Calibration signal size in Jy - pol B
+c       QUANTITY  17:   Total power counts - cal off - pol A
+c       QUANTITY  18:   Total power counts - cal on - pol B
+c       QUANTITY  19:   Total power counts - cal off - pol A
+c       QUANTITY  20:   Total power counts - cal on - pol B
+c
+
+
+>Fine, except that SCANTYPE = "track" seems oxymoronic - "SCAN" is an
+>unfortunate choice of collective noun for integrations in single dish
+>observing.  
+
+OK I'll change "SCANTYPE" to "OBSTYPE " - mjk's suggestion.
+
+>Could you put an expanded description of the two-letter codes
+>in the comment section of the card for human readers.
+
+I considered that, but 50 characters is not quite enough to cover
+the possible combinations.  I'll look into whether I can put some useful
+information in the comment area.
+
+Cheers, Warwick.
+
+--------

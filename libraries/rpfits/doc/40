@@ -1,0 +1,49 @@
+Replied: Mon, 10 May 1999 18:23:06 +1000
+Replied: mkesteve
+Replied: lstavele
+Replied: Warwick.Wilson@atnf.CSIRO.AU
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Mon, 10 May 1999 17:41:16 +1000
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id RAA24176;
+	Mon, 10 May 1999 17:41:15 +1000 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.1a) with SMTP id RAA16395;
+	Mon, 10 May 1999 17:41:15 +1000 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA01955; Mon, 10 May 1999 17:41:09 +1000
+Message-Id: <9905100741.AA01955@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: mkesteve@atnf.CSIRO.AU, lstavele@atnf.CSIRO.AU, wwilson@atnf.CSIRO.AU
+Subject: sc_cal in RPFITS 
+Date: Mon, 10 May 99 17:41:00 +1000
+X-Mts: smtp
+
+Mark,
+
+Yes, the official definition of sc_cal is not in accordance with
+what is done in practice.
+
+In fact, in writing the data, I equivalence sc_cal to an array 
+sc_buf( sc_q*sc_ant).  Note that, always, only one IF at a time gets 
+written out, so that sc_if is always 1.
+
+Readers should also do this, thus allowing sc_q to be a variable
+which depends on the application. 
+
+When we started fiddling with the number of quantities written, i.e.
+with the multibeam data, this treatment of the sc_cal data became
+necessary.
+
+As far as the readers are concerned, livedata does the right thing.
+I believe ATLOD also handles it correctly, because, for example, we can 
+read LBA data, which has yet another number of quantities.
+
+Unfortunately, the official definition of rpfits has never been modified
+to reflect this change, and so you have probably been led astray.
+
+Cheers, Warwick.
+
+--------

@@ -1,0 +1,1125 @@
+
+			DEFINITION OF RPFITS
+                        --------------------
+
+File: RPFITS.DEFN
+$Id: rpfits.defn,v 1.9 2006/07/11 06:24:20 cal103 Exp $
+
+   CONTENTS:
+   --------
+
+  1) Introduction
+  2) Software
+  3) File Structure
+     a) Headers
+     b) Tables
+     c) Data
+  4) Multi-Frequency Data
+  5) System Calibration Data
+
+  Appendix A: Details for calling RPFITSIN and RPFITSOUT
+  Appendix B: Common Blocks
+  Appendix C: Table Formats
+  Appendix D: Sample Header
+
+
+1) INTRODUCTION
+   ------------
+
+This document contains the current definition of RPFITS.
+RPFITS is a dialect of FITS which differs from standard FITS primarily in
+the following respects:
+
+	(1)	The block size is 2560 bytes, in order to maximise speed on
+                a VAX.
+	(2)	Several scans can occur on one file. Each scan starts with a
+                FITS header
+	(3)	All data (other than header information) are stored as VAX
+                REAL*4.
+	(4)	Tables are generally written between the header and the data
+                instead of at the end of the data. However, an exception is
+                the flag data (FG table) which should occur after the data.
+
+Nomenclature:
+Note that an IF band is defined as an observing band centred on one observing
+frequency with one bandwidth. Thus the following modes of observation are
+possible on the AT.
+
+One IF band, with four stokes parameters
+Two IF bands, with four stokes parameters each
+Four IF bands (at four different frequencies) with one linear polarisation
+        each
+Four IF bands, consisting of two bands of four stokes through the spectral
+        line correlator, and two bands of four stokes through the continuum
+        correlator.
+
+2) SOFTWARE
+   --------
+
+RPFITS is normally read and written using the routines RPFITSIN and RPFITSOUT
+respectively.
+Use of these means that the programmer need know little about the internal
+structure of RPFITS. Each of these is called once per header or once per data
+group (see Appendix A).
+
+Calls to these routines have the form
+
+	call RPFITSOUT (jstat, vis, weight, baseline, utr, u, v, w,
+     +	flag, bin, if_no, sourceno)
+
+where
+JSTAT    is an INTEGER*4 detailing the type of operation and the exit status
+VIS      contains an array of real or complex visibility data
+WEIGHT   (to be discontinued in future) contains an array of weights
+         corresponding to VIS
+BASELINE (INTEGER*4) is the baseline number
+UTR      is a REAL*8 UTC in seconds
+U,V,W    are the REAL*4 coordinates in metres
+FLAG     is an INTEGER*4 which is normally 0 for good data
+BIN      is an INTEGER*4 giving the pulsar bin number
+IF_NO    is a pointer to the IF table
+SOURCENO is a pointer to the SU table
+
+These can all default to zero if not used.
+
+Note that for data with more than one IF band, RPFITSIN/OUT should now be
+called once per IF band.
+In addition to the formal parameters, data is transferred to/from RPFITSIN/OUT
+via commons contained in RPFITS.INC. These commons, plus further details of
+the formal parameters, are given in Appendix A.
+
+3) FILE STRUCTURE
+   --------------
+
+An RPFITS file consists of a number of SCANS of data. Each scan contains
+interferometer data covering a period of (typically) minutes to hours, and
+represents a continuous period of observation. However, a scan can
+contain data on more than one source (when source-switching or mosaicing,
+for example) and at more than one frequency (when frequency-switching).
+Each scan of data starts with a header, followed optionally by tables,
+followed by data. Flag tables can also occur after the data. Note that
+SU, IF, etc. tables all refer to the data immediately following (i.e. until
+the next header) whereas FG tables refer to the data immediately preceding
+(i.e. since the last header).
+
+Thus a typical RPFITS file might have the structure:
+
+			HEADER
+			TABLES
+			DATA
+			FG TABLE
+
+			HEADER
+			TABLES
+			DATA
+a) Headers
+
+Each header consists of a number of 80-character records, each of which
+starts with a keyword and then has a value to be assigned to that keyword.
+A typical header is given in Appendix D. A header always starts with the
+keyword SIMPLE and ends with the keyword END.
+
+b) Tables
+
+Tables are similar to headers in that they consist of a number of 80-character
+records, and start with the keyword TABLE and end with the keyword ENDTABLE.
+At present the following tables are used by RPFITS: Source (SU), IF, Index (NX),
+flag (FG), Antenna (AN), Meteorological (MT) and  Uncalibration (CU). However,
+in principle any number of tables can be inserted here, in any order. Each
+table must start with the line
+TABLE xxxx
+where xxxx is the name of the table, and must end with the line
+ENDTABLE
+It can also contain lines starting with HEADER or COMMENT which will be ignored.
+The format of other records between these two lines is determined by the type
+of table, as detailed in Appendix C.
+
+c) Data
+
+Data is written in binary real*4 format (VAX G_FLOATING)
+packed into the file with no gaps between diferent data. The data are divided
+into groups. Each group of data represents all the data from the interferometer
+for one integration period and, in the case of multi-IF band data, for one IF.
+Thus, for multi-IF data, RPFITSOUT should be called once per IF (i.e. several
+times per integration), with a formal parameter if_no varying from 1 to n_if.
+A new group will be written for each IF, and needn't be the same length. I.e.
+the length of each visibility group is no longer constant, but depends on the
+parameters associated with it.
+
+The way the data are actually written out is as follows. Each data group
+consists of a number of header parameters followed by a hypercube of data.
+The number of header parameters is given by PCOUNT in the RPFITS scan header,
+and is usually either 5 or 9. In the latest version usually 5 or 10.
+
+The parameters are:
+	1) u in m (real*4)
+	2) v in m (real*4)
+	3) w in m (real*4)
+	4) baseline number (real*4 - see below)
+	5) UTC in s (real*4)
+	6) flag (int*4)
+	7) pulsar bin (int*4)
+	8) if_no (int*4)
+	9) source no (int*4)
+       10) intbase (real*4)
+       11) data_format (int*4)
+
+Notes:
+	i) the number of the baseline going from antenna p to antenna q
+	is given by 256*p + q. RPFITS allows these in either order, but
+	AIPS insists on having q>p. If necessary baselines with p>q will
+	be inverted by RPLOD in AIPS.
+	ii) the flag may be set to 1 to flag bad data. It's normally
+	set to 0.
+	iii) the if_no and source_no point to the preceding IF and SU
+	tables respectively.
+        iv) intbase is the integration time for the baseline.
+        v) if this in present it overrides the value of data format in
+        the scan header.
+
+Following these parameters, the data are written in a six-dimensional
+hypercube. The axis dimensions are:
+	NAXIS1	0		dummy (required by FITS for grouped data)
+	NAXIS2	1, 2 or 3	complex or real(real, imag, and poss. weight)
+	NAXIS3	1-4		Stokes - see NSTOK for dimension
+	NAXIS4	1-8192		No. of freq channels - see N_FREQ
+	NAXIS5	usually 1	no of RA positions (used for mosaicing)
+	NAXIS6	usually 1	no of Dec positions (used for mosaicing)
+Note that the dimensions of any of these axes may be over-ridden by entries
+in the data, as will be discussed below.
+
+
+4) MULTI-FREQUENCY DATA
+   --------------------
+
+Multi frequency data may occur as a result of
+	1) switching frequency rapidly (e.g. for bandwidth synthesis)
+	2) Observing more than one band simultaneously (the AT can observe
+           up to 4 frequency bands simultaneously). In this case note that
+           the different bands may not be configured in the same way.
+	3) A combination of these.
+
+For example, there may be 1024 frequency channels with four stokes parameters
+and a bandwidth of 8 MHz at 6035 MHz, and 4096 channels with RR and LL and a
+bandwidth of 4 MHz at 4885 MHz. Furthermore, these may be stepping in units
+of 4 MHz every 5 seconds. Note that the polarisation calibration will differ
+for each band.
+
+To get the required flexibility, each group of visibility data will contain
+data from only one frequency band (i.e. one central frequency). A parameter
+associated with each group points to an entry in an IF table which gives the
+centre frequency, bandwidth, polarisation configuration, and number of
+frequency channels. Where these duplicate or conflict with information supplied
+by header keywords, then table entries have precedence. Thus for the example
+above, at each integration two groups of data per baseline are written. One
+group contains the 6035 MHz data and has a pointer (IF_NO) to entries in the
+IF table giving IF_NFREQ=1024, and IF_NSTOK=4, and the other group contains
+the 4885 MHz data and has pointers to IF_NFREQ=4096, IF_NSTOK=2.
+
+
+5) SYSTEM CALIBRATION DATA
+   -----------------------
+
+In addition to the normal groups of data containing interferometry data, there
+is a special type of system calibration (or syscal) data group, identified
+by having baseline number=-1, which gives details of the data used to perform
+on-line AT system calibration.
+
+In a similar way to the normal grouped data, the syscal group consists of a
+9-parameter header followed by a three-dimensional array of data.  The sizes
+of the axes of this latter array are given by the number of antennas, number
+of IF's per antenna, and the number of syscal quantities per IF.
+
+The syscal groups have the following format ("word" means 4 bytes):
+
+Words 1-3:	0.0	real*4	(corresponding to u,v,w)
+Word 4:		-1.0	real*4	(to indicate baseline -1)
+Word 5:		sc_UT	real*4	(UTC in seconds)
+Word 6:		sc_ant	int*4	(no. of antennas: array dimension 3; max=6)
+Word 7:		sc_if	int*4	(no of IFs per ant: array dimension 2; max=4)
+Word 8:		sc_q	int*4	(no of syscal quantities per IF: array
+							dimension 1; max=16)
+Word 9:		sc_srcno int*4  (source number - pointer to source table)
+Word 10:        0                (not used)
+Word 11:        0                (not used)
+
+There then follows a real*4 three-dimensional array sc_cal(sc_q,sc_if,sc_ant).
+The third subscript refers to tha AN table and the second subscript refers
+to the IF table. The first axis is as follows (others may be added):
+
+element 1:	antenna number (points to AN table)
+element 2:	IF number (points to IF table)
+element 3:	X-Y phase in radians
+element 4:	sqrt(Tsys) of X in K**0.5
+element 5:	sqrt(Tsys) of Y in K**0.5
+elements 6-8:	sampler statistics for X
+elements 9-11:	sampler statistics for Y
+element 12:	flag (0 is good, otherwise is bad)
+element 13:	X-Y amplitude
+
+
+APPENDIX A: DETAILS FOR CALLING RPFITSIN and RPFITSOUT
+------------------------------------------------------
+
+A.1 Calling RPFITSIN
+
+	subroutine rpfitsin(jstat, vis, weight, baseline, ut, u, v, w,
+     +		flag, bin, if_no, sourceno)
+
+This routine is for reading an RPFITS file, which may have been generated
+by RPFITSOUT.
+
+Its function when called depends primarily on the value of JSTAT, as follows:
+		JSTAT=-3......Open file
+		JSTAT=-2......Open file and read the first header
+		JSTAT=-1......Read next header (or FG table if there's one
+				before the next header)
+		JSTAT=0.......Read next data group
+		JSTAT=1.......Close the file.
+		JSTAT=2.......Skip to end-of-file
+	When JSTAT=1 or -1, all the other arguments are dummy, and are
+	left unchanged.
+	When JSTAT=0, all other arguments are irrelevant on entry, and on
+	exit contain the values read from the file. Similarly, the contents
+	of the common blocks, except for FILE, NCARD, and CARD, are
+	irrelevant on entry and on exit contain values read from the data.
+
+On exit, the value of JSTAT indicates the success of the operation:
+		JSTAT=-1.........Operation unsuccessful
+		JSTAT=0..........Operation successful
+		JSTAT=1..........Encountered header when trying to read data
+		JSTAT=2..........Probably OK . . End of scan
+		JSTAT=3..........Encountered end-of-file
+		JSTAT=4..........Encountered FG table
+                JSTAT=5..........May be reading illegal data written at
+                                 close/reopen operation. 2 consecutive errors
+                                 indicate illegal parameter encountered
+
+The routine should be called with JSTAT=0 once per data group (which generally
+means once per uv point).
+It will cope with data which may be either continuum or spectral line, and
+which may contain polarisation data with visibilities recorded in up to 4
+Stokes Parameters.
+
+If an FG table is encountered when expecting data or a header, then the
+values of the FG commons will be updated before RPFITSIN returns with JSTAT=4.
+In this case, the calling program should deal with the FG data, and then call
+RPFITSIN again with JSTAT=-1 to read the subsequent header.
+
+The formal parameters when JSTAT=0 are as follows:
+	     VIS........ A complex (or real)array to receive
+			 the complex visibilities, in Jy, for each stokes
+			 parameter and frequency channel at the current uv
+			 point.	 Further details of this array follow below.
+	     WEIGHT..... A real array to receive
+			 the weight assigned to each point.
+	     BASELINE... = 256*(1st telescope no.) + (2nd telescope no.)
+			 or -1 for syscal data (see section 7 above)
+	     UT......... in seconds
+	     U,V,W...... in metres
+	     FLAG....... an integer specifying flagging. Flag = 0 implies
+			 perfect data
+	     BIN........ a bin number for pulsar data. Points to an entry in
+			 the preceding pulsar BIN table.
+	     IF_NO...... an IF channel number. Points to an entry in the
+			 preceding IF table
+	     SOURCENO... source number. Points to an entry in the
+			 preceding SU table
+
+The array VIS
+		If there are NSTOK stokes parameters, and NFREQ
+		frequency channels,
+		then VIS must be an array of dimension >= (NSTOK*NFREQ)
+		The visibilities are contained within VIS in order of
+		increasing stokes parameter and frequency channel number,
+		with stokes parameter varying fastest and freq channel varying
+		slowest. For intensity-only,
+		continuum, observations,therefore, VIS can be a single
+		complex number, and the array length should be set to 1.
+
+A.2 Calling RPFITSOUT
+
+	subroutine rpfitsout(jstat, vis, weight, baseline, ut, u, v, w,
+     +		flag, bin, if_no, sourceno)
+
+This routine is for writing an RPFITS file.
+Its function when called depends primarily on the value of JSTAT, as follows:
+		JSTAT=-3......Open file
+		JSTAT=-2......Open file and write a header
+		JSTAT=-1......Write a header
+		JSTAT=0.......Write a data group to the file
+		JSTAT=1.......Close the file.
+		JSTAT=2.......Write an FG table (at end of data)
+                JSTAT=3.......Flush buffer, close file, reopen file.
+	When JSTAT=1 or -1, all the other arguments are dummy, and are
+	left unchanged.
+	When JSTAT=0, all the parameters and the contents of common blocks
+	should be set before entry. They are all unchanged on exit, except
+	DATOBS which, if blank on entry, will contain the current date on exit.
+
+On exit, the value of JSTAT indicates the success of the operation:
+		JSTAT=-1.........Operation unsuccessful
+		JSTAT=0..........Operation successful
+
+The routine should be called with JSTAT=0 once per data group (which generally
+means once per uv point).  It will cope with data which may be either
+continuum or spectral line, and which may contain polarisation data with
+visibilities recorded in up to 4 Stokes Parameters. It is assumed that each
+file contains data on only one position in the sky (i.e. not a grid of
+positions).
+
+The formal parameters when JSTAT=0 are as follows:
+	     VIS........ A complex (or real) array containing
+			 the complex visibilities, in Jy, for each stokes
+			 parameter and frequency channel at the current uv
+			 point.	 Further details of this array follow below.
+	     WEIGHT..... A real array containing
+			 the weight assigned to each point. For natural
+			 weighting, all elements of WEIGHT should be 1.0
+			 Note that this will be used only if WRITE_WT is true.
+	     BASELINE.. = 256*(1st telescope no.) + (2nd telescope no.)
+			 or -1 for syscal data (see section 7 above)
+			 (these telescope numbers should correspond to
+			 those in the common block ANTEN)
+	     UT......... in seconds
+	     U,V,W...... in metres
+	     FLAG....... an integer specifying flagging. Flag = 0 implies
+			 perfect data
+	     BIN........ a bin number for pulsar data. Points to an entry in
+			 the pulsar BIN table.
+	     IF_NO...... an IF channel number. Points to an entry in the
+			 IF table
+	     SOURCENO... source number. Points to an entry in the SU table.
+
+The array VIS
+		If there are NSTOK stokes parameters, and NFREQ
+		frequency channels,
+		then VIS must be an array of dimension >= (NSTOK*NFREQ).
+		The visibilities are contained within VIS in order of
+		increasing stokes parameter and frequency channel number,
+		with stokes parameter varying fastest and freq channel varying
+		slowest. For intensity-only,
+		continuum, observations,therefore, VIS can be a single
+		complex number, and the array length should be set to 1.
+intbase         should be set to the integration time in seconds for
+                the baseline.
+
+
+
+APPENDIX B: THE RPFITS COMMONS
+------------------------------
+
+These are all contained in the file rpfits.inc, whose listing follows:
+
+C--------------------- COMMONS FOR RPFITS ROUTINES ---------------------
+C
+C                  SEE RPFITS.DEFN FOR AN EXPLANATION
+C
+C     The FORTRAN standard requires that CHARACTER variables not be
+C     mixed with other types in COMMON and hence they have a separate
+C     COMMON block.  However, they are declared in context.
+C
+C     DOUBLE PRECISION variables were also segregated into a separate
+C     COMMON block for reasons long forgotten.
+C
+C $Id: rpfits.defn,v 1.9 2006/07/11 06:24:20 cal103 Exp $
+C-----------------------------------------------------------------------
+
+      INTEGER   ant_max, max_card, max_cu, max_fg, max_if, max_mt,
+     :          max_nx, max_sc, max_su, pol_max
+      PARAMETER (ant_max  = 15,
+     :           max_card = 650,
+     :           max_cu   = 32,
+     :           max_fg   = 32,
+     :           max_if   = 16,
+     :           max_mt   = 256,
+     :           max_nx   = 256,
+     :           max_sc   = 16,
+     :           max_su   = 500,
+     :           pol_max  = 8)
+
+
+C     Error status value from ATIO I/O operation.
+      INTEGER   rp_iostat
+      COMMON /iostat/ rp_iostat
+
+C     -------- Parameter values obtained from the RPFITS header --------
+C                (except intbase which is a random parameter)
+
+C     Miscellaneous parameters from RPFITS header cards (ncount, nfreq,
+C     nstok, freq, dfreq, ra, dec, and coord are defunct; use if_nfreq,
+C     if_nstok, if_freq, if_bw, if_nfreq su_ra, and su_dec, instead and
+C     ignore ncount and coord - now always J2000).
+      LOGICAL   write_wt
+      INTEGER   data_format, intime, ncard, ncount, nfreq, nscan, nstok
+      REAL      intbase
+      DOUBLE PRECISION dec, dfreq, freq, ra
+      CHARACTER bunit*16, cal*16, card(max_card)*80, coord*8, datobs*12,
+     :          datsys*8, datwrit*12, file*256, instrument*16,
+     :          object*16, obstype*16, rp_observer*16, rpfitsversion*20,
+     :          version*20
+      COMMON /param/ nstok, nfreq, ncount, intime, nscan, write_wt,
+     :          ncard, intbase, data_format
+
+C     Ephemeris parameters from RPFITS header cards.
+      INTEGER   rp_defeat
+      DOUBLE PRECISION rp_c(12), rp_djmrefp, rp_djmreft, rp_utcmtai
+      COMMON /ephem/ rp_defeat
+
+C     Proper motion parameters from RPFITS header cards.
+      DOUBLE PRECISION pm_dec, pm_epoch, pm_ra
+      COMMON /proper/ pm_ra, pm_dec, pm_epoch
+
+C     Spectral line information from RPFITS header cards.
+      INTEGER   ivelref
+      DOUBLE PRECISION rfreq, vel1
+      COMMON /spect/ ivelref
+
+C     Antenna table (embedded in the RPFITS header).
+      LOGICAL   an_found
+      INTEGER   ant_mount(ant_max), ant_num(ant_max), nant
+      DOUBLE PRECISION axis_offset(ant_max),
+     :          feed_cal(ant_max,max_if,pol_max), feed_pa(2,ant_max),
+     :          x(ant_max), x_array, y(ant_max), y_array, z(ant_max),
+     :          z_array
+      CHARACTER feed_type(2,ant_max)*2, sta(ant_max)*8
+      COMMON /anten/ nant, ant_num, ant_mount, an_found
+
+C     Uncalibration table (embedded in the RPFITS header).
+      LOGICAL   cu_found
+      INTEGER   cu_ant(max_cu), cu_ch1(max_cu), cu_ch2(max_cu),
+     :          cu_if(max_cu), n_cu
+      DOUBLE PRECISION cu_cal1(max_cu), cu_cal2(max_cu), cu_ut(max_cu)
+      COMMON /cu/ n_cu, cu_ant, cu_if, cu_ch1, cu_ch2, cu_found
+
+C     Flag table (embedded in the RPFITS header).
+      LOGICAL   fg_found
+      INTEGER   fg_ant(2,max_fg), fg_chan(2,max_fg),
+     :          fg_if(2,max_fg), fg_stok(2,max_fg), n_fg
+      DOUBLE PRECISION fg_ut(2,max_fg)
+      CHARACTER fg_reason(max_fg)*24
+      COMMON /fg/ n_fg, fg_ant, fg_if, fg_chan, fg_stok, fg_found
+
+C     IF table (embedded in the RPFITS header).
+      LOGICAL   if_found
+      INTEGER   if_chain(max_if), if_invert(max_if), if_nfreq(max_if),
+     :          if_nstok(max_if), if_num(max_if), if_sampl(max_if),
+     :          if_simul(max_if), n_if
+      DOUBLE PRECISION if_bw(max_if), if_freq(max_if), if_ref(max_if)
+      CHARACTER if_cstok(4,max_if)*2
+      COMMON /if/ n_if, if_invert, if_nfreq, if_nstok, if_sampl,
+     :          if_found, if_num, if_simul, if_chain
+
+C     Meteorological table (embedded in the RPFITS header).
+      LOGICAL   mt_found
+      INTEGER   mt_ant(max_mt), n_mt
+      DOUBLE PRECISION mt_humid(max_mt), mt_press(max_mt),
+     :          mt_temp(max_mt), mt_ut(max_mt)
+      COMMON /mt/ n_mt, mt_ant, mt_found
+
+C     Index table (embedded in the RPFITS header).
+      LOGICAL   nx_found
+      INTEGER   n_nx, nx_rec(max_nx)
+      DOUBLE PRECISION nx_ut(max_nx)
+      CHARACTER nx_date(max_nx)*12, nx_source(max_nx)*16
+      COMMON /nx/ n_nx, nx_rec, nx_found
+
+C     Source table (embedded in the RPFITS header).
+      LOGICAL   su_found
+      INTEGER   n_su, su_num(max_su)
+      DOUBLE PRECISION su_dec(max_su), su_decd(max_su), su_pdec(max_su),
+     :          su_pdecd(max_su), su_pra(max_su), su_prad(max_su),
+     :          su_ra(max_su), su_rad(max_su)
+      CHARACTER su_cal(max_su)*4, su_name(max_su)*16
+      COMMON /su/ n_su, su_found, su_num
+
+
+C     DOUBLE PRECISION variables (declared in context above).
+      COMMON /doubles/ axis_offset, dec, dfreq, cu_cal1, cu_cal2, cu_ut,
+     :          feed_cal, feed_pa, fg_ut, freq, if_bw, if_ref, if_freq,
+     :          mt_humid, mt_press, mt_temp, mt_ut, nx_ut, ra, rfreq,
+     :          rp_c, rp_djmrefp, rp_djmreft, rp_utcmtai, su_dec, su_ra,
+     :          su_rad, su_decd, su_pra, su_pdec, su_prad, su_pdecd,
+     :          vel1, x, x_array, y, y_array, z, z_array
+
+C     CHARACTER variables (declared in context above).
+      COMMON /names/ object, instrument, cal, rp_observer, datobs,
+     :          datwrit, file, datsys, version, coord, sta, feed_type,
+     :          card, if_cstok, su_name, su_cal, fg_reason, nx_source,
+     :          nx_date, rpfitsversion, bunit, obstype
+
+C     -------------- Values obtained from the RPFITS data --------------
+
+C     Syscal data.
+      INTEGER   sc_ant, sc_if, sc_q, sc_srcno
+      REAL      sc_cal(max_sc,max_if,ant_max), sc_ut
+      COMMON /sc/ sc_ut, sc_ant, sc_if, sc_q, sc_cal, sc_srcno
+
+C     ------------------------------------------------------------------
+
+C     The following is for compatibility with early versions:
+      DOUBLE PRECISION ant_humid(ant_max), ant_pressure(ant_max),
+     :          ant_temp(ant_max), rp_humid(ant_max),
+     :          rp_pressure(ant_max), rp_temp(ant_max)
+      EQUIVALENCE (mt_humid, ant_humid,    rp_humid)
+      EQUIVALENCE (mt_press, ant_pressure, rp_pressure)
+      EQUIVALENCE (mt_temp,  ant_temp,     rp_temp)
+
+
+Listing by category of variables returned via RPFITS commons
+------------------------------------------------------------
+As indicated, some of these are now obsolete and have been replaced by more
+generalised variables that are suitable for multi-frequency or multi-source
+observations.
+
+  Error status value from ATIO I/O operation.
+    RP_IOSTAT
+
+  Miscellaneous parameters from RPFITS header cards.
+    WRITE_WT	In RPFITSOUT, if WRITE_WT is FALSE only the real & imaginary
+		parts of VIS will be written to the file, whereas if TRUE,
+		then WEIGHT will be written too.
+		In RPFITSIN, WRITE_WT indicates whether weight was found in
+		the data file.
+    DATA_FORMAT Value of NAXIS2 card:
+		  1: a single real value,
+		  2: real/imaginary visibility,
+		  3: real/imaginary visibility and weight.
+    INTIME	Integration time in seconds.
+    NCARD	Number (=< 256) of extra header records to be made available
+		to the calling program by RPFITSIN or to be written to the
+		data by RPFITSOUT.  If NCARD < 0 in a call to RPFITSIN, then
+		ALL cards will be returned.
+    NCOUNT	Total no. of uv points (i.e. no. of groups) (IGNORE).
+    NFREQ	No. of frequency channels (OBSOLETE, use IF_NFREQ instead).
+    NSCAN	No. of scans in the file, usually given as zero which means
+		not specified.
+    NSTOK	No. of stokes parameters (OBSOLETE, use IF_NSTOK instead).
+    INTBASE	Total integration time for a baseline in seconds.
+    DEC		Source declination in radians (OBSOLETE, use SU_DEC instead).
+    DFREQ	Frequency increment between channels in Hz (OBSOLETE, use
+		IF_BW and IF_NFREQ instead).
+    FREQ	Frequency of the centre channel in Hz (OBSOLETE, use IF_FREQ
+		instead).
+    RA		Source RA in radians (OBSOLETE, use SU_RA instead).
+    BUNIT	Brightness units, e.g. Jy or K.
+    CAL		Cal applied, e.g. 'NONE'.
+    CARD	Array of header cards, the first NCARDs elements of which:
+		  on entry to RPFITSOUT should be filled with card images to
+		    be written,
+		  on exit from RPFITSIN will be filled with the card image
+		    header record,
+		  on entry to RPFITSIN should contain the first EIGHT
+		    characters of the required card, i.e. the keyword name
+		    (N.B. trailing spaces are significant).
+    COORD	Equatorial coordinate system (NOW ALWAYS J2000).
+    DATOBS	UTC date of observation in the format YYYY-MM-DD.
+    DATSYS	Date system (for compatibility with older data using AEST
+		date).  May be blank, 'AEST', or 'UT'.  Blank => UTC.
+		Used only by RPFITSIN.  RPFITSOUT ignores this, and assumes
+		UTC.
+    DATWRIT	UTC date of writing the file in YYYY-MM-DD, automatically set
+		by RPFITSOUT.
+    FILE	Name to be used for the RPFITS file.
+    INSTRUMENT	Is one of ATCA, ATLBA, ATLBAN, ATCAN, PTI, DUMMY.
+    OBJECT	Source name (OBSOLETE, use SU_NAME instead).
+    OBSTYPE	Set of two-letter codes that indicate the observation type:
+		  MX: beam-multiplexing
+		  PA: paddle
+		  SC: scanning
+		  SL: signal level setting
+		  TR: tracking
+		and possibly others.
+    RP_OBSERVER Name of the observer.
+    RPFITSVERSION  Software version set by calling routine.
+    VERSION	Software version of RPFITS.
+
+  Ephemeris parameters from RPFITS header cards (not usually set).
+    RP_DEFEAT	Binary switch used to control phase correction options.
+    RP_UTCMTAI	UTC - TAI (or, for PTI, VAX UTC - true UTC) in seconds.
+    RP_C, RP_DJMREFP, RP_DJMREFT
+		Ephemeris parameters from USNO circulars.  See EPHEMERIS for
+		further details.
+
+  Proper motion parameters from RPFITS header cards.
+    PM_RA	Proper motion in RA in seconds of time/Julian year.
+    PM_DEC	Proper motion in DEC in arcsec/Julian year.
+    PM_EPOCH	Reference epoch for the proper motion (MJD).
+
+  Spectral line information from RPFITS header cards (used only for spectral
+  line data, ignore otherwise).
+    IVELREF	Is 256a + b, where:
+		    a=0 => optical definition
+		    a=1 => radio definition
+		    b=1 => wrt LSR
+		    b=2 => wrt Sun
+		    b=3 => wrt observer
+    RFREQ	Line rest frequency in Hz.
+    VEL1	Velocity of channel 1 in m/s.
+
+  Antenna table (embedded in the RPFITS header).
+    AN_FOUND	True if an AN table was found, reset to false when a new
+		header is read.
+    ANT_MOUNT	Type of antenna mount:
+		    0: altaz,
+		    1: equatorial,
+		    2: orbital,
+		    3: X-Y mount.
+    ANT_NUM	The antenna numbers.
+    NANT	No. of antennas.
+    AXIS_OFFSET Axis offsets in mm.
+    FEED_CAL(ant_max, max_if, pol_max)
+		Polarisation calibration parameters.
+    FEED_PA(2,ant_max)
+		Position angles in degrees.
+    X, Y, Z	Cartesian coordinates in m.
+    X_ARRAY, Y_ARRAY, Z_ARRAY
+		Cartesian coordinates of the array centre in m.
+    FEED_TYPE(2,ant_max) feed types (R,L,X,Y, or CR, CL, CX, CY for calibrated
+		Stokes).
+    STA		Station names.
+
+  Uncalibration table (embedded in the RPFITS header), may be used to undo the
+  online calibration (not usually set).
+    CU_FOUND	True if a CU table was found, reset to false when a new header
+		is read.
+    CU_ANT	Antenna number to which this entry refers (pointing to the AN
+		table).
+    CU_CH1	Start channel of the bandpass segment used for this
+		calibration.
+    CU_CH2	Stop channel of the bandpass segment used for this calibration
+    CU_IF	IF number to which this entry refers (pointing to the IF
+		table).
+    N_CU	Number of entries in the CU table.
+    CU_CAL1	Start UTC of the calibration data from which this
+		calibration has been derived in seconds.
+    CU_CAL2	Stop UTC of the calibration data from which this
+		calibration has been derived in seconds.
+    CU_UT	Start UTC from which the calibration has been applied in
+		seconds.  (The corresponding stop UTC is the end of the scan.)
+
+   Flag table (embedded in the RPFITS header) to identify bad data (not
+   usually set).
+    FG_FOUND	True if an FG table was found, reset to false when a new
+		header is read.
+    FG_ANT(2,MAX_FG)
+		First and last antenna numbers to be flagged 0 => all
+		baselines to other antenna are to be flagged.
+    FG_CHAN(2,MAX_FG)
+		First and last channel numbers to be flagged 0,0 => all
+		channels are to be flagged.
+    FG_IF(2,MAX_FG)
+		First and last IF numbers to be flagged 0,0 => all IF's are to
+		be flagged.
+    FG_STOK(2,MAX_FG)
+		First and last Stokes numbers to be flagged 0,0 => all stokes
+		params are to be flagged
+    N_FG	Number of flags.
+    FG_UT(2,MAX_FG)
+		First and last UTC's to be flagged 0 => all
+		remaining/preceding UTC's are to be flagged.
+    FG_REASON	24-char string describing why data has been flagged.
+
+  IF table (embedded in the RPFITS header), information about the separate
+  spectral windows.
+    IF_FOUND	True if an IF table was found, reset to false when a new
+		header is read.
+    IF_CHAIN(MAX_IF)
+		Down-converter chain.
+    IF_INVERT(MAX_IF)
+		Either -1 or +1 depending on whether the video is inverted or
+		non-inverted respectively wrt the sky.
+    IF_NFREQ(MAX_IF)
+		Number of spectral channels of each band.
+    IF_NSTOK(MAX_IF)
+		Number of polarization parameters of each band.
+    IF_NUM(MAX_IF)
+		The IF number.
+    IF_SAMPL(MAX_IF)
+		Number of bits of sampling used.
+    IF_SIMUL(MAX_IF)
+		The simultaneous set; IFs with the same number were observed
+		simultaneously.
+    N_IF	Number of IF bands.
+    IF_BW(MAX_IF)
+		Bandwidth of each band in Hz.
+    IF_FREQ(MAX_IF)
+		Reference frequency (usually the centre frequency) of each
+		band in Hz.
+    IF_REF(MAX_IF)
+		Pixel number of the reference frequency.
+    IF_CSTOK(4,MAX_IF)
+		Type of each poln parameter (LL, RR, LR, XX, XY, I, Q, U, V,
+		etc).
+
+  Meteorological table (embedded in the RPFITS header) (not usually set).
+    MT_FOUND	True if an MT table was found, reset to false when a new
+		header is read.
+    MT_ANT	Antenna number (as defined in AN table).
+    N_MT	Number of entries in the MT table.
+    MT_HUMID	Relative humidity in percent.
+    MT_PRESSURE Atmospheric pressure in mbar.
+    MT_TEMP	Atmospheric temperature in K.
+    MT_UT	UTC at which the reading was taken (s).
+
+  Index table (embedded in the RPFITS header), indexes the position of scans
+  in the file (not usually set).  Normally only one NX table is found on each
+  file, but if several are present then the last one is taken to be the
+  correct one.
+    NX_FOUND	True if an NX table was found, reset to false when a new
+		header is read.
+    N_NX	Number of entries in the NX table.
+    NX_REC	Number of the 2560-byte record in which the scan header
+		starts.  Thus the first entry in the table always has
+		NX_REC = 1.
+    NX_UT	UTC in seconds of the start of the scan.
+    NX_DATE	UTC date in the format YYYY-MM-DD of the start of the scan.
+    NX_SOURCE	Name of the source (for single-source scans) or else is set
+		to 'MULTI'.
+
+  Source or field centre information
+    SU_FOUND	True if an SU table was found, reset to false when a new
+		header is read.
+    N_SU	Number of sources or fields.
+    SU_NUM	Source number.
+    SU_RA	J2000 RA in radians of phase centre.
+    SU_RAD	Apparent RA at date in radians of phase centre.
+    SU_PRA	J2000 RA in radians of pointing centre.
+    SU_PRAD	Apparent RA at date in radians of pointing centre.
+    SU_DEC	J2000 Dec in radians of phase centre.
+    SU_DECD	Apparent dec at date in radians of phase centre.
+    SU_PDEC	J2000 Dec in radians of pointing centre.
+    SU_PDECD	Apparent dec at date in radians of pointing centre.
+    SU_CAL	A code to identify calibrators.
+    SU_NAME	Source name.
+
+  System calibration data differs from the other commons in that it is filled
+  on reading a special SC data group, rather than when reading a header.
+    SC_ANT	Number of antennas (sc_cal dimension 3).
+    SC_IF	Number of IFs (sc_cal dimension 2).
+    SC_Q	Number of syscal quantities (sc_cal dimension 1).
+    SC_SCRNO	Source number - may be up to 500 for mosaicing.
+    SC_CAL	Array of dimension (sc_q*sc_if*sc_ant).
+    SC_UT	UTC in seconds of the measurement.
+
+	The elements along the first axis are as follows
+	(others may be added):
+
+	element 1:	antenna number (points to AN table)
+	element 2:	IF number (points to IF table)
+	element 3:	X-Y phase in radians
+	element 4:	sqrt(Tsys) of X in K**0.5
+	element 5:	sqrt(Tsys) of Y in K**0.5
+	elements 6-8:	sampler statistics for X
+	elements 9-11:	sampler statistics for Y
+	element 12:	flag (0 is good, otherwise is bad)
+	element 13:	X-Y amplitude
+
+
+
+
+APPENDIX C: TABLES
+------------------
+
+C.1) IF Table
+
+This table is for data with several IF's, and gives the characteristics of
+each IF band. The format is:
+
+TABLE IF
+HEADER     FREQ     INVERT    BW       NCHAN NSTOK TYPE SAM REF SIM CHAIN
+nnnaaaaaaaaaaaa.aaa bb cccccccccccc.ccc dddd ee ffgghhii j kkkk.k lllmm
+nnnaaaaaaaaaaaa.aaa bb cccccccccccc.ccc dddd ee ffgghhii j kkkk.k lllmm
+nnnaaaaaaaaaaaa.aaa bb cccccccccccc.ccc dddd ee ffgghhii j kkkk.k lllmm
+ENDTABLE
+
+where as many data records as necessary are included. n is the IF number,
+aaaaaaaaaaaa   is the reference frequency in Hz, and bb is either -1 or  1,
+depending on whether the video is inverted or non-inverted respectively with
+respect to the sky. ccccccccccc is the bandwidth in Hz, dddd is the number of
+frequency channels per IF, ee is the number of stokes parameters,ffgghhii
+are a sequence of 2-character codes describing the polarisation (I, Q, RR,
+XY, etc.)of each of the (upto 4 stokes) parameters, and j is the no. of
+bits used for sampling. kkkk.k is the reference pixel number.
+lll is the simultaneous set
+mm is the down-converter chain used.
+
+The format for the data
+record is (I3,f16.3,1x,i2,1x,f16.3,1x,i4,1x,i2,1x,4a2,1x,i1,1x,f6.1,1x,i3,i2)
+
+The data for the IF table in communicated to/from RPFITSOUT/RPFITSIN via the
+IF common, which is included in RPFITS.INC.
+
+
+C.2) The source (SU) table
+
+The SU table describes each of the sources or fields observed, and is of
+especial relevance when mosaicing. Its format is
+
+TABLE SU
+HEADER NAME            RA2000     DEC2000    CALCODE  RA_DATE   DEC_DATE
+nnnbbbbbbbbbbbbbbbb ccc.cccccccc ddd.dddddddd eeee ff.ffffffff gg.gggggggg
+nnnbbbbbbbbbbbbbbbb ccc.cccccccc ddd.dddddddd eeee ff.ffffffff gg.gggggggg
+nnnbbbbbbbbbbbbbbbb ccc.cccccccc ddd.dddddddd eeee ff.ffffffff gg.gggggggg
+ENDTABL
+
+nnn is the source number, bbbbbbbb is the source name, the phase centre is
+given by ccccc is the J2000 RA in radians, dddddd is the J2000 dec in radians,
+ffffffff and gggggggg are the apparent RA and dec at the epoch of
+observation in radians. The phase centre is described by hhhhhhhhhhhhhhhh
+and iiiiiiiiiiiiiiii the J2000 RA and DEC and jjj.jjjjjjjjj and kkk.kkkkkkkkk
+the apparent RA and dec at the epoch of the observation in radians.
+eeee is a code (yet to be determined) to indicate whether the source is a
+calibrator.
+The pointing centre, if different from the phase centre, is not yet included
+in a table.
+The data for the source table is contained within the SU common in RPFITS.INC
+
+
+C.3) The flag (FG) table
+
+The flag table offers a flexible and efficient means of flagging chunks of
+bad data. Each parameter has a start and stop value so that all intervening
+data (e.g. from ut1 to ut2, from ant1 to ant2, etc) can be flagged. If a start
+value is 0, then all data upto the stop value is flagged. If a stop value is
+zero, then all data after the start value is flagged. In the special case
+of antennas, two numbers indicates a particular baseline, and a zero means 'all
+baselines to the other antenna'. If both start and satop values are zero, then
+all data (e.g. all antennas, all UTC's) are flagged subject to the other
+criteria.
+
+TABLE FG
+HEADER  ANT     UT           IF    CHAN   STOK    REASON
+nnnaa bb cccccc.c dddddd.d eeefffgggg hhhh i j kkkkkkkkkkkkkkkkkkkkkkkk
+nnnaa bb cccccc.c dddddd.d eeefffgggg hhhh i j kkkkkkkkkkkkkkkkkkkkkkkk
+nnnaa bb cccccc.c dddddd.d eeefffgggg hhhh i j kkkkkkkkkkkkkkkkkkkkkkkk
+ENDTABLE
+
+nnn is the flag number
+aa and bb are the start and stop antenna numbers
+cccccc.c and dddddd.d are the start and stop UTCs in s
+eee and fff are IF numbers (see IF table)
+gggg and hhhh are spectral channel numbers
+i and j are stokes numbers
+kkkkkk... is a 24-character reason for the flagging (e.g. 'ANT04 off source')
+
+
+C.4) The index (NX) table
+
+The index table is an optional table which enables rapid searching for
+required data in a file. Normally only one index table is included per file,
+but if sevral are present, then the last one will be used. The record number
+refers to the first 2560-byte record containg the scan header, and is 1
+for the first record in the file. Source names are only useful for scans
+which contain only one source. Otherwise, the sourcename is set to MULTI.
+
+TABLE NX
+HEADER
+nnnn aaaaaaaaaa bbbbbbbb.b cccccccccccccccc
+nnnn aaaaaaaaaa bbbbbbbb.b cccccccccccccccc
+nnnn aaaaaaaaaa bbbbbbbb.b cccccccccccccccc
+nnnn aaaaaaaaaa bbbbbbbb.b cccccccccccccccc
+ENDTABLE
+
+nnnn is the record number
+aaaaaaaaaaaa is the UTC date of the scan start in the format (space filled)
+           YYYY-MM-DD
+bbbbbbbb.b is the UTC in seconds of the scan start
+cccccc...cc is the source name (or MULTI if there are several sources per scan)
+
+
+C.5) The antenna (AN) table
+
+The antenna table contains all the antenna specific information.
+Its format is:
+
+TABLE AN
+HEADER      M       X             Y             Z       AXIS
+nn aaaaaaaa m bbbbbbbbb.bbb bbbbbbbbb.bbb bbbbbbbbb.bbb cccc
+nn aaaaaaaa m bbbbbbbbb.bbb bbbbbbbbb.bbb bbbbbbbbb.bbb cccc
+nn aaaaaaaa m bbbbbbbbb.bbb bbbbbbbbb.bbb bbbbbbbbb.bbb cccc
+ENDTABLE
+
+nn is the antenna number
+aaaaaaaa is the station name
+m is the type of antenna mount (0=altaz, 1=equatorial, 2=orbital, 3=X-Y)
+bbbbbbbb.b are the cartesian coordinates of the antenna in m
+cccc is the az-elevation axis offset in mm
+The format for the data record is
+(i2,1x,a8,1x,i1,3(1x,f13.3),1x,i4)
+
+
+C.6) The meteorological (MT) table
+
+The MT table contains details about the weather recorded at each antenna,
+and can contain as many entries as required, so that the interval between
+weather measurements can be arbitrarily small.
+Its format is:
+
+TABLE MT
+HEADER      PRESS  TEMP HUMID
+nn aaaaaa.a dddd.d eee.e fff.f
+nn aaaaaa.a dddd.d eee.e fff.f
+nn aaaaaa.a dddd.d eee.e fff.f
+ENDTABLE
+
+nn is the antenna number
+aaaaaa.a is the UTC (in s) of the record
+dddd.d is the atmospheric pressure in mbar
+eee.e is the atmospheric temperature in K
+fff.f is the relative humidity in %.
+The format for the data record is
+(i2,1x,f8.1, 1x,f6.1, 2(1x,f5.1))
+
+
+C.7) The uncalibration (CU) table
+
+AT data is normally calibrated for individual complex antenna gains online.
+The CU table records the calibration information used so that if necessary
+the data can be uncalibrated and then recalibrated within AIPS. Note that
+this data refers to stokes parameter I, and is derived from, and applied to,
+a fraction of the bandpass defined by CH1 and CH2 in the table.
+Its format is:
+
+TABLE CU
+HEADER  ANT IF CALSTART CALSTOP   CH1  CH2
+aaaaaa.a bb cccdddd.d eeee.e ffff gggg
+aaaaaa.a bb cccdddd.d eeee.e ffff gggg
+aaaaaa.a bb cccdddd.d eeee.e ffff gggg
+ENDTABLE
+
+aaaaaa.a is the UTC (in s) of the record
+bb is the antenna number (pointing to the AN table)
+cc is the IF number (pointing to the IF table)
+dddddd.d is the start UTC of the data from which the cal. has been derived
+eeeeee.e is the stop UTC of the data from which the cal. has been derived
+ffff is the first channel number of the bandpass segment used
+gggg is the last channel number of the bandpass segment used
+The format for the data record is
+(f8.1,1x,i2,1x,i2,2(1x,f6.1),2(1x,i4))
+
+
+APPENDIX D: A TYPICAL RPFITS HEADER
+-----------------------------------
+
+          HEADER OF RPFITS FILE: CUL2:[TID.DAT]0537_K1.COR
+
+
+ SIMPLE  =                    F  /  NONCONFORMIST
+ FORMAT  =               RPFITS  /  RPFITS
+ SCANS   =                   -1  /  No of scans in file
+ BITPIX  =                   32  /  Vals. are REAL*4
+ NAXIS   =                    6  /
+ NAXIS1  =                    0  /  Required for grouped data
+ NAXIS2  =                    3  /  Complex=real,imag.,weight
+ NAXIS3  =                    2  /  No. of Stokes params
+ NAXIS4  =                   64  /  Number of frequencies
+ NAXIS5  =                    1  /  Right Ascension (1950)
+ NAXIS6  =                    1  /  Declination(1950)
+ DUMMY   =                    1  /  Keep for future use!
+ GROUPS  =                    T  /  Data structured in groups
+ PCOUNT  =                    9  /  # params in group heading
+ GCOUNT  =                10000  /  # of groups
+ BUNIT   = 'JY'                  / Unit of flux
+ BLANK   =               -32768  /  Value of blank pixel
+ OBJECT  = '0537-441            '  /  Source Name
+ INSTRUME= 'PTI                 '  /  Instrument
+ CAL     = 'OPTIMISM            '  / Cal applied
+ EPOCH   = 'J2000               '  /  Epoch of RA & Dec.
+ OBSERVER= 'rnm et al.          '  /
+ DATE    = '1998-11-09          '  /UT Date data written
+ DATE-OBS= '1988-04-23          '  /UT Date data generated
+ HISTORY AT    SORT   ORDER='TB' /  Baseline varies fastest
+ CTYPE2  = 'COMPLEX'             /  Fringe visibilities
+ CRPIX2  =                  1.0  /
+ CRVAL2  =                  1.0  /
+ CDELT2  =                  1.0  /
+ CTYPE3  = 'STOKES'              /
+ CRPIX3  =                    1  /
+ CRVAL3  =                    1  /
+ CDELT3  =                    1  /
+ CTYPE4  = 'FREQ     '           / Frequency in Hz
+ CRPIX4  =             32.00000  /  Ref. pixel= centre channel
+ CRVAL4  =    1665500000.00      /  Freq. (Hz) of ref. pixel
+ CDELT4  =    78125.0000000      /  Frequency interval (Hz)
+ CTYPE5  = 'RA'                  /   R.A. in radians
+ CRPIX5  =                    1  /
+ CRVAL5  =    2.24860948625      /
+ CDELT5  =                  1.0  /
+ CTYPE6  = 'DEC'                 /  Decl. in radians
+ CRPIX6  =                    1  /
+ CRVAL6  =  -0.788480608778      /
+ CDELT6  =                  1.0  /
+ PTYPE1  = 'UU  '                /  U coord in metres
+ PTYPE2  = 'VV  '                /  V coord in metres
+ PTYPE3  = 'WW  '                /  W coord in metres
+ PTYPE4  = 'BASELINE'            /  =aerial(j)*256+aerial(i)
+ PTYPE5  = 'UT   '               / UT in seconds
+ PTYPE6  = 'FLAG '               / Data flag
+ PTYPE7  = 'BIN  '               / Pulsar bin no.
+ PTYPE8  = 'IF_NO'               / IF no (points to IF table)
+ PTYPE9  = 'SOURCENO'            /sce no (points to SU table)
+ VELREF  =                    0  / Velocity reference system
+ RESTFREQ=   0.000000000000E+00  / Line rest frequency in Hz
+ ALTRVAL =   0.000000000000E+00  / Alternate reference value
+ ALTRPIX =                  1.0  / Alternate reference pixel
+ INTIME  =                    2  / Integration time in s
+ HISTORY =   RPFITSOUT  9/11/88  /
+ TABLES  =                    0  / No tables
+ DEFEAT  =                    0  / Ephem. phase corrn. switch
+ UTCMTAI =   0.171875000000      / UT - TAI in seconds
+ DJMREFP =    47277.0000000      / Param from USNO circular
+ DJMREFT =    47277.0000000      / Param from USNO circular
+ ANTENNA N=1 PKS X= -4554231.900     Y=  2816758.300     Z= -3454035.900
+ PRESS 1             950.000
+ TEMPE 1             280.000
+ HUMID 1             30.0000
+ ANTENNA N=2 D43 X= -4460894.010     Y=  2682361.937     Z= -3674749.500
+ PRESS 2             950.000
+ TEMPE 2             280.000
+ HUMID 2             30.0000
+ EPHEM 1            0.317000E-01
+ EPHEM 2           -0.451000E-01
+ EPHEM 3            0.801000E-01
+ EPHEM 4            0.174300
+ EPHEM 5           -0.196000E-01
+ EPHEM 6            0.320300
+ EPHEM 7            0.702000E-01
+ EPHEM 8            0.318000E-01
+ EPHEM 9           -0.196000E-01
+ EPHEM10           -0.174300
+ EPHEM11            0.193800
+ EPHEM12           -0.151000E-02
+ FDELAY  =   0.118143996224E-02  /  Fixed delay in s
+ UDELAY  =                   80  /  Delay unit setting
+ CLOCK   =    10000000.0000      /  Clock freq in Hz
+ PMULT   =    1.00000000000      /  Fringe freq. mult
+ ZEROPHAS=                   -1  /  Phase zeroing?
+ HWOFF   =                    0  /  Hardware disabled?
+ FFTOFF  =                    0  /  FFT disabled?
+ NSTEP   =                  128  /  Delay step increment
+ OFFSET  =  -0.700000021607E-02  /  Fringe offset freq (Hz)
+ UTZERO  =    21290.0000000      /  UT (s) of phase zeroing
+ GMULT1  =    1.00000000000      /  Phase grad. corr. mult.#1
+ GMULT2  =    1.00000000000      /  Phase grad. corr. mult.#2
+ ZCORR   =                   -1  /  Correct for zeroing?
+ ZEROPHI1=    200653521811.      /  Phase (rad) at UTZERO
+ ZEROPHI2=    10866150.6293      /  Phase (rad) at UTZERO
+ LO1     =    1664500000.00      /  Eff. LO of Band 1 (Hz)
+ LO2     =    1671500000.00      /  Eff. LO of Band 2 (Hz)
+ USB1    =                    1  /  Sideband of band1 (-1=USB)
+ USB2    =                    1  /  Sideband of band2 (-1=USB)
+ EXTRA1  =   0.000000000000E+00  /  Extra delay in band 1 (s)
+ EXTRA2  =   0.500000005843E-07  /  Extra delay in band 2 (s)
+ LINKL1  =    1000000.00000      /  Link frequency of DC (Hz)
+ LINKL2  =    6000000.00000      /  Link frequency of DC (Hz)
+ NOMINAL =    1500000.00000      /  Nom. Rockland freq. (Hz)
+ RA_1    =   0.000000000000E+00  /  RA2000 of posn 1 (rad)
+ DEC_1   =   0.000000000000E+00  /  Dec2000 of posn 1 (rad)
+ RA_2    =   0.000000000000E+00  /  RA2000 of posn 2 (rad)
+ DEC_2   =   0.000000000000E+00  /  Dec2000 of posn 2 (rad)
+ HISTORY: DATA CORRECTED IN PTILOOK
+ END
+
+
+ ******** END OF THIS HEADER ***********

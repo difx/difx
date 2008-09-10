@@ -1,0 +1,71 @@
+Return-Path: Michael.Kesteven@atnf.CSIRO.AU 
+Delivery-Date: Wed, 17 Mar 1999 11:13:09 +1100
+Return-Path: Michael.Kesteven@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id LAA28949;
+	Wed, 17 Mar 1999 11:13:08 +1100 (EST)
+Received: from corfu.atnf.CSIRO.AU (corfu.atnf.CSIRO.AU [130.155.194.102])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with ESMTP id LAA26609;
+	Wed, 17 Mar 1999 11:13:08 +1100 (EST)
+Received: from corfu.atnf.CSIRO.AU (localhost [127.0.0.1]) by corfu.atnf.CSIRO.AU (8.7.5/8.7.3) with ESMTP id LAA07314; Wed, 17 Mar 1999 11:13:07 +1100 (EST)
+Message-Id: <199903170013.LAA07314@corfu.atnf.CSIRO.AU>
+To: Warwick.Wilson@atnf.CSIRO.AU, mcalabre@crux.tip.CSIRO.AU
+Subject: Re: REFBEAM, etc. 
+In-reply-to: Your message of Wed 1999/03/17 09:22:46 +1000
+             <9903162322.AA14574@acorn.atnf.csiro.au> 
+Date: Wed, 17 Mar 1999 11:13:06 +1100
+From: Michael Kesteven <Michael.Kesteven@atnf.CSIRO.AU>
+
+
+There are three groups of these options;  only one item in each group
+is allowed.
+
+PU TC TL ... "correlator modes";  
+FS MO RF SF FF  "scan options" --- The ATCA modes could be moved to scan type.
+MX SC TR        "scan type"
+
+
+cheers, mjk
+-------------
+
+
+On Wed 1999/03/17 09:22:46 +1000, Warwick.Wilson@atnf.CSIRO.AU wrote
+in a message to: Mark.Calabretta@atnf.CSIRO.AU
+and copied to: lstavele@atnf.CSIRO.AU, mkesteve@atnf.CSIRO.AU, wwilson@atnf.CSI
+     RO.AU
+
+>Mark,
+>
+>To accommodate the new "multiple pointings per scan" (MX) mode, I propose
+>adding the current reference beam to the so-called sys-cal 
+>( i.e. baseline = -1 ) record which is written to the rpfits file
+>at the start of each integration.  It will be quantity number 17 in the
+>sc_cal array where the antenna number = 0. i.e. in the same area as the 
+>azimuth, elevation and focus parameters appear, immediately following
+>the time of measurement of the cal signal.  Unfortunately, this
+>location in current rpfits files is not defined.  It should be ignored
+>if there is no SCANTYPE card in the header - see below. 
+>
+>I also propose writing a new user defined card ( the first ) to the header 
+>which will contain the scan_type parameter.  The first 10 characters
+>of the card will be "SCANTYPE= ".  The value will appear in card(11:30)
+>as a list of space separated two letter codes.  
+>
+>Currently valid codes are:
+>
+>	FS	ATCA style frequency switching - within a scan
+>	MO	ATCA style mosaicing mode
+>	PU	Pulsar binning mode
+>	TC	ATCA tied array circular polarisation
+>	TL	ATCA tied array linear polarisation
+>	RF	Reference scan - for single dish spectral line work.
+>	SF	Slow frequency switching - per integration cycle
+>	FF 	Fast frequency switching - within an integration cycle
+>	MX	Multibeam MX mode - multiple pointings within a scan
+>
+>Comments ?
+>
+>Cheers, Warwick.
+>
+>
+>--------

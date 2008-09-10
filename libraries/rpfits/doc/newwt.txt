@@ -1,0 +1,93 @@
+From hmay Mon Dec  6 14:18:01 1993
+To: wwilson, nkilleen, rsault
+Subject: integration time/weights
+Content-Length: 3107
+X-Lines: 88
+
+
+Neil does not like the use of weightarray(1) for passing the single
+baseline value to rpfitsout, so I've reverted to using a new common 
+variable.
+
+Neil would like to call this intbase, not weightpar and redefine it
+as follows:
+
+In the RPFITS FILE:
+  In file header 
+          INTTIME is basic unit of integration for the whole
+                  file. (as before)
+          NAXIS2  =3 if weight array is included
+                  =2 otherwise.
+  With each baseline a new random parameter 
+          INTBAS is the total integration time in secs for the baseline. 
+                 If NAXIS2=3, this will be ignored
+                 If NAXIS2=2, a non-zero value will be interpreted as 
+                              the inttegration time for this baseline - 
+                              to be multiplied in AIPS by INTTIME.
+
+
+In rpfitsout :
+--------------
+  pcount - an internal variable set in data statement to 10 instead of
+           9 as before.
+  PCOUNT - in file header = number of random parameters
+  NAXIS2 - in file header = number of 'axes' of data. Normally 2 or 3 - real, 
+           imag and optionally, weight.
+  write_wt argument passed to rpfitsout. 
+           If true, will write weight array to file, otherwise not.
+  intbase  real number in rpfits common.  This is used to 
+           pass a single integration time to be written to the RPFITS file
+           with to this baseline.
+  INTBAS   name of the random parameter in which intbase is stored in the
+           RPFITS file. 
+
+  writing file header:
+     PCOUNT = pcount
+     if (write_wt) NAXIS2 = 3
+     else          NAXIS2 = 2   
+
+  writing random parameters with each baseline:
+     INTBAS = intbase
+
+  writing data :
+     if (write_wt) write weight array to buffer
+     else          weight array not written (array two thirds the size)
+
+In rpfitsin :
+-------------
+  PCOUNT - in file header = number of random parameters
+  pcount - an internal variable used to store PCOUNT
+  NAXIS2 - in file header = number of 'axes' of data. Normally 2 or 3 - real, 
+           imag and optionally, weight.
+  write_wt logical internal variable derived from NAXIS2. 
+  INTBAS   name of the random parameter in which intbase is stored in the
+           RPFITS file. 
+  intbase  real number in rpfits common. Used here for temporary storage
+           of INTBAS. 
+
+  reading file header:
+     read PCOUNT  (in new RPFITS files will be 10, in old files will be 9)
+     read NAXIS2
+     if (NAXIS2=3) n_complex = 3
+                   write_wt = .true.
+     else          n_complex = 2
+                   write_wt = .false. 
+ 
+  reading random parameters with each baseline:
+      intbase = 0
+      if (PCOUNT=10)
+          intbase = INTBAS
+      else if 9 intbase = inttime      
+
+   reading data:
+      if (NAXIS2=3) read weight array into buffer
+      else 
+          if (intbase != 0) set whole weight array to intbase
+          else              set whole weight array to 0
+                            
+Is that better?
+
+Henrietta
+
+
+

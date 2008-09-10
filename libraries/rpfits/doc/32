@@ -1,0 +1,57 @@
+X-Mailer: exmh version 2.0.2 2/24/98
+To: Warwick.Wilson@atnf.CSIRO.AU
+CC: lstavele, mkesteve
+Subject: Re: REFBEAM, etc. 
+In-reply-to: Your message of Wed 1999/03/17 09:22:46 +1000
+             <9903162322.AA14574@acorn.atnf.csiro.au> 
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Date: Wed, 17 Mar 1999 11:23:26 +1100
+From: Mark Calabretta <mcalabre@grus.atnf.CSIRO.AU>
+
+
+On Wed 1999/03/17 09:22:46 +1000, Warwick.Wilson@atnf.CSIRO.AU wrote
+in a message to: Mark.Calabretta@atnf.CSIRO.AU
+and copied to: lstavele@atnf.CSIRO.AU, mkesteve@atnf.CSIRO.AU, wwilson@atnf.CSI
+     RO.AU
+
+>To accommodate the new "multiple pointings per scan" (MX) mode, I propose
+>adding the current reference beam to the so-called sys-cal 
+>( i.e. baseline = -1 ) record which is written to the rpfits file
+>at the start of each integration.  It will be quantity number 17 in the
+>sc_cal array where the antenna number = 0. i.e. in the same area as the 
+>azimuth, elevation and focus parameters appear, immediately following
+>the time of measurement of the cal signal.  Unfortunately, this
+>location in current rpfits files is not defined.  It should be ignored
+>if there is no SCANTYPE card in the header - see below. 
+
+I wasn't aware that sc_cal was used in this way!  There's nothing about it in
+the rpfits documentation.
+
+>I also propose writing a new user defined card ( the first ) to the header 
+>which will contain the scan_type parameter.  The first 10 characters
+>of the card will be "SCANTYPE= ".  The value will appear in card(11:30)
+>as a list of space separated two letter codes.  
+>
+>Currently valid codes are:
+>
+>	FS	ATCA style frequency switching - within a scan
+>	MO	ATCA style mosaicing mode
+>	PU	Pulsar binning mode
+>	TC	ATCA tied array circular polarisation
+>	TL	ATCA tied array linear polarisation
+>	RF	Reference scan - for single dish spectral line work.
+>	SF	Slow frequency switching - per integration cycle
+>	FF 	Fast frequency switching - within an integration cycle
+>	MX	Multibeam MX mode - multiple pointings within a scan
+>
+>Comments ?
+
+Fine, except that SCANTYPE = "track" seems oxymoronic - "SCAN" is an
+unfortunate choice of collective noun for integrations in single dish
+observing.  Could you put an expanded description of the two-letter codes
+in the comment section of the card for human readers.
+
+Cheers, Mark
+
+

@@ -1,0 +1,98 @@
+Replied: Tue, 03 Sep 2002 15:40:19 +1000
+Replied: Warwick.Wilson@atnf.CSIRO.AU
+Replied: Fri, 12 May 2000 16:56:59 +1000
+Replied: Warwick.Wilson@atnf.CSIRO.AU
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Fri, 19 Mar 1999 16:57:53 +1100
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id QAA03590;
+	Fri, 19 Mar 1999 16:57:52 +1100 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with SMTP id QAA03257;
+	Fri, 19 Mar 1999 16:57:51 +1100 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA15469; Fri, 19 Mar 1999 15:56:00 +1000
+Message-Id: <9903190556.AA15469@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: wwilson@atnf.CSIRO.AU
+Subject: Re: REFBEAM, etc.  
+Date: Fri, 19 Mar 99 15:55:52 +1000
+X-Mts: smtp
+
+Mark,
+
+>Where does this antenna 0 record occur in the sc_cal(sc_q,sc_if,sc_ant) array?
+>The current multibeam reader assumes that sc_ant is set to the number of beams
+>plus 1, and that the beams (ants) are written out in order with antenna 0
+>last.  Is that right?
+
+Yes, that is correct.  It does not really need to assume anything about
+sc_ant, or the order of writing.  One could look to see if there is a 
+block of quantities within sc_cal with QUANTITY 1 set to 0.  If so, the
+extra info. is there, if not - as would be the case at Narrabri and Mopra -
+then it's not there.
+
+>Is element 14 the "on-source" flag?
+
+The RPFITS definition is not correct.  
+The file /nfs/atapplic/rpfits/doc/rpfits.defn says it's at location 12.
+
+The following is the way it really is:
+
+c       Description of system calibration data
+c
+c
+c NORMAL FORMAT - one set for each antenna
+c
+c       QUANTITY  1:    antenna number
+c       QUANTITY  2:    if number - i.e freq 1 or 2
+c       QUANTITY  3:    A/B phase - radians
+c       QUANTITY  4:    SQRT( Tsys-A ) * SIGN( Tcal_enabled ) - K**0.5
+c       QUANTITY  5:    SQRT( Tsys-B ) * SIGN( Tcal_enabled ) - K**0.5
+c       QUANTITY  6-8:  sampler statistics for A
+c       QUANTITY  9-11: sampler statistics for B
+c       QUANTITY  12:   parallactic angle
+c       QUANTITY  13:   flag
+c       QUANTITY  14:   A/B amplitude
+c
+c       flag format
+c
+c               bit 0   -       set if off source
+c               bit 1   -       set if loss of sync in A
+c               bit 2   -       set if loss of sync in B
+c  2/2/97 - add more quantities for Multibeam
+c
+c       QUANTITY  15:   Calibration signal size in Jy - pol A
+c       QUANTITY  16:   Calibration signal size in Jy - pol B
+c       QUANTITY  17:   Total power counts - cal off - pol A
+c       QUANTITY  18:   Total power counts - cal on - pol B
+c       QUANTITY  19:   Total power counts - cal off - pol A
+c       QUANTITY  20:   Total power counts - cal on - pol B
+c
+c
+c
+c SPECIAL FORMAT - for Multibeam at Parkes
+c
+c       QUANTITY   1:   0
+c       QUANTITY   2:   azimuth
+c       QUANTITY   3:   elevation
+c       QUANTITY   4:   parallactic angle
+c       QUANTITY   5:   focus_y
+c       QUANTITY   6:   focus_z
+c       QUANTITY   7:   focus_r
+c       QUANTITY   8:   temperature
+c       QUANTITY   9:   pressure
+c       QUANTITY  10:   humidity
+c       QUANTITY  11:   wind speed
+c       QUANTITY  12:   wind direction
+c       QUANTITY  13-16:  time of measurement of cal signals in Jy (ascii)
+c Added 17 March 1999
+c       QUANTITY  17:   reference beam
+c
+
+
+Cheers, Warwick.
+
+--------

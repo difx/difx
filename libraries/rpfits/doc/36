@@ -1,0 +1,28 @@
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Fri, 19 Mar 1999 17:06:28 +1100
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id RAA04249;
+	Fri, 19 Mar 1999 17:06:27 +1100 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with SMTP id RAA03746;
+	Fri, 19 Mar 1999 17:06:27 +1100 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA15482; Fri, 19 Mar 1999 16:04:37 +1000
+Message-Id: <9903190604.AA15482@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: wwilson@atnf.CSIRO.AU
+Subject: Re: SC CAL data 
+Date: Fri, 19 Mar 99 16:04:31 +1000
+X-Mts: smtp
+
+Mark,
+
+Note that the value of sc_q will change depending on the application.
+Currently it is 14 for ATCA, Mopra and possibly some applications at Parkes, 
+20 for the MB at Parkes and 17 for the LBA.
+
+Cheers, Warwick.
+
+--------

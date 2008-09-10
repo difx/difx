@@ -1,0 +1,32 @@
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Wed, 17 Mar 1999 10:35:42 +1100
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id KAA25845;
+	Wed, 17 Mar 1999 10:35:42 +1100 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with SMTP id KAA24491;
+	Wed, 17 Mar 1999 10:35:41 +1100 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA14588; Wed, 17 Mar 1999 09:33:51 +1000
+Message-Id: <9903162333.AA14588@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: lstavele@atnf.CSIRO.AU, mkesteve@atnf.CSIRO.AU, wwilson@atnf.CSIRO.AU
+Subject: SCANTYPE - addendum 
+Date: Wed, 17 Mar 99 09:33:45 +1000
+X-Mts: smtp
+
+Mark,
+
+Two more SCANTYPES:
+
+	SC	Scanning mode, e.g. multibeam scanning
+	TR	Tracking mode, e.g. multibeam tracking
+
+Obviously some of these modes are incompatible and will, hopefully,
+not appear together.
+
+Warwick.
+
+--------

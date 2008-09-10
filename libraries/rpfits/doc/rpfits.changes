@@ -1,0 +1,147 @@
+
+CHANGES TO RPFITS				RPN 11/10/89
+
+Note a number of changes and additional features in the RPFITS format.
+These should all be downwards-compatible, in that any existing software can
+be relinked to the new RPFITS routines without changes, and all older data
+is still readable (with provisos as noted below).
+
+**************************************************************************
+HOWEVER, NOTE THAT CODE WHICH USES RPFITS.INC WILL NEED TO BE RECOMPILED
+SINCE THE FORMATS OF THE COMMONS HAVE CHANGED.
+**************************************************************************
+
+The new formats are all detailed in RPFITS.DEFN. A summary of the major
+changes is as follows:
+
+1) Meteorological information has been moved from the ANT table to
+a new MT table, and can be marked with a UT of measurement. This
+enables met. data to be updated as often as required.
+
+2) FG (flag) tables can be put at the end of the data instead of at the 
+beginning. This allows flagging to be done after the event instead of before.
+
+3) RPFITSIN will return with JSTAT=4 if an FG table is encountered when
+looking for a header or data.
+
+4) RPFITSOUT can be called with JSTAT=2 to write an FG table at the end 
+of the data.
+
+5) There are new logicals in the RPFITS commons called SU_found, FG_found, etc.
+These are set true whenever the appropriate table is encountered, and reset to
+false whenever a new header is read.
+
+6) If RPFITSIN is called with ncard<0, then ALL the header cards will be 
+returned in the array CARD. The dimension of card (max_card) has been 
+increased to 256 to cope with this.
+
+7) There are several quantities such as OBJECT, FREQ, etc in the header cards
+which contain the same information as is present in SU, IF tables, leading
+to the possibility of conflicts. This has been resolved in the following way:
+(i) If no tables are present, then the information (both in OBJECT, FREQ, 
+etc. and in the first entry of the appropriate table common) will be 
+obtained from the header cards.
+(ii) If tables are present, then the information (both in OBJECT, FREQ, 
+etc. and in the first entry of the appropriate table common) will be 
+obtained from the table.
+The effect of this is that the entries in the table commons are ALWAYS valid,
+and should normally be used. The other variables (OBJECT etc.) are kept
+purely for downwards compatibility and may one day be removed. Note that
+the flags (SU_found, etc.) can be used to tell whether or not a table has 
+actually been used, but even if it hasn't the first entry in the appropriate
+common will still be valid. 
+
+8) A call to RPFITSIN with JSTAT=2 will cause it to skip to the end-of-file.
+Note that the file must be opened first before you do this. This facility
+has been added to ease handling of multiple RPFITS files on mag tape.
+
+9) Changed format of SU, IF, FG and CU tables slightly to allow for
+   . su_num, if_num, fg_if and ch_if increased to i3 to allow for
+     source number of up to 999.
+   . if_simul increased to i3 to allow for up to 999 simultaneous
+     frequencies
+   . index, j, in fg table, increased to i3 to allow up to 999 entries
+     in fg table.
+
+10) Changed MAX_CARD in rpfitsin to 650
+   to allow for more sources per file. MAX_CARD is in common in rpfits.inc.
+
+11)A new random parameter was introduced and placed in common in rpfits.inc.
+     INTBASE - real - the total integration time for a baseline.
+   The old parameter INTTIME, is the basic unit of integration time for
+   the whole time - as before.
+   Any modification of the weight array to allow for differences in 
+   integration times is NOT done in RPFITSIN or RPFITSOUT.
+   The handling of weights in RPFITS is unchanged by the new integration
+   time parameter introduced above. RPFITSOUT writes the weight array
+   to the file and sets NAXIS2=3 if the argument write_wt is true.
+   In rpfitsin, NAXIS2 is used to determine whether the file includes
+   the weight data.
+
+12) H.May 10mar1994 Added 3 new keywords to describe proper motion.
+   PMRA Proper motion in RA (secs time/day)
+   PMDEC Proper motion in Dec (secs time/day)
+   PMEPOCH Reference epoch for proper motion (rjd)
+   All are passed to/from rpfitsout/rpfitsin in a new common block
+   proper as double precision real.
+
+13) H.May 11mar1994 Changed format of MT table so temperature and
+   humidity are not f5.1 not f4.1.
+
+14) H.May 22mar1994 Fixed bug. grphdr was declared as (9) in rpfitsin
+   should have been 10 since the addition of intbase. This caused
+   ATLOD to fail on the convex where it is build with bounds-checking.
+   Does not seem to have caused aa problem on the suns.
+
+15) H.May 08sep1994 New unix subroutine to emulate the VMS routine
+    secnds. Used in unix to avoid having to link rpfitsout with the
+    library of VMS routines (V11 on Solaris)
+
+16) H.May 08 Nov 1994 RPFITSOUT. Increased MAX_HEADER to 650
+
+17) H.May March 1996  rpfits.inc, rpfitsout.f, rpfitsin.f
+    Added integer data_format to rpfits.inc common.
+    Used to determine how data is read/written.
+    data_format=1 used in multibeam data writes 2 real numbers, no weight
+    data_format=2 writes 2 complex numbers, no weight.
+    data_format=3 writes 2 complex numbers and weight.
+
+18) H.May Aug 1996 - removed unused 3rd parameter in calls to at_read. All
+    were in rpfits_tables.
+
+19) H.May Aug 1996 - changed loop index in readfg in line reading comment.
+    Got all changes to sun4, sun4sol, sgi, alpha
+
+20) H.May Jan 1997 - mods to rpfitsin.f, rpfitsout.f and atio.f
+    added 11th random parameter - data_format, which, if it exists, 
+    overrides data_format in the header.
+    Also, add the ability to save buffer, close and reopen between groups.
+
+21) H.May Jun 1997 - Changes mostly to correctly handle multiple input
+    and output files- arrays for lenrec and irec and sep in and out commons.
+    Also a couple of bug fixes in rpfitsout.
+    Also JER change to Eliminate junk record at start of files in rpfitsout.
+
+22) H.May Jun 1998 - Change date format for Year 2000 conformity.
+    All character UT dates from dd/mm/yy to YYYY-MM-DD stored in 12-char string
+    In header:  DATE and DAT-OBS
+    IN common:  DATOBS NX_DATE and DATWRIT
+    Now use fdate routine to get full date, as idate returns 2-digit year.
+
+23) H.May Oct 1998 - fdate gave AEST for datobs. Need UT date.
+    Restore check of datobs so only set in rpfitsout if blank.
+
+24) H.May Nov 1998 - Version 2.1 VERSION now char*20, RPFITS now used
+    for rpfits code version (2.1).
+    Also add rpfitsversion to rpfits.inc for RPFITS version keyword.
+
+25) H.May May 1999 Eliminate multiple lun array in atio. Thus can only
+    read one rpfits file at a time. It was not working properly anyhow
+    because the lun was not passwd back to the calling prog.
+
+26) H.May May 1999 Some cleaning up for linux compiler.
+    Also remove limits on u,v,w in rpfitsin illbase. The w limit was too 
+    small for vlbi.
+
+27) H.May Nov 1999 DATE in header always set to current date by rpfitsout.
+    DATE-OBS is unchanged: if unset on entry, is set to current date.

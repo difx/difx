@@ -1,0 +1,84 @@
+
+Use of Integration Time in RPFITS
+---------------------------------
+
+In the RPFITS FILE:
+  In file header 
+          PCOUNT  in file header = number of random parameters
+          INTTIME is basic unit of integration for the whole
+                  file. (as before)
+  With each baseline a new random parameter 
+          INTBAS  a non-zero value will be interpreted as the total 
+                  integration time (in secs) for this baseline .
+
+In rpfitsout :
+  pcount - an internal variable set in data statement to 10 instead of
+           9 as before.
+  intbase  real number in rpfits common.  This is used to 
+           pass a single integration time for this baseline to be written 
+           to the RPFITS file as INTBAS.
+
+  writing file header:
+     PCOUNT = pcount
+
+  writing random parameters with each baseline:
+     INTBAS = intbase
+
+In rpfitsin :
+  pcount - an internal variable used to store PCOUNT
+  INTBAS   name of the random parameter in which intbase is stored in the
+           RPFITS file. 
+  intbase  real number in rpfits common. Used here for temporary storage
+           of INTBAS. 
+
+  reading file header:
+     read PCOUNT  (in new RPFITS files will be 10, in old files will be 9)
+ 
+  reading random parameters with each baseline:
+      intbase = 0
+      if (PCOUNT=10)
+          intbase = INTBAS
+      else if (PCOUNT == 9) 
+          intbase = inttime 
+
+
+Use of WEIGHT in RPFITS
+-----------------------
+Any modification of the weight array to allow for differences in 
+integration times is NOT done in RPFITSIN or RPFITSOUT.
+The handling of weights in RPFITS is unchanged by the new integration
+time parameter introduced above.
+
+In the RPFITS file:
+  In file header 
+          PCOUNT = number of random parameters (will be 10 or 9)
+          NAXIS2 = number of data axes (normally 2 or 3 - real, imag, 
+                   and optionally weight)
+  In the data
+          weightarray may or may not be included.
+
+In rpfitsout :
+  write_wt argument passed to rpfitsout. 
+           If true, will write weight array to file, otherwise not.
+
+  writing file header:
+     if (write_wt) NAXIS2 = 3
+     else          NAXIS2 = 2   
+
+  writing data :
+     if (write_wt) write weight array to buffer
+     else          weight array not written (array two thirds the size)
+
+In rpfitsin :
+  write_wt logical internal variable derived from NAXIS2. 
+
+  reading file header:
+     read NAXIS2
+     if (NAXIS2=3) write_wt = .true.
+     else          write_wt = .false. 
+ 
+   reading data:
+      if (NAXIS2=3) read weight array into buffer
+      else          clear weight array
+                            
+Henrietta

@@ -1,0 +1,49 @@
+RPFITS Modification for the Year 2000 problem
+
+RPFITS does not use the FITS standard date keywords because it specifies 
+date as UT, not the standard UTC. For this reason the time system is
+explicitly stated in comments.
+
+The date keywords in RPFITS are these:
+  DATOBS   char*8 dd/mm/yy  UT date of observation
+  DATWRIT  char*8 dd/mm/yy  UT date of writing file
+  DATSYS   char*8 dd/mm/yy  Date system, being AEST, UT
+                            or blank (defaulting to UT)
+  NX_DATE  char*8 dd/mm/yy  UT date of start of scan
+
+The new date format sanctioned by IAU FITS Working Group has a short 
+and a long form ie
+  yyyy-mm-dd                     char*10
+  yyyy-mm-ddThh:mm:ss[.sss...]   char*21 or longer
+
+The short form will be used in RPFITS when this version is implemented
+  . in all FITS files written
+  . in common blocks when all FITS files are read.
+Dates in either the old or new form will be accepted by both
+RPFITSIN and RPFITSOUT.
+
+The date keywords listed above as char*8 will all become char*10.
+
+The Fortran library routine IDATE can no longer be used by RPFITSOUT to 
+get the current date in the required form for DATWRIT. It returns a 
+2 digit year. ie
+  call idate(im, id, iy) with the -V77 option
+  call idate(iarray(3)) without the -V77 option
+
+Instead the Fortran library routine FDATE will be used. It returns
+a 23 or 24 character string.
+  eg     Mon Aug 1 09:24:21 1994
+      or Mon Aug 15 09:24:21 1994
+  
+A subroutine will use FDATE to produce a date in the new format.
+  character*8 old_date                if blank, uses the current date
+  character*10 new_date
+  call date_2fits(old_date, new_date)
+
+If there are conversions which will be used by more than one application 
+to encode and decode the new date format. These could be included in the 
+RPFITS library. (ATLOD in AIPS uses the AIPS routine JULDAY to convert to
+Julian day. JULDAY still used only 2 digit years in AIPS 15APR97.)
+
+Henrietta
+1998-03-24

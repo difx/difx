@@ -1,0 +1,58 @@
+Replied: Wed, 17 Mar 1999 11:23:27 +1100
+Replied: lstavele
+Replied: mkesteve
+Replied: Warwick.Wilson@atnf.CSIRO.AU
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU 
+Delivery-Date: Wed, 17 Mar 1999 10:24:46 +1100
+Return-Path: Warwick.Wilson@atnf.CSIRO.AU
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.1a/8.9.1/1.0c) with ESMTP id KAA25070;
+	Wed, 17 Mar 1999 10:24:45 +1100 (EST)
+From: Warwick.Wilson@atnf.CSIRO.AU
+Received: from acorn.atnf.csiro.au (acorn.atnf.CSIRO.AU [130.155.194.65])
+	by crux.tip.CSIRO.AU (8.9.0.Beta5/8.9.0.Beta5/TIPAT-1.0b) with SMTP id KAA23778;
+	Wed, 17 Mar 1999 10:24:44 +1100 (EST)
+Received: by acorn.atnf.csiro.au (5.65/DEC-Ultrix/4.3/yp/RP.2)
+	id AA14574; Wed, 17 Mar 1999 09:22:53 +1000
+Message-Id: <9903162322.AA14574@acorn.atnf.csiro.au>
+To: Mark.Calabretta@atnf.CSIRO.AU
+Cc: lstavele@atnf.CSIRO.AU, mkesteve@atnf.CSIRO.AU, wwilson@atnf.CSIRO.AU
+Subject: REFBEAM, etc. 
+Date: Wed, 17 Mar 99 09:22:46 +1000
+X-Mts: smtp
+
+Mark,
+
+To accommodate the new "multiple pointings per scan" (MX) mode, I propose
+adding the current reference beam to the so-called sys-cal 
+( i.e. baseline = -1 ) record which is written to the rpfits file
+at the start of each integration.  It will be quantity number 17 in the
+sc_cal array where the antenna number = 0. i.e. in the same area as the 
+azimuth, elevation and focus parameters appear, immediately following
+the time of measurement of the cal signal.  Unfortunately, this
+location in current rpfits files is not defined.  It should be ignored
+if there is no SCANTYPE card in the header - see below. 
+
+I also propose writing a new user defined card ( the first ) to the header 
+which will contain the scan_type parameter.  The first 10 characters
+of the card will be "SCANTYPE= ".  The value will appear in card(11:30)
+as a list of space separated two letter codes.  
+
+Currently valid codes are:
+
+	FS	ATCA style frequency switching - within a scan
+	MO	ATCA style mosaicing mode
+	PU	Pulsar binning mode
+	TC	ATCA tied array circular polarisation
+	TL	ATCA tied array linear polarisation
+	RF	Reference scan - for single dish spectral line work.
+	SF	Slow frequency switching - per integration cycle
+	FF 	Fast frequency switching - within an integration cycle
+	MX	Multibeam MX mode - multiple pointings within a scan
+
+Comments ?
+
+Cheers, Warwick.
+
+
+--------

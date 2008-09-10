@@ -1,0 +1,66 @@
+X-Mailer: exmh version 2.0.2 2/24/98
+To: Warwick.Wilson@atnf.CSIRO.AU
+CC: lstavele, mkesteve
+Subject: Re: REFBEAM, etc. 
+In-reply-to: Your message of Wed 1999/03/17 12:04:42 +1000
+             <9903170204.AA14631@acorn.atnf.csiro.au> 
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Date: Fri, 19 Mar 1999 16:15:08 +1100
+From: Mark Calabretta <mcalabre@grus.atnf.CSIRO.AU>
+
+
+On Wed 1999/03/17 12:04:42 +1000, Warwick.Wilson@atnf.CSIRO.AU wrote
+in a message to: Mark.Calabretta@atnf.CSIRO.AU
+and copied to: lstavele, mkesteve, wwilson
+
+>c SPECIAL FORMAT - for Multibeam at Parkes
+>c
+>c       QUANTITY   1:   0		i.e. antenna number = 0
+>c       QUANTITY   2:   azimuth
+>c       QUANTITY   3:   elevation
+>c       QUANTITY   4:   parallactic angle
+>c       QUANTITY   5:   focus_y
+>c       QUANTITY   6:   focus_z
+>c       QUANTITY   7:   focus_r
+>c       QUANTITY   8:   temperature
+>c       QUANTITY   9:   pressure
+>c       QUANTITY  10:   humidity
+>c       QUANTITY  11:   wind speed
+>c       QUANTITY  12:   wind direction
+>c       QUANTITY  13-16:  time of measurement of cal signals in Jy (ascii)
+>c Added 17 March 1999
+>c       QUANTITY  17:   reference beam
+
+Where does this antenna 0 record occur in the sc_cal(sc_q,sc_if,sc_ant) array?
+The current multibeam reader assumes that sc_ant is set to the number of beams
+plus 1, and that the beams (ants) are written out in order with antenna 0
+last.  Is that right?
+
+>There are also extra quantities written for each antenna:
+>c
+>c       QUANTITY  15:   Calibration signal size in Jy - pol A
+>c       QUANTITY  16:   Calibration signal size in Jy - pol B
+>c       QUANTITY  17:   Total power counts - cal off - pol A
+>c       QUANTITY  18:   Total power counts - cal on - pol B
+>c       QUANTITY  19:   Total power counts - cal off - pol A
+>c       QUANTITY  20:   Total power counts - cal on - pol B
+>c
+
+The RPFITS definition gives
+
+   element 1:      antenna number (points to AN table)
+   element 2:      IF number (points to IF table)
+   element 3:      X-Y phase in radians
+   element 4:      sqrt(Tsys) of X in K**0.5
+   element 5:      sqrt(Tsys) of Y in K**0.5
+   elements 6-8:   sampler statistics for X
+   elements 9-11:  sampler statistics for Y
+   element 12:     flag (0 is good, otherwise is bad)
+   element 13:     X-Y amplitude
+
+Is element 14 the "on-source" flag?
+
+Cheers, Mark
+
+
