@@ -1,3 +1,13 @@
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>

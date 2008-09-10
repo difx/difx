@@ -1,3 +1,14 @@
+
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
