@@ -743,13 +743,10 @@ void Configuration::processDatastreamTable(ifstream * input)
       if(configindex >= 0) break;
     }
 
-    if(configindex < 0)
+    if(configindex >= 0)
     {
-      cerr << "Error - no config found for datastream " << i << endl;
-      exit(1);
+      decimationfactor = configs[configindex].decimationfactor;
     }
-
-    decimationfactor = configs[configindex].decimationfactor;
 
     //read all the info for this datastream
     getinputline(input, &line, "TELESCOPE INDEX");

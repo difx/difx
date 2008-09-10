@@ -27,3 +27,6 @@ namespace fxcorr
   static const int MANAGERID = 0;
   static const int FIRSTTELESCOPEID = 1;
 }
+
+///definition of the largest allowable negative delay
+static const double MAX_NEGATIVE_DELAY = -9.9e99;

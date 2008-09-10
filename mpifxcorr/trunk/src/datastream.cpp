@@ -195,7 +195,7 @@ void DataStream::execute()
           cerr << "Error copying in the DataStream data buffer!!!" << endl;
       }
 
-      if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] == -1.0)
+      if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] == MAX_NEGATIVE_DELAY)
       {
         //bad or no data, don't waste time sending full length of junk
         MPI_Issend(&databuffer[startpos], 1, MPI_UNSIGNED_CHAR, targetcore, CR_PROCESSDATA, MPI_COMM_WORLD, &(bufferinfo[atsegment].datarequests[bufferinfo[atsegment].numsent]));
@@ -362,7 +362,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   if(offsetsec < bufferinfo[atsegment].seconds - 1) //coarse test to see if its all bad
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
     return 0; //note exit here!!!!
   }
 
@@ -385,7 +385,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   if((offsetsec < bufferinfo[atsegment].seconds - 1) || ((offsetsec - bufferinfo[atsegment].seconds < 2) && ((offsetsec - bufferinfo[atsegment].seconds)*1000000000 + lastoffsetns - bufferinfo[atsegment].nanoseconds < 0)))
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
     return 0; //note exit here!!!!
   }
 
@@ -393,7 +393,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   if(offsetsec > bufferinfo[atsegment].seconds + 1)
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
     return 0; //note exit here!!!!
   }
   
@@ -405,7 +405,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
     if(dbufferindex < double(-blockbytes*bufferinfo[atsegment].controllength) || dbufferindex > double(bufferbytes)) //its way off, bail out
     {
       for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
       return 0; //note exit here!!!!
     }
   }
@@ -421,12 +421,12 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   while(bufferindex < 0 && count < bufferinfo[atsegment].controllength - 1)
   {
     bufferindex += blockbytes;
-    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][(count++) + 1] = -1.0;
+    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][(count++) + 1] = MAX_NEGATIVE_DELAY;
   }
   if(bufferindex < 0)
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
     return 0;
   }
 
@@ -445,7 +445,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
     if(dbufferindex < double(-blockbytes*bufferinfo[atsegment].controllength) || dbufferindex > double(bufferbytes)) //its way off, bail out
     {
       for(int i=0;i<bufferinfo[atsegment].controllength;i++)
-        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = -1.0;
+        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
       return 0; //note exit here!!!!
     }
     for(int i=count;i<bufferinfo[atsegment].controllength - 1;i++)
@@ -454,7 +454,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
         bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i+1] = quadinterpolatedelay(intdelayseconds, offsetns + int(i*2*bufferinfo[atsegment].numchannels*bufferinfo[atsegment].sampletimens + 0.5));
       else
       {
-        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i+1] = -1.0;
+        bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i+1] = MAX_NEGATIVE_DELAY;
       }
     }
   }
@@ -1168,8 +1168,8 @@ void DataStream::processDelayFile(string delayfilename)
         at = next+1;
       }
       delays[i][j] = linedelays[columnoffset];
-      if(delays[i][j] < 0.0) {
-        cerr << "Error - cannot handle negative delays!!! Need to unimplement the datastream check for negative delays to indicate bad data.  Aborting now - contact the developer!" << endl;
+      if(delays[i][j] <= MAX_NEGATIVE_DELAY) {
+        cerr << "Error - cannot handle delays more negative than " << MAX_NEGATIVE_DELAY << "!!! Need to unimplement the datastream check for negative delays to indicate bad data.  Aborting now - contact the developer!" << endl;
         exit(1);
       }
       if(j<scanlengths[i])

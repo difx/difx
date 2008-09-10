@@ -24,6 +24,7 @@
 #include "math.h"
 #include "architecture.h"
 #include "datastream.h"
+#include "mpifxcorr.h"
 #include <iomanip>
 
 //using namespace std;
@@ -262,7 +263,7 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
   f32* currentchannelfreqptr;
   int indices[10];
   
-  if(datalengthbytes == 0 || delays[index] < 0 || delays[index+1] < 0)
+  if(datalengthbytes == 0 || !(delays[index] > MAX_NEGATIVE_DELAY) || !(delays[index+1] > MAX_NEGATIVE_DELAY))
   {
     for(int i=0;i<numinputbands;i++)
     {
@@ -516,7 +517,7 @@ void Mode::setDelays(f64 * d)
   //work out the twiddle factors used later to interpolate
   if(quadraticdelayinterp)
   {
-    if(delays[0] < 0 || delays[blockspersend/2] < 0 || delays[blockspersend/2+1] < 0 || delays[blockspersend] < 0)
+    if(!(delays[0] > MAX_NEGATIVE_DELAY) || !(delays[blockspersend/2] > MAX_NEGATIVE_DELAY) || !(delays[blockspersend/2+1] > MAX_NEGATIVE_DELAY) || !(delays[blockspersend] > MAX_NEGATIVE_DELAY))
     {
       dolinearinterp = true; //no quadratic cause we don't have the info everywhere
     }
