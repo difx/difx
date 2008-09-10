@@ -16,6 +16,15 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+//===============================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//===============================================================================
 
 /** \file architecture.h
  *  \brief File contains mapping for vector functions to specific architectures
