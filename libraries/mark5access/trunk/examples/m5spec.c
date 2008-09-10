@@ -252,7 +252,7 @@ int main(int argc, char **argv)
 		nint = 2000000000L;
 	}
 
-	if(argc > 7)
+	if(argc > 6)
 	{
 		offset=atoll(argv[6]);
 	}
