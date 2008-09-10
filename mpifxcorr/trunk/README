@@ -1,0 +1,11 @@
+Example installation guide.  Assumes mpi c++ compiler is 
+<openmpiprefix>/bin/mpicxx 
+
+svn co []
+aclocal
+autoconf
+autoheader
+automake -a
+./configure --prefix=<prefixdir>  CXX=<openmpiprefix>/bin/mpicxx
+make
+make install

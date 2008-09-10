@@ -1,0 +1,39 @@
+Version 1.5 Perth, 2008 March 7
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This version was born from the merge of the main trunk code and Walter's
+native-mark5 branch.  In addition some new features were added:
+
+1. Input file
+
+  * HEADER O/RIDE is removed (never used) and replaced with
+VIS BUFFER LENGTH, which was a compile-time constant.  Typical values for
+this number are upwards of 8.
+
+  * In the configuration table, two additional parameters have been added
+after NUM CHANNELS:
+
+  CHANNELS TO AVERAGE
+  OVERSAMPLE FACTOR
+
+Currently both of these only accept value 1.
+
+  * In the datastream table, the format and data source parameters have
+changed.  The four following parameters are now used:
+
+  DATA FORMAT
+  QUANTIZATION BITS
+  DATA FRAME SIZE
+  DATA SOURCE
+
+2. Difx format output
+
+  * WEIGHTS WRITTEN replaced with DATA WEIGHT.  The value is a float ranging
+from 0.0 to possibly a bit more than 1.0, but no more than 2.0; the average
+weight over many seconds of data should not exceed 1.0.
+
+  * Exactly NUM CHANNELS of data are written out.  For upper sideband data
+the first written channel is the DC channel and for lower sideband data
+the last written channel is the DC channel.  The Nyquist channel is always
+dropped.
+
