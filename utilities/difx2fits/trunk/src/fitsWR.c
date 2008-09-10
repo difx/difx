@@ -128,7 +128,6 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		antId = DifxInputGetAntennaId(D, antName);
 		if(antId < 0 || antId >= D->nAntenna)
 		{
-			printf("skipping ant %d\n", antId);
 			continue;
 		}
 		antId1 = antId + 1;
