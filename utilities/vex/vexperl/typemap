@@ -1,3 +1,0 @@
-TYPEMAP
-vex *   T_PTRREF
-Llist * T_PTRREF
