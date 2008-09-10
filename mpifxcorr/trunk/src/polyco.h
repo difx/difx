@@ -9,6 +9,17 @@
  *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
  ***************************************************************************/
+
+//===============================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//===============================================================================
+
 #ifndef POLYCO_H
 #define POLYCO_H
 

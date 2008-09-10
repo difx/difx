@@ -10,6 +10,17 @@
  *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
  ***************************************************************************/
 
+//===============================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//===============================================================================
+
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

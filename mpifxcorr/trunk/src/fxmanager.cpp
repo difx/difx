@@ -11,10 +11,13 @@
  ***************************************************************************/
 
 //===============================================================================
-// URL                : $HeadURL$
-// Revision           : $LastChangedRevision$
-// Last Changed by    : $Author$
-// Change date        : $LastChangedDate$
+// SVN properties (DO NOT CHANGE)
+//
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
 //===============================================================================
 
 #include "fxmanager.h"
