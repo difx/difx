@@ -58,12 +58,12 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   currentconfigindex = config->getConfigIndex(skipseconds);
   expermjd = config->getStartMJD();
   experseconds = config->getStartSeconds();
-  changeConfig(currentconfigindex);
-
-  //set up the initial time period this Visibility will be responsible for
   offset = 0;
   currentstartsamples = 0;
   currentstartseconds = skipseconds;
+  changeConfig(currentconfigindex);
+
+  //set up the initial time period this Visibility will be responsible for
   offset = offset+offsetperintegration;
   blocksthisintegration = integrationsamples/blocksamples;
   if(offset >= blocksamples/2)

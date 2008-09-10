@@ -1127,10 +1127,23 @@ void Configuration::setPolycoFreqInfo(int configindex)
     configs[configindex].polycos[i]->setFrequencyValues(d.numfreqs, frequencies, bandwidth);
   }
   delete [] frequencies;*/
-  datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
+  /*datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
   double * frequencies = new double[datastreamtablelength];
   double bandwidth = freqtable[d.freqtableindices[0]].bandwidth;
   for(int i=0;i<datastreamtablelength;i++)
+  {
+    frequencies[i] = freqtable[i].bandedgefreq;
+    if(freqtable[i].lowersideband)
+      frequencies[i] -= freqtable[i].bandwidth;
+  }
+  for(int i=0;i<configs[configindex].numpolycos;i++)
+  {
+    configs[configindex].polycos[i]->setFrequencyValues(freqtablelength, frequencies, bandwidth);
+  }
+  delete [] frequencies;*/
+  double * frequencies = new double[freqtablelength];
+  double bandwidth = freqtable[(datastreamtable[getMaxNumFreqDatastreamIndex(configindex)]).freqtableindices[0]].bandwidth;
+  for(int i=0;i<freqtablelength;i++)
   {
     frequencies[i] = freqtable[i].bandedgefreq;
     if(freqtable[i].lowersideband)

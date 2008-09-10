@@ -212,8 +212,9 @@ void Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
     bandwidth = bw;
 
     lofrequencies = vectorAlloc_f32(numfreqs);
-    for(int i=0;i<numfreqs;i++)
+    for(int i=0;i<numfreqs;i++) {
       lofrequencies[i] = freqs[i];
+    }
 
     //create the phase offsets and channeldmdelay arrays
     dmPhaseOffsets = new double*[numfreqs];
@@ -313,6 +314,7 @@ Polyco * Polyco::getCurrentPolyco(int requiredconfig, int mjd, double mjdfractio
 	}
     }
 
+    cout << "WARNING: Could not find appropriate polyco, returning NULL pointer!" << endl;
     return NULL;
 }
 
