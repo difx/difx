@@ -1,3 +1,13 @@
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
 

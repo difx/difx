@@ -1,6 +1,17 @@
 /* vexf.c FORTRAN VEX library */
 /* ----------------------------------------------------------------------- */
 
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
 #include <stdio.h>
 #include <math.h>
 #include <string.h>

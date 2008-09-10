@@ -1,5 +1,14 @@
 /* structure declarations */
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 struct llist {
   struct llist *next;
   void *ptr;
