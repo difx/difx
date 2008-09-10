@@ -1,0 +1,11 @@
+Changes
+MANIFEST
+typemap
+Makefile.PL
+VexParser.pm
+VexParser.xs
+Vex.pm
+Quanta.pm
+test.pl
+examples/readvex.pl
+META.yml                                 Module meta-data (added by MakeMaker)

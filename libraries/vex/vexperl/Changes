@@ -1,0 +1,12 @@
+Revision history for Perl extension VexPerl.
+
+0.01  Wed Dec  8 21:50:00 1999
+	- original version; created by h2xs 1.19
+0.20  Tue Jul 13 
+	- Many changes, firsy working version
+0.21  Wed Jul 14
+	- More sample rate units in Quanta.pm
+0.22-0.26 ??
+0.27  Thu Jul 12 16:18:05 EST 2007
+	- Bug fixes
+
