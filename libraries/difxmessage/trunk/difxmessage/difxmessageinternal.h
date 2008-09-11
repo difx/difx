@@ -20,5 +20,7 @@ extern char difxMessageHostname[32];
 extern int difxMessageMpiProcessId;
 extern char difxMessageXMLFormat[256];
 extern int difxMessageSequenceNumber;
+extern char difxBinaryGroup[16];
+extern int difxBinaryPort;
 
 #endif

@@ -23,6 +23,8 @@ char difxMessageHostname[32] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
 int difxMessageSequenceNumber = 0;
+char difxBinaryGroup[16] = "";
+int difxBinaryPort = -1;
 
 const char difxMessageDefaultGroup[] = "224.2.2.1";
 const int difxMessageDefaultPort = 50200;
@@ -76,6 +78,25 @@ int difxMessageInit(int mpiId, const char *identifier)
 		difxMessageHostname, 
 		difxMessageMpiProcessId,
 		difxMessageIdentifier);
+
+	return 0;
+}
+int difxMessageInitBinary()
+{
+	const char *envstr;
+
+	envstr = getenv("DIFX_BINARY_GROUP");
+	if(envstr != 0)
+	{
+		strncpy(difxBinaryGroup, envstr, 16);
+		difxBinaryGroup[15] = 0;
+	}
+
+	envstr = getenv("DIFX_BINARY_PORT");
+	if(envstr != 0)
+	{
+		difxBinaryPort = atoi(envstr);
+	}
 
 	return 0;
 }

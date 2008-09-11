@@ -74,6 +74,17 @@ enum DifxState
 
 extern const char DifxStateStrings[][24];
 
+enum DifxErrorLevel
+{
+	DIFX_ERROR_LEVEL_FATAL = 0,
+	DIFX_ERROR_LEVEL_SEVERE,
+	DIFX_ERROR_LEVEL_MAJOR,
+	DIFX_ERROR_LEVEL_WARNING,
+	DIFX_ERROR_LEVEL_INFO,
+	DIFX_ERROR_LEVEL_VERBOSE,
+	DIFX_ERROR_LEVEL_DEBUG
+};
+
 /* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
 enum DifxMessageType
 {
@@ -166,7 +177,23 @@ typedef struct
 	int _xml_error_count;
 } DifxMessageGeneric;
 
+typedef struct
+{
+	int messageType;/* user defined message type */
+	int sec;	/* second portion of time since obs start */
+	int ns;		/* nanosecond portion of time since obs start */
+	int antId;	/* telescope table entry number (from 0) */
+	int threadId;	/* core.cpp thread number (starting from 0) */
+	int bandId;
+	int nChan;
+	int dummy;	/* space reserved for future use */
+	float data[0];	/* Note -- must allocate enough space for your data! */
+} DifxMessageSTARecord;
+
+
+
 int difxMessageInit(int mpiId, const char *identifier);
+int difxMessageInitBinary();	/* looks at env vars DIFX_BINARY_GROUP and _PORT */
 void difxMessagePrint();
 void difxMessageGetMulticastGroupPort(char *group, int *port);
 
@@ -177,10 +204,15 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *message, double 
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxError(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
+int difxMessageSendBinary(const char *data, int size);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
+
+int difxMessageBinaryOpen();
+int difxMessageBinaryClose(int sock);
+int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from);
 
 int difxMessageParse(DifxMessageGeneric *G, const char *message);
 void difxMessageGenericPrint(const DifxMessageGeneric *G);
