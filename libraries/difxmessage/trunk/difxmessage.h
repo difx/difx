@@ -190,7 +190,7 @@ typedef struct
 	float data[0];	/* Note -- must allocate enough space for your data! */
 } DifxMessageSTARecord;
 
-
+const char *difxMessageGetVersion();
 
 int difxMessageInit(int mpiId, const char *identifier);
 int difxMessageInitBinary();	/* looks at env vars DIFX_BINARY_GROUP and _PORT */

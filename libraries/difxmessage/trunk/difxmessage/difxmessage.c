@@ -10,6 +10,7 @@
 //============================================================================
 #include <stdio.h>
 #include "../difxmessage.h"
+#include "../config.h"
 
 /* Note! Keep this in sync with enum Mk5Status in difxmessage.h */
 const char Mk5StateStrings[][24] = 
@@ -59,3 +60,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxDatastreamMessage",
 	"DifxCommand"
 };
+
+const char *difxMessageGetVersion()
+{
+	return PACKAGE_STRING " svn: $HeadURL$ $Revision$";
+}
