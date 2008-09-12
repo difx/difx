@@ -15,6 +15,7 @@ author  = 'Walter Brisken'
 version = '0.2'
 verdate = '20080912'
 
+alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG']
 
 class Parser:
 
@@ -28,6 +29,7 @@ class Parser:
 	self.tmp = ''
 	self.ok = False
 	self.unit = ''
+	self.mpiid = -1
 	self.id = ''
 
     def feed(self, data):
@@ -50,13 +52,15 @@ class Parser:
 		self.unit = lower(self.tmp)
 	if tag == 'identifier':
 		self.id = self.tmp
+	if tag == 'mpiProcessId':
+		self.mpiid = int(self.tmp)
 
     def data(self, data):
         self.tmp = data
 
     def getinfo(self):
 	if self.ok:
-        	return '%-10s %s %1d %s' % (self.unit, self.id, self.severity, self.message)
+        	return 'MPI[%2d] %-8s %s %-7s %s' % (self.mpiid, self.unit, self.id, alertLevels[self.severity], self.message)
 	else:
 		return ''
 
