@@ -1,0 +1,100 @@
+#!/usr/bin/python
+import os,sys
+
+difxroot = os.environ.get('DIFXROOT')
+bindir = difxroot + '/bin/'
+libdir = difxroot + '/lib/'
+pkgdir = difxroot + '/lib/pkg-config/'
+incdir = difxroot + '/include/'
+ipproot = os.environ.get('IPPROOT')
+mpicxx = os.environ.get('MPICXX')
+
+print "You must have already source'd setup.difx.bash!"
+
+if os.path.exists(difxroot):
+    print difxroot + " already exists"
+    if os.path.exists(bindir):
+        print bindir + " already exists"
+    else:
+        os.mkdir(bindir)
+    if os.path.exists(libdir):
+        print libdir + " already exists"
+    else:
+        os.mkdir(libdir)
+    if os.path.exists(pkgdir):
+        print pkgdir + " already exists"
+    else:
+        os.mkdir(pkgdir)
+    if os.path.exists(incdir):
+        print incdir + " already exists"
+    else:
+        os.mkdir(incdir)
+else:
+    os.mkdir(difxroot)
+    os.mkdir(bindir)
+    os.mkdir(libdir)
+    os.mkdir(pkgdir)
+    os.mkdir(incdir)
+
+print "Making CALC"
+os.chdir('applications/calc/')
+#Set CALCDB and append this call to the setup.difx.bash file
+os.environ.set('CALCDB', os.cwd())
+os.system("echo \"export $CALCDB=" + os.cwd() + "\" >> setup.difx.bash") 
+#Make calc
+os.system('make')
+os.system('ar -r libcorcalc.a *.o')
+os.chdir('../../')
+os.system("cp -f applications/calc/*.h " + incdir)
+
+print "Making vex"
+os.chdir("libraries/vex/vexlib")
+os.system("make")
+os.system("mv -f vexlib.so " + libdir)
+os.system("mv -f vexlib.a " + libdir)
+os.chdir("../vexperl")
+os.system("perl Makefile.PL PREFIX=" + libdir)
+os.system("make")
+os.system("make install")
+echo "Make sure to set PERL5LIB appropriately - will be a subdirectory of " + libdir
+os.chdir("../../../")
+
+print "Making rpfits"
+is32bit = os.environ.get(DIFX32)
+if is32bit:
+    os.chdir("libraries/rpfits/linux/")
+else:
+    os.chdir("libraries/rpfits/linux64/")
+os.system("make")
+os.system("mv -f librpfits.a " + libdir)
+os.chdir("../../../")
+os.system("cp -f libraries/rpfits/code/RPFITS.h " + incdir)
+
+print "Making vlba_utils"
+os.chdir("libraries/vlba_utils/")
+os.system("make")
+os.system("mv -f libvlba_utils.a " + libdir) 
+os.system("mv -f test_vlba_stream " + bindir)
+os.system("cp -f vlba_stream.h " + incdir)
+os.chdir("../../")
+
+print "Making mpifxcorr"
+os.chdir("mpifxcorr/")
+os.system("aclocal")
+os.system("automake")
+os.system("./configure CXX=" + mpicxx + " PREFIX=" + difxroot)
+os.system("make")
+os.system("make install")
+os.chdir("../")
+
+print "Copying some utilities"
+os.system("cp -f utilities/vex2difx/vex2config.pl " + bindir)
+os.system("cp -f utilities/vex2difx/vex2model_updated.pl " + bindir)
+
+print "Making the difx_monitor"
+os.chdir("applications/difx_monitor/")
+os.system("make")
+os.system("mv -f difx_monitor " + bindir)
+os.chdir("../../")
+
+print "Done!"

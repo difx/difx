@@ -1,0 +1,19 @@
+export DIFXROOT=/home/ssi/adeller/difx/
+export IPPROOT=/opt/intel/ipp/5.3.3.075/ia32/
+export MPICXX=/usr/bin/mpicxx
+export PATH=${DIFXROOT}/bin:${PATH}
+export LD_LIBRARY_PATH=${DIFXROOT}/lib:${LD_LIBRARY_PATH}
+export PKG_CONFIG_PATH=${DIFXROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}
+export PERL5LIB=${DIFXROOT}/vexperl/lib/perl5/site_perl/5.8.6/
+export JOB_ROOT=/home/swc/difx/projects 
+export TESTS=/home/swc/difx/tests 
+export MARK5_DIR_PATH=/home/swc/difx/directories 
+export CALC_SERVER=swc000 
+export GAIN_CURVE_PATH=/home/swc/difx/gaincurves 
+export DIFX_MACHINES=/home/swc/difx/machines.difx 
+export DIFX_HEAD_NODE=swc000 
+export DIFX_ARCHIVE_ROOT=/home/swc/difx/archive 
+export MANPATH=/usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
+export DIFX_VERSION=1.1 
+export DIFX_GROUP_ID=difx 
+echo "DiFX version $DIFX_VERSION is selected" 
