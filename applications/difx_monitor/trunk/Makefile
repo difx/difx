@@ -7,17 +7,12 @@ all   : $(TARGETS)
 clean : $(TARGETS)
 	rm -f *.o $^
 
-CC  = mpicc -g
-CXX = mpicxx -g 
+CXX = $(MPICXX) -g 
 CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
 F77 = g77
 
-IPPROOT = /opt/intel/ipp/5.2/ia32
-
-CORR_ROOT=../..
-
-INCS = -I$(CORR_ROOT)/mpifxcorr/branches/mark5-evlbi/src/ -I$(IPPROOT)/include -I$(CORR_ROOT)/common/mark5access/trunk -I/usr/local/pgplot
-LIBS = -L$(CORR_ROOT)/mpifxcorr/branches/mark5-evlbi/src -L$(IPPROOT)/sharedlib -L$(IPPROOT)/sharedlib/linux32 -L$(CORR_ROOT)/lib -lmark5access -lmpifxcorr -lippvm -lguide -lipps -lippcore -L/usr/local/pgplot -lcpgplot -lpgplot -L/usr/X11R6/lib -lX11 -lg2c -lpng
+INCS = -I$(DIFXROOT)/include/ -I$(IPPROOT)/include -I$(PGPLOTDIR)
+LIBS = -L$(G2CDIR) -L$(DIFXROOT)/lib/ -L$(IPPROOT)/sharedlib -lmpifxcorr -lippvmem64t -lguide -lippsem64t -lippcoreem64t -L$(PGPLOTDIR) -lcpgplot -lpgplot -lX11 -lg2c -lpng -lvlba_utils
 
 difx_monitor : difx_monitor.cpp
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS)

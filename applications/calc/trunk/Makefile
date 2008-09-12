@@ -12,16 +12,8 @@ CXX = g++
 CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
 F77 = g77
 
-INCS = -I.
-LIBS = -L.
-
-CALCROOT = /home/vlbi/calc9/
-
-CALCINC = -I$(CALCROOT)/
-CALCLIB = -L$(CALCROOT)/ -lcorcalc -lg2c
-
-INCS += $(CALCINC)
-LIBS += $(CALCLIB)
+INCS = -I$(DIFXROOT)/include/
+LIBS = -L$(DIFXROOT)/lib/ -L$(G2CDIR) -lcorcalc -lg2c
 
 gencalc_delays : gencalc_delays.cpp
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS)

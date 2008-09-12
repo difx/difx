@@ -8,6 +8,7 @@ pkgdir = difxroot + '/lib/pkg-config/'
 incdir = difxroot + '/include/'
 ipproot = os.environ.get('IPPROOT')
 mpicxx = os.environ.get('MPICXX')
+pgplotdir = os.environ.get('PGPLOTDIR')
 
 print "You must have already source'd setup.difx.bash!"
 
@@ -37,30 +38,35 @@ else:
     os.mkdir(incdir)
 
 print "Making CALC"
-os.chdir('applications/calc/')
+os.chdir('applications/calc/calc9/')
 #Set CALCDB and append this call to the setup.difx.bash file
-os.environ.set('CALCDB', os.cwd())
-os.system("echo \"export $CALCDB=" + os.cwd() + "\" >> setup.difx.bash") 
+os.putenv('CALCDB', os.getcwd())
+os.system("echo \"export $CALCDB=" + os.getcwd() + "\" >> setup.difx.bash") 
 #Make calc
 os.system('make')
 os.system('ar -r libcorcalc.a *.o')
-os.chdir('../../')
-os.system("cp -f applications/calc/*.h " + incdir)
+os.system("mv libcorcalc.a " + libdir)
+os.chdir('../../../')
+os.system("cp -f applications/calc/calc9/*.h " + incdir)
 
 print "Making vex"
 os.chdir("libraries/vex/vexlib")
 os.system("make")
-os.system("mv -f vexlib.so " + libdir)
-os.system("mv -f vexlib.a " + libdir)
+os.system("mv -f libvex.so " + libdir)
+os.system("mv -f libvex.a " + libdir)
 os.chdir("../vexperl")
 os.system("perl Makefile.PL PREFIX=" + libdir)
 os.system("make")
 os.system("make install")
-echo "Make sure to set PERL5LIB appropriately - will be a subdirectory of " + libdir
+print "Make sure to set PERL5LIB appropriately - will be a subdirectory of " + libdir
 os.chdir("../../../")
 
 print "Making rpfits"
-is32bit = os.environ.get(DIFX32)
+is32bit = False
+environ_vars = os.environ.keys()
+for envvar in environ_vars:
+    if envvar == 'DIFX32':
+        is32bit = True
 if is32bit:
     os.chdir("libraries/rpfits/linux/")
 else:
@@ -82,14 +88,19 @@ print "Making mpifxcorr"
 os.chdir("mpifxcorr/")
 os.system("aclocal")
 os.system("automake")
-os.system("./configure CXX=" + mpicxx + " PREFIX=" + difxroot)
+os.system("./configure CXX=" + mpicxx + " --prefix=" + difxroot)
 os.system("make")
 os.system("make install")
+os.system("cp -f src/*.h " + incdir)
 os.chdir("../")
 
 print "Copying some utilities"
 os.system("cp -f utilities/vex2difx/vex2config.pl " + bindir)
 os.system("cp -f utilities/vex2difx/vex2model_updated.pl " + bindir)
+os.chdir("applications/calc/")
+os.system("make")
+os.system("mv gencalc_delays " + bindir)
+os.chdir("../../")
 
 print "Making the difx_monitor"
 os.chdir("applications/difx_monitor/")
