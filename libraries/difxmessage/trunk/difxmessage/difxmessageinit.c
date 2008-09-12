@@ -26,9 +26,6 @@ int difxMessageSequenceNumber = 0;
 char difxBinaryGroup[16] = "";
 int difxBinaryPort = -1;
 
-const char difxMessageDefaultGroup[] = "224.2.2.1";
-const int difxMessageDefaultPort = 50200;
-
 int difxMessageInit(int mpiId, const char *identifier)
 {
 	const char *envstr;
@@ -39,9 +36,6 @@ int difxMessageInit(int mpiId, const char *identifier)
 	difxMessageIdentifier[MAX_DIFX_MESSAGE_IDENTIFER-1] = 0;
 
 	difxMessageMpiProcessId = mpiId;
-
-	strcpy(difxMessageGroup, difxMessageDefaultGroup);
-	difxMessagePort = difxMessageDefaultPort;
 
 	gethostname(difxMessageHostname, 32);
 	difxMessageHostname[31] = 0;

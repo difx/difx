@@ -65,26 +65,35 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 	return difxMessageSend(message);
 }
 
-int difxMessageSendDifxError(const char *errorMessage, int severity)
+int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 {
 	char message[1000];
 	char body[700];
 
-	sprintf(body,
+	if(difxMessagePort < 0)
+	{
+		printf("[%s %d] %s %s\n", difxMessageHostname, difxMessageMpiProcessId, difxMessageAlertString[severity], alertMessage);
+	}
+	else
+	{
+		sprintf(body,
+			
+			"<difxAlert>"
+			  "<alertMessage>%s</alertMessage>"
+			  "<severity>%d</severity>"
+			"</difxAlert>",
+
+			alertMessage, 
+			severity);
+
+		sprintf(message, difxMessageXMLFormat, 
+			DifxMessageTypeStrings[DIFX_MESSAGE_ALERT],
+			difxMessageSequenceNumber++, body);
 		
-		"<difxError>"
-		  "<errorMessage>%s</errorMessage>"
-		  "<severity>%d</severity>"
-		"</difxError>",
-
-		errorMessage, 
-		severity);
-
-	sprintf(message, difxMessageXMLFormat, 
-		DifxMessageTypeStrings[DIFX_MESSAGE_ERROR],
-		difxMessageSequenceNumber++, body);
+		difxMessageSend(message);
+	}
 	
-	return difxMessageSend(message);
+	return 0;
 }
 
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)

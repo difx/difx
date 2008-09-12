@@ -74,23 +74,26 @@ enum DifxState
 
 extern const char DifxStateStrings[][24];
 
-enum DifxErrorLevel
+/* Note! Keep this in sync with DifxMessageAlertString[][16] in difxmessage.c */
+enum DifxAlertLevel
 {
-	DIFX_ERROR_LEVEL_FATAL = 0,
-	DIFX_ERROR_LEVEL_SEVERE,
-	DIFX_ERROR_LEVEL_MAJOR,
-	DIFX_ERROR_LEVEL_WARNING,
-	DIFX_ERROR_LEVEL_INFO,
-	DIFX_ERROR_LEVEL_VERBOSE,
-	DIFX_ERROR_LEVEL_DEBUG
+	DIFX_ALERT_LEVEL_FATAL = 0,
+	DIFX_ALERT_LEVEL_SEVERE,
+	DIFX_ALERT_LEVEL_MAJOR,
+	DIFX_ALERT_LEVEL_WARNING,
+	DIFX_ALERT_LEVEL_INFO,
+	DIFX_ALERT_LEVEL_VERBOSE,
+	DIFX_ALERT_LEVEL_DEBUG
 };
+
+extern const char difxMessageAlertString[][16];
 
 /* Note! Keep this in sync with DifxMessageTypeStrings[][24] in difxmessage.c */
 enum DifxMessageType
 {
 	DIFX_MESSAGE_UNKNOWN = 0,
 	DIFX_MESSAGE_LOAD,
-	DIFX_MESSAGE_ERROR,
+	DIFX_MESSAGE_ALERT,
 	DIFX_MESSAGE_MARK5STATUS,
 	DIFX_MESSAGE_STATUS,
 	DIFX_MESSAGE_INFO,
@@ -202,7 +205,7 @@ int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD, int numdatastreams, float *weight);
 int difxMessageSendLoad(const DifxMessageLoad *load);
-int difxMessageSendDifxError(const char *errorMessage, int severity);
+int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
 int difxMessageSendBinary(const char *data, int size);
 

@@ -13,4 +13,5 @@ Version 0.3  20080715
 ~~~~~~~~~~~
 New branch version post version 1.1
 Add table (enum) of error levels
+Rename ERROR to ALERT
 Binary message sending, intended for Short Term Accumations (STAs)

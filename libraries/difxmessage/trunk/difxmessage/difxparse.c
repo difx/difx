@@ -117,7 +117,7 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 					G->body.load.netTXRate = atof(s);
 				}
 				break;
-			case DIFX_MESSAGE_ERROR:
+			case DIFX_MESSAGE_ALERT:
 				if(strcmp(elem, "errorMessage") == 0)
 				{
 					strncpy(G->body.error.message, s, 999);
@@ -262,7 +262,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    network Transmit Rate = %d B/s\n", 
 			G->body.load.netTXRate);
 		break;
-	case DIFX_MESSAGE_ERROR:
+	case DIFX_MESSAGE_ALERT:
 		printf("    severity = %d\n", G->body.error.severity);
 		printf("    message = %s\n", G->body.error.message);
 		break;

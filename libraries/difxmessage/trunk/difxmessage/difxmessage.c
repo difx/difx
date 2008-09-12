@@ -53,12 +53,24 @@ const char DifxMessageTypeStrings[][24] =
 {
 	"Unknown",
 	"DifxLoadMessage",
-	"DifxErrorMessage",
+	"DifxAlertMessage",
 	"Mark5StatusMessage",
 	"DifxStatusMessage",
 	"DifxInfoMessage",
 	"DifxDatastreamMessage",
 	"DifxCommand"
+};
+
+/* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */
+const char difxMessageAlertString[][16] =
+{
+	"FATAL",
+	"SEVERE",
+	"ERROR",
+	"WARNING",
+	"INFO",
+	"INFO",
+	"DEBUG"
 };
 
 const char *difxMessageGetVersion()
