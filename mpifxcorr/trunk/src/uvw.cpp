@@ -21,6 +21,7 @@
 //============================================================================
 #include "uvw.h"
 #include "configuration.h"
+#include <difxmessage.h>
 
 Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   : uvwread(!nameonly)
@@ -28,10 +29,13 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   int year, month, day, hour, minute, second, at, next;
   string line;
   bool found;
+  char message[80];
+
   ifstream input(uvwfilename.c_str());
   if(!input.is_open() || input.bad()) {
-    cerr << "Error opening uvw file " << uvwfilename << " - aborting!!!" << endl;
-    exit(1);
+    sprintf(message, "Error opening uvw file %s - aborting!!!", uvwfilename.c_str());
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
   config->getinputline(&input, &line, "START YEAR");
@@ -84,7 +88,8 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   if(uvwread) //only create the uvw information if we've been asked to, otherwise save time and memory
     uvw = new double***[numscans];
 
-  cout << "Scan information has been read in - numscans is " << numscans << endl;
+  if(!nameonly)
+    cout << "Scan information has been read in - numscans is " << numscans << endl;
 
   for(int i=0;i<numscans;i++)
   {
@@ -209,7 +214,9 @@ void Uvw::interpolateUvw(string t1name, string t2name, int mjd, float seconds, f
   }
   if(stationindex[0] < 0 || stationindex[1] < 0)
   {
-    cerr << "Error - one of the telescope " << t1name << " or " << t2name << " could not be found in the uvw file!!!" << endl;
+    char message[128];
+    sprintf(message, "Error - one of the telescope %s or %s could not be found in the uvw file!!!", t1name.c_str(), t2name.c_str());
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
     buvw[0] = 0;
     buvw[1] = 0;
     buvw[2] = 0;
@@ -279,6 +286,6 @@ int Uvw::getMountInt(string mount)
     return 3;
     
   //otherwise unknown
-  cerr << "Warning - unknown mount type: Assuming Az-El" << endl;
+  difxMessageSendDifxAlert("Unknown mount type: Assuming Az-El", DIFX_ALERT_LEVEL_WARNING);
   return 0;
 }

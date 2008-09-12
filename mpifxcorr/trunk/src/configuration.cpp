@@ -33,7 +33,7 @@ Configuration::Configuration(const char * configfile)
   if(input->fail() || !input->is_open())
   {
     cerr << "Error opening file " << configfile << " - aborting!!!" << endl;
-    exit(1);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
   sectionheader currentheader = getSectionHeader(input);
   commonread = false;
@@ -53,7 +53,7 @@ Configuration::Configuration(const char * configfile)
         if(!commonread)
         {
           cerr << "Error - input file out of order!  Attempted to read configuration details without knowledge of common settings - aborting!!!" << endl;
-          exit(EXIT_FAILURE);
+	  MPI_Abort(MPI_COMM_WORLD, 1);
         }
         processConfig(input);
         break;
@@ -67,7 +67,7 @@ Configuration::Configuration(const char * configfile)
         if(!configread)
         {
           cerr << "Error - input file out of order!  Attempted to read datastreams without knowledge of configs - aborting!!!" << endl;
-          exit(EXIT_FAILURE);
+	  MPI_Abort(MPI_COMM_WORLD, 1);
         }
         processDatastreamTable(input);
         break;
@@ -78,7 +78,7 @@ Configuration::Configuration(const char * configfile)
         if(!datastreamread)
         {
           cerr << "Error - input file out of order!  Attempted to read datastream data files without knowledge of datastreams - aborting!!!" << endl;
-          exit(EXIT_FAILURE);
+	  MPI_Abort(MPI_COMM_WORLD, 1);
         }
         processDataTable(input);
         break;
@@ -86,7 +86,7 @@ Configuration::Configuration(const char * configfile)
         if(!datastreamread)
         {
           cerr << "Error - input file out of order!  Attempted to read datastream network details without knowledge of datastreams - aborting!!!" << endl;
-          exit(EXIT_FAILURE);
+	  MPI_Abort(MPI_COMM_WORLD, 1);
         }
         processNetworkTable(input);
         break;
@@ -98,7 +98,7 @@ Configuration::Configuration(const char * configfile)
   if(!configread)
   {
     cerr << "Error - no config section in input file - aborting!!!" << endl;
-    exit(EXIT_FAILURE);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
   input->close();
   delete input;
@@ -369,7 +369,7 @@ int Configuration::getMaxProducts(int configindex)
     if(configs[configindex].baselineindices[i] >= baselinetablelength || configs[configindex].baselineindices[i] < 0)
     {
       cerr << "Error - baselinetable index of " << configs[configindex].baselineindices[i] << " from config " << configindex << ", baseline " << i << " is outside of table range!!!" << endl;
-      exit(1);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
     current = baselinetable[configs[configindex].baselineindices[i]];
     for(int j=0;j<current.numfreqs;j++)
@@ -442,7 +442,7 @@ int Configuration::getConfigIndex(int offsetseconds)
   if(!uvw)
   {
     cerr << "UVW HAS NOT BEEN CREATED!!!" << endl;
-    exit(1);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
   uvw->getSourceName(startmjd, startseconds + offsetseconds, currentsourcename);
@@ -530,7 +530,7 @@ void Configuration::processBaselineTable(ifstream * input)
   if(baselinetablelength < numbaselines)
   {
     cerr << "Error - not enough baselines are supplied in the baseline table (" << baselinetablelength << ") compared to the number of baselines (" << numbaselines << ")!!!" << endl;
-    exit(1);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
   for(int i=0;i<baselinetablelength;i++)
@@ -673,7 +673,7 @@ void Configuration::processConfig(ifstream * input)
     if(configs[i].postffringerot && configs[i].quadraticdelayinterp)
     {
       cerr << "ERROR - cannot quad interpolate delays with post-f fringe rotation - aborting!!!" << endl;
-      exit(1);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
     getinputline(input, &line, "WRITE AUTOCORRS");
     configs[i].writeautocorrs = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
@@ -712,7 +712,7 @@ void Configuration::processDatastreamTable(ifstream * input)
   if(datastreamtablelength < numdatastreams)
   {
     cerr << "Error - not enough datastreams are supplied in the datastream table (" << datastreamtablelength << ") compared to the number of datastreams (" << numdatastreams << "!!!" << endl;
-    exit(1);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
   //create the ordereddatastream array
   for(int i=0;i<numconfigs;i++)
@@ -771,7 +771,7 @@ void Configuration::processDatastreamTable(ifstream * input)
     else
     {
       cerr << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, and MARK5B)" << endl;
-      exit(1);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
     getinputline(input, &line, "QUANTISATION BITS");
     datastreamtable[i].numbits = atoi(line.c_str());
@@ -789,7 +789,7 @@ void Configuration::processDatastreamTable(ifstream * input)
     else
     {
       cerr << "Unnkown data source " << line << " (case sensitive choices are FILE, MK5MODULE and EVLBI)" << endl;
-      exit(1);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
     getinputline(input, &line, "FILTERBANK USED");
@@ -1111,7 +1111,7 @@ void Configuration::processPulsarConfig(string filename, int configindex)
   if(!pulsarinput.is_open() || pulsarinput.bad())
   {
     cerr << "Error - could not open pulsar config file " << line << " - aborting!!!" << endl;
-    exit(1);
+    MPI_Abort(MPI_COMM_WORLD, 1);
   }
   getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
   configs[configindex].numpolycos = atoi(line.c_str());

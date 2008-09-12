@@ -13,36 +13,38 @@
 #include <stdlib.h>
 #include "nativemk5.h"
 #include "config.h"
+#include <difxmessage.h>
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
         int id, int ncores, int * cids, int bufferfactor, int numsegments) :
                 Mk5DataStream(conf, snum, id, ncores, cids, bufferfactor,
         numsegments)
 {
-	cout << "NativeMk5DataStream::NativeMk5DataStream stub called" << endl;
+	difxMessageSendDifxAlert("NativeMk5DataStream::NativeMk5DataStream stub called, meaning mpifxcorr was not compiled for nativemk5 support, but it was requested (with MODULE in .input file).  Aborting.", DIFX_ALERT_LEVEL_FATAL);
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 NativeMk5DataStream::~NativeMk5DataStream()
 {
-	cout << "NativeMk5DataStream::~NativeMk5DataStream stub called" << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 {
-	cout << "NativeMk5DataStream::initialiseFile stub called" << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::openfile(int configindex, int fileindex)
 {
-	cout << "NativeMk5DataStream::openfile stub called" << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::loopfileread()
 {
-	cout << "NativeMk5DataStream::loopfileread stub called" << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
-	cout << "Never to be called" << endl;
+	MPI_Abort(MPI_COMM_WORLD, 1);
 }

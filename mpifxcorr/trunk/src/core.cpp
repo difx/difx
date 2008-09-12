@@ -22,6 +22,7 @@
 #include "core.h"
 #include "fxmanager.h"
 #include "mpifxcorr.h"
+#include <difxmessage.h>
 
 Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   : mpiid(id), config(conf), return_comm(rcomm)
@@ -80,14 +81,18 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
           procslots[i].bincounts[j][k] = vectorAlloc_s32(config->getMaxNumChannels()+1);
           status = vectorZero_s32(procslots[i].bincounts[j][k], procslots[i].numchannels+1);
           if(status != vecNoErr)
-            cerr << "Error trying to zero bincounts!!!" << endl;
+	    difxMessageSendDifxAlert("Error trying to zero bincounts!!!", DIFX_ALERT_LEVEL_SEVERE);
         }
       }
     }
     //set up the remainder of the info in this slot, using the first configuration
     status = vectorZero_cf32(procslots[i].results, maxresultlength);
     if(status != vecNoErr)
-      cerr << "Error trying to zero results in core " << mpiid << ", processing slot " << i << endl;
+    {
+      char message[80];
+      sprintf(message, "Error trying to zero results in core %d, processing slot %d", mpiid, i);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+    }
     procslots[i].resultsvalid = CR_VALIDVIS;
     procslots[i].configindex = currentconfigindex;
     procslots[i].resultlength = config->getResultLength(currentconfigindex);
@@ -174,17 +179,22 @@ void Core::execute()
   int perr, status;
   bool terminate;
   processthreadinfo * threadinfos = new processthreadinfo[numprocessthreads];
+  char message[200];
   
   terminate = false;
   numreceived = 0;
-  cout << "Core " << mpiid << " has started executing!!!" << endl;
+  sprintf(message, "CORE %d has started executing!!!", mpiid);
+  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
   //get the lock for the first slot, one per thread
   for(int i=0;i<numprocessthreads;i++)
   {
     perr = pthread_mutex_lock(&(procslots[numreceived].slotlocks[i]));
     if(perr != 0)
-      cerr << "Error in Core " << mpiid << " attempt to lock mutex" << numreceived << " of thread " << i << endl;
+    {
+      sprintf(message, "CORE %d error attempting to lock mutex %d of thread %d", mpiid, numreceived, i);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    }
   }
 
   //start off by filling up the data and control buffers for all slots
@@ -198,12 +208,15 @@ void Core::execute()
     threadinfos[i].processthreadid = i;
     perr = pthread_create(&processthreads[i], NULL, Core::launchNewProcessThread, (void *)(&threadinfos[i]));
     if(perr != 0)
-      cerr << "Error in launching Core " << mpiid << " processthread " << i << "!!!" << endl;
+    {
+      sprintf(message, "Error launching core/thread %d/%d", mpiid, i);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+    }
     while(!processthreadinitialised[i])
     {
       perr = pthread_cond_wait(&processconds[i], &(procslots[numreceived].slotlocks[i]));
       if (perr != 0)
-        cerr << "Error waiting on receivethreadinitialised condition!!!!" << endl;
+        difxMessageSendDifxAlert("Error waiting on receivethreadinitialised condition!!!", DIFX_ALERT_LEVEL_SEVERE);
     }
   }
   delete [] threadinfos;
@@ -219,49 +232,57 @@ void Core::execute()
     //zero the results buffer for this slot and set the status back to valid
     status = vectorZero_cf32(procslots[numreceived%RECEIVE_RING_LENGTH].results, procslots[numreceived%RECEIVE_RING_LENGTH].resultlength);
     if(status != vecNoErr)
-      cerr << "Error trying to zero results in Core!!!" << endl;
+      difxMessageSendDifxAlert("Error trying to zero results in Core!!!", DIFX_ALERT_LEVEL_SEVERE);
     procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid = CR_VALIDVIS;
   }
 
   //Run through the shutdown sequence
-//  cout << "Core " << mpiid << " commencing termination sequence" << endl;
   for(int i=0;i<numprocessthreads;i++)
   {
     //Unlock the mutex we are currently holding for this thread
     perr = pthread_mutex_unlock(&(procslots[(numreceived+RECEIVE_RING_LENGTH-1) % RECEIVE_RING_LENGTH].slotlocks[i]));
     if(perr != 0)
-      cerr << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+RECEIVE_RING_LENGTH-1) % RECEIVE_RING_LENGTH << " of thread " << i << endl;
+    {
+      sprintf(message, "Error in Core %d attempt to unlock mutex %d of thread %d", mpiid, (numreceived+RECEIVE_RING_LENGTH-1), i);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    }
   }
 
   //ensure all the results we have sitting around have been sent
   for(int i=1;i<RECEIVE_RING_LENGTH-1;i++)
   {
-//    cout << "Core " << mpiid << " about to send final values from section " << i << endl;
+    sprintf(message, "CORE %d about to send final values from section %d", mpiid, i);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_DEBUG);
     for(int j=0;j<numprocessthreads;j++)
     {
       //Lock and unlock first to ensure the threads have finished working on this slot
       perr = pthread_mutex_lock(&(procslots[(numreceived+i) % RECEIVE_RING_LENGTH].slotlocks[j]));
       if(perr != 0)
-        cerr << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
+      {
+        sprintf(message, "Error in Core %d attempt to lock mutex %d of thread %d", mpiid, (numreceived+i) % RECEIVE_RING_LENGTH, j);
+        difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+      }
       perr = pthread_mutex_unlock(&(procslots[(numreceived+i) % RECEIVE_RING_LENGTH].slotlocks[j]));
       if(perr != 0)
-        cerr << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
+      {
+        sprintf(message, "Error in Core %d attempt to unlock mutex %d of thread %d", mpiid, (numreceived+i) % RECEIVE_RING_LENGTH, j);
+        difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+      }
     }
     //send the results
     MPI_Ssend(procslots[(numreceived+i)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i)%RECEIVE_RING_LENGTH].resultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
   }
-
-//  cout << "CORE " << mpiid << " is about to join the processthreads" << endl;
 
   //join the process threads, they have to already be finished anyway
   for(int i=0;i<numprocessthreads;i++)
   {
     perr = pthread_join(processthreads[i], NULL);
     if(perr != 0)
-      cerr << "Error in Core " << mpiid << " attempt to join processthread " << i << endl;  
+    {
+      sprintf(message, "Error in Core %d attempt to join processthread %d", mpiid, i);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    }
   }
-
-//  cout << "CORE " << mpiid << " terminating" << endl;
 }
 
 void * Core::launchNewProcessThread(void * tdata)
@@ -283,6 +304,7 @@ void Core::loopprocess(int threadid)
   cf32 * threadresults = vectorAlloc_cf32(maxresultlength);
   cf32 * pulsarscratchspace=0;
   cf32 ***** pulsaraccumspace=0;
+  char message[200];
   
   pulsarbin = false;
   somepulsarbin = false;
@@ -326,25 +348,37 @@ void Core::loopprocess(int threadid)
     polycos = new Polyco*[maxpolycos];
   updateconfig(lastconfigindex, lastconfigindex, threadid, startblock, numblocks, numpolycos, pulsarbin, modes, polycos, true, &bins);
   numprocessed = 0;
-//  cout << "Core thread id " << threadid << " will be processing from block " << startblock << ", length " << numblocks << endl;
 
   //lock the end section
   perr = pthread_mutex_lock(&(procslots[RECEIVE_RING_LENGTH-1].slotlocks[threadid]));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex " << RECEIVE_RING_LENGTH-1;
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying to lock mutex %d", mpiid, threadid, RECEIVE_RING_LENGTH-1);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+  }
 
   //grab the lock we really want, unlock the end section and signal the main thread we're ready to go
   perr = pthread_mutex_lock(&(procslots[0].slotlocks[threadid]));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex 0" << endl; 
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying lock mutex 0", mpiid, threadid);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+  }
   perr = pthread_mutex_unlock(&(procslots[RECEIVE_RING_LENGTH-1].slotlocks[threadid]));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << RECEIVE_RING_LENGTH-1;
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying to unlock mutex %d", mpiid, threadid, RECEIVE_RING_LENGTH-1);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+  }
   processthreadinitialised[threadid] = true;
   perr = pthread_cond_signal(&processconds[threadid]);
   if(perr != 0)
-    cerr << "Core processthread " << mpiid << "/" << threadid << " error trying to signal main thread to wake up!!!" << endl;
-  cout << "PROCESSTHREAD " << mpiid << "/" << threadid << " is about to start processing" << endl;
+  {
+    sprintf(message, "Core processthread %d/%d error trying to signal main thread to wake up!!!", mpiid, threadid);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+  }
+  sprintf(message, "PROCESSTHREAD %d/%d is about to start processing", mpiid, threadid);
+  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
   //while valid, process data
   while(procslots[(numprocessed)%RECEIVE_RING_LENGTH].keepprocessing)
@@ -355,8 +389,9 @@ void Core::loopprocess(int threadid)
       currentpolyco = Polyco::getCurrentPolyco(procslots[numprocessed%RECEIVE_RING_LENGTH].configindex, startmjd, double(startseconds + procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[0])/86400.0, polycos, numpolycos);
       if(currentpolyco == NULL)
       {
-        cerr << "ERROR - could not locate a polyco to cover time " << startmjd+double(startseconds + procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[0])/86400.0 << " - aborting!!!" << endl;
-        exit(1);
+	sprintf(message, "Could not locate a polyco to cover time %5.3f -- aborting", startmjd+double(startseconds + procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[0])/86400.0);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+	MPI_Abort(MPI_COMM_WORLD, 1);
       }
       currentpolyco->setTime(startmjd, double(startseconds + procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[0] + double(procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[1])/1000000000.0)/86400.0);
     }
@@ -367,19 +402,23 @@ void Core::loopprocess(int threadid)
     //if the configuration changes from this segment to the next, change our setup accordingly
     if(procslots[numprocessed%RECEIVE_RING_LENGTH].configindex != lastconfigindex)
     {
-      cout << "Core " << mpiid << " threadid " << threadid << ": changing config to " << procslots[numprocessed%RECEIVE_RING_LENGTH].configindex << endl;
+      sprintf(message, "CORE %d threadid %d changing config to %d", mpiid, threadid, procslots[numprocessed%RECEIVE_RING_LENGTH].configindex);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
       updateconfig(lastconfigindex, procslots[numprocessed%RECEIVE_RING_LENGTH].configindex, threadid, startblock, numblocks, numpolycos, pulsarbin, modes, polycos, false, &bins);
-      cout << "Core " << mpiid << " threadid " << threadid << ": config changed successfully - pulsarbin is now " << pulsarbin << endl;
+      sprintf(message, "CORE %d threadid %d config changed successfully - pulsarbin is now %d", mpiid, threadid, pulsarbin);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
       createPulsarAccumSpace(pulsaraccumspace, procslots[numprocessed%RECEIVE_RING_LENGTH].configindex, lastconfigindex);
       lastconfigindex = procslots[numprocessed%RECEIVE_RING_LENGTH].configindex;
     }
   }
 
   //fallen out of loop, so must be finished.  Unlock held mutex
-//  cout << "PROCESS " << mpiid << "/" << threadid << " process thread about to free resources and exit" << endl;
   perr = pthread_mutex_unlock(&(procslots[numprocessed % RECEIVE_RING_LENGTH].slotlocks[threadid]));
   if (perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << (numprocessed)%RECEIVE_RING_LENGTH << endl;;
+  {
+    sprintf(message, "CORE %d threadid %d error trying unlock mutex %d", mpiid, threadid, (numprocessed)%RECEIVE_RING_LENGTH);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+  }
 
   //free resources
   for(int j=0;j<numdatastreams;j++)
@@ -410,13 +449,15 @@ void Core::loopprocess(int threadid)
   }
   vectorFree(threadresults);
 
-  cout << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
+  sprintf(message, "PROCESS %d/%d process thread exiting!!!", mpiid, threadid);
+  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 }
 
 void Core::receivedata(int index, bool * terminate)
 {
   MPI_Status mpistatus;
   int perr;
+  char message[128];
 
   if(*terminate)
     return; //don't try to read, we've already finished
@@ -426,7 +467,6 @@ void Core::receivedata(int index, bool * terminate)
   if(mpistatus.MPI_TAG == CR_TERMINATE)
   {
     *terminate = true;
-//    cout << "Core " << mpiid << " has received a terminate signal!!!" << endl;
     procslots[index].keepprocessing = false;
     return; //note return here!!!
   }
@@ -435,12 +475,14 @@ void Core::receivedata(int index, bool * terminate)
   currentconfigindex = config->getConfigIndex(procslots[index].offsets[0]);
   if(procslots[index].configindex != currentconfigindex)
   {
-    cout << "Config has changed! Old config: " << procslots[index].configindex << ", new config " << currentconfigindex << endl;
+    sprintf(message, "Config has changed! Old config: %d new config %d", procslots[index].configindex, currentconfigindex);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
     procslots[index].configindex = currentconfigindex;
     if(procslots[index].configindex < 0)
     {
-      cerr << "Error - core received a request to process data from time " << procslots[index].offsets[0] << " which does not have a config - aborting!!!" << endl;
-      exit(1);
+      sprintf(message, "Core received a request to process data from time %d which does not have a config - aborting!!!", procslots[index].offsets[0]);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+      MPI_Abort(MPI_COMM_WORLD, 1);
     }
     procslots[index].resultlength = config->getResultLength(currentconfigindex);
     procslots[index].numchannels = config->getNumChannels(currentconfigindex);
@@ -468,11 +510,17 @@ void Core::receivedata(int index, bool * terminate)
   {
     perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[i]));
     if(perr != 0)
-      cerr << "CORE " << mpiid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;;
+    {
+      sprintf(message, "CORE %d error trying lock mutex %d", mpiid, (index+1)%RECEIVE_RING_LENGTH);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    }
 
     perr = pthread_mutex_unlock(&(procslots[index].slotlocks[i]));
     if(perr != 0)
-      cerr << "CORE " << mpiid << " error trying unlock mutex " << index;
+    {
+      sprintf(message, "CORE %d error trying unlock mutex %d", mpiid, index);
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    }
   }
 }
 
@@ -486,6 +534,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   cf32 * vis1;
   cf32 * vis2;
   bool writecrossautocorrs;
+  char message[128];
 
   writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
   maxproducts = config->getMaxProducts();
@@ -502,7 +551,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   //zero the results for this slot, for this thread
   status = vectorZero_cf32(threadresults, procslots[index].resultlength);
   if(status != vecNoErr)
-    cerr << "Error trying to zero threadresults!!!" << endl;
+    difxMessageSendDifxAlert("Error trying to zero threadresults!!!", DIFX_ALERT_LEVEL_SEVERE);
 
   //process each FFT chunk in turn
   for(int i=startblock;i<startblock+numblocks;i++)
@@ -552,7 +601,10 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             //multiply into scratch space
             status = vectorMul_cf32(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, k, p)), m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, k, p)), pulsarscratchspace, procslots[index].numchannels+1);
             if(status != vecNoErr)
-              cerr << "Error trying to xmac baseline " << j << " frequency " << k << " polarisation product " << p << ", status " << status << endl;
+	    {
+	      sprintf(message, "Error trying to xmac baseline %d freq %d pol product %d  status=%d", j, k, p, status);
+	      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+	    }
 
             //if scrunching, add into temp accumulate space, otherwise add into normal space
             if(procslots[index].scrunchoutput)
@@ -581,7 +633,10 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             //not pulsar binning, so this is nice and simple - just cross multiply accumulate
             status = vectorAddProduct_cf32(m1->getFreqs(config->getBDataStream1BandIndex(procslots[index].configindex, j, k, p)), m2->getConjugatedFreqs(config->getBDataStream2BandIndex(procslots[index].configindex, j, k, p)), &(threadresults[resultindex]), procslots[index].numchannels+1);
             if(status != vecNoErr)
-              cerr << "Error trying to xmac baseline " << j << " frequency " << k << " polarisation product " << p << ", status " << status << endl;
+	    {
+	      sprintf(message, "Error trying to xmac baseline %d freq %d pol product %d  status=%d", j, k, p, status);
+	      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+	    }
             threadresults[resultindex+nyquistchannel].im += dsweights[ds1index]*dsweights[ds2index];
             resultindex += procslots[index].numchannels+1;
           }
@@ -623,15 +678,15 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
               //Scale the accumulation space, and scrunch it into the results vector
               status = vectorMulC_f32_I((f32)(binweights[l]), (f32*)(pulsaraccumspace[i][j][k][l]), 2*procslots[index].numchannels+2);
               if(status != vecNoErr)
-                cerr << "Error trying to scale for scrunch!!!" << endl;
+		difxMessageSendDifxAlert("Error trying to scale for scrunch!!!", DIFX_ALERT_LEVEL_SEVERE);
               status = vectorAdd_cf32_I(pulsaraccumspace[i][j][k][l], &(threadresults[resultindex]), procslots[index].numchannels+1);
               if(status != vecNoErr)
-                cerr << "Error trying to accumulate for scrunch!!!" << endl;
+		difxMessageSendDifxAlert("Error trying to accumulate for scrunch!!!", DIFX_ALERT_LEVEL_SEVERE);
   
               //zero the accumulation space for next time
               status = vectorZero_cf32(pulsaraccumspace[i][j][k][l], procslots[index].numchannels+1);
               if(status != vecNoErr)
-                cerr << "Error trying to zero pulsaraccumspace!!!" << endl;
+		difxMessageSendDifxAlert("Error trying to zero pulsaraccumspace!!!", DIFX_ALERT_LEVEL_SEVERE);
             }
             //store the correct weight
             threadresults[resultindex + nyquistchannel].im = baselineweight;
@@ -647,7 +702,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
               //Scale the bin
               status = vectorMulC_f32_I((f32)(binweights[k]), (f32*)(&(threadresults[resultindex])), 2*procslots[index].numchannels+2);
               if(status != vecNoErr)
-                cerr << "Error trying to scale pulsar binned (non-scrunched) results!!!" << endl;
+		difxMessageSendDifxAlert("Error trying to scale pulsar binned (non-scrunched) results!!!", DIFX_ALERT_LEVEL_SEVERE);
               if(k==0)
                 //renormalise the weight
                 threadresults[resultindex + nyquistchannel].im /= binweights[k];
@@ -662,12 +717,15 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   //lock the thread "copy" lock, meaning we're the only one adding to the result array
   perr = pthread_mutex_lock(&(procslots[index].copylock));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock copy mutex!!!" << endl;
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying lock copy mutex!!!", mpiid, threadid);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+  }
 
   //copy the baseline results
   status = vectorAdd_cf32_I(threadresults, procslots[index].results, resultindex);
   if(status != vecNoErr)
-    cerr << "Error trying to add thread results to final results!!!" << endl;
+    difxMessageSendDifxAlert("Error trying to add thread results to final results!!!", DIFX_ALERT_LEVEL_SEVERE);
 
   //copy the autocorrelations
   for(int j=0;j<numdatastreams;j++)
@@ -678,7 +736,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       //put autocorrs in resultsbuffer
       status = vectorAdd_cf32_I(modes[j]->getAutocorrelation(false, k), &procslots[index].results[resultindex], procslots[index].numchannels+1);
       if(status != vecNoErr)
-        cerr << "Error copying autocorrelations" << endl;
+        difxMessageSendDifxAlert("Error copying autocorrelations", DIFX_ALERT_LEVEL_SEVERE);
       resultindex += procslots[index].numchannels+1;
     }
     if(writecrossautocorrs && maxproducts > 1) //want the cross-polarisation autocorrs as well
@@ -688,7 +746,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         //put autocorrs in resultsbuffer
         status = vectorAdd_cf32_I(modes[j]->getAutocorrelation(true, k), &procslots[index].results[resultindex], procslots[index].numchannels+1);
         if(status != vecNoErr)
-          cerr << "Error copying cross-polar autocorrelations" << endl;
+          difxMessageSendDifxAlert("Error copying cross-polar autocorrelations", DIFX_ALERT_LEVEL_SEVERE);
         resultindex += procslots[index].numchannels+1;
       }
     }
@@ -700,17 +758,27 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   //unlock the copy lock
   perr = pthread_mutex_unlock(&(procslots[index].copylock));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock copy mutex!!!" << endl;
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying unlock copy mutex!!!", mpiid, threadid);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+  }
 
   //grab the next lock
   perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[threadid]));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH;
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying lock copy mutex %d", mpiid, threadid, (index+1)%RECEIVE_RING_LENGTH);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+  }
 
   //unlock the one we had
   perr = pthread_mutex_unlock(&(procslots[index].slotlocks[threadid]));
   if(perr != 0)
-    cerr << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index; 
+  {
+    sprintf(message, "PROCESSTHREAD %d/%d error trying ulock copy mutex %d", mpiid, threadid, index);
+    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+  }
+
   delete [] dsweights;
 }
 
@@ -757,7 +825,7 @@ void Core::createPulsarAccumSpace(cf32***** pulsaraccumspace, int newconfigindex
             pulsaraccumspace[i][j][k][l] = vectorAlloc_cf32(config->getNumChannels(newconfigindex) + 1);
             status = vectorZero_cf32(pulsaraccumspace[i][j][k][l], config->getNumChannels(newconfigindex)+1);
             if(status != vecNoErr)
-              cerr << "Error trying to zero pulsaraccumspace!!!" << endl;
+	      difxMessageSendDifxAlert("Error trying to zero pulsaraccumspace!!!", DIFX_ALERT_LEVEL_SEVERE);
           }
         }
       }
@@ -808,7 +876,11 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
       //if we are not the first thread, create a copy of the Polyco for our use
       polycos[i] = (threadid==0)?currentpolycos[i]:new Polyco(*currentpolycos[i]);
     }
-    cout << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
+    {
+      char message[80];
+      sprintf(message, "CORE %d thread %d polycos created/copied successfully!");
+      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+    }
 
     //create the bins array
     *bins = new s32*[maxfreqs];

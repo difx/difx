@@ -33,9 +33,7 @@
 
 #include "mk5.h"
 
-#ifdef HAVE_DIFXMESSAGE
 #include <difxmessage.h>
-#endif
 
 class NativeMk5DataStream : public Mk5DataStream
 {
@@ -48,9 +46,7 @@ public:
 
 protected:
 	void moduleToMemory(int buffersegment);
-#ifdef HAVE_DIFXMESSAGE
 	int sendMark5Status(enum Mk5State state, int scanNumber, long long position, double dataMJD, float rate);
-#endif
 
 private:
 #ifdef HAVE_XLRAPI_H
@@ -60,10 +56,7 @@ private:
 	SSHANDLE xlrDevice;
 #endif
 
-#ifdef HAVE_DIFXMESSAGE
 	DifxMessageMk5Status mk5status;
-#endif
-
 	int executeseconds;
 	int invalidtime;
 	long long invalidstart;
