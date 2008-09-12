@@ -12,11 +12,8 @@ from time import asctime
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20080618'
-
-defaultDifxMessagePort = 50200
-defaultDifxMessageGroup = '224.2.2.1'
+version = '0.2'
+verdate = '20080912'
 
 
 class Parser:
@@ -41,11 +38,11 @@ class Parser:
         del self._parser # get rid of circular references
 
     def start(self, tag, attrs):
-        if tag == 'difxError':
+        if tag == 'difxAlert':
 		self.ok = True
 
     def end(self, tag):
-        if tag == 'errorMessage' and self.ok:
+        if tag == 'alertMessage' and self.ok:
 		self.message = self.tmp
 	if tag == 'severity':
 		self.severity = int(self.tmp)
@@ -67,12 +64,14 @@ def run():
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
-		port = defaultDifxMessagePort
+		print 'DIFX_MESSAGE_PORT needs to be defined'
+		exit(0)
 	else:
 		port = int(port)
 	group = getenv('DIFX_MESSAGE_GROUP')
 	if group == None:
-		group = defaultDifxMessageGroup
+		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		exit(0)
 
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
