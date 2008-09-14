@@ -160,15 +160,14 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 
 	if(F->fetchsize == 0)	/* finish some initialization */
 	{
-		nf = (F->buffersize-ms->frameoffset)/ms->framebytes;
 		nframes = (F->buffersize)/ms->framebytes; 
 		F->fetchsize = nframes*ms->framebytes;
+		nf = (F->fetchsize-ms->frameoffset)/ms->framebytes;
 		F->end = F->buffer + F->fetchsize;
 		F->last = F->end;
 
-/* FIXME -- there is still an issue here -- is the 0 below a 1? */
-
 		/* back up stream a bit to load whole frames */
+
 		lseek64(F->in, 
 			F->offset + ms->frameoffset + nf*ms->framebytes, 
 			SEEK_SET);

@@ -279,7 +279,6 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 	{
 		if(data[t] != 0xFFFFFFFFUL)
 		{
-//			printf("<%s %x %x %d>", ms->streamname, data[t], data[t+ntrack], t);
 			e++;
 		}
 	}

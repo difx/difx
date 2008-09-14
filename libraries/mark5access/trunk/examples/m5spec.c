@@ -110,10 +110,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		{
 			break;
 		}
-		else if(status < chunk)
-		{
-			continue;
-		}
 		else
 		{
 			total += chunk;
