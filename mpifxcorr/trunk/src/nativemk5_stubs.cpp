@@ -9,10 +9,7 @@
 //
 //============================================================================
 #include <mpi.h>
-#include <string.h>
-#include <stdlib.h>
 #include "nativemk5.h"
-#include "config.h"
 #include "alert.h"
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
@@ -26,25 +23,20 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 
 NativeMk5DataStream::~NativeMk5DataStream()
 {
-	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 {
-	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::openfile(int configindex, int fileindex)
 {
-	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::loopfileread()
 {
-	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 
 void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
-	MPI_Abort(MPI_COMM_WORLD, 1);
 }

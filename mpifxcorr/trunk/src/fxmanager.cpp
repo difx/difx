@@ -32,7 +32,9 @@
 #ifdef HAVE_RPFITS
 #include <RPFITS.h>
 #endif
+#ifdef HAVE_DIFXMESSAGE
 #include <difxmessage.h>
+#endif
 #include "alert.h"
 
 //includes for socket stuff - for monitoring
@@ -66,7 +68,9 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
 
   cinfo << "STARTING " << PACKAGE_NAME << " version " << VERSION << endl;
 
+#ifdef HAVE_DIFXMESSAGE
   difxMessageSendDifxStatus(DIFX_STATE_STARTING, "Version " VERSION, 0.0, 0, 0);
+#endif
 
   /* set the PIPE signal handler to 'catch_pipe' */
   signal(SIGPIPE, catch_pipe);
@@ -193,6 +197,7 @@ FxManager::~FxManager()
   delete [] islocked;
   delete [] bufferlock;
 
+#ifdef HAVE_DIFXMESSAGE
   if(terminatenow)
   {
     difxMessageSendDifxStatus(DIFX_STATE_TERMINATED, "", 0.0, 0, 0);
@@ -201,6 +206,7 @@ FxManager::~FxManager()
   {
     difxMessageSendDifxStatus(DIFX_STATE_DONE, "", 0.0, 0, 0);
   }
+#endif
 }
 
 void interrupthandler(int sig)
@@ -211,6 +217,7 @@ void interrupthandler(int sig)
 
 void FxManager::terminate()
 {
+#ifdef HAVE_DIFXMESSAGE
   if(terminatenow)
   {
     difxMessageSendDifxStatus(DIFX_STATE_TERMINATING, "", 0.0, 0, 0);
@@ -219,6 +226,7 @@ void FxManager::terminate()
   {
     difxMessageSendDifxStatus(DIFX_STATE_ENDING, "", 0.0, 0, 0);
   }
+#endif
   cinfo << "FXMANAGER: Sending terminate signals" << endl;
   for(int i=0;i<numcores;i++)
     MPI_Send(senddata, 1, MPI_INT, coreids[i], CR_TERMINATE, return_comm);

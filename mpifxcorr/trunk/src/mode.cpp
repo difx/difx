@@ -20,12 +20,13 @@
 //
 //============================================================================
 #include <mpi.h>
+#include <iomanip>
 #include "mode.h"
 #include "math.h"
 #include "architecture.h"
 #include "datastream.h"
 #include "mpifxcorr.h"
-#include <iomanip>
+#include "alert.h"
 
 //using namespace std;
 const float Mode::TINY = 0.000000001;

@@ -27,15 +27,14 @@
 #include <sys/time.h>
 #include "config.h"
 #include "nativemk5.h"
-#include <difxmessage.h>
+#include "alert.h"
+
 
 #define FILL_PATTERN 0x11223344
 
-#define u32 uint32_t
-
 static void dirCallback(int scan, int nscan, int status, void *data)
 {
-	char progressSymbols[] = "@?!.";
+#ifdef HAVE_DIFXMESSAGE
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
@@ -43,15 +42,18 @@ static void dirCallback(int scan, int nscan, int status, void *data)
 	mk5status->position = nscan;
 	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
 	difxMessageSendMark5Status(mk5status);
-
+#else
+	char progressSymbols[] = "@?!.";
+	
 	if(status == 3)
 	{
-		printf(".");
+		cout << "." << flush;
 	}
 	else
 	{
-		printf("%c[%d]", progressSymbols[status], scan);
+		cout << progressSymbols[status] << "[" << scan << "]" << flush;
 	}
+#endif
 }
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum, 
@@ -67,29 +69,30 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 
 	executeseconds = conf->getExecuteSeconds();
 
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_OPENING, 0, 0, 0.0, 0.0);
+#endif
 
-	cinfo << "Opening Streamstor [" << mpiid << "]" << endl;
+	cinfo << "Opening Streamstor" << endl;
 	xlrRC = XLROpen(1, &xlrDevice);
   
   	if(xlrRC == XLR_FAIL)
 	{
 		XLRClose(xlrDevice);
-		cfatal << "Error opening Streamstor device [" << mpiid << "] ";
+		cfatal << "Error opening Streamstor device";
 		cfatal << "Do you have permission +rw for /dev/windrvr6?" << endl;
-		difxMessageSendDifxError("Failure opening Streamstor device", 0);
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 	else
 	{
-		cerr << "Success opening Streamstor device [" << mpiid << "]" <<  endl;
+		cinfo << "Success opening Streamstor device" <<  endl;
 	}
 
 	// FIXME -- for non-bank-mode operation, need to look at the modules to determine what to do here.
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		cerr << "Error setting bank mode" << endl;
+		cerror << "Error setting bank mode" << endl;
 	}
 
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
@@ -103,7 +106,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	}
 	if(xlrRC != XLR_SUCCESS)
 	{
-		cerr << "Error setting data replacement mode / fill pattern" << endl;
+		cerror << "Error setting data replacement mode / fill pattern" << endl;
 	}
 
 	module.nscans = -1;
@@ -114,7 +117,9 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	invalidtime = 0;
 	invalidstart = 0;
 	newscan = 0;
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
+#endif
 }
 
 NativeMk5DataStream::~NativeMk5DataStream()
@@ -123,7 +128,9 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	{
 		delete_mark5_stream(mark5stream);
 	}
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
+#endif
 	XLRClose(xlrDevice);
 }
 
@@ -137,7 +144,6 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	long long n;
 	int doUpdate = 0;
 	char *mk5dirpath;
-	char message[64];
 	char formatname[64];
 	int nbits, ninputbands, framebytes;
 	Configuration::dataformat format;
@@ -166,7 +172,9 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 	startmjd = corrstartday + corrstartseconds/86400.0;
 
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GETDIR, 0, 0, startmjd, 0.0);
+#endif
 
 	if(module.nscans < 0)
 	{
@@ -179,17 +187,17 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		if(v < 0)
 		{
-			cerr << "Module " << 
+			cerror << "Module " << 
 				datafilenames[configindex][fileindex] << 
 				" not found in unit - aborting!!!" << endl;
-			sprintf(message, "Module %s not found in unit", datafilenames[configindex][fileindex].c_str());
-			difxMessageSendDifxError(message, 0);
 			dataremaining = false;
 			return;
 		}
 	}
 
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GOTDIR, 0, 0, startmjd, 0.0);
+#endif
 
 	// find starting position
   
@@ -202,11 +210,13 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		} while(scan-module.scans < module.nscans && scan->duration < 0.1);
 		if(scan-module.scans >= module.nscans)
 		{
-			cerr << "No more data on module [" << mpiid << "]" << endl;
+			cwarn << "No more data on module [" << mpiid << "]" << endl;
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
+#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+#endif
 			return;
 		}
 		scanns = int(1000000000.0*scan->framenuminsecond/scan->framespersecond + 0.1);
@@ -221,11 +231,13 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		if(readseconds > executeseconds)
 		{
-			cerr << "No more data for project on module [" << mpiid << "]" << endl;
+			cwarn << "No more data for project on module [" << mpiid << "]" << endl;
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
+#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+#endif
 			return;
 		}
 	}
@@ -269,7 +281,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		if(i >= module.nscans || scan == 0)
 		{
-			cerr << "No valid data found - aborting\n";
+			cerror << "No valid data found - aborting\n";
 			dataremaining = false;
 			sendMark5Status(MARK5_STATE_NODATA, 0, 0, 0.0, 0.0);
 			return;
@@ -278,7 +290,9 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		cinfo << "Scan info. start = " << scan->start << " off = " << scan->frameoffset << " size = " << scan->framebytes << endl;
 	}
 
+#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GOTDIR, scan-module.scans+1, readpointer, scan->mjd+(scan->sec+scanns*1.e-9)/86400.0, 0.0);
+#endif
 
 	newscan = 1;
 
@@ -345,7 +359,6 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	static int now = 0;
 	static long long lastpos = 0;
 	struct timeval tv;
-	char message[1000];
 	int mjd, sec, sec2;
 	double ns, ms;
 
@@ -397,9 +410,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		{
 			xlrEC = XLRGetLastError();
 			XLRGetErrorMessage(errStr, xlrEC);
-			cinfo << "XLRReadImmed returns FAIL.  Error msg: " << errStr << endl;
-			sprintf(message, "Read error at position=%lld, length=%d, error=%s", readpointer, bytes, errStr);
-			difxMessageSendDifxError(message, 0);
+			cerror << "XLRReadImmed returns FAIL." << endl;
+			cerror << "Read error at position=" << readpointer << ", length=" << bytes << ", error=" << errStr;
 			break;
 		}
 
@@ -413,13 +425,9 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			}
 			else if(xlrRS == XLR_READ_ERROR)
 			{
-				cerr << "XXX:" << a << ":" << b << "  rp = " << readpointer << endl;
 				xlrEC = XLRGetLastError();
 				XLRGetErrorMessage(errStr, xlrEC);
-				cerr << "NativeMk5DataStream " << mpiid << 
-					" XLRReadData error: " << errStr << endl; 
-				sprintf(message, "Read error at position=%lld, length=%d, error=%s", readpointer, bytes, errStr);
-				difxMessageSendDifxError(message, 0);
+				cerror << "NativeMk5 " << mpiid << " XLRReadData error: " << errStr << " position=" << readpointer << " length=" << bytes << endl; 
 
 				dataremaining = false;
 				keepreading = false;
@@ -465,10 +473,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 
 	if(xlrRS != XLR_READ_COMPLETE)
 	{
-		cerr << "Native Mark5 Error at:" << a << ":" << b << "  rp = " << readpointer << endl;
-		cerr << "[" << mpiid << "] Waited 10 seconds for a read and gave up" << endl;
-		sprintf(message, "Read error at position=%lld, length=%d.  Dropping out.", readpointer, bytes);
-		difxMessageSendDifxError(message, 0);
+		cerror << "NativeMk5: Waited 10 seconds for a read and gave up.  position=" << readpointer << " length=" << bytes << endl;
 		dataremaining = false;
 		keepreading = false;
 		bufferinfo[buffersegment].validbytes = 0;
@@ -489,12 +494,10 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		invalidtime++;
 		invalidstart = readpointer;
 		bufferinfo[buffersegment].validbytes = 0;
-		cerr << "[" << mpiid << "] Sync error: ("<<sec<<","<<ns<<") != ("<<sec2<<","<<readnanoseconds<<")"<<endl;
-		printf("sync error: %d %f %d\n", mpiid, ns, readnanoseconds);
-		if(invalidtime % 16 == 0)
+		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
+		if((invalidtime & (invalidtime-1)) == 0)
 		{
-			sprintf(message, "%d consecutive sync errors starting at readpos %lld.", invalidtime, invalidstart);
-			difxMessageSendDifxError(message, 0);
+			cerror << invalidtime << "consecutive sync errors starting at readpos " << invalidstart << " (" << sec << "," << "ns) != (" << sec2 << "," << readnanoseconds << ")" << endl ;
 		}
 		// FIXME -- if invalidtime > threshhold, look for sync again
 	}
@@ -537,7 +540,9 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				rate = invalidtime;
 			}
 
+#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(state, scan-module.scans+1, readpointer, fmjd, rate);
+#endif
 		}
 		lastpos = readpointer + bytes;
 	}
@@ -564,7 +569,6 @@ void NativeMk5DataStream::loopfileread()
 {
   int perr;
   int numread = 0;
-  char message[1024];
 
   cinfo << "NM5 : loopfileread starting" << endl;
 
@@ -574,11 +578,11 @@ void NativeMk5DataStream::loopfileread()
   moduleToMemory(numread++);
   perr = pthread_mutex_lock(&(bufferlock[numread]));
   if(perr != 0)
-    cerr << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
+    csevere << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
-    cerr << "NativeMk5DataStream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
+    csevere << "NativeMk5DataStream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
   moduleToMemory(numread++);
 
   lastvalidsegment = (numread-1)%numdatasegments;
@@ -591,12 +595,12 @@ void NativeMk5DataStream::loopfileread()
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
-        cerr << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+        csevere << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-        cerr << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+        csevere << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
 
       //do the read
       moduleToMemory(lastvalidsegment);
@@ -636,15 +640,15 @@ void NativeMk5DataStream::loopfileread()
   }
   perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
   if(perr != 0)
-    cerr << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+    csevere << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
 
   cinfo << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
+#ifdef HAVE_DIFXMESSAGE
 int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long long position, double dataMJD, float rate)
 {
 	int v = 0;
-	char message[1000];
 	S_BANKSTATUS A, B;
 	XLR_RETURN_CODE xlrRC;
 
@@ -748,3 +752,4 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 
 	return v;
 }
+#endif

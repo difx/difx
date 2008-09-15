@@ -176,7 +176,7 @@ int main(int argc, char *argv[])
   {
     if(!(argv[2][0]=='-' && argv[2][1]=='M'))
     {
-      cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+      cfatal << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
@@ -201,7 +201,7 @@ int main(int argc, char *argv[])
   }
   else if(argc != 2)
   {
-    cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+    cfatal << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
-    cerr << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
+    cfatal << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -222,7 +222,9 @@ int main(int argc, char *argv[])
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
   if(numcores < 1)
   {
-    cerr << "Error - must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!!!" << endl;
+    cfatal << "Error - must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!!!" << endl;
+    MPI_Barrier(world);
+    MPI_Finalize();
     return EXIT_FAILURE;
   }
 

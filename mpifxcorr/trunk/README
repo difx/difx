@@ -6,6 +6,7 @@ aclocal
 autoconf
 autoheader
 automake -a
-./configure --prefix=<prefixdir>  CXX=<openmpiprefix>/bin/mpicxx
+./configure --prefix=${DIFX_PREFIX}  CXX=${OPENMPI_PREFIX}/bin/mpicxx
 make
+# (su root?)
 make install
