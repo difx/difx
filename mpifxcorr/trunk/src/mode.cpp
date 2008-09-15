@@ -48,7 +48,10 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
   //now do the rest of the initialising
   samplesperblock = int(bandwidth*2/blockclock);
   if(samplesperblock == 0)
-    cerr << "Error!!! Samplesperblock is < 1, current implementation cannot handle this situation.  Aborting!" << endl;
+  {
+    cfatal << "Error!!! Samplesperblock is < 1, current implementation cannot handle this situation.  Aborting!" << endl;
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   bytesperblocknumerator = (numinputbands*samplesperblock*numbits*decimationfactor)/8;
   if(bytesperblocknumerator == 0)
   {
@@ -90,13 +93,13 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
 
   if(postffringerot) //initialise the specific structures
   {
-    cerr << "Warning - post-f fringe rotation not yet tested!!!" << endl;
+    cwarn << "Warning - post-f fringe rotation not yet tested!!!" << endl;
     status = vectorInitFFTR_f32(&pFFTSpecR, order, flag, hint);
     if(status != vecNoErr)
-      cerr << "Error in FFT initialisation!!!" << status << endl;
+      csevere << "Error in FFT initialisation!!!" << status << endl;
     status = vectorGetFFTBufSizeR_f32(pFFTSpecR, &fftbuffersize);
     if(status != vecNoErr)
-      cerr << "Error in FFT buffer size calculation!!!" << status << endl;
+      csevere << "Error in FFT buffer size calculation!!!" << status << endl;
   }
   else
   {
@@ -110,10 +113,10 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
     fringedelayarray = vectorAlloc_f64(twicenumchannels);
     status = vectorInitFFTC_f32(&pFFTSpecC, order, flag, hint);
     if(status != vecNoErr)
-      cerr << "Error in FFT initialisation!!!" << status << endl;
+      csevere << "Error in FFT initialisation!!!" << status << endl;
     status = vectorGetFFTBufSizeC_f32(pFFTSpecC, &fftbuffersize);
     if(status != vecNoErr)
-      cerr << "Error in FFT buffer size calculation!!!" << status << endl;
+      csevere << "Error in FFT buffer size calculation!!!" << status << endl;
     //zero the Nyquist channel for every band - that is where the weight will be stored on all
     //baselines (the imag part) so the datastream channel for it must be zeroed
     for(int i=0;i<numinputbands;i++)
@@ -162,9 +165,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
 Mode::~Mode()
 {
   int status;
-#ifndef QUIET
-  cout << "Starting a mode destructor" << endl;
-#endif
+
+  cdebug << "Starting a mode destructor" << endl;
 
   for(int i=0;i<numinputbands;i++)
   {
@@ -182,7 +184,7 @@ Mode::~Mode()
   {
     status = vectorFreeFFTR_f32(pFFTSpecR);
     if(status != vecNoErr)
-      cerr << "Error in freeing FFT spec!!!" << status << endl;
+      csevere << "Error in freeing FFT spec!!!" << status << endl;
   }
   else
   {
@@ -196,7 +198,7 @@ Mode::~Mode()
     vectorFree(fringedelayarray);
     status = vectorFreeFFTC_f32(pFFTSpecC);
     if(status != vecNoErr)
-      cerr << "Error in freeing FFT spec!!!" << status << endl;
+      csevere << "Error in freeing FFT spec!!!" << status << endl;
   }
   vectorFree(lookup);
   vectorFree(linearunpacked);
@@ -216,9 +218,7 @@ Mode::~Mode()
   }
   delete [] autocorrelations;
 
-#ifndef QUIET
-  cout << "Ending a mode destructor" << endl;
-#endif
+  cdebug << "Ending a mode destructor" << endl;
 }
 
 float Mode::unpack(int sampleoffset)
@@ -239,7 +239,7 @@ float Mode::unpack(int sampleoffset)
   {
     status = vectorCopy_s16(&lookup[packed[i]*samplesperlookup], &linearunpacked[i*samplesperlookup], samplesperlookup);
     if(status != vecNoErr) {
-      cerr << "Error in lookup for unpacking!!!" << status << endl;
+      csevere << "Error in lookup for unpacking!!!" << status << endl;
       return 0;
     }
   }
@@ -247,7 +247,7 @@ float Mode::unpack(int sampleoffset)
   //split the linear unpacked array into the separate subbands
   status = vectorSplitScaled_s16f32(&(linearunpacked[stepin*numinputbands]), unpackedarrays, numinputbands, unpacksamples);
   if(status != vecNoErr) {
-    cerr << "Error in splitting linearunpacked!!!" << status << endl;
+    csevere << "Error in splitting linearunpacked!!!" << status << endl;
     return 0;
   }
 
@@ -269,10 +269,10 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
     {
       status = vectorZero_cf32(fftoutputs[i], numchannels+1);
       if(status != vecNoErr)
-        cerr << "Error trying to zero fftoutputs when data is bad!" << endl;
+        csevere << "Error trying to zero fftoutputs when data is bad!" << endl;
       status = vectorZero_cf32(conjfftoutputs[i], numchannels+1);
       if(status != vecNoErr)
-        cerr << "Error trying to zero fftoutputs when data is bad!" << endl;
+        csevere << "Error trying to zero fftoutputs when data is bad!" << endl;
     }
     return 0.0; //don't process crap data
   }
@@ -284,7 +284,7 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
   //if we need to, unpack some more data - first check to make sure the pos is valid at all
   if(nearestsample < -1 || (((nearestsample + twicenumchannels)/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator > datalengthbytes)
   {
-    cerr << "MODE error - trying to process data outside range - aborting!!! nearest sample was " << nearestsample << ", the max bytes should be " << datalengthbytes << ".  bufferseconds was " << bufferseconds << ", offsetseconds was " << offsetseconds << ", buffermicroseconds was " << buffermicroseconds << ", offsetns was " << offsetns << ", index was " << index << ", average delay was " << averagedelay << endl;
+    cerror << "MODE error - trying to process data outside range - aborting!!! nearest sample was " << nearestsample << ", the max bytes should be " << datalengthbytes << ".  bufferseconds was " << bufferseconds << ", offsetseconds was " << offsetseconds << ", buffermicroseconds was " << buffermicroseconds << ", offsetns was " << offsetns << ", index was " << index << ", average delay was " << averagedelay << endl;
     return 0.0;
   }
   if(nearestsample == -1)
@@ -315,11 +315,11 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
       //multiply the offset by the rate
       status = vectorMulC_f64(xoffset, rate, xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in linearinterpolate, multiplication" << endl;
+        csevere << "Error in linearinterpolate, multiplication" << endl;
       //add the starting delay
       status = vectorAddC_f64_I(delays[index] - integerdelay, xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in linearinterpolate, final offset add!!!" << endl;
+        csevere << "Error in linearinterpolate, final offset add!!!" << endl;
     }
     else //we're doing quadratic interpolation
     {
@@ -330,19 +330,19 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
       //change x to x + b/a
       status = vectorAddC_f64(xoffset, distance + toaddfirst, xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in quadinterpolate, offset add!!!" << endl;
+        csevere << "Error in quadinterpolate, offset add!!!" << endl;
       //square
       status = vectorSquare_f64_I(xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in quadinterpolate, xval squaring" << endl;
+        csevere << "Error in quadinterpolate, xval squaring" << endl;
       //multiply by a
       status = vectorMulC_f64_I(a, xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in quadinterpolate, multiplication" << endl;
+        csevere << "Error in quadinterpolate, multiplication" << endl;
       //add c - b^2/4a
       status = vectorAddC_f64_I(finaloffset, xval, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in quadinterpolate, final offset add!!!" << endl;
+        csevere << "Error in quadinterpolate, final offset add!!!" << endl;
     }
   }
 
@@ -354,7 +354,7 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
     currentchannelfreqptr = (config->getDLowerSideband(configindex, datastreamindex, i))?lsbchannelfreqs:channelfreqs;
     status = vectorMulC_f32(currentchannelfreqptr, fracsampleerror - freqclockoffsets[i], fracmult, numchannels + 1);
     if(status != vecNoErr)
-      cerr << "Error in frac sample correction!!!" << status << endl;
+      csevere << "Error in frac sample correction!!!" << status << endl;
 
     lofreq = config->getDFreq(configindex, datastreamindex, i);
     if(postffringerot)
@@ -367,18 +367,18 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
 
       status = vectorAddC_f32_I(phaserotationfloat, fracmult, numchannels+1);
       if(status != vecNoErr)
-        cerr << "Error in post-f phase rotation addition!!!" << status << endl;
+        csevere << "Error in post-f phase rotation addition!!!" << status << endl;
     }
     else //need to work out the time domain modulation
     {
       status = vectorMulC_f64(xval, lofreq, fringedelayarray, twicenumchannels);
       if(status != vecNoErr)
-        cerr << "Error in delay multiplication!!!" << status << endl;
+        csevere << "Error in delay multiplication!!!" << status << endl;
       if(fractionalLoFreq)
       {
           status = vectorAddC_f64_I((lofreq-int(lofreq))*double(integerdelay), fringedelayarray, twicenumchannels);
           if(status != vecNoErr)
-              cerr << "Error in addition of fractional LO contribution to fringe rotation!!!" << status << endl;
+              csevere << "Error in addition of fractional LO contribution to fringe rotation!!!" << status << endl;
       }
 
       //convert to angle in range 0->2pi
@@ -388,18 +388,16 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
       //do the sin/cos
       status = vectorSinCos_f32(rotateargument, sinrotated, cosrotated, twicenumchannels);
       if(status != vecNoErr)
-      {
-        cerr << "Error in sin/cos of rotate argument!!! Status = " << status << endl;
-      }
+        csevere << "Error in sin/cos of rotate argument!!! Status = " << status << endl;
     }
 
     status = vectorSinCos_f32(fracmult, fracmultsin, fracmultcos, numchannels + 1);
     if(status != vecNoErr)
-      cerr << "Error in frac sample correction!!!" << status << endl; 
+      csevere << "Error in frac sample correction!!!" << status << endl; 
 
     status = vectorRealToComplex_f32(fracmultcos, fracmultsin, complexfracmult, numchannels + 1);
     if(status != vecNoErr)
-      cerr << "Error in frac sample correction!!!" << status << endl; 
+      csevere << "Error in frac sample correction!!!" << status << endl; 
 
     for(int j=0;j<numinputbands;j++)
     {
@@ -413,14 +411,14 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
           //do the fft
           status = vectorFFT_RtoC_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), (f32*)fftptr, pFFTSpecR, fftbuffer);
           if(status != vecNoErr)
-            cerr << "Error in FFT!!!" << status << endl;
+            csevere << "Error in FFT!!!" << status << endl;
   
           //fix the lower sideband if required
           if(config->getDLowerSideband(configindex, datastreamindex, i))
           {
             status = vectorConjFlip_cf32(fftptr, fftoutputs[j], numchannels + 1);
             if(status != vecNoErr)
-              cerr << "Error in conjugate!!!" << status << endl;
+              csevere << "Error in conjugate!!!" << status << endl;
           }
         }
         else //doing pre-f fringe rot
@@ -428,15 +426,15 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
           //do the fringe rotation
           status = vectorMul_f32(sinrotated, &(unpackedarrays[j][nearestsample - unpackstartsamples]), sinrotatedoutput, twicenumchannels);
           if(status != vecNoErr)
-            cerr << "Error in sine fringe rotation!!!" << status << endl;
+            csevere << "Error in sine fringe rotation!!!" << status << endl;
           status = vectorMul_f32(cosrotated, &(unpackedarrays[j][nearestsample - unpackstartsamples]), cosrotatedoutput, twicenumchannels);
           if(status != vecNoErr)
-            cerr << "Error in cosine fringe rotation!!!" << status << endl;
+            csevere << "Error in cosine fringe rotation!!!" << status << endl;
 
           //do the fft
           status = vectorFFT_CtoC_f32(cosrotatedoutput, sinrotatedoutput, realfftd, imagfftd, pFFTSpecC, fftbuffer);
           if(status != vecNoErr)
-            cerr << "Error in FFT!!!" << status << endl;
+            csevere << "Error in FFT!!!" << status << endl;
 
           //assemble complex from the real and imaginary
           if(config->getDLowerSideband(configindex, datastreamindex, i)) {
@@ -450,18 +448,18 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
             status = vectorRealToComplex_f32(realfftd, imagfftd, fftoutputs[j], numchannels);
           }
           if(status != vecNoErr)
-            cerr << "Error assembling complex fft result" << endl;
+            csevere << "Error assembling complex fft result" << endl;
         }
 
         //do the frac sample correct (+ fringe rotate if its post-f)
         status = vectorMul_cf32_I(complexfracmult, fftoutputs[j], numchannels + 1);
         if(status != vecNoErr)
-          cerr << "Error in frac sample correction!!!" << status << endl;
+          csevere << "Error in frac sample correction!!!" << status << endl;
 
         //do the conjugation
         status = vectorConj_cf32(fftoutputs[j], conjfftoutputs[j], numchannels + 1);
         if(status != vecNoErr)
-          cerr << "Error in conjugate!!!" << status << endl;
+          csevere << "Error in conjugate!!!" << status << endl;
 
         //updated so that Nyquist channel is not accumulated for either USB or LSB data
         sidebandoffset = 0;
@@ -471,7 +469,7 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
         //do the autocorrelation (skipping Nyquist channel)
         status = vectorAddProduct_cf32(fftoutputs[j]+sidebandoffset, conjfftoutputs[j]+sidebandoffset, autocorrelations[0][j]+sidebandoffset, numchannels);
         if(status != vecNoErr)
-          cerr << "Error in autocorrelation!!!" << status << endl;
+          csevere << "Error in autocorrelation!!!" << status << endl;
 
         //Add the weight in magic location (imaginary part of Nyquist channel)
         autocorrelations[0][j][numchannels*(1-sidebandoffset)].im += dataweight;
@@ -481,13 +479,13 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
     //if we need to, do the cross-polar autocorrelations
     if(calccrosspolautocorrs && count > 1)
     {
-      //cout << "For frequency " << i << ", datastream " << datastreamindex << " has chosen bands " << indices[0] << " and " << indices[1] << endl; 
+      //cinfo << "For frequency " << i << ", datastream " << datastreamindex << " has chosen bands " << indices[0] << " and " << indices[1] << endl; 
       status = vectorAddProduct_cf32(fftoutputs[indices[0]]+sidebandoffset, conjfftoutputs[indices[1]]+sidebandoffset, autocorrelations[1][indices[0]]+sidebandoffset, numchannels);
       if(status != vecNoErr)
-        cerr << "Error in cross-polar autocorrelation!!!" << status << endl;
+        csevere << "Error in cross-polar autocorrelation!!!" << status << endl;
       status = vectorAddProduct_cf32(fftoutputs[indices[1]]+sidebandoffset, conjfftoutputs[indices[0]]+sidebandoffset, autocorrelations[1][indices[1]]+sidebandoffset, numchannels);
       if(status != vecNoErr)
-        cerr << "Error in cross-polar autocorrelation!!!" << status << endl;
+        csevere << "Error in cross-polar autocorrelation!!!" << status << endl;
       //add the weight in magic location (imaginary part of Nyquist channel)
       autocorrelations[1][indices[0]][numchannels*(1-sidebandoffset)].im += dataweight;
       autocorrelations[1][indices[1]][numchannels*(1-sidebandoffset)].im += dataweight;
@@ -510,7 +508,7 @@ void Mode::setDelays(f64 * d)
 {
   int status = vectorCopy_f64(d, delays, delaylength);
   if(status != vecNoErr)
-    cerr << "Error trying to copy delays!!!" << endl;
+    csevere << "Error trying to copy delays!!!" << endl;
     
   dolinearinterp = !quadraticdelayinterp;
     
