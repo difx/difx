@@ -1,5 +1,16 @@
 #!/bin/env python
 
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id$
+# $HeadURL: $
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
+#
+#============================================================================
+
 from string import split, strip, find, upper, lower
 from sys import argv, exit
 from os import popen, getenv
