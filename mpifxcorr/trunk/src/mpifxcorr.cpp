@@ -286,6 +286,6 @@ int main(int argc, char *argv[])
   if(stream) delete stream;
   if(core) delete core;
 
-  cinfo << myID << ": BYE!" << endl;
+  cinfo << "MPI process " << myID << "says BYE!" << endl;
   return EXIT_SUCCESS;
 }

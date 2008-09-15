@@ -131,7 +131,7 @@ bool Visibility::addData(cf32* subintresults)
 
   status = vectorAdd_cf32_I(subintresults, results, resultlength);
   if(status != vecNoErr)
-    csevere << "Error copying results in visibility ID " << visID << endl;
+    csevere << "Error copying results in Vis. " << visID << endl;
   currentsubints++;
 
   return (currentsubints==subintsthisintegration); //are we finished integrating?
@@ -140,7 +140,7 @@ bool Visibility::addData(cf32* subintresults)
 void Visibility::increment()
 {
   int status;
-  cinfo << "VISIBILITY " << visID << " IS INCREMENTING, SINCE CURRENTBLOCKS = " << currentsubints << endl;
+  cinfo << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
@@ -393,7 +393,7 @@ void Visibility::writedata()
   int dumpmjd;
   double dumpseconds;
 
-  cinfo << "Visibility " << visID << " is starting to write out data" << endl;
+  cdebug << "Vis. " << visID << " is starting to write out data" << endl;
 
   dumpmjd = expermjd + (experseconds + currentstartseconds)/86400;
   dumpseconds = double((experseconds + currentstartseconds)%86400) + double((currentstartsamples+integrationsamples/2)/(2000000.0*config->getDBandwidth(currentconfigindex,0,0)));
@@ -631,7 +631,7 @@ void Visibility::writedata()
     }
   }
 
-  cinfo << "Visibility has finished writing data" << endl;
+  cdebug << "Vis. " << visID << " has finished writing data" << endl;
 }
 
 void Visibility::writeascii()

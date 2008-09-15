@@ -300,7 +300,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
   readnanoseconds = int(mark5stream->ns);
-  cinfo << "The frame start day is " << mark5stream->mjd << ", the frame start seconds is " << mark5stream->sec << ", the frame start ns is " << mark5stream->ns << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
+  cinfo << "The frame start is day=" << mark5stream->mjd << ", seconds=" << mark5stream->sec << ", ns=" << mark5stream->ns << ", readseconds=" << readseconds << ", readns=" << readnanoseconds << endl;
 
   //close mark5stream
   delete_mark5_stream(mark5stream);
