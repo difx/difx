@@ -8,7 +8,7 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
+const char version[] = "0.2";
 
 int verbose = 0;
 
@@ -102,6 +102,14 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot set SkipCheckDir\n");
+		XLRClose(xlrDevice);
+		return 0;
+	}
+
+	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		printf("Cannot set BankMode\n");
 		XLRClose(xlrDevice);
 		return 0;
 	}

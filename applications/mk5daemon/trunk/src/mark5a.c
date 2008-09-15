@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <time.h>
+#include <xlrapi.h>
 #include "mk5daemon.h"
 
 static void *mark5Arun(void *ptr)
@@ -29,7 +30,7 @@ static void *mark5Arun(void *ptr)
 		}
 		if(strstr("ERROR", str) != 0)
 		{
-			difxMessageSendDifxError(str, 1);
+			difxMessageSendDifxAlert(str, DIFX_ALERT_LEVEL_ERROR);
 		}
 		Logger_logData(D->log, str);
 		D->lastMark5AUpdate = time(0);
@@ -92,9 +93,6 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 
 void Mk5Daemon_resetMark5A(Mk5Daemon *D)
 {
-	const char command1[] = "/usr/bin/SSReset";
-	const char command2[] = "/usr/bin/ssopen";
-
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
@@ -110,8 +108,7 @@ void Mk5Daemon_resetMark5A(Mk5Daemon *D)
 		D->process = PROCESS_RESET;
 		pthread_mutex_unlock(&D->processLock);
 
-		system(command1);
-		system(command2);
+		XLRCardReset(1);
 
 		pthread_mutex_lock(&D->processLock);
 		D->process = PROCESS_NONE;

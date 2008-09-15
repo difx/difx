@@ -7,7 +7,7 @@ automake -a
 
 ./configure --prefix=<prefix>
 make
-(su root?)
+# (su root?)
 make install
 
 After an svn update, these steps do not need to be rerun.  at most, running 
