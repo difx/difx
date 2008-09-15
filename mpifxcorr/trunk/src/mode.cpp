@@ -26,7 +26,6 @@
 #include "datastream.h"
 #include "mpifxcorr.h"
 #include <iomanip>
-#include <difxmessage.h>
 
 //using namespace std;
 const float Mode::TINY = 0.000000001;
@@ -163,7 +162,9 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
 Mode::~Mode()
 {
   int status;
-  difxMessageSendDifxAlert("Starting a mode destructor", DIFX_ALERT_LEVEL_DEBUG);
+#ifndef QUIET
+  cout << "Starting a mode destructor" << endl;
+#endif
 
   for(int i=0;i<numinputbands;i++)
   {
@@ -215,7 +216,9 @@ Mode::~Mode()
   }
   delete [] autocorrelations;
 
-  difxMessageSendDifxAlert("Ending a mode destructor", DIFX_ALERT_LEVEL_DEBUG);
+#ifndef QUIET
+  cout << "Ending a mode destructor" << endl;
+#endif
 }
 
 float Mode::unpack(int sampleoffset)

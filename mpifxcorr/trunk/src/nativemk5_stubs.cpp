@@ -13,14 +13,14 @@
 #include <stdlib.h>
 #include "nativemk5.h"
 #include "config.h"
-#include <difxmessage.h>
+#include "alert.h"
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
         int id, int ncores, int * cids, int bufferfactor, int numsegments) :
                 Mk5DataStream(conf, snum, id, ncores, cids, bufferfactor,
         numsegments)
 {
-	difxMessageSendDifxAlert("NativeMk5DataStream::NativeMk5DataStream stub called, meaning mpifxcorr was not compiled for nativemk5 support, but it was requested (with MODULE in .input file).  Aborting.", DIFX_ALERT_LEVEL_FATAL);
+	cfatal << "NativeMk5DataStream::NativeMk5DataStream stub called, meaning mpifxcorr was not compiled for nativemk5 support, but it was requested (with MODULE in .input file).  Aborting." << endl;
 	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 

@@ -16,60 +16,30 @@
 // $HeadURL$
 // $LastChangedRevision$
 // $Author$
-// $LastChangedDate$
+// $LastChangedDate: 2008-09-10 10:13:06 -0400 (Wed, 10 Sep 2008) $
 //
 //============================================================================
 
-#ifndef NATIVEMK5_H
-#define NATIVEMK5_H
-
-#include "mode.h"
-#include "datastream.h"
-#include "mark5access.h"
-
-#ifdef HAVE_XLRAPI_H
-#include "mark5dir.h"
-#endif
-
-#include "mk5.h"
-
-#ifdef HAVE_DIFXMESSAGE
+#include "alert.h"
 #include <difxmessage.h>
-#endif
 
-class NativeMk5DataStream : public Mk5DataStream
+// Initialize 7 alert streams
+Alert cfatal(DIFX_ALERT_LEVEL_FATAL);
+Alert csevere(DIFX_ALERT_LEVEL_SEVERE);
+Alert cerror(DIFX_ALERT_LEVEL_ERROR);
+Alert cwarn(DIFX_ALERT_LEVEL_WARNING);
+Alert cinfo(DIFX_ALERT_LEVEL_INFO);
+Alert cverbose(DIFX_ALERT_LEVEL_VERBOSE);
+Alert cdebug(DIFX_ALERT_LEVEL_DEBUG);
+
+
+Alert& Alert::sendAlert()
 {
-public:
-	NativeMk5DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments);
-	virtual ~NativeMk5DataStream();
-	virtual void initialiseFile(int configindex, int fileindex);
-	virtual void openfile(int configindex, int fileindex);
-	virtual void loopfileread();
+	// Send alert to appropriate place
+	difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
 
-protected:
-	void moduleToMemory(int buffersegment);
-#ifdef HAVE_DIFXMESSAGE
-	int sendMark5Status(enum Mk5State state, int scanNumber, long long position, double dataMJD, float rate);
-#endif
+	// Reset alert stream
+	alertString.str("");
 
-private:
-#ifdef HAVE_XLRAPI_H
-	struct Mark5Module module;
-	struct Mark5Scan *scan;
-	long long readpointer;
-	SSHANDLE xlrDevice;
-#endif
-
-#ifdef HAVE_DIFXMESSAGE
-	DifxMessageMk5Status mk5status;
-#endif
-
-	int executeseconds;
-	int invalidtime;
-	long long invalidstart;
-	unsigned long lastval;
-	struct mark5_stream *mark5stream;
-	int newscan;
-};
-
-#endif
+	return *this;
+}

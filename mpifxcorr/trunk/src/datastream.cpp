@@ -31,7 +31,9 @@
 #include <values.h>
 #include <math.h>
 #include "config.h"
+#ifdef HAVE_DIFXMESSAGE
 #include <difxmessage.h>
+#endif
 
 
 DataStream::DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
@@ -69,8 +71,6 @@ DataStream::~DataStream()
 void DataStream::initialise()
 {
   int currentconfigindex, currentoverflowbytes, overflowbytes = 0;
-  char message[200];
-
   bufferbytes = databufferfactor*config->getMaxDataBytes(streamnum);
   readbytes = bufferbytes/numdatasegments;
 
@@ -81,13 +81,11 @@ void DataStream::initialise()
     if(currentoverflowbytes > overflowbytes)
       overflowbytes = currentoverflowbytes;
   }
-  sprintf(message, "DATASTREAM %d about to allocate %d + %d bytes in databuffer", mpiid, bufferbytes, overflowbytes);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "DATASTREAM " << mpiid << " about to allocate " << bufferbytes << " + " << overflowbytes << " bytes in databuffer" << endl;
   databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
   if(databuffer == NULL) {
-    sprintf(message, "DATASTREAM %d could not allocate databuffer (length %d)! Aborting correlation", mpiid, bufferbytes + overflowbytes);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    cerr << "Error - datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ")! Aborting correlation" << endl;
+    exit(1);
   }
   int mindatabytes = config->getDataBytes(0, streamnum);
   for(int i=1;i<config->getNumConfigs();i++)
@@ -141,8 +139,7 @@ void DataStream::initialise()
     datafilenames[i] = config->getDDataFileNames(i, streamnum);
   }
 
-//  sprintf(message, "Telescope %d is about to process the delay file %s", stationname, config->getDelayFileName().c_str());
-//  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "Telescope " << stationname << " is about to process the delay file " << config->getDelayFileName() << endl;
   processDelayFile(config->getDelayFileName());
 
   numsent = 0;
@@ -151,10 +148,7 @@ void DataStream::initialise()
 
 void DataStream::execute()
 {
-  char message[200];
-  sprintf(message, "DATASTREAM %d has started execution", mpiid);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-
+  cout << "DATASTREAM " << mpiid << " has started execution" << endl;
   datastatuses = new MPI_Status[maxsendspersegment];
   controlstatuses = new MPI_Status[maxsendspersegment];
   MPI_Request msgrequest;
@@ -198,7 +192,7 @@ void DataStream::execute()
       {
         status = vectorCopy_u8(databuffer, &databuffer[bufferbytes], bufferinfo[atsegment].sendbytes - bufferremaining);
         if(status != vecNoErr)
-	  difxMessageSendDifxAlert("Error copying in the DataStream data buffer!!!", DIFX_ALERT_LEVEL_SEVERE);
+          cerr << "Error copying in the DataStream data buffer!!!" << endl;
       }
 
       if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] == MAX_NEGATIVE_DELAY)
@@ -225,8 +219,7 @@ void DataStream::execute()
     }
     else //must have been a terminate signal
     {
-      sprintf(message, "DATASTREAM %d will terminate next round!!!", mpiid);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+      cout << "DataStream " << mpiid << " will terminate next round!!!" << endl;
       status = -1; //will terminate next round
       keepreading = false;
     }
@@ -244,50 +237,32 @@ void DataStream::execute()
   }
   perr = pthread_cond_signal(&readcond);
   if(perr != 0)
-  {
-    sprintf(message, "DATASTREAM %d mainthread: error trying to signal read thread to wake up!!!", mpiid);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "DataStream mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
 
   //join the reading thread
   perr = pthread_mutex_unlock(&(bufferlock[atsegment]));
   if(perr != 0)
-  {
-    sprintf(message, "Error in telescope mainthread unlock of buffer section (atsegment=%d)!!!", atsegment);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
   perr = pthread_mutex_unlock(&(bufferlock[(atsegment+1)%numdatasegments]));
   if(perr != 0)
-  {
-    sprintf(message, "Error in telescope mainthread unlock of buffer section (atsegment=%d)!!!", (atsegment+1)%numdatasegments);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error in telescope mainthread unlock of buffer section!!!" << (atsegment+1)%numdatasegments << endl;
   perr = pthread_join(readerthread, NULL);
   if(perr != 0)
-  {
-    sprintf(message, "Error in closing telescope %d readerthread!!!", mpiid);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error in closing telescope " << mpiid << " readerthread!!!" << endl;
 
   delete [] datastatuses;
   delete [] controlstatuses;
-  sprintf(message, "DATASTREAM %d terminating", mpiid);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "DATASTREAM " << mpiid << " terminating" << endl;
 }
 
 void DataStream::openfile(int configindex, int fileindex)
 {
-  char message[128];
-
-  sprintf(message, "DATASTREAM %d is about to try and open file index %d of configindex %d", mpiid, fileindex, configindex);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-
+  cout << "DataStream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
   if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
   {
     dataremaining = false;
     keepreading = false;
-    sprintf(message, "DATASTREAM %d is exiting because fileindex is %d, while confignumfiles is %d", mpiid, fileindex, confignumfiles[configindex]);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+    cout << "Datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
     return;
   }
   
@@ -295,18 +270,15 @@ void DataStream::openfile(int configindex, int fileindex)
   if(input.fail())
     input.clear(); //get around EOF problems caused by peeking
   input.open(datafilenames[configindex][fileindex].c_str(),ios::in);
-  sprintf(message, "input.bad() is %d, input.fail is %d", input.bad(), input.fail());
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "input.bad() is " << input.bad() << ", input.fail is " << input.fail() << endl;
   if(!input.is_open() || input.bad())
   {
-    sprintf(message, "Error trying to open file %s", datafilenames[configindex][fileindex].c_str());
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    cerr << "Error trying to open file " << datafilenames[configindex][fileindex] << endl;
     dataremaining = false;
     return;
   }
 
-  sprintf(message, "DATASTREAM %d has opened file index %d, which was %s", mpiid, fileindex, datafilenames[configindex][fileindex].c_str());
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "DataStream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << "!" << endl;
 
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);
@@ -494,17 +466,14 @@ void DataStream::initialiseMemoryBuffer()
 {
   int perr;
   readthreadstarted = false;
-  char message[128];
-
-  sprintf(message, "DATASTREAM %d started initialising memory buffer", mpiid);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "DATASTREAM " << mpiid << " started initialising memory buffer" << endl;
 
   perr = pthread_mutex_lock(&bufferlock[0]);
   if(perr != 0)
-    difxMessageSendDifxAlert("Error in main thread locking buffer segment 0", DIFX_ALERT_LEVEL_ERROR);
+    cerr << "Error in main thread locking buffer segment " << 0 << endl;
   perr = pthread_mutex_lock(&bufferlock[1]);
   if(perr != 0)
-    difxMessageSendDifxAlert("Error in main thread locking buffer segment 1", DIFX_ALERT_LEVEL_ERROR);
+    cerr << "Error in main thread locking buffer segment " << 1 << endl;
 
   //initialise the condition signals
   pthread_cond_init(&readcond, NULL);
@@ -515,25 +484,24 @@ void DataStream::initialiseMemoryBuffer()
     //launch the file reader thread
     perr = pthread_create(&readerthread, NULL, DataStream::launchNewFileReadThread, (void *)(this));
     if(perr != 0)
-      difxMessageSendDifxAlert("Error in launching telescope readerthread!!!", DIFX_ALERT_LEVEL_ERROR);
+      cerr << "Error in launching telescope readerthread!!!" << endl;
   }
   else
   {
     //launch the network reader thread
     perr = pthread_create(&readerthread, NULL, DataStream::launchNewNetworkReadThread, (void *)(this));
     if(perr != 0)
-      difxMessageSendDifxAlert("Error in launching telescope networkthread!!!", DIFX_ALERT_LEVEL_ERROR);
+      cerr << "Error in launching telescope networkthread!!!" << endl;
   }
   
   while(!readthreadstarted) //wait to ensure the thread got started ok
   {
     perr = pthread_cond_wait(&initcond, &(bufferlock[1]));
     if (perr != 0)
-      difxMessageSendDifxAlert("Error waiting on readthreadstarted condition!!!", DIFX_ALERT_LEVEL_ERROR);
+      cerr << "Error waiting on readthreadstarted condition!!!!" << endl;
   }
 
-  sprintf(message, "DATASTREAM %d finished initialising memory buffer", mpiid);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "DATASTREAM " << mpiid << " finished initialising memory buffer" << endl;
 }
 
 void DataStream::calculateQuadraticParameters(int intdelayseconds, int offsetns)
@@ -545,16 +513,12 @@ void DataStream::calculateQuadraticParameters(int intdelayseconds, int offsetns)
   snindex = static_cast<int>((delayoffsetseconds*1000)/delayincms);
   if(snindex < 0)
   {
-    char message[80];
-    sprintf(message, "Error attempting to get a delay from offset time %d.%d, will take first source", intdelayseconds, offsetns);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+    cerr << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take first source" << endl;
     snindex = 0;
   }
   else if (snindex >= totaldelays)
   {
-    char message[80];
-    sprintf(message, "Error attempting to get a delay from offset time %d.%d, will take last source", intdelayseconds, offsetns);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+    cerr << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take last source" << endl;
     snindex = totaldelays-1;
   }
   lastscan = scannumbers[snindex];
@@ -582,10 +546,7 @@ void DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].configindex = config->getConfigIndex(readseconds);
   if(bufferinfo[segmentindex].configindex < 0)
   {
-    char message[128];
-    sprintf(message, "Datastream %d read a file containing data from a source for which we had no configuration - leaving parameters unchanged", mpiid);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-
+    cerr << "Warning - Datastream " << mpiid << " read a file containing data from a source for which we had no configuration - leaving parameters unchanged" << endl;
     return;
   }
 
@@ -625,7 +586,6 @@ void DataStream::loopfileread()
 {
   int perr;
   int numread = 0;
-  char message[200];
 
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);
@@ -635,15 +595,12 @@ void DataStream::loopfileread()
     diskToMemory(numread++);
     perr = pthread_mutex_lock(&(bufferlock[numread]));
     if(perr != 0)
-      difxMessageSendDifxAlert("Error in initial telescope readthread lock of first buffer section!!!", DIFX_ALERT_LEVEL_SEVERE);
+      cerr << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
   }
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
-  {
-    sprintf(message, "Datastream readthread %d error trying to signal main thread to wake up!!!", mpiid);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-  }
+    cerr << "Datastream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
   if(keepreading)
     diskToMemory(numread++);
 
@@ -657,18 +614,12 @@ void DataStream::loopfileread()
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
-      {
-        sprintf(message, "Error in telescope readthread lock of buffer section!!! segment = %d", lastvalidsegment);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-      }
+        cerr << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-      {
-        sprintf(message, "Error in telescope readthread unlock of buffer section!!! segment = %d", (lastvalidsegment-1+numdatasegments)%numdatasegments);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-      }
+        cerr << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
 
       //do the read
       diskToMemory(lastvalidsegment);
@@ -708,20 +659,15 @@ void DataStream::loopfileread()
   if(numread > 0) {
     perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
     if(perr != 0)
-    {
-      sprintf(message, "Error in telescope readthread unlock of buffer section!!! segment = %d", lastvalidsegment);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-    }
+      cerr << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
   }
- 
-  sprintf(message, "DATASTREAM %d readthread is exiting!!! Filecount was %d confignumfiles was %d dataremaining was %d keepreading was %d", mpiid, filesread[bufferinfo[lastvalidsegment].configindex], confignumfiles[bufferinfo[lastvalidsegment].configindex], dataremaining, keepreading);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+  cout << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
 void DataStream::loopnetworkread()
 {
   int perr, framebytesremaining, lastvalidsegment;
-  char message[128];
 
   //open the socket
   openstream(portnumber, tcpwindowsizebytes);
@@ -735,14 +681,11 @@ void DataStream::loopnetworkread()
   //lock the segment we are at now
   perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment + 1]));
   if(perr != 0)
-    difxMessageSendDifxAlert("Error in initial telescope networkreadthread lock of first buffer section!!!", DIFX_ALERT_LEVEL_ERROR);
+    cerr << "Error in initial telescope networkreadthread lock of first buffer section!!!" << endl;
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
-  {
-    sprintf(message, "DATASTREAM %d networkreadthread: error trying to signal main thread to wake up!!!", mpiid);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-  }
+    cerr << "Datastream networkreadthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
   networkToMemory(++lastvalidsegment, framebytesremaining);
 
   //loop until we have to stop
@@ -755,18 +698,12 @@ void DataStream::loopnetworkread()
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
-      {
-        sprintf(message, "Error in telescope readthread lock of buffer section!!! segment=%d", lastvalidsegment);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-      }
+        cerr << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-      {
-        sprintf(message, "Error in telescope readthread unlock of buffer section!!! segment=%d", (lastvalidsegment-1+numdatasegments)%numdatasegments);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-      }
+        cerr << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
 
       //do the read
       networkToMemory(lastvalidsegment, framebytesremaining);
@@ -782,13 +719,9 @@ void DataStream::loopnetworkread()
   
   perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
   if(perr != 0)
-  {
-    sprintf(message, "Error in telescope readthread unlock of buffer section!!! segment=%d", lastvalidsegment);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
 
-  sprintf(message, "DATASTREAM %d networkreadthread is exiting!!! Keepreading was %d , framebytesremaining was %d", mpiid, keepreading, framebytesremaining);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "DATASTREAM " << mpiid << "'s networkreadthread is exiting!!! Keepreading was " << keepreading << ", framebytesremaining was " << framebytesremaining << endl;
 }
 
 void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
@@ -1170,7 +1103,7 @@ void DataStream::processDelayFile(string delayfilename)
   ifstream delayinput(delayfilename.c_str(),ios::in);
   if(!delayinput.is_open() || delayinput.bad()) {
     cerr << "Error opening delay file " << delayfilename << " - aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
   }
 
   config->getinputline(&delayinput, &line, "START YEAR");
@@ -1203,7 +1136,7 @@ void DataStream::processDelayFile(string delayfilename)
   if(columnoffset < 0)
   {
     cerr << "Error!!! " << mpiid << " could not locate " << stationname << " in delay file " << delayfilename << " - ABORTING!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    exit(1);
   }
 
   config->getinputline(&delayinput, &line, "NUM SCANS");
@@ -1237,7 +1170,7 @@ void DataStream::processDelayFile(string delayfilename)
       delays[i][j] = linedelays[columnoffset];
       if(delays[i][j] <= MAX_NEGATIVE_DELAY) {
         cerr << "Error - cannot handle delays more negative than " << MAX_NEGATIVE_DELAY << "!!! Need to unimplement the datastream check for negative delays to indicate bad data.  Aborting now - contact the developer!" << endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        exit(1);
       }
       if(j<scanlengths[i])
       {

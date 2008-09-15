@@ -41,8 +41,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <difxmessage.h>
-#include <errno.h>
-#include <string.h>
+#include "alert.h"
 
 //setup monitoring socket
 int setup_net(char *monhostname, int port, int window_size, int *sock) {
@@ -51,7 +50,6 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
   struct hostent     *hostptr;
   struct linger      linger = {1, 1};
   struct sockaddr_in server;    /* Socket address */
-  char message[200];
 
   hostptr = gethostbyname(monhostname);
   if (hostptr==NULL) {
@@ -69,8 +67,7 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
     
   *sock = socket(AF_INET, SOCK_STREAM, 0);
   if (*sock==-1) {
-    sprintf(message, "Failed to allocate socket: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Failed to allocate socket");
     return(1);
   }
 
@@ -80,8 +77,7 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
                       sizeof(struct linger)); 
   if (status!=0) {
     close(*sock);
-    sprintf(message, "Failed to set socket options [1]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Setting socket options");
     return(1);
   }
 
@@ -90,29 +86,26 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
                       (char *) &window_size, sizeof(window_size));
   if (status!=0) {
     close(*sock);
-    sprintf(message, "Failed to set socket options [3]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Setting socket options");
     return(1);
   }
   status = setsockopt(*sock, SOL_SOCKET, SO_RCVBUF,
                       (char *) &window_size, sizeof(window_size));
   if (status!=0) {
     close(*sock);
-    sprintf(message, "Failed to set socket options [3]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Setting socket options");
     return(1);
   }
     
   status = connect(*sock, (struct sockaddr *) &server, sizeof(server));
   if (status!=0) {
-    sprintf(message, "Failed to connect to server: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Failed to connect to server");
     return(1);
   }
   return(0);
 } /* Setup Net */
 
-static void generateIdentifier(const char *inputfile, int myID, int numdatastreams, char *identifier)
+static void generateIdentifier(const char *inputfile, int myID, char *identifier)
 {
   int i, l, s=0;
 
@@ -163,6 +156,7 @@ int main(int argc, char *argv[])
   char * mpihost = new char[nameslength];
   int port, monitor_skip, namelen;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
+  char difxMessageID[128];
 
   cout << "About to run MPIInit" << endl;
 
@@ -173,7 +167,10 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
-  cout << "MPI Process " << myID << " is running on host " << processor_name << endl;
+  generateIdentifier(argv[1], myID, difxMessageID);
+  difxMessageInit(myID, difxMessageID);
+
+  cinfo << "MPI Process " << myID << " is running on host " << processor_name << endl;
   
   if(argc == 3)
   {
@@ -210,8 +207,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  if(myID == 0)
-    cout << "About to process the input file.." << endl;
+  cinfo << "About to process the input file.." << endl;
   //process the input file to get all the info we need
   config = new Configuration(argv[1]);
   if(!config->consistencyOK())
@@ -242,26 +238,17 @@ int main(int argc, char *argv[])
   //wait until everyone has caught up
   MPI_Barrier(world);
 
-  //setup difxmessage.  Do not call difxMessageSend*** above here!
-  {
-    char identifier[128];
-    generateIdentifier(argv[1], myID, numdatastreams, identifier);
-    difxMessageInit(myID, identifier);
-  }
-
   try
   {
     //work out what process we are and run accordingly
     if(myID == fxcorr::MANAGERID) //im the manager
     {
-      char message[64];
       manager = new FxManager(config, numcores, datastreamids, coreids, myID, return_comm, monitor, monhostname, port, monitor_skip);
       MPI_Barrier(world);
       t1 = MPI_Wtime();
       manager->execute();
       t2 = MPI_Wtime();
-      sprintf(message, "Total wallclock time was ** %5.3f ** seconds", t2-t1);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+      cinfo << "Total wallclock time was **" << t2 - t1 << "** seconds" << endl;
     }
     else if (myID >= fxcorr::FIRSTTELESCOPEID && myID < fxcorr::FIRSTTELESCOPEID + numdatastreams) //im a datastream
     {
@@ -286,9 +273,7 @@ int main(int argc, char *argv[])
   }
   catch (MPI::Exception e)
   {
-    char message[200];
-    sprintf(message, "Caught an exception: %s", e.Get_error_string());
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    cerror << "Caught an exception!!! " << e.Get_error_string() << endl;
     return EXIT_FAILURE;
   }
   MPI_Finalize();
@@ -299,6 +284,6 @@ int main(int argc, char *argv[])
   if(stream) delete stream;
   if(core) delete core;
 
-  cout << myID << ": BYE!" << endl;
+  cinfo << myID << ": BYE!" << endl;
   return EXIT_SUCCESS;
 }

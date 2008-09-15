@@ -30,7 +30,6 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-#include <difxmessage.h>
 
 #define MAXPACKETSIZE 10000
 #define MARK5FILL 0x11223344;
@@ -47,10 +46,8 @@ int genFormatName(Configuration::dataformat format, int nchan, double bw, int nb
       fanout = framebytes*8/(20000*nbits*nchan);
       if(fanout*20000*nbits*nchan != framebytes*8)
       {
-	char message[80];
-	sprintf(message, "genFormatName : MKIV format : framebytes = %d is not allowed", framebytes);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-	MPI_Abort(MPI_COMM_WORLD, 1);
+        cerr << "genFormatName : MKIV format : framebytes = " << framebytes << " is not allowed\n";
+        exit(1);
       }
       if(decimationfactor > 1)	// Note, this conditional is to ensure compatibility with older mark5access versions
         sprintf(formatname, "MKIV1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
@@ -61,10 +58,8 @@ int genFormatName(Configuration::dataformat format, int nchan, double bw, int nb
       fanout = framebytes*8/(20160*nbits*nchan);
       if(fanout*20160*nbits*nchan != framebytes*8)
       {
-	char message[80];
-	sprintf(message, "genFormatName : VLBA format : framebytes = %d is not allowed", framebytes);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-	MPI_Abort(MPI_COMM_WORLD, 1);
+        cerr << "genFormatName : VLBA format : framebytes = " << framebytes << " is not allowed\n";
+        exit(1);
       }
       if(decimationfactor > 1)
         sprintf(formatname, "VLBA1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
@@ -78,8 +73,8 @@ int genFormatName(Configuration::dataformat format, int nchan, double bw, int nb
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
     default:
-      difxMessageSendDifxAlert("genFormatName : unsupported format encountered", DIFX_ALERT_LEVEL_FATAL);
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      cerr << "genFormatName : unsupported format encountered\n" << endl;
+      exit(1);
   }
 
   return fanout;
@@ -110,18 +105,17 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int nchan, in
 
   if(mark5stream == 0)
   {
-    difxMessageSendDifxAlert("Mk5Mode::Mk5Mode : mark5stream is null", DIFX_ALERT_LEVEL_FATAL);
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    cerr << "Mk5Mode::Mk5Mode : mark5stream is null " << endl;
+    exit(1);
   }
 
   sprintf(mark5stream->streamname, "DS%d", dsindex);
 
   if(framesamples != mark5stream->framesamples)
   {
-    char message[80];
-    sprintf(message, "Mk5Mode::Mk5Mode : framesamples inconsistent (%d != %d)", framesamples, mark5stream->framesamples);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    cerr << "Mk5Mode::Mk5Mode : framesamples inconsistent (" << framesamples 
+	 << "/" << mark5stream->framesamples << ")" << endl;
+    exit(1);
   }
 
 }
@@ -155,11 +149,7 @@ float Mk5Mode::unpack(int sampleoffset)
     
   if(goodsamples < 0)
   {
-    char message[128];
-    
-    sprintf(message, "Error trying to unpack Mark5 format data at sampleoffset %d from buffer seconds %d plus %d microseconds!!!", sampleoffset, bufferseconds, buffermicroseconds);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-
+    cerr << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from buffer seconds " << bufferseconds << " plus " << buffermicroseconds << " microseconds!!!" << endl;
     goodsamples = 0;
   }
 
@@ -188,15 +178,13 @@ void Mk5DataStream::initialise()
   udp_offset = 0;
   if (!readfromfile && !tcp) {
     if (sizeof(long long)!=8) {
-      char message[80];
-      sprintf(message, "DataStream assumes long long is 8 bytes, it is %d bytes", sizeof(long long));
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      cerr << "Warning: DataStream assumes long long is 8 bytes, it is " << sizeof(long long) << " bytes" << endl;
+      // Should exit here
     }
     udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(long long); // IP header is 20 bytes, UDP is 4x2 bytes
     if (udpsize<=0) {
-      difxMessageSendDifxAlert("Implied UDP packet size is negative!", DIFX_ALERT_LEVEL_FATAL);
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      cerr << "Datastream " << mpiid << ":" << " Warning implied UDP packet size is negative!! " << endl;
+      // Should exit here
     }
     udpsize &= ~ 0x7;  // Ensures udpsize multiple of 64 bits
     packet_segmentstart = 0;
@@ -234,9 +222,7 @@ int Mk5DataStream::calculateControlParams(int offsetsec, int offsetns)
 
   if(vlbaoffset < 0)
   {
-    char message[128];
-    sprintf(message, "Mk5DataStream::calculateControlParams : vlbaoffset=%d bufferindex=%d atsegment=%d", vlbaoffset, bufferindex, atsegment);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    cout << "ERROR Mk5DataStream::calculateControlParams : vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = -1.0;
     return 0;
   }
@@ -251,9 +237,7 @@ int Mk5DataStream::calculateControlParams(int offsetsec, int offsetns)
   bufferindex = atsegment*readbytes + framesin*framebytes;
   if(bufferindex >= bufferbytes)
   {
-    char message[128];
-    sprintf(message, "Mk5DataStream::calculateControlParams : bufferindex=%d >= bufferbytes=%d", bufferindex, bufferbytes);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    cout << "Mk5DataStream::calculateControlParams : bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = -1.0;
     return 0;
   }
@@ -289,7 +273,6 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   int nbits, ninputbands, framebytes;
   Configuration::dataformat format;
   double bw;
-  char message[200];
 
   format = config->getDataFormat(configindex, streamnum);
   nbits = config->getDNumBits(configindex, streamnum);
@@ -304,27 +287,24 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     new_mark5_format_generic_from_string(formatname) );
   if(mark5stream->nchan != config->getDNumInputBands(configindex, streamnum))
   {
-    sprintf(message, "The number of input bands for datastream %d (%d) does not match with MkV file %s (%d), will be ignored!!!", streamnum, ninputbands, datafilenames[configindex][fileindex].c_str(), mark5stream->nchan);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+    cerr << "Error - number of input bands for datastream " << streamnum << " (" << ninputbands << ") does not match with MkV file " << datafilenames[configindex][fileindex] << " (" << mark5stream->nchan << "), will be ignored!!!" << endl;
   }
 
   // resolve any day ambiguities
   mark5_stream_fix_mjd(mark5stream, corrstartday);
 
-  //mark5_stream_print(mark5stream);
+  mark5_stream_print(mark5stream);
 
   offset = mark5stream->frameoffset;
 
   readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
   readnanoseconds = int(mark5stream->ns);
-  sprintf(message, "Frame start mjd %d seconds %d nanoseconds %d; readseconds=%d readnanoseconds=%d", mark5stream->mjd, mark5stream->sec, mark5stream->ns, readseconds, readnanoseconds);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "The frame start day is " << mark5stream->mjd << ", the frame start seconds is " << mark5stream->sec << ", the frame start ns is " << mark5stream->ns << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
 
   //close mark5stream
   delete_mark5_stream(mark5stream);
 
-  sprintf(message, "About to seek to byte %d to get to the first frame");
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "About to seek to byte " << offset << " to get to the first frame" << endl;
 
   input.seekg(offset);
 }
@@ -333,9 +313,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
 {
 
   if (udp_offset>readbytes) {
-    char message[64];
-    sprintf(message, "DATASTREAM %d skipping over %d bytes", mpiid, udp_offset-(udp_offset%readbytes));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+    cout << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << endl;
     udp_offset %= readbytes;
   }
 
@@ -387,13 +365,13 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     if (udp_offset>0) packet_segmentend++;
     segmentsize = packet_segmentend-packet_segmentstart+1;
 
+    //cout << "****** udpsize " << udpsize << "  bytestoread " << bytestoread << endl;
+    //cout << "****** udp_offset = " << udp_offset << endl;
+    //cout << "****** readnetwork will read packets " << packet_segmentstart << " to " << packet_segmentend << "(" << segmentsize << ")" << endl;
+    
     if (segmentsize>packets_arrived.size()) {
-      char message[80];
-
-      sprintf(message, "Mk5DataStream::readnetwork bytestoread too large (%d)", bytestoread);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-      
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      cerr << "Mk5DataStream::readnetwork  bytestoread too large (" << bytestoread << ")" << endl;
+      exit(1);
     } 
     
     for (int i=0; i<segmentsize; i++) {
@@ -406,6 +384,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     if (udp_offset>0) {
       packet_index = (udp_offset-1)/udpsize;
       udp_offset = (udp_offset-1)%udpsize+1;
+      //cout << "*** DataStream " << mpiid << ": packet_index=" << packet_index << " udp_offset=" << udp_offset << endl;
       if (packet_index<segmentsize) // Check not out of range
 	packets_arrived[packet_index] = true;
 
@@ -465,25 +444,20 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	if (errno == EINTR) continue;
 	return(nr);
       } else if (nr==0) {  // Socket closed remotely
-	char message[80];
-	sprintf(message, "DATASTREAM %d Remote socket closed", mpiid);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+	cout << "Datastream " << mpiid << ": Remote socket closed" << endl;
 	return(nr);
       } else if (nr!=udpsize+sizeof(long long)) {
-        char message[80];
-	sprintf(message, "DATASTREAM %d Expected %d bytes, got %d bytes. Quiting", mpiid, udpsize+sizeof(long long), nr);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-        MPI_Abort(MPI_COMM_WORLD, 1);
+	cerr << "DataStream " << mpiid << ": Expected " << udpsize+sizeof(long long) << " bytes, got " << nr << "bytes. Quiting" << endl;
+	exit(1);
       } else {
 	if (packet_head==0 && sequence!=0) { // First packet!
-	  char message[80];
 	  packet_head = sequence;
-
-	  sprintf(message, "DATASTREAM %d First packet has sequence %d", mpiid, sequence);
-	  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+	  cout <<  "DataStream " << mpiid << ": First packet has sequence " << sequence << endl;
 
 	  packet_segmentstart = sequence;
 	  packet_segmentend = packet_segmentstart+(bytestoread-1)/udpsize;
+	  //cout << "****** readnetwork will actually read packets " << packet_segmentstart << " to " << packet_segmentend << "(" << segmentsize << ")" << endl;
+
 	}
 
 
@@ -494,14 +468,15 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  // Resync
 	  packet_oo++;  // This could be duplicate but we cannot tell
 	} else if (sequence==packet_segmentend) { 
+	  //cout << "**Segmentend " << packet_index << " (" << packet_segmentend << ")" << endl;
 	  int bytes = (bytestoread-udp_offset-1)%udpsize+1;
 	  // Consistence check
 	  if (bytes<0) {
-	    difxMessageSendDifxAlert("Read too many UDP packets!!", DIFX_ALERT_LEVEL_FATAL);
-	    MPI_Abort(MPI_COMM_WORLD, 1);
+	    cerr << "Datastream " << mpiid << ": Error read too many UDP packets!!" << endl;
+	    exit(1);
 	  } else if (bytes > udpsize) {
-	    difxMessageSendDifxAlert("Read too few UDP packets!!", DIFX_ALERT_LEVEL_FATAL);
-	    MPI_Abort(MPI_COMM_WORLD, 1);
+	    cerr << "Datastream " << mpiid << ": Error have not read enough UDP packets!!" << endl;
+	    exit(1);
 	  }
 	  memcpy(ptr+udp_offset+(packet_index-1)*udpsize,udp_buf,bytes);
 	  packet_sum += bytes;
@@ -517,6 +492,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  packets_arrived[packet_index] = true;
 	  done = 1;
 	} else if (packet_index>=segmentsize) { 
+	  //cout << "*********Past Segmentend " << sequence << endl;
 
 	  if (udp_offset==udpsize) 
 	    next_segmentstart = packet_segmentend+1;
@@ -524,15 +500,18 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	    next_segmentstart = packet_segmentend;
 
 	  next_udpoffset = udpsize-(bytestoread-udp_offset)%udpsize+udpsize*(sequence-packet_segmentend);
+	  //cout << "**********udp_offset= " << next_udpoffset << endl;
 	  packet_head = sequence;
 	  *nread = bytestoread;
 	  done = 1;
 	} else if (packets_arrived[packet_index]) {
+	  //cout << "**** Duplicate " << packet_index << endl;
 	  packet_duplicate++;
 	} else {
 	  // This must be good data finally!
 	  if (first) {
 	    first = false;
+	    //cout << "**** First packet " << packet_index << endl;
 	  }
 	  packets_arrived[packet_index] = true;
 	  memcpy(ptr+udp_offset+(packet_index-1)*udpsize,udp_buf,udpsize);
@@ -554,6 +533,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     int nmiss = 0;
     for (int i=0; i<segmentsize; i++) {
       if (!packets_arrived[i]) {
+	//cout << "***** Dropped " << packet_segmentstart+i << "(" << i << ")" << endl;
 	packet_drop++; // Will generally count dropped first packet twice
 	nmiss++;
 	if (i==0) {
@@ -565,6 +545,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	}
       }
     }
+    //cout << "**** Datastream " << mpiid << " missing " << nmiss << "/" << segmentsize << " packets" << endl;
 
     packet_segmentstart = next_segmentstart;
     udp_offset = next_udpoffset;
@@ -592,32 +573,30 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
 
   genFormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
 
+  //cout << "******* validbytes " << bufferinfo[buffersegment].validbytes << endl;
+
+  //cout << "DataStream " << mpiid << ": Create a new Mark5 stream " << formatname << endl;
+
   mark5stream = new_mark5_stream(
     new_mark5_stream_memory(&databuffer[buffersegment*(bufferbytes/numdatasegments)], 
 			    bufferinfo[buffersegment].validbytes),
     new_mark5_format_generic_from_string(formatname) );
 
   if (mark5stream==0) {
-    char message[80];
-    
-    sprintf(message, "Could not identify Mark5 segment time (%s)", formatname);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-    // We don't need to actually set the time - it will just be deadreckoned from that last segment. As there is no good data this does not matter
+    cerr << "DataStream " << mpiid << ": Warning - Could not identify Mark5 segment time (" << formatname << ")" << endl;
+    // We don't need to actually set the time - it ill just be deadreckoned from that last segment. As there is no good data this does not matter
   } else {
 
     if(mark5stream->nchan != config->getDNumInputBands(configindex, streamnum))
     {
-      char message[80];
-
-      sprintf(message, "Number of input bands DATASTREAM %d (%d) does not match with Mark5 data (%d) -- will be ignored!!!", streamnum, ninputbands, mark5stream->nchan);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+      cerr << "Error - number of input bands for datastream " << streamnum << " (" << ninputbands << ") does not match with MkV data " << " (" << mark5stream->nchan << "), will be ignored!!!" << endl;
     }
 
     // resolve any day ambiguities
     mark5_stream_fix_mjd(mark5stream, corrstartday);
 
     if (configindex != lastconfig) {
-      //mark5_stream_print(mark5stream);
+      mark5_stream_print(mark5stream);
       lastconfig = configindex;
     }
 
@@ -629,29 +608,23 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
       ptr = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
 
       if (offset>bufferinfo[buffersegment].validbytes) {
-	char message[80];
-	sprintf(message, "Mark5 offset=%d > segment size=%d", offset, bufferinfo[buffersegment].validbytes);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+	cerr << "Datastream " << mpiid << ": ERROR Mark5 offset (" << offset << ") > segment size (" << bufferinfo[buffersegment].validbytes << "!!!" << endl;
 	keepreading=false;
       } else {
 	int nread, status;
-	char message[80];
-	
-	sprintf(message, "Seeking %d bytes into stream", offset);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-
+	cout << "************Datastream " << mpiid << ": Seeking " << offset << " bytes into stream. " << endl;
 	memmove(ptr, ptr+offset, bufferinfo[buffersegment].validbytes-offset);
 	status = readnetwork(socketnumber, ptr+bufferinfo[buffersegment].validbytes-offset, offset, &nread);
 	
 	// We *should not* update framebytes remaining (or validbyes). 
 
 	if (status==-1) { // Error reading socket
-	  difxMessageSendDifxAlert("Error reading socket", DIFX_ALERT_LEVEL_ERROR);
+	  cerr << "Datastream " << mpiid << ": Error reading socket" << endl;
 	  keepreading=false;
 	} else if (status==0) {  // Socket closed remotely
 	  keepreading=false;
 	} else if (nread!=offset) {
-	  difxMessageSendDifxAlert("Did not read enough bytes", DIFX_ALERT_LEVEL_ERROR);
+	  cerr << "Datastream " << mpiid << ": Did not read enough bytes" << endl;
 	  keepreading=false;
 	}
       }
@@ -659,6 +632,7 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
 
     readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
     readnanoseconds = mark5stream->ns;
+    //cout << "DataStream " << mpiid << ": The frame start day is " << mark5stream->mjd << ", the frame start seconds is " << mark5stream->sec << ", the frame start ns is " << mark5stream->ns << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
 
     delete_mark5_stream(mark5stream);
   }
@@ -702,9 +676,10 @@ int Mk5DataStream::openframe()
     rate = packet_sum/delta*8/1e6;
     
     if (packet_head!=0) {
-      char message[128];
-      sprintf(message, "Mk5DataStream::openframe Packets=%d Dropped=%d Duplicated=%d Out-of-order=%d Rate=%5.2f Mbps", npacket, dropped, dup, oo, rate);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+      cout << fixed << setprecision(2);
+      cout << "Datastream " << mpiid << ": Packets=" << npacket << "  Dropped=" << dropped
+	   << "  Duplicated=" << dup << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
+      // Should reset precision
     }
     packet_drop = 0;
     packet_oo = 0;

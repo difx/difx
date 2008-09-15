@@ -44,10 +44,8 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   : config(conf), visID(id), numvisibilities(numvis), executeseconds(eseconds), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
 {
   int status;
-  char message[64];
 
-  sprintf(message, "About to create visibility %d/%d", id, numvis);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "About to create visibility " << id << "/" << numvis << endl;
 
   if(visID == 0)
     *mon_socket = -1;
@@ -60,10 +58,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   results = vectorAlloc_cf32(resultlength);
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
-  {
-    sprintf(message, "Vis. %d: Error trying to zero when incrementing visibility", visID);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-  }
+    cerr << "Error trying to zero when incrementing visibility " << visID << endl;
   numbaselines = config->getNumBaselines();
   currentconfigindex = config->getConfigIndex(skipseconds);
   expermjd = config->getStartMJD();
@@ -133,11 +128,7 @@ bool Visibility::addData(cf32* subintresults)
 
   status = vectorAdd_cf32_I(subintresults, results, resultlength);
   if(status != vecNoErr)
-  {
-    char message[64];
-    sprintf(message, "Vis. %d: error copying results; currentsubints=%d", visID, currentsubints);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error copying results in visibility ID " << visID << endl;
   currentsubints++;
 
   return (currentsubints==subintsthisintegration); //are we finished integrating?
@@ -146,10 +137,7 @@ bool Visibility::addData(cf32* subintresults)
 void Visibility::increment()
 {
   int status;
-  char message[64];
-
-  sprintf(message, "Vis. %d is incrementing; currentsubints=%d", visID, currentsubints);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "VISIBILITY " << visID << " IS INCREMENTING, SINCE CURRENTBLOCKS = " << currentsubints << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
@@ -157,10 +145,7 @@ void Visibility::increment()
 
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
-  {
-    sprintf(message, "Vis. %d: error trying to zero results while incrementing", visID);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error trying to zero when incrementing visibility " << visID << endl;
 
   if(pulsarbinon) {
     for(int i=0;i<config->getFreqTableLength();i++) {
@@ -173,10 +158,7 @@ void Visibility::increment()
         {
           status = vectorZero_f32(binweightsums[i][j], config->getNumPulsarBins(currentconfigindex));
           if(status != vecNoErr)
-          {
-            sprintf(message, "Vis. %d: error trying to zero binweightsums while incrementing", visID);
-            difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-          }
+            cerr << "Error trying to zero binweightsums when incrementing visibility " << visID << endl;
         }
       }
     }
@@ -226,16 +208,14 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
   int saveflags,ret,back_err;
   fd_set fd_w;
   struct timeval timeout;
-  char message[200];
 
   timeout.tv_sec = 0;
   timeout.tv_usec = 100000;
 
   hostptr = gethostbyname(hostname);
   if (hostptr==NULL) {
-    sprintf(message, "Failed to look up hostname %s", hostname);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-    return 1;
+    printf("Failed to look up hostname %s\n", hostname);
+    return(1);
   }
   
   memcpy(&ip_addr, (char *)hostptr->h_addr, sizeof(ip_addr));
@@ -244,14 +224,12 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
   server.sin_port = htons((unsigned short)port); 
   server.sin_addr.s_addr = ip_addr;
   
-  sprintf(message, "Connecting to %s\n",inet_ntoa(server.sin_addr));
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
     
   *sock = socket(AF_INET, SOCK_STREAM, 0);
   if (*sock==-1) {
-    sprintf(message, "Failed to allocate socket: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
-    return 1;
+    perror("Failed to allocate socket");
+    return(1);
   }
 
   /* Set the window size to TCP actually works */
@@ -259,23 +237,20 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
                       (char *) &window_size, sizeof(window_size));
   if (status!=0) {
     close(*sock);
-    sprintf(message, "Failed to set socket options: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("Setting socket options");
     return(1);
   }
 
   saveflags=fcntl(*sock,F_GETFL,0);
   if(saveflags<0) {
-    sprintf(message, "fcntl failed [1]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("fcntl1");
     err=errno;
     return 1;
   }
 
   /* Set non blocking */
   if(fcntl(*sock,F_SETFL,saveflags|O_NONBLOCK)<0) {
-    sprintf(message, "fcntl failed [2]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("fcntl2");
     err=errno;
     return 1;
   }
@@ -286,8 +261,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
 
   /* restore flags */
   if(fcntl(*sock,F_SETFL,saveflags)<0) {
-    sprintf(message, "fcntl failed [3]: errno=%d %s", errno, strerror(errno));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+    perror("fcntl3");
     err=errno;
     return 1;
   }
@@ -297,8 +271,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
 
   if(status<0) {
     if (back_err!=EINPROGRESS) {
-      sprintf(message, "connect failed: errno=%d %s", errno, strerror(errno));
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+      perror("connect");
       err=errno;
       return 1;
     } else {
@@ -308,8 +281,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
 
       status = select(FD_SETSIZE,NULL,&fd_w,NULL,&timeout);
       if(status < 0) {
-        sprintf(message, "select failed: errno=%d %s", errno, strerror(errno));
-        difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+	perror("select");
 	err=errno;
 	return 1;
       }
@@ -325,8 +297,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
       socklen_t len=sizeof(ret);
       status=getsockopt(*sock,SOL_SOCKET,SO_ERROR,&ret,&len);
       if(status<0) {
-        sprintf(message, "getsockopt failed: errno=%d %s", errno, strerror(errno));
-        difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_FATAL);
+	perror("getsockopt");
 	status = errno;
 	return 1;
       }
@@ -358,7 +329,7 @@ int Visibility::sendMonitorData(bool tofollow) {
     nwrote = send(*mon_socket, ptr, 4, 0);
     if (nwrote < 4)
     {
-      difxMessageSendDifxAlert("Error writing to network - will try to reconnect next Visibility 0 integration!", DIFX_ALERT_LEVEL_ERROR);
+      cerr << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
       return 1;
     }
 
@@ -371,18 +342,16 @@ int Visibility::sendMonitorData(bool tofollow) {
         nwrote = send(*mon_socket, ptr, ntowrite, 0);
         if(errno == EPIPE)
         {
-          difxMessageSendDifxAlert("Network seems to have dropped out!  Will try to reconnect shortly...!", DIFX_ALERT_LEVEL_ERROR);
+          printf("Network seems to have dropped out!  Will try to reconnect shortly...!\n");
           return(1);
         }
         if (nwrote==-1) {
-	  char message[200];
           if (errno == EINTR) continue;
-          sprintf(message, "Error writing to network: errno=%d %s", errno, strerror(errno));
-          difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+          perror("Error writing to network");
 
           return(1);
         } else if (nwrote==0) {
-	  difxMessageSendDifxAlert("Warning: Did not write any bytes!", DIFX_ALERT_LEVEL_WARNING);
+          printf("Warning: Did not write any bytes!\n");
           return(1);
         } else {
           ntowrite -= nwrote;
@@ -396,22 +365,18 @@ int Visibility::sendMonitorData(bool tofollow) {
 
 bool Visibility::checkSocketStatus()
 {
-  char message[128];
-
   if(*mon_socket < 0)
   {
     if(visID != 0)
     {
       //don't even try to connect, unless you're the first visibility.  Saves trying to reconnect too often
-      sprintf(message, "Vis. %d won't try to reconnect monitor - waiting for vis 0...", visID);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+      cerr << "Visibility " << visID << " won't try to reconnect monitor - waiting for vis 0..." << endl;
       return false;
     }
     if(openMonitorSocket(hostname, portnum, Configuration::MONITOR_TCP_WINDOWBYTES, mon_socket) != 0)
     {
       *mon_socket = -1;
-      sprintf(message, "Monitor socket could not be opened - monitoring not proceeding! Will try again after %d integrations...", numvisibilities);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+      cerr << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << numvisibilities << " integrations..." << endl;
       return false;
     }
   }
@@ -424,10 +389,8 @@ void Visibility::writedata()
   int status, ds1, ds2, ds1bandindex, ds2bandindex, binloop;
   int dumpmjd;
   double dumpseconds;
-  char message[128];
 
-  sprintf(message, "Vis. %d is starting to write out data", visID);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "Visibility " << visID << " is starting to write out data" << endl;
 
   dumpmjd = expermjd + (experseconds + currentstartseconds)/86400;
   dumpseconds = double((experseconds + currentstartseconds)%86400) + double((currentstartsamples+integrationsamples/2)/(2000000.0*config->getDBandwidth(currentconfigindex,0,0)));
@@ -442,9 +405,7 @@ void Visibility::writedata()
     //if required, send a message to the monitor not to expect any data this integration - 
     //if we can't get through to the monitor, close the socket
     if(monitor && sendMonitorData(false) != 0) {
-      sprintf(message, "Vis. %d tried to send a header only to monitor and it failed - closing socket!", visID);
-      difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
-      
+      cerr << "tried to send a header only to monitor and it failed - closing socket!" << endl;
       close(*mon_socket);
       *mon_socket = -1;
     }
@@ -491,10 +452,7 @@ void Visibility::writedata()
       //work out the band average, for use in calibration (allows us to calculate fractional correlation)
       status = vectorMean_cf32(&results[skip + count], numchannels+1, &autocorrcalibs[i][j], vecAlgHintFast);
       if(status != vecNoErr)
-      {
-        sprintf(message, "Cannot compute vectorMean of autocorrelation: count=%d status=%d", count, status);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-      }
+        cerr << "Error in getting average of autocorrelation!!!" << status << endl;
       count += numchannels + 1;
     }
     if(config->writeAutoCorrs(currentconfigindex) && autocorrincrement > 1)  { 
@@ -533,7 +491,7 @@ void Visibility::writedata()
           {
             status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
             if(status != vecNoErr)
-	      difxMessageSendDifxAlert("Error trying to amplitude calibrate the baseline data!!!", DIFX_ALERT_LEVEL_SEVERE);
+              cerr << "Error trying to amplitude calibrate the baseline data!!!" << endl;
           }
           else
           {
@@ -545,7 +503,7 @@ void Visibility::writedata()
               scale = 1.0/(baselineweights[i][j][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*numchannels)));
               status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
               if(status != vecNoErr)
-	        difxMessageSendDifxAlert("Error trying to amplitude calibrate the baseline data!!!", DIFX_ALERT_LEVEL_SEVERE);
+                cerr << "Error trying to amplitude calibrate the baseline data!!!" << endl;
             }
           }
           count += numchannels+1;
@@ -571,7 +529,7 @@ void Visibility::writedata()
 	    {
               status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
               if(status != vecNoErr)
-	        difxMessageSendDifxAlert("Error trying to amplitude calibrate the baseline data!!!", DIFX_ALERT_LEVEL_SEVERE);
+                cerr << "Error trying to amplitude calibrate the datastream data!!!" << endl;
             }
             else
             {
@@ -583,7 +541,7 @@ void Visibility::writedata()
                 scale = 1.0/(autocorrweights[i][k+j*config->getDNumOutputBands(currentconfigindex, i)]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*numchannels)));
                 status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
                 if(status != vecNoErr)
-	          difxMessageSendDifxAlert("Error trying to amplitude calibrate the baseline data!!!", DIFX_ALERT_LEVEL_SEVERE);
+                  cerr << "Error trying to amplitude calibrate the datastream data for the correlation coefficient case!!!" << endl;
               }
             }
           }
@@ -620,14 +578,14 @@ void Visibility::writedata()
         }
       }
     }
-    difxMessageSendDifxAlert("Done calculating weight sums", DIFX_ALERT_LEVEL_VERBOSE);
+    cout << "Done calculating weight sums" << endl;
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++) {
         for(int k=0;k<(config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);k++)
             binscales[i][k][j].re = binscales[i][k][j].im = binweightsums[i][j][k] / binweightdivisor[k];
       }
     }
-    difxMessageSendDifxAlert("Done calculating scales", DIFX_ALERT_LEVEL_VERBOSE);
+    cout << "Done calculating scales" << endl;
 
     //do the calibration - should address the weight here as well!
     count = 0;
@@ -641,13 +599,13 @@ void Visibility::writedata()
           {
             status = vectorMul_f32_I((f32*)(binscales[config->getBFreqIndex(currentconfigindex, i, j)][b]), (f32*)(&(results[count])), 2*(numchannels+1));
             if(status != vecNoErr)
-	      difxMessageSendDifxAlert("Error trying to pulsar amplitude calibrate the baseline data!!!", DIFX_ALERT_LEVEL_SEVERE);
+              cerr << "Error trying to pulsar amplitude calibrate the baseline data!!!" << endl;
             count += numchannels+1;
           }
         }
       }
     }
-    difxMessageSendDifxAlert("Done the in-place multiplication", DIFX_ALERT_LEVEL_VERBOSE);
+    cout << "Done the in-place multiplication" << endl;
   }
   
   //all calibrated, now just need to write out
@@ -662,7 +620,7 @@ void Visibility::writedata()
   if(monitor) {
     if (visID % monitor_skip == 0) {
       if (sendMonitorData(true) != 0){ 
-        difxMessageSendDifxAlert("Error sending monitoring data - closing socket!", DIFX_ALERT_LEVEL_ERROR);
+	cerr << "Error sending monitoring data - closing socket!" << endl;
 	close(*mon_socket);
 	*mon_socket = -1;
       }
@@ -670,8 +628,7 @@ void Visibility::writedata()
     }
   }
 
-  sprintf(message, "Vis. %d has finished writing data", visID);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "Visibility has finished writing data" << endl;
 }
 
 void Visibility::writeascii()
@@ -679,7 +636,6 @@ void Visibility::writeascii()
   ofstream output;
   int binloop;
   char datetimestring[26];
-  char message[64];
 
   int count = 0;
   int samples = currentstartsamples + integrationsamples/2;
@@ -695,8 +651,7 @@ void Visibility::writeascii()
      mjd++;
   }
   sprintf(datetimestring, "%05u_%02u%02u%02u_%06u", mjd, hours, minutes, seconds, microseconds);
-  sprintf(message, "Writing ASCII visibility for %s", datetimestring);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+  cout << "Mjd is " << mjd << ", hours is " << hours << ", minutes is " << minutes << ", seconds is " << seconds << endl;
   
   if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
     binloop = config->getNumPulsarBins(currentconfigindex);
@@ -778,7 +733,7 @@ void Visibility::writerpfits()
         //clear the rpfits array, which is a specially ordered array of all products for this frequency
         status = vectorZero_cf32(rpfitsarray, maxproducts*(numchannels+1));
         if(status != vecNoErr)
-	  difxMessageSendDifxAlert("Error trying to zero the rpfitsarray!!!", DIFX_ALERT_LEVEL_ERROR);
+          cerr << "Error trying to zero the rpfitsarray!!!" << endl;
         freqnumber = config->getBFreqIndex(currentconfigindex, i, j) + 1;
         numpolproducts = config->getBNumPolProducts(currentconfigindex, i, j);
 
@@ -817,7 +772,7 @@ void Visibility::writerpfits()
           //zero the rpfitsarray
           status = vectorZero_cf32(rpfitsarray, maxproducts*(numchannels+1));
           if(status != vecNoErr)
-	    difxMessageSendDifxAlert("Error trying to zero the rpfitsarray!!!", DIFX_ALERT_LEVEL_ERROR);
+            cerr << "Error trying to zero the rpfitsarray!!!" << endl;
           freqnumber = config->getDFreqIndex(currentconfigindex, i, datastreampolbandoffsets[i][j][firstpolindex]%config->getDNumOutputBands(currentconfigindex, i)) + config->getIndependentChannelIndex(currentconfigindex)*config->getFreqTableLength() + 1;
 
           for(int k=0;k<maxproducts; k++)
@@ -834,22 +789,14 @@ void Visibility::writerpfits()
           rpfitsout_(&status/*should be 0 = writing data*/, visibilities, 0/*not using weights*/, &baselinenumber, &offsetstartdaysec, &buvw[0], &buvw[1], &buvw[2], &flag/*not flagged*/, &bin, &freqnumber, &sourcenumber);
         }
         else
-	{
-	  char message[80];
-	  sprintf(message, "Did not find any bands for frequency %d of datastream %d", j, i);
-	  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-	}
+          cerr << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
       }
       count += autocorrincrement*(numchannels+1)*config->getDNumOutputBands(currentconfigindex, i);
     }
   }
   if(status != 0)
-  {
-    char message[80];
-    sprintf(message, "Error trying to write visibilities for %d seconds plus %d samples", 
-      currentstartseconds, currentstartsamples);
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-  }
+    cerr << "Error trying to write visibilities for " << currentstartseconds << " seconds plus " << currentstartsamples << " samples" << endl;
+
 #endif
 }
 
@@ -958,11 +905,7 @@ void Visibility::writedifx()
           }
         }
         else
-	{
-	  char message[80];
-          sprintf(message, "Did not find any bands for frequency %d of datastream %d", j, i);
-	  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-	}
+          cerr << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
       }
       count += autocorrincrement*config->getDNumOutputBands(currentconfigindex, i);
     }
@@ -1033,7 +976,6 @@ void Visibility::changeConfig(int configindex)
   char polpair[3];
   bool found;
   polpair[2] = 0;
-  char message[128];
   
   if(first) 
   {
@@ -1096,9 +1038,7 @@ void Visibility::changeConfig(int configindex)
   offsetperintegration = integrationsamples%subintsamples;
   fftsperintegration = ((double)integrationsamples)*config->getBlocksPerSend(configindex)/((double)subintsamples);
   meansubintsperintegration = fftsperintegration/config->getBlocksPerSend(configindex);
-  sprintf(message, "Vis. %d gets new config index=%d; offsetperintegration=%d subintsamples=%d",
-    visID, configindex, offsetperintegration, subintsamples);
-  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+  cout << "For Visibility " << visID << ", offsetperintegration is " << offsetperintegration << ", subintsamples is " << subintsamples << ", and configindex is " << configindex << endl;
   resultlength = config->getResultLength(configindex);
   for(int i=0;i<numdatastreams;i++)
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
@@ -1126,9 +1066,7 @@ void Visibility::changeConfig(int configindex)
         }
         if(!found)
         {
-	  char message[128];
-	  sprintf(message, "Could not find a polarisation pair, will be put in position %d!!!", maxproducts);
-	  difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+          cerr << "Error - could not find a polarisation pair, will be put in position " << maxproducts << "!!!" << endl;
           baselinepoloffsets[i][j][k] = maxproducts-1;
         }
       }   
@@ -1140,8 +1078,7 @@ void Visibility::changeConfig(int configindex)
   {
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
     autocorrweights[i] = new f32[autocorrincrement*config->getDNumOutputBands(configindex, i)];
-    sprintf(message, "Creating datastreampolbandoffsets, length=%d", config->getDNumFreqs(configindex,i));
-    difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+    cout << "Creating datastreampolbandoffsets, length " << config->getDNumFreqs(configindex,i) << endl;
     datastreampolbandoffsets[i] = new int*[config->getDNumFreqs(configindex,i)];
     for(int j=0;j<config->getDNumFreqs(configindex, i);j++)
     {
