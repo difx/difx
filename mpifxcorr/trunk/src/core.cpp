@@ -178,7 +178,7 @@ void Core::execute()
   
   terminate = false;
   numreceived = 0;
-  cinfo << "Core " << mpiid << " has started executing!!!" << endl;
+  cverbose << "Core " << mpiid << " has started executing!!!" << endl;
 
   //get the lock for the first slot, one per thread
   for(int i=0;i<numprocessthreads;i++)

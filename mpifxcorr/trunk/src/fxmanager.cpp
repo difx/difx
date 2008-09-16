@@ -211,7 +211,7 @@ FxManager::~FxManager()
 
 void interrupthandler(int sig)
 {
-  cinfo << "FXMANAGER caught a signal and is going to shut down the correlator" << endl;
+  cwarn << "FXMANAGER caught a signal and is going to shut down the correlator" << endl;
   terminatenow = true;
 }
 

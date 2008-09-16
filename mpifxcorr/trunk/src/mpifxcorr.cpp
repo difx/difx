@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  cinfo << "About to process the input file.." << endl;
+  cverbose << "About to process the input file.." << endl;
   //process the input file to get all the info we need
   config = new Configuration(argv[1]);
   if(!config->consistencyOK())
@@ -286,6 +286,6 @@ int main(int argc, char *argv[])
   if(stream) delete stream;
   if(core) delete core;
 
-  cinfo << "MPI process " << myID << "says BYE!" << endl;
+  cinfo << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;
 }

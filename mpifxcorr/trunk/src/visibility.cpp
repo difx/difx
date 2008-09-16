@@ -48,7 +48,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
 {
   int status;
 
-  cinfo << "About to create visibility " << id << "/" << numvis << endl;
+  cverbose << "About to create visibility " << id << "/" << numvis << endl;
 
   if(visID == 0)
     *mon_socket = -1;
@@ -1043,7 +1043,7 @@ void Visibility::changeConfig(int configindex)
   offsetperintegration = integrationsamples%subintsamples;
   fftsperintegration = ((double)integrationsamples)*config->getBlocksPerSend(configindex)/((double)subintsamples);
   meansubintsperintegration = fftsperintegration/config->getBlocksPerSend(configindex);
-  cinfo << "For Visibility " << visID << ", offsetperintegration is " << offsetperintegration << ", subintsamples is " << subintsamples << ", and configindex is " << configindex << endl;
+  cverbose << "For Visibility " << visID << ", offsetperintegration is " << offsetperintegration << ", subintsamples is " << subintsamples << ", and configindex is " << configindex << endl;
   resultlength = config->getResultLength(configindex);
   for(int i=0;i<numdatastreams;i++)
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
@@ -1083,7 +1083,7 @@ void Visibility::changeConfig(int configindex)
   {
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
     autocorrweights[i] = new f32[autocorrincrement*config->getDNumOutputBands(configindex, i)];
-    cinfo << "Creating datastreampolbandoffsets, length " << config->getDNumFreqs(configindex,i) << endl;
+    cverbose << "Creating datastreampolbandoffsets, length " << config->getDNumFreqs(configindex,i) << endl;
     datastreampolbandoffsets[i] = new int*[config->getDNumFreqs(configindex,i)];
     for(int j=0;j<config->getDNumFreqs(configindex, i);j++)
     {

@@ -300,12 +300,12 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
   readnanoseconds = int(mark5stream->ns);
-  cinfo << "The frame start is day=" << mark5stream->mjd << ", seconds=" << mark5stream->sec << ", ns=" << mark5stream->ns << ", readseconds=" << readseconds << ", readns=" << readnanoseconds << endl;
+  cverbose << "The frame start is day=" << mark5stream->mjd << ", seconds=" << mark5stream->sec << ", ns=" << mark5stream->ns << ", readseconds=" << readseconds << ", readns=" << readnanoseconds << endl;
 
   //close mark5stream
   delete_mark5_stream(mark5stream);
 
-  cinfo << "About to seek to byte " << offset << " to get to the first frame" << endl;
+  cverbose << "About to seek to byte " << offset << " to get to the first frame" << endl;
 
   input.seekg(offset);
 }

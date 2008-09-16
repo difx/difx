@@ -71,7 +71,7 @@ void DataStream::initialise()
   bufferbytes = databufferfactor*config->getMaxDataBytes(streamnum);
   readbytes = bufferbytes/numdatasegments;
 
-  //cinfo << "******DataStream " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
+  //cinfo << "******DATASTREAM " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
 
   for(int i=0;i<config->getNumConfigs();i++) {
     currentoverflowbytes = int((((long long)config->getDataBytes(i,streamnum))*((long long)(config->getBlocksPerSend(i) + config->getGuardBlocks(i))))/config->getBlocksPerSend(i));
@@ -136,7 +136,7 @@ void DataStream::initialise()
     datafilenames[i] = config->getDDataFileNames(i, streamnum);
   }
 
-  cinfo << "Telescope " << stationname << " is about to process the delay file " << config->getDelayFileName() << endl;
+  cverbose << "Telescope " << stationname << " is about to process the delay file " << config->getDelayFileName() << endl;
   processDelayFile(config->getDelayFileName());
 
   numsent = 0;
@@ -145,7 +145,7 @@ void DataStream::initialise()
 
 void DataStream::execute()
 {
-  cinfo << "DATASTREAM " << mpiid << " has started execution" << endl;
+  cverbose << "DATASTREAM " << mpiid << " has started execution" << endl;
   datastatuses = new MPI_Status[maxsendspersegment];
   controlstatuses = new MPI_Status[maxsendspersegment];
   MPI_Request msgrequest;
@@ -216,7 +216,7 @@ void DataStream::execute()
     }
     else //must have been a terminate signal
     {
-      cinfo << "DataStream " << mpiid << " will terminate next round!!!" << endl;
+      cinfo << "DATASTREAM " << mpiid << " will terminate next round!!!" << endl;
       status = -1; //will terminate next round
       keepreading = false;
     }
@@ -249,17 +249,17 @@ void DataStream::execute()
 
   delete [] datastatuses;
   delete [] controlstatuses;
-  cinfo << "DATASTREAM " << mpiid << " terminating" << endl;
+  cverbose << "DATASTREAM " << mpiid << " terminating" << endl;
 }
 
 void DataStream::openfile(int configindex, int fileindex)
 {
-  cinfo << "DataStream " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
+  cverbose << "DATASTREAM " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
   if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
   {
     dataremaining = false;
     keepreading = false;
-    cinfo << "Datastream " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
+    cinfo << "DATASTREAM " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
     return;
   }
   
@@ -267,7 +267,7 @@ void DataStream::openfile(int configindex, int fileindex)
   if(input.fail())
     input.clear(); //get around EOF problems caused by peeking
   input.open(datafilenames[configindex][fileindex].c_str(),ios::in);
-  cinfo << "input.bad() is " << input.bad() << ", input.fail is " << input.fail() << endl;
+  cverbose << "input.bad() is " << input.bad() << ", input.fail() is " << input.fail() << endl;
   if(!input.is_open() || input.bad())
   {
     cerror << "Error trying to open file " << datafilenames[configindex][fileindex] << endl;
@@ -275,7 +275,7 @@ void DataStream::openfile(int configindex, int fileindex)
     return;
   }
 
-  cinfo << "DataStream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << "!" << endl;
+  cinfo << "DATASTREAM " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
 
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);
@@ -319,12 +319,12 @@ void DataStream::initialiseFile(int configindex, int fileindex)
     cinfo << "Processed a new style header, all info ignored except date/time" << endl;
   }
   
-  cinfo << "DataStream " << mpiid << " got the header " << inputline << " ok" << endl;
+  cinfo << "DATASTREAM " << mpiid << " got the header " << inputline << " ok" << endl;
 
   //convert this date into MJD
   config->getMJD(filestartday, filestartseconds, year, month, day, hour, minute, second);
 
-  cinfo << "DataStream " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
+  cinfo << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
 
   //set readseconds, accounting for the intclockseconds
   readseconds = 86400*(filestartday-corrstartday) + (filestartseconds-corrstartseconds) + intclockseconds;
@@ -463,7 +463,7 @@ void DataStream::initialiseMemoryBuffer()
 {
   int perr;
   readthreadstarted = false;
-  cinfo << "DATASTREAM " << mpiid << " started initialising memory buffer" << endl;
+  cverbose << "DATASTREAM " << mpiid << " started initialising memory buffer" << endl;
 
   perr = pthread_mutex_lock(&bufferlock[0]);
   if(perr != 0)
@@ -498,7 +498,7 @@ void DataStream::initialiseMemoryBuffer()
       csevere << "Error waiting on readthreadstarted condition!!!!" << endl;
   }
 
-  cinfo << "DATASTREAM " << mpiid << " finished initialising memory buffer" << endl;
+  cverbose << "DATASTREAM " << mpiid << " finished initialising memory buffer" << endl;
 }
 
 void DataStream::calculateQuadraticParameters(int intdelayseconds, int offsetns)
@@ -659,7 +659,7 @@ void DataStream::loopfileread()
       csevere << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
   }
 
-  cinfo << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
+  cverbose << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
 void DataStream::loopnetworkread()
@@ -928,7 +928,6 @@ int DataStream::initialiseFrame(char * frameheader)
 
   inputline = at;
 
-  //cinfo << "DataStream " << mpiid << " read a header line of " << inputline << "!" << endl;
   year = atoi((inputline.substr(0,4)).c_str());
   month = atoi((inputline.substr(4,2)).c_str());
   day = atoi((inputline.substr(6,2)).c_str());
@@ -938,7 +937,7 @@ int DataStream::initialiseFrame(char * frameheader)
 
   config->getMJD(filestartday, filestartseconds, year, month, day, hour, minute, second);
 
-  cinfo << "DataStream " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
+  cinfo << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
 
   readseconds = 86400*(filestartday-corrstartday) + (filestartseconds-corrstartseconds) + intclockseconds;
   readnanoseconds = 0;
@@ -951,14 +950,9 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
   char *ptr;
   int bytestoread, nread, status;
 
-  
-  //cinfo << "***DataStream " << mpiid << ": Waiting on buffer " << buffersegment << "/" << numdatasegments << endl;
   //do the buffer housekeeping
   waitForBuffer(buffersegment);
-  //cinfo << "***DataStream " << mpiid << ": Got it. Reading " << readbytes << endl;
 
-  //cinfo << "***DataStream " << mpiid << ": framebytesremaining = " << framebytesremaining << endl;
- 
   bytestoread = readbytes;
   if (bytestoread>framebytesremaining)
     bytestoread = framebytesremaining;
@@ -995,7 +989,7 @@ int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
   *nread = 0;
 
-  //cinfo << "DataStream " << mpiid << ": Reading " << bytestoread << " bytes" << endl;
+  //cinfo << "DATASTREAM " << mpiid << ": Reading " << bytestoread << " bytes" << endl;
 
   while (bytestoread>0)
   {
@@ -1062,7 +1056,7 @@ void DataStream::waitForSendComplete()
       waitsegment = (waitsegment + 1)%numdatasegments;
       perr = pthread_cond_signal(&readcond);
       if(perr != 0)
-        csevere << "DataStream mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
+        csevere << "DATASTREAM mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
     }
   }
   else //already done!  can advance for next time
