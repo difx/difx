@@ -1,4 +1,8 @@
-SUBDIRS= src
+SUBDIRS = \
+	vex \
+	src
 
-DIST_SUBDIRS = src
+DIST_SUBDIRS = \
+	vex \
+	src
 
