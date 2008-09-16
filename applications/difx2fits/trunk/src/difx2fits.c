@@ -164,7 +164,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			else if(strcmp(argv[i], "--quiet") == 0 ||
 			        strcmp(argv[i], "-q") == 0)
 			{
-				opts->verbose++;
+				opts->verbose--;
 			}
 			else if(strcmp(argv[i], "--difx") == 0 ||
 			        strcmp(argv[i], "-d") == 0)
