@@ -10,7 +10,7 @@ extern FILE * yyin;
 extern struct vex *vex_ptr;
 
 /*---------------------------------------------------------------------------*/
-int vex_open(char *name, struct vex **vex)
+int vex_open(const char *name, struct vex **vex)
 {
   *vex=NULL;
   yyin=fopen(name,"r");

@@ -600,7 +600,7 @@ void *
 get_literals(Llist **lowls_literal, char *station_in,
 		 struct vex *vex_in);
 
-int vex_open(char *name, struct vex **vex);
+int vex_open(const char *name, struct vex **vex);
 
 void *
 create_vex(); /* (int screen_or_file) * zero(0) or one(1) resp.*/

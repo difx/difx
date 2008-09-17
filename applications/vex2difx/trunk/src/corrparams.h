@@ -79,12 +79,16 @@ public:
 	/* global parameters */
 	double mjdStart;
 	double mjdStop;
+	int minSubarraySize;
 	vector<string> antennaList;
 
+	/* setups to apply */
 	vector<CorrSetup> setups;
+
+	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
 
-	bool useAntenna(const string &antName);
+	bool useAntenna(const string &antName) const;
 };
 
 #endif

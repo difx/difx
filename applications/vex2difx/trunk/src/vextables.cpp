@@ -3,6 +3,35 @@
 
 using namespace std;
 
+VexSource *VexData::newSource()
+{
+	VexSource *source;
+
+	source = new VexSource;
+	sources.push_back(*source);
+	return &sources.back();
+}
+
+const VexSource &VexData::getSource(string name) const
+{
+	int i;
+	
+	for(i = 0; i < nSource(); i++)
+	{
+		if(sources[i].name == name)
+			return sources[i];
+	}
+
+	// FIXME -- throw exception
+}
+
+const VexSource &VexData::getSource(int num) const
+{
+	// FIXME -- throw exception if num < 0 || num >= nScan
+
+	return sources[num];
+}
+
 VexScan *VexData::newScan()
 {
 	VexScan *scan;
@@ -32,9 +61,57 @@ const VexScan &VexData::getScan(int num) const
 	return scans[num];
 }
 
+VexAntenna *VexData::newAntenna()
+{
+	VexAntenna *antenna;
+
+	antenna = new VexAntenna;
+	antennas.push_back(*antenna);
+	return &antennas.back();
+}
+
+const VexAntenna &VexData::getAntenna(string name) const
+{
+	int i;
+	
+	for(i = 0; i < nAntenna(); i++)
+	{
+		if(antennas[i].name == name)
+			return antennas[i];
+	}
+
+	// FIXME -- throw exception
+}
+
+const VexAntenna &VexData::getAntenna(int num) const
+{
+	// FIXME -- throw exception if num < 0 || num >= nScan
+
+	return antennas[num];
+}
+
+
 ostream& operator << (ostream& os, const VexInterval& x)
 {
 	return os << "mjd(" << x.mjdStart << "," << x.mjdEnd << ")";
+}
+
+ostream& operator << (ostream& os, const VexSource& x)
+{
+	int i, n;
+
+	os << "Source " << x.name << endl;
+	n = x.sourceNames.size();
+	for(i = 0; i < n; i++)
+	{
+		os << "  name=" << x.sourceNames[i] << endl;
+	}
+	os << "  ra=" << x.ra <<
+		"\n  dec=" << x.dec <<
+		"\n  calCode=" << x.calCode <<
+		"\n  qual=" << x.qualifier << endl;
+
+	return os;
 }
 
 ostream& operator << (ostream& os, const VexScan& x)
@@ -48,6 +125,19 @@ ostream& operator << (ostream& os, const VexScan& x)
 
 	for(iter = x.stations.begin(); iter != x.stations.end(); iter++)
 		cout << "  " << iter->first << " range=" << iter->second << endl;
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexAntenna& x)
+{
+	os << "Antenna " << x.name <<
+		"\n   x=" << x.x <<
+		"\n   y=" << x.y <<
+		"\n   z=" << x.z <<
+		"\n   axisType=" << x.axisType <<
+		"\n   axisOffset=" << x.axisOffset << endl;
+
 	return os;
 }
 
@@ -55,13 +145,27 @@ ostream& operator << (ostream& os, const VexData& x)
 {
 	int i, n;
 
-	n = x.nScan();
-
 	os << "Vex:" << endl;
+
+	n = x.nSource();
+	os << n << " sources:" << endl;
+	for(i = 0; i < n; i++)
+	{
+		os << x.getSource(i);
+	}
+
+	n = x.nScan();
 	os << n << " scans:" << endl;
 	for(i = 0; i < n; i++)
 	{
-		cout << x.getScan(i);
+		os << x.getScan(i);
+	}
+
+	n = x.nAntenna();
+	os << n << " antennas:" << endl;
+	for(i = 0; i < n; i++)
+	{
+		os << x.getAntenna(i);
 	}
 
 	return os;

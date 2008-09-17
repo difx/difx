@@ -1,28 +1,27 @@
 #include "vextables.h"
 #include "corrparams.h"
-#include "../vex/vex.h"
+#include "vexload.h"
 
-
-main()
+int main(int argc, char **argv)
 {
-	VexInterval v(51000, 52000);
-	VexScan *S;
-	VexData V;
+	VexData *V;
+	CorrParams params;
 
-	S = V.newScan();
+	params.antennaList.push_back("Fd");
+	params.antennaList.push_back("MK");
+	params.antennaList.push_back("Sc");
+	 
+	if(argc < 2)
+	{
+		cout << "need filename" << endl;
+		return 0;
+	}
 
-	S->name = "xyz";
-	S->timeRange.mjdStart = 10322;
-	S->timeRange.mjdEnd = 10323;
-	S->modeName = "abc";
-	S->sourceName = "12+12";
-	S->stations["FD"] = VexInterval(10322.5, 10322.6);
-	S->stations["BR"] = VexInterval(10322.5, 10322.6);
+	V = loadVexFile(argv[1], params);
 
+	cout << *V << endl;
 
-	cout << v << endl;
+	delete V;
 
-	cout << *S << endl;
-
-	cout << V << endl;
+	return 0;
 }

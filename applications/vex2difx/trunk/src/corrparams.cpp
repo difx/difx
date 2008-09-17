@@ -1,6 +1,6 @@
 #include "corrparams.h"
 
-bool CorrParams::useAntenna(const string &antName)
+bool CorrParams::useAntenna(const string &antName) const
 {
 	int i, n;
 
@@ -17,4 +17,6 @@ bool CorrParams::useAntenna(const string &antName)
 		}
 		// FIXME -- allow -antName
 	}
+
+	return false;
 }
