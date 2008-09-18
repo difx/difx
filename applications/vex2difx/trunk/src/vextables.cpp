@@ -3,20 +3,46 @@
 
 using namespace std;
 
+
+int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
+{
+	int i, n;
+	VexSubband S(freq, bandwidth, sideband, pol);
+
+	n = subbands.size();
+
+	for(i = 0; i < n; i++)
+	{
+		if(S == subbands[i])
+		{
+			return 0;
+		}
+	}
+
+	subbands.push_back(S);
+
+	return 0;
+}
+
+bool operator == (VexSubband& s1, VexSubband& s2)
+{
+	if(s1.freq != s2.freq) return false;
+	if(s1.bandwidth != s2.bandwidth) return false;
+	if(s1.sideBand != s2.sideBand) return false;
+	if(s1.pol != s2.pol) return false;
+
+	return true;
+}
+
 VexSource *VexData::newSource()
 {
-	VexSource *source;
-
-	source = new VexSource;
-	sources.push_back(*source);
+	sources.push_back(VexSource());
 	return &sources.back();
 }
 
 const VexSource &VexData::getSource(string name) const
 {
-	int i;
-	
-	for(i = 0; i < nSource(); i++)
+	for(int i = 0; i < nSource(); i++)
 	{
 		if(sources[i].name == name)
 			return sources[i];
@@ -34,18 +60,13 @@ const VexSource &VexData::getSource(int num) const
 
 VexScan *VexData::newScan()
 {
-	VexScan *scan;
-
-	scan = new VexScan;
-	scans.push_back(*scan);
+	scans.push_back(VexScan());
 	return &scans.back();
 }
 
 const VexScan &VexData::getScan(string name) const
 {
-	int i;
-	
-	for(i = 0; i < nScan(); i++)
+	for(int i = 0; i < nScan(); i++)
 	{
 		if(scans[i].name == name)
 			return scans[i];
@@ -63,18 +84,13 @@ const VexScan &VexData::getScan(int num) const
 
 VexAntenna *VexData::newAntenna()
 {
-	VexAntenna *antenna;
-
-	antenna = new VexAntenna;
-	antennas.push_back(*antenna);
+	antennas.push_back(VexAntenna());
 	return &antennas.back();
 }
 
 const VexAntenna &VexData::getAntenna(string name) const
 {
-	int i;
-	
-	for(i = 0; i < nAntenna(); i++)
+	for(int i = 0; i < nAntenna(); i++)
 	{
 		if(antennas[i].name == name)
 			return antennas[i];
@@ -90,12 +106,89 @@ const VexAntenna &VexData::getAntenna(int num) const
 	return antennas[num];
 }
 
+VexMode *VexData::newMode()
+{
+	modes.push_back(VexMode());
+	return &modes.back();
+}
+
+const VexMode &VexData::getMode(string name) const
+{
+	for(int i = 0; i < nMode(); i++)
+	{
+		if(modes[i].name == name)
+			return modes[i];
+	}
+
+	// FIXME -- throw exception
+}
+
+const VexMode &VexData::getMode(int num) const
+{
+	// FIXME -- throw exception if num < 0 || num >= nScan
+
+	return modes[num];
+}
+
+VexEOP *VexData::newEOP()
+{
+	eops.push_back(VexEOP());
+	return &eops.back();
+}
+
+const VexEOP &VexData::getEOP(int num) const
+{
+	// FIXME -- throw exception if num < 0 || num >= nScan
+
+	if(num > 1000)	// Look for mjd
+	{
+		int n = nEOP();
+		for(int i = 0; i < n; i++)
+		{
+			if(getEOP(i).mjd == num)
+			{
+				return eops[i];
+			}
+		}
+	}
+
+	return eops[num];
+}
+
+bool VexData::usesAntenna(const string& antennaName) const
+{
+	int n = nAntenna();
+
+	for(int i = 0; i < n; i++)
+	{
+		if(getAntenna(i).name == antennaName)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool VexData::usesMode(const string& modeName) const
+{
+	int n = nScan();
+
+	for(int i = 0; i < n; i++)
+	{
+		if(getScan(i).modeName == modeName)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 
 ostream& operator << (ostream& os, const VexInterval& x)
 {
-	int p;
-
-	p = os.precision();
+	int p = os.precision();
 	os.precision(12);
 	os << "mjd(" << x.mjdStart << "," << x.mjdEnd << ")";
 	os.precision(p);
@@ -105,11 +198,9 @@ ostream& operator << (ostream& os, const VexInterval& x)
 
 ostream& operator << (ostream& os, const VexSource& x)
 {
-	int i, n;
-
 	os << "Source " << x.name << endl;
-	n = x.sourceNames.size();
-	for(i = 0; i < n; i++)
+	int n = x.sourceNames.size();
+	for(int i = 0; i < n; i++)
 	{
 		os << "  name=" << x.sourceNames[i] << endl;
 	}
@@ -148,49 +239,56 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexSubband& x)
+{
+	os << "  subband=(" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << ")" << endl;
+	
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexMode& x)
+{
+	os << "Mode " << x.name << endl;
+	for(int i = 0; i < x.subbands.size(); i++)
+	{
+		os << x.subbands[i];
+	}
+	
+	return os;
+}
+
 ostream& operator << (ostream& os, const VexData& x)
 {
-	int i, n;
-
 	os << "Vex:" << endl;
 
-	n = x.nSource();
+	int n = x.nSource();
 	os << n << " sources:" << endl;
-	for(i = 0; i < n; i++)
+	for(int i = 0; i < n; i++)
 	{
 		os << x.getSource(i);
 	}
 
 	n = x.nScan();
 	os << n << " scans:" << endl;
-	for(i = 0; i < n; i++)
+	for(int i = 0; i < n; i++)
 	{
 		os << x.getScan(i);
 	}
 
 	n = x.nAntenna();
 	os << n << " antennas:" << endl;
-	for(i = 0; i < n; i++)
+	for(int i = 0; i < n; i++)
 	{
 		os << x.getAntenna(i);
+	}
+
+	n = x.nMode();
+	os << n << " modes:" << endl;
+	for(int i = 0; i < n; i++)
+	{
+		os << x.getMode(i);
 	}
 
 	return os;
 }
 
-bool VexData::usesMode(string modeName) const
-{
-	int i, n;
-
-	n = nScan();
-
-	for(i = 0; i < n; i++)
-	{
-		if(getScan(i).modeName == modeName)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}

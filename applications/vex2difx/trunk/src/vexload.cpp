@@ -12,7 +12,7 @@ int fvex_date(char **field, int *iarray, double *seconds);
 
 }
 
-int toMJD(int year, int doy)
+int DOYtoMJD(int year, int doy)
 {
 	return doy-678576+365*(year-1)+(year-1)/4-(year-1)/100+(year-1)/400;
 }
@@ -101,7 +101,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		p = get_scan_start(L);
 		vex_field(T_START, p, 1, &link, &name, &value, &units);
 		fvex_date(&value, ints, &seconds);
-		mjd = toMJD(ints[0], ints[1]);
+		mjd = DOYtoMJD(ints[0], ints[1]);
 		mjd += ints[2]/24.0 + ints[3]/1440.0 + seconds/86400.0;
 		startScan = 1e99;
 		stopScan = 0.0;
@@ -149,6 +149,80 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->sourceName = string((char *)get_scan_source(L));
 	}
 	
+	return 0;
+}
+
+int getModes(VexData *V, Vex *v, const CorrParams& params)
+{
+	VexMode *M;
+	Llist *L;
+	void *p;
+	char *modeId;
+	int link, name;
+	char *value, *units;
+	double freq, bandwidth;
+	char sideBand;
+	map<string,char> if2pol;
+	map<string,char> bbc2pol;
+
+	for(modeId = get_mode_def(v);
+	    modeId;
+	    modeId = get_mode_def_next())
+	{
+		// don't bother building up modes that are not used
+		if(!V->usesMode(modeId))
+		{
+			continue;
+		}
+
+		M = V->newMode();
+		M->name = modeId;
+
+		// get FREQ info
+		for(int a = 0; a < V->nAntenna(); a++)
+		{
+			if2pol.clear();
+			bbc2pol.clear();
+
+			// Get IF to pol map for this antenna
+			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_IF_DEF, B_IF, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
+				sideBand = value[0];
+				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
+				if2pol[value] = sideBand;
+			}
+
+			// Get BBC to pol map for this antenna
+			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_BBC_ASSIGN, B_BBC, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
+				sideBand = if2pol[value];
+				vex_field(T_BBC_ASSIGN, p, 1, &link, &name, &value, &units);
+				bbc2pol[value] = sideBand;
+			}
+
+			// Get rest of Subband information
+			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_CHAN_DEF, B_FREQ, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
+				fvex_double(&value, &units, &freq);
+				vex_field(T_CHAN_DEF, p, 3, &link, &name, &value, &units);
+				sideBand = value[0];
+				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
+				fvex_double(&value, &units, &bandwidth);
+				vex_field(T_CHAN_DEF, p, 6, &link, &name, &value, &units);
+				
+				M->addSubband(freq, bandwidth, sideBand, bbc2pol[value]);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -170,6 +244,7 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getAntennas(V, v, params);
 	getSources(V, v, params);
 	getScans(V, v, params);
+	getModes(V, v, params);
 
 	return V;
 }

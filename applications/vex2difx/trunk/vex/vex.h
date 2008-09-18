@@ -486,17 +486,17 @@ void *
 get_all_lowl_next();
 
 void *
-get_all_lowl(char *station, char *mode, int statement,
+get_all_lowl(const char *station, const char *mode, int statement,
 	     int primitive, struct vex *vex_in);
 
 void *
-get_mode_lowl(char *station_in, char *mode_in, int statement,
+get_mode_lowl(const char *station_in, const char *mode_in, int statement,
 	      int primitive, struct vex *vex_in);
 void *
 get_mode_lowl_next();
 
 void *
-get_station_lowl(char *station_in, int statement_in,
+get_station_lowl(const char *station_in, int statement_in,
 	      int primitive_in, struct vex *vex_in);
 
 void *
@@ -518,7 +518,7 @@ struct llist *
 find_block(int block,struct vex *vex);
 
 struct llist *
-find_def(struct llist *defs,char *mode);
+find_def(struct llist *defs, const char *mode);
 
 struct llist *
 find_lowl(struct llist *lowls,int statement);

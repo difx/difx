@@ -20,10 +20,7 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	cout << endl << endl;
-
 	V = loadVexFile(argv[1], params);
-
 
 	cout << *V << endl;
 
