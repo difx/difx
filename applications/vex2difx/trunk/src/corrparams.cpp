@@ -1,5 +1,10 @@
 #include "corrparams.h"
 
+CorrParams::CorrParams()
+{
+	minSubarraySize = 2;
+}
+
 bool CorrParams::useAntenna(const string &antName) const
 {
 	int i, n;

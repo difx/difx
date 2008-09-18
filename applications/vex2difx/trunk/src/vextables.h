@@ -127,6 +127,8 @@ public:
 	int nAntenna() const { return antennas.size(); }
 	const VexAntenna &getAntenna(string name) const;
 	const VexAntenna &getAntenna(int num) const;
+
+	bool usesMode(string modeName) const;
 private:
 	vector<VexSource> sources;
 	vector<VexScan> scans;

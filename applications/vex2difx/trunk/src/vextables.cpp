@@ -93,7 +93,14 @@ const VexAntenna &VexData::getAntenna(int num) const
 
 ostream& operator << (ostream& os, const VexInterval& x)
 {
-	return os << "mjd(" << x.mjdStart << "," << x.mjdEnd << ")";
+	int p;
+
+	p = os.precision();
+	os.precision(12);
+	os << "mjd(" << x.mjdStart << "," << x.mjdEnd << ")";
+	os.precision(p);
+
+	return os;
 }
 
 ostream& operator << (ostream& os, const VexSource& x)
@@ -171,3 +178,19 @@ ostream& operator << (ostream& os, const VexData& x)
 	return os;
 }
 
+bool VexData::usesMode(string modeName) const
+{
+	int i, n;
+
+	n = nScan();
+
+	for(i = 0; i < n; i++)
+	{
+		if(getScan(i).modeName == modeName)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

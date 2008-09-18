@@ -76,6 +76,8 @@ public:
 class CorrParams
 {
 public:
+	CorrParams();
+
 	/* global parameters */
 	double mjdStart;
 	double mjdStop;
