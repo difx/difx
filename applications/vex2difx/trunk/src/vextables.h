@@ -65,9 +65,9 @@ class VexIF		// Antenna-specific baseband channel details
 public:
 	VexIF() : phaseCal(0), recordChan(0), subbandId(-1) {}
 
-	int phaseCal;		// (Hz), typically 1,000,000 or 5,000,000
 	int recordChan;		// channel number on recorded media
-	int subbandId;
+	int subbandId;		// 0-based index
+	int phaseCal;		// (Hz), typically 1,000,000 or 5,000,000
 };
 
 class VexFormat
@@ -165,6 +165,9 @@ ostream& operator << (ostream& os, const VexInterval& x);
 ostream& operator << (ostream& os, const VexSource& x);
 ostream& operator << (ostream& os, const VexScan& x);
 ostream& operator << (ostream& os, const VexAntenna& x);
+ostream& operator << (ostream& os, const VexSubband& x);
+ostream& operator << (ostream& os, const VexIF& x);
+ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexData& x);

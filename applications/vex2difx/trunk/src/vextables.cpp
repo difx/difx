@@ -15,13 +15,13 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 	{
 		if(S == subbands[i])
 		{
-			return 0;
+			return i;
 		}
 	}
 
 	subbands.push_back(S);
 
-	return 0;
+	return n;
 }
 
 bool operator == (VexSubband& s1, VexSubband& s2)
@@ -241,17 +241,42 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 
 ostream& operator << (ostream& os, const VexSubband& x)
 {
-	os << "  subband=(" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << ")" << endl;
+	os << "(" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << ")";
 	
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexIF& x)
+{
+	os << "[r=" << x.recordChan << " -> s=" << x.subbandId << "]";
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexFormat& x)
+{
+	os << "(format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
+	for(int i = 0; i < x.ifs.size(); i++)
+	{
+		os << ", " << x.ifs[i];
+	}
+	os << ")";
+
 	return os;
 }
 
 ostream& operator << (ostream& os, const VexMode& x)
 {
+	map<string,VexFormat>::const_iterator it;
+
 	os << "Mode " << x.name << endl;
 	for(int i = 0; i < x.subbands.size(); i++)
 	{
-		os << x.subbands[i];
+		os << "  subband=" << x.subbands[i] << endl;
+	}
+	for(it = x.formats.begin(); it != x.formats.end(); ++it)
+	{
+		os << "  format[" << it->first << "] =" << it->second << endl;
 	}
 	
 	return os;

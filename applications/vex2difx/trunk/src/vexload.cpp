@@ -9,7 +9,56 @@ int fvex_double(char **field, char **units, double *d);
 int fvex_ra(char **field, double *ra);
 int fvex_dec(char **field, double *dec);
 int fvex_date(char **field, int *iarray, double *seconds);
+}
 
+class Tracks
+{
+public:
+	vector<int> sign;
+	vector<int> mag;
+};
+
+int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F)
+{
+	int delta, track;
+	map<string,Tracks>::const_iterator it;
+
+	it = ch2tracks.find(chanName);
+
+	if(it == ch2tracks.end())
+	{
+		return -1;
+	}
+
+	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
+	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
+	   F.format == "VLBA1_4" || F.format == "MKIV1_4")
+	{
+		const Tracks& T = it->second;
+		delta = 2*(T.sign.size() + T.mag.size());
+		track = T.sign[0];
+
+		if(track < 34)
+		{
+			if(track % 2 == 0) 
+				return (track-2)/delta;
+			else 
+				return (track+29)/delta;
+		}
+		else
+		{
+			if(track % 2 == 0)
+				return (track+30)/delta;
+			else
+				return (track+61)/delta;
+		}
+	}
+	else
+	{
+		cerr << "Format " << F.format << " is not yet supported" << endl;
+	}
+
+	return -1;
 }
 
 int DOYtoMJD(int year, int doy)
@@ -33,18 +82,15 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 		A = V->newAntenna();
 		A->name = stn;
 
-		p = (struct site_position *)get_station_lowl(stn, 
-			T_SITE_POSITION, B_SITE, v);
+		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
 		fvex_double(&(p->x->value), &(p->x->units), &A->x);
 		fvex_double(&(p->y->value), &(p->y->units), &A->y);
 		fvex_double(&(p->z->value), &(p->z->units), &A->z);
 
-		q = (struct axis_type *)get_station_lowl(stn, 
-			T_AXIS_TYPE, B_ANTENNA, v);
+		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
 		A->axisType = string(q->axis1) + string(q->axis2);
 
-		r = (struct dvalue *)get_station_lowl(stn, 
-			T_AXIS_OFFSET, B_ANTENNA, v);
+		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 	}
 
@@ -160,10 +206,18 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	char *modeId;
 	int link, name;
 	char *value, *units;
-	double freq, bandwidth;
+	double freq, bandwidth, sampRate;
 	char sideBand;
+	string format, chanName;
+	int chanNum;
+	int nTrack, fanout;
+	int nBit;
+	int dasNum;
+	int subbandId, recChanId;
+	bool sign;
 	map<string,char> if2pol;
 	map<string,char> bbc2pol;
+	map<string,Tracks> ch2tracks;
 
 	for(modeId = get_mode_def(v);
 	    modeId;
@@ -183,6 +237,72 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 		{
 			if2pol.clear();
 			bbc2pol.clear();
+			ch2tracks.clear();
+			nTrack = 0;
+			nBit = 1;
+			VexFormat& F = M->formats[V->getAntenna(a).name] = VexFormat();
+
+			// Get sample rate
+			p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_SAMPLE_RATE, B_FREQ, v);
+			vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
+			fvex_double(&value, &units, &sampRate);
+
+			M->sampRate = sampRate;
+
+			// Get datastream assignments and formats
+			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
+				F.format = string(value);
+				if(F.format == "Mark4")
+				{
+					F.format = "MKIV";
+				}
+			}
+
+			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_FANOUT_DEF, B_TRACKS, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+				chanName = value;
+				vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+				sign = (value[0] == 's');
+				vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+				sscanf(value, "%d", &dasNum);
+
+				for(int k = 5; k < 9; k++)
+				{
+					if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
+					{
+						break;
+					}
+					nTrack++;
+					sscanf(value, "%d", &chanNum);
+					chanNum += 32*(dasNum-1);
+					if(sign)
+					{
+						ch2tracks[chanName].sign.push_back(chanNum);
+					}
+					else
+					{
+						nBit = 2;
+						ch2tracks[chanName].mag.push_back(chanNum);
+					}
+				}
+			}
+			fanout = nTrack/ch2tracks.size()/nBit;
+			switch(fanout)
+			{
+				case 1: F.format += "1_1"; break;
+				case 2: F.format += "1_2"; break;
+				case 4: F.format += "1_4"; break;
+				default: cerr << "Fanout=" << fanout << " not legal for format " << F.format << endl;
+			}
+			F.nRecordChan = ch2tracks.size();
+			F.nBit = nBit;
 
 			// Get IF to pol map for this antenna
 			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_IF_DEF, B_IF, v);
@@ -213,13 +333,24 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			{
 				vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
 				fvex_double(&value, &units, &freq);
+
 				vex_field(T_CHAN_DEF, p, 3, &link, &name, &value, &units);
 				sideBand = value[0];
+				
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
+
 				vex_field(T_CHAN_DEF, p, 6, &link, &name, &value, &units);
-				
-				M->addSubband(freq, bandwidth, sideBand, bbc2pol[value]);
+				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[value]);
+
+				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
+				recChanId = getRecordChannel(value, ch2tracks, F);
+				if(recChanId >= 0)
+				{
+					F.ifs.push_back(VexIF());
+					F.ifs.back().subbandId = subbandId;
+					F.ifs.back().recordChan = recChanId;
+				}
 			}
 		}
 	}
