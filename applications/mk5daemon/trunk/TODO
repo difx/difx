@@ -1,0 +1,10 @@
+mk5daemon
+~~~~~~~~~
+* Integrate mk5cp
+
+mk5cp
+~~~~~
+* Listen for multicast "stop" message
+* Allow max file size to be specified
+* Allow scan subsets to be specified
+

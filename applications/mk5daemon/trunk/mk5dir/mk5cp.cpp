@@ -4,6 +4,7 @@
 #include <string.h>
 #include <difxmessage.h>
 #include <signal.h>
+#include <sys/time.h>
 #include "config.h"
 #include "mark5dir.h"
 
@@ -25,14 +26,14 @@ void siginthand(int j)
 		printf("Being killed\n");
 	}
 	die = 1;
-	//signal(SIGINT, oldsiginthand);
+	signal(SIGHUP, oldsiginthand);
 }
 
 int usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s\n\n", program, version, author);
 	printf("A program to copy Mark5 module scans via XLR calls\n");
-	printf("\nUsage : %s [<options>] { <bank> | <vsn> } <scan(s)> <output path>\n\n", pgm);
+	printf("\nUsage : %s [<options>] { <bank> | <vsn> } <scans> <output path>\n\n", pgm);
 	printf("options can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
@@ -40,6 +41,12 @@ int usage(const char *pgm)
 	printf("  -v             Be more verbose\n\n");
 	printf("<bank> is either A or B\n\n");
 	printf("<vsn> is a valid module VSN (8 characters)\n\n");
+	printf("<scans> is a string containing a list of scans to copy.  No whitespace\n    "
+		"is allowed.  Ranges are allowed.  Examples:  1  or  3,5  or  1,3,6-9\n");
+	printf("output path> is a directory where files will be dumped\n");
+	printf("Environment variable MARK5_DIR_PATH should point to the location of\n");
+	printf("the directory to be written.  The output filename will be:\n");
+	printf("  $MARK5_DIR_PATH/<vsn>.dir\n\n");
 
 	return 0;
 }
@@ -71,6 +78,9 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	unsigned long *data;
 	int i, a, b, v;
 	char filename[256];
+	struct timeval t1, t2;
+	double dt;
+	double rate;
 
 	sprintf(filename, "%s/%8s_%03d_%s", outpath, vsn, scanNum, scan->name); 
 
@@ -88,8 +98,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	len = chunksize;
 
 	mk5status->status = MARK5_COPY_SUCCESS;
-	mk5status->scanNumber = scanNum;
-	sprintf(mk5status->scanName, "%s", scan->name);
+	mk5status->scanNumber = scanNum+1;
 
 	if(verbose)
 	{
@@ -97,18 +106,22 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		printf("start/length = %Ld/%Ld\n", scan->start, scan->length);
 	}
 
+	rate = 0.0;
+	gettimeofday(&t1, 0);
+
 	for(i = 0; togo > 0; i++)
 	{
 		if(die)
 		{
-			printf("bailing\n");
 			break;
 		}
 		if(verbose)
 		{
 			printf("%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
 		}
+		sprintf(mk5status->scanName, "%s[%d%%]", scan->name, 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
+		mk5status->rate = rate;
 		difxMessageSendMark5Status(mk5status);
 		if(togo < chunksize)
 		{
@@ -142,16 +155,26 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 			fprintf(stderr, "Incomplete write, FS full?\n");
 			break;
 		}
+		gettimeofday(&t2, 0);
+		dt = (t2.tv_sec-t1.tv_sec) + 1.0e-6*(t2.tv_usec-t1.tv_usec);
+
+		if(dt > 0.0)
+		{
+			rate = 8.0e-6*(chunksize-skip)/dt; /* Mbps */
+		}
+		t1 = t2;
 
 		readptr += chunksize;
 		togo -= len;
 	}
 
-	mk5status->position = scan->start + scan->length;
-	difxMessageSendMark5Status(mk5status);
-
 	fclose(out);
 	free(data);
+
+	mk5status->scanNumber = 0;
+	mk5status->rate = 0.0;
+	mk5status->position = scan->start + scan->length;
+	difxMessageSendMark5Status(mk5status);
 
 	if(togo > 0)
 	{
@@ -338,7 +361,7 @@ int main(int argc, char **argv)
 
 	mk5status.state = MARK5_STATE_COPY;
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	oldsiginthand = signal(SIGHUP, siginthand);
 
 	if(mk5status.activeBank > ' ') for(;;)
 	{
@@ -346,7 +369,6 @@ int main(int argc, char **argv)
 		printf("scanlist = %s\n", scanlist);
 
 		v = sscanf(scanlist, "%d%n", &a, &s);
-		printf("a=%d s=%d\n", a, s);
 		scanlist += s;
 		if(v < 1)
 		{
@@ -354,8 +376,8 @@ int main(int argc, char **argv)
 		}
 		if(scanlist[0] == '-')
 		{
+			scanlist++;
 			v = sscanf(scanlist, "%d%n", &b, &s);
-			printf("b=%d s=%d\n", a, s);
 			scanlist += s;
 			if(v < 1)
 			{
@@ -374,7 +396,6 @@ int main(int argc, char **argv)
 		{
 			if(die)
 			{
-				printf("Told to die\n");
 				break;
 			}
 			copyScan(xlrDevice, module.label, outpath, i-1, module.scans+i-1, &mk5status);
