@@ -127,6 +127,7 @@ int main(int argc, char **argv)
 		mk5status.vsnA[8] = 0;
 		if(strcasecmp(vsn, "A") == 0)
 		{
+			mk5status.activeBank = 'A';
 			strcpy(vsn, mk5status.vsnA);
 		}
 	}
@@ -148,6 +149,7 @@ int main(int argc, char **argv)
 		mk5status.vsnB[8] = 0;
 		if(strcasecmp(vsn, "B") == 0)
 		{
+			mk5status.activeBank = 'B';
 			strcpy(vsn, mk5status.vsnB);
 		}
 	}
@@ -156,11 +158,11 @@ int main(int argc, char **argv)
 		mk5status.vsnB[0] = 0;
 	}
 
-	if(strcasecmp(vsn, mk5status.vsnA) == 0)
+	if(strncasecmp(vsn, mk5status.vsnA, 8) == 0)
 	{
 		mk5status.activeBank = 'A';
 	}
-	else if(strcasecmp(vsn, mk5status.vsnB) == 0)
+	else if(strncasecmp(vsn, mk5status.vsnB, 8) == 0)
 	{
 		mk5status.activeBank = 'B';
 	}
