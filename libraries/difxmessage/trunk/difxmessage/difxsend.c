@@ -67,12 +67,20 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 
 int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 {
-	char message[1000];
-	char body[700];
+	char message[1500];
+	char body[1200];
 
 	if(difxMessagePort < 0)
 	{
-		printf("[%s %d] %s %s\n", difxMessageHostname, difxMessageMpiProcessId, difxMessageAlertString[severity], alertMessage);
+		/* send to stderr or stdout if no port is defined */
+		if(severity < DIFX_ALERT_LEVEL_WARNING)
+		{
+			fprintf(stderr, "[%s %d] %7s %s\n", difxMessageHostname, difxMessageMpiProcessId, difxMessageAlertString[severity], alertMessage);
+		}
+		else
+		{
+			printf("[%s %d] %7s %s\n", difxMessageHostname, difxMessageMpiProcessId, difxMessageAlertString[severity], alertMessage);
+		}
 	}
 	else
 	{
@@ -91,6 +99,12 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 			difxMessageSequenceNumber++, body);
 		
 		difxMessageSend(message);
+
+		/* Make sure all fatal errors go to the console */
+		if(severity == DIFX_ALERT_LEVEL_FATAL)
+		{
+			fprintf(stderr, "[%s %d] %7s %s\n", difxMessageHostname, difxMessageMpiProcessId, difxMessageAlertString[severity], alertMessage);
+		}
 	}
 	
 	return 0;
