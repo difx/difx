@@ -13,6 +13,7 @@ enum ProcessType
 	PROCESS_MARK5A,
 	PROCESS_DATASTREAM,
 	PROCESS_MK5DIR,
+	PROCESS_MK5COPY,
 	PROCESS_SSERASE
 };
 
@@ -50,5 +51,8 @@ void Mk5Daemon_resetMark5A(Mk5Daemon *D);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
 void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank);
+void Mk5Daemon_stopMk5Dir(Mk5Daemon *D);
+void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
+void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
 
 #endif

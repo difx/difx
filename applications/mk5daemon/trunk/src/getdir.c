@@ -39,7 +39,7 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
 
 	P = (struct mk5dirParams *)calloc(1, sizeof(struct mk5dirParams));
 
-	if(strncmp(D->hostName, "mark5", 5) != 0)
+	if(!D->isMk5)
 	{
 		return;
 	}
@@ -58,4 +58,9 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
 	}
 
 	pthread_mutex_unlock(&D->processLock);
+}
+
+void Mk5Daemon_stopMk5Dir(Mk5Daemon *D)
+{
+	system("killall -HUP mk5dir");
 }

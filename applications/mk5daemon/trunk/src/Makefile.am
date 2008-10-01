@@ -11,6 +11,7 @@ mk5daemon_SOURCES = \
 	monitor.c \
 	modules.c \
 	getdir.c \
+	datacopy.c \
 	proc.c \
 	proc.h \
 	mk5daemon.c \

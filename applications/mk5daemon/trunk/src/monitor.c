@@ -170,6 +170,28 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_startMk5Dir(D, "AB");
 		}
 	}
+	else if(strcasecmp(cmd, "stopdir") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_stopMk5Dir(D);
+		}
+	}
+	else if(strncasecmp(cmd, "copy ", 5) == 0)
+	{
+		/* protect against malicious use */
+		if(D->isMk5 && !strstr(cmd, ";"))
+		{
+			Mk5Daemon_startMk5Copy(D, cmd+5);
+		}
+	}
+	else if(strcasecmp(cmd, "stopcopy") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_stopMk5Copy(D);
+		}
+	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
 		printf("[%s]\n", cmd);

@@ -100,7 +100,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 }
 
 int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref, 
-	void (*callback)(int, int, int, void *), void *data)
+	int (*callback)(int, int, int, void *), void *data)
 {
 	XLR_RETURN_CODE xlrRC;
 	Mark5Directory m5dir;
@@ -113,6 +113,7 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 	unsigned long *buffer;
 	int bufferlen;
 	unsigned int x, signature;
+	int die = 0;
 
 	/* allocate a bit more than the minimum needed */
 	bufferlen = 20160*8*5;
@@ -182,9 +183,14 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 		{
 			if(callback)
 			{
-				callback(i, module->nscans, MARK5_DIR_SHORT_SCAN, data);
+				die = callback(i, module->nscans, MARK5_DIR_SHORT_SCAN, data);
 			}
 			continue;
+		}
+
+		if(die)
+		{
+			break;
 		}
 
 		if(scan->start & 4)
@@ -202,9 +208,14 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 		{
 			if(callback)
 			{
-				callback(i, module->nscans, MARK5_DIR_READ_ERROR, data);
+				die = callback(i, module->nscans, MARK5_DIR_READ_ERROR, data);
 			}
 			continue;
+		}
+
+		if(die)
+		{
+			break;
 		}
 
 		mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen));
@@ -213,11 +224,16 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 		{
 			if(callback)
 			{
-				callback(i, module->nscans, MARK5_DIR_DECODE_ERROR, data);
+				die = callback(i, module->nscans, MARK5_DIR_DECODE_ERROR, data);
 			}
 			continue;
 		}
 		
+		if(die)
+		{
+			break;
+		}
+
 		scan->mjd = mf->mjd;
 		scan->sec = mf->sec;
 		n = (mjdref - scan->mjd + 500) / 1000;
@@ -236,14 +252,18 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 
 		if(callback)
 		{
-			callback(i, module->nscans, MARK5_DIR_DECODE_SUCCESS, data);
+			die = callback(i, module->nscans, MARK5_DIR_DECODE_SUCCESS, data);
 		}
-		continue;
+
+		if(die)
+		{
+			break;
+		}
 	}
 
 	free(buffer);
 
-	return 0;
+	return -die;
 }
 
 void printMark5Module(const struct Mark5Module *module)
@@ -423,7 +443,7 @@ int saveMark5Module(struct Mark5Module *module, const char *filename)
  */
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
-	void (*callback)(int, int, int, void *), void *data)
+	int (*callback)(int, int, int, void *), void *data)
 {
 	char filename[256];
 	int v, curbank;

@@ -74,7 +74,7 @@ int Mark5BankGet(SSHANDLE xlrDevice);
 int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
 
 int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
-	void (*callback)(int, int, int, void *), void *data);
+	int (*callback)(int, int, int, void *), void *data);
 
 void printMark5Module(const struct Mark5Module *module);
 
@@ -84,7 +84,7 @@ int saveMark5Module(struct Mark5Module *module, const char *filename);
 
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
-	void (*callback)(int, int, int, void *), void *data);
+	int (*callback)(int, int, int, void *), void *data);
 
 
 

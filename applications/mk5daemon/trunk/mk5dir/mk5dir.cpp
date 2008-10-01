@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <string.h>
+#include <signal.h>
 #include <difxmessage.h>
 #include "config.h"
 #include "mark5dir.h"
@@ -11,6 +12,22 @@ const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
 
 int verbose = 0;
+int die = 0;
+
+typedef void (*sighandler_t)(int);
+
+sighandler_t oldsiginthand;
+
+void siginthand(int j)
+{
+	if(verbose)
+	{
+		printf("Being killed\n");
+	}
+	die = 1;
+	signal(SIGHUP, oldsiginthand);
+}
+
 
 int usage(const char *pgm)
 {
@@ -31,7 +48,7 @@ int usage(const char *pgm)
 	return 0;
 }
 
-void dirCallback(int scan, int nscan, int status, void *data)
+int dirCallback(int scan, int nscan, int status, void *data)
 {
 	DifxMessageMk5Status *mk5status;
 
@@ -45,6 +62,8 @@ void dirCallback(int scan, int nscan, int status, void *data)
 	{
 		printf("%d/%d %d\n", scan, nscan, status);
 	}
+
+	return die;
 }
 
 int main(int argc, char **argv)
@@ -181,14 +200,16 @@ int main(int argc, char **argv)
 	memset(&module, 0, sizeof(module));
 	module.bank = -1;
 
+	oldsiginthand = signal(SIGHUP, siginthand);
+
 	if(strcmp(vsn, "AB") == 0)
 	{
 		if(strlen(mk5status.vsnA) == 8)
 		{
-			getCachedMark5Module(&module, xlrDevice, mjdnow, 
+			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnA, mk5dirpath, &dirCallback, 
 				&mk5status);
-			if(verbose > 0)
+			if(v == 0 && verbose > 0)
 			{
 				printMark5Module(&module);
 			}
@@ -197,12 +218,12 @@ int main(int argc, char **argv)
 		memset(&module, 0, sizeof(module));
 		module.bank = -1;
 
-		if(strlen(mk5status.vsnB) == 8)
+		if(strlen(mk5status.vsnB) == 8 && v == 0)
 		{
-			getCachedMark5Module(&module, xlrDevice, mjdnow, 
+			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnB, mk5dirpath, &dirCallback, 
 				&mk5status);
-			if(verbose > 0)
+			if(v == 0 && verbose > 0)
 			{
 				printMark5Module(&module);
 			}
@@ -216,7 +237,7 @@ int main(int argc, char **argv)
 				vsn, mk5dirpath, &dirCallback, &mk5status);
 			if(v < 0)
 			{
-				printf("Module not found : %s\n", vsn);
+				fprintf(stderr, "Unsuccessful\n");
 			}
 			else if(verbose > 0)
 			{

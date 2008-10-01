@@ -51,7 +51,7 @@ int usage(const char *pgm)
 	return 0;
 }
 
-void dirCallback(int scan, int nscan, int status, void *data)
+int dirCallback(int scan, int nscan, int status, void *data)
 {
 	DifxMessageMk5Status *mk5status;
 
@@ -65,6 +65,8 @@ void dirCallback(int scan, int nscan, int status, void *data)
 	{
 		printf("%d/%d %d\n", scan, nscan, status);
 	}
+
+	return die;
 }
 
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status)
@@ -200,6 +202,7 @@ int main(int argc, char **argv)
 	char vsn[16] = "";
 	int v;
 	int a, b, i, s;
+	int scanIndex;
 
 	if(argc < 2)
 	{
@@ -335,13 +338,15 @@ int main(int argc, char **argv)
 	memset(&module, 0, sizeof(module));
 	module.bank = -1;
 
+	oldsiginthand = signal(SIGHUP, siginthand);
+
 	if(strlen(vsn) == 8)
 	{
 		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status);
 		if(v < 0)
 		{
-			fprintf(stderr, "Module not found : %s\n", vsn);
+			fprintf(stderr, "Unsuccessful\n");
 			mk5status.activeBank = ' ';
 		}
 		else if(verbose > 0)
@@ -360,8 +365,6 @@ int main(int argc, char **argv)
 	}
 
 	mk5status.state = MARK5_STATE_COPY;
-
-	oldsiginthand = signal(SIGHUP, siginthand);
 
 	if(mk5status.activeBank > ' ') for(;;)
 	{
@@ -398,7 +401,11 @@ int main(int argc, char **argv)
 			{
 				break;
 			}
-			copyScan(xlrDevice, module.label, outpath, i-1, module.scans+i-1, &mk5status);
+			if(i > 0 && i <= module.nscans)
+			{
+				scanIndex = i-1;
+				copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+			}
 		}
 
 		if(scanlist[0] == 0)

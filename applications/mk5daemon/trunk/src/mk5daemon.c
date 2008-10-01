@@ -150,7 +150,7 @@ int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
 	time_t t, lastTime, firstTime;
-	char logMessage[128];
+	char logMessage[128], str[16];
 	int startmk5a = 1;
 	int i, v, busy;
 	int justStarted = 1;
@@ -168,6 +168,10 @@ int main(int argc, char **argv)
 	{
 		strcpy(logPath, DefaultLogPath);
 	}
+
+	sprintf(str, "%d", DefaultDifxMonitorPort);
+	setenv("DIFX_MESSAGE_PORT", str, 0);
+	setenv("DIFX_MESSAGE_GROUP", DefaultDifxGroup, 0);
 
 	if(argc > 1) for(i = 1; i < argc; i++)
 	{
