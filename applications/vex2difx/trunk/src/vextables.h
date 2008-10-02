@@ -97,6 +97,16 @@ public:
 	map<string,VexFormat> formats;	// indexed by antenna name
 };
 
+class VexVSN
+{
+public:
+	VexVSN() : mjdStart(0.0), mjdEnd(0.0) {}
+
+	string name;
+	double mjdStart;
+	double mjdEnd;
+};
+
 class VexAntenna
 {
 public:
@@ -109,6 +119,7 @@ public:
 	double axisOffset;	// (m)
 	double clockOffset;
 	double clockRate;
+	vector<VexVSN> vsns;
 };
 
 class VexEOP
@@ -152,7 +163,11 @@ public:
 
 	bool usesAntenna(const string& antennaName) const;
 	bool usesMode(const string& modeName) const;
+
+	void addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop);
 private:
+	VexAntenna &getAntenna(string name);
+
 	vector<VexSource> sources;
 	vector<VexScan> scans;
 	vector<VexMode> modes;
@@ -171,6 +186,7 @@ ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexData& x);
+ostream& operator << (ostream& os, const VexVSN& x);
 bool operator == (VexSubband& s1, VexSubband& s2);
 
 #endif

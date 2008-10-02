@@ -66,6 +66,18 @@ int DOYtoMJD(int year, int doy)
 	return doy-678576+365*(year-1)+(year-1)/4-(year-1)/100+(year-1)/400;
 }
 
+double vexDate(char *value)
+{
+	int ints[4];
+	double mjd, seconds;
+
+	fvex_date(&value, ints, &seconds);
+	mjd = DOYtoMJD(ints[0], ints[1]);
+	mjd += ints[2]/24.0 + ints[3]/1440.0 + seconds/86400.0;
+
+	return mjd;
+}
+
 int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexAntenna *A;
@@ -135,8 +147,6 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	double mjd;
 	double startScan, stopScan;
 	double startAnt, stopAnt;
-	int ints[4];
-	double seconds;
 	Llist *L;
 	map<string,VexInterval> stations;
 
@@ -146,9 +156,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	{
 		p = get_scan_start(L);
 		vex_field(T_START, p, 1, &link, &name, &value, &units);
-		fvex_date(&value, ints, &seconds);
-		mjd = DOYtoMJD(ints[0], ints[1]);
-		mjd += ints[2]/24.0 + ints[3]/1440.0 + seconds/86400.0;
+		mjd = vexDate(value);
 		startScan = 1e99;
 		stopScan = 0.0;
 		stations.clear();
@@ -358,6 +366,38 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
+int getVSNs(VexData *V, Vex *v, const CorrParams& params)
+{
+	struct vsn *p;
+	llist *block;
+	Llist *defs;
+	Llist *lowls;
+	char *x;
+
+	block = find_block(B_TAPELOG_OBS, v);
+
+	for(defs=((struct block *)block->ptr)->items;
+	    defs;
+	    defs=defs->next)
+	{
+		const string antName(((Def *)((Lowl *)defs->ptr)->item)->name);
+		
+		for(lowls = ((Def *)((Lowl *)defs->ptr)->item)->refs;
+		    lowls; 
+		    lowls=lowls->next)
+		{
+			lowls=find_lowl(lowls,T_VSN);
+			p = (struct vsn *)(((Lowl *)lowls->ptr)->item);
+
+			const string vsn(p->label);
+			V->addVSN(antName, vsn, vexDate(p->start), vexDate(p->stop));
+		}
+	}
+
+	return 0;
+}
+
+
 VexData *loadVexFile(string vexfilename, const CorrParams& params)
 {
 	VexData *V;
@@ -376,6 +416,7 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getSources(V, v, params);
 	getScans(V, v, params);
 	getModes(V, v, params);
+	getVSNs(V, v, params);
 
 	return V;
 }

@@ -99,6 +99,17 @@ const VexAntenna &VexData::getAntenna(string name) const
 	// FIXME -- throw exception
 }
 
+VexAntenna &VexData::getAntenna(string name)
+{
+	for(int i = 0; i < nAntenna(); i++)
+	{
+		if(antennas[i].name == name)
+			return antennas[i];
+	}
+
+	// FIXME -- throw exception
+}
+
 const VexAntenna &VexData::getAntenna(int num) const
 {
 	// FIXME -- throw exception if num < 0 || num >= nScan
@@ -185,6 +196,22 @@ bool VexData::usesMode(const string& modeName) const
 	return false;
 }
 
+void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop)
+{
+	int n = nAntenna();
+
+	for(int i = 0; i < n; i++)
+	{
+		if(antennas[i].name == antName)
+		{
+			antennas[i].vsns.push_back(VexVSN());
+			antennas[i].vsns.back().name = vsn;
+			antennas[i].vsns.back().mjdStart = mjdStart;
+			antennas[i].vsns.back().mjdEnd = mjdStop;
+		}
+	}
+}
+
 
 ostream& operator << (ostream& os, const VexInterval& x)
 {
@@ -222,19 +249,28 @@ ostream& operator << (ostream& os, const VexScan& x)
 		"\n  source=" << x.sourceName << "\n";
 
 	for(iter = x.stations.begin(); iter != x.stations.end(); iter++)
+	{
 		cout << "  " << iter->first << " range=" << iter->second << endl;
+	}
 
 	return os;
 }
 
 ostream& operator << (ostream& os, const VexAntenna& x)
 {
+	vector<VexVSN>::const_iterator iter;
+
 	os << "Antenna " << x.name <<
 		"\n   x=" << x.x <<
 		"\n   y=" << x.y <<
 		"\n   z=" << x.z <<
 		"\n   axisType=" << x.axisType <<
 		"\n   axisOffset=" << x.axisOffset << endl;
+
+	for(iter = x.vsns.begin(); iter != x.vsns.end(); iter++)
+	{
+		cout << "   " << *iter << endl;
+	}
 
 	return os;
 }
@@ -317,3 +353,9 @@ ostream& operator << (ostream& os, const VexData& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexVSN& x)
+{
+	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
+
+	return os;
+}
