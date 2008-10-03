@@ -187,6 +187,9 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 			}
 
 			stations[stn] = VexInterval(startAnt, stopAnt);
+
+			V->addEvent(startAnt, VexEvent::ANT_SCAN_START, stn);
+			V->addEvent(stopAnt, VexEvent::ANT_SCAN_STOP, stn);
 		}
 
 		if(stations.size() < params.minSubarraySize)
@@ -201,6 +204,8 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->stations = stations;
 		S->modeName = string((char *)get_scan_mode(L));
 		S->sourceName = string((char *)get_scan_source(L));
+		V->addEvent(startScan, VexEvent::SCAN_START, scanId);
+		V->addEvent(stopScan, VexEvent::SCAN_STOP, scanId);
 	}
 	
 	return 0;
@@ -374,8 +379,14 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	Llist *lowls;
 	char *x;
 	int statement;
+	double start, stop;
 
 	block = find_block(B_TAPELOG_OBS, v);
+
+	if(!block)
+	{
+		return -1;
+	}
 
 	for(defs=((struct block *)block->ptr)->items;
 	    defs;
@@ -402,13 +413,19 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 			p = (struct vsn *)(((Lowl *)lowls->ptr)->item);
 
 			const string vsn(p->label);
-			V->addVSN(antName, vsn, vexDate(p->start), vexDate(p->stop));
+			start = vexDate(p->start);
+			stop = vexDate(p->stop);
+			V->addVSN(antName, vsn, start, stop);
+
+			V->addEvent(start, VexEvent::RECORD_START, antName);
+			V->addEvent(stop, VexEvent::RECORD_STOP, antName);
 		}
 	}
 
 	return 0;
 }
 
+// FIXME: work in progress
 int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 {
 	llist *block;
@@ -474,7 +491,7 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getScans(V, v, params);
 	getModes(V, v, params);
 	getVSNs(V, v, params);
-	getEOPs(V, v, params);
+//	getEOPs(V, v, params);
 
 	return V;
 }

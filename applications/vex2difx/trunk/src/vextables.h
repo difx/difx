@@ -1,5 +1,6 @@
 
 #include <vector>
+#include <list>
 #include <string>
 #include <iostream>
 #include <map>
@@ -9,10 +10,32 @@
 
 using namespace std;
 
-class VexExper
+class VexEvent
 {
 public:
+	enum EventType
+	{
+		NO_EVENT,
+		OBSERVE_START,
+		JOB_START,
+		RECORD_START,
+		SCAN_START,
+		ANT_SCAN_START,
+		ANT_SCAN_STOP,
+		SCAN_STOP,
+		RECORD_STOP,
+		JOB_STOP,
+		OBSERVE_STOP
+	};
+
+	static const char eventName[][20];
+
+	double mjd;
+	enum EventType eventType;
 	string name;
+
+	VexEvent() : mjd(0.0), eventType(NO_EVENT), name("") {}
+	VexEvent(double m, enum EventType e, const string& a) : mjd(m), eventType(e), name(a) {}
 };
 
 class VexInterval
@@ -133,8 +156,28 @@ public:
 	double xPole, yPole;
 };
 
+class VexExper
+{
+public:
+	string name;
+	double mjdStart;
+	double mjdEnd;
+};
+
 class VexData
 {
+private:
+	VexAntenna &getAntenna(string name);
+
+	VexExper exper;
+	vector<VexSource> sources;
+	vector<VexScan> scans;
+	vector<VexMode> modes;
+	vector<VexAntenna> antennas;
+	vector<VexEOP> eops;
+
+	list<VexEvent> events;
+
 public:
 	VexSource *newSource();
 	VexScan *newScan();
@@ -165,17 +208,16 @@ public:
 	bool usesMode(const string& modeName) const;
 
 	void addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop);
-private:
-	VexAntenna &getAntenna(string name);
 
-	vector<VexSource> sources;
-	vector<VexScan> scans;
-	vector<VexMode> modes;
-	vector<VexAntenna> antennas;
-	vector<VexEOP> eops;
+	int nEvent() const { return events.size(); }
+	const list<VexEvent> &getEvents() const;
+	void addEvent(double mjd, VexEvent::EventType eventType, const string &antName);
+
+	const VexExper &getExper() const { return exper; }
 
 };
 
+bool operator<(const VexEvent &a, const VexEvent &b);
 ostream& operator << (ostream& os, const VexInterval& x);
 ostream& operator << (ostream& os, const VexSource& x);
 ostream& operator << (ostream& os, const VexScan& x);
@@ -185,8 +227,9 @@ ostream& operator << (ostream& os, const VexIF& x);
 ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
-ostream& operator << (ostream& os, const VexData& x);
 ostream& operator << (ostream& os, const VexVSN& x);
+ostream& operator << (ostream& os, const VexEvent& x);
+ostream& operator << (ostream& os, const VexData& x);
 bool operator == (VexSubband& s1, VexSubband& s2);
 
 #endif

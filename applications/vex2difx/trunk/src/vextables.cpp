@@ -3,6 +3,44 @@
 
 using namespace std;
 
+const char VexEvent::eventName[][20] =
+{
+	"None",
+	"Observe Start",
+	"Job Start",
+	"Record Start",
+	"Scan Start",
+	"Ant On-source",
+	"Ant Off-source",
+	"Scan Stop",
+	"Record Stop",
+	"Job Stop",
+	"Observe Stop"
+};
+
+
+bool operator<(const VexEvent &a, const VexEvent &b)
+{
+	if(a.mjd < b.mjd)
+	{
+		return true;
+	}
+	else if(a.mjd > b.mjd)
+	{
+		return false;
+	}
+	if(a.eventType < b.eventType)
+	{
+		return true;
+	}
+	else if(a.eventType > b.eventType)
+	{
+		return false;
+	}
+	return a.name < b.name;
+}
+
+
 
 int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 {
@@ -212,6 +250,18 @@ void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, 
 	}
 }
 
+const list<VexEvent> &VexData::getEvents() const
+{
+	// FIXME -- throw exception if num < 0 || num >= nScan
+
+	return events;
+}
+
+void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name)
+{
+	events.push_back(VexEvent(mjd, eventType, name));
+	events.sort();
+}
 
 ostream& operator << (ostream& os, const VexInterval& x)
 {
@@ -318,6 +368,24 @@ ostream& operator << (ostream& os, const VexMode& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexVSN& x)
+{
+	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexEvent& x)
+{
+	int d, s;
+	d = static_cast<int>(x.mjd);
+	s = static_cast<int>((x.mjd - d)*86400.0);
+
+	os << "mjd=" << d << " sec=" << s << " : " << VexEvent::eventName[x.eventType] << " " << x.name;
+
+	return os;
+}
+
 ostream& operator << (ostream& os, const VexData& x)
 {
 	os << "Vex:" << endl;
@@ -350,12 +418,13 @@ ostream& operator << (ostream& os, const VexData& x)
 		os << x.getMode(i);
 	}
 
-	return os;
-}
-
-ostream& operator << (ostream& os, const VexVSN& x)
-{
-	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
+	const list<VexEvent>& events = x.getEvents();
+	list<VexEvent>::const_iterator iter;
+	os << " Events:" << endl;
+	for(iter = events.begin(); iter != events.end(); iter++)
+	{
+		os << "   " << *iter << endl;
+	}
 
 	return os;
 }
