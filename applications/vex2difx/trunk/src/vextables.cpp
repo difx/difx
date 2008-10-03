@@ -250,6 +250,24 @@ void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, 
 	}
 }
 
+void VexData::setExper(const string& name, double start, double stop)
+{
+
+	if(start < 10000)
+	{
+		start = events.front().mjd;
+	}
+	if(stop < 10000)
+	{
+		stop = events.back().mjd;
+	}
+	exper.name = name;
+	exper.mjdStart = start;
+	exper.mjdStop = stop;
+	addEvent(start, VexEvent::OBSERVE_START, name); 
+	addEvent(stop, VexEvent::OBSERVE_STOP, name); 
+}
+
 const list<VexEvent> &VexData::getEvents() const
 {
 	// FIXME -- throw exception if num < 0 || num >= nScan
@@ -368,6 +386,14 @@ ostream& operator << (ostream& os, const VexMode& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexEOP& x)
+{
+	os << "EOP(" << x.mjd << ", " << x.tai_utc << ", " << x.ut1_utc << ", " << x.xPole << ", " << x.yPole << ")";
+
+	return os;
+}
+
+
 ostream& operator << (ostream& os, const VexVSN& x)
 {
 	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
@@ -416,6 +442,13 @@ ostream& operator << (ostream& os, const VexData& x)
 	for(int i = 0; i < n; i++)
 	{
 		os << x.getMode(i);
+	}
+
+	n = x.nEOP();
+	os << n << " eops:" << endl;
+	for(int i = 0; i < n; i++)
+	{
+		os << "   " << x.getEOP(i) << endl;
 	}
 
 	const list<VexEvent>& events = x.getEvents();

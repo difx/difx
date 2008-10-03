@@ -150,10 +150,10 @@ class VexEOP
 public:
 	VexEOP() : mjd(0), tai_utc(0), ut1_utc(0.0), xPole(0.0), yPole(0.0) {}
 
-	int mjd;
-	int tai_utc;
-	double ut1_utc;
-	double xPole, yPole;
+	double mjd;		// days
+	double tai_utc;		// seconds
+	double ut1_utc;		// seconds
+	double xPole, yPole;	// radian
 };
 
 class VexExper
@@ -161,7 +161,7 @@ class VexExper
 public:
 	string name;
 	double mjdStart;
-	double mjdEnd;
+	double mjdStop;
 };
 
 class VexData
@@ -214,6 +214,7 @@ public:
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &antName);
 
 	const VexExper &getExper() const { return exper; }
+	void setExper(const string& name, double start, double stop);
 
 };
 

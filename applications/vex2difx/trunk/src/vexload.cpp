@@ -425,7 +425,6 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-// FIXME: work in progress
 int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 {
 	llist *block;
@@ -436,14 +435,17 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	char *value, *units;
 	void *p;
 	dvalue *r;
+	double tai_utc, ut1_utc, x_wobble, y_wobble;
+	int nEop;
+	double refEpoch, interval;
+	VexEOP *E;
 
-#if 0
-	p = get_global_lowl(T_TAI_UTC, B_EOP, v);
-	vex_field(T_TAI_UTC, p, 1, &link, &name, &value, &units);
-
-	cout << value << " " << units << endl;
-#endif
 	block = find_block(B_EOP, v);
+
+	if(!block)
+	{
+		return -1;
+	}
 
 	for(defs=((struct block *)block->ptr)->items;
 	    defs;
@@ -461,16 +463,110 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 
 		refs = ((Def *)((Lowl *)defs->ptr)->item)->refs;
 
-		r = (struct dvalue *)(find_lowl(refs, T_TAI_UTC)->ptr);
+		lowls = find_lowl(refs, T_TAI_UTC);
+		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
+		fvex_double(&r->value, &r->units, &tai_utc);
 
-		cout << r->value << r->units << endl;
+		lowls = find_lowl(refs, T_EOP_REF_EPOCH);
+		p = (((Lowl *)lowls->ptr)->item);
+		refEpoch = vexDate((char *)p);
 
+		lowls = find_lowl(refs, T_NUM_EOP_POINTS);
+		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
+		nEop = atoi(r->value);
 
-		cout << "EOP " << ((Def *)((Lowl *)defs->ptr)->item)->name << endl;
+		lowls = find_lowl(refs, T_EOP_INTERVAL);
+		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
+		fvex_double(&r->value, &r->units, &interval);
+
+		for(int i = 0; i < nEop; i++)
+		{	
+			lowls = find_lowl(refs, T_UT1_UTC);
+			vex_field(T_UT1_UTC, ((Lowl *)lowls->ptr)->item, i+1, &link, &name, &value, &units);
+			fvex_double(&value, &units, &ut1_utc);
+
+			lowls = find_lowl(refs, T_X_WOBBLE);
+			vex_field(T_X_WOBBLE, ((Lowl *)lowls->ptr)->item, i+1, &link, &name, &value, &units);
+			fvex_double(&value, &units, &x_wobble);
+
+			lowls = find_lowl(refs, T_Y_WOBBLE);
+			vex_field(T_Y_WOBBLE, ((Lowl *)lowls->ptr)->item, i+1, &link, &name, &value, &units);
+			fvex_double(&value, &units, &y_wobble);
+
+			E = V->newEOP();
+			E->mjd = refEpoch + i*interval/86400.0;
+			E->tai_utc = tai_utc;
+			E->ut1_utc = ut1_utc;
+			E->xPole = x_wobble;
+			E->yPole = y_wobble;
+		}
 	}
 	return 0;
 }
 
+int getExper(VexData *V, Vex *v, const CorrParams& params)
+{
+	llist *block;
+	Llist *defs;
+	Llist *lowls, *refs;
+	int statement;
+	char *value, *units;
+	dvalue *r;
+	void *p;
+	double start=0.0, stop=0.0;
+	string name;
+
+	block = find_block(B_EXPER, v);
+
+	if(!block)
+	{
+		return -1;
+	}
+
+	for(defs=((struct block *)block->ptr)->items;
+	    defs;
+	    defs=defs->next)
+	{
+		statement = ((Lowl *)defs->ptr)->statement;
+
+		cout << statement << endl;
+
+		if(statement == T_COMMENT)
+		{
+			continue;
+		}
+		if(statement != T_DEF)
+		{
+			break;
+		}
+
+		refs = ((Def *)((Lowl *)defs->ptr)->item)->refs;
+
+		lowls = find_lowl(refs, T_EXPER_NAME);
+
+		name = (char *)(((Lowl *)lowls->ptr)->item);
+
+		cout << name << endl;
+
+		lowls = find_lowl(refs, T_EXPER_NOMINAL_START);
+		if(lowls)
+		{
+			p = (((Lowl *)lowls->ptr)->item);
+			start = vexDate((char *)p);
+		}
+
+		lowls = find_lowl(refs, T_EXPER_NOMINAL_START);
+		if(lowls)
+		{
+			p = (((Lowl *)lowls->ptr)->item);
+			stop = vexDate((char *)p);
+		}
+	}
+
+	V->setExper(name, start, stop);
+
+	return 0;
+}
 
 VexData *loadVexFile(string vexfilename, const CorrParams& params)
 {
@@ -491,7 +587,8 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getScans(V, v, params);
 	getModes(V, v, params);
 	getVSNs(V, v, params);
-//	getEOPs(V, v, params);
+	getEOPs(V, v, params);
+	getExper(V, v, params);
 
 	return V;
 }
