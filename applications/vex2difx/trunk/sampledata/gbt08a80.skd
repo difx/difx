@@ -1,0 +1,620 @@
+VEX_rev = 1.5;
+*    SCHED vers: June 2006
+*    VEX/SCHED:  1.5.86
+*    Other versions: Sched:   6.1  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = gbt08a80;
+*                                                      +------------+
+*                         PI revision number:          |    3.0000  |
+*                                                      +------------+
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def gbt08a80;
+     exper_name = gbt08a80;
+     exper_description = "Simultaneous GBT/Arecibo Pulsar Timing";
+     PI_name = "Paul Demorest";
+     PI_email = pdemores@nrao.edu;
+*    address:   National Radio Astronomy Observatory
+*               520 Edgemont Rd.
+*               Charlottesville, VA 22901
+*                
+*    phone:     434-244-6838
+*    during obs:510-468-6803
+*    fax:        
+*
+*    year, doy: 2008, 179
+*    date     : Fri 27 Jun 2008
+*    MJD      : 54644
+*
+*-------------------- cover  letter --------------------
+*
+*This project is a coordinated pulsar timing observation using GBT and Arecibo.
+*The goal is to help determine instrumental systematic effects
+*that influence high-precision pulsar timing measurements.  Data will be
+*recorded using standard pulsar backends (ASP and GASP) as well as the
+*VLBI recorders, and timing results from the different systems will be
+*compared.  It is important for this project that observations be done in
+*a similar manner to ongoing pulsar timing experiments (which typically
+*don't use the VLBI recorders).  The means there will be several changes
+*from standard VLBI operations:
+*
+*The pulsar backends will be controlled manually by the observers during
+*the session.
+*
+*IF/LO settings must be appropriate for getting signal to the pulsar
+*backends as well as the VLBI systems.  The observers will be in contact
+*with observatory personnel ahead of and during the observations to make
+*sure this is working.
+*
+*The observers will manually enable and disable TCALs as necessary.
+*
+*Please make sure pulse tone calibration is disabled.
+*
+*Data should be taken in linear polarization rather than circular.
+*
+*------------------------- end -------------------------
+*
+     target_correlator = "DIFX - SOCORRO";
+*
+*    integr_time    :     1.000 s
+*    number_channels:  32
+*    number_antenna :  2
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : NONE
+*    source_pos_cat : STANDARD
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def psr1410;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 1377.99MHz8x16MHz:Ar:Gb;
+     ref $IF = LO@2165MHzDPolTone/1:Ar;
+     ref $IF = LO@2050MHzDPolTone/1:Gb;
+     ref $BBC = 8BBCs:Ar:Gb;
+     ref $TRACKS = MKIV.8Ch2bit1to4:Ar;
+     ref $TRACKS = VLBA.8Ch2bit1to4:Gb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+*    ref $HEAD_POS = DiskVoid#02 <= obsolete definition
+     ref $ROLL = NoRoll:Ar:Gb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect:Ar:Gb;
+enddef;
+*
+def psr2650;
+     ref $PROCEDURES = Mode_02;
+     ref $FREQ = 2617.99MHz8x16MHz:Ar:Gb;
+     ref $IF = LO@3500MHzDPolTone/1:Ar;
+     ref $IF = LO@3200MHzDPolTone/1:Gb;
+     ref $BBC = 8BBCs:Ar;
+     ref $BBC = 8BBCs#02:Gb;
+     ref $TRACKS = MKIV.8Ch2bit1to4:Ar;
+     ref $TRACKS = VLBA.8Ch2bit1to4:Gb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+*    ref $HEAD_POS = DiskVoid#02 <= obsolete definition
+     ref $ROLL = NoRoll:Ar:Gb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = UsbDetect#02:Ar:Gb;
+enddef;
+*
+def PulseCalOFF;
+     ref $PROCEDURES = Mode_03;
+     ref $FREQ = 1377.99MHz8x16MHz#02:Ar:Gb;
+     ref $IF = LO@2165MHzDPolNoTone:Ar;
+     ref $IF = LO@2050MHzDPolNoTone:Gb;
+     ref $BBC = 8BBCs:Ar:Gb;
+     ref $TRACKS = MKIV.8Ch2bit1to4:Ar;
+     ref $TRACKS = VLBA.8Ch2bit1to4:Gb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+*    ref $HEAD_POS = DiskVoid#02 <= obsolete definition
+     ref $ROLL = NoRoll:Ar:Gb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect:Ar:Gb;
+enddef;
+*
+def PulseCalOFF#02;
+     ref $PROCEDURES = Mode_04;
+     ref $FREQ = 2617.99MHz8x16MHz#02:Ar:Gb;
+     ref $IF = LO@3500MHzDPolNoTone:Ar;
+     ref $IF = LO@3200MHzDPolNoTone:Gb;
+     ref $BBC = 8BBCs:Ar;
+     ref $BBC = 8BBCs#02:Gb;
+     ref $TRACKS = MKIV.8Ch2bit1to4:Ar;
+     ref $TRACKS = VLBA.8Ch2bit1to4:Gb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+*    ref $HEAD_POS = DiskVoid#02 <= obsolete definition
+     ref $ROLL = NoRoll:Ar:Gb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+*    ref $PASS_ORDER = DiskVoid#02 <= obsolete definition
+     ref $PHASE_CAL_DETECT = NoDetect#02:Ar:Gb;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Ar;
+     ref $SITE = ARECIBO;
+     ref $ANTENNA = ARECIBO;
+     ref $DAS = 1VLBA4<Mark5A;
+enddef;
+*
+def Gb;
+     ref $SITE = GBT_VLBA;
+     ref $ANTENNA = GBT_VLBA;
+     ref $DAS = 2VLBA<Mark5A;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_02;
+     procedure_name_prefix =  "02";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_03;
+     procedure_name_prefix =  "03";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_04;
+     procedure_name_prefix =  "04";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def ARECIBO;
+     site_type = fixed;
+     site_name = ARECIBO;
+     site_ID = Ar;
+*    elev=  451.18 long= 066:45:09. lat= 18:20:39.0
+     site_position = 2390486.900 m:-5564731.440 m: 1994720.450 m;
+enddef;
+*
+def GBT_VLBA;
+     site_type = fixed;
+     site_name = GBT_VLBA;
+     site_ID = Gb;
+*    elev=  823.65 long= 079:50:23. lat= 38:25:59.3
+     site_position =  882589.644 m:-4924872.321 m: 3943729.362 m;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def ARECIBO;
+     axis_type = az : el;
+     antenna_motion = el :   2.5 deg/min :  7 sec;  *    0.025 deg/sec/sec
+     antenna_motion = az :  25.0 deg/min :  7 sec;  *    0.100 deg/sec/sec
+     axis_offset =     0.000 m;
+enddef;
+*
+def GBT_VLBA;
+     axis_type = az : el;
+     antenna_motion = el :  18.0 deg/min : 20 sec;  *    0.050 deg/sec/sec
+     antenna_motion = az :  36.0 deg/min : 20 sec;  *    0.050 deg/sec/sec
+     axis_offset =     0.000 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 1VLBA4<Mark5A;
+     record_transport_type = Mark5A;
+     electronics_rack_type = VLBA4;
+     number_drives = 1;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 0 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 2VLBA<Mark5A;
+     record_transport_type = Mark5A;
+     electronics_rack_type = VLBA;
+     number_drives = 2;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 1 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def 1413+15;
+     source_name = 1413+15;
+*    this source had calibrator code: V
+     ra = 14h13m41.660000s; dec =  15d09'39.52100"; ref_coord_frame = J2000;
+*    ra = 14h11m17.858047s; dec =  15d23'38.68438"; ref_coord_frame = B1950;
+*    ra = 14h14m07.434651s; dec =  15d07'15.79949"; ref_coord_frame = Date;
+enddef;
+*
+def 1713+07;
+     source_name = 1713+07;
+*    this source had calibrator code: G
+     ra = 17h13m49.530530s; dec =  07d47'37.52640"; ref_coord_frame = J2000;
+*    ra = 17h11m24.726896s; dec =  07d51'03.18722"; ref_coord_frame = B1950;
+*    ra = 17h14m16.031718s; dec =  07d46'57.81417"; ref_coord_frame = Date;
+enddef;
+*
+def 1937+21;
+     source_name = 1937+21;
+*    this source had calibrator code:  
+     ra = 19h39m38.561250s; dec =  21d34'59.13580"; ref_coord_frame = J2000;
+*    ra = 19h37m28.723252s; dec =  21d28'01.33006"; ref_coord_frame = B1950;
+*    ra = 19h40m02.423283s; dec =  21d36'04.86701"; ref_coord_frame = Date;
+enddef;
+*
+def J1658+0741;
+     source_name = J1658+0741;
+*    this source had calibrator code: V
+*    alternate source name: 1655+077
+*    alternate source name: J1658+07
+*    VLBA Calib Survey - GSFC sols. - created L.Petrov 2005f_astro
+     ra = 16h58m09.011468s; dec =  07d41'27.54058"; ref_coord_frame = J2000;
+*    ra = 16h55m43.951811s; dec =  07d45'59.75723"; ref_coord_frame = B1950;
+*    ra = 16h58m35.532719s; dec =  07d40'36.50366"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 1377.99MHz8x16MHz;
+* mode =  1    stations =Ar:Gb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  1377.99 MHz : U :16.000 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  1377.99 MHz : U :16.000 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  1393.99 MHz : U :16.000 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  1393.99 MHz : U :16.000 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  1409.99 MHz : U :16.000 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  1409.99 MHz : U :16.000 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  1425.99 MHz : U :16.000 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  1425.99 MHz : U :16.000 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 2617.99MHz8x16MHz;
+* mode =  2    stations =Ar:Gb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  2617.99 MHz : U :16.000 MHz : &CH01 : &BBC01 : &U_Cal; *Rcp
+     chan_def = :  2617.99 MHz : U :16.000 MHz : &CH02 : &BBC02 : &U_Cal; *Lcp
+     chan_def = :  2633.99 MHz : U :16.000 MHz : &CH03 : &BBC03 : &U_Cal; *Rcp
+     chan_def = :  2633.99 MHz : U :16.000 MHz : &CH04 : &BBC04 : &U_Cal; *Lcp
+     chan_def = :  2649.99 MHz : U :16.000 MHz : &CH05 : &BBC05 : &U_Cal; *Rcp
+     chan_def = :  2649.99 MHz : U :16.000 MHz : &CH06 : &BBC06 : &U_Cal; *Lcp
+     chan_def = :  2665.99 MHz : U :16.000 MHz : &CH07 : &BBC07 : &U_Cal; *Rcp
+     chan_def = :  2665.99 MHz : U :16.000 MHz : &CH08 : &BBC08 : &U_Cal; *Lcp
+enddef;
+*
+def 1377.99MHz8x16MHz#02;
+* mode =  3    stations =Ar:Gb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  1377.99 MHz : U :16.000 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = :  1377.99 MHz : U :16.000 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = :  1393.99 MHz : U :16.000 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = :  1393.99 MHz : U :16.000 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = :  1409.99 MHz : U :16.000 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = :  1409.99 MHz : U :16.000 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = :  1425.99 MHz : U :16.000 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = :  1425.99 MHz : U :16.000 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+enddef;
+*
+def 2617.99MHz8x16MHz#02;
+* mode =  4    stations =Ar:Gb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  2617.99 MHz : U :16.000 MHz : &CH01 : &BBC01 : &NoCal; *Rcp
+     chan_def = :  2617.99 MHz : U :16.000 MHz : &CH02 : &BBC02 : &NoCal; *Lcp
+     chan_def = :  2633.99 MHz : U :16.000 MHz : &CH03 : &BBC03 : &NoCal; *Rcp
+     chan_def = :  2633.99 MHz : U :16.000 MHz : &CH04 : &BBC04 : &NoCal; *Lcp
+     chan_def = :  2649.99 MHz : U :16.000 MHz : &CH05 : &BBC05 : &NoCal; *Rcp
+     chan_def = :  2649.99 MHz : U :16.000 MHz : &CH06 : &BBC06 : &NoCal; *Lcp
+     chan_def = :  2665.99 MHz : U :16.000 MHz : &CH07 : &BBC07 : &NoCal; *Rcp
+     chan_def = :  2665.99 MHz : U :16.000 MHz : &CH08 : &BBC08 : &NoCal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@2165MHzDPolTone/1;
+* mode =  1    stations =Ar
+     if_def = &IF_A : A : R :  2165.0 MHz : L : 1 MHz ;
+     if_def = &IF_C : C : L :  2165.0 MHz : L : 1 MHz ;
+enddef;
+*
+def LO@2050MHzDPolTone/1;
+* mode =  1    stations =Gb
+     if_def = &IF_A : A : R :  2050.0 MHz : L : 1 MHz ;
+     if_def = &IF_C : C : L :  2050.0 MHz : L : 1 MHz ;
+enddef;
+*
+def LO@3500MHzDPolTone/1;
+* mode =  2    stations =Ar
+     if_def = &IF_A : A : R :  3500.0 MHz : L : 1 MHz ;
+     if_def = &IF_C : C : L :  3500.0 MHz : L : 1 MHz ;
+enddef;
+*
+def LO@3200MHzDPolTone/1;
+* mode =  2    stations =Gb
+     if_def = &IF_B : B : R :  3200.0 MHz : L : 1 MHz ;
+     if_def = &IF_D : D : L :  3200.0 MHz : L : 1 MHz ;
+enddef;
+*
+def LO@2165MHzDPolNoTone;
+* mode =  3    stations =Ar
+     if_def = &IF_A : A : R :  2165.0 MHz : L ; * PCall off!
+     if_def = &IF_C : C : L :  2165.0 MHz : L ; * PCall off!
+enddef;
+*
+def LO@2050MHzDPolNoTone;
+* mode =  3    stations =Gb
+     if_def = &IF_A : A : R :  2050.0 MHz : L ; * PCall off!
+     if_def = &IF_C : C : L :  2050.0 MHz : L ; * PCall off!
+enddef;
+*
+def LO@3500MHzDPolNoTone;
+* mode =  4    stations =Ar
+     if_def = &IF_A : A : R :  3500.0 MHz : L ; * PCall off!
+     if_def = &IF_C : C : L :  3500.0 MHz : L ; * PCall off!
+enddef;
+*
+def LO@3200MHzDPolNoTone;
+* mode =  4    stations =Gb
+     if_def = &IF_B : B : R :  3200.0 MHz : L ; * PCall off!
+     if_def = &IF_D : D : L :  3200.0 MHz : L ; * PCall off!
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 8BBCs;
+* mode =  1    stations =Ar:Gb
+* mode =  2    stations =Ar
+* mode =  3    stations =Ar:Gb
+* mode =  4    stations =Ar
+     BBC_assign = &BBC01 :  1 : &IF_A;
+     BBC_assign = &BBC02 :  2 : &IF_C;
+     BBC_assign = &BBC03 :  3 : &IF_A;
+     BBC_assign = &BBC04 :  4 : &IF_C;
+     BBC_assign = &BBC05 :  5 : &IF_A;
+     BBC_assign = &BBC06 :  6 : &IF_C;
+     BBC_assign = &BBC07 :  7 : &IF_A;
+     BBC_assign = &BBC08 :  8 : &IF_C;
+enddef;
+*
+def 8BBCs#02;
+* mode =  2    stations =Gb
+* mode =  4    stations =Gb
+     BBC_assign = &BBC01 :  1 : &IF_B;
+     BBC_assign = &BBC02 :  2 : &IF_D;
+     BBC_assign = &BBC03 :  3 : &IF_B;
+     BBC_assign = &BBC04 :  4 : &IF_D;
+     BBC_assign = &BBC05 :  5 : &IF_B;
+     BBC_assign = &BBC06 :  6 : &IF_D;
+     BBC_assign = &BBC07 :  7 : &IF_B;
+     BBC_assign = &BBC08 :  8 : &IF_D;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def UsbDetect;
+* mode =  1    stations =Ar:Gb
+     phase_cal_detect = &U_Cal : 1 :16;
+enddef;
+*
+def UsbDetect#02;
+* mode =  2    stations =Ar:Gb
+     phase_cal_detect = &U_Cal : 1 :16;
+enddef;
+*
+def NoDetect;
+* mode =  3    stations =Ar:Gb
+     phase_cal_detect = &NoCal;
+enddef;
+*
+def NoDetect#02;
+* mode =  4    stations =Ar:Gb
+     phase_cal_detect = &NoCal;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MKIV.8Ch2bit1to4;
+* mode =  1    stations =Ar
+* mode =  2    stations =Ar
+* mode =  3    stations =Ar
+* mode =  4    stations =Ar
+*    format = MKIV1:4, and fan-out = 4
+*    mode requires  8.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH02 : sign : 1: 18: 20: 22: 24;
+     fanout_def =   : &CH02 :  mag : 1: 26: 28: 30: 32;
+     fanout_def =   : &CH01 : sign : 1:  2:  4:  6:  8;
+     fanout_def =   : &CH01 :  mag : 1: 10: 12: 14: 16;
+     fanout_def =   : &CH04 : sign : 1:  3:  5:  7:  9;
+     fanout_def =   : &CH04 :  mag : 1: 11: 13: 15: 17;
+     fanout_def =   : &CH03 : sign : 1: 19: 21: 23: 25;
+     fanout_def =   : &CH03 :  mag : 1: 27: 29: 31: 33;
+     fanout_def =   : &CH05 : sign : 2:  2:  4:  6:  8;
+     fanout_def =   : &CH05 :  mag : 2: 10: 12: 14: 16;
+     fanout_def =   : &CH06 : sign : 2: 18: 20: 22: 24;
+     fanout_def =   : &CH06 :  mag : 2: 26: 28: 30: 32;
+*     fanout_def =   : &CH07 : sign : 2:  3:  5:  7:  9;
+*     fanout_def =   : &CH07 :  mag : 2: 11: 13: 15: 17;
+     fanout_def =   : &CH08 : sign : 2: 19: 21: 23: 25;
+     fanout_def =   : &CH08 :  mag : 2: 27: 29: 31: 33;
+enddef;
+*
+def VLBA.8Ch2bit1to4;
+* mode =  1    stations =Gb
+* mode =  2    stations =Gb
+* mode =  3    stations =Gb
+* mode =  4    stations =Gb
+*    format = VLBA1:4, and fan-out = 4
+*    mode requires  8.00Mb/s/tr; stations using disks
+     track_frame_format = VLBA;
+     data_modulation = on;
+     fanout_def =   : &CH01 : sign : 1:  2:  4:  6:  8;
+     fanout_def =   : &CH01 :  mag : 1: 10: 12: 14: 16;
+     fanout_def =   : &CH02 : sign : 1: 18: 20: 22: 24;
+     fanout_def =   : &CH02 :  mag : 1: 26: 28: 30: 32;
+     fanout_def =   : &CH03 : sign : 1:  3:  5:  7:  9;
+     fanout_def =   : &CH03 :  mag : 1: 11: 13: 15: 17;
+     fanout_def =   : &CH04 : sign : 1: 19: 21: 23: 25;
+     fanout_def =   : &CH04 :  mag : 1: 27: 29: 31: 33;
+     fanout_def =   : &CH05 : sign : 2:  2:  4:  6:  8;
+     fanout_def =   : &CH05 :  mag : 2: 10: 12: 14: 16;
+     fanout_def =   : &CH06 : sign : 2: 18: 20: 22: 24;
+     fanout_def =   : &CH06 :  mag : 2: 26: 28: 30: 32;
+     fanout_def =   : &CH07 : sign : 2:  3:  5:  7:  9;
+     fanout_def =   : &CH07 :  mag : 2: 11: 13: 15: 17;
+     fanout_def =   : &CH08 : sign : 2: 19: 21: 23: 25;
+     fanout_def =   : &CH08 :  mag : 2: 27: 29: 31: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Ar
+* mode =  2    stations =Ar
+* mode =  3    stations =Ar
+* mode =  4    stations =Ar
+*     Head positions irrelevant for Disk: empty def
+enddef;
+def DiskVoid#02;
+* mode =  1    stations =Gb
+* mode =  2    stations =Gb
+* mode =  3    stations =Gb
+* mode =  4    stations =Gb
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Ar
+* mode =  2    stations =Ar
+* mode =  3    stations =Ar
+* mode =  4    stations =Ar
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*
+def DiskVoid#02;
+* mode =  1    stations =Gb
+* mode =  2    stations =Gb
+* mode =  3    stations =Gb
+* mode =  4    stations =Gb
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Ar:Gb
+* mode =  2    stations =Ar:Gb
+* mode =  3    stations =Ar:Gb
+* mode =  4    stations =Ar:Gb
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (2 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment gbt08a80
+* Simultaneous GBT/Arecibo Pulsar Timing                                  
+scan No0001;
+     start=2008y179d01h30m00s; mode=PulseCalOFF; source=1413+15;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Ar:    0 sec: 1440 sec:   0.000 GB:   :       : 0;
+     station=Gb:    0 sec: 1440 sec:   0.000 GB:   :       : 0;
+endscan;
+scan No0002;
+     start=2008y179d01h55m00s; mode=PulseCalOFF; source=J1658+0741;
+     station=Ar:  299 sec:  540 sec:  92.897 GB:   :       : 1;
+     station=Gb:   96 sec:  540 sec:  92.897 GB:   :       : 1;
+endscan;
+scan No0003;
+     start=2008y179d02h05m00s; mode=PulseCalOFF#02; source=J1658+0741;
+     station=Ar:    0 sec:  540 sec: 127.734 GB:   :       : 1;
+     station=Gb:    0 sec:  540 sec: 127.734 GB:   :       : 1;
+endscan;
+scan No0004;
+     start=2008y179d02h15m00s; mode=PulseCalOFF#02; source=1713+07;
+     station=Ar:   15 sec: 3900 sec: 162.570 GB:   :       : 1;
+     station=Gb:    0 sec: 3900 sec: 162.570 GB:   :       : 1;
+endscan;
+scan No0005;
+     start=2008y179d03h21m00s; mode=PulseCalOFF; source=1713+07;
+     station=Ar:    0 sec: 3900 sec: 414.167 GB:   :       : 1;
+     station=Gb:    0 sec: 3900 sec: 414.167 GB:   :       : 1;
+endscan;
+scan No0006;
+     start=2008y179d04h27m00s; mode=PulseCalOFF; source=1937+21;
+     station=Ar:  425 sec: 4800 sec: 665.764 GB:   :       : 1;
+     station=Gb:   98 sec: 4800 sec: 665.764 GB:   :       : 1;
+endscan;
+scan No0007;
+     start=2008y179d05h48m00s; mode=PulseCalOFF#02; source=1937+21;
+     station=Ar:    0 sec: 4500 sec: 975.421 GB:   :       : 1;
+     station=Gb:    0 sec: 4500 sec: 975.421 GB:   :       : 1;
+endscan;
+*-----------------------------------------------------------------------------
+$TAPELOG_OBS;
+def Gb;
+  VSN=1 : NRAO-002 : 2008y179d01h30m00s : 2008y179d04h00m00s;
+  VSN=2 : NRAO-003 : 2008y179d04h30m00s : 2008y179d06h00m00s;
+enddef;
+def Ar;
+  VSN=1 : NRAO-001 : 2008y179d01h30m00s : 2008y179d06h00m00s;
+enddef;
+*------------
+$EOP;
+* note -- values below are bogus
+def EOP179;
+  TAI-UTC= 0.526 sec;
+  A1-TAI= 22.0 sec;
+  eop_ref_epoch=2008y179d;
+  num_eop_points=5;
+  eop_interval=24 hr;
+  ut1-utc= 0.1039 sec: 0.1052 sec: 0.1064 sec: 0.1078 sec: 0.1084 sec;
+  x_wobble=0.231 asec: 0.232 asec: 0.233 asec: 0.234 asec: 0.235 asec;
+  y_wobble=-.131 asec: -.132 asec: -.133 asec: -.134 asec: -.135 asec;
+enddef;
+

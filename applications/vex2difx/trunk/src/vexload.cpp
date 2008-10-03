@@ -373,6 +373,7 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	Llist *defs;
 	Llist *lowls;
 	char *x;
+	int statement;
 
 	block = find_block(B_TAPELOG_OBS, v);
 
@@ -380,13 +381,24 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	    defs;
 	    defs=defs->next)
 	{
+		// This is somewhat of a hack, but seems to be fine
+		statement = ((Lowl *)defs->ptr)->statement;
+		if(statement == T_COMMENT)
+		{
+			continue;
+		}
+		if(statement != T_DEF)
+		{
+			break;
+		}
+
 		const string antName(((Def *)((Lowl *)defs->ptr)->item)->name);
 		
 		for(lowls = ((Def *)((Lowl *)defs->ptr)->item)->refs;
 		    lowls; 
 		    lowls=lowls->next)
 		{
-			lowls=find_lowl(lowls,T_VSN);
+			lowls=find_lowl(lowls, T_VSN);
 			p = (struct vsn *)(((Lowl *)lowls->ptr)->item);
 
 			const string vsn(p->label);
@@ -394,6 +406,51 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
+	return 0;
+}
+
+int getEOPs(VexData *V, Vex *v, const CorrParams& params)
+{
+	llist *block;
+	Llist *defs;
+	Llist *lowls, *refs;
+	int statement;
+	int link, name;
+	char *value, *units;
+	void *p;
+	dvalue *r;
+
+#if 0
+	p = get_global_lowl(T_TAI_UTC, B_EOP, v);
+	vex_field(T_TAI_UTC, p, 1, &link, &name, &value, &units);
+
+	cout << value << " " << units << endl;
+#endif
+	block = find_block(B_EOP, v);
+
+	for(defs=((struct block *)block->ptr)->items;
+	    defs;
+	    defs=defs->next)
+	{
+		statement = ((Lowl *)defs->ptr)->statement;
+		if(statement == T_COMMENT)
+		{
+			continue;
+		}
+		if(statement != T_DEF)
+		{
+			break;
+		}
+
+		refs = ((Def *)((Lowl *)defs->ptr)->item)->refs;
+
+		r = (struct dvalue *)(find_lowl(refs, T_TAI_UTC)->ptr);
+
+		cout << r->value << r->units << endl;
+
+
+		cout << "EOP " << ((Def *)((Lowl *)defs->ptr)->item)->name << endl;
+	}
 	return 0;
 }
 
@@ -417,6 +474,7 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getScans(V, v, params);
 	getModes(V, v, params);
 	getVSNs(V, v, params);
+	getEOPs(V, v, params);
 
 	return V;
 }
