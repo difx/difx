@@ -78,22 +78,25 @@ VexSource *VexData::newSource()
 	return &sources.back();
 }
 
-const VexSource &VexData::getSource(string name) const
+const VexSource *VexData::getSource(string name) const
 {
 	for(int i = 0; i < nSource(); i++)
 	{
 		if(sources[i].name == name)
-			return sources[i];
+			return &sources[i];
 	}
 
-	// FIXME -- throw exception
+	return 0;
 }
 
-const VexSource &VexData::getSource(int num) const
+const VexSource *VexData::getSource(int num) const
 {
-	// FIXME -- throw exception if num < 0 || num >= nScan
+	if(num < 0 || num >= nSource())
+	{
+		return 0;
+	}
 
-	return sources[num];
+	return &sources[num];
 }
 
 VexScan *VexData::newScan()
@@ -102,22 +105,27 @@ VexScan *VexData::newScan()
 	return &scans.back();
 }
 
-const VexScan &VexData::getScan(string name) const
+const VexScan *VexData::getScan(string name) const
 {
 	for(int i = 0; i < nScan(); i++)
 	{
 		if(scans[i].name == name)
-			return scans[i];
+			return &scans[i];
 	}
 
 	// FIXME -- throw exception
 }
 
-const VexScan &VexData::getScan(int num) const
+const VexScan *VexData::getScan(int num) const
 {
 	// FIXME -- throw exception if num < 0 || num >= nScan
 
-	return scans[num];
+	return &scans[num];
+}
+
+const VexScan *VexData::getScanByAntenna(string antName, double mjd) const
+{
+	return 0;
 }
 
 VexAntenna *VexData::newAntenna()
@@ -126,33 +134,25 @@ VexAntenna *VexData::newAntenna()
 	return &antennas.back();
 }
 
-const VexAntenna &VexData::getAntenna(string name) const
+const VexAntenna *VexData::getAntenna(string name) const
 {
 	for(int i = 0; i < nAntenna(); i++)
 	{
 		if(antennas[i].name == name)
-			return antennas[i];
+			return &antennas[i];
 	}
 
-	// FIXME -- throw exception
+	return 0;
 }
 
-VexAntenna &VexData::getAntenna(string name)
+const VexAntenna *VexData::getAntenna(int num) const
 {
-	for(int i = 0; i < nAntenna(); i++)
+	if(num < 0 || num >= nAntenna())
 	{
-		if(antennas[i].name == name)
-			return antennas[i];
+		return 0;
 	}
 
-	// FIXME -- throw exception
-}
-
-const VexAntenna &VexData::getAntenna(int num) const
-{
-	// FIXME -- throw exception if num < 0 || num >= nScan
-
-	return antennas[num];
+	return &antennas[num];
 }
 
 VexMode *VexData::newMode()
@@ -161,22 +161,25 @@ VexMode *VexData::newMode()
 	return &modes.back();
 }
 
-const VexMode &VexData::getMode(string name) const
+const VexMode *VexData::getMode(string name) const
 {
 	for(int i = 0; i < nMode(); i++)
 	{
 		if(modes[i].name == name)
-			return modes[i];
+			return &modes[i];
 	}
 
-	// FIXME -- throw exception
+	return 0;
 }
 
-const VexMode &VexData::getMode(int num) const
+const VexMode *VexData::getMode(int num) const
 {
-	// FIXME -- throw exception if num < 0 || num >= nScan
+	if(num < 0 || num >= nMode())
+	{
+		return 0;
+	}
 
-	return modes[num];
+	return &modes[num];
 }
 
 VexEOP *VexData::newEOP()
@@ -185,23 +188,14 @@ VexEOP *VexData::newEOP()
 	return &eops.back();
 }
 
-const VexEOP &VexData::getEOP(int num) const
+const VexEOP *VexData::getEOP(int num) const
 {
-	// FIXME -- throw exception if num < 0 || num >= nScan
-
-	if(num > 1000)	// Look for mjd
+	if(num < 0 || num > nEOP())
 	{
-		int n = nEOP();
-		for(int i = 0; i < n; i++)
-		{
-			if(getEOP(i).mjd == num)
-			{
-				return eops[i];
-			}
-		}
+		return 0;
 	}
 
-	return eops[num];
+	return &eops[num];
 }
 
 bool VexData::usesAntenna(const string& antennaName) const
@@ -210,7 +204,7 @@ bool VexData::usesAntenna(const string& antennaName) const
 
 	for(int i = 0; i < n; i++)
 	{
-		if(getAntenna(i).name == antennaName)
+		if(getAntenna(i)->name == antennaName)
 		{
 			return true;
 		}
@@ -225,7 +219,7 @@ bool VexData::usesMode(const string& modeName) const
 
 	for(int i = 0; i < n; i++)
 	{
-		if(getScan(i).modeName == modeName)
+		if(getScan(i)->modeName == modeName)
 		{
 			return true;
 		}
@@ -268,11 +262,9 @@ void VexData::setExper(const string& name, double start, double stop)
 	addEvent(stop, VexEvent::OBSERVE_STOP, name); 
 }
 
-const list<VexEvent> &VexData::getEvents() const
+const list<VexEvent> *VexData::getEvents() const
 {
-	// FIXME -- throw exception if num < 0 || num >= nScan
-
-	return events;
+	return &events;
 }
 
 void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name)
@@ -451,10 +443,10 @@ ostream& operator << (ostream& os, const VexData& x)
 		os << "   " << x.getEOP(i) << endl;
 	}
 
-	const list<VexEvent>& events = x.getEvents();
+	const list<VexEvent> *events = x.getEvents();
 	list<VexEvent>::const_iterator iter;
 	os << " Events:" << endl;
-	for(iter = events.begin(); iter != events.end(); iter++)
+	for(iter = events->begin(); iter != events->end(); iter++)
 	{
 		os << "   " << *iter << endl;
 	}

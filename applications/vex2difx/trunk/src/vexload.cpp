@@ -8,7 +8,6 @@ extern "C" {
 int fvex_double(char **field, char **units, double *d);
 int fvex_ra(char **field, double *ra);
 int fvex_dec(char **field, double *dec);
-int fvex_date(char **field, int *iarray, double *seconds);
 }
 
 class Tracks
@@ -69,9 +68,14 @@ int DOYtoMJD(int year, int doy)
 double vexDate(char *value)
 {
 	int ints[4];
-	double mjd, seconds;
+	double mjd, seconds = 0.0;
 
-	fvex_date(&value, ints, &seconds);
+	for(int i = 0; i < 4; i++)
+	{
+		ints[i] = 0;
+	}
+
+	sscanf(value, "%dy%dd%dh%dm%lfs", ints, ints+1, ints+2, ints+3, &seconds);
 	mjd = DOYtoMJD(ints[0], ints[1]);
 	mjd += ints[2]/24.0 + ints[3]/1440.0 + seconds/86400.0;
 
@@ -248,22 +252,23 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 		// get FREQ info
 		for(int a = 0; a < V->nAntenna(); a++)
 		{
+			const string antName(V->getAntenna(a)->name);
 			if2pol.clear();
 			bbc2pol.clear();
 			ch2tracks.clear();
 			nTrack = 0;
 			nBit = 1;
-			VexFormat& F = M->formats[V->getAntenna(a).name] = VexFormat();
+			VexFormat& F = M->formats[antName] = VexFormat();
 
 			// Get sample rate
-			p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_SAMPLE_RATE, B_FREQ, v);
+			p = get_all_lowl(antName.c_str(), modeId, T_SAMPLE_RATE, B_FREQ, v);
 			vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
 			fvex_double(&value, &units, &sampRate);
 
 			M->sampRate = sampRate;
 
 			// Get datastream assignments and formats
-			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
+			for(p = get_all_lowl(antName.c_str(), modeId, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
@@ -275,7 +280,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				}
 			}
 
-			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_FANOUT_DEF, B_TRACKS, v);
+			for(p = get_all_lowl(antName.c_str(), modeId, T_FANOUT_DEF, B_TRACKS, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
@@ -318,7 +323,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			F.nBit = nBit;
 
 			// Get IF to pol map for this antenna
-			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_IF_DEF, B_IF, v);
+			for(p = get_all_lowl(antName.c_str(), modeId, T_IF_DEF, B_IF, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
@@ -329,7 +334,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			}
 
 			// Get BBC to pol map for this antenna
-			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_BBC_ASSIGN, B_BBC, v);
+			for(p = get_all_lowl(antName.c_str(), modeId, T_BBC_ASSIGN, B_BBC, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
@@ -340,7 +345,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			}
 
 			// Get rest of Subband information
-			for(p = get_all_lowl(V->getAntenna(a).name.c_str(), modeId, T_CHAN_DEF, B_FREQ, v);
+			for(p = get_all_lowl(antName.c_str(), modeId, T_CHAN_DEF, B_FREQ, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
@@ -470,6 +475,8 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		lowls = find_lowl(refs, T_EOP_REF_EPOCH);
 		p = (((Lowl *)lowls->ptr)->item);
 		refEpoch = vexDate((char *)p);
+
+		cout << (char *)p << " -> " << refEpoch << endl;
 
 		lowls = find_lowl(refs, T_NUM_EOP_POINTS);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);

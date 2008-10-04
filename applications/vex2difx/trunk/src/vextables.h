@@ -1,12 +1,11 @@
+#ifndef __VEXTABLES_H__
+#define __VEXTABLES_H__
 
 #include <vector>
 #include <list>
 #include <string>
 #include <iostream>
 #include <map>
-
-#ifndef __VEXTABLES_H__
-#define __VEXTABLES_H__
 
 using namespace std;
 
@@ -164,6 +163,20 @@ public:
 	double mjdStop;
 };
 
+class VexJob
+{
+public:
+	double mjdStart, mjdStop;
+	vector<int> scans;
+};
+
+class VexJobGroup
+{
+public:
+	vector<int> scans;
+
+};
+
 class VexData
 {
 private:
@@ -186,23 +199,24 @@ public:
 	VexEOP *newEOP();
 
 	int nSource() const { return sources.size(); }
-	const VexSource &getSource(string name) const;
-	const VexSource &getSource(int num) const;
+	const VexSource *getSource(string name) const;
+	const VexSource *getSource(int num) const;
 
 	int nScan() const { return scans.size(); }
-	const VexScan &getScan(string name) const;
-	const VexScan &getScan(int num) const;
+	const VexScan *getScan(string name) const;
+	const VexScan *getScan(int num) const;
+	const VexScan *getScanByAntenna(string antName, double mjd) const;
 
 	int nAntenna() const { return antennas.size(); }
-	const VexAntenna &getAntenna(string name) const;
-	const VexAntenna &getAntenna(int num) const;
+	const VexAntenna *getAntenna(string name) const;
+	const VexAntenna *getAntenna(int num) const;
 
 	int nMode() const { return modes.size(); }
-	const VexMode &getMode(string name) const;
-	const VexMode &getMode(int num) const;
+	const VexMode *getMode(string name) const;
+	const VexMode *getMode(int num) const;
 
 	int nEOP() const { return eops.size(); }
-	const VexEOP &getEOP(int num) const;
+	const VexEOP *getEOP(int num) const;
 
 	bool usesAntenna(const string& antennaName) const;
 	bool usesMode(const string& modeName) const;
@@ -210,10 +224,10 @@ public:
 	void addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop);
 
 	int nEvent() const { return events.size(); }
-	const list<VexEvent> &getEvents() const;
+	const list<VexEvent> *getEvents() const;
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &antName);
 
-	const VexExper &getExper() const { return exper; }
+	const VexExper *getExper() const { return &exper; }
 	void setExper(const string& name, double start, double stop);
 
 };
