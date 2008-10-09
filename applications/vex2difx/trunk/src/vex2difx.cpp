@@ -7,12 +7,12 @@ int main(int argc, char **argv)
 	VexData *V;
 	CorrParams params;
 
-	params.antennaList.push_back("Ar");
-	params.antennaList.push_back("Gb");
-	params.antennaList.push_back("Br");
-	params.antennaList.push_back("Fd");
-	params.antennaList.push_back("Mk");
-	params.antennaList.push_back("Sc");
+//	params.antennaList.push_back("Ar");
+//	params.antennaList.push_back("Gb");
+//	params.antennaList.push_back("Br");
+//	params.antennaList.push_back("Fd");
+//	params.antennaList.push_back("Mk");
+//	params.antennaList.push_back("Sc");
 	 
 	if(argc < 2)
 	{
