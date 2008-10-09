@@ -1,0 +1,5 @@
+1. Load vex file, populating VexTable structure
+
+2. Load rule file, populating CorrParams structure
+
+3. 

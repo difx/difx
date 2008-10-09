@@ -35,7 +35,7 @@
 
 using namespace std;
 
-/* See http://astronomy.ivec.org/dokuwiki/doku.php/difx/configuration */
+// see http://cira.ivec.org/dokuwiki/doku.php/difx/configuration
 
 class PhaseCenter
 {
@@ -52,12 +52,14 @@ public:
 class CorrSetup
 {
 public:
+	CorrSetup();
+
 	string setupName;
 
 	double tInt;		/* integration time */
 	int nChan;		/* channels per sub-band */
-	int doPolar;		/* 0 for no cross pol, otherwise full pol */
-	int doAuto;		/* write autocorrelations */
+	bool doPolar;		/* false for no cross pol, true for full pol */
+	bool doAuto;		/* write autocorrelations */
 	int blocksPerSend;	/* literal */
 	vector<PhaseCenter> centers;
 };
@@ -82,6 +84,11 @@ public:
 	double mjdStart;
 	double mjdStop;
 	int minSubarraySize;
+	double maxGap;		// MJD
+	bool singleScan;
+	bool singleSetup;
+	double maxLength;	// MJD
+
 	vector<string> antennaList;
 
 	/* setups to apply */
