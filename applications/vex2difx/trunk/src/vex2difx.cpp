@@ -13,6 +13,8 @@ int main(int argc, char **argv)
 //	params.antennaList.push_back("Fd");
 //	params.antennaList.push_back("Mk");
 //	params.antennaList.push_back("Sc");
+
+	params.example();
 	 
 	if(argc < 2)
 	{

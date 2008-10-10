@@ -31,6 +31,7 @@
 #define __CORRPARAM_H__
 
 #include <vector>
+#include <list>
 #include <string>
 
 using namespace std;
@@ -52,7 +53,7 @@ public:
 class CorrSetup
 {
 public:
-	CorrSetup();
+	CorrSetup(const string &name = "setup_default");
 
 	string setupName;
 
@@ -64,13 +65,21 @@ public:
 	vector<PhaseCenter> centers;
 };
 
+
 class CorrRule
 {
 public:
-	vector<string> scanName;
-	vector<string> sourceName;
-	vector<char> calCode;
-	vector<int> qualifier;
+	CorrRule(const string &name = "rule_default");
+
+	bool match(const string &scan, const string &source, const string &mode, char cal, int qual) const;
+
+	string ruleName;
+
+	list<string> scanName;
+	list<string> sourceName;
+	list<string> modeName;
+	list<char> calCode;
+	list<int> qualifier;
 
 	string setupName;	/* pointer to CorrSetup */
 };
@@ -80,16 +89,25 @@ class CorrParams
 public:
 	CorrParams();
 
+	void defaultSetup();
+	void example();
+
+	bool useAntenna(const string &antName) const;
+	const CorrSetup *getCorrSetup(const string &name) const;
+
+	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
+	
+
 	/* global parameters */
 	double mjdStart;
 	double mjdStop;
 	int minSubarraySize;
-	double maxGap;		// MJD
+	double maxGap;		// days
 	bool singleScan;
 	bool singleSetup;
-	double maxLength;	// MJD
+	double maxLength;	// days
 
-	vector<string> antennaList;
+	list<string> antennaList;
 
 	/* setups to apply */
 	vector<CorrSetup> setups;
@@ -97,7 +115,8 @@ public:
 	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
 
-	bool useAntenna(const string &antName) const;
 };
+
+bool areCorrSetupsCompatible(const CorrSetup &A, const CorrSetup &B, const CorrParams &C);
 
 #endif

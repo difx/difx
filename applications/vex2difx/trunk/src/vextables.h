@@ -54,6 +54,7 @@ public:
 	string modeName;
 	string sourceName;
 	map<string,VexInterval> stations;
+	string setupName;	// points to CorrSetup entry
 };
 
 class VexSource

@@ -412,35 +412,35 @@ ostream& operator << (ostream& os, const VexData& x)
 	os << n << " sources:" << endl;
 	for(int i = 0; i < n; i++)
 	{
-		os << x.getSource(i);
+		os << *x.getSource(i);
 	}
 
 	n = x.nScan();
 	os << n << " scans:" << endl;
 	for(int i = 0; i < n; i++)
 	{
-		os << x.getScan(i);
+		os << *x.getScan(i);
 	}
 
 	n = x.nAntenna();
 	os << n << " antennas:" << endl;
 	for(int i = 0; i < n; i++)
 	{
-		os << x.getAntenna(i);
+		os << *x.getAntenna(i);
 	}
 
 	n = x.nMode();
 	os << n << " modes:" << endl;
 	for(int i = 0; i < n; i++)
 	{
-		os << x.getMode(i);
+		os << *x.getMode(i);
 	}
 
 	n = x.nEOP();
 	os << n << " eops:" << endl;
 	for(int i = 0; i < n; i++)
 	{
-		os << "   " << x.getEOP(i) << endl;
+		os << "   " << *x.getEOP(i) << endl;
 	}
 
 	const list<VexEvent> *events = x.getEvents();

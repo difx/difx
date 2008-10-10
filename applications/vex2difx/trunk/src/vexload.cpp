@@ -201,13 +201,32 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 			continue;
 		}
 
+		string scanName(scanId);
+		string sourceName((char *)get_scan_source(L));
+		string modeName((char *)get_scan_mode(L));
+
+		string setupName = params.findSetup(scanName, sourceName, modeName, ' ', 0);
+
+		cout << "Scan=" << scanName << "  Setup=" << setupName << endl;
+
+		if(setupName == "" || setupName == "skip")
+		{
+			continue;
+		}
+
+		if(params.getCorrSetup(setupName) == 0)
+		{
+			cout << "Error : setup " << setupName << " not defined!" << endl;
+		}
+
 		// Make scan
 		S = V->newScan();
 		S->timeRange = VexInterval(startScan, stopScan);
-		S->name = scanId;
+		S->name = scanName;
 		S->stations = stations;
-		S->modeName = string((char *)get_scan_mode(L));
-		S->sourceName = string((char *)get_scan_source(L));
+		S->modeName = modeName;
+		S->sourceName = sourceName;
+		S->setupName = setupName;
 		V->addEvent(startScan, VexEvent::SCAN_START, scanId);
 		V->addEvent(stopScan, VexEvent::SCAN_STOP, scanId);
 	}
