@@ -105,6 +105,8 @@ public:
 	double maxGap;		// days
 	bool singleScan;
 	bool singleSetup;
+	bool allowOverlap;
+	bool mediaSplit;	// split jobs on media change
 	double maxLength;	// days
 
 	list<string> antennaList;
@@ -121,6 +123,6 @@ ostream& operator << (ostream& os, const CorrSetup& x);
 ostream& operator << (ostream& os, const CorrRule& x);
 ostream& operator << (ostream& os, const CorrParams& x);
 
-bool areCorrSetupsCompatible(const CorrSetup &A, const CorrSetup &B, const CorrParams &C);
+bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C);
 
 #endif

@@ -168,7 +168,7 @@ class VexJob
 {
 public:
 	double mjdStart, mjdStop;
-	vector<int> scans;
+	vector<string> scans;
 };
 
 class VexJobGroup
@@ -207,6 +207,7 @@ public:
 	const VexScan *getScan(string name) const;
 	const VexScan *getScan(int num) const;
 	const VexScan *getScanByAntenna(string antName, double mjd) const;
+	void getScanList(list<string> &scans) const;
 
 	int nAntenna() const { return antennas.size(); }
 	const VexAntenna *getAntenna(string name) const;

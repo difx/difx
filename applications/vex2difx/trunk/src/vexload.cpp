@@ -210,8 +210,6 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		string setupName = params.findSetup(scanName, sourceName, modeName, ' ', 0);
 
-		cout << "Scan=" << scanName << "  Setup=" << setupName << endl;
-
 		if(setupName == "" || setupName == "skip")
 		{
 			continue;
@@ -220,6 +218,12 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		if(params.getCorrSetup(setupName) == 0)
 		{
 			cout << "Error : setup " << setupName << " not defined!" << endl;
+			continue;
+		}
+
+		if(params.mjdStart > stopScan || params.mjdStop < startScan)
+		{
+			cout << "Skipping scan " << scanName << " : out of time range" << endl;
 			continue;
 		}
 
@@ -509,8 +513,6 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		p = (((Lowl *)lowls->ptr)->item);
 		refEpoch = vexDate((char *)p);
 
-		cout << (char *)p << " -> " << refEpoch << endl;
-
 		lowls = find_lowl(refs, T_NUM_EOP_POINTS);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
 		nEop = atoi(r->value);
@@ -569,8 +571,6 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 	{
 		statement = ((Lowl *)defs->ptr)->statement;
 
-		cout << statement << endl;
-
 		if(statement == T_COMMENT)
 		{
 			continue;
@@ -585,8 +585,6 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 		lowls = find_lowl(refs, T_EXPER_NAME);
 
 		name = (char *)(((Lowl *)lowls->ptr)->item);
-
-		cout << name << endl;
 
 		lowls = find_lowl(refs, T_EXPER_NOMINAL_START);
 		if(lowls)

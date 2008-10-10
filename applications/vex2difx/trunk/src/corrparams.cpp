@@ -42,6 +42,8 @@ CorrParams::CorrParams()
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
 	singleSetup = true;
+	allowOverlap = false;
+	mediaSplit = true;
 	maxLength = 7200/86400.0;	// 2 hours
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
@@ -56,13 +58,14 @@ void CorrParams::example()
 {
 	setups.push_back(CorrSetup("1413+15"));
 	setups.back().tInt = 1.0;
+	setups.back().nChan = 64;
 	setups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
 	rules.back().sourceName.push_back(string("1413+15"));
 	rules.back().setupName = string("1413+15");
 	rules.push_back(CorrRule("1713+07"));
 	rules.back().sourceName.push_back(string("1713+07"));
-	rules.back().setupName = string("skip");
+	rules.back().setupName = string("default");
 	rules.push_back(CorrRule("X"));
 	rules.back().scanName.push_back(string("No0006"));
 	rules.back().setupName = string("bogus");
@@ -256,18 +259,18 @@ ostream& operator << (ostream& os, const CorrParams& x)
 }
 
 
-bool areCorrSetupsCompatible(const CorrSetup &A, const CorrSetup &B, const CorrParams &C)
+bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C)
 {
-	if(C.singleScan)
+	if(C->singleScan)
 	{
 		return false;
 	}
-	if(C.singleSetup)
+	if(C->singleSetup)
 	{
-		if(A.tInt    == B.tInt    &&
-		   A.nChan   == B.nChan   &&
-		   A.doPolar == B.doPolar &&
-		   A.doAuto  == B.doAuto     )
+		if(A->tInt    == B->tInt    &&
+		   A->nChan   == B->nChan   &&
+		   A->doPolar == B->doPolar &&
+		   A->doAuto  == B->doAuto     )
 		{
 			return true;
 		}

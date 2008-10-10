@@ -128,6 +128,16 @@ const VexScan *VexData::getScanByAntenna(string antName, double mjd) const
 	return 0;
 }
 
+void VexData::getScanList(list<string> &scanList) const
+{
+	vector<VexScan>::const_iterator it;
+
+	for(it = scans.begin(); it != scans.end(); it++)
+	{
+		scanList.push_back(it->name);
+	}
+}
+
 VexAntenna *VexData::newAntenna()
 {
 	antennas.push_back(VexAntenna());
@@ -310,8 +320,10 @@ ostream& operator << (ostream& os, const VexScan& x)
 
 	for(iter = x.stations.begin(); iter != x.stations.end(); iter++)
 	{
-		cout << "  " << iter->first << " range=" << iter->second << endl;
+		os << "  " << iter->first << " range=" << iter->second << endl;
 	}
+
+	os << "  setup=" << x.setupName << endl;
 
 	return os;
 }
@@ -329,7 +341,7 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 
 	for(iter = x.vsns.begin(); iter != x.vsns.end(); iter++)
 	{
-		cout << "   " << *iter << endl;
+		os << "   " << *iter << endl;
 	}
 
 	return os;
