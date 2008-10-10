@@ -1,3 +1,4 @@
+#include <iostream>
 #include <algorithm>
 
 #include "corrparams.h"
@@ -117,6 +118,143 @@ const string &CorrParams::findSetup(const string &scan, const string &source, co
 
 	return none;
 }
+
+
+ostream& operator << (ostream& os, const CorrSetup& x)
+{
+	int p;
+
+	p = os.precision();
+	os.precision(6);
+
+	os << "SETUP " << x.setupName << endl;
+	os << "{" << endl;
+	os << "  tInt = " << x.tInt << endl;
+	os << "  nChan = " << x.nChan << endl;
+	os << "  doPolar = " << x.doPolar << endl;
+	os << "  doAuto = " << x.doAuto << endl;
+	os << "  blocksPerSend = " << x.blocksPerSend << endl;
+	// FIXME phasecenters
+	os << "}" << endl;
+
+	os.precision(p);
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const CorrRule& x)
+{
+	bool space = false;
+	os << "RULE " << x.ruleName << endl;
+	os << "{" << endl;
+	if(!x.scanName.empty())
+	{
+		list<string>::const_iterator it;
+
+		os << "  scan =";
+		for(it = x.scanName.begin(); it != x.scanName.end(); it++)
+		{
+			os << " " << *it;
+		}
+		os << endl;
+		space = true;
+	}
+	if(!x.sourceName.empty())
+	{
+		list<string>::const_iterator it;
+
+		os << "  source =";
+		for(it = x.sourceName.begin(); it != x.sourceName.end(); it++)
+		{
+			os << " " << *it;
+		}
+		os << endl;
+		space = true;
+	}
+	if(!x.modeName.empty())
+	{
+		list<string>::const_iterator it;
+
+		os << "  mode =";
+		for(it = x.modeName.begin(); it != x.modeName.end(); it++)
+		{
+			os << " " << *it;
+		}
+		os << endl;
+		space = true;
+	}
+	
+	if(space)
+	{
+		os << endl;
+	}
+	os << "  setup = " << x.setupName << endl;
+	
+	os << "}" << endl;
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const CorrParams& x)
+{
+	int p;
+
+	p = os.precision();
+	os.precision(13);
+
+	os << "# correlation parameters" << endl;
+
+	os << "mjdStart = " << x.mjdStart << endl;
+	os << "mjdStop  = " << x.mjdStop << endl;
+	os << "minSubarray = " << x.minSubarraySize << endl;
+
+	os.precision(6);
+	os << "maxGap = " << x.maxGap*86400.0 << " # seconds" << endl;
+	os << "maxLength = " << x.maxLength*86400.0 << " # seconds" << endl;
+	os.precision(13);
+
+	os << "singleScan = " << x.singleScan << endl;
+	os << "singleSetup = " << x.singleSetup << endl;
+	
+	if(!x.antennaList.empty())
+	{
+		list<string>::const_iterator it;
+		
+		os << "antennas =";
+		for(it = x.antennaList.begin(); it != x.antennaList.end(); it++)
+		{
+			os << " " << *it;
+		}
+		os << endl;
+	}
+
+	if(!x.setups.empty())
+	{
+		vector<CorrSetup>::const_iterator it;
+
+		for(it = x.setups.begin(); it != x.setups.end(); it++)
+		{
+			os << endl;
+			os << *it;
+		}
+	}
+
+	if(!x.rules.empty())
+	{
+		vector<CorrRule>::const_iterator it;
+
+		for(it = x.rules.begin(); it != x.rules.end(); it++)
+		{
+			os << endl;
+			os << *it;
+		}
+	}
+
+	os.precision(p);
+
+	return os;
+}
+
 
 bool areCorrSetupsCompatible(const CorrSetup &A, const CorrSetup &B, const CorrParams &C)
 {

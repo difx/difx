@@ -117,6 +117,10 @@ public:
 
 };
 
+ostream& operator << (ostream& os, const CorrSetup& x);
+ostream& operator << (ostream& os, const CorrRule& x);
+ostream& operator << (ostream& os, const CorrParams& x);
+
 bool areCorrSetupsCompatible(const CorrSetup &A, const CorrSetup &B, const CorrParams &C);
 
 #endif

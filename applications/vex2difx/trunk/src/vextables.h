@@ -174,7 +174,7 @@ public:
 class VexJobGroup
 {
 public:
-	vector<int> scans;
+	vector<string> scans;
 
 };
 

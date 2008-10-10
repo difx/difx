@@ -152,12 +152,15 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	double startScan, stopScan;
 	double startAnt, stopAnt;
 	Llist *L;
-	map<string,VexInterval> stations;
+	map<string, VexInterval> stations;
 
 	for(L = (Llist *)get_scan(&scanId, v);
 	    L != 0;
 	    L = (Llist *)get_scan_next(&scanId))
 	{
+		map<string, double> antStart, antStop;
+		map<string, double>::const_iterator it;
+
 		p = get_scan_start(L);
 		vex_field(T_START, p, 1, &link, &name, &value, &units);
 		mjd = vexDate(value);
@@ -192,8 +195,8 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 			stations[stn] = VexInterval(startAnt, stopAnt);
 
-			V->addEvent(startAnt, VexEvent::ANT_SCAN_START, stn);
-			V->addEvent(stopAnt, VexEvent::ANT_SCAN_STOP, stn);
+			antStart[stn] = startAnt;
+			antStop[stn] = stopAnt;
 		}
 
 		if(stations.size() < params.minSubarraySize)
@@ -217,6 +220,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		if(params.getCorrSetup(setupName) == 0)
 		{
 			cout << "Error : setup " << setupName << " not defined!" << endl;
+			continue;
 		}
 
 		// Make scan
@@ -227,8 +231,18 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->modeName = modeName;
 		S->sourceName = sourceName;
 		S->setupName = setupName;
+
+		// Add to event list
 		V->addEvent(startScan, VexEvent::SCAN_START, scanId);
-		V->addEvent(stopScan, VexEvent::SCAN_STOP, scanId);
+		V->addEvent(stopScan,  VexEvent::SCAN_STOP,  scanId);
+		for(it = antStart.begin(); it != antStart.end(); it++)
+		{
+			V->addEvent(it->second, VexEvent::ANT_SCAN_START, it->first);
+		}
+		for(it = antStop.begin(); it != antStop.end(); it++)
+		{
+			V->addEvent(it->second, VexEvent::ANT_SCAN_STOP, it->first);
+		}
 	}
 	
 	return 0;

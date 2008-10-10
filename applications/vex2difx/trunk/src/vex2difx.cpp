@@ -1,20 +1,28 @@
+#include <vector>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
 
+//void genJobGroups(vector<JobGroup> &J, const VexData *V, const CorrParams *P)
+//{
+//}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
-	CorrParams params;
+	CorrParams *P;
+//	vector<JobGroup> jobGroups;
 
-//	params.antennaList.push_back("Ar");
-//	params.antennaList.push_back("Gb");
-//	params.antennaList.push_back("Br");
-//	params.antennaList.push_back("Fd");
-//	params.antennaList.push_back("Mk");
-//	params.antennaList.push_back("Sc");
+	P = new CorrParams();
 
-	params.example();
+//	P->antennaList.push_back("Ar");
+//	P->antennaList.push_back("Gb");
+//	P->antennaList.push_back("Br");
+//	P->antennaList.push_back("Fd");
+//	P->antennaList.push_back("Mk");
+//	P->antennaList.push_back("Sc");
+
+	P->example();
 	 
 	if(argc < 2)
 	{
@@ -22,11 +30,16 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	V = loadVexFile(argv[1], params);
+	V = loadVexFile(argv[1], *P);
 
 	cout << *V << endl;
 
+	cout << *P << endl;
+
+//	genJobGroups(jobGroups, V, P);
+
 	delete V;
+	delete P;
 
 	return 0;
 }
