@@ -105,6 +105,104 @@ VexScan *VexData::newScan()
 	return &scans.back();
 }
 
+bool VexJobGroup::hasScan(const string& scanName)
+{
+	return find(scans.begin(), scans.end(), scanName) != scans.end();
+}
+
+void VexJobGroup::genEvents(const list<VexEvent>& eventList)
+{
+	list<VexEvent>::const_iterator it;
+	bool save = true;
+
+	for(it = eventList.begin(); it != eventList.end(); it++)
+	{
+		if(it->eventType == VexEvent::SCAN_START)
+		{
+			if(!hasScan(it->name))
+			{
+				save = false;
+			}
+		}
+		if(save || 
+		   it->eventType == VexEvent::RECORD_START ||
+		   it->eventType == VexEvent::RECORD_STOP)
+		{
+			events.push_back(*it);
+		}
+		if(it->eventType == VexEvent::SCAN_STOP)
+		{
+			save = true;
+		}
+	}
+
+	// Now remove any module changes that don't occur within scans
+
+	list<VexEvent>::iterator rstart, rstop;
+	map<string,bool> inScan;
+	map<string,bool> inScanNow;
+
+	// initialize inScan
+
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		if(it->eventType == VexEvent::RECORD_START)
+		{
+			inScan[it->name] = false;
+			inScanNow[it->name] = false;
+		}
+	}
+
+	for(rstart = events.begin(); rstart != events.end();)
+	{
+		if(rstart->eventType == VexEvent::ANT_SCAN_START)
+		{
+			inScan[rstart->name] = true;
+			inScanNow[rstart->name] = true;
+		}
+		else if(rstart->eventType == VexEvent::ANT_SCAN_STOP)
+		{
+			inScanNow[rstart->name] = false;
+		}
+		if(rstart->eventType == VexEvent::RECORD_START && !inScanNow[rstart->name])
+		{
+			inScan[rstart->name] = inScanNow[rstart->name];
+			for(rstop = rstart, rstop++; rstop != events.end(); rstop++)
+			{
+				if(rstart->name != rstop->name)
+				{
+					continue;
+				}
+
+				if(rstop->eventType == VexEvent::ANT_SCAN_START)
+				{
+					inScan[rstart->name] = true;
+				}
+
+				if(rstop->eventType == VexEvent::RECORD_STOP)
+				{
+					if(!inScan[rstop->name])
+					{
+						inScan[rstop->name] = inScanNow[rstop->name];
+						events.erase(rstop);
+						rstart = events.erase(rstart);
+					}
+					else
+					{
+						rstart++;
+					}
+
+					break;
+				}
+			}
+		}
+		else
+		{
+			rstart++;
+		}
+	}
+}
+
 const VexScan *VexData::getScan(string name) const
 {
 	for(int i = 0; i < nScan(); i++)
@@ -113,12 +211,15 @@ const VexScan *VexData::getScan(string name) const
 			return &scans[i];
 	}
 
-	// FIXME -- throw exception
+	return 0;
 }
 
 const VexScan *VexData::getScan(int num) const
 {
-	// FIXME -- throw exception if num < 0 || num >= nScan
+	if(num < 0 || num >= nScan())
+	{
+		return 0;
+	}
 
 	return &scans[num];
 }

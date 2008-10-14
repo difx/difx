@@ -159,6 +159,8 @@ public:
 class VexExper
 {
 public:
+	VexExper() : mjdStart(0.0), mjdStop(1000000.0) {}
+
 	string name;
 	double mjdStart;
 	double mjdStop;
@@ -167,15 +169,24 @@ public:
 class VexJob
 {
 public:
-	double mjdStart, mjdStop;
+	VexJob() : mjdStart(0.0), mjdStop(1000000.0), jobId(0) {}
+
+	string jobSeries;
+	int jobId;
 	vector<string> scans;
+	double mjdStart;
+	double mjdStop;
+	double dutyCycle;	// fraction of job spent in scans
 };
 
 class VexJobGroup
 {
 public:
 	vector<string> scans;
+	list<VexEvent> events;
 
+	bool hasScan(const string& scanName);
+	void genEvents(const list<VexEvent>& eventList);
 };
 
 class VexData
@@ -231,7 +242,6 @@ public:
 
 	const VexExper *getExper() const { return &exper; }
 	void setExper(const string& name, double start, double stop);
-
 };
 
 bool operator<(const VexEvent &a, const VexEvent &b);

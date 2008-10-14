@@ -31,23 +31,24 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 	return true;
 }
 
-void genJobGroups(vector<VexJobGroup> &Js, const VexData *V, const CorrParams *P)
+void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P)
 {
 	list<string> scans;
 	list<string>::iterator it;
-
+	vector<VexJobGroup>::iterator v;
+	list<VexEvent>::const_iterator e;
 	V->getScanList(scans);
 
 	while(!scans.empty())
 	{
-		Js.push_back(VexJobGroup());
-		VexJobGroup &J = Js.back();
-		J.scans.push_back(scans.front());
+		JGs.push_back(VexJobGroup());
+		VexJobGroup &JG = JGs.back();
+		JG.scans.push_back(scans.front());
 		scans.pop_front();
 
-		cout << J.scans.back() << endl;
+		cout << JG.scans.back() << endl;
 		
-		const VexScan *scan1 = V->getScan(J.scans.back());
+		const VexScan *scan1 = V->getScan(JG.scans.back());
 		const CorrSetup *setup1 = P->getCorrSetup(scan1->setupName);
 
 		for(it = scans.begin(); it != scans.end();)
@@ -60,7 +61,7 @@ void genJobGroups(vector<VexJobGroup> &Js, const VexData *V, const CorrParams *P
 			   areScansCompatible(scan1, scan2, P))
 			{
 				cout << "adding  " << *it << endl;
-				J.scans.push_back(*it);
+				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
 				setup1 = setup2;
@@ -71,8 +72,24 @@ void genJobGroups(vector<VexJobGroup> &Js, const VexData *V, const CorrParams *P
 			}
 		}
 	}
+
+	const list<VexEvent> *events = V->getEvents();
+	for(v = JGs.begin(); v != JGs.end(); v++)
+	{
+		v->genEvents(*events);
+		cout << "Job Group Events " << v->events.size() << endl;
+
+		for(e = v->events.begin(); e != v->events.end(); e++)
+		{
+			cout << *e << endl;
+		}
+	}
 }
 
+void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const CorrParams *P)
+{
+	list<VexEvent> events;
+}
 
 
 int main(int argc, char **argv)
