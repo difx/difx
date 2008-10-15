@@ -177,11 +177,10 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const 
 		}
 	}
 
-	cout.precision(12);
-
 	// now go through and set breakpoints
 	while(!changes.empty())
 	{
+		// look for break with highest score
 		scoreBest = -1;
 		for(t = times.begin(); t != times.end(); t++)
 		{
@@ -191,10 +190,11 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const 
 				scoreBest = score;
 				mjdBest = *t;
 			}
-			cout << "  " << *t << " " << nGap(changes, *t) << " " << usage[*t] << endl;
 		}
-		cout << scoreBest << " " << mjdBest << " " << changes.size() << endl;
+
 		breaks.push_back(mjdBest);
+
+		// find modules that change in the new gap
 		for(c = changes.begin(); c != changes.end();)
 		{
 			if(c->mjdStart <= mjdBest && c->mjdStop >= mjdBest)
@@ -207,7 +207,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const 
 			}
 		}
 	}
-	breaks.sort();
+	breaks.sort();	// should be a no-op
 
 	cout << breaks.size() << " Breaks:" << endl;
 	for(t = breaks.begin(); t != breaks.end(); t++)
