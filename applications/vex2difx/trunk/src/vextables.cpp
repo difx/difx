@@ -203,6 +203,46 @@ void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 	}
 }
 
+// FIXME -- this does not allow concurrent scans
+void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) const
+{
+	list<VexEvent>::const_iterator s, e;
+	jobs.push_back(VexJob());
+	VexJob &J = jobs.back();
+	double totalTime, scanTime = 0.0;
+
+	// note these are backwards now -- will set these to minimum range covering scans
+	J.mjdStart = stop;
+	J.mjdStop = start;
+
+	for(e = events.begin(); e != events.end(); e++)
+	{
+		if(e->eventType == VexEvent::SCAN_START)
+		{
+			s = e;
+		}
+		if(e->eventType == VexEvent::SCAN_STOP)
+		{
+			if(s->mjd >= start && e->mjd <= stop)
+			{
+				J.scans.push_back(e->name);
+				if(J.mjdStart > s->mjd)
+				{
+					J.mjdStart = s->mjd;
+				}
+				if(J.mjdStop < e->mjd)
+				{
+					J.mjdStop = e->mjd;
+				}
+				scanTime += e->mjd - s->mjd;
+			}
+		}
+	}
+
+	totalTime = J.mjdStop - J.mjdStart;
+	J.dutyCycle = scanTime / totalTime;
+}
+
 const VexScan *VexData::getScan(string name) const
 {
 	for(int i = 0; i < nScan(); i++)
@@ -502,6 +542,26 @@ ostream& operator << (ostream& os, const VexEOP& x)
 ostream& operator << (ostream& os, const VexVSN& x)
 {
 	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexJob& x)
+{
+	vector<string>::const_iterator s;
+	int p = os.precision();
+	os.precision(12);
+	os << "Job " << x.jobSeries << " " << x.jobId << endl;
+	os << "  " << x.mjdStart << " - " << x.mjdStop << endl;
+	os << "  duty cycle = " << x.dutyCycle << endl;
+	os << "  scans =";
+	for(s = x.scans.begin(); s != x.scans.end(); s++)
+	{
+		os << " " << *s;
+	}
+	os << endl;
+
+	os.precision(p);
 
 	return os;
 }

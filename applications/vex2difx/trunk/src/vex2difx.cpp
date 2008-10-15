@@ -1,4 +1,5 @@
 #include <vector>
+#include <sstream>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -113,7 +114,7 @@ int nGap(const list<MediaChange> &m, double mjd)
 	return n;
 }
 
-void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const CorrParams *P)
+void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P)
 {
 	list<VexEvent>::const_iterator e;
 	list<double>::const_iterator t;
@@ -209,11 +210,14 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const 
 	}
 	breaks.sort();	// should be a no-op
 
-	cout << breaks.size() << " Breaks:" << endl;
+	// form jobs
+	double start = V->obsStart();
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
-		cout << "  " << *t << endl;
+		JG.createJob(Js, start, *t);
+		start = *t;
 	}
+	JG.createJob(Js, start, V->obsStop());
 }
 
 
@@ -223,6 +227,8 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	vector<VexJobGroup> JG;
 	vector<VexJob> J;
+	vector<VexJob>::iterator j;
+	int k;
 
 	P = new CorrParams();
 
@@ -243,15 +249,26 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(argv[1], *P);
 
-	cout << *V << endl;
-
-	cout << *P << endl;
-
 	genJobGroups(JG, V, P);
 	for(int i = 0; i < JG.size(); i++)
 	{
 		genJobs(J, JG[i], V, P);
 	}
+
+	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++)
+	{
+		ostringstream name;
+		j->jobSeries = P->jobSeries;
+		j->jobId = k;
+		name << j->jobSeries << "." << j->jobId;
+		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
+		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
+	}
+
+	cout << *V << endl;
+	cout << *P << endl;
+
+	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++) cout << *j;
 
 	delete V;
 	delete P;

@@ -36,7 +36,7 @@ bool CorrRule::match(const string &scan, const string &source, const string &mod
 	}
 }
 
-CorrParams::CorrParams()
+CorrParams::CorrParams() : jobSeries("vex2difx")
 {
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
@@ -47,6 +47,7 @@ CorrParams::CorrParams()
 	maxLength = 7200/86400.0;	// 2 hours
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
+	startSeries = 20;
 }
 
 void CorrParams::defaultSetup()

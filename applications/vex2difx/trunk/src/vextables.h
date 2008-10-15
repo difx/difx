@@ -169,14 +169,15 @@ public:
 class VexJob
 {
 public:
-	VexJob() : mjdStart(0.0), mjdStop(1000000.0), jobId(0) {}
+	VexJob() : mjdStart(0.0), mjdStop(1000000.0), jobSeries("Bogus"), jobId(-1) {}
 
 	string jobSeries;
 	int jobId;
 	vector<string> scans;
+	map<string,string> vsns;	// vsn, indexed by antenna name
 	double mjdStart;
 	double mjdStop;
-	double dutyCycle;	// fraction of job spent in scans
+	double dutyCycle;		// fraction of job spent in scans
 };
 
 class VexJobGroup
@@ -187,7 +188,7 @@ public:
 
 	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
-	int usage(double mjd);
+	void createJob(vector<VexJob>& jobs, double start, double stop) const;
 };
 
 class VexData
@@ -210,6 +211,16 @@ public:
 	VexMode *newMode();
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
+
+	double obsStart() const
+	{
+		return events.front().mjd;
+	}
+
+	double obsStop() const
+	{
+		return events.back().mjd;
+	}
 
 	int nSource() const { return sources.size(); }
 	const VexSource *getSource(string name) const;
@@ -256,6 +267,7 @@ ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexVSN& x);
+ostream& operator << (ostream& os, const VexJob& x);
 ostream& operator << (ostream& os, const VexEvent& x);
 ostream& operator << (ostream& os, const VexData& x);
 bool operator == (VexSubband& s1, VexSubband& s2);
