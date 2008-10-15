@@ -105,7 +105,7 @@ VexScan *VexData::newScan()
 	return &scans.back();
 }
 
-bool VexJobGroup::hasScan(const string& scanName)
+bool VexJobGroup::hasScan(const string& scanName) const
 {
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
 }

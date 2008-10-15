@@ -56,6 +56,8 @@ void CorrParams::defaultSetup()
 
 void CorrParams::example()
 {
+	singleSetup = false;
+	maxGap = 1.0;
 	setups.push_back(CorrSetup("1413+15"));
 	setups.back().tInt = 1.0;
 	setups.back().nChan = 64;

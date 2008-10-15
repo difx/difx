@@ -185,8 +185,9 @@ public:
 	vector<string> scans;
 	list<VexEvent> events;
 
-	bool hasScan(const string& scanName);
+	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
+	int usage(double mjd);
 };
 
 class VexData

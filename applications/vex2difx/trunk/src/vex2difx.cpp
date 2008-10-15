@@ -36,7 +36,6 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	list<string> scans;
 	list<string>::iterator it;
 	vector<VexJobGroup>::iterator v;
-	list<VexEvent>::const_iterator e;
 	V->getScanList(scans);
 
 	while(!scans.empty())
@@ -77,8 +76,10 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	for(v = JGs.begin(); v != JGs.end(); v++)
 	{
 		v->genEvents(*events);
-		cout << "Job Group Events " << v->events.size() << endl;
 
+		// dog and pony show
+		cout << "Job Group Events " << v->events.size() << endl;
+		list<VexEvent>::const_iterator e;
 		for(e = v->events.begin(); e != v->events.end(); e++)
 		{
 			cout << *e << endl;
@@ -86,9 +87,133 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	}
 }
 
+class MediaChange
+{
+public:
+	MediaChange(string A, double start, double stop) : ant(A), mjdStart(start), mjdStop(stop) {}
+
+	string ant;
+	double mjdStart;
+	double mjdStop;
+};
+
+int nGap(const list<MediaChange> &m, double mjd)
+{
+	list<MediaChange>::const_iterator it;
+	int n=0;
+
+	for(it = m.begin(); it != m.end(); it++)
+	{
+		if(mjd > it->mjdStart && mjd < it->mjdStop)
+		{
+			n++;
+		}
+	}
+
+	return n;
+}
+
 void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, const VexData *V, const CorrParams *P)
 {
-	list<VexEvent> events;
+	list<VexEvent>::const_iterator e;
+	list<double>::const_iterator t;
+	list<MediaChange>::iterator c;
+	map<string,double> recordStop;
+	map<double,int> usage;
+	list<MediaChange> changes;
+	list<double> times;
+	list<double> breaks;
+	double mjdLast = -1.0;
+	int score, scoreBest;
+	double mjdBest;
+	int nAnt;
+
+	// first initialize recordStop and usage
+	for(e = JG.events.begin(); e != JG.events.end(); e++)
+	{
+		if(e->eventType == VexEvent::RECORD_START)
+		{
+			recordStop[e->name] = -1.0;
+		}
+
+		usage[e->mjd] = 0;
+	}
+	nAnt = recordStop.size();
+
+	// populate changes, times, and usage
+	for(e = JG.events.begin(); e != JG.events.end(); e++)
+	{
+		if(mjdLast > 0.0 && e->mjd > mjdLast)
+		{
+			usage[e->mjd] = usage[mjdLast];
+			mjdLast = e->mjd;
+			times.push_back(e->mjd);
+		}
+		else if(mjdLast < 0.0)
+		{
+			usage[e->mjd] = 0;
+			mjdLast = e->mjd;
+			times.push_back(e->mjd);
+		}
+
+		if(e->eventType == VexEvent::RECORD_START)
+		{
+			if(recordStop[e->name] > 0.0)
+			{
+				changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
+			}
+		}
+		else if(e->eventType == VexEvent::RECORD_STOP)
+		{
+			recordStop[e->name] = e->mjd;
+		}
+		else if(e->eventType == VexEvent::ANT_SCAN_START)
+		{
+			usage[e->mjd]++;
+		}
+		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
+		{
+			usage[e->mjd]--;
+		}
+	}
+
+	cout.precision(12);
+
+	// now go through and set breakpoints
+	while(!changes.empty())
+	{
+		scoreBest = -1;
+		for(t = times.begin(); t != times.end(); t++)
+		{
+			score = nGap(changes, *t) * (nAnt-usage[*t]);
+			if(score > scoreBest)
+			{
+				scoreBest = score;
+				mjdBest = *t;
+			}
+			cout << "  " << *t << " " << nGap(changes, *t) << " " << usage[*t] << endl;
+		}
+		cout << scoreBest << " " << mjdBest << " " << changes.size() << endl;
+		breaks.push_back(mjdBest);
+		for(c = changes.begin(); c != changes.end();)
+		{
+			if(c->mjdStart <= mjdBest && c->mjdStop >= mjdBest)
+			{
+				c = changes.erase(c);
+			}
+			else
+			{
+				c++;
+			}
+		}
+	}
+	breaks.sort();
+
+	cout << breaks.size() << " Breaks:" << endl;
+	for(t = breaks.begin(); t != breaks.end(); t++)
+	{
+		cout << "  " << *t << endl;
+	}
 }
 
 
@@ -97,6 +222,7 @@ int main(int argc, char **argv)
 	VexData *V;
 	CorrParams *P;
 	vector<VexJobGroup> JG;
+	vector<VexJob> J;
 
 	P = new CorrParams();
 
@@ -122,6 +248,10 @@ int main(int argc, char **argv)
 	cout << *P << endl;
 
 	genJobGroups(JG, V, P);
+	for(int i = 0; i < JG.size(); i++)
+	{
+		genJobs(J, JG[i], V, P);
+	}
 
 	delete V;
 	delete P;
