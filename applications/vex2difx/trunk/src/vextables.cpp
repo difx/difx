@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include "vextables.h"
 
 using namespace std;
@@ -103,6 +104,31 @@ VexScan *VexData::newScan()
 {
 	scans.push_back(VexScan());
 	return &scans.back();
+}
+
+void VexJob::assignVSNs(const VexData& V)
+{
+	list<string> antennas;
+	vector<string>::const_iterator s;
+	map<string,VexInterval>::const_iterator a;
+	list<string>::const_iterator i;
+
+	for(s = scans.begin(); s != scans.end(); s++)
+	{
+		const VexScan* S = V.getScan(*s);
+		for(a = S->stations.begin(); a != S->stations.end(); a++)
+		{
+			if(find(antennas.begin(), antennas.end(), a->first) == antennas.end())
+			{
+				antennas.push_back(a->first);
+			}
+		}
+	}
+	
+	for(i = antennas.begin(); i != antennas.end(); i++)
+	{
+		vsns[*i] = V.getVSN(*i, mjdStart, mjdStop);
+	}
 }
 
 bool VexJobGroup::hasScan(const string& scanName) const
@@ -390,9 +416,35 @@ void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, 
 			antennas[i].vsns.push_back(VexVSN());
 			antennas[i].vsns.back().name = vsn;
 			antennas[i].vsns.back().mjdStart = mjdStart;
-			antennas[i].vsns.back().mjdEnd = mjdStop;
+			antennas[i].vsns.back().mjdStop = mjdStop;
 		}
 	}
+}
+
+string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) const
+{
+	const VexAntenna *A;
+	vector<VexVSN>::const_iterator v;
+	double best = 0.0;
+	string bestVSN("None");
+
+	A = getAntenna(antName);
+	if(!A)
+	{
+		return bestVSN;
+	}
+
+	for(v = A->vsns.begin(); v != A->vsns.end(); v++)
+	{
+		double overlap = max(mjdStop, v->mjdStop) - min(mjdStart, v->mjdStart);
+		if(overlap > best)
+		{
+			best = overlap;
+			bestVSN = v->name;
+		}
+	}
+
+	return bestVSN;
 }
 
 void VexData::setExper(const string& name, double start, double stop)
@@ -428,7 +480,7 @@ ostream& operator << (ostream& os, const VexInterval& x)
 {
 	int p = os.precision();
 	os.precision(12);
-	os << "mjd(" << x.mjdStart << "," << x.mjdEnd << ")";
+	os << "mjd(" << x.mjdStart << "," << x.mjdStop << ")";
 	os.precision(p);
 
 	return os;
@@ -541,7 +593,7 @@ ostream& operator << (ostream& os, const VexEOP& x)
 
 ostream& operator << (ostream& os, const VexVSN& x)
 {
-	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdEnd << ")";
+	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdStop << ")";
 
 	return os;
 }
@@ -549,6 +601,7 @@ ostream& operator << (ostream& os, const VexVSN& x)
 ostream& operator << (ostream& os, const VexJob& x)
 {
 	vector<string>::const_iterator s;
+	map<string,string>::const_iterator v;
 	int p = os.precision();
 	os.precision(12);
 	os << "Job " << x.jobSeries << " " << x.jobId << endl;
@@ -560,6 +613,10 @@ ostream& operator << (ostream& os, const VexJob& x)
 		os << " " << *s;
 	}
 	os << endl;
+	for(v = x.vsns.begin(); v != x.vsns.end(); v++)
+	{
+		os << "  " << "VSN[" << v->first << "] = " << v->second << endl;
+	}
 
 	os.precision(p);
 

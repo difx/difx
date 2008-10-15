@@ -9,7 +9,7 @@
 // A is assumed to be the first scan in time order
 bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
-	if(A->timeRange.mjdEnd + P->maxGap < B->timeRange.mjdStart)
+	if(A->timeRange.mjdStop + P->maxGap < B->timeRange.mjdStart)
 	{
 		return false;
 	}
@@ -220,7 +220,6 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	JG.createJob(Js, start, V->obsStop());
 }
 
-
 int main(int argc, char **argv)
 {
 	VexData *V;
@@ -255,6 +254,7 @@ int main(int argc, char **argv)
 		genJobs(J, JG[i], V, P);
 	}
 
+	// Finalize all the new job structures
 	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++)
 	{
 		ostringstream name;
@@ -263,6 +263,7 @@ int main(int argc, char **argv)
 		name << j->jobSeries << "." << j->jobId;
 		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
+		j->assignVSNs(*V);
 	}
 
 	cout << *V << endl;

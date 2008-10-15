@@ -9,6 +9,8 @@
 
 using namespace std;
 
+class VexData;
+
 class VexEvent
 {
 public:
@@ -41,8 +43,8 @@ class VexInterval
 {
 public:
 	double mjdStart;
-	double mjdEnd;
-	VexInterval(double start=0.0, double end=0.0) : mjdStart(start), mjdEnd(end) {}
+	double mjdStop;
+	VexInterval(double start=0.0, double end=0.0) : mjdStart(start), mjdStop(end) {}
 };
 
 class VexScan
@@ -123,11 +125,11 @@ public:
 class VexVSN
 {
 public:
-	VexVSN() : mjdStart(0.0), mjdEnd(0.0) {}
+	VexVSN() : mjdStart(0.0), mjdStop(0.0) {}
 
 	string name;
 	double mjdStart;
-	double mjdEnd;
+	double mjdStop;
 };
 
 class VexAntenna
@@ -170,6 +172,8 @@ class VexJob
 {
 public:
 	VexJob() : mjdStart(0.0), mjdStop(1000000.0), jobSeries("Bogus"), jobId(-1) {}
+
+	void assignVSNs(const VexData& V);
 
 	string jobSeries;
 	int jobId;
@@ -247,6 +251,7 @@ public:
 	bool usesMode(const string& modeName) const;
 
 	void addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop);
+	string getVSN(const string& antName, double mjdStart, double mjdStop) const;
 
 	int nEvent() const { return events.size(); }
 	const list<VexEvent> *getEvents() const;
