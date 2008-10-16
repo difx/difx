@@ -32,6 +32,11 @@
 
 #define MAX_DIFX_KEY_LEN	32
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 typedef struct
 {
 	char *line;	/* entire, unmodified line of text */
@@ -93,5 +98,10 @@ int DifxParametersbatchfind1(const DifxParameters *dp, int start,
 int DifxParametersbatchfind2(const DifxParameters *dp, int start,
 	const char keys[][MAX_DIFX_KEY_LEN], int index1, int index2,
 	int n, int rows[]);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif

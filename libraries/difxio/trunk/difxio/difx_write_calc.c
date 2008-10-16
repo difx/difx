@@ -43,6 +43,12 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
+	if(!D->job)
+	{
+		fprintf(stderr, "writeDifxCalc: job=0\n");
+		return -1;
+	}
+
 	strcpy(filebase, filename);
 	l = strlen(filebase);
 	for(i = l-1; i > 0; i++)

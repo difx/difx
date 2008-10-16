@@ -30,6 +30,11 @@
 #ifndef __PARSE_VIS_H__
 #define __PARSE_VIS_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdio.h>
 #include <complex.h>
 #include "parsedifx.h"
@@ -55,6 +60,10 @@ int DifxVisRecordgetnext(DifxVisRecord *vis);
 /* find next occurance of given parameters */
 int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid,
 	const char *pol);
+
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif

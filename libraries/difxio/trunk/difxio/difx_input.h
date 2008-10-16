@@ -35,6 +35,11 @@
 
 #include <stdio.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 /* Notes about antenna numbering
  *
  * antennaId will typically refer to the index to the DifxInput array called
@@ -555,5 +560,9 @@ int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxIM(const DifxInput *D, const char *filename);
 int writeDifxCalc(const DifxInput *D, const char *filename);
 int writeDifxInput(const DifxInput *D, const char *filename);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

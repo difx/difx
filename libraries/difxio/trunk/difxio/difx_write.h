@@ -30,6 +30,11 @@
 #ifndef __DIFX_WRITE_H__
 #define __DIFX_WRITE_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
 #include <stdio.h>
 #include "difxio/difx_input.h"
 
@@ -68,5 +73,10 @@ int writeDifxLineArray1(FILE *out, const char *key, int i1, double *array,
 
 
 int writeDifxDateLines(FILE *out, double mjd);
+
+#ifdef __cplusplus
+}
+#endif
+
 
 #endif
