@@ -1,5 +1,8 @@
 #include <vector>
 #include <sstream>
+#include <difxio/difx_input.h>
+#include <cmath>
+#include <cstdlib>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -220,14 +223,146 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	JG.createJob(Js, start, V->obsStop());
 }
 
+void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P)
+{
+	// FIXME -- no maxLength constraint yet
+
+	vector<VexJobGroup> JG;
+	vector<VexJob>::iterator j;
+	int k;
+
+	// Do splitting of jobs
+	genJobGroups(JG, V, P);
+	for(int i = 0; i < JG.size(); i++)
+	{
+		genJobs(J, JG[i], V, P);
+	}
+
+	// Finalize all the new job structures
+	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++)
+	{
+		ostringstream name;
+		j->jobSeries = P->jobSeries;
+		j->jobId = k;
+		name << j->jobSeries << "." << j->jobId;
+		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
+		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
+		j->assignVSNs(*V);
+	}
+}
+
+DifxJob *makeDifxJob(const VexJob& J, int nAntenna, const string& obsCode, int *n)
+{
+	DifxJob *job;
+	const char *difxVer;
+
+	*n = 1;
+	job = newDifxJobArray(*n);
+	difxVer = getenv("DIFX_VERSION");
+	if(difxVer)
+	{
+		strcpy(job->difxVersion, difxVer);
+	}
+	job->jobStart = J.mjdStart;
+	job->jobStop  = J.mjdStop;
+	job->mjdStart = J.mjdStart;
+	job->duration = trunc((J.mjdStop - J.mjdStart) * 86400.0 + 0.001);
+	job->modelInc = 1;
+	job->jobId    = J.jobId;
+	job->subarrayId = 0;
+	strncpy(job->obsCode, obsCode.c_str(), 8);
+	job->obsCode[7] = 0;
+	strcpy(job->taperFunction, "UNIFORM");
+	job->polyOrder = 5;
+	job->polyInterval = 120;
+	job->aberCorr = AberCorrExact;
+	job->activeBaselines = nAntenna;
+	job->activeBaselines = nAntenna*(nAntenna-1)/2;
+
+	sprintf(job->fileBase, "%s.%d", J.jobSeries.c_str(), J.jobId);
+
+	return job;
+}
+
+DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n)
+{
+	const VexAntenna *ant;
+	DifxAntenna *A;
+	int i;
+	map<string,string>::const_iterator a;
+
+	*n = J.vsns.size();
+
+	A = newDifxAntennaArray(*n);
+	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
+	{
+		ant = V->getAntenna(a->first);
+		strcpy(A[i].name, a->first.c_str());
+		strcpy(A[i].vsn, a->second.c_str());
+		A[i].X = ant->x;
+		A[i].Y = ant->y;
+		A[i].Z = ant->z;
+		strcpy(A[i].mount, ant->axisType.c_str());
+		A[i].delay = ant->clockOffset;
+		A[i].rate  = ant->clockRate;
+	}
+
+	return A;
+}
+
+DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int *n)
+{
+	DifxDatastream *D;
+	int i;
+	map<string,string>::const_iterator a;
+	
+
+	D = newDifxDatastreamArray(J.vsns.size());
+	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
+	{
+		D[i].antennaId = i;
+		D[i].tSys = 0.0;
+	}
+
+	return D;
+}
+
+void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
+{
+	DifxInput *D;
+	string setupName;
+	const CorrSetup *setup;
+
+	setupName = V->getScan(J.scans.front())->setupName;
+	setup = P->getCorrSetup(setupName);
+	if(!setup)
+	{
+		cerr << "Setup " << setupName << "Not found!" << endl;
+		return;
+	}
+
+	D = newDifxInput();
+
+	D->mjdStart = J.mjdStart;
+	D->mjdStop  = J.mjdStop;
+	D->specAvg  = setup->specAvg;
+	D->startChan = setup->startChan;
+
+	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna));
+	D->datastream = makeDifxDatastreams(J, V, &(D->nDatastream));
+	D->job = makeDifxJob(J, D->nAntenna, V->getExper()->name, &(D->nJob));
+	
+	writeDifxInput(D, "X.input");
+	writeDifxCalc(D, "X.calc");
+
+	deleteDifxInput(D);
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
 	CorrParams *P;
-	vector<VexJobGroup> JG;
 	vector<VexJob> J;
-	vector<VexJob>::iterator j;
-	int k;
 
 	P = new CorrParams();
 
@@ -248,28 +383,21 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(argv[1], *P);
 
-	genJobGroups(JG, V, P);
-	for(int i = 0; i < JG.size(); i++)
-	{
-		genJobs(J, JG[i], V, P);
-	}
-
-	// Finalize all the new job structures
-	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++)
-	{
-		ostringstream name;
-		j->jobSeries = P->jobSeries;
-		j->jobId = k;
-		name << j->jobSeries << "." << j->jobId;
-		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
-		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
-		j->assignVSNs(*V);
-	}
+	makeJobs(J, V, P);
 
 	cout << *V << endl;
 	cout << *P << endl;
 
-	for(j = J.begin(), k = P->startSeries; j != J.end(); j++, k++) cout << *j;
+	vector<VexJob>::iterator j;
+	for(j = J.begin(); j != J.end(); j++)
+	{
+		cout << *j;
+	}
+
+	for(j = J.begin(); j != J.end(); j++)
+	{
+		writeJob(*j, V, P);
+	}
 
 	delete V;
 	delete P;

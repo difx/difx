@@ -62,6 +62,8 @@ public:
 	bool doPolar;		/* false for no cross pol, true for full pol */
 	bool doAuto;		/* write autocorrelations */
 	int blocksPerSend;	/* literal */
+	int specAvg;
+	int startChan;
 	vector<PhaseCenter> centers;
 };
 
@@ -97,7 +99,6 @@ public:
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
-
 	/* global parameters */
 	double mjdStart;
 	double mjdStop;

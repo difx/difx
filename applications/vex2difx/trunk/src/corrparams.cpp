@@ -6,6 +6,8 @@
 CorrSetup::CorrSetup(const string &name) : setupName(name)
 {
 	tInt = 2.0;
+	specAvg = 1;
+	startChan = 0;
 	nChan = 16;
 	doPolar = true;
 	doAuto = true;
