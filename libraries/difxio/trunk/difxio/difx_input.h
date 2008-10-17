@@ -297,6 +297,7 @@ typedef struct
 	int polyOrder;		/* polynomial model order */
 	int polyInterval;	/* (sec) length of valid polynomial */
 	enum AberCorr aberCorr;	/* level of correction for aberration */
+	double dutyCycle;	/* fraction of time in scans */
 } DifxJob;
 
 typedef struct
@@ -387,6 +388,8 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
+void DifxDatastreamSetupFreqs(DifxDatastream *dd, int nFreq);
+void DifxDatastreamSetupRecChans(DifxDatastream *dd, int nRecChan);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);

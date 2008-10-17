@@ -70,6 +70,10 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxLineInt(out, "JOB ID", D->job->jobId);
 	writeDifxLineDouble(out, "JOB START TIME", "%13.7f", D->job->jobStart);
 	writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", D->job->jobStop);
+	if(D->job->dutyCycle > 0.0)
+	{
+		writeDifxLineDouble(out, "DUTY CYCLE", "%5.3f", D->job->dutyCycle);
+	}
 	writeDifxLine(out, "OBSCODE", D->job->obsCode);
 	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);

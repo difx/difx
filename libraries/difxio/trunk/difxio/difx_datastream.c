@@ -135,6 +135,41 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	return 1;
 }
 
+void DifxDatastreamSetupFreqs(DifxDatastream *dd, int nFreq)
+{
+	if(dd->freqId)
+	{
+		free(dd->freqId);
+	}
+	if(dd->nPol)
+	{
+		free(dd->nPol);
+	}
+	if(dd->clockOffset)
+	{
+		free(dd->clockOffset);
+	}
+	dd->nFreq = nFreq;
+	dd->freqId = (int *)calloc(nFreq, sizeof(int));
+	dd->nPol = (int *)calloc(nFreq, sizeof(int));
+	dd->clockOffset = (double *)calloc(nFreq, sizeof(double));
+}
+
+void DifxDatastreamSetupRecChans(DifxDatastream *dd, int nRecChan)
+{
+	if(dd->RCfreqId)
+	{
+		free(dd->RCfreqId);
+	}
+	if(dd->RCpolName)
+	{
+		free(dd->RCpolName);
+	}
+	dd->nRecChan = nRecChan;
+	dd->RCfreqId = (int *)calloc(nRecChan, sizeof(int));
+	dd->RCpolName = (char *)calloc(nRecChan, sizeof(char));
+}
+
 void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	const int *freqIdRemap, const int *antennaIdRemap)
 {
