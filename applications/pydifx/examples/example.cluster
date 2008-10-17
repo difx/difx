@@ -1,0 +1,16 @@
+# This is a cluster file
+# Comments are as python
+# Columns can be separated by any whitespace as defined by python
+# str.split()
+# 
+# first line will be assigned the master (and datastream 1)
+# datastreams must be in order and the first lines in the file
+# hostname	n cores 	threads per core 	datastream
+wn01		2		1			1
+wn02		2		1			2
+wn03		2		1			3
+wn04		2		1			4
+wn05		4		1			0
+wn06		4		1			0
+wn07		4		1			0
+wn08		4		1			0

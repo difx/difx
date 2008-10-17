@@ -1,0 +1,100 @@
+Scripts for use with mpifxcorr software correlator 
+http://astronomy.ivec.org/dokuwiki/doku.php/difx/index
+
+and NRAO-DiFX 1.0
+http://www.aoc.nrao.edu/~wbrisken/NRAO-DiFX-1.0/
+
+All of the executable scripts have parameters that can be set in 3 
+different ways:
+
+1 - In the file correlator_default.py
+    Parameters which are the same for all jobs should be placed here.
+
+2 - In the file observation.py (see "Some notes on observation.py" below.)
+    observation.py contains observation-specific parameters. It can also 
+    overwrite any parameter in the correlator_defaults file. The first line
+    of the script should always be:
+    from correlator_default import *
+
+    It is usually placed in the working directory.
+
+    otherwise simply put a script with that name in this directory.
+
+3 - as arguments on the command line.
+
+3 has precedence of 2 which has precedence over 1.
+
+
+Any script can be run in 2 ways:
+
+1 - from the command line (run without arguments for a help string)
+2 - from a script (see pydifx.py)
+
+
+A quick explanation of most of the scripts (All of the scripts have a docstring at the top.)
+
+calcif.py
+======
+Start calcServer, run calcif, log its output and then shut down calcserver
+
+difx2fits.py
+=========
+Run difx2fits and (optionally) delete the .difx file afterwards.
+
+execall.py
+=======
+Execute a command on all machines in a machine file
+
+killdifx.py
+========
+Kill mpifxcorr processes on all machines in a machine file
+
+log2input.py
+=========
+Calculates clock parameters from a list of telescope log files and writes the results to the input file.
+
+machinegen.py
+===========
+Generate a machine file and .threads file from an input file and a ".cluster" file (see examples)
+
+mpifxcorr.py
+=========
+Run mpifxcorr, checking for an existing output file first, and logging all output.
+
+pydifx.py
+=======
+For use within a python scripts. Combines all of the functionality of these scripts in a single class.
+
+vex2calc.py
+========
+Generate a .calc file from a vex file.
+
+vex2flag.py
+========
+Generate a flag file for the times each antenna is not observing.
+(mpifxcorr sometimes generate small amounts of spurious data between the scans)
+
+
+Some notes on observation.py
+============================
+
+For any import python should look first in the local directory, then in 
+PYTHONPATH. However python will look first in the directory of the script that
+is doing the import. The present working directory is still checked, however,
+so if you delete (or rename) the observation.py (and observation.pyc!) in the 
+main directory, the local copy will be used instead.
+
+So basically you have 2 possibilities:
+
+1: Decide that there's nothing you want to change from observation to 
+observation, and just keep observation.py in the main directory
+
+2: Decide that you want to have a local observation.py for each experiment and
+always have one in the local directory.
+
+If you find youself swapping between the two, make sure you delete the
+observation.pyc in the main directory, or python will behave as if
+observation.py was still there.
+
+I hope this is clear, I know it's a bit awkward, but I find it useful, and if 
+it gets too confusing you can always stick with option 1.

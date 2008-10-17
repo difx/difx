@@ -1,0 +1,37 @@
+============
+Requirements
+============
+Python > 2.4 is recommended. Python 2.3 should be fine.
+
+Most of the scripts are pure python. However spawn.py, mpifxcorr.py, calcif.py
+and difx2fits.py require pexpect.
+
+log2clock.py and log2input.py require numpy
+
+pexpect
+========
+http://www.noah.org/wiki/Pexpect
+
+Available as python-pexpect on some debian-based systems. 
+
+Or download and install:
+wget http://pexpect.sourceforge.net/pexpect-2.3.tar.gz
+tar -xvvzf pexpect-2.3.tar.gz
+cd pexpect-2.3
+
+# as root
+python ./setup.py install
+
+numpy
+=====
+http://numpy.scipy.org/
+
+Available on some systems as python-numpy
+
+============
+Instructions
+============
+
+Place this directory somewhere sensible. You'll need add it to you PYTHONPATH and you may want to add it to you PATH as well.
+
+Edit correlator_defaults.py and set all paths to your local setup

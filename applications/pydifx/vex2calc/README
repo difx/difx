@@ -1,0 +1,8 @@
+This module contains:
+    - an (incomplete) vex parser
+    - individual scripts for creating the various tables of the calc file
+
+The following files should be in $PWD or $PYTHONPATH
+    -astro.py
+    -pfile.py
+    -observation.py
