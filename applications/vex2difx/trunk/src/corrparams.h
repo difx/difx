@@ -57,13 +57,14 @@ public:
 
 	string setupName;
 
-	double tInt;		/* integration time */
-	int nChan;		/* channels per sub-band */
-	bool doPolar;		/* false for no cross pol, true for full pol */
-	bool doAuto;		/* write autocorrelations */
-	int blocksPerSend;	/* literal */
+	double tInt;		// integration time
+	int nChan;		// channels per sub-band
+	bool doPolar;		// false for no cross pol, true for full pol
+	bool doAuto;		// write autocorrelations
+	int blocksPerSend;	// literal
 	int specAvg;
 	int startChan;
+	bool postFFringe;	// fringe after FFT?
 	vector<PhaseCenter> centers;
 };
 

@@ -11,6 +11,7 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	nChan = 16;
 	doPolar = true;
 	doAuto = true;
+	postFFringe = false;
 	blocksPerSend = 3125;
 }
 

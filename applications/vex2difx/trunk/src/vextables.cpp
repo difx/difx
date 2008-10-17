@@ -63,6 +63,84 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 	return n;
 }
 
+int VexMode::getPols(char *pols) const
+{
+	int n=0;
+	bool L=false, R=false, X=false, Y=false;
+	vector<VexSubband>::const_iterator it;
+
+	for(it = subbands.begin(); it != subbands.end(); it++)
+	{
+		if(it->pol == 'R') R=true;
+		if(it->pol == 'L') L=true;
+		if(it->pol == 'X') X=true;
+		if(it->pol == 'Y') Y=true;
+	}
+
+	if(R) 
+	{
+		*pols = 'R';
+		pols++;
+		n++;
+	}
+	if(L)
+	{
+		*pols = 'L';
+		pols++;
+		n++;
+	}
+	if(n)
+	{
+		return n;
+	}
+	if(X) 
+	{
+		*pols = 'X';
+		pols++;
+		n++;
+	}
+	if(Y)
+	{
+		*pols = 'Y';
+		pols++;
+		n++;
+	}
+
+	return n;
+}
+
+int VexMode::getBits() const
+{
+	int nBit;
+	map<string,VexFormat>::const_iterator it;
+
+	nBit = formats.begin()->second.nBit;
+
+	for(it = formats.begin(); it != formats.end(); it++)
+	{
+		if(it->second.nBit != nBit)
+		{
+			cout << "Warning -- differing numbers of bits : FITS will not store this information perfectly" << endl;
+			break;
+		}
+	}
+
+	return nBit;
+}
+
+const VexFormat& VexMode::getFormat(const string antName) const
+{
+	map<string,VexFormat>::const_iterator it;
+
+	for(it = formats.begin(); it != formats.end(); it++)
+	{
+		if(it->first == antName)
+		{
+			return it->second;
+		}
+	}
+}
+
 bool operator == (VexSubband& s1, VexSubband& s2)
 {
 	if(s1.freq != s2.freq) return false;

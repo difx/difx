@@ -114,6 +114,9 @@ public:
 	VexMode() : sampRate(0.0) {}
 
 	int addSubband(double freq, double bandwidth, char sideband, char pol);
+	int getPols(char *pols) const;
+	int getBits() const;
+	const VexFormat &getFormat(const string antName) const;
 
 	string name;
 
@@ -140,6 +143,8 @@ public:
 	string name;
 
 	double x, y, z;		// (m) antenna position
+	double dx, dy, dz;	// (m/?) antenna position	//FIXME
+	double posEpoch;	// mjd				//FIXME
 	string axisType;
 	double axisOffset;	// (m)
 	double clockOffset;

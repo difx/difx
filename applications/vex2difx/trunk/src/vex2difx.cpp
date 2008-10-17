@@ -278,13 +278,14 @@ DifxJob *makeDifxJob(const VexJob& J, int nAntenna, const string& obsCode, int *
 	job->aberCorr = AberCorrExact;
 	job->activeBaselines = nAntenna;
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
+	job->dutyCycle = J.dutyCycle;
 
 	sprintf(job->fileBase, "%s.%d", J.jobSeries.c_str(), J.jobId);
 
 	return job;
 }
 
-DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n)
+DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<string>& antList)
 {
 	const VexAntenna *ant;
 	DifxAntenna *A;
@@ -292,6 +293,8 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n)
 	map<string,string>::const_iterator a;
 
 	*n = J.vsns.size();
+
+	antList.clear();
 
 	A = newDifxAntennaArray(*n);
 	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
@@ -305,6 +308,7 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n)
 		strcpy(A[i].mount, ant->axisType.c_str());
 		A[i].delay = ant->clockOffset;
 		A[i].rate  = ant->clockRate;
+		antList.push_back(a->first);
 	}
 
 	return A;
@@ -338,7 +342,9 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	const VexSource *src;
 	map<string,int> configIndex;
 	vector<string>::const_iterator si;
-	int i, c;
+	vector<pair<string,string> > configs;
+	vector<string> antList;
+	int a, i, c, dsId;
 	int nConfig = 0;
 
 	setupName = V->getScan(J.scans.front())->setupName;
@@ -365,8 +371,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->specAvg  = setup->specAvg;
 	D->startChan = setup->startChan;
 
-	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna));
-	D->datastream = makeDifxDatastreams(J, V, configIndex.size(), &(D->nDatastream));
+	// FIXME -- next two: expose to params file
+	D->dataBufferFactor = 32;
+	D->nDataSegments = 8;
+
+	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna), antList);
 	D->job = makeDifxJob(J, D->nAntenna, V->getExper()->name, &(D->nJob));
 	
 	// now run through all scans, populating things as we go
@@ -389,23 +398,36 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			
 			c = configIndex[configName] = nConfig;
 			nConfig++;
+			configs.push_back(pair<string,string>(S->modeName, S->setupName));
 			cout << configName << " -> " << c << endl;
 			config = D->config + c;
-			// FIXME -- use mode info
 			strcpy(config->name, configName.c_str());
 			config->tInt = setup->tInt;
 			config->nChan = setup->nChan;
 			config->blocksPerSend = 100;	// FIXME
+			config->specAvg = 1;		// FIXME
 			config->guardBlocks = 2;
-			config->postFFringe = 0;
+			config->postFFringe = setup->postFFringe;
 			config->quadDelayInterp = 1;
 			config->pulsarId = -1;		// FIXME -- from setup
 			config->doPolar = setup->doPolar;
 			config->nAntenna = D->nAntenna;
 			config->nDatastream = D->nAntenna;
 			config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
+			config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
+			config->decimation = 1;
+			// try to get a good balance of oversampling and decim
+			while(config->overSamp % 4 == 0)
+			{
+				config->overSamp /= 2;
+				config->decimation *= 2;
+			}
 			DifxConfigSetDatastreamIds(config, config->nDatastream, c*config->nDatastream);
 			DifxConfigSetBaselineIds(config, config->nBaseline, c*config->nBaseline);
+
+			// FIXME -- use mode info
+			config->nPol = mode->getPols(config->pol);
+			config->quantBits = mode->getBits();
 		}
 		scan->configId = c;
 		src = V->getSource(S->sourceName);
@@ -419,9 +441,59 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		// qual and calcode
 	}
 
+	// configure datastreams
 	if(nConfig != configIndex.size())
 	{
 		cerr << "Error : nConfig != configIndex.size())" << endl;
+	}
+	D->datastream = makeDifxDatastreams(J, V, nConfig, &(D->nDatastream));
+	for(c = 0; c < nConfig; c++)
+	{
+		mode  = V->getMode(configs[c].first);
+		setup = P->getCorrSetup(configs[c].second);
+		cout << "Setting up " << mode->name << " " << setup->setupName << endl;
+
+		for(a = 0; a < antList.size(); a++)
+		{
+			dsId = c*antList.size() + a;
+			const VexFormat format = mode->getFormat(antList[a]);
+			if(format.format == string("VLBA1_1"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "VLBA");
+				D->datastream[dsId].dataFrameSize = 2520*format.nBit*format.nRecordChan;
+			}
+			else if(format.format == string("VLBA1_2"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "VLBA");
+				D->datastream[dsId].dataFrameSize = 5040*format.nBit*format.nRecordChan;
+			}
+			else if(format.format == string("VLBA1_4"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "VLBA");
+				D->datastream[dsId].dataFrameSize = 10080*format.nBit*format.nRecordChan;
+			}
+			else if(format.format == string("MKIV1_1"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "MKIV");
+				D->datastream[dsId].dataFrameSize = 2500*format.nBit*format.nRecordChan;
+			}
+			else if(format.format == string("MKIV1_1"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "MKIV");
+				D->datastream[dsId].dataFrameSize = 5000*format.nBit*format.nRecordChan;
+			}
+			else if(format.format == string("MKIV1_1"))
+			{
+				strcpy(D->datastream[dsId].dataFormat, "MKIV");
+				D->datastream[dsId].dataFrameSize = 10000*format.nBit*format.nRecordChan;
+			}
+			else
+			{
+				cerr << "Format " << format.format << "not currently supported" << endl;
+			}
+			strcpy(D->datastream[dsId].dataSource, "MODULE");
+			DifxDatastreamSetupRecChans(D->datastream + dsId, format.nRecordChan);
+		}
 	}
 
 	deriveSourceTable(D);
