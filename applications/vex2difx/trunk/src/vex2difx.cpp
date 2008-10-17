@@ -310,17 +310,16 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n)
 	return A;
 }
 
-DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int *n)
+DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int nSet, int *n)
 {
 	DifxDatastream *D;
 	int i;
-	map<string,string>::const_iterator a;
 	
-
-	D = newDifxDatastreamArray(J.vsns.size());
-	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
+	*n = J.vsns.size() * nSet;
+	D = newDifxDatastreamArray(*n);
+	for(i = 0; i < *n; i++)
 	{
-		D[i].antennaId = i;
+		D[i].antennaId = i % J.vsns.size();
 		D[i].tSys = 0.0;
 	}
 
@@ -330,8 +329,17 @@ DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int *n)
 void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 {
 	DifxInput *D;
+	DifxScan *scan;
 	string setupName;
+	string configName;
 	const CorrSetup *setup;
+	const VexMode *mode;
+	const VexScan *S;
+	const VexSource *src;
+	map<string,int> configIndex;
+	vector<string>::const_iterator si;
+	int i, c;
+	int nConfig = 0;
 
 	setupName = V->getScan(J.scans.front())->setupName;
 	setup = P->getCorrSetup(setupName);
@@ -341,6 +349,15 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		return;
 	}
 
+	// initialize configIndex
+	for(si = J.scans.begin(); si != J.scans.end(); si++)
+	{
+		S = V->getScan(*si);
+		configName = S->modeName + string("_") + S->setupName;
+		configIndex[configName] = -1;
+	}
+
+
 	D = newDifxInput();
 
 	D->mjdStart = J.mjdStart;
@@ -349,11 +366,75 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->startChan = setup->startChan;
 
 	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna));
-	D->datastream = makeDifxDatastreams(J, V, &(D->nDatastream));
+	D->datastream = makeDifxDatastreams(J, V, configIndex.size(), &(D->nDatastream));
 	D->job = makeDifxJob(J, D->nAntenna, V->getExper()->name, &(D->nJob));
 	
-	writeDifxInput(D, "X.input");
-	writeDifxCalc(D, "X.calc");
+	// now run through all scans, populating things as we go
+	D->nScan = J.scans.size();
+	D->scan = newDifxScanArray(D->nScan);
+	D->nConfig = configIndex.size();
+	D->config = newDifxConfigArray(D->nConfig);
+	scan = D->scan;
+	for(si = J.scans.begin(); si != J.scans.end(); si++, scan++)
+	{
+		S = V->getScan(*si);
+		cout << *S << endl;
+		configName = S->modeName + string("_") + S->setupName;
+		setup = P->getCorrSetup(S->setupName);
+		mode = V->getMode(S->modeName);
+		c = configIndex[configName];
+		if(c < 0)
+		{
+			DifxConfig *config;
+			
+			c = configIndex[configName] = nConfig;
+			nConfig++;
+			cout << configName << " -> " << c << endl;
+			config = D->config + c;
+			// FIXME -- use mode info
+			strcpy(config->name, configName.c_str());
+			config->tInt = setup->tInt;
+			config->nChan = setup->nChan;
+			config->blocksPerSend = 100;	// FIXME
+			config->guardBlocks = 2;
+			config->postFFringe = 0;
+			config->quadDelayInterp = 1;
+			config->pulsarId = -1;		// FIXME -- from setup
+			config->doPolar = setup->doPolar;
+			config->nAntenna = D->nAntenna;
+			config->nDatastream = D->nAntenna;
+			config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
+			DifxConfigSetDatastreamIds(config, config->nDatastream, c*config->nDatastream);
+			DifxConfigSetBaselineIds(config, config->nBaseline, c*config->nBaseline);
+		}
+		scan->configId = c;
+		src = V->getSource(S->sourceName);
+		scan->ra = src->ra;
+		scan->dec = src->dec;
+		scan->mjdStart = S->timeRange.mjdStart;
+		scan->mjdEnd = S->timeRange.mjdStop;
+		scan->startPoint = static_cast<int>((S->timeRange.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
+		scan->nPoint = static_cast<int>((S->timeRange.mjdStop - S->timeRange.mjdStart)*86400.0/D->job->modelInc + 0.01);
+		strcpy(scan->name, S->sourceName.c_str());
+		// qual and calcode
+	}
+
+	if(nConfig != configIndex.size())
+	{
+		cerr << "Error : nConfig != configIndex.size())" << endl;
+	}
+
+	deriveSourceTable(D);
+
+	printDifxInput(D);
+
+	ostringstream inputName;
+	inputName << D->job->jobId << ".input";
+	writeDifxInput(D, inputName.str().c_str());
+
+	ostringstream calcName;
+	calcName << D->job->jobId << ".calc";
+	writeDifxCalc(D, calcName.str().c_str());
 
 	deleteDifxInput(D);
 }
