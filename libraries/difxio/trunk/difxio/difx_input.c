@@ -2529,9 +2529,8 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 }
 
 /* take DifxInput structure and derive the source table.
- * Also derive sourceId and configId for each scan
  */
-static DifxInput *deriveSourceTable(DifxInput *D)
+DifxInput *deriveSourceTable(DifxInput *D)
 {
 	int i, n=0, s, sc;
 

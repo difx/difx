@@ -315,6 +315,8 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 	const DifxConfig *config;
 	int n;
 
+	ds += scanId;
+
 	config = dc + ds->configId;
 
 	writeDifxLineInt1(out, "SCAN %d POINTS", scanId, ds->nPoint);

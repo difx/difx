@@ -81,6 +81,38 @@ void deleteDifxConfigArray(DifxConfig *dc)
 	}
 }
 
+void DifxConfigSetDatastreamIds(DifxConfig *dc, int nDatastream, int start)
+{
+	int i;
+
+	if(dc->datastreamId)
+	{
+		free(dc->datastreamId);
+	}
+	dc->datastreamId = (int *)malloc(nDatastream+1);
+	dc->datastreamId[nDatastream] = -1;
+	for(i = 0; i < nDatastream; i++)
+	{
+		dc->datastreamId[i] = i + start;
+	}
+}
+
+void DifxConfigSetBaselineIds(DifxConfig *dc, int nBaseline, int start)
+{
+	int i;
+
+	if(dc->baselineId)
+	{
+		free(dc->baselineId);
+	}
+	dc->baselineId = (int *)malloc(nBaseline+1);
+	dc->baselineId[nBaseline] = -1;
+	for(i = 0; i < nBaseline; i++)
+	{
+		dc->baselineId[i] = i + start;
+	}
+}
+
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 {
 	int i;
