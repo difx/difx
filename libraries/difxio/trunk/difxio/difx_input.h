@@ -365,6 +365,7 @@ DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da);
 void printDifxAntenna(const DifxAntenna *da);
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);
+void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da);
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,

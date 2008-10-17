@@ -221,7 +221,7 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 {
 	int i;
 
-	fprintf(fp, "Summary\n", D);
+	fprintf(fp, "Summary\n");
 	if(!D)
 	{
 		return;
@@ -2427,7 +2427,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 
 static DifxInput *populateRate(DifxInput *D, DifxParameters *rp)
 {
-	int i, a, p, r = 0, s, v;
+	int a, p, r = 0, s, v;
 	double f;
 	int nTel;
 	int *antMap;
@@ -3244,9 +3244,8 @@ static int AntennaCompare(const void *a1, const void *a2)
  * damage */ 
 int DifxInputSortAntennas(DifxInput *D, int verbose)
 {
-	int a, s, d, f, c, j, a1, a2;
+	int a, d, f;
 	int *old2new;
-	DifxModel **m;
 	int changed = 0;
 
 	if(!D)

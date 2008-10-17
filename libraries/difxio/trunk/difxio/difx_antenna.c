@@ -32,6 +32,7 @@
 #include <string.h>
 #include <math.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxAntenna *newDifxAntennaArray(int nAntenna)

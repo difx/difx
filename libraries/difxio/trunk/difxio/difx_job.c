@@ -86,8 +86,6 @@ void printDifxJob(const DifxJob *dj)
 
 void copyDifxJob(DifxJob *dest, const DifxJob *src)
 {
-	int a;
-	
 	memcpy(dest, src, sizeof(DifxJob));
 }
 

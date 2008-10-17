@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxFreq *newDifxFreqArray(int nFreq)

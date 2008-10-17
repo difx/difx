@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxConfig *newDifxConfigArray(int nConfig)
@@ -152,7 +153,6 @@ void printDifxConfig(const DifxConfig *dc)
 void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 {
 	int i;
-	int nAnt;
 
 	fprintf(fp, "  Difx Config [%s]\n", dc->name);
 	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);

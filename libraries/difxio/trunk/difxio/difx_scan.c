@@ -31,6 +31,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "difxio/difx_input.h"
+#include "difxio/difx_write.h"
 
 
 DifxScan *newDifxScanArray(int nScan)
@@ -362,6 +363,8 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds,
 		n += writeDifxScan(out, ds, i, dc, 
 			doRealName, doCoords, doExtra);
 	}
+
+	return 0;
 }
 
 #if 0

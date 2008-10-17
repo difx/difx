@@ -300,8 +300,8 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 		for(j = 0; j < ds[i].nPoint; j++)
 		{
 			V = ds[i].pos + j;
-			sprintf(value, "%13.8f %18.14e %18.14e %18.14e "
-					"%18.14e %18.14e %18.14e", 
+			sprintf(value, "%13.8f %18.14Le %18.14Le %18.14Le "
+					"%18.14Le %18.14Le %18.14Le", 
 				V->mjd + V->fracDay, 
 				V->X, V->Y, V->Z,
 				V->dX, V->dY, V->dZ);
