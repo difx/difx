@@ -330,6 +330,76 @@ DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int nSet,
 	return D;
 }
 
+// round up to the next power of two
+int next2(int x)
+{
+	int n=0; 
+	int m=0;
+	
+	for(int i=0; i < 31; i++)
+	{
+		if(x & (1 << i))
+		{
+			n++;
+			m = i;
+		}
+	}
+
+	if(n < 2)
+	{
+		return x;
+	}
+	else
+	{
+		return 2<<m;
+	}
+}
+
+class freq
+{
+public:
+	freq(double f=0.0, double b=0.0, char s=' ') : fq(f), bw(b), sideBand(s) {};
+	double fq;
+	double bw;
+	char sideBand;
+};
+
+int getFreqId(vector<freq>& freqs, double fq, double bw, char sb)
+{
+	for(int i = 0; i < freqs.size(); i++)
+	{
+		if(fq == freqs[i].fq &&
+		   bw == freqs[i].bw &&
+		   sb == freqs[i].sideBand)
+		{
+			return i;
+		}
+	}
+
+	freqs.push_back(freq(fq, bw, sb));
+
+	return freqs.size() - 1;
+}
+
+int getBand(vector<pair<int,int> >& bandMap, int fqId)
+{
+	vector<pair<int,int> >::iterator it;
+	int i;
+
+	for(i = 0, it = bandMap.begin(); it != bandMap.end(); i++, it++)
+	{
+		if(it->first == fqId)
+		{
+			it->second++;
+			return i;
+		}
+	}
+
+	bandMap.push_back(pair<int,int>(fqId, 1));
+
+	return bandMap.size() - 1;
+}
+
 void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 {
 	DifxInput *D;
@@ -344,8 +414,9 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	vector<string>::const_iterator si;
 	vector<pair<string,string> > configs;
 	vector<string> antList;
-	int a, i, c, dsId;
+	int n2, a, i, c, dsId;
 	int nConfig = 0;
+	vector<freq> freqs;
 
 	setupName = V->getScan(J.scans.front())->setupName;
 	setup = P->getCorrSetup(setupName);
@@ -455,45 +526,73 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 		for(a = 0; a < antList.size(); a++)
 		{
+			vector<pair<int,int> > bandMap;
+
 			dsId = c*antList.size() + a;
 			const VexFormat format = mode->getFormat(antList[a]);
+			n2 = next2(format.nRecordChan);
 			if(format.format == string("VLBA1_1"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 2520*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
 			}
 			else if(format.format == string("VLBA1_2"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 5040*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
 			}
 			else if(format.format == string("VLBA1_4"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 10080*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
 			}
 			else if(format.format == string("MKIV1_1"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 2500*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 2500*format.nBit*n2;
 			}
-			else if(format.format == string("MKIV1_1"))
+			else if(format.format == string("MKIV1_2"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 5000*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 5000*format.nBit*n2;
 			}
-			else if(format.format == string("MKIV1_1"))
+			else if(format.format == string("MKIV1_4"))
 			{
 				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 10000*format.nBit*format.nRecordChan;
+				D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
 			}
 			else
 			{
-				cerr << "Format " << format.format << "not currently supported" << endl;
+				cerr << "Format " << format.format << " not currently supported" << endl;
 			}
 			strcpy(D->datastream[dsId].dataSource, "MODULE");
-			DifxDatastreamSetupRecChans(D->datastream + dsId, format.nRecordChan);
+			D->datastream[dsId].quantBits = format.nBit;
+			DifxDatastreamSetupRecChans(D->datastream + dsId, n2);
+
+			for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
+			{
+				int r = i->recordChan;
+				const VexSubband& subband = mode->subbands[i->subbandId];
+				int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand);
+				
+				D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
+				D->datastream[dsId].RCpolName[r] = subband.pol;
+			}
+			DifxDatastreamSetupFreqs(D->datastream + dsId, bandMap.size());
+			for(int i = 0; i < bandMap.size(); i++)
+			{
+				D->datastream[dsId].freqId[i] = bandMap[i].first;
+				D->datastream[dsId].nPol[i] = bandMap[i].second;
+			}
 		}
+	}
+	D->nFreq = freqs.size();
+	D->freq = newDifxFreqArray(D->nFreq);
+	for(int f = 0; f < freqs.size(); f++)
+	{
+		D->freq[f].freq = freqs[f].fq/1.0e6;
+		D->freq[f].bw   = freqs[f].bw/1.0e6;
+		D->freq[f].sideband = freqs[f].sideBand;
 	}
 
 	deriveSourceTable(D);
