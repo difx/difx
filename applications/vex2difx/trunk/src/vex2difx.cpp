@@ -414,7 +414,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	vector<string>::const_iterator si;
 	vector<pair<string,string> > configs;
 	vector<string> antList;
-	int n2, a, i, c, dsId;
+	int n2, a, b, i, c, dsId;
 	int nConfig = 0;
 	vector<freq> freqs;
 
@@ -567,7 +567,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			}
 			strcpy(D->datastream[dsId].dataSource, "MODULE");
 			D->datastream[dsId].quantBits = format.nBit;
-			DifxDatastreamSetupRecChans(D->datastream + dsId, n2);
+			DifxDatastreamAllocRecChans(D->datastream + dsId, n2);
 
 			for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
 			{
@@ -578,7 +578,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 				D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
 				D->datastream[dsId].RCpolName[r] = subband.pol;
 			}
-			DifxDatastreamSetupFreqs(D->datastream + dsId, bandMap.size());
+			DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
 			for(int i = 0; i < bandMap.size(); i++)
 			{
 				D->datastream[dsId].freqId[i] = bandMap[i].first;
@@ -586,6 +586,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			}
 		}
 	}
+
+	// Make frequency table
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
 	for(int f = 0; f < freqs.size(); f++)
@@ -593,6 +595,68 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		D->freq[f].freq = freqs[f].fq/1.0e6;
 		D->freq[f].bw   = freqs[f].bw/1.0e6;
 		D->freq[f].sideband = freqs[f].sideBand;
+	}
+
+	// Make baseline table
+	D->nBaseline = nConfig*D->nAntenna*(D->nAntenna-1)/2;
+	D->baseline = newDifxBaselineArray(D->nBaseline);
+	b = 0;
+	for(c = 0; c < nConfig; c++)
+	{
+		for(int a2 = 1; a2 < D->nAntenna; a2++)
+		{
+			for(int a1 = 0; a1 < a2; a1++)
+			{
+				DifxBaseline *bl = D->baseline + b;
+	
+				bl->dsA = a1 + c*D->nAntenna;
+				bl->dsB = a2 + c*D->nAntenna;
+				DifxBaselineAllocFreqs(bl, D->datastream[a1].nFreq);
+
+				for(int f = 0; f < D->datastream[a1].nFreq; f++)
+				{
+					int npol = 0;
+					int n1, n2, g;
+					int a1c[2], a2c[2];
+					char a1p[2], a2p[2];
+					
+					DifxBaselineAllocPolProds(bl, f, 4);
+					g = D->datastream[a1].freqId[f];
+
+					n1 = DifxDatastreamGetRecChans(D->datastream+a1, g, a1p, a1c);
+					n2 = DifxDatastreamGetRecChans(D->datastream+a2, g, a2p, a2c);
+
+					for(int u = 0; u < n1; u++)
+					{
+						for(int v = 0; v < n2; v++)
+						{
+							if(a1p[u] == a2p[v])
+							{
+								bl->recChanA[f][npol] = a1c[u];
+								bl->recChanB[f][npol] = a2c[v];
+								npol++;
+							}
+						}
+					}
+
+					if(npol == 2 && setup->doPolar)
+					{
+						// configure cross hands here
+						bl->recChanA[f][2] = bl->recChanA[f][0];
+						bl->recChanB[f][2] = bl->recChanB[f][1];
+						bl->recChanA[f][3] = bl->recChanA[f][1];
+						bl->recChanB[f][3] = bl->recChanB[f][0];
+					}
+					else
+					{
+						// Not all 4 products used: reduce count
+						bl->nPolProd[f] = npol;
+					}
+				}
+
+				b++;
+			}
+		}
 	}
 
 	deriveSourceTable(D);
