@@ -169,14 +169,53 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		{
 			rcA = db->recChanA[f][0];
 			rcB = db->recChanB[f][0];
+
+			if(rcA < 0 || rcA >= D->datastream[db->dsA].nRecChan)
+			{
+				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					"rcA = %d, range = %d\n",
+					rcA, D->datastream[db->dsA].nRecChan);
+				exit(0);
+			}
+
+			if(rcB < 0 || rcB >= D->datastream[db->dsB].nRecChan)
+			{
+				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					"rcB = %d, range = %d\n",
+					rcB, D->datastream[db->dsB].nRecChan);
+				exit(0);
+			}
+
 			fqA = D->datastream[db->dsA].RCfreqId[rcA];
 			fqB = D->datastream[db->dsB].RCfreqId[rcB];
+
+			if(fqA < 0 || fqA >= D->datastream[db->dsA].nFreq)
+			{
+				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					"local freq id=%d out of range %d\n",
+					fqA, D->datastream[db->dsA].nFreq);
+				fqA = 0;
+				exit(0);
+			}
+			if(fqB < 0 || fqB >= D->datastream[db->dsB].nFreq)
+			{
+				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					"local freq id=%d out of range %d\n",
+					fqB, D->datastream[db->dsB].nFreq);
+				fqB = 0;
+				exit(0);
+			}
+
+			/* map from local freqid to freqid table index */
+			fqA = D->datastream[db->dsA].freqId[fqA];
+			fqB = D->datastream[db->dsB].freqId[fqB];
 			if(fqA != fqB)
 			{
 				fprintf(stderr, "Baseline %d-%d freq %d "
 					"correlates different freqs!\n",
 					a1, a2, f);
 			}
+			
 			if(fqA < 0 || fqA >= D->nFreq)
 			{
 				fprintf(stderr,"Error! "

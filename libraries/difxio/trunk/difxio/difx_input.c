@@ -181,7 +181,7 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		fprintDifxEOP(fp, D->eop + i);
 	}
 
-	fprintf(fp, "  nDataStreamEntries = %d\n", D->nDatastream);
+	fprintf(fp, "  nDatastreamEntries = %d\n", D->nDatastream);
 	for(i = 0; i < D->nDatastream; i++)
 	{
 		fprintDifxDatastream(fp, D->datastream + i);
@@ -594,9 +594,8 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 					haspol[3] = 1; 
 					break;
 				default:
-					fprintf(stderr, "Unknown pol %c\n",
+					fprintf(stderr, "Warning: Unknown pol %c\n",
 						ds->RCpolName[c]);
-					return -1;
 			}
 		}
 	}
@@ -1025,10 +1024,10 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 	return D;
 }
 
-static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
+static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 	const DifxParameters *ip)
 {
-	int a, e, i, r, r2;
+	int a, e, i, r, r2, v, nr;
 	int nRecChan;
 
 	if(!D || !ip)
@@ -1130,6 +1129,25 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 				atoi(DifxParametersvalue(ip, r));
 			nRecChan += D->datastream[e].nPol[i];
 		}
+
+		/* count rec chans to make sure we have enough */
+		nr = 0;
+		for(i = 0; ; i++)
+		{
+			v = DifxParametersfind1(ip, r,
+				"INPUT BAND %d POL", i);
+			if(v <= 0 || v > r+2*i+2)
+			{
+				break;
+			}
+			nr++;
+		}
+
+		if(nr > nRecChan)
+		{
+			nRecChan = nr;
+		}
+
 		DifxDatastreamAllocRecChans(D->datastream + e, nRecChan);
 
 		for(i = 0; i < nRecChan; i++)
@@ -1138,9 +1156,9 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 				"INPUT BAND %d POL", i);
 			if(r < 0)
 			{
-				printf("parseDifxInputDataStreamTable: "
+				fprintf(stderr, "Warning: parseDifxInputDatastreamTable: "
 					"INPUT BAND %d POL not found\n", i);
-				return 0;
+				continue;
 			}
 			D->datastream[e].RCpolName[i] = 
 				DifxParametersvalue(ip, r)[0];
@@ -1148,7 +1166,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 				"INPUT BAND %d INDEX", i);
 			if(r < 0)
 			{
-				printf("parseDifxInputDataStreamTable: "
+				fprintf(stderr, "Error: parseDifxInputDatastreamTable: "
 					"INPUT BAND %d INDEX not found\n", i);
 				return 0;
 			}
@@ -1391,7 +1409,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	D = parseDifxInputTelescopeTable(D, ip);
 	
 	/* DATASTREAM TABLE */
-	D = parseDifxInputDataStreamTable(D, ip);
+	D = parseDifxInputDatastreamTable(D, ip);
 
 	/* BASELINE TABLE */
 	D = parseDifxInputBaselineTable(D, ip);
