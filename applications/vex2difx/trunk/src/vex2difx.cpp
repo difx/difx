@@ -659,6 +659,19 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		}
 	}
 
+	// Make EOP table
+	D->nEOP = V->nEOP();
+	D->eop = newDifxEOPArray(D->nEOP);
+	for(int e = 0; e < V->nEOP(); e++)
+	{
+		const VexEOP *E = V->getEOP(e);
+		D->eop[e].mjd = static_cast<int>(E->mjd);
+		D->eop[e].tai_utc = static_cast<int>(E->tai_utc);
+		D->eop[e].ut1_utc = E->ut1_utc;
+		D->eop[e].xPole = E->xPole*180.0*3600.0/M_PI;
+		D->eop[e].yPole = E->yPole*180.0*3600.0/M_PI;
+	}
+
 	deriveSourceTable(D);
 
 	printDifxInput(D);
