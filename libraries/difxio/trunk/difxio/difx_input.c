@@ -1109,13 +1109,9 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 			fprintf(stderr, "NUM FREQS not found\n");
 			return 0;
 		}
-		D->datastream[e].nFreq = atoi(DifxParametersvalue(ip, r));
-		D->datastream[e].nPol = (int *)calloc(D->datastream[e].nFreq,
-			sizeof(int));
-		D->datastream[e].freqId = (int *)calloc(D->datastream[e].nFreq,
-			sizeof(int));
-		D->datastream[e].clockOffset = (double *)calloc(
-			D->datastream[e].nFreq, sizeof(double));
+
+		DifxDatastreamAllocFreqs(D->datastream + e, 
+			atoi(DifxParametersvalue(ip, r)));
 
 		nRecChan = 0;
 		for(i = 0; i < D->datastream[e].nFreq; i++)
@@ -1134,11 +1130,7 @@ static DifxInput *parseDifxInputDataStreamTable(DifxInput *D,
 				atoi(DifxParametersvalue(ip, r));
 			nRecChan += D->datastream[e].nPol[i];
 		}
-		D->datastream[e].nRecChan = nRecChan;
-		D->datastream[e].RCfreqId = (int *)calloc(D->datastream[e].nRecChan,
-			sizeof(int));
-		D->datastream[e].RCpolName = (char *)calloc(D->datastream[e].nRecChan,
-			sizeof(char));
+		DifxDatastreamAllocRecChans(D->datastream + e, nRecChan);
 
 		for(i = 0; i < nRecChan; i++)
 		{
@@ -1204,13 +1196,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 			fprintf(stderr, "NUM FREQS %d not found\n", b);
 			return 0;
 		}
-		D->baseline[b].nFreq = atoi(DifxParametersvalue(ip, r));
-		D->baseline[b].nPolProd = (int *)calloc(D->baseline[b].nFreq,
-			sizeof(int));
-		D->baseline[b].recChanA = (int **)calloc(D->baseline[b].nFreq,
-			sizeof(int *));
-		D->baseline[b].recChanB = (int **)calloc(D->baseline[b].nFreq,
-			sizeof(int *));
+		DifxBaselineAllocFreqs(D->baseline + b, atoi(DifxParametersvalue(ip, r)));
 		
 		for(f = 0; f < D->baseline[b].nFreq; f++)
 		{
@@ -1222,12 +1208,8 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 					"not found\n", b, f);
 				return 0;
 			}
-			D->baseline[b].nPolProd[f] =
-				atoi(DifxParametersvalue(ip, r));
-			D->baseline[b].recChanA[f] = (int *)calloc(
-				D->baseline[b].nPolProd[f], sizeof(int));
-			D->baseline[b].recChanB[f] = (int *)calloc(
-				D->baseline[b].nPolProd[f], sizeof(int));
+			DifxBaselineAllocPolProds(D->baseline + b, f, 
+				atoi(DifxParametersvalue(ip, r)));
 			for(p = 0; p < D->baseline[b].nPolProd[f]; p++)
 			{
 				r = DifxParametersfind1(ip, r+1, 

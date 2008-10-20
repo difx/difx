@@ -156,7 +156,7 @@ typedef struct
 	int *freqId;		/* [freq] index to DifxFreq table */
 	double *clockOffset;	/* (us) [freq] */
 	
-	int *RCfreqId;		/* [recChan] index to DifxFreq table */
+	int *RCfreqId;		/* [recChan] index to freqId[] */
 	char *RCpolName;	/* [recChan] Polarization name (R, L, X or Y) */
 } DifxDatastream;
 
@@ -388,8 +388,9 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
-void DifxDatastreamSetupFreqs(DifxDatastream *dd, int nFreq);
-void DifxDatastreamSetupRecChans(DifxDatastream *dd, int nRecChan);
+void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nFreq);
+void DifxDatastreamAllocRecChans(DifxDatastream *dd, int nRecChan);
+int DifxDatastreamGetRecChans(DifxDatastream *ds, int freqId, char *pols, int *recChans);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
@@ -400,6 +401,8 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 	const int *datastreamIdRemap);
 void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 	const int *datastreamIdRemap);
+void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq);
+void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol);
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,
 	const DifxBaseline *db2, int ndb2, int *baselineIdRemap,
 	const int *datastreamIdRemap, int *ndb);

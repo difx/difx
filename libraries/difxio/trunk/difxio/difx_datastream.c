@@ -90,7 +90,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *ds)
 		fprintf(fp, " (%d, %d)", ds->freqId[f], ds->nPol[f]);
 	}
 	fprintf(fp, "\n");
-	fprintf(fp, "    (freqId, pol)[recchan] =");
+	fprintf(fp, "    (freq(index to above), pol)[recchan] =");
 	for(f = 0; f < ds->nRecChan; f++)
 	{
 		fprintf(fp, " (%d, %c)", ds->RCfreqId[f], ds->RCpolName[f]);
@@ -135,7 +135,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	return 1;
 }
 
-void DifxDatastreamSetupFreqs(DifxDatastream *dd, int nFreq)
+void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nFreq)
 {
 	if(dd->freqId)
 	{
@@ -155,7 +155,7 @@ void DifxDatastreamSetupFreqs(DifxDatastream *dd, int nFreq)
 	dd->clockOffset = (double *)calloc(nFreq, sizeof(double));
 }
 
-void DifxDatastreamSetupRecChans(DifxDatastream *dd, int nRecChan)
+void DifxDatastreamAllocRecChans(DifxDatastream *dd, int nRecChan)
 {
 	if(dd->RCfreqId)
 	{
@@ -185,13 +185,9 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	}
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;
-	dest->nFreq = src->nFreq;
-	dest->nRecChan = src->nRecChan;
-	dest->nPol = (int *)calloc(dest->nFreq, sizeof(int));
-	dest->freqId = (int *)calloc(dest->nFreq, sizeof(int));
-	dest->clockOffset = (double *)calloc(dest->nFreq, sizeof(double));
-	dest->RCfreqId = (int *)calloc(dest->nRecChan, sizeof(int));
-	dest->RCpolName = (char *)calloc(dest->nRecChan, sizeof(char));
+
+	DifxDatastreamAllocFreqs(dest, src->nFreq);
+	DifxDatastreamAllocRecChans(dest, src->nRecChan);
 	for(f = 0; f < dest->nFreq; f++)
 	{
 		dest->nPol[f] = src->nPol[f];
@@ -207,14 +203,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	}
 	for(c = 0; c < dest->nRecChan; c++)
 	{
-		if(freqIdRemap)
-		{
-			dest->RCfreqId[c] = freqIdRemap[src->RCfreqId[c]];
-		}
-		else
-		{
-			dest->RCfreqId[c] = src->RCfreqId[c];
-		}
+		dest->RCfreqId[c]  = src->RCfreqId[c];
 		dest->RCpolName[c] = src->RCpolName[c];
 	}
 }
@@ -299,4 +288,57 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	}
 
 	return 8 + 3*dd->nFreq + 2*dd->nRecChan;
+}
+
+int DifxDatastreamGetRecChans(DifxDatastream *ds, int freqId, char *pols, int *recChans)
+{
+	int r;
+	int n=0;
+
+	for(r = 0; r < ds->nRecChan; r++)
+	{
+		if(ds->RCfreqId[r] == freqId)
+		{
+			if(ds->RCpolName[r] <= ' ')
+			{
+				continue;
+			}
+			if(n >= 2)
+			{
+				fprintf(stderr, "Warning: skipping dup rechan\n");
+			}
+			else if(n == 1 && ds->RCpolName[r] == pols[0])
+			{
+				fprintf(stderr, "Warning: skipping dup rechan\n");
+			}
+			else
+			{
+				pols[n] = ds->RCpolName[r];
+				recChans[n] = r;
+				n++;
+			}
+		}
+	}
+
+	if(n == 2)
+	{
+		if(pols[0] == 'L' && pols[1] == 'R')
+		{
+			r = recChans[0];
+			recChans[0] = recChans[1];
+			recChans[1] = r;
+			pols[0] = 'R';
+			pols[1] = 'L';
+		}
+		if(pols[0] == 'Y' && pols[1] == 'X')
+		{
+			r = recChans[0];
+			recChans[0] = recChans[1];
+			recChans[1] = r;
+			pols[0] = 'X';
+			pols[1] = 'Y';
+		}
+	}
+
+	return n;
 }

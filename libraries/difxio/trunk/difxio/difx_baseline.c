@@ -147,10 +147,87 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 	return 1;
 }
 
+void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
+{
+	int i;
+
+	if(!b)
+	{
+		fprintf(stderr, "Error : DifxBaselineAllocFreqs : b = 0\n");
+		return;
+	}
+	if(b->nPolProd)
+	{
+		free(b->nPolProd);
+	}
+	if(b->recChanA)
+	{
+		for(i = 0; i < b->nFreq; i++)
+		{
+			if(b->recChanA[i])
+			{
+				free(b->recChanA[i]);
+			}
+		}
+		free(b->recChanA);
+	}
+	if(b->recChanB)
+	{
+		for(i = 0; i < b->nFreq; i++)
+		{
+			if(b->recChanB[i])
+			{
+				free(b->recChanB[i]);
+			}
+		}
+		free(b->recChanB);
+	}
+
+	b->nFreq = nFreq;
+	b->nPolProd = (int *)calloc(nFreq, sizeof(int));
+	b->recChanA = (int **)calloc(nFreq, sizeof(int *));
+	b->recChanB = (int **)calloc(nFreq, sizeof(int *));
+}
+
+void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
+{
+	if(!b)
+	{
+		fprintf(stderr, "Error : DifxBaselineAllocPolProds : b = 0\n");
+		return;
+	}
+	if(freq < 0 || freq >= b->nFreq)
+	{
+		fprintf(stderr, "Error : DifxBaselineAllocPolProds : "
+			"freq=%d outside range=%d\n", freq, b->nFreq);
+		return;
+	}
+
+	if(!b->recChanA || !b->recChanB || !b->nPolProd)
+	{
+		fprintf(stderr, "Error : DifxBaselineAllocPolProds : "
+			"recChanA or recChanB or nPolProd is zero\n");
+		return;
+	}
+
+	if(b->recChanA[freq])
+	{
+		free(b->recChanA[freq]);
+	}
+	if(b->recChanB[freq])
+	{
+		free(b->recChanB[freq]);
+	}
+
+	b->nPolProd[freq] = nPol;
+	b->recChanA[freq] = (int *)calloc(nPol, sizeof(int));
+	b->recChanB[freq] = (int *)calloc(nPol, sizeof(int));
+}
+
 void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 	const int *datastreamIdRemap)
 {
-	int f, p, nProd;
+	int f, p;
 
 	if(datastreamIdRemap)
 	{
@@ -162,17 +239,12 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 		dest->dsA = src->dsA;
 		dest->dsB = src->dsB;
 	}
-	dest->nFreq = src->nFreq;
-	dest->nPolProd = (int *)calloc(dest->nFreq, sizeof(int));
-	dest->recChanA = (int **)calloc(dest->nFreq, sizeof(int *));
-	dest->recChanB = (int **)calloc(dest->nFreq, sizeof(int *));
+
+	DifxBaselineAllocFreqs(dest, src->nFreq);
 	for(f = 0; f < dest->nFreq; f++)
 	{
-		dest->nPolProd[f] = src->nPolProd[f];
-		nProd = dest->nPolProd[f];
-		dest->recChanA[f] = (int *)calloc(nProd, sizeof(int));
-		dest->recChanB[f] = (int *)calloc(nProd, sizeof(int));
-		for(p = 0; p < nProd; p++)
+		DifxBaselineAllocPolProds(dest, f, src->nPolProd[f]);
+		for(p = 0; p < dest->nPolProd[f]; p++)
 		{
 			dest->recChanA[f][p] = src->recChanA[f][p];
 			dest->recChanB[f][p] = src->recChanB[f][p];
