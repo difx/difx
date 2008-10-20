@@ -18,9 +18,9 @@ autoconf
 autoheader
 automake -a
 
-./configure --prefix=<prefix>
+./configure --prefix=${DIFX_PREFIX}
 make
-(su root?)
+# (su root?)
 make install
 
 After an svn update, these steps do not need to be rerun.  usually just 

@@ -56,6 +56,8 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	}
 	else
 	{
+		printf("Not enough eop values present (%d < %d)\n", 
+			D->nEOP, MAX_EOPS);
 		return -1;
 	}
 

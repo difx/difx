@@ -126,7 +126,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			{
 				opts->verbose++;
 			}
-			if(strcmp(argv[i], "-q") == 0 ||
+			else if(strcmp(argv[i], "-q") == 0 ||
 			   strcmp(argv[i], "--quiet") == 0)
 			{
 				opts->verbose--;
