@@ -88,6 +88,8 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 	struct site_position *p;
 	struct axis_type *q;
 	struct dvalue *r;
+	Clock_early *C;
+	double mjd;
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
@@ -108,6 +110,36 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
+
+		for(C = (Clock_early *)get_station_lowl(stn, T_CLOCK_EARLY, B_CLOCK, v);
+		    C;
+		    C  = (Clock_early *)get_station_lowl_next())
+		{
+			if(C->start)
+			{
+				mjd = vexDate(C->start);
+			}
+			else
+			{
+				mjd = 0.0;
+			}
+//			if(!A->clocks.empty()) // Move this
+//			{
+//				V->addEvent(mjd, VexEvent::CLOCK_BREAK, A->name);
+//			}
+			A->clocks.push_back(VexClock());
+			VexClock &clock = A->clocks.back();
+			clock.mjdStart = mjd;
+			if(C->offset)
+			{
+				fvex_double(&(C->offset->value), &(C->offset->units), &clock.offset);
+			}
+			if(C->rate && C->origin) 
+			{
+				clock.rate = atof(C->rate->value);
+				clock.offset_epoch = vexDate(C->origin);
+			}
+		}
 	}
 
 	return 0;
@@ -593,7 +625,7 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 			start = vexDate((char *)p);
 		}
 
-		lowls = find_lowl(refs, T_EXPER_NOMINAL_START);
+		lowls = find_lowl(refs, T_EXPER_NOMINAL_STOP);
 		if(lowls)
 		{
 			p = (((Lowl *)lowls->ptr)->item);

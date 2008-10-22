@@ -14,9 +14,10 @@ class VexData;
 class VexEvent
 {
 public:
-	enum EventType
+	enum EventType	// NOTE! keep VexEvent::eventName up to date
 	{
 		NO_EVENT,
+		CLOCK_BREAK,
 		OBSERVE_START,
 		JOB_START,
 		RECORD_START,
@@ -135,10 +136,23 @@ public:
 	double mjdStop;
 };
 
+class VexClock
+{
+public:
+	VexClock() : mjdStart(0.0), offset(0.0), rate(0.0), offset_epoch(50000.0) {}
+
+	double mjdStart;	// mjd
+	double offset;		// sec
+	double rate;		// sec/sec?
+	double offset_epoch;	// mjd
+};
+
 class VexAntenna
 {
 public:
-	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0), clockOffset(0.0), clockRate(0.0) {}
+	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0) {}
+
+	void getClock(double mjd, double &offset, double &rate) const;
 
 	string name;
 
@@ -147,8 +161,7 @@ public:
 	double posEpoch;	// mjd				//FIXME
 	string axisType;
 	double axisOffset;	// (m)
-	double clockOffset;
-	double clockRate;
+	vector<VexClock> clocks;
 	vector<VexVSN> vsns;
 };
 
@@ -277,6 +290,7 @@ ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexVSN& x);
+ostream& operator << (ostream& os, const VexClock& x);
 ostream& operator << (ostream& os, const VexJob& x);
 ostream& operator << (ostream& os, const VexEvent& x);
 ostream& operator << (ostream& os, const VexData& x);

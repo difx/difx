@@ -124,6 +124,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	list<MediaChange>::iterator c;
 	map<string,double> recordStop;
 	map<double,int> usage;
+	map<double,int> clockBreaks;
 	list<MediaChange> changes;
 	list<double> times;
 	list<double> breaks;
@@ -141,6 +142,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		}
 
 		usage[e->mjd] = 0;
+		clockBreaks[e->mjd] = 0;
 	}
 	nAnt = recordStop.size();
 
@@ -179,6 +181,10 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		{
 			usage[e->mjd]--;
 		}
+		else if(e->eventType == VexEvent::CLOCK_BREAK)
+		{
+			clockBreaks[e->mjd]++;
+		}
 	}
 
 	// now go through and set breakpoints
@@ -188,7 +194,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		scoreBest = -1;
 		for(t = times.begin(); t != times.end(); t++)
 		{
-			score = nGap(changes, *t) * (nAnt-usage[*t]);
+			score = nGap(changes, *t) * (nAnt-usage[*t]) + 100*clockBreaks[*t];
 			if(score > scoreBest)
 			{
 				scoreBest = score;
@@ -290,6 +296,7 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 	const VexAntenna *ant;
 	DifxAntenna *A;
 	int i;
+	double offset, rate;
 	map<string,string>::const_iterator a;
 
 	*n = J.vsns.size();
@@ -306,9 +313,11 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 		A[i].Y = ant->y;
 		A[i].Z = ant->z;
 		strcpy(A[i].mount, ant->axisType.c_str());
-		A[i].delay = ant->clockOffset;
-		A[i].rate  = ant->clockRate;
+		ant->getClock(J.mjdStart, offset, rate);
+		A[i].delay = offset*1.0e6;	// convert to us from sec
+		A[i].rate  = rate*1.0e6;	// convert to us/sec from sec/sec
 		antList.push_back(a->first);
+		// FIXME : shelf
 	}
 
 	return A;

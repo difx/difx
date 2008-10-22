@@ -7,6 +7,7 @@ using namespace std;
 const char VexEvent::eventName[][20] =
 {
 	"None",
+	"Clock Break",
 	"Observe Start",
 	"Job Start",
 	"Record Start",
@@ -155,6 +156,23 @@ VexSource *VexData::newSource()
 {
 	sources.push_back(VexSource());
 	return &sources.back();
+}
+
+// returned values in seconds
+void VexAntenna::getClock(double mjd, double &offset, double &rate) const
+{
+	vector<VexClock>::const_iterator it;
+	offset = 0.0;
+	rate = 0.0;
+
+	for(it = clocks.begin(); it != clocks.end(); it++)
+	{
+		if(it->mjdStart <= mjd)
+		{
+			offset = it->offset + (mjd - it->offset_epoch)*it->rate;
+			rate = it->rate;
+		}
+	}
 }
 
 const VexSource *VexData::getSource(string name) const
@@ -527,15 +545,30 @@ string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) c
 
 void VexData::setExper(const string& name, double start, double stop)
 {
+	double a=1.0e7, b=0.0;
+	list<VexEvent>::const_iterator it;
+
+	for(it = events.begin(); it != events.end(); it++)
+	{
+		if(it->mjd < a && it->eventType != VexEvent::CLOCK_BREAK)
+		{
+			a = it->mjd;
+		}
+		if(it->mjd > b && it->eventType != VexEvent::CLOCK_BREAK)
+		{
+			b = it->mjd;
+		}
+	}
 
 	if(start < 10000)
 	{
-		start = events.front().mjd;
+		start = a;
 	}
 	if(stop < 10000)
 	{
-		stop = events.back().mjd;
+		stop = b;
 	}
+
 	exper.name = name;
 	exper.mjdStart = start;
 	exper.mjdStop = stop;
@@ -599,10 +632,15 @@ ostream& operator << (ostream& os, const VexScan& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexClock& x)
+{
+	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")" << endl;
+
+	return os;
+}
+
 ostream& operator << (ostream& os, const VexAntenna& x)
 {
-	vector<VexVSN>::const_iterator iter;
-
 	os << "Antenna " << x.name <<
 		"\n   x=" << x.x <<
 		"\n   y=" << x.y <<
@@ -610,9 +648,14 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 		"\n   axisType=" << x.axisType <<
 		"\n   axisOffset=" << x.axisOffset << endl;
 
-	for(iter = x.vsns.begin(); iter != x.vsns.end(); iter++)
+	for(vector<VexVSN>::const_iterator it = x.vsns.begin(); it != x.vsns.end(); it++)
 	{
-		os << "   " << *iter << endl;
+		os << "   " << *it << endl;
+	}
+
+	for(vector<VexClock>::const_iterator it = x.clocks.begin(); it != x.clocks.end(); it++)
+	{
+		os << "   " << *it << endl;
 	}
 
 	return os;
