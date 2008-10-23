@@ -142,12 +142,14 @@ def Ar;
      ref $SITE = ARECIBO;
      ref $ANTENNA = ARECIBO;
      ref $DAS = 1VLBA4<Mark5A;
+     ref $CLOCK = AR;
 enddef;
 *
 def Gb;
      ref $SITE = GBT_VLBA;
      ref $ANTENNA = GBT_VLBA;
      ref $DAS = 2VLBA<Mark5A;
+     ref $CLOCK = GB;
 enddef;
 *------------------------------------------------------------------------------
 $PROCEDURES;
@@ -616,5 +618,17 @@ def EOP179;
   ut1-utc= 0.1039 sec: 0.1052 sec: 0.1064 sec: 0.1078 sec: 0.1084 sec;
   x_wobble=0.231 asec: 0.232 asec: 0.233 asec: 0.234 asec: 0.235 asec;
   y_wobble=-.131 asec: -.132 asec: -.133 asec: -.134 asec: -.135 asec;
+enddef;
+*------------
+$CLOCK;
+def AR;
+  clock_early = 1995y263d12h00m : 1.5 usec;
+  clock_early = 1996y263d12h00m : 1.6 usec;
+  clock_early = 1997y263d12h00m : 1.7 usec;
+  clock_early = 1999y263d12h00m : 1.7 usec;
+enddef;
+def GB;
+  clock_early = : 1.5 usec;
+  clock_early = 1996y263d12h00m : 1.6 usec : 2000y1d00h00m : 1.2e-12; 
 enddef;
 
