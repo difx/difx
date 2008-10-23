@@ -433,8 +433,8 @@ int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar);
 /* DifxConfig functions */
 DifxConfig *newDifxConfigArray(int nConfig);
 void deleteDifxConfigArray(DifxConfig *dc);
-void DifxConfigSetDatastreamIds(DifxConfig *dc, int nDatastream, int start);
-void DifxConfigSetBaselineIds(DifxConfig *dc, int nBaseline, int start);
+void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start);
+void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start);
 void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 void printDifxConfig(const DifxConfig *dc);
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc);

@@ -81,7 +81,7 @@ void deleteDifxConfigArray(DifxConfig *dc)
 	}
 }
 
-void DifxConfigSetDatastreamIds(DifxConfig *dc, int nDatastream, int start)
+void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 {
 	int i;
 
@@ -89,15 +89,16 @@ void DifxConfigSetDatastreamIds(DifxConfig *dc, int nDatastream, int start)
 	{
 		free(dc->datastreamId);
 	}
-	dc->datastreamId = (int *)malloc(nDatastream+1);
+	dc->datastreamId = (int *)malloc((nDatastream+1)*sizeof(int));
 	dc->datastreamId[nDatastream] = -1;
 	for(i = 0; i < nDatastream; i++)
 	{
 		dc->datastreamId[i] = i + start;
 	}
+	dc->nDatastream = nDatastream;
 }
 
-void DifxConfigSetBaselineIds(DifxConfig *dc, int nBaseline, int start)
+void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 {
 	int i;
 
@@ -105,12 +106,13 @@ void DifxConfigSetBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	{
 		free(dc->baselineId);
 	}
-	dc->baselineId = (int *)malloc(nBaseline+1);
+	dc->baselineId = (int *)malloc((nBaseline+1)*sizeof(int));
 	dc->baselineId[nBaseline] = -1;
 	for(i = 0; i < nBaseline; i++)
 	{
 		dc->baselineId[i] = i + start;
 	}
+	dc->nBaseline = nBaseline;
 }
 
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
