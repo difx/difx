@@ -264,6 +264,7 @@ public:
 
 	int nEOP() const { return eops.size(); }
 	const VexEOP *getEOP(int num) const;
+	const vector<VexEOP> &getEOPs() const { return eops; }
 
 	bool usesAntenna(const string& antennaName) const;
 	bool usesMode(const string& modeName) const;

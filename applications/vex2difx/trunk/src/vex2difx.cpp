@@ -1,4 +1,5 @@
 #include <vector>
+#include <set>
 #include <sstream>
 #include <difxio/difx_input.h>
 #include <cmath>
@@ -403,23 +404,263 @@ int getBand(vector<pair<int,int> >& bandMap, int fqId)
 
 	return bandMap.size() - 1;
 }
+	
+int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
+{
+	int antId = D->datastream[dsId].antennaId;
+	if(antId < 0 || antId >= D->nAntenna)
+	{
+		cerr << "Error : antId = " << antId << " while nAntenna = " << D->nAntenna << endl;
+		exit(0);
+	}
+	string antName(D->antenna[antId].name);
+	const VexFormat &format = mode->getFormat(antName);
+	int n2 = next2(format.nRecordChan);
+
+	if(format.format == string("VLBA1_1"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBA");
+		D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
+	}
+	else if(format.format == string("VLBA1_2"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBA");
+		D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
+	}
+	else if(format.format == string("VLBA1_4"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBA");
+		D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
+	}
+	else if(format.format == string("MKIV1_1"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "MKIV");
+		D->datastream[dsId].dataFrameSize = 2500*format.nBit*n2;
+	}
+	else if(format.format == string("MKIV1_2"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "MKIV");
+		D->datastream[dsId].dataFrameSize = 5000*format.nBit*n2;
+	}
+	else if(format.format == string("MKIV1_4"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "MKIV");
+		D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
+	}
+	else
+	{
+		cerr << "Format " << format.format << " not currently supported" << endl;
+		exit(0);
+	}
+
+	strcpy(D->datastream[dsId].dataSource, "MODULE");
+	D->datastream[dsId].quantBits = format.nBit;
+	DifxDatastreamAllocRecChans(D->datastream + dsId, n2);
+
+	vector<pair<int,int> > bandMap;
+	for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
+	{
+		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
+		{
+			cerr << "index to subband = " << i->subbandId << " is out of range" << endl;
+			exit(0);
+		}
+		int r = i->recordChan;
+		const VexSubband& subband = mode->subbands[i->subbandId];
+		int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand);
+		
+		if(r < 0 || r >= D->datastream[dsId].nRecChan)
+		{
+			cerr << "index to RC = " << r << " is out of range" << endl;
+			exit(0);
+		}
+		D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
+		D->datastream[dsId].RCpolName[r] = subband.pol;
+	}
+	DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
+	for(int i = 0; i < bandMap.size(); i++)
+	{
+		D->datastream[dsId].freqId[i] = bandMap[i].first;
+		D->datastream[dsId].nPol[i] = bandMap[i].second;
+	}
+
+	return n2;
+}
+
+void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
+{
+	D->nFreq = freqs.size();
+	D->freq = newDifxFreqArray(D->nFreq);
+	for(int f = 0; f < freqs.size(); f++)
+	{
+		D->freq[f].freq = freqs[f].fq/1.0e6;
+		D->freq[f].bw   = freqs[f].bw/1.0e6;
+		D->freq[f].sideband = freqs[f].sideBand;
+	}
+}
+
+// warning: assumes same number of datastreams == antennas for each config
+void populateBaselineTable(DifxInput *D, int doPolar)
+{	
+	int a1, a2, c, f, g, n1, n2, u, v;
+	int npol;
+	int a1c[2], a2c[2];
+	char a1p[2], a2p[2];
+	DifxBaseline *bl;
+	
+	D->nBaseline = D->nConfig*D->nAntenna*(D->nAntenna-1)/2;
+	D->baseline = newDifxBaselineArray(D->nBaseline);
+
+	bl = D->baseline;
+	for(c = 0; c < D->nConfig; c++)
+	{
+		for(a2 = 1; a2 < D->nAntenna; a2++)
+		{
+			for(a1 = 0; a1 < a2; a1++)
+			{
+				bl->dsA = D->config[c].datastreamId[a1];
+				bl->dsB = D->config[c].datastreamId[a2];
+
+				DifxBaselineAllocFreqs(bl, D->datastream[a1].nFreq);
+
+				for(f = 0; f < D->datastream[a1].nFreq; f++)
+				{
+					npol = 0;
+					DifxBaselineAllocPolProds(bl, f, 4);
+					g = D->datastream[a1].freqId[f];
+
+					n1 = DifxDatastreamGetRecChans(D->datastream+a1, g, a1p, a1c);
+					n2 = DifxDatastreamGetRecChans(D->datastream+a2, g, a2p, a2c);
+
+					for(u = 0; u < n1; u++)
+					{
+						for(v = 0; v < n2; v++)
+						{
+							if(a1p[u] == a2p[v])
+							{
+								bl->recChanA[f][npol] = a1c[u];
+								bl->recChanB[f][npol] = a2c[v];
+								npol++;
+							}
+						}
+					}
+
+					if(npol == 2 && doPolar)
+					{
+						// configure cross hands here
+						bl->recChanA[f][2] = bl->recChanA[f][0];
+						bl->recChanB[f][2] = bl->recChanB[f][1];
+						bl->recChanA[f][3] = bl->recChanA[f][1];
+						bl->recChanB[f][3] = bl->recChanB[f][0];
+					}
+					else
+					{
+						// Not all 4 products used: reduce count
+						bl->nPolProd[f] = npol;
+					}
+				}
+
+				bl++;
+			}
+		}
+	}
+}
+
+void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
+{
+	int nEOP;
+
+	nEOP = E.size();
+	D->nEOP = nEOP;
+	D->eop = newDifxEOPArray(D->nEOP);
+	for(int e = 0; e < nEOP; e++)
+	{
+		D->eop[e].mjd = static_cast<int>(E[e].mjd);
+		D->eop[e].tai_utc = static_cast<int>(E[e].tai_utc);
+		D->eop[e].ut1_utc = E[e].ut1_utc;
+		D->eop[e].xPole = E[e].xPole*180.0*3600.0/M_PI;
+		D->eop[e].yPole = E[e].yPole*180.0*3600.0/M_PI;
+	}
+}
+
+int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
+{
+	int c;
+	DifxConfig *config;
+	int i;
+	const CorrSetup *setup;
+	const VexMode *mode;
+	string configName;
+
+	setup = P->getCorrSetup(S->setupName);
+	if(setup == 0)
+	{
+		cerr << "ACK setup[" << S->setupName << "] == 0" << endl;
+		exit(0);
+	}
+
+	mode = V->getMode(S->modeName);
+	if(mode == 0)
+	{
+		cerr << "ACK mode[" << S->modeName << "] == 0" << endl;
+		exit(0);
+	}
+
+	for(i = 0; i < configs.size(); i++)
+	{
+		if(configs[i].first  == S->modeName &&
+		   configs[i].second == S->setupName)
+		{
+			return i;
+		}
+	}
+
+	configName = S->modeName + string("_") + S->setupName;
+
+	c = configs.size();
+	configs.push_back(pair<string,string>(S->modeName, S->setupName));
+	config = D->config + c;
+	strcpy(config->name, configName.c_str());
+	config->tInt = setup->tInt;
+	config->nChan = setup->nChan;
+	config->blocksPerSend = 100;	// FIXME
+	config->specAvg = 1;		// FIXME
+	config->guardBlocks = 2;
+	config->postFFringe = setup->postFFringe;
+	config->quadDelayInterp = 1;
+	config->pulsarId = -1;		// FIXME -- from setup
+	config->doPolar = setup->doPolar;
+	config->nAntenna = D->nAntenna;
+	config->nDatastream = D->nAntenna;
+	config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
+	config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
+	config->decimation = 1;
+	// try to get a good balance of oversampling and decim
+	while(config->overSamp % 4 == 0)
+	{
+		config->overSamp /= 2;
+		config->decimation *= 2;
+	}
+	DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
+	DifxConfigAllocBaselineIds(config, config->nBaseline, c*config->nBaseline);
+
+	config->nPol = mode->getPols(config->pol);
+	config->quantBits = mode->getBits();
+
+	return c;
+}
 
 void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 {
 	DifxInput *D;
 	DifxScan *scan;
 	string setupName;
-	string configName;
 	const CorrSetup *setup;
 	const VexMode *mode;
 	const VexScan *S;
-	const VexSource *src;
-	map<string,int> configIndex;
-	vector<string>::const_iterator si;
+	set<string> configSet;
 	vector<pair<string,string> > configs;
 	vector<string> antList;
-	int n2, a, b, i, c, dsId;
-	int nConfig = 0;
 	vector<freq> freqs;
 
 	setupName = V->getScan(J.scans.front())->setupName;
@@ -430,14 +671,15 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		return;
 	}
 
-	// initialize configIndex
-	for(si = J.scans.begin(); si != J.scans.end(); si++)
+	// make set of unique config names
+	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); si++)
 	{
+		string configName;
+
 		S = V->getScan(*si);
 		configName = S->modeName + string("_") + S->setupName;
-		configIndex[configName] = -1;
+		configSet.insert(configName);
 	}
-
 
 	D = newDifxInput();
 
@@ -456,67 +698,21 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	// now run through all scans, populating things as we go
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
-	D->nConfig = configIndex.size();
+	D->nConfig = configSet.size();
 	D->config = newDifxConfigArray(D->nConfig);
 	scan = D->scan;
-	for(si = J.scans.begin(); si != J.scans.end(); si++, scan++)
+	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); si++, scan++)
 	{
 		S = V->getScan(*si);
-		
-		setup = P->getCorrSetup(S->setupName);
-		if(setup == 0)
+		if(!S)
 		{
-			cerr << "ACK setup[" << S->setupName << "] == 0" << endl;
+			cerr << "Error : Source[" << *si << "] not found!" << endl;
 			exit(0);
 		}
 
-		mode = V->getMode(S->modeName);
-		if(mode == 0)
-		{
-			cerr << "ACK mode[" << S->modeName << "] == 0" << endl;
-			exit(0);
-		}
+		const VexSource *src = V->getSource(S->sourceName);
 
-		configName = S->modeName + string("_") + S->setupName;
-		c = configIndex[configName];
-		if(c < 0)
-		{
-			DifxConfig *config;
-			
-			c = configIndex[configName] = nConfig;
-			nConfig++;
-			configs.push_back(pair<string,string>(S->modeName, S->setupName));
-			config = D->config + c;
-			strcpy(config->name, configName.c_str());
-			config->tInt = setup->tInt;
-			config->nChan = setup->nChan;
-			config->blocksPerSend = 100;	// FIXME
-			config->specAvg = 1;		// FIXME
-			config->guardBlocks = 2;
-			config->postFFringe = setup->postFFringe;
-			config->quadDelayInterp = 1;
-			config->pulsarId = -1;		// FIXME -- from setup
-			config->doPolar = setup->doPolar;
-			config->nAntenna = D->nAntenna;
-			config->nDatastream = D->nAntenna;
-			config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
-			config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
-			config->decimation = 1;
-			// try to get a good balance of oversampling and decim
-			while(config->overSamp % 4 == 0)
-			{
-				config->overSamp /= 2;
-				config->decimation *= 2;
-			}
-			DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
-			DifxConfigAllocBaselineIds(config, config->nBaseline, c*config->nBaseline);
-
-			// FIXME -- use mode info
-			config->nPol = mode->getPols(config->pol);
-			config->quantBits = mode->getBits();
-		}
-		scan->configId = c;
-		src = V->getSource(S->sourceName);
+		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->ra = src->ra;
 		scan->dec = src->dec;
 		scan->mjdStart = S->timeRange.mjdStart;
@@ -524,196 +720,50 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		scan->startPoint = static_cast<int>((S->timeRange.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
 		scan->nPoint = static_cast<int>((S->timeRange.mjdStop - S->timeRange.mjdStart)*86400.0/D->job->modelInc + 0.01);
 		strcpy(scan->name, S->sourceName.c_str());
-		// qual and calcode
+		// FIXME qual and calcode
 	}
 
 	// configure datastreams
-	if(nConfig != configIndex.size())
-	{
-		cerr << "Error : nConfig != configIndex.size())" << endl;
-	}
-	D->datastream = makeDifxDatastreams(J, V, nConfig, &(D->nDatastream));
-	for(c = 0; c < nConfig; c++)
+	D->datastream = makeDifxDatastreams(J, V, D->nConfig, &(D->nDatastream));
+	for(int c = 0; c < D->nConfig; c++)
 	{
 		mode  = V->getMode(configs[c].first);
-		setup = P->getCorrSetup(configs[c].second);
-
 		if(mode == 0)
 		{
 			cerr << "ACK! mode[" << configs[c].first << "] is null" << endl;
 			exit(0);
 		}
 
-		for(a = 0; a < antList.size(); a++)
+		for(int a = 0; a < D->config[c].nDatastream; a++)
 		{
-			vector<pair<int,int> > bandMap;
-
-			dsId = c*antList.size() + a;
-			const VexFormat format = mode->getFormat(antList[a]);
-			n2 = next2(format.nRecordChan);
-			if(format.format == string("VLBA1_1"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
-			}
-			else if(format.format == string("VLBA1_2"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
-			}
-			else if(format.format == string("VLBA1_4"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "VLBA");
-				D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
-			}
-			else if(format.format == string("MKIV1_1"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 2500*format.nBit*n2;
-			}
-			else if(format.format == string("MKIV1_2"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 5000*format.nBit*n2;
-			}
-			else if(format.format == string("MKIV1_4"))
-			{
-				strcpy(D->datastream[dsId].dataFormat, "MKIV");
-				D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
-			}
-			else
-			{
-				cerr << "Format " << format.format << " not currently supported" << endl;
-			}
-			strcpy(D->datastream[dsId].dataSource, "MODULE");
-			D->datastream[dsId].quantBits = format.nBit;
-			DifxDatastreamAllocRecChans(D->datastream + dsId, n2);
-
-			for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
-			{
-				if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
-				{
-					cerr << "index to subband = " << i->subbandId << " is out of range" << endl;
-					exit(0);
-				}
-				int r = i->recordChan;
-				const VexSubband& subband = mode->subbands[i->subbandId];
-				int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand);
-				
-				if(r < 0 || r >= D->datastream[dsId].nRecChan)
-				{
-					cerr << "index to RC = " << r << " is out of range" << endl;
-					exit(0);
-				}
-				D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
-				D->datastream[dsId].RCpolName[r] = subband.pol;
-			}
-			DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
-			for(int i = 0; i < bandMap.size(); i++)
-			{
-				D->datastream[dsId].freqId[i] = bandMap[i].first;
-				D->datastream[dsId].nPol[i] = bandMap[i].second;
-			}
+			setFormat(D, D->config[c].datastreamId[a], freqs, mode);
 		}
 	}
 
 	// Make frequency table
-	D->nFreq = freqs.size();
-	D->freq = newDifxFreqArray(D->nFreq);
-	for(int f = 0; f < freqs.size(); f++)
-	{
-		D->freq[f].freq = freqs[f].fq/1.0e6;
-		D->freq[f].bw   = freqs[f].bw/1.0e6;
-		D->freq[f].sideband = freqs[f].sideBand;
-	}
+	populateFreqTable(D, freqs);
 
 	// Make baseline table
-	D->nBaseline = nConfig*D->nAntenna*(D->nAntenna-1)/2;
-	D->baseline = newDifxBaselineArray(D->nBaseline);
-	b = 0;
-	for(c = 0; c < nConfig; c++)
-	{
-		for(int a2 = 1; a2 < D->nAntenna; a2++)
-		{
-			for(int a1 = 0; a1 < a2; a1++)
-			{
-				DifxBaseline *bl = D->baseline + b;
-	
-				bl->dsA = a1 + c*D->nAntenna;
-				bl->dsB = a2 + c*D->nAntenna;
-				DifxBaselineAllocFreqs(bl, D->datastream[a1].nFreq);
-
-				for(int f = 0; f < D->datastream[a1].nFreq; f++)
-				{
-					int npol = 0;
-					int n1, n2, g;
-					int a1c[2], a2c[2];
-					char a1p[2], a2p[2];
-					
-					DifxBaselineAllocPolProds(bl, f, 4);
-					g = D->datastream[a1].freqId[f];
-
-					n1 = DifxDatastreamGetRecChans(D->datastream+a1, g, a1p, a1c);
-					n2 = DifxDatastreamGetRecChans(D->datastream+a2, g, a2p, a2c);
-
-					for(int u = 0; u < n1; u++)
-					{
-						for(int v = 0; v < n2; v++)
-						{
-							if(a1p[u] == a2p[v])
-							{
-								bl->recChanA[f][npol] = a1c[u];
-								bl->recChanB[f][npol] = a2c[v];
-								npol++;
-							}
-						}
-					}
-
-					if(npol == 2 && setup->doPolar)
-					{
-						// configure cross hands here
-						bl->recChanA[f][2] = bl->recChanA[f][0];
-						bl->recChanB[f][2] = bl->recChanB[f][1];
-						bl->recChanA[f][3] = bl->recChanA[f][1];
-						bl->recChanB[f][3] = bl->recChanB[f][0];
-					}
-					else
-					{
-						// Not all 4 products used: reduce count
-						bl->nPolProd[f] = npol;
-					}
-				}
-
-				b++;
-			}
-		}
-	}
+	populateBaselineTable(D, setup->doPolar);
 
 	// Make EOP table
-	D->nEOP = V->nEOP();
-	D->eop = newDifxEOPArray(D->nEOP);
-	for(int e = 0; e < V->nEOP(); e++)
-	{
-		const VexEOP *E = V->getEOP(e);
-		D->eop[e].mjd = static_cast<int>(E->mjd);
-		D->eop[e].tai_utc = static_cast<int>(E->tai_utc);
-		D->eop[e].ut1_utc = E->ut1_utc;
-		D->eop[e].xPole = E->xPole*180.0*3600.0/M_PI;
-		D->eop[e].yPole = E->yPole*180.0*3600.0/M_PI;
-	}
+	populateEOPTable(D, V->getEOPs());
 
+	// complete a few DifxInput structures
 	deriveSourceTable(D);
-
 	//printDifxInput(D);
 
+	// write input file
 	ostringstream inputName;
 	inputName << D->job->jobId << ".input";
 	writeDifxInput(D, inputName.str().c_str());
 
+	// write calc file
 	ostringstream calcName;
 	calcName << D->job->jobId << ".calc";
 	writeDifxCalc(D, calcName.str().c_str());
 
+	// clean up
 	deleteDifxInput(D);
 }
 
