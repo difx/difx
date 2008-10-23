@@ -49,8 +49,6 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 		JG.scans.push_back(scans.front());
 		scans.pop_front();
 
-		cout << JG.scans.back() << endl;
-		
 		const VexScan *scan1 = V->getScan(JG.scans.back());
 		const CorrSetup *setup1 = P->getCorrSetup(scan1->setupName);
 
@@ -63,7 +61,6 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 			if(areCorrSetupsCompatible(setup1, setup2, P) &&
 			   areScansCompatible(scan1, scan2, P))
 			{
-				cout << "adding  " << *it << endl;
 				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
@@ -81,8 +78,6 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	{
 		v->genEvents(*events);
 
-		// dog and pony show
-		cout << "Job Group Events " << v->events.size() << endl;
 		list<VexEvent>::const_iterator e;
 		for(e = v->events.begin(); e != v->events.end(); e++)
 		{
@@ -467,10 +462,22 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	for(si = J.scans.begin(); si != J.scans.end(); si++, scan++)
 	{
 		S = V->getScan(*si);
-		cout << *S << endl;
-		configName = S->modeName + string("_") + S->setupName;
+		
 		setup = P->getCorrSetup(S->setupName);
+		if(setup == 0)
+		{
+			cerr << "ACK setup[" << S->setupName << "] == 0" << endl;
+			exit(0);
+		}
+
 		mode = V->getMode(S->modeName);
+		if(mode == 0)
+		{
+			cerr << "ACK mode[" << S->modeName << "] == 0" << endl;
+			exit(0);
+		}
+
+		configName = S->modeName + string("_") + S->setupName;
 		c = configIndex[configName];
 		if(c < 0)
 		{
@@ -479,7 +486,6 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			c = configIndex[configName] = nConfig;
 			nConfig++;
 			configs.push_back(pair<string,string>(S->modeName, S->setupName));
-			cout << configName << " -> " << c << endl;
 			config = D->config + c;
 			strcpy(config->name, configName.c_str());
 			config->tInt = setup->tInt;
@@ -502,8 +508,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 				config->overSamp /= 2;
 				config->decimation *= 2;
 			}
-			DifxConfigSetDatastreamIds(config, config->nDatastream, c*config->nDatastream);
-			DifxConfigSetBaselineIds(config, config->nBaseline, c*config->nBaseline);
+			DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
+			DifxConfigAllocBaselineIds(config, config->nBaseline, c*config->nBaseline);
 
 			// FIXME -- use mode info
 			config->nPol = mode->getPols(config->pol);
@@ -531,7 +537,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	{
 		mode  = V->getMode(configs[c].first);
 		setup = P->getCorrSetup(configs[c].second);
-		cout << "Setting up " << mode->name << " " << setup->setupName << endl;
+
+		if(mode == 0)
+		{
+			cerr << "ACK! mode[" << configs[c].first << "] is null" << endl;
+			exit(0);
+		}
 
 		for(a = 0; a < antList.size(); a++)
 		{
@@ -580,10 +591,20 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 			for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
 			{
+				if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
+				{
+					cerr << "index to subband = " << i->subbandId << " is out of range" << endl;
+					exit(0);
+				}
 				int r = i->recordChan;
 				const VexSubband& subband = mode->subbands[i->subbandId];
 				int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand);
 				
+				if(r < 0 || r >= D->datastream[dsId].nRecChan)
+				{
+					cerr << "index to RC = " << r << " is out of range" << endl;
+					exit(0);
+				}
 				D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
 				D->datastream[dsId].RCpolName[r] = subband.pol;
 			}
@@ -683,7 +704,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 	deriveSourceTable(D);
 
-	printDifxInput(D);
+	//printDifxInput(D);
 
 	ostringstream inputName;
 	inputName << D->job->jobId << ".input";
@@ -715,7 +736,7 @@ int main(int argc, char **argv)
 	 
 	if(argc < 2)
 	{
-		cout << "need filename" << endl;
+		cerr << "need filename" << endl;
 		return 0;
 	}
 

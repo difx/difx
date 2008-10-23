@@ -140,6 +140,9 @@ const VexFormat& VexMode::getFormat(const string antName) const
 			return it->second;
 		}
 	}
+
+	cout << "error : antName=" << antName << " not found" << endl;
+	exit(0);
 }
 
 bool operator == (VexSubband& s1, VexSubband& s2)
@@ -439,7 +442,9 @@ const VexMode *VexData::getMode(string name) const
 	for(int i = 0; i < nMode(); i++)
 	{
 		if(modes[i].name == name)
+		{
 			return &modes[i];
+		}
 	}
 
 	return 0;
