@@ -24,7 +24,7 @@ import curses
 program = 'mk5mon'
 author  = 'Walter Brisken'
 version = '0.1'
-verdate = '20080500'
+verdate = '20080501'
 
 def usage():
 	exit(1)

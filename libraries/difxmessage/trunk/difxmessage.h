@@ -52,6 +52,7 @@ enum Mk5State
 	MARK5_STATE_NOMOREDATA,
 	MARK5_STATE_PLAYINVALID,
 	MARK5_STATE_START,
+	MARK5_STATE_COPY,
 	NUM_MARK5_STATES	/* this needs to be the last line of enum */
 };
 
