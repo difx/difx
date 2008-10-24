@@ -35,9 +35,11 @@ public:
 	double mjd;
 	enum EventType eventType;
 	string name;
+	string scan;
 
 	VexEvent() : mjd(0.0), eventType(NO_EVENT), name("") {}
-	VexEvent(double m, enum EventType e, const string& a) : mjd(m), eventType(e), name(a) {}
+	VexEvent(double m, enum EventType e, const string& a) : mjd(m), eventType(e), name(a), scan("") {}
+	VexEvent(double m, enum EventType e, const string& a, const string& b) : mjd(m), eventType(e), name(a), scan(b) {}
 };
 
 class VexInterval
@@ -274,7 +276,8 @@ public:
 
 	int nEvent() const { return events.size(); }
 	const list<VexEvent> *getEvents() const;
-	void addEvent(double mjd, VexEvent::EventType eventType, const string &antName);
+	void addEvent(double mjd, VexEvent::EventType eventType, const string &name);
+	void addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scanName);
 
 	const VexExper *getExper() const { return &exper; }
 	void setExper(const string& name, double start, double stop);

@@ -13,7 +13,8 @@
 // A is assumed to be the first scan in time order
 bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
-	if(A->timeRange.mjdStop + P->maxGap < B->timeRange.mjdStart)
+	if((B->timeRange.mjdStart < A->timeRange.mjdStop) ||
+	   (B->timeRange.mjdStart > A->timeRange.mjdStop + P->maxGap))
 	{
 		return false;
 	}
@@ -21,16 +22,9 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 	{
 		return false;
 	}
-	if(P->singleSetup)
+	if(P->singleSetup && A->modeName != B->modeName)
 	{
-		if(A->modeName != B->modeName)
-		{
-			return false;
-		}
-		else
-		{
-			return true;
-		}
+		return false;
 	}
 	
 	return true;
@@ -79,11 +73,14 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	{
 		v->genEvents(*events);
 
-		list<VexEvent>::const_iterator e;
-		for(e = v->events.begin(); e != v->events.end(); e++)
-		{
-			cout << *e << endl;
-		}
+		cout << "XXX" << endl;
+
+               list<VexEvent>::const_iterator e;
+               for(e = v->events.begin(); e != v->events.end(); e++)
+               {
+                       cout << *e << endl;
+               }
+
 	}
 }
 

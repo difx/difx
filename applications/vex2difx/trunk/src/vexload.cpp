@@ -269,15 +269,15 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->setupName = setupName;
 
 		// Add to event list
-		V->addEvent(startScan, VexEvent::SCAN_START, scanId);
-		V->addEvent(stopScan,  VexEvent::SCAN_STOP,  scanId);
+		V->addEvent(startScan, VexEvent::SCAN_START, scanId, scanId);
+		V->addEvent(stopScan,  VexEvent::SCAN_STOP,  scanId, scanId);
 		for(it = antStart.begin(); it != antStart.end(); it++)
 		{
-			V->addEvent(it->second, VexEvent::ANT_SCAN_START, it->first);
+			V->addEvent(it->second, VexEvent::ANT_SCAN_START, it->first, scanId);
 		}
 		for(it = antStop.begin(); it != antStop.end(); it++)
 		{
-			V->addEvent(it->second, VexEvent::ANT_SCAN_STOP, it->first);
+			V->addEvent(it->second, VexEvent::ANT_SCAN_STOP, it->first, scanId);
 		}
 	}
 	

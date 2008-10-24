@@ -238,6 +238,7 @@ bool VexJobGroup::hasScan(const string& scanName) const
 void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 {
 	list<VexEvent>::const_iterator it;
+#if 0
 	bool save = true;
 
 	for(it = eventList.begin(); it != eventList.end(); it++)
@@ -258,6 +259,24 @@ void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 		if(it->eventType == VexEvent::SCAN_STOP)
 		{
 			save = true;
+		}
+	}
+#endif
+	for(it = eventList.begin(); it != eventList.end(); it++)
+	{
+		if(it->eventType == VexEvent::SCAN_START ||
+		   it->eventType == VexEvent::SCAN_STOP ||
+		   it->eventType == VexEvent::ANT_SCAN_START ||
+		   it->eventType == VexEvent::ANT_SCAN_STOP)
+		{
+			if(hasScan(it->scan))
+			{
+				events.push_back(*it);
+			}
+		}
+		else
+		{
+			events.push_back(*it);
 		}
 	}
 
@@ -335,6 +354,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) con
 	jobs.push_back(VexJob());
 	VexJob &J = jobs.back();
 	double totalTime, scanTime = 0.0;
+	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
 	J.mjdStart = stop;
@@ -345,9 +365,15 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) con
 		if(e->eventType == VexEvent::SCAN_START)
 		{
 			s = e;
+			id = e->name;
 		}
 		if(e->eventType == VexEvent::SCAN_STOP)
 		{
+			if(id != e->name)
+			{
+				cout << "Aweful! [" << id << "] [" << e->name << "]" << endl;
+				exit(0);
+			}
 			if(s->mjd >= start && e->mjd <= stop)
 			{
 				J.scans.push_back(e->name);
@@ -592,6 +618,12 @@ void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &
 	events.sort();
 }
 
+void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scan)
+{
+	events.push_back(VexEvent(mjd, eventType, name, scan));
+	events.sort();
+}
+
 ostream& operator << (ostream& os, const VexInterval& x)
 {
 	int p = os.precision();
@@ -799,6 +831,7 @@ ostream& operator << (ostream& os, const VexData& x)
 		os << "   " << *x.getEOP(i) << endl;
 	}
 
+#if 0
 	const list<VexEvent> *events = x.getEvents();
 	list<VexEvent>::const_iterator iter;
 	os << " Events:" << endl;
@@ -806,6 +839,7 @@ ostream& operator << (ostream& os, const VexData& x)
 	{
 		os << "   " << *iter << endl;
 	}
+#endif
 
 	return os;
 }
