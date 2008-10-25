@@ -1,0 +1,860 @@
+VEX_rev = 1.5;
+*    SCHED vers: June 2006
+*    VEX/SCHED:  1.5.86
+*    Other versions: Sched:   6.1  Plot: 1.06  JPL-ephem: 1.01
+*------------------------------------------------------------------------------
+$GLOBAL;
+     ref $EXPER = te069;
+*                                                      +------------+
+*                         PI revision number:          |    1.0000  |
+*                                                      +------------+
+*------------------------------------------------------------------------------
+$EXPER;
+*
+def te069;
+     exper_name = te069;
+     exper_description = "e-VLBI test";
+     PI_name = "Z. Paragi";
+     PI_email = zparagi@jive.nl;
+*    address:   JIVE
+*               Postbus 2
+*               7990 AA Dwingeloo
+*               The Netherlands
+*    phone:     +31 (0)521 596 536
+*    during obs:+31 (0)521 596 500
+*    fax:        
+*    notes:     Note these setups are different from the previous e-VLBI setups.
+*               We use 16 MHz subbands in the 128-1024 Mbps modes.
+*
+*    year, doy: 2007, 255
+*    date     : Wed 12 Sep 2007
+*    MJD      : 54355
+*
+     target_correlator = JIVE;
+*
+*    integr_time    :     2.000 s
+*    number_channels:  16
+*    number_antenna :  6
+*    cross_polarize : Yes
+*    weight_func    : UNIFORM
+*    distrib_medium : DAT
+*    source_pos_cat : STANDARD
+*    distribute_to  : 
+*                     Zsolt Paragi
+*
+enddef;
+*------------------------------------------------------------------------------
+$MODE;
+*
+def 128Mbps;
+     ref $PROCEDURES = Mode_01;
+     ref $FREQ = 4956.49MHz2x16MHz:Da;
+     ref $FREQ = 4956.49MHz2x16MHz#02:Mc:Jb;
+     ref $IF = LO@4440MHzDPolTone/1:Da;
+     ref $IF = LO@4600MHzDPolTone/1:Mc;
+     ref $IF = LO@4840MHzDPolTone/1:Jb;
+     ref $BBC = 2BBCs:Da;
+     ref $BBC = 2BBCs#02:Mc:Jb;
+     ref $TRACKS = MKIV.2Ch2bit1to2:Da:Mc:Jb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Da:Mc:Jb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = LsbDetect:Da:Mc:Jb;
+enddef;
+*
+def 256Mbps;
+     ref $PROCEDURES = Mode_02;
+     ref $FREQ = 4956.49MHz4x16MHz:Da;
+     ref $FREQ = 4956.49MHz4x16MHz#02:Mc:Jb;
+     ref $IF = LO@4440MHzDPolTone/1:Da;
+     ref $IF = LO@4600MHzDPolTone/1:Mc;
+     ref $IF = LO@4840MHzDPolTone/1:Jb;
+     ref $BBC = 2BBCs:Da;
+     ref $BBC = 2BBCs#02:Mc:Jb;
+     ref $TRACKS = MKIV.4Ch2bit1to2:Da:Mc:Jb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Da:Mc:Jb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect:Da:Mc:Jb;
+enddef;
+*
+def 512Mbps;
+     ref $PROCEDURES = Mode_03;
+     ref $FREQ = 4956.49MHz8x16MHz:Da;
+     ref $FREQ = 4956.49MHz8x16MHz#02:Mc:Jb;
+     ref $IF = LO@4440MHzDPolTone/1:Da;
+     ref $IF = LO@4600MHzDPolTone/1:Mc;
+     ref $IF = LO@4840MHzDPolTone/1:Jb;
+     ref $BBC = 8BBCs:Da;
+     ref $BBC = 8BBCs#02:Mc:Jb;
+     ref $TRACKS = MKIV.8Ch2bit1to2:Da:Mc:Jb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Da:Mc:Jb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect#02:Da:Mc:Jb;
+enddef;
+*
+def 1024Mbps;
+     ref $PROCEDURES = Mode_04;
+     ref $FREQ = 4956.49MHz16x16MHz:Da;
+     ref $FREQ = 4956.49MHz16x16MHz#02:Mc:Jb;
+     ref $IF = LO@4440MHzDPolTone/1:Da;
+     ref $IF = LO@4600MHzDPolTone/1:Mc;
+     ref $IF = LO@4840MHzDPolTone/1:Jb;
+     ref $BBC = 16BBCs:Da;
+     ref $BBC = 16BBCs#02:Mc:Jb;
+     ref $TRACKS = MKIV.16Ch2bit1to2:Da:Mc:Jb;
+*    ref $HEAD_POS = DiskVoid <= obsolete definition
+     ref $ROLL = NoRoll:Da:Mc:Jb;
+*    ref $PASS_ORDER = DiskVoid <= obsolete definition
+     ref $PHASE_CAL_DETECT = DsbDetect#03:Da:Mc:Jb;
+enddef;
+*------------------------------------------------------------------------------
+$STATION;
+*
+def Da;
+     ref $SITE = DARNHALL;
+     ref $ANTENNA = DARNHALL;
+     ref $DAS = 1VLBA4<Mark5A;
+enddef;
+*
+def Mc;
+     ref $SITE = MEDICINA;
+     ref $ANTENNA = MEDICINA;
+     ref $DAS = 1MKIV<Mark5A;
+enddef;
+*
+def Jb;
+     ref $SITE = JODRELL2;
+     ref $ANTENNA = JODRELL2;
+     ref $DAS = 1MKIV<Mark5A;
+enddef;
+*------------------------------------------------------------------------------
+$PROCEDURES;
+*
+def Mode_01;
+     procedure_name_prefix =  "01";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_02;
+     procedure_name_prefix =  "02";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_03;
+     procedure_name_prefix =  "03";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*
+def Mode_04;
+     procedure_name_prefix =  "04";
+     tape_change =  420 sec;
+     headstack_motion =    6 sec;
+     new_source_command =    5 sec;
+     new_tape_setup =   20 sec;
+     setup_always = on :  20 sec;
+     parity_check = off : 100 sec;
+     tape_prepass = off : 600 sec;
+     preob_cal  = on :  10 sec : preob;
+     midob_cal  = on :  15 sec : midob;
+     postob_cal = on :   0 sec : postob;
+enddef;
+*------------------------------------------------------------------------------
+$SITE;
+*
+def DARNHALL;
+     site_type = fixed;
+     site_name = DARNHALL;
+     site_ID = Da;
+*    elev=  111.88 long= 002:32:08. lat= 53:09:22.7
+     site_position = 3829087.899 m: -169568.955 m: 5081082.346 m;
+enddef;
+*
+def MEDICINA;
+     site_type = fixed;
+     site_name = MEDICINA;
+     site_ID = Mc;
+*    elev=   67.18 long=-011:38:49. lat= 44:31:13.8
+     site_position = 4461369.983 m:  919596.825 m: 4449559.202 m;
+enddef;
+*
+def JODRELL2;
+     site_type = fixed;
+     site_name = JODRELL2;
+     site_ID = Jb;
+*    elev=  143.77 long= 002:18:14. lat= 53:14:02.3
+     site_position = 3822846.760 m: -153802.280 m: 5086285.900 m;
+enddef;
+*------------------------------------------------------------------------------
+$ANTENNA;
+*
+def DARNHALL;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min : 10 sec;  *    0.023 deg/sec/sec
+     antenna_motion = az :  40.0 deg/min : 10 sec;  *    0.026 deg/sec/sec
+     axis_offset =     0.000 m;
+enddef;
+*
+def MEDICINA;
+     axis_type = az : el;
+     antenna_motion = el :  30.0 deg/min :  3 sec;  *    0.310 deg/sec/sec
+     antenna_motion = az :  45.0 deg/min :  3 sec;  *    0.820 deg/sec/sec
+     axis_offset =     1.825 m;
+enddef;
+*
+def JODRELL2;
+     axis_type = az : el;
+     antenna_motion = el :  20.0 deg/min :  2 sec;  *    0.022 deg/sec/sec
+     antenna_motion = az :  20.0 deg/min :  2 sec;  *    0.034 deg/sec/sec
+     axis_offset =     0.458 m;
+enddef;
+*------------------------------------------------------------------------------
+$DAS;
+*
+def 1VLBA4<Mark5A;
+     record_transport_type = Mark5A;
+     electronics_rack_type = VLBA4;
+     number_drives = 1;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 0 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*
+def 1MKIV<Mark5A;
+     record_transport_type = Mark5A;
+     electronics_rack_type = Mark4;
+     number_drives = 1;
+     headstack = 1 :            : 0 ;
+     headstack = 2 :            : 0 ;
+     tape_motion = adaptive : 0 min: 0 min: 10 sec;
+enddef;
+*------------------------------------------------------------------------------
+$SOURCE;
+*
+def 4C39.25;
+     source_name = 4C39.25;
+*    this source had calibrator code: V
+*    alternate source name: J0927+3902
+*    alternate source name: 0923+392
+*    alternate source name: J0927+39
+*    VLBA Calib Survey - GSFC sols. - created L.Petrov 2005f_astro
+     ra = 09h27m03.013934s; dec =  39d02'20.85188"; ref_coord_frame = J2000;
+*    ra = 09h23m55.319213s; dec =  39d15'23.56648"; ref_coord_frame = B1950;
+*    ra = 09h27m31.316373s; dec =  39d00'23.69886"; ref_coord_frame = Date;
+enddef;
+*------------------------------------------------------------------------------
+$FREQ;
+*
+def 4956.49MHz2x16MHz;
+* mode =  1    stations =Da
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz2x16MHz#02;
+* mode =  1    stations =Mc:Jb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC01 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz4x16MHz;
+* mode =  2    stations =Da
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC02 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz4x16MHz#02;
+* mode =  2    stations =Mc:Jb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC01 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC01 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz8x16MHz;
+* mode =  3    stations =Da
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC02 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH05 : &BBC03 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH06 : &BBC04 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH07 : &BBC03 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH08 : &BBC04 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz8x16MHz#02;
+* mode =  3    stations =Mc:Jb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC01 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC01 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH05 : &BBC04 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH06 : &BBC03 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH07 : &BBC04 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH08 : &BBC03 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz16x16MHz;
+* mode =  4    stations =Da
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC02 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC01 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC02 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH05 : &BBC03 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH06 : &BBC04 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH07 : &BBC03 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH08 : &BBC04 : &L_Cal; *Lcp
+     chan_def = :  5020.49 MHz : L :16.000 MHz : &CH09 : &BBC05 : &L_Cal; *Rcp
+     chan_def = :  5020.49 MHz : L :16.000 MHz : &CH10 : &BBC06 : &L_Cal; *Lcp
+     chan_def = :  5020.49 MHz : U :16.000 MHz : &CH11 : &BBC05 : &L_Cal; *Rcp
+     chan_def = :  5020.49 MHz : U :16.000 MHz : &CH12 : &BBC06 : &L_Cal; *Lcp
+     chan_def = :  5052.49 MHz : L :16.000 MHz : &CH13 : &BBC07 : &L_Cal; *Rcp
+     chan_def = :  5052.49 MHz : L :16.000 MHz : &CH14 : &BBC08 : &L_Cal; *Lcp
+     chan_def = :  5052.49 MHz : U :16.000 MHz : &CH15 : &BBC07 : &L_Cal; *Rcp
+     chan_def = :  5052.49 MHz : U :16.000 MHz : &CH16 : &BBC08 : &L_Cal; *Lcp
+enddef;
+*
+def 4956.49MHz16x16MHz#02;
+* mode =  4    stations =Mc:Jb
+     sample_rate = 32.000 Ms/sec;  * (2bits/sample)
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH01 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : L :16.000 MHz : &CH02 : &BBC01 : &L_Cal; *Lcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH03 : &BBC02 : &L_Cal; *Rcp
+     chan_def = :  4956.49 MHz : U :16.000 MHz : &CH04 : &BBC01 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH05 : &BBC04 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : L :16.000 MHz : &CH06 : &BBC03 : &L_Cal; *Lcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH07 : &BBC04 : &L_Cal; *Rcp
+     chan_def = :  4988.49 MHz : U :16.000 MHz : &CH08 : &BBC03 : &L_Cal; *Lcp
+     chan_def = :  5020.49 MHz : L :16.000 MHz : &CH09 : &BBC06 : &L_Cal; *Rcp
+     chan_def = :  5020.49 MHz : L :16.000 MHz : &CH10 : &BBC05 : &L_Cal; *Lcp
+     chan_def = :  5020.49 MHz : U :16.000 MHz : &CH11 : &BBC06 : &L_Cal; *Rcp
+     chan_def = :  5020.49 MHz : U :16.000 MHz : &CH12 : &BBC05 : &L_Cal; *Lcp
+     chan_def = :  5052.49 MHz : L :16.000 MHz : &CH13 : &BBC08 : &L_Cal; *Rcp
+     chan_def = :  5052.49 MHz : L :16.000 MHz : &CH14 : &BBC07 : &L_Cal; *Lcp
+     chan_def = :  5052.49 MHz : U :16.000 MHz : &CH15 : &BBC08 : &L_Cal; *Rcp
+     chan_def = :  5052.49 MHz : U :16.000 MHz : &CH16 : &BBC07 : &L_Cal; *Lcp
+enddef;
+*------------------------------------------------------------------------------
+$IF;
+*
+def LO@4440MHzDPolTone/1;
+* mode =  1    stations =Da
+* mode =  2    stations =Da
+* mode =  3    stations =Da
+* mode =  4    stations =Da
+     if_def = &IF_C : C : R :  4440.0 MHz : U : 1 MHz ;
+     if_def = &IF_A : A : L :  4440.0 MHz : U : 1 MHz ;
+enddef;
+*
+def LO@4600MHzDPolTone/1;
+* mode =  1    stations =Mc
+* mode =  2    stations =Mc
+* mode =  3    stations =Mc
+* mode =  4    stations =Mc
+     if_def = &IF_2N : 2N : R :  4600.0 MHz : U : 1 MHz ;
+     if_def = &IF_1N : 1N : L :  4600.0 MHz : U : 1 MHz ;
+enddef;
+*
+def LO@4840MHzDPolTone/1;
+* mode =  1    stations =Jb
+* mode =  2    stations =Jb
+* mode =  3    stations =Jb
+* mode =  4    stations =Jb
+     if_def = &IF_2N : 2N : R :  4840.0 MHz : U : 1 MHz ;
+     if_def = &IF_1N : 1N : L :  4840.0 MHz : U : 1 MHz ;
+enddef;
+*------------------------------------------------------------------------------
+$BBC;
+*
+def 2BBCs;
+* mode =  1    stations =Da
+* mode =  2    stations =Da
+     BBC_assign = &BBC01 :  1 : &IF_C;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+enddef;
+*
+def 2BBCs#02;
+* mode =  1    stations =Mc:Jb
+* mode =  2    stations =Mc:Jb
+     BBC_assign = &BBC02 :  2 : &IF_2N;
+     BBC_assign = &BBC01 :  1 : &IF_1N;
+enddef;
+*
+def 8BBCs;
+* mode =  3    stations =Da
+     BBC_assign = &BBC01 :  1 : &IF_C;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_C;
+     BBC_assign = &BBC04 :  4 : &IF_A;
+enddef;
+*
+def 8BBCs#02;
+* mode =  3    stations =Mc:Jb
+     BBC_assign = &BBC02 :  2 : &IF_2N;
+     BBC_assign = &BBC01 :  1 : &IF_1N;
+     BBC_assign = &BBC04 :  4 : &IF_2N;
+     BBC_assign = &BBC03 :  3 : &IF_1N;
+enddef;
+*
+def 16BBCs;
+* mode =  4    stations =Da
+     BBC_assign = &BBC01 :  1 : &IF_C;
+     BBC_assign = &BBC02 :  2 : &IF_A;
+     BBC_assign = &BBC03 :  3 : &IF_C;
+     BBC_assign = &BBC04 :  4 : &IF_A;
+     BBC_assign = &BBC05 :  5 : &IF_C;
+     BBC_assign = &BBC06 :  6 : &IF_A;
+     BBC_assign = &BBC07 :  7 : &IF_C;
+     BBC_assign = &BBC08 :  8 : &IF_A;
+enddef;
+*
+def 16BBCs#02;
+* mode =  4    stations =Mc:Jb
+     BBC_assign = &BBC02 :  2 : &IF_2N;
+     BBC_assign = &BBC01 :  1 : &IF_1N;
+     BBC_assign = &BBC04 :  4 : &IF_2N;
+     BBC_assign = &BBC03 :  3 : &IF_1N;
+     BBC_assign = &BBC06 :  6 : &IF_2N;
+     BBC_assign = &BBC05 :  5 : &IF_1N;
+     BBC_assign = &BBC08 :  8 : &IF_2N;
+     BBC_assign = &BBC07 :  7 : &IF_1N;
+enddef;
+*------------------------------------------------------------------------------
+$PHASE_CAL_DETECT;
+*
+def LsbDetect;
+* mode =  1    stations =Da:Mc:Jb
+     phase_cal_detect = &L_Cal : 1 :16 : 0 : 2;
+enddef;
+*
+def DsbDetect;
+* mode =  2    stations =Da:Mc:Jb
+     phase_cal_detect = &L_Cal : 1 :16 : 0;
+enddef;
+*
+def DsbDetect#02;
+* mode =  3    stations =Da:Mc:Jb
+     phase_cal_detect = &L_Cal : 1 :16;
+enddef;
+*
+def DsbDetect#03;
+* mode =  4    stations =Da:Mc:Jb
+     phase_cal_detect = &L_Cal : 1;
+enddef;
+*------------------------------------------------------------------------------
+$TRACKS;
+*
+def MKIV.2Ch2bit1to2;
+* mode =  1    stations =Da:Mc:Jb
+*    format = MKIV1:2, and fan-out = 2
+*    mode requires 16.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH01 : sign : 1:  2:  4;
+     fanout_def =   : &CH01 :  mag : 1:  6:  8;
+     fanout_def =   : &CH02 : sign : 1: 10: 12;
+     fanout_def =   : &CH02 :  mag : 1: 14: 16;
+enddef;
+*
+def MKIV.4Ch2bit1to2;
+* mode =  2    stations =Da:Mc:Jb
+*    format = MKIV1:2, and fan-out = 2
+*    mode requires 16.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH01 : sign : 1:  2:  4;
+     fanout_def =   : &CH01 :  mag : 1:  6:  8;
+     fanout_def =   : &CH02 : sign : 1: 10: 12;
+     fanout_def =   : &CH02 :  mag : 1: 14: 16;
+     fanout_def =   : &CH03 : sign : 1: 18: 20;
+     fanout_def =   : &CH03 :  mag : 1: 22: 24;
+     fanout_def =   : &CH04 : sign : 1: 26: 28;
+     fanout_def =   : &CH04 :  mag : 1: 30: 32;
+enddef;
+*
+def MKIV.8Ch2bit1to2;
+* mode =  3    stations =Da:Mc:Jb
+*    format = MKIV1:2, and fan-out = 2
+*    mode requires 16.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH01 : sign : 1:  2:  4;
+     fanout_def =   : &CH01 :  mag : 1:  6:  8;
+     fanout_def =   : &CH02 : sign : 1: 10: 12;
+     fanout_def =   : &CH02 :  mag : 1: 14: 16;
+     fanout_def =   : &CH03 : sign : 1: 18: 20;
+     fanout_def =   : &CH03 :  mag : 1: 22: 24;
+     fanout_def =   : &CH04 : sign : 1: 26: 28;
+     fanout_def =   : &CH04 :  mag : 1: 30: 32;
+     fanout_def =   : &CH05 : sign : 1:  3:  5;
+     fanout_def =   : &CH05 :  mag : 1:  7:  9;
+     fanout_def =   : &CH06 : sign : 1: 11: 13;
+     fanout_def =   : &CH06 :  mag : 1: 15: 17;
+     fanout_def =   : &CH07 : sign : 1: 19: 21;
+     fanout_def =   : &CH07 :  mag : 1: 23: 25;
+     fanout_def =   : &CH08 : sign : 1: 27: 29;
+     fanout_def =   : &CH08 :  mag : 1: 31: 33;
+enddef;
+*
+def MKIV.16Ch2bit1to2;
+* mode =  4    stations =Da:Mc:Jb
+*    format = MKIV1:2, and fan-out = 2
+*    mode requires 16.00Mb/s/tr; stations using disks
+     track_frame_format = Mark4;
+     data_modulation = off;
+     fanout_def =   : &CH01 : sign : 1:  2:  4;
+     fanout_def =   : &CH01 :  mag : 1:  6:  8;
+     fanout_def =   : &CH02 : sign : 1: 10: 12;
+     fanout_def =   : &CH02 :  mag : 1: 14: 16;
+     fanout_def =   : &CH03 : sign : 1: 18: 20;
+     fanout_def =   : &CH03 :  mag : 1: 22: 24;
+     fanout_def =   : &CH04 : sign : 1: 26: 28;
+     fanout_def =   : &CH04 :  mag : 1: 30: 32;
+     fanout_def =   : &CH05 : sign : 1:  3:  5;
+     fanout_def =   : &CH05 :  mag : 1:  7:  9;
+     fanout_def =   : &CH06 : sign : 1: 11: 13;
+     fanout_def =   : &CH06 :  mag : 1: 15: 17;
+     fanout_def =   : &CH07 : sign : 1: 19: 21;
+     fanout_def =   : &CH07 :  mag : 1: 23: 25;
+     fanout_def =   : &CH08 : sign : 1: 27: 29;
+     fanout_def =   : &CH08 :  mag : 1: 31: 33;
+     fanout_def =   : &CH09 : sign : 2:  2:  4;
+     fanout_def =   : &CH09 :  mag : 2:  6:  8;
+     fanout_def =   : &CH10 : sign : 2: 10: 12;
+     fanout_def =   : &CH10 :  mag : 2: 14: 16;
+     fanout_def =   : &CH11 : sign : 2: 18: 20;
+     fanout_def =   : &CH11 :  mag : 2: 22: 24;
+     fanout_def =   : &CH12 : sign : 2: 26: 28;
+     fanout_def =   : &CH12 :  mag : 2: 30: 32;
+     fanout_def =   : &CH13 : sign : 2:  3:  5;
+     fanout_def =   : &CH13 :  mag : 2:  7:  9;
+     fanout_def =   : &CH14 : sign : 2: 11: 13;
+     fanout_def =   : &CH14 :  mag : 2: 15: 17;
+     fanout_def =   : &CH15 : sign : 2: 19: 21;
+     fanout_def =   : &CH15 :  mag : 2: 23: 25;
+     fanout_def =   : &CH16 : sign : 2: 27: 29;
+     fanout_def =   : &CH16 :  mag : 2: 31: 33;
+enddef;
+*------------------------------------------------------------------------------
+$HEAD_POS;
+def DiskVoid;
+* mode =  1    stations =Da:Mc:Jb
+* mode =  2    stations =Da:Mc:Jb
+* mode =  3    stations =Da:Mc:Jb
+* mode =  4    stations =Da:Mc:Jb
+*     Head positions irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$PASS_ORDER;
+*
+def DiskVoid;
+* mode =  1    stations =Da:Mc:Jb
+* mode =  2    stations =Da:Mc:Jb
+* mode =  3    stations =Da:Mc:Jb
+* mode =  4    stations =Da:Mc:Jb
+*     Pass orders irrelevant for Disk: empty def
+enddef;
+*------------------------------------------------------------------------------
+$ROLL;
+*
+def NoRoll;
+* mode =  1    stations =Da:Mc:Jb
+* mode =  2    stations =Da:Mc:Jb
+* mode =  3    stations =Da:Mc:Jb
+* mode =  4    stations =Da:Mc:Jb
+*    barrel-roll set to 'roll_off', so reverse-roll by  0 (1 head)
+     roll = off;
+enddef;
+*------------------------------------------------------------------------------
+$SCHED;
+* schedule section for experiment te069   
+* e-VLBI test                                                             
+scan No0001;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d08h00m00s; mode=1024Mbps; source=4C39.25;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Da:    0 sec:  860 sec:   0.000 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:   0.000 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:   0.000 GB:   :       : 1;
+endscan;
+scan No0002;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d08h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 110.961 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 110.961 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 110.961 GB:   :       : 1;
+endscan;
+scan No0003;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d08h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 221.921 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 221.921 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 221.921 GB:   :       : 1;
+endscan;
+scan No0004;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d08h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 332.882 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 332.882 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 332.882 GB:   :       : 1;
+endscan;
+scan No0005;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d09h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 443.843 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 443.843 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 443.843 GB:   :       : 1;
+endscan;
+scan No0006;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d09h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 554.803 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 554.803 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 554.803 GB:   :       : 1;
+endscan;
+scan No0007;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d09h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 665.764 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 665.764 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 665.764 GB:   :       : 1;
+endscan;
+scan No0008;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d09h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 776.724 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 776.724 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 776.724 GB:   :       : 1;
+endscan;
+scan No0009;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d10h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 887.685 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 887.685 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 887.685 GB:   :       : 1;
+endscan;
+scan No0010;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d10h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec: 998.646 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec: 998.646 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec: 998.646 GB:   :       : 1;
+endscan;
+scan No0011;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d10h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1109.606 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1109.606 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1109.606 GB:   :       : 1;
+endscan;
+scan No0012;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d10h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1220.567 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1220.567 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1220.567 GB:   :       : 1;
+endscan;
+scan No0013;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d11h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1331.528 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1331.528 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1331.528 GB:   :       : 1;
+endscan;
+scan No0014;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d11h15m00s; mode=1024Mbps; source=4C39.25;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Da:    0 sec:  860 sec:1442.489 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1442.489 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1442.489 GB:   :       : 1;
+endscan;
+scan No0015;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d11h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1553.449 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1553.449 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1553.449 GB:   :       : 1;
+endscan;
+scan No0016;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d11h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1664.410 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1664.410 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1664.410 GB:   :       : 1;
+endscan;
+scan No0017;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d12h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1775.371 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1775.371 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1775.371 GB:   :       : 1;
+endscan;
+scan No0018;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d12h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1886.331 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1886.331 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1886.331 GB:   :       : 1;
+endscan;
+scan No0019;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d12h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:1997.292 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:1997.292 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:1997.292 GB:   :       : 1;
+endscan;
+scan No0020;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d12h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2108.253 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2108.253 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2108.253 GB:   :       : 1;
+endscan;
+scan No0021;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d13h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2219.213 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2219.213 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2219.213 GB:   :       : 1;
+endscan;
+scan No0022;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d13h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2330.174 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2330.174 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2330.174 GB:   :       : 1;
+endscan;
+scan No0023;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d13h30m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2441.135 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2441.135 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2441.135 GB:   :       : 1;
+endscan;
+scan No0024;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d13h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2552.095 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2552.095 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2552.095 GB:   :       : 1;
+endscan;
+scan No0025;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d14h00m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2663.056 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2663.056 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2663.056 GB:   :       : 1;
+endscan;
+scan No0026;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d14h15m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2774.017 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2774.017 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2774.017 GB:   :       : 1;
+endscan;
+scan No0027;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d14h30m00s; mode=1024Mbps; source=4C39.25;
+*              :data_good:data_stop:goto_foot: pass:  wrap :driv:tape at
+     station=Da:    0 sec:  860 sec:2884.978 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2884.978 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2884.978 GB:   :       : 1;
+endscan;
+scan No0028;
+*     Note a COMMENT was inserted during scheduling: 
+*       ff                                                              
+     start=2007y255d14h45m00s; mode=1024Mbps; source=4C39.25;
+     station=Da:    0 sec:  860 sec:2995.938 GB:   :       : 1;
+     station=Mc:    0 sec:  860 sec:2995.938 GB:   :       : 1;
+     station=Jb:    0 sec:  860 sec:2995.938 GB:   :       : 1;
+endscan;
+scan No0029;
+*     Note a COMMENT was inserted during scheduling: 
+*       Dummy Scan                                                      
+     start=2007y255d15h00m20s; mode=512Mbps; source=4C39.25;
+     station=Da:    0 sec:   60 sec:3106.899 GB:   :       : 1;
+     station=Mc:    0 sec:   60 sec:3106.899 GB:   :       : 1;
+     station=Jb:    0 sec:   60 sec:3106.899 GB:   :       : 1;
+endscan;
+scan No0030;
+*     Note a COMMENT was inserted during scheduling: 
+*       Dummy Scan                                                      
+     start=2007y255d15h02m20s; mode=256Mbps; source=4C39.25;
+     station=Da:    0 sec:   60 sec:3110.770 GB:   :       : 1;
+     station=Mc:    0 sec:   60 sec:3110.770 GB:   :       : 1;
+     station=Jb:    0 sec:   60 sec:3110.770 GB:   :       : 1;
+endscan;
+scan No0031;
+*     Note a COMMENT was inserted during scheduling: 
+*       Dummy Scan                                                      
+     start=2007y255d15h04m20s; mode=128Mbps; source=4C39.25;
+     station=Da:    0 sec:   60 sec:3112.705 GB:   :       : 1;
+     station=Mc:    0 sec:   60 sec:3112.705 GB:   :       : 1;
+     station=Jb:    0 sec:   60 sec:3112.705 GB:   :       : 1;
+endscan;
