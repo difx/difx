@@ -331,6 +331,10 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			// Get sample rate
 			p = get_all_lowl(antName.c_str(), modeId, T_SAMPLE_RATE, B_FREQ, v);
+			if(p == 0)
+			{
+				continue;
+			}
 			vex_field(T_SAMPLE_RATE, p, 1, &link, &name, &value, &units);
 			fvex_double(&value, &units, &sampRate);
 

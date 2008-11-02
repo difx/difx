@@ -72,15 +72,6 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	for(v = JGs.begin(); v != JGs.end(); v++)
 	{
 		v->genEvents(*events);
-
-		cout << "XXX" << endl;
-
-               list<VexEvent>::const_iterator e;
-               for(e = v->events.begin(); e != v->events.end(); e++)
-               {
-                       cout << *e << endl;
-               }
-
 	}
 }
 
@@ -407,7 +398,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	int antId = D->datastream[dsId].antennaId;
 	if(antId < 0 || antId >= D->nAntenna)
 	{
-		cerr << "Error : antId = " << antId << " while nAntenna = " << D->nAntenna << endl;
+		cerr << "setFormat error : antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
 		exit(0);
 	}
 	string antName(D->antenna[antId].name);
@@ -446,8 +437,8 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	}
 	else
 	{
-		cerr << "Format " << format.format << " not currently supported" << endl;
-		exit(0);
+		cerr << "Format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << D->antenna[antId].name << "." << endl;
+		return 0;
 	}
 
 	strcpy(D->datastream[dsId].dataSource, "MODULE");
@@ -459,7 +450,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	{
 		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
 		{
-			cerr << "index to subband = " << i->subbandId << " is out of range" << endl;
+			cerr << "index to subband=" << i->subbandId << " is out of range" << endl;
 			exit(0);
 		}
 		int r = i->recordChan;
@@ -504,14 +495,21 @@ void populateBaselineTable(DifxInput *D, int doPolar)
 	int a1c[2], a2c[2];
 	char a1p[2], a2p[2];
 	DifxBaseline *bl;
+
+	D->nBaseline = 0;
+
+	for(c = 0; c < D->nConfig; c++)
+	{
+		int nD = D->config[c].nDatastream;
+		D->nBaseline += nD*(nD-1)/2;
+	}
 	
-	D->nBaseline = D->nConfig*D->nAntenna*(D->nAntenna-1)/2;
 	D->baseline = newDifxBaselineArray(D->nBaseline);
 
 	bl = D->baseline;
 	for(c = 0; c < D->nConfig; c++)
 	{
-		for(a2 = 1; a2 < D->nAntenna; a2++)
+		for(a2 = 1; a2 < D->config[c].nDatastream; a2++)
 		{
 			for(a1 = 0; a1 < a2; a1++)
 			{
@@ -722,6 +720,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 	// configure datastreams
 	D->datastream = makeDifxDatastreams(J, V, D->nConfig, &(D->nDatastream));
+	D->nDatastream = 0;
 	for(int c = 0; c < D->nConfig; c++)
 	{
 		mode  = V->getMode(configs[c].first);
@@ -731,9 +730,16 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			exit(0);
 		}
 
-		for(int a = 0; a < D->config[c].nDatastream; a++)
+		int d = 0;
+		for(int a = 0; a < D->nAntenna; a++)
 		{
-			setFormat(D, D->config[c].datastreamId[a], freqs, mode);
+			int v = setFormat(D, D->nDatastream, freqs, mode);
+			if(v)
+			{
+				D->config[c].datastreamId[d] = D->nDatastream;
+				D->nDatastream++;
+				d++;
+			}
 		}
 	}
 

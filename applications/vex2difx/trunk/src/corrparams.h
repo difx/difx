@@ -54,6 +54,7 @@ class CorrSetup
 {
 public:
 	CorrSetup(const string &name = "setup_default");
+	void set(const string &key, const string &value);
 
 	string setupName;
 
@@ -126,6 +127,8 @@ public:
 ostream& operator << (ostream& os, const CorrSetup& x);
 ostream& operator << (ostream& os, const CorrRule& x);
 ostream& operator << (ostream& os, const CorrParams& x);
+
+istream& operator >> (istream& is, CorrSetup& x);
 
 bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C);
 

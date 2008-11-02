@@ -4,20 +4,21 @@
 
 using namespace std;
 
+// Note: the ordering here is crucial!
 const char VexEvent::eventName[][20] =
 {
 	"None",
-	"Clock Break",
-	"Observe Start",
-	"Job Start",
-	"Record Start",
-	"Scan Start",
-	"Ant On-source",
 	"Ant Off-source",
 	"Scan Stop",
-	"Record Stop",
 	"Job Stop",
-	"Observe Stop"
+	"Observe Start",
+	"Record Stop",
+	"Clock Break",
+	"Record Start",
+	"Observe Stop",
+	"Job Start",
+	"Scan Start",
+	"Ant On-source"
 };
 
 

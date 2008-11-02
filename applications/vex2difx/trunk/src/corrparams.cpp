@@ -1,4 +1,5 @@
 #include <iostream>
+#include <sstream>
 #include <algorithm>
 
 #include "corrparams.h"
@@ -13,6 +14,50 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	doAuto = true;
 	postFFringe = false;
 	blocksPerSend = 3125;
+}
+
+void CorrSetup::set(const string &key, const string &value)
+{
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "tInt")
+	{
+		ss >> tInt;
+	}
+	else if(key == "nChan")
+	{
+		ss >> nChan;
+	}
+	else if(key == "doPolar")
+	{
+		ss >> doPolar;
+	}
+	else if(key == "doAuto")
+	{
+		ss >> doAuto;
+	}
+	else if(key == "blocksPerSend")
+	{
+		ss >> blocksPerSend;
+	}
+	else if(key == "specAvg")
+	{
+		ss >> specAvg;
+	}
+	else if(key == "startChan")
+	{
+		ss >> startChan;
+	}
+	else if(key == "postFFringe")
+	{
+		ss >> postFFringe;
+	}
+	else
+	{
+		cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << endl; 
+	}
 }
 
 CorrRule::CorrRule(const string &name) : ruleName(name)
@@ -148,6 +193,60 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 	os.precision(p);
 
 	return os;
+}
+
+istream& operator >> (istream& is, CorrSetup& x)
+{
+	string s, key(""), value;
+
+	is >> x.setupName;
+
+	is >> s;
+	if(s != "{")
+	{
+		cerr << "reading SETUP " << x.setupName << ": '{' expected" << endl;
+		exit(0);
+	}
+
+	for(;;)
+	{
+		is >> s;
+		if(s == "}")
+		{
+			break;
+		}
+		if(is.eof())
+		{
+			cerr << "reading SETUP " << x.setupName << ": premature EOF" << endl;
+			exit(0);
+		}
+		if(s == "=")
+		{
+			if(key == "")
+			{
+				cerr << "reading SETUP " << x.setupName << ": '=' with no parameter name." << endl;
+				exit(0);
+			}
+			is >> value;
+			if(is.eof())
+			{
+				cerr << "reading SETUP " << x.setupName << ": premature EOF" << endl;
+				exit(0);
+			}
+			x.set(key, value);
+			key = "";
+		}
+		else if(s == "#")
+		{
+			// skip to next eol
+		}
+		else
+		{
+			is >> key;
+		}
+	}
+
+	return is;
 }
 
 ostream& operator << (ostream& os, const CorrRule& x)

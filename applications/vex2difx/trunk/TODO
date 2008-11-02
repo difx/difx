@@ -1,0 +1,21 @@
+X fails on RDV -- aweful.
+
+What to do about modes that don't support all antennas? (c081a.skd)?
+
+
+TODO in vex2difx
+
+1. Capitalization of Antenna names and obs code
+2. # sign
+3. load params file
+4. Pulsar support
+5. Spacecraft support
+6. Handle files (i.e., not Mark5 modules)
+7. Handle multiple phase centers
+
+Concerns outside vex2difx proper
+
+1. Need ant velocities and pos'n epoch in vex file
+2. Need to get module shelf location from track 
+3. Calcode/Qualifier in vex
+4. Get exper_nominal_{start,stop} in vex files

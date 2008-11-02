@@ -17,17 +17,17 @@ public:
 	enum EventType	// NOTE! keep VexEvent::eventName up to date
 	{
 		NO_EVENT,
-		CLOCK_BREAK,
-		OBSERVE_START,
-		JOB_START,
-		RECORD_START,
-		SCAN_START,
-		ANT_SCAN_START,
 		ANT_SCAN_STOP,
 		SCAN_STOP,
-		RECORD_STOP,
 		JOB_STOP,
-		OBSERVE_STOP
+		OBSERVE_STOP,
+		RECORD_STOP,
+		CLOCK_BREAK,
+		RECORD_START,
+		OBSERVE_START,
+		JOB_START,
+		SCAN_START,
+		ANT_SCAN_START
 	};
 
 	static const char eventName[][20];
