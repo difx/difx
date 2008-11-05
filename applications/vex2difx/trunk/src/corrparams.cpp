@@ -1,8 +1,10 @@
 #include <iostream>
 #include <sstream>
 #include <algorithm>
-
+#include <fstream>
 #include "corrparams.h"
+
+#define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
 
 CorrSetup::CorrSetup(const string &name) : setupName(name)
 {
@@ -82,10 +84,71 @@ bool CorrRule::match(const string &scan, const string &source, const string &mod
 	{
 		return false;
 	}
+
+	return true;
 }
 
-CorrParams::CorrParams() : jobSeries("vex2difx")
+void CorrRule::set(const string &key, const string &value)
 {
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "scanName" || key == "scan")
+	{
+		string s;
+		ss >> s;
+		scanName.push_back(s);
+	}
+	else if(key == "sourceName" || key == "source")
+	{
+		string s;
+		ss >> s;
+		sourceName.push_back(s);
+	}
+	else if(key == "modeName" || key == "mode")
+	{
+		string s;
+		ss >> s;
+		modeName.push_back(s);
+	}
+	else if(key == "calCode")
+	{
+		char c;
+		ss >> c;
+		calCode.push_back(c);
+	}
+	else if(key == "qualifier")
+	{
+		int i;
+		ss >> i;
+		qualifier.push_back(i);
+	}
+	else if(key == "setupName" || key == "setup")
+	{
+		ss >> setupName;
+	}
+	else
+	{
+		cerr << "Warning: RULE: Unknown parameter '" << key << "'." << endl; 
+	}
+}
+
+CorrParams::CorrParams()
+{
+	defaults();
+}
+
+CorrParams::CorrParams(const string& filename)
+{
+	defaults();
+
+	load(filename);
+}
+
+void CorrParams::defaults()
+{
+	jobSeries = "vex2difx";
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
@@ -96,6 +159,211 @@ CorrParams::CorrParams() : jobSeries("vex2difx")
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
 	startSeries = 20;
+}
+
+void CorrParams::set(const string &key, const string &value)
+{
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "mjdStart")
+	{
+		ss >> mjdStart;
+	}
+	else if(key == "mjdStop")
+	{
+		ss >> mjdStop;
+	}
+	else if(key == "minSubarray")
+	{
+		ss >> minSubarraySize;
+	}
+	else if(key == "maxGap")
+	{
+		ss >> maxGap;
+	}
+	else if(key == "singleScan")
+	{
+		ss >> singleScan;
+	}
+	else if(key == "singleSetup")
+	{
+		ss >> singleSetup;
+	}
+	else if(key == "allowOverlap")
+	{
+		ss >> allowOverlap;
+	}
+	else if(key == "mediaSplit")
+	{
+		ss >> mediaSplit;
+	}
+	else if(key == "maxLength")
+	{
+		ss >> maxLength;
+	}
+	else if(key == "jobSeries")
+	{
+		ss >> jobSeries;
+	}
+	else if(key == "startSeries")
+	{
+		ss >> startSeries;
+	}
+	else if(key == "antennas")
+	{
+		string s;
+		ss >> s;
+		Upper(s);
+		antennaList.push_back(s);
+	}
+	else
+	{
+		cerr << "Warning: Unknown keyword " << key << " with value " << value << endl;
+	}
+}
+
+void CorrParams::load(const string& filename)
+{
+	ifstream is;
+	vector<string> tokens;
+	char s[1024];
+	CorrSetup *setup=0;
+	CorrRule  *rule=0;
+	int mode = 0;	// an internal concept, not observing mode!
+
+	is.open(filename.c_str());
+
+	for(;;)
+	{
+		is.getline(s, 1024);
+		if(is.eof())
+		{
+			break;
+		}
+		string ss = s;
+
+		int l = ss.size();
+		int t = 0;
+		char last = ' ';
+		for(int i = 0; i <= l; i++)
+		{
+			// comment
+			if(last <= ' ' && s[i] == '#')
+			{	
+				break;
+			}
+			else if(s[i] == '{' || s[i] == '}' || 
+			        s[i] == '=' || s[i] == ',')
+			{
+				if(t < i)
+				{
+					tokens.push_back(ss.substr(t, i-t));
+				}
+				tokens.push_back(ss.substr(i, 1));
+				t = i+1;
+			}
+			else if(s[i] <= ' ')
+			{
+				if(t < i)
+				{
+					tokens.push_back(ss.substr(t, i-t));
+				}
+				t = i+1;
+			}
+			last = s[i];
+		}
+	}
+
+	string key(""), value, last("");
+	for(vector<string>::const_iterator i = tokens.begin(); 
+	    i != tokens.end();
+	    i++)
+	{
+		if(*i == "SETUP")
+		{
+			if(mode != 0)
+			{
+				cerr << "SETUP out of place" << endl;
+				exit(0);
+			}
+			i++;
+			setups.push_back(CorrSetup(*i));
+			setup = &setups.back();
+			i++;
+			if(*i != "{")
+			{
+				cerr << "'{' expected" << endl;
+				exit(0);
+			}
+			key = "";
+			mode = 1;
+		}
+		else if(*i == "RULE")
+		{
+			if(mode != 0)
+			{
+				cerr << "SETUP out of place" << endl;
+				exit(0);
+			}
+			i++;
+			rules.push_back(CorrRule(*i));
+			rule = &rules.back();
+			i++;
+			if(*i != "{")
+			{
+				cerr << "'{' expected" << endl;
+				exit(0);
+			}
+			key = "";
+			mode = 2;
+		}
+		else if(*i == "}" && mode != 0)
+		{
+			mode = 0;
+			key = "";
+		}
+		else if(*i == "=")
+		{
+			key = last;
+		}
+		else if(*i == "{" || *i == "}")
+		{
+			cerr << "Unexpected character '" << *i << "'" << endl;
+		}
+		else if(last == "=" || last == ",")
+		{
+			if(key == "")
+			{
+				cerr << "L-value expected before " << *i << endl;
+				exit(0);
+			}
+			value = *i;
+			if(mode == 0)
+			{
+				set(key, value);
+			}
+			else if(mode == 1)
+			{
+				setup->set(key, value);
+			}
+			else if(mode == 2)
+			{
+				rule->set(key, value);
+			}
+		}
+		if(*i == "{" || *i == "}")
+		{
+			last = "";
+		}
+		else
+		{
+			last = *i;
+		}
+	}
+
+	is.close();
 }
 
 void CorrParams::defaultSetup()
@@ -193,60 +461,6 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 	os.precision(p);
 
 	return os;
-}
-
-istream& operator >> (istream& is, CorrSetup& x)
-{
-	string s, key(""), value;
-
-	is >> x.setupName;
-
-	is >> s;
-	if(s != "{")
-	{
-		cerr << "reading SETUP " << x.setupName << ": '{' expected" << endl;
-		exit(0);
-	}
-
-	for(;;)
-	{
-		is >> s;
-		if(s == "}")
-		{
-			break;
-		}
-		if(is.eof())
-		{
-			cerr << "reading SETUP " << x.setupName << ": premature EOF" << endl;
-			exit(0);
-		}
-		if(s == "=")
-		{
-			if(key == "")
-			{
-				cerr << "reading SETUP " << x.setupName << ": '=' with no parameter name." << endl;
-				exit(0);
-			}
-			is >> value;
-			if(is.eof())
-			{
-				cerr << "reading SETUP " << x.setupName << ": premature EOF" << endl;
-				exit(0);
-			}
-			x.set(key, value);
-			key = "";
-		}
-		else if(s == "#")
-		{
-			// skip to next eol
-		}
-		else
-		{
-			is >> key;
-		}
-	}
-
-	return is;
 }
 
 ostream& operator << (ostream& os, const CorrRule& x)
@@ -361,7 +575,6 @@ ostream& operator << (ostream& os, const CorrParams& x)
 
 	return os;
 }
-
 
 bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C)
 {

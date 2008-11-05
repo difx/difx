@@ -91,7 +91,7 @@ public:
 class VexIF		// Antenna-specific baseband channel details
 {
 public:
-	VexIF() : phaseCal(0), recordChan(0), subbandId(-1) {}
+	VexIF() : recordChan(0), subbandId(-1), phaseCal(0) {}
 
 	int recordChan;		// channel number on recorded media
 	int subbandId;		// 0-based index
@@ -157,6 +157,7 @@ public:
 	void getClock(double mjd, double &offset, double &rate) const;
 
 	string name;
+	string nameInVex;	// Sometimes names get changed
 
 	double x, y, z;		// (m) antenna position
 	double dx, dy, dz;	// (m/?) antenna position	//FIXME
@@ -191,7 +192,7 @@ public:
 class VexJob
 {
 public:
-	VexJob() : mjdStart(0.0), mjdStop(1000000.0), jobSeries("Bogus"), jobId(-1) {}
+	VexJob() : jobSeries("Bogus"), jobId(-1), mjdStart(0.0), mjdStop(1000000.0) {}
 
 	void assignVSNs(const VexData& V);
 

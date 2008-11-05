@@ -75,6 +75,7 @@ class CorrRule
 public:
 	CorrRule(const string &name = "rule_default");
 
+	void set(const string &key, const string &value);
 	bool match(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 
 	string ruleName;
@@ -92,7 +93,11 @@ class CorrParams
 {
 public:
 	CorrParams();
+	CorrParams(const string& filename);
 
+	void set(const string &key, const string &value);
+	void load(const string& filename);
+	void defaults();
 	void defaultSetup();
 	void example();
 
@@ -104,7 +109,7 @@ public:
 	/* global parameters */
 	double mjdStart;
 	double mjdStop;
-	int minSubarraySize;
+	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;
 	bool singleSetup;
@@ -127,8 +132,6 @@ public:
 ostream& operator << (ostream& os, const CorrSetup& x);
 ostream& operator << (ostream& os, const CorrRule& x);
 ostream& operator << (ostream& os, const CorrParams& x);
-
-istream& operator >> (istream& is, CorrSetup& x);
 
 bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C);
 

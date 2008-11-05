@@ -3,6 +3,10 @@
 #include "../vex/vex.h"
 #include "../vex/vex_parse.h"
 #include <cstring>
+#include <cctype>
+
+// To capitalize a string
+#define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
 
 extern "C" {
 int fvex_double(char **field, char **units, double *d);
@@ -93,12 +97,16 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
-		if(!params.useAntenna(stn))
-		{
-			continue;
-		}
 		A = V->newAntenna();
 		A->name = stn;
+		A->nameInVex = stn;
+		Upper(A->name);
+		if(!params.useAntenna(A->name))
+		{
+			delete A;
+
+			continue;
+		}
 
 		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
 		fvex_double(&(p->x->value), &(p->x->units), &A->x);
@@ -123,10 +131,6 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 			{
 				mjd = 0.0;
 			}
-//			if(!A->clocks.empty()) // Move this
-//			{
-//				V->addEvent(mjd, VexEvent::CLOCK_BREAK, A->name);
-//			}
 			A->clocks.push_back(VexClock());
 			VexClock &clock = A->clocks.back();
 			clock.mjdStart = mjd;
@@ -179,6 +183,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	void *p;
 	int link, name;
 	char *stn;
+	string stationName;
 	char *value, *units;
 	double mjd;
 	double startScan, stopScan;
@@ -204,7 +209,9 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		    p = get_station_scan_next())
 		{
 			vex_field(T_STATION, p, 1, &link, &name, &stn, &units);
-			if(!params.useAntenna(stn))
+			stationName = string(stn);
+			Upper(stationName);
+			if(!params.useAntenna(stationName))
 			{
 				continue;
 			}
@@ -225,10 +232,10 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 				stopScan = stopAnt;
 			}
 
-			stations[stn] = VexInterval(startAnt, stopAnt);
+			stations[stationName] = VexInterval(startAnt, stopAnt);
 
-			antStart[stn] = startAnt;
-			antStop[stn] = stopAnt;
+			antStart[stationName] = startAnt;
+			antStop[stationName] = stopAnt;
 		}
 
 		if(stations.size() < params.minSubarraySize)
@@ -287,7 +294,6 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 int getModes(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexMode *M;
-	Llist *L;
 	void *p;
 	char *modeId;
 	int link, name;
@@ -321,13 +327,13 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 		// get FREQ info
 		for(int a = 0; a < V->nAntenna(); a++)
 		{
-			const string antName(V->getAntenna(a)->name);
+			const string& antName = V->getAntenna(a)->nameInVex;
 			if2pol.clear();
 			bbc2pol.clear();
 			ch2tracks.clear();
 			nTrack = 0;
 			nBit = 1;
-			VexFormat& F = M->formats[antName] = VexFormat();
+			VexFormat& F = M->formats[V->getAntenna(a)->name] = VexFormat();
 
 			// Get sample rate
 			p = get_all_lowl(antName.c_str(), modeId, T_SAMPLE_RATE, B_FREQ, v);
@@ -455,7 +461,6 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
-	char *x;
 	int statement;
 	double start, stop;
 
@@ -481,8 +486,10 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 			break;
 		}
 
-		const string antName(((Def *)((Lowl *)defs->ptr)->item)->name);
-		
+		string antName(((Def *)((Lowl *)defs->ptr)->item)->name);
+
+		Upper(antName);
+
 		for(lowls = ((Def *)((Lowl *)defs->ptr)->item)->refs;
 		    lowls; 
 		    lowls=lowls->next)
@@ -588,8 +595,6 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 	Llist *defs;
 	Llist *lowls, *refs;
 	int statement;
-	char *value, *units;
-	dvalue *r;
 	void *p;
 	double start=0.0, stop=0.0;
 	string name;
@@ -636,6 +641,8 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 			stop = vexDate((char *)p);
 		}
 	}
+
+	Upper(name);
 
 	V->setExper(name, start, stop);
 

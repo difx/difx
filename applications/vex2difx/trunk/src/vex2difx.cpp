@@ -4,6 +4,7 @@
 #include <difxio/difx_input.h>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -114,7 +115,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	list<double> breaks;
 	double mjdLast = -1.0;
 	int score, scoreBest;
-	double mjdBest;
+	double mjdBest = 0.0;
 	int nAnt;
 
 	// first initialize recordStop and usage
@@ -223,7 +224,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P)
 
 	// Do splitting of jobs
 	genJobGroups(JG, V, P);
-	for(int i = 0; i < JG.size(); i++)
+	for(unsigned int i = 0; i < JG.size(); i++)
 	{
 		genJobs(J, JG[i], V, P);
 	}
@@ -359,7 +360,7 @@ public:
 
 int getFreqId(vector<freq>& freqs, double fq, double bw, char sb)
 {
-	for(int i = 0; i < freqs.size(); i++)
+	for(unsigned int i = 0; i < freqs.size(); i++)
 	{
 		if(fq == freqs[i].fq &&
 		   bw == freqs[i].bw &&
@@ -466,10 +467,10 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 		D->datastream[dsId].RCpolName[r] = subband.pol;
 	}
 	DifxDatastreamAllocFreqs(D->datastream + dsId, bandMap.size());
-	for(int i = 0; i < bandMap.size(); i++)
+	for(unsigned int j = 0; j < bandMap.size(); j++)
 	{
-		D->datastream[dsId].freqId[i] = bandMap[i].first;
-		D->datastream[dsId].nPol[i] = bandMap[i].second;
+		D->datastream[dsId].freqId[j] = bandMap[j].first;
+		D->datastream[dsId].nPol[j] = bandMap[j].second;
 	}
 
 	return n2;
@@ -479,7 +480,7 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 {
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
-	for(int f = 0; f < freqs.size(); f++)
+	for(unsigned int f = 0; f < freqs.size(); f++)
 	{
 		D->freq[f].freq = freqs[f].fq/1.0e6;
 		D->freq[f].bw   = freqs[f].bw/1.0e6;
@@ -582,7 +583,6 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 {
 	int c;
 	DifxConfig *config;
-	int i;
 	const CorrSetup *setup;
 	const VexMode *mode;
 	string configName;
@@ -601,7 +601,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 		exit(0);
 	}
 
-	for(i = 0; i < configs.size(); i++)
+	for(unsigned int i = 0; i < configs.size(); i++)
 	{
 		if(configs[i].first  == S->modeName &&
 		   configs[i].second == S->setupName)
@@ -630,6 +630,13 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
 	config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
 	config->decimation = 1;
+	if(config->overSamp <= 0)
+	{
+		cerr << "Error! configName=" << configName << " overSamp=" << config->overSamp << endl;
+		cerr << "samprate=" << mode->sampRate << " bw=" << 
+			mode->subbands[0].bandwidth << endl;
+		exit(0);
+	}
 	// try to get a good balance of oversampling and decim
 	while(config->overSamp % 4 == 0)
 	{
@@ -775,39 +782,27 @@ int main(int argc, char **argv)
 	VexData *V;
 	CorrParams *P;
 	vector<VexJob> J;
-
-	P = new CorrParams();
-
-//	P->antennaList.push_back("Ar");
-//	P->antennaList.push_back("Gb");
-//	P->antennaList.push_back("Br");
-//	P->antennaList.push_back("Fd");
-//	P->antennaList.push_back("Mk");
-//	P->antennaList.push_back("Sc");
-
-	P->example();
+	ifstream is;
 	 
-	if(argc < 2)
+	if(argc < 3)
 	{
-		cerr << "need filename" << endl;
+		cerr << "need vex filename and config filename" << endl;
 		return 0;
 	}
+
+
+	P = new CorrParams(argv[2]);
 
 	V = loadVexFile(argv[1], *P);
 
 	makeJobs(J, V, P);
 
-	cout << *V << endl;
-	cout << *P << endl;
+	//cout << *V << endl;
+	//cout << *P << endl;
 
-	vector<VexJob>::iterator j;
-	for(j = J.begin(); j != J.end(); j++)
+	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
 	{
 		cout << *j;
-	}
-
-	for(j = J.begin(); j != J.end(); j++)
-	{
 		writeJob(*j, V, P);
 	}
 

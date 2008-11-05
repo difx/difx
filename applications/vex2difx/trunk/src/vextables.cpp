@@ -672,7 +672,7 @@ ostream& operator << (ostream& os, const VexScan& x)
 
 ostream& operator << (ostream& os, const VexClock& x)
 {
-	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")" << endl;
+	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")";
 
 	return os;
 }
@@ -716,7 +716,7 @@ ostream& operator << (ostream& os, const VexIF& x)
 ostream& operator << (ostream& os, const VexFormat& x)
 {
 	os << "(format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
-	for(int i = 0; i < x.ifs.size(); i++)
+	for(unsigned int i = 0; i < x.ifs.size(); i++)
 	{
 		os << ", " << x.ifs[i];
 	}
@@ -730,7 +730,7 @@ ostream& operator << (ostream& os, const VexMode& x)
 	map<string,VexFormat>::const_iterator it;
 
 	os << "Mode " << x.name << endl;
-	for(int i = 0; i < x.subbands.size(); i++)
+	for(unsigned int i = 0; i < x.subbands.size(); i++)
 	{
 		os << "  subband=" << x.subbands[i] << endl;
 	}
@@ -832,7 +832,6 @@ ostream& operator << (ostream& os, const VexData& x)
 		os << "   " << *x.getEOP(i) << endl;
 	}
 
-#if 0
 	const list<VexEvent> *events = x.getEvents();
 	list<VexEvent>::const_iterator iter;
 	os << " Events:" << endl;
@@ -840,7 +839,6 @@ ostream& operator << (ostream& os, const VexData& x)
 	{
 		os << "   " << *iter << endl;
 	}
-#endif
 
 	return os;
 }
