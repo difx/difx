@@ -16,7 +16,8 @@ def auto_compile(dolibtoolize, doautoheader, prefix):
     if dolibtoolize:
         os.system("libtoolize --copy --force")
     os.system("autoconf")
-    os.system("autoheader")
+    if doautoheader:
+    	os.system("autoheader")
     os.system("automake -a")
     os.system("./configure --prefix=" + difxroot)
     os.system("make")
@@ -107,6 +108,8 @@ os.chdir("../")
 print "Making mpifxcorr"
 os.chdir("mpifxcorr/" + cortarget)
 os.system("aclocal")
+os.system("autoconf")
+os.system("autoheader")
 os.system("automake")
 os.system("./configure CXX=" + mpicxx + " --prefix=" + difxroot)
 os.system("make")
