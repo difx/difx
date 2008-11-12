@@ -63,7 +63,6 @@ def printuvflag(antenna_list, antenna, start, end, startday, flag, flagfile):
     reason = "REASON='" + flag + "'"
     print >> flagfile, antenna, timerange, reason, '/'
 
-
 def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
     if shrink == None:
         shrink = observation.flag_shrink
@@ -94,19 +93,40 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
             print "Error in scan time " + str(times[-1].isoformat())
             raise
 
+    n = len(durations)
+    print "n = ", str(n)
     for telid in ids:
         if not printuv:
             print >> flagfile, "# Ant D.O.Y.start D.O.Y.end RecChan reason"
-        for i in range(len(durations) - 1):
-            if telid in durations[i].keys() and telid in durations[i + 1].keys():
+        i = 0
+        j = 1
+        print telid + ":"
+        while i < (n - 2):
+            if i == 0 and not telid in durations[i].keys():
+                startflag = sched.start()
+
+            else:
+                while i < (n - 2) and not telid in durations[i].keys():
+                    i += 1
                 startflag = times[i] + timedelta(0, durations[i][telid][1], 0) + shrink
-                endflag = times[i + 1] + timedelta(0, durations[i + 1][telid][0], 0) + shrink
-                if printuv:
-                    printuvflag(antennas, iddict[telid], startflag, endflag, starttime,
-                                "source change in progress", flagfile)
-                else:
-                    printdifxflag(iddict[telid], startflag, endflag,
-                                  " -1 'source change in progress'", flagfile)
+            j = i + 1
+
+            while j < (n - 1) and not telid in durations[j].keys():
+                j += 1
+            print "flagging between scan", str(i + 1), "and", str(j + 1)
+
+            if j == (n - 1):
+                endflag = sched.end()
+            else:
+                endflag = times[j] + timedelta(0, durations[j][telid][0], 0) + shrink
+
+            if printuv:
+                printuvflag(antennas, iddict[telid], startflag, endflag, starttime,
+                            "source change in progress", flagfile)
+            else:
+                printdifxflag(iddict[telid], startflag, endflag,
+                              " -1 'source change in progress'", flagfile)
+            i = j
 
 def main():
     """

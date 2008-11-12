@@ -13,6 +13,7 @@ TODO Work out how to support links in vexfiles
 from odict import Odict, VexDict
 from vexvalue import reblock, recomment, classify
 from astro import datetime2mjd
+from datetime import timedelta
 
 class VexBlock(VexDict):
     """
@@ -173,7 +174,7 @@ class VexSched(VexBlock):
 
     def start(self):
         """
-    Return integer mjd nearest to start time of first scan in vex file
+    Return start time of first scan in vex file
         """
         return self.__getitem__(self.keys()[0])['start'][0]
 
@@ -185,14 +186,19 @@ class VexSched(VexBlock):
 
     def end(self):
         """
-    Unimplemented
-    Return integer mjd nearest to end time of last scan in vex file
+    Return end time of last scan in vex file
         """
-        pass
+        lstart = self.__getitem__(self.keys()[-1])['start'][0]
+        duration = 0
+        durations = self.__getitem__(self.keys()[-1])['station']
+        for i in range(len(durations)):
+            if duration < durations[i][2]:
+                duration = durations[i][2]
+        return lstart + timedelta(0, duration, 0)
 
     def endmjd(self):
         """
     Unimplemented
     Return integer mjd nearest to start time of last scan in vex file
         """
-        pass
+        return datetime2mjd(self.end())
