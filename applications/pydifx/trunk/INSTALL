@@ -14,13 +14,14 @@ http://www.noah.org/wiki/Pexpect
 
 Available as python-pexpect on some debian-based systems. 
 
-Or download and install:
+Download and install:
 wget http://pexpect.sourceforge.net/pexpect-2.3.tar.gz
 tar -xvvzf pexpect-2.3.tar.gz
 cd pexpect-2.3
 
 # as root
 python ./setup.py install
+
 
 numpy
 =====

@@ -8,10 +8,10 @@ import re
 import sys
 import os.path
 import getopt
-from datetime import datetime
+from time import time
 from shutil import rmtree
 import difxlog as log
-from astro import df2hms
+
 
 import observation
 
@@ -19,8 +19,7 @@ from spawn import spawn, EOF
 from pfile import get_parameter
 
 defreg = ["\r\n", EOF]
-retimestep = re.compile(r"""FXMANAGER telling visbuffer\[(\d+)\] to write out - this refers to time (\d+(?:\.\d+)?) - the previous buffer has time (\d+(?:\.\d+)?), and the next one has (\d+(?:\.\d+)?)""")
-
+retimestep = re.compile("""FXMANAGER telling visbuffer\[(\d+)\] to write out - this refers to time (\d+) - the previous buffer has time (\d+), and the next one has (\d+)""")
 
 def check_threads(machine_file, input_file):
     # for our datastream there is simply one process per line in the machine file
@@ -76,41 +75,22 @@ def check_outfile(input_file):
         log.error('Output file ' + output_file + ' exists.')
         raise RuntimeError, "Output file exists."
 
-def delta2secs(delta):
-    return (delta.days * 86400.) + delta.seconds + (delta.microseconds / 1000000.)
-
-class spawn_class:
-    def __init__(self, obj):
-        import difxlog as log
-        self.log = log
-        self.start_time, self.exec_time = obj
-        self.last_time = self.start_time
-        self.last_step = 0.
-
-    def next(self, i, child):
-        if i == 0:
-            self.log.debug(child.before)
-            a = retimestep.match(child.before)
-            if a:
-                timestep = float(a.group(2))
-                duration = timestep - self.last_step
-                realtime = int(100. * duration / delta2secs(datetime.now() - self.last_time))
-                if realtime == 0:
-                    realtime = 1
-                complete = int(100. * timestep / float(self.exec_time))
-                remaining = (float(self.exec_time) - timestep) / (realtime * 864.) # time left in days 
-                hms_remaining = "%02d:%02d:%02d" % df2hms(remaining)
-                self.log.info(''.join((a.group(2), '/', self.exec_time, ' = ',
-                                      str(complete), '%. ',
-                                      str(realtime), '% realtime. ',
-                                      hms_remaining, ' remaining.')))
-                self.last_time = datetime.now()
-                self.last_step = timestep
-            return 0
-        # Could add some other regexps for detecting errors etc.
-        # returning 2 or something like that
-        if i == 1:
-            return 1
+def spawn_func(i, child, funcobj):
+    if i == 0:
+        start_time, exec_time = funcobj
+        log.debug(child.before)
+        a = retimestep.match(child.before)
+        if a:
+            timestep = int(a.group(2))
+            realtime = int(100. * timestep / (time() - start_time))
+            log.info(''.join(('Timestep ',  a.group(2), ' / ', exec_time, '.  ',
+                             str(timestep * 100 / int(exec_time)), '% completed in ',
+                             str(realtime), '% realtime.')))
+        return 0
+    # Could add some other regexps for detecting errors etc.
+    # returning 2 or something like that
+    if i == 1:
+        return 1
 
 def run_mpifxcorr(rootname, np, mpi = None,  machine_file = None, mpifxcorr = None, input_file = None, timeout = None):
 
@@ -130,7 +110,7 @@ def run_mpifxcorr(rootname, np, mpi = None,  machine_file = None, mpifxcorr = No
     command = mpi + ' -nolocal -np ' + str(np) + ' -machinefile ' +\
               machine_file + ' ' + mpifxcorr + ' ' + input_file
     exec_time = get_parameter('EXECUTE TIME (SEC)', input_file)
-    spawn(command, defreg, spawn_class, (datetime.now(), exec_time), timeout = 120)
+    spawn(command, defreg, spawn_func, (time(), exec_time), timeout = 120)
     log.info('Correlator Finished')
 
 def main():

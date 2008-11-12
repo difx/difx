@@ -11,17 +11,13 @@ from spawn import spawn, EOF
 
 defreg = ["\r\n", EOF]
 
-class spawnclass:
-    def __init__(self, obj):
-        import difxlog as log
-        self.log = log
-
-    def next(self, i, child):
-        if i == 0:
-            self.log.debug(child.before)
-            return 0
-        if i == 1:
-            return 1
+def spawnfunc(i, child, funcobj):
+    import difxlog as log
+    if i == 0:
+        log.debug(child.before)
+        return 0
+    if i == 1:
+        return 1
 
 def run_difx2fits(basefilename, fitsfilename, options = None, delete = None):
     if options == None:
@@ -29,7 +25,7 @@ def run_difx2fits(basefilename, fitsfilename, options = None, delete = None):
     if delete == None:
         delete = observation.difx2fits_delete
 
-    spawn(' '.join(('difx2fits', options , basefilename, fitsfilename)), reg = defreg, reclass = spawnclass)
+    spawn(' '.join(('difx2fits', options , basefilename, fitsfilename)), defreg, spawnfunc)
     
     if delete:
         rmtree(basefilename + '.difx')

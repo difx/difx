@@ -7,18 +7,17 @@ http://www.aoc.nrao.edu/~wbrisken/NRAO-DiFX-1.0/
 All of the executable scripts have parameters that can be set in 3 
 different ways:
 
-1 - In the file correlator_default.py
+1 - in the file correlator_default.py
     Parameters which are the same for all jobs should be placed here.
 
-2 - In the file observation.py (see "Some notes on observation.py" below.)
-    observation.py contains observation-specific parameters. It can also 
-    overwrite any parameter in the correlator_defaults file. The first line
-    of the script should always be:
+2 - in the file observation.py
+    observation.py contains observation-specific parameters. It can also overwrite any parameter
+    in the correlator_defaults file. The first line of the script should be
     from correlator_default import *
 
     It is usually placed in the working directory.
 
-    otherwise simply put a script with that name in this directory.
+    other-wise simply put a script with that name in this directory.
 
 3 - as arguments on the command line.
 
@@ -73,28 +72,3 @@ vex2flag.py
 ========
 Generate a flag file for the times each antenna is not observing.
 (mpifxcorr sometimes generate small amounts of spurious data between the scans)
-
-
-Some notes on observation.py
-============================
-
-For any import python should look first in the local directory, then in 
-PYTHONPATH. However python will look first in the directory of the script that
-is doing the import. The present working directory is still checked, however,
-so if you delete (or rename) the observation.py (and observation.pyc!) in the 
-main directory, the local copy will be used instead.
-
-So basically you have 2 possibilities:
-
-1: Decide that there's nothing you want to change from observation to 
-observation, and just keep observation.py in the main directory
-
-2: Decide that you want to have a local observation.py for each experiment and
-always have one in the local directory.
-
-If you find youself swapping between the two, make sure you delete the
-observation.pyc in the main directory, or python will behave as if
-observation.py was still there.
-
-I hope this is clear, I know it's a bit awkward, but I find it useful, and if 
-it gets too confusing you can always stick with option 1.

@@ -1,6 +1,8 @@
 #!/usr/bin/python
 """
 Script to parse log file, extracting all comments.
+
+TODO: make it possible to insert exclamation marks to make antab comments
 """
 #need to set this up such that graph can be made non-interactively
 
@@ -8,6 +10,8 @@ import sys
 import re
 from datetime import datetime, timedelta
 from time import strptime, strftime
+
+import difxlog as log
 
 ##############################################################################
 searchstring = [';"', ':"']
@@ -22,7 +26,7 @@ def get_comments(logfile):
     #first find out how the file is structured
 
     logfile.seek(0)
-    print 'relevant lines from ' + sys.argv[1]
+    log.debug('relevant lines from ' + sys.argv[1])
     for line in logfile:
         for s in searchstring:
             if s in line:
@@ -37,8 +41,7 @@ def get_comments(logfile):
 
 def print_comments(times, comments):
     for i in range(len(times)):
-        print "!",
-        print strftime("%j %H:%M:%S", times[i].utctimetuple()).zfill(12) + ' ',
+        print times[i].isoformat(),
         print ' ',
         print comments[i]
 

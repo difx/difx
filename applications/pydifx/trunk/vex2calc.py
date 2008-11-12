@@ -5,7 +5,7 @@ Creates a full calc file.
 Ties together vex2calcheader, vex2calcantenna, vex2sched and eop to create
 a full calc file
 
-It is very unefficient in that it reads the vex file multiple times
+It is very efficiently in that it reads the vex file multiple times
 This may be a problem with very large vex files.
 
 TODO add option to use input2calc.py?

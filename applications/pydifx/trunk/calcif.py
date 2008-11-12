@@ -21,25 +21,22 @@ from spawn import spawn, EOF
 checkreg = "CALCServer is running normally."
 defreg = ["\r\n", EOF]
 
-class checkcalcclass:
+def checkcalcfunc(i, child, funcobj):
     """
     Wait for last line of checkCalcserver
     """
-    def __init__(self, obj):
-        pass
-    def next(self, i, child):
-        if i == 0:
-            if child.before == checkreg:
-                return True
-            return 0
-        if i == 1:
-            return -1
+    if i == 0:
+        if child.before == checkreg:
+            return True
+        return 0
+    if i == 1:
+        return -1
 
 def start_calc():
     """
     Run startCalcserver and check it's running
     """
-    return spawn(observation.startCalc, defreg, checkcalcclass)
+    return spawn(observation.startCalc, defreg, checkcalcfunc)
 
 def kill_calc():
     """

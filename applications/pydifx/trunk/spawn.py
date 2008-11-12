@@ -2,7 +2,7 @@
 """
 Opens process and parses any error code. Records all output.
 
-TODO - properly document in this doc string
+TODO make deffunc stateful - maybe it could be a class?
 """
 import sys
 
@@ -14,9 +14,9 @@ import observation
 #match 1 line
 
 defreg = ["\r\n", EOF]
-defobj = None
+funcobj = None
 
-class defclass:
+def deffunc(i, child, funcobj):
     """
     Default function
 
@@ -24,19 +24,14 @@ class defclass:
 
     must 0 unless terminating 
     """
-    def __init__(self, obj):
-        import difxlog as log
-        self.log = log
-        self.obj = obj
+    import difxlog as log
+    if i == 0:
+        log.debug(child.before)
+        return 0
+    if i == 1:
+        return 1
 
-    def next(self, i, child):
-        if i == 0:
-            self.log.debug(child.before)
-            return 0
-        if i == 1:
-            return 1
-
-def spawn(command, reg = defreg, reclass = defclass, obj = defobj, timeout = None):
+def spawn(command, reg = defreg, refunc = deffunc, funcobj = funcobj, timeout = None):
     """
     command is the command to spawn
     reg is the regexp or list of regexp to pass to pexpect
@@ -50,11 +45,10 @@ def spawn(command, reg = defreg, reclass = defclass, obj = defobj, timeout = Non
         timeout = observation.spawn_timeout
     log.info('spawning ' + command)
     child = pspawn(command)
-    log.debug('spawn output:')
-    cl = reclass(obj)
+    log.debug(command + ' output:')
     while 1:
         i = child.expect(reg, timeout)
-        a = cl.next(i, child)
+        a = refunc(i, child, funcobj)
         if not a == 0:
             break
     return a

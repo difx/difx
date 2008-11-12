@@ -22,8 +22,6 @@ def add_clock(logs, input_file, starttime = None):
         mjd = int(mjd)
         mjd += float(startsecs) / 86400.
         starttime = mjd2datetime(mjd)
-    print "Start time: " + starttime.isoformat()
-
     l = []
     for i in range(len(logs)):
         intercept, rate = log2delay(logs[i], starttime)

@@ -79,46 +79,50 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
     starttime = sched.values()[0]['start'][0]
     ids = [namedict[i] for i in antennas]
 
-    s, us = divmod(shrink * 1000000., 1000000.)
-    shrink = timedelta(0, s, us)
+    shrink = timedelta(0, shrink, 0)
 
     durations = []
     times = []
+    #first copy all times into a single array
     for s in sched.values():
         times.append(s['start'][0])
-        try:
-            durations.append(dict(zip([s['station'][i][0] for i in range(len(s['station']))],
-                                      [s['station'][i][1:3] for i in range(len(s['station']))])))
-        except:
-            print "Error in scan time " + str(times[-1].isoformat())
-            raise
+        durations.append(dict(zip([s['station'][i][0] for i in range(len(s['station']))],
+                             [s['station'][i][1:3] for i in range(len(s['station']))])))
+    # so now we have all the start times in times and all the durations for all
+    # the telescopes in durations as a list of dictionaries
 
     n = len(durations)
-    print "n = ", str(n)
     for telid in ids:
         if not printuv:
             print >> flagfile, "# Ant D.O.Y.start D.O.Y.end RecChan reason"
+        # we flag the gap between scan[i] and scan[j]
         i = 0
         j = 1
-        print telid + ":"
-        while i < (n - 2):
+        
+        #keep going until i reaches the penultimate scan
+        while i < (n - 1):
             if i == 0 and not telid in durations[i].keys():
+                # if the telescope's not in the first scan start flagging from
+                # the start of the observation.  Correlator starts here so
+                # shouldn't be any need to flag before this point.
                 startflag = sched.start()
-
             else:
                 while i < (n - 2) and not telid in durations[i].keys():
+                    # find a scan which has the relevant telescope in
                     i += 1
+                #start flagging from the end of this scan
                 startflag = times[i] + timedelta(0, durations[i][telid][1], 0) + shrink
+            #start searching for an end point from the next scan onwards
             j = i + 1
 
-            while j < (n - 1) and not telid in durations[j].keys():
+            while not telid in durations[j].keys():
                 j += 1
-            print "flagging between scan", str(i + 1), "and", str(j + 1)
-
-            if j == (n - 1):
-                endflag = sched.end()
+                if j == (n - 1):
+                    #Antenna not in the last scan. End here.
+                    endflag = sched.end()
+                    break
             else:
-                endflag = times[j] + timedelta(0, durations[j][telid][0], 0) + shrink
+                endflag = times[j] + timedelta(0, durations[j][telid][0], 0) - shrink
 
             if printuv:
                 printuvflag(antennas, iddict[telid], startflag, endflag, starttime,
@@ -126,7 +130,7 @@ def write_flag(vex_path, flagfile = None, shrink = None, printuv = None):
             else:
                 printdifxflag(iddict[telid], startflag, endflag,
                               " -1 'source change in progress'", flagfile)
-            i = j
+            i = j #start from last end
 
 def main():
     """

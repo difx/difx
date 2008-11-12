@@ -2,7 +2,9 @@
 """
 Script to parse log file, extracting all gps times.
 
+TODO check for gps-fmout or fmout-gps
 TODO get graph functions working with a choice between interactive or not
+TODO verify results against graphs
 TODO add function to check against internet for EVN stations
 """
 
@@ -107,6 +109,7 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
             if l:
 
                 g = l.groups()
+                print g
                 time = datetime(*strptime(' '.join(g[0:5]), "%Y %j %H %M %S")[0:6])
                 if g[5]:
                     time += timedelta(0, float(g[5]), 0)
@@ -140,7 +143,7 @@ def log2delay(logfilename, starttime = None, index = 0, graph = False):
     print "Intercept : " + str(intercept).rjust(19)    + ' us'
     print "Rate      : " + str(rate).rjust(19)    + ' us/s'
     print "Rate      : " + str(rate * 3600).rjust(19)    + ' us/hr'
-    print "Standard deviation of gps offsets from model"
+    print "Standard deviation of points from line"
     print "          :" + str(sqrt(sum((offsets - fity) ** 2)/len(fity))) + ' us'
     print
 
