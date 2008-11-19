@@ -241,7 +241,7 @@ OVERSAMPLE FACTOR:  1
 EOF
 }
 if ($perth) {
-  print INPUT "DECIMATION FACTOR:  1";
+  print INPUT "DECIMATION FACTOR:  1\n";
 }
 
 print INPUT<<EOF;
