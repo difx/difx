@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 				}
 				pthread_mutex_unlock(&D->processLock);
 			}
-#ifdef STREAMSTOR_NOT_BROKEN
+//#ifdef STREAMSTOR_NOT_BROKEN
 			if(lastTime % D->loadMonInterval == halfInterval)
 			{
 				v = procGetStreamstor(&busy);
@@ -284,18 +284,14 @@ int main(int argc, char **argv)
 					Mk5Daemon_getModules(D);
 					D->process = PROCESS_NONE;
 				}
-				/* FIXME -- cannot do this since streamstor
-				 * dies after 300 times here! 
-				 * Ticket #639-6459049 
-				 */
 				if((D->idleCount > 2 || 
 				    D->process == PROCESS_MARK5A) &&
-				   D->isMk5)
+				    D->isMk5)
 				{
 					Mk5Daemon_getModules(D);
 				}
 			}
-#endif
+//#endif
 		}
 
 		if(t != 0 && t - D->lastMpifxcorrUpdate > 20 &&
@@ -324,6 +320,7 @@ int main(int argc, char **argv)
 			{
 				Mk5Daemon_startMark5A(D);
 				startmk5a = 0;
+				justStarted = 0;
 			}
 			else if(justStarted)
 			{

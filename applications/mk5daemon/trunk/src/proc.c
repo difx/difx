@@ -112,7 +112,7 @@ int procGetStreamstor(int *busy)
 
 	*busy = 0;
 
-	in = fopen("/proc/loadavg", "r");
+	in = fopen("/proc/modules", "r");
 	if(!in)
 	{
 		return -1;
@@ -127,7 +127,8 @@ int procGetStreamstor(int *busy)
 		}
 		if(strncmp(line, "windrvr6 ", 9) == 0)
 		{
-			sscanf(line+9, "%*d %d", &busy);
+			sscanf(line+9, "%*d %d", busy);
+
 			break;
 		}
 	}

@@ -10,7 +10,9 @@
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
-int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
+#define MARK5A_PORT     2620
+
+static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 {
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
@@ -39,12 +41,23 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: XLR_get_modules: "
-			"Cannot set SkipCheckDir.  N=%d "
-			"Error=%u (%s)\n",
-			xlrError,
-			xlrErrorStr);
+		if(xlrError == 148) /* XLR_ERR_DRIVEMODULE_NOTREADY */
+		{
+			/* this means no modules loaded */
+			vsna[0] = vsnb[0] = 0;
+			sprintf(message, "XLR VSNs: <%s> <%s> N=%d\n",
+				vsna, vsnb, D->nXLROpen);
+		}
+		else
+		{
+			XLRGetErrorMessage(xlrErrorStr, xlrError);
+			sprintf(message, "ERROR: XLR_get_modules: "
+				"Cannot set SkipCheckDir.  N=%d "
+				"Error=%u (%s)\n",
+				D->nXLROpen,
+				xlrError,
+				xlrErrorStr);
+		}
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
 		return 0;
@@ -110,45 +123,98 @@ int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	return 0;
 }
 
-int Mark5A_get_modules(char *vsna, char *vsnb)
+static int Mark5A_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 {
-	char cmd[] = "echo \"bank_set?\" | tstMark5A";
+	struct sockaddr_in addr;
+	int sock;
+	struct timeval tv;
+	int status;
 	char line[512];
-	FILE *in;
-	int n;
+	int i, n;
+	char *ptr[8];
+	int nptr = 0;
 
 	vsna[0] = vsnb[0] = 0;
 
-	in = popen(cmd, "r");
-	if(!in)
+
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if(sock < 0)
 	{
-		printf("ERROR Cannot run tstMark5A\n");
+		Logger_logData(D->log, "cannot make socket");	
 		return 1;
 	}
 
-	n = fread(line, 1, 512, in);
-	line[511] = 0;
-	fclose(in);
+	tv.tv_sec = 9;	
+	tv.tv_usec = 0;
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
 
-	if(line[48] == 'A' && line[52] != '-')
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(MARK5A_PORT);
+	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	status = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+	if(status != 0)
 	{
-		strncpy(vsna, line+52, 8);
+		Logger_logData(D->log, "cannot connect to Mark5A");	
+		close(sock);
+		return 1;
+	}
+
+	sprintf(line, "bank_set?\n");
+	n = strlen(line);
+
+	if(send(sock, line, n, 0) < 1)
+	{
+		Logger_logData(D->log, "error sending bank_set? to Mark5A");
+		close(sock);
+		return 1;
+	}
+
+	n = recv(sock, line, 511, 0);
+	if(n < 1)
+	{
+		Logger_logData(D->log, "error recving from Mark5A");
+		close(sock);
+		return 1;
+	}
+	line[n] = 0;
+
+	close(sock);
+
+	for(i = 0; line[i] && nptr < 8; i++)
+	{
+		if(line[i] == ':')
+		{
+			ptr[nptr] = line+i+2;
+			line[i] = 0;
+			nptr++;
+		}
+	}
+	for(i = nptr; i < 8; i++)
+	{
+		ptr[i] = line;
+	}
+
+	if(ptr[0][0] == 'A' && ptr[1][0] != '-')
+	{
+		strncpy(vsna, ptr[1], 8);
 		vsna[8] = 0;
 	}
-	if(line[48] == 'B' && line[52] != '-')
+	if(ptr[0][0] == 'B' && ptr[1][0] != '-')
 	{
-		strncpy(vsnb, line+52, 8);
+		strncpy(vsnb, ptr[1], 8);
 		vsnb[8] = 0;
 	}
 
-	if(line[73] == 'A' && line[77] != '-')
+	if(ptr[2][0] == 'A' && ptr[3][0] != '-')
 	{
-		strncpy(vsna, line+77, 8);
+		strncpy(vsna, ptr[3], 8);
 		vsna[8] = 0;
 	}
-	if(line[73] == 'B' && line[77] != '-')
+	if(ptr[2][0] == 'B' && ptr[3][0] != '-')
 	{
-		strncpy(vsnb, line+77, 8);
+		strncpy(vsnb, ptr[3], 8);
 		vsnb[8] = 0;
 	}
 
@@ -182,7 +248,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		break;
 	case PROCESS_MARK5A:
-		n = Mark5A_get_modules(vsnA, vsnB);
+		n = Mark5A_get_modules(vsnA, vsnB, D);
 		if(n == 0)
 		{
 			dm.state = MARK5_STATE_BUSY;
