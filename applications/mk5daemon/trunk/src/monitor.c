@@ -177,10 +177,55 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_stopMk5Dir(D);
 		}
 	}
+	else if(strcasecmp(cmd, "discon") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOn(D, "AB");
+		}
+	}
+	else if(strcasecmp(cmd, "disconA") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOn(D, "A");
+		}
+	}
+	else if(strcasecmp(cmd, "disconB") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOn(D, "B");
+		}
+	}
+	else if(strcasecmp(cmd, "discoff") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOff(D, "AB");
+		}
+	}
+	else if(strcasecmp(cmd, "discoffA") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOff(D, "A");
+		}
+	}
+	else if(strcasecmp(cmd, "discoffB") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_diskOff(D, "B");
+		}
+	}
 	else if(strncasecmp(cmd, "copy ", 5) == 0)
 	{
 		/* protect against malicious use */
-		if(D->isMk5 && !strstr(cmd, ";"))
+		if(D->isMk5 && !strstr(cmd, ";") 
+		            && !strstr(cmd, "|") 
+		            && !strstr(cmd, ">") 
+		            && !strstr(cmd, "<") )
 		{
 			Mk5Daemon_startMk5Copy(D, cmd+5);
 		}

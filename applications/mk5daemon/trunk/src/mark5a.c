@@ -4,6 +4,10 @@
 #include <string.h>
 #include <time.h>
 #include <xlrapi.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include "mk5daemon.h"
 
 static void *mark5Arun(void *ptr)
@@ -152,3 +156,55 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	D->dieNow = 1;
 	system(command);
 }
+
+int mark5command(const char *outstr, char *instr, int maxlen)
+{
+	struct sockaddr_in addr;
+	int sock;
+	struct timeval tv;
+	int status;
+	int n;
+
+	sock = socket(AF_INET, SOCK_STREAM, 0);
+	{
+		return -1;
+	}
+	
+
+	tv.tv_sec = 9;	
+	tv.tv_usec = 0;
+	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+	setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(MARK5A_PORT);
+	addr.sin_addr.s_addr = inet_addr("127.0.0.1");
+
+	status = connect(sock, (struct sockaddr *)&addr, sizeof(addr));
+	if(status != 0)
+	{
+		close(sock);
+		return -2;
+	}
+
+	n = strlen(line);
+
+	if(send(sock, outstr, n, 0) < 1)
+	{
+		close(sock);
+		return -3;
+	}
+
+	n = recv(sock, instr, maxlen, 0);
+	if(n < 1)
+	{
+		close(sock);
+		return -4;
+	}
+	instr[n] = 0;
+
+	close(sock);
+
+	return n;
+}
+
