@@ -1,0 +1,48 @@
+Return-Path: John.Reynolds@csiro.au
+Delivery-Date: Wed Apr  4 01:59:56 2007
+Received: from crux.tip.CSIRO.AU (crux.tip.CSIRO.AU [130.155.194.32])
+	by lynx.tip.CSIRO.AU (8.9.3/8.9.3/TIPAT-1.0a) with ESMTP id BAA22401
+	for <cal103@lynx.tip.CSIRO.AU>; Wed, 4 Apr 2007 01:59:56 +1000 (EST)
+Received: (from daemon@localhost)
+	by crux.tip.CSIRO.AU (8.9.3/8.9.3/CIPAT-2.1a) id BAA27328
+	for <Mark.Calabretta@crux.tip.csiro.au>; Wed, 4 Apr 2007 01:59:55 +1000 (EST)
+Received: from act-MTAout4.csiro.au(150.229.7.41)
+ via SMTP by crux.tip.CSIRO.AU, id smtpdAAAa27326; Wed Apr  4 01:59:49 2007
+DomainKey-Signature: s=email; d=csiro.au; c=nofws; q=dns; b=jofP8JztR7xAB8eZOE/4bZO4s/0qmC9Mchuj6yviWxDj43smWYdXFBioxr9Z3d+XJHiFFBGegEofGX8pJrueyrEaSQ6fO1zpbYM6Dq68gGmDdgh7n80wSy5M1DIMIk2w;
+Received: from exgw1-cbr.nexus.csiro.au ([152.83.3.66])
+  by act-ironport-int.csiro.au with ESMTP; 04 Apr 2007 01:59:49 +1000
+X-IronPort-AV: i="4.14,366,1170594000"; 
+   d="scan'208"; a="151461038:sNHT19741856"
+Received: from EXACTN1-CBR.nexus.csiro.au ([152.83.3.131]) by exgw1-cbr.nexus.csiro.au with Microsoft SMTPSVC(5.0.2195.6713);
+	 Wed, 4 Apr 2007 01:59:48 +1000
+Received: from exnswn2-syd.nexus.csiro.au ([130.155.3.32]) by EXACTN1-CBR.nexus.csiro.au with Microsoft SMTPSVC(5.0.2195.6713);
+	 Wed, 4 Apr 2007 01:59:48 +1000
+Received: from auriga.atnf.CSIRO.AU ([130.155.181.8]) by exnswn2-syd.nexus.csiro.au with Microsoft SMTPSVC(5.0.2195.6713);
+	 Wed, 4 Apr 2007 01:59:48 +1000
+Date: Wed, 4 Apr 2007 01:59:47 +1000 (EST)
+From: John Reynolds <John.Reynolds@csiro.au>
+X-X-Sender: John.Reynolds@auriga.atnf.CSIRO.AU
+To: Mark Calabretta <Mark.Calabretta@csiro.au>
+Subject: rpfits
+Message-ID: <Pine.SOL.4.58x4.0704040117060.20340@auriga.atnf.CSIRO.AU>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 03 Apr 2007 15:59:48.0191 (UTC) FILETIME=[1AED96F0:01C77609]
+
+Mark,
+
+>From the Feb 2004 ATNF Newsletter;
+
+ Reducing ATCA millimetre observations
+ ...
+ New monitoring data: The RPFITS file produced by an observation now
+ contains weather measurements, antenna-pointing centre (in addition to
+ delay centre), and a measure of the tracking error. In blustery
+ conditions or when there are antenna drive problems, the tracking error
+ may be a significant fraction of the 3-mm beam size. In this case, an observer can
+ flag data based on excessive tracking error.
+ ...
+ Bob Sault
+
+Cheers,
+john R

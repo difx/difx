@@ -1,10 +1,10 @@
-# Sun Solaris Makefile for RPFITS.
+# Sun Solaris Makefile for RPFITS (cetus, SunOS 5.6).
 
 # The RPFITS root directory.
 RPFITSROOT := ..
 
-# Only used for locating architecture-specific code in ./code/$(ARCH).
-ARCH := sun4sol
+# Only used for locating architecture-specific code in ./code/$(RPARCH).
+RPARCH := sun4sol
 
 # Sun Fortran and C compiler flags...
 FFLAGS := -O -u -xs

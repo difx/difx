@@ -8,7 +8,7 @@ C
 C     Programmer: Ray Norris
 C     Date: 25 April 1985
 C
-C     $Id: rpfitsin.f,v 1.42 2006/07/24 05:33:24 cal103 Exp $
+C     $Id: rpfitsin.f,v 1.45 2008/10/27 05:37:12 cal103 Exp $
 C-----------------------------------------------------------------------
 
       subroutine RPFITSIN (jstat, vis, weight, baseline, ut, u, v, w,
@@ -29,20 +29,26 @@ C-----------------------------------------------------------------------
      :          jstat, k, lun, pcount, SIMPLE
       real      buffer(640), crpix4, grphdr(11), r1, r2, revis,
      :          sc_buf(max_sc*max_if*ant_max), velref, pra, pdec
-      character keyvalue*20, keyword*8, m(32)*80
+      double precision d2pi
+      character keyvalue*20, keyword*8, m(32)*80, terr*2
 
       equivalence (i_buff(1), buffer(1))
       equivalence (i_grphdr(1), grphdr(1))
       equivalence (sc_buf(1), sc_cal(1,1,1))
 
-      data illegal /32768/
+      parameter (d2pi = 2d0 * 3.14159265358979323846d0)
+
       data isopen  /.false./
       data async   /.false./
       data new_antenna /.false./
+      data illegal /32768/
 
       save
 
 C-------------------------- DECIDE ON ACTION ---------------------------
+
+      rp_iostat = 0
+      errmsg = ''
 
       open_only = jstat.eq.-3
 
@@ -53,21 +59,22 @@ C-------------------------- DECIDE ON ACTION ---------------------------
       if (jstat.eq.1) go to 5000
       if (jstat.eq.2) go to 6000
 
-      write (6, *) ' Error in READFITS: illegal value of jstat = ',jstat
+      write (errmsg, '(a,i3)') 'Illegal value of jstat =', jstat
+      call RPFERR (errmsg)
       jstat = -1
       RETURN
 
 C--------------------------- OPEN FITS FILE ----------------------------
 
  1000 if (isopen) then
-         write (6, *) ' File is already open'
+         call RPFERR ('File is already open.')
          jstat = -1
          RETURN
       end if
 
       rp_iostat =  AT_OPEN_READ (file, async, lun)
       if (rp_iostat.ne.0) then
-         write (6, *) ' Cannot open file'
+         call RPFERR ('File open error')
          jstat = -1
          RETURN
       end if
@@ -81,13 +88,11 @@ C--------------------------- OPEN FITS FILE ----------------------------
 C----------------------------- READ HEADER -----------------------------
 
  2000 if (.not.isopen) then
-         write (6, *) ' File is not open'
+         call RPFERR ('File is not open.')
          jstat = -1
          RETURN
       end if
 
-      endhdr = .false.
-      starthdr = .false.
       bufptr = 0
       n_if = 0
       icard = 1
@@ -103,29 +108,41 @@ C----------------------------- READ HEADER -----------------------------
       pdec = 0.0
 
 C     Look for start of next header.
+      starthdr = .false.
       do while (.not.starthdr)
          rp_iostat = AT_READ (lun, buffer)
-         write (m,'(32(20a4,:,/))') (buffer(j),j=1,640)
-
          if (rp_iostat.ne.0) then
             if (rp_iostat.eq.-1) then
                jstat = 3
                RETURN
             end if
-            write (6, *) ' RPFITSIN: Unable to read header block'
-            write (6, *) ' RPFITSIN: rp_iostat = ',rp_iostat
+
+            call RPFERR ('I/O error reading header')
             jstat = -1
             RETURN
          end if
-         if (m(1)(1:8).eq.'SIMPLE') starthdr = .true.
-         if (m(1)(1:8).eq.'TABLE FG') then
-            call RPFITS_READ_TABLE (lun, m, -1, endhdr)
-            jstat = 4
+
+         jstat = SIMPLE (buffer, lun)
+         if (jstat.eq.1) then
+C           Start of header.
+            starthdr = .true.
+         else if (jstat.eq.3) then
+C           End-of-file while reading flag table.
+            RETURN
+         else if (jstat.eq.4) then
+C           Encountered flag table.
+            RETURN
+         else if (jstat.ne.0) then
+C           Fortran I/O error status.
+            jstat = -1
             RETURN
          end if
+
+         write (m, '(32(20a4,:,/))') (buffer(j),j=1,640)
       end do
 
 C     Scan through header, getting the interesting bits.
+      endhdr = .false.
       do 2500 while (.not.endhdr)
          if (.not.starthdr) then
             rp_iostat = AT_READ (lun, buffer)
@@ -135,7 +152,8 @@ C     Scan through header, getting the interesting bits.
                   jstat = 3
                   RETURN
                end if
-               write (6, *) ' Unable to read header block'
+
+               call RPFERR ('I/O error reading header')
                jstat = -1
                RETURN
             end if
@@ -177,6 +195,7 @@ C              Keyword names beginning with A to C.
                   read (keyvalue, '(g20.12)') freq
                else if (keyword.eq.'CRVAL5') then
                   read (keyvalue, '(g20.12)') ra
+                  if (ra.lt.0d0) ra = ra + d2pi
                else if (keyword.eq.'CRVAL6') then
                   read (keyvalue, '(g20.12)') dec
                end if
@@ -263,7 +282,23 @@ C              Keyword names beginning with Q to Z.
                   read (keyvalue, '(i20)') nscan
                else if (keyword(1:6).eq.'TABLE ') then
 C                 Sort out tables.
-                  call RPFITS_READ_TABLE (lun, m, i, endhdr)
+                  call RPFITS_READ_TABLE (lun, m, i, endhdr, terr, ierr)
+                  if (ierr.ne.0) then
+                     if (ierr.eq.1) then
+                        jstat = -1
+                        call RPFERR (terr // ' table contains too ' //
+     :                               'many entries.')
+                     else if (rp_iostat.lt.0) then
+                        jstat = 3
+                     else
+                        jstat = -1
+                        call RPFERR ('I/O error reading ' // terr //
+     :                               ' table')
+                     end if
+
+                     RETURN
+                  end if
+
                else if (keyword(1:5).eq.'TEMPE') then
                   read (keyword(6:7), '(i2)') k
                   read (keyvalue, '(g20.12)') rp_temp(k)
@@ -317,7 +352,7 @@ C                 Old format ('ANTENNA:').
 
 C     Set up for reading data.
       if (data_format.lt.1 .or. data_format.gt.3) then
-         write (6,*) 'RPFITSIN: NAXIS2 in file must be 1,2,3'
+         call RPFERR ('NAXIS2 must be 1, 2, or 3.')
          jstat = -1
          RETURN
       end if
@@ -337,9 +372,8 @@ C     Insert default values into table commons if tables weren't found.
          if_simul(1) = 1
          if_chain(1) = 1
       else
-         freq = if_freq(1)
+         freq  = if_freq(1)
          nfreq = if_nfreq(1)
-C                                            hm 18may90 added -1 below
          if (if_nfreq(1).gt.1) then
             dfreq = if_bw(1)/(if_nfreq(1) - 1)
          else
@@ -350,11 +384,11 @@ C                                            hm 18may90 added -1 below
       if (.not. su_found) then
          n_su = 1
          su_name(1) = object
-         su_ra(1) = ra
+         su_ra(1)  = ra
          su_dec(1) = dec
       else
          object = su_name(1)
-         ra = su_ra(1)
+         ra  = su_ra(1)
          dec = su_dec(1)
 C        For single source, record possible pointing centre offset
          if (n_su.eq.1 .and. (pra.ne.0.0 .or. pdec.ne.0.0)) then
@@ -374,7 +408,7 @@ C     Tidy up.
 
 C----------------------- READ DATA GROUP HEADER ------------------------
  3000 if (.not.isopen) then
-         write (6, *) ' File is not open'
+         call RPFERR ('File is not open.')
          jstat = -1
          RETURN
       end if
@@ -399,7 +433,7 @@ C     words.
                RETURN
             end if
 
-            write (6, *) ' Cannot read data'
+            call RPFERR ('I/O error reading data')
             jstat = -1
             RETURN
          end if
@@ -453,7 +487,8 @@ C        incomplete at end of buffer, next buffer will be all zeros.
                jstat = 3
                RETURN
             end if
-            write (6, *) ' Unable to read header block'
+
+            call RPFERR ('I/O error reading header')
             jstat = -1
             RETURN
          end if
@@ -496,7 +531,7 @@ C        (pcount blocks).
                RETURN
             end if
 
-            write (6, *) ' Cannot read data'
+            call RPFERR ('I/O error reading data')
             jstat = -1
             RETURN
          end if
@@ -548,7 +583,7 @@ C           2       Real(vis) Imag(vis)     -
 C           3       Real(vis) Imag(vis)  Weight
 
       if (data_format.lt.1 .or. data_format.gt.3) then
-         write (6,*) 'RPFITSIN: NAXIS2 in file must be 1, 2, or 3'
+         call RPFERR ('NAXIS2 in file must be 1, 2, or 3.')
          jstat = -1
          RETURN
       end if
@@ -613,7 +648,7 @@ C           Now read in a new buffer.
                   RETURN
                end if
 
-               write (6, *) ' Cannot read data'
+               call RPFERR ('I/O error reading data')
                jstat = -1
                RETURN
             end if
@@ -680,7 +715,7 @@ C           Then read in a new buffer.
                   RETURN
                end if
 
-               write (6, *) ' Cannot read data'
+               call RPFERR ('I/O error reading data')
                jstat = -1
                RETURN
             end if
@@ -701,7 +736,7 @@ C--------------------------- CLOSE FITS FILE ---------------------------
  5000 if (isopen) then
          rp_iostat = AT_CLOSE (lun)
          if (rp_iostat.ne.0) then
-            write (6, *) ' Cannot close file'
+            call RPFERR ('I/O error closing file')
             jstat = -1
             RETURN
          end if
@@ -714,7 +749,7 @@ C--------------------------- CLOSE FITS FILE ---------------------------
 C------------------------- SKIP TO END OF FILE -------------------------
 
  6000 if (.not.isopen) then
-         write (6, *) ' File is not open'
+         call RPFERR ('File is not open.')
          jstat = -1
          RETURN
       end if
@@ -723,7 +758,7 @@ C------------------------- SKIP TO END OF FILE -------------------------
       if (rp_iostat.eq.-1) then
          jstat = 3
       else
-         write (6, *) ' Unable to skip-to-EOF'
+         call RPFERR ('I/O error skipping to EOF')
          jstat = -1
          RETURN
       end if
@@ -737,11 +772,14 @@ C-----------------------------------------------------------------------
 
 C-----------------------------------------------------------------------
 C     SIMPLE tests for the start of a new header or FG (flag) table.
+C     Reads the FG table if encountered.
 C-----------------------------------------------------------------------
 
+      include 'rpfits.inc'
+
       logical   endhdr
-      integer   lun, j
-      character m(80)*32
+      integer   ierr, j, lun
+      character m(80)*32, terr*2
       real buffer(640)
 
 C     Assume not.
@@ -756,15 +794,25 @@ C        Start of header.
 
       else if (m(1)(1:8).eq.'FG TABLE') then
 C        Start of FG (flag) table.
-         endhdr = .false.
-         write (m,'(32(20a4,:,/))') (buffer(j),j=1,640)
-         call RPFITS_READ_TABLE (lun, m, -1, endhdr)
          SIMPLE = 4
+
+         write (m, '(32(20a4,:,/))') (buffer(j),j=1,640)
+         call RPFITS_READ_TABLE (lun, m, -1, endhdr, terr, ierr)
+         if (ierr.ne.0) then
+            if (ierr.eq.1) then
+               call RPFERR ('FG table contains too many entries.')
+               SIMPLE = -1
+            else if (rp_iostat.lt.0) then
+               SIMPLE = 3
+            else
+               SIMPLE = -1
+               call RPFERR ('I/O error reading FG table')
+            end if
+         end if
       end if
 
       return
       end
-
 
 C-----------------------------------------------------------------------
 
@@ -813,7 +861,7 @@ C           Otherwise, data_format comes from NAXIS2.
 C     Check for illegal parameters.
       if (ILLPARM(u, v, w, rbase, ut, iant, iif, iq)) then
 C        This can be caused by a bad block, so look for more data.
-         write (6, *) 'Corrupted data encountered, skipping...'
+         call RPFERR ('Corrupted data encountered, skipping...')
          call SKIPTHRU (jstat, bufptr, buffer, lun, pcount)
          RETURN
       end if
@@ -847,85 +895,6 @@ C        Syscal parameters.
       end if
 
       jstat = 0
-      return
-      end
-
-C-----------------------------------------------------------------------
-
-      subroutine SKIPTHRU (jstat, bufptr, buffer, lun, pcount)
-
-C-----------------------------------------------------------------------
-C     Skip through data looking for recognisable data or header.
-C
-C     Returns jstat = -2 if successful.
-C
-C     rpn 17/11/90
-C-----------------------------------------------------------------------
-
-      include 'rpfits.inc'
-
-      logical   ILLPARM
-      integer   AT_READ, AT_UNREAD, bufptr, i, iant, iif, iq, j, jstat,
-     :          lun, pcount, SIMPLE
-      real      buffer(640), rbase, u, ut, v, w
-
-      do 10 j = 1, 1000
-C        Read a new block; the remainder of the old one is unlikely to
-C        contain anything useful (and at most one integration).
-         rp_iostat = AT_READ (lun, buffer)
-         if (rp_iostat.ne.0) then
-            if (rp_iostat.eq.-1) then
-               jstat = 3
-               RETURN
-            end if
-
-            write (6,*) ' Unable to read next block'
-            jstat = -1
-            RETURN
-         end if
-
-C        Check to see if it's a header block.
-         jstat = SIMPLE (buffer, lun)
-         if (jstat.ne.0) then
-            rp_iostat = AT_UNREAD (lun, buffer)
-            RETURN
-         end if
-         bufptr = 1
-
-C        Scan through the block looking for something legal.
-         do i = 1, 640
-            call VAXR4 (buffer(bufptr),   u)
-            call VAXR4 (buffer(bufptr+1), v)
-            call VAXR4 (buffer(bufptr+2), w)
-            call VAXR4 (buffer(bufptr+3), rbase)
-            call VAXR4 (buffer(bufptr+4), ut)
-
-            if (rbase.lt.0.0) then
-C              Syscal parameters.
-               call VAXI4 (buffer(bufptr+5), iant)
-               call VAXI4 (buffer(bufptr+6), iif)
-               call VAXI4 (buffer(bufptr+7), iq)
-            else
-C              IF number.
-               call VAXI4 (buffer(bufptr+7), iif)
-
-               if (pcount.ge.11) then
-C                 Otherwise, data_format comes from NAXIS2.
-                  call VAXI4 (buffer(bufptr+10), data_format)
-               end if
-            end if
-
-            if (.not.ILLPARM(u, v, w, rbase, ut, iant, iif, iq)) then
-               goto 999
-            end if
-
-            bufptr = bufptr + 1
-            if (bufptr.gt.632) goto 10
-         end do
- 10   continue
-
-C     Success!
- 999  jstat = -2
       return
       end
 
@@ -986,5 +955,84 @@ C     Success!
          end if
       end if
 
+      return
+      end
+
+C-----------------------------------------------------------------------
+
+      subroutine SKIPTHRU (jstat, bufptr, buffer, lun, pcount)
+
+C-----------------------------------------------------------------------
+C     Skip through data looking for recognisable data or header.
+C
+C     Returns jstat = -2 if successful.
+C
+C     rpn 17/11/90
+C-----------------------------------------------------------------------
+
+      include 'rpfits.inc'
+
+      logical   ILLPARM
+      integer   AT_READ, AT_UNREAD, bufptr, i, iant, iif, iq, j, jstat,
+     :          lun, pcount, SIMPLE
+      real      buffer(640), rbase, u, ut, v, w
+
+      do 10 j = 1, 1000
+C        Read a new block; the remainder of the old one is unlikely to
+C        contain anything useful (and at most one integration).
+         rp_iostat = AT_READ (lun, buffer)
+         if (rp_iostat.ne.0) then
+            if (rp_iostat.eq.-1) then
+               jstat = 3
+               RETURN
+            end if
+
+            call RPFERR ('Read error')
+            jstat = -1
+            RETURN
+         end if
+
+C        Check to see if it's a header block.
+         jstat = SIMPLE (buffer, lun)
+         if (jstat.ne.0) then
+            rp_iostat = AT_UNREAD (lun, buffer)
+            RETURN
+         end if
+         bufptr = 1
+
+C        Scan through the block looking for something legal.
+         do i = 1, 640
+            call VAXR4 (buffer(bufptr),   u)
+            call VAXR4 (buffer(bufptr+1), v)
+            call VAXR4 (buffer(bufptr+2), w)
+            call VAXR4 (buffer(bufptr+3), rbase)
+            call VAXR4 (buffer(bufptr+4), ut)
+
+            if (rbase.lt.0.0) then
+C              Syscal parameters.
+               call VAXI4 (buffer(bufptr+5), iant)
+               call VAXI4 (buffer(bufptr+6), iif)
+               call VAXI4 (buffer(bufptr+7), iq)
+            else
+C              IF number.
+               call VAXI4 (buffer(bufptr+7), iif)
+
+               if (pcount.ge.11) then
+C                 Otherwise, data_format comes from NAXIS2.
+                  call VAXI4 (buffer(bufptr+10), data_format)
+               end if
+            end if
+
+            if (.not.ILLPARM(u, v, w, rbase, ut, iant, iif, iq)) then
+               goto 999
+            end if
+
+            bufptr = bufptr + 1
+            if (bufptr.gt.632) goto 10
+         end do
+ 10   continue
+
+C     Success!
+ 999  jstat = -2
       return
       end

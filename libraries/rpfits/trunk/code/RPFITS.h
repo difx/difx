@@ -8,7 +8,7 @@
 /*  DOUBLE PRECISION variables were also segregated into a separate COMMON  */
 /*  block for reasons long forgotten.                                       */
 /*                                                                          */
-/* $Id: RPFITS.h,v 1.6 2007/01/30 04:25:40 cal103 Exp $            */
+/* $Id: RPFITS.h,v 1.7 2008/09/11 06:42:01 cal103 Exp $            */
 /*--------------------------------------------------------------------------*/
 
 #ifndef ATNF_RPFITS_H
@@ -50,9 +50,10 @@ enum {
 };
 
 
-/* Error status value from ATIO I/O operation. */
+/* Error handling. */
 extern struct __iostat_t {
   int rp_iostat;
+  int errlun;
 } iostat_;
 
 
@@ -231,6 +232,7 @@ extern struct names_t {
   char rpfitsversion[20];			/* param */
   char bunit[16];				/* param */
   char obstype[16];				/* param */
+  char errmsg[80];				/* iostat */
 } names_;
 
 

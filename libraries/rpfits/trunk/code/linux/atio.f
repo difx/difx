@@ -6,7 +6,7 @@ C   Notes:
 C     1) Cloned from the sun4sol version with tape handling stripped
 C        out.
 C
-C   $Id: atio.f,v 1.5 2006/07/24 05:42:48 cal103 Exp $
+C   $Id: atio.f,v 1.6 2007/07/16 01:11:50 cal103 Exp $
 C-----------------------------------------------------------------------
 
 
@@ -248,15 +248,21 @@ C     Get a logical unit number.
 C
 C     FORTRAN logical unit numbers are returned in the range 10 to 99.
 C-----------------------------------------------------------------------
+      logical   isopen
       integer   j, fluns(10:99), lun
 
       common /lunlst/ fluns
       save /lunlst/
 C-----------------------------------------------------------------------
       GETLUN = -1
+      lun = -1
 
       do 10 j = 99, 10, -1
          if (fluns(j).eq.0) then
+C           Has it already been opened outside RPFITS.
+            inquire (unit=j, opened=isopen)
+            if (isopen) go to 10
+
             lun = j
             fluns(j) = -1
             GETLUN = 0

@@ -23,7 +23,7 @@ C        Likewise, when opening a file for output, the SHARED keyword,
 C        necessary for realtime processing by the Parkes multibeam
 C        system, is ignored by SunOS.
 C
-C   $Id: atio.f,v 1.14 2001/10/27 05:56:30 jreynold Exp $
+C   $Id: atio.f,v 1.15 2007/07/16 01:11:50 cal103 Exp $
 C-----------------------------------------------------------------------
 
 
@@ -359,13 +359,14 @@ C     FORTRAN logical unit numbers.
 C
 C     FORTRAN logical unit numbers are returned in the range 10 to 99.
 C-----------------------------------------------------------------------
-      logical   istape
+      logical   isopen, istape
       integer   j, fluns(10:99), lun, tluns(0:7)
 
       common /lunlst/ fluns, tluns
       save /lunlst/
 C-----------------------------------------------------------------------
       GETLUN = -1
+      lun = -1
 
       if (istape) then
          do 10 j = 7, 0, -1
@@ -380,6 +381,10 @@ C-----------------------------------------------------------------------
       else
          do 20 j = 99, 10, -1
             if (fluns(j).eq.0) then
+C              Has it already been opened outside RPFITS.
+               inquire (unit=j, opened=isopen)
+               if (isopen) go to 20
+
                lun = j
                fluns(j) = -1
                GETLUN = 0

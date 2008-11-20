@@ -16,7 +16,7 @@ C     3) Creation and writing of RPFITS files is normally done by the AT
 C        correlator which uses a linux system.  AT_CREATE,
 C        AT_REOPEN_WRITE and AT_WRITE are only here for testing.
 C
-C   $Id: atio.f,v 1.12 2001/05/31 07:39:38 mcalabre Exp $
+C   $Id: atio.f,v 1.13 2007/07/16 01:11:50 cal103 Exp $
 C-----------------------------------------------------------------------
 
 
@@ -375,13 +375,14 @@ C     FORTRAN logical unit numbers.
 C
 C     FORTRAN logical unit numbers are returned in the range 10 to 99.
 C-----------------------------------------------------------------------
-      logical   istape
+      logical   isopen, istape
       integer   j, fluns(10:99), lun, tluns(0:3)
 
       common /lunlst/ fluns, tluns
       save /lunlst/
 C-----------------------------------------------------------------------
       GETLUN = -1
+      lun = -1
 
       if (istape) then
          do 10 j = 3, 0, -1
@@ -396,6 +397,10 @@ C-----------------------------------------------------------------------
       else
          do 20 j = 99, 10, -1
             if (fluns(j).eq.0) then
+C              Has it already been opened outside RPFITS.
+               inquire (unit=j, opened=isopen)
+               if (isopen) go to 20
+
                lun = j
                fluns(j) = -1
                GETLUN = 0

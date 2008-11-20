@@ -1,27 +1,20 @@
-# Darwin Intel x86 Makefile for RPFITS.
+# Darwin Intel x86 Makefile for RPFITS (cancer, MacOSX 8.9.1).
 
 # The RPFITS root directory.
 RPFITSROOT := ..
 
-# Only used for locating architecture-specific code in ../code/$(ARCH)
+# Only used for locating architecture-specific code in ../code/$(RPARCH)
 # (../code/darwin_x86 is currently symlink'd to ../code/linux).
-ARCH := darwin_x86
+RPARCH := darwin_x86
 
-# GNU Fortran 95 and C compiler flags.  As of 2006/10/24 the port of GNU/linux
-# utilities on the Intel Macs is in an unstable development phase and thus it
-# is important to use a consistent set of compilers.  The definitions here
-# assume the Fink distribution of gcc/gfortran 4.2.0.  This is not necessarily
-# the same as other distributions that claim to be 4.2.0, mixing them is
-# likely to result in the linker reporting symbols that are defined in one
-# version of libgfortran but not another.  Note that the -a option is used on
-# ranlib to satisfy the requirements of the "odcctools" linker
-# (/sw/lib/odcctools/bin/ld) which, if installed, is used by default by Fink
-# gfortran.
-FC      := /sw/bin/gfortran
-FFLAGS  := -g -O -fno-automatic -Wall
-CC      := /sw/bin/gcc-4
-CFLAGS  := -g -O -Wall -Wno-parentheses
-RANLIB  := /usr/bin/ranlib -a
+# GNU Fortran 77 and C compiler flags.  The definitions here are for the
+# g77 3.4 compiler available from hpc.sourceforge.net.  Note that
+# /usr/bin/gcc-3.3 supplied in XCode is incomplete and unusable.
+FC      := /usr/local/bin/g77-3.4
+FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
+CC      := /usr/bin/gcc-4.0
+CFLAGS  := -g -O -Wall
+RANLIB  := /usr/bin/ranlib
 
 # Where to install stuff.
 PREFIX := /usr/local

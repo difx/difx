@@ -1,5 +1,5 @@
 C-----------------------------------------------------------------------
-C   atio.f: Input/output routines for RPFITS under SunOS 4.1.3.
+C   atio.f: Input/output routines for RPFITS under Solaris-2.
 C-----------------------------------------------------------------------
 C
 C   Notes:
@@ -23,7 +23,7 @@ C        Likewise, when opening a file for output, the SHARED keyword,
 C        necessary for realtime processing by the Parkes multibeam
 C        system, is ignored by SunOS.
 C
-C   $Id: atio.f,v 1.11 2001/05/31 07:39:38 mcalabre Exp $
+C   $Id: atio.f,v 1.12 2007/07/16 01:11:02 cal103 Exp $
 C-----------------------------------------------------------------------
 
 
@@ -56,7 +56,6 @@ C-----------------------------------------------------------------------
 
          irec(lun) = 1
       endif
-      reread = .false.
 
       return
       end
@@ -111,7 +110,7 @@ C-----------------------------------------------------------------------
 C           Skip header file.
             AT_OPEN_READ = TSKIPF(lun, 1, 0)
             if (AT_OPEN_READ.lt.0) then
-               type *,'AT_OPEN_READ:Error skipping header: ',
+               write (6, *) 'AT_OPEN_READ:Error skipping header: ',
      +            AT_OPEN_READ
             endif
          endif
@@ -129,7 +128,6 @@ C           Skip header file.
 
          irec(lun) = 1
       end if
-      reread = .false.
 
       return
       end
@@ -202,8 +200,8 @@ C           returns 0 if EOF
                AT_READ = TSKIPF(lun, 1, 0)
                AT_READ = TSKIPF(lun, 1, 0)
                if (AT_READ.ne.0) then
-                  type *,
-     +            'AT_READ:Failed to skip EOF+trailer. Err ', AT_READ
+                  write (6, *)
+     +               'AT_READ:Failed to skip EOF+trailer. Err ', AT_READ
                endif
                AT_READ = -1
 C           returns byte count if OK
@@ -237,8 +235,8 @@ C              clear EOF 'flag' and skip over the EOF+trailer
                AT_READ = TSKIPF(lun, 1, 0)
                AT_READ = TSKIPF(lun, 1, 0)
                if (AT_READ.ne.0) then
-                  type *,
-     +            'AT_READ:Failed to skip EOF+trailer.Err ', AT_READ
+                  write (6, *)
+     +               'AT_READ:Failed to skip EOF+trailer.Err ', AT_READ
                endif
                AT_READ = -1
             else if (AT_READ.gt.0) then
@@ -284,8 +282,8 @@ C-----------------------------------------------------------------------
          AT_SKIP_EOF = TSKIPF(lun, 1, 0)
          AT_SKIP_EOF = TSKIPF(lun, 1, 0)
          if (AT_SKIP_EOF.ne.0) then
-            type *,
-     +      'AT_SKIP_EOF:Failed to skip EOF+trailer. Err ', AT_SKIP_EOF
+            write (6, *) 'AT_SKIP_EOF:Failed to skip EOF+trailer. Err ',
+     +                    AT_SKIP_EOF
             AT_SKIP_EOF = -2
          else
             AT_SKIP_EOF = -1
@@ -296,7 +294,7 @@ C-----------------------------------------------------------------------
             irec(lun) = irec(lun) + 1
          end do
       end if
-      reread = .false.
+      if (reread .and. lun.eq.lunsav) reread = .false.
 
  999  continue
       return
@@ -344,6 +342,7 @@ C-----------------------------------------------------------------------
          close (lun, iostat=AT_CLOSE)
       end if
 
+      if (lun.eq.lunsav) reread = .false.
       istat = FREELUN(lun)
 
       return
@@ -360,13 +359,14 @@ C     FORTRAN logical unit numbers.
 C
 C     FORTRAN logical unit numbers are returned in the range 10 to 99.
 C-----------------------------------------------------------------------
-      logical   istape
+      logical   isopen, istape
       integer   j, fluns(10:99), lun, tluns(0:7)
 
       common /lunlst/ fluns, tluns
       save /lunlst/
 C-----------------------------------------------------------------------
       GETLUN = -1
+      lun = -1
 
       if (istape) then
          do 10 j = 7, 0, -1
@@ -381,6 +381,10 @@ C-----------------------------------------------------------------------
       else
          do 20 j = 99, 10, -1
             if (fluns(j).eq.0) then
+C              Has it already been opened outside RPFITS.
+               inquire (unit=j, open=isopen)
+               if (isopen) go to 20
+
                lun = j
                fluns(j) = -1
                GETLUN = 0
@@ -435,12 +439,19 @@ C-----------------------------------------------------------------------
 
       block data
 C-----------------------------------------------------------------------
-C     Initialise logical unit number lists.
+C     Initialise logical unit number lists and flags.
 C-----------------------------------------------------------------------
       integer   fluns(10:99), tluns(0:7)
+      byte      bufsav(2560)
+      logical   reread
+      integer   irec(10:99), lenrec(10:99), lunsav
 
       common /lunlst/ fluns, tluns
       data  fluns, tluns /90*0, 8*0/
       save /lunlst/
+
+      common /atio/ lenrec, irec, reread, lunsav, bufsav
+      data reread, lunsav /.false., 0/
+      save /atio/
 C-----------------------------------------------------------------------
       end

@@ -1,22 +1,22 @@
-# Linux Makefile for RPFITS.
+# Linux Makefile for RPFITS (grus, Debian etch).
 
 # The RPFITS root directory.
 RPFITSROOT := ..
 
-# Only used for locating architecture-specific code in ./code/$(ARCH).
-ARCH := linux
+# Only used for locating architecture-specific code in ./code/$(RPARCH).
+RPARCH := linux
 
 # GNU Fortran and C compiler flags.
 FC     := g77
-FFLAGS := -g -O -fno-automatic -Wall -Wno-globals
-CFLAGS := -g -O -Wall -Wno-parentheses
+FFLAGS := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
+CFLAGS := -g -O -Wall
 RANLIB := ranlib
 
 LDFLAGS :=
 
 # Use these definitions (in place of those above) to compile with gfortran.
 # FC      := gfortran
-# FFLAGS  := -g -O -fno-automatic -Wall
+# FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit
 # LDFLAGS := -lg2c
 
 # Where to install stuff.

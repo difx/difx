@@ -6,9 +6,9 @@
 # variable definitions for:
 #
 #    RPFITSROOT ...The RPFITS root directory (i.e. this directory).
-#    ARCH       ...Architecture name (alpha, darwin, linux, sgi, sun4,
-#                  sun4sol, etc.) used only for locating architecture-specific
-#                  source code, e.g. in ../code/linux/.
+#    RPARCH     ...Architecture name (alpha, darwin_ppc, darwin_x86, linux,
+#                  linux64, sgi, sun4, sun4sol, etc.) used only for locating
+#                  architecture-specific source code, e.g. in ../code/linux/.
 #    FC,CC      ...Names of the Fortran and C compilers should be supplied
 #                  by GNU make for your system but can also be redefined if
 #                  required.
@@ -21,11 +21,11 @@
 #                  installed in $(PREFIX)/{lib,include,bin}.
 #
 # If you are trying to install the RPFITS library, please chdir to either the
-# linux, sun4sol, or darwin sub-directory and run GNU 'make' from there.  You
-# may find it necessary to modify variable definitions (as above) in the
-# GNUmakefile there to suit your purposes.
+# linux, linux_64, sun4sol, darwin_ppc, or darwin_x86 sub-directory and run
+# GNU 'make' from there.  You may find it necessary to modify variable
+# definitions (as above) in the GNUmakefile there to suit your purposes.
 #
-# $Id: GNUmakefile,v 1.11 2006/07/17 07:04:38 cal103 Exp $
+# $Id: GNUmakefile,v 1.13 2007/03/14 07:07:10 cal103 Exp $
 #-----------------------------------------------------------------------------
 ifndef RPFITSROOT
    RPFITSROOT := $(shell pwd)
@@ -33,7 +33,7 @@ endif
 
 # Where gmake finds the source code.
 COMMSRC := $(RPFITSROOT)/code
-ARCHSRC := $(COMMSRC)/$(ARCH)
+ARCHSRC := $(COMMSRC)/$(RPARCH)
 TESTSRC := $(RPFITSROOT)/test
 VPATH   := .:$(ARCHSRC):$(COMMSRC):$(TESTSRC)
 
@@ -68,7 +68,7 @@ endif
 .PRECIOUS : $(RPFITSLIB)
 .PHONY : all clean lib realclean show test
 
-ifeq "$(ARCH)" ""
+ifeq "$(RPARCH)" ""
 all :
 	-@ echo ""
 	-@ head -29 ./GNUmakefile
@@ -80,7 +80,9 @@ all : lib rpfhdr rpfex
 lib : $(RPFITSLIB) ;
 
 $(RPFITSLIB) : $(MEMBERS)
+ifneq "$(RANLIB)" ""
 	$(RANLIB) $(RPFITSLIB)
+endif
 	chmod 664 $@
 
 rpfhdr : rpfhdr.c
@@ -94,13 +96,13 @@ rpfex : rpfex.c
 install : all
 	-@ mkdir -p $(PREFIX)/lib $(PREFIX)/include $(PREFIX)/bin
 	-@ $(RM) $(PREFIX)/lib/librpfits.*
-	   cp $(RPFITSLIB) $(PREFIX)/lib
+	   cp -p $(RPFITSLIB) $(PREFIX)/lib
 	-@ $(RM) $(PREFIX)/include/rpfits.inc
-	   cp $(COMMSRC)/rpfits.inc $(PREFIX)/include
+	   cp -p $(COMMSRC)/rpfits.inc $(PREFIX)/include
 	-@ $(RM) $(PREFIX)/include/RPFITS.h
-	   cp $(COMMSRC)/RPFITS.h $(PREFIX)/include
+	   cp -p $(COMMSRC)/RPFITS.h $(PREFIX)/include
 	-@ $(RM) $(PREFIX)/bin/rpfhdr $(PREFIX)/bin/rpfex
-	   cp rpfhdr rpfex $(PREFIX)/bin
+	   cp -p rpfhdr rpfex $(PREFIX)/bin
 
 clean :
 	-$(RM) *.o core test.tmp
@@ -127,7 +129,7 @@ $(RPFITSLIB)(rpfits_tables.o) : rpfits.inc
 
 show :
 	-@echo "RPFITSROOT=$(RPFITSROOT)"
-	-@echo "ARCH    =$(ARCH)"
+	-@echo "RPARCH  =$(RPARCH)"
 	-@echo ""
 	-@echo "RPFITSLIB=$(RPFITSLIB)"
 	-@echo ""
@@ -146,4 +148,8 @@ show :
 	-@echo "COBJS   =$(COBJS)"
 	-@echo ""
 	-@echo "MEMBERS =$(MEMBERS)"
+	-@echo ""
+	-@echo "RANLIB  =$(RANLIB)"
+	-@echo "LDFLAGS =$(LDFLAGS)"
+	-@echo "PREFIX  =$(PREFIX)"
 endif

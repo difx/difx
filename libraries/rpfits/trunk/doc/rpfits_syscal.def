@@ -1,0 +1,80 @@
+RPFITS syscal definition
+
+sc_q := elements per section:
+  ATCA:    =  16
+  Parkes:  =  22
+  LBA:     =  18
+
+per-antenna section
+-------------------
+1  antenna number
+2  IF number
+3  XY phase (0.0 PKS)
+4  +/- Tsys_A  +=cal, -=uncal
+5  +/- Tsys_B    "       "
+6  Sampl_neg_A
+7  Sampl_zero_A
+8  Sampl_pos_A
+9  Sampl_neg_B
+10  Sampl_zero_B
+11  Sampl_pos_B
+12  Parallactic angle
+13  Flag = 1*(.not.on_source) + 2*(corr_flag_A) + 4*(corr_flag_B) 
+14  XY amplitude (0.0) 
+
+ Additional parameters for ATCA, Parkes (as of ~Dec 2003)
+15  TrkErrMax
+16  TrkErrRms
+
+ Additional parameters for Parkes data (as of ~Dec 2003)
+ (Technically, iff "OLDPARAM messages are received").
+17  cal_Jy_A
+18  cal_Jy_B
+19  tp_OFF_A (counts)
+20  tp_ON_A     "
+21  tp_OFF_B    "
+22  tp_ON_B     "
+
+ Additional parameters for LBA data (sc_q=18)
+15  Antenna total delay (us, integral part)
+16  Antenna total delay (us, fractional part)
+17  Antenna clock model delay (us, whole part)
+18  Antenna clock model delay (us, fractional part)
+
+
+
+Additional syscal record (ATCA)
+ 1  0 
+ 2  Temperature (C)
+ 3  Air pressure (mB)
+ 4  Humidity (%RH)
+ 5  Wind speed (km/h ?)
+ 6  Wind direction (d)
+ 7  Weather flag (0 invalid, 1 valid)
+ 8  Rain gauge
+ 9  Seeing monitor phase
+10  Seeing monitor RMS phase
+11  Seeing monitor flag (0 invalid, 1 valid)
+12  0
+13  0
+14  0
+15  0
+16  0
+
+Additional syscal record (Parkes)
+ 1  0.0
+ 2  Az (rads)
+ 3  El (rads)
+ 4  Parangle (rads)
+ 5  Focus_Y (mm)
+ 6  Focus_Z (mm)
+ 7  Focus_R (rads)
+ 8  Temp
+ 9  Pressure
+10  Humidity
+11  Windspeed
+12  Wind Dir
+13-16 cal_jy_time (ASCII datestring of cal file)
+17  Reference beam
+
+JER 04-Apr-2007

@@ -45,11 +45,14 @@ C-----------------OTHER BITS & PIECES-----------------------------------
      +          n_words, newdim, pcount
       real      buffer(640), crpix4, grphdr(11),
      +          sc_buf(max_sc*max_if*ant_max)
+      double precision d2pi
       character key*8, utdate*12
 
       equivalence (i_buff(1), buffer(1))
       equivalence (i_grphdr(1), grphdr(1))
       equivalence (sc_buf(1), sc_cal(1,1,1))
+
+      parameter (d2pi = 2d0 * 3.14159265358979323846d0)
 
 C-------------------TEMPLATE FOR FILE HEADERS---------------------------
 
@@ -71,7 +74,7 @@ C-------------------TEMPLATE FOR FILE HEADERS---------------------------
 
       data (m(i), i = 1,15) /
      + 'SIMPLE  =                    F  / NONCONFORMIST',
-     + 'FORMAT  =               RPFITS  / RPFITS',
+     + 'FORMAT  =             ''RPFITS''  / RPFITS',
      + 'SCANS   =                   -1  / No. of scans in file',
      + 'BITPIX  =                  -32  / Values are real',
      + 'NAXIS   =                    6  /',
@@ -282,12 +285,19 @@ C------------ SORT OUT OBSOLETE HEADER QUANTITIES IF NECESSARY ---------
          crpix4 = if_ref(1)
 
          n_su = MAX (1, n_su)
-         if (object.eq.' ') object = su_name(1)
-         if (ra.eq.0.0) ra = su_ra(1)
-         if (dec.eq.0.0) dec = su_dec(1)
-         if (su_name(1).eq.' ') su_name(1) = object
-         if (su_ra(1).eq.0.0) su_ra(1) = ra
-         if (su_dec(1).eq.0.0) su_dec(1) = dec
+         if (object.eq.' ') then
+           object = su_name(1)
+         else if (su_name(1).eq.' ') then
+           su_name(1) = object
+         end if
+
+         if (ra.eq.0d0 .and. dec.eq.0d0) then
+           ra  = su_ra(1)
+           dec = su_dec(1)
+         else if (su_ra(1).eq.0d0 .and. su_dec(1).eq.0d0) then
+           su_ra(1)  = ra
+           su_dec(1) = dec
+         end if
 
 C---------------------WRITE FILE HEADER---------------------------------
 
@@ -317,6 +327,7 @@ C---------------------WRITE FILE HEADER---------------------------------
                   write (m(i)(11:30), '(g20.12)') freq
                   call RJUSTY(m(i)(11:30))
                else if (key.EQ.'CRVAL5') then
+                  if (ra.lt.0d0) ra = ra + d2pi
                   write (m(i)(11:30), '(g20.12)') ra
                   call RJUSTY(m(i)(11:30))
                else if (key.EQ.'CRVAL6') then

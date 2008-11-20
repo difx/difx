@@ -34,7 +34,7 @@
 *   same address, e.g. CALL IV2B (B, B) is allowed.
 *
 *   Original: 1997/08/20 MRC
-*   $Id: dconv.f,v 1.5 2001/02/08 01:02:44 mcalabre Exp $
+*   $Id: dconv.f,v 1.6 2007/05/04 02:27:54 cal103 Exp $
 *=======================================================================
 *   Two's complement integer representation
 *-----------------------------------------------------------------------
@@ -106,11 +106,11 @@
 *
 *      bit field  (significance increases with increasing bit number)
 *      ---------
-*           31     sign bit
-*        23-30     exponent
-*         0-22     fraction
+*           31     sign bit ( 1 bit)
+*        23-30     exponent ( 8 bits)
+*         0-22     fraction (23 bits)
 *
-*   The IEEE single precision representation is summarized as follows:
+*   The IEEE single-precision representation is summarized as follows:
 *
 *      seeeeeee efffffff ffffffff ffffffff
 *      -----------------------------------
@@ -148,6 +148,75 @@
 *   Where b is the byte address in memory (b precedes b+1).  DEC Alphas,
 *   and INTEL machines (PCs) are commonly little-endian, while most
 *   other IEEE 754 machines are big-endian.
+*
+*=======================================================================
+*   Integer representations of IEEE floating point infinities and NaNs
+*-----------------------------------------------------------------------
+*
+*   Assuming consistent endianness of integer and single-precision
+*   representations the following relations may be useful:
+*
+*   -Infinity:
+*     11111111 10000000 00000000 00000000 =   -8388608
+*
+*   Negative range of signalling NaNs:
+*     11111111 10000000 00000000 00000001 =   -8388607
+*         :
+*     11111111 10111111 11111111 11111111 =   -4194305
+*
+*   Negative range of quiet NaNs:
+*     11111111 11000000 00000000 00000000 =   -4194304
+*         :
+*     11111111 11111111 11111111 11111111 =         -1
+*
+*   +Infinity:
+*     01111111 10000000 00000000 00000000 = 2139095040
+*
+*   Positive range of signalling NaNs:
+*     01111111 10000000 00000000 00000001 = 2139095041
+*         :
+*     01111111 10111111 11111111 11111111 = 2143289343
+*
+*   Positive range of quiet NaNs:
+*     01111111 11000000 00000000 00000000 = 2143289344
+*         :
+*     01111111 11111111 11111111 11111111 = 2147483647
+*
+*   Thus the integer representation of IEEE floating point infinities
+*   and NaNs ranges from -8388608 to -1, and 2139095040 to 2147483647
+*   inclusive.
+*
+*=======================================================================
+*   IEEE 754-1985 double-precision floating representation
+*-----------------------------------------------------------------------
+*
+*   The bit-pattern of an IEEE 754-1985 double-precision floating point
+*   number is
+*
+*      byte:    0        1        2        3        4     ...    7
+*            seeeeeee eeeeffff ffffffff ffffffff ffffffff ... ffffffff
+*            ^                                                       ^
+*      bit: 63                                                       0
+*
+*      bit field  (significance increases with increasing bit number)
+*      ---------
+*           63     sign bit ( 1 bit)
+*        52-62     exponent (11 bits)
+*         0-51     fraction (52 bits)
+*
+*   The representation of infinities and NaNs follows the pattern
+*   established for single-precision numbers.
+*
+*   The value of a normalized number is 
+*
+*      (-1)**s * 2**(e-1023) * 1.f
+*
+*   where the implicit fraction bit occurs to the left of the binary
+*   radix point.
+*
+*   The value of an unnormalized number is 
+*
+*      (-1)**s * 2**(-1022) * 0.f
 *
 *=======================================================================
 *   VAX F_floating single-precision floating representation
