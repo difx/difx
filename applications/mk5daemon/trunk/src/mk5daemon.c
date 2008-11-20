@@ -204,15 +204,15 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(fork())
-	{
-		printf("Spawned\n");
-		return 0;
-	}
-
 	if(setuid(0) != 0)
 	{
 		fprintf(stderr, "Need suid root permission.  Bailing.\n");
+		return 0;
+	}
+
+	if(fork())
+	{
+		printf("*** mk5daemon spawned ***\n");
 		return 0;
 	}
 
@@ -266,7 +266,7 @@ int main(int argc, char **argv)
 				}
 				pthread_mutex_unlock(&D->processLock);
 			}
-//#ifdef STREAMSTOR_NOT_BROKEN
+
 			if(lastTime % D->loadMonInterval == halfInterval)
 			{
 				v = procGetStreamstor(&busy);
@@ -291,7 +291,6 @@ int main(int argc, char **argv)
 					Mk5Daemon_getModules(D);
 				}
 			}
-//#endif
 		}
 
 		if(t != 0 && t - D->lastMpifxcorrUpdate > 20 &&

@@ -76,11 +76,13 @@ void Mk5Daemon_stopMark5A(Mk5Daemon *D)
 	const char command[] = "killall -s INT Mark5A";
 
 	/* if Mark5A got usage in last 3 seconds, don't allow */
+#if 0
 	if(time(0) - D->lastMark5AUpdate < 3)
 	{
 		Logger_logData(D->log, "Killing of Mark5A denied\n");
 		return;
 	}
+#endif
 	pthread_mutex_lock(&D->processLock);
 
 	if(D->process == PROCESS_MARK5A)
