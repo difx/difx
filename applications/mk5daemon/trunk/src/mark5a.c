@@ -10,6 +10,9 @@
 #include <arpa/inet.h>
 #include "mk5daemon.h"
 
+const int MARK5A_PORT=2620;
+
+
 static void *mark5Arun(void *ptr)
 {
 	const char command[] = "/usr/bin/Mark5A -m 0 2>&1";
@@ -187,7 +190,7 @@ int mark5command(const char *outstr, char *instr, int maxlen)
 		return -2;
 	}
 
-	n = strlen(line);
+	n = strlen(outstr);
 
 	if(send(sock, outstr, n, 0) < 1)
 	{

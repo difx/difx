@@ -5,7 +5,7 @@ autoconf
 autoheader
 automake -a
 
-./configure --prefix=<prefix>
+./configure --prefix=$DIFX_PREFIX
 make
 # (su root?)
 make install

@@ -6,8 +6,6 @@
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
-#define MARK5A_PORT     2620
-
 static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 {
 	SSHANDLE xlrDevice;
@@ -128,8 +126,6 @@ static int Mark5A_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 	vsna[0] = vsnb[0] = 0;
 
-	sprintf(line, "bank_set?\n");
-
 	n = mark5command("bank_set?\n", message, 511);
 
 	if(n < 0)
@@ -244,7 +240,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 }
 
 /* on > 0 for mount, 0 for dismount */
-static int XLR_disc_power(Mk5Daemon *D, char *banks, int on)
+static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 {
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
