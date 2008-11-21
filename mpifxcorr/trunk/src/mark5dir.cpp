@@ -115,6 +115,7 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 	XLR_RETURN_CODE xlrRC;
 	Mark5Directory m5dir;
 	int len, i, n;
+	unsigned int j;
 	struct mark5_format *mf;
 	Mark5Scan *scan;
 	char label[XLR_LABEL_LENGTH];
@@ -155,9 +156,9 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 
 	/* the adventurous would use md5 here */
 	signature = 1;
-	for(i = 0; i < sizeof(struct Mark5Directory)/4; i++)
+	for(j = 0; j < sizeof(struct Mark5Directory)/4; j++)
 	{
-		x = ((unsigned int *)(&m5dir))[i] + 1;
+		x = ((unsigned int *)(&m5dir))[j] + 1;
 		signature = signature ^ x;
 	}
 
@@ -303,7 +304,6 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 	int i, nscans, n;
 	char bank;
 	char label[XLR_LABEL_LENGTH];
-	double sec, framesec;
 	unsigned int signature;
 
 	if(!module)

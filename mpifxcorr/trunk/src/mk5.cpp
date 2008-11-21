@@ -23,7 +23,7 @@
 #include "mk5.h"
 
 #include <iomanip>
-
+#include <cstring>
 
 #include <errno.h>
 #include <math.h>
@@ -349,7 +349,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
   } else { // UDP
     bool done, first;
     int segmentsize;
-    long long packet_index, packet_segmentend, next_segmentstart, next_udpoffset;
+    long long packet_index, packet_segmentend, next_segmentstart=0, next_udpoffset=0;
     unsigned long long sequence;
     struct msghdr msg;
     struct iovec iov[2];
@@ -562,7 +562,7 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
   char formatname[64];
   char *ptr;
   struct mark5_stream *mark5stream;
-  int nbits, ninputbands, segmentbytes;
+  int nbits, ninputbands;
   Configuration::dataformat format;
   double bw;
 

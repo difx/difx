@@ -30,6 +30,7 @@
 #include <errno.h>
 #include <values.h>
 #include <math.h>
+#include <cstring>
 #include "config.h"
 #include "alert.h"
 

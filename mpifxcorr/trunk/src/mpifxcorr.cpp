@@ -34,6 +34,7 @@
 #include "mk5.h"
 #include "nativemk5.h"
 #include "mpifxcorr.h"
+#include <cstring>
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include <sys/socket.h>
@@ -153,8 +154,7 @@ int main(int argc, char *argv[])
   string monitoropt;
   int nameslength = 1;
   char * monhostname = new char[nameslength];
-  char * mpihost = new char[nameslength];
-  int port, monitor_skip, namelen;
+  int port=0, monitor_skip=0, namelen;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   char difxMessageID[128];
 

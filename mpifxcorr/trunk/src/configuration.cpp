@@ -20,6 +20,7 @@
 //
 //============================================================================
 #include <mpi.h>
+#include <cstring>
 #include "configuration.h"
 #include "mode.h"
 #include "datastream.h"

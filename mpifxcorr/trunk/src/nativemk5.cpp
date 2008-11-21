@@ -137,10 +137,11 @@ NativeMk5DataStream::~NativeMk5DataStream()
 /* Here "File" is VSN */
 void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 {
+	char defaultDirPath[] = ".";
 	double startmjd;
 	double scanstart, scanend;
 	int v, i;
-	int scanns;
+	int scanns = 0;
 	long long n;
 	int doUpdate = 0;
 	char *mk5dirpath;
@@ -167,7 +168,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	mk5dirpath = getenv("MARK5_DIR_PATH");
 	if(mk5dirpath == 0)
 	{
-		mk5dirpath = ".";
+		mk5dirpath = defaultDirPath;
 	}
 
 	startmjd = corrstartday + corrstartseconds/86400.0;
@@ -353,14 +354,14 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	S_READDESC      xlrRD;
 	XLR_RETURN_CODE xlrRC;
 	XLR_ERROR_CODE  xlrEC;
-	XLR_READ_STATUS xlrRS;
+	XLR_READ_STATUS xlrRS=XLR_SUCCESS;
 	int bytes;
 	char errStr[XLR_ERROR_LENGTH];
 	static int now = 0;
 	static long long lastpos = 0;
 	struct timeval tv;
 	int mjd, sec, sec2;
-	double ns, ms;
+	double ns;
 
 	/* All reads of a module must be 64 bit aligned */
 	bytes = readbytes;
