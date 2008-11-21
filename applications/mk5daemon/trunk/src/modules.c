@@ -11,7 +11,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
-	XLR_ERROR_CODE xlrError;
+	unsigned int xlrError;
 	char message[100+(XLR_ERROR_LENGTH)];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
 	
@@ -157,31 +157,33 @@ static int Mark5A_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 			nptr++;
 		}
 	}
-	for(i = nptr; i < 8; i++)
+
+	if(nptr >= 2)
 	{
-		ptr[i] = message;
+		if(ptr[0][0] == 'A' && ptr[0][1] <= ' ' && ptr[1][0] != '-')
+		{
+			strncpy(vsna, ptr[1], 8);
+			vsna[8] = 0;
+		}
+		if(ptr[0][0] == 'B' && ptr[0][1] <= ' ' && ptr[1][0] != '-')
+		{
+			strncpy(vsnb, ptr[1], 8);
+			vsnb[8] = 0;
+		}
 	}
 
-	if(ptr[0][0] == 'A' && ptr[1][0] != '-')
+	if(nptr >= 4)
 	{
-		strncpy(vsna, ptr[1], 8);
-		vsna[8] = 0;
-	}
-	if(ptr[0][0] == 'B' && ptr[1][0] != '-')
-	{
-		strncpy(vsnb, ptr[1], 8);
-		vsnb[8] = 0;
-	}
-
-	if(ptr[2][0] == 'A' && ptr[3][0] != '-')
-	{
-		strncpy(vsna, ptr[3], 8);
-		vsna[8] = 0;
-	}
-	if(ptr[2][0] == 'B' && ptr[3][0] != '-')
-	{
-		strncpy(vsnb, ptr[3], 8);
-		vsnb[8] = 0;
+		if(ptr[2][0] == 'A' && ptr[2][1] <= ' ' && ptr[3][0] != '-')
+		{
+			strncpy(vsna, ptr[3], 8);
+			vsna[8] = 0;
+		}
+		if(ptr[2][0] == 'B' && ptr[2][1] <= ' ' && ptr[3][0] != '-')
+		{
+			strncpy(vsnb, ptr[3], 8);
+			vsnb[8] = 0;
+		}
 	}
 
 	return 0;
@@ -243,9 +245,8 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 {
 	SSHANDLE xlrDevice;
-	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
-	XLR_ERROR_CODE xlrError;
+	unsigned int xlrError;
 	char message[100+(XLR_ERROR_LENGTH)];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
 	int i, bank;

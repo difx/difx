@@ -313,7 +313,6 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 	int i, nscans, n;
 	char bank;
 	char label[XLR_LABEL_LENGTH];
-	double sec, framesec;
 	unsigned int signature;
 
 	if(!module)

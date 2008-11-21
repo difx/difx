@@ -251,8 +251,7 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 static void *monitorMultiListen(void *ptr)
 {
 	Mk5Daemon *D;
-	int sock, port, n, v;
-	char group[16];
+	int sock, n, v;
 	char message[2000], from[20];
 	DifxMessageGeneric G;
 

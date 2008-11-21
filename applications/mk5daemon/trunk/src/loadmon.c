@@ -8,7 +8,6 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 {
 	long long curRX, curTX;
 	long long d;
-	char message[1024];
 	float l1, l5, l15;
 	int memused, memtot;
 	char logMessage[256];

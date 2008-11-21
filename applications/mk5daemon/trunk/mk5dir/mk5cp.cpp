@@ -121,7 +121,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		{
 			printf("%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
 		}
-		sprintf(mk5status->scanName, "%s[%d%%]", scan->name, 100*(readptr-scan->start)/scan->length);
+		sprintf(mk5status->scanName, "%s[%Ld%%]", scan->name, 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
 		mk5status->rate = rate;
 		difxMessageSendMark5Status(mk5status);
@@ -192,8 +192,8 @@ int main(int argc, char **argv)
 {
 	int mjdnow;
 	const char *mk5dirpath;
-	const char *scanlist;
-	const char *outpath;
+	const char *scanlist=0;
+	const char *outpath=0;
 	struct Mark5Module module;
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;

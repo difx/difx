@@ -169,11 +169,11 @@ int mark5command(const char *outstr, char *instr, int maxlen)
 	int n;
 
 	sock = socket(AF_INET, SOCK_STREAM, 0);
+	if(sock < 0)
 	{
 		return -1;
 	}
 	
-
 	tv.tv_sec = 9;	
 	tv.tv_usec = 0;
 	setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
@@ -199,14 +199,13 @@ int mark5command(const char *outstr, char *instr, int maxlen)
 	}
 
 	n = recv(sock, instr, maxlen, 0);
+	close(sock);
+
 	if(n < 1)
 	{
-		close(sock);
 		return -4;
 	}
 	instr[n] = 0;
-
-	close(sock);
 
 	return n;
 }

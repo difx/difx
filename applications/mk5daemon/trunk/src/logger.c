@@ -8,7 +8,6 @@
 static int Logger_newFile(Logger *log, int mjd)
 {
 	char filename[256];
-	time_t t;
 
 	if(log->out)
 	{
@@ -89,4 +88,6 @@ int Logger_logData(Logger *log, const char *message)
 	fflush(log->out);
 
 	pthread_mutex_unlock(&log->lock);
+
+	return 0;
 }

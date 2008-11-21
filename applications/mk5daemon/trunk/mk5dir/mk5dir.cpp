@@ -76,8 +76,7 @@ int main(int argc, char **argv)
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
 	char vsn[16] = "";
-	int v;
-	int a;
+	int a, v;
 
 	if(argc < 2)
 	{
@@ -218,7 +217,7 @@ int main(int argc, char **argv)
 		memset(&module, 0, sizeof(module));
 		module.bank = -1;
 
-		if(strlen(mk5status.vsnB) == 8 && v == 0)
+		if(strlen(mk5status.vsnB) == 8)
 		{
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnB, mk5dirpath, &dirCallback, 
