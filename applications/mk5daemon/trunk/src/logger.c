@@ -34,7 +34,7 @@ Logger *newLogger(const char *logPath)
 
 	strcpy(log->logPath, logPath);
 	gethostname(log->hostName, 32);
-	log->hostName[32] = 0;
+	log->hostName[31] = 0;
 
 	mjd = (int)(40587.0 + t/86400.0);
 
