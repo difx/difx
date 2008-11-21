@@ -4,6 +4,7 @@
 #include "../vex/vex_parse.h"
 #include <cstring>
 #include <cctype>
+#include <algorithm>
 
 // To capitalize a string
 #define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)

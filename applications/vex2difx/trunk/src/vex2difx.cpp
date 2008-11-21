@@ -4,6 +4,7 @@
 #include <difxio/difx_input.h>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include "vextables.h"
 #include "corrparams.h"
