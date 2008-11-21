@@ -2,6 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <glob.h>
+#include <sys/stat.h>
 #include "difx2fits.h"
 #include "../config.h"
 

@@ -133,7 +133,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 {
 	Sniffer *S;
 	char filename[256];
-	int a1, a2, i, c;
+	int a1, a2, c;
 	double tMax = 0.0;
 	FILE *log;
 
@@ -237,7 +237,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 
 void deleteSniffer(Sniffer *S)
 {
-	int a, i;
+	int a;
 
 	if(S)
 	{
@@ -607,7 +607,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	double mjd;
 	Accumulator *A;
 	int a1, a2;
-	int a, b, i, p;
+	int i, p;
 	int configId, sourceId;
 	float weight;
 	int stride, offset, bbc, index;

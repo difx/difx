@@ -330,7 +330,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	const DifxConfig *config;
 	const DifxScan *scan;
 	const DifxPolyModel *im1, *im2;
-	int terms1, terms2, n;
+	int terms1, terms2;
 	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
 
 	resetDifxParameters(dv->dp);
@@ -412,7 +412,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	if(a1 < 0 || a1 >= config->nAntenna ||
 	   a2 < 0 || a2 >= config->nAntenna)
 	{
-		printf("Error: illegal baseline %d -> %s-%s\n", bl, a1, a2);
+		printf("Error: illegal baseline %d -> %d-%d\n", bl, a1, a2);
 		return -8;
 	}
 
@@ -474,6 +474,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		if(scan->im)
 		{
 			double u,v,w;
+			int n;
+
+			n = getDifxScanIMIndex(scan, mjd, &dt);
 
 			u = dv->U;
 			v = dv->V;
@@ -484,7 +487,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 			im2 = scan->im[aa2];
 			if(im1 && im2)
 			{
-				n = getDifxScanIMIndex(scan, mjd, &dt);
 				if(n < 0)
 				{
 					fprintf(stderr, "Error: interferometer model index out of range: scanId=%d mjd=%12.6f\n",

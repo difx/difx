@@ -94,7 +94,7 @@ char *srvMjd2str
  */
 {
     char *poriginal = pOutStr;  /* hold output string address for return */
-    long mjd;
+    int mjd;
     double rads;
     char tempStr[40];
 
