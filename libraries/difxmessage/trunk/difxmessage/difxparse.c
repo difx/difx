@@ -230,8 +230,8 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 				}
 				if(strcmp(elem, "name") == 0)
 				{
-					strncpy(G->body.param.paramName, s, DIFX_MESSAGE_LENGTH-1);
-					G->body.param.paramName[DIFX_MESSAGE_LENGTH-1] = 0;
+					strncpy(G->body.param.paramName, s, DIFX_MESSAGE_PARAM_LENGTH-1);
+					G->body.param.paramName[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
 				}
 				if(strcmp(elem, "value") == 0)
 				{
