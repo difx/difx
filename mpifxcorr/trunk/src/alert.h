@@ -41,6 +41,7 @@ public:
 	
 	~Alert()
 	{
+		// flush unsent message at destruction time
 		if(alertString.str().length() > 0)
 		{
 			sendAlert();

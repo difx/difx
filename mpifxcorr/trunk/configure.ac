@@ -43,7 +43,7 @@ AC_CHECK_HEADER([xlrapi.h],
 		[AC_DEFINE([HAVE_XLRAPI_H], 1, [1=has SS])],
 		[ss_enabled=false])
 if test ${ss_enabled} = true; then
-	SS_LIBS="-lwdapi910 -lssapi"
+	SS_LIBS="-lwdapi921 -lssapi -lrt"
 else
 	SS_LIBS=""
 fi
