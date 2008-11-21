@@ -147,7 +147,7 @@ protected:
   void calculateDMPhaseOffsets(double offsetmins);
 
   string pulsarname;
-  int observatory, timespan, numcoefficients, mjd, numbins, numfreqs, numchannels, configindex;
+  int configindex, numbins, numchannels, numfreqs, observatory, timespan, numcoefficients, mjd;
   double mjdfraction, dt0, dm, dopplershift, logresidual, refphase, f0, obsfrequency, binaryphase, minbinwidth, bandwidth, calclengthmins;
   double * coefficients;
   f64 * binphases;

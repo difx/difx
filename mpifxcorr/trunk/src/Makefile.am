@@ -37,7 +37,7 @@ noinst_HEADERS = \
 	alert.h
 
 mpifxcorr_LDADD = \
-	-lipps -lguide -lippvm 
+	-lipps -liomp5 -lippvm 
 
 lib_LIBRARIES = libmpifxcorr.a
 libmpifxcorr_a_SOURCES = \

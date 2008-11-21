@@ -28,14 +28,14 @@ const double Polyco::BIN_TOLERANCE = 0.01;
 const double Polyco::DM_CONSTANT_SECS = 1.0/0.000241;
 
 Polyco::Polyco(string filename, int confindex, int nbins, int nchans, double * bphases, double * bweights, double calcmins)
-  : configindex(confindex), numbins(nbins), numchannels(nchans), calclengthmins(calcmins), numfreqs(-1)
+  : configindex(confindex), numbins(nbins), numchannels(nchans), numfreqs(-1), calclengthmins(calcmins)
 {
   int status;
 
   //load the polyco file
   bool ok = loadPolycoFile(filename);
   if(!ok)
-    cerror << "Error trying to open polyco file " << filename << endl;
+    cerror << startl << "Error trying to open polyco file " << filename << endl;
 
   //allocate the phase and weight arrays
   absolutephases = vectorAlloc_f64(numchannels + 1);
@@ -43,32 +43,33 @@ Polyco::Polyco(string filename, int confindex, int nbins, int nchans, double * b
   binphases = vectorAlloc_f64(numbins);
   status = vectorCopy_f64(bphases, binphases, numbins);
   if(status != vecNoErr)
-    csevere << "Error copying binphases in Polyco!!" << endl;
+    csevere << startl << "Error copying binphases in Polyco!!" << endl;
 
   binweights = vectorAlloc_f64(numbins);
   status = vectorCopy_f64(bweights, binweights, numbins);
   if(status != vecNoErr)
-    csevere << "Error copying binweights in Polyco!!" << endl;
+    csevere << startl << "Error copying binweights in Polyco!!" << endl;
   
-  cinfo << "Polyco " << filename << " created successfully" << endl;
+  cinfo << startl << "Polyco " << filename << " created successfully" << endl;
 }
 
+// FIXME: WFB: dt0 not copied -- is that OK?
 Polyco::Polyco(const Polyco & tocopy)
-  : configindex(tocopy.configindex), numbins(tocopy.numbins), numchannels(tocopy.numchannels), numfreqs(tocopy.numfreqs), calclengthmins(tocopy.calclengthmins), numcoefficients(tocopy.numcoefficients), mjd(tocopy.mjd), mjdfraction(tocopy.mjdfraction), timespan(tocopy.timespan), bandwidth(tocopy.bandwidth), dm(tocopy.dm), dopplershift(tocopy.dopplershift), logresidual(tocopy.logresidual), refphase(tocopy.refphase), f0(tocopy.f0), obsfrequency(tocopy.obsfrequency), binaryphase(tocopy.binaryphase), minbinwidth(tocopy.minbinwidth), observatory(tocopy.observatory), pulsarname(tocopy.pulsarname)
+  : pulsarname(tocopy.pulsarname), configindex(tocopy.configindex), numbins(tocopy.numbins), numchannels(tocopy.numchannels), numfreqs(tocopy.numfreqs), observatory(tocopy.observatory), timespan(tocopy.timespan), numcoefficients(tocopy.numcoefficients), mjd(tocopy.mjd), mjdfraction(tocopy.mjdfraction), dm(tocopy.dm), dopplershift(tocopy.dopplershift), logresidual(tocopy.logresidual), refphase(tocopy.refphase), f0(tocopy.f0), obsfrequency(tocopy.obsfrequency), binaryphase(tocopy.binaryphase), minbinwidth(tocopy.minbinwidth), bandwidth(tocopy.bandwidth), calclengthmins(tocopy.calclengthmins)
 {
   int status;
-  cinfo << "Started copying a polyco" << endl;
+  cinfo << startl << "Started copying a polyco" << endl;
 
   //copy as much information as is contained in the copy Polyco
   binphases = vectorAlloc_f64(numbins);
   status = vectorCopy_f64(tocopy.binphases, binphases, numbins);
   if(status != vecNoErr)
-    csevere << "Error copying binphases in Polyco!!" << endl;
+    csevere << startl << "Error copying binphases in Polyco!!" << endl;
     
   binweights = vectorAlloc_f64(numbins);
   status = vectorCopy_f64(tocopy.binweights, binweights, numbins);
   if(status != vecNoErr)
-    csevere << "Error copying binweights in Polyco!!" << endl;
+    csevere << startl << "Error copying binweights in Polyco!!" << endl;
   
   absolutephases = vectorAlloc_f64(numchannels + 1);
   coefficients = new double[numcoefficients];
@@ -111,7 +112,7 @@ Polyco::Polyco(const Polyco & tocopy)
     }
   }
   
-  cinfo << "Finished copying a polyco!" << endl;
+  cinfo << startl << "Finished copying a polyco!" << endl;
 }
 
 Polyco::~Polyco()
@@ -170,7 +171,7 @@ void Polyco::getBins(double offsetmins, int **bins)
     }
     status = vectorDotProduct_f64(timepowerarray, phasecoefficientarray, numcoefficients, &averagephase);
     if(status != vecNoErr)
-        csevere << "Error!!! Problem calculating vector dot product in polyco::getBins" << endl;
+        csevere << startl << "Error!!! Problem calculating vector dot product in polyco::getBins" << endl;
 
     //loop through all the frequencies and subtract the phase offsets for this frequency
     for(int i=0;i<numfreqs;i++)
@@ -178,7 +179,7 @@ void Polyco::getBins(double offsetmins, int **bins)
         //now subtract the dmphaseoffsets for this observing frequency
         status = vectorAddC_f64(dmPhaseOffsets[i], averagephase, absolutephases, numchannels + 1);
         if(status != vecNoErr)
-            csevere << "Error!!! Problem adding dmPhaseOffsets to average phase!!!" << endl;
+            csevere << startl << "Error!!! Problem adding dmPhaseOffsets to average phase!!!" << endl;
 
         //now work out the modulophase for each element and thence its bin
         for(int j=0;j<numchannels+1;j++)
@@ -239,7 +240,7 @@ void Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
 
     if(minbinwidth < 0.0)
     {
-        cfatal << "Error!! Bin phase breakpoints are not in linear ascending order!!!" << endl;
+        cfatal << startl << "Error!! Bin phase breakpoints are not in linear ascending order!!!" << endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
@@ -271,12 +272,12 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
         timepowerarray[i] = dt0*timepowerarray[i-1];
     status = vectorDotProduct_f64(timepowerarray, freqcoefficientarray, numcoefficients, &startf);
     if(status != vecNoErr)
-        csevere << "Error!!! Problem calculating vector dot product in polyco" << endl;
+        csevere << startl << "Error!!! Problem calculating vector dot product in polyco" << endl;
     for(int i=1;i<numcoefficients;i++)
         timepowerarray[i] = endt*timepowerarray[i-1];
     status = vectorDotProduct_f64(timepowerarray, freqcoefficientarray, numcoefficients, &endf);
     if(status != vecNoErr)
-        csevere << "Error!!! Problem calculating vector dot product in polyco" << endl;
+        csevere << startl << "Error!!! Problem calculating vector dot product in polyco" << endl;
 
     freqgradient = (startf>endf)?(startf-endf)/calclengthmins:(endf-startf)/calclengthmins;
 
@@ -293,7 +294,7 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
 
     //now, we need to make sure our required valid length is not longer than the validity time we've just worked out
     if(maxdeltafreq/freqgradient < calclengthmins)
-      cerror << "Error - Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << ", maxdeltaphase is " << maxdeltaphase << ", minbinwidth is " << minbinwidth << ", freqgradient is " << freqgradient << ", maxdeltafreq is " << maxdeltafreq << ", dm is " << dm << ", minlofreq is " << minlofreq << endl;
+      cerror << startl << "Error - Polyco will not be accurate over entire range of " << calclengthmins << " as the frequency is changing too rapidly.  The maximum safe calc length would be " << maxdeltafreq/freqgradient << " - try reducing blocks per send or numchannels" << ", maxdeltaphase is " << maxdeltaphase << ", minbinwidth is " << minbinwidth << ", freqgradient is " << freqgradient << ", maxdeltafreq is " << maxdeltafreq << ", dm is " << dm << ", minlofreq is " << minlofreq << endl;
 
     //work out the initial dmphasecorrect array and set the lastphasecalctime
     calculateDMPhaseOffsets(calclengthmins/2);
@@ -331,14 +332,14 @@ void Polyco::calculateDMPhaseOffsets(double offsetmins)
         timepowerarray[i] = dt*timepowerarray[i-1];
     status = vectorDotProduct_f64(timepowerarray, freqcoefficientarray, numcoefficients, &currentfreq);
     if(status != vecNoErr)
-        csevere << "Error!!! Problem calculating vector dot product in calculateDMPhaseOffsets" << endl;
+        csevere << startl << "Error!!! Problem calculating vector dot product in calculateDMPhaseOffsets" << endl;
 
     //work out the phase offset due to dispersion at each channel of each frequency
     for(int i=0;i<numfreqs;i++)
     {
         status = vectorMulC_f64(channeldmdelays[i], currentfreq, dmPhaseOffsets[i], numchannels + 1);
         if(status != vecNoErr)
-            csevere << "Error!!! Problem calculating dmPhaseOffsets!!!" << endl;
+            csevere << startl << "Error!!! Problem calculating dmPhaseOffsets!!!" << endl;
     }
 }
 
@@ -354,7 +355,7 @@ bool Polyco::loadPolycoFile(string filename)
 
     coefficients = 0;
 
-    cinfo << "About to start processing the polyco file " << filename << endl;
+    cinfo << startl << "About to start processing the polyco file " << filename << endl;
 
     //process the first line
     input.get(buffer, 11);
@@ -417,7 +418,7 @@ bool Polyco::loadPolycoFile(string filename)
     {
         input.get(buffer, 26);
 	if(input.fail())
-	  cerror << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
+	  cerror << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
         coefficients[i] = atof(buffer);
         if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
             getline(input, strbuffer);

@@ -48,7 +48,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
 {
   int status;
 
-  cverbose << "About to create visibility " << id << "/" << numvis << endl;
+  cverbose << startl << "About to create visibility " << id << "/" << numvis << endl;
 
   if(visID == 0)
     *mon_socket = -1;
@@ -61,7 +61,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   results = vectorAlloc_cf32(resultlength);
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
-    csevere << "Error trying to zero when incrementing visibility " << visID << endl;
+    csevere << startl << "Error trying to zero when incrementing visibility " << visID << endl;
   numbaselines = config->getNumBaselines();
   currentconfigindex = config->getConfigIndex(skipseconds);
   expermjd = config->getStartMJD();
@@ -131,7 +131,7 @@ bool Visibility::addData(cf32* subintresults)
 
   status = vectorAdd_cf32_I(subintresults, results, resultlength);
   if(status != vecNoErr)
-    csevere << "Error copying results in Vis. " << visID << endl;
+    csevere << startl << "Error copying results in Vis. " << visID << endl;
   currentsubints++;
 
   return (currentsubints==subintsthisintegration); //are we finished integrating?
@@ -140,7 +140,7 @@ bool Visibility::addData(cf32* subintresults)
 void Visibility::increment()
 {
   int status;
-  cinfo << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
+  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
@@ -148,7 +148,7 @@ void Visibility::increment()
 
   status = vectorZero_cf32(results, resultlength);
   if(status != vecNoErr)
-    csevere << "Error trying to zero when incrementing visibility " << visID << endl;
+    csevere << startl << "Error trying to zero when incrementing visibility " << visID << endl;
 
   if(pulsarbinon) {
     for(int i=0;i<config->getFreqTableLength();i++) {
@@ -161,7 +161,7 @@ void Visibility::increment()
         {
           status = vectorZero_f32(binweightsums[i][j], config->getNumPulsarBins(currentconfigindex));
           if(status != vecNoErr)
-            csevere << "Error trying to zero binweightsums when incrementing visibility " << visID << endl;
+            csevere << startl << "Error trying to zero binweightsums when incrementing visibility " << visID << endl;
         }
       }
     }
@@ -206,7 +206,6 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
   int err=0;
   unsigned long ip_addr;
   struct hostent     *hostptr;
-  struct linger      linger = {1, 1};
   struct sockaddr_in server;    /* Socket address */
   int saveflags,ret,back_err;
   fd_set fd_w;
@@ -332,7 +331,7 @@ int Visibility::sendMonitorData(bool tofollow) {
     nwrote = send(*mon_socket, ptr, 4, 0);
     if (nwrote < 4)
     {
-      cerror << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+      cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
       return 1;
     }
 
@@ -373,13 +372,13 @@ bool Visibility::checkSocketStatus()
     if(visID != 0)
     {
       //don't even try to connect, unless you're the first visibility.  Saves trying to reconnect too often
-      cerror << "Visibility " << visID << " won't try to reconnect monitor - waiting for vis 0..." << endl;
+      cerror << startl << "Visibility " << visID << " won't try to reconnect monitor - waiting for vis 0..." << endl;
       return false;
     }
     if(openMonitorSocket(hostname, portnum, Configuration::MONITOR_TCP_WINDOWBYTES, mon_socket) != 0)
     {
       *mon_socket = -1;
-      cerror << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << numvisibilities << " integrations..." << endl;
+      cerror << startl << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << numvisibilities << " integrations..." << endl;
       return false;
     }
   }
@@ -393,7 +392,7 @@ void Visibility::writedata()
   int dumpmjd;
   double dumpseconds;
 
-  cdebug << "Vis. " << visID << " is starting to write out data" << endl;
+  cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
 
   dumpmjd = expermjd + (experseconds + currentstartseconds)/86400;
   dumpseconds = double((experseconds + currentstartseconds)%86400) + double((currentstartsamples+integrationsamples/2)/(2000000.0*config->getDBandwidth(currentconfigindex,0,0)));
@@ -408,7 +407,7 @@ void Visibility::writedata()
     //if required, send a message to the monitor not to expect any data this integration - 
     //if we can't get through to the monitor, close the socket
     if(monitor && sendMonitorData(false) != 0) {
-      cerror << "tried to send a header only to monitor and it failed - closing socket!" << endl;
+      cerror << startl << "tried to send a header only to monitor and it failed - closing socket!" << endl;
       close(*mon_socket);
       *mon_socket = -1;
     }
@@ -455,7 +454,7 @@ void Visibility::writedata()
       //work out the band average, for use in calibration (allows us to calculate fractional correlation)
       status = vectorMean_cf32(&results[skip + count], numchannels+1, &autocorrcalibs[i][j], vecAlgHintFast);
       if(status != vecNoErr)
-        csevere << "Error in getting average of autocorrelation!!!" << status << endl;
+        csevere << startl << "Error in getting average of autocorrelation!!!" << status << endl;
       count += numchannels + 1;
     }
     if(config->writeAutoCorrs(currentconfigindex) && autocorrincrement > 1)  { 
@@ -494,7 +493,7 @@ void Visibility::writedata()
           {
             status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
             if(status != vecNoErr)
-              csevere << "Error trying to amplitude calibrate the baseline data!!!" << endl;
+              csevere << startl << "Error trying to amplitude calibrate the baseline data!!!" << endl;
           }
           else
           {
@@ -506,7 +505,7 @@ void Visibility::writedata()
               scale = 1.0/(baselineweights[i][j][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*numchannels)));
               status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
               if(status != vecNoErr)
-                csevere << "Error trying to amplitude calibrate the baseline data!!!" << endl;
+                csevere << startl << "Error trying to amplitude calibrate the baseline data!!!" << endl;
             }
           }
           count += numchannels+1;
@@ -532,7 +531,7 @@ void Visibility::writedata()
 	    {
               status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
               if(status != vecNoErr)
-                csevere << "Error trying to amplitude calibrate the datastream data!!!" << endl;
+                csevere << startl << "Error trying to amplitude calibrate the datastream data!!!" << endl;
             }
             else
             {
@@ -544,7 +543,7 @@ void Visibility::writedata()
                 scale = 1.0/(autocorrweights[i][k+j*config->getDNumOutputBands(currentconfigindex, i)]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*numchannels)));
                 status = vectorMulC_f32_I(scale, (f32*)(&(results[count])), 2*(numchannels+1));
                 if(status != vecNoErr)
-                  csevere << "Error trying to amplitude calibrate the datastream data for the correlation coefficient case!!!" << endl;
+                  csevere << startl << "Error trying to amplitude calibrate the datastream data for the correlation coefficient case!!!" << endl;
               }
             }
           }
@@ -581,14 +580,14 @@ void Visibility::writedata()
         }
       }
     }
-    cinfo << "Done calculating weight sums" << endl;
+    cinfo << startl << "Done calculating weight sums" << endl;
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++) {
         for(int k=0;k<(config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);k++)
             binscales[i][k][j].re = binscales[i][k][j].im = binweightsums[i][j][k] / binweightdivisor[k];
       }
     }
-    cinfo << "Done calculating scales" << endl;
+    cinfo << startl << "Done calculating scales" << endl;
 
     //do the calibration - should address the weight here as well!
     count = 0;
@@ -602,13 +601,13 @@ void Visibility::writedata()
           {
             status = vectorMul_f32_I((f32*)(binscales[config->getBFreqIndex(currentconfigindex, i, j)][b]), (f32*)(&(results[count])), 2*(numchannels+1));
             if(status != vecNoErr)
-              csevere << "Error trying to pulsar amplitude calibrate the baseline data!!!" << endl;
+              csevere << startl << "Error trying to pulsar amplitude calibrate the baseline data!!!" << endl;
             count += numchannels+1;
           }
         }
       }
     }
-    cinfo << "Done the in-place multiplication" << endl;
+    cinfo << startl << "Done the in-place multiplication" << endl;
   }
   
   //all calibrated, now just need to write out
@@ -623,7 +622,7 @@ void Visibility::writedata()
   if(monitor) {
     if (visID % monitor_skip == 0) {
       if (sendMonitorData(true) != 0){ 
-	cerror << "Error sending monitoring data - closing socket!" << endl;
+	cerror << startl << "Error sending monitoring data - closing socket!" << endl;
 	close(*mon_socket);
 	*mon_socket = -1;
       }
@@ -631,7 +630,7 @@ void Visibility::writedata()
     }
   }
 
-  cdebug << "Vis. " << visID << " has finished writing data" << endl;
+  cdebug << startl << "Vis. " << visID << " has finished writing data" << endl;
 }
 
 void Visibility::writeascii()
@@ -654,7 +653,7 @@ void Visibility::writeascii()
      mjd++;
   }
   sprintf(datetimestring, "%05u_%02u%02u%02u_%06u", mjd, hours, minutes, seconds, microseconds);
-  cinfo << "Mjd is " << mjd << ", hours is " << hours << ", minutes is " << minutes << ", seconds is " << seconds << endl;
+  cinfo << startl << "Mjd is " << mjd << ", hours is " << hours << ", minutes is " << minutes << ", seconds is " << seconds << endl;
   
   if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
     binloop = config->getNumPulsarBins(currentconfigindex);
@@ -736,7 +735,7 @@ void Visibility::writerpfits()
         //clear the rpfits array, which is a specially ordered array of all products for this frequency
         status = vectorZero_cf32(rpfitsarray, maxproducts*(numchannels+1));
         if(status != vecNoErr)
-          csevere << "Error trying to zero the rpfitsarray!!!" << endl;
+          csevere << startl << "Error trying to zero the rpfitsarray!!!" << endl;
         freqnumber = config->getBFreqIndex(currentconfigindex, i, j) + 1;
         numpolproducts = config->getBNumPolProducts(currentconfigindex, i, j);
 
@@ -775,7 +774,7 @@ void Visibility::writerpfits()
           //zero the rpfitsarray
           status = vectorZero_cf32(rpfitsarray, maxproducts*(numchannels+1));
           if(status != vecNoErr)
-            csevere << "Error trying to zero the rpfitsarray!!!" << endl;
+            csevere << startl << "Error trying to zero the rpfitsarray!!!" << endl;
           freqnumber = config->getDFreqIndex(currentconfigindex, i, datastreampolbandoffsets[i][j][firstpolindex]%config->getDNumOutputBands(currentconfigindex, i)) + config->getIndependentChannelIndex(currentconfigindex)*config->getFreqTableLength() + 1;
 
           for(int k=0;k<maxproducts; k++)
@@ -792,13 +791,13 @@ void Visibility::writerpfits()
           rpfitsout_(&status/*should be 0 = writing data*/, visibilities, 0/*not using weights*/, &baselinenumber, &offsetstartdaysec, &buvw[0], &buvw[1], &buvw[2], &flag/*not flagged*/, &bin, &freqnumber, &sourcenumber);
         }
         else
-          cerror << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
+          cerror << startl << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
       }
       count += autocorrincrement*(numchannels+1)*config->getDNumOutputBands(currentconfigindex, i);
     }
   }
   if(status != 0)
-    cerror << "Error trying to write visibilities for " << currentstartseconds << " seconds plus " << currentstartsamples << " samples" << endl;
+    cerror << startl << "Error trying to write visibilities for " << currentstartseconds << " seconds plus " << currentstartsamples << " samples" << endl;
 
 #endif
 }
@@ -908,7 +907,7 @@ void Visibility::writedifx()
           }
         }
         else
-          cerror << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
+          cerror << startl << "WARNING - did not find any bands for frequency " << j << " of datastream " << i << endl;
       }
       count += autocorrincrement*config->getDNumOutputBands(currentconfigindex, i);
     }
@@ -917,7 +916,7 @@ void Visibility::writedifx()
 
 void Visibility::multicastweights()
 {
-  int i, j, k, pboffset;
+  int pboffset;
   float *weight;
   double mjd;
   int dumpmjd;
@@ -1043,7 +1042,7 @@ void Visibility::changeConfig(int configindex)
   offsetperintegration = integrationsamples%subintsamples;
   fftsperintegration = ((double)integrationsamples)*config->getBlocksPerSend(configindex)/((double)subintsamples);
   meansubintsperintegration = fftsperintegration/config->getBlocksPerSend(configindex);
-  cverbose << "For Visibility " << visID << ", offsetperintegration is " << offsetperintegration << ", subintsamples is " << subintsamples << ", and configindex is " << configindex << endl;
+  cverbose << startl << "For Visibility " << visID << ", offsetperintegration is " << offsetperintegration << ", subintsamples is " << subintsamples << ", and configindex is " << configindex << endl;
   resultlength = config->getResultLength(configindex);
   for(int i=0;i<numdatastreams;i++)
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
@@ -1071,7 +1070,7 @@ void Visibility::changeConfig(int configindex)
         }
         if(!found)
         {
-          cerror << "Could not find a polarisation pair, will be put in position " << maxproducts << "!!!" << endl;
+          cerror << startl << "Could not find a polarisation pair, will be put in position " << maxproducts << "!!!" << endl;
           baselinepoloffsets[i][j][k] = maxproducts-1;
         }
       }   
@@ -1083,7 +1082,7 @@ void Visibility::changeConfig(int configindex)
   {
     autocorrcalibs[i] = new cf32[config->getDNumOutputBands(configindex, i)];
     autocorrweights[i] = new f32[autocorrincrement*config->getDNumOutputBands(configindex, i)];
-    cverbose << "Creating datastreampolbandoffsets, length " << config->getDNumFreqs(configindex,i) << endl;
+    cverbose << startl << "Creating datastreampolbandoffsets, length " << config->getDNumFreqs(configindex,i) << endl;
     datastreampolbandoffsets[i] = new int*[config->getDNumFreqs(configindex,i)];
     for(int j=0;j<config->getDNumFreqs(configindex, i);j++)
     {

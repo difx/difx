@@ -154,12 +154,12 @@ protected:
   */
   virtual float unpack(int sampleoffset);
   
-  int configindex, datastreamindex, numfreqs, numinputbands, numoutputbands, numchannels, blockspersend, guardblocks, twicenumchannels, numbits, bytesperblocknumerator, bytesperblockdenominator, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, bufferseconds, unpackstartsamples, datalengthbytes;
+  Configuration * config;
+  int configindex, datastreamindex, numchannels, blockspersend, guardblocks, twicenumchannels, numfreqs, numinputbands, numoutputbands, numbits, bytesperblocknumerator, bytesperblockdenominator, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, bufferseconds, unpackstartsamples, datalengthbytes;
   double bandwidth, blockclock, sampletime, processtime, a, b, c, centredelay, toaddfirst, toaddlast; //MHz, microseconds
   double buffermicroseconds;
   int samplesperblock, samplesperlookup, numlookups, delaylength, autocorrwidth;
   bool filterbank, calccrosspolautocorrs, postffringerot, fractionalLoFreq, quadraticdelayinterp, dolinearinterp;
-  Configuration * config;
   double * freqclockoffsets;
   u8 * data;
   s16 * lookup;

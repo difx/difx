@@ -31,7 +31,7 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   bool found;
   ifstream input(uvwfilename.c_str());
   if(!input.is_open() || input.bad()) {
-    cfatal << "Error opening uvw file " << uvwfilename << " - aborting!!!" << endl;
+    cfatal << startl << "Error opening uvw file " << uvwfilename << " - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
@@ -86,7 +86,7 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
     uvw = new double***[numscans];
 
   if(!nameonly)
-    cinfo << "Scan information has been read in - numscans is " << numscans << endl;
+    cinfo << startl << "Scan information has been read in - numscans is " << numscans << endl;
 
   for(int i=0;i<numscans;i++)
   {
@@ -211,7 +211,7 @@ void Uvw::interpolateUvw(string t1name, string t2name, int mjd, float seconds, f
   }
   if(stationindex[0] < 0 || stationindex[1] < 0)
   {
-    cerror << "Error - one of the telescope " << t1name << " or " << t2name << " could not be found in the uvw file!!!" << endl;
+    cerror << startl << "Error - one of the telescope " << t1name << " or " << t2name << " could not be found in the uvw file!!!" << endl;
     buvw[0] = 0;
     buvw[1] = 0;
     buvw[2] = 0;
@@ -254,12 +254,12 @@ void Uvw::getSourceName(int mjd, int sec, string & toset)
   if(index < 0)
   {
     //NOTE -- the following error is commented out since this case seems to happen fairly frequently
-    //cerror << "Error - attempting to get a source name from mjd " << mjd << "." << double(sec)/86400.0 << ", when the uvw file begins at " << expermjd << "." << double(experstartseconds)/86400.0 << ", will take first source" << endl;
+    //cerror << startl << "Error - attempting to get a source name from mjd " << mjd << "." << double(sec)/86400.0 << ", when the uvw file begins at " << expermjd << "." << double(experstartseconds)/86400.0 << ", will take first source" << endl;
     index = 0;
   }
   else if (index >= numuvwpoints)
   {
-    //cerror << "Error - attempting to get a source name from mjd " << mjd << "." << double(sec)/86400.0 << ", when the uvw file ends at " << expermjd << "." << double(experstartseconds + numuvwpoints*uvwincrementsecs)/86400.0 << ", will take last source" << endl;
+    //cerror << startl << "Error - attempting to get a source name from mjd " << mjd << "." << double(sec)/86400.0 << ", when the uvw file ends at " << expermjd << "." << double(experstartseconds + numuvwpoints*uvwincrementsecs)/86400.0 << ", will take last source" << endl;
     index = numuvwpoints-1;
   }
   toset = scansources[scanindices[scannumbers.at(index)]].name;
@@ -281,6 +281,6 @@ int Uvw::getMountInt(string mount)
     return 3;
     
   //otherwise unknown
-  cerror << "Warning - unknown mount type: Assuming Az-El" << endl;
+  cerror << startl << "Warning - unknown mount type: Assuming Az-El" << endl;
   return 0;
 }

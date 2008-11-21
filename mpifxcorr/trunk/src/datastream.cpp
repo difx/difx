@@ -35,7 +35,7 @@
 #include "alert.h"
 
 DataStream::DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
-  : config(conf), streamnum(snum), mpiid(id), numcores(ncores), databufferfactor(bufferfactor), numdatasegments(numsegments)
+  : databufferfactor(bufferfactor), numdatasegments(numsegments), streamnum(snum), config(conf), mpiid(id), numcores(ncores)
 {
   coreids = new int[numcores];
   for(int i=0;i<numcores;i++)
@@ -72,17 +72,17 @@ void DataStream::initialise()
   bufferbytes = databufferfactor*config->getMaxDataBytes(streamnum);
   readbytes = bufferbytes/numdatasegments;
 
-  //cinfo << "******DATASTREAM " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
+  //cinfo << startl << "******DATASTREAM " << mpiid << ": Initialise. bufferbytes=" << bufferbytes << "  numdatasegments=" << numdatasegments << "  readbytes=" << readbytes << endl;
 
   for(int i=0;i<config->getNumConfigs();i++) {
     currentoverflowbytes = int((((long long)config->getDataBytes(i,streamnum))*((long long)(config->getBlocksPerSend(i) + config->getGuardBlocks(i))))/config->getBlocksPerSend(i));
     if(currentoverflowbytes > overflowbytes)
       overflowbytes = currentoverflowbytes;
   }
-  cinfo << "DATASTREAM " << mpiid << " about to allocate " << bufferbytes << " + " << overflowbytes << " bytes in databuffer" << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << " about to allocate " << bufferbytes << " + " << overflowbytes << " bytes in databuffer" << endl;
   databuffer = vectorAlloc_u8(bufferbytes + overflowbytes + 4); // a couple extra for mark5 case
   if(databuffer == NULL) {
-    cfatal << "Error - datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ")! Aborting correlation" << endl;
+    cfatal << startl << "Error - datastream " << mpiid << " could not allocate databuffer (length " << bufferbytes + overflowbytes << ")! Aborting correlation" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   int mindatabytes = config->getDataBytes(0, streamnum);
@@ -137,7 +137,7 @@ void DataStream::initialise()
     datafilenames[i] = config->getDDataFileNames(i, streamnum);
   }
 
-  cverbose << "Telescope " << stationname << " is about to process the delay file " << config->getDelayFileName() << endl;
+  cverbose << startl << "Telescope " << stationname << " is about to process the delay file " << config->getDelayFileName() << endl;
   processDelayFile(config->getDelayFileName());
 
   numsent = 0;
@@ -146,7 +146,7 @@ void DataStream::initialise()
 
 void DataStream::execute()
 {
-  cverbose << "DATASTREAM " << mpiid << " has started execution" << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << " has started execution" << endl;
   datastatuses = new MPI_Status[maxsendspersegment];
   controlstatuses = new MPI_Status[maxsendspersegment];
   MPI_Request msgrequest;
@@ -190,7 +190,7 @@ void DataStream::execute()
       {
         status = vectorCopy_u8(databuffer, &databuffer[bufferbytes], bufferinfo[atsegment].sendbytes - bufferremaining);
         if(status != vecNoErr)
-          csevere << "Error copying in the DataStream data buffer!!!" << endl;
+          csevere << startl << "Error copying in the DataStream data buffer!!!" << endl;
       }
 
       if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] == MAX_NEGATIVE_DELAY)
@@ -217,7 +217,7 @@ void DataStream::execute()
     }
     else //must have been a terminate signal
     {
-      cinfo << "DATASTREAM " << mpiid << " will terminate next round!!!" << endl;
+      cinfo << startl << "DATASTREAM " << mpiid << " will terminate next round!!!" << endl;
       status = -1; //will terminate next round
       keepreading = false;
     }
@@ -235,32 +235,32 @@ void DataStream::execute()
   }
   perr = pthread_cond_signal(&readcond);
   if(perr != 0)
-    csevere << "DataStream mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
+    csevere << startl << "DataStream mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
 
   //join the reading thread
   perr = pthread_mutex_unlock(&(bufferlock[atsegment]));
   if(perr != 0)
-    csevere << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
+    csevere << startl << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
   perr = pthread_mutex_unlock(&(bufferlock[(atsegment+1)%numdatasegments]));
   if(perr != 0)
-    csevere << "Error in telescope mainthread unlock of buffer section!!!" << (atsegment+1)%numdatasegments << endl;
+    csevere << startl << "Error in telescope mainthread unlock of buffer section!!!" << (atsegment+1)%numdatasegments << endl;
   perr = pthread_join(readerthread, NULL);
   if(perr != 0)
-    csevere << "Error in closing telescope " << mpiid << " readerthread!!!" << endl;
+    csevere << startl << "Error in closing telescope " << mpiid << " readerthread!!!" << endl;
 
   delete [] datastatuses;
   delete [] controlstatuses;
-  cverbose << "DATASTREAM " << mpiid << " terminating" << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << " terminating" << endl;
 }
 
 void DataStream::openfile(int configindex, int fileindex)
 {
-  cverbose << "DATASTREAM " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << " is about to try and open file index " << fileindex << " of configindex " << configindex << endl;
   if(fileindex >= confignumfiles[configindex]) //run out of files - time to stop reading
   {
     dataremaining = false;
     keepreading = false;
-    cinfo << "DATASTREAM " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
+    cinfo << startl << "DATASTREAM " << mpiid << " is exiting because fileindex is " << fileindex << ", while confignumfiles is " << confignumfiles[configindex] << endl;
     return;
   }
   
@@ -268,15 +268,15 @@ void DataStream::openfile(int configindex, int fileindex)
   if(input.fail())
     input.clear(); //get around EOF problems caused by peeking
   input.open(datafilenames[configindex][fileindex].c_str(),ios::in);
-  cverbose << "input.bad() is " << input.bad() << ", input.fail() is " << input.fail() << endl;
+  cverbose << startl << "input.bad() is " << input.bad() << ", input.fail() is " << input.fail() << endl;
   if(!input.is_open() || input.bad())
   {
-    cerror << "Error trying to open file " << datafilenames[configindex][fileindex] << endl;
+    cerror << startl << "Error trying to open file " << datafilenames[configindex][fileindex] << endl;
     dataremaining = false;
     return;
   }
 
-  cinfo << "DATASTREAM " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
 
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);
@@ -317,15 +317,15 @@ void DataStream::initialiseFile(int configindex, int fileindex)
   if(bytes != 0) //it was a new style header so we need to get the rest of the header
   {
     input.read(headerbuffer, LBA_HEADER_LENGTH - bytes);
-    cinfo << "Processed a new style header, all info ignored except date/time" << endl;
+    cinfo << startl << "Processed a new style header, all info ignored except date/time" << endl;
   }
   
-  cinfo << "DATASTREAM " << mpiid << " got the header " << inputline << " ok" << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << " got the header " << inputline << " ok" << endl;
 
   //convert this date into MJD
   config->getMJD(filestartday, filestartseconds, year, month, day, hour, minute, second);
 
-  cinfo << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
 
   //set readseconds, accounting for the intclockseconds
   readseconds = 86400*(filestartday-corrstartday) + (filestartseconds-corrstartseconds) + intclockseconds;
@@ -352,7 +352,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   }
   if(lastoffsetns < 0)
   {
-    cerror << "lastoffsetns < 0 still! =" << lastoffsetns << endl;
+    cerror << startl << "lastoffsetns < 0 still! =" << lastoffsetns << endl;
   }
 
   //while we have passed the first of our two locked sections, unlock that and lock the next - have two tests so sample difference can't overflow
@@ -371,10 +371,10 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
 
     perr = pthread_mutex_lock(&(bufferlock[(atsegment+2)%numdatasegments]));
     if(perr != 0)
-      csevere << "Error in telescope mainthread lock of buffer section!!!" << (atsegment+2)%numdatasegments << endl;
+      csevere << startl << "Error in telescope mainthread lock of buffer section!!!" << (atsegment+2)%numdatasegments << endl;
     perr = pthread_mutex_unlock(&(bufferlock[atsegment]));
     if(perr != 0)
-      csevere << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
+      csevere << startl << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
     atsegment = (atsegment+1)%numdatasegments;
   }
 
@@ -464,14 +464,14 @@ void DataStream::initialiseMemoryBuffer()
 {
   int perr;
   readthreadstarted = false;
-  cverbose << "DATASTREAM " << mpiid << " started initialising memory buffer" << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << " started initialising memory buffer" << endl;
 
   perr = pthread_mutex_lock(&bufferlock[0]);
   if(perr != 0)
-    csevere << "Error in main thread locking buffer segment " << 0 << endl;
+    csevere << startl << "Error in main thread locking buffer segment " << 0 << endl;
   perr = pthread_mutex_lock(&bufferlock[1]);
   if(perr != 0)
-    csevere << "Error in main thread locking buffer segment " << 1 << endl;
+    csevere << startl << "Error in main thread locking buffer segment " << 1 << endl;
 
   //initialise the condition signals
   pthread_cond_init(&readcond, NULL);
@@ -482,24 +482,24 @@ void DataStream::initialiseMemoryBuffer()
     //launch the file reader thread
     perr = pthread_create(&readerthread, NULL, DataStream::launchNewFileReadThread, (void *)(this));
     if(perr != 0)
-      csevere << "Error in launching telescope readerthread!!!" << endl;
+      csevere << startl << "Error in launching telescope readerthread!!!" << endl;
   }
   else
   {
     //launch the network reader thread
     perr = pthread_create(&readerthread, NULL, DataStream::launchNewNetworkReadThread, (void *)(this));
     if(perr != 0)
-      csevere << "Error in launching telescope networkthread!!!" << endl;
+      csevere << startl << "Error in launching telescope networkthread!!!" << endl;
   }
   
   while(!readthreadstarted) //wait to ensure the thread got started ok
   {
     perr = pthread_cond_wait(&initcond, &(bufferlock[1]));
     if (perr != 0)
-      csevere << "Error waiting on readthreadstarted condition!!!!" << endl;
+      csevere << startl << "Error waiting on readthreadstarted condition!!!!" << endl;
   }
 
-  cverbose << "DATASTREAM " << mpiid << " finished initialising memory buffer" << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << " finished initialising memory buffer" << endl;
 }
 
 void DataStream::calculateQuadraticParameters(int intdelayseconds, int offsetns)
@@ -511,12 +511,12 @@ void DataStream::calculateQuadraticParameters(int intdelayseconds, int offsetns)
   snindex = static_cast<int>((delayoffsetseconds*1000)/delayincms);
   if(snindex < 0)
   {
-    cerror << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take first source" << endl;
+    cerror << startl << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take first source" << endl;
     snindex = 0;
   }
   else if (snindex >= totaldelays)
   {
-    cerror << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take last source" << endl;
+    cerror << startl << "Error - attempting to get a delay from offset time " << intdelayseconds << "." << offsetns << ", will take last source" << endl;
     snindex = totaldelays-1;
   }
   lastscan = scannumbers[snindex];
@@ -544,7 +544,7 @@ void DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].configindex = config->getConfigIndex(readseconds);
   if(bufferinfo[segmentindex].configindex < 0)
   {
-    cerror << "Warning - Datastream " << mpiid << " read a file containing data from a source for which we had no configuration - leaving parameters unchanged" << endl;
+    cerror << startl << "Warning - Datastream " << mpiid << " read a file containing data from a source for which we had no configuration - leaving parameters unchanged" << endl;
     return;
   }
 
@@ -593,12 +593,12 @@ void DataStream::loopfileread()
     diskToMemory(numread++);
     perr = pthread_mutex_lock(&(bufferlock[numread]));
     if(perr != 0)
-      csevere << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
+      csevere << startl << "Error in initial telescope readthread lock of first buffer section!!!" << endl;
   }
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
-    csevere << "Datastream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
+    csevere << startl << "Datastream readthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
   if(keepreading)
     diskToMemory(numread++);
 
@@ -612,12 +612,12 @@ void DataStream::loopfileread()
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
-        csevere << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+        csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-        csevere << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+        csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
 
       //do the read
       diskToMemory(lastvalidsegment);
@@ -657,10 +657,10 @@ void DataStream::loopfileread()
   if(numread > 0) {
     perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
     if(perr != 0)
-      csevere << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+      csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
   }
 
-  cverbose << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
+  cverbose << startl << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
 void DataStream::loopnetworkread()
@@ -679,11 +679,11 @@ void DataStream::loopnetworkread()
   //lock the segment we are at now
   perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment + 1]));
   if(perr != 0)
-    csevere << "Error in initial telescope networkreadthread lock of first buffer section!!!" << endl;
+    csevere << startl << "Error in initial telescope networkreadthread lock of first buffer section!!!" << endl;
   readthreadstarted = true;
   perr = pthread_cond_signal(&initcond);
   if(perr != 0)
-    csevere << "Datastream networkreadthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
+    csevere << startl << "Datastream networkreadthread " << mpiid << " error trying to signal main thread to wake up!!!" << endl;
   networkToMemory(++lastvalidsegment, framebytesremaining);
 
   //loop until we have to stop
@@ -696,12 +696,12 @@ void DataStream::loopnetworkread()
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
-        csevere << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
+        csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
       //unlock the previous section
       perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
       if(perr != 0)
-        csevere << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+        csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
 
       //do the read
       networkToMemory(lastvalidsegment, framebytesremaining);
@@ -717,9 +717,9 @@ void DataStream::loopnetworkread()
   
   perr = pthread_mutex_unlock(&(bufferlock[lastvalidsegment]));
   if(perr != 0)
-    csevere << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
+    csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << lastvalidsegment << endl;
 
-  cinfo << "DATASTREAM " << mpiid << "'s networkreadthread is exiting!!! Keepreading was " << keepreading << ", framebytesremaining was " << framebytesremaining << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << "'s networkreadthread is exiting!!! Keepreading was " << keepreading << ", framebytesremaining was " << framebytesremaining << endl;
 }
 
 void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
@@ -738,21 +738,21 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
   server.sin_port = htons((unsigned short)portnumber); /* Which port number to use */
 
   if (tcp) { // TCP socket
-    cinfo << "Datastream " << mpiid << ": Creating a TCP socket on port " << portnumber << endl;
+    cinfo << startl << "Datastream " << mpiid << ": Creating a TCP socket on port " << portnumber << endl;
     /* Create a server to listen with */
     serversock = socket(AF_INET,SOCK_STREAM,0); 
     if (serversock==-1) 
-      cerror << "Error creating socket" << endl;
+      cerror << startl << "Error creating socket" << endl;
 
     /* Set the TCP window size */
 
     if (tcpwindowsizebytes>0) {
-      cinfo << "Datastream " << mpiid << ": Set TCP window to " << int(tcpwindowsizebytes/1024) << " kB" << endl;
+      cinfo << startl << "Datastream " << mpiid << ": Set TCP window to " << int(tcpwindowsizebytes/1024) << " kB" << endl;
       status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
 		 (char *) &tcpwindowsizebytes, sizeof(tcpwindowsizebytes));
 
       if (status!=0) {
-	cerror << "Datastream " << mpiid << ": Error setting socket RCVBUF" << endl;
+	cerror << startl << "Datastream " << mpiid << ": Error setting socket RCVBUF" << endl;
 	close(serversock);
       } 
 
@@ -761,16 +761,16 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       status = getsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
 			  (char *) &window_size, &winlen);
       if (status!=0) {
-	cerror << "Datastream " << mpiid << ": Error getting socket RCVBUF" << endl;
+	cerror << startl << "Datastream " << mpiid << ": Error getting socket RCVBUF" << endl;
       }
       printf("Sending buffersize set to %d Kbytes\n", window_size/1024);
 
     }
   } else { // UDP socket  
-    cinfo << "Datastream " << mpiid << ": Creating a UDP socket on port " << portnumber << endl;
+    cinfo << startl << "Datastream " << mpiid << ": Creating a UDP socket on port " << portnumber << endl;
     serversock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP); 
     if (serversock==-1) 
-      cerror << "Error creating UDP socket" << endl;
+      cerror << startl << "Error creating UDP socket" << endl;
     // Should exit here on error
 
     int udpbufbytes = 32*1024*1024;
@@ -778,14 +778,14 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
 			(char *) &udpbufbytes, sizeof(udpbufbytes));
     
     if (status!=0) {
-      cerror << "Datastream " << mpiid << ": Error setting socket RCVBUF" << endl;
+      cerror << startl << "Datastream " << mpiid << ": Error setting socket RCVBUF" << endl;
 	close(serversock);
     } 
   }
 
   status = bind(serversock, (struct sockaddr *)&server, sizeof(server));
   if (status!=0) {
-    cerror << "Datastream " << mpiid << ": Error binding socket" << endl;
+    cerror << startl << "Datastream " << mpiid << ": Error binding socket" << endl;
     close(serversock);
   } 
   
@@ -795,23 +795,23 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
        back log of 1 */
     status = listen(serversock,1);
     if (status!=0) {
-      cerror << "Datastream " << mpiid << ": Error binding socket" << endl;
+      cerror << startl << "Datastream " << mpiid << ": Error binding socket" << endl;
       close(serversock);
     }
 
-    cinfo << "Datastream " << mpiid << ": Waiting for connection" << endl;
+    cinfo << startl << "Datastream " << mpiid << ": Waiting for connection" << endl;
 
     /* Accept connection */
     client_len = sizeof(client);
     socketnumber = accept(serversock, (struct sockaddr *)&client, &client_len);
     if (socketnumber == -1) {
-      cerror << "Datastream " << mpiid << ": Error connecting to client" << endl;
+      cerror << startl << "Datastream " << mpiid << ": Error connecting to client" << endl;
       close(serversock);
     }
-    cinfo << "Datastream " << mpiid << " got a connection from " << inet_ntoa(client.sin_addr) << endl;
+    cinfo << startl << "Datastream " << mpiid << " got a connection from " << inet_ntoa(client.sin_addr) << endl;
   } else {  // UDP
     socketnumber = serversock;
-    cinfo << "Datastream " << mpiid << ": Ready to receive UDP data" << endl;
+    cinfo << startl << "Datastream " << mpiid << ": Ready to receive UDP data" << endl;
   }
 }
 
@@ -822,7 +822,7 @@ void DataStream::closestream()
 
   status = close(socketnumber);
   if (status!=0) 
-    cerror << "Error closing socket" << endl;
+    cerror << startl << "Error closing socket" << endl;
 }
 
 int DataStream::openframe()
@@ -836,11 +836,11 @@ int DataStream::openframe()
 
   buf = (char*)malloc(LBA_HEADER_LENGTH); // Minimum size of file header
 
-  //cinfo << "About to open frame" << endl;
+  //cinfo << startl << "About to open frame" << endl;
   status = readnetwork(socketnumber, buf, ntoread, &nread);
-  //cinfo << "Read first network successfully" << endl;
+  //cinfo << startl << "Read first network successfully" << endl;
   if (status==-1) { // Error reading socket
-    cerror << "Error reading socket" << endl;
+    cerror << startl << "Error reading socket" << endl;
     keepreading=false;
     return(0);
   } else if (status==0) {  // Socket closed remotely
@@ -848,7 +848,7 @@ int DataStream::openframe()
     return(0);
   } else if (nread!=ntoread) { // This should never happen
     keepreading=false;
-    cerror << "Error reading network header" << endl;
+    cerror << startl << "Error reading network header" << endl;
     return(0);
   }
 	
@@ -860,7 +860,7 @@ int DataStream::openframe()
 
   if (framesize>MAXINT) {
     keepreading=false;
-    cerror << "Network stream trying to send too large frame. Aborting!" << endl;
+    cerror << startl << "Network stream trying to send too large frame. Aborting!" << endl;
     return(0);
   }
 
@@ -870,7 +870,7 @@ int DataStream::openframe()
   }
   status = readnetwork(socketnumber, buf, fnamesize, &nread);
   if (status==-1) { // Error reading socket
-    cerror << "Error reading socket" << endl;
+    cerror << startl << "Error reading socket" << endl;
     keepreading=false;
     return(0);
   } else if (status==0) {  // Socket closed remotely
@@ -878,14 +878,14 @@ int DataStream::openframe()
     return(0);
   } else if (nread!=fnamesize) { // This should never happen
     keepreading=false;
-    cerror << "Error reading network header" << endl;
+    cerror << startl << "Error reading network header" << endl;
     return(0);
   }
 
   // Read file header and extract time from it
   status = readnetwork(socketnumber, buf, LBA_HEADER_LENGTH, &nread);
   if (status==-1) { // Error reading socket
-    cerror << "Error reading socket" << endl;
+    cerror << startl << "Error reading socket" << endl;
     keepreading=false;
     return(0);
   } else if (status==0) {  // Socket closed remotely
@@ -893,7 +893,7 @@ int DataStream::openframe()
     return(0);
   } else if (nread!=LBA_HEADER_LENGTH) { // This should never happen
     keepreading=false;
-    cerror << "Error file header" << endl;
+    cerror << startl << "Error file header" << endl;
     return(0);
   }
 
@@ -917,7 +917,7 @@ int DataStream::initialiseFrame(char * frameheader)
   {
     endline = index(at, '\n');
     if (endline==NULL || endline-frameheader>=LBA_HEADER_LENGTH-1) {
-      cerror << "Could not parse file header" << endl;
+      cerror << startl << "Could not parse file header" << endl;
       keepreading=false;
       return -1;
     }
@@ -938,7 +938,7 @@ int DataStream::initialiseFrame(char * frameheader)
 
   config->getMJD(filestartday, filestartseconds, year, month, day, hour, minute, second);
 
-  cinfo << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
+  cinfo << startl << "DATASTREAM " << mpiid << " worked out a filestartday of " << filestartday << " and a filestartseconds of " << filestartseconds << endl;
 
   readseconds = 86400*(filestartday-corrstartday) + (filestartseconds-corrstartseconds) + intclockseconds;
   readnanoseconds = 0;
@@ -965,7 +965,7 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
   status = readnetwork(socketnumber, ptr, bytestoread, &nread);
 
   if (status==-1) { // Error reading socket
-    cerror << "Datastream " << mpiid << ": Error reading socket" << endl;
+    cerror << startl << "Datastream " << mpiid << ": Error reading socket" << endl;
     keepreading=false;
   } else if (status==0) {  // Socket closed remotely
     keepreading=false;
@@ -990,7 +990,7 @@ int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
   *nread = 0;
 
-  //cinfo << "DATASTREAM " << mpiid << ": Reading " << bytestoread << " bytes" << endl;
+  //cinfo << startl << "DATASTREAM " << mpiid << ": Reading " << bytestoread << " bytes" << endl;
 
   while (bytestoread>0)
   {
@@ -1025,7 +1025,7 @@ void DataStream::waitForBuffer(int buffersegment)
   {
     perr = pthread_cond_wait(&readcond, &(bufferlock[buffersegment]));
     if (perr != 0)
-      csevere << "Error waiting on ok to read condition!!!!" << endl;
+      csevere << startl << "Error waiting on ok to read condition!!!!" << endl;
     usleep(20);
   }
 }
@@ -1057,7 +1057,7 @@ void DataStream::waitForSendComplete()
       waitsegment = (waitsegment + 1)%numdatasegments;
       perr = pthread_cond_signal(&readcond);
       if(perr != 0)
-        csevere << "DATASTREAM mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
+        csevere << startl << "DATASTREAM mainthread " << mpiid << " error trying to signal read thread to wake up!!!" << endl;
     }
   }
   else //already done!  can advance for next time
@@ -1094,7 +1094,7 @@ void DataStream::processDelayFile(string delayfilename)
   //read in the delays and store in the Telescope objects
   ifstream delayinput(delayfilename.c_str(),ios::in);
   if(!delayinput.is_open() || delayinput.bad()) {
-    cfatal << "Error opening delay file " << delayfilename << " - aborting!!!" << endl;
+    cfatal << startl << "Error opening delay file " << delayfilename << " - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
@@ -1127,7 +1127,7 @@ void DataStream::processDelayFile(string delayfilename)
   }
   if(columnoffset < 0)
   {
-    cfatal << "Error!!! " << mpiid << " could not locate " << stationname << " in delay file " << delayfilename << " - ABORTING!!!" << endl;
+    cfatal << startl << "Error!!! " << mpiid << " could not locate " << stationname << " in delay file " << delayfilename << " - ABORTING!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
@@ -1161,7 +1161,7 @@ void DataStream::processDelayFile(string delayfilename)
       }
       delays[i][j] = linedelays[columnoffset];
       if(delays[i][j] <= MAX_NEGATIVE_DELAY) {
-        cfatal << "Error - cannot handle delays more negative than " << MAX_NEGATIVE_DELAY << "!!! Need to unimplement the datastream check for negative delays to indicate bad data.  Aborting now - contact the developer!" << endl;
+        cfatal << startl << "Error - cannot handle delays more negative than " << MAX_NEGATIVE_DELAY << "!!! Need to unimplement the datastream check for negative delays to indicate bad data.  Aborting now - contact the developer!" << endl;
 	MPI_Abort(MPI_COMM_WORLD, 1);
       }
       if(j<scanlengths[i])
@@ -1172,7 +1172,7 @@ void DataStream::processDelayFile(string delayfilename)
     }
   }
 
-  cinfo << "Telescope " << stationname << " has finished processing delay file, numdelays = " << totaldelays << ", numtelescopes = " << numdelaytelescopes << endl;
+  cinfo << startl << "Telescope " << stationname << " has finished processing delay file, numdelays = " << totaldelays << ", numtelescopes = " << numdelaytelescopes << endl;
 
   delete [] delayTelescopeNames;
 }

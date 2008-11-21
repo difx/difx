@@ -17,7 +17,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
                 Mk5DataStream(conf, snum, id, ncores, cids, bufferfactor,
         numsegments)
 {
-	cfatal << "NativeMk5DataStream::NativeMk5DataStream stub called, meaning mpifxcorr was not compiled for nativemk5 support, but it was requested (with MODULE in .input file).  Aborting." << endl;
+	cfatal << startl << "NativeMk5DataStream::NativeMk5DataStream stub called, meaning mpifxcorr was not compiled for nativemk5 support, but it was requested (with MODULE in .input file).  Aborting." << endl;
 	MPI_Abort(MPI_COMM_WORLD, 1);
 }
 

@@ -26,17 +26,22 @@
 #include <string>
 #include <iostream>
 #include <sstream>
+#include <pthread.h>
 
 using namespace std;
 
 class Alert
 {
 private:
-	stringstream alertString;
 	int alertLevel;
+	stringstream alertString;
+	pthread_mutex_t lock;
+	int last;	// 0 for startl, 1 for endl;
 public:
 	Alert(int level = 4) : alertLevel(level)
 	{
+		last = 1;
+		pthread_mutex_init(&lock, 0);
 	}
 	
 	~Alert()
@@ -64,11 +69,33 @@ public:
 
 	// the function endl calls
 	Alert& sendAlert();
+
+	friend Alert& endl(Alert &x);
+	friend Alert& startl(Alert &x);
 };
 
 inline Alert& endl(Alert &x)
 {
-	return x.sendAlert();
+	x.sendAlert();
+	if(x.last == 1)
+	{
+		cerr << "Developer error: two endls in a row.  string was : " << x.alertString.str() << endl;
+	}
+	else
+	{
+		x.last = 1;
+		pthread_mutex_unlock(&x.lock);
+	}
+
+	return x;
+}
+
+inline Alert& startl(Alert &x)
+{
+	pthread_mutex_lock(&x.lock);
+	x.last = 0;
+
+	return x;
 }
 
 extern Alert cfatal;

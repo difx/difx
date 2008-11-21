@@ -170,13 +170,13 @@ int main(int argc, char *argv[])
   generateIdentifier(argv[1], myID, difxMessageID);
   difxMessageInit(myID, difxMessageID);
 
-  cinfo << "MPI Process " << myID << " is running on host " << processor_name << endl;
+  cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
   
   if(argc == 3)
   {
     if(!(argv[2][0]=='-' && argv[2][1]=='M'))
     {
-      cfatal << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+      cfatal << startl << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
@@ -201,19 +201,19 @@ int main(int argc, char *argv[])
   }
   else if(argc != 2)
   {
-    cfatal << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+    cfatal << startl << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
   }
 
-  cverbose << "About to process the input file.." << endl;
+  cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
   config = new Configuration(argv[1]);
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
-    cfatal << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
+    cfatal << startl << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -222,7 +222,7 @@ int main(int argc, char *argv[])
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
   if(numcores < 1)
   {
-    cfatal << "Error - must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!!!" << endl;
+    cfatal << startl << "Error - must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!!!" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -250,7 +250,7 @@ int main(int argc, char *argv[])
       t1 = MPI_Wtime();
       manager->execute();
       t2 = MPI_Wtime();
-      cinfo << "Total wallclock time was **" << t2 - t1 << "** seconds" << endl;
+      cinfo << startl << "Total wallclock time was **" << t2 - t1 << "** seconds" << endl;
     }
     else if (myID >= fxcorr::FIRSTTELESCOPEID && myID < fxcorr::FIRSTTELESCOPEID + numdatastreams) //im a datastream
     {
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
   }
   catch (MPI::Exception e)
   {
-    cerror << "Caught an exception!!! " << e.Get_error_string() << endl;
+    cerror << startl << "Caught an exception!!! " << e.Get_error_string() << endl;
     return EXIT_FAILURE;
   }
   MPI_Finalize();
@@ -286,6 +286,6 @@ int main(int argc, char *argv[])
   if(stream) delete stream;
   if(core) delete core;
 
-  cinfo << "MPI ID " << myID << " says BYE!" << endl;
+  cinfo << startl << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;
 }

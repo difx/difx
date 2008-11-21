@@ -51,7 +51,7 @@ void catch_pipe(int sig_num)
     /* re-set the signal handler again to catch_int, for next time */
     signal(SIGPIPE, catch_pipe);
     /* and print the message */
-    cwarn << "Caught a pipe signal - the monitor probably just dropped out..." << endl;
+    cwarn << startl << "Caught a pipe signal - the monitor probably just dropped out..." << endl;
 }
 
 using namespace std;
@@ -61,12 +61,12 @@ const string FxManager::LL_CIRCULAR_POL_NAMES[4] = {"LL", "RR", "LR", "RL"};
 const string FxManager::LINEAR_POL_NAMES[4] = {"XX", "YY", "XY", "YX"};
 
 FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip)
-  : config(conf), numcores(ncores), mpiid(id), return_comm(rcomm), monitor(mon), hostname(hname), monitorport(port)
+  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), monitor(mon), hostname(hname), monitorport(port)
 {
   int perr;
   const string * polnames;
 
-  cinfo << "STARTING " << PACKAGE_NAME << " version " << VERSION << endl;
+  cinfo << startl << "STARTING " << PACKAGE_NAME << " version " << VERSION << endl;
 
 #ifdef HAVE_DIFXMESSAGE
   difxMessageSendDifxStatus(DIFX_STATE_STARTING, "Version " VERSION, 0.0, 0, 0);
@@ -87,16 +87,16 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   currentconfigindex = config->getConfigIndex(skipseconds);
   while(currentconfigindex < 0 && skipseconds < executetimeseconds)
   {
-    //cinfo << "Skipping ahead to " << skipseconds << " seconds" << endl;
+    //cinfo << startl << "Skipping ahead to " << skipseconds << " seconds" << endl;
     currentconfigindex = config->getConfigIndex(++skipseconds);
   }
   if(skipseconds == executetimeseconds)
   {
-    cfatal << "Could not locate any of the specified sources in the specified time range - aborting!!!" << endl;
+    cfatal << startl << "Could not locate any of the specified sources in the specified time range - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   if(skipseconds != 0 && config->getStartNS() != 0) {
-    cwarn << "WARNING!!! Fractional start time of " << startseconds << " seconds plus " << startns << " ns was specified, but the start time corresponded to a configuration not specified in the input file and hence we are skipping " << skipseconds << " seconds ahead! The ns offset will be set to 0!!!" << endl;
+    cwarn << startl << "WARNING!!! Fractional start time of " << startseconds << " seconds plus " << startns << " ns was specified, but the start time corresponded to a configuration not specified in the input file and hence we are skipping " << skipseconds << " seconds ahead! The ns offset will be set to 0!!!" << endl;
     startns = 0;
   }
   halfsampleseconds = 1.0/(config->getDBandwidth(currentconfigindex, 0, 0)*4000000.0);
@@ -155,23 +155,23 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   islocked[1] = true;
   perr = pthread_mutex_lock(&(bufferlock[0]));
   if(perr != 0)
-    csevere << "FxManager: Error locking first visibility!!" << endl;
+    csevere << startl << "FxManager: Error locking first visibility!!" << endl;
   perr = pthread_mutex_lock(&(bufferlock[1]));
   if(perr != 0)
-    csevere << "FxManager: Error locking second visibility!!" << endl;
+    csevere << startl << "FxManager: Error locking second visibility!!" << endl;
   perr = pthread_create(&writethread, NULL, FxManager::launchNewWriteThread, (void *)(this));
   if(perr != 0)
-    csevere << "FxManager: Error in launching writethread!!" << endl;
+    csevere << startl << "FxManager: Error in launching writethread!!" << endl;
   while(!writethreadinitialised)
   {
     perr = pthread_cond_wait(&writecond, &(bufferlock[1]));
     if (perr != 0)
-      csevere << "Error waiting on writethreadstarted condition!!!!" << endl;
+      csevere << startl << "Error waiting on writethreadstarted condition!!!!" << endl;
   }
 
   lastsource = numdatastreams;
 
-  cinfo << "Estimated memory usage by FXManager: " << float(uvw->getNumUVWPoints()*24 + config->getVisBufferLength()*config->getMaxResultLength()*8)/1048576.0 << " MB" << endl;
+  cinfo << startl << "Estimated memory usage by FXManager: " << float(uvw->getNumUVWPoints()*24 + config->getVisBufferLength()*config->getMaxResultLength()*8)/1048576.0 << " MB" << endl;
 }
 
 
@@ -211,7 +211,7 @@ FxManager::~FxManager()
 
 void interrupthandler(int sig)
 {
-  cwarn << "FXMANAGER caught a signal and is going to shut down the correlator" << endl;
+  cwarn << startl << "FXMANAGER caught a signal and is going to shut down the correlator" << endl;
   terminatenow = true;
 }
 
@@ -227,7 +227,7 @@ void FxManager::terminate()
     difxMessageSendDifxStatus(DIFX_STATE_ENDING, "", 0.0, 0, 0);
   }
 #endif
-  cinfo << "FXMANAGER: Sending terminate signals" << endl;
+  cinfo << startl << "FXMANAGER: Sending terminate signals" << endl;
   for(int i=0;i<numcores;i++)
     MPI_Send(senddata, 1, MPI_INT, coreids[i], CR_TERMINATE, return_comm);
   for(int i=0;i<numdatastreams;i++)
@@ -238,7 +238,7 @@ void FxManager::terminate()
  */
 void FxManager::execute()
 {
-  cinfo << "Hello World, I am the FxManager" << endl;
+  cinfo << startl << "Hello World, I am the FxManager" << endl;
   int perr;
   senddata[1] = skipseconds;
   senddata[2] = startns;
@@ -249,7 +249,7 @@ void FxManager::execute()
     for(int j=0;j<numcores;j++)
     {
       senddata[0] = coreids[j];
-      //cinfo << "FXMANAGER: Telling the datastreams to send data to core " << coreids[i] << endl;
+      //cinfo << startl << "FXMANAGER: Telling the datastreams to send data to core " << coreids[i] << endl;
       sendData(senddata, j);
     }
   }
@@ -280,11 +280,11 @@ void FxManager::execute()
   {
     perr = pthread_mutex_unlock(&(bufferlock[(oldestlockedvis+i)%config->getVisBufferLength()]));
     if(perr!=0)
-      csevere << "FxManager error trying to unlock bufferlock[" << (oldestlockedvis+i)%config->getVisBufferLength() << "] for the last time" << endl; 
+      csevere << startl << "FxManager error trying to unlock bufferlock[" << (oldestlockedvis+i)%config->getVisBufferLength() << "] for the last time" << endl; 
   }
   //perr = pthread_mutex_lock(&queuelock);
   //if(perr!=0)
-  //  csevere << "FxManager error trying to lock queue for the last time" << endl;
+  //  csevere << startl << "FxManager error trying to lock queue for the last time" << endl;
   //writewaiting = 0;
   //double mintime = 0.0;
   //int minindex = 0;
@@ -300,28 +300,28 @@ void FxManager::execute()
   //  writequeue[writewaiting++] = visbuffer[i%config->getVisBufferLength()];
   //perr = pthread_mutex_unlock(&queuelock);
   //if(perr!=0)
-  //  csevere << "FxManager error trying to unlock queue for the last time" << endl; 
+  //  csevere << startl << "FxManager error trying to unlock queue for the last time" << endl; 
   
   //join up the write thread
   //perr = pthread_cond_signal(&queuecond);
   //if(perr != 0)
-  //  csevere << "FxManager error trying to signal writethread to wake up!!!" << endl;
+  //  csevere << startl << "FxManager error trying to signal writethread to wake up!!!" << endl;
   perr = pthread_join(writethread, NULL);
   if(perr != 0)
-    csevere << "Error in closing writethread!!!" << endl;
+    csevere << startl << "Error in closing writethread!!!" << endl;
 
-  cinfo << "FxManager is finished" << endl;
+  cinfo << startl << "FxManager is finished" << endl;
 }
 
 void FxManager::sendData(int data[], int coreindex)
 {
   int configindex;
-  //cinfo << "FXMANAGER is about to send data of length 3 to the telescopes" << endl;
+  //cinfo << startl << "FXMANAGER is about to send data of length 3 to the telescopes" << endl;
   MPI_Send(&data[1], 2, MPI_INT, coreids[coreindex], CR_RECEIVETIME, return_comm);
 
   for(int j=0;j<numdatastreams;j++)
   {
-    //cinfo << "FXMANAGER about to send to telescope " << telescopeids[j] << endl;
+    //cinfo << startl << "FXMANAGER about to send to telescope " << telescopeids[j] << endl;
     MPI_Ssend(data, 3, MPI_INT, datastreamids[j], DS_PROCESS, MPI_COMM_WORLD);
   }
   coretimes[numsent[coreindex]%Core::RECEIVE_RING_LENGTH][coreindex][0] = data[1];
@@ -349,7 +349,7 @@ void FxManager::sendData(int data[], int coreindex)
       //samplespersecond = int(2000000*config->getDBandwidth(currentconfigindex, 0, 0) + 0.5);
     }
   }
-  //cinfo <<  "FXMANAGER has finished sending data" << endl;
+  //cinfo << startl <<  "FXMANAGER has finished sending data" << endl;
 }
 
 void FxManager::receiveData(bool resend)
@@ -411,7 +411,7 @@ void FxManager::receiveData(bool resend)
       extrareceived[sourceid]++;
     }
     if (visindex < 0)
-      cerror << "Error - stale data was received from core " << sourceid << " regarding time " << time << " seconds - it will be ignored!!!" << endl;
+      cerror << startl << "Error - stale data was received from core " << sourceid << " regarding time " << time << " seconds - it will be ignored!!!" << endl;
     else
     {
       //now store the data appropriately - if we have reached sufficient sub-accumulations, release this Visibility so the writing thread can write it out
@@ -420,21 +420,21 @@ void FxManager::receiveData(bool resend)
       {
         visbuffer[visindex]->multicastweights();
 
-        //cinfo << "FXMANAGER telling Vis. " << visindex << " to write out - this refers to time " << visbuffer[visindex]->getTime() << " - the previous buffer has time " << visbuffer[(visindex-1+config->getVisBufferLength())%config->getVisBufferLength()]->getTime() << ", and the next one has " << visbuffer[(visindex +1)%config->getVisBufferLength()]->getTime() << endl;
-        cinfo << "Vis. " << visindex << " to write out time " << visbuffer[visindex]->getTime() << endl;
-        cverbose << "Vis. " << visindex << " Newestlockedvis is " << newestlockedvis << ", while oldestlockedvis is " << oldestlockedvis << endl;
+        //cinfo << startl << "FXMANAGER telling Vis. " << visindex << " to write out - this refers to time " << visbuffer[visindex]->getTime() << " - the previous buffer has time " << visbuffer[(visindex-1+config->getVisBufferLength())%config->getVisBufferLength()]->getTime() << ", and the next one has " << visbuffer[(visindex +1)%config->getVisBufferLength()]->getTime() << endl;
+        cinfo << startl << "Vis. " << visindex << " to write out time " << visbuffer[visindex]->getTime() << endl;
+        cverbose << startl << "Vis. " << visindex << " Newestlockedvis is " << newestlockedvis << ", while oldestlockedvis is " << oldestlockedvis << endl;
         //better make sure we have at least locked the next section
         if(visindex == newestlockedvis)
         {
           newestlockedvis = (newestlockedvis + 1)%config->getVisBufferLength();
           perr = pthread_mutex_lock(&(bufferlock[newestlockedvis]));
           if(perr != 0)
-            csevere << "FxManager error trying to lock bufferlock[" << newestlockedvis << "]!!!" << endl;
+            csevere << startl << "FxManager error trying to lock bufferlock[" << newestlockedvis << "]!!!" << endl;
           islocked[newestlockedvis] = true;
         }
         perr = pthread_mutex_unlock(&(bufferlock[visindex]));
         if(perr != 0)
-          csevere << "FxManager error trying to unlock bufferlock[" << visindex << "]!!!" << endl;
+          csevere << startl << "FxManager error trying to unlock bufferlock[" << visindex << "]!!!" << endl;
         islocked[visindex] = false;
         if(oldestlockedvis == visindex)
         {
@@ -446,7 +446,7 @@ void FxManager::receiveData(bool resend)
   }
   else
   {
-    cinfo << "Invalid data was recieved from core " << sourcecore << " regarding time " << coretimes[(numsent[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][0] << " seconds plus " << coretimes[(numsent[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][1] << " ns" << endl;
+    cinfo << startl << "Invalid data was recieved from core " << sourcecore << " regarding time " << coretimes[(numsent[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][0] << " seconds plus " << coretimes[(numsent[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][1] << " ns" << endl;
 
     //immediately get some more data heading to that node
     if(resend)
@@ -478,11 +478,11 @@ void FxManager::initialiseOutput()
     rpfitsout_(&flag, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
     if(flag < 0)
     {
-      cfatal << "Error - could not open output file " << config->getOutputFilename() << " - aborting!!!" << endl;
+      cfatal << startl << "Error - could not open output file " << config->getOutputFilename() << " - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 #else
-    cfatal << "RPFITS not compiled in.  quitting" << endl;
+    cfatal << startl << "RPFITS not compiled in.  quitting" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
 #endif
   }
@@ -491,7 +491,7 @@ void FxManager::initialiseOutput()
     //create the directory - if that doesn't work, abort as we can't guarantee no overwriting data
     flag = mkdir(config->getOutputFilename().c_str(), 0775);
     if(flag < 0) {
-      cfatal << "Error trying to create directory " << config->getOutputFilename() << ": " << flag << ", ABORTING!" << endl;
+      cfatal << startl << "Error trying to create directory " << config->getOutputFilename() << ": " << flag << ", ABORTING!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
   }
@@ -499,14 +499,14 @@ void FxManager::initialiseOutput()
 
 void FxManager::finaliseOutput()
 {
+#ifdef HAVE_RPFITS
   int flag = 1;
   if(config->getOutputFormat() == Configuration::RPFITS)  //only if its RPFITS output do we need to do anything
   {
-#ifdef HAVE_RPFITS
     //close the RPFits file
     rpfitsout_(&flag, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-#endif
   }
+#endif
 }
 
 void FxManager::loopwrite()
@@ -516,22 +516,22 @@ void FxManager::loopwrite()
   int atsegment = 0;
   perr = pthread_mutex_lock(&(bufferlock[config->getVisBufferLength()-1]));
   if(perr != 0)
-    csevere << "Error in initial fxmanager writethread lock of the end section!!!" << endl;
+    csevere << startl << "Error in initial fxmanager writethread lock of the end section!!!" << endl;
   writethreadinitialised = true;
   perr = pthread_cond_signal(&writecond);
   if(perr != 0)
-    csevere << "FXMANAGER: Writethread error trying to signal main thread to wake up!!!" << endl;
+    csevere << startl << "FXMANAGER: Writethread error trying to signal main thread to wake up!!!" << endl;
 
   while(keepwriting)
   {
     //get the lock on the queue
     perr = pthread_mutex_lock(&(bufferlock[atsegment]));
     if(perr != 0)
-      csevere << "Writethread error trying to lock bufferlock[" << atsegment << "]!!!" << endl;
+      csevere << startl << "Writethread error trying to lock bufferlock[" << atsegment << "]!!!" << endl;
     //unlock the previous section
     perr = pthread_mutex_unlock(&(bufferlock[(atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
     if(perr != 0)
-      csevere << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
+      csevere << startl << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
     if(visbuffer[atsegment]->getCurrentConfig() != lastconfigindex)
     {
       lastconfigindex = visbuffer[atsegment]->getCurrentConfig();
@@ -547,7 +547,7 @@ void FxManager::loopwrite()
   //now we're done, so run thru everyone just to be sure
   perr = pthread_mutex_unlock(&(bufferlock[(atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
   if(perr != 0)
-    csevere << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
+    csevere << startl << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
   for(int i=0;i<config->getVisBufferLength();i++)
   {
     visbuffer[(atsegment+i)%config->getVisBufferLength()]->writedata();
@@ -580,7 +580,7 @@ void FxManager::writeheader()
 
   //set up the antenna info
   anten_.nant = config->getTelescopeTableLength();
-  cinfo << "Number of antennas is " << anten_.nant << endl;
+  cinfo << startl << "Number of antennas is " << anten_.nant << endl;
   for(int i=0;i<anten_.nant;i++)
   {
     anten_.ant_num[i] = i+1;
@@ -597,15 +597,15 @@ void FxManager::writeheader()
     }
     if(uindex < 0)
     {
-      cerror << "Error - could not find station " << config->getTelescopeName(i) << " in the uvw file when making rpfits header!!!" << endl;
+      cerror << startl << "Error - could not find station " << config->getTelescopeName(i) << " in the uvw file when making rpfits header!!!" << endl;
       if(config->stationUsed(i))
       {
-        cfatal << "This station is used in the correlation so I will abort!!!" << endl;
+        cfatal << startl << "This station is used in the correlation so I will abort!!!" << endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
       }
       else
       {
-        cerror << "Station is not used in this correlation so its parameters will be initialised to 0!!!" << endl;
+        cerror << startl << "Station is not used in this correlation so its parameters will be initialised to 0!!!" << endl;
         anten_.ant_mount[i] = 1;
         doubles_.x[i] = 0.0;
         doubles_.y[i] = 0.0;
@@ -626,7 +626,7 @@ void FxManager::writeheader()
   numproducts = config->getMaxProducts();
   maxfrequencies = config->getFreqTableLength();
   if_.n_if = maxfrequencies*config->getNumIndependentChannelConfigs();
-  cinfo << "Number of IFs is " << if_.n_if*config->getNumIndependentChannelConfigs() << endl;
+  cinfo << startl << "Number of IFs is " << if_.n_if*config->getNumIndependentChannelConfigs() << endl;
   string blank = "  ";
   for(int j=0;j<config->getNumIndependentChannelConfigs();j++)
   {
@@ -696,7 +696,7 @@ int FxManager::locateVisIndex(int coreid)
       //lock another visibility
       perr = pthread_mutex_lock(&(bufferlock[newestlockedvis]));
       if(perr != 0)
-        csevere << "Error in fxmanager locking visibility " << newestlockedvis << endl;
+        csevere << startl << "Error in fxmanager locking visibility " << newestlockedvis << endl;
       islocked[newestlockedvis] = true;
       //check if its good
       difference = visbuffer[newestlockedvis]->timeDifference(coretimes[(numsent[coreid]+extrareceived[coreid]) % Core::RECEIVE_RING_LENGTH][coreid][0], coretimes[(numsent[coreid]+extrareceived[coreid])%Core::RECEIVE_RING_LENGTH][coreid][1]);
@@ -704,14 +704,14 @@ int FxManager::locateVisIndex(int coreid)
         return newestlockedvis;
     }
     //d'oh - its newer than we can handle - have to drop old data until we catch up
-    cerror << "Error - data was received which is too recent (" << coretimes[(numsent[coreid])% Core::RECEIVE_RING_LENGTH][coreid][0] << "sec + " << coretimes[(numsent[coreid])%Core::RECEIVE_RING_LENGTH][coreid][1] << "ns)!  Will force existing data to be dropped until we have caught up coreid="<< coreid << endl;
+    cerror << startl << "Error - data was received which is too recent (" << coretimes[(numsent[coreid])% Core::RECEIVE_RING_LENGTH][coreid][0] << "sec + " << coretimes[(numsent[coreid])%Core::RECEIVE_RING_LENGTH][coreid][1] << "ns)!  Will force existing data to be dropped until we have caught up coreid="<< coreid << endl;
     while(difference > inttime)
     {
       count = 0;
       //abandon the oldest vis, even though it hasn't been filled yet
       perr = pthread_mutex_unlock(&(bufferlock[oldestlockedvis]));
       if(perr != 0)
-        csevere << "Error in fxmanager locking visibility " << newestlockedvis << endl;
+        csevere << startl << "Error in fxmanager locking visibility " << newestlockedvis << endl;
       islocked[oldestlockedvis] = false;
       while(!islocked[oldestlockedvis])
       {
@@ -723,7 +723,7 @@ int FxManager::locateVisIndex(int coreid)
         newestlockedvis = (newestlockedvis+1)%config->getVisBufferLength();
         perr = pthread_mutex_lock(&(bufferlock[newestlockedvis]));
         if(perr != 0)
-          csevere << "Error in fxmanager locking visibility " << newestlockedvis << endl;
+          csevere << startl << "Error in fxmanager locking visibility " << newestlockedvis << endl;
         islocked[newestlockedvis] = true;
         difference = visbuffer[newestlockedvis]->timeDifference(coretimes[(numsent[coreid])% Core::RECEIVE_RING_LENGTH][coreid][0], coretimes[(numsent[coreid])%Core::RECEIVE_RING_LENGTH][coreid][1]);
         if(difference <= inttime) //we've finally caught up

@@ -133,21 +133,21 @@ private:
   void writeheader();
 
   //variables
+  Configuration * config;
   MPI_Comm return_comm;
-  int numdatastreams, numcores, mpiid, startmjd, startseconds, startns, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, skipseconds;
+  int numcores, mpiid, numdatastreams, startmjd, startseconds, startns, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, skipseconds;
   double inttime, halfsampleseconds;
   bool keepwriting, circularpols, writethreadinitialised;
   int senddata[3]; //targetcoreid, offsetseconds, offsetnanoseconds
-  Configuration * config;
   Uvw * uvw;
   int * datastreamids;
   int * coreids;
   int * numsent;
   int * extrareceived;
   int *** coretimes;
-  int monitorport, mon_socket;
-  char * hostname;
   bool monitor;
+  char * hostname;
+  int monitorport, mon_socket;
   cf32 * resultbuffer;
   Visibility ** visbuffer;
   pthread_mutex_t * bufferlock;
