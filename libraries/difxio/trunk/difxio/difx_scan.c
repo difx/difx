@@ -263,7 +263,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 {
 	int i;
 	double m1, m2;
-	const DifxPolyModel *dp, *im;
+	const DifxPolyModel *dp, *im=0;
 
 	if(!ds)
 	{
