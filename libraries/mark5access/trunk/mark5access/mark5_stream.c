@@ -612,7 +612,7 @@ struct mark5_format *new_mark5_format_from_stream(
 
 void print_mark5_format(const struct mark5_format *mf)
 {
-	printf("mark5_format : %x\n", mf);
+	printf("mark5_format : %p\n", mf);
 	if(!mf)
 	{
 		return;

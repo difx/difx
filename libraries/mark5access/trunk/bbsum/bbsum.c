@@ -75,7 +75,7 @@ int usage(const char *pgm)
 int summarize(const char *filename, int refmjd)
 {
 	struct mark5_format *mf;
-	int n, decade, mjd;
+	int n;
 	int err;
 	struct stat64 fileStatus;
 	int in;
@@ -85,7 +85,7 @@ int summarize(const char *filename, int refmjd)
 	in = open64(filename, O_RDONLY);
 	if(!in)
 	{
-		printf("%s notfound\n");
+		printf("%s notfound\n", filename);
 		return 0;
 	}
 	
@@ -128,6 +128,8 @@ int summarize(const char *filename, int refmjd)
 			break;
 		case MK5_FORMAT_K5:
 			mf->mjd = refmjd;
+			break;
+		default:
 			break;
 		}
 	}

@@ -337,7 +337,7 @@ int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 		strcpy(F->files[F->nfiles], filename);
 		F->nfiles++;
 		strncpy(fn, filename, 64);
-		fn[64] = 0;
+		fn[63] = 0;
 		sprintf(ms->streamname, "File-%d/%d=%-64s", F->curfile,
 			F->nfiles, fn);
 	
