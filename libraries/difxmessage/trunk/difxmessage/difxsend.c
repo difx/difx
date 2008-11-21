@@ -39,7 +39,7 @@ int difxMessageSendProcessState(const char *state)
 
 int difxMessageSendLoad(const DifxMessageLoad *load)
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
 
 	sprintf(body,
@@ -112,7 +112,7 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
 	char vsnA[10], vsnB[10];
 	char scanName[64];
@@ -228,7 +228,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 
 int difxMessageSendDifxInfo(const char *infoMessage)
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
 
 	sprintf(body,
@@ -248,7 +248,7 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 
 int difxMessageSendDifxCommand(const char *command)
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
 
 	sprintf(body,
@@ -260,6 +260,124 @@ int difxMessageSendDifxCommand(const char *command)
 		command);
 
 	sprintf(message, difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+/* mpiDestination: 
+	>= 0 implies mpiId, 
+	  -1 implies ALL, 
+	  -2 implies all Datastrems, 
+	  -3 implies all Cores
+*/
+int difxMessageSendDifxParameter(const char *name, 
+	const char *value, int mpiDestination)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[700];
+
+	sprintf(body,
+		
+		"<difxParameter>"
+		  "<name>%s</name>"
+		  "<value>%s</value>"
+		"</difxParameter>",
+
+		name,
+		value);
+
+	sprintf(message, difxMessageXMLParamFormat,
+		mpiDestination,
+		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxParameter1(const char *name, int index1,
+	const char *value, int mpiDestination)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[700];
+
+	sprintf(body,
+		
+		"<difxParameter>"
+		  "<name>%s</name>"
+		  "<index1>%d</index1>"
+		  "<value>%s</value>"
+		"</difxParameter>",
+
+		name,
+		index1,
+		value);
+
+	sprintf(message, difxMessageXMLParamFormat,
+		mpiDestination,
+		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
+	const char *value, int mpiDestination)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[700];
+
+	sprintf(body,
+		
+		"<difxParameter>"
+		  "<name>%s</name>"
+		  "<index1>%d</index1>"
+		  "<index2>%d</index1>"
+		  "<value>%s</value>"
+		"</difxParameter>",
+
+		name,
+		index1,
+		index2,
+		value);
+
+	sprintf(message, difxMessageXMLParamFormat,
+		mpiDestination,
+		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
+	const char *value, int mpiDestination)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[700];
+	char indices[200];
+	int i;
+	int p=0;
+
+	for(i = 0; i < nIndex; i++)
+	{
+		p += sprintf(indices + p, "<index%d>%d</index%d>", i+1, index[i], i+1);
+	}
+
+	sprintf(body,
+		
+		"<difxParameter>"
+		  "<name>%s</name>"
+		  "%s"
+		  "<value>%s</value>"
+		"</difxParameter>",
+
+		name,
+		indices,
+		value);
+
+	sprintf(message, difxMessageXMLParamFormat,
+		mpiDestination,
 		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
 		difxMessageSequenceNumber++, body);
 	

@@ -15,6 +15,14 @@
 extern "C" {
 #endif
 
+#define DIFX_MESSAGE_IDENTIFER_LENGTH	128
+#define DIFX_MESSAGE_PARAM_LENGTH	32
+#define DIFX_MESSAGE_MAX_TARGETS	128
+#define DIFX_MESSAGE_LENGTH		1500
+#define DIFX_MESSAGE_MAX_INDEX		8
+#define DIFX_MESSAGE_MAX_DATASTREAMS	50
+#define DIFX_MESSAGE_MAX_CORES		100
+#define DIFX_MESSAGE_MAX_SCANNAME_LEN	64
 
 /**** LOW LEVEL MULTICAST FUNCTIONS ****/
 
@@ -53,6 +61,8 @@ enum Mk5State
 	MARK5_STATE_PLAYINVALID,
 	MARK5_STATE_START,
 	MARK5_STATE_COPY,
+	MARK5_STATE_CONDITION,
+	MARK5_STATE_COND_ERROR,
 	NUM_MARK5_STATES	/* this needs to be the last line of enum */
 };
 
@@ -100,6 +110,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_INFO,
 	DIFX_MESSAGE_DATASTREAM,
 	DIFX_MESSAGE_COMMAND,
+	DIFX_MESSAGE_PARAMETER,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -113,7 +124,7 @@ typedef struct
 	unsigned int status;
 	char activeBank;
 	int scanNumber;
-	char scanName[64];
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
 	long long position;	/* play pointer */
 	float rate;		/* Mbps */
 	double dataMJD;
@@ -135,34 +146,51 @@ typedef struct
 
 typedef struct
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	int severity;
 } DifxMessageError;
 
 typedef struct
 {
 	enum DifxState state;
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 	double mjd;
 } DifxMessageStatus;
 
 typedef struct
 {
-	char message[1000];
+	char message[DIFX_MESSAGE_LENGTH];
 } DifxMessageInfo;
 
 typedef struct
 {
-	char command[1000];
+	char command[DIFX_MESSAGE_LENGTH];
 } DifxMessageCommand;
 
 typedef struct
 {
+	int targetMpiId;
+	char paramName[DIFX_MESSAGE_PARAM_LENGTH];
+	int nIndex;
+	int paramIndex[DIFX_MESSAGE_MAX_INDEX];
+	char paramValue[DIFX_MESSAGE_LENGTH];
+} DifxMessageParameter;
+
+typedef struct
+{
+	char inputFilename[DIFX_MESSAGE_PARAM_LENGTH];
+	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
+	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
+	char processNode[DIFX_MESSAGE_MAX_CORES][DIFX_MESSAGE_PARAM_LENGTH];
+} DifxMessageStart;
+
+typedef struct
+{
 	enum DifxMessageType type;
-	char from[32];
-	char to[32][32];
+	char from[DIFX_MESSAGE_PARAM_LENGTH];
+	char to[DIFX_MESSAGE_MAX_TARGETS][DIFX_MESSAGE_PARAM_LENGTH];
 	int nTo;
-	char identifier[32];
+	char identifier[DIFX_MESSAGE_PARAM_LENGTH];
 	int mpiId;
 	int seqNumber;
 	/* FIXME -- add time of receipt ?? */
@@ -175,12 +203,14 @@ typedef struct
 		DifxMessageInfo		info;
 		DifxMessageDatastream	datastream;
 		DifxMessageCommand	command;
+		DifxMessageParameter	param;
 	} body;
 	int _xml_level;			/* internal use only */
 	char _xml_element[5][32];	/* internal use only */
 	int _xml_error_count;
 } DifxMessageGeneric;
 
+/* short term accumulate message type -- antenna-based data (e.g. real) */
 typedef struct
 {
 	int messageType;/* user defined message type */
@@ -194,6 +224,19 @@ typedef struct
 	float data[0];	/* Note -- must allocate enough space for your data! */
 } DifxMessageSTARecord;
 
+/* long term accumulate message type -- baseline data (e.g. complex) */
+typedef struct
+{
+	int messageType;/* user defined message type */
+	int sec;	/* second portion of time since obs start */
+	int ns;		/* nanosecond portion of time since obs start */
+	int blId;	/* baseline table entry number (from 0) */
+	int bandId;
+	int nChan;
+	int dummy;	/* space reserved for future use */
+	float data[0];	/* Note -- must allocate enough space for your data! */
+} DifxMessageLTARecord;
+
 const char *difxMessageGetVersion();
 
 int difxMessageInit(int mpiId, const char *identifier);
@@ -204,10 +247,19 @@ void difxMessageGetMulticastGroupPort(char *group, int *port);
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
-int difxMessageSendDifxStatus(enum DifxState state, const char *message, double visMJD, int numdatastreams, float *weight);
+int difxMessageSendDifxStatus(enum DifxState state, const char *message, 
+	double visMJD, int numdatastreams, float *weight);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
+int difxMessageSendDifxParameter(const char *name, 
+	const char *value, int mpiDestination);
+int difxMessageSendDifxParameter1(const char *name, int index1, 
+	const char *value, int mpiDestination);
+int difxMessageSendDifxParameter2(const char *name, int index1, int index2, 
+	const char *value, int mpiDestination);
+int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
+	const char *value, int mpiDestination);
 int difxMessageSendBinary(const char *data, int size);
 
 int difxMessageReceiveOpen();

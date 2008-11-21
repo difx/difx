@@ -120,8 +120,8 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 			case DIFX_MESSAGE_ALERT:
 				if(strcmp(elem, "errorMessage") == 0)
 				{
-					strncpy(G->body.error.message, s, 999);
-					G->body.error.message[999] = 0;
+					strncpy(G->body.error.message, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.error.message[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				else if(strcmp(elem, "severity") == 0)
 				{
@@ -184,8 +184,8 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 			case DIFX_MESSAGE_STATUS:
 				if(strcmp(elem, "message") == 0)
 				{
-					strncpy(G->body.status.message, s, 999);
-					G->body.status.message[999] = 0;
+					strncpy(G->body.status.message, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.status.message[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				else if(strcmp(elem, "state") == 0)
 				{
@@ -201,15 +201,42 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 			case DIFX_MESSAGE_INFO:
 				if(strcmp(elem, "message") == 0)
 				{
-					strncpy(G->body.info.message, s, 999);
-					G->body.info.message[999] = 0;
+					strncpy(G->body.info.message, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.info.message[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				break;
 			case DIFX_MESSAGE_COMMAND:
 				if(strcmp(elem, "command") == 0)
 				{
-					strncpy(G->body.command.command, s, 999);
-					G->body.command.command[999] = 0;
+					strncpy(G->body.command.command, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.command.command[DIFX_MESSAGE_LENGTH-1] = 0;
+				}
+				break;
+			case DIFX_MESSAGE_PARAMETER:
+				if(strncmp(elem, "index", 5) == 0)
+				{
+					int p;
+					p = atoi(elem+5);
+					if(p > 1 || p < DIFX_MESSAGE_MAX_INDEX)
+					{
+						int i;
+						i = atoi(s);
+						if(p > G->body.param.nIndex)
+						{
+							G->body.param.nIndex = p;
+						}
+						G->body.param.paramIndex[p-1] = i;
+					}
+				}
+				if(strcmp(elem, "name") == 0)
+				{
+					strncpy(G->body.param.paramName, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.param.paramName[DIFX_MESSAGE_LENGTH-1] = 0;
+				}
+				if(strcmp(elem, "value") == 0)
+				{
+					strncpy(G->body.param.paramValue, s, DIFX_MESSAGE_LENGTH-1);
+					G->body.param.paramValue[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				break;
 			default:
@@ -291,6 +318,16 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		break;
 	case DIFX_MESSAGE_COMMAND:
 		printf("    command = %s\n", G->body.command.command);
+		break;
+	case DIFX_MESSAGE_PARAMETER:
+		printf("    targetMpiId = %d\n", G->body.param.targetMpiId);
+		printf("    name = %s", G->body.param.paramName);
+		for(i = 0; i < G->body.param.nIndex; i++)
+		{
+			printf("[%d]", G->body.param.paramIndex[i]);
+		}
+		printf("\n");
+		printf("    value = %s\n", G->body.param.paramValue);
 		break;
 	default:
 		break;

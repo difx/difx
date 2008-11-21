@@ -32,7 +32,9 @@ const char Mk5StateStrings[][24] =
 	"NoMoreData",
 	"PlayInvalid",
 	"PlayStart",
-	"Copy"
+	"Copy",
+	"Condition",
+	"CondError"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
@@ -59,7 +61,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxStatusMessage",
 	"DifxInfoMessage",
 	"DifxDatastreamMessage",
-	"DifxCommand"
+	"DifxCommand",
+	"DifxParameter"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */

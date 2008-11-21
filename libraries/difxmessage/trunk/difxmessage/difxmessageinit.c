@@ -18,10 +18,11 @@
 
 char difxMessageGroup[16] = "";
 int difxMessagePort = -1; 
-char difxMessageIdentifier[128] = "";
-char difxMessageHostname[32] = "";
+char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH] = "";
+char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
+char difxMessageXMLParamFormat[256] = "";
 int difxMessageSequenceNumber = 0;
 char difxBinaryGroup[16] = "";
 int difxBinaryPort = -1;
@@ -32,13 +33,13 @@ int difxMessageInit(int mpiId, const char *identifier)
 
 	difxMessageSequenceNumber = 0;
 	
-	strncpy(difxMessageIdentifier, identifier, MAX_DIFX_MESSAGE_IDENTIFER);
-	difxMessageIdentifier[MAX_DIFX_MESSAGE_IDENTIFER-1] = 0;
+	strncpy(difxMessageIdentifier, identifier, DIFX_MESSAGE_IDENTIFER_LENGTH);
+	difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH-1] = 0;
 
 	difxMessageMpiProcessId = mpiId;
 
-	gethostname(difxMessageHostname, 32);
-	difxMessageHostname[31] = 0;
+	gethostname(difxMessageHostname, DIFX_MESSAGE_PARAM_LENGTH);
+	difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
 
 	envstr = getenv("DIFX_MESSAGE_GROUP");
 	if(envstr != 0)
@@ -67,10 +68,29 @@ int difxMessageInit(int mpiId, const char *identifier)
 		    "<seqNumber>%%d</seqNumber>"
 		    "%%s"
 		  "</body>"
-		"</difxMessage>\n",
+		"</difxMessage>",
 		
 		difxMessageHostname, 
 		difxMessageMpiProcessId,
+		difxMessageIdentifier);
+
+	sprintf(difxMessageXMLParamFormat, 
+		
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+		"<difxMessage>"
+		  "<header>"
+		    "<from>%s</from>"
+		    "<mpiProcessId>%%d</mpiProcessId>"
+		    "<identifier>%s</identifier>"
+		    "<type>%%s</type>"
+		  "</header>"
+		  "<body>"
+		    "<seqNumber>%%d</seqNumber>"
+		    "%%s"
+		  "</body>"
+		"</difxMessage>",
+		
+		difxMessageHostname, 
 		difxMessageIdentifier);
 
 	return 0;
