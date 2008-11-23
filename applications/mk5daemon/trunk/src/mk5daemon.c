@@ -278,13 +278,11 @@ int main(int argc, char **argv)
 				{
 					D->idleCount++;
 				}
-				if(D->idleCount > 3 && 
-				   D->process != PROCESS_NONE)
+				if(D->idleCount > 3)
 				{
-					Mk5Daemon_getModules(D);
 					D->process = PROCESS_NONE;
 				}
-				if((D->idleCount > 2 || 
+				if((D->process == PROCESS_NONE || 
 				    D->process == PROCESS_MARK5A) &&
 				    D->isMk5)
 				{
