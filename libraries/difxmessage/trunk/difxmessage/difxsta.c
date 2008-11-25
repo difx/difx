@@ -12,32 +12,62 @@
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
-int difxMessageSendBinary(const char *message)
+int difxMessageSendBinary(const char *message, int destination, int length)
 {
-	if(difxBinaryPort < 0)
+	if(destination == BINARY_STA)
 	{
-		return -1;
-	}
+		if(difxBinarySTAPort < 0)
+		{
+			return -1;
+		}
 
-	return MulticastSend(difxBinaryGroup, difxBinaryPort, message);
+		return MulticastSend(difxBinarySTAGroup, difxBinarySTAPort, message, length);
+	}
+	else
+	{
+		if (destination != BINARY_LTA)
+		{
+			return -1;
+		}
+                if(difxBinaryLTAPort < 0)
+                {
+                        return -1;
+                }
+
+                return MulticastSend(difxBinaryLTAGroup, difxBinaryLTAPort, message, length);
+        }
+
 }
 
-int difxMessageBinaryOpen()
+int difxMessageBinaryOpen(int destination)
 {
-	if(difxBinaryPort < 0)
+	if(destination != BINARY_STA)
 	{
-		return -1;
-	}
+		if(difxBinarySTAPort < 0)
+		{
+			return -1;
+		}
 
-	return openMultiCastSocket(difxBinaryGroup, difxBinaryPort);
+		return openMultiCastSocket(difxBinarySTAGroup, difxBinarySTAPort);
+	}
+	else
+	{
+		if (destination != BINARY_LTA)
+                {
+                        return -1;
+                }
+
+		if(difxBinaryLTAPort < 0)
+                {
+                        return -1;
+                }
+
+                return openMultiCastSocket(difxBinaryLTAGroup, difxBinaryLTAPort);
+        }
+
 }
 
 int difxMessageBinaryClose(int sock)
 {
 	return closeMultiCastSocket(sock);
-}
-
-int difxMessageReceive(int sock, char *message, int maxlen, char *from)
-{
-	return MultiCastReceive(sock, message, maxlen, from);
 }

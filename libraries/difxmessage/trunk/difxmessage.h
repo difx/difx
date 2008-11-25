@@ -31,8 +31,7 @@ extern "C" {
 
 /* single function for send.  returns message length on success, or -1 */
 
-int MulticastSend(const char *group, int port, const char *message);
-
+int MulticastSend(const char *group, int port, const char *message, int length);
 
 /* functions for receive */
 
@@ -42,6 +41,13 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 
 /**** DIFX SPECIFIC FUNCTIONS AND DATA TYPES ****/
+
+/* Types of binary data to be sent */
+enum BinaryDataChannels
+{
+	BINARY_STA,
+	BINARY_LTA
+};
 
 /* Note! Keep this in sync with Mk5StateStrings[][24] in difxmessage.c */
 enum Mk5State
@@ -263,13 +269,13 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 	const char *value, int mpiDestination);
 int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
 	const char *value, int mpiDestination);
-int difxMessageSendBinary(const char *data, int size);
+int difxMessageSendBinary(const char *data, int destination, int size);
 
 int difxMessageReceiveOpen();
 int difxMessageReceiveClose(int sock);
 int difxMessageReceive(int sock, char *message, int maxlen, char *from);
 
-int difxMessageBinaryOpen();
+int difxMessageBinaryOpen(int destination);
 int difxMessageBinaryClose(int sock);
 int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from);
 

@@ -21,7 +21,7 @@ int difxMessageSend(const char *message)
 		return -1;
 	}
 
-	return MulticastSend(difxMessageGroup, difxMessagePort, message);
+	return MulticastSend(difxMessageGroup, difxMessagePort, message, strlen(message));
 }
 
 int difxMessageSendProcessState(const char *state)

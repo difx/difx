@@ -24,8 +24,10 @@ int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
 char difxMessageXMLParamFormat[256] = "";
 int difxMessageSequenceNumber = 0;
-char difxBinaryGroup[16] = "";
-int difxBinaryPort = -1;
+char difxBinarySTAGroup[16] = "";
+int difxBinarySTAPort = -1;
+char difxBinaryLTAGroup[16] = "";
+int difxBinaryLTAPort = -1;
 
 int difxMessageInit(int mpiId, const char *identifier)
 {
@@ -102,14 +104,14 @@ int difxMessageInitBinary()
 	envstr = getenv("DIFX_BINARY_GROUP");
 	if(envstr != 0)
 	{
-		strncpy(difxBinaryGroup, envstr, 16);
-		difxBinaryGroup[15] = 0;
+		strncpy(difxBinarySTAGroup, envstr, 16);
+		difxBinarySTAGroup[15] = 0;
 	}
 
 	envstr = getenv("DIFX_BINARY_PORT");
 	if(envstr != 0)
 	{
-		difxBinaryPort = atoi(envstr);
+		difxBinarySTAPort = atoi(envstr);
 	}
 
 	return 0;
