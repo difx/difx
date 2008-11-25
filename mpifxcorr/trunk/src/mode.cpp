@@ -77,6 +77,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
     fftoutputs[i] = vectorAlloc_cf32(numchannels+1);
     conjfftoutputs[i] = vectorAlloc_cf32(numchannels+1);
   }
+  dataweight = 0.0;
 
   lookup = vectorAlloc_s16((MAX_U16+1)*samplesperlookup);
   linearunpacked = vectorAlloc_s16(numlookups*samplesperlookup);
@@ -258,7 +259,7 @@ float Mode::unpack(int sampleoffset)
 float Mode::process(int index)  //frac sample error, fringedelay and wholemicroseconds are in microseconds 
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, finaloffset, lofreq, distance;
-  f32 phaserotationfloat, fracsampleerror, dataweight;
+  f32 phaserotationfloat, fracsampleerror;
   int status, count, nearestsample, integerdelay, sidebandoffset;
   cf32* fftptr;
   f32* currentchannelfreqptr;
@@ -350,6 +351,10 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
   for(int i=0;i<numfreqs;i++)
   {
     count = 0;
+    sidebandoffset = 0;
+    //updated so that Nyquist channel is not accumulated for either USB or LSB data
+    if(config->getDLowerSideband(configindex, datastreamindex, i))
+      sidebandoffset = 1;
 
     //create the array for fractional sample error correction - including the post-f fringe rotation
     currentchannelfreqptr = (config->getDLowerSideband(configindex, datastreamindex, i))?lsbchannelfreqs:channelfreqs;
@@ -461,11 +466,6 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
         status = vectorConj_cf32(fftoutputs[j], conjfftoutputs[j], numchannels + 1);
         if(status != vecNoErr)
           csevere << startl << "Error in conjugate!!!" << status << endl;
-
-        //updated so that Nyquist channel is not accumulated for either USB or LSB data
-        sidebandoffset = 0;
-        if(config->getDLowerSideband(configindex, datastreamindex, i))
-          sidebandoffset = 1;
 
         //do the autocorrelation (skipping Nyquist channel)
         status = vectorAddProduct_cf32(fftoutputs[j]+sidebandoffset, conjfftoutputs[j]+sidebandoffset, autocorrelations[0][j]+sidebandoffset, numchannels);
