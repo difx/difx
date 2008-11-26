@@ -167,9 +167,6 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
-  generateIdentifier(argv[1], myID, difxMessageID);
-  difxMessageInit(myID, difxMessageID);
-
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
   
   if(argc == 3)
@@ -206,6 +203,9 @@ int main(int argc, char *argv[])
     MPI_Finalize();
     return EXIT_FAILURE;
   }
+
+  generateIdentifier(argv[1], myID, difxMessageID);
+  difxMessageInit(myID, difxMessageID);
 
   cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
