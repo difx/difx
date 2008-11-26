@@ -17,6 +17,7 @@ extern "C" {
 
 #define DIFX_MESSAGE_IDENTIFER_LENGTH	128
 #define DIFX_MESSAGE_PARAM_LENGTH	32
+#define DIFX_MESSAGE_FILENAME_LENGTH	128
 #define DIFX_MESSAGE_MAX_TARGETS	128
 #define DIFX_MESSAGE_LENGTH		1500
 #define DIFX_MESSAGE_MAX_INDEX		8
@@ -120,6 +121,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_DATASTREAM,
 	DIFX_MESSAGE_COMMAND,
 	DIFX_MESSAGE_PARAMETER,
+	DIFX_MESSAGE_START,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -187,10 +189,12 @@ typedef struct
 
 typedef struct
 {
-	char inputFilename[DIFX_MESSAGE_PARAM_LENGTH];
+	int nDatastream, nProcess;
+	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
 	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
 	char processNode[DIFX_MESSAGE_MAX_CORES][DIFX_MESSAGE_PARAM_LENGTH];
+	int nThread[DIFX_MESSAGE_MAX_CORES];
 } DifxMessageStart;
 
 typedef struct
@@ -213,6 +217,7 @@ typedef struct
 		DifxMessageDatastream	datastream;
 		DifxMessageCommand	command;
 		DifxMessageParameter	param;
+		DifxMessageStart	start;
 	} body;
 	int _xml_level;			/* internal use only */
 	char _xml_element[5][32];	/* internal use only */

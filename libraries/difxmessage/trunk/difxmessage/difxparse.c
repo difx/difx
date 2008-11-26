@@ -15,12 +15,109 @@
 #include <expat.h>
 #include "../difxmessage.h"
 
+/* allow space or comma separated list of nodes */
+int addNodes(char nodes[][DIFX_MESSAGE_PARAM_LENGTH], int maxNodes, int *n, const char *nodeList)
+{
+	char *str, *p;
+	char name[DIFX_MESSAGE_LENGTH];
+	int nnew=0;
+	int i, l;
+
+	str = strdup(nodeList);
+
+	for(i = 0; str[i]; i++)
+	{
+		if(str[i] == ',' || 
+		   str[i] == '(' || str[i] == ')' ||
+		   str[i] == '{' || str[i] == '}' ||
+		   str[i] == '[' || str[i] == ']')
+		{
+			str[i] = ' ';
+		}
+	}
+
+	p = str;
+	for(;;)
+	{
+		if(*n >= maxNodes)
+		{
+			break;
+		}
+		name[0] = 0;
+		sscanf(p, "%s%n", name, &l);
+		if(name[0] == 0)
+		{
+			break;
+		}
+		p += l;
+		strncpy(nodes[*n], name, DIFX_MESSAGE_PARAM_LENGTH-1);
+		nodes[*n][DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+		(*n)++;
+		nnew++;
+	}
+
+	free(str);
+
+	return nnew;
+}
+
 static void XMLCALL startElement(void *userData, const char *name, 
 	const char **atts)
 {
 	DifxMessageGeneric *G;
+	DifxMessageStart *S;
+	int nThread = 1;
+	int i, j, n;
 
 	G = (DifxMessageGeneric *)userData;
+	
+	if(G->type == DIFX_MESSAGE_START)
+	{
+		S = &G->body.start;
+		for(i = 0; atts[i]; i+=2)
+		{
+			if(strcmp(atts[i], "threads") == 0)
+			{
+				nThread = atoi(atts[i+1]);
+			}
+		}
+		if(strcmp(name, "manager") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "node") == 0)
+				{
+					strncpy(S->headNode, atts[i+1], DIFX_MESSAGE_PARAM_LENGTH-1);
+					S->headNode[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
+				}
+			}
+		}
+		else if(strcmp(name, "datastream") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "nodes") == 0)
+				{
+					addNodes(S->datastreamNode, DIFX_MESSAGE_MAX_DATASTREAMS, &S->nDatastream, atts[i+1]);
+				}
+			}
+		}
+		else if(strcmp(name, "process") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "nodes") == 0)
+				{
+					n = addNodes(S->processNode, DIFX_MESSAGE_MAX_CORES, &S->nProcess, atts[i+1]);
+					for(j = S->nProcess-n; j < S->nProcess; j++)
+					{
+						S->nThread[j] = nThread;
+					}
+				}
+			}
+		}
+	}
+
 	G->_xml_level++;
 	strcpy(G->_xml_element[G->_xml_level], name);
 }
@@ -213,7 +310,11 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 				}
 				break;
 			case DIFX_MESSAGE_PARAMETER:
-				if(strncmp(elem, "index", 5) == 0)
+				if(strcmp(elem, "targetMpiId") == 0)
+				{
+					G->body.param.targetMpiId = atoi(s);
+				}
+				else if(strncmp(elem, "index", 5) == 0)
 				{
 					int p;
 					p = atoi(elem+5);
@@ -228,15 +329,22 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 						G->body.param.paramIndex[p-1] = i;
 					}
 				}
-				if(strcmp(elem, "name") == 0)
+				else if(strcmp(elem, "name") == 0)
 				{
 					strncpy(G->body.param.paramName, s, DIFX_MESSAGE_PARAM_LENGTH-1);
 					G->body.param.paramName[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
 				}
-				if(strcmp(elem, "value") == 0)
+				else if(strcmp(elem, "value") == 0)
 				{
 					strncpy(G->body.param.paramValue, s, DIFX_MESSAGE_LENGTH-1);
 					G->body.param.paramValue[DIFX_MESSAGE_LENGTH-1] = 0;
+				}
+				break;
+			case DIFX_MESSAGE_START:
+				if(strncmp(elem, "input", 5) == 0)
+				{
+					strncpy(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					G->body.start.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 				}
 				break;
 			default:
