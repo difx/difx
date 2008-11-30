@@ -42,7 +42,6 @@ my $databufferfactor = undef;
 my $numdatasegments = 32;
 my $atca = 'WXXX';
 my $new = 0;
-my $perth = 0;
 my $monitor = 0;
 my $requested_duration = undef;
 my $files = undef;
@@ -53,7 +52,7 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
-	   'swin'=>\$swin, 'perth'=>\$perth, 'monitor'=>\$monitor, 
+	   'swin'=>\$swin, 'monitor'=>\$monitor, 
 	   'duration=i'=>\$requested_duration, 'files=s'=>\$files);
 
 
@@ -64,7 +63,6 @@ if (@ARGV!=1 && @ARGV!=2) {
 }
 
 $quadf = 0 if ($postf);
-$new = 1 if ($perth);
 
 if (!defined $databufferfactor) {
   $databufferfactor = 256*256/$nchannel;
@@ -240,7 +238,7 @@ CHANNELS TO AVERAGE:1
 OVERSAMPLE FACTOR:  1
 EOF
 }
-if ($perth) {
+if ($new) {
   print INPUT "DECIMATION FACTOR:  1\n";
 }
 
@@ -963,7 +961,7 @@ my %anttcpwindow;
 BEGIN {
   %anttcpwindow = (Pa => 0,
 		   At => 512,
-		   Mp => 350,
+		   Mp => 1024,
 		   Ho => 512,
 		   Sh => -1500,
 		   Ks => -1500);
@@ -1031,8 +1029,7 @@ Options:
   -start hh:mm:ss     Specift start time after nominal experiment start
   -duration <DUR>     Duration (in seconds) to correlate from start
   -input <s>          Specify input file to write (default experiment.input)
-  -new                Mark5 evlbi version of input file
-  -perth              Perth_merge version of inout file (DiFX2.0 development)
+  -new                DiFX Trunk (DiFX 2.0 development)
   -monitor            Create html code for monitor display
   -files <FILES>      List of files to correlate
 
