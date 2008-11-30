@@ -709,6 +709,7 @@ void Configuration::processDatastreamTable(ifstream * input)
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
   datastreamtablelength = atoi(line.c_str());
+
   datastreamtable = new datastreamdata[datastreamtablelength];
   if(datastreamtablelength < numdatastreams)
   {
@@ -750,8 +751,9 @@ void Configuration::processDatastreamTable(ifstream * input)
     }
     else
     {
-      cfatal << startl << "Error - processDatastreamTable: configuration not found when determining decimationfactor" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      //cfatal << startl << "Error - processDatastreamTable: configuration not found when determining decimationfactor" << endl;
+      //MPI_Abort(MPI_COMM_WORLD, 1);
+      decimationfactor = 1;
     }
 
     //read all the info for this datastream
