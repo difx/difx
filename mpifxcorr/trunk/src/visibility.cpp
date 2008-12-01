@@ -216,7 +216,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
 
   hostptr = gethostbyname(hostname);
   if (hostptr==NULL) {
-    printf("Failed to look up hostname %s\n", hostname);
+    cwarn << startl << "Failed to look up hostname " << hostname << endl;
     return(1);
   }
   
@@ -226,7 +226,7 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
   server.sin_port = htons((unsigned short)port); 
   server.sin_addr.s_addr = ip_addr;
   
-  printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
+  cinfo << startl << "Connecting to " << inet_ntoa(server.sin_addr) << endl;
     
   *sock = socket(AF_INET, SOCK_STREAM, 0);
   if (*sock==-1) {
@@ -344,7 +344,7 @@ int Visibility::sendMonitorData(bool tofollow) {
         nwrote = send(*mon_socket, ptr, ntowrite, 0);
         if(errno == EPIPE)
         {
-          printf("Network seems to have dropped out!  Will try to reconnect shortly...!\n");
+	  cwarn << startl << "Network seems to have dropped out!  Will try to reconnect shortly...!" << endl;
           return(1);
         }
         if (nwrote==-1) {
@@ -353,7 +353,7 @@ int Visibility::sendMonitorData(bool tofollow) {
 
           return(1);
         } else if (nwrote==0) {
-          printf("Warning: Did not write any bytes!\n");
+          cwarn << startl << "Warning: Did not write any bytes!" << endl;
           return(1);
         } else {
           ntowrite -= nwrote;
