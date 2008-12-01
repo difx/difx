@@ -54,7 +54,8 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
 
   hostptr = gethostbyname(monhostname);
   if (hostptr==NULL) {
-    printf("Failed to look up monhostname %s\n", monhostname);
+
+    cerror << startl << "Failed to look up monhostname " << monhostname << endl;
     return(1);
   }
   
@@ -64,7 +65,7 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
   server.sin_port = htons((unsigned short)port); 
   server.sin_addr.s_addr = ip_addr;
   
-  printf("Connecting to %s\n",inet_ntoa(server.sin_addr));
+  cinfo << startl << "Connecting to " << inet_ntoa(server.sin_addr) << endl;
     
   *sock = socket(AF_INET, SOCK_STREAM, 0);
   if (*sock==-1) {
