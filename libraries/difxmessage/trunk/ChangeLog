@@ -18,5 +18,5 @@ Binary message sending, intended for Short Term Accumations (STAs)
 Don't assume default PORT and GROUP
 Add DifxMessageParameter type
   Note: mpiid is a target parameter for this message type, not a source parameter
-Started implementing DifxMessageStart 
+Add DifxMessageStart 
 Started distinguishing between STA and LTA types

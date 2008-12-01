@@ -32,7 +32,7 @@
 
 int main(int argc, char **argv)
 {
-	char message[256];
+	char message[1500];
 	int r;
 	
 	difxMessageInit(-1, argv[0]);
@@ -40,9 +40,9 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
-		fgets(message, 255, stdin);
+		fgets(message, 1499, stdin);
 		if(feof(stdin)) break;
-		message[255] = 0;
+		message[1499] = 0;
 		r = difxMessageSend(message);
 		if(r < 0)
 		{

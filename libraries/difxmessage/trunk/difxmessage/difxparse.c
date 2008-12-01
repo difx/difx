@@ -360,6 +360,7 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message)
 	
 	memset(G, 0, sizeof(DifxMessageGeneric));
 	G->_xml_level = -1;
+	G->type = DIFX_MESSAGE_UNKNOWN;
 	parser = XML_ParserCreate(0);
 	XML_ParserReset(parser, 0);
 	XML_SetElementHandler(parser, startElement, endElement);
@@ -436,6 +437,20 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		}
 		printf("\n");
 		printf("    value = %s\n", G->body.param.paramValue);
+		break;
+	case DIFX_MESSAGE_START:
+		printf("    input file = %s\n", G->body.start.inputFilename);
+		printf("    headNode = %s\n", G->body.start.headNode);
+		printf("    nDatastream = %d\n", G->body.start.nDatastream);
+		for(i = 0; i < G->body.start.nDatastream; i++)
+		{
+			printf("      %s\n", G->body.start.datastreamNode[i]);
+		}
+		printf("    nDatastream = %d\n", G->body.start.nDatastream);
+		for(i = 0; i < G->body.start.nProcess; i++)
+		{
+			printf("      %s %d\n", G->body.start.processNode[i], G->body.start.nThread[i]);
+		}
 		break;
 	default:
 		break;
