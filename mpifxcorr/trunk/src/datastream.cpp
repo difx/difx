@@ -763,7 +763,7 @@ void DataStream::openstream(int portnumber, int tcpwindowsizebytes)
       if (status!=0) {
 	cerror << startl << "Datastream " << mpiid << ": Error getting socket RCVBUF" << endl;
       }
-      printf("Sending buffersize set to %d Kbytes\n", window_size/1024);
+      cinfo << startl << "Datastream " << mpiid << ": TCP window set to " << window_size/1024 << " bytes" << endl;
 
     }
   } else { // UDP socket  
