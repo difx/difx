@@ -34,12 +34,11 @@ typedef struct
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
 	int isMk5;
+	int isHeadNode;
 	long long lastRX, lastTX;
 	int idleCount;
 	int nXLROpen;
 } Mk5Daemon;
-
-extern const char headNode[];
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
 void Mk5Daemon_getModules(Mk5Daemon *D);
@@ -57,6 +56,6 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
-void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageStart *S);
+void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
 
 #endif

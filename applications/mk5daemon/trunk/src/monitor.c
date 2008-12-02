@@ -276,7 +276,7 @@ static void *monitorMultiListen(void *ptr)
 				handleCommand(D, &G);
 				break;
 			case DIFX_MESSAGE_START:
-				Mk5Daemon_startMpifxcorr(D, &G.body.start);
+				Mk5Daemon_startMpifxcorr(D, &G);
 				break;
 			default:
 				break;

@@ -154,6 +154,7 @@ int main(int argc, char **argv)
 	char logMessage[128], str[16];
 	int startmk5a = 1;
 	int i, v, busy;
+	int isHeadNode = 0;
 	int justStarted = 1;
 	int halfInterval;
 	char logPath[256];
@@ -180,6 +181,11 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--no-mark5a") == 0)
 		{
 			startmk5a = 0;
+		}
+		else if(strcmp(argv[i], "-H") == 0 ||
+		   strcmp(argv[i], "--headnode") == 0)
+		{
+			isHeadNode = 1;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -225,6 +231,7 @@ int main(int argc, char **argv)
 	difxMessageSendDifxAlert("mk5daemon starting", DIFX_ALERT_LEVEL_INFO);
 
 	D = newMk5Daemon(logPath);
+	D->isHeadNode = isHeadNode;
 
 	sprintf(logMessage, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, logMessage);

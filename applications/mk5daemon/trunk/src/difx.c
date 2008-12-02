@@ -4,6 +4,9 @@
 #include <string.h>
 #include "mk5daemon.h"
 
+const char defaultMpiOptions[] = "--mca btl ^udapl,openib --mca mpi_yield_when_idle 1";
+const char defaultDifxProgram[] = "mpifxcorr";
+
 typedef struct
 {
 	char hostname[DIFX_MESSAGE_PARAM_LENGTH];
@@ -44,19 +47,41 @@ int getUse(const Uses *U, const char *hostname)
 	return 0;
 }
 
-void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageStart *S)
+void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	int i, l, n;
 	char filebase[DIFX_MESSAGE_FILENAME_LENGTH];
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char message[512];
+	char command[512];
 	FILE *out;
 	Uses *uses;
+	const char *jobName;
+	const DifxMessageStart *S;
+
+	S = &G->body.start;
+
+	if(G->nTo != 1)
+	{
+		return;
+	}
+
+	if(strcmp(G->to[0], D->hostName) != 0)
+	{
+		return;
+	}
 
 	if(S->headNode[0] == 0 || S->nDatastream <= 0 || S->nProcess <= 0 || S->inputFilename[0] != '/')
 	{
 		difxMessageSendDifxAlert("Malformed DifxStart message received", DIFX_ALERT_LEVEL_ERROR);
 		Logger_logData(D->log, "Mk5Daemon_startMpifxcorr: degenerate request\n");
+		return;
+	}
+
+	if(!D->isHeadNode)
+	{
+		difxMessageSendDifxAlert("Attempt to start job from non head node", DIFX_ALERT_LEVEL_ERROR);
+		Logger_logData(D->log, "Mk5Daemon_startMpifxcorr: I am not a head node\n");
 		return;
 	}
 
@@ -69,6 +94,14 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageStart *S)
 		{
 			filebase[i] = 0;
 			break;
+		}
+	}
+	jobName = filebase;
+	for(i = 0; filebase[i]; i++)
+	{
+		if(filebase[i] == '/')
+		{
+			jobName = filebase + i + 1;
 		}
 	}
 
@@ -169,9 +202,45 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageStart *S)
 
 	if(fork() == 0)
 	{
+		const char *mpiOptions;
+		const char *difxProgram;
+
+		if(S->mpiOptions[0])
+		{
+			mpiOptions = S->mpiOptions;
+		}
+		else
+		{
+			mpiOptions = defaultMpiOptions;
+		}
+
+		if(S->difxProgram[0])
+		{
+			difxProgram = S->difxProgram;
+		}
+		else
+		{
+			difxProgram = defaultDifxProgram;
+		}
+
 		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
-		sprintf(message, "ssh -l difx swc000 startdifx -n %s", filebase);
-		system(message);
+		
+		sprintf(command, "ssh -l difx %s mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input", 
+			S->headNode,
+			1 + S->nDatastream + S->nProcess,
+			filebase,
+			mpiOptions,
+			difxProgram,
+			filebase);
+		
+		sprintf(message, "Executing: %s", command);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+		sprintf(message, "Spawning %d processes", 1 + S->nDatastream + S->nProcess);
+		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, message);
+		system(command);
+		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
+
 		difxMessageSendDifxAlert("mpifxcorr process done", DIFX_ALERT_LEVEL_INFO);
 		exit(0);
 	}

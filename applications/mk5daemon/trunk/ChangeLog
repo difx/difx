@@ -35,4 +35,4 @@ Version 0.8
 * lots of careless bug fixes
 * reenable auto getvsn
 * Support for copy in mk5daemon, and support for HUP signal in mk5cp and mk5dir
-
+* support difxStart messages
