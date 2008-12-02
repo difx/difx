@@ -4,6 +4,7 @@ CCLD = g++
 bin_PROGRAMS = mk5daemon
 
 mk5daemon_SOURCES = \
+	difx.c \
 	loadmon.c \
 	logger.c \
 	logger.h \

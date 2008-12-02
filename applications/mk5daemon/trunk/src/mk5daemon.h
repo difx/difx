@@ -57,5 +57,6 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
+void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageStart *S);
 
 #endif

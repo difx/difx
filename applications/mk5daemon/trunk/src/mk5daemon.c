@@ -4,8 +4,9 @@
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
-#include <difxmessage.h>
+#include <sys/stat.h>
 #include <expat.h>
+#include <difxmessage.h>
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
@@ -216,9 +217,12 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	umask(02);
+
 	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
 	difxMessageInit(-1, program);
+	difxMessageSendDifxAlert("mk5daemon starting", DIFX_ALERT_LEVEL_INFO);
 
 	D = newMk5Daemon(logPath);
 
