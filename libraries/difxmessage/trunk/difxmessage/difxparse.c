@@ -350,15 +350,20 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 						G->body.start.nEnv++;
 					}
 				}
-				else if(strcmp(elem, "difxProgram") == 0)
+				else if(strcmp(elem, "mpiWrapper") == 0)
 				{
-					strncpy(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+					strncpy(G->body.start.mpiWrapper, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					G->body.start.mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 				}
 				else if(strcmp(elem, "mpiOptions") == 0)
 				{
 					strncpy(G->body.start.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 					G->body.start.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+				}
+				else if(strcmp(elem, "difxProgram") == 0)
+				{
+					strncpy(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 				}
 				break;
 			default:
@@ -453,8 +458,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    value = %s\n", G->body.param.paramValue);
 		break;
 	case DIFX_MESSAGE_START:
-		printf("    program = %s\n", G->body.start.difxProgram);
+		printf("    MPI wrapper = %s\n", G->body.start.mpiWrapper);
 		printf("    MPI options = %s\n", G->body.start.mpiOptions);
+		printf("    program = %s\n", G->body.start.difxProgram);
 		printf("    input file = %s\n", G->body.start.inputFilename);
 		printf("    nEnv = %d\n", G->body.start.nEnv);
 		for(i = 0; i < G->body.start.nEnv; i++)

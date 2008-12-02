@@ -71,7 +71,7 @@ class Parser:
 
     def getinfo(self):
 	if self.ok:
-        	return 'MPI[%2d] %-8s %s %-7s %s' % (self.mpiid, self.unit, self.id, alertLevels[self.severity], self.message)
+        	return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiid, self.unit, self.id, alertLevels[self.severity], self.message)
 	else:
 		return ''
 
