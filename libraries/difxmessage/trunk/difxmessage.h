@@ -24,6 +24,7 @@ extern "C" {
 #define DIFX_MESSAGE_MAX_DATASTREAMS	50
 #define DIFX_MESSAGE_MAX_CORES		100
 #define DIFX_MESSAGE_MAX_SCANNAME_LEN	64
+#define DIFX_MESSAGE_MAX_ENV		8
 #define DIFX_MESSAGE_ALLMPIFXCORR	-1
 #define DIFX_MESSAGE_ALLCORES		-2
 #define DIFX_MESSAGE_ALLDATASTREAMS	-3
@@ -189,12 +190,15 @@ typedef struct
 
 typedef struct
 {
-	int nDatastream, nProcess;
+	int nDatastream, nProcess, nEnv;
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char headNode[DIFX_MESSAGE_PARAM_LENGTH];
 	char datastreamNode[DIFX_MESSAGE_MAX_DATASTREAMS][DIFX_MESSAGE_PARAM_LENGTH];
 	char processNode[DIFX_MESSAGE_MAX_CORES][DIFX_MESSAGE_PARAM_LENGTH];
+	char envVar[DIFX_MESSAGE_MAX_ENV][DIFX_MESSAGE_FILENAME_LENGTH];
 	int nThread[DIFX_MESSAGE_MAX_CORES];
+	char mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH];
+	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStart;
 
 typedef struct
@@ -261,8 +265,10 @@ void difxMessageGetMulticastGroupPort(char *group, int *port);
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
-int difxMessageSendDifxStatus(enum DifxState state, const char *message, 
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, 
 	double visMJD, int numdatastreams, float *weight);
+int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 
+	const char *stateMessage);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);

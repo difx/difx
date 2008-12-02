@@ -226,6 +226,37 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	return difxMessageSend(message);
 }
 
+int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage)
+{
+	char message[1500];
+	
+	sprintf(message,
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+		"<difxMessage>"
+		  "<header>"
+		    "<from>%s</from>"
+		    "<mpiProcessId>-1</mpiProcessId>"
+		    "<identifier>%s</identifier>"
+		    "<type>DifxStatusMessage</type>"
+		  "</header>"
+		  "<body>"
+		    "<seqNumber>%d</seqNumber>"
+		    "<difxStatus>"
+		      "<state>%s</state>"
+		      "<message>%s</message>"
+		      "<visibilityMJD>0</visibilityMJD>"
+		    "</difxStatus>"
+		  "</body>"
+		"</difxMessage>\n",
+		difxMessageHostname,
+		jobName,
+		difxMessageSequenceNumber++,
+		DifxStateStrings[state],
+		stateMessage);
+
+	return difxMessageSend(message);
+}
+
 int difxMessageSendDifxInfo(const char *infoMessage)
 {
 	char message[DIFX_MESSAGE_LENGTH];

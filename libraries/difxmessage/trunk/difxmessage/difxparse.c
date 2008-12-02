@@ -306,7 +306,6 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 				if(strcmp(elem, "command") == 0)
 				{
 					strncpy(G->body.command.command, s, DIFX_MESSAGE_LENGTH-1);
-					G->body.command.command[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				break;
 			case DIFX_MESSAGE_PARAMETER:
@@ -332,19 +331,34 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 				else if(strcmp(elem, "name") == 0)
 				{
 					strncpy(G->body.param.paramName, s, DIFX_MESSAGE_PARAM_LENGTH-1);
-					G->body.param.paramName[DIFX_MESSAGE_PARAM_LENGTH-1] = 0;
 				}
 				else if(strcmp(elem, "value") == 0)
 				{
 					strncpy(G->body.param.paramValue, s, DIFX_MESSAGE_LENGTH-1);
-					G->body.param.paramValue[DIFX_MESSAGE_LENGTH-1] = 0;
 				}
 				break;
 			case DIFX_MESSAGE_START:
-				if(strncmp(elem, "input", 5) == 0)
+				if(strcmp(elem, "input") == 0)
 				{
 					strncpy(G->body.start.inputFilename, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
-					G->body.start.inputFilename[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+				}
+				else if(strcmp(elem, "env") == 0)
+				{
+					if(G->body.start.nEnv < DIFX_MESSAGE_MAX_ENV)
+					{
+						strncpy(G->body.start.envVar[G->body.start.nEnv], s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+						G->body.start.nEnv++;
+					}
+				}
+				else if(strcmp(elem, "difxProgram") == 0)
+				{
+					strncpy(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
+				}
+				else if(strcmp(elem, "mpiOptions") == 0)
+				{
+					strncpy(G->body.start.mpiOptions, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
+					G->body.start.mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 				}
 				break;
 			default:
@@ -439,7 +453,14 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    value = %s\n", G->body.param.paramValue);
 		break;
 	case DIFX_MESSAGE_START:
+		printf("    program = %s\n", G->body.start.difxProgram);
+		printf("    MPI options = %s\n", G->body.start.mpiOptions);
 		printf("    input file = %s\n", G->body.start.inputFilename);
+		printf("    nEnv = %d\n", G->body.start.nEnv);
+		for(i = 0; i < G->body.start.nEnv; i++)
+		{
+			printf("      %s\n", G->body.start.envVar[i]);
+		}
 		printf("    headNode = %s\n", G->body.start.headNode);
 		printf("    nDatastream = %d\n", G->body.start.nDatastream);
 		for(i = 0; i < G->body.start.nDatastream; i++)
