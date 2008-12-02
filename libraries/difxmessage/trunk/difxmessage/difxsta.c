@@ -71,3 +71,9 @@ int difxMessageBinaryClose(int sock)
 {
 	return closeMultiCastSocket(sock);
 }
+
+int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from)
+{
+        return MultiCastReceive(sock, message, maxlen, from);
+}
+
