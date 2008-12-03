@@ -75,6 +75,8 @@ int main(int argc, char **argv)
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
+	char message[1000];
+	char modules[100] = "";
 	char vsn[16] = "";
 	int a, v;
 
@@ -113,6 +115,7 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot open XLR\n");
+		difxMessageSendDifxAlert("Cannot open XLR", DIFX_ALERT_LEVEL_ERROR);
 		return 0;
 	}
 
@@ -120,6 +123,7 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot set SkipCheckDir\n");
+		difxMessageSendDifxAlert("Cannot set SkipCheckDir", DIFX_ALERT_LEVEL_ERROR);
 		XLRClose(xlrDevice);
 		return 0;
 	}
@@ -128,6 +132,7 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot set BankMode\n");
+		difxMessageSendDifxAlert("Cannot set BankMode", DIFX_ALERT_LEVEL_ERROR);
 		XLRClose(xlrDevice);
 		return 0;
 	}
@@ -136,6 +141,7 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot get bank A status\n");
+		difxMessageSendDifxAlert("Cannot get bank A status", DIFX_ALERT_LEVEL_ERROR);
 		XLRClose(xlrDevice);
 		return 0;
 	}
@@ -158,6 +164,7 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		printf("Cannot get bank B status\n");
+		difxMessageSendDifxAlert("Cannot get bank B status", DIFX_ALERT_LEVEL_ERROR);
 		XLRClose(xlrDevice);
 		return 0;
 	}
@@ -174,15 +181,6 @@ int main(int argc, char **argv)
 	else
 	{
 		mk5status.vsnB[0] = 0;
-	}
-
-	if(strncasecmp(vsn, mk5status.vsnA, 8) == 0)
-	{
-		mk5status.activeBank = 'A';
-	}
-	else if(strncasecmp(vsn, mk5status.vsnB, 8) == 0)
-	{
-		mk5status.activeBank = 'B';
 	}
 
 	mk5dirpath = getenv("MARK5_DIR_PATH");
@@ -205,12 +203,23 @@ int main(int argc, char **argv)
 	{
 		if(strlen(mk5status.vsnA) == 8)
 		{
+			mk5status.activeBank = 'A';
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnA, mk5dirpath, &dirCallback, 
 				&mk5status);
-			if(v == 0 && verbose > 0)
+			if(v < 0)
+			{
+				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
+				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnA, v);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			}
+			else if(v == 0 && verbose > 0)
 			{
 				printMark5Module(&module);
+			}
+			if(v >= 0)
+			{
+				strcpy(modules, mk5status.vsnA);
 			}
 		}
 
@@ -219,12 +228,31 @@ int main(int argc, char **argv)
 
 		if(strlen(mk5status.vsnB) == 8)
 		{
+			mk5status.activeBank = 'B';
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnB, mk5dirpath, &dirCallback, 
 				&mk5status);
-			if(v == 0 && verbose > 0)
+			if(v < 0)
+			{
+				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
+				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnB, v);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			}
+			else if(v == 0 && verbose > 0)
 			{
 				printMark5Module(&module);
+			}
+			if(v >= 0)
+			{
+				if(modules[0])
+				{
+					strcat(modules, " and ");
+					strcat(modules, mk5status.vsnB);
+				}
+				else
+				{
+					strcpy(modules, mk5status.vsnB);
+				}
 			}
 		}
 	}
@@ -232,17 +260,43 @@ int main(int argc, char **argv)
 	{
 		if(strlen(vsn) == 8)
 		{
+			if(strncmp(vsn, mk5status.vsnA, 8) == 0)
+			{
+				mk5status.activeBank = 'A';
+			}
+			else if(strncmp(vsn, mk5status.vsnB, 8) == 0)
+			{
+				mk5status.activeBank = 'B';
+			}
+
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				vsn, mk5dirpath, &dirCallback, &mk5status);
 			if(v < 0)
 			{
-				fprintf(stderr, "Unsuccessful\n");
+				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
+				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", vsn, v);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 			else if(verbose > 0)
 			{
 				printMark5Module(&module);
 			}
+			if(v >= 0)
+			{
+				strcpy(modules, vsn);
+			}
 		}
+
+	}
+
+	if(die)
+	{
+		difxMessageSendDifxAlert("Directory read terminated", DIFX_ALERT_LEVEL_WARNING);
+	}
+	else if(modules[0])
+	{
+		sprintf(message, "Successful directory read for %s", modules);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 	}
 
 	XLRClose(xlrDevice);
@@ -253,7 +307,6 @@ int main(int argc, char **argv)
 	mk5status.position = 0;
 	mk5status.activeBank = ' ';
 	difxMessageSendMark5Status(&mk5status);
-	
 
 	return 0;
 }

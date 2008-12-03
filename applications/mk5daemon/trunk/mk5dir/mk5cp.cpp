@@ -86,7 +86,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	double rate;
 	char message[1000];
 
-	sprintf(filename, "%s/%8s_%03d_%s", outpath, vsn, scanNum, scan->name); 
+	sprintf(filename, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name); 
 
 	printf("outname = %s\n", filename);
 
@@ -120,6 +120,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	{
 		if(die)
 		{
+			difxMessageSendDifxAlert("Data copy aborted", DIFX_ALERT_LEVEL_WARNING);
 			break;
 		}
 		if(verbose)
@@ -427,6 +428,11 @@ int main(int argc, char **argv)
 			{
 				scanlist++;
 			}
+			if(n == 0)
+			{
+				sprintf(message, "No scans copied from module %8s to %s", module.label, outpath);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			}
 		}
 		else
 		{
@@ -442,14 +448,17 @@ int main(int argc, char **argv)
 			}
 			if(n == 0)
 			{
-				sprintf(message, "No scans match with code [%s]", scanlist);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				sprintf(message, "No scans match with code %s on module %8s", scanlist, module.label);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			}
 		}
 	}
 
-	sprintf(message, "%d scans copied to %s", n, outpath);
-	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+	if(n > 0)
+	{
+		sprintf(message, "%d scans copied from module %8s to %s", n, module.label, outpath);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+	}
 
 	XLRClose(xlrDevice);
 
