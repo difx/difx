@@ -4,6 +4,7 @@
 #include <string.h>
 #include "mk5daemon.h"
 
+const char defaultMpiWrapper[] = "mpirun";
 const char defaultMpiOptions[] = "--mca btl ^udapl,openib --mca mpi_yield_when_idle 1";
 const char defaultDifxProgram[] = "mpifxcorr";
 
@@ -203,6 +204,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(fork() == 0)
 	{
 		const char *mpiOptions;
+		const char *mpiWrapper;
 		const char *difxProgram;
 
 		if(S->mpiOptions[0])
@@ -212,6 +214,15 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		else
 		{
 			mpiOptions = defaultMpiOptions;
+		}
+
+		if(S->mpiWrapper[0])
+		{
+			mpiWrapper = S->mpiWrapper;
+		}
+		else
+		{
+			mpiWrapper = defaultMpiWrapper;
 		}
 
 		if(S->difxProgram[0])
