@@ -4,6 +4,7 @@
 #include <string.h>
 #include <difxmessage.h>
 #include <signal.h>
+#include <ctype.h>
 #include <sys/time.h>
 #include "config.h"
 #include "mark5dir.h"
@@ -83,6 +84,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	struct timeval t1, t2;
 	double dt;
 	double rate;
+	char message[1000];
 
 	sprintf(filename, "%s/%8s_%03d_%s", outpath, vsn, scanNum, scan->name); 
 
@@ -110,6 +112,9 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 
 	rate = 0.0;
 	gettimeofday(&t1, 0);
+
+	sprintf(message, "Copying scan %d to file %s", scanNum+1, filename);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	for(i = 0; togo > 0; i++)
 	{
@@ -194,6 +199,7 @@ int main(int argc, char **argv)
 	const char *mk5dirpath;
 	const char *scanlist=0;
 	const char *outpath=0;
+	char message[1000];
 	struct Mark5Module module;
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
@@ -201,7 +207,7 @@ int main(int argc, char **argv)
 	DifxMessageMk5Status mk5status;
 	char vsn[16] = "";
 	int v;
-	int a, b, i, s;
+	int a, b, i, s, l, n;
 	int scanIndex;
 
 	if(argc < 2)
@@ -366,57 +372,84 @@ int main(int argc, char **argv)
 
 	mk5status.state = MARK5_STATE_COPY;
 
-	if(mk5status.activeBank > ' ') for(;;)
+	n = 0;
+	if(mk5status.activeBank > ' ') 
 	{
-
-		printf("scanlist = %s\n", scanlist);
-
-		v = sscanf(scanlist, "%d%n", &a, &s);
-		scanlist += s;
-		if(v < 1)
+		if(isdigit(scanlist[0])) for(;;)
 		{
-			break;
-		}
-		if(scanlist[0] == '-')
-		{
-			scanlist++;
-			v = sscanf(scanlist, "%d%n", &b, &s);
+
+			printf("scanlist = %s\n", scanlist);
+
+			v = sscanf(scanlist, "%d%n", &a, &s);
 			scanlist += s;
 			if(v < 1)
 			{
-				fprintf(stderr, "Bad format for list of scans\n");
 				break;
+			}
+			if(scanlist[0] == '-')
+			{
+				scanlist++;
+				v = sscanf(scanlist, "%d%n", &b, &s);
+				scanlist += s;
+				if(v < 1)
+				{
+					difxMessageSendDifxAlert("Bad format for list of scans", DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "Bad format for list of scans\n");
+					break;
+				}
+			}
+			else
+			{
+				b = a;
+			}
+
+			printf("reading %d to %d\n", a, b);
+
+			for(i = a; i <= b; i++)
+			{
+				if(die)
+				{
+					break;
+				}
+				if(i > 0 && i <= module.nscans)
+				{
+					scanIndex = i-1;
+					copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+					n++;
+				}
+			}
+
+			if(scanlist[0] == 0)
+			{
+				break;
+			}
+			else
+			{
+				scanlist++;
 			}
 		}
 		else
 		{
-			b = a;
-		}
-
-		printf("reading %d to %d\n", a, b);
-
-		for(i = a; i <= b; i++)
-		{
-			if(die)
+			l = strlen(scanlist);
+			for(i = 0; i < module.nscans; i++)
 			{
-				break;
+				if(strncasecmp(module.scans[i].name, scanlist, l) == 0)
+				{
+					scanIndex = i;
+					copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+					n++;
+				}
 			}
-			if(i > 0 && i <= module.nscans)
+			if(n == 0)
 			{
-				scanIndex = i-1;
-				copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+				sprintf(message, "No scans match with code [%s]", scanlist);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
-		}
-
-		if(scanlist[0] == 0)
-		{
-			break;
-		}
-		else
-		{
-			scanlist++;
 		}
 	}
+
+	sprintf(message, "%d scans copied to %s", n, outpath);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	XLRClose(xlrDevice);
 
