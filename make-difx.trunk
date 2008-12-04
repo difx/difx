@@ -8,7 +8,7 @@ apptargets = [["calcserver", "trunk",True,False],
               ["difx2fits",  "trunk",False,True],
               ["vex2difx",   "trunk",True,True],
               ["mk5daemon", "trunk",False,True]]
-cortarget  = "branches/adeller-time"
+cortarget  = "trunk"
 
 ###### Subroutine to do the compiling of an auto-tool ###
 def auto_compile(dolibtoolize, doautoheader, prefix):
@@ -80,13 +80,13 @@ os.chdir("../../../../")
 
 print "Making rpfits"
 if difxbits == "32":
-    os.chdir("libraries/rpfits/linux/")
+    os.chdir("libraries/rpfits/trunk/linux/")
 else:
-    os.chdir("libraries/rpfits/linux64/")
+    os.chdir("libraries/rpfits/trunk/linux64/")
 os.system("make")
 os.system("mv -f librpfits.a " + libdir)
-os.chdir("../../../")
-os.system("cp -f libraries/rpfits/code/RPFITS.h " + incdir)
+os.chdir("../../../..")
+os.system("cp -f libraries/rpfits/trunk/code/RPFITS.h " + incdir)
 
 ##### Make standard (autotool'd) libraries ###############
 os.chdir("libraries")
