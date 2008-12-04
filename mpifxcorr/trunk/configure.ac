@@ -56,12 +56,12 @@ dnl **** Look for RPFITS                                  ****
 dnl **********************************************************
 rpfits_enabled=true
 PWD=`pwd`
-AC_CHECK_HEADER([$PWD/../rpfits/code/RPFITS.h],
+AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
 		[AC_DEFINE([HAVE_RPFITS], 1, [1=has RPFITS])],
 		[rpfits_enabled=false])
 if test ${rpfits_enabled} = true; then
-	RPFITS_CFLAGS="-I$PWD/../rpfits/code"
-	RPFITS_LIBS="-L$PWD/../rpfits/linux -lrpfits -lg2c"
+	RPFITS_CFLAGS="-I$DIFXROOT/include"
+	RPFITS_LIBS=" -lrpfits -lg2c"
 else
 RPFITS_CFLAGS=""
 RPFITS_LIBS=""
