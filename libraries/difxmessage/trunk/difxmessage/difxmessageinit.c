@@ -22,7 +22,6 @@ char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH] = "";
 char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
-char difxMessageXMLParamFormat[256] = "";
 int difxMessageSequenceNumber = 0;
 char difxBinarySTAGroup[16] = "";
 int difxBinarySTAPort = -1;
@@ -74,25 +73,6 @@ int difxMessageInit(int mpiId, const char *identifier)
 		
 		difxMessageHostname, 
 		difxMessageMpiProcessId,
-		difxMessageIdentifier);
-
-	sprintf(difxMessageXMLParamFormat, 
-		
-		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
-		"<difxMessage>"
-		  "<header>"
-		    "<from>%s</from>"
-		    "<mpiProcessId>%%d</mpiProcessId>"
-		    "<identifier>%s</identifier>"
-		    "<type>%%s</type>"
-		  "</header>"
-		  "<body>"
-		    "<seqNumber>%%d</seqNumber>"
-		    "%%s"
-		  "</body>"
-		"</difxMessage>",
-		
-		difxMessageHostname, 
 		difxMessageIdentifier);
 
 	return 0;

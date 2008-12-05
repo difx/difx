@@ -337,17 +337,18 @@ int difxMessageSendDifxParameter1(const char *name, int index1,
 	sprintf(body,
 		
 		"<difxParameter>"
+		  "<targetMpiId>%d</targetMpiId>"
 		  "<name>%s</name>"
 		  "<index1>%d</index1>"
 		  "<value>%s</value>"
 		"</difxParameter>",
 
+		mpiDestination,
 		name,
 		index1,
 		value);
 
-	sprintf(message, difxMessageXMLParamFormat,
-		mpiDestination,
+	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
 	
@@ -363,19 +364,20 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 	sprintf(body,
 		
 		"<difxParameter>"
+		  "<targetMpiId>%d</targetMpiId>"
 		  "<name>%s</name>"
 		  "<index1>%d</index1>"
 		  "<index2>%d</index1>"
 		  "<value>%s</value>"
 		"</difxParameter>",
 
+		mpiDestination,
 		name,
 		index1,
 		index2,
 		value);
 
-	sprintf(message, difxMessageXMLParamFormat,
-		mpiDestination,
+	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
 	
@@ -399,17 +401,18 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 	sprintf(body,
 		
 		"<difxParameter>"
+		  "<targetMpiId>%d</targetMpiId>"
 		  "<name>%s</name>"
 		  "%s"
 		  "<value>%s</value>"
 		"</difxParameter>",
 
+		mpiDestination,
 		name,
 		indices,
 		value);
 
-	sprintf(message, difxMessageXMLParamFormat,
-		mpiDestination,
+	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
 	
