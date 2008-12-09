@@ -701,8 +701,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       starecord->nChan = procslots[index].numchannels;
     channelinc = procslots[index].numchannels/starecord->nChan;
     starecord->sec = procslots[index].offsets[0];
-    starecord->ns = ((int)(1000.0*((double)(procslots[index].offsets[1]+procslots[index].numchannels))/
-        (config->getConfigBandwidth(procslots[index].configindex))+ 0.5));
+    starecord->ns = procslots[index].offsets[1];
     for (int i=0;i<numdatastreams;i++) {
       starecord->antId = i;
       for (int j=0;j<config->getDNumInputBands(procslots[index].configindex, i);j++) {

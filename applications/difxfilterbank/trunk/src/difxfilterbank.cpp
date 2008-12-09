@@ -61,7 +61,7 @@ int main(int argc, const char * argv[])
 
     //write it to the file
     if (nbytes <= 0) {
-      cout << "Some problem with the binary message - ignoring!" << endl;
+      cout << "Problem with binary message or timeout - carrying on..." << endl;
     }
     else {
       writeDiFXHeader(&output, starecord->antId, starecord->sec, starecord->ns, 

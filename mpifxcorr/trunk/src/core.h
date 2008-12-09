@@ -79,7 +79,7 @@ private:
     int numchannels;
     int resultsvalid;
     int configindex;
-    int offsets[2]; //0=seconds, 1=samples
+    int offsets[2]; //0=seconds, 1=nanoseconds
     bool keepprocessing;
     int numpulsarbins;
     bool pulsarbin;
