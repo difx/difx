@@ -10,6 +10,11 @@
 #include "corrparams.h"
 #include "vexload.h"
 
+const string program("vex2difx");
+const string version("0.1");
+const string verdate("20081208");
+const string author("Walter Brisken");
+
 // FIXME : where to put this function?
 
 // A is assumed to be the first scan in time order

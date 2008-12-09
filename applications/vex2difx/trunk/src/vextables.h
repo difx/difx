@@ -48,6 +48,7 @@ public:
 	double mjdStart;
 	double mjdStop;
 	VexInterval(double start=0.0, double end=0.0) : mjdStart(start), mjdStop(end) {}
+	VexInterval(const VexInterval &vi) : mjdStart(vi.mjdStart), mjdStop(vi.mjdStop) {}
 };
 
 class VexScan

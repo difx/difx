@@ -1,5 +1,6 @@
 bin_PROGRAMS = \
-	vex2difx
+	vex2difx \
+	vexpeek
 
 LDADD = \
 	$(top_builddir)/vex/libvex.la \
@@ -11,3 +12,8 @@ vex2difx_SOURCES = \
 	vexload.cpp \
 	corrparams.cpp
 
+vexpeek_SOURCES = \
+	vexpeek.cpp \
+	vextables.cpp \
+	vexload.cpp \
+	corrparams.cpp
