@@ -89,6 +89,17 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		return 0;
 	}
 
+	mark5_stream_print(ms);
+
+	out = fopen(outfile, "w");
+	if(!out)
+	{
+		fprintf(stderr, "Error -- cannot open %s for write\n", outfile);
+		delete_mark5_stream(ms);
+
+		return 0;
+	}
+
 	nif = ms->nchan;
 
 	data = (double **)malloc(nif*sizeof(double *));
@@ -108,8 +119,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	{
 		zx[i] = (fftw_complex *)calloc(nchan, sizeof(fftw_complex));
 	}
-
-	mark5_stream_print(ms);
 
 	for(j = 0; j < nint; j++)
 	{
@@ -156,8 +165,6 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	}
 
 	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
-
-	out = fopen(outfile, "w");
 
 	/* normalize */
 	sum = 0.0;
