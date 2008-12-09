@@ -41,7 +41,7 @@ int difxMessageSendBinary(const char *message, int destination, int length)
 
 int difxMessageBinaryOpen(int destination)
 {
-	if(destination != BINARY_STA)
+	if(destination == BINARY_STA)
 	{
 		if(difxBinarySTAPort < 0)
 		{
