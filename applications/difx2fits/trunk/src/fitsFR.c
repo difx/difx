@@ -82,7 +82,7 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		{
 			IF = config->IF + i;
 			bandFreq[i] = (IF->freq - D->refFreq)*1.0e6;
-			chanBW[i] = (IF->bw*D->specAvg/D->nInChan/config->decimation)*1.0e6;
+			chanBW[i] = (IF->bw*D->specAvg/D->nInChan)*1.0e6;
 			bandBW[i] = chanBW[i]*D->nOutChan;
 			netSide[i] = ( IF->sideband == 'U' ? 1 : -1 );
 			bbChan[i] = 0;	/* vistigial */
