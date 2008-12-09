@@ -3,3 +3,7 @@
 AUTOMAKE_OPTIONS = foreign 1.4
 
 SUBDIRS = src scripts
+
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = mpifxcorr.pc fxcorr.pc
+

@@ -22,7 +22,6 @@
 #ifndef UVW_H
 #define UVW_H
 
-#include <mpi.h>
 #include <string>
 #include <fstream>
 #include <cstdlib>
@@ -70,6 +69,12 @@ public:
   * @param toset The string which is set to the source name for this time
   */
   void getSourceName(int mjd, int sec, string & toset);
+
+ /**
+  * Returns whether the UVW file was opened and parsed successfully
+  * @return Whether this UVW object was successfully created
+  */
+  inline bool openSuccess() { return opensuccess; }
 
  /**
   * Gets the index of the source corresponding to the active scan at a given time
@@ -169,7 +174,7 @@ private:
 
   int expermjd, experstartseconds, numstations, numscans, numuvwpoints, numsources;
   double uvwincrementsecs;
-  bool uvwread;
+  bool uvwread, opensuccess;
   vector<int> scannumbers;
   source * scansources;
   telescope * stations;

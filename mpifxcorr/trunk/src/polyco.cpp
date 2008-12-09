@@ -33,24 +33,26 @@ Polyco::Polyco(string filename, int confindex, int nbins, int nchans, double * b
   int status;
 
   //load the polyco file
-  bool ok = loadPolycoFile(filename);
-  if(!ok)
+  readok = loadPolycoFile(filename);
+  if(!readok)
     cerror << startl << "Error trying to open polyco file " << filename << endl;
+  else
+  {
+    //allocate the phase and weight arrays
+    absolutephases = vectorAlloc_f64(numchannels + 1);
 
-  //allocate the phase and weight arrays
-  absolutephases = vectorAlloc_f64(numchannels + 1);
+    binphases = vectorAlloc_f64(numbins);
+    status = vectorCopy_f64(bphases, binphases, numbins);
+    if(status != vecNoErr)
+      csevere << startl << "Error copying binphases in Polyco!!" << endl;
 
-  binphases = vectorAlloc_f64(numbins);
-  status = vectorCopy_f64(bphases, binphases, numbins);
-  if(status != vecNoErr)
-    csevere << startl << "Error copying binphases in Polyco!!" << endl;
-
-  binweights = vectorAlloc_f64(numbins);
-  status = vectorCopy_f64(bweights, binweights, numbins);
-  if(status != vecNoErr)
-    csevere << startl << "Error copying binweights in Polyco!!" << endl;
+    binweights = vectorAlloc_f64(numbins);
+    status = vectorCopy_f64(bweights, binweights, numbins);
+    if(status != vecNoErr)
+      csevere << startl << "Error copying binweights in Polyco!!" << endl;
   
-  cinfo << startl << "Polyco " << filename << " created successfully" << endl;
+    cinfo << startl << "Polyco " << filename << " created successfully" << endl;
+  }
 }
 
 // FIXME: WFB: dt0 not copied -- is that OK?
@@ -205,9 +207,10 @@ void Polyco::getBins(double offsetmins, int **bins)
     }
 }
 
-void Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
+bool Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
 {
     double channelfreq;
+    bool ok = true;
 
     numfreqs = nfreqs;
     bandwidth = bw;
@@ -241,7 +244,7 @@ void Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
     if(minbinwidth < 0.0)
     {
         cfatal << startl << "Error!! Bin phase breakpoints are not in linear ascending order!!!" << endl;
-        MPI_Abort(MPI_COMM_WORLD, 1);
+        ok = false;
     }
 
     //create the bincounts array
@@ -256,6 +259,7 @@ void Polyco::setFrequencyValues(int nfreqs, double * freqs, double bw)
                 currentbincounts[i][j][k] = 0;
         }
     }
+    return ok;
 }
 
 void Polyco::setTime(int startmjd, double startmjdfraction)
@@ -339,7 +343,7 @@ void Polyco::calculateDMPhaseOffsets(double offsetmins)
     {
         status = vectorMulC_f64(channeldmdelays[i], currentfreq, dmPhaseOffsets[i], numchannels + 1);
         if(status != vecNoErr)
-            csevere << startl << "Error!!! Problem calculating dmPhaseOffsets!!!" << endl;
+          csevere << startl << "Error!!! Problem calculating dmPhaseOffsets!!!" << endl;
     }
 }
 
@@ -418,7 +422,7 @@ bool Polyco::loadPolycoFile(string filename)
     {
         input.get(buffer, 26);
 	if(input.fail())
-	  cerror << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
+          cerror << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
         coefficients[i] = atof(buffer);
         if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
             getline(input, strbuffer);

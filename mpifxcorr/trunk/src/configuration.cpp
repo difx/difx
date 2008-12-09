@@ -20,31 +20,36 @@
 //
 //============================================================================
 #include <mpi.h>
-#include <cstring>
+//#include "mk5.h"
+#include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
-#include "datastream.h"
-#include "mk5.h"
-#include "nativemk5.h"
+//#include "datastream.h"
+//#include "mk5.h"
+//#include "nativemk5.h"
 #include "alert.h"
 
-Configuration::Configuration(const char * configfile)
+Configuration::Configuration(const char * configfile, int id)
+  : mpiid(id), consistencyok(true)
 {
+  sectionheader currentheader = INPUT_EOF;
+  commonread = false;
+  datastreamread = false;
+  configread = false;
+  uvw = NULL;
+  
   //open the file
   ifstream * input = new ifstream(configfile);
   if(input->fail() || !input->is_open())
   {
     cfatal << startl << "Error opening file " << configfile << " - aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    consistencyok = false;
   }
-  sectionheader currentheader = getSectionHeader(input);
-  commonread = false;
-  datastreamread = false;
-  configread = false;
-  uvw = NULL;
+  else
+    currentheader = getSectionHeader(input);
 
   //go through all the sections and tables in the input file
-  while(currentheader != INPUT_EOF)
+  while(consistencyok && currentheader != INPUT_EOF)
   {
     switch(currentheader)
     {
@@ -55,9 +60,10 @@ Configuration::Configuration(const char * configfile)
         if(!commonread)
         {
           cfatal << startl << "Error - input file out of order!  Attempted to read configuration details without knowledge of common settings - aborting!!!" << endl;
-	  MPI_Abort(MPI_COMM_WORLD, 1);
+          consistencyok = false;
         }
-        processConfig(input);
+        else
+          consistencyok = consistencyok && processConfig(input);
         break;
       case FREQ:
         processFreqTable(input);
@@ -69,28 +75,31 @@ Configuration::Configuration(const char * configfile)
         if(!configread)
         {
           cfatal << startl << "Error - input file out of order!  Attempted to read datastreams without knowledge of configs - aborting!!!" << endl;
-	  MPI_Abort(MPI_COMM_WORLD, 1);
+          consistencyok = false;
         }
-        processDatastreamTable(input);
+        else
+          consistencyok = consistencyok && processDatastreamTable(input);
         break;
       case BASELINE:
-        processBaselineTable(input);
+        consistencyok = consistencyok && processBaselineTable(input);
         break;
       case DATA:
         if(!datastreamread)
         {
           cfatal << startl << "Error - input file out of order!  Attempted to read datastream data files without knowledge of datastreams - aborting!!!" << endl;
-	  MPI_Abort(MPI_COMM_WORLD, 1);
+          consistencyok = false;
         }
-        processDataTable(input);
+        else
+          processDataTable(input);
         break;
       case NETWORK:
         if(!datastreamread)
         {
           cfatal << startl << "Error - input file out of order!  Attempted to read datastream network details without knowledge of datastreams - aborting!!!" << endl;
-	  MPI_Abort(MPI_COMM_WORLD, 1);
+          consistencyok = false;
         }
-        processNetworkTable(input);
+        else
+          processNetworkTable(input);
         break;
       default:
         break;
@@ -100,11 +109,17 @@ Configuration::Configuration(const char * configfile)
   if(!configread)
   {
     cfatal << startl << "Error - no config section in input file - aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    consistencyok = false;
   }
   input->close();
   delete input;
-  consistencyok = consistencyCheck();
+  if (consistencyok)
+    consistencyok = consistencyCheck();
+  commandthreadinitialised = false;
+  dumpsta = false;
+  dumplta = false;
+  stadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
+  ltadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
 //  cinfo << startl << "Finished processing input file!!!" << endl;
 }
 
@@ -159,6 +174,52 @@ Configuration::~Configuration()
   delete [] baselinetable;
   delete [] numprocessthreads;
   delete [] firstnaturalconfigindices;
+}
+
+int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, int framebytes, int decimationfactor, char *formatname)
+{
+  int fanout=1, mbps;
+
+  mbps = int(2*nchan*bw*nbits + 0.5);
+
+  switch(format)
+  {
+    case MKIV:
+      fanout = framebytes*8/(20000*nbits*nchan);
+      if(fanout*20000*nbits*nchan != framebytes*8)
+      {
+        cfatal << "genMk5FormatName : MKIV format : framebytes = " << framebytes << " is not allowed\n";
+        return -1;
+      }
+      if(decimationfactor > 1)	// Note, this conditional is to ensure compatibility with older mark5access versions
+        sprintf(formatname, "MKIV1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
+      else
+        sprintf(formatname, "MKIV1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
+      break;
+    case VLBA:
+      fanout = framebytes*8/(20160*nbits*nchan);
+      if(fanout*20160*nbits*nchan != framebytes*8)
+      {
+        cfatal << "genMk5FormatName : VLBA format : framebytes = " << framebytes << " is not allowed\n";
+        return -1;
+      }
+      if(decimationfactor > 1)
+        sprintf(formatname, "VLBA1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
+      else
+        sprintf(formatname, "VLBA1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
+      break;
+    case MARK5B:
+      if(decimationfactor > 1)
+        sprintf(formatname, "Mark5B-%d-%d-%d/%d", mbps, nchan, nbits, decimationfactor);
+      else
+        sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
+      break;
+    default:
+      cfatal << startl << "genMk5FormatName : unsupported format encountered\n" << endl;
+      return -1;
+  }
+
+  return fanout;
 }
 
 int Configuration::getFramePayloadBytes(int configindex, int configdatastreamindex)
@@ -367,11 +428,12 @@ int Configuration::getMaxProducts(int configindex)
   int maxproducts = 0;
   for(int i=0;i<numbaselines;i++)
   {
-    if(configs[configindex].baselineindices[i] >= baselinetablelength || configs[configindex].baselineindices[i] < 0)
-    {
-      cfatal << startl << "Error - baselinetable index of " << configs[configindex].baselineindices[i] << " from config " << configindex << ", baseline " << i << " is outside of table range!!!" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
-    }
+    //check is done in consistencyCheck - no longer necessary
+    //if(configs[configindex].baselineindices[i] >= baselinetablelength || configs[configindex].baselineindices[i] < 0)
+    //{
+    //  cfatal << "Error - baselinetable index of " << configs[configindex].baselineindices[i] << " from config " << configindex << ", baseline " << i << " is outside of table range!!!" << endl;
+    //  MPI_Abort(MPI_COMM_WORLD, 1);
+    //}
     current = baselinetable[configs[configindex].baselineindices[i]];
     for(int j=0;j<current.numfreqs;j++)
     {
@@ -414,9 +476,10 @@ int Configuration::getCNumProcessThreads(int corenum)
   return 1;
 }
 
-void Configuration::loaduvwinfo(bool sourceonly)
+bool Configuration::loaduvwinfo(bool sourceonly)
 {
   uvw = new Uvw(this, uvwfilename, sourceonly);
+  return uvw->openSuccess();
 }
 
 bool Configuration::stationUsed(int telescopeindex)
@@ -443,7 +506,7 @@ int Configuration::getConfigIndex(int offsetseconds)
   if(!uvw)
   {
     cfatal << startl << "UVW HAS NOT BEEN CREATED!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    return -1; //nasty, but this should never happen except in a programmer error.  Caller will probably crash.
   }
 
   uvw->getSourceName(startmjd, startseconds + offsetseconds, currentsourcename);
@@ -519,7 +582,7 @@ Configuration::sectionheader Configuration::getSectionHeader(ifstream * input)
   return UNKNOWN;
 }
 
-void Configuration::processBaselineTable(ifstream * input)
+bool Configuration::processBaselineTable(ifstream * input)
 {
   int tempint;
   int ** tempintptr;
@@ -531,7 +594,7 @@ void Configuration::processBaselineTable(ifstream * input)
   if(baselinetablelength < numbaselines)
   {
     cfatal << startl << "Error - not enough baselines are supplied in the baseline table (" << baselinetablelength << ") compared to the number of baselines (" << numbaselines << ")!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    return false;
   }
 
   for(int i=0;i<baselinetablelength;i++)
@@ -573,6 +636,7 @@ void Configuration::processBaselineTable(ifstream * input)
       baselinetable[i].datastream2bandindex = tempintptr;
     }
   }
+  return true;
 }
 
 void Configuration::processCommon(ifstream * input)
@@ -618,7 +682,7 @@ void Configuration::processCommon(ifstream * input)
   commonread = true;
 }
 
-void Configuration::processConfig(ifstream * input)
+bool Configuration::processConfig(ifstream * input)
 {
   string line;
   bool found;
@@ -674,7 +738,7 @@ void Configuration::processConfig(ifstream * input)
     if(configs[i].postffringerot && configs[i].quadraticdelayinterp)
     {
       cfatal << startl << "ERROR - cannot quad interpolate delays with post-f fringe rotation - aborting!!!" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      return false;
     }
     getinputline(input, &line, "WRITE AUTOCORRS");
     configs[i].writeautocorrs = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
@@ -697,24 +761,25 @@ void Configuration::processConfig(ifstream * input)
   }
   if(defaultconfigindex < 0)
   {
-//    cerror << startl << "Warning - no default config found - sources which were not specified will not be correlated!!!" << endl;
+//    cinfo << startl << "Warning - no default config found - sources which were not specified will not be correlated!!!" << endl;
   }
 
   configread = true;
+  return true;
 }
 
-void Configuration::processDatastreamTable(ifstream * input)
+bool Configuration::processDatastreamTable(ifstream * input)
 {
+  bool ok = true;
   string line;
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
   datastreamtablelength = atoi(line.c_str());
-
   datastreamtable = new datastreamdata[datastreamtablelength];
   if(datastreamtablelength < numdatastreams)
   {
     cfatal << startl << "Error - not enough datastreams are supplied in the datastream table (" << datastreamtablelength << ") compared to the number of datastreams (" << numdatastreams << "!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    return false;
   }
   //create the ordereddatastream array
   for(int i=0;i<numconfigs;i++)
@@ -729,7 +794,7 @@ void Configuration::processDatastreamTable(ifstream * input)
   for(int i=0;i<datastreamtablelength;i++)
   {
     int configindex=-1;
-    int decimationfactor=0;
+    int decimationfactor = 1;
 
     //get configuration index for this datastream
     for(int c=0; c<numconfigs; c++)
@@ -748,12 +813,6 @@ void Configuration::processDatastreamTable(ifstream * input)
     if(configindex >= 0)
     {
       decimationfactor = configs[configindex].decimationfactor;
-    }
-    else
-    {
-      //cfatal << startl << "Error - processDatastreamTable: configuration not found when determining decimationfactor" << endl;
-      //MPI_Abort(MPI_COMM_WORLD, 1);
-      decimationfactor = 1;
     }
 
     //read all the info for this datastream
@@ -779,7 +838,7 @@ void Configuration::processDatastreamTable(ifstream * input)
     else
     {
       cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, and MARK5B)" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");
     datastreamtable[i].numbits = atoi(line.c_str());
@@ -797,7 +856,7 @@ void Configuration::processDatastreamTable(ifstream * input)
     else
     {
       cfatal << startl << "Unnkown data source " << line << " (case sensitive choices are FILE, MK5MODULE and EVLBI)" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
+      return false;
     }
 
     getinputline(input, &line, "FILTERBANK USED");
@@ -848,11 +907,14 @@ void Configuration::processDatastreamTable(ifstream * input)
     if(configs[i].pulsarbin)
     {
       //process the pulsar config file
-      processPulsarConfig(configs[i].pulsarconfigfilename, i);
-      setPolycoFreqInfo(i);
+      ok = ok && processPulsarConfig(configs[i].pulsarconfigfilename, i);
+      if (ok)
+        ok = ok && setPolycoFreqInfo(i);
     }
   }
-  
+  if(!ok)
+    return false;
+
   //read in the core numthreads info
   ifstream coreinput(coreconffilename.c_str());
   numcoreconfs = 0;
@@ -883,6 +945,7 @@ void Configuration::processDatastreamTable(ifstream * input)
   coreinput.close();
 
   datastreamread = true;
+  return true;
 }
 
 void Configuration::processDataTable(ifstream * input)
@@ -1108,7 +1171,7 @@ bool Configuration::consistencyCheck()
   return true;
 }
 
-void Configuration::processPulsarConfig(string filename, int configindex)
+bool Configuration::processPulsarConfig(string filename, int configindex)
 {
   string line;
   string * polycofilenames;
@@ -1119,7 +1182,7 @@ void Configuration::processPulsarConfig(string filename, int configindex)
   if(!pulsarinput.is_open() || pulsarinput.bad())
   {
     cfatal << startl << "Error - could not open pulsar config file " << line << " - aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    return false;
   }
   getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
   configs[configindex].numpolycos = atoi(line.c_str());
@@ -1150,16 +1213,20 @@ void Configuration::processPulsarConfig(string filename, int configindex)
   {
     cinfo << startl << "About to create polyco file " << i << " with filename " << polycofilenames[i] << endl;
     configs[configindex].polycos[i] = new Polyco(polycofilenames[i], configindex, configs[configindex].numbins, configs[configindex].numchannels, binphaseends, binweights, double(2*configs[configindex].numchannels*configs[configindex].blockspersend)/(60.0*2000000.0*getDBandwidth(configindex,0,0)));
+    if (!configs[configindex].polycos[i]->initialisedOK())
+      return false; 
   }
   
   delete [] binphaseends;
   delete [] binweights;
   delete [] polycofilenames;
   pulsarinput.close();
+  return true;
 }
 
-void Configuration::setPolycoFreqInfo(int configindex)
+bool Configuration::setPolycoFreqInfo(int configindex)
 {
+  bool ok = true;
   datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
   double * frequencies = new double[datastreamtablelength];
   double bandwidth = freqtable[d.freqtableindices[0]].bandwidth;
@@ -1171,9 +1238,10 @@ void Configuration::setPolycoFreqInfo(int configindex)
   }
   for(int i=0;i<configs[configindex].numpolycos;i++)
   {
-    configs[configindex].polycos[i]->setFrequencyValues(freqtablelength, frequencies, bandwidth);
+    ok = ok && configs[configindex].polycos[i]->setFrequencyValues(freqtablelength, frequencies, bandwidth);
   }
   delete [] frequencies;
+  return ok;
 }
 
 void Configuration::makeFortranString(string line, int length, char * destination)

@@ -21,10 +21,7 @@
 //============================================================================
 #include <mpi.h>
 #include "mk5.h"
-
 #include <iomanip>
-#include <cstring>
-
 #include <errno.h>
 #include <math.h>
 #include <sys/time.h>
@@ -35,132 +32,7 @@
 #define MAXPACKETSIZE 10000
 #define MARK5FILL 0x11223344;
 
-int genFormatName(Configuration::dataformat format, int nchan, double bw, int nbits, int framebytes, int decimationfactor, char *formatname)
-{
-  int fanout=1, mbps;
-
-  mbps = int(2*nchan*bw*nbits + 0.5);
-
-  switch(format)
-  {
-    case Configuration::MKIV:
-      fanout = framebytes*8/(20000*nbits*nchan);
-      if(fanout*20000*nbits*nchan != framebytes*8)
-      {
-        cfatal << startl << "genFormatName : MKIV format : framebytes = " << framebytes << " is not allowed" << endl;
-	MPI_Abort(MPI_COMM_WORLD, 1);
-      }
-      if(decimationfactor > 1)	// Note, this conditional is to ensure compatibility with older mark5access versions
-        sprintf(formatname, "MKIV1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
-      else
-        sprintf(formatname, "MKIV1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
-      break;
-    case Configuration::VLBA:
-      fanout = framebytes*8/(20160*nbits*nchan);
-      if(fanout*20160*nbits*nchan != framebytes*8)
-      {
-        cfatal << startl << "genFormatName : VLBA format : framebytes = " << framebytes << " is not allowed" << endl;
-	MPI_Abort(MPI_COMM_WORLD, 1);
-      }
-      if(decimationfactor > 1)
-        sprintf(formatname, "VLBA1_%d-%d-%d-%d/%d", fanout, mbps, nchan, nbits, decimationfactor);
-      else
-        sprintf(formatname, "VLBA1_%d-%d-%d-%d", fanout, mbps, nchan, nbits);
-      break;
-    case Configuration::MARK5B:
-      if(decimationfactor > 1)
-        sprintf(formatname, "Mark5B-%d-%d-%d/%d", mbps, nchan, nbits, decimationfactor);
-      else
-        sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
-      break;
-    default:
-      cfatal << startl << "genFormatName : unsupported format encountered" << endl;
-      MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-
-  return fanout;
-}
-
-/// Mk5DataMode ---------------------------------------------------------
-
-
-Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bpersend, int gblocks, int nfreqs, double bw, double * freqclkoffsets, int ninputbands, int noutputbands, int nbits, bool fbank, bool postffringe, bool quaddelayinterp, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format)
- : Mode(conf, confindex, dsindex, nchan, bpersend, gblocks, nfreqs, bw, freqclkoffsets, ninputbands, noutputbands, nbits, nchan*2+4, fbank, postffringe, quaddelayinterp, cacorrs, bw*2)
-{
-  char formatname[64];
-
-  fanout = genFormatName(format, ninputbands, bw, nbits, framebytes, conf->getDecimationFactor(confindex), formatname);
-
-  // since we allocated the max amount of space needed above, we need to change
-  // this to the number actually needed.
-  unpacksamples = nchan*2;
-
-  samplestounpack = nchan*2;
-  if(fanout > 1)
-    samplestounpack += fanout;
-
-  //create the mark5_stream used for unpacking
-  mark5stream = new_mark5_stream(
-      new_mark5_stream_unpacker(0),
-      new_mark5_format_generic_from_string(formatname) );
-
-  if(mark5stream == 0)
-  {
-    cfatal << startl << "Mk5Mode::Mk5Mode : mark5stream is null " << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-
-  sprintf(mark5stream->streamname, "DS%d", dsindex);
-
-  if(framesamples != mark5stream->framesamples)
-  {
-    cfatal << startl << "Mk5Mode::Mk5Mode : framesamples inconsistent (" << framesamples 
-	 << "/" << mark5stream->framesamples << ")" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-
-}
-
-Mk5Mode::~Mk5Mode()
-{
-  delete_mark5_stream(mark5stream);
-}
-
-float Mk5Mode::unpack(int sampleoffset)
-{
-  int framesin, goodsamples;
-
-  // FIXME -- I think we can use mark5stream->samplegranularity instead of fanout below and fewer samples will be lost in those rare cases.  --WFB
-
-  //work out where to start from
-  framesin = (sampleoffset/framesamples);
-  unpackstartsamples = sampleoffset - (sampleoffset % fanout);
-
-  //unpack one frame plus one FFT size worth of samples
-  goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
-  if(fanout > 1)
-  {
-    for(int i = 0; i < sampleoffset % fanout; i++)
-      if(unpackedarrays[0][i] != 0.0)
-        goodsamples--;
-    for(int i = unpacksamples + sampleoffset % fanout; i < samplestounpack; i++)
-      if(unpackedarrays[0][i] != 0.0)
-        goodsamples--;
-  }
-    
-  if(goodsamples < 0)
-  {
-    cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from buffer seconds " << bufferseconds << " plus " << buffermicroseconds << " microseconds!!!" << endl;
-    goodsamples = 0;
-  }
-
-  return goodsamples/(float)unpacksamples;
-}
-
-
-
 /// Mk5DataStream -------------------------------------------------------
-
 
 Mk5DataStream::Mk5DataStream(Configuration * conf, int snum, int id, int ncores, int * cids, int bufferfactor, int numsegments)
  : DataStream(conf, snum, id, ncores, cids, bufferfactor, numsegments)
@@ -223,7 +95,7 @@ int Mk5DataStream::calculateControlParams(int offsetsec, int offsetns)
 
   if(vlbaoffset < 0)
   {
-    cinfo << startl << "ERROR Mk5DataStream::calculateControlParams : vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << endl;
+    cwarn << startl << "Mk5DataStream::calculateControlParams : vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = -1.0;
     return 0;
   }
@@ -238,7 +110,7 @@ int Mk5DataStream::calculateControlParams(int offsetsec, int offsetns)
   bufferindex = atsegment*readbytes + framesin*framebytes;
   if(bufferindex >= bufferbytes)
   {
-    cinfo << startl << "Mk5DataStream::calculateControlParams : bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << endl;
+    cwarn << startl << "Mk5DataStream::calculateControlParams : bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = -1.0;
     return 0;
   }
@@ -271,7 +143,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   int offset;
   char formatname[64];
   struct mark5_stream *mark5stream;
-  int nbits, ninputbands, framebytes;
+  int nbits, ninputbands, framebytes, fanout;
   Configuration::dataformat format;
   double bw;
 
@@ -281,7 +153,9 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   framebytes = config->getFrameBytes(configindex, streamnum);
   bw = config->getConfigBandwidth(configindex);
 
-  genFormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+  fanout = config->genMk5FormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+  if (fanout < 0)
+    MPI_Abort(MPI_COMM_WORLD, 1);
 
   mark5stream = new_mark5_stream(
     new_mark5_stream_file(datafilenames[configindex][fileindex].c_str(), 0),
@@ -562,7 +436,7 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
   char formatname[64];
   char *ptr;
   struct mark5_stream *mark5stream;
-  int nbits, ninputbands;
+  int nbits, ninputbands, fanout;
   Configuration::dataformat format;
   double bw;
 
@@ -572,7 +446,9 @@ void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
   framebytes = config->getFrameBytes(configindex, streamnum);
   bw = config->getConfigBandwidth(configindex);
 
-  genFormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+  fanout = config->genMk5FormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+  if (fanout < 0)
+    MPI_Abort(MPI_COMM_WORLD, 1);
 
   //cinfo << startl << "******* validbytes " << bufferinfo[buffersegment].validbytes << endl;
 

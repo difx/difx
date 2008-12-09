@@ -19,9 +19,9 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include <mpi.h>
 #include "core.h"
 #include "fxmanager.h"
-#include "mpifxcorr.h"
 #include "alert.h"
 
 Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
@@ -31,7 +31,9 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   double guardratio, maxguardratio;
 
   //Get all the correlation parameters from config
-  config->loaduvwinfo(true);
+  if (!config->loaduvwinfo(true)) {
+    MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   numdatastreams = config->getNumDataStreams();
   numbaselines = config->getNumBaselines();
   maxresultlength = config->getMaxResultLength();
@@ -129,6 +131,9 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   datastreamids = new int[numdatastreams];
   for(int i=0;i<numdatastreams;i++)
     datastreamids[i] = dids[i];
+
+  //initialise the binary message infrastructure
+  difxMessageInitBinary();
 }
 
 
@@ -178,7 +183,7 @@ void Core::execute()
   
   terminate = false;
   numreceived = 0;
-  cverbose << startl << "Core " << mpiid << " has started executing!!!" << endl;
+  cverbose << startl << "Core " << mpiid << " has started executing!!! Numprocessthreads is " << numprocessthreads << endl;
 
   //get the lock for the first slot, one per thread
   for(int i=0;i<numprocessthreads;i++)
@@ -188,9 +193,11 @@ void Core::execute()
       csevere << startl << "Error in Core " << mpiid << " attempt to lock mutex" << numreceived << " of thread " << i << endl;
   }
 
+  //cverbose << startl << "Core about to fill up receive ring buffer" << endl;
   //start off by filling up the data and control buffers for all slots
   for(int i=0;i<RECEIVE_RING_LENGTH-1;i++)
     receivedata(numreceived++, &terminate);
+  //cverbose << startl << "Core has filled up receive ring buffer" << endl;
 
   //now we have the lock on the last slot in the ring.  Launch processthreads
   for(int i=0;i<numprocessthreads;i++)
@@ -259,7 +266,7 @@ void Core::execute()
   {
     perr = pthread_join(processthreads[i], NULL);
     if(perr != 0)
-      csevere << startl << "Error in Core " << mpiid << " attempt to join processthread " << i << endl;  
+      csevere << startl << "Error in Core " << mpiid << " attempt to join processthread " << i << endl;
   }
 
 //  cinfo << startl << "CORE " << mpiid << " terminating" << endl;
@@ -275,8 +282,8 @@ void * Core::launchNewProcessThread(void * tdata)
 
 void Core::loopprocess(int threadid)
 {
-  int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos,  numchan, maxbins, maxchan, maxpolycos, maxfreqs;
-  bool pulsarbin, somepulsarbin, scrunch = false;
+  int perr, numprocessed, startblock, numblocks, lastconfigindex, numpolycos,  numchan, maxbins, maxchan, maxpolycos, maxfreqs, stadumpchannels;
+  bool pulsarbin, somepulsarbin, scrunch, dumpingsta, nowdumpingsta;
   Polyco ** polycos=0;
   Polyco * currentpolyco=0;
   Mode ** modes;
@@ -284,9 +291,12 @@ void Core::loopprocess(int threadid)
   cf32 * threadresults = vectorAlloc_cf32(maxresultlength);
   cf32 * pulsarscratchspace=0;
   cf32 ***** pulsaraccumspace=0;
-  
+  DifxMessageSTARecord * starecord = 0;
+
   pulsarbin = false;
   somepulsarbin = false;
+  scrunch = false;
+  dumpingsta = false;
   maxpolycos = 0;
   maxchan = 0;
   maxfreqs = config->getMaxNumFreqs();
@@ -346,7 +356,7 @@ void Core::loopprocess(int threadid)
   if(perr != 0)
     csevere << startl << "Core processthread " << mpiid << "/" << threadid << " error trying to signal main thread to wake up!!!" << endl;
   if(threadid == 0)
-     cinfo << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " is about to start processing" << endl;
+    cinfo << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " is about to start processing" << endl;
 
   //while valid, process data
   while(procslots[(numprocessed)%RECEIVE_RING_LENGTH].keepprocessing)
@@ -363,8 +373,24 @@ void Core::loopprocess(int threadid)
       currentpolyco->setTime(startmjd, double(startseconds + procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[0] + double(procslots[numprocessed%RECEIVE_RING_LENGTH].offsets[1])/1000000000.0)/86400.0);
     }
 
+    //if necessary, allocate/reallocate space for the STAs
+    nowdumpingsta = config->dumpSTA();
+    if(nowdumpingsta != dumpingsta) {
+      if (starecord != 0) {
+        delete starecord;
+        starecord = 0;
+      }
+      if(nowdumpingsta) {
+        stadumpchannels = config->getSTADumpChannels();
+        starecord = (DifxMessageSTARecord*)malloc(sizeof(DifxMessageSTARecord) + sizeof(f32)*stadumpchannels);
+        starecord->threadId = threadid;
+        starecord->nChan = stadumpchannels;
+      }
+      dumpingsta = nowdumpingsta;
+    }
+
     //process our section of responsibility for this time range
-    processdata(numprocessed++ % RECEIVE_RING_LENGTH, threadid, startblock, numblocks, modes, currentpolyco, threadresults, bins, pulsarscratchspace, pulsaraccumspace);
+    processdata(numprocessed++ % RECEIVE_RING_LENGTH, threadid, startblock, numblocks, modes, currentpolyco, threadresults, bins, pulsarscratchspace, pulsaraccumspace, starecord);
 
     //if the configuration changes from this segment to the next, change our setup accordingly
     if(procslots[numprocessed%RECEIVE_RING_LENGTH].configindex != lastconfigindex)
@@ -411,6 +437,9 @@ void Core::loopprocess(int threadid)
     }
   }
   vectorFree(threadresults);
+  if(starecord != 0) {
+    delete starecord;
+  }
 
   cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
 }
@@ -423,6 +452,7 @@ void Core::receivedata(int index, bool * terminate)
   if(*terminate)
     return; //don't try to read, we've already finished
 
+  //cinfo << startl << "Core is about to receive from manager" << endl; 
   //Get the instructions on the time offset from the FxManager node
   MPI_Recv(&(procslots[index].offsets), 2, MPI_INT, fxcorr::MANAGERID, MPI_ANY_TAG, return_comm, &mpistatus);
   if(mpistatus.MPI_TAG == CR_TERMINATE)
@@ -454,23 +484,26 @@ void Core::receivedata(int index, bool * terminate)
   //now grab the data and delay info from the individual datastreams
   for(int i=0;i<numdatastreams;i++)
   {
+    //cinfo << startl << "Core is about to post receive request for datastream " << i << endl;
     //get data
     MPI_Irecv(procslots[index].databuffer[i], databytes, MPI_UNSIGNED_CHAR, datastreamids[i], CR_PROCESSDATA, MPI_COMM_WORLD, &datarequests[i]);
     //also receive the offsets and rates
     MPI_Irecv(procslots[index].controlbuffer[i], controllength, MPI_DOUBLE, datastreamids[i], CR_PROCESSCONTROL, MPI_COMM_WORLD, &controlrequests[i]);
   }
+  //cinfo << startl << "Core is about to wait for all" << endl;
   //wait for everything to arrive, store the length of the messages
   MPI_Waitall(numdatastreams, datarequests, msgstatuses);
   for(int i=0;i<numdatastreams;i++)
     MPI_Get_count(&(msgstatuses[i]), MPI_UNSIGNED_CHAR, &(procslots[index].datalengthbytes[i]));
   MPI_Waitall(numdatastreams, controlrequests, msgstatuses);
+  //cinfo << startl << "Core finished waiting for all!" << endl;
 
   //lock the next slot, unlock the one we just finished with
   for(int i=0;i<numprocessthreads;i++)
   {
     perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[i]));
     if(perr != 0)
-      csevere << startl << "CORE " << mpiid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;
+      csevere << startl << "CORE " << mpiid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;;
 
     perr = pthread_mutex_unlock(&(procslots[index].slotlocks[i]));
     if(perr != 0)
@@ -478,15 +511,16 @@ void Core::receivedata(int index, bool * terminate)
   }
 }
 
-void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace)
+void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace, DifxMessageSTARecord * starecord)
 {
-  int status, perr, resultindex=0, currentnumoutputbands, cindex, maxproducts, ds1index, ds2index, nyquistchannel;
+  int status, perr, resultindex=0, currentnumoutputbands, cindex, maxproducts, ds1index, ds2index, nyquistchannel, channelinc;
   double offsetmins;
   float * dsweights = new float[numdatastreams];
   Mode * m1, * m2;
   s32 *** polycobincounts;
   cf32 * vis1;
   cf32 * vis2;
+  f32 * acdata;
   bool writecrossautocorrs;
 
   writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
@@ -661,6 +695,34 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     }
   }
 
+  //if required, send off a message with the STA results
+  if(starecord != 0) {
+    if(procslots[index].numchannels < starecord->nChan)
+      starecord->nChan = procslots[index].numchannels;
+    channelinc = procslots[index].numchannels/starecord->nChan;
+    starecord->sec = procslots[index].offsets[0];
+    starecord->ns = ((int)(1000.0*((double)(procslots[index].offsets[1]+procslots[index].numchannels))/
+        (config->getConfigBandwidth(procslots[index].configindex))+ 0.5));
+    for (int i=0;i<numdatastreams;i++) {
+      starecord->antId = i;
+      for (int j=0;j<config->getDNumInputBands(procslots[index].configindex, i);j++) {
+        //cout << "Doing band " << j << " of datastream " << i << endl;
+        starecord->bandId = j;
+        int nyquistoffset = (config->getFreqTableLowerSideband(config->getDFreqIndex(procslots[index].configindex, i, j)))?1:0;
+        acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
+        for (int k=0;k<starecord->nChan;k++) {
+          //cout << "Doing channel " << k << endl;
+          starecord->data[k] = acdata[2*(k*channelinc + nyquistoffset)];
+          for (int l=1;l<channelinc;l++)
+            starecord->data[k] += acdata[2*(k*channelinc+l+nyquistoffset)];
+        }
+        //cout << "About to send the binary message" << endl;
+        difxMessageSendBinary((const char *)starecord, BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*config->getSTADumpChannels());
+      }
+    }
+    //cout << "Finished doing some STA stuff" << endl;
+  }
+
   //lock the thread "copy" lock, meaning we're the only one adding to the result array
   perr = pthread_mutex_lock(&(procslots[index].copylock));
   if(perr != 0)
@@ -797,9 +859,12 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
   }
 
   //get the config to create the appropriate Modes for us
-  for(int i=0;i<numdatastreams;i++)
+  for(int i=0;i<numdatastreams;i++) {
     modes[i] = config->getMode(configindex, i);
-  
+    if(!modes[i]->initialisedOK())
+      MPI_Abort(MPI_COMM_WORLD, 1);
+  }
+
   pulsarbin = config->pulsarBinOn(configindex);
   if(pulsarbin)
   {

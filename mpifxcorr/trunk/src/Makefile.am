@@ -18,11 +18,13 @@ mpifxcorr_SOURCES = \
 	uvw.cpp \
 	mode.cpp \
 	mk5.cpp \
+	mk5mode.cpp \
 	polyco.cpp \
 	alert.cpp \
 	$(mark5_files)
 
-noinst_HEADERS = \
+library_includedir = $(includedir)/mpifxcorr
+library_include_HEADERS = \
 	fxmanager.h \
 	core.h \
 	datastream.h \
@@ -31,15 +33,14 @@ noinst_HEADERS = \
 	configuration.h \
 	uvw.h \
 	mk5.h \
+	mk5mode.h \
 	polyco.h \
 	mark5dir.h \
 	nativemk5.h \
-	alert.h
+	mpifxcorr.h \
+	alert.h 
 
-mpifxcorr_LDADD = \
-	-lipps -liomp5 -lippvm 
-
-lib_LIBRARIES = libmpifxcorr.a
+lib_LIBRARIES = libmpifxcorr.a libfxcorr.a
 libmpifxcorr_a_SOURCES = \
 	configuration.cpp \
 	mode.cpp \
@@ -47,7 +48,18 @@ libmpifxcorr_a_SOURCES = \
 	datastream.cpp \
 	polyco.cpp \
 	mk5.cpp \
+	mk5mode.cpp \
 	fxmanager.cpp \
 	uvw.cpp \
 	visibility.cpp \
+	alert.cpp 
+
+libfxcorr_a_SOURCES = \
+	configuration.cpp \
+	mode.cpp \
+	mk5mode.cpp \
+	polyco.cpp \
+	visibility.cpp \
+	uvw.cpp \
 	alert.cpp
+

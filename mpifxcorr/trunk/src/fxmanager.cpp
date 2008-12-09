@@ -81,7 +81,8 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   startseconds = config->getStartSeconds();
   startns = config->getStartNS();
   executetimeseconds = config->getExecuteSeconds();
-  config->loaduvwinfo(false);
+  if (!config->loaduvwinfo(false))
+    MPI_Abort(MPI_COMM_WORLD, 1);
   uvw = config->getUVW();
   skipseconds = 0;
   currentconfigindex = config->getConfigIndex(skipseconds);
@@ -249,7 +250,7 @@ void FxManager::execute()
     for(int j=0;j<numcores;j++)
     {
       senddata[0] = coreids[j];
-      //cinfo << startl << "FXMANAGER: Telling the datastreams to send data to core " << coreids[i] << endl;
+      //cinfo << startl << "FXMANAGER: Telling the datastreams to send data to core " << coreids[j] << endl;
       sendData(senddata, j);
     }
   }
@@ -321,7 +322,7 @@ void FxManager::sendData(int data[], int coreindex)
 
   for(int j=0;j<numdatastreams;j++)
   {
-    //cinfo << startl << "FXMANAGER about to send to telescope " << telescopeids[j] << endl;
+    //cinfo << startl << "FXMANAGER about to send to telescope " << datastreamids[j] << endl;
     MPI_Ssend(data, 3, MPI_INT, datastreamids[j], DS_PROCESS, MPI_COMM_WORLD);
   }
   coretimes[numsent[coreindex]%Core::RECEIVE_RING_LENGTH][coreindex][0] = data[1];
@@ -349,7 +350,7 @@ void FxManager::sendData(int data[], int coreindex)
       //samplespersecond = int(2000000*config->getDBandwidth(currentconfigindex, 0, 0) + 0.5);
     }
   }
-  //cinfo << startl <<  "FXMANAGER has finished sending data" << endl;
+  //cinfo << startl << "FXMANAGER has finished sending data" << endl;
 }
 
 void FxManager::receiveData(bool resend)

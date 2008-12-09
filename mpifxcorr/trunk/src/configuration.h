@@ -29,6 +29,7 @@
 #include "polyco.h"
 #include "uvw.h"
 #include "mark5access.h"
+#include "mpifxcorr.h"
 
 //forward declaration of class Mode
 class Mode;
@@ -62,7 +63,7 @@ public:
   * Constructor: Reads and stores the information in the input file
   * @param configfile The filename of the input file containing configuration information to be read
   */
-  Configuration(const char * configfile);
+  Configuration(const char * configfile, int id);
 
   ~Configuration();
 
@@ -70,6 +71,7 @@ public:
   * These methods simply allow other objects access to the configuration information held in tables in the input file for the correlation
   */
 //@{
+  inline int getMPIId() { return mpiid; }
   inline int getVisBufferLength() { return visbufferlength; }
   inline bool consistencyOK() {return consistencyok; }
   inline int getNumConfigs() { return numconfigs; }
@@ -206,6 +208,19 @@ public:
     { return telescopetable[telescopeindex].name; }
   inline int getTelescopeTableLength()
     { return telescopetablelength; }
+  inline bool isCoreProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID + numdatastreams; }
+  inline bool isDatastreamProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID && mpiid < fxcorr::FIRSTTELESCOPEID + numdatastreams; }
+  inline void setCommandThreadInitialised() { commandthreadinitialised = true; }
+  inline bool commandThreadInitialised() { return commandthreadinitialised; }
+  inline void setDumpSTAState(bool setval) { dumpsta = setval; }
+  inline void setDumpLTAState(bool setval) { dumplta = setval; }
+  inline bool dumpSTA() { return dumpsta; }
+  inline bool dumpLTA() { return dumplta; }
+  inline void setSTADumpChannels(int setval) { stadumpchannels = setval; }
+  inline void setLTADumpChannels(int setval) { ltadumpchannels = setval; }
+  inline int getSTADumpChannels() { return stadumpchannels; }
+  inline int getLTADumpChannels() { return ltadumpchannels; }
+
 //@}
 
  /**
@@ -231,6 +246,18 @@ public:
   int getFramePayloadBytes(int configindex, int configdatastreamindex);
 
  /**
+  * @return The fanout, or -1 if an error occurred
+  * @param format The type of mark5 format
+  * @param nchan The number of channels
+  * @param bw The bandwidth (MHz)
+  * @param nbits The number of bits per sample
+  * @param framebytes The number of bytes in a frame
+  * @param decimationfactor The number of samples to throw away during unpacking
+  * @param formatname character array representing format name (set during method)
+  */
+  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, int framebytes, int decimationfactor, char *formatname);
+
+ /**
   * @return The UVW object which contains geometric model information
   */
   inline Uvw * getUVW() { return uvw; }
@@ -238,8 +265,9 @@ public:
  /**
   * Loads the UVW information from file into memory
   * @param nameonly Whether to only load the scan names (true) or all model information (false)
+  * @return Whether the uvw object was created successfully
   */
-  void loaduvwinfo(bool nameonly);
+  bool loaduvwinfo(bool nameonly);
 
  /**
   * Creates and returns the appropriate mode object
@@ -487,8 +515,9 @@ private:
  /**
   * Loads the baseline table from the file into memory
   * @param input Open file stream for the input file
+  * @return Whether the baseline table was successfully parsed (failure should abort)
   */
-  void processBaselineTable(ifstream * input);
+  bool processBaselineTable(ifstream * input);
 
  /**
   * Loads the common settings from the file into memory
@@ -499,14 +528,16 @@ private:
  /**
   * Loads the config table from the file into memory
   * @param input Open file stream for the input file
+  * @return Whether the config table was successfully parsed (failure should abort)
   */
-  void processConfig(ifstream * input);
+  bool processConfig(ifstream * input);
 
  /**
   * Loads the datastream table from the file into memory
   * @param input Open file stream for the input file
+  * @return Whether the datastream table was successfully parsed (failure should abort)
   */
-  void processDatastreamTable(ifstream * input);
+  bool processDatastreamTable(ifstream * input);
 
  /**
   * Loads the data table from the file into memory
@@ -536,22 +567,27 @@ private:
   * Loads the pulsar setup data for the specified config and creates the Polyco objects
   * @param filename The file containing pulsar configuration data to be loaded
   * @param configindex The config index in the configuration table that this pulsar setup belongs to
+  * @return Whether the pulsar config was successfully parsed (failure should abort)
   */
-  void processPulsarConfig(string filename, int configindex);
+  bool processPulsarConfig(string filename, int configindex);
 
  /**
   * Once the input file has been completely processed, provide all frequency info to the generated Polyco files
   * @param configindex The index of the configuration to be set up (from the table in the input file)
+  * @return Whether the polyco frequency values were set successfully (false should abort)
   */
-  void setPolycoFreqInfo(int configindex);
+  bool setPolycoFreqInfo(int configindex);
 
   ///The length of keywords in all input files
   static const int HEADER_LENGTH = 21;
 
+  /// Constant for the default number of channels for visibilities sent to monitor (STA or LTA)
+  static const int DEFAULT_MONITOR_NUMCHANNELS = 32;
+
   char header[HEADER_LENGTH];
-  bool commonread, configread, datastreamread, consistencyok;
+  bool commonread, configread, datastreamread, consistencyok, commandthreadinitialised, dumpsta, dumplta;
   int visbufferlength;
-  int executeseconds, startmjd, startseconds, startns, numdatastreams, numbaselines, numconfigs, defaultconfigindex, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, databufferfactor, numdatasegments, numcoreconfs, maxnumchannels, maxnumpulsarbins, numindependentchannelconfigs;
+  int mpiid, executeseconds, startmjd, startseconds, startns, numdatastreams, numbaselines, numconfigs, defaultconfigindex, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, databufferfactor, numdatasegments, numcoreconfs, maxnumchannels, maxnumpulsarbins, numindependentchannelconfigs, stadumpchannels, ltadumpchannels;
   string delayfilename, uvwfilename, coreconffilename, outputfilename;
   int * numprocessthreads;
   int * firstnaturalconfigindices;

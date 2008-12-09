@@ -25,18 +25,18 @@
 #include "math.h"
 #include "architecture.h"
 #include "datastream.h"
-#include "mpifxcorr.h"
 #include "alert.h"
 
 //using namespace std;
 const float Mode::TINY = 0.000000001;
 
 Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bpersend, int gblocks, int nfreqs, double bw, double * freqclkoffsets, int ninputbands, int noutputbands, int nbits, int unpacksamp, bool fbank, bool postffringe, bool quaddelayinterp, bool cacorrs, double bclock)
-  : config(conf), configindex(confindex), datastreamindex(dsindex), numchannels(nchan), blockspersend(bpersend), guardblocks(gblocks), twicenumchannels(nchan*2), numfreqs(nfreqs), numinputbands(ninputbands), numoutputbands(noutputbands), numbits(nbits), unpacksamples(unpacksamp), bandwidth(bw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), postffringerot(postffringe), quadraticdelayinterp(quaddelayinterp), freqclockoffsets(freqclkoffsets)
+  : config(conf), configindex(confindex), datastreamindex(dsindex), numchannels(nchan), blockspersend(bpersend), guardblocks(gblocks), twicenumchannels(nchan*2), numfreqs(nfreqs), bandwidth(bw), freqclockoffsets(freqclkoffsets), numinputbands(ninputbands), numoutputbands(noutputbands), numbits(nbits), unpacksamples(unpacksamp), filterbank(fbank), postffringerot(postffringe), quadraticdelayinterp(quaddelayinterp), calccrosspolautocorrs(cacorrs), blockclock(bclock)
 {
   int status;
   int decimationfactor = config->getDecimationFactor(configindex);
 
+  initok = true;
   sampletime = 1.0/(2.0*bandwidth); //microseconds
   processtime = twicenumchannels*sampletime; //microseconds
   fractionalLoFreq = false;
@@ -51,116 +51,119 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
   if(samplesperblock == 0)
   {
     cfatal << startl << "Error!!! Samplesperblock is < 1, current implementation cannot handle this situation.  Aborting!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
-  }
-  bytesperblocknumerator = (numinputbands*samplesperblock*numbits*decimationfactor)/8;
-  if(bytesperblocknumerator == 0)
-  {
-    bytesperblocknumerator = 1;
-    bytesperblockdenominator = 8/(numinputbands*samplesperblock*numbits*decimationfactor);
-    unpacksamples += bytesperblockdenominator*sizeof(u16)*samplesperblock;
+    initok = false;
   }
   else
   {
-    bytesperblockdenominator = 1;
-  }
-  samplesperlookup = (numinputbands*sizeof(u16)*samplesperblock*bytesperblockdenominator)/bytesperblocknumerator;
-  numlookups = (unpacksamples*bytesperblocknumerator)/(bytesperblockdenominator*sizeof(u16)*samplesperblock);
-  if(samplesperblock > 1)
-    numlookups++;
-  unpackedarrays = new f32*[numinputbands];
-  fftoutputs = new cf32*[numinputbands];
-  conjfftoutputs = new cf32*[numinputbands];
-  for(int i=0;i<numinputbands;i++)
-  {
-    unpackedarrays[i] = vectorAlloc_f32(unpacksamples);
-    fftoutputs[i] = vectorAlloc_cf32(numchannels+1);
-    conjfftoutputs[i] = vectorAlloc_cf32(numchannels+1);
-  }
-  dataweight = 0.0;
-
-  lookup = vectorAlloc_s16((MAX_U16+1)*samplesperlookup);
-  linearunpacked = vectorAlloc_s16(numlookups*samplesperlookup);
-  xval = vectorAlloc_f64(twicenumchannels);
-  xoffset = vectorAlloc_f64(twicenumchannels);
-  for(int i=0;i<twicenumchannels;i++)
-    xoffset[i] = double(i)/double(numchannels*blockspersend);
-
-  //initialise the fft info
-  order = 0;
-  while((twicenumchannels) >> order != 1)
-    order++;
-  flag = vecFFT_NoReNorm;
-  hint = vecAlgHintFast;
-
-  if(postffringerot) //initialise the specific structures
-  {
-    cwarn << startl << "Warning - post-f fringe rotation not yet tested!!!" << endl;
-    status = vectorInitFFTR_f32(&pFFTSpecR, order, flag, hint);
-    if(status != vecNoErr)
-      csevere << startl << "Error in FFT initialisation!!!" << status << endl;
-    status = vectorGetFFTBufSizeR_f32(pFFTSpecR, &fftbuffersize);
-    if(status != vecNoErr)
-      csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
-  }
-  else
-  {
-    rotateargument = vectorAlloc_f32(twicenumchannels);
-    cosrotated = vectorAlloc_f32(twicenumchannels);
-    cosrotatedoutput = vectorAlloc_f32(twicenumchannels);
-    sinrotated = vectorAlloc_f32(twicenumchannels);
-    sinrotatedoutput = vectorAlloc_f32(twicenumchannels);
-    realfftd = vectorAlloc_f32(twicenumchannels);
-    imagfftd = vectorAlloc_f32(twicenumchannels);
-    fringedelayarray = vectorAlloc_f64(twicenumchannels);
-    status = vectorInitFFTC_f32(&pFFTSpecC, order, flag, hint);
-    if(status != vecNoErr)
-      csevere << startl << "Error in FFT initialisation!!!" << status << endl;
-    status = vectorGetFFTBufSizeC_f32(pFFTSpecC, &fftbuffersize);
-    if(status != vecNoErr)
-      csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
-    //zero the Nyquist channel for every band - that is where the weight will be stored on all
-    //baselines (the imag part) so the datastream channel for it must be zeroed
+    bytesperblocknumerator = (numinputbands*samplesperblock*numbits*decimationfactor)/8;
+    if(bytesperblocknumerator == 0)
+    {
+      bytesperblocknumerator = 1;
+      bytesperblockdenominator = 8/(numinputbands*samplesperblock*numbits*decimationfactor);
+      unpacksamples += bytesperblockdenominator*sizeof(u16)*samplesperblock;
+    }
+    else
+    {
+      bytesperblockdenominator = 1;
+    }
+    samplesperlookup = (numinputbands*sizeof(u16)*samplesperblock*bytesperblockdenominator)/bytesperblocknumerator;
+    numlookups = (unpacksamples*bytesperblocknumerator)/(bytesperblockdenominator*sizeof(u16)*samplesperblock);
+    if(samplesperblock > 1)
+      numlookups++;
+    unpackedarrays = new f32*[numinputbands];
+    fftoutputs = new cf32*[numinputbands];
+    conjfftoutputs = new cf32*[numinputbands];
     for(int i=0;i<numinputbands;i++)
     {
-      if(config->getDLowerSideband(configindex, datastreamindex, config->getDLocalFreqIndex(configindex, datastreamindex, i))) {
-        fftoutputs[i][0].re = 0.0;
-        fftoutputs[i][0].im = 0.0;
-      }
-      else {
-        fftoutputs[i][numchannels].re = 0.0;
-        fftoutputs[i][numchannels].im = 0.0;
+      unpackedarrays[i] = vectorAlloc_f32(unpacksamples);
+      fftoutputs[i] = vectorAlloc_cf32(numchannels+1);
+      conjfftoutputs[i] = vectorAlloc_cf32(numchannels+1);
+    }
+    dataweight = 0.0;
+  
+    lookup = vectorAlloc_s16((MAX_U16+1)*samplesperlookup);
+    linearunpacked = vectorAlloc_s16(numlookups*samplesperlookup);
+    xval = vectorAlloc_f64(twicenumchannels);
+    xoffset = vectorAlloc_f64(twicenumchannels);
+    for(int i=0;i<twicenumchannels;i++)
+      xoffset[i] = double(i)/double(numchannels*blockspersend);
+  
+    //initialise the fft info
+    order = 0;
+    while((twicenumchannels) >> order != 1)
+      order++;
+    flag = vecFFT_NoReNorm;
+    hint = vecAlgHintFast;
+  
+    if(postffringerot) //initialise the specific structures
+    {
+      cwarn << startl << "Warning - post-f fringe rotation not yet tested!!!" << endl;
+      status = vectorInitFFTR_f32(&pFFTSpecR, order, flag, hint);
+      if(status != vecNoErr)
+        csevere << startl << "Error in FFT initialisation!!!" << status << endl;
+      status = vectorGetFFTBufSizeR_f32(pFFTSpecR, &fftbuffersize);
+      if(status != vecNoErr)
+        csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+    }
+    else
+    {
+      rotateargument = vectorAlloc_f32(twicenumchannels);
+      cosrotated = vectorAlloc_f32(twicenumchannels);
+      cosrotatedoutput = vectorAlloc_f32(twicenumchannels);
+      sinrotated = vectorAlloc_f32(twicenumchannels);
+      sinrotatedoutput = vectorAlloc_f32(twicenumchannels);
+      realfftd = vectorAlloc_f32(twicenumchannels);
+      imagfftd = vectorAlloc_f32(twicenumchannels);
+      fringedelayarray = vectorAlloc_f64(twicenumchannels);
+      status = vectorInitFFTC_f32(&pFFTSpecC, order, flag, hint);
+      if(status != vecNoErr)
+        csevere << startl << "Error in FFT initialisation!!!" << status << endl;
+      status = vectorGetFFTBufSizeC_f32(pFFTSpecC, &fftbuffersize);
+      if(status != vecNoErr)
+        csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+      //zero the Nyquist channel for every band - that is where the weight will be stored on all
+      //baselines (the imag part) so the datastream channel for it must be zeroed
+      for(int i=0;i<numinputbands;i++)
+      {
+        if(config->getDLowerSideband(configindex, datastreamindex, config->getDLocalFreqIndex(configindex, datastreamindex, i))) {
+          fftoutputs[i][0].re = 0.0;
+          fftoutputs[i][0].im = 0.0;
+        }
+        else {
+          fftoutputs[i][numchannels].re = 0.0;
+          fftoutputs[i][numchannels].im = 0.0;
+        }
       }
     }
-  }
-  fftbuffer = vectorAlloc_u8(fftbuffersize);
-
-  delaylength = blockspersend + guardblocks;
-  delays = vectorAlloc_f64(delaylength);
-
-  fracmult = vectorAlloc_f32(numchannels + 1);
-  fracmultcos = vectorAlloc_f32(numchannels + 1);
-  fracmultsin = vectorAlloc_f32(numchannels + 1);
-  complexfracmult = vectorAlloc_cf32(numchannels + 1);
-
-  channelfreqs = vectorAlloc_f32(numchannels + 1);
-  for(int i=0;i<numchannels + 1;i++)
-    channelfreqs[i] = (float)((TWO_PI*i*bandwidth)/numchannels);
-  lsbchannelfreqs = vectorAlloc_f32(numchannels + 1);
-  for(int i=0;i<numchannels + 1;i++)
-    lsbchannelfreqs[i] = (float)((-TWO_PI*(numchannels-i)*bandwidth)/numchannels);
-
-  //space for the autocorrelations
-  if(calccrosspolautocorrs)
-    autocorrwidth = 2;
-  else
-    autocorrwidth = 1;
-  autocorrelations = new cf32**[autocorrwidth];
-  for(int i=0;i<autocorrwidth;i++)
-  {
-    autocorrelations[i] = new cf32*[numinputbands];
-    for(int j=0;j<numinputbands;j++)
-      autocorrelations[i][j] = vectorAlloc_cf32(numchannels+1);
+    fftbuffer = vectorAlloc_u8(fftbuffersize);
+  
+    delaylength = blockspersend + guardblocks;
+    delays = vectorAlloc_f64(delaylength);
+  
+    fracmult = vectorAlloc_f32(numchannels + 1);
+    fracmultcos = vectorAlloc_f32(numchannels + 1);
+    fracmultsin = vectorAlloc_f32(numchannels + 1);
+    complexfracmult = vectorAlloc_cf32(numchannels + 1);
+  
+    channelfreqs = vectorAlloc_f32(numchannels + 1);
+    for(int i=0;i<numchannels + 1;i++)
+      channelfreqs[i] = (float)((TWO_PI*i*bandwidth)/numchannels);
+    lsbchannelfreqs = vectorAlloc_f32(numchannels + 1);
+    for(int i=0;i<numchannels + 1;i++)
+      lsbchannelfreqs[i] = (float)((-TWO_PI*(numchannels-i)*bandwidth)/numchannels);
+  
+    //space for the autocorrelations
+    if(calccrosspolautocorrs)
+      autocorrwidth = 2;
+    else
+      autocorrwidth = 1;
+    autocorrelations = new cf32**[autocorrwidth];
+    for(int i=0;i<autocorrwidth;i++)
+    {
+      autocorrelations[i] = new cf32*[numinputbands];
+      for(int j=0;j<numinputbands;j++)
+        autocorrelations[i][j] = vectorAlloc_cf32(numchannels+1);
+    }
   }
 }
 
@@ -168,7 +171,7 @@ Mode::~Mode()
 {
   int status;
 
-//  cdebug << startl << "Starting a mode destructor" << endl;
+  cdebug << startl << "Starting a mode destructor" << endl;
 
   for(int i=0;i<numinputbands;i++)
   {
@@ -220,7 +223,7 @@ Mode::~Mode()
   }
   delete [] autocorrelations;
 
-//  cdebug << startl << "Ending a mode destructor" << endl;
+  cdebug << startl << "Ending a mode destructor" << endl;
 }
 
 float Mode::unpack(int sampleoffset)
@@ -351,8 +354,8 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
   for(int i=0;i<numfreqs;i++)
   {
     count = 0;
-    sidebandoffset = 0;
     //updated so that Nyquist channel is not accumulated for either USB or LSB data
+    sidebandoffset = 0;
     if(config->getDLowerSideband(configindex, datastreamindex, i))
       sidebandoffset = 1;
 
@@ -384,7 +387,7 @@ float Mode::process(int index)  //frac sample error, fringedelay and wholemicros
       {
           status = vectorAddC_f64_I((lofreq-int(lofreq))*double(integerdelay), fringedelayarray, twicenumchannels);
           if(status != vecNoErr)
-              csevere << startl << "Error in addition of fractional LO contribution to fringe rotation!!!" << status << endl;
+            csevere << startl << "Error in addition of fractional LO contribution to fringe rotation!!!" << status << endl;
       }
 
       //convert to angle in range 0->2pi

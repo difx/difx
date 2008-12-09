@@ -67,9 +67,12 @@
 #define s16                      Ipp16s
 #define cs16                     Ipp16sc
 #define s32                      Ipp32s
+#define u32                      Ipp32u
 #define f32                      Ipp32f
 #define cf32                     Ipp32fc
 #define f64                      Ipp64f
+#define s64                      Ipp64s
+#define u64                      Ipp64u
 
 //and the constant values
 #define vecNoErr                 ippStsNoErr
@@ -82,6 +85,7 @@
 #define vecHamming               ippWinHamming
 #define vecTrue                  ippTrue
 #define MAX_S32                  IPP_MAX_32S
+#define MAX_U32                  IPP_MAX_32U
 #define MAX_S16                  IPP_MAX_16S
 #define MAX_U16                  IPP_MAX_16U
 #define vecFFT_NoReNorm          IPP_FFT_NODIV_BY_ANY

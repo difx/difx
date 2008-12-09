@@ -139,7 +139,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	char defaultDirPath[] = ".";
 	double startmjd;
 	double scanstart, scanend;
-	int v, i;
+	int v, i, fanout;
 	int scanns = 0;
 	long long n;
 	int doUpdate = 0;
@@ -154,7 +154,9 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	ninputbands = config->getDNumInputBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
 	bw = config->getConfigBandwidth(configindex);
-	genFormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+	fanout = config->genMk5FormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+        if(fanout < 0)
+          MPI_Abort(MPI_COMM_WORLD, 1);
 
 	if(mark5stream)
 	{

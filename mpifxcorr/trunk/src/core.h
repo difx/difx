@@ -26,6 +26,7 @@
 #include "datastream.h"
 #include "configuration.h"
 #include "mode.h"
+#include "difxmessage.h"
 #include <pthread.h>
 
 /**
@@ -126,8 +127,9 @@ private:
   * @param bins Pre-allocated space for the bins for each subband/channel combination - null if not pulsar binning
   * @param pulsarscratchspace Room to perform the pulsar binning if required - null if not pulsar binning (numchannels + 1 long)
   * @param pulsaraccumspace Room in which to accumulate the binned results ([#baselines][#frequencies][#polproducts][#bins][#channels+1])
+  * @param starecord Message to be sent to a process listening for STA results
   */
-  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace);
+  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace, DifxMessageSTARecord * starecord);
 
  /**
   * Updates all the parameters for processing thread when the configuration changes
@@ -145,18 +147,17 @@ private:
   */
   void updateconfig(int oldconfigindex, int configindex, int threadid, int & startblock, int & numblocks, int & numpolycos, bool & pulsarbin, Mode ** modes, Polyco ** polycos, bool first, s32 *** bins);
 
-  int mpiid;
-  Configuration * config;
   MPI_Comm return_comm;
   MPI_Request * datarequests;
   MPI_Request * controlrequests;
   MPI_Status * msgstatuses;
-  int numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxresultlength, startmjd, startseconds;
+  int mpiid, numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxresultlength, startmjd, startseconds;
   int * datastreamids;
   processslot * procslots;
   pthread_t * processthreads;
   pthread_cond_t * processconds;
   bool * processthreadinitialised;
+  Configuration * config;
 };
 
 #endif

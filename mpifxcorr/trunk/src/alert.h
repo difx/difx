@@ -76,17 +76,16 @@ public:
 
 inline Alert& endl(Alert &x)
 {
-	x.sendAlert();
 	if(x.last == 1)
 	{
 		cerr << "Developer error: two endls in a row.  string was : " << x.alertString.str() << endl;
 	}
-	else
+        x.sendAlert();
+	if(x.last != 1)
 	{
 		x.last = 1;
 		pthread_mutex_unlock(&x.lock);
 	}
-
 	return x;
 }
 

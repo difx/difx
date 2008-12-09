@@ -22,7 +22,6 @@
 #ifndef VISIBILITY_H
 #define VISIBILITY_H
 
-#include <mpi.h>
 #include <string>
 #include "architecture.h"
 #include "datastream.h"

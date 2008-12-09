@@ -22,7 +22,6 @@
 #ifndef POLYCO_H
 #define POLYCO_H
 
-#include <mpi.h>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -79,8 +78,9 @@ public:
   * @param nfreqs The number of frequencies to calculate for
   * @param freqs Array of frequency values, in MHz
   * @param bw The bandwidth of the bands, in MHz
+  * @return Whether bin values are legal or not (should abort if not legal)
   */
-  void setFrequencyValues(int nfreqs, double * freqs, double bw);
+  bool setFrequencyValues(int nfreqs, double * freqs, double bw);
 
  /**
   * Sets the active time (from which subsequent offsets will refer to) to the given values
@@ -107,6 +107,12 @@ public:
   */
   static Polyco * getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos);
 
+ /**
+  * Returns whether the initial file was read ok
+  * @return Whether the initial file was read ok
+  */
+  inline bool initialisedOK() { return readok; }
+  
  /**
   * Returns the bin counts
   * @return The bin counts (number of times each bin has been calculated since last cleared) for this Polyco
@@ -149,6 +155,7 @@ protected:
   string pulsarname;
   int configindex, numbins, numchannels, numfreqs, observatory, timespan, numcoefficients, mjd;
   double mjdfraction, dt0, dm, dopplershift, logresidual, refphase, f0, obsfrequency, binaryphase, minbinwidth, bandwidth, calclengthmins;
+  bool readok;
   double * coefficients;
   f64 * binphases;
   f64 * binweights;

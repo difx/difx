@@ -33,8 +33,6 @@
 #include "datastream.h"
 #include "mk5.h"
 #include "nativemk5.h"
-#include "mpifxcorr.h"
-#include <cstring>
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
 #include <sys/socket.h>
@@ -43,6 +41,84 @@
 #include <arpa/inet.h>
 #include <difxmessage.h>
 #include "alert.h"
+
+//act on an XML command message which was received
+bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
+  string paramname, paramvalue;
+
+  //Only act on parameter setting commands
+  //cout << "received a message" << endl;
+  if (difxmessage->type == DIFX_MESSAGE_PARAMETER) {
+    DifxMessageParameter * pmessage = &((difxmessage->body).param);
+    paramname = string(pmessage->paramName);
+    paramvalue = string(pmessage->paramValue);
+    cinfo << startl << "Received a parameter message for parameter " << paramname << " and value " << paramvalue << ", targetmpiid is " << pmessage->targetMpiId << endl;
+    //is it for me
+    if ((pmessage->targetMpiId == config->getMPIId()) || 
+        (pmessage->targetMpiId == DIFX_MESSAGE_ALLMPIFXCORR) || 
+        ((pmessage->targetMpiId == DIFX_MESSAGE_ALLCORES) && config->isCoreProcess()) ||
+        ((pmessage->targetMpiId == DIFX_MESSAGE_ALLDATASTREAMS) && config->isDatastreamProcess())) {
+      //is it a shutdown message?
+      if (paramname == "keepacting" && paramvalue == "false")
+        return false;
+      //otherwise set a config parameter if we know how
+      if (paramname == "dumpsta")
+        config->setDumpSTAState((paramvalue == "true") || (paramvalue == "True"));
+      else if (paramname == "dumplta")
+        config->setDumpLTAState((paramvalue == "true") || (paramvalue == "True"));
+      else if (paramname == "stachannels")
+        config->setSTADumpChannels(atoi(pmessage->paramValue));
+      else if (paramname == "ltachannels")
+        config->setLTADumpChannels(atoi(pmessage->paramValue));
+      //else if (pmessage->paramname == "clock stuff")
+      else {
+        cwarn << startl << config->getMPIId() << ": warning - received a parameter instruction regarding " <<  pmessage->paramName << " which cannot be honored and will be ignored!" << endl;
+      }
+    }
+  }
+  return true;
+}
+
+//setup message receive thread
+void * launchCommandMonitorThread(void * c) {
+  Configuration * config = (Configuration*) c;
+  int socket, bytesreceived = 1;
+  char message[DIFX_MESSAGE_LENGTH];
+  char sendername[DIFX_MESSAGE_PARAM_LENGTH];
+  bool keepacting = true;
+  DifxMessageGeneric * genericmessage = (DifxMessageGeneric *)malloc(sizeof(DifxMessageGeneric));
+
+  cinfo << startl << "About to open receive socket" << endl;
+  socket = difxMessageReceiveOpen();
+  //struct timeval tv;
+  //tv.tv_sec = 9;
+  //tv.tv_usec = 0;
+  //setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+  cinfo << startl << "Receive socket opened - socket is " << socket << endl;
+  if (socket < 0) {
+    csevere << startl << "Could not open command monitoring socket! Aborting message receive thread." << endl;
+    keepacting = false;
+  }
+  config->setCommandThreadInitialised();
+  cinfo << startl << "Command thread initialised has been set" << endl;
+  while (keepacting) {
+    bytesreceived = difxMessageReceive(socket, message, DIFX_MESSAGE_LENGTH, sendername);
+    if(bytesreceived > 0) {
+      //cinfo << startl << "Received a message" << endl;
+      difxMessageParse(genericmessage, message);
+      keepacting = actOnCommand(config, genericmessage);
+    }
+    //else {
+    //  csevere << startl << "Problem receiving message! Bytesreceived was " << bytesreceived << ". Sendername was " << sendername << ". Aborting message receive thread." << endl;
+    //  keepacting = false;
+    //}
+  }
+  free(genericmessage);
+  if(socket >= 0)
+    difxMessageReceiveClose(socket);
+  cinfo << startl << "Command monitor thread shutting down" << endl;
+  return 0;
+}
 
 //setup monitoring socket
 int setup_net(char *monhostname, int port, int window_size, int *sock) {
@@ -143,7 +219,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 int main(int argc, char *argv[])
 {
   MPI_Comm world, return_comm;
-  int numprocs, myID, numdatastreams, numcores;
+  int numprocs, myID, numdatastreams, numcores, perr;
   double t1, t2;
   Configuration * config;
   FxManager * manager = 0;
@@ -153,6 +229,7 @@ int main(int argc, char *argv[])
   int * datastreamids;
   bool monitor = false;
   string monitoropt;
+  pthread_t commandthread;
   int nameslength = 1;
   char * monhostname = new char[nameslength];
   int port=0, monitor_skip=0, namelen;
@@ -210,7 +287,7 @@ int main(int argc, char *argv[])
 
   cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
-  config = new Configuration(argv[1]);
+  config = new Configuration(argv[1], myID);
   if(!config->consistencyOK())
   {
     //There was a problem with the input file, so shut down gracefully
@@ -218,6 +295,16 @@ int main(int argc, char *argv[])
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
+  }
+
+  //handle difxmessage setup for sending and receiving
+  perr = pthread_create(&commandthread, NULL, launchCommandMonitorThread, (void *)(config));
+  if (perr != 0)
+    csevere << startl << "Error creating command monitoring thread!" << endl;
+  else {
+    //wait for commandmonthread to be initialised
+    while(!config->commandThreadInitialised())
+      usleep(10);
   }
   numdatastreams = config->getNumDataStreams();
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
@@ -283,9 +370,15 @@ int main(int argc, char *argv[])
   delete [] coreids;
   delete [] datastreamids;
 
+  if(myID == 0) difxMessageSendDifxAlert("Will this work?", 3);
+  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
+  if(myID == 0) difxMessageSendDifxAlert("Not expecting this one!?", 3);
+  perr = pthread_join(commandthread, NULL);
+  if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
+  delete config;
 
   cinfo << startl << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;

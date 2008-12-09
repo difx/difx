@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: fxcorr
+Description: Library of all mpifxcorr objects that don't need MPI, useful for other programs which communicate to mpifxcorr
+Requires:
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lfxcorr -lmark5access
+Cflags: -I${includedir}/mpifxcorr
+

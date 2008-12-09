@@ -29,124 +29,129 @@ Uvw::Uvw(Configuration * config, string uvwfilename, bool nameonly)
   int year, month, day, hour, minute, second, at, next;
   string line;
   bool found;
+  opensuccess = true;
+
   ifstream input(uvwfilename.c_str());
   if(!input.is_open() || input.bad()) {
     cfatal << startl << "Error opening uvw file " << uvwfilename << " - aborting!!!" << endl;
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    opensuccess = false;
   }
 
-  config->getinputline(&input, &line, "START YEAR");
-  year = atoi(line.c_str());
-  config->getinputline(&input, &line, "START MONTH");
-  month = atoi(line.c_str());
-  config->getinputline(&input, &line, "START DAY");
-  day = atoi(line.c_str());
-  config->getinputline(&input, &line, "START HOUR");
-  hour = atoi(line.c_str());
-  config->getinputline(&input, &line, "START MINUTE");
-  minute = atoi(line.c_str());
-  config->getinputline(&input, &line, "START SECOND");
-  second = atoi(line.c_str());
-
-  config->getMJD(expermjd, experstartseconds, year, month, day, hour, minute, second);
-
-  config->getinputline(&input, &line, "INCREMENT");
-  uvwincrementsecs = atof(line.c_str());
-
-  //read in the telescope info
-  config->getinputline(&input, &line, "NUM TELESCOPES");
-  numstations = atoi(line.c_str());
-  stations = new telescope[numstations];
-  for(int i=0;i<numstations;i++)
+  if(opensuccess) 
   {
-    config->getinputline(&input, &stations[i].name, "TELESCOPE ", i);
-    //trim the whitespace off the end
-    while((stations[i].name).at((stations[i].name).length()-1) == ' ')
-      stations[i].name = (stations[i].name).substr(0, (stations[i].name).length()-1);
-    config->getinputline(&input, &line, "TELESCOPE ", i);
-    stations[i].mount = getMountInt(line);
-    config->getinputline(&input, &line, "TELESCOPE ", i);
-    stations[i].x = atof(line.c_str());
-    config->getinputline(&input, &line, "TELESCOPE ", i);
-    stations[i].y = atof(line.c_str());
-    config->getinputline(&input, &line, "TELESCOPE ", i);
-    stations[i].z = atof(line.c_str());
-  }
+    config->getinputline(&input, &line, "START YEAR");
+    year = atoi(line.c_str());
+    config->getinputline(&input, &line, "START MONTH");
+    month = atoi(line.c_str());
+    config->getinputline(&input, &line, "START DAY");
+    day = atoi(line.c_str());
+    config->getinputline(&input, &line, "START HOUR");
+    hour = atoi(line.c_str());
+    config->getinputline(&input, &line, "START MINUTE");
+    minute = atoi(line.c_str());
+    config->getinputline(&input, &line, "START SECOND");
+    second = atoi(line.c_str());
 
-  //read in scan information
-  numuvwpoints = 0;
-  numsources = 0;
-  config->getinputline(&input, &line, "NUM SCANS");
-  numscans = atoi(line.c_str()); 
-  numpoints = new int[numscans];
-  scansources = new source[numscans];
-  scanindices = new int[numscans];
-  scanstartpoints = new int[numscans];
-  if(uvwread) //only create the uvw information if we've been asked to, otherwise save time and memory
-    uvw = new double***[numscans];
+    config->getMJD(expermjd, experstartseconds, year, month, day, hour, minute, second);
 
-  if(!nameonly)
-    cinfo << startl << "Scan information has been read in - numscans is " << numscans << endl;
+    config->getinputline(&input, &line, "INCREMENT");
+    uvwincrementsecs = atof(line.c_str());
 
-  for(int i=0;i<numscans;i++)
-  {
-    config->getinputline(&input, &line, "SCAN ", i);
-    numpoints[i] = atoi(line.c_str());
-    numuvwpoints += numpoints[i];
-    if(uvwread)
-      uvw[i] = new double**[numpoints[i] + 3]; //since we have -1, numpoints and numpoints+1 as well
-    config->getinputline(&input, &line, "SCAN ", i);
-    scanstartpoints[i] = atoi(line.c_str());
-    config->getinputline(&input, &(scansources[numsources].name), "SCAN ", i); 
-
-    //work out if we already have this source in the list
-    found = false;
-    for(int j=0;j<numsources;j++)
+    //read in the telescope info
+    config->getinputline(&input, &line, "NUM TELESCOPES");
+    numstations = atoi(line.c_str());
+    stations = new telescope[numstations];
+    for(int i=0;i<numstations;i++)
     {
-      if((scansources[numsources].name).compare(scansources[j].name) == 0)
-      {
-        found = true;
-        scanindices[i] = j;
-      }
+      config->getinputline(&input, &stations[i].name, "TELESCOPE ", i);
+      //trim the whitespace off the end
+      while((stations[i].name).at((stations[i].name).length()-1) == ' ')
+        stations[i].name = (stations[i].name).substr(0, (stations[i].name).length()-1);
+      config->getinputline(&input, &line, "TELESCOPE ", i);
+      stations[i].mount = getMountInt(line);
+      config->getinputline(&input, &line, "TELESCOPE ", i);
+      stations[i].x = atof(line.c_str());
+      config->getinputline(&input, &line, "TELESCOPE ", i);
+      stations[i].y = atof(line.c_str());
+      config->getinputline(&input, &line, "TELESCOPE ", i);
+      stations[i].z = atof(line.c_str());
     }
 
-    if(!found)
-    {
-      //grab the info for this source and store it
-      config->getinputline(&input, &line, "SCAN ", i);
-      scansources[numsources].ra = atof(line.c_str());
-      config->getinputline(&input, &line, "SCAN ", i);
-      scansources[numsources].dec = atof(line.c_str());
-      scanindices[i] = numsources;
-      numsources++;
-    }
-    else
-    {
-      //still have to skip over the ra and dec lines
-      config->getinputline(&input, &line, "SCAN ", i);
-      config->getinputline(&input, &line, "SCAN ", i);
-    }
+    //read in scan information
+    numuvwpoints = 0;
+    numsources = 0;
+    config->getinputline(&input, &line, "NUM SCANS");
+    numscans = atoi(line.c_str()); 
+    numpoints = new int[numscans];
+    scansources = new source[numscans];
+    scanindices = new int[numscans];
+    scanstartpoints = new int[numscans];
+    if(uvwread) //only create the uvw information if we've been asked to, otherwise save time and memory
+      uvw = new double***[numscans];
 
-    for(int j=0;j<numpoints[i]+3;j++)
+    if(!nameonly)
+      cinfo << startl << "Scan information has been read in - numscans is " << numscans << endl;
+
+    for(int i=0;i<numscans;i++)
     {
-      at = 0;
-      config->getinputline(&input, &line, "RELATIVE INC ", j-1);
+      config->getinputline(&input, &line, "SCAN ", i);
+      numpoints[i] = atoi(line.c_str());
+      numuvwpoints += numpoints[i];
       if(uvwread)
-        uvw[i][j] = new double*[numstations];
-      for(int k=0;k<numstations;k++)
+        uvw[i] = new double**[numpoints[i] + 3]; //since we have -1, numpoints and numpoints+1 as well
+      config->getinputline(&input, &line, "SCAN ", i);
+      scanstartpoints[i] = atoi(line.c_str());
+      config->getinputline(&input, &(scansources[numsources].name), "SCAN ", i); 
+
+      //work out if we already have this source in the list
+      found = false;
+      for(int j=0;j<numsources;j++)
       {
-        if(uvwread)
-          uvw[i][j][k] = new double[3]; //u, v, w
-        for(int l=0;l<3;l++)
+        if((scansources[numsources].name).compare(scansources[j].name) == 0)
         {
-          next = line.find_first_of('\t', at);
-          if(uvwread)
-            uvw[i][j][k][l] = atof((line.substr(at, next-at)).c_str());
-          at = next+1;
+          found = true;
+          scanindices[i] = j;
         }
       }
-      if(j<numpoints[i])
-        scannumbers.push_back(i);
+
+      if(!found)
+      {
+        //grab the info for this source and store it
+        config->getinputline(&input, &line, "SCAN ", i);
+        scansources[numsources].ra = atof(line.c_str());
+        config->getinputline(&input, &line, "SCAN ", i);
+        scansources[numsources].dec = atof(line.c_str());
+        scanindices[i] = numsources;
+        numsources++;
+      }
+      else
+      {
+        //still have to skip over the ra and dec lines
+        config->getinputline(&input, &line, "SCAN ", i);
+        config->getinputline(&input, &line, "SCAN ", i);
+      }
+
+      for(int j=0;j<numpoints[i]+3;j++)
+      {
+        at = 0;
+        config->getinputline(&input, &line, "RELATIVE INC ", j-1);
+        if(uvwread)
+          uvw[i][j] = new double*[numstations];
+        for(int k=0;k<numstations;k++)
+        {
+          if(uvwread)
+            uvw[i][j][k] = new double[3]; //u, v, w
+          for(int l=0;l<3;l++)
+          {
+            next = line.find_first_of('\t', at);
+            if(uvwread)
+              uvw[i][j][k][l] = atof((line.substr(at, next-at)).c_str());
+            at = next+1;
+          }
+        }
+        if(j<numpoints[i])
+          scannumbers.push_back(i);
+      }
     }
   }
 }

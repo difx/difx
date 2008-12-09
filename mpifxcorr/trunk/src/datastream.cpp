@@ -22,7 +22,6 @@
 #include "datastream.h"
 #include "core.h"
 #include "fxmanager.h"
-#include "mpifxcorr.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -30,7 +29,6 @@
 #include <errno.h>
 #include <values.h>
 #include <math.h>
-#include <cstring>
 #include "config.h"
 #include "alert.h"
 
@@ -104,7 +102,8 @@ void DataStream::initialise()
   //threaded initialisation
   bufferlock = new pthread_mutex_t[numdatasegments];
   bufferinfo = new readinfo[numdatasegments];
-  config->loaduvwinfo(true);
+  if(!config->loaduvwinfo(true))
+    MPI_Abort(MPI_COMM_WORLD, 1);
   readseconds = 0;
   currentconfigindex = config->getConfigIndex(readseconds);
   while(currentconfigindex < 0)
@@ -117,7 +116,7 @@ void DataStream::initialise()
     //set up all the parameters in this bufferinfo slot
     updateConfig(i);
     bufferinfo[i].numsent = 0;
-    bufferinfo[i].seconds = 0;
+    bufferinfo[i].seconds = -9999;
     bufferinfo[i].nanoseconds = 0;
     bufferinfo[i].validbytes = 0;
     bufferinfo[i].datarequests = new MPI_Request[maxsendspersegment];
@@ -357,7 +356,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
 
   //while we have passed the first of our two locked sections, unlock that and lock the next - have two tests so sample difference can't overflow
   waitForSendComplete();
-  if(offsetsec < bufferinfo[atsegment].seconds - 1) //coarse test to see if its all bad
+  if(offsetsec < bufferinfo[atsegment].seconds - 1 || bufferinfo[atsegment].seconds < 0) //coarse test to see if its all bad
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
       bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;

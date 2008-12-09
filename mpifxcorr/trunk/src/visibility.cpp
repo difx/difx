@@ -19,6 +19,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include <mpi.h>
 #include "config.h"
 #include "visibility.h"
 #include "core.h"
