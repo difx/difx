@@ -2,7 +2,6 @@ Version 1.3.0
 * Post NRAO-DiFX 1.1
 * Fix file based stream offset problem for all data alignments
 * Start of Mark5C development
-* Fix data rate sanity check in case of decimation
 
 Version 1.2.3
 * fix minor bug in blanking code -- end of header not blanked on first frame

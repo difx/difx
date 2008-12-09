@@ -7005,7 +7005,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 			}
 			ms->samprate = ms->framesamples*
 				(1000000000/ms->framens);
-			datarate = ms->decimation*ms->samprate*ms->nbit*ms->nchan/1000000;
+			datarate = ms->samprate*ms->nbit*ms->nchan/1000000;
 			if(datarate != ms->Mbps)
 			{
 				if(ms->Mbps > 0)

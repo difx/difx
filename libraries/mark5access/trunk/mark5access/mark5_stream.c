@@ -714,8 +714,8 @@ void delete_mark5_stream(struct mark5_stream *ms)
 	{
 		if(ms->nvalidatefail > 0)
 		{
-			printf("Warning: %d validation failures\n",
-				ms->nvalidatefail);
+			printf("Warning: %d validation failures on %s framenum=%Ld -> bytepos=%Ld\n",
+				ms->nvalidatefail, ms->streamname, ms->framenum, ms->framenum*ms->framebytes);
 		}
 		if(ms->final_stream)
 		{
