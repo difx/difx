@@ -317,6 +317,12 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 
 	ds += scanId;
 
+	if(ds->configId < 0 || ds->configId > 1<<12)
+	{
+		fprintf(stderr, "Error!   writeDifxScan:  scanId=%d implies configId=%d\n", scanId, ds->configId);
+		return -1;
+	}
+
 	config = dc + ds->configId;
 
 	writeDifxLineInt1(out, "SCAN %d POINTS", scanId, ds->nPoint);

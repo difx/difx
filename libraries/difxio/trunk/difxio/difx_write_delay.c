@@ -74,7 +74,7 @@ int writeDifxDelay(const DifxInput *D, const char *filename)
 	for(s = 0; s < D->nScan; s++)
 	{
 		scan = D->scan + s;
-		writeDifxScan(out, scan, s, D->config, 0, 0, 0);
+		writeDifxScan(out, D->scan, s, D->config, 0, 0, 0);
 		for(i = -1; i <= scan->nPoint+1; i++)
 		{
 			value[0] = 0;

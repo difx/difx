@@ -79,7 +79,7 @@ int writeDifxRate(const DifxInput *D, const char *filename)
 	{
 		scan = D->scan + s;
 
-		writeDifxScan(out, scan, s, D->config, 0, 1, 0);
+		writeDifxScan(out, D->scan, s, D->config, 0, 1, 0);
 
 		for(i = -1; i <= scan->nPoint+1; i++)
 		{
