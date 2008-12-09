@@ -6,13 +6,41 @@ VERSION=0.1
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 
 DIFXMESSAGE_REQUIRED_VERSION=0.1
-MPIFXCORR_REQUIRED_VERSION=1.0
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage-1.0 >= $DIFXMESSAGE_REQUIRED_VERSION)
-PKG_CHECK_MODULES(MPIFXCORR, mpifxcorr-1.0 >= $MPIFXCORR_REQUIRED_VERSION)
+FXCORR_REQUIRED_VERSION=1.0
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= $DIFXMESSAGE_REQUIRED_VERSION)
+PKG_CHECK_MODULES(FXCORR, fxcorr >= $FXCORR_REQUIRED_VERSION)
 AC_SUBST(DIFXMESSAGE_CFLAGS)
 AC_SUBST(DIFXMESSAGE_LIBS)
-AC_SUBST(MPIFXCORR_CFLAGS)
-AC_SUBST(MPIFXCORR_LIBS)
+AC_SUBST(FXCORR_CFLAGS)
+AC_SUBST(FXCORR_LIBS)
+
+dnl **********************************************************
+dnl **** Set path for Intel Performance Primitive library ****
+dnl **********************************************************
+AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT
+                          ipp root is ROOT (optional).  Use env variable
+                          IPPROOT otherwise.],
+ipp_root="$withval", ipp_root="")
+if test x"$ipp_root" != "x"; then
+        IPP_CFLAGS="-I$ipp_root/include"
+        IPP_LIBS="-L$ipp_root/sharedlib"
+else
+        IPP_CFLAGS="-I$IPPROOT/include"
+        IPP_LIBS="-L$IPPROOT/sharedlib"
+fi
+
+
+if test "$DIFXBITS" == "32"; then
+        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore -lpthread"
+elif test "$DIFXBITS" == "64"; then
+        IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t -lpthread"
+else
+        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore -lpthread"
+        echo "32/64 bit unspecified - assuming 32 bit for IPP"
+fi
+AC_SUBST(IPP_CFLAGS)
+AC_SUBST(IPP_LIBS)
+dnl **********************************************************
 
 AC_PROG_CXX
 

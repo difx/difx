@@ -1,0 +1,6 @@
+aclocal
+autoconf
+automake -a
+./configure --prefix=${DIFXROOT}
+make
+make install
