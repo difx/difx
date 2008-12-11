@@ -287,8 +287,10 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 	const VexAntenna *ant;
 	DifxAntenna *A;
 	int i;
-	double offset, rate;
+	double offset, rate, mjd;
 	map<string,string>::const_iterator a;
+
+	mjd = 0.5*(V->obsStart() + V->obsStop());
 
 	*n = J.vsns.size();
 
@@ -300,13 +302,14 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 		ant = V->getAntenna(a->first);
 		strcpy(A[i].name, a->first.c_str());
 		strcpy(A[i].vsn, a->second.c_str());
-		A[i].X = ant->x;
-		A[i].Y = ant->y;
-		A[i].Z = ant->z;
+		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
+		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
+		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
 		strcpy(A[i].mount, ant->axisType.c_str());
 		ant->getClock(J.mjdStart, offset, rate);
 		A[i].delay = offset*1.0e6;	// convert to us from sec
 		A[i].rate  = rate*1.0e6;	// convert to us/sec from sec/sec
+		A[i].offset[2] = ant->axisOffset;
 		antList.push_back(a->first);
 		// FIXME : shelf
 	}
@@ -803,7 +806,7 @@ int main(int argc, char **argv)
 
 	makeJobs(J, V, P);
 
-	//cout << *V << endl;
+	cout << *V << endl;
 	//cout << *P << endl;
 
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)

@@ -7,15 +7,18 @@ TODO in vex2difx
 
 1. Capitalization of Antenna names and obs code
 2. # sign
-3. load params file
+x. load params file
 4. Pulsar support
 5. Spacecraft support
 6. Handle files (i.e., not Mark5 modules)
 7. Handle multiple phase centers
+8. full paths to files
+9. guardblocks, blocks per send
 
 Concerns outside vex2difx proper
 
-1. Need ant velocities and pos'n epoch in vex file
+x. Need ant velocities and pos'n epoch in vex file
+	- what is a year?
 2. Need to get module shelf location from track 
 3. Calcode/Qualifier in vex
 4. Get exper_nominal_{start,stop} in vex files

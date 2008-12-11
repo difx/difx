@@ -95,54 +95,108 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 	struct dvalue *r;
 	Clock_early *C;
 	double mjd;
+	llist *block;
+	Llist *defs;
+	Llist *lowls;
+
+	block = find_block(B_CLOCK, v);
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
+		string antName(stn);
+		Upper(antName);
+
+		if(!params.useAntenna(antName))
+		{
+			continue;
+		}
 		A = V->newAntenna();
 		A->name = stn;
 		A->nameInVex = stn;
 		Upper(A->name);
-		if(!params.useAntenna(A->name))
-		{
-			delete A;
-
-			continue;
-		}
 
 		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
 		fvex_double(&(p->x->value), &(p->x->units), &A->x);
 		fvex_double(&(p->y->value), &(p->y->units), &A->y);
 		fvex_double(&(p->z->value), &(p->z->units), &A->z);
 
+		p = (struct site_position *)get_station_lowl(stn, T_SITE_VELOCITY, B_SITE, v);
+		if(p)
+		{
+			fvex_double(&(p->x->value), &(p->x->units), &A->dx);
+			fvex_double(&(p->y->value), &(p->y->units), &A->dy);
+			fvex_double(&(p->z->value), &(p->z->units), &A->dz);
+		}
+		else
+		{
+			A->dx = A->dy = A->dz = 0.0;
+		}
+
 		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
 		A->axisType = string(q->axis1) + string(q->axis2);
+
+		r = (struct dvalue *)get_station_lowl(stn, T_SITE_POSITION_EPOCH, B_SITE, v);
+		if(r)
+		{
+			char *value;
+			char *units;
+			int name;
+			int link;
+			vex_field(T_SITE_POSITION_EPOCH, (void *)r, 1, &link, &name, &value, &units);
+
+			A->posEpoch = atof(value);
+		}
+		else
+		{
+			A->posEpoch = 0.0;
+		}
 
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 
-		for(C = (Clock_early *)get_station_lowl(stn, T_CLOCK_EARLY, B_CLOCK, v);
-		    C;
-		    C  = (Clock_early *)get_station_lowl_next())
+		if(block)
 		{
-			if(C->start)
+			defs = ((struct block *)block->ptr)->items;
+			if(defs)
 			{
-				mjd = vexDate(C->start);
+				defs = find_def(defs, stn);
 			}
-			else
+			if(defs)
 			{
-				mjd = 0.0;
-			}
-			A->clocks.push_back(VexClock());
-			VexClock &clock = A->clocks.back();
-			clock.mjdStart = mjd;
-			if(C->offset)
-			{
-				fvex_double(&(C->offset->value), &(C->offset->units), &clock.offset);
-			}
-			if(C->rate && C->origin) 
-			{
-				clock.rate = atof(C->rate->value);
-				clock.offset_epoch = vexDate(C->origin);
+				for(lowls = find_lowl(((Def *)((Lowl *)defs->ptr)->item)->refs, T_CLOCK_EARLY);
+				    lowls;
+				    lowls = lowls->next)
+				{
+					if(((Lowl *)lowls->ptr)->statement != T_CLOCK_EARLY)
+					{
+						continue;
+					}
+
+					C = (Clock_early *)(((Lowl *)lowls->ptr)->item);
+					if(C)
+					{
+						if(C->start)
+						{
+							mjd = vexDate(C->start);
+						}
+						else
+						{
+							mjd = 0.0;
+						}
+						A->clocks.push_back(VexClock());
+						VexClock &clock = A->clocks.back();
+						clock.mjdStart = mjd;
+						if(C->offset)
+						{
+							fvex_double(&(C->offset->value), &(C->offset->units), &clock.offset);
+						}
+						if(C->rate && C->origin) 
+						{
+							clock.rate = atof(C->rate->value);
+							clock.offset_epoch = vexDate(C->origin);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -257,13 +311,13 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		if(params.getCorrSetup(setupName) == 0)
 		{
-			cout << "Error : setup " << setupName << " not defined!" << endl;
+			cerr << "Error : setup " << setupName << " not defined!" << endl;
 			continue;
 		}
 
 		if(params.mjdStart > stopScan || params.mjdStop < startScan)
 		{
-			cout << "Skipping scan " << scanName << " : out of time range" << endl;
+			cerr << "Skipping scan " << scanName << " : out of time range" << endl;
 			continue;
 		}
 
@@ -456,14 +510,34 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-int getVSNs(VexData *V, Vex *v, const CorrParams& params)
+static void fixOhs(string &str)
 {
-	struct vsn *p;
+	unsigned int i;
+
+	for(i = 0; i < str.length(); i++)
+	{
+		if(str[i] == '-' || str[i] == '+')
+		{
+			break;
+		}
+		if(str[i] == '0')
+		{
+			str[i] = 'O';
+		}
+	}
+}
+
+int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
+{
+	Vsn *p;
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
-	int statement;
 	double start, stop;
+
+	string antName(station);
+
+	Upper(antName);
 
 	block = find_block(B_TAPELOG_OBS, v);
 
@@ -472,40 +546,53 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 		return -1;
 	}
 
-	for(defs=((struct block *)block->ptr)->items;
-	    defs;
-	    defs=defs->next)
+	defs = ((struct block *)block->ptr)->items;
+	if(!defs)
 	{
-		// This is somewhat of a hack, but seems to be fine
-		statement = ((Lowl *)defs->ptr)->statement;
-		if(statement == T_COMMENT)
+		return -2;
+	}
+
+	defs = find_def(defs, station);
+	if(!defs)
+	{
+		return -3;
+	}
+
+	for(lowls = find_lowl(((Def *)((Lowl *)defs->ptr)->item)->refs, T_VSN);
+	    lowls;
+	    lowls = lowls->next)
+	{
+		if(((Lowl *)lowls->ptr)->statement != T_VSN)
 		{
 			continue;
 		}
-		if(statement != T_DEF)
+		
+		p = (Vsn *)(((Lowl *)lowls->ptr)->item);
+		if(!p)
 		{
-			break;
+			return -4;
 		}
 
-		string antName(((Def *)((Lowl *)defs->ptr)->item)->name);
+		string vsn(p->label);
+		fixOhs(vsn);
+		start = vexDate(p->start);
+		stop = vexDate(p->stop);
+		
+		V->addVSN(antName, vsn, start, stop);
+		V->addEvent(start, VexEvent::RECORD_START, antName);
+		V->addEvent(stop, VexEvent::RECORD_STOP, antName);
+	}
 
-		Upper(antName);
+	return 0;
+}
 
-		for(lowls = ((Def *)((Lowl *)defs->ptr)->item)->refs;
-		    lowls; 
-		    lowls=lowls->next)
-		{
-			lowls=find_lowl(lowls, T_VSN);
-			p = (struct vsn *)(((Lowl *)lowls->ptr)->item);
+int getVSNs(VexData *V, Vex *v, const CorrParams& params)
+{
+	int r;
 
-			const string vsn(p->label);
-			start = vexDate(p->start);
-			stop = vexDate(p->stop);
-			V->addVSN(antName, vsn, start, stop);
-
-			V->addEvent(start, VexEvent::RECORD_START, antName);
-			V->addEvent(stop, VexEvent::RECORD_STOP, antName);
-		}
+	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
+	{
+		r = getVSN(V, v, params, stn);
 	}
 
 	return 0;

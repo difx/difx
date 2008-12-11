@@ -173,7 +173,7 @@ void VexAntenna::getClock(double mjd, double &offset, double &rate) const
 	{
 		if(it->mjdStart <= mjd)
 		{
-			offset = it->offset + (mjd - it->offset_epoch)*it->rate;
+			offset = it->offset + (mjd - it->offset_epoch)*it->rate*86400.0;
 			rate = it->rate;
 		}
 	}
@@ -680,9 +680,10 @@ ostream& operator << (ostream& os, const VexClock& x)
 ostream& operator << (ostream& os, const VexAntenna& x)
 {
 	os << "Antenna " << x.name <<
-		"\n   x=" << x.x <<
-		"\n   y=" << x.y <<
-		"\n   z=" << x.z <<
+		"\n   x=" << x.x << "  dx/dt=" << x.dx <<
+		"\n   y=" << x.y << "  dy/dt=" << x.dy <<
+		"\n   z=" << x.z << "  dz/dt=" << x.dz <<
+		"\n   posEpoch=" << x.posEpoch <<
 		"\n   axisType=" << x.axisType <<
 		"\n   axisOffset=" << x.axisOffset << endl;
 
