@@ -37,6 +37,7 @@ int main(int argc, char *argv[])
   //open the file containing the filterbank data
   input = new ifstream(argv[1], ios::binary);
   config = new Configuration(argv[2], -1);
+  config->loaduvwinfo(true);
 
   //set up pgplot and the xaxis data
   if(cpgbeg(0, "?", 1, 1) != 1)
