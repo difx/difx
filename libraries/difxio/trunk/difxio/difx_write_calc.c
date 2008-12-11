@@ -51,7 +51,7 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 
 	strcpy(filebase, filename);
 	l = strlen(filebase);
-	for(i = l-1; i > 0; i++)
+	for(i = l-1; i > 0; i--)
 	{
 		if(filebase[i] == '.')
 		{

@@ -42,52 +42,56 @@ static int mjd2date(long mjd, int *pYear, int *pMonth, int *pDay)
    minus # days from jan 1, 4713 BC (beginning of Julian calendar) */
 #define AD 678576
 
-    static int monlen[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+	static int monlen[] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
-    int icen4;
-    int icen;
-    int iyr4;
-    int iyr;
-    int imon;
-    int iday;
+	int icen4, icen, iyr4, iyr, imon, iday;
 
-    /* check input range and calc days since jan 1 1 AD (Gregorian Calendar) */
-    if (mjd > 2973483)
-	return -1;
-    if ((mjd += AD - 1) < 0)
-        return -1;
+	/* check input range and calc days since jan 1 1 AD (Gregorian Calendar) */
+	if (mjd > 2973483)
+	{
+		return -1;
+	}
+	if ((mjd += AD - 1) < 0)
+	{
+		return -1;
+	}
+	/* calc number of fours of Gregorian centuries */
+	icen4 = mjd / 146097;
 
-    /* calc number of fours of Gregorian centuries */
-    icen4 = mjd / 146097;
-
-    /* calc number of centuries since last 
+	/* calc number of centuries since last 
 	fours of Gregorian centuries (e.g. since 1600 or 2000) */
-    mjd -= (icen4 * 146097);
-    if ((icen = mjd / 36524) == 4)
-        icen = 3; 
+	mjd -= (icen4 * 146097);
+	if ((icen = mjd / 36524) == 4)
+	{
+		icen = 3; 
+	}
 
-    /* calc number of quadrenia(four years) since jan 1, 1901 */
-    mjd -= (icen * 36524);
-    iyr4 = mjd / 1461;
+	/* calc number of quadrenia(four years) since jan 1, 1901 */
+	mjd -= (icen * 36524);
+	iyr4 = mjd / 1461;
 
-    /* calc number of years since last quadrenia */
-    mjd -= (iyr4 * 1461);
-    if ((iyr = mjd / 365) == 4)
-        iyr = 3;
+	/* calc number of years since last quadrenia */
+	mjd -= (iyr4 * 1461);
+	if ((iyr = mjd / 365) == 4)
+	{
+		iyr = 3;
+	}
 
-    /* calc number of months, days since jan 1 of current year */
-    iday = mjd - iyr * 365;
-    for (imon = 0; iday >= 0; imon++)
-	iday = iday - monlen[imon] - ((iyr == 3 && imon == 1) ? 1 : 0);
-    imon--;		/* restore imon, iday to last loop value */
-    iday = iday + monlen[imon] + ((iyr == 3 && imon == 1) ? 1 : 0);
+	/* calc number of months, days since jan 1 of current year */
+	iday = mjd - iyr * 365;
+	for(imon = 0; iday >= 0; imon++)
+	{
+		iday = iday - monlen[imon] - ((iyr == 3 && imon == 1) ? 1 : 0);
+	}
+	imon--;		/* restore imon, iday to last loop value */
+	iday = iday + monlen[imon] + ((iyr == 3 && imon == 1) ? 1 : 0);
 
-    /* calc return values */
-    *pYear = icen4 * 400 + icen * 100 + iyr4 * 4 + iyr + 1;
-    *pMonth = imon + 1;
-    *pDay = iday + 1;
+	/* calc return values */
+	*pYear = icen4 * 400 + icen * 100 + iyr4 * 4 + iyr + 1;
+	*pMonth = imon + 1;
+	*pDay = iday + 1;
 
-    return 0;
+	return 0;
 }
 
 int writeDifxLine(FILE *out, const char *key, const char *value)
