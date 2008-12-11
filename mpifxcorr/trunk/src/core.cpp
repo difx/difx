@@ -384,6 +384,7 @@ void Core::loopprocess(int threadid)
         stadumpchannels = config->getSTADumpChannels();
         starecord = (DifxMessageSTARecord*)malloc(sizeof(DifxMessageSTARecord) + sizeof(f32)*stadumpchannels);
         starecord->threadId = threadid;
+        starecord->nThreads = numprocessthreads;
         starecord->nChan = stadumpchannels;
       }
       dumpingsta = nowdumpingsta;
