@@ -65,7 +65,8 @@ int main(int argc, const char * argv[])
     }
     else {
       writeDiFXHeader(&output, starecord->antId, starecord->sec, starecord->ns, 
-		      starecord->threadId, starecord->bandId, starecord->nChan);
+		      starecord->threadId, starecord->bandId, starecord->nChan,
+                      starecord->nThreads);
       output.write((char*)starecord->data, starecord->nChan*sizeof(float));
     }
   }
@@ -83,7 +84,7 @@ int main(int argc, const char * argv[])
 
 //writes a header before the filterbank data
 void writeDiFXHeader(ofstream * output, int antId, int sec, int ns, 
-		    int threadId, int bandId, int nchan)
+		    int threadId, int bandId, int nchan, int nthreads)
 {
   output->write((char*)&SYNC, sizeof(int));
   output->write((char*)&antId, sizeof(int));
@@ -92,6 +93,7 @@ void writeDiFXHeader(ofstream * output, int antId, int sec, int ns,
   output->write((char*)&threadId, sizeof(int));
   output->write((char*)&bandId, sizeof(int));
   output->write((char*)&nchan, sizeof(int));
+  output->write((char*)&nthreads, sizeof(int));
 }
 
 //setup message receive thread

@@ -11,7 +11,7 @@ static const u32 SYNC = MAX_U32;
 
 //Prototypes
 void writeDiFXHeader(ofstream * output, int antId, int sec, int ns, 
-		     int threadId, int bandId, int nchan);
+		     int threadId, int bandId, int nchan, int nthreads);
 void * launchCommandMonitorThread(void * c);
 bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage);
 
