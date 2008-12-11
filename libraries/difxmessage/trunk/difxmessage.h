@@ -239,7 +239,7 @@ typedef struct
 	int threadId;	/* core.cpp thread number (starting from 0) */
 	int bandId;
 	int nChan;
-	int dummy;	/* space reserved for future use */
+	int nThreads;	/* Number of threads in this core */
 	float data[0];	/* Note -- must allocate enough space for your data! */
 } DifxMessageSTARecord;
 
