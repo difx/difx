@@ -214,7 +214,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		if(doOffset)
 		{
 			writeDifxLineDouble1(out, "TELESCOPE %d OFFSET (m)", i, 
-				"%8.6f", da[i].offset[2]);
+				"%8.6f", da[i].offset[0]);
 			n++;
 		}
 		if(doCoords)
