@@ -440,6 +440,7 @@ void printDifxConfig(const DifxConfig *dc);
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc);
 void printDifxConfigSummary(const DifxConfig *dc);
 void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc);
+int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recChan, int *bandId, int *polId);

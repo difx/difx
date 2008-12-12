@@ -115,6 +115,35 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	dc->nBaseline = nBaseline;
 }
 
+int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
+{
+	int b, f, blId;
+	int doPolar = 0;
+	DifxBaseline *bl;
+
+	for(b = 0; b < dc->nBaseline; b++)
+	{
+		blId = dc->baselineId[b];
+		if(blId < 0)
+		{
+			break;
+		}
+
+		bl = db + blId;
+		for(f = 0; f < bl->nFreq; f++)
+		{
+			if(bl->nPolProd[f] > 2)
+			{
+				doPolar = 1;
+			}
+		}
+	}
+
+	dc->doPolar = doPolar;
+
+	return dc->doPolar;
+}
+
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 {
 	int i;

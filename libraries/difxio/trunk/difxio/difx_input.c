@@ -874,14 +874,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 			}
 		}
 		N = strlen(dc->name);
-		if(dc->name[N-1] == '1')
-		{
-			dc->doPolar = 1;
-		}
-		else
-		{
-			dc->doPolar = 0;
-		}
+		dc->doPolar = -1;	/* to be calculated later */
 
 		/* initialize datastream index array */
 		dc->datastreamId = (int *)malloc(sizeof(int)*
@@ -1496,6 +1489,10 @@ static DifxInput *populateUVW(DifxInput *D, DifxParameters *up)
 			continue;
 		}
 		strcpy(D->antenna[a].mount, DifxParametersvalue(up, rows[0]));
+		if(strcasecmp(D->antenna[a].mount, "azel"))
+		{
+			strcpy(D->antenna[a].mount, "altz");
+		}
 		D->antenna[a].offset[0]= 0.0;	/* Default */
 		D->antenna[a].offset[1]= 0.0;	
 		D->antenna[a].offset[2]= 0.0;	
@@ -1890,6 +1887,10 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 		nFound++;
 		strcpy(D->antenna[a].mount, DifxParametersvalue(cp, rows[1]));
+		if(strcasecmp(D->antenna[a].mount, "azel"))
+		{
+			strcpy(D->antenna[a].mount, "altz");
+		}
 		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
 		D->antenna[a].offset[1]= 0.0;	/* FIXME */
 		D->antenna[a].offset[2]= 0.0;	/* FIXME */
@@ -2721,6 +2722,7 @@ static void setOrbitingAntennas(DifxInput *D)
 
 static void setGlobalValues(DifxInput *D)
 {
+	DifxConfig *dc;
 	int i, j, c, p, n, nIF, nPol;
 	int doPolar, qb;
 	double bw;
@@ -2759,8 +2761,10 @@ static void setGlobalValues(DifxInput *D)
 
 	for(c = 0; c < D->nConfig; c++)
 	{
-		nIF = D->config[c].nIF;
-		qb  = D->config[c].quantBits;
+		dc = D->config + c;
+
+		nIF = dc->nIF;
+		qb  = dc->quantBits;
 		if(D->nIF < nIF)
 		{
 			D->nIF = nIF;
@@ -2773,17 +2777,17 @@ static void setGlobalValues(DifxInput *D)
 		{
 			D->quantBits = 0;
 		}
-		doPolar = D->config[c].doPolar;
+		doPolar = DifxConfigCalculateDoPolar(dc, D->baseline);
 		if(D->doPolar < doPolar)
 		{
 			D->doPolar = doPolar;
 		}
 		for(i = 0; i < nIF; i++)
 		{
-			nPol   = D->config[c].IF[i].nPol;
-			bw     = D->config[c].IF[i].bw;
-			pol[0] = D->config[c].IF[i].pol[0];
-			pol[1] = D->config[c].IF[i].pol[1];
+			nPol   = dc->IF[i].nPol;
+			bw     = dc->IF[i].bw;
+			pol[0] = dc->IF[i].pol[0];
+			pol[1] = dc->IF[i].pol[1];
 			if(doPolar)
 			{
 				nPol *= 2;
