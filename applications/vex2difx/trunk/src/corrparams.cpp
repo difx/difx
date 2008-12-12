@@ -9,7 +9,7 @@
 CorrSetup::CorrSetup(const string &name) : setupName(name)
 {
 	tInt = 2.0;
-	specAvg = 1;
+	specAvg = 0;
 	startChan = 0;
 	nChan = 16;
 	doPolar = true;
@@ -148,7 +148,7 @@ CorrParams::CorrParams(const string& filename)
 
 void CorrParams::defaults()
 {
-	jobSeries = "vex2difx";
+	jobSeries = "job";
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
@@ -159,6 +159,9 @@ void CorrParams::defaults()
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
 	startSeries = 20;
+	dataBufferFactor = 32;
+	nDataSegments = 8;
+	sendLength = 0.262144;		// (s)
 }
 
 void CorrParams::set(const string &key, const string &value)
@@ -210,6 +213,18 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "startSeries")
 	{
 		ss >> startSeries;
+	}
+	else if(key == "dataBufferFactor")
+	{
+		ss >> dataBufferFactor;
+	}
+	else if(key == "nDataSegments")
+	{
+		ss >> nDataSegments;
+	}
+	else if(key == "sendLength")
+	{
+		ss >> sendLength;
 	}
 	else if(key == "antennas")
 	{

@@ -118,6 +118,9 @@ public:
 	double maxLength;	// days
 	string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
+	int dataBufferFactor;
+	int nDataSegments;
+	double sendLength;	// (s) amount of data to send from datastream to core at a time
 
 	list<string> antennaList;
 

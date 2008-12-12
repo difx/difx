@@ -277,7 +277,7 @@ DifxJob *makeDifxJob(const VexJob& J, int nAntenna, const string& obsCode, int *
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
 	job->dutyCycle = J.dutyCycle;
 
-	sprintf(job->fileBase, "%s.%d", J.jobSeries.c_str(), J.jobId);
+	sprintf(job->fileBase, "%s%d", J.jobSeries.c_str(), J.jobId);
 
 	return job;
 }
@@ -595,6 +595,8 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	const CorrSetup *setup;
 	const VexMode *mode;
 	string configName;
+	double sendLength;
+	double minBW;
 
 	setup = P->getCorrSetup(S->setupName);
 	if(setup == 0)
@@ -619,6 +621,8 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 		}
 	}
 
+	sendLength = P->sendLength;
+
 	configName = S->modeName + string("_") + S->setupName;
 
 	c = configs.size();
@@ -626,10 +630,22 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	config = D->config + c;
 	strcpy(config->name, configName.c_str());
 	config->tInt = setup->tInt;
-	config->nChan = setup->nChan;
-	config->blocksPerSend = 100;	// FIXME
-	config->specAvg = 1;		// FIXME
-	config->guardBlocks = 2;
+	if(setup->specAvg == 0)
+	{
+		config->nChan = setup->nChan;
+		config->specAvg = 1;	
+		if(setup->nChan < 128)
+		{
+			config->specAvg = 128/setup->nChan;
+			config->nChan = 128;
+		}
+	}
+	else
+	{
+		config->nChan = setup->nChan*setup->specAvg;
+		config->specAvg = setup->specAvg;
+	}
+	config->guardBlocks = 1;
 	config->postFFringe = setup->postFFringe;
 	config->quadDelayInterp = 1;
 	config->pulsarId = -1;		// FIXME -- from setup
@@ -652,11 +668,15 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 		config->overSamp /= 2;
 		config->decimation *= 2;
 	}
+	minBW = mode->sampRate/(2.0*config->decimation);
 	DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
 	DifxConfigAllocBaselineIds(config, config->nBaseline, c*config->nBaseline);
 
 	config->nPol = mode->getPols(config->pol);
 	config->quantBits = mode->getBits();
+	config->blocksPerSend = (int)(sendLength*minBW*D->nDataSegments/(config->decimation*config->nChan*D->dataBufferFactor));
+
+	// FIXME -- reset sendLength based on blockspersend, then readjust tInt, perhaps
 
 	return c;
 }
@@ -696,12 +716,9 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 	D->mjdStart = J.mjdStart;
 	D->mjdStop  = J.mjdStop;
-	D->specAvg  = setup->specAvg;
 	D->startChan = setup->startChan;
-
-	// FIXME -- next two: expose to params file
-	D->dataBufferFactor = 32;
-	D->nDataSegments = 8;
+	D->dataBufferFactor = P->dataBufferFactor;
+	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna), antList);
 	D->job = makeDifxJob(J, D->nAntenna, V->getExper()->name, &(D->nJob));
@@ -772,14 +789,24 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	deriveSourceTable(D);
 	//printDifxInput(D);
 
+	// fix a few last parameters
+	if(setup->specAvg == 0)
+	{
+		D->specAvg  = D->config[0].specAvg;
+	}
+	else
+	{
+		D->specAvg = setup->specAvg;
+	}
+
 	// write input file
 	ostringstream inputName;
-	inputName << D->job->jobId << ".input";
+	inputName << D->job->fileBase << ".input";
 	writeDifxInput(D, inputName.str().c_str());
 
 	// write calc file
 	ostringstream calcName;
-	calcName << D->job->jobId << ".calc";
+	calcName << D->job->fileBase << ".calc";
 	writeDifxCalc(D, calcName.str().c_str());
 
 	// clean up

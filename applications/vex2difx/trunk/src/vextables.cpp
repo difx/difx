@@ -764,7 +764,7 @@ ostream& operator << (ostream& os, const VexJob& x)
 	map<string,string>::const_iterator v;
 	int p = os.precision();
 	os.precision(12);
-	os << "Job " << x.jobSeries << " " << x.jobId << endl;
+	os << "Job " << x.jobSeries << x.jobId << endl;
 	os << "  " << x.mjdStart << " - " << x.mjdStop << endl;
 	os << "  duty cycle = " << x.dutyCycle << endl;
 	os << "  scans =";
