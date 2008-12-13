@@ -15,7 +15,7 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	doPolar = true;
 	doAuto = true;
 	postFFringe = false;
-	blocksPerSend = 3125;
+	blocksPerSend = 0;
 }
 
 void CorrSetup::set(const string &key, const string &value)

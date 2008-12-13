@@ -12,8 +12,8 @@ x. load params file
 5. Spacecraft support
 6. Handle files (i.e., not Mark5 modules)
 7. Handle multiple phase centers
-8. full paths to files
-9. guardblocks, blocks per send
+x. full paths to files
+x. guardblocks, blocks per send
 
 Concerns outside vex2difx proper
 

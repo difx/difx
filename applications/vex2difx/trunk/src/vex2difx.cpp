@@ -248,7 +248,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P)
 	}
 }
 
-DifxJob *makeDifxJob(const VexJob& J, int nAntenna, const string& obsCode, int *n)
+DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n)
 {
 	DifxJob *job;
 	const char *difxVer;
@@ -277,7 +277,7 @@ DifxJob *makeDifxJob(const VexJob& J, int nAntenna, const string& obsCode, int *
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
 	job->dutyCycle = J.dutyCycle;
 
-	sprintf(job->fileBase, "%s%d", J.jobSeries.c_str(), J.jobId);
+	sprintf(job->fileBase, "%s/%s%d", directory.c_str(), J.jobSeries.c_str(), J.jobId);
 
 	return job;
 }
@@ -309,7 +309,10 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 		ant->getClock(J.mjdStart, offset, rate);
 		A[i].delay = offset*1.0e6;	// convert to us from sec
 		A[i].rate  = rate*1.0e6;	// convert to us/sec from sec/sec
-		A[i].offset[2] = ant->axisOffset;
+		A[i].offset[0] = ant->axisOffset;
+		A[i].offset[1] = 0.0;
+		A[i].offset[2] = 0.0;
+
 		antList.push_back(a->first);
 		// FIXME : shelf
 	}
@@ -674,7 +677,14 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 
 	config->nPol = mode->getPols(config->pol);
 	config->quantBits = mode->getBits();
-	config->blocksPerSend = (int)(sendLength*minBW*D->nDataSegments/(config->decimation*config->nChan*D->dataBufferFactor));
+	if(setup->blocksPerSend > 0)
+	{
+		config->blocksPerSend = setup->blocksPerSend;
+	}
+	else
+	{
+		config->blocksPerSend = (int)(sendLength*minBW*D->nDataSegments/(config->decimation*config->nChan*D->dataBufferFactor));
+	}
 
 	// FIXME -- reset sendLength based on blockspersend, then readjust tInt, perhaps
 
@@ -721,7 +731,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna), antList);
-	D->job = makeDifxJob(J, D->nAntenna, V->getExper()->name, &(D->nJob));
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob));
 	
 	// now run through all scans, populating things as we go
 	D->nScan = J.scans.size();
@@ -826,14 +836,29 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	string infile;
+	if(argv[1][0] == '/')
+	{
+		infile = argv[1];
+	}
+	else
+	{
+		char cwd[1024];
+		getcwd(cwd, 1023);
+		infile = string(cwd);
+		infile += string("/");
+		infile += string(argv[1]);
+	}
+
+	cout << infile << endl;
 
 	P = new CorrParams(argv[2]);
 
-	V = loadVexFile(argv[1], *P);
+	V = loadVexFile(infile, *P);
 
 	makeJobs(J, V, P);
 
-	cout << *V << endl;
+	//cout << *V << endl;
 	//cout << *P << endl;
 
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)

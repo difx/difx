@@ -230,6 +230,7 @@ private:
 	vector<VexEOP> eops;
 
 	list<VexEvent> events;
+	string directory;
 
 public:
 	VexSource *newSource();
@@ -247,6 +248,10 @@ public:
 	{
 		return events.back().mjd;
 	}
+
+	const string &getDirectory() const { return directory; }
+	void setDirectory(const string &dir) { directory = dir; }
+
 
 	int nSource() const { return sources.size(); }
 	const VexSource *getSource(string name) const;

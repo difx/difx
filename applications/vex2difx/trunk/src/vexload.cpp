@@ -1,10 +1,11 @@
+#include <cstring>
+#include <cctype>
+#include <algorithm>
+#include <unistd.h>
 #include "corrparams.h"
 #include "vextables.h"
 #include "../vex/vex.h"
 #include "../vex/vex_parse.h"
-#include <cstring>
-#include <cctype>
-#include <algorithm>
 
 // To capitalize a string
 #define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
@@ -126,6 +127,11 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 			fvex_double(&(p->x->value), &(p->x->units), &A->dx);
 			fvex_double(&(p->y->value), &(p->y->units), &A->dy);
 			fvex_double(&(p->z->value), &(p->z->units), &A->dz);
+
+			// Correct for various definitions of year: yr_vex = 365.2524  yr_goddard=365.25
+			A->dx *= (365.25/365.2425);
+			A->dy *= (365.25/365.2425);
+			A->dz *= (365.25/365.2425);
 		}
 		else
 		{
@@ -751,6 +757,8 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 
 	V = new VexData();
 
+	V->setDirectory(vexfilename.substr(0, vexfilename.find_last_of('/')));
+
 	getAntennas(V, v, params);
 	getSources(V, v, params);
 	getScans(V, v, params);
@@ -758,6 +766,7 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 	getVSNs(V, v, params);
 	getEOPs(V, v, params);
 	getExper(V, v, params);
+
 
 	return V;
 }
