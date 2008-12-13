@@ -1,5 +1,6 @@
 Version 2.4
 * Post NRAO-DiFX 1.1 development
+* Require difxio 2.5
 
 Version 2.3
 * Support for writing FITS files larger than 2 GiB

@@ -534,12 +534,21 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		DifxVisCollectRandomParams(dv);
 	}
 
-	if(dv->bandId <  0 || dv->bandId >= dv->nFreq  ||
-	   dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
+	if(dv->bandId <  0 || dv->bandId >= dv->nFreq)
 	{
-		fprintf(stderr, "Parameter problem: %d %d  %d %d\n",
-			dv->bandId, dv->nFreq,
-			dv->polId, dv->D->nPolar);
+		fprintf(stderr, "Parameter problem: bandId should be in "
+				"[0, %d), was %d\n", 
+				dv->nFreq, dv->bandId);
+		
+		return -6;
+	}
+	
+	if(dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
+	{
+		fprintf(stderr, "Parameter problem: polId should be in "
+				"[0, %d), was %d\n",
+				dv->D->nPolar, dv->polId);
+
 		return -6;
 	}
 
