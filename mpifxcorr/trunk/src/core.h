@@ -147,17 +147,18 @@ private:
   */
   void updateconfig(int oldconfigindex, int configindex, int threadid, int & startblock, int & numblocks, int & numpolycos, bool & pulsarbin, Mode ** modes, Polyco ** polycos, bool first, s32 *** bins);
 
+  int mpiid;
+  Configuration * config;
   MPI_Comm return_comm;
   MPI_Request * datarequests;
   MPI_Request * controlrequests;
   MPI_Status * msgstatuses;
-  int mpiid, numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxresultlength, startmjd, startseconds;
+  int numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxresultlength, startmjd, startseconds;
   int * datastreamids;
   processslot * procslots;
   pthread_t * processthreads;
   pthread_cond_t * processconds;
   bool * processthreadinitialised;
-  Configuration * config;
 };
 
 #endif

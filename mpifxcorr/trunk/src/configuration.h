@@ -584,10 +584,11 @@ private:
   /// Constant for the default number of channels for visibilities sent to monitor (STA or LTA)
   static const int DEFAULT_MONITOR_NUMCHANNELS = 32;
 
+  int mpiid;
   char header[HEADER_LENGTH];
   bool commonread, configread, datastreamread, consistencyok, commandthreadinitialised, dumpsta, dumplta;
   int visbufferlength;
-  int mpiid, executeseconds, startmjd, startseconds, startns, numdatastreams, numbaselines, numconfigs, defaultconfigindex, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, databufferfactor, numdatasegments, numcoreconfs, maxnumchannels, maxnumpulsarbins, numindependentchannelconfigs, stadumpchannels, ltadumpchannels;
+  int executeseconds, startmjd, startseconds, startns, numdatastreams, numbaselines, numconfigs, defaultconfigindex, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, databufferfactor, numdatasegments, numcoreconfs, maxnumchannels, maxnumpulsarbins, numindependentchannelconfigs, stadumpchannels, ltadumpchannels;
   string delayfilename, uvwfilename, coreconffilename, outputfilename;
   int * numprocessthreads;
   int * firstnaturalconfigindices;

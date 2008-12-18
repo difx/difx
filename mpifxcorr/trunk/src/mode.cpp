@@ -30,8 +30,9 @@
 //using namespace std;
 const float Mode::TINY = 0.000000001;
 
+
 Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bpersend, int gblocks, int nfreqs, double bw, double * freqclkoffsets, int ninputbands, int noutputbands, int nbits, int unpacksamp, bool fbank, bool postffringe, bool quaddelayinterp, bool cacorrs, double bclock)
-  : config(conf), configindex(confindex), datastreamindex(dsindex), numchannels(nchan), blockspersend(bpersend), guardblocks(gblocks), twicenumchannels(nchan*2), numfreqs(nfreqs), bandwidth(bw), freqclockoffsets(freqclkoffsets), numinputbands(ninputbands), numoutputbands(noutputbands), numbits(nbits), unpacksamples(unpacksamp), filterbank(fbank), postffringerot(postffringe), quadraticdelayinterp(quaddelayinterp), calccrosspolautocorrs(cacorrs), blockclock(bclock)
+  : config(conf), configindex(confindex), datastreamindex(dsindex), numchannels(nchan), blockspersend(bpersend), guardblocks(gblocks), twicenumchannels(nchan*2), numfreqs(nfreqs), numinputbands(ninputbands), numoutputbands(noutputbands), numbits(nbits), unpacksamples(unpacksamp), bandwidth(bw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), postffringerot(postffringe), quadraticdelayinterp(quaddelayinterp), freqclockoffsets(freqclkoffsets)
 {
   int status;
   int decimationfactor = config->getDecimationFactor(configindex);

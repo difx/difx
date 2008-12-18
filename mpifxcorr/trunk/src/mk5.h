@@ -92,7 +92,8 @@ protected:
 
   // UDP values and statistics
   int npacketperframe, udpsize;
-  unsigned long packet_drop, packet_oo, packet_duplicate, npacket, udp_offset;
+  unsigned long packet_drop, packet_oo, packet_duplicate, npacket;
+  long udp_offset;
   unsigned long long packet_sum, packet_head, packet_segmentstart;
   double lasttime;
   char *udp_buf, *invalid_buf;

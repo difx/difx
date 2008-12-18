@@ -222,7 +222,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     DataStream::readnetwork(sock, ptr, bytestoread, nread);
   } else { // UDP
     bool done, first;
-    int segmentsize;
+    unsigned int segmentsize;
     long long packet_index, packet_segmentend, next_segmentstart=0, next_udpoffset=0;
     unsigned long long sequence;
     struct msghdr msg;
@@ -249,7 +249,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
       MPI_Abort(MPI_COMM_WORLD, 1);
     } 
     
-    for (int i=0; i<segmentsize; i++) {
+    for (unsigned int i=0; i<segmentsize; i++) {
       packets_arrived[i] = false;
     }
     *nread = -1;
@@ -314,6 +314,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
     first = 1;
     while (!done) {
+      int expectedsize = udpsize+sizeof(long long);
       nr = recvmsg(sock,&msg,MSG_WAITALL);
       if (nr==-1) { // Error reading socket
 	if (errno == EINTR) continue;
@@ -321,8 +322,8 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
       } else if (nr==0) {  // Socket closed remotely
 	cinfo << startl << "Datastream " << mpiid << ": Remote socket closed" << endl;
 	return(nr);
-      } else if (nr!=udpsize+sizeof(long long)) {
-	cfatal << startl << "DataStream " << mpiid << ": Expected " << udpsize+sizeof(long long) << " bytes, got " << nr << "bytes. Quiting" << endl;
+      } else if (nr!=expectedsize) {
+	cfatal << startl << "DataStream " << mpiid << ": Expected " << expectedsize << " bytes, got " << nr << "bytes. Quiting" << endl;
         MPI_Abort(MPI_COMM_WORLD, 1);
       } else {
 	if (packet_head==0 && sequence!=0) { // First packet!
@@ -406,7 +407,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
     // Replace missing packets with fill data
     int nmiss = 0;
-    for (int i=0; i<segmentsize; i++) {
+    for (unsigned int i=0; i<segmentsize; i++) {
       if (!packets_arrived[i]) {
 	//cinfo << startl << "***** Dropped " << packet_segmentstart+i << "(" << i << ")" << endl;
 	packet_drop++; // Will generally count dropped first packet twice

@@ -258,8 +258,8 @@ int main(int argc, char *argv[])
     }
     monitor = true;
     monitoropt = string(argv[2]);
-    int colindex1 = monitoropt.find_first_of(':');
-    int colindex2 = monitoropt.find_last_of(':');
+    size_t colindex1 = monitoropt.find_first_of(':');
+    size_t colindex2 = monitoropt.find_last_of(':');
     if(colindex2 == string::npos) 
       // BUG: This does not work and skip ends up equaling port!!!!
     {
