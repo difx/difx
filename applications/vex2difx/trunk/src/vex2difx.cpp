@@ -448,6 +448,11 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
 		D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
 	}
+	else if(format.format == string("S2"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "LBA");
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+	}
 	else
 	{
 		cerr << "Format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << D->antenna[antId].name << "." << endl;

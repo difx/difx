@@ -23,22 +23,22 @@ public:
 	vector<int> mag;
 };
 
-int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F)
+static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F, int n)
 {
 	int delta, track;
 	map<string,Tracks>::const_iterator it;
-
-	it = ch2tracks.find(chanName);
-
-	if(it == ch2tracks.end())
-	{
-		return -1;
-	}
 
 	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
 	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
 	   F.format == "VLBA1_4" || F.format == "MKIV1_4")
 	{
+		it = ch2tracks.find(chanName);
+
+		if(it == ch2tracks.end())
+		{
+			return -1;
+		}
+
 		const Tracks& T = it->second;
 		delta = 2*(T.sign.size() + T.mag.size());
 		track = T.sign[0];
@@ -57,6 +57,10 @@ int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks,
 			else
 				return (track+61)/delta;
 		}
+	}
+	else if(F.format == "S2")
+	{
+		return n;
 	}
 	else
 	{
@@ -361,6 +365,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	char *value, *units;
 	double freq, bandwidth, sampRate;
 	char sideBand;
+	char polarization;
 	string format, chanName;
 	int chanNum;
 	int nTrack, fanout;
@@ -407,70 +412,15 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			M->sampRate = sampRate;
 
-			// Get datastream assignments and formats
-			for(p = get_all_lowl(antName.c_str(), modeId, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
-			    p;
-			    p = get_all_lowl_next())
-			{
-				vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
-				F.format = string(value);
-				if(F.format == "Mark4")
-				{
-					F.format = "MKIV";
-				}
-			}
-
-			for(p = get_all_lowl(antName.c_str(), modeId, T_FANOUT_DEF, B_TRACKS, v);
-			    p;
-			    p = get_all_lowl_next())
-			{
-				vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
-				chanName = value;
-				vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
-				sign = (value[0] == 's');
-				vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
-				sscanf(value, "%d", &dasNum);
-
-				for(int k = 5; k < 9; k++)
-				{
-					if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
-					{
-						break;
-					}
-					nTrack++;
-					sscanf(value, "%d", &chanNum);
-					chanNum += 32*(dasNum-1);
-					if(sign)
-					{
-						ch2tracks[chanName].sign.push_back(chanNum);
-					}
-					else
-					{
-						nBit = 2;
-						ch2tracks[chanName].mag.push_back(chanNum);
-					}
-				}
-			}
-			fanout = nTrack/ch2tracks.size()/nBit;
-			switch(fanout)
-			{
-				case 1: F.format += "1_1"; break;
-				case 2: F.format += "1_2"; break;
-				case 4: F.format += "1_4"; break;
-				default: cerr << "Fanout=" << fanout << " not legal for format " << F.format << endl;
-			}
-			F.nRecordChan = ch2tracks.size();
-			F.nBit = nBit;
-
 			// Get IF to pol map for this antenna
 			for(p = get_all_lowl(antName.c_str(), modeId, T_IF_DEF, B_IF, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
 				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-				sideBand = value[0];
+				polarization = value[0];
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
-				if2pol[value] = sideBand;
+				if2pol[value] = polarization;
 			}
 
 			// Get BBC to pol map for this antenna
@@ -479,12 +429,101 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			    p = get_all_lowl_next())
 			{
 				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-				sideBand = if2pol[value];
+				polarization = if2pol[value];
 				vex_field(T_BBC_ASSIGN, p, 1, &link, &name, &value, &units);
-				bbc2pol[value] = sideBand;
+				bbc2pol[value] = polarization;
+			}
+
+			// Get datastream assignments and formats
+
+			// Is it a Mark5 mode?
+			p = get_all_lowl(antName.c_str(), modeId, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
+			if(p)
+			{
+				vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
+				F.format = string(value);
+				if(F.format == "Mark4")
+				{
+					F.format = "MKIV";
+				}
+
+				for(p = get_all_lowl(antName.c_str(), modeId, T_FANOUT_DEF, B_TRACKS, v);
+				    p;
+				    p = get_all_lowl_next())
+				{
+					vex_field(T_FANOUT_DEF, p, 2, &link, &name, &value, &units);
+					chanName = value;
+					vex_field(T_FANOUT_DEF, p, 3, &link, &name, &value, &units);
+					sign = (value[0] == 's');
+					vex_field(T_FANOUT_DEF, p, 4, &link, &name, &value, &units);
+					sscanf(value, "%d", &dasNum);
+
+					for(int k = 5; k < 9; k++)
+					{
+						if(vex_field(T_FANOUT_DEF, p, k, &link, &name, &value, &units) < 0)
+						{
+							break;
+						}
+						nTrack++;
+						sscanf(value, "%d", &chanNum);
+						chanNum += 32*(dasNum-1);
+						if(sign)
+						{
+							ch2tracks[chanName].sign.push_back(chanNum);
+						}
+						else
+						{
+							nBit = 2;
+							ch2tracks[chanName].mag.push_back(chanNum);
+						}
+					}
+				}
+				fanout = nTrack/ch2tracks.size()/nBit;
+				switch(fanout)
+				{
+					case 1: F.format += "1_1"; break;
+					case 2: F.format += "1_2"; break;
+					case 4: F.format += "1_4"; break;
+					default: cerr << "Fanout=" << fanout << " not legal for format " << F.format << endl;
+				}
+				F.nRecordChan = ch2tracks.size();
+				F.nBit = nBit;
+			}
+
+			// Is it an S2 mode?
+			p = get_all_lowl(antName.c_str(), modeId, T_S2_RECORDING_MODE, B_TRACKS, v);
+			if(p)
+			{
+				size_t f, g;
+
+				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
+				string s2mode(value);
+				F.format = "S2";
+
+				f = s2mode.find_last_of("x");
+				g = s2mode.find_last_of("-");
+
+				if(f < 0 || g < 0 || f > g)
+				{
+					cerr << "Malformed S2 mode : " << string(value) << endl;
+					return -1;
+				}
+
+				string chans = s2mode.substr(f+1, g-f-1);
+				string bits = s2mode.substr(g+1);
+
+				F.nRecordChan = atoi(chans.c_str()); //bbc2pol.size();
+				F.nBit = atoi(bits.c_str());
+			}
+
+			if(F.nRecordChan != bbc2pol.size())
+			{
+				cout << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
 			}
 
 			// Get rest of Subband information
+			int i = 0;
+			
 			for(p = get_all_lowl(antName.c_str(), modeId, T_CHAN_DEF, B_FREQ, v);
 			    p;
 			    p = get_all_lowl_next())
@@ -502,13 +541,20 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[value]);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
-				recChanId = getRecordChannel(value, ch2tracks, F);
+				recChanId = getRecordChannel(value, ch2tracks, F, i);
 				if(recChanId >= 0)
 				{
 					F.ifs.push_back(VexIF());
 					F.ifs.back().subbandId = subbandId;
 					F.ifs.back().recordChan = recChanId;
 				}
+
+				i++;
+			}
+
+			if(i != F.nRecordChan)
+			{
+				cerr << "Warning: nchan != F.nRecordChan!" << endl;
 			}
 		}
 	}
