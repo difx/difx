@@ -11,11 +11,11 @@ const char VexEvent::eventName[][20] =
 	"Ant Off-source",
 	"Scan Stop",
 	"Job Stop",
-	"Observe Start",
+	"Observe Stop",
 	"Record Stop",
 	"Clock Break",
 	"Record Start",
-	"Observe Stop",
+	"Observe Start",
 	"Job Start",
 	"Scan Start",
 	"Ant On-source"

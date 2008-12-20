@@ -99,7 +99,7 @@ int nGap(const list<MediaChange> &m, double mjd)
 
 	for(it = m.begin(); it != m.end(); it++)
 	{
-		if(mjd > it->mjdStart && mjd < it->mjdStop)
+		if(mjd >= it->mjdStart && mjd <= it->mjdStop)
 		{
 			n++;
 		}
@@ -217,6 +217,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		JG.createJob(Js, start, *t);
 		start = *t;
 	}
+
 	JG.createJob(Js, start, V->obsStop());
 }
 
