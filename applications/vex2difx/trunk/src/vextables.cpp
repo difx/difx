@@ -564,7 +564,11 @@ string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) c
 
 	for(v = A->vsns.begin(); v != A->vsns.end(); v++)
 	{
-		double overlap = max(mjdStop, v->mjdStop) - min(mjdStart, v->mjdStart);
+		if(v->mjdStop < mjdStart || mjdStop < v->mjdStart)
+		{
+			continue;
+		}
+		double overlap = min(mjdStop, v->mjdStop) - max(mjdStart, v->mjdStart);
 		if(overlap > best)
 		{
 			best = overlap;
