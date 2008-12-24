@@ -433,8 +433,16 @@ bool Polyco::loadPolycoFile(string filename)
     for(int i=0;i<numcoefficients;i++)
     {
         input.get(buffer, 26);
-	if(input.fail())
-          csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
+        if(input.fail()) {
+          csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!! Will attempt clearing stream and continuing." << endl;
+          input.clear();
+        }
+        //check for exponents given with D's rather than E's, and fix if necessary
+        for (int j=0;j<26;j++)
+        {
+          if(buffer[j] == 'D' || buffer[j] == 'd')
+            buffer[j] = 'E';
+        }
         coefficients[i] = atof(buffer);
         if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
             getline(input, strbuffer);
