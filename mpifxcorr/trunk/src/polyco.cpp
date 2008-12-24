@@ -388,6 +388,12 @@ bool Polyco::loadPolycoFile(string filename)
     input.get(buffer, 8);
     logresidual = atof(buffer);
 
+    //check if we missed anything
+    if (input.fail()) {
+      cwarn << startl << "Hit end of first line prematurely - check your polyco conforms to standard! Some values may not have been set properly, but likely everything is ok" << endl;
+      input.clear();
+    }
+
     getline(input, strbuffer); //skip over any remaining whitespace
 
     //process the second line
@@ -413,6 +419,12 @@ bool Polyco::loadPolycoFile(string filename)
     input.get(buffer, 6);
     binaryphase = atof(buffer);
 
+    //check if the end of line was reached prematurely
+    if (input.fail()) {
+      cwarn << startl << "Hit end of second line prematurely - check your polyco conforms to standard! Some values may not have been set properly.  This often happens for non-binary pulsars.  Likely everything is ok." << endl;
+      input.clear();
+    }
+
     getline(input, strbuffer); //skip to next line
 
     //grab all the coefficients
@@ -422,7 +434,7 @@ bool Polyco::loadPolycoFile(string filename)
     {
         input.get(buffer, 26);
 	if(input.fail())
-          cerror << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
+          csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!!" << endl;
         coefficients[i] = atof(buffer);
         if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
             getline(input, strbuffer);
