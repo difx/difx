@@ -2,11 +2,11 @@
 
 from sys import argv, exit
 from os import chdir, popen, system
-from string import strip, split, find, lower
+from string import strip, split, find, lower, upper
 
 program = 'difxsniff'
-version = '2.0'
-verdate = '20080826'
+version = '1.1'
+verdate = '20081229'
 author  = 'Walter Brisken'
 
 def run(pgm, args):
@@ -112,7 +112,7 @@ for a in argv[1:]:
 		else:
 			print 'Error: unknown option : ' + a
 	else:
-		refants.append(a)
+		refants.append(upper(a))
 
 if len(files) == 0:
 	print 'Error: no input files provided.'

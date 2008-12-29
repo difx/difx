@@ -1,0 +1,341 @@
+#!/bin/env python
+
+import datetime
+import cx_Oracle
+from sys import argv, exit
+from os import getenv, popen
+from string import upper, lower, strip, split
+
+program = 'db2vex'
+author = 'Walter Brisken'
+version = '0.1'
+verdate = '20081229'
+
+databaseName = getenv("VLBA_DB")
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def vexPeek(vexFile):
+	p = popen('vexpeek %s' % vexFile)
+	data = p.readlines()
+
+	obsCode = upper(strip(data[0]))
+	obsSeg = ''
+
+	if len(obsCode) > 3:
+		if obsCode[0].isalpha() and obsCode[1].isalpha() and obsCode[2].isdigit():
+			for i in range(3, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		
+
+	stationTimes = {}
+	for d in data[1:]:
+		s = split(strip(d))
+		stationTimes[upper(s[0])] = [float(s[1]), float(s[2])]
+
+	print 'This is experiment %s %s' % (obsCode, obsSeg)
+
+	return obsCode, obsSeg, stationTimes
+
+def mjdCenter(stationTimes):
+	start = 1.0e10
+	stop = 0.0
+	for s in stationTimes:
+		a = stationTimes[s][0]
+		b = stationTimes[s][1]
+		if a < start:
+			start = a
+		if b > stop:
+			stop = b
+	return (start + stop)*0.5
+
+
+def mjd2vex(mjd, dateonly=False):
+	md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	d = int(mjd)
+	s = int((mjd - d)*86400.0 + 0.5)
+	dt = datetime.timedelta(d, s)
+	t = mjd0 + dt
+	d = t.day + md[t.month-1]
+	if t.year % 4 == 0 and t.month > 2:
+		d += 1
+	if dateonly:
+		return '%dy%03dd' % (t.year, d)
+	else:
+		return '%dy%03dd%02dh%02dm%02ds' % (t.year, d, t.hour, t.minute, t.second)
+
+def mjd2date(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd+0.5/86400.0), 0)
+	t = mjd0 + dt
+	return '%02d-%s-%04d' % (t.day, mon[t.month-1], t.year)
+
+def Ulow(s):
+	return upper(s[0]) + lower(s[1:])
+
+def calcMJD(t):
+	dt = t - mjd0
+	mjd = dt.days + dt.seconds/86400.0
+	return mjd
+
+def oh2zero(x):
+	return x.replace('O', '0')
+
+def zero2oh(x):
+	y = ""
+	before = True
+	for i in range(len(x)):
+		if before and x[i] == '0':
+			y += 'O'
+		else:
+			y += x[i]
+		if x[i] == '+' or x[i] == '-':
+			before = False
+	return y
+
+def getShelf(shelves, vsn):
+	for s in shelves:
+		if oh2zero(s[0]) == oh2zero(vsn):
+			return s[1]
+	return 'none'
+
+def getShelvesFromDB(db):
+	cursor = db.cursor()
+	cursor.execute("select * from SHELVES")
+	shelves = cursor.fetchall()
+	return shelves
+
+def getTapesFromDB(db, prop, seg):
+	cursor = db.cursor()
+	if len(seg) > 0:
+		query = "select * from TAPE where PROPOSAL='%s' and SEGMENT='%s'" % (prop, seg)
+	else:
+		query = "select * from TAPE where PROPOSAL='%s'" % prop
+	cursor.execute(query)
+	tapes = cursor.fetchall()
+	return tapes
+
+def getVSN(vsns, stn, u, t):
+	vsn = 'none'
+	if not vsns.has_key(stn):
+		return vsn
+	for v in vsns[stn]:
+		if t + 0.5/86400.0 >= v[0] and u == v[2]:
+			vsn = v[1]
+	return vsn
+
+def getTapeMotionFromDB(db, prop, seg):
+	cursor = db.cursor()
+	collect = "STAID,TAPESPEED1,TAPESPEED2,START_TIME,STOP_TIME"
+	if len(seg) > 0:
+		query = "select %s from OBSSTA where PROPOSAL='%s' and SEGMENT='%s' order by START_TIME" % (collect, prop, seg)
+	else:
+		query = "select %s from OBSSTA where PROPOSAL='%s' order by START_TIME" % (collect, prop)
+	cursor.execute(query)
+	motions = cursor.fetchall()
+	return motions
+
+def getClockFromDB(db, stn, timerange):
+	gps_offsets = []
+	clocks = []
+
+	cursor = db.cursor()
+	query = "select VERSION,GPS_EPOCH,GPS_OFFSET from STATIONS where STN_ID='%s' order by VERSION,GPS_EPOCH" % stn
+	cursor.execute(query)
+	gps_offsets = cursor.fetchall()
+	gps_offset = gps_offsets[-1][-1]
+
+	cursor = db.cursor()
+	query = "select * from CLOCKS where STAID='%s' order by EPOCH_STOP,VERSION" % stn
+	cursor.execute(query)
+	allclocks = cursor.fetchall()
+	if len(allclocks) == 0:
+		return []
+	clocks = []
+	for c in allclocks:
+		if c[6] == None:
+			clocks.append(c)
+			break;
+		mjd = calcMJD(c[6])
+		if mjd > timerange[0]:
+			clocks.append(c)
+			if mjd > timerange[1]:
+				break;
+
+	v = []
+	start = timerange[0]
+	for c in clocks:
+		v.append( (mjd2vex(start), c[4]+gps_offset, mjd2vex(calcMJD(c[1])), c[5], gps_offset*1.0e6) )
+		if c[6] != None:
+			start = calcMJD(c[6])
+
+	print stn, gps_offset
+
+	return v
+
+def getEarthFromDB(db, centerMJD):
+	cursor = db.cursor()
+	startMJD = int(centerMJD+0.5) - 2
+	stopMJD  = int(centerMJD+0.5) + 2
+	eops  = []
+	ver = '  * data versions = '
+	origin = '  * data origins = '
+	ut1_utc = '  ut1-utc  = '
+	x_pole  = '  x_wobble = '
+	y_pole  = '  y_wobble = '
+
+	eops.append("$EOP;\n")
+	eops.append("def EOP%d;\n" % startMJD)
+
+	nPredict = 0;
+
+	for m in range(startMJD, stopMJD+1):
+		d  = mjd2date(m)
+		query = "select EPOCH,VERSION,ORIGIN,TAI_UTC,UT1_UTC,X_POLE,Y_POLE " \
+			"from EARTH where EPOCH = '%s' order by EPOCH,VERSION" % d
+		cursor.execute(query)
+		E = cursor.fetchall()
+		if len(E) < 1:
+			print 'Error -- no EOPs for day %s' % d
+		else:
+			e = E[-1]	# select most recent
+			if m == startMJD:
+				eops.append("  TAI-UTC= %d sec;\n" % e[3])
+				eops.append("  A1-TAI= 0 sec;\n")
+				eops.append("  eop_ref_epoch=%s;\n" % mjd2vex(calcMJD(e[0]), True))
+				eops.append("  num_eop_points=5;\n")
+				eops.append("  eop_interval=24 hr;\n")
+			if m == stopMJD:
+				end = ';\n'
+			else:
+				end = ' : '
+			ver = ver + mjd2vex(calcMJD(e[1])) + end
+			org = upper(strip(e[2]))
+			if org == 'PREDICT':
+				nPredict += 1
+			origin = origin + org + end
+			ut1_utc = ut1_utc + ('%8.6f sec' % e[4]) + end
+			x_pole = x_pole + ('%7.5f asec' % e[5]) + end
+			y_pole = y_pole + ('%7.5f asec' % e[6]) + end
+		
+	eops.append(ut1_utc)
+	eops.append(x_pole)
+	eops.append(y_pole)
+	eops.append(ver)
+	eops.append(origin)
+	eops.append("enddef;\n")
+
+	if nPredict > 0:
+		print 'Warning: %d of %d EOP data are PREDICTs' % (nPredict, stopMJD-startMJD+1)
+
+	return eops
+
+def makeVSNDict(tapes):
+	td = {}
+	for t in tapes:
+		stn = t[2]
+		mjd = calcMJD(t[3])
+		row = [mjd, t[4], t[5]-4]
+		if not td.has_key(stn):
+			td[stn] = []
+		td[stn].append(row)
+	return td
+
+def calcVSNList(motions, vsns, stn):
+	r = []
+	for m in motions:
+		if m[0] == stn and (m[1] != 0 or m[2] != 0):
+			if m[1] != 0:
+				u = 0
+			else:
+				u = 1
+			t1 = calcMJD(m[3])
+			t2 = calcMJD(m[4])
+			r.append([u, t1, t2, getVSN(vsns, stn, u, t1)])
+	return r;
+
+def genBlocks(scans):
+	blocks = []
+	curBlock = [0.0, 0.0, 'none', -1]
+	for s in scans:
+		if s[3] == curBlock[2]:
+			if s[2] > curBlock[1]:
+				curBlock[1] = s[2]
+			else:
+				print 'Warning -- not time ordered!', s[3], curBlock[1], s[2]
+		else:
+			curBlock = [s[1], s[2], s[3], s[0]]
+			blocks.append(curBlock);
+	return blocks
+
+def writeShelfData(data, fileName):
+	out = open(fileName, 'w')
+	for d in data:
+		out.write('%s %s %s\n' % (d[0], zero2oh(d[1]), d[2]))
+	out.close()
+
+def processVexFile(vexFile):
+	db = cx_Oracle.connect(databaseName)
+
+	obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+
+	shelves = getShelvesFromDB(db)
+	tapes = getTapesFromDB(db, obsCode, obsSeg)
+	motions = getTapeMotionFromDB(db, obsCode, obsSeg)
+	vsns = makeVSNDict(tapes)
+	stations = vsns.keys()
+	stations.sort()
+	eops = getEarthFromDB(db, mjdCenter(stationTimes))
+
+	vexData = open(vexFile, "r").readlines()
+
+	vexData.append('*------------------------------------------------------------------------------\n')
+	vexData.append('*---- log data below was appended by %s ver %s ----\n' % (program, version))
+	vexData.append('*------------------------------------------------------------------------------\n')
+
+	shelfData = []
+	vexData.append('$TAPELOG_OBS;\n')
+	for stn in stations:
+		vexData.append('def %s;\n' % Ulow(stn))
+		scans = calcVSNList(motions, vsns, stn)
+		blocks = genBlocks(scans)
+		for b in blocks:
+			b.append(getShelf(shelves, b[2]))
+			vexData.append('  VSN = %d : %s : %s : %s;  * shelf = %s\n' % \
+				((b[3]+1), b[2], mjd2vex(b[0]), mjd2vex(b[1]), b[4]))
+			shelfData.append([stn, b[2], b[4]])
+		vexData.append('enddef;\n')
+
+	writeShelfData(shelfData, vexFile + '.shelf')
+
+	vexData.append('*------------------------------------------------------------------------------\n')
+	vexData.append('$CLOCK;\n')
+	for stn in stations:
+		if stationTimes.has_key(stn):
+			clocks = getClockFromDB(db, stn, stationTimes[stn])
+			if len(clocks) > 0:
+				vexData.append('def %s;\n' % Ulow(stn));
+				for c in clocks:
+					vexData.append('  clock_early = %s : %10.8e sec : %s : %10.8e;  * offset = %4.2f usec\n' % c)
+				vexData.append('enddef;\n')
+		else:
+			print 'Warning: No clock offset found for station %s' % stn
+	vexData.append('*------------------------------------------------------------------------------\n')
+	for e in eops:
+		vexData.append(e)
+
+	outFile = vexFile + '.obs'
+	out = open(outFile, "w")
+	for d in vexData:
+		out.write(d)
+	out.close()
+
+if len(argv) < 2:
+	print 'need vex filename'
+	exit(0)
+
+processVexFile(argv[1])
+
