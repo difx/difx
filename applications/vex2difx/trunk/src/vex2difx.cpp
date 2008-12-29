@@ -283,7 +283,7 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	return job;
 }
 
-DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<string>& antList)
+DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParams *P, int *n, vector<string>& antList)
 {
 	const VexAntenna *ant;
 	DifxAntenna *A;
@@ -315,7 +315,7 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, int *n, vector<
 		A[i].offset[2] = 0.0;
 
 		antList.push_back(a->first);
-		// FIXME : shelf
+		strcpy(A[i].shelf, P->getShelf(a->second));
 	}
 
 	return A;
@@ -736,7 +736,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->dataBufferFactor = P->dataBufferFactor;
 	D->nDataSegments = P->nDataSegments;
 
-	D->antenna = makeDifxAntennas(J, V, &(D->nAntenna), antList);
+	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
 	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob));
 	
 	// now run through all scans, populating things as we go
@@ -835,37 +835,46 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	vector<VexJob> J;
 	ifstream is;
-	 
+	string inFile;
+	string shelfFile;
+	int verbose = 0;
+
 	if(argc < 3)
 	{
 		cerr << "need vex filename and config filename" << endl;
 		return 0;
 	}
 
-	string infile;
 	if(argv[1][0] == '/')
 	{
-		infile = argv[1];
+		inFile = argv[1];
 	}
 	else
 	{
 		char cwd[1024];
 		getcwd(cwd, 1023);
-		infile = string(cwd);
-		infile += string("/");
-		infile += string(argv[1]);
+		inFile = string(cwd);
+		inFile += string("/");
+		inFile += string(argv[1]);
 	}
 
-	cout << infile << endl;
+	shelfFile = inFile.substr(0, inFile.find_last_of('.'));
+	shelfFile += string(".shelf");
+
+	cout << "shelfFile = " << shelfFile << endl;
 
 	P = new CorrParams(argv[2]);
+	P->loadShelves(shelfFile);
 
-	V = loadVexFile(infile, *P);
+	V = loadVexFile(inFile, *P);
 
 	makeJobs(J, V, P);
 
-	//cout << *V << endl;
-	//cout << *P << endl;
+	if(verbose > 1)
+	{
+		cout << *V << endl;
+		cout << *P << endl;
+	}
 
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
 	{

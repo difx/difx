@@ -2,6 +2,7 @@
 #include <sstream>
 #include <algorithm>
 #include <fstream>
+#include <cstdio>
 #include "corrparams.h"
 
 #define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
@@ -139,11 +140,11 @@ CorrParams::CorrParams()
 	defaults();
 }
 
-CorrParams::CorrParams(const string& filename)
+CorrParams::CorrParams(const string& fileName)
 {
 	defaults();
 
-	load(filename);
+	load(fileName);
 }
 
 void CorrParams::defaults()
@@ -231,7 +232,7 @@ void CorrParams::set(const string &key, const string &value)
 		string s;
 		ss >> s;
 		Upper(s);
-		antennaList.push_back(s);
+		addAntenna(s);
 	}
 	else
 	{
@@ -239,7 +240,16 @@ void CorrParams::set(const string &key, const string &value)
 	}
 }
 
-void CorrParams::load(const string& filename)
+void CorrParams::addAntenna(const string& antName)
+{
+	if(find(antennaList.begin(), antennaList.end(), antName) == antennaList.end())
+	{
+		antennaList.push_back(antName);
+		cout << "+" << antName << endl;
+	}
+}
+
+void CorrParams::load(const string& fileName)
 {
 	ifstream is;
 	vector<string> tokens;
@@ -248,7 +258,13 @@ void CorrParams::load(const string& filename)
 	CorrRule  *rule=0;
 	int mode = 0;	// an internal concept, not observing mode!
 
-	is.open(filename.c_str());
+	is.open(fileName.c_str());
+
+	if(is.fail())
+	{
+		cout << "Error: cannot open " << fileName << endl;
+		exit(0);
+	}
 
 	for(;;)
 	{
@@ -614,5 +630,96 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	else
 	{
 		return true;
+	}
+}
+
+void CorrParams::loadShelves(const string& fileName)
+{
+	ifstream is;
+	bool doAntennas;
+	char s[1024], a[32], v[32], ms[32];
+	string vsn, shelf;
+	int nNoShelf = 0;
+
+	is.open(fileName.c_str());
+
+	if(is.fail())
+	{
+		return;
+	}
+
+	doAntennas = (antennaList.size() == 0);
+
+	for(int lineNum = 1; ; lineNum++)
+	{
+		is.getline(s, 1024);
+		if(is.eof())
+		{
+			break;
+		}
+		for(int i = 0; s[i]; i++)
+		{
+			if(s[i] == '#')
+			{
+				s[i] = 0;
+				break;
+			}
+		}
+
+		if(strlen(s) < 5)
+		{
+			continue;
+		}
+
+		if(sscanf(s, "%s%s%s", a, v, ms) != 3)
+		{
+			cout << "Warning: line " << lineNum << " of " << fileName << " not parsable." << endl;
+		}
+
+		if(doAntennas)
+		{
+			string antName(a);
+			Upper(antName);
+			addAntenna(antName);
+		}
+
+		vsn = string(v);
+		shelf = string(ms);
+
+		Upper(vsn);
+		Upper(shelf);
+
+		if(shelf == string("NONE"))
+		{
+			nNoShelf++;
+		}
+		else
+		{
+			cout << vsn << " -> " << shelf << " " << vsn.size() << " " << shelf.size() << endl;
+			shelves[vsn] = shelf;
+		}
+	}
+
+	is.close();
+
+	if(nNoShelf > 0)
+	{
+		cout << "Warning: " << nNoShelf << " modules have no shelf location." << endl;
+	}
+}
+
+const char *CorrParams::getShelf(const string& vsn) const
+{
+	map<string,string>::const_iterator it;
+
+	it = shelves.find(vsn);
+	if(it == shelves.end())
+	{
+		cout << "Cannot find shelf for " << vsn << endl;
+		return "NONE";
+	}
+	else
+	{
+		return it->second.c_str();
 	}
 }

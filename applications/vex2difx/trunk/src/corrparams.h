@@ -32,6 +32,7 @@
 
 #include <vector>
 #include <list>
+#include <map>
 #include <string>
 
 using namespace std;
@@ -93,10 +94,13 @@ class CorrParams
 {
 public:
 	CorrParams();
-	CorrParams(const string& filename);
+	CorrParams(const string& fileName);
+
+	void loadShelves(const string& fileName);
+	const char *getShelf(const string& vsn) const;
 
 	void set(const string &key, const string &value);
-	void load(const string& filename);
+	void load(const string& fileName);
 	void defaults();
 	void defaultSetup();
 	void example();
@@ -129,7 +133,9 @@ public:
 
 	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
-
+private:
+	void addAntenna(const string& antName);
+	map<string,string> shelves;
 };
 
 ostream& operator << (ostream& os, const CorrSetup& x);
