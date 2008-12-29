@@ -389,7 +389,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 						z += A->spectrum[b][t][f];
 					}
 					z /= A->weightSum[b];
-					fprintf(fp, "%2d %3s %5d %5.3f\n",
+					fprintf(fp, "%2d %3s %5d %7.5f\n",
 						a1+1, S->D->antenna[a1].name,
 						chan, creal(z));
 					chan++;
@@ -410,7 +410,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 					z /= A->weightSum[b];
 					x = creal(z);
 					y = cimag(z);
-					fprintf(fp, "%2d %2d %3s %3s %5d %5.3f %8.3f\n",
+					fprintf(fp, "%2d %2d %3s %3s %5d %7.5f %8.3f\n",
 						a1+1, a2+1, 
 						S->D->antenna[a1].name,
 						S->D->antenna[a2].name,
