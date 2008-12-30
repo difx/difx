@@ -41,6 +41,7 @@ public:
  /**
   * Constructor: Loads the provided file and allocates the weighting and phase arrays
   * @param filename The polyco file to load from
+  * @param subcount The index of the polyco in the file to load
   * @param confindex The configuration index which this polyco relates to (ie which pulsar)
   * @param nbins The number of pulsar bins to use
   * @param nchans The number of spectral points per band
@@ -48,7 +49,7 @@ public:
   * @param bweights The weights associated with each pulsar bin
   * @param calcmins The period of time over which a given set of phase offsets is expected to be accurate
   */
-  Polyco(string filename, int confindex, int nbins, int nchans, double * bphases, double * bweights, double calcmins);
+  Polyco(string filename, int subcount, int confindex, int nbins, int nchans, double * bphases, double * bweights, double calcmins);
 
  /**
   * Copy constructor - performs deep copy of provided Polyco
@@ -61,9 +62,10 @@ public:
  /**
   * Loads a polyco file and stores the information in memory
   * @param filename The file to load from
+  * @param subcount The index of the polyco in the file to load
   * @return True if polyco file loaded ok
   */
-  bool loadPolycoFile(string filename);
+  bool loadPolycoFile(string filename, int subcount);
 
  /**
   * Checks to see if this polyco's valid range includes the specified time

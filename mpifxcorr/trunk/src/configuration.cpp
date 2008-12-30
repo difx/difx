@@ -1173,10 +1173,15 @@ bool Configuration::consistencyCheck()
 
 bool Configuration::processPulsarConfig(string filename, int configindex)
 {
+  int numpolycofiles, ncoefficients, polycocount;
   string line;
   string * polycofilenames;
   double * binphaseends;
   double * binweights;
+  int * numsubpolycos;
+  char psrline[128];
+  ifstream temppsrinput;
+
   cinfo << startl << "About to process pulsar file " << filename << endl;
   ifstream pulsarinput(filename.c_str(), ios::in);
   if(!pulsarinput.is_open() || pulsarinput.bad())
@@ -1185,11 +1190,26 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
     return false;
   }
   getinputline(&pulsarinput, &line, "NUM POLYCO FILES");
-  configs[configindex].numpolycos = atoi(line.c_str());
-  polycofilenames = new string[configs[configindex].numpolycos];
-  for(int i=0;i<configs[configindex].numpolycos;i++)
+  numpolycofiles = atoi(line.c_str());
+  polycofilenames = new string[numpolycofiles];
+  numsubpolycos = new int[numpolycofiles];
+  configs[configindex].numpolycos = 0;
+  for(int i=0;i<numpolycofiles;i++)
   {
     getinputline(&pulsarinput, &(polycofilenames[i]), "POLYCO FILE");
+    numsubpolycos[i] = 0;
+    temppsrinput.open(polycofilenames[i].c_str());
+    temppsrinput.getline(psrline, 128);
+    temppsrinput.getline(psrline, 128);
+    while(!(temppsrinput.eof() || temppsrinput.fail())) {
+      psrline[54] = '\0';
+      ncoefficients = atoi(&(psrline[49]));
+      for(int j=0;j<ncoefficients/3 + 2;j++)
+        temppsrinput.getline(psrline, 128);
+      numsubpolycos[i]++;
+      configs[configindex].numpolycos++;
+    }
+    temppsrinput.close();
   }
   getinputline(&pulsarinput, &line, "NUM PULSAR BINS");
   configs[configindex].numbins = atoi(line.c_str());
@@ -1209,17 +1229,23 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
 
   //create the polycos
   configs[configindex].polycos = new Polyco*[configs[configindex].numpolycos];
-  for(int i=0;i<configs[configindex].numpolycos;i++)
+  polycocount = 0;
+  for(int i=0;i<numpolycofiles;i++)
   {
-    cinfo << startl << "About to create polyco file " << i << " with filename " << polycofilenames[i] << endl;
-    configs[configindex].polycos[i] = new Polyco(polycofilenames[i], configindex, configs[configindex].numbins, configs[configindex].numchannels, binphaseends, binweights, double(2*configs[configindex].numchannels*configs[configindex].blockspersend)/(60.0*2000000.0*getDBandwidth(configindex,0,0)));
-    if (!configs[configindex].polycos[i]->initialisedOK())
-      return false; 
+    for(int j=0;j<numsubpolycos[i];j++)
+    {
+      cinfo << startl << "About to create polyco file " << polycocount << " from filename " << polycofilenames[i] << ", subcount " << j << endl;
+      configs[configindex].polycos[polycocount] = new Polyco(polycofilenames[i], j, configindex, configs[configindex].numbins, configs[configindex].numchannels, binphaseends, binweights, double(2*configs[configindex].numchannels*configs[configindex].blockspersend)/(60.0*2000000.0*getDBandwidth(configindex,0,0)));
+      if (!configs[configindex].polycos[polycocount]->initialisedOK())
+        return false;
+      polycocount++;
+    } 
   }
   
   delete [] binphaseends;
   delete [] binweights;
   delete [] polycofilenames;
+  delete [] numsubpolycos;
   pulsarinput.close();
   return true;
 }

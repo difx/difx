@@ -27,13 +27,13 @@
 const double Polyco::BIN_TOLERANCE = 0.01;
 const double Polyco::DM_CONSTANT_SECS = 1.0/0.000241;
 
-Polyco::Polyco(string filename, int confindex, int nbins, int nchans, double * bphases, double * bweights, double calcmins)
+Polyco::Polyco(string filename, int subcount, int confindex, int nbins, int nchans, double * bphases, double * bweights, double calcmins)
   : configindex(confindex), numbins(nbins), numchannels(nchans), numfreqs(-1), calclengthmins(calcmins)
 {
   int status;
 
   //load the polyco file
-  readok = loadPolycoFile(filename);
+  readok = loadPolycoFile(filename, subcount);
   if(!readok)
     cerror << startl << "Error trying to open polyco file " << filename << endl;
   else
@@ -51,7 +51,7 @@ Polyco::Polyco(string filename, int confindex, int nbins, int nchans, double * b
     if(status != vecNoErr)
       csevere << startl << "Error copying binweights in Polyco!!" << endl;
   
-    cinfo << startl << "Polyco " << filename << " created successfully" << endl;
+    cinfo << startl << "Polyco " << subcount << " from file " << filename << " created successfully" << endl;
   }
 }
 
@@ -347,7 +347,7 @@ void Polyco::calculateDMPhaseOffsets(double offsetmins)
     }
 }
 
-bool Polyco::loadPolycoFile(string filename)
+bool Polyco::loadPolycoFile(string filename, int subcount)
 {
     string strbuffer;
     char buffer[80];
@@ -359,93 +359,96 @@ bool Polyco::loadPolycoFile(string filename)
 
     coefficients = 0;
 
-    cinfo << startl << "About to start processing the polyco file " << filename << endl;
+    cinfo << startl << "About to start processing the polyco file " << filename << ", looking for subcount " << subcount << endl;
 
-    //process the first line
-    input.get(buffer, 11);
-    pulsarname = buffer;
-
-    input.get(buffer, 11); //ignore the date - we'll use the mjd instead
-    input.get(buffer, 13);
-    timedouble = atof(buffer);
-    hour = int(timedouble/10000);
-    minute = int((timedouble - 10000*hour)/100);
-    second = timedouble - (minute*100 + hour*10000);
-
-    //get the mjd
-    input.get(buffer, 20);
-    mjddouble = atof(buffer);
-    mjd = int(mjddouble);
-    mjdfraction = double(hour)/24.0 + double(minute)/1440.0 + second/86400.0;
-
-    //get the dm, dopplershift and logresidual
-    input.get(buffer, 22);
-    dm = atof(buffer);
-
-    input.get(buffer, 8);
-    dopplershift = atof(buffer);
-
-    input.get(buffer, 8);
-    logresidual = atof(buffer);
-
-    //check if we missed anything
-    if (input.fail()) {
-      cwarn << startl << "Hit end of first line prematurely - check your polyco conforms to standard! Some values may not have been set properly, but likely everything is ok" << endl;
-      input.clear();
-    }
-
-    getline(input, strbuffer); //skip over any remaining whitespace
-
-    //process the second line
-    //get the refphase, reference frequency, observatory, timespan, number of coefficients, observing frequency and binary phase
-    input.get(buffer, 21);
-    refphase = atof(buffer);
-
-    input.get(buffer, 19);
-    f0 = atof(buffer);
-
-    input.get(buffer, 6);
-    observatory = atoi(buffer);
-
-    input.get(buffer, 7);
-    timespan = atoi(buffer);
-
-    input.get(buffer, 6);
-    numcoefficients = atoi(buffer);
-
-    input.get(buffer, 22);
-    obsfrequency = atof(buffer);
-
-    input.get(buffer, 6);
-    binaryphase = atof(buffer);
-
-    //check if the end of line was reached prematurely
-    if (input.fail()) {
-      cwarn << startl << "Hit end of second line prematurely - check your polyco conforms to standard! Some values may not have been set properly.  This often happens for non-binary pulsars.  Likely everything is ok." << endl;
-      input.clear();
-    }
-
-    getline(input, strbuffer); //skip to next line
-
-    //grab all the coefficients
-    coefficients = new double[numcoefficients];
-
-    for(int i=0;i<numcoefficients;i++)
+    for(int s=0;s<=subcount;s++)
     {
-        input.get(buffer, 26);
-        if(input.fail()) {
-          csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!! Will attempt clearing stream and continuing." << endl;
-          input.clear();
-        }
-        //check for exponents given with D's rather than E's, and fix if necessary
-        for (int j=0;j<26;j++)
-        {
-          if(buffer[j] == 'D' || buffer[j] == 'd')
-            buffer[j] = 'E';
-        }
-        coefficients[i] = atof(buffer);
-        if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
-            getline(input, strbuffer);
+      //process the first line
+      input.get(buffer, 11);
+      pulsarname = buffer;
+
+      input.get(buffer, 11); //ignore the date - we'll use the mjd instead
+      input.get(buffer, 13);
+      timedouble = atof(buffer);
+      hour = int(timedouble/10000);
+      minute = int((timedouble - 10000*hour)/100);
+      second = timedouble - (minute*100 + hour*10000);
+
+      //get the mjd
+      input.get(buffer, 20);
+      mjddouble = atof(buffer);
+      mjd = int(mjddouble);
+      mjdfraction = double(hour)/24.0 + double(minute)/1440.0 + second/86400.0;
+
+      //get the dm, dopplershift and logresidual
+      input.get(buffer, 22);
+      dm = atof(buffer);
+
+      input.get(buffer, 8);
+      dopplershift = atof(buffer);
+
+      input.get(buffer, 8);
+      logresidual = atof(buffer);
+
+      //check if we missed anything
+      if (input.fail()) {
+        cwarn << startl << "Hit end of first line prematurely - check your polyco conforms to standard! Some values may not have been set properly, but likely everything is ok" << endl;
+        input.clear();
+      }
+
+      getline(input, strbuffer); //skip over any remaining whitespace
+
+      //process the second line
+      //get the refphase, reference frequency, observatory, timespan, number of coefficients, observing frequency and binary phase
+      input.get(buffer, 21);
+      refphase = atof(buffer);
+
+      input.get(buffer, 19);
+      f0 = atof(buffer);
+
+      input.get(buffer, 6);
+      observatory = atoi(buffer);
+
+      input.get(buffer, 7);
+      timespan = atoi(buffer);
+
+      input.get(buffer, 6);
+      numcoefficients = atoi(buffer);
+
+      input.get(buffer, 22);
+      obsfrequency = atof(buffer);
+
+      input.get(buffer, 6);
+      binaryphase = atof(buffer);
+
+      //check if the end of line was reached prematurely
+      if (input.fail()) {
+        cwarn << startl << "Hit end of second line prematurely - check your polyco conforms to standard! Some values may not have been set properly.  This often happens for non-binary pulsars.  Likely everything is ok." << endl;
+        input.clear();
+      }
+
+      getline(input, strbuffer); //skip to next line
+
+      //grab all the coefficients
+      coefficients = new double[numcoefficients];
+
+      for(int i=0;i<numcoefficients;i++)
+      {
+          input.get(buffer, 26);
+          if(input.fail()) {
+            csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!! Will attempt clearing stream and continuing." << endl;
+            input.clear();
+          }
+          //check for exponents given with D's rather than E's, and fix if necessary
+          for (int j=0;j<26;j++)
+          {
+            if(buffer[j] == 'D' || buffer[j] == 'd')
+              buffer[j] = 'E';
+          }
+          coefficients[i] = atof(buffer);
+          if((((i+1)%3)==0) && (i>0)) // at the end of a line, need to skip
+              getline(input, strbuffer);
+      }
     }
     input.close();
 
