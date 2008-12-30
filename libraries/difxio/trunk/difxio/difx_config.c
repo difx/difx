@@ -439,7 +439,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	return dc;
 }
 
-int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc)
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar)
 {
 	int i, j;
 	int n;
@@ -465,10 +465,11 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc)
 		writeDifxLine(out, "POST-F FRINGE ROT", "FALSE");
 		writeDifxLine(out, "QUAD DELAY INTERP", "TRUE");
 		writeDifxLine(out, "WRITE AUTOCORRS", "TRUE");
-		if(config->pulsarId >= 0)
+		if(config->pulsarId >= 0 && pulsar)
 		{
 			writeDifxLine(out, "PULSAR BINNING", "TRUE");
-			/* FIXME : more stuff here */
+			writeDifxLine(out, "PULSAR CONFIG FILE", 
+				pulsar[config->pulsarId].fileName);
 		}
 		else
 		{

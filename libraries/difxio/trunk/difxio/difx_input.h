@@ -451,7 +451,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap, int *ndc);
-int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc);
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar);
 
 /* DifxModel functions */
 DifxModel **newDifxModelArray(int nAntenna, int nPoint);
