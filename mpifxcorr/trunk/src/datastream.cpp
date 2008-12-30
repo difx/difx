@@ -351,7 +351,7 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
   }
   if(lastoffsetns < 0)
   {
-    cerror << startl << "lastoffsetns < 0 still! =" << lastoffsetns << endl;
+    cerror << startl << "lastoffsetns less than 0 still! =" << lastoffsetns << endl;
   }
 
   //while we have passed the first of our two locked sections, unlock that and lock the next - have two tests so sample difference can't overflow

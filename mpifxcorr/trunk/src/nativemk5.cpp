@@ -38,7 +38,7 @@ static void dirCallback(int scan, int nscan, int status, void *data)
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
-	mk5status->scanNumber = scan;
+	mk5status->scanNumber = scan + 1;
 	mk5status->position = nscan;
 	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
 	difxMessageSendMark5Status(mk5status);
@@ -255,7 +255,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 			if(startmjd < scanstart)  /* obs starts before data */
 			{
-				cinfo << startl << "NM5 : scan found(1) : " << i << endl;
+				cinfo << startl << "NM5 : scan found(1) : " << (i+1) << endl;
 				readpointer = scan->start + scan->frameoffset;
 				readseconds = (scan->mjd-corrstartday)*86400 
 					+ scan->sec - corrstartseconds;
@@ -264,7 +264,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			}
 			else if(startmjd < scanend) /* obs starts within data */
 			{
-				cinfo << startl << "NM5 : scan found(2) : " << i << endl;
+				cinfo << startl << "NM5 : scan found(2) : " << (i+1) << endl;
 				readpointer = scan->start + scan->frameoffset;
 				n = (long long)((((corrstartday - scan->mjd)*86400 
 			+ (corrstartseconds - (scan->sec + scanns*1.e-9)))

@@ -51,7 +51,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bper
   samplesperblock = int(bandwidth*2/blockclock);
   if(samplesperblock == 0)
   {
-    cfatal << startl << "Error!!! Samplesperblock is < 1, current implementation cannot handle this situation.  Aborting!" << endl;
+    cfatal << startl << "Error!!! Samplesperblock is less than 1, current implementation cannot handle this situation.  Aborting!" << endl;
     initok = false;
   }
   else
