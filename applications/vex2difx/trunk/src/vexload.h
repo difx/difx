@@ -3,6 +3,6 @@
 
 #include "corrparams.h"
 
-VexData *loadVexFile(string vexfilename, const CorrParams& params);
+VexData *loadVexFile(const CorrParams& P);
 
 #endif

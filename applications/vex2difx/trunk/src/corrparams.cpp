@@ -3,9 +3,8 @@
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
+#include "util.h"
 #include "corrparams.h"
-
-#define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
 
 CorrSetup::CorrSetup(const string &name) : setupName(name)
 {
@@ -17,6 +16,8 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	doAuto = true;
 	postFFringe = false;
 	blocksPerSend = 0;
+	ra = -999;
+	dec = -999;
 }
 
 void CorrSetup::set(const string &key, const string &value)
@@ -56,6 +57,28 @@ void CorrSetup::set(const string &key, const string &value)
 	else if(key == "postFFringe")
 	{
 		ss >> postFFringe;
+	}
+	else if(key == "name")
+	{
+		ss >> sourceName;
+	}
+	else if(key == "ra" || key == "RA")
+	{
+		char v[100], *w;
+		strcpy(v, value.c_str());
+		w = v;
+		fvex_ra(&w, &ra);
+	}
+	else if(key == "dec" || key == "Dec")
+	{
+		char v[100], *w;
+		strcpy(v, value.c_str());
+		w = v;
+		fvex_dec(&w, &dec);
+	}
+	else if(key == "binConfig")
+	{
+		ss >> binConfigFile;
 	}
 	else
 	{
@@ -128,6 +151,7 @@ void CorrRule::set(const string &key, const string &value)
 	else if(key == "setupName" || key == "setup")
 	{
 		ss >> setupName;
+		Upper(setupName);
 	}
 	else
 	{
@@ -170,8 +194,24 @@ void CorrParams::set(const string &key, const string &value)
 	stringstream ss;
 
 	ss << value;
+	
+	if(key == "vex")
+	{
+		ss >> vexFile;
 
-	if(key == "mjdStart")
+		if(vexFile[0] != '/')
+		{
+			char cwd[1024];
+			string inFile;
+
+			getcwd(cwd, 1023);
+			inFile = string(cwd);
+			inFile += string("/");
+			inFile += vexFile;
+			vexFile = inFile;
+		}
+	}
+	else if(key == "mjdStart")
 	{
 		ss >> mjdStart;
 	}
@@ -245,7 +285,6 @@ void CorrParams::addAntenna(const string& antName)
 	if(find(antennaList.begin(), antennaList.end(), antName) == antennaList.end())
 	{
 		antennaList.push_back(antName);
-		cout << "+" << antName << endl;
 	}
 }
 
@@ -262,7 +301,7 @@ void CorrParams::load(const string& fileName)
 
 	if(is.fail())
 	{
-		cout << "Error: cannot open " << fileName << endl;
+		cerr << "Error: cannot open " << fileName << endl;
 		exit(0);
 	}
 
@@ -673,7 +712,8 @@ void CorrParams::loadShelves(const string& fileName)
 
 		if(sscanf(s, "%s%s%s", a, v, ms) != 3)
 		{
-			cout << "Warning: line " << lineNum << " of " << fileName << " not parsable." << endl;
+			cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << endl;
+			exit(0);
 		}
 
 		if(doAntennas)
@@ -695,7 +735,6 @@ void CorrParams::loadShelves(const string& fileName)
 		}
 		else
 		{
-			cout << vsn << " -> " << shelf << " " << vsn.size() << " " << shelf.size() << endl;
 			shelves[vsn] = shelf;
 		}
 	}
@@ -704,7 +743,7 @@ void CorrParams::loadShelves(const string& fileName)
 
 	if(nNoShelf > 0)
 	{
-		cout << "Warning: " << nNoShelf << " modules have no shelf location." << endl;
+		cerr << "Warning: " << nNoShelf << " modules have no shelf location." << endl;
 	}
 }
 
@@ -715,7 +754,7 @@ const char *CorrParams::getShelf(const string& vsn) const
 	it = shelves.find(vsn);
 	if(it == shelves.end())
 	{
-		cout << "Cannot find shelf for " << vsn << endl;
+		cerr << "* Warning: cannot find shelf for " << vsn << endl;
 		return "NONE";
 	}
 	else

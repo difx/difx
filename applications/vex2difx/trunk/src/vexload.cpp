@@ -2,19 +2,11 @@
 #include <cctype>
 #include <algorithm>
 #include <unistd.h>
+#include "util.h"
 #include "corrparams.h"
 #include "vextables.h"
 #include "../vex/vex.h"
 #include "../vex/vex_parse.h"
-
-// To capitalize a string
-#define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
-
-extern "C" {
-int fvex_double(char **field, char **units, double *d);
-int fvex_ra(char **field, double *ra);
-int fvex_dec(char **field, double *dec);
-}
 
 class Tracks
 {
@@ -236,6 +228,13 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 
 		p = (char *)get_source_lowl(src, T_DEC, v);
 		fvex_dec(&p, &S->dec);
+
+		p = (char *)get_source_lowl(src, T_REF_COORD_FRAME, v);
+		if(strcmp(p, "J2000") != 0)
+		{
+			cerr << "Error: only J2000 ref frame is supported" << endl;
+			exit(0);
+		}
 	}
 
 	return 0;
@@ -518,7 +517,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			if(F.nRecordChan != bbc2pol.size())
 			{
-				cout << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
+				cerr << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
 			}
 
 			// Get rest of Subband information
@@ -789,13 +788,13 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-VexData *loadVexFile(string vexfilename, const CorrParams& params)
+VexData *loadVexFile(const CorrParams& P)
 {
 	VexData *V;
 	Vex *v;
 	int r;
 
-	r = vex_open(vexfilename.c_str(), &v);
+	r = vex_open(P.vexFile.c_str(), &v);
 	if(r != 0)
 	{
 		return 0;
@@ -803,16 +802,15 @@ VexData *loadVexFile(string vexfilename, const CorrParams& params)
 
 	V = new VexData();
 
-	V->setDirectory(vexfilename.substr(0, vexfilename.find_last_of('/')));
+	V->setDirectory(P.vexFile.substr(0, P.vexFile.find_last_of('/')));
 
-	getAntennas(V, v, params);
-	getSources(V, v, params);
-	getScans(V, v, params);
-	getModes(V, v, params);
-	getVSNs(V, v, params);
-	getEOPs(V, v, params);
-	getExper(V, v, params);
-
+	getAntennas(V, v, P);
+	getSources(V, v, P);
+	getScans(V, v, P);
+	getModes(V, v, P);
+	getVSNs(V, v, P);
+	getEOPs(V, v, P);
+	getExper(V, v, P);
 
 	return V;
 }

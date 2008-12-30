@@ -76,8 +76,9 @@ int main(int argc, char **argv)
 
 	P = new CorrParams();
 	P->defaultSetup();
+	P->vexFile = argv[1];
 
-	V = loadVexFile(argv[1], *P);
+	V = loadVexFile(*P);
 
 	cout << V->getExper()->name << endl;
 

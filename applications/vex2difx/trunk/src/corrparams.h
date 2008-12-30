@@ -67,6 +67,9 @@ public:
 	int specAvg;
 	int startChan;
 	bool postFFringe;	// fringe after FFT?
+	double ra, dec;		// in radians
+	string sourceName;	
+	string binConfigFile;
 	vector<PhaseCenter> centers;
 };
 
@@ -111,6 +114,7 @@ public:
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
 	/* global parameters */
+	string vexFile;
 	double mjdStart;
 	double mjdStop;
 	unsigned int minSubarraySize;

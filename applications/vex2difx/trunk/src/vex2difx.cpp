@@ -709,6 +709,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	vector<pair<string,string> > configs;
 	vector<string> antList;
 	vector<freq> freqs;
+	int nPulsar=0;
 
 	setupName = V->getScan(J.scans.front())->setupName;
 	setup = P->getCorrSetup(setupName);
@@ -728,6 +729,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		configSet.insert(configName);
 	}
 
+
 	D = newDifxInput();
 
 	D->mjdStart = J.mjdStart;
@@ -739,11 +741,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
 	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob));
 	
-	// now run through all scans, populating things as we go
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
 	D->nConfig = configSet.size();
 	D->config = newDifxConfigArray(D->nConfig);
+
+	// now run through all scans, populating things as we go
 	scan = D->scan;
 	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); si++, scan++)
 	{
@@ -756,15 +759,45 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 		const VexSource *src = V->getSource(S->sourceName);
 
+		setup = P->getCorrSetup(S->setupName);
+
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->ra = src->ra;
 		scan->dec = src->dec;
+		if(setup->ra > -990)
+		{
+			scan->ra = setup->ra;
+		}
+		if(setup->dec > -990)
+		{
+			scan->dec = setup->dec;
+		}
 		scan->mjdStart = S->timeRange.mjdStart;
 		scan->mjdEnd = S->timeRange.mjdStop;
 		scan->startPoint = static_cast<int>((S->timeRange.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
 		scan->nPoint = static_cast<int>((S->timeRange.mjdStop - S->timeRange.mjdStart)*86400.0/D->job->modelInc + 0.01);
-		strcpy(scan->name, S->sourceName.c_str());
+		if(setup->sourceName.size() > 0)
+		{
+			strcpy(scan->name, setup->sourceName.c_str());
+		}
+		else
+		{
+			strcpy(scan->name, S->sourceName.c_str());
+		}
 		// FIXME qual and calcode
+	}
+
+	for(int c = 0; c < D->nConfig; c++)
+	{
+		setup = P->getCorrSetup(configs[c].second);
+		if(setup->binConfigFile.size() > 0)
+		{
+			nPulsar++;
+		}
+	}
+	if(nPulsar > 0)
+	{
+		D->pulsar = newDifxPulsarArray(nPulsar);
 	}
 
 	// configure datastreams
@@ -779,6 +812,20 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			exit(0);
 		}
 
+		setup = P->getCorrSetup(configs[c].second);
+		if(setup == 0)
+		{
+			cerr << "ACK! setup[" << configs[c].second << "] is null" << endl;
+			exit(0);
+		}
+
+		if(setup->binConfigFile.size() > 0)
+		{
+			D->config[c].pulsarId = D->nPulsar;
+			strcpy(D->pulsar[D->nPulsar].fileName, setup->binConfigFile.c_str());
+			D->nPulsar++;
+		}
+
 		int d = 0;
 		for(int a = 0; a < D->nAntenna; a++)
 		{
@@ -790,6 +837,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 				d++;
 			}
 		}
+	}
+
+	if(nPulsar != D->nPulsar)
+	{
+		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
+		exit(0);
 	}
 
 	// Make frequency table
@@ -835,38 +888,27 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	vector<VexJob> J;
 	ifstream is;
-	string inFile;
 	string shelfFile;
 	int verbose = 0;
 
-	if(argc < 3)
+	if(argc < 2)
 	{
-		cerr << "need vex filename and config filename" << endl;
+		cerr << "need config filename" << endl;
 		return 0;
 	}
 
-	if(argv[1][0] == '/')
+	P = new CorrParams(argv[1]);
+	if(P->vexFile.size() == 0)
 	{
-		inFile = argv[1];
-	}
-	else
-	{
-		char cwd[1024];
-		getcwd(cwd, 1023);
-		inFile = string(cwd);
-		inFile += string("/");
-		inFile += string(argv[1]);
+		cerr << "Error: vex file parameter (vex) not found in file." << endl;
+		exit(0);
 	}
 
-	shelfFile = inFile.substr(0, inFile.find_last_of('.'));
+	shelfFile = P->vexFile.substr(0, P->vexFile.find_last_of('.'));
 	shelfFile += string(".shelf");
-
-	cout << "shelfFile = " << shelfFile << endl;
-
-	P = new CorrParams(argv[2]);
 	P->loadShelves(shelfFile);
 
-	V = loadVexFile(inFile, *P);
+	V = loadVexFile(*P);
 
 	makeJobs(J, V, P);
 

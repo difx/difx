@@ -122,7 +122,7 @@ int VexMode::getBits() const
 	{
 		if(it->second.nBit != nBit)
 		{
-			cout << "Warning -- differing numbers of bits : FITS will not store this information perfectly" << endl;
+			cerr << "Warning: differing numbers of bits : FITS will not store this information perfectly" << endl;
 			break;
 		}
 	}
@@ -142,7 +142,7 @@ const VexFormat& VexMode::getFormat(const string antName) const
 		}
 	}
 
-	cout << "error : antName=" << antName << " not found" << endl;
+	cerr << "Error: antName=" << antName << " not found" << endl;
 	exit(0);
 }
 
@@ -372,7 +372,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) con
 		{
 			if(id != e->name)
 			{
-				cout << "Aweful! [" << id << "] [" << e->name << "]" << endl;
+				cerr << "Aweful! [" << id << "] [" << e->name << "]" << endl;
 				exit(0);
 			}
 			if(s->mjd >= start && e->mjd <= stop)
