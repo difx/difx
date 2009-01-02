@@ -1,2 +1,8 @@
+Version 0.1
+~~~~~~~~~~~
+* simplified difx input file output
+* add SOURCE blocks to .v2d files
+
 Version 0.0
 ~~~~~~~~~~~
+* Initial version

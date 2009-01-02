@@ -16,8 +16,6 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	doAuto = true;
 	postFFringe = false;
 	blocksPerSend = 0;
-	ra = -999;
-	dec = -999;
 }
 
 void CorrSetup::set(const string &key, const string &value)
@@ -57,24 +55,6 @@ void CorrSetup::set(const string &key, const string &value)
 	else if(key == "postFFringe")
 	{
 		ss >> postFFringe;
-	}
-	else if(key == "name")
-	{
-		ss >> sourceName;
-	}
-	else if(key == "ra" || key == "RA")
-	{
-		char v[100], *w;
-		strcpy(v, value.c_str());
-		w = v;
-		fvex_ra(&w, &ra);
-	}
-	else if(key == "dec" || key == "Dec")
-	{
-		char v[100], *w;
-		strcpy(v, value.c_str());
-		w = v;
-		fvex_dec(&w, &dec);
 	}
 	else if(key == "binConfig")
 	{
@@ -151,11 +131,47 @@ void CorrRule::set(const string &key, const string &value)
 	else if(key == "setupName" || key == "setup")
 	{
 		ss >> setupName;
-		Upper(setupName);
 	}
 	else
 	{
 		cerr << "Warning: RULE: Unknown parameter '" << key << "'." << endl; 
+	}
+}
+
+SourceSetup::SourceSetup(const string &name) : vexName(name)
+{
+	ra = -999;
+	dec = -999;
+	calCode = ' ';
+}
+
+void SourceSetup::set(const string &key, const string &value)
+{
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "ra" || key == "RA")
+	{
+		char v[100], *w;
+		strcpy(v, value.c_str());
+		w = v;
+		fvex_ra(&w, &ra);
+	}
+	else if(key == "dec" || key == "Dec")
+	{
+		char v[100], *w;
+		strcpy(v, value.c_str());
+		w = v;
+		fvex_dec(&w, &dec);
+	}
+	else if(key == "calCode")
+	{
+		ss >> calCode;
+	}
+	else if(key == "name" || key == "newName")
+	{
+		ss >> difxName;
 	}
 }
 
@@ -293,8 +309,9 @@ void CorrParams::load(const string& fileName)
 	ifstream is;
 	vector<string> tokens;
 	char s[1024];
-	CorrSetup *setup=0;
-	CorrRule  *rule=0;
+	CorrSetup   *setup=0;
+	CorrRule    *rule=0;
+	SourceSetup *sourceSetup=0;
 	int mode = 0;	// an internal concept, not observing mode!
 
 	is.open(fileName.c_str());
@@ -374,7 +391,7 @@ void CorrParams::load(const string& fileName)
 		{
 			if(mode != 0)
 			{
-				cerr << "SETUP out of place" << endl;
+				cerr << "RULE out of place" << endl;
 				exit(0);
 			}
 			i++;
@@ -388,6 +405,25 @@ void CorrParams::load(const string& fileName)
 			}
 			key = "";
 			mode = 2;
+		}
+		else if(*i == "SOURCE")
+		{
+			if(mode != 0)
+			{
+				cerr << "SOURCE out of place" << endl;
+				exit(0);
+			}
+			i++;
+			sourceSetups.push_back(SourceSetup(*i));
+			sourceSetup = &sourceSetups.back();
+			i++;
+			if(*i != "{")
+			{
+				cerr << "'{' expected" << endl;
+				exit(0);
+			}
+			key = "";
+			mode = 3;
 		}
 		else if(*i == "}" && mode != 0)
 		{
@@ -422,6 +458,10 @@ void CorrParams::load(const string& fileName)
 			{
 				rule->set(key, value);
 			}
+			else if(mode == 3)
+			{
+				sourceSetup->set(key, value);
+			}
 		}
 		if(*i == "{" || *i == "}")
 		{
@@ -434,6 +474,13 @@ void CorrParams::load(const string& fileName)
 	}
 
 	is.close();
+
+	// if no setups or rules declared, make the default setup
+
+	if(setups.size() == 0 && rules.size() == 0)
+	{
+		defaultSetup();
+	}
 }
 
 void CorrParams::defaultSetup()
@@ -481,6 +528,22 @@ const CorrSetup *CorrParams::getCorrSetup(const string &name) const
 		if(name == setups[i].setupName)
 		{
 			return &setups[i];
+		}
+	}
+
+	return 0;
+}
+
+const SourceSetup *CorrParams::getSourceSetup(const string &name) const
+{
+	int i, n;
+
+	n = sourceSetups.size();
+	for(i = 0; i < n; i++)
+	{
+		if(name == sourceSetups[i].vexName)
+		{
+			return &sourceSetups[i];
 		}
 	}
 

@@ -47,8 +47,21 @@ public:
 	string name;
 	// pulsar index
 	// ephemeris
-	char calcode;
+	char calCode;
 	int qualifier;
+};
+
+class SourceSetup
+{
+public:
+	SourceSetup(const string &name);
+	void set(const string &key, const string &value);
+
+	string vexName;		// Source name as appears in vex file
+	string difxName;	// Source name (if different) to appear in difx
+	char calCode;
+	double ra, dec;		// in radians
+	//vector<PhaseCenter> centers;
 };
 
 class CorrSetup
@@ -67,10 +80,7 @@ public:
 	int specAvg;
 	int startChan;
 	bool postFFringe;	// fringe after FFT?
-	double ra, dec;		// in radians
-	string sourceName;	
 	string binConfigFile;
-	vector<PhaseCenter> centers;
 };
 
 
@@ -110,6 +120,7 @@ public:
 
 	bool useAntenna(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
+	const SourceSetup *getSourceSetup(const string &name) const;
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
@@ -137,6 +148,10 @@ public:
 
 	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
+
+	/* source setups to apply */
+	vector<SourceSetup> sourceSetups;
+
 private:
 	void addAntenna(const string& antName);
 	map<string,string> shelves;

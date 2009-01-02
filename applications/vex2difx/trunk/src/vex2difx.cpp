@@ -12,7 +12,7 @@
 
 const string program("vex2difx");
 const string version("0.1");
-const string verdate("20081208");
+const string verdate("20090102");
 const string author("Walter Brisken");
 
 // FIXME : where to put this function?
@@ -703,6 +703,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	DifxScan *scan;
 	string setupName;
 	const CorrSetup *setup;
+	const SourceSetup *sourceSetup;
 	const VexMode *mode;
 	const VexScan *S;
 	set<string> configSet;
@@ -753,38 +754,41 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		S = V->getScan(*si);
 		if(!S)
 		{
-			cerr << "Error : Source[" << *si << "] not found!" << endl;
+			cerr << "Error : Source[" << *si << "] not found!  This cannot be!" << endl;
 			exit(0);
 		}
 
 		const VexSource *src = V->getSource(S->sourceName);
 
 		setup = P->getCorrSetup(S->setupName);
+		sourceSetup = P->getSourceSetup(S->sourceName.c_str());
 
-		scan->configId = getConfigIndex(configs, D, V, P, S);
-		scan->ra = src->ra;
-		scan->dec = src->dec;
-		if(setup->ra > -990)
-		{
-			scan->ra = setup->ra;
-		}
-		if(setup->dec > -990)
-		{
-			scan->dec = setup->dec;
-		}
 		scan->mjdStart = S->timeRange.mjdStart;
 		scan->mjdEnd = S->timeRange.mjdStop;
 		scan->startPoint = static_cast<int>((S->timeRange.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
 		scan->nPoint = static_cast<int>((S->timeRange.mjdStop - S->timeRange.mjdStart)*86400.0/D->job->modelInc + 0.01);
-		if(setup->sourceName.size() > 0)
-		{
-			strcpy(scan->name, setup->sourceName.c_str());
-		}
-		else
-		{
-			strcpy(scan->name, S->sourceName.c_str());
-		}
+		scan->configId = getConfigIndex(configs, D, V, P, S);
+
+		scan->ra = src->ra;
+		scan->dec = src->dec;
+		strcpy(scan->name, S->sourceName.c_str());
 		// FIXME qual and calcode
+
+		if(sourceSetup)
+		{
+			if(sourceSetup->ra > -990)
+			{
+				scan->ra = sourceSetup->ra;
+			}
+			if(sourceSetup->dec > -990)
+			{
+				scan->dec = sourceSetup->dec;
+			}
+			if(sourceSetup->difxName.size() > 0)
+			{
+				strcpy(scan->name, sourceSetup->difxName.c_str());
+			}
+		}
 	}
 
 	for(int c = 0; c < D->nConfig; c++)
@@ -805,7 +809,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	D->nDatastream = 0;
 	for(int c = 0; c < D->nConfig; c++)
 	{
-		mode  = V->getMode(configs[c].first);
+		mode = V->getMode(configs[c].first);
 		if(mode == 0)
 		{
 			cerr << "ACK! mode[" << configs[c].first << "] is null" << endl;
@@ -857,6 +861,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	// complete a few DifxInput structures
 	deriveSourceTable(D);
 	//printDifxInput(D);
+
+	// Merge identical table entries
+	simplifyDifxFreqs(D);
+	simplifyDifxDatastreams(D);
+	simplifyDifxBaselines(D);
 
 	// fix a few last parameters
 	if(setup->specAvg == 0)

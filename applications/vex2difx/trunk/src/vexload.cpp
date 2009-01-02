@@ -321,7 +321,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		if(params.getCorrSetup(setupName) == 0)
 		{
 			cerr << "Error : setup " << setupName << " not defined!" << endl;
-			continue;
+			exit(0);
 		}
 
 		if(params.mjdStart > stopScan || params.mjdStop < startScan)
