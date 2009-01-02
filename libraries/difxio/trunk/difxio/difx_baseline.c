@@ -43,110 +43,6 @@ DifxBaseline *newDifxBaselineArray(int nBaseline)
 	return db;
 }
 
-void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
-{
-	int b, f;
-	
-	if(db)
-	{
-		for(b = 0; b < nBaseline; b++)
-		{
-			if(db[b].nPolProd)
-			{
-				free(db[b].nPolProd);
-			}
-			if(db[b].recChanA)
-			{
-				for(f = 0; f < db[b].nFreq; f++)
-				{
-					if(db[b].recChanA[f])
-					{
-						free(db[b].recChanA[f]);
-					}
-				}
-				free(db[b].recChanA);
-			}
-			if(db[b].recChanB)
-			{
-				for(f = 0; f < db[b].nFreq; f++)
-				{
-					if(db[b].recChanB[f])
-					{
-						free(db[b].recChanB[f]);
-					}
-				}
-				free(db[b].recChanB);
-			}
-		}
-		free(db);
-	}
-}
-
-void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
-{
-	int f;
-	
-	fprintf(fp, "  Difx Baseline : %p\n", db);
-	fprintf(fp, "    datastream indices = %d %d\n", db->dsA, db->dsB);
-	fprintf(fp, "    nFreq = %d\n", db->nFreq);
-	if(db->nPolProd)
-	{
-		fprintf(fp, "    nPolProd[freq] =");
-		for(f = 0; f < db->nFreq; f++)
-		{
-			fprintf(fp, " %d", db->nPolProd[f]);
-		}
-		fprintf(fp, "\n");
-	}
-}
-
-void printDifxBaseline(const DifxBaseline *db)
-{
-	fprintDifxBaseline(stdout, db);
-}
-
-int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
-	const int *datastreamIdRemap)
-{
-	int f, p;
-	int ds2A, ds2B;
-
-	if(datastreamIdRemap)
-	{
-		ds2A = datastreamIdRemap[db2->dsA];
-		ds2B = datastreamIdRemap[db2->dsB];
-	}
-	else
-	{
-		ds2A = db2->dsA;
-		ds2B = db2->dsB;
-	}
-
-	if(db1->dsA   != ds2A || 
-	   db1->dsB   != ds2B ||
-	   db1->nFreq != db2->nFreq)
-	{
-		return 0;
-	}
-	for(f = 0; f < db1->nFreq; f++)
-	{
-		if(db1->nPolProd[f] != db2->nPolProd[f])
-		{
-			return 0;
-		}
-		for(p = 0; p < db1->nPolProd[f]; p++)
-		{
-			if(db1->recChanA[f][p] != db2->recChanA[f][p] ||
-			   db1->recChanB[f][p] != db2->recChanB[f][p])
-			{
-				return 0;
-			}
-		}
-	}
-	
-	return 1;
-}
-
 void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 {
 	int i;
@@ -224,6 +120,120 @@ void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
 	b->recChanB[freq] = (int *)calloc(nPol, sizeof(int));
 }
 
+void deleteDifxBaselineInternals(DifxBaseline *db)
+{
+	int f;
+
+	if(db->nPolProd)
+	{
+		free(db->nPolProd);
+		db->nPolProd = 0;
+	}
+	if(db->recChanA)
+	{
+		for(f = 0; f < db->nFreq; f++)
+		{
+			if(db->recChanA[f])
+			{
+				free(db->recChanA[f]);
+			}
+		}
+		free(db->recChanA);
+		db->recChanA = 0;
+	}
+	if(db->recChanB)
+	{
+		for(f = 0; f < db->nFreq; f++)
+		{
+			if(db->recChanB[f])
+			{
+				free(db->recChanB[f]);
+			}
+		}
+		free(db->recChanB);
+		db->recChanB = 0;
+	}
+}
+
+void deleteDifxBaselineArray(DifxBaseline *db, int nBaseline)
+{
+	int b;
+	
+	if(db)
+	{
+		for(b = 0; b < nBaseline; b++)
+		{
+			deleteDifxBaselineInternals(db + b);
+		}
+		free(db);
+	}
+}
+
+void fprintDifxBaseline(FILE *fp, const DifxBaseline *db)
+{
+	int f;
+	
+	fprintf(fp, "  Difx Baseline : %p\n", db);
+	fprintf(fp, "    datastream indices = %d %d\n", db->dsA, db->dsB);
+	fprintf(fp, "    nFreq = %d\n", db->nFreq);
+	if(db->nPolProd)
+	{
+		fprintf(fp, "    nPolProd[freq] =");
+		for(f = 0; f < db->nFreq; f++)
+		{
+			fprintf(fp, " %d", db->nPolProd[f]);
+		}
+		fprintf(fp, "\n");
+	}
+}
+
+void printDifxBaseline(const DifxBaseline *db)
+{
+	fprintDifxBaseline(stdout, db);
+}
+
+int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
+	const int *datastreamIdRemap)
+{
+	int f, p;
+	int ds2A, ds2B;
+
+	if(datastreamIdRemap)
+	{
+		ds2A = datastreamIdRemap[db2->dsA];
+		ds2B = datastreamIdRemap[db2->dsB];
+	}
+	else
+	{
+		ds2A = db2->dsA;
+		ds2B = db2->dsB;
+	}
+
+	if(db1->dsA   != ds2A || 
+	   db1->dsB   != ds2B ||
+	   db1->nFreq != db2->nFreq)
+	{
+		return 0;
+	}
+	for(f = 0; f < db1->nFreq; f++)
+	{
+		if(db1->nPolProd[f] != db2->nPolProd[f])
+		{
+			return 0;
+		}
+		for(p = 0; p < db1->nPolProd[f]; p++)
+		{
+			if(db1->recChanA[f][p] != db2->recChanA[f][p] ||
+			   db1->recChanB[f][p] != db2->recChanB[f][p])
+			{
+				return 0;
+			}
+		}
+	}
+	
+	return 1;
+}
+
 void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 	const int *datastreamIdRemap)
 {
@@ -250,6 +260,82 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 			dest->recChanB[f][p] = src->recChanB[f][p];
 		}
 	}
+}
+
+void moveDifxBaseline(DifxBaseline *dest, DifxBaseline *src)
+{
+	dest->dsA = src->dsA;
+	dest->dsB = src->dsB;
+	dest->nPolProd = src->nPolProd;
+	dest->recChanA = src->recChanA;
+	dest->recChanB = src->recChanB;
+
+	/* "unlink" internal structures */
+	src->nPolProd = 0;
+	src->recChanA = 0;
+	src->recChanB = 0;
+}
+
+int simplifyDifxBaselines(DifxInput *D)
+{
+	int n0;
+	int b, b1;
+	int b0;
+	int c, cb;
+
+	n0 = D->nBaseline;
+
+	for(b = 1;;)
+	{
+		if(b >= D->nBaseline)
+		{
+			break;
+		}
+
+		for(b1 = 0; b1 < b; b1++)
+		{
+			if(isSameDifxBaseline(D->baseline+b, D->baseline+b1, 0))
+			{
+				break;
+			}
+		}
+		if(b == b1)	/* no match found */
+		{
+			b++;	/* advance to next baseline */
+		}
+		else		/* found match */
+		{
+			/* 1. Renumber this and all higher baselines */
+			for(c = 0; c < D->nConfig; c++)
+			{
+				for(cb = 0; cb < D->config[c].nBaseline; cb++)
+				{
+					b0 = D->config[c].baselineId[cb];
+					if(b0 == b)
+					{
+						b0 = b1;
+					}
+					else if(b0 > b)
+					{
+						b0--;
+					}
+					D->config[c].baselineId[cb] = b0;
+				}
+			}
+
+			/* 2. reduce number of baselines */
+			D->nBaseline--;
+
+			/* 3. Delete this baseline and bump up higher ones */
+			deleteDifxBaselineInternals(D->baseline+b);
+			for(b1 = b; b1 < D->nBaseline; b1++)
+			{
+				moveDifxBaseline(D->baseline+b1, D->baseline+b1+1);
+			}
+		}
+	}
+
+	return n0 - D->nBaseline;
 }
 
 DifxBaseline *mergeDifxBaselineArrays(const DifxBaseline *db1, int ndb1,

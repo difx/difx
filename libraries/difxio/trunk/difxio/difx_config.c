@@ -33,7 +33,6 @@
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
-
 DifxConfig *newDifxConfigArray(int nConfig)
 {
 	DifxConfig *dc;
@@ -47,38 +46,6 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	}
 	
 	return dc;
-}
-
-void deleteDifxConfigArray(DifxConfig *dc)
-{
-	if(dc)
-	{
-		if(dc->IF)
-		{
-			free(dc->IF);
-		}
-		if(dc->datastreamId)
-		{
-			free(dc->datastreamId);
-		}
-		if(dc->baselineId)
-		{
-			free(dc->baselineId);
-		}
-		if(dc->freqId2IF)
-		{
-			free(dc->freqId2IF);
-		}
-		if(dc->baselineFreq2IF)
-		{
-			deleteBaselineFreq2IF(dc->baselineFreq2IF);
-		}
-		if(dc->ant2dsId)
-		{
-			free(dc->ant2dsId);
-		}
-		free(dc);
-	}
 }
 
 void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start)
@@ -115,33 +82,52 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	dc->nBaseline = nBaseline;
 }
 
-int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
+void deleteDifxConfigInterals(DifxConfig *dc)
 {
-	int b, f, blId;
-	int doPolar = 0;
-	DifxBaseline *bl;
-
-	for(b = 0; b < dc->nBaseline; b++)
+	if(dc->IF)
 	{
-		blId = dc->baselineId[b];
-		if(blId < 0)
-		{
-			break;
-		}
-
-		bl = db + blId;
-		for(f = 0; f < bl->nFreq; f++)
-		{
-			if(bl->nPolProd[f] > 2)
-			{
-				doPolar = 1;
-			}
-		}
+		free(dc->IF);
+		dc->IF = 0;
 	}
+	if(dc->datastreamId)
+	{
+		free(dc->datastreamId);
+		dc->datastreamId = 0;
+	}
+	if(dc->baselineId)
+	{
+		free(dc->baselineId);
+		dc->baselineId = 0;
+	}
+	if(dc->freqId2IF)
+	{
+		free(dc->freqId2IF);
+		dc->freqId2IF = 0;
+	}
+	if(dc->baselineFreq2IF)
+	{
+		deleteBaselineFreq2IF(dc->baselineFreq2IF);
+		dc->baselineFreq2IF = 0;
+	}
+	if(dc->ant2dsId)
+	{
+		free(dc->ant2dsId);
+		dc->ant2dsId = 0;
+	}
+}
 
-	dc->doPolar = doPolar;
+void deleteDifxConfigArray(DifxConfig *dc, int nConfig)
+{
+	int c;
 
-	return dc->doPolar;
+	if(dc)
+	{
+		for(c = 0; c < nConfig; c++)
+		{
+			deleteDifxConfigInterals(dc + c);
+		}
+		free(dc);
+	}
 }
 
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
@@ -238,6 +224,35 @@ void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 void printDifxConfigSummary(const DifxConfig *dc)
 {
 	fprintDifxConfigSummary(stdout, dc);
+}
+
+int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
+{
+	int b, f, blId;
+	int doPolar = 0;
+	DifxBaseline *bl;
+
+	for(b = 0; b < dc->nBaseline; b++)
+	{
+		blId = dc->baselineId[b];
+		if(blId < 0)
+		{
+			break;
+		}
+
+		bl = db + blId;
+		for(f = 0; f < bl->nFreq; f++)
+		{
+			if(bl->nPolProd[f] > 2)
+			{
+				doPolar = 1;
+			}
+		}
+	}
+
+	dc->doPolar = doPolar;
+
+	return dc->doPolar;
 }
 
 int DifxConfigGetPolId(const DifxConfig *dc, char polName)

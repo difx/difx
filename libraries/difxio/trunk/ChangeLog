@@ -1,5 +1,15 @@
+2.7
+* Version bump for slight API change
+* few important bug fixes
+* Add simplify functions for freqs, datastreams and baselines
+* separate out internal deallocation from table destructors and force to 0 deallocated arrays
+
+2.6
+* Version bump.  Slight change to internal API.  This version is needed for pulsar
+  support in vex2difx.
+
 2.5
-* Version bump.  This version required now by vex2difx
+* Version bump.  This version required now by vex2difx.
 
 2.4 
 * Post NRAO-DiFX 1.1 developments

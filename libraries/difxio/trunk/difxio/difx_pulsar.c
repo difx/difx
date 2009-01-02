@@ -51,6 +51,25 @@ DifxPulsar *growDifxPulsarArray(DifxPulsar *dp, int origSize)
 	return dp;
 }
 
+void deleteDifxPulsarInternals(DifxPulsar *dp)
+{
+	if(dp->polyco)
+	{
+		deleteDifxPolycoArray(dp->polyco, dp->nPolyco);
+		dp->polyco = 0;
+	}
+	if(dp->binEnd)
+	{
+		free(dp->binEnd);
+		dp->binEnd = 0;
+	}
+	if(dp->binWeight)
+	{
+		free(dp->binWeight);
+		dp->binWeight = 0;
+	}
+}
+
 void deleteDifxPulsarArray(DifxPulsar *dp, int nPulsar)
 {
 	int p;
@@ -62,18 +81,7 @@ void deleteDifxPulsarArray(DifxPulsar *dp, int nPulsar)
 
 	for(p = 0; p < nPulsar; p++)
 	{
-		if(dp[p].polyco)
-		{
-			deleteDifxPolycoArray(dp[p].polyco, dp[p].nPolyco);
-		}
-		if(dp[p].binEnd)
-		{
-			free(dp[p].binEnd);
-		}
-		if(dp[p].binWeight)
-		{
-			free(dp[p].binWeight);
-		}
+		deleteDifxPulsarInternals(dp + p);
 	}
 	free(dp);
 }

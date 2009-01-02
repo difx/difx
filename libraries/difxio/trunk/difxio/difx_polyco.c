@@ -42,6 +42,15 @@ DifxPolyco *newDifxPolycoArray(int nPolyco)
 	return dp;
 }
 
+void deleteDifxPolycoInternals(DifxPolyco *dp)
+{
+	if(dp->coef)
+	{
+		free(dp->coef);
+		dp->coef = 0;
+	}
+}
+
 void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco)
 {
 	int p;
@@ -50,10 +59,7 @@ void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco)
 	{
 		for(p = 0; p < nPolyco; p++)
 		{
-			if(dp[p].coef)
-			{
-				free(dp[p].coef);
-			}
+			deleteDifxPolycoInternals(dp + p);
 		}
 		free(dp);
 	}

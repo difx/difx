@@ -49,6 +49,20 @@ DifxScan *newDifxScanArray(int nScan)
 	return ds;
 }
 
+void deleteDifxScanInternals(DifxScan *ds)
+{
+	if(ds->model)
+	{
+		deleteDifxModelArray(ds->model, ds->nAntenna);
+		ds->model = 0;
+	}
+	if(ds->im)
+	{
+		deleteDifxPolyModelArray(ds->im, ds->nAntenna);
+		ds->im = 0;
+	}
+}
+
 void deleteDifxScanArray(DifxScan *ds, int nScan)
 {
 	int s;
@@ -56,16 +70,7 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 	{
 		for(s = 0; s < nScan; s++)
 		{
-			if(ds[s].model)
-			{
-				deleteDifxModelArray(ds[s].model, 
-					ds[s].nAntenna);
-			}
-			if(ds[s].im)
-			{
-				deleteDifxPolyModelArray(ds[s].im,
-					ds[s].nAntenna);
-			}
+			deleteDifxScanInternals(ds + s);
 		}
 		free(ds);
 	}

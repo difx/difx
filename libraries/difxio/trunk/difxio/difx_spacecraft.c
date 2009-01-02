@@ -68,7 +68,17 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 	return dest;
 }
 
-void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft)
+void deleteDifxSpacecraftInternals(DifxSpacecraft *ds)
+{
+	if(ds->pos)
+	{
+		free(ds->pos);
+		ds->pos = 0;
+	}
+	
+}
+
+void deleteDifxSpacecraftArray(DifxSpacecraft *ds, int nSpacecraft)
 {
 	int s;
 
@@ -76,10 +86,7 @@ void deleteDifxSpacecraft(DifxSpacecraft *ds, int nSpacecraft)
 	{
 		for(s = 0; s < nSpacecraft; s++)
 		{
-			if(ds[s].pos)
-			{
-				free(ds[s].pos);
-			}
+			deleteDifxSpacecraftInternals(ds + s);
 		}
 		free(ds);
 	}

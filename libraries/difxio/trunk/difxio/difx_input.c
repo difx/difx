@@ -50,7 +50,8 @@ void deleteDifxInput(DifxInput *D)
 	{
 		if(D->config)
 		{
-			deleteDifxConfigArray(D->config);
+			deleteDifxConfigArray(D->config,
+				D->nConfig);
 		}
 		if(D->datastream)
 		{

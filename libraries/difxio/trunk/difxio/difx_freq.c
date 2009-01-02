@@ -85,6 +85,70 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 	dest->sideband = src->sideband;
 }
 
+int simplifyDifxFreqs(DifxInput *D)
+{
+	int f, f1;
+	int f0;
+	int d, r;
+	int n0;
+
+	n0 = D->nFreq;
+
+	for(f=1;;)
+	{
+		if(f >= D->nFreq)
+		{
+			break;
+		}
+
+		for(f1 = 0; f1 < f; f1++)
+		{
+			if(isSameDifxFreq(D->freq+f, D->freq+f1))
+			{
+				break;
+			}
+		}
+		if(f == f1)	/* no match found */
+		{
+			f++;	/* advance to next freq */
+		}
+		else		/* found match */
+		{
+			/* 1. Renumber this and all higher freqs */
+			for(d = 0; d < D->nDatastream; d++)
+			{
+				for(r = 0; r < D->datastream[d].nFreq; r++)
+				{
+					f0 = D->datastream[d].freqId[r];
+					if(f0 == f)
+					{
+						f0 = f1;
+					}
+					else if(f0 > f)
+					{
+						f0--;
+					}
+					D->datastream[d].freqId[r] = f0;
+				}
+			}
+
+			/* 2. reduce number of freqs */
+			D->nFreq--;
+
+			/* 3. Delete this freq and bump up higher ones */
+			if(f < D->nFreq)
+			{
+				for(f1 = f; f1 < D->nFreq; f1++)
+				{
+					copyDifxFreq(D->freq+f1, D->freq+f1+1);
+				}
+			}
+		}
+	}
+
+	return n0 - D->nFreq;
+}
+
 /* merge two DifxFreq tables into an new one.  freqIdRemap will contain the
  * mapping from df2's old freq entries to that of the merged set
  */
