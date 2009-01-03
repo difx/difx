@@ -565,14 +565,13 @@ const string &CorrParams::findSetup(const string &scan, const string &source, co
 	}
 
 	// If here, no rule has been found.  Look for default
-	if(getCorrSetup("default") != 0)
+	if(getCorrSetup(def) != 0)
 	{
 		return def;
 	}
 
 	return none;
 }
-
 
 ostream& operator << (ostream& os, const CorrSetup& x)
 {
@@ -583,12 +582,18 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 
 	os << "SETUP " << x.setupName << endl;
 	os << "{" << endl;
-	os << "  tInt = " << x.tInt << endl;
-	os << "  nChan = " << x.nChan << endl;
-	os << "  doPolar = " << x.doPolar << endl;
-	os << "  doAuto = " << x.doAuto << endl;
-	os << "  blocksPerSend = " << x.blocksPerSend << endl;
-	// FIXME phasecenters
+	os << "  tInt=" << x.tInt << endl;
+	os << "  nChan=" << x.nChan << endl;
+	os << "  doPolar=" << x.doPolar << endl;
+	os << "  doAuto=" << x.doAuto << endl;
+	os << "  blocksPerSend=" << x.blocksPerSend << endl;
+	os << "  specAvg=" << x.specAvg << endl;
+	os << "  startChan=" << x.startChan << endl;
+	os << "  postFFringe=" << x.postFFringe << endl;
+	if(x.binConfigFile.size() > 0)
+	{
+		os << "  binConfig=" << x.binConfigFile << endl;
+	}
 	os << "}" << endl;
 
 	os.precision(p);
@@ -605,7 +610,7 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	{
 		list<string>::const_iterator it;
 
-		os << "  scan =";
+		os << "  scan=";
 		for(it = x.scanName.begin(); it != x.scanName.end(); it++)
 		{
 			os << " " << *it;
@@ -617,7 +622,7 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	{
 		list<string>::const_iterator it;
 
-		os << "  source =";
+		os << "  source=";
 		for(it = x.sourceName.begin(); it != x.sourceName.end(); it++)
 		{
 			os << " " << *it;
@@ -629,7 +634,7 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	{
 		list<string>::const_iterator it;
 
-		os << "  mode =";
+		os << "  mode=";
 		for(it = x.modeName.begin(); it != x.modeName.end(); it++)
 		{
 			os << " " << *it;
@@ -642,8 +647,33 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	{
 		os << endl;
 	}
-	os << "  setup = " << x.setupName << endl;
+	os << "  setup=" << x.setupName << endl;
 	
+	os << "}" << endl;
+
+	return os;
+}
+
+ostream& operator << (ostream& os, const SourceSetup& x)
+{
+	os << "SOURCE " << x.vexName << endl;
+	os << "{" << endl;
+	if(x.difxName.size() > 0)
+	{
+		os << "  name=" << x.difxName << endl;
+	}
+	if(x.ra > -990)
+	{
+		os << "  ra=" << x.ra << " # J2000" << endl;
+	}
+	if(x.dec > -990)
+	{
+		os << "  dec=" << x.dec << " # J2000" << endl;
+	}
+	if(x.calCode != ' ')
+	{
+		os << "  calCode=" << x.calCode << endl;
+	}
 	os << "}" << endl;
 
 	return os;
@@ -658,28 +688,50 @@ ostream& operator << (ostream& os, const CorrParams& x)
 
 	os << "# correlation parameters" << endl;
 
-	os << "mjdStart = " << x.mjdStart << endl;
-	os << "mjdStop  = " << x.mjdStop << endl;
-	os << "minSubarray = " << x.minSubarraySize << endl;
+	os << "vex=" << x.vexFile << endl;
+	os << "mjdStart=" << x.mjdStart << endl;
+	os << "mjdStop=" << x.mjdStop << endl;
+	os << "minSubarray=" << x.minSubarraySize << endl;
 
 	os.precision(6);
-	os << "maxGap = " << x.maxGap*86400.0 << " # seconds" << endl;
-	os << "maxLength = " << x.maxLength*86400.0 << " # seconds" << endl;
+	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << endl;
+	os << "maxLength=" << x.maxLength*86400.0 << " # seconds" << endl;
 	os.precision(13);
 
-	os << "singleScan = " << x.singleScan << endl;
-	os << "singleSetup = " << x.singleSetup << endl;
+	os << "singleScan=" << x.singleScan << endl;
+	os << "singleSetup=" << x.singleSetup << endl;
+	os << "mediaSplit=" << x.mediaSplit << endl;
+	os << "jobSeries=" << x.jobSeries << endl;
+	os << "startSeries=" << x.startSeries << endl;
+	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
+	os << "nDataSegments=" << x.nDataSegments << endl;
+	os << "sendLength=" << x.sendLength << " # seconds" << endl;
 	
 	if(!x.antennaList.empty())
 	{
 		list<string>::const_iterator it;
 		
-		os << "antennas =";
+		os << "antennas=";
 		for(it = x.antennaList.begin(); it != x.antennaList.end(); it++)
 		{
-			os << " " << *it;
+			if(it != x.antennaList.begin())
+			{
+				os << ",";
+			}
+			os << *it;
 		}
 		os << endl;
+	}
+
+	if(!x.sourceSetups.empty())
+	{
+		vector<SourceSetup>::const_iterator it;
+
+		for(it = x.sourceSetups.begin(); it != x.sourceSetups.end(); it++)
+		{
+			os << endl;
+			os << *it;
+		}
 	}
 
 	if(!x.setups.empty())
