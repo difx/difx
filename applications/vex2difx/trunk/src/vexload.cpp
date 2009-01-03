@@ -56,7 +56,9 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 	}
 	else
 	{
-		cerr << "Format " << F.format << " is not yet supported" << endl;
+		cerr << "Error: format " << F.format << " is not yet supported" << endl;
+		cerr << "Contact developer." << endl;
+		exit(0);
 	}
 
 	return -1;
@@ -232,7 +234,7 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 		p = (char *)get_source_lowl(src, T_REF_COORD_FRAME, v);
 		if(strcmp(p, "J2000") != 0)
 		{
-			cerr << "Error: only J2000 ref frame is supported" << endl;
+			cerr << "Error: only J2000 ref frame is supported." << endl;
 			exit(0);
 		}
 	}
@@ -320,13 +322,13 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		if(params.getCorrSetup(setupName) == 0)
 		{
-			cerr << "Error : setup " << setupName << " not defined!" << endl;
+			cerr << "Error: setup " << setupName << " not defined!" << endl;
 			exit(0);
 		}
 
 		if(params.mjdStart > stopScan || params.mjdStop < startScan)
 		{
-			cerr << "Skipping scan " << scanName << " : out of time range" << endl;
+			cerr << "FYI: skipping scan " << scanName << " : out of time range." << endl;
 			continue;
 		}
 
@@ -480,10 +482,18 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				fanout = nTrack/ch2tracks.size()/nBit;
 				switch(fanout)
 				{
-					case 1: F.format += "1_1"; break;
-					case 2: F.format += "1_2"; break;
-					case 4: F.format += "1_4"; break;
-					default: cerr << "Fanout=" << fanout << " not legal for format " << F.format << endl;
+					case 1: 
+						F.format += "1_1"; 
+						break;
+					case 2: 
+						F.format += "1_2"; 
+						break;
+					case 4: 
+						F.format += "1_4"; 
+						break;
+					default: 
+						cerr << "Error: fanout=" << fanout << " not legal for format " << F.format << endl;
+						exit(0);
 				}
 				F.nRecordChan = ch2tracks.size();
 				F.nBit = nBit;
@@ -504,8 +514,8 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				if(f < 0 || g < 0 || f > g)
 				{
-					cerr << "Malformed S2 mode : " << string(value) << endl;
-					return -1;
+					cerr << "Error: malformed S2 mode : " << string(value) << endl;
+					exit(0);
 				}
 
 				string chans = s2mode.substr(f+1, g-f-1);

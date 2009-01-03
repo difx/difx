@@ -372,7 +372,8 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) con
 		{
 			if(id != e->name)
 			{
-				cerr << "Aweful! [" << id << "] [" << e->name << "]" << endl;
+				cerr << "Programming error: id != e->name  (" << id << " != " << e->name << ")" << endl;
+				cerr << "Contact developer" << endl;
 				exit(0);
 			}
 			if(s->mjd >= start && e->mjd <= stop)

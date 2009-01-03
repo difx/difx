@@ -12,10 +12,8 @@
 
 const string program("vex2difx");
 const string version("0.1");
-const string verdate("20090102");
+const string verdate("20090103");
 const string author("Walter Brisken");
-
-// FIXME : where to put this function?
 
 // A is assumed to be the first scan in time order
 bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
@@ -37,7 +35,7 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 	return true;
 }
 
-void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P)
+void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
 {
 	list<string> scans;
 	list<string>::iterator it;
@@ -108,7 +106,7 @@ int nGap(const list<MediaChange> &m, double mjd)
 	return n;
 }
 
-void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P)
+void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
 {
 	list<VexEvent>::const_iterator e;
 	list<double>::const_iterator t;
@@ -221,7 +219,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	JG.createJob(Js, start, V->obsStop());
 }
 
-void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P)
+void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 {
 	// FIXME -- no maxLength constraint yet
 
@@ -230,10 +228,10 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P)
 	int k;
 
 	// Do splitting of jobs
-	genJobGroups(JG, V, P);
+	genJobGroups(JG, V, P, verbose);
 	for(unsigned int i = 0; i < JG.size(); i++)
 	{
-		genJobs(J, JG[i], V, P);
+		genJobs(J, JG[i], V, P, verbose);
 	}
 
 	// Finalize all the new job structures
@@ -412,7 +410,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	int antId = D->datastream[dsId].antennaId;
 	if(antId < 0 || antId >= D->nAntenna)
 	{
-		cerr << "setFormat error : antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
+		cerr << "Error: setFormat: antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
 		exit(0);
 	}
 	string antName(D->antenna[antId].name);
@@ -456,7 +454,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	}
 	else
 	{
-		cerr << "Format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << D->antenna[antId].name << "." << endl;
+		cerr << "Error: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << D->antenna[antId].name << "." << endl;
 		return 0;
 	}
 
@@ -469,7 +467,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	{
 		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
 		{
-			cerr << "index to subband=" << i->subbandId << " is out of range" << endl;
+			cerr << "Error: index to subband=" << i->subbandId << " is out of range" << endl;
 			exit(0);
 		}
 		int r = i->recordChan;
@@ -478,7 +476,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecChan)
 		{
-			cerr << "index to RC = " << r << " is out of range" << endl;
+			cerr << "Error: index to RC = " << r << " is out of range" << endl;
 			exit(0);
 		}
 		D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
@@ -610,14 +608,14 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	setup = P->getCorrSetup(S->setupName);
 	if(setup == 0)
 	{
-		cerr << "ACK setup[" << S->setupName << "] == 0" << endl;
+		cerr << "Error: setup[" << S->setupName << "] == 0" << endl;
 		exit(0);
 	}
 
 	mode = V->getMode(S->modeName);
 	if(mode == 0)
 	{
-		cerr << "ACK mode[" << S->modeName << "] == 0" << endl;
+		cerr << "Error: mode[" << S->modeName << "] == 0" << endl;
 		exit(0);
 	}
 
@@ -666,7 +664,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	config->decimation = 1;
 	if(config->overSamp <= 0)
 	{
-		cerr << "Error! configName=" << configName << " overSamp=" << config->overSamp << endl;
+		cerr << "Error: configName=" << configName << " overSamp=" << config->overSamp << endl;
 		cerr << "samprate=" << mode->sampRate << " bw=" << 
 			mode->subbands[0].bandwidth << endl;
 		exit(0);
@@ -716,8 +714,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	setup = P->getCorrSetup(setupName);
 	if(!setup)
 	{
-		cerr << "Setup " << setupName << "Not found!" << endl;
-		return;
+		cerr << "Error: setup " << setupName << "Not found!" << endl;
+		exit(0);
 	}
 
 	// make set of unique config names
@@ -754,7 +752,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		S = V->getScan(*si);
 		if(!S)
 		{
-			cerr << "Error : Source[" << *si << "] not found!  This cannot be!" << endl;
+			cerr << "Error: source[" << *si << "] not found!  This cannot be!" << endl;
 			exit(0);
 		}
 
@@ -812,14 +810,14 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		mode = V->getMode(configs[c].first);
 		if(mode == 0)
 		{
-			cerr << "ACK! mode[" << configs[c].first << "] is null" << endl;
+			cerr << "Error: mode[" << configs[c].first << "] is null" << endl;
 			exit(0);
 		}
 
 		setup = P->getCorrSetup(configs[c].second);
 		if(setup == 0)
 		{
-			cerr << "ACK! setup[" << configs[c].second << "] is null" << endl;
+			cerr << "Error: setup[" << configs[c].second << "] is null" << endl;
 			exit(0);
 		}
 
@@ -903,7 +901,7 @@ int usage(int argc, char **argv)
 	cout << "     --help      display this information and quit." << endl;
 	cout << endl;
 	cout << "     -v" << endl;
-	cout << "     --verbose   increase the verbosity of the output." << endl;
+	cout << "     --verbose   increase the verbosity of the output; use twice for more detail." << endl;
 	cout << endl;
 	cout << "     -o" << endl;
 	cout << "     --output    create a v2d file with all defaults populated." << endl;
@@ -953,8 +951,8 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				cerr << "Unknown option " << argv[a] << endl;
-				cerr << "Run with -h for usage info" << endl;
+				cerr << "Error: unknown option " << argv[a] << endl;
+				cerr << "Run with -h for help information." << endl;
 				exit(0);
 			}
 		}
@@ -990,9 +988,9 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(*P);
 
-	makeJobs(J, V, P);
+	makeJobs(J, V, P, verbose);
 
-	if(verbose > 0)
+	if(verbose > 1)
 	{
 		cout << *V << endl;
 		cout << *P << endl;
@@ -1010,9 +1008,13 @@ int main(int argc, char **argv)
 
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
 	{
-		cout << *j;
+		if(verbose > 0)
+		{
+			cout << *j;
+		}
 		writeJob(*j, V, P);
 	}
+	cout << J.size() << " job(s) created." << endl;
 
 	delete V;
 	delete P;

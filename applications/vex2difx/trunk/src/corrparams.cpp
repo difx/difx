@@ -372,7 +372,7 @@ void CorrParams::load(const string& fileName)
 		{
 			if(mode != 0)
 			{
-				cerr << "SETUP out of place" << endl;
+				cerr << "Error: SETUP out of place." << endl;
 				exit(0);
 			}
 			i++;
@@ -381,7 +381,7 @@ void CorrParams::load(const string& fileName)
 			i++;
 			if(*i != "{")
 			{
-				cerr << "'{' expected" << endl;
+				cerr << "Error: '{' expected." << endl;
 				exit(0);
 			}
 			key = "";
@@ -391,7 +391,7 @@ void CorrParams::load(const string& fileName)
 		{
 			if(mode != 0)
 			{
-				cerr << "RULE out of place" << endl;
+				cerr << "Error: RULE out of place." << endl;
 				exit(0);
 			}
 			i++;
@@ -400,7 +400,7 @@ void CorrParams::load(const string& fileName)
 			i++;
 			if(*i != "{")
 			{
-				cerr << "'{' expected" << endl;
+				cerr << "Error: '{' expected." << endl;
 				exit(0);
 			}
 			key = "";
@@ -410,7 +410,7 @@ void CorrParams::load(const string& fileName)
 		{
 			if(mode != 0)
 			{
-				cerr << "SOURCE out of place" << endl;
+				cerr << "Error: SOURCE out of place." << endl;
 				exit(0);
 			}
 			i++;
@@ -419,7 +419,7 @@ void CorrParams::load(const string& fileName)
 			i++;
 			if(*i != "{")
 			{
-				cerr << "'{' expected" << endl;
+				cerr << "Error: '{' expected." << endl;
 				exit(0);
 			}
 			key = "";
@@ -436,13 +436,13 @@ void CorrParams::load(const string& fileName)
 		}
 		else if(*i == "{" || *i == "}")
 		{
-			cerr << "Unexpected character '" << *i << "'" << endl;
+			cerr << "Warning: unexpected character '" << *i << "'." << endl;
 		}
 		else if(last == "=" || last == ",")
 		{
 			if(key == "")
 			{
-				cerr << "L-value expected before " << *i << endl;
+				cerr << "Error: legal parameter name expected before " << *i << endl;
 				exit(0);
 			}
 			value = *i;
@@ -869,7 +869,10 @@ const char *CorrParams::getShelf(const string& vsn) const
 	it = shelves.find(vsn);
 	if(it == shelves.end())
 	{
-		cerr << "* Warning: cannot find shelf for " << vsn << endl;
+		if(vsn != "None")
+		{
+			cerr << "Warning: cannot find shelf for " << vsn << endl;
+		}
 		return "NONE";
 	}
 	else
