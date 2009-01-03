@@ -891,6 +891,31 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	deleteDifxInput(D);
 }
 
+int usage(int argc, char **argv)
+{
+	cout << endl;
+	cout << program << " version " << version << "  " << author << " " << verdate << endl;
+	cout << endl;
+	cout << "Usage:  " << argv[0] << " [<options>] <v2d file>" << endl;
+	cout << endl;
+	cout << "  options can include:" << endl;
+	cout << "     -h" << endl;
+	cout << "     --help      display this information and quit." << endl;
+	cout << endl;
+	cout << "     -v" << endl;
+	cout << "     --verbose   increase the verbosity of the output." << endl;
+	cout << endl;
+	cout << "     -o" << endl;
+	cout << "     --output    create a v2d file with all defaults populated." << endl;
+	cout << endl;
+	cout << "  the v2d file is the vex2difx configuration file to process." << endl;
+	cout << endl;
+	cout << "See http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
+	cout << endl;
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
@@ -899,14 +924,60 @@ int main(int argc, char **argv)
 	ifstream is;
 	string shelfFile;
 	int verbose = 0;
+	string v2dFile;
+	bool writeParams = 0;
 
 	if(argc < 2)
 	{
-		cerr << "need config filename" << endl;
-		return 0;
+		return usage(argc, argv);
 	}
 
-	P = new CorrParams(argv[1]);
+	for(int a = 1; a < argc; a++)
+	{
+		if(argv[a][0] == '-')
+		{
+			if(strcmp(argv[a], "-h") == 0 ||
+			   strcmp(argv[a], "--help") == 0)
+			{
+				return usage(argc, argv);
+			}
+			else if(strcmp(argv[a], "-v") == 0 ||
+			        strcmp(argv[a], "--verbose") == 0)
+			{
+				verbose++;
+			}
+			else if(strcmp(argv[a], "-o") == 0 ||
+			        strcmp(argv[a], "--output") == 0)
+			{
+				writeParams=1;
+			}
+			else
+			{
+				cerr << "Unknown option " << argv[a] << endl;
+				cerr << "Run with -h for usage info" << endl;
+				exit(0);
+			}
+		}
+		else
+		{
+			if(v2dFile.size() > 0)
+			{
+				cerr << "Error: multiple configuration files provides, one expected." << endl;
+				cerr << "Run with -h for help information." << endl;
+				exit(0);
+			}
+			v2dFile = argv[a];
+		}
+	}
+
+	if(v2dFile.size() == 0)
+	{
+		cerr << "Error: configuration file expected." << endl;
+		cerr << "Run with -h for help information." << endl;
+		exit(0);
+	}
+
+	P = new CorrParams(v2dFile);
 	if(P->vexFile.size() == 0)
 	{
 		cerr << "Error: vex file parameter (vex) not found in file." << endl;
@@ -921,10 +992,20 @@ int main(int argc, char **argv)
 
 	makeJobs(J, V, P);
 
-	if(verbose > 1)
+	if(verbose > 0)
 	{
 		cout << *V << endl;
 		cout << *P << endl;
+	}
+
+	if(writeParams)
+	{
+		ofstream of;
+		string paramsFile = v2dFile + ".params";
+
+		of.open(paramsFile.c_str());
+		of << *P << endl;
+		of.close();
 	}
 
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
