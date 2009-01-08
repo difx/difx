@@ -10,6 +10,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
+const char verdate[] = "20090109";
 
 int verbose = 0;
 int die = 0;
@@ -31,7 +32,7 @@ void siginthand(int j)
 
 int usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s\n\n", program, version, author);
+	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
 	printf("options can include:\n");
@@ -114,35 +115,46 @@ int main(int argc, char **argv)
 	xlrRC = XLROpen(1, &xlrDevice);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot open XLR\n");
-		difxMessageSendDifxAlert("Cannot open XLR", DIFX_ALERT_LEVEL_ERROR);
+		sprintf(message, "Cannot open XLR");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		return 0;
 	}
 
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot set SkipCheckDir\n");
-		difxMessageSendDifxAlert("Cannot set SkipCheckDir", DIFX_ALERT_LEVEL_ERROR);
+		sprintf(message, "Cannot set SkipCheckDir");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		XLRClose(xlrDevice);
+		
 		return 0;
 	}
 
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot set BankMode\n");
-		difxMessageSendDifxAlert("Cannot set BankMode", DIFX_ALERT_LEVEL_ERROR);
+		sprintf(message, "Cannot set BankMode");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		XLRClose(xlrDevice);
+		
 		return 0;
 	}
 
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot get bank A status\n");
-		difxMessageSendDifxAlert("Cannot get bank A status", DIFX_ALERT_LEVEL_ERROR);
+		sprintf(message, "Cannot get bank A status");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		XLRClose(xlrDevice);
+		
 		return 0;
 	}
 	else if(bank_stat.Label[8] == '/')
@@ -163,9 +175,12 @@ int main(int argc, char **argv)
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot get bank B status\n");
-		difxMessageSendDifxAlert("Cannot get bank B status", DIFX_ALERT_LEVEL_ERROR);
+		sprintf(message, "Cannot get bank B status");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		XLRClose(xlrDevice);
+
 		return 0;
 	}
 	else if(bank_stat.Label[8] == '/')
@@ -209,9 +224,12 @@ int main(int argc, char **argv)
 				&mk5status);
 			if(v < 0)
 			{
-				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
-				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnA, v);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				if(!die)
+				{
+					sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnA, v);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "Error: %s\n", message);
+				}
 			}
 			else if(v == 0 && verbose > 0)
 			{
@@ -234,9 +252,12 @@ int main(int argc, char **argv)
 				&mk5status);
 			if(v < 0)
 			{
-				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
-				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnB, v);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				if(!die)
+				{
+					sprintf(message, "Directory read for module %s unsuccessful, error code=%d", mk5status.vsnB, v);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "Error: %s\n", message);
+				}
 			}
 			else if(v == 0 && verbose > 0)
 			{
@@ -273,9 +294,12 @@ int main(int argc, char **argv)
 				vsn, mk5dirpath, &dirCallback, &mk5status);
 			if(v < 0)
 			{
-				fprintf(stderr, "Unsuccessful, error code=%d\n", v);
-				sprintf(message, "Directory read for module %s unsuccessful, error code=%d", vsn, v);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				if(!die)
+				{
+					sprintf(message, "Directory read for module %s unsuccessful, error code=%d", vsn, v);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "Error: %s\n", message);
+				}
 			}
 			else if(verbose > 0)
 			{
@@ -291,7 +315,7 @@ int main(int argc, char **argv)
 
 	if(die)
 	{
-		difxMessageSendDifxAlert("Directory read terminated", DIFX_ALERT_LEVEL_WARNING);
+		difxMessageSendDifxAlert("Directory read terminated by signal.", DIFX_ALERT_LEVEL_WARNING);
 	}
 	else if(modules[0])
 	{

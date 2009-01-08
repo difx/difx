@@ -11,7 +11,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
+const char version[] = "0.2";
+const char verdate[] = "20090108";
 
 int verbose = 0;
 int die = 0;
@@ -32,7 +33,7 @@ void siginthand(int j)
 
 int usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s\n\n", program, version, author);
+	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to copy Mark5 module scans via XLR calls\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> } <scans> <output path>\n\n", pgm);
 	printf("options can include:\n");
@@ -93,6 +94,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	out = fopen(filename, "w");
 	if(!out)
 	{
+		sprintf(message, "Cannot open file %s for write.  Check permissions!", filename);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		return -1;
 	}
 
@@ -120,7 +125,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	{
 		if(die)
 		{
-			difxMessageSendDifxAlert("Data copy aborted", DIFX_ALERT_LEVEL_WARNING);
+			difxMessageSendDifxAlert("Data copy aborted due to die signal", DIFX_ALERT_LEVEL_WARNING);
+			
 			break;
 		}
 		if(verbose)
@@ -143,8 +149,11 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 
 		if(xlrRC == XLR_FAIL)
 		{
-			fprintf(stderr, "Read failure at %Ld\n", readptr);
+			sprintf(message, "XLR Read failure at %Ld.  Aborting copy.", readptr);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
 			mk5status->status = MARK5_COPY_ERROR;
+			
 			break;
 		}
 
@@ -160,7 +169,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		v = fwrite(data+(skip/4), 1, chunksize-skip, out);
 		if(v < chunksize-skip)
 		{
-			fprintf(stderr, "Incomplete write, FS full?\n");
+			sprintf(message, "Incomplete write -- disk full?  path=%s", outpath);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
 			break;
 		}
 		gettimeofday(&t2, 0);
@@ -208,7 +220,7 @@ int main(int argc, char **argv)
 	DifxMessageMk5Status mk5status;
 	char vsn[16] = "";
 	int v;
-	int a, b, i, s, l, n;
+	int a, b, i, s, l, nGood, nBad;
 	int scanIndex;
 
 	if(argc < 2)
@@ -258,32 +270,47 @@ int main(int argc, char **argv)
 	xlrRC = XLROpen(1, &xlrDevice);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot open XLR\n");
-		return 0;
+		sprintf(message, "Cannot open XLR");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
+		return -1;
 	}
 
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot set SkipCheckDir\n");
+		sprintf(message, "Cannot set SkipCheckDir");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
 		XLRClose(xlrDevice);
-		return 0;
+		
+		return -1;
 	}
 
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot set BankMode\n");
+		sprintf(message, "Cannot set BankMode");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
 		XLRClose(xlrDevice);
-		return 0;
+		
+		return -1;
 	}
 
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot get bank A status\n");
+		sprintf(message, "Cannot get bank A status");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
 		XLRClose(xlrDevice);
-		return 0;
+		
+		return -1;
 	}
 	else if(bank_stat.Label[8] == '/')
 	{
@@ -303,8 +330,12 @@ int main(int argc, char **argv)
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		printf("Cannot get bank B status\n");
+		sprintf(message, "Cannot get bank B status");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
 		XLRClose(xlrDevice);
+		
 		return 0;
 	}
 	else if(bank_stat.Label[8] == '/')
@@ -373,7 +404,8 @@ int main(int argc, char **argv)
 
 	mk5status.state = MARK5_STATE_COPY;
 
-	n = 0;
+	nGood = 0;
+	nBad = 0;
 	if(mk5status.activeBank > ' ') 
 	{
 		if(isdigit(scanlist[0])) for(;;)
@@ -394,8 +426,9 @@ int main(int argc, char **argv)
 				scanlist += s;
 				if(v < 1)
 				{
-					difxMessageSendDifxAlert("Bad format for list of scans", DIFX_ALERT_LEVEL_ERROR);
-					fprintf(stderr, "Bad format for list of scans\n");
+					sprintf(message, "Bad format for list of scans");
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+					fprintf(stderr, "Error: %s\n", message);
 					break;
 				}
 			}
@@ -415,8 +448,22 @@ int main(int argc, char **argv)
 				if(i > 0 && i <= module.nscans)
 				{
 					scanIndex = i-1;
-					copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
-					n++;
+					v = copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+					if(v == 0)
+					{
+						nGood++;
+					}
+					else
+					{
+						nBad++;
+					}
+				}
+				else
+				{
+					sprintf(message, "Scan number %d out of range.  nScan = %d", i, module.nscans);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+					fprintf(stderr, "Warning: %s\n", message);
+					nBad++;
 				}
 			}
 
@@ -428,11 +475,6 @@ int main(int argc, char **argv)
 			{
 				scanlist++;
 			}
-			if(n == 0)
-			{
-				sprintf(message, "No scans copied from module %8s to %s", module.label, outpath);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			}
 		}
 		else
 		{
@@ -442,33 +484,54 @@ int main(int argc, char **argv)
 				if(strncasecmp(module.scans[i].name, scanlist, l) == 0)
 				{
 					scanIndex = i;
-					copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
-					n++;
+					v = copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+					if(v == 0) 
+					{
+						nGood++;
+					}
+					else
+					{
+						nBad++;
+					}
 				}
 			}
-			if(n == 0)
-			{
-				sprintf(message, "No scans match with code %s on module %8s", scanlist, module.label);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-			}
+		}
+
+		if(nGood > 0)
+		{
+			sprintf(message, "%d scans copied from module %8s to %s", nGood, module.label, outpath);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			printf("%s\n", message);
+		}
+		if(nBad > 0)
+		{
+			sprintf(message, "%d scans NOT copied from module %8s to %s", nBad, module.label, outpath);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+			printf("%s\n", message);
+		}
+		if(nGood == 0 && nBad == 0)
+		{
+			sprintf(message, "No scans match with code %s on module %8s", scanlist, module.label);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+			printf("%s\n", message);
 		}
 	}
-
-	if(n > 0)
+	else
 	{
-		sprintf(message, "%d scans copied from module %8s to %s", n, module.label, outpath);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		sprintf(message, "Cannot find vsn=%s or get its directory", vsn);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
 	}
 
 	XLRClose(xlrDevice);
 
+	/* Send final "IDLE" state message so everyone knows we're done */
 	mk5status.state = MARK5_STATE_IDLE;
 	mk5status.scanNumber = module.nscans;
 	mk5status.scanName[0] = 0;
 	mk5status.position = 0;
 	mk5status.activeBank = ' ';
 	difxMessageSendMark5Status(&mk5status);
-	
 
 	return 0;
 }
