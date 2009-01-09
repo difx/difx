@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2009 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: mark5_stream.c 777 2008-09-10 14:48:08Z HelgeRottmann $
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision: 777 $
- * $Author: HelgeRottmann $
- * $LastChangedDate: 2008-09-10 08:48:08 -0600 (Wed, 10 Sep 2008) $
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -62,6 +62,23 @@ public:
 	char calCode;
 	double ra, dec;		// in radians
 	//vector<PhaseCenter> centers;
+};
+
+class AntennaSetup
+{
+public:
+	AntennaSetup(const string &name);
+	void set(const string &key, const string &value);
+
+	string vexName;		// Antenna name as it appears in vex file
+	string difxName;	// Antenna name (if different) to appear in difx
+	double X, Y, Z;		// Station coordinates to override vex
+	double clockOffset;	// [us] Override clock values in vex file.  All 3 clock ...
+	double clockRate;	// [us/s]  ... parameters are required if any is present.
+	double clockEpoch;	// [MJD]
+	// flag
+	// media
+	double polSwap;		// If true, swap polarizations
 };
 
 class CorrSetup
@@ -121,6 +138,7 @@ public:
 	bool useAntenna(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const string &name) const;
+	const AntennaSetup *getAntennaSetup(const string &name) const;
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
@@ -151,6 +169,9 @@ public:
 
 	/* source setups to apply */
 	vector<SourceSetup> sourceSetups;
+
+	/* antenna setups to apply */
+	vector<AntennaSetup> antennaSetups;
 
 private:
 	void addAntenna(const string& antName);

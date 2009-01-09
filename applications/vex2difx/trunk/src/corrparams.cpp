@@ -1,10 +1,106 @@
+/***************************************************************************
+ *   Copyright (C) 2009 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision:$
+ * $Author:$
+ * $LastChangedDate:$
+ *
+ *==========================================================================*/
+
 #include <iostream>
 #include <sstream>
 #include <algorithm>
 #include <fstream>
 #include <cstdio>
+#include <cmath>
 #include "util.h"
 #include "corrparams.h"
+
+
+double parseCoord(const char *str, char type)
+{
+	int sign = 1, l, n;
+	double a, b, c;
+	double v = -999999.0;
+
+	if(type != ' ' && type != 'R' && type != 'D')
+	{
+		cerr << "Programmer error: parseTime: parameter 'type' has illegal value = " << type << endl;
+		exit(0);
+	}
+
+	if(str[0] == '-')
+	{
+		sign = -1;
+		str++;
+	}
+	else if(str[0] == '+')
+	{
+		str++;
+	}
+
+	l = strlen(str);
+
+	if(sscanf(str, "%lf:%lf:%lf", &a, &b, &c) == 3)
+	{
+		v = sign*(a + b/60.0 + c/3600.0);
+		if(type == 'D')
+		{
+			v *= M_PI/180.0;
+		}
+		else
+		{
+			v *= M_PI/12.0;
+		}
+	}
+	else if(sscanf(str, "%lfh%lfm%lf", &a, &b, &c) == 3 && str[l-1] == 's' && type != 'D')
+	{
+		v = sign*(a + b/60.0 + c/3600.0);
+		v *= M_PI/12.0;
+	}
+	else if(sscanf(str, "%lfd%lf'%lf\"", &a, &b, &c) == 3 && str[l-1] == '"' && type == 'D')
+	{
+		v = sign*(a + b/60.0 + c/3600.0);
+		v *= M_PI/180.0;
+	}
+	else if(sscanf(str, "%lf%n", &a, &n) == 1)
+	{
+		if(n == l)
+		{
+			v = a;
+		}
+		else if(strcmp(str+n, "rad") == 0)
+		{
+			v = a;
+		}
+		else if(strcmp(str+n, "deg") == 0)
+		{
+			v = a*M_PI/180.0;
+		}
+	}
+
+	return v;
+}
 
 CorrSetup::CorrSetup(const string &name) : setupName(name)
 {
@@ -153,17 +249,11 @@ void SourceSetup::set(const string &key, const string &value)
 
 	if(key == "ra" || key == "RA")
 	{
-		char v[100], *w;
-		strcpy(v, value.c_str());
-		w = v;
-		fvex_ra(&w, &ra);
+		ra = parseCoord(value.c_str(), 'R');
 	}
 	else if(key == "dec" || key == "Dec")
 	{
-		char v[100], *w;
-		strcpy(v, value.c_str());
-		w = v;
-		fvex_dec(&w, &dec);
+		dec = parseCoord(value.c_str(), 'D');
 	}
 	else if(key == "calCode")
 	{
@@ -172,6 +262,38 @@ void SourceSetup::set(const string &key, const string &value)
 	else if(key == "name" || key == "newName")
 	{
 		ss >> difxName;
+	}
+}
+
+AntennaSetup::AntennaSetup(const string &name) : vexName(name)
+{
+}
+
+void AntennaSetup::set(const string &key, const string &value)
+{
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "name" || key == "newName")
+	{
+		ss >> difxName;
+	}
+	else if(key == "polSwap")
+	{
+		ss >> polSwap;
+	}
+	else if(key == "clockOffset")
+	{
+		ss >> clockOffset;
+	}
+	else if(key == "clockRate")
+	{
+		ss >> clockRate;
+	}
+	else if(key == "clockEpoch")
+	{
+		ss >> clockEpoch;
 	}
 }
 
@@ -312,6 +434,7 @@ void CorrParams::load(const string& fileName)
 	CorrSetup   *setup=0;
 	CorrRule    *rule=0;
 	SourceSetup *sourceSetup=0;
+	AntennaSetup *antennaSetup=0;
 	int mode = 0;	// an internal concept, not observing mode!
 
 	is.open(fileName.c_str());
@@ -425,6 +548,25 @@ void CorrParams::load(const string& fileName)
 			key = "";
 			mode = 3;
 		}
+		else if(*i == "ANTENNA")
+		{
+			if(mode != 0)
+			{
+				cerr << "Error: ANTENNA out of place." << endl;
+				exit(0);
+			}
+			i++;
+			antennaSetups.push_back(AntennaSetup(*i));
+			antennaSetup = &antennaSetups.back();
+			i++;
+			if(*i != "{")
+			{
+				cerr << "Error: '{' expected." << endl;
+				exit(0);
+			}
+			key = "";
+			mode = 4;
+		}
 		else if(*i == "}" && mode != 0)
 		{
 			mode = 0;
@@ -461,6 +603,10 @@ void CorrParams::load(const string& fileName)
 			else if(mode == 3)
 			{
 				sourceSetup->set(key, value);
+			}
+			else if(mode == 4)
+			{
+				antennaSetup->set(key, value);
 			}
 		}
 		if(*i == "{" || *i == "}")

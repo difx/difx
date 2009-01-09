@@ -1,0 +1,236 @@
+===== vex2difx =====
+
+vex2difx is a program that takes a vex files (such as one produced by sched with various tables based on observe-time data appended) and a configuration file (described below) and generates one or more .input files for use with difx.  Each .input file is accompanied by a .calc file which is used by calcif2 to generate the .delay and .uvw files needed at correlation time.  vex2difx along with calcif2 supersedes the functionality of vex2config and vex2model.
+
+===== The vex2difx philosophy =====
+
+Users and future developers of vex2difx should be aware of the approach used in designing vex2difx which can be summarized as follows:
+
+  - The output files should never need to be hand edited
+  - Simple experiments should not require complicated configuration
+  - All features implemented by mpifxcorr should be accessible
+  - All experiments expressible by vex should be supported
+  - The configuration file should be human and machine friendly
+  - Command line arguments should not influence the processing of the vex file
+
+Note that not all of these ideals have been completely reached as of now.  It is not the intention of the developer to guess all possible future needs of this program.  Most new features will be easy to implement so send a message to the difx-users mailing list for requests.
+
+===== The vex file =====
+
+The VLBI scheduling programs [[http://http://www.aoc.nrao.edu/~cwalker/sched/sched/sched.html|sched]] and sked both produce vex files that are used to control antennas for observations.  Certain information that is not available prior to an observation should be appended to the vex file.  This information includes: 
+
+  - The Earth orientation parameters ($EOP block)
+  - The antenna clock offsets ($CLOCK block)
+  - The volume serial numbers for the recording media ($TAPELOG_OBS block)
+
+Population of these three tables is necessarily a correlator/array specific operation and is the responsibility of the vex2difx user to arrange.
+
+===== The configuration file =====
+
+The configuration file consists of a number of global parameters that affect the way that jobs are created and several sections that can customize correlation on a per-source, per mode, or per scan basis.  All parameters (those that are global and those that reside inside sections) are specified by a parameter name, the equal sign, and exactly one value that cannot contain whitespace.  Whitespace is not required except to keep parameter names, values, and section names separate.  All parameter names and values are case sensitive except for source names and antenna names.  The # is a comment character; any text after this on a line is ignored.
+
+==== Global Parameters ====
+
+Global parameters can be specified one or many per line such as:
+
+  maxGap = 2000 # seconds
+
+or
+
+  mjdStart = 52342.522 mjdStop=52342.532 
+
+
+^ Parameter name ^ Type   ^ Units ^ Default    ^ Comments ^
+| vex            | string |       | REQUIRED   | filename of the vex file to process; this is the only required parameter |
+| mjdStart       | float  | days  | obs. start | discard any scans or partial scans before this time |
+| mjdStop        | float  | days  | obs. stop  | discard any scans or partial scans after this time |
+| minSubarray    | int    |       | 2          | don't make jobs for subarrays with fewer than this many antennas |
+| maxGap         | float  | sec   | 180        | split an observation into multiple jobs if there are correlation gaps longer than this number |
+| singleScan     | bool   |       | False      | if True, split each scan into its own job |
+| singleSetup    | bool   |       | True       | if True, allow only one setup per job; True is required for FITS-IDI conversion |
+| maxLength      | float  | sec   | 7200       | don't allow individual jobs longer than this amount of time |
+| dataBufferFactor | int  |       | 32         | the mpifxcorr DATABUFFERFACTOR parameter;  see mpifxcorr documentation | 
+| nDataSegments  | int    |       | 8          | the mpifxcorr NUMDATASEGMENTS parameter |
+| jobSeries      | string |       | ''job''    | the base filename of .input and .calc files to be created |
+| startSeries    | int    |       | 20         | the default starting number for jobs created |
+| sendLength     | float  | sec   | 0.262144   | roughly the amount of data to send at a time from datastream processes to core processes |
+| antennas       | string |       | all ants.  | a comma or whitespace separated list of antennas to include in correlation |
+
+==== SOURCE sections ====
+
+A source section can be used to change the properties of an individual source, such as its position or name.  In the future this is where multiple correlation centers for a given source will be specified.  A source section is enclosed in a pair of curly braces after the keyword SOURCE followed by the name of a source, e.g.:
+
+  SOURCE 3C273
+  {
+    source parameters go here
+  }
+
+or equivalently
+
+  SOURCE 3c273 { source parameters go here }
+
+^ Parameter name ^ Type   ^ Units ^ Default ^ Comments ^
+| ra             |        | J2000 |         | right ascension, e.g. 12h34m12.6s |
+| dec            |        | J2000 |         | declination, e.g. 34d12'23.1" |
+| name           | string |       |         | new name for source |
+| calCode        | char   |       | ' '     | calibration code, typically A, B, C for calibrators, G for a gated pulsar, or blank for normal target | 
+
+==== SETUP sections ====
+
+Setup sections are enclosed in braces after the word SETUP and a name given to this setup section.  The setup name is referenced by a RULE section (see below).  A setup with the special name ''default'' will be applied to any scans not otherwise assigned to setups by rule sections.  If no setup sections are defined, a setup called ''default'', with all default parameters, will be implicitly created and applied to all scans.  The order of setup sections is immaterial.
+
+^ Parameter name ^ Type   ^ Units ^ Default ^ Comments ^
+| tInt           | float  | sec   | 2       | integration time |
+| nChan          | int    |       | 16      | number of channels per spectral window; currently must be a power of 2 |
+| doPolar        | bool   |       | True    | correlate cross hands when possible? |
+| blocksPerSend  | int    |       |         | the mpifxcorr BLOCKSPERSEND parameter; defaults to a value that depends on other parameters |
+| specAvg        | int    |       | 1       | how many channels to average together after correlation |
+| startChan      | int    |       | 0       | first (unaveraged) channel to include in output |
+| postFFringe    | bool   |       | False   | do fringe rotation after FFT? |
+| binConfig      | string |       | none    | if specified, apply this pulsar bin configuration file to this setup |
+
+==== RULE sections ====
+
+A rule section is used to assign a setup to a particular source name, calibration code (currently not supported), scan name, or vex mode.  The order of rule sections //does// matter as the order determines the priority of the rules.  The first rule that matches a scan is applied to that scan.  The correlator setup used for scans that match a rule is determined by the parameter called ''setup''.  A special setup name ''skip'' causes matching scans not to be correlated.  Any parameters not specified are interpreted as fully inclusive.  Note that multiple rule sections can reference the same setup section.  Multiple values may be applied to any of the parameters except for ''setup''.  This is accomplished either by comma or whitespace separation of the values in a single assignment or with repeated assignments.  Thus
+
+  RUlE rule1
+  {
+    source = 3C84,3C273
+    setup = BrightSourceSetup
+  }
+
+is equivalent to
+
+  RULE rule2
+  {
+    source = 3C84 3C273
+    setup = BrightSourceSetup
+  }
+
+is equivalent to
+
+  RULE rule3
+  {
+    source = 3C84
+    source = 3C273
+    setup = BrightSourceSetup
+  }
+
+The names given to rules (e.g., rule1, rule2 and rule3 above) are not used anywhere but are required to be unique.
+
+^ Parameter name ^ Type   ^ Units ^ Default ^ Comments ^
+| scan           | string |       |         | one or more scan name, as specified in the vex file, to select with this rule |
+| source         | string |       |         | one or more source name, as specified in the vex file, to select with this rule |
+| calCode        | char   |       |         | one or more calibration code to select with this rule |
+
+Note that source names and calibration codes reassigned by source sections are not used.  Only the names and calibration codes in the vex file are compared.
+
+==== ANTENNA sections ====
+
+(Not yet implemented) An antenna section will allow properties of an individual antenna, such as position, name, or clock/LO offsets to be adjusted.  
+
+===== Command line arguments =====
+
+vex2difx is executed on the command line with:
+
+''vex2difx'' [options] inputFile
+
+Although no command line options can change the way that vex2difx processes a file, there are some options that the user may find useful:
+
+  * ''-h'' or ''--help''    Print usage information to the screen.  This is the same as if no arguments were supplied to vex2difx.
+  * ''-o'' or ''--output''  Writes a configuration file called //inputFile//''.params'' which is a valid configuration file identical to //inputFile//, but with all assumed defaults populated.  This is useful to see what was actually assumed.
+  * ''-v'' or ''--verbose'' Prints much more information to the screen.  Use this option twice for even more information.
+
+===== Reporting problems =====
+
+If you have a problem with vex2difx, please email the difx users email group.  Be sure to include the following in the email:
+
+  - A description of the problem
+  - The v2d file supplied to vex2difx
+  - The vex file pointed to from the v2d file
+  - the captured output when running vex2difx with extra verbosity (use options ''-v -v'')
+
+===== Examples =====
+
+==== Trivial case ====
+
+The following example demonstrates the simplest case where all defaults are assumed
+
+  vex=trivial.vex
+
+==== Simple case ====
+
+The following is a more realistic case for a simple experiment
+
+  vex=simple.vex
+  
+  SETUP default
+  {
+    nChan=64
+    tInt =3.0 
+  }
+
+==== Source coordinate change ====
+
+This shows how to change the coordinates of two sources in a file
+
+  vex=coords.vex
+  
+  SOURCE J1232+131 { ra=12h32m15.12s dec=13d07'12.5" }
+  SOURCE PLANETX   { ra=11h59m59.999s dec=-12d59'59.88" }
+  
+  SETUP default
+  {
+    nChan=128
+  }
+
+==== Two setups ====
+
+This is a more complicated file showing how to apply different correlator setups to different sources
+
+  vex=twosetups.vex
+  maxGap=1000  # don't split the jobs at every source change,
+               # instead, make just 2 interleaved jobs
+  antennas=BR,FD,HN,MK  # select only these four antennas for now  
+  
+  SETUP target
+  {
+    nchan=1024
+    tInt =1.2
+  }
+  
+  SETUP calibrator
+  {
+    nchan=32
+    tInt =4
+  }
+  
+  RULE calRule
+  {
+    source=J1234+1231,3C84,3C273
+    setup =calibrator
+  }
+  
+  RULE targetRule
+  {
+    # note: not specifying any restrictions so all sources that don't 
+    # match above will match here
+    setup = target   
+  }
+
+The above could have used a default setup rather than a catch-all rule and resulted in the same output.
+
+===== vex2difx TODO list =====
+
+List of remaining issues
+
+  * Support disk files rather than Mark5 modules (help appreciated here!)
+  * Support of spacecraft .bsf files
+  * Mark5B and VDIF support
+  * Handle modes/setups that don't use all provided antennas
+  * Extensive testing of many modes
+  * Support for polarization swapping
+  * Support for ANTENNA sections
+  * Improved ra, dec parsing
+  * Handle modes that don't use all antennas
+  * Write ''.flag'' file indicating baselines/antennas to turf after correlation
