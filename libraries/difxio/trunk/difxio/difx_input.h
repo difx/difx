@@ -139,7 +139,6 @@ typedef struct
 				 * DifxDatastream Id. [0..nAntenna-1]
 				 * this should be used only in conjunction
 				 * with .difx/ antenna numbers! */
-	
 } DifxConfig;
 
 typedef struct
@@ -443,15 +442,18 @@ int DifxPulsarArrayGetMaxPolyOrder(const DifxPulsar *dp, int nPulsar);
 DifxConfig *newDifxConfigArray(int nConfig);
 void DifxConfigAllocDatastreamIds(DifxConfig *dc, int nDatastream, int start);
 void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start);
-void deleteDifxConfigInterals(DifxConfig *dc);
+void deleteDifxConfigInternals(DifxConfig *dc);
 void deleteDifxConfigArray(DifxConfig *dc, int nConfig);
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc);
 void printDifxConfig(const DifxConfig *dc);
 void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc);
 void printDifxConfigSummary(const DifxConfig *dc);
+int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2);
 void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
 	const int *pulsarIdRemap);
+void moveDifxConfig(DifxConfig *dest, DifxConfig *src);
+int simplifyDifxConfigs(DifxInput *D);
 DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const DifxConfig *dc2, int ndc2, int *configIdRemap,
 	const int *baselineIdRemap, const int *datastreamIdRemap,
@@ -535,6 +537,7 @@ void printDifxIF(const DifxIF *di);
 void fprintDifxIF(FILE *fp, const DifxIF *di);
 void printDifxIFSummary(const DifxIF *di);
 void fprintDifxIFSummary(FILE *fp, const DifxIF *di);
+int isSameDifxIF(const DifxIF *di1, const DifxIF *di2);
 void deleteBaselineFreq2IF(int ***map);
 void printBaselineFreq2IF(int ***map, int nAnt, int nChan);
 void fprintBaselineFreq2IF(FILE *fp, int ***map, int nAnt, int nChan);

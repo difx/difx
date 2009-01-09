@@ -78,6 +78,38 @@ void printBaselineFreq2IF(int ***map, int nAnt, int nChan)
 	fprintBaselineFreq2IF(stdout, map, nAnt, nChan);
 }
 
+int isSameDifxIF(const DifxIF *di1, const DifxIF *di2)
+{
+	int i;
+
+	if(di1 == 0 && di2 == 0)
+	{
+		return 1;
+	}
+	else if(di1 == 0 || di2 == 0)
+	{
+		return 0;
+	}
+
+	if(di1->freq != di2->freq ||
+	   di1->bw != di2->bw ||
+	   di1->sideband != di2->sideband ||
+	   di1->nPol != di2->nPol)
+	{
+		return 0;
+	}
+
+	for(i = 0; i < di1->nPol; i++)
+	{
+		if(di1->pol[i] != di2->pol[i])
+		{
+			return 0;
+		}
+	}
+
+	return 1;
+}
+
 int makeBaselineFreq2IF(DifxInput *D, int configId)
 {
 	int ***map;

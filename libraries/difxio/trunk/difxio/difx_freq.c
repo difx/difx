@@ -93,6 +93,10 @@ int simplifyDifxFreqs(DifxInput *D)
 	int n0;
 
 	n0 = D->nFreq;
+	if(n0 < 2)
+	{
+		return 0;
+	}
 
 	for(f=1;;)
 	{

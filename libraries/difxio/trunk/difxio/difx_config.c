@@ -82,7 +82,7 @@ void DifxConfigAllocBaselineIds(DifxConfig *dc, int nBaseline, int start)
 	dc->nBaseline = nBaseline;
 }
 
-void deleteDifxConfigInterals(DifxConfig *dc)
+void deleteDifxConfigInternals(DifxConfig *dc)
 {
 	if(dc->IF)
 	{
@@ -124,7 +124,7 @@ void deleteDifxConfigArray(DifxConfig *dc, int nConfig)
 	{
 		for(c = 0; c < nConfig; c++)
 		{
-			deleteDifxConfigInterals(dc + c);
+			deleteDifxConfigInternals(dc + c);
 		}
 		free(dc);
 	}
@@ -224,6 +224,73 @@ void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 void printDifxConfigSummary(const DifxConfig *dc)
 {
 	fprintDifxConfigSummary(stdout, dc);
+}
+
+int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
+{
+	int i;
+
+	if(dc1->tInt != dc2->tInt ||
+	   dc1->nChan != dc2->nChan ||
+	   dc1->specAvg != dc2->specAvg ||
+	   dc1->overSamp != dc2->overSamp ||
+	   dc1->decimation != dc2->decimation ||
+	   dc1->blocksPerSend != dc2->blocksPerSend ||
+	   dc1->guardBlocks != dc2->guardBlocks ||
+	   dc1->quadDelayInterp != dc2->quadDelayInterp ||
+	   dc1->pulsarId != dc2->pulsarId ||
+	   dc1->nPol != dc2->nPol ||
+	   dc1->doPolar != dc2->doPolar ||
+	   dc1->quantBits != dc2->quantBits ||
+	   dc1->nAntenna != dc2->nAntenna ||
+	   dc1->nDatastream != dc2->nDatastream ||
+	   dc1->nBaseline != dc2->nBaseline ||
+	   dc1->nIF != dc2->nIF ||
+	   dc1->freqId != dc2->freqId)
+	{
+		return 0;
+	}
+
+	for(i = 0; i < dc1->nPol; i++)
+	{
+		if(dc1->pol[i] != dc2->pol[i])
+		{
+			return 0;
+		}
+	}
+
+	for(i = 0; i < dc1->nDatastream; i++)
+	{
+		if(dc1->datastreamId[i] != dc2->datastreamId[i])
+		{
+			return 0;
+		}
+	}
+
+	for(i = 0; i < dc1->nBaseline; i++)
+	{
+		if(dc1->baselineId[i] != dc2->baselineId[i])
+		{
+			return 0;
+		}
+	}
+
+	if(dc1->IF && dc2->IF) 
+	{
+		for(i = 0; i < dc1->nIF; i++)
+		{
+			if(!isSameDifxIF(dc1->IF + i, dc2->IF + i))
+			{
+				return 0;
+			}
+		}
+	}
+	else if(dc1->IF || dc2->IF)
+	{
+		return 0;
+	}
+
+	return 1;
 }
 
 int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db)
@@ -414,6 +481,94 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 			dest->datastreamId[i] = src->datastreamId[i];
 		}
 	}
+}
+
+void moveDifxConfig(DifxConfig *dest, DifxConfig *src)
+{
+	memcpy(dest, src, sizeof(DifxConfig));
+
+	/* unlink some pointers to prevent doubel freeing */
+	src->datastreamId = 0;
+	src->baselineId = 0;
+	src->IF = 0;
+	src->freqId2IF = 0;
+	src->baselineFreq2IF = 0;
+	src->ant2dsId = 0;
+}
+
+int simplifyDifxConfigs(DifxInput *D)
+{
+	int c, c1, c0, s;
+	int n0;
+
+	n0 = D->nConfig;
+	if(n0 < 2)
+	{
+		return 0;
+	}
+
+	for(c=1;;)
+	{
+		if(c >= D->nConfig)
+		{
+			break;
+		}
+
+		for(c1 = 0; c1 < c; c1++)
+		{
+			if(isSameDifxConfig(D->config+c, D->config+c1))
+			{
+				break;
+			}
+		}
+		if(c == c1)
+		{
+			c++;
+		}
+		else
+		{
+			/* 1. renumber this an all higher references to configs */
+			for(s = 0; s < D->nSource; s++)
+			{
+				c0 = D->source[s].configId;
+				if(c0 == c)
+				{
+					c0 = c1;
+				}
+				else if(c0 > c)
+				{
+					c0--;
+				}
+				D->source[s].configId = c0;
+			}
+
+			for(s = 0; s < D->nScan; s++)
+			{
+				c0 = D->scan[s].configId;
+				if(c0 == c)
+				{
+					c0 = c1;
+				}
+				else if(c0 > c)
+				{
+					c0--;
+				}
+				D->scan[s].configId = c0;
+			}
+
+			/* 2. reduce number of configs */
+			D->nConfig--;
+
+			/* 3. delete this config and bump up higher ones */
+			deleteDifxConfigInternals(D->config+c);
+			for(c1 = c; c1 < D->nConfig; c1++)
+			{
+				moveDifxConfig(D->config+c1, D->config+c1+1);
+			}
+		}
+	}
+
+	return n0 - D->nConfig;
 }
 
 DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,

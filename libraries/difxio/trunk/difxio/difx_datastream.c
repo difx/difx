@@ -265,6 +265,11 @@ int simplifyDifxDatastreams(DifxInput *D)
 
 	n0 = D->nDatastream;
 
+	if(n0 < 2)
+	{
+		return 0;
+	}
+
 	for(d = 1;;)
 	{
 		if(d >= D->nDatastream)

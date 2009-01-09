@@ -284,6 +284,10 @@ int simplifyDifxBaselines(DifxInput *D)
 	int c, cb;
 
 	n0 = D->nBaseline;
+	if(n0 < 2)
+	{
+		return 0;
+	}
 
 	for(b = 1;;)
 	{
