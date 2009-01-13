@@ -116,7 +116,7 @@ Visibility::~Visibility()
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++)
         vectorFree(binweightsums[i][j]);
-      for(int j=0;j<config->scrunchOutputOn(currentconfigindex)?1:config->getNumPulsarBins(currentconfigindex);j++)
+      for(int j=0;j<((config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex));j++)
         vectorFree(binscales[i][j]);
       delete [] binweightsums[i];
       delete [] binscales[i];
@@ -142,7 +142,7 @@ bool Visibility::addData(cf32* subintresults)
 void Visibility::increment()
 {
   int status;
-  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
+  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << ".  The approximate mjd/seconds is " << expermjd + (experseconds + currentstartseconds)/86400 << "/" << (experseconds + currentstartseconds)%86400 << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
@@ -1004,6 +1004,7 @@ void Visibility::changeConfig(int configindex)
   }
   else
   {
+    cverbose << startl << "Starting to delete some old arrays" << endl;
     //need to delete the old arrays before allocating the new ones
     for(int i=0;i<numdatastreams;i++) {
       for(int j=0;j<config->getDNumFreqs(currentconfigindex, i);j++)
@@ -1027,16 +1028,18 @@ void Visibility::changeConfig(int configindex)
     vectorFree(rpfitsarray);
 #endif
     if(pulsarbinon) {
+      cverbose << startl << "Starting to delete some pulsar arrays" << endl;
       for(int i=0;i<config->getFreqTableLength();i++) {
         for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++)
           vectorFree(binweightsums[i][j]);
-        for(int j=0;j<config->scrunchOutputOn(currentconfigindex)?1:config->getNumPulsarBins(currentconfigindex);j++)
+        for(int j=0;j<((config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex));j++)
           vectorFree(binscales[i][j]);
         vectorFree(pulsarbins[i]);
         delete [] binweightsums[i];
         delete [] binscales[i];
       }
       vectorFree(binweightdivisor);
+      cverbose << startl << "Finished deleting some pulsar arrays" << endl;
     }
   }
 
