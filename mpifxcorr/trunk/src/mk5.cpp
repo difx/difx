@@ -234,43 +234,6 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     struct msghdr msg;
     struct iovec iov[2];
 
-    // Handle this case seperately to avoid horribly convoluted code below. There
-    // may be a cleaner way to do this but it hurts my head already...
-    // Maybe do network setup stuff after dealing with first packet
-    if (bytestoread<udp_offset) {
-      if (bytestoread<udp_offset-udpsize) { // Nothing available fill with invalid pattern
-	int npack = bytestoread/udpsize;
-	// Fill complete packets
-	for (int i=0; i<npack; i++) {
-	  memcpy(ptr+i*udpsize, invalid_buf, udpsize);
-	}
-	memcpy(ptr+npack*udpsize, invalid_buf, bytestoread-npack*udpsize);
-	*nread = bytestoread;
-	udp_offset -= bytestoread;
-      } else {
-	int invalidsize = bytestoread-udpsize;
-
-	int nfull = invalidsize/udpsize;
-	// Fill complete packets
-	for (int i=0; i<nfull; i++) {
-	  memcpy(ptr+i*udpsize, invalid_buf, udpsize);
-	}
-	memcpy(ptr+nfull*udpsize, invalid_buf, invalidsize-nfull*udpsize);
-
-	// Copy the actual usable bytes
-	int validsize = bytestoread - invalidsize;
-	if (validsize > udpsize) {
-	  cfatal << startl << "Mk5DataStream::readnetwork  Internal errorcalculating UDP sizes" << endl;
-	}
-	memcpy(ptr+invalidsize, udp_buf, validsize);
-	memmove(udp_buf, udp_buf+validsize, udp_offset);
-	/* NEEDS MORE WORK HERE */
-
-
-
-      }
-    }
-
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov        = &iov[0];
     msg.msg_iovlen     = 2;
@@ -288,9 +251,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     //cinfo << startl << "****** readnetwork will read packets " << packet_segmentstart << " to " << packet_segmentend << "(" << segmentsize << ")" << endl;
     
     if (segmentsize>packets_arrived.size()) {
-      cfatal << startl << "Mk5DataStream::readnetwork  bytestoread too large (" << bytestoread << "/" << segmentsize << ")" << endl;
-
-
+      cfatal << startl << "Mk5DataStream::readnetwork bytestoread too large (" << bytestoread << "/" << segmentsize << ")" << endl;
       cinfo << startl << "packet_segmentstart = " << packet_segmentstart << endl;
       cinfo << startl << "packet_segmentend = " << packet_segmentend << endl;
       cinfo << startl << "segmentsize = " << segmentsize << endl;
@@ -315,13 +276,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	packets_arrived[packet_index] = true;
 
       if (bytestoread<udp_offset+packet_index*udpsize) {
-	if (packet_index==0) {
-	  memcpy(ptr, udp_buf, bytestoread);
-	  packet_sum += bytestoread;
-	  npacket++;
-	  udp_offset -= bytestoread;
-	  memmove(udp_buf, udp_buf+bytestoread, udp_offset);
-	} else if (packet_index>=segmentsize) {
+	if (packet_index>=segmentsize) {
 
 	  if (udp_offset==udpsize) 
 	    next_segmentstart = packet_segmentend+1;
@@ -331,10 +286,13 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  next_udpoffset = udp_offset + packet_index*udpsize-bytestoread;
 	  packet_drop+=segmentsize;
 
-
-
-	  done = 1;
-	  *nread = bytestoread;
+	} else if (packet_index==0) {
+	  memcpy(ptr, udp_buf, bytestoread);
+	  packet_sum += bytestoread;
+	  npacket++;
+	  udp_offset -= bytestoread;
+	  if (udp_offset>0)
+	    memmove(udp_buf, udp_buf+bytestoread, udp_offset);
 
 	} else {
 	  int bytes = (bytestoread-udp_offset)%udpsize;
@@ -383,10 +341,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
 	  packet_segmentstart = sequence;
 	  packet_segmentend = packet_segmentstart+(bytestoread-1)/udpsize;
-	  //cinfo << startl << "****** readnetwork will actually read packets " << packet_segmentstart << " to " << packet_segmentend << "(" << segmentsize << ")" << endl;
-
 	}
-
 
 	// Check this is a sensible packet
 	packet_index = sequence-packet_segmentstart;
@@ -394,6 +349,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  // If this was much smaller we really should assume the sequence has got screwed up and 
 	  // Resync
 	  packet_oo++;  // This could be duplicate but we cannot tell
+	  // Probably should decrease packet dropped count, maybe (it was not counted after all)
 	} else if (sequence==packet_segmentend) { 
 	  //cinfo << startl << "**Segmentend " << packet_index << " (" << packet_segmentend << ")" << endl;
 	  int bytes = (bytestoread-udp_offset-1)%udpsize+1;
