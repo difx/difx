@@ -17,9 +17,8 @@ int main(int argc, char** argv)
   }
 
   string line, pol;
-  int baseline, mjd, sec, confindex, srcindex, freqindex, pbin, flag, weight_add, numchannels;
-  double u,v,w;
-  bool weights_used;
+  int baseline, mjd, sec, confindex, srcindex, freqindex, pbin, flag, numchannels;
+  double u,v,w,weight;
   string filename = argv[1];
   int sepindex = filename.find_last_of('.');
   int numvispoints = atoi(filename.substr(sepindex+1).c_str());
@@ -31,7 +30,7 @@ int main(int argc, char** argv)
     if(config->getNumChannels(i) > maxnumchannels)
       maxnumchannels = config->getNumChannels(i);
   }
-  float * visibilities = new float[maxnumchannels*3]; //worst case
+  float * visibilities = new float[maxnumchannels*2];
 
   ifstream difxin(argv[1]);
 
@@ -57,8 +56,7 @@ int main(int argc, char** argv)
     getline(difxin, line);
     flag = atoi(line.substr(20).c_str());
     getline(difxin, line);
-    weight_add = atoi(line.substr(20).c_str());
-    weights_used = (weight_add == 0)?false:true;
+    weight = atof(line.substr(20).c_str());
     getline(difxin, line);
     u = atof(line.substr(20).c_str());
     getline(difxin, line);
@@ -67,9 +65,10 @@ int main(int argc, char** argv)
     w = atof(line.substr(20).c_str());
 
     numchannels = config->getNumChannels(confindex);
-    difxin.read((char*)visibilities, numchannels*(2+weight_add)*sizeof(float));
+    cout << "W line was " << line << ", numchannels is " << numchannels << endl;
+    difxin.read((char*)visibilities, numchannels*2*sizeof(float));
 
-    cout << "For baseline " << baseline << ", at time " << mjd << "/" << sec << ", the source was " << srcindex << " and the config was " << confindex << ", with uvw (" << u << "," << v << "," << w << ").  For freq " << freqindex << ", pol " << pol << ", pulsar bin " << pbin << ", we have visibilities[0] = " << visibilities[0] << " + " << visibilities[1] << " i.  The middle visibility is " << visibilities[(numchannels/2)*(2+weight_add)] << " + " << visibilities[(numchannels/2)*(2+weight_add) + 1] << " i." << endl;
+    cout << "For baseline " << baseline << ", at time " << mjd << "/" << sec << ", the source was " << srcindex << " and the config was " << confindex << ", with uvw (" << u << "," << v << "," << w << ").  For freq " << freqindex << ", pol " << pol << ", pulsar bin " << pbin << ", we have visibilities[0] = " << visibilities[0] << " + " << visibilities[1] << " i.  The middle visibility is " << visibilities[numchannels] << " + " << visibilities[numchannels + 1] << " i." << ", and the weight was " << weight << endl;
     //ofstream asciiout("ascii.out", ios::trunc);
     //for(int j=0;j<numchannels;j++)
     //  asciiout << j << " " << sqrt(visibilities[j*2]*visibilities[j*2] + visibilities[j*2+1]*visibilities[j*2+1]) << " " << atan2(visibilities[2*j+1], visibilities[2*j]) << endl;
