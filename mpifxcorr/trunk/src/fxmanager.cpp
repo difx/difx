@@ -61,7 +61,7 @@ const string FxManager::LL_CIRCULAR_POL_NAMES[4] = {"LL", "RR", "LR", "RL"};
 const string FxManager::LINEAR_POL_NAMES[4] = {"XX", "YY", "XY", "YX"};
 
 FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip)
-  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), monitor(mon), hostname(hname), monitorport(port)
+  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), monitor(mon), hostname(hname), monitorport(port), visibilityconfigok(true)
 {
   int perr;
   const string * polnames;
@@ -143,6 +143,10 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), executetimeseconds, skipseconds, startns, polnames, monitor, monitorport, hostname, &mon_socket, monitor_skip);
     pthread_mutex_init(&(bufferlock[i]), NULL);
     islocked[i] = false;
+    if(!visbuffer[i]->configuredOK()) { //problem with finding a polyco, probably
+      cfatal << startl << "Manager aborting correlation!" << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
   }
 
   //create the threaded writing stuff
@@ -263,6 +267,10 @@ void FxManager::execute()
   {
     //receive from any core, and send data straight back
     receiveData(true);
+    if(!visibilityconfigok) { //problem with finding a polyco, probably
+      cfatal << startl << "Manager aborting correlation!" << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
   }
 
   //now send the terminate signal to each datastream and each core
@@ -542,6 +550,9 @@ void FxManager::loopwrite()
     }
     visbuffer[atsegment]->writedata();
     visbuffer[atsegment]->increment();
+    if(!visbuffer[atsegment]->configuredOK()) { //problem with finding a polyco, probably
+      visibilityconfigok = false;
+    }
     atsegment=(atsegment+1)%config->getVisBufferLength();
   }
   

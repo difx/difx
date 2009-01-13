@@ -56,6 +56,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   maxproducts = config->getMaxProducts();
   autocorrincrement = (maxproducts>1)?2:1;
   first = true;
+  configuredok = true;
   currentsubints = 0;
   numdatastreams = config->getNumDataStreams();
   resultlength = config->getMaxResultLength();
@@ -560,7 +561,13 @@ void Visibility::writedata()
     int mjd = expermjd + (experseconds + currentstartseconds)/86400;
     double mjdfrac = (double((experseconds + currentstartseconds)%86400) + double((currentstartsamples)/(2000000.0*config->getDBandwidth(currentconfigindex,0,0))))/86400.0;
     double fftminutes = double(config->getNumChannels(currentconfigindex))/(60000000.0*config->getDBandwidth(currentconfigindex,0,0));
-    polyco = Polyco::getCurrentPolyco(currentconfigindex, mjd, mjdfrac, config->getPolycos(currentconfigindex), config->getNumPolycos(currentconfigindex));
+    polyco = Polyco::getCurrentPolyco(currentconfigindex, mjd, mjdfrac, config->getPolycos(currentconfigindex), config->getNumPolycos(currentconfigindex), false);
+    if (polyco == NULL) {
+      cfatal << startl << "Could not locate a Polyco to cover the timerange MJD " << expermjd + (experseconds + currentstartseconds)/86400 << ", seconds " << (experseconds + currentstartseconds)%86400 << " - aborting" << endl;
+      Polyco::getCurrentPolyco(currentconfigindex, mjd, mjdfrac, config->getPolycos(currentconfigindex), config->getNumPolycos(currentconfigindex), true);
+      configuredok = false;
+      return;
+    }
     double * binweights = polyco->getBinWeights();
 
     //SOMEWHERE IN HERE, CHECK THE AMPLITUDE SCALING FOR MULTIPLE SCRUNCHED BINS!
@@ -1118,7 +1125,12 @@ void Visibility::changeConfig(int configindex)
   //create the pulsar bin weight accumulation arrays
   if(pulsarbinon) {
     double fftsecs = double(config->getNumChannels(currentconfigindex))/(1000000.0*config->getDBandwidth(currentconfigindex,0,0));
-    polyco = Polyco::getCurrentPolyco(configindex, expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0, config->getPolycos(configindex), config->getNumPolycos(configindex));
+    polyco = Polyco::getCurrentPolyco(configindex, expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0, config->getPolycos(configindex), config->getNumPolycos(configindex), false);
+    if (polyco == NULL) {
+      cfatal << startl << "Could not locate a Polyco to cover the timerange MJD " << expermjd + (experseconds + currentstartseconds)/86400 << ", seconds " << (experseconds + currentstartseconds)%86400 << " - aborting" << endl;
+      Polyco::getCurrentPolyco(configindex, expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0, config->getPolycos(configindex), config->getNumPolycos(configindex), true);
+      configuredok = false;
+    }
     //polyco->setTime(expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0);
     if(config->scrunchOutputOn(configindex)) {
       binweightdivisor = vectorAlloc_f32(1);

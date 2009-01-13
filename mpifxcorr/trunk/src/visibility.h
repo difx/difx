@@ -56,6 +56,13 @@ public:
   ~Visibility();
 
  /**
+  * Tells whether any problems have been found when configuring the Visibility (like
+  * missing polycos when pulsar binning)
+  * @return Boolean value which is true if no problems found
+  */
+  inline bool configuredOK() { return configuredok; }
+
+ /**
   * Adds one sub-integration to the accumulator
   * @param subintresults The sub-integration to be added
   * @return Whether this integration period is now complete
@@ -152,7 +159,7 @@ private:
   int visID, expermjd, experseconds, integrationsamples, currentstartseconds, currentstartsamples, offset, offsetperintegration, subintsthisintegration, subintsamples, numvisibilities, numdatastreams, numbaselines, numchannels, currentsubints, resultlength, currentconfigindex, samplespersecond, maxproducts, executeseconds, autocorrincrement;
   double fftsperintegration, meansubintsperintegration;
   const string * polnames;
-  bool first, monitor, pulsarbinon;
+  bool first, monitor, pulsarbinon, configuredok;
   int portnum;
   char * hostname;
   int * mon_socket;

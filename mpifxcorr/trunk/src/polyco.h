@@ -105,9 +105,10 @@ public:
   * @param mjdfraction The offset in days (as a fraction) from the specified integer MJD
   * @param polycos The array of Polycos to check through
   * @param npolycos The number of polycos in the array
+  * @param printtimes Whether to print the comparison values to cinfo or not
   * @return The matching Polyco, or null if none match
   */
-  static Polyco * getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos);
+  static Polyco * getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos, bool printtimes);
 
  /**
   * Returns whether the initial file was read ok
@@ -140,6 +141,10 @@ public:
   * Clears the bin counts
   */
   void incrementBinCount();
+
+  inline int getMJD() { return mjd; }
+  inline double getMJDfraction() { return mjdfraction; }
+  inline double getSpanMinutes() { return timespan; }
 
   ///defines how much error will be tolerated due to frequency drift since the reference time
   static const double BIN_TOLERANCE;

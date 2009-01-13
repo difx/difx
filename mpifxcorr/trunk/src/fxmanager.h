@@ -137,7 +137,7 @@ private:
   MPI_Comm return_comm;
   int numcores, mpiid, numdatastreams, startmjd, startseconds, startns, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, skipseconds;
   double inttime, halfsampleseconds;
-  bool keepwriting, circularpols, writethreadinitialised;
+  bool keepwriting, circularpols, writethreadinitialised, visibilityconfigok;
   int senddata[3]; //targetcoreid, offsetseconds, offsetnanoseconds
   Uvw * uvw;
   int * datastreamids;

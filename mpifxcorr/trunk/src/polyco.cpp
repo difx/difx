@@ -311,14 +311,16 @@ bool Polyco::includesTime(int incmjd, double incmjdfraction)
     return (differencemins <= double(timespan/2.0)) && (differencemins >= -double(timespan/2.0));
 }
 
-Polyco * Polyco::getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos)
+Polyco * Polyco::getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos, bool printtimes)
 {
     for(int i=0;i<npolycos;i++)
     {
-        if(polycos[i]->includesTime(mjd, mjdfraction) && polycos[i]->getConfig() == requiredconfig)
-	{
-            return polycos[i]; //note exit from loop here!
-	}
+      if(printtimes)
+        cinfo << startl << "Polyco[" << i << "] has config << " << polycos[i]->getConfig() << " while required config is " << requiredconfig << ". Center time MJD is " << polycos[i]->getMJD() << ", fraction " << polycos[i]->getMJDfraction() << " and timespan in minutes is " << polycos[i]->getSpanMinutes() << ", while the requested time was MJD " << mjd << " + fraction " << mjdfraction << endl;
+      if(polycos[i]->includesTime(mjd, mjdfraction) && polycos[i]->getConfig() == requiredconfig)
+      {
+        return polycos[i]; //note exit from loop here!
+      }
     }
 
     return NULL;
