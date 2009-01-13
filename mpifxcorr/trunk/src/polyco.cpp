@@ -315,8 +315,11 @@ Polyco * Polyco::getCurrentPolyco(int requiredconfig, int mjd, double mjdfractio
 {
     for(int i=0;i<npolycos;i++)
     {
-      if(printtimes)
-        cinfo << startl << "Polyco[" << i << "] has config << " << polycos[i]->getConfig() << " while required config is " << requiredconfig << ". Center time MJD is " << polycos[i]->getMJD() << ", fraction " << polycos[i]->getMJDfraction() << " and timespan in minutes is " << polycos[i]->getSpanMinutes() << ", while the requested time was MJD " << mjd << " + fraction " << mjdfraction << endl;
+      if(printtimes) {
+        cinfo << startl << "Polyco[" << i << "] has config " << polycos[i]->getConfig() << "; required config is " << requiredconfig << endl;
+        cinfo << startl << "Center time MJD is " << polycos[i]->getMJD() << ", fraction " << polycos[i]->getMJDfraction() << " and timespan (mins) is " << polycos[i]->getSpanMinutes() << endl;
+        cinfo << startl << "The requested time was MJD " << mjd << " + fraction " << mjdfraction << endl;
+      }
       if(polycos[i]->includesTime(mjd, mjdfraction) && polycos[i]->getConfig() == requiredconfig)
       {
         return polycos[i]; //note exit from loop here!

@@ -68,12 +68,12 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   currentconfigindex = config->getConfigIndex(skipseconds);
   expermjd = config->getStartMJD();
   experseconds = config->getStartSeconds();
-  changeConfig(currentconfigindex);
-
-  //set up the initial time period this Visibility will be responsible for
   offset = 0;
   currentstartsamples = (int)((((double)startns)/1000000000.0)*((double)samplespersecond) + 0.5);
   currentstartseconds = skipseconds;
+  changeConfig(currentconfigindex);
+
+  //set up the initial time period this Visibility will be responsible for
   offset = offset+offsetperintegration;
   subintsthisintegration = integrationsamples/subintsamples;
   if(offset >= subintsamples/2)
@@ -591,7 +591,7 @@ void Visibility::writedata()
     cinfo << startl << "Done calculating weight sums" << endl;
     for(int i=0;i<config->getFreqTableLength();i++) {
       for(int j=0;j<config->getNumChannels(currentconfigindex)+1;j++) {
-        for(int k=0;k<(config->scrunchOutputOn(currentconfigindex))?1:config->getNumPulsarBins(currentconfigindex);k++)
+        for(int k=0;k<binloop;k++)
             binscales[i][k][j].re = binscales[i][k][j].im = binweightsums[i][j][k] / binweightdivisor[k];
       }
     }
@@ -1124,6 +1124,7 @@ void Visibility::changeConfig(int configindex)
 
   //create the pulsar bin weight accumulation arrays
   if(pulsarbinon) {
+    cverbose << startl << "Starting the pulsar bin initialisation" << endl;
     double fftsecs = double(config->getNumChannels(currentconfigindex))/(1000000.0*config->getDBandwidth(currentconfigindex,0,0));
     polyco = Polyco::getCurrentPolyco(configindex, expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0, config->getPolycos(configindex), config->getNumPolycos(configindex), false);
     if (polyco == NULL) {
@@ -1161,5 +1162,6 @@ void Visibility::changeConfig(int configindex)
       for(int j=0;j<(config->scrunchOutputOn(configindex)?1:config->getNumPulsarBins(configindex));j++)
         binscales[i][j] = vectorAlloc_cf32(config->getNumChannels(configindex) + 1);
     }
+    cverbose << startl << "Finished the pulsar bin initialisation" << endl;
   }
 }
