@@ -201,7 +201,7 @@ void Uvw::interpolateUvw(string t1name, string t2name, int mjd, float seconds, f
 {
   double offsetsec, distance, distancesquared;
   float tuvw[2][3]; //individual telescope u, v ,w
-  int scannumber, nearestindex;
+  int scannumber, nearestindex, atincrement;
   double a, b, c;
   int stationindex[2];
   stationindex[0] = -1;
@@ -225,7 +225,12 @@ void Uvw::interpolateUvw(string t1name, string t2name, int mjd, float seconds, f
 
   //work out the offsets from known points so we can interpolate
   offsetsec = (mjd-expermjd)*86400 + seconds - experstartseconds;
-  scannumber = scannumbers.at(int(offsetsec/uvwincrementsecs + 0.5));
+  atincrement = int(offsetsec/uvwincrementsecs + 0.5);
+  if (atincrement > scannumbers.size()) {
+    cwarn << startl << "Trying to read " << atincrement - scannumbers.size() << " seconds past the end of the UVW array!" << endl;
+    atincrement = scannumbers.size() - 1;
+  }
+  scannumber = scannumbers.at(atincrement);
   nearestindex = int(offsetsec/uvwincrementsecs + 0.5) - scanstartpoints[scannumber] + 1;
   if(nearestindex <= 0)
     nearestindex = 1;
