@@ -29,7 +29,7 @@
 #include <sys/socket.h>
 #include "alert.h"
 
-#define MAXPACKETSIZE 10000
+#define MAXPACKETSIZE 100000
 #define MARK5FILL 0x11223344;
 
 /// Mk5DataStream -------------------------------------------------------
@@ -64,9 +64,14 @@ void Mk5DataStream::initialise()
     packet_head = 0;
     udp_buf = new char[MAXPACKETSIZE];
     packets_arrived.resize(readbytes/udpsize+2);
-    
+
+    if (sizeof(int)!=4) {
+      cfatal << startl << "DataStream assumes int is 4 bytes, it is " << sizeof(int) << " bytes" << endl;
+      MPI_Abort(MPI_COMM_WORLD, 1);
+    }
+
     invalid_buf = new char[udpsize];
-        unsigned long *tmp = (unsigned long*)invalid_buf;
+    unsigned int *tmp = (unsigned int*)invalid_buf;
     for (int i=0; i<udpsize/4; i++) {
       tmp[i] = MARK5FILL;
     }
@@ -207,9 +212,10 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
 /****
  ASSUMPTIONS
 
- udp_offset is left containing number of bytes still to be consumned from last UDP packet. If
+ udp_offset is left containing number of bytes still to be consumed from last UDP packet. If
  first packet from next frame is missing then udp_offset points to END of initial data. It is
- assumed only udpsize bytes are available though.
+ assumed only udpsize bytes are available though. udp_buf actually contains the left over bytes 
+ so that must be dealt with before any more data is read.
 
 *****/
 
@@ -228,6 +234,43 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     struct msghdr msg;
     struct iovec iov[2];
 
+    // Handle this case seperately to avoid horribly convoluted code below. There
+    // may be a cleaner way to do this but it hurts my head already...
+    // Maybe do network setup stuff after dealing with first packet
+    if (bytestoread<udp_offset) {
+      if (bytestoread<udp_offset-udpsize) { // Nothing available fill with invalid pattern
+	int npack = bytestoread/udpsize;
+	// Fill complete packets
+	for (int i=0; i<npack; i++) {
+	  memcpy(ptr+i*udpsize, invalid_buf, udpsize);
+	}
+	memcpy(ptr+npack*udpsize, invalid_buf, bytestoread-npack*udpsize);
+	*nread = bytestoread;
+	udp_offset -= bytestoread;
+      } else {
+	int invalidsize = bytestoread-udpsize;
+
+	int nfull = invalidsize/udpsize;
+	// Fill complete packets
+	for (int i=0; i<nfull; i++) {
+	  memcpy(ptr+i*udpsize, invalid_buf, udpsize);
+	}
+	memcpy(ptr+nfull*udpsize, invalid_buf, invalidsize-nfull*udpsize);
+
+	// Copy the actual usable bytes
+	int validsize = bytestoread - invalidsize;
+	if (validsize > udpsize) {
+	  cfatal << startl << "Mk5DataStream::readnetwork  Internal errorcalculating UDP sizes" << endl;
+	}
+	memcpy(ptr+invalidsize, udp_buf, validsize);
+	memmove(udp_buf, udp_buf+validsize, udp_offset);
+	/* NEEDS MORE WORK HERE */
+
+
+
+      }
+    }
+
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov        = &iov[0];
     msg.msg_iovlen     = 2;
@@ -245,7 +288,16 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     //cinfo << startl << "****** readnetwork will read packets " << packet_segmentstart << " to " << packet_segmentend << "(" << segmentsize << ")" << endl;
     
     if (segmentsize>packets_arrived.size()) {
-      cfatal << startl << "Mk5DataStream::readnetwork  bytestoread too large (" << bytestoread << ")" << endl;
+      cfatal << startl << "Mk5DataStream::readnetwork  bytestoread too large (" << bytestoread << "/" << segmentsize << ")" << endl;
+
+
+      cinfo << startl << "packet_segmentstart = " << packet_segmentstart << endl;
+      cinfo << startl << "packet_segmentend = " << packet_segmentend << endl;
+      cinfo << startl << "segmentsize = " << segmentsize << endl;
+      cinfo << startl << "udp_offset = " << udp_offset << endl;
+      cinfo << startl << "udpsize = " << udpsize << endl;
+      cinfo << startl << "packets_arrived.size() = " << packets_arrived.size() << endl;
+
       MPI_Abort(MPI_COMM_WORLD, 1);
     } 
     
@@ -259,7 +311,6 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     if (udp_offset>0) {
       packet_index = (udp_offset-1)/udpsize;
       udp_offset = (udp_offset-1)%udpsize+1;
-      //cinfo << startl << "*** DataStream " << mpiid << ": packet_index=" << packet_index << " udp_offset=" << udp_offset << endl;
       if (packet_index<segmentsize) // Check not out of range
 	packets_arrived[packet_index] = true;
 
