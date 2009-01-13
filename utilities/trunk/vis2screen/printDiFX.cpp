@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   int sepindex = filename.find_last_of('.');
   int numvispoints = atoi(filename.substr(sepindex+1).c_str());
   cout << "About to create the configuration - num vis points is " << numvispoints << endl;
-  Configuration * config = new Configuration(argv[2]);
+  Configuration * config = new Configuration(argv[2], 0);
   cout << "Created the config" << endl;
   int maxnumchannels = 0;
   for(int i=0;i<config->getNumConfigs();i++) {
