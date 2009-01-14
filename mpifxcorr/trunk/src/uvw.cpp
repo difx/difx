@@ -226,8 +226,8 @@ void Uvw::interpolateUvw(string t1name, string t2name, int mjd, float seconds, f
   //work out the offsets from known points so we can interpolate
   offsetsec = (mjd-expermjd)*86400 + seconds - experstartseconds;
   atincrement = int(offsetsec/uvwincrementsecs + 0.5);
-  if (atincrement > scannumbers.size()) {
-    cwarn << startl << "Trying to read " << atincrement - scannumbers.size() << " seconds past the end of the UVW array!" << endl;
+  if (atincrement >= scannumbers.size()) {
+    cwarn << startl << "Trying to read " << atincrement + 1 - scannumbers.size() << " seconds past the end of the UVW array!" << endl;
     atincrement = scannumbers.size() - 1;
   }
   scannumber = scannumbers.at(atincrement);
