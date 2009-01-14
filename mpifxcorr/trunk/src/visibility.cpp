@@ -1011,8 +1011,6 @@ void Visibility::changeConfig(int configindex)
         delete [] datastreampolbandoffsets[i][j];
       delete [] datastreampolbandoffsets[i];
       delete [] autocorrcalibs[i];
-    }
-    for(int i=0;i<autocorrincrement*config->getDNumFreqs(currentconfigindex, i);i++) {
       delete [] autocorrweights[i];
     }
     for(int i=0;i<numbaselines;i++)
