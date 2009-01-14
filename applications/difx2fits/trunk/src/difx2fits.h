@@ -33,7 +33,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	double scale, int verbose, double sniffTime);
+	double scale, int verbose, double sniffTime, int pulsarBin);
 
 const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

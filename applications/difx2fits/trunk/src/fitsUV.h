@@ -39,6 +39,7 @@ typedef struct
 	int freqId;			/* DiFX configId or FITS freqId */
 	int bandId;			/* FITS IF index, 0-based */
 	int polId;			/* FITS polarization index, 0-based */
+	int pulsarBin;
 	int nPol, nFreq;
 	int polStart;			/* start of polarization FITS axis */
 	float *spectrum;		/* input visibility spectrum */
@@ -57,7 +58,7 @@ typedef struct
 DifxVis *newDifxVis(const DifxInput *D, int jobId);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
-int DifxVisNewUVData(DifxVis *dv, int verbose);
+int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 
 

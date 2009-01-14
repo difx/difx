@@ -55,6 +55,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --average <nchan>\n");
 	fprintf(stderr, "  -a        <nchan>   Average <nchan> channels\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --bin        <bin>\n");
+	fprintf(stderr, "  -p           <bin>  Select on this pulsar bin number\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --beginchan <chan>\n");
 	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
 	fprintf(stderr, "\n");
@@ -109,6 +112,7 @@ struct CommandLineOptions
 	int dontCombine;
 	int overrideVersion;
 	double sniffTime;
+	int pulsarBin;
 };
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -223,6 +227,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					i++;
 					opts->specAvg = atoi(argv[i]);
+				}
+				else if(strcmp(argv[i], "--bin") == 0 ||
+					strcmp(argv[i], "-p") == 0)
+				{
+					i++;
+					opts->pulsarBin = atoi(argv[i]);
 				}
 				else if(strcmp(argv[i], "--outchans") == 0 ||
 				        strcmp(argv[i], "-o") == 0)
@@ -365,7 +375,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 static const DifxInput *DifxInput2FitsTables(const DifxInput *D, 
 	struct fitsPrivate *out, int write_model, double scale, int verbose,
-	double sniffTime)
+	double sniffTime, int pulsarBin)
 {
 	struct fits_keywords keys;
 	long long last_bytes = 0;
@@ -445,7 +455,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  UV -- visibility          \n");
 	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, scale, verbose, sniffTime);
+	D = DifxInput2FitsUV(D, &keys, out, scale, verbose, sniffTime, pulsarBin);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
@@ -646,10 +656,21 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 	}
 	else
 	{
-		sprintf(outFitsName, "%s%s.%d.FITS",
-			D->job[0].obsCode,
-			D->job[0].obsSession,
-			passNum);
+		if(opts->pulsarBin == 0)
+		{
+			sprintf(outFitsName, "%s%s.%d.FITS",
+				D->job[0].obsCode,
+				D->job[0].obsSession,
+				passNum);
+		}
+		else
+		{
+			sprintf(outFitsName, "%s%s.%d.bin%04d.FITS",
+				D->job[0].obsCode,
+				D->job[0].obsSession,
+				passNum,
+				opts->pulsarBin);
+		}
 	}
 
 	if(!opts->pretend)
@@ -672,7 +693,8 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		}
 
 		if(DifxInput2FitsTables(D, &outfile, opts->writemodel, 
-			opts->scale, opts->verbose, opts->sniffTime) == D)
+			opts->scale, opts->verbose, opts->sniffTime,
+			opts->pulsarBin) == D)
 		{
 			printf("\nConversion successful\n\n");
 		}

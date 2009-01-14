@@ -284,7 +284,7 @@ static double evalPoly(const double *p, int n, double x)
 }
 
 	
-int DifxVisNewUVData(DifxVis *dv, int verbose)
+int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 {
 	const char difxKeys[][MAX_DIFX_KEY_LEN] = 
 	{
@@ -295,6 +295,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		"SOURCE INDEX",
 		"FREQ INDEX",
 		"POLARISATION PAIR",
+		"PULSAR BIN",
 		"DATA WEIGHT",
 		"U (METRES)",
 		"V (METRES)",
@@ -310,6 +311,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		"SOURCE INDEX",
 		"FREQ INDEX",
 		"POLARISATION PAIR",
+		"PULSAR BIN",
 		"WEIGHTS WRITTEN",
 		"U (METRES)",
 		"V (METRES)",
@@ -442,11 +444,20 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 	dv->freqId = config->freqId;
 	dv->bandId = config->baselineFreq2IF[aa1][aa2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
+	dv->pulsarBin = atoi(DifxParametersvalue(dv->dp, rows[7]));
+
+	if(dv->pulsarBin != pulsarBin)
+	{
+		nFloat = 2;
+		readSize = nFloat * dv->D->nInChan;
+		fread(dv->spectrum, sizeof(float), readSize, dv->in);
+		return -4;
+	}
 
 	/* stash the weight for later incorporation into a record */
 	if(dv->D->inputFileVersion == 0)
 	{
-		dv->recweight = atof(DifxParametersvalue(dv->dp, rows[7]));
+		dv->recweight = atof(DifxParametersvalue(dv->dp, rows[8]));
 	}
 	else
 	{
@@ -466,9 +477,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose)
 		index = dv->freqId + dv->nFreq*dv->polId;
 
 		/* swap phase/uvw for FITS-IDI conformance */
-		dv->U = -atof(DifxParametersvalue(dv->dp, rows[8]));
-		dv->V = -atof(DifxParametersvalue(dv->dp, rows[9]));
-		dv->W = -atof(DifxParametersvalue(dv->dp, rows[10]));
+		dv->U = -atof(DifxParametersvalue(dv->dp, rows[9]));
+		dv->V = -atof(DifxParametersvalue(dv->dp, rows[10]));
+		dv->W = -atof(DifxParametersvalue(dv->dp, rows[11]));
 
 		/* recompute from polynomials if possible */
 		if(scan->im)
@@ -780,7 +791,7 @@ static int storevis(DifxVis *dv)
 	return 0;
 }
 
-static int readvisrecord(DifxVis *dv, int verbose)
+static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin)
 {
 	/* blank array */
 	memset(dv->data, 0, dv->nData*sizeof(float));
@@ -795,7 +806,7 @@ static int readvisrecord(DifxVis *dv, int verbose)
 		}
 		do	/* skip over any unneeded autocorrelations */
 		{
-			dv->changed = DifxVisNewUVData(dv, verbose);
+			dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin);
 		} while(dv->changed == -4);
 	}
 
@@ -804,7 +815,7 @@ static int readvisrecord(DifxVis *dv, int verbose)
 
 static int DifxVisConvert(const DifxInput *D, 
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	double s, int verbose, double sniffTime)
+	double s, int verbose, double sniffTime, int pulsarBin)
 {
 	int i, j, l, v;
 	float visScale = 1.0;
@@ -961,7 +972,7 @@ static int DifxVisConvert(const DifxInput *D,
 	/* First prime each structure with some data */
 	for(j = 0; j < nJob; j++)
 	{
-		readvisrecord(dvs[j], verbose);
+		readvisrecord(dvs[j], verbose, pulsarBin);
 	}
 
 	/* Now loop until done, looking at */
@@ -1032,7 +1043,7 @@ static int DifxVisConvert(const DifxInput *D,
 				return -3;
 			}
 
-			readvisrecord(dv, verbose);
+			readvisrecord(dv, verbose, pulsarBin);
 		}
 	}
 
@@ -1059,14 +1070,14 @@ static int DifxVisConvert(const DifxInput *D,
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, double scale,
-	int verbose, double sniffTime)
+	int verbose, double sniffTime, int pulsarBin)
 {
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime);
+	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime, pulsarBin);
 
 	return D;
 }
