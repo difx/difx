@@ -102,6 +102,9 @@ os.chdir("../")
 ##### Make standard (autotool'd) applications ############
 os.chdir("applications")
 for apptarget in apptargets:
+    print "************************************"
+    print "Building ", apptarget[0]
+    print
     os.chdir(apptarget[0] + '/' + apptarget[1])
     auto_compile(apptarget[2], apptarget[3], difxroot)
     os.chdir("../../")
