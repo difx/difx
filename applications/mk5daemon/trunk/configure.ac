@@ -1,6 +1,8 @@
 AC_INIT([mk5daemon], [0.8], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
+AC_C_BIGENDIAN
+
 AM_INIT_AUTOMAKE
 
 AC_PROG_CXX

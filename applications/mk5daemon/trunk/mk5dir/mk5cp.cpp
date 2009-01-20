@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2007 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: $
+// $HeadURL: $
+// $LastChangedRevision: $
+// $Author: $
+// $LastChangedDate: $
+//
+//============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -8,6 +37,15 @@
 #include <sys/time.h>
 #include "config.h"
 #include "mark5dir.h"
+#include "../config.h"
+
+#ifdef WORDS_BIGENDIAN
+#define MARK5_FILL_WORD32 0x44332211UL
+#define MARK5_FILL_WORD64 0x4433221144332211ULL
+#else
+#define MARK5_FILL_WORD32 0x11223344UL
+#define MARK5_FILL_WORD64 0x1122334411223344ULL
+#endif
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
@@ -71,6 +109,24 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
+void countReplaced(const unsigned long *data, int len, 
+	long long *wGood, long long *wBad)
+{
+	int i;
+	int nBad=0;
+
+	for(i = 0; i < len; i++)
+	{
+		if(data[i] == MARK5_FILL_WORD32)
+		{
+			nBad++;
+		}
+	}
+
+	*wGood += (len-nBad);
+	*wBad += nBad;
+}
+
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -86,6 +142,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	double dt;
 	double rate;
 	char message[1000];
+	long long wGood=0, wBad=0;
 
 	sprintf(filename, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name); 
 
@@ -157,6 +214,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 			break;
 		}
 
+		countReplaced(data, len/4, &wGood, &wBad);
+
 		if(i == 0)
 		{
 			skip = scan->frameoffset;
@@ -190,6 +249,18 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 
 	fclose(out);
 	free(data);
+
+	sprintf(message, "Copied scan %d. %Ld bytes total, %Ld bytes replaced.", scanNum+1, 4*(wGood+wBad), 4*wBad);
+	if((double)wBad/(double)wGood < 1.0e-8)
+	{
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		fprintf(stderr, "%s\n", message);
+	}
+	else
+	{
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+		fprintf(stderr, "Warning: %s\n", message);
+	}
 
 	mk5status->scanNumber = 0;
 	mk5status->rate = 0.0;
