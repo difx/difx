@@ -31,6 +31,9 @@
 #define _GNU_SOURCE
 #endif
 
+#ifdef __linux__
+#define _FILE_OFFSET_BITS=64
+#endif
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -82,14 +85,14 @@ int summarize(const char *filename, int refmjd)
 	double size, dur;
 	double start, stop;
 	
-	in = open64(filename, O_RDONLY);
+	in = open(filename, O_RDONLY);
 	if(!in)
 	{
 		printf("%s notfound\n", filename);
 		return 0;
 	}
 	
-	err = fstat64(in, &fileStatus);
+	err = fstat(in, &fileStatus);
 	close(in);
 
 	size = fileStatus.st_size;
