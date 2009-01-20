@@ -227,7 +227,7 @@ if not noinstall:
     run("cp -f src/*.h " + incdir)
 os.chdir("../")
 
-if not errors == []:
+if (force and not errors == []):
     print "************************************"
     print "WARNING: Errors were encountered during installation"
     print
