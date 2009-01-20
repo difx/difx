@@ -31,8 +31,8 @@
 #define _GNU_SOURCE
 #endif
 
-#ifdef __linux__
-#define _FILE_OFFSET_BITS=64
+#if defined(__linux__)
+#define _FILE_OFFSET_BITS 64
 #endif
 
 #include <stdio.h>
@@ -80,7 +80,7 @@ int summarize(const char *filename, int refmjd)
 	struct mark5_format *mf;
 	int n;
 	int err;
-	struct stat64 fileStatus;
+	struct stat fileStatus;
 	int in;
 	double size, dur;
 	double start, stop;
