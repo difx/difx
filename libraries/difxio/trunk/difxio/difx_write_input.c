@@ -122,7 +122,7 @@ static int writeDataTable(FILE *out, const DifxInput *D)
 
 	fprintf(out, "# DATA TABLE #######!\n");
 
-	for(i = 0; i < D->job->activeDatastreams; i++)
+	for(i = 0; i < D->nAntenna; i++)
 	{
 		if(D->datastream[i].antennaId >= 0)
 		{

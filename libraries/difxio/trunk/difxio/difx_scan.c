@@ -152,8 +152,9 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	{
 		dest->configId = src->configId;
 	}
-	dest->nPoint   = src->nPoint;
-	dest->nPoly    = src->nPoly;
+	dest->startPoint = src->startPoint;
+	dest->nPoint     = src->nPoint;
+	dest->nPoly      = src->nPoly;
 
 	/* figure out how many antennas needed in this scan */
 	dest->nAntenna = src->nAntenna;
@@ -317,22 +318,31 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
 	const DifxConfig *dc, int doRealName, int doCoords, int doExtra)
 {
-	const DifxConfig *config;
 	int n;
+	const char *name;
 
 	ds += scanId;
 
-	if(ds->configId < 0 || ds->configId > 1<<12)
+	if(ds->configId == -1)
+	{
+		name = "SCAN_GAP";
+	}
+	else if(ds->configId < 0 || ds->configId > 1<<12)
 	{
 		fprintf(stderr, "Error!   writeDifxScan:  scanId=%d implies configId=%d\n", scanId, ds->configId);
 		return -1;
 	}
-
-	config = dc + ds->configId;
+	else
+	{
+		const DifxConfig *config;
+		
+		config = dc + ds->configId;
+		name = config->name;
+	}
 
 	writeDifxLineInt1(out, "SCAN %d POINTS", scanId, ds->nPoint);
 	writeDifxLineInt1(out, "SCAN %d START PT", scanId, ds->startPoint);
-	writeDifxLine1(out, "SCAN %d SRC NAME", scanId, config->name);
+	writeDifxLine1(out, "SCAN %d SRC NAME", scanId, name);
 	n = 3;
 	
 	if(doRealName)
@@ -380,68 +390,89 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds,
 	return 0;
 }
 
-#if 0
-
-/* this is a complicated thought in progress */
-
-
-int DifxScansAppendable(const DifxScan *ds1, const DifxScan *ds2)
+/* insert dummy scans to make the series of scans contiguous */
+int padDifxScans(DifxInput *D)
 {
-	if(!ds1 || !ds2)
+	int nPad = 0;
+	int s, nScan;
+	DifxScan *newScans;
+	DifxScan *s0, *s1, *sNew;
+	int deltat;
+
+	nScan = D->nScan;
+	if(nScan <= 0 || D->scan == 0)
 	{
-		fprintf(stderr, "ERROR : DifxScansAppendable : null input\n");
-		return 0;
+		fprintf(stderr, "Error: padDifxScanArrays: nScan = %d / scans = %p\n", nScan, D->scan);
+		return -1;
 	}
 
-	if(ds1->sourceId == ds2->sourceId &&
-	   ds1->configId == ds2->configId &&
-	   ds1->jobId    == ds2->jobId)
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-/* concattenate consecutive compatible scans */
-int simplifyDifxScanArray(DifxScan *scans, int *nScan)
-{
-	int i, j, n;
-
-	if(*nScan < 2)
+	/* Do nothing if only one scan */
+	if(nScan == 1)
 	{
 		return 0;
 	}
 
-	j = 0;				/* dest pointer */
-	for(i = 1; i < *nScan; i++)	/* src pointer */
+	/* first go through and count number of new scans needed */
+	for(s = 1; s < nScan; s++)
 	{
-		if(DifxScansAppendable(scans+j, scans+i))
+		s1 = D->scan + s;
+		s0 = s1 - 1;
+
+		deltat = s1->startPoint - (s0->startPoint + s0->nPoint);
+
+		/* oops -- scans overlap! */
+		if(deltat < 0)
 		{
-			scans[j].mjdEnd = scans[i].mjdEnd;
-			n = scans[j].nPoint + scans[i].nPoint;
-			for(a = 0; a < scans[j].nAntenna; a++)
-			{
-				scans[j].model[a]--;
-				scans[j].model[a] = (DifxModel *)realloc(
-					scans[j].model[a],
-					(n+3)*sizeof(DifxModel));
-				memcpy(scans[j].model[a]+scans[j].nPoint,
-					scans[i].model[a]
-				scans[j].model[a]++;
-			}
-			scans[j].nPoint = n;
+			fprintf(stderr, "Warning: padDifxScanArrays: scans %d and %d overlap!\n", s-1, s);
 		}
-		else
+		else if(deltat > 0)
 		{
-			j++;
+			nPad++;
 		}
 	}
 
-	*nScan = j+1;
+	if(nPad == 0)
+	{
+		return 0;
+	}
 
-	return 0;
+	newScans = newDifxScanArray(nScan + nPad);
+
+	/* now go through again, inserting spacer scans as needed */
+	sNew = newScans;
+	copyDifxScan(sNew, D->scan + 0, 0, 0);	/* copy first scan */
+	sNew++;
+	for(s = 1; s < nScan; s++)
+	{
+		s1 = D->scan + s;
+		s0 = s1 - 1;
+
+		deltat = s1->startPoint - (s0->startPoint + s0->nPoint);
+		if(deltat > 0)
+		{
+			sNew->mjdStart = s0->mjdEnd;
+			sNew->mjdEnd = s1->mjdStart;
+			sNew->ra = 0.0;
+			sNew->dec = 1.57;	/* near north pole */
+			strcpy(sNew->name, "SCAN_GAP");
+			strcpy(sNew->calCode, "-");
+			sNew->sourceId = -1;
+			sNew->configId = -1;
+			sNew->jobId = s0->jobId;
+			sNew->nPoint = deltat;
+			sNew->startPoint = s0->startPoint + s0->nPoint;
+			/* don't populsate model or im */
+			
+			sNew++;
+		}
+
+		copyDifxScan(sNew, s1, 0, 0);
+		sNew++;
+	}
+
+	deleteDifxScanArray(D->scan, nScan);
+	D->scan = newScans;
+	D->nScan += nPad;
+
+	return nPad;
 }
-
-
-#endif

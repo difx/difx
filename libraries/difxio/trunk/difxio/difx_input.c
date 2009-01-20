@@ -1978,16 +1978,15 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 		if(c == D->nConfig)
 		{
-			fprintf(stderr, "Warning: ingoring source without "
-				"config! id=%d  name=%s  realname=%s\n",
-				i, cname, D->scan[k].name);
-			//return 0;
-			k++;
+			D->scan[k].configId = -1;
+			if(strcmp(cname, "SCAN_GAP") != 0)
+			{
+				fprintf(stderr, "Warning: ingoring source without "
+					"config! id=%d  name=%s  realname=%s\n",
+					i, cname, D->scan[k].name);
+			}
 		}
-		else
-		{
-			k++;
-		}
+		k++;
 	    }
 	    D->nScan = k;
 	}

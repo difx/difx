@@ -35,9 +35,9 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 {
 	FILE *out;
 	DifxScan *scan;
-	DifxConfig *config;
 	int a, s, p;
 	int refAnt, order;
+	const char *name;
 
 	if(!D)
 	{
@@ -81,9 +81,19 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	for(s = 0; s < D->nScan; s++)
 	{
 		scan = D->scan + s;
-		config = D->config + scan->configId;
 
-		writeDifxLine1(out, "SCAN %d SRC NAME", s, config->name);
+		if(scan->configId >= 0 && scan->configId < 1<<12)
+		{
+			DifxConfig *config;
+			config = D->config + scan->configId;
+			name = config->name;
+		}
+		else
+		{
+			name = scan->name;
+		}
+
+		writeDifxLine1(out, "SCAN %d SRC NAME", s, name);
 		
 		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
 		{

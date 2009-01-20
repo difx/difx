@@ -1,7 +1,11 @@
+2.8
+* Version bump for slight API change
+* padDifxScans added to allow extra non-correlation scans to be inserted
+
 2.7
 * Version bump for slight API change
-* few important bug fixes
-* Add simplify functions for freqs, datastreams and baselines
+* a few important bug fixes
+* Add simplify functions for freqs, datastreams, baselines and configs
 * separate out internal deallocation from table destructors and force to 0 deallocated arrays
 
 2.6

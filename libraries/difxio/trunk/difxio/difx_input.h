@@ -496,6 +496,7 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 	const DifxConfig *dc,int doRealName, int doCoords, int doExtra);
 int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
 	const DifxConfig *dc, int doRealName, int doCoords, int doExtra);
+int padDifxScans(DifxInput *D);
 
 /* DifxEOP functions */
 DifxEOP *newDifxEOPArray(int nEOP);
