@@ -4,6 +4,7 @@ Version 0.1
 * add SOURCE blocks to .v2d files
 * allow colon separated RAs and Decs in the config file
 * start to implement ANTENNA blocks
+* write SCAN_GAP scans instead of no scans 
 
 Version 0.0
 ~~~~~~~~~~~

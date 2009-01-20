@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -894,6 +894,9 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	simplifyDifxDatastreams(D);
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
+
+	// insert pad scans where needed
+	padDifxScans(D);
 
 	// fix a few last parameters
 	if(setup->specAvg == 0)
