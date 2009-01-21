@@ -37,6 +37,17 @@
 #include "util.h"
 #include "corrparams.h"
 
+bool isTrue(const string &str)
+{
+	if(str[0] == '0' || str[0] == 'f' || str[0] == 'F' || str[0] == '-')
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
 
 double parseCoord(const char *str, char type)
 {
@@ -131,11 +142,11 @@ void CorrSetup::set(const string &key, const string &value)
 	}
 	else if(key == "doPolar")
 	{
-		ss >> doPolar;
+		doPolar = isTrue(value);
 	}
 	else if(key == "doAuto")
 	{
-		ss >> doAuto;
+		doAuto = isTrue(value);
 	}
 	else if(key == "blocksPerSend")
 	{
@@ -151,7 +162,7 @@ void CorrSetup::set(const string &key, const string &value)
 	}
 	else if(key == "postFFringe")
 	{
-		ss >> postFFringe;
+		postFFringe = isTrue(value);
 	}
 	else if(key == "binConfig")
 	{
@@ -282,7 +293,7 @@ void AntennaSetup::set(const string &key, const string &value)
 	}
 	else if(key == "polSwap")
 	{
-		ss >> polSwap;
+		polSwap = isTrue(value);
 	}
 	else if(key == "clockOffset")
 	{
@@ -319,6 +330,7 @@ void CorrParams::defaults()
 	singleSetup = true;
 	allowOverlap = false;
 	mediaSplit = true;
+	padScans = true;
 	maxLength = 7200/86400.0;	// 2 hours
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
@@ -368,19 +380,19 @@ void CorrParams::set(const string &key, const string &value)
 	}
 	else if(key == "singleScan")
 	{
-		ss >> singleScan;
+		singleScan = isTrue(value);
 	}
 	else if(key == "singleSetup")
 	{
-		ss >> singleSetup;
+		singleSetup = isTrue(value);
 	}
 	else if(key == "allowOverlap")
 	{
-		ss >> allowOverlap;
+		allowOverlap = isTrue(value);
 	}
 	else if(key == "mediaSplit")
 	{
-		ss >> mediaSplit;
+		mediaSplit = isTrue(value);
 	}
 	else if(key == "maxLength")
 	{
@@ -405,6 +417,10 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "sendLength")
 	{
 		ss >> sendLength;
+	}
+	else if(key == "padScans")
+	{
+		padScans = isTrue(value);
 	}
 	else if(key == "antennas")
 	{

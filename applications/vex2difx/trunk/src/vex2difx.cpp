@@ -895,8 +895,15 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
 
-	// insert pad scans where needed
-	padDifxScans(D);
+	if(P->padScans)
+	{
+		// insert pad scans where needed
+		padDifxScans(D);
+	}
+	else
+	{
+		cout << "Warning: scans are not padded.  This may mean the correlator jobs that are produced will not work.  Set padScans to true to force the padding of scans." << endl;
+	}
 
 	// fix a few last parameters
 	if(setup->specAvg == 0)

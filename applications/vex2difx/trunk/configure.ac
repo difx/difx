@@ -27,4 +27,5 @@ AC_OUTPUT([ \
 	vex/Makefile \
 	vex/vex.pc \
 	src/Makefile \
+	utilities/Makefile \
 ])

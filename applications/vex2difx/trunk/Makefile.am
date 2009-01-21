@@ -1,8 +1,10 @@
 SUBDIRS = \
 	vex \
-	src
+	src \
+	utilities
 
 DIST_SUBDIRS = \
 	vex \
-	src
+	src \
+	utilities
 

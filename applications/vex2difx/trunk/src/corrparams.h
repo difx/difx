@@ -152,6 +152,7 @@ public:
 	bool singleSetup;
 	bool allowOverlap;
 	bool mediaSplit;	// split jobs on media change
+	bool padScans;
 	double maxLength;	// days
 	string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
