@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -33,6 +33,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cmath>
+#include <string.h>
 #include "util.h"
 #include "corrparams.h"
 

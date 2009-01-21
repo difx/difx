@@ -1110,8 +1110,8 @@ create_s2_data_source(char *str, char *str2, char *str3);
 void *
 create_test(struct llist *start, char *str);
 
-FILE *fp;
-char *filename;
+extern FILE *fp;
+extern char *filename;
 
 #ifdef __cplusplus
 }
