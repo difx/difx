@@ -75,6 +75,8 @@ AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
 if test ${rpfits_enabled} = true; then
 	RPFITS_CFLAGS="-I$DIFXROOT/include"
 	RPFITS_LIBS=" -lrpfits -lg2c"
+dnl *** Alternative if gfotran used
+dnl	RPFITS_LIBS=" -lrpfits -lgfortran"  
 else
 RPFITS_CFLAGS=""
 RPFITS_LIBS=""
