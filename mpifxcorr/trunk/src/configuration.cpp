@@ -20,6 +20,7 @@
 //
 //============================================================================
 #include <mpi.h>
+#include <string.h>
 //#include "mk5.h"
 #include "mk5mode.h"
 #include "configuration.h"

@@ -35,6 +35,7 @@
 #include "nativemk5.h"
 #include <sys/utsname.h>
 //includes for socket stuff - for monitoring
+#include "string.h"
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>

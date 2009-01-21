@@ -27,7 +27,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <values.h>
+#include <string.h>
+#include <strings.h>
+#include <limits.h>
 #include <math.h>
 #include "config.h"
 #include "alert.h"
@@ -857,7 +859,7 @@ int DataStream::openframe()
   
   framesize = framesize - LBA_HEADER_LENGTH;
 
-  if (framesize>MAXINT) {
+  if (framesize>INT_MAX) {
     keepreading=false;
     cerror << startl << "Network stream trying to send too large frame. Aborting!" << endl;
     return(0);
