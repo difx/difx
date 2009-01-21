@@ -14,6 +14,47 @@
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
+int expandEntityRefrences(char *dest, const char *src)
+{
+	int i, j;
+
+	for(i = j = 0; src[i]; i++)
+	{
+		if(src[i] == '>')
+		{
+			strcpy(dest+j, "&gt;");
+			j += 4;
+		}
+		else if(src[i] == '<')
+		{
+			strcpy(dest+j, "&lt;");
+			j += 4;
+		}
+		else if(src[i] == '&')
+		{
+			strcpy(dest+j, "&amp;");
+			j += 5;
+		}
+		else if(src[i] == '"')
+		{
+			strcpy(dest+j, "&quot;");
+			j += 6;
+		}
+		else if(src[i] == '\'')
+		{
+			strcpy(dest+j, "&apos;");
+			j += 6;
+		}
+		else
+		{
+			dest[j] = src[i];
+			j++;
+		}
+	}
+
+	return j - i;
+}
+
 int difxMessageSend(const char *message)
 {
 	if(difxMessagePort < 0)
@@ -189,9 +230,12 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	double visMJD, int numdatastreams, float *weight)
 {
 	char message[1500], weightstr[1200];
+	char stateMessageExpanded[400];
 	char body[700];
 	int i, n;
 	
+	expandEntityRefrences(stateMessageExpanded, stateMessage);
+
 	weightstr[0] = 0;
 	n = 0;
 
@@ -215,7 +259,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 		"</difxStatus>",
 
 		DifxStateStrings[state],
-		stateMessage,
+		stateMessageExpanded,
 		visMJD,
 		weightstr);
 

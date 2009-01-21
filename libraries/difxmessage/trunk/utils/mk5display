@@ -21,9 +21,19 @@ units = \
 	["mark5fx12", 2, 2], \
 	["mark5fx13", 3, 0], \
 	["mark5fx14", 3, 1], \
+	["mark5fx15", 3, 2], \
+	["mark5fx16", 4, 0], \
+	["mark5fx17", 4, 1], \
+	["mark5fx18", 4, 2], \
+	["mark5fx19", 5, 0], \
+	["mark5fx20", 5, 1], \
+	["mark5fx21", 5, 2], \
+	["mark5fx22", 6, 0], \
+	["mark5fx23", 6, 1], \
+	["mark5fx24", 6, 2], \
 ]
 
-maxX = 4
+maxX = 7
 maxY = 3
 
 
@@ -141,7 +151,7 @@ class Unit:
 	cr.rectangle(0, 0, 1, 1)
 	cr.fill()
 	cr.set_line_width(0.01)
-	cr.set_font_size(0.12)
+	cr.set_font_size(0.08)
 	cr.select_font_face("courier")
 	if self.state.vsnA == 'none':
 		cr.rectangle(0.1, 0.2, 0.35, 0.6)
@@ -228,11 +238,12 @@ class Mark5s(gtk.DrawingArea):
 	info = p.getinfo()
 	p.close()
 
-	for U in self.Units:
-		if U.name == info.mk5:
-			U.state = info
-			U.color = (0, 1, 0)
-			self.drawunit(U)
+	if info.ok:
+		for U in self.Units:
+			if U.name == info.mk5:
+				U.state = info
+				U.color = (0, 1, 0)
+				self.drawunit(U)
 
 	print info.mk5
 	return 1

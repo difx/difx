@@ -20,3 +20,9 @@ Add DifxMessageParameter type
   Note: mpiid is a target parameter for this message type, not a source parameter
 Add DifxMessageStart 
 Started distinguishing between STA and LTA types
+
+Version 0.4 20090121
+~~~~~~~~~~~
+Escape characters in xml messages: < > & ' "
+Add initial version of "mk5display", a python gui to watch a bank of Mark5 units. 
+  This is basically a toy, not for real use at the moment.

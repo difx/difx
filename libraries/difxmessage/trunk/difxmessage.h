@@ -227,6 +227,7 @@ typedef struct
 	int _xml_level;			/* internal use only */
 	char _xml_element[5][32];	/* internal use only */
 	int _xml_error_count;
+	char _xml_string[1024];
 } DifxMessageGeneric;
 
 /* short term accumulate message type -- antenna-based data (e.g. real) */
