@@ -386,8 +386,6 @@ static void XMLCALL charHandler(void *userData, const XML_Char *str, int len)
 	}
 	strncpy(G->_xml_string+l, str, len);
 	G->_xml_string[len+l] = 0;
-
-	printf("** %s\n", G->_xml_string);
 }
 
 int difxMessageParse(DifxMessageGeneric *G, const char *message)
