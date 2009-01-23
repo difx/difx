@@ -52,6 +52,8 @@ int expandEntityRefrences(char *dest, const char *src)
 		}
 	}
 
+	dest[j] = 0;
+
 	return j - i;
 }
 
