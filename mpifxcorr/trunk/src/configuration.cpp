@@ -1255,9 +1255,9 @@ bool Configuration::setPolycoFreqInfo(int configindex)
 {
   bool ok = true;
   datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
-  double * frequencies = new double[datastreamtablelength];
+  double * frequencies = new double[freqtablelength];
   double bandwidth = freqtable[d.freqtableindices[0]].bandwidth;
-  for(int i=0;i<datastreamtablelength;i++)
+  for(int i=0;i<freqtablelength;i++)
   {
     frequencies[i] = freqtable[i].bandedgefreq;
     if(freqtable[i].lowersideband)
