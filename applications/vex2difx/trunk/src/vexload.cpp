@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -361,6 +361,15 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 			continue;
 		}
 
+		if(startScan < params.mjdStart)
+		{
+			startScan = params.mjdStart;
+		}
+		if(stopScan > params.mjdStop)
+		{
+			stopScan = params.mjdStop;
+		}
+
 		// Make scan
 		S = V->newScan();
 		S->timeRange = VexInterval(startScan, stopScan);
@@ -375,11 +384,11 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		V->addEvent(stopScan,  VexEvent::SCAN_STOP,  scanId, scanId);
 		for(it = antStart.begin(); it != antStart.end(); it++)
 		{
-			V->addEvent(it->second, VexEvent::ANT_SCAN_START, it->first, scanId);
+			V->addEvent(max(it->second, startScan), VexEvent::ANT_SCAN_START, it->first, scanId);
 		}
 		for(it = antStop.begin(); it != antStop.end(); it++)
 		{
-			V->addEvent(it->second, VexEvent::ANT_SCAN_STOP, it->first, scanId);
+			V->addEvent(min(it->second, stopScan), VexEvent::ANT_SCAN_STOP, it->first, scanId);
 		}
 	}
 	

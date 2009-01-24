@@ -235,7 +235,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 			}
 		}
 	}
-	breaks.sort();	// should be a no-op
+	breaks.sort();
 
 	// form jobs
 	double start = V->obsStart();
@@ -269,7 +269,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 		ostringstream name;
 		j->jobSeries = P->jobSeries;
 		j->jobId = k;
-		name << j->jobSeries << "." << j->jobId;
+		name << j->jobSeries << j->jobId;
 		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
 		j->assignVSNs(*V);
@@ -924,6 +924,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	ostringstream calcName;
 	calcName << D->job->fileBase << ".calc";
 	writeDifxCalc(D, calcName.str().c_str());
+
+	// write flag file
+	ostringstream flagName;
+	flagName << D->job->fileBase << ".flag";
+	J.generateFlagFile(*V, flagName.str(), P->invalidMask);
 
 	// clean up
 	deleteDifxInput(D);

@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -225,6 +225,7 @@ public:
 	VexJob() : jobSeries("Bogus"), jobId(-1), mjdStart(0.0), mjdStop(1000000.0) {}
 
 	void assignVSNs(const VexData& V);
+	int generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	string jobSeries;
 	int jobId;
@@ -233,6 +234,20 @@ public:
 	double mjdStart;
 	double mjdStop;
 	double dutyCycle;		// fraction of job spent in scans
+};
+
+class VexJobFlag
+{
+public:
+	static const unsigned int JOB_FLAG_RECORD = 1 << 0;
+	static const unsigned int JOB_FLAG_POINT  = 1 << 1;
+	static const unsigned int JOB_FLAG_TIME   = 1 << 2;
+	static const unsigned int JOB_FLAG_SCAN   = 1 << 3;
+	VexJobFlag() {}
+	VexJobFlag(double start, double stop, int ant) : mjdStart(start), mjdStop(stop), antId(ant) {}
+
+	double mjdStart, mjdStop;
+	int antId;
 };
 
 class VexJobGroup
@@ -333,6 +348,7 @@ ostream& operator << (ostream& os, const VexVSN& x);
 ostream& operator << (ostream& os, const VexClock& x);
 ostream& operator << (ostream& os, const VexJob& x);
 ostream& operator << (ostream& os, const VexEvent& x);
+ostream& operator << (ostream& os, const VexJobFlag& x);
 ostream& operator << (ostream& os, const VexData& x);
 bool operator == (VexSubband& s1, VexSubband& s2);
 

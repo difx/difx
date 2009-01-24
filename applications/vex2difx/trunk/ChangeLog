@@ -5,6 +5,8 @@ Version 0.1
 * allow colon separated RAs and Decs in the config file
 * start to implement ANTENNA blocks
 * write SCAN_GAP scans instead of no scans 
+* start time and stop time are no longer expanded to full length of all included scans
+* write flag file that is compliant with difx2fits
 
 Version 0.0
 ~~~~~~~~~~~

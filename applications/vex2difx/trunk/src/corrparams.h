@@ -159,6 +159,7 @@ public:
 	int dataBufferFactor;
 	int nDataSegments;
 	double sendLength;	// (s) amount of data to send from datastream to core at a time
+	unsigned int invalidMask;
 
 	list<string> antennaList;
 

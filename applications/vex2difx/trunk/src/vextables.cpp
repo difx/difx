@@ -21,14 +21,16 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
+#include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 #include "vextables.h"
 
 using namespace std;
@@ -375,6 +377,143 @@ void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 			rstart++;
 		}
 	}
+}
+
+int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask) const
+{
+	vector<VexJobFlag> flags;
+	map<string,int> antIds;
+	map<string,string>::const_iterator a;
+	list<VexEvent>::const_iterator e;
+	map<string,VexInterval>::const_iterator sa;
+	int nAnt;
+	ofstream of;
+	const list<VexEvent> &eventList = *V.getEvents();
+
+	for(nAnt = 0, a = vsns.begin(); a != vsns.end(); nAnt++, a++)
+	{
+		antIds[a->first] = nAnt;
+	}
+
+	vector<unsigned int> flagMask(nAnt, 
+		VexJobFlag::JOB_FLAG_RECORD | 
+		VexJobFlag::JOB_FLAG_POINT | 
+		VexJobFlag::JOB_FLAG_TIME | 
+		VexJobFlag::JOB_FLAG_SCAN);
+	vector<double> flagStart(nAnt, mjdStart);
+
+	for(e = eventList.begin(); e != eventList.end(); e++)
+	{
+		if(e->eventType == VexEvent::RECORD_START)
+		{
+			flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_RECORD;
+		}
+		else if(e->eventType == VexEvent::RECORD_STOP)
+		{
+			flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_RECORD;
+		}
+		else if(e->eventType == VexEvent::SCAN_START)
+		{
+			const VexScan *scan = V.getScan(e->name);
+
+			if(!scan)
+			{
+				cerr << "Developer error! generateFlagFile: SCAN_START, scan=0" << endl;
+				exit(0);
+			}
+			for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
+			{
+				flagMask[antIds[sa->first]] &= ~VexJobFlag::JOB_FLAG_SCAN;
+			}
+		}
+		else if(e->eventType == VexEvent::SCAN_STOP)
+		{
+			const VexScan *scan = V.getScan(e->name);
+
+			if(!scan)
+			{
+				cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
+				exit(0);
+			}
+			for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
+			{
+				flagMask[antIds[sa->first]] |= VexJobFlag::JOB_FLAG_SCAN;
+			}
+		}
+		else if(e->eventType == VexEvent::ANT_SCAN_START)
+		{
+			flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_POINT;
+		}
+		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
+		{
+			flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_POINT;
+		}
+		else if(e->eventType == VexEvent::JOB_START)
+		{
+			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
+			{
+				for(int antId = 0; antId < nAnt; antId++)
+				{
+					flagMask[antId] &= ~VexJobFlag::JOB_FLAG_TIME;
+				}
+			}
+		}
+		else if(e->eventType == VexEvent::JOB_STOP)
+		{
+			if(fabs(e->mjd > mjdStart) < 0.5/86400.0)
+			{
+				for(int antId = 0; antId < nAnt; antId++)
+				{
+					flagMask[antId] |= VexJobFlag::JOB_FLAG_TIME;
+				}
+			}
+		}
+
+		for(int antId = 0; antId < nAnt; antId++)
+		{
+			if( (flagMask[antId] & invalidMask) == 0)
+			{
+				if(flagStart[antId] > 0)
+				{
+					if(e->mjd - flagStart[antId] > 0.5/86400.0)
+					{
+						flags.push_back(VexJobFlag(flagStart[antId], e->mjd, antId));
+					}
+					flagStart[antId] = -1;
+				}
+			}
+			else
+			{
+				if(flagStart[antId] <= 0)
+				{
+					flagStart[antId] = e->mjd;
+				}
+			}
+		}
+	}
+
+	// add final flags if needed (probably not!)
+	for(int antId = 0; antId < nAnt; antId++)
+	{
+		if( (flagMask[antId] & invalidMask) != 0)
+		{
+			if(mjdStop - flagStart[antId] > 0.5/86400.0)
+			{
+				flags.push_back(VexJobFlag(flagStart[antId], mjdStop, antId));
+			}
+		}
+	}
+
+	// write data to file
+	of.open(fileName.c_str());
+	of << flags.size() << endl;
+	for(int f = 0; f < flags.size(); f++)
+	{
+		of << "  " << flags[f] << endl;
+	}
+	of.close();
+
+	return flags.size();
 }
 
 // FIXME -- this does not allow concurrent scans
@@ -824,6 +963,19 @@ ostream& operator << (ostream& os, const VexEvent& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const VexJobFlag& x)
+{
+	int p = os.precision();
+
+	os.precision(12);
+
+	os << x.mjdStart << " " << x.mjdStop << " " << x.antId;
+
+	os.precision(p);
+
+	return os;
+}
+
 ostream& operator << (ostream& os, const VexData& x)
 {
 	os << "Vex:" << endl;
@@ -865,7 +1017,7 @@ ostream& operator << (ostream& os, const VexData& x)
 
 	const list<VexEvent> *events = x.getEvents();
 	list<VexEvent>::const_iterator iter;
-	os << " Events:" << endl;
+	os << "Events:" << endl;
 	for(iter = events->begin(); iter != events->end(); iter++)
 	{
 		os << "   " << *iter << endl;

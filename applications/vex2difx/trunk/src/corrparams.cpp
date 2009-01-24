@@ -338,6 +338,7 @@ void CorrParams::defaults()
 	dataBufferFactor = 32;
 	nDataSegments = 8;
 	sendLength = 0.262144;		// (s)
+	invalidMask = ~0;		// write flags for all types of invalidity
 }
 
 void CorrParams::set(const string &key, const string &value)
@@ -421,6 +422,10 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "padScans")
 	{
 		padScans = isTrue(value);
+	}
+	else if(key == "invalidMask")
+	{
+		ss >> invalidMask;
 	}
 	else if(key == "antennas")
 	{
