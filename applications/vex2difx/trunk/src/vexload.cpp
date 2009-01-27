@@ -44,6 +44,24 @@ public:
 	vector<int> mag;
 };
 
+static char swapPolarization(char pol)
+{
+	switch(pol)
+	{
+	case 'R':
+		return 'L';
+	case 'L':
+		return 'R';
+	case 'X':
+		return 'Y';
+	case 'Y':
+		return 'X';
+	default:
+		cerr << "Error: unknown polarization: " << pol << endl;
+		exit(0);
+	}
+}
+
 static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F, int n)
 {
 	int delta, track;
@@ -187,7 +205,12 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 
-		if(block)
+		const VexClock *paramClock = params.getAntennaClock(antName);
+		if(paramClock)
+		{
+			A->clocks.push_back(*paramClock);
+		}
+		else if(block)
 		{
 			defs = ((struct block *)block->ptr)->items;
 			if(defs)
@@ -283,6 +306,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	double mjd;
 	double startScan, stopScan;
 	double startAnt, stopAnt;
+	int nScanSkip = 0;
 	Llist *L;
 	map<string, VexInterval> stations;
 
@@ -357,7 +381,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		if(params.mjdStart > stopScan || params.mjdStop < startScan)
 		{
-			cerr << "FYI: skipping scan " << scanName << " : out of time range." << endl;
+			nScanSkip++;
 			continue;
 		}
 
@@ -390,6 +414,11 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		{
 			V->addEvent(min(it->second, stopScan), VexEvent::ANT_SCAN_STOP, it->first, scanId);
 		}
+	}
+
+	if(nScanSkip > 0)
+	{
+		cout << "FYI: " << nScanSkip << " scans skipped because of time range selection." << endl;
 	}
 	
 	return 0;
@@ -433,6 +462,10 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 		for(int a = 0; a < V->nAntenna(); a++)
 		{
 			const string& antName = V->getAntenna(a)->nameInVex;
+			string antName2 = V->getAntenna(a)->nameInVex;
+
+			Upper(antName2);
+			bool swapPol = params.swapPol(antName2);
 			if2pol.clear();
 			bbc2pol.clear();
 			ch2tracks.clear();
@@ -458,6 +491,10 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			{
 				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
 				polarization = value[0];
+				if(swapPol)
+				{
+					polarization = swapPolarization(polarization);
+				}
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
 				if2pol[value] = polarization;
 			}
@@ -563,10 +600,12 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				F.nBit = atoi(bits.c_str());
 			}
 
+#if 0
 			if(F.nRecordChan != bbc2pol.size())
 			{
 				cerr << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
 			}
+#endif
 
 			// Get rest of Subband information
 			int i = 0;
@@ -691,7 +730,12 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
-		r = getVSN(V, v, params, stn);
+		string ant(stn);
+		Upper(ant);
+		if(params.useAntenna(ant))
+		{
+			r = getVSN(V, v, params, stn);
+		}
 	}
 
 	return 0;

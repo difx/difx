@@ -1,7 +1,7 @@
 
 Full documentation is at: http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx
 
-Install instructions follow:
+Requirements:
 
 vex2difx requires a recent version of difxio available at:
 https://svn.atnf.csiro.au/difx/libraries/difxio/trunk

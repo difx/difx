@@ -3,10 +3,11 @@ Version 0.1
 * simplified difx input file output
 * add SOURCE blocks to .v2d files
 * allow colon separated RAs and Decs in the config file
-* start to implement ANTENNA blocks
+* implement ANTENNA blocks
 * write SCAN_GAP scans instead of no scans 
 * start time and stop time are no longer expanded to full length of all included scans
 * write flag file that is compliant with difx2fits
+* add oms2v2f to this package
 
 Version 0.0
 ~~~~~~~~~~~

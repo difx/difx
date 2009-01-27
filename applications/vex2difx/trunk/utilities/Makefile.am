@@ -12,4 +12,4 @@
 
 dist_bin_SCRIPTS = \
 	padCalcScans \
-	oms2v2f
+	oms2v2d

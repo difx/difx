@@ -341,6 +341,28 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
 
+		/* override with antenna setup values? */
+		const AntennaSetup *antSetup = P->getAntennaSetup(a->first);
+		if(antSetup)
+		{
+			if(fabs(antSetup->X) > 1.0)
+			{
+				A[i].X = antSetup->X;
+			}
+			if(fabs(antSetup->Y) > 1.0)
+			{
+				A[i].Y = antSetup->Y;
+			}
+			if(fabs(antSetup->Z) > 1.0)
+			{
+				A[i].Z = antSetup->Z;
+			}
+			if(antSetup->difxName.size() > 0)
+			{
+				strcpy(A[i].name, antSetup->difxName.c_str());
+			}
+		}
+
 		antList.push_back(a->first);
 		strcpy(A[i].shelf, P->getShelf(a->second));
 	}
@@ -434,7 +456,7 @@ int getBand(vector<pair<int,int> >& bandMap, int fqId)
 	return bandMap.size() - 1;
 }
 	
-int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
+static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode, const string &antName)
 {
 	int antId = D->datastream[dsId].antennaId;
 	if(antId < 0 || antId >= D->nAntenna)
@@ -442,7 +464,6 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 		cerr << "Error: setFormat: antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
 		exit(0);
 	}
-	string antName(D->antenna[antId].name);
 	const VexFormat &format = mode->getFormat(antName);
 	int n2 = next2(format.nRecordChan);
 
@@ -483,7 +504,7 @@ int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode)
 	}
 	else
 	{
-		cerr << "Error: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << D->antenna[antId].name << "." << endl;
+		cerr << "Error: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << antName << "." << endl;
 		return 0;
 	}
 
@@ -762,6 +783,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 	D->mjdStart = J.mjdStart;
 	D->mjdStop  = J.mjdStop;
+	D->visBufferLength = P->visBufferLength;
 	D->startChan = setup->startChan;
 	D->dataBufferFactor = P->dataBufferFactor;
 	D->nDataSegments = P->nDataSegments;
@@ -815,6 +837,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 			{
 				strcpy(scan->name, sourceSetup->difxName.c_str());
 			}
+			if(sourceSetup->calCode > ' ')
+			{
+				scan->calCode[0] = sourceSetup->calCode;
+				scan->calCode[1] = 0;
+			}
+
 		}
 	}
 
@@ -860,7 +888,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 		int d = 0;
 		for(int a = 0; a < D->nAntenna; a++)
 		{
-			int v = setFormat(D, D->nDatastream, freqs, mode);
+			int v = setFormat(D, D->nDatastream, freqs, mode, antList[a]);
 			if(v)
 			{
 				D->config[c].datastreamId[d] = D->nDatastream;

@@ -275,6 +275,10 @@ void SourceSetup::set(const string &key, const string &value)
 	{
 		ss >> difxName;
 	}
+	else
+	{
+		cerr << "Warning: SOURCE: Unknown parameter '" << key << "'." << endl; 
+	}
 }
 
 AntennaSetup::AntennaSetup(const string &name) : vexName(name)
@@ -297,15 +301,36 @@ void AntennaSetup::set(const string &key, const string &value)
 	}
 	else if(key == "clockOffset")
 	{
-		ss >> clockOffset;
+		ss >> clock.offset;
+		clock.offset /= 1.0e6;
+		clock.mjdStart = 1;
 	}
 	else if(key == "clockRate")
 	{
-		ss >> clockRate;
+		ss >> clock.rate;
+		clock.rate /= 1.0e6;
+		clock.mjdStart = 1;
 	}
 	else if(key == "clockEpoch")
 	{
-		ss >> clockEpoch;
+		ss >> clock.offset_epoch;
+		clock.mjdStart = 1;
+	}
+	else if(key == "X")
+	{
+		ss >> X;
+	}
+	else if(key == "Y")
+	{
+		ss >> Y;
+	}
+	else if(key == "Z")
+	{
+		ss >> Z;
+	}
+	else
+	{
+		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
 	}
 }
 
@@ -339,6 +364,7 @@ void CorrParams::defaults()
 	nDataSegments = 8;
 	sendLength = 0.262144;		// (s)
 	invalidMask = ~0;		// write flags for all types of invalidity
+	visBufferLength = 32;
 }
 
 void CorrParams::set(const string &key, const string &value)
@@ -426,6 +452,10 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "invalidMask")
 	{
 		ss >> invalidMask;
+	}
+	else if(key == "visBufferLength")
+	{
+		ss >> visBufferLength;
 	}
 	else if(key == "antennas")
 	{
@@ -686,6 +716,59 @@ bool CorrParams::useAntenna(const string &antName) const
 	}
 }
 
+bool CorrParams::swapPol(const string &antName) const
+{
+	vector<AntennaSetup>::const_iterator a;
+
+	for(a = antennaSetups.begin(); a != antennaSetups.end(); a++)
+	{
+		if(a->vexName == antName)
+		{
+			return a->polSwap;
+		}
+	}
+
+	return false;
+}
+
+const VexClock *CorrParams::getAntennaClock(const string &antName) const
+{
+	vector<AntennaSetup>::const_iterator a;
+
+	for(a = antennaSetups.begin(); a != antennaSetups.end(); a++)
+	{
+		if(a->vexName == antName)
+		{
+			if(a->clock.mjdStart > 0)
+			{
+				return &a->clock;
+			}
+			else
+			{
+				return 0;
+			}
+		}
+	}
+	
+	return 0;
+}
+
+const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
+{
+	int i, n;
+
+	n = antennaSetups.size();
+	for(i = 0; i < n; i++)
+	{
+		if(name == antennaSetups[i].vexName)
+		{
+			return &antennaSetups[i];
+		}
+	}
+
+	return 0;
+}
+
 const CorrSetup *CorrParams::getCorrSetup(const string &name) const
 {
 	int i, n;
@@ -860,6 +943,7 @@ ostream& operator << (ostream& os, const CorrParams& x)
 	os << "mjdStart=" << x.mjdStart << endl;
 	os << "mjdStop=" << x.mjdStop << endl;
 	os << "minSubarray=" << x.minSubarraySize << endl;
+	os << "visBufferLength=" << x.visBufferLength << endl;
 
 	os.precision(6);
 	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << endl;
@@ -999,11 +1083,16 @@ void CorrParams::loadShelves(const string& fileName)
 			exit(0);
 		}
 
+		string antName(a);
+		Upper(antName);
+
 		if(doAntennas)
 		{
-			string antName(a);
-			Upper(antName);
 			addAntenna(antName);
+		}
+		else if(!useAntenna(antName))
+		{
+			continue;
 		}
 
 		vsn = string(v);

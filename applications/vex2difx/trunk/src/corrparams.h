@@ -35,6 +35,8 @@
 #include <map>
 #include <string>
 
+#include "vextables.h"
+
 using namespace std;
 
 // see http://cira.ivec.org/dokuwiki/doku.php/difx/configuration
@@ -73,12 +75,10 @@ public:
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
 	double X, Y, Z;		// Station coordinates to override vex
-	double clockOffset;	// [us] Override clock values in vex file.  All 3 clock ...
-	double clockRate;	// [us/s]  ... parameters are required if any is present.
-	double clockEpoch;	// [MJD]
+	VexClock clock;
 	// flag
 	// media
-	double polSwap;		// If true, swap polarizations
+	bool polSwap;		// If true, swap polarizations
 };
 
 class CorrSetup
@@ -136,9 +136,11 @@ public:
 	void example();
 
 	bool useAntenna(const string &antName) const;
+	bool swapPol(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const string &name) const;
 	const AntennaSetup *getAntennaSetup(const string &name) const;
+	const VexClock *getAntennaClock(const string &antName) const;
 
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
@@ -160,6 +162,7 @@ public:
 	int nDataSegments;
 	double sendLength;	// (s) amount of data to send from datastream to core at a time
 	unsigned int invalidMask;
+	int visBufferLength;
 
 	list<string> antennaList;
 
