@@ -100,6 +100,8 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 
 	if(!dv)
 	{
+		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
+			sizeof(DifxVis));
 		return 0;
 	}
 
@@ -199,6 +201,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 
 	if(DifxVisNextFile(dv) < 0)
 	{
+		fprintf(stderr, "Info: newDifxVis: DifxVisNextFile(dv) < 0\n");
 		deleteDifxVis(dv);
 		return 0;
 	}
@@ -334,6 +337,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	const DifxPolyModel *im1, *im2;
 	int terms1, terms2;
 	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
+	int bin;
 
 	resetDifxParameters(dv->dp);
 
@@ -378,6 +382,19 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	mjd          = atoi(DifxParametersvalue(dv->dp, rows[1])) +
 	               atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
+	bin          = atoi(DifxParametersvalue(dv->dp, rows[7]));
+
+	if(bin != pulsarBin)
+	{
+		nFloat = 2;
+		readSize = nFloat * dv->D->nInChan;
+		fread(dv->spectrum, sizeof(float), readSize, dv->in);
+		return -4;
+	}
+	else
+	{
+		dv->pulsarBin = bin;
+	}
 
 	/* FIXME -- look at sourceId in the record as a check */
 	/* FIXME -- look at configId in the record as a check */
@@ -394,6 +411,20 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 
 	scan = dv->D->scan + scanId;
 	configId = scan->configId;
+	if(configId >= dv->D->nConfig) 
+	{
+		fprintf(stderr, "Developer error: configId = %d\n", configId);
+		fprintf(stderr, "ScanId was %d\n", scanId);
+		exit(0);
+	}
+	if(configId < 0)
+	{
+		nFloat = 2;
+		readSize = nFloat * dv->D->nInChan;
+		fread(dv->spectrum, sizeof(float), readSize, dv->in);
+		return -4;
+	}
+
 	config = dv->D->config + configId;
 
 	/* see if it is still the same scan at the edges of integration */
@@ -444,15 +475,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	dv->freqId = config->freqId;
 	dv->bandId = config->baselineFreq2IF[aa1][aa2][freqNum];
 	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
-	dv->pulsarBin = atoi(DifxParametersvalue(dv->dp, rows[7]));
-
-	if(dv->pulsarBin != pulsarBin)
-	{
-		nFloat = 2;
-		readSize = nFloat * dv->D->nInChan;
-		fread(dv->spectrum, sizeof(float), readSize, dv->in);
-		return -4;
-	}
 
 	/* stash the weight for later incorporation into a record */
 	if(dv->D->inputFileVersion == 0)
@@ -640,6 +662,19 @@ static int RecordIsInvalid(const DifxVis *dv)
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
 				dv->mjd);
+			return 1;
+		}
+	}
+	for(i = 0; i < n; i++)
+	{
+		if(d[i] > 1.0e10 || d[i] < -1.0e10)
+		{
+			printf("Warning -- record with extreme value: ");
+			printf("a1=%d a1=%d mjd=%13.7f value=%e\n",
+				(dv->record->baseline/256) - 1,
+				(dv->record->baseline%256) - 1,
+				dv->mjd,
+				d[i]);
 			return 1;
 		}
 	}
@@ -1020,6 +1055,9 @@ static int DifxVisConvert(const DifxInput *D,
 			FitsBinRowByteSwap(columns, nColumn, 
 				dv->record);
 #endif
+
+//			printf("Record out: %f %d\n", dv->mjd, dv->pulsarBin);
+
 			fitsWriteBinRow(out, (char *)dv->record);
 			nWritten++;
 		}

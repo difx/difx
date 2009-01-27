@@ -56,7 +56,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -a        <nchan>   Average <nchan> channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --bin        <bin>\n");
-	fprintf(stderr, "  -p           <bin>  Select on this pulsar bin number\n");
+	fprintf(stderr, "  -B           <bin>  Select on this pulsar bin number\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --beginchan <chan>\n");
 	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
@@ -229,7 +229,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					opts->specAvg = atoi(argv[i]);
 				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
-					strcmp(argv[i], "-p") == 0)
+					strcmp(argv[i], "-B") == 0)
 				{
 					i++;
 					opts->pulsarBin = atoi(argv[i]);

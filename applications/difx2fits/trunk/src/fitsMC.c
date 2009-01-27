@@ -113,6 +113,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	{
 	   scan = D->scan + s;
 	   configId = scan->configId;
+	   if(configId < 0)
+	   {
+	   	continue;
+	   }
 	   config = D->config + configId;
 	   freqId1 = config->freqId + 1;
 	   sourceId1 = D->source[scan->sourceId].fitsSourceId + 1;

@@ -618,8 +618,16 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	}
 
 	sourceId = data->sourceId1-1;
+	if(sourceId < 0 || sourceId >= S->D->nSource)
+	{
+		return 0;
+	}
 
-	configId = S->D->source[data->sourceId1-1].configId;
+	configId = S->D->source[sourceId].configId;
+	if(configId < 0 || configId >= S->D->nConfig)
+	{
+		return 0;
+	}
 
 	if(configId != S->configId)
 	{
