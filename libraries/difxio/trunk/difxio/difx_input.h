@@ -310,6 +310,7 @@ typedef struct
 	int nInChan;		/* number of correlated channels */
 	int nOutChan;		/* number of channels to write to FITS */
 	int nFFT;		/* size of FFT used */
+	int visBufferLength;	/* number of visibility buffers in mpifxcorr */
 
 	int nIF;		/* maximum num IF across configs */
 	int nPol;		/* maximum num pol across configs */

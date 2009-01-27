@@ -40,6 +40,7 @@ DifxInput *newDifxInput()
 
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
+	D->visBufferLength = 32;
 
 	return D;
 }
@@ -134,6 +135,7 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 
 	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
 	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
+	fprintf(fp, "  vis buffer length = %d\n", D->visBufferLength);
 	fprintf(fp, "  FFT size = %d\n", D->nFFT);
 	fprintf(fp, "  Input Channels = %d\n", D->nInChan);
 	fprintf(fp, "  Start Channel = %d\n", D->startChan);
@@ -656,7 +658,8 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 		"START MJD",
 		"START SECONDS",
 		"ACTIVE DATASTREAMS",
-		"ACTIVE BASELINES"
+		"ACTIVE BASELINES",
+		"VIS BUFFER LENGTH"
 	};
 	const int N_COMMON_ROWS = sizeof(commonKeys)/sizeof(commonKeys[0]);
 	int N;
@@ -683,6 +686,8 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 		      atoi(DifxParametersvalue(ip, rows[3]));
 	D->job->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[4]));
+	D->visBufferLength =
+		      atoi(DifxParametersvalue(ip, rows[5]));
 
 	if(DifxParametersfind(ip, 0, "DATA HEADER O/RIDE") > 0)
 	{

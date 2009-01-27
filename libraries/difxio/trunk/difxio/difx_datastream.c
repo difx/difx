@@ -405,7 +405,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	pol[1] = 0;
 
 	writeDifxLineInt(out, "TELESCOPE INDEX", dd->antennaId);
-	writeDifxLineDouble(out, "TSYS", "%4.2f", dd->tSys);
+	writeDifxLineDouble(out, "TSYS", "%f", dd->tSys);
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);

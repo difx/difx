@@ -137,6 +137,14 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	D->startChan = D1->startChan;
 	D->nInChan = D1->nInChan;
 	D->nOutChan = D1->nOutChan;
+	if(D1->visBufferLength > D2->visBufferLength)
+	{
+		D->visBufferLength = D1->visBufferLength;
+	}
+	else
+	{
+		D->visBufferLength = D2->visBufferLength;
+	}
 	if(D1->mjdStart < D2->mjdStart)
 	{
 		D->mjdStart = D1->mjdStart;

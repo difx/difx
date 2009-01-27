@@ -52,7 +52,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	writeDifxLineInt(out, "START SECONDS", secs);
 	writeDifxLineInt(out, "ACTIVE DATASTREAMS", D->nDatastream);
 	writeDifxLineInt(out, "ACTIVE BASELINES", D->nBaseline);
-	writeDifxLineInt(out, "VIS BUFFER LENGTH", 32);
+	writeDifxLineInt(out, "VIS BUFFER LENGTH", D->visBufferLength);
 	writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
 	sprintf(value, "%s.difx", filebase);
 	writeDifxLine(out, "OUTPUT FILENAME", value);
