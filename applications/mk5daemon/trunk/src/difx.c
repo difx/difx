@@ -110,7 +110,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		sprintf(message, "Input file %s does not exist.  Aborting correlation.", S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		sprintf(message, "Mk5Daemon_startMpifxcorr: input file %s does not exist\n", filename);
+		sprintf(message, "Mk5Daemon_startMpifxcorr: input file %s does not exist\n", S->inputFilename);
 		Logger_logData(D->log, message);
 		return;
 	}
@@ -236,7 +236,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
 		
-		sprintf(command, "ssh -l difx %s mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input", 
+		sprintf(command, "su - difx %s -c \"mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input\"", 
 			S->headNode,
 			1 + S->nDatastream + S->nProcess,
 			filebase,

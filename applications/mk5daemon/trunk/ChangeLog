@@ -39,3 +39,6 @@ Version 0.8
 * mk5cp by exp code
 * alert messages for mk5cp and mk5dir
 * minor bug fixes for mk5cp and mk5dir
+* send messages whenever modules are inserted or removed
+* always make sure VSNs are legal
+* use su, not ssh

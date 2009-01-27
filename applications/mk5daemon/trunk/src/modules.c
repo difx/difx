@@ -3,8 +3,53 @@
 #include <stdlib.h>
 #include <xlrapi.h>
 #include <unistd.h>
+#include <ctype.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
+
+
+/* see if vsn matches <chars> {+|-} <digits> */
+int legalVSN(const char *vsn)
+{
+	int i;
+	int state=0;
+
+	for(i = 0; i < 8; i++)
+	{
+		switch(state)
+		{
+		case 0:
+			if(!isalpha(vsn[i]))
+			{
+				return 0;
+			}
+			state = 1;
+			break;
+		case 1:
+			if(i >= 6)
+			{
+				return 0;
+			}
+			if(vsn[i] == '-' || vsn[i] == '+')
+			{
+				state = 2;
+			}
+			else if(!isalpha(vsn[i]))
+			{
+				return 0;
+			}
+			break;
+		case 2:
+			if(!isdigit(vsn[i]))
+			{
+				return 0;
+			}
+			break;
+		}
+	}
+
+	return 1;
+}
 
 static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 {
@@ -194,6 +239,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 	int n;
 	char vsnA[16], vsnB[16];
+	char message[1000];
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
 
@@ -231,10 +277,56 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		break;
 	}
 
-	strncpy(D->vsnA, vsnA, 8);
-	strncpy(D->vsnB, vsnB, 8);
-	strncpy(dm.vsnA, vsnA, 8);
-	strncpy(dm.vsnB, vsnB, 8);
+	if(strncmp(D->vsnA, vsnA, 8) != 0)
+	{
+		if(legalVSN(D->vsnA))
+		{
+			sprintf(message, "Module %s removed from bank A", D->vsnA);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+		}
+		if(vsnA[0] == 0)
+		{
+			D->vsnA[0] = 0;
+		}
+		else if(legalVSN(vsnA))
+		{
+			sprintf(message, "Module %s inserted into bank A", vsnA);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			strncpy(D->vsnA, vsnA, 8);
+		}
+		else if(strcmp(D->vsnA, "illegalA") != 0)
+		{
+			sprintf(message, "Module with illegal VSN inserted into bank A");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			strcpy(D->vsnA, "illegalA");
+		}
+	}
+	if(strncmp(D->vsnB, vsnB, 8) != 0)
+	{
+		if(legalVSN(D->vsnB))
+		{
+			sprintf(message, "Module %s removed from bank B", D->vsnB);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+		}
+		if(vsnB[0] == 0)
+		{
+			D->vsnB[0] = 0;
+		}
+		else if(legalVSN(vsnB))
+		{
+			sprintf(message, "Module %s inserted into bank B", vsnB);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			strncpy(D->vsnB, vsnB, 8);
+		}
+		else if(strcmp(D->vsnB, "illegalB") != 0)
+		{
+			sprintf(message, "Module with illegal VSN inserted into bank B");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			strcpy(D->vsnB, "illegalB");
+		}
+	}
+	strncpy(dm.vsnA, D->vsnA, 8);
+	strncpy(dm.vsnB, D->vsnB, 8);
 	
 	pthread_mutex_unlock(&D->processLock);
 
