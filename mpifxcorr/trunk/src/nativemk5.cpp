@@ -435,7 +435,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			}
 			if(i % 10000 == 0)
 			{
-				cinfo << startl << "[" << mpiid << "] Waited " << i << " microsec  state="; 
+				cinfo << startl << "[" << mpiid << "] Waited " << i << " ms  state="; 
 				if(xlrRS == XLR_READ_WAITING)
 				{
 					cinfo << "XLR_READ_WAITING" << endl;
@@ -457,16 +457,16 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		}
 		else if(t == 0)
 		{
-			cinfo << startl << "[" << mpiid << "]  XLRClose() being called!" << endl;
+			cinfo << startl << "[" << mpiid << "] XLRClose() being called!" << endl;
 			XLRClose(xlrDevice);
 			
-			cinfo << startl << "[" << mpiid << "]  XLRCardReset() being called!" << endl;
+			cinfo << startl << "[" << mpiid << "] XLRCardReset() being called!" << endl;
 			xlrRC = XLRCardReset(1);
-			cinfo << startl << "[" << mpiid << "]  XLRCardReset() called! " << xlrRC << endl;
+			cinfo << startl << "[" << mpiid << "] XLRCardReset() called! " << xlrRC << endl;
 
-			cinfo << startl << "[" << mpiid << "]  XLROpen() being called!" << endl;
+			cinfo << startl << "[" << mpiid << "] XLROpen() being called!" << endl;
 			xlrRC = XLROpen(1, &xlrDevice);
-			cinfo << startl << "[" << mpiid << "]  XLROpen() called! " << xlrRC << endl;
+			cinfo << startl << "[" << mpiid << "] XLROpen() called! " << xlrRC << endl;
 		}
 	}
 
@@ -488,7 +488,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = 0;
 	sec2 = (readseconds + corrstartseconds) % 86400;
 
-	if(sec != sec2 || fabs(ns - readnanoseconds) > 0.5)
+	if((sec % 86400) != sec2 || fabs(ns - readnanoseconds) > 0.5)
 	{
 		invalidtime++;
 		invalidstart = readpointer;
@@ -496,7 +496,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
 		if((invalidtime & (invalidtime-1)) == 0)
 		{
-			cerror << startl << invalidtime << "consecutive sync errors starting at readpos " << invalidstart << " (" << sec << "," << "ns) != (" << sec2 << "," << readnanoseconds << ")" << endl ;
+			cerror << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << (sec % 86400) << "," << ns << ") != (" << sec2 << "," << readnanoseconds << ")" << endl ;
 		}
 		// FIXME -- if invalidtime > threshhold, look for sync again
 	}

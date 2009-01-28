@@ -27,6 +27,8 @@
 #include <mpi.h>
 #include <iostream>
 #include <cstdlib>
+#include <unistd.h>
+#include <signal.h>
 #include "configuration.h"
 #include "fxmanager.h"
 #include "core.h"
@@ -74,6 +76,13 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
       //else if (pmessage->paramname == "clock stuff")
       else {
         cwarn << startl << config->getMPIId() << ": warning - received a parameter instruction regarding " <<  pmessage->paramName << " which cannot be honored and will be ignored!" << endl;
+      }
+    }
+  }
+  else if(difxmessage->type == DIFX_MESSAGE_STOP) {
+    if(difxmessage->mpiId == 0 && config->getMPIId() == 0) {
+      if(strcmp(difxmessage->identifier, getDifxMessageIdentifier()) == 0) {
+         kill(getpid(), SIGINT);
       }
     }
   }
@@ -379,7 +388,8 @@ int main(int argc, char *argv[])
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
-  delete config;
+  //delete config;  	// FIXME!!! Revisit this commented out destructor sometime.
+  			// It is currently commented out to prevent hang on exit
 
   cinfo << startl << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;
