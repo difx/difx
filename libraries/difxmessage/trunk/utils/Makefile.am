@@ -6,7 +6,8 @@ LDADD = \
 
 bin_PROGRAMS = \
 	testdifxmessagesend \
-	testdifxmessagereceive
+	testdifxmessagereceive \
+	difxlog
 
 dist_bin_SCRIPTS = \
 	mk5mon \
@@ -19,3 +20,6 @@ testdifxmessagesend_SOURCES = \
 
 testdifxmessagereceive_SOURCES = \
 	testdifxmessagereceive.c
+
+difxlog_SOURCES = \
+	difxlog.c

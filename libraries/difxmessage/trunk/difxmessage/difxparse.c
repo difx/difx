@@ -206,7 +206,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_ALERT:
-					if(strcmp(elem, "errorMessage") == 0)
+					if(strcmp(elem, "alertMessage") == 0)
 					{
 						strncpy(G->body.error.message, s, DIFX_MESSAGE_LENGTH-1);
 						G->body.error.message[DIFX_MESSAGE_LENGTH-1] = 0;
