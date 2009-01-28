@@ -593,19 +593,17 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 					exit(0);
 				}
 
-				string chans = s2mode.substr(f+1, g-f-1);
+				string tracks = s2mode.substr(f+1, g-f-1);
 				string bits = s2mode.substr(g+1);
 
-				F.nRecordChan = atoi(chans.c_str()); //bbc2pol.size();
 				F.nBit = atoi(bits.c_str());
+				F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
 			}
 
-#if 0
 			if(F.nRecordChan != bbc2pol.size())
 			{
 				cerr << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
 			}
-#endif
 
 			// Get rest of Subband information
 			int i = 0;
@@ -640,7 +638,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			if(i != F.nRecordChan)
 			{
-				cerr << "Warning: nchan != F.nRecordChan!" << endl;
+				cerr << "Warning: nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
 			}
 		}
 	}

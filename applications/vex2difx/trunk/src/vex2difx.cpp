@@ -576,9 +576,9 @@ void populateBaselineTable(DifxInput *D, int doPolar)
 	bl = D->baseline;
 	for(c = 0; c < D->nConfig; c++)
 	{
-		for(a2 = 1; a2 < D->config[c].nDatastream; a2++)
+		for(a1 = 0; a1 < D->config[c].nDatastream-1; a1++)
 		{
-			for(a1 = 0; a1 < a2; a1++)
+			for(a2 = a1+1; a2 < D->config[c].nDatastream; a2++)
 			{
 				bl->dsA = D->config[c].datastreamId[a1];
 				bl->dsB = D->config[c].datastreamId[a2];
@@ -745,7 +745,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	return c;
 }
 
-void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
+void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -915,7 +915,6 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 
 	// complete a few DifxInput structures
 	deriveSourceTable(D);
-	//printDifxInput(D);
 
 	// Merge identical table entries
 	simplifyDifxFreqs(D);
@@ -957,6 +956,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P)
 	ostringstream flagName;
 	flagName << D->job->fileBase << ".flag";
 	J.generateFlagFile(*V, flagName.str(), P->invalidMask);
+
+	if(verbose > 2)
+	{
+		printDifxInput(D);
+	}
 
 	// clean up
 	deleteDifxInput(D);
@@ -1061,6 +1065,12 @@ int main(int argc, char **argv)
 
 	V = loadVexFile(*P);
 
+	if(!V)
+	{
+		cerr << "Error: cannot load vex file: " << P->vexFile << endl;
+		exit(0);
+	}
+
 	makeJobs(J, V, P, verbose);
 
 	if(verbose > 1)
@@ -1085,7 +1095,7 @@ int main(int argc, char **argv)
 		{
 			cout << *j;
 		}
-		writeJob(*j, V, P);
+		writeJob(*j, V, P, verbose);
 	}
 	cout << J.size() << " job(s) created." << endl;
 
