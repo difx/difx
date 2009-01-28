@@ -1,5 +1,10 @@
-difxio installs in a way that should be familiar to most that have installed
+job2difx installs in a way that should be familiar to most that have installed
 modern Gnu software.
+
+Requirements:
+
+package difxio (available at the same place you got this package) is required
+in order to compile the calcif2 component of this package.
 
 To install from a .tar.gz distribution:
 
@@ -7,7 +12,7 @@ tar zxvf job2difx-XXX.tar.gz
 cd job2difx-XXX
 ./configure --prefix=<prefix>     (replace <prefix> with the base install dir)
 make
-(maybe become root here)
+# (maybe become root here)
 make install
 
 
