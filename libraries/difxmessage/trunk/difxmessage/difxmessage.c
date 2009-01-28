@@ -63,7 +63,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxDatastreamMessage",
 	"DifxCommand",
 	"DifxParameter",
-	"DifxStart"
+	"DifxStart",
+	"DifxStop"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */

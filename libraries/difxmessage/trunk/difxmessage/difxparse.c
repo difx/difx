@@ -357,6 +357,8 @@ static void XMLCALL endElement(void *userData, const char *name)
 						G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 					}
 					break;
+				case DIFX_MESSAGE_STOP:
+					break;
 				default:
 					break;
 				}
@@ -493,6 +495,8 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		{
 			printf("      %s %d\n", G->body.start.processNode[i], G->body.start.nThread[i]);
 		}
+		break;
+	case DIFX_MESSAGE_STOP:
 		break;
 	default:
 		break;

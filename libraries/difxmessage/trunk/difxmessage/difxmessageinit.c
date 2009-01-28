@@ -28,6 +28,11 @@ int difxBinarySTAPort = -1;
 char difxBinaryLTAGroup[16] = "";
 int difxBinaryLTAPort = -1;
 
+const char *getDifxMessageIdentifier()
+{
+	return difxMessageIdentifier;
+}
+
 int difxMessageInit(int mpiId, const char *identifier)
 {
 	const char *envstr;

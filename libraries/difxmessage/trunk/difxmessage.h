@@ -123,6 +123,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_COMMAND,
 	DIFX_MESSAGE_PARAMETER,
 	DIFX_MESSAGE_START,
+	DIFX_MESSAGE_STOP,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -204,6 +205,11 @@ typedef struct
 
 typedef struct
 {
+	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
+} DifxMessageStop;
+
+typedef struct
+{
 	enum DifxMessageType type;
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	char to[DIFX_MESSAGE_MAX_TARGETS][DIFX_MESSAGE_PARAM_LENGTH];
@@ -223,9 +229,10 @@ typedef struct
 		DifxMessageCommand	command;
 		DifxMessageParameter	param;
 		DifxMessageStart	start;
+		DifxMessageStop		stop;
 	} body;
-	int _xml_level;			/* internal use only */
-	char _xml_element[5][32];	/* internal use only */
+	int _xml_level;			/* internal use only here and below */
+	char _xml_element[5][32];
 	int _xml_error_count;
 	char _xml_string[1024];
 } DifxMessageGeneric;
@@ -263,6 +270,8 @@ int difxMessageInit(int mpiId, const char *identifier);
 int difxMessageInitBinary();	/* looks at env vars DIFX_BINARY_GROUP and _PORT */
 void difxMessagePrint();
 void difxMessageGetMulticastGroupPort(char *group, int *port);
+
+const char *getDifxMessageIdentifier();
 
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
