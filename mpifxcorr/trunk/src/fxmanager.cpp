@@ -61,7 +61,7 @@ const string FxManager::LL_CIRCULAR_POL_NAMES[4] = {"LL", "RR", "LR", "RL"};
 const string FxManager::LINEAR_POL_NAMES[4] = {"XX", "YY", "XY", "YX"};
 
 FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip)
-  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), monitor(mon), hostname(hname), monitorport(port), visibilityconfigok(true)
+  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitorport(port)
 {
   int perr;
   const string * polnames;
@@ -427,8 +427,6 @@ void FxManager::receiveData(bool resend)
       viscomplete = visbuffer[visindex]->addData(resultbuffer);
       if(viscomplete)
       {
-        visbuffer[visindex]->multicastweights();
-
         //cinfo << startl << "FXMANAGER telling Vis. " << visindex << " to write out - this refers to time " << visbuffer[visindex]->getTime() << " - the previous buffer has time " << visbuffer[(visindex-1+config->getVisBufferLength())%config->getVisBufferLength()]->getTime() << ", and the next one has " << visbuffer[(visindex +1)%config->getVisBufferLength()]->getTime() << endl;
         cinfo << startl << "Vis. " << visindex << " to write out time " << visbuffer[visindex]->getTime() << endl;
         cverbose << startl << "Vis. " << visindex << " Newestlockedvis is " << newestlockedvis << ", while oldestlockedvis is " << oldestlockedvis << endl;
@@ -549,6 +547,7 @@ void FxManager::loopwrite()
 #endif
     }
     visbuffer[atsegment]->writedata();
+    visbuffer[atsegment]->multicastweights();
     visbuffer[atsegment]->increment();
     if(!visbuffer[atsegment]->configuredOK()) { //problem with finding a polyco, probably
       visibilityconfigok = false;
@@ -563,6 +562,7 @@ void FxManager::loopwrite()
   for(int i=0;i<config->getVisBufferLength();i++)
   {
     visbuffer[(atsegment+i)%config->getVisBufferLength()]->writedata();
+    visbuffer[(atsegment+i)%config->getVisBufferLength()]->multicastweights();
   }
 }
 
