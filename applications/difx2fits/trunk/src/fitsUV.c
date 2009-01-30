@@ -442,8 +442,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	if(scan->mjdStart > mjd-dt2 || scan->mjdEnd < mjd+dt2)
 	{
 		/* Nope! */
-		printf("Transition scan at %f\n", mjd);
 		dv->flagTransition = 1;
+		return SKIPPED_RECORD;
 	}
 	else
 	{
