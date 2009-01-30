@@ -1,0 +1,60 @@
+===== difx2fits =====
+
+Program difx2fits creates a FITS output file from the DIFX (also known as SWIN) format visibilities created by mpifxcorr and several      other files carrying information about the observation.  When run, difx2fits requires the following files to be present:
+
+  - //baseFilename//''.difx/''
+  - //baseFilename//''.input''
+  - //baseFilename//''.uvw''
+  - //baseFilename//''.delay''
+
+This minimal requirement means that difx2fits can be used for correlator jobs not created with the job2difx or vex2difx, though it is     possible that certain combinations of different configurations within the ''.input'' file will not be properly supported at this time.    Several other files are optional and are typically used to populate calibration and ancillary tables:
+
+  - //baseFilename//''.calc/''
+  - //baseFilename//''.rates/''
+  - //baseFilename//''.im/''
+  - //baseFilename//''.flag/''
+  - ''flags''
+  - ''pcal''
+  - ''tsys''
+  - ''weather''
+  - ''$GAIN_CURVE_PATH''
+
+With the exception of the gain curve files, all the input files to difx2fits are expected to be in the current working directory.  As the visibility file (''.difx'') is read, any records that are all zero are omitted.  The number count of these dropped records is reported    as //invalid records// when difx2fits finishes writing the ''UV'' table.  With difx2fits versions since 2.0 multiple correlator output    files can be combined into a single destination FITS file; this feature is still new, so please check the results carefully!
+
+==== Usage ====
+
+difx2fits should be invoked from the command line as follows:
+
+''difx2fits'' [ //options// ]  [ //baseFilename1// [ ... //baseFilename//N ]] [ //outFile// ]
+
+//options// can include:
+
+    * ''-a'' //chanavg// or ''--average'' //chanavg// : average //chanavg// spectral channels
+    * ''-b'' //chan// or ''--beginchan'' //chan// : convert channels starting at zero-based channel //chan//
+    * ''-h'' or ''--help'' : print usage information and exit
+    * ''-n'' or ''--no-model'' : don't write model (ML) table
+    * ''-o'' //nchan// or ''--outchans'' //nchan// : write a total of //nchan// channels to FITS
+    * ''-s'' //scale// or ''--scale'' //scale// : scale visibility data by //scale//
+    * ''-v'' or ''--verbose'' : increase verbosity of output; use twice or thrice to get even more
+    * ''-d'' or ''--difx'' : run on all ''.difx'' files found in the directory
+    * ''-k'' or ''--keep-order'' : don't sort the antennas by name
+    * ''-1'' or ''--dont-combine'' : make a separate FITS file for each input job
+    * ''-x'' or ''--dont-sniff'' : don't generate sniffer output files
+    * ''--override-version'' : ignore difx version clashes
+
+//baseFilename//X is the prefix of a jobfile to convert; it is OK to use the ''.difx'' filename instead
+
+//outFile// is the name of the FITS file to produce; if not provided one will be made based on the project code
+
+==== Usage examples ====
+
+  * Explicitly convert one job output into one fits file:
+
+  difx2fits job9020.000 9020.FITS
+
+  * Convert all job outputs found in the current directory and give extra verbose messages
+
+  difx2fits -v -v -d
+
+
+Unless disabled with the ''--dont-sniff'' or ''-x'' flag, four //sniffer// output files (with suffixes ''.acb'', ''.apd'', ''.wts'' and   ''.xcb'') will be written for each FITS file produced.  These files are used by difxsniff and its associated programs to produce data     plots that are used to assess data quality.

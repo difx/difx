@@ -9,6 +9,15 @@
 #include "sniffer.h"
 #endif
 
+#define HEADER_READ_ERROR	-1
+#define NEXT_FILE_ERROR		-2
+#define DATA_READ_ERROR		-3
+#define SKIPPED_RECORD 		-4
+#define CONFIG_CHANGE_ERROR	-5
+#define BAND_ID_ERROR		-6
+#define POL_ID_ERROR		-7
+#define NFLOAT_ERROR		-8
+
 static int DifxVisInitData(DifxVis *dv)
 {
 	int n;
@@ -349,12 +358,12 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 			/* EOF should not happen in middle of text */
 			if(i != 0)
 			{
-				return -1;
+				return HEADER_READ_ERROR;
 			}
 			v = DifxVisNextFile(dv);
 			if(v < 0)
 			{
-				return -2;
+				return NEXT_FILE_ERROR;
 			}
 			fgets(line, 99, dv->in);
 		}
@@ -375,7 +384,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	if(N < N_DIFX_ROWS)
 	{
 		printf("ERROR: N=%d < N_DIFX_ROWS=%d\n", N, N_DIFX_ROWS);
-		return -3;
+		return HEADER_READ_ERROR;
 	}
 
 	bl           = atoi(DifxParametersvalue(dv->dp, rows[0]));
@@ -384,12 +393,19 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 	bin          = atoi(DifxParametersvalue(dv->dp, rows[7]));
 
+	/* if chan weights are written the data volume is 3/2 as large */
+	/* for now, force nFloat = 2 (one weight for entire vis record) */
+	nFloat = 2;
+	readSize = nFloat * dv->D->nInChan;
+	v = fread(dv->spectrum, sizeof(float), readSize, dv->in);
+	if(v < readSize)
+	{
+		return DATA_READ_ERROR;
+	}
+
 	if(bin != pulsarBin)
 	{
-		nFloat = 2;
-		readSize = nFloat * dv->D->nInChan;
-		fread(dv->spectrum, sizeof(float), readSize, dv->in);
-		return -4;
+		return SKIPPED_RECORD;
 	}
 	else
 	{
@@ -403,10 +419,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	scanId = DifxInputGetScanIdByJobId(dv->D, mjd, dv->jobId);
 	if(scanId < 0)
 	{
-		nFloat = 2;
-		readSize = nFloat * dv->D->nInChan;
-		fread(dv->spectrum, sizeof(float), readSize, dv->in);
-		return -4;
+		return SKIPPED_RECORD;
 	}
 
 	scan = dv->D->scan + scanId;
@@ -419,10 +432,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	}
 	if(configId < 0)
 	{
-		nFloat = 2;
-		readSize = nFloat * dv->D->nInChan;
-		fread(dv->spectrum, sizeof(float), readSize, dv->in);
-		return -4;
+		return SKIPPED_RECORD;
 	}
 
 	config = dv->D->config + configId;
@@ -432,6 +442,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	if(scan->mjdStart > mjd-dt2 || scan->mjdEnd < mjd+dt2)
 	{
 		/* Nope! */
+		printf("Transition scan at %f\n", mjd);
 		dv->flagTransition = 1;
 	}
 	else
@@ -465,9 +476,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	
 	if(verbose >= 1 && scanId != dv->scanId)
 	{
-		printf("        MJD=%11.5f jobId=%d scanId=%d "
-			"Source=%s\n", 
-			mjd, dv->jobId, scanId, scan->name);
+		printf("        MJD=%11.5f jobId=%d scanId=%d Source=%s  FITS SourceId=%d\n", 
+			mjd, dv->jobId, scanId, scan->name, dv->D->source[scan->sourceId].fitsSourceId+1);
 	}
 
 	dv->scanId = scanId;
@@ -486,10 +496,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 		dv->recweight = 1.0;
 	}
 
-	/* if chan weights are written the data volume is 3/2 as large */
-	/* for now, force nFloat = 2 (one weight for entire vis record) */
-	nFloat = 2;
-	readSize = nFloat * dv->D->nInChan;
 	if(bl != dv->baseline || fabs(mjd - dv->mjd) > 1.0/86400000.0)
 	{
 		changed = 1;
@@ -553,7 +559,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 	{
 		if(!changed)	/* cannot change config within integration */
 		{
-			return -5;
+			return CONFIG_CHANGE_ERROR;
 		}
 		dv->configId = configId;
 		dv->tInt = config->tInt;
@@ -573,7 +579,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 				"[0, %d), was %d\n", 
 				dv->nFreq, dv->bandId);
 		
-		return -6;
+		return BAND_ID_ERROR;
 	}
 	
 	if(dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
@@ -582,23 +588,16 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 				"[0, %d), was %d\n",
 				dv->D->nPolar, dv->polId);
 
-		return -6;
+		return POL_ID_ERROR;
 	}
 
 	/* don't read weighted data into unweighted slot */
 	if(nFloat > dv->nComplex)
 	{
 		printf("nFloat > dv->nComplex\n");
-		return -7;
+		return NFLOAT_ERROR;
 	}
 	
-	/* read in the binary formatted visibility spectrum */
-	v = fread(dv->spectrum, sizeof(float), readSize, dv->in);
-	if(v < readSize)
-	{
-		return -8;
-	}
-
 	/* reorder data and set weights if weights not provided */
 	if(nFloat < dv->nComplex)
 	{
@@ -745,7 +744,6 @@ static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 
 	if(D->inputFileVersion == 0) /* Perth merge and after */
 	{
-		//scale = 7.15*D->nOutChan*D->specAvg/(3.125*D->nInChan);
 		scale = 4.576*D->nOutChan/D->nInChan;
 	}
 	else
@@ -833,16 +831,13 @@ static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin)
 
 	dv->changed = 0;
 
-	while(!dv->changed)
+	while(dv->changed == 0 || dv->changed == SKIPPED_RECORD)
 	{
 		if(!dv->first && dv->changed >= 0)
 		{
 			storevis(dv);
 		}
-		do	/* skip over any unneeded autocorrelations */
-		{
-			dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin);
-		} while(dv->changed == -4);
+		dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin);
 	}
 
 	return 0;

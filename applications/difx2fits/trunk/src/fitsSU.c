@@ -159,7 +159,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
-		sourceId1 = sourceId + 1;	/* FITS sourceId1 is 1-based */
+		sourceId1 = i + 1;	/* FITS sourceId1 is 1-based */
 		qual = source->qual;
 		strcpypad(calCode, source->calCode, 4);
 		RAEpoch = source->ra * 180.0 / M_PI;
