@@ -289,6 +289,15 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 			cerr << "Error: only J2000 ref frame is supported." << endl;
 			exit(0);
 		}
+
+		const SourceSetup *setup = params.getSourceSetup(S->name);
+		if(setup)
+		{
+			if(setup->calCode > ' ')
+			{
+				S->calCode = setup->calCode;
+			}
+		}
 	}
 
 	return 0;
@@ -366,9 +375,16 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		string sourceName((char *)get_scan_source(L));
 		string modeName((char *)get_scan_mode(L));
 
-		string setupName = params.findSetup(scanName, sourceName, modeName, ' ', 0);
+		const VexSource *src = V->getSource(sourceName);
+		if(src == 0)
+		{
+			cerr << "Developer error! src == 0" << endl;
+			exit(0);
+		}
 
-		if(setupName == "" || setupName == "skip")
+		string setupName = params.findSetup(scanName, sourceName, modeName, src->calCode, 0);
+
+		if(setupName == "" || setupName == "SKIP")
 		{
 			continue;
 		}
@@ -598,11 +614,6 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				F.nBit = atoi(bits.c_str());
 				F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
-			}
-
-			if(F.nRecordChan != bbc2pol.size())
-			{
-				cerr << "Warning: F.nRecordChan != bbc2pol.size()  (" << F.nRecordChan << ", " << bbc2pol.size() << ")" << endl;
 			}
 
 			// Get rest of Subband information

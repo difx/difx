@@ -258,7 +258,11 @@ void VexJob::assignVSNs(const VexData& V)
 	
 	for(i = antennas.begin(); i != antennas.end(); i++)
 	{
-		vsns[*i] = V.getVSN(*i, mjdStart, mjdStop);
+		const string &vsn = V.getVSN(*i, mjdStart, mjdStop);
+		if(vsn != string("None"))
+		{
+			vsns[*i] = vsn;
+		}
 	}
 }
 

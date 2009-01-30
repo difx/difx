@@ -820,6 +820,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 
 		scan->ra = src->ra;
 		scan->dec = src->dec;
+		if(src->calCode > ' ')
+		{
+			scan->calCode[0] = src->calCode;
+			scan->calCode[1] = 0;
+		}
 		strcpy(scan->name, S->sourceName.c_str());
 		// FIXME qual and calcode
 
@@ -837,12 +842,6 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			{
 				strcpy(scan->name, sourceSetup->difxName.c_str());
 			}
-			if(sourceSetup->calCode > ' ')
-			{
-				scan->calCode[0] = sourceSetup->calCode;
-				scan->calCode[1] = 0;
-			}
-
 		}
 	}
 
