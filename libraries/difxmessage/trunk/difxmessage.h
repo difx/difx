@@ -161,13 +161,15 @@ typedef struct
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	int severity;
-} DifxMessageError;
+} DifxMessageAlert;
 
 typedef struct
 {
 	enum DifxState state;
 	char message[DIFX_MESSAGE_LENGTH];
 	double mjd;
+	float weight[DIFX_MESSAGE_MAX_DATASTREAMS];
+	int maxDS;
 } DifxMessageStatus;
 
 typedef struct
@@ -222,7 +224,7 @@ typedef struct
 	{
 		DifxMessageMk5Status	mk5status;
 		DifxMessageLoad		load;
-		DifxMessageError	error;
+		DifxMessageAlert	alert;
 		DifxMessageStatus	status;
 		DifxMessageInfo		info;
 		DifxMessageDatastream	datastream;

@@ -65,7 +65,6 @@ static void XMLCALL startElement(void *userData, const char *name,
 	const char **atts)
 {
 	DifxMessageGeneric *G;
-	DifxMessageStart *S;
 	int nThread = 1;
 	int i, j, n;
 
@@ -75,6 +74,8 @@ static void XMLCALL startElement(void *userData, const char *name,
 	
 	if(G->type == DIFX_MESSAGE_START)
 	{
+		DifxMessageStart *S;
+		
 		S = &G->body.start;
 		for(i = 0; atts[i]; i+=2)
 		{
@@ -119,6 +120,34 @@ static void XMLCALL startElement(void *userData, const char *name,
 			}
 		}
 	}
+	else if(G->type == DIFX_MESSAGE_STATUS)
+	{
+		DifxMessageStatus *S;
+		int ds = -1;
+
+		S = &G->body.status;
+		if(strcmp(name, "weight") == 0)
+		{
+			for(i = 0; atts[i]; i+=2)
+			{
+				if(strcmp(atts[i], "ant") == 0)
+				{
+					ds = atoi(atts[i+1]);
+				}
+				else if(strcmp(atts[i], "wt") == 0)
+				{
+					if(ds >= 0 && ds < DIFX_MESSAGE_MAX_DATASTREAMS)
+					{
+						if(ds > S->maxDS)
+						{
+							S->maxDS = ds;
+						}
+						S->weight[ds] = atof(atts[i+1]);
+					}
+				}
+			}
+		}
+	}
 
 	G->_xml_level++;
 	strcpy(G->_xml_element[G->_xml_level], name);
@@ -129,6 +158,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 	DifxMessageGeneric *G;
 	const char *elem;
 	const char *s;
+	int i;
 
 	G = (DifxMessageGeneric *)userData;
 	elem = G->_xml_element[G->_xml_level];
@@ -171,6 +201,14 @@ static void XMLCALL endElement(void *userData, const char *name)
 						if(!strcmp(DifxMessageTypeStrings[t],s))
 						{
 							G->type = t;
+							if(G->type == DIFX_MESSAGE_STATUS)
+							{
+								for(i = 0; i < DIFX_MESSAGE_MAX_DATASTREAMS; i++)
+								{
+									G->body.status.weight[i] = -1;
+								}
+								G->body.status.maxDS = -1;
+							}
 						}
 					}
 				}
@@ -208,12 +246,12 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_ALERT:
 					if(strcmp(elem, "alertMessage") == 0)
 					{
-						strncpy(G->body.error.message, s, DIFX_MESSAGE_LENGTH-1);
-						G->body.error.message[DIFX_MESSAGE_LENGTH-1] = 0;
+						strncpy(G->body.alert.message, s, DIFX_MESSAGE_LENGTH-1);
+						G->body.alert.message[DIFX_MESSAGE_LENGTH-1] = 0;
 					}
 					else if(strcmp(elem, "severity") == 0)
 					{
-						G->body.error.severity = atoi(s);
+						G->body.alert.severity = atoi(s);
 					}
 					break;
 				case DIFX_MESSAGE_MARK5STATUS:
@@ -435,8 +473,8 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 			G->body.load.netTXRate);
 		break;
 	case DIFX_MESSAGE_ALERT:
-		printf("    severity = %d\n", G->body.error.severity);
-		printf("    message = %s\n", G->body.error.message);
+		printf("    severity = %d\n", G->body.alert.severity);
+		printf("    message = %s\n", G->body.alert.message);
 		break;
 	case DIFX_MESSAGE_MARK5STATUS:
 		printf("    state = %s %d\n", 

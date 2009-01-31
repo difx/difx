@@ -29,3 +29,7 @@ Add initial version of "mk5display", a python gui to watch a bank of Mark5 units
   This is basically a toy, not for real use at the moment.
 Add difxStopMessage
 Add difxlog
+
+Version 0.5 20090131
+~~~~~~~~~~~
+Complete change from DifxMessageError to DifxMessageAlert

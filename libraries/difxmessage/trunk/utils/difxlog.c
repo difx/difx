@@ -49,7 +49,7 @@ int checkPid(int pid)
 
 	sprintf(cmd, "ps -p %d -o pid --no-headers", pid);
 	p = popen(cmd, "r");
-	r = (fgets(s, 9, p) > 3);
+	r = (*fgets(s, 9, p) >= ' ');
 	fclose(p);
 
 	return r;
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
 	int logLevel = DIFX_ALERT_LEVEL_INFO;
 	int pidWatch = -1;
 	int sock;
-	int l;
+	int i, l;
 	char message[1024], from[32];
 	DifxMessageGeneric G;
 	FILE *out;
@@ -115,13 +115,31 @@ int main(int argc, char **argv)
 		{
 			if(G.type == DIFX_MESSAGE_ALERT)
 			{
-				DifxMessageError *A;
+				DifxMessageAlert *A;
 
-				A = &G.body.error;
+				A = &G.body.alert;
 				if(A->severity <= logLevel)
 				{
 					fprintf(out, "%s  %s  %s\n", timestr, difxMessageAlertString[A->severity], A->message);
 					fflush(out);
+				}
+			}
+			else if(G.type == DIFX_MESSAGE_STATUS)
+			{
+				DifxMessageStatus *S;
+
+				S = &G.body.status;
+				
+				fprintf(out, "%s  STATUS %s  %s\n", timestr, DifxStateStrings[S->state],
+					S->message);
+				if(S->maxDS >= 0)
+				{
+					fprintf(out, "%s  WEIGHTS", timestr);
+					for(i = 0; i <= S->maxDS; i++)
+					{
+						fprintf(out, " %4.2f", S->weight[i]);
+					}
+					fprintf(out, "\n");
 				}
 			}
 		}
