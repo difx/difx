@@ -11,7 +11,7 @@ using namespace std;
 
 //variables
 const int MAX_CHANNELS=4096;
-const int SYNC=4294967295;
+static const u32 SYNC = MAX_U32;
 float maxy, dumptime;
 int antID, nchan, bandID, threadID, nthreads, threadsampleoffset, startblock, numblocks, configindex, blockspersend;
 float data[MAX_CHANNELS];
