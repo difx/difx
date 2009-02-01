@@ -883,8 +883,9 @@ int DataStream::openframe()
     return(0);
   }
 
-  // Read file header and extract time from it
-  status = readnetwork(socketnumber, buf, LBA_HEADER_LENGTH, &nread);
+  // Check to see if this is an old style header first
+  ntoread = sizeof(long long) + sizeof(long long);
+  status = readnetwork(socketnumber, buf, ntoread, &nread);
   if (status==-1) { // Error reading socket
     cerror << startl << "Error reading socket" << endl;
     keepreading=false;
@@ -892,10 +893,27 @@ int DataStream::openframe()
   } else if (status==0) {  // Socket closed remotely
     keepreading=false;
     return(0);
-  } else if (nread!=LBA_HEADER_LENGTH) { // This should never happen
+  } else if (nread!=ntoread) { // This should never happen
     keepreading=false;
     cerror << startl << "Error file header" << endl;
     return(0);
+  }
+  
+  if (buf[8] != ':') {
+    // Read file header and extract time from it
+    status = readnetwork(socketnumber, &(buf[16]), LBA_HEADER_LENGTH - 16, &nread);
+    if (status==-1) { // Error reading socket
+      cerror << startl << "Error reading socket" << endl;
+      keepreading=false;
+      return(0);
+    } else if (status==0) {  // Socket closed remotely
+      keepreading=false;
+      return(0);
+    } else if (nread!=LBA_HEADER_LENGTH-16) { // This should never happen
+      keepreading=false;
+      cerror << startl << "Error file header" << endl;
+      return(0);
+    }
   }
 
   status = initialiseFrame(buf);
@@ -914,22 +932,26 @@ int DataStream::initialiseFrame(char * frameheader)
   string inputline;
 
   at = frameheader;
-  while (strncmp(at,"TIME",4)!=0)
-  {
-    endline = index(at, '\n');
-    if (endline==NULL || endline-frameheader>=LBA_HEADER_LENGTH-1) {
-      cerror << startl << "Could not parse file header" << endl;
-      keepreading=false;
-      return -1;
+  if (at[8] != ':') {
+    while (strncmp(at,"TIME",4)!=0)
+    {
+      endline = index(at, '\n');
+      if (endline==NULL || endline-frameheader>=LBA_HEADER_LENGTH-1) {
+        cerror << startl << "Could not parse file header" << endl;
+        keepreading=false;
+        return -1;
+      }
+      at = endline+1;
     }
-    at = endline+1;
+    endline = index(at, '\n');
+    *endline = 0;
+    at += 5;  // Skip over "TIME"
+    inputline = at;
+  } else {
+    inputline = string(at, 15);
   }
-  endline = index(at, '\n');
-  *endline = 0;
-  at += 5;  // Skip over "TIME"
 
-  inputline = at;
-
+  cinfo << startl << "DATASTREAM " << mpiid << " read a header line of " << inputline << "!" << endl;
   year = atoi((inputline.substr(0,4)).c_str());
   month = atoi((inputline.substr(4,2)).c_str());
   day = atoi((inputline.substr(6,2)).c_str());
