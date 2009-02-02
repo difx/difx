@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <mark5access.h>
 #include "mark5dir.h"
+#include "replaced.h"
 
 using namespace std;
 
@@ -26,7 +27,8 @@ char Mark5DirDescription[][20] =
 	"Short scan",
 	"XLR Read error",
 	"Decode error",
-	"Decoded"
+	"Decoded",
+	"Decoded WR"
 };
 
 /* returns active bank, or -1 if none */
@@ -99,8 +101,8 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	return b;
 }
 
-int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref, 
-	int (*callback)(int, int, int, void *), void *data)
+static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref, 
+	int (*callback)(int, int, int, void *), void *data, float *replacedFrac)
 {
 	XLR_RETURN_CODE xlrRC;
 	Mark5Directory m5dir;
@@ -114,6 +116,8 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 	int bufferlen;
 	unsigned int x, signature;
 	int die = 0;
+	long long wGood, wBad;
+	long long wGoodSum=0, wBadSum=0;
 
 	/* allocate a bit more than the minimum needed */
 	bufferlen = 20160*8*5;
@@ -174,6 +178,7 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 
 	for(i = 0; i < module->nscans; i++)
 	{
+		wGood = wBad = 0;
 		scan = module->scans + i;
 
 		strncpy(scan->name, m5dir.scanName[i], MAXLENGTH);
@@ -203,6 +208,8 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 		b = scan->start % (1LL<<32);
 
 		xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen);
+
+		countReplaced(buffer, bufferlen/4, &wGood, &wBad);
 
 		if(xlrRC == XLR_FAIL)
 		{
@@ -252,13 +259,31 @@ int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 
 		if(callback)
 		{
-			die = callback(i, module->nscans, MARK5_DIR_DECODE_SUCCESS, data);
+			enum Mark5DirStatus s;
+
+			if(wBad > 8)
+			{
+				s = MARK5_DIR_DECODE_WITH_REPLACEMENTS;
+			}
+			else
+			{
+				s = MARK5_DIR_DECODE_SUCCESS;
+			}
+			die = callback(i, module->nscans, s, data);
 		}
+
+		wGoodSum += wGood;
+		wBadSum += wBad;
 
 		if(die)
 		{
 			break;
 		}
+	}
+
+	if(replacedFrac)
+	{
+		*replacedFrac = (double)wBad/(double)wGood;
 	}
 
 	free(buffer);
@@ -442,7 +467,8 @@ int saveMark5Module(struct Mark5Module *module, const char *filename)
  */
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
-	int (*callback)(int, int, int, void *), void *data)
+	int (*callback)(int, int, int, void *), void *data,
+	float *replacedFrac)
 {
 	char filename[256];
 	int v, curbank;
@@ -457,7 +483,7 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice,
 	
 	v = loadMark5Module(module, filename);
 
-	v = getMark5Module(module, xlrDevice, mjdref, callback, data);
+	v = getMark5Module(module, xlrDevice, mjdref, callback, data, replacedFrac);
 
 	if(v >= 0)
 	{

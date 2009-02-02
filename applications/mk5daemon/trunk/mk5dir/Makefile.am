@@ -14,8 +14,10 @@ mk5dir_LDADD = \
 
 mk5cp_SOURCES = \
 	mark5dir.cpp \
+	replaced.c \
 	mk5cp.cpp
 
 mk5dir_SOURCES = \
 	mark5dir.cpp \
+	replaced.c \
 	mk5dir.cpp

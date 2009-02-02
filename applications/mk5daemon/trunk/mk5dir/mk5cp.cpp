@@ -37,20 +37,13 @@
 #include <sys/time.h>
 #include "config.h"
 #include "mark5dir.h"
+#include "replaced.h"
 #include "../config.h"
-
-#ifdef WORDS_BIGENDIAN
-#define MARK5_FILL_WORD32 0x44332211UL
-#define MARK5_FILL_WORD64 0x4433221144332211ULL
-#else
-#define MARK5_FILL_WORD32 0x11223344UL
-#define MARK5_FILL_WORD64 0x1122334411223344ULL
-#endif
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20090108";
+const char version[] = "0.3";
+const char verdate[] = "20090202";
 
 int verbose = 0;
 int die = 0;
@@ -107,24 +100,6 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	}
 
 	return die;
-}
-
-void countReplaced(const unsigned long *data, int len, 
-	long long *wGood, long long *wBad)
-{
-	int i;
-	int nBad=0;
-
-	for(i = 0; i < len; i++)
-	{
-		if(data[i] == MARK5_FILL_WORD32)
-		{
-			nBad++;
-		}
-	}
-
-	*wGood += (len-nBad);
-	*wBad += nBad;
 }
 
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status)
@@ -293,6 +268,7 @@ int main(int argc, char **argv)
 	int v;
 	int a, b, i, s, l, nGood, nBad;
 	int scanIndex;
+	float replacedFrac;
 
 	if(argc < 2)
 	{
@@ -452,7 +428,15 @@ int main(int argc, char **argv)
 	if(strlen(vsn) == 8)
 	{
 		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
-			vsn, mk5dirpath, &dirCallback, &mk5status);
+			vsn, mk5dirpath, &dirCallback, &mk5status,
+			&replacedFrac);
+		if(replacedFrac > 0.01)
+		{
+			sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
+				vsn, replacedFrac);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+			fprintf(stderr, "Warning: %s\n", message);
+		}
 		if(v < 0)
 		{
 			fprintf(stderr, "Unsuccessful\n");

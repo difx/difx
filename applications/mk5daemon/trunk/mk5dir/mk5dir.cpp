@@ -9,8 +9,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20090109";
+const char version[] = "0.3";
+const char verdate[] = "20090202";
 
 int verbose = 0;
 int die = 0;
@@ -80,6 +80,7 @@ int main(int argc, char **argv)
 	char modules[100] = "";
 	char vsn[16] = "";
 	int a, v;
+	float replacedFrac;
 
 	if(argc < 2)
 	{
@@ -221,7 +222,14 @@ int main(int argc, char **argv)
 			mk5status.activeBank = 'A';
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnA, mk5dirpath, &dirCallback, 
-				&mk5status);
+				&mk5status, &replacedFrac);
+			if(replacedFrac > 0.01)
+			{
+				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
+					mk5status.vsnA, replacedFrac);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+				fprintf(stderr, "Warning: %s\n", message);
+			}
 			if(v < 0)
 			{
 				if(!die)
@@ -249,7 +257,14 @@ int main(int argc, char **argv)
 			mk5status.activeBank = 'B';
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 				mk5status.vsnB, mk5dirpath, &dirCallback, 
-				&mk5status);
+				&mk5status, &replacedFrac);
+			if(replacedFrac > 0.01)
+			{
+				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
+					mk5status.vsnB, replacedFrac);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+				fprintf(stderr, "Warning: %s\n", message);
+			}
 			if(v < 0)
 			{
 				if(!die)
@@ -291,7 +306,15 @@ int main(int argc, char **argv)
 			}
 
 			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
-				vsn, mk5dirpath, &dirCallback, &mk5status);
+				vsn, mk5dirpath, &dirCallback, &mk5status,
+				&replacedFrac);
+			if(replacedFrac > 0.01)
+			{
+				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
+					vsn, replacedFrac);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+				fprintf(stderr, "Warning: %s\n", message);
+			}
 			if(v < 0)
 			{
 				if(!die)

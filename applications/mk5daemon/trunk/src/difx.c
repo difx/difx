@@ -7,6 +7,7 @@
 const char defaultMpiWrapper[] = "mpirun";
 const char defaultMpiOptions[] = "--mca btl ^udapl,openib --mca mpi_yield_when_idle 1";
 const char defaultDifxProgram[] = "mpifxcorr";
+const char difxUser[] = "difx";
 
 typedef struct
 {
@@ -167,6 +168,8 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 
 	fclose(out);
+	sprintf(command, "chown %s %s.machines", difxUser, filebase);
+	system(command);
 
 	/* write threads file */
 	sprintf(filename, "%s.threads", filebase);
@@ -195,6 +198,8 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 
 	fclose(out);
+	sprintf(command, "chown %s %s.threads", difxUser, filebase);
+	system(command);
 
 	/* Don't need usage info anymore */
 	free(uses);
@@ -234,9 +239,13 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			difxProgram = defaultDifxProgram;
 		}
 
-		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
+		sprintf(command, "su - %s rm -rf %s.difx/", difxUser, filebase);
+		system(command);
 		
-		sprintf(command, "su - difx %s -c \"mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input\"", 
+		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
+
+		sprintf(command, "su - %s %s -c \"mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input\"", 
+			difxUser,
 			S->headNode,
 			1 + S->nDatastream + S->nProcess,
 			filebase,

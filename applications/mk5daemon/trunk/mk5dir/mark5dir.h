@@ -61,6 +61,7 @@ enum Mark5DirStatus
 	MARK5_DIR_READ_ERROR,
 	MARK5_DIR_DECODE_ERROR,
 	MARK5_DIR_DECODE_SUCCESS,
+	MARK5_DIR_DECODE_WITH_REPLACEMENTS,
 	MARK5_COPY_ERROR,
 	MARK5_COPY_SUCCESS
 };
@@ -84,7 +85,8 @@ int saveMark5Module(struct Mark5Module *module, const char *filename);
 
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
-	int (*callback)(int, int, int, void *), void *data);
+	int (*callback)(int, int, int, void *), void *data,
+	float *replacedFrac);
 
 
 
