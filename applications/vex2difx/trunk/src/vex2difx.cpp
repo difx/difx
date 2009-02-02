@@ -737,7 +737,30 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	}
 	else
 	{
-		config->blocksPerSend = (int)(sendLength*minBW*D->nDataSegments/(config->decimation*config->nChan*D->dataBufferFactor));
+		int blocksPerInt = (int)(setup->tInt*minBW/config->nChan + 0.5);
+		int bytesPerBlock = (int)(mode->subbands.size()*config->nChan*2*mode->getBits()/8 + 0.5);
+		int bps = 1;
+		int sendBytes = (int)(sendLength*mode->subbands.size()*mode->sampRate*mode->getBits()/8.0 + 0.5);
+
+		// Search for the perfect number of blocks per send
+		for(int b = 1; b <=blocksPerInt; b++)
+		{
+			if(blocksPerInt % b == 0)
+			{
+				if(b*bytesPerBlock < 2*sendBytes)
+				{
+					bps = b;
+				}
+			}
+		}
+
+		if(bps * bytesPerBlock < sendBytes/5.0)
+		{
+			// Give up on even number of blocks per integration
+			bps = (int)(sendBytes/bytesPerBlock + 0.5);
+		}
+
+		config->blocksPerSend = bps;
 	}
 
 	// FIXME -- reset sendLength based on blockspersend, then readjust tInt, perhaps

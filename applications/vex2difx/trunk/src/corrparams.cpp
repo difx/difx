@@ -362,7 +362,7 @@ void CorrParams::defaults()
 	startSeries = 20;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	sendLength = 0.262144;		// (s)
+	sendLength = 0.1;		// (s)
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 32;
 }

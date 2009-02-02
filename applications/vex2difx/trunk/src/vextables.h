@@ -153,7 +153,7 @@ public:
 
 	string name;
 
-	double sampRate;
+	double sampRate;		// (Hz)
 	vector<VexSubband> subbands;
 	map<string,VexFormat> formats;	// indexed by antenna name
 };
@@ -173,10 +173,10 @@ class VexClock
 public:
 	VexClock() : mjdStart(0.0), offset(0.0), rate(0.0), offset_epoch(50000.0) {}
 
-	double mjdStart;	// mjd
-	double offset;		// sec
-	double rate;		// sec/sec?
-	double offset_epoch;	// mjd
+	double mjdStart;	// (mjd)
+	double offset;		// (sec)
+	double rate;		// (sec/sec)
+	double offset_epoch;	// (mjd)
 };
 
 class VexAntenna
@@ -191,7 +191,7 @@ public:
 
 	double x, y, z;		// (m) antenna position
 	double dx, dy, dz;	// (m/?) antenna position	//FIXME
-	double posEpoch;	// mjd				//FIXME
+	double posEpoch;	// mjd
 	string axisType;
 	double axisOffset;	// (m)
 	vector<VexClock> clocks;
