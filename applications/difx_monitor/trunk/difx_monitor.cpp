@@ -15,10 +15,10 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
-#include <values.h>
+#include <limits.h>
 #include <math.h>
 #include <cpgplot.h>
-#include <string>
+#include <string.h>
 #include <sstream>
 #include "architecture.h"
 #include "configuration.h"
@@ -48,6 +48,7 @@ f32 *xval;
 int main(int argc, const char * argv[])
 {
   int timestampsec, readbytes, status = 1;
+  int numchan, buffersize;
 
   if(argc < 3 || argc > 4)
   {
@@ -56,7 +57,7 @@ int main(int argc, const char * argv[])
   }
 
   //work out the config stuff
-  config = new Configuration(argv[1]);
+  config = new Configuration(argv[1], 0);
   config->loaduvwinfo(true);
   port = atoi(argv[2]);
   if(argc == 4)
@@ -109,6 +110,33 @@ int main(int argc, const char * argv[])
     //if not skipping this vis
     if(!(timestampsec < 0))
     {
+      //receive the buffersize
+      status = readnetwork(socketnumber, (char*)(&buffersize), sizeof(int), &readbytes);
+      if (status==-1) { // Error reading socket
+	cerr << "Error reading socket" << endl;
+	exit(1);
+      } else if (status==0) {  // Socket closed remotely
+	cerr << "Socket closed remotely - aborting" << endl;
+	break;
+      } else if (readbytes!=sizeof(int)) { // This should never happen
+	cerr<<"Read size error!!!"<<endl;
+	break;
+      }
+
+      //receive the number of channels
+      cout << "About to get a visibility" << endl;
+      status = readnetwork(socketnumber, (char*)(&numchan), sizeof(int), &readbytes);
+      if (status==-1) { // Error reading socket
+	cerr << "Error reading socket" << endl;
+	exit(1);
+      } else if (status==0) {  // Socket closed remotely
+	cerr << "Socket closed remotely - aborting" << endl;
+	break;
+      } else if (readbytes!=sizeof(int)) { // This should never happen
+	cerr<<"Read size error!!!"<<endl;
+	break;
+      }
+
       //if config has changed, zero everything and grab new parameters from config
       atseconds = timestampsec;
       if(config->getConfigIndex(atseconds) != currentconfigindex)
