@@ -319,7 +319,8 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
 
 int Visibility::sendMonitorData(bool tofollow) {
   char *ptr;
-  int ntowrite, nwrote, atsec;
+  int ntowrite, nwrote;
+  int32_t atsec, datasize, numchans;
 
   //ensure the socket is open
   if(checkSocketStatus())
@@ -339,6 +340,25 @@ int Visibility::sendMonitorData(bool tofollow) {
 
     if(tofollow)
     {
+
+      datasize = resultlength;
+      ptr = (char*)(&datasize);
+      nwrote = send(*mon_socket, ptr, 4, 0);
+      if (nwrote < 4)
+	{
+	  cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	  return 1;
+	}
+
+      numchans = config->getNumChannels(currentconfigindex);
+      ptr = (char*)(&numchans);
+      nwrote = send(*mon_socket, ptr, 4, 0);
+      if (nwrote < 4)
+	{
+	  cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	  return 1;
+	}
+
       ptr = (char*)results;
       ntowrite = resultlength*sizeof(cf32);
 
