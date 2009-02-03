@@ -33,3 +33,4 @@ Add difxlog
 Version 0.5 20090131
 ~~~~~~~~~~~
 Complete change from DifxMessageError to DifxMessageAlert
+Add Mark5Version message type

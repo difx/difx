@@ -228,6 +228,42 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 	return difxMessageSend(message);
 }
 
+int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[700];
+
+	sprintf(body, 
+	
+		"<mark5Version>"
+		  "<ApiVer>%s</ApiVer>"
+		  "<ApiDate>%s</ApiDate>"
+		  "<FirmVer>%s</FirmVer>"
+		  "<FirmDate>%s</FirmDate>"
+		  "<MonVer>%s</MonVer>"
+		  "<XbarVer>%s</XbarVer>"
+		  "<AtaVer>%s</AtaVer>"
+		  "<UAtaVer>%s</UAtaVer>"
+		  "<DriverVer>%s</DriverVer>"
+		"</mark5Version>",
+
+		mk5version->ApiVersion,
+		mk5version->ApiDateCode,
+		mk5version->FirmwareVersion,
+		mk5version->FirmDateCode,
+		mk5version->MonitorVersion,
+		mk5version->XbarVersion,
+		mk5version->AtaVersion,
+		mk5version->UAtaVersion,
+		mk5version->DriverVersion);
+
+	sprintf(message, difxMessageXMLFormat, 
+		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],
+		difxMessageSequenceNumber++, body);
+	
+	return difxMessageSend(message);
+}
+
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	double visMJD, int numdatastreams, float *weight)
 {

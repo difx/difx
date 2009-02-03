@@ -291,7 +291,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "scanName") == 0)
 					{
-						strncpy(G->body.mk5status.scanName, s,63);
+						strncpy(G->body.mk5status.scanName, s, 63);
 						G->body.mk5status.scanName[63] = 0;
 					}
 					else if(strcmp(elem, "position") == 0)
@@ -305,6 +305,53 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "dataMJD") == 0)
 					{
 						G->body.mk5status.dataMJD = atof(s);
+					}
+					break;
+				case DIFX_MESSAGE_MARK5VERSION:
+					if(strcmp(elem, "ApiVer") == 0)
+					{
+						strncpy(G->body.mk5version.ApiVersion, s, 7);
+						G->body.mk5version.ApiVersion[7] = 0;
+					}
+					else if(strcmp(elem, "ApiDate") == 0)
+					{
+						strncpy(G->body.mk5version.ApiDateCode, s, 11);
+						G->body.mk5version.ApiDateCode[11] = 0;
+					}
+					else if(strcmp(elem, "FirmVer") == 0)
+					{
+						strncpy(G->body.mk5version.FirmwareVersion, s, 7);
+						G->body.mk5version.FirmwareVersion[7] = 0;
+					}
+					else if(strcmp(elem, "FirmDate") == 0)
+					{
+						strncpy(G->body.mk5version.FirmDateCode, s, 11);
+						G->body.mk5version.FirmDateCode[11] = 0;
+					}
+					else if(strcmp(elem, "MonVer") == 0)
+					{
+						strncpy(G->body.mk5version.MonitorVersion, s, 7);
+						G->body.mk5version.MonitorVersion[7] = 0;
+					}
+					else if(strcmp(elem, "XbarVer") == 0)
+					{
+						strncpy(G->body.mk5version.XbarVersion, s, 7);
+						G->body.mk5version.XbarVersion[7] = 0;
+					}
+					else if(strcmp(elem, "AtaVer") == 0)
+					{
+						strncpy(G->body.mk5version.AtaVersion, s, 7);
+						G->body.mk5version.AtaVersion[7] = 0;
+					}
+					else if(strcmp(elem, "UAtaVer") == 0)
+					{
+						strncpy(G->body.mk5version.UAtaVersion, s, 7);
+						G->body.mk5version.UAtaVersion[7] = 0;
+					}
+					else if(strcmp(elem, "DriverVer") == 0)
+					{
+						strncpy(G->body.mk5version.DriverVersion, s, 7);
+						G->body.mk5version.DriverVersion[7] = 0;
 					}
 					break;
 				case DIFX_MESSAGE_STATUS:
@@ -489,6 +536,24 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    position = %lld\n", G->body.mk5status.position);
 		printf("    rate = %7.3f Mbps\n", G->body.mk5status.rate);
 		printf("    data MJD = %12.6f\n", G->body.mk5status.dataMJD);
+		break;
+	case DIFX_MESSAGE_MARK5VERSION:
+		printf("    Api Version = %s  Date = %s\n", 
+			G->body.mk5version.ApiVersion,
+			G->body.mk5version.ApiDateCode);
+		printf("    Firmware Version = %s  Date = %s\n", 
+			G->body.mk5version.FirmwareVersion,
+			G->body.mk5version.FirmDateCode);
+		printf("    Monitor Version = %s\n", 
+			G->body.mk5version.MonitorVersion);
+		printf("    Xbar Version = %s\n", 
+			G->body.mk5version.XbarVersion);
+		printf("    Ata Version = %s\n", 
+			G->body.mk5version.AtaVersion);
+		printf("    UAta Version = %s\n", 
+			G->body.mk5version.UAtaVersion);
+		printf("    Driver Version = %s\n", 
+			G->body.mk5version.DriverVersion);
 		break;
 	case DIFX_MESSAGE_STATUS:
 		printf("    state = %s %d\n", 

@@ -124,6 +124,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_PARAMETER,
 	DIFX_MESSAGE_START,
 	DIFX_MESSAGE_STOP,
+	DIFX_MESSAGE_MARK5VERSION,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -142,6 +143,19 @@ typedef struct
 	float rate;		/* Mbps */
 	double dataMJD;
 } DifxMessageMk5Status;
+
+typedef struct
+{
+	char ApiVersion[8];
+	char ApiDateCode[12];
+	char FirmwareVersion[8];
+	char FirmDateCode[12];
+	char MonitorVersion[8];
+	char XbarVersion[8];
+	char AtaVersion[8];
+	char UAtaVersion[8];
+	char DriverVersion[8];
+} DifxMessageMk5Version;
 
 typedef struct
 {
@@ -223,6 +237,7 @@ typedef struct
 	union
 	{
 		DifxMessageMk5Status	mk5status;
+		DifxMessageMk5Version	mk5version;
 		DifxMessageLoad		load;
 		DifxMessageAlert	alert;
 		DifxMessageStatus	status;
@@ -278,6 +293,7 @@ const char *getDifxMessageIdentifier();
 int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
+int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, 
 	double visMJD, int numdatastreams, float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 
