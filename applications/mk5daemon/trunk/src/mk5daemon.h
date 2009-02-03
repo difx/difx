@@ -21,6 +21,7 @@ typedef struct
 {
 	Logger *log;
 	DifxMessageLoad load;
+	DifxMessageMk5Version mk5ver;
 	enum ProcessType process;
 	pthread_t processThread;
 	pthread_t monitorThread;
@@ -41,6 +42,9 @@ typedef struct
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
+int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D);
+int Mk5Daemon_sendStreamstorVersions(Mk5Daemon *D);
+int logStreamstorVersions(Mk5Daemon *D);
 void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);

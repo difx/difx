@@ -15,5 +15,6 @@ mk5daemon_SOURCES = \
 	datacopy.c \
 	proc.c \
 	proc.h \
+	versions.c \
 	mk5daemon.c \
 	mk5daemon.h

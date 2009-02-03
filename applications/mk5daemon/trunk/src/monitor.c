@@ -237,6 +237,13 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_stopMk5Copy(D);
 		}
 	}
+	else if(strcasecmp(cmd, "getver") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_sendStreamstorVersions(D);
+		}
+	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
 		printf("[%s]\n", cmd);

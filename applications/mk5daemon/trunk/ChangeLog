@@ -43,3 +43,4 @@ Version 0.8
 * always make sure VSNs are legal
 * use su, not ssh
 * mk5dir and mk5cp now report on replaced data
+* track StreamStor versions

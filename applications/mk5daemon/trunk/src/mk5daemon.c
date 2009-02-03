@@ -324,6 +324,11 @@ int main(int argc, char **argv)
 		if(t - firstTime > 15 && D->isMk5 &&
 			strncasecmp(D->hostName, "mark5", 5) == 0)
 		{
+			if(justStarted)
+			{
+				Mk5Daemon_getStreamstorVersions(D);
+				logStreamstorVersions(D);
+			}
 			if(startmk5a)
 			{
 				Mk5Daemon_startMark5A(D);
