@@ -26,6 +26,8 @@ Options:
    --noinstall     Don't install, only build.
 
    --reconf        Don't run autoreconf but reconfigure step by step.
+
+   --mk5daemon     Install mk5daemon (not installed by default)
     """
     pass
 
@@ -36,7 +38,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -51,6 +53,7 @@ if not 0 <= len(args) <= 0:
 force = False
 reconf = False
 noinstall = False
+mk5d = False
 
 # read arguments
 
@@ -66,6 +69,8 @@ if len(opts) > 0:
             reconf = True
         if o == "--noinstall":
             noinstall = True
+        if o == "--mk5daemon":
+            mk5d = True
 
 
 ###### Targets ##########################################
@@ -73,10 +78,13 @@ if len(opts) > 0:
 libtargets = [["difxio",     "trunk",True,True],
               ["difxmessage","trunk",True,True],
               ["mark5access","trunk",True,True]]
+
 apptargets = [["calcserver", "trunk",True,False],
               ["difx2fits",  "trunk",False,True],
-              ["vex2difx",   "trunk",True,True],
-              ["mk5daemon", "trunk",False,True]]
+              ["vex2difx",   "trunk",True,True]]
+if mk5d:
+    apptargets.append(["mk5daemon", "trunk",False,True])
+
 cortarget  = "trunk"
 
 ###### Subroutine to run a command and raise error if  
