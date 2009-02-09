@@ -13,6 +13,7 @@ dist_bin_SCRIPTS = \
 	mk5mon \
 	cpumon \
 	errormon \
+	errormon2 \
 	mk5display
 
 testdifxmessagesend_SOURCES = \
