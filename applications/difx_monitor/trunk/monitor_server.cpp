@@ -30,6 +30,7 @@ void plot_results();
 void change_config();
 int openstream(int portnumber, int tcpwindowsizebytes);
 void closestream(int sock);
+int waitforconnection (int serversock);
 int readnetwork(int sock, char* ptr, int bytestoread);
 
 int maxresultlength, buffersize, atseconds, bufferindex;
@@ -41,13 +42,13 @@ f32 *xval;
 
 int main(int argc, const char * argv[])
 {
-  int readbytes;
+  int readbytes, status;
   char *tcpwindow;
   int32_t thisbuffersize;
 
   cf32 *resultbuffer;
-  int status = 1;
   int port;                  // TCP port to listen on
+  int serversocket;          // Socket to listen for connections on
   int socketnumber;          // Socket to receive data from mpifxcorr
   int tcp_windowsize = -1;   // TCP windowsize for socket connection to mpifxcorr in kbytes
   int32_t buffersize = 0;    // current size of buffer to receive data blob from mpifxcorr
@@ -67,66 +68,67 @@ int main(int argc, const char * argv[])
   }
 
   //open up the socket
-  socketnumber = openstream(port, tcp_windowsize);
+  serversocket = openstream(port, tcp_windowsize);
   if (socketnumber <=0) {
     cerr << "Error opening connection for mpifxcorr. Aborting" << endl;
     exit(1);
   }
 
+  while (1) {
+    status = 1;
+    socketnumber = waitforconnection(serversocket);
 
-  while(status > 0)
-  {
-    //receive the timestamp
-    cout << "About to get a visibility" << endl;
+    while(status > 0)  {
+      //receive the timestamp
+      cout << "About to get a visibility" << endl;
     
-    // Get atseconds
-    status = readnetwork(socketnumber, (char*)(&timestampsec), sizeof(int32_t));
-    if (status!=1) { // Error reading socket
-      break;
-    }
+      // Get atseconds
+      status = readnetwork(socketnumber, (char*)(&timestampsec), sizeof(int32_t));
+      if (status!=1) { // Error reading socket
+	break;
+      }
 
-    //if not skipping this vis
-    if(!(timestampsec < 0))
-    {
-      cout << "Got visibility # " << timestampsec << endl;
+      //if not skipping this vis
+      if(!(timestampsec < 0))  {
+	cout << "Got visibility # " << timestampsec << endl;
       
-      // Get buffersize to follow
-      status = readnetwork(socketnumber, (char*)(&thisbuffersize), sizeof(int32_t));
-      if (status!=1) { // Error reading socket
-	break;
-      }
+	// Get buffersize to follow
+	status = readnetwork(socketnumber, (char*)(&thisbuffersize), sizeof(int32_t));
+	if (status!=1) { // Error reading socket
+	  break;
+	}
 
-      // Get number of channels
-      status = readnetwork(socketnumber, (char*)(&numchannels), sizeof(int32_t));
-      if (status!=1) { // Error reading socket
-	break;
-      }
+	// Get number of channels
+	status = readnetwork(socketnumber, (char*)(&numchannels), sizeof(int32_t));
+	if (status!=1) { // Error reading socket
+	  break;
+	}
 
-      if (thisbuffersize>buffersize) {
-	if (buffersize>0) 
-	  vectorFree(resultbuffer);
-	
-	resultbuffer = vectorAlloc_cf32(thisbuffersize);
-	buffersize = thisbuffersize;
-      }
+	if (thisbuffersize>buffersize) {
+	  if (buffersize>0) 
+	    vectorFree(resultbuffer);
+	  
+	  resultbuffer = vectorAlloc_cf32(thisbuffersize);
+	  buffersize = thisbuffersize;
+	}
 
-      //receive the results into a buffer
-      status = readnetwork(socketnumber, (char*)resultbuffer, thisbuffersize*sizeof(cf32));
-      if (status!=1) { // Error reading socket
-	break;
+	//receive the results into a buffer
+	status = readnetwork(socketnumber, (char*)resultbuffer, thisbuffersize*sizeof(cf32));
+	if (status!=1) { // Error reading socket
+	  break;
+	}
       }
     }
-  }
 
-  //close the socket
-  closestream(socketnumber);
+    //close the socket
+    closestream(socketnumber);
+  }
 }
 
 int openstream(int portnumber, int tcpwindowsizebytes)
 {
   int serversock, status, socketnumber;
-  socklen_t client_len;
-  struct sockaddr_in server, client;    /* Socket address */
+  struct sockaddr_in server;    /* Socket address */
 
   /* Open a server connection for reading */
 
@@ -169,7 +171,7 @@ int openstream(int portnumber, int tcpwindowsizebytes)
     close(serversock);
     return(0);
   } 
-  
+
   /* We are willing to receive conections, using the maximum
      back log of 1 */
   status = listen(serversock,1);
@@ -179,19 +181,27 @@ int openstream(int portnumber, int tcpwindowsizebytes)
     return(0);
   }
 
+  return serversock;
+}
+
+int waitforconnection (int serversock) {
+  int sock;
+  socklen_t client_len;
+  struct sockaddr_in client;    /* Socket address */
+
   cout << "Waiting for connection" << endl;
 
   /* Accept connection */
   client_len = sizeof(client);
-  socketnumber = accept(serversock, (struct sockaddr *)&client, &client_len);
-  if (socketnumber == -1) {
+  sock = accept(serversock, (struct sockaddr *)&client, &client_len);
+  if (sock == -1) {
     cerr << "Error connecting to client" << endl;
     close(serversock);
     return(-1);
   }
 
   cout << "Got a connection from " << inet_ntoa(client.sin_addr) << endl;
-  return(socketnumber);
+  return(sock);
 }
 
 int readnetwork(int sock, char* ptr, int bytestoread)
