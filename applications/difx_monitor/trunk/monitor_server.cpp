@@ -97,14 +97,14 @@ int main(int argc, const char * argv[])
       }
 
       // Get number of channels
-      status = readnetwork(socketnumber, (char*)(&thisbuffersize), sizeof(int32_t));
+      status = readnetwork(socketnumber, (char*)(&numchannels), sizeof(int32_t));
       if (status!=1) { // Error reading socket
 	break;
       }
 
       if (thisbuffersize>buffersize) {
 	if (buffersize>0) 
-	  delete resultbuffer;
+	  vectorFree(resultbuffer);
 	
 	resultbuffer = vectorAlloc_cf32(thisbuffersize);
 	buffersize = thisbuffersize;
