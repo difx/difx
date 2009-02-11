@@ -232,6 +232,25 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
+	char dbInfo[500] = "";
+
+	if(mk5version->DB_PCBVersion[0] != 0)
+	{
+		sprintf(dbInfo,
+		  "<DaughterBoard>"
+		    "<PCBVer>%s</PCBVer>"
+		    "<PCBType>%s</PCBType>"
+		    "<PCBSubType>%s</PCBSubType>"
+		    "<FPGAConfig>%s</FPGAConfig>"
+		    "<FPGAConfigVer>%s</FPGAConfigVer>"
+		  "</DaughterBoard>",
+
+		mk5version->DB_PCBVersion,
+		mk5version->DB_PCBType,
+		mk5version->DB_PCBSubType,
+		mk5version->DB_FPGAConfig,
+		mk5version->DB_FPGAConfigVersion);
+	}
 
 	sprintf(body, 
 	
@@ -245,6 +264,9 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		  "<AtaVer>%s</AtaVer>"
 		  "<UAtaVer>%s</UAtaVer>"
 		  "<DriverVer>%s</DriverVer>"
+		  "<BoardType>%s</BoardType>"
+		  "<SerialNum>%d</SerialNum>"
+		  "%s"
 		"</mark5Version>",
 
 		mk5version->ApiVersion,
@@ -255,7 +277,10 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		mk5version->XbarVersion,
 		mk5version->AtaVersion,
 		mk5version->UAtaVersion,
-		mk5version->DriverVersion);
+		mk5version->DriverVersion,
+		mk5version->BoardType,
+		mk5version->SerialNum,
+		dbInfo);
 
 	sprintf(message, difxMessageXMLFormat, 
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],

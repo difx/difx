@@ -155,6 +155,13 @@ typedef struct
 	char AtaVersion[8];
 	char UAtaVersion[8];
 	char DriverVersion[8];
+	char BoardType[12];
+	int SerialNum;
+	char DB_PCBType[12];
+	char DB_PCBSubType[12];
+	char DB_PCBVersion[8];
+	char DB_FPGAConfig[12];
+	char DB_FPGAConfigVersion[8];
 } DifxMessageMk5Version;
 
 typedef struct

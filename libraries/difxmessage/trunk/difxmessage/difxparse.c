@@ -353,6 +353,40 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy(G->body.mk5version.DriverVersion, s, 7);
 						G->body.mk5version.DriverVersion[7] = 0;
 					}
+					else if(strcmp(elem, "BoardType") == 0)
+					{
+						strncpy(G->body.mk5version.BoardType, s, 12);
+						G->body.mk5version.BoardType[11] = 0;
+					}
+					else if(strcmp(elem, "SerialNum") == 0)
+					{
+						G->body.mk5version.SerialNum = atoi(s);
+					}
+					else if(strcmp(elem, "PCBType") == 0)
+					{
+						strncpy(G->body.mk5version.DB_PCBType, s, 12);
+						G->body.mk5version.DB_PCBType[11] = 0;
+					}
+					else if(strcmp(elem, "PCBSubType") == 0)
+					{
+						strncpy(G->body.mk5version.DB_PCBSubType, s, 12);
+						G->body.mk5version.DB_PCBSubType[11] = 0;
+					}
+					else if(strcmp(elem, "PCBVer") == 0)
+					{
+						strncpy(G->body.mk5version.DB_PCBVersion, s, 8);
+						G->body.mk5version.DB_PCBVersion[7] = 0;
+					}
+					else if(strcmp(elem, "DB_FPGAConfig") == 0)
+					{
+						strncpy(G->body.mk5version.DB_FPGAConfig, s, 12);
+						G->body.mk5version.DB_FPGAConfig[11] = 0;
+					}
+					else if(strcmp(elem, "DB_FPGAConfigVer") == 0)
+					{
+						strncpy(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
+						G->body.mk5version.DB_FPGAConfigVersion[7] = 0;
+					}
 					break;
 				case DIFX_MESSAGE_STATUS:
 					if(strcmp(elem, "message") == 0)
@@ -554,6 +588,19 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 			G->body.mk5version.UAtaVersion);
 		printf("    Driver Version = %s\n", 
 			G->body.mk5version.DriverVersion);
+		printf("    Board Type = %s  Serial Num. = %d\n",
+			G->body.mk5version.BoardType,
+			G->body.mk5version.SerialNum);
+		if(G->body.mk5version.DB_PCBVersion[0] != 0)
+		{
+			printf("    Daughter Board:  Type = %s  Subtype = %s  Version = %s\n",
+				G->body.mk5version.DB_PCBType,
+				G->body.mk5version.DB_PCBSubType,
+				G->body.mk5version.DB_PCBVersion);
+			printf("    Daughter Board:  Configuration = %s  Version = %s\n",
+				G->body.mk5version.DB_FPGAConfig,
+				G->body.mk5version.DB_FPGAConfigVersion);
+		}
 		break;
 	case DIFX_MESSAGE_STATUS:
 		printf("    state = %s %d\n", 
