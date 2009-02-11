@@ -464,7 +464,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		}
 		else if(e->eventType == VexEvent::JOB_STOP)
 		{
-			if(fabs(e->mjd > mjdStart) < 0.5/86400.0)
+			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
 				for(int antId = 0; antId < nAnt; antId++)
 				{
