@@ -60,6 +60,8 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	Uses *uses;
 	const char *jobName;
 	const DifxMessageStart *S;
+	int outputExists = 0;
+	int force = 1;
 
 	S = &G->body.start;
 
@@ -118,6 +120,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	sprintf(filename, "%s.difx", filebase);
 	if(access(filename, F_OK) == 0)
+	{
+		outputExists = 1;
+	}
+	
+	if(outputExists && !force)
 	{
 		sprintf(message, "Output file %s exists.  Aborting correlation.", filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
@@ -206,7 +213,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	pthread_mutex_unlock(&D->processLock);
 
-	if(fork() == 0)
+	if(fork() != 0)
 	{
 		const char *mpiOptions;
 		const char *mpiWrapper;
@@ -239,13 +246,22 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			difxProgram = defaultDifxProgram;
 		}
 
-		sprintf(command, "su - %s rm -rf %s.difx/", difxUser, filebase);
-		system(command);
+		setuid(5605);
+		setgid(5105);
+
+		if(force && outputExists)
+		{
+			sprintf(command, "/bin/rm -rf %s.difx/", filebase);
+	
+			sprintf(message, "Executing: %s", command);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		
+			system(command);
+		}
+
 		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
 
-		sprintf(command, "su - %s %s -c \"mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input\"", 
-			difxUser,
+		sprintf(command, "ssh -x %s \"mpirun -np %d --bynode --hostfile %s.machines %s %s %s.input\"", 
 			S->headNode,
 			1 + S->nDatastream + S->nProcess,
 			filebase,
@@ -255,6 +271,8 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		
 		sprintf(message, "Executing: %s", command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+		printf("Executing: %s\n", command);
 
 		sprintf(message, "Spawning %d processes", 1 + S->nDatastream + S->nProcess);
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, message);

@@ -40,6 +40,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --no-mark5a\n");
 	fprintf(stderr, "  -n             Don't automatically start Mark5A\n"); 
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --headnode\n");
+	fprintf(stderr, "  -H             Give head node capabilities\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --log-path <path>\n");
 	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
 	fprintf(stderr, "\n");
