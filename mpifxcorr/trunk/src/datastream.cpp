@@ -118,7 +118,7 @@ void DataStream::initialise()
     //set up all the parameters in this bufferinfo slot
     updateConfig(i);
     bufferinfo[i].numsent = 0;
-    bufferinfo[i].seconds = -9999;
+    bufferinfo[i].seconds = 0;
     bufferinfo[i].nanoseconds = 0;
     bufferinfo[i].validbytes = 0;
     bufferinfo[i].datarequests = new MPI_Request[maxsendspersegment];
@@ -358,7 +358,9 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
 
   //while we have passed the first of our two locked sections, unlock that and lock the next - have two tests so sample difference can't overflow
   waitForSendComplete();
-  if(offsetsec < bufferinfo[atsegment].seconds - 1 || bufferinfo[atsegment].seconds < 0) //coarse test to see if its all bad
+
+  if(offsetsec < bufferinfo[atsegment].seconds - 1) //coarse test to see if its all bad
+    //if(offsetsec < bufferinfo[atsegment].seconds - 1 || bufferinfo[atsegment].seconds < 0) //coarse test to see if its all bad
   {
     for(int i=0;i<bufferinfo[atsegment].controllength;i++)
       bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
