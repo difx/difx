@@ -21,7 +21,7 @@
 //============================================================================
 #include <mpi.h>
 #include <string.h>
-//#include "mk5.h"
+#include <climits>
 #include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
@@ -1107,7 +1107,7 @@ bool Configuration::consistencyCheck()
         cerror << startl << "Error - FFT chunk time for config " << i << ", datastream " << j << " is not a whole number of nanoseconds (" << ffttime << ") - aborting!!!" << endl;
         return false;
       }
-      if(nsincrement > ((1 << (sizeof(int)*8 - 1)) - 1))
+      if(nsincrement > INT_MAX)
       {
         cerror << startl << "Error - increment per read in nanoseconds is " << nsincrement << " - too large to fit in an int.  ABORTING" << endl;
         return false;
