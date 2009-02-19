@@ -121,6 +121,7 @@ void DataStream::initialise()
     bufferinfo[i].seconds = 0;
     bufferinfo[i].nanoseconds = 0;
     bufferinfo[i].validbytes = 0;
+    bufferinfo[i].readto = false;
     bufferinfo[i].datarequests = new MPI_Request[maxsendspersegment];
     bufferinfo[i].controlrequests = new MPI_Request[maxsendspersegment];
     bufferinfo[i].controlbuffer = new f64*[maxsendspersegment];
@@ -358,6 +359,13 @@ int DataStream::calculateControlParams(int offsetsec, int offsetns)
 
   //while we have passed the first of our two locked sections, unlock that and lock the next - have two tests so sample difference can't overflow
   waitForSendComplete();
+
+  if(!bufferinfo[atsegment].readto) //can only occur when *all* datastream files bad, hence no good data, ever
+  {
+    for(int i=0;i<bufferinfo[atsegment].controllength;i++)
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][i] = MAX_NEGATIVE_DELAY;
+    return 0; //note exit here!!!!
+  }
 
   if(offsetsec < bufferinfo[atsegment].seconds - 1) //coarse test to see if its all bad
     //if(offsetsec < bufferinfo[atsegment].seconds - 1 || bufferinfo[atsegment].seconds < 0) //coarse test to see if its all bad
@@ -997,6 +1005,7 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
   } else {
     bufferinfo[buffersegment].validbytes = nread;
     framebytesremaining -= nread;
+    bufferinfo[buffersegment].readto = true;
   }
 
   if (framebytesremaining<=0) {
@@ -1097,6 +1106,7 @@ void DataStream::diskToMemory(int buffersegment)
   //read some data
   input.read((char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)], readbytes);
   bufferinfo[buffersegment].validbytes = input.gcount();
+  bufferinfo[buffersegment].readto = true;
   readnanoseconds += bufferinfo[buffersegment].nsinc;
   readseconds += readnanoseconds/1000000000;
   readnanoseconds %= 1000000000;

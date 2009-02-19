@@ -85,6 +85,7 @@ protected:
     int nsinc;
     int numchannels;
     int numsent;
+    bool readto;
     double sampletimens;
     MPI_Request * datarequests;
     MPI_Request * controlrequests;
