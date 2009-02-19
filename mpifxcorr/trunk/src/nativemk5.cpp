@@ -34,7 +34,6 @@
 
 static void dirCallback(int scan, int nscan, int status, void *data)
 {
-#ifdef HAVE_DIFXMESSAGE
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
@@ -42,18 +41,6 @@ static void dirCallback(int scan, int nscan, int status, void *data)
 	mk5status->position = nscan;
 	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
 	difxMessageSendMark5Status(mk5status);
-#else
-	char progressSymbols[] = "@?!.";
-	
-	if(status == 3)
-	{
-		cout << "." << flush;
-	}
-	else
-	{
-		cout << progressSymbols[status] << "[" << scan << "]" << flush;
-	}
-#endif
 }
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum, 
@@ -69,9 +56,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 
 	executeseconds = conf->getExecuteSeconds();
 
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_OPENING, 0, 0, 0.0, 0.0);
-#endif
 
 	cinfo << startl << "Opening Streamstor" << endl;
 	xlrRC = XLROpen(1, &xlrDevice);
@@ -116,9 +101,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	invalidtime = 0;
 	invalidstart = 0;
 	newscan = 0;
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
-#endif
 }
 
 NativeMk5DataStream::~NativeMk5DataStream()
@@ -174,9 +157,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 	startmjd = corrstartday + corrstartseconds/86400.0;
 
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GETDIR, 0, 0, startmjd, 0.0);
-#endif
 
 	if(module.nscans < 0)
 	{
@@ -196,9 +177,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		}
 	}
 
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GOTDIR, 0, 0, startmjd, 0.0);
-#endif
 
 	// find starting position
   
@@ -215,9 +194,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
-#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
-#endif
 			return;
 		}
 		scanns = int(1000000000.0*scan->framenuminsecond/scan->framespersecond + 0.1);
@@ -236,9 +213,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
-#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
-#endif
 			return;
 		}
 	}
@@ -291,9 +266,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		cinfo << startl << "Scan info. start = " << scan->start << " off = " << scan->frameoffset << " size = " << scan->framebytes << endl;
 	}
 
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_GOTDIR, scan-module.scans+1, readpointer, scan->mjd+(scan->sec+scanns*1.e-9)/86400.0, 0.0);
-#endif
 
 	newscan = 1;
 
@@ -411,6 +384,9 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			xlrEC = XLRGetLastError();
 			XLRGetErrorMessage(errStr, xlrEC);
 			cerror << startl << "XLRReadImmed returns FAIL.  Read error at position=" << readpointer << ", length=" << bytes << ", error=" << errStr << endl;
+
+			double errorTime = corrstartday + (readseconds + corrstartseconds + readnanoseconds*1.0e-9)/86400.0;
+			sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, errorTime, 0.0);
 			break;
 		}
 
@@ -480,6 +456,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 
 	bufferinfo[buffersegment].validbytes = bytes;
+	bufferinfo[buffersegment].readto = true;
 	lastval = buf[bytes/4-1];
 
 	// Check for validity
@@ -539,9 +516,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				rate = invalidtime;
 			}
 
-#ifdef HAVE_DIFXMESSAGE
 			sendMark5Status(state, scan-module.scans+1, readpointer, fmjd, rate);
-#endif
 		}
 		lastpos = readpointer + bytes;
 	}
@@ -644,7 +619,6 @@ void NativeMk5DataStream::loopfileread()
   cinfo << startl << "DATASTREAM " << mpiid << "'s readthread is exiting!!! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
-#ifdef HAVE_DIFXMESSAGE
 int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long long position, double dataMJD, float rate)
 {
 	int v = 0;
@@ -751,4 +725,3 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 
 	return v;
 }
-#endif
