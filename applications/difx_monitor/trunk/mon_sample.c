@@ -14,13 +14,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "architecture.h"
 #include "monserver.h"
+
 
 int main(int argc, const char * argv[]) {
   int status, prod;
   char monhostname[] = "localhost";
   struct monclient monserver;
-  complex float *vis;
+  cf32 *vis;
 
   status  = monserver_connect(&monserver, monhostname, -1);
   if (status) exit(1);
@@ -36,22 +38,16 @@ int main(int argc, const char * argv[]) {
   while (!status) {
     status = monserver_readvis(&monserver);
     if (!status) {
+      printf("Got visibility # %d\n", monserver.timestamp);
+
       while (!monserver_nextvis(&monserver, &prod, &vis)) {
 	printf("Got visibility for product %d\n", prod);
       }
       printf("\n");
     }
-
-
   }
 
-
-  
-
-
   monserver_close(monserver);
-
-
 }
 
 

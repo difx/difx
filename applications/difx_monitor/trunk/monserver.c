@@ -195,21 +195,22 @@ int monserver_readvis(struct monclient *client) {
       return(1);
     }
   }
-  status = readnetwork(client->fd, (char*)&client->visbuf, bufsize);
+  status = readnetwork(client->fd, (char*)client->visbuf, bufsize);
 
   return(status);
 }
 
-int monserver_nextvis(struct monclient *client, int *product, complex float **vis) {
+int monserver_nextvis(struct monclient *client, int *product, cf32 **vis) {
   int ivis = client->ivis;
 
-  if (ivis >= client->nretvis) return(1);
+  if (ivis >= client->nretvis)  return(1);
 
   *product = *(int32_t*)(client->visbuf+ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(complex float)));
+   	                         + client->numchannels*sizeof(cf32)));
 
-  *vis = (complex float*)(client->visbuf+sizeof(int32_t) + ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(complex float)));
+  *vis = (cf32*)(client->visbuf+sizeof(int32_t) + ivis*(sizeof(int32_t) 
+   	                         + client->numchannels*sizeof(cf32)));
+
   client->ivis++;
   return(0);
 }

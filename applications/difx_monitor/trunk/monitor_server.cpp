@@ -196,7 +196,7 @@ int main(int argc, const char * argv[]) {
 
 	  // Receive the timestamp
 	  status = readnetwork(difxsocket, (char*)(&timestampsec), sizeof(int32_t));
-	  if (status!=1) { // Error reading socket
+	  if (status) { // Error reading socket
 	    close(difxsocket);
 	    pollfd_remove(pollfds, &nfds, difxsocket);
 	    difxsocket = 0;
@@ -208,13 +208,13 @@ int main(int argc, const char * argv[]) {
       
 	    // Get buffersize to follow
 	    status = readnetwork(difxsocket, (char*)(&thisbuffersize), sizeof(int32_t));
-	    if (status!=1) { // Error reading socket
+	    if (status) { // Error reading socket
 	      break;
 	    }
 
 	    // Get number of channels
 	    status = readnetwork(difxsocket, (char*)(&numchannels), sizeof(int32_t));
-	    if (status!=1) { // Error reading socket
+	    if (status) { // Error reading socket
 	      break;
 	    }
 
@@ -228,15 +228,16 @@ int main(int argc, const char * argv[]) {
 
 	    //receive the results into a buffer
 	    status = readnetwork(difxsocket, (char*)resultbuffer, thisbuffersize*sizeof(cf32));
-	    if (status!=1) { // Error reading socket
+	    if (status) { // Error reading socket
 	      break;
 	    }
 	  }
 	}
 
 	for (i=0; i<nclient; i++) {
-	  status = monclient_sendvisdata(clients[i], timestampsec, numchannels, thisbuffersize, 
-					 resultbuffer);
+	  cout << "Sending vis data to fd " << clients[i].fd << endl;
+	  status = monclient_sendvisdata(clients[i], timestampsec, numchannels, 
+					 thisbuffersize, resultbuffer);
 	  if (status) {
 	    pollfd_remove(pollfds, &nfds, clients[i].fd);
 	    monclient_remove(clients, &nclient, clients[i].fd);
@@ -254,7 +255,7 @@ int main(int argc, const char * argv[]) {
 	  pollfd_remove(pollfds, &nfds, fd);
 	  monclient_remove(clients, &nclient, fd);
 	  close(fd);
-	} else if (revents==POLLIN) {
+	} else if (revents==POLLIN) { // Message from client requesting products
 	  int32_t nproduct;
 	  struct monclient *thisclient ;
 
@@ -491,7 +492,8 @@ void monclient_addproduct(struct monclient *client, int nproduct, int32_t produc
     for (i=0; i<nproduct; i++) {
       client->vis[i] = products[i];
 
-      cout << "Adding monitor of product " << products[i] << endl;
+      cout << "Adding monitor of product " << products[i] << " (nvis=" 
+	   << nproduct << ")" <<endl;
     }
 
   } else {
@@ -506,6 +508,7 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
 			  int32_t thisbuffersize, cf32 *buffer) {
   int nvis, maxvis, i, fd, status;
   
+
   if (client.nvis==0) return(0);
 
   maxvis = thisbuffersize/(numchannels*sizeof(cf32));

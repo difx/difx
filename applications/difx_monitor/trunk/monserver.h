@@ -2,7 +2,7 @@
 #define MONSERVER_H
 
 #include <limits.h>
-#include <complex.h>
+#include "architecture.h"
 
 #define MONITOR_PORT 52300
 
@@ -30,7 +30,7 @@ int monserver_sendstatus(int sock, int32_t status32);
 int monserver_requestproduct(struct monclient client, unsigned int product);
 int monserver_readvis(struct monclient *client);
 int monserver_close(struct monclient monserver);
-int monserver_nextvis(struct monclient *client, int *product, complex float **vis);
+int monserver_nextvis(struct monclient *client, int *product, cf32 **vis);
 void monserver_resetvis(struct monclient *client);
 
 #endif
