@@ -109,6 +109,9 @@
 *  2006 January 1
       IF (UTC.GE.53736D0) DT=33D0
 
+*  2009 January 1
+      IF (UTC.GE.54832D0) DT=34D0
+
 * - - - - - - - - - - - - - - - - - - - - - - - - - - *
 *  (Add a new pair of lines to the above set on each  *
 *      occasion that a leap second is announced)      *
