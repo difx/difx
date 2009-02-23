@@ -1,0 +1,71 @@
+#!/bin/env python
+
+from getopt import getopt
+from sys import stdout, argv, exit
+from os.path import isfile
+from string import split, strip
+
+program = 'difxcopy'
+version = '0.1'
+author  = 'Walter Brisken'
+verdate = '20090223'
+
+fileTypes = ['input', 'calc', 'flag', 'delay', 'uvw', 'rate', 'im']
+
+def usage(prog):
+	print '\n%s ver. %s  %s %s' % (program, version, author, verdate)
+	print '\nUsage: %s [options] <jobPrefix1> [<jobPrefix2> [ ... ] ] <destDirectory>\n' % prog
+	exit(0)
+
+def copyfile(pathName, destination):
+	if destination[-1] == '/':
+		dest = destination
+	else:
+		dest = destination + '/'
+	fileName = dest + split(pathName, '/')[-1]
+	
+	indatalines = open(pathName, 'r').readlines()
+	out = open(fileName, 'w')
+	for indata in indatalines:
+		if len(indata) < 21:
+			outdata = indata
+		elif indata[0:5] == 'FILE ':
+			outdata = indata
+		else:
+			s = split(indata[20:], '/')
+			if len(s) == 1:
+				outdata = indata
+			else:
+				outdata = indata[0:20] + dest + s[-1]
+		out.write(outdata)
+	out.close()
+
+def copyfiles(jobPrefix, destination):
+	j = split(jobPrefix)[-1]
+	stdout.write(j + ':')
+	for f in fileTypes:
+		pathName = jobPrefix + '.' + f
+		if isfile(pathName):
+			stdout.write(' ' + f)
+			copyfile(pathName, destination)
+	stdout.write('\n')
+
+prefixes = []
+for a in argv[1:]:
+	if a[0] == '-':
+		pass
+	else:
+		if a[-6:] == '.input':
+			jobPrefix = a[:-6]
+		else:
+			jobPrefix = a
+		prefixes.append(jobPrefix)
+
+if len(prefixes) < 2:
+	usage(argv[0])
+
+destination = prefixes[-1]
+prefixes = prefixes[:-1]
+
+for p in prefixes:
+	copyfiles(p, destination)
