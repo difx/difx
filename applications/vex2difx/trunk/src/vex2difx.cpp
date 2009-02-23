@@ -35,14 +35,26 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <sys/time.h>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
 
 const string program("vex2difx");
 const string version("0.1");
-const string verdate("20090109");
+const string verdate("20090223");
 const string author("Walter Brisken");
+
+const double MJD_UNIX0 = 40587.0;	/* MJD at beginning of unix time */
+const double SEC_DAY = 86400.0;
+const double MUSEC_DAY = 86400000000.0;
+
+double current_mjd()
+{
+	struct timeval t;
+	gettimeofday(&t, 0);
+	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
+}
 
 // A is assumed to be the first scan in time order
 bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
@@ -768,7 +780,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	return c;
 }
 
-void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose)
+void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose, ofstream *of)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -818,6 +830,16 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	D->scan = newDifxScanArray(D->nScan);
 	D->nConfig = configSet.size();
 	D->config = newDifxConfigArray(D->nConfig);
+		
+	if(of)
+	{
+		*of << J.jobSeries << J.jobId << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << "  #";
+		for(vector<string>::const_iterator ai = antList.begin(); ai != antList.end(); ai++)
+		{
+			*of << " " << *ai;
+		}
+		*of << endl;
+	}
 
 	// now run through all scans, populating things as we go
 	scan = D->scan;
@@ -1111,14 +1133,25 @@ int main(int argc, char **argv)
 		of.close();
 	}
 
+	ofstream of;
+	string jobListFile = P->jobSeries + ".joblist";
+	string difxVersion(getenv("DIFX_VERSION"));
+	if(difxVersion == "")
+	{
+		difxVersion = "unknown";
+	}
+	of.open(jobListFile.c_str());
+	of.precision(12);
+	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version << endl;
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
 	{
 		if(verbose > 0)
 		{
 			cout << *j;
 		}
-		writeJob(*j, V, P, verbose);
+		writeJob(*j, V, P, verbose, &of);
 	}
+	of.close();
 	cout << J.size() << " job(s) created." << endl;
 
 	delete V;

@@ -359,7 +359,7 @@ void CorrParams::defaults()
 	maxLength = 7200/86400.0;	// 2 hours
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
-	startSeries = 20;
+	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
 	sendLength = 0.1;		// (s)
@@ -425,7 +425,7 @@ void CorrParams::set(const string &key, const string &value)
 	{
 		ss >> maxLength;
 	}
-	else if(key == "jobSeries")
+	else if(key == "jobSeries" || key == "pass")
 	{
 		ss >> jobSeries;
 	}

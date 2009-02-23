@@ -29,6 +29,7 @@
 
 #include <cstring>
 #include <cctype>
+#include <cstdio>
 #include <algorithm>
 #include <unistd.h>
 #include "util.h"

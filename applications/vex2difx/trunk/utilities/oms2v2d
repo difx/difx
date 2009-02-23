@@ -33,10 +33,14 @@
 from string import split, strip, find
 from sys import exit, argv
 
-program = 'oms2v2f'
-version = '0.1'
-verdate = '20090126'
+program = 'oms2v2d'
+version = '0.2'
+verdate = '20090211'
 author = 'Walter Brisken'
+
+def usage(argv):
+	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Usage: %s <oms file>' % argv[0];
 
 def readOMS(filename):
 	data = open(filename).readlines()
@@ -128,8 +132,7 @@ def writev2d(oms, v2dFile):
 	out.close()
 
 if len(argv) < 2:
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s <oms file>' % argv[0];
+	usage(argv)
 	exit(0)
 
 prefix = argv[1][0:-4]
@@ -137,6 +140,10 @@ prefix = argv[1][0:-4]
 omsFile = prefix + '.oms'
 vexFile = prefix + '.skd.obs'
 v2dFile = prefix + '.v2d'
+
+if argv[1] == '-h' or argv[1] == '--help':
+	usage(argv)
+	exit(0)
 
 if argv[1] != omsFile:
 	print 'This program requries that the input file ends in .oms'
