@@ -37,8 +37,8 @@ if (!(defined $p4pg) && !(defined $machinefile && defined $numproc)) {
 
 die "Offset must be positive\n" if ($offset<0);
 
-die "Must either set \$RECORDER_HOSTS or pass the -host option" 
-  if ($evlbi && !defined $recorder_hosts);
+#die "Must either set \$RECORDER_HOSTS or pass the -host option" 
+#  if ($evlbi && !defined $recorder_hosts);
 
 
 die "Usage: startcorr.pl [options] <mpifxcorr> <inputfile>\n" if (@ARGV!=2);
@@ -189,6 +189,112 @@ if ($evlbi) {
 
 die "Rpfits file $outfile already exists!\n" if (-e $outfile);
 
+##########
+# Launch ATNF evlbi clients
+my $status;
+my $pid = 0;
+
+if (defined $recorder_hosts && $evlbi) {
+    
+  print "Launching recorders\n";
+  
+  if ($pid = fork) { # Parent
+
+  } else { # Child
+
+    print "Waiting for DiFX to start\n";
+    #sleep($offset*0.8);
+    sleep(5);
+
+    my %rec_hosts = ();
+    open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
+    while (<HOSTS>) {
+      s/^\s+//;
+      s/\s+$//;
+      next if ($_ eq '');
+      my ($tel, $rechost, $corrhost) = split;
+      die "Wrong hosts file format: $_ " 
+	if (! (defined $tel && defined $rechost && defined $corrhost));
+      $rec_hosts{$tel} = [$rechost, $corrhost];
+    }
+    close HOSTS;
+
+    for (my $i=0; $i<@telescopes; $i++) {
+      next if (!$active_datastreams[$i]);
+    
+      my ($recorder, $playback);
+      if ($telescopes[$i] =~ /^CATW/) {
+	$recorder = $rec_hosts{CATW}->[0];
+	$playback = $rec_hosts{CATW}->[1];
+      } elsif (exists $rec_hosts{$telescopes[$i]}) {
+	$recorder = $rec_hosts{$telescopes[$i]}->[0];
+	$playback = $rec_hosts{$telescopes[$i]}->[1];
+      }
+
+      if ($recorder) {
+	$status = send_data("remote_host=$playback", $recorder);
+	die "Failed to set remote_host on $recorder\n" if (!defined $status);
+	
+	$status = send_data("remote_port=$telport[$i]", $recorder);
+	die "Failed to set port on $recorder\n" if (!defined $status);
+	if ($tcpwin[$i]<0) {
+	  my $udp = -$tcpwin[$i];
+	  $status = send_data("udp=$udp", $recorder);
+	  die "Failed to set UDP on $recorder\n" if (!defined $status);
+	  
+	} else {
+	  $status = send_data("udp=0", $recorder);
+	  die "Failed to turn off UDP on $recorder\n" if (!defined $status);
+	  #if ($tcpwin[$i]>0) {
+	    $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
+	    die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
+	  #}
+	} 
+	$status = send_data("record_time=${duration}s", $recorder);
+	die "Failed to set recording time on $recorder\n" if (!defined $status);
+	$status = send_data("evlbi=on", $recorder);
+	die "Failed to turn on evlbi mode $recorder\n" if (!defined $status);
+	$status = send_data("filesize=2s", $recorder);
+	die "Failed to set filesize on $recorder\n" if (!defined $status);
+	$status = send_data("round_start=off", $recorder);
+	die "Failed to set round start off, on $recorder\n" if (!defined $status);
+	$status = send_data("bandwidth=$bandwidth", $recorder);
+	die "Failed to set bandwidth on $recorder\n" if (!defined $status);
+	
+	$status = send_data("filename_prefix=$telescopes[$i]", $recorder);
+	die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
+	
+	if ($format[$i] eq 'MARK5B') {
+	  $status = send_data("mark5b=on", $recorder);
+	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
+	} elsif ($format[$i] eq 'LBAVSOP' || $format[$i] eq 'LBASTD') {
+	  $status = send_data("mark5b=off", $recorder);
+	  die "Failed to turn off mark5b on $recorder\n" if (!defined $status);
+	} else {
+	  die "Unsupported data format $format[$i]\n";
+	}
+
+	$status = send_cmd("record-start", $recorder);
+	die "Failed to launch recorder on $recorder\n" if (!defined $status);
+
+	# Turn off evlbi
+	$status = send_data("evlbi=off", $recorder);
+	warn "Failed to turn off evlbi mode $recorder\n" if (!defined $status);
+	$status = send_data("filesize=10s", $recorder);
+	die "Failed to set filesize on $recorder\n" if (!defined $status);
+	$status = send_data("round_start=on", $recorder);
+	die "Failed to set round start on, on $recorder\n" if (!defined $status);
+ 
+	print "Launched $telescopes[$i] on $recorder\n" if ($recorder);
+      } else {
+	print "***************************Not launching recorder for $telescopes[$i]\n";
+      }
+    }
+  }
+}
+
+# mpifxcorr options
+
 my $mpioptions;
 if (defined $p4pg) {
   $mpioptions = "-p4pg $p4pg";
@@ -205,99 +311,7 @@ my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
 print "$exec\n";
 system $exec if (!$debug);
 
-# Launch ATNF evlbi clients
-my $status;
-if (0 & $evlbi) {
-  
-  print "******Waiting for DiFX to start\n";
-  sleep($offset*0.8);
-
-  my %rec_hosts = ();
-  open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
-  while (<HOSTS>) {
-    s/^\s+//;
-    s/\s+$//;
-    next if ($_ eq '');
-    my ($tel, $rechost, $corrhost) = split;
-    die "Wrong hosts file format: $_ " 
-      if (! (defined $tel && defined $rechost && defined $corrhost));
-    $rec_hosts{$tel} = [$rechost, $corrhost];
-  }
-  close HOSTS;
-
-  for (my $i=0; $i<@telescopes; $i++) {
-    next if (!$active_datastreams[$i]);
-    
-    my ($recorder, $playback);
-    if ($telescopes[$i] =~ /^CATW/) {
-      $recorder = $rec_hosts{CATW}->[0];
-      $playback = $rec_hosts{CATW}->[1];
-    } elsif (exists $rec_hosts{$telescopes[$i]}) {
-      $recorder = $rec_hosts{$telescopes[$i]}->[0];
-      $playback = $rec_hosts{$telescopes[$i]}->[1];
-    }
-
-    if ($recorder) {
-      $status = send_data("remote_host=$playback", $recorder);
-      die "Failed to set remote_host on $recorder\n" if (!defined $status);
-
-      $status = send_data("remote_port=$telport[$i]", $recorder);
-      die "Failed to set port on $recorder\n" if (!defined $status);
-      if ($tcpwin[$i]<0) {
-	my $udp = -$tcpwin[$i];
-	$status = send_data("udp=$udp", $recorder);
-	die "Failed to set UDP on $recorder\n" if (!defined $status);
-
-      } else {
-	$status = send_data("udp=0", $recorder);
-	die "Failed to turn off UDP on $recorder\n" if (!defined $status);
-	if ($tcpwin[$i]>0) {
-	  $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
-	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
-	}
-      } 
-      $status = send_data("record_time=${duration}s", $recorder);
-      die "Failed to set recording time on $recorder\n" if (!defined $status);
-      $status = send_data("evlbi=on", $recorder);
-      die "Failed to turn on evlbi mode $recorder\n" if (!defined $status);
-      $status = send_data("filesize=2s", $recorder);
-      die "Failed to set filesize on $recorder\n" if (!defined $status);
-      $status = send_data("round_start=off", $recorder);
-      die "Failed to set round start off, on $recorder\n" if (!defined $status);
-      $status = send_data("bandwidth=$bandwidth", $recorder);
-      die "Failed to set bandwidth on $recorder\n" if (!defined $status);
-
-      $status = send_data("filename_prefix=$telescopes[$i]", $recorder);
-      die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
-
-      if ($format[$i] eq 'MARK5B') {
-	$status = send_data("mark5b=on", $recorder);
-	die "Failed to set mark5b on $recorder\n" if (!defined $status);
-      } elsif ($format[$i] eq 'LBAVSOP' || $format[$i] eq 'LBASTD') {
-	$status = send_data("mark5b=off", $recorder);
-	die "Failed to turn off mark5b on $recorder\n" if (!defined $status);
-      } else {
-	die "Unsupported data format $format[$i]\n";
-      }
-
-      $status = send_cmd("record-start", $recorder);
-      die "Failed to launch recorder on $recorder\n" if (!defined $status);
-
-      # Turn off evlbi
-      $status = send_data("evlbi=off", $recorder);
-      warn "Failed to turn off evlbi mode $recorder\n" if (!defined $status);
-      $status = send_data("filesize=10s", $recorder);
-      die "Failed to set filesize on $recorder\n" if (!defined $status);
-      $status = send_data("round_start=on", $recorder);
-      die "Failed to set round start on, on $recorder\n" if (!defined $status);
- 
-      print "Launched $telescopes[$i] on $recorder\n" if ($recorder);
-    } else {
-      print "Not launching recorder for $telescopes[$i]\n";
-    }
-  }
-}
-
+wait if ($pid);
 
 sub checkfile ($$) {
   my ($type, $file) = @_;
@@ -315,8 +329,9 @@ sub server_comm {
 
   if ($debug) {
     print "SEND: <$type>$message</$type> to $recorder\n";
-    return "";
-  } else {
+  }
+
+  {
 
     # Connect to the recorder server
     my $socket = IO::Socket::INET->new(PeerAddr => $recorder,
