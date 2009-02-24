@@ -2120,7 +2120,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	f = (struct mark5_format_mark5b *)(ms->formatdata);
 
-	ms->samplegranularity = 32/(f->nbitstream*ms->decimation);
+	ms->samplegranularity = 8/(f->nbitstream*ms->decimation);
 	if(ms->samplegranularity <= 0)
 	{
 		ms->samplegranularity = 1;
@@ -2435,7 +2435,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 
 	if(f->decode == 0)
 	{
-		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		fprintf(stderr, "Illegal combination of decimation, bitstreams and bits\n");
 		return 0;
 	}
 
