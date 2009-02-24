@@ -356,6 +356,7 @@ void CorrParams::defaults()
 	allowOverlap = false;
 	mediaSplit = true;
 	padScans = true;
+	simFXCORR = false;
 	maxLength = 7200/86400.0;	// 2 hours
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
@@ -456,6 +457,10 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "visBufferLength")
 	{
 		ss >> visBufferLength;
+	}
+	else if(key == "simFXCORR")
+	{
+		simFXCORR = isTrue(value);
 	}
 	else if(key == "antennas")
 	{

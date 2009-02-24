@@ -966,6 +966,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
 
+	if(P->simFXCORR)
+	{
+		// nudge integration times and start times to match those of the VLBA HW correlator
+		DifxInputSimFXCORR(D);
+	}
+
 	if(P->padScans)
 	{
 		// insert pad scans where needed

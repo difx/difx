@@ -155,6 +155,7 @@ public:
 	bool allowOverlap;
 	bool mediaSplit;	// split jobs on media change
 	bool padScans;
+	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
 	double maxLength;	// days
 	string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
