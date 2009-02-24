@@ -3328,3 +3328,73 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	/* success */
 	return 0;
 }
+
+/* note -- this will not work if different integration times are requested within one job */
+int DifxInputSimFXCORR(DifxInput *D)
+{
+	DifxConfig *dc;
+	const DifxDatastream *dd;
+	double quantum;
+	double tInt, sec, mjdStart;
+	int c, d, n, mjd;
+	int speedUp = 4, su, fanout;
+	int nBitstream, sampRate;
+
+	if(!D)
+	{
+		fprintf(stderr, "Error: DifxInputSimFXCORR: D = 0\n");
+		return -1;
+	}
+
+	if(D->nDatastream < 1 || D->nConfig < 1 || D->nFreq < 1)
+	{
+		fprintf(stderr, "Error: DifxInputSimFXCORR: incomplete DifxInput structure\n");
+		return -2;
+	}
+
+	for(d = 0; d < D->nDatastream; d++)
+	{
+		dd = D->datastream + d;
+		nBitstream = dd->dataFrameSize/20000;
+		nBitstream *= 8;
+		fanout = nBitstream/(dd->quantBits*dd->nRecChan);
+		sampRate = (int)(D->freq[dd->freqId[0]].bw*2.0+0.00001);
+		su = 8*fanout/sampRate;
+		if(su < speedUp)
+		{
+			speedUp = su;
+		}
+	}
+
+	/* the quantum of integration time */
+	quantum = 0.131072*speedUp;
+
+	for(c = 0; c < D->nConfig; c++)
+	{
+		dc = D->config + c;
+		n = (int)(dc->tInt/quantum + 0.5);
+		dc->tInt = n * quantum;
+	}
+
+	/* here use the first config's tInt to derive the start time of the job */
+	tInt = D->config[0].tInt;
+
+	mjd = D->mjdStart;
+	sec = (D->mjdStart - mjd)*86400.0;
+
+	n = sec / tInt;
+	sec = n*tInt;
+
+	mjdStart = mjd + sec/86400.0;
+	if(mjdStart < D->mjdStart)
+	{
+		mjdStart += tInt/86400.0;
+	}
+	D->mjdStart = mjdStart;
+	D->job[0].jobStart = D->mjdStart;
+	D->fracSecondStartTime = 1;
+
+	/* FIXME -- reset BLOCKSPERSEND here? */
+
+	return 0;
+}

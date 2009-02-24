@@ -37,6 +37,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 {
 	char value[256];
 	int secs;
+	double dsecs;
 
 	fprintf(out, "# COMMON SETTINGS ##!\n");
 	sprintf(value, "%s.delay", filebase);
@@ -47,9 +48,17 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	writeDifxLine(out, "CORE CONF FILENAME", value);
 	secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
 	writeDifxLineInt(out, "EXECUTE TIME (SEC)", secs);
-	secs = (D->mjdStart - (int)(D->mjdStart))*86400.0;
 	writeDifxLineInt(out, "START MJD", (int)(D->mjdStart));
-	writeDifxLineInt(out, "START SECONDS", secs);
+	if(D->fracSecondStartTime > 0)
+	{
+		dsecs = (D->mjdStart - (int)(D->mjdStart))*86400.0;
+		writeDifxLineDouble(out, "START SECONDS", "%12.6f", dsecs);
+	}
+	else
+	{
+		secs = (D->mjdStart - (int)(D->mjdStart))*86400.0;
+		writeDifxLineInt(out, "START SECONDS", secs);
+	}
 	writeDifxLineInt(out, "ACTIVE DATASTREAMS", D->nDatastream);
 	writeDifxLineInt(out, "ACTIVE BASELINES", D->nBaseline);
 	writeDifxLineInt(out, "VIS BUFFER LENGTH", D->visBufferLength);

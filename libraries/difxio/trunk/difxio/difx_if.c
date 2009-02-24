@@ -297,7 +297,7 @@ DifxIF *newDifxIFArray(int nIF)
 {
 	DifxIF *di;
 
-	di = (DifxIF *)calloc(nIF, sizeof(DifxConfig));
+	di = (DifxIF *)calloc(nIF, sizeof(DifxIF));
 	
 	return di;
 }

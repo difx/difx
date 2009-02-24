@@ -147,7 +147,7 @@ typedef struct
 	float tSys;		/* 0.0 for NRAO DiFX */
 	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
 	int quantBits;		/* quantization bits */
-	int dataFrameSize;	/* size of formatted data frame */
+	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	char dataSource[32];	/* MODULE, FILE, NET, other? */
 	int nFreq;		/* num freqs from this datastream */
 	int nRecChan;		/* number of base band channels recorded */
@@ -302,6 +302,7 @@ typedef struct
 typedef struct
 {
 	int inputFileVersion;	/* version of input file to parse. 0=current */
+	int fracSecondStartTime;/* allow writing of fractional second start time? */
 	double mjdStart;	/* start of combined dataset */
 	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
@@ -580,6 +581,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 	int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
+int DifxInputSimFXCORR(DifxInput *D);
 
 /* Writing functions */
 int writeDifxDelay(const DifxInput *D, const char *filename);
