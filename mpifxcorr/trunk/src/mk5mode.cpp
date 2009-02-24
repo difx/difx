@@ -72,21 +72,21 @@ Mk5Mode::~Mk5Mode()
 float Mk5Mode::unpack(int sampleoffset)
 {
   int framesin, goodsamples;
-
-  // FIXME -- I think we can use mark5stream->samplegranularity instead of fanout below and fewer samples will be lost in those rare cases.  --WFB
+  int mungedoffset;
 
   //work out where to start from
   framesin = (sampleoffset/framesamples);
-  unpackstartsamples = sampleoffset - (sampleoffset % fanout);
+  unpackstartsamples = sampleoffset - (sampleoffset % mark5stream->samplegranularity);
 
   //unpack one frame plus one FFT size worth of samples
   goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
-  if(fanout > 1)
+  if(mark5stream->samplegranularity > 1)
   {
-    for(int i = 0; i < sampleoffset % fanout; i++)
+    mungedoffset = sampleoffset % mark5stream->samplegranularity;
+    for(int i = 0; i < mungedoffset; i++)
       if(unpackedarrays[0][i] != 0.0)
         goodsamples--;
-    for(int i = unpacksamples + sampleoffset % fanout; i < samplestounpack; i++)
+    for(int i = unpacksamples + mungedoffset; i < samplestounpack; i++)
       if(unpackedarrays[0][i] != 0.0)
         goodsamples--;
   }

@@ -75,7 +75,7 @@ AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
 if test ${rpfits_enabled} = true; then
 	RPFITS_CFLAGS="-I$DIFXROOT/include"
 	RPFITS_LIBS=" -lrpfits -lg2c"
-dnl *** Alternative if gfotran used
+dnl *** Alternative if gfortran used
 dnl	RPFITS_LIBS=" -lrpfits -lgfortran"  
 else
 RPFITS_CFLAGS=""
@@ -87,7 +87,7 @@ dnl **********************************************************
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(M5ACCESS, mark5access)
+PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.1)
 dnl **********************************************************
 
 
