@@ -101,7 +101,75 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	invalidtime = 0;
 	invalidstart = 0;
 	newscan = 0;
+	lastrate = 0.0;
+	nrate = 0;
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
+}
+
+static void setDiscModuleState(SSHANDLE xlrDevice, const char *newState)
+{
+	XLR_RETURN_CODE xlrRC;
+	char label[XLR_LABEL_LENGTH];
+	int labelLength = 0, rs = 0;
+	xlrRC = XLRGetLabel(xlrDevice, label);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot XLRGetLabel" << endl;
+		return;
+	}
+
+	for(labelLength = 0; labelLength < XLR_LABEL_LENGTH; labelLength++)
+	{
+		if(!label[labelLength])
+		{
+			break;
+		}
+	}
+	if(labelLength >= XLR_LABEL_LENGTH)
+	{
+		cwarn << startl << "Module label is not terminated!" << endl;
+		return;
+	}
+
+	for(rs = 0; rs < labelLength; rs++)
+	{
+		if(label[rs] == 30)	// ASCII "RS" == "Record separator"
+		{
+			break;
+		}
+	}
+	if(rs >= labelLength)
+	{
+		cwarn << startl << "Module label record separator not found!" << endl;
+	}
+
+	label[rs] = 0;
+	cverbose << startl << "Module extended VSN is " << label << " Previous DMS is " << label+rs+1 << endl;
+
+	if(strcmp(label+rs+1, newState) == 0)
+	{
+		// Nothing to do here
+		return;
+	}
+
+	xlrRC = XLRClearWriteProtect(xlrDevice);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot clear write protect" << endl;
+	}
+	cinfo << startl << "Setting module DMS to Played" << endl;
+	label[rs] = 30;	// ASCII "RS" == "Record separator"
+	strcpy(label+rs+1, newState);
+	xlrRC = XLRSetLabel(xlrDevice, label, strlen(label));
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot XLRSetLabel" << endl;
+	}
+	XLRSetWriteProtect(xlrDevice);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot set write protect" << endl;
+	}
 }
 
 NativeMk5DataStream::~NativeMk5DataStream()
@@ -175,6 +243,9 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			dataremaining = false;
 			return;
 		}
+
+		// Set the module state to "Played"
+		setDiscModuleState(xlrDevice, "Played");
 	}
 
 	sendMark5Status(MARK5_STATE_GOTDIR, 0, 0, startmjd, 0.0);
@@ -499,6 +570,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				newscan = 0;
 				state = MARK5_STATE_START;
 				rate = 0.0;
+				lastrate = 0.0;
+				nrate = 0;
 				fmjd2 = scan->mjd + (scan->sec + (float)scan->framenuminsecond/scan->framespersecond)/86400.0;
 				if(fmjd2 > fmjd)
 				{
@@ -509,11 +582,18 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			{
 				state = MARK5_STATE_PLAY;
 				rate = (double)(readpointer + bytes - lastpos)*8.0/1000000.0;
+				if(nrate > 1)
+				{
+					rate = (nrate*lastrate + 4*rate)/(nrate+4);
+				}
+				lastrate = rate;
+				nrate++;
 			}
 			else
 			{
 				state = MARK5_STATE_PLAYINVALID;
 				rate = invalidtime;
+				nrate = 0;
 			}
 
 			sendMark5Status(state, scan-module.scans+1, readpointer, fmjd, rate);

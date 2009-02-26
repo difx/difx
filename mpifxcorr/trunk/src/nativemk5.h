@@ -70,6 +70,8 @@ private:
 	unsigned long lastval;
 	struct mark5_stream *mark5stream;
 	int newscan;
+	double lastrate;
+	int nrate;
 };
 
 #endif
