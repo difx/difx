@@ -37,6 +37,7 @@ my $blockspersend = undef;
 my $guardblock = 1;
 my $autocorr = 1;
 my $swin = 0;
+my $udp = 0;
 my $pulsar = 0;
 my $databufferfactor = undef;
 my $numdatasegments = 32;
@@ -52,7 +53,7 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
 	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
-	   'swin'=>\$swin, 'monitor'=>\$monitor, 
+	   'swin'=>\$swin, 'monitor'=>\$monitor, 'udp=i'=>\$udp,
 	   'duration=i'=>\$requested_duration, 'files=s'=>\$files);
 
 
@@ -678,7 +679,12 @@ print INPUT "\n# NETWORK TABLE ####!\n";
 $count = 0;
 foreach (@stations) {
   my $istr = count2str($count);
-  my $tcpwin = vexant2window($_);
+  my $tcpwin;
+  if ($udp) {
+    $tcpwin = -$udp;
+  } else {
+    $tcpwin = vexant2window($_);
+  }
   print INPUT<<EOF;
 PORT NUM $istr        $ports{$_}
 TCP WINDOW (KB) $istr $tcpwin
@@ -945,10 +951,10 @@ BEGIN {
 
 my %antclockoffsets;
 BEGIN {
-  %antclockoffsets = (Pa => -2.48,
+  %antclockoffsets = (Pa => -1.997,
                       At => -55.31,
-                      Mp => -1.22,
-                      Ho => -3,
+                      Mp => -1.817,
+                      Ho => -13.59,
                       Cd => 1.05,
                       Ti => -2.0,
                       Sh => -7.4,
