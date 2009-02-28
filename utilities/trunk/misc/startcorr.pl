@@ -62,6 +62,7 @@ my @telescopes = ();
 my @format = ();
 my @telport = ();
 my @tcpwin = ();
+my @bits = ();
 my $bandwidth = undef;
 
 # Grab the values we need from the input file
@@ -95,6 +96,8 @@ while (<INPUT>) {
     push @telescopes, $1;
   } elsif (/DATA FORMAT:\s+(\S+)/) {
     push @format, $1;
+  } elsif (/QUANTISATION BITS:\s+(\S+)/) {
+    push @bits, $1;
   } elsif (/PORT NUM \d+:\s+(\d+)/) {
     push @telport, $1;
   } elsif (/TCP WINDOW \(KB\) \d+:\s*(-?\d+)/) {
@@ -203,8 +206,7 @@ if (defined $recorder_hosts && $evlbi) {
   } else { # Child
 
     print "Waiting for DiFX to start\n";
-    #sleep($offset*0.8);
-    sleep(5);
+    sleep($offset*0.75);
 
     my %rec_hosts = ();
     open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
@@ -212,24 +214,26 @@ if (defined $recorder_hosts && $evlbi) {
       s/^\s+//;
       s/\s+$//;
       next if ($_ eq '');
-      my ($tel, $rechost, $corrhost) = split;
-      die "Wrong hosts file format: $_ " 
-	if (! (defined $tel && defined $rechost && defined $corrhost));
-      $rec_hosts{$tel} = [$rechost, $corrhost];
+      my @vals = split;
+
+      my $tel = shift @vals;
+      die "Wrong hosts file format: $_ " if (@vals < 4);
+      $rec_hosts{$tel} = [@vals];
     }
     close HOSTS;
 
     for (my $i=0; $i<@telescopes; $i++) {
       next if (!$active_datastreams[$i]);
     
-      my ($recorder, $playback);
+      my ($recorder, $playback, $compression, $vsib_mode, $ipd);
       if ($telescopes[$i] =~ /^CATW/) {
-	$recorder = $rec_hosts{CATW}->[0];
-	$playback = $rec_hosts{CATW}->[1];
-      } elsif (exists $rec_hosts{$telescopes[$i]}) {
-	$recorder = $rec_hosts{$telescopes[$i]}->[0];
-	$playback = $rec_hosts{$telescopes[$i]}->[1];
+	  $telescopes[$i] = 'CATW';
       }
+      $recorder = $rec_hosts{$telescopes[$i]}->[0];
+      $playback = $rec_hosts{$telescopes[$i]}->[1];
+      $compression = $rec_hosts{$telescopes[$i]}->[2];
+      $vsib_mode = $rec_hosts{$telescopes[$i]}->[3];
+      $ipd = $rec_hosts{$telescopes[$i]}->[4];
 
       if ($recorder) {
 	$status = send_data("remote_host=$playback", $recorder);
@@ -241,26 +245,37 @@ if (defined $recorder_hosts && $evlbi) {
 	  my $udp = -$tcpwin[$i];
 	  $status = send_data("udp=$udp", $recorder);
 	  die "Failed to set UDP on $recorder\n" if (!defined $status);
-	  
+
+	  if (defined $ipd) {
+	    $status = send_data("ipd=$ipd", $recorder);
+	    die "Failed to set IPD on $recorder\n" if (!defined $status);
+	  }
+      
 	} else {
 	  $status = send_data("udp=0", $recorder);
 	  die "Failed to turn off UDP on $recorder\n" if (!defined $status);
-	  #if ($tcpwin[$i]>0) {
-	    $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
-	    die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
-	  #}
-	} 
+	  $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
+	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
+	}
+	
 	$status = send_data("record_time=${duration}s", $recorder);
 	die "Failed to set recording time on $recorder\n" if (!defined $status);
+	
 	$status = send_data("evlbi=on", $recorder);
 	die "Failed to turn on evlbi mode $recorder\n" if (!defined $status);
+	
 	$status = send_data("filesize=2s", $recorder);
 	die "Failed to set filesize on $recorder\n" if (!defined $status);
+	
 	$status = send_data("round_start=off", $recorder);
 	die "Failed to set round start off, on $recorder\n" if (!defined $status);
-	$status = send_data("bandwidth=$bandwidth", $recorder);
-	die "Failed to set bandwidth on $recorder\n" if (!defined $status);
 	
+	$status = send_data("compression=$compression", $recorder);
+	die "Failed to set compression on $recorder\n" if (!defined $status);
+
+	$status = send_data("vsib_mode=$vsib_mode", $recorder);
+	die "Failed to set vsib_mode on $recorder\n" if (!defined $status);
+
 	$status = send_data("filename_prefix=$telescopes[$i]", $recorder);
 	die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
 	
@@ -273,6 +288,13 @@ if (defined $recorder_hosts && $evlbi) {
 	} else {
 	  die "Unsupported data format $format[$i]\n";
 	}
+	if ($bits[$i]==1) {
+	  $status = send_data("onebit=on", $recorder);
+	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
+	} else {
+	  $status = send_data("onebit=off", $recorder);
+	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
+	}
 
 	$status = send_cmd("record-start", $recorder);
 	die "Failed to launch recorder on $recorder\n" if (!defined $status);
@@ -284,6 +306,8 @@ if (defined $recorder_hosts && $evlbi) {
 	die "Failed to set filesize on $recorder\n" if (!defined $status);
 	$status = send_data("round_start=on", $recorder);
 	die "Failed to set round start on, on $recorder\n" if (!defined $status);
+	$status = send_data("onebit=off", $recorder);
+	die "Failed to set mark5b on $recorder\n" if (!defined $status);
  
 	print "Launched $telescopes[$i] on $recorder\n" if ($recorder);
       } else {
