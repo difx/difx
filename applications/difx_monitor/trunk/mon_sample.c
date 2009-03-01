@@ -21,7 +21,7 @@
 
 
 int main(int argc, const char * argv[]) {
-  int status, prod, i, nchan=0;
+  int status, prod, i, nchan=0, iprod;
   char monhostname[] = "localhost";
   struct monclient monserver;
   float *xval=NULL, *amp=NULL, *phase=NULL, *lags=NULL, *lagx=NULL;
@@ -29,12 +29,18 @@ int main(int argc, const char * argv[]) {
   cf32 *vis;
   IppsFFTSpec_R_32f* fftspec=NULL;
 
+  if(argc != 2)  {
+    fprintf(stderr, "Error - invoke with mon_sample <product#>\n");
+    return(EXIT_FAILURE);
+  }
+  iprod = atoi(argv[1]);
+
   status  = monserver_connect(&monserver, monhostname, -1);
   if (status) exit(1);
 
   printf("Opened connection to monitor server\n");
 
-  status = monserver_requestproduct(monserver, 0);
+  status = monserver_requestproduct(monserver, iprod);
   if (status) exit(1);
 
   status = cpgbeg(0,"/xs",1,3);
