@@ -651,9 +651,9 @@ void Configuration::processCommon(ifstream * input)
   executeseconds = atoi(line.c_str());
   getinputline(input, &line, "START MJD");
   startmjd = atoi(line.c_str());
-  getinputline(input, &line, "START SECONDS");  // FIXME -- look for fractional seconds -> startns
+  getinputline(input, &line, "START SECONDS");
   startseconds = atoi(line.c_str());
-  startns = 0;
+  startns = (int)((atof(line.c_str()) - ((double)startseconds))*1000000000.0 + 0.5);
   getinputline(input, &line, "ACTIVE DATASTREAMS");
   numdatastreams = atoi(line.c_str());
   getinputline(input, &line, "ACTIVE BASELINES");
