@@ -69,9 +69,9 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   expermjd = config->getStartMJD();
   experseconds = config->getStartSeconds();
   offset = 0;
-  currentstartsamples = (int)((((double)startns)/1000000000.0)*((double)samplespersecond) + 0.5);
   currentstartseconds = skipseconds;
   changeConfig(currentconfigindex);
+  currentstartsamples = (int)((((double)startns)/1000000000.0)*((double)samplespersecond) + 0.5);
 
   //set up the initial time period this Visibility will be responsible for
   offset = offset+offsetperintegration;
