@@ -200,16 +200,16 @@ int monserver_readvis(struct monclient *client) {
   return(status);
 }
 
-int monserver_nextvis(struct monclient *client, int *product, cf32 **vis) {
+int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis) {
   int ivis = client->ivis;
 
   if (ivis >= client->nretvis)  return(1);
 
   *product = *(int32_t*)(client->visbuf+ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(cf32)));
+   	                         + client->numchannels*sizeof(Ipp32fc)));
 
-  *vis = (cf32*)(client->visbuf+sizeof(int32_t) + ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(cf32)));
+  *vis = (Ipp32fc*)(client->visbuf+sizeof(int32_t) + ivis*(sizeof(int32_t) 
+   	                         + client->numchannels*sizeof(Ipp32fc)));
 
   client->ivis++;
   return(0);
