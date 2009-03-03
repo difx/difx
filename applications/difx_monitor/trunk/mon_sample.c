@@ -22,20 +22,19 @@
 
 int main(int argc, const char * argv[]) {
   int status, prod, i, nchan=0, iprod;
-  char monhostname[] = "localhost";
   struct monclient monserver;
   float *xval=NULL, *amp=NULL, *phase=NULL, *lags=NULL, *lagx=NULL;
   float delta, min, max, temp;
   cf32 *vis;
   IppsFFTSpec_R_32f* fftspec=NULL;
 
-  if(argc != 2)  {
-    fprintf(stderr, "Error - invoke with mon_sample <product#>\n");
+  if(argc != 3)  {
+    fprintf(stderr, "Error - invoke with mon_sample <host> <product#>\n");
     return(EXIT_FAILURE);
   }
-  iprod = atoi(argv[1]);
+  iprod = atoi(argv[2]);
 
-  status  = monserver_connect(&monserver, monhostname, -1);
+  status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
 
   printf("Opened connection to monitor server\n");
