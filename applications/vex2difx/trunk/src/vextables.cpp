@@ -521,17 +521,17 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 }
 
 // FIXME -- this does not allow concurrent scans
-void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) const
+void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop, double maxLength) const
 {
 	list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
-	VexJob &J = jobs.back();
+	VexJob *J = &jobs.back();
 	double totalTime, scanTime = 0.0;
 	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
-	J.mjdStart = stop;
-	J.mjdStop = start;
+	J->mjdStart = stop;
+	J->mjdStop = start;
 
 	for(e = events.begin(); e != events.end(); e++)
 	{
@@ -550,22 +550,42 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop) con
 			}
 			if(s->mjd >= start && e->mjd <= stop)
 			{
-				J.scans.push_back(e->name);
-				if(J.mjdStart > s->mjd)
+				J->scans.push_back(e->name);
+				if(J->mjdStart > s->mjd)
 				{
-					J.mjdStart = s->mjd;
+					J->mjdStart = s->mjd;
 				}
-				if(J.mjdStop < e->mjd)
+				if(J->mjdStop < e->mjd)
 				{
-					J.mjdStop = e->mjd;
+					J->mjdStop = e->mjd;
 				}
 				scanTime += e->mjd - s->mjd;
+
+				/* start a new job at scan boundary if maxLength exceeded */
+				if(J->mjdStop - J->mjdStart > maxLength)
+				{
+					totalTime = J->mjdStop - J->mjdStart;
+					J->dutyCycle = scanTime / totalTime;
+					jobs.push_back(VexJob());
+					J = &jobs.back();
+					scanTime = 0.0;
+					J->mjdStart = stop;
+					J->mjdStop = start;
+				}
 			}
 		}
 	}
 
-	totalTime = J.mjdStop - J.mjdStart;
-	J.dutyCycle = scanTime / totalTime;
+	totalTime = J->mjdStop - J->mjdStart;
+	
+	if(totalTime <= 0.0)
+	{
+		jobs.pop_back();
+	}
+	else
+	{
+		J->dutyCycle = scanTime / totalTime;
+	}
 }
 
 const VexScan *VexData::getScan(string name) const

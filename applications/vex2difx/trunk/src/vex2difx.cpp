@@ -161,6 +161,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	double mjdLast = -1.0;
 	int score, scoreBest;
 	double mjdBest = 0.0;
+	double start;
 	int nAnt;
 
 	// first initialize recordStop and usage
@@ -221,6 +222,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	while(!changes.empty())
 	{
 		// look for break with highest score
+		// Try as hard as possible to minimize number of breaks
 		scoreBest = -1;
 		for(t = times.begin(); t != times.end(); t++)
 		{
@@ -248,16 +250,16 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		}
 	}
 	breaks.sort();
+	// Add one fictitious break at end so num breaks = num jobs
+	breaks.push_back(V->obsStop());
 
 	// form jobs
-	double start = V->obsStart();
+	start = V->obsStart();
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
-		JG.createJob(Js, start, *t);
+		JG.createJob(Js, start, *t, P->maxLength);
 		start = *t;
 	}
-
-	JG.createJob(Js, start, V->obsStop());
 }
 
 void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)

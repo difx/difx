@@ -425,6 +425,7 @@ void CorrParams::set(const string &key, const string &value)
 	else if(key == "maxLength")
 	{
 		ss >> maxLength;
+		maxLength /= 86400.0;	// convert to seconds from days
 	}
 	else if(key == "jobSeries" || key == "pass")
 	{
@@ -543,11 +544,13 @@ void CorrParams::load(const string& fileName)
 		}
 	}
 
+	bool keyWaiting=false, keyWaitingTemp;
 	string key(""), value, last("");
 	for(vector<string>::const_iterator i = tokens.begin(); 
 	    i != tokens.end();
 	    i++)
 	{
+		keyWaitingTemp = false;
 		if(*i == "SETUP")
 		{
 			if(mode != 0)
@@ -666,6 +669,15 @@ void CorrParams::load(const string& fileName)
 				antennaSetup->set(key, value);
 			}
 		}
+		else
+		{
+			if(keyWaiting == true)
+			{
+				cerr << "Parse error in file " << fileName << " : Unused token: " << last << " before token: " << *i << endl;
+				exit(0);
+			}
+			keyWaitingTemp = true;
+		}
 		if(*i == "{" || *i == "}")
 		{
 			last = "";
@@ -674,6 +686,8 @@ void CorrParams::load(const string& fileName)
 		{
 			last = *i;
 		}
+
+		keyWaiting = keyWaitingTemp;
 	}
 
 	is.close();

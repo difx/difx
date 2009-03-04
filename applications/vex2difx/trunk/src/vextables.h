@@ -258,7 +258,7 @@ public:
 
 	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
-	void createJob(vector<VexJob>& jobs, double start, double stop) const;
+	void createJob(vector<VexJob>& jobs, double start, double stop, double maxLength) const;
 };
 
 class VexData

@@ -8,6 +8,8 @@ Version 0.1
 * start time and stop time are no longer expanded to full length of all included scans
 * write flag file that is compliant with difx2fits
 * add oms2v2f to this package
+* implement maxLength (seconds)
+* don't allow white-space separated lists
 
 Version 0.0
 ~~~~~~~~~~~
