@@ -1018,6 +1018,19 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	deleteDifxInput(D);
 }
 
+void sanityCheckSources(const VexData *V, const CorrParams *P)
+{
+	vector<SourceSetup>::const_iterator s;
+
+	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); s++)
+	{
+		if(V->getSource(s->vexName) == 0)
+		{
+			cout << "Warning: source " << s->vexName << " referenced in .v2d file but not is not in vex file" << endl;
+		}
+	}
+}
+
 int usage(int argc, char **argv)
 {
 	cout << endl;
@@ -1122,6 +1135,8 @@ int main(int argc, char **argv)
 		cerr << "Error: cannot load vex file: " << P->vexFile << endl;
 		exit(0);
 	}
+
+	sanityCheckSources(V, P);
 
 	makeJobs(J, V, P, verbose);
 

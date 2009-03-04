@@ -109,6 +109,11 @@ double parseCoord(const char *str, char type)
 		{
 			v = a*M_PI/180.0;
 		}
+		else
+		{
+			cerr << "Error parsing coordinate value " << str << endl;
+			exit(0);
+		}
 	}
 
 	return v;
