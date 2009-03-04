@@ -511,7 +511,7 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
 
   if (client.nvis==0) return(0);
 
-  maxvis = thisbuffersize/(numchannels*sizeof(cf32));
+  maxvis = thisbuffersize/((numchannels+1)*sizeof(cf32));
 
   nvis=0;
   for (i=0; i<client.nvis; i++) {
@@ -540,7 +540,7 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
     if (client.vis[i] < maxvis) {
       sendint(client.fd, client.vis[i], &status);
       if (status) return(status);
-      status = writenetwork(client.fd, (char*)(buffer+numchannels*client.vis[i]), 
+      status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*client.vis[i]), 
 			    numchannels*sizeof(cf32));
     }
   }
