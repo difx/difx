@@ -37,6 +37,7 @@ struct _Sniffer
 	fftw_complex *fftbuffer;
 	int fft_nx, fft_ny;
 	Accumulator **accum;
+	int *fitsSourceId2SourceId;
 };
 
 void resetAccumulator(Accumulator *A)
@@ -136,6 +137,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	int a1, a2, c;
 	double tMax = 0.0;
 	FILE *log;
+	int i, m;
 
 	/* write summary to log file */
 	sprintf(filename, "%s.log", filebase);
@@ -152,6 +154,27 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	}
 
 	S = (Sniffer *)calloc(1, sizeof(Sniffer));
+
+	m = 1;
+	for(i = 0; i < D->nSource; i++)
+	{
+		if(D->source[i].fitsSourceId > m)
+		{
+			m = D->source[i].fitsSourceId;
+		}
+	}
+	S->fitsSourceId2SourceId = (int *)malloc((m+1)*sizeof(int));
+	for(i = 0; i <= m; i++)
+	{
+		S->fitsSourceId2SourceId[i] = -1;
+	}
+	for(i = 0; i < D->nSource; i++)
+	{
+		if(D->source[i].fitsSourceId >= 0)
+		{
+			S->fitsSourceId2SourceId[D->source[i].fitsSourceId] = i;
+		}
+	}
 
 	S->deltaT = tMax;
 	S->deltaF = D->chanBW;
@@ -241,6 +264,11 @@ void deleteSniffer(Sniffer *S)
 
 	if(S)
 	{
+		if(S->fitsSourceId2SourceId)
+		{
+			free(S->fitsSourceId2SourceId);
+			S->fitsSourceId2SourceId = 0;
+		}
 		if(S->apd)
 		{
 			fclose(S->apd);
@@ -389,7 +417,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 						z += A->spectrum[b][t][f];
 					}
 					z /= A->weightSum[b];
-					fprintf(fp, "%2d %3s %5d %7.5f\n",
+					fprintf(fp, "%2d %-3s %5d %7.5f\n",
 						a1+1, S->D->antenna[a1].name,
 						chan, creal(z));
 					chan++;
@@ -410,7 +438,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 					z /= A->weightSum[b];
 					x = creal(z);
 					y = cimag(z);
-					fprintf(fp, "%2d %2d %3s %3s %5d %7.5f %8.3f\n",
+					fprintf(fp, "%2d %2d %-3s %-3s %5d %7.5f %8.3f\n",
 						a1+1, a2+1, 
 						S->D->antenna[a1].name,
 						S->D->antenna[a2].name,
@@ -425,7 +453,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	if(a1 == a2) /* Autocorrelation? */
 	{
 		/* weights file */
-		fprintf(S->wts, "%5d %8.5f %2d %3s %2d",
+		fprintf(S->wts, "%5d %8.5f %2d %-3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->a1+1,
 			S->D->antenna[A->a1].name,
 			A->nBBC);
@@ -473,7 +501,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	{
 		/* fringe fit */
 
-		fprintf(S->apd, "%5d %8.5f %2d %10s %2d %2d %3s %3s %2d",
+		fprintf(S->apd, "%5d %8.5f %2d %-10s %2d %2d %-3s %-3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
 			S->D->source[A->sourceId].name, a1+1, a2+1,
 			S->D->antenna[a1].name,
@@ -617,7 +645,12 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 		return 0;
 	}
 
-	sourceId = data->sourceId1-1;
+	if(data->sourceId1 < 1)
+	{
+		return 0;
+	}
+
+	sourceId = S->fitsSourceId2SourceId[data->sourceId1-1];
 	if(sourceId < 0 || sourceId >= S->D->nSource)
 	{
 		return 0;
