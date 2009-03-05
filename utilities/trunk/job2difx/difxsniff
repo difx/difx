@@ -5,7 +5,7 @@ from os import chdir, popen, system
 from string import strip, split, find, lower, upper
 
 program = 'difxsniff'
-version = '1.1'
+version = '1.2'
 verdate = '20081229'
 author  = 'Walter Brisken'
 
@@ -99,6 +99,8 @@ dir = 'sniffer/'
 
 for a in argv[1:]:
 	p = find(a, '.FITS')
+	if p < 1:
+		p = find(a, '.fits')
 	if p > 0:
 		files.append(a[:p])
 	elif find(a, '.') >= 0 and len(a) > 2:

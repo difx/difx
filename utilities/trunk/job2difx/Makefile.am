@@ -13,6 +13,5 @@ dist_bin_SCRIPTS = \
 	listmodules \
 	listcpus \
 	startdifx \
-	db2vex \
 	vlog
 
