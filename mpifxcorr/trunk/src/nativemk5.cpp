@@ -482,12 +482,12 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			}
 			if(i % 10000 == 0)
 			{
-				cinfo << startl << "[" << mpiid << "] Waited " << i << " ms  state="; 
+				cinfo << startl << "Waited " << i << " ms  state="; 
 				if(xlrRS == XLR_READ_WAITING)
 				{
 					cinfo << "XLR_READ_WAITING" << endl;
 				}
-				if(xlrRS == XLR_READ_RUNNING)
+				else if(xlrRS == XLR_READ_RUNNING)
 				{
 					cinfo << "XLR_READ_RUNNING" << endl;
 				}
@@ -504,9 +504,6 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		}
 		else if(t == 0)
 		{
-			cinfo << startl << "[" << mpiid << "] XLRClose() being called!" << endl;
-			XLRClose(xlrDevice);
-			
 			cinfo << startl << "[" << mpiid << "] XLRCardReset() being called!" << endl;
 			xlrRC = XLRCardReset(1);
 			cinfo << startl << "[" << mpiid << "] XLRCardReset() called! " << xlrRC << endl;
