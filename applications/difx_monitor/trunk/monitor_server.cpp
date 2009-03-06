@@ -90,7 +90,7 @@ int main(int argc, const char * argv[]) {
   }
 
   //open up the socket for the monitor clients to connect to
-  monitorsocket = openstream(MONITOR_PORT, 0, 10);
+  monitorsocket = openstream(MONITOR_PORT, 0);
   if (monitorsocket <=0) {
     cerr << "Error opening connection for monitor clients. Aborting" << endl;
     close(serversocket);
@@ -123,7 +123,7 @@ int main(int argc, const char * argv[]) {
       short revents = pollfds[i].revents;
       
       if (fd == serversocket && revents) {
-	printf("Event on serversocket (%d)\n", revents);
+	printf("Event on serversocket %d (%d)\n", fd, revents);
 	
 	if (revents==POLLIN) { // Connection request
 	  printf("Try and connect\n");
@@ -146,7 +146,7 @@ int main(int argc, const char * argv[]) {
 
       } else if (fd == monitorsocket && revents) {
 	int newsock;
-	cout << "Event on monitorsocket " << revents << endl;
+	cout << "Event on monitorsocket " << fd << " (" << revents << ")" << endl;
 
 	if (revents==POLLIN) { // Connection request
 	  cout << "Try and connect" << endl;
@@ -183,7 +183,7 @@ int main(int argc, const char * argv[]) {
 	}
 
       } else if (fd == difxsocket && revents) {
-	cout << "Event on difxsocket " << revents << endl;
+	cout << "Event on difxsocket " << fd << "(" << revents << ")" << endl;
 
 	if (revents & POLLHUP) { // Connection went away
 	  cout << "Connection to mpifxcorr dropped" << endl;
@@ -274,33 +274,34 @@ int main(int argc, const char * argv[]) {
 	    pollfd_remove(pollfds, &nfds, fd);
 	    monclient_remove(clients, &nclient, fd);
 	    close(fd);
-	  }
-	  if (nproduct<0) {
-	    status = monserver_sendstatus(fd, DIFXMON_BADPRODUCTS);
-	    if (status) {
-	      pollfd_remove(pollfds, &nfds, fd);
-	      monclient_remove(clients, &nclient, fd);
-	      close(fd);
-	    }
-	  } else if (nproduct>0) {
-	    int32_t *buf = new int32_t [nproduct];
+	  } else {
+	    if (nproduct<0) {
+	      status = monserver_sendstatus(fd, DIFXMON_BADPRODUCTS);
+	      if (status) {
+		pollfd_remove(pollfds, &nfds, fd);
+		monclient_remove(clients, &nclient, fd);
+		close(fd);
+	      }
+	    } else if (nproduct>0) {
+	      int32_t *buf = new int32_t [nproduct];
 
-	    status = readnetwork(fd, (char*)buf, nproduct*sizeof(int32_t));
-	    if (status) {
-	      pollfd_remove(pollfds, &nfds, fd);
-	      monclient_remove(clients, &nclient, fd);
-	      close(fd);
-	    }
-	    monclient_addproduct(thisclient, nproduct, buf);
+	      status = readnetwork(fd, (char*)buf, nproduct*sizeof(int32_t));
+	      if (status) {
+		pollfd_remove(pollfds, &nfds, fd);
+		monclient_remove(clients, &nclient, fd);
+		close(fd);
+	      }
+	      monclient_addproduct(thisclient, nproduct, buf);
 
-	    status = monserver_sendstatus(fd, DIFXMON_NOERROR);
-	    if (status) {
-	      pollfd_remove(pollfds, &nfds, fd);
-	      monclient_remove(clients, &nclient, fd);
-	      close(fd);
+	      status = monserver_sendstatus(fd, DIFXMON_NOERROR);
+	      if (status) {
+		pollfd_remove(pollfds, &nfds, fd);
+		monclient_remove(clients, &nclient, fd);
+		close(fd);
+	      }
+	    
+	      delete [] buf;
 	    }
-	   
-	    delete [] buf;
 	  }
 	}
       }
@@ -400,9 +401,17 @@ void closestream(int sock)
 int pollfd_add(struct pollfd *fds, nfds_t *nfds, nfds_t max_fds, int fd, short events) {
   if (*nfds>=max_fds) return(1); // No space left
 
+  cout << "DEBUG: pollfd_add adding " << fd << endl;
+
+
   fds[*nfds].fd = fd;
   fds[*nfds].events = events;
   (*nfds)++;
+
+  cout << "DEBUG: fds==" << endl;
+  for (int i=0; i<*nfds; i++) {
+    cout << "      " << fds[i].fd << "   " << fds[i].events << endl;
+  }
   
   return(0);
 }
@@ -508,14 +517,20 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
 			  int32_t thisbuffersize, cf32 *buffer) {
   int nvis, maxvis, i, fd, status;
   
-
   if (client.nvis==0) return(0);
 
-  maxvis = thisbuffersize/((numchannels+1)*sizeof(cf32));
+  maxvis = thisbuffersize/(numchannels+1);
+  printf("Buffersize=%d\n", thisbuffersize);
+  printf("numchannels=%d\n", numchannels);
+  printf("Maxvis=%d\n", maxvis);
 
   nvis=0;
   for (i=0; i<client.nvis; i++) {
-    if (client.vis[i] < maxvis) nvis++;
+    if (client.vis[i] < maxvis) 
+      nvis++;
+    else {
+      cout << "Warning: Skipping requested product " << client.vis[i] << endl;
+    }
   }
   if (nvis==0) return(0); // Not an error...
 
