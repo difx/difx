@@ -273,7 +273,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		break;
 	default:
-		dm.state = MARK5_STATE_BUSY;
+		return;
 		break;
 	}
 

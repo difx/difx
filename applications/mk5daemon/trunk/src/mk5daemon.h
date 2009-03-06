@@ -14,7 +14,8 @@ enum ProcessType
 	PROCESS_DATASTREAM,
 	PROCESS_MK5DIR,
 	PROCESS_MK5COPY,
-	PROCESS_SSERASE
+	PROCESS_SSERASE,
+	PROCESS_UNKNOWN
 };
 
 typedef struct
@@ -25,7 +26,6 @@ typedef struct
 	enum ProcessType process;
 	pthread_t processThread;
 	pthread_t monitorThread;
-	pthread_t controlThread;
 	pthread_mutex_t processLock;
 	int processDone;
 	int loadMonInterval;		/* seconds */
@@ -34,6 +34,7 @@ typedef struct
 	char hostName[32];
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
+	time_t noDriver;		/* time when driver disappeared */
 	int isMk5;
 	int isHeadNode;
 	long long lastRX, lastTX;

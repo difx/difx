@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sys/time.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include <difxmessage.h>
 #include "config.h"
 #include "mark5dir.h"
@@ -14,6 +16,7 @@ const char verdate[] = "20090202";
 
 int verbose = 0;
 int die = 0;
+SSHANDLE xlrDevice;
 
 typedef void (*sighandler_t)(int);
 
@@ -49,8 +52,62 @@ int usage(const char *pgm)
 	return 0;
 }
 
+static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
+{
+	S_BANKSTATUS bank_stat;
+	XLR_RETURN_CODE xlrRC;
+	char message[1000];
+
+	if(bank == 'A' || bank == 'a' || bank == ' ')
+	{
+		xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot get bank A status");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
+			return -1;
+		}
+		else if(bank_stat.Label[8] == '/')
+		{
+			strncpy(mk5status->vsnA, bank_stat.Label, 8);
+			mk5status->vsnA[8] = 0;
+		}
+		else
+		{
+			mk5status->vsnA[0] = 0;
+		}
+	}
+	if(bank == 'B' || bank == 'b' || bank == ' ')
+	{
+		xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot get bank B status");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
+			return -2;
+		}
+		else if(bank_stat.Label[8] == '/')
+		{
+			strncpy(mk5status->vsnB, bank_stat.Label, 8);
+			mk5status->vsnB[8] = 0;
+		}
+		else
+		{
+			mk5status->vsnB[0] = 0;
+		}
+	}
+
+	return 0;
+}
+
 int dirCallback(int scan, int nscan, int status, void *data)
 {
+	static long long seconds=0;
+	struct timeval t;
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
@@ -64,6 +121,17 @@ int dirCallback(int scan, int nscan, int status, void *data)
 		printf("%d/%d %d\n", scan, nscan, status);
 	}
 
+	gettimeofday(&t, 0);
+	if(seconds == 0)
+	{
+		seconds = t.tv_sec;
+	}
+	if(t.tv_sec - seconds > 10)
+	{
+		seconds = t.tv_sec;
+		getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
+	}
+
 	return die;
 }
 
@@ -72,8 +140,6 @@ int main(int argc, char **argv)
 	int mjdnow;
 	const char *mk5dirpath;
 	struct Mark5Module module;
-	SSHANDLE xlrDevice;
-	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
 	char message[1000];
@@ -147,56 +213,23 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
+	v = getBankInfo(xlrDevice, &mk5status, ' ');
+	if(v < 0)
 	{
-		sprintf(message, "Cannot get bank A status");
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-
-		XLRClose(xlrDevice);
-		
-		return 0;
-	}
-	else if(bank_stat.Label[8] == '/')
-	{
-		strncpy(mk5status.vsnA, bank_stat.Label, 8);
-		mk5status.vsnA[8] = 0;
-		if(strcasecmp(vsn, "A") == 0)
-		{
-			mk5status.activeBank = 'A';
-			strcpy(vsn, mk5status.vsnA);
-		}
-	}
-	else
-	{
-		mk5status.vsnA[0] = 0;
-	}
-
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
-	{
-		sprintf(message, "Cannot get bank B status");
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-
 		XLRClose(xlrDevice);
 
-		return 0;
+		return -1;
 	}
-	else if(bank_stat.Label[8] == '/')
+
+	if(strcasecmp(vsn, "A") == 0 && mk5status.vsnA[0] != 0)
 	{
-		strncpy(mk5status.vsnB, bank_stat.Label, 8);
-		mk5status.vsnB[8] = 0;
-		if(strcasecmp(vsn, "B") == 0)
-		{
-			mk5status.activeBank = 'B';
-			strcpy(vsn, mk5status.vsnB);
-		}
+		mk5status.activeBank = 'A';
+		strcpy(vsn, mk5status.vsnA);
 	}
-	else
+	if(strcasecmp(vsn, "B") == 0 && mk5status.vsnB[0] != 0)
 	{
-		mk5status.vsnB[0] = 0;
+		mk5status.activeBank = 'B';
+		strcpy(vsn, mk5status.vsnB);
 	}
 
 	mk5dirpath = getenv("MARK5_DIR_PATH");

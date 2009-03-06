@@ -1,10 +1,20 @@
 mk5daemon
 ~~~~~~~~~
-* Integrate mk5cp
+* Integrate mk5cp?
+? Fix reboot->busy or condition->busy state changes
+* ssopen bug?
+* Fix bug: no more load messages after failed correlation
+* run difxlog when running mpifxcorr
+* Add IPMI support
 
 mk5cp
 ~~~~~
-* Listen for multicast "stop" message
+x Listen for multicast "stop" message
 * Allow max file size to be specified
 * Allow scan subsets to be specified
+x Watch for disk changes in other bank
 
+mk5dir
+~~~~~~
+x Watch for disk changes in other bank
+* Look for improperly decoded scans and warn user

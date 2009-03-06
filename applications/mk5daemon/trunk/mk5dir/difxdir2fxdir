@@ -1,0 +1,49 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import split, strip, lower
+
+format = [1, 2, 3, 4]
+
+def parsehead(str):
+	s = split(strip(str))
+	return [s[0], int(s[1])]
+
+def parsescan(str):
+	s = split(strip(str))
+	return [int(s[0]), int(s[1]), int(s[2]), int(s[3]), int(s[4]), int(s[5]), float(s[6]), int(s[7]), int(s[8]), int(s[9]), int(s[10]), lower(s[11])]
+
+def getstart(s):
+	return float(s[2]) + (float(s[3]) + float(s[4])/float(s[5]))/86400.0
+
+def getstop(s):
+	return float(s[2]) + (float(s[3]) + float(s[4])/float(s[5]) + s[6])/86400.0
+
+if len(argv) < 2:
+	print 'Usage: %s <difxdirfile>'
+	exit(0)
+
+d = open(argv[1], 'r').readlines()
+
+scans = []
+header = parsehead(d[0])
+
+if header[1] != len(d)-1:
+	print 'Warning -- directory size mismatch'
+	header[1] = len(d)-1
+
+first = 100000
+last = 0
+for i in d[1:]:
+	scan = parsescan(i)
+	start = getstart(scan)
+	stop = getstop(scan)
+	scans.append(scan)
+	if start < first:
+		first = start
+	if stop > last:
+		last = stop
+
+print '%d %14.8f %14.8f %s' % (header[1], first, last, header[0])
+for s in scans:
+	print '%d %d %14.8f %14.8f %d %d %s' % (s[0], s[0]+s[1], getstart(s), getstop(s), format[s[10]], s[9], s[11])

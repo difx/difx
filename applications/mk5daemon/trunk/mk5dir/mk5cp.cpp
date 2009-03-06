@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2009 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,6 +33,7 @@
 #include <string.h>
 #include <difxmessage.h>
 #include <signal.h>
+#include <unistd.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include "config.h"
@@ -102,6 +103,58 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
+static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
+{
+	S_BANKSTATUS bank_stat;
+	XLR_RETURN_CODE xlrRC;
+	char message[1000];
+
+	if(bank == 'A' || bank == 'a' || bank == ' ')
+	{
+		xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot get bank A status");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
+			return -1;
+		}
+		else if(bank_stat.Label[8] == '/')
+		{
+			strncpy(mk5status->vsnA, bank_stat.Label, 8);
+			mk5status->vsnA[8] = 0;
+		}
+		else
+		{
+			mk5status->vsnA[0] = 0;
+		}
+	}
+	if(bank == 'B' || bank == 'b' || bank == ' ')
+	{
+		xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot get bank B status");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
+			return -2;
+		}
+		else if(bank_stat.Label[8] == '/')
+		{
+			strncpy(mk5status->vsnB, bank_stat.Label, 8);
+			mk5status->vsnB[8] = 0;
+		}
+		else
+		{
+			mk5status->vsnB[0] = 0;
+		}
+	}
+
+	return 0;
+}
+
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -113,7 +166,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	unsigned long *data;
 	int i, a, b, v;
 	char filename[256];
-	struct timeval t1, t2;
+	struct timeval t0, t1, t2;
 	double dt;
 	double rate;
 	char message[1000];
@@ -148,6 +201,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	}
 
 	rate = 0.0;
+	gettimeofday(&t0, 0);
 	gettimeofday(&t1, 0);
 
 	sprintf(message, "Copying scan %d to file %s", scanNum+1, filename);
@@ -200,8 +254,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 			skip = 0;
 		}
 
-		v = fwrite(data+(skip/4), 1, chunksize-skip, out);
-		if(v < chunksize-skip)
+		v = fwrite(data+(skip/4), 1, len-skip, out);
+		if(v < len-skip)
 		{
 			sprintf(message, "Incomplete write -- disk full?  path=%s", outpath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
@@ -217,6 +271,15 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 			rate = 8.0e-6*(chunksize-skip)/dt; /* Mbps */
 		}
 		t1 = t2;
+
+		dt = t2.tv_sec-t0.tv_sec;
+
+		if(dt >= 10)
+		{
+			t0 = t2;
+			
+			getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
+		}
 
 		readptr += chunksize;
 		togo -= len;
@@ -261,7 +324,6 @@ int main(int argc, char **argv)
 	char message[1000];
 	struct Mark5Module module;
 	SSHANDLE xlrDevice;
-	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
 	char vsn[16] = "";
@@ -348,56 +410,12 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
+	v = getBankInfo(xlrDevice, &mk5status, ' ');
+	if(v < 0)
 	{
-		sprintf(message, "Cannot get bank A status");
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-		
 		XLRClose(xlrDevice);
-		
-		return -1;
-	}
-	else if(bank_stat.Label[8] == '/')
-	{
-		strncpy(mk5status.vsnA, bank_stat.Label, 8);
-		mk5status.vsnA[8] = 0;
-		if(strcasecmp(vsn, "A") == 0)
-		{
-			mk5status.activeBank = 'A';
-			strcpy(vsn, mk5status.vsnA);
-		}
-	}
-	else
-	{
-		mk5status.vsnA[0] = 0;
-	}
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
-	{
-		sprintf(message, "Cannot get bank B status");
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-		
-		XLRClose(xlrDevice);
-		
-		return 0;
-	}
-	else if(bank_stat.Label[8] == '/')
-	{
-		strncpy(mk5status.vsnB, bank_stat.Label, 8);
-		mk5status.vsnB[8] = 0;
-		if(strcasecmp(vsn, "B") == 0)
-		{
-			strcpy(vsn, mk5status.vsnB);
-			mk5status.activeBank = 'B';
-		}
-	}
-	else
-	{
-		mk5status.vsnB[0] = 0;
+		return -1;
 	}
 
 	if(strncasecmp(vsn, mk5status.vsnA, 8) == 0)
@@ -448,13 +466,28 @@ int main(int argc, char **argv)
 		}
 	}
 
+	if(strcasecmp(vsn, "A") == 0 && mk5status.vsnA[0] != 0)
+	{
+		mk5status.activeBank = 'A';
+		strcpy(vsn, mk5status.vsnA);
+	}
+	if(strcasecmp(vsn, "B") == 0 && mk5status.vsnB[0] != 0)
+	{
+		strcpy(vsn, mk5status.vsnB);
+		mk5status.activeBank = 'B';
+	}
+
 	if(mk5status.activeBank == 'A')
 	{
+		usleep(50000);
 		xlrRC = XLRSelectBank(xlrDevice, BANK_A);
+		usleep(50000);
 	}
 	else if(mk5status.activeBank == 'B')
 	{
+		usleep(50000);
 		xlrRC = XLRSelectBank(xlrDevice, BANK_B);
+		usleep(50000);
 	}
 
 	mk5status.state = MARK5_STATE_COPY;

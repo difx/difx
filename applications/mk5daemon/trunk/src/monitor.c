@@ -298,9 +298,6 @@ static void *monitorMultiListen(void *ptr)
 			D->processDone = 0;
 			
 			pthread_mutex_unlock(&D->processLock);
-			
-			usleep(100000);
-			Mk5Daemon_getModules(D);
 		}	
 	}
 

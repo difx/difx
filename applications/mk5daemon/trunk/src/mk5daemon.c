@@ -21,6 +21,9 @@ const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
 
+const int maxIdle = 25;		/* if streamstor card is idle this long */
+				/* set current process to NONE */
+
 int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
@@ -42,6 +45,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --headnode\n");
 	fprintf(stderr, "  -H             Give head node capabilities\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --quiet\n");
+	fprintf(stderr, "  -q             Don't multicast any status\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --log-path <path>\n");
 	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
@@ -73,6 +79,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath)
 	D->loadMonInterval = 10;	/* seconds */
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
+	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
 	pthread_mutex_init(&D->processLock, 0);
@@ -140,6 +147,94 @@ int running(const char *name)
 	}
 }
 
+int checkStreamstor(Mk5Daemon *D, time_t t)
+{
+	int v, busy;
+	char logMessage[128];
+
+	v = procGetStreamstor(&busy);
+	if(v < 0 && D->noDriver == 0)
+	{
+		D->noDriver = t;
+		Logger_logData(D->log, 
+			"windrvr6 driver went missing!\n");
+		difxMessageSendDifxAlert(
+			"windrvr6 disappeared!", 
+			DIFX_ALERT_LEVEL_ERROR);
+	}
+	else
+	{
+		if(D->noDriver != 0)
+		{
+			D->noDriver = 0;
+			Logger_logData(D->log, 
+				"windrvr6 driver came back!\n");
+			difxMessageSendDifxAlert(
+				"windrvr6 reappeared!", 
+				DIFX_ALERT_LEVEL_WARNING);
+		}
+	}
+
+	if(D->noDriver)
+	{
+		return -1;
+	}
+
+	if(busy > 2)
+	{
+		D->idleCount = 0;
+		pthread_mutex_lock(&D->processLock);
+		if(D->process == PROCESS_NONE)
+		{
+			Logger_logData(D->log, 
+				"Some process took control of windrvr6\n");
+			difxMessageSendDifxAlert(
+				"Some process took control of windrvr6", 
+				DIFX_ALERT_LEVEL_INFO);
+			D->process = PROCESS_UNKNOWN;
+		}
+		pthread_mutex_unlock(&D->processLock);
+	}
+	else
+	{
+		D->idleCount++;
+	}
+
+	if(D->idleCount > maxIdle && D->process != PROCESS_NONE & !D->processDone)
+	{
+		pthread_mutex_lock(&D->processLock);
+		Logger_logData(D->log, 
+			"Some process gave back control of windrvr6\n");
+		difxMessageSendDifxAlert(
+			"Some process gave back control of windrvr6", 
+			DIFX_ALERT_LEVEL_INFO);
+		/* FIXME -- watch for timeout here */
+		D->process = PROCESS_NONE;
+		pthread_mutex_unlock(&D->processLock);
+	}
+
+	if(t - D->lastMpifxcorrUpdate > 20 &&
+		D->process == PROCESS_DATASTREAM)
+	{
+		pthread_mutex_lock(&D->processLock);
+		if(!running("mpifxcorr"))
+		{
+			sprintf(logMessage, 
+				"Detected premature end of mpifxcorr at %s\n",
+				ctime(&t));
+			Logger_logData(D->log, logMessage);
+			D->process = PROCESS_NONE;
+		}
+		else
+		{
+			/* note that it is still alive */
+			D->lastMpifxcorrUpdate = t;
+		}
+		pthread_mutex_unlock(&D->processLock);
+	}
+
+	return 0;
+}
 
 void sigintHandler(int j)
 {
@@ -155,10 +250,10 @@ int main(int argc, char **argv)
 	Mk5Daemon *D;
 	time_t t, lastTime, firstTime;
 	char logMessage[128], str[16];
-	int startmk5a = 1;
-	int i, v, busy;
 	int isHeadNode = 0;
+	int i, ok=0;
 	int justStarted = 1;
+	int startMark5A = 1;
 	int halfInterval;
 	char logPath[256];
 	const char *p;
@@ -177,13 +272,14 @@ int main(int argc, char **argv)
 	sprintf(str, "%d", DefaultDifxMonitorPort);
 	setenv("DIFX_MESSAGE_PORT", str, 0);
 	setenv("DIFX_MESSAGE_GROUP", DefaultDifxGroup, 0);
+	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
 
 	if(argc > 1) for(i = 1; i < argc; i++)
 	{
 		if(strcmp(argv[i], "-n") == 0 ||
 		   strcmp(argv[i], "--no-mark5a") == 0)
 		{
-			startmk5a = 0;
+			startMark5A = 0;
 		}
 		else if(strcmp(argv[i], "-H") == 0 ||
 		   strcmp(argv[i], "--headnode") == 0)
@@ -194,6 +290,11 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--help") == 0)
 		{
 			return usage(argv[0]);
+		}
+		else if(strcmp(argv[i], "-q") == 0 ||
+		   strcmp(argv[i], "--quiet") == 0)
+		{
+			setenv("DIFX_MESSAGE_PORT", "-1", 0);
 		}
 		else if(i < argc-1)
 		{
@@ -222,16 +323,16 @@ int main(int argc, char **argv)
 
 	if(fork())
 	{
-		printf("*** mk5daemon spawned ***\n");
+		printf("*** %s ver. %s spawned ***\n", program, version);
 		return 0;
 	}
 
 	umask(02);
 
-	setenv("STREAMSTOR_BIB_PATH", "/usr/share/streamstor/bib", 0);
-
 	difxMessageInit(-1, program);
 	difxMessageSendDifxAlert("mk5daemon starting", DIFX_ALERT_LEVEL_INFO);
+
+	difxMessagePrint();
 
 	D = newMk5Daemon(logPath);
 	D->isHeadNode = isHeadNode;
@@ -248,101 +349,47 @@ int main(int argc, char **argv)
 	while(!D->dieNow)	/* program event loop */
 	{
 		t = time(0);
-		if(t != lastTime)
+		mjd = 40587.0 + t/86400.0;
+
+		if(t != lastTime)	/* we crossed a 1 second tick */
 		{
 			lastTime = t;
-			if(lastTime % D->loadMonInterval == 0)
+
+			if(D->isMk5)
 			{
-				mjd = 40587.0 + t/86400.0;
+				ok = (checkStreamstor(D, t) == 0);
+			}
+
+			if( (t % D->loadMonInterval) == 0)
+			{
 				Mk5Daemon_loadMon(D, mjd);
 			}
-			if(lastTime % 2 == 0 && D->isMk5)
-			{
-				pthread_mutex_lock(&D->processLock);
-				if(D->process != PROCESS_RESET &&
-				   (running("ssopen") || running("SSReset")))
-				{
-					D->process = PROCESS_SSOPEN;
-					D->idleCount = 0;
-				}
-				else if(D->process == PROCESS_SSOPEN)
-				{
-					D->process = PROCESS_NONE;
-				}
-				if(running("SSErase"))
-				{
-					D->process = PROCESS_SSERASE;
-					D->idleCount = 0;
-				}
-				else if(D->process == PROCESS_SSERASE)
-				{
-					D->process = PROCESS_NONE;
-				}
-				pthread_mutex_unlock(&D->processLock);
-			}
 
-			if(lastTime % D->loadMonInterval == halfInterval)
-			{
-				v = procGetStreamstor(&busy);
-				if(v < 0 || busy > 0)
-				{
-					D->idleCount = 0;
-				}
-				else
-				{
-					D->idleCount++;
-				}
-				if(D->idleCount > 3)
-				{
-					D->process = PROCESS_NONE;
-				}
-				if((D->process == PROCESS_NONE || 
-				    D->process == PROCESS_MARK5A) &&
-				    D->isMk5)
-				{
-					Mk5Daemon_getModules(D);
-				}
-			}
-		}
-
-		if(t != 0 && t - D->lastMpifxcorrUpdate > 20 &&
-			D->process == PROCESS_DATASTREAM)
-		{
-			pthread_mutex_lock(&D->processLock);
-			if(!running("mpifxcorr"))
-			{
-				sprintf(logMessage, "Detected premature end of "
-					"mpifxcorr at %s\n", ctime(&t));
-				Logger_logData(D->log, logMessage);
-				D->process = PROCESS_NONE;
-			}
-			else
-			{
-				/* note that it is still alive */
-				D->lastMpifxcorrUpdate = t;
-			}
-			pthread_mutex_unlock(&D->processLock);
-		}
-
-		if(t - firstTime > 15 && D->isMk5 &&
-			strncasecmp(D->hostName, "mark5", 5) == 0)
-		{
-			if(justStarted)
-			{
-				Mk5Daemon_getStreamstorVersions(D);
-				logStreamstorVersions(D);
-			}
-			if(startmk5a)
-			{
-				Mk5Daemon_startMark5A(D);
-				startmk5a = 0;
-				justStarted = 0;
-			}
-			else if(justStarted)
+			if(t % D->loadMonInterval == halfInterval)
 			{
 				Mk5Daemon_getModules(D);
 			}
-			justStarted = 0;
+
+			if(t - firstTime > 15 && D->isMk5 &&
+				strncasecmp(D->hostName, "mark5", 5) == 0)
+			{
+				if(justStarted)
+				{
+					Mk5Daemon_getStreamstorVersions(D);
+					logStreamstorVersions(D);
+				}
+				if(startMark5A)
+				{
+					Mk5Daemon_startMark5A(D);
+					startMark5A = 0;
+					justStarted = 0;
+				}
+				else if(justStarted)
+				{
+					Mk5Daemon_getModules(D);
+				}
+				justStarted = 0;
+			}
 		}
 
 		usleep(200000);

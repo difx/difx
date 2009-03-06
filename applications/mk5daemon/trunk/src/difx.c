@@ -61,7 +61,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	const char *jobName;
 	const DifxMessageStart *S;
 	int outputExists = 0;
-	int force = 1;
 
 	S = &G->body.start;
 
@@ -124,7 +123,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		outputExists = 1;
 	}
 	
-	if(outputExists && !force)
+	if(outputExists && !S->force)
 	{
 		sprintf(message, "Output file %s exists.  Aborting correlation.", filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
@@ -249,7 +248,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		setuid(5605);
 		setgid(5105);
 
-		if(force && outputExists)
+		if(S->force && outputExists)
 		{
 			sprintf(command, "/bin/rm -rf %s.difx/", filebase);
 	
