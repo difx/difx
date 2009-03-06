@@ -33,9 +33,7 @@
 
 using namespace std;
 
-#define MONITOR_PORT 52300
 #define MAXCLIENTS  20
-
 
 //prototypes
 void plot_results();
