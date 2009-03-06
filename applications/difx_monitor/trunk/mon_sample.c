@@ -109,8 +109,8 @@ int main(int argc, const char * argv[]) {
 	delta = (max-min)*0.05;
 	min -= delta;
 	max += delta;
-	printf("MAX=%f, MIN=%f\n", max, min);
 
+	cpgbbuf();
 	cpgsci(1);
 	cpgenv(0,nchan,min,max,0,0);
 	cpglab("Channel", "Amplitude", "");
@@ -131,7 +131,7 @@ int main(int argc, const char * argv[]) {
 
 	ippsMax_32f(lags, nchan*2, &max);
 	ippsMin_32f(lags, nchan*2, &min);
-	delta = (max-min)*0.05;
+	delta = (max-min)*0.1;
 	min -= delta;
 	max += delta;
 	cpgsci(1);
@@ -139,6 +139,7 @@ int main(int argc, const char * argv[]) {
 	cpglab("Channel", "Amplitude", "");
 	cpgsci(2);
 	cpgline(nchan*2, lagx, lags);
+	cpgebuf();
 
       }
       printf("\n");
