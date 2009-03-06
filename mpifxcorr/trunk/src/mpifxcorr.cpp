@@ -126,7 +126,7 @@ void * launchCommandMonitorThread(void * c) {
   free(genericmessage);
   if(socket >= 0)
     difxMessageReceiveClose(socket);
-  cinfo << startl << "Command monitor thread shutting down" << endl;
+  //cverbose << startl << "Command monitor thread shutting down" << endl;
   return 0;
 }
 
@@ -380,9 +380,9 @@ int main(int argc, char *argv[])
   delete [] coreids;
   delete [] datastreamids;
 
-  if(myID == 0) difxMessageSendDifxAlert("Will this work?", 3);
+  //if(myID == 0) difxMessageSendDifxAlert("Will this work?", 3);
   if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
-  if(myID == 0) difxMessageSendDifxAlert("Not expecting this one!?", 3);
+  //if(myID == 0) difxMessageSendDifxAlert("Not expecting this one!?", 3);
   perr = pthread_join(commandthread, NULL);
   if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
   if(manager) delete manager;
