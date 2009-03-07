@@ -51,7 +51,7 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
 			  int32_t thisbuffersize, cf32 *buffer);
 
 int main(int argc, const char * argv[]) {
-  int status, i;
+  int status, i, j;
   char *tcpwindow;
   int32_t thisbuffersize;
 
@@ -114,11 +114,12 @@ int main(int argc, const char * argv[]) {
       perror("Waiting for incoming traffic\n");
       exit(1);
     } else if (nfd==0) continue;
-    
+
     // Look at all available events
     for (i=0; i<(int)nfds; i++) {
       int fd = pollfds[i].fd;
       short revents = pollfds[i].revents;
+      if (revents==0) continue;
       
       if (fd == serversocket && revents) {
 	printf("Event on serversocket %d (%d)\n", fd, revents);
@@ -144,10 +145,8 @@ int main(int argc, const char * argv[]) {
 
       } else if (fd == monitorsocket && revents) {
 	int newsock;
-	cout << "Event on monitorsocket " << fd << " (" << revents << ")" << endl;
 
 	if (revents==POLLIN) { // Connection request
-	  cout << "Try and connect" << endl;
 	
 	  newsock = waitforconnection(monitorsocket);
 	  if (newsock>0) {
@@ -181,7 +180,6 @@ int main(int argc, const char * argv[]) {
 	}
 
       } else if (fd == difxsocket && revents) {
-	cout << "Event on difxsocket " << fd << "(" << revents << ")" << endl;
 
 	if (revents & POLLHUP) { // Connection went away
 	  cout << "Connection to mpifxcorr dropped" << endl;
@@ -229,27 +227,22 @@ int main(int argc, const char * argv[]) {
 	    if (status) { // Error reading socket
 	      break;
 	    }
-	  }
-	}
 
-	for (i=0; i<nclient; i++) {
-	  cout << "Sending vis data to fd " << clients[i].fd << endl;
-	  status = monclient_sendvisdata(clients[i], timestampsec, numchannels, 
+	    for (j=0; j<nclient; j++) {
+	      cout << "Sending vis data to fd " << clients[j].fd << endl;
+	      status = monclient_sendvisdata(clients[j], timestampsec, numchannels, 
 					 thisbuffersize, resultbuffer);
-	  if (status) {
-	    pollfd_remove(pollfds, &nfds, clients[i].fd);
-	    monclient_remove(clients, &nclient, clients[i].fd);
-	    monserver_close(clients[i]);
-	    i--;  //Not sure this will work....
+	      if (status) {
+		pollfd_remove(pollfds, &nfds, clients[j].fd);
+		monclient_remove(clients, &nclient, clients[j].fd);
+		monserver_close(clients[j]);
+		j--;  //Not sure this will work....
+	      }
+	    }
 	  }
 	}
-
-
       } else if (revents) {
-	cout << "Event on fd " << fd << " (" << revents << ")" << endl;
-	
 	if (revents & POLLHUP) { // Connection closed
-	  cout << "fd " << fd << " connection closed" << endl;
 	  pollfd_remove(pollfds, &nfds, fd);
 	  monclient_remove(clients, &nclient, fd);
 	  close(fd);
@@ -370,8 +363,6 @@ int waitforconnection (int serversock) {
   socklen_t client_len;
   struct sockaddr_in client;    /* Socket address */
 
-  cout << "Waiting for connection" << endl;
-
   /* Accept connection */
   client_len = sizeof(client);
   sock = accept(serversock, (struct sockaddr *)&client, &client_len);
@@ -399,18 +390,10 @@ void closestream(int sock)
 int pollfd_add(struct pollfd *fds, nfds_t *nfds, nfds_t max_fds, int fd, short events) {
   if (*nfds>=max_fds) return(1); // No space left
 
-  cout << "DEBUG: pollfd_add adding " << fd << endl;
-
-
   fds[*nfds].fd = fd;
   fds[*nfds].events = events;
   (*nfds)++;
 
-  cout << "DEBUG: fds==" << endl;
-  for (int i=0; i<*nfds; i++) {
-    cout << "      " << fds[i].fd << "   " << fds[i].events << endl;
-  }
-  
   return(0);
 }
 
@@ -498,11 +481,7 @@ void monclient_addproduct(struct monclient *client, int nproduct, int32_t produc
     client->vis = new int32_t [nproduct];
     for (i=0; i<nproduct; i++) {
       client->vis[i] = products[i];
-
-      cout << "Adding monitor of product " << products[i] << " (nvis=" 
-	   << nproduct << ")" <<endl;
     }
-
   } else {
     client->nvis=0;
     client->vis = NULL;
