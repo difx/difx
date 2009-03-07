@@ -18,17 +18,20 @@
 #include "s2plot.h"
 #include <signal.h>
 #include <sys/time.h>
+#include <math.h>
+#include <ippi.h>
 
 #include "monserver.h"
 
-#define NTIMES 32
+#define NTIMES 16
+#define DISPLAYCHAN 32
 
 #define X1LIMIT 0
-#define X2LIMIT NTIMES
+#define X2LIMIT 100
 #define Y1LIMIT 0
-#define Y2LIMIT 256
+#define Y2LIMIT 100
 #define Z1LIMIT 0
-#define Z2LIMIT 2
+#define Z2LIMIT 12
 
 void *plotit(void *arg);
 void cb(double *t, int *kc);
@@ -39,8 +42,7 @@ int32_t nchan=0;
 int32_t timestamp=-1;
 int32_t lasttime=-1;
 Ipp32fc *buf=NULL;
-Ipp32fc *plotbuf=NULL;
-float **allvis;
+float **lagdisplay;
 
 int main(int argc, const char * argv[]) {
   int status, iprod;
@@ -64,8 +66,8 @@ int main(int argc, const char * argv[]) {
   if (status) exit(1);
   printf("Sent product request\n");
 
-  allvis = malloc(sizeof(float*)*NTIMES);
-  if (allvis==NULL) {
+  lagdisplay = malloc(sizeof(float*)*NTIMES);
+  if (lagdisplay==NULL) {
     fprintf(stderr, "Failed to allocate memory for image array\n");
     exit(1);
   }
@@ -78,11 +80,12 @@ int main(int argc, const char * argv[]) {
   }
 
   s2opendo("/s2mono");                     /* Open the display */
-  s2swin(X1LIMIT,X2LIMIT,Y1LIMIT,Y2LIMIT,Z1LIMIT,Z2LIMIT);   /* Set the window coordinates */
-  s2box("BCDET",0,0,"BCDET",0,0,"BCDET",0,0);  /* Draw coordinate box */
 
   s2icm("rainbow", 1000, 1500);                /* Install colour map */
   s2scir(1000, 1500);                          /* Set colour range */
+
+  s2swin(X1LIMIT,X2LIMIT,Y1LIMIT,Y2LIMIT,Z1LIMIT,Z2LIMIT);   /* Set the window coordinates */
+  s2box("BCDET",0,0,"BCDET",0,0,"BCDET",0,0);  /* Draw coordinate box */
 
   cs2scb(&cb);                                  /* Install the callback */
   cs2dcb();
@@ -112,62 +115,146 @@ void alarm_signal(int sig) {
 
 void cb(double *t, int *kc) {
   int i, reinit;
-  float tr[8];
+  IppStatus status;
+  static Ipp32f max;
   static int32_t lastchans=-1;
-  static  float *visbuf=NULL;
+  static  Ipp32fc *visbuf=NULL, *lags=NULL;
+  static Ipp32f *lagamp=NULL;
+  static IppiFFTSpec_C_32fc *spec;
+  static float tr[8];
+  static int nav;
+  static Ipp32fc navc;
 
   pthread_mutex_lock(&vismutex);
   lasttime=timestamp;
   reinit=0;
   if (lastchans!=nchan) {
-    if (plotbuf!=NULL) ippsFree(plotbuf);
-    plotbuf = ippsMalloc_32fc(nchan);
-    lastchans = nchan;
     reinit=1;
-  }
+    int orderx, ordery;
 
-  ippsCopy_32fc(buf, plotbuf, nchan);
-  pthread_mutex_unlock(&vismutex);
-  printf("THREAD: plot %d\n", timestamp);
-  
-  if (reinit) { 
+    lastchans = nchan;
+    nav = nchan/DISPLAYCHAN;
+    navc.re  = nav;
+    navc.im = 0;
+
     if (visbuf!=NULL) ippsFree(visbuf);
-    visbuf = ippsMalloc_32f(nchan*NTIMES);
-    ippsZero_32f(visbuf, nchan*NTIMES);      
+    visbuf = ippsMalloc_32fc(DISPLAYCHAN*NTIMES);
+
+    if (lags!=NULL) ippsFree(lags);
+    lags = ippsMalloc_32fc(DISPLAYCHAN*NTIMES);
+
+    if (lagamp!=NULL) ippsFree(lagamp);
+    lagamp = ippsMalloc_32f(DISPLAYCHAN*NTIMES);
+
+    if (spec !=NULL) ippiFFTFree_C_32fc(spec);
+    orderx = round(log(NTIMES)/log(2));
+    ordery = round(log(DISPLAYCHAN)/log(2));
+    printf("FFT: %dx%d\n", orderx, ordery);
+    ippiFFTInitAlloc_C_32fc( &spec, ordery, orderx, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast);
       
     for (i=0; i<NTIMES; i++) {
-      allvis[i] = &visbuf[i*nchan];
+     lagdisplay[i] = &lagamp[i*DISPLAYCHAN];
     }
-    printf("..Done\n");
   } else {
 
     // Shuffle the values up one
-    ippsMove_32f(visbuf, visbuf+nchan, nchan*(NTIMES-1));
+    ippsMove_32fc(visbuf, visbuf+DISPLAYCHAN, DISPLAYCHAN*(NTIMES-1));
   }
 
-  // Get the amp
-  ippsMagnitude_32fc(plotbuf, visbuf, nchan);
+  // Copy the newest value
+  for (i=0; i<DISPLAYCHAN; i++) {
+    ippsSum_32fc(&buf[i*nav], nav, &visbuf[i], ippAlgHintFast);
+  }
+  ippsDivC_32fc_I(navc, visbuf, DISPLAYCHAN);
+  //ippsCopy_32fc(buf, visbuf, nchan);
 
-  if (reinit) {
+  pthread_mutex_unlock(&vismutex);
+  printf("THREAD: plot %d\n", timestamp);
+
+  if (reinit) { // Duplicate the first vis is starting from scratch
     for (i=1; i<NTIMES; i++) {
-      ippsCopy_32f(visbuf, visbuf+(nchan)*i, nchan);
+      ippsCopy_32fc(visbuf, visbuf+(DISPLAYCHAN)*i, DISPLAYCHAN);
+    }
+
+    /* set up a unity transformation matrix */
+    tr[0] = 0;
+    tr[1] = 1.0/NTIMES*100; 
+    tr[2] = 0.0;
+    tr[3] = 0;
+    tr[4] = 0;
+    tr[5] = 1.0/DISPLAYCHAN*100;
+    tr[6] = 0;
+    tr[7] = 1;
+  }
+
+  //Do the fft 
+  status = ippiFFTFwd_CToC_32fc_C1R(visbuf, DISPLAYCHAN*sizeof(Ipp32fc), lags, DISPLAYCHAN*sizeof(Ipp32fc),
+				     spec, 0 );
+  if (status!=ippStsNoErr) {
+    fprintf(stderr, "Error calling ippiFFT. Aborting\n");
+    exit(1);
+  }
+
+  // Get the Lag amplitude. Also translate the origin to the middle of the
+  // image, assuming symetry of the data
+
+  for (i=0;i<NTIMES/2;i++) {
+    status = ippsMagnitude_32fc(lags+i*DISPLAYCHAN, lagamp+i*DISPLAYCHAN+DISPLAYCHAN/2+NTIMES/2*DISPLAYCHAN, DISPLAYCHAN/2);
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsMagnitude. Aborting\n");
+      exit(1);
+    }
+    status = ippsMagnitude_32fc(lags+i*DISPLAYCHAN+DISPLAYCHAN/2, lagamp+i*DISPLAYCHAN+NTIMES/2*DISPLAYCHAN, DISPLAYCHAN/2);
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsMagnitude. Aborting\n");
+      exit(1);
+    }
+    
+    status = ippsMagnitude_32fc(lags+i*DISPLAYCHAN+NTIMES/2*DISPLAYCHAN,  lagamp+i*DISPLAYCHAN+DISPLAYCHAN/2, DISPLAYCHAN/2);
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsMagnitude. Aborting\n");
+      exit(1);
+    }
+    status = ippsMagnitude_32fc(lags+i*DISPLAYCHAN+DISPLAYCHAN/2+NTIMES/2*DISPLAYCHAN,  lagamp+i*DISPLAYCHAN, DISPLAYCHAN/2);
+    if (status!=ippStsNoErr) {
+      fprintf(stderr, "Error calling ippsMagnitude. Aborting\n");
+      exit(1);
     }
   }
 
-  /* set up a unity transformation matrix */
-  tr[0] = 0;
-  tr[1] = 1; 
-  tr[2] = 0.0;
-  tr[3] = 0;
-  tr[4] = 0.0;
-  tr[5] = 1;
-  tr[6] = 0;
-  tr[7] = 1;
+  /*
+  status = ippsMagnitude_32fc(lags, lagamp, DISPLAYCHAN*NTIMES);
+  if (status!=ippStsNoErr) {
+    fprintf(stderr, "Error calling ippsMagnitude. Aborting\n");
+    exit(1);
+   }
+  */
 
+  // Normalize
+  ippsDivC_32f_I(DISPLAYCHAN*NTIMES/100, lagamp, DISPLAYCHAN*NTIMES);
+  //ippsAddC_32f_I(DISPLAYCHAN*NTIMES, lagamp, 1);
+
+  ippsSqrt_32f_I(lagamp, DISPLAYCHAN*NTIMES);
+
+  /*
+  for (i=0; i<DISPLAYCHAN; i++) {
+    for (j=0; j<NTIMES; j++) {
+      printf(" %.2f", lagamp[j*NTIMES+i]);
+    }
+    printf("\n");
+  }
+  */
+
+  if (reinit) {
+    ippsMax_32f(lagamp, DISPLAYCHAN*NTIMES, &max);
+    s2swin(X1LIMIT,X2LIMIT,Y1LIMIT,Y2LIMIT,0,max*1.1);   /* Set the window coordinates */
+    //s2box("BCDET",0,0,"BCDET",0,0,"BCDET",0,0);  /* Draw coordinate box */
+
+  }
+  
   /* plot surface */
 
-  printf("Surface\n");
-  s2surp(allvis, NTIMES, nchan, 0, NTIMES-1, 0, nchan-1, 0, Z2LIMIT, tr);
+  s2surp(lagdisplay, NTIMES, DISPLAYCHAN, 0, NTIMES-1, 0, DISPLAYCHAN-1, 0, max/2, tr);
 
   //XYZ pos, up, vdir;
   
