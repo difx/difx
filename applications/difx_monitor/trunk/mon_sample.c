@@ -107,6 +107,7 @@ int main(int argc, const char * argv[]) {
 	ippsMax_32f(amp, nchan, &max);
 	ippsMin_32f(amp, nchan, &min);
 	delta = (max-min)*0.05;
+	if (delta==0.0) delta = 0.5;
 	min -= delta;
 	max += delta;
 
@@ -120,6 +121,7 @@ int main(int argc, const char * argv[]) {
 	ippsMax_32f(phase, nchan, &max);
 	ippsMin_32f(phase, nchan, &min);
 	delta = (max-min)*0.1;
+	if (delta==0.0) delta = 0.5;
 	min -= delta;
 	max += delta;
 	cpgsci(1);
@@ -132,6 +134,7 @@ int main(int argc, const char * argv[]) {
 	ippsMax_32f(lags, nchan*2, &max);
 	ippsMin_32f(lags, nchan*2, &min);
 	delta = (max-min)*0.1;
+	if (delta==0.0) delta = 0.5;
 	min -= delta;
 	max += delta;
 	cpgsci(1);
