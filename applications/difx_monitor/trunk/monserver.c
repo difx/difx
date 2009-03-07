@@ -10,6 +10,10 @@
 
 #include "monserver.h"
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL SO_NOSIGPIPE 
+#endif
+
 int readnetwork(int sock, char* ptr, int bytestoread) {
   int nr;
 
