@@ -48,7 +48,7 @@ f32 *xval;
 int main(int argc, const char * argv[])
 {
   int timestampsec, readbytes, status = 1;
-  int numchan, buffersize;
+  int numchan;
 
   if(argc < 3 || argc > 4)
   {
@@ -68,14 +68,15 @@ int main(int argc, const char * argv[])
 
   //create the buffers etc we need
   maxresultlength = config->getMaxResultLength();
-  buffersize = int(intseconds/config->getIntTime(0)) + 2;
+  buffersize = int((intseconds-1)/config->getIntTime(0)) + 2;
   for(int i=1;i<config->getNumConfigs();i++)
   {
-    if(int(intseconds/config->getIntTime(0)) + 1 > buffersize)
-      buffersize = int(intseconds/config->getIntTime(i)) + 2;
+    int b = int((intseconds-1)/config->getIntTime(i)) + 2; 
+    if(b > buffersize)
+      buffersize = b;
   }
   resultbuffer = new cf32*[buffersize];
-  for(int i=0;i<buffersize;i++)
+  for(int i=0;i<buffersize;i++) 
     resultbuffer[i] = vectorAlloc_cf32(maxresultlength);
 
   phase = vectorAlloc_f32(maxresultlength);
@@ -110,8 +111,9 @@ int main(int argc, const char * argv[])
     //if not skipping this vis
     if(!(timestampsec < 0))
     {
+      int bufsize;
       //receive the buffersize
-      status = readnetwork(socketnumber, (char*)(&buffersize), sizeof(int), &readbytes);
+      status = readnetwork(socketnumber, (char*)(&bufsize), sizeof(int), &readbytes);
       if (status==-1) { // Error reading socket
 	cerr << "Error reading socket" << endl;
 	exit(1);
@@ -124,7 +126,6 @@ int main(int argc, const char * argv[])
       }
 
       //receive the number of channels
-      cout << "About to get a visibility" << endl;
       status = readnetwork(socketnumber, (char*)(&numchan), sizeof(int), &readbytes);
       if (status==-1) { // Error reading socket
 	cerr << "Error reading socket" << endl;
@@ -139,7 +140,7 @@ int main(int argc, const char * argv[])
 
       //if config has changed, zero everything and grab new parameters from config
       atseconds = timestampsec;
-      if(config->getConfigIndex(atseconds) != currentconfigindex)
+      if(config->getConfigIndex(atseconds) != currentconfigindex) 
 	change_config();
 
       //receive the results into a buffer
@@ -158,11 +159,15 @@ int main(int argc, const char * argv[])
       //process - skip this step for now and just plot
 
       //plot
-      if(bufferindex == 0)
+      if(bufferindex == 0) {
         plot_results();
-      cout << "Finished plotting time " << atseconds << endl;
+	cout << "Finished plotting time " << atseconds << endl;
+      }
     }
-    bufferindex = (bufferindex + 1)%(buffersize - 1);
+    bufferindex++;
+    if (bufferindex > buffersize - 2) {
+      bufferindex=0;
+    }
   }
 
   //close the socket
@@ -224,17 +229,17 @@ void plot_results()
   {
     int ds1index = config->getBDataStream1Index(currentconfigindex, i);
     int ds2index = config->getBDataStream2Index(currentconfigindex, i);
-    cout << "Baseline name is " << config->getDStationName(currentconfigindex, ds1index) << "-" <<  config->getDStationName(currentconfigindex, ds2index) << endl; 
+    //cout << "Baseline name is " << config->getDStationName(currentconfigindex, ds1index) << "-" <<  config->getDStationName(currentconfigindex, ds2index) << endl; 
     for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++)
     {
       int freqindex = config->getBFreqIndex(currentconfigindex, i, j);
-      cout << "Frequency is " << config->getFreqTableFreq(freqindex) << endl;
+      //cout << "Frequency is " << config->getFreqTableFreq(freqindex) << endl;
       for(int b=0;b<binloop;b++)
       {
         for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++)
         {
           config->getBPolPair(currentconfigindex,i,j,k,polpair);
-          cout << "Polarisation is " << polpair << endl;
+          //cout << "Polarisation is " << polpair << endl;
           //get the lagspace as well
 #if COMPLEXLAG
 	  ippsFFTFwd_CToC_32fc(&resultbuffer[buffersize-1][at], lags, fftspec, 0);  // Should supply buffer
@@ -255,7 +260,7 @@ void plot_results()
 #endif
 
           //plot something - data is from resultbuffer[at] to resultbuffer[at+numchannels+1]
-          cout << "Plotting baseline " << i << ", freq " << j << ", bin " << b << ", polproduct " << k << endl;
+          //cout << "Plotting baseline " << i << ", freq " << j << ", bin " << b << ", polproduct " << k << endl;
 
 	  sprintf(pgplotname, "lba-%d-f%d-p%d-b%d.png/png",
 		  i, j, k, b);
@@ -352,19 +357,19 @@ void plot_results()
   int autocorrwidth = (config->getMaxProducts()>1)?2:1;
   for(int i=0;i<config->getNumDataStreams();i++)
   {
-    cout << "Doing autocorrelation for " << config->getDStationName(currentconfigindex, i) << endl;
+    //cout << "Doing autocorrelation for " << config->getDStationName(currentconfigindex, i) << endl;
     for(int j=0;j<autocorrwidth;j++)
     {
       for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++)
       {
         //keep plotting...
-        cout << "Frequency is " <<  config->getFreqTableFreq(config->getDFreqIndex(currentconfigindex, i, k)) << endl;
+        //cout << "Frequency is " <<  config->getFreqTableFreq(config->getDFreqIndex(currentconfigindex, i, k)) << endl;
         char firstpol = config->getDBandPol(currentconfigindex, i, k);
         char otherpol = ((firstpol == 'R')?'L':'R');
-        if (j==0)
-          cout << "Polarisation pair is " << firstpol << firstpol << endl;
-        else
-          cout << "Polarisation pair is " << firstpol << otherpol << endl;
+        //if (j==0)
+          //cout << "Polarisation pair is " << firstpol << firstpol << endl;
+        //else
+          //cout << "Polarisation pair is " << firstpol << otherpol << endl;
 
 	if (j==0) {
 	  sprintf(pgplotname, "lba-auto%d-b%d.png/png",
@@ -419,8 +424,11 @@ void change_config()
 {
   int status;
 
+
   currentconfigindex = config->getConfigIndex(atseconds);
   numchannels = config->getNumChannels(currentconfigindex);
+
+  cout << "New config " << currentconfigindex << " at " << atseconds << endl;
 
   if(xval)
     vectorFree(xval);
@@ -449,7 +457,8 @@ void change_config()
   //ippsFFTInitAlloc_C_32fc(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
   ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
   bufferindex = 0;
-  buffersize = int(intseconds/config->getIntTime(currentconfigindex)) + 2;
+  buffersize = int((intseconds-1)/config->getIntTime(currentconfigindex)) + 2;
+  cout << "BUFFERSIZE" << buffersize << endl;
   resultlength = config->getResultLength(currentconfigindex);
   for(int i=0;i<buffersize;i++)
   {
@@ -545,6 +554,8 @@ int readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
     if (nr==-1) { // Error reading socket
       if (errno == EINTR) continue;
+      cout << "Only read " << *nread << " out of " << bytestoread+*nread << endl;
+      perror("");
       return(nr);
     } else if (nr==0) {  // Socket closed remotely
       return(nr);
