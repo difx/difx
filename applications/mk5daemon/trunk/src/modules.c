@@ -241,6 +241,11 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	char vsnA[16], vsnB[16];
 	char message[1000];
 
+	if(!D->isMk5)
+	{
+		return;
+	}
+
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
 
 	/* don't let the process type change while getting vsns */
@@ -273,6 +278,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		break;
 	default:
+		pthread_mutex_unlock(&D->processLock);
 		return;
 		break;
 	}
