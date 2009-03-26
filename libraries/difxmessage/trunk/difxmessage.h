@@ -224,6 +224,7 @@ typedef struct
 	char mpiWrapper[DIFX_MESSAGE_FILENAME_LENGTH];
 	char mpiOptions[DIFX_MESSAGE_FILENAME_LENGTH];
 	char difxProgram[DIFX_MESSAGE_FILENAME_LENGTH];
+	int force;
 } DifxMessageStart;
 
 typedef struct

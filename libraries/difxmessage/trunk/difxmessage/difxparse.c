@@ -475,6 +475,17 @@ static void XMLCALL endElement(void *userData, const char *name)
 						strncpy(G->body.start.difxProgram, s, DIFX_MESSAGE_FILENAME_LENGTH-1);
 						G->body.start.difxProgram[DIFX_MESSAGE_FILENAME_LENGTH-1] = 0;
 					}
+					else if(strcmp(elem, "force") == 0)
+					{
+						if(s[0] == '0' || s[0] == 'n' || s[0] == 'N' || s[0] == 'f' || s[0] == 'F')
+						{
+							G->body.start.force = 0;
+						}
+						else
+						{
+							G->body.start.force = 1;
+						}
+					}
 					break;
 				case DIFX_MESSAGE_STOP:
 					break;
