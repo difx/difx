@@ -152,6 +152,11 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 	int v, busy;
 	char logMessage[128];
 
+	if(!D->isMk5)
+	{
+		return 0;
+	}
+
 	v = procGetStreamstor(&busy);
 	if(v < 0 && D->noDriver == 0)
 	{
@@ -294,7 +299,7 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[i], "-q") == 0 ||
 		   strcmp(argv[i], "--quiet") == 0)
 		{
-			setenv("DIFX_MESSAGE_PORT", "-1", 0);
+			setenv("DIFX_MESSAGE_PORT", "-1", 1);
 		}
 		else if(i < argc-1)
 		{
@@ -355,10 +360,7 @@ int main(int argc, char **argv)
 		{
 			lastTime = t;
 
-			if(D->isMk5)
-			{
-				ok = (checkStreamstor(D, t) == 0);
-			}
+			ok = (checkStreamstor(D, t) == 0);
 
 			if( (t % D->loadMonInterval) == 0)
 			{

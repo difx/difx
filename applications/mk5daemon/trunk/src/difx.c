@@ -61,6 +61,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	const char *jobName;
 	const DifxMessageStart *S;
 	int outputExists = 0;
+	const char *mpiOptions;
+	const char *mpiWrapper;
+	const char *difxProgram;
+
 
 	S = &G->body.start;
 
@@ -212,38 +216,35 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	pthread_mutex_unlock(&D->processLock);
 
-	if(fork() != 0)
+	if(S->mpiOptions[0])
 	{
-		const char *mpiOptions;
-		const char *mpiWrapper;
-		const char *difxProgram;
+		mpiOptions = S->mpiOptions;
+	}
+	else
+	{
+		mpiOptions = defaultMpiOptions;
+	}
 
-		if(S->mpiOptions[0])
-		{
-			mpiOptions = S->mpiOptions;
-		}
-		else
-		{
-			mpiOptions = defaultMpiOptions;
-		}
+	if(S->mpiWrapper[0])
+	{
+		mpiWrapper = S->mpiWrapper;
+	}
+	else
+	{
+		mpiWrapper = defaultMpiWrapper;
+	}
 
-		if(S->mpiWrapper[0])
-		{
-			mpiWrapper = S->mpiWrapper;
-		}
-		else
-		{
-			mpiWrapper = defaultMpiWrapper;
-		}
+	if(S->difxProgram[0])
+	{
+		difxProgram = S->difxProgram;
+	}
+	else
+	{
+		difxProgram = defaultDifxProgram;
+	}
 
-		if(S->difxProgram[0])
-		{
-			difxProgram = S->difxProgram;
-		}
-		else
-		{
-			difxProgram = defaultDifxProgram;
-		}
+	if(fork() == 0)
+	{
 
 		setuid(5605);
 		setgid(5105);
@@ -271,7 +272,8 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		sprintf(message, "Executing: %s", command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
-		printf("Executing: %s\n", command);
+		sprintf(message, "Executing: %s\n", command);
+		Logger_logData(D->log, message);
 
 		sprintf(message, "Spawning %d processes", 1 + S->nDatastream + S->nProcess);
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, message);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <stdlib.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
@@ -149,6 +150,10 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		D->dieNow = 1;
 	}
+	else if(strcasecmp(cmd, "killmpifxcorr") == 0)
+	{
+		system("killall -9 mpifxcorr");
+	}
 	else if(strcasecmp(cmd, "getdirA") == 0)
 	{
 		if(D->isMk5)
@@ -266,6 +271,11 @@ static void *monitorMultiListen(void *ptr)
 
 	sock = difxMessageReceiveOpen();
 	
+	if(sock < 0)
+	{
+		return 0;
+	}
+
 	while(!D->dieNow)
 	{
 		n = difxMessageReceive(sock, message, 1999, from);
