@@ -14,6 +14,11 @@ from readvex import VexSched
 
 def write_header(vex_path, calcfile, obscode = "", job_id = None, increment = None, spectral_average = None, taper_function = None):
     print "Writing header of .calc file"
+    try:
+        difx_version = os.environ['DIFX_VERSION']
+    except:
+        print "Warning, DIFX_VERSION not set. Setting to ''"
+        difx_version = ''
     sched = VexSched(vex_path)
     #cross match telescope names against input file in final version?
     i = 0
@@ -27,14 +32,15 @@ def write_header(vex_path, calcfile, obscode = "", job_id = None, increment = No
         taper_function = observation.taper_function
 
     start_datetime = sched[sched.keys()[0]]['start'][0]
-    print start_datetime
     start_time = str(datetime2mjd(start_datetime))
     last_scan = datetime2mjd(sched[sched.keys()[-1]]['start'][0])
     end_time = last_scan + float(sched[sched.keys()[-1]]['station'][0][2]) / 86400.
     print_parameter("JOB ID", job_id, calcfile)
     print_parameter("JOB START TIME", start_time, calcfile)
     print_parameter("JOB END TIME",  + end_time, calcfile)
-    print_parameter("OBSCODE", obscode, calcfile)
+    print_parameter("DUTY CYCLE", 1.0, calcfile)
+    print_parameter("OBSCODE", obscode.upper(), calcfile)
+    print_parameter("DIFX VERSION", difx_version, calcfile)
     print_parameter("SUBJOB ID", '0', calcfile)
     print_parameter("START MJD", start_time, calcfile)
     print_parameter("START YEAR", start_datetime.year, calcfile)

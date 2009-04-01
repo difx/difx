@@ -82,6 +82,24 @@ Convert day fraction to hours, minutes, and float seconds
     s = s * 60
     return int(h), int(m), float(s)
 
+def df2hhms(df):
+    """
+Convert day fraction to hours, minutes, and float seconds
+
+>>> print df2hhms(0.25)
+(6, 0, 0.0)
+
+>>> print df2hhms(40.25)
+(966, 0, 0.0)
+    """
+
+    d, h = divmod(df, 1)
+    h, m = divmod(24 * h, 1)
+    m, s = divmod(60 * m, 1)
+    s = s * 60
+    h += d * 24
+    return int(h), int(m), float(s)
+
     
 def hms2r(h, m, s):
     """

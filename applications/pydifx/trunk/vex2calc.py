@@ -39,7 +39,7 @@ parameters
     
 Options:    
 ========
--p  --vexpath           vexpath (root.skd by default)
+-p  --vexpath           vexpath (root.skd or root.vex by default)
 
 vex2calcheader.py
     --obscode           obscode (root by default)
@@ -84,7 +84,8 @@ scripts in the vex2calc directory
 
     # set defaults
     vex_path = root + '.skd'
-    
+    vex_path2 = root + '.vex'
+    vex_path_opt = None
 
     obscode = root
     job_id = None
@@ -102,7 +103,7 @@ scripts in the vex2calc directory
     # read options
     for o, a in opts:
         if o in ("-p", "--vexpath"):
-            vex_path = a
+            vex_path_opt = a
         elif o == "--obscode":
             obscode = a
         elif o == "--jobid":
@@ -128,11 +129,22 @@ scripts in the vex2calc directory
         elif o in ("-n", "--ndays"):
             ndays = int(a)
 
+    if vex_path_opt:
+        try:
+            f = open(vex_path_opt, 'r')
+        except:
+            "Can't open vex file"
+            raise
     try:
         f = open(vex_path, 'r')
     except:
-        "Can't open vex file"
-        raise
+        try: 
+            f = open(vex_path2, 'r')
+        except:
+            "Can't open vex file"
+            raise
+        else:
+            vex_path = vex_path2
 
     f.close()
     calcfilepath = root + '.calc'
@@ -140,7 +152,7 @@ scripts in the vex2calc directory
     
     vex2calcheader.write_header(vex_path, calcfile, obscode, job_id, increment, spectral_average, taper_function)
     vex2calcantenna.write_antenna(vex_path, calcfile, antennas)
-    vex2sched.write_scan(vex_path, calcfile, offset, tail, increment)
+    vex2sched.write_scan(vex_path, calcfile, offset, tail, increment, obscode)
     eop.write_eops(floor(VexSched(vex_path).startmjd() + 0.5), calcfile, extra, download, force, ndays)
     calcfooter.write_footer(obscode, calcfile)
 

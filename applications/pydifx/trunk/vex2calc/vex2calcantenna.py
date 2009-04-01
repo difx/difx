@@ -18,24 +18,28 @@ def write_antenna(vex_path, calcfile, antennas = None):
         try:
             antennas = observation.antennas
         except AttributeError:
-            antennas = site.keys()
+            antennas = site.id_dict().keys()
+            antennas.sort()
 
     print "Writing antenna table of calc file"
     print_parameter("NUM TELESCOPES", len(antennas), calcfile)
     for telescope in antennas:
-        print_parameter("TELESCOPE %d NAME" % i,  site[telescope]['site_name'][0], calcfile)
+        name = telescope.upper()
+        fullname = site.id_dict()[telescope]
+        print_parameter("TELESCOPE %d NAME" % i, name, calcfile)
         # TODO look up different types of mount and how they are notated in vex file and
         # for calc file
         if True:
         #if antenna[site[telescope]['site_name']]['axis_type'] == ['az', 'el']:
             print_parameter("TELESCOPE %d MOUNT" % i,  'azel', calcfile)
         else:
-            print antenna[site[telescope]['site_name']]['axis_type'][0]
+            print antenna[site[fullname]['site_name']]['axis_type'][0]
             raise RuntimeError, 'unknown axis type'
-        print_parameter("TELESCOPE %d OFFSET (m)" % i,  (antenna[telescope]['axis_offset'][0]), calcfile)
-        print_parameter("TELESCOPE %d X (m)" % i,  site[telescope]['site_position'][0], calcfile)
-        print_parameter("TELESCOPE %d Y (m)" % i,  site[telescope]['site_position'][1], calcfile)
-        print_parameter("TELESCOPE %d Z (m)" % i,  site[telescope]['site_position'][2], calcfile)
+        print_parameter("TELESCOPE %d OFFSET (m)" % i, '%.6f' % (antenna[fullname]['axis_offset'][-1]), calcfile)
+        print_parameter("TELESCOPE %d X (m)" % i, '%.6f' % site[fullname]['site_position'][0], calcfile)
+        print_parameter("TELESCOPE %d Y (m)" % i, '%.6f' % site[fullname]['site_position'][1], calcfile)
+        print_parameter("TELESCOPE %d Z (m)" % i, '%.6f' % site[fullname]['site_position'][2], calcfile)
+        #print_parameter("TELESCOPE %d SHELF" % i, "NONE", calcfile)
         i += 1
 
 def main():
@@ -50,7 +54,8 @@ the vex $SITE table, enclosed in "quotes" and seperated only by whitespace.
 
 if TELESCOPE LIST is not defined, the antennas value will be read from observation.py
 
-if antennas is not defined in observation.py, all antennas in the vex file will be used.
+if antennas is not defined in observation.py, all antennas in the vex file will be used
+in alphabetical order.
     """
     if len(sys.argv) < 2:
         print main.__doc__

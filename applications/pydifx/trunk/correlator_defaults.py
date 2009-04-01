@@ -7,14 +7,21 @@
 from logging import DEBUG
 
 #######################################################################
+import os
 #executables
 #######################################################################
 # mpirun
-mpi = '/irasoft/difx/mpich/mpich-1.2.7p1/util/mpirun'
-# mpifxcorr
-mpifxcorr = '/irasoft/difx/tools/bin/mpifxcorr'
+# mpi = '/irasoft/difx/mpich/mpich-1.2.7p1/util/mpirun'
+difxroot= os.environ['DIFXROOT']
+mpi = os.environ['MPICXX']
+
+#mpifxcorr
+#mpifxcorr = '/irasoft/difx/tools/bin/mpifxcorr'
+#mpifxcorr = '/irasoft/difx/mpifxcorr2hz/src/mpifxcorr'
+#mpifxcorr = '/irasoft/difx/mpifxcorr2hz_hacked/src/mpifxcorr'
+mpifxcorr = '/'.join((difxroot,'bin','mpifxcorr'))
 # difx2fits
-difx2fits = 'difx2fits'
+difx2fits = '/'.join((difxroot, '/bin/difx2fits'))
 #remote shell used to connect to machines (used by killdifx)
 rsh = 'ssh'
 # checkCalcServer host
@@ -25,7 +32,7 @@ startCalc = 'startCalcServer'
 #######################################################################
 # Log file locations
 #######################################################################
-logpath = '/irasoft/difx/log'
+logpath = '/'.join((difxroot, 'log'))
 logname = 'log'
 logfile_level = DEBUG
 
@@ -44,7 +51,7 @@ difx2fits_delete = False
 #######################################################################
 # eop.py
 #######################################################################
-eop_path = "/irasoft/difx/tools/calc"
+eop_path = '/'.join((difxroot, "share"))
 iat_path = eop_path
 # can get TAI-UTC from here but they seem to be out of date
 # http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/ut1ls.dat
@@ -86,7 +93,7 @@ starttime = None
 #######################################################################
 # mpifxcorr.py defaults
 #######################################################################
-mpifxcorr_timeout = 120
+mpifxcorr_timeout = 86400
 
 #######################################################################
 # spawn.py defaults

@@ -1,22 +1,20 @@
 #!/usr/bin/python
 """
 Opens process and parses any error code. Records all output.
-
-TODO make deffunc stateful - maybe it could be a class?
 """
 import sys
 
 import observation
-from pexpect import spawn as pspawn
-from pexpect import EOF
+from pexpect.pexpect import spawn as pspawn
+from pexpect.pexpect import EOF
 import observation
 
 #match 1 line
 
 defreg = ["\r\n", EOF]
-funcobj = None
+spawn_class_obj = None
 
-def deffunc(i, child, funcobj):
+class spawnClass():
     """
     Default function
 
@@ -24,18 +22,25 @@ def deffunc(i, child, funcobj):
 
     must 0 unless terminating 
     """
-    import difxlog as log
-    if i == 0:
-        log.debug(child.before)
-        return 0
-    if i == 1:
-        return 1
+    def __init__(self, classobj, child):
+        import difxlog as log
+        self.obj = classobj
+        self.child = child
 
-def spawn(command, reg = defreg, refunc = deffunc, funcobj = funcobj, timeout = None):
+    def run(self, i):
+        if i == 0:
+            log.debug(self.child.before)
+            return 0
+        if i == 1:
+            return 1
+
+def spawn(command, reg = defreg, reclass = spawnClass, classobj = spawn_class_obj, timeout = None):
     """
     command is the command to spawn
     reg is the regexp or list of regexp to pass to pexpect
-    reffunc is a function which is run after the expect
+    reclass is a class
+      __init__ should take self, classobj and child
+      run should take self and i
     it  takes i and child as arguments and should return 
     a nonzero value when the child returns EOF and 0 otherwise
     the nonzero value is returned.
@@ -44,11 +49,12 @@ def spawn(command, reg = defreg, refunc = deffunc, funcobj = funcobj, timeout = 
     if timeout == None:
         timeout = observation.spawn_timeout
     log.info('spawning ' + command)
+    log.info('timeout  ' + str(timeout) + 's')
     child = pspawn(command)
-    log.debug(command + ' output:')
+    cl = reclass(classobj, child)
     while 1:
         i = child.expect(reg, timeout)
-        a = refunc(i, child, funcobj)
+        a = cl.run(i)
         if not a == 0:
             break
     return a

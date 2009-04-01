@@ -143,8 +143,8 @@ Options:
 -s --shrink       shrink
 -u --uvflg
 -d --difxflag
--f --flagfilename flagfilename
-
+-f --flagfilename flag filename
+-v --vexfilename  vex filename
 Can produce either a input file for the aips task UVFLG or an input file to
 difx2fits.
 
@@ -156,8 +156,8 @@ shrink will shrink it on either side by shrink seconds
         print main.__doc__
         sys.exit(2)
     try:
-        opts, args = getopt.gnu_getopt(sys.argv[1:], "s:udf:",
-                                       ["shrink=", "uvflg", "difxflag", "flagfilename="])
+        opts, args = getopt.gnu_getopt(sys.argv[1:], "s:udf:v:",
+                                       ["shrink=", "uvflg", "difxflag", "flagfilename=", "vexfilename="])
     except getopt.GetoptError, err:
         print err
         print main.__doc__
@@ -167,13 +167,16 @@ shrink will shrink it on either side by shrink seconds
         print main.__doc__
         sys.exit(2)
 
+    # read arguments
+    root = args[0]
+
     # set defaults:
     shrink = None
     printuv = None
     flagfilename = 'flag'
-
-    # read arguments
-    root = args[0]
+    vex_path = root + '.skd'
+    vex_path2 = root + '.vex'
+    vex_path_opt = None
     
     #read options
     for o, a in opts:
@@ -190,8 +193,23 @@ shrink will shrink it on either side by shrink seconds
                 raise RuntimeError, "flagtype must be either uvflg OR difxflag"
         if o in ("-f", "--flagfilename"):
             flagfilename = a
+        if o in ("-v", "--vexfilename"):
+            vex_path_opt = a
 
-    vex_path = root + '.skd'
+    if vex_path_opt:
+        try:
+            f = open(vex_path_opt, 'r')
+        except:
+            "Can't open vex file"
+            raise
+    try:
+        f = open(vex_path, 'r')
+    except:
+        try: 
+            f = open(vex_path2, 'r')
+        except:
+            "Can't open vex file"
+            raise
     try:
         flagfile = open(flagfilename, 'w')
     except:

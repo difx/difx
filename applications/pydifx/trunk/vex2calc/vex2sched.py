@@ -12,19 +12,18 @@ from readvex import VexSource, VexSched
 from pfile import print_parameter
 from observation import increment
 
-def printscan(n_scan, start, npoints, source, ra, dec, calcode, calcfile):
+def printscan(n_scan, start, npoints, source, ra, dec, calcode, obscode, calcfile):
     scan = "SCAN %d " % (n_scan)
     print_parameter(scan + 'POINTS',  str(int(npoints)), calcfile)
     print_parameter(scan + 'START PT', str(int(start)), calcfile)
-    print_parameter(scan + 'SRC NAME', source, calcfile)
+    print_parameter(scan + 'SRC NAME', obscode + '_default', calcfile)
     print_parameter(scan + 'REAL NAME', source, calcfile)
-    print_parameter(scan + 'SRC RA', '%.12f' % ra, calcfile)
-    print_parameter(scan + 'SRC DEC', '%.12f' % dec, calcfile)
+    print_parameter(scan + 'SRC RA', '%.15f' % ra, calcfile)
+    print_parameter(scan + 'SRC DEC', '%.15f' % dec, calcfile)
     print_parameter(scan + 'CALCODE', calcode, calcfile)
     print_parameter(scan + 'QUAL', 0, calcfile)
-    print_parameter(scan + 'OVERSAMP', 1, calcfile)
 
-def write_scan(vex_path, calcfile, offset = None, tail = None, inc = None):
+def write_scan(vex_path, calcfile, offset = None, tail = None, inc = None, obscode = None):
     print 'Writing scan table of calc table'
     if offset == None:
         offset = observation.offset
@@ -32,6 +31,8 @@ def write_scan(vex_path, calcfile, offset = None, tail = None, inc = None):
         tail = observation.tail
     if inc == None:
         inc = observation.increment
+    if obscode == None:
+        obscode = ''
     #get info from vex file
     source_dict = VexSource(vex_path)
     sched = VexSched(vex_path)
@@ -103,7 +104,7 @@ def write_scan(vex_path, calcfile, offset = None, tail = None, inc = None):
             npoints = nextstart - thisstart
             thisstarthms = df2hms((first + thisstart - offset)* inc / 86400.)
             thisendhms = df2hms((first + thisstart - offset + npoints)* inc / 86400.)
-            printscan(n_scan, thisstart - offset, npoints, thissource, thisra, thisdec, thiscalcode, calcfile)
+            printscan(n_scan, thisstart - offset, npoints, thissource, thisra, thisdec, thiscalcode, obscode, calcfile)
         n_scan += 1
 
     #print out last scan once we've fallen off the end of the loop
@@ -111,7 +112,7 @@ def write_scan(vex_path, calcfile, offset = None, tail = None, inc = None):
     nextstarthms = df2hms((first + nextstart - offset) * inc / 86400.)
     nextendhms =   df2hms((first + nextstart - offset + npoints) * inc / 86400.)
 
-    printscan(n_scan, nextstart - offset, npoints, nextsource, nextra, nextdec, nextcalcode, calcfile)
+    printscan(n_scan, nextstart - offset, npoints, nextsource, nextra, nextdec, nextcalcode, obscode, calcfile)
 
 def main():
     """

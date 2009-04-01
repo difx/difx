@@ -10,7 +10,7 @@ vexvalue.py.
 TODO Work out how to support links in vexfiles
 """
 
-from odict import Odict, VexDict
+from odict import Odict, VexDict, VexList
 from vexvalue import reblock, recomment, classify
 from astro import datetime2mjd
 from datetime import timedelta

@@ -24,6 +24,8 @@ def execall(command, machine_path, rsh = None):
     machines = Set()
     for line in machine_file:
         machines.add(line.split()[0])
+    machines = list(machines)
+    machines.sort()
     machine_file.close()
     command = "'" + command + "'"
     for machine in machines:

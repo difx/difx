@@ -4,7 +4,6 @@ Functions for classifying vex file statements, converting to SI units, and retur
 TODO improve testing and do properly using unit tests
 TODO change reblock so that it only finds blocks *outside* comments, strings and string_literals
 TODO change recomment so that it only finds comments *outside* strings and string_literals
-TODO change epochcheck to read the fraction of a second using a timedelta
 """
 import re
 from math import pi

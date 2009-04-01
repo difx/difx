@@ -106,6 +106,7 @@ def create_eop_list(mjd, eop_file, iat_file, extra = 2, ndays = 0):
         raise
     jd = mjd2jd(mjd)
     last = 0.
+    tai_utc1 = False
     for line in iat_file:
         line = line.split()
         if float(line[4]) > jd - extra:
@@ -116,7 +117,7 @@ def create_eop_list(mjd, eop_file, iat_file, extra = 2, ndays = 0):
             break
         last = float(line[6])
     if not tai_utc1:
-        raise RuntimeError, "invalid utc file"
+        tai_utc1 = last
 
     timemjd = []
     tai_utc = []
@@ -141,7 +142,7 @@ def create_eop_list(mjd, eop_file, iat_file, extra = 2, ndays = 0):
             continue
         if jd1 > jd + ndays + extra:
             return timemjd, tai_utc, ut1_utc, xpole, ypole
-    raise RuntimeError, 'error with eop file'
+    raise RuntimeError, 'Error with eop file ' + eop_file.name
 
 def create_eop_table(mjd, eop_file, iat_file, calcfile, extra = 2, ndays = 0):
     """
