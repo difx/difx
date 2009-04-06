@@ -5,15 +5,16 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "other.h"
 
 #ifndef M_PI
 #define M_PI           3.14159265358979323846
 #endif
 
-#define FITS_WRITE_ITEM(item, buffer)  { bcopy((char *)(&(item)), buffer, sizeof(item)); buffer += sizeof(item); }
+#define FITS_WRITE_ITEM(item, buffer)  { memcpy(buffer, (char *)(&(item)), sizeof(item)); buffer += sizeof(item); }
 
-#define FITS_WRITE_ARRAY(array, buffer, n)  { bcopy((char *)((array)), buffer, n*sizeof((array)[0])); buffer += n*sizeof((array)[0]); }
+#define FITS_WRITE_ARRAY(array, buffer, n)  { memcpy(buffer, (char *)((array)), n*sizeof((array)[0])); buffer += n*sizeof((array)[0]); }
 
 /* Structs for describing FITS data types: */
 
