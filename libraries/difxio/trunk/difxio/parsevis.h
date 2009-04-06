@@ -30,14 +30,14 @@
 #ifndef __PARSE_VIS_H__
 #define __PARSE_VIS_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 
 #include <stdio.h>
 #include <complex.h>
 #include "parsedifx.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct
 {
