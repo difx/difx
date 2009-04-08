@@ -31,8 +31,8 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  <baseFilename>.delay    DiFX delay model\n\n");
 	fprintf(stderr, "Four other files are optionally read:\n");
 	fprintf(stderr, "  <baseFilename>.calc     Base file for calcif \n");
-	fprintf(stderr, "  <baseFilename>.rate     Extra calcif output\n");
 	fprintf(stderr, "  <baseFilename>.im       Polynomial UVW and model\n");
+	fprintf(stderr, "  <baseFilename>.rate     Extra calcif output\n");
 	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
 	fprintf(stderr, "  flag, tsys, pcal, weather\n");
@@ -746,16 +746,6 @@ int main(int argc, char **argv)
 	if(nConverted != opts->nBaseFile)
 	{
 		printf("\n*** Warning -- not all input files converted!\n");
-	}
-
-	if(opts->nBaseFile > nFits) 
-	{
-		printf("\n");
-		printf("*** Warning -- combining multiple files with difx2fits "
-			"is still a beta\nfeature.  Please check your results "
-			"carefully and report problems to\n%s.  Please always "
-			"include the output\nof difx2fits -v -v with any "
-			"error report.  Have a groovy day.\n", author);
 	}
 
 	printf("\n");

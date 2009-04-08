@@ -1,0 +1,257 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import split, strip
+from getopt import getopt
+from glob import glob
+from os import getenv, mkdir, chdir, system, getcwd, rmdir
+from os.path import isfile, isdir
+from time import gmtime
+
+program = 'makefits'
+version = '0.1'
+author  = 'Walter Brisken'
+verdate = '20090406'
+
+def usage(prog):
+	print '%s ver %s  %s  %s' % (program, version, author, verdate)
+	print '\nUsage:  %s [options] <pass name>' % prog
+	exit(0)
+
+def parsekv(str):
+	kv = {}
+	ss = split(str)
+	for s in ss:
+		p = split(s, '=')
+		if len(p) != 2:
+			print 'Error parsing key=value statement: %s', s
+			return {}
+		kv[p[0]] = p[1]
+	return kv
+
+def mergefiles(expt, list, passname, ext, cwd, verbose):
+	dir = cwd + '/sniffer'
+	
+	if not isdir(dir):
+		mkdir(dir)
+
+	fn = '%s/sniffer/%s.%s.%s' % (cwd, expt, passname, ext)
+	if isfile(fn):
+		print 'Note: renaming existing file %s with .old extension' % fn
+		system('mv %s %s.old' % (fn, fn))
+	cmd = 'cat'
+	for i in list:
+		infile = ' %s.%d.%s' % (expt, i, ext)
+		cmd = cmd + infile
+	cmd = cmd + ' > ' + fn
+	if verbose:
+		print 'Executing: %s' % cmd
+	system(cmd)
+	for i in list:
+		infile = ' %s.%d.%s' % (expt, i, ext)
+		system('rm %s' % infile);
+		
+
+def genDateStr():
+	d = gmtime()
+	return '%02d%02d%02dT%02d%02d%02d' % \
+		(d.tm_year % 100, d.tm_mon, d.tm_mday, \
+		d.tm_hour, d.tm_min, d.tm_sec)
+
+class Job:
+	def __init__(self, str):
+		s = split(strip(str))
+		if len(s) >= 4:
+			self.name = s[0]
+			self.mjdStart = float(s[1])
+			self.mjdStop = float(s[2])
+			self.nAnt = int(s[3])
+		else:
+			self.name = ''
+	def show(self, indent=0):
+		print '%sJob %s: start=%f stop=%f nAnt=%d' % \
+			(' '*indent, self.name, self.mjdStart, self.mjdStop, self.nAnt)
+	def verify(self, dir):
+		files = ['.calc', '.input', '.flag', '.im']
+		for f in files:
+			file = dir + '/' + self.name + f
+			if not isfile(file):
+				print 'Error : %s not found' % file
+				return False
+		ddir = dir + '/' + self.name + '.difx'
+		if not isdir(ddir):
+			print 'Error : difx output dir %s not found' % ddir
+			return False
+		return True
+
+class JobList:
+	def __init__(self, filename):
+		self.filename = filename
+		data = open(filename).readlines()
+		self.jobs = []
+		if len(data) < 2:
+			print 'Malformed .joblist file %s' % filename
+			exit(0)
+		self.kv = parsekv(data[0])
+		if len(self.kv) < 1:
+			print 'Malformed .joblist file %s' % filename
+			exit(0)
+		for n in range(1, len(data)):
+			d = split(data[n], '#')[0]
+			if len(d) < 2:
+				continue
+			j = Job(d)
+			if j.name == '':
+				print 'Malformed line %d in %s' % (n+1, filename)
+				exit(0)
+			self.jobs.append(j)
+	
+	def testversion(self, override):
+		difxVersion = getenv('DIFX_VERSION')
+		if difxVersion == None:
+			print 'Warning: env var DIFX_VERSION is not set!'
+			if override:
+				difxVersion = 'unknown'
+			else:
+				exit(0)
+		elif difxVersion != self.kv['DiFX']:
+			if override:
+				print 'Overriding version mismatch: %s != %s' % \
+					(difxVersion, self.kv['DiFX'])
+				difxVersion = 'unknwown'
+			else:
+				print 'Error: file DiFX version = %s' % self.kv['DiFX']
+				print 'and current DiFX version = %s' % difxVersion
+				exit(0)
+		return difxVersion
+
+	def makefits(self, dir, verbose, options=''):
+		cwd = getcwd()
+		
+		datestr = genDateStr()
+
+		tmp = dir + '/' + 'makefilts.tmp'
+		if isdir(tmp):
+			print '\nError: temporary directory %s already exists.  Aborting.' % tmp
+			exit(0)
+		mkdir(tmp)
+		if verbose:
+			print 'Changing to directory: %s' % tmp
+		chdir(tmp)
+
+		cmd = 'difx2fits %s ' % options
+		for j in self.jobs:
+			cmd += ('../%s ' % j.name)
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
+		
+		files = glob('*.*.FITS')
+		if len(files) == 0:
+			print 'Error: No fits files made'
+			print 'Please clean remove %s when you are done picking up the pieces.' % tmp
+			exit(0)
+		if verbose:
+			print 'Made %d FITS files' % len(files)
+		
+		expt = split(files[0], '.')[0]
+
+		indices = []
+		for f in files:
+			s = split(f, '.')
+			if s[0] != expt:
+				print 'Error: Unexpected variety of FITS files found:', files
+				print 'Please clean remove %s when you are done picking up the pieces.' % tmp
+				exit(0)
+			indices.append(int(s[1]))
+
+		indices.sort()
+
+		j = 1
+		for i in indices:
+			fn = '%s.%d.FITS' % (expt, i)
+			archfile = 'VLBA_%s_%s_%d_%s.idifits' % \
+				(self.kv['exper'], self.kv['pass'], j, datestr)
+			if verbose:
+				print 'mv  %s -> ../%s' % (fn, archfile)
+			cmd = 'mv %s ../%s' % (fn, archfile)
+			system(cmd)
+			j = j + 1
+
+		print '\nMerging sniffer output:'
+		for ext in ['acb', 'apd', 'log', 'wts', 'xcb']:
+			mergefiles(expt, indices, self.kv['pass'], ext, cwd, verbose)
+
+		chdir(cwd)
+
+		if len(glob('%s/*' % tmp)) == 0:
+			rmdir(tmp)
+		
+		if isdir(tmp):
+			print 'Warning: unexpected files left in %s' % tmp
+
+		return True
+
+	def verify(self, dir):
+		OK = True
+		for j in self.jobs:
+			if j.verify(dir) == False:
+				OK = False
+		return OK
+
+	def show(self, indent=0):
+		id = ' '*indent
+		print '%sJobList: %s' % (id, self.filename)
+		id = ' '*(indent+2)
+		for key in self.kv.keys():
+			print '%sKV: %s = %s' % (id, key, self.kv[key])
+		for j in self.jobs:
+			j.show(indent+2)
+
+difxQueueBase = getenv('DIFX_QUEUE_BASE')
+if difxQueueBase == None:
+	print 'Error: env var DIFX_QUEUE_BASE is not set.  Cannot proceed.'
+	exit(0)
+
+optlist, args = getopt(argv[1:], 'hvf', ['help', 'verbose', 'force', 'override-version'])
+
+overrideVersion = False
+verbose = False
+force = False
+for o, a in optlist:
+	if o == 'override-version':
+		overrideVersion = True
+	if o in ('-v', '--verbose'):
+		verbose = True
+	if o in ('-f', '--force'):
+		force = True
+
+if len(args) < 1:
+	usage(argv[0])
+
+for arg in args:
+	if arg[-8:] == '.joblist':
+		joblistfile = arg
+	else:
+		joblistfile = arg + '.joblist'
+
+	if not isfile(joblistfile):
+		print 'Error: file %s not found' % joblistfile
+		exit(0)
+
+	jl = JobList(joblistfile)
+
+	jl.testversion(overrideVersion)
+
+	if verbose:
+		jl.show()
+
+	queueDir = difxQueueBase + '/' + jl.kv['exper']
+
+	OK = jl.verify(queueDir)
+
+	if not OK:
+		print 'job list verification failed!'
+		exit(0)
+
+	OK = jl.makefits(queueDir, verbose, '-v')

@@ -1,4 +1,8 @@
-SUBDIRS= src
+SUBDIRS = \
+	src \
+	utils
 
-DIST_SUBDIRS = src
+DIST_SUBDIRS = \
+	src \
+	utils
 
