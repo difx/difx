@@ -14,6 +14,7 @@ typedef struct
 	double *weightMax;
 	double *lastDump;
 	int *nRec;
+	int *isLSB;
 } Accumulator;
 
 struct _Sniffer
@@ -86,6 +87,7 @@ Accumulator *newAccumulatorArray(Sniffer *S, int n)
 			}
 		}
 		A[a].nRec = (int *)calloc(nBBC, sizeof(int));
+		A[a].isLSB = (int *)calloc(nBBC, sizeof(int));
 		A[a].weightSum = (double *)calloc(nBBC, sizeof(double));
 		A[a].weightMin = (double *)calloc(nBBC, sizeof(double));
 		A[a].weightMax = (double *)calloc(nBBC, sizeof(double));
@@ -119,6 +121,7 @@ void deleteAccumulatorArray(Accumulator *A, int n)
 			}
 			free(A[a].spectrum);
 			free(A[a].nRec);
+			free(A[a].isLSB);
 			free(A[a].weightSum);
 			free(A[a].weightMin);
 			free(A[a].weightMax);
@@ -590,6 +593,13 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			rate = peakup(peak, bestj, 
 				S->fft_ny, S->solInt*S->fftOversample);
 
+			if(A->isLSB[bbc])
+			{
+				phase = -phase;
+				delay = -delay;
+				rate = -rate;
+			}
+
 			fprintf(S->apd, " %10.4f %6.4f %10.4f %10.6f", 
 				delay, 
 				2.0*amp/(A->weightSum[bbc]*S->nChan), 
@@ -603,7 +613,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 }
 
 static int add(Accumulator *A, int bbc, int index, float weight, 
-	const float *data, int stride)
+	const float *data, int stride, int isLSB)
 {
 	fftw_complex *array;
 	complex float *z;
@@ -617,6 +627,7 @@ static int add(Accumulator *A, int bbc, int index, float weight,
 	}
 
 	A->nRec[bbc]++;
+	A->isLSB[bbc] = isLSB;
 	A->weightSum[bbc] += weight;
 	if(weight > A->weightMax[bbc])
 	{
@@ -638,6 +649,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	int i, p;
 	int configId, sourceId;
 	float weight;
+	int isLSB;
 	int stride, offset, bbc, index;
 
 	if(!S)
@@ -700,12 +712,14 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 
 	for(i = 0; i < S->nIF; i++)
 	{
+		isLSB = (S->D->config[configId].IF[i].sideband == 'L');
+
 		for(p = 0; p < S->nPol; p++)
 		{
 			bbc = i*S->nPol + p;
 			weight = data->data[p + S->nStokes*i];
 			offset = S->nStokes*S->nIF + stride*S->nChan*i + p*S->nComplex;
-			add(A, bbc, index, weight, data->data+offset, stride);
+			add(A, bbc, index, weight, data->data+offset, stride, isLSB);
 		}
 	}
 
