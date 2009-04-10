@@ -346,7 +346,12 @@ CorrParams::CorrParams()
 
 CorrParams::CorrParams(const string& fileName)
 {
+	size_t pos;
+
 	defaults();
+
+	pos = fileName.find(".");
+	jobSeries = fileName.substr(0, pos);
 
 	load(fileName);
 }

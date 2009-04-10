@@ -778,7 +778,7 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	    defs=defs->next)
 	{
 		statement = ((Lowl *)defs->ptr)->statement;
-		if(statement == T_COMMENT)
+		if(statement == T_COMMENT || statement == T_COMMENT_TRAILING)
 		{
 			continue;
 		}
@@ -800,6 +800,12 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		lowls = find_lowl(refs, T_NUM_EOP_POINTS);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
 		nEop = atoi(r->value);
+
+		if(nEop < 5)
+		{
+			cerr << "Warning: Fewer than 5 EOP values provided." << endl;
+			cerr << "vex2difx will continue, but expect problems downstream." << endl;
+		}
 
 		lowls = find_lowl(refs, T_EOP_INTERVAL);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
@@ -852,8 +858,7 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 	    defs=defs->next)
 	{
 		statement = ((Lowl *)defs->ptr)->statement;
-
-		if(statement == T_COMMENT)
+		if(statement == T_COMMENT || statement == T_COMMENT_TRAILING)
 		{
 			continue;
 		}
