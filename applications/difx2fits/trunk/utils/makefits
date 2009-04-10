@@ -2,11 +2,10 @@
 
 from sys import argv, exit
 from string import split, strip
-from getopt import getopt
 from glob import glob
 from os import getenv, mkdir, chdir, system, getcwd, rmdir
-from os.path import isfile, isdir
-from time import gmtime
+from os.path import isfile, isdir, getsize
+from time import gmtime, time
 
 program = 'makefits'
 version = '0.1'
@@ -14,8 +13,14 @@ author  = 'Walter Brisken'
 verdate = '20090406'
 
 def usage(prog):
-	print '%s ver %s  %s  %s' % (program, version, author, verdate)
+	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
 	print '\nUsage:  %s [options] <pass name>' % prog
+	print '  --verbose'
+	print '  -v         Send more output to the screen\n'
+	print '  --help'
+	print '  -h         Print this help information\n'
+	print '  --override-version'
+	print '             To force operation with mixed DiFX versions\n'
 	exit(0)
 
 def parsekv(str):
@@ -29,31 +34,37 @@ def parsekv(str):
 		kv[p[0]] = p[1]
 	return kv
 
-def mergefiles(expt, list, passname, ext, cwd, verbose):
+def getmjd(t):
+	return 40587.0 + t/86400.0
+
+def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 	dir = cwd + '/sniffer'
 	
 	if not isdir(dir):
 		mkdir(dir)
 
-	fn = '%s/sniffer/%s.%s.%s' % (cwd, expt, passname, ext)
-	if isfile(fn):
-		print 'Note: renaming existing file %s with .old extension' % fn
-		system('mv %s %s.old' % (fn, fn))
-	cmd = 'cat'
-	for i in list:
-		infile = ' %s.%d.%s' % (expt, i, ext)
-		cmd = cmd + infile
-	cmd = cmd + ' > ' + fn
+	outfile = '%s/%s.%s.%s' % (dir, expt, passname, ext)
+	if isfile(outfile):
+		system('mv %s %s.old' % (outfile, outfile))
+	out = open(outfile, 'w')
+	skipFirst = False
 	if verbose:
-		print 'Executing: %s' % cmd
-	system(cmd)
+		print '\nMaking sniffer file %s from:' % outfile
 	for i in list:
-		infile = ' %s.%d.%s' % (expt, i, ext)
-		system('rm %s' % infile);
-		
+		infile = '%s.%d.%s' % (expt, i, ext)
+		if verbose:
+			print '  %s' % infile
+		data = open(infile, 'r').readlines()
+		if skipFirst == False:
+			skipFirst = hasHeaderLine
+			out.write(data[0])
+		for d in data[1:]:
+			out.write(d)
+		system('rm %s' % infile)
+	out.close()
 
-def genDateStr():
-	d = gmtime()
+def genDateStr(t):
+	d = gmtime(t)
 	return '%02d%02d%02dT%02d%02d%02d' % \
 		(d.tm_year % 100, d.tm_mon, d.tm_mday, \
 		d.tm_hour, d.tm_min, d.tm_sec)
@@ -94,7 +105,7 @@ class JobList:
 			exit(0)
 		self.kv = parsekv(data[0])
 		if len(self.kv) < 1:
-			print 'Malformed .joblist file %s' % filename
+			print 'Malformed .joblist file %s line 1' % filename
 			exit(0)
 		for n in range(1, len(data)):
 			d = split(data[n], '#')[0]
@@ -123,12 +134,18 @@ class JobList:
 				print 'Error: file DiFX version = %s' % self.kv['DiFX']
 				print 'and current DiFX version = %s' % difxVersion
 				exit(0)
+
+		self.kv['DiFX'] = difxVersion
+
 		return difxVersion
 
-	def makefits(self, dir, verbose, options=''):
+	def makefits(self, queuedir, verbose, sniff, options=''):
+		dir = queuedir + '/' + self.kv['exper']
 		cwd = getcwd()
 		
-		datestr = genDateStr()
+		t = time()
+
+		datestr = genDateStr(t)
 
 		tmp = dir + '/' + 'makefilts.tmp'
 		if isdir(tmp):
@@ -168,19 +185,25 @@ class JobList:
 		indices.sort()
 
 		j = 1
+		out = open('%s/%s.fitslist' % (cwd, self.kv['pass']), 'w')
+		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0\n' % \
+			(self.kv['exper'], self.kv['pass'], self.filename, getmjd(t), self.kv['DiFX']))
 		for i in indices:
 			fn = '%s.%d.FITS' % (expt, i)
+			size = getsize(fn)/1000000.0
 			archfile = 'VLBA_%s_%s_%d_%s.idifits' % \
 				(self.kv['exper'], self.kv['pass'], j, datestr)
+			out.write('%s %3.1f %s\n' % (archfile, size, fn))
 			if verbose:
 				print 'mv  %s -> ../%s' % (fn, archfile)
 			cmd = 'mv %s ../%s' % (fn, archfile)
 			system(cmd)
 			j = j + 1
+		out.close()
 
-		print '\nMerging sniffer output:'
-		for ext in ['acb', 'apd', 'log', 'wts', 'xcb']:
-			mergefiles(expt, indices, self.kv['pass'], ext, cwd, verbose)
+		if sniff:
+			for x in [['acb', False] , ['apd', True], ['log', False], ['wts', True], ['xcb', False]]:
+				mergesnifferfiles(expt, indices, self.kv['pass'], x[0], cwd, verbose, x[1])
 
 		chdir(cwd)
 
@@ -192,7 +215,9 @@ class JobList:
 
 		return True
 
-	def verify(self, dir):
+	def verify(self, queuedir):
+		dir = queuedir + '/' + self.kv['exper']
+
 		OK = True
 		for j in self.jobs:
 			if j.verify(dir) == False:
@@ -213,18 +238,31 @@ if difxQueueBase == None:
 	print 'Error: env var DIFX_QUEUE_BASE is not set.  Cannot proceed.'
 	exit(0)
 
-optlist, args = getopt(argv[1:], 'hvf', ['help', 'verbose', 'force', 'override-version'])
-
 overrideVersion = False
 verbose = False
-force = False
-for o, a in optlist:
-	if o == 'override-version':
-		overrideVersion = True
-	if o in ('-v', '--verbose'):
-		verbose = True
-	if o in ('-f', '--force'):
-		force = True
+sniff = True
+
+opts = ''
+args = []
+for a in argv[1:]:
+	if a[0] == '-':
+		if a == '--override-version':
+			overrideVersion = True
+		elif a in ('-h', '--help'):
+			usage(argv[0])
+			opts = opts + ' -v'
+		else:
+			opts = opts + ' ' + a
+
+		if a in ('-v', '--verbose'):
+			verbose = True
+		if a in ('-x', '--dont-sniff'):
+			sniff = False
+	else:
+		args.append(a)
+
+if opts == '':
+	opts = '-v'
 
 if len(args) < 1:
 	usage(argv[0])
@@ -246,12 +284,10 @@ for arg in args:
 	if verbose:
 		jl.show()
 
-	queueDir = difxQueueBase + '/' + jl.kv['exper']
-
-	OK = jl.verify(queueDir)
+	OK = jl.verify(difxQueueBase)
 
 	if not OK:
 		print 'job list verification failed!'
 		exit(0)
 
-	OK = jl.makefits(queueDir, verbose, '-v')
+	OK = jl.makefits(difxQueueBase, verbose, sniff, opts)

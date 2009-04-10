@@ -4,6 +4,8 @@ Version 2.4
 * Fix numbering of FITS Source IDs
 * Better handle transitional scans
 * don't use bcopy -- use memcpy instead.
+* fix sense of phase for LSB sniffer output data
+* add makefits wrapper program
 
 Version 2.3
 * Support for writing FITS files larger than 2 GiB
