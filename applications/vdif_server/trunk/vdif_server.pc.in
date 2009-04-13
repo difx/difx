@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+	
+Name: vdif_server
+Description: Application for sorting multi-thread VDIF data
+Requires:
+Version: @PACKAGE_VERSION@
+Libs: -L${libdir} -lvdif_server
+Cflags: -I${includedir}/vdif_server
