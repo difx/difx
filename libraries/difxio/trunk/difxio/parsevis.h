@@ -32,8 +32,15 @@
 
 
 #include <stdio.h>
-#include <complex.h>
 #include "parsedifx.h"
+
+#ifdef __cplusplus
+#include <complex>
+typedef std::complex<float> cplx32f;
+#else
+#include <complex.h>
+typedef float complex cplx32f;
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -45,7 +52,7 @@ typedef struct
 	DifxParameters *params;		/* structure containing text params */
 	int nchan;			/* number of channels to expect */
 	int visnum;			/* counter of number of vis */
-	float complex *visdata;		/* pointer to nchan complex values */
+	cplx32f *visdata;		/* pointer to nchan complex values (2x float) */
 } DifxVisRecord;
 
 /* open difx file and return pointer to vis structure */

@@ -43,7 +43,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 		return 0;
 	}
 
-	vis->visdata = (float complex *)malloc(nchan*sizeof(float complex));
+	vis->visdata = (cplx32f*)malloc(nchan*sizeof(cplx32f));
 	if(vis->visdata == 0)
 	{
 		fprintf(stderr, "newDifxVisRecord : malloc error\n");
@@ -120,7 +120,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		DifxParametersaddrow(vis->params, line);
 	}
 
-	v = fread(vis->visdata, sizeof(float complex), vis->nchan, vis->infile);
+	v = fread(vis->visdata, sizeof(cplx32f), vis->nchan, vis->infile);
 	if(v < vis->nchan)
 	{
 		return -1;
