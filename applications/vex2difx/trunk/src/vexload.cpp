@@ -413,7 +413,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		// Make scan
 		S = V->newScan();
-		S->timeRange = VexInterval(startScan, stopScan);
+		S->setTimeRange(startScan, stopScan);
 		S->name = scanName;
 		S->stations = stations;
 		S->modeName = modeName;
@@ -681,7 +681,6 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
-	double start, stop;
 
 	string antName(station);
 
@@ -723,12 +722,12 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 
 		string vsn(p->label);
 		fixOhs(vsn);
-		start = vexDate(p->start);
-		stop = vexDate(p->stop);
+
+		VexInterval vsnTimeRange(vexDate(p->start), vexDate(p->stop));
 		
-		V->addVSN(antName, vsn, start, stop);
-		V->addEvent(start, VexEvent::RECORD_START, antName);
-		V->addEvent(stop, VexEvent::RECORD_STOP, antName);
+		V->addVSN(antName, vsn, vsnTimeRange);
+		V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
+		V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
 	}
 
 	return 0;
@@ -890,7 +889,7 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 
 	Upper(name);
 
-	V->setExper(name, start, stop);
+	V->setExper(name, VexInterval(start, stop));
 
 	return 0;
 }

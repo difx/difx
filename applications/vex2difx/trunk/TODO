@@ -16,6 +16,7 @@ x. guardblocks, blocks per send
 12. support VDIF
 13. support baselines=
 14. implement maxLength
+15. use antennas, not modules, in antenna count
 
 Concerns outside vex2difx proper
 

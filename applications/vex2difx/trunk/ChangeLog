@@ -1,3 +1,8 @@
+Version 0.2
+~~~~~~~~~~~
+* Make several classes subclasses of VexInterval to simplify things
+* Compute "Computational load" -- an estimate of the number of numerical operations required.
+
 Version 0.1
 ~~~~~~~~~~~
 * simplified difx input file output

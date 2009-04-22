@@ -76,16 +76,27 @@ class VexInterval
 public:
 	double mjdStart;
 	double mjdStop;
+
 	VexInterval(double start=0.0, double end=0.0) : mjdStart(start), mjdStop(end) {}
 	VexInterval(const VexInterval &vi) : mjdStart(vi.mjdStart), mjdStop(vi.mjdStop) {}
+	double duration() const { return mjdStop-mjdStart; }
+	double duration_seconds() const { return 86400.0*(mjdStop-mjdStart); }
+	double overlap(const VexInterval &v) const;
+	double overlap_seconds(const VexInterval &v) const { return 86400.0*overlap(v); }
+	void setTimeRange(double start, double stop) { mjdStart = start; mjdStop = stop; }
+	void setTimeRange(const VexInterval &v) { mjdStart = v.mjdStart; mjdStop = v.mjdStop; }
+	void logicalAnd(double start, double stop);
+	void logicalAnd(VexInterval &v);
+	void logicalOr(double start, double stop);
+	void logicalOr(VexInterval &v);
+	bool isWithin(VexInterval &v) { return (mjdStart >= v.mjdStart) && (mjdStop <= v.mjdStop); }
 };
 
-class VexScan
+class VexScan : public VexInterval
 {
 public:
 	string name;		// name of this scan
 
-	VexInterval timeRange;
 	string modeName;
 	string sourceName;
 	map<string,VexInterval> stations;
@@ -158,14 +169,12 @@ public:
 	map<string,VexFormat> formats;	// indexed by antenna name
 };
 
-class VexVSN
+class VexVSN : public VexInterval
 {
 public:
-	VexVSN() : mjdStart(0.0), mjdStop(0.0) {}
-
 	string name;
-	double mjdStart;
-	double mjdStop;
+	VexVSN() {}
+	VexVSN(const string &c_name, const VexInterval& timeRange) : VexInterval(timeRange), name(c_name) {} 
 };
 
 class VexClock
@@ -209,30 +218,29 @@ public:
 	double xPole, yPole;	// radian
 };
 
-class VexExper
+class VexExper : public VexInterval
 {
 public:
-	VexExper() : mjdStart(0.0), mjdStop(1000000.0) {}
+	VexExper() : VexInterval(0.0, 1000000.0) {}
 
 	string name;
-	double mjdStart;
-	double mjdStop;
 };
 
-class VexJob
+class VexJob : public VexInterval
 {
 public:
-	VexJob() : jobSeries("Bogus"), jobId(-1), mjdStart(0.0), mjdStop(1000000.0) {}
+	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1) {}
 
 	void assignVSNs(const VexData& V);
 	int generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask=0xFFFFFFFF) const;
+
+	// return the approximate number of Operations required to compute this scan
+	double calcOps(const VexData *V, int fftSize, bool doPolar) const;
 
 	string jobSeries;
 	int jobId;
 	vector<string> scans;
 	map<string,string> vsns;	// vsn, indexed by antenna name
-	double mjdStart;
-	double mjdStop;
 	double dutyCycle;		// fraction of job spent in scans
 };
 
@@ -244,9 +252,9 @@ public:
 	static const unsigned int JOB_FLAG_TIME   = 1 << 2;
 	static const unsigned int JOB_FLAG_SCAN   = 1 << 3;
 	VexJobFlag() {}
-	VexJobFlag(double start, double stop, int ant) : mjdStart(start), mjdStop(stop), antId(ant) {}
+	VexJobFlag(double start, double stop, int ant) : timeRange(start, stop), antId(ant) {}
 
-	double mjdStart, mjdStop;
+	VexInterval timeRange;
 	int antId;
 };
 
@@ -258,7 +266,7 @@ public:
 
 	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
-	void createJob(vector<VexJob>& jobs, double start, double stop, double maxLength) const;
+	void createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const;
 };
 
 class VexData
@@ -322,8 +330,8 @@ public:
 	bool usesAntenna(const string& antennaName) const;
 	bool usesMode(const string& modeName) const;
 
-	void addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop);
-	string getVSN(const string& antName, double mjdStart, double mjdStop) const;
+	void addVSN(const string& antName, const string& vsn, const VexInterval& timeRange);
+	string getVSN(const string& antName, const VexInterval& timeRange) const;
 
 	int nEvent() const { return events.size(); }
 	const list<VexEvent> *getEvents() const;
@@ -331,7 +339,7 @@ public:
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scanName);
 
 	const VexExper *getExper() const { return &exper; }
-	void setExper(const string& name, double start, double stop);
+	void setExper(const string& name, const VexInterval& experTimeRange);
 };
 
 bool operator<(const VexEvent &a, const VexEvent &b);

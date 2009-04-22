@@ -33,6 +33,7 @@
 #include <fstream>
 #include <cstdio>
 #include <cmath>
+#include <cctype>
 #include <string.h>
 #include "util.h"
 #include "corrparams.h"
@@ -354,6 +355,15 @@ CorrParams::CorrParams(const string& fileName)
 	jobSeries = fileName.substr(0, pos);
 
 	load(fileName);
+
+#ifdef DONT_USE_EXPER_AS_PASS
+	pos = vexFile.find(".");
+	string vexBase = jobSeries.substr(0, pos);
+	if(vexBase == jobSeries)
+	{
+		jobSeries = "main";
+	}
+#endif
 }
 
 void CorrParams::defaults()
@@ -439,6 +449,12 @@ void CorrParams::set(const string &key, const string &value)
 	}
 	else if(key == "jobSeries" || key == "pass")
 	{
+		for(int i = 0; i < value.size(); i++)
+		if(!isalnum(value[i]))
+		{
+			cerr << "Error: jobSeries must be purely alphanumeric" << endl;
+			exit(0);	
+		}
 		ss >> jobSeries;
 	}
 	else if(key == "startSeries")

@@ -74,7 +74,59 @@ bool operator<(const VexEvent &a, const VexEvent &b)
 	return a.name < b.name;
 }
 
+// returns a negative number if no overlap
+double VexInterval::overlap(const VexInterval &v) const
+{
+	return min(mjdStop, v.mjdStop) - max(mjdStart, v.mjdStart);
+}
 
+void VexInterval::logicalAnd(double start, double stop)
+{
+	if(mjdStart < start)
+	{
+		mjdStart = start;
+	}
+	if(mjdStop > stop)
+	{
+		mjdStop = stop;
+	}
+}
+
+void VexInterval::logicalAnd(VexInterval &v)
+{
+	if(mjdStart < v.mjdStart)
+	{
+		mjdStart = v.mjdStart;
+	}
+	if(mjdStop > v.mjdStop)
+	{
+		mjdStop = v.mjdStop;
+	}
+}
+
+void VexInterval::logicalOr(double start, double stop)
+{
+	if(mjdStart > start)
+	{
+		mjdStart = start;
+	}
+	if(mjdStop < stop)
+	{
+		mjdStop = stop;
+	}
+}
+
+void VexInterval::logicalOr(VexInterval &v)
+{
+	if(mjdStart > v.mjdStart)
+	{
+		mjdStart = v.mjdStart;
+	}
+	if(mjdStop < v.mjdStop)
+	{
+		mjdStop = v.mjdStop;
+	}
+}
 
 int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 {
@@ -258,12 +310,57 @@ void VexJob::assignVSNs(const VexData& V)
 	
 	for(i = antennas.begin(); i != antennas.end(); i++)
 	{
-		const string &vsn = V.getVSN(*i, mjdStart, mjdStop);
+		const string &vsn = V.getVSN(*i, *this);
 		if(vsn != string("None"))
 		{
 			vsns[*i] = vsn;
 		}
 	}
+}
+
+double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
+{
+	double ops = 0.0;
+	int nAnt, nPol, nSubband;
+	double sampRate, seconds;
+	const VexMode *M;
+	char pols[8];
+	double opsPerSample;
+	vector<string>::const_iterator si;
+
+	for(si = scans.begin(); si != scans.end(); si++)
+	{
+		const VexScan *S = V->getScan(*si);
+		M = V->getMode(S->modeName);
+		if(!M)
+		{
+			return 0.0;
+		}
+		
+		sampRate = M->sampRate;
+		nPol = M->getPols(pols);
+		if(nPol > 1 && doPolar)
+		{
+			nPol = 2;
+		}
+		else
+		{
+			nPol = 1;
+		}
+
+		seconds = S->duration_seconds();
+		nAnt = S->stations.size();
+		nSubband = M->subbands.size();
+
+		// Estimate number of operations based on VLBA Sensitivity Upgrade Memo 16
+		// Note: currently this does not consider oversampling
+		// Note: this assumes all polarizations are matched
+		opsPerSample = 16.0 + 5.0*log(fftSize)/log(2.0) + 2.5*nAnt*nPol;
+		ops += opsPerSample*seconds*sampRate*nSubband*nAnt;
+
+	}
+
+	return ops;
 }
 
 bool VexJobGroup::hasScan(const string& scanName) const
@@ -521,7 +618,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 }
 
 // FIXME -- this does not allow concurrent scans
-void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop, double maxLength) const
+void VexJobGroup::createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const
 {
 	list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
@@ -530,8 +627,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop, dou
 	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
-	J->mjdStart = stop;
-	J->mjdStop = start;
+	J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
 
 	for(e = events.begin(); e != events.end(); e++)
 	{
@@ -548,35 +644,28 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, double start, double stop, dou
 				cerr << "Contact developer" << endl;
 				exit(0);
 			}
-			if(s->mjd >= start && e->mjd <= stop)
+			VexInterval scanTimeRange(s->mjd, e->mjd);
+			if(scanTimeRange.isWithin(jobTimeRange))
 			{
 				J->scans.push_back(e->name);
-				if(J->mjdStart > s->mjd)
-				{
-					J->mjdStart = s->mjd;
-				}
-				if(J->mjdStop < e->mjd)
-				{
-					J->mjdStop = e->mjd;
-				}
-				scanTime += e->mjd - s->mjd;
+				J->logicalOr(scanTimeRange);
+				scanTime += scanTimeRange.duration();
 
 				/* start a new job at scan boundary if maxLength exceeded */
-				if(J->mjdStop - J->mjdStart > maxLength)
+				if(J->duration() > maxLength)
 				{
-					totalTime = J->mjdStop - J->mjdStart;
+					totalTime = J->duration();
 					J->dutyCycle = scanTime / totalTime;
 					jobs.push_back(VexJob());
 					J = &jobs.back();
 					scanTime = 0.0;
-					J->mjdStart = stop;
-					J->mjdStop = start;
+					J->setTimeRange(jobTimeRange);
 				}
 			}
 		}
 	}
 
-	totalTime = J->mjdStop - J->mjdStart;
+	totalTime = J->duration();
 	
 	if(totalTime <= 0.0)
 	{
@@ -726,7 +815,7 @@ bool VexData::usesMode(const string& modeName) const
 	return false;
 }
 
-void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, double mjdStop)
+void VexData::addVSN(const string& antName, const string& vsn, const VexInterval& timeRange)
 {
 	int n = nAntenna();
 
@@ -734,15 +823,12 @@ void VexData::addVSN(const string& antName, const string& vsn, double mjdStart, 
 	{
 		if(antennas[i].name == antName)
 		{
-			antennas[i].vsns.push_back(VexVSN());
-			antennas[i].vsns.back().name = vsn;
-			antennas[i].vsns.back().mjdStart = mjdStart;
-			antennas[i].vsns.back().mjdStop = mjdStop;
+			antennas[i].vsns.push_back(VexVSN(vsn, timeRange));
 		}
 	}
 }
 
-string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) const
+string VexData::getVSN(const string& antName, const VexInterval& timeRange) const
 {
 	const VexAntenna *A;
 	vector<VexVSN>::const_iterator v;
@@ -757,7 +843,7 @@ string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) c
 
 	for(v = A->vsns.begin(); v != A->vsns.end(); v++)
 	{
-		double overlap = min(mjdStop, v->mjdStop) - max(mjdStart, v->mjdStart);
+		double overlap = timeRange.overlap(*v);
 		if(overlap > best)
 		{
 			best = overlap;
@@ -768,7 +854,7 @@ string VexData::getVSN(const string& antName, double mjdStart, double mjdStop) c
 	return bestVSN;
 }
 
-void VexData::setExper(const string& name, double start, double stop)
+void VexData::setExper(const string& name, const VexInterval& experTimeRange)
 {
 	double a=1.0e7, b=0.0;
 	list<VexEvent>::const_iterator it;
@@ -785,20 +871,19 @@ void VexData::setExper(const string& name, double start, double stop)
 		}
 	}
 
-	if(start < 10000)
+	exper.name = name;
+	exper.setTimeRange(experTimeRange);
+	if(exper.mjdStart < 10000)
 	{
-		start = a;
+		exper.mjdStart = a;
 	}
-	if(stop < 10000)
+	if(exper.mjdStop < 10000)
 	{
-		stop = b;
+		exper.mjdStop = b;
 	}
 
-	exper.name = name;
-	exper.mjdStart = start;
-	exper.mjdStop = stop;
-	addEvent(start, VexEvent::OBSERVE_START, name); 
-	addEvent(stop, VexEvent::OBSERVE_STOP, name); 
+	addEvent(exper.mjdStart, VexEvent::OBSERVE_START, name); 
+	addEvent(exper.mjdStop, VexEvent::OBSERVE_STOP, name); 
 }
 
 const list<VexEvent> *VexData::getEvents() const
@@ -849,7 +934,7 @@ ostream& operator << (ostream& os, const VexScan& x)
 	map<string,VexInterval>::const_iterator iter;
 
 	os << "Scan " << x.name << 
-		"\n  timeRange=" << x.timeRange <<
+		"\n  timeRange=" << (const VexInterval&)x <<
 		"\n  mode=" << x.modeName <<
 		"\n  source=" << x.sourceName << "\n";
 
@@ -946,7 +1031,7 @@ ostream& operator << (ostream& os, const VexEOP& x)
 
 ostream& operator << (ostream& os, const VexVSN& x)
 {
-	os << "VSN(" << x.name << ", " << x.mjdStart << ", " << x.mjdStop << ")";
+	os << "VSN(" << x.name << ", " << (const VexInterval&)x << ")";
 
 	return os;
 }
@@ -958,7 +1043,7 @@ ostream& operator << (ostream& os, const VexJob& x)
 	int p = os.precision();
 	os.precision(12);
 	os << "Job " << x.jobSeries << x.jobId << endl;
-	os << "  " << x.mjdStart << " - " << x.mjdStop << endl;
+	os << "  " << (const VexInterval&)x << endl;
 	os << "  duty cycle = " << x.dutyCycle << endl;
 	os << "  scans =";
 	for(s = x.scans.begin(); s != x.scans.end(); s++)
@@ -993,7 +1078,7 @@ ostream& operator << (ostream& os, const VexJobFlag& x)
 
 	os.precision(12);
 
-	os << x.mjdStart << " " << x.mjdStop << " " << x.antId;
+	os << (const VexInterval&)x << " " << x.antId;
 
 	os.precision(p);
 

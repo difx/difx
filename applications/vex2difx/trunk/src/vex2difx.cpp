@@ -41,8 +41,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("0.1");
-const string verdate("20090223");
+const string version("0.2");
+const string verdate("20090422");
 const string author("Walter Brisken");
 
 const double MJD_UNIX0 = 40587.0;	/* MJD at beginning of unix time */
@@ -59,8 +59,8 @@ double current_mjd()
 // A is assumed to be the first scan in time order
 bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
-	if((B->timeRange.mjdStart < A->timeRange.mjdStop) ||
-	   (B->timeRange.mjdStart > A->timeRange.mjdStop + P->maxGap))
+	if((B->mjdStart < A->mjdStop) ||
+	   (B->mjdStart > A->mjdStop + P->maxGap))
 	{
 		return false;
 	}
@@ -257,7 +257,8 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	start = V->obsStart();
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
-		JG.createJob(Js, start, *t, P->maxLength);
+		VexInterval jobTimeRange(start, *t);
+		JG.createJob(Js, jobTimeRange, P->maxLength);
 		start = *t;
 	}
 }
@@ -290,10 +291,11 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 	}
 }
 
-DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n)
+DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit)
 {
 	DifxJob *job;
 	const char *difxVer;
+	char format[16];
 
 	*n = 1;
 	job = newDifxJobArray(*n);
@@ -319,7 +321,10 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	job->activeBaselines = nAntenna*(nAntenna-1)/2;
 	job->dutyCycle = J.dutyCycle;
 
-	sprintf(job->fileBase, "%s/%s%d", directory.c_str(), J.jobSeries.c_str(), J.jobId);
+	// The following line defines the format of the job filenames
+	sprintf(format, "%%s/%%s_%%0%dd", nDigit);
+
+	sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId);
 
 	return job;
 }
@@ -782,7 +787,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	return c;
 }
 
-void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose, ofstream *of)
+void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose, ofstream *of, int nDigit)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -826,7 +831,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
-	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob));
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit);
 	
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
@@ -835,7 +840,27 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		
 	if(of)
 	{
-		*of << J.jobSeries << J.jobId << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << "  #";
+		const char *fileBase = D->job->fileBase;
+		double tops;	// Trillion operations
+		int p;
+
+		for(int i = 0; D->job->fileBase[i]; i++)
+		{
+			if(D->job->fileBase[i] == '/')
+			{
+				fileBase = D->job->fileBase + i + 1;
+			}
+		}
+
+		tops = J.calcOps(V, setup->nChan*2, setup->doPolar) * 1.0e-12;
+
+		*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
+		p = of->precision();
+		of->precision(4);
+		*of << tops << "  #";
+		of->precision(p);
+		
+
 		for(vector<string>::const_iterator ai = antList.begin(); ai != antList.end(); ai++)
 		{
 			*of << " " << *ai;
@@ -859,10 +884,10 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		setup = P->getCorrSetup(S->setupName);
 		sourceSetup = P->getSourceSetup(S->sourceName.c_str());
 
-		scan->mjdStart = S->timeRange.mjdStart;
-		scan->mjdEnd = S->timeRange.mjdStop;
-		scan->startPoint = static_cast<int>((S->timeRange.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
-		scan->nPoint = static_cast<int>((S->timeRange.mjdStop - S->timeRange.mjdStart)*86400.0/D->job->modelInc + 0.01);
+		scan->mjdStart = S->mjdStart;
+		scan->mjdEnd = S->mjdStop;
+		scan->startPoint = static_cast<int>((S->mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
+		scan->nPoint = static_cast<int>(S->duration_seconds()/D->job->modelInc + 0.01);
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 
 		scan->ra = src->ra;
@@ -1066,6 +1091,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	string v2dFile;
 	bool writeParams = 0;
+	int nDigit;
 
 	if(argc < 2)
 	{
@@ -1166,13 +1192,20 @@ int main(int argc, char **argv)
 	of.open(jobListFile.c_str());
 	of.precision(12);
 	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version << endl;
+	
+	nDigit=0;
+	for(int l = J.size(); l > 0; l /= 10)
+	{
+		nDigit++;
+	}
+	
 	for(vector<VexJob>::iterator j = J.begin(); j != J.end(); j++)
 	{
 		if(verbose > 0)
 		{
 			cout << *j;
 		}
-		writeJob(*j, V, P, verbose, &of);
+		writeJob(*j, V, P, verbose, &of, nDigit);
 	}
 	of.close();
 	cout << J.size() << " job(s) created." << endl;
