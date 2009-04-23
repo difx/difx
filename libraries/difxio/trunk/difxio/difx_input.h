@@ -144,7 +144,7 @@ typedef struct
 typedef struct
 {
 	int antennaId;		/* index to D->antenna */
-	float tSys;		/* 0.0 for NRAO DiFX */
+	float tSys;		/* 0.0 for VLBA DiFX */
 	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */

@@ -35,7 +35,7 @@
 #include "difxio/difx_write.h"
 
 /* include spice files for spacecraft navigation if libraries are present */
-#ifdef HAVE_SPICE
+#if HAVE_SPICE
 #include "SpiceCK.h"
 #include "SpiceZpr.h"
 #endif
@@ -117,6 +117,7 @@ void printDifxSpacecraft(const DifxSpacecraft *ds)
 
 int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile)
 {
+#if HAVE_SPICE
 	int spiceHandle;
 	int p;
 	long double mjd;
@@ -124,10 +125,6 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	double et;
 	double state[6], range;
 
-#ifndef HAVE_SPICE
-	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
-	return -1;
-#else
 	ldpool_c(naifFile);
 	spklef_c(ephemFile, &spiceHandle);
 
@@ -153,6 +150,9 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 	spkuef_c(spiceHandle);
 	clpool_c();
+#else
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
+	return -1;
 #endif
 }
 
