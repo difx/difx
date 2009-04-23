@@ -1,8 +1,7 @@
 INCLUDES = \
         -I$(top_srcdir)/difxio
 
-LDADD = \
-        $(top_builddir)/difxio/libdifxio.la
+LDADD = $(top_builddir)/difxio/libdifxio.la -lm
 
 bin_PROGRAMS = \
 	testdifxinput \

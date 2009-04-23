@@ -31,7 +31,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "config.h"
 #include "difxio/difx_write.h"
+
+/* include spice files for spacecraft navigation if libraries are present */
+#ifdef HAVE_SPICE
+#include "SpiceCK.h"
+#include "SpiceZpr.h"
+#endif
 
 
 DifxSpacecraft *newDifxSpacecraftArray(int nSpacecraft)
@@ -106,6 +113,47 @@ void fprintDifxSpacecraft(FILE *fp, const DifxSpacecraft *ds)
 void printDifxSpacecraft(const DifxSpacecraft *ds)
 {
 	fprintDifxSpacecraft(stdout, ds);
+}
+
+int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double deltat, int nPoint, const char *objectName, const char *naifFile, const char *ephemFile)
+{
+	int spiceHandle;
+	int p;
+	long double mjd;
+	char jdstr[24];
+	double et;
+	double state[6], range;
+
+#ifndef HAVE_SPICE
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
+	return -1;
+#else
+	ldpool_c(naifFile);
+	spklef_c(ephemFile, &spiceHandle);
+
+	strcpy(ds->name, objectName);
+	ds->nPoint = nPoint;
+	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
+	for(p = 0; p < nPoint; p++)
+	{
+		mjd = mjd + p*deltat;
+		sprintf(jdstr, "%18.12lf", mjd+2400000.5);
+		str2et_c(jdstr, &et);
+		spkezr_c(objectName, et, "J2000", "LT", "EARTH", state, &range);
+
+		ds->pos[p].mjd = mjd;
+		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
+		ds->pos[p].X = state[0]*1000.0;	/* Convert to m and m/s from km and km/s */
+		ds->pos[p].Y = state[1]*1000.0;
+		ds->pos[p].Z = state[2]*1000.0;
+		ds->pos[p].dX = state[3]*1000.0;
+		ds->pos[p].dY = state[4]*1000.0;
+		ds->pos[p].dZ = state[5]*1000.0;
+	}
+
+	spkuef_c(spiceHandle);
+	clpool_c();
+#endif
 }
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)

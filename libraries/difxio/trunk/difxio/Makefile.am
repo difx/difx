@@ -41,5 +41,5 @@ lib_LTLIBRARIES = \
 	libdifxio.la
 
 libdifxio_la_SOURCES = $(h_sources) $(c_sources)
-libdifxio_la_LDFLAGS = -version-info $(LIBRARY_VERSION)
+libdifxio_la_LDFLAGS = $(spicelibs) -version-info $(LIBRARY_VERSION)
 

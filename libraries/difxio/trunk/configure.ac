@@ -28,6 +28,26 @@ AC_PROG_CC
 AC_PROG_LIBTOOL
 AM_SANITY_CHECK
 
+AC_ARG_WITH(spice-root, [  --with-spice-root=ROOT
+                            spice root is ROOT (optional).],
+spice_root="$withval", spice_root="$SPICE_ROOT")
+if test x"$spice_root" != "x"; then
+	CFLAGS="$CFLAGS -I$spice_root/include"
+	SPICE_LIBS="$spice_root/lib/cspice.a"
+	spice_enabled=true
+	echo "Spice enabled"
+	AC_DEFINE([HAVE_SPICE], [1], [1=has spice library])
+else
+	SPICE_LIBS=""
+	spice_enabled=false
+	echo "Spice disabled"
+	AC_DEFINE([HAVE_SPICE], [0], [1=has spice library])
+fi
+AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
+
+spicelibs="$SPICE_LIBS"
+AC_SUBST(spicelibs)
+
 AC_OUTPUT([
 	Makefile \
 	difxio.pc \

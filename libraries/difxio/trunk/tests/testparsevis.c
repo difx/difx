@@ -53,6 +53,10 @@ int fringe(const char *filename, int nchan, int baseline, const char *pol)
 
 	FILE *out;
 
+	/* suppress warnings */
+	baseline = 0;
+	pol = 0;
+
 	out = fopen("vis.out", "w");
 
 	vis = newDifxVisRecord(filename, nchan);
