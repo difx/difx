@@ -262,7 +262,7 @@ void VexAntenna::getClock(double mjd, double &offset, double &rate) const
 	}
 }
 
-const VexSource *VexData::getSource(string name) const
+const VexSource *VexData::getSource(const string name) const
 {
 	for(int i = 0; i < nSource(); i++)
 	{
@@ -677,7 +677,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, dou
 	}
 }
 
-const VexScan *VexData::getScan(string name) const
+const VexScan *VexData::getScan(const string name) const
 {
 	for(int i = 0; i < nScan(); i++)
 	{
@@ -698,11 +698,6 @@ const VexScan *VexData::getScan(int num) const
 	return &scans[num];
 }
 
-const VexScan *VexData::getScanByAntenna(string antName, double mjd) const
-{
-	return 0;
-}
-
 void VexData::getScanList(list<string> &scanList) const
 {
 	vector<VexScan>::const_iterator it;
@@ -719,7 +714,7 @@ VexAntenna *VexData::newAntenna()
 	return &antennas.back();
 }
 
-const VexAntenna *VexData::getAntenna(string name) const
+const VexAntenna *VexData::getAntenna(const string name) const
 {
 	for(int i = 0; i < nAntenna(); i++)
 	{
@@ -746,7 +741,7 @@ VexMode *VexData::newMode()
 	return &modes.back();
 }
 
-const VexMode *VexData::getMode(string name) const
+const VexMode *VexData::getMode(const string name) const
 {
 	for(int i = 0; i < nMode(); i++)
 	{

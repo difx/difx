@@ -63,6 +63,11 @@ public:
 	string difxName;	// Source name (if different) to appear in difx
 	char calCode;
 	double ra, dec;		// in radians
+	string ephemObject;	// name of the object in the ephemeris
+	string ephemFile;	// file containing a JPL ephemeris
+	string naifFile;	// file containing naif time data
+	double ephemDeltaT;	// tabulated ephemeris interval (seconds -- default 60)
+
 	//vector<PhaseCenter> centers;
 };
 

@@ -306,21 +306,20 @@ public:
 
 
 	int nSource() const { return sources.size(); }
-	const VexSource *getSource(string name) const;
+	const VexSource *getSource(const string name) const;
 	const VexSource *getSource(int num) const;
 
 	int nScan() const { return scans.size(); }
-	const VexScan *getScan(string name) const;
+	const VexScan *getScan(const string name) const;
 	const VexScan *getScan(int num) const;
-	const VexScan *getScanByAntenna(string antName, double mjd) const;
 	void getScanList(list<string> &scans) const;
 
 	int nAntenna() const { return antennas.size(); }
-	const VexAntenna *getAntenna(string name) const;
+	const VexAntenna *getAntenna(const string name) const;
 	const VexAntenna *getAntenna(int num) const;
 
 	int nMode() const { return modes.size(); }
-	const VexMode *getMode(string name) const;
+	const VexMode *getMode(const string name) const;
 	const VexMode *getMode(int num) const;
 
 	int nEOP() const { return eops.size(); }

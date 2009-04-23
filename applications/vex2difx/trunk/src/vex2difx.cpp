@@ -797,6 +797,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	const VexMode *mode;
 	const VexScan *S;
 	set<string> configSet;
+	set<string> spacecraftSet;
 	vector<pair<string,string> > configs;
 	vector<string> antList;
 	vector<freq> freqs;
@@ -882,7 +883,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		const VexSource *src = V->getSource(S->sourceName);
 
 		setup = P->getCorrSetup(S->setupName);
-		sourceSetup = P->getSourceSetup(S->sourceName.c_str());
+		sourceSetup = P->getSourceSetup(S->sourceName);
 
 		scan->mjdStart = S->mjdStart;
 		scan->mjdEnd = S->mjdStop;
@@ -913,6 +914,10 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			if(sourceSetup->difxName.size() > 0)
 			{
 				strcpy(scan->name, sourceSetup->difxName.c_str());
+			}
+			if(sourceSetup->ephemFile.size() > 0)
+			{
+				spacecraftSet.insert(S->sourceName);
 			}
 		}
 	}
@@ -973,6 +978,61 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	{
 		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
 		exit(0);
+	}
+
+	// Populate spacecraft table (must be before deriveSourceTable()
+	if(!spacecraftSet.empty())
+	{
+		DifxSpacecraft *ds;
+		double fracday0, deltat;
+		int mjdint, n0, nPoint, v;
+		double mjd0;
+
+		D->spacecraft = newDifxSpacecraftArray(spacecraftSet.size());
+		D->nSpacecraft = spacecraftSet.size();
+		
+		ds = D->spacecraft;
+
+		for(set<string>::const_iterator s = spacecraftSet.begin(); s != spacecraftSet.end(); s++, ds++)
+		{
+			sourceSetup = P->getSourceSetup(*s);
+
+			mjdint = J.mjdStart;
+			fracday0 = J.mjdStart-mjdint;
+			deltat = sourceSetup->ephemDeltaT/86400.0;	// convert from seconds to days
+			n0 = fracday0/deltat - 2;			// start ephmemeris at least 2 points early
+			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
+			nPoint = J.duration()/deltat + 6;		// make sure to extend beyond the end of the job
+			if(verbose > 0)
+			{
+				cout << "Computing ephemeris:" << endl;
+				cout << "  vex source name = " << sourceSetup->difxName << endl;
+				cout << "  object name = " << sourceSetup->ephemObject << endl;
+				cout << "  mjd = " << mjdint << "  deltat = " << deltat << endl;
+				cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
+				cout << "  ephemFile = " << sourceSetup->ephemFile << endl;
+				cout << "  naifFile = " << sourceSetup->naifFile << endl;
+			}
+			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
+				sourceSetup->ephemObject.c_str(),
+				sourceSetup->naifFile.c_str(),
+				sourceSetup->ephemFile.c_str());
+			if(v != 0)
+			{
+				cerr << "Error -- ephemeris calculation failed.  Must stop." << endl;
+				exit(0);
+			}
+
+			// give the spacecraft table the right name so it can be linked to the source
+			if(sourceSetup->difxName.size() > 0)
+			{
+				strcpy(ds->name, sourceSetup->difxName.c_str());
+			}
+			else
+			{
+				strcpy(ds->name, sourceSetup->vexName.c_str());
+			}
+		}
 	}
 
 	// Make frequency table

@@ -257,6 +257,7 @@ SourceSetup::SourceSetup(const string &name) : vexName(name)
 	ra = -999;
 	dec = -999;
 	calCode = ' ';
+	ephemDeltaT = 60.0;	// seconds
 }
 
 void SourceSetup::set(const string &key, const string &value)
@@ -280,6 +281,18 @@ void SourceSetup::set(const string &key, const string &value)
 	else if(key == "name" || key == "newName")
 	{
 		ss >> difxName;
+	}
+	else if(key == "ephemObject")
+	{
+		ss >> ephemObject;
+	}
+	else if(key == "ephemFile")
+	{
+		ss >> ephemFile;
+	}
+	else if(key == "naifFile")
+	{
+		ss >> naifFile;
 	}
 	else
 	{

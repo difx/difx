@@ -5,7 +5,7 @@ x. Capitalization of Antenna names and obs code
 x. # sign
 x. load params file
 x. Pulsar support
-5. Spacecraft support
+x. Spacecraft support
 6. Handle files (i.e., not Mark5 modules)
 7. Handle multiple phase centers
 x. full paths to files
