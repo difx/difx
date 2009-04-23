@@ -120,7 +120,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 #if HAVE_SPICE
 	int spiceHandle;
 	int p;
-	long double mjd;
+	long double mjd, jd;
 	char jdstr[24];
 	double et;
 	double state[6], range;
@@ -133,8 +133,9 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
 	for(p = 0; p < nPoint; p++)
 	{
-		mjd = mjd + p*deltat;
-		sprintf(jdstr, "%18.12lf", mjd+2400000.5);
+		mjd = mjd0 + p*deltat;
+		jd = mjd + 2400000.5;
+		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
 		spkezr_c(objectName, et, "J2000", "LT", "EARTH", state, &range);
 
@@ -154,6 +155,8 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
 	return -1;
 #endif
+
+	return 0;
 }
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
@@ -345,19 +348,21 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 	int i, j;
 	char value[256];
 	const sixVector *V;
+	long double mjd;
 
 	writeDifxLineInt(out, "NUM SPACECRAFT", nSpacecraft);
 	n = 1;
-	if(nSpacecraft > 0) for(i = 0; i < nSpacecraft; i++)
+	for(i = 0; i < nSpacecraft; i++)
 	{
 		writeDifxLine1(out, "SPACECRAFT %d NAME", i, ds[i].name);
 		writeDifxLineInt1(out, "SPACECRAFT %d ROWS", i, ds[i].nPoint);
 		for(j = 0; j < ds[i].nPoint; j++)
 		{
 			V = ds[i].pos + j;
-			sprintf(value, "%13.8f %18.14Le %18.14Le %18.14Le "
-					"%18.14Le %18.14Le %18.14Le", 
-				V->mjd + V->fracDay, 
+			mjd = V->mjd + V->fracDay;
+			sprintf(value, "%17.12Lf %18.14Le %18.14Le %18.14Le "
+						"%18.14Le %18.14Le %18.14Le", 
+				mjd, 
 				V->X, V->Y, V->Z,
 				V->dX, V->dY, V->dZ);
 			writeDifxLine2(out, "SPACECRAFT %d ROW %d", 
