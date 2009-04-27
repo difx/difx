@@ -11,8 +11,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/time.h>
+#include <unistd.h>
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
+
+const int MIN_SEND_GAP=40;
 
 int expandEntityRefrences(char *dest, const char *src)
 {
@@ -59,9 +63,35 @@ int expandEntityRefrences(char *dest, const char *src)
 
 int difxMessageSend(const char *message)
 {
+	static int first = 1;
+	static struct timeval tv0;
+
+	struct timeval tv;
+	int dt;
+
 	if(difxMessagePort < 0)
 	{
 		return -1;
+	}
+
+	if(first)
+	{
+		first = 0;
+		gettimeofday(&tv0, 0);
+	}
+	else
+	{
+		gettimeofday(&tv, 0);
+		dt = 1000000*(tv.tv_sec - tv0.tv_sec) + (tv.tv_usec - tv0.tv_usec);
+		if(dt < MIN_SEND_GAP && dt > 0)
+		{
+			/* The minimum gap prevents two messages from being sent too soon 
+			 * after each other -- a condition that apparently can lead to lost
+			 * messages 
+			 */
+			usleep(MIN_SEND_GAP-dt);
+		}
+		tv0 = tv;
 	}
 
 	return MulticastSend(difxMessageGroup, difxMessagePort, message, strlen(message));

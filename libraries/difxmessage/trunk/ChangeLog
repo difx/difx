@@ -35,3 +35,6 @@ Version 0.5 20090131
 Complete change from DifxMessageError to DifxMessageAlert
 Add Mark5Version message type
 Add Daughterboard information to Mark5Version messages
+Implement a minimum send delay (set to 40us now) to prevent loss of messages
+  when many are sent at nearly the same time.  Warning -- this could have 
+  performance impacts!

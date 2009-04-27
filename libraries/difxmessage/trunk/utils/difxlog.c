@@ -34,9 +34,30 @@
 #include <time.h>
 #include "difxmessage.h"
 
-int usage(const char *program)
+const char program[] = "difxlog";
+const char version[] = "0.2";
+const char verdate[] = "20090427";
+const char author[]  = "Walter Brisken";
+
+int usage(const char *prog)
 {
-	printf("Usage: %s <identity> <outfile> [<logLevel> [<pidWatch>] ]\n", program);
+	printf("\n%s ver. %s  %s %s\n\n", program, version, author, verdate);
+	printf("A program to collect multi-cast alert messages for a particular job and\nwrite them to a file.\n\n");
+	printf("Usage: %s <identity> <outfile> [<logLevel> [<pidWatch>] ]\n\n", prog);
+	printf("<identity> is the identifier for a job -- usually the job prefix.\nSpecifically, this is compared to the identity field of the DifxMessage\nthat is received.\n\n");
+	printf("<outfile> is the name of the output file containing the log info.\n\n");
+	printf("<logLevel> specifies how much data to collect [default is 4]. Messages\nwith severity less than or equal to this are saved.  See the list of severity\nlevels below.\n\n");
+	printf("<pidWatch> specifies the pid of the mpifxcorr process to watch.  This\nprogram will quit automatically when this pid is no longer running.\n\n");
+	printf("Alert severity levels are as follows:\n");
+	printf("  %d = Fatal\n", DIFX_ALERT_LEVEL_FATAL);
+	printf("  %d = Severe\n", DIFX_ALERT_LEVEL_SEVERE);
+	printf("  %d = Error\n", DIFX_ALERT_LEVEL_ERROR);
+	printf("  %d = Warning\n", DIFX_ALERT_LEVEL_WARNING);
+	printf("  %d = Informative\n", DIFX_ALERT_LEVEL_INFO);
+	printf("  %d = Verbose\n", DIFX_ALERT_LEVEL_VERBOSE);
+	printf("  %d = Debug\n", DIFX_ALERT_LEVEL_DEBUG);
+	printf("\n");
+
 	return 0;
 }
 
