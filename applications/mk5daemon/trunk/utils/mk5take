@@ -20,7 +20,9 @@ def usage(prog):
 	print '  -v         Print command to execute to the terminal\n'
 	print 'One or more Mark5 units should be specified with <unit> arguments.'
 	print 'Units are specified with 2 digit numbers, e.g., 08 or 11.  If multiple'
-	print 'units are specified, separate with spaces.\n'
+	print 'units are specified, separate with spaces.  Note that a range of units'
+	print 'can be specified with a hyphen, e.g., 07-12 and that multiple ranges'
+	print 'can be specified, e.g., 07-16 19-23 .\n'
 	print 'Internally this program uses the "stopmark5a" option of mk5control.\n'
 	exit(0)
 

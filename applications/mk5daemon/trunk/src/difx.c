@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <pwd.h>
 #include "mk5daemon.h"
 
 const char defaultMpiWrapper[] = "mpirun";
@@ -52,6 +53,7 @@ int getUse(const Uses *U, const char *hostname)
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	int i, l, n;
+	int childPid;
 	char filebase[DIFX_MESSAGE_FILENAME_LENGTH];
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char message[512];
@@ -243,11 +245,32 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		difxProgram = defaultDifxProgram;
 	}
 
-	if(fork() == 0)
-	{
+	childPid = fork();
 
-		setuid(5605);
-		setgid(5105);
+	/* here is where the spawning of mpifxcorr happens... */
+	if(childPid == 0)
+	{
+		const struct passwd *pw;
+		const char *user;
+
+		user = getenv("DIFX_USER_ID");
+		if(!user)
+		{
+			user = difxUser;
+		}
+
+		pw = getpwnam(user);
+		if(!pw)
+		{
+			fprintf(stderr, "No user named %s\n", user);
+			exit(0);
+		}
+
+		sprintf(message, "Setting uid/gid to %d/%d", pw->pw_uid, pw->pw_gid);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+
+		setgid(pw->pw_gid);
+		setuid(pw->pw_uid);
 
 		if(S->force && outputExists)
 		{
@@ -281,6 +304,39 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
 
 		difxMessageSendDifxAlert("mpifxcorr process done", DIFX_ALERT_LEVEL_INFO);
+		exit(0);
+	}
+
+	/* if we got here, we are the parent process */
+	/* now spawn the difxlog process. */
+	if(fork() == 0)
+	{
+		const struct passwd *pw;
+		const char *user;
+
+		user = getenv("DIFX_USER_ID");
+		if(!user)
+		{
+			user = difxUser;
+		}
+
+		pw = getpwnam(user);
+		if(!pw)
+		{
+			fprintf(stderr, "No user named %s\n", user);
+			exit(0);
+		}
+
+		setgid(pw->pw_gid);
+		setuid(pw->pw_uid);
+
+		sprintf(command, "ssh -x %s \"difxlog %s %s.difxlog 4 %d\"",
+			S->headNode, jobName, filebase, childPid);
+
+		printf("Executing: %s\n", command);
+
+		system(command);
+
 		exit(0);
 	}
 }

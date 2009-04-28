@@ -44,3 +44,11 @@ Version 0.8
 * use su, not ssh
 * mk5dir and mk5cp now report on replaced data
 * track StreamStor versions
+
+Version 0.9
+~~~~~~~~~~~
+* go back to using ssh to start new processes -- ensures up-to-date enviromnent
+* ignore child signal to prevent defunct processes
+* use password file to get proper user ids
+* spawn difxlog when starting a job
+* fix? dual-link network performance tracking

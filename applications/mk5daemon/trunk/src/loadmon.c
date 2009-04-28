@@ -38,16 +38,9 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 	if(D->lastRX > 0 || D->lastTX > 0) 
 	{
 		d = curRX - D->lastRX;
-		if(d < 0)
-		{
-			d += 1LL<<32;
-		}
 		D->load.netRXRate = d/D->loadMonInterval;
+
 		d = curTX - D->lastTX;
-		if(d < 0)
-		{
-			d += 1LL<<32;
-		}
 		D->load.netTXRate = d/D->loadMonInterval;
 	}
 	else

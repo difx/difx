@@ -332,6 +332,11 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	/* the next line is so that later calls to fork() don't end up with defunct
+	 * children.  see http://www.ecst.csuchico.edu/~beej/guide/ipc/fork.html
+	 */
+	signal(SIGCLD, SIG_IGN);
+
 	umask(02);
 
 	difxMessageInit(-1, program);

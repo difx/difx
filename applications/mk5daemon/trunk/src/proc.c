@@ -48,10 +48,13 @@ int procGetMem(int *memused, int *memtot)
 
 int procGetNet(long long *rx, long long *tx)
 {
+	static long long lastrx[10] = {0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL};
+	static long long lasttx[10] = {0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL};
 	FILE *in;
 	char line[100];
 	long long a, b;
 	int v;
+	int i;
 
 	*rx = 0LL;
 	*tx = 0LL;
@@ -62,7 +65,7 @@ int procGetNet(long long *rx, long long *tx)
 		return -1;
 	}
 
-	for(;;)
+	for(i = 0; i < 10; i++)
 	{
 		fgets(line, 99, in);
 		if(feof(in))
@@ -75,8 +78,29 @@ int procGetNet(long long *rx, long long *tx)
 				&a, &b);
 			if(v >= 2)
 			{
+
+				/* take into account 32 bit counters on 32-bit machines */
+				if(a < lastrx[i])
+				{
+					a = (a & 0xFFFFFFFFLL) | (lastrx[i] & 0xFFFFFFFF00000000LL);
+					if(a < lastrx[i])
+					{
+						a += 0x100000000LL;
+					}
+				}
+				if(b < lasttx[i])
+				{
+					b = (b & 0xFFFFFFFFLL) | (lasttx[i] & 0xFFFFFFFF00000000LL);
+					if(b < lasttx[i])
+					{
+						b += 0x100000000LL;
+					}
+				}
 				*rx += a;
 				*tx += b;
+
+				lastrx[i] = a;
+				lasttx[i] = b;
 			}
 		}
 	}
