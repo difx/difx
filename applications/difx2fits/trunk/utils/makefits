@@ -8,19 +8,24 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.1'
+version = '0.2'
 author  = 'Walter Brisken'
-verdate = '20090406'
+verdate = '20090421'
+
+calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
 def usage(prog):
 	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
 	print '\nUsage:  %s [options] <pass name>' % prog
+	print '\nOptions can include:'
 	print '  --verbose'
 	print '  -v         Send more output to the screen\n'
 	print '  --help'
-	print '  -h         Print this help information\n'
+	print '  -h         Print this help information and quit\n'
 	print '  --override-version'
 	print '             To force operation with mixed DiFX versions\n'
+	print '  --allow-partial'
+	print '             Bypass check for complete set of correlated\n'
 	exit(0)
 
 def parsekv(str):
@@ -46,12 +51,26 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 	outfile = '%s/%s.%s.%s' % (dir, expt, passname, ext)
 	if isfile(outfile):
 		system('mv %s %s.old' % (outfile, outfile))
-	out = open(outfile, 'w')
 	skipFirst = False
-	if verbose:
-		print '\nMaking sniffer file %s from:' % outfile
+
+	files = []
 	for i in list:
 		infile = '%s.%d.%s' % (expt, i, ext)
+		if isfile(infile):
+			files.append(infile)
+		else:
+			print 'Warning: %s not found' % infile
+
+	if len(files) == 0:
+		print 'No %s files to merge!' % ext
+		return
+
+	out = open(outfile, 'w')
+
+	if verbose:
+		print '\nMaking sniffer file %s from:' % outfile
+	
+	for infile in files:
 		if verbose:
 			print '  %s' % infile
 		data = open(infile, 'r').readlines()
@@ -152,6 +171,19 @@ class JobList:
 			print '\nError: temporary directory %s already exists.  Aborting.' % tmp
 			exit(0)
 		mkdir(tmp)
+
+		calfiles = ''
+		for f in calFiles:
+			if not isfile(f):
+				print 'Warning: file "%s" not in current directory.' % f
+			else:
+				calfiles = calfiles + ' ' + f
+		if len(calfiles) > 0:
+			cmd = 'cp %s %s' % (calfiles, tmp)
+			if verbose:
+				print 'Executing: %s' % cmd
+			system(cmd)
+
 		if verbose:
 			print 'Changing to directory: %s' % tmp
 		chdir(tmp)
@@ -201,9 +233,38 @@ class JobList:
 			j = j + 1
 		out.close()
 
+		# merge and gzip difxlog files
+		logFile = '%s/%s.difxlog' % (cwd, self.passName)
+		cmd = 'cat':
+		nLog = 0
+		for j in self.jobs:
+			fn = dir + '/' + j.name + '.difxlog'
+			if isfile(fn):
+				cmd = cmd + ' ' + fn
+				nLog += 1
+		if nLog > 0:
+			cmd = cmd + ' > ' + logFile
+			if verbose:
+				print 'Executing: %s' % cmd
+			system(cmd)
+			cmd = 'gzip %s' % (logFile)
+			if verbose:
+				print 'Executing: %s' % cmd
+			system(cmd)
+		else:
+			if verbose:
+				print 'No .difxlog files to merge'
+
+		# merge sniffer files
 		if sniff:
 			for x in [['acb', False] , ['apd', True], ['log', False], ['wts', True], ['xcb', False]]:
 				mergesnifferfiles(expt, indices, self.kv['pass'], x[0], cwd, verbose, x[1])
+
+		if len(calfiles) > 0:
+			cmd = 'rm %s' % calfiles
+			if verbose:
+				print 'Executing: %s' % cmd
+			system(cmd)
 
 		chdir(cwd)
 
@@ -239,6 +300,7 @@ if difxQueueBase == None:
 	exit(0)
 
 overrideVersion = False
+allowPartial = False
 verbose = False
 sniff = True
 
@@ -248,6 +310,8 @@ for a in argv[1:]:
 	if a[0] == '-':
 		if a == '--override-version':
 			overrideVersion = True
+		elif a == '--allow-partial':
+			allowPartial = True
 		elif a in ('-h', '--help'):
 			usage(argv[0])
 			opts = opts + ' -v'
