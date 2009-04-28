@@ -64,16 +64,24 @@ int usage(const char *prog)
 int checkPid(int pid)
 {
 	char cmd[100];
+	const char *c;
 	FILE *p;
-	int r;
 	char s[10];
 
 	sprintf(cmd, "ps -p %d -o pid --no-headers", pid);
 	p = popen(cmd, "r");
-	r = (*fgets(s, 9, p) >= ' ');
+	c = fgets(s, 9, p);
 	fclose(p);
+	if(c == 0)
+	{
+		return 0;
+	}
+	if(*c <= 0)
+	{
+		return 0;
+	}
 
-	return r;
+	return 1;
 }
 
 int main(int argc, char **argv)
@@ -173,6 +181,8 @@ int main(int argc, char **argv)
 
 		lastt = t;
 	}
+
+	fclose(out);
 
 	difxMessageReceiveClose(sock);
 
