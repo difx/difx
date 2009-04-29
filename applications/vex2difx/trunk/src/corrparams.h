@@ -30,10 +30,11 @@
 #ifndef __CORRPARAM_H__
 #define __CORRPARAM_H__
 
-#include <vector>
-#include <list>
-#include <map>
 #include <string>
+#include <set>
+#include <vector>
+#include <map>
+#include <list>
 
 #include "vextables.h"
 
@@ -57,7 +58,7 @@ class SourceSetup
 {
 public:
 	SourceSetup(const string &name);
-	void set(const string &key, const string &value);
+	void setkv(const string &key, const string &value);
 
 	string vexName;		// Source name as appears in vex file
 	string difxName;	// Source name (if different) to appear in difx
@@ -66,7 +67,7 @@ public:
 	string ephemObject;	// name of the object in the ephemeris
 	string ephemFile;	// file containing a JPL ephemeris
 	string naifFile;	// file containing naif time data
-	double ephemDeltaT;	// tabulated ephemeris interval (seconds -- default 60)
+	double ephemDeltaT;	// tabulated ephem. interval (seconds, default 60)
 
 	//vector<PhaseCenter> centers;
 };
@@ -75,7 +76,7 @@ class AntennaSetup
 {
 public:
 	AntennaSetup(const string &name);
-	void set(const string &key, const string &value);
+	void setkv(const string &key, const string &value);
 
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
@@ -90,9 +91,10 @@ class CorrSetup
 {
 public:
 	CorrSetup(const string &name = "setup_default");
-	void set(const string &key, const string &value);
+	void setkv(const string &key, const string &value);
+	bool correlateFreqId(int freqId) const;
 
-	string setupName;
+	string corrSetupName;
 
 	double tInt;		// integration time
 	int nChan;		// channels per sub-band
@@ -103,6 +105,9 @@ public:
 	int startChan;
 	bool postFFringe;	// fringe after FFT?
 	string binConfigFile;
+	set<int> freqIds;	// which bands to correlate
+private:
+	void addFreqId(int freqId);
 };
 
 
@@ -111,7 +116,7 @@ class CorrRule
 public:
 	CorrRule(const string &name = "rule_default");
 
-	void set(const string &key, const string &value);
+	void setkv(const string &key, const string &value);
 	bool match(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 
 	string ruleName;
@@ -122,7 +127,7 @@ public:
 	list<char> calCode;
 	list<int> qualifier;
 
-	string setupName;	/* pointer to CorrSetup */
+	string corrSetupName;	/* pointer to CorrSetup */
 };
 
 class CorrParams
@@ -134,7 +139,7 @@ public:
 	void loadShelves(const string& fileName);
 	const char *getShelf(const string& vsn) const;
 
-	void set(const string &key, const string &value);
+	void setkv(const string &key, const string &value);
 	void load(const string& fileName);
 	void defaults();
 	void defaultSetup();
@@ -173,16 +178,16 @@ public:
 	list<string> antennaList;
 
 	/* setups to apply */
-	vector<CorrSetup> setups;
-
-	/* rules to determine which setups to apply */
-	vector<CorrRule> rules;
+	vector<CorrSetup> corrSetups;
 
 	/* source setups to apply */
 	vector<SourceSetup> sourceSetups;
 
 	/* antenna setups to apply */
 	vector<AntennaSetup> antennaSetups;
+
+	/* rules to determine which setups to apply */
+	vector<CorrRule> rules;
 
 private:
 	void addAntenna(const string& antName);

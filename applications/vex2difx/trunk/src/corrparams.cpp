@@ -120,7 +120,7 @@ double parseCoord(const char *str, char type)
 	return v;
 }
 
-CorrSetup::CorrSetup(const string &name) : setupName(name)
+CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
 	specAvg = 0;
@@ -132,7 +132,7 @@ CorrSetup::CorrSetup(const string &name) : setupName(name)
 	blocksPerSend = 0;
 }
 
-void CorrSetup::set(const string &key, const string &value)
+void CorrSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 
@@ -174,9 +174,32 @@ void CorrSetup::set(const string &key, const string &value)
 	{
 		ss >> binConfigFile;
 	}
+	else if(key == "freqId" || key == "freqIds")
+	{
+		int freqId;
+		ss >> freqId;
+		addFreqId(freqId);
+	}
 	else
 	{
 		cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << endl; 
+	}
+}
+
+void CorrSetup::addFreqId(int freqId)
+{
+	freqIds.insert(freqId);
+}
+
+bool CorrSetup::correlateFreqId(int freqId) const
+{
+	if(freqIds.size() == 0)
+	{
+		return true;
+	}
+	else
+	{
+		return (freqIds.find(freqId) != freqIds.end());
 	}
 }
 
@@ -206,7 +229,7 @@ bool CorrRule::match(const string &scan, const string &source, const string &mod
 	return true;
 }
 
-void CorrRule::set(const string &key, const string &value)
+void CorrRule::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 
@@ -244,7 +267,7 @@ void CorrRule::set(const string &key, const string &value)
 	}
 	else if(key == "setupName" || key == "setup")
 	{
-		ss >> setupName;
+		ss >> corrSetupName;
 	}
 	else
 	{
@@ -260,7 +283,7 @@ SourceSetup::SourceSetup(const string &name) : vexName(name)
 	ephemDeltaT = 60.0;	// seconds
 }
 
-void SourceSetup::set(const string &key, const string &value)
+void SourceSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 
@@ -304,7 +327,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 {
 }
 
-void AntennaSetup::set(const string &key, const string &value)
+void AntennaSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 
@@ -401,7 +424,7 @@ void CorrParams::defaults()
 	visBufferLength = 32;
 }
 
-void CorrParams::set(const string &key, const string &value)
+void CorrParams::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 
@@ -528,7 +551,7 @@ void CorrParams::load(const string& fileName)
 	ifstream is;
 	vector<string> tokens;
 	char s[1024];
-	CorrSetup   *setup=0;
+	CorrSetup   *corrSetup=0;
 	CorrRule    *rule=0;
 	SourceSetup *sourceSetup=0;
 	AntennaSetup *antennaSetup=0;
@@ -598,8 +621,8 @@ void CorrParams::load(const string& fileName)
 				exit(0);
 			}
 			i++;
-			setups.push_back(CorrSetup(*i));
-			setup = &setups.back();
+			corrSetups.push_back(CorrSetup(*i));
+			corrSetup = &corrSetups.back();
 			i++;
 			if(*i != "{")
 			{
@@ -689,23 +712,23 @@ void CorrParams::load(const string& fileName)
 			value = *i;
 			if(mode == 0)
 			{
-				set(key, value);
+				setkv(key, value);
 			}
 			else if(mode == 1)
 			{
-				setup->set(key, value);
+				corrSetup->setkv(key, value);
 			}
 			else if(mode == 2)
 			{
-				rule->set(key, value);
+				rule->setkv(key, value);
 			}
 			else if(mode == 3)
 			{
-				sourceSetup->set(key, value);
+				sourceSetup->setkv(key, value);
 			}
 			else if(mode == 4)
 			{
-				antennaSetup->set(key, value);
+				antennaSetup->setkv(key, value);
 			}
 		}
 		else
@@ -733,7 +756,7 @@ void CorrParams::load(const string& fileName)
 
 	// if no setups or rules declared, make the default setup
 
-	if(setups.size() == 0 && rules.size() == 0)
+	if(corrSetups.size() == 0 && rules.size() == 0)
 	{
 		defaultSetup();
 	}
@@ -741,25 +764,25 @@ void CorrParams::load(const string& fileName)
 
 void CorrParams::defaultSetup()
 {
-	setups.push_back(CorrSetup("default"));
+	corrSetups.push_back(CorrSetup("default"));
 }
 
 void CorrParams::example()
 {
 	singleSetup = false;
-	setups.push_back(CorrSetup("1413+15"));
-	setups.back().tInt = 1.0;
-	setups.back().nChan = 64;
-	setups.push_back(CorrSetup("default"));
+	corrSetups.push_back(CorrSetup("1413+15"));
+	corrSetups.back().tInt = 1.0;
+	corrSetups.back().nChan = 64;
+	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
 	rules.back().sourceName.push_back(string("1413+15"));
-	rules.back().setupName = string("1413+15");
+	rules.back().corrSetupName = string("1413+15");
 	rules.push_back(CorrRule("1713+07"));
 	rules.back().sourceName.push_back(string("1713+07"));
-	rules.back().setupName = string("default");
+	rules.back().corrSetupName = string("default");
 	rules.push_back(CorrRule("X"));
 	rules.back().scanName.push_back(string("No0006"));
-	rules.back().setupName = string("bogus");
+	rules.back().corrSetupName = string("bogus");
 }
 
 bool CorrParams::useAntenna(const string &antName) const
@@ -831,12 +854,12 @@ const CorrSetup *CorrParams::getCorrSetup(const string &name) const
 {
 	int i, n;
 
-	n = setups.size();
+	n = corrSetups.size();
 	for(i = 0; i < n; i++)
 	{
-		if(name == setups[i].setupName)
+		if(name == corrSetups[i].corrSetupName)
 		{
-			return &setups[i];
+			return &corrSetups[i];
 		}
 	}
 
@@ -869,7 +892,7 @@ const string &CorrParams::findSetup(const string &scan, const string &source, co
 	{
 		if(it->match(scan, source, mode, cal, qual))
 		{
-			return it->setupName;
+			return it->corrSetupName;
 		}
 	}
 
@@ -889,7 +912,7 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 	p = os.precision();
 	os.precision(6);
 
-	os << "SETUP " << x.setupName << endl;
+	os << "SETUP " << x.corrSetupName << endl;
 	os << "{" << endl;
 	os << "  tInt=" << x.tInt << endl;
 	os << "  nChan=" << x.nChan << endl;
@@ -956,7 +979,7 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	{
 		os << endl;
 	}
-	os << "  setup=" << x.setupName << endl;
+	os << "  correlator setup=" << x.corrSetupName << endl;
 	
 	os << "}" << endl;
 
@@ -1044,11 +1067,11 @@ ostream& operator << (ostream& os, const CorrParams& x)
 		}
 	}
 
-	if(!x.setups.empty())
+	if(!x.corrSetups.empty())
 	{
 		vector<CorrSetup>::const_iterator it;
 
-		for(it = x.setups.begin(); it != x.setups.end(); it++)
+		for(it = x.corrSetups.begin(); it != x.corrSetups.end(); it++)
 		{
 			os << endl;
 			os << *it;

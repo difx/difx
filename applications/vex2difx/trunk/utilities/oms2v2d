@@ -34,13 +34,19 @@ from string import split, strip, find
 from sys import exit, argv
 
 program = 'oms2v2d'
-version = '0.2'
-verdate = '20090211'
+version = '0.3'
+verdate = '20090429'
 author = 'Walter Brisken'
 
 def usage(argv):
-	print '%s ver. %s  %s  %s\n' % (program, version, author, verdate)
-	print 'Usage: %s <oms file>' % argv[0];
+	print '\n%s ver. %s  %s  %s\n' % (program, version, author, verdate)
+	print 'Program to take sched\'s .oms file and produce a skeleton .v2d file\n'
+	print 'Usage: %s [options] <oms file>\n' % argv[0];
+	print 'options can include\n'
+	print '  --help'
+	print '  -h       print this help info and quit\n'
+	print '<oms file> is a .oms file produced by sched\n'
+
 
 def readOMS(filename):
 	data = open(filename).readlines()
@@ -119,7 +125,7 @@ def writev2d(oms, v2dFile):
 			if len(s['CAL_CODE']) > 0:
 				c = s['CAL_CODE'][0]
 				if len(c) > 0:
-					srcParams = srcParams + ' calCode = ' + s['SOURCE_NAME'][0]
+					srcParams = srcParams + ' calCode = ' + c
 		out.write('SOURCE %s {%s }\n' % (s['SOURCE_NAME'][0], srcParams))
 	out.write('\n')
 

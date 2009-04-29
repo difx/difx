@@ -93,22 +93,22 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScan(JG.scans.back());
-		const CorrSetup *setup1 = P->getCorrSetup(scan1->setupName);
+		const CorrSetup *corrSetup1 = P->getCorrSetup(scan1->corrSetupName);
 
 		for(it = scans.begin(); it != scans.end();)
 		{
 			const VexScan *scan2 = V->getScan(*it);
-			const CorrSetup *setup2 = P->getCorrSetup(scan2->setupName);
+			const CorrSetup *corrSetup2 = P->getCorrSetup(scan2->corrSetupName);
 
 			// FIXME -- verify modes are compatible
-			if(areCorrSetupsCompatible(setup1, setup2, P) &&
+			if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) &&
 			   areScansCompatible(scan1, scan2, P))
 			{
 				JG.logicalOr(*scan2);
 				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
-				setup1 = setup2;
+				corrSetup1 = corrSetup2;
 			}
 			else
 			{	
@@ -269,8 +269,6 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 
 void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 {
-	// FIXME -- no maxLength constraint yet
-
 	vector<VexJobGroup> JG;
 	vector<VexJob>::iterator j;
 	int k;
@@ -298,7 +296,11 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 		ostringstream name;
 		j->jobSeries = P->jobSeries;
 		j->jobId = k;
+
+		// note -- this is an internal name only, not the job prefix that 
+		// becomes part of the filenames
 		name << j->jobSeries << j->jobId;
+
 		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
 		j->assignVSNs(*V);
@@ -588,77 +590,118 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 }
 
 // warning: assumes same number of datastreams == antennas for each config
-void populateBaselineTable(DifxInput *D, int doPolar)
+void populateBaselineTable(DifxInput *D, const CorrSetup *corrSetup)
 {	
-	int a1, a2, c, f, g, n1, n2, u, v;
+	int a1, a2, f, n1, n2, u, v;
 	int npol;
 	int a1c[2], a2c[2];
 	char a1p[2], a2p[2];
+	int nFreq;
 	DifxBaseline *bl;
+	DifxConfig *config;
+	int freqId, blId, configId;
+	int nConfigBaseline;
 
+
+	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
-
-	for(c = 0; c < D->nConfig; c++)
+	for(configId = 0; configId < D->nConfig; configId++)
 	{
-		int nD = D->config[c].nDatastream;
+		int nD = D->config[configId].nDatastream;
 		D->nBaseline += nD*(nD-1)/2;
 	}
 	
 	D->baseline = newDifxBaselineArray(D->nBaseline);
 
 	bl = D->baseline;
-	for(c = 0; c < D->nConfig; c++)
+	blId = 0;	// baseline table index
+
+	for(configId = 0; configId < D->nConfig; configId++)
 	{
-		for(a1 = 0; a1 < D->config[c].nDatastream-1; a1++)
+		config = D->config + configId;
+
+		config->nBaseline = 0;
+
+		for(a1 = 0; a1 < config->nDatastream-1; a1++)
 		{
-			for(a2 = a1+1; a2 < D->config[c].nDatastream; a2++)
+			for(a2 = a1+1; a2 < config->nDatastream; a2++)
 			{
-				bl->dsA = D->config[c].datastreamId[a1];
-				bl->dsB = D->config[c].datastreamId[a2];
+				bl->dsA = config->datastreamId[a1];
+				bl->dsB = config->datastreamId[a2];
 
 				DifxBaselineAllocFreqs(bl, D->datastream[a1].nFreq);
 
+				nFreq = 0; // this counts the actual number of freqs
+
 				for(f = 0; f < D->datastream[a1].nFreq; f++)
 				{
+					freqId = D->datastream[a1].freqId[f];
+
+					if(!corrSetup->correlateFreqId(freqId))
+					{
+						continue;
+					}
+
+					DifxBaselineAllocPolProds(bl, nFreq, 4);
+
+					n1 = DifxDatastreamGetRecChans(D->datastream+a1, freqId, a1p, a1c);
+					n2 = DifxDatastreamGetRecChans(D->datastream+a2, freqId, a2p, a2c);
+
 					npol = 0;
-					DifxBaselineAllocPolProds(bl, f, 4);
-					g = D->datastream[a1].freqId[f];
-
-					n1 = DifxDatastreamGetRecChans(D->datastream+a1, g, a1p, a1c);
-					n2 = DifxDatastreamGetRecChans(D->datastream+a2, g, a2p, a2c);
-
 					for(u = 0; u < n1; u++)
 					{
 						for(v = 0; v < n2; v++)
 						{
 							if(a1p[u] == a2p[v])
 							{
-								bl->recChanA[f][npol] = a1c[u];
-								bl->recChanB[f][npol] = a2c[v];
+								bl->recChanA[nFreq][npol] = a1c[u];
+								bl->recChanB[nFreq][npol] = a2c[v];
 								npol++;
 							}
 						}
 					}
 
-					if(npol == 2 && doPolar)
+					if(npol == 0)
+					{
+						// This deallocates
+						DifxBaselineAllocPolProds(bl, nFreq, 0);
+
+						continue;
+					}
+
+					if(npol == 2 && corrSetup->doPolar)
 					{
 						// configure cross hands here
-						bl->recChanA[f][2] = bl->recChanA[f][0];
-						bl->recChanB[f][2] = bl->recChanB[f][1];
-						bl->recChanA[f][3] = bl->recChanA[f][1];
-						bl->recChanB[f][3] = bl->recChanB[f][0];
+						bl->recChanA[nFreq][2] = bl->recChanA[nFreq][0];
+						bl->recChanB[nFreq][2] = bl->recChanB[nFreq][1];
+						bl->recChanA[nFreq][3] = bl->recChanA[nFreq][1];
+						bl->recChanB[nFreq][3] = bl->recChanB[nFreq][0];
 					}
 					else
 					{
 						// Not all 4 products used: reduce count
-						bl->nPolProd[f] = npol;
+						bl->nPolProd[nFreq] = npol;
 					}
+
+					nFreq++;
 				}
 
-				bl++;
+				bl->nFreq = nFreq;
+
+				if(bl->nFreq > 0)
+				{
+					config->baselineId[config->nBaseline] = blId;
+					config->nBaseline++;
+					bl++;
+					blId++;
+				}
 			}
 		}
+		config->baselineId[config->nBaseline] = -1;
 	}
+
+	// set actual number of baselines
+	D->nBaseline = blId;
 }
 
 void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
@@ -682,16 +725,16 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 {
 	int c;
 	DifxConfig *config;
-	const CorrSetup *setup;
+	const CorrSetup *corrSetup;
 	const VexMode *mode;
 	string configName;
 	double sendLength;
 	double minBW;
 
-	setup = P->getCorrSetup(S->setupName);
-	if(setup == 0)
+	corrSetup = P->getCorrSetup(S->corrSetupName);
+	if(corrSetup == 0)
 	{
-		cerr << "Error: setup[" << S->setupName << "] == 0" << endl;
+		cerr << "Error: correlator setup[" << S->corrSetupName << "] == 0" << endl;
 		exit(0);
 	}
 
@@ -705,7 +748,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 	for(unsigned int i = 0; i < configs.size(); i++)
 	{
 		if(configs[i].first  == S->modeName &&
-		   configs[i].second == S->setupName)
+		   configs[i].second == S->corrSetupName)
 		{
 			return i;
 		}
@@ -713,33 +756,33 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 
 	sendLength = P->sendLength;
 
-	configName = S->modeName + string("_") + S->setupName;
+	configName = S->modeName + string("_") + S->corrSetupName;
 
 	c = configs.size();
-	configs.push_back(pair<string,string>(S->modeName, S->setupName));
+	configs.push_back(pair<string,string>(S->modeName, S->corrSetupName));
 	config = D->config + c;
 	strcpy(config->name, configName.c_str());
-	config->tInt = setup->tInt;
-	if(setup->specAvg == 0)
+	config->tInt = corrSetup->tInt;
+	if(corrSetup->specAvg == 0)
 	{
-		config->nChan = setup->nChan;
+		config->nChan = corrSetup->nChan;
 		config->specAvg = 1;	
-		if(setup->nChan < 128)
+		if(corrSetup->nChan < 128)
 		{
-			config->specAvg = 128/setup->nChan;
+			config->specAvg = 128/corrSetup->nChan;
 			config->nChan = 128;
 		}
 	}
 	else
 	{
-		config->nChan = setup->nChan*setup->specAvg;
-		config->specAvg = setup->specAvg;
+		config->nChan = corrSetup->nChan*corrSetup->specAvg;
+		config->specAvg = corrSetup->specAvg;
 	}
 	config->guardBlocks = 1;
-	config->postFFringe = setup->postFFringe;
+	config->postFFringe = corrSetup->postFFringe;
 	config->quadDelayInterp = 1;
 	config->pulsarId = -1;		// FIXME -- from setup
-	config->doPolar = setup->doPolar;
+	config->doPolar = corrSetup->doPolar;
 	config->nAntenna = D->nAntenna;
 	config->nDatastream = D->nAntenna;
 	config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
@@ -764,13 +807,13 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 
 	config->nPol = mode->getPols(config->pol);
 	config->quantBits = mode->getBits();
-	if(setup->blocksPerSend > 0)
+	if(corrSetup->blocksPerSend > 0)
 	{
-		config->blocksPerSend = setup->blocksPerSend;
+		config->blocksPerSend = corrSetup->blocksPerSend;
 	}
 	else
 	{
-		int blocksPerInt = (int)(setup->tInt*minBW/config->nChan + 0.5);
+		int blocksPerInt = (int)(corrSetup->tInt*minBW/config->nChan + 0.5);
 		int bytesPerBlock = (int)(mode->subbands.size()*config->nChan*2*mode->getBits()/8 + 0.5);
 		int bps = 1;
 		int sendBytes = (int)(sendLength*mode->subbands.size()*mode->sampRate*mode->getBits()/8.0 + 0.5);
@@ -805,8 +848,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 {
 	DifxInput *D;
 	DifxScan *scan;
-	string setupName;
-	const CorrSetup *setup;
+	string corrSetupName;
+	const CorrSetup *corrSetup;
 	const SourceSetup *sourceSetup;
 	const VexMode *mode;
 	const VexScan *S;
@@ -817,12 +860,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	vector<freq> freqs;
 	int nPulsar=0;
 
-	// Assume same setup for all scans
+	// Assume same correlator setup for all scans
 
 	if(J.scans.size() == 0)
 	{
 		cerr << "Developer error: writeJob(): J.scans.size() = 0" << endl;
-		return;
+		exit(0);
 	}
 	
 	S = V->getScan(J.scans.front());
@@ -831,11 +874,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		cerr << "Developer error: writeJob() top: scan[" << J.scans.front() << "] = 0" << endl;
 		exit(0);
 	}
-	setupName = S->setupName;
-	setup = P->getCorrSetup(setupName);
-	if(!setup)
+	corrSetupName = S->corrSetupName;
+	corrSetup = P->getCorrSetup(corrSetupName);
+	if(!corrSetup)
 	{
-		cerr << "Error: setup " << setupName << "Not found!" << endl;
+		cerr << "Error: writeJob(): correlator setup " << corrSetupName << "Not found!" << endl;
 		exit(0);
 	}
 
@@ -850,7 +893,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			cerr << "Developer error: writeJob() loop: scan[" << *si << "] = 0" << endl;
 			exit(0);
 		}
-		configName = S->modeName + string("_") + S->setupName;
+		configName = S->modeName + string("_") + S->corrSetupName;
 		configSet.insert(configName);
 	}
 
@@ -860,7 +903,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	D->mjdStart = J.mjdStart;
 	D->mjdStop  = J.mjdStop;
 	D->visBufferLength = P->visBufferLength;
-	D->startChan = setup->startChan;
+	D->startChan = corrSetup->startChan;
 	D->dataBufferFactor = P->dataBufferFactor;
 	D->nDataSegments = P->nDataSegments;
 
@@ -886,7 +929,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			}
 		}
 
-		tops = J.calcOps(V, setup->nChan*2, setup->doPolar) * 1.0e-12;
+		tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
 
 		*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
 		p = of->precision();
@@ -915,7 +958,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 
 		const VexSource *src = V->getSource(S->sourceName);
 
-		setup = P->getCorrSetup(S->setupName);
+		corrSetup = P->getCorrSetup(S->corrSetupName);
 		sourceSetup = P->getSourceSetup(S->sourceName);
 
 		scan->mjdStart = S->mjdStart;
@@ -957,8 +1000,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 
 	for(int c = 0; c < D->nConfig; c++)
 	{
-		setup = P->getCorrSetup(configs[c].second);
-		if(setup->binConfigFile.size() > 0)
+		corrSetup = P->getCorrSetup(configs[c].second);
+		if(corrSetup->binConfigFile.size() > 0)
 		{
 			nPulsar++;
 		}
@@ -980,17 +1023,17 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			exit(0);
 		}
 
-		setup = P->getCorrSetup(configs[c].second);
-		if(setup == 0)
+		corrSetup = P->getCorrSetup(configs[c].second);
+		if(corrSetup == 0)
 		{
-			cerr << "Error: setup[" << configs[c].second << "] is null" << endl;
+			cerr << "Error: correlator setup[" << configs[c].second << "] is null" << endl;
 			exit(0);
 		}
 
-		if(setup->binConfigFile.size() > 0)
+		if(corrSetup->binConfigFile.size() > 0)
 		{
 			D->config[c].pulsarId = D->nPulsar;
-			strcpy(D->pulsar[D->nPulsar].fileName, setup->binConfigFile.c_str());
+			strcpy(D->pulsar[D->nPulsar].fileName, corrSetup->binConfigFile.c_str());
 			D->nPulsar++;
 		}
 
@@ -1072,7 +1115,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	populateFreqTable(D, freqs);
 
 	// Make baseline table
-	populateBaselineTable(D, setup->doPolar);
+	populateBaselineTable(D, corrSetup);
 
 	// Make EOP table
 	populateEOPTable(D, V->getEOPs());
@@ -1103,13 +1146,13 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	}
 
 	// fix a few last parameters
-	if(setup->specAvg == 0)
+	if(corrSetup->specAvg == 0)
 	{
 		D->specAvg  = D->config[0].specAvg;
 	}
 	else
 	{
-		D->specAvg = setup->specAvg;
+		D->specAvg = corrSetup->specAvg;
 	}
 
 	// write input file

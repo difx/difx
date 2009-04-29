@@ -383,16 +383,16 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 			exit(0);
 		}
 
-		string setupName = params.findSetup(scanName, sourceName, modeName, src->calCode, 0);
+		string corrSetupName = params.findSetup(scanName, sourceName, modeName, src->calCode, 0);
 
-		if(setupName == "" || setupName == "SKIP")
+		if(corrSetupName == "" || corrSetupName == "SKIP")
 		{
 			continue;
 		}
 
-		if(params.getCorrSetup(setupName) == 0)
+		if(params.getCorrSetup(corrSetupName) == 0)
 		{
-			cerr << "Error: setup " << setupName << " not defined!" << endl;
+			cerr << "Error: correlator setup " << corrSetupName << " not defined!" << endl;
 			exit(0);
 		}
 
@@ -418,7 +418,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->stations = stations;
 		S->modeName = modeName;
 		S->sourceName = sourceName;
-		S->setupName = setupName;
+		S->corrSetupName = corrSetupName;
 
 		// Add to event list
 		V->addEvent(startScan, VexEvent::SCAN_START, scanId, scanId);

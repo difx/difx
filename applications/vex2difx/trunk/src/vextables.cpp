@@ -939,7 +939,7 @@ ostream& operator << (ostream& os, const VexScan& x)
 		os << "  " << iter->first << " range=" << iter->second << endl;
 	}
 
-	os << "  setup=" << x.setupName << endl;
+	os << "  setup=" << x.corrSetupName << endl;
 
 	return os;
 }
