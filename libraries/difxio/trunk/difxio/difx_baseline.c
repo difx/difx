@@ -116,8 +116,16 @@ void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
 	}
 
 	b->nPolProd[freq] = nPol;
-	b->recChanA[freq] = (int *)calloc(nPol, sizeof(int));
-	b->recChanB[freq] = (int *)calloc(nPol, sizeof(int));
+	if(nPol > 0)
+	{
+		b->recChanA[freq] = (int *)calloc(nPol, sizeof(int));
+		b->recChanB[freq] = (int *)calloc(nPol, sizeof(int));
+	}
+	else
+	{
+		b->recChanA[freq] = 0;
+		b->recChanB[freq] = 0;
+	}
 }
 
 void deleteDifxBaselineInternals(DifxBaseline *db)

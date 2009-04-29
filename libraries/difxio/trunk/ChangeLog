@@ -1,3 +1,7 @@
+2.10
+* Deallocation option of function DifxBaselineAllocPolProds()
+  - needed for more flexible frequency selection in vex2difx
+
 2.9
 * Initial support for calculation of spacecraft positions via SPICE
 
