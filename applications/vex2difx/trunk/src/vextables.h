@@ -86,9 +86,9 @@ public:
 	void setTimeRange(double start, double stop) { mjdStart = start; mjdStop = stop; }
 	void setTimeRange(const VexInterval &v) { mjdStart = v.mjdStart; mjdStop = v.mjdStop; }
 	void logicalAnd(double start, double stop);
-	void logicalAnd(VexInterval &v);
+	void logicalAnd(const VexInterval &v);
 	void logicalOr(double start, double stop);
-	void logicalOr(VexInterval &v);
+	void logicalOr(const VexInterval &v);
 	bool isWithin(VexInterval &v) { return (mjdStart >= v.mjdStart) && (mjdStop <= v.mjdStop); }
 };
 
@@ -258,7 +258,7 @@ public:
 	int antId;
 };
 
-class VexJobGroup
+class VexJobGroup : public VexInterval
 {
 public:
 	vector<string> scans;
@@ -266,7 +266,7 @@ public:
 
 	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
-	void createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const;
+	void createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const;
 };
 
 class VexData
@@ -354,6 +354,7 @@ ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexVSN& x);
 ostream& operator << (ostream& os, const VexClock& x);
 ostream& operator << (ostream& os, const VexJob& x);
+ostream& operator << (ostream& os, const VexJobGroup& x);
 ostream& operator << (ostream& os, const VexEvent& x);
 ostream& operator << (ostream& os, const VexJobFlag& x);
 ostream& operator << (ostream& os, const VexData& x);

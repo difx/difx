@@ -30,12 +30,13 @@
 #include <vector>
 #include <set>
 #include <sstream>
-#include <difxio/difx_input.h>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <sys/time.h>
+#include <sys/stat.h>
+#include <difxio/difx_input.h>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -88,6 +89,7 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 		JGs.push_back(VexJobGroup());
 		VexJobGroup &JG = JGs.back();
 		JG.scans.push_back(scans.front());
+		JG.setTimeRange( *(V->getScan(scans.front())) );
 		scans.pop_front();
 
 		const VexScan *scan1 = V->getScan(JG.scans.back());
@@ -102,6 +104,7 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 			if(areCorrSetupsCompatible(setup1, setup2, P) &&
 			   areScansCompatible(scan1, scan2, P))
 			{
+				JG.logicalOr(*scan2);
 				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
@@ -121,14 +124,12 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	}
 }
 
-class MediaChange
+class MediaChange : public VexInterval
 {
 public:
-	MediaChange(string A, double start, double stop) : ant(A), mjdStart(start), mjdStop(stop) {}
+	MediaChange(string A, double start, double stop) : VexInterval(start, stop), ant(A) {}
 
 	string ant;
-	double mjdStart;
-	double mjdStop;
 };
 
 int nGap(const list<MediaChange> &m, double mjd)
@@ -198,6 +199,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 			if(recordStop[e->name] > 0.0)
 			{
 				changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
+				cout << "Media change: " << e->name << " " << (VexInterval)(changes.back()) << endl;
 			}
 		}
 		else if(e->eventType == VexEvent::RECORD_STOP)
@@ -251,14 +253,16 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	}
 	breaks.sort();
 	// Add one fictitious break at end so num breaks = num jobs
-	breaks.push_back(V->obsStop());
+	//breaks.push_back(V->obsStop());
+	breaks.push_back(JG.mjdStop);
 
 	// form jobs
-	start = V->obsStart();
+	//start = V->obsStart();
+	start = JG.mjdStart;
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
 		VexInterval jobTimeRange(start, *t);
-		JG.createJob(Js, jobTimeRange, P->maxLength);
+		JG.createJobs(Js, jobTimeRange, P->maxLength);
 		start = *t;
 	}
 }
@@ -273,6 +277,16 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 
 	// Do splitting of jobs
 	genJobGroups(JG, V, P, verbose);
+
+	if(verbose > 0)
+	{
+		cout << JG.size() << " job groups created:" << endl;
+		for(unsigned int i = 0; i < JG.size(); i++)
+		{
+			cout << "  " << JG[i];
+		}
+	}
+
 	for(unsigned int i = 0; i < JG.size(); i++)
 	{
 		genJobs(J, JG[i], V, P, verbose);
@@ -803,7 +817,21 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	vector<freq> freqs;
 	int nPulsar=0;
 
-	setupName = V->getScan(J.scans.front())->setupName;
+	// Assume same setup for all scans
+
+	if(J.scans.size() == 0)
+	{
+		cerr << "Developer error: writeJob(): J.scans.size() = 0" << endl;
+		return;
+	}
+	
+	S = V->getScan(J.scans.front());
+	if(!S)
+	{
+		cerr << "Developer error: writeJob() top: scan[" << J.scans.front() << "] = 0" << endl;
+		exit(0);
+	}
+	setupName = S->setupName;
 	setup = P->getCorrSetup(setupName);
 	if(!setup)
 	{
@@ -817,6 +845,11 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		string configName;
 
 		S = V->getScan(*si);
+		if(!S)
+		{
+			cerr << "Developer error: writeJob() loop: scan[" << *si << "] = 0" << endl;
+			exit(0);
+		}
 		configName = S->modeName + string("_") + S->setupName;
 		configSet.insert(configName);
 	}
@@ -1209,6 +1242,8 @@ int main(int argc, char **argv)
 		cerr << "Error: vex file parameter (vex) not found in file." << endl;
 		exit(0);
 	}
+
+	umask(02);
 
 	shelfFile = P->vexFile.substr(0, P->vexFile.find_last_of('.'));
 	shelfFile += string(".shelf");

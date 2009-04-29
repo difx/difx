@@ -1103,7 +1103,7 @@ void CorrParams::loadShelves(const string& fileName)
 	bool doAntennas;
 	char s[1024], a[32], v[32], ms[32];
 	string vsn, shelf;
-	int nNoShelf = 0;
+	vector<string> noShelf;
 
 	is.open(fileName.c_str());
 
@@ -1161,7 +1161,7 @@ void CorrParams::loadShelves(const string& fileName)
 
 		if(shelf == string("NONE"))
 		{
-			nNoShelf++;
+			noShelf.push_back(vsn);
 		}
 		else
 		{
@@ -1171,9 +1171,14 @@ void CorrParams::loadShelves(const string& fileName)
 
 	is.close();
 
-	if(nNoShelf > 0)
+	if(noShelf.size() > 0)
 	{
-		cerr << "Warning: " << nNoShelf << " modules have no shelf location." << endl;
+		cerr << "Warning: " << noShelf.size() << " modules have no shelf location:";
+		for(vector<string>::const_iterator s = noShelf.begin(); s != noShelf.end(); s++)
+		{
+			cerr << " " << *s;
+		}
+		cerr << endl;
 	}
 }
 
@@ -1184,10 +1189,6 @@ const char *CorrParams::getShelf(const string& vsn) const
 	it = shelves.find(vsn);
 	if(it == shelves.end())
 	{
-		if(vsn != "None")
-		{
-			cerr << "Warning: cannot find shelf for " << vsn << endl;
-		}
 		return "NONE";
 	}
 	else

@@ -92,7 +92,7 @@ void VexInterval::logicalAnd(double start, double stop)
 	}
 }
 
-void VexInterval::logicalAnd(VexInterval &v)
+void VexInterval::logicalAnd(const VexInterval &v)
 {
 	if(mjdStart < v.mjdStart)
 	{
@@ -116,7 +116,7 @@ void VexInterval::logicalOr(double start, double stop)
 	}
 }
 
-void VexInterval::logicalOr(VexInterval &v)
+void VexInterval::logicalOr(const VexInterval &v)
 {
 	if(mjdStart > v.mjdStart)
 	{
@@ -618,7 +618,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 }
 
 // FIXME -- this does not allow concurrent scans
-void VexJobGroup::createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const
+void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const
 {
 	list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
@@ -627,6 +627,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, dou
 	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
+
 	J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
 
 	for(e = events.begin(); e != events.end(); e++)
@@ -659,7 +660,7 @@ void VexJobGroup::createJob(vector<VexJob>& jobs, VexInterval& jobTimeRange, dou
 					jobs.push_back(VexJob());
 					J = &jobs.back();
 					scanTime = 0.0;
-					J->setTimeRange(jobTimeRange);
+					J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
 				}
 			}
 		}
@@ -1053,6 +1054,18 @@ ostream& operator << (ostream& os, const VexJob& x)
 
 	os.precision(p);
 
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexJobGroup& x)
+{
+	int p = os.precision();
+	os.precision(12);
+
+	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << endl;
+	
+	os.precision(p);
+	
 	return os;
 }
 
