@@ -39,6 +39,7 @@ def parsekv(str):
 		kv[p[0]] = p[1]
 	return kv
 
+# turn unix time into mjd.  Should only be used when precision is not required
 def getmjd(t):
 	return 40587.0 + t/86400.0
 
@@ -106,11 +107,11 @@ class Job:
 		for f in files:
 			file = dir + '/' + self.name + f
 			if not isfile(file):
-				print 'Error : %s not found' % file
+				print '%s not found' % file
 				return False
 		ddir = dir + '/' + self.name + '.difx'
 		if not isdir(ddir):
-			print 'Error : difx output dir %s not found' % ddir
+			print 'difx output dir %s not found' % ddir
 			return False
 		return True
 
@@ -234,8 +235,8 @@ class JobList:
 		out.close()
 
 		# merge and gzip difxlog files
-		logFile = '%s/%s.difxlog' % (cwd, self.passName)
-		cmd = 'cat':
+		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])
+		cmd = 'cat'
 		nLog = 0
 		for j in self.jobs:
 			fn = dir + '/' + j.name + '.difxlog'
@@ -247,7 +248,7 @@ class JobList:
 			if verbose:
 				print 'Executing: %s' % cmd
 			system(cmd)
-			cmd = 'gzip %s' % (logFile)
+			cmd = 'gzip -f %s' % (logFile)
 			if verbose:
 				print 'Executing: %s' % cmd
 			system(cmd)
@@ -276,14 +277,32 @@ class JobList:
 
 		return True
 
-	def verify(self, queuedir):
+	def verify(self, queuedir, allowPartial):
 		dir = queuedir + '/' + self.kv['exper']
+
+		completeJobs = []
 
 		OK = True
 		for j in self.jobs:
 			if j.verify(dir) == False:
 				OK = False
-		return OK
+			else:
+				completeJobs.append(j)
+		if not allowPartial:
+			return OK
+
+		nFail = len(self.jobs) - len(completeJobs)
+		if nFail == 0:
+			return True
+
+		if len(completeJobs) == 0:
+			print 'No jobs are complete.  Cannot continue'
+			return False
+
+		print '%d of %d jobs were not complete.  Continuing anyway...' % \
+			(nFail, len(self.jobs))
+		self.jobs = completeJobs
+		return True
 
 	def show(self, indent=0):
 		id = ' '*indent
@@ -348,10 +367,11 @@ for arg in args:
 	if verbose:
 		jl.show()
 
-	OK = jl.verify(difxQueueBase)
+	OK = jl.verify(difxQueueBase, allowPartial)
 
 	if not OK:
-		print 'job list verification failed!'
+		if not allowPartial:
+			print 'job list verification failed!'
 		exit(0)
 
 	OK = jl.makefits(difxQueueBase, verbose, sniff, opts)
