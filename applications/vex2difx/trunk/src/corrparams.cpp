@@ -559,6 +559,18 @@ void CorrParams::addBaseline(const string& baselineName)
 
 	pos = baselineName.find("-");
 
+	if(pos == string::npos)
+	{
+		cerr << "Error in baseline designation: " << baselineName << " -- a hyphen is required." << endl;
+		exit(0);
+	}
+
+	if(pos == 0 || pos == baselineName.length()-1)
+	{
+		cerr << "Error in baseline designation: " << baselineName << " -- need characters before and after the hyphen." << endl;
+		exit(0);
+	}
+
 	baselineList.push_back(pair<string,string>(
 		baselineName.substr(0, pos),
 		baselineName.substr(pos+1) ));
