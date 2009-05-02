@@ -311,11 +311,23 @@ void VexJob::assignVSNs(const VexData& V)
 	for(i = antennas.begin(); i != antennas.end(); i++)
 	{
 		const string &vsn = V.getVSN(*i, *this);
-		if(vsn != string("None"))
+		vsns[*i] = vsn;
+	}
+}
+
+string VexJob::getVSN(const string &antName) const
+{
+	map<string,string>::const_iterator a;
+
+	for(a = vsns.begin(); a != vsns.end(); a++)
+	{
+		if(a->first == antName)
 		{
-			vsns[*i] = vsn;
+			return a->second;
 		}
 	}
+
+	return string("None");
 }
 
 double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
@@ -519,11 +531,15 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 
 			if(!scan)
 			{
-				cerr << "Developer error! generateFlagFile: SCAN_START, scan=0" << endl;
+				cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
 				exit(0);
 			}
 			for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
 			{
+				if(antIds.find(sa->first) == antIds.end())
+				{
+					cerr << "Developer error: generateFlagFile: antenna " << sa->first << " not in antIds" << endl;
+				}
 				flagMask[antIds[sa->first]] &= ~VexJobFlag::JOB_FLAG_SCAN;
 			}
 		}

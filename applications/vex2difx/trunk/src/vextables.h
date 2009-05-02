@@ -232,6 +232,7 @@ public:
 	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1) {}
 
 	void assignVSNs(const VexData& V);
+	string getVSN(const string &antName) const;
 	int generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	// return the approximate number of Operations required to compute this scan

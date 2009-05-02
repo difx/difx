@@ -146,6 +146,7 @@ public:
 	void example();
 
 	bool useAntenna(const string &antName) const;
+	bool useBaseline(const string &ant1, const string &ant2) const;
 	bool swapPol(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const string &name) const;
@@ -176,6 +177,7 @@ public:
 	int visBufferLength;
 
 	list<string> antennaList;
+	list<pair<string,string> > baselineList;
 
 	/* setups to apply */
 	vector<CorrSetup> corrSetups;
@@ -191,6 +193,7 @@ public:
 
 private:
 	void addAntenna(const string& antName);
+	void addBaseline(const string& baselineName);
 	map<string,string> shelves;
 };
 

@@ -532,6 +532,13 @@ void CorrParams::setkv(const string &key, const string &value)
 		Upper(s);
 		addAntenna(s);
 	}
+	else if(key == "baselines")
+	{
+		string s;
+		ss >> s;
+		Upper(s);
+		addBaseline(s);
+	}
 	else
 	{
 		cerr << "Warning: Unknown keyword " << key << " with value " << value << endl;
@@ -544,6 +551,17 @@ void CorrParams::addAntenna(const string& antName)
 	{
 		antennaList.push_back(antName);
 	}
+}
+
+void CorrParams::addBaseline(const string& baselineName)
+{
+	size_t pos;
+
+	pos = baselineName.find("-");
+
+	baselineList.push_back(pair<string,string>(
+		baselineName.substr(0, pos),
+		baselineName.substr(pos+1) ));
 }
 
 void CorrParams::load(const string& fileName)
@@ -760,6 +778,11 @@ void CorrParams::load(const string& fileName)
 	{
 		defaultSetup();
 	}
+
+	if(baselineList.size() == 0)
+	{
+		addBaseline("*-*");
+	}
 }
 
 void CorrParams::defaultSetup()
@@ -785,16 +808,74 @@ void CorrParams::example()
 	rules.back().corrSetupName = string("bogus");
 }
 
-bool CorrParams::useAntenna(const string &antName) const
+bool antennaMatch(const string &a1, const string &a2)
 {
-	if(antennaList.empty() || find(antennaList.begin(), antennaList.end(), antName) != antennaList.end())
+	if(a1 == "*" || a2 == "*")
 	{
 		return true;
 	}
-	else
+	if(a1 == a2)
 	{
-		return false;
+		return true;
 	}
+	if(a1.find(a2) != string::npos)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool baselineMatch(const pair<string,string> &bl, const string &ant1, const string &ant2)
+{
+	if(antennaMatch(bl.first, ant1) &&
+	   antennaMatch(bl.second, ant2) )
+	{
+		return true;
+	}
+	
+	return false;
+}
+
+bool CorrParams::useAntenna(const string &antName) const
+{
+	list<string>::const_iterator it;
+
+	if(antennaList.empty())
+	{
+		return true;
+	}
+
+	for(it = antennaList.begin(); it != antennaList.end(); it++)
+	{
+		if(antennaMatch(*it, antName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CorrParams::useBaseline(const string &ant1, const string &ant2) const
+{
+	list<pair<string,string> >::const_iterator it;
+
+	if(baselineList.empty())
+	{
+		return true;
+	}
+
+	for(it = baselineList.begin(); it != baselineList.end(); it++)
+	{
+		if(baselineMatch(*it, ant1, ant2) ||
+		   baselineMatch(*it, ant2, ant1))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool CorrParams::swapPol(const string &antName) const
@@ -1052,6 +1133,22 @@ ostream& operator << (ostream& os, const CorrParams& x)
 				os << ",";
 			}
 			os << *it;
+		}
+		os << endl;
+	}
+	
+	if(!x.baselineList.empty())
+	{
+		list<pair<string,string> >::const_iterator it;
+		
+		os << "baselines=";
+		for(it = x.baselineList.begin(); it != x.baselineList.end(); it++)
+		{
+			if(it != x.baselineList.begin())
+			{
+				os << ",";
+			}
+			os << it->first << '-' << it->second;
 		}
 		os << endl;
 	}

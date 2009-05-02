@@ -493,6 +493,8 @@ int getBand(vector<pair<int,int> >& bandMap, int fqId)
 	
 static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode, const string &antName)
 {
+	vector<pair<int,int> > bandMap;
+
 	int antId = D->datastream[dsId].antennaId;
 	if(antId < 0 || antId >= D->nAntenna)
 	{
@@ -539,7 +541,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	}
 	else
 	{
-		cerr << "Error: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << antName << "." << endl;
+		cerr << "Error: setFormat: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << antName << "." << endl;
 		return 0;
 	}
 
@@ -547,12 +549,11 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	D->datastream[dsId].quantBits = format.nBit;
 	DifxDatastreamAllocRecChans(D->datastream + dsId, n2);
 
-	vector<pair<int,int> > bandMap;
 	for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
 	{
 		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
 		{
-			cerr << "Error: index to subband=" << i->subbandId << " is out of range" << endl;
+			cerr << "Error: setFormat: index to subband=" << i->subbandId << " is out of range" << endl;
 			exit(0);
 		}
 		int r = i->recordChan;
@@ -561,7 +562,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecChan)
 		{
-			cerr << "Error: index to RC = " << r << " is out of range" << endl;
+			cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
 			exit(0);
 		}
 		D->datastream[dsId].RCfreqId[r] = getBand(bandMap, fqId);
@@ -590,7 +591,7 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 }
 
 // warning: assumes same number of datastreams == antennas for each config
-void populateBaselineTable(DifxInput *D, const CorrSetup *corrSetup)
+void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup)
 {	
 	int a1, a2, f, n1, n2, u, v;
 	int npol;
@@ -622,6 +623,7 @@ void populateBaselineTable(DifxInput *D, const CorrSetup *corrSetup)
 
 		config->nBaseline = 0;
 
+		// Note: these should loop over antennaIds
 		for(a1 = 0; a1 < config->nDatastream-1; a1++)
 		{
 			for(a2 = a1+1; a2 < config->nDatastream; a2++)
@@ -629,10 +631,16 @@ void populateBaselineTable(DifxInput *D, const CorrSetup *corrSetup)
 				bl->dsA = config->datastreamId[a1];
 				bl->dsB = config->datastreamId[a2];
 
+				if(!P->useBaseline(D->antenna[a1].name, D->antenna[a2].name))
+				{
+					continue;
+				}
+
 				DifxBaselineAllocFreqs(bl, D->datastream[a1].nFreq);
 
 				nFreq = 0; // this counts the actual number of freqs
 
+				// Note: here we need to loop over all datastreams associated with this antenna!
 				for(f = 0; f < D->datastream[a1].nFreq; f++)
 				{
 					freqId = D->datastream[a1].freqId[f];
@@ -1040,9 +1048,14 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		int d = 0;
 		for(int a = 0; a < D->nAntenna; a++)
 		{
-			int v = setFormat(D, D->nDatastream, freqs, mode, antList[a]);
+			string antName = antList[a];
+			int v = setFormat(D, D->nDatastream, freqs, mode, antName);
 			if(v)
 			{
+				if(J.getVSN(antName) == "None")
+				{
+					strcpy(D->datastream[D->nDatastream].dataSource, "FILE");
+				}
 				D->config[c].datastreamId[d] = D->nDatastream;
 				D->nDatastream++;
 				d++;
@@ -1115,7 +1128,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	populateFreqTable(D, freqs);
 
 	// Make baseline table
-	populateBaselineTable(D, corrSetup);
+	populateBaselineTable(D, P, corrSetup);
 
 	// Make EOP table
 	populateEOPTable(D, V->getEOPs());
