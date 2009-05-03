@@ -1,14 +1,24 @@
 #!/usr/bin/env python
 
 from sys import argv, exit
-from os import chdir, popen, system
+from os import chdir, popen, system, getcwd
 from string import strip, split, find, lower, upper
 
 program = 'difxsniff'
-version = '1.2'
-verdate = '20081229'
+version = '1.3'
+verdate = '20090409'
 author  = 'Walter Brisken'
 
+def usage():
+	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
+	print '\nA program to "sniff" FITS files made by DiFX\n'
+	print 'Usage: ./difxsniff [options] <refants> <filebase1> [<filebase2> [...] ]'
+	print '\nOptions can include:'
+	print '  -h or --help : print this info and quit.'
+	print 'each "file" is a FITS file made by difx2fits\n'
+
+# Executes a program wanting command line input.  The args here are those
+# inputs in order.
 def run(pgm, args):
 	print pgm
 	p = popen(pgm, 'w')
@@ -16,15 +26,7 @@ def run(pgm, args):
 		p.write('%s\n' % a)
 	p.close()
 
-def usage():
-	print '\n%s ver. %s   %s %s' % (program, version, verdate, author)
-	print '\nA program to "sniff" FITS files made by DiFX\n'
-	print 'Usage: ./difxsniff [options] <refants> <file1> [<file2> [...] ]'
-	print '\nOptions can include:'
-	print '  -h or --help : print this info and quit.'
-	print 'each "file" is a FITS file made by difx2fits\n'
-
-def sniff(filebases, refants, dir):
+def sniff(filebases, refants, dir, newNames):
 
 	if len(dir) > 0:
 		system('mkdir -p ' + dir)
@@ -88,14 +90,33 @@ def sniff(filebases, refants, dir):
 	if len(dir) > 0:
 		chdir(dir)
 
-	run('plotapd', ['datafile.lis', 'apdfile.ps/vps', 'ALL', 'ALL'])
-	run('plotwt',  ['wtsfile.lis.sum', 'wtsfile.ps/vps'])
-	run('plotbp',  ['acbandfile.lis', 'acbandfile.ps/vps', ''])
-	run('plotbp',  ['xcbandfile.lis', 'xcbandfile.ps/vps', ''])
+	if newNames:
+		base = split(filebases[0], '/')[-1]
+		apdfilename = '%s.apd.ps' % base
+		wtsfilename = '%s.wts.ps' % base
+		acbfilename = '%s.acb.ps' % base
+		xcbfilename = '%s.xcb.ps' % base
+	else:
+		apdfilename = 'apdfile.ps'
+		wtsfilename = 'wtsfile.ps'
+		acbfilename = 'acbandfile.ps'
+		xcbfilename = 'xcbandfile.ps'
+
+	run('plotapd', ['datafile.lis',    '%s/vps' % apdfilename, 'ALL', 'ALL'])
+	run('plotwt',  ['wtsfile.lis.sum', '%s/vps' % wtsfilename])
+	run('plotbp',  ['acbandfile.lis',  '%s/vps' % acbfilename, ''])
+	run('plotbp',  ['xcbandfile.lis',  '%s/vps' % xcbfilename, ''])
 	
 files = []
 refants = []
-dir = 'sniffer/'
+if getcwd()[-7:] == 'sniffer':
+	dir = getcwd() + '/'
+else:
+	dir = 'sniffer/'
+
+if len(argv) < 2:
+	usage()
+	exit(0)
 
 for a in argv[1:]:
 	p = find(a, '.FITS')
@@ -130,5 +151,16 @@ if dir[-1] != '/':
 if len(refants) == 1:
 	dir += refants[0] + '/'
 
-sniff(files, refants, dir)
+nFITS = 0
+for f in files:
+	if f[-5:] == '.FITS':
+		nFITS += 1
+
+if nFITS == 0:
+	for f in files:
+		sniff([f], refants, dir, True)
+elif nFITS == len(files):
+	sniff(files, refants, dir, False)
+else:
+	print 'Error -- mixed FITS files and file prefixes'
 
