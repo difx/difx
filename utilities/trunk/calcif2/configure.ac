@@ -1,4 +1,4 @@
-AC_INIT([job2difx], [1.11], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([calcif2], [1.0], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE
@@ -14,5 +14,6 @@ CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS}"
 
 AC_OUTPUT([ \
 	Makefile \
-	calcif/Makefile \
+	src/Makefile \
+	utils/Makefile \
 ])

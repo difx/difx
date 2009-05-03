@@ -1,4 +1,4 @@
-bin_PROGRAMS = calcif calcif2
+bin_PROGRAMS = calcif2
 
 calcif2_SOURCES = \
 	calcif2.c \
@@ -8,10 +8,4 @@ calcif2_SOURCES = \
 	CALCServer.h \
 	poly.c \
 	poly.h \
-	MATHCNST.H
-
-calcif_SOURCES = \
-	calcif.c \
-	CALC_xdr.c \
-	CALCServer.h \
 	MATHCNST.H

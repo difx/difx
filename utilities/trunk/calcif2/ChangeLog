@@ -1,7 +1,19 @@
-db2vex
-~~~~~~
+calcif2
+~~~~~~~
+Version 1.0
+* No changes except renaming of this entire package
+
+Version 0.2
+* by default zero negative delays
+* don't include atmosphere in UVW calculation
+* respect DIFX_GROUP_ID and set permissions
+
 Version 0.1
-* initial version
+* complete rewrite of calcif.  Differences from calcif:
+  - generates polynomial model by default
+  - corrects for aberration by default
+  - allows any mount type
+  - much improved integration with difxio library
 
 getjobs
 ~~~~~~~
@@ -83,40 +95,6 @@ jobstatus
 Version 1.0
 * Initial version
 
-calcif2
-~~~~~~~
-Version 0.2
-* by default zero negative delays
-* don't include atmosphere in UVW calculation
-* respect DIFX_GROUP_ID and set permissions
-
-Version 0.1
-* complete rewrite of calcif.  Differences from calcif:
-  - generates polynomial model by default
-  - corrects for aberration by default
-  - allows any mount type
-  - much improved integration with difxio library
-
-calcif
-~~~~~~
-Version 1.5
-* allow -a for globbing all .calc files or a list of files.
-* don't rerun if unnecessary, unless -f is used
-* generate files in /tmp and move when complete to prevent partial files
-* respect DIFX_GROUP_ID and set permissions
-
-Version 1.2
-* Handle CALC_SERVER env var, and command line value.
-* Improved help info
-
-Version 1.1
-* Ignore more than 5 EOPs
-* HACK -- make sure that "time" of data request is integer number of seconds.
-      This is not the proper fix, but it works within the scope of the project.
-
-Version 1.0
-* Initial version
-
 difxsniff
 ~~~~~~~~~
 Version 1.0
@@ -179,3 +157,26 @@ Version 0.3
 * look at DIFX_VERSION
 * small fixes
 * respect DIFX_GROUP_ID and set permissions
+
+
+calcif
+~~~~~~
+Removed from repository 20090503
+
+Version 1.5
+* allow -a for globbing all .calc files or a list of files.
+* don't rerun if unnecessary, unless -f is used
+* generate files in /tmp and move when complete to prevent partial files
+* respect DIFX_GROUP_ID and set permissions
+
+Version 1.2
+* Handle CALC_SERVER env var, and command line value.
+* Improved help info
+
+Version 1.1
+* Ignore more than 5 EOPs
+* HACK -- make sure that "time" of data request is integer number of seconds.
+      This is not the proper fix, but it works within the scope of the project.
+
+Version 1.0
+* Initial version
