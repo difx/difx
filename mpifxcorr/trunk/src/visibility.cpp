@@ -139,10 +139,17 @@ bool Visibility::addData(cf32* subintresults)
   return (currentsubints==subintsthisintegration); //are we finished integrating?
 }
 
+string sec2time(const int& sec) {
+  ostringstream oss;
+  oss << setfill('0');
+  oss << setw(2) << sec/3600 << ":" << setw(2) << (sec/60)%60 << ":" << setw(2) << sec%60;
+  return oss.str();
+}
+
 void Visibility::increment()
 {
   int status;
-  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << ".  The approximate mjd/seconds is " << expermjd + (experseconds + currentstartseconds)/86400 << "/" << (experseconds + currentstartseconds)%86400 << endl;
+  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << ".  The approximate mjd/seconds is " << expermjd + (experseconds + currentstartseconds)/86400 << "/" << sec2time((experseconds + currentstartseconds)%86400) << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
