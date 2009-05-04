@@ -194,7 +194,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
 {
 
   if (udp_offset>readbytes) {
-    cinfo << startl << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << endl;
+    cinfo << startl << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << "(" << udp_offset << "," << readbytes << "," << udp_offset % readbytes << ")" << endl;
     udp_offset %= readbytes;
   }
 
@@ -244,7 +244,8 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     iov[1].iov_len = MAXPACKETSIZE;
 
     packet_segmentend = packet_segmentstart+(bytestoread-(udp_offset%udpsize)-1)/udpsize;
-    if (udp_offset>0) packet_segmentend++;
+    if (udp_offset>0 && udp_offset<bytestoread) packet_segmentend++; 
+    // Check above line is correct if udp_offset > udpsize
     segmentsize = packet_segmentend-packet_segmentstart+1;
 
     //cinfo << startl << "****** udpsize " << udpsize << "  bytestoread " << bytestoread << endl;
@@ -292,8 +293,13 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  packet_sum += bytestoread;
 	  npacket++;
 	  udp_offset -= bytestoread;
-	  if (udp_offset>0)
+	  if (udp_offset>0) {
 	    memmove(udp_buf, udp_buf+bytestoread, udp_offset);
+	    next_segmentstart = packet_segmentend;
+	  } else {
+	    next_segmentstart = packet_segmentend+1;
+	  }
+	  next_udpoffset = udp_offset;
 
 	} else {
 	  int bytes = (bytestoread-udp_offset)%udpsize;
@@ -353,13 +359,19 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  // Probably should decrease packet dropped count, maybe (it was not counted after all)
 	} else if (sequence==packet_segmentend) { 
 	  //cinfo << startl << "**Segmentend " << packet_index << " (" << packet_segmentend << ")" << endl;
-	  int bytes = (bytestoread-udp_offset-1)%udpsize+1;
+	  int bytes;
+	  if (udp_offset==udpsize && segmentsize==1) 
+	    bytes = bytestoread;
+	  else 
+	    bytes = (bytestoread-udp_offset-1)%udpsize+1;
 	  // Consistence check
 	  if (bytes<0) {
-	    cfatal << startl << "Datastream " << mpiid << ": Error read too many UDP packets!!" << endl;
+	    cfatal << startl << "Datastream: Error read too many UDP packets!!" << endl;
+	    cfatal << startl << "   " << bytestoread << " " << udp_offset << " " << bytes << endl;
 	    MPI_Abort(MPI_COMM_WORLD, 1);
 	  } else if (bytes > udpsize) {
-	    cfatal << startl << "Datastream " << mpiid << ": Error have not read enough UDP packets!!" << endl;
+	    cfatal << startl << "Datastream: Error have not read enough UDP packets!!" << endl;
+	    cfatal << startl << "   " << bytestoread << " " << udp_offset << " " << bytes << endl;
 	    MPI_Abort(MPI_COMM_WORLD, 1);
 	  }
 	  memcpy(ptr+udp_offset+(packet_index-1)*udpsize,udp_buf,bytes);
@@ -415,6 +427,17 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
     // Replace missing packets with fill data
     int nmiss = 0;
+    /*
+    for (unsigned int i=0; i<segmentsize; i++) {
+      if (!packets_arrived[i]) {
+	nmiss++;
+      }
+    }
+    if (nmiss) {
+      cinfo << startl << "Missing " << nmiss << endl;
+    }
+    nmiss = 0;
+    */
     for (unsigned int i=0; i<segmentsize; i++) {
       if (!packets_arrived[i]) {
 	//cinfo << startl << "***** Dropped " << packet_segmentstart+i << "(" << i << ")" << endl;
@@ -423,13 +446,15 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	if (i==0) {
 	  memcpy(ptr, invalid_buf, udp_offset); // CHECK INITIAL FULL OR EMPTY BUFFER
 	} else if (i==packet_segmentend-packet_segmentstart) {
-	  memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,(bytestoread-udp_offset)%udpsize);	  
+	  if (udp_offset+(i-1)*udpsize+(bytestoread-udp_offset)%udpsize > bytestoread) 
+	    cwarn << startl << "Internal Error, trying to copy pass buffer size" << endl;
+	  else 
+	    memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,(bytestoread-udp_offset)%udpsize);	  
 	} else {
 	  memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,udpsize);	  
 	}
       }
     }
-    //cinfo << startl << "**** Datastream " << mpiid << " missing " << nmiss << "/" << segmentsize << " packets" << endl;
 
     packet_segmentstart = next_segmentstart;
     udp_offset = next_udpoffset;
@@ -537,9 +562,9 @@ double tim(void) {
 
 int Mk5DataStream::openframe()
 {
-  // The number of segments per "frame" is arbitrary. Just set it to ~ 1sec
+  // The number of segments per "frame" is arbitrary. Just set it to ~ 5sec
   int nsegment;
-  nsegment = (int)(1.0e9/bufferinfo[0].nsinc+0.1);
+  nsegment = (int)(2.0e9/bufferinfo[0].nsinc+0.1);
 
   if (!tcp) {
     // Print statistics. 
@@ -564,7 +589,7 @@ int Mk5DataStream::openframe()
     if (packet_head!=0) {
       cinfo << fixed << setprecision(2);
       cinfo << startl << "Datastream " << mpiid << ": Packets=" << npacket << "  Dropped=" << dropped
-	   << "  Duplicated=" << dup << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
+	    << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
       // Should reset precision
     }
     packet_drop = 0;
