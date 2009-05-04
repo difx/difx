@@ -205,8 +205,10 @@ if (defined $recorder_hosts && $evlbi) {
 
   } else { # Child
 
-    print "Waiting for DiFX to start\n";
-    sleep($offset*0.75);
+    if (!$debug) {
+      print "Waiting for DiFX to start\n";
+      sleep($offset*0.75);
+    }
 
     my %rec_hosts = ();
     open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
@@ -245,9 +247,13 @@ if (defined $recorder_hosts && $evlbi) {
 	  my $udp = -$tcpwin[$i];
 	  $status = send_data("udp=$udp", $recorder);
 	  die "Failed to set UDP on $recorder\n" if (!defined $status);
-
+	  $status = send_data("tcp_window_size=0", $recorder);
+	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
 	  if (defined $ipd) {
 	    $status = send_data("ipd=$ipd", $recorder);
+	    die "Failed to set IPD on $recorder\n" if (!defined $status);
+	  } else {
+	    $status = send_data("ipd=0", $recorder);
 	    die "Failed to set IPD on $recorder\n" if (!defined $status);
 	  }
       
@@ -270,6 +276,9 @@ if (defined $recorder_hosts && $evlbi) {
 	$status = send_data("round_start=off", $recorder);
 	die "Failed to set round start off, on $recorder\n" if (!defined $status);
 	
+	$status = send_data("bandwidth=$bandwidth", $recorder);
+	die "Failed to set bandwidth on $recorder\n" if (!defined $status);
+
 	$status = send_data("compression=$compression", $recorder);
 	die "Failed to set compression on $recorder\n" if (!defined $status);
 
