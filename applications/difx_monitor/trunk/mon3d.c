@@ -40,9 +40,9 @@ void alarm_signal(int sig);
 pthread_mutex_t vismutex = PTHREAD_MUTEX_INITIALIZER;
 int32_t nchan=0;
 int32_t timestamp=-1;
-int32_t lasttime=-1;
 Ipp32fc *buf=NULL;
 float **lagdisplay;
+int sequence, lastseq;
 
 int main(int argc, const char * argv[]) {
   int status, iprod;
@@ -71,6 +71,9 @@ int main(int argc, const char * argv[]) {
     fprintf(stderr, "Failed to allocate memory for image array\n");
     exit(1);
   }
+
+  sequence = -1;
+  lastseq = -1;
 
   /* Start plotting thread */
   status = pthread_create( &plotthread, NULL, plotit, &monserver);
@@ -107,7 +110,7 @@ int main(int argc, const char * argv[]) {
 
 void alarm_signal(int sig) {
   pthread_mutex_lock(&vismutex);
-  if (timestamp!=lasttime) {
+  if (sequence!=lastseq) {
     cs2ecb();
   }
   pthread_mutex_unlock(&vismutex);
@@ -126,7 +129,7 @@ void cb(double *t, int *kc) {
   static Ipp32fc navc;
 
   pthread_mutex_lock(&vismutex);
-  lasttime=timestamp;
+  lastseq=sequence;
   reinit=0;
   if (lastchans!=nchan) {
     reinit=1;
@@ -284,6 +287,7 @@ void *plotit (void *arg) {
 
       pthread_mutex_lock(&vismutex);	
       timestamp=monserver->timestamp;
+      sequence++;
       if (nchan!=monserver->numchannels) {
 	nchan = monserver->numchannels;
 	if (buf!=NULL) ippsFree(buf);
