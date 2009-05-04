@@ -205,7 +205,7 @@ print INPUT<<EOF;
 # COMMON SETTINGS ##!
 DELAY FILENAME:     $pwd/${exper}.delay
 UVW FILENAME:       $pwd/${exper}.uvw
-CORE CONF FILENAME: $pwd/${exper}.threads
+CORE CONF FILENAME: $pwd/threads
 EXECUTE TIME (SEC): $duration
 START MJD:          $start_mjd
 START SECONDS:      $start_seconds
@@ -953,8 +953,8 @@ my %antclockoffsets;
 BEGIN {
   %antclockoffsets = (Pa => -1.997,
                       At => -55.31,
-                      Mp => -1.817,
-                      Ho => -13.59,
+                      Mp => 0.3,
+                      Ho => -11.72,
                       Cd => 1.05,
                       Ti => -2.0,
                       Sh => -7.4,
