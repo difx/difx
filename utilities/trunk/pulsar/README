@@ -1,0 +1,50 @@
+This is brief and probably incomplete description of how to generate pulsar binconfig files for DiFX from the baseband data used for the correlation (ie most use when you are unsure of the absolute phase of the pulsar).
+
+You will first want to compile pulseprofile, located in a subdirectory of the same name.  Follow the usual autotools path:
+aclocal
+autoconf
+autoheader
+automake -a
+./configure --prefix=${DIFXROOT} CXX=mpicxx
+make
+# (su root?)
+make install
+
+This is also contained in the README file in the pulseprofile directory.
+
+Pulseprofile is used to bin the autocorrelations of one antenna, and average to form a pulse profile.  You will want to choose your most sensitive antenna. Also, if your DAS/digital backend servos the antenna gain on a timescale shorter or comparable to the pulse period, you will get a very odd looking pulse profile out.  You have been warned.
+
+Now, to generate a "profile" file, copy the .input file that you will use for the gated pass of the correlator.  Change the OUTPUT FILENAME to be whatever you want the profile file to be called (pulseprofile will automatically append ".profileout.ascii", so just choose a sensible prefix.  Full path recommended).
+
+It is important that there is just one entry in the config table, and that is for the pulsar.  Otherwise you'll be binning and adding your reference sources etc as well.  Pulsar binning must be ON! Pulseprofile will fail with an error if these conditions are not met.
+
+Make sure that the binconfig file which is pointed at by this configuration has the number of pulsar bins that you would like your profile to have.  30 or 40 is a good number for a weakish pulsar, you can have more for a bright pulsar if you want a really nice profile.
+
+If you want, you can shorten the time interval if the pulsar is bright (to save execution time).
+
+Now, run just like you would mpifxcorr, except that you need only allow one process for a datastream.  You can have as many cores as you like.  You need one extra parameter, which is the index of the datastream you wish to use.  This is a zero based index.  So if Parkes is the 4th antenna in the datastream table and you want to use it, use 3 for <dsindex> in the example below.
+
+So, a typical command line might look like:
+
+mpirun -np 10 -machinefile machines.list pulseprofile <input filename> <dsindex>
+
+That would give you 10-2=8 Core processes (there is one manager and one datastream).
+
+That will produce an ascii pulse profile, in a simple format similar to that you get from the single dish pulsar guys.  it will look like:
+
+Bin#  Weight
+0 0.1
+1 0.15
+2 0.04
+...
+N 0.1
+
+where N is the number of pulsar bins, minus 1.
+
+Right, so now you have an ascii pulse profile, where the phase is matched to the polycos you fed it (and will feed the correlator).  Now, you could just look at this and set bin phases by eye, and edit that binconfig file you just used for pulseprofile by hand to match what you want for mpifxcorr.  Alternatively, a tool exists (profile2binconfig.py) which will turn that ascii file into an optimum representation of the pulse for a given number of bins.  This is mostly useful if you want to scrunch on a slightly complicated pulse profile.  You run profile2binconfig.py with:
+
+profile2binconfig.py --profile=<ascii profile filename> --polyco=<comma separated polycos> --numbins=<number of bins> --binconfigfile=<outputfilename> [--scrunch]
+
+That will generate the binconfigfile you request, with the number of bins you request, and will produce a nice plot of what its done in the file "pulsarfilter.png".  Like I said, its mostly useful for scrunching.
+
+Enjoy!

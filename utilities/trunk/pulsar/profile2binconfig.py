@@ -171,6 +171,17 @@ else:
         startpos = 0
     while zerophase < 0.0:
         zerophase = zerophase + 1.0
+
+    #Normalise the weights
+    weightsum = 0.0
+    for i in range(numbins):
+        binw = binphases[i] - binphases[i-1]
+        if binw < 0.0:
+            binw = binw + 1.0
+        weightsum = weightsum + binw*binvalues[i]
+
+    for i in range(numbins):
+        binvalues[i] = binvalues[i]/weightsum
         
     #Write the rest of the binconfig file
     for i in range(numbins):
