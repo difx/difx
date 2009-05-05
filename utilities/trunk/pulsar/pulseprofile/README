@@ -1,0 +1,10 @@
+svn co []
+aclocal
+autoconf
+autoheader
+automake -a
+./configure --prefix=${DIFX_PREFIX} CXX=mpicxx
+make
+# (su root?)
+make install
+
