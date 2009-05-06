@@ -1,0 +1,14 @@
+
+
+
+
+Note: As root you may wish to do the following:
+
+#   cp init.d/calcserver  /etc/init.d
+
+and then perform the steps necessary on your computer to have this file
+run upon boot.  This will cause calcserver to start automatically.
+
+
+
+

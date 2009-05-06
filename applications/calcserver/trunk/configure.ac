@@ -16,5 +16,6 @@ AC_OUTPUT(Makefile \
 	startCalcServer \
 	src/Makefile \
 	calc9.1/Makefile \
+	init.d/calcserver \
 	data/Makefile
 )

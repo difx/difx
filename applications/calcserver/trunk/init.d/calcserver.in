@@ -1,0 +1,40 @@
+#!/bin/sh
+# a shell script to start CalcServer
+
+# chkconfig: 345 99 99
+# description: calcserver - VLBA software correlator
+
+export CALC_USER=C
+export WET_ATM=Y
+export JPLEPH=@prefix@/share/CalcServer/JPLEPH
+export SERVERLOG=ON
+export HORIZONS_FILENAME=@prefix@/share/CalcServer/Horizons.lis
+export HORIZONS_SRCNAME=TSTCURVE
+
+start() {
+	pushd /tmp
+	echo "starting CalcServer" 
+	@prefix@/bin/CalcServer > /dev/null &
+	popd
+}
+
+stop() {
+	echo "terminating CALCServer that is currently"
+	killall CalcServer
+}
+
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        stop && start
+        ;;
+  *)
+        echo $"Usage: $0 {start|stop|restart}"
+        exit 1
+esac
+
