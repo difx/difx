@@ -552,7 +552,7 @@ void Visibility::writedata()
         for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) //for each band
         {
           //calibrate the data
-          divisor = (Mode::getDecorrelationPercentage(config->getDNumBits(currentconfigindex, i))*sqrt(autocorrcalibs[i][k].re*autocorrcalibs[i][(j==0)?k:config->getDMatchingBand(currentconfigindex, i, k)].re));
+          divisor = sqrt(autocorrcalibs[i][k].re*autocorrcalibs[i][(j==0)?k:config->getDMatchingBand(currentconfigindex, i, k)].re);
           if(divisor > 0.0)
           {
             scale = config->getDTsys(currentconfigindex, i)/divisor;
