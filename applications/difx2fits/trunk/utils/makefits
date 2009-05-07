@@ -33,14 +33,14 @@
 from sys import argv, exit
 from string import split, strip
 from glob import glob
-from os import getenv, mkdir, chdir, system, getcwd, rmdir
+from os import getenv, chdir, system, getcwd, rmdir, umask
 from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.2'
+version = '0.3'
 author  = 'Walter Brisken'
-verdate = '20090421'
+verdate = '20090507'
 
 calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
@@ -73,15 +73,32 @@ def parsekv(str):
 def getmjd(t):
 	return 40587.0 + t/86400.0
 
+def countDigits(n):
+	nDig = 1
+	
+	while True:
+		n /= 10
+		if n == 0:
+			break;
+		nDig += 1
+	
+	return nDig
+
 def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 	dir = cwd + '/sniffer'
 	
 	if not isdir(dir):
-		mkdir(dir)
+		cmd = 'mkdir -p %s' % dir
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
 
-	outfile = '%s/%s.%s.%s' % (dir, expt, passname, ext)
-	if isfile(outfile):
-		system('mv %s %s.old' % (outfile, outfile))
+	outFile = '%s/%s.%s.%s' % (dir, expt, passname, ext)
+	if isfile(outFile):
+		cmd = 'mv %s %s.old' % (outFile, outFile)
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
 	skipFirst = False
 
 	files = []
@@ -94,12 +111,12 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 
 	if len(files) == 0:
 		print 'No %s files to merge!' % ext
-		return
+		return None
 
-	out = open(outfile, 'w')
+	out = open(outFile, 'w')
 
 	if verbose:
-		print '\nMaking sniffer file %s from:' % outfile
+		print '\nMaking sniffer file %s from:' % outFile
 	
 	for infile in files:
 		if verbose:
@@ -112,6 +129,8 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 			out.write(d)
 		system('rm %s' % infile)
 	out.close()
+
+	return outFile
 
 def genDateStr(t):
 	d = gmtime(t)
@@ -190,6 +209,9 @@ class JobList:
 		return difxVersion
 
 	def makefits(self, queuedir, verbose, sniff, options=''):
+
+		groupId = getenv('DIFX_GROUP_ID')
+
 		dir = queuedir + '/' + self.kv['exper']
 		cwd = getcwd()
 		
@@ -201,7 +223,10 @@ class JobList:
 		if isdir(tmp):
 			print '\nError: temporary directory %s already exists.  Aborting.' % tmp
 			exit(0)
-		mkdir(tmp)
+		cmd = 'mkdir -p %s' % tmp
+		if verbose:
+			print 'Executing: %s' % cmd
+		system(cmd)
 
 		calfiles = ''
 		for f in calFiles:
@@ -251,16 +276,23 @@ class JobList:
 		out = open('%s/%s.fitslist' % (cwd, self.kv['pass']), 'w')
 		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0\n' % \
 			(self.kv['exper'], self.kv['pass'], self.filename, getmjd(t), self.kv['DiFX']))
+		nDigit = countDigits(indices[-1])
+		format = 'VLBA_%%s_%%s_%%0%dd_%%s.idifits' % nDigit
 		for i in indices:
 			fn = '%s.%d.FITS' % (expt, i)
 			size = getsize(fn)/1000000.0
-			archfile = 'VLBA_%s_%s_%d_%s.idifits' % \
-				(self.kv['exper'], self.kv['pass'], j, datestr)
+			archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
 			out.write('%s %3.1f %s\n' % (archfile, size, fn))
+			cmd = 'mv %s %s/%s' % (fn, dir, archfile)
 			if verbose:
-				print 'mv  %s -> ../%s' % (fn, archfile)
-			cmd = 'mv %s ../%s' % (fn, archfile)
+				print 'Executing: %s' % cmd
 			system(cmd)
+			if groupId != None:
+				# make sure anyone in the difx group can remove the file later
+				cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
+				if verbose:
+					print 'Executing: %s' % cmd
+				system(cmd)
 			j = j + 1
 		out.close()
 
@@ -278,18 +310,33 @@ class JobList:
 			if verbose:
 				print 'Executing: %s' % cmd
 			system(cmd)
-			cmd = 'gzip -f %s' % (logFile)
+			cmd = 'gzip -f %s' % logFile
 			if verbose:
 				print 'Executing: %s' % cmd
 			system(cmd)
+			if groupId != None:
+				cmd = 'chown -R :%s %s/%s' % (groupId, cwd, logFile)
+				if verbose:
+					print 'Executing: %s' % cmd
+				system(cmd)
 		else:
 			if verbose:
 				print 'No .difxlog files to merge'
 
 		# merge sniffer files
+		sniffFiles = ''
 		if sniff:
 			for x in [['acb', False] , ['apd', True], ['log', False], ['wts', True], ['xcb', False]]:
-				mergesnifferfiles(expt, indices, self.kv['pass'], x[0], cwd, verbose, x[1])
+				sniffFile = mergesnifferfiles(expt, indices, self.kv['pass'], x[0], cwd, verbose, x[1])
+				if sniffFile != None:
+					sniffFiles += ' ' + sniffFile
+
+		if sniffFiles != '':
+			if groupId != None:
+				cmd = 'chown -R :%s %s' % (groupId, sniffFiles)
+				if verbose:
+					print 'Executing: %s' % cmd
+				system(cmd)
 
 		if len(calfiles) > 0:
 			cmd = 'rm %s' % calfiles
@@ -342,6 +389,10 @@ class JobList:
 			print '%sKV: %s = %s' % (id, key, self.kv[key])
 		for j in self.jobs:
 			j.show(indent+2)
+
+# main below here
+
+umask(02)
 
 difxQueueBase = getenv('DIFX_QUEUE_BASE')
 if difxQueueBase == None:
@@ -401,7 +452,8 @@ for arg in args:
 
 	if not OK:
 		if not allowPartial:
-			print 'job list verification failed!'
+			print '\nJob list verification failed!'
+			print 'Run with --allow-partial to process a subset of data.\n'
 		exit(0)
 
 	OK = jl.makefits(difxQueueBase, verbose, sniff, opts)
