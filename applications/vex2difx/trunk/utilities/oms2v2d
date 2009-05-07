@@ -33,6 +33,7 @@
 from string import split, strip, find
 from sys import exit, argv
 from os.path import isfile
+from os import umask
 
 program = 'oms2v2d'
 version = '0.4'
@@ -103,6 +104,7 @@ def readOMS(filename):
 def writev2d(oms, v2dFile):
 	corr = oms['CORRELATOR_PARAMETERS'][0]
 
+	print 'Writing: %s' % v2dFile
 	out = open(v2dFile, 'w')
 
 	nFFT = int(corr['FFT_SIZE'][0])
@@ -145,6 +147,8 @@ def writev2d(oms, v2dFile):
 
 
 # main below here
+
+umask(02)
 
 print ''
 

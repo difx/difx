@@ -3,24 +3,25 @@
 import sys, os
 
 if not len(sys.argv) == 2:
-    print "Usage: padCalcScans <calcfile>"
+    print "Usage: padCalcScans <calcFile>"
     sys.exit()
 
-calcfile = sys.argv[1]
+calcFile = sys.argv[1]
 
-if not os.path.exists(calcfile):
-    print "Supplied .calc file " + calcfile + " does not exist - aborting"
+if not os.path.exists(calcFile):
+    print "Supplied .calc file " + calcFile + " does not exist - aborting"
     sys.exit()
 
-os.system("mv " + calcfile + " " + calcfile + ".org")
+backupFile = calcFile + '.orig'
+os.system("mv " + calcFile + " " + backupFile)
 
 #Read the calc file
-calcin = open(calcfile + ".org")
+calcin = open(backupFile)
 calclines = calcin.readlines()
 calcin.close()
 
 #Open a new calc file and fill it
-calcout = open(calcfile, 'w')
+calcout = open(calcFile, 'w')
 at = 0
 tag = calclines[at].split(':')[0]
 while not tag == "NUM SCANS":

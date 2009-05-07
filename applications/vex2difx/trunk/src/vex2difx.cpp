@@ -601,7 +601,6 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 	DifxBaseline *bl;
 	DifxConfig *config;
 	int freqId, blId, configId;
-	int nConfigBaseline;
 
 
 	// Calculate maximum number of possible baselines based on list of configs
@@ -1086,12 +1085,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		{
 			sourceSetup = P->getSourceSetup(*s);
 
-			mjdint = J.mjdStart;
+			mjdint = static_cast<int>(J.mjdStart);
 			fracday0 = J.mjdStart-mjdint;
 			deltat = sourceSetup->ephemDeltaT/86400.0;	// convert from seconds to days
-			n0 = fracday0/deltat - 2;			// start ephmemeris at least 2 points early
+			n0 = static_cast<int>(fracday0/deltat - 2);	// start ephmemeris at least 2 points early
 			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
-			nPoint = J.duration()/deltat + 6;		// make sure to extend beyond the end of the job
+			nPoint = static_cast<int>(J.duration()/deltat) + 6; // make sure to extend beyond the end of the job
 			if(verbose > 0)
 			{
 				cout << "Computing ephemeris:" << endl;
