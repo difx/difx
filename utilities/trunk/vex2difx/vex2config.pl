@@ -65,9 +65,11 @@ if (@ARGV!=1 && @ARGV!=2) {
 
 $quadf = 0 if ($postf);
 
-if (!defined $databufferfactor) {
-  $databufferfactor = 256*256/$nchannel;
-}
+#if (!defined $databufferfactor) {
+#  $databufferfactor = 256*256/$nchannel;
+#}
+
+$databufferfactor = 128;
 
 my ($outputformat, $filetype);
 if ($swin) {
@@ -193,9 +195,9 @@ my $nactivebaseline = $nactive*($nactive-1)/2;
 my $ntotalbaseline = $ntel*($ntel-1)/2;
 
 if (!defined $blockspersend) {
-    #$blockspersend = sprintf("%.0f", 160000/$nchannel);
+    $blockspersend = sprintf("%.0f", 256000/$nchannel);
     #$blockspersend = sprintf("%.0f", 80000/$nchannel);
-    $blockspersend = 1250;
+    #$blockspersend = 1250;
 }
 
 # Open input file (which is our output...)
@@ -531,13 +533,13 @@ EOF
 
   $localfreq{$_} = [@localfreq];
 
-  if ($stationmodes->{$_}->record_transport_type eq 'Mark5A' ||
-      $stationmodes->{$_}->record_transport_type eq 'Mark5B') {
-    $ports{$_} = 2630;
-  } else {
+#  if ($stationmodes->{$_}->record_transport_type eq 'Mark5A' ||
+#      $stationmodes->{$_}->record_transport_type eq 'Mark5B') {
+#  $ports{$_} = 2630;
+#  } else {
     $ports{$_} = $iport;
-    $iport++;
-  }
+#    $iport++;
+#  }
 }
 # Baseline table
 
@@ -966,9 +968,12 @@ BEGIN {
 my %anttcpwindow;
 BEGIN {
   %anttcpwindow = (Pa => 0,
-		   At => 512,
-		   Mp => 1024,
-		   Ho => 512,
+		   #At => 512,
+		   #Mp => 1024,
+		   #Ho => 512,
+		   At => 0,
+		   Mp => 0,
+		   Ho => 0,
 		   Sh => -1500,
 		   Ks => -1500);
 }
