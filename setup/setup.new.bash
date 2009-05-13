@@ -10,6 +10,15 @@ export MPICXX=/usr/local/bin/mpicxx
 perlver="5"
 perlsver="5.8.8"
 
+####### Operating System, use $OSTYPE
+if [ $OSTYPE == "darwin" || $OSTYPE == "linux" ] 
+then
+  OS=$OSTYPE
+else
+  echo "Warning supported O/S $OSTYPE";
+  exit 1
+fi
+
 ####### 32/64 BIT DEPENDENT MODIFICATIONS ###
 ####### COMMENT OUT SVN LINE IF #############
 ####### ONLY ONE INSTALL ####################
@@ -36,9 +45,16 @@ fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             ${DIFXROOT}/bin
-PrependPath LD_LIBRARY_PATH  ${DIFXROOT}/lib
-PrependPath LD_LIBRARY_PATH  ${PGPLOTDIR}
-PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
+if [ $OS eq "darwin" ] 
+then
+  PrependPath DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
+  PrependPath DYLD_LIBRARY_PATH  ${PGPLOTDIR}
+  PrependPath DYLD_LIBRARY_PATH  ${IPPROOT}/Libraries
+else
+  PrependPath LD_LIBRARY_PATH  ${DIFXROOT}/lib
+  PrependPath LD_LIBRARY_PATH  ${PGPLOTDIR}
+  PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
+fi
 PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
 PrependPath PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
 

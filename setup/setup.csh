@@ -14,6 +14,15 @@ set perlsver="5.8.8"
 
 ####### No User configurable values below here
 
+####### Operating System, use $OSTYPE
+
+if ( $OSTYPE == "darwin" || $OSTYPE == "linux") then
+  set OS=$OSTYPE
+else
+  echo "Warning supported O/S $OSTYPE";
+  exit 1
+endif
+
 ####### 32/64 BIT DEPENDENT MODIFICATIONS ###
 ####### COMMENT OUT SVN LINE IF #############
 ####### ONLY ONE INSTALL ####################
@@ -38,11 +47,25 @@ endif
 
 ####### LIBRARY/EXECUTABLE PATHS ############
 PREPEND PATH             ${DIFXROOT}/bin
-PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib
-PREPEND LD_LIBRARY_PATH  ${PGPLOTDIR}
-PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
-PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
-PREPEND PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
+if ($OS == "darwin") then
+  PREPEND DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
+  PREPEND DYLD_LIBRARY_PATH  ${PGPLOTDIR}
+  PREPEND DYLD_LIBRARY_PATH  ${IPPROOT}/Libraries
+else
+  PREPEND LD_LIBRARY_PATH  ${DIFXROOT}/lib
+  PREPEND LD_LIBRARY_PATH  ${PGPLOTDIR}
+  PREPEND LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
+endif
+if ($?PKG_CONFIG_PATH) then
+  PREPEND PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
+else
+  setenv PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
+endif
+if ($?PERL5LIB) then
+  PREPEND PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
+else 
+  PREPEND PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
+endif
 
 ####### PORTS FOR DIFXMESSAGE ###############
 setenv DIFX_MESSAGE_GROUP 224.2.2.1
