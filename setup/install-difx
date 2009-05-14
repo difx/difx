@@ -82,6 +82,7 @@ libtargets = [["difxio",     "trunk",True,True],
 apptargets = [["calcserver", "trunk",True,False],
               ["difx2fits",  "trunk",False,True],
               ["vex2difx",   "trunk",True,True]]
+
 if mk5d:
     apptargets.append(["mk5daemon", "trunk",False,True])
 
@@ -105,7 +106,7 @@ def auto_compile(dolibtoolize, doautoheader, prefix):
         print "reconfiguring"
         run("aclocal")
         if dolibtoolize:
-            run("libtoolize --copy --force")
+            run(LIBTOOLIZE+" --copy --force")
         run("autoconf")
         if doautoheader:
             run("autoheader")
@@ -130,12 +131,22 @@ ipproot = os.environ.get('IPPROOT')
 mpicxx = os.environ.get('MPICXX')
 pgplotdir = os.environ.get('PGPLOTDIR')
 difxbits = os.environ.get('DIFXBITS')
+platform = sys.platform
 
 ##### Check that appropriate setup has been done ########
 if os.environ.get('DIFX_VERSION') == "":
-    print "You must have already source'd setup.difx.bash!"
+    print "You must have already source'd setup.bash/setup.csh!"
     print "DIFX_VERSION was undefined - aborting compilation"
     raise RuntimeError
+
+##### OSX Specific changes
+if platform == "darwin":
+    print "Using Darwin tools"
+    LIBTOOLIZE = "glibtoolize"
+    SHAREDPOSTFIX = "dylib"
+else:
+    LIBTOOLIZE = "libtoolize"
+    SHAREDPOSTFIX = "so"
 
 ##### Make directories if required ######################
 if not noinstall:
@@ -172,9 +183,12 @@ print "************************************"
 print "Building vex"
 print
 os.chdir("../libraries/vex/trunk/vexlib")
-run("make")
+if platform == "darwin":
+    run("make -f Makefile.osx")
+else:
+    run("make")
 if not noinstall:
-    run("mv -f libvex.so " + libdir)
+    run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
     run("mv -f libvex.a " + libdir)
 os.chdir("../vexperl")
 run("perl Makefile.PL PREFIX=" + libdir)
@@ -186,10 +200,13 @@ os.chdir("../../../../")
 print "************************************"
 print "Building rpfits"
 print
-if difxbits == "32":
-    os.chdir("libraries/rpfits/trunk/linux/")
+if platform == "darwin":
+    os.chdir("libraries/rpfits/trunk/darwin_x86")
 else:
-    os.chdir("libraries/rpfits/trunk/linux64/")
+    if difxbits == "32":
+        os.chdir("libraries/rpfits/trunk/linux/")
+    else:
+        os.chdir("libraries/rpfits/trunk/linux64/")
 run("make")
 if not noinstall:
     run("mv -f librpfits.a " + libdir)
