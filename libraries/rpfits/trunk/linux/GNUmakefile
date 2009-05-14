@@ -6,18 +6,21 @@ RPFITSROOT := ..
 # Only used for locating architecture-specific code in ./code/$(RPARCH).
 RPARCH := linux
 
-# GNU Fortran and C compiler flags.
-FC     := g77
-FFLAGS := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
-CFLAGS := -g -O -Wall
+# C compiler flags.  
+CC      := gcc
+CFLAGS  := -g -O -Wall
+
+# GNU Fortran 77
+ifdef USEGFORTRAN
+  FC      := gfortran
+  FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit
+  LDFLAGS := -lg2c
+else
+  FC      := g77
+  FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
+  LDFLAGS :=
+endif
 RANLIB := ranlib
-
-LDFLAGS :=
-
-# Use these definitions (in place of those above) to compile with gfortran.
-# FC      := gfortran
-# FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit
-# LDFLAGS := -lg2c
 
 # Where to install stuff.
 PREFIX := /usr/local

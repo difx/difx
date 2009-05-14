@@ -7,16 +7,21 @@ RPFITSROOT := ..
 # (../code/darwin_x86 is currently symlink'd to ../code/linux).
 RPARCH := darwin_x86
 
-# GNU Fortran 77 and C compiler flags.  
-FC      := g77
-FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
+# C compiler flags.  
 CC      := gcc
 CFLAGS  := -g -O -Wall
 
+# GNU Fortran 77
+ifdef USEGFORTRAN
+  FC      := gfortran
+  FFLAGS  := -g -O -fno-automatic -Wall
+  LDFLAGS := -lg2c
+else
+  FC      := g77
+  FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
+endif
+
 # Use these definitions (in place of those above) to compile with gfortran.
-# FC      := gfortran
-# FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit
-# LDFLAGS := -lg2c
 
 RANLIB  := /usr/bin/ranlib
 
