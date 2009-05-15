@@ -7,7 +7,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] 
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--gfortran] [--clean]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -28,6 +28,11 @@ Options:
    --reconf        Don't run autoreconf but reconfigure step by step.
 
    --mk5daemon     Install mk5daemon (not installed by default)
+
+   --gfortran      Use gfortran, rather than g77
+
+   --clean         Run make clean for all components
+
     """
     pass
 
@@ -38,7 +43,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "gfortran", "clean"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -54,6 +59,8 @@ force = False
 reconf = False
 noinstall = False
 mk5d = False
+gfortran = False
+doclean = False
 
 # read arguments
 
@@ -71,7 +78,10 @@ if len(opts) > 0:
             noinstall = True
         if o == "--mk5daemon":
             mk5d = True
-
+        if o == "--gfortran":
+            gfortran = True
+        if o == "--clean":
+            doclean = True
 
 ###### Targets ##########################################
 
@@ -144,9 +154,45 @@ if platform == "darwin":
     print "Using Darwin tools"
     LIBTOOLIZE = "glibtoolize"
     SHAREDPOSTFIX = "dylib"
+    gfortran = True
 else:
     LIBTOOLIZE = "libtoolize"
     SHAREDPOSTFIX = "so"
+
+if gfortran:
+    os.environ['USEGFORTRAN'] = 'yes'
+
+if doclean:
+    print "**** Cleaning vexlib"
+    os.chdir("../libraries/vex/trunk/vexlib")
+    run("make clean")
+    os.chdir("../../../../")
+    print "**** Cleaning rpfits"
+    if platform == "darwin":
+        os.chdir("libraries/rpfits/trunk/darwin_x86")
+    else:
+        if difxbits == "32":
+            os.chdir("libraries/rpfits/trunk/linux/")
+        else:
+            os.chdir("libraries/rpfits/trunk/linux64/")
+    run("make clean")
+    os.chdir("../../../..")
+    os.chdir("libraries")
+    for libtarget in libtargets:
+        print "**** Cleaning "+libtarget[0]
+        os.chdir(libtarget[0] + '/' + libtarget[1])
+        run("make clean")
+        os.chdir("../../")
+    os.chdir("../")
+    os.chdir("applications")
+    for apptarget in apptargets:
+        print "**** Cleaning "+apptarget[0]
+        os.chdir(apptarget[0] + '/' + apptarget[1])
+        run("make clean")
+        os.chdir("../../")
+    os.chdir("../")
+    sys.exit(0)  # Clean exit
+
 
 ##### Make directories if required ######################
 if not noinstall:
@@ -237,8 +283,10 @@ for apptarget in apptargets:
 os.chdir("../")
 
 ##### Make mpifxcorr #####################################
-print
+print "************************************"
 print "Making mpifxcorr"
+print
+
 os.chdir("mpifxcorr/" + cortarget)
 
 run("aclocal")
