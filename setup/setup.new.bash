@@ -1,29 +1,55 @@
 ####### ROOT PATHS ##########################
-export DIFXROOT=/users/adeller/difx/
-export PGPLOTDIR=/usr/lib64/
-export IPPROOT=/users/adeller/intel/ipp/
+export DIFXROOT=/nfs/apps/misc/corr_test/difx
+export PGPLOTDIR=/usr/lib/pgplot
+export IPPROOT=/nfs/apps/intel/ipp/5.3.3.075/em64t
 
 ####### COMPILER ############################
-export MPICXX=/usr/local/bin/mpicxx
+export MPICXX=/usr/bin/mpicxx
 
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
 perlsver="5.8.8"
 
 ####### Operating System, use $OSTYPE
-if [ $OSTYPE == "darwin" || $OSTYPE == "linux" ] 
+if [ $OSTYPE = "darwin" -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
 then
   OS=$OSTYPE
 else
-  echo "Warning supported O/S $OSTYPE";
+  echo "Warning unsupported O/S $OSTYPE"
   exit 1
 fi
+
+PrependPath()
+{
+Path="$1"
+NewItem="$2"
+eval CurPath=\$$Path
+
+#################################################################
+# Add the item.  If the path is currently empty, just set it to
+# the new item, otherwise, prepend the new item and colon
+# separator.
+#################################################################
+if [ -n "$CurPath" ]
+then
+    #################################################################
+    # Check to see if the item is already in the list
+    #################################################################
+    if [ `expr "$CurPath" ':' ".*$NewItem\$"` -eq '0'  -a \
+         `expr "$CurPath" ':' ".*$NewItem\:.*"` -eq '0' ]
+    then
+        eval $Path=$NewItem\:$CurPath
+    fi
+else
+    eval $Path=$NewItem
+fi
+}
 
 ####### 32/64 BIT DEPENDENT MODIFICATIONS ###
 ####### COMMENT OUT SVN LINE IF #############
 ####### ONLY ONE INSTALL ####################
 arch=(`uname -m`)
-if [ $arch == "i386" || $arch == "i686" ] #32 bit
+if [ $arch = "i386" -o $arch = "i686" ] #32 bit
 then
   echo "Adjusting paths for 32 bit machines"
   #export DIFXROOT=${DIFXROOT}/32
@@ -31,7 +57,7 @@ then
   #export IPPROOT=${IPPROOT}/5.1/ia32/
   export DIFXBITS=32
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib/perl$perlver/site_perl/$perlsver
-elif [ $arch == "x86_64" ] #64 bit
+elif [ $arch = "x86_64" ] #64 bit
 then
   echo "Adjusting paths for 64 bit machines"
   #export DIFXROOT=${DIFXROOT}/64
@@ -45,7 +71,7 @@ fi
 
 ####### LIBRARY/EXECUTABLE PATHS ############
 PrependPath PATH             ${DIFXROOT}/bin
-if [ $OS eq "darwin" ] 
+if [ $OS = "darwin" ] 
 then
   PrependPath DYLD_LIBRARY_PATH  ${DIFXROOT}/lib
   PrependPath DYLD_LIBRARY_PATH  ${PGPLOTDIR}
