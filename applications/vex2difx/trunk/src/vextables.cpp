@@ -375,6 +375,19 @@ double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
 	return ops;
 }
 
+double VexJob::calcSize(const VexData *V) const
+{
+	double size = 0.0;
+	int nScan = scans.size();
+
+	for(int i = 0; i < nScan; i++)
+	{
+		size += V->getScan(scans[i])->size;
+	}
+
+	return size;
+}
+
 bool VexJobGroup::hasScan(const string& scanName) const
 {
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
@@ -634,12 +647,13 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 }
 
 // FIXME -- this does not allow concurrent scans
-void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const
+void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, const VexData *V, double maxLength, double maxSize) const
 {
 	list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
 	VexJob *J = &jobs.back();
 	double totalTime, scanTime = 0.0;
+	double size = 0.0;
 	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
@@ -657,7 +671,7 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, do
 		{
 			if(id != e->name)
 			{
-				cerr << "Programming error: id != e->name  (" << id << " != " << e->name << ")" << endl;
+				cerr << "Programming error: createJobs: id != e->name  (" << id << " != " << e->name << ")" << endl;
 				cerr << "Contact developer" << endl;
 				exit(0);
 			}
@@ -668,14 +682,19 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, do
 				J->logicalOr(scanTimeRange);
 				scanTime += scanTimeRange.duration();
 
+				// Work in progress: calculate correlated size of scan
+				size += V->getScan(id)->size;
+
 				/* start a new job at scan boundary if maxLength exceeded */
-				if(J->duration() > maxLength)
+				if(J->duration() > maxLength || size > maxSize)
 				{
 					totalTime = J->duration();
 					J->dutyCycle = scanTime / totalTime;
+					J->dataSize = size;
 					jobs.push_back(VexJob());
 					J = &jobs.back();
 					scanTime = 0.0;
+					size = 0.0;
 					J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
 				}
 			}
@@ -691,6 +710,7 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, do
 	else
 	{
 		J->dutyCycle = scanTime / totalTime;
+		J->dataSize = size;
 	}
 }
 
@@ -713,6 +733,16 @@ const VexScan *VexData::getScan(int num) const
 	}
 
 	return &scans[num];
+}
+
+void VexData::setScanSize(int num, double size)
+{
+	if(num < 0 || num >= nScan())
+	{
+		return;
+	}
+	
+	scans[num].size = size;
 }
 
 void VexData::getScanList(list<string> &scanList) const
@@ -948,7 +978,8 @@ ostream& operator << (ostream& os, const VexScan& x)
 	os << "Scan " << x.name << 
 		"\n  timeRange=" << (const VexInterval&)x <<
 		"\n  mode=" << x.modeName <<
-		"\n  source=" << x.sourceName << "\n";
+		"\n  source=" << x.sourceName << 
+		"\n  size=" << x.size << " bytes \n";
 
 	for(iter = x.stations.begin(); iter != x.stations.end(); iter++)
 	{
@@ -1067,6 +1098,7 @@ ostream& operator << (ostream& os, const VexJob& x)
 	{
 		os << "  " << "VSN[" << v->first << "] = " << v->second << endl;
 	}
+	os << "  size = " << x.dataSize << " bytes" << endl;
 
 	os.precision(p);
 

@@ -252,17 +252,16 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		}
 	}
 	breaks.sort();
-	// Add one fictitious break at end so num breaks = num jobs
-	//breaks.push_back(V->obsStop());
+
+	// Add a break at end so num breaks = num jobs
 	breaks.push_back(JG.mjdStop);
 
 	// form jobs
-	//start = V->obsStart();
 	start = JG.mjdStart;
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
 		VexInterval jobTimeRange(start, *t);
-		JG.createJobs(Js, jobTimeRange, P->maxLength);
+		JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);
 		start = *t;
 	}
 }
@@ -911,6 +910,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	D->mjdStop  = J.mjdStop;
 	D->visBufferLength = P->visBufferLength;
 	D->startChan = corrSetup->startChan;
+	D->nOutChan = corrSetup->nOutChan;
 	D->dataBufferFactor = P->dataBufferFactor;
 	D->nDataSegments = P->nDataSegments;
 
@@ -941,7 +941,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
 		p = of->precision();
 		of->precision(4);
-		*of << tops << "  #";
+		*of << tops << " ";
+		*of << (J.dataSize/1000000) << "  #";
 		of->precision(p);
 		
 

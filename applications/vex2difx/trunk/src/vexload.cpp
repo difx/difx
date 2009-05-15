@@ -894,6 +894,28 @@ int getExper(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
+// Note -- this is approximate, assumes all polarizations matched
+// And no IFs being selected out
+void calculateScanSizes(VexData *V, const CorrParams &P)
+{
+	int nScan, nSubband, nBaseline;
+	const VexScan *scan;
+	const VexMode *mode;
+	const CorrSetup *setup;
+
+	nScan = V->nScan();
+
+	for(int s = 0; s < nScan; s++)
+	{
+		scan = V->getScan(s);
+		mode = V->getMode(scan->modeName);
+		setup = P.getCorrSetup(scan->corrSetupName);
+		nSubband = mode->subbands.size();
+		nBaseline = scan->stations.size()*(scan->stations.size()+1)/2;
+		V->setScanSize(s, scan->duration()*86400*nBaseline*nSubband*setup->bytesPerSecPerBLPerBand());
+	}
+}
+
 VexData *loadVexFile(const CorrParams& P)
 {
 	VexData *V;
@@ -917,6 +939,8 @@ VexData *loadVexFile(const CorrParams& P)
 	getVSNs(V, v, P);
 	getEOPs(V, v, P);
 	getExper(V, v, P);
+
+	calculateScanSizes(V, P);
 
 	return V;
 }

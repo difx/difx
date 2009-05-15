@@ -101,6 +101,7 @@ public:
 	string sourceName;
 	map<string,VexInterval> stations;
 	string corrSetupName;	// points to CorrSetup entry
+	double size;		// [bytes] approx. correlated size
 };
 
 class VexSource
@@ -229,7 +230,7 @@ public:
 class VexJob : public VexInterval
 {
 public:
-	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1) {}
+	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dataSize(0.0) {}
 
 	void assignVSNs(const VexData& V);
 	string getVSN(const string &antName) const;
@@ -237,12 +238,14 @@ public:
 
 	// return the approximate number of Operations required to compute this scan
 	double calcOps(const VexData *V, int fftSize, bool doPolar) const;
+	double calcSize(const VexData *V) const;
 
 	string jobSeries;
 	int jobId;
 	vector<string> scans;
 	map<string,string> vsns;	// vsn, indexed by antenna name
 	double dutyCycle;		// fraction of job spent in scans
+	double dataSize;		// [bytes] estimate of data output size
 };
 
 class VexJobFlag
@@ -267,7 +270,7 @@ public:
 
 	bool hasScan(const string& scanName) const;
 	void genEvents(const list<VexEvent>& eventList);
-	void createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, double maxLength) const;
+	void createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, const VexData *V, double maxLength, double maxSize) const;
 };
 
 class VexData
@@ -313,6 +316,7 @@ public:
 	int nScan() const { return scans.size(); }
 	const VexScan *getScan(const string name) const;
 	const VexScan *getScan(int num) const;
+	void setScanSize(int num, double size);
 	void getScanList(list<string> &scans) const;
 
 	int nAntenna() const { return antennas.size(); }

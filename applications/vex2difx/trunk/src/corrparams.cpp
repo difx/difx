@@ -125,6 +125,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	tInt = 2.0;
 	specAvg = 0;
 	startChan = 0;
+	nOutChan = 0;
 	nChan = 16;
 	doPolar = true;
 	doAuto = true;
@@ -166,6 +167,10 @@ void CorrSetup::setkv(const string &key, const string &value)
 	{
 		ss >> startChan;
 	}
+	else if(key == "nOutChan")
+	{
+		ss >> nOutChan;
+	}
 	else if(key == "postFFringe")
 	{
 		postFFringe = isTrue(value);
@@ -201,6 +206,16 @@ bool CorrSetup::correlateFreqId(int freqId) const
 	{
 		return (freqIds.find(freqId) != freqIds.end());
 	}
+}
+
+double CorrSetup::bytesPerSecPerBLPerBand() const
+{
+	int chans = nOutChan>0 ? nOutChan : nChan;
+	int pols = doPolar ? 2 : 1;
+
+	// assume 8 bytes per complex
+
+	return 8*chans*pols/tInt;
 }
 
 CorrRule::CorrRule(const string &name) : ruleName(name)
@@ -414,6 +429,7 @@ void CorrParams::defaults()
 	padScans = true;
 	simFXCORR = false;
 	maxLength = 7200/86400.0;	// 2 hours
+	maxSize = 2e9;			// 2 GB
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
 	startSeries = 1;
@@ -482,6 +498,11 @@ void CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> maxLength;
 		maxLength /= 86400.0;	// convert to seconds from days
+	}
+	else if(key == "maxSize")
+	{
+		ss >> maxSize;
+		maxSize *= 1000000.0;	// convert to bytes from MB
 	}
 	else if(key == "jobSeries" || key == "pass")
 	{
@@ -1014,6 +1035,7 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 	os << "  blocksPerSend=" << x.blocksPerSend << endl;
 	os << "  specAvg=" << x.specAvg << endl;
 	os << "  startChan=" << x.startChan << endl;
+	os << "  nOutChan=" << x.nOutChan << endl;
 	os << "  postFFringe=" << x.postFFringe << endl;
 	if(x.binConfigFile.size() > 0)
 	{
@@ -1122,6 +1144,7 @@ ostream& operator << (ostream& os, const CorrParams& x)
 	os.precision(6);
 	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << endl;
 	os << "maxLength=" << x.maxLength*86400.0 << " # seconds" << endl;
+	os << "maxSize=" << x.maxSize/1000000.0 << " # MB" << endl;
 	os.precision(13);
 
 	os << "singleScan=" << x.singleScan << endl;

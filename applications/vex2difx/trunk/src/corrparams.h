@@ -93,6 +93,7 @@ public:
 	CorrSetup(const string &name = "setup_default");
 	void setkv(const string &key, const string &value);
 	bool correlateFreqId(int freqId) const;
+	double bytesPerSecPerBLPerBand() const;
 
 	string corrSetupName;
 
@@ -103,6 +104,7 @@ public:
 	int blocksPerSend;	// literal
 	int specAvg;
 	int startChan;
+	int nOutChan;
 	bool postFFringe;	// fringe after FFT?
 	string binConfigFile;
 	set<int> freqIds;	// which bands to correlate
@@ -167,7 +169,8 @@ public:
 	bool mediaSplit;	// split jobs on media change
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
-	double maxLength;	// days
+	double maxLength;	// [days]
+	double maxSize;		// [bytes] -- break jobs for output filesize
 	string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
 	int dataBufferFactor;
