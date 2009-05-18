@@ -29,13 +29,17 @@ else
         IPP_LIBS="-L$IPPROOT/$ipp_libname"
 fi
 
-if test "$DIFXBITS" == "32"; then
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
-elif test "$DIFXBITS" == "64"; then
-        IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+if test x"$IPPLINKLIBS" != x; then
+        IPP_LIBS=$IPP_LIBS" $IPPLINKLIBS"
 else
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
-        echo "32/64 bit unspecified - assuming 32 bit for IPP"
+	if test "$DIFXBITS" == "32"; then
+           IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
+	elif test "$DIFXBITS" == "64"; then
+           IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+	else
+	   IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
+           echo "32/64 bit unspecified - assuming 32 bit for IPP"
+        fi
 fi
 dnl **********************************************************
 
@@ -72,7 +76,7 @@ dnl **** Look for RPFITS                                  ****
 dnl **********************************************************
 rpfits_enabled=true
 AC_ARG_WITH(rpfits, [AS_HELP_STRING([--without-rpfits],[Disable rpfits output])])
-if test ${with_rpfits} = no; then
+if test x"$with_rpfits" = xno; then
    	rpfits_enabled=false
 else
 	PWD=`pwd`

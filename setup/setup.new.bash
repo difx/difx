@@ -1,14 +1,20 @@
 ####### ROOT PATHS ##########################
-export DIFXROOT=/nfs/apps/misc/corr_test/difx
-export PGPLOTDIR=/usr/lib/pgplot
-export IPPROOT=/nfs/apps/intel/ipp/5.3.3.075/em64t
+export DIFXROOT=/usr/local/difx
+export PGPLOTDIR=/usr/local/pgplot
+export IPPROOT=/opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
 export MPICXX=/usr/bin/mpicxx
 
+####### IPP libraries needed for linking #############
+IPPLIB32="-lipps -lguide -lippvm -lippcore"
+IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
 perlsver="5.8.8"
+
+####### No User configurable values below here
 
 ####### Operating System, use $OSTYPE
 if [ $OSTYPE = "darwin" -o $OSTYPE = "linux" -o $OSTYPE = "linux-gnu" ] 
@@ -51,20 +57,22 @@ fi
 arch=(`uname -m`)
 if [ $arch = "i386" -o $arch = "i686" ] #32 bit
 then
-  echo "Adjusting paths for 32 bit machines"
+  #echo "Adjusting paths for 32 bit machines"
   #export DIFXROOT=${DIFXROOT}/32
   #export SVNROOT=${SVNROOT}/32
   #export IPPROOT=${IPPROOT}/5.1/ia32/
   export DIFXBITS=32
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib/perl$perlver/site_perl/$perlsver
+  export IPPLINKLIBS="$IPPLIB32"
 elif [ $arch = "x86_64" ] #64 bit
 then
-  echo "Adjusting paths for 64 bit machines"
+  #echo "Adjusting paths for 64 bit machines"
   #export DIFXROOT=${DIFXROOT}/64
   #export SVNROOT=${SVNROOT}/64
   #export IPPROOT=${IPPROOT}/6.0.0.063/em64t/
   export DIFXBITS=64
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi
+  export IPPLINKLIBS="$IPPLIB64"
 else
   echo "Unknown architecture $arch - leaving paths unaltered"
 fi
@@ -82,7 +90,6 @@ else
   PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
 fi
 PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
-PrependPath PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
 
 ####### PORTS FOR DIFXMESSAGE ###############
 export DIFX_MESSAGE_GROUP=224.2.2.1

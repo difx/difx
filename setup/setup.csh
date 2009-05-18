@@ -1,12 +1,16 @@
 alias PREPEND 'setenv \!^ {$\!^}:{\!:2}'
 
 ####### ROOT PATHS ##########################
-setenv DIFXROOT /home/vlbi/test/difx
-setenv PGPLOTDIR
+setenv DIFXROOT /usr/local/difx
+setenv PGPLOTDIR /usr/local/pgplot
 setenv IPPROOT /opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
-setenv MPICXX /home/vlbi/openmpi/bin/mpicxx
+setenv MPICXX /usr/bin/mpicxx
+
+####### IPP libraries needed for linking #############
+set IPPLIB32="-lipps -lguide -lippvm -lippcore"
+set IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
 
 ####### PERL VERSION/SUBVERSION #############
 set perlver="5"
@@ -28,19 +32,21 @@ endif
 ####### ONLY ONE INSTALL ####################
 set arch=`uname -m`
 if ( $arch == "i386" || $arch == "i686" ) then #32 bit
-  echo "Adjusting paths for 32 bit machines"
+  #echo "Adjusting paths for 32 bit machines"
   #setenv DIFXROOT ${DIFXROOT}/32
   #setenv SVNROOT ${SVNROOT}/32
   #setenv IPPROOT ${IPPROOT}/5.1/ia32/
   setenv DIFXBITS 32
   PREPEND PERL5LIB         ${DIFXROOT}/lib/lib/perl$perlver/site_perl/$perlsver
+  setenv IPPLINKLIBS "$IPPLIB32"
 else if ( $arch == "x86_64" ) then #64 bit
-  echo "Adjusting paths for 64 bit machines"
+  #echo "Adjusting paths for 64 bit machines"
   #setenv DIFXROOT ${DIFXROOT}/64
   #setenv SVNROOT ${SVNROOT}/64
   #setenv IPPROOT ${IPPROOT}/6.0.0.063/em64t/
   setenv DIFXBITS 64
   PREPEND PERL5LIB         ${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi
+  setenv IPPLINKLIBS "$IPPLIB64"
 else
   echo "Unknown architecture $arch - leaving paths unaltered"
 endif
@@ -61,11 +67,6 @@ if ($?PKG_CONFIG_PATH) then
 else
   setenv PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
 endif
-if ($?PERL5LIB) then
-  PREPEND PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
-else 
-  PREPEND PERL5LIB         ${DIFXROOT}/perl/Astro-0.69
-endif
 
 ####### PORTS FOR DIFXMESSAGE ###############
 setenv DIFX_MESSAGE_GROUP 224.2.2.1
@@ -85,7 +86,7 @@ setenv DIFX_MACHINES /home/ssi/adeller/difx/machines.difx
 setenv DIFX_HEAD_NODE swc000 
 setenv DIFX_ARCHIVE_ROOT /home/swc/difx/archive 
 setenv MANPATH /usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
-setenv DIFX_VERSION 1.1 
+setenv DIFX_VERSION trunk
 setenv DIFX_GROUP_ID difx 
 setenv G2CDIR /usr/lib/gcc/x86_64-redhat-linux/3.4.6/
 echo "DiFX version $DIFX_VERSION is selected"
