@@ -8,7 +8,7 @@ AC_LANG_CPLUSPLUS
 AC_PROG_CXX
 AC_PROG_RANLIB
 
-AC_ARG_ENABLE(quiet, [  --enable-quiet          disable some verbiage], [CFLAG_QUIET="-DQUIET"], [CFLAG_QUIET=" "])
+AC_ARG_ENABLE(quiet, [AS_HELP_STRING([--enable-quiet],[disable some verbiage])], [CFLAG_QUIET="-DQUIET"], [CFLAG_QUIET=" "])
 
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
@@ -19,8 +19,7 @@ else
         ipp_libname="sharedlib"
 fi
 
-AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT    ipp root is ROOT (optional).  Use env variable
-                          IPPROOT otherwise.],
+AC_ARG_WITH(ipp-root, [AS_HELP_STRING([--with-ipp-root=ROOT],[ipp root is ROOT (optional).  Use env variable IPPROOT otherwise.])],
 ipp_root="$withval", ipp_root="")
 if test x"$ipp_root" != "x"; then
         IPP_CFLAGS="-I$ipp_root/include"
@@ -29,7 +28,6 @@ else
         IPP_CFLAGS="-I$IPPROOT/include"
         IPP_LIBS="-L$IPPROOT/$ipp_libname"
 fi
-
 
 if test "$DIFXBITS" == "32"; then
         IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
@@ -73,20 +71,26 @@ dnl **********************************************************
 dnl **** Look for RPFITS                                  ****
 dnl **********************************************************
 rpfits_enabled=true
-PWD=`pwd`
-AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
+AC_ARG_WITH(rpfits, [AS_HELP_STRING([--without-rpfits],[Disable rpfits output])])
+if test ${with_rpfits} = no; then
+   	rpfits_enabled=false
+else
+	PWD=`pwd`
+	AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
 		[AC_DEFINE([HAVE_RPFITS], 1, [1=has RPFITS])],
 		[rpfits_enabled=false])
+fi
 if test ${rpfits_enabled} = true; then
-	RPFITS_CFLAGS="-I$DIFXROOT/include"
+   	RPFITS_CFLAGS="-I$DIFXROOT/include"
 	if test x"$USEGFORTRAN" != "x"; then
-	   RPFITS_LIBS=" -lrpfits -lgfortran"  
+	      RPFITS_LIBS=" -lrpfits -lgfortran"  
 	else
-	   RPFITS_LIBS=" -lrpfits -lg2c"
+	      RPFITS_LIBS=" -lrpfits -lg2c"
         fi
 else
-RPFITS_CFLAGS=""
-RPFITS_LIBS=""
+	echo "RPFITS disabled"
+	RPFITS_CFLAGS=""
+	RPFITS_LIBS=""
 fi
 dnl **********************************************************
 
