@@ -8,7 +8,7 @@ AC_LANG_CPLUSPLUS
 AC_PROG_CXX
 AC_PROG_RANLIB
 
-AC_ARG_ENABLE(quiet, ["disable some verbiage"], [CFLAG_QUIET="-DQUIET"], [CFLAG_QUIET=" "])
+AC_ARG_ENABLE(quiet, [  --enable-quiet          disable some verbiage], [CFLAG_QUIET="-DQUIET"], [CFLAG_QUIET=" "])
 
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
@@ -19,8 +19,7 @@ else
         ipp_libname="sharedlib"
 fi
 
-AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT
-                          ipp root is ROOT (optional).  Use env variable
+AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT    ipp root is ROOT (optional).  Use env variable
                           IPPROOT otherwise.],
 ipp_root="$withval", ipp_root="")
 if test x"$ipp_root" != "x"; then
