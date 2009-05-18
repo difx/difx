@@ -7,7 +7,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--gfortran] [--clean]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--norpfits]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -29,7 +29,9 @@ Options:
 
    --mk5daemon     Install mk5daemon (not installed by default)
 
-   --gfortran      Use gfortran, rather than g77
+   --g77           Use g77, rather than gfortran
+
+   --norpfits      Don't build rpfits
 
    --clean         Run make clean for all components
 
@@ -43,7 +45,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "gfortran", "clean"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "norpfits"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -59,7 +61,8 @@ force = False
 reconf = False
 noinstall = False
 mk5d = False
-gfortran = False
+gfortran = True
+rpfits = True
 doclean = False
 
 # read arguments
@@ -78,8 +81,10 @@ if len(opts) > 0:
             noinstall = True
         if o == "--mk5daemon":
             mk5d = True
-        if o == "--gfortran":
-            gfortran = True
+        if o == "--g77":
+            gfortran = False
+        if o == "--norpfits":
+            rpfits = False
         if o == "--clean":
             doclean = True
 
@@ -138,6 +143,8 @@ libdir = difxroot + '/lib/'
 pkgdir = difxroot + '/lib/pkg-config/'
 incdir = difxroot + '/include/'
 ipproot = os.environ.get('IPPROOT')
+ipplib32 = os.environ.get('IPPLIB32')
+ipplib64 = os.environ.get('IPPLIB64')
 mpicxx = os.environ.get('MPICXX')
 pgplotdir = os.environ.get('PGPLOTDIR')
 difxbits = os.environ.get('DIFXBITS')
@@ -154,7 +161,6 @@ if platform == "darwin":
     print "Using Darwin tools"
     LIBTOOLIZE = "glibtoolize"
     SHAREDPOSTFIX = "dylib"
-    gfortran = True
 else:
     LIBTOOLIZE = "libtoolize"
     SHAREDPOSTFIX = "so"
@@ -167,16 +173,17 @@ if doclean:
     os.chdir("../libraries/vex/trunk/vexlib")
     run("make clean")
     os.chdir("../../../../")
-    print "**** Cleaning rpfits"
-    if platform == "darwin":
-        os.chdir("libraries/rpfits/trunk/darwin_x86")
-    else:
-        if difxbits == "32":
-            os.chdir("libraries/rpfits/trunk/linux/")
+    if rpfits:
+        print "**** Cleaning rpfits"
+        if platform == "darwin":
+            os.chdir("libraries/rpfits/trunk/darwin_x86")
         else:
-            os.chdir("libraries/rpfits/trunk/linux64/")
-    run("make clean")
-    os.chdir("../../../..")
+            if difxbits == "32":
+                os.chdir("libraries/rpfits/trunk/linux/")
+            else:
+                os.chdir("libraries/rpfits/trunk/linux64/")
+        run("make clean")
+        os.chdir("../../../..")
     os.chdir("libraries")
     for libtarget in libtargets:
         print "**** Cleaning "+libtarget[0]
@@ -224,11 +231,13 @@ if not noinstall:
         os.mkdir(pkgdir)
         os.mkdir(incdir)
 
+os.chdir("..")
+
 ##### Compile non-standard libraries ####################
 print "************************************"
 print "Building vex"
 print
-os.chdir("../libraries/vex/trunk/vexlib")
+os.chdir("libraries/vex/trunk/vexlib")
 if platform == "darwin":
     run("make -f Makefile.osx")
 else:
@@ -244,21 +253,32 @@ if not noinstall:
 os.chdir("../../../../")
 
 print "************************************"
-print "Building rpfits"
+print "Building Astro Perl"
 print
-if platform == "darwin":
-    os.chdir("libraries/rpfits/trunk/darwin_x86")
-else:
-    if difxbits == "32":
-        os.chdir("libraries/rpfits/trunk/linux/")
-    else:
-        os.chdir("libraries/rpfits/trunk/linux64/")
+os.chdir("libraries/perl/trunk/Astro")
+run("perl Makefile.PL PREFIX=" + libdir)
 run("make")
 if not noinstall:
-    run("mv -f librpfits.a " + libdir)
-os.chdir("../../../..")
-if not noinstall:
-    run("cp -f libraries/rpfits/trunk/code/RPFITS.h " + incdir)
+    run("make install")
+os.chdir("../../../../")
+
+if rpfits:
+    print "************************************"
+    print "Building rpfits"
+    print
+    if platform == "darwin":
+        os.chdir("libraries/rpfits/trunk/darwin_x86")
+    else:
+        if difxbits == "32":
+            os.chdir("libraries/rpfits/trunk/linux/")
+        else:
+            os.chdir("libraries/rpfits/trunk/linux64/")
+    run("make")
+    if not noinstall:
+        run("mv -f librpfits.a " + libdir)
+    os.chdir("../../../..")
+    if not noinstall:
+        run("cp -f libraries/rpfits/trunk/code/RPFITS.h " + incdir)
 
 ##### Make standard (autotool'd) libraries ###############
 os.chdir("libraries")
@@ -293,7 +313,10 @@ run("aclocal")
 run("autoconf")
 run("autoheader")
 run("automake")
-run("./configure CXX=" + mpicxx + " --prefix=" + difxroot)
+rpfitsopt = ''
+if not rpfits:
+    rpfitsopt = ' --without-rpfits '
+run("./configure CXX=" + mpicxx + rpfitsopt + " --prefix=" + difxroot)
 run("make")
 if not noinstall:
     run("make install")
