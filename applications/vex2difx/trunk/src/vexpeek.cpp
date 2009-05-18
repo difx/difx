@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -39,9 +39,20 @@
 #include "vexload.h"
 
 const string program("vexpeep");
-const string version("0.1");
-const string verdate("20081208");
+const string version("0.2");
+const string verdate("20090518");
 const string author("Walter Brisken");
+
+void usage(const char *pgm)
+{
+	cout << endl;
+	cout << program << " ver. " << version << "  " << author << " " << verdate << endl;
+	cout << endl;
+	cout << "A program to print essential information from a vex file." << endl;
+	cout << endl;
+	cout << "Usage: " << pgm << " <vex filename>" << endl;
+	cout << endl;
+}
 
 void antennaSummary(const VexData *V)
 {
@@ -88,18 +99,56 @@ void antennaSummary(const VexData *V)
 	cout.precision(p);
 }
 
+int testVex(const string &vexFile)
+{
+	ifstream is;
+	char s[128];
+
+	is.open(vexFile.c_str());
+	if(is.fail())
+	{
+		cerr << "Error: vex2difx cannot open " << vexFile << endl;
+		return -1;
+	}
+
+	is.getline(s, 128);
+	if(is.eof())
+	{
+		cerr << "Error: unexpected end of file: " << vexFile << endl;
+		return -2;
+	}
+
+	if(strncmp(s, "$EXPER ", 7) == 0)
+	{
+		cerr << "Error: " << vexFile << " looks like a sked input file and is not vex formatted." << endl;
+		return -3;
+	}
+
+	if(strncmp(s, "VEX", 3) != 0)
+	{
+		cerr << "Error: " << vexFile << " is not a vex file." << endl;
+		return -4;
+	}
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
 	CorrParams *P;
-	 
+	int v;
+
 	if(argc < 2)
 	{
-		cout << endl;
-		cout << program << " ver. " << version << "  " << author << " " << verdate << endl;
-		cout << endl;
-		cout << "Usage: " << argv[0] << " <vex filename>" << endl;
-		cout << endl;
+		usage(argv[0]);
+		return 0;
+	}
+
+	v = testVex(argv[1]);
+	if(v != 0)
+	{
+		cout << "Error code " << v << endl;
 		return 0;
 	}
 
