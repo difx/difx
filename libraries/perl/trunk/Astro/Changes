@@ -1,0 +1,43 @@
+0.01 Oct 16 1999 - original version based on astro.pm
+0.02 Nov 10 1999 - Bug fixes, documentation updates and Misc.pm
+0.03 Nov 15 1999 - Bug fixes
+	- Order of returned parameters in mjd2dayno
+	- Calling order in coord_convert
+	- Assuming radians not turns in kindist
+	- Forgot to export routines in Misc.pm
+	- Fixed spelling in PODs
+0.5  Nov 19 1999 - First CPAN release
+	- Added README and minor changes 
+0.51 Nov 17 2000
+	- Minor Changes
+	- Added j2gal routine
+
+0.6  Nov 2 2001
+	- Replace J2000 <-> B1950 routines with copies of SLALIB routines
+	- Updated calc_Nl (and bug fix)
+	- Replace Panagia spectral type values by Thompson
+
+0.61 Sep 26 2002
+	- Allow Bepoch to be set (via "global variable") for
+	  fk4fk5 routine.
+	- rad2turn and turn2rad change to accept array of values
+0.62-0.63 ??
+
+0.64 19 Aug 2004
+	- Fixed minor bug in lst2mjd (error <= 4min in conversion)
+0.65 11 Jan 2006
+	- Fixed fract second error in time2hms
+	- Missing wrapper for fk5fk4r (used in coord_convert)
+0.66 12 Jan 2006
+	- Added support for PDL in Coord.pm - more work probably is needed
+0.67 13 Jan 2006
+	- Minor mistake in PDL support
+0.68 22 Jan 2006
+	- deg2turn and turn2deg work on arrays
+	- Merge galfk4 and galfk4r
+0.69 23 Nov 2006
+	- Added mjd2time function
+0.70 27 Jul 2007
+	- Added month2str and str2month
+0.71 18 Aug 2008
+	- Added $np option to mjd2time

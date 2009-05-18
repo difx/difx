@@ -1,0 +1,72 @@
+Astro::	- Assorted astronomical routines
+
+Astro::Time, Astro::Coord and Astro::Misc provide a collection of useful
+astronomical routines written entirely in Perl (so no hassling about
+installing external libraries is required).
+
+The routines provided include various time conversions (dayno to day/month,
+local sidereal time, calendar to Modified Julian day) and coordinate
+transformations (J2000 to B1950, B1950 to Galactic, Az,El to Ha,Dec),
+string parsing (12:00:00 -> 0.5) as well as a number of astronomical tools
+(eg observed Galactic velocity to kinematic distance).
+
+These routines should be used at your own risk! Most should give
+reasonable accurate results, but spot checks against your favorite
+program are recommenced. The B1950/J2000/Galactic coordinate routines
+are based on SLALIB routines and agree very closely.
+
+Please let me know of any bugs you find or if you have other routines you
+would like to contribute.
+
+Requirements:
+-------------
+
+Only perl. Developed using version 5.6 on Solaris and Linux.
+
+
+Where can I get it from?
+------------------------
+  http://www.perl.com/CPAN-local/modules/by-module/Astro/Astro-?.tar.gz
+
+Installation:
+------------
+
+ % perl Makefile.PL
+ % make
+ % make test
+ % make install
+
+Documentation:
+--------------
+
+Documentation is included in the three modules as POD. Man files should be
+created in the installation process.
+
+Changes:
+--------
+
+See the Changes file
+
+Author:
+-------
+
+Chris Phillips, CSIRO, Australia Telescope National Facility
+
+ Chris.Phillips@csiro.au
+
+Acknowledgment:
+---------------
+
+ Simon Ellingsen wrote most of the routines in Coord.pm
+ A few of the routines are based in code from Edward King
+
+Copyright
+---------
+
+This module is copyright (C) 1999-2009 Chris Phillips.  All rights
+reserved.  This program is free software; you can redistribute it
+and/or modify it under the same terms as Perl itself.
+
+The J2000/B1950 routines are based on the FORTRAN version of
+SLALIB, which is under the GPL.
+
