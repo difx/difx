@@ -45,7 +45,8 @@ int main(int argc, char **argv)
 	cond.discSize = 250;
 	sprintf(cond.moduleVSN, "WFB-0123");
 	cond.moduleSlot = 4;
-	cond.conditionMJD = 54321.9876;
+	cond.startMJD = 54321.9876;
+	cond.stopMJD = 54324.9876;
 	for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 	{
 		cond.bin[i] = N;

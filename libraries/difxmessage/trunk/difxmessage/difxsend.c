@@ -220,7 +220,8 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			  "<size>%d</size>"
 			  "<moduleVSN>%s</moduleVSN>"
 			  "<moduleSlot>%d</moduleSlot>"
-			  "<conditionMJD>%6.4f</conditionMJD>"
+			  "<startMJD>%6.4f</startMJD>"
+			  "<stopMJD>%6.4f</stopMJD>"
 			  "%s"
 			"</difxCondition>",
 
@@ -229,7 +230,8 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			cond->discSize,
 			cond->moduleVSN, 
 			cond->moduleSlot,
-			cond->conditionMJD,
+			cond->startMJD,
+			cond->stopMJD,
 			bins);
 
 		sprintf(message, difxMessageXMLFormat, 

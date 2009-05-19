@@ -248,7 +248,7 @@ typedef struct
 	int discSize;	/* GB */
 	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
 	int moduleSlot;
-	double conditionMJD;
+	double startMJD, stopMJD;
 	int bin[DIFX_MESSAGE_N_CONDITION_BINS];
 } DifxMessageCondition;
 

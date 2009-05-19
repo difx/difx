@@ -344,9 +344,13 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						G->body.condition.moduleSlot = atoi(s);
 					}
-					else if(strcmp(elem, "conditionMJD") == 0)
+					else if(strcmp(elem, "startMJD") == 0)
 					{
-						G->body.condition.conditionMJD = atof(s);
+						G->body.condition.startMJD = atof(s);
+					}
+					else if(strcmp(elem, "stopMJD") == 0)
+					{
+						G->body.condition.stopMJD = atof(s);
 					}
 					break;
 				case DIFX_MESSAGE_MARK5VERSION:
@@ -665,8 +669,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    module VSN / slot = %s / %d\n", 
 			G->body.condition.moduleVSN,
 			G->body.condition.moduleSlot);
-		printf("    condition MJD = %6.4f\n",
-			G->body.condition.conditionMJD);
+		printf("    MJD = %6.4f to %6.4f\n",
+			G->body.condition.startMJD,
+			G->body.condition.stopMJD);
 		printf("    stats =");
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
