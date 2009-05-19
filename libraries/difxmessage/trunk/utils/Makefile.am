@@ -7,6 +7,7 @@ LDADD = \
 bin_PROGRAMS = \
 	testdifxmessagesend \
 	testdifxmessagereceive \
+	testdifxmessagecondition \
 	testseqnumbers \
 	difxlog
 
@@ -22,6 +23,9 @@ testdifxmessagesend_SOURCES = \
 
 testdifxmessagereceive_SOURCES = \
 	testdifxmessagereceive.c
+
+testdifxmessagecondition_SOURCES = \
+	testdifxmessagecondition.c
 
 testseqnumbers_SOURCES = \
 	testseqnumbers.c

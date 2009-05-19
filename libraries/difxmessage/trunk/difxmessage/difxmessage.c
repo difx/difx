@@ -65,7 +65,8 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxParameter",
 	"DifxStart",
 	"DifxStop",
-	"Mark5VersionMessage"
+	"Mark5VersionMessage",
+	"Mark5ConditionMessage"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */

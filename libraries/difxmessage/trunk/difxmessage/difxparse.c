@@ -257,13 +257,15 @@ static void XMLCALL endElement(void *userData, const char *name)
 				case DIFX_MESSAGE_MARK5STATUS:
 					if(strcmp(elem, "bankAVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnA, s, 8);
-						G->body.mk5status.vsnA[8] = 0;
+						strncpy(G->body.mk5status.vsnA, s, 
+							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						G->body.mk5status.vsnA[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "bankBVSN") == 0)
 					{
-						strncpy(G->body.mk5status.vsnB, s, 8);
-						G->body.mk5status.vsnB[8] = 0;
+						strncpy(G->body.mk5status.vsnB, s, 
+							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						G->body.mk5status.vsnB[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "statusWord") == 0)
 					{
@@ -305,6 +307,46 @@ static void XMLCALL endElement(void *userData, const char *name)
 					else if(strcmp(elem, "dataMJD") == 0)
 					{
 						G->body.mk5status.dataMJD = atof(s);
+					}
+					break;
+				case DIFX_MESSAGE_CONDITION:
+					if(strncmp(elem, "bin", 3) == 0)
+					{
+						i = atoi(elem+3);
+						if(i >= 0 && i < DIFX_MESSAGE_N_CONDITION_BINS)
+						{
+							G->body.condition.bin[i] = atoi(s);
+						}
+					}
+					else if(strcmp(elem, "serialNumber") == 0)
+					{
+						strncpy(G->body.condition.serialNumber, s,
+							DIFX_MESSAGE_DISC_SERIAL_LENGTH);
+						G->body.condition.serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH] = 0;
+					}
+					else if(strcmp(elem, "modelNumber") == 0)
+					{
+						strncpy(G->body.condition.modelNumber, s,
+							DIFX_MESSAGE_DISC_MODEL_LENGTH);
+						G->body.condition.modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH] = 0;
+					}
+					else if(strcmp(elem, "size") == 0)
+					{
+						G->body.condition.discSize = atoi(s);
+					}
+					else if(strcmp(elem, "moduleVSN") == 0)
+					{
+						strncpy(G->body.condition.moduleVSN, s,
+							DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						G->body.condition.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+					}
+					else if(strcmp(elem, "moduleSlot") == 0)
+					{
+						G->body.condition.moduleSlot = atoi(s);
+					}
+					else if(strcmp(elem, "conditionMJD") == 0)
+					{
+						G->body.condition.conditionMJD = atof(s);
 					}
 					break;
 				case DIFX_MESSAGE_MARK5VERSION:
@@ -612,6 +654,25 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 				G->body.mk5version.DB_FPGAConfig,
 				G->body.mk5version.DB_FPGAConfigVersion);
 		}
+		break;
+	case DIFX_MESSAGE_CONDITION:
+		printf("    serial number = %s\n", 
+			G->body.condition.serialNumber);
+		printf("    model number = %s\n",
+			G->body.condition.modelNumber);
+		printf("    disc size = %d GB\n",
+			G->body.condition.discSize);
+		printf("    module VSN / slot = %s / %d\n", 
+			G->body.condition.moduleVSN,
+			G->body.condition.moduleSlot);
+		printf("    condition MJD = %6.4f\n",
+			G->body.condition.conditionMJD);
+		printf("    stats =");
+		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		{
+			printf(" %d", G->body.condition.bin[i]);
+		}
+		printf("\n");
 		break;
 	case DIFX_MESSAGE_STATUS:
 		printf("    state = %s %d\n", 

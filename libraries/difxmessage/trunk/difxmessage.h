@@ -28,6 +28,10 @@ extern "C" {
 #define DIFX_MESSAGE_ALLMPIFXCORR	-1
 #define DIFX_MESSAGE_ALLCORES		-2
 #define DIFX_MESSAGE_ALLDATASTREAMS	-3
+#define DIFX_MESSAGE_N_CONDITION_BINS	8
+#define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
+#define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
+#define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
 
 /**** LOW LEVEL MULTICAST FUNCTIONS ****/
 
@@ -125,6 +129,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_START,
 	DIFX_MESSAGE_STOP,
 	DIFX_MESSAGE_MARK5VERSION,
+	DIFX_MESSAGE_CONDITION,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -133,8 +138,8 @@ extern const char DifxMessageTypeStrings[][24];
 typedef struct
 {
 	enum Mk5State state;
-	char vsnA[10];
-	char vsnB[10];
+	char vsnA[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	char vsnB[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
 	unsigned int status;
 	char activeBank;
 	int scanNumber;
@@ -232,6 +237,21 @@ typedef struct
 	char inputFilename[DIFX_MESSAGE_FILENAME_LENGTH];
 } DifxMessageStop;
 
+/* This message type contains conditioning statistics for one disk
+ * of a Mark5 module.  Typically 8 such messages will be needed to 
+ * convey results from the conditioning of one module.
+ */
+typedef struct
+{
+	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
+	char modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH+1];
+	int discSize;	/* GB */
+	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	int moduleSlot;
+	double conditionMJD;
+	int bin[DIFX_MESSAGE_N_CONDITION_BINS];
+} DifxMessageCondition;
+
 typedef struct
 {
 	enum DifxMessageType type;
@@ -255,6 +275,7 @@ typedef struct
 		DifxMessageParameter	param;
 		DifxMessageStart	start;
 		DifxMessageStop		stop;
+		DifxMessageCondition	condition;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
@@ -262,7 +283,7 @@ typedef struct
 	char _xml_string[1024];
 } DifxMessageGeneric;
 
-/* short term accumulate message type -- antenna-based data (e.g. real) */
+/* short term accumulate message type -- antenna-based data (e.g., real) */
 typedef struct
 {
 	int messageType;/* user defined message type */
@@ -302,6 +323,7 @@ int difxMessageSend(const char *message);
 int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
+int difxMessageSendCondition(const DifxMessageCondition *cond);
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, 
 	double visMJD, int numdatastreams, float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 

@@ -38,3 +38,8 @@ Add Daughterboard information to Mark5Version messages
 Implement a minimum send delay (set to 40us now) to prevent loss of messages
   when many are sent at nearly the same time.  Warning -- this could have 
   performance impacts!
+
+Version 0.6 20090518
+~~~~~~~~~~~
+Add XML type for condition reports
+  one document per disk (i.e., 8 per module)

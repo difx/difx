@@ -20,7 +20,7 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
+ * $HeadURL$
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
@@ -28,52 +28,31 @@
  *==========================================================================*/
 
 #include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <time.h>
 #include "difxmessage.h"
-
 
 int main(int argc, char **argv)
 {
-	int sock;
-	int l;
-	char message[1024], from[32];
-	time_t t;
-	char timestr[32];
-	DifxMessageGeneric G;
+	char message[1500];
+	DifxMessageCondition cond;
+	int i;
+	int N = 1000000;
 
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
-	sock = difxMessageReceiveOpen();
-
-	for(;;)
+	sprintf(cond.serialNumber, "X1Y2Z3Wxxx001");
+	sprintf(cond.modelNumber, "Boomerang9000");
+	cond.discSize = 250;
+	sprintf(cond.moduleVSN, "WFB-0123");
+	cond.moduleSlot = 4;
+	cond.conditionMJD = 54321.9876;
+	for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 	{
-		from[0] = 0;
-		l = difxMessageReceive(sock, message, 1023, from);
-		if(l < 0)
-		{
-			usleep(100000);
-			continue;
-		}
-		message[l] = 0;
-		time(&t);
-		strcpy(timestr, ctime(&t));
-		timestr[strlen(timestr)-1] = 0;
-		printf("[%s %s] %s\n", timestr, from, message);
-
-		difxMessageParse(&G, message);
-		difxMessageGenericPrint(&G);
-		if(strncmp(message, "exit", 4) == 0)
-		{
-			break;
-		}
-
-		fflush(stdout);
+		cond.bin[i] = N;
+		N /= 3;
 	}
 
-	difxMessageReceiveClose(sock);
+	difxMessageSendCondition(&cond);
 
 	return 0;
 }

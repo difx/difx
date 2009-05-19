@@ -183,6 +183,63 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 	return 0;
 }
 
+int difxMessageSendCondition(const DifxMessageCondition *cond)
+{
+	char message[1500];
+	char body[1200];
+	char bins[32*DIFX_MESSAGE_N_CONDITION_BINS];
+	int i;
+	char *b;
+
+	if(difxMessagePort < 0)
+	{
+		b = bins;
+		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		{
+			b += sprintf(b, "%c %d", (i=0 ? ':' : ','), cond->bin[i]);
+		}
+		printf("%s[%d] = %s %s", 
+			cond->moduleVSN, 
+			cond->moduleSlot,
+			cond->serialNumber,
+			bins);
+	}
+	else
+	{
+		b = bins;
+		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		{
+			b += sprintf(b, "<bin%d>%d</bin%d>", i, cond->bin[i], i);
+		}
+
+		sprintf(body,
+			
+			"<difxCondition>"
+			  "<serialNumber>%s</serialNumber>"
+			  "<modelNumber>%s</modelNumber>"
+			  "<size>%d</size>"
+			  "<moduleVSN>%s</moduleVSN>"
+			  "<moduleSlot>%d</moduleSlot>"
+			  "<conditionMJD>%6.4f</conditionMJD>"
+			  "%s"
+			"</difxCondition>",
+
+			cond->serialNumber,
+			cond->modelNumber,
+			cond->discSize,
+			cond->moduleVSN, 
+			cond->moduleSlot,
+			cond->conditionMJD,
+			bins);
+
+		sprintf(message, difxMessageXMLFormat, 
+			DifxMessageTypeStrings[DIFX_MESSAGE_CONDITION],
+			difxMessageSequenceNumber++, body);
+		
+		difxMessageSend(message);
+	}
+}
+
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 {
 	char message[DIFX_MESSAGE_LENGTH];
