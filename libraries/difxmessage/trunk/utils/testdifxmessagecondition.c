@@ -42,7 +42,7 @@ int main(int argc, char **argv)
 
 	sprintf(cond.serialNumber, "X1Y2Z3Wxxx001");
 	sprintf(cond.modelNumber, "Boomerang9000");
-	cond.discSize = 250;
+	cond.diskSize = 250;
 	sprintf(cond.moduleVSN, "WFB-0123");
 	cond.moduleSlot = 4;
 	cond.startMJD = 54321.9876;

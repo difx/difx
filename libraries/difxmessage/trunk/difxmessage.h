@@ -245,7 +245,7 @@ typedef struct
 {
 	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
 	char modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH+1];
-	int discSize;	/* GB */
+	int diskSize;	/* GB */
 	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
 	int moduleSlot;
 	double startMJD, stopMJD;

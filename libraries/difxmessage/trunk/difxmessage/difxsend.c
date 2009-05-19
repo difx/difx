@@ -227,7 +227,7 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 
 			cond->serialNumber,
 			cond->modelNumber,
-			cond->discSize,
+			cond->diskSize,
 			cond->moduleVSN, 
 			cond->moduleSlot,
 			cond->startMJD,

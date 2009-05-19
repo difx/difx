@@ -332,7 +332,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					else if(strcmp(elem, "size") == 0)
 					{
-						G->body.condition.discSize = atoi(s);
+						G->body.condition.diskSize = atoi(s);
 					}
 					else if(strcmp(elem, "moduleVSN") == 0)
 					{
@@ -664,8 +664,8 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 			G->body.condition.serialNumber);
 		printf("    model number = %s\n",
 			G->body.condition.modelNumber);
-		printf("    disc size = %d GB\n",
-			G->body.condition.discSize);
+		printf("    disk size = %d GB\n",
+			G->body.condition.diskSize);
 		printf("    module VSN / slot = %s / %d\n", 
 			G->body.condition.moduleVSN,
 			G->body.condition.moduleSlot);
