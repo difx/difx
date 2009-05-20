@@ -14,16 +14,14 @@ int main (argc, argv)
 {
 
      struct getCALC_arg request_args, *p_request;
-     struct getCALC_res result, *p_result;
+     struct getCALC_res *p_result;
 
-     double delt, delta_dly;
-     char   stnnamea[8], srcname[12], axistypea[6], eph_file[80];
+     double delta_dly;
+     char   stnnamea[8], srcname[12], axistypea[6];
      char   stnnameb[8], axistypeb[6];
      int    i;
 
      CLIENT    *cl;
-     char      *value;
-
 
      if(argc != 2)
      {
@@ -128,9 +126,9 @@ int main (argc, argv)
      printf ("return from RPC call\n");
      system ("date");
 
-     printf ("result: request_id = %d\n", 
+     printf ("result: request_id = %ld\n", 
               p_result->getCALC_res_u.record.request_id);
-     printf ("result: date  = %d\n", 
+     printf ("result: date  = %ld\n", 
               p_result->getCALC_res_u.record.date);
      printf ("result: time  = %e\n",
               p_result->getCALC_res_u.record.time);

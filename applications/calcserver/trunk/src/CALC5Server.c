@@ -9,6 +9,7 @@
 #include <sys/syslog.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
 #include "CALCServer.h"     /* RPCGEN creates this from CALCServer.x */
 #define INCocean
 #include "ocean.h"
@@ -1945,6 +1946,12 @@ double         asteroid (mjdtime, icolumn)
               value[0] = solar_target[i-1].deldot;
               value[1] = solar_target[i].deldot;
            }
+	   else
+	   {
+	      value[0] = 0.0;
+	      value[1] = 0.0;
+	      /* FIXME -- issue warning as this should not happen */
+	   }
  
            time[0] = solar_target[i-1].ref_time;
            time[1] = solar_target[i].ref_time;
