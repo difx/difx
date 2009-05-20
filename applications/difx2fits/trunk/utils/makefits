@@ -58,6 +58,24 @@ def usage(prog):
 	print '             Bypass check for complete set of correlated\n'
 	exit(0)
 
+def testgainfiles():
+	gcPath = getenv("GAIN_CURVE_PATH")
+	if gcPath == None:
+		return []
+	gcFiles = glob(gcPath + '/*')
+	missing = []
+	for f in gcFiles:
+		if not isfile(f):
+			if len(missing) == 0:
+				print ''
+			print 'Warning: symlink %s is broken' % f
+			missing.append(f)
+	
+	if len(missing) > 0:
+		print ''
+
+	return missing
+
 def parsekv(str):
 	kv = {}
 	ss = split(str)
@@ -282,7 +300,7 @@ class JobList:
 			fn = '%s.%d.FITS' % (expt, i)
 			size = getsize(fn)/1000000.0
 			archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
-			out.write('%s %3.1f %s\n' % (archfile, size, fn))
+			out.write('%s %4.2f %s\n' % (archfile, size, fn))
 			cmd = 'mv %s %s/%s' % (fn, dir, archfile)
 			if verbose:
 				print 'Executing: %s' % cmd
@@ -315,7 +333,7 @@ class JobList:
 				print 'Executing: %s' % cmd
 			system(cmd)
 			if groupId != None:
-				cmd = 'chown -R :%s %s/%s' % (groupId, cwd, logFile)
+				cmd = 'chown -R :%s %s.gz' % (groupId, logFile)
 				if verbose:
 					print 'Executing: %s' % cmd
 				system(cmd)
@@ -431,6 +449,8 @@ if opts == '':
 if len(args) < 1:
 	usage(argv[0])
 
+gcFilesMissing = testgainfiles()
+
 for arg in args:
 	if arg[-8:] == '.joblist':
 		joblistfile = arg
@@ -457,3 +477,10 @@ for arg in args:
 		exit(0)
 
 	OK = jl.makefits(difxQueueBase, verbose, sniff, opts)
+
+if len(gcFilesMissing) > 0:
+	print '\nWarning: some gain curve files were not found:'
+	for f in fcFilesMissing:
+		print '  %s' % f
+	print ''
+
