@@ -228,7 +228,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		scoreBest = -1;
 		for(t = times.begin(); t != times.end(); t++)
 		{
-			score = nGap(changes, *t) * (nAnt-usage[*t]) + 100*clockBreaks[*t];
+			score = nGap(changes, *t) * (nAnt-usage[*t]+1) + 100*clockBreaks[*t];
 			if(score > scoreBest)
 			{
 				scoreBest = score;
