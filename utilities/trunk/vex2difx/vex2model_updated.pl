@@ -60,7 +60,11 @@ my $yestoall = 0;
 my @stations = $vex->stationlist;
 my $old_handle;
 my ($day, $month, $year, $ut) = mjd2cal($exper_start);
-my $epoch = $year + $month*0.08333 + $day*0.0027397;
+my $hour = floor(24.0*$ut);
+my $minute = floor((24.0*$ut - $hour)*60.0);
+my $dayno = cal2dayno($day, $month, $year);
+my $numdays = cal2dayno(31, 12, $year);
+my $epoch = $year + ($dayno+$ut-1)/$numdays;
 my $yearoffset;
 my ($ra, $dec, $x, $y, $z);
 my $exper_stationfile = $exper."_station.tab";
@@ -185,8 +189,6 @@ foreach $a (@ants)
 
 #Then the experiment start time
 my $delay_start = $exper_start;
-my $hour = floor(24.0*$ut);
-my $minute = floor((24.0*$ut - $hour)*60.0);
 print(O pack("A20", "START UT: "), $year, " ", $month, " ", $day, " ", $hour, " ", $minute , "\n");
 $delay_start = cal2mjd($day, $month, $year, ($hour*60.0 + $minute) / 1440.0);
 my $start = $delay_start;
