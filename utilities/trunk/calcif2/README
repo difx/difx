@@ -1,4 +1,4 @@
-job2difx installs in a way that should be familiar to most that have installed
+calcif2 installs in a way that should be familiar to most that have installed
 modern Gnu software.
 
 Requirements:
@@ -8,8 +8,8 @@ in order to compile the calcif2 component of this package.
 
 To install from a .tar.gz distribution:
 
-tar zxvf job2difx-XXX.tar.gz
-cd job2difx-XXX
+tar zxvf calcif2-XXX.tar.gz
+cd calcif2-XXX
 ./configure --prefix=<prefix>     (replace <prefix> with the base install dir)
 make
 # (maybe become root here)

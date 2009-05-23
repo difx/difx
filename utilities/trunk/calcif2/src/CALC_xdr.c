@@ -11,7 +11,6 @@ xdr_getCALC_arg(xdrs, objp)
 	getCALC_arg *objp;
 {
         int i;
-	register long *buf;
 
 	if (!xdr_long(xdrs, &objp->request_id))
 		return (FALSE);
@@ -90,7 +89,6 @@ xdr_CALCRecord(xdrs, objp)
 	CALCRecord *objp;
 {
         int i;
-	register long *buf;
 
 	if (!xdr_long(xdrs, &objp->request_id))
 		return (FALSE);
@@ -128,9 +126,6 @@ xdr_getCALC_res(xdrs, objp)
 	register XDR *xdrs;
 	getCALC_res *objp;
 {
-
-	register long *buf;
-
 	if (!xdr_int(xdrs, &objp->error))
 		return (FALSE);
 	switch (objp->error) {

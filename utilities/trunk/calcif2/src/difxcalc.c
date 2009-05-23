@@ -67,7 +67,6 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 static int calcSpacecraftPosition(const DifxInput *D,
 	struct getCALC_arg *request, int spacecraftId)
 {
-	int nRow;
 	DifxSpacecraft *sc;
 	sixVector pos;
 	int r;
@@ -434,17 +433,18 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 		
 		for(i = 0; i < nInt; i++)
 		{
+			if(sec >= 86400)
+			{
+				sec -= 86400;
+				mjd++;
+			}
+
 			/* set up the intervals to calc polys over */
 			im[i].mjd = mjd;
 			im[i].sec = sec;
 			im[i].order = p->order;
 			im[i].validDuration = p->increment;
 			sec += p->increment;
-			if(sec >= 86400)
-			{
-				sec -= 86400;
-				mjd++;
-			}
 		}
 
 		/* call calc to derive delay, etc... polys */
