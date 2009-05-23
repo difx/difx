@@ -228,11 +228,11 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		      }
 		      continue;
 		  }
-	       	
+	       
 		  P = scan->im[a] + p;
 
-	          time = P->mjd - (int)(job->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - job->mjdStart)*86400.0 + P->sec;
+	          time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
+		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
 
 	          for(k = 0; k < array_N_POLY; k++)
 		  {

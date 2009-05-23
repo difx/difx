@@ -155,8 +155,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 		  P = scan->im[ant] + p;
 
-		  time = P->mjd - (int)(job->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - job->mjdStart)*86400.0 + P->sec;
+		  time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
+		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
 
 		  /* in general, convert from (us) to (sec) */
 		  atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
