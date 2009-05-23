@@ -386,7 +386,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p)
 	return 0;
 }
 
-static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
+static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 {
 	DifxPolyModel *im;
 	int antId;
@@ -421,6 +421,10 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p)
 	int1 = sec1/p->increment;
 	int2 = (sec2 + p->increment - 1)/p->increment;
 	nInt = int2 - int1;
+	if(isLast)
+	{
+		nInt++;
+	}
 	scan->nPoly = nInt;
 
 	for(antId = 0; antId < scan->nAntenna; antId++)
@@ -462,6 +466,7 @@ int difxCalc(DifxInput *D, CalcParams *p)
 {
 	int scanId;
 	int v;
+	int isLast;
 	DifxScan *scan;
 	DifxJob *job;
 
@@ -491,7 +496,15 @@ int difxCalc(DifxInput *D, CalcParams *p)
 				"exists\n", scanId);
 			return -2;
 		}
-		v = scanCalc(scanId, D, p);
+		if(scanId == D->nScan - 1)
+		{
+			isLast = 1;
+		}
+		else
+		{
+			isLast = 0;
+		}
+		v = scanCalc(scanId, D, p, isLast);
 		if(v < 0)
 		{
 			return -1;

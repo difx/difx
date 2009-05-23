@@ -1,7 +1,8 @@
 calcif2
 ~~~~~~~
 Version 1.0
-* No changes except renaming of this entire package
+* Add one extra MC row at end of job to quash AIPS warning
+* Always wrap at 86400 seconds into day
 
 Version 0.2
 * by default zero negative delays
