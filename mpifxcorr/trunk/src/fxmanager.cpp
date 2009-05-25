@@ -369,8 +369,6 @@ void FxManager::receiveData(bool resend)
   double time;
   int i, flag;
 
-  cinfo << startl << "FxManager:receiveData" << endl;
-
   // Work around MPI_Recv's desire to prioritize receives by MPI rank
   for(i = 0; i < numcores; i++)
   {
@@ -392,7 +390,6 @@ void FxManager::receiveData(bool resend)
   	// Receive message from the core that is both ready and has been waiting the longest
   	MPI_Recv(resultbuffer, resultlength*2, MPI_FLOAT, lastsource, MPI_ANY_TAG, return_comm, &mpistatus);
   }
-  cinfo << startl << "FxManager: Got data from core" << endl;
 
   sourcecore = mpistatus.MPI_SOURCE;
   MPI_Get_count(&mpistatus, MPI_FLOAT, &perr);
