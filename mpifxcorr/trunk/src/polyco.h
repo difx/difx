@@ -135,7 +135,7 @@ public:
   * Returns the weight*width product for the specified bin
   * @return The weight*width product for the specified bin
   */
-  inline f64 getBinWeightTimesWidth(int bin) { f64 w = binphases[(bin+numbins+1)%numbins]-binphases[bin]; return (w<0.0)?binweights[bin]*(1.0+w):binweights[bin]*w; }
+  inline f64 getBinWeightTimesWidth(int bin) { f64 w = binphases[bin]-binphases[bin+numbins-1]; return (w<0.0)?binweights[bin]*(1.0+w):binweights[bin]*w; }
 
  /**
   * Clears the bin counts
