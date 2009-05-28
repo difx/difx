@@ -1,0 +1,59 @@
+DiFX benchmarking
+
+DiFX benchmarking can be done using vlbi_fake program in this directory plus
+some wrapper scripts. Samples of these scripts are in the "sample" driectory.
+
+A significant amount of manual tweaking is needed - probably the sample 
+scripts should be highly modified for your local environment and actual tests
+you want to run. The run.sh script included steps through running DiFX on 
+1..n compute nodes, with 1..m threads per node. 
+
+Files
+
+vlbi_fake
+
+A simple evlbi data generation program. For benchmarking only the TCP mode is
+useful. This has only been tested assuming LVBDR data, mark5b may work as 
+well (for benchmarking it should not matter what you use). The options you
+are likely to use for benchmarking are:
+
+ -help	  	       Summary of options
+ -duration <SEC>       Amount of seconds to transfer (default 60)
+ -host <HOSTNAME>      Hostname to connect to. Default localhost which is
+       		       probably what should be used
+ -port <PORT>	       TCP port to use. Needs to match DiFX
+ -nchan <N>	       Number of (2 bit sampled) VLBI channels to generate
+ -bandwidth <VAL>      Bandwidth to assume (default 16).
+ -day <DAY>            Day of month of start time (default now)
+ -month <MONTH>        Month of start time (default now)
+ -dayno <DAYNO>        Day of year of start time (default now)
+ -year <YEAR>          Year of start time (default now)
+ -time <HH:MM:SS>      Year of start time (default now)
+ -mark5b/mk5b          Send Mark5b format data. Untested
+
+
+sample/vstart.sh
+
+Simple script to tun vlbi_fake. This will need to be editted to set the 
+proper path of vlbi_fake and the starttime/duration etc. Normally the easiest
+thing is to copy it to $HOME on the i/o nodes.
+
+sample/run.sh
+
+Sample scirpt to test the full maxtix of varying number of compute nodes and
+threads per node. This launches vstart.sh on the i/o nodes, sets the thread
+file appropriately and launche DiFX. The output from DiFX and the i/o nodes are all logged.
+
+Setup
+
+Create/find a DiFX input file with the mode you want to test (number 
+channels, telescopes etc). If you want to test the number of threads create
+a set of "thread" files (for the maximum number of compute nodes) for each
+thread test. Create the host files with the maximum number of hosts you want 
+to test. 
+
+Analysis
+
+The perl script medrianrate.pl computes the median transfer rate from the 
+i/o log files.  This can me used as the "speed metric". Just running on the 
+logs from a single i/o node should be enough.
