@@ -157,7 +157,7 @@ void processManager()
   cout.precision(15);
   string outname = config->getOutputFilename() + ".profileout.ascii";
   output.open(outname.c_str(), ios::trunc);
-  out << "Bin#	Weight" << endl;
+  output << "Bin#	Weight" << endl;
   for(int i=0;i<numbins;i++)
     output << i << " " << profile[i] << endl;
   output.close();
