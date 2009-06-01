@@ -12,9 +12,9 @@ make install
 
 This is also contained in the README file in the pulseprofile directory.
 
-Pulseprofile is used to bin the autocorrelations of one antenna, and average to form a pulse profile.  You will want to choose your most sensitive antenna. Also, if your DAS/digital backend servos the antenna gain on a timescale shorter or comparable to the pulse period, you will get a very odd looking pulse profile out.  You have been warned.
+Pulseprofile is used to bin the autocorrelations of one or more antennas, and average to form a pulse profile.  You will want to choose your most sensitive antenna(s). Also, if your DAS/digital backend servos the antenna gain on a timescale shorter or comparable to the pulse period, you will get a very odd looking pulse profile out.  You have been warned.
 
-Now, to generate a "profile" file, copy the .input file that you will use for the gated pass of the correlator.  Change the OUTPUT FILENAME to be whatever you want the profile file to be called (pulseprofile will automatically append ".profileout.ascii", so just choose a sensible prefix.  Full path recommended).
+Now, to generate a "profile" file, copy the .input file that you will use for the gated pass of the correlator.  Change the OUTPUT FILENAME to be whatever you want the profile file to be called (pulseprofile will automatically append ".profileout.ascii", so just choose a sensible prefix.  Full path recommended). This file should have only those antennas you wish to use as "active" datastreams.  The baseline section will be ignored, so no need to change that.
 
 It is important that there is just one entry in the config table, and that is for the pulsar.  Otherwise you'll be binning and adding your reference sources etc as well.  Pulsar binning must be ON! Pulseprofile will fail with an error if these conditions are not met.
 
@@ -22,13 +22,13 @@ Make sure that the binconfig file which is pointed at by this configuration has 
 
 If you want, you can shorten the time interval if the pulsar is bright (to save execution time).
 
-Now, run just like you would mpifxcorr, except that you need only allow one process for a datastream.  You can have as many cores as you like.  You need one extra parameter, which is the index of the datastream you wish to use.  This is a zero based index.  So if Parkes is the 4th antenna in the datastream table and you want to use it, use 3 for <dsindex> in the example below.
+Now, run just like you would mpifxcorr.  You can have as many cores as you like.  However, the threads file will be ignored (only 1 thread per Core node will be used) so you should run multiple Core processes per node (using the machines file) if you have multicore machines.
 
 So, a typical command line might look like:
 
-mpirun -np 10 -machinefile machines.list pulseprofile <input filename> <dsindex>
+mpirun -np 10 -machinefile machines.list pulseprofile <input filename>
 
-That would give you 10-2=8 Core processes (there is one manager and one datastream).
+If the input file only had one active datastream, that would give you 10-2=8 Core processes (there is one manager and one datastream).
 
 That will produce an ascii pulse profile, in a simple format similar to that you get from the single dish pulsar guys.  it will look like:
 

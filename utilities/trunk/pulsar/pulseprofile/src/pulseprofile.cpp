@@ -42,9 +42,9 @@ int main(int argc, char *argv[])
   MPI_Comm_rank(world, &myid);
   MPI_Comm_dup(world, &return_comm);
 
-  if(argc != 3)
+  if(argc != 2)
   {
-    cerr << "Error - invoke with pulseprofile <configfilename> <targetdatastreamindex>" << endl;
+    cerr << "Error - invoke with pulseprofile <configfilename>" << endl;
     exit(1);
   }
   if(numprocs < 3) {
@@ -53,14 +53,27 @@ int main(int argc, char *argv[])
   }
 
   quit = false;
-  numcores = numprocs - 2;
+  currentdsindex = 0;
+  //string dsstring = argv[2];
+  //string::size_type at = -1;
+  //string::size_type wasat = 0;
+  //while(at!=string::npos) {
+  //  wasat = ++at;
+  //  at = dsstring.find_first_of(",");
+  //  dsindices[numdatastreams++] = atoi(dsstring.substr(wasat,at-wasat).c_str());
+  //}
+  controldata = new int[4];
+  config = new Configuration(argv[1], myid);
+  numdatastreams = config->getNumDataStreams();
+  numcores = numprocs - (numdatastreams+1);
   coreids = new int[numcores];
   for(int i=0;i<numcores;i++)
-    coreids[i] = 2 + i;
-  controldata = new int[3];
-  config = new Configuration(argv[1], myid);
+    coreids[i] = numdatastreams + 1 + i;
+  if(numprocs < numdatastreams + 2) {
+    cerr << "Error - must have at least " << numdatastreams+2 << " processes    (manager, datastreams, core(s)) - aborting" << endl;
+    return EXIT_FAILURE;
+  }
   config->loaduvwinfo(true);
-  dsindex = atoi(argv[2]);
   numbins = config->getNumPulsarBins(0);
   numchannels = config->getNumChannels(0);
   nsincrement = int(1000.0*(config->getBlocksPerSend(0)*numchannels)/(config->getDBandwidth(0, 0, 0))+ 0.5);
@@ -68,22 +81,51 @@ int main(int argc, char *argv[])
     cerr << "Must be a single config file, with pulsar binning on - aborting" << endl;
     return EXIT_FAILURE;
   }
-  if(dsindex >= config->getNumDataStreams()) {
-    cerr << "Dsindex " << dsindex << " is greater than the active number of datastreams " << config->getNumDataStreams() << " - aborting" << endl;
-    return EXIT_FAILURE;
+  //for(int i=0;i<numdatastreams;i++) {
+  //  if(dsindices[i] < 0 || dsindices[i] >= config->getNumDataStreams()) {
+  //    cerr << "Dsindex " << dsindices[i] << " is outside the permitted range of datastream values (0, " << config->getNumDataStreams() << ") - aborting" << endl;
+  //    return EXIT_FAILURE;
+  //  }
+  //}
+  Configuration::dataformat df = config->getDataFormat(0,0);
+  int dfreqs = config->getDNumFreqs(0,0);
+  int dbands = config->getDNumInputBands(0,0);
+  double bw = config->getDBandwidth(0,0,0);
+  int bits = config->getDNumBits(0,0);
+  double * findices = new double[dbands];
+  for(int i=0;i<dbands;i++) findices[i] = config->getDFreqIndex(0,0,i);
+  //check that all the modes are the same
+  for(int i=0;i<numdatastreams;i++) {
+    bool mismatch = false;
+    if(config->getDataFormat(0,i) != df) mismatch = true;
+    else if(config->getDNumFreqs(0,i) != dfreqs) mismatch = true;
+    else if(config->getDNumInputBands(0,i) != dbands) mismatch = true;
+    else if(config->getDBandwidth(0,i,0) != bw) mismatch = true;
+    else if(config->getDNumBits(0,i) != bits) mismatch = true;
+    else {
+      for(int j=0;j<dbands;j++) {
+        if(config->getDFreqIndex(0,i,j) != findices[j]) mismatch = true;
+      }
+    }
+    if(mismatch) {
+      cerr << "Error - not all datastreams have the same mode - aborting!" << endl;
+      return EXIT_FAILURE;
+    }
   }
-  if(myid != 1)
+  delete [] findices;
+
+  if(myid == 0 || myid > numdatastreams)
     resultbuffer = vectorAlloc_f64(numbins);
   else {
-    if(config->isMkV(dsindex))
-      datastream = new Mk5DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-    else if(config->isNativeMkV(dsindex)) {
-      datastream = new NativeMk5DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+    if(config->isMkV(myid-1))
+      datastream = new Mk5DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+    else if(config->isNativeMkV(myid-1)) {
+      datastream = new NativeMk5DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
       //cout << "NativeMk5 not yet supported - aborting!" << endl;
       //MPI_Abort(world, 1);
     }
     else
-      datastream = new DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      datastream = new DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
     datastream->initialise();
   }
   if(myid == 0) {
@@ -133,6 +175,7 @@ void processManager()
 
   while(controldata[1] < executetimeseconds)
   {
+    //cout << "About to receive some visibility and send again" << endl;
     //receive from any core, and send data straight back
     receiveVisData(true);
   }
@@ -173,7 +216,8 @@ void managerTerminate()
 {
   for(int i=0;i<numcores;i++)
     MPI_Send(controldata, 1, MPI_INT, coreids[i], CR_TERMINATE, return_comm);
-  MPI_Send(controldata, 3, MPI_INT, 1, DS_TERMINATE, MPI_COMM_WORLD);
+  for(int i=0;i<numdatastreams;i++)
+    MPI_Send(controldata, 3, MPI_INT, i+1, DS_TERMINATE, MPI_COMM_WORLD);
 }
 
 void receiveVisData(bool sendagain)
@@ -190,6 +234,7 @@ void receiveVisData(bool sendagain)
   if(sendagain)
   {
     controldata[0] = sourcecore;
+    //cout << "About to send more data" << endl;
     sendManagerData(controldata, sourceid);
   }
   for(int i=0;i<numbins;i++)
@@ -199,13 +244,19 @@ void receiveVisData(bool sendagain)
 void sendManagerData(int data[], int coreindex)
 {
   int configindex;
-  MPI_Send(&data[1], 2, MPI_INT, coreids[coreindex], CR_RECEIVETIME, return_comm);
-  MPI_Ssend(data, 3, MPI_INT, 1, DS_PROCESS, MPI_COMM_WORLD);
+  data[3] = currentdsindex;
+  MPI_Send(&data[1], 3, MPI_INT, coreids[coreindex], CR_RECEIVETIME, return_comm);
+  MPI_Ssend(data, 3, MPI_INT, currentdsindex+1, DS_PROCESS, MPI_COMM_WORLD);
+  currentdsindex++;
+  if(currentdsindex == numdatastreams)
+    currentdsindex = 0;
   data[2] += nsincrement;
   if(data[2] >= 1000000000)
   {
     data[2] -= 1000000000;
     data[1]++;
+    if(data[0]%10 == 0)
+      cout << "Up to execute second " << data[1] << "/" << executetimeseconds << endl;
     //check that we haven't changed configs
     configindex = config->getConfigIndex(data[1]);
     while(configindex < 0 && data[1] < executetimeseconds)
@@ -219,20 +270,20 @@ void sendManagerData(int data[], int coreindex)
 void processCore()
 {
   corecounter = 0;
-  mode = config->getMode(0, dsindex);
+  mode = config->getMode(0, 0);
   bins = new int*[config->getMaxNumFreqs()];
   for(int i=0;i<config->getMaxNumFreqs();i++)
     bins[i] = new int[numchannels + 1];
   databytes = config->getMaxDataBytes();
-  if(config->isMkV(dsindex))
-    databytes += config->getFrameBytes(0, dsindex);
+  if(config->isMkV(0))
+    databytes += config->getFrameBytes(0, 0);
   rawbuffer = new char*[COREBUFLEN];
   delaydata = new double*[COREBUFLEN];
   offsets = new int*[COREBUFLEN];
   for(int i=0;i<COREBUFLEN;i++) {
     rawbuffer[i] = new char[databytes];
     delaydata[i] = new double[config->getMaxSendBlocks() + 1];
-    offsets[i] = new int[2];
+    offsets[i] = new int[3];
   }
   for(int i=0;i<COREBUFLEN;i++) {
     coreReceiveData();    
@@ -250,19 +301,20 @@ void processCore()
 void coreReceiveData()
 {
   MPI_Status mpistatus;
-  int perr;
+  int perr, ds;
 
   if(quit)
     return; //don't try to read, we've already finished
 
   //Get the instructions on the time offset from the FxManager node
-  MPI_Recv(offsets[corecounter%COREBUFLEN], 2, MPI_INT, fxcorr::MANAGERID, MPI_ANY_TAG, return_comm, &mpistatus);
+  MPI_Recv(offsets[corecounter%COREBUFLEN], 3, MPI_INT, fxcorr::MANAGERID, MPI_ANY_TAG, return_comm, &mpistatus);
   if(mpistatus.MPI_TAG == CR_TERMINATE) {
     quit = true;
     return;
   }
-  MPI_Recv(rawbuffer[corecounter%COREBUFLEN], databytes, MPI_UNSIGNED_CHAR, 1, CR_PROCESSDATA, MPI_COMM_WORLD, &mpistatus);
-  MPI_Recv(delaydata[corecounter%COREBUFLEN], config->getMaxSendBlocks() + 1, MPI_DOUBLE, 1, CR_PROCESSCONTROL, MPI_COMM_WORLD, &mpistatus);
+  ds = offsets[corecounter%COREBUFLEN][2]+1;
+  MPI_Recv(rawbuffer[corecounter%COREBUFLEN], databytes, MPI_UNSIGNED_CHAR, ds, CR_PROCESSDATA, MPI_COMM_WORLD, &mpistatus);
+  MPI_Recv(delaydata[corecounter%COREBUFLEN], config->getMaxSendBlocks() + 1, MPI_DOUBLE, ds, CR_PROCESSCONTROL, MPI_COMM_WORLD, &mpistatus);
 }
 
 void coreProcessData()
@@ -282,8 +334,8 @@ void coreProcessData()
     mode->process(i);
     offsetmins = double(i*numchannels)/(60.0*1000000.0*config->getConfigBandwidth(0));
     polyco->getBins(offsetmins, bins);
-    for(int j=0;j<config->getDNumInputBands(0, dsindex);j++) {
-      bandfreq = config->getDFreqIndex(0, dsindex, j);
+    for(int j=0;j<config->getDNumInputBands(0, 0);j++) {
+      bandfreq = config->getDFreqIndex(0, 0, j);
       autocorr = mode->getAutocorrelation(false, j);
       for(int k=0;k<numchannels-1;k++) {
         resultbuffer[bins[bandfreq][k+1]] += autocorr[k+1].re;
@@ -292,8 +344,9 @@ void coreProcessData()
   }
 
   //send the results back to the manager
-  cout << "Resultbuffer[0] was " << resultbuffer[0] << ", resultbuffer[5] was " << resultbuffer[5] << endl;
+  //cout << "Resultbuffer[0] was " << resultbuffer[0] << ", resultbuffer[5] was " << resultbuffer[5] << endl;
   if(delaydata[corecounter%COREBUFLEN][1] < 0.0)
-    cout << "This subint contained rubbish" << endl;
+    //cout << "This subint contained rubbish" << endl;
+  //cout << "Core " << myid << " about to send results back to manager" << endl;
   MPI_Ssend(resultbuffer, numbins, MPI_DOUBLE, fxcorr::MANAGERID, true, return_comm);    
 }
