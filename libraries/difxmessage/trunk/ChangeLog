@@ -43,3 +43,6 @@ Version 0.6 20090518
 ~~~~~~~~~~~
 Add XML type for condition reports
   one document per disk (i.e., 8 per module)
+Test programs for condition document types
+Improvements to difxlog
+DiFX version 1.5
