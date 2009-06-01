@@ -49,12 +49,11 @@ libmpifxcorr_a_SOURCES = \
 	polyco.cpp \
 	mk5.cpp \
 	mk5mode.cpp \
-	nativemk5.cpp \
-	mark5dir.cpp \
 	fxmanager.cpp \
 	uvw.cpp \
 	visibility.cpp \
-	alert.cpp 
+	alert.cpp \
+	$(mark5_files)
 
 libfxcorr_a_SOURCES = \
 	configuration.cpp \
