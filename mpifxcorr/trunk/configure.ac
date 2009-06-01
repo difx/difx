@@ -49,7 +49,7 @@ dnl **** Find difxmessage library                         ****
 dnl **********************************************************
 dm_enabled=true
 PKG_CHECK_MODULES(DIFXMESSAGE,
-        difxmessage,
+        difxmessage >= 0.6,
 	[AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
 	dm_enabled=false)
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
