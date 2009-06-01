@@ -8,6 +8,7 @@ bin_PROGRAMS = \
 	testdifxmessagesend \
 	testdifxmessagereceive \
 	testdifxmessagecondition \
+	testdifxmessagereceivecond \
 	testseqnumbers \
 	difxlog
 
@@ -29,6 +30,9 @@ testdifxmessagecondition_SOURCES = \
 
 testseqnumbers_SOURCES = \
 	testseqnumbers.c
+
+testdifxmessagereceivecond_SOURCES = \
+	testdifxmessagereceivecond.c
 
 difxlog_SOURCES = \
 	difxlog.c

@@ -191,14 +191,16 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 	int i;
 	char *b;
 
+	bins[0] = 0;
+
 	if(difxMessagePort < 0)
 	{
 		b = bins;
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
-			b += sprintf(b, "%c %d", (i=0 ? ':' : ','), cond->bin[i]);
+			b += sprintf(b, " %d", cond->bin[i]);
 		}
-		printf("%s[%d] = %s %s", 
+		printf("%s[%d] = %s %s\n", 
 			cond->moduleVSN, 
 			cond->moduleSlot,
 			cond->serialNumber,
@@ -220,8 +222,8 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			  "<size>%d</size>"
 			  "<moduleVSN>%s</moduleVSN>"
 			  "<moduleSlot>%d</moduleSlot>"
-			  "<startMJD>%6.4f</startMJD>"
-			  "<stopMJD>%6.4f</stopMJD>"
+			  "<startMJD>%7.5f</startMJD>"
+			  "<stopMJD>%7.5f</stopMJD>"
 			  "%s"
 			"</difxCondition>",
 

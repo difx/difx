@@ -669,7 +669,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    module VSN / slot = %s / %d\n", 
 			G->body.condition.moduleVSN,
 			G->body.condition.moduleSlot);
-		printf("    MJD = %6.4f to %6.4f\n",
+		printf("    MJD = %7.5f to %7.5f\n",
 			G->body.condition.startMJD,
 			G->body.condition.stopMJD);
 		printf("    stats =");

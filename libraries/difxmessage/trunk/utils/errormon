@@ -57,13 +57,13 @@ class Parser:
     def end(self, tag):
         if tag == 'alertMessage' and self.ok:
 		self.message = self.tmp
-	if tag == 'severity':
+	elif tag == 'severity':
 		self.severity = int(self.tmp)
-	if tag == 'from':
+	elif tag == 'from':
 		self.unit = lower(self.tmp)
-	if tag == 'identifier':
+	elif tag == 'identifier':
 		self.id = self.tmp
-	if tag == 'mpiProcessId':
+	elif tag == 'mpiProcessId':
 		self.mpiid = int(self.tmp)
 
     def data(self, data):

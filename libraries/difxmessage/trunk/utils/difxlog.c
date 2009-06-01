@@ -96,6 +96,7 @@ int main(int argc, char **argv)
 	FILE *out;
 	time_t t, lastt;
 	char timestr[32];
+	char tag[64+DIFX_MESSAGE_PARAM_LENGTH];
 
 	time(&lastt);
 
@@ -142,6 +143,7 @@ int main(int argc, char **argv)
 
 		if(strcmp(G.identifier, identifier) == 0)
 		{
+			sprintf(tag, "%s %3d %s", timestr, G.mpiId, G.from);
 			if(G.type == DIFX_MESSAGE_ALERT)
 			{
 				DifxMessageAlert *A;
@@ -149,7 +151,7 @@ int main(int argc, char **argv)
 				A = &G.body.alert;
 				if(A->severity <= logLevel)
 				{
-					fprintf(out, "%s  %s  %s\n", timestr, difxMessageAlertString[A->severity], A->message);
+					fprintf(out, "%s %s  %s\n", tag, difxMessageAlertString[A->severity], A->message);
 					fflush(out);
 				}
 			}
@@ -159,11 +161,11 @@ int main(int argc, char **argv)
 
 				S = &G.body.status;
 				
-				fprintf(out, "%s  STATUS %s  %s\n", timestr, DifxStateStrings[S->state],
+				fprintf(out, "%s  STATUS %s  %s\n", tag, DifxStateStrings[S->state],
 					S->message);
 				if(S->maxDS >= 0)
 				{
-					fprintf(out, "%s  WEIGHTS", timestr);
+					fprintf(out, "%s  WEIGHTS", tag);
 					for(i = 0; i <= S->maxDS; i++)
 					{
 						fprintf(out, " %4.2f", S->weight[i]);
