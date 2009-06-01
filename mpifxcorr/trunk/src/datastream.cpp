@@ -555,7 +555,7 @@ void DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].configindex = config->getConfigIndex(readseconds);
   if(bufferinfo[segmentindex].configindex < 0)
   {
-    cerror << startl << "Warning - Datastream " << mpiid << " read a file containing data from a source for which we had no configuration - leaving parameters unchanged" << endl;
+    cverbose << startl << "Datastream " << mpiid << " read a file containing data from a source for which we had no configuration - leaving parameters unchanged" << endl;
     return;
   }
 

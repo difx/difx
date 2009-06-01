@@ -98,6 +98,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	scan = 0;
 	lastval = 0xFFFFFFFF;
 	mark5stream = 0;
+	filltime = 0;
 	invalidtime = 0;
 	invalidstart = 0;
 	newscan = 0;
@@ -533,7 +534,21 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = 0;
 	sec2 = (readseconds + corrstartseconds) % 86400;
 
-	if((sec % 86400) != sec2 || fabs(ns - readnanoseconds) > 0.5)
+	if(data[0] == FILL_PATTERN && data[1] == FILL_PATTERN)
+	{
+		filltime++;
+		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
+		if((filltime & (filltime-1)) == 0)
+		{
+			cwarn << startl << filltime << " consecutive fill patterns at time" << sec2 << "," << readnanoseconds << endl ;
+		}
+
+		if(filltime > 1)
+		{
+			bufferinfo[buffersegment].validbytes = 0;
+		}
+	}
+	else if((sec % 86400) != sec2 || fabs(ns - readnanoseconds) > 0.5)
 	{
 		invalidtime++;
 		invalidstart = readpointer;
@@ -541,12 +556,13 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
 		if((invalidtime & (invalidtime-1)) == 0)
 		{
-			cerror << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << (sec % 86400) << "," << ns << ") != (" << sec2 << "," << readnanoseconds << ")" << endl ;
+			cerror << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << mjd << "," << sec << "," << ns << ")!=(" << sec2 << "," << readnanoseconds << ")" << " length=" << bytes << endl ;
 		}
 		// FIXME -- if invalidtime > threshhold, look for sync again
 	}
 	else
 	{
+		filltime = 0;
 		invalidtime = 0;
 	}
 
