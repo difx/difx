@@ -172,7 +172,7 @@ Mode::~Mode()
 {
   int status;
 
-  cdebug << startl << "Starting a mode destructor" << endl;
+  //cdebug << startl << "Starting a mode destructor" << endl;
 
   for(int i=0;i<numinputbands;i++)
   {
@@ -224,7 +224,7 @@ Mode::~Mode()
   }
   delete [] autocorrelations;
 
-  cdebug << startl << "Ending a mode destructor" << endl;
+  //cdebug << startl << "Ending a mode destructor" << endl;
 }
 
 float Mode::unpack(int sampleoffset)

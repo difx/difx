@@ -443,7 +443,7 @@ void Core::loopprocess(int threadid)
     delete starecord;
   }
 
-  cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
+  //cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
 }
 
 void Core::receivedata(int index, bool * terminate)
@@ -876,7 +876,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
       //if we are not the first thread, create a copy of the Polyco for our use
       polycos[i] = (threadid==0)?currentpolycos[i]:new Polyco(*currentpolycos[i]);
     }
-    cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
+    // cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
 
     //create the bins array
     *bins = new s32*[maxfreqs];

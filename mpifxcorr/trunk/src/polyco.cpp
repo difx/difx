@@ -60,7 +60,7 @@ Polyco::Polyco(const Polyco & tocopy)
   : pulsarname(tocopy.pulsarname), configindex(tocopy.configindex), numbins(tocopy.numbins), numchannels(tocopy.numchannels), numfreqs(tocopy.numfreqs), observatory(tocopy.observatory), timespan(tocopy.timespan), numcoefficients(tocopy.numcoefficients), mjd(tocopy.mjd), mjdfraction(tocopy.mjdfraction), dm(tocopy.dm), dopplershift(tocopy.dopplershift), logresidual(tocopy.logresidual), refphase(tocopy.refphase), f0(tocopy.f0), obsfrequency(tocopy.obsfrequency), binaryphase(tocopy.binaryphase), minbinwidth(tocopy.minbinwidth), bandwidth(tocopy.bandwidth), calclengthmins(tocopy.calclengthmins)
 {
   int status;
-  cinfo << startl << "Started copying a polyco" << endl;
+  //cinfo << startl << "Started copying a polyco" << endl;
 
   //copy as much information as is contained in the copy Polyco
   binphases = vectorAlloc_f64(numbins);
@@ -114,7 +114,7 @@ Polyco::Polyco(const Polyco & tocopy)
     }
   }
   
-  cinfo << startl << "Finished copying a polyco!" << endl;
+  //cinfo << startl << "Finished copying a polyco!" << endl;
 }
 
 Polyco::~Polyco()
