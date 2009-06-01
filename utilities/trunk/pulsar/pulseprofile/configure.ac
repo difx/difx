@@ -6,6 +6,7 @@ AC_SUBST([LIBRARY_VERSION])
 
 AM_INIT_AUTOMAKE
 
+AC_LANG_CPLUSPLUS
 AC_CONFIG_SRCDIR([src/pulseprofile.h])
 AM_CONFIG_HEADER([config.h])
 
@@ -40,9 +41,30 @@ dnl **********************************************************
 
 # Checks for libraries.
 PKG_CHECK_MODULES(DIFXIO, difxio >= 2.9)
-PKG_CHECK_MODULES(FXCORR, mpifxcorr >= 1.5)
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 0.5)
+PKG_CHECK_MODULES(MPIFXCORR, mpifxcorr >= 1.5)
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.1)
+
+dnl ** Need to define HAVE_DIFXMESSAGE for the mpifxcorr lib
+dm_enabled=true
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 0.4,
+	          [AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
+		  dm_enabled=false)
+AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
+
+dnl **********************************************************
+dnl **** Look for StreamStor libraries                    ****
+dnl **** cause native Mark5 to be built if found.         ****
+dnl **********************************************************
+ss_enabled=true
+AC_CHECK_HEADER([xlrapi.h],
+		[AC_DEFINE([HAVE_XLRAPI_H], 1, [1=has SS])],
+		[ss_enabled=false])
+if test ${ss_enabled} = true; then
+	SS_LIBS="-lwdapi921 -lssapi -lrt"
+else
+	SS_LIBS=""
+fi
+AM_CONDITIONAL(WITH_SS, $ss_enabled)
 
 # Checks for header files.
 
@@ -50,8 +72,8 @@ PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.1)
 
 # Checks for library functions.
 
-CXXFLAGS="${CXXFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${DIFXIO_CFLAGS} ${FXCORR_CFLAGS} ${M5ACCESS_CFLAGS}"
-LIBS="${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${DIFXIO_LIBS} ${FXCORR_LIBS} ${M5ACCESS_LIBS}"
+CXXFLAGS="${CXXFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${DIFXIO_CFLAGS} ${MPIFXCORR_CFLAGS} ${M5ACCESS_CFLAGS}"
+LIBS="${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${DIFXIO_LIBS} ${MPIFXCORR_LIBS} ${M5ACCESS_LIBS} ${SS_LIBS}"
 
 AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT

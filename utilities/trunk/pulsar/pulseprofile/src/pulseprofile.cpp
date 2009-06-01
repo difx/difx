@@ -16,12 +16,18 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include "pulseprofile.h"
 #include "alert.h"
+#include "difxmessage.h"
 #include "math.h"
 #include "mk5.h"
+#ifdef HAVE_XLRAPI_H
 #include "nativemk5.h"
+#endif
 
 using namespace std;
 
@@ -72,9 +78,9 @@ int main(int argc, char *argv[])
     if(config->isMkV(dsindex))
       datastream = new Mk5DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
     else if(config->isNativeMkV(dsindex)) {
-      //datastream = new NativeMk5DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      cout << "NativeMk5 not yet supported - aborting!" << endl;
-      MPI_Abort(world, 1);
+      datastream = new NativeMk5DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
+      //cout << "NativeMk5 not yet supported - aborting!" << endl;
+      //MPI_Abort(world, 1);
     }
     else
       datastream = new DataStream(config, dsindex, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
