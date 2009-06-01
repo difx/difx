@@ -34,6 +34,7 @@ library_include_HEADERS = \
 	uvw.h \
 	mk5.h \
 	mk5mode.h \
+	mode.h \
 	polyco.h \
 	mark5dir.h \
 	nativemk5.h \
