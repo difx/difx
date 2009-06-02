@@ -4,6 +4,7 @@ Version 0.2
 * Compute "Computational load" -- an estimate of the number of numerical operations required.
 * Initial (untested) support for ephemeris-driven targets
 * Estimate output data size / allow job splitting based on job size
+* Version for DiFX-1.5
 
 Version 0.1
 ~~~~~~~~~~~

@@ -178,6 +178,18 @@ void CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "binConfig")
 	{
 		ss >> binConfigFile;
+		
+		if(binConfigFile[0] != '/')
+		{
+			char cwd[1024];
+			string inFile;
+
+			getcwd(cwd, 1023);
+			inFile = string(cwd);
+			inFile += string("/");
+			inFile += binConfigFile;
+			binConfigFile = inFile;
+		}
 	}
 	else if(key == "freqId" || key == "freqIds")
 	{
