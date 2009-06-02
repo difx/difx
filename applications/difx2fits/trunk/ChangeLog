@@ -6,6 +6,8 @@ Version 2.4
 * don't use bcopy -- use memcpy instead.
 * fix sense of phase for LSB sniffer output data
 * add makefits wrapper program
+* Fix model tables when crossing midnight
+* Version for DiFX-1.5
 
 Version 2.3
 * Support for writing FITS files larger than 2 GiB
