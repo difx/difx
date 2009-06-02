@@ -489,10 +489,11 @@ void printDifxScan(const DifxScan *ds);
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds);
 void printDifxScanSummary(const DifxScan *ds);
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *configIdRemap);
+	const int *jobIdRemap, const int *configIdRemap, 
+	const int *antennaIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, const int *jobIdRemap,
-	const int *configIdRemap, int *nds);
+	const int *configIdRemap, const int *antennaIdRemap, int *nds);
 int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
 int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
 	const DifxConfig *dc,int doRealName, int doCoords, int doExtra);

@@ -1,6 +1,8 @@
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()
   - needed for more flexible frequency selection in vex2difx
+* Consider antenna reordering when concattenating scans
+* Version for DiFX-1.5
 
 2.9
 * Initial support for calculation of spacecraft positions via SPICE

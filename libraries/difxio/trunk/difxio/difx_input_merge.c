@@ -197,7 +197,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 
 	/* merge DifxScan table */
 	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan, D2->scan, D2->nScan,
-		jobIdRemap, configIdRemap, &(D->nScan));
+		jobIdRemap, configIdRemap, antennaIdRemap, &(D->nScan));
 
 	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,

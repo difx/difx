@@ -87,7 +87,10 @@ void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm)
 	if(dpm)
 	{
 		fprintf(fp, "        mjd, sec = %d, %d\n", dpm->mjd, dpm->sec);
-		fprintf(fp, "        delay = %22.15e", dpm->delay[0]);
+		fprintf(fp, "        delay = %22.15e %22.15e %22.15e\n", 
+			dpm->delay[0],
+			dpm->delay[1],
+			dpm->delay[2]);
 	}
 }
 

@@ -90,15 +90,53 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 	if(ds->nPoint > 1 && ds->nAntenna > 1)
 	{
-		if(ds->model[0])
+		if(ds->model)
 		{
-			fprintDifxModel(fp, ds->model[0] - 1);
-			fprintDifxModel(fp, ds->model[0]);
+			if(ds->model[0])
+			{
+				fprintDifxModel(fp, ds->model[0] - 1);
+				fprintDifxModel(fp, ds->model[0]);
+			}
+			else
+			{
+				fprintf(fp, "    No model[0]\n");
+			}
+			if(ds->model[1])
+			{
+				fprintDifxModel(fp, ds->model[1] - 1);
+				fprintDifxModel(fp, ds->model[1]);
+			}
+			else
+			{
+				fprintf(fp, "    No model[1]\n");
+			}
 		}
-		if(ds->model[1])
+		else
 		{
-			fprintDifxModel(fp, ds->model[1] - 1);
-			fprintDifxModel(fp, ds->model[1]);
+			fprintf(fp, "    No model available\n");
+		}
+		if(ds->im)
+		{
+			if(ds->im[0])
+			{
+				fprintDifxPolyModel(fp, ds->im[0]);
+			}
+			else
+			{
+				fprintf(fp, "    No polymodel[0]\n");
+			}
+			if(ds->im[1])
+			{
+				fprintDifxPolyModel(fp, ds->im[1]);
+			}
+			else
+			{
+				fprintf(fp, "    No polymodel[0]\n");
+			}
+		}
+		else
+		{
+			fprintf(fp, "    No polynomial model available\n");
 		}
 	}
 }
@@ -122,9 +160,10 @@ void printDifxScanSummary(const DifxScan *ds)
 }
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *configIdRemap)
+	const int *jobIdRemap, const int *configIdRemap, 
+	const int *antennaIdRemap)
 {
-	int i, srcAntenna;
+	int i, srcAntenna, destAntenna;
 
 	dest->mjdStart = src->mjdStart;
 	dest->mjdEnd   = src->mjdEnd;
@@ -158,6 +197,17 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 
 	/* figure out how many antennas needed in this scan */
 	dest->nAntenna = src->nAntenna;
+	if(antennaIdRemap)
+	{
+		for(i = 0; i < src->nAntenna; i++)
+		{
+			destAntenna = antennaIdRemap[i];
+			if(destAntenna >= dest->nAntenna)
+			{
+				dest->nAntenna = destAntenna+1;
+			}
+		}
+	}
 
 	/* allocate space for model info and copy from original. */
 	if(src->model)
@@ -166,7 +216,15 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			sizeof(DifxModel *));
 		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 		{
-			dest->model[srcAntenna] = dupDifxModelColumn(
+			if(antennaIdRemap)
+			{
+				destAntenna = antennaIdRemap[srcAntenna];
+			}
+			else
+			{
+				destAntenna = srcAntenna;
+			}
+			dest->model[destAntenna] = dupDifxModelColumn(
 				src->model[srcAntenna], dest->nPoint);
 		}
 	}
@@ -181,7 +239,15 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			sizeof(DifxPolyModel *));
 		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 		{
-			dest->im[srcAntenna] = dupDifxPolyModelColumn(
+			if(antennaIdRemap)
+			{
+				destAntenna = antennaIdRemap[srcAntenna];
+			}
+			else
+			{
+				destAntenna = srcAntenna;
+			}
+			dest->im[destAntenna] = dupDifxPolyModelColumn(
 				src->im[srcAntenna], dest->nPoly);
 		}
 	}
@@ -196,7 +262,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
  */
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, const int *jobIdRemap, 
-	const int *configIdRemap, int *nds)
+	const int *configIdRemap, const int *antennaIdRemap, int *nds)
 {
 	DifxScan *ds;
 	int i=0, i1=0, i2=0, src;
@@ -242,7 +308,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			if(ds1[i1].configId >= 0)
 			{
-				copyDifxScan(ds + i, ds1 + i1, 0, 0);
+				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
 				i++;
 			}
 			i1++;
@@ -252,7 +318,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 			if(ds2[i2].configId >= 0)
 			{
 				copyDifxScan(ds + i, ds2 + i2, jobIdRemap, 
-					configIdRemap);
+					configIdRemap, antennaIdRemap);
 				i++;
 			}
 			i2++;
@@ -440,7 +506,7 @@ int padDifxScans(DifxInput *D)
 
 	/* now go through again, inserting spacer scans as needed */
 	sNew = newScans;
-	copyDifxScan(sNew, D->scan + 0, 0, 0);	/* copy first scan */
+	copyDifxScan(sNew, D->scan + 0, 0, 0, 0);	/* copy first scan */
 	sNew++;
 	for(s = 1; s < nScan; s++)
 	{
@@ -466,7 +532,7 @@ int padDifxScans(DifxInput *D)
 			sNew++;
 		}
 
-		copyDifxScan(sNew, s1, 0, 0);
+		copyDifxScan(sNew, s1, 0, 0, 0);
 		sNew++;
 	}
 

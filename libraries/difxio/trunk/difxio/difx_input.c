@@ -2035,7 +2035,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		nSubarray = atoi(DifxParametersvalue(cp, row));
 		for(j = 0; j < nSubarray; j++)
 		{
-		    copyDifxScan(D->scan + k, old_scan + i, 0, 0);
+		    copyDifxScan(D->scan + k, old_scan + i, 0, 0, 0);
 		    memcpy(D->scan + k, old_scan + i, sizeof(DifxScan));
 		    D->scan[k].model = (DifxModel **)calloc(
 			D->scan[k].nAntenna, sizeof(DifxModel *));
