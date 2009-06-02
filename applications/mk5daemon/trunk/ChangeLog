@@ -51,4 +51,9 @@ Version 0.9
 * ignore child signal to prevent defunct processes
 * use password file to get proper user ids
 * spawn difxlog when starting a job
-* fix? dual-link network performance tracking
+* fix dual-link network performance tracking
+* option to start condition_watch upon startup
+
+Version 1.0
+~~~~~~~~~~~
+* Version for DiFX-1.5

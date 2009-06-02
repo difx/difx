@@ -73,6 +73,8 @@ void Mk5Daemon_startMark5A(Mk5Daemon *D)
 	{
 		v = pthread_create(&D->processThread, 0, &mark5Arun, D);
 		D->process = PROCESS_MARK5A;
+		D->processDone = 0;
+		D->idleCount = 0;
 	}
 
 	pthread_mutex_unlock(&D->processLock);

@@ -260,6 +260,23 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 }
 
+static void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
+{
+	char logMessage[1024];
+	const DifxMessageCondition *c;
+
+	if(!messageForMe(D, G))
+	{
+		return;
+	}
+
+	c = &G->body.condition;
+
+	sprintf(logMessage, "Condition report: from=%s identifier=%s disk=%s[%d]=%s\n", 
+		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
+	Logger_logData(D->log, logMessage);
+}
+
 static void *monitorMultiListen(void *ptr)
 {
 	Mk5Daemon *D;
@@ -294,6 +311,9 @@ static void *monitorMultiListen(void *ptr)
 				break;
 			case DIFX_MESSAGE_START:
 				Mk5Daemon_startMpifxcorr(D, &G);
+				break;
+			case DIFX_MESSAGE_CONDITION:
+				handleCondition(D, &G);
 				break;
 			default:
 				break;

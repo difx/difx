@@ -20,6 +20,7 @@ const int DefaultDifxMonitorPort = 50200;
 const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
+const char difxUser[] = "difx";
 
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
@@ -45,6 +46,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --headnode\n");
 	fprintf(stderr, "  -H             Give head node capabilities\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --condition-watch\n");
+	fprintf(stderr, "  -w             Start the condition-watch program\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Don't multicast any status\n");
@@ -250,6 +254,31 @@ void sigintHandler(int j)
 	signal(SIGINT, oldsigintHandler);
 }
 
+void startConditionWatch(const Mk5Daemon *D)
+{
+	const char *user;
+	char command[1024];
+
+	Logger_logData(D->log, "Starting condition_watch");
+
+	if(fork())
+	{
+		return;
+	}
+	
+	user = getenv("DIFX_USER_ID");
+	if(!user)
+	{
+		user = difxUser;
+	}
+
+	sprintf(command, "ssh -f %s@%s condition_watch", user, D->hostName);
+
+	system(command);
+
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
@@ -263,6 +292,7 @@ int main(int argc, char **argv)
 	char logPath[256];
 	const char *p;
 	double mjd;
+	int startCW = 0;
 
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
@@ -290,6 +320,11 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--headnode") == 0)
 		{
 			isHeadNode = 1;
+		}
+		else if(strcmp(argv[i], "-w") == 0 ||
+		   strcmp(argv[i], "--condition-watch") == 0)
+		{
+			startCW = 1;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -349,6 +384,11 @@ int main(int argc, char **argv)
 
 	sprintf(logMessage, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, logMessage);
+
+	if(startCW && isHeadNode)
+	{
+		startConditionWatch(D);
+	}
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
 

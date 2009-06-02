@@ -8,7 +8,6 @@
 const char defaultMpiWrapper[] = "mpirun";
 const char defaultMpiOptions[] = "--mca btl ^udapl,openib --mca mpi_yield_when_idle 1";
 const char defaultDifxProgram[] = "mpifxcorr";
-const char difxUser[] = "difx";
 
 typedef struct
 {
@@ -332,8 +331,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 		sprintf(command, "ssh -x %s \"difxlog %s %s.difxlog 4 %d\"",
 			S->headNode, jobName, filebase, childPid);
-
-		printf("Executing: %s\n", command);
 
 		system(command);
 

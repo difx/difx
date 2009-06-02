@@ -5,6 +5,8 @@
 #include <difxmessage.h>
 #include "logger.h"
 
+extern const char difxUser[];
+
 enum ProcessType
 {
 	PROCESS_NONE = 0,
