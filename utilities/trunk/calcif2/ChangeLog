@@ -3,6 +3,7 @@ calcif2
 Version 1.0
 * Add one extra MC row at end of job to quash AIPS warning
 * Always wrap at 86400 seconds into day
+* Version for DiFX-1.5
 
 Version 0.2
 * by default zero negative delays
