@@ -20,6 +20,7 @@
 #include <config.h>
 #endif
 
+#include <mpi.h>
 #include "pulseprofile.h"
 #include "alert.h"
 #include "difxmessage.h"
@@ -120,9 +121,12 @@ int main(int argc, char *argv[])
     if(config->isMkV(myid-1))
       datastream = new Mk5DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
     else if(config->isNativeMkV(myid-1)) {
+#ifdef HAVE_XLRAPI_H 
       datastream = new NativeMk5DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
-      //cout << "NativeMk5 not yet supported - aborting!" << endl;
-      //MPI_Abort(world, 1);
+#else
+      cout << "NativeMk5 cannot be used here, you don't have the libraries compiled in! Aborting." << endl;
+      MPI_Abort(world, 1);
+#endif
     }
     else
       datastream = new DataStream(config, myid-1, myid, numcores, coreids, config->getDDataBufferFactor(), config->getDNumDataSegments());
@@ -137,7 +141,7 @@ int main(int argc, char *argv[])
   MPI_Barrier(world);
   if(myid == 0)
     processManager();
-  else if (myid==1)
+  else if (myid<=numdatastreams)
     datastream->execute();
   else
     processCore();
@@ -168,6 +172,7 @@ void processManager()
   {
     for(int j=0;j<numcores;j++)
     {
+      //cout << "About to send data from datastream " << currentdsindex+1 << " to core " << coreids[j] << endl;
       controldata[0] = coreids[j];
       sendManagerData(controldata, j);
     }
@@ -246,7 +251,9 @@ void sendManagerData(int data[], int coreindex)
   int configindex;
   data[3] = currentdsindex;
   MPI_Send(&data[1], 3, MPI_INT, coreids[coreindex], CR_RECEIVETIME, return_comm);
+  //cout << "About to send to ds " << currentdsindex+1 << endl;
   MPI_Ssend(data, 3, MPI_INT, currentdsindex+1, DS_PROCESS, MPI_COMM_WORLD);
+  //cout << "Sent to ds " << currentdsindex+1 << endl;
   currentdsindex++;
   if(currentdsindex == numdatastreams)
     currentdsindex = 0;
@@ -271,11 +278,12 @@ void processCore()
 {
   corecounter = 0;
   mode = config->getMode(0, 0);
-  bins = new int*[config->getMaxNumFreqs()];
-  for(int i=0;i<config->getMaxNumFreqs();i++)
+  bins = new int*[config->getFreqTableLength()];
+  for(int i=0;i<config->getFreqTableLength();i++)
     bins[i] = new int[numchannels + 1];
-  databytes = config->getMaxDataBytes();
-  if(config->isMkV(0))
+  databytes = int(config->getMaxDataBytes()*(double(config->getBlocksPerSend(0) + config->getGuardBlocks(0))/double(config->getBlocksPerSend(0)))+0.5);
+  Configuration::dataformat df = config->getDataFormat(0,0);
+  if(df == Configuration::MKIV || df == Configuration::VLBA || df == Configuration::MARK5B)
     databytes += config->getFrameBytes(0, 0);
   rawbuffer = new char*[COREBUFLEN];
   delaydata = new double*[COREBUFLEN];
@@ -322,23 +330,29 @@ void coreProcessData()
   int bandfreq;
   double offsetmins;
   cf32 * autocorr;
+  int dsindex = offsets[corecounter%COREBUFLEN][2];
   Polyco * polyco = Polyco::getCurrentPolyco(0, config->getStartMJD(), double(config->getStartSeconds() + offsets[corecounter%COREBUFLEN][0])/86400.0, polycos, config->getNumPolycos(0), false);
+  if(polyco == NULL) {
+    cerr << "Error - could not locate a polyco to cover MJD " << config->getStartMJD() << ", seconds " << config->getStartSeconds() + offsets[corecounter%COREBUFLEN][0] << " - ABORTING!" << endl;
+   MPI_Abort(MPI_COMM_WORLD, 1);
+  }
   polyco->setTime(config->getStartMJD(), double(config->getStartSeconds() + offsets[corecounter%COREBUFLEN][0] + double(offsets[corecounter%COREBUFLEN][1])/1000000000.0)/86400.0);
   mode->setDelays(&(delaydata[corecounter%COREBUFLEN][1]));
   mode->setData((u8*)rawbuffer[corecounter%COREBUFLEN], databytes, delaydata[corecounter%COREBUFLEN][0]);
   mode->setOffsets(offsets[corecounter%COREBUFLEN][0], offsets[corecounter%COREBUFLEN][1]);
   for(int i=0;i<numbins;i++)
     resultbuffer[i] = 0.0;
+  //cout << "Core " << myid << " is about to process data, offsets[0] is " << offsets[corecounter%COREBUFLEN][0] << endl;
   for(int i=0;i<config->getBlocksPerSend(0);i++) {
     mode->zeroAutocorrelations();
     mode->process(i);
     offsetmins = double(i*numchannels)/(60.0*1000000.0*config->getConfigBandwidth(0));
     polyco->getBins(offsetmins, bins);
-    for(int j=0;j<config->getDNumInputBands(0, 0);j++) {
-      bandfreq = config->getDFreqIndex(0, 0, j);
+    for(int j=0;j<config->getDNumInputBands(0, dsindex);j++) {
+      bandfreq = config->getDFreqIndex(0, dsindex, j);
       autocorr = mode->getAutocorrelation(false, j);
-      for(int k=0;k<numchannels-1;k++) {
-        resultbuffer[bins[bandfreq][k+1]] += autocorr[k+1].re;
+      for(int k=0;k<numchannels-3;k++) {
+        resultbuffer[bins[bandfreq][k+2]] += autocorr[k+2].re;
       }
     }
   }
@@ -347,6 +361,6 @@ void coreProcessData()
   //cout << "Resultbuffer[0] was " << resultbuffer[0] << ", resultbuffer[5] was " << resultbuffer[5] << endl;
   if(delaydata[corecounter%COREBUFLEN][1] < 0.0)
     //cout << "This subint contained rubbish" << endl;
-  //cout << "Core " << myid << " about to send results back to manager" << endl;
+  cout << "Core " << myid << " about to send results back to manager" << endl;
   MPI_Ssend(resultbuffer, numbins, MPI_DOUBLE, fxcorr::MANAGERID, true, return_comm);    
 }
