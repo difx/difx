@@ -288,7 +288,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		if(legalVSN(D->vsnA))
 		{
 			sprintf(message, "Module %s removed from bank A", D->vsnA);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		}
 		if(vsnA[0] == 0)
 		{
@@ -297,7 +297,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		else if(legalVSN(vsnA))
 		{
 			sprintf(message, "Module %s inserted into bank A", vsnA);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			strncpy(D->vsnA, vsnA, 8);
 		}
 		else if(strcmp(D->vsnA, "illegalA") != 0)
@@ -312,7 +312,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		if(legalVSN(D->vsnB))
 		{
 			sprintf(message, "Module %s removed from bank B", D->vsnB);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		}
 		if(vsnB[0] == 0)
 		{
@@ -321,7 +321,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		else if(legalVSN(vsnB))
 		{
 			sprintf(message, "Module %s inserted into bank B", vsnB);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			strncpy(D->vsnB, vsnB, 8);
 		}
 		else if(strcmp(D->vsnB, "illegalB") != 0)

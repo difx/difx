@@ -299,8 +299,12 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 		sprintf(message, "Spawning %d processes", 1 + S->nDatastream + S->nProcess);
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, message);
+		usleep(100);
 		system(command);
+		
+		usleep(100);
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
+		usleep(100);
 
 		difxMessageSendDifxAlert("mpifxcorr process done", DIFX_ALERT_LEVEL_INFO);
 		exit(0);
