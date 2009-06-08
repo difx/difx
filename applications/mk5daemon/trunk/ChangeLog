@@ -61,3 +61,4 @@ Version 1.0
 Version 1.1
 ~~~~~~~~~~~
 * Post DiFX-1.5
+* Option to have difxqueue run every 15 minutes

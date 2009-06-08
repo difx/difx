@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2009 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id:$
+ * $HeadURL:$
+ * $LastChangedRevision:$
+ * $Author:$
+ * $LastChangedDate:$
+ *
+ *==========================================================================*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -11,8 +40,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20090202";
+const char version[] = "0.4";
+const char verdate[] = "20090608";
 
 int verbose = 0;
 int die = 0;
@@ -108,6 +137,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 {
 	static long long seconds=0;
 	struct timeval t;
+	char message[256];
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
@@ -130,6 +160,20 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	{
 		seconds = t.tv_sec;
 		getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
+	}
+
+	if(!die) switch(status)
+	{
+	case MARK5_DIR_READ_ERROR:
+		sprintf(message, "XLR read error in decoding of scan %d\n", scan+1);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		break;
+	case MARK5_DIR_DECODE_ERROR:
+		sprintf(message, "cannot decode scan %d\n", scan+1);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		break;
+	default:
+		break;
 	}
 
 	return die;
@@ -177,6 +221,10 @@ int main(int argc, char **argv)
 	}
 
 	difxMessageInit(-1, "mk5dir");
+
+	sprintf(message, "%s ver %s starting", program, version);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+
 	memset(&mk5status, 0, sizeof(mk5status));
 
 	xlrRC = XLROpen(1, &xlrDevice);
@@ -280,6 +328,12 @@ int main(int argc, char **argv)
 			{
 				strcpy(modules, mk5status.vsnA);
 			}
+
+			if(sanityCheckModule(&module) < 0)
+			{
+				sprintf(message, "Module %s directory contains errors", mk5status.vsnA);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+			}
 		}
 
 		memset(&module, 0, sizeof(module));
@@ -323,6 +377,12 @@ int main(int argc, char **argv)
 					strcpy(modules, mk5status.vsnB);
 				}
 			}
+
+			if(sanityCheckModule(&module) < 0)
+			{
+				sprintf(message, "Module %s directory contains errors", mk5status.vsnA);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+			}
 		}
 	}
 	else
@@ -364,6 +424,12 @@ int main(int argc, char **argv)
 			if(v >= 0)
 			{
 				strcpy(modules, vsn);
+			}
+
+			if(sanityCheckModule(&module) < 0)
+			{
+				sprintf(message, "Module %s directory contains errors", vsn);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
 			}
 		}
 

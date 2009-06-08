@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2009 by Walter Brisken                                  *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id:$ 
+ * $HeadURL:$
+ * $LastChangedRevision:$ 
+ * $Author:$
+ * $LastChangedDate:$
+ *
+ *==========================================================================*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -49,6 +78,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --condition-watch\n");
 	fprintf(stderr, "  -w             Start the condition-watch program\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --monitor-queue\n");
+	fprintf(stderr, "  -m             Periodically update the queue (VLBA only)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Don't multicast any status\n");
@@ -279,6 +311,31 @@ void startConditionWatch(const Mk5Daemon *D)
 	exit(0);
 }
 
+void Mk5Daemon_queueMon(Mk5Daemon *D)
+{
+	const char *user;
+	char command[1024];
+
+	Logger_logData(D->log, "Checking Queue");
+
+	if(fork())
+	{
+		return;
+	}
+	
+	user = getenv("DIFX_USER_ID");
+	if(!user)
+	{
+		user = difxUser;
+	}
+
+	sprintf(command, "ssh -f %s@%s difxqueue prod /users/difx/public_html/difx.queue", user, D->hostName);
+
+	system(command);
+
+	exit(0);
+}
+
 int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
@@ -293,6 +350,7 @@ int main(int argc, char **argv)
 	const char *p;
 	double mjd;
 	int startCW = 0;
+	int monQueue = 0;
 
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
@@ -325,6 +383,11 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--condition-watch") == 0)
 		{
 			startCW = 1;
+		}
+		else if(strcmp(argv[i], "-m") == 0 ||
+		   strcmp(argv[i], "--monitor-queue") == 0)
+		{
+			monQueue = 1;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -382,6 +445,11 @@ int main(int argc, char **argv)
 	D = newMk5Daemon(logPath);
 	D->isHeadNode = isHeadNode;
 
+	if(isHeadNode && monQueue > 0)
+	{
+		D->queueMonInterval = 15*60;	/* check queue every 15 minutes */
+	}
+
 	sprintf(logMessage, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, logMessage);
 
@@ -406,6 +474,11 @@ int main(int argc, char **argv)
 			lastTime = t;
 
 			ok = (checkStreamstor(D, t) == 0);
+
+			if((D->queueMonInterval > 0) && (t % D->queueMonInterval) == 0)
+			{
+				Mk5Daemon_queueMon(D);
+			}
 
 			if( (t % D->loadMonInterval) == 0)
 			{

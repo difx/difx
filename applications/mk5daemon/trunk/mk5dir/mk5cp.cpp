@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: $
-// $HeadURL: $
-// $LastChangedRevision: $
-// $Author: $
-// $LastChangedDate: $
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -38,7 +38,6 @@
 #include <sys/time.h>
 #include "config.h"
 #include "mark5dir.h"
-#include "replaced.h"
 #include "../config.h"
 
 const char program[] = "mk5cp";
@@ -331,6 +330,7 @@ int main(int argc, char **argv)
 	int a, b, i, s, l, nGood, nBad;
 	int scanIndex;
 	float replacedFrac;
+	int bail = 0;
 
 	if(argc < 2)
 	{
@@ -455,14 +455,25 @@ int main(int argc, char **argv)
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "Warning: %s\n", message);
 		}
+
 		if(v < 0)
 		{
 			fprintf(stderr, "Unsuccessful\n");
 			mk5status.activeBank = ' ';
+			bail = 1;
 		}
 		else if(verbose > 0)
 		{
 			printMark5Module(&module);
+		}
+
+		v = sanityCheckModule(&module);
+		if(v < 0)
+		{
+			sprintf(message, "Module %s directory contains undecoded scans!", vsn);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
+			mk5status.activeBank = ' ';
+			bail = 1;
 		}
 	}
 
@@ -494,7 +505,7 @@ int main(int argc, char **argv)
 
 	nGood = 0;
 	nBad = 0;
-	if(mk5status.activeBank > ' ') 
+	if(mk5status.activeBank > ' ' && bail < 1) 
 	{
 		if(isdigit(scanlist[0])) for(;;)
 		{
