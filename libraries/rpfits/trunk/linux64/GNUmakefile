@@ -13,12 +13,12 @@ CFLAGS  := -g -O -Wall
 # GNU Fortran 77
 ifdef USEGFORTRAN
   FC      := gfortran
-  FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit
-  LDFLAGS := -lg2c
+  FFLAGS  := -g -O -fno-automatic -Wall 
+  LDFLAGS :=
 else
   FC      := g77
   FFLAGS  := -g -O -fno-automatic -Wall -Wimplicit -Wno-globals
-  LDFLAGS :=
+  LDFLAGS := -lg2c
 endif
 RANLIB := ranlib
 
