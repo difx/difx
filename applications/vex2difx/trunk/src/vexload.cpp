@@ -681,6 +681,7 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
+	bool quit = false;
 
 	string antName(station);
 
@@ -725,9 +726,22 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 
 		VexInterval vsnTimeRange(vexDate(p->start), vexDate(p->stop));
 		
-		V->addVSN(antName, vsn, vsnTimeRange);
-		V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
-		V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
+		if(!vsnTimeRange.isCausal())
+		{
+			cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " . " << endl;
+			quit = true;
+		}
+		else
+		{
+			V->addVSN(antName, vsn, vsnTimeRange);
+			V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
+			V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
+		}
+	}
+
+	if(quit)
+	{
+		exit(0);
 	}
 
 	return 0;

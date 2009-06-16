@@ -90,6 +90,7 @@ public:
 	void logicalOr(double start, double stop);
 	void logicalOr(const VexInterval &v);
 	bool isWithin(VexInterval &v) { return (mjdStart >= v.mjdStart) && (mjdStop <= v.mjdStop); }
+	bool isCausal() { return (mjdStart <= mjdStop); }
 };
 
 class VexScan : public VexInterval
