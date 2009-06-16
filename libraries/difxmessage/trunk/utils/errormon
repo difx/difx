@@ -75,7 +75,7 @@ class Parser:
 	else:
 		return ''
 
-def run():
+def run(maxlevel):
 	
 	port = getenv('DIFX_MESSAGE_PORT')
 	if port == None:
@@ -102,9 +102,14 @@ def run():
 			p.feed(message)
 			info = p.getinfo()
 			p.close()
-			if len(info) > 0:
+			if len(info) > 0 and p.severity <= maxlevel:
 				print asctime(), info
 		except socket.timeout:
 			pass
 
-run()
+if len(argv) > 1:
+	maxlevel = int(argv[1])
+else:
+	maxlevel = 8
+
+run(maxlevel)

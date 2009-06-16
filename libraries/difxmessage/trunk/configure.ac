@@ -35,7 +35,7 @@ dnl **********************************************************
 expat_enabled=true
 AC_CHECK_HEADER([expat.h],
 		[AC_DEFINE([HAVE_EXPAT_H], 1, [1=has expat])],
-		[expat_enabled=false])
+		[AC_MSG_ERROR([Expat not found])])
 if test ${expat_enabled} = true; then
 	EXPAT_LIBS="-lexpat"
 else
