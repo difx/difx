@@ -82,6 +82,14 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxDateLines(out, D->mjdStart);
 	writeDifxLineDouble(out, "INCREMENT (SECS)", "%1.0f", D->job->modelInc);
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
+	if(D->nOutChan > 0.0)
+	{
+		writeDifxLineInt(out, "OUTPUT CHANNELS", D->nOutChan);
+	}
+	if(D->startChan > 0)
+	{
+		writeDifxLineInt(out, "START CHANNEL", D->startChan);
+	}
 	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);
 	writeDifxScanArray(out, D->nScan, D->scan, D->config, 1, 1, 1);

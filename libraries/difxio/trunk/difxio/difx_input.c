@@ -535,7 +535,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 
 	freqIds = (int *)calloc(D->nFreq, sizeof(int));
 
-	/* go through datastreams associates with this config and collect all
+	/* go through datastreams associated with this config and collect all
 	 * distinct Freq table ids
 	 */
 	

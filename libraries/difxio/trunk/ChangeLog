@@ -2,6 +2,7 @@
 * Deallocation option of function DifxBaselineAllocPolProds()
   - needed for more flexible frequency selection in vex2difx
 * Consider antenna reordering when concattenating scans
+* use same mjd rounding for .calc and .input files
 * Version for DiFX-1.5
 
 2.9

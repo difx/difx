@@ -56,7 +56,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	}
 	else
 	{
-		secs = (D->mjdStart - (int)(D->mjdStart))*86400.0;
+		secs = (D->mjdStart - (int)(D->mjdStart))*86400.0 + 0.5;
 		writeDifxLineInt(out, "START SECONDS", secs);
 	}
 	writeDifxLineInt(out, "ACTIVE DATASTREAMS", D->nDatastream);
