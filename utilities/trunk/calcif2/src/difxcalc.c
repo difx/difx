@@ -56,9 +56,17 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	}
 	else
 	{
-		printf("Not enough eop values present (%d < %d)\n", 
+		fprintf(stderr, "Not enough eop values present (%d < %d)\n", 
 			D->nEOP, MAX_EOPS);
 		return -1;
+	}
+
+	/* check that eops bracket the observation */
+	if(D->eop[MAX_EOPS-1].mjd < D->mjdStart ||
+	   D->eop[0].mjd          > D->mjdStop)
+	{
+		fprintf(stderr, "EOPs don't bracket the observation.\n");
+		return -2;
 	}
 
 	return 0;

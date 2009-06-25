@@ -17,7 +17,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "1.0";
-const char verdate[] = "20090503";
+const char verdate[] = "20090625";
 
 typedef struct
 {
@@ -385,14 +385,14 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		if(v < 0)
 		{
 			deleteDifxInput(D);
-			printf("difxCalcInit returned %d\n", v);
+			fprintf(stderr, "difxCalcInit returned %d\n", v);
 			return -1;
 		}
 		v = difxCalc(D, p);
 		if(v < 0)
 		{
 			deleteDifxInput(D);
-			printf("difxCalc returned %d\n", v);
+			fprintf(stderr, "difxCalc returned %d\n", v);
 			return -1;
 		}
 
