@@ -55,6 +55,12 @@ parser.add_option("-s", "--scrunch", dest="doscrunch", default=False,
                   help="Turn scrunching on in binconfig file")
 parser.add_option("--binconfigfile", dest="binconfigfile", default="",
                   help="Filename of the output binconfig file")
+parser.add_option("--nonormalise", dest="nonormalise", default=False,
+                  action="store_true", help="Don't calculated zero phase")
+parser.add_option("--zeroranges", dest="zeroranges", default="",
+                  help="colon separated start,end pairs of ranges to zero")
+parser.add_option("--hannwidth", dest="hannwidth", default="-1",
+                  help="Width of hanning filter to apply, default -1/off")
 (options, junk) = parser.parse_args()
 
 profilefile = options.profile
@@ -63,10 +69,16 @@ numbins     = int(options.numbins)
 doscrunch   = options.doscrunch
 binconffile = options.binconfigfile
 numpolycos  = len(polycofiles)
+normalise   = not options.nonormalise
+zeroranges  = options.zeroranges.split(":")
+hannwidth   = int(options.hannwidth)
 
 #Check everything necessary was supplied
 if profilefile == "" or len(options.polyco) == "" or binconffile == "":
     print "You must supply a profile file, polyco file(s) and binconfig filename! Aborting!"
+    sys.exit(1)
+if hannwidth > 0 and hannwidth % 2 == 0:
+    print "Hanning width, if on, must be odd! Aborting"
     sys.exit(1)
 
 #Write the header of the output file
@@ -90,6 +102,8 @@ else:
     #Load the bins into memory
     profilein = open(profilefile, 'r')
     profilelines = profilein.readlines()
+    if profilelines[0] == "":
+        profilelines = profilelines[1:]
     profilein.close()
     numprofilebins = len(profilelines)-1
     profile = numpy.zeros(numprofilebins, numpy.float64)
@@ -98,11 +112,33 @@ else:
         profile[i] = float((profilelines[i+1].split())[1])
         xvals[i] = float(i)/float(numprofilebins)
 
+    if hannwidth > 0: #Need to smooth
+        orgprofile = []
+	hanncoeff = []
+	hannsum = 0.0
+	for i in range(hannwidth):
+	    hanncoeff.append(0.5*(1.0 - math.cos(2*math.pi*(i+1)/
+	                                          (hannwidth+1))))
+            hannsum = hannsum + hanncoeff[i]
+	for i in range(hannwidth):
+	    hanncoeff[i] = hanncoeff[i]/hannsum
+        for i in range(numprofilebins):
+	    orgprofile.append(profile[i])
+	pylab.plot(xvals, orgprofile, 'g-')
+	for i in range(numprofilebins):
+	    profile[i] = 0.0
+	    for j in range(hannwidth):
+	        profile[i] = profile[i] + hanncoeff[j]*orgprofile[(i+j+
+		             numprofilebins-hannwidth/2)%numprofilebins]
+
     #Calculate zero phase of the profile (to get the correct pulse phase)
-    firstfourierterm = sum(profile * exp(-1j*2*math.pi*(1)*arange(numprofilebins)/numprofilebins))
-    zerophase = math.atan2(float(firstfourierterm.imag), float(firstfourierterm.real))/(2.0*math.pi)
-    if zerophase > 0.0:
-        zerophase = zerophase - 1.0
+    if normalise:
+        firstfourierterm = sum(profile * exp(-1j*2*math.pi*(1)*arange(numprofilebins)/numprofilebins))
+        zerophase = math.atan2(float(firstfourierterm.imag), float(firstfourierterm.real))/(2.0*math.pi)
+        if zerophase > 0.0:
+            zerophase = zerophase - 1.0
+    else:
+        zerophase = -1.0
     print "Zero phase is " + str(zerophase)
     for i in range(numprofilebins):
         xvals[i] = xvals[i] + 1.0 + zerophase
@@ -110,31 +146,40 @@ else:
     #Plot the original profile
     pylab.plot(xvals, profile, 'b-')
 
-    #Try and guess the noise
     profilemin = numpy.min(profile)
     profilemax = numpy.max(profile)
-    noiseonly = []
-    for val in profile:
-        if val < -profilemin:
-            noiseonly.append(val)
-    stddev = numpy.std(noiseonly)
 
-    #Zero all the noisy bits of the image
-    windowsize = 1
-    while math.pow(2, windowsize) < numprofilebins:
-        windowsize = windowsize + 1
-    windowsize = (windowsize-1)*2
-    for i in range(numprofilebins):
-        if not numpy.mean(profile[i-windowsize/2:i+windowsize/2]) > \
-               4*stddev/math.sqrt(windowsize):
-            profile[i] = 0.0
+    #Plot the original profile
+    if not zeroranges[0] == "":
+        for zr in zeroranges:
+	    start = int(zr.split(",")[0])
+	    end   = int(zr.split(",")[1])
+	    for i in range(start, end):
+	        profile[i] = 0.0;
+    else:
+        #Try and guess the noise
+        noiseonly = []
+        for val in profile:
+            if val < -profilemin:
+                noiseonly.append(val)
+        stddev = numpy.std(noiseonly)
 
-    #Go back and check for isolated noisy bits, squash them too
-    for i in range(numprofilebins):
-        if profile[i-1] == 0 and profile[(i+1)%numprofilebins] == 0:
-            if profile[i-2] == 0 or profile[(i+2)%numprofilebins] == 0:
+        #Zero all the noisy bits of the image
+        windowsize = 1
+        while math.pow(2, windowsize) < numprofilebins:
+            windowsize = windowsize + 1
+        windowsize = (windowsize-1)*2
+        for i in range(numprofilebins):
+            if not numpy.mean(profile[i-windowsize/2:i+windowsize/2]) > \
+                   4*stddev/math.sqrt(windowsize):
                 profile[i] = 0.0
-    print "Windowsize is " + str(windowsize) + ", stddev is " + str(stddev) + ", numprofilebins is " + str(numprofilebins)
+
+        #Go back and check for isolated noisy bits, squash them too
+        for i in range(numprofilebins):
+            if profile[i-1] == 0 and profile[(i+1)%numprofilebins] == 0:
+                if profile[i-2] == 0 or profile[(i+2)%numprofilebins] == 0:
+                    profile[i] = 0.0
+        print "Windowsize is " + str(windowsize) + ", stddev is " + str(stddev) + ", numprofilebins is " + str(numprofilebins)
 
     #Now merge bins until you reach required number
     outputbins = getNumMergedBins(profile, numprofilebins)

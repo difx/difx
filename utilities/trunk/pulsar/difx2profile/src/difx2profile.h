@@ -28,9 +28,12 @@ Configuration * config;
 ifstream * input;
 ofstream * output;
 double * profile;
+double * normprofile;
+double * scratch;
 float * visibilities;
-string line;
-int njobs, nbins, nchannels, baseline, bin;
-double profiletotal;
+string line, difxfile, polpair;
+int njobs, nbins, nchannels, baseline, bin, freqindex;
+int startmjd, atmjd, startsec, atsec, nextsec, runsec, runcount;
+double profiletotal, weight;
 
 //functions
