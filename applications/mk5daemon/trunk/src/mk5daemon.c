@@ -50,6 +50,7 @@ const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
 const char difxUser[] = "difx";
+const char restartCalcServerCommand[] = "/etc/init.d/calcserver restart";
 
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
@@ -314,15 +315,9 @@ void startConditionWatch(const Mk5Daemon *D)
 void Mk5Daemon_queueMon(Mk5Daemon *D)
 {
 	const char *user;
-	char command[1024];
+	char command[256];
+	char message[512];
 
-	Logger_logData(D->log, "Checking Queue");
-
-	if(fork())
-	{
-		return;
-	}
-	
 	user = getenv("DIFX_USER_ID");
 	if(!user)
 	{
@@ -330,8 +325,35 @@ void Mk5Daemon_queueMon(Mk5Daemon *D)
 	}
 
 	sprintf(command, "ssh -f %s@%s difxqueue prod /users/difx/public_html/difx.queue", user, D->hostName);
+	sprintf(message, "Checking queue: %s\n", command);
+
+	Logger_logData(D->log, message);
+
+	if(fork())
+	{
+		return;
+	}
 
 	system(command);
+
+	exit(0);
+}
+
+void Mk5Daemon_restartCalcServer(Mk5Daemon *D)
+{
+	char message[512];
+
+	sprintf(message, "Restarting calcServer with command: %s\n",
+		restartCalcServerCommand);
+
+	Logger_logData(D->log, message);
+
+	if(fork())
+	{
+		return;
+	}
+
+	system(restartCalcServerCommand);
 
 	exit(0);
 }
@@ -414,6 +436,8 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+			fprintf(stderr, "Unrecognized command line argument %s\n\n", argv[i]);
+
 			return usage(argv[0]);
 		}
 	}

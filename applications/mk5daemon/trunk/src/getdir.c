@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$ 
+ * $HeadURL$
+ * $LastChangedRevision$ 
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -37,6 +37,7 @@ struct mk5dirParams
 {
 	Mk5Daemon *D;
 	char bank[10];
+	const char *extraArgs;
 };
 
 static void *mk5dirRun(void *ptr)
@@ -48,7 +49,7 @@ static void *mk5dirRun(void *ptr)
 
 	Logger_logData(params->D->log, "mk5dir starting\n");
 
-	sprintf(cmd, "su -l difx -c 'mk5dir %s'", params->bank);
+	sprintf(cmd, "su -l difx -c 'mk5dir %s %s'", params->extraArgs, params->bank);
 	system(cmd);
 
 	Logger_logData(params->D->log, "mk5dir done\n");
@@ -62,7 +63,7 @@ static void *mk5dirRun(void *ptr)
 	return 0;
 }
 
-void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
+void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs)
 {
 	struct mk5dirParams *P;
 
@@ -83,6 +84,7 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
 		P->D = D;
 		strncpy(P->bank, bank, 9);
 		P->bank[9] = 0;
+		P->extraArgs = extraArgs;
 		pthread_create(&D->processThread, 0, &mk5dirRun, P);
 	}
 

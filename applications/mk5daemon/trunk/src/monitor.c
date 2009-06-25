@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$ 
+ * $HeadURL$
+ * $LastChangedRevision$ 
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -187,21 +187,35 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "A");
+			Mk5Daemon_startMk5Dir(D, "A", "");
 		}
 	}
 	else if(strcasecmp(cmd, "getdirB") == 0)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "B");
+			Mk5Daemon_startMk5Dir(D, "B", "");
 		}
 	}
 	else if(strcasecmp(cmd, "getdir") == 0)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "AB");
+			Mk5Daemon_startMk5Dir(D, "AB", "");
+		}
+	}
+	else if(strcasecmp(cmd, "safedirA") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMk5Dir(D, "A", "--partial");
+		}
+	}
+	else if(strcasecmp(cmd, "safedirB") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startMk5Dir(D, "B", "--partial");
 		}
 	}
 	else if(strcasecmp(cmd, "stopdir") == 0)
@@ -276,6 +290,13 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		if(D->isMk5)
 		{
 			Mk5Daemon_sendStreamstorVersions(D);
+		}
+	}
+	else if(strcasecmp(cmd, "restartCalcServer") == 0)
+	{
+		if(D->isHeadNode)
+		{
+			Mk5Daemon_restartCalcServer(D);
 		}
 	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)

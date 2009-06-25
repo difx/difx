@@ -62,3 +62,5 @@ Version 1.1
 ~~~~~~~~~~~
 * Post DiFX-1.5
 * Option to have difxqueue run every 15 minutes
+* mk5dir option to run in real-time mode
+* restartCalcServer command accepted

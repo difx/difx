@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -163,7 +163,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	long long wGoodSum=0, wBadSum=0;
 
 	/* allocate a bit more than the minimum needed */
-	bufferlen = 20160*8*5;
+	bufferlen = 20160*8*10;
 
 	bank = Mark5BankGet(xlrDevice);
 	if(bank < 0)

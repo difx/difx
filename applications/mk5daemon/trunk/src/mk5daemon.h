@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$ 
+ * $HeadURL$
+ * $LastChangedRevision$ 
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -85,10 +85,11 @@ void Mk5Daemon_stopMonitor(Mk5Daemon *D);
 void Mk5Daemon_startMark5A(Mk5Daemon *D);
 void Mk5Daemon_stopMark5A(Mk5Daemon *D);
 void Mk5Daemon_resetMark5A(Mk5Daemon *D);
+void Mk5Daemon_restartCalcServer(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
-void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank);
+void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs);
 void Mk5Daemon_stopMk5Dir(Mk5Daemon *D);
 void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);

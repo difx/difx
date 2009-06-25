@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -38,10 +38,16 @@
 #include "config.h"
 #include "mark5dir.h"
 
+#ifdef WORDS_BIGENDIAN
+#define FILL_PATTERN 0x44332211UL
+#else
+#define FILL_PATTERN 0x11223344UL
+#endif
+
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20090608";
+const char version[] = "0.5";
+const char verdate[] = "20090622";
 
 int verbose = 0;
 int die = 0;
@@ -70,6 +76,8 @@ int usage(const char *pgm)
 	printf("options can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
+	printf("  --partial\n");
+	printf("  -p             Read directory of module with missing disks\n\n");
 	printf("  --verbose\n");
 	printf("  -v             Be more verbose\n\n");
 	printf("<bank> is either A or B\n\n");
@@ -167,10 +175,12 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	case MARK5_DIR_READ_ERROR:
 		sprintf(message, "XLR read error in decoding of scan %d\n", scan+1);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
 		break;
 	case MARK5_DIR_DECODE_ERROR:
-		sprintf(message, "cannot decode scan %d\n", scan+1);
+		sprintf(message, "Cannot decode scan %d\n", scan+1);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
 		break;
 	default:
 		break;
@@ -186,6 +196,7 @@ int main(int argc, char **argv)
 	struct Mark5Module module;
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
+	int partialModule = 0;
 	char message[1000];
 	char modules[100] = "";
 	char vsn[16] = "";
@@ -208,6 +219,11 @@ int main(int argc, char **argv)
 		        strcmp(argv[a], "--verbose") == 0)
 		{
 			verbose++;
+		}
+		else if(strcmp(argv[a], "-p") == 0 ||
+			strcmp(argv[a], "--partial") == 0)
+		{
+			partialModule = 1;
 		}
 		else if(vsn[0] == 0)
 		{
@@ -240,7 +256,7 @@ int main(int argc, char **argv)
 	xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		sprintf(message, "Cannot set SkipCheckDir");
+		sprintf(message, "Cannot set Skip Check Dir");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		fprintf(stderr, "Error: %s\n", message);
 
@@ -252,13 +268,45 @@ int main(int argc, char **argv)
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		sprintf(message, "Cannot set BankMode");
+		sprintf(message, "Cannot set Bank Mode");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		fprintf(stderr, "Error: %s\n", message);
 
 		XLRClose(xlrDevice);
 		
 		return 0;
+	}
+
+	if(partialModule)
+	{
+		if(verbose)
+		{
+			difxMessageSendDifxAlert("Running in real-time playback mode", DIFX_ALERT_LEVEL_VERBOSE);
+		}
+
+		xlrRC = XLRSetOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot set Realtime Playback Mode");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			XLRClose(xlrDevice);
+			
+			return 0;
+		}
+
+		xlrRC = XLRSetFillData(xlrDevice, FILL_PATTERN);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot set Fill Pattern to %8lx", FILL_PATTERN);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			XLRClose(xlrDevice);
+			
+			return 0;
+		}
 	}
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
@@ -307,7 +355,7 @@ int main(int argc, char **argv)
 			if(replacedFrac > 0.01)
 			{
 				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
-					mk5status.vsnA, replacedFrac);
+					mk5status.vsnA, replacedFrac*100.0);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 				fprintf(stderr, "Warning: %s\n", message);
 			}
@@ -348,7 +396,7 @@ int main(int argc, char **argv)
 			if(replacedFrac > 0.01)
 			{
 				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
-					mk5status.vsnB, replacedFrac);
+					mk5status.vsnB, replacedFrac*100.0);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 				fprintf(stderr, "Warning: %s\n", message);
 			}
@@ -380,7 +428,7 @@ int main(int argc, char **argv)
 
 			if(sanityCheckModule(&module) < 0)
 			{
-				sprintf(message, "Module %s directory contains errors", mk5status.vsnA);
+				sprintf(message, "Module %s directory contains errors", mk5status.vsnB);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_SEVERE);
 			}
 		}
@@ -404,7 +452,7 @@ int main(int argc, char **argv)
 			if(replacedFrac > 0.01)
 			{
 				sprintf(message, "Module %s directory read encountered %4.2f%% data replacement rate",
-					vsn, replacedFrac);
+					vsn, replacedFrac*100.0);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 				fprintf(stderr, "Warning: %s\n", message);
 			}
