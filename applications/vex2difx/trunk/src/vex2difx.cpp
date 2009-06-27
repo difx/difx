@@ -42,8 +42,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("0.2");
-const string verdate("20090422");
+const string version("0.3");
+const string verdate("20090627");
 const string author("Walter Brisken");
 
 const double MJD_UNIX0 = 40587.0;	/* MJD at beginning of unix time */
@@ -532,6 +532,11 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
 		D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
+	}
+	else if(format.format == string("Mark5B"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "Mark5B");
+		D->datastream[dsId].dataFrameSize = 10016;
 	}
 	else if(format.format == string("S2"))
 	{
@@ -1214,13 +1219,16 @@ int usage(int argc, char **argv)
 	cout << endl;
 	cout << "  options can include:" << endl;
 	cout << "     -h" << endl;
-	cout << "     --help      display this information and quit." << endl;
+	cout << "     --help        display this information and quit." << endl;
 	cout << endl;
 	cout << "     -v" << endl;
-	cout << "     --verbose   increase the verbosity of the output; -v -v for more detail." << endl;
+	cout << "     --verbose     increase the verbosity of the output; -v -v for more." << endl;
 	cout << endl;
 	cout << "     -o" << endl;
-	cout << "     --output    create a v2d file with all defaults populated." << endl;
+	cout << "     --output      create a v2d file with all defaults populated." << endl;
+	cout << endl;
+	cout << "     -d" << endl;
+	cout << "     --delete-old  delete all jobs in this series before running." << endl;
 	cout << endl;
 	cout << "  the v2d file is the vex2difx configuration file to process." << endl;
 	cout << endl;
@@ -1240,6 +1248,7 @@ int main(int argc, char **argv)
 	int verbose = 0;
 	string v2dFile;
 	bool writeParams = 0;
+	bool deleteOld = 0;
 	int nDigit;
 
 	if(argc < 2)
@@ -1264,7 +1273,12 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-o") == 0 ||
 			        strcmp(argv[a], "--output") == 0)
 			{
-				writeParams=1;
+				writeParams = 1;
+			}
+			else if(strcmp(argv[a], "-d") == 0 ||
+			        strcmp(argv[a], "--delete-old") == 0)
+			{
+				deleteOld = 1;
 			}
 			else
 			{
@@ -1277,7 +1291,7 @@ int main(int argc, char **argv)
 		{
 			if(v2dFile.size() > 0)
 			{
-				cerr << "Error: multiple configuration files provides, one expected." << endl;
+				cerr << "Error: multiple configuration files provided, only one expected." << endl;
 				cerr << "Run with -h for help information." << endl;
 				exit(0);
 			}
@@ -1331,6 +1345,39 @@ int main(int argc, char **argv)
 		of.open(paramsFile.c_str());
 		of << *P << endl;
 		of.close();
+	}
+
+	if(deleteOld)
+	{
+		char cmd[512];
+
+		sprintf(cmd, "rm -f %s.params", v2dFile.c_str());
+		if(verbose > 0)
+		{
+			printf("Executing: %s\n", cmd);
+		}
+		system(cmd);
+
+		sprintf(cmd, "rm -f %s_*.input", P->jobSeries.c_str());
+		if(verbose > 0)
+		{
+			printf("Executing: %s\n", cmd);
+		}
+		system(cmd);
+
+		sprintf(cmd, "rm -f %s_*.calc", P->jobSeries.c_str());
+		if(verbose > 0)
+		{
+			printf("Executing: %s\n", cmd);
+		}
+		system(cmd);
+		
+		sprintf(cmd, "rm -f %s_*.flag", P->jobSeries.c_str());
+		if(verbose > 0)
+		{
+			printf("Executing: %s\n", cmd);
+		}
+		system(cmd);
 	}
 
 	ofstream of;

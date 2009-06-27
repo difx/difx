@@ -397,6 +397,23 @@ void AntennaSetup::setkv(const string &key, const string &value)
 	{
 		ss >> Z;
 	}
+	else if(key == "format")
+	{
+		string s;
+		ss >> s;
+		Upper(s);
+		
+		if(s == "MARK4")
+		{
+			s = "MKIV";
+		}
+		else if(s == "MARK5B")
+		{
+			s = "Mark5B";
+		}
+
+		format = s;
+	}
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
