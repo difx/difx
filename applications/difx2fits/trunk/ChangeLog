@@ -1,3 +1,8 @@
+Version 2.5
+* Require difxio 2.10
+* Post DiFX-1.5
+* Sniffer: look for spectral lines
+
 Version 2.4
 * Post NRAO-DiFX 1.1 development
 * Require difxio 2.5
