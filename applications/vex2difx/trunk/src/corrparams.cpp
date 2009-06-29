@@ -467,6 +467,7 @@ void CorrParams::defaults()
 	sendLength = 0.1;		// (s)
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 32;
+	v2dMode = V2D_MODE_NORMAL;
 }
 
 void CorrParams::setkv(const string &key, const string &value)
@@ -588,6 +589,24 @@ void CorrParams::setkv(const string &key, const string &value)
 		ss >> s;
 		Upper(s);
 		addBaseline(s);
+	}
+	else if(key == "mode")
+	{
+		string s;
+		ss >> s;
+		Upper(s);
+		if(s == "NORMAL")
+		{
+			v2dMode = V2D_MODE_NORMAL;
+		}
+		else if(s == "PROFILE")
+		{
+			v2dMode = V2D_MODE_PROFILE;
+		}
+		else
+		{
+			cerr << "Warning: Illegal value " << value << " for mode" << endl;
+		}
 	}
 	else
 	{
@@ -1155,6 +1174,30 @@ ostream& operator << (ostream& os, const SourceSetup& x)
 	return os;
 }
 
+ostream& operator << (ostream& os, const AntennaSetup& x)
+{
+	os << "ANTENNA " << x.vexName << endl;
+	os << "{" << endl;
+	if(x.difxName.size() > 0)
+	{
+		os << "  name=" << x.difxName << endl;
+	}
+	if(fabs(x.X) > 0.1 || fabs(x.Y) > 0.1 || fabs(x.Z) > 0.1)
+	{
+		os << "  X=" << x.X <<" Y=" << x.Y << " Z=" << x.Z << endl;
+	}
+	os << "  #FIXME clock=" << endl;
+	os << "  polSwap=" << x.polSwap << endl;
+	if(x.format.size() > 0)
+	{
+		os << "  format=" << x.format << endl;
+	}
+
+	os << "}" << endl;
+
+	return os;
+}
+
 ostream& operator << (ostream& os, const CorrParams& x)
 {
 	int p;
@@ -1165,6 +1208,15 @@ ostream& operator << (ostream& os, const CorrParams& x)
 	os << "# correlation parameters" << endl;
 
 	os << "vex=" << x.vexFile << endl;
+	switch(x.v2dMode)
+	{
+	case V2D_MODE_NORMAL:
+		os << "mode=normal" << endl;
+		break;
+	case V2D_MODE_PROFILE:
+		os << "mode=profile" << endl;
+		break;
+	}
 	os << "mjdStart=" << x.mjdStart << endl;
 	os << "mjdStop=" << x.mjdStop << endl;
 	os << "minSubarray=" << x.minSubarraySize << endl;
@@ -1215,6 +1267,17 @@ ostream& operator << (ostream& os, const CorrParams& x)
 			os << it->first << '-' << it->second;
 		}
 		os << endl;
+	}
+
+	if(!x.antennaSetups.empty())
+	{
+		vector<AntennaSetup>::const_iterator it;
+
+		for(it = x.antennaSetups.begin(); it != x.antennaSetups.end(); it++)
+		{
+			os << endl;
+			os << *it;
+		}
 	}
 
 	if(!x.sourceSetups.empty())

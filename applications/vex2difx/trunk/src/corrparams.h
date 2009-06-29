@@ -40,6 +40,12 @@
 
 using namespace std;
 
+enum V2D_Mode
+{
+	V2D_MODE_NORMAL = 0,	// for almost all purposes
+	V2D_MODE_PROFILE = 1	// to produce pulsar profiles
+};
+
 // see http://cira.ivec.org/dokuwiki/doku.php/difx/configuration
 
 class PhaseCenter
@@ -196,6 +202,8 @@ public:
 
 	/* rules to determine which setups to apply */
 	vector<CorrRule> rules;
+
+	enum V2D_Mode v2dMode;
 
 private:
 	void addAntenna(const string& antName);
