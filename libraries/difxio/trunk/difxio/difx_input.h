@@ -114,6 +114,7 @@ typedef struct
 	int blocksPerSend;
 	int guardBlocks;
 	int postFFringe;	/* 0 or 1 */
+	int writeAutocorrs;	/* 0 or 1 */
 	int quadDelayInterp;	/* 0 or 1 */
 	int pulsarId;		/* -1 if not pulsar */
 	int nPol;		/* number of pols in datastreams (1 or 2) */

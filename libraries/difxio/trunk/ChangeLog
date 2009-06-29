@@ -1,3 +1,7 @@
+2.11
+* Post DiFX-1.5
+* Implement profile mode (with mode=profile at the global level)
+
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()
   - needed for more flexible frequency selection in vex2difx
