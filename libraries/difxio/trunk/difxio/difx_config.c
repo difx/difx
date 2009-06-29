@@ -635,25 +635,19 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		writeDifxLineInt(out, "BLOCKS PER SEND", 
 			config->blocksPerSend);
 		writeDifxLineInt(out, "GUARD BLOCKS", config->guardBlocks);
-		writeDifxLine(out, "POST-F FRINGE ROT", "FALSE");
-		writeDifxLine(out, "QUAD DELAY INTERP", "TRUE");
-		if(config->writeAutocorrs)
-		{
-			writeDifxLine(out, "WRITE AUTOCORRS", "TRUE");
-		}
-		else
-		{
-			writeDifxLine(out, "WRITE AUTOCORRS", "FALSE");
-		}
+		writeDifxLineBoolean(out, "POST-F FRINGE ROT", 0);
+		writeDifxLineBoolean(out, "QUAD DELAY INTERP", 1);
+		writeDifxLineBoolean(out, "POST-F FRINGE ROT", 
+			config->writeAutocorrs);
 		if(config->pulsarId >= 0 && pulsar)
 		{
-			writeDifxLine(out, "PULSAR BINNING", "TRUE");
+			writeDifxLineBoolean(out, "PULSAR BINNING", 1);
 			writeDifxLine(out, "PULSAR CONFIG FILE", 
 				pulsar[config->pulsarId].fileName);
 		}
 		else
 		{
-			writeDifxLine(out, "PULSAR BINNING", "FALSE");
+			writeDifxLineBoolean(out, "PULSAR BINNING", 0);
 		}
 		for(j = 0; j < config->nDatastream; j++)
 		{

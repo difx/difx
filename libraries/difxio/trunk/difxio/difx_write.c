@@ -148,6 +148,18 @@ int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3,
 	return writeDifxLine(out, k, value);
 }
 
+int writeDifxLineBoolean(FILE *out, const char *key, int value)
+{
+	if(value)
+	{
+		return writeDifxLine(out, key, "TRUE");
+	}
+	else
+	{
+		return writeDifxLine(out, key, "FALSE");
+	}
+}
+
 int writeDifxLineInt(FILE *out, const char *key, int value)
 {
 	char v[32];

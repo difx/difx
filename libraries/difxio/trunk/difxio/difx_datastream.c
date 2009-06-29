@@ -410,7 +410,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
 	writeDifxLine(out, "DATA SOURCE", dd->dataSource);
-	writeDifxLine(out, "FILTERBANK USED", "FALSE");
+	writeDifxLineBoolean(out, "FILTERBANK USED", 0);
 	writeDifxLineInt(out, "NUM FREQS", dd->nFreq);
 	for(i = 0; i < dd->nFreq; i++)
 	{
