@@ -3355,15 +3355,35 @@ int DifxInputSimFXCORR(DifxInput *D)
 	for(d = 0; d < D->nDatastream; d++)
 	{
 		dd = D->datastream + d;
+		if(dd->quantBits < 1)
+		{
+			fprintf(stderr, "Error: datastream %d quantBits=%d\n", d, dd->quantBits);
+			continue;
+		}
+		if(dd->nRecChan < 1)
+		{
+			fprintf(stderr, "Error: datastream %d nRecChan=%d\n", d, dd->nRecChan);
+			continue;
+		}
+		
 		nBitstream = dd->dataFrameSize/20000;
 		nBitstream *= 8;
 		fanout = nBitstream/(dd->quantBits*dd->nRecChan);
 		sampRate = (int)(D->freq[dd->freqId[0]].bw*2.0+0.00001);
+		if(sampRate < 1)
+		{
+			continue;
+		}
 		su = 8*fanout/sampRate;
 		if(su < speedUp)
 		{
 			speedUp = su;
 		}
+	}
+	if(speedUp > 4)
+	{
+		fprintf(stderr, "Warning: reducing speedUp to 4 from %d\n", speedUp);
+		speedUp = 4;
 	}
 
 	/* the quantum of integration time */
