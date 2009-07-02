@@ -637,7 +637,7 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		writeDifxLineInt(out, "GUARD BLOCKS", config->guardBlocks);
 		writeDifxLineBoolean(out, "POST-F FRINGE ROT", 0);
 		writeDifxLineBoolean(out, "QUAD DELAY INTERP", 1);
-		writeDifxLineBoolean(out, "POST-F FRINGE ROT", 
+		writeDifxLineBoolean(out, "WRITE AUTOCORRS", 
 			config->writeAutocorrs);
 		if(config->pulsarId >= 0 && pulsar)
 		{
