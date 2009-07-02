@@ -122,6 +122,7 @@ def summarize(input, i, n, dotree):
 	fq = []
 	nsec = 0
 	trippel = ''
+	oversamp = 1
 	for d in data:
 		if d[:19] == 'EXECUTE TIME (SEC):':
 			nsec = int(d[20:])
@@ -138,6 +139,12 @@ def summarize(input, i, n, dotree):
 			fq.append(float(d[20:]))
 		if d[:17] == 'POL PRODUCTS 0/0:':
 			npol = int(d[20:])
+		if d[:14] == 'CONFIG SOURCE:':
+			oversamp = 1
+		if d[:18] == 'OVERSAMPLE FACTOR:':
+			oversamp *= int(d[20:])
+		if d[:18] == 'DECIMATION FACTOR:':
+			oversamp *= int(d[20:])
 		if d[:11] == 'DATA FORMAT':
 			p = find(d[20:], '-')
 			if p > 0:
@@ -149,7 +156,7 @@ def summarize(input, i, n, dotree):
 		nchan = nfreq*npol
 
 	if trippel == '':
-		trippel = '%d-%d-%d' % (int(bw*nchan*nbit*2+0.5), nchan, nbit)
+		trippel = '%d-%d-%d' % (int(oversamp*bw*nchan*nbit*2+0.5), nchan, nbit)
 			
 	band = genband(fq)
 	

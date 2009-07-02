@@ -288,17 +288,27 @@ def makePH(sections, BBCs, antenna):
 				tone = T[6]
 				index = tone + nTone*(band + nBand*pol)
 				recChan, nBBC = bbc2recChan(T[0]+T[1], t, bbc)
-				ToneData[index] = [recChan, T[3], s[3], s[4]]
+				try:
+					ToneData[index] = [recChan, T[3], s[3], s[4]]
+				except IndexError:
+					print 'ToneData index error: T=', T, 's=', s
+					print 'index=', index, 'array size=', len(ToneData)
+					print 'Full line from file: ', row
 			elif key in StateTable:
 				S = StateTable[key]
 				pol  = S[4]
 				band = S[5]
 				for state in range(S[3]):
 					index = band + nBand*pol
-					StateData[index][0], nBBC = \
-						bbc2recChan(S[0]+S[1], t, bbc)
-					StateData[index][1][state] = \
-						s[3+state]
+					try:
+						StateData[index][0], nBBC = \
+							bbc2recChan(S[0]+S[1], t, bbc)
+						StateData[index][1][state] = \
+							s[3+state]
+					except IndexError:
+						print 'StateData index error: S=', S, 's=', s
+						print 'index=', index, 'array size=', len(StateData)
+						print 'Full line from file: ', row
 		if action == 3:
 			line = '%10.7f %9.7f %s %d %d %d %d %d' % \
 				(t, dt, ccal, nPol, nBand, nTone, nState, nBBC)
