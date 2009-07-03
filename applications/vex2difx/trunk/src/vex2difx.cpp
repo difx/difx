@@ -533,9 +533,9 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
 		D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
 	}
-	else if(format.format == string("Mark5B"))
+	else if(format.format == string("MARK5B"))
 	{
-		strcpy(D->datastream[dsId].dataFormat, "Mark5B");
+		strcpy(D->datastream[dsId].dataFormat, "MARK5B");
 		D->datastream[dsId].dataFrameSize = 10016;
 	}
 	else if(format.format == string("S2"))

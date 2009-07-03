@@ -4,6 +4,9 @@ Version 0.3
 * Mark5B support
 * format override support
 * Pulsar profile mode
+* Change sign convention associated with vex file
+   Note on clock sign conventions: As far as I (WFB) can tell, vex uses one sign
+   convention and the VLBA, DiFX and FITS all use the other.
 
 Version 0.2
 ~~~~~~~~~~~

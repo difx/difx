@@ -71,7 +71,7 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
 	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
 	   F.format == "VLBA1_4" || F.format == "MKIV1_4" ||
-	   F.format == "Mark5B") 
+	   F.format == "MARK5B") 
 	{
 		it = ch2tracks.find(chanName);
 
@@ -253,6 +253,9 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 							clock.rate = atof(C->rate->value);
 							clock.offset_epoch = vexDate(C->origin);
 						}
+						
+						// vex has the opposite sign convention, so swap
+						clock.flipSign();
 					}
 				}
 			}
@@ -546,7 +549,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			{
 				p = 0;
 			}
-			if(p || F.format == "VLBA" || F.format == "MKIV" || F.format == "Mark5B")
+			if(p || F.format == "VLBA" || F.format == "MKIV" || F.format == "MARK5B")
 			{
 				// If not overridden in v2d file
 				if(F.format == "")
@@ -591,7 +594,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 					}
 				}
 				fanout = nTrack/ch2tracks.size()/nBit;
-				if(F.format != "Mark5B")
+				if(F.format != "MARK5B")
 				{
 					switch(fanout)
 					{

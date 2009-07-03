@@ -183,6 +183,11 @@ class VexClock
 {
 public:
 	VexClock() : mjdStart(0.0), offset(0.0), rate(0.0), offset_epoch(50000.0) {}
+	void flipSign() 
+	{ 
+		offset = -offset;
+		rate = -rate;
+	}
 
 	double mjdStart;	// (mjd)
 	double offset;		// (sec)

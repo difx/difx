@@ -407,10 +407,6 @@ void AntennaSetup::setkv(const string &key, const string &value)
 		{
 			s = "MKIV";
 		}
-		else if(s == "MARK5B")
-		{
-			s = "Mark5B";
-		}
 
 		format = s;
 	}
