@@ -278,6 +278,7 @@ void plot_results()
 	    ippsMax_32f(lags, numchannels*2, &max);
 	    ippsMin_32f(lags, numchannels*2, &min);
 	    delta = (max-min)*0.05;
+	    if (delta==0) delta = 1;
 	    min -= delta;
 	    max += delta;
 
@@ -327,6 +328,7 @@ void plot_results()
 	    ippsMax_32f(&amplitude[at], numchannels, &max);
 	    ippsMin_32f(&amplitude[at], numchannels, &min);
 	    delta = (max-min)*0.05;
+	    if (delta==0) delta = 1;
 	    min -= delta;
 	    max += delta;
 
@@ -395,6 +397,10 @@ void plot_results()
 	  for (int n=at; n<at+numchannels; n++) {
 	    if (amplitude[n] > max) max = amplitude[n];
 	    if (amplitude[n] < min) min = amplitude[n];
+	  }
+	  if (min==max) {
+	    min-=1;
+	    max+=1;
 	  }
 
 	  cpgsci(1);
