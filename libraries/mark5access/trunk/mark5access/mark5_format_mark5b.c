@@ -2182,7 +2182,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
 		ms->ns = (int)(dns + 0.5);
-		
+
 		if(ms->Mbps > 0)
 		{
 			ms->samprate = ms->framesamples*
@@ -2243,14 +2243,17 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 	k = ms->Mbps/1024;
 	if(k > 0)
 	{
-		framenum = mark5_stream_frame_num_mark5b(ms);
-		df = k - framenum % k;
-		if(df != k)
+		if(ms->datawindow)
 		{
-			ms->frame += df*ms->framebytes;
-			ms->frameoffset += df*ms->framebytes;
-			ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
-			ms->ns = (int)(dns + 0.5);
+			framenum = mark5_stream_frame_num_mark5b(ms);
+			df = k - framenum % k;
+			if(df != k)
+			{
+				ms->frame += df*ms->framebytes;
+				ms->frameoffset += df*ms->framebytes;
+				ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+				ms->ns = (int)(dns + 0.5);
+			}
 		}
 		ms->framegranularity = k;
 	}
