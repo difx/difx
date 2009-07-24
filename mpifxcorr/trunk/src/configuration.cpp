@@ -1288,15 +1288,22 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
 {
   if(input->eof())
     cerror << startl << "Trying to read past the end of file!!!" << endl;
-  input->get(header, HEADER_LENGTH);
-  if(strncmp(header, startofheader.c_str(), startofheader.length()) != 0) //not what we expected
-    cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << header << "'" << endl;
   getline(*input,*line);
+  while(line->length() > 0 && line->at(0) == COMMENT_CHAR) { // a comment
+    cinfo << startl << "Skipping comment " << line << endl;
+    getline(*input, *line);
+  }
+  int keylength = line->find_first_of(':') + 1;
+  if(keylength < DEFAULT_KEY_LENGTH)
+    keylength = DEFAULT_KEY_LENGTH;
+  if(startofheader.compare((*line).substr(0, startofheader.length())) != 0) //not what we expected
+    cerror << startl << "Error - we thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
+  *line = line->substr(keylength);
 }
 
 void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader, int intval)
 {
-  char buffer[HEADER_LENGTH+1];
+  char buffer[MAX_KEY_LENGTH+1];
   sprintf(buffer, "%s%i", startofheader.c_str(), intval);
   getinputline(input, line, string(buffer));
 }

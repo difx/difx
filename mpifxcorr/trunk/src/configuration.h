@@ -579,13 +579,17 @@ private:
   bool setPolycoFreqInfo(int configindex);
 
   ///The length of keywords in all input files
-  static const int HEADER_LENGTH = 21;
+  static const int DEFAULT_KEY_LENGTH = 20;
+  static const int MAX_KEY_LENGTH = 128;
+
+  ///The character used to denote a comment line, to be ignored
+  static const char COMMENT_CHAR = '@';
 
   /// Constant for the default number of channels for visibilities sent to monitor (STA or LTA)
   static const int DEFAULT_MONITOR_NUMCHANNELS = 32;
 
   int mpiid;
-  char header[HEADER_LENGTH];
+  char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, consistencyok, commandthreadinitialised, dumpsta, dumplta;
   int visbufferlength;
   int executeseconds, startmjd, startseconds, startns, numdatastreams, numbaselines, numconfigs, defaultconfigindex, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, databufferfactor, numdatasegments, numcoreconfs, maxnumchannels, maxnumpulsarbins, numindependentchannelconfigs, stadumpchannels, ltadumpchannels;
