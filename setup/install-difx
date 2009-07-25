@@ -88,21 +88,6 @@ if len(opts) > 0:
         if o == "--clean":
             doclean = True
 
-###### Targets ##########################################
-
-libtargets = [["difxio",     "trunk",True,True],
-              ["difxmessage","trunk",True,True],
-              ["mark5access","trunk",True,True]]
-
-apptargets = [["calcserver", "trunk",True,False],
-              ["difx2fits",  "trunk",False,True],
-              ["vex2difx",   "trunk",True,True]]
-
-if mk5d:
-    apptargets.append(["mk5daemon", "trunk",False,True])
-
-cortarget  = "trunk"
-
 ###### Subroutine to run a command and raise error if  
 ###### command doesn't return 0.
 if force:
@@ -155,6 +140,7 @@ if os.environ.get('DIFX_VERSION') == "":
     print "You must have already source'd setup.bash/setup.csh!"
     print "DIFX_VERSION was undefined - aborting compilation"
     raise RuntimeError
+difx_version = os.environ.get('DIFX_VERSION')
 
 ##### OSX Specific changes
 if platform == "darwin":
@@ -168,9 +154,29 @@ else:
 if gfortran:
     os.environ['USEGFORTRAN'] = 'yes'
 
+if difx_version != "trunk":
+  difx_version = "branches/" + difx_version 
+
+###### Targets ##########################################
+
+libtargets = [["difxio",     difx_version, True,True],
+              ["difxmessage",difx_version, True,True],
+              ["mark5access",difx_version, True,True]]
+
+apptargets = [["calcserver", difx_version, True,False],
+              ["difx2fits",  difx_version, False,True],
+              ["vex2difx",   difx_version, True,True]]
+
+if mk5d:
+    apptargets.append(["mk5daemon", difx_version, False,True])
+
+cortarget = difx_version
+
+os.chdir("..")
+
 if doclean:
     print "**** Cleaning vexlib"
-    os.chdir("../libraries/vex/trunk/vexlib")
+    os.chdir("libraries/vex/trunk/vexlib")
     run("make clean")
     os.chdir("../../../../")
     if rpfits:
@@ -185,18 +191,20 @@ if doclean:
         run("make clean")
         os.chdir("../../../..")
     os.chdir("libraries")
+    thisdir = os.getcwd()
     for libtarget in libtargets:
         print "**** Cleaning "+libtarget[0]
         os.chdir(libtarget[0] + '/' + libtarget[1])
         run("make clean")
-        os.chdir("../../")
+        os.chdir(thisdir)
     os.chdir("../")
     os.chdir("applications")
+    thisdir = os.getcwd()
     for apptarget in apptargets:
         print "**** Cleaning "+apptarget[0]
         os.chdir(apptarget[0] + '/' + apptarget[1])
         run("make clean")
-        os.chdir("../../")
+        os.chdir(thisdir)
     os.chdir("../")
     sys.exit(0)  # Clean exit
 
@@ -208,30 +216,23 @@ if not noinstall:
     print
     if os.path.exists(difxroot):
         print difxroot + " already exists"
-        if os.path.exists(bindir):
-            print bindir + " already exists"
-        else:
-            os.mkdir(bindir)
-        if os.path.exists(libdir):
-            print libdir + " already exists"
-        else:
-            os.mkdir(libdir)
-        if os.path.exists(pkgdir):
-            print pkgdir + " already exists"
-        else:
-            os.mkdir(pkgdir)
-        if os.path.exists(incdir):
-            print incdir + " already exists"
-        else:
-            os.mkdir(incdir)
-    else:
-        os.mkdir(difxroot)
-        os.mkdir(bindir)
-        os.mkdir(libdir)
-        os.mkdir(pkgdir)
-        os.mkdir(incdir)
 
-os.chdir("..")
+    if os.path.exists(bindir):
+        print bindir + " already exists"
+    else:
+        os.mkdir(bindir)
+    if os.path.exists(libdir):
+        print libdir + " already exists"
+    else:
+        os.mkdir(libdir)
+    if os.path.exists(pkgdir):
+        print pkgdir + " already exists"
+    else:
+        os.mkdir(pkgdir)
+    if os.path.exists(incdir):
+        print incdir + " already exists"
+    else:
+        os.mkdir(incdir)
 
 ##### Compile non-standard libraries ####################
 print "************************************"
@@ -280,26 +281,33 @@ if rpfits:
     if not noinstall:
         run("cp -f libraries/rpfits/trunk/code/RPFITS.h " + incdir)
 
+
+
+
 ##### Make standard (autotool'd) libraries ###############
 os.chdir("libraries")
+thisdir = os.getcwd()
+print "DEBUG: Making in ",thisdir
 for libtarget in libtargets:
     print "************************************"
     print "Building ", libtarget[0]
     print
     os.chdir(libtarget[0] + '/' + libtarget[1])
     auto_compile(libtarget[2], libtarget[3], difxroot)
-    os.chdir("../../")
+    os.chdir(thisdir)
 os.chdir("../")
 
 ##### Make standard (autotool'd) applications ############
 os.chdir("applications")
+thisdir = os.getcwd()
+print "DEBUG: Making in ",thisdir
 for apptarget in apptargets:
     print "************************************"
     print "Building ", apptarget[0]
     print
     os.chdir(apptarget[0] + '/' + apptarget[1])
     auto_compile(apptarget[2], apptarget[3], difxroot)
-    os.chdir("../../")
+    os.chdir(thisdir)
 os.chdir("../")
 
 ##### Make mpifxcorr #####################################

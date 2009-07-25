@@ -1,3 +1,6 @@
+####### DIFX VERSION ########################
+export DIFX_VERSION=difx-1.5
+
 ####### ROOT PATHS ##########################
 export DIFXROOT=/usr/local/difx
 export PGPLOTDIR=/usr/local/pgplot
@@ -101,15 +104,10 @@ export DIFX_BINARY_PORT=50202
 export CALC_SERVER=swc000
 
 ####### NRAO SPECIFIC PATHS - HARMLESS ######
-export JOB_ROOT=/home/ssi/adeller/difx/projects 
-export TESTS=/home/ssi/adeller/difx/tests 
-export MARK5_DIR_PATH=/home/ssi/adeller/difx/directories 
 export GAIN_CURVE_PATH=/home/swc/difx/gaincurves 
-export DIFX_MACHINES=/home/ssi/adeller/difx/machines.difx 
 export DIFX_HEAD_NODE=swc000 
 export DIFX_ARCHIVE_ROOT=/home/swc/difx/archive 
 export MANPATH=/usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
-export DIFX_VERSION=1.1 
 export DIFX_GROUP_ID=difx 
 export G2CDIR=/usr/lib/gcc/x86_64-redhat-linux/3.4.6/
 echo "DiFX version $DIFX_VERSION is selected"

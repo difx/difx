@@ -1,5 +1,8 @@
 alias PREPEND 'setenv \!^ {$\!^}:{\!:2}'
 
+####### DIFX VERSION ########################
+setenv DIFX_VERSION difx-1.5
+
 ####### ROOT PATHS ##########################
 setenv DIFXROOT /usr/local/difx
 setenv PGPLOTDIR /usr/local/pgplot
@@ -78,18 +81,12 @@ setenv DIFX_BINARY_PORT 50202
 setenv CALC_SERVER swc000
 
 ####### NRAO SPECIFIC PATHS - HARMLESS ######
-setenv JOB_ROOT /home/ssi/adeller/difx/projects 
-setenv TESTS /home/ssi/adeller/difx/tests 
-setenv MARK5_DIR_PATH /home/ssi/adeller/difx/directories 
 setenv GAIN_CURVE_PATH /home/swc/difx/gaincurves 
-setenv DIFX_MACHINES /home/ssi/adeller/difx/machines.difx 
 setenv DIFX_HEAD_NODE swc000 
 setenv DIFX_ARCHIVE_ROOT /home/swc/difx/archive 
 setenv MANPATH /usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
-setenv DIFX_VERSION trunk
 setenv DIFX_GROUP_ID difx 
 setenv G2CDIR /usr/lib/gcc/x86_64-redhat-linux/3.4.6/
 echo "DiFX version $DIFX_VERSION is selected"
-
 
 unalias PREPEND
