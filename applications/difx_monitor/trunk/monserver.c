@@ -41,7 +41,7 @@ int writenetwork(int sock, char* ptr, int bytestowrite) {
 
   while (bytestowrite>0) {
 
-    nwrote = send(sock, ptr, bytestowrite, MSG_NOSIGNAL);
+    nwrote = send(sock, ptr, bytestowrite, MSG_NOSIGNAL|MSG_DONTWAIT);
     if (nwrote==-1) {
       if (errno == EINTR) continue;
       perror("Error writing to network");
@@ -151,17 +151,19 @@ int monserver_sendstatus(int sock, int32_t status32) {
 }
 
 int monserver_requestproduct(struct monclient client, unsigned int product) {
-  int status;
-  int32_t  temp, status32;
+  return monserver_requestproducts(client, &product, 1);
+}
 
-  printf("DEBUG: Sending request %d\n", product);
+int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod) {
+  int status, i;
+  int32_t  temp, status32;
   
-  temp = 1;
-  status = writenetwork(client.fd, (char*)&temp, sizeof(int32_t));
-  if (!status) {
-    temp = product;
-    writenetwork(client.fd, (char*)&temp, sizeof(int32_t));
-  }
+  status = DIFXMON_NOERROR;
+
+  sendint(client.fd, nprod, &status);
+
+  for (i=0; i<nprod; i++) 
+    sendint(client.fd, product[i], &status);
   if (status) return(status);
 
   status32 = 0;
