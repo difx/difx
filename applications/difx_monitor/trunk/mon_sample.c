@@ -18,28 +18,36 @@
 
 #include "architecture.h"
 #include "monserver.h"
-
+#define MAX_PROD 4
 
 int main(int argc, const char * argv[]) {
-  int status, prod, i, nchan=0, iprod;
+  int status, prod, i, nchan=0, nprod;
+  unsigned int iprod[MAX_PROD];
   struct monclient monserver;
   float *xval=NULL, *amp=NULL, *phase=NULL, *lags=NULL, *lagx=NULL;
   float delta, min, max, temp;
   cf32 *vis;
   IppsFFTSpec_R_32f* fftspec=NULL;
 
-  if(argc != 3)  {
+  if(argc < 3)  {
     fprintf(stderr, "Error - invoke with mon_sample <host> <product#>\n");
     return(EXIT_FAILURE);
   }
-  iprod = atoi(argv[2]);
+
+  if (argc-2>MAX_PROD) {
+    fprintf(stderr, "Error - Too many producst requested\n");
+    return(EXIT_FAILURE);
+  }
+
+  for (i=2; i<argc; i++) iprod[i-2] = atoi(argv[i]);
+  nprod = argc-2;
 
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
 
   printf("Opened connection to monitor server\n");
 
-  status = monserver_requestproduct(monserver, iprod);
+  status = monserver_requestproducts(monserver, iprod, nprod);
   if (status) exit(1);
 
   status = cpgbeg(0,"/xs",1,3);
