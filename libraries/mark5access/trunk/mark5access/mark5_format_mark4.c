@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -6897,7 +6897,6 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	ms->payloadoffset = (VALIDEND-20000)*f->ntrack/8;
 	
 	ms->framesamples = 20000*f->fanout;
-	ms->format = MK5_FORMAT_MARK4;
 	ms->framegranularity = 1;
 
 	ms->blanker = blanker_mark4;
@@ -6961,6 +6960,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
+	ms->format = MK5_FORMAT_MARK4;
 	mark5_format_mark4_make_formatname(ms);
 
 	return 0;
@@ -6976,6 +6976,7 @@ static int mark5_format_mark4_final(struct mark5_stream *ms)
 	if(ms->formatdata)
 	{
 		free(ms->formatdata);
+		ms->formatdata = 0;
 	}
 
 	return 0;
@@ -7240,6 +7241,8 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	if(f->decode == 0)
 	{
 		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		free(v);
+		free(f);
 		return 0;
 	}
 

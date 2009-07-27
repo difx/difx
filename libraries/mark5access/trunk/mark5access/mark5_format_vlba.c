@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -262,6 +262,17 @@ static int mark5_format_vlba_frame_time_int(const struct mark5_stream *ms,
 	char nibs[12];
 	struct mark5_format_vlba *v;
 	int nRealTrack;
+	static int mjdepochs[64] = 
+	{
+		51544, 51726, 51910, 52091, 52275, 52456, 52640, 52821,  /* 2000-2003 */
+		53005, 53187, 53371, 53552, 53736, 53917, 54101, 54282,  /* 2004-2007 */
+		54466, 54648, 54832, 55013, 55197, 55378, 55562, 55743,  /* 2008-2011 */
+		55927, 56109, 56293, 56474, 56658, 56839, 57023, 57204,  /* 2012-2015 */
+		57388, 57570, 57754, 57935, 58119, 58300, 58484, 58665,  /* 2016-2019 */
+		58849, 59031, 59215, 59396, 59580, 59761, 59945, 60126,  /* 2020-2023 */
+		60310, 60492, 60676, 60857, 61041, 61222, 61406, 61587,  /* 2024-2027 */
+		61771, 61953, 62137, 62318, 62502, 62683, 62867, 63048   /* 2028-2031 */
+	};
 
 	if(!ms)
 	{
@@ -6961,7 +6972,6 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 	ms->databytes = 20000*nRealTrack/8;
 	ms->payloadoffset = 12*nRealTrack;
 	ms->framesamples = 20000*f->fanout/ms->decimation;
-	ms->format = MK5_FORMAT_VLBA;
 	ms->framegranularity = 1;
 
 	ms->blanker = blanker_mark5;
@@ -7025,6 +7035,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
+	ms->format = MK5_FORMAT_VLBA;
 	mark5_format_vlba_make_formatname(ms);
 
 	return 0;
@@ -7040,6 +7051,7 @@ static int mark5_format_vlba_final(struct mark5_stream *ms)
 	if(ms->formatdata)
 	{
 		free(ms->formatdata);
+		ms->formatdata = 0;
 	}
 
 	return 0;
@@ -7302,6 +7314,8 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	if(f->decode == 0)
 	{
 		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		free(v);
+		free(f);
 		return 0;
 	}
 

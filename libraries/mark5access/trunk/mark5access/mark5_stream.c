@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -442,9 +442,45 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		}
 		F = MK5_FORMAT_K5;
 		databytes = 1000000*b/8;
-		framebytes = 8 + databytes;
+		framebytes = databytes + 8;
 		framens = 1000000000;
 		if(r > 3)
+		{
+			decimation = e;
+		}
+	}
+	/* for VDIF, the datasize per packet must be supplied as first numeric element:
+	 * e.g., VDIF_4000-2048-4-2
+	 */
+	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
+	{
+		r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIF;
+		databytes = a;
+		framebytes = databytes + 32;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
+	/* for VDIF with legacy (16 byte) headers, a different name is used: */
+	else if(strncasecmp(formatname, "VDIFL_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIF;
+		databytes = a;
+		framebytes = databytes + 16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
 		{
 			decimation = e;
 		}

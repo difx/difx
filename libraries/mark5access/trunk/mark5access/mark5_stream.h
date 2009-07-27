@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -58,8 +58,8 @@ enum Mark5Format
 	MK5_FORMAT_VLBA    =  0,
 	MK5_FORMAT_MARK4   =  1,
 	MK5_FORMAT_MARK5B  =  2,
-	MK5_FORMAT_MARK5CB =  3,
-	MK5_FORMAT_MARK5C  =  4,		/* Not Yet Implemented */
+	MK5_FORMAT_VDIF    =  3,
+	MK5_FORMAT_VDIFL   =  4,		/* Legacy headers on VDIF */
 	MK5_FORMAT_K5      =  5			/* Not Yet Implemented */
 };
 
@@ -68,7 +68,8 @@ enum Mark5Format
 enum Mark5Blanker
 {
 	MK5_BLANKER_NONE  = 0,
-	MK5_BLANKER_MARK5 = 1
+	MK5_BLANKER_MARK5 = 1,
+	MK5_BLANKER_VDIF  = 2
 };
 
 struct mark5_stream
@@ -236,7 +237,15 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 struct mark5_format_generic *new_mark5_format_mark5b(int Mbps, 
 	int nchan, int nbit, int decimation);
 
-/*   K5 format */
+/*   VDIF format */
+
+struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
+	int nchan, int nbit, int decimation, 
+	int databytesperpacket, int frameheadersize);
+
+void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs);
+
+/*   K5 format -- not yet complete */
 
 struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	int submode);
@@ -261,6 +270,9 @@ int blanker_mark5(struct mark5_stream *ms);
 
 int blanker_mark4(struct mark5_stream *ms);
 
+/* Blankser for VDIF data stored on Mark5 modules */
+
+int blanker_vdif(struct mark5_stream *ms);
 
 /* TO PARTIALLY DETERMINE DATA FORMAT FROM DATA OR DESCRIPTION */
 

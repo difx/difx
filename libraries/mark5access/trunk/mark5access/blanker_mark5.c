@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -277,4 +277,40 @@ int blanker_mark4(struct mark5_stream *ms)
 	}
 
 	return nblanked;
+}
+
+int blanker_vdif(struct mark5_stream *ms)
+{
+	uint64_t *data;
+	int nword;
+	
+	if(!ms->payload)
+	{
+		ms->blankzoneendvalid[0] = 0;
+
+		return 0;
+	}
+
+	data = (uint64_t *)ms->payload;
+
+	nword = ms->databytes/8;
+
+	/* only 1 zone for VDIF data.  a packet is either good or bad. 
+	 *
+	 * To be good, it cannot have fill pattern at beginning or end 
+	 */
+
+	ms->blankzonestartvalid[0] = 0;
+
+	if(data[0] == MARK5_FILL_WORD64 || data[nword-1] == MARK5_FILL_WORD64)
+	{
+		ms->blankzoneendvalid[0] = 0;
+		return 0;
+	}
+	else
+	{
+		ms->blankzoneendvalid[0] = 1<<30;
+		return nword;
+	}
+
 }

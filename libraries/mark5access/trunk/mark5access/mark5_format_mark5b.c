@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,6 @@
 #define MK5B_PAYLOADSIZE 10000
 
 const uint32_t mark5bSync       = 0xABADDEED;
-const uint32_t mark5cCompatSync = 0xF00FF00F;	/* FIXME: replace with actual */
 
 /* the high mag value for 2-bit reconstruction */
 static const float HiMag = 3.3359;
@@ -171,47 +170,6 @@ static int mark5_stream_frame_time_mark5b(const struct mark5_stream *ms,
 			/* "unround" the number */
 			*ns = 156250*(((int)(*ns)+156249)/156250);
 		}
-	}
-
-	return 0;
-}
-
-static int mark5_stream_frame_time_mark5cb(const struct mark5_stream *ms,
-	int *mjd, int *sec, double *ns)
-{
-	struct mark5_format_mark5b *m;
-	const uint8_t *buf;
-	int n;	/* frame number within the 1 second period */
-	int i;
-	uint8_t nibs[8];
-
-	m = (struct mark5_format_mark5b *)(ms->formatdata);
-
-	buf = ms->frame + 8;
-	
-	/* 15 lowest bits of second 32-bit word */
-	n = mark5_stream_frame_num_mark5b(ms);
-
-	buf = ms->frame + 8;
-
-	for(i = 0; i < 4; i++)
-	{
-		nibs[2*i+0] = buf[3-i] >> 4;
-		nibs[2*i+1] = buf[3-i] & 0x0F;
-	}
-
-	if(mjd)
-	{
-		*mjd = m->kday + nibs[0]*100 + nibs[1]*10 + nibs[2];
-	}
-	if(sec) 
-	{
-		*sec = nibs[3]*10000 + nibs[4]*1000 + nibs[5]*100 + nibs[6]*10
-	        	+ nibs[7];
-	}
-	if(ns)
-	{
-		*ns = ms->framens*n;
 	}
 
 	return 0;
@@ -2089,16 +2047,8 @@ static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 
 static int mark5_format_mark5b_make_formatname(struct mark5_stream *ms)
 {
-	if(ms->format == MK5_FORMAT_MARK5CB)
-	{
-		sprintf(ms->formatname, "Mark5CB-%d-%d-%d", ms->Mbps, 
-			ms->nchan, ms->nbit);
-	}
-	else
-	{
-		sprintf(ms->formatname, "Mark5B-%d-%d-%d", ms->Mbps, 
-			ms->nchan, ms->nbit);
-	}
+	sprintf(ms->formatname, "Mark5B-%d-%d-%d", ms->Mbps, 
+		ms->nchan, ms->nbit);
 
 	return 0;
 }
@@ -2135,8 +2085,6 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->framens = 80000000.0/ms->Mbps;
 	}
 
-	mark5_format_mark5b_make_formatname(ms);
-
 	if(ms->datawindow)
 	{
 		if(ms->datawindowsize < ms->framebytes)
@@ -2152,27 +2100,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->frameoffset = findfirstframe(ms->datawindow, bytes,
 			mark5bSync);
 
-		if(ms->frameoffset >= 0)
-		{
-			ms->format = MK5_FORMAT_MARK5B;
-		}
-		else if(ms->Mbps > 0)
-		{
-			/* then look for Mark5C compatibility mode sync word */
-			ms->frameoffset = findfirstframe(ms->datawindow, bytes,
-				mark5cCompatSync);
-			if(ms->frameoffset >= 0)
-			{
-				ms->format = MK5_FORMAT_MARK5CB;
-				ms->gettime = mark5_stream_frame_time_mark5cb;
-				ms->framens = 80000000/ms->Mbps;
-			}
-			else
-			{
-				return -1;
-			}
-		}
-		else 
+		if(ms->frameoffset == 0)
 		{
 			return -1;
 		}
@@ -2264,6 +2192,9 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
+	ms->format = MK5_FORMAT_MARK5B;
+	mark5_format_mark5b_make_formatname(ms);
+
 	return 0;
 }
 
@@ -2277,6 +2208,7 @@ static int mark5_format_mark5b_final(struct mark5_stream *ms)
 	if(ms->formatdata)
 	{
 		free(ms->formatdata);
+		ms->formatdata = 0;
 	}
 
 	return 0;
@@ -2439,6 +2371,8 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	if(f->decode == 0)
 	{
 		fprintf(stderr, "Illegal combination of decimation, bitstreams and bits\n");
+		free(f);
+		free(m);
 		return 0;
 	}
 
