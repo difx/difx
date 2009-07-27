@@ -366,6 +366,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	enum Mark5Format F;
 	int decimation = 1;
 	int r;
+	int fanout = 1;
 
 	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
 	{
@@ -382,6 +383,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		{
 			decimation = e;
 		}
+		fanout = a;
 		ntrack = a*c*d;
 	}
 	else if(strncasecmp(formatname, "MKIV1_", 6) == 0)
@@ -399,6 +401,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		{
 			decimation = e;
 		}
+		fanout = a;
 		ntrack = a*c*d;
 	}
 	else if(strncasecmp(formatname, "Mark5B-", 7) == 0)
@@ -485,6 +488,39 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 			decimation = e;
 		}
 	}
+	else if(strncasecmp(formatname, "VDIF-", 5) == 0)
+	{
+		r = sscanf(formatname+5, "%d-%d-%d/%d", &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIF;
+		databytes = 0;
+		framebytes = databytes + 32;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
+	/* for VDIF with legacy (16 byte) headers, a different name is used: */
+	else if(strncasecmp(formatname, "VDIFL-", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d/%d", &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VDIF;
+		databytes = 0;
+		framebytes = databytes + 16;
+		framens = 1000.0*(8.0*databytes/(double)b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+	}
 	else
 	{
 		return 0;
@@ -492,7 +528,7 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 
 	f = (struct mark5_format *)calloc(1, sizeof(struct mark5_format));
 	f->format = F;
-	f->fanout = a;
+	f->fanout = fanout;
 	f->Mbps = b;
 	f->nchan = c;
 	f->nbit = d;
