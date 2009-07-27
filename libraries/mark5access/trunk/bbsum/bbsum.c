@@ -113,7 +113,6 @@ int summarize(const char *filename, int refmjd)
 		{
 		case MK5_FORMAT_VLBA:
 		case MK5_FORMAT_MARK5B:
-		case MK5_FORMAT_MARK5CB:
 			n = (refmjd - mf->mjd + 500) / 1000;
 			mf->mjd += n*1000;
 			break;
