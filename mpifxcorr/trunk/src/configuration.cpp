@@ -30,6 +30,8 @@
 //#include "nativemk5.h"
 #include "alert.h"
 
+int Configuration::MONITOR_TCP_WINDOWBYTES;
+
 Configuration::Configuration(const char * configfile, int id)
   : mpiid(id), consistencyok(true)
 {
@@ -121,7 +123,15 @@ Configuration::Configuration(const char * configfile, int id)
   dumplta = false;
   stadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
   ltadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
-//  cinfo << startl << "Finished processing input file!!!" << endl;
+
+  char *monitor_tcpwin = getenv("DIFX_MONITOR_TCPWINDOW");
+  if (monitor_tcpwin!=0) {
+    Configuration::MONITOR_TCP_WINDOWBYTES = atoi(monitor_tcpwin)*1024;
+    cinfo << startl << "DIFX_MONITOR_TCPWINDOW set to" << Configuration::MONITOR_TCP_WINDOWBYTES/1024 << "kB" << endl;
+  } else {
+    Configuration::MONITOR_TCP_WINDOWBYTES = 262144;
+  }
+  //  cinfo << startl << "Finished processing input file!!!" << endl;
 }
 
 
@@ -189,7 +199,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       fanout = framebytes*8/(20000*nbits*nchan);
       if(fanout*20000*nbits*nchan != framebytes*8)
       {
-        cfatal << "genMk5FormatName : MKIV format : framebytes = " << framebytes << " is not allowed\n";
+        cfatal << "genMk5FormatName : MKIV format : framebytes = " << framebytes << " is not allowed" << endl;
         return -1;
       }
       if(decimationfactor > 1)	// Note, this conditional is to ensure compatibility with older mark5access versions
@@ -201,7 +211,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       fanout = framebytes*8/(20160*nbits*nchan);
       if(fanout*20160*nbits*nchan != framebytes*8)
       {
-        cfatal << "genMk5FormatName : VLBA format : framebytes = " << framebytes << " is not allowed\n";
+        cfatal << "genMk5FormatName : VLBA format : framebytes = " << framebytes << " is not allowed" << endl;
         return -1;
       }
       if(decimationfactor > 1)
@@ -216,7 +226,7 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
     default:
-      cfatal << startl << "genMk5FormatName : unsupported format encountered\n" << endl;
+      cfatal << startl << "genMk5FormatName : unsupported format encountered" << endl;
       return -1;
   }
 

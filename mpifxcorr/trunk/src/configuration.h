@@ -57,7 +57,7 @@ public:
   enum datasource {UNIXFILE, MK5MODULE, EVLBI};
 
   /// Constant for the TCP window size for monitoring
-  static const int MONITOR_TCP_WINDOWBYTES = 65536;
+  static int MONITOR_TCP_WINDOWBYTES;
 
  /**
   * Constructor: Reads and stores the information in the input file
