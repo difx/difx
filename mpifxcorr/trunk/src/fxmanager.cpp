@@ -51,7 +51,7 @@ void catch_pipe(int sig_num)
     /* re-set the signal handler again to catch_int, for next time */
     signal(SIGPIPE, catch_pipe);
     /* and print the message */
-    cwarn << startl << "Caught a pipe signal - the monitor probably just dropped out..." << endl;
+    //cwarn << startl << "Caught a pipe signal - the monitor probably just dropped out..." << endl;
 }
 
 using namespace std;
