@@ -35,6 +35,9 @@ and once all data has been gathered it is written to disk, in ascii or fits form
 
 @author Adam Deller
 */
+
+enum monsockStatusType {CLOSED, PENDING, OPENED};
+
 class Visibility{
 public:
  /**
@@ -180,6 +183,7 @@ private:
   Polyco * polyco;
   int *** baselinepoloffsets;
   int *** datastreampolbandoffsets;
+  static monsockStatusType monsockStatus;
 };
 
 #endif

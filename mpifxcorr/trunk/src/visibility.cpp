@@ -39,10 +39,12 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/poll.h>
 #ifdef HAVE_DIFXMESSAGE
 #include <difxmessage.h>
 #endif
 #include "alert.h"
+monsockStatusType Visibility::monsockStatus;
 
 Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, int skipseconds, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip)
   : config(conf), visID(id), numvisibilities(numvis), executeseconds(eseconds), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
@@ -51,8 +53,10 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
 
   cverbose << startl << "About to create visibility " << id << "/" << numvis << endl;
 
-  if(visID == 0)
+  if(visID == 0) {
     *mon_socket = -1;
+    monsockStatus = CLOSED;
+  }
   maxproducts = config->getMaxProducts();
   autocorrincrement = (maxproducts>1)?2:1;
   first = true;
@@ -212,16 +216,11 @@ void Visibility::updateTime()
 //setup monitoring socket
 int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int *sock) {
   int status;
-  int err=0;
+  //int err=0;
   unsigned long ip_addr;
   struct hostent     *hostptr;
   struct sockaddr_in server;    /* Socket address */
-  int saveflags,ret,back_err;
-  fd_set fd_w;
-  struct timeval timeout;
-
-  timeout.tv_sec = 0;
-  timeout.tv_usec = 100000;
+  int saveflags;
 
   hostptr = gethostbyname(hostname);
   if (hostptr==NULL) {
@@ -255,73 +254,37 @@ int Visibility::openMonitorSocket(char *hostname, int port, int window_size, int
   saveflags=fcntl(*sock,F_GETFL,0);
   if(saveflags<0) {
     perror("fcntl1");
-    err=errno;
     return 1;
   }
 
   /* Set non blocking */
   if(fcntl(*sock,F_SETFL,saveflags|O_NONBLOCK)<0) {
     perror("fcntl2");
-    err=errno;
     return 1;
   }
 
   // try to connect    
   status = connect(*sock, (struct sockaddr *) &server, sizeof(server));
-  back_err=errno;
-
-  /* restore flags */
-  if(fcntl(*sock,F_SETFL,saveflags)<0) {
-    perror("fcntl3");
-    err=errno;
-    return 1;
-  }
 
   /* return unless the connection was successful or the connect is
            still in progress. */
 
-  if(status<0) {
-    if (back_err!=EINPROGRESS) {
+  if(status==0) {
+    monsockStatus = OPENED;
+    cinfo<< startl << "Immediate connection to monitor server" << endl;
+    return 0;
+  } else {
+    if (errno!=EINPROGRESS) {
+      monsockStatus = CLOSED;
       perror("connect");
-      err=errno;
       return 1;
     } else {
-
-      FD_ZERO(&fd_w);
-      FD_SET(*sock,&fd_w);
-
-      status = select(FD_SETSIZE,NULL,&fd_w,NULL,&timeout);
-      if(status < 0) {
-	perror("select");
-	err=errno;
-	return 1;
-      }
-
-      /* 0 means it timeout out & no fds changed */
-      if(status==0) {
-	close(*sock);
-	status=ETIMEDOUT;
-	return 1;
-      }
-
-      /* Get the return code from the connect */
-      socklen_t len=sizeof(ret);
-      status=getsockopt(*sock,SOL_SOCKET,SO_ERROR,&ret,&len);
-      if(status<0) {
-	perror("getsockopt");
-	status = errno;
-	return 1;
-      }
-
-      /* ret=0 means success, otherwise it contains the errno */
-      if(ret) {
-	status=ret;
-	return 1;
-      }
+      monsockStatus = PENDING;
+      return 1;
     }
   }
 
-  return 0;
+  return 1;
 } /* Setup Net */
 
 int Visibility::sendMonitorData(bool tofollow) {
@@ -339,7 +302,23 @@ int Visibility::sendMonitorData(bool tofollow) {
 
     ptr = (char*)(&atsec);
     nwrote = send(*mon_socket, ptr, 4, 0);
-    if (nwrote < 4)
+    if (nwrote==-1) 
+    {
+      if (errno==EWOULDBLOCK) {
+	cwarn << startl << "Sending monitor data would block. Skipping this integration" << endl;
+	return 0;
+      } 
+      else if (errno==EPIPE) {
+	cerror << startl << "Monitor connection seems to have dropped out!  Will try to reconnect shortly...!" << endl;
+	return 1;
+      } 
+      else 
+      {
+	cerror << startl << "Monitor socket returns \"" << strerror(errno) << "\"" << endl;
+	return 1;
+      }
+    }
+    else if (nwrote < 4)
     {
       cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
       return 1;
@@ -351,40 +330,86 @@ int Visibility::sendMonitorData(bool tofollow) {
       datasize = resultlength;
       ptr = (char*)(&datasize);
       nwrote = send(*mon_socket, ptr, 4, 0);
-      if (nwrote < 4)
+      if (nwrote==-1) 
+      {
+	if (errno==EWOULDBLOCK) 
 	{
-	  cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	  cerror << startl << "Sending monitor data would block. Closing connection" << endl;
 	  return 1;
 	}
+	else if (errno==EPIPE) 
+	{
+	  cwarn << startl << "Monitor connection seems to have dropped out!  Will try to reconnect shortly...!" << endl;
+	  return 1;
+	} 
+	else 
+	{
+	  cerror << startl << "Monitor socket returns \"" << strerror(errno) << "\"" << endl;
+	  return 1;
+	}
+      }
+      else if (nwrote < 4)
+      {
+	cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	return 1;
+      }
 
       numchans = config->getNumChannels(currentconfigindex);
       ptr = (char*)(&numchans);
       nwrote = send(*mon_socket, ptr, 4, 0);
-      if (nwrote < 4)
+      if (nwrote==-1) 
+      {
+	if (errno==EWOULDBLOCK) 
 	{
-	  cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	  cerror << startl << "Sending monitor data would block. Closing connection" << endl;
+	  return 1;
+	} 
+	else if (errno==EPIPE) 
+	{
+	  cwarn << startl << "Monitor connection seems to have dropped out!  Will try to reconnect shortly...!" << endl;
 	  return 1;
 	}
+	else 
+	{
+	  cerror << startl << "Monitor socket returns \"" << strerror(errno) << "\"" << endl;
+	  return 1;
+	}
+      }
+      else if (nwrote < 4)
+      {
+	cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	return 1;
+      }
 
       ptr = (char*)results;
       ntowrite = resultlength*sizeof(cf32);
 
       while (ntowrite>0) {
         nwrote = send(*mon_socket, ptr, ntowrite, 0);
-        if(errno == EPIPE)
-        {
-	  cwarn << startl << "Network seems to have dropped out!  Will try to reconnect shortly...!" << endl;
-          return(1);
-        }
-        if (nwrote==-1) {
+	if (nwrote==-1) 
+	{
           if (errno == EINTR) continue;
-          perror("Error writing to network");
-
-          return(1);
-        } else if (nwrote==0) {
+	  if (errno==EWOULDBLOCK) 
+	  {
+	    cerror << startl << "Sending monitor data would block. Closing connection" << endl;
+	    return 1;
+	  }
+	  else if (errno == EPIPE)
+	  {
+	    cwarn << startl << "Monitor connection seems to have dropped out!  Will try to reconnect shortly...!" << endl;
+	    return(1);
+	  }
+	  else {
+	    cerror << startl << "Monitor socket returns \"" << strerror(errno) << "\"" << endl;
+	    return 1;
+	  }
+        } 
+	else if (nwrote==0) {
           cwarn << startl << "Warning: Did not write any bytes!" << endl;
           return(1);
-        } else {
+        } 
+	else 
+	{
           ntowrite -= nwrote;
           ptr += nwrote;
         }
@@ -396,18 +421,75 @@ int Visibility::sendMonitorData(bool tofollow) {
 
 bool Visibility::checkSocketStatus()
 {
-  if(*mon_socket < 0)
+  if(monsockStatus!=OPENED)
   {
-    if(visID != 0)
+    if (monsockStatus==PENDING)
+    {
+      int status;
+      struct pollfd fds[1];
+
+      fds[0].fd = *mon_socket;
+      fds[0].events = POLLOUT|POLLWRBAND;
+
+      status = poll(fds, 1, 0);
+      if(status < 0) 
+      {
+	cdebug << startl << "POLL FAILED" << endl;
+	perror("poll");
+	return false;
+      } 
+      else if (status==0) 
+      { // Nothing ready
+	cwarn << startl << "Connection to monitor socket still pending" << endl;	
+	return false;
+      } 
+      else 
+      { // Either connected or error
+
+	/* Get the return code from the connect */
+	int ret;
+	socklen_t len=sizeof(ret);
+	status=getsockopt(*mon_socket,SOL_SOCKET,SO_ERROR,&ret,&len);
+	if (status<0) {
+	  *mon_socket = -1;
+	  monsockStatus=CLOSED;
+	  perror("getsockopt");
+	  cdebug << startl << "GETSOCKOPT FAILED" << endl;
+	  return false;
+	}
+      
+	/* ret=0 means success, otherwise it contains the errno */
+	if(ret) {
+	  *mon_socket = -1;
+	  monsockStatus=CLOSED;
+	  errno=ret;
+	  //perror("connect");
+	  cinfo << startl << "Connection to monitor server failed" << endl;
+	  return false;
+	} 
+	else 
+	{
+	  // Connected!
+	  cinfo << startl << "Connection to monitor server succeeded" << endl;
+	  monsockStatus=OPENED;
+	  return true;
+	} 
+      }
+    } 
+    else if(visID != 0)
     {
       //don't even try to connect, unless you're the first visibility.  Saves trying to reconnect too often
-      cerror << startl << "Visibility " << visID << " won't try to reconnect monitor - waiting for vis 0..." << endl;
+      //cerror << startl << "Visibility " << visID << " won't try to reconnect monitor - waiting for vis 0..." << endl;
       return false;
     }
     if(openMonitorSocket(hostname, portnum, Configuration::MONITOR_TCP_WINDOWBYTES, mon_socket) != 0)
     {
-      *mon_socket = -1;
-      cerror << startl << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << numvisibilities << " integrations..." << endl;
+      if (monsockStatus != PENDING)
+      {
+	*mon_socket = -1;
+	monsockStatus = CLOSED;
+	cerror << startl << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << numvisibilities << " integrations..." << endl;
+      }
       return false;
     }
   }
@@ -436,9 +518,9 @@ void Visibility::writedata()
     //if required, send a message to the monitor not to expect any data this integration - 
     //if we can't get through to the monitor, close the socket
     if(monitor && sendMonitorData(false) != 0) {
-      cerror << startl << "tried to send a header only to monitor and it failed - closing socket!" << endl;
       close(*mon_socket);
       *mon_socket = -1;
+      monsockStatus = CLOSED;
     }
     return; //NOTE EXIT HERE!!!
   }
@@ -657,9 +739,9 @@ void Visibility::writedata()
   if(monitor) {
     if (visID % monitor_skip == 0) {
       if (sendMonitorData(true) != 0){ 
-	cerror << startl << "Error sending monitoring data - closing socket!" << endl;
 	close(*mon_socket);
 	*mon_socket = -1;
+	monsockStatus = CLOSED;
       }
     } else {
     }
