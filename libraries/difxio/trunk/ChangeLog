@@ -2,6 +2,7 @@
 * Post DiFX-1.5
 * Implement profile mode (with mode=profile at the global level)
 * Add writeDifxLineBoolean and use it for writing TRUE/FALSE values
+* Forward port the file-based correlation properties
 
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()

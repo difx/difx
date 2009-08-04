@@ -52,7 +52,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	if(D->fracSecondStartTime > 0)
 	{
 		dsecs = (D->mjdStart - (int)(D->mjdStart))*86400.0;
-		writeDifxLineDouble(out, "START SECONDS", "%12.6f", dsecs);
+		writeDifxLineDouble(out, "START SECONDS", "%8.6f", dsecs);
 	}
 	else
 	{
@@ -126,8 +126,9 @@ static int writeBaselineTable(FILE *out, const DifxInput *D)
 
 static int writeDataTable(FILE *out, const DifxInput *D)
 {
-	int i;
+	int i, j;
 	const DifxAntenna *da;
+	int type;	/* 0=None 1=VSN 2=Files */
 
 	fprintf(out, "# DATA TABLE #######!\n");
 
@@ -136,9 +137,55 @@ static int writeDataTable(FILE *out, const DifxInput *D)
 		if(D->datastream[i].antennaId >= 0)
 		{
 			da = D->antenna + D->datastream[i].antennaId;
-			writeDifxLineInt1(out, "D/STREAM %d FILES", i, 1);
-			writeDifxLine1(out, "FILE %d/0", i, da->vsn);
+			
+			type = 0;
+			if(strcmp(da->vsn, "File") == 0)
+			{
+				type = 2;
+			}
+			else if(strlen(da->vsn) == 8)
+			{
+				type = 1;
+			}
+			else if(strcasecmp(da->vsn, "None") == 0)
+			{
+				type = 0;
+			}
+			else if(strlen(da->vsn) < 8 && da->nFile > 0)
+			{
+				type = 2;
+			}
 
+
+			if(type == 1)
+			{
+				writeDifxLineInt1(out, "D/STREAM %d FILES", i, 1);
+				writeDifxLine1(out, "FILE %d/0", i, da->vsn);
+			}
+			else if(type == 2)
+			{
+				if(da->file == 0)
+				{
+					fprintf(stderr, "Error: difxio:writeDataTable da->file = 0\n");
+					return -1;
+				}
+				writeDifxLineInt1(out, "D/STREAM %d FILES", i, da->nFile);
+				for(j = 0; j < da->nFile; j++)
+				{
+					if(da->file[j])
+					{
+						writeDifxLine2(out, "FILE %d/%d", i, j, da->file[j]);
+					}
+					else
+					{
+						writeDifxLine2(out, "FILE %d/%d", i, j, "Null");
+					}
+				}
+			}
+			else
+			{
+				writeDifxLineInt1(out, "D/STREAM %d FILES", i, 0);
+			}
 		}
 		else
 		{

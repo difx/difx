@@ -49,10 +49,47 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	return da;
 }
 
+void allocateDifxAntennaFiles(DifxAntenna *da, int nFile)
+{
+	int i;
+
+	if(da->file)
+	{
+		for(i = 0; i < da->nFile; i++)
+		{
+			if(da->file[i])
+			{
+				free(da->file[i]);
+				da->file[i] = 0;
+			}
+		}
+		free(da->file);
+		da->file = 0;
+	}
+	
+	da->nFile = nFile;
+	da->file = (char **)calloc(nFile, sizeof(char *));
+}
+
 void deleteDifxAntennaArray(DifxAntenna *da)
 {
+	int i;
+
 	if(da)
 	{
+		if(da->nFile > 0)
+		{
+			for(i = 0; i < da->nFile; i++)
+			{
+				if(da->file[i])
+				{
+					free(da->file[i]);
+					da->file[i] = 0;
+				}
+			}
+			free(da->file);
+			da->file = 0;
+		}
 		free(da);
 	}
 }
@@ -67,6 +104,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
 	fprintf(fp, "    VSN = %s\n", da->vsn);
+	fprintf(fp, "    nFile = %d\n", da->nFile);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
 }
 
@@ -85,6 +123,7 @@ void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
 	fprintf(fp, "    VSN = %s\n", da->vsn);
+	fprintf(fp, "    nFile = %d\n", da->nFile);
 	if(da->spacecraftId >= 0)
 	{
 		fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
@@ -130,6 +169,14 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	dest->dY = src->dY;
 	dest->dZ = src->dZ;
 	strcpy(dest->vsn, src->vsn);
+	if(src->nFile > 0)
+	{
+		allocateDifxAntennaFiles(dest, src->nFile);
+		for(i = 0; i < src->nFile; i++)
+		{
+			dest->file[i] = strdup(src->file[i]);
+		}
+	}
 }
 
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,

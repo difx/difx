@@ -182,6 +182,8 @@ typedef struct
 	char vsn[12];		/* vsn for module */
 	char shelf[20];		/* shelf location of module */
 	int spacecraftId;	/* -1 if not a spacecraft */
+	int nFile;		/* number of files */
+	char **file;		/* list of files to correlate (if not VSN) */
 } DifxAntenna;
 
 typedef struct
@@ -367,6 +369,7 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 /* DifxAntenna functions */
 DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da);
+void allocateDifxAntennaFiles(DifxAntenna *da, int nFile);
 void printDifxAntenna(const DifxAntenna *da);
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);
 void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da);
