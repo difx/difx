@@ -311,7 +311,10 @@ void VexJob::assignVSNs(const VexData& V)
 	for(i = antennas.begin(); i != antennas.end(); i++)
 	{
 		const string &vsn = V.getVSN(*i, *this);
-		vsns[*i] = vsn;
+		if(vsn != "None")
+		{
+			vsns[*i] = vsn;
+		}
 	}
 }
 
@@ -890,6 +893,14 @@ string VexData::getVSN(const string& antName, const VexInterval& timeRange) cons
 		{
 			best = overlap;
 			bestVSN = v->name;
+		}
+	}
+
+	if(bestVSN == "None")
+	{
+		if(A->basebandFiles.size() > 0)
+		{
+			bestVSN = "File";
 		}
 	}
 

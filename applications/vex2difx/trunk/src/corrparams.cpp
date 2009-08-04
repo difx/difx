@@ -410,6 +410,10 @@ void AntennaSetup::setkv(const string &key, const string &value)
 
 		format = s;
 	}
+	else if(key == "file" || key == "files")
+	{
+		basebandFiles.push_back(value);
+	}
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 

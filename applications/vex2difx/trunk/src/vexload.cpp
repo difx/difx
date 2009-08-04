@@ -70,8 +70,7 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 
 	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
 	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
-	   F.format == "VLBA1_4" || F.format == "MKIV1_4" ||
-	   F.format == "MARK5B") 
+	   F.format == "VLBA1_4" || F.format == "MKIV1_4") 
 	{
 		it = ch2tracks.find(chanName);
 
@@ -98,6 +97,23 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 			else
 				return (track+61)/delta;
 		}
+	}
+	else if(F.format == "MARK5B") 
+	{
+		it = ch2tracks.find(chanName);
+
+		if(it == ch2tracks.end())
+		{
+			return -1;
+		}
+
+		const Tracks& T = it->second;
+		delta = T.sign.size() + T.mag.size();
+		track = T.sign[0];
+
+		cout << "XX " << delta << " " << track  << endl;
+
+		return (track-2)/delta;
 	}
 	else if(F.format == "S2")
 	{
@@ -211,6 +227,11 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 		if(paramClock)
 		{
 			A->clocks.push_back(*paramClock);
+		}
+		const AntennaSetup *antennaSetup = params.getAntennaSetup(antName);
+		if(antennaSetup)
+		{
+			A->basebandFiles = antennaSetup->basebandFiles;
 		}
 		else if(block)
 		{
@@ -663,6 +684,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
 				recChanId = getRecordChannel(value, ch2tracks, F, i);
+				//cerr << "Track map: " << value << " -> " << recChanId << endl;
 				if(recChanId >= 0)
 				{
 					F.ifs.push_back(VexIF());

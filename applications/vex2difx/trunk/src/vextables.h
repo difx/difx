@@ -212,6 +212,7 @@ public:
 	double axisOffset;	// (m)
 	vector<VexClock> clocks;
 	vector<VexVSN> vsns;
+	vector<string> basebandFiles;
 };
 
 class VexEOP

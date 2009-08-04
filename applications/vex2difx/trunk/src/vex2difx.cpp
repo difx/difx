@@ -363,7 +363,18 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	{
 		ant = V->getAntenna(a->first);
 		strcpy(A[i].name, a->first.c_str());
-		strcpy(A[i].vsn, a->second.c_str());
+		if(ant->basebandFiles.size() > 0)
+		{
+			allocateDifxAntennaFiles(A+i, ant->basebandFiles.size());
+			for(int j = 0; j < ant->basebandFiles.size(); j++)
+			{
+				A[i].file[j] = strdup(ant->basebandFiles[j].c_str());
+			}
+		}
+		else
+		{
+			strcpy(A[i].vsn, a->second.c_str());
+		}
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
@@ -550,6 +561,19 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	}
 
 	strcpy(D->datastream[dsId].dataSource, "MODULE");
+
+	// FIXME -- this is ugly
+	for(int i = 0; i < D->nAntenna; i++)
+	{
+		if(strcmp(D->antenna[i].name, antName.c_str()) == 0)
+		{
+			if(D->antenna[i].nFile > 0)
+			{
+				strcpy(D->datastream[dsId].dataSource, "FILE");
+			}
+		}
+	}
+
 	D->datastream[dsId].quantBits = format.nBit;
 	DifxDatastreamAllocRecChans(D->datastream + dsId, n2);
 
