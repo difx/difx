@@ -94,7 +94,7 @@ public:
 	string format;		// Override format from .v2d file.  
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B .  Is converted to all caps on load
-	vector<string> basebandFiles;	// files to correlate
+	vector<VexBasebandFile> basebandFiles;	// files to correlate
 };
 
 class CorrSetup

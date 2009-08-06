@@ -363,12 +363,31 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	{
 		ant = V->getAntenna(a->first);
 		strcpy(A[i].name, a->first.c_str());
-		if(ant->basebandFiles.size() > 0)
+		int nFile = ant->basebandFiles.size();
+		if(nFile > 0)
 		{
-			allocateDifxAntennaFiles(A+i, ant->basebandFiles.size());
-			for(int j = 0; j < ant->basebandFiles.size(); j++)
+			int count = 0;
+
+			for(int j = 0; j < nFile; j++)
 			{
-				A[i].file[j] = strdup(ant->basebandFiles[j].c_str());
+				if(J.overlap(ant->basebandFiles[j]) > 0.0)
+				{
+					count++;
+				}
+			}
+
+			allocateDifxAntennaFiles(A+i, count);
+			
+			count = 0;
+
+			for(int j = 0; j < nFile; j++)
+			{
+				if(J.overlap(ant->basebandFiles[j]) > 0.0)
+				{
+					A[i].file[count] = 
+						strdup(ant->basebandFiles[j].filename.c_str());
+					count++;
+				}
 			}
 		}
 		else

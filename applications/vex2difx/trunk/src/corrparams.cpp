@@ -120,6 +120,89 @@ double parseCoord(const char *str, char type)
 	return v;
 }
 
+// From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
+void split(const string& str, vector<string>& tokens, const string& delimiters = " ")
+{
+	// Skip delimiters at beginning.
+	string::size_type lastPos = str.find_first_not_of(delimiters, 0);
+	// Find first "non-delimiter".
+	string::size_type pos     = str.find_first_of(delimiters, lastPos);
+
+	while (string::npos != pos || string::npos != lastPos)
+	{
+		// Found a token, add it to the vector.
+		tokens.push_back(str.substr(lastPos, pos - lastPos));
+		// Skip delimiters.  Note the "not_of"
+		lastPos = str.find_first_not_of(delimiters, pos);
+		// Find next "non-delimiter"
+		pos = str.find_first_of(delimiters, lastPos);
+	}
+}
+
+
+int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &basebandFiles)
+{
+	ifstream is;
+	int n=0;
+	char s[1024];
+	vector<string> tokens;
+
+	is.open(fileName.c_str());
+
+	if(is.fail())
+	{
+		cerr << "Error: cannot open " << fileName << endl;
+		exit(0);
+	}
+
+	for(int line=1; ; line++)
+	{
+		is.getline(s, 1024);
+		if(is.eof())
+		{
+			break;
+		}
+
+		for(int i = 0; s[i]; i++)
+		{
+			if(s[i] == '#')
+			{
+				s[i] = 0;
+			}
+		}
+
+		tokens.clear();
+
+		split(string(s), tokens);
+
+		int l = tokens.size();
+
+		if(l == 0)
+		{
+			continue;
+		}
+		else if(l == 1)
+		{
+			basebandFiles.push_back(VexBasebandFile(tokens[0]));
+			n++;
+		}
+		else if(l == 3)
+		{
+			basebandFiles.push_back(VexBasebandFile(tokens[0],
+				atof(tokens[1].c_str()),
+				atof(tokens[2].c_str()) ));
+			n++;
+		}
+		else
+		{
+			cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << endl;
+			exit(0);
+		}
+	}
+
+	return n;
+}
+
 CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
@@ -412,7 +495,11 @@ void AntennaSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "file" || key == "files")
 	{
-		basebandFiles.push_back(value);
+		basebandFiles.push_back(VexBasebandFile(value));
+	}
+	else if(key == "filelist")
+	{
+		loadBasebandFilelist(value, basebandFiles);
 	}
 	else
 	{

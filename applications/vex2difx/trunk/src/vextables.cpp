@@ -1083,6 +1083,13 @@ ostream& operator << (ostream& os, const VexEOP& x)
 }
 
 
+ostream& operator << (ostream& os, const VexBasebandFile& x)
+{
+	os << "Baseband(" << x.filename << ", " << (const VexInterval&)x << ")";
+
+	return os;
+}
+
 ostream& operator << (ostream& os, const VexVSN& x)
 {
 	os << "VSN(" << x.name << ", " << (const VexInterval&)x << ")";

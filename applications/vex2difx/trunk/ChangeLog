@@ -7,6 +7,9 @@ Version 0.3
 * Change sign convention associated with vex file
    Note on clock sign conventions: As far as I (WFB) can tell, vex uses one sign
    convention and the VLBA, DiFX and FITS all use the other.
+* Don't let VSN=None get through.
+* Allow file-based correlation using ANTENNA block values file= and filelist=
+
 
 Version 0.2
 ~~~~~~~~~~~

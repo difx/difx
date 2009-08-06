@@ -93,6 +93,15 @@ public:
 	bool isCausal() { return (mjdStart <= mjdStop); }
 };
 
+class VexBasebandFile : public VexInterval
+{
+	public:
+	string filename;
+
+	VexBasebandFile(string name, double start=-1.0e9, double stop=1.0e9) :
+		VexInterval(start, stop), filename(name) {}
+};
+
 class VexScan : public VexInterval
 {
 public:
@@ -212,7 +221,7 @@ public:
 	double axisOffset;	// (m)
 	vector<VexClock> clocks;
 	vector<VexVSN> vsns;
-	vector<string> basebandFiles;
+	vector<VexBasebandFile> basebandFiles;
 };
 
 class VexEOP
@@ -363,6 +372,7 @@ ostream& operator << (ostream& os, const VexIF& x);
 ostream& operator << (ostream& os, const VexFormat& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
+ostream& operator << (ostream& os, const VexBasebandFile& x);
 ostream& operator << (ostream& os, const VexVSN& x);
 ostream& operator << (ostream& os, const VexClock& x);
 ostream& operator << (ostream& os, const VexJob& x);
