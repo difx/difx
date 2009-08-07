@@ -951,6 +951,15 @@ void CorrParams::load(const string& fileName)
 	{
 		addBaseline("*-*");
 	}
+
+	if(v2dMode == V2D_MODE_PROFILE)
+	{
+		int n = corrSetups.size();
+		for(int i = 0; i < n; i++)
+		{
+			corrSetups[i].doPolar = false;
+		}
+	}
 }
 
 void CorrParams::defaultSetup()
