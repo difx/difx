@@ -313,7 +313,7 @@ typedef struct
 const char *difxMessageGetVersion();
 
 int difxMessageInit(int mpiId, const char *identifier);
-int difxMessageInitBinary();	/* looks at env vars DIFX_BINARY_GROUP and _PORT */
+int difxMessageInitBinary();	/* looks @ env vars DIFX_BINARY_GROUP & _PORT */
 void difxMessagePrint();
 void difxMessageGetMulticastGroupPort(char *group, int *port);
 
