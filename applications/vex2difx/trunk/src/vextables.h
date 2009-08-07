@@ -52,6 +52,7 @@ public:
 		OBSERVE_STOP,
 		RECORD_STOP,
 		CLOCK_BREAK,
+		LEAP_SECOND,
 		RECORD_START,
 		OBSERVE_START,
 		JOB_START,
@@ -310,6 +311,7 @@ public:
 	VexMode *newMode();
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
+	void findLeapSeconds();
 
 	double obsStart() const
 	{

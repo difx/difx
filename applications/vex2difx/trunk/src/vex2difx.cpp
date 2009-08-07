@@ -214,7 +214,8 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		{
 			usage[e->mjd]--;
 		}
-		else if(e->eventType == VexEvent::CLOCK_BREAK)
+		else if(e->eventType == VexEvent::CLOCK_BREAK ||
+			e->eventType == VexEvent::LEAP_SECOND)
 		{
 			clockBreaks[e->mjd]++;
 		}

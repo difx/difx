@@ -825,6 +825,7 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	int nEop;
 	double refEpoch, interval;
 	VexEOP *E;
+	int N = 0;
 
 	block = find_block(B_EOP, v);
 
@@ -860,12 +861,7 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		lowls = find_lowl(refs, T_NUM_EOP_POINTS);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
 		nEop = atoi(r->value);
-
-		if(nEop < 5)
-		{
-			cerr << "Warning: Fewer than 5 EOP values provided." << endl;
-			cerr << "vex2difx will continue, but expect problems downstream." << endl;
-		}
+		N += nEop;
 
 		lowls = find_lowl(refs, T_EOP_INTERVAL);
 		r = (struct dvalue *)(((Lowl *)lowls->ptr)->item);
@@ -893,6 +889,13 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 			E->yPole = y_wobble;
 		}
 	}
+
+	if(N < 5)
+	{
+		cerr << "Warning: Fewer than 5 EOP values provided." << endl;
+		cerr << "vex2difx will continue, but expect problems downstream." << endl;
+	}
+
 	return 0;
 }
 
@@ -1002,6 +1005,7 @@ VexData *loadVexFile(const CorrParams& P)
 	getExper(V, v, P);
 
 	calculateScanSizes(V, P);
+	V->findLeapSeconds();
 
 	return V;
 }

@@ -45,6 +45,7 @@ const char VexEvent::eventName[][20] =
 	"Observe Stop",
 	"Record Stop",
 	"Clock Break",
+	"Leap Second",
 	"Record Start",
 	"Observe Start",
 	"Job Start",
@@ -954,6 +955,25 @@ void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &
 {
 	events.push_back(VexEvent(mjd, eventType, name, scan));
 	events.sort();
+}
+
+void VexData::findLeapSeconds()
+{
+	int n = eops.size();
+
+	if(n < 2)
+	{
+		return;
+	}
+
+	for(int i = 1; i < n; i++)
+	{
+		if(eops[i-1].tai_utc != eops[i].tai_utc)
+		{
+			addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
+			cout << "Leap second detected at day " << eops[i].mjd << endl;
+		}
+	}
 }
 
 ostream& operator << (ostream& os, const VexInterval& x)

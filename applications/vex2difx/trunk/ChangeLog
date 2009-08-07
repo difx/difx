@@ -9,6 +9,7 @@ Version 0.3
    convention and the VLBA, DiFX and FITS all use the other.
 * Don't let VSN=None get through.
 * Allow file-based correlation using ANTENNA block values file= and filelist=
+* Split jobs at leap second
 
 
 Version 0.2
