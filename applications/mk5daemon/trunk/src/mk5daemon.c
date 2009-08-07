@@ -50,7 +50,8 @@ const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
 const char difxUser[] = "difx";
-const char restartCalcServerCommand[] = "/etc/init.d/calcserver restart";
+const char stopCalcServerCommand[] = "/etc/init.d/calcserver stop";
+const char startCalcServerCommand[] = "/etc/init.d/calcserver start";
 
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
@@ -343,8 +344,9 @@ void Mk5Daemon_restartCalcServer(Mk5Daemon *D)
 {
 	char message[512];
 
-	sprintf(message, "Restarting calcServer with command: %s\n",
-		restartCalcServerCommand);
+	sprintf(message, "Restarting calcServer with commands:\n  %s\n  %s\n",
+		stopCalcServerCommand,
+		startCalcServerCommand);
 
 	Logger_logData(D->log, message);
 
@@ -353,7 +355,9 @@ void Mk5Daemon_restartCalcServer(Mk5Daemon *D)
 		return;
 	}
 
-	system(restartCalcServerCommand);
+	system(stopCalcServerCommand);
+	sleep(1);
+	system(startCalcServerCommand);
 
 	exit(0);
 }
