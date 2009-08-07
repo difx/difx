@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from string import split, strip, find
 from sys import argv, exit

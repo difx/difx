@@ -151,6 +151,8 @@ def countTones(ToneTable, StateTable):
 					nBand = polCount[pol] + 1
 			else:
 				polCount[pol] = 0
+			if nBand == 0:
+				nBand = 1
 			bandnums[chanpol] = [polCount[pol], 0]
 			if nTone == 0:
 				nTone = 1
@@ -170,8 +172,6 @@ def countTones(ToneTable, StateTable):
 						nBand = polCount[pol] + 1
 				else:
 					polCount[pol] = 0
-				if nBand == 0:
-					nBand = 1
 				bandnums[chanpol] = [polCount[pol], 0]
 
 	toneIndex = {}
@@ -294,6 +294,9 @@ def makePH(sections, BBCs, antenna):
 					print 'ToneData index error: T=', T, 's=', s
 					print 'index=', index, 'array size=', len(ToneData)
 					print 'Full line from file: ', row
+					print 'nPol=%d nBand=%d nTone=%d' % (nPol, nBand, nTone)
+					print 'ToneTable=',ToneTable
+					print 'StateTable=',StateTable,'\n'
 			elif key in StateTable:
 				S = StateTable[key]
 				pol  = S[4]
@@ -309,6 +312,7 @@ def makePH(sections, BBCs, antenna):
 						print 'StateData index error: S=', S, 's=', s
 						print 'index=', index, 'array size=', len(StateData)
 						print 'Full line from file: ', row
+						print 'nPol=%d nBand=%d nTone=%d\n' % (nPol, nBand, nTone)
 		if action == 3:
 			line = '%10.7f %9.7f %s %d %d %d %d %d' % \
 				(t, dt, ccal, nPol, nBand, nTone, nState, nBBC)
