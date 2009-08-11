@@ -95,6 +95,7 @@ enum DifxState
 	DIFX_STATE_TERMINATING,	/* Caught SIGINT, closing down */
 	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
 	DIFX_STATE_MPIDONE,	/* mpi process has finished */
+	DIFX_STATE_CRASHED,	/* mpi process has crashed */
 	NUM_DIFX_STATES		/* this needs to be the last line of enum */
 };
 

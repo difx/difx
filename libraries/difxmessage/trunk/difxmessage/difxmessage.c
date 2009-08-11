@@ -48,7 +48,8 @@ const char DifxStateStrings[][24] =
 	"Aborting",
 	"Terminating",
 	"Terminated",
-	"MpiDone"
+	"MpiDone",
+	"Crashed"
 };
 
 /* Note! Keep this in sync with enum DifxMessageType in difxmessage.h */
