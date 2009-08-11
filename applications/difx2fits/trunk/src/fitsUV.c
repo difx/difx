@@ -403,7 +403,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 		return DATA_READ_ERROR;
 	}
 
-	if(bin != pulsarBin)
+	/* Drop all records (except autocorrelations) not associated 
+	 * with the requested pulsar bin */
+	if(bin != pulsarBin && bl % 257 != 0)
 	{
 		return SKIPPED_RECORD;
 	}
