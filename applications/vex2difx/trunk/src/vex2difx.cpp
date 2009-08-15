@@ -156,6 +156,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	map<string,double> recordStop;
 	map<double,int> usage;
 	map<double,int> clockBreaks;
+	int nClockBreaks = 0;
 	list<MediaChange> changes;
 	list<double> times;
 	list<double> breaks;
@@ -164,6 +165,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	double mjdBest = 0.0;
 	double start;
 	int nAnt;
+	int nLoop = 0;
 
 	// first initialize recordStop and usage
 	for(e = JG.events.begin(); e != JG.events.end(); e++)
@@ -215,15 +217,24 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 			usage[e->mjd]--;
 		}
 		else if(e->eventType == VexEvent::CLOCK_BREAK ||
-			e->eventType == VexEvent::LEAP_SECOND)
+			e->eventType == VexEvent::LEAP_SECOND ||
+			e->eventType == VexEvent::MANUAL_BREAK)
 		{
 			clockBreaks[e->mjd]++;
+			nClockBreaks++;
 		}
 	}
 
 	// now go through and set breakpoints
-	while(!changes.empty())
+	while(!changes.empty() || nClockBreaks > 0)
 	{
+		nLoop++;
+		if(nLoop > 100000) // There is clearly a problem converging!
+		{
+			cerr << "Developer error! -- jobs not converging after " << nLoop << " tries.\n" << endl;
+			exit(0);
+		}
+
 		// look for break with highest score
 		// Try as hard as possible to minimize number of breaks
 		scoreBest = -1;
@@ -238,6 +249,8 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		}
 
 		breaks.push_back(mjdBest);
+		nClockBreaks -= clockBreaks[mjdBest];
+		clockBreaks[mjdBest] = 0;
 
 		// find modules that change in the new gap
 		for(c = changes.begin(); c != changes.end();)
@@ -262,7 +275,14 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	for(t = breaks.begin(); t != breaks.end(); t++)
 	{
 		VexInterval jobTimeRange(start, *t);
-		JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);
+		if(jobTimeRange.duration() > P->minLength)
+		{
+			JG.createJobs(Js, jobTimeRange, V, P->maxLength, P->maxSize);
+		}
+		else
+		{
+			cout << "Warning: skipping short job of " << (jobTimeRange.duration()*86400.0) << " seconds duration." << endl;
+		}
 		start = *t;
 	}
 }
@@ -299,7 +319,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 
 		// note -- this is an internal name only, not the job prefix that 
 		// becomes part of the filenames
-		name << j->jobSeries << j->jobId;
+		name << j->jobSeries << "_" << j->jobId;
 
 		V->addEvent(j->mjdStart, VexEvent::JOB_START, name.str());
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());

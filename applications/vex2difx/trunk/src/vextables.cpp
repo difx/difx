@@ -46,6 +46,7 @@ const char VexEvent::eventName[][20] =
 	"Record Stop",
 	"Clock Break",
 	"Leap Second",
+	"Manual Break",
 	"Record Start",
 	"Observe Start",
 	"Job Start",
@@ -680,7 +681,8 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, co
 				exit(0);
 			}
 			VexInterval scanTimeRange(s->mjd, e->mjd);
-			if(scanTimeRange.isWithin(jobTimeRange))
+			scanTimeRange.logicalAnd(jobTimeRange);
+			if(scanTimeRange.duration() > 0.0)
 			{
 				J->scans.push_back(e->name);
 				J->logicalOr(scanTimeRange);
@@ -976,6 +978,26 @@ void VexData::findLeapSeconds()
 	}
 }
 
+void VexData::addBreaks(const vector<double> &breaks)
+{
+	int n = breaks.size();
+
+	if(n < 1)
+	{
+		return;
+	}
+
+	for(int i = 0; i < n; i++)
+	{
+		double mjd = breaks[i];
+
+		if(exper.contains(mjd))
+		{
+			addEvent(mjd, VexEvent::MANUAL_BREAK, "");
+		}
+	}
+}
+
 ostream& operator << (ostream& os, const VexInterval& x)
 {
 	int p = os.precision();
@@ -1123,7 +1145,7 @@ ostream& operator << (ostream& os, const VexJob& x)
 	map<string,string>::const_iterator v;
 	int p = os.precision();
 	os.precision(12);
-	os << "Job " << x.jobSeries << x.jobId << endl;
+	os << "Job " << x.jobSeries << "_" << x.jobId << endl;
 	os << "  " << (const VexInterval&)x << endl;
 	os << "  duty cycle = " << x.dutyCycle << endl;
 	os << "  scans =";

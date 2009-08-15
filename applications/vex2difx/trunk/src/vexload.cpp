@@ -1006,6 +1006,7 @@ VexData *loadVexFile(const CorrParams& P)
 
 	calculateScanSizes(V, P);
 	V->findLeapSeconds();
+	V->addBreaks(P.manualBreaks);
 
 	return V;
 }

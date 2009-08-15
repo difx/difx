@@ -545,6 +545,7 @@ void CorrParams::defaults()
 	padScans = true;
 	simFXCORR = false;
 	maxLength = 7200/86400.0;	// 2 hours
+	minLength = 2/86400.0;		// 2 seconds
 	maxSize = 2e9;			// 2 GB
 	mjdStart = 0.0;
 	mjdStop = 1.0e7;
@@ -587,6 +588,13 @@ void CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> mjdStop;
 	}
+	else if(key == "break" || key == "breaks")
+	{
+		double mjd;
+
+		ss >> mjd;
+		manualBreaks.push_back(mjd);
+	}
 	else if(key == "minSubarray")
 	{
 		ss >> minSubarraySize;
@@ -615,6 +623,11 @@ void CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> maxLength;
 		maxLength /= 86400.0;	// convert to seconds from days
+	}
+	else if(key == "minLength")
+	{
+		ss >> minLength;
+		minLength /= 86400.0;	// convert to seconds from days
 	}
 	else if(key == "maxSize")
 	{
@@ -1315,12 +1328,18 @@ ostream& operator << (ostream& os, const CorrParams& x)
 	}
 	os << "mjdStart=" << x.mjdStart << endl;
 	os << "mjdStop=" << x.mjdStop << endl;
+	int n = x.manualBreaks.size();
+	for(int i = 0; i < n; i++)
+	{
+		os << "break=" << x.manualBreaks[i] << endl;
+	}
 	os << "minSubarray=" << x.minSubarraySize << endl;
 	os << "visBufferLength=" << x.visBufferLength << endl;
 
 	os.precision(6);
 	os << "maxGap=" << x.maxGap*86400.0 << " # seconds" << endl;
 	os << "maxLength=" << x.maxLength*86400.0 << " # seconds" << endl;
+	os << "minLength=" << x.minLength*86400.0 << " # seconds" << endl;
 	os << "maxSize=" << x.maxSize/1000000.0 << " # MB" << endl;
 	os.precision(13);
 

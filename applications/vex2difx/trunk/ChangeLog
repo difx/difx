@@ -10,7 +10,9 @@ Version 0.3
 * Don't let VSN=None get through.
 * Allow file-based correlation using ANTENNA block values file= and filelist=
 * Split jobs at leap second
-
+* Add minLength parameter
+* Fix splitting jobs at clock boundaries
+* break= parameter to force job breaks at particular times
 
 Version 0.2
 ~~~~~~~~~~~

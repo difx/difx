@@ -180,6 +180,7 @@ public:
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
 	double maxLength;	// [days]
+	double minLength;	// [days]
 	double maxSize;		// [bytes] -- break jobs for output filesize
 	string jobSeries;	// prefix name to job files
 	int startSeries;	// start job series at this number
@@ -191,6 +192,9 @@ public:
 
 	list<string> antennaList;
 	list<pair<string,string> > baselineList;
+
+	/* manual forced job breaks */
+	vector<double> manualBreaks;
 
 	/* setups to apply */
 	vector<CorrSetup> corrSetups;

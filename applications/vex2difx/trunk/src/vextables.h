@@ -53,6 +53,7 @@ public:
 		RECORD_STOP,
 		CLOCK_BREAK,
 		LEAP_SECOND,
+		MANUAL_BREAK,
 		RECORD_START,
 		OBSERVE_START,
 		JOB_START,
@@ -90,7 +91,7 @@ public:
 	void logicalAnd(const VexInterval &v);
 	void logicalOr(double start, double stop);
 	void logicalOr(const VexInterval &v);
-	bool isWithin(VexInterval &v) { return (mjdStart >= v.mjdStart) && (mjdStop <= v.mjdStop); }
+	bool contains(double mjd) { return (mjdStart <= mjd) && (mjd <= mjdStop); }
 	bool isCausal() { return (mjdStart <= mjdStop); }
 };
 
@@ -312,6 +313,7 @@ public:
 	VexAntenna *newAntenna();
 	VexEOP *newEOP();
 	void findLeapSeconds();
+	void addBreaks(const vector<double> &breaks);
 
 	double obsStart() const
 	{
