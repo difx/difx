@@ -368,7 +368,7 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 
 /* DifxAntenna functions */
 DifxAntenna *newDifxAntennaArray(int nAntenna);
-void deleteDifxAntennaArray(DifxAntenna *da);
+void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna);
 void allocateDifxAntennaFiles(DifxAntenna *da, int nFile);
 void printDifxAntenna(const DifxAntenna *da);
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);

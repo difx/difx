@@ -65,7 +65,8 @@ void deleteDifxInput(DifxInput *D)
 		}
 		if(D->antenna)
 		{
-			deleteDifxAntennaArray(D->antenna);
+			deleteDifxAntennaArray(D->antenna,
+				D->nAntenna);
 		}
 		if(D->scan)
 		{

@@ -71,24 +71,27 @@ void allocateDifxAntennaFiles(DifxAntenna *da, int nFile)
 	da->file = (char **)calloc(nFile, sizeof(char *));
 }
 
-void deleteDifxAntennaArray(DifxAntenna *da)
+void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna)
 {
-	int i;
+	int a, i;
 
 	if(da)
 	{
-		if(da->nFile > 0)
+		for(a = 0; a < nAntenna; a++)
 		{
-			for(i = 0; i < da->nFile; i++)
+			if(da[a].nFile > 0)
 			{
-				if(da->file[i])
+				for(i = 0; i < da[a].nFile; i++)
 				{
-					free(da->file[i]);
-					da->file[i] = 0;
+					if(da[a].file[i])
+					{
+						free(da[a].file[i]);
+						da[a].file[i] = 0;
+					}
 				}
+				free(da[a].file);
+				da[a].file = 0;
 			}
-			free(da->file);
-			da->file = 0;
 		}
 		free(da);
 	}
