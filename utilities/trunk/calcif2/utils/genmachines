@@ -167,11 +167,11 @@ def getVsnsByMulticast(maxtime, modlist, verbose):
 				conflicts.append(info)
 			if info[1] in missing:
 				missing.remove(info[1])
-				if info[3] != 'Idle':
+				if info[3] != 'Idle' and info[3] != 'Close':
 					notidle.append(info[1])
 			if info[2] in missing:
 				missing.remove(info[2])
-				if info[3] != 'Idle':
+				if info[3] != 'Idle' and info[3] != 'Close':
 					notidle.append(info[2])
 
 		except socket.timeout:
