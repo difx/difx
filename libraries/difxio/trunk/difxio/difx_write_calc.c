@@ -31,6 +31,17 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
+static double truncSeconds(double mjd)
+{
+	int intmjd, intsec;
+
+	intmjd = mjd;
+	intsec = (mjd - intmjd)*86400.0;
+
+	return intmjd + intsec/86400.0;
+}
+
+
 int writeDifxCalc(const DifxInput *D, const char *filename)
 {
 	FILE *out;
@@ -78,7 +89,7 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
-	writeDifxLineDouble(out, "START MJD", "%13.7f", D->mjdStart);
+	writeDifxLineDouble(out, "START MJD", "%13.7f", truncSeconds(D->mjdStart));
 	writeDifxDateLines(out, D->mjdStart);
 	writeDifxLineDouble(out, "INCREMENT (SECS)", "%1.0f", D->job->modelInc);
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);

@@ -3368,7 +3368,8 @@ int DifxInputSimFXCORR(DifxInput *D)
 	const DifxDatastream *dd;
 	double quantum;
 	double tInt, sec, mjdStart;
-	int c, d, n, mjd;
+	double sec_old, deltasec;
+	int a, c, d, n, mjd;
 	int speedUp = 4, su, fanout;
 	int nBitstream, sampRate;
 
@@ -3430,30 +3431,60 @@ int DifxInputSimFXCORR(DifxInput *D)
 		dc->tInt = n * quantum;
 	}
 
-	/* here use the first config's tInt to derive the start time of the job */
+	/* here use the first config's tInt to derive the start time of 
+	 * the job
+	 */
 	tInt = D->config[0].tInt;
 
 	mjd = D->mjdStart;
-	sec = (D->mjdStart - mjd)*86400.0;
+	sec = sec_old = (D->mjdStart - mjd)*86400.0;
 
 	n = sec / tInt;
 	sec = n*tInt;
 
+	deltasec = sec - sec_old;
+
 	mjdStart = mjd + sec/86400.0;
 	if(mjdStart < D->mjdStart)
 	{
+		n++;
 		mjdStart += tInt/86400.0;
+		deltasec += tInt;
 	}
 
 	/* Work around problem that occurs if frac sec >= 0.5 */
 	while(86400.0*mjdStart - (long long)(86400.0*mjdStart) > 0.49999)
 	{
+		n++;
 		mjdStart += tInt/86400.0;
+		deltasec += tInt;
 	}
+
+	/* recompute to avoid bad rounding issues */
+	mjdStart = mjd + n*tInt/86400.0;
 
 	D->mjdStart = mjdStart;
 	D->job[0].jobStart = D->mjdStart;
 	D->fracSecondStartTime = 1;
+
+	printf("FXCORR Simulator: delayed job start time by %8.6f seconds\n",
+		deltasec);
+
+	/* The reference for the shift is the start of the .calc file which
+	 * starts at a the truncated second
+	 */
+	deltasec = (int)deltasec;
+
+	printf("                  delayed clock reference by %8.6f seconds\n",
+		deltasec);
+
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		D->antenna[a].delay += deltasec*D->antenna[a].rate;
+		printf("  Antenna %s clock shift = %e us = %f deg at 8.4 GHz\n",
+			D->antenna[a].name, deltasec*D->antenna[a].rate,
+			deltasec*D->antenna[a].rate*8400.0*360.0);
+	}
 
 	/* FIXME -- reset BLOCKSPERSEND here? */
 
