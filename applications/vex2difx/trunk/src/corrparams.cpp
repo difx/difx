@@ -38,6 +38,17 @@
 #include "util.h"
 #include "corrparams.h"
 
+/* round to nearest second */
+static double roundSeconds(double mjd)
+{
+	int intmjd, intsec;
+
+	intmjd = static_cast<int>(mjd);
+	intsec = static_cast<int>((mjd - intmjd)*86400.0 + 0.5);
+
+	return intmjd + intsec/86400.0;
+}
+
 bool isTrue(const string &str)
 {
 	if(str[0] == '0' || str[0] == 'f' || str[0] == 'F' || str[0] == '-')
@@ -593,6 +604,10 @@ void CorrParams::setkv(const string &key, const string &value)
 		double mjd;
 
 		ss >> mjd;
+
+		/* always break at integer second boundary */
+		mjd = roundSeconds(mjd);
+
 		manualBreaks.push_back(mjd);
 	}
 	else if(key == "minSubarray")

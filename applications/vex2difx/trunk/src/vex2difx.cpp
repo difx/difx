@@ -1126,13 +1126,17 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 
 		const VexSource *src = V->getSource(S->sourceName);
 
+		// Determine interval where scan and job overlap
+		VexInterval scanInterval(*S);
+		scanInterval.logicalAnd(J);
+
 		corrSetup = P->getCorrSetup(S->corrSetupName);
 		sourceSetup = P->getSourceSetup(S->sourceName);
 
-		scan->mjdStart = S->mjdStart;
-		scan->mjdEnd = S->mjdStop;
-		scan->startPoint = static_cast<int>((S->mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
-		scan->nPoint = static_cast<int>(S->duration_seconds()/D->job->modelInc + 0.01);
+		scan->mjdStart = scanInterval.mjdStart;
+		scan->mjdEnd = scanInterval.mjdStop;
+		scan->startPoint = static_cast<int>((scanInterval.mjdStart - J.mjdStart)*86400.0/D->job->modelInc + 0.01);
+		scan->nPoint = static_cast<int>(scanInterval.duration_seconds()/D->job->modelInc + 0.01);
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 
 		scan->ra = src->ra;
