@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id:$
+ * $HeadURL:$
+ * $LastChangedRevision:$
+ * $Author:$
+ * $LastChangedDate:$
+ *
+ *==========================================================================*/
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -25,7 +54,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"FREQOFF", bandFormDouble, "freq. offset from ref freq.","HZ"},
 		{"RAEPO", "1D", "Right Ascension at EPOCH", "DEGREES"},
 		{"DECEPO", "1D", "Declination at EPOCH", "DEGREES"},
-		{"EPOCH", "1D", "epoch 1950.0B or J2000", "YEARS"},
+		{"EQUINOX", "8A", "Mean equinox"},
 		{"RAAPP", "1D", "apparent RA at 0 IAT ref day", "DEGREES"},
 		{"DECAPP", "1D", "apparent Dec at 0 IAT ref day", "DEGREES"},
 		{"SYSVEL", bandFormDouble, "systemic velocity at ref pixel", 
@@ -35,7 +64,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"RESTFREQ", bandFormDouble, "line rest frequency", "HZ"},
 		{"PMRA", "1D", "proper motion in RA", "DEG/DAY"},
 		{"PMDEC", "1D", "proper motion in Dec", "DEG/DAY"},
-		{"PARALLAX", "1E", "parallax of source", "ARCSEC"}
+		{"PARALLAX", "1E", "parallax of source", "ARCSEC"},
+		{"EPOCH", "1D", "Epoch of observation", "YEARS"}
 	};
 
 	int nColumn;
@@ -57,6 +87,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	double RAEpoch, decEpoch;	/* position of Epoch */
 	double RAApp, decApp;		/* apparent position */
 	double epoch;
+	char equinox[8];
 	double sysVel[array_MAX_BANDS];
 	double restFreq[array_MAX_BANDS];
 	char velType[8];
@@ -75,6 +106,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	{
 		return 0;
 	}
+
+	strcpypad(equinox, "J2000", 8);
 
 	nBand = D->nIF;
 	sprintf(bandFormFloat, "%1dE", nBand);
@@ -184,7 +217,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ARRAY(freqOffset, p_fitsbuf, nBand);
 		FITS_WRITE_ITEM (RAEpoch, p_fitsbuf);
 		FITS_WRITE_ITEM (decEpoch, p_fitsbuf);
-		FITS_WRITE_ITEM (epoch, p_fitsbuf);
+		FITS_WRITE_ARRAY(equinox, p_fitsbuf, 8);
 		FITS_WRITE_ITEM (RAApp, p_fitsbuf);
 		FITS_WRITE_ITEM (decApp, p_fitsbuf);
 		FITS_WRITE_ARRAY(sysVel, p_fitsbuf, nBand);
@@ -194,6 +227,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ITEM (muRA, p_fitsbuf);
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
+		FITS_WRITE_ITEM (epoch, p_fitsbuf);
 
 		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SU");
 

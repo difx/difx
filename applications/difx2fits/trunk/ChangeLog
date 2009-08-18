@@ -1,8 +1,9 @@
 Version 2.5
-* Require difxio 2.10
+* Require difxio 2.11
 * Post DiFX-1.5
 * Sniffer: look for spectral lines
 * Write autocorrs for all pulsar bins
+* Fix indexing by antennas after merging.  Affects: UV, MC, ML tables
 
 Version 2.4
 * Post NRAO-DiFX 1.1 development

@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id:$
+ * $HeadURL:$
+ * $LastChangedRevision:$
+ * $Author:$
+ * $LastChangedDate:$
+ *
+ *==========================================================================*/
+
 #include "fits.h"
 
 #include <stdlib.h>
@@ -523,9 +552,16 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 			v = dv->V;
 			w = dv->W;
 
+			if(a1 >= scan->nAntenna || a2 > scan->nAntenna)
+			{
+				fprintf(stderr, "Error: DifxVisNewUVData: a1=%d a2=%d nAnt=%d\n",
+					a1, a2, scan->nAntenna);
+				goto End_UVW_Fix;
+			}
+
 			/* use .difx/ antenna indices for model tables */
-			im1 = scan->im[aa1];
-			im2 = scan->im[aa2];
+			im1 = scan->im[a1];
+			im2 = scan->im[a2];
 			if(im1 && im2)
 			{
 				if(n < 0)
@@ -545,6 +581,12 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin)
 					       -evalPoly(im1[n].w, terms1, dt);
 				}
 			}
+			else
+			{
+				printf("Badness: %d %d %d-%d\n", scanId, n, aa1, aa2);
+			}
+
+		End_UVW_Fix:
 
 			if((fabs(u - dv->U) > 10.0 ||
 			    fabs(v - dv->V) > 10.0 ||
@@ -949,6 +991,9 @@ static int DifxVisConvert(const DifxInput *D,
 	   a FITS string and save it in the FITS header */
 	mjd2fits((int)D->mjdStart, dateStr);
 	fitsWriteString(out, "DATE-OBS", dateStr, "");
+
+	fitsWriteString(out, "EQUINOX", "J2000", "");
+	fitsWriteString(out, "WEIGHTYP", "CORRELAT", "");
 
 	fitsWriteString(out, "TELESCOP", "VLBA", "");
 	fitsWriteString(out, "OBSERVER", "PLUTO", "");
