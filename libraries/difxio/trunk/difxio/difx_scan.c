@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008, 2009 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -78,6 +78,8 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 
 void fprintDifxScan(FILE *fp, const DifxScan *ds)
 {
+	int a;
+
 	fprintf(fp, "  DifxScan [%s] : %p\n", ds->name, ds);
 	fprintf(fp, "    Start = MJD %12.6f\n", ds->mjdStart);
 	fprintf(fp, "    End   = MJD %12.6f\n", ds->mjdEnd);
@@ -110,6 +112,12 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 			{
 				fprintf(fp, "    No model[1]\n");
 			}
+			fprintf(fp, "    Model exists[ant] =");
+			for(a = 0; a < ds->nAntenna; a++)
+			{
+				fprintf(fp, " %c", ds->model[a] ? 'T' : 'F');
+			}
+			fprintf(fp, "\n");
 		}
 		else
 		{
@@ -133,6 +141,11 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 			{
 				fprintf(fp, "    No polymodel[0]\n");
 			}
+			fprintf(fp, "    Poly model exists[ant] =");
+			{
+				fprintf(fp, " %c", ds->im[a] ? 'T' : 'F');
+			}
+			fprintf(fp, "\n");
 		}
 		else
 		{
@@ -196,6 +209,9 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->nPoly      = src->nPoly;
 
 	/* figure out how many antennas needed in this scan */
+	/* note that not all thest antennas are actually there -- just
+	 * need to make the array big enough
+	 */
 	dest->nAntenna = src->nAntenna;
 	if(antennaIdRemap)
 	{

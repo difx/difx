@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -210,9 +210,11 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		fprintDifxPulsar(fp, D->pulsar + i);
 	}
 
+	/*
 	fprintf(fp, "  nFlags = %d\n", D->nFlag);
 	fprintDifxAntennaFlagArray(fp, D->flag, D->nFlag);
-	
+	 */
+
 	fprintf(fp, "\n");
 }
 
@@ -3284,9 +3286,11 @@ static int AntennaCompare(const void *a1, const void *a2)
  * damage */ 
 int DifxInputSortAntennas(DifxInput *D, int verbose)
 {
-	int a, d, f;
+	int a, a2, d, f, s;
 	int *old2new;
 	int changed = 0;
+	DifxModel **m2;
+	DifxPolyModel **p2;
 
 	if(!D)
 	{
@@ -3353,6 +3357,56 @@ int DifxInputSortAntennas(DifxInput *D, int verbose)
 	for(f = 0; f < D->nFlag; f++)
 	{
 		D->flag[f].antennaId = old2new[D->flag[f].antennaId];
+	}
+
+	/* 3. The model tables for each scah */
+	for(s = 0; s < D->nScan; s++)
+	{
+		/* correct the tabulated model table */
+		if(D->scan[s].model)
+		{
+			m2 = (DifxModel **)calloc(D->nAntenna, sizeof(DifxModel *));
+
+			for(a = 0; a < D->scan[s].nAntenna; a++)
+			{
+				a2 = old2new[a];
+				if(a2 < 0 || a2 >= D->nAntenna)
+				{
+					fprintf(stderr, "Error: DifxInputSortAntennas: "
+						"old2new[%d] = %d; nAnt = %d\n",
+						a, a2, D->scan[s].nAntenna);
+					continue;
+				}
+				m2[a2] = D->scan[s].model[a];
+			}
+
+			free(D->scan[s].model);
+			D->scan[s].model = m2;
+		}
+
+		/* correct the polynomial model table */
+		if(D->scan[s].model)
+		{
+			p2 = (DifxPolyModel **)calloc(D->nAntenna, sizeof(DifxPolyModel *));
+
+			for(a = 0; a < D->scan[s].nAntenna; a++)
+			{
+				a2 = old2new[a];
+				if(a2 < 0 || a2 >= D->nAntenna)
+				{
+					fprintf(stderr, "Error: DifxInputSortAntennas: "
+						"old2new[%d] = %d; nAnt = %d\n",
+						a, a2, D->scan[s].nAntenna);
+					continue;
+				}
+				p2[a2] = D->scan[s].im[a];
+			}
+
+			free(D->scan[s].im);
+			D->scan[s].im = p2;
+		}
+
+		D->scan[s].nAntenna = D->nAntenna;
 	}
 
 	free(old2new);

@@ -3,6 +3,8 @@
 * Implement profile mode (with mode=profile at the global level)
 * Add writeDifxLineBoolean and use it for writing TRUE/FALSE values
 * Forward port the file-based correlation properties
+* Infrastructure for writing for file-based correlation
+* When sorting antennas, update the scan table (nAntenna, im and model)
 
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()

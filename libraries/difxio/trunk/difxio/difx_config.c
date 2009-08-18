@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008, 2009 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -135,6 +135,7 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 {
 	int i;
 	int nAnt;
+	char p0, p1;
 
 	fprintf(fp, "  Difx Config [%s] : %p\n", dc->name, dc);
 	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
@@ -142,8 +143,9 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 	fprintf(fp, "    postFFringe = %d\n", dc->postFFringe);
 	fprintf(fp, "    quadDelayInterp = %d\n", dc->quadDelayInterp);
 	fprintf(fp, "    pulsarId = %d\n", dc->pulsarId);
-	fprintf(fp, "    polarization [%d] = %c%c\n", 
-		dc->nPol, dc->pol[0], dc->pol[1]);
+	p0 = dc->pol[0] ? dc->pol[0] : ' ';
+	p1 = dc->pol[1] ? dc->pol[1] : ' ';
+	fprintf(fp, "    polarization [%d] = %c%c\n", dc->nPol, p0, p1);
 	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
 	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
 	fprintf(fp, "    datastream ids [%d] =", dc->nDatastream);
