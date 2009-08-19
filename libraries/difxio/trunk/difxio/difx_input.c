@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -3161,12 +3161,11 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 }
 
 /* return -1 if no suitable scan found */
-/* FIXME -- this function is ill-posed */
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId)
 {
-	int d, c, scanId, dsId, antId=0;
-	const DifxConfig *config;
+	int scanId;
+	int hasModel;
 
 	if(!D)
 	{
@@ -3175,43 +3174,34 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 
 	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
-		c = D->scan[scanId].configId;
-		if(c < 0 || c >= D->nConfig)
+		/* see if this scan contains the antenna.  If so, one of
+		 * the model tables should exist */
+		if(D->scan[scanId].nAntenna <= antennaId)
 		{
 			continue;
 		}
-		config = D->config + c;
-
-		/* here "d" is "datastream # within conf.", not "antenanId" */
-		for(d = 0; d < config->nDatastream; d++)
+		hasModel = 0;
+		if(D->scan[scanId].model)
 		{
-			dsId = config->datastreamId[d];
-			if(dsId < 0 || 
-			   dsId >= D->nDatastream ||
-			   dsId >= config->nDatastream)
+			if(D->scan[scanId].model[antennaId])
 			{
-				continue;
-			}
-			
-			antId = D->datastream[dsId].antennaId;
-			if(antId < 0 || antId >= D->nAntenna)
-			{
-				continue;
-			}
-			
-			if(antennaId == antId)
-			{
-				break;
+				hasModel = 1;
 			}
 		}
-		if(d == config->nDatastream)
+		if(D->scan[scanId].im)
+		{
+			if(D->scan[scanId].im[antennaId])
+			{
+				hasModel = 1;
+			}
+		}
+		if(!hasModel)
 		{
 			continue;
 		}
 		
 		if(mjd <  D->scan[scanId].mjdEnd   &&
-		   mjd >= D->scan[scanId].mjdStart &&
-		   D->scan[scanId].model[antId] != 0)
+		   mjd >= D->scan[scanId].mjdStart)
 		{
 			return scanId;
 		}
