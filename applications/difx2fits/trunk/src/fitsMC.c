@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -172,7 +172,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   for(p = 0; p < np; p++)
 	   {
 	      /* loop over original .input file antenna list */
-	      for(a = 0; a < scan->nAntenna; a++)
+	      for(a = 0; a < config->nAntenna; a++)
 	      {
 	        dsId = config->ant2dsId[a];
 		if(dsId < 0 || dsId >= D->nDatastream)
@@ -190,13 +190,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
-		if(scan->im)  /* use polynomial model */
+		if(scan->im)  /* use polynomial model (preferred) */
 		{
 		  if(scan->im[antId] == 0)
 		  {
 		    if(skip[antId] == 0)
 		    {
-		      printf("\n    Warning : skipping antId %d", antId);
+		      printf("\n    Polynomial model error : skipping antId %d = %s", 
+		        antId, D->antenna[antId].name);
 		      skip[antId]++;
 		      printed++;
 		      skipped++;
@@ -218,13 +219,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		  delay     = -P->delay[0]*1.0e-6 - atmosDelay;
 		  delayRate = -P->delay[1]*1.0e-6 - atmosRate;
 		}
-		else	   /* use tabulated model */
+		else if(scan->model)	   /* use tabulated model */
 		{
 		  if(scan->model[antId] == 0)
 		  {
 		    if(skip[antId] == 0)
 		    {
-		      printf("\n    Warning : skipping antId %d", antId);
+		      printf("\n    Tabulated model error : skipping antId %d = %s", 
+		        antId, D->antenna[antId].name);
 		      skip[antId]++;
 		      printed++;
 		      skipped++;
@@ -245,6 +247,19 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		   * portion of it. */
 		  delay     = -M->t*1.0e-6  - atmosDelay;
 		  delayRate = -M->dt*1.0e-6 - atmosRate;
+		}
+		else
+		{
+		  if(skip[antId] == 0)
+		  {
+		    printf("\n    Model error : no model information for antId %d = %s",
+		      antId, D->antenna[antId].name);
+		    skip[antId]++;
+		    printed++;
+		    skipped++;
+
+		  }
+		  deltat = job->modelInc*p;
 		}
 		
 		clockRate = D->antenna[antId].rate*1.0e-6;
