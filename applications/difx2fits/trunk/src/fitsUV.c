@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+#include <assert.h>
 #include "config.h"
 #include "fitsUV.h"
 #ifdef HAVE_FFTW
@@ -71,7 +72,8 @@ static int DifxVisInitData(DifxVis *dv)
 	dv->record = calloc(n*sizeof(float) + sizeof(struct UVrow), 1);
 	if(dv->record == 0)
 	{
-		return -2;
+		assert(dv->record);
+		exit(0);
 	}
 	dv->weight = dv->record->data;
 	/* FIXME -- here add a similar thing for gateId? */
@@ -89,12 +91,24 @@ static void DifxVisStartGlob(DifxVis *dv)
 
 	globstr = calloc(strlen(dv->D->job[dv->jobId].fileBase)+
 		strlen(suffix)+8, 1);
+	if(globstr == 0)
+	{
+		assert(globstr);
+		exit(0);
+	}
 
 	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].fileBase, suffix);
 
 	glob(globstr, 0, 0, &dv->globbuf);
 	dv->nFile = dv->globbuf.gl_pathc;
 	
+	if(dv->nFile == 0)
+	{
+		fprintf(stderr, "Error: no data files for job %s\n",
+			dv->D->job[dv->jobId].fileBase);
+		exit(0);
+	}
+
 	dv->globbuf.gl_offs = 0;
 
 	free(globstr);
@@ -140,7 +154,8 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 	{
 		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
 			sizeof(DifxVis));
-		return 0;
+		assert(dv);
+		exit(0);
 	}
 
 	if(jobId < 0 || jobId >= D->nJob)
@@ -224,6 +239,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 
 	/* room for input vis record: 3 for real, imag, weight */
 	dv->spectrum = (float *)calloc(3*dv->D->nInChan, sizeof(float));
+	assert(dv->spectrum);
 
 	dv->dp = newDifxParameters();
 
@@ -938,9 +954,11 @@ static int DifxVisConvert(const DifxInput *D,
 	scale = getDifxScaleFactor(D, s, verbose);
 
 	dvs = (DifxVis **)calloc(D->nJob, sizeof(DifxVis *));
+	assert(dvs);
 	for(j = 0; j < D->nJob; j++)
 	{
 		dvs[j] = newDifxVis(D, j);
+		assert(dvs[j]);
 		if(!dvs[j])
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",

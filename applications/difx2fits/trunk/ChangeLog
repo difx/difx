@@ -4,6 +4,7 @@ Version 2.5
 * Sniffer: look for spectral lines
 * Write autocorrs for all pulsar bins
 * Fix indexing by antennas after merging.  Affects: UV, MC, ML tables
+* Check for existance of some data for each job being correlated
 
 Version 2.4
 * Post NRAO-DiFX 1.1 development
