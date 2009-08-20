@@ -2533,7 +2533,9 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 {
 	FILE *in;
 	double mjd1, mjd2;
-	int i, n=0, a, p;
+	int i, j=0, n=0, a, p;
+	char line[1000];
+	int nUndecoded = 0;
 
 	in = fopen(flagfile, "r");
 	if(!in)
@@ -2541,19 +2543,48 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 		return 0;
 	}
 
-	p = fscanf(in, "%d", &n);
+	fgets(line, 999, in);
+	if(feof(in))
+	{
+		fprintf(stderr, "Warning: premature end of file %s\n",
+			flagfile);
+		fclose(in);
+		return 0;
+	}
+	p = sscanf(line, "%d", &n);
 	if(p == 1 && n > 0 && n < 10000)
 	{
 		D->nFlag = n;
 		D->flag = newDifxAntennaFlagArray(D->nFlag);
 		for(i = 0; i < n; i++)
 		{
-			p = fscanf(in, "%lf%lf%d", &mjd1, &mjd2, &a);
+			fgets(line, 999, in);
+			if(feof(in))
+			{
+				fprintf(stderr, "Warning: premature end of file %s\n", 
+					flagfile);
+				D->nFlag = i;
+				break;
+			}
+			line[999] = 0;
+
+			/* Allow read of plain numbers */
+			p = sscanf(line, "%lf%lf%d", &mjd1, &mjd2, &a);
+			if(p != 3)
+			{
+				/* or formatted in one particular way */
+				p = sscanf(line, "  mjd(%lf,%lf)%d", &mjd1, &mjd2, &a);
+			}
 			if(p == 3)
 			{
-				D->flag[i].mjd1  = mjd1;
-				D->flag[i].mjd2  = mjd2;
-				D->flag[i].antennaId = a;
+				D->flag[j].mjd1  = mjd1;
+				D->flag[j].mjd2  = mjd2;
+				D->flag[j].antennaId = a;
+				j++;
+			}
+			else
+			{
+				nUndecoded++;
 			}
 		}
 	}
@@ -2563,9 +2594,34 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 			"number of flags : %d\n", n);
 	}
 
+	if(nUndecoded > 0)
+	{
+		fprintf(stderr, "Warning: %d flags from file %s were not properly parsed\n",
+			nUndecoded, flagfile);
+		D->nFlag = j;
+	}
+
 	fclose(in);
 
 	return n;
+}
+
+int isAntennaFlagged(const DifxInput *D, double mjd, int antennaId)
+{
+	int f;
+
+	for(f = 0; f < D->nFlag; f++)
+	{
+		if(D->flag[f].antennaId == antennaId)
+		{
+			if(mjd > D->flag[f].mjd1 && mjd < D->flag[f].mjd2)
+			{
+				return 1;
+			}
+		}
+	}
+
+	return 0;
 }
 
 /* take DifxInput structure and derive the source table.

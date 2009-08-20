@@ -6,6 +6,9 @@
 * Infrastructure for writing for file-based correlation
 * When sorting antennas, update the scan table (nAntenna, im and model)
 * Fix and simplify DifxInputGetScanIdByAntennaId
+* Fix for parsing of .flag file.
+* Start some infrastructure for supporting proper flagging in cases of partially
+  overlapping scans
 
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()
