@@ -510,6 +510,21 @@ void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 	}
 }
 
+bool VexJob::hasScan(const string &scanName) const
+{
+	vector<string>::const_iterator it;
+
+	for(it = scans.begin(); it != scans.end(); it++)
+	{
+		if(*it == scanName)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask) const
 {
 	vector<VexJobFlag> flags;
@@ -533,6 +548,9 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		VexJobFlag::JOB_FLAG_SCAN);
 	vector<double> flagStart(nAnt, mjdStart);
 
+	// Assume all flags from the start.  Then go through each event, adjusting 
+	// current flag state.  At end of loop see if any flag->unflag (or v.-v.)
+	// occurs.
 	for(e = eventList.begin(); e != eventList.end(); e++)
 	{
 		if(e->eventType == VexEvent::RECORD_START)
@@ -545,43 +563,55 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		}
 		else if(e->eventType == VexEvent::SCAN_START)
 		{
-			const VexScan *scan = V.getScan(e->name);
+			if(hasScan(e->scan))
+			{
+				const VexScan *scan = V.getScan(e->scan);
 
-			if(!scan)
-			{
-				cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
-				exit(0);
-			}
-			for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
-			{
-				if(antIds.find(sa->first) == antIds.end())
+				if(!scan)
 				{
-					cerr << "Developer error: generateFlagFile: antenna " << sa->first << " not in antIds" << endl;
+					cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
+					exit(0);
 				}
-				flagMask[antIds[sa->first]] &= ~VexJobFlag::JOB_FLAG_SCAN;
+				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
+				{
+					if(antIds.find(sa->first) == antIds.end())
+					{
+						cerr << "Developer error: generateFlagFile: antenna " << sa->first << " not in antIds" << endl;
+					}
+					flagMask[antIds[sa->first]] &= ~VexJobFlag::JOB_FLAG_SCAN;
+				}
 			}
 		}
 		else if(e->eventType == VexEvent::SCAN_STOP)
 		{
-			const VexScan *scan = V.getScan(e->name);
+			if(hasScan(e->scan))
+			{
+				const VexScan *scan = V.getScan(e->scan);
 
-			if(!scan)
-			{
-				cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
-				exit(0);
-			}
-			for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
-			{
-				flagMask[antIds[sa->first]] |= VexJobFlag::JOB_FLAG_SCAN;
+				if(!scan)
+				{
+					cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
+					exit(0);
+				}
+				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
+				{
+					flagMask[antIds[sa->first]] |= VexJobFlag::JOB_FLAG_SCAN;
+				}
 			}
 		}
 		else if(e->eventType == VexEvent::ANT_SCAN_START)
 		{
-			flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_POINT;
+			if(hasScan(e->scan))
+			{
+				flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_POINT;
+			}
 		}
 		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
 		{
-			flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_POINT;
+			if(hasScan(e->scan))
+			{
+				flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_POINT;
+			}
 		}
 		else if(e->eventType == VexEvent::JOB_START)
 		{
@@ -595,7 +625,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		}
 		else if(e->eventType == VexEvent::JOB_STOP)
 		{
-			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
+			if(fabs(e->mjd - mjdStop) < 0.5/86400.0)
 			{
 				for(int antId = 0; antId < nAnt; antId++)
 				{
@@ -612,7 +642,12 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 				{
 					if(e->mjd - flagStart[antId] > 0.5/86400.0)
 					{
-						flags.push_back(VexJobFlag(flagStart[antId], e->mjd, antId));
+						VexJobFlag f(flagStart[antId], e->mjd, antId);
+						// only add flag if it overlaps in time with this job
+						if(overlap(f))
+						{
+							flags.push_back(f);
+						}
 					}
 					flagStart[antId] = -1;
 				}
@@ -634,7 +669,12 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		{
 			if(mjdStop - flagStart[antId] > 0.5/86400.0)
 			{
-				flags.push_back(VexJobFlag(flagStart[antId], mjdStop, antId));
+				VexJobFlag f(flagStart[antId], mjdStop, antId);
+				// only add flag if it overlaps in time with this job
+				if(overlap(f))
+				{
+					flags.push_back(f);
+				}
 			}
 		}
 	}
@@ -1194,7 +1234,7 @@ ostream& operator << (ostream& os, const VexJobFlag& x)
 
 	os.precision(12);
 
-	os << (const VexInterval&)x << " " << x.antId;
+	os << x.mjdStart << " " << x.mjdStop << " " << x.antId;
 
 	os.precision(p);
 

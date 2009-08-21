@@ -192,6 +192,8 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 			fvex_double(&(p->z->value), &(p->z->units), &A->dz);
 
 			// Correct for various definitions of year: yr_vex = 365.2524  yr_goddard=365.25
+			// Note that 365.25 is the IAU convention for year length.
+
 			A->dx *= (365.25/365.2425);
 			A->dy *= (365.25/365.2425);
 			A->dz *= (365.25/365.2425);
@@ -329,6 +331,71 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
+static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, double> &antStop, int minSubarraySize)
+{
+	list<double> start;
+	list<double> stop;
+	map<string, double>::iterator it;
+	double mjdStart, mjdStop;
+
+	if(antStart.size() != antStop.size())
+	{
+		cerr << "Developer error: adjustTimeRange: size mismatch" << endl;
+		exit(0);
+	}
+
+	if(antStart.size() < minSubarraySize)
+	{
+		// Return an acausal interval
+		return VexInterval(1, 0);
+	}
+
+	for(it = antStart.begin(); it != antStart.end(); it++)
+	{
+		start.push_back(it->second);
+	}
+	start.sort();
+	// Now the start times are sorted chronologically
+
+	for(it = antStop.begin(); it != antStop.end(); it++)
+	{
+		stop.push_back(it->second);
+	}
+	stop.sort();
+	// Now stop times are sorted chronologically
+
+	// Pick off times where min subarray condition is met
+	// If these are in the wrong order (i.e., no such interval exists)
+	// Then these will form an acausal interval which will be caught by
+	// the caller.
+	for(int i = 0; i < minSubarraySize-1; i++)
+	{
+		start.pop_front();
+		stop.pop_back();
+	}
+	mjdStart = start.front();
+	mjdStop = stop.back();
+
+	// Adjust start times where needed
+	for(it = antStart.begin(); it != antStart.end(); it++)
+	{
+		if(it->second < mjdStart)
+		{
+			it->second = mjdStart;
+		}
+	}
+
+	for(it = antStop.begin(); it != antStop.end(); it++)
+	{
+		if(it->second > mjdStop)
+		{
+			it->second = mjdStop;
+		}
+	}
+
+	return VexInterval(mjdStart, mjdStop);
+}
+
 int getScans(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexScan *S;
@@ -397,6 +464,16 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 			continue;
 		}
 
+		// Adjust start and stop times so that the minimum subarray size is
+		// always honored.  The return value becomes
+		VexInterval timeRange = adjustTimeRange(antStart, antStop, params.minSubarraySize);
+
+		// If the min subarray condition never occurs, then skip the scan
+		if(!timeRange.isCausal())
+		{
+			continue;
+		}
+
 		string scanName(scanId);
 		string sourceName((char *)get_scan_source(L));
 		string modeName((char *)get_scan_mode(L));
@@ -438,7 +515,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 
 		// Make scan
 		S = V->newScan();
-		S->setTimeRange(startScan, stopScan);
+		S->setTimeRange(timeRange);
 		S->name = scanName;
 		S->stations = stations;
 		S->modeName = modeName;
@@ -446,8 +523,8 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->corrSetupName = corrSetupName;
 
 		// Add to event list
-		V->addEvent(startScan, VexEvent::SCAN_START, scanId, scanId);
-		V->addEvent(stopScan,  VexEvent::SCAN_STOP,  scanId, scanId);
+		V->addEvent(S->mjdStart, VexEvent::SCAN_START, scanId, scanId);
+		V->addEvent(S->mjdStop,  VexEvent::SCAN_STOP,  scanId, scanId);
 		for(it = antStart.begin(); it != antStart.end(); it++)
 		{
 			V->addEvent(max(it->second, startScan), VexEvent::ANT_SCAN_START, it->first, scanId);

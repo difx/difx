@@ -252,6 +252,7 @@ public:
 
 	void assignVSNs(const VexData& V);
 	string getVSN(const string &antName) const;
+	bool hasScan(const string &scanName) const;
 	int generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	// return the approximate number of Operations required to compute this scan
@@ -266,7 +267,7 @@ public:
 	double dataSize;		// [bytes] estimate of data output size
 };
 
-class VexJobFlag
+class VexJobFlag : public VexInterval
 {
 public:
 	static const unsigned int JOB_FLAG_RECORD = 1 << 0;
@@ -274,9 +275,8 @@ public:
 	static const unsigned int JOB_FLAG_TIME   = 1 << 2;
 	static const unsigned int JOB_FLAG_SCAN   = 1 << 3;
 	VexJobFlag() {}
-	VexJobFlag(double start, double stop, int ant) : timeRange(start, stop), antId(ant) {}
+	VexJobFlag(double start, double stop, int ant) : VexInterval(start, stop), antId(ant) {}
 
-	VexInterval timeRange;
 	int antId;
 };
 
