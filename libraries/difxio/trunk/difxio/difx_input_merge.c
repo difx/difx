@@ -168,7 +168,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 
 	/* merge DifxJob table */
 	D->job = mergeDifxJobArrays(D1->job, D1->nJob, D2->job, D2->nJob,
-		jobIdRemap, &(D->nJob));
+		jobIdRemap, antennaIdRemap, &(D->nJob));
 
 	/* merge DifxFreq table */
 	D->freq = mergeDifxFreqArrays(D1->freq, D1->nFreq,
@@ -207,10 +207,6 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	D->spacecraft = mergeDifxSpacecraft(D1->spacecraft, D1->nSpacecraft,
 		D2->spacecraft, D2->nSpacecraft,
 		spacecraftIdRemap, &(D->nSpacecraft));
-
-	/* merge DifxAntennaFlag table */
-	D->flag = mergeDifxAntennaFlagArrays(D1->flag, D1->nFlag,
-		D2->flag, D2->nFlag, antennaIdRemap, &(D->nFlag));
 
 	/* print remappings */
 	if(verbose > 1)

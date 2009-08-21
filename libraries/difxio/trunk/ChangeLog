@@ -1,3 +1,7 @@
+2.12
+* Move flags to DifxJob so combinig multiple subarrays results in accurate
+  application of flags.  NOTE: This breaks the API
+
 2.11
 * Post DiFX-1.5
 * Implement profile mode (with mode=profile at the global level)
