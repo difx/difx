@@ -48,6 +48,9 @@
 #define POL_ID_ERROR		-7
 #define NFLOAT_ERROR		-8
 
+int **jobMatrix;
+double nSec = 20.0; 
+
 static int DifxVisInitData(DifxVis *dv)
 {
 	int n;
@@ -744,7 +747,6 @@ static int RecordIsInvalid(const DifxVis *dv)
 static int RecordIsZero(const DifxVis *dv)
 {
 	int i, n;
-	int invalid=1;
 	const float *d;
 
 	d = dv->data;
@@ -755,11 +757,12 @@ static int RecordIsZero(const DifxVis *dv)
 		/* don't look at weight in deciding whether data is valid */
 		if((d[i] != 0.0) && (i % dv->nComplex != 2))
 		{
-			invalid = 0;
+			return 0;
 		}
 	}
 	
-	return invalid;
+	// haven't found a non-zero value :(
+	return 1;
 }
 
 static int RecordIsTransitioning(const DifxVis *dv)
@@ -769,26 +772,29 @@ static int RecordIsTransitioning(const DifxVis *dv)
 
 static int RecordIsFlagged(const DifxVis *dv)
 {
+	DifxJob *job;
 	double mjd;
 	int a1, a2;
 	int i;
 
-	if(dv->D->nFlag <= 0)
+	job = dv->D->job + dv->jobId;
+
+	if(job->nFlag <= 0)
 	{
 		return 0;
 	}
 
+	mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
 	a1  = (dv->record->baseline/256) - 1;
 	a2  = (dv->record->baseline%256) - 1;
-	mjd = dv->mjd;
 
-	for(i = 0; i < dv->D->nFlag; i++)
+	for(i = 0; i < job->nFlag; i++)
 	{
-		if(dv->D->flag[i].mjd1 <= mjd &&
-		   dv->D->flag[i].mjd2 >= mjd)
+		if(job->flag[i].mjd1 <= mjd &&
+		   job->flag[i].mjd2 >= mjd)
 		{
-			if(dv->D->flag[i].antennaId == a1 ||
-			   dv->D->flag[i].antennaId == a2)
+			if(job->flag[i].antennaId == a1 ||
+			   job->flag[i].antennaId == a2)
 			{
 				return 1;
 			}
@@ -1090,6 +1096,7 @@ static int DifxVisConvert(const DifxInput *D,
 
 		/* dv now points to earliest data. */
 
+		
 		if(RecordIsInvalid(dv))
 		{
 			nInvalid++;
@@ -1111,12 +1118,21 @@ static int DifxVisConvert(const DifxInput *D,
 #ifdef HAVE_FFTW
 			feedSnifferFITS(S, dv->record);
 #endif
+			if(dv->record->baseline % 257 == 0)
+			{
+				int a1, a2;
+				int t;
+				double mjd;
+				a1 = dv->record->baseline/256 - 1;
+				a2 = dv->record->baseline%256 - 1;
+				mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
+				t = (mjd - D->mjdStart)*86400.0/nSec;
+				jobMatrix[t][a1] = dv->jobId;
+			}
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, 
 				dv->record);
 #endif
-
-//			printf("Record out: %f %d\n", dv->mjd, dv->pulsarBin);
 
 			fitsWriteBinRow(out, (char *)dv->record);
 			nWritten++;
@@ -1170,12 +1186,76 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fitsPrivate *out, double scale,
 	int verbose, double sniffTime, int pulsarBin)
 {
+	int na, nt;
+	int a, t, j;
+	FILE *o;
+	int *jobList;
+
+	jobList = (int *)calloc(D->nJob, sizeof(int));
+
 	if(D == 0)
 	{
 		return 0;
 	}
 
+	na = D->nAntenna;
+	nt = (D->mjdStop - D->mjdStart)*86400.0/nSec + 1; 
+
+	jobMatrix = (int **)calloc(nt, sizeof(int *));
+	for(t = 0; t < nt; t++)
+	{
+		jobMatrix[t] = (int *)calloc(na, sizeof(int));
+		for(a = 0; a < na; a++)
+		{
+			jobMatrix[t][a] = -1;
+		}
+	}
+
 	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime, pulsarBin);
+
+	o = fopen("jobMatrix.out", "w");
+
+	for(a = 0; a < na; a++)
+	{
+		fprintf(o, "%c ", D->antenna[a].name[0]);
+	}
+	fprintf(o, "\n");
+	for(a = 0; a < na; a++)
+	{
+		fprintf(o, "%c ", D->antenna[a].name[1]);
+	}
+	fprintf(o, "\n\n");
+
+	j = 0;
+
+	for(t = 0; t < nt; t++)
+	{
+		for(a = 0; a < na; a++)
+		{
+			if(jobMatrix[t][a] < 0)
+			{
+				fprintf(o, "  ");
+			}
+			else
+			{
+				jobList[jobMatrix[t][a]] = 1;
+				fprintf(o, "%c ", 'A'+(jobMatrix[t][a] % 26));
+			}
+		}
+		fprintf(o, "   %14.8f", D->mjdStart+t*nSec/86400.0);
+
+		if(j < D->nJob && jobList[j])
+		{
+			fprintf(o, "   %c = %s", 'A'+(j%26), D->job[j].fileBase);
+			j++;
+		}
+
+		fprintf(o, "\n");
+	}
+
+	fprintf(o, "\n\nOne line is %f seconds\n", nSec);
+
+	fclose(o);
 
 	return D;
 }

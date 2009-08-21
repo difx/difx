@@ -1,3 +1,8 @@
+Version 2.6
+* Apply flags properly, even in cases with crazy subarraying
+* Require difxio 2.12
+* Write file that summarizes jobs that went into FITS
+
 Version 2.5
 * Require difxio 2.11
 * Post DiFX-1.5

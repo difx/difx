@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -202,8 +202,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			scan = D->scan + scanId;
 
 			sourceId = scan->sourceId;
-			if(sourceId < 0 || mjd < D->mjdStart || 
-				mjd > D->mjdStop)
+			if(sourceId < 0)
 			{
 				continue;
 			}
