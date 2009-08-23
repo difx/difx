@@ -27,24 +27,23 @@
  *
  *==========================================================================*/
 
+#ifndef __JOBMATRIX_H__
+#define __JOBMATRIX_H__
 
-#ifndef __SNIFFER_H__
-#define __SNIFFER_H__
-
-#include <stdio.h>
-#include <complex.h>
-#include <fftw3.h>
+#include "difxio/difx_input.h"
 #include "fitsUV.h"
 
-struct _Sniffer;
+struct _JobMatrix;
 
-typedef struct _Sniffer Sniffer;
+typedef struct _JobMatrix JobMatrix;
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, 
-	const char *filebase, double solint);
+JobMatrix *newJobMatrix(const DifxInput *D, const char *filebase, 
+	double deltaT);
 
-void deleteSniffer(Sniffer *S);
+void writeJobMatrix(JobMatrix *jm);
 
-int feedSnifferFITS(Sniffer *S, const struct UVrow *data);
+void deleteJobMatrix(JobMatrix *jm);
+
+int feedJobMatrix(JobMatrix *jm, const struct UVrow *data, int jobId);
 
 #endif

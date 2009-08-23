@@ -35,6 +35,7 @@
 #include <assert.h>
 #include "config.h"
 #include "fitsUV.h"
+#include "jobmatrix.h"
 #ifdef HAVE_FFTW
 #include "sniffer.h"
 #endif
@@ -47,9 +48,6 @@
 #define BAND_ID_ERROR		-6
 #define POL_ID_ERROR		-7
 #define NFLOAT_ERROR		-8
-
-int **jobMatrix;
-double nSec = 20.0; 
 
 static int DifxVisInitData(DifxVis *dv)
 {
@@ -933,6 +931,7 @@ static int DifxVisConvert(const DifxInput *D,
 	double scale;
 	DifxVis **dvs;
 	DifxVis *dv;
+	JobMatrix *jobMatrix = 0;
 #ifdef HAVE_FFTW
 	Sniffer *S = 0;
 #endif
@@ -969,9 +968,6 @@ static int DifxVisConvert(const DifxInput *D,
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
 				j, D->nJob);
-#ifdef HAVE_FFTW
-			deleteSniffer(S);
-#endif
 			return 0;
 		}
 		dvs[j]->scale = scale;
@@ -999,6 +995,9 @@ static int DifxVisConvert(const DifxInput *D,
 		S = newSniffer(D, dv->nComplex, fileBase, sniffTime);
 #endif
 	}
+
+	/* Start up jobmatrix */
+	jobMatrix = newJobMatrix(D, fileBase, 20.0);
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -1120,14 +1119,7 @@ static int DifxVisConvert(const DifxInput *D,
 #endif
 			if(dv->record->baseline % 257 == 0)
 			{
-				int a1, a2;
-				int t;
-				double mjd;
-				a1 = dv->record->baseline/256 - 1;
-				a2 = dv->record->baseline%256 - 1;
-				mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
-				t = (mjd - D->mjdStart)*86400.0/nSec;
-				jobMatrix[t][a1] = dv->jobId;
+				feedJobMatrix(jobMatrix, dv->record, dv->jobId);
 			}
 #ifndef WORDS_BIGENDIAN
 			FitsBinRowByteSwap(columns, nColumn, 
@@ -1177,6 +1169,11 @@ static int DifxVisConvert(const DifxInput *D,
 #ifdef HAVE_FFTW
 	deleteSniffer(S);
 #endif
+	if(jobMatrix)
+	{
+		writeJobMatrix(jobMatrix);
+		deleteJobMatrix(jobMatrix);
+	}
 
 	return 0;
 }
@@ -1186,76 +1183,12 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fitsPrivate *out, double scale,
 	int verbose, double sniffTime, int pulsarBin)
 {
-	int na, nt;
-	int a, t, j;
-	FILE *o;
-	int *jobList;
-
-	jobList = (int *)calloc(D->nJob, sizeof(int));
-
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	na = D->nAntenna;
-	nt = (D->mjdStop - D->mjdStart)*86400.0/nSec + 1; 
-
-	jobMatrix = (int **)calloc(nt, sizeof(int *));
-	for(t = 0; t < nt; t++)
-	{
-		jobMatrix[t] = (int *)calloc(na, sizeof(int));
-		for(a = 0; a < na; a++)
-		{
-			jobMatrix[t][a] = -1;
-		}
-	}
-
 	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime, pulsarBin);
-
-	o = fopen("jobMatrix.out", "w");
-
-	for(a = 0; a < na; a++)
-	{
-		fprintf(o, "%c ", D->antenna[a].name[0]);
-	}
-	fprintf(o, "\n");
-	for(a = 0; a < na; a++)
-	{
-		fprintf(o, "%c ", D->antenna[a].name[1]);
-	}
-	fprintf(o, "\n\n");
-
-	j = 0;
-
-	for(t = 0; t < nt; t++)
-	{
-		for(a = 0; a < na; a++)
-		{
-			if(jobMatrix[t][a] < 0)
-			{
-				fprintf(o, "  ");
-			}
-			else
-			{
-				jobList[jobMatrix[t][a]] = 1;
-				fprintf(o, "%c ", 'A'+(jobMatrix[t][a] % 26));
-			}
-		}
-		fprintf(o, "   %14.8f", D->mjdStart+t*nSec/86400.0);
-
-		if(j < D->nJob && jobList[j])
-		{
-			fprintf(o, "   %c = %s", 'A'+(j%26), D->job[j].fileBase);
-			j++;
-		}
-
-		fprintf(o, "\n");
-	}
-
-	fprintf(o, "\n\nOne line is %f seconds\n", nSec);
-
-	fclose(o);
 
 	return D;
 }
