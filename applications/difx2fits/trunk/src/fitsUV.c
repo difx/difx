@@ -909,7 +909,7 @@ static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin)
 
 static int DifxVisConvert(const DifxInput *D, 
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	double s, int verbose, double sniffTime, int pulsarBin)
+	struct CommandLineOptions *opts)
 {
 	int i, j, l, v;
 	float visScale = 1.0;
@@ -956,7 +956,7 @@ static int DifxVisConvert(const DifxInput *D,
 
 	/* allocate one DifxVis per job */
 
-	scale = getDifxScaleFactor(D, s, verbose);
+	scale = getDifxScaleFactor(D, opts->scale, opts->verbose);
 
 	dvs = (DifxVis **)calloc(D->nJob, sizeof(DifxVis *));
 	assert(dvs);
@@ -979,7 +979,7 @@ static int DifxVisConvert(const DifxInput *D,
 	nWeight = dv->nFreq*D->nPolar;
 
 	/* Start up sniffer */
-	if(sniffTime > 0.0)
+	if(opts->sniffTime > 0.0)
 	{
 		strcpy(fileBase, out->filename);
 		l = strlen(fileBase);
@@ -992,12 +992,15 @@ static int DifxVisConvert(const DifxInput *D,
 			}
 		}
 #ifdef HAVE_FFTW
-		S = newSniffer(D, dv->nComplex, fileBase, sniffTime);
+		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
 #endif
 	}
 
 	/* Start up jobmatrix */
-	jobMatrix = newJobMatrix(D, fileBase, 20.0);
+	if(opts->jobMatrixDeltaT > 0)
+	{
+		jobMatrix = newJobMatrix(D, fileBase, opts->jobMatrixDeltaT);
+	}
 
 	/* set the number of weight and flux values*/
 	sprintf(weightFormFloat, "%dE", nWeight);
@@ -1072,7 +1075,7 @@ static int DifxVisConvert(const DifxInput *D,
 	/* First prime each structure with some data */
 	for(j = 0; j < nJob; j++)
 	{
-		readvisrecord(dvs[j], verbose, pulsarBin);
+		readvisrecord(dvs[j], opts->verbose, opts->pulsarBin);
 	}
 
 	/* Now loop until done, looking at */
@@ -1149,7 +1152,7 @@ static int DifxVisConvert(const DifxInput *D,
 				return -3;
 			}
 
-			readvisrecord(dv, verbose, pulsarBin);
+			readvisrecord(dv, opts->verbose, opts->pulsarBin);
 		}
 	}
 
@@ -1158,7 +1161,7 @@ static int DifxVisConvert(const DifxInput *D,
 	printf("      %d all zero records dropped\n", nZero);
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d records written\n", nWritten);
-	if(verbose > 1)
+	if(opts->verbose > 1)
 	{
 		printf("        Note : 1 record is all data from 1 baseline\n");
 		printf("        for 1 timestamp\n");
@@ -1180,15 +1183,14 @@ static int DifxVisConvert(const DifxInput *D,
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
-	struct fitsPrivate *out, double scale,
-	int verbose, double sniffTime, int pulsarBin)
+	struct fitsPrivate *out, struct CommandLineOptions *opts)
 {
 	if(D == 0)
 	{
 		return 0;
 	}
 
-	DifxVisConvert(D, p_fits_keys, out, scale, verbose, sniffTime, pulsarBin);
+	DifxVisConvert(D, p_fits_keys, out, opts);
 
 	return D;
 }
