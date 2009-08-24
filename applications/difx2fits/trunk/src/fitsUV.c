@@ -1018,7 +1018,7 @@ static int DifxVisConvert(const DifxInput *D,
 	mjd2fits((int)D->mjdStart, dateStr);
 	fitsWriteString(out, "DATE-OBS", dateStr, "");
 
-	fitsWriteString(out, "EQUINOX", "J2000", "");
+// Soon! fitsWriteString(out, "EQUINOX", "J2000", "");
 	fitsWriteString(out, "WEIGHTYP", "CORRELAT", "");
 
 	fitsWriteString(out, "TELESCOP", "VLBA", "");
