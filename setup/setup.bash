@@ -50,7 +50,7 @@ then
         eval $Path=$NewItem\:$CurPath
     fi
 else
-    eval $Path=$NewItem
+    eval export $Path=$NewItem
 fi
 }
 
