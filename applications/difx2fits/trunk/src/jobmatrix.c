@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -90,7 +90,7 @@ void writeJobMatrix(JobMatrix *jm)
 	nJob = jm->D->nJob;
 	jobList = (int *)calloc(nJob, sizeof(int));
 	
-	sprintf(outname, "%s.jobMatrix", jm->filebase);
+	sprintf(outname, "%s.jobmatrix", jm->filebase);
 	out = fopen(outname, "w");
 
 	for(a = 0; a < jm->nAntenna; a++)

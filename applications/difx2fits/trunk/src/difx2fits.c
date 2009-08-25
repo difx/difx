@@ -103,6 +103,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --scale <scale>\n");
 	fprintf(stderr, "  -s      <scale>     Scale visibility data "
 		"by <scale>\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --deltat <deltat>\n");
 	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix\n");
 	fprintf(stderr, "\n");
