@@ -43,12 +43,9 @@
 
 const string program("vex2difx");
 const string version("0.3");
-const string verdate("20090627");
+const string verdate("20090825");
 const string author("Walter Brisken");
 
-const double MJD_UNIX0 = 40587.0;	/* MJD at beginning of unix time */
-const double SEC_DAY = 86400.0;
-const double MUSEC_DAY = 86400000000.0;
 
 double current_mjd()
 {
@@ -591,7 +588,18 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	}
 	else if(format.format == string("S2"))
 	{
-		strcpy(D->datastream[dsId].dataFormat, "LBA");
+		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+		cout << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
+	}
+	else if(format.format == string("LBAVSOP"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+	}
+	else if(format.format == string("LBASTD"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "LBASTD");
 		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
 	}
 	else
@@ -1414,6 +1422,11 @@ int main(int argc, char **argv)
 	{
 		return usage(argc, argv);
 	}
+
+	// force program to work in Univeral Time
+	setenv("TZ", "", 1);    
+	tzset();
+
 
 	for(int a = 1; a < argc; a++)
 	{

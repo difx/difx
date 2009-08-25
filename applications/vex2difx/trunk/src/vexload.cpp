@@ -115,7 +115,7 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 
 		return (track-2)/delta;
 	}
-	else if(F.format == "S2")
+	else if(F.format == "S2" || F.format == "LBASTD" || F.format == "LBAVSOP")
 	{
 		return n;
 	}
@@ -225,15 +225,15 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 
-		const VexClock *paramClock = params.getAntennaClock(antName);
-		if(paramClock)
-		{
-			A->clocks.push_back(*paramClock);
-		}
 		const AntennaSetup *antennaSetup = params.getAntennaSetup(antName);
 		if(antennaSetup)
 		{
 			A->basebandFiles = antennaSetup->basebandFiles;
+		}
+		const VexClock *paramClock = params.getAntennaClock(antName);
+		if(paramClock)
+		{
+			A->clocks.push_back(*paramClock);
 		}
 		else if(block)
 		{
@@ -595,6 +595,12 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			antennaSetup = params.getAntennaSetup(antName2);
 			if(antennaSetup)
 			{
+				if(antennaSetup->format.size() > 0)
+				{
+					cout << "Setting antenna format to " << 
+						antennaSetup->format << 
+				        	 " for antenna " << antName << endl;
+				}
 				F.format = antennaSetup->format;
 			}
 
@@ -618,6 +624,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				polarization = value[0];
 				if(swapPol)
 				{
+					cout << "Swapping polarizations on antenna " << antName << endl;
 					polarization = swapPolarization(polarization);
 				}
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
@@ -722,7 +729,10 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
 				string s2mode(value);
-				F.format = "S2";
+				if(F.format == "")
+				{
+					F.format = "S2";
+				}
 
 				f = s2mode.find_last_of("x");
 				g = s2mode.find_last_of("-");

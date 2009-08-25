@@ -40,6 +40,11 @@
 
 using namespace std;
 
+extern const double MJD_UNIX0;	// MJD at beginning of unix time 
+extern const double SEC_DAY;
+extern const double MUSEC_DAY;
+
+
 enum V2D_Mode
 {
 	V2D_MODE_NORMAL = 0,	// for almost all purposes

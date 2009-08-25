@@ -541,6 +541,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		antIds[a->first] = nAnt;
 	}
 
+	// Assume all flags from the start.  
 	vector<unsigned int> flagMask(nAnt, 
 		VexJobFlag::JOB_FLAG_RECORD | 
 		VexJobFlag::JOB_FLAG_POINT | 
@@ -548,9 +549,26 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		VexJobFlag::JOB_FLAG_SCAN);
 	vector<double> flagStart(nAnt, mjdStart);
 
-	// Assume all flags from the start.  Then go through each event, adjusting 
-	// current flag state.  At end of loop see if any flag->unflag (or v.-v.)
-	// occurs.
+	// Except -- if not a Mark5 Module case, don't assume RECORD flag is on
+	for(a = vsns.begin(); a != vsns.end(); a++)
+	{
+		const VexAntenna *ant = V.getAntenna(a->first);
+
+		if(!ant)
+		{
+			cerr << "Developer error: generateFlagFile: antenna " <<
+				a->first << " not found in antenna table." << endl;
+			exit(0);
+		}
+
+		if(ant->basebandFiles.size() > 0)
+		{
+			// Aha -- not module based so unflag JOB_FLAG_RECORD
+			flagMask[antIds[a->first]] &= ~VexJobFlag::JOB_FLAG_RECORD;
+		}
+	}
+
+	// Then go through each event, adjusting current flag state.  
 	for(e = eventList.begin(); e != eventList.end(); e++)
 	{
 		if(e->eventType == VexEvent::RECORD_START)
@@ -662,7 +680,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		}
 	}
 
-	// add final flags if needed (probably not!)
+	// At end of loop see if any flag->unflag (or vice-versa) occurs.
 	for(int antId = 0; antId < nAnt; antId++)
 	{
 		if( (flagMask[antId] & invalidMask) != 0)
