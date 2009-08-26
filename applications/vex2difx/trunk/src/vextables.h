@@ -36,6 +36,8 @@
 #include <iostream>
 #include <map>
 
+extern const double RAD2ASEC;
+
 using namespace std;
 
 class VexData;

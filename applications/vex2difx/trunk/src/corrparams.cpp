@@ -1415,7 +1415,12 @@ ostream& operator << (ostream& os, const AntennaSetup& x)
 	{
 		os << "  X=" << x.X <<" Y=" << x.Y << " Z=" << x.Z << endl;
 	}
-	os << "  #FIXME clock=" << endl;
+	if(x.clock.mjdStart > 0.0)
+	{
+		os << "  clockOffset=" << x.clock.offset*1.0e6 << endl;
+		os << "  clockRate=" << x.clock.rate*1.0e6 << endl;
+		os << "  clockEpoch=" << x.clock.offset_epoch << endl;
+	}
 	os << "  polSwap=" << x.polSwap << endl;
 	if(x.format.size() > 0)
 	{
@@ -1512,6 +1517,22 @@ ostream& operator << (ostream& os, const CorrParams& x)
 		{
 			os << endl;
 			os << *it;
+		}
+	}
+
+	if(!x.eops.empty())
+	{
+		os << endl;
+
+		vector<VexEOP>::const_iterator it;
+
+		for(it = x.eops.begin(); it != x.eops.end(); it++)
+		{
+			os << "EOP " << it->mjd << " { ";
+			os << "tai_utc=" << it->tai_utc << " ";
+			os << "ut1_utc=" << it->ut1_utc << " ";
+			os << "xPole=" << it->xPole*RAD2ASEC << " ";
+			os << "yPole=" << it->yPole*RAD2ASEC << " }" << endl;
 		}
 	}
 
