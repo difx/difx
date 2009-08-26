@@ -147,7 +147,7 @@ public:
 	string corrSetupName;	/* pointer to CorrSetup */
 };
 
-class CorrParams
+class CorrParams : public VexInterval
 {
 public:
 	CorrParams();
@@ -174,8 +174,6 @@ public:
 	
 	/* global parameters */
 	string vexFile;
-	double mjdStart;
-	double mjdStop;
 	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;

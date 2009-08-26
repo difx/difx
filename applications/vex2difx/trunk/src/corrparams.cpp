@@ -267,8 +267,8 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 		else if(l == 3)
 		{
 			basebandFiles.push_back(VexBasebandFile(tokens[0],
-				atof(tokens[1].c_str()),
-				atof(tokens[2].c_str()) ));
+				parseTime(tokens[1]),
+				parseTime(tokens[2]) ));
 			n++;
 		}
 		else

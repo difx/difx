@@ -720,7 +720,6 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, co
 	string id("");
 
 	// note these are backwards now -- will set these to minimum range covering scans
-
 	J->setTimeRange(jobTimeRange.mjdStop, jobTimeRange.mjdStart);
 
 	for(e = events.begin(); e != events.end(); e++)
@@ -949,10 +948,10 @@ string VexData::getVSN(const string& antName, const VexInterval& timeRange) cons
 
 	for(v = A->vsns.begin(); v != A->vsns.end(); v++)
 	{
-		double overlap = timeRange.overlap(*v);
-		if(overlap > best)
+		double timeOverlap = timeRange.overlap(*v);
+		if(timeOverlap > best)
 		{
-			best = overlap;
+			best = timeOverlap;
 			bestVSN = v->name;
 		}
 	}

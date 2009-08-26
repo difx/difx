@@ -77,8 +77,6 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
 {
 	list<string> scans;
-	list<string>::iterator it;
-	vector<VexJobGroup>::iterator v;
 	V->getScanList(scans);
 
 	while(!scans.empty())
@@ -92,16 +90,22 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 		const VexScan *scan1 = V->getScan(JG.scans.back());
 		const CorrSetup *corrSetup1 = P->getCorrSetup(scan1->corrSetupName);
 
-		for(it = scans.begin(); it != scans.end();)
+		for(list<string>::iterator it = scans.begin(); it != scans.end();)
 		{
 			const VexScan *scan2 = V->getScan(*it);
 			const CorrSetup *corrSetup2 = P->getCorrSetup(scan2->corrSetupName);
+
+			// Skip any scans that don't overlap with .v2d mjdStart and mjdStop
+			if(P->overlap(*scan2) <= 0.0)
+			{
+				continue;
+			}
 
 			// FIXME -- verify modes are compatible
 			if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) &&
 			   areScansCompatible(scan1, scan2, P))
 			{
-				JG.logicalOr(*scan2);
+				JG.logicalOr(*scan2);	// expand jobGroup time to include this scan
 				JG.scans.push_back(*it);
 				it = scans.erase(it);
 				scan1 = scan2;
@@ -115,9 +119,10 @@ void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *
 	}
 
 	const list<VexEvent> *events = V->getEvents();
-	for(v = JGs.begin(); v != JGs.end(); v++)
+	for(vector<VexJobGroup>::iterator jg = JGs.begin(); jg != JGs.end(); jg++)
 	{
-		v->genEvents(*events);
+		jg->genEvents(*events);
+		jg->logicalAnd(*P);		// possibly shrink job group to requested range
 	}
 }
 
