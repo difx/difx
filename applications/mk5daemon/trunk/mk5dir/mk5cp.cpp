@@ -42,8 +42,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.3";
-const char verdate[] = "20090202";
+const char version[] = "0.4";
+const char verdate[] = "20090826";
 
 int verbose = 0;
 int die = 0;
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 
 	if(strlen(vsn) == 8)
 	{
-		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+		v = getCachedMark5Module(&module, &xlrDevice, mjdnow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status,
 			&replacedFrac);
 		if(replacedFrac > 0.01)
@@ -490,15 +490,24 @@ int main(int argc, char **argv)
 
 	if(mk5status.activeBank == 'A')
 	{
-		usleep(50000);
 		xlrRC = XLRSelectBank(xlrDevice, BANK_A);
-		usleep(50000);
 	}
 	else if(mk5status.activeBank == 'B')
 	{
-		usleep(50000);
 		xlrRC = XLRSelectBank(xlrDevice, BANK_B);
-		usleep(50000);
+	}
+
+	/* Close and Open the XLR device after a bank change -- a workaround to 
+	 * a streamstor bug */
+	XLRClose(xlrDevice);
+	xlrRC = XLROpen(1, &xlrDevice);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		sprintf(message, "Cannot reopen XLR");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
+		return -1;
 	}
 
 	mk5status.state = MARK5_STATE_COPY;

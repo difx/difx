@@ -47,7 +47,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.5";
-const char verdate[] = "20090622";
+const char verdate[] = "20090826";
 
 int verbose = 0;
 int die = 0;
@@ -349,7 +349,7 @@ int main(int argc, char **argv)
 		if(strlen(mk5status.vsnA) == 8)
 		{
 			mk5status.activeBank = 'A';
-			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+			v = getCachedMark5Module(&module, &xlrDevice, mjdnow, 
 				mk5status.vsnA, mk5dirpath, &dirCallback, 
 				&mk5status, &replacedFrac);
 			if(replacedFrac > 0.01)
@@ -390,7 +390,7 @@ int main(int argc, char **argv)
 		if(strlen(mk5status.vsnB) == 8)
 		{
 			mk5status.activeBank = 'B';
-			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+			v = getCachedMark5Module(&module, &xlrDevice, mjdnow, 
 				mk5status.vsnB, mk5dirpath, &dirCallback, 
 				&mk5status, &replacedFrac);
 			if(replacedFrac > 0.01)
@@ -446,7 +446,7 @@ int main(int argc, char **argv)
 				mk5status.activeBank = 'B';
 			}
 
-			v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+			v = getCachedMark5Module(&module, &xlrDevice, mjdnow, 
 				vsn, mk5dirpath, &dirCallback, &mk5status,
 				&replacedFrac);
 			if(replacedFrac > 0.01)

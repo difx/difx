@@ -1,0 +1,350 @@
+#!/usr/bin/env python
+
+
+#**************************************************************************
+#   Copyright (C) 2009 by Walter Brisken                                  *
+#                                                                         *
+#   This program is free software; you can redistribute it and/or modify  *
+#   it under the terms of the GNU General Public License as published by  *
+#   the Free Software Foundation; either version 3 of the License, or     *
+#   (at your option) any later version.                                   *
+#                                                                         *
+#   This program is distributed in the hope that it will be useful,       *
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+#   GNU General Public License for more details.                          *
+#                                                                         *
+#   You should have received a copy of the GNU General Public License     *
+#   along with this program; if not, write to the                         *
+#   Free Software Foundation, Inc.,                                       *
+#   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+#**************************************************************************
+
+#===========================================================================
+# SVN properties (DO NOT CHANGE)
+#
+# $Id:$
+# $HeadURL:$
+# $LastChangedRevision:$
+# $Author:$
+# $LastChangedDate:$
+#
+#============================================================================
+
+
+program = 'checkdir'
+version = '0.1'
+author  = 'Walter Brisken'
+verdate = '20090818'
+
+from sys import exit, argv
+from os.path import isfile, isdir
+from os import getenv
+from string import split, strip, upper
+from glob import glob
+import datetime
+
+dirPath = getenv("MARK5_DIR_PATH")
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def usage(prog):
+	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
+	print 'A program to carefully inspect module directory files for problems.'
+	print '\nUsage: %s [options] [<list of modules>]' % prog
+	print """
+Options can include:
+
+  --verbose
+  -v         Send more output to the screen  (use -v -v for extra info)
+
+  --quiet
+  -q         Be quieter in operation
+
+  --help
+  -h         Print this help information and quit
+
+  --all
+  -a         Run on all directory files
+
+If the "-a" or "--all" switch is not supplied, only those modules listed on
+the command line will be checked.  You cannot use this switch together with a 
+list of modules.
+
+This program looks in the directory defined by environment variable
+MARK5_DIR_PATH .  If this variable is not defined this program will not
+function.
+
+Examples:
+
+  checkdir -a         # check all directories for problems
+  
+  checkdir -a -v -v   # check all directories and show all problems found
+
+  checkdir NRAO-024 NRAO+266   # check these two modules
+
+"""
+	exit(0)
+
+
+def mjd2vex(mjd, dateonly=False):
+	if mjd < 50001 or mjd > 99999:
+		return ''
+	md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	d = int(mjd)
+	s = int((mjd - d)*86400.0 + 0.5)
+	dt = datetime.timedelta(d, s)
+	t = mjd0 + dt
+	d = t.day + md[t.month-1]
+	if t.year % 4 == 0 and t.month > 2:
+		d += 1
+	if dateonly:
+		return '%dy%03dd' % \
+			(t.year, d)
+	else:
+		return '%dy%03dd%02dh%02dm%02ds' % \
+			(t.year, d, t.hour, t.minute, t.second)
+
+class Scan:
+	def __init__(self, text):
+		self.error = None
+		self.startMJD = 0.0
+		self.stopMJD = 0.0
+		self.endBytes = 0
+		s = split(text)
+		if len(s) < 12:
+			self.error = 'Too few columns in directory (%d < 12)' % len(s)
+		else:
+			try:
+				self.startBytes   = int(s[0])
+				self.bytes        = int(s[1])
+				self.startDay     = int(s[2])
+				self.startSec     = int(s[3])
+				self.startFrame   = int(s[4])
+				self.framesPerSec = int(s[5])
+				self.duration     = float(s[6])
+				self.bytesPerFrame= int(s[7])
+				self.byteOffset   = int(s[8])
+				self.nTrack       = int(s[9])
+				self.format       = int(s[10])
+				self.name         = s[11]
+			except ValueError:
+				self.error = 'Conversion error'
+	
+	def checkTime(self):
+		if self.startDay < 51000 or self.startDay > 100000:
+			return "MJD out of range"
+		if self.startSec < 0 or self.startSec >= 86400:
+			return "Seconds out of range"
+		if self.framesPerSec < 1 or self.framesPerSec > 1000000:
+			return "Frames per second out of range"
+		if self.startFrame < 0 or self.startFrame >= self.framesPerSec:
+			return "Start frame out of range"
+		if self.duration < 0.0 or self.duration > 864000.0:
+			return "Duration out of range"
+
+		self.startMJD = self.startDay + (self.startSec + float(self.startFrame)/float(self.framesPerSec))/86400.0
+		self.stopMJD = self.startMJD + self.duration/86400.0
+
+		return None
+
+	def checkFormat(self):
+		if self.format < 0:
+			return "Undecoded scan"
+		elif self.format == 0:
+			if not self.nTrack in [8,16,32,64]:
+				return "VLBA format with illegal number of tracks (%d)" % self.nTrack
+			if not self.bytesPerFrame in [20160, 40320, 80640, 161280]:
+				return "VLBA format with illegal bytes per frame (%d)" % self.bytesPerFrame
+			if not self.framesPerSec in [100, 200, 400]:
+				return "VLBA format with illegal frames per second (%d)" % self.framesPerSec
+		elif self.format == 1:
+			if not self.nTrack in [8,16,32,64]:
+				return "MKIV format with illegal number of tracks (%d)" % self.nTrack
+			if not self.bytesPerFrame in [20000, 40000, 80000, 160000]:
+				return "MKIV format with illegal bytes per frame (%d)" % self.bytesPerFrame
+			if not self.framesPerSec in [100, 200, 400]:
+				return "MKIV format with illegal frames per second (%d)" % self.framesPerSec
+		elif self.format == 2:
+			if not self.bytesPerFrame in [10016]:
+				return "VLBA format with illegal bytes per frame (%d)" % self.bytesPerFrame
+			if not self.framesPerSec in [100,200,400,800,1600,3200,6400,12800,25600]:
+				return "MKIV format with illegal frames per second (%d)" % self.framesPerSec
+
+		else:
+			return "Unknown format (%d)" % self.format
+
+		return None
+
+	def checkBytes(self):
+		self.endBytes = self.startBytes + self.bytes
+		if self.endBytes < self.startBytes:
+			return "startBytes > endBytes"
+		if self.startBytes % 4 != 0:
+			return "startBytes != 4n"
+		if self.endBytes % 4 != 0:
+			return "endBytes != 4n"
+		return None
+
+def checkForOverlap(scans):
+	n = len(scans)
+	if n < 2:
+		return None
+	for i in range(1, n):
+		for j in range(0, i):
+			if min(scans[i].stopMJD, scans[j].stopMJD) > max(scans[i].startMJD, scans[j].startMJD):
+				return 'Scans %d and %d overlap in time' % (j+1, i+1)
+			if min(scans[i].endBytes, scans[j].endBytes) > max(scans[i].startBytes, scans[j].startBytes):
+				return 'Scans %d and %d overlap in bytes' % (j+1, i+1)
+
+	return None
+
+def checkForOrder(scans):
+	n = len(scans)
+	if n < 2:
+		return None
+	for i in range(1, n):
+		if scans[i].startMJD < scans[i-1].startMJD:
+			return 'Scans %d and %d are out of time order' % (i, i+1)
+		if scans[i].startBytes < scans[i-1].startBytes:
+			return 'Scans %d and %d are out of byte order' % (i, i+1)
+
+	return None
+
+def checkFile(module, verbose=1):
+	
+	fn = dirPath + '/' + module + '.dir'
+
+	if not isfile(fn):
+		print '%s : No directory found' % module
+		return 0
+
+	text = open(fn).readlines()
+
+	if len(text) < 1:
+		print '%s : No data in directory file' % module
+		return 0
+
+	header = split(text[0])
+	if len(header) < 4:
+		print '%s : Header malformed' % module
+		return 0
+
+	if header[0] != module:
+		print '%s : Module ID is incorrect (%s)' % (module, header[0])
+		return 0
+
+	try:
+		nScan = int(header[1])
+	except ValueError:
+		print '%s : Header number of scans value is malformed: %s' % (module, header[1])
+		return 0
+	
+	if nScan > len(text) - 1:
+		print '%s : Header number of scans is too large: %d > %d' % (module, nScan, len(text) - 1)
+		return 0
+	
+	scans = []
+	errors = []
+	mjdStart = 1.0e9
+	mjdStop = -1.0e9
+	for t in text[1:]:
+		scan = Scan(t)
+		scans.append(scan)
+		if scan.error == None:
+			scan.error = scan.checkTime()
+		if scan.error == None:
+			scan.error = scan.checkFormat()
+		if scan.error == None:
+			scan.error = scan.checkBytes()
+		if scan.startMJD < mjdStart:
+			mjdStart = scan.startMJD
+		if scan.stopMJD > mjdStop:
+			mjdStop = scan.stopMJD
+
+	for s in range(len(scans)):
+		if scans[s].error != None:
+			errors.append('Scan %d : %s' % (s+1, scans[s].error))
+	
+	if len(errors) > 0:
+		if verbose > 1:
+			print '%s : Module has errors' % module
+			for e in errors:
+				print '  %s' % e
+		else:
+			print '%s : %d / %d scans have errors' % (module, len(errors), len(scans))
+		return 0
+
+	err = checkForOverlap(scans)
+	if err == None:
+		err = checkForOrder(scans)
+	if err != None:
+		print '%s : %s' % (module, err)
+		return 0
+
+	if verbose > 0:
+		print '%s : %4d scans  %s to %s' % (module, nScan, mjd2vex(mjdStart), mjd2vex(mjdStop))
+
+	return 0
+
+
+# main
+
+if dirPath == None:
+	print 'Error: env. var. MARK5_DIR_PATH not defined.'
+	exit(0)
+
+if not isdir(dirPath):
+	print 'Error: env. var. MARK5_DIR_PATH does not point to a directory.'
+	exit(0)
+
+modules = []
+verbose = 1
+doAll = False
+
+if len(argv) == 1:
+	print 'Use -h option for help'
+	exit(0)
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose -= 1
+		elif a in ['-a', '--all']:
+			doAll = True
+			verbose -= 1
+		elif a in ['-h', '--help']:
+			usage(argv[0])
+		else:
+			print 'Unknown command line parameter : ', a
+			exit(0)
+	else:
+		modules.append(upper(a[:8]))
+
+
+if doAll:
+	if len(modules) > 0:
+		print 'The doAll flag and individual modules were selected.'
+		print 'Only one can be set at a time.'
+	files = glob(dirPath+'/????????.dir')
+	if len(files) == 0:
+		print 'No module directories found in %s' % dirPath
+		exit(0)
+	for f in files:
+		g = split(f, '/')[-1]
+		if len(g) == 12 and g[-4:] == '.dir':
+			modules.append(g[:8])
+		if len(modules) == 0:
+			print 'No module directories found in %s' % dirPath
+			exit(0)
+
+modules.sort()
+
+lastm = ''
+
+for m in modules:
+	if m != lastm:
+		checkFile(m, verbose)
+		lastm = m

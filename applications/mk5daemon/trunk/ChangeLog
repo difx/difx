@@ -64,3 +64,5 @@ Version 1.1
 * Option to have difxqueue run every 15 minutes
 * mk5dir option to run in real-time mode
 * restartCalcServer command accepted
+* XLRClose / XLROpen after XLRSelectBank to prevent read errors
+* add checkdir

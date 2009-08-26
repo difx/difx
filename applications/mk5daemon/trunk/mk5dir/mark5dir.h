@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -86,12 +86,12 @@ enum Mark5DirStatus
 extern char Mark5DirDescription[][20];
 
 /* returns active bank: 0 or 1 for bank A or B, or -1 if none */
-int Mark5BankGet(SSHANDLE xlrDevice);
+int Mark5BankGet(SSHANDLE *xlrDevice);
 
 /* returns 0 or 1 for bank A or B, or < 0 if module not found */
-int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
+int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn);
 
-int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
+int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int mjdref,
 	int (*callback)(int, int, int, void *), void *data);
 
 void printMark5Module(const struct Mark5Module *module);
@@ -102,7 +102,7 @@ int saveMark5Module(struct Mark5Module *module, const char *filename);
 
 int sanityCheckModule(const struct Mark5Module *module);
 
-int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
+int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
 	float *replacedFrac);
