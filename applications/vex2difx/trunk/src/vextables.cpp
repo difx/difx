@@ -28,10 +28,13 @@
  *==========================================================================*/
 
 #include <fstream>
+#include <sstream>
 #include <iostream>
 #include <algorithm>
 #include <cmath>
 #include "vextables.h"
+
+const double RAD2ASEC=180.0*3600.0/M_PI;
 
 using namespace std;
 
@@ -818,6 +821,36 @@ void VexData::getScanList(list<string> &scanList) const
 	}
 }
 
+void VexEOP::setkv(const string &key, const string &value)
+{
+	stringstream ss;
+
+	ss << value;
+
+	if(key == "tai_utc")
+	{
+		ss >> tai_utc;
+	}
+	else if(key == "ut1_utc")
+	{
+		ss >> ut1_utc;
+	}
+	else if(key == "xPole")
+	{
+		ss >> xPole;
+		xPole /= RAD2ASEC;
+	}
+	else if(key == "yPole")
+	{
+		ss >> yPole;
+		yPole /= RAD2ASEC;
+	}
+	else
+	{
+		cerr << "Warning: EOP: Unknown parameter '" << key << "'." << endl;
+	}
+}
+
 VexAntenna *VexData::newAntenna()
 {
 	antennas.push_back(VexAntenna());
@@ -1176,7 +1209,7 @@ ostream& operator << (ostream& os, const VexMode& x)
 
 ostream& operator << (ostream& os, const VexEOP& x)
 {
-	os << "EOP(" << x.mjd << ", " << x.tai_utc << ", " << x.ut1_utc << ", " << x.xPole << ", " << x.yPole << ")";
+	os << "EOP(" << x.mjd << ", " << x.tai_utc << ", " << x.ut1_utc << ", " << (x.xPole*RAD2ASEC) << ", " << (x.yPole*RAD2ASEC) << ")";
 
 	return os;
 }

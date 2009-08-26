@@ -838,16 +838,18 @@ void CorrParams::load(const string& fileName)
 		PARSE_MODE_SETUP,
 		PARSE_MODE_RULE,
 		PARSE_MODE_SOURCE,
-		PARSE_MODE_ANTENNA
+		PARSE_MODE_ANTENNA,
+		PARSE_MODE_EOP
 	};
 
 	ifstream is;
 	vector<string> tokens;
 	char s[1024];
-	CorrSetup   *corrSetup=0;
-	CorrRule    *rule=0;
-	SourceSetup *sourceSetup=0;
+	CorrSetup    *corrSetup=0;
+	CorrRule     *rule=0;
+	SourceSetup  *sourceSetup=0;
 	AntennaSetup *antennaSetup=0;
+	VexEOP       *eop=0;
 	Parse_Mode parseMode = PARSE_MODE_GLOBAL;
 
 	is.open(fileName.c_str());
@@ -984,6 +986,27 @@ void CorrParams::load(const string& fileName)
 			key = "";
 			parseMode = PARSE_MODE_ANTENNA;
 		}
+		else if(*i == "EOP")
+		{
+			if(parseMode != PARSE_MODE_GLOBAL)
+			{
+				cerr << "Error: ANTENNA out of place." << endl;
+				exit(0);
+			}
+			i++;
+			string eopDate(*i);
+			eops.push_back(VexEOP());
+			eop = &eops.back();
+			eop->mjd = parseTime(eopDate);
+			i++;
+			if(*i != "{")
+			{
+				cerr << "Error: '{' expected." << endl;
+				exit(0);
+			}
+			key = "";
+			parseMode = PARSE_MODE_EOP;
+		}
 		else if(*i == "}" && parseMode != PARSE_MODE_GLOBAL)
 		{
 			parseMode = PARSE_MODE_GLOBAL;
@@ -1021,6 +1044,9 @@ void CorrParams::load(const string& fileName)
 				break;
 			case PARSE_MODE_ANTENNA:
 				antennaSetup->setkv(key, value);
+				break;
+			case PARSE_MODE_EOP:
+				eop->setkv(key, value);
 				break;
 			}
 		}

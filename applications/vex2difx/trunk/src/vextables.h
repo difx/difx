@@ -235,6 +235,8 @@ public:
 	double tai_utc;		// seconds
 	double ut1_utc;		// seconds
 	double xPole, yPole;	// radian
+
+	void setkv(const string &key, const string &value);
 };
 
 class VexExper : public VexInterval

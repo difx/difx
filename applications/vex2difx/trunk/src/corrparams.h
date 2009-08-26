@@ -205,6 +205,9 @@ public:
 	/* source setups to apply */
 	vector<SourceSetup> sourceSetups;
 
+	/* manually provided EOPs */
+	vector<VexEOP> eops;
+
 	/* antenna setups to apply */
 	vector<AntennaSetup> antennaSetups;
 

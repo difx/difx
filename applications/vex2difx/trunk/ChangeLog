@@ -18,8 +18,9 @@ Version 0.3
 * (Adam) Initialize some ANTENNA block variables
 * (Adam) Clean up LBA format
 * Support a wider range of time formats in the .v2d file
-* make .v2d parameters "mjdStart" and "mjdStop" operate at specified times, not 
+* Make .v2d parameters "mjdStart" and "mjdStop" operate at specified times, not 
   at scan boundaries
+* EOP table support from within .v2d file
 
 Version 0.2
 ~~~~~~~~~~~
