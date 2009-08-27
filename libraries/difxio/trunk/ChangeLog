@@ -1,6 +1,7 @@
 2.12
 * Move flags to DifxJob so combinig multiple subarrays results in accurate
   application of flags.  NOTE: This breaks the API
+* Load > 1 pulsar polynomial from a file
 
 2.11
 * Post DiFX-1.5

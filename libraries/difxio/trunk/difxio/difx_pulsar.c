@@ -95,7 +95,7 @@ void fprintDifxPulsar(FILE *fp, const DifxPulsar *dp)
 		fprintf(fp, "    Number of bins = %d\n", dp->nBin);
 		fprintf(fp, "    Scrunch = %d\n", dp->scrunch);
 		fprintf(fp, "    Number of polycos : %d\n", dp->nPolyco);
-		printDifxPolycoArray(dp->polyco, dp->nPolyco);
+		fprintDifxPolycoArray(fp, dp->polyco, dp->nPolyco);
 	}
 }
 

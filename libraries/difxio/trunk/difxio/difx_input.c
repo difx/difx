@@ -693,6 +693,7 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	DifxParameters *pp;
 	DifxPulsar *dp;
 	int i, r;
+	int nPolycoFiles;
 
 	pp = newDifxParametersfromfile(fileName);
 	if(!pp)
@@ -711,12 +712,13 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		fprintf(stderr, "NUM POLYCO FILES not found\n");
 		return -1;
 	}
-	dp->nPolyco = atoi(DifxParametersvalue(pp, r));
-	dp->polyco = newDifxPolycoArray(dp->nPolyco);
+	nPolycoFiles = atoi(DifxParametersvalue(pp, r));
+	dp->nPolyco = 0;
+	dp->polyco = 0;
 
 	strcpy(dp->fileName, fileName);
 
-	for(i = 0; i < dp->nPolyco; i++)
+	for(i = 0; i < nPolycoFiles; i++)
 	{
 		r = DifxParametersfind1(pp, r, "POLYCO FILE %d", i);
 		if(r < 0)
@@ -725,7 +727,7 @@ static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 			fprintf(stderr, "POLYCO FILE %d not found\n", i);
 			return -1;
 		}
-		r = loadPulsarPolycoFile(&dp->polyco[i], 
+		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco,
 			DifxParametersvalue(pp, r));
 		if(r < 0)
 		{
@@ -849,9 +851,10 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		dc->nBaseline    = D->job->activeBaselines;
 
 		/* pulsar stuff */
-		if(strcmp(DifxParametersvalue(ip, rows[5]), "TRUE") == 0)
+		if(strcmp(DifxParametersvalue(ip, rows[10]), "TRUE") == 0)
 		{
-			r = DifxParametersfind(ip, rows[5], 
+			
+			r = DifxParametersfind(ip, rows[10], 
 				"PULSAR CONFIG FILE");
 			if(r <= 0)
 			{

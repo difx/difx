@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -85,8 +85,9 @@ typedef struct
 	char fileName[256];	/* filename containing polyco data */
 	double dm;		/* pc/cm^3 */
 	double refFreq;		/* MHz */
-	double mjd;
-	int nCoef, nBlk;
+	double mjd;		/* center time for first polynomial */
+	int nCoef;		/* number of coefficients per polynomial */
+	int nBlk;		/* number of minutes spanned by each */
 	double p0, f0;
 	double *coef;
 } DifxPolyco;
@@ -441,7 +442,7 @@ void printDifxPolycoArray(const DifxPolyco *dp, int nPolyco);
 void fprintDifxPolycoArray(FILE *fp, const DifxPolyco *dp, int nPolyco);
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
-int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename);
+int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPoly, const char *filename);
 int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco);
 
 /* DifxPulsar functions */

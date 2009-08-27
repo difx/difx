@@ -142,6 +142,7 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 				fprintf(fp, "    No polymodel[0]\n");
 			}
 			fprintf(fp, "    Poly model exists[ant] =");
+			for(a = 0; a < ds->nAntenna; a++)
 			{
 				fprintf(fp, " %c", ds->im[a] ? 'T' : 'F');
 			}

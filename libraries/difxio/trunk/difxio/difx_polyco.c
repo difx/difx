@@ -156,13 +156,12 @@ DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco)
 	return dp;
 }
 
-int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename)
+int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filename)
 {
 	FILE *in;
 	char buffer[160];
 	int r, c, len;
-
-	strcpy(dp->fileName, filename);
+	DifxPolyco *dp;
 	
 	in = fopen(filename, "r");
 	if(!in)
@@ -171,73 +170,91 @@ int loadPulsarPolycoFile(DifxPolyco *dp, const char *filename)
 		return -1;
 	}
 	
-	fgets(buffer, 159, in);
-	if(feof(in))
+	for(;;)
 	{
-		fprintf(stderr, "Early EOF in %s\n", filename);
-		fclose(in);
-		return -1;
-	}
-	r = sscanf(buffer, "%*s%*s%*f%lf%lf", &dp->mjd, &dp->dm);
-	if(r != 2)
-	{
-		fprintf(stderr, "Error parsing [%s] from %s\n",
-			buffer, filename);
-		fclose(in);
-		return -1;
-	}
+		fgets(buffer, 159, in);
+		if(feof(in))
+		{
+			if(*nPolyco < 1)
+			{
+				fprintf(stderr, "Early EOF in %s\n", filename);
+			}
+			fclose(in);
+			return *nPolyco;
+		}
+		
+		/* append another entry onto the dpArray */
+		*dpArray = (DifxPolyco *)realloc(*dpArray, ((*nPolyco)+1)*sizeof(DifxPolyco));
+		dp = (*dpArray) + (*nPolyco);
+		dp->nCoef = 0;
+		dp->coef = 0;
+		strcpy(dp->fileName, filename);
 
-	fgets(buffer, 159, in);
-	if(feof(in))
-	{
-		fprintf(stderr, "Early EOF in %s\n", filename);
-		fclose(in);
-		return -1;
-	}
-	r = sscanf(buffer, "%*d%lf%lf%*d%d%d%lf", 
-		&dp->p0, &dp->f0, &dp->nBlk, &dp->nCoef, &dp->refFreq);
-	if(r != 5)
-	{
-		fprintf(stderr, "Error parsing [%s] from %s\n",
-			buffer, filename);
-		fclose(in);
-		return -1;
-	}
+		r = sscanf(buffer, "%*s%*s%*f%lf%lf", &dp->mjd, &dp->dm);
+		if(r != 2)
+		{
+			fprintf(stderr, "Error parsing [%s] from %s\n",
+				buffer, filename);
+			fclose(in);
+			return -1;
+		}
 
-	if(dp->nCoef < 1 || dp->nCoef > 24)
-	{
-		fprintf(stderr, "Too many coefs(%d) in file %s\n",
-			dp->nCoef, filename);
-		fclose(in);
-		return -1;
-	}
-
-	dp->coef = (double *)calloc(dp->nCoef, sizeof(double));
-
-	for(c = 0; c < dp->nCoef; c++)
-	{
-		fscanf(in, "%s", buffer);
+		fgets(buffer, 159, in);
 		if(feof(in))
 		{
 			fprintf(stderr, "Early EOF in %s\n", filename);
 			fclose(in);
 			return -1;
 		}
-		len = strlen(buffer);
-		if(buffer[len-4] == 'D')
+		r = sscanf(buffer, "%*d%lf%lf%*d%d%d%lf", 
+			&dp->p0, &dp->f0, &dp->nBlk, &dp->nCoef, &dp->refFreq);
+		if(r != 5)
 		{
-			buffer[len-4] = 'e';
+			fprintf(stderr, "Error parsing [%s] from %s\n",
+				buffer, filename);
+			fclose(in);
+			return -1;
 		}
-		dp->coef[c] = atof(buffer);
-	}
-	
-	// Correct for "FUT time" 
-	if(dp->mjd < 20000.0)
-	{
-		dp->mjd += 39126;
+
+		if(dp->nCoef < 1 || dp->nCoef > 24)
+		{
+			fprintf(stderr, "Too many coefs(%d) in file %s\n",
+				dp->nCoef, filename);
+			fclose(in);
+			return -1;
+		}
+
+		dp->coef = (double *)calloc(dp->nCoef, sizeof(double));
+
+		for(c = 0; c < dp->nCoef; c++)
+		{
+			fscanf(in, "%s", buffer);
+			if(feof(in))
+			{
+				fprintf(stderr, "Early EOF in %s\n", filename);
+				fclose(in);
+				return -1;
+			}
+			len = strlen(buffer);
+			if(buffer[len-4] == 'D')
+			{
+				buffer[len-4] = 'e';
+			}
+			dp->coef[c] = atof(buffer);
+		}
+
+		/* get the end of line character out of the file */
+		fgets(buffer, 159, in);
+		
+		// Correct for "FUT time" 
+		if(dp->mjd < 20000.0)
+		{
+			dp->mjd += 39126;
+		}
+		(*nPolyco)++;
 	}
 	
 	fclose(in);
 
-	return 0;
+	return *nPolyco;
 }
