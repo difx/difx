@@ -47,7 +47,8 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	struct CommandLineOptions *opts);
 
 const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
@@ -81,6 +82,7 @@ const DifxInput *DifxInput2FitsGD(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsGM(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	struct CommandLineOptions *opts);
 
 #endif

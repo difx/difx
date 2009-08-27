@@ -1181,6 +1181,7 @@ static int DifxVisConvert(const DifxInput *D,
 	return 0;
 }
 
+/* FIXME -- merge this function with DifxVisConvert */
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *out, struct CommandLineOptions *opts)
@@ -1190,7 +1191,9 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		return 0;
 	}
 
+	printf("\n");
 	DifxVisConvert(D, p_fits_keys, out, opts);
+	printf("                            ");
 
 	return D;
 }

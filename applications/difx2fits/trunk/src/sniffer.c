@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -225,6 +225,14 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S->configId = -1;
 	S->nChan = D->nOutChan;
 	S->nTime = solInt/tMax;
+	if(S->nTime <= 1)
+	{
+		S->nTime = 1;
+		fprintf(stderr, "\nWarning: sniffer interval is not long "
+			"compared to integration time.\n");
+		fprintf(stderr, "Changing to %f seconds.\n\n",
+			tMax * S->nTime);
+	}
 	S->solInt = tMax * S->nTime;
 	
 	/* Open fringe fit files */
@@ -836,7 +844,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 
 	if(index < 0 || index >= A->nTime)
 	{
-		fprintf(stderr, "Bad index = %d\n", index);
+		fprintf(stderr, "Developer Error: Sniffer: bad time index = %d\n", index);
 		return -1;
 	}
 

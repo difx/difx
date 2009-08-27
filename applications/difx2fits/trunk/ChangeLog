@@ -3,6 +3,9 @@ Version 2.6
 * Require difxio 2.12
 * Write file that summarizes jobs that went into FITS
 * Pass full command line option structure to UV writing
+* Normalize calling to all table writing functions
+* Properly populate GATEMODL table
+* Ensure sniffer interval >= tInt
 
 Version 2.5
 * Require difxio 2.11

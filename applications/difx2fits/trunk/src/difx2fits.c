@@ -429,14 +429,11 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	if(opts->writemodel)
-	{
-		printf("  ML -- model               ");
-		fflush(stdout);
-		D = DifxInput2FitsML(D, &keys, out);
-		printf("%lld bytes\n", out->bytes_written - last_bytes);
-		last_bytes = out->bytes_written;
-	}
+	printf("  ML -- model               ");
+	fflush(stdout);
+	D = DifxInput2FitsML(D, &keys, out, opts);
+	printf("%lld bytes\n", out->bytes_written - last_bytes);
+	last_bytes = out->bytes_written;
 
 	printf("  CT -- correlator (eop)    ");
 	fflush(stdout);
@@ -464,14 +461,13 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  GM -- pulsar gate model   ");
 	fflush(stdout);
-	D = DifxInput2FitsGM(D, &keys, out);
+	D = DifxInput2FitsGM(D, &keys, out, opts);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  UV -- visibility          \n");
+	printf("  UV -- visibility          ");
 	fflush(stdout);
 	D = DifxInput2FitsUV(D, &keys, out, opts);
-	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

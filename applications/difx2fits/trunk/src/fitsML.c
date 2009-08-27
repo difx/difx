@@ -67,7 +67,8 @@ void calcPolynomial(double gpoly[array_N_POLY],
 }
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	struct CommandLineOptions *opts)
 {
 	char bandFormDouble[4];
 	char bandFormFloat[4];
@@ -137,6 +138,11 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	double clockRate;
 
 	if(D == 0)
+	{
+		return 0;
+	}
+
+	if(!opts->writemodel)
 	{
 		return 0;
 	}
