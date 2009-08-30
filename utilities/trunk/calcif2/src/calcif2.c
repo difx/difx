@@ -16,8 +16,8 @@
 
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "1.0";
-const char verdate[] = "20090625";
+const char version[] = "1.1";
+const char verdate[] = "20090830";
 
 typedef struct
 {
@@ -422,8 +422,8 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 
 	p = (CalcParams *)calloc(1, sizeof(CalcParams));
 
-	p->increment = 120;
-	p->order = 5;
+	p->increment = opts->polyInterval;
+	p->order = opts->polyOrder;
 	p->delta = opts->delta;
 
 	strncpy(p->calcServer, opts->calcServer, 31);
