@@ -203,7 +203,11 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 			if(recordStop[e->name] > 0.0)
 			{
 				changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
-				cout << "Media change: " << e->name << " " << (VexInterval)(changes.back()) << endl;
+				if(verbose > 0)
+				{
+					cout << "Media change: " << e->name << " " << 
+						(VexInterval)(changes.back()) << endl;
+				}
 			}
 		}
 		else if(e->eventType == VexEvent::RECORD_STOP)
@@ -283,7 +287,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		}
 		else
 		{
-			cout << "Warning: skipping short job of " << (jobTimeRange.duration()*86400.0) << " seconds duration." << endl;
+			cerr << "Warning: skipping short job of " << (jobTimeRange.duration()*86400.0) << " seconds duration." << endl;
 		}
 		start = *t;
 	}
@@ -595,7 +599,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
 		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
-		cout << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
+		cerr << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
 	}
 	else if(format.format == string("LBAVSOP"))
 	{
@@ -659,7 +663,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	return n2;
 }
 
-void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
+static void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 {
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
@@ -672,7 +676,7 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 }
 
 // warning: assumes same number of datastreams == antennas for each config
-void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup)
+static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup)
 {	
 	int a1, a2, f, n1, n2, u, v;
 	int npol;
@@ -883,7 +887,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 	D->nBaseline = blId;
 }
 
-void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
+static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 {
 	int nEOP;
 
@@ -900,7 +904,7 @@ void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 	}
 }
 
-int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
+static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
 	int c;
 	DifxConfig *config;
@@ -975,7 +979,7 @@ int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const Ve
 		exit(0);
 	}
 	// try to get a good balance of oversampling and decim
-	while(config->overSamp % 4 == 0)
+	while(config->overSamp % 4 == 0 && config->decimation < 16)
 	{
 		config->overSamp /= 2;
 		config->decimation *= 2;
@@ -1267,8 +1271,8 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 			fracday0 = J.mjdStart-mjdint;
 			deltat = sourceSetup->ephemDeltaT/86400.0;	// convert from seconds to days
 			n0 = static_cast<int>(fracday0/deltat - 2);	// start ephmemeris at least 2 points early
-			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
-			nPoint = static_cast<int>(J.duration()/deltat) + 6; // make sure to extend beyond the end of the job
+			mjd0 = mjdint + (n0-5)*deltat;			// always start an integer number of increments into day
+			nPoint = static_cast<int>(J.duration()/deltat) + 11; // make sure to extend beyond the end of the job
 			if(verbose > 0)
 			{
 				cout << "Computing ephemeris:" << endl;
@@ -1285,7 +1289,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 				sourceSetup->ephemFile.c_str());
 			if(v != 0)
 			{
-				cerr << "Error -- ephemeris calculation failed.  Must stop." << endl;
+				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
 				exit(0);
 			}
 
@@ -1332,7 +1336,7 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	}
 	else
 	{
-		cout << "Warning: scans are not padded.  This may mean the correlator jobs that are produced will not work.  Set padScans to true to force the padding of scans." << endl;
+		cerr << "Warning: scans are not padded.  This may mean the correlator jobs that are produced will not work.  Set padScans to true to force the padding of scans." << endl;
 	}
 
 	// fix a few last parameters
@@ -1369,17 +1373,21 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	deleteDifxInput(D);
 }
 
-void sanityCheckSources(const VexData *V, const CorrParams *P)
+static int sanityCheckSources(const VexData *V, const CorrParams *P)
 {
 	vector<SourceSetup>::const_iterator s;
+	int nWarn = 0;
 
 	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); s++)
 	{
 		if(V->getSource(s->vexName) == 0)
 		{
-			cout << "Warning: source " << s->vexName << " referenced in .v2d file but not is not in vex file" << endl;
+			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but not is not in vex file" << endl;
+			nWarn++;
 		}
 	}
+
+	return nWarn;
 }
 
 int usage(int argc, char **argv)
@@ -1402,6 +1410,9 @@ int usage(int argc, char **argv)
 	cout << "     -d" << endl;
 	cout << "     --delete-old  delete all jobs in this series before running." << endl;
 	cout << endl;
+	cout << "     -s" << endl;
+	cout << "     --strict      treat some warnings as errors and quit." << endl;
+	cout << endl;
 	cout << "  the v2d file is the vex2difx configuration file to process." << endl;
 	cout << endl;
 	cout << "See http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx for more information" << endl;
@@ -1421,6 +1432,8 @@ int main(int argc, char **argv)
 	string v2dFile;
 	bool writeParams = 0;
 	bool deleteOld = 0;
+	bool strict = 0;
+	int nWarn = 0;
 	int nDigit;
 
 	if(argc < 2)
@@ -1456,6 +1469,11 @@ int main(int argc, char **argv)
 			        strcmp(argv[a], "--delete-old") == 0)
 			{
 				deleteOld = 1;
+			}
+			else if(strcmp(argv[a], "-s") == 0 ||
+			        strcmp(argv[a], "--strict") == 0)
+			{
+				strict = 1;
 			}
 			else
 			{
@@ -1494,7 +1512,7 @@ int main(int argc, char **argv)
 
 	shelfFile = P->vexFile.substr(0, P->vexFile.find_last_of('.'));
 	shelfFile += string(".shelf");
-	P->loadShelves(shelfFile);
+	nWarn = P->loadShelves(shelfFile);
 
 	V = loadVexFile(*P);
 
@@ -1504,7 +1522,14 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
-	sanityCheckSources(V, P);
+	nWarn += V->sanityCheck();
+	nWarn += sanityCheckSources(V, P);
+	if(strict && nWarn > 0)
+	{
+		cerr << "Quitting since " << nWarn << 
+			"warnings were found and strict mode was enabled." << endl;
+		exit(0);
+	}
 
 	makeJobs(J, V, P, verbose);
 

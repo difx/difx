@@ -244,6 +244,37 @@ bool operator == (VexSubband& s1, VexSubband& s2)
 	return true;
 }
 
+int VexData::sanityCheck()
+{
+	int nWarn = 0;
+
+	if(eops.size() < 5)
+	{
+		cerr << "Warning: Fewer than 5 EOPs specified" << endl;
+		nWarn++;
+	}
+
+	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
+	{
+		if(it->clocks.size() == 0)
+		{
+			cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
+			nWarn++;
+		}
+	}
+
+	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
+	{
+		if(it->vsns.size() == 0 && it->basebandFiles.size() == 0)
+		{
+			cerr << "Warning: no media specified for antenna " << it->name << " ." << endl;
+			nWarn++;
+		}
+	}
+
+	return nWarn;
+}
+
 VexSource *VexData::newSource()
 {
 	sources.push_back(VexSource());
@@ -712,7 +743,6 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	return flags.size();
 }
 
-// FIXME -- this does not allow concurrent scans
 void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, const VexData *V, double maxLength, double maxSize) const
 {
 	list<VexEvent>::const_iterator s, e;

@@ -468,7 +468,8 @@ SourceSetup::SourceSetup(const string &name) : vexName(name)
 	ra = -999;
 	dec = -999;
 	calCode = ' ';
-	ephemDeltaT = 60.0;	// seconds
+	ephemDeltaT = 24.0;	// seconds.  24 is nice as it forces each point
+				// to lie exactly where the default model points are
 }
 
 void SourceSetup::setkv(const string &key, const string &value)
@@ -500,6 +501,10 @@ void SourceSetup::setkv(const string &key, const string &value)
 	else if(key == "ephemFile")
 	{
 		ss >> ephemFile;
+	}
+	else if(key == "ephemDeltaT")
+	{
+		ss >> ephemDeltaT;
 	}
 	else if(key == "naifFile")
 	{
@@ -1600,8 +1605,9 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	}
 }
 
-void CorrParams::loadShelves(const string& fileName)
+int CorrParams::loadShelves(const string& fileName)
 {
+	int nWarn = 0;
 	ifstream is;
 	bool doAntennas;
 	char s[1024], a[32], v[32], ms[32];
@@ -1612,7 +1618,7 @@ void CorrParams::loadShelves(const string& fileName)
 
 	if(is.fail())
 	{
-		return;
+		return 0;
 	}
 
 	doAntennas = (antennaList.size() == 0);
@@ -1680,9 +1686,12 @@ void CorrParams::loadShelves(const string& fileName)
 		for(vector<string>::const_iterator s = noShelf.begin(); s != noShelf.end(); s++)
 		{
 			cerr << " " << *s;
+			nWarn++;
 		}
 		cerr << endl;
 	}
+
+	return nWarn;
 }
 
 const char *CorrParams::getShelf(const string& vsn) const

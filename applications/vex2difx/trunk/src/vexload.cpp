@@ -989,13 +989,7 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
-	if(N < 5)
-	{
-		cerr << "Warning: Fewer than 5 EOP values provided." << endl;
-		cerr << "vex2difx will continue, but expect problems downstream." << endl;
-	}
-
-	return 0;
+	return N;
 }
 
 int getExper(VexData *V, Vex *v, const CorrParams& params)

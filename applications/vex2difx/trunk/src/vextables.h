@@ -311,6 +311,8 @@ private:
 	string directory;
 
 public:
+	int sanityCheck();
+
 	VexSource *newSource();
 	VexScan *newScan();
 	VexMode *newMode();

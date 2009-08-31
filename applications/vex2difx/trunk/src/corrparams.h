@@ -153,7 +153,7 @@ public:
 	CorrParams();
 	CorrParams(const string& fileName);
 
-	void loadShelves(const string& fileName);
+	int loadShelves(const string& fileName);
 	const char *getShelf(const string& vsn) const;
 
 	void setkv(const string &key, const string &value);
