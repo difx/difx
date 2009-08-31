@@ -1,4 +1,4 @@
-SUBDIRS = difxio tests
+SUBDIRS = difxio tests utils
 
 library_includedir = $(includedir)
 library_include_HEADERS = difxio.h

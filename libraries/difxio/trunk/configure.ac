@@ -52,6 +52,7 @@ AC_OUTPUT([
 	Makefile \
 	difxio.pc \
 	difxio/Makefile \
+	utils/Makefile \
 	tests/Makefile
 ])
 
