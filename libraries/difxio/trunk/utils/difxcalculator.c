@@ -31,8 +31,28 @@
 #include <stdlib.h>
 #include "difx_input.h"
 
+const char program[] = "difxcalculator";
+const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
+const char version[] = "0.1";
+const char verdate[] = "20090831";
+
 const int nNode = 10;
 const int nCore = 7;
+
+int usage()
+{
+	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
+		author, verdate);
+	fprintf(stderr, "A program to calculate software correlator resource usage.\n");
+	fprintf(stderr, "This is based on Adam Deller's difx_calculator.xls .\n");
+	fprintf(stderr, "\nUsage: %s <input file base name> [<speedUp factor>]\n", program);
+	fprintf(stderr, "\n<input file base name> is the prefix of the difx .input file\n");
+	fprintf(stderr, "        to study.  Files ending in .input and .calc are needed.\n");
+	fprintf(stderr, "\n<speedUp factor> is a floating point number which is the ratio\n");
+	fprintf(stderr, "        of correlation speed to observation speed.\n\n");
+
+	return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -63,8 +83,7 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		printf("Usage : %s <inputfilebase> [<speedUp>]\n", argv[0]);
-		return 0;
+		return usage();
 	}
 	
 	if(argc > 2)
@@ -174,11 +193,11 @@ int main(int argc, char **argv)
 		visSize = (nAnt+nBL)*(8*nChan*nFreq*nPol*nPpB);
 
 		recDataRate = nFreq*bandwidth*nPol*quantBits*decimation*2.0;
-		basebandMessageSize = BPS*nChan*2.0*nFreq*nPol*decimation/(8*1024*1024);
+		basebandMessageSize = quantBits*BPS*nChan*2.0*nFreq*nPol*decimation/(8*1024*1024);
 		basebandReadSize = basebandMessageSize*dataBufferFactor/nDataSeg;
 		coreInputRatio = nAnt/(float)nNode;
 		coreInputRate = recDataRate*coreInputRatio*speedUp;
-		coreOutputRatio = visSize/(1024*1024*basebandMessageSize);
+		coreOutputRatio = visSize/(nAnt*1024*1024*basebandMessageSize);
 		coreOutputRate = coreInputRate*coreOutputRatio;
 		manInputRate = coreOutputRate*nNode;
 		diskDataRate = visSize/(tInt*1024*1024);
