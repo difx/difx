@@ -47,6 +47,7 @@ LIBS =
 #
 ctest: ctest.o $(OBJS)
 	f77 -lg2c -lm -o ctest ctest.o $(OBJS)
+	ar ru libcorcalc.a $(OBJS)
 #
 mbl: mbl.o $(OBJS)
 	f77 -lg2c -lm -o mbl mbl.o $(OBJS)
