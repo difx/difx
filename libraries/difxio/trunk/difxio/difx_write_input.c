@@ -124,6 +124,38 @@ static int writeBaselineTable(FILE *out, const DifxInput *D)
 	return 0;
 }
 
+static int writeNetworkTable(FILE *out, const DifxInput *D)
+{
+	const DifxAntenna *da;
+	int a;
+
+	/* first determine if we need such a table */
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		da = D->antenna + a;
+		if(da->windowSize != 0)
+		{
+			break;
+		}
+	}
+	if(a == D->nAntenna)
+	{
+		/* no network table needed */
+		return 0;
+	}
+
+	fprintf(out, "# NETWORK TABLE ####!\n");
+
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		da = D->antenna + a;
+		writeDifxLineInt1(out, "PORT NUM %d", a, da->networkPort);
+		writeDifxLineInt1(out, "TCP WINDOW (KB) %d", a, da->windowSize);
+	}
+
+	fprintf(out, "\n");
+}
+
 static int writeDataTable(FILE *out, const DifxInput *D)
 {
 	int i, j;
@@ -240,6 +272,7 @@ int writeDifxInput(const DifxInput *D, const char *filename)
 	writeDatastreamTable(out, D);
 	writeBaselineTable(out, D);
 	writeDataTable(out, D);
+	writeNetworkTable(out, D);
 
 	fclose(out);
 

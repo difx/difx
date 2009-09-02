@@ -1315,6 +1315,38 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 	return D;
 }
 
+static DifxInput *parseDifxInputNetworkTable(DifxInput *D, 
+	const DifxParameters *ip)
+{
+	int a;
+	int r;
+	DifxAntenna *da;
+
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
+	for(a = 0; a < D->nAntenna; a++)
+	{
+		da = D->antenna + a;
+
+		r = DifxParametersfind1(ip, 1, "PORT NUM %d", a);
+		if(r > 0)
+		{
+			D->antenna[a].networkPort = atoi(DifxParametersvalue(ip, r));
+		}
+
+		r = DifxParametersfind1(ip, 1, "TCP WINDOW (KB) %d", a);
+		if(r > 0)
+		{
+			D->antenna[a].windowSize = atoi(DifxParametersvalue(ip, r));
+		}
+	}
+
+	return D;
+}
+
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
 	int a, b, c, e, qb, nChan = 0, nc;
@@ -1437,6 +1469,9 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 	/* DATA TABLE */
 	D = parseDifxInputDataTable(D, ip);
+
+	/* NETWORK TABLE */
+	D = parseDifxInputNetworkTable(D, ip);
 
 	return D;
 }

@@ -185,6 +185,8 @@ typedef struct
 	int spacecraftId;	/* -1 if not a spacecraft */
 	int nFile;		/* number of files */
 	char **file;		/* list of files to correlate (if not VSN) */
+	int networkPort;	/* eVLBI port for this datastream */
+	int windowSize;		/* eVLBI TCP window size */
 } DifxAntenna;
 
 typedef struct
