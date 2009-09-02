@@ -6,6 +6,9 @@ Version 2.6
 * Normalize calling to all table writing functions
 * Properly populate GATEMODL table
 * Ensure sniffer interval >= tInt
+* Write .jobmatrix file
+* Require difxio 2.12
+* To become version for DiFX-1.5.1
 
 Version 2.5
 * Require difxio 2.11
