@@ -143,8 +143,6 @@ def summarize(input, i, n, dotree):
 			oversamp = 1
 		if d[:18] == 'OVERSAMPLE FACTOR:':
 			oversamp *= int(d[20:])
-		if d[:18] == 'DECIMATION FACTOR:':
-			oversamp *= int(d[20:])
 		if d[:11] == 'DATA FORMAT':
 			p = find(d[20:], '-')
 			if p > 0:
