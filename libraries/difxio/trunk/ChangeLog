@@ -1,3 +1,6 @@
+2.13
+* Pose DiFX-1.5.1
+
 2.12
 * Move flags to DifxJob so combinig multiple subarrays results in accurate
   application of flags.  NOTE: This breaks the API

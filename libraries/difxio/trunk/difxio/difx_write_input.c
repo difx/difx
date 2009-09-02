@@ -154,6 +154,8 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
 	}
 
 	fprintf(out, "\n");
+
+	return 0;
 }
 
 static int writeDataTable(FILE *out, const DifxInput *D)
