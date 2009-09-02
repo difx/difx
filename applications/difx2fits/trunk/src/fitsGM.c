@@ -168,6 +168,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	
 	/* and some specific to this table */
 	fitsWriteInteger(out, "TABREV", 1, "");
+	fitsWriteInteger(out, "NO_POLY", nPoly, "number of terms in polynomial");
 	fitsWriteInteger(out, "BIN_ID", opts->pulsarBin+1, "pulsar bin number");
 
 	fitsWriteEnd(out);
