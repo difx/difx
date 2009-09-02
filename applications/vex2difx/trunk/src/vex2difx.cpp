@@ -42,8 +42,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("0.3");
-const string verdate("20090825");
+const string version("1.0");
+const string verdate("20090902");
 const string author("Walter Brisken");
 
 
