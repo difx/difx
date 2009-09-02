@@ -333,7 +333,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 	}
 }
 
-DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit)
+DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext)
 {
 	DifxJob *job;
 	const char *difxVer;
@@ -364,9 +364,9 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	job->dutyCycle = J.dutyCycle;
 
 	// The following line defines the format of the job filenames
-	sprintf(format, "%%s/%%s_%%0%dd", nDigit);
+	sprintf(format, "%%s/%%s_%%0%dd%%c", nDigit);
 
-	sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId);
+	sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
 
 	return job;
 }
@@ -452,6 +452,8 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 			{
 				strcpy(A[i].name, antSetup->difxName.c_str());
 			}
+			A[i].networkPort = antSetup->networkPort;
+			A[i].windowSize  = antSetup->windowSize;
 		}
 
 		antList.push_back(a->first);
@@ -619,12 +621,15 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 
 	strcpy(D->datastream[dsId].dataSource, "MODULE");
 
-	// FIXME -- this is ugly
-	for(int i = 0; i < D->nAntenna; i++)
+	for(int a = 0; a < D->nAntenna; a++)
 	{
-		if(strcmp(D->antenna[i].name, antName.c_str()) == 0)
+		if(strcmp(D->antenna[a].name, antName.c_str()) == 0)
 		{
-			if(D->antenna[i].nFile > 0)
+			if(D->antenna[a].networkPort != 0)
+			{
+				strcpy(D->datastream[dsId].dataSource, "NETWORK");
+			}
+			else if(D->antenna[a].nFile > 0)
 			{
 				strcpy(D->datastream[dsId].dataSource, "FILE");
 			}
@@ -663,20 +668,23 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	return n2;
 }
 
-static void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
+// FIXME -- kind of ugly to pass bandwidth on command line param.  Need a better way to 
+// send bandwidth around.  This is all confused due to oversampling
+static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, double bw)
 {
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
 	for(unsigned int f = 0; f < freqs.size(); f++)
 	{
 		D->freq[f].freq = freqs[f].fq/1.0e6;
-		D->freq[f].bw   = freqs[f].bw/1.0e6;
+		//D->freq[f].bw   = freqs[f].bw/1.0e6;
+		D->freq[f].bw   = bw/1.0e6;
 		D->freq[f].sideband = freqs[f].sideBand;
 	}
 }
 
 // warning: assumes same number of datastreams == antennas for each config
-static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup)
+static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup, int overSamp)
 {	
 	int a1, a2, f, n1, n2, u, v;
 	int npol;
@@ -969,20 +977,12 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->nAntenna = D->nAntenna;
 	config->nDatastream = D->nAntenna;
 	config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
-	config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
-	config->decimation = 1;
 	if(config->overSamp <= 0)
 	{
 		cerr << "Error: configName=" << configName << " overSamp=" << config->overSamp << endl;
 		cerr << "samprate=" << mode->sampRate << " bw=" << 
 			mode->subbands[0].bandwidth << endl;
 		exit(0);
-	}
-	// try to get a good balance of oversampling and decim
-	while(config->overSamp % 4 == 0 && config->decimation < 16)
-	{
-		config->overSamp /= 2;
-		config->decimation *= 2;
 	}
 	minBW = mode->sampRate/(2.0*config->decimation);
 	DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
@@ -999,7 +999,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		int blocksPerInt = (int)(corrSetup->tInt*minBW/config->nChan + 0.5);
 		int bytesPerBlock = (int)(mode->subbands.size()*config->nChan*2*mode->getBits()/8 + 0.5);
 		int bps = 1;
-		int sendBytes = (int)(sendLength*mode->subbands.size()*mode->sampRate*mode->getBits()/8.0 + 0.5);
+		int sendBytes = (int)(sendLength*mode->subbands.size()*mode->sampRate*mode->getBits()/(8.0*config->overSamp) + 0.5);
 
 		// Search for the perfect number of blocks per send
 		for(int b = 1; b <=blocksPerInt; b++)
@@ -1027,7 +1027,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	return c;
 }
 
-void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbose, ofstream *of, int nDigit)
+int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSamp, int verbose, ofstream *of, int nDigit, char ext)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -1092,44 +1092,18 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
-	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit);
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext);
 	
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
 	D->nConfig = configSet.size();
 	D->config = newDifxConfigArray(D->nConfig);
-		
-	if(of)
+	for(int c = 0; c < D->nConfig; c++)
 	{
-		const char *fileBase = D->job->fileBase;
-		double tops;	// Trillion operations
-		int p;
-
-		for(int i = 0; D->job->fileBase[i]; i++)
-		{
-			if(D->job->fileBase[i] == '/')
-			{
-				fileBase = D->job->fileBase + i + 1;
-			}
-		}
-
-		tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
-
-		*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
-		p = of->precision();
-		of->precision(4);
-		*of << tops << " ";
-		*of << (J.dataSize/1000000) << "  #";
-		of->precision(p);
-		
-
-		for(vector<string>::const_iterator ai = antList.begin(); ai != antList.end(); ai++)
-		{
-			*of << " " << *ai;
-		}
-		*of << endl;
+		D->config[c].decimation = overSamp;
+		D->config[c].overSamp = overSamp;
 	}
-
+		
 	// now run through all scans, populating things as we go
 	scan = D->scan;
 	for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); si++, scan++)
@@ -1306,10 +1280,12 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 	}
 
 	// Make frequency table
-	populateFreqTable(D, freqs);
+	mode = V->getMode(configs[0].first);
+	double bw = mode->sampRate/(2.0*overSamp);
+	populateFreqTable(D, freqs, bw);
 
 	// Make baseline table
-	populateBaselineTable(D, P, corrSetup);
+	populateBaselineTable(D, P, corrSetup, overSamp);
 
 	// Make EOP table
 	populateEOPTable(D, V->getEOPs());
@@ -1349,28 +1325,76 @@ void writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int verbos
 		D->specAvg = corrSetup->specAvg;
 	}
 
-	// write input file
-	ostringstream inputName;
-	inputName << D->job->fileBase << ".input";
-	writeDifxInput(D, inputName.str().c_str());
-
-	// write calc file
-	ostringstream calcName;
-	calcName << D->job->fileBase << ".calc";
-	writeDifxCalc(D, calcName.str().c_str());
-
-	// write flag file
-	ostringstream flagName;
-	flagName << D->job->fileBase << ".flag";
-	J.generateFlagFile(*V, flagName.str(), P->invalidMask);
-
-	if(verbose > 2)
+	if(D->nBaseline > 0)
 	{
-		printDifxInput(D);
+		// write input file
+		ostringstream inputName;
+		inputName << D->job->fileBase << ".input";
+		writeDifxInput(D, inputName.str().c_str());
+
+		// write calc file
+		ostringstream calcName;
+		calcName << D->job->fileBase << ".calc";
+		writeDifxCalc(D, calcName.str().c_str());
+
+		// write flag file
+		ostringstream flagName;
+		flagName << D->job->fileBase << ".flag";
+		J.generateFlagFile(*V, flagName.str(), P->invalidMask);
+
+		if(verbose > 2)
+		{
+			printDifxInput(D);
+		}
+
+		if(of)
+		{
+			const char *fileBase = D->job->fileBase;
+			double tops;	// Trillion operations
+			int p;
+
+			for(int i = 0; D->job->fileBase[i]; i++)
+			{
+				if(D->job->fileBase[i] == '/')
+				{
+					fileBase = D->job->fileBase + i + 1;
+				}
+			}
+
+			tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
+
+			*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
+			p = of->precision();
+			of->precision(4);
+			*of << tops << " ";
+			*of << (J.dataSize/1000000) << "  #";
+			of->precision(p);
+			
+
+			for(vector<string>::const_iterator ai = antList.begin(); ai != antList.end(); ai++)
+			{
+				*of << " " << *ai;
+			}
+			*of << endl;
+		}
+	}
+	else
+	{
+		cerr << "Warning: job " << D->job->fileBase << " not written since it correlates no data" << endl;
+		cerr << "This is usually due to all frequency Ids being unselected." << endl;
 	}
 
 	// clean up
 	deleteDifxInput(D);
+
+	if(D->nBaseline > 0)
+	{
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 static int sanityCheckSources(const VexData *V, const CorrParams *P)
@@ -1435,6 +1459,8 @@ int main(int argc, char **argv)
 	bool strict = 0;
 	int nWarn = 0;
 	int nDigit;
+	int nJob = 0;
+	int nMulti = 0;
 
 	if(argc < 2)
 	{
@@ -1508,11 +1534,13 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	nWarn = P->parseWarnings;
+
 	umask(02);
 
 	shelfFile = P->vexFile.substr(0, P->vexFile.find_last_of('.'));
 	shelfFile += string(".shelf");
-	nWarn = P->loadShelves(shelfFile);
+	nWarn += P->loadShelves(shelfFile);
 
 	V = loadVexFile(*P);
 
@@ -1522,12 +1550,13 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	nWarn += P->sanityCheck();
 	nWarn += V->sanityCheck();
 	nWarn += sanityCheckSources(V, P);
 	if(strict && nWarn > 0)
 	{
 		cerr << "Quitting since " << nWarn << 
-			"warnings were found and strict mode was enabled." << endl;
+			" warnings were found and strict mode was enabled." << endl;
 		exit(0);
 	}
 
@@ -1605,13 +1634,45 @@ int main(int argc, char **argv)
 		{
 			cout << *j;
 		}
-		writeJob(*j, V, P, verbose, &of, nDigit);
+		const VexScan *S = V->getScan(j->scans[0]);
+		const VexMode *M = V->getMode(S->modeName);
+		int n = 0;
+		for(list<int>::const_iterator k = M->overSamp.begin(); k != M->overSamp.end(); k++)
+		{
+			char ext=0;
+			if(M->overSamp.size() > 1)
+			{
+				ext='a'+n;
+			}
+			nJob += writeJob(*j, V, P, *k, verbose, &of, nDigit, ext);
+			n++;
+		}
+		if(M->overSamp.size() > 1)
+		{
+			nMulti++;
+		}
 	}
 	of.close();
-	cout << J.size() << " job(s) created." << endl;
+
+	cout << endl;
+	cout << nJob << " job(s) created." << endl;
+
+	if(nMulti > 0)
+	{
+		cout << endl;
+		cout << "Notice!  " << nMulti << " jobs were replicated multiple times and have a letter suffix" << endl;
+		cout << "after the job number.  This is probably due to mixed amounts of oversampling" << endl;
+		cout << "at the same time within one or more observing modes.  In cases like this the" << endl;
+		cout << "PI might want different processing to be done on each IF (such as number of" << endl;
+		cout << "spectral lines or integration times).  Consider explicitly making multiple" << endl;
+		cout << ".v2d files, one for each oversample factor, that operate only on the" << endl;
+		cout << "relavant baseband channels." << endl;
+	}
 
 	delete V;
 	delete P;
+
+	cout << endl;
 
 	return 0;
 }

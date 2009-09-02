@@ -851,9 +851,10 @@ void VexData::getScanList(list<string> &scanList) const
 	}
 }
 
-void VexEOP::setkv(const string &key, const string &value)
+int VexEOP::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 
@@ -878,7 +879,10 @@ void VexEOP::setkv(const string &key, const string &value)
 	else
 	{
 		cerr << "Warning: EOP: Unknown parameter '" << key << "'." << endl;
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 VexAntenna *VexData::newAntenna()

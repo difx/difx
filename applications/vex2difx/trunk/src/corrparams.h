@@ -69,7 +69,7 @@ class SourceSetup
 {
 public:
 	SourceSetup(const string &name);
-	void setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value);
 
 	string vexName;		// Source name as appears in vex file
 	string difxName;	// Source name (if different) to appear in difx
@@ -87,7 +87,7 @@ class AntennaSetup
 {
 public:
 	AntennaSetup(const string &name);
-	void setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value);
 
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
@@ -100,13 +100,15 @@ public:
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B .  Is converted to all caps on load
 	vector<VexBasebandFile> basebandFiles;	// files to correlate
+	int networkPort;	// For eVLBI : port for this antenna
+	int windowSize;		// For eVLBI : TCP window size
 };
 
 class CorrSetup
 {
 public:
 	CorrSetup(const string &name = "setup_default");
-	void setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value);
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
 
@@ -133,7 +135,7 @@ class CorrRule
 public:
 	CorrRule(const string &name = "rule_default");
 
-	void setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value);
 	bool match(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 
 	string ruleName;
@@ -156,11 +158,12 @@ public:
 	int loadShelves(const string& fileName);
 	const char *getShelf(const string& vsn) const;
 
-	void setkv(const string &key, const string &value);
-	void load(const string& fileName);
+	int setkv(const string &key, const string &value);
+	int load(const string& fileName);
 	void defaults();
 	void defaultSetup();
 	void example();
+	int sanityCheck();
 
 	bool useAntenna(const string &antName) const;
 	bool useBaseline(const string &ant1, const string &ant2) const;
@@ -173,6 +176,7 @@ public:
 	const string &findSetup(const string &scan, const string &source, const string &mode, char cal, int qual) const;
 	
 	/* global parameters */
+	int parseWarnings;
 	string vexFile;
 	unsigned int minSubarraySize;
 	double maxGap;		// days
@@ -192,6 +196,7 @@ public:
 	double sendLength;	// (s) amount of data to send from datastream to core at a time
 	unsigned int invalidMask;
 	int visBufferLength;
+	int overSamp;		// A user supplied override to oversample factor
 
 	list<string> antennaList;
 	list<pair<string,string> > baselineList;

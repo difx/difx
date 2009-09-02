@@ -17,8 +17,9 @@ x. support mark5b
 x. support baselines=
 x. implement maxLength
 x. use antennas, not modules, in antenna count
-16. support time formats other than mjd
-
+x. support time formats other than mjd
+x. support EVLBI
+18. clean up oversampling/decimation support
 
 Concerns outside vex2difx proper
 

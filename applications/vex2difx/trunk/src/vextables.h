@@ -182,6 +182,7 @@ public:
 	double sampRate;		// (Hz)
 	vector<VexSubband> subbands;
 	map<string,VexFormat> formats;	// indexed by antenna name
+	list<int> overSamp;		// list of the oversample factors used by this mode
 };
 
 class VexVSN : public VexInterval
@@ -238,7 +239,7 @@ public:
 	double ut1_utc;		// seconds
 	double xPole, yPole;	// radian
 
-	void setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value);
 };
 
 class VexExper : public VexInterval

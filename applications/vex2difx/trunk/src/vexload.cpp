@@ -771,7 +771,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
 				recChanId = getRecordChannel(value, ch2tracks, F, i);
-				//cerr << "Track map: " << value << " -> " << recChanId << endl;
+
 				if(recChanId >= 0)
 				{
 					F.ifs.push_back(VexIF());
@@ -787,6 +787,29 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				cerr << "Warning: nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
 			}
 		}
+
+		for(vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); it++)
+		{
+			int overSamp = static_cast<int>(M->sampRate/(2.0*it->bandwidth) + 0.001);
+			if(params.overSamp > 0)
+			{
+				if(params.overSamp > overSamp)
+				{
+					cerr << "Warning: Mode " << M->name << " subband " << M->overSamp.size() << 
+						": requested oversample factor " << params.overSamp << 
+						" is greater than the observed oversample factor " << overSamp << endl;
+				}
+				overSamp = params.overSamp;
+			}
+			else if(overSamp > 8)
+			{
+				overSamp = 8;
+			}
+	
+			M->overSamp.push_back(overSamp);
+		}
+		M->overSamp.sort();
+		M->overSamp.unique();
 	}
 
 	return 0;

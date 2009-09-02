@@ -21,6 +21,7 @@ Version 0.3
 * Make .v2d parameters "mjdStart" and "mjdStop" operate at specified times, not 
   at scan boundaries
 * EOP table support from within .v2d file
+* Support eVLBI via writing of Network table
 
 Version 0.2
 ~~~~~~~~~~~

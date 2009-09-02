@@ -294,13 +294,20 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	blocksPerSend = 0;
 }
 
-void CorrSetup::setkv(const string &key, const string &value)
+int CorrSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 
-	if(key == "tInt")
+	if(key == "VEX_rev")
+	{
+		cerr << "Error: You are running vex2difx on a vex file." << endl;
+		cerr << "Please run on a vex2difx input file (.v2d) instead." << endl;
+		exit(0);
+	}
+	else if(key == "tInt")
 	{
 		ss >> tInt;
 	}
@@ -361,7 +368,10 @@ void CorrSetup::setkv(const string &key, const string &value)
 	else
 	{
 		cerr << "Warning: SETUP: Unknown parameter '" << key << "'." << endl; 
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 void CorrSetup::addFreqId(int freqId)
@@ -417,9 +427,10 @@ bool CorrRule::match(const string &scan, const string &source, const string &mod
 	return true;
 }
 
-void CorrRule::setkv(const string &key, const string &value)
+int CorrRule::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 
@@ -460,7 +471,10 @@ void CorrRule::setkv(const string &key, const string &value)
 	else
 	{
 		cerr << "Warning: RULE: Unknown parameter '" << key << "'." << endl; 
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 SourceSetup::SourceSetup(const string &name) : vexName(name)
@@ -472,9 +486,10 @@ SourceSetup::SourceSetup(const string &name) : vexName(name)
 				// to lie exactly where the default model points are
 }
 
-void SourceSetup::setkv(const string &key, const string &value)
+int SourceSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 
@@ -513,7 +528,10 @@ void SourceSetup::setkv(const string &key, const string &value)
 	else
 	{
 		cerr << "Warning: SOURCE: Unknown parameter '" << key << "'." << endl; 
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 AntennaSetup::AntennaSetup(const string &name) : vexName(name)
@@ -523,11 +541,14 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	Y = 0.0;
 	Z = 0.0;
 	clock.mjdStart = -1e9;
+	networkPort = 0;
+	windowSize = 0;
 }
 
-void AntennaSetup::setkv(const string &key, const string &value)
+int AntennaSetup::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 
@@ -589,10 +610,21 @@ void AntennaSetup::setkv(const string &key, const string &value)
 	{
 		loadBasebandFilelist(value, basebandFiles);
 	}
+	else if(key == "networkPort")
+	{
+		ss >> networkPort;
+	}
+	else if(key == "windowSize")
+	{
+		ss >> windowSize;
+	}
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 CorrParams::CorrParams()
@@ -609,7 +641,7 @@ CorrParams::CorrParams(const string& fileName)
 	pos = fileName.find(".");
 	jobSeries = fileName.substr(0, pos);
 
-	load(fileName);
+	parseWarnings = load(fileName);
 
 #ifdef DONT_USE_EXPER_AS_PASS
 	pos = vexFile.find(".");
@@ -644,11 +676,13 @@ void CorrParams::defaults()
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 32;
 	v2dMode = V2D_MODE_NORMAL;
+	overSamp = 0;
 }
 
-void CorrParams::setkv(const string &key, const string &value)
+int CorrParams::setkv(const string &key, const string &value)
 {
 	stringstream ss;
+	int nWarn = 0;
 
 	ss << value;
 	
@@ -796,12 +830,20 @@ void CorrParams::setkv(const string &key, const string &value)
 		else
 		{
 			cerr << "Warning: Illegal value " << value << " for mode" << endl;
+			nWarn++;
 		}
+	}
+	else if(key == "overSamp")
+	{
+		ss >> overSamp;
 	}
 	else
 	{
 		cerr << "Warning: Unknown keyword " << key << " with value " << value << endl;
+		nWarn++;
 	}
+
+	return nWarn;
 }
 
 void CorrParams::addAntenna(const string& antName)
@@ -835,7 +877,7 @@ void CorrParams::addBaseline(const string& baselineName)
 		baselineName.substr(pos+1) ));
 }
 
-void CorrParams::load(const string& fileName)
+int CorrParams::load(const string& fileName)
 {
 	enum Parse_Mode
 	{
@@ -856,6 +898,7 @@ void CorrParams::load(const string& fileName)
 	AntennaSetup *antennaSetup=0;
 	VexEOP       *eop=0;
 	Parse_Mode parseMode = PARSE_MODE_GLOBAL;
+	int nWarn = 0;
 
 	is.open(fileName.c_str());
 
@@ -1024,6 +1067,7 @@ void CorrParams::load(const string& fileName)
 		else if(*i == "{" || *i == "}")
 		{
 			cerr << "Warning: unexpected character '" << *i << "'." << endl;
+			nWarn++;
 		}
 		else if(last == "=" || last == ",")
 		{
@@ -1036,22 +1080,22 @@ void CorrParams::load(const string& fileName)
 			switch(parseMode)
 			{
 			case PARSE_MODE_GLOBAL:
-				setkv(key, value);
+				nWarn += setkv(key, value);
 				break;
 			case PARSE_MODE_SETUP:
-				corrSetup->setkv(key, value);
+				nWarn += corrSetup->setkv(key, value);
 				break;
 			case PARSE_MODE_RULE:
-				rule->setkv(key, value);
+				nWarn += rule->setkv(key, value);
 				break;
 			case PARSE_MODE_SOURCE:
-				sourceSetup->setkv(key, value);
+				nWarn += sourceSetup->setkv(key, value);
 				break;
 			case PARSE_MODE_ANTENNA:
-				antennaSetup->setkv(key, value);
+				nWarn += antennaSetup->setkv(key, value);
 				break;
 			case PARSE_MODE_EOP:
-				eop->setkv(key, value);
+				nWarn += eop->setkv(key, value);
 				break;
 			}
 		}
@@ -1098,6 +1142,8 @@ void CorrParams::load(const string& fileName)
 			corrSetups[i].doPolar = false;
 		}
 	}
+
+	return nWarn;
 }
 
 void CorrParams::defaultSetup()
@@ -1121,6 +1167,11 @@ void CorrParams::example()
 	rules.push_back(CorrRule("X"));
 	rules.back().scanName.push_back(string("No0006"));
 	rules.back().corrSetupName = string("bogus");
+}
+
+int CorrParams::sanityCheck()
+{
+	return 0;
 }
 
 bool antennaMatch(const string &a1, const string &a2)
@@ -1481,6 +1532,7 @@ ostream& operator << (ostream& os, const CorrParams& x)
 	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
 	os << "nDataSegments=" << x.nDataSegments << endl;
 	os << "sendLength=" << x.sendLength << " # seconds" << endl;
+	os << "overSamp=" << x.overSamp << endl;
 	
 	if(!x.antennaList.empty())
 	{
