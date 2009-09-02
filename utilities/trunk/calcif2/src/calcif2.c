@@ -17,7 +17,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "1.1";
-const char verdate[] = "20090830";
+const char verdate[] = "20090902";
 
 typedef struct
 {
