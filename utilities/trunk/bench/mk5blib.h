@@ -16,6 +16,7 @@ typedef struct mk5bheader {
 } mk5bheader;
 
 void initialise_mark5bheader (mk5bheader *header, int rate, double mjd);
+void setmjd_mark5bheader(mk5bheader *header, double startmjd);
 void next_mark5bheader(mk5bheader *header);
 double mark5b_mjd(mk5bheader *header);
 void init_bitreversal ();

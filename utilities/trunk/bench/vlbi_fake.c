@@ -34,6 +34,7 @@
 
 #include "vheader.h"
 #include "mk5blib.h"
+#include "vdif.h"
 
 #define DEFAULT_BUFSIZE    1000  //  KB
 #define MAXSTR              200 
@@ -61,18 +62,21 @@ double cal2mjd(int day, int month, int year);
 int netsend(int sock, char *buf, size_t len, udp *udp);
 void my_usleep(u_int64_t usec);
 
-int main (int argc, char * const argv[]) {
+typedef enum {LBADR, MARK5B, VDIF} datamode;
+
+int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
   int i, status, ofile, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
   int seconds, hour, min, sec, bufsize, datarate;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
-  double mjd, finishmjd, ut, tbehind, t0, t1, t2;
+  double thismjd, finishmjd, ut, tbehind, t0, t1, t2, dtmp;
   float ftmp, speed;
   unsigned long long filesize, networksize, nwritten, totalsize;
-  vhead *header;    // File header object
+  vhead *header=0;    // File header object
   mk5bheader mk5_header;
+  vdif_header vdif_header;
 
   //int monitor = 0;  
   int port = 52100;    /* Write nfiles files of size total size */
@@ -82,14 +86,16 @@ int main (int argc, char * const argv[]) {
   int month = -1;
   int day = -1;
   int dayno = -1;
+  double mjd = -1;
   int numchan = 4;
-  int mark5b = 0;
+  datamode mode = LBADR;
   int bits=2;
   int bandwidth=16;
+  int framesize=10000;
   //float rate = 0; /* Limit read/write to this data rate */
   float updatetime = 1; /* 1 second update by default */
   float filetime = 1; /* 1 second "files" */
-  double duration = 60; /* 10min by default */
+  double duration = 60; /* 1min by default */
   char filebase[MAXSTR+1]; /* Base name for output file */
   char hostname[MAXSTR+1] = ""; /* Host name to send data to */
   char timestr[MAXSTR] = "";
@@ -98,6 +104,7 @@ int main (int argc, char * const argv[]) {
   udp.size = 0;
   udp.enabled = 0;  
   udp.usleep = 0;  
+  udp.extra = 0;
 
   struct option options[] = {
     {"duration", 1, 0, 'd'},
@@ -105,6 +112,8 @@ int main (int argc, char * const argv[]) {
     {"day", 1, 0, 'D'},
     {"dayno", 1, 0, 'Y'},
     {"month", 1, 0, 'm'},
+    {"mjd", 1, 0, 'M'},
+    {"year", 1, 0, 'y'},
     {"year", 1, 0, 'y'},
     {"time", 1, 0, 't'},
     {"port", 1, 0, 'p'},
@@ -119,6 +128,7 @@ int main (int argc, char * const argv[]) {
     {"nchan", 1, 0, 'n'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
+    {"vdif", 0, 0, 'V'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -164,7 +174,7 @@ int main (int argc, char * const argv[]) {
 	window_size = ftmp * 1024;
      break;
      
-    case 'r':
+    case 'W':
       status = sscanf(optarg, "%f", &ftmp);
       if (status!=1)
      	fprintf(stderr, "Bad bandwidth option %s\n", optarg);
@@ -225,6 +235,15 @@ int main (int argc, char * const argv[]) {
 	month = tmp;
       }
       break;
+
+    case 'M':
+      status = sscanf(optarg, "%lf", &dtmp);
+      if (status!=1)
+	fprintf(stderr, "Bad MJD option %s\n", optarg);
+      else {
+	mjd = dtmp;
+      }
+      break;
       
     case 'y':
       status = sscanf(optarg, "%d", &tmp);
@@ -274,7 +293,11 @@ int main (int argc, char * const argv[]) {
       break;
       
     case 'B':
-      mark5b = 1;
+      mode = MARK5B;
+      break;
+
+    case 'V':
+      mode = VDIF;
       break;
 
     case 'h':
@@ -289,7 +312,9 @@ int main (int argc, char * const argv[]) {
       printf("  -dayno <DAYNO>        Day of year of start time (now)\n");
       printf("  -year <YEAR>          Year of start time (now)\n");
       printf("  -time <HH:MM:SS>      Year of start time (now)\n");
+      printf("  -mjd <MJD>            MJD of start time\n");
       printf("  -mark5b/mk5b          Send Mark5b format data\n");
+      printf("  -vdif                 Send VDIF format data\n");
       printf("  -udp <MTU>            Use UDP with given datagram size (Mark5b only)\n");
       printf("  -sleep <USEC>         Sleep (usec) between udp packets\n");
       printf("  -u/-update <SEC>      Number of seconds to average timing statistics\n");
@@ -306,28 +331,105 @@ int main (int argc, char * const argv[]) {
     }
   }
 
-  if (mark5b) {
-    bufsize=10000+MK5BHEADSIZE*4;
-    udp.extra = 0;
+  thismjd = currentmjd();
+  mjd2cal(thismjd, &thisday, &thismonth, &thisyear, &ut);
+
+  if (year==-1) year = thisyear;
+  if (day==-1) day = thisday;
+  if (month==-1) month = thismonth;
+  if (dayno!=-1) dayno2cal(dayno, year, &day, &month);
+
+  ut = 0;
+  if (strlen(timestr)>0) {
+    status = sscanf(timestr, "%d:%d:%d", &hour, &min, &sec);
+    if (status!=3) {
+      sec = 0;
+      status = sscanf(timestr, "%d:%d", &hour, &min);
+      if (status!=2) {
+	hour = min = 0;
+	status = sscanf(timestr, "%d", &sec);
+	if (status!=1) {
+	  fprintf(stderr, "Could not parse time %s\n", timestr);
+	  exit(1);
+	}
+      }
+    }
+    ut = (hour+(min+sec/60.0)/60.0)/24.0;
   }
 
+  if (mjd<0) 
+    mjd = cal2mjd(day, month, year)+ut;
+  else 
+    mjd = mjd+ut;
+
+  finishmjd = mjd+duration/(60.*60.*24.);
+
+  datarate = numchan*bits*bandwidth*2; // Mbps, assuming Nyquist
+
   if (udp.enabled) {
-    if (!mark5b) {
-      fprintf(stderr, "Can only run UDP in mark5b mode\n");
+    if (mode==LBADR) {
+      fprintf(stderr, "Cannot run UDP in LBADR mode\n");
       exit(1);
     }
+    udp.sequence = 0;
     udp.size -= 20; // IP header
     udp.size -= 4*2; // UDP header
     udp.size -= sizeof(long long); // Sequence number
     udp.size &= ~0x7;  //Truncate to smallest multiple of 8
-      
+   
     if (udp.size<=0) {
       printf("Error: Specified UDP MTU size (%d) too small\n", 
 	     udp.size+20+4*2+(int)sizeof(long long));
       exit(1);
     }
-    bufsize+=udp.size;
-    udp.sequence = 0;
+  }
+
+  if (mode==MARK5B) {
+    bufsize=MK5BFRAMESIZE+MK5BHEADSIZE*4;
+    filesize = bufsize;
+    init_bitreversal();
+    initialise_mark5bheader(&mk5_header, datarate, mjd);
+
+    if (udp.enabled)  bufsize+=udp.size;
+
+  } else if (mode==VDIF) {
+    if (udp.enabled) 
+      bufsize = udp.size-VDIFHEADERSIZE;
+    else 
+      bufsize=framesize;
+    // Need to to have an integral number of frames/sec
+    while (bufsize>0) {
+      if ((int)(datarate*1e6) % bufsize==0) break;
+      bufsize -= 8;
+    }
+    if (bufsize==0) {
+      fprintf(stderr, "Could not find frame size to suit %d Mbps\n", datarate);
+      exit(1);
+    }
+    printf("VDIF: Using data frame size of %d bytes\n", bufsize);
+    bufsize += VDIFHEADERSIZE;
+    filesize = bufsize;
+    if (udp.enabled) udp.size = bufsize;
+
+    status = vdif_createheader(&vdif_header, bufsize, datarate*1e6/bufsize,
+			       2, bits, numchan, "Tt");
+    if (status!=VDIF_NOERROR) {
+      fprintf(stderr, "Error creating header (%d)\n", status);
+      exit(1);
+    }
+    status = vdif_setmjd(&vdif_header, mjd);
+    if (status!=VDIF_NOERROR) {
+      fprintf(stderr, "Error setting VDIF file (%d)\n", status);
+      exit(1);
+    }
+    
+  } else if (mode==LBADR) {
+    filesize = filetime*datarate*1e6/8;  // Seconds and Mbps => bytes
+    filetime = filesize/(datarate*1e6)*8;  // Rounding
+    filetime /= 60*60*24;
+  } else {
+    fprintf(stderr, "Unsupported data mode\n");
+    exit(1);
   }
 
   strcpy(filebase, "TESTFILE");
@@ -351,7 +453,7 @@ int main (int argc, char * const argv[]) {
 
   totalsize=0;
 
-  if (!mark5b) {
+  if (mode==LBADR) {
     header = newheader();
 
     setantennaid(header, "Tt");
@@ -365,46 +467,16 @@ int main (int argc, char * const argv[]) {
     setsequence(header, 0);
     strcpy(buf, "Chris was here");
 
-  } else {
+  } else if (mode==MARK5B) {
     header = NULL; 
-    strcpy(buf+MK5BHEADSIZE+4, "Chris was here");
+    strcpy(buf+MK5BHEADSIZE*4, "Chris was here");
+  } else if (mode==VDIF) {
+    strcpy(buf+VDIFHEADERSIZE, "Chris was here");
+  } else {
+    fprintf(stderr, "Unsupported recording mode\n");
+    exit(1);
   }
   tbehind = 0;
-
-  mjd = currentmjd();
-  mjd2cal(mjd, &thisday, &thismonth, &thisyear, &ut);
-
-  if (year==-1) year = thisyear;
-  if (day==-1) day = thisday;
-  if (month==-1) month = thismonth;
-  if (dayno!=-1) dayno2cal(dayno, year, &day, &month);
-
-  if (strlen(timestr)>0) {
-    status = sscanf(timestr, "%d:%d:%d", &hour, &min, &sec);
-    if (status!=3) {
-      fprintf(stderr, "Could not parse time %s\n", timestr);
-      exit(1);
-    }
-    ut = (hour+(min+sec/60.0)/60.0)/24.0;
-  }
-
-  mjd = cal2mjd(day, month, year)+ut;
-
-  finishmjd = mjd+duration;
-
-  datarate = numchan*bits*bandwidth*2;
-
-  if (mark5b) {
-    init_bitreversal();
-  
-    initialise_mark5bheader(&mk5_header, datarate, mjd);
-
-    filesize = MK5BFRAMESIZE+MK5BHEADSIZE*4;
-  } else {
-    filesize = filetime*datarate*1e6/8;  // Seconds and Mbps => bytes
-    filetime = filesize/(datarate*1e6)*8;  // Rounding
-    filetime /= 60*60*24;
-  }
 
   status = setup_net(hostname, port, window_size, &udp, &sock);
   if (status) return(1);
@@ -415,14 +487,15 @@ int main (int argc, char * const argv[]) {
   bwrote = 0;
   while (mjd+0.001/60/60/24<finishmjd) {
     
-    if (mark5b) {
-      next_mark5bheader(&mk5_header);
-
+    if (mode==MARK5B) {
       ptr = buf+udp.extra;
-      memcpy(ptr, mk5_header.header, MK5BHEADSIZE*4);
+      memcpy(ptr, mk5_header.header, MK5BHEADSIZE*4); // Inefficent, but oh well
 
-    } else { // vsi 
-      // Create vsi header
+    } else if (mode==VDIF) {
+      ptr = buf;
+      memcpy(ptr, &vdif_header, VDIFHEADERSIZE); // Inefficent, but oh well
+    } else { // LBADR
+      // Create LBADR header
       mjd2cal(mjd, &day, &month, &year, &ut);
       dayno = cal2dayno(day, month, year);
 
@@ -477,7 +550,6 @@ int main (int argc, char * const argv[]) {
 
       status = netsend(sock, buf, ntowrite, &udp);
       if (status) exit(1);
-
       nwritten += ntowrite;
       bwrote += ntowrite;
 
@@ -494,8 +566,14 @@ int main (int argc, char * const argv[]) {
       bwrote = 0;
     }
     
-    if (mark5b) {
+    if (mode==MARK5B) {
       mjd = mark5b_mjd(&mk5_header);
+      next_mark5bheader(&mk5_header);
+
+    } else if (mode==VDIF) {
+      mjd = vdif_mjd(&vdif_header);
+      vdif_nextheader(&vdif_header);
+
     } else {
       mjd += filetime;
     }
@@ -621,10 +699,10 @@ int netsend(int sock, char *buf, size_t len, udp *udp) {
     iovect[1].iov_len  = udp->size;
   
     ptr = buf;
-    while (ptr+udp->size<buf+len) {
+    while (ptr+udp->size<=buf+len) {
       iovect[1].iov_base = ptr;
 
-      nsent = sendmsg(sock, &msg, MSG_EOR);
+      nsent = sendmsg(sock, &msg, MSG_EOR);    
       if (nsent==-1) {
 	sprintf(str, "Sending %d byte UDP packet: ", (int)ntosend);
 	perror(str);

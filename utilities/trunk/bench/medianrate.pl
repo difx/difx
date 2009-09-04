@@ -17,7 +17,7 @@ foreach my $fname (@ARGV) {
 
   $rates[0] = 'na' if (@rates==0);
 
-  my $mid = length(@rates)/2;
+  my $mid = int scalar(@rates)/2;
 
   printf "$fname %s\n", $rates[$mid];
 

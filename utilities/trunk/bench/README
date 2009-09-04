@@ -57,3 +57,10 @@ Analysis
 The perl script medrianrate.pl computes the median transfer rate from the 
 i/o log files.  This can me used as the "speed metric". Just running on the 
 logs from a single i/o node should be enough.
+
+Development
+
+Please do not make changes to vlbi_fake.c and the files it links against *and check them into SVN*.
+These are copies from a different repository. If you make changes plese send them to me directly.
+
+Chris Phillips

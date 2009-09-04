@@ -27,24 +27,7 @@ int main(void) {
 }
 #endif
 
-void initialise_mark5bheader (mk5bheader *header, int rate, double startmjd) {
-  // Mark5b Sync word is constant. Blank user bits
-  
-  header->header[0] = 0xABADDEED;
-  header->header[1] = 0xF00F0000;
-  header->header[2] = 0x0;
-  header->header[3] = 0x0;
-  //  Return pointer into header for frame number and crc
-  header->nframe = (unsigned short*)&header->header[1];
-  *header->nframe = 0;
-  header->crc = (unsigned short*)&header->header[3];
-
-  header->framepersec = rate*1e6/8 / MK5BFRAMESIZE;
-  header->nsec = 0;
-  header->startmjd = startmjd;
-}
-
-void next_mark5bheader(mk5bheader *header) {
+void settime_mark5bheader(mk5bheader *header) {
   unsigned char j1, j2, j3, s1, s2, s3, s4, s5;
   int intmjd, secmjd, fracsec;
   double mjd;
@@ -94,10 +77,34 @@ void next_mark5bheader(mk5bheader *header) {
   header->crcdata[4] = s1<<4|s2;
   header->crcdata[5] = s3<<4|s4;
   *header->crc = reversebits16(crcc(header->crcdata, 48, 040003, 16));
+}
 
+void setmjd_mark5bheader(mk5bheader *header, double startmjd) {
+  *header->nframe = 0;
+  header->startmjd = startmjd;
+  header->nsec = 0;
+  settime_mark5bheader(header);
+}
+
+void initialise_mark5bheader (mk5bheader *header, int rate, double startmjd) {
+  // Mark5b Sync word is constant. Blank user bits
+  
+  header->header[0] = 0xABADDEED;
+  header->header[1] = 0xF00F0000;
+  header->header[2] = 0x0;
+  header->header[3] = 0x0;
+  //  Return pointer into header for frame number and crc
+  header->nframe = (unsigned short*)&header->header[1];
+  header->crc = (unsigned short*)&header->header[3];
+  header->framepersec = rate*1e6/8 / MK5BFRAMESIZE;
+
+  setmjd_mark5bheader(header, startmjd);
+}
+
+void next_mark5bheader(mk5bheader *header) {
   *header->nframe = (*header->nframe+1) % header->framepersec;
   if (*header->nframe==0) header->nsec++;
-
+  settime_mark5bheader(header);
 }
 
 double mark5b_mjd(mk5bheader *header) {
