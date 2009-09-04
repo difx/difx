@@ -36,8 +36,8 @@ from os.path import isfile
 from os import umask
 
 program = 'oms2v2d'
-version = '0.4'
-verdate = '20090501'
+version = '0.5'
+verdate = '20090904'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -109,7 +109,7 @@ def writev2d(oms, v2dFile):
 
 	nFFT = int(corr['FFT_SIZE'][0])
 	specAvg = int(corr['SPECTRAL_AVERAGE'][0])
-	if corr['POLARIZATION'] == 'NO':
+	if corr['POLARIZATION'][0] == 'NO':
 		doPolar = 'False'
 	else:
 		doPolar = 'True'

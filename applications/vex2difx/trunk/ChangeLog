@@ -1,18 +1,18 @@
-Version 0.3
+Version 1.1
 ~~~~~~~~~~~
-* Post DiFX-1.5
+* Post DiFX-1.5.1
+
+Version 1.0
+~~~~~~~~~~~
+* oms2v2d: correct use of POLARIZATION
+* Version for DiFX-1.5.1
+ 
+Version 0.2.3
+~~~~~~~~~~~~~
 * Mark5B support
 * format override support
 * Pulsar profile mode
-* Change sign convention associated with vex file
-   Note on clock sign conventions: As far as I (WFB) can tell, vex uses one sign
-   convention and the VLBA, DiFX and FITS all use the other.
-* Don't let VSN=None get through.
-* Allow file-based correlation using ANTENNA block values file= and filelist=
 * Split jobs at leap second
-* Add minLength parameter
-* Fix splitting jobs at clock boundaries
-* break= parameter to force job breaks at particular times
 * ANTENNA blocks get antenna names capitalized
 * Clean up parsing of .v2d a little bit
 * (Adam) Initialize some ANTENNA block variables
@@ -23,11 +23,28 @@ Version 0.3
 * EOP table support from within .v2d file
 * Support eVLBI via writing of Network table
 
+Version 0.2.2
+~~~~~~~~~~~~~
+* Fix clock offset of up to 6 picoseconds in simFXCORR mode
+* Don't write flag based on RECORD if correlating files
+* Fix some initialization information
+
+Version 0.2.1
+~~~~~~~~~~~~~
+* Post DiFX-1.5
+* Change sign convention associated with vex file
+   Note on clock sign conventions: As far as I (WFB) can tell, vex uses one sign
+   convention and the VLBA, DiFX and FITS all use the other.
+* Don't let VSN=None get through.
+* Allow file-based correlation using ANTENNA block values file= and filelist=
+* Fix splitting jobs at clock boundaries
+* Add minLength parameter
+* break= parameter to force job breaks at particular times
+
 Version 0.2
 ~~~~~~~~~~~
 * Make several classes subclasses of VexInterval to simplify things
-* Compute "Computational load" -- an estimate of the number of numerical 
-  operations required.
+* Compute "Computational load" -- an estimate of the number of numerical operations required.
 * Initial (untested) support for ephemeris-driven targets
 * Estimate output data size / allow job splitting based on job size
 * Version for DiFX-1.5

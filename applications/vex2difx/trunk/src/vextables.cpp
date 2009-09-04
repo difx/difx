@@ -1305,7 +1305,7 @@ ostream& operator << (ostream& os, const VexEvent& x)
 {
 	int d, s;
 	d = static_cast<int>(x.mjd);
-	s = static_cast<int>((x.mjd - d)*86400.0);
+	s = static_cast<int>((x.mjd - d)*86400.0 + 0.5);
 
 	os << "mjd=" << d << " sec=" << s << " : " << VexEvent::eventName[x.eventType] << " " << x.name;
 
