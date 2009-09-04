@@ -1522,8 +1522,15 @@ int main(int argc, char **argv)
 
 	if(v2dFile.size() == 0)
 	{
-		cerr << "Error: configuration file expected." << endl;
+		cerr << "Error: configuration file (.v2d) expected." << endl;
 		cerr << "Run with -h for help information." << endl;
+		exit(0);
+	}
+
+	if(v2dFile.find("_") != string::npos)
+	{
+		cerr << "Error: you cannot have an underscore (_) in the filename!" << endl;
+		cerr << "Please rename it and run again." << endl;
 		exit(0);
 	}
 
