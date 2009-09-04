@@ -580,6 +580,9 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 			D = mergeDifxInputs(D1, D2, opts->verbose);
 
+			deleteDifxInput(D1);
+			deleteDifxInput(D2);
+
 			if(!D)
 			{
 				fprintf(stderr, "Merging failed on <%s>.\n",
