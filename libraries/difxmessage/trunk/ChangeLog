@@ -41,8 +41,12 @@ Implement a minimum send delay (set to 40us now) to prevent loss of messages
 
 Version 0.6 20090518
 ~~~~~~~~~~~
+Improvements to difxlog
+DiFX version 1.5
+
+Version 0.7 20090904
+~~~~~~~~~~~
 Add XML type for condition reports
   one document per disk (i.e., 8 per module)
 Test programs for condition document types
-Improvements to difxlog
-DiFX version 1.5
+DiFX version 1.5.1

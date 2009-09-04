@@ -23,8 +23,8 @@ from time import asctime
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.2'
-verdate = '20080912'
+version = '0.3'
+verdate = '20090904'
 
 alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG']
 
