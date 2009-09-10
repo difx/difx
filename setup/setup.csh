@@ -4,9 +4,9 @@ alias PREPEND 'setenv \!^ {$\!^}:{\!:2}'
 setenv DIFX_VERSION difx-1.5
 
 ####### ROOT PATHS ##########################
-setenv DIFXROOT /Users/phi196/code/difx 
-setenv PGPLOTDIR 
-setenv IPPROOT /Library/Frameworks/Intel_IPP.framework/Versions/Current
+setenv DIFXROOT /usr/local/difx
+setenv PGPLOTDIR /usr/local/pgplot
+setenv IPPROOT /opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
 setenv MPICXX /usr/bin/mpicxx
