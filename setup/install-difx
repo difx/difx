@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--norpfits]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--norpfits] [--perl]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -37,6 +37,8 @@ Options:
 
    --norpfits      Don't build rpfits
 
+   --perl          Install some non-standard perl utilities (deprecated)
+
    --clean         Run make clean for all components
 
     """
@@ -49,7 +51,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "norpfits"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "norpfits", "perl"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -67,6 +69,7 @@ noinstall = False
 mk5d = False
 gfortran = True
 rpfits = True
+perl = False
 doclean = False
 
 # read arguments
@@ -87,6 +90,8 @@ if len(opts) > 0:
             mk5d = True
         if o == "--g77":
             gfortran = False
+        if o == "--perl":
+            perl = True
         if o == "--norpfits":
             rpfits = False
         if o == "--clean":
@@ -182,10 +187,11 @@ if not master_tag:
 topdir = os.getcwd()
 
 if doclean:
-#    print "**** Cleaning vexlib"
-#    os.chdir("libraries/vex/trunk/vexlib")
-#    run("make clean")
-#    os.chdir(topdir)
+    if perl:
+        print "**** Cleaning vexlib"
+        os.chdir("libraries/vex"+difx_version+"/vexlib")
+        run("make clean")
+        os.chdir(topdir)
     if rpfits:
         print "**** Cleaning rpfits"
         if platform == "darwin":
@@ -233,33 +239,36 @@ if not noinstall:
         os.mkdir(incdir)
 
 ##### Compile non-standard libraries ####################
-#print "************************************"
-#print "Building vex"
-#print
-#os.chdir("libraries/vex/trunk/vexlib")
-#if platform == "darwin":
-#    run("make -f Makefile.osx")
-#else:
-#    run("make")
-#if not noinstall:
-#    run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
-#    run("mv -f libvex.a " + libdir)
-#os.chdir("../vexperl")
-#run("perl Makefile.PL PREFIX=" + libdir)
-#run("make")
-#if not noinstall:
-#    run("make install")
-#os.chdir(topdir)
+if perl:
+    print "************************************"
+    print "Building vex"
+    print
+    os.chdir("libraries/vex"+difx_version+"/vexlib")
+    if platform == "darwin":
+        run("make -f Makefile.osx")
+    else:
+        run("make")
+    if not noinstall:
+        run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
+        run("mv -f libvex.a " + libdir)
+    os.chdir("../vexperl")
+    run("perl Makefile.PL PREFIX=" + dirxroot)
+    run("make")
+    if not noinstall:
+        run("make install")
+    os.chdir(topdir)
 
-#print "************************************"
-#print "Building Astro Perl"
-#print
-#os.chdir("libraries/perl/trunk/Astro")
-#run("perl Makefile.PL PREFIX=" + libdir)
-#run("make")
-#if not noinstall:
-#    run("make install")
-#os.chdir(topdir)
+    print "***DEBUG", os.getcwd()
+
+    print "************************************"
+    print "Building Astro Perl"
+    print
+    os.chdir("libraries/perl"+difx_version+"/Astro")
+    run("perl Makefile.PL PREFIX="+difxroot)
+    run("make")
+    if not noinstall:
+        run("make install")
+        os.chdir(topdir)
 
 if rpfits:
     print "************************************"
