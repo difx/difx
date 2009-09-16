@@ -1,6 +1,8 @@
 Version 1.1
 ~~~~~~~~~~~
 * Post DiFX-1.5.1
+* Improved algorithm for determining blocks per send
+* Zero length scans are ignored
 
 Version 1.0
 ~~~~~~~~~~~

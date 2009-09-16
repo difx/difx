@@ -672,7 +672,9 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	sendLength = 0.1;		// (s)
+	tweakIntegrationTime = true;
+	sendLength = 0.0;		// (s) zero implies use sendSize to dictate sends
+	sendSize = 6000000;		// Bytes
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 32;
 	v2dMode = V2D_MODE_NORMAL;
@@ -702,11 +704,11 @@ int CorrParams::setkv(const string &key, const string &value)
 			vexFile = inFile;
 		}
 	}
-	else if(key == "mjdStart")
+	else if(key == "mjdStart" || key == "start")
 	{
 		mjdStart = parseTime(value);
 	}
-	else if(key == "mjdStop")
+	else if(key == "mjdStop" || key == "stop")
 	{
 		mjdStop = parseTime(value);
 	}
@@ -784,6 +786,10 @@ int CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> sendLength;
 	}
+	else if(key == "sendSize")
+	{
+		ss >> sendSize;
+	}
 	else if(key == "padScans")
 	{
 		padScans = isTrue(value);
@@ -799,6 +805,10 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "simFXCORR")
 	{
 		simFXCORR = isTrue(value);
+	}
+	else if(key == "tweakIntTime")
+	{
+		tweakIntegrationTime = isTrue(value);
 	}
 	else if(key == "antennas")
 	{
@@ -1526,12 +1536,14 @@ ostream& operator << (ostream& os, const CorrParams& x)
 
 	os << "singleScan=" << x.singleScan << endl;
 	os << "singleSetup=" << x.singleSetup << endl;
+	os << "tweakIntTime=" << x.tweakIntegrationTime << endl;
 	os << "mediaSplit=" << x.mediaSplit << endl;
 	os << "jobSeries=" << x.jobSeries << endl;
 	os << "startSeries=" << x.startSeries << endl;
 	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
 	os << "nDataSegments=" << x.nDataSegments << endl;
 	os << "sendLength=" << x.sendLength << " # seconds" << endl;
+	os << "sendSize=" << x.sendSize << " # Bytes" << endl;
 	os << "overSamp=" << x.overSamp << endl;
 	
 	if(!x.antennaList.empty())

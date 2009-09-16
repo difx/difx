@@ -462,7 +462,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		VexInterval timeRange = adjustTimeRange(antStart, antStop, params.minSubarraySize);
 
 		// If the min subarray condition never occurs, then skip the scan
-		if(!timeRange.isCausal())
+		if(timeRange.duration_seconds() < 0.5)
 		{
 			continue;
 		}
@@ -592,7 +592,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				{
 					cout << "Setting antenna format to " << 
 						antennaSetup->format << 
-				        	 " for antenna " << antName << endl;
+						" for antenna " << antName << endl;
 				}
 				F.format = antennaSetup->format;
 			}

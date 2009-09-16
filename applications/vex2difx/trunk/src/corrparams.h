@@ -186,6 +186,7 @@ public:
 	bool mediaSplit;	// split jobs on media change
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
+	bool tweakIntegrationTime;	// nadger the integration time to make values nice
 	double maxLength;	// [days]
 	double minLength;	// [days]
 	double maxSize;		// [bytes] -- break jobs for output filesize
@@ -194,6 +195,7 @@ public:
 	int dataBufferFactor;
 	int nDataSegments;
 	double sendLength;	// (s) amount of data to send from datastream to core at a time
+	int sendSize;		// (Bytes) amount of data to send from datastream to core at a time (overrides sendLength)
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor

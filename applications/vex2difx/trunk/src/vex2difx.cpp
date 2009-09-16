@@ -42,8 +42,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("1.0");
-const string verdate("20090902");
+const string version("1.1");
+const string verdate("20090916");
 const string author("Walter Brisken");
 
 
@@ -912,6 +912,162 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 	}
 }
 
+static int count2s(int c)
+{
+	int i = 0;
+
+	while(c%2 == 0)
+	{
+		i++;
+		c /= 2;
+	}
+	return i;
+}
+
+static double tweakTime(double tInt, int bwIndex, int *n2, int *n5, int *p)
+{
+	int m, i;
+	double fundamental, ratio;
+	double errorTol[] = {0.15, 0.19, 0.42};
+	int powers[][2] = 
+	{
+		{5,5},	/* for {a,b}, fundamental int time is 2^a 5^b mus */
+		{5,5}, 
+		{5,5}, 
+		{5,5}, 
+		{4,6}, 
+		{5,6}, 
+		{6,6}, 
+		{7,6}, 
+		{8,5}, 
+		{9,5}, 
+		{10,5}, 
+		{11,4}, 
+		{12,4}
+	};
+
+	/* first check for exact FXCORR integration time */
+	ratio = tInt/0.131072;
+	m = (int)(ratio + 0.5);
+	if(m > 0 && fabs(ratio - m) < 0.00001)
+	{
+		*n2 = 17;
+		*n5 = 0;
+		*p = m;
+		return m*0.131072;
+	}
+
+	/* fundamental integration time */
+	fundamental = (1 << powers[bwIndex][0])*pow(5.0, (double)(powers[bwIndex][1]))*1.0e-6;
+
+	for(i = 0; i < 3; i++)
+	{
+		ratio = tInt/fundamental;
+		m = (int)(ratio + 0.5);
+		if(m > 0 && fabs(ratio - m) < errorTol[i]*ratio)
+		{
+			*n2 = powers[bwIndex][0]-bwIndex+count2s(m);
+			*n5 = powers[bwIndex][1]-i;
+			*p = m;
+			return m*fundamental;
+		}
+		fundamental /= 5.0;
+	}
+
+	*n2 = *n5 = 0;
+	*p = -1;
+
+	return tInt;
+}
+
+static int calcBlocksPerSend(double bw, double *tInt, double dataRate, int sendSize, int tweakIntTime)
+{
+	int n;	/* channel bandwidth = 2^-n MHz */
+	int t;	/* integration time in microsec */
+	int n2, n5;	/* factors of 2 and 5 in of t */
+	int p;		/* total int time is p * 2^n2 * 5^n5 */
+	int fftTime;	/* fft time in mus */
+	int nFFT;	/* number of ffts in integration time */
+	int bytesPerFFT;
+	int targetNSend;
+	int i2, i5, A2, A5;
+	int e, eBest;
+	int blocksPerSend = 1;
+	int nSend;
+	int f;
+
+	if(sendSize <= 0)
+	{
+		sendSize = 6000000;
+	}
+
+	n = -static_cast<int>(log(bw)/log(2) + 0.5);
+	if(n < 0)
+	{
+		return -1;
+	}
+	fftTime = 1 << n;
+	bytesPerFFT = static_cast<int>(dataRate * fftTime / 4);
+
+	if(tweakIntTime)
+	{
+		/* Here, adjust the integration time to make things work out best */
+		*tInt = tweakTime(*tInt, n, &n2, &n5, &p);
+
+		t = static_cast<int>(1.0e6*(*tInt) + 0.5);
+		nFFT = (int)((*tInt)*1.0e6/fftTime + 0.5);
+
+		/* Aim for about 6 MB sends */
+		targetNSend = static_cast<int>( (float)sendSize/bytesPerFFT );
+
+		A2 = 1;
+		eBest = 1<<30;
+		for(i2 = 0; i2 <= n2; i2++)
+		{
+			A2 *= 2;
+			A5 = 1;
+			for(i5 = 0; i5 <= n5; i5++)
+			{
+				A5 *= 5;
+				e = abs(A2*A5 - targetNSend);
+				if(e < eBest)
+				{
+					eBest = e;
+					blocksPerSend = A2*A5;
+				}
+			}
+		}
+
+		return blocksPerSend;
+	}
+	else
+	{
+		nFFT = (int)((*tInt)*1.0e6/fftTime + 0.5);
+
+		targetNSend = static_cast<int>(sendSize*2.0/3.0/bytesPerFFT);
+
+		/* See if any value within a factor of ~2 target works exactly */
+		for(nSend = targetNSend*3/2; nSend >= targetNSend/2; nSend--)
+		{
+			if(nFFT % nSend == 0)
+			{
+				return nSend;
+			}
+		}
+
+		/* Not optimal.  try to keep integration times fairly equal */
+		f = static_cast<int>((float)nFFT/targetNSend + 0.9);
+		if(f < 5)
+		{
+			f = 5;
+		}
+
+		return nFFT/f;
+	}
+
+	return 0;
+}
+
 static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
 	int c;
@@ -919,7 +1075,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	const CorrSetup *corrSetup;
 	const VexMode *mode;
 	string configName;
-	double sendLength;
 	double minBW;
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
@@ -944,8 +1099,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			return i;
 		}
 	}
-
-	sendLength = P->sendLength;
 
 	configName = S->modeName + string("_") + S->corrSetupName;
 
@@ -996,33 +1149,27 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	else
 	{
-		int blocksPerInt = (int)(corrSetup->tInt*minBW/config->nChan + 0.5);
-		int bytesPerBlock = (int)(mode->subbands.size()*config->nChan*2*mode->getBits()/8 + 0.5);
-		int bps = 1;
-		int sendBytes = (int)(sendLength*mode->subbands.size()*mode->sampRate*mode->getBits()/(8.0*config->overSamp) + 0.5);
+		double dataRate, chbw;
+		int sendSize;
 
-		// Search for the perfect number of blocks per send
-		for(int b = 1; b <=blocksPerInt; b++)
+		dataRate = mode->subbands.size()*mode->getBits()*mode->sampRate/1000000.0; // data rate (Mbps)
+		chbw = (minBW/1000000.0)/config->nChan; // channel bandwidth (MHz)
+
+		if(P->sendLength > 0.0)
 		{
-			if(blocksPerInt % b == 0)
-			{
-				if(b*bytesPerBlock < 2*sendBytes)
-				{
-					bps = b;
-				}
-			}
+			sendSize = static_cast<int>(P->sendLength*mode->subbands.size()*mode->getBits()*mode->sampRate/8);
+		}
+		else if(P->sendSize > 0)
+		{
+			sendSize = P->sendSize;
+		}
+		else
+		{
+			sendSize = 6000000;	/* 6 MB is not a bad amount */
 		}
 
-		if(bps * bytesPerBlock < sendBytes/5.0)
-		{
-			// Give up on even number of blocks per integration
-			bps = (int)(sendBytes/bytesPerBlock + 0.5);
-		}
-
-		config->blocksPerSend = bps;
+		config->blocksPerSend = calcBlocksPerSend(chbw, &(config->tInt), dataRate, sendSize, P->tweakIntegrationTime);
 	}
-
-	// FIXME -- reset sendLength based on blockspersend, then readjust tInt, perhaps
 
 	return c;
 }
@@ -1522,7 +1669,7 @@ int main(int argc, char **argv)
 
 	if(v2dFile.size() == 0)
 	{
-		cerr << "Error: configuration file (.v2d) expected." << endl;
+		cerr << "Error: configuration (.v2d) file expected." << endl;
 		cerr << "Run with -h for help information." << endl;
 		exit(0);
 	}
