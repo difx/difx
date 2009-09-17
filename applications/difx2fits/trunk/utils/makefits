@@ -38,9 +38,9 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.3'
+version = '0.4'
 author  = 'Walter Brisken'
-verdate = '20090507'
+verdate = '20090917'
 
 calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
@@ -237,7 +237,7 @@ class JobList:
 
 		datestr = genDateStr(t)
 
-		tmp = dir + '/' + 'makefilts.tmp'
+		tmp = dir + '/' + 'makefits.tmp'
 		if isdir(tmp):
 			print '\nError: temporary directory %s already exists.  Aborting.' % tmp
 			exit(0)
@@ -314,6 +314,22 @@ class JobList:
 			j = j + 1
 		out.close()
 
+		format = 'VLBA_%%s_%%s_%%0%dd_%%s.jobmatrix.txt' % nDigit
+		for i in indices:
+			fn = '%s.%d.jobmatrix' % (expt, i)
+			if isfile(fn):
+				archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
+				cmd = 'mv %s %s/%s' % (fn, dir, archfile)
+				if verbose:
+					print 'Executing: %s' % cmd
+				system(cmd)
+				if groupId != None:
+					# make sure anyone in the difx group can remove the file later
+					cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
+					if verbose:
+						print 'Executing: %s' % cmd
+					system(cmd)
+
 		# merge and gzip difxlog files
 		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])
 		cmd = 'cat'
@@ -344,7 +360,7 @@ class JobList:
 		# merge sniffer files
 		sniffFiles = ''
 		if sniff:
-			for x in [['acb', False] , ['apd', True], ['log', False], ['wts', True], ['xcb', False]]:
+			for x in [['acb', False] , ['apd', True], ['apc', True], ['log', False], ['wts', True], ['xcb', False]]:
 				sniffFile = mergesnifferfiles(expt, indices, self.kv['pass'], x[0], cwd, verbose, x[1])
 				if sniffFile != None:
 					sniffFiles += ' ' + sniffFile

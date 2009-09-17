@@ -1,3 +1,8 @@
+Version 2.7
+* Post DiFX-1.5.1
+* Copy jobmatrix file
+* rename "makefilts.tmp" to "makefits.tmp"
+
 Version 2.6
 * Apply flags properly, even in cases with crazy subarraying
 * Require difxio 2.12
