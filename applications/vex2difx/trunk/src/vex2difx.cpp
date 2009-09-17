@@ -43,7 +43,7 @@
 
 const string program("vex2difx");
 const string version("1.1");
-const string verdate("20090916");
+const string verdate("20090917");
 const string author("Walter Brisken");
 
 
@@ -425,7 +425,12 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
 		strcpy(A[i].mount, ant->axisType.c_str());
-		ant->getClock(J.mjdStart, offset, rate);
+		bool clockFound = ant->getClock(J.mjdStart, offset, rate);
+		if(!clockFound)
+		{
+			cerr << "WARNING:  Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
+			cerr << "          Unless this is intentional, your results will suffer!" << endl;
+		}
 		A[i].delay = offset*1.0e6;	// convert to us from sec
 		A[i].rate  = rate*1.0e6;	// convert to us/sec from sec/sec
 		A[i].offset[0] = ant->axisOffset;

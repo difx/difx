@@ -3,6 +3,7 @@ Version 1.1
 * Post DiFX-1.5.1
 * Improved algorithm for determining blocks per send
 * Zero length scans are ignored
+* Warn if no clock values are applied on a job/antenna basis
 
 Version 1.0
 ~~~~~~~~~~~

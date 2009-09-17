@@ -282,9 +282,11 @@ VexSource *VexData::newSource()
 }
 
 // returned values in seconds
-void VexAntenna::getClock(double mjd, double &offset, double &rate) const
+bool VexAntenna::getClock(double mjd, double &offset, double &rate) const
 {
 	vector<VexClock>::const_iterator it;
+	bool hasValue = false;
+
 	offset = 0.0;
 	rate = 0.0;
 
@@ -292,10 +294,13 @@ void VexAntenna::getClock(double mjd, double &offset, double &rate) const
 	{
 		if(it->mjdStart <= mjd)
 		{
+			hasValue = true;
 			offset = it->offset + (mjd - it->offset_epoch)*it->rate*86400.0;
 			rate = it->rate;
 		}
 	}
+
+	return hasValue;
 }
 
 const VexSource *VexData::getSource(const string name) const

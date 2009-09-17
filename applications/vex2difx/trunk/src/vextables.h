@@ -214,7 +214,7 @@ class VexAntenna
 public:
 	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0) {}
 
-	void getClock(double mjd, double &offset, double &rate) const;
+	bool getClock(double mjd, double &offset, double &rate) const;
 
 	string name;
 	string nameInVex;	// Sometimes names get changed
