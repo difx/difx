@@ -29,11 +29,15 @@
 #include "nativemk5.h"
 #include "alert.h"
 
+#ifdef WORDS_BIGENDIAN
+#define FILL_PATTERN 0x44332211UL
+#else
+#define FILL_PATTERN 0x11223344UL
+#endif
 
-#define FILL_PATTERN 0x11223344
-
-static void dirCallback(int scan, int nscan, int status, void *data)
+static int dirCallback(int scan, int nscan, int status, void *data)
 {
+	char message[256];
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
@@ -41,6 +45,20 @@ static void dirCallback(int scan, int nscan, int status, void *data)
 	mk5status->position = nscan;
 	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
 	difxMessageSendMark5Status(mk5status);
+
+	if(status == MARK5_DIR_READ_ERROR)
+	{
+		sprintf(message, "XLR read error in decoding of scan %d\n", 
+			scan+1);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+	}
+	else if(status == MARK5_DIR_DECODE_ERROR)
+	{
+		sprintf(message, "cannot decode scan %d\n", scan+1);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+	}
+
+	return 0;
 }
 
 NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum, 
@@ -232,15 +250,25 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	{
 		doUpdate = 1;
 		cinfo << startl << "getting module info" << endl;
-		v = getCachedMark5Module(&module, xlrDevice, corrstartday, 
+		v = getCachedMark5Module(&module, &xlrDevice, corrstartday, 
 			datafilenames[configindex][fileindex].c_str(), 
-			mk5dirpath, &dirCallback, &mk5status);
+			mk5dirpath, &dirCallback, &mk5status, 0);
 
 		if(v < 0)
 		{
 			cerror << startl << "Module " << 
 				datafilenames[configindex][fileindex] << 
 				" not found in unit - aborting!!!" << endl;
+			dataremaining = false;
+			return;
+		}
+
+		v = sanityCheckModule(&module);
+		if(v < 0)
+		{
+			csevere << startl << "Module " << 
+				datafilenames[configindex][fileindex] <<
+				" contains undecoded scans - aborting!!!" << endl;
 			dataremaining = false;
 			return;
 		}
@@ -411,8 +439,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	/* All reads of a module must be 64 bit aligned */
 	bytes = readbytes;
 	start = readpointer;
-	data = buf = (unsigned long *)&databuffer[(buffersegment*bufferbytes)/
-		numdatasegments];
+	data = buf = (unsigned long *)&databuffer[buffersegment*(bufferbytes/
+		numdatasegments)];
 	if(start & 4)
 	{
 		start += 4;
@@ -462,8 +490,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			break;
 		}
 
-		/* Wait up to 10 seconds for a return */
-		for(i = 1; i < 100000; i++)
+		/* Wait up to 5 seconds for a return */
+		for(i = 1; i < 50; i++)
 		{
 			xlrRS = XLRReadStatus(0);
 			if(xlrRS == XLR_READ_COMPLETE)
@@ -481,23 +509,23 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				bufferinfo[buffersegment].validbytes = 0;
 				return;
 			}
-			if(i % 10000 == 0)
+			if(i % 10 == 0)
 			{
-				cinfo << startl << "Waited " << i << " ms  state="; 
+				cerror << startl << "Waited " << (i/10) << " sec  state="; 
 				if(xlrRS == XLR_READ_WAITING)
 				{
-					cinfo << "XLR_READ_WAITING" << endl;
+					cerror << "XLR_READ_WAITING" << endl;
 				}
 				else if(xlrRS == XLR_READ_RUNNING)
 				{
-					cinfo << "XLR_READ_RUNNING" << endl;
+					cerror << "XLR_READ_RUNNING" << endl;
 				}
 				else
 				{
-					cinfo << "XLR_READ_OTHER" << endl;
+					cerror << "XLR_READ_OTHER" << endl;
 				}
 			}
-			usleep(100);
+			usleep(100000);
 		}
 		if(xlrRS == XLR_READ_COMPLETE)
 		{
@@ -505,21 +533,41 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		}
 		else if(t == 0)
 		{
-			cinfo << startl << "[" << mpiid << "] XLRCardReset() being called!" << endl;
+			cerror << startl << "XLRCardReset() being called!" << endl;
 			xlrRC = XLRCardReset(1);
-			cinfo << startl << "[" << mpiid << "] XLRCardReset() called! " << xlrRC << endl;
+			if(xlrRC != XLR_SUCCESS)
+			{
+				csevere << startl << "XLRCardReset() failed.  Remainder of data from this antenna will not be correlated and a reboot of this Mark5 unit is probably needed." << endl;
+				dataremaining = false;
+				keepreading = false;
+				bufferinfo[buffersegment].validbytes = 0;
+				return;
+			}
+			else
+			{
+				cerror << startl << "XLRCardReset() success!" << endl;
+			}
 
-			cinfo << startl << "[" << mpiid << "] XLROpen() being called!" << endl;
+			cerror << startl << "XLROpen() being called!" << endl;
 			xlrRC = XLROpen(1, &xlrDevice);
-			cinfo << startl << "[" << mpiid << "] XLROpen() called! " << xlrRC << endl;
+			if(xlrRC != XLR_SUCCESS)
+			{
+				csevere << startl << "XLROpen() failed.  Remainder of data from this antenna will not be correlated and a reboot of this Mark5 unit is probably needed." << endl;
+				dataremaining = false;
+				keepreading = false;
+				bufferinfo[buffersegment].validbytes = 0;
+				return;
+			}
+			else
+			{
+				cerror << startl << "XLROpen() success!" << endl;
+			}
 		}
 	}
 
 	if(xlrRS != XLR_READ_COMPLETE)
 	{
-		cerror << startl << "NativeMk5: Waited 10 seconds for a read and gave up.  position=" << readpointer << " length=" << bytes << endl;
-		dataremaining = false;
-		keepreading = false;
+		cerror << startl << "NativeMk5: Waited 5 seconds for a read and gave up.  position=" << readpointer << " length=" << bytes << endl;
 		bufferinfo[buffersegment].validbytes = 0;
 		return;
 	}
@@ -636,8 +684,6 @@ void NativeMk5DataStream::loopfileread()
 {
   int perr;
   int numread = 0;
-
-  cinfo << startl << "NM5 : loopfileread starting" << endl;
 
   //lock the first section to start reading
   openfile(bufferinfo[0].configindex, 0);

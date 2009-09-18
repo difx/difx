@@ -60,6 +60,10 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int nchan, in
         cfatal << startl << "Mk5Mode::Mk5Mode : framesamples inconsistent (" << framesamples << "/" << mark5stream->framesamples << ")" << endl;
         initok = false;
       }
+      else
+      {
+        this->framesamples = mark5stream->framesamples;
+      }
     }
   }
 }

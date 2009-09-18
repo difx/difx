@@ -23,6 +23,7 @@
 #include "mode.h"
 #include "math.h"
 #include "alert.h"
+#include <iomanip>
 
 const double Polyco::BIN_TOLERANCE = 0.01;
 const double Polyco::DM_CONSTANT_SECS = 1.0/0.000241;
@@ -113,6 +114,10 @@ Polyco::Polyco(const Polyco & tocopy)
       }
     }
   }
+  else
+  {
+    cwarn << startl << "Copying a polyco with no frequency information!" << endl;
+  }
   
   //cinfo << startl << "Finished copying a polyco!" << endl;
 }
@@ -175,6 +180,8 @@ void Polyco::getBins(double offsetmins, int **bins)
     if(status != vecNoErr)
         csevere << startl << "Error!!! Problem calculating vector dot product in polyco::getBins" << endl;
 
+    //if(int(offsetmins*60000)%1000 == 0)
+    //  cout << "Averagephase is " << averagephase << ", dmphaseoffsets[numfreqs-1][0] is " << dmPhaseOffsets[numfreqs-1][0] << ", combined module phase will be " << averagephase + dmPhaseOffsets[numfreqs-1][0] - int(averagephase + dmPhaseOffsets[numfreqs-1][0]) << endl;
     //loop through all the frequencies and subtract the phase offsets for this frequency
     for(int i=0;i<numfreqs;i++)
     {
@@ -350,6 +357,9 @@ void Polyco::calculateDMPhaseOffsets(double offsetmins)
         if(status != vecNoErr)
           csevere << startl << "Error!!! Problem calculating dmPhaseOffsets!!!" << endl;
     }
+    //cinfo << startl << "Current freq is " << currentfreq << endl;
+    //cinfo << startl << "First and last dmphaseoffset for freq[0] is " << dmPhaseOffsets[0][0] << ", " << dmPhaseOffsets[0][numchannels] << endl;
+    //cinfo << startl << "First and last dmphaseoffset for freq[numfreqs-1] is " << dmPhaseOffsets[numfreqs-1][0] << ", " << dmPhaseOffsets[numfreqs-1][numchannels] << endl;
 }
 
 bool Polyco::loadPolycoFile(string filename, int subcount)
@@ -407,6 +417,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       //get the refphase, reference frequency, observatory, timespan, number of coefficients, observing frequency and binary phase
       input.get(buffer, 21);
       refphase = atof(buffer);
+      refphase = refphase - floor(refphase);
 
       input.get(buffer, 19);
       f0 = atof(buffer);
@@ -462,7 +473,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     freqcoefficientarray[0] = f0 + coefficients[1]/60.0;
     freqcoefficientarray[numcoefficients-1] = 0.0;
     for(int i=1;i<numcoefficients-1;i++)
-        freqcoefficientarray[i] = (i+1)*coefficients[i+1];
+        freqcoefficientarray[i] = (i+1)*coefficients[i+1]/60.0;
 
     phasecoefficientarray = vectorAlloc_f64(numcoefficients);
     phasecoefficientarray[0] = refphase + coefficients[0];
