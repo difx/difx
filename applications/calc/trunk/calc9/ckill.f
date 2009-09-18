@@ -1,4 +1,4 @@
-      SUBROUTINE KILL ( LNAME, I1, I2 )
+      SUBROUTINE CKILL ( LNAME, I1, I2 )
       IMPLICIT None
 C 
 C 1.     KILL 

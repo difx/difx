@@ -148,7 +148,7 @@ C     for meanings.
       IF (KPTDC .EQ. 1) CALL PUTA('PTD CFLG      ',LOFF,40,1,1)
       IF (KPTDC .EQ. 2) CALL PUTA('PTD CFLG      ',LOXX,40,1,1)
       IF ( KERR .EQ. 0 ) GO TO 500
-           CALL KILL (6HPTDI  , 1, KERR )
+           CALL CKILL (6HPTDI  , 1, KERR )
 C
 C     Normal conclusion.
   500 CONTINUE

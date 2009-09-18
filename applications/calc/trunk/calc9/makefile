@@ -1,6 +1,9 @@
 #
 # Build wtest - Modified for Linux - WEW
 #
+
+F77=gfortran
+
 OBJS =  refcalc.o inform.o init_calc.o \
         load_sites.o load_sources.o get_baseline_xyz.o \
         find_source.o eop_setup.o wcalc.o \
@@ -42,28 +45,27 @@ OBJS =  refcalc.o inform.o init_calc.o \
        cwobm.o
 #
 #
-FFLAGS = -C -c -w +O2 -I2 +Q ../includes/i8yy.ftni
+FFLAGS = -C -c -w +O2 -I2 +Q 
 LIBS = 
 #
 ctest: ctest.o $(OBJS)
-	f77 -lg2c -lm -o ctest ctest.o $(OBJS)
+	$(F77) -lg2c -lm -o ctest ctest.o $(OBJS)
 	ar ru libcorcalc.a $(OBJS)
 #
 mbl: mbl.o $(OBJS)
-	f77 -lg2c -lm -o mbl mbl.o $(OBJS)
+	$(F77) -lg2c -lm -o mbl mbl.o $(OBJS)
 #
 wtest: wtest.o $(OBJS)
-	f77 -lg2c -lm -o wtest wtest.o $(OBJS)
+	$(F77) -lg2c -lm -o wtest wtest.o $(OBJS)
 #
 %.o:  %.for
-	f77 -c $<
+	$(F77) -c $<
 #
 %.o:  %.f
-	f77 -C -w -I2 -fbadu77-intrinsics-delete \
-            -funix-intrinsics-delete -c $<
+	$(F77) -C -w -I2 -c $<
 #
 # Originally
-#	f77 -C -w +O2 +U77 -I2 -c $<
+#	$(F77) -C -w +O2 +U77 -I2 -c $<
 #
 %.o:  %.c
 	cc -g -c $<

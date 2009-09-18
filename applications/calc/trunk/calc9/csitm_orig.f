@@ -398,7 +398,7 @@ C               Make sure interpolation is over no more than 10 years!!
      *             ', Data epoch = ',F10.2, ', Site epoch = ',F10.2,/,
      *             ' Maximum difference allowed is 10 years!! Check',
      *             ' input codes SITERECV and INTRVAL4/INTERVAL. ') 
-                  CALL KILL (6HSITI  , 0, 0 )
+                  CALL CKILL (6HSITI  , 0, 0 )
                   STOP
                  Endif
 C 
@@ -436,7 +436,7 @@ C  Check for a geocenter station and set flag if so
            Write(6,'("SITI: Goecenter site = site # ",I3)') Zero_site
           Else      ! More than one geocenter site! Not allowed!
            Write(6,'("SITBLK: More than 1 geocenter site! Quitting!")')
-           CALL KILL (6HSITI  , 0, 0 )
+           CALL CKILL (6HSITI  , 0, 0 )
           Endif
         Endif
       Enddo
@@ -503,12 +503,12 @@ C
 C     Check for database interface errors. If an error is found, KILL.
        DO N = 1,5
            NN = N
-           IF ( KERR(NN) .NE. 0 ) CALL KILL (6HSITI  , NN, KERR(NN) )
+           IF ( KERR(NN) .NE. 0 ) CALL CKILL (6HSITI  , NN, KERR(NN) )
        ENDDO
 C
 C     There may be only one site zenith atmosphere delay.
        IF( KERR(6) .NE. 0 .AND. KERR(6) .NE. 2 )
-     .     CALL KILL (6HSITI  , 6, KERR(6) )
+     .     CALL CKILL (6HSITI  , 6, KERR(6) )
 C
       ENDIF
 C
@@ -517,7 +517,7 @@ C
       DO 302 N = 7,10
         NN = N
         IF( KERR(N) .EQ. 0) GO TO 302
-          CALL KILL (6HSITI  ,NN, KERR(NN))
+          CALL CKILL (6HSITI  ,NN, KERR(NN))
  302  CONTINUE
 C
 C     Calculate the neccesary site geometry.
@@ -828,7 +828,7 @@ C
 C     GET the baseline name. Check for errors.
       CALL GETA ('BASELINE      ', LNBASE, 4, 2, 1, NDO, KERR )
       IF ( KERR .EQ. 0 ) GO TO 310
-      CALL KILL (6HSITG  , 1, KERR )
+      CALL CKILL (6HSITG  , 1, KERR )
 C
 C   Set geocenter indicator to zero
       Nzero = 0
@@ -993,7 +993,7 @@ C     Abnormal conclusion.       .
   700 WRITE ( 6, 9300 )
  9300 FORMAT (1X, 'CALC has been terminated in subroutine SITG.  ',
      1            'The baseline identification was not successful.' )
-      CALL KILL (6HSITG  , 0, 0)
+      CALL CKILL (6HSITG  , 0, 0)
       END
 C
 C******************************************************************************
@@ -1428,7 +1428,7 @@ C
         Kerr(5) = 0
         Kerr(6) = 0
        Else
-        Call Kill(6HSITBLK,0,0)
+        CALL CKILL(6HSITBLK,0,0)
        Endif
 C
 C       print *, ' SITXYZ ', SITXYZ
@@ -1589,7 +1589,7 @@ C
           Ocestat(I) = 'YES '
          Enddo
        Else
-        Call Kill(6HOCNIN ,0,0)
+        CALL CKILL(6HOCNIN ,0,0)
        Endif
 C
 C       print *, ' SITOAM ', SITOAM
@@ -1609,12 +1609,12 @@ C
 C   error on Read
  180  Continue
       print *, 'OCNIN: Error on read of ocean loading file '
-        Call Kill(6HOCNIN ,0,0)
+        CALL CKILL(6HOCNIN ,0,0)
 C
 C   error on OPEN
  240  Continue
       print *, 'OCNIN: Error on OPEN of ocean loading file '
-        Call Kill(6HOCNIN ,0,0)
+        CALL CKILL(6HOCNIN ,0,0)
 C
  270  Continue
       Return

@@ -480,7 +480,7 @@ C    Convert from MHz to Hz.
       CALL GET4('REF FREQ      ',REF_FREQ,1,1,1,NDO,KERR)
       IF(KERR.NE.0) then
         write(6,'("AXOG: Failure to obtain ref frequency.")')
-        CALL KILL(6HAXOG  ,1,KERR)
+        CALL CKILL(6HAXOG  ,1,KERR)
       Endif
       REF_FREQ = REF_FREQ*1.D6
 C
@@ -551,7 +551,7 @@ C
 C    Antenna axis type invalid, a message is written and the program stops.
          IF ((KAXIS(L) .le. 0 ) .OR. (KAXIS(L) .gt. 5)) Then
            WRITE ( 6, 9300 )  LL, KAXIS(LL)
-           CALL KILL (6HAXOG  , 0, 0)
+           CALL CKILL (6HAXOG  , 0, 0)
          Endif
  9300 FORMAT (1X, "THE PROGRAM HAS TERMINATED IN SUBROUTINE AXOG.  ",
      1            'KAXIS (', I2, ') = ', I2, '.' )

@@ -172,7 +172,7 @@ C
 C   GET the precession constant from the database
       CALL GET4 ('PRE DATA      ', PRECON, 1, 1, 1, NDO, KERR )
       IF ( KERR .EQ. 0 ) GO TO 300
-           CALL KILL (6HPREI  , 1, KERR )
+           CALL CKILL (6HPREI  , 1, KERR )
 C
 C   Check KPRED for debug output.
   300 IF ( KPRED .EQ. 0 ) GO TO 500

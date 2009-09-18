@@ -172,7 +172,7 @@ C
       IF (.not. Input_EOP) THEN           !Already have A1DIFF? 
 C        Get the A1DIFF array and check for database error.
         CALL GET4('A1 - TAI      ',A1DIFF,3,1,1,NDO,KERR(1))
-        IF (KERR(1) .NE. 0) CALL KILL(6HCTIMI ,1,KERR(1))
+        IF (KERR(1) .NE. 0) CALL CKILL(6HCTIMI ,1,KERR(1))
       ENDIF                               !Already have A1DIFF?
 C
 C    Move the offset into A1TAI.

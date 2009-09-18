@@ -106,7 +106,7 @@ C     time tag with 2-digit year. Doesn't really matter though.
       DO 200  N = 1,2
         NN = N
         IF ( KERR(N) .EQ. 0 )  GO TO 200
-        CALL KILL (6HUTCTM , NN, KERR(NN) )
+        CALL CKILL (6HUTCTM , NN, KERR(NN) )
   200 CONTINUE
 C
 C  Compute the Julian date at 0 hours UTC for the year, month, day.

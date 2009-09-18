@@ -170,9 +170,12 @@ c Got to end of file - interpolate using last 5(?) values
 	m = 5
 	print *, ' !!!!! EOP FILE NOT UP TO DATE - INTERPOLATING !!!!! '
 	k = k - 4
-	call flinear_mean_square_fit( a_day( k ), a_x( k ), m, ax, bx, rmsx )
-	call flinear_mean_square_fit( a_day( k ), a_y( k ), m, ay, by, rmsy )
-	call flinear_mean_square_fit( a_day( k ), a_dut1( k ), m,ad,bd,rmsd )
+	call flinear_mean_square_fit( a_day( k ), a_x( k ), m, ax, bx,
+     - rmsx )
+	call flinear_mean_square_fit( a_day( k ), a_y( k ), m, ay, by, 
+     - rmsy )
+	call flinear_mean_square_fit( a_day( k ), a_dut1( k ), m, ad, 
+     - bd,rmsd )
 
 	m = k
 	do i = 1, 5

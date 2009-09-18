@@ -347,7 +347,7 @@ C   date of the CALC run, the time of the CALC run, and the load module message.
       ierr4 = gethostname(computing_center)
       if(ierr4.ne.0) then
         write(6,"('ERROR reading host computer name')")
-        call perror()
+        call perror("")
       endif
       host_len = trimlen(Computing_center)
        WRITE (6,9301) LCALC, LNAME, IVERI, LNAMO, LFVO, STR24, 
@@ -381,7 +381,7 @@ C  Get the header record
         Call MVREC(1,1,1,kerr)
          If (kerr .ne. 0) Then 
           write(6,'("START/MVREC: Kerr = ",i5)') Kerr
-          CALL KILL ( 6HSTART , 1, KERR )
+          CALL CKILL ( 6HSTART , 1, KERR )
          Endif
 C  Get number of sites, number of sources, Interval, EOP stuff
        If (Input_sites .or. Input_ocean)
@@ -452,7 +452,7 @@ C
 C
 C   Check for interfacing errors with the database. If an error, then KILL CALC
 C   and terminiate.
-      IF ( KERR .NE. 0 ) CALL KILL ( 6HSTART , 1, KERR )
+      IF ( KERR .NE. 0 ) CALL CKILL ( 6HSTART , 1, KERR )
 C
 C   Insert two history records.
       Write(Lhist1,'( "CALC",f5.2,1x,8a2,1x,a24,a10)')
@@ -903,7 +903,7 @@ C    *       Iostat=Ios)
        Go to 101
   99   Continue
        Write(6,'(" Error opening external EOP file. Quitting! ")')
-       Call KILL (6HGETEOP,1,Ios)
+       CALL CKILL (6HGETEOP,1,Ios)
  101   Continue
 C
 C  Read new EOP mod file format. 2000.12.29
@@ -928,7 +928,7 @@ C          Will need to subtract leap seconds later (in UT1I)
 C
 C  If here, UT1type not properly defined. ?????
        Write(6,'(" Illegal UT1type in EOP mod file! Quitting! ")')
-       Call KILL (6HGETEOP,1,Ios)
+       CALL CKILL (6HGETEOP,1,Ios)
 C
   88   Continue
 C  Old format, just in case
@@ -946,14 +946,14 @@ C   Determine what the short period tidal term flag should be
        IF(Utflag .eq. 'UT1R') Then
          ISHRTFL = -1
          Write(6,'(" Cannot use UT1R data! Quitting! ")')
-         Call KILL (6HGETEOP,1,Ios)
+         CALL CKILL (6HGETEOP,1,Ios)
        ENDIF
  
 C**   Write(6,'(" ISHRTFL = ",I3)') ISHRTFL
        Go to 102
   89   Continue
        Write(6,'(" Cannot read EOP file! Quitting! ")')
-       Call KILL (6HGETEOP,1,Ios)
+       CALL CKILL (6HGETEOP,1,Ios)
 C
  102  Continue
 C
@@ -981,7 +981,7 @@ C*       If ( (Xintv(1) - Uintv) .lt. JD1 ) Then
            Write(6,'("GETEOP: Not enough EOP points before database")')
             KERR = 0
             Close (Iunit)
-           CALL KILL ( 6HGETEOP, 1, KERR )
+           CALL CKILL ( 6HGETEOP, 1, KERR )
 C*       Else
 C*         Recompute Nerp and reset first tabular point to JD1
 C*         Nerp = Nerp - (JD1-Xmjds+.01)/Uintv
@@ -999,7 +999,7 @@ C*       If ( (Xintv(2) + Uintv) .gt. JD2 ) Then
            Write(6,'("GETEOP: Not enough EOP points after database")')
             KERR = 0
             Close (Iunit)
-           CALL KILL ( 6HGETEOP, 1, KERR )
+           CALL CKILL ( 6HGETEOP, 1, KERR )
 C*       Else
 C          Recompute Nerp 
 C*         Nerp = Nerp - ( Xmjdl-JD2+.01)/Uintv

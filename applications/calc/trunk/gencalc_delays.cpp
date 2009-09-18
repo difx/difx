@@ -2,6 +2,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <string>
+#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <iomanip>

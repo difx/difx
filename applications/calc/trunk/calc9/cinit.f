@@ -146,7 +146,7 @@ C   INITL Program Structure.
 C
 C   Call MVREC to make the header record available and check for db error.
       CALL MVREC ( 1, 1, 1, KERR (1) )
-      IF ( KERR (1) .NE. 0 ) CALL KILL(6HINITL ,1,KERR(1))
+      IF ( KERR (1) .NE. 0 ) CALL CKILL(6HINITL ,1,KERR(1))
 C
 C   GET the physical constants.
       CALL GET4 ('VLIGHT        ', VLIGHT, 1, 1, 1, NDO, KERR(2) )
@@ -182,7 +182,7 @@ C
 C  Check for database errors. If an error, KILL
       DO  N = 2,12
         NN = N
-        IF ( KERR(N) .NE. 0 ) CALL KILL (6HINITL ,NN,KERR(NN))
+        IF ( KERR(N) .NE. 0 ) CALL CKILL (6HINITL ,NN,KERR(NN))
       ENDDO
 C
 C  Provide for the input and initializations of the model modules and of the

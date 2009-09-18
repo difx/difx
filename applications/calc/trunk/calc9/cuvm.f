@@ -127,7 +127,7 @@ C   Get the reference frequency.
        CALL GET4('REF FREQ      ',REF_FREQ,1,1,1,NDO,KERR)
        IF(KERR.NE.0) then
          write(6,'("UVG: Failure to obtain ref frequency.")')
-         CALL KILL(6HUVG   ,1,KERR)
+         CALL CKILL(6HUVG   ,1,KERR)
        Endif
 C    Convert from MHz to Hz.
        REF_FREQ = REF_FREQ*1.D6

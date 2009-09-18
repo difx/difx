@@ -167,7 +167,7 @@ C   Call 'PUTA' to place the ocean loading module text message into db.
       CALL PUTA ('OCE MESS      ',LOCEM, 40, 1, 1 )
 C
 C   Check that the flow control variable has a legitimate value.
-      IF(KOCEC.LT.0 .OR. KOCEC.GT.3) CALL KILL(6HOCEI  ,1,1)
+      IF(KOCEC.LT.0 .OR. KOCEC.GT.3) CALL CKILL(6HOCEI  ,1,1)
 C
       IF (KOCEC .EQ. 2 .or. (Calc_user.eq.'C' .and. Apply_ocean.eq.'Y')) 
      *   Then

@@ -106,7 +106,7 @@ C   KERR = 0 says observation found. KERR = 1 says end-of-file.
 C   First check for database failure.
       IF ( KERR(1) .NE. 0 ) THEN
         IF ( KERR(1) .EQ. 1 )  GO TO 810
-          CALL KILL (6HOBSNT , 1, KERR(1) )
+          CALL CKILL (6HOBSNT , 1, KERR(1) )
       ENDIF
 C
 C   GET the time tag, the baseline id, and source name.
@@ -122,7 +122,7 @@ C
 C   Check for database errors and KILL if found.
       DO  N = 1,5
         NN = N
-        IF ( KERR(N) .NE. 0 )  CALL KILL (6HOBSNT ,NN,KERR(NN))
+        IF ( KERR(N) .NE. 0 )  CALL CKILL (6HOBSNT ,NN,KERR(NN))
       ENDDO
 C
 C   Kick the counter for another observation and set end-of-data flag to zero.

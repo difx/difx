@@ -144,7 +144,7 @@ C
 C      GET the 'TAI MINUS UTC' array from the database and check for errors.
         CALL GET4 ('TAI- UTC      ', ATMUTC, 3, 1, 1, NDO, KERR )
         IF ( KERR .EQ. 0 )  GO TO 300
-         CALL KILL (6HATIMI , 1, KERR )
+         CALL CKILL (6HATIMI , 1, KERR )
       ENDIF                             ! Already have ATMUTC?
 C
 C     Check KATID for debug output.
