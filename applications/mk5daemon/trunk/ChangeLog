@@ -66,3 +66,9 @@ Version 1.1
 * restartCalcServer command accepted
 * XLRClose / XLROpen after XLRSelectBank to prevent read errors
 * add checkdir
+
+Version 1.2
+~~~~~~~~~~~
+* Post DiFX-1.5.1
+* mk5dir -- add suffix to distinguish otherwise identically named scans
+

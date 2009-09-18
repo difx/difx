@@ -153,6 +153,66 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 	return b;
 }
 
+static int uniquifyScanNames(struct Mark5Module *module)
+{
+	char scanNames[MAXSCANS][MAXLENGTH];
+	int nameCount[MAXSCANS];
+	int origIndex[MAXSCANS];
+	int i, j, n=0;
+	char tmpStr[MAXLENGTH+5];
+
+	if(!module)
+	{
+		return -1;
+	}
+
+	if(module->nscans < 2)
+	{
+		return 0;
+	}
+
+	strcpy(scanNames[0], module->scans[0].name);
+	nameCount[0] = 1;
+	origIndex[0] = 0;
+	n = 1;
+
+	for(i = 1; i < module->nscans; i++)
+	{
+		for(j = 0; j < n; j++)
+		{
+			if(strcmp(scanNames[j], module->scans[i].name) == 0)
+			{
+				nameCount[j]++;
+				sprintf(tmpStr, "%s_%04d", scanNames[j], nameCount[j]);
+				strncpy(module->scans[i].name, tmpStr, MAXLENGTH-1);
+				module->scans[i].name[MAXLENGTH-1] = 0;
+				break;
+			}
+		}
+		if(j == n)
+		{
+			strcpy(scanNames[n], module->scans[i].name);
+			nameCount[n] = 1;
+			origIndex[n] = i;
+			n++;
+		}
+	}
+
+	/* rename those that would have had name extension _0001 */
+	for(j = 0; j < n; j++)
+	{
+		if(nameCount[j] > 1)
+		{
+			i = origIndex[j];
+			sprintf(tmpStr, "%s_%04d", scanNames[j], 1);
+			strncpy(module->scans[i].name, tmpStr, MAXLENGTH-1);
+			module->scans[i].name[MAXLENGTH-1] = 0;
+		}
+	}
+
+	return 0;
+}
+
 static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int mjdref, 
 	int (*callback)(int, int, int, void *), void *data, float *replacedFrac)
 {
@@ -348,6 +408,8 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 	}
 
 	free(buffer);
+
+	uniquifyScanNames(module);
 
 	return -die;
 }

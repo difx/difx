@@ -1,4 +1,4 @@
-AC_INIT([mk5daemon], [1.1], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([mk5daemon], [1.2], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN
