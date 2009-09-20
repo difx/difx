@@ -2100,7 +2100,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 		ms->frameoffset = findfirstframe(ms->datawindow, bytes,
 			mark5bSync);
 
-		if(ms->frameoffset == 0)
+		if(ms->frameoffset < 0)
 		{
 			return -1;
 		}
