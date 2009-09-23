@@ -87,6 +87,6 @@ setenv DIFX_ARCHIVE_ROOT /home/swc/difx/archive
 setenv MANPATH /usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
 setenv DIFX_GROUP_ID difx 
 setenv G2CDIR /usr/lib/gcc/x86_64-redhat-linux/3.4.6/
-echo "DiFX version $DIFX_VERSION is selected"
+echo " DiFX version $DIFX_VERSION is selected"
 
 unalias PREPEND

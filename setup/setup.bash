@@ -110,4 +110,4 @@ export DIFX_ARCHIVE_ROOT=/home/swc/difx/archive
 export MANPATH=/usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
 export DIFX_GROUP_ID=difx 
 export G2CDIR=/usr/lib/gcc/x86_64-redhat-linux/3.4.6/
-echo "DiFX version $DIFX_VERSION is selected"
+echo " DiFX version $DIFX_VERSION is selected"
