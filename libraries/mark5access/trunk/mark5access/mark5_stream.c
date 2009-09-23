@@ -343,6 +343,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 		return new_mark5_format_k5(a, b, c, e);
 	}
+	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
+	{
+	  r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		if(r < 4)
+		{
+			return 0;
+		}
+		if(r < 5)
+		{
+			d = 1;
+		}
+
+		return new_mark5_format_vdif(a, b, c, d, e, 32);
+	}
 	else
 	{
 		fprintf(stderr, "Unknown format : %s\n", formatname);
