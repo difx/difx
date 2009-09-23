@@ -42,7 +42,7 @@ my $pulsar = 0;
 my $databufferfactor = undef;
 my $numdatasegments = 32;
 my $atca = 'WXXX';
-my $new = 0;
+my $old = 0;
 my $monitor = 0;
 my $requested_duration = undef;
 my $files = undef;
@@ -52,7 +52,7 @@ my @activestations = ();
 GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'auto!'=>\$auto, 
 	   'quad!'=>\$quadf, 'postf'=>\$postf, 'start=s'=>\$starttime,
-	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'new'=>\$new,
+	   'input=s'=>\$input, 'ant=s'=>\@activestations, 'old'=>\$old,
 	   'swin'=>\$swin, 'monitor'=>\$monitor, 'udp=i'=>\$udp,
 	   'duration=i'=>\$requested_duration, 'files=s'=>\$files);
 
@@ -214,10 +214,10 @@ START SECONDS:      $start_seconds
 ACTIVE DATASTREAMS: $nactive
 ACTIVE BASELINES:   $nactivebaseline
 EOF
-if ($new) {
-  print INPUT "VIS BUFFER LENGTH:  8\n";
-} else {
+if ($old) {
   print INPUT "DATA HEADER O/RIDE: FALSE\n";
+} else {
+  print INPUT "VIS BUFFER LENGTH:  8\n";
 }
 print INPUT<<EOF;
 OUTPUT FORMAT:      $outputformat
@@ -235,13 +235,13 @@ CONFIG SOURCE:      DEFAULT
 INT TIME (SEC):     $tint
 NUM CHANNELS:       $nchannel
 EOF
-if ($new) {
+if (!$old) {
   print INPUT<<EOF;
 CHANNELS TO AVERAGE:1
 OVERSAMPLE FACTOR:  1
 EOF
 }
-if ($new) {
+if (!$old) {
   print INPUT "DECIMATION FACTOR:  1\n";
 }
 
@@ -405,7 +405,7 @@ foreach (@stations) {
   if ($stationmodes->{$_}->record_transport_type eq 'S2') {
     $format = 'LBAVSOP';
   } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5A') {
-    if ($new) {
+    if (!$old) {
       $format = 'MKIV';
     } else {
       $format = 'MKV';
@@ -425,7 +425,7 @@ TELESCOPE INDEX:    $index
 TSYS:               $tsys
 DATA FORMAT:        $format
 EOF
-  if ($new) {
+  if (!$old) {
     my $source = 'FILE';
     $source = 'EVLBI' if ($evlbi);
     print INPUT<<EOF;
