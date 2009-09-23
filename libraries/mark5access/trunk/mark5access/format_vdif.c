@@ -829,11 +829,12 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->framens = 8000.0*f->databytesperpacket/ms->Mbps;
 	}
 
-	mark5_format_vdif_make_formatname(ms);
-
 	/* Aha -- we have some data to look at to further refine the format... */
 	if(ms->datawindow)
 	{
+		ms->frame = ms->datawindow;
+		ms->payload = ms->frame + ms->payloadoffset;
+
 		headerwords = (uint32_t *)(ms->frame);
 
 #ifdef WORDS_BIGENDIAN
@@ -874,16 +875,16 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 			}
 		}
 
-		dataframelength = word2 & 0x00FFFFFF;
+		dataframelength = (word2 & 0x00FFFFFF)*8;
 		if(f->databytesperpacket == 0)
 		{
-			f->databytesperpacket = dataframelength;
+			f->databytesperpacket = dataframelength-f->frameheadersize;
 		}
-		else if(f->databytesperpacket != dataframelength)
+		else if(f->databytesperpacket != dataframelength-f->frameheadersize)
 		{
 			fprintf(stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength);
-			f->databytesperpacket = dataframelength;
+				f->databytesperpacket, dataframelength-f->frameheadersize);
+			f->databytesperpacket = dataframelength-f->frameheadersize;
 		}
 		
 		ms->payloadoffset = f->frameheadersize;
@@ -940,6 +941,8 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 			f->frameheadersize);
 		return -1;
 	}
+	mark5_format_vdif_make_formatname(ms);
+
 
 	return 0;
 }
@@ -988,7 +991,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	{
 		decoderindex += 0;
 	}
-	if(decimation == 2)
+	else if(decimation == 2)
 	{
 		decoderindex += 1024;
 	}
