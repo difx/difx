@@ -130,8 +130,8 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 
 	headerbytes = ms->frame;
 
-	seconds = word0 && 0x3FFFFFFF;	/* bits 0 to 29 */
-	refepoch = headerbytes[7] & 0x0FFF;
+	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
+	refepoch = headerbytes[7] & 0x3F;
 
 	seconds += v->leapsecs;
 	days = seconds/86400;
@@ -148,7 +148,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	}
 	if(ns)
 	{
-		*ns = (word1 && 0x00FFFFFF)*ms->framens;
+		*ns = (word1 & 0x00FFFFFF)*ms->framens;
 	}
 
 	return 0;
