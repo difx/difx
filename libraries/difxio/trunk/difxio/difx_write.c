@@ -279,9 +279,17 @@ int writeDifxLineArray1(FILE *out, const char *key, int i1, double *array,
 	
 	return writeDifxLineArray(out, k, array, n);
 }
+int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2,
+	double *array, int n)
+{
+	char k[128];
+	sprintf(k, key, i1, i2);
+	return writeDifxLineArray(out, k, array, n);
+}
 
 int writeDifxDateLines(FILE *out, double mjd)
 {
+	//printf("Writing out mjd %15.8f\n", mjd);
 	int yr=0, mo=0, da=0, hr, mi, se;
 	int mjdint;
 	double mjdfrac;

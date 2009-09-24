@@ -35,7 +35,7 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 {
 	FILE *out;
 	DifxScan *scan;
-	int a, s, p;
+	int a, s, p, i;
 	int refAnt, order;
 	const char *name;
 
@@ -82,18 +82,15 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	{
 		scan = D->scan + s;
 
-		if(scan->configId >= 0 && scan->configId < 1<<12)
+		writeDifxLine1(out, "SCAN %d POINTING SRC", s, 
+			       D->source[scan->pointingCentreSrc].name);
+		writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", s, 
+				  scan->nPhaseCentres);
+		for(i=0;i<scan->nPhaseCentres;i++)
 		{
-			DifxConfig *config;
-			config = D->config + scan->configId;
-			name = config->name;
+			writeDifxLine2(out, "SCAN %d PHS CTR %d SRC", s, i,
+                                       D->source[scan->phsCentreSrcs[i]].name);
 		}
-		else
-		{
-			name = scan->name;
-		}
-
-		writeDifxLine1(out, "SCAN %d SRC NAME", s, name);
 		
 		for(refAnt = 0; refAnt < scan->nAntenna; refAnt++)
 		{
@@ -113,28 +110,31 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 		for(p = 0; p < scan->nPoly; p++)
 		{
 			writeDifxLineInt2(out, "SCAN %d POLY %d MJD",
-				s, p, scan->im[refAnt][p].mjd);
+				s, p, scan->im[refAnt][0][p].mjd);
 			writeDifxLineInt2(out, "SCAN %d POLY %d SEC",
-				s, p, scan->im[refAnt][p].sec);
-			for(a = 0; a < scan->nAntenna; a++)
+				s, p, scan->im[refAnt][0][p].sec);
+			for(i=0;i<scan->nPhaseCentres+1;i++)
 			{
-				if(scan->im[a] == 0)
+				for(a = 0; a < scan->nAntenna; a++)
 				{
-					continue;
+					if(scan->im[a] == 0)
+					{
+						continue;
+					}
+					order = scan->im[a][i][p].order;
+					writeDifxLineArray2(out, "SRC %d ANT %d DELAY (us)", 
+						i, a, scan->im[a][i][p].delay, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d DRY (us)", 
+						i, a, scan->im[a][i][p].dry, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d WET (us)", 
+						i, a, scan->im[a][i][p].wet, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d U (m)",
+						i, a, scan->im[a][i][p].u, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d V (m)",
+						i, a, scan->im[a][i][p].v, order+1);
+					writeDifxLineArray2(out, "SRC %d ANT %d W (m)",
+						i, a, scan->im[a][i][p].w, order+1);
 				}
-				order = scan->im[a][p].order;
-				writeDifxLineArray1(out, "ANT %d DELAY (us)", 
-					a, scan->im[a][p].delay, order+1);
-				writeDifxLineArray1(out, "ANT %d DRY (us)", 
-					a, scan->im[a][p].dry, order+1);
-				writeDifxLineArray1(out, "ANT %d WET (us)", 
-					a, scan->im[a][p].wet, order+1);
-				writeDifxLineArray1(out, "ANT %d U (m)",
-					a, scan->im[a][p].u, order+1);
-				writeDifxLineArray1(out, "ANT %d V (m)",
-					a, scan->im[a][p].v, order+1);
-				writeDifxLineArray1(out, "ANT %d W (m)",
-					a, scan->im[a][p].w, order+1);
 			}
 		}
 	}

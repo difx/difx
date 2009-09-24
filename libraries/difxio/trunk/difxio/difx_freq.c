@@ -57,6 +57,10 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	fprintf(fp, "    Freq = %f MHz\n", df->freq);
 	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
 	fprintf(fp, "    Sideband = %c\n", df->sideband);
+        fprintf(fp, "    Num Chan = %c\n", df->nChan);
+        fprintf(fp, "    Spec Avg = %c\n", df->specAvg);
+        fprintf(fp, "    Oversamp = %c\n", df->overSamp);
+        fprintf(fp, "    Decimation = %c\n", df->decimation);
 }
 
 void printDifxFreq(const DifxFreq *df)
@@ -66,9 +70,13 @@ void printDifxFreq(const DifxFreq *df)
 
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
 {
-	if(df1->freq     == df2->freq &&
-	   df1->bw       == df2->bw   &&
-	   df1->sideband == df2->sideband)
+	if(df1->freq       == df2->freq &&
+	   df1->bw         == df2->bw   &&
+	   df1->sideband   == df2->sideband &&
+	   df1->specAvg    == df2->specAvg &&
+	   df1->nChan      == df2->nChan &&
+	   df1->overSamp   == df2->overSamp &&
+	   df1->decimation == df2->decimation)
 	{
 		return 1;
 	}
@@ -80,9 +88,13 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
 
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 {
-	dest->freq     = src->freq;
-	dest->bw       = src->bw;
-	dest->sideband = src->sideband;
+	dest->freq       = src->freq;
+	dest->bw         = src->bw;
+	dest->sideband   = src->sideband;
+	dest->nChan      = src->nChan;
+	dest->specAvg    = src->specAvg;
+	dest->overSamp   = src->overSamp;
+	dest->decimation = src->decimation;
 }
 
 int simplifyDifxFreqs(DifxInput *D)
@@ -121,9 +133,9 @@ int simplifyDifxFreqs(DifxInput *D)
 			/* 1. Renumber this and all higher freqs */
 			for(d = 0; d < D->nDatastream; d++)
 			{
-				for(r = 0; r < D->datastream[d].nFreq; r++)
+				for(r = 0; r < D->datastream[d].nRecFreq; r++)
 				{
-					f0 = D->datastream[d].freqId[r];
+					f0 = D->datastream[d].recFreqId[r];
 					if(f0 == f)
 					{
 						f0 = f1;
@@ -132,7 +144,20 @@ int simplifyDifxFreqs(DifxInput *D)
 					{
 						f0--;
 					}
-					D->datastream[d].freqId[r] = f0;
+					D->datastream[d].recFreqId[r] = f0;
+				}
+				for(r = 0; r < D->datastream[d].nZoomFreq; r++)
+				{
+					f0 = D->datastream[d].zoomFreqId[r];
+					if(f0 == f)
+					{
+						f0 = f1;
+					}
+					else if(f0 > f)
+					{
+						f0--;
+					}
+					D->datastream[d].zoomFreqId[r] = f0;
 				}
 			}
 
@@ -219,6 +244,10 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 			"%10.8f", df[i].bw);
 		sb[0] = df[i].sideband;
 		writeDifxLine1(out, "SIDEBAND %d", i, sb);
+                writeDifxLineInt1(out, "NUM CHANNELS %d", i, df[i].nChan);
+		writeDifxLineInt1(out, "CHANS TO AVG %d", i, df[i].specAvg);
+		writeDifxLineInt1(out, "OVERSAMPLE FAC. %d", i, df[i].overSamp);
+		writeDifxLineInt1(out, "DECIMATION FAC. %d", i, df[i].decimation);
 	}
 
 	return n;

@@ -202,45 +202,75 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 			rcA = db->recChanA[f][0];
 			rcB = db->recChanB[f][0];
 
-			if(rcA < 0 || rcA >= D->datastream[db->dsA].nRecChan)
+			if(rcA < 0 || rcA >= D->datastream[db->dsA].nRecBand)
 			{
 				fprintf(stderr, "Error! makeBaselineFreq2IF : "
 					"rcA = %d, range = %d\n",
-					rcA, D->datastream[db->dsA].nRecChan);
+					rcA, D->datastream[db->dsA].nRecBand);
 				exit(0);
 			}
 
-			if(rcB < 0 || rcB >= D->datastream[db->dsB].nRecChan)
+			if(rcB < 0 || rcB >= D->datastream[db->dsB].nRecBand)
 			{
 				fprintf(stderr, "Error! makeBaselineFreq2IF : "
 					"rcB = %d, range = %d\n",
-					rcB, D->datastream[db->dsB].nRecChan);
+					rcB, D->datastream[db->dsB].nRecBand);
 				exit(0);
 			}
 
-			fqA = D->datastream[db->dsA].RCfreqId[rcA];
-			fqB = D->datastream[db->dsB].RCfreqId[rcB];
-
-			if(fqA < 0 || fqA >= D->datastream[db->dsA].nFreq)
+			if(rcA > D->datastream[db->dsA].nRecBand)
 			{
-				fprintf(stderr, "Error! makeBaselineFreq2IF : "
-					"local freq id=%d out of range %d\n",
-					fqA, D->datastream[db->dsA].nFreq);
-				fqA = 0;
-				exit(0);
+				fqA = D->datastream[db->dsA].zoomBandFreqId[rcA-D->datastream[db->dsA].nRecBand];
+				if(fqA < 0 || fqA >= D->datastream[db->dsA].nZoomFreq)
+				{
+					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+						"local freq id=%d out of range %d\n",
+						fqA, D->datastream[db->dsA].nZoomFreq);
+					exit(0);
+				}
+				/* map from local freqid to freqid table index */
+				fqA = D->datastream[db->dsA].zoomFreqId[fqA];
 			}
-			if(fqB < 0 || fqB >= D->datastream[db->dsB].nFreq)
+			else
 			{
-				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+				fqA = D->datastream[db->dsA].recBandFreqId[rcA];
+				if(fqA < 0 || fqA >= D->datastream[db->dsA].nRecFreq)
+				{
+					fprintf(stderr, "Error! makeBaselineFreq2IF : "
 					"local freq id=%d out of range %d\n",
-					fqB, D->datastream[db->dsB].nFreq);
-				fqB = 0;
-				exit(0);
+					fqA, D->datastream[db->dsA].nRecFreq);
+					exit(0);
+				}
+				/* map from local freqid to freqid table index */
+				fqA = D->datastream[db->dsA].recFreqId[fqA];
+			}
+			if(rcB > D->datastream[db->dsB].nRecBand)
+			{
+				fqB = D->datastream[db->dsB].zoomBandFreqId[rcB-D->datastream[db->dsB].nRecBand];
+				if(fqB < 0 || fqB >= D->datastream[db->dsB].nZoomFreq)
+				{
+					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+						"local freq id=%d out of range %d\n",
+						fqB, D->datastream[db->dsB].nZoomFreq);
+					exit(0);
+				}
+				/* map from local freqid to freqid table index */
+				fqB = D->datastream[db->dsB].zoomFreqId[fqB];
+			}
+			else
+			{
+				fqB = D->datastream[db->dsB].recBandFreqId[rcB];
+				if(fqB < 0 || fqB >= D->datastream[db->dsB].nRecFreq)
+				{
+					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+						"local freq id=%d out of range %d\n",
+						fqB, D->datastream[db->dsB].nRecFreq);
+					exit(0);
+				}
+				/* map from local freqid to freqid table index */
+				fqB = D->datastream[db->dsB].recFreqId[fqB];
 			}
 
-			/* map from local freqid to freqid table index */
-			fqA = D->datastream[db->dsA].freqId[fqA];
-			fqB = D->datastream[db->dsB].freqId[fqB];
 			if(fqA != fqB)
 			{
 				fprintf(stderr, "Baseline %d-%d freq %d "
@@ -278,10 +308,10 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 				a, nAnt);
 			continue;
 		}
-		nFreq = dd->nFreq;
+		nFreq = dd->nRecFreq;
 		for(f = 0; f < nFreq; f++)
 		{
-			ddf = dd->freqId[f];
+			ddf = dd->recFreqId[f];
 			if(ddf >= 0 && ddf < dc->nIF)
 			{
 				bandId = dc->freqId2IF[ddf];

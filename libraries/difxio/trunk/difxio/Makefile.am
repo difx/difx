@@ -12,7 +12,6 @@ c_sources = \
 	difx_datastream.c \
 	difx_baseline.c \
 	difx_config.c \
-	difx_model.c \
 	difx_poly_model.c \
 	difx_scan.c \
 	difx_eop.c \
@@ -22,10 +21,8 @@ c_sources = \
 	difx_flag.c \
 	difx_polyco.c \
 	difx_pulsar.c \
+	difx_rule.c \
 	difx_write.c \
-	difx_write_delay.c \
-	difx_write_uvw.c \
-	difx_write_rate.c \
 	difx_write_im.c \
 	difx_write_calc.c \
 	difx_write_input.c \

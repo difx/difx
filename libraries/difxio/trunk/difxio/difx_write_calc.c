@@ -41,7 +41,6 @@ static double truncSeconds(double mjd)
 	return intmjd + intsec/86400.0;
 }
 
-
 int writeDifxCalc(const DifxInput *D, const char *filename)
 {
 	FILE *out;
@@ -91,27 +90,13 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
 	writeDifxLineDouble(out, "START MJD", "%13.7f", truncSeconds(D->mjdStart));
 	writeDifxDateLines(out, D->mjdStart);
-	writeDifxLineDouble(out, "INCREMENT (SECS)", "%1.0f", D->job->modelInc);
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
-	if(D->nOutChan > 0.0)
-	{
-		writeDifxLineInt(out, "OUTPUT CHANNELS", D->nOutChan);
-	}
-	if(D->startChan > 0)
-	{
-		writeDifxLineInt(out, "START CHANNEL", D->startChan);
-	}
 	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);
-	writeDifxScanArray(out, D->nScan, D->scan, D->config, 1, 1, 1);
+        writeDifxSourceArray(out, D->nSource, D->source, 1, 1, 0, 0);
+	writeDifxScanArray(out, D->nScan, D->scan, D->config);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
-	sprintf(value, "%s.delay", filebase);
-	writeDifxLine(out, "DELAY FILENAME", value);
-	sprintf(value, "%s.uvw", filebase);
-	writeDifxLine(out, "UVW FILENAME", value);
-	sprintf(value, "%s.rate", filebase);
-	writeDifxLine(out, "RATE FILENAME", value);
 	sprintf(value, "%s.im", filebase);
 	writeDifxLine(out, "IM FILENAME", value);
 

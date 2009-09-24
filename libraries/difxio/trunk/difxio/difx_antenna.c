@@ -106,8 +106,8 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	fprintf(fp, "    VSN = %s\n", da->vsn);
 	fprintf(fp, "    nFile = %d\n", da->nFile);
+	fprintf(fp, "    VSN = %s\n", da->vsn);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
 }
 
@@ -125,8 +125,8 @@ void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	fprintf(fp, "    VSN = %s\n", da->vsn);
 	fprintf(fp, "    nFile = %d\n", da->nFile);
+	fprintf(fp, "    VSN = %s\n", da->vsn);
 	if(da->spacecraftId >= 0)
 	{
 		fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);

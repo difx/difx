@@ -213,7 +213,7 @@ int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de)
 {
 	int i = 0;
 
-	writeDifxLineInt(out, "NUM EOP", nEOP);
+	writeDifxLineInt(out, "NUM EOPS", nEOP);
 	for(i = 0; i < nEOP; i++)
 	{
 		writeDifxLineInt1(out, "EOP %d TIME (mjd)", i, 

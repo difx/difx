@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
+ *   Copyright (C) 2007 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 
 #define DIFX_SESSION_LEN	4
 #define MAX_MODEL_ORDER		5
+#define MAX_PHS_CENTRES		1000
 
 #include <stdio.h>
 
@@ -68,6 +69,10 @@ typedef struct
 	double freq;		/* (MHz) */
 	double bw;		/* (MHz) */
 	char sideband;		/* U or L -- net sideband */
+        int nChan;
+	int specAvg;            /* This is averaging within mpifxcorr  */
+	int overSamp;
+	int decimation;
 } DifxFreq;
 
 /* To become a FITS IF */
@@ -87,7 +92,7 @@ typedef struct
 	double refFreq;		/* MHz */
 	double mjd;		/* center time for first polynomial */
 	int nCoef;		/* number of coefficients per polynomial */
-	int nBlk;		/* number of minutes spanned by each */
+	int  nBlk;		/* number of minutes spanned by each */
 	double p0, f0;
 	double *coef;
 } DifxPolyco;
@@ -108,19 +113,17 @@ typedef struct
 {
 	char name[32];		/* name for configuration */
 	double tInt;		/* integration time (sec) */
-	int nChan;
-	int specAvg;		/* This is averaging within mpifxcorr -- NYI */
-	int overSamp;
-	int decimation;
-	int blocksPerSend;
-	int guardBlocks;
-	int postFFringe;	/* 0 or 1 */
-	int writeAutocorrs;	/* 0 or 1 */
-	int quadDelayInterp;	/* 0 or 1 */
+	int subintNS;		/* Length of a subint in nanoseconds */
+	int guardNS;		/* "Guard" nanoseconds appended to the end of a send */
+	int fringeRotOrder;	/* 0, 1 or 2 */
+	int strideLength;	/* Must be integer divisor of number of channels */
+	int xmacLength;         /* Must be integer divisor of number of channels */
+	int numBufferedFFTs;    /* The number of FFTs to do in a row before XMAC'ing */
 	int pulsarId;		/* -1 if not pulsar */
 	int nPol;		/* number of pols in datastreams (1 or 2) */
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
+	int doAutoCorr;		/* >0 if autocorrelations are to be written to disk */
 	int quantBits;		/* 1 or 2 */
 	int nAntenna;
 	int nDatastream;	/* number of datastreams attached */
@@ -145,20 +148,40 @@ typedef struct
 
 typedef struct
 {
+	char sourcename[32];	/* (DiFX) name of source, optional */
+	char scanId[32];	/* Scan identifier from vex file, optional */
+	char calCode[4];	/* calCode, optional */
+	int qual;		/* Source qualifier, optional */
+	double mjdStart;	/* start time, optional */
+	double mjdStop; 	/* stop time, optional */
+	char configName[32];	/* Name of the configuration to which 
+				   this rule is applied */	
+} DifxRule;
+
+typedef struct
+{
 	int antennaId;		/* index to D->antenna */
 	float tSys;		/* 0.0 for VLBA DiFX */
 	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	char dataSource[32];	/* MODULE, FILE, NET, other? */
-	int nFreq;		/* num freqs from this datastream */
-	int nRecChan;		/* number of base band channels recorded */
-	int *nPol;		/* [freq] */
-	int *freqId;		/* [freq] index to DifxFreq table */
+	int nRecFreq;		/* num freqs from this datastream */
+	int nRecBand;		/* number of base band channels recorded */
+	int *nRecPol;		/* [freq] */
+	int *recFreqId;		/* [freq] index to DifxFreq table */
 	double *clockOffset;	/* (us) [freq] */
-	
-	int *RCfreqId;		/* [recChan] index to freqId[] */
-	char *RCpolName;	/* [recChan] Polarization name (R, L, X or Y) */
+	double *freqOffset;     /* Freq offsets for each frequency in Hz */
+	int *recBandFreqId;     /* [recChan] index to recFreqId[] */
+	char *recBandPolName;   /* [recChan] Polarization name (R, L, X or Y) */
+
+        int nZoomFreq;          /* number of "zoom" freqs (within recorded
+				   freqs) for this datastream */
+	int nZoomBand;          /* number of zoom subbands */
+	int *nZoomPol;          /* [zoomfreq] */
+	int *zoomFreqId;        /* [zoomfreq] index to DifxFreq table */
+	int *zoomBandFreqId;	/* [zoomband] index to zoomfreqId[] */
+	char *zoomBandPolName;	/* [zoomband] Polarization name (R, L, X or Y) */
 } DifxDatastream;
 
 typedef struct
@@ -183,10 +206,10 @@ typedef struct
 	char vsn[12];		/* vsn for module */
 	char shelf[20];		/* shelf location of module */
 	int spacecraftId;	/* -1 if not a spacecraft */
-	int nFile;		/* number of files */
-	char **file;		/* list of files to correlate (if not VSN) */
-	int networkPort;	/* eVLBI port for this datastream */
-	int windowSize;		/* eVLBI TCP window size */
+	int nFile;              /* number of files */
+        char **file;            /* list of files to correlate (if not VSN) */
+	int networkPort;        /* eVLBI port for this datastream */
+	int windowSize;         /* eVLBI TCP window size */
 } DifxAntenna;
 
 typedef struct
@@ -195,21 +218,13 @@ typedef struct
 	char name[32];		/* source name */
 	char calCode[4];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
-	int configId;		/* to determine freqId */
 	int spacecraftId;	/* -1 if not spacecraft */
 	int fitsSourceId;	/* 0-based FITS source id */
+	double pmRA;		/* arcsec/year */
+	double pmDec; 		/* arcsec/year */
+	double parallax;	/* arcsec */
+	double pmEpoch;		/* MJD */
 } DifxSource;
-
-typedef struct
-{
-	double u, v, w;		/* baseline (m) */
-	double t;		/* delay (us) */
-	double dt;		/* rate (us/s) */
-	double dry;		/* dry atmosphere delay (us) */
-	double wet;		/* wet atmosphere delay (us) */
-	double ddry;		/* dry atmosphere rate (us/s) */
-	double dwet;		/* wet atmosphere rate (us/s) */
-} DifxModel;
 
 typedef struct
 {
@@ -227,25 +242,23 @@ typedef struct
 
 typedef struct
 {
-	double mjdStart;	/* (day) */
-	double mjdEnd;		/* (day) */
-	double ra, dec;		/* (radians) */
-	char name[32];		/* name of source */
-	char calCode[4];	/* usually only 1 digit */
-	int qual;		/* source qualifier */
-	int sourceId;		/* 0, 1, ... nScan-1 */
-	int configId;		/* 0, 1, ... nConfig-1 */
-	int jobId;		/* 0, 1, ... nJob-1 */
-	int nPoint;		/* number of points modeled for scan */
-	int startPoint;		/* absolute "point number" of first model */
+	double mjdStart;			/* (day) */
+	double mjdEnd;				/* (day) */
+	int startSeconds;			/* Since model reference (top of calc file) */
+	int durSeconds; 			/* Duration of the scan */
+        char identifier[32];          		/* Usually a zero-based number */
+	char obsModeName[32];			/* Identifying the "mode" of observation */
+	int maxNSBetweenUVShifts;		/* Maximum interval until data must be shifted/averaged */
+        int pointingCentreSrc;  		/* index to source array */
+        int nPhaseCentres;      		/* Number of correlation centres */
+        int phsCentreSrcs[MAX_PHS_CENTRES]; 	/* indices to source array */
+	int jobId;				/* 0, 1, ... nJob-1 */
+        int configId;           		/* to determine freqId */
 	int nAntenna;
-	DifxModel **model;	/* indexed by [ant][point] */
-				/* ant is index of antenna in .input file */
-				/* NOTE : point is over [-1 .. nPoint+1] ! */
-				/* NOTE : model[ant] can be zero -> no data */
 	int nPoly;
-	DifxPolyModel **im;	/* indexed by [ant][poly] */
+	DifxPolyModel ***im;	/* indexed by [ant][src][poly] */
 				/* ant is index of antenna in .input file */
+				/*   src ranges over [0...nPhaseCentres] */
 				/*   poly ranges over [0 .. nPoly-1] */
 				/* NOTE : im[ant] can be zero -> no data */
 } DifxScan;
@@ -281,9 +294,9 @@ typedef struct
 
 
 /* DifxJob contains information relevant for a particular job.
- * In some cases, multiple jobs will be concatennated and some 
+ * In some cases, multiple jobs will be concatennated and some
  * information about the individual jobs will be needed.
- * In particular, the DifxAntennaFlag contains flags that are 
+ * In particular, the DifxAntennaFlag contains flags that are
  * generated by .input/.calc generating programs (such as vex2difx)
  * which are job dependent and are to be applied when building the
  * output FITS files.
@@ -296,7 +309,6 @@ typedef struct
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */
 	double duration;	/* subjob observe duration (sec) */
-	double modelInc;	/* model (delay, uvw) interval */
 	int jobId;		/* correlator job number */
 	int subjobId;		/* difx specific sub-job id */
 	int subarrayId;		/* sub array number of the specified sub-job */
@@ -315,7 +327,7 @@ typedef struct
 	double dutyCycle;	/* fraction of time in scans */
 
 	int nFlag;
-	DifxAntennaFlag *flag;	/* flags to be applied at FITS building time */
+	DifxAntennaFlag *flag;  /* flags to be applied at FITS building time */
 } DifxJob;
 
 typedef struct
@@ -325,11 +337,13 @@ typedef struct
 	double mjdStart;	/* start of combined dataset */
 	double mjdStop;		/* end of combined dataset */
 	double refFreq;		/* some sort of reference frequency, (MHz) */
-	int startChan;		/* first (unaveraged) channel to write */
+	int startChan;		/* first (unaveraged) channel to write, only set for difx2fits */
 	int specAvg;		/* number of channels to average post corr. */
-	int nInChan;		/* number of correlated channels */
-	int nOutChan;		/* number of channels to write to FITS */
-	int nFFT;		/* size of FFT used */
+	int nInChan;		/* number of correlated channels, only set for difx2fits */
+	int nOutChan;		/* number of channels to write to FITS, only set for difx2fits */
+				/* Statchan, nInChan and nOutChan are all set haphazardly, and
+				   will certainly have odd things if not all freqs are the same */
+	//int nFFT;		/* size of FFT used */
 	int visBufferLength;	/* number of visibility buffers in mpifxcorr */
 
 	int nIF;		/* maximum num IF across configs */
@@ -345,10 +359,11 @@ typedef struct
 	int dataBufferFactor;
 	int nDataSegments;
 	
-	int nAntenna, nConfig, nFreq, nScan, nSource, nEOP;
+	int nAntenna, nConfig, nRule, nFreq, nScan, nSource, nEOP, nFlag;
 	int nDatastream, nBaseline, nSpacecraft, nPulsar, nJob;
 	DifxJob		*job;
 	DifxConfig	*config;
+	DifxRule        *rule;
 	DifxFreq	*freq;
 	DifxAntenna	*antenna;
 	DifxScan	*scan;		/* assumed in time order */
@@ -399,8 +414,8 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 
 /* DifxDatastream functions */
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
-void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nFreq);
-void DifxDatastreamAllocRecChans(DifxDatastream *dd, int nRecChan);
+void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nReqFreq);
+void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);
@@ -415,7 +430,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const DifxDatastream *dd2, int ndd2, int *datastreamIdRemap,
 	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
-int DifxDatastreamGetRecChans(DifxDatastream *dd, int freqId, char *pols, int *recChans);
+int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *recBands);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
@@ -483,20 +498,21 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
-	int antennaId, int recChan, int *bandId, int *polId);
+	int antennaId, int recBand, int *bandId, int *polId);
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar);
 
-/* DifxModel functions */
-DifxModel **newDifxModelArray(int nAntenna, int nPoint);
-DifxModel *dupDifxModelColumn(const DifxModel *src, int nPoint);
-void deleteDifxModelArray(DifxModel **dm, int nAntenna);
-void printDifxModel(const DifxModel *dm);
-void fprintDifxModel(FILE *fp, const DifxModel *dm);
+/* DifxRule functions */
+DifxRule *newDifxRuleArray(int nRule);
+void deleteDifxRuleArray(DifxRule *dr);
+void fprintDifxRule(FILE *fp, const DifxRule *dc);
+void printDifxRule(const DifxRule *dr);
+int writeDifxRuleArray(FILE *out, const DifxInput *D);
+int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const DifxSource * src);
 
 /* DifxPolyModel functions */
-DifxPolyModel **newDifxPolyModelArray(int nAntenna, int nPoly);
+DifxPolyModel ***newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly);
 DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly);
-void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna);
+void deleteDifxPolyModelArray(DifxPolyModel ***dpm, int nAntenna, int nSrcs);
 void printDifxPolyModel(const DifxPolyModel *dpm);
 void fprintDifxPolyModel(FILE *fp, const DifxPolyModel *dpm);
 
@@ -509,16 +525,17 @@ void printDifxScan(const DifxScan *ds);
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds);
 void printDifxScanSummary(const DifxScan *ds);
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *configIdRemap, 
-	const int *antennaIdRemap);
+	const int *sourceIdRemap, const int *jobIdRemap, 
+	const int *configIdRemap, const int *antennaIdRemap);
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
-	const DifxScan *ds2, int nds2, const int *jobIdRemap,
-	const int *configIdRemap, const int *antennaIdRemap, int *nds);
+	const DifxScan *ds2, int nds2, const int *sourceIdRemap, 
+	const int *jobIdRemap, const int *configIdRemap, 
+	const int *antennaIdRemap, int *nds);
 int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
 int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
-	const DifxConfig *dc,int doRealName, int doCoords, int doExtra);
+	const DifxConfig *dc);
 int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
-	const DifxConfig *dc, int doRealName, int doCoords, int doExtra);
+	const DifxConfig *dc);
 int padDifxScans(DifxInput *D);
 
 /* DifxEOP functions */
@@ -554,6 +571,9 @@ void printDifxSource(const DifxSource *ds);
 void fprintDifxSource(FILE *fp, const DifxSource *ds);
 void printDifxSourceSummary(const DifxSource *ds);
 void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds);
+int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2);
+void copyDifxSource(DifxSource *dest, const DifxSource *src);
+DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1, const DifxSource *ds2, int nds2, int *sourceIdRemap, int *nds);
 
 /* DifxIF functions */
 DifxIF *newDifxIFArray(int nIF);
@@ -589,27 +609,26 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D);
 void DifxConfigMapAntennas(DifxConfig *dc, const DifxDatastream *ds);
 DifxInput *loadDifxInput(const char *filePrefix);
 DifxInput *loadDifxCalc(const char *filePrefix);
-DifxInput *deriveSourceTable(DifxInput *D);
+//DifxInput *deriveSourceTable(DifxInput *D);
+DifxInput *allocateSourceTable(DifxInput *D, int length);
 DifxInput *updateDifxInput(DifxInput *D);
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2);
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2);
 DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	int verbose);
 int isAntennaFlagged(const DifxJob *J, double mjd, int antennaId);
-int DifxInputGetSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
-int DifxInputGetSourceIdByAntennaId(const DifxInput *D, double mjd, 
+int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId);
+int DifxInputGetPointingSourceIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId);
 int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId);
+int DifxInputGetScanId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
 
 /* Writing functions */
-int writeDifxDelay(const DifxInput *D, const char *filename);
-int writeDifxRate(const DifxInput *D, const char *filename);
-int writeDifxUVW(const DifxInput *D, const char *filename);
 int writeDifxIM(const DifxInput *D, const char *filename);
 int writeDifxCalc(const DifxInput *D, const char *filename);
 int writeDifxInput(const DifxInput *D, const char *filename);

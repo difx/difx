@@ -37,10 +37,10 @@
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
 	if(D1->specAvg != D2->specAvg ||
-	   D1->nFFT != D2->nFFT ||
-	   D1->startChan != D2->startChan ||
-	   D1->nInChan != D2->nInChan ||
-	   D1->nOutChan != D2->nOutChan ||
+	   //D1->nFFT != D2->nFFT ||
+	   //D1->startChan != D2->startChan ||
+	   //D1->nInChan != D2->nInChan ||
+	   //D1->nOutChan != D2->nOutChan ||
 	   D1->job->aberCorr != D2->job->aberCorr ||
 	   strncmp(D1->job->difxVersion, D2->job->difxVersion, 64))
 	{
@@ -105,6 +105,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	int *baselineIdRemap = 0;
 	int *pulsarIdRemap = 0;
 	int *configIdRemap = 0;
+	int *sourceIdRemap = 0;
 	int *spacecraftIdRemap = 0;
 
 	if(!D1 || !D2)
@@ -118,6 +119,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
 	datastreamIdRemap = (int *)calloc(D2->nDatastream, sizeof(int));
 	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
+	sourceIdRemap     = (int *)calloc(D2->nSource, sizeof(int));
 	if(D2->nPulsar > 0)
 	{
 		pulsarIdRemap = (int *)calloc(D2->nPulsar, sizeof(int));
@@ -133,7 +135,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 
 	/* copy over / merge some of DifxInput top level parameters */
 	D->specAvg = D1->specAvg;
-	D->nFFT = D1->nFFT;
+	//D->nFFT = D1->nFFT;
 	D->startChan = D1->startChan;
 	D->nInChan = D1->nInChan;
 	D->nOutChan = D1->nOutChan;
@@ -195,9 +197,16 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		baselineIdRemap, datastreamIdRemap, pulsarIdRemap, 
 		&(D->nConfig));
 
+        /* merge DifxSource table */
+	//printf("About to merge two source arrays (vals %p, %p)", D1->source, D2->source);
+	//printf("With numbers of sources %d, %d\n", D2->nSource, D2->nSource);
+	D->source = mergeDifxSourceArrays(D1->source, D1->nSource,
+		D2->source, D2->nSource, sourceIdRemap, &(D->nSource));
+
 	/* merge DifxScan table */
 	D->scan = mergeDifxScanArrays(D1->scan, D1->nScan, D2->scan, D2->nScan,
-		jobIdRemap, configIdRemap, antennaIdRemap, &(D->nScan));
+		sourceIdRemap, jobIdRemap, configIdRemap, antennaIdRemap, 
+		&(D->nScan));
 
 	/* merge DifxEOP table */
 	D->eop = mergeDifxEOPArrays(D1->eop, D1->nEOP, D2->eop, D2->nEOP,
@@ -214,6 +223,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		printRemap("jobId", jobIdRemap, D2->nJob);
 		printRemap("freqId", freqIdRemap, D2->nFreq);
 		printRemap("antennaId", antennaIdRemap, D2->nAntenna);
+		printRemap("sourceId", sourceIdRemap, D2->nSource);
 		printRemap("datastreamId", datastreamIdRemap, D2->nDatastream);
 		printRemap("baselineId", baselineIdRemap, D2->nBaseline);
 		printRemap("pulsarId", pulsarIdRemap, D2->nPulsar);
@@ -232,6 +242,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		free(pulsarIdRemap);
 	}
 	free(configIdRemap);
+	free(sourceIdRemap);
 	if(spacecraftIdRemap)
 	{
 		free(spacecraftIdRemap);

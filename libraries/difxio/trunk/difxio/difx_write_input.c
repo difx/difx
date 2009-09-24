@@ -40,10 +40,8 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	double dsecs;
 
 	fprintf(out, "# COMMON SETTINGS ##!\n");
-	sprintf(value, "%s.delay", filebase);
-	writeDifxLine(out, "DELAY FILENAME", value);
-	sprintf(value, "%s.uvw", filebase);
-	writeDifxLine(out, "UVW FILENAME", value);
+	sprintf(value, "%s.calc", filebase);
+	writeDifxLine(out, "CALC FILENAME", value);
 	sprintf(value, "%s.threads", filebase);
 	writeDifxLine(out, "CORE CONF FILENAME", value);
 	secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
@@ -74,6 +72,15 @@ static int writeConfigurations(FILE *out, const DifxInput *D)
 {
 	fprintf(out, "# CONFIGURATIONS ###!\n");
 	writeDifxConfigArray(out, D->nConfig, D->config, D->pulsar);
+	fprintf(out, "\n");
+
+	return 0;
+}
+
+static int writeRuleTable(FILE *out, const DifxInput *D)
+{
+	fprintf(out, "# RULES ############!\n");
+	writeDifxRuleArray(out, D);
 	fprintf(out, "\n");
 
 	return 0;
@@ -126,42 +133,42 @@ static int writeBaselineTable(FILE *out, const DifxInput *D)
 
 static int writeNetworkTable(FILE *out, const DifxInput *D)
 {
-	const DifxAntenna *da;
-	int a;
+        const DifxAntenna *da;
+        int a;
 
-	/* first determine if we need such a table */
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		da = D->antenna + a;
-		if(da->windowSize != 0)
-		{
-			break;
-		}
-	}
-	if(a == D->nAntenna)
-	{
-		/* no network table needed */
-		return 0;
-	}
+        /* first determine if we need such a table */
+        for(a = 0; a < D->nAntenna; a++)
+        {
+                da = D->antenna + a;
+                if(da->windowSize != 0)
+                {
+                        break;
+                }
+        }
+        if(a == D->nAntenna)
+        {
+                /* no network table needed */
+                return 0;
+        }
 
-	fprintf(out, "# NETWORK TABLE ####!\n");
+        fprintf(out, "# NETWORK TABLE ####!\n");
 
-	for(a = 0; a < D->nAntenna; a++)
-	{
-		da = D->antenna + a;
-		writeDifxLineInt1(out, "PORT NUM %d", a, da->networkPort);
-		writeDifxLineInt1(out, "TCP WINDOW (KB) %d", a, da->windowSize);
-	}
+        for(a = 0; a < D->nAntenna; a++)
+        {
+                da = D->antenna + a;
+                writeDifxLineInt1(out, "PORT NUM %d", a, da->networkPort);
+                writeDifxLineInt1(out, "TCP WINDOW (KB) %d", a, da->windowSize);
+        }
 
-	fprintf(out, "\n");
+        fprintf(out, "\n");
 
-	return 0;
+        return 0;
 }
 
 static int writeDataTable(FILE *out, const DifxInput *D)
 {
 	int i, j;
-	const DifxAntenna *da;
+ 	const DifxAntenna *da;
 	int type;	/* 0=None 1=VSN 2=Files */
 
 	fprintf(out, "# DATA TABLE #######!\n");
@@ -267,8 +274,10 @@ int writeDifxInput(const DifxInput *D, const char *filename)
 		return -1;
 	}
 
+	//printf("About to start writing input file\n");
 	writeCommonSettings(out, D, filebase);
 	writeConfigurations(out, D);
+	writeRuleTable(out, D);
 	writeFreqTable(out, D);
 	writeTelescopeTable(out, D);
 	writeDatastreamTable(out, D);

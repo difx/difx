@@ -1,4 +1,4 @@
-AC_INIT([difxio], [2.13], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxio], [3.0], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 
@@ -52,7 +52,7 @@ AC_OUTPUT([
 	Makefile \
 	difxio.pc \
 	difxio/Makefile \
-	utils/Makefile \
-	tests/Makefile
+	tests/Makefile \
+	utils/Makefile
 ])
 

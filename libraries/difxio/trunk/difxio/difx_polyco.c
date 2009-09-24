@@ -169,9 +169,9 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		fprintf(stderr, "Cannot open %s for read\n", filename);
 		return -1;
 	}
-	
+
 	for(;;)
-	{
+	{	
 		fgets(buffer, 159, in);
 		if(feof(in))
 		{
@@ -182,7 +182,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 			fclose(in);
 			return *nPolyco;
 		}
-		
+
 		/* append another entry onto the dpArray */
 		*dpArray = (DifxPolyco *)realloc(*dpArray, ((*nPolyco)+1)*sizeof(DifxPolyco));
 		dp = (*dpArray) + (*nPolyco);
@@ -244,8 +244,8 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		}
 
 		/* get the end of line character out of the file */
-		fgets(buffer, 159, in);
-		
+		fgets(buffer, 159, in);	
+
 		// Correct for "FUT time" 
 		if(dp->mjd < 20000.0)
 		{

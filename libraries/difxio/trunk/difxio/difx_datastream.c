@@ -42,67 +42,119 @@ DifxDatastream *newDifxDatastreamArray(int nDatastream)
 	return dd;
 }
 
-void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nFreq)
+void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 {
-	if(dd->freqId)
+	if(dd->recFreqId)
 	{
-		free(dd->freqId);
+		free(dd->recFreqId);
 	}
-	if(dd->nPol)
+	if(dd->nRecPol)
 	{
-		free(dd->nPol);
+		free(dd->nRecPol);
 	}
 	if(dd->clockOffset)
 	{
 		free(dd->clockOffset);
 	}
-	dd->nFreq = nFreq;
-	dd->freqId = (int *)calloc(nFreq, sizeof(int));
-	dd->nPol = (int *)calloc(nFreq, sizeof(int));
-	dd->clockOffset = (double *)calloc(nFreq, sizeof(double));
+	if(dd->freqOffset)
+	{
+		free(dd->freqOffset);
+	}
+	dd->nRecFreq = nRecFreq;
+	dd->recFreqId = (int *)calloc(nRecFreq, sizeof(int));
+	dd->nRecPol = (int *)calloc(nRecFreq, sizeof(int));
+	dd->clockOffset = (double *)calloc(nRecFreq, sizeof(double));
+	dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
+	if(dd->zoomFreqId)
+	{
+		free(dd->zoomFreqId);
+	}
+	if(dd->nZoomPol)
+	{
+		free(dd->nZoomPol);
+	}
+	dd->nZoomFreq = 0; //for now
+	dd->zoomFreqId = 0;
+	dd->nZoomPol = 0;
 }
 
-void DifxDatastreamAllocRecChans(DifxDatastream *dd, int nRecChan)
+void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
 {
-	if(dd->RCfreqId)
+	if(dd->recBandFreqId)
 	{
-		free(dd->RCfreqId);
+		free(dd->recBandFreqId);
 	}
-	if(dd->RCpolName)
+	if(dd->recBandPolName)
 	{
-		free(dd->RCpolName);
+		free(dd->recBandPolName);
 	}
-	dd->nRecChan = nRecChan;
-	dd->RCfreqId = (int *)calloc(nRecChan, sizeof(int));
-	dd->RCpolName = (char *)calloc(nRecChan, sizeof(char));
+	dd->nRecBand = nRecBand;
+	dd->recBandFreqId = (int *)calloc(nRecBand, sizeof(int));
+	dd->recBandPolName = (char *)calloc(nRecBand, sizeof(char));
+	if(dd->zoomBandFreqId)
+	{
+		free(dd->zoomBandFreqId);
+	}
+	if(dd->zoomBandPolName)
+	{
+		free(dd->zoomBandPolName);
+	}
+	dd->nZoomBand = 0; //for now
+	dd->zoomBandFreqId = 0;
+	dd->zoomBandPolName = 0;
 }
 
 void deleteDifxDatastreamInternals(DifxDatastream *dd)
 {
-	if(dd->nPol)
+	if(dd->nRecPol)
 	{
-		free(dd->nPol);
-		dd->nPol = 0;
+		free(dd->nRecPol);
+		dd->nRecPol = 0;
 	}
-	if(dd->freqId)
+	if(dd->recFreqId)
 	{
-		free(dd->freqId);
-		dd->freqId = 0;
+		free(dd->recFreqId);
+		dd->recFreqId = 0;
 	}
 	if(dd->clockOffset)
 	{
 		free(dd->clockOffset);
 		dd->clockOffset = 0;
 	}
-	if(dd->RCfreqId)
+	if(dd->freqOffset)
 	{
-		free(dd->RCfreqId);
-		dd->RCfreqId = 0;
+		free(dd->freqOffset);
+		dd->freqOffset = 0;
 	}
-	if(dd->RCpolName)
+	if(dd->recBandFreqId)
 	{
-		free(dd->RCpolName);
-		dd->RCpolName = 0;
+		free(dd->recBandFreqId);
+		dd->recBandFreqId = 0;
+	}
+	if(dd->recBandPolName)
+	{
+		free(dd->recBandPolName);
+		dd->recBandPolName = 0;
+	}
+	if(dd->nZoomPol)
+	{
+		free(dd->nZoomPol);
+		dd->nZoomPol = 0;
+	}
+	if(dd->zoomFreqId)
+	{
+		free(dd->zoomFreqId);
+		dd->zoomFreqId = 0;
+	}
+	if(dd->zoomBandFreqId)
+	{
+		free(dd->zoomBandFreqId);
+		dd->zoomBandFreqId = 0;
+	}
+	if(dd->zoomBandPolName)
+	{
+		free(dd->zoomBandPolName);
+		dd->zoomBandPolName = 0;
 	}
 }
 
@@ -127,18 +179,31 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		dd->antennaId, dd);
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
-	fprintf(fp, "    nFreq = %d\n", dd->nFreq);
-	fprintf(fp, "    nRecChan = %d\n", dd->nRecChan);
-	fprintf(fp, "    (freqId, nPol)[freq] =");
-	for(f = 0; f < dd->nFreq; f++)
+	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
+	fprintf(fp, "    nRecBand = %d\n", dd->nRecBand);
+	fprintf(fp, "    (RecFreqId, nRecPol)[freq] =");
+	for(f = 0; f < dd->nRecFreq; f++)
 	{
-		fprintf(fp, " (%d, %d)", dd->freqId[f], dd->nPol[f]);
+		fprintf(fp, " (%d, %d)", dd->recFreqId[f], dd->nRecPol[f]);
 	}
 	fprintf(fp, "\n");
 	fprintf(fp, "    (freq(index to above), pol)[recchan] =");
-	for(f = 0; f < dd->nRecChan; f++)
+	for(f = 0; f < dd->nRecBand; f++)
 	{
-		fprintf(fp, " (%d, %c)", dd->RCfreqId[f], dd->RCpolName[f]);
+		fprintf(fp, " (%d, %c)", dd->recBandFreqId[f], dd->recBandPolName[f]);
+	}
+	fprintf(fp, "    nZoomFreq = %d\n", dd->nZoomFreq);
+	fprintf(fp, "    nZoomBand = %d\n", dd->nZoomBand);
+	fprintf(fp, "    (ZoomFreqId, nZoomPol)[freq] =");
+	for(f = 0; f < dd->nZoomFreq; f++)
+	{
+		fprintf(fp, " (%d, %d)", dd->zoomFreqId[f], dd->nZoomPol[f]);
+	}
+	fprintf(fp, "\n");
+	fprintf(fp, "    (freq(index to above), pol)[recchan] =");
+	for(f = 0; f < dd->nZoomBand; f++)
+	{
+		fprintf(fp, " (%d, %c)", dd->zoomBandFreqId[f], dd->zoomBandPolName[f]);
 	}
 	fprintf(fp, "\n");
 }
@@ -164,32 +229,59 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	
 	if(dd1->antennaId != antennaId2 ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
-	   dd1->nFreq != dd2->nFreq ||
-	   dd1->nRecChan != dd2->nRecChan)
+	   dd1->nRecFreq != dd2->nRecFreq ||
+	   dd1->nRecBand != dd2->nRecBand ||
+	   dd1->nZoomFreq != dd2->nZoomFreq ||
+	   dd1->nZoomBand != dd2->nZoomBand)
 	{
 		return 0;
 	}
-	for(f = 0; f < dd1->nFreq; f++)
+	for(f = 0; f < dd1->nRecFreq; f++)
 	{
 		if(freqIdRemap)
 		{
-			freqId2 = freqIdRemap[dd2->freqId[f]];
+			freqId2 = freqIdRemap[dd2->recFreqId[f]];
 		}
 		else
 		{
-			freqId2 = dd2->freqId[f];
+			freqId2 = dd2->recFreqId[f];
 		}
-		if(dd1->nPol[f] != dd2->nPol[f] ||
-		   dd1->freqId[f] != freqId2 ||
-		   dd1->clockOffset[f] != dd2->clockOffset[f])
+		if(dd1->nRecPol[f] != dd2->nRecPol[f] ||
+		   dd1->recFreqId[f] != freqId2 ||
+		   dd1->clockOffset[f] != dd2->clockOffset[f] ||
+		   dd1->freqOffset[f] != dd2->freqOffset[f])
 		{
 			return 0;
 		}
 	}
-	for(c = 0; c < dd1->nRecChan; c++)
+	for(c = 0; c < dd1->nRecBand; c++)
 	{
-		if(dd1->RCfreqId[c]  != dd2->RCfreqId[c] ||
-		   dd1->RCpolName[c] != dd2->RCpolName[c])
+		if(dd1->recBandFreqId[c]  != dd2->recBandFreqId[c] ||
+		   dd1->recBandPolName[c] != dd2->recBandPolName[c])
+		{
+			return 0;
+		}
+	}
+	for(f = 0; f < dd1->nZoomFreq; f++)
+	{
+		if(freqIdRemap)
+		{
+			freqId2 = freqIdRemap[dd2->zoomFreqId[f]];
+		}
+		else
+		{
+			freqId2 = dd2->zoomFreqId[f];
+		}
+		if(dd1->nZoomPol[f] != dd2->nZoomPol[f] ||
+		   dd1->zoomFreqId[f] != freqId2)
+		{
+			return 0;
+		}
+	}
+	for(c = 0; c < dd1->nZoomBand; c++)
+	{
+		if(dd1->zoomBandFreqId[c]  != dd2->zoomBandFreqId[c] ||
+		   dd1->zoomBandPolName[c] != dd2->zoomBandPolName[c])
 		{
 			return 0;
 		}
@@ -214,25 +306,43 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;
 
-	DifxDatastreamAllocFreqs(dest, src->nFreq);
-	DifxDatastreamAllocRecChans(dest, src->nRecChan);
-	for(f = 0; f < dest->nFreq; f++)
+	DifxDatastreamAllocFreqs(dest, src->nRecFreq);
+	DifxDatastreamAllocBands(dest, src->nRecBand);
+	for(f = 0; f < dest->nRecFreq; f++)
 	{
-		dest->nPol[f] = src->nPol[f];
+		dest->nRecPol[f] = src->nRecPol[f];
 		if(freqIdRemap)
 		{
-			dest->freqId[f] = freqIdRemap[src->freqId[f]];
+			dest->recFreqId[f] = freqIdRemap[src->recFreqId[f]];
 		}
 		else
 		{
-			dest->freqId[f] = src->freqId[f];
+			dest->recFreqId[f] = src->recFreqId[f];
 		}
 		dest->clockOffset[f] = src->clockOffset[f];
+		dest->freqOffset[f]  = src->freqOffset[f];
 	}
-	for(c = 0; c < dest->nRecChan; c++)
+	for(c = 0; c < dest->nRecBand; c++)
 	{
-		dest->RCfreqId[c]  = src->RCfreqId[c];
-		dest->RCpolName[c] = src->RCpolName[c];
+		dest->recBandFreqId[c]  = src->recBandFreqId[c];
+		dest->recBandPolName[c] = src->recBandPolName[c];
+	}
+	for(f = 0; f < dest->nZoomFreq; f++)
+	{
+		dest->nZoomPol[f] = src->nZoomPol[f];
+		if(freqIdRemap)
+		{
+			dest->zoomFreqId[f] = freqIdRemap[src->zoomFreqId[f]];
+		}
+		else
+		{
+			dest->zoomFreqId[f] = src->zoomFreqId[f];
+		}
+	}
+	for(c = 0; c < dest->nZoomBand; c++)
+	{
+		dest->zoomBandFreqId[c]  = src->zoomBandFreqId[c];
+		dest->zoomBandPolName[c] = src->zoomBandPolName[c];
 	}
 }
 
@@ -242,18 +352,28 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->antennaId = src->antennaId;
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;
-	dest->freqId = src->freqId;
-	dest->nPol = src->nPol;
+	dest->recFreqId = src->recFreqId;
+	dest->nRecPol = src->nRecPol;
 	dest->clockOffset = src->clockOffset;
-	dest->RCfreqId = src->RCfreqId;
-	dest->RCpolName = src->RCpolName;
+	dest->freqOffset = src->freqOffset;
+	dest->recBandFreqId = src->recBandFreqId;
+	dest->recBandPolName = src->recBandPolName;
+	dest->zoomFreqId = src->zoomFreqId;
+	dest->nZoomPol = src->nZoomPol;
+	dest->zoomBandFreqId = src->zoomBandFreqId;
+	dest->zoomBandPolName = src->zoomBandPolName;
 
 	/* unlink src data structures */
-	src->freqId = 0;
-	src->nPol = 0;
+	src->recFreqId = 0;
+	src->nRecPol = 0;
 	src->clockOffset = 0;
-	src->RCfreqId = 0;
-	src->RCpolName = 0;
+	src->freqOffset = 0;
+	src->recBandFreqId = 0;
+	src->recBandPolName = 0;
+	src->zoomFreqId = 0;
+	src->nZoomPol = 0;
+	src->zoomBandFreqId = 0;
+	src->zoomBandPolName = 0;
 }
 
 int simplifyDifxDatastreams(DifxInput *D)
@@ -410,36 +530,51 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
 	writeDifxLine(out, "DATA SOURCE", dd->dataSource);
-	writeDifxLineBoolean(out, "FILTERBANK USED", 0);
-	writeDifxLineInt(out, "NUM FREQS", dd->nFreq);
-	for(i = 0; i < dd->nFreq; i++)
+	writeDifxLine(out, "FILTERBANK USED", "FALSE");
+	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);
+	for(i = 0; i < dd->nRecFreq; i++)
 	{
-		writeDifxLineInt1(out, "FREQ TABLE INDEX %d", i, dd->freqId[i]);
+		writeDifxLineInt1(out, "REC FREQ INDEX %d", i, dd->recFreqId[i]);
 		writeDifxLineDouble1(out, "CLK OFFSET %d (us)", i, 
 			"%8.6f", dd->clockOffset[i]);
-		writeDifxLineInt1(out, "NUM POLS %d", i, dd->nPol[i]);
+		writeDifxLineDouble1(out, "FREQ OFFSET %d (Hz)", i,
+			"%8.6f", dd->freqOffset[i]);
+		writeDifxLineInt1(out, "NUM REC POLS %d", i, dd->nRecPol[i]);
 	}
-	for(i = 0; i < dd->nRecChan; i++)
+	for(i = 0; i < dd->nRecBand; i++)
 	{
-		pol[0] = dd->RCpolName[i];
-		writeDifxLine1(out, "INPUT BAND %d POL", i, pol);
-		writeDifxLineInt1(out, "INPUT BAND %d INDEX", i, 
-			dd->RCfreqId[i]);
+		pol[0] = dd->recBandPolName[i];
+		writeDifxLine1(out, "REC BAND %d POL", i, pol);
+		writeDifxLineInt1(out, "REC BAND %d INDEX", i, 
+			dd->recBandFreqId[i]);
+	}
+	writeDifxLineInt(out, "NUM ZOOM FREQS", dd->nZoomFreq);
+	for(i = 0; i < dd->nZoomFreq; i++)
+	{
+		writeDifxLineInt1(out, "ZOOM FREQ INDEX %d", i, dd->zoomFreqId[i]);
+		writeDifxLineInt1(out, "ZOOM REC POLS %d", i, dd->nZoomPol[i]);
+	}
+	for(i = 0; i < dd->nZoomBand; i++)
+	{
+		pol[0] = dd->zoomBandPolName[i];
+		writeDifxLine1(out, "ZOOM BAND %d POL", i, pol);
+		writeDifxLineInt1(out, "ZOOM BAND %d INDEX", i,
+			dd->zoomBandFreqId[i]);
 	}
 
-	return 8 + 3*dd->nFreq + 2*dd->nRecChan;
+	return 8 + 4*dd->nRecFreq + 2*dd->nRecBand + 2*dd->nZoomFreq + 2*dd->nZoomBand;
 }
 
-int DifxDatastreamGetRecChans(DifxDatastream *dd, int freqId, char *pols, int *recChans)
+int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *recBands)
 {
 	int r;
 	int n=0;
 
-	for(r = 0; r < dd->nRecChan; r++)
+	for(r = 0; r < dd->nRecBand; r++)
 	{
-		if(dd->RCfreqId[r] == freqId)
+		if(dd->recBandFreqId[r] == freqId)
 		{
-			if(dd->RCpolName[r] <= ' ')
+			if(dd->recBandPolName[r] <= ' ')
 			{
 				continue;
 			}
@@ -447,14 +582,14 @@ int DifxDatastreamGetRecChans(DifxDatastream *dd, int freqId, char *pols, int *r
 			{
 				fprintf(stderr, "Warning: skipping dup rechan\n");
 			}
-			else if(n == 1 && dd->RCpolName[r] == pols[0])
+			else if(n == 1 && dd->recBandPolName[r] == pols[0])
 			{
 				fprintf(stderr, "Warning: skipping dup rechan\n");
 			}
 			else
 			{
-				pols[n] = dd->RCpolName[r];
-				recChans[n] = r;
+				pols[n] = dd->recBandPolName[r];
+				recBands[n] = r;
 				n++;
 			}
 		}
@@ -464,17 +599,17 @@ int DifxDatastreamGetRecChans(DifxDatastream *dd, int freqId, char *pols, int *r
 	{
 		if(pols[0] == 'L' && pols[1] == 'R')
 		{
-			r = recChans[0];
-			recChans[0] = recChans[1];
-			recChans[1] = r;
+			r = recBands[0];
+			recBands[0] = recBands[1];
+			recBands[1] = r;
 			pols[0] = 'R';
 			pols[1] = 'L';
 		}
 		if(pols[0] == 'Y' && pols[1] == 'X')
 		{
-			r = recChans[0];
-			recChans[0] = recChans[1];
-			recChans[1] = r;
+			r = recBands[0];
+			recBands[0] = recBands[1];
+			recBands[1] = r;
 			pols[0] = 'X';
 			pols[1] = 'Y';
 		}

@@ -1,24 +1,30 @@
-2.13
-* Post DiFX-1.5.1
-
-2.12
-* Move flags to DifxJob so combinig multiple subarrays results in accurate
-  application of flags.  NOTE: This breaks the API
-* Load > 1 pulsar polynomial from a file
-* Add network table infrastructure
-* This becomes the version for DiFX-1.5.1
+3.0
+* Includes the following changes merged (hopefully correctly) from the DiFX-1.5 branch;
+  - Merge fixes from trunk
+  - Add network table infrastructure
+  - Load > 1 pulsar polynomial from a file
+  - Move flags to DifxJob so combinig multiple subarrays results in accurate
+    application of flags.  NOTE: This breaks the API
+  - Infrastructure for writing for file-based correlation
+  - When sorting antennas, update the scan table (nAntenna, im and model)
+  - Fix and simplify DifxInputGetScanIdByAntennaId
+  - Fix for parsing of .flag file. 
+  - Start some infrastructure for supporting proper flagging in cases of partially
+    overlapping scans
+  - Add difxcalculator under utils.  This is an implementation of
+    http://cira.ivec.org/dokuwiki/lib/exe/fetch.php/difx/difx_calculator.xls
+    as a stand-alone program
+* Allows support of multiple phase centres in input/calc/im files
+* Allows support of zoom bands
+* Replaces blockspersend with subintNS
+* Shifts numchannels/oversample/decimation etc from Configuration to Freq
+* Allows use of Rule table in input file
+* Adds support for LO offsets
 
 2.11
 * Post DiFX-1.5
 * Implement profile mode (with mode=profile at the global level)
 * Add writeDifxLineBoolean and use it for writing TRUE/FALSE values
-* Forward port the file-based correlation properties
-* Infrastructure for writing for file-based correlation
-* When sorting antennas, update the scan table (nAntenna, im and model)
-* Fix and simplify DifxInputGetScanIdByAntennaId
-* Fix for parsing of .flag file.
-* Start some infrastructure for supporting proper flagging in cases of partially
-  overlapping scans
 
 2.10
 * Deallocation option of function DifxBaselineAllocPolProds()

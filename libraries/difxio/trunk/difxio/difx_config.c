@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,10 @@ DifxConfig *newDifxConfigArray(int nConfig)
 	{
 		dc[c].doPolar = -1;
 		dc[c].pulsarId = -1;
-		dc[c].writeAutocorrs = 1;
+		dc[c].strideLength = 16;
+		dc[c].xmacLength = 32;
+		dc[c].numBufferedFFTs = 1;
+		dc[c].fringeRotOrder = 1;
 	}
 	
 	return dc;
@@ -139,9 +142,12 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 
 	fprintf(fp, "  Difx Config [%s] : %p\n", dc->name, dc);
 	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
-	fprintf(fp, "    nChan = %d\n", dc->nChan);
-	fprintf(fp, "    postFFringe = %d\n", dc->postFFringe);
-	fprintf(fp, "    quadDelayInterp = %d\n", dc->quadDelayInterp);
+	fprintf(fp, "    Subint nanoseconds = %d\n", dc->subintNS);
+	fprintf(fp, "    Guard nanoseconds = %d\n", dc->guardNS);
+	fprintf(fp, "    fringeRotOrder = %d\n", dc->fringeRotOrder);
+	fprintf(fp, "    strideLength = %d\n", dc->strideLength);
+	fprintf(fp, "    xmacLength = %d\n", dc->xmacLength);
+	fprintf(fp, "    numBufferedFFTs = %d\n", dc->numBufferedFFTs);
 	fprintf(fp, "    pulsarId = %d\n", dc->pulsarId);
 	p0 = dc->pol[0] ? dc->pol[0] : ' ';
 	p1 = dc->pol[1] ? dc->pol[1] : ' ';
@@ -208,7 +214,6 @@ void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 
 	fprintf(fp, "  Difx Config [%s]\n", dc->name);
 	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
-	fprintf(fp, "    nChan = %d\n", dc->nChan);
 	if(dc->pulsarId >= 0)
 	{
 		fprintf(fp, "    pulsarId = %d\n", dc->pulsarId);
@@ -234,17 +239,16 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 	int i;
 
 	if(dc1->tInt != dc2->tInt ||
-	   dc1->nChan != dc2->nChan ||
-	   dc1->specAvg != dc2->specAvg ||
-	   dc1->overSamp != dc2->overSamp ||
-	   dc1->decimation != dc2->decimation ||
-	   dc1->blocksPerSend != dc2->blocksPerSend ||
-	   dc1->guardBlocks != dc2->guardBlocks ||
-	   dc1->quadDelayInterp != dc2->quadDelayInterp ||
-	   dc1->writeAutocorrs != dc2->writeAutocorrs ||
+	   dc1->subintNS != dc2->subintNS ||
+	   dc1->guardNS != dc2->guardNS ||
+	   dc1->fringeRotOrder != dc2->fringeRotOrder ||
+	   dc1->strideLength != dc2->strideLength ||
+	   dc1->xmacLength != dc2->xmacLength ||
+	   dc1->numBufferedFFTs != dc2->numBufferedFFTs ||
 	   dc1->pulsarId != dc2->pulsarId ||
 	   dc1->nPol != dc2->nPol ||
 	   dc1->doPolar != dc2->doPolar ||
+	   dc1->doAutoCorr != dc2->doAutoCorr ||
 	   dc1->quantBits != dc2->quantBits ||
 	   dc1->nAntenna != dc2->nAntenna ||
 	   dc1->nDatastream != dc2->nDatastream ||
@@ -341,14 +345,14 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 
 /* antennaId is the index to D->antenna */
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
-	int antennaId, int recChan, int *bandId, int *polId)
+	int antennaId, int recBand, int *bandId, int *polId)
 {
 	DifxConfig *dc;
 	DifxDatastream *ds;
 	int datastreamId;
 	int d;
 	
-	if(recChan < 0 || antennaId < 0)
+	if(recBand < 0 || antennaId < 0)
 	{
 		*bandId = -1;
 		*polId = -1;
@@ -385,13 +389,13 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 		return -4;
 	}
 
-	if(recChan >= ds->nRecChan)
+	if(recBand >= ds->nRecBand)
 	{
 		return -3;
 	}
 	
-	*bandId = ds->RCfreqId[recChan];
-	*polId = DifxConfigGetPolId(dc, ds->RCpolName[recChan]);
+	*bandId = ds->recBandFreqId[recBand];
+	*polId = DifxConfigGetPolId(dc, ds->recBandPolName[recBand]);
 
 	return 0;
 }
@@ -426,11 +430,13 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	}
 
 	dest->tInt = src->tInt;
-	dest->nChan = src->nChan;
+	dest->subintNS = src->subintNS;
+	dest->guardNS = src->guardNS;
 	strcpy(dest->name, src->name);
-	dest->postFFringe = src->postFFringe;
-	dest->writeAutocorrs = src->writeAutocorrs;
-	dest->quadDelayInterp = src->quadDelayInterp;
+	dest->fringeRotOrder = src->fringeRotOrder;
+	dest->strideLength = src->strideLength;
+	dest->xmacLength = src->xmacLength;
+	dest->numBufferedFFTs = src->numBufferedFFTs;
 	if(pulsarIdRemap && src->pulsarId >= 0)
 	{
 		dest->pulsarId = pulsarIdRemap[src->pulsarId];
@@ -445,6 +451,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 		dest->pol[i] = src->pol[i];
 	}
 	dest->doPolar = src->doPolar;
+	dest->doAutoCorr = src->doAutoCorr;
 	dest->quantBits = src->quantBits;
 	dest->nBaseline = src->nBaseline;
 	dest->nDatastream = src->nDatastream;
@@ -533,20 +540,6 @@ int simplifyDifxConfigs(DifxInput *D)
 		else
 		{
 			/* 1. renumber this an all higher references to configs */
-			for(s = 0; s < D->nSource; s++)
-			{
-				c0 = D->source[s].configId;
-				if(c0 == c)
-				{
-					c0 = c1;
-				}
-				else if(c0 > c)
-				{
-					c0--;
-				}
-				D->source[s].configId = c0;
-			}
-
 			for(s = 0; s < D->nScan; s++)
 			{
 				c0 = D->scan[s].configId;
@@ -627,29 +620,28 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 	{
 		config = dc + i;
 
-		writeDifxLine(out, "CONFIG SOURCE", config->name);
+		writeDifxLine(out, "CONFIG NAME", config->name);
 		writeDifxLineDouble(out, "INT TIME (SEC)", "%8.6f",
 			config->tInt);
-		writeDifxLineInt(out, "NUM CHANNELS", config->nChan);
-		writeDifxLineInt(out, "CHANNELS TO AVERAGE", config->specAvg);
-		writeDifxLineInt(out, "OVERSAMPLE FACTOR", config->overSamp);
-		writeDifxLineInt(out, "DECIMATION FACTOR", config->decimation);
-		writeDifxLineInt(out, "BLOCKS PER SEND", 
-			config->blocksPerSend);
-		writeDifxLineInt(out, "GUARD BLOCKS", config->guardBlocks);
-		writeDifxLineBoolean(out, "POST-F FRINGE ROT", 0);
-		writeDifxLineBoolean(out, "QUAD DELAY INTERP", 1);
-		writeDifxLineBoolean(out, "WRITE AUTOCORRS", 
-			config->writeAutocorrs);
+		writeDifxLineInt(out, "SUBINT NANOSECONDS", config->subintNS);
+		writeDifxLineInt(out, "GUARD NANOSECONDS", config->guardNS);
+		writeDifxLineInt(out, "FRINGE ROTN ORDER", config->fringeRotOrder);
+		writeDifxLineInt(out, "ARRAY STRIDE LENGTH", config->strideLength);
+		writeDifxLineInt(out, "XMAC STRIDE LENGTH", config->xmacLength);
+		writeDifxLineInt(out, "NUM BUFFERED FFTS", config->numBufferedFFTs);
+		if(config->doAutoCorr)
+			writeDifxLine(out, "WRITE AUTOCORRS", "TRUE");
+		else
+			writeDifxLine(out, "WRITE AUTOCORRS", "FALSE");
 		if(config->pulsarId >= 0 && pulsar)
 		{
-			writeDifxLineBoolean(out, "PULSAR BINNING", 1);
+			writeDifxLine(out, "PULSAR BINNING", "TRUE");
 			writeDifxLine(out, "PULSAR CONFIG FILE", 
 				pulsar[config->pulsarId].fileName);
 		}
 		else
 		{
-			writeDifxLineBoolean(out, "PULSAR BINNING", 0);
+			writeDifxLine(out, "PULSAR BINNING", "FALSE");
 		}
 		for(j = 0; j < config->nDatastream; j++)
 		{

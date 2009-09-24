@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,9 @@ DifxScan *newDifxScanArray(int nScan)
 	for(s = 0; s < nScan; s++)
 	{
 		ds[s].configId = -1;
-		ds[s].sourceId = -1;
+		ds[s].pointingCentreSrc = -1;
+		ds[s].nPhaseCentres = 0;
+		ds[s].maxNSBetweenUVShifts = 2000000000;
 	}
 	
 	return ds;
@@ -51,14 +53,10 @@ DifxScan *newDifxScanArray(int nScan)
 
 void deleteDifxScanInternals(DifxScan *ds)
 {
-	if(ds->model)
-	{
-		deleteDifxModelArray(ds->model, ds->nAntenna);
-		ds->model = 0;
-	}
 	if(ds->im)
 	{
-		deleteDifxPolyModelArray(ds->im, ds->nAntenna);
+		deleteDifxPolyModelArray(ds->im, ds->nAntenna, 
+					 ds->nPhaseCentres+1);
 		ds->im = 0;
 	}
 }
@@ -78,75 +76,39 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 
 void fprintDifxScan(FILE *fp, const DifxScan *ds)
 {
-	int a;
+	int i,j;
 
-	fprintf(fp, "  DifxScan [%s] : %p\n", ds->name, ds);
+	fprintf(fp, "  DifxScan [%s] : %p\n", ds->identifier, ds);
 	fprintf(fp, "    Start = MJD %12.6f\n", ds->mjdStart);
 	fprintf(fp, "    End   = MJD %12.6f\n", ds->mjdEnd);
-	fprintf(fp, "    Calcode = %s\n", ds->calCode);
-	fprintf(fp, "    Qualifier = %d\n", ds->qual);
-	fprintf(fp, "    nPoint = %d\n", ds->nPoint);
-	fprintf(fp, "    startPoint = %d\n", ds->startPoint);
+	fprintf(fp, "    Observing mode = %s\n", ds->obsModeName);
+	fprintf(fp, "    Max NS between UV shifts = %d\n", ds->maxNSBetweenUVShifts);
+	fprintf(fp, "    Pointing centre source index = %d\n", ds->pointingCentreSrc);
+        fprintf(fp, "    Number of phase centres = %d\n", ds->nPhaseCentres);
+	for(i=0;i<ds->nPhaseCentres;i++) {
+	        fprintf(fp, "    Phase centre %d source index = %d\n", i, 
+			ds->phsCentreSrcs[i]);
+	}
 	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
-	fprintf(fp, "    SourceId = %d\n", ds->sourceId);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
-	if(ds->nPoint > 1 && ds->nAntenna > 1)
+	if(ds->nPoly > 0 && ds->nAntenna > 1)
 	{
-		if(ds->model)
-		{
-			if(ds->model[0])
-			{
-				fprintDifxModel(fp, ds->model[0] - 1);
-				fprintDifxModel(fp, ds->model[0]);
-			}
-			else
-			{
-				fprintf(fp, "    No model[0]\n");
-			}
-			if(ds->model[1])
-			{
-				fprintDifxModel(fp, ds->model[1] - 1);
-				fprintDifxModel(fp, ds->model[1]);
-			}
-			else
-			{
-				fprintf(fp, "    No model[1]\n");
-			}
-			fprintf(fp, "    Model exists[ant] =");
-			for(a = 0; a < ds->nAntenna; a++)
-			{
-				fprintf(fp, " %c", ds->model[a] ? 'T' : 'F');
-			}
-			fprintf(fp, "\n");
-		}
-		else
-		{
-			fprintf(fp, "    No model available\n");
-		}
 		if(ds->im)
 		{
-			if(ds->im[0])
+			for(i=0;i<ds->nAntenna;i++)
 			{
-				fprintDifxPolyModel(fp, ds->im[0]);
+				if(ds->im[i])
+				{
+					for(j=0;j<ds->nPhaseCentres+1;j++)
+					{
+						fprintDifxPolyModel(fp, ds->im[i][j]);
+					}
+				}
+				else
+				{
+					fprintf(fp, "    No polymodel[%d]\n", i);
+				}
 			}
-			else
-			{
-				fprintf(fp, "    No polymodel[0]\n");
-			}
-			if(ds->im[1])
-			{
-				fprintDifxPolyModel(fp, ds->im[1]);
-			}
-			else
-			{
-				fprintf(fp, "    No polymodel[0]\n");
-			}
-			fprintf(fp, "    Poly model exists[ant] =");
-			for(a = 0; a < ds->nAntenna; a++)
-			{
-				fprintf(fp, " %c", ds->im[a] ? 'T' : 'F');
-			}
-			fprintf(fp, "\n");
 		}
 		else
 		{
@@ -163,8 +125,8 @@ void printDifxScan(const DifxScan *ds)
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds)
 {
 	fprintf(fp, "  Start=%12.6f end=%12.6f source=%s\n", 
-		ds->mjdStart, ds->mjdEnd, ds->name);
-	fprintf(fp, "    SourceId = %d\n", ds->sourceId);
+		ds->mjdStart, ds->mjdEnd, ds->identifier);
+	fprintf(fp, "    PointingSourceIndex = %d\n", ds->pointingCentreSrc);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
 }
 
@@ -174,20 +136,38 @@ void printDifxScanSummary(const DifxScan *ds)
 }
 
 void copyDifxScan(DifxScan *dest, const DifxScan *src,
-	const int *jobIdRemap, const int *configIdRemap, 
-	const int *antennaIdRemap)
+	const int *sourceIdRemap, const int *jobIdRemap, 
+	const int *configIdRemap, const int *antennaIdRemap)
 {
-	int i, srcAntenna, destAntenna;
+	int i, j, srcAntenna, destAntenna;
 
-	dest->mjdStart = src->mjdStart;
-	dest->mjdEnd   = src->mjdEnd;
-	dest->ra       = src->ra;
-	dest->dec      = src->dec;
-	dest->qual     = src->qual;
-	strcpy(dest->name, src->name);
-	for(i = 0; i < 4; i++)
+	dest->mjdStart     = src->mjdStart;
+	dest->mjdEnd       = src->mjdEnd;
+	dest->startSeconds = src->startSeconds;
+        dest->durSeconds   = src->durSeconds;
+	dest->maxNSBetweenUVShifts = src->maxNSBetweenUVShifts;
+	strcpy(dest->identifier, src->identifier);
+	strcpy(dest->obsModeName, src->obsModeName);
+	dest->nPhaseCentres = src->nPhaseCentres;
+	if(sourceIdRemap)
 	{
-		dest->calCode[i] = src->calCode[i];
+		printf("About to do the source re-mapping\n");
+		printf("Source pointing centre was %d\n", src->pointingCentreSrc);
+		printf("This will be re-mapped to %d\n", sourceIdRemap[src->pointingCentreSrc]);
+		dest->pointingCentreSrc = sourceIdRemap[src->pointingCentreSrc];
+		for(i=0;i<src->nPhaseCentres;i++)
+		{
+			dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
+		}
+		printf("Done with source re-mapping\n");
+	}
+	else
+	{
+		dest->pointingCentreSrc = src->pointingCentreSrc;
+		for(i=0;i<src->nPhaseCentres;i++)
+		{
+			dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
+		}
 	}
 	if(jobIdRemap)
 	{
@@ -205,14 +185,11 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	{
 		dest->configId = src->configId;
 	}
-	dest->startPoint = src->startPoint;
-	dest->nPoint     = src->nPoint;
-	dest->nPoly      = src->nPoly;
+	dest->startSeconds = src->startSeconds;
+	dest->durSeconds   = src->durSeconds;
+	dest->nPoly        = src->nPoly;
 
 	/* figure out how many antennas needed in this scan */
-	/* note that not all thest antennas are actually there -- just
-	 * need to make the array big enough
-	 */
 	dest->nAntenna = src->nAntenna;
 	if(antennaIdRemap)
 	{
@@ -226,34 +203,10 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 		}
 	}
 
-	/* allocate space for model info and copy from original. */
-	if(src->model)
-	{
-		dest->model = (DifxModel **)calloc(dest->nAntenna, 
-			sizeof(DifxModel *));
-		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
-		{
-			if(antennaIdRemap)
-			{
-				destAntenna = antennaIdRemap[srcAntenna];
-			}
-			else
-			{
-				destAntenna = srcAntenna;
-			}
-			dest->model[destAntenna] = dupDifxModelColumn(
-				src->model[srcAntenna], dest->nPoint);
-		}
-	}
-	else
-	{
-		dest->model = 0;
-	}
-
 	if(src->im)
 	{
-		dest->im = (DifxPolyModel **)calloc(dest->nAntenna, 
-			sizeof(DifxPolyModel *));
+		dest->im = (DifxPolyModel ***)calloc(dest->nAntenna, 
+			sizeof(DifxPolyModel **));
 		for(srcAntenna = 0; srcAntenna < src->nAntenna; srcAntenna++)
 		{
 			if(antennaIdRemap)
@@ -264,8 +217,13 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			{
 				destAntenna = srcAntenna;
 			}
-			dest->im[destAntenna] = dupDifxPolyModelColumn(
-				src->im[srcAntenna], dest->nPoly);
+			dest->im[destAntenna] = (DifxPolyModel **)calloc(dest->nPhaseCentres+1,
+							sizeof(DifxPolyModel *));
+			for(j=0;j<src->nPhaseCentres+1;j++)
+			{
+				dest->im[destAntenna][j] = dupDifxPolyModelColumn(
+						src->im[srcAntenna][j], dest->nPoly);
+			}
 		}
 	}
 	else
@@ -278,8 +236,9 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
  * more than two DifxInputs in any order.
  */
 DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
-	const DifxScan *ds2, int nds2, const int *jobIdRemap, 
-	const int *configIdRemap, const int *antennaIdRemap, int *nds)
+	const DifxScan *ds2, int nds2, const int *sourceIdRemap, 
+	const int *jobIdRemap, const int *configIdRemap, 
+	const int *antennaIdRemap, int *nds)
 {
 	DifxScan *ds;
 	int i=0, i1=0, i2=0, src;
@@ -287,6 +246,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	*nds = nds1 + nds2;
 	ds = newDifxScanArray(*nds);
 
+	printf("ds1 has %d scans; ds2 has %d scans\n", nds1, nds2);
 	for(;;)
 	{
 		if(i1 >= nds1)
@@ -319,13 +279,19 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			src = 2;
 		}
+		printf("Taking scan from src %d: ", src);
+		if(i1>=0)
+			printf("ds1[%d] starts at %f; ", i1, ds1[i1].mjdStart);
+		if(i2>=0)
+                        printf("ds2[%d] starts at %f", i2, ds2[i2].mjdStart);
+		printf("\n");
 
 		/* do the copy and increments */
 		if(src == 1)
 		{
 			if(ds1[i1].configId >= 0)
 			{
-				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0);
+				copyDifxScan(ds + i, ds1 + i1, 0, 0, 0, 0);
 				i++;
 			}
 			i1++;
@@ -334,8 +300,8 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			if(ds2[i2].configId >= 0)
 			{
-				copyDifxScan(ds + i, ds2 + i2, jobIdRemap, 
-					configIdRemap, antennaIdRemap);
+				copyDifxScan(ds + i, ds2 + i2, sourceIdRemap,
+					jobIdRemap, configIdRemap, antennaIdRemap);
 				i++;
 			}
 			i2++;
@@ -344,6 +310,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 
 	*nds = i;
 
+	printf("After merging two inputs, which had nScan %d and %d, the result has nScan %d\n", nds1, nds2, *nds);
 	return ds;
 }
 
@@ -352,7 +319,8 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 {
 	int i;
 	double m1, m2;
-	const DifxPolyModel *dp, *im=0;
+	DifxPolyModel *dp;
+	DifxPolyModel **im=0;
 
 	if(!ds)
 	{
@@ -363,7 +331,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 		return -1;
 	}
 
-	/* be sure to find an antenna with model data */
+	/* be sure to find an antenna with im model data */
 	for(i = 0; i < ds->nAntenna; i++)
 	{
 		im = ds->im[i];
@@ -380,7 +348,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 
 	for(i = 0; i < ds->nPoly; i++)
 	{
-		dp = im + i;
+		dp = im[0] + i;
 		m1 = dp->mjd + dp->sec/86400.0;
 		m2 = m1 + dp->validDuration/86400.0;
 		if(mjd >= m1 && mjd <= m2)
@@ -399,64 +367,30 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 
 /* dc must point to the base of a configuration array */
 int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
-	const DifxConfig *dc, int doRealName, int doCoords, int doExtra)
+	const DifxConfig *dc)
 {
-	int n;
-	const char *name;
+	int i;
 
 	ds += scanId;
 
-	if(ds->configId == -1)
+        writeDifxLine1(out, "SCAN %d IDENTIFIER", scanId, ds->identifier);
+        writeDifxLineInt1(out, "SCAN %d START (S)", scanId, ds->startSeconds);
+	writeDifxLineInt1(out, "SCAN %d DUR (S)", scanId, ds->durSeconds);
+        writeDifxLine1(out, "SCAN %d OBS MODE NAME", scanId, ds->obsModeName);
+	writeDifxLineInt1(out, "SCAN %d UVSHIFT INTERVAL (NS)", scanId, ds->maxNSBetweenUVShifts);
+	writeDifxLineInt1(out, "SCAN %d POINTING SRC", scanId, ds->pointingCentreSrc);
+        writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", scanId, ds->nPhaseCentres);
+	for(i=0;i<ds->nPhaseCentres;i++)
 	{
-		name = "SCAN_GAP";
-	}
-	else if(ds->configId < 0 || ds->configId > 1<<12)
-	{
-		fprintf(stderr, "Error!   writeDifxScan:  scanId=%d implies configId=%d\n", scanId, ds->configId);
-		return -1;
-	}
-	else
-	{
-		const DifxConfig *config;
-		
-		config = dc + ds->configId;
-		name = config->name;
+		writeDifxLineInt2(out, "SCAN %d PHS CTR %d", scanId, i, 
+				  ds->phsCentreSrcs[i]);
 	}
 
-	writeDifxLineInt1(out, "SCAN %d POINTS", scanId, ds->nPoint);
-	writeDifxLineInt1(out, "SCAN %d START PT", scanId, ds->startPoint);
-	writeDifxLine1(out, "SCAN %d SRC NAME", scanId, name);
-	n = 3;
-	
-	if(doRealName)
-	{
-		writeDifxLine1(out, "SCAN %d REAL NAME", scanId, ds->name);
-		n++;
-	}
-	
-	if(doCoords)
-	{
-		writeDifxLineDouble1(out, "SCAN %d SRC RA", scanId,
-			"%17.15f", ds->ra);
-		writeDifxLineDouble1(out, "SCAN %d SRC DEC", scanId,
-			"%17.15f", ds->dec);
-		n += 2;
-	}
-
-	if(doExtra)
-	{
-		writeDifxLine1(out, "SCAN %d CALCODE", scanId,
-			ds->calCode);
-		writeDifxLineInt1(out, "SCAN %d QUAL", scanId,
-			ds->qual);
-		n += 2;
-	}
-
-	return n;
+	return 7+ds->nPhaseCentres;
 }
 
 int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
-	const DifxConfig *dc,  int doRealName, int doCoords, int doExtra)
+	const DifxConfig *dc)
 {
 	int i;
 	int n;
@@ -466,96 +400,8 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds,
 
 	for(i = 0; i < nScan; i++)
 	{
-		n += writeDifxScan(out, ds, i, dc, 
-			doRealName, doCoords, doExtra);
+		n += writeDifxScan(out, ds, i, dc);
 	}
 
 	return 0;
-}
-
-/* insert dummy scans to make the series of scans contiguous */
-int padDifxScans(DifxInput *D)
-{
-	int nPad = 0;
-	int s, nScan;
-	DifxScan *newScans;
-	DifxScan *s0, *s1, *sNew;
-	int deltat;
-
-	nScan = D->nScan;
-	if(nScan <= 0 || D->scan == 0)
-	{
-		fprintf(stderr, "Error: padDifxScanArrays: nScan = %d / scans = %p\n", nScan, D->scan);
-		return -1;
-	}
-
-	/* Do nothing if only one scan */
-	if(nScan == 1)
-	{
-		return 0;
-	}
-
-	/* first go through and count number of new scans needed */
-	for(s = 1; s < nScan; s++)
-	{
-		s1 = D->scan + s;
-		s0 = s1 - 1;
-
-		deltat = s1->startPoint - (s0->startPoint + s0->nPoint);
-
-		/* oops -- scans overlap! */
-		if(deltat < 0)
-		{
-			fprintf(stderr, "Warning: padDifxScanArrays: scans %d and %d overlap!\n", s-1, s);
-		}
-		else if(deltat > 0)
-		{
-			nPad++;
-		}
-	}
-
-	if(nPad == 0)
-	{
-		return 0;
-	}
-
-	newScans = newDifxScanArray(nScan + nPad);
-
-	/* now go through again, inserting spacer scans as needed */
-	sNew = newScans;
-	copyDifxScan(sNew, D->scan + 0, 0, 0, 0);	/* copy first scan */
-	sNew++;
-	for(s = 1; s < nScan; s++)
-	{
-		s1 = D->scan + s;
-		s0 = s1 - 1;
-
-		deltat = s1->startPoint - (s0->startPoint + s0->nPoint);
-		if(deltat > 0)
-		{
-			sNew->mjdStart = s0->mjdEnd;
-			sNew->mjdEnd = s1->mjdStart;
-			sNew->ra = 0.0;
-			sNew->dec = 1.57;	/* near north pole */
-			strcpy(sNew->name, "SCAN_GAP");
-			strcpy(sNew->calCode, "-");
-			sNew->sourceId = -1;
-			sNew->configId = -1;
-			sNew->jobId = s0->jobId;
-			sNew->nPoint = deltat;
-			sNew->startPoint = s0->startPoint + s0->nPoint;
-			/* don't populsate model or im */
-			
-			sNew++;
-		}
-
-		copyDifxScan(sNew, s1, 0, 0, 0);
-		sNew++;
-	}
-
-	deleteDifxScanArray(D->scan, nScan);
-	D->scan = newScans;
-	D->nScan += nPad;
-
-	return nPad;
 }

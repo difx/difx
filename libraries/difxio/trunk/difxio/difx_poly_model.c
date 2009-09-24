@@ -33,16 +33,19 @@
 #include "difxio/difx_input.h"
 
 
-DifxPolyModel **newDifxPolyModelArray(int nAntenna, int nPoly)
+DifxPolyModel *** newDifxPolyModelArray(int nAntenna, int nSrcs, int nPoly)
 {
-	DifxPolyModel **dpm;
-	int a;
+	DifxPolyModel *** dpm;
+	int a, s;
 
-	dpm = (DifxPolyModel **)calloc(nAntenna, sizeof(DifxPolyModel *));
-
+	dpm = (DifxPolyModel ***)calloc(nAntenna, sizeof(DifxPolyModel **));
 	for(a = 0; a < nAntenna; a++)
 	{
-		dpm[a] = (DifxPolyModel *)calloc(nPoly, sizeof(DifxPolyModel));
+		dpm[a] = (DifxPolyModel **)calloc(nSrcs, sizeof(DifxPolyModel *));
+		for(s = 0; s < nSrcs; s++)
+		{
+			dpm[a][s] = (DifxPolyModel *)calloc(nPoly, sizeof(DifxPolyModel));
+		}
 	}
 
 	return dpm;
@@ -64,9 +67,9 @@ DifxPolyModel *dupDifxPolyModelColumn(const DifxPolyModel *src, int nPoly)
 	return dest;
 }
 
-void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna)
+void deleteDifxPolyModelArray(DifxPolyModel *** dpm, int nAntenna, int nSrcs)
 {
-	int a;
+	int a, s;
 
 	if(dpm)
 	{
@@ -74,6 +77,10 @@ void deleteDifxPolyModelArray(DifxPolyModel **dpm, int nAntenna)
 		{
 			if(dpm[a])
 			{
+				for(s = 0; s < nSrcs; s++)
+				{
+					free(dpm[a][s]);
+				}
 				free(dpm[a]);
 			}
 		}

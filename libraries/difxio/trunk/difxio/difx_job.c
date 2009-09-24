@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007, 2008, 2009 by Walter Brisken                      *
+ *   Copyright (C) 2007 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -74,14 +74,13 @@ void deleteDifxJobArray(DifxJob *dj)
 void fprintDifxJob(FILE *fp, const DifxJob *dj)
 {
 	fprintf(fp, "    Job ID = %d\n", dj->jobId);
-	fprintf(fp, "      Project = %s\n", dj->obsCode);
+	fprintf(fp, "    Project = %s\n", dj->obsCode);
 	if(dj->obsSession[0])
 	{
-		fprintf(fp, "      Session = %s\n", dj->obsSession);
+		fprintf(fp, "    Session = %s\n", dj->obsSession);
 	}
-	fprintf(fp, "      Start = MJD %12.6f\n", dj->mjdStart);
-	fprintf(fp, "      Duration = %f sec\n", dj->duration);
-	fprintf(fp, "      Model Inc = %f sec\n", dj->modelInc);
+	fprintf(fp, "    Start = MJD %12.6f\n", dj->mjdStart);
+	fprintf(fp, "    Duration = %f sec\n", dj->duration);
 }
 
 void printDifxJob(const DifxJob *dj)
@@ -92,7 +91,7 @@ void printDifxJob(const DifxJob *dj)
 void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap)
 {
 	int f;
-
+	
 	memcpy(dest, src, sizeof(DifxJob));
 
 	if(src->nFlag > 0)
