@@ -1,3 +1,24 @@
+Version 2.0, 2009 September 24
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Many, many changes both visibly and under the hood
+* Allows support of multiple phase centres
+* Writes each pulsar bin/source to a different DiFX file
+* More efficient implementation of station-based processing, using
+  complex multiplications to replace many sin/cos calculations (~20% speedup)
+* More cache-efficient implementation of baseline-based processing
+  for correlations with many channels where whole output array can't
+  fit in cache simultaneously (factor of ~2 speedup for >=2k channels)
+* Allows support of zoom bands
+* Replaces blockspersend with subintNS, guardBlocks with guardNS
+* Shifts numchannels/oversample/decimation etc from Configuration to Freq
+* Allows use of Rule table in input file
+* Adds support for LO offsets
+* mostly complete Mark5B support
+* Mark5B eVLBI support
+* Visibilities with zero weight are not written to disk
+* See http://cira.ivec.org/dokuwiki/doku.php/difx/documentation for more info
+  on changes, particulaly for the file formats
+
 Version 1.5 Perth, 2008 March 7
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

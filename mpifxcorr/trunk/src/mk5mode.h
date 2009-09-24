@@ -37,22 +37,24 @@ class Mk5Mode : public Mode
    * @param conf The configuration object, containing all information about the duration and setup of this correlation
    * @param confindex The index of the configuration this Mode is for
    * @param dsindex The index of the datastream this Mode is for
-   * @param nchan The number of channels per subband
+   * @param recordedbandchan The number of channels for each recorded subband
+   * @param chanstoavg The number of channels to average for each subband
    * @param bpersend The number of FFT blocks to be processed in a message
-   * @param gblocks The number of additional guard blocks at the end of a message
-   * @param nfreqs The number of frequencies for this Mode
-   * @param bw The bandwidth of each of these IFs
-   * @param freqclkoffsets The time offsets in microseconds to be applied post-F for each of the frequencies
-   * @param ninputbands The total number of subbands recorded
-   * @param noutputbands The total number of subbands after prefiltering - not currently used (must be = numinputbands)
+   * @param gsamples The number of additional guard samples at the end of a message
+   * @param nrecordedfreqs The number of recorded frequencies for this Mode
+   * @param recordedbw The bandwidth of each of these IFs
+   * @param recordedfreqclkoffs The time offsets in microseconds to be applied post-F for each of the frequencies
+   * @param recordedfreqlooffs The LO offsets in Hz for each recorded frequency
+   * @param nrecordedbands The total number of subbands recorded
+   * @param nzoombands The number of subbands to be taken from withing the recorded bands - can be zero
    * @param nbits The number of bits per sample
    * @param fbank Whether to use a polyphase filterbank to channelise (instead of FFT)
-   * @param postffringe Whether fringe rotation takes place after channelisation
-   * @param quaddelayinterp Whether delay interpolataion from FFT start to FFT end is quadratic (if false, linear is used)
+   * @param fringerotorder The interpolation order across an FFT (Oth, 1st or 2nd order; 0th = post-F)
+   * @param arraystridelen The number of samples to stride when doing complex multiplies to implement sin/cos operations efficiently
    * @param cacorrs Whether cross-polarisation autocorrelations are to be calculated
    * @param fsamples The number of samples in a frame per channel
   */
-    Mk5Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bpersend, int gblocks, int nfreqs, double bw, double * freqclkoffsets, int ninputbands, int noutputbands, int nbits, bool fbank, bool postffringe, bool quaddelayinterp, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format);
+    Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format);
     virtual ~Mk5Mode();
 
   protected:

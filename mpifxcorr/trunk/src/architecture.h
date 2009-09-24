@@ -78,6 +78,7 @@
 #define vecNoErr                 ippStsNoErr
 #define vecFFTSpecR_f32          IppsFFTSpec_R_32f
 #define vecFFTSpecC_f32          IppsFFTSpec_C_32f
+#define vecFFTSpecC_cf32         IppsFFTSpec_C_32fc
 #define vecFFTSpec_s16           IppsFFTSpec_R_16s
 #define vecHintAlg               IppHintAlgorithm
 #define vecRndZero               ippRndZero
@@ -100,13 +101,16 @@
 #define vectorAlloc_f32(length)  ippsMalloc_32f(length)
 #define vectorAlloc_cf32(length) ippsMalloc_32fc(length)
 #define vectorAlloc_f64(length)  ippsMalloc_64f(length)
+#define vectorAlloc_cf64(length) ippsMalloc_64fc(length)
 
 #define vectorFree(memptr)       ippsFree(memptr)
 
 #define vectorAdd_f32_I(src, srcdest, length)                               ippsAdd_32f_I(src, srcdest, length)
+#define vectorAdd_f64_I(src, srcdest, length)                               ippsAdd_64f_I(src, srcdest, length)
 #define vectorAdd_s16_I(src, srcdest, length)                               ippsAdd_16s_I(src, srcdest, length)
 #define vectorAdd_s32_I(src, srcdest, length)                               ippsAdd_32s_ISfs(src, srcdest, length, 0)
 #define vectorAdd_cf32_I(src, srcdest, length)                              ippsAdd_32fc_I(src, srcdest, length)
+#define vectorAdd_cf64_I(src, srcdest, length)                              ippsAdd_64fc_I(src, srcdest, length)
 #define vectorAddC_f64(src, val, dest, length)                              ippsAddC_64f(src, val, dest, length)
 #define vectorAddC_f32(src, val, dest, length)                              ippsAddC_32f(src, val, dest, length)
 #define vectorAddC_f32_I(val, srcdest, length)                              ippsAddC_32f_I(val, srcdest, length)
@@ -139,17 +143,20 @@
 
 #define vectorInitFFTR_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_R_32f(fftspec, order, flag, hint)
 #define vectorInitFFTC_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_C_32f(fftspec, order, flag, hint)
+#define vectorInitFFTC_cf32(fftspec, order, flag, hint)                     ippsFFTInitAlloc_C_32fc(fftspec, order, flag, hint)
 //#define vectorInitFFT_f32(fftspec, order, flag, hint)                       ippsDFTInitAlloc_R_32f(fftspec, order, flag, hint)
 #define vectorInitFFT_s16(fftspec, order, flag, hint)                       ippsFFTInitAlloc_R_16s(fftspec, order, flag, hint)
 #define vectorGetFFTBufSizeR_f32(fftspec, buffersize)                       ippsFFTGetBufSize_R_32f(fftspec, buffersize)
 #define vectorGetFFTBufSizeC_f32(fftspec, buffersize)                       ippsFFTGetBufSize_C_32f(fftspec, buffersize)
+#define vectorGetFFTBufSizeC_cf32(fftspec, buffersize)                      ippsFFTGetBufSize_C_32fc(fftspec, buffersize)
 //#define vectorGetFFTBufSize_f32(fftspec, buffersize)                        ippsDFTGetBufSize_R_32f(fftspec, buffersize)
 #define vectorGetFFTBufSize_s16(fftspec, buffersize)                        ippsFFTGetBufSize_R_16s(fftspec, buffersize)
 #define vectorFreeFFTR_f32(fftspec)                                         ippsFFTFree_R_32f(fftspec)
 #define vectorFreeFFTC_f32(fftspec)                                         ippsFFTFree_C_32f(fftspec)
-//#define vectorFreeFFT_f32(fftspec)                                          ippsDFTFree_R_32f(pFFTSpec)
+#define vectorFreeFFTC_cf32(fftspec)                                        ippsFFTFree_C_32fc(fftspec)
 #define vectorFFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsFFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
 #define vectorFFT_CtoC_f32(srcre, srcim, destre, destim, fftspec, fftbuff)  ippsFFTFwd_CToC_32f(srcre, srcim, destre, destim, fftspec, fftbuff)
+#define vectorFFT_CtoC_cf32(src, dest, fftspec, fftbuff)                    ippsFFTFwd_CToC_32fc(src, dest, fftspec, fftbuff)
 //#define vectorFFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsDFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
 #define vectorScaledFFT_RtoC_s16(src, dest, fftspec, fftbuffer, scale)      ippsFFTFwd_RToCCS_16s_Sfs(src, dest, fftspec, fftbuffer, scale)
 
@@ -167,12 +174,15 @@
 #define vectorMulC_cs16_I(val, srcdest, length)                             ippsMulC_16sc_ISfs(val, srcdest, length, 0)
 #define vectorMulC_f32_I(val, srcdest, length)                              ippsMulC_32f_I(val, srcdest, length)
 #define vectorMulC_cf32_I(val, srcdest, length)                             ippsMulC_32fc_I(val, srcdest, length)
+#define vectorMulC_cf32(src, val, dest, length)                             ippsMulC_32fc(src, val, dest, length)
 #define vectorMulC_f64_I(val, srcdest, length)                              ippsMulC_64f_I(val, srcdest, length)
 #define vectorMulC_f64(src, val, dest, length)                              ippsMulC_64f(src, val, dest, length)
 
 #define vectorPhase_cf32(src, dest, length)                                 ippsPhase_32fc(src, dest, length)
 
 #define vectorRealToComplex_f32(real, imag, complex, length)                ippsRealToCplx_32f(real, imag, complex, length)
+
+#define vectorReal_cf32(complex, real, length)                              ippsReal_32fc(complex, real, length)
 
 #define vectorSet_f32(val, dest, length)                                    ippsSet_32f(val, dest, length)
 
@@ -188,9 +198,12 @@
 #define vectorSub_s32(src1, src2, dest, length)                             ippsSub_32s_Sfs(src1, src2, dest, length, 0)
 #define vectorSub_cf32_I(src, srcdest, length)                              ippsSub_32fc_I(src, srcdest, length)
 
+#define vectorSum_cf32(src, length, sum, hint)                              ippsSum_32fc(src, length, sum, hint)
+
 #define vectorGenerateFIRLowpass_f64(freq, taps, length, window, normalise) ippsFIRGenLowpass_64f(freq, taps, length, window, normalise)
 
 #define vectorZero_cf32(dest, length)                                       ippsZero_32fc(dest, length)
+#define vectorZero_cf64(dest, length)                                       ippsZero_64fc(dest, length)
 #define vectorZero_f32(dest, length)                                        ippsZero_32f(dest, length)
 #define vectorZero_s16(dest, length)                                        ippsZero_16s(dest, length)
 #define vectorZero_s32(dest, length)                                        genericZero_32s(dest, length)

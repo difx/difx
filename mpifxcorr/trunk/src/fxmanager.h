@@ -27,7 +27,6 @@
 #include "architecture.h"
 #include "visibility.h"
 #include "core.h"
-#include "uvw.h"
 #include <pthread.h>
 
 /**
@@ -68,6 +67,12 @@ public:
   */
   void execute();
 
+ /**
+  * Returns the estimated number of bytes used by the FxManager
+  * @return Estimated memory size of the FxManager (bytes)
+  */
+  inline int getEstimatedBytes() { return estimatedbytes; }
+
 protected:
  /** 
   * Launches a new writing thread, that will loop through the Visibility array as fast as possible, writing out results as soon as it is allowed
@@ -76,20 +81,10 @@ protected:
   static void * launchNewWriteThread(void * thismanager);
   
 private:
- /** @name RPFITS constants
-  * These constants are used by the RPFITS standard and are necessary for creating RPFITS files
-  */
- //@{
-  static const int ANTENNA_NAME_LENGTH = 8;
-  static const int SOURCE_NAME_LENGTH = 16;
-  static const int SOURCE_CALCODE_LENGTH = 4;
-  static const int RPFITS_HEADER_LENGTH = 80;
-  static const int STOKES_NAME_LENGTH = 2;
-  static const int MAX_FILENAME_LENGTH = 256;
+  //constants
   static const string CIRCULAR_POL_NAMES[4];
   static const string LL_CIRCULAR_POL_NAMES[4];
   static const string LINEAR_POL_NAMES[4];
- //@}
 
   //methods
  /** 
@@ -113,7 +108,7 @@ private:
   int locateVisIndex(int coreid);
 
  /** 
-  * Opens the RPFITS file if necessary
+  * Open the files
   */
   void initialiseOutput();
 
@@ -122,24 +117,14 @@ private:
   */
   void loopwrite();
 
- /** 
-  * Closes the RPFITS file if necessary
-  */
-  void finaliseOutput();
-
- /** 
-  * Writes the RPFITS header to disk
-  */
-  void writeheader();
-
   //variables
   Configuration * config;
   MPI_Comm return_comm;
-  int numcores, mpiid, numdatastreams, startmjd, startseconds, startns, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, skipseconds;
-  double inttime, halfsampleseconds;
+  int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, estimatedbytes;
+  double inttime;
   bool keepwriting, circularpols, writethreadinitialised, visibilityconfigok;
-  int senddata[3]; //targetcoreid, offsetseconds, offsetnanoseconds
-  Uvw * uvw;
+  int senddata[4]; //targetcoreid, scan, scanoffsetseconds, scanoffsetnanoseconds
+  Model * model;
   int * datastreamids;
   int * coreids;
   int * numsent;

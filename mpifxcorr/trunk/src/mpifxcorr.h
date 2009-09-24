@@ -28,5 +28,4 @@ namespace fxcorr
   static const int FIRSTTELESCOPEID = 1;
 }
 
-///definition of the largest allowable negative delay
-static const double MAX_NEGATIVE_DELAY = -9.9e99;
+static const int FLAGS_PER_INT = 30;

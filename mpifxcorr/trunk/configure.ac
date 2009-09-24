@@ -1,4 +1,4 @@
-AC_INIT([mpifxcorr], [1.5.1], [Adam Deller <adeller@astro.swin.edu.au>])
+AC_INIT([mpifxcorr], [2.0], [Adam Deller <adeller@astro.swin.edu.au>])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
@@ -34,13 +34,13 @@ fi
 if test x"$IPPLINKLIBS" != x; then
         IPP_LIBS=$IPP_LIBS" $IPPLINKLIBS"
 else
-	if test "$DIFXBITS" == "32"; then
-           IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
-	elif test "$DIFXBITS" == "64"; then
-           IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
-	else
-	   IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
-           echo "32/64 bit unspecified - assuming 32 bit for IPP"
+        if test "$DIFXBITS" == "32"; then
+                IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
+        elif test "$DIFXBITS" == "64"; then
+                IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -lippcoreem64t"
+        else
+                IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
+                echo "32/64 bit unspecified - assuming 32 bit for IPP"
         fi
 fi
 dnl **********************************************************
@@ -52,8 +52,8 @@ dnl **********************************************************
 dm_enabled=true
 PKG_CHECK_MODULES(DIFXMESSAGE,
         difxmessage >= 0.7,
-	[AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
-	dm_enabled=false)
+        [AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
+        dm_enabled=false)
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
 
 dnl **********************************************************
@@ -74,42 +74,14 @@ dnl **********************************************************
 
 
 dnl **********************************************************
-dnl **** Look for RPFITS                                  ****
-dnl **********************************************************
-rpfits_enabled=true
-AC_ARG_WITH(rpfits, [AS_HELP_STRING([--without-rpfits],[Disable rpfits output])])
-if test x"$with_rpfits" = xno; then
-   	rpfits_enabled=false
-else
-	PWD=`pwd`
-	AC_CHECK_HEADER([$DIFXROOT/include/RPFITS.h],
-		[AC_DEFINE([HAVE_RPFITS], 1, [1=has RPFITS])],
-		[rpfits_enabled=false])
-fi
-if test ${rpfits_enabled} = true; then
-   	RPFITS_CFLAGS="-I$DIFXROOT/include"
-	if test x"$USEGFORTRAN" != "x"; then
-	      RPFITS_LIBS=" -lrpfits -lgfortran"  
-	else
-	      RPFITS_LIBS=" -lrpfits -lg2c"
-        fi
-else
-	echo "RPFITS disabled"
-	RPFITS_CFLAGS=""
-	RPFITS_LIBS=""
-fi
-dnl **********************************************************
-
-
-dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.2)
 dnl **********************************************************
 
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${IPP_CFLAGS} ${RPFITS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${SS_LIBS} ${IPP_LIBS} ${RPFITS_LIBS} ${DIFXMESSAGE_LIBS}"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${CFLAG_QUIET}"
+LIBS="${M5ACCESS_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS}"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"

@@ -70,26 +70,35 @@ public:
   */
   void execute();
 
+ /**
+  * Returns the estimated number of bytes used by the Datastream
+  * @return Estimated memory size of the Datastream (bytes)
+  */
+  inline int getEstimatedBytes() { return estimatedbytes; }
+
 protected:
   /// Structure which maintains all information necessary for a segment of the databuffer, including the configuration parameters for
   /// that time interval and the MPI requests for the non-blocking communications that originated in this segment
   typedef struct {
-    int seconds;
-    int nanoseconds;
+    int scan;
+    int scanseconds;
+    int scanns;
     int configindex;
     int validbytes;
     int sendbytes;
     int controllength;
+    int bytesbetweenintegerns;
+    bool readto;
+    int blockspersend;
     int bytespersamplenum;
     int bytespersampledenom;
     int nsinc;
     int numchannels;
     int numsent;
-    bool readto;
     double sampletimens;
     MPI_Request * datarequests;
     MPI_Request * controlrequests;
-    double ** controlbuffer;
+    s32 ** controlbuffer;
   } readinfo;
 
  /** 
@@ -128,19 +137,22 @@ protected:
   virtual int initialiseFrame(char * frameheader);
 
  /** 
-  * Calculates the correct offset from the start of the databuffer for a given time in the correlation, and calculates
-  * the geometric delays at the start and end of each FFT block as control information to pass to the Cores
-  * @param offsetsec The offset in seconds from the start of the correlation
-  * @param offsetsamples The offset in samples from the given second
+  * Calculates the correct offset from the start of the databuffer for a given time in the correlation, 
+  * and calculates valid bits for each FFT block as control information to pass to the Cores
+  * @param scan The scan to calculate for
+  * @param offsetsec The offset in seconds from the start of the scan
+  * @param offsetns The offset in nanoseconds from the given second
   * @return The offset in bytes from the start of the databuffer that this block should start from - must be between 0 and bufferlength
   */
-  virtual int calculateControlParams(int offsetsec, int offsetsamples);
+  virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
   
   const int databufferfactor, numdatasegments;
-  int streamnum, atsegment, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds;
+  int activescan, activesec, activens;
+  int streamnum, atsegment, readscan, readseconds, corrstartday, corrstartseconds, readbytes, bufferbytes, readnanoseconds, intclockseconds, estimatedbytes;
   bool dataremaining;
   readinfo * bufferinfo;
   Configuration * config;
+  Model * model;
   string ** datafilenames;
   ifstream input;
   
@@ -152,6 +164,14 @@ protected:
   * @param fileindex The number of the file to be opened
   */
   virtual void openfile(int configindex, int fileindex);
+
+ /** 
+  * Attempts to open the specified file and peeks at what scan it belongs to
+  * @param configindex The config index at the current time
+  * @param fileindex The number of the file to be opened
+  * @return The scan that the start of the file belongs to
+  */
+  virtual int peekfile(int configindex, int fileindex);
 
  /** 
   * Attempts to open the next frame by reading data from the open network socket
@@ -203,20 +223,13 @@ protected:
   */
   virtual int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 
- /** 
-  * Loads the precomputed delays for this telescope from the specified delay file
-  * @param delayfilename The delay file to read from
-  */
-  void processDelayFile(string delayfilename);
-
  /**
-  * Interpolates, using a quadratic approximation, between the nearest 3 delay points to give a delay value for this Datastream
-  * at the specified time
-  * @param intdelayseconds The offset in whole seconds since the start time of the delay file
-  * @param offsetns The offset in nanoseconds from the given integer second
-  * @return The geometric delay at this time for this Datastream, in microseconds
+  * Tests that sync has not been lost (assuming the format supports this)
+  * @param configindex The current configuration index
+  * @param buffersegment The segment of the databuffer that the sync will be tested in
+  * @return The number of bytes which must be read in (0 unless sync was lost and must be regained)
   */
-  double quadinterpolatedelay(int intdelayseconds, int offsetns);
+  virtual int testForSync(int configindex, int buffersegment);
 
  /**
   * Launches the read thread (whether from file or network) and waits until it has initialised itself
@@ -230,29 +243,18 @@ protected:
   void waitForSendComplete();
 
  /**
-  * Calculates the coefficients a, b and c for a quadratic interpolation of delays for this telescope at the specified time
-  * @param intdelayseconds The offset in whole seconds since the start time of the delay file
-  * @param offsetns The offset in nanoseconds from the given integer second
-  */
-  void calculateQuadraticParameters(int intdelayseconds, int offsetns);
-
- /**
   * Waits until all sends from the given buffer segment have been completed, using MPI_Wait
   * @param buffersegment The segment of the databuffer to wait on
   */
   void waitForBuffer(int buffersegment);
 
   string stationname;
-  int mpiid, delaystartday, delaystartseconds, filestartday, filestartseconds, numcores, numsent, delayincms, lastnearestindex, lastscan, lastvalidsegment, totaldelays, maxsendspersegment, waitsegment, portnumber, tcpwindowsizebytes, socketnumber;
+  int mpiid, filestartday, filestartseconds, numcores, numsent, delayincms, lastnearestindex, lastscan, lastvalidsegment, totaldelays, maxsendspersegment, waitsegment, portnumber, tcpwindowsizebytes, socketnumber;
   int * coreids;
   int * filesread;
   int * confignumfiles;
   double a, b, c, clockoffset, clockrate;
   bool readthreadstarted, keepreading, readfromfile, tcp;
-  double ** delays;
-  int * scanstarts;
-  int * scanlengths;
-  vector<int> scannumbers;
   u8 * databuffer;
   pthread_t readerthread;
   pthread_cond_t readcond;

@@ -55,14 +55,14 @@ public:
 protected:
   #include <vector>
  /** 
-  * Calculates the correct offset from the start of the databuffer for a given time in the correlation, and calculates
-  * the geometric delays at the start and end of each FFT block as control information to pass to the Cores.  Allows for
-  * the fact that Mk5 data must be sent as an integer number of frames, starting at a frame boundary
-  * @param offsetsec The offset in seconds from the start of the correlation
-  * @param offsetns The offset in ns from the given second
+  * Calculates the correct offset from the start of the databuffer for a given time in the correlation, 
+  * and calculates valid bits for each FFT block as control information to pass to the Cores
+  * @param scan The scan to calculate for
+  * @param offsetsec The offset in seconds from the start of the scan
+  * @param offsetns The offset in nanoseconds from the given second
   * @return The offset in bytes from the start of the databuffer that this block should start from - must be between 0 and bufferlength
   */
-  virtual int calculateControlParams(int offsetsec, int offsetns);
+  virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
 
  /** 
   * Updates all the parameters (numchannels, sendbytes etc) for the specified segment of the databuffer.  Allows for
@@ -84,6 +84,8 @@ protected:
 
   virtual int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 
+  virtual int testForSync(int configindex, int buffersegment);
+
   virtual int openframe();
 
   int framebytes, payloadbytes, framespersecond;
@@ -98,7 +100,8 @@ protected:
   double lasttime;
   char *udp_buf, *invalid_buf;
   vector<bool> packets_arrived;
-
+  char formatname[64];
+  struct mark5_stream * syncteststream;
 };
 
 #endif

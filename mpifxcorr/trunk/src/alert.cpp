@@ -22,17 +22,7 @@
 
 #include "alert.h"
 #include "config.h"
-#ifdef HAVE_DIFXMESSAGE
 #include <difxmessage.h>
-#else
-#define DIFX_ALERT_LEVEL_FATAL		0
-#define DIFX_ALERT_LEVEL_SEVERE		1
-#define DIFX_ALERT_LEVEL_ERROR		2
-#define DIFX_ALERT_LEVEL_WARNING	3
-#define DIFX_ALERT_LEVEL_INFO		4
-#define DIFX_ALERT_LEVEL_VERBOSE	5
-#define DIFX_ALERT_LEVEL_DEBUG		6
-#endif
 
 // Initialize 7 alert streams.  Use these instead of cout and cerr.
 
@@ -64,20 +54,7 @@ Alert cdebug(DIFX_ALERT_LEVEL_DEBUG);		// alert level 6
 Alert& Alert::sendAlert()
 {
 	// Send alert to appropriate place
-#ifdef HAVE_DIFXMESSAGE
-	// If difxmessage is compiled in, let it decide what to do
 	difxMessageSendDifxAlert(alertString.str().c_str(), alertLevel);
-#else
-	// Otherwise send it to cout or cerr depending on the alert Level
-	if(alertLevel < DIFX_ALERT_LEVEL_WARNING)	// Fatal, severe, error
-	{
-		cerr << alertString.str() << endl;
-	}
-	else
-	{
-		cout << alertString.str() << endl;
-	}
-#endif
 
 	// Reset alert stream
 	alertString.str("");

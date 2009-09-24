@@ -46,15 +46,16 @@ public:
   * @param id This Datastream's MPI id
   * @param numvis The number of Visibilities in the array
   * @param eseconds The length of the correlation, in seconds
-  * @param skipseconds The number of seconds to skip from the start of the correlation, due to the first source(s) not being correlated
-  * @param startns The number of nanoseconds to skip from the start of the correlation
+  * @param scan The scan on which we will start
+  * @param scanstartsec The number of seconds from the start of this scan
+  * @param startns The number of nanoseconds offset from the start second
   * @param pnames The names of the polarisation products eg {RR, LL, RL, LR} or {XX, YY, XY, YX}
   * @param mon Whether to send visibility data down a monitor socket
   * @param port The port number to send down
   * @param hname The socket to send monitor data down
   * @param monskip Only send 1 in every monskip visibilities to the monitor
   */
-  Visibility(Configuration * conf, int id, int numvis, int eseconds, int skipseconds, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip);
+  Visibility(Configuration * conf, int id, int numvis, int eseconds, int scan, int scanstartsec, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip);
 
   ~Visibility();
 
@@ -88,18 +89,32 @@ public:
   inline int getCurrentConfig() { return currentconfigindex; }
 
  /**
-  * Calculates the time difference between the specified time and the centre of the present integration period
-  * @param seconds The comparison time in whole seconds
-  * @param ns The offset from the whole seconds in nanoseconds
-  * @return Difference between specified time and centre of current integration period, in seconds
+  * Returns the estimated number of bytes used by the Visibility
+  * @return Estimated memory size of the Visibility (bytes)
   */
-  inline double timeDifference(int seconds, int ns)
-    { return double(seconds-currentstartseconds) + double(ns)/1000000000.0 - double(currentstartsamples - subintsamples/2)/samplespersecond; }
+  inline int getEstimatedBytes() { return estimatedbytes; }
 
  /**
-  * @return The time at the start of the current integration period
+  * Returns the current scan index
+  * @return Current scan index
   */
-  inline double getTime() { return double(currentstartseconds) + double(currentstartsamples)/double(samplespersecond); }
+  inline int getCurrentScan() { return currentscan; }
+
+ /**
+  * Calculates the time difference between the specified time and the start of the present integration period
+  * Assumes the same scan
+  * @param seconds The comparison time in whole seconds
+  * @param ns The offset from the whole seconds in nanoseconds
+  * @return Difference between specified time and start of current integration period, in nanoseconds
+  */
+  inline s64 timeDifference(int seconds, int ns)
+  { return ((s64)(seconds-currentstartseconds))*1000000000 + (s64)ns - (s64)currentstartns; }
+
+ /**
+  * @return The time at the start of the current integration period, in seconds since
+  *         start of experiment
+  */
+  inline double getTime() { return ((double)(model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds)) + double(currentstartns)/1000000000.0; }
 
 /**
   * Send a difxmessage containing integration time and antenna weights
@@ -141,25 +156,20 @@ private:
 /**
   * Writes the visibilities to disk in ascii format - only used for debugging
   */
-  void writeascii();
-
-/**
-  * Writes the visibilities to disk in rpfits format
-  */
-  void writerpfits();
+  void writeascii(int dumpmjd, double dumpseconds);
 
 /**
   * Writes the visibilities to disk in DiFX format (binary with inserted ascii headers)
   */
-  void writedifx();
+  void writedifx(int dumpmjd, double dumpseconds);
 
 /**
   * Writes the ascii header for a visibility point in a DiFX format output file
   */
-  void writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, float buvw[3]);
+  void writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3]);
 
   Configuration * config;
-  int visID, expermjd, experseconds, integrationsamples, currentstartseconds, currentstartsamples, offset, offsetperintegration, subintsthisintegration, subintsamples, numvisibilities, numdatastreams, numbaselines, numchannels, currentsubints, resultlength, currentconfigindex, samplespersecond, maxproducts, executeseconds, autocorrincrement;
+  int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, estimatedbytes;
   double fftsperintegration, meansubintsperintegration;
   const string * polnames;
   bool first, monitor, pulsarbinon, configuredok;
@@ -168,21 +178,17 @@ private:
   int * mon_socket;
   int monitor_skip;
   cf32 ** autocorrcalibs;
-  f32 ** autocorrweights;
+  f32 *** autocorrweights;
   f32 **** baselineweights;
   std::string * telescopenames;
-  //cf32 *** results;
   cf32 * results;
-#ifdef HAVE_RPFITS
-  cf32 * rpfitsarray;
-#endif
+  f32 * floatresults;
   f32 *** binweightsums;
   cf32 *** binscales;
   f32 * binweightdivisor;
   int ** pulsarbins;
+  Model * model;
   Polyco * polyco;
-  int *** baselinepoloffsets;
-  int *** datastreampolbandoffsets;
   static monsockStatusType monsockStatus;
 };
 

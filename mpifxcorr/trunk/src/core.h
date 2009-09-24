@@ -56,6 +56,12 @@ public:
   */
   void execute();
 
+ /**
+  * Returns the estimated number of bytes used by the Core
+  * @return Estimated memory size of the Core (bytes)
+  */
+  int getEstimatedBytes();
+
   /// The number of elements in the send/receive circular buffer
   static const int RECEIVE_RING_LENGTH = 4;
 
@@ -71,22 +77,43 @@ private:
   /// store data and results
   typedef struct {
     u8 ** databuffer;
-    double ** controlbuffer;
+    s32 ** controlbuffer;
     cf32 * results;
-    s32 *** bincounts;
-    int resultlength;
+    f32 * floatresults;
+    //s32 *** bincounts;
+    int threadresultlength;
+    int coreresultlength;
     int * datalengthbytes;
-    int numchannels;
     int resultsvalid;
     int configindex;
-    int offsets[2]; //0=seconds, 1=nanoseconds
+    int offsets[3]; //0=scan, 1=seconds, 2=nanoseconds
     bool keepprocessing;
     int numpulsarbins;
     bool pulsarbin;
     bool scrunchoutput;
     pthread_mutex_t * slotlocks;
-    pthread_mutex_t copylock;
+    pthread_mutex_t ** viscopylocks;
+    pthread_mutex_t autocorrcopylock;
+    pthread_mutex_t bweightcopylock;
+    pthread_mutex_t acweightcopylock;
   } processslot;
+
+  ///Structure containing all of the pointers to scratch space for a single thread
+  typedef struct {
+    f32 **** baselineweight; //[freq][pulsarbin][baseline][pol]
+    cf32 * threadcrosscorrs;
+    //cf32 * threadresults;
+    s32 *** bins; //[fftsubloop][freq][channel]
+    cf32* pulsarscratchspace;
+    cf32******* pulsaraccumspace; //[freq][stride][baseline][source][polproduct][bin][channel]
+    f64 * chanfreqs;
+    cf32 * rotated;
+    cf32 * rotator;
+    cf32 * channelsums;
+    f32 * argument;
+    f32 ** dsweights;
+    DifxMessageSTARecord * starecord;
+  } threadscratchspace;
 
   /// Structure containing a pointer to the current Core and the sequence id of the thread that will be launched, so it knows which part of the time slice to process
   typedef struct {
@@ -95,12 +122,23 @@ private:
   } processthreadinfo;
 
  /**
-  * Allocates or deallocates the required accumulation scratch space for pulsar binning
-  * @param pulsaraccumspace The array of scratch space
+  * Allocates or deallocates the required scratch space for pulsar binning which varies with config
+  * @param pulsaraccumspace The array of scratch space [freq][xmacstride][baseline][src][pol][bin][chan]
+  * @param bins Pointer to the array for bins
   * @param newconfigindex The index of the config which is to be used
   * @param oldconfigindex The index of the config which was previously being used
+  * @param threadid The thread for which this will be done
   */
-  void createPulsarAccumSpace(cf32***** pulsaraccumspace, int newconfigindex, int oldconfigindex);
+  void createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, int newconfigindex, int oldconfigindex, int threadid);
+
+ /**
+  * Allocates or deallocates the required space for thread-specific arrays which vary in size with config
+  * @param baselineweight The array for baseline weights [freq][bin][baseline][pol]
+  * @param newconfigindex The index of the config which is to be used
+  * @param oldconfigindex The index of the config which was previously being used
+  * @param threadid The thread for which this will be done
+  */
+  void allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newconfigindex, int oldconfigindex, int threadid);
 
  /**
   * While the correlation is continuing, processes the given thread's share of the next element in the send/receive circular buffer
@@ -116,20 +154,37 @@ private:
   void receivedata(int index, bool * terminate);
 
  /**
-  * Receives data from all telescopes into the given index of the circular send/receive buffer, as well as control info from the FxManager
+  * Processes a single thread's section of a single subintegration
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param startblock The first FFT block which is this thread's responsibility
   * @param numblocks The number of FFT blocks which this thread will take care of
   * @param modes The Mode objects which handle the station-based processing
   * @param currentpolyco The correct Polyco object for this time slice - null if not pulsar binning
-  * @param threadresults Pre-allocated space for this thread to place its partial results (Nbaselines*nproducts*(numchannels+1) long)
-  * @param bins Pre-allocated space for the bins for each subband/channel combination - null if not pulsar binning
-  * @param pulsarscratchspace Room to perform the pulsar binning if required - null if not pulsar binning (numchannels + 1 long)
-  * @param pulsaraccumspace Room in which to accumulate the binned results ([#baselines][#frequencies][#polproducts][#bins][#channels+1])
-  * @param starecord Message to be sent to a process listening for STA results
+  * @param scratchspace Space for all of the intermediate results for this thread
   */
-  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, cf32 * threadresults, s32 ** bins, cf32* pulsarscratchspace, cf32***** pulsaraccumspace, DifxMessageSTARecord * starecord);
+  void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace);
+
+ /**
+  * Does any uvshifting necessary and averages down in frequency into the threadresults
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
+  * @param currentpolyco The correct Polyco object for this time slice - null if not pulsar binning
+  * @param scratchspace Space for all of the intermediate results for this thread
+  */
+  void uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace);
+
+ /**
+  * Does any uvshifting necessary and averages down in frequency into the threadresults
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
+  * @param scratchspace Space for all of the intermediate results for this thread
+  * @param freqindex The frequency (from the frequency table) to process
+  * @param baseline The baseline to process
+  */
+  void uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, threadscratchspace * scratchspace, int freqindex, int baseline);
 
  /**
   * Updates all the parameters for processing thread when the configuration changes
@@ -143,9 +198,8 @@ private:
   * @param modes The Mode objects that will be used to do the station-based processing for this configuration
   * @param polycos The polyco objects to be used with this configuration (null if not pulsar binning)
   * @param first Whether this is the first time the config has been updated (ie do the arrays exist already and need to be deallocated)
-  * @param bins Space to store the bins [#freqs][#channels+1] for this configuration (null if not pulsar binning)
   */
-  void updateconfig(int oldconfigindex, int configindex, int threadid, int & startblock, int & numblocks, int & numpolycos, bool & pulsarbin, Mode ** modes, Polyco ** polycos, bool first, s32 *** bins);
+  void updateconfig(int oldconfigindex, int configindex, int threadid, int & startblock, int & numblocks, int & numpolycos, bool & pulsarbin, Mode ** modes, Polyco ** polycos, bool first);
 
   int mpiid;
   Configuration * config;
@@ -153,12 +207,14 @@ private:
   MPI_Request * datarequests;
   MPI_Request * controlrequests;
   MPI_Status * msgstatuses;
-  int numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxresultlength, startmjd, startseconds;
+  int numdatastreams, numbaselines, databytes, controllength, numreceived, currentconfigindex, numprocessthreads, maxthreadresultlength, maxcoreresultlength, startmjd, startseconds, estimatedbytes;
+  int * threadbytes;
   int * datastreamids;
   processslot * procslots;
   pthread_t * processthreads;
   pthread_cond_t * processconds;
   bool * processthreadinitialised;
+  Model * model;
 };
 
 #endif

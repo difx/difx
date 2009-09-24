@@ -197,9 +197,7 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	{
 		delete_mark5_stream(mark5stream);
 	}
-#ifdef HAVE_DIFXMESSAGE
 	sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
-#endif
 	XLRClose(xlrDevice);
 }
 
@@ -215,16 +213,16 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	int doUpdate = 0;
 	char *mk5dirpath;
 	char formatname[64];
-	int nbits, ninputbands, framebytes;
+	int nbits, nrecordedbands, framebytes;
 	Configuration::dataformat format;
 	double bw;
 
 	format = config->getDataFormat(configindex, streamnum);
 	nbits = config->getDNumBits(configindex, streamnum);
-	ninputbands = config->getDNumInputBands(configindex, streamnum);
+	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
-	bw = config->getConfigBandwidth(configindex);
-	fanout = config->genMk5FormatName(format, ninputbands, bw, nbits, framebytes, config->getDecimationFactor(configindex), formatname);
+        bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
+	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, framebytes, config->getDDecimationFactor(configindex, streamnum), formatname);
         if(fanout < 0)
           MPI_Abort(MPI_COMM_WORLD, 1);
 
@@ -298,16 +296,21 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			return;
 		}
 		scanns = int(1000000000.0*scan->framenuminsecond/scan->framespersecond + 0.1);
-		cinfo << startl << "Before[" << mpiid << "] rs = " << readseconds << "  rns = " << readnanoseconds << endl;
+		cinfo << startl << "Before[" << mpiid << "]  readscan = " << readscan << "  readsec = " << readseconds << "  readns = " << readnanoseconds << endl;
 		scanstart = scan->mjd + (scan->sec + scanns*1.e-9)/86400.0;
 		scanend = scanstart + scan->duration/86400.0;
 		readpointer = scan->start + scan->frameoffset;
 		readseconds = (scan->mjd-corrstartday)*86400 + scan->sec - corrstartseconds;
 		readnanoseconds = scanns;
+                while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
+                  readscan++;
+                while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
+                  readscan--;
+                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 
-		cinfo << startl << "After[" << mpiid << "]  rs = " << readseconds << "  rns = " << readnanoseconds << endl;
+		cinfo << startl << "After[" << mpiid << "]  readscan = " << readscan << " rs = " << readseconds << "  rns = " << readnanoseconds << endl;
 
-		if(readseconds > executeseconds)
+		if(readscan == model->getNumScans() - 1 && readseconds >= model->getScanDuration(readscan))
 		{
 			cwarn << startl << "No more data for project on module [" << mpiid << "]" << endl;
 			scan = 0;
@@ -328,13 +331,18 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scanstart = scan->mjd + (scan->sec + scanns*1.e-9)/86400.0;
 			scanend = scanstart + scan->duration/86400.0;
 
-			if(startmjd < scanstart)  /* obs starts before data */
+ 			if(startmjd < scanstart)  /* obs starts before data */
 			{
 				cinfo << startl << "NM5 : scan found(1) : " << (i+1) << endl;
 				readpointer = scan->start + scan->frameoffset;
 				readseconds = (scan->mjd-corrstartday)*86400 
 					+ scan->sec - corrstartseconds;
 				readnanoseconds = scanns;
+                                while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
+                                  readscan++;
+                                while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
+                                  readscan--;
+                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 				break;
 			}
 			else if(startmjd < scanend) /* obs starts within data */
@@ -347,13 +355,18 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				readpointer += n*scan->framebytes;
 				readseconds = 0;
 				readnanoseconds = 0;
+                                while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
+                                  readscan++;
+                                while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
+                                  readscan--;
+                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 				break;
 			}
 		}
 		cinfo << startl << "NativeMk5DataStream " << mpiid << 
 			" positioned at byte " << readpointer << 
-			" seconds = " << readseconds <<" ns = " << 
-			readnanoseconds << " n = " << n << endl;
+			" scan = " << readscan << " seconds = " << readseconds <<
+                        " ns = " << readnanoseconds << " n = " << n << endl;
 
 		if(i >= module.nscans || scan == 0)
 		{
@@ -372,7 +385,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 	cinfo << startl << "The frame start day is " << scan->mjd << 
 		", the frame start seconds is " << (scan->sec+scanns*1.e-9)
-		<< ", readseconds is " << readseconds << 
+		<< ", readscan is " << readscan << ", readseconds is " << readseconds << 
 		", readnanoseconds is " << readnanoseconds << endl;
 
 	/* update all the configs - to ensure that the nsincs and 
@@ -485,7 +498,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			XLRGetErrorMessage(errStr, xlrEC);
 			cerror << startl << "XLRReadImmed returns FAIL.  Read error at position=" << readpointer << ", length=" << bytes << ", error=" << errStr << endl;
 
-			double errorTime = corrstartday + (readseconds + corrstartseconds + readnanoseconds*1.0e-9)/86400.0;
+			double errorTime = corrstartday + (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds + readnanoseconds*1.0e-9)/86400.0;
 			sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, errorTime, 0.0);
 			break;
 		}
@@ -580,7 +593,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = (uint8_t *)data;
 	mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
 	mark5stream->frame = 0;
-	sec2 = (readseconds + corrstartseconds) % 86400;
+	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
 	if(data[0] == FILL_PATTERN && data[1] == FILL_PATTERN)
 	{
@@ -625,7 +638,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			double fmjd, fmjd2;
 			enum Mk5State state;
 
-			fmjd = corrstartday + (corrstartseconds + readseconds + (double)readnanoseconds/1000000000.0)/86400.0;
+			fmjd = corrstartday + (corrstartseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + (double)readnanoseconds/1000000000.0)/86400.0;
 			if(newscan > 0)
 			{
 				newscan = 0;
@@ -666,6 +679,22 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	readnanoseconds += bufferinfo[buffersegment].nsinc;
 	readseconds += readnanoseconds/1000000000;
 	readnanoseconds %= 1000000000;
+        if(readseconds >= model->getScanDuration(readscan)) {
+          if(readscan < model->getNumScans()-1) {
+            readscan++;
+            readseconds -= model->getScanStartSec(readscan, corrstartday, corrstartseconds) - model->getScanStartSec(readscan-1, corrstartday, corrstartseconds);
+            cdebug << startl << "Incrementing scan to " << readscan << ", readseconds is now " << readseconds << endl;
+	    if(readseconds < -1)
+	    {
+	    	int skipseconds = -readseconds-1;
+		readpointer += (long long)(skipseconds)*(long long)(scan->framebytes)*(long long)(scan->framespersecond);
+		readseconds += skipseconds;
+		cdebug << startl << "Skipping " << skipseconds << " seconds at scan boundary." << endl;
+	    }
+          }
+          else
+            keepreading = false;
+        }
 	if(bytes < readbytes)
 	{
 		dataremaining = false;
@@ -722,17 +751,22 @@ void NativeMk5DataStream::loopfileread()
     if(keepreading)
     {
       //if we need to, change the config
-      int nextconfigindex = config->getConfigIndex(readseconds);
+      int nextconfigindex = config->getScanConfigIndex(readscan);
       cinfo << startl << "old config[" << mpiid << "] = " << nextconfigindex << endl;
-      while(nextconfigindex < 0 && readseconds < config->getExecuteSeconds())
-        nextconfigindex = config->getConfigIndex(++readseconds);
-      if(readseconds >= config->getExecuteSeconds())
+      while(nextconfigindex < 0 && readscan < model->getNumScans()) {
+        readseconds = 0; 
+        nextconfigindex = config->getScanConfigIndex(++readscan);
+      }
+      if(readscan == model->getNumScans())
       {
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scan = model->getNumScans()-1;
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = model->getScanDuration(model->getNumScans()-1);
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
         keepreading = false;
       }
       else
       {
-        if(config->getConfigIndex(readseconds) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
+        if(config->getScanConfigIndex(readscan) != bufferinfo[(lastvalidsegment + 1)%numdatasegments].configindex)
           updateConfig((lastvalidsegment + 1)%numdatasegments);
 	//if the datastreams for two or more configs are common, they'll all have the same 
         //files.  Therefore work with the lowest one
@@ -746,8 +780,8 @@ void NativeMk5DataStream::loopfileread()
       }
       if(keepreading == false)
       {
-        bufferinfo[(lastvalidsegment+1)%numdatasegments].seconds = config->getExecuteSeconds();
-        bufferinfo[(lastvalidsegment+1)%numdatasegments].nanoseconds = 0;
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanseconds = config->getExecuteSeconds();
+        bufferinfo[(lastvalidsegment+1)%numdatasegments].scanns = 0;
       }
     }
   }

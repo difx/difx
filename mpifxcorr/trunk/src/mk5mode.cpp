@@ -24,21 +24,21 @@
 #include "mk5.h"
 #include "alert.h"
 
-Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int nchan, int bpersend, int gblocks, int nfreqs, double bw, double * freqclkoffsets, int ninputbands, int noutputbands, int nbits, bool fbank, bool postffringe, bool quaddelayinterp, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format)
-  : Mode(conf, confindex, dsindex, nchan, bpersend, gblocks, nfreqs, bw, freqclkoffsets, ninputbands, noutputbands, nbits, nchan*2+4, fbank, postffringe, quaddelayinterp, cacorrs, bw*2)
+Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format)
+  : Mode(conf, confindex, dsindex, recordedbandchan, chanstoavg, bpersend, gsamples, nrecordedfreqs, recordedbw, recordedfreqclkoffs, recordedfreqlooffs, nrecordedbands, nzoombands, nbits, recordedbandchan*2+4, fbank, fringerotorder, arraystridelen, cacorrs, recordedbw*2)
 {
   char formatname[64];
 
-  fanout = config->genMk5FormatName(format, ninputbands, bw, nbits, framebytes, conf->getDecimationFactor(confindex), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, framebytes, conf->getDDecimationFactor(confindex, dsindex), formatname);
   if(fanout < 0)
     initok = false;
   else
   {
     // since we allocated the max amount of space needed above, we need to change
     // this to the number actually needed.
-    unpacksamples = nchan*2;
-  
-    samplestounpack = nchan*2;
+    unpacksamples = recordedbandchan*2;
+    this->framesamples = framesamples;
+    samplestounpack = recordedbandchan*2;
     if(fanout > 1)
       samplestounpack += fanout;
   
@@ -97,7 +97,7 @@ float Mk5Mode::unpack(int sampleoffset)
     
   if(goodsamples < 0)
   {
-    cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from buffer seconds " << bufferseconds << " plus " << buffermicroseconds << " microseconds!!!" << endl;
+    cerror << startl << "Error trying to unpack Mark5 format data at sampleoffset " << sampleoffset << " from data seconds " << datasec << " plus " << datans << " ns!!!" << endl;
     goodsamples = 0;
   }
 
