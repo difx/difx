@@ -17,7 +17,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "1.1";
-const char verdate[] = "20090902";
+const char verdate[] = "20090918";
 
 typedef struct
 {
@@ -346,6 +346,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 
 	D = loadDifxCalc(prefix);
 	D = updateDifxInput(D);
+        printf("Finished updating difxinput\n");
 	
 	if(D)
 	{
@@ -395,12 +396,9 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 			fprintf(stderr, "difxCalc returned %d\n", v);
 			return -1;
 		}
-
-		writeDifxDelay(D, delayfile);
-		writeDifxRate(D,  ratefile);
-		writeDifxUVW(D,   uvwfile);
+		printf("About to write IM file\n");
 		writeDifxIM(D,    imfile);
-
+		printf("Wrote IM file\n");
 		deleteDifxInput(D);
 
 		return 0;

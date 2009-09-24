@@ -145,7 +145,7 @@ def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
 	if not isfile(filebase+'.input'):
 		return 'Error: input file %s.input not found' % filebase
 	
-	if not isfile(filebase+'.uvw') or not isfile(filebase+'.delay'):
+	if not isfile(filebase+'.im'):
 		if makeuvw and isfile(filebase+'.calc'):
 			system('%s %s.calc' % (calcif, filebase))
 		else:
