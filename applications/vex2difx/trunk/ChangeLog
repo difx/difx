@@ -1,48 +1,20 @@
-Version 1.1
+Version 2.0
 ~~~~~~~~~~~
-* Post DiFX-1.5.1
-* Improved algorithm for determining blocks per send
-* Zero length scans are ignored
-* Warn if no clock values are applied on a job/antenna basis
+* Jumped because in the mean-time difx-1.5 branch had gone to 1.1
+* Includes the following corrections merged in from the 1.5 branch
+  - Zero length scans are ignored
+  - Warn if no clock values are applied on a job/antenna basis
+  - os2v2d: correct use of POLARIZATION
+* Also bugfixes related to variable initialisation
+* Adds support for multiple phase centres
+* Requires difxio 3.0
 
-Version 1.0
+Version 0.3
 ~~~~~~~~~~~
-* oms2v2d: correct use of POLARIZATION
-* Version for DiFX-1.5.1
- 
-Version 0.2.3
-~~~~~~~~~~~~~
+* Post DiFX-1.5
 * Mark5B support
 * format override support
 * Pulsar profile mode
-* Split jobs at leap second
-* ANTENNA blocks get antenna names capitalized
-* Clean up parsing of .v2d a little bit
-* (Adam) Initialize some ANTENNA block variables
-* (Adam) Clean up LBA format
-* Support a wider range of time formats in the .v2d file
-* Make .v2d parameters "mjdStart" and "mjdStop" operate at specified times, not 
-  at scan boundaries
-* EOP table support from within .v2d file
-* Support eVLBI via writing of Network table
-
-Version 0.2.2
-~~~~~~~~~~~~~
-* Fix clock offset of up to 6 picoseconds in simFXCORR mode
-* Don't write flag based on RECORD if correlating files
-* Fix some initialization information
-
-Version 0.2.1
-~~~~~~~~~~~~~
-* Post DiFX-1.5
-* Change sign convention associated with vex file
-   Note on clock sign conventions: As far as I (WFB) can tell, vex uses one sign
-   convention and the VLBA, DiFX and FITS all use the other.
-* Don't let VSN=None get through.
-* Allow file-based correlation using ANTENNA block values file= and filelist=
-* Fix splitting jobs at clock boundaries
-* Add minLength parameter
-* break= parameter to force job breaks at particular times
 
 Version 0.2
 ~~~~~~~~~~~
@@ -59,8 +31,7 @@ Version 0.1
 * allow colon separated RAs and Decs in the config file
 * implement ANTENNA blocks
 * write SCAN_GAP scans instead of no scans 
-* start time and stop time are no longer expanded to full length of all  
-  included scans
+* start time and stop time are no longer expanded to full length of all included scans
 * write flag file that is compliant with difx2fits
 * add oms2v2f to this package
 * implement maxLength (seconds)

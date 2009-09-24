@@ -40,10 +40,9 @@
 
 using namespace std;
 
-extern const double MJD_UNIX0;	// MJD at beginning of unix time 
+extern const double MJD_UNIX0;	// MJD at beginning of unix time
 extern const double SEC_DAY;
 extern const double MUSEC_DAY;
-
 
 enum V2D_Mode
 {
@@ -53,16 +52,27 @@ enum V2D_Mode
 
 // see http://cira.ivec.org/dokuwiki/doku.php/difx/configuration
 
-class PhaseCenter
+class PhaseCentre
 {
 public:
-	double ra;
-	double dec;
-	string name;
-	// pulsar index
-	// ephemeris
-	char calCode;
+	//constructors
+	PhaseCentre(double ra, double dec, string name);
+	PhaseCentre();
+
+	//methods
+	void initialise(double ra, double dec, string name);
+
+	//variables
+	double ra;	  //radians
+	double dec;	  //radians
+	string difxname;
+        char calCode;
 	int qualifier;
+	// ephemeris
+	string ephemObject;     // name of the object in the ephemeris
+	string ephemFile;       // file containing a JPL ephemeris
+	string naifFile;        // file containing naif time data
+	double ephemDeltaT;     // tabulated ephem. interval (seconds, default 60)
 };
 
 class SourceSetup
@@ -70,17 +80,12 @@ class SourceSetup
 public:
 	SourceSetup(const string &name);
 	int setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value, PhaseCentre * pc);
 
-	string vexName;		// Source name as appears in vex file
-	string difxName;	// Source name (if different) to appear in difx
-	char calCode;
-	double ra, dec;		// in radians
-	string ephemObject;	// name of the object in the ephemeris
-	string ephemFile;	// file containing a JPL ephemeris
-	string naifFile;	// file containing naif time data
-	double ephemDeltaT;	// tabulated ephem. interval (seconds, default 60)
-
-	//vector<PhaseCenter> centers;
+	bool doPointingCentre;       	  // Whether or not to correlate the pointing centre
+	string vexName;		     	  // Source name as appears in vex file
+	PhaseCentre pointingCentre;  	  // The source which is at the pointing centre
+	vector<PhaseCentre> phaseCentres; // Additional phase centres to be correlated
 };
 
 class AntennaSetup
@@ -98,7 +103,7 @@ public:
 	bool polSwap;		// If true, swap polarizations
 	string format;		// Override format from .v2d file.  
 				// This is sometimes needed because format not known always at scheduling time
-				// Possible values: S2 VLBA MkIV/Mark4 Mark5B .  Is converted to all caps on load
+				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	vector<VexBasebandFile> basebandFiles;	// files to correlate
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
@@ -115,14 +120,19 @@ public:
 	string corrSetupName;
 
 	double tInt;		// integration time
-	int nChan;		// channels per sub-band
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations
-	int blocksPerSend;	// literal
+	int subintNS;		// Duration of a subintegration in nanoseconds
+	int guardNS;		// Number of "guard" ns tacked on to end of a send
+	int nChan;		// For the narrowest band 
+				// (all others will have same spectral resolution)
 	int specAvg;
-	int startChan;
-	int nOutChan;
-	bool postFFringe;	// fringe after FFT?
+	int maxNSBetweenUVShifts; //for multi-phase centres
+	int fringeRotOrder;	// 0, 1, or 2
+	int strideLength;	// The number of channels to do at a time
+				// when fringeRotOrder > 0
+	int xmacLength;		// Number of channels to do at a time when xmac'ing
+	int numBufferedFFTs;	// Number of FFTs to do in Mode before XMAC'ing
 	string binConfigFile;
 	set<int> freqIds;	// which bands to correlate
 private:
@@ -164,12 +174,14 @@ public:
 	void defaultSetup();
 	void example();
 	int sanityCheck();
+	void addSourceSetup(SourceSetup toadd);
 
 	bool useAntenna(const string &antName) const;
 	bool useBaseline(const string &ant1, const string &ant2) const;
 	bool swapPol(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const string &name) const;
+	const PhaseCentre *getPhaseCentre(const string &difxname) const;
 	const AntennaSetup *getAntennaSetup(const string &name) const;
 	const VexClock *getAntennaClock(const string &antName) const;
 
@@ -186,7 +198,7 @@ public:
 	bool mediaSplit;	// split jobs on media change
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
-	bool tweakIntegrationTime;	// nadger the integration time to make values nice
+	bool tweakIntegrationTime;      // nadger the integration time to make values nice
 	double maxLength;	// [days]
 	double minLength;	// [days]
 	double maxSize;		// [bytes] -- break jobs for output filesize
@@ -195,7 +207,7 @@ public:
 	int dataBufferFactor;
 	int nDataSegments;
 	double sendLength;	// (s) amount of data to send from datastream to core at a time
-	int sendSize;		// (Bytes) amount of data to send from datastream to core at a time (overrides sendLength)
+	int sendSize;           // (Bytes) amount of data to send from datastream to core at a time (overrides sendLength)
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor

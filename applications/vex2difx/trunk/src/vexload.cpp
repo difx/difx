@@ -70,7 +70,7 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 
 	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
 	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
-	   F.format == "VLBA1_4" || F.format == "MKIV1_4") 
+	   F.format == "VLBA1_4" || F.format == "MKIV1_4")
 	{
 		it = ch2tracks.find(chanName);
 
@@ -190,6 +190,11 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 			fvex_double(&(p->x->value), &(p->x->units), &A->dx);
 			fvex_double(&(p->y->value), &(p->y->units), &A->dy);
 			fvex_double(&(p->z->value), &(p->z->units), &A->dz);
+
+			// Correct for various definitions of year: yr_vex = 365.2524  yr_goddard=365.25
+			A->dx *= (365.25/365.2425);
+			A->dy *= (365.25/365.2425);
+			A->dz *= (365.25/365.2425);
 		}
 		else
 		{
@@ -314,9 +319,9 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 		const SourceSetup *setup = params.getSourceSetup(S->name);
 		if(setup)
 		{
-			if(setup->calCode > ' ')
+			if(setup->pointingCentre.calCode > ' ')
 			{
-				S->calCode = setup->calCode;
+				S->calCode = setup->pointingCentre.calCode;
 			}
 		}
 	}
@@ -591,7 +596,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				if(antennaSetup->format.size() > 0)
 				{
 					cout << "Setting antenna format to " << 
-						antennaSetup->format << 
+						antennaSetup->format <<
 						" for antenna " << antName << endl;
 				}
 				F.format = antennaSetup->format;
@@ -617,7 +622,6 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				polarization = value[0];
 				if(swapPol)
 				{
-					cout << "Swapping polarizations on antenna " << antName << endl;
 					polarization = swapPolarization(polarization);
 				}
 				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
@@ -636,7 +640,6 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			}
 
 			// Get datastream assignments and formats
-
 
 			// Is it a Mark5 mode?
 			if(F.format == "")
@@ -764,7 +767,6 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
 				recChanId = getRecordChannel(value, ch2tracks, F, i);
-
 				if(recChanId >= 0)
 				{
 					F.ifs.push_back(VexIF());
@@ -798,7 +800,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			{
 				overSamp = 8;
 			}
-	
+
 			M->overSamp.push_back(overSamp);
 		}
 		M->overSamp.sort();
@@ -875,7 +877,7 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 		fixOhs(vsn);
 
 		VexInterval vsnTimeRange(vexDate(p->start), vexDate(p->stop));
-		
+
 		if(!vsnTimeRange.isCausal())
 		{
 			cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " . " << endl;
@@ -935,8 +937,8 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	if(block)
 	{
 		for(defs=((struct block *)block->ptr)->items;
-		    defs;
-		    defs=defs->next)
+	   	    defs;
+	    	    defs=defs->next)
 		{
 			statement = ((Lowl *)defs->ptr)->statement;
 			if(statement == T_COMMENT || statement == T_COMMENT_TRAILING)

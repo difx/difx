@@ -246,33 +246,33 @@ bool operator == (VexSubband& s1, VexSubband& s2)
 
 int VexData::sanityCheck()
 {
-	int nWarn = 0;
+        int nWarn = 0;
 
-	if(eops.size() < 5)
-	{
-		cerr << "Warning: Fewer than 5 EOPs specified" << endl;
-		nWarn++;
-	}
+        if(eops.size() < 5)
+        {
+                cerr << "Warning: Fewer than 5 EOPs specified" << endl;
+                nWarn++;
+        }
 
-	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
-	{
-		if(it->clocks.size() == 0)
-		{
-			cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
-			nWarn++;
-		}
-	}
+        for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
+        {
+                if(it->clocks.size() == 0)
+                {
+                        cerr << "Warning: no clock values for antenna " << it->name << " ." << endl;
+                        nWarn++;
+                }
+        }
 
-	for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
-	{
-		if(it->vsns.size() == 0 && it->basebandFiles.size() == 0)
-		{
-			cerr << "Warning: no media specified for antenna " << it->name << " ." << endl;
-			nWarn++;
-		}
-	}
+        for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
+        {
+                if(it->vsns.size() == 0 && it->basebandFiles.size() == 0)
+                {
+                        cerr << "Warning: no media specified for antenna " << it->name << " ." << endl;
+                        nWarn++;
+                }
+        }
 
-	return nWarn;
+        return nWarn;
 }
 
 VexSource *VexData::newSource()
@@ -286,7 +286,7 @@ bool VexAntenna::getClock(double mjd, double &offset, double &rate) const
 {
 	vector<VexClock>::const_iterator it;
 	bool hasValue = false;
-
+	
 	offset = 0.0;
 	rate = 0.0;
 
@@ -548,20 +548,19 @@ void VexJobGroup::genEvents(const list<VexEvent>& eventList)
 		}
 	}
 }
-
 bool VexJob::hasScan(const string &scanName) const
 {
-	vector<string>::const_iterator it;
+        vector<string>::const_iterator it;
 
-	for(it = scans.begin(); it != scans.end(); it++)
-	{
-		if(*it == scanName)
-		{
-			return true;
-		}
-	}
+        for(it = scans.begin(); it != scans.end(); it++)
+        {
+                if(*it == scanName)
+                {
+                        return true;
+                }
+        }
 
-	return false;
+        return false;
 }
 
 int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask) const
@@ -1090,41 +1089,41 @@ void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &
 
 void VexData::findLeapSeconds()
 {
-	int n = eops.size();
+        int n = eops.size();
 
-	if(n < 2)
-	{
-		return;
-	}
+        if(n < 2)
+        {
+                return;
+        }
 
-	for(int i = 1; i < n; i++)
-	{
-		if(eops[i-1].tai_utc != eops[i].tai_utc)
-		{
-			addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
-			cout << "Leap second detected at day " << eops[i].mjd << endl;
-		}
-	}
+        for(int i = 1; i < n; i++)
+        {
+                if(eops[i-1].tai_utc != eops[i].tai_utc)
+                {
+                        addEvent(eops[i].mjd, VexEvent::LEAP_SECOND, "Leap second");
+                        cout << "Leap second detected at day " << eops[i].mjd << endl;
+                }
+        }
 }
 
 void VexData::addBreaks(const vector<double> &breaks)
 {
-	int n = breaks.size();
+        int n = breaks.size();
 
-	if(n < 1)
-	{
-		return;
-	}
+        if(n < 1)
+        {
+                return;
+        }
 
-	for(int i = 0; i < n; i++)
-	{
-		double mjd = breaks[i];
+        for(int i = 0; i < n; i++)
+        {
+                double mjd = breaks[i];
 
-		if(exper.contains(mjd))
-		{
-			addEvent(mjd, VexEvent::MANUAL_BREAK, "");
-		}
-	}
+                if(exper.contains(mjd))
+                {
+                        addEvent(mjd, VexEvent::MANUAL_BREAK, "");
+                }
+        }
 }
 
 ostream& operator << (ostream& os, const VexInterval& x)
