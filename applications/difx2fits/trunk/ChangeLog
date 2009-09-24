@@ -1,27 +1,24 @@
-Version 2.7
-* Post DiFX-1.5.1
-* Copy jobmatrix file
-* rename "makefilts.tmp" to "makefits.tmp"
-
-Version 2.6
-* Apply flags properly, even in cases with crazy subarraying
-* Require difxio 2.12
-* Write file that summarizes jobs that went into FITS
-* Pass full command line option structure to UV writing
-* Normalize calling to all table writing functions
-* Properly populate GATEMODL table
-* Ensure sniffer interval >= tInt
-* Write .jobmatrix file
-* Require difxio 2.12
-* To become version for DiFX-1.5.1
+Version 3.0
+* Includes the following merged changes from DiFX-1.5:
+  - Copy jobmatrix file
+  - rename "makefilts.tmp" to "makefits.tmp"
+  - Apply flags properly, even in cases with crazy subarraying
+  - Require difxio 2.12
+  - Write file that summarizes jobs that went into FITS
+  - Pass full command line option structure to UV writing
+  - Normalize calling to all table writing functions
+  - Properly populate GATEMODL table
+  - Write .jobmatrix file
+  - Require difxio 2.12
+  - Write new WEIGHTYP keyword
+* Adds support for multiple phase centres, zoom bands
+* Also bugfixes for freeing memory
+* Requires difxio 3.0
 
 Version 2.5
-* Require difxio 2.11
+* Require difxio 2.10
 * Post DiFX-1.5
 * Sniffer: look for spectral lines
-* Write autocorrs for all pulsar bins
-* Fix indexing by antennas after merging.  Affects: UV, MC, ML tables
-* Check for existance of some data for each job being correlated
 
 Version 2.4
 * Post NRAO-DiFX 1.1 development

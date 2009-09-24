@@ -16,18 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <string.h>
 #include "sniffer.h"
@@ -50,7 +48,7 @@ typedef struct
 struct _Sniffer
 {
 	FILE *apd;	/* amp, phase, dalay (, rate) file */
-	FILE *apc;	/* amp, phase, chan (, rate) file */
+	FILE *apc;      /* amp, phase, chan (, rate) file */
 	FILE *wts;
 	FILE *acb;
 	FILE *xcb;
@@ -231,7 +229,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		fprintf(stderr, "\nWarning: sniffer interval is not long "
 			"compared to integration time.\n");
 		fprintf(stderr, "Changing to %f seconds.\n\n",
-			tMax * S->nTime);
+		tMax * S->nTime);
 	}
 	S->solInt = tMax * S->nTime;
 	
@@ -611,54 +609,54 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			}
 
 			/* First transform in time to form rates.  Here we do
-			 * the spectral line sniffing to look for peak in 
-			 * rate/chan space*/
-			fftw_execute(S->plan1);
-			max2 = 0.0;
-			besti = bestj = 0;
-			for(j = 0; j < S->fft_ny; j++)
-			{
-				for(i = 0; i < S->fft_nx; i++)
-				{
-					z = S->fftbuffer[j*S->fft_nx + i];
-					amp2 = z*~z;
-					if(amp2 > max2)
-					{
-						besti = i;
-						bestj = j;
-						max2 = amp2;
-					}
-				}
-			}
-			z = S->fftbuffer[bestj*S->fft_nx + besti];
-			specAmp = sqrt(max2);
-			specChan = besti;
-			specPhase = (180.0/M_PI)*atan2(cimag(z), creal(z));
-			
-			peak[1] = specAmp;
-			if(bestj == 0)
-			{
-				z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
-			}
-			else
-			{
-				z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
-			}
-			peak[0] = sqrt(z*~z);
-			if(bestj == S->fft_ny-1)
-			{
-				z = S->fftbuffer[besti];
-			}
-			else
-			{
-				z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
-			}
-			peak[2] = sqrt(z*~z);
-			specRate = peakup(peak, bestj, 
-				S->fft_ny, S->solInt*S->fftOversample);
+                         * the spectral line sniffing to look for peak in
+                         * rate/chan space*/
+                        fftw_execute(S->plan1);
+                        max2 = 0.0;
+                        besti = bestj = 0;
+                        for(j = 0; j < S->fft_ny; j++)
+                        {
+                                for(i = 0; i < S->fft_nx; i++)
+                                {
+                                        z = S->fftbuffer[j*S->fft_nx + i];
+                                        amp2 = z*~z;
+                                        if(amp2 > max2)
+                                        {
+                                                besti = i;
+                                                bestj = j;
+                                                max2 = amp2;
+                                        }
+                                }
+                        }
+                        z = S->fftbuffer[bestj*S->fft_nx + besti];
+                        specAmp = sqrt(max2);
+                        specChan = besti;
+                        specPhase = (180.0/M_PI)*atan2(cimag(z), creal(z));
 
-			/* Now do second axis of FFT -- in frequency to look for 
-			 * a peak in rate/delay space */
+                        peak[1] = specAmp;
+                        if(bestj == 0)
+                        {
+                                z = S->fftbuffer[(S->fft_ny-1)*S->fft_nx+besti];
+                        }
+			else
+                        {
+                                z = S->fftbuffer[(bestj-1)*S->fft_nx + besti];
+                        }
+                        peak[0] = sqrt(z*~z);
+                        if(bestj == S->fft_ny-1)
+                        {
+                                z = S->fftbuffer[besti];
+                        }
+                        else
+                        {
+                                z = S->fftbuffer[(bestj+1)*S->fft_nx + besti];
+                        }
+                        peak[2] = sqrt(z*~z);
+                        specRate = peakup(peak, bestj,
+                                S->fft_ny, S->solInt*S->fftOversample);
+
+                        /* Now do second axis of FFT -- in frequency to look for
+                         * a peak in rate/delay space */
 			fftw_execute(S->plan2);
 
 			max2 = 0.0;
@@ -739,10 +737,10 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 				phase, 
 				rate);
 
-			fprintf(S->apc, " %4d %6.4f %10.4f %10.6f", 
-				specChan, 
+			fprintf(S->apc, " %4d %6.4f %10.4f %10.6f",
+				specChan,
 				2.0*specAmp/(A->weightSum[bbc]*S->nChan), 
-				specPhase, 
+				specPhase,
 				specRate);
 		}
 		fprintf(S->apd, "\n");
@@ -787,7 +785,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	Accumulator *A;
 	int a1, a2;
 	int i, p;
-	int configId, sourceId;
+	int configId, sourceId, scanId;
 	float weight;
 	int isLSB;
 	int stride, offset, bbc, index;
@@ -808,7 +806,17 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 		return 0;
 	}
 
-	configId = S->D->source[sourceId].configId;
+	mjd = data->jd - 2400000.5;
+	mjd += data->iat;
+	a1 = data->baseline/256 - 1;
+	a2 = data->baseline%256 - 1;
+	scanId = DifxInputGetScanId(S->D, mjd);
+	if(scanId < 0 || scanId > S->D->nScan)
+	{
+		return 0;
+	}
+
+	configId = S->D->scan[scanId].configId;
 	if(configId < 0 || configId >= S->D->nConfig)
 	{
 		return 0;
@@ -821,10 +829,6 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 		S->configId = configId;
 	}
 
-	mjd = data->jd - 2400000.5;
-	mjd += data->iat;
-	a1 = data->baseline/256 - 1;
-	a2 = data->baseline%256 - 1;
 
 	A = &(S->accum[a1][a2]);
 

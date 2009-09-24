@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -111,13 +110,15 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		{
 			IF = config->IF + i;
 			bandFreq[i] = (IF->freq - D->refFreq)*1.0e6;
-			chanBW[i] = (IF->bw*D->specAvg/D->nInChan)*1.0e6;
+			chanBW[i] = (IF->bw*D->specAvg/D->nOutChan)*1.0e6;
+			//printf("D->specAvg is %d, D->refFreq is %f, D->nOutChan is %d, IF->bw was already %f, so chanBW is %f\n", D->specAvg, D->refFreq, D->nOutChan, IF->bw, chanBW[i]);
 			bandBW[i] = chanBW[i]*D->nOutChan;
 			netSide[i] = ( IF->sideband == 'U' ? 1 : -1 );
 			bbChan[i] = 0;	/* vistigial */
 			/* correct for skipping some channels */
 			bandFreq[i] += netSide[i]*IF->bw*
 				D->startChan*1.0e6/(double)(D->nInChan);
+			//printf("Writing IF with freq %f, chanBW %f, bandBW %f\n", bandFreq[i], chanBW[i], bandBW[i]);
 		}
 		
 		/* pointer to the buffer for FITS records */

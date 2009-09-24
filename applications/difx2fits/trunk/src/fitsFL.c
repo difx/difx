@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -318,10 +317,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				hasData[p][i] = 0;
 			}
 		}
-		for(c = 0; c < ds->nRecChan; c++)
+		for(c = 0; c < ds->nRecBand; c++)
 		{
-			polName = ds->RCpolName[c];
-			freqNum = ds->RCfreqId[c];
+			polName = ds->recBandPolName[c];
+			freqNum = ds->recBandFreqId[c];
 			i = dc->freqId2IF[freqNum];
 			if(polName == dc->pol[0])
 			{

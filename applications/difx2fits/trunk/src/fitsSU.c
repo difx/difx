@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -55,7 +54,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"RAEPO", "1D", "Right Ascension at EPOCH", "DEGREES"},
 		{"DECEPO", "1D", "Declination at EPOCH", "DEGREES"},
 		{"EPOCH", "1D", "epoch 1950.0B or J2000", "YEARS"},
-// Soon!	{"EQUINOX", "8A", "Mean equinox"},
+// Soon!        {"EQUINOX", "8A", "Mean equinox"},
 		{"RAAPP", "1D", "apparent RA at 0 IAT ref day", "DEGREES"},
 		{"DECAPP", "1D", "apparent Dec at 0 IAT ref day", "DEGREES"},
 		{"SYSVEL", bandFormDouble, "systemic velocity at ref pixel", 
@@ -66,7 +65,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"PMRA", "1D", "proper motion in RA", "DEG/DAY"},
 		{"PMDEC", "1D", "proper motion in Dec", "DEG/DAY"},
 		{"PARALLAX", "1E", "parallax of source", "ARCSEC"}
-// Soon!	{"EPOCH", "1D", "Epoch of observation", "YEARS"}
+// Soon!        {"EPOCH", "1D", "Epoch of observation", "YEARS"}
 	};
 
 	int nColumn;
@@ -179,13 +178,15 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		}
 
 		source = D->source + sourceId;
-		configId = source->configId;
-		if(configId < 0 || configId >= D->nConfig)
-		{
-			fprintf(stderr, "Error: configId out of range = %d\n",
-				configId);
-			continue;
-		}
+		configId = 0;
+		printf("Setting configId to 0 for all sources - needs to be fixed!!!\n");
+		//configId = source->configId;
+		//if(configId < 0 || configId >= D->nConfig)
+		//{
+		//	fprintf(stderr, "Error: configId out of range = %d\n",
+		//		configId);
+		//	continue;
+		//}
 
 		config = D->config + configId;
 
@@ -219,7 +220,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ITEM (RAEpoch, p_fitsbuf);
 		FITS_WRITE_ITEM (decEpoch, p_fitsbuf);
 		FITS_WRITE_ITEM (epoch, p_fitsbuf);
-// Soon!	FITS_WRITE_ARRAY(equinox, p_fitsbuf, 8);
+// Soon!        FITS_WRITE_ARRAY(equinox, p_fitsbuf, 8);
 		FITS_WRITE_ITEM (RAApp, p_fitsbuf);
 		FITS_WRITE_ITEM (decApp, p_fitsbuf);
 		FITS_WRITE_ARRAY(sysVel, p_fitsbuf, nBand);
@@ -229,7 +230,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ITEM (muRA, p_fitsbuf);
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
-// Soon!	FITS_WRITE_ITEM (epoch, p_fitsbuf);
+// Soon!        FITS_WRITE_ITEM (epoch, p_fitsbuf);
 
 		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SU");
 

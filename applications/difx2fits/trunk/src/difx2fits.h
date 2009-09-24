@@ -1,3 +1,31 @@
+/***************************************************************************
+ *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: difx2fits.h 1520 2009-09-23 23:34:38Z AdamDeller $
+// $HeadURL: $
+// $LastChangedRevision: 1520 $
+// $Author: AdamDeller $
+// $LastChangedDate: 2009-09-23 17:34:38 -0600 (Wed, 23 Sep 2009) $
+//
+//============================================================================
 #ifndef __DIFX2FITS_H__
 #define __DIFX2FITS_H__
 
@@ -28,7 +56,8 @@ struct CommandLineOptions
 	int overrideVersion;
 	double sniffTime;
 	int pulsarBin;
-	double jobMatrixDeltaT;	/* seconds */
+	int phaseCentre;
+	double jobMatrixDeltaT; /* seconds */
 };
 
 const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
@@ -47,14 +76,13 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	struct CommandLineOptions *opts);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
 
 const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
 
 const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
@@ -64,10 +92,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -34,64 +33,64 @@
 #include "difx2fits.h"
 
 /* return -1 on out-of-range */
-int getGateWindow(const DifxPulsar *dp, int bin, 
-	double *phaseOpen, double *phaseClose)
+int getGateWindow(const DifxPulsar *dp, int bin,
+        double *phaseOpen, double *phaseClose)
 {
-	if(!dp->scrunch)
-	{
-		/* First the simple case: no scrunching */
-		if(bin < 0 || bin >= dp->nBin)
-		{
-			return -1;
-		}
-		*phaseClose = dp->binEnd[bin];
-		bin--;
-		if(bin < 0)
-		{
-			bin = dp->nBin-1;
-		}
-		*phaseOpen = dp->binEnd[bin];
-	}
-	else if(bin == 0)
-	{
+        if(!dp->scrunch)
+        {
+                /* First the simple case: no scrunching */
+                if(bin < 0 || bin >= dp->nBin)
+                {
+                        return -1;
+                }
+                *phaseClose = dp->binEnd[bin];
+                bin--;
+                if(bin < 0)
+                {
+                        bin = dp->nBin-1;
+                }
+                *phaseOpen = dp->binEnd[bin];
+        }
+        else if(bin == 0)
+        {
 		/* More complicated -- include all phases with weight > 0 */
-		/* Note: this will get confused for pulsars with interpulses */
-		int b;
-		int lastBin = dp->nBin-1;
-		int binOpen = -1;
-		int binClose = -1;
-		for(b = 0; b < dp->nBin; b++)
-		{
-			if(dp->binWeight[lastBin] <= 0.0 &&
-			   dp->binWeight[b] > 0.0)
-			{
-				binOpen = lastBin;
-			}
-			if(dp->binWeight[lastBin] > 0.0 &&
-			   dp->binWeight[b] <= 0.0)
-			{
-				binClose = lastBin;
-			}
-			lastBin = b;
-		}
-		if(binOpen >= 0 && binClose >= 0)
-		{
-			*phaseOpen  = dp->binEnd[binOpen];
-			*phaseClose = dp->binEnd[binClose];
-		}
-		else
-		{
-			*phaseOpen = 0.0;
-			*phaseClose = 1.0;
-		}
+                /* Note: this will get confused for pulsars with interpulses */
+                int b;
+                int lastBin = dp->nBin-1;
+                int binOpen = -1;
+                int binClose = -1;
+                for(b = 0; b < dp->nBin; b++)
+                {
+                        if(dp->binWeight[lastBin] <= 0.0 &&
+                           dp->binWeight[b] > 0.0)
+                        {
+                                binOpen = lastBin;
+                        }
+                        if(dp->binWeight[lastBin] > 0.0 &&
+                           dp->binWeight[b] <= 0.0)
+                        {
+                                binClose = lastBin;
+                        }
+                        lastBin = b;
+                }
+                if(binOpen >= 0 && binClose >= 0)
+                {
+                        *phaseOpen  = dp->binEnd[binOpen];
+                        *phaseClose = dp->binEnd[binClose];
+                }
+                else
+                {
+                        *phaseOpen = 0.0;
+                        *phaseClose = 1.0;
+                }
 	}
 	else
-	{
-		/* scrunching and bin > 1 doesn't make sense */
-		return -1;
-	}
+        {
+                /* scrunching and bin > 1 doesn't make sense */
+                return -1;
+        }
 
-	return 0;
+        return 0;
 }
 
 const DifxInput *DifxInput2FitsGM(const DifxInput *D,
@@ -121,7 +120,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	int nBand, nPoly;
 	float *onPhase, *offPhase;
 	double *poly;
-	int configId, sourceId;
+	int configId, scanId;
 	const DifxPulsar *dp;
 	const DifxPolyco *pc;
 	const DifxConfig *config;
@@ -165,7 +164,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 
 	/* write standard FITS header keywords and values to output file */
 	arrayWriteKeys(p_fits_keys, out);
-	
+
 	/* and some specific to this table */
 	fitsWriteInteger(out, "TABREV", 1, "");
 	fitsWriteInteger(out, "NO_POLY", nPoly, "number of terms in polynomial");
@@ -183,19 +182,19 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 
 	for(psr = 0; psr < D->nPulsar; psr++)
 	{
-		for(sourceId = 0; sourceId < D->nSource; sourceId++)
+		for(scanId = 0; scanId < D->nScan; scanId++)
 		{
-			configId = D->source[sourceId].configId;
+			configId = D->scan[scanId].configId;
 			config = D->config + configId;
 			if(D->config->pulsarId == psr)
 			{
 				break;
 			}
 		}
-		if(sourceId >= D->nSource)
+		if(scanId >= D->nScan)
 		{
-			fprintf(stderr, "PulsarId %d not linked to any source!\n",
-				psr);
+			fprintf(stderr, "PulsarId %d not linked to any scans!\n",
+				 psr);
 			continue;
 		}
 		dp = D->pulsar + psr;
@@ -210,10 +209,10 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 			onPhase[i]  = phaseOpen;
 			offPhase[i] = phaseClose;
 		}
-		
+
 		for(p = 0; p < dp->nPolyco; p++)
 		{
-			sourceId1 = sourceId+1;
+			sourceId1 = D->scan[scanId].pointingCentreSrc+1;
 			freqId1 = config->freqId+1;
 			gateId1++;
 			pc = dp->polyco + p;

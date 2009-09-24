@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -34,7 +33,8 @@
 #include "difx2fits.h"
 
 const DifxInput *DifxInput2FitsMC(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	int phasecentre)
 {
 	char bandFormFloat[4];
 
@@ -72,7 +72,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
  	int nRowBytes;
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int b, j, s, p, np, a;
+	int b, j, s, p, np, ant;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
@@ -80,16 +80,12 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	const DifxConfig *config;
 	const DifxScan *scan;
 	const DifxJob *job;
-	const DifxModel *M;
 	const DifxPolyModel *P;
 	double time, deltat;      
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate;
 	int configId, jobId, dsId, antId;
-	int *skip;
-	int skipped=0;
-	int printed=0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -122,7 +118,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "MODEL_COMPS");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
-	fitsWriteInteger(out, "FFT_SIZE", D->nFFT, "");
+	fitsWriteInteger(out, "FFT_SIZE", D->nInChan*2, "");
 	fitsWriteInteger(out, "OVERSAMP", 0, "");
 	fitsWriteInteger(out, "ZERO_PAD", 0, "");
 	fitsWriteInteger(out, "FFT_TWID", 1, 
@@ -131,10 +127,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 1, "");
 	
 	fitsWriteEnd(out);
-              
+
 	arrayId1 = 1;
-	
-	/* some values that are always zero */
+
+	/* some values that are always zero */              
 	for(b = 0; b < nBand; b++)
 	{
 		LOOffset[b] = 0.0;
@@ -144,8 +140,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	dispDelay = 0.0;
 	dispDelayRate = 0.0;
 
-	skip = (int *)calloc(D->nAntenna, sizeof(int));
-
 	for(s = 0; s < D->nScan; s++)
 	{
 	   scan = D->scan + s;
@@ -154,9 +148,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   {
 	   	continue;
 	   }
+	   if(phasecentre >= scan->nPhaseCentres)
+	   {
+	     printf("Skipping scan %d as the requested phase centre > number of phase centres\n", s);
+	     continue;
+	   }
 	   config = D->config + configId;
 	   freqId1 = config->freqId + 1;
-	   sourceId1 = D->source[scan->sourceId].fitsSourceId + 1;
+	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceId + 1;
 	   jobId = D->scan[s].jobId;
 	   job = D->job + jobId;
 
@@ -166,46 +165,32 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   }
 	   else
 	   {
-	   	np = scan->nPoint;
+	   	fprintf(stderr, "No im table available - aborting MC file creation\n");
+		continue;
 	   }
 
 	   for(p = 0; p < np; p++)
 	   {
 	      /* loop over original .input file antenna list */
-	      for(a = 0; a < config->nAntenna; a++)
+	      for(ant = 0; ant < scan->nAntenna; ant++)
 	      {
-	        dsId = config->ant2dsId[a];
+	        dsId = config->ant2dsId[ant];
 		if(dsId < 0 || dsId >= D->nDatastream)
 		{
 			continue;
 		}
-		/* convert to D->antenna[] index ... */
 		antId = D->datastream[dsId].antennaId;
 
-		if(antId < 0 || antId >= scan->nAntenna)
-		{
-		  continue;
-		}
+		antId1 = config->datastreamId[ant] + 1;
 
-		/* ... and to FITS antennaId */
-		antId1 = antId + 1;
-
-		if(scan->im)  /* use polynomial model (preferred) */
+		if(scan->im)  /* use polynomial model */
 		{
-		  if(scan->im[antId] == 0)
+		  if(scan->im[ant] == 0)
 		  {
-		    if(skip[antId] == 0)
-		    {
-		      printf("\n    Polynomial model error : skipping antId %d = %s", 
-		        antId, D->antenna[antId].name);
-		      skip[antId]++;
-		      printed++;
-		      skipped++;
-		    }
 		    continue;
 		  }
 
-		  P = scan->im[antId] + p;
+		  P = scan->im[ant][phasecentre] + p;
 
 		  time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
 		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
@@ -219,51 +204,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		  delay     = -P->delay[0]*1.0e-6 - atmosDelay;
 		  delayRate = -P->delay[1]*1.0e-6 - atmosRate;
 		}
-		else if(scan->model)	   /* use tabulated model */
-		{
-		  if(scan->model[antId] == 0)
-		  {
-		    if(skip[antId] == 0)
-		    {
-		      printf("\n    Tabulated model error : skipping antId %d = %s", 
-		        antId, D->antenna[antId].name);
-		      skip[antId]++;
-		      printed++;
-		      skipped++;
-		    }
-		    continue;
-		  }
-
-		  M = scan->model[antId] + p;
-	          
-		  time = scan->mjdStart - (int)D->mjdStart + job->modelInc*p/86400.0;
-		  deltat = job->modelInc*p;
-
-		  /* in general, convert from (us) to (sec) */
-		  atmosDelay = (M->dry  + M->wet)*1.0e-6;
-		  atmosRate  = (M->ddry + M->dwet)*1.0e-6;
-		  
-		  /* here correct the sign of delay, and remove atmospheric
-		   * portion of it. */
-		  delay     = -M->t*1.0e-6  - atmosDelay;
-		  delayRate = -M->dt*1.0e-6 - atmosRate;
-		}
 		else
 		{
-		  if(skip[antId] == 0)
-		  {
-		    printf("\n    Model error : no model information for antId %d = %s",
-		      antId, D->antenna[antId].name);
-		    skip[antId]++;
-		    printed++;
-		    skipped++;
-
-		  }
-		  deltat = job->modelInc*p;
+		  fprintf(stderr, "No IM info available - skipping MC creation!\n");
+		  continue;
 		}
 		
-		clockRate = D->antenna[antId].rate*1.0e-6;
-		clock     = D->antenna[antId].delay*1.0e-6 + clockRate*deltat;
+		clockRate = D->antenna[ant].rate*1.0e-6;
+		clock     = D->antenna[ant].delay*1.0e-6 + clockRate*deltat;
           
 	        p_fitsbuf = fitsbuf;
 
@@ -297,15 +245,9 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	     } /* Antenna loop */
 	   } /* Intervals in scan loop */
 	} /* Scan loop */
-
-  	if(printed)
-	{
-		printf("\n                            ");
-	}
   
 	/* release buffer space */
 	free(fitsbuf);
-	free(skip);
 
 	return D;
 }

@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id:$
- * $HeadURL:$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #ifndef __FITS_UV_H__
 #define __FITS_UV_H__
 
@@ -87,7 +86,7 @@ typedef struct
 DifxVis *newDifxVis(const DifxInput *D, int jobId);
 void deleteDifxVis(DifxVis *dv);
 int DifxVisNextFile(DifxVis *dv);
-int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin);
+int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 
 

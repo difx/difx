@@ -32,11 +32,11 @@ difx2fits_SOURCES = \
 	time2str.c \
 	textutils.c \
 	ymd2mjd.c \
-	jobmatrix.c \
 	difx2fits.h \
 	fits.h \
 	fitsUV.h \
 	other.h \
+	jobmatrix.c \
 	jobmatrix.h \
 	$(fftw_sources)
 

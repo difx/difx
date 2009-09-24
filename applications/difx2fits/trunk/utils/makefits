@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/env python
 
 #**************************************************************************
 #   Copyright (C) 2009 by Walter Brisken                                  *
@@ -40,7 +40,7 @@ from time import gmtime, time
 program = 'makefits'
 version = '0.4'
 author  = 'Walter Brisken'
-verdate = '20090917'
+verdate = '20090921'
 
 calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
@@ -315,20 +315,20 @@ class JobList:
 		out.close()
 
 		format = 'VLBA_%%s_%%s_%%0%dd_%%s.jobmatrix.txt' % nDigit
-		for i in indices:
-			fn = '%s.%d.jobmatrix' % (expt, i)
-			if isfile(fn):
-				archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
-				cmd = 'mv %s %s/%s' % (fn, dir, archfile)
-				if verbose:
-					print 'Executing: %s' % cmd
-				system(cmd)
-				if groupId != None:
-					# make sure anyone in the difx group can remove the file later
-					cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
-					if verbose:
-						print 'Executing: %s' % cmd
-					system(cmd)
+                for i in indices:
+                        fn = '%s.%d.jobmatrix' % (expt, i)
+                        if isfile(fn):
+                                archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
+                                cmd = 'mv %s %s/%s' % (fn, dir, archfile)
+                                if verbose:
+                                        print 'Executing: %s' % cmd
+                                system(cmd)
+                                if groupId != None:
+                                        # make sure anyone in the difx group can remove the file later
+                                        cmd = 'chown -R :%s %s/%s' % (groupId, dir, archfile)
+                                        if verbose:
+                                                print 'Executing: %s' % cmd
+                                        system(cmd)
 
 		# merge and gzip difxlog files
 		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])

@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -68,8 +67,9 @@ void calcPolynomial(double gpoly[array_N_POLY],
 
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	struct CommandLineOptions *opts)
+	int phasecentre)
 {
+	printf("Starting DifxInput2FitsML\n");
 	char bandFormDouble[4];
 	char bandFormFloat[4];
 
@@ -122,11 +122,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	const DifxScan *scan;
 	const DifxJob *job;
 	const DifxConfig *config;
-	const DifxModel *M;
 	const DifxPolyModel *P;
 	float dispDelay;
 	float dispDelayRate;
-	double modelInc;
 	double start;
 	double deltat;
 	double freq;
@@ -142,13 +140,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		return 0;
 	}
 
-	if(!opts->writemodel)
-	{
-		return 0;
-	}
-
 	nBand = p_fits_keys->no_band;
 	nPol = D->nPol;
+	printf("D->nPol is %d\n", nPol);
   
 	/* set FITS header to reflect number of bands in observation */
 	sprintf(bandFormDouble, "%dD", array_N_POLY * nBand);  
@@ -216,12 +210,18 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   {
 	   	continue;
 	   }
+	   if(phasecentre >= scan->nPhaseCentres)
+	   {
+	     printf("Skipping scan %d as the requested phase centre was not used\n", s);
+	     continue;
+	   }
 
 	   config = D->config + configId;
 	   freqId1 = config->freqId + 1;
-	   sourceId1 = D->source[scan->sourceId].fitsSourceId + 1;
-
-	   modelInc = job->modelInc;
+	   //printf("Working on phase centre %d\n", phasecentre);
+	   //printf("scan->phsCentreSrcs[phasecentre] is %d\n", scan->phsCentreSrcs[phasecentre]);
+	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceId + 1;
+	   //printf("Found the sourceId1 to be %d\n", sourceId1);
 	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
 	   
 	   if(scan->im)
@@ -231,14 +231,18 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   }
 	   else
 	   {
-	   	np = scan->nPoint;
-	   	timeInt = modelInc / 86400.0;
+		fprintf(stderr, "No IM info available - skipping generation of ML table\n");
+		continue;
 	   }
+	   //printf("np is %d\n", np);
+	   //printf("scan->nAntenna is %d\n", scan->nAntenna);
 
 	   for(p = 0; p < np; p++)
 	   {
-	      for(a = 0; a < config->nAntenna; a++)
+	      //printf("np is %d, scan->nAntenna is %d\n", np, scan->nAntenna);
+	      for(a = 0; a < scan->nAntenna; a++)
 	      {
+	        //printf("Doing poly %d, antenna %d\n", p, a);
 		dsId = config->ant2dsId[a];
 		if(dsId < 0 || dsId >= D->nDatastream)
 		{
@@ -249,71 +253,43 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 		if(antId < 0 || antId >= scan->nAntenna)
 		{
-		  continue;
+			continue;
 		}
 
 		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
-	        if(scan->im)  /* use polynomial model (preferred) */
+	        if(scan->im)  /* use polynomial model */
 		{
-		  if(scan->im[antId] == 0)
+		  if(scan->im[a] == 0)
 		  {
-		    if(skip[antId] == 0)
-		    {
-		      printf("\n    Polynomial model error : skipping antId %d = %s",
-		        antId, D->antenna[antId].name);
-		      skip[antId]++;
-		      printed++;
-		      skipped++;
-		    }
-		    continue;
+		      if(skip[antId] == 0)
+		      {
+		        printf("\n    Polynomial model error : skipping antId %d = %s",
+				antId, D->antenna[antId].name);
+		        skip[antId]++;
+		        printed++;
+		        skipped++;
+		      }
+		      continue;
 		  }
 	       
-		  P = scan->im[antId] + p;
+		  P = scan->im[a][phasecentre] + p;
+		  //printf("Working on antenna %d, phasecentre %d, polynomial %d\n", a, phasecentre, p);
 
 	          time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
 		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
 
 	          for(k = 0; k < array_N_POLY; k++)
 		  {
+		    //printf("About to look for poly %d of %d", k, array_N_POLY);
 		    gpoly[k] = -P->delay[k]*1.0e-6;
 		  }
 		}
-		else if(scan->model)	   /* use tabulated model */
+		else	   /* use tabulated model */
 		{
-		  if(scan->model[antId] == 0)
-		  {
-		    if(skip[antId] == 0)
-		    {
-		      printf("\n    Tabulated model error : skipping antId %d = %s",
-		        antId, D->antenna[antId].name);
-		      skip[antId]++;
-		      printed++;
-		      skipped++;
-		    }
-		    continue;
-		  }
-	       	
-		  M = scan->model[antId] + p;
-
-		  time = start + timeInt*p;
-		  deltat = modelInc*p;
-
-		  calcPolynomial(gpoly,
-			-M[-1].t, -M[0].t, -M[1].t, -M[2].t, modelInc);
-		}
-		else
-		{
-		  if(skip[antId] == 0)
-		  {
-		    printf("\n    Model error : no model information for antId %d = %s",
-		      antId, D->antenna[antId].name);
-		    skip[antId]++;
-		    printed++;
-		    skipped++;
-		  }
-		  deltat = modelInc*p;
+		  fprintf(stderr, "No IM info available - skipping ML creation\n");
+		  continue;
 		}
 
 		clockRate = D->antenna[antId].rate*1.0e-6;

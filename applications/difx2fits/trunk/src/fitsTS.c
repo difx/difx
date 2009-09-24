@@ -16,17 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/*===========================================================================
- * SVN properties (DO NOT CHANGE)
- *
- * $Id$
- * $HeadURL$
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
- *
- *==========================================================================*/
-
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -62,7 +61,8 @@ static int parseTsys(const char *line, char *antName,
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
+	int phasecentre)
 {
 	char bandFormFloat[4];
 	
@@ -201,8 +201,15 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 			scan = D->scan + scanId;
 
-			sourceId = scan->sourceId;
-			if(sourceId < 0)
+			if(phasecentre >= scan->nPhaseCentres)
+			{
+				printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
+				continue;
+			}
+
+			sourceId = scan->phsCentreSrcs[phasecentre];
+			if(sourceId < 0 || mjd < D->mjdStart || 
+				mjd > D->mjdStop)
 			{
 				continue;
 			}
