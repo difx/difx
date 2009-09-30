@@ -294,6 +294,13 @@ int main(int argc, char *argv[])
 
   generateIdentifier(argv[1], myID, difxMessageID);
   difxMessageInit(myID, difxMessageID);
+  if(myID == 0)
+  {
+    if(isDifxMessageInUse())
+    {
+      cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!!" << endl;
+    }
+  }
 
   cverbose << startl << "About to process the input file.." << endl;
   //process the input file to get all the info we need
