@@ -10,12 +10,28 @@ export IPPROOT=/opt/intel/ipp/5.2/ia32
 export MPICXX=/usr/bin/mpicxx
 
 ####### IPP libraries needed for linking #############
+## Alternate lines may be needed for old versions ####
+## of IPP (<=4 for 32bit, <=5 for 64 bit #############
 IPPLIB32="-lipps -lguide -lippvm -lippcore"
 IPPLIB64="-lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t"
+## Uncomment the following for old 32 bit IPP
+#PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib/linux
+## Uncomment the following (and comment other IPPLIB64 line) 
+## for old 64 bit IPP
+#IPPLIB64="-lippsem64t -lguide -lippvmem64t -lippcoreem64t"
 
 ####### PERL VERSION/SUBVERSION #############
 perlver="5"
 perlsver="5.8.8"
+
+####### PORTS FOR DIFXMESSAGE ###############
+export DIFX_MESSAGE_GROUP=224.2.2.1
+export DIFX_MESSAGE_PORT=50201
+export DIFX_BINARY_GROUP=224.2.2.1
+export DIFX_BINARY_PORT=50202
+
+####### CALC SERVER NAME - HARMLESS #########
+export CALC_SERVER=swc000
 
 ####### No User configurable values below here
 
@@ -55,24 +71,16 @@ fi
 }
 
 ####### 32/64 BIT DEPENDENT MODIFICATIONS ###
-####### COMMENT OUT SVN LINE IF #############
-####### ONLY ONE INSTALL ####################
 arch=(`uname -m`)
 if [ $arch = "i386" -o $arch = "i686" ] #32 bit
 then
   #echo "Adjusting paths for 32 bit machines"
-  #export DIFXROOT=${DIFXROOT}/32
-  #export SVNROOT=${SVNROOT}/32
-  #export IPPROOT=${IPPROOT}/5.1/ia32/
   export DIFXBITS=32
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib/perl$perlver/site_perl/$perlsver
   export IPPLINKLIBS="$IPPLIB32"
 elif [ $arch = "x86_64" ] #64 bit
 then
   #echo "Adjusting paths for 64 bit machines"
-  #export DIFXROOT=${DIFXROOT}/64
-  #export SVNROOT=${SVNROOT}/64
-  #export IPPROOT=${IPPROOT}/6.0.0.063/em64t/
   export DIFXBITS=64
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi
   export IPPLINKLIBS="$IPPLIB64"
@@ -94,20 +102,4 @@ else
 fi
 PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
 
-####### PORTS FOR DIFXMESSAGE ###############
-export DIFX_MESSAGE_GROUP=224.2.2.1
-export DIFX_MESSAGE_PORT=50201
-export DIFX_BINARY_GROUP=224.2.2.1
-export DIFX_BINARY_PORT=50202
-
-####### CALC SERVER NAME - HARMLESS #########
-export CALC_SERVER=swc000
-
-####### NRAO SPECIFIC PATHS - HARMLESS ######
-export GAIN_CURVE_PATH=/home/swc/difx/gaincurves 
-export DIFX_HEAD_NODE=swc000 
-export DIFX_ARCHIVE_ROOT=/home/swc/difx/archive 
-export MANPATH=/usr/share/man:/opt/local/man:/home/swc/NRAO-DiFX-1.1/share/man 
-export DIFX_GROUP_ID=difx 
-export G2CDIR=/usr/lib/gcc/x86_64-redhat-linux/3.4.6/
 echo " DiFX version $DIFX_VERSION is selected"
