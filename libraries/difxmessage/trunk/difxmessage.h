@@ -48,6 +48,9 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from);
 
 /**** DIFX SPECIFIC FUNCTIONS AND DATA TYPES ****/
 
+/* check whether using difxMessage or just cout/cerr */
+int isDifxMessageInUse();
+
 /* Types of binary data to be sent */
 enum BinaryDataChannels
 {

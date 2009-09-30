@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "../difxmessage.h"
 #include "../config.h"
+#include "difxmessageinternal.h"
 
 /* Note! Keep this in sync with enum Mk5Status in difxmessage.h */
 const char Mk5StateStrings[][24] = 
@@ -81,6 +82,11 @@ const char difxMessageAlertString[][16] =
 	"INFO",
 	"DEBUG"
 };
+
+int isDifxMessageInUse()
+{
+	return difxMessageInUse;
+}
 
 const char *difxMessageGetVersion()
 {
