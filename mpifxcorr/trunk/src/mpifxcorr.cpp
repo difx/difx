@@ -255,6 +255,25 @@ int main(int argc, char *argv[])
   MPI_Comm_dup(world, &return_comm);
   MPI_Get_processor_name(processor_name, &namelen);
 
+  if(argc < 2 || argc > 3)
+  {
+    cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+    MPI_Barrier(world);
+    MPI_Finalize();
+    return EXIT_FAILURE;
+  }
+
+  //setup difxmessage
+  generateIdentifier(argv[1], myID, difxMessageID);
+  difxMessageInit(myID, difxMessageID);
+  if(myID == 0)
+  {
+    if(isDifxMessageInUse())
+    {
+      cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!!" << endl;
+    }
+  }
+
   cinfo << startl << "MPI Process " << myID << " is running on host " << processor_name << endl;
   
   if(argc == 3)
@@ -283,23 +302,6 @@ int main(int argc, char *argv[])
 
     }
     strcpy(monhostname, monitoropt.substr(2,colindex1-2).c_str());
-  }
-  else if(argc != 2)
-  {
-    cfatal << startl << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
-    MPI_Barrier(world);
-    MPI_Finalize();
-    return EXIT_FAILURE;
-  }
-
-  generateIdentifier(argv[1], myID, difxMessageID);
-  difxMessageInit(myID, difxMessageID);
-  if(myID == 0)
-  {
-    if(isDifxMessageInUse())
-    {
-      cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!!" << endl;
-    }
   }
 
   cverbose << startl << "About to process the input file.." << endl;
