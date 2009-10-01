@@ -877,13 +877,13 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		dataframelength = (word2 & 0x00FFFFFF)*8;
 		if(f->databytesperpacket == 0)
 		{
-			f->databytesperpacket = dataframelength;
+			f->databytesperpacket = dataframelength - f->frameheadersize;
 		}
-		else if(f->databytesperpacket != dataframelength)
+		else if(f->databytesperpacket != dataframelength - f->frameheadersize)
 		{
 			fprintf(stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength);
-			f->databytesperpacket = dataframelength;
+				f->databytesperpacket, dataframelength - f->frameheadersize);
+			f->databytesperpacket = dataframelength - f->frameheadersize;
 		}
 
 		ms->payloadoffset = f->frameheadersize;
