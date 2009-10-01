@@ -845,7 +845,6 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		/* Intel byte order does not */
 		word2 = headerwords[2];
 #endif
-
 		headerbytes = ms->frame;
 		
 		if(headerbytes[3] & 0x40)	/* Legacy bit */
@@ -878,18 +877,18 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		dataframelength = (word2 & 0x00FFFFFF)*8;
 		if(f->databytesperpacket == 0)
 		{
-			f->databytesperpacket = dataframelength-f->frameheadersize;
+			f->databytesperpacket = dataframelength;
 		}
-		else if(f->databytesperpacket != dataframelength-f->frameheadersize)
+		else if(f->databytesperpacket != dataframelength)
 		{
 			fprintf(stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
-				f->databytesperpacket, dataframelength-f->frameheadersize);
-			f->databytesperpacket = dataframelength-f->frameheadersize;
+				f->databytesperpacket, dataframelength);
+			f->databytesperpacket = dataframelength;
 		}
-		
+
 		ms->payloadoffset = f->frameheadersize;
-		ms->databytes = f->databytesperpacket;
-		ms->framebytes = f->databytesperpacket + f->frameheadersize;
+		ms->databytes = f->databytesperpacket - f->frameheadersize;
+		ms->framebytes = f->databytesperpacket;
 		ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
 		
 		/* WRITEME */
