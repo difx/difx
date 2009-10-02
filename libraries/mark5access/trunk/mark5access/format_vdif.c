@@ -805,6 +805,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	uint32_t *headerwords, word2;
 	uint8_t *headerbytes;
 	int framensNum, framensDen, dataframelength;
+	double dns;
 
 	if(!ms)
 	{
@@ -891,6 +892,11 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->framebytes = f->databytesperpacket;
 		ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
 		
+
+		/* get time again so ms->framens is used */
+		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
+		ms->ns = (int)(dns + 0.5);
+
 		/* WRITEME */
 	}
 
