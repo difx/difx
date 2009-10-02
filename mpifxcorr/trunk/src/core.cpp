@@ -169,7 +169,7 @@ Core::~Core()
 
 void Core::execute()
 {
-  int perr, status, lastconfigindex;
+  int perr, status, lastconfigindex, adjust, countdown;
   bool terminate;
   processthreadinfo * threadinfos = new processthreadinfo[numprocessthreads];
   
@@ -188,7 +188,10 @@ void Core::execute()
   //cverbose << startl << "Core about to fill up receive ring buffer" << endl;
   //start off by filling up the data and control buffers for all slots
   for(int i=0;i<RECEIVE_RING_LENGTH-1;i++)
-    receivedata(numreceived++, &terminate);
+  {
+    if(!terminate)
+      numreceived += receivedata(numreceived, &terminate);
+  }
   //cverbose << startl << "Core has filled up receive ring buffer" << endl;
 
   //now we have the lock on the last slot in the ring.  Launch processthreads
@@ -212,7 +215,10 @@ void Core::execute()
   while(!terminate) //the data is valid, so keep processing
   {
     //increment and receive some more data
-    receivedata(numreceived++ % RECEIVE_RING_LENGTH, &terminate);
+    numreceived += receivedata(numreceived % RECEIVE_RING_LENGTH, &terminate);
+
+    if(terminate)
+      break;
 
     //send the results back
     MPI_Ssend(procslots[numreceived%RECEIVE_RING_LENGTH].results, procslots[numreceived%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
@@ -229,31 +235,41 @@ void Core::execute()
   }
 
   //Run through the shutdown sequence
-//  cinfo << startl << "Core " << mpiid << " commencing termination sequence" << endl;
   for(int i=0;i<numprocessthreads;i++)
   {
     //Unlock the mutex we are currently holding for this thread
-    perr = pthread_mutex_unlock(&(procslots[(numreceived+RECEIVE_RING_LENGTH-1) % RECEIVE_RING_LENGTH].slotlocks[i]));
+    perr = pthread_mutex_unlock(&(procslots[numreceived % RECEIVE_RING_LENGTH].slotlocks[i]));
     if(perr != 0)
       csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+RECEIVE_RING_LENGTH-1) % RECEIVE_RING_LENGTH << " of thread " << i << endl;
   }
 
+  adjust = 0;
+  countdown = RECEIVE_RING_LENGTH;
+  if(numreceived < RECEIVE_RING_LENGTH-1) {
+    adjust = (RECEIVE_RING_LENGTH-1)-numreceived;
+    countdown = numreceived;
+  }
   //ensure all the results we have sitting around have been sent
-  for(int i=1;i<RECEIVE_RING_LENGTH-1;i++)
+  for(int i=1;i<RECEIVE_RING_LENGTH;i++)
   {
+    if(countdown == 0)
+      break;
+
 //    cinfo << startl << "Core " << mpiid << " about to send final values from section " << i << endl;
     for(int j=0;j<numprocessthreads;j++)
     {
       //Lock and unlock first to ensure the threads have finished working on this slot
-      perr = pthread_mutex_lock(&(procslots[(numreceived+i) % RECEIVE_RING_LENGTH].slotlocks[j]));
+      perr = pthread_mutex_lock(&(procslots[(numreceived+i+adjust) % RECEIVE_RING_LENGTH].slotlocks[j]));
       if(perr != 0)
-        csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
-      perr = pthread_mutex_unlock(&(procslots[(numreceived+i) % RECEIVE_RING_LENGTH].slotlocks[j]));
+        csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i+adjust) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
+      perr = pthread_mutex_unlock(&(procslots[(numreceived+i+adjust) % RECEIVE_RING_LENGTH].slotlocks[j]));
       if(perr != 0)
-        csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
+        csevere << startl << "Error in Core " << mpiid << " attempt to unlock mutex" << (numreceived+i+adjust) % RECEIVE_RING_LENGTH << " of thread " << j << endl;
     }
     //send the results
-    MPI_Ssend(procslots[(numreceived+i)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i)%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
+    MPI_Ssend(procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].results, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[(numreceived+i+adjust)%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
+
+    countdown--;
   }
 
 //  cinfo << startl << "CORE " << mpiid << " is about to join the processthreads" << endl;
@@ -489,13 +505,13 @@ void Core::loopprocess(int threadid)
   cinfo << startl << "PROCESS " << mpiid << "/" << threadid << " process thread exiting!!!" << endl;
 }
 
-void Core::receivedata(int index, bool * terminate)
+int Core::receivedata(int index, bool * terminate)
 {
   MPI_Status mpistatus;
   int perr;
 
   if(*terminate)
-    return; //don't try to read, we've already finished
+    return 0; //don't try to read, we've already finished
 
   //Get the instructions on the time offset from the FxManager node
   MPI_Recv(&(procslots[index].offsets), 3, MPI_INT, fxcorr::MANAGERID, MPI_ANY_TAG, return_comm, &mpistatus);
@@ -504,7 +520,7 @@ void Core::receivedata(int index, bool * terminate)
     *terminate = true;
 //    cinfo << startl << "Core " << mpiid << " has received a terminate signal!!!" << endl;
     procslots[index].keepprocessing = false;
-    return; //note return here!!!
+    return 0; //note return here!!!
   }
 
   //work out if the source has changed, and if so, whether we need to change the modes and baselines
@@ -552,6 +568,8 @@ void Core::receivedata(int index, bool * terminate)
     if(perr != 0)
       csevere << startl << "CORE " << mpiid << " error trying unlock mutex " << index << endl;
   }
+
+  return 1;
 }
 
 void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace)

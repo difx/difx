@@ -289,8 +289,12 @@ void FxManager::execute()
   //receive the final data from each core
   for(int i=0;i<Core::RECEIVE_RING_LENGTH;i++)
   {
-    for(int j=0;j<numcores;j++)
+    for(int j=0;j<numcores;j++) {
+      if(sendcount==0)
+        break;
       receiveData(false);
+      sendcount--;
+    }
   }
   
   //ensure the thread writes out all waiting visibilities

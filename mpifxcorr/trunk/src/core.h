@@ -150,8 +150,9 @@ private:
   * Receives data from all telescopes into the given index of the circular send/receive buffer, as well as control info from the FxManager
   * @param index The index in the circular send/receive buffer in which the received data should be stored
   * @param terminate Set if the received instruction from FxManager is to terminate
+  * @return The number of data messages received (0 or 1)
   */
-  void receivedata(int index, bool * terminate);
+  int receivedata(int index, bool * terminate);
 
  /**
   * Processes a single thread's section of a single subintegration
