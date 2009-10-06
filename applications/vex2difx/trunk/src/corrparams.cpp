@@ -681,6 +681,11 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		ss >> windowSize;
 	}
+	else if(key == "UDP_MTU")
+	{
+		ss >> windowSize;
+		windowSize = -windowSize;
+	}
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 

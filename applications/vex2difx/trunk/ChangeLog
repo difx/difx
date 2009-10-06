@@ -4,7 +4,8 @@ Version 2.0
 * Includes the following corrections merged in from the 1.5 branch
   - Zero length scans are ignored
   - Warn if no clock values are applied on a job/antenna basis
-  - os2v2d: correct use of POLARIZATION
+  - oms2v2d: correct use of POLARIZATION
+  - oms2v2d: respect TWEAK_INT_TIME parameter
 * Also bugfixes related to variable initialisation
 * Adds support for multiple phase centres
 * Requires difxio 3.0
