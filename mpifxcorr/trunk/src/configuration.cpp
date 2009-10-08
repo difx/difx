@@ -305,6 +305,12 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       else
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
+    case VDIF:
+      if(decimationfactor > 1)
+        sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+      else
+        sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
+      break;
     default:
       cfatal << startl << "genMk5FormatName : unsupported format encountered" << endl;
       return -1;
@@ -326,6 +332,9 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
       break;
     case MARK5B:
       payloadsize = framebytes - 16;
+      break;
+    case VDIF:
+      payloadsize = framebytes - 32;
       break;
     default:
       payloadsize = framebytes;
@@ -477,7 +486,7 @@ int Configuration::getDataBytes(int configindex, int datastreamindex)
   datastreamdata currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   freqdata arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   int validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
-  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == MARK5B)
+  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == MARK5B || currentds.format == VDIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
     validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+0.5)*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
@@ -586,6 +595,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case MKIV:
     case VLBA:
     case MARK5B:
+    case VDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
       framebytes = getFrameBytes(configindex, datastreamindex);
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
@@ -898,10 +908,12 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = VLBA;
     else if(line == "MARK5B")
       datastreamtable[i].format = MARK5B;
+    else if(line == "VDIF")
+      datastreamtable[i].format = VDIF;
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, and MARK5B)" << endl;
+        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, MARK5B and VDIF)" << endl;
       return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");
