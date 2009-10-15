@@ -17,19 +17,15 @@ int main(int argc, char** argv)
   }
 
   string line, pol;
-  int baseline, mjd, sec, confindex, srcindex, freqindex, pbin, flag, numchannels;
-  double u,v,w,weight;
+  int baseline, mjd, confindex, srcindex, freqindex, pbin, flag, numchannels;
+  double u,v,w,weight,sec;
   string filename = argv[1];
   int sepindex = filename.find_last_of('.');
   int numvispoints = atoi(filename.substr(sepindex+1).c_str());
   cout << "About to create the configuration - num vis points is " << numvispoints << endl;
   Configuration * config = new Configuration(argv[2], 0);
   cout << "Created the config" << endl;
-  int maxnumchannels = 0;
-  for(int i=0;i<config->getNumConfigs();i++) {
-    if(config->getNumChannels(i) > maxnumchannels)
-      maxnumchannels = config->getNumChannels(i);
-  }
+  int maxnumchannels = config->getMaxNumChannels();
   float * visibilities = new float[maxnumchannels*2];
 
   ifstream difxin(argv[1]);
@@ -42,7 +38,7 @@ int main(int argc, char** argv)
     getline(difxin, line);
     mjd = atoi(line.substr(20).c_str());
     getline(difxin, line);
-    sec = atoi(line.substr(20).c_str());
+    sec = atof(line.substr(20).c_str());
     getline(difxin, line);
     confindex = atoi(line.substr(20).c_str());
     getline(difxin, line);
@@ -64,7 +60,7 @@ int main(int argc, char** argv)
     getline(difxin, line);
     w = atof(line.substr(20).c_str());
 
-    numchannels = config->getNumChannels(confindex);
+    numchannels = config->getFNumChannels(freqindex);
     cout << "W line was " << line << ", numchannels is " << numchannels << endl;
     difxin.read((char*)visibilities, numchannels*2*sizeof(float));
 
