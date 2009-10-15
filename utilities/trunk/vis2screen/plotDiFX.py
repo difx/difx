@@ -9,6 +9,9 @@ if len(sys.argv) < 2:
 numfiles = len(sys.argv[1:])
 MAX_CHANNELS = 16384
 
+BASELINE = -1
+FREQ = -1
+
 chans = []
 amp = []
 phase = []
@@ -145,7 +148,9 @@ while not lines[0] == "":
     pylab.subplot(313)
     pylab.ylabel("Lag")
     pylab.xlabel("Channel")
-    pylab.show()
+    if (BASELINE < 0 or baseline[0] == BASELINE) and \
+       (FREQ < 0 or freqindex[0] == FREQ):
+        pylab.show()
     for i in range(numfiles):
         lines[i] = difxinputs[i].readline()
     
