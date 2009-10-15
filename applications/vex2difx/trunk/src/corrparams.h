@@ -107,6 +107,7 @@ public:
 	vector<VexBasebandFile> basebandFiles;	// files to correlate
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
+	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
 };
 
 class CorrSetup
@@ -133,8 +134,9 @@ public:
 				// when fringeRotOrder > 0
 	int xmacLength;		// Number of channels to do at a time when xmac'ing
 	int numBufferedFFTs;	// Number of FFTs to do in Mode before XMAC'ing
+	set<int> freqIds;       // which bands to correlate
 	string binConfigFile;
-	set<int> freqIds;	// which bands to correlate
+	string phasedArrayConfigFile;
 private:
 	void addFreqId(int freqId);
 };

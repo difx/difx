@@ -1506,6 +1506,14 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			D->nPulsar++;
 		}
 
+		if(corrSetup->phasedArrayConfigFile.size() > 0)
+		{
+			D->config[c].phasedArrayId = D->nPhasedArray;
+			strcpy(D->phasedarray[D->nPhasedArray].fileName, 
+				corrSetup->phasedArrayConfigFile.c_str());
+			D->nPhasedArray++;
+		}
+
 		int d = 0;
 		for(int a = 0; a < D->nAntenna; a++)
 		{
@@ -1513,6 +1521,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			int v = setFormat(D, D->nDatastream, freqs, mode, antName, corrSetup);
 			if(v)
 			{
+				D->datastream[D->nDatastream].phaseCalIntervalMHz = 
+					(P->getAntennaSetup(antName))->phaseCalIntervalMHz;
 				if(J.getVSN(antName) == "None")
 				{
 					strcpy(D->datastream[D->nDatastream].dataSource, "FILE");

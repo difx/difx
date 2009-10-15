@@ -373,6 +373,22 @@ int CorrSetup::setkv(const string &key, const string &value)
 			binConfigFile = inFile;
 		}
 	}
+	else if(key == "phasedArray")
+	{
+		ss >> phasedArrayConfigFile;
+
+		if(phasedArrayConfigFile[0] != '/')
+		{
+			char cwd[1024];
+			string inFile;
+
+			getcwd(cwd, 1023);
+			inFile = string(cwd);
+			inFile += string("/");
+			inFile += binConfigFile;
+			binConfigFile = inFile;
+		}
+	}
 	else if(key == "freqId" || key == "freqIds")
 	{
 		int freqId;
@@ -574,7 +590,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	else if(key == "addPhaseCentre")
 	{
 		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /
-		//eg addPhaseCentre = name=1010-1212/RA@10:10:21.1/Dec@-12:12:00.34
+		//eg addPhaseCentre = name@1010-1212/RA@10:10:21.1/Dec@-12:12:00.34
 		phaseCentres.push_back(PhaseCentre());
 		PhaseCentre * newpc = &(phaseCentres.back());
 		last = 0;
@@ -606,6 +622,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	clock.mjdStart = -1e9;
 	networkPort = 0;
 	windowSize = 0;
+	phaseCalIntervalMHz = 0;
 }
 
 int AntennaSetup::setkv(const string &key, const string &value)
@@ -685,6 +702,10 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		ss >> windowSize;
 		windowSize = -windowSize;
+	}
+	else if(key == "phaseCalInt")
+	{
+		ss >> phaseCalIntervalMHz;
 	}
 	else
 	{
