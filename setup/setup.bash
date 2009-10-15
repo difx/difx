@@ -25,13 +25,11 @@ perlver="5"
 perlsver="5.8.8"
 
 ####### PORTS FOR DIFXMESSAGE ###############
-export DIFX_MESSAGE_GROUP=224.2.2.1
-export DIFX_MESSAGE_PORT=50201
-export DIFX_BINARY_GROUP=224.2.2.1
-export DIFX_BINARY_PORT=50202
-
-####### CALC SERVER NAME - HARMLESS #########
-export CALC_SERVER=swc000
+# Uncomment these to enable DIFX_MESSAGES
+#export DIFX_MESSAGE_GROUP=224.2.2.1
+#export DIFX_MESSAGE_PORT=50201
+#export DIFX_BINARY_GROUP=224.2.2.1
+#export DIFX_BINARY_PORT=50202
 
 ####### No User configurable values below here
 
@@ -74,13 +72,11 @@ fi
 arch=(`uname -m`)
 if [ $arch = "i386" -o $arch = "i686" ] #32 bit
 then
-  #echo "Adjusting paths for 32 bit machines"
   export DIFXBITS=32
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib/perl$perlver/site_perl/$perlsver
   export IPPLINKLIBS="$IPPLIB32"
 elif [ $arch = "x86_64" ] #64 bit
 then
-  #echo "Adjusting paths for 64 bit machines"
   export DIFXBITS=64
   PrependPath PERL5LIB         ${DIFXROOT}/perl/lib64/perl$perlver/site_perl/$perlsver/x86_64-linux-thread-multi
   export IPPLINKLIBS="$IPPLIB64"
