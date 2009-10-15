@@ -21,6 +21,7 @@ c_sources = \
 	difx_flag.c \
 	difx_polyco.c \
 	difx_pulsar.c \
+	difx_phasedarray.c \
 	difx_rule.c \
 	difx_write.c \
 	difx_write_im.c \

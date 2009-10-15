@@ -531,6 +531,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
 	writeDifxLine(out, "DATA SOURCE", dd->dataSource);
 	writeDifxLine(out, "FILTERBANK USED", "FALSE");
+	writeDifxLineInt(out, "PHASE CAL INT (MHZ)", dd->phaseCalIntervalMHz);
 	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);
 	for(i = 0; i < dd->nRecFreq; i++)
 	{

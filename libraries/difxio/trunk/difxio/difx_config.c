@@ -607,7 +607,8 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	return dc;
 }
 
-int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar)
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
+	const DifxPhasedArray *phasedarray)
 {
 	int i, j;
 	int n;
@@ -642,6 +643,16 @@ int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const Dif
 		else
 		{
 			writeDifxLine(out, "PULSAR BINNING", "FALSE");
+		}
+		if(config->phasedArrayId >= 0 && phasedarray)
+		{
+			writeDifxLine(out, "PHASED ARRAY", "TRUE");
+			writeDifxLine(out, "PHASED ARRAY CONNFIG FILE", 
+				phasedarray[config->phasedArrayId].fileName);
+		}
+		else
+		{
+			writeDifxLine(out, "PHASED ARRAY", "FALSE");
 		}
 		for(j = 0; j < config->nDatastream; j++)
 		{

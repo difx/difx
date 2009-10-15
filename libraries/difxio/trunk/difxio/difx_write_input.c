@@ -71,7 +71,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 static int writeConfigurations(FILE *out, const DifxInput *D)
 {
 	fprintf(out, "# CONFIGURATIONS ###!\n");
-	writeDifxConfigArray(out, D->nConfig, D->config, D->pulsar);
+	writeDifxConfigArray(out, D->nConfig, D->config, D->pulsar, D->phasedarray);
 	fprintf(out, "\n");
 
 	return 0;

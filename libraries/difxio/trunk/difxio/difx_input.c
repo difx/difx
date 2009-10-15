@@ -579,6 +579,41 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 }	
 
 /* return -1 on a failure */
+static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
+{
+	DifxParameters *pp;
+	DifxPhasedArray *dpa;
+	int i, r;
+
+	pp = newDifxParametersfromfile(fileName);
+	if(!pp) 
+	{
+		fprintf(stderr, "Problem opening or reading %s\n", fileName);
+		return -1;
+	}
+
+	D->phasedarray = growDifxPhasedarrayArray(D->phasedarray, D->nPhasedArray);
+	dpa = D->phasedarray + D->nPhasedArray;
+
+	/* Fill in the info about quantisation, format etc for this phased array output */
+	r = DifxParametersfind(pp, 0, "OUTPUT TYPE");
+	strcpy(dpa->outputType, DifxParametersvalue(pp, r));
+	r = DifxParametersfind(pp, r, "OUTPUT FORMAT");
+	strcpy(dpa->outputFormat, DifxParametersvalue(pp, r));
+	r = DifxParametersfind(pp, r, "ACC TIME (NS)");
+	dpa->accTime = atoi(DifxParametersvalue(pp, r));
+	r = DifxParametersfind(pp, r, "COMPLEX OUTPUT");
+	dpa->complexOutput = 0;
+	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE") == 0 || 
+		strcasecmp(DifxParametersvalue(pp, r), "True") == 0)
+		dpa->complexOutput = 1;
+	r = DifxParametersfind(pp, r, "OUTPUT BITS");
+	dpa->quantBits = atoi(DifxParametersvalue(pp, r));
+
+	return D->nPhasedArray-1;
+}
+
+/* return -1 on a failure */
 static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 {
 	DifxParameters *pp;
@@ -691,7 +726,8 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 		"XMAC STRIDE LENGTH",
 		"NUM BUFFERED FFTS",
 		"WRITE AUTOCORRS",
-		"PULSAR BINNING"
+		"PULSAR BINNING",
+		"PHASED ARRAY"
 	};
 	const int N_CONFIG_ROWS = sizeof(configKeys)/sizeof(configKeys[0]);
 	int a, b, c, r, N;
@@ -752,6 +788,25 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 			dc->pulsarId = loadPulsarConfigFile(D,
 				DifxParametersvalue(ip, r));
 			if(dc->pulsarId < 0)
+			{
+				return 0;
+			}
+		}
+		/* phased array stuff */
+		if(strcmp(DifxParametersvalue(ip, rows[10]), "TRUE") == 0)
+		{
+			r = DifxParametersfind(ip, rows[10],
+				"PHASED ARRAY CONFIG FILE");
+			if(r <= 0)
+			{
+				fprintf(stderr, "input file row %d : "
+					"PHASED ARRAY CONFIG FILE expected\n",
+					rows[10] + 2);
+				return 0;
+			}
+			dc->phasedArrayId = loadPhasedArrayConfigFile(D,
+				DifxParametersvalue(ip, r));
+			if(dc->phasedArrayId < 0)
 			{
 				return 0;
 			}
@@ -1045,6 +1100,12 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		strncpy(D->datastream[e].dataSource, 
 			DifxParametersvalue(ip, r), 31);
 		D->datastream[e].dataSource[31] = 0;
+		r = DifxParametersfind(ip, r+1, "PHASE CAL INT (MHZ)");
+		if(r < 0)
+		{
+			fprintf(stderr, "Cannot determine phase cal interval\n");
+		}
+		D->datastream[e].phaseCalIntervalMHz = atoi(DifxParametersvalue(ip,r));
 
 		r = DifxParametersfind(ip, r+1, "NUM RECORDED FREQS");
 		if(r < 0)

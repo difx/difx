@@ -108,6 +108,16 @@ typedef struct
 	int scrunch;		/* 1 = yes, 0 = no */
 } DifxPulsar;
 
+typedef struct
+{
+	char fileName[256];	/* Phased array config filename */
+	char outputType[32];	/* FILTERBANK or TIMESERIES */
+	char outputFormat[32];	/* DIFX or VDIF */
+	double accTime;		/* Accumulation time in ns for phased array output */
+	int complexOutput;	/* 1=true (complex output), 0=false (real output) */
+	int quantBits;		/* Bits to re-quantise to */
+} DifxPhasedArray;
+
 /* From DiFX config table, with additional derived information */
 typedef struct
 {
@@ -120,6 +130,7 @@ typedef struct
 	int xmacLength;         /* Must be integer divisor of number of channels */
 	int numBufferedFFTs;    /* The number of FFTs to do in a row before XMAC'ing */
 	int pulsarId;		/* -1 if not pulsar */
+	int phasedArrayId;	/* -1 if not phased array mode */
 	int nPol;		/* number of pols in datastreams (1 or 2) */
 	char pol[2];		/* the polarizations */
 	int doPolar;		/* >0 if cross hands to be correlated */
@@ -166,6 +177,7 @@ typedef struct
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	char dataSource[32];	/* MODULE, FILE, NET, other? */
+	int phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone */
 	int nRecFreq;		/* num freqs from this datastream */
 	int nRecBand;		/* number of base band channels recorded */
 	int *nRecPol;		/* [freq] */
@@ -360,7 +372,7 @@ typedef struct
 	int nDataSegments;
 	
 	int nAntenna, nConfig, nRule, nFreq, nScan, nSource, nEOP, nFlag;
-	int nDatastream, nBaseline, nSpacecraft, nPulsar, nJob;
+	int nDatastream, nBaseline, nSpacecraft, nPulsar, nPhasedArray, nJob;
 	DifxJob		*job;
 	DifxConfig	*config;
 	DifxRule        *rule;
@@ -373,6 +385,7 @@ typedef struct
 	DifxBaseline    *baseline;
 	DifxSpacecraft	*spacecraft;	/* optional table */
 	DifxPulsar	*pulsar;	/* optional table */
+	DifxPhasedArray	*phasedarray;	/* optional table */
 } DifxInput;
 
 /* DifxJob functions */
@@ -462,6 +475,20 @@ DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
 int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPoly, const char *filename);
 int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco);
 
+/* DifxPhasedArray functions */
+DifxPhasedArray *newDifxPhasedarrayArray(int nPhasedArray);
+DifxPhasedArray *growDifxPhasedarrayArray(DifxPhasedArray *dpa, int origSize);
+void deleteDifxPhasedarrayArray(DifxPhasedArray *dpa, int nPhasedArray);
+void fprintDifxPhasedArray(FILE *fp, const DifxPhasedArray *dpa);
+void printDifxPhasedArray(const DifxPhasedArray *dpa);
+int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, 
+	const DifxPhasedArray *dpa2);
+DifxPhasedArray *dupDifxPhasedarrayArray(const DifxPhasedArray *src, 
+	int nPhasedArray);
+DifxPhasedArray *mergeDifxPhasedarrayArrays(const DifxPhasedArray *dpa1, 
+	int ndpa1, const DifxPhasedArray *dpa2, int ndpa2, 
+	int *phasedArrayIdRemap, int *ndpa);
+
 /* DifxPulsar functions */
 DifxPulsar *newDifxPulsarArray(int nPulsar);
 DifxPulsar *growDifxPulsarArray(DifxPulsar *dp, int origSize);
@@ -499,7 +526,8 @@ int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	int antennaId, int recBand, int *bandId, int *polId);
-int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar);
+int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
+	const DifxPhasedArray *phasedarray);
 
 /* DifxRule functions */
 DifxRule *newDifxRuleArray(int nRule);
