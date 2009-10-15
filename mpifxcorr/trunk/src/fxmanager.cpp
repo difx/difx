@@ -270,6 +270,12 @@ void FxManager::execute()
 
     //do as many sends as we need to for this scan
     while(senddata[2] < model->getScanDuration(i) && (senddata[2]+model->getScanStartSec(i, startmjd, startseconds) < executetimeseconds) && !terminatenow) {
+      if(senddata[2] == model->getScanDuration(i)-1 || 
+        (senddata[2]+model->getScanStartSec(i, startmjd, startseconds)) == executetimeseconds-1)
+      {
+        if((1000000000-senddata[3]) <= nsincrement/2)
+          break;
+      }
       if(sendcount < Core::RECEIVE_RING_LENGTH*numcores) {//still in the "filling up" phase
         senddata[0] = coreids[((int)sendcount)%numcores];
         sendData(senddata, ((int)sendcount)%numcores);
@@ -291,7 +297,6 @@ void FxManager::execute()
     initsec = 0;
   }
 
-  cout << "send count is " << sendcount << endl;
   //must be done - send the terminate signal to each datastream and each core
   terminate();
   
