@@ -572,7 +572,7 @@ void DataStream::loopfileread()
     while(dataremaining && keepreading)
     {
       lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
-      
+
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
@@ -670,7 +670,7 @@ void DataStream::loopnetworkread()
     while(framebytesremaining > 0 && keepreading)
     {
       lastvalidsegment = (lastvalidsegment + 1)%numdatasegments;
-      
+
       //lock the next section
       perr = pthread_mutex_lock(&(bufferlock[lastvalidsegment]));
       if(perr != 0)
@@ -1236,9 +1236,15 @@ int DataStream::testForSync(int configindex, int buffersegment)
 void DataStream::waitForBuffer(int buffersegment)
 {
   int perr;
+  double bufferfullfraction = double((buffersegment-1-atsegment+numdatasegments)%numdatasegments)/double(numdatasegments);
+
   bufferinfo[buffersegment].scanns = readnanoseconds;
   bufferinfo[buffersegment].scanseconds = readseconds;
   bufferinfo[buffersegment].scan = readscan;
+
+  //send a message once per pass through the buffer
+  if(buffersegment == numdatasegments-1)
+    cinfo << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
 
   //if we need to, change the config
   if(config->getScanConfigIndex(readscan) != bufferinfo[buffersegment].configindex)

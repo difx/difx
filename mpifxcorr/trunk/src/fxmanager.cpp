@@ -113,8 +113,14 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   estimatedbytes += resultlength*8;
   datastreamids = new int[numdatastreams];
   coreids = new int[numcores];
+  corecounts = new int[numcores];
+  recentcorecounts = new int[numcores];
   for(int i=0;i<numdatastreams;i++)
     datastreamids[i] = dids[i];
+  for(int i=0;i<numcores;i++) {
+    corecounts[i] = 0;
+    recentcorecounts[i] = 0;
+  }
   coretimes = new int**[Core::RECEIVE_RING_LENGTH];
   numsent = new int[numcores];
   extrareceived = new int[numcores];
@@ -251,6 +257,8 @@ void FxManager::execute()
   for(int i=initscan;i<model->getNumScans();i++)
   {
     currentconfigindex = config->getScanConfigIndex(i);
+    if(currentconfigindex < 0)
+      continue; //can skip this scan - not interested
     inttime = config->getIntTime(config->getScanConfigIndex(i));
     nsincrement = config->getSubintNS(config->getScanConfigIndex(i));
     if(model->getScanStartSec(i, startmjd, startseconds) >= executetimeseconds)
@@ -283,6 +291,7 @@ void FxManager::execute()
     initsec = 0;
   }
 
+  cout << "send count is " << sendcount << endl;
   //must be done - send the terminate signal to each datastream and each core
   terminate();
   
@@ -377,6 +386,8 @@ void FxManager::receiveData(bool resend)
       sourceid = i;
   }
 
+  corecounts[sourceid]++;
+  recentcorecounts[sourceid]++;
   subintscan = coretimes[(numsent[sourceid]+extrareceived[sourceid])%Core::RECEIVE_RING_LENGTH][sourceid][0];
   scantime = coretimes[(numsent[sourceid]+extrareceived[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][1] + double(coretimes[(numsent[sourceid]+extrareceived[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][2])/1000000000.0;
 
@@ -401,13 +412,12 @@ void FxManager::receiveData(bool resend)
       cerror << startl << "Error - stale data was received from core " << sourceid << " regarding scan " << subintscan << ", time " << scantime << " seconds - it will be ignored!!!" << endl;
     else
     {
-      //now store the data appropriately - if we have reached sufficient sub-accumulations, release this Visibility so the writing thread can write it out
+      //now store the data - if we have sufficient sub-accumulations received, release this 
+      //Visibility so the writing thread can write it out
       viscomplete = visbuffer[visindex]->addData(resultbuffer);
       if(viscomplete)
       {
-        //cinfo << startl << "FXMANAGER telling Vis. " << visindex << " to write out - this refers to time " << visbuffer[visindex]->getTime() << " - the previous buffer has time " << visbuffer[(visindex-1+config->getVisBufferLength())%config->getVisBufferLength()]->getTime() << ", and the next one has " << visbuffer[(visindex +1)%config->getVisBufferLength()]->getTime() << endl;
         cinfo << startl << "Vis. " << visindex << " to write out time " << visbuffer[visindex]->getTime() << endl;
-        cverbose << startl << "Vis. " << visindex << " Newestlockedvis is " << newestlockedvis << ", while oldestlockedvis is " << oldestlockedvis << endl;
         //better make sure we have at least locked the next section
         if(visindex == newestlockedvis)
         {
@@ -426,6 +436,7 @@ void FxManager::receiveData(bool resend)
           while(!islocked[oldestlockedvis])
             oldestlockedvis = (oldestlockedvis + 1)%config->getVisBufferLength();
         }
+        printSummary(visindex);
       }
     }
   }
@@ -439,6 +450,59 @@ void FxManager::receiveData(bool resend)
       senddata[0] = sourcecore;
       sendData(senddata, sourceid);
     }
+  }
+}
+
+void FxManager::printSummary(int visindex)
+{
+  int minsubints, maxsubints, minsubintindex, maxsubintindex, numvis;
+  double meansubints, visbufferduration;
+
+  numvis = (newestlockedvis+config->getVisBufferLength()-oldestlockedvis)%config->getVisBufferLength();
+  cinfo << startl << numvis << "/" << config->getVisBufferLength() << " visibilities locked for accumulation, most recent index is " << newestlockedvis << endl;
+  numvis = (oldestlockedvis+config->getVisBufferLength()-writesegment)%config->getVisBufferLength();
+  cinfo << startl << numvis << "/" << config->getVisBufferLength() << " visibilities ready to write out from " << writesegment << endl;
+
+  visbufferduration = inttime*config->getVisBufferLength();
+  minsubints = MAX_S32;
+  maxsubints = 0;
+  meansubints = 0.0;
+  for(int c=0;c<numcores;c++)
+  {
+    if(corecounts[c] < minsubints)
+    {
+      minsubints = corecounts[c];
+      minsubintindex = c;
+    }
+    if(corecounts[c] > maxsubints)
+    {
+      maxsubints = corecounts[c];
+      maxsubintindex = c;
+    }
+    meansubints += corecounts[c]/numcores;
+  }
+  cinfo << startl << "Min/Mean/Max number of subints processed is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;
+  if(visindex == config->getVisBufferLength()-1)
+  {
+    minsubints = MAX_S32;
+    maxsubints = 0;
+    meansubints = 0.0;
+    for(int c=0;c<numcores;c++)
+    {
+      if(recentcorecounts[c] < minsubints)
+      {
+        minsubints = corecounts[c];
+        minsubintindex = c;
+      }
+      if(recentcorecounts[c] > maxsubints)
+      {
+        maxsubints = corecounts[c];
+        maxsubintindex = c;
+      }
+      meansubints += recentcorecounts[c]/numcores;
+      recentcorecounts[c] = 0;
+    }
+    cinfo << startl << "Min/Mean/Max number of subints processed in last " << visbufferduration << " seconds is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;
   }
 }
 
@@ -469,7 +533,8 @@ void FxManager::loopwrite()
 {
   int perr;
   int lastconfigindex = currentconfigindex;
-  int atsegment = 0;
+
+  writesegment = 0;
   perr = pthread_mutex_lock(&(bufferlock[config->getVisBufferLength()-1]));
   if(perr != 0)
     csevere << startl << "Error in initial fxmanager writethread lock of the end section!!!" << endl;
@@ -481,34 +546,34 @@ void FxManager::loopwrite()
   while(keepwriting)
   {
     //get the lock on the queue
-    perr = pthread_mutex_lock(&(bufferlock[atsegment]));
+    perr = pthread_mutex_lock(&(bufferlock[writesegment]));
     if(perr != 0)
-      csevere << startl << "Writethread error trying to lock bufferlock[" << atsegment << "]!!!" << endl;
+      csevere << startl << "Writethread error trying to lock bufferlock[" << writesegment << "]!!!" << endl;
     //unlock the previous section
-    perr = pthread_mutex_unlock(&(bufferlock[(atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
+    perr = pthread_mutex_unlock(&(bufferlock[(writesegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
     if(perr != 0)
-      csevere << startl << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
-    if(visbuffer[atsegment]->getCurrentConfig() != lastconfigindex)
+      csevere << startl << "Writethread error trying to unlock bufferlock[" << (writesegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
+    if(visbuffer[writesegment]->getCurrentConfig() != lastconfigindex)
     {
-      lastconfigindex = visbuffer[atsegment]->getCurrentConfig();
+      lastconfigindex = visbuffer[writesegment]->getCurrentConfig();
     }
-    visbuffer[atsegment]->writedata();
-    visbuffer[atsegment]->multicastweights();
-    visbuffer[atsegment]->increment();
-    if(!visbuffer[atsegment]->configuredOK()) { //problem with finding a polyco, probably
+    visbuffer[writesegment]->writedata();
+    visbuffer[writesegment]->multicastweights();
+    visbuffer[writesegment]->increment();
+    if(!visbuffer[writesegment]->configuredOK()) { //problem with finding a polyco, probably
       visibilityconfigok = false;
     }
-    atsegment=(atsegment+1)%config->getVisBufferLength();
+    writesegment=(writesegment+1)%config->getVisBufferLength();
   }
-  
+
   //now we're done, so run thru everyone just to be sure
-  perr = pthread_mutex_unlock(&(bufferlock[(atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
+  perr = pthread_mutex_unlock(&(bufferlock[(writesegment+config->getVisBufferLength()-1)%config->getVisBufferLength()]));
   if(perr != 0)
-    csevere << startl << "Writethread error trying to unlock bufferlock[" << (atsegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
+    csevere << startl << "Writethread error trying to unlock bufferlock[" << (writesegment+config->getVisBufferLength()-1)%config->getVisBufferLength() << "]!!!" << endl;
   for(int i=0;i<config->getVisBufferLength();i++)
   {
-    visbuffer[(atsegment+i)%config->getVisBufferLength()]->writedata();
-    visbuffer[(atsegment+i)%config->getVisBufferLength()]->multicastweights();
+    visbuffer[(writesegment+i)%config->getVisBufferLength()]->writedata();
+    visbuffer[(writesegment+i)%config->getVisBufferLength()]->multicastweights();
   }
 }
 

@@ -7,7 +7,8 @@ mark5_files = \
 	nativemk5_stubs.cpp
 endif
 
-bin_PROGRAMS = mpifxcorr
+bin_PROGRAMS = mpifxcorr neuteredmpifxcorr
+
 mpifxcorr_SOURCES = \
 	mpifxcorr.cpp \
 	fxmanager.cpp \
@@ -65,3 +66,14 @@ libfxcorr_a_SOURCES = \
         model.cpp \
 	alert.cpp
 
+neuteredmpifxcorr_SOURCES = \
+	mpifxcorr.cpp \
+	fxmanager.cpp \
+	core.cpp \
+	datastream.cpp \
+	mk5.cpp \
+	$(mark5_files)
+
+neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)
+
+neuteredmpifxcorr_LDADD = $(top_builddir)/src/libfxcorr.a

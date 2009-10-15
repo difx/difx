@@ -825,6 +825,14 @@ bool Configuration::processConfig(ifstream * input)
     {
       getinputline(input, &configs[i].pulsarconfigfilename, "PULSAR CONFIG FILE");
     }
+    getinputline(input, &line, "PHASED ARRAY");
+    configs[i].phasedarray = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
+    if(configs[i].phasedarray)
+    {
+      if(mpiid == 0) //only write one copy of this error message
+        cwarn << startl << "Error - phased array is not yet supported!!!" << endl;
+      getinputline(input, &configs[i].phasedarrayconfigfilename, "PHASED ARRAY CONFIG FILE");
+    }
     for(int j=0;j<numdatastreams;j++)
     {
       getinputline(input, &line, "DATASTREAM ", j);
@@ -935,12 +943,18 @@ bool Configuration::processDatastreamTable(ifstream * input)
         cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MK5MODULE and EVLBI)" << endl;
       return false;
     }
-
     getinputline(input, &line, "FILTERBANK USED");
     datastreamtable[i].filterbank = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
     if(datastreamtable[i].filterbank) {
       if(mpiid == 0) //only write one copy of this error message
         cwarn << startl << "Error - filterbank not yet supported!!!" << endl;
+    }
+    getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    datastreamtable[i].phasecalintervalmhz = atoi(line.c_str());
+    if(datastreamtable[i].phasecalintervalmhz != 0)
+    {
+      if(mpiid == 0) //only write one copy of this error message
+        cwarn << startl << "Error - phase cal extraction not yet supported!!!" << endl;
     }
 
     getinputline(input, &line, "NUM RECORDED FREQS");
@@ -1924,6 +1938,28 @@ bool Configuration::consistencyCheck()
   return true;
 }
 
+bool Configuration::processPhasedArrayConfig(string filename, int configindex)
+{
+  string line;
+
+  if(mpiid == 0) //only write one copy of this info message
+    cinfo << startl << "About to process phased array file " << filename << endl;
+  ifstream phasedarrayinput(filename.c_str(), ios::in);
+  if(!phasedarrayinput.is_open() || phasedarrayinput.bad())
+  {
+    if(mpiid == 0) //only write one copy of this error message
+      cfatal << startl << "Could not open phased array config file " << line << " - aborting!!!" << endl;
+    return false;
+  }
+  getinputline(&phasedarrayinput, &line, "OUTPUT TYPE");
+  getinputline(&phasedarrayinput, &line, "OUTPUT FORMAT");
+  getinputline(&phasedarrayinput, &line, "ACC TIME (NS)");
+  getinputline(&phasedarrayinput, &line, "COMPLEX OUTPUT");
+  getinputline(&phasedarrayinput, &line, "OUTPUT BITS");
+  phasedarrayinput.close();
+  return true;
+}
+
 bool Configuration::processPulsarConfig(string filename, int configindex)
 {
   int numpolycofiles, ncoefficients, polycocount;
@@ -1935,7 +1971,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
   char psrline[128];
   ifstream temppsrinput;
 
-  if(mpiid == 0) //only write one copy of this error message
+  if(mpiid == 0) //only write one copy of this info message
     cinfo << startl << "About to process pulsar file " << filename << endl;
   ifstream pulsarinput(filename.c_str(), ios::in);
   if(!pulsarinput.is_open() || pulsarinput.bad())

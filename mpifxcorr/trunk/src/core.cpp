@@ -111,6 +111,7 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   }
 
   //initialise the threads that do the actual processing
+  numcomplete = 0;
   processthreads = new pthread_t[numprocessthreads];
   processconds = new pthread_cond_t[numprocessthreads];
   processthreadinitialised = new bool[numprocessthreads];
@@ -216,6 +217,10 @@ void Core::execute()
   {
     //increment and receive some more data
     numreceived += receivedata(numreceived % RECEIVE_RING_LENGTH, &terminate);
+
+    //send off a message if we are back at the start of the buffer
+    if(numreceived % RECEIVE_RING_LENGTH == 0)
+      cinfo << startl << "CORE: " << numreceived-(numcomplete+1) << " unprocessed segments, 1 being processed, and " << RECEIVE_RING_LENGTH-(numreceived-numcomplete) << " to be sent" << endl;
 
     if(terminate)
       break;
@@ -449,6 +454,9 @@ void Core::loopprocess(int threadid)
     //process our section of responsibility for this time range
     processdata(numprocessed++ % RECEIVE_RING_LENGTH, threadid, startblock, numblocks, modes, currentpolyco, scratchspace);
 
+    if(threadid == 0)
+      numcomplete++;
+
     currentslot = &(procslots[numprocessed%RECEIVE_RING_LENGTH]);
     //if the configuration changes from this segment to the next, change our setup accordingly
     if(currentslot->configindex != lastconfigindex)
@@ -590,6 +598,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   bool datastreamsaveraged;
   bool writecrossautocorrs;
 
+//following statement used to cut all all processing for "Neutered DiFX"
+#ifndef NEUTERED_DIFX
   writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
   maxproducts = config->getMaxProducts();
   xmacstridelength = config->getXmacStrideLength(procslots[index].configindex);
@@ -1021,6 +1031,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   perr = pthread_mutex_unlock(&(procslots[index].acweightcopylock));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock acweight copy mutex!!!" << endl;
+
+//end the cutout of processing in "Neutered DiFX"
+#endif
 
   //grab the next slot lock
   perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[threadid]));

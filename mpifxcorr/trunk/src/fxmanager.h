@@ -112,6 +112,12 @@ private:
   */
   void initialiseOutput();
 
+ /**
+  * Prints a summary of the internal buffers and how many subints were received from each core
+  * @param visindex The index in the visibility buffer which was just completed
+  */
+  void printSummary(int visindex);
+
  /** 
   * While the correlation is active, continually tries to obtain a lock on the next Visibility, write it out, and increment it
   */
@@ -120,13 +126,15 @@ private:
   //variables
   Configuration * config;
   MPI_Comm return_comm;
-  int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, estimatedbytes;
+  int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, writesegment, estimatedbytes;
   double inttime;
   bool keepwriting, circularpols, writethreadinitialised, visibilityconfigok;
   int senddata[4]; //targetcoreid, scan, scanoffsetseconds, scanoffsetnanoseconds
   Model * model;
   int * datastreamids;
   int * coreids;
+  int * corecounts;
+  int * recentcorecounts;
   int * numsent;
   int * extrareceived;
   int *** coretimes;

@@ -77,6 +77,7 @@ public:
   inline int getVisBufferLength() { return visbufferlength; }
   inline bool consistencyOK() {return consistencyok; }
   inline bool anyUsbXLsb(int configindex) { return configs[configindex].anyusbxlsb; }
+  inline bool phaseArrayOn(int configindex) { return configs[configindex].phasedarray; }
   inline int getArrayStrideLength(int configindex) { return configs[configindex].arraystridelen; }
   inline int getXmacStrideLength(int configindex) { return configs[configindex].xmacstridelen; }
   inline int getNumBufferedFFTs(int configindex) { return configs[configindex].numbufferedffts; }
@@ -130,6 +131,8 @@ public:
     { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].name; }
   inline double getDTsys(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
+  inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) 
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
   inline int getDNumBits(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numbits; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
@@ -332,12 +335,6 @@ public:
   Mode * getMode(int configindex, int datastreamindex);
 
  /**
-  * Works out which kind of MkV format is used (Mk4 or VLBA) for a given datastream configuration
-  * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param configdatastreamindex The index of the datastream in order for that configuration (from the table in the input file)
-  */
-
- /**
   * @param scan The scan index
   * @return The index of the configuration in use for that scan
   */
@@ -520,6 +517,7 @@ private:
     int numbufferedffts;
     bool writeautocorrs;
     bool pulsarbin;
+    bool phasedarray;
     int numpolycos;
     int numbins;
     int minpostavfreqchannels;
@@ -529,6 +527,7 @@ private:
     int numphasecentres;
     bool anyusbxlsb;
     string pulsarconfigfilename;
+    string phasedarrayconfigfilename;
     Polyco ** polycos;
     int  * datastreamindices;
     int  * ordereddatastreamindices;
@@ -571,6 +570,7 @@ private:
     double tsys;
     dataformat format;
     datasource source;
+    int phasecalintervalmhz;
     int numbits;
     int bytespersamplenum;
     int bytespersampledenom;
@@ -698,6 +698,14 @@ private:
   * @return Whether the pulsar config was successfully parsed (failure should abort)
   */
   bool processPulsarConfig(string filename, int configindex);
+
+ /**
+  * Loads the phased array setup data for the specified config
+  * @param filename The file containing phased array configuration data to be loaded
+  * @param configindex The config index in the configuration table that this phased array belongs to
+  * @return Whether the phased array config was successfully parsed (failure should abort)
+  */
+  bool processPhasedArrayConfig(string filename, int configindex);
 
  /**
   * Once the input file has been completely processed, provide all frequency info to the generated Polyco files
