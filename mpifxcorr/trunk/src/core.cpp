@@ -593,8 +593,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   cf32 * vis1;
   cf32 * vis2;
   f32 * acdata;
-  cf32 tempsum;
-  cf32 * sumpointer;
   bool datastreamsaveraged;
   bool writecrossautocorrs;
 
@@ -1049,7 +1047,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
 void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
   int status, startbaselinefreq, atbaselinefreq, startbaseline, startfreq, endbaseline, binloop;
-  int freqindex, freqchannels, localfreqindex, channelinc, baselinefreqs;
+  int localfreqindex, baselinefreqs;
   int numxmacstrides, xmaclen;
 
   //first scale the pulsar data if necessary
@@ -1211,9 +1209,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
 {
   int status, perr, threadbinloop, threadindex, threadstart, numstrides, numaverages;
   int localfreqindex, freqchannels, coreindex, coreoffset, corebinloop, channelinc, rotatorlength, dest;
-  //int startchannel, endchannel, atchannel, channelcount, sidebandinc;
   int antenna1index, antenna2index;
-  int rotatestridelen, rotatesperstride, xmacstridelen, xmaccopylen, stridestoaverage, averagesperstride, atrotate, averagelength;
+  int rotatestridelen, rotatesperstride, xmacstridelen, xmaccopylen, stridestoaverage, averagesperstride, averagelength;
   double bandwidth, lofrequency, channelbandwidth, stepbandwidth;
   double pointingcentredelay1, pointingcentredelay2, applieddelay, turns, edgeturns;
   double * phasecentredelay1;

@@ -615,3 +615,18 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice,
 
 	return v;
 }
+
+int sanityCheckModule(const struct Mark5Module *module)
+{
+	int i;
+
+	for(i = 0; i < module->nscans; i++)
+	{
+		if(module->scans[i].format < 0)
+		{
+			return -1;
+		}
+	}
+
+	return 0;
+}
