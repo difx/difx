@@ -1677,8 +1677,6 @@ bool Configuration::consistencyCheck()
 
   //check entries in the config table, check that number of channels * sample time yields a whole number of nanoseconds and that the nanosecond increment is not too large for an int, and generate the ordered datastream indices array
   //also check that guardns is large enough
-  int numpulsarconfigs = 0;
-  int numscrunchconfigs = 0;
   int nchan, chantoav;
   double samplens;
   for(int i=0;i<numconfigs;i++)
@@ -1803,19 +1801,8 @@ bool Configuration::consistencyCheck()
         }
       }
     }
-
-    //check that if pulsar binning is turned on, that scrunch matches for all
-    //if(configs[i].pulsarbin)
-    //  numpulsarconfigs++;
-    //if(configs[i].scrunchoutput)
-    //  numscrunchconfigs++;
   }
 
-
-  //if(numpulsarconfigs != numscrunchconfigs) {
-  //  cerror << startl << "Error - there are " << numpulsarconfigs << " configurations with pulsar binning enabled, but only " << numscrunchconfigs << " have scrunching enabled.  If one is scrunching, all must - aborting!" << endl;
-  //  return false;
-  //}
 
   //check the baseline table entries
   for(int i=0;i<baselinetablelength;i++)
