@@ -1244,7 +1244,7 @@ void DataStream::waitForBuffer(int buffersegment)
 
   //send a message once per pass through the buffer
   if(buffersegment == numdatasegments-1)
-    cinfo << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
+    cinfo << startl << "Datastream databuffer is " << int(bufferfullfraction*100 + 0.5) << "% full (max " << int(100.0*double(numdatasegments-1)/double(numdatasegments)) << "%)" << endl;
 
   //if we need to, change the config
   if(config->getScanConfigIndex(readscan) != bufferinfo[buffersegment].configindex)

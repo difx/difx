@@ -42,7 +42,7 @@
 monsockStatusType Visibility::monsockStatus;
 
 Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, int scan, int scanstartsec, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip)
-  : config(conf), visID(id), numvisibilities(numvis), executeseconds(eseconds), currentscan(scan), currentstartseconds(scanstartsec), currentstartns(startns), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
+  : config(conf), visID(id), numvisibilities(numvis), currentscan(scan), executeseconds(eseconds), currentstartseconds(scanstartsec), currentstartns(startns), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
 {
   int status;
 
@@ -205,6 +205,7 @@ void Visibility::updateTime()
     }
   }
 
+  configindex = 0;
   if(currentscan < model->getNumScans())
     configindex = config->getScanConfigIndex(currentscan);
   while(configindex < 0 && currentscan < model->getNumScans())
@@ -794,7 +795,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 {
   ofstream output;
   char filename[256];
-  int binloop, freqindex, numpolproducts, firstpolindex, resultindex, freqchannels;
+  int binloop, freqindex, numpolproducts, resultindex, freqchannels;
   int ant1index, ant2index, sourceindex, baselinenumber;
   double scanoffsetsecs;
   bool modelok;
@@ -979,7 +980,6 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
 void Visibility::changeConfig(int configindex)
 {
   char polpair[3];
-  bool found;
   polpair[2] = 0;
   int pulsarwidth;
 

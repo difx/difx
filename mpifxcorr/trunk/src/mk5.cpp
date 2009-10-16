@@ -299,7 +299,6 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
           cerror << startl << "Mark5 offset (" << offset << ") > valid bytes in current segment (" << bufferinfo[buffersegment].validbytes << "!!! Will trash this segment." << endl;
           bufferinfo[buffersegment].validbytes = 0;
         } else {
-          int nread, status;
           cinfo << startl << "************: Shifting " << offset << " bytes in memory to regain sync" << endl;
           memmove(ptr, ptr+offset, bufferinfo[buffersegment].validbytes-offset);
 
@@ -325,7 +324,6 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
 
 void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
 {
-  int offset;
   int nbits, nrecordedbands, framebytes, fanout;
   Configuration::dataformat format;
   double bw;

@@ -391,7 +391,6 @@ bool Model::readSourceData(ifstream * input)
 
 bool Model::readScanData(ifstream * input)
 {
-  int at, next;
   string line = "";
 
   config->getinputline(input, &line, "NUM SCANS");

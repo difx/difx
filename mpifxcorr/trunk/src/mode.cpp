@@ -31,7 +31,7 @@ const float Mode::TINY = 0.000000001;
 
 
 Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock)
-  : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), twicerecordedbandchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), fringerotationorder(fringerotorder), arraystridelength(arraystridelen), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
+  : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), twicerecordedbandchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), fringerotationorder(fringerotorder), calccrosspolautocorrs(cacorrs), arraystridelength(arraystridelen), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
 {
   int status, localfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
@@ -416,13 +416,12 @@ float Mode::unpack(int sampleoffset)
 
 float Mode::process(int index, int subloopindex)  //frac sample error, fringedelay and wholemicroseconds are in microseconds 
 {
-  double phaserotation, averagedelay, nearestsampletime, starttime, finaloffset, lofreq, distance, walltimesecs, fftcentre, delay1, delay2;
+  double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, delay1, delay2;
   f32 phaserotationfloat, fracsampleerror;
   int status, count, nearestsample, integerdelay, dcchannel;
   cf32* fftptr;
   cf32* fracsampptr1;
   cf32* fracsampptr2;
-  f32* currentsubchannelfreqs;
   f32* currentstepchannelfreqs;
   int indices[10];
   //cout << "For Mode of datastream " << datastreamindex << ", index " << index << ", validflags is " << validflags[index/FLAGS_PER_INT] << ", after shift you get " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
@@ -476,9 +475,8 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 
   nearestsampletime = nearestsample*sampletime;
   fracsampleerror = float(starttime - nearestsampletime);
-  //if(datastreamindex == 0)
-  //  cout << "Fractional sample error is " << fracsampleerror << endl;
 
+  integerdelay = 0;
   switch(fringerotationorder) {
     case 0: //post-F
       integerdelay = int(averagedelay);

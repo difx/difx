@@ -472,6 +472,8 @@ void FxManager::printSummary(int visindex)
   minsubints = MAX_S32;
   maxsubints = 0;
   meansubints = 0.0;
+  minsubintindex = 0;
+  maxsubintindex = 0;
   for(int c=0;c<numcores;c++)
   {
     if(corecounts[c] < minsubints)
@@ -484,7 +486,7 @@ void FxManager::printSummary(int visindex)
       maxsubints = corecounts[c];
       maxsubintindex = c;
     }
-    meansubints += corecounts[c]/numcores;
+    meansubints += ((double)corecounts[c])/numcores;
   }
   cinfo << startl << "Min/Mean/Max number of subints processed is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;
   if(visindex == config->getVisBufferLength()-1)
@@ -492,19 +494,21 @@ void FxManager::printSummary(int visindex)
     minsubints = MAX_S32;
     maxsubints = 0;
     meansubints = 0.0;
+    minsubintindex = 0;
+    maxsubintindex = 0;
     for(int c=0;c<numcores;c++)
     {
       if(recentcorecounts[c] < minsubints)
       {
-        minsubints = corecounts[c];
+        minsubints = recentcorecounts[c];
         minsubintindex = c;
       }
       if(recentcorecounts[c] > maxsubints)
       {
-        maxsubints = corecounts[c];
+        maxsubints = recentcorecounts[c];
         maxsubintindex = c;
       }
-      meansubints += recentcorecounts[c]/numcores;
+      meansubints += ((double)recentcorecounts[c])/numcores;
       recentcorecounts[c] = 0;
     }
     cinfo << startl << "Min/Mean/Max number of subints processed in last " << visbufferduration << " seconds is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;

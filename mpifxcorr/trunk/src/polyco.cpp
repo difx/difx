@@ -28,7 +28,7 @@ const double Polyco::BIN_TOLERANCE = 0.01;
 const double Polyco::DM_CONSTANT_SECS = 1.0/0.000241;
 
 Polyco::Polyco(string filename, int subcount, int confindex, int nbins, int maxchans, double * bphases, double * bweights, double calcmins)
-  : configindex(confindex), numbins(nbins), maxchannels(maxchans), numfreqs(-1), calclengthmins(calcmins)
+  : configindex(confindex), numbins(nbins), calclengthmins(calcmins), maxchannels(maxchans), numfreqs(-1)
 {
   int status;
   estimatedbytes = 0;

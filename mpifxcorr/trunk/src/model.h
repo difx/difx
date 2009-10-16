@@ -209,12 +209,12 @@ class Model{
     bool fillPolyRow(f64* vals, string line, int npoly);
     axistype getMount(string mount);
 
+    Configuration * config;
     int modelmjd, modelstartseconds, numstations, numsources, numscans, numeops, numspacecraft;
     int polyorder, modelincsecs, estimatedbytes;
     bool opensuccess;
     string calcfilename, imfilename;
     f64 * tpowerarray;
-    Configuration * config;
     station * stationtable;
     source * sourcetable;
     eop * eoptable;

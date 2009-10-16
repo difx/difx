@@ -1522,7 +1522,7 @@ bool Configuration::populateResultLengths()
 
 bool Configuration::consistencyCheck()
 {
-  int tindex, count, dsband, freqindex, freq1index, freq2index;
+  int tindex, count, freqindex, freq1index, freq2index;
   double bandwidth, sampletimens, ffttime, numffts, f1, f2;
   datastreamdata ds1, ds2;
   baselinedata bl;
