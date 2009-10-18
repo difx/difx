@@ -30,6 +30,27 @@
 #include <stdlib.h>
 #include "jobmatrix.h"
 
+static const char *stripDir(const char *fn)
+{
+	const char *out;
+	int i;
+
+	out = fn;
+
+	for(i = 0; fn[i] != 0; i++)
+	{
+		if(fn[i] == '/')
+		{
+			if(fn[i+1] != 0)
+			{
+				out = fn+i+1;
+			}
+		}
+	}
+
+	return out;
+}
+
 struct _JobMatrix
 {
 	int **matrix;
@@ -138,7 +159,7 @@ void writeJobMatrix(JobMatrix *jm)
 		if(j < nJob && jobList[j])
 		{
 			fprintf(out, "   %c = %s", 'A'+(j%26),
-				jm->D->job[j].fileBase);
+				stripDir(jm->D->job[j].fileBase));
 			j++;
 		}
 
