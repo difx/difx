@@ -281,26 +281,37 @@ VexSource *VexData::newSource()
 	return &sources.back();
 }
 
-// returned values in seconds
-bool VexAntenna::getClock(double mjd, double &offset, double &rate) const
+// get the clock epoch as a MJD value (with fractional component)
+// negative means not found
+double VexAntenna::getClockRefMJD(double mjd) const
 {
 	vector<VexClock>::const_iterator it;
-	bool hasValue = false;
-	
-	offset = 0.0;
-	rate = 0.0;
+	double epoch = -1.0;
 
 	for(it = clocks.begin(); it != clocks.end(); it++)
 	{
 		if(it->mjdStart <= mjd)
 		{
-			hasValue = true;
-			offset = it->offset + (mjd - it->offset_epoch)*it->rate*86400.0;
-			rate = it->rate;
+			epoch = it->offset_epoch;
 		}
 	}
 
-	return hasValue;
+	return epoch;
+}
+
+// returned values in seconds
+void VexAntenna::getClockCoeffs(double mjd, double * coeffs) const
+{
+	vector<VexClock>::const_iterator it;
+	
+	for(it = clocks.begin(); it != clocks.end(); it++)
+	{
+		if(it->mjdStart <= mjd)
+		{
+			coeffs[0] = it->offset + (mjd - it->offset_epoch)*it->rate*86400.0;
+			coeffs[1] = it->rate;
+		}
+	}
 }
 
 const VexSource *VexData::getSource(const string name) const

@@ -831,11 +831,12 @@ static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 
 	if(D->inputFileVersion == 0) /* Perth merge and after */
 	{
-		scale = 4.576*D->nOutChan/D->nInChan;
+		scale = 4.576*D->nOutChan;
 	}
 	else
 	{
-		scale = 7.15/(D->chanBW*6.25e6*D->config[0].tInt*D->specAvg);
+		fprintf(stderr, "Can't handle old versions of DiFX properly - aborting!\n");
+		exit(1);
 	}
 	if(D->quantBits == 2)
 	{

@@ -118,10 +118,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqs; }
   inline int getDNumZoomFreqs(int configindex, int configdatastreamindex)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoomfreqs; }
-  inline double getDClockOffset(int configindex, int configdatastreamindex)
-    { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].clockdelay; }
-  inline double getDClockRate(int configindex, int configdatastreamindex)
-    { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].clockrate; }
+  inline double getDClockCoeff(int configindex, int configdatastreamindex, int coeff)
+    { return telescopetable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex].clockpoly[coeff]; }
   inline int getDOversampleFactor(int configindex, int configdatastreamindex) 
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].oversamplefactor; }
   inline int getDChannelsToAverage(int configindex, int configdatastreamindex) { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[0]].channelstoaverage; }
@@ -559,8 +557,9 @@ private:
   ///Storage struct for data from the telescope table of the input file
   typedef struct {
     string name;
-    double clockdelay;
-    double clockrate;
+    int clockorder;
+    double clockrefmjd;
+    double * clockpoly;
   } telescopedata;
 
   ///Storage struct for data from the datastream table of the input file

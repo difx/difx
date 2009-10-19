@@ -983,11 +983,11 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 	const char antKeys[][MAX_DIFX_KEY_LEN] =
 	{
 		"TELESCOPE NAME %d",
-		"CLOCK DELAY (us) %d",
-		"CLOCK RATE(us/s) %d"
+		"CLOCK REF MJD %d",
+		"CLOCK POLY ORDER %d"
 	};
 	const int N_ANT_ROWS = sizeof(antKeys)/sizeof(antKeys[0]);
-	int a, r, N;
+	int a, i, r, N;
 	int rows[N_ANT_ROWS];
 
 	if(!D || !ip)
@@ -1016,8 +1016,14 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 			return 0;
 		}
 		strcpy(D->antenna[a].name, DifxParametersvalue(ip, rows[0]));
-		D->antenna[a].delay = atof(DifxParametersvalue(ip, rows[1]));
-		D->antenna[a].rate  = atof(DifxParametersvalue(ip, rows[2]));
+		D->antenna[a].clockrefmjd = atof(DifxParametersvalue(ip, rows[1]));
+		D->antenna[a].clockorder  = atoi(DifxParametersvalue(ip, rows[2]));
+		r = rows[2];
+		for(i=0;i<D->antenna[a].clockorder;i++)
+		{
+			r = DifxParametersfind2(ip, r, "CLOCK COEFF %d/%d", a, i);
+			D->antenna[a].clockcoeff[i] = atof(DifxParametersvalue(ip, r));
+		}
 	}
 
 	return D;
@@ -3422,21 +3428,7 @@ int DifxInputSimFXCORR(DifxInput *D)
 	printf("FXCORR Simulator: delayed job start time by %8.6f seconds\n",
                 deltasec);
 
-        /* The reference for the shift is the start of the .calc file which
-         * starts at a the truncated second
-         */
-        deltasec = (int)deltasec;
-
-        printf("                  delayed clock reference by %8.6f seconds\n",
-                deltasec);
-
-        for(a = 0; a < D->nAntenna; a++)
-        {
-                D->antenna[a].delay += deltasec*D->antenna[a].rate;
-                printf("  Antenna %s clock shift = %e us = %f deg at 8.4 GHz\n",
-                        D->antenna[a].name, deltasec*D->antenna[a].rate,
-                        deltasec*D->antenna[a].rate*8400.0*360.0);
-        }
+	/* Now that clocks have their own reference times, this doesn't matter */
 
 	/* FIXME -- reset BLOCKSPERSEND here? */
 

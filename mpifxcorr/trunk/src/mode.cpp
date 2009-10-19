@@ -39,7 +39,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
   model = config->getModel();
   initok = true;
-  intclockseconds = int(floor(config->getDClockOffset(configindex, dsindex)/1000000.0 + 0.5));
+  intclockseconds = int(floor(config->getDClockCoeff(configindex, dsindex, 0)/1000000.0 + 0.5));
   numstrides = twicerecordedbandchannels/arraystridelength;
   sampletime = 1.0/(2.0*recordedbandwidth); //microseconds
   fftdurationmicrosec = twicerecordedbandchannels*sampletime;

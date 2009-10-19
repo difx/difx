@@ -63,7 +63,17 @@ Model::Model(Configuration * conf, string cfilename)
   if(opensuccess)
     opensuccess = readPolynomialSamples(input);
 
+  //allocate some arrays
   tpowerarray = vectorAlloc_f64(polyorder+1);
+  binomialcoeffs = new double*[polyorder+1];
+  for(int i=0;i<polyorder+1;i++)
+  {
+    binomialcoeffs[i] = new double[i+1];
+    binomialcoeffs[i][0] = 1;
+    binomialcoeffs[i][i] = 1;
+    for(int j=1;j<i;j++)
+      binomialcoeffs[i][j] = binomialcoeffs[i-1][j-1] + binomialcoeffs[i-1][j];
+  } 
 
   delete input;
 }
@@ -109,12 +119,15 @@ Model::~Model()
           delete [] scantable[i].wet[j][k];
           delete [] scantable[i].dry[j][k];
         }
+        for(int k=0;k<numstations;k++)
+          delete [] scantable[i].clock[j][k];
         delete [] scantable[i].u[j];
         delete [] scantable[i].v[j];
         delete [] scantable[i].w[j];
         delete [] scantable[i].delay[j];
         delete [] scantable[i].wet[j];
         delete [] scantable[i].dry[j];
+        delete [] scantable[i].clock[j];
       }
       delete [] scantable[i].u;
       delete [] scantable[i].v;
@@ -122,6 +135,7 @@ Model::~Model()
       delete [] scantable[i].delay;
       delete [] scantable[i].wet;
       delete [] scantable[i].dry;
+      delete [] scantable[i].clock;
       delete [] scantable[i].phasecentres;
     }
     delete [] scantable;
@@ -243,9 +257,15 @@ bool Model::calculateDelayInterpolator(int scanindex, f64 offsettime, f64 timesp
 bool Model::addClockTerms(string antennaname, double refmjd, int order, double * terms)
 {
   double clockdistance, dt, polysampleclock;
+  double * clockdt;
 
   if(scantable == 0) //hasn't been allocated yet
     return false; //note exit here
+
+  if(order > polyorder) {
+    cfatal << "Clock order for antenna " << antennaname << " is greater than the model polynomial order - this cannot be supported! You must regenerate the model with a polynomial order at least " << order << endl;
+    return false;
+  }
 
   for(int i=0;i<numstations;i++)
   {
@@ -255,25 +275,20 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
       {
         if(scantable[j].nummodelsamples == 0) //the IM information has not yet been read
           return false; //note exit here
-        
+
+        clockdt = new double[order+1];
         for(int k=0;k<scantable[j].nummodelsamples;k++)
         {
           clockdistance = 86400.0*(scantable[j].polystartmjd + ((double)scantable[j].polystartseconds)/86400.0 - refmjd);
-          dt = clockdistance;
-          polysampleclock = terms[0];
+          clockdt[0] = 1.0;
           for(int l=1;l<=order;l++)
-          {
-            polysampleclock += terms[l]*dt;
-            dt *= clockdistance;
-          }
-          scantable[j].clock[k][i][0] = polysampleclock;
-          for(int l=1;l<=order;l++)
-          {
-            scantable[j].clock[k][i][l] = terms[l];
-          }
-          for(int l=order+1;l<=polyorder;l++)
-          {
+            clockdt[l] = clockdt[l-1]*clockdistance;
+          for(int l=0;l<=polyorder;l++)
             scantable[j].clock[k][i][l] = 0.0;
+          for(int l=0;l<=order;l++)
+          {
+            for(int m=l;m<=order;m++)
+              scantable[j].clock[k][i][l] += terms[m]*clockdt[m-l]*binomialcoeffs[m][m-l];
           }
 
           //now update the overall delay model too
@@ -286,6 +301,7 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
           }
         }
       }
+      delete [] clockdt;
       return true; //note exit here
     }
   }

@@ -209,8 +209,10 @@ typedef struct
 {
 	char name[32];		/* null terminated */
 	int origId;		/* antennaId before a sort */
-	double delay;		/* (us) at start of job */
-	double rate;		/* (us/s) */
+	double clockrefmjd;	/* Reference time for clock polynomial */
+	int clockorder;		/* Polynomial order of the clock model */
+	double clockcoeff[MAX_MODEL_ORDER+1];	/* clock polynomial 
+				   coefficients (us, us/s, us/s^2... */
 	char mount[8];		/* azel, ... */
 	double offset[3];	/* axis offset, (m) */
 	double X, Y, Z;		/* telescope position, (m) */

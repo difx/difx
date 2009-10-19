@@ -36,6 +36,7 @@
 #define array_MAX_TONES	64
 #define MAX_INPUT_FILES 4096
 
+extern const int binomialcoeffs[6][6];
 
 struct CommandLineOptions
 {

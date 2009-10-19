@@ -320,25 +320,16 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	DifxInput *D;
 	int v;
 	char imfile[256];
-	char uvwfile[256];
-	char ratefile[256];
-	char delayfile[256];
 	char calcfile[256];
 	const char *difxVersion;
 
 	sprintf(imfile,    "%s.im",    prefix);
-	sprintf(uvwfile,   "%s.uvw",   prefix);
-	sprintf(ratefile,  "%s.rate",  prefix);
-	sprintf(delayfile, "%s.delay", prefix);
 	sprintf(calcfile,  "%s.calc",  prefix);
 
 	difxVersion = getenv("DIFX_VERSION");
 
 	if(opts->force == 0 &&
-	   skipFile(calcfile, imfile) &&
-	   skipFile(calcfile, uvwfile) &&
-	   skipFile(calcfile, ratefile) &&
-	   skipFile(calcfile, delayfile))
+	   skipFile(calcfile, imfile))
 	{
 		printf("skipping %s due to file ages\n", prefix);
 		return 0;

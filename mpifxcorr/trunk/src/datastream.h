@@ -253,7 +253,7 @@ protected:
   int * coreids;
   int * filesread;
   int * confignumfiles;
-  double a, b, c, clockoffset, clockrate;
+  double a, b, c;
   bool readthreadstarted, keepreading, readfromfile, tcp;
   u8 * databuffer;
   pthread_t readerthread;

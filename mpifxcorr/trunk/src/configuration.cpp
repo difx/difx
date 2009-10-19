@@ -176,14 +176,10 @@ Configuration::Configuration(const char * configfile, int id)
     model = new Model(this, calcfilename);
     consistencyok = model->openSuccess();
   }
-  double * clockmodel = new double[2];
   for(int i=0;i<telescopetablelength;i++) {
-    clockmodel[0] = telescopetable[i].clockdelay;
-    clockmodel[1] = telescopetable[i].clockrate;
     if(consistencyok)
-      consistencyok = model->addClockTerms(telescopetable[i].name, model->getModelStartMJDPlusFraction(), 1, clockmodel);
+      consistencyok = model->addClockTerms(telescopetable[i].name, telescopetable[i].clockrefmjd, telescopetable[i].clockorder, telescopetable[i].clockpoly);
   }
-  delete [] clockmodel;
   estimatedbytes += model->getEstimatedBytes();
   //cout << "About to populateScanConfigList(), consistencyok is " << consistencyok << endl;
   if(consistencyok)
@@ -1255,10 +1251,15 @@ void Configuration::processTelescopeTable(ifstream * input)
   for(int i=0;i<telescopetablelength;i++)
   {
     getinputline(input, &(telescopetable[i].name), "TELESCOPE NAME ", i);
-    getinputline(input, &line, "CLOCK DELAY (us) ", i);
-    telescopetable[i].clockdelay = atof(line.c_str());
-    getinputline(input, &line, "CLOCK RATE(us/s) ", i);
-    telescopetable[i].clockrate = atof(line.c_str());
+    getinputline(input, &line, "CLOCK REF MJD ", i);
+    telescopetable[i].clockrefmjd = atof(line.c_str());
+    getinputline(input, &line, "CLOCK POLY ORDER ", i);
+    telescopetable[i].clockorder = atoi(line.c_str());
+    telescopetable[i].clockpoly = new double[telescopetable[i].clockorder+1];
+    for(int j=0;j<telescopetable[i].clockorder+1;j++) {
+      getinputline(input, &line, "CLOCK COEFF ", i);
+      telescopetable[i].clockpoly[j] = atof(line.c_str());
+    }
   }
 }
 

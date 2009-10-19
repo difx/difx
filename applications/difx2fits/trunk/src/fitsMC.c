@@ -81,10 +81,10 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	const DifxScan *scan;
 	const DifxJob *job;
 	const DifxPolyModel *P;
-	double time, deltat;      
+	double time, deltat, deltat2, deltatn;      
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
-	double clock, clockRate;
+	double clock, clockRate, c1, c2;
 	int configId, jobId, dsId, antId;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
@@ -209,9 +209,25 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		  fprintf(stderr, "No IM info available - skipping MC creation!\n");
 		  continue;
 		}
+
+		deltatn = 1.0;
+		c1 = 0.0;
+		for(j=0; j<D->antenna[ant].clockorder; j++)
+		{
+			c1 = c1 + D->antenna[ant].clockcoeff[j] * deltatn;
+			deltatn = deltatn * deltat;
+		}
+		deltat2 = deltat + P->validDuration/86400.0;
+		deltatn = 1.0;
+		c2 = 0.0;
+		for(j=0; j<D->antenna[ant].clockorder; j++)
+		{
+			c2 = c2 + D->antenna[ant].clockcoeff[j] * deltatn;
+			deltatn = deltatn * deltat2;
+		}
 		
-		clockRate = D->antenna[ant].rate*1.0e-6;
-		clock     = D->antenna[ant].delay*1.0e-6 + clockRate*deltat;
+		clockRate = ((c2-c1)/P->validDuration)*1.0e-6;
+		clock     = c1*1.0e-6;
           
 	        p_fitsbuf = fitsbuf;
 

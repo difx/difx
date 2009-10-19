@@ -69,7 +69,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	int phasecentre)
 {
-	printf("Starting DifxInput2FitsML\n");
 	char bandFormDouble[4];
 	char bandFormFloat[4];
 
@@ -126,7 +125,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	float dispDelay;
 	float dispDelayRate;
 	double start;
-	double deltat;
+	double deltat, deltatn;
 	double freq;
 	int *skip;
 	int skipped=0;
@@ -142,7 +141,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	nBand = p_fits_keys->no_band;
 	nPol = D->nPol;
-	printf("D->nPol is %d\n", nPol);
   
 	/* set FITS header to reflect number of bands in observation */
 	sprintf(bandFormDouble, "%dD", array_N_POLY * nBand);  
@@ -292,10 +290,16 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		  continue;
 		}
 
-		clockRate = D->antenna[antId].rate*1.0e-6;
-
-		gpoly[0] -= (D->antenna[antId].delay*1.0e-6 + clockRate*deltat);
-		gpoly[1] -= clockRate;		
+		/* Add in the clock model */
+		for(k = 0; k < array_N_POLY; k++)
+		{
+			deltatn = 1.0;
+			for(i = k; i < array_N_POLY; i++)
+			{
+				gpoly[k] -= D->antenna[antId].clockcoeff[i]*deltatn*binomialcoeffs[i][i-k]*1.0e-6;
+				deltatn = deltatn * deltat;
+			}
+		}
 
 		/* All others are derived from gpoly */
 		for(k = 1; k < array_N_POLY; k++)

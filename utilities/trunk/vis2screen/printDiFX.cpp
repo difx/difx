@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     getline(difxin, line);
     w = atof(line.substr(20).c_str());
 
-    numchannels = config->getFNumChannels(freqindex);
+    numchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
     cout << "W line was " << line << ", numchannels is " << numchannels << endl;
     difxin.read((char*)visibilities, numchannels*2*sizeof(float));
 

@@ -620,6 +620,11 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	Y = 0.0;
 	Z = 0.0;
 	clock.mjdStart = -1e9;
+	clockorder = 1;
+	clock2 = 0.0;
+	clock3 = 0.0;
+	clock4 = 0.0;
+	clock5 = 0.0;
 	networkPort = 0;
 	windowSize = 0;
 	phaseCalIntervalMHz = 0;
@@ -640,17 +645,49 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		polSwap = isTrue(value);
 	}
-	else if(key == "clockOffset")
+	else if(key == "clockOffset" || key == "clock0")
 	{
 		ss >> clock.offset;
 		clock.offset /= 1.0e6;
 		clock.mjdStart = 1;
 	}
-	else if(key == "clockRate")
+	else if(key == "clockRate" || key == "clock1")
 	{
 		ss >> clock.rate;
 		clock.rate /= 1.0e6;
 		clock.mjdStart = 1;
+	}
+	else if(key == "clock2")
+	{
+		ss >> clock2;
+		if(clockorder < 2)
+		{
+			clockorder = 2;
+		}
+	}
+	else if(key == "clock3")
+	{
+		ss >> clock3;
+		if(clockorder < 3)
+		{
+			clockorder = 3;
+		}
+	}
+	else if(key == "clock4")
+	{
+		ss >> clock4;
+		if(clockorder < 4)
+		{
+			clockorder = 4;
+		}
+	}
+	else if(key == "clock5")
+	{
+		ss >> clock5;
+		if(clockorder < 5)
+		{
+			clockorder = 5;
+		}
 	}
 	else if(key == "clockEpoch")
 	{

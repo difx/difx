@@ -97,6 +97,8 @@ public:
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
 	double X, Y, Z;		// Station coordinates to override vex
+	int clockorder;		// Order of clock poly (if overriding)
+	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
 	VexClock clock;
 	// flag
 	// media

@@ -375,7 +375,7 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	const VexAntenna *ant;
 	DifxAntenna *A;
 	int i;
-	double offset, rate, mjd;
+	double clockrefmjd, mjd;
 	map<string,string>::const_iterator a;
 
 	mjd = 0.5*(V->obsStart() + V->obsStop());
@@ -424,15 +424,17 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
 		strcpy(A[i].mount, ant->axisType.c_str());
-		bool clockFound = ant->getClock(J.mjdStart, offset, rate);
-		if(!clockFound)
+		clockrefmjd = ant->getClockRefMJD(J.mjdStart);
+		if(clockrefmjd < 0.0)
 		{
 			cerr << "WARNING:  Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
 			cerr << "          Unless this is intentional, your results will suffer!" << endl;
 		}
-		ant->getClock(J.mjdStart, offset, rate);
-		A[i].delay = offset*1.0e6;	// convert to us from sec
-		A[i].rate  = rate*1.0e6;	// convert to us/sec from sec/sec
+		ant->getClockCoeffs(clockrefmjd, A[i].clockcoeff);
+		A[i].clockrefmjd = clockrefmjd;
+		A[i].clockorder = 1;
+		A[i].clockcoeff[0] *= 1.0e6;	// convert to us from sec
+		A[i].clockcoeff[1] *= 1.0e6;	// convert to us/sec from sec/sec
 		A[i].offset[0] = ant->axisOffset;
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
@@ -459,6 +461,15 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 			}
 			A[i].networkPort = antSetup->networkPort;
 			A[i].windowSize  = antSetup->windowSize;
+			A[i].clockorder  = antSetup->clockorder;
+			switch(A[i].clockorder) {
+				case 5: A[i].clockcoeff[5] = antSetup->clock5;
+				case 4: A[i].clockcoeff[4] = antSetup->clock4;
+				case 3: A[i].clockcoeff[3] = antSetup->clock3;
+				case 2: A[i].clockcoeff[2] = antSetup->clock2;
+				case 1: break;
+				default: cerr << "Crazy clock order " << A[i].clockorder << "!" << endl;
+			}
 		}
 
 		antList.push_back(a->first);

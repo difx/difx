@@ -100,10 +100,7 @@ void DataStream::initialise()
   maxsendspersegment = 3*bufferbytes/(mindatabytes*numdatasegments); //overkill, can get more sends than you would expect with MkV data
 
   stationname = config->getDStationName(0, streamnum);
-  clockoffset = config->getDClockOffset(0, streamnum);
-  intclockseconds = int(floor(clockoffset/1000000.0 + 0.5));
-  clockoffset -= intclockseconds*1000000;
-  clockrate = config->getDClockRate(0, streamnum);
+  intclockseconds = int(floor(config->getDClockCoeff(0, streamnum, 0)/1000000.0 + 0.5));
   corrstartday = config->getStartMJD();
   corrstartseconds = config->getStartSeconds();
 

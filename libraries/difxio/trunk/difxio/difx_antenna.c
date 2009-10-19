@@ -38,12 +38,16 @@
 DifxAntenna *newDifxAntennaArray(int nAntenna)
 {
 	DifxAntenna* da;
-	int a;
+	int a, i;
 
 	da = (DifxAntenna *)calloc(nAntenna, sizeof(DifxAntenna));
 	for(a = 0; a < nAntenna; a++)
 	{
 		da[a].spacecraftId = -1;
+		for(i=0; i<MAX_MODEL_ORDER; i++)
+		{
+			da[a].clockcoeff[i] = 0.0;
+		}
 	}
 	
 	return da;
@@ -99,9 +103,15 @@ void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna)
 
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 {
+	int i;
+
 	fprintf(fp, "  DifxAntenna [%s] : %p\n", da->name, da);
-	fprintf(fp, "    Delay = %f us\n", da->delay);
-	fprintf(fp, "    Rate = %e us/s\n", da->rate);
+	fprintf(fp, "    Clock reference MJD = %f\n", da->clockrefmjd);
+	for(i=0;i<da->clockorder;i++)
+	{
+		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, 
+			da->clockcoeff[i], i);
+	}
 	fprintf(fp, "    Mount = %s\n", da->mount);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
@@ -119,8 +129,8 @@ void printDifxAntenna(const DifxAntenna *da)
 void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 {
 	fprintf(fp, "  %s\n", da->name);
-	fprintf(fp, "    Clock: Delay = %f us  Rate = %e us/s\n", 
-		da->delay, da->rate);
+	fprintf(fp, "    Clock: Ref time %f, Order = %d, linear approx %e us + %e us/s\n", 
+		da->clockrefmjd, da->clockorder, da->clockcoeff[0], da->clockcoeff[1]);
 	fprintf(fp, "    Mount = %s\n", da->mount);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
@@ -158,8 +168,12 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	int i;
 	
 	strcpy(dest->name, src->name);
-	dest->delay = src->delay;
-	dest->rate  = src->rate;
+	dest->clockrefmjd = src->clockrefmjd;
+	dest->clockorder  = src->clockorder;
+	for(i=0; i<MAX_MODEL_ORDER; i++)
+	{
+		dest->clockcoeff[i] = src->clockcoeff[i];
+	}
 	strcpy(dest->mount, src->mount);
 	for(i = 0; i < 3; i++)
 	{
@@ -234,7 +248,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 	int doMount, int doOffset, int doCoords, int doClock, int doShelf)
 {
 	int n;	/* number of lines written */
-	int i;
+	int i, j;
 
 	if(doClock)
 	{
@@ -281,11 +295,18 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		}
 		if(doClock)
 		{
-			writeDifxLineDouble1(out, "CLOCK DELAY (us) %d", i,
-				"%17.15f", da[i].delay);
-			writeDifxLineDouble1(out, "CLOCK RATE(us/s) %d", i,
-				"%10.8e", da[i].rate);
-			n += 2;
+			writeDifxLineDouble1(out, "CLOCK REF MJD %d", i, 
+				"%15.10f", da[i].clockrefmjd);
+			writeDifxLineInt1(out, "CLOCK POLY ORDER %d", i, 
+				da[i].clockorder);
+			writeDifxLine(out, "@ ***** Clock poly coeff N", 
+				" has units microsec / sec^N ***** @");
+			for(j=0;j<da[i].clockorder+1;j++)
+			{
+				writeDifxLineDouble2(out, "CLOCK COEFF %d/%d", i, j,
+				"%17.15e", da[i].clockcoeff[j]);
+			}
+			n += 3+da[i].clockorder+1;
 		}
 		if(doShelf)
 		{
