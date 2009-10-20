@@ -32,7 +32,7 @@
 #include <string.h>
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
-
+#include "difxio/difx_write.h"
 
 DifxSource *newDifxSourceArray(int nSource)
 {
