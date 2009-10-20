@@ -424,13 +424,12 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
 		strcpy(A[i].mount, ant->axisType.c_str());
-		clockrefmjd = ant->getClockRefMJD(J.mjdStart);
+		clockrefmjd = ant->getVexClocks(J.mjdStart, A[i].clockcoeff);
 		if(clockrefmjd < 0.0)
 		{
 			cerr << "WARNING:  Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
 			cerr << "          Unless this is intentional, your results will suffer!" << endl;
 		}
-		ant->getClockCoeffs(clockrefmjd, A[i].clockcoeff);
 		A[i].clockrefmjd = clockrefmjd;
 		A[i].clockorder = 1;
 		A[i].clockcoeff[0] *= 1.0e6;	// convert to us from sec

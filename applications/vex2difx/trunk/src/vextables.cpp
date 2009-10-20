@@ -281,9 +281,9 @@ VexSource *VexData::newSource()
 	return &sources.back();
 }
 
-// get the clock epoch as a MJD value (with fractional component)
-// negative means not found
-double VexAntenna::getClockRefMJD(double mjd) const
+// get the clock epoch as a MJD value (with fractional component), negative 
+// means not found.  Also fills in the first two coeffs, returned in seconds
+double VexAntenna::getVexClocks(double mjd, double * coeffs) const
 {
 	vector<VexClock>::const_iterator it;
 	double epoch = -1.0;
@@ -293,25 +293,12 @@ double VexAntenna::getClockRefMJD(double mjd) const
 		if(it->mjdStart <= mjd)
 		{
 			epoch = it->offset_epoch;
+			coeffs[0] = it->offset;
+			coeffs[1] = it->rate;
 		}
 	}
 
 	return epoch;
-}
-
-// returned values in seconds
-void VexAntenna::getClockCoeffs(double mjd, double * coeffs) const
-{
-	vector<VexClock>::const_iterator it;
-	
-	for(it = clocks.begin(); it != clocks.end(); it++)
-	{
-		if(it->mjdStart <= mjd)
-		{
-			coeffs[0] = it->offset + (mjd - it->offset_epoch)*it->rate*86400.0;
-			coeffs[1] = it->rate;
-		}
-	}
 }
 
 const VexSource *VexData::getSource(const string name) const
