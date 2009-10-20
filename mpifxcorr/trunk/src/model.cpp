@@ -300,8 +300,8 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
             }
           }
         }
+        delete [] clockdt;
       }
-      delete [] clockdt;
       return true; //note exit here
     }
   }
