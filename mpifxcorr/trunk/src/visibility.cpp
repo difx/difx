@@ -509,7 +509,7 @@ void Visibility::writedata()
 
   cdebug << startl << "Vis. " << visID << " is starting to write out data" << endl;
 
-  if(currentstartseconds + model->getScanStartSec(currentscan, expermjd, experseconds) >= executeseconds)
+  if(currentscan >= model->getNumScans() || currentstartseconds + model->getScanStartSec(currentscan, expermjd, experseconds) >= executeseconds)
   {
     //cdebug << startl << "Vis. " << visID << " is not writing out any data, since the time is past the end of the correlation" << endl;
     return; //NOTE EXIT HERE!!!
@@ -928,7 +928,7 @@ void Visibility::multicastweights()
   int dumpmjd, intsec;
   double dumpseconds;
 
-  if((model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds)
+  if(currentscan >= model->getNumScans() || (model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds) >= executeseconds)
   {
     cdebug << startl << "Vis. " << visID << " is not multicasting any weights, since the time is past the end of the correlation" << endl;
     return; //NOTE EXIT HERE!!!

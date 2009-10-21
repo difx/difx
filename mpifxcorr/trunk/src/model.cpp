@@ -279,7 +279,7 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
         clockdt = new double[order+1];
         for(int k=0;k<scantable[j].nummodelsamples;k++)
         {
-          clockdistance = 86400.0*(scantable[j].polystartmjd + ((double)scantable[j].polystartseconds)/86400.0 - refmjd);
+          clockdistance = 86400.0*(scantable[j].polystartmjd + ((double)scantable[j].polystartseconds)/86400.0 - refmjd) + k*double(modelincsecs);
           clockdt[0] = 1.0;
           for(int l=1;l<=order;l++)
             clockdt[l] = clockdt[l-1]*clockdistance;

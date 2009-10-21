@@ -27,7 +27,7 @@
 Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
   : mpiid(id), config(conf), return_comm(rcomm)
 {
-  int status;
+  int status, perr;
   double guardratio, maxguardratio;
   estimatedbytes = config->getEstimatedBytes();
 
@@ -83,17 +83,28 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
     procslots[i].viscopylocks = new pthread_mutex_t*[config->getFreqTableLength()];
     for(int j=0;j<config->getFreqTableLength();j++)
       procslots[i].viscopylocks[j] = new pthread_mutex_t[numbaselines];
-    for(int j=0;j<numprocessthreads;j++)
-      pthread_mutex_init(&(procslots[i].slotlocks[j]), NULL);
+    for(int j=0;j<numprocessthreads;j++) {
+      perr = pthread_mutex_init(&(procslots[i].slotlocks[j]), NULL);
+      if(perr != 0)
+        csevere << startl << "Problem initialising processthread " << j << " lock in slot " << i << "(" << perr << ")" << endl;
+    }
     for(int j=0;j<config->getFreqTableLength();j++)
     {
       for(int k=0;k<numbaselines;k++) {
         pthread_mutex_init(&(procslots[i].viscopylocks[j][k]), NULL);
+        if(perr != 0)
+          csevere << startl << "Problem initialising viscopylock for freq " << j << ", baseline " << k << " in slot " << i << "(" << perr << ")" << endl;
       }
     }
     pthread_mutex_init(&(procslots[i].autocorrcopylock), NULL);
+    if(perr != 0)
+      csevere << startl << "Problem initialising autocorrcopylock in slot " << i << "(" << perr << ")" << endl;
     pthread_mutex_init(&(procslots[i].bweightcopylock), NULL);
+    if(perr != 0)
+      csevere << startl << "Problem initialising bweightcopylock in slot " << i << "(" << perr << ")" << endl;
     pthread_mutex_init(&(procslots[i].acweightcopylock), NULL);
+    if(perr != 0)
+      csevere << startl << "Problem initialising acweightcopylock in slot " << i << "(" << perr << ")" << endl;
     procslots[i].datalengthbytes = new int[numdatastreams];
     procslots[i].databuffer = new u8*[numdatastreams];
     procslots[i].controlbuffer = new s32*[numdatastreams];
@@ -207,7 +218,7 @@ void Core::execute()
     {
       perr = pthread_cond_wait(&processconds[i], &(procslots[numreceived].slotlocks[i]));
       if (perr != 0)
-        csevere << startl << "Error waiting on receivethreadinitialised condition!!!!" << endl;
+        csevere << startl << "Error waiting on processthreadinitialised condition!!!!" << endl;
     }
   }
 
@@ -224,6 +235,8 @@ void Core::execute()
 
     if(terminate)
       break;
+
+    //cinfo << startl << "Main thread is going to send back results from " << numreceived%RECEIVE_RING_LENGTH << endl;
 
     //send the results back
     MPI_Ssend(procslots[numreceived%RECEIVE_RING_LENGTH].results, procslots[numreceived%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
@@ -414,7 +427,7 @@ void Core::loopprocess(int threadid)
   if(perr != 0)
     csevere << startl << "Core processthread " << mpiid << "/" << threadid << " error trying to signal main thread to wake up!!!" << endl;
   if(threadid == 0)
-    cinfo << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " is about to start processing" << endl;
+    cinfo << startl << "Core " << mpiid << " PROCESSTHREAD " << threadid+1 << "/" << numprocessthreads << " is about to start processing" << endl;
 
   //while valid, process data
   while(procslots[(numprocessed)%RECEIVE_RING_LENGTH].keepprocessing)
@@ -571,7 +584,10 @@ int Core::receivedata(int index, bool * terminate)
     perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[i]));
     if(perr != 0)
       csevere << startl << "CORE " << mpiid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;
+  }
 
+  for(int i=0;i<numprocessthreads;i++)
+  {
     perr = pthread_mutex_unlock(&(procslots[index].slotlocks[i]));
     if(perr != 0)
       csevere << startl << "CORE " << mpiid << " error trying unlock mutex " << index << endl;
@@ -671,7 +687,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       {
         i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
         offsetmins = ((double)i)*((double)config->getSubintNS(procslots[index].configindex))/(60000000000.0);
-        currentpolyco->getBins(offsetmins, scratchspace->bins[i]);
+        currentpolyco->getBins(offsetmins, scratchspace->bins[fftsubloop]);
       }
     }
 
@@ -754,27 +770,29 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     //if scrunching, add into temp accumulate space, otherwise add into normal space
                     if(procslots[index].scrunchoutput)
                     {
+                      destchan = xmacstart+outputoffset;
                       for(int l=0;l<xmacmullength;x++)
                       {
                         //the first zero (the source slot) is because we are limiting to one pulsar ephemeris for now
-                        destchan = xmacstart+outputoffset+l;
-                        destbin = scratchspace->bins[i][f][destchan];
+                        destbin = scratchspace->bins[fftsubloop][f][destchan];
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][destchan].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][destchan].im += scratchspace->pulsarscratchspace[l].im;
+                        destchan++;
                       }
                     }
                     else
                     {
-                      bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels+1);
+                      bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
+                      destchan = xmacstart+outputoffset;
                       for(int l=0;l<xmacmullength;x++)
                       {
-                        destchan = xmacstart+outputoffset+l;
-                        destbin = scratchspace->bins[i][f][destchan];
+                        destbin = scratchspace->bins[fftsubloop][f][destchan];
                         //cindex = resultindex + (scratchspace->bins[freqindex][destchan]*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*(freqchannels+1) + destchan;
                         cindex = resultindex + (destbin*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*xmacstridelength + destchan;
                         scratchspace->threadcrosscorrs[cindex].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->threadcrosscorrs[cindex].im += scratchspace->pulsarscratchspace[l].im;
                         scratchspace->baselineweight[f][destbin][j][p] += bweight;
+                        destchan++;
                       }
                     }
                   }
@@ -1050,6 +1068,8 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
   int localfreqindex, baselinefreqs;
   int numxmacstrides, xmaclen;
 
+  //cinfo << startl << "Index " << index << " is being worked on by thread " << threadid << endl;
+
   //first scale the pulsar data if necessary
   if(procslots[index].pulsarbin && procslots[index].scrunchoutput)
   {
@@ -1252,6 +1272,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << threadid << " error trying lock copy mutex for frequency table entry " << freqindex << ", baseline " << baseline << "!!!" << endl;
 
+  //cinfo << startl << "For index " << index << ", thread " << threadid << " is working on freqindex " << freqindex << ", baseline " << baseline << endl;
+
   freqchannels = config->getFNumChannels(freqindex);
   channelinc = config->getFChannelsToAverage(freqindex);
   bandwidth = config->getFreqTableBandwidth(freqindex);
@@ -1375,6 +1397,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
           }
           else //this frequency *is* averaged - deal with it
           {
+            dest = coreindex+coreoffset;
             for(int l=0;l<averagesperstride;l++)
             {
               //status = vectorMean_cf32(srcpointer + l*channelinc, channelinc, &(scratchspace->channelsums[l]), vecAlgHintFast);
@@ -1383,23 +1406,9 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
               if(status != vecNoErr)
                 cerror << startl << "Error trying to average frequency " << freqindex << ", baseline " << baseline << endl;
               //cout << "Mean result is " << meanresult.re << " + " << meanresult.im << " i" << endl;
-              dest = coreindex+coreoffset+l;
               procslots[index].results[dest].re += meanresult.re/stridestoaverage;
               procslots[index].results[dest].im += meanresult.im/stridestoaverage;
-              //scratchspace->channelsums[l].re += meanresult.re/stridestoaverage;
-              //scratchspace->channelsums[l].im += meanresult.im/stridestoaverage;
-            }
-            if(x%stridestoaverage == stridestoaverage-1)
-            {
-              coreoffset += averagesperstride;
-              //for(int l=0;l<averagesperstride;l++)
-              //{
-              //  procslots[index].results[coreindex+coreoffset].re += scratchspace->channelsums[l].re;
-              //  scratchspace->channelsums[l].re = 0.0;
-              //  procslots[index].results[coreindex+coreoffset].im += scratchspace->channelsums[l].im;
-              //  scratchspace->channelsums[l].im = 0.0;
-              //  coreoffset++;
-              //}
+              dest++;
             }
           }
           threadindex += xmacstridelen;
@@ -1408,6 +1417,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
     }
     coreindex += corebinloop*config->getBNumPolProducts(procslots[index].configindex,baseline,localfreqindex)*freqchannels/channelinc;
   }
+
+  //cinfo << startl << "For index " << index << ", thread " << threadid << " is about to finish freqindex " << freqindex << ", baseline " << baseline << endl;
 
   //unlock the mutex for this segment of the copying
   perr = pthread_mutex_unlock(&(procslots[index].viscopylocks[freqindex][baseline]));
