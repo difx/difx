@@ -110,4 +110,6 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice,
 void countReplaced(const unsigned long *data, int len,
 	long long *wGood, long long *wBad);
 
+int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop);
+
 #endif

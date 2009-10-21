@@ -630,3 +630,55 @@ int sanityCheckModule(const struct Mark5Module *module)
 
 	return 0;
 }
+
+int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop)
+{
+	double scanStart, scanStop, R;
+	long long delta;
+
+	if(scan->length <= 0)
+	{
+		return 0;
+	}
+
+	scanStart = scan->mjd + (scan->sec + (float)(scan->framenuminsecond)/(float)(scan->framespersecond))/86400.0;
+	scanStop = scanStart + scan->duration/86400.0;
+
+	if(scanStart >= mjdStop || scanStop <= mjdStart)
+	{
+		return 0;
+	}
+
+	R = scan->length*86400.0/scan->duration;
+
+	if(mjdStart <= scanStart)
+	{
+		*byteStart = scan->start;
+	}
+	else
+	{
+		*byteStart = (int)(scan->start + R*(mjdStart - scanStart));
+	}
+
+	if(mjdStop >= scanStop)
+	{
+		*byteStop = scan->start + scan->length;
+	}
+	else
+	{
+		*byteStop = (int)(scan->start + R*(mjdStop - scanStart));
+	}
+
+	/* make sure read is aligned with data frames */
+	delta = (*byteStart - scan->frameoffset) % scan->framebytes;
+	*byteStart -= delta;
+	if(*byteStart < scan->start)
+	{
+		*byteStart += scan->framebytes;
+	}
+
+	delta = (*byteStop - scan->frameoffset) % scan->framebytes;
+	*byteStop  -= delta;
+
+	return 1;
+}

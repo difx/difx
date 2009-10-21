@@ -42,8 +42,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.4";
-const char verdate[] = "20090826";
+const char version[] = "0.5";
+const char verdate[] = "20091021";
 
 int verbose = 0;
 int die = 0;
@@ -152,6 +152,157 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	}
 
 	return 0;
+}
+
+int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, int scanNum, long long byteStart, long long byteStop, DifxMessageMk5Status *mk5status)
+{
+	XLR_RETURN_CODE xlrRC;
+	FILE *out;
+	const int chunksize = 50000000;
+	long long readptr;
+	long long togo;
+	int len;
+	unsigned long *data;
+	int i, a, b, v;
+	char filename[256];
+	struct timeval t0, t1, t2;
+	double dt;
+	double rate;
+	char message[1000];
+	long long wGood=0, wBad=0;
+
+	sprintf(filename, "%s/%s", outpath, outname); 
+
+	printf("outname = %s\n", filename);
+
+	out = fopen(filename, "w");
+	if(!out)
+	{
+		sprintf(message, "Cannot open file %s for write.  Check permissions!", filename);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
+		return -1;
+	}
+
+	readptr = byteStart;
+	togo = byteStop-byteStart;
+	data = (unsigned long *)malloc(chunksize);
+	len = chunksize;
+
+	mk5status->status = MARK5_COPY_SUCCESS;
+	mk5status->scanNumber = scanNum+1;
+
+	if(verbose)
+	{
+		printf("Writing %s\n", filename);
+		printf("start/length = %Ld/%Ld\n", byteStart, byteStop-byteStart);
+	}
+
+	rate = 0.0;
+	gettimeofday(&t0, 0);
+	gettimeofday(&t1, 0);
+
+	sprintf(message, "Copying portion of scan %d to file %s", scanNum+1, filename);
+	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+	for(i = 0; togo > 0; i++)
+	{
+		if(die)
+		{
+			difxMessageSendDifxAlert("Data copy aborted due to die signal", DIFX_ALERT_LEVEL_WARNING);
+			
+			break;
+		}
+		if(verbose)
+		{
+			printf("%Ld = %Ld/%Ld\n", readptr, readptr-byteStart, byteStop-byteStart);
+		}
+		sprintf(mk5status->scanName, "[%Ld%%]", 100*(readptr-byteStart)/(byteStop-byteStart));
+		mk5status->position = readptr;
+		mk5status->rate = rate;
+		difxMessageSendMark5Status(mk5status);
+		if(togo < chunksize)
+		{
+			len = togo;
+		}
+
+		a = readptr >> 32;
+		b = readptr % (1LL<<32);
+
+		xlrRC = XLRReadData(xlrDevice, data, a, b, len);
+
+		if(xlrRC == XLR_FAIL)
+		{
+			sprintf(message, "XLR Read failure at %Ld.  Aborting copy.", readptr);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			mk5status->status = MARK5_COPY_ERROR;
+			
+			break;
+		}
+
+		countReplaced(data, len/4, &wGood, &wBad);
+
+		v = fwrite(data, 1, len, out);
+		if(v < len)
+		{
+			sprintf(message, "Incomplete write -- disk full?  path=%s", outpath);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+			
+			break;
+		}
+		gettimeofday(&t2, 0);
+		dt = (t2.tv_sec-t1.tv_sec) + 1.0e-6*(t2.tv_usec-t1.tv_usec);
+
+		if(dt > 0.0)
+		{
+			rate = 8.0e-6*chunksize/dt; /* Mbps */
+		}
+		t1 = t2;
+
+		dt = t2.tv_sec-t0.tv_sec;
+
+		if(dt >= 10)
+		{
+			t0 = t2;
+			
+			getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
+		}
+
+		readptr += chunksize;
+		togo -= len;
+	}
+
+	fclose(out);
+	free(data);
+
+	sprintf(message, "Copied scan %d. %Ld bytes total, %Ld bytes replaced.", scanNum+1, 4*(wGood+wBad), 4*wBad);
+	if((double)wBad/(double)wGood < 1.0e-8)
+	{
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+		fprintf(stderr, "%s\n", message);
+	}
+	else
+	{
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+		fprintf(stderr, "Warning: %s\n", message);
+	}
+
+	mk5status->scanNumber = 0;
+	mk5status->rate = 0.0;
+	mk5status->position = byteStop;
+	difxMessageSendMark5Status(mk5status);
+
+	if(togo > 0)
+	{
+		return -1;
+	}
+	else
+	{
+		return 0;
+	}
 }
 
 int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanNum, const Mark5Scan *scan, DifxMessageMk5Status *mk5status)
@@ -314,6 +465,29 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	}
 }
 
+static int parseMjdRange(double *mjdStart, double *mjdStop, const char *scanlist)
+{
+	if(sscanf(scanlist, "%lf_%lf", mjdStart, mjdStop) != 2)
+	{
+		return 0;
+	}
+
+	if(*mjdStart < 10000.0 || *mjdStart > 100000.0)
+	{
+		return 0;
+	}
+	if(*mjdStop < 10000.0 || *mjdStop > 100000.0)
+	{
+		return 0;
+	}
+	if(*mjdStart >= *mjdStop)
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 int main(int argc, char **argv)
 {
 	int mjdnow;
@@ -331,6 +505,10 @@ int main(int argc, char **argv)
 	int scanIndex;
 	float replacedFrac;
 	int bail = 0;
+	double mjdStart, mjdStop;
+	long long byteStart, byteStop;
+	Mark5Scan *scan;
+	char outname[128];
 
 	if(argc < 2)
 	{
@@ -426,6 +604,18 @@ int main(int argc, char **argv)
 	{
 		mk5status.activeBank = 'B';
 	}
+	else if(strcasecmp(vsn, "A") == 0)
+	{
+		mk5status.activeBank = 'A';
+		strncpy(vsn, mk5status.vsnA, 8);
+		vsn[8] = 0;
+	}
+	else if(strcasecmp(vsn, "B") == 0)
+	{
+		mk5status.activeBank = 'B';
+		strncpy(vsn, mk5status.vsnB, 8);
+		vsn[8] = 0;
+	}
 
 	mk5dirpath = getenv("MARK5_DIR_PATH");
 	if(mk5dirpath == 0)
@@ -516,7 +706,37 @@ int main(int argc, char **argv)
 	nBad = 0;
 	if(mk5status.activeBank > ' ' && bail < 1) 
 	{
-		if(isdigit(scanlist[0])) for(;;)
+		/* first look for mjd range */
+		if(parseMjdRange(&mjdStart, &mjdStop, scanlist))	
+		{
+			for(scanIndex = 0; scanIndex < module.nscans; scanIndex++)
+			{
+				scan = module.scans+scanIndex;
+				if(!getByteRange(scan, &byteStart, &byteStop, mjdStart, mjdStop))
+				{
+					continue;
+				}
+				sprintf(outname, "%8s_%s_%d", module.label, scanlist, nGood+nBad);
+				v = copyByteRange(xlrDevice, outpath, outname, scanIndex, byteStart, byteStop, &mk5status);
+				if(v == 0)
+				{
+					nGood++;
+				}
+				else
+				{
+					nBad++;
+				}
+			}
+			if(nGood == 0)
+			{
+				sprintf(message, "MJD range %12.6f to %12.6f not in any scan", mjdStart, mjdStop);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+				fprintf(stderr, "Warning: %s\n", message);
+			}
+			
+		}
+		/* next look for scan range */
+		else if(isdigit(scanlist[0])) for(;;)
 		{
 
 			printf("scanlist = %s\n", scanlist);
@@ -584,6 +804,7 @@ int main(int argc, char **argv)
 				scanlist++;
 			}
 		}
+		/* finally, look for scan name */
 		else
 		{
 			l = strlen(scanlist);
