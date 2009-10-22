@@ -181,6 +181,8 @@ class Model{
     inline bool isPointingCentre(int scan, int source) { return (scantable[scan].phasecentres[source] == scantable[scan].pointingcentre); }
 
   private:
+    static const int MAX_POLY_ORDER = 10;
+
     typedef struct {
       int offsetseconds, durationseconds, nummodelsamples, polystartmjd, polystartseconds;
       string obsmodename, identifier;
@@ -214,7 +216,6 @@ class Model{
     bool opensuccess;
     string calcfilename, imfilename;
     double ** binomialcoeffs;
-    f64 * tpowerarray;
     Configuration * config;
     station * stationtable;
     source * sourcetable;

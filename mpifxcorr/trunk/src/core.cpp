@@ -206,7 +206,16 @@ void Core::execute()
   }
   //cverbose << startl << "Core has filled up receive ring buffer" << endl;
 
-  //now we have the lock on the last slot in the ring.  Launch processthreads
+  //also lock the second last slot, to keep any cheeky thread from getting round the entire
+  //RECEIVE_RING before we wake back up
+  for(int i=0;i<numprocessthreads;i++)
+  {
+    perr = pthread_mutex_lock(&(procslots[RECEIVE_RING_LENGTH-2].slotlocks[i]));
+    if(perr != 0)
+      csevere << startl << "Error in main thread attempting to lock mutex " << RECEIVE_RING_LENGTH-2 << " of thread " << i << " during startup" << endl;
+  }
+
+  //now we have the lock on the last two slots in the ring.  Launch processthreads
   for(int i=0;i<numprocessthreads;i++)
   {
     threadinfos[i].thiscore = this;
@@ -222,6 +231,14 @@ void Core::execute()
     }
   }
 
+  //release that supplementary lock (2nd last in buffer)
+  for(int i=0;i<numprocessthreads;i++)
+  {
+    perr = pthread_mutex_unlock(&(procslots[RECEIVE_RING_LENGTH-2].slotlocks[i]));
+    if(perr != 0)
+      csevere << startl << "Error in main thread attempting to lock mutex " << RECEIVE_RING_LENGTH-2 << " of thread " << i << " during startup" << endl;
+  }
+
   cverbose << startl << "Estimated memory usage by Core is now " << getEstimatedBytes()/(1024.0*1024.0) << " MB" << endl;
   lastconfigindex = procslots[0].configindex;
   while(!terminate) //the data is valid, so keep processing
@@ -235,8 +252,6 @@ void Core::execute()
 
     if(terminate)
       break;
-
-    //cinfo << startl << "Main thread is going to send back results from " << numreceived%RECEIVE_RING_LENGTH << endl;
 
     //send the results back
     MPI_Ssend(procslots[numreceived%RECEIVE_RING_LENGTH].results, procslots[numreceived%RECEIVE_RING_LENGTH].coreresultlength*2, MPI_FLOAT, fxcorr::MANAGERID, procslots[numreceived%RECEIVE_RING_LENGTH].resultsvalid, return_comm);
@@ -657,7 +672,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     }
   }
 
-  //process each FFT chunk in turn
+  //set up variables which control the number of loops through buffered FFT results
   blockcount = 0;
   shiftcount = 0;
   numfftloops = numblocks/config->getNumBufferedFFTs(procslots[index].configindex);
@@ -665,7 +680,13 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     numfftloops++;
   blockns = ((double)(config->getSubintNS(procslots[index].configindex)))/((double)(config->getBlocksPerSend(procslots[index].configindex)));
   maxblocks = ((int)(model->getMaxNSBetweenUVShifts(procslots[index].offsets[0])/blockns));
-  //for(int i=startblock;i<startblock+numblocks;i++)
+  maxblocks -= maxblocks%config->getNumBufferedFFTs(procslots[index].configindex);
+  if(maxblocks == 0) {
+    maxblocks = config->getNumBufferedFFTs(procslots[index].configindex);
+    cwarn << startl << "Requested shift/average time of " << model->getMaxNSBetweenUVShifts(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered - the time resolution which will be attained is " << maxblocks*blockns << " ns" << endl;
+  }
+
+  //process each chunk of FFTs in turn
   for(int fftloop=0;fftloop<numfftloops;fftloop++)
   {
     //do the station-based processing for this batch of FFT chunks
@@ -696,7 +717,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     for(int f=0;f<config->getFreqTableLength();f++)
     {
       if(config->isFrequencyUsed(procslots[index].configindex, f))
-        {
+      {
         //All baseline freq indices into the freq table are determined by the *first* datastream
         //in the event of correlating USB with LSB data.  Hence all Nyquist offsets/channels etc
         //are determined by the freq corresponding to the *first* datastream
@@ -814,19 +835,19 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
           }
         }
       }
-      blockcount++;
-      if(blockcount == maxblocks)
-      {
-        //shift/average and then lock results and copy data
-        uvshiftAndAverage(index, threadid, (startblock+shiftcount*maxblocks+((double)maxblocks)/2.0)*blockns, currentpolyco, scratchspace);
-
-        //reset the blockcount, increment shiftcount
-        blockcount = 0;
-        shiftcount++;
-      }
     }
 
-    //finally, update the baselineweight in the non-binning case
+    blockcount += config->getNumBufferedFFTs(procslots[index].configindex);
+    if(blockcount == maxblocks)
+    {
+      //shift/average and then lock results and copy data
+      uvshiftAndAverage(index, threadid, (startblock+shiftcount*maxblocks+((double)maxblocks)/2.0)*blockns, currentpolyco, scratchspace);
+      //reset the blockcount, increment shiftcount
+      blockcount = 0;
+      shiftcount++;
+    }
+
+    //finally, update the baselineweight in the binning, non-scrunching case
     if(!procslots[index].pulsarbin || procslots[index].scrunchoutput)
     {
       for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
@@ -858,8 +879,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     }
   }
 
-  if(blockcount != 0)
+  if(blockcount != 0) {
     uvshiftAndAverage(index, threadid, (startblock+shiftcount*maxblocks+((double)blockcount)/2.0)*blockns, currentpolyco, scratchspace);
+  }
 
   datastreamsaveraged = false;
   //if STA send needed but we can average datastream results in freq first, do so
@@ -890,7 +912,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         scratchspace->starecord->bandId = j;
         acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
         for (int k=0;k<scratchspace->starecord->nChan;k++) {
-          //cout << "Doing channel " << k << endl;
           scratchspace->starecord->data[k] = acdata[2*k*channelinc];
           for (int l=1;l<channelinc;l++)
             scratchspace->starecord->data[k] += acdata[2*(k*channelinc+l)];
@@ -1067,8 +1088,6 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
   int status, startbaselinefreq, atbaselinefreq, startbaseline, startfreq, endbaseline, binloop;
   int localfreqindex, baselinefreqs;
   int numxmacstrides, xmaclen;
-
-  //cinfo << startl << "Index " << index << " is being worked on by thread " << threadid << endl;
 
   //first scale the pulsar data if necessary
   if(procslots[index].pulsarbin && procslots[index].scrunchoutput)
@@ -1304,11 +1323,9 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
     {
       for(int c=0;c<rotatestridelen;c++) {
         scratchspace->chanfreqs[c] = c*channelbandwidth;
-        //cout << "set chanfreqs " << c << " to " << scratchspace->chanfreqs[c] << endl;
       }
       for(int c=0;c<numstrides*rotatesperstride;c++) {
         scratchspace->chanfreqs[rotatestridelen+c] = c*stepbandwidth;
-        //cout << "set chanfreqs[" << c << "] which is really " << c*rotatestridelen << " to " << scratchspace->chanfreqs[rotatestridelen+c] << endl;
       }
     }
   }
@@ -1405,7 +1422,6 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
               status = vectorMean_cf32(srcpointer + l*averagelength, averagelength, &meanresult, vecAlgHintFast);
               if(status != vecNoErr)
                 cerror << startl << "Error trying to average frequency " << freqindex << ", baseline " << baseline << endl;
-              //cout << "Mean result is " << meanresult.re << " + " << meanresult.im << " i" << endl;
               procslots[index].results[dest].re += meanresult.re/stridestoaverage;
               procslots[index].results[dest].im += meanresult.im/stridestoaverage;
               dest++;

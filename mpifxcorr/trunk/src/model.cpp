@@ -43,7 +43,7 @@ Model::Model(Configuration * conf, string cfilename)
   eoptable = 0;
   spacecrafttable = 0;
   scantable = 0;
-  tpowerarray = 0;
+  binomialcoeffs = 0;
 
   //read the files
   if(opensuccess) 
@@ -63,25 +63,33 @@ Model::Model(Configuration * conf, string cfilename)
   if(opensuccess)
     opensuccess = readPolynomialSamples(input);
 
+  if(opensuccess && polyorder > MAX_POLY_ORDER) {
+    cfatal << startl << "Polynomial order " << polyorder << " is greater than the maximum allowed (" << MAX_POLY_ORDER << ") - aborting!" << endl;
+    opensuccess = false;
+  }
+
   //allocate some arrays
-  tpowerarray = vectorAlloc_f64(polyorder+1);
-  binomialcoeffs = new double*[polyorder+1];
-  for(int i=0;i<polyorder+1;i++)
-  {
-    binomialcoeffs[i] = new double[i+1];
-    binomialcoeffs[i][0] = 1;
-    binomialcoeffs[i][i] = 1;
-    for(int j=1;j<i;j++)
-      binomialcoeffs[i][j] = binomialcoeffs[i-1][j-1] + binomialcoeffs[i-1][j];
-  } 
+  if(opensuccess) {
+    binomialcoeffs = new double*[polyorder+1];
+    for(int i=0;i<polyorder+1;i++) {
+      binomialcoeffs[i] = new double[i+1];
+      binomialcoeffs[i][0] = 1;
+      binomialcoeffs[i][i] = 1;
+      for(int j=1;j<i;j++)
+        binomialcoeffs[i][j] = binomialcoeffs[i-1][j-1] + binomialcoeffs[i-1][j];
+    }
+  }
 
   delete input;
 }
 
 Model::~Model()
 {
-  if(tpowerarray)
-    vectorFree(tpowerarray);
+  if(binomialcoeffs) {
+    for(int i=0;i<polyorder+1;i++)
+      delete [] binomialcoeffs[i];
+    delete [] binomialcoeffs;
+  }
   if(stationtable)
     delete [] stationtable;
   if(sourcetable)
@@ -147,6 +155,7 @@ bool Model::interpolateUVW(int scanindex, double offsettime, int antennaindex1, 
   int scansample, polyoffset;
   double deltat, tempuvw;
   double * coeffs;
+  f64 tpowerarray[MAX_POLY_ORDER+1];
 
   //work out the correct sample and offset from that sample
   polyoffset = (modelmjd - scantable[scanindex].polystartmjd)*86400 + modelstartseconds + scantable[scanindex].offsetseconds - scantable[scanindex].polystartseconds;
@@ -188,6 +197,7 @@ bool Model::calculateDelayInterpolator(int scanindex, f64 offsettime, f64 timesp
   int scansample, status, polyoffset;
   double deltat;
   double delaysamples[3];
+  f64 tpowerarray[MAX_POLY_ORDER+1];
 
   //check that order is ok
   if(order < 0 || order > 2) {

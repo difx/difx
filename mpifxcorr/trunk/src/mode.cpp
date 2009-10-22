@@ -198,12 +198,10 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
     fftbuffer = vectorAlloc_u8(fftbuffersize);
 
-    //cout << "arraystridelength is " << arraystridelength << endl;
     subfracsamparg = vectorAlloc_f32(arraystridelength);
     subfracsampsin = vectorAlloc_f32(arraystridelength);
     subfracsampcos = vectorAlloc_f32(arraystridelength);
     subchannelfreqs = vectorAlloc_f32(arraystridelength);
-    //lsbsubchannelfreqs = vectorAlloc_f32(arraystridelength);
     estimatedbytes += 5*4*arraystridelength;
     /*cout << "subfracsamparg is " << subfracsamparg << endl;
     cout << "subfracsampsin is " << subfracsampsin << endl;
@@ -222,12 +220,6 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     stepchannelfreqs = vectorAlloc_f32(numstrides/2);
     lsbstepchannelfreqs = vectorAlloc_f32(numstrides/2);
     estimatedbytes += (5*2+4)*numstrides;
-    /*cout << "stepfracsamparg is " << stepfracsamparg << endl;
-    cout << "stepfracsampsin is " << stepfracsampsin << endl;
-    cout << "stepfracsampcos is " << stepfracsampcos << endl;
-    cout << "stepfracsampcplx is " << stepfracsampcplx << endl;
-    cout << "stepchannelfreqs is " << stepchannelfreqs << endl;
-    cout << "lsbstepchannelfreqs is " << lsbstepchannelfreqs << endl;*/
 
     for(int i=0;i<numstrides/2;i++) {
       stepchannelfreqs[i] = (float)((TWO_PI*i*arraystridelength*recordedbandwidth)/recordedbandchannels);
@@ -502,8 +494,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       a = interpolator[0];
       b = interpolator[1] + index*interpolator[0]*2.0;
       c = interpolator[2] + index*interpolator[1] + index*index*interpolator[0];
-      if(datastreamindex == 0)
-        cout << "I got a c value of " << c << " when my average delay was " << averagedelay << ", the difference is " << c-averagedelay << endl;
       integerdelay = int(c);
       c -= integerdelay;
 
