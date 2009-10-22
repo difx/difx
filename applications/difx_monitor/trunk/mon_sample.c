@@ -134,7 +134,7 @@ int main(int argc, const char * argv[]) {
 	max += delta;
 	cpgsci(1);
 	cpgenv(0,nchan,min,max,0,0);
-	cpglab("Channel", "Amplitude", "");
+	cpglab("Channel", "Phase", "");
 	cpgsci(2);
 	cpgpt(nchan, xval, phase, 17);
 
@@ -147,7 +147,7 @@ int main(int argc, const char * argv[]) {
 	max += delta;
 	cpgsci(1);
 	cpgenv(-nchan,nchan,min,max,0,0);
-	cpglab("Channel", "Amplitude", "");
+	cpglab("Channel", "Delay", "");
 	cpgsci(2);
 	cpgline(nchan*2, lagx, lags);
 	cpgebuf();
