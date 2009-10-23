@@ -402,8 +402,15 @@ foreach (@stations) {
 #   VLBA 20160*ntrack/8
 #   MKIV 20000*ntrack/8
 #   MK5B 10000
+
   if ($stationmodes->{$_}->record_transport_type eq 'S2') {
-    $format = 'LBAVSOP';
+    if ($evlbi) {
+      $format = 'MARK5B';
+      $framesize = 10016;
+    } else {
+      $format = 'LBAVSOP';
+      $framesize = 1;
+    }
   } elsif ($stationmodes->{$_}->record_transport_type eq 'Mark5A') {
     if (!$old) {
       $format = 'MKIV';
@@ -718,6 +725,7 @@ EOF
     printf(HTML "       <th style=\"text-align: center; background-color: rgb(204, 255, 255);\"> %s</th>", $_->freq->unit('MHz')->value);
   }
 
+  my $ibaseline=0;
   for (my $i=0; $i<@bactive; $i++)  {
     next if (! $bactive[$i]);
     my $bname = shift @{$monitorbaselines[$i]};
@@ -728,21 +736,27 @@ EOF
 
 EOF
 
+    my $ifreq = 0;
     for (my $j=0; $j<@globalfreq; $j++) {
+      my $done = 0;
       my $title = sprintf("$bname %s", $globalfreq[$j]->freq);
       print HTML "<td style=\"text-align: center;\">";
       if ($monitorbaselines[$i][$j][0]) {
-	print HTML "<a href=\"lba-$i-f$j-p0.html\">RCP</a> ";
-	push @plots, ["lba-$i-f$j-p0.html", "lba-$i-f$j-p0-b0.png", "$title RCP"];
+	print HTML "<a href=\"lba-$ibaseline-f$ifreq-p0.html\">RCP</a> ";
+	push @plots, ["lba-$ibaseline-f$ifreq-p0.html", "lba-$ibaseline-f$ifreq-p0-b0.png", "$title RCP"];
+	$done=1;
       }
       if ($monitorbaselines[$i][$j][1]) {
-	print HTML " <a href=\"lba-$i-f$j-p0.html\">LCP</a>";
-	push @plots, ["lba-$i-f$j-p1.html", "lba-$i-f$j-p1-b0.png", "$title LCP"];
+	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p1.html\">LCP</a>";
+	push @plots, ["lba-$ibaseline-f$ifreq-p1.html", "lba-$ibaseline-f$ifreq-p1-b0.png", "$title LCP"];
+	$done=1;
       }
       print HTML "</td>\n";
+      $ifreq++ if ($done);
     }
     print HTML "</tr>\n";
-  }
+    $ibaseline++;
+}
 
   print HTML<<EOF;
  </tbody>
@@ -953,12 +967,12 @@ BEGIN {
 
 my %antclockoffsets;
 BEGIN {
-  %antclockoffsets = (Pa => -1.997,
-                      At => -55.31,
-                      Mp => 0.3,
-                      Ho => -11.72,
-                      Cd => 1.05,
-                      Ti => -2.0,
+  %antclockoffsets = (Pa => -1.57,
+                      At => -46.7,
+                      Mp => -0.68,
+                      Ho => -12.37,
+                      Cd => -5,
+                      Ti => 1.5,
                       Sh => -7.4,
 		      Ks => 1.95,
 		      Hh => -1,
@@ -967,13 +981,10 @@ BEGIN {
 
 my %anttcpwindow;
 BEGIN {
-  %anttcpwindow = (Pa => 0,
-		   #At => 512,
-		   #Mp => 1024,
-		   #Ho => 512,
-		   At => 0,
-		   Mp => 0,
-		   Ho => 0,
+  %anttcpwindow = (Pa => -1500,
+		   At => -1500,
+		   Mp => -1500,
+		   Ho => -1500,
 		   Sh => -1500,
 		   Ks => -1500);
 }
