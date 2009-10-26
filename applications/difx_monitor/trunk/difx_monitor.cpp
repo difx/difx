@@ -151,7 +151,7 @@ int main(int argc, const char * argv[])
       } else if (status==0) {  // Socket closed remotely
         cerr << "Socket closed remotely - aborting" << endl;
         break;
-      } else if (readbytes!=resultlength*sizeof(cf32)) { // This should never happen
+      } else if (readbytes!=resultlength*(int)sizeof(cf32)) { // This should never happen
         cerr<<"Read size error!!!"<<endl;
         break;
       }
@@ -179,7 +179,6 @@ void plot_results()
   char pgplotname[256];
   char polpair[3];
   char timestr[10];
-  const char* cstr;
   string sourcename;
   ostringstream ss;
   f32 temp;
@@ -269,8 +268,7 @@ void plot_results()
 	    cout << "Error opening pgplot device: " << pgplotname << endl;
 	  } else {
 	    float max, min, delta;
-	    int c;
-	    
+
 	    cpgscr(0,1,1,1);
 	    cpgscr(1,0,0,0);
 
@@ -366,12 +364,7 @@ void plot_results()
       {
         //keep plotting...
         //cout << "Frequency is " <<  config->getFreqTableFreq(config->getDFreqIndex(currentconfigindex, i, k)) << endl;
-        char firstpol = config->getDBandPol(currentconfigindex, i, k);
-        char otherpol = ((firstpol == 'R')?'L':'R');
-        //if (j==0)
-          //cout << "Polarisation pair is " << firstpol << firstpol << endl;
-        //else
-          //cout << "Polarisation pair is " << firstpol << otherpol << endl;
+        //char firstpol = config->getDBandPol(currentconfigindex, i, k);
 
 	if (j==0) {
 	  sprintf(pgplotname, "lba-auto%d-b%d.png/png",
@@ -386,7 +379,6 @@ void plot_results()
 	  cout << "Error opening pgplot device: " << pgplotname << endl;
 	} else {
 	  float max, min;
-	  int c;
 
 	  cpgscr(0,1,1,1);
 	  cpgscr(1,0,0,0);
