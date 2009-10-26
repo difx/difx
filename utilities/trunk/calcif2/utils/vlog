@@ -4,8 +4,8 @@ from sys import argv, stdout, exit
 from string import split, strip, find
 
 program = 'vlog'
-version = 1.1
-verdate = '20071231'
+version = 1.2
+verdate = '20091026'
 author  = 'Walter Brisken'
 
 def usage():
@@ -70,7 +70,7 @@ def bbcflag(flags, bbc, t1, t2, chan, reason):
 		nBBC = len(b) - 2
 		if T1 < T2:
 			for i in range(nBBC):
-				if b[i+2][0:-1] == chan:
+				if b[i+2][0][0:-1] == chan:
 					flags.append('%9.7f %9.7f %d %s' % \
 						(T1, T2, i, reason))
 
@@ -133,7 +133,7 @@ def countTones(ToneTable, StateTable):
 	# if both RCP and LCP, make sure RCP is first
 	polList.sort()
 	polList.reverse()
-	
+
 	for key in toneKeys:
 		T = ToneTable[key]
 		pol = T[2]
@@ -200,12 +200,12 @@ def countTones(ToneTable, StateTable):
 
 	return nPol, nBand, nTone, nState
 
-def bbc2recChan(bbcName, t, bbcMap):
+def bbc2recChan(bbcNum, t, bbcMap):
 	for b in bbcMap:
 		if t >= b[0] and t < b[1]:
 			nBBC = len(b) - 2
 			for i in range(nBBC):
-				if b[i+2] == bbcName:
+				if b[i+2][1] == bbcNum:
 					return ('%d' % i), nBBC
 	return '-1', 0
 	
@@ -287,7 +287,7 @@ def makePH(sections, BBCs, antenna):
 				band = T[5]
 				tone = T[6]
 				index = tone + nTone*(band + nBand*pol)
-				recChan, nBBC = bbc2recChan(T[0]+T[1], t, bbc)
+				recChan, nBBC = bbc2recChan(int(T[0]), t, bbc)
 				try:
 					ToneData[index] = [recChan, T[3], s[3], s[4]]
 				except IndexError:
@@ -305,7 +305,7 @@ def makePH(sections, BBCs, antenna):
 					index = band + nBand*pol
 					try:
 						StateData[index][0], nBBC = \
-							bbc2recChan(S[0]+S[1], t, bbc)
+							bbc2recChan(int(S[0]), t, bbc)
 						StateData[index][1][state] = \
 							s[3+state]
 					except IndexError:
@@ -364,7 +364,7 @@ def makeTS(sections, antenna):
 				BBCrow = [t0, t1]
 				BBCmap.append(BBCrow)
 			recvName.append(s[2])
-			BBCrow.append(s[5]+s[6])
+			BBCrow.append([s[5]+s[6], int(s[1]), s[4][0]])
 			nRecChan += 1
 		elif s[0] == '!' and len(s) == 5:
 			tr = split(s[4], '/')
