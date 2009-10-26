@@ -156,7 +156,7 @@ int monserver_requestproduct(struct monclient client, unsigned int product) {
 
 int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod) {
   int status, i;
-  int32_t  temp, status32;
+  int32_t  status32;
   
   status = DIFXMON_NOERROR;
 
@@ -171,7 +171,7 @@ int monserver_requestproducts(struct monclient client, unsigned int product[], i
   if (status) return(status);
 
   if (status32!=DIFXMON_NOERROR) {
-    fprintf(stderr, "Error %d requesting product %d from Monitor\n", status32, product);
+    fprintf(stderr, "Error %d requesting products from monitor\n", status32);
     return(1);
   }
 
