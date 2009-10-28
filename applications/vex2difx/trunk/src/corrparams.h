@@ -99,6 +99,7 @@ public:
 	double X, Y, Z;		// Station coordinates to override vex
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
+        vector<double> freqClockOffs; // clock offsets for the individual frequencies
 	VexClock clock;
 	// flag
 	// media

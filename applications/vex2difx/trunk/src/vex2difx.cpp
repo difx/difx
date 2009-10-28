@@ -1252,6 +1252,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	const CorrSetup *corrSetup;
 	const SourceSetup *sourceSetup;
 	const PhaseCentre *phaseCentre;
+	const AntennaSetup *antennaSetup;
 	const VexMode *mode;
 	const VexScan *S;
 	set<string> configSet;
@@ -1531,8 +1532,38 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			int v = setFormat(D, D->nDatastream, freqs, mode, antName, corrSetup);
 			if(v)
 			{
-				D->datastream[D->nDatastream].phaseCalIntervalMHz = 
-					(P->getAntennaSetup(antName))->phaseCalIntervalMHz;
+				antennaSetup = P->getAntennaSetup(antName);
+				if(antennaSetup)
+				{
+					D->datastream[D->nDatastream].phaseCalIntervalMHz = 
+						antennaSetup->phaseCalIntervalMHz;
+					if(antennaSetup->freqClockOffs.size() > 0)
+					{
+						if(antennaSetup->freqClockOffs.size() != 
+							D->datastream[D->nDatastream].nRecFreq)
+						{
+							cerr << "Error: AntennaSetup for " << antName << 
+							" has only " << antennaSetup->freqClockOffs.size() << 
+							" freqClockOffsets specified but " << 
+							D->datastream[D->nDatastream].nRecFreq << 
+							" recorded frequencies - aborting!" << endl;
+							exit(0);
+						}
+						if(antennaSetup->freqClockOffs.front() != 0.0)
+						{
+							cerr << "Error: AntennaSetup for " << antName <<
+							" has a non-zero clock offset for the first " << 
+							"frequency offset. This is not allowed for model " << 
+							"accountability reasons. Aborting!" << endl;
+							exit(0);
+						}
+						for(int i=0; i<antennaSetup->freqClockOffs.size(); i++)
+						{
+							D->datastream[D->nDatastream].clockOffset[i] = 
+								antennaSetup->freqClockOffs.at(i);
+						}
+					}
+				}
 				if(J.getVSN(antName) == "None")
 				{
 					strcpy(D->datastream[D->nDatastream].dataSource, "FILE");
@@ -1589,9 +1620,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 				cout << "  naifFile = " << phaseCentre->naifFile << endl;
 			}
 			v = computeDifxSpacecraftEphemeris(ds, mjd0, deltat, nPoint, 
-				phaseCentre->ephemObject.c_str(),
-				phaseCentre->naifFile.c_str(),
-				phaseCentre->ephemFile.c_str());
+			phaseCentre->ephemObject.c_str(),
+			phaseCentre->naifFile.c_str(),
+			phaseCentre->ephemFile.c_str());
 			if(v != 0)
 			{
 				cerr << "Error -- ephemeris calculation failed.  Must stop." << endl;
@@ -1652,19 +1683,19 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		writeDifxInput(D, inputName.str().c_str());
 
 		// write calc file
-	ostringstream calcName;
-	calcName << D->job->fileBase << ".calc";
-	writeDifxCalc(D, calcName.str().c_str());
+		ostringstream calcName;
+		calcName << D->job->fileBase << ".calc";
+		writeDifxCalc(D, calcName.str().c_str());
 
-	// write flag file
-	ostringstream flagName;
-	flagName << D->job->fileBase << ".flag";
-	J.generateFlagFile(*V, flagName.str(), P->invalidMask);
+		// write flag file
+		ostringstream flagName;
+		flagName << D->job->fileBase << ".flag";
+		J.generateFlagFile(*V, flagName.str(), P->invalidMask);
 
-	if(verbose > 2)
-	{
-		printDifxInput(D);
-	}
+		if(verbose > 2)
+		{
+			printDifxInput(D);
+		}
 
 		if(of)
                 {

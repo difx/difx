@@ -744,6 +744,18 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		ss >> phaseCalIntervalMHz;
 	}
+	else if(key == "freqClockOffs")
+	{
+		string s;
+		ss >> s;
+		int at, last = 0;
+		while(at != string::npos)
+		{
+			at = s.find_first_of(';',last);
+			freqClockOffs.push_back(atof(s.substr(last, at-last).c_str()));
+			last = at+1;
+		}
+	}
 	else
 	{
 		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
