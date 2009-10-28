@@ -967,6 +967,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].recordedfreqtableindices[j] = atoi(line.c_str());
       getinputline(input, &line, "CLK OFFSET ", j);
       datastreamtable[i].recordedfreqclockoffsets[j] = atof(line.c_str());
+      if(j == 0 && datastreamtable[i].recordedfreqclockoffsets[j] != 0.0 && mpiid == 0)
+        cwarn << startl << "Model accountability is compromised if the first band of a telescope has a non-zero clock offset! If this is the first/only datastream for " << telescopetable[datastreamtable[i].telescopeindex].name << ", you should adjust the telescope clock so that the offset for this band is ZERO!" << endl;
       getinputline(input, &line, "FREQ OFFSET ", j); //Freq offset is positive if recorded LO frequency was higher than the frequency in the frequency table
       datastreamtable[i].recordedfreqlooffsets[j] = atof(line.c_str());
       getinputline(input, &line, "NUM REC POLS ", j);
