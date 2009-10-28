@@ -223,6 +223,11 @@ void Core::execute()
     perr = pthread_create(&processthreads[i], NULL, Core::launchNewProcessThread, (void *)(&threadinfos[i]));
     if(perr != 0)
       csevere << startl << "Error in launching Core " << mpiid << " processthread " << i << "!!!" << endl;
+  }
+
+  //wait til they are all initialised (and hence have a lock of their own)
+  for(int i=0;i<numprocessthreads;i++)
+  {
     while(!processthreadinitialised[i])
     {
       perr = pthread_cond_wait(&processconds[i], &(procslots[numreceived].slotlocks[i]));
@@ -231,6 +236,7 @@ void Core::execute()
     }
   }
 
+  //now we definitely have our lock back on the last slot in the buffer,
   //release that supplementary lock (2nd last in buffer)
   for(int i=0;i<numprocessthreads;i++)
   {
@@ -277,11 +283,12 @@ void Core::execute()
   }
 
   adjust = 0;
-  countdown = RECEIVE_RING_LENGTH;
+  countdown = RECEIVE_RING_LENGTH-1;
   if(numreceived < RECEIVE_RING_LENGTH-1) {
     adjust = (RECEIVE_RING_LENGTH-1)-numreceived;
     countdown = numreceived;
   }
+
   //ensure all the results we have sitting around have been sent
   for(int i=1;i<RECEIVE_RING_LENGTH;i++)
   {
