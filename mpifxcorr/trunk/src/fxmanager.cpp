@@ -354,7 +354,7 @@ void FxManager::sendData(int data[], int coreindex)
 void FxManager::receiveData(bool resend)
 {
   MPI_Status mpistatus;
-  int sourcecore, sourceid=0, visindex, perr;
+  int sourcecore, sourceid=0, visindex, perr, infoindex;
   bool viscomplete;
   double scantime;
   int i, flag, subintscan;
@@ -393,8 +393,11 @@ void FxManager::receiveData(bool resend)
 
   corecounts[sourceid]++;
   recentcorecounts[sourceid]++;
-  subintscan = coretimes[(numsent[sourceid]+extrareceived[sourceid])%Core::RECEIVE_RING_LENGTH][sourceid][0];
-  scantime = coretimes[(numsent[sourceid]+extrareceived[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][1] + double(coretimes[(numsent[sourceid]+extrareceived[sourceid]) % Core::RECEIVE_RING_LENGTH][sourceid][2])/1000000000.0;
+  infoindex = (numsent[sourceid]+extrareceived[sourceid])%Core::RECEIVE_RING_LENGTH;
+  if(numsent[sourceid] < Core::RECEIVE_RING_LENGTH)
+    infoindex = extrareceived[sourceid];
+  subintscan = coretimes[infoindex][sourceid][0];
+  scantime = coretimes[infoindex][sourceid][1] + double(coretimes[infoindex][sourceid][2])/1000000000.0;
 
   //put the data in the appropriate slot
   if(mpistatus.MPI_TAG == CR_VALIDVIS) // the data is valid
@@ -589,13 +592,19 @@ void FxManager::loopwrite()
 int FxManager::locateVisIndex(int coreid)
 {
   bool tooold = true;
-  int perr, count;
+  int perr, count, infoindex, vblength;
+  int corescan, coresec, corens;
   s64 difference;
   Visibility * vis;
-  int vblength = config->getVisBufferLength();
-  int corescan = coretimes[(numsent[coreid]+extrareceived[coreid]) % Core::RECEIVE_RING_LENGTH][coreid][0];
-  int coresec = coretimes[(numsent[coreid]+extrareceived[coreid]) % Core::RECEIVE_RING_LENGTH][coreid][1];
-  int corens = coretimes[(numsent[coreid]+extrareceived[coreid]) % Core::RECEIVE_RING_LENGTH][coreid][2] + config->getSubintNS(config->getScanConfigIndex(corescan))/2;
+
+  vblength = config->getVisBufferLength();
+  infoindex = (numsent[coreid]+extrareceived[coreid]) % Core::RECEIVE_RING_LENGTH;
+  if(numsent[coreid] < Core::RECEIVE_RING_LENGTH)
+    infoindex = extrareceived[coreid];
+
+  corescan = coretimes[infoindex][coreid][0];
+  coresec = coretimes[infoindex][coreid][1];
+  corens = coretimes[infoindex][coreid][2] + config->getSubintNS(config->getScanConfigIndex(corescan))/2;
 
   if((newestlockedvis-oldestlockedvis+vblength)%vblength >= vblength/2) 
   { 
