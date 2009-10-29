@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
   char * monhostname = new char[nameslength];
   int port=0, monitor_skip=0, namelen;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
-  char difxMessageID[128];
+  char difxMessageID[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 
   cout << "About to run MPIInit" << endl;
 

@@ -119,7 +119,8 @@ class Model{
     inline string getScanIdentifier(int scan) { return scantable[scan].identifier; }
     inline int getScanDuration(int scan) { return scantable[scan].durationseconds; }
     inline double getModelStartMJDPlusFraction() { return modelmjd + ((double)modelstartseconds)/86400.0; }
-    inline int getMaxNSBetweenUVShifts(int scan) { return scantable[scan].maxnsbetweenuvshifts; }
+    inline int getMaxNSBetweenXCAvg(int scan) { return scantable[scan].maxnsbetweenxcavg; }
+    inline int getMaxNSBetweenACAvg(int scan) { return scantable[scan].maxnsbetweenacavg; }
 
     ///accessor methods for source information from a scan
     inline int getPointingCentreSourceIndex(int scan) { return scantable[scan].pointingcentre->index; }
@@ -188,7 +189,8 @@ class Model{
       string obsmodename, identifier;
       source * pointingcentre;
       int numphasecentres;
-      int maxnsbetweenuvshifts;
+      int maxnsbetweenxcavg;
+      int maxnsbetweenacavg;
       bool pointingcentrecorrelated;
       source ** phasecentres;
       f64 **** u;

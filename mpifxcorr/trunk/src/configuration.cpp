@@ -32,6 +32,12 @@ int Configuration::MONITOR_TCP_WINDOWBYTES;
 Configuration::Configuration(const char * configfile, int id)
   : mpiid(id), consistencyok(true)
 {
+  string configfilestring = configfile;
+  int basestart = configfilestring.find_last_of('/');
+  if(basestart == string::npos)
+    basestart = 0;
+  jobname = configfilestring.substr(basestart, string(configfile).find_last_of('.')-basestart);
+
   sectionheader currentheader = INPUT_EOF;
   commonread = false;
   datastreamread = false;
@@ -42,7 +48,7 @@ Configuration::Configuration(const char * configfile, int id)
   maxnumchannels = 0;
   estimatedbytes = 0;
   model = NULL;
-  
+
   //open the file
   ifstream * input = new ifstream(configfile);
   if(input->fail() || !input->is_open())
@@ -2083,8 +2089,8 @@ void Configuration::getinputkeyval(ifstream * input, std::string * key, std::str
     cerror << startl << "Error - trying to read past the end of file!!!" << endl;
   getline(*input, *key);
   while(key->length() > 0 && key->at(0) == COMMENT_CHAR) { // a comment
-    if(mpiid == 0) //only write one copy of this error message
-      cverbose << startl << "Skipping comment " << key << endl;
+    //if(mpiid == 0) //only write one copy of this error message
+    //  cverbose << startl << "Skipping comment " << key << endl;
     getline(*input, *key);
   }
   int keylength = key->find_first_of(':') + 1;
@@ -2100,8 +2106,8 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
     cerror << startl << "Trying to read past the end of file!!!" << endl;
   getline(*input,*line);
   while(line->length() > 0 && line->at(0) == COMMENT_CHAR) { // a comment
-    if(mpiid == 0) //only write one copy of this error message
-      cverbose << startl << "Skipping comment " << line << endl;
+    //if(mpiid == 0) //only write one copy of this error message
+    //  cverbose << startl << "Skipping comment " << line << endl;
     getline(*input, *line);
   }
   int keylength = line->find_first_of(':') + 1;

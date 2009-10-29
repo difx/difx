@@ -167,7 +167,18 @@ private:
   void processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace);
 
  /**
-  * Does any uvshifting necessary and averages down in frequency into the threadresults
+  * Averages the autocorrelations down, sends off STA dumps down a socket if required and copies to coreresults
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param nsoffset The offset from start of subintegration
+  * @param nswidth The width of the dump in nanoseconds
+  * @param modes The Mode objects which have the unaveraged autocorrelation results
+  * @param scratchspace Space for all of the intermediate results for this thread
+  */
+  void averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace);
+
+ /**
+  * Does any uvshifting necessary and averages down in frequency into the coreresults
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
@@ -177,7 +188,7 @@ private:
   void uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace);
 
  /**
-  * Does any uvshifting necessary and averages down in frequency into the threadresults
+  * Does any uvshifting necessary and averages down in frequency into the coreresults
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param nsoffset The offset from start of subintegration (for calculating UV shifts)

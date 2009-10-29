@@ -479,9 +479,10 @@ void Core::loopprocess(int threadid)
       if(nowdumpingsta) {
         stadumpchannels = config->getSTADumpChannels();
         scratchspace->starecord = (DifxMessageSTARecord*)malloc(sizeof(DifxMessageSTARecord) + sizeof(f32)*stadumpchannels);
-        scratchspace->starecord->threadId = threadid;
-        scratchspace->starecord->nThreads = numprocessthreads;
+        scratchspace->starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
+        scratchspace->starecord->threadindex = threadid;
         scratchspace->starecord->nChan = stadumpchannels;
+        sprintf(scratchspace->starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
       }
       dumpingsta = nowdumpingsta;
     }
@@ -621,7 +622,9 @@ int Core::receivedata(int index, bool * terminate)
 void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
   int status, perr, i, numfftloops;
-  int resultindex, cindex, ds1index, ds2index, maxproducts, binloop, blockcount, maxblocks, shiftcount;
+  int resultindex, cindex, ds1index, ds2index, binloop;
+  int xcblockcount, maxxcblocks, xcshiftcount;
+  int acblockcount, maxacblocks, acshiftcount;
   int freqindex, freqchannels, channelinc;
   int xmacstridelength, xmacpasses, xmacstart, destbin, destchan, localfreqindex, parentfreqindex;
   int outputoffset, input1offset, input2offset, xmacmullength;
@@ -630,14 +633,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   Mode * m1, * m2;
   cf32 * vis1;
   cf32 * vis2;
-  f32 * acdata;
-  bool datastreamsaveraged;
-  bool writecrossautocorrs;
 
 //following statement used to cut all all processing for "Neutered DiFX"
 #ifndef NEUTERED_DIFX
-  writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
-  maxproducts = config->getMaxProducts();
   xmacstridelength = config->getXmacStrideLength(procslots[index].configindex);
   binloop = 1;
   if(procslots[index].pulsarbin && !procslots[index].scrunchoutput)
@@ -680,17 +678,27 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   }
 
   //set up variables which control the number of loops through buffered FFT results
-  blockcount = 0;
-  shiftcount = 0;
+  xcblockcount = 0;
+  xcshiftcount = 0;
+  acblockcount = 0;
+  acshiftcount = 0;
   numfftloops = numblocks/config->getNumBufferedFFTs(procslots[index].configindex);
   if(numblocks%config->getNumBufferedFFTs(procslots[index].configindex) != 0)
     numfftloops++;
   blockns = ((double)(config->getSubintNS(procslots[index].configindex)))/((double)(config->getBlocksPerSend(procslots[index].configindex)));
-  maxblocks = ((int)(model->getMaxNSBetweenUVShifts(procslots[index].offsets[0])/blockns));
-  maxblocks -= maxblocks%config->getNumBufferedFFTs(procslots[index].configindex);
-  if(maxblocks == 0) {
-    maxblocks = config->getNumBufferedFFTs(procslots[index].configindex);
-    cwarn << startl << "Requested shift/average time of " << model->getMaxNSBetweenUVShifts(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered - the time resolution which will be attained is " << maxblocks*blockns << " ns" << endl;
+
+  maxxcblocks = ((int)(model->getMaxNSBetweenXCAvg(procslots[index].offsets[0])/blockns));
+  maxxcblocks -= maxxcblocks%config->getNumBufferedFFTs(procslots[index].configindex);
+  if(maxxcblocks == 0) {
+    maxxcblocks = config->getNumBufferedFFTs(procslots[index].configindex);
+    cwarn << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenXCAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered - the time resolution which will be attained is " << maxxcblocks*blockns << " ns" << endl;
+  }
+
+  maxacblocks = ((int)(model->getMaxNSBetweenACAvg(procslots[index].offsets[0])/blockns));
+  maxacblocks -= maxacblocks%config->getNumBufferedFFTs(procslots[index].configindex);
+  if(maxacblocks == 0) {
+    maxacblocks = config->getNumBufferedFFTs(procslots[index].configindex);
+    cwarn << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenACAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered - the time resolution which will be attained is " << maxacblocks*blockns << " ns" << endl;
   }
 
   //process each chunk of FFTs in turn
@@ -844,14 +852,25 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       }
     }
 
-    blockcount += config->getNumBufferedFFTs(procslots[index].configindex);
-    if(blockcount == maxblocks)
+    xcblockcount += config->getNumBufferedFFTs(procslots[index].configindex);
+    if(xcblockcount == maxxcblocks)
     {
       //shift/average and then lock results and copy data
-      uvshiftAndAverage(index, threadid, (startblock+shiftcount*maxblocks+((double)maxblocks)/2.0)*blockns, currentpolyco, scratchspace);
-      //reset the blockcount, increment shiftcount
-      blockcount = 0;
-      shiftcount++;
+      uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)maxxcblocks)/2.0)*blockns, currentpolyco, scratchspace);
+      //reset the xcblockcount, increment xcshiftcount
+      xcblockcount = 0;
+      xcshiftcount++;
+    }
+    acblockcount += config->getNumBufferedFFTs(procslots[index].configindex);
+    if(acblockcount == maxacblocks)
+    {
+      //shift/average and then lock results and copy data
+      averageAndSendAutocorrs(index, threadid, (startblock+acshiftcount*maxacblocks+((double)maxacblocks)/2.0)*blockns, maxacblocks*blockns, modes, scratchspace);
+      //reset the acblockcount, increment acshiftcount, zero the autocorrelations
+      acblockcount = 0;
+      acshiftcount++;
+      for(int j=0;j<numdatastreams;j++)
+        modes[j]->zeroAutocorrelations();
     }
 
     //finally, update the baselineweight in the binning, non-scrunching case
@@ -886,55 +905,11 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     }
   }
 
-  if(blockcount != 0) {
-    uvshiftAndAverage(index, threadid, (startblock+shiftcount*maxblocks+((double)blockcount)/2.0)*blockns, currentpolyco, scratchspace);
+  if(xcblockcount != 0) {
+    uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)xcblockcount)/2.0)*blockns, currentpolyco, scratchspace);
   }
-
-  datastreamsaveraged = false;
-  //if STA send needed but we can average datastream results in freq first, do so
-  if(scratchspace->starecord != 0 && config->getMinPostAvFreqChannels(procslots[index].configindex) >= config->getSTADumpChannels())
-  {
-    for(int i=0;i<numdatastreams;i++) {
-      modes[i]->averageFrequency();
-    }
-    datastreamsaveraged = true;
-  }
-
-  //if required, send off a message with the STA results
-  //(before averaging in case high spectral resolution for the dump is required)
-  if(scratchspace->starecord != 0) {
-    scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
-    scratchspace->starecord->ns = procslots[index].offsets[2];
-    for (int i=0;i<numdatastreams;i++) {
-      scratchspace->starecord->antId = i;
-      for (int j=0;j<config->getDNumTotalBands(procslots[index].configindex, i);j++) {
-        scratchspace->starecord->nChan = config->getSTADumpChannels();
-        freqindex = config->getDTotalFreqIndex(procslots[index].configindex, i, j);
-        freqchannels = config->getFNumChannels(freqindex);
-        if(datastreamsaveraged)
-          freqchannels /= config->getFChannelsToAverage(freqindex);
-        if (freqchannels < scratchspace->starecord->nChan)
-          scratchspace->starecord->nChan = freqchannels;
-        channelinc = freqchannels/scratchspace->starecord->nChan;
-        scratchspace->starecord->bandId = j;
-        acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
-        for (int k=0;k<scratchspace->starecord->nChan;k++) {
-          scratchspace->starecord->data[k] = acdata[2*k*channelinc];
-          for (int l=1;l<channelinc;l++)
-            scratchspace->starecord->data[k] += acdata[2*(k*channelinc+l)];
-        }
-        //cout << "About to send the binary message" << endl;
-        difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + scratchspace->starecord->nChan);
-      }
-    }
-    //cout << "Finished doing some STA stuff" << endl;
-  }
-
-  //if required, average the datastreams down in frequency
-  if(!datastreamsaveraged) {
-    for(int i=0;i<numdatastreams;i++) {
-      modes[i]->averageFrequency();
-    }
+  if(acblockcount != 0) {
+    averageAndSendAutocorrs(index, threadid, (startblock+acshiftcount*maxacblocks+((double)acblockcount)/2.0)*blockns, acblockcount*blockns, modes, scratchspace);
   }
 
   //lock the bweight copylock, so we're the only one adding to the result array (baseline weight section)
@@ -969,6 +944,83 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   perr = pthread_mutex_unlock(&(procslots[index].bweightcopylock));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock copy mutex!!!" << endl;
+
+//end the cutout of processing in "Neutered DiFX"
+#endif
+
+  //grab the next slot lock
+  perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[threadid]));
+  if(perr != 0)
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;
+
+  //unlock the one we had
+  perr = pthread_mutex_unlock(&(procslots[index].slotlocks[threadid]));
+  if(perr != 0)
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index << endl;
+}
+
+void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace)
+{
+  int maxproducts, resultindex, perr, status;
+  int freqindex, parentfreqindex, channelinc, freqchannels;
+  bool datastreamsaveraged, writecrossautocorrs;
+  f32 * acdata;
+
+  datastreamsaveraged = false;
+  writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
+  maxproducts = config->getMaxProducts();
+
+  //if STA send needed but we can average datastream results in freq first, do so
+  if(scratchspace->starecord != 0 && config->getMinPostAvFreqChannels(procslots[index].configindex) >= config->getSTADumpChannels())
+  {
+    for(int i=0;i<numdatastreams;i++) {
+      modes[i]->averageFrequency();
+    }
+    datastreamsaveraged = true;
+  }
+
+  //if required, send off a message with the STA results
+  //(before averaging in case high spectral resolution for the dump is required)
+  if(scratchspace->starecord != 0) {
+    scratchspace->starecord->scan = procslots[index].offsets[0];
+    scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
+    scratchspace->starecord->ns = procslots[index].offsets[2] + int(nsoffset);
+    if(scratchspace->starecord->ns >= 1000000000) {
+      scratchspace->starecord->ns -= 1000000000;
+      scratchspace->starecord->sec++;
+    }
+    scratchspace->starecord->nswidth = int(nswidth);
+    for (int i=0;i<numdatastreams;i++) {
+      scratchspace->starecord->dsindex = i;
+      for (int j=0;j<config->getDNumTotalBands(procslots[index].configindex, i);j++) {
+        scratchspace->starecord->nChan = config->getSTADumpChannels();
+        freqindex = config->getDTotalFreqIndex(procslots[index].configindex, i, j);
+        freqchannels = config->getFNumChannels(freqindex);
+        if(datastreamsaveraged)
+          freqchannels /= config->getFChannelsToAverage(freqindex);
+        if (freqchannels < scratchspace->starecord->nChan)
+          scratchspace->starecord->nChan = freqchannels;
+        channelinc = freqchannels/scratchspace->starecord->nChan;
+        scratchspace->starecord->bandindex = j;
+        acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
+        for (int k=0;k<scratchspace->starecord->nChan;k++) {
+          scratchspace->starecord->data[k] = acdata[2*k*channelinc];
+          for (int l=1;l<channelinc;l++)
+            scratchspace->starecord->data[k] += acdata[2*(k*channelinc+l)];
+        }
+        //cout << "About to send the binary message" << endl;
+        difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+      }
+    }
+    //cout << "Finished doing some STA stuff" << endl;
+  }
+
+  //if required, average the datastreams down in frequency
+  if(!datastreamsaveraged) {
+    for(int i=0;i<numdatastreams;i++) {
+      modes[i]->averageFrequency();
+    }
+  }
 
   //lock the autocorr copylock, so we're the only one adding to the result array (datastream section)
   perr = pthread_mutex_lock(&(procslots[index].autocorrcopylock));
@@ -1075,19 +1127,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   perr = pthread_mutex_unlock(&(procslots[index].acweightcopylock));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock acweight copy mutex!!!" << endl;
-
-//end the cutout of processing in "Neutered DiFX"
-#endif
-
-  //grab the next slot lock
-  perr = pthread_mutex_lock(&(procslots[(index+1)%RECEIVE_RING_LENGTH].slotlocks[threadid]));
-  if(perr != 0)
-    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock mutex " << (index+1)%RECEIVE_RING_LENGTH << endl;
-
-  //unlock the one we had
-  perr = pthread_mutex_unlock(&(procslots[index].slotlocks[threadid]));
-  if(perr != 0)
-    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index << endl;
 }
 
 void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace)

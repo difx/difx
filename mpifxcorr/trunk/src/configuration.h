@@ -73,6 +73,7 @@ public:
   */
 //@{
   inline int getMPIId() { return mpiid; }
+  inline string getJobName() { return jobname; }
   inline int getEstimatedBytes() { return estimatedbytes; }
   inline int getVisBufferLength() { return visbufferlength; }
   inline bool consistencyOK() {return consistencyok; }
@@ -733,7 +734,7 @@ private:
   int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts;
   int stadumpchannels, ltadumpchannels;
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, estimatedbytes;
-  string calcfilename, modelfilename, coreconffilename, outputfilename;
+  string calcfilename, modelfilename, coreconffilename, outputfilename, jobname;
   int * numprocessthreads;
   int * scanconfigindices;
   configdata * configs;

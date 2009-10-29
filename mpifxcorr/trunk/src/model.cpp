@@ -431,7 +431,9 @@ bool Model::readScanData(ifstream * input)
     scantable[i].durationseconds = atoi(line.c_str());
     config->getinputline(input, &(scantable[i].obsmodename), "SCAN ", i);
     config->getinputline(input, &line, "SCAN ", i);
-    scantable[i].maxnsbetweenuvshifts = atoi(line.c_str());
+    scantable[i].maxnsbetweenxcavg = atoi(line.c_str());
+    config->getinputline(input, &line, "SCAN ", i);
+    scantable[i].maxnsbetweenacavg = atoi(line.c_str());
     config->getinputline(input, &line, "SCAN ", i);
     scantable[i].pointingcentre = &(sourcetable[atoi(line.c_str())]);
     config->getinputline(input, &line, "SCAN ", i);
