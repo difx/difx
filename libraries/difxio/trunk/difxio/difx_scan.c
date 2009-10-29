@@ -46,6 +46,7 @@ DifxScan *newDifxScanArray(int nScan)
 		ds[s].pointingCentreSrc = -1;
 		ds[s].nPhaseCentres = 0;
 		ds[s].maxNSBetweenUVShifts = 2000000000;
+		ds[s].maxNSBetweenACAvg = 2000000000;
 	}
 	
 	return ds;
@@ -83,6 +84,7 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	fprintf(fp, "    End   = MJD %12.6f\n", ds->mjdEnd);
 	fprintf(fp, "    Observing mode = %s\n", ds->obsModeName);
 	fprintf(fp, "    Max NS between UV shifts = %d\n", ds->maxNSBetweenUVShifts);
+	fprintf(fp, "    Max NS between AC averages = %d\n", ds->maxNSBetweenACAvg);
 	fprintf(fp, "    Pointing centre source index = %d\n", ds->pointingCentreSrc);
         fprintf(fp, "    Number of phase centres = %d\n", ds->nPhaseCentres);
 	for(i=0;i<ds->nPhaseCentres;i++) {
@@ -146,6 +148,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->startSeconds = src->startSeconds;
         dest->durSeconds   = src->durSeconds;
 	dest->maxNSBetweenUVShifts = src->maxNSBetweenUVShifts;
+	dest->maxNSBetweenACAvg = src->maxNSBetweenACAvg;
 	strcpy(dest->identifier, src->identifier);
 	strcpy(dest->obsModeName, src->obsModeName);
 	dest->nPhaseCentres = src->nPhaseCentres;
@@ -378,6 +381,7 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 	writeDifxLineInt1(out, "SCAN %d DUR (S)", scanId, ds->durSeconds);
         writeDifxLine1(out, "SCAN %d OBS MODE NAME", scanId, ds->obsModeName);
 	writeDifxLineInt1(out, "SCAN %d UVSHIFT INTERVAL (NS)", scanId, ds->maxNSBetweenUVShifts);
+	writeDifxLineInt1(out, "SCAN %d AC AVG INTERVAL (NS)", scanId, ds->maxNSBetweenACAvg);
 	writeDifxLineInt1(out, "SCAN %d POINTING SRC", scanId, ds->pointingCentreSrc);
         writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", scanId, ds->nPhaseCentres);
 	for(i=0;i<ds->nPhaseCentres;i++)

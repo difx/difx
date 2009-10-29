@@ -1896,6 +1896,12 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		    return 0;
 		}	
 		D->scan[i].maxNSBetweenUVShifts = atoi(DifxParametersvalue(cp, row));
+		row = DifxParametersfind1(cp, row, "SCAN %d AC AVG INTERVAL (NS)", i);
+		if(row < 0) {
+			fprintf(stderr, "SCAN %d AC AVG INTERVAL (NS) not found\n", i);
+			return 0;
+		}
+		D->scan[i].maxNSBetweenACAvg = atoi(DifxParametersvalue(cp, row));
 		row = DifxParametersfind1(cp, row, "SCAN %d POINTING SRC", i);
 		if(row < 0) {
                     fprintf(stderr, "SCAN %d POINTING SRC not found\n", i);

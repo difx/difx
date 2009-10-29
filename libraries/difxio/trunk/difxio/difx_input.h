@@ -263,6 +263,7 @@ typedef struct
         char identifier[32];          		/* Usually a zero-based number */
 	char obsModeName[32];			/* Identifying the "mode" of observation */
 	int maxNSBetweenUVShifts;		/* Maximum interval until data must be shifted/averaged */
+	int maxNSBetweenACAvg;			/* Maximum interval until autocorrelations are sent/averaged */
         int pointingCentreSrc;  		/* index to source array */
         int nPhaseCentres;      		/* Number of correlation centres */
         int phsCentreSrcs[MAX_PHS_CENTRES]; 	/* indices to source array */
