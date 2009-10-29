@@ -1403,6 +1403,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			cerr << "No source setup for " << S->sourceName << " - aborting!" << endl;
 		}
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
+		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
 		if(sourceSetup->doPointingCentre)
 			scan->nPhaseCentres++;

@@ -294,6 +294,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	subintNS = 0;
 	guardNS = 1000;
 	maxNSBetweenUVShifts = 2000000000;
+	maxNSBetweenACAvg = 2000000000;
 }
 
 int CorrSetup::setkv(const string &key, const string &value)
@@ -336,6 +337,10 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "maxNSBetweenUVShifts")
 	{
 		ss >> maxNSBetweenUVShifts;
+	}
+	else if(key == "maxNSBetweenACAvg")
+	{
+		ss >> maxNSBetweenACAvg;
 	}
 	else if(key == "specAvg")
 	{

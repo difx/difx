@@ -131,7 +131,8 @@ public:
 	int nChan;		// For the narrowest band 
 				// (all others will have same spectral resolution)
 	int specAvg;
-	int maxNSBetweenUVShifts; //for multi-phase centres
+	int maxNSBetweenUVShifts; //Mostly for multi-phase centres
+	int maxNSBetweenACAvg;	// Mostly for sending STA dumps
 	int fringeRotOrder;	// 0, 1, or 2
 	int strideLength;	// The number of channels to do at a time
 				// when fringeRotOrder > 0
