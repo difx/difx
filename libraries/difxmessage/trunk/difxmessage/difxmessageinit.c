@@ -18,7 +18,7 @@
 
 char difxMessageGroup[16] = "";
 int difxMessagePort = -1; 
-char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH] = "";
+char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH] = "";
 char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[256] = "";
@@ -41,8 +41,8 @@ int difxMessageInit(int mpiId, const char *identifier)
 	difxMessageInUse = 1;
 	difxMessageSequenceNumber = 0;
 	
-	strncpy(difxMessageIdentifier, identifier, DIFX_MESSAGE_IDENTIFER_LENGTH);
-	difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH-1] = 0;
+	strncpy(difxMessageIdentifier, identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH);
+	difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH-1] = 0;
 
 	difxMessageMpiProcessId = mpiId;
 

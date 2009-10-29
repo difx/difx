@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-#define DIFX_MESSAGE_IDENTIFER_LENGTH	128
+#define DIFX_MESSAGE_IDENTIFIER_LENGTH	128
 #define DIFX_MESSAGE_PARAM_LENGTH	32
 #define DIFX_MESSAGE_FILENAME_LENGTH	128
 #define DIFX_MESSAGE_MAX_TARGETS	128
@@ -288,29 +288,40 @@ typedef struct
 } DifxMessageGeneric;
 
 /* short term accumulate message type -- antenna-based data (e.g., real) */
+/* Header size made the same as for LTA data */
 typedef struct
 {
 	int messageType;/* user defined message type */
-	int sec;	/* second portion of time since obs start */
-	int ns;		/* nanosecond portion of time since obs start */
-	int antId;	/* telescope table entry number (from 0) */
-	int threadId;	/* core.cpp thread number (starting from 0) */
-	int bandId;
-	int nChan;
-	int nThreads;	/* Number of threads in this core */
+	int scan;	/* the scan index (0 based) */
+	int sec;	/* second portion of time since scan start */
+	int ns;		/* nanosecond portion of time since scan start
+			   (centre of integration) */
+	int nswidth;	/* width of the integration in nanoseconds */
+	int dsindex;	/* index of the datastream for the current config (from 0) */
+	int coreindex;	/* index of the core (starting from 0) */
+	int threadindex;/* core.cpp thread number (starting from 0) */
+	int bandindex;	/* index of the band for this datastream */
+	int nChan;	/* number of channels for this band */
+	char identifier[DIFX_MESSAGE_PARAM_LENGTH];	/* Jobname (basename) */
 	float data[0];	/* Note -- must allocate enough space for your data! */
 } DifxMessageSTARecord;
 
 /* long term accumulate message type -- baseline data (e.g. complex) */
+/* Header size made the same as for STA data */
 typedef struct
 {
 	int messageType;/* user defined message type */
-	int sec;	/* second portion of time since obs start */
-	int ns;		/* nanosecond portion of time since obs start */
-	int blId;	/* baseline table entry number (from 0) */
-	int bandId;
-	int nChan;
+	int scan;       /* the scan index (0 based) */
+	int sec;	/* second portion of time since scan start */
+	int ns;		/* nanosecond portion of time since scan start 
+			   (centre of integration) */
+	int secwidth;	/* width of the integration in whole seconds */
+	int nswidth;	/* width of the integration in whole nanoseconds */
+	int blId;	/* index of the baseline for the current config (from 0) */
+	int bandindex;	/* index of the band for this baseline */
+	int nChan;	/* Number of channels for this band */
 	int dummy;	/* space reserved for future use */
+	char identifier[DIFX_MESSAGE_PARAM_LENGTH];     /* Jobname (basename) */
 	float data[0];	/* Note -- must allocate enough space for your data! */
 } DifxMessageLTARecord;
 

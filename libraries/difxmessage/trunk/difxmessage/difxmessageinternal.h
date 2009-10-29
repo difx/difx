@@ -15,7 +15,7 @@
 
 extern char difxMessageGroup[16];
 extern int difxMessagePort;
-extern char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFER_LENGTH];
+extern char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 extern char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH];
 extern int difxMessageMpiProcessId;
 extern char difxMessageXMLFormat[256];
