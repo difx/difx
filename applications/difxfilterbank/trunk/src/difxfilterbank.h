@@ -10,13 +10,14 @@
 static const u32 SYNC = MAX_U32;
 
 //Prototypes
-void writeDiFXHeader(ofstream * output, int antId, int sec, int ns, 
-		     int threadId, int bandId, int nchan, int nthreads);
+void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, 
+			int ns, int nswidth, int bandindex, int nchan, 
+			int coreindex, int threadindex);
 void * launchCommandMonitorThread(void * c);
 bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage);
 
 // Variables
-int mainsocket, binarysocket, jobnamestart, jobnameend, numchans;
+int mainsocket, binarysocket, numchans;
 int binarymsglength, perr;
 string configfile, outputfile, identifier, jobname, numchannelsstring;
 bool keepwriting;

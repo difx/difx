@@ -12,19 +12,20 @@ using namespace std;
 //variables
 const int MAX_CHANNELS=4096;
 static const u32 SYNC = MAX_U32;
-float maxy, dumptime;
-int antID, nchan, bandID, threadID, nthreads, threadsampleoffset, startblock, numblocks, configindex, blockspersend;
+double dumptime, freq, maxy, inttimems;
+int dsindex, nchan, bandindex, threadindex, coreindex, nthreads, configindex;
+string pol, antennaname;
 float data[MAX_CHANNELS];
 float xaxis[MAX_CHANNELS];
 char title[256];
 char junk[256];
 ifstream * input;
 Configuration * config;
+Model * model;
 
 //prototypes
 bool getData(ifstream * input);
-float getMax(float * data, int length);
-float * getThreadTimeOffets(Configuration * config);
+double getMax(float * data, int length);
 
 int main(int argc, char *argv[])
 {
@@ -37,7 +38,7 @@ int main(int argc, char *argv[])
   //open the file containing the filterbank data
   input = new ifstream(argv[1], ios::binary);
   config = new Configuration(argv[2], -1);
-  config->loaduvwinfo(true);
+  model = config->getModel();
 
   //set up pgplot and the xaxis data
   if(cpgbeg(0, "?", 1, 1) != 1)
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
     if(getData(input)) {
       maxy = getMax(data, nchan);
       if(maxy > 0.0) {
-        sprintf(title, "Antenna ID=%i, Band ID=%i, Thread ID=%i/%i, Time=%f", antID, bandID, threadID, nthreads, dumptime);
+        sprintf(title, "Antenna=%s, Freq=%8.2f, Pol=%s, Time=%f, Int time (ms)=%5.2f, CoreID=%i, ThreadID=%i", antennaname.c_str(), freq, pol.c_str(), dumptime, inttimems, coreindex, threadindex);
         cpgpage();
         cpgenv(0.0, (float)nchan, 0.0, maxy, 0, 1);
         cpglab("Channel number", "Unnormalised amplitude", title);
@@ -65,9 +66,9 @@ int main(int argc, char *argv[])
   }
 }
 
-float getMax(float * data, int length)
+double getMax(float * data, int length)
 {
-  float max = data[0];
+  double max = data[0];
   for (int i=1;i<length;i++) {
     if(data[i] > max)
       max = data[i];
@@ -77,7 +78,7 @@ float getMax(float * data, int length)
 
 bool getData(ifstream * input)
 {
-  int sync, s, ns, extrachan = 0;
+  int sync, configindex, scan, sec, ns, nswidth, extrachan = 0;
 
   cout << "About to start another block" << endl;
   input->read((char*)&sync, sizeof(int));
@@ -87,25 +88,25 @@ bool getData(ifstream * input)
   }
   if (input->eof())
     return false;
-  input->read((char*)&antID, sizeof(int));
-  input->read((char*)&s, sizeof(int));
+  input->read((char*)&dsindex, sizeof(int));
+  input->read((char*)&scan, sizeof(int));
+  input->read((char*)&sec, sizeof(int));
   input->read((char*)&ns, sizeof(int));
-  input->read((char*)&threadID, sizeof(int));
-  input->read((char*)&bandID, sizeof(int));
+  input->read((char*)&nswidth, sizeof(int));
+  input->read((char*)&bandindex, sizeof(int));
   input->read((char*)&nchan, sizeof(int));
-  input->read((char*)&nthreads, sizeof(int));
-  //figure out the offset for this thread
-  startblock = 0;
-  numblocks = 0;
-  configindex = config->getConfigIndex(s);
-  blockspersend = config->getBlocksPerSend(configindex);
-  for(int i=0;i<=threadID;i++)
-  {
-    startblock += numblocks;
-    numblocks = blockspersend/nthreads + ((i < blockspersend%nthreads)?1:0);
-  }
-  threadsampleoffset = config->getNumChannels(configindex)*(startblock*2 + numblocks);
-  dumptime = (float)s + ((float)ns)/1000000000.0 + 0.0000005*((float)threadsampleoffset)/config->getConfigBandwidth(configindex);
+  input->read((char*)&coreindex, sizeof(int));
+  input->read((char*)&threadindex, sizeof(int));
+  cout << "NSwidth is " << nswidth << endl; 
+
+  //figure out the MJD (including fractional component) for this dump and the freq/pol/antname
+  dumptime = model->getScanStartMJD(scan) + ((double)sec)/86400.0 + ((double)ns)/86400000000000.0;
+  inttimems = ((double)nswidth)/1000000.0;
+  configindex = config->getScanConfigIndex(scan);
+  freq = config->getFreqTableFreq(config->getDRecordedFreqIndex(configindex, dsindex, bandindex));
+  pol = config->getDRecordedBandPol(configindex, dsindex, bandindex);
+  antennaname = config->getDStationName(configindex, dsindex);
+
   if(nchan > MAX_CHANNELS) {
     cout << "nchan=" << nchan << " is greater than MAX_CHANNELS=" << MAX_CHANNELS;
     cout << "Will only read the first MAX_CHANNELS channels" << endl;
