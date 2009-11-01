@@ -603,6 +603,21 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
 		D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
 	}
+	else if(format.format == string("VLBN1_1"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBN");
+		D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
+	}
+	else if(format.format == string("VLBN1_2"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBN");
+		D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
+	}
+	else if(format.format == string("VLBN1_4"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VLBN");
+		D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
+	}
 	else if(format.format == string("MKIV1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");

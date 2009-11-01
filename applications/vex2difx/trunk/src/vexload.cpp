@@ -68,9 +68,9 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 	int delta, track;
 	map<string,Tracks>::const_iterator it;
 
-	if(F.format == "VLBA1_1" || F.format == "MKIV1_1" ||
-	   F.format == "VLBA1_2" || F.format == "MKIV1_2" ||
-	   F.format == "VLBA1_4" || F.format == "MKIV1_4")
+	if(F.format == "VLBA1_1" || F.format == "VLBN1_1" || F.format == "MKIV1_1" ||
+	   F.format == "VLBA1_2" || F.format == "VLBN1_2" || F.format == "MKIV1_2" ||
+	   F.format == "VLBA1_4" || F.format == "VLBN1_4" || F.format == "MKIV1_4")
 	{
 		it = ch2tracks.find(chanName);
 
@@ -650,7 +650,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			{
 				p = 0;
 			}
-			if(p || F.format == "VLBA" || F.format == "MKIV" || F.format == "MARK5B")
+			if(p || F.format == "VLBA" || F.format == "VLBN" || F.format == "MKIV" || F.format == "MARK5B")
 			{
 				// If not overridden in v2d file
 				if(F.format == "")

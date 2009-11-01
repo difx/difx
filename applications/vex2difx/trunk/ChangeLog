@@ -9,6 +9,7 @@ Version 2.0
 * Also bugfixes related to variable initialisation
 * Adds support for multiple phase centres
 * Requires difxio 3.0
+* Add support for VLBN "format" -- that is VLBA with no data modulation
 
 Version 0.3
 ~~~~~~~~~~~
