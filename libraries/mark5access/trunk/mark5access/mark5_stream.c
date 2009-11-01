@@ -357,6 +357,20 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 		return new_mark5_format_vdif(a, b, c, d, e, 32);
 	}
+	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		if(r < 5)
+		{
+			e = 1;
+		}
+
+		return new_mark5_format_vlba_nomod(b, c, d, a, e);
+	}
 	else
 	{
 		fprintf(stderr, "Unknown format : %s\n", formatname);
@@ -368,7 +382,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*]";
 }
                                                                                 /* given a format string, populate a structure with info about format */
 struct mark5_format *new_mark5_format_from_name(const char *formatname)
@@ -534,6 +548,24 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 		{
 			decimation = e;
 		}
+	}
+	else if(strncasecmp(formatname, "VLBN1_", 6) == 0)
+	{
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &a, &b, &c, &d, &e);
+		if(r < 4)
+		{
+			return 0;
+		}
+		F = MK5_FORMAT_VLBN;
+		databytes = 2500*a*c*d;
+		framebytes = 2520*a*c*d;
+		framens = 1000*((20000*a*c*d)/b);
+		if(r > 4)
+		{
+			decimation = e;
+		}
+		fanout = a;
+		ntrack = a*c*d;
 	}
 	else
 	{

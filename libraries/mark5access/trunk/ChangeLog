@@ -1,5 +1,6 @@
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
+* Add VLBN format == VLBA without data modulation
 
 Version 1.3.2
 * Fix sample granularity calculation for Mark5B

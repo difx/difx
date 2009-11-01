@@ -6,6 +6,7 @@ c_sources = \
 	mark5_stream_memory.c \
 	mark5_stream_unpacker.c \
 	mark5_format_vlba.c \
+	mark5_format_vlba_nomod.c \
 	mark5_format_mark4.c \
 	mark5_format_mark5b.c \
 	format_vdif.c \
