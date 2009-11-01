@@ -74,6 +74,8 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 
 	executeseconds = conf->getExecuteSeconds();
 
+	nError = 0;
+
 	sendMark5Status(MARK5_STATE_OPENING, 0, 0, 0.0, 0.0);
 
 	cinfo << startl << "Opening Streamstor" << endl;
@@ -197,8 +199,12 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	{
 		delete_mark5_stream(mark5stream);
 	}
-	sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
-	XLRClose(xlrDevice);
+	if(nError == 0)
+	{
+		sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
+		XLRClose(xlrDevice);
+		sendMark5Status(MARK5_STATE_IDLE, 0, 0, 0.0, 0.0);
+	}
 }
 
 /* Here "File" is VSN */
@@ -497,14 +503,18 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			xlrEC = XLRGetLastError();
 			XLRGetErrorMessage(errStr, xlrEC);
 			cerror << startl << "XLRReadImmed returns FAIL.  Read error at position=" << readpointer << ", length=" << bytes << ", error=" << errStr << endl;
+			dataremaining = false;
+			keepreading = false;
+			bufferinfo[buffersegment].validbytes = 0;
 
 			double errorTime = corrstartday + (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds + readnanoseconds*1.0e-9)/86400.0;
 			sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, errorTime, 0.0);
-			break;
+			nError++;
+			return;
 		}
 
 		/* Wait up to 5 seconds for a return */
-		for(i = 1; i < 50; i++)
+		for(i = 1; i < 60; i++)
 		{
 			xlrRS = XLRReadStatus(0);
 			if(xlrRS == XLR_READ_COMPLETE)
@@ -522,20 +532,20 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 				bufferinfo[buffersegment].validbytes = 0;
 				return;
 			}
-			if(i % 10 == 0)
+			if(i % 10 == 0 && i > 30)
 			{
-				cerror << startl << "Waited " << (i/10) << " sec  state="; 
+				cwarn << startl << "Waited " << (i/10) << " sec  state="; 
 				if(xlrRS == XLR_READ_WAITING)
 				{
-					cerror << "XLR_READ_WAITING" << endl;
+					cwarn << "XLR_READ_WAITING" << endl;
 				}
 				else if(xlrRS == XLR_READ_RUNNING)
 				{
-					cerror << "XLR_READ_RUNNING" << endl;
+					cwarn << "XLR_READ_RUNNING" << endl;
 				}
 				else
 				{
-					cerror << "XLR_READ_OTHER" << endl;
+					cwarn << "XLR_READ_OTHER" << endl;
 				}
 			}
 			usleep(100000);
@@ -551,6 +561,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			if(xlrRC != XLR_SUCCESS)
 			{
 				csevere << startl << "XLRCardReset() failed.  Remainder of data from this antenna will not be correlated and a reboot of this Mark5 unit is probably needed." << endl;
+				sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, 0.0, 0.0);
+				nError++;
 				dataremaining = false;
 				keepreading = false;
 				bufferinfo[buffersegment].validbytes = 0;
@@ -558,14 +570,16 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			}
 			else
 			{
-				cerror << startl << "XLRCardReset() success!" << endl;
+				cinfo << startl << "XLRCardReset() success!" << endl;
 			}
 
-			cerror << startl << "XLROpen() being called!" << endl;
+			cinfo << startl << "XLROpen() being called!" << endl;
 			xlrRC = XLROpen(1, &xlrDevice);
 			if(xlrRC != XLR_SUCCESS)
 			{
 				csevere << startl << "XLROpen() failed.  Remainder of data from this antenna will not be correlated and a reboot of this Mark5 unit is probably needed." << endl;
+				sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, 0.0, 0.0);
+				nError++;
 				dataremaining = false;
 				keepreading = false;
 				bufferinfo[buffersegment].validbytes = 0;
@@ -573,14 +587,14 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			}
 			else
 			{
-				cerror << startl << "XLROpen() success!" << endl;
+				cinfo << startl << "XLROpen() success!" << endl;
 			}
 		}
 	}
 
 	if(xlrRS != XLR_READ_COMPLETE)
 	{
-		cerror << startl << "NativeMk5: Waited 5 seconds for a read and gave up.  position=" << readpointer << " length=" << bytes << endl;
+		cerror << startl << "NativeMk5: Waited 6 seconds for a read and gave up.  position=" << readpointer << " length=" << bytes << endl;
 		bufferinfo[buffersegment].validbytes = 0;
 		return;
 	}
@@ -617,7 +631,11 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
 		if((invalidtime & (invalidtime-1)) == 0)
 		{
-			cerror << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << mjd << "," << sec << "," << ns << ")!=(" << sec2 << "," << readnanoseconds << ")" << " length=" << bytes << endl ;
+			cwarn << startl << invalidtime << " consecutive sync errors starting at readpos " << invalidstart << " (" << mjd << "," << sec << "," << ns << ")!=(" << sec2 << "," << readnanoseconds << ")" << " length=" << bytes << endl ;
+		}
+		if(invalidtime == 100)
+		{
+			cerror << startl << invalidtime << "consecutive sync errors.  Something is probably wrong!" << endl;
 		}
 		// FIXME -- if invalidtime > threshhold, look for sync again
 	}
@@ -813,7 +831,7 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 	{
 		strcpy(mk5status.scanName, "none");
 	}
-	if(state != MARK5_STATE_OPENING && state != MARK5_STATE_ERROR)
+	if(state != MARK5_STATE_OPENING && state != MARK5_STATE_ERROR && state != MARK5_STATE_IDLE)
 	{
 		xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &A);
 		if(xlrRC == XLR_SUCCESS)

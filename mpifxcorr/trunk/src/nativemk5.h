@@ -66,6 +66,7 @@ private:
 	int newscan;
 	double lastrate;
 	int nrate;
+	int nError;
 };
 
 #endif
