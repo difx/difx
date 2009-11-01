@@ -52,7 +52,7 @@ public:
   enum outputformat {ASCII, DIFX};
 
   /// Supported types of recorded data format
-  enum dataformat {LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, MARK5B, VDIF};
+  enum dataformat {LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, MARK5B, VDIF, VLBN};
 
   /// Supported sources of data
   enum datasource {UNIXFILE, MK5MODULE, EVLBI};
@@ -251,7 +251,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == MARK5B || f == VDIF) && (s == UNIXFILE || s == EVLBI)); 
+    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF) && (s == UNIXFILE || s == EVLBI)); 
   }
   inline bool isNativeMkV(int datastreamindex) 
   { 
@@ -259,7 +259,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == MARK5B) && s == MK5MODULE); 
+    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B) && s == MK5MODULE); 
   }
   inline int getFrameBytes(int configindex, int configdatastreamindex)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framebytes; }
