@@ -178,6 +178,11 @@ int monserver_requestproducts(struct monclient client, unsigned int product[], i
   return(0);
 }
 
+int monserver_requestall(struct monclient client) {
+  unsigned int product=-1;
+  return monserver_requestproducts(client, &product, 1);
+}
+
 int monserver_readvis(struct monclient *client) {
   int status;
   int32_t headbuf[4], bufsize;

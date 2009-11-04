@@ -29,6 +29,7 @@ int monserver_connect(struct monclient *monserver, char *monhostname, int window
 int monserver_sendstatus(int sock, int32_t status32);
 int monserver_requestproduct(struct monclient client, unsigned int product);
 int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod);
+int monserver_requestall(struct monclient client);
 int monserver_readvis(struct monclient *client);
 int monserver_close(struct monclient monserver);
 int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis);
