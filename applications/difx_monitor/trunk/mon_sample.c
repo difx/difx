@@ -20,11 +20,14 @@
 #include "monserver.h"
 #define MAX_PROD 4
 
+float arraymax(float *array[], int nchan, int nprod);
+float arraymin(float *a[], int nchan, int nprod);
+
 int main(int argc, const char * argv[]) {
-  int status, prod, i, nchan=0, nprod;
+  int status, prod, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
   unsigned int iprod[MAX_PROD];
   struct monclient monserver;
-  float *xval=NULL, *amp=NULL, *phase=NULL, *lags=NULL, *lagx=NULL;
+  float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
   cf32 *vis;
   IppsFFTSpec_R_32f* fftspec=NULL;
@@ -35,12 +38,18 @@ int main(int argc, const char * argv[]) {
   }
 
   if (argc-2>MAX_PROD) {
-    fprintf(stderr, "Error - Too many producst requested\n");
+    fprintf(stderr, "Error - Too many products requested\n");
     return(EXIT_FAILURE);
   }
 
   for (i=2; i<argc; i++) iprod[i-2] = atoi(argv[i]);
   nprod = argc-2;
+
+  for (i=0; i<nprod; i++) {
+    amp[i] = NULL;
+    phase[i] = NULL;
+    lags[i] = NULL;
+  }
 
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
@@ -65,25 +74,35 @@ int main(int argc, const char * argv[]) {
     if (!status) {
       printf("Got visibility # %d\n", monserver.timestamp);
 
+      ivis = 0;
       while (!monserver_nextvis(&monserver, &prod, &vis)) {
 	printf("Got visibility for product %d\n", prod);
 
+	// (Re)allocate arrays if number of channels changes, including first time
 	if (nchan!=monserver.numchannels) {
 	  nchan = monserver.numchannels;
+
 	  if (xval!=NULL) vectorFree(xval);
-	  if (amp!=NULL) vectorFree(amp);
-	  if (phase!=NULL) vectorFree(phase);
-	  if (lags!=NULL) vectorFree(lags);
 	  if (lagx!=NULL) vectorFree(lagx);
 	  if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
+	  for (i=0; i<nprod; i++) {
+	    if (amp[i]!=NULL) vectorFree(amp[i]);
+	    if (phase[i]!=NULL) vectorFree(phase[i]);
+	    if (lags[i]!=NULL) vectorFree(lags[i]);
+	  }
 
 	  xval = vectorAlloc_f32(nchan);
-	  amp = vectorAlloc_f32(nchan);
-	  phase = vectorAlloc_f32(nchan);
-	  lags = vectorAlloc_f32(nchan*2);
 	  lagx = vectorAlloc_f32(nchan*2);
-
-	  if (xval==NULL || amp==NULL || phase==NULL || lags==NULL || lagx==NULL) {
+	  for (i=0; i<nprod; i++) {
+	    amp[i] = vectorAlloc_f32(nchan);
+	    phase[i] = vectorAlloc_f32(nchan);
+	    lags[i] = vectorAlloc_f32(nchan*2);
+	    if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
+	      fprintf(stderr, "Failed to allocate memory for plotting arrays\n");
+	      exit(1);
+	    }
+	  }
+	  if (xval==NULL || lagx==NULL) {
 	    fprintf(stderr, "Failed to allocate memory for plotting arrays\n");
 	    exit(1);
 	  }
@@ -94,66 +113,82 @@ int main(int argc, const char * argv[]) {
 	    lagx[i+nchan] = i;
 	  }
 
+	  
+	  printf("Initialise FFT\n");
 	  int order = 0;
 	  while(((nchan*2) >> order) > 1)
 	    order++;
 	  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
 	}
 
-	ippsMagnitude_32fc(vis, amp, nchan);
-	ippsPhase_32fc(vis, phase, nchan);
-	vectorMulC_f32_I(180/M_PI, phase, nchan);
+	ippsMagnitude_32fc(vis, amp[ivis], nchan);
+	ippsPhase_32fc(vis, phase[ivis], nchan);
+	vectorMulC_f32_I(180/M_PI, phase[ivis], nchan);
 
-	ippsFFTInv_CCSToR_32f((Ipp32f*)vis, lags, fftspec, 0);
+	ippsFFTInv_CCSToR_32f((Ipp32f*)vis, lags[ivis], fftspec, 0);
 	//rearrange the lags into order
-	for(i=0;i<nchan;i++) {
-	  temp = lags[i];
-	  lags[i] = lags[i+nchan];
-	  lags[i+nchan] = temp;
-	}
-
-	ippsMax_32f(amp, nchan, &max);
-	ippsMin_32f(amp, nchan, &min);
-	delta = (max-min)*0.05;
-	if (delta==0.0) delta = 0.5;
-	min -= delta;
-	max += delta;
-
-	cpgbbuf();
-	cpgsci(1);
-	cpgenv(0,nchan,min,max,0,0);
-	cpglab("Channel", "Amplitude", "");
-	cpgsci(2);
-	cpgline(nchan, xval, amp);
-
-	ippsMax_32f(phase, nchan, &max);
-	ippsMin_32f(phase, nchan, &min);
-	delta = (max-min)*0.1;
-	if (delta==0.0) delta = 0.5;
-	min -= delta;
-	max += delta;
-	cpgsci(1);
-	cpgenv(0,nchan,min,max,0,0);
-	cpglab("Channel", "Phase", "");
-	cpgsci(2);
-	cpgpt(nchan, xval, phase, 17);
-
-
-	ippsMax_32f(lags, nchan*2, &max);
-	ippsMin_32f(lags, nchan*2, &min);
-	delta = (max-min)*0.1;
-	if (delta==0.0) delta = 0.5;
-	min -= delta;
-	max += delta;
-	cpgsci(1);
-	cpgenv(-nchan,nchan,min,max,0,0);
-	cpglab("Channel", "Delay", "");
-	cpgsci(2);
-	cpgline(nchan*2, lagx, lags);
-	cpgebuf();
-
+	//for(i=0;i<nchan;i++) {
+	//  temp = lags[ivis][i];
+	//  lags[ivis][i] = lags[ivis][i+nchan];
+	//  lags[ivis][i+nchan] = temp;
+	//	}
+	ivis++;
       }
-      printf("\n");
+
+      // Plot all the data
+      cpgbbuf();
+
+      max = arraymax(amp, nchan, nprod);
+      min = arraymin(amp, nchan, nprod);
+      delta = (max-min)*0.05;
+      if (delta==0.0) delta = 0.5;
+      min -= delta;
+      max += delta;
+
+      cpgsci(1);
+      cpgenv(0,nchan,min,max,0,0);
+      cpglab("Channel", "Amplitude", "");
+
+      for (i=0; i<nprod; i++) {
+	cpgsci(cols[i]);
+	cpgline(nchan, xval, amp[i]);
+      }
+
+      max = arraymax(phase, nchan, nprod);
+      min = arraymin(phase, nchan, nprod);
+      delta = (max-min)*0.1;
+      if (delta==0.0) delta = 0.5;
+      min -= delta;
+      max += delta;
+      cpgsci(1);
+      cpgenv(0,nchan,min,max,0,0);
+      cpglab("Channel", "Phase", "");
+
+
+      for (i=0; i<nprod; i++) {
+	cpgsci(cols[i]);
+	cpgpt(nchan, xval, phase[i], 17);
+      }
+
+      max = arraymax(lags, nchan*2, nprod);
+      min = arraymin(lags, nchan*2, nprod);
+      delta = (max-min)*0.1;
+      if (delta==0.0) delta = 0.5;
+      min -= delta;
+      max += delta;
+      cpgsci(1);
+      cpgenv(-nchan,nchan,min,max,0,0);
+      cpglab("Channel", "Delay", "");
+
+      printf("*** %d %.2f %.2f\n", nchan, min, max);
+
+      for (i=0; i<nprod; i++) {
+	cpgsci(cols[i]);
+	cpgline(nchan*2, lagx, lags[i]);
+      }
+
+      cpgebuf();
+
     }
   }
 
@@ -161,3 +196,26 @@ int main(int argc, const char * argv[]) {
 }
 
 
+float arraymax(float *a[], int nchan, int nprod) {
+  float max, thismax;
+  int i;
+
+  max = a[0][0];
+  for (i=0; i<nprod; i++)  {
+    ippsMax_32f(a[i], nchan, &thismax);
+    if (thismax>max) max = thismax;
+  }
+  return max;
+}
+
+float arraymin(float *a[], int nchan, int nprod) {
+  float min, thismin;
+  int i;
+
+  min = a[0][0];
+  for (i=0; i<nprod; i++)  {
+    ippsMin_32f(a[i], nchan, &thismin);
+    if (thismin<min) min = thismin;
+  }
+  return min;
+}
