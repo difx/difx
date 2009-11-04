@@ -30,6 +30,7 @@
 #include <sstream>
 #include "architecture.h"
 #include  "monserver.h"
+#include "ipps.h"
 
 using namespace std;
 
@@ -216,7 +217,7 @@ int main(int argc, const char * argv[]) {
 
 	    if (thisbuffersize>buffersize) {
 	      if (buffersize>0) 
-		vectorFree(resultbuffer);
+		ippsFree(resultbuffer);
 	      
 	      resultbuffer = vectorAlloc_cf32(thisbuffersize);
 	      buffersize = thisbuffersize;
@@ -250,7 +251,7 @@ int main(int argc, const char * argv[]) {
 	  int32_t nproduct;
 	  struct monclient *thisclient ;
 
-	  // The the appropriate monclient
+	  // Find the appropriate monclient
 	  thisclient = monclient_find(clients, nclient, fd);
 	  if (thisclient==NULL) {
 	    cerr << "Internal error: Could not find fd " << fd << endl;
@@ -486,13 +487,12 @@ void monclient_addproduct(struct monclient *client, int nproduct, int32_t produc
     client->nvis=0;
     client->vis = NULL;
   }
-
   return;
 }
 
 int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t numchannels, 
 			  int32_t thisbuffersize, cf32 *buffer) {
-  int nvis, maxvis, i, fd, status;
+  int nvis, maxvis, i, fd, status, all, ivis;
   
   if (client.nvis==0) return(0);
 
@@ -500,13 +500,19 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
   printf("Buffersize=%d\n", thisbuffersize);
   printf("numchannels=%d\n", numchannels);
   printf("Maxvis=%d\n", maxvis);
+  all = 0;
 
-  nvis=0;
-  for (i=0; i<client.nvis; i++) {
-    if (client.vis[i] < maxvis) 
-      nvis++;
-    else {
-      cout << "Warning: Skipping requested product " << client.vis[i] << endl;
+  if (client.nvis>0 && client.vis[0] == -1) {
+    all=1;
+    nvis=maxvis;
+  } else {
+    nvis=0;
+    for (i=0; i<client.nvis; i++) {
+      if (client.vis[i] < maxvis) 
+	nvis++;
+      else {
+	cout << "Warning: Skipping requested product " << client.vis[i] << endl;
+      }
     }
   }
   if (nvis==0) return(0); // Not an error...
@@ -520,20 +526,27 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
   //     int32_t     vis number
   //     cf32[numchannels]   
 
-  fd = client.fd;
-
   status = 0;
   sendint(client.fd, timestampsec, &status);
   sendint(client.fd, numchannels, &status);
   sendint(client.fd, nvis, &status);
   sendint(client.fd, nvis*(sizeof(int32_t)+numchannels*sizeof(cf32)), &status);
 
-  for (i=0; i<client.nvis; i++) {
-    if (client.vis[i] < maxvis) {
-      sendint(client.fd, client.vis[i], &status);
+  if (all) {
+    for (i=0; i<maxvis; i++) {
+      sendint(client.fd, i, &status);
       if (status) return(status);
-      status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*client.vis[i]), 
+      status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*i), 
 			    numchannels*sizeof(cf32));
+    }
+  } else {
+    for (i=0; i<client.nvis; i++) {
+      if (client.vis[i] < maxvis) {
+	sendint(client.fd, client.vis[i], &status);
+	if (status) return(status);
+	status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*client.vis[i]), 
+			      numchannels*sizeof(cf32));
+      }
     }
   }
   return(status);
