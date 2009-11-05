@@ -820,7 +820,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     {
                       bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
                       destchan = xmacstart+outputoffset;
-                      for(int l=0;l<xmacmullength;x++)
+                      for(int l=0;l<xmacmullength;l++)
                       {
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
                         //cindex = resultindex + (scratchspace->bins[freqindex][destchan]*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*(freqchannels+1) + destchan;

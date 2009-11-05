@@ -36,6 +36,8 @@ Configuration::Configuration(const char * configfile, int id)
   int basestart = configfilestring.find_last_of('/');
   if(basestart == string::npos)
     basestart = 0;
+  else
+    basestart = basestart+1;
   jobname = configfilestring.substr(basestart, string(configfile).find_last_of('.')-basestart);
 
   sectionheader currentheader = INPUT_EOF;
