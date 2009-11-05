@@ -2,6 +2,8 @@
 
 int main(int argc, const char * argv[])
 {
+  int perr;
+
   //check for correct invocation
   if(argc != 3 && argc != 4) {
     cout << "Error - invoke with difxfilterbank <config file> <output file> [num channels]" << endl;
@@ -18,7 +20,33 @@ int main(int argc, const char * argv[])
   keepwriting = true;
   numchans = atoi(numchannelsstring.c_str());
   binarymsglength = sizeof(DifxMessageSTARecord) + numchans*sizeof(f32);
-  starecord = (DifxMessageSTARecord*)malloc(binarymsglength);
+  for(int i=0;i<BUFFER_LENGTH;i++) {
+    perr = pthread_mutex_init(&(locks[i]), NULL);
+    if(perr != 0)
+      cerr << "Problem initialising lock " << i << endl;
+    starecords[i] = (DifxMessageSTARecord*)malloc(binarymsglength);
+  }
+
+  //lock the first slot, and fire up the write thread
+  writethreadinitialised = false;
+  pthread_cond_init(&writecond, NULL);
+  perr = pthread_mutex_lock(&(locks[0]));
+  if(perr != 0)
+    cerr << "Problem locking the first lock" << endl;
+  perr = pthread_mutex_lock(&(locks[1]));
+  if(perr != 0)
+    cerr << "Problem locking the second lock" << endl;
+  perr = pthread_create(&writethread, NULL, launchWriteThread, NULL);
+  if(perr != 0)
+    cerr << "Error in launching writethread !!!" << endl;
+  while(!writethreadinitialised) {
+    perr = pthread_cond_wait(&writecond, &(locks[1]));
+    if (perr != 0)
+      cerr << "Error waiting on writethreadinitialised condition!!!!" << endl;
+  }
+  perr = pthread_mutex_unlock(&(locks[1]));
+  if(perr != 0)
+    cerr << "Problem unlocking the second lock" << endl;
 
   //parse the config file, get the job name and identifier
   config = new Configuration(configfile.c_str(), 0);
@@ -49,32 +77,43 @@ int main(int argc, const char * argv[])
   difxMessageSendDifxParameter("stachannels", numchannelsstring.c_str(), 
 			       DIFX_MESSAGE_ALLCORES);
 
+  atsegment = 0;
   while(keepwriting) {
     //get a binary message
-    int nbytes = difxMessageBinaryRecv(binarysocket, (char*)starecord, binarymsglength, 
-				       sendername);
+    int nbytes = difxMessageBinaryRecv(binarysocket, (char*)starecords[atsegment], 
+                                       binarymsglength, sendername);
 
 
     //check it belongs to us
-    if(strcmp(starecord->identifier, jobname.c_str()) == 0) {
-      //write it to the file
+    if(strcmp(starecords[atsegment]->identifier, jobname.c_str()) == 0) {
+      //check there is actually some data
       if (nbytes <= 0 && keepwriting) {
         cout << "Problem with binary message or timeout - carrying on..." << endl;
       }
       else {
-        writeDiFXHeader(&output, starecord->dsindex, starecord->scan, starecord->sec, 
-			starecord->ns, starecord->nswidth, starecord->bandindex, 
-			starecord->nChan, starecord->coreindex, starecord->threadindex);
-        output.write((char*)starecord->data, starecord->nChan*sizeof(float));
+        perr = pthread_mutex_lock(&(locks[(atsegment+1)%BUFFER_LENGTH]));
+        if(perr != 0)
+          cerr << "Main thread problem locking " << (atsegment+1)%BUFFER_LENGTH << endl;
+        atsegment = (atsegment+1)%BUFFER_LENGTH;
+        perr = pthread_mutex_unlock(&(locks[(atsegment+BUFFER_LENGTH-1)%BUFFER_LENGTH]));
+        if(perr != 0)
+          cerr << "Main thread problem unlocking " << (atsegment+BUFFER_LENGTH-1)%BUFFER_LENGTH << endl;
       }
     }
   }
 
+  //unlock the last lock
+  perr = pthread_mutex_unlock(&(locks[atsegment]));
+  if(perr != 0)
+    cerr << "Main thread problem unlocking " << atsegment << endl;
+
   //close the sockets and output file
   difxMessageReceiveClose(mainsocket);
   difxMessageBinaryClose(binarysocket);
-  output.close();
-  free(starecord);
+  perr = pthread_join(writethread, NULL);
+  if(perr != 0) cerr << "Error in closing writethread!!!" << endl;
+  for(int i=0;i<BUFFER_LENGTH;i++)
+    free(starecords[i]);
   perr = pthread_join(commandthread, NULL);
   if(perr != 0) cerr << "Error in closing commandthread!!!" << endl;
 
@@ -96,6 +135,44 @@ void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, 
   output->write((char*)&coreindex, sizeof(int));
   output->write((char*)&threadindex, sizeof(int));
 }
+
+//setup write thread
+void * launchWriteThread(void * nothing) {
+  int perr, writesegment, nextsegment;
+
+  perr = pthread_mutex_lock(&(locks[BUFFER_LENGTH-1]));
+  if(perr != 0)
+    cerr << "Error in write thread trying to lock last lock!" << endl;
+  writethreadinitialised = true;
+  perr = pthread_cond_signal(&writecond);
+  if(perr != 0)
+    cerr << "Error in write thread signalling main thread to wake up!" << endl;
+
+  writesegment = BUFFER_LENGTH-1;
+  nextsegment = 0;
+  while(keepwriting || nextsegment != atsegment) {
+    perr = pthread_mutex_lock(&(locks[nextsegment]));
+    if(perr != 0)
+      cerr << "Error in writethread trying to lock segment " << nextsegment << endl;
+    perr = pthread_mutex_unlock(&(locks[writesegment]));
+    if(perr != 0)
+      cerr << "Error in writethread trying to unlock segment " << writesegment << endl;
+    writesegment = nextsegment;
+    nextsegment = (writesegment+1)%BUFFER_LENGTH;
+    //write it out (main thread already filtered out those not belonging to this job)
+    writeDiFXHeader(&output, starecords[writesegment]->dsindex, starecords[writesegment]->scan, 
+                    starecords[writesegment]->sec, starecords[writesegment]->ns, 
+                    starecords[writesegment]->nswidth, starecords[writesegment]->bandindex,
+                    starecords[writesegment]->nChan, starecords[writesegment]->coreindex, 
+                    starecords[writesegment]->threadindex);
+    output.write((char*)starecords[writesegment]->data, 
+                 starecords[writesegment]->nChan*sizeof(float));
+  }
+
+  output.close();
+  cout << "Write thread exiting!" << endl;
+}
+    
 
 //setup message receive thread
 void * launchCommandMonitorThread(void * c) {
@@ -140,6 +217,7 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
       if (pmessage->targetMpiId == DIFX_MESSAGE_ALLMPIFXCORR){
         //is it a shutdown message? If not, do nothing
         if (string(pmessage->paramName) == "keepacting" && string(pmessage->paramValue) == "false") {
+          cout << "Correlation has ended - shutting down difxfilterbank" << endl;
 	  keepwriting = false;
           return false;
         }
@@ -147,8 +225,11 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
     }
     else if (difxmessage->type == DIFX_MESSAGE_STATUS) {
       DifxMessageStatus * smessage = &((difxmessage->body).status);
-      if (smessage->state == DIFX_STATE_RUNNING || smessage->state == DIFX_STATE_STARTING)
+      if (smessage->state == DIFX_STATE_RUNNING || smessage->state == DIFX_STATE_STARTING) {
+        if(!config->commandThreadInitialised())
+          cout << "Correlation has started - commencing filterbank operation" << endl;
         config->setCommandThreadInitialised();
+      } 
     }
   }
   return true;
