@@ -807,7 +807,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     if(procslots[index].scrunchoutput)
                     {
                       destchan = xmacstart+outputoffset;
-                      for(int l=0;l<xmacmullength;x++)
+                      for(int l=0;l<xmacmullength;l++)
                       {
                         //the first zero (the source slot) is because we are limiting to one pulsar ephemeris for now
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
