@@ -5,13 +5,15 @@ from numpy import fft
 
 parser = OptionParser()
 parser.add_option("-f", "--freq", dest="freq", metavar="FREQ", default="-1",
-                  help="Only display visibilities from this frequency index")
+                  help="Only look at visibilities from this frequency index")
 parser.add_option("-b", "--baseline", dest="baseline", metavar="BASELINE", default="-1",
-                  help="Only display visibilities from this baseline num")
+                  help="Only look at visibilities from this baseline num")
+parser.add_option("-t", "--threshold", dest="threshold", metavar="THRESHOLD", default="0.0005",
+                  help="Only display difference if greater than THRESHOLD")
 (options, args) = parser.parse_args()
 
-if len(args) < 1:
-    print "Usage: plotDiFX [options] <difx file 1> [difx file 2] ... [difx file N]\n\nFlashes bandpasses"
+if len(args) != 2:
+    print "Usage: diffDiFX [options] <difx file 1> <difx file 2>\n\nShows percentage difference in abs values between two files"
     sys.exit()
 
 numfiles = len(args)
@@ -19,6 +21,7 @@ MAX_CHANNELS = 16384
 
 BASELINE = int(options.baseline)
 FREQ = int(options.freq)
+threshold = float(options.threshold)
 
 chans = []
 amp = []
@@ -45,7 +48,6 @@ for i in range(MAX_CHANNELS):
 
 pylab.xlabel("Channel")
 pylab.ylabel("Amplitude")
-linestyles = ['b', 'r', 'g', 'k', 'y']
 difxinputs  = []
 lines       = []
 baseline    = []
@@ -116,18 +118,13 @@ while not lines[0] == "":
         while not nextcfloat == "BASELINE" and not nextcfloat == "":
             cvis = struct.unpack("ff", nextcfloat)
             vis[i][nchan[i]] = complex(cvis[0], cvis[1])
-            amp[i][nchan[i]] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
-            phase[i][nchan[i]] = math.atan2(cvis[1], cvis[0])
+            #amp[i][nchan[i]] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
+            #phase[i][nchan[i]] = math.atan2(cvis[1], cvis[0])
             nchan[i] = nchan[i] + 1
             nextcfloat = difxinputs[i].read(8)
 	if (BASELINE < 0 or BASELINE == baseline[i]) and \
 	    (FREQ < 0 or FREQ == freqindex[i]):
-            lag[i] = fft.ifft(vis[i], nchan[i])
-            for j in range(nchan[i]/2):
-                lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
-            for j in range(nchan[i]/2):
-                lagamp[i][j] = abs(lag[i][j+nchan[i]/2])
-            if i > 0:
+            if i == 1:
                 if baseline[i] != baseline[0] or \
                    mjd[i] != mjd[0] or seconds[i] != seconds[0] or \
                    configindex[i] != configindex[0] or \
@@ -150,24 +147,16 @@ while not lines[0] == "":
                     print "nchan is " + str(nchan[i]) + "/" + str(nchan[0])
                     print "flag is " + str(flag[i]) + "/" + str(flag[0])
                     print "psrbin is " + str(psrbin[i]) + "/" + str(psrbin[0])
-            pylab.subplot(311)
-            pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], linestyles[i])
-            pylab.subplot(312)
-            pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], linestyles[i])
-            pylab.subplot(313)
-            pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], linestyles[i])
-    pylab.subplot(311)
-    titlestr = "Baseline " + str(baseline[0]) + ", Freq " + str(freqindex[0]) + ", pol " + polpair[0] + ", MJD " + str(mjd[0]+seconds[0]/86400.0)
-    pylab.title(titlestr)
-    pylab.ylabel("Amplitude")
-    pylab.subplot(312)
-    pylab.ylabel("Phase")
-    pylab.subplot(313)
-    pylab.ylabel("Lag")
-    pylab.xlabel("Channel")
+		diffavg = 0.0
+		refavg = 0.0
+                for j in range(nchan[0]):
+		    diff = vis[1][j] - vis[0][j]
+                    diffavg = diffavg + abs(diff)/nchan[0]
+                    refavg = refavg + abs(vis[0][j])/nchan[0]
     if (BASELINE < 0 or baseline[0] == BASELINE) and \
        (FREQ < 0 or freqindex[0] == FREQ):
-        pylab.show()
+        if 100.0*diffavg/refavg > threshold:
+            print "The percentage difference on baseline %d, freq %d is %10.8f" % (baseline[0], freqindex[0], 100.0*diffavg/refavg)
     for i in range(numfiles):
         lines[i] = difxinputs[i].readline()
     
