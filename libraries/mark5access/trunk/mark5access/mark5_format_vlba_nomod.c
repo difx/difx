@@ -5880,8 +5880,8 @@ static int vlba_nomod_decode_2bit_32track_fanout4_decimation1(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			nblank++;
@@ -5952,8 +5952,8 @@ static int vlba_nomod_decode_2bit_32track_fanout4_decimation2(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			nblank++;
@@ -6015,8 +6015,8 @@ static int vlba_nomod_decode_2bit_32track_fanout4_decimation4(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			nblank++;
@@ -6636,7 +6636,7 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation1(struct mark5_strea
 	int nblank = 0;
 
 	buf = (uint64_t *)(ms->payload);
-	i = ms->readposition >> 3;  /* note that i here counts 64-bit words */
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 
 	bytes = (uint8_t *)(& bits);
@@ -6645,8 +6645,8 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation1(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			fp4 = fp5 = fp6 = fp7 = zeros;
@@ -6729,7 +6729,7 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation2(struct mark5_strea
 	int nblank = 0;
 
 	buf = (uint64_t *)(ms->payload);
-	i = ms->readposition >> 3;  /* note that i here counts 64-bit words */
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 
 	bytes = (uint8_t *)(& bits);
@@ -6738,8 +6738,8 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation2(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			fp4 = fp5 = fp6 = fp7 = zeros;
@@ -6804,7 +6804,7 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation4(struct mark5_strea
 	int nblank = 0;
 
 	buf = (uint64_t *)(ms->payload);
-	i = ms->readposition >> 3;  /* note that i here counts 64-bit words */
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
 	l2 = ms->log2blankzonesize - 3;
 	df = ms->decimation/4;
 
@@ -6814,8 +6814,8 @@ static int vlba_nomod_decode_2bit_64track_fanout4_decimation4(struct mark5_strea
 	{
 		zone = i >> l2;
 
-		if(i <  ms->blankzonestartvalid[zone] || 
-		   i >= ms->blankzoneendvalid[zone])
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
 			fp4 = fp5 = fp6 = fp7 = zeros;

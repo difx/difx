@@ -1,6 +1,8 @@
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
 * Add VLBN format == VLBA without data modulation
+* Fix blank range checking for a small subset of modes
+	(Thanks to Sergei Pogrebenko and Jan Wagner for the bug report)
 
 Version 1.3.2
 * Fix sample granularity calculation for Mark5B
