@@ -4,7 +4,7 @@
 #include <stdint.h>
 #include <ipps.h>
 
-#define MONITOR_PORT 52100
+#define MONITOR_PORT 52300
 
 #define DIFXMON_NOERROR         0
 #define DIFXMON_TOOMANYCLIENTS  1

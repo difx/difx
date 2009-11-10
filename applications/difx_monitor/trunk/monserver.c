@@ -45,7 +45,7 @@ int writenetwork(int sock, char* ptr, int bytestowrite) {
     nwrote = send(sock, ptr, bytestowrite, MSG_NOSIGNAL);
     if (nwrote==-1) {
       if (errno == EINTR) continue;
-      perror("Error writing to network");
+      perror("\nError writing to network");
 
       return(1);
     } else if (nwrote==0) {
