@@ -70,13 +70,14 @@ int main(int argc, const char * argv[]) {
 
   status = 0;
   while (!status) {
+    printf("Waiting for visibilities\n");
     status = monserver_readvis(&monserver);
     if (!status) {
       printf("Got visibility # %d\n", monserver.timestamp);
 
       ivis = 0;
       while (!monserver_nextvis(&monserver, &prod, &vis)) {
-	printf("Got visibility for product %d\n", prod);
+	//printf("Got visibility for product %d\n", prod);
 
 	// (Re)allocate arrays if number of channels changes, including first time
 	if (nchan!=monserver.numchannels) {
@@ -127,11 +128,11 @@ int main(int argc, const char * argv[]) {
 
 	ippsFFTInv_CCSToR_32f((Ipp32f*)vis, lags[ivis], fftspec, 0);
 	//rearrange the lags into order
-	//for(i=0;i<nchan;i++) {
-	//  temp = lags[ivis][i];
-	//  lags[ivis][i] = lags[ivis][i+nchan];
-	//  lags[ivis][i+nchan] = temp;
-	//	}
+	for(i=0;i<nchan;i++) {
+	  temp = lags[ivis][i];
+	  lags[ivis][i] = lags[ivis][i+nchan];
+	  lags[ivis][i+nchan] = temp;
+	}
 	ivis++;
       }
 
@@ -179,8 +180,6 @@ int main(int argc, const char * argv[]) {
       cpgsci(1);
       cpgenv(-nchan,nchan,min,max,0,0);
       cpglab("Channel", "Delay", "");
-
-      printf("*** %d %.2f %.2f\n", nchan, min, max);
 
       for (i=0; i<nprod; i++) {
 	cpgsci(cols[i]);
