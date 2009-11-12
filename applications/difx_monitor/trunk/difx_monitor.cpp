@@ -201,6 +201,7 @@ void plot_results()
 
 	  sprintf(pgplotname, "lba-%d-f%d-p%d-b%d.png/png",
 		  i, j, k, b);
+
 	  status = cpgbeg(0,pgplotname,1,3);
 	  if (status != 1) {
 	    cout << "Error opening pgplot device: " << pgplotname << endl;
