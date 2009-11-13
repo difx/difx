@@ -11,9 +11,6 @@
  * GNU General Public License for more details.                            *
  ***************************************************************************/
 
-//#include <string>
-//#include <fstream>
-//#include <cstdlib>
 #include <iostream>
 
 #include <stdlib.h>
@@ -230,14 +227,17 @@ int main(int argc, const char * argv[]) {
 	    }
 
 	    for (j=0; j<nclient; j++) {
-	      cout << "Sending vis data to fd " << clients[j].fd << endl;
+	      cout << "Sending vis data to fd " << clients[j].fd << " " << flush;
 	      status = monclient_sendvisdata(clients[j], timestampsec, numchannels, 
-					 thisbuffersize, resultbuffer);
+					     thisbuffersize, resultbuffer);
 	      if (status) {
 		pollfd_remove(pollfds, &nfds, clients[j].fd);
 		monclient_remove(clients, &nclient, clients[j].fd);
 		monserver_close(clients[j]);
 		j--;  //Not sure this will work....
+
+	      } else {
+		cout << "  sent" << endl;
 	      }
 	    }
 	  }
@@ -429,6 +429,7 @@ int monclient_add(struct monclient *clients,  int *nclient, int maxclient, int f
   clients[*nclient].fd = fd;
   clients[*nclient].nvis = 0;
   clients[*nclient].vis = NULL;
+  clients[*nclient].visbuf = NULL;
   (*nclient)++;
   
   return(0);
@@ -497,9 +498,9 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
   if (client.nvis==0) return(0);
 
   maxvis = thisbuffersize/(numchannels+1);
-  printf("Buffersize=%d\n", thisbuffersize);
-  printf("numchannels=%d\n", numchannels);
-  printf("Maxvis=%d\n", maxvis);
+  //printf("Buffersize=%d\n", thisbuffersize);
+  //printf("numchannels=%d\n", numchannels);
+  //printf("Maxvis=%d\n", maxvis);
   all = 0;
 
   if (client.nvis>0 && client.vis[0] == -1) {
@@ -511,7 +512,7 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
       if (client.vis[i] < maxvis) 
 	nvis++;
       else {
-	cout << "Warning: Skipping requested product " << client.vis[i] << endl;
+	cout << endl << "Warning: Skipping requested product " << client.vis[i] << endl;
       }
     }
   }
