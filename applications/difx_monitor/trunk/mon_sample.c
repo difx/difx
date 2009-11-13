@@ -51,6 +51,13 @@ int main(int argc, const char * argv[]) {
     lags[i] = NULL;
   }
 
+  // Open PGPLOT first, as pgplot server seems to inherite monitor socket
+  status = cpgbeg(0,"/xs",1,3);
+  if (status != 1) {
+    printf("Error opening pgplot device\n");
+  }
+  cpgask(0);
+
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
 
@@ -59,12 +66,6 @@ int main(int argc, const char * argv[]) {
   status = monserver_requestproducts(monserver, iprod, nprod);
   if (status) exit(1);
 
-  status = cpgbeg(0,"/xs",1,3);
-  if (status != 1) {
-    printf("Error opening pgplot device\n");
-  }
-  
-  cpgask(0);
 
   printf("Sent product request\n");
 
