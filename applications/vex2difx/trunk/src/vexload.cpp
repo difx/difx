@@ -111,8 +111,6 @@ static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2
 		delta = T.sign.size() + T.mag.size();
 		track = T.sign[0];
 
-		cout << "XX " << delta << " " << track  << endl;
-
 		return (track-2)/delta;
 	}
 	else if(F.format == "S2" || F.format == "LBASTD" || F.format == "LBAVSOP")
@@ -519,6 +517,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 		S->modeName = modeName;
 		S->sourceName = sourceName;
 		S->corrSetupName = corrSetupName;
+		S->mjdVex = mjd;
 
 		// Add to event list
 		V->addEvent(S->mjdStart, VexEvent::SCAN_START, scanId, scanId);
@@ -548,9 +547,9 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	char *modeId;
 	int link, name;
 	char *value, *units;
+	char *bbcname;
 	double freq, bandwidth, sampRate;
 	char sideBand;
-	char polarization;
 	string format, chanName;
 	int chanNum;
 	int nTrack, fanout;
@@ -558,8 +557,8 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 	int dasNum;
 	int subbandId, recChanId;
 	bool sign;
-	map<string,char> if2pol;
 	map<string,char> bbc2pol;
+	map<string,string> bbc2ifname;
 	map<string,Tracks> ch2tracks;
 
 	for(modeId = get_mode_def(v);
@@ -584,12 +583,13 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			Upper(antName2);
 			bool swapPol = params.swapPol(antName2);
-			if2pol.clear();
 			bbc2pol.clear();
+			bbc2ifname.clear();
 			ch2tracks.clear();
 			nTrack = 0;
 			nBit = 1;
-			VexFormat& F = M->formats[V->getAntenna(a)->name] = VexFormat();
+			VexSetup& setup = M->setups[V->getAntenna(a)->name];
+			VexFormat& F = setup.format;
 			antennaSetup = params.getAntennaSetup(antName2);
 			if(antennaSetup)
 			{
@@ -613,19 +613,39 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			M->sampRate = sampRate;
 
-			// Get IF to pol map for this antenna
+			// Derive IF map
 			for(p = get_all_lowl(antName.c_str(), modeId, T_IF_DEF, B_IF, v);
 			    p;
 			    p = get_all_lowl_next())
 			{
-				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-				polarization = value[0];
+				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
+				VexIF& vif = setup.ifs[string(value)];
+
+				vex_field(T_IF_DEF, p, 2, &link, &name, &value, &units);
+				vif.name = value;
+				
+				vex_field(T_IF_DEF, p, 3, &link, &name, &value, &units);
+				vif.pol = value[0];
 				if(swapPol)
 				{
-					polarization = swapPolarization(polarization);
+					vif.pol = swapPolarization(vif.pol);
 				}
-				vex_field(T_IF_DEF, p, 1, &link, &name, &value, &units);
-				if2pol[value] = polarization;
+
+				vex_field(T_IF_DEF, p, 4, &link, &name, &value, &units);
+				fvex_double(&value, &units, &vif.ifSSLO);
+
+				vex_field(T_IF_DEF, p, 5, &link, &name, &value, &units);
+				vif.ifSideBand = value[0];
+
+				vex_field(T_IF_DEF, p, 6, &link, &name, &value, &units);
+				if(value)
+				{
+					fvex_double(&value, &units, &vif.phaseCal);
+				}
+				else
+				{
+					vif.phaseCal = 0.0;
+				}
 			}
 
 			// Get BBC to pol map for this antenna
@@ -634,9 +654,11 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			    p = get_all_lowl_next())
 			{
 				vex_field(T_BBC_ASSIGN, p, 3, &link, &name, &value, &units);
-				polarization = if2pol[value];
+				VexIF& vif = setup.ifs[string(value)];
+
 				vex_field(T_BBC_ASSIGN, p, 1, &link, &name, &value, &units);
-				bbc2pol[value] = polarization;
+				bbc2pol[value] = vif.pol;
+				bbc2ifname[value] = vif.name;
 			}
 
 			// Get datastream assignments and formats
@@ -762,16 +784,17 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
 
-				vex_field(T_CHAN_DEF, p, 6, &link, &name, &value, &units);
-				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[value]);
+				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcname, &units);
+				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcname]);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
 				recChanId = getRecordChannel(value, ch2tracks, F, i);
 				if(recChanId >= 0)
 				{
-					F.ifs.push_back(VexIF());
-					F.ifs.back().subbandId = subbandId;
-					F.ifs.back().recordChan = recChanId;
+					F.channels.push_back(VexChannel());
+					F.channels.back().subbandId = subbandId;
+					F.channels.back().recordChan = recChanId;
+					F.channels.back().ifname = bbc2ifname[bbcname];
 				}
 
 				i++;

@@ -202,13 +202,13 @@ int VexMode::getPols(char *pols) const
 int VexMode::getBits() const
 {
 	int nBit;
-	map<string,VexFormat>::const_iterator it;
+	map<string,VexSetup>::const_iterator it;
 
-	nBit = formats.begin()->second.nBit;
+	nBit = setups.begin()->second.format.nBit;
 
-	for(it = formats.begin(); it != formats.end(); it++)
+	for(it = setups.begin(); it != setups.end(); it++)
 	{
-		if(it->second.nBit != nBit)
+		if(it->second.format.nBit != nBit)
 		{
 			cerr << "Warning: differing numbers of bits : FITS will not store this information perfectly" << endl;
 			break;
@@ -218,20 +218,90 @@ int VexMode::getBits() const
 	return nBit;
 }
 
-const VexFormat& VexMode::getFormat(const string antName) const
+const VexSetup* VexMode::getSetup(const string antName) const
 {
-	map<string,VexFormat>::const_iterator it;
+	map<string,VexSetup>::const_iterator it;
 
-	for(it = formats.begin(); it != formats.end(); it++)
+	it = setups.find(antName);
+	if(it == setups.end())
 	{
-		if(it->first == antName)
-		{
-			return it->second;
-		}
+		cerr << "Error: antName=" << antName << " not found" << endl;
+		exit(0);
 	}
 
-	cerr << "Error: antName=" << antName << " not found" << endl;
-	exit(0);
+	return &it->second;
+}
+
+const VexFormat* VexMode::getFormat(const string antName) const
+{
+	map<string,VexSetup>::const_iterator it;
+
+	it == setups.find(antName);
+	if(it == setups.end())
+	{
+		cerr << "Error: antName=" << antName << " not found" << endl;
+		exit(0);
+	}
+
+	return &it->second.format;
+}
+
+string VexIF::VLBABandName() const
+{
+	double bandCenter = ifSSLO;
+
+	// Calculate the center of the 500-1000 MHz IF range;
+	if(ifSideBand == 'L')
+	{
+		bandCenter -= 750.0e6;
+	}
+	else
+	{
+		bandCenter += 750.0e6;
+	}
+
+	if(bandCenter < 1.0e9)
+	{
+		return "90cm";
+	}
+	else if(bandCenter < 2.0e9)
+	{
+		return "20cm";
+	}
+	else if(bandCenter < 3.0e9)
+	{
+		return "13cm";
+	}
+	else if(bandCenter < 6.0e9)
+	{
+		return "6cm";
+	}
+	else if(bandCenter < 9.5e9)
+	{
+		return "4cm";
+	}
+	else if(bandCenter < 17.0e9)
+	{
+		return "2cm";
+	}
+	else if(bandCenter < 25.0e9)
+	{
+		return "1cm";
+	}
+	else if(bandCenter < 40.5e9)
+	{
+		return "9mm";
+	}
+	else if(bandCenter < 60.0e9)
+	{
+		return "7mm";
+	}
+	else if(bandCenter < 100.0e9)
+	{
+		return "3mm";
+	}
+
+	return "None";
 }
 
 bool operator == (VexSubband& s1, VexSubband& s2)
@@ -320,6 +390,23 @@ const VexSource *VexData::getSource(int num) const
 	}
 
 	return &sources[num];
+}
+
+int VexData::getSourceId(const string name) const
+{
+	vector<VexSource>::const_iterator it;
+	int i = 0;
+
+	for(it = sources.begin(); it != sources.end(); it++)
+	{
+		if(it->name == name)
+		{
+			return i;
+		}
+		i++;
+	}
+
+	return -1;
 }
 
 VexScan *VexData::newScan()
@@ -914,6 +1001,24 @@ const VexAntenna *VexData::getAntenna(int num) const
 	return &antennas[num];
 }
 
+double VexSetup::phaseCal() const
+{
+	map<string,VexIF>::const_iterator it;
+	double p;
+	double pc = 0.0;
+
+	for(it = ifs.begin(); it != ifs.end(); it++)
+	{
+		p = it->second.phaseCal;
+		if(p > 0.0 && (p < pc || pc == 0.0))
+		{
+			pc = p;
+		}
+	}
+
+	return pc;
+}
+
 VexMode *VexData::newMode()
 {
 	modes.push_back(VexMode());
@@ -942,6 +1047,24 @@ const VexMode *VexData::getMode(int num) const
 
 	return &modes[num];
 }
+
+int VexData::getModeId(const string name) const
+{
+	vector<VexMode>::const_iterator it;
+	int i = 0;
+
+	for(it = modes.begin(); it != modes.end(); it++)
+	{
+		if(it->name == name)
+		{
+			return i;
+		}
+		i++;
+	}
+
+	return -1;
+}
+
 
 VexEOP *VexData::newEOP()
 {
@@ -1202,42 +1325,63 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 
 ostream& operator << (ostream& os, const VexSubband& x)
 {
-	os << "(" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << ")";
+	os << "[" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << "]";
 	
+	return os;
+}
+
+ostream& operator << (ostream& os, const VexChannel& x)
+{
+	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << "]";
+
 	return os;
 }
 
 ostream& operator << (ostream& os, const VexIF& x)
 {
-	os << "[r=" << x.recordChan << " -> s=" << x.subbandId << "]";
+	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCal=" << x.phaseCal << "]";
 
 	return os;
 }
 
 ostream& operator << (ostream& os, const VexFormat& x)
 {
-	os << "(format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
-	for(unsigned int i = 0; i < x.ifs.size(); i++)
+	vector<VexChannel>::const_iterator it;
+	os << "[format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
+	for(it = x.channels.begin(); it != x.channels.end(); it++)
 	{
-		os << ", " << x.ifs[i];
+		os << ", " << *it;
 	}
-	os << ")";
+	os << "]";
+
+	return os;
+}
+
+ostream& operator << (ostream&os, const VexSetup& x)
+{
+	map<string,VexIF>::const_iterator it;
+	os << "    Format = " << x.format << endl;
+	for(it = x.ifs.begin(); it != x.ifs.end(); it++)
+	{
+		os << "    IF: " << it->first << " " << it->second << endl;
+	}
 
 	return os;
 }
 
 ostream& operator << (ostream& os, const VexMode& x)
 {
-	map<string,VexFormat>::const_iterator it;
+	map<string,VexSetup>::const_iterator it;
 
 	os << "Mode " << x.name << endl;
 	for(unsigned int i = 0; i < x.subbands.size(); i++)
 	{
-		os << "  subband=" << x.subbands[i] << endl;
+		os << "  Subband[" << i << "]=" << x.subbands[i] << endl;
 	}
-	for(it = x.formats.begin(); it != x.formats.end(); ++it)
+	for(it = x.setups.begin(); it != x.setups.end(); ++it)
 	{
-		os << "  format[" << it->first << "] =" << it->second << endl;
+		os << "  Setup[" << it->first << "]" << endl;
+		os << it->second;
 	}
 	
 	return os;

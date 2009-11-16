@@ -1,5 +1,6 @@
 bin_PROGRAMS = \
 	vex2difx \
+	vex2script \
 	vexpeek
 
 LDADD = \
@@ -7,10 +8,24 @@ LDADD = \
 	-lfl
 
 vex2difx_SOURCES = \
+	vextables.h \
 	vextables.cpp \
-	vex2difx.cpp \
+	vexload.h \
 	vexload.cpp \
-	corrparams.cpp
+	corrparams.h \
+	corrparams.cpp \
+	vex2difx.cpp 
+
+vex2script_SOURCES = \
+	vextables.h \
+	vextables.cpp \
+	vexload.h \
+	vexload.cpp \
+	corrparams.h \
+	corrparams.cpp \
+	pystream.h \
+	pystream.cpp \
+	vex2script.cpp 
 
 vexpeek_SOURCES = \
 	vexpeek.cpp \

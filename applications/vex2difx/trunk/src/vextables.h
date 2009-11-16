@@ -116,6 +116,7 @@ public:
 	map<string,VexInterval> stations;
 	string corrSetupName;	// points to CorrSetup entry
 	double size;		// [bytes] approx. correlated size
+	double mjdVex;		// The start time listed in the vex file
 };
 
 class VexSource
@@ -132,26 +133,28 @@ public:
 	double dec;		// (rad)
 };
 
-class VexSubband	// Mode-specific frequency details
+class VexSubband		// Mode-specific frequency details for all antennas
 {
 public:
-	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ') : 
+	VexSubband(double f=0.0, double b=0.0, char s=' ', char p=' ', string name="") : 
 		freq(f), bandwidth(b), sideBand(s), pol(p) {}
 
 	double freq;		// (Hz)
 	double bandwidth;	// (Hz)
-	char sideBand;		// U or L
+	char sideBand;		// net side band of channel (U or L)
 	char pol;		// R or L
 };
 
-class VexIF		// Antenna-specific baseband channel details
+class VexChannel		// Antenna-specific baseband channel details
 {
 public:
-	VexIF() : recordChan(0), subbandId(-1), phaseCal(0) {}
+	VexChannel() : recordChan(0), subbandId(-1) {}
 
 	int recordChan;		// channel number on recorded media
 	int subbandId;		// 0-based index
-	int phaseCal;		// (Hz), typically 1,000,000 or 5,000,000
+	string ifname;		// name of the IF this channel came from
+	double bbcFreq;		// tuning of the BBC
+	char bbcSideBand;	// sideband of the BBC
 };
 
 class VexFormat
@@ -164,7 +167,29 @@ public:
 	string format;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
 	int nBit;
 	int nRecordChan;	// number of recorded channels
-	vector<VexIF> ifs;
+	vector<VexChannel> channels;
+};
+
+class VexIF	// Note: the old "VexIF" is now called "VexChannel"
+{
+public:
+	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCal(0.0) {}
+	string VLBABandName() const;
+
+	string name;
+	double ifSSLO;		// SSLO of the IF
+	char ifSideBand;	// U or L
+	char pol;		// R or L
+	double phaseCal;	// (Hz), typically 1,000,000 or 5,000,000
+};
+
+class VexSetup	// Container for all antenna-specific settings
+{
+public:
+	double phaseCal() const;
+
+	VexFormat format;
+	map<string,VexIF> ifs;	// Indexed by name in the vex file, such as IF_A
 };
 
 class VexMode
@@ -175,13 +200,15 @@ public:
 	int addSubband(double freq, double bandwidth, char sideband, char pol);
 	int getPols(char *pols) const;
 	int getBits() const;
-	const VexFormat &getFormat(const string antName) const;
+	const VexSetup* getSetup(const string antName) const;
+	const VexFormat* getFormat(const string antName) const;
 
 	string name;
 
 	double sampRate;		// (Hz)
+	vector<VexIF> ifs;
 	vector<VexSubband> subbands;
-	map<string,VexFormat> formats;	// indexed by antenna name
+	map<string,VexSetup> setups;	// indexed by antenna name
 	list<int> overSamp;		// list of the oversample factors used by this mode
 };
 
@@ -339,6 +366,7 @@ public:
 	int nSource() const { return sources.size(); }
 	const VexSource *getSource(const string name) const;
 	const VexSource *getSource(int num) const;
+	int getSourceId(const string name) const;
 
 	int nScan() const { return scans.size(); }
 	const VexScan *getScan(const string name) const;
@@ -353,6 +381,7 @@ public:
 	int nMode() const { return modes.size(); }
 	const VexMode *getMode(const string name) const;
 	const VexMode *getMode(int num) const;
+	int getModeId(const string name) const;
 
 	int nEOP() const { return eops.size(); }
 	const VexEOP *getEOP(int num) const;
@@ -379,8 +408,10 @@ ostream& operator << (ostream& os, const VexSource& x);
 ostream& operator << (ostream& os, const VexScan& x);
 ostream& operator << (ostream& os, const VexAntenna& x);
 ostream& operator << (ostream& os, const VexSubband& x);
+ostream& operator << (ostream& os, const VexChannel& x);
 ostream& operator << (ostream& os, const VexIF& x);
 ostream& operator << (ostream& os, const VexFormat& x);
+ostream& operator << (ostream& os, const VexSetup& x);
 ostream& operator << (ostream& os, const VexMode& x);
 ostream& operator << (ostream& os, const VexEOP& x);
 ostream& operator << (ostream& os, const VexBasebandFile& x);

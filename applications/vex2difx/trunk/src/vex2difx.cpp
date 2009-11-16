@@ -585,78 +585,78 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		cerr << "Error: setFormat: antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
 		exit(0);
 	}
-	const VexFormat &format = mode->getFormat(antName);
-	int n2 = next2(format.nRecordChan);
+	const VexFormat* format = mode->getFormat(antName);
+	int n2 = next2(format->nRecordChan);
 
-	if(format.format == string("VLBA1_1"))
+	if(format->format == string("VLBA1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2520*format->nBit*n2;
 	}
-	else if(format.format == string("VLBA1_2"))
+	else if(format->format == string("VLBA1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5040*format->nBit*n2;
 	}
-	else if(format.format == string("VLBA1_4"))
+	else if(format->format == string("VLBA1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBA");
-		D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10080*format->nBit*n2;
 	}
-	else if(format.format == string("VLBN1_1"))
+	else if(format->format == string("VLBN1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 2520*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2520*format->nBit*n2;
 	}
-	else if(format.format == string("VLBN1_2"))
+	else if(format->format == string("VLBN1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 5040*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5040*format->nBit*n2;
 	}
-	else if(format.format == string("VLBN1_4"))
+	else if(format->format == string("VLBN1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "VLBN");
-		D->datastream[dsId].dataFrameSize = 10080*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10080*format->nBit*n2;
 	}
-	else if(format.format == string("MKIV1_1"))
+	else if(format->format == string("MKIV1_1"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 2500*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 2500*format->nBit*n2;
 	}
-	else if(format.format == string("MKIV1_2"))
+	else if(format->format == string("MKIV1_2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 5000*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 5000*format->nBit*n2;
 	}
-	else if(format.format == string("MKIV1_4"))
+	else if(format->format == string("MKIV1_4"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MKIV");
-		D->datastream[dsId].dataFrameSize = 10000*format.nBit*n2;
+		D->datastream[dsId].dataFrameSize = 10000*format->nBit*n2;
 	}
-	else if(format.format == string("MARK5B"))
+	else if(format->format == string("MARK5B"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "MARK5B");
 		D->datastream[dsId].dataFrameSize = 10016;
 	}
-	else if(format.format == string("S2"))
+	else if(format->format == string("S2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*(int)(mode->sampRate+0.5)/8;
 		cerr << "Warning: S2 data can be in LBAVSOP or LBASTD format - defaulting to LBAVSOP!!" << endl;
 	}
-	else if(format.format == string("LBAVSOP"))
+	else if(format->format == string("LBAVSOP"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*(int)(mode->sampRate+0.5)/8;
 	}
-	else if(format.format == string("LBASTD"))
+	else if(format->format == string("LBASTD"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBASTD");
-		D->datastream[dsId].dataFrameSize = 4096 + 10*format.nBit*n2*(int)(mode->sampRate+0.5)/8;
+		D->datastream[dsId].dataFrameSize = 4096 + 10*format->nBit*n2*(int)(mode->sampRate+0.5)/8;
 	}
 	else
 	{
-		cerr << "Error: setFormat: format " << format.format << " not currently supported.  Mode=" << mode->name << ", ant=" << antName << "." << endl;
+		cerr << "Error: setFormat: format " << format->format << " not currently supported.  Mode=" << mode->name << ", ant=" << antName << "." << endl;
 		return 0;
 	}
 
@@ -677,10 +677,10 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		}
 	}
 
-	D->datastream[dsId].quantBits = format.nBit;
+	D->datastream[dsId].quantBits = format->nBit;
 	DifxDatastreamAllocBands(D->datastream + dsId, n2);
 
-	for(vector<VexIF>::const_iterator i = format.ifs.begin(); i != format.ifs.end(); i++)
+	for(vector<VexChannel>::const_iterator i = format->channels.begin(); i != format->channels.end(); i++)
 	{
 		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
 		{
