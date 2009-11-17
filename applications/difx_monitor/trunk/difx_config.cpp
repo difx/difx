@@ -17,14 +17,9 @@ using namespace std;
 
 int main(int argc, const char * argv[]) {
   Configuration * config;
-  int currentconfigindex, atseconds;
+  int currentconfigindex;
   char polpair[3];
-  char timestr[10];
-  const char* cstr;
   string sourcename;
-  f32 temp;
-  cf32 div;
-  int status;
   ostringstream ss;
 
   polpair[2] = 0;
@@ -73,6 +68,8 @@ int main(int argc, const char * argv[]) {
 	    cout << " " << polpair << " ";
 
 	    cout  << config->getFreqTableFreq(freqindex) << " MHz";
+
+	    cout << " (" << config->getConfigBandwidth(currentconfigindex) << " MHz)";
 	    cout << endl;
 	    prod++;
 	  }
