@@ -723,7 +723,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one scan simultaneously" << endl;
 				exit(0);
 			}
-			sprintf(D->rule[i].scanId, (*(P->rules[i].scanName.begin())).c_str());
+			strcpy(D->rule[i].scanId, P->rules[i].scanName.front().c_str());
 		}
 		if(P->rules[i].sourceName.size() > 0)
 		{
@@ -732,7 +732,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one source simultaneously" << endl;
 				exit(0);
 			}
-			sprintf(D->rule[i].sourcename, (*(P->rules[i].sourceName.begin())).c_str());
+			strcpy(D->rule[i].sourcename, P->rules[i].sourceName.front().c_str());
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
@@ -745,7 +745,8 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one calCode simultaneously" << endl;
 				exit(0);
 			}
-			sprintf(D->rule[i].calCode, "%c", (*(P->rules[i].calCode.begin())));
+			D->rule[i].calCode[0] = P->rules[i].calCode.front();
+			D->rule[i].calCode[1] = 0;
 		}
 		if(P->rules[i].qualifier.size() > 0)
 		{
@@ -754,9 +755,9 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one qualifier simultaneously" << endl;
 				exit(0);
 			}
-			D->rule[i].qual = (*(P->rules[i].qualifier.begin()));
+			D->rule[i].qual = P->rules[i].qualifier.front();
 		}
-		sprintf(D->rule[i].configName, P->rules[i].corrSetupName.c_str());
+		strcpy(D->rule[i].configName, P->rules[i].corrSetupName.c_str());
 	}
 }
 
@@ -1005,162 +1006,6 @@ static void populateEOPTable(DifxInput *D, const vector<VexEOP>& E)
 	}
 }
 
-static int count2s(int c)
-{
-        int i = 0;
-
-        while(c%2 == 0)
-        {
-                i++;
-                c /= 2;
-        }
-        return i;
-}
-
-static double tweakTime(double tInt, int bwIndex, int *n2, int *n5, int *p)
-{
-        int m, i;
-        double fundamental, ratio;
-        double errorTol[] = {0.15, 0.19, 0.42};
-        int powers[][2] =
-        {
-                {5,5},  /* for {a,b}, fundamental int time is 2^a 5^b mus */
-                {5,5},
-                {5,5},
-                {5,5},
-                {4,6},
-                {5,6},
-                {6,6},
-                {7,6},
-                {8,5},
-                {9,5},
-                {10,5},
-                {11,4},
-                {12,4}
-        };
-
-        /* first check for exact FXCORR integration time */
-        ratio = tInt/0.131072;
-        m = (int)(ratio + 0.5);
-	if(m > 0 && fabs(ratio - m) < 0.00001)
-        {
-                *n2 = 17;
-                *n5 = 0;
-                *p = m;
-                return m*0.131072;
-        }
-
-        /* fundamental integration time */
-        fundamental = (1 << powers[bwIndex][0])*pow(5.0, (double)(powers[bwIndex][1]))*1.0e-6;
-
-        for(i = 0; i < 3; i++)
-        {
-                ratio = tInt/fundamental;
-                m = (int)(ratio + 0.5);
-                if(m > 0 && fabs(ratio - m) < errorTol[i]*ratio)
-                {
-                        *n2 = powers[bwIndex][0]-bwIndex+count2s(m);
-                        *n5 = powers[bwIndex][1]-i;
-                        *p = m;
-                        return m*fundamental;
-                }
-                fundamental /= 5.0;
-        }
-
-        *n2 = *n5 = 0;
-        *p = -1;
-
-        return tInt;
-}
-
-static int calcBlocksPerSend(double bw, double *tInt, double dataRate, int sendSize, int tweakIntTime)
-{
-        int n;  /* channel bandwidth = 2^-n MHz */
-        int t;  /* integration time in microsec */
-        int n2, n5;     /* factors of 2 and 5 in of t */
-        int p;          /* total int time is p * 2^n2 * 5^n5 */
-        int fftTime;    /* fft time in mus */
-        int nFFT;       /* number of ffts in integration time */
-        int bytesPerFFT;
-        int targetNSend;
-        int i2, i5, A2, A5;
-        int e, eBest;
-        int blocksPerSend = 1;
-        int nSend;
-        int f;
-
-        if(sendSize <= 0)
-        {
-                sendSize = 6000000;
-        }
-
-        n = -static_cast<int>(log(bw)/log(2) + 0.5);
-        if(n < 0)
-        {
-                return -1;
-        }
-        fftTime = 1 << n;
-        bytesPerFFT = static_cast<int>(dataRate * fftTime / 4);
-
-	if(tweakIntTime)
-        {
-                /* Here, adjust the integration time to make things work out best */
-                *tInt = tweakTime(*tInt, n, &n2, &n5, &p);
-
-                t = static_cast<int>(1.0e6*(*tInt) + 0.5);
-                nFFT = (int)((*tInt)*1.0e6/fftTime + 0.5);
-
-                /* Aim for about 6 MB sends */
-                targetNSend = static_cast<int>( (float)sendSize/bytesPerFFT );
-
-                A2 = 1;
-                eBest = 1<<30;
-                for(i2 = 0; i2 <= n2; i2++)
-                {
-                        A2 *= 2;
-                        A5 = 1;
-                        for(i5 = 0; i5 <= n5; i5++)
-                        {
-                                A5 *= 5;
-                                e = abs(A2*A5 - targetNSend);
-                                if(e < eBest)
-                                {
-                                        eBest = e;
-                                        blocksPerSend = A2*A5;
-                                }
-                        }
-                }
-
-                return blocksPerSend;
-        }
-	else
-        {
-                nFFT = (int)((*tInt)*1.0e6/fftTime + 0.5);
-
-                targetNSend = static_cast<int>(sendSize*2.0/3.0/bytesPerFFT);
-
-                /* See if any value within a factor of ~2 target works exactly */
-                for(nSend = targetNSend*3/2; nSend >= targetNSend/2; nSend--)
-                {
-                        if(nFFT % nSend == 0)
-                        {
-                                return nSend;
-                        }
-                }
-
-                /* Not optimal.  try to keep integration times fairly equal */
-                f = static_cast<int>((float)nFFT/targetNSend + 0.9);
-                if(f < 5)
-                {
-                        f = 5;
-                }
-
-                return nFFT/f;
-        }
-
-        return 0;
-}
-
 static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, const VexData *V, const CorrParams *P, const VexScan *S)
 {
 	int c, fftdurNS;
@@ -1206,7 +1051,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		if(strcmp(D->rule[i].configName, S->corrSetupName.c_str()) == 0)
 		{
-			sprintf(D->rule[i].configName, configName.c_str());
+			strcpy(D->rule[i].configName, configName.c_str());
 		}
 	}
 	config->tInt = corrSetup->tInt;
@@ -1812,6 +1657,20 @@ int usage(int argc, char **argv)
 	return 0;
 }
 
+void runCommand(const char *cmd, int verbose)
+{
+	if(verbose > 0)
+	{
+		cout << "Executing: " << cmd << endl;
+	}
+	int s = system(cmd);
+	if(s == -1)
+	{
+		cerr << "Error executing: " << cmd << endl;
+		exit(0);
+	}
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
@@ -1978,32 +1837,16 @@ int main(int argc, char **argv)
                 char cmd[512];
 
                 sprintf(cmd, "rm -f %s.params", v2dFile.c_str());
-                if(verbose > 0)
-                {
-                        printf("Executing: %s\n", cmd);
-                }
-                system(cmd);
+		runCommand(cmd, verbose);
 
                 sprintf(cmd, "rm -f %s_*.input", P->jobSeries.c_str());
-                if(verbose > 0)
-                {
-                        printf("Executing: %s\n", cmd);
-                }
-                system(cmd);
+		runCommand(cmd, verbose);
 
                 sprintf(cmd, "rm -f %s_*.calc", P->jobSeries.c_str());
-                if(verbose > 0)
-                {
-                        printf("Executing: %s\n", cmd);
-                }
-                system(cmd);
+		runCommand(cmd, verbose);
 
                 sprintf(cmd, "rm -f %s_*.flag", P->jobSeries.c_str());
-                if(verbose > 0)
-                {
-                        printf("Executing: %s\n", cmd);
-                }
-                system(cmd);
+		runCommand(cmd, verbose);
         }
 
 	ofstream of;

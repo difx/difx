@@ -236,12 +236,13 @@ const VexFormat* VexMode::getFormat(const string antName) const
 {
 	map<string,VexSetup>::const_iterator it;
 
-	it == setups.find(antName);
+	it = setups.find(antName);
 	if(it == setups.end())
 	{
 		cerr << "Error: antName=" << antName << " not found" << endl;
 		exit(0);
 	}
+
 
 	return &it->second.format;
 }
