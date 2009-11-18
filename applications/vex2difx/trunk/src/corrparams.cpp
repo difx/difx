@@ -672,9 +672,9 @@ int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomF
 	else if(key == "noparent" || key == "NOPARENT")
         {
 		if(value == "TRUE" || value == "True" || value == "true")
-	                zoomFreq->correlateparent = true;
+	                zoomFreq->correlateparent = false;
 		else
-			zoomFreq->correlateparent = false;
+			zoomFreq->correlateparent = true;
         }
 	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
         {
