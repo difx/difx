@@ -40,10 +40,10 @@ DifxRule *newDifxRuleArray(int nRule)
         dr = (DifxRule *)calloc(nRule, sizeof(DifxRule));
         for(r = 0; r < nRule; r++)
         {
-		sprintf(dr[r].configName, "");
-                sprintf(dr[r].sourcename, "");
-                sprintf(dr[r].scanId, "");
-		sprintf(dr[r].calCode, "");
+		dr[r].configName[0] = 0;
+                dr[r].sourcename[0] = 0;
+                dr[r].scanId[0] = 0;
+		dr[r].calCode[0] = 0;
 		dr[r].qual = -1;
 		dr[r].mjdStart = -1.0;
 		dr[r].mjdStop = -1.0;

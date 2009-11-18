@@ -37,7 +37,6 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	DifxScan *scan;
 	int a, s, p, i;
 	int refAnt, order;
-	const char *name;
 
 	if(!D)
 	{

@@ -106,14 +106,15 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 {
 	int i, v;
 	char line[100];
+	char *ptr;
 
 	/* reset the parameter list */
 	resetDifxParameters(vis->params);
 
 	for(i = 0; i < 13; i++)
 	{
-		fgets(line, 99, vis->infile);
-		if(feof(vis->infile))
+		ptr = fgets(line, 99, vis->infile);
+		if(ptr == 0)
 		{
 			return -1;
 		}

@@ -583,7 +583,7 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 {
 	DifxParameters *pp;
 	DifxPhasedArray *dpa;
-	int i, r;
+	int r;
 
 	pp = newDifxParametersfromfile(fileName);
 	if(!pp) 
@@ -1428,7 +1428,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int a, b, c, e, qb, nc;
+	int a, b, c, e, qb;
 	DifxDatastream *ds;
 	
 	if(!D)
@@ -1586,17 +1586,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
 	
 	int rows[20];
-	int a, i, j, k, c, s, N, row, n, p, r, applies, src;
-	const char *cname;
+	int a, i, j, k, c, s, N, row, n, r, applies, src;
 	const char *str;
-	const char *antlist;
-	float nch;
 	double time;
-	int nSubScan = 0;
-	int nSubarray;
-	int nPoint, startPoint;
-	DifxScan *old_scan;
-	int old_nScan;
 	//int nFound, nTel, nSrc, startsec, dursec;
 	int nFound, nTel, startsec, dursec;
 
@@ -1655,12 +1647,6 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	{
 		strncpy(D->job->difxVersion, DifxParametersvalue(cp, row), 63);
 		D->job->difxVersion[63] = 0;
-	}
-
-	row = DifxParametersfind(cp, 0, "NUM SUBSCANS");
-	if(row >= 0)
-	{
-		nSubScan = atoi(DifxParametersvalue(cp, row));
 	}
 
 	row = DifxParametersfind(cp, 0, "SESSION");
@@ -1862,11 +1848,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->eop[i].yPole   = atof(DifxParametersvalue(cp, rows[4]));
 	}
 
-	if(nSubScan == 0)
+	k = 0;
+	for(i = 0; i < D->nScan; i++)
 	{
-	    k = 0;
-	    for(i = 0; i < D->nScan; i++)
-	    {
 		row = DifxParametersfind1(cp, 0, "SCAN %d START (S)", i);
                 if(row < 0) {
                     fprintf(stderr, "SCAN %d START (S) not found\n", i);
@@ -1992,108 +1976,9 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		//	}
 		//}
 		k++;
-	    }
-	    D->nScan = k;
-	    //fprintf(stdout, "Got %d scans\n", k);
 	}
-	else
-	{
-	    fprintf(stderr, "SUBARRAYS NOT SUPPORTED");
-	    return 0;
-	    
-//	    old_nScan = D->nScan;
-//	    old_scan = D->scan;
-//	    D->nScan = nSubScan;
-//	    D->scan = newDifxScanArray(D->nScan);
-//	    k = 0;
-
-//	    rows[N_SCAN2_ROWS-1] = 0;
-//	    for(i = 0; i < old_nScan; i++)
-//	    {
-//		row = DifxParametersfind1(cp, rows[N_SCAN2_ROWS-1], 
-//		    "SCAN %d SUBARRAYS", i);
-//		if(row < 0)
-//		{
-//		    fprintf(stderr, "SCAN %d SUBARRAYS not found\n", i);
-//		    return 0;
-//		}
-//		nSubarray = atoi(DifxParametersvalue(cp, row));
-//
-//		row = DifxParametersfind1(cp, row, "SCAN %d SRC NAME", i);
-//		if(row < 0)
-//		{
-//		    fprintf(stderr, "SCAN %d SRC NAME not found\n", i);
-//		    return 0;
-//		}
-//		cname = DifxParametersvalue(cp, row);
-//
-//		for(j = 0; j < nSubarray; j++)
-//		{
-//		    copyDifxScan(D->scan + k, old_scan + i, 0, 0, 0);
-//		    memcpy(D->scan + k, old_scan + i, sizeof(DifxScan));
-//		    D->scan[k].model = (DifxModel **)calloc(
-//			D->scan[k].nAntenna, sizeof(DifxModel *));
-//	    	    rows[N_SCAN2_ROWS-1] = row;
-//		    N = DifxParametersbatchfind2(cp, rows[N_SCAN2_ROWS-1], 
-//			scanKeys2, i, j, N_SCAN2_ROWS, rows);
-//		    if(N < N_SCAN2_ROWS)
-//		    {
-//			fprintf(stderr, "Scan %d subarray %d: data not found\n",
-//				i, j);
-//			return 0;
-//		    }
-//		    strncpy(D->scan[i].name, DifxParametersvalue(cp, rows[0]), 
-//			31);
-//		    D->scan[i].name[31]  = 0;
-//		    strncpy(D->scan[i].calCode, 
-//			DifxParametersvalue(cp, rows[2]), 3);
-//		    D->scan[i].calCode[3]= 0;
-//		    D->scan[i].qual = atoi(DifxParametersvalue(cp, rows[3]));
-//
-//		    antlist = DifxParametersvalue(cp, rows[1]);
-//		    while(sscanf(antlist, "%d%n", &a, &p) > 0)
-//		    {
-//			if(a < 0 || a > D->scan[k].nAntenna)
-//			{
-//			    fprintf(stderr, "Ant num out of range : %s\n",
-//				DifxParametersvalue(cp, rows[1]));
-//			    return 0;
-//			}
-//			antlist += p;
-//			/* move the model column over */
-//			if(old_scan[i].model[a] == 0)
-//			{
-//			    fprintf(stderr, "Ant %d in > 1 subarray : %s\n",
-//				a, DifxParametersvalue(cp, rows[1]));
-//			    return 0;
-//			}
-
-//			D->scan[k].model[a] = old_scan[i].model[a];
-//			old_scan[i].model[a] = 0;
-//		    }
-
-//		    for(c = 0; c < D->nConfig; c++)
-//		    {
-//			if(strcmp(cname, D->config[c].name) == 0)
-//			{
-//				D->scan[i].configId = c;
-//				break;
-//			}
-//		    }
-//		    if(c == D->nConfig)
-//		    {
-//			fprintf(stderr, "Error -- source without config! "
-//				"id=%d  name=%s  realname=%s\n",
-//				i, cname, D->scan[i].name);
-//			return 0;
-//		    }
-		
-//		    k++;
-//		}
-//	    }
-
-//	    deleteDifxScanArray(old_scan, old_nScan);
-	}
+	D->nScan = k;
+	//fprintf(stdout, "Got %d scans\n", k);
 
 	row = DifxParametersfind(cp, 0, "NUM SPACECRAFT");
 	if(row >= 0)
@@ -2383,6 +2268,7 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 	double mjd1, mjd2;
 	int i, j=0, n=0, a, p;
 	char line[1000];
+	char *ptr;
 	int nUndecoded = 0;
 	DifxJob *J;
 
@@ -2398,8 +2284,8 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 		return 0;
 	}
 
-	fgets(line, 999, in);
-	if(feof(in))
+	ptr = fgets(line, 999, in);
+	if(ptr == 0)
 	{
 		fprintf(stderr, "Warning: premature end of file %s\n",
 			flagfile);
@@ -2413,8 +2299,8 @@ static int populateFlags(DifxInput *D, const char *flagfile)
 		J->flag = newDifxAntennaFlagArray(J->nFlag);
 		for(i = 0; i < n; i++)
 		{
-			fgets(line, 999, in);
-                        if(feof(in))
+			ptr = fgets(line, 999, in);
+                        if(ptr == 0)
                         {
                                 fprintf(stderr, "Warning: premature end of file %s\n",
                                         flagfile);
@@ -3124,7 +3010,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 /* FIXME -- this function is ill-posed */
 int DifxInputGetScanId(const DifxInput *D, double mjd)
 {
-	int d, c, scanId;
+	int c, scanId;
 
 	if(!D)
 	{
@@ -3337,7 +3223,7 @@ int DifxInputSimFXCORR(DifxInput *D)
 	double quantum;
 	double tInt, sec, mjdStart;
 	double sec_old, deltasec;
-	int a, c, d, n, mjd;
+	int c, d, n, mjd;
 	int speedUp = 4, su, fanout;
 	int nBitstream, sampRate;
 

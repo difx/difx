@@ -53,8 +53,6 @@ DifxPhasedArray *growDifxPhasedarrayArray(DifxPhasedArray *dpa, int origSize)
 
 void deleteDifxPhasedarrayArray(DifxPhasedArray *dpa, int nPhasedArray)
 {
-	int p;
-
 	if(!dpa)
 	{
 		return;
@@ -68,8 +66,8 @@ void fprintDifxPhasedArray(FILE *fp, const DifxPhasedArray *dpa)
 	if(dpa)
 	{
 		fprintf(fp, "    Filename = %s\n", dpa->fileName);
-		fprintf(fp, "    Output type = %a\n", dpa->outputType);
-		fprintf(fp, "    Output format = %a\n", dpa->outputFormat);
+		fprintf(fp, "    Output type = %s\n", dpa->outputType);
+		fprintf(fp, "    Output format = %s\n", dpa->outputFormat);
 		fprintf(fp, "    Accumulation time (ns) = %f\n", dpa->accTime);
 		fprintf(fp, "    Complex output: %d\n", dpa->complexOutput);
 		fprintf(fp, "    Output quantisation bits: %d\n", dpa->quantBits);

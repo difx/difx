@@ -602,6 +602,8 @@ void printDifxSource(const DifxSource *ds);
 void fprintDifxSource(FILE *fp, const DifxSource *ds);
 void printDifxSourceSummary(const DifxSource *ds);
 void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds);
+int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
+        int doCalcode, int doQual, int doSpacecraftID, int doFitsSourceID);
 int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2);
 void copyDifxSource(DifxSource *dest, const DifxSource *src);
 DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1, const DifxSource *ds2, int nds2, int *sourceIdRemap, int *nds);

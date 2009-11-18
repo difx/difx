@@ -49,8 +49,8 @@ DifxSource *newDifxSourceArray(int nSource)
 		ds[s].parallax = 0.0;
 		ds[s].pmEpoch = 0.0;
 		ds[s].qual = 0;
-		sprintf(ds[s].calCode, "");
-		sprintf(ds[s].name, "");
+		ds[s].calCode[0] = 0;
+		ds[s].name[0] = 0;
 	}
 	
 	return ds;

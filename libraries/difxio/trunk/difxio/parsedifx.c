@@ -247,6 +247,7 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 {
 	DifxParameters *dp;
 	char line[2000];
+	char *ptr;
 	FILE *in;
 
 	in = fopen(filename, "r");
@@ -260,8 +261,8 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 
 	for(;;)
 	{
-		fgets(line, 1999, in);
-		if(feof(in))
+		ptr = fgets(line, 1999, in);
+		if(ptr == 0)
 		{
 			break;
 		}
