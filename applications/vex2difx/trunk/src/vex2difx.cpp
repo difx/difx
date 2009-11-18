@@ -778,7 +778,7 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 }
 
 // warning: assumes same number of datastreams == antennas for each config
-void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup)
+void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup, vector<set <int> > blockedfreqids)
 {	
 	int a1, a2, f, n1, n2, u, v;
 	int npol;
@@ -912,7 +912,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						continue;
 					}
 
-					DifxBaselineAllocFreqs(bl, D->datastream[a1].nRecFreq);
+					DifxBaselineAllocFreqs(bl, D->datastream[a1].nRecFreq + D->datastream[a1].nZoomFreq);
 
 					nFreq = 0; // this counts the actual number of freqs
 
@@ -925,6 +925,16 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						{
 							continue;
 						}
+						if(blockedfreqids[a1].size() > 0 &&
+                                                        blockedfreqids[a1].find(freqId) != blockedfreqids[a1].end())
+                                                {
+                                                        continue;
+                                                }
+                                                if(blockedfreqids[a2].size() > 0 &&
+                                                        blockedfreqids[a2].find(freqId) != blockedfreqids[a2].end())
+                                                {
+                                                        continue;
+                                                }
 	
 						DifxBaselineAllocPolProds(bl, nFreq, 4);
 	
@@ -969,6 +979,59 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 
 						nFreq++;
 					}
+					for(f = 0; f < D->datastream[a1].nZoomFreq; f++)
+                                        {
+                                                freqId = D->datastream[a1].zoomFreqId[f];
+
+                                                if(!corrSetup->correlateFreqId(freqId))
+                                                {
+                                                        continue;
+                                                }
+
+                                                DifxBaselineAllocPolProds(bl, nFreq, 4);
+
+                                                n1 = DifxDatastreamGetZoomBands(D->datastream+a1, freqId, a1p, a1c);
+                                                n2 = DifxDatastreamGetZoomBands(D->datastream+a2, freqId, a2p, a2c);
+
+                                                npol = 0;
+                                                for(u = 0; u < n1; u++)
+                                                {
+                                                        for(v = 0; v < n2; v++)
+                                                        {
+                                                                if(a1p[u] == a2p[v])
+                                                                {
+                                                                        bl->recChanA[nFreq][npol] = D->datastream[a1].nRecBand + a1c[u];
+                                                                        bl->recChanB[nFreq][npol] = D->datastream[a2].nRecBand + a2c[v];
+                                                                        npol++;
+                                                                }
+                                                        }
+                                                }
+
+						if(npol == 0)
+                                                {
+                                                        // This deallocates
+                                                        DifxBaselineAllocPolProds(bl, nFreq, 0);
+
+                                                        continue;
+                                                }
+
+                                                if(npol == 2 && corrSetup->doPolar)
+                                                {
+                                                        // configure cross hands here
+                                                        bl->recChanA[nFreq][2] = bl->recChanA[nFreq][0];
+                                                        bl->recChanB[nFreq][2] = bl->recChanB[nFreq][1];
+                                                        bl->recChanA[nFreq][3] = bl->recChanA[nFreq][1];
+                                                        bl->recChanB[nFreq][3] = bl->recChanB[nFreq][0];
+                                                }
+                                                else
+                                                {
+                                                        // Not all 4 products used: reduce count
+                                                        bl->nPolProd[nFreq] = npol;
+                                                }
+
+                                                nFreq++;
+                                        }
+
 	
 					bl->nFreq = nFreq;
 	
@@ -1104,6 +1167,40 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	return c;
 }
 
+bool matchingFreq(ZoomFreq zoomfreq, DifxDatastream * dd, int dfreqindex, vector<freq> freqs)
+{
+        double channeloffset;
+        freq f = freqs.at(dd->recFreqId[dfreqindex]);
+
+        if(f.sideBand == 'L')
+        {
+                if(zoomfreq.frequency > f.fq)
+                        return false;
+                if(zoomfreq.frequency - zoomfreq.bandwidth  < f.fq - f.bw)
+                        return false;
+                if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg) //0 means default to parent
+                        return false;
+                channeloffset = ((f.fq - zoomfreq.frequency)/f.bw)*f.nChan;
+                if(fabs(channeloffset - int(channeloffset+0.5)) > 0.000001)
+                        return false;
+                return true;
+        }
+        else
+        {
+                if(zoomfreq.frequency < f.fq)
+                        return false;
+                if(zoomfreq.frequency + zoomfreq.bandwidth  > f.fq + f.bw)
+                        return false;
+                if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg) //0 means default to parent
+                        return false;
+                channeloffset = ((zoomfreq.frequency - f.fq)/f.bw)*f.nChan;
+                if(fabs(channeloffset - int(channeloffset+0.5)) > 0.000001)
+                        return false;
+                return true;
+        }
+        return false;
+}
+
 int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSamp, int verbose, ofstream *of, int nDigit, char ext)
 {
 	DifxInput *D;
@@ -1123,6 +1220,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	int nPulsar=0;
 	int nTotalPhaseCentres;
 	int pointingSrcIndex, foundSrcIndex, atSource;
+	int nZoomBands, fqId, zoomsrc, polcount;
+	int * parentfreqindices;
+	DifxDatastream * dd;
+	ZoomFreq zf;
+	vector<set <int> > blockedfreqids;
 
 	// Assume same correlator setup for all scans
 	if(J.scans.size() == 0)
@@ -1175,7 +1277,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	D->scan = newDifxScanArray(D->nScan);
 	D->nConfig = configSet.size();
 	D->config = newDifxConfigArray(D->nConfig);
-		
+
+	blockedfreqids.resize(D->nAntenna);
+
 	if(of)
 	{
 		const char *fileBase = D->job->fileBase;
@@ -1396,8 +1500,71 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 				antennaSetup = P->getAntennaSetup(antName);
 				if(antennaSetup)
 				{
-					D->datastream[D->nDatastream].phaseCalIntervalMHz = 
-						antennaSetup->phaseCalIntervalMHz;
+					dd = &(D->datastream[D->nDatastream]);
+					dd->phaseCalIntervalMHz = antennaSetup->phaseCalIntervalMHz;
+					nZoomBands = 0;
+					if(antennaSetup->zoomFreqs.size() > 0)
+                                        {
+                                                DifxDatastreamAllocZoomFreqs(dd, antennaSetup->zoomFreqs.size());
+                                                parentfreqindices = (int*)calloc(antennaSetup->zoomFreqs.size(), sizeof(int));
+                                                for(int i=0;i<antennaSetup->zoomFreqs.size();i++)
+                                                {
+                                                        parentfreqindices[i] = -1;
+                                                        zf = antennaSetup->zoomFreqs.at(i);
+                                                        for(int j=0;j<dd->nRecFreq;j++)
+                                                        {
+                                                                if(matchingFreq(zf, dd, j, freqs))
+                                                                        parentfreqindices[i] = j;
+                                                        }
+                                                        if(parentfreqindices[i] < 0)
+                                                        {
+                                                                cerr << "Error: Cannot find a parent freq for zoom band " <<
+                                                                        i << " of datastream " << a << endl;
+                                                                exit(0);
+                                                        }
+                                                        fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
+                                                                        freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
+                                                                        int(corrSetup->nChan*zf.bandwidth/
+                                                                        freqs[dd->recFreqId[parentfreqindices[i]]].bw),
+                                                                        corrSetup->specAvg, 1, 1);
+                                                        dd->zoomFreqId[i] = fqId;
+                                                        dd->nZoomPol[i] = dd->nRecPol[parentfreqindices[i]];
+                                                        nZoomBands += dd->nRecPol[parentfreqindices[i]];
+                                                        if(!zf.correlateparent)
+                                                        {
+                                                                blockedfreqids[a].insert(dd->recFreqId[parentfreqindices[i]]);
+                                                        }
+                                                }
+						DifxDatastreamAllocZoomBands(dd, nZoomBands);
+						nZoomBands = 0;
+                                                for(int i=0;i<antennaSetup->zoomFreqs.size();i++)
+                                                {
+							zoomsrc = 0;
+							polcount = 0;
+                                                        for(int j=0;j<dd->nZoomPol[i];j++)
+                                                        {
+                                                                dd->zoomBandFreqId[nZoomBands] = dd->zoomFreqId[i];
+								for(int k=zoomsrc;k<dd->nRecBand;k++)
+								{
+									if(dd->recBandFreqId[k] == parentfreqindices[i])
+									{
+										dd->zoomBandPolName[nZoomBands] =
+											dd->recBandPolName[k];
+										zoomsrc = k+1;
+										polcount++;
+										break;
+									}
+								}
+								nZoomBands++;
+                                                        }
+							if(polcount != dd->nZoomPol[i])
+							{
+								cout << "Developer error - didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
+								exit(0);
+							}
+                                                }
+                                                free(parentfreqindices);
+                                        }
 					if(antennaSetup->freqClockOffs.size() > 0)
 					{
 						if(antennaSetup->freqClockOffs.size() != 
@@ -1406,7 +1573,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							cerr << "Error: AntennaSetup for " << antName << 
 							" has only " << antennaSetup->freqClockOffs.size() << 
 							" freqClockOffsets specified but " << 
-							D->datastream[D->nDatastream].nRecFreq << 
+							dd->nRecFreq << 
 							" recorded frequencies - aborting!" << endl;
 							exit(0);
 						}
@@ -1516,7 +1683,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	populateFreqTable(D, freqs);
 
 	// Make baseline table
-	populateBaselineTable(D, P, corrSetup);
+	populateBaselineTable(D, P, corrSetup, blockedfreqids);
 
 	// Make EOP table
 	populateEOPTable(D, V->getEOPs());
@@ -1526,6 +1693,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	simplifyDifxDatastreams(D);
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
+
+	//delete the "blocked freq" array
+	blockedfreqids.clear();
 
 	if(P->simFXCORR)
 	{

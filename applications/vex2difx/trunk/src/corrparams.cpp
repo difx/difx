@@ -629,6 +629,19 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	return nWarn;
 }
 
+ZoomFreq::ZoomFreq()
+{
+        initialise(-999, -999, false, -1);
+}
+
+void ZoomFreq::initialise(double freq, double bw, bool corrparent, int specavg)
+{
+        frequency = freq*1000000; //convert to Hz
+	bandwidth = bw*1000000; //convert to Hz
+	correlateparent = corrparent;
+	spectralaverage = specavg;
+}
+
 AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 {
 	polSwap = false;
@@ -646,8 +659,33 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	phaseCalIntervalMHz = 0;
 }
 
+int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomFreq)
+{
+	if(key == "freq" || key == "FREQ")
+        {
+                zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
+        }
+	else if(key == "bw" || key == "BW")
+        {
+                zoomFreq->bandwidth = atof(value.c_str())*1000000; //convert to Hz
+        }
+	else if(key == "noparent" || key == "NOPARENT")
+        {
+		if(value == "TRUE" || value == "True" || value == "true")
+	                zoomFreq->correlateparent = true;
+		else
+			zoomFreq->correlateparent = false;
+        }
+	else if(key == "specAvg" || key == "SPECAVG" || key == "specavg")
+        {
+                zoomFreq->spectralaverage = atoi(value.c_str());
+        }
+}
+
 int AntennaSetup::setkv(const string &key, const string &value)
 {
+	string::size_type at, last, splitat;
+        string nestedkeyval;
 	stringstream ss;
 	int nWarn = 0;
 
@@ -771,6 +809,24 @@ int AntennaSetup::setkv(const string &key, const string &value)
 			freqClockOffs.push_back(atof(s.substr(last, at-last).c_str()));
 			last = at+1;
 		}
+	}
+	else if(key == "addZoomFreq")
+	{
+		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /
+                //eg addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		//only freq and bw are compulsory - default is parent values and don't correlate parent
+                zoomFreqs.push_back(ZoomFreq());
+                ZoomFreq * newfreq = &(zoomFreqs.back());
+                last = 0;
+                at = 0;
+                while(at !=string::npos)
+                {
+                        at = value.find_first_of('/', last);
+                        nestedkeyval = value.substr(last, at-last);
+                        splitat = nestedkeyval.find_first_of('@');
+                        setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
+                        last = at+1;
+                }
 	}
 	else
 	{

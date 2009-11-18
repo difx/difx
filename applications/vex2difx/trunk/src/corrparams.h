@@ -88,11 +88,27 @@ public:
 	vector<PhaseCentre> phaseCentres; // Additional phase centres to be correlated
 };
 
+class ZoomFreq
+{
+public:
+	//constructor
+	ZoomFreq();
+
+	//method
+	void initialise(double freq, double bw, bool corrparent, int specavg);
+
+	//variables
+	double frequency, bandwidth;
+	int spectralaverage;
+	bool correlateparent;
+};
+
 class AntennaSetup
 {
 public:
 	AntennaSetup(const string &name);
 	int setkv(const string &key, const string &value);
+	int setkv(const string &key, const string &value, ZoomFreq * zoomFreq);
 
 	string vexName;		// Antenna name as it appears in vex file
 	string difxName;	// Antenna name (if different) to appear in difx
@@ -111,6 +127,7 @@ public:
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
 };
 
 class CorrSetup
