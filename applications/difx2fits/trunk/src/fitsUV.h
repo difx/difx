@@ -56,7 +56,7 @@ typedef struct
 	DifxParameters *dp;
 	FILE *in;
 	double U, V, W;
-	double mjd;
+	double mjd, iat;
 	float tInt;
 	int baseline;
 	int *antennaIdRemap;		/* to convert baseline number */

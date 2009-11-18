@@ -314,6 +314,7 @@ class JobList:
 			j = j + 1
 		out.close()
 
+		j = 1
 		format = 'VLBA_%%s_%%s_%%0%dd_%%s.jobmatrix.txt' % nDigit
                 for i in indices:
                         fn = '%s.%d.jobmatrix' % (expt, i)
@@ -329,6 +330,7 @@ class JobList:
                                         if verbose:
                                                 print 'Executing: %s' % cmd
                                         system(cmd)
+			j = j + 1
 
 		# merge and gzip difxlog files
 		logFile = '%s/%s.difxlog' % (cwd, self.kv['pass'])

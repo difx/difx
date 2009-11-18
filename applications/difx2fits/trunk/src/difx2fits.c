@@ -358,7 +358,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
-	int i,j,band,fqindex;
+	int i, j, band;
+	int fqindex=-1;
 	DifxDatastream * dds;
 
 	strcpy(keys->obscode, D->job->obsCode);
@@ -412,7 +413,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			}
 		}
 	}
-	if(keys->no_chan == -1)
+	if(keys->no_chan == -1 || fqindex == -1)
 	{
 		fprintf(stderr, "Didn't find any used frequencies - what the?? Aborting\n");
 		exit(0);

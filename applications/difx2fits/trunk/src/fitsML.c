@@ -132,7 +132,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int printed=0;
 	/* 1-based indices for FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
-	double clockRate;
 
 	if(D == 0)
 	{
