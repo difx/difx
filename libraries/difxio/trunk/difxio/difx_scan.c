@@ -317,8 +317,8 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	return ds;
 }
 
-/* dt in seconds */
-int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
+/* dt in seconds; mjd and iat both in days */
+int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 {
 	int i;
 	double m1, m2;
@@ -352,13 +352,13 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt)
 	for(i = 0; i < ds->nPoly; i++)
 	{
 		dp = im[0] + i;
-		m1 = dp->mjd + dp->sec/86400.0;
+		m1 = (dp->mjd - mjd) + dp->sec/86400.0;
 		m2 = m1 + dp->validDuration/86400.0;
-		if(mjd >= m1 && mjd <= m2)
+		if(m1 <= iat && iat <= m2)
 		{
 			if(dt)
 			{
-				*dt = (mjd - m1)*86400.0;
+				*dt = (iat - m1)*86400.0;
 			}
 			return i;
 		}

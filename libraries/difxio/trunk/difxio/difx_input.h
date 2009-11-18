@@ -562,7 +562,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	const DifxScan *ds2, int nds2, const int *sourceIdRemap, 
 	const int *jobIdRemap, const int *configIdRemap, 
 	const int *antennaIdRemap, int *nds);
-int getDifxScanIMIndex(const DifxScan *ds, double mjd, double *dt);
+int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt);
 int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
 	const DifxConfig *dc);
 int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
