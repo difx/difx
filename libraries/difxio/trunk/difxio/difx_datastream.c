@@ -65,17 +65,17 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 	dd->nRecPol = (int *)calloc(nRecFreq, sizeof(int));
 	dd->clockOffset = (double *)calloc(nRecFreq, sizeof(double));
 	dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
-	if(dd->zoomFreqId)
-	{
-		free(dd->zoomFreqId);
-	}
-	if(dd->nZoomPol)
-	{
-		free(dd->nZoomPol);
-	}
-	dd->nZoomFreq = 0; //for now
-	dd->zoomFreqId = 0;
-	dd->nZoomPol = 0;
+        if(dd->zoomFreqId)
+        {
+                free(dd->zoomFreqId);
+        }
+        if(dd->nZoomPol)
+        {
+                free(dd->nZoomPol);
+        }
+        dd->nZoomFreq = 0;
+        dd->zoomFreqId = 0;
+        dd->nZoomPol = 0;
 }
 
 void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
@@ -102,6 +102,36 @@ void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
 	dd->nZoomBand = 0; //for now
 	dd->zoomBandFreqId = 0;
 	dd->zoomBandPolName = 0;
+}
+
+void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq)
+{
+        if(dd->zoomFreqId)
+        {
+                free(dd->zoomFreqId);
+        }
+        if(dd->nZoomPol)
+        {
+                free(dd->nZoomPol);
+        }
+	dd->nZoomFreq = nZoomFreq;
+        dd->zoomFreqId = (int *)calloc(nZoomFreq, sizeof(int));
+        dd->nZoomPol = (int *)calloc(nZoomFreq, sizeof(int));
+}
+
+void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand)
+{
+        if(dd->zoomBandFreqId)
+        {
+                free(dd->zoomBandFreqId);
+        }
+        if(dd->zoomBandPolName)
+        {
+                free(dd->zoomBandPolName);
+        }
+        dd->nZoomBand = nZoomBand;
+        dd->zoomBandFreqId = (int *)calloc(nZoomBand, sizeof(int));
+        dd->zoomBandPolName = (char *)calloc(nZoomBand, sizeof(char));
 }
 
 void deleteDifxDatastreamInternals(DifxDatastream *dd)
@@ -617,4 +647,56 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 	}
 
 	return n;
+}
+
+int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *zoomBands)
+{
+        int z;
+        int n=0;
+        for(z = 0; z < dd->nZoomBand; z++)
+        {
+                if(dd->zoomBandFreqId[z] == freqId)
+                {
+                        if(dd->zoomBandPolName[z] <= ' ')
+                        {
+                                continue;
+                        }
+                        if(n >= 2)
+                        {
+                                fprintf(stderr, "Warning: skipping dup zoomchan\n");
+                        }
+                        else if(n == 1 && dd->zoomBandPolName[z] == pols[0])
+                        {
+                                fprintf(stderr, "Warning: skipping dup zoomchan\n");
+                        }
+                        else
+                        {
+                                pols[n] = dd->zoomBandPolName[z];
+                                zoomBands[n] = z;
+                                n++;
+                        }
+                }
+        }
+
+	if(n == 2)
+        {
+                if(pols[0] == 'L' && pols[1] == 'R')
+                {
+                        z = zoomBands[0];
+                        zoomBands[0] = zoomBands[1];
+                        zoomBands[1] = z;
+                        pols[0] = 'R';
+                        pols[1] = 'L';
+                }
+                if(pols[0] == 'Y' && pols[1] == 'X')
+                {
+                        z = zoomBands[0];
+                        zoomBands[0] = zoomBands[1];
+                        zoomBands[1] = z;
+                        pols[0] = 'X';
+                        pols[1] = 'Y';
+                }
+        }
+
+        return n;
 }

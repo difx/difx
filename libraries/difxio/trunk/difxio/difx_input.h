@@ -432,6 +432,8 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
 void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nReqFreq);
 void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
+void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq);
+void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);
@@ -447,6 +449,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 	const int *freqIdRemap, const int *antennaIdRemap, int *ndd);
 int writeDifxDatastream(FILE *out, const DifxDatastream *dd);
 int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *recBands);
+int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *zoomBands);
 
 /* DifxBaseline functions */
 DifxBaseline *newDifxBaselineArray(int nBaseline);
