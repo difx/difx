@@ -233,7 +233,7 @@ int main(int argc, const char * argv[]) {
 	      if (status) {
 		pollfd_remove(pollfds, &nfds, clients[j].fd);
 		monclient_remove(clients, &nclient, clients[j].fd);
-		monserver_close(clients[j]);
+		monserver_close(&clients[j]);
 		j--;  //Not sure this will work....
 
 	      } else {
@@ -428,6 +428,7 @@ int monclient_add(struct monclient *clients,  int *nclient, int maxclient, int f
 
   clients[*nclient].fd = fd;
   clients[*nclient].nvis = 0;
+  clients[*nclient].bufsize = 0;
   clients[*nclient].vis = NULL;
   clients[*nclient].visbuf = NULL;
   (*nclient)++;
@@ -452,9 +453,7 @@ int monclient_remove(struct monclient *clients, int *nclient, int fd) {
 
   (*nclient)--;
   for (i=n; i<(int)*nclient; i++) {
-    clients[i].fd = clients[i+1].fd;
-    clients[i].nvis = clients[i+1].nvis;
-    clients[i].vis = clients[i+1].vis;
+    monserver_copyclient(clients[i+1], &clients[i]);
   }
 
   return(0);
@@ -493,14 +492,11 @@ void monclient_addproduct(struct monclient *client, int nproduct, int32_t produc
 
 int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t numchannels, 
 			  int32_t thisbuffersize, cf32 *buffer) {
-  int nvis, maxvis, i, fd, status, all, ivis;
+  int nvis, maxvis, i, status, all;
   
   if (client.nvis==0) return(0);
 
   maxvis = thisbuffersize/(numchannels+1);
-  //printf("Buffersize=%d\n", thisbuffersize);
-  //printf("numchannels=%d\n", numchannels);
-  //printf("Maxvis=%d\n", maxvis);
   all = 0;
 
   if (client.nvis>0 && client.vis[0] == -1) {

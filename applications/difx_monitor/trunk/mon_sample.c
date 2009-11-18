@@ -192,7 +192,7 @@ int main(int argc, const char * argv[]) {
     }
   }
 
-  monserver_close(monserver);
+  monserver_close(&monserver);
 }
 
 

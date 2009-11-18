@@ -1,14 +1,20 @@
 #ifndef MONSERVER_H
 #define MONSERVER_H
 
+#include <string>
 #include <stdint.h>
+
+#include <configuration.h>
 #include <ipps.h>
+
+using std::string;
 
 #define MONITOR_PORT 52300
 
 #define DIFXMON_NOERROR         0
 #define DIFXMON_TOOMANYCLIENTS  1
 #define DIFXMON_BADPRODUCTS     2
+#define DIFXMON_MALLOCERROR     3
 
 struct monclient {
   int     fd;       /* file descriptor */
@@ -16,9 +22,36 @@ struct monclient {
   int32_t *vis;     /* Visibilities numbers to  return*/
   int32_t timestamp; /* Correlator time field */
   int32_t numchannels; /* Number of spectral points/visibility */
+  int32_t bufsize;    /* Size contained in visbuf */
   int32_t nretvis;    /* Number of visibilities actually returned */
   char *visbuf; /* buffer of returned visibilities, int32_t followed by numchannel complexfloat */
   int ivis;
+};
+
+class DIFX_ProdConfig {
+ public:
+
+  DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, string TelName2, double freq, double bandwidth, char polpair[3]);
+  ~DIFX_ProdConfig();
+
+  inline int getTelescopeIndex1 () { return TelescopeIndex1; }
+  inline int getTelescopeIndex2 () { return TelescopeIndex2; }
+  inline double getFreq () { return Freq; }
+  inline double getBandwidth () { return Bandwidth; }
+  inline string getTelescopeName1 () { return TelescopeName1; }
+  inline string getTelescopeName2 () { return TelescopeName2; }
+  inline void getPolPair(char polpair[3]) {polpair[0]=PolPair[0]; polpair[1]=PolPair[1]; polpair[2]=0;}
+
+ private:
+
+  int TelescopeIndex1;
+  int TelescopeIndex2;
+  string TelescopeName1;
+  string TelescopeName2;
+  char PolPair[3];
+  double Freq;
+  double Bandwidth;
+
 };
 
 int readnetwork(int sock, char* ptr, int bytestoread);
@@ -31,8 +64,13 @@ int monserver_requestproduct(struct monclient client, unsigned int product);
 int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod);
 int monserver_requestall(struct monclient client);
 int monserver_readvis(struct monclient *client);
-int monserver_close(struct monclient monserver);
+int monserver_close(struct monclient *monserver);
 int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis);
 void monserver_resetvis(struct monclient *client);
+void monserver_copyclient(struct monclient client, struct monclient *copy);
+int monserver_dupclient(struct monclient client, struct monclient *copy);
+void monserver_clear(struct monclient *client);
+vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex);
+
 
 #endif

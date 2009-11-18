@@ -1,31 +1,35 @@
 .PHONY : all clean
 
-TARGETS := difx_monitor monitor_server mon_sample difx_config
+TARGETS := difx_monitor monitor_server mon_sample difx_config vcal
 
 all   : $(TARGETS)
 
 clean : $(TARGETS)
 	rm -f *.o $^
 
-CXX = $(MPICXX) -g 
-CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
-#CPPFLAGS =  -D__PWD=\"$$PWD\"
+CXX = $(MPICXX) -g -Wall
+#CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
+CPPFLAGS =  -D__PWD=\"$$PWD\"
 F77 = g77
 
 INCS = -I$(DIFXROOT)/include/ -I$(IPPROOT)/include 
-LIBS =  -L$(DIFXROOT)/lib/ -L$(IPPROOT)/sharedlib -lmpifxcorr -lmark5access -ldifxmessage $(IPPLINKLIBS) -lcpgplot -lpgplot -lX11 -lpng 
+LIBS =  -L$(DIFXROOT)/lib/ -L$(IPPROOT)/sharedlib -lmpifxcorr -lmark5access -ldifxmessage $(IPPLINKLIBS) 
+PGPLOTLIBS = -lcpgplot -lpgplot -lX11 -lpng 
 
-difx_monitor : difx_monitor.cpp monserver.c monserver.h
+difx_monitor : difx_monitor.cpp monserver.cpp monserver.h
+	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) $(PGPLOTLIBS)
+
+vcal : vcal.cpp monserver.cpp monserver.h
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) 
 
 difx_config : difx_config.cpp 
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) 
 
-monitor_server : monitor_server.cpp monserver.c monserver.h
+monitor_server : monitor_server.cpp monserver.cpp monserver.h
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) 
 
-mon_sample: mon_sample.c monserver.c monserver.h
-	$(CXX) $(CPPFLAGS) $(INCS) -o $@  $^ $(LIBS)
+mon_sample: mon_sample.c monserver.cpp monserver.h
+	$(CXX) $(CPPFLAGS) $(INCS) -o $@  $^ $(LIBS) $(PGPLOTLIBS)
 
-mon3d: mon3d.c monserver.c
+mon3d: mon3d.c monserver.cpp
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@  $^ $(LIBS)

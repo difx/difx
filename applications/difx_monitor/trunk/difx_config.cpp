@@ -17,7 +17,7 @@ using namespace std;
 
 int main(int argc, const char * argv[]) {
   Configuration * config;
-  int currentconfigindex;
+  int currentconfigindex, freqindex;
   char polpair[3];
   string sourcename;
   ostringstream ss;
@@ -52,7 +52,7 @@ int main(int argc, const char * argv[]) {
       int ds2index = config->getBDataStream2Index(currentconfigindex, i);
 
       for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++) {
-	int freqindex = config->getBFreqIndex(currentconfigindex, i, j);
+	freqindex = config->getBFreqIndex(currentconfigindex, i, j);
 
 	for(int b=0;b<binloop;b++) {
 	  for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++) {
@@ -68,8 +68,9 @@ int main(int argc, const char * argv[]) {
 	    cout << " " << polpair << " ";
 
 	    cout  << config->getFreqTableFreq(freqindex) << " MHz";
+	    
+	    cout << " (" << config->getFreqTableBandwidth(freqindex) << " MHz)";
 
-	    cout << " (" << config->getConfigBandwidth(currentconfigindex) << " MHz)";
 	    cout << endl;
 	    prod++;
 	  }
@@ -94,7 +95,11 @@ int main(int argc, const char * argv[]) {
        else
 	 cout << firstpol << otherpol;
 
-       cout <<  " " << config->getFreqTableFreq(config->getDFreqIndex(currentconfigindex, i, k)) << " MHz";
+       freqindex = config->getDFreqIndex(currentconfigindex, i, k);
+       cout <<  " " << config->getFreqTableFreq(freqindex) << " MHz";
+
+       cout << " (" << config->getFreqTableBandwidth(freqindex) << " MHz)";
+
        cout << endl;
 
        prod++;

@@ -30,7 +30,6 @@ using namespace std;
 //prototypes
 void plot_results();
 void change_config();
-int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 
 Configuration * config;
 int socketnumber, currentconfigindex, maxresultlength, nav, atseconds;
@@ -45,8 +44,8 @@ f32 *xval=NULL;
 
 int main(int argc, const char * argv[])
 {
-  int timestampsec, readbytes, i, status = 1;
-  int numchan, prod, nvis, startsec;
+  int i, status = 1;
+  int prod, nvis, startsec;
   cf32 *vis;
   struct monclient monserver;
 
@@ -121,7 +120,7 @@ int main(int argc, const char * argv[])
   }
 
   //close the socket
-  monserver_close(monserver);
+  monserver_close(&monserver);
 }
 
 void plot_results()
