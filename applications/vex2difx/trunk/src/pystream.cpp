@@ -29,7 +29,7 @@
 
 #include "pystream.h"
 
-void pystream::open(string antennaName, const VexData *V)
+void pystream::open(const string& antennaName, const VexData *V)
 {
 	ant = antennaName;
 	lastValid = 0.0;
@@ -37,6 +37,7 @@ void pystream::open(string antennaName, const VexData *V)
 	lastModeId = -1;
 	lastChannelSet = -1;
 	obsCode = V->getExper()->name;
+	calcIfIndex(V);
 	if(obsCode == "")
 	{
 		obsCode = "Unknown";
@@ -46,6 +47,33 @@ void pystream::open(string antennaName, const VexData *V)
 		sw[i] = "";
 	}
 	ofstream::open((string(obsCode) + string(".") + antennaName + ".py").c_str());
+}
+
+void pystream::calcIfIndex(const VexData *V)
+{
+	map<string,VexIF>::const_iterator it;
+	unsigned int nMode = V->nMode();
+
+	ifIndex.clear();
+	ifIndex.resize(nMode);
+
+	for(unsigned int m = 0; m < nMode; m++)
+	{
+		const VexMode *mode = V->getMode(m);
+		const VexSetup *setup = mode->getSetup(ant);
+		unsigned int nif=0;
+
+		if(!setup)
+		{
+			continue;
+		}
+
+		for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
+		{
+			ifIndex[m][it->second.name] = nif;
+			nif++;
+		}
+	}
 }
 
 void pystream::close()
@@ -74,8 +102,8 @@ int pystream::writeHeader(const VexData *V)
 	*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 	*this << "from edu.nrao.evla.observe import Parameters" << endl;
 	*this << endl;
-	*this << "obsCode = \"" << obsCode << "\"" << endl;
-	*this << "stnCode = \"" << ant << "\"" << endl;
+	*this << "obsCode = '" << obsCode << "'" << endl;
+	*this << "stnCode = '" << ant << "'" << endl;
 	*this << endl;
 
 	return 0;
@@ -87,11 +115,23 @@ int pystream::writeRecorderInit(const VexData *V)
 
 	// FIXME For now, set up single recorder in Mark5B mode
 	// Need to check requested format/mode first
-	*this << "recorder0.setMode(\"Mark5B\")" << endl;
+	*this << "recorder0.setMode('Mark5B')" << endl;
 	*this << "recorder0.setPSNMode(1)" << endl;
 	*this << "recorder0.setPacket(46, 0, 8, 5008)" << endl;
 
 	*this << "subarray.setRecorder(recorder0, None)" << endl;
+	*this << endl;
+
+	return 1;
+}
+
+int pystream::writeDbeInit(const VexData *V)
+{
+	*this << "dbe0 = RDBE(0, 'pfb')" << endl;
+	*this << "dbe0.setAGC(1)" << endl;
+	*this << "dbe0.setFormat('Mark5B')" << endl;
+	*this << "dbe0.setPacket(46, 0, 8, 5008)" << endl;
+	*this << "subarray.setDBE(dbe0, None)" << endl;
 	*this << endl;
 
 	return 1;
@@ -128,7 +168,7 @@ int pystream::writeLoifTable(const VexData *V)
 		for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
 		{
 			const VexIF &i = it->second;
-			*this << "loif" << m << ".setIf(\"" << i.name << "\", \"" << i.VLBABandName() << "\", " << (i.ifSSLO/1.0e6) << ")" << endl;
+			*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
 		}
 		*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCal()/1.0e6) << ")" << endl;
 
@@ -136,14 +176,26 @@ int pystream::writeLoifTable(const VexData *V)
 
 		for(unsigned i = 0; i < F.channels.size(); i++)
 		{
-			unsigned int inputNum = 999;
-			double freq = F.channels[i].bbcFreq * 1.0e-6;
-			double bw = F.channels[i].bbcBandwidth * 1.0e-6;
+			unsigned int inputNum = ifIndex[m][F.channels[i].ifname];
+			double bw = F.channels[i].bbcBandwidth;
 			char sb = F.channels[i].bbcSideBand;
 			unsigned int nBit = F.nBit;
 			unsigned int threadId = 0;
+			const VexIF *vif = setup->getIF(F.channels[i].ifname);
+			if(!vif)
+			{
+				cerr << "Developer error" << endl;
+				exit(0);
+			}
+			double freq = F.channels[i].bbcFreq - vif->ifSSLO;
 
-			*this << "  bbc(" << inputNum << ", " << freq << ", " << bw << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+			if(freq < 0.0)
+			{
+				freq = -freq;
+				sb = (sb == 'U') ? 'L' : 'U';
+			}
+
+			*this << "  bbc(" << inputNum << ", " << (freq*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
 			if(i < F.channels.size()-1)
 			{
 				*this << ",";
@@ -174,7 +226,7 @@ int pystream::writeSourceTable(const VexData *V)
 	{
 		const VexSource *S = V->getSource(s);
 		*this << "source" << s << " = Source(" << S->ra << ", " << S->dec << ")" << endl;
-		*this << "source" << s << ".setName(\"" << S->name << "\")" << endl;
+		*this << "source" << s << ".setName('" << S->name << "')" << endl;
 		*this << endl;
 	}
 
@@ -188,9 +240,6 @@ int pystream::writeScans(const VexData *V)
 	int p;
 	int n = 0;
 	int nScan;
-	int ifmap[4];
-	int nif;
-	const string VLBAIFName[4] = {"A", "B", "C", "D"};
 	map<string,VexIF>::const_iterator it;
 
 	nScan = V->nScan();
@@ -232,36 +281,16 @@ int pystream::writeScans(const VexData *V)
 				*this << "# changing to mode " << mode->name << endl;
 				*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
-				for(int i = 0; i < 4; i++)
+				map<string,unsigned int>::const_iterator ifit;
+				for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ifit++)
 				{
-					ifmap[i] = -1;
-				}
-				nif = 0;
-				for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
-				{
-					for(int i = 0; i < 4; i++)
+					if(ifit->first != sw[ifit->second])
 					{
-						if(it->second.name == VLBAIFName[i])
-						{
-							if(ifmap[i] < 0)
-							{
-								ifmap[i] = nif;
-								nif++;
-							}
-						}
+						sw[ifit->second] = ifit->first;
+						*this << "subarray.set4x4Switch(" << ifit->second << ", '" << ifit->first << "')" << endl;
 					}
 				}
-				for(int i = 0; i < 4; i++)
-				{
-					if(ifmap[i] >= 0)
-					{
-						if(sw[ifmap[i]] != VLBAIFName[i])
-						{
-							sw[ifmap[i]] = VLBAIFName[i];
-							*this << "subarray.set4x4Switch(" << ifmap[i] << ", \"" << VLBAIFName[i] << "\")" << endl;
-						}
-					}
-				}
+
 
 				*this << "dbe0.setChannels(channelSet" << modeId << ")" << endl;
 
@@ -275,8 +304,9 @@ int pystream::writeScans(const VexData *V)
 				lastSourceId = sourceId;
 			}
 
-			*this << "subarray.setRecord(" << arange->mjdStart << ", " << arange->mjdStop << ", '\%s_\%s_\%s' % (obsCode, stnCode, \'" << scan->name << "\') )" << endl;
-			*this << "subarray.execute(" << scan->mjdVex << ")" << endl;
+			*this << "subarray.setRecord(" << arange->mjdStart << ", " << arange->mjdStop << ", '\%s_\%s_\%s' % (obsCode, stnCode, '" << scan->name << "') )" << endl;
+			*this << "if array.time() < " << arange->mjdStop << ":" << endl;
+			*this << "  subarray.execute(" << scan->mjdVex << ")" << endl;
 
 			lastValid = arange->mjdStop;
 		}

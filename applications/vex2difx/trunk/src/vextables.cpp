@@ -1020,6 +1020,21 @@ double VexSetup::phaseCal() const
 	return pc;
 }
 
+const VexIF *VexSetup::getIF(const string& ifname) const
+{
+	map<string,VexIF>::const_iterator it;
+
+	for(it = ifs.begin(); it != ifs.end(); it++)
+	{
+		if(it->second.name == ifname)
+		{
+			return &it->second;
+		}
+	}
+
+	return 0;
+}
+
 bool operator ==(const VexChannel& c1, const VexChannel& c2)
 {
 	if( (c1.recordChan  != c2.recordChan)  ||

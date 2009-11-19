@@ -190,6 +190,7 @@ class VexSetup	// Container for all antenna-specific settings
 {
 public:
 	double phaseCal() const;
+	const VexIF *getIF(const string& ifname) const;
 
 	VexFormat format;
 	map<string,VexIF> ifs;	// Indexed by name in the vex file, such as IF_A
@@ -209,7 +210,6 @@ public:
 	string name;
 
 	double sampRate;		// (Hz)
-	vector<VexIF> ifs;
 	vector<VexSubband> subbands;
 	map<string,VexSetup> setups;	// indexed by antenna name
 	list<int> overSamp;		// list of the oversample factors used by this mode

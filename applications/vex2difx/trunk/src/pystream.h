@@ -44,11 +44,15 @@ private:
 	int lastSourceId;
 	int lastModeId;
 	int lastChannelSet;
+	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
+
+	void calcIfIndex(const VexData *V);
 public:
-	void open(string antennaName, const VexData *V);
+	void open(const string& antennaName, const VexData *V);
 	void close();
 	int writeHeader(const VexData *V);
 	int writeRecorderInit(const VexData *V);
+	int writeDbeInit(const VexData *V);
 	int writeLoifTable(const VexData *V);
 	int writeSourceTable(const VexData *V);
 	int writeScans(const VexData *V);

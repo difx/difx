@@ -46,6 +46,21 @@ int usage(int argc, char **argv)
 	return 0;
 }
 
+bool isVLBA(const string& ant)
+{
+	const string VLBAantennas[10] = 
+		{"BR", "FD", "HN", "KP", "LA", "MK", "NL", "OV", "PT", "SC"};
+
+	for(unsigned int i = 0; i < 10; i++)
+	{
+		if(VLBAantennas[i] == ant)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
 
 int main(int argc, char **argv)
 {
@@ -77,17 +92,19 @@ int main(int argc, char **argv)
 	for(int a = 0; a < nAntenna; a++)
 	{
 		A = V->getAntenna(a);
+		if(!isVLBA(A->name))
+		{
+			cout << "Skipping non VLBA antenna " << A->name << endl;
+			continue;
+		}
 		cout << "Antenna " << a << " = " << A->name << endl;
 		py.open(A->name, V);
 
 		py.writeHeader(V);
-
 		py.writeRecorderInit(V);
-
+		py.writeDbeInit(V);
 		py.writeLoifTable(V);
-
 		py.writeSourceTable(V);
-
 		py.writeScans(V);
 
 		py.close();
