@@ -43,6 +43,9 @@ private:
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;
+	int lastChannelSet;
+	unsigned int nChannelSet;
+	map<unsigned int,unsigned int> chanMap;
 public:
 	void open(string antennaName, const VexData *V);
 	void close();

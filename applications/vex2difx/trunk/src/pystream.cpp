@@ -35,7 +35,10 @@ void pystream::open(string antennaName, const VexData *V)
 	lastValid = 0.0;
 	lastSourceId = -1;
 	lastModeId = -1;
+	lastChannelSet = -1;
 	obsCode = V->getExper()->name;
+	nChannelSet = 0;
+	chanMap.clear();
 	if(obsCode == "")
 	{
 		obsCode = "Unknown";
@@ -98,16 +101,16 @@ int pystream::writeRecorderInit(const VexData *V)
 
 int pystream::writeLoifTable(const VexData *V)
 {
+	map<unsigned int,unsigned int>::const_iterator uuit;
 	map<string,VexIF>::const_iterator it;
-	int nMode;
 	int p;
 
-	nMode = V->nMode();
+	unsigned int nMode = V->nMode();
 
 	p = precision();
 	precision(15);
 
-	for(int m = 0; m < nMode; m++)
+	for(unsigned int m = 0; m < nMode; m++)
 	{
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
@@ -131,6 +134,30 @@ int pystream::writeLoifTable(const VexData *V)
 		*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCal()/1.0e6) << ")" << endl;
 
 		*this << endl;
+
+		// derive channel maps
+		for(uuit = chanMap.begin(); uuit != chanMap.end(); uuit++)
+		{
+			unsigned int n = uuit->first;
+			
+			const VexMode *mode2 = V->getMode(n);
+			const VexSetup *setup2 = mode2->getSetup(ant);
+
+			if(setup->format == setup2->format)
+			{
+				break;
+			}
+		}
+		if(uuit == chanMap.end())
+		{
+			// FIXME -- generate channelset here
+			chanMap[m] = nChannelSet;
+			nChannelSet++;
+		}
+		else
+		{
+			chanMap[m] = uuit->second;
+		}
 	}
 
 	precision(p);
@@ -241,6 +268,14 @@ int pystream::writeScans(const VexData *V)
 					}
 				}
 				lastModeId = modeId;
+
+				int channelSet = chanMap[modeId];
+				if(channelSet != lastChannelSet)
+				{
+					*this << "dbe0.setChannels(channelSet" << channelSet << ")" << endl;
+					
+					lastChannelSet = channelSet;
+				}
 			}
 
 			int sourceId = V->getSourceId(scan->sourceName);

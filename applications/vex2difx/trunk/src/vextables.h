@@ -149,9 +149,10 @@ class VexChannel		// Antenna-specific baseband channel details
 {
 public:
 	VexChannel() : recordChan(0), subbandId(-1) {}
+	friend bool operator ==(const VexChannel& c1, const VexChannel& c2);
 
-	int recordChan;		// channel number on recorded media
-	int subbandId;		// 0-based index
+	unsigned int recordChan;// channel number on recorded media
+	int subbandId;		// 0-based index; -1 means unset
 	string ifname;		// name of the IF this channel came from
 	double bbcFreq;		// tuning of the BBC
 	char bbcSideBand;	// sideband of the BBC
@@ -165,9 +166,10 @@ public:
 	string name;
 
 	string format;		// e.g. VLBA, MKIV, Mk5B, VDIF, LBA, K5, ...
-	int nBit;
-	int nRecordChan;	// number of recorded channels
+	unsigned int nBit;
+	unsigned int nRecordChan;	// number of recorded channels
 	vector<VexChannel> channels;
+	friend bool operator ==(const VexFormat& f1, const VexFormat& f2);
 };
 
 class VexIF	// Note: the old "VexIF" is now called "VexChannel"
@@ -363,28 +365,28 @@ public:
 	void setDirectory(const string &dir) { directory = dir; }
 
 
-	int nSource() const { return sources.size(); }
+	unsigned int nSource() const { return sources.size(); }
 	const VexSource *getSource(const string name) const;
-	const VexSource *getSource(int num) const;
+	const VexSource *getSource(unsigned int num) const;
 	int getSourceId(const string name) const;
 
-	int nScan() const { return scans.size(); }
+	unsigned int nScan() const { return scans.size(); }
 	const VexScan *getScan(const string name) const;
-	const VexScan *getScan(int num) const;
-	void setScanSize(int num, double size);
+	const VexScan *getScan(unsigned int num) const;
+	void setScanSize(unsigned int num, double size);
 	void getScanList(list<string> &scans) const;
 
-	int nAntenna() const { return antennas.size(); }
+	unsigned int nAntenna() const { return antennas.size(); }
 	const VexAntenna *getAntenna(const string name) const;
-	const VexAntenna *getAntenna(int num) const;
+	const VexAntenna *getAntenna(unsigned int num) const;
 
-	int nMode() const { return modes.size(); }
+	unsigned int nMode() const { return modes.size(); }
 	const VexMode *getMode(const string name) const;
-	const VexMode *getMode(int num) const;
+	const VexMode *getMode(unsigned int num) const;
 	int getModeId(const string name) const;
 
-	int nEOP() const { return eops.size(); }
-	const VexEOP *getEOP(int num) const;
+	unsigned int nEOP() const { return eops.size(); }
+	const VexEOP *getEOP(unsigned int num) const;
 	const vector<VexEOP> &getEOPs() const { return eops; }
 
 	bool usesAntenna(const string& antennaName) const;
@@ -393,7 +395,7 @@ public:
 	void addVSN(const string& antName, const string& vsn, const VexInterval& timeRange);
 	string getVSN(const string& antName, const VexInterval& timeRange) const;
 
-	int nEvent() const { return events.size(); }
+	unsigned int nEvent() const { return events.size(); }
 	const list<VexEvent> *getEvents() const;
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &name);
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scanName);

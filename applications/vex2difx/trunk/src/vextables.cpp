@@ -201,7 +201,7 @@ int VexMode::getPols(char *pols) const
 
 int VexMode::getBits() const
 {
-	int nBit;
+	unsigned int nBit;
 	map<string,VexSetup>::const_iterator it;
 
 	nBit = setups.begin()->second.format.nBit;
@@ -374,7 +374,7 @@ double VexAntenna::getVexClocks(double mjd, double * coeffs) const
 
 const VexSource *VexData::getSource(const string name) const
 {
-	for(int i = 0; i < nSource(); i++)
+	for(unsigned int i = 0; i < nSource(); i++)
 	{
 		if(sources[i].name == name)
 			return &sources[i];
@@ -383,7 +383,7 @@ const VexSource *VexData::getSource(const string name) const
 	return 0;
 }
 
-const VexSource *VexData::getSource(int num) const
+const VexSource *VexData::getSource(unsigned int num) const
 {
 	if(num < 0 || num >= nSource())
 	{
@@ -902,7 +902,7 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, co
 
 const VexScan *VexData::getScan(const string name) const
 {
-	for(int i = 0; i < nScan(); i++)
+	for(unsigned int i = 0; i < nScan(); i++)
 	{
 		if(scans[i].name == name)
 			return &scans[i];
@@ -911,7 +911,7 @@ const VexScan *VexData::getScan(const string name) const
 	return 0;
 }
 
-const VexScan *VexData::getScan(int num) const
+const VexScan *VexData::getScan(unsigned int num) const
 {
 	if(num < 0 || num >= nScan())
 	{
@@ -921,7 +921,7 @@ const VexScan *VexData::getScan(int num) const
 	return &scans[num];
 }
 
-void VexData::setScanSize(int num, double size)
+void VexData::setScanSize(unsigned int num, double size)
 {
 	if(num < 0 || num >= nScan())
 	{
@@ -983,7 +983,7 @@ VexAntenna *VexData::newAntenna()
 
 const VexAntenna *VexData::getAntenna(const string name) const
 {
-	for(int i = 0; i < nAntenna(); i++)
+	for(unsigned int i = 0; i < nAntenna(); i++)
 	{
 		if(antennas[i].name == name)
 			return &antennas[i];
@@ -992,7 +992,7 @@ const VexAntenna *VexData::getAntenna(const string name) const
 	return 0;
 }
 
-const VexAntenna *VexData::getAntenna(int num) const
+const VexAntenna *VexData::getAntenna(unsigned int num) const
 {
 	if(num < 0 || num >= nAntenna())
 	{
@@ -1020,6 +1020,42 @@ double VexSetup::phaseCal() const
 	return pc;
 }
 
+bool operator ==(const VexChannel& c1, const VexChannel& c2)
+{
+	if( (c1.recordChan  != c2.recordChan)  ||
+	    (c1.subbandId   != c2.subbandId)   ||
+	    (c1.ifname      != c2.ifname)      ||
+	    (c1.bbcFreq     != c2.bbcFreq)     ||
+	    (c1.bbcSideBand != c2.bbcSideBand) )
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
+}
+
+bool operator ==(const VexFormat& f1, const VexFormat& f2)
+{
+	if( (f1.format      != f2.format)      ||
+	    (f1.nBit        != f2.nBit)        ||
+	    (f1.nRecordChan != f2.nRecordChan) )
+	{
+		return false;
+	}
+
+	for(unsigned int r = 0; r < f1.nRecordChan; r++)
+	{
+		if( !(f1.channels[r] == f2.channels[r]) )
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 VexMode *VexData::newMode()
 {
 	modes.push_back(VexMode());
@@ -1028,7 +1064,7 @@ VexMode *VexData::newMode()
 
 const VexMode *VexData::getMode(const string name) const
 {
-	for(int i = 0; i < nMode(); i++)
+	for(unsigned int i = 0; i < nMode(); i++)
 	{
 		if(modes[i].name == name)
 		{
@@ -1039,7 +1075,7 @@ const VexMode *VexData::getMode(const string name) const
 	return 0;
 }
 
-const VexMode *VexData::getMode(int num) const
+const VexMode *VexData::getMode(unsigned int num) const
 {
 	if(num < 0 || num >= nMode())
 	{
@@ -1073,7 +1109,7 @@ VexEOP *VexData::newEOP()
 	return &eops.back();
 }
 
-const VexEOP *VexData::getEOP(int num) const
+const VexEOP *VexData::getEOP(unsigned int num) const
 {
 	if(num < 0 || num > nEOP())
 	{

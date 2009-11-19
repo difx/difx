@@ -63,7 +63,7 @@ static char swapPolarization(char pol)
 	}
 }
 
-static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F, int n)
+static int getRecordChannel(const string chanName, const map<string,Tracks>& ch2tracks, const VexFormat& F, unsigned int n)
 {
 	int delta, track;
 	map<string,Tracks>::const_iterator it;
@@ -581,7 +581,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 		M->name = modeId;
 
 		// get FREQ info
-		for(int a = 0; a < V->nAntenna(); a++)
+		for(unsigned int a = 0; a < V->nAntenna(); a++)
 		{
 			const string& antName = V->getAntenna(a)->nameInVex;
 			string antName2 = V->getAntenna(a)->nameInVex;
@@ -775,7 +775,7 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 			}
 
 			// Get rest of Subband information
-			int i = 0;
+			unsigned int i = 0;
 			
 			for(p = get_all_lowl(antName.c_str(), modeId, T_CHAN_DEF, B_FREQ, v);
 			    p;

@@ -56,10 +56,9 @@ void usage(const char *pgm)
 
 void antennaSummary(const VexData *V)
 {
-	int s;
 	map<string,VexInterval> as;
 
-	for(s = 0; s < V->nScan(); s++)
+	for(unsigned int s = 0; s < V->nScan(); s++)
 	{
 		const VexScan *scan = V->getScan(s);
 		map<string,VexInterval>::const_iterator it;
