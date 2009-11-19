@@ -168,7 +168,7 @@ int pystream::writeLoifTable(const VexData *V)
 		for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
 		{
 			const VexIF &i = it->second;
-			*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
+			*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
 		}
 		*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCal()/1.0e6) << ")" << endl;
 
