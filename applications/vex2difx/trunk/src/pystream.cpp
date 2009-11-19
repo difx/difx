@@ -37,8 +37,6 @@ void pystream::open(string antennaName, const VexData *V)
 	lastModeId = -1;
 	lastChannelSet = -1;
 	obsCode = V->getExper()->name;
-	nChannelSet = 0;
-	chanMap.clear();
 	if(obsCode == "")
 	{
 		obsCode = "Unknown";
@@ -101,7 +99,6 @@ int pystream::writeRecorderInit(const VexData *V)
 
 int pystream::writeLoifTable(const VexData *V)
 {
-	map<unsigned int,unsigned int>::const_iterator uuit;
 	map<string,VexIF>::const_iterator it;
 	int p;
 
@@ -120,6 +117,8 @@ int pystream::writeLoifTable(const VexData *V)
 			continue;
 		}
 
+		const VexFormat &F = setup->format;
+
 		if(setup->ifs.size() > 2)
 		{
 			cout << "Warning: mode " << mode->name << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
@@ -133,31 +132,27 @@ int pystream::writeLoifTable(const VexData *V)
 		}
 		*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCal()/1.0e6) << ")" << endl;
 
-		*this << endl;
+		*this << "channelSet" << m << " = [ \\" << endl;
 
-		// derive channel maps
-		for(uuit = chanMap.begin(); uuit != chanMap.end(); uuit++)
+		for(unsigned i = 0; i < F.channels.size(); i++)
 		{
-			unsigned int n = uuit->first;
-			
-			const VexMode *mode2 = V->getMode(n);
-			const VexSetup *setup2 = mode2->getSetup(ant);
+			unsigned int inputNum = 999;
+			double freq = F.channels[i].bbcFreq * 1.0e-6;
+			double bw = F.channels[i].bbcBandwidth * 1.0e-6;
+			char sb = F.channels[i].bbcSideBand;
+			unsigned int nBit = F.nBit;
+			unsigned int threadId = 0;
 
-			if(setup->format == setup2->format)
+			*this << "  bbc(" << inputNum << ", " << freq << ", " << bw << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+			if(i < F.channels.size()-1)
 			{
-				break;
+				*this << ",";
 			}
+			*this << " \\" << endl;
 		}
-		if(uuit == chanMap.end())
-		{
-			// FIXME -- generate channelset here
-			chanMap[m] = nChannelSet;
-			nChannelSet++;
-		}
-		else
-		{
-			chanMap[m] = uuit->second;
-		}
+
+		*this << "]" << endl;
+		*this << endl;
 	}
 
 	precision(p);
@@ -267,15 +262,10 @@ int pystream::writeScans(const VexData *V)
 						}
 					}
 				}
-				lastModeId = modeId;
 
-				int channelSet = chanMap[modeId];
-				if(channelSet != lastChannelSet)
-				{
-					*this << "dbe0.setChannels(channelSet" << channelSet << ")" << endl;
-					
-					lastChannelSet = channelSet;
-				}
+				*this << "dbe0.setChannels(channelSet" << modeId << ")" << endl;
+
+				lastModeId = modeId;
 			}
 
 			int sourceId = V->getSourceId(scan->sourceName);

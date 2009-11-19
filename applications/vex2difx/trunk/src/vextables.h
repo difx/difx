@@ -154,7 +154,8 @@ public:
 	unsigned int recordChan;// channel number on recorded media
 	int subbandId;		// 0-based index; -1 means unset
 	string ifname;		// name of the IF this channel came from
-	double bbcFreq;		// tuning of the BBC
+	double bbcFreq;		// tuning of the BBC (Hz)
+	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
 };
 

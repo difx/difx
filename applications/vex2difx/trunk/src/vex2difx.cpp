@@ -1967,7 +1967,7 @@ int main(int argc, char **argv)
 
 	//run through all the scans once, creating source setups for any sources
 	//that don't have one
-	for(int i=0;i<V->nScan();i++)
+	for(unsigned int i=0;i<V->nScan();i++)
 	{
 		SourceSetup * added;
 		S = V->getScan(i);

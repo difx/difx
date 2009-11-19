@@ -801,6 +801,9 @@ int getModes(VexData *V, Vex *v, const CorrParams& params)
 					F.channels.back().subbandId = subbandId;
 					F.channels.back().recordChan = recChanId;
 					F.channels.back().ifname = bbc2ifname[bbcname];
+					F.channels.back().bbcFreq = freq;
+					F.channels.back().bbcBandwidth = bandwidth;
+					F.channels.back().bbcSideBand = sideBand;
 				}
 
 				i++;
