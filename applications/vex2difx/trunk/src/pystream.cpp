@@ -174,6 +174,7 @@ int pystream::writeLoifTable(const VexData *V)
 
 		*this << "channelSet" << m << " = [ \\" << endl;
 
+		vector<unsigned int> implicitConversions;
 		for(unsigned i = 0; i < F.channels.size(); i++)
 		{
 			unsigned int inputNum = ifIndex[m][F.channels[i].ifname];
@@ -187,23 +188,40 @@ int pystream::writeLoifTable(const VexData *V)
 				cerr << "Developer error" << endl;
 				exit(0);
 			}
-			double freq = F.channels[i].bbcFreq - vif->ifSSLO;
+			double freq = F.channels[i].bbcFreq;
+			double tune = freq - vif->ifSSLO;
 
-			if(freq < 0.0)
+			if(tune < 0.0)
 			{
-				freq = -freq;
+				tune = -tune;
 				sb = (sb == 'U') ? 'L' : 'U';
 			}
 
-			*this << "  bbc(" << inputNum << ", " << (freq*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
+			if(freq > 550e6 && freq < 650e6 && tune > 1000e6)
+			{
+				tune -= 500e6;
+				implicitConversions.push_back(i);
+			}
+
+			*this << "  bbc(" << inputNum << ", " << (tune*1.0e-6) << ", " << (bw*1.0e-6) << ", '" << sb << "', " << nBit << ", " << threadId << ")";
 			if(i < F.channels.size()-1)
 			{
 				*this << ",";
 			}
 			*this << " \\" << endl;
 		}
-
 		*this << "]" << endl;
+		if(implicitConversions.size() > 0)
+		{
+			*this << "# implicit conversion performed on basebands:";
+			for(vector<unsigned int>::const_iterator uit = implicitConversions.begin();
+				uit != implicitConversions.end(); uit++)
+			{
+				*this << " " << *uit;
+			}
+			*this << endl;
+		}
+
 		*this << endl;
 	}
 
