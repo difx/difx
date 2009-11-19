@@ -327,12 +327,18 @@ int getSources(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, double> &antStop, int minSubarraySize)
+static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, double> &antStop, unsigned int minSubarraySize)
 {
 	list<double> start;
 	list<double> stop;
 	map<string, double>::iterator it;
 	double mjdStart, mjdStop;
+
+	if(minSubarraySize < 1)
+	{
+		cerr << "Developer error: adjustTimeRange: minSubarraySize = " << minSubarraySize << " is < 1" << endl;
+		exit(0);
+	}
 
 	if(antStart.size() != antStop.size())
 	{
@@ -364,7 +370,7 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 	// If these are in the wrong order (i.e., no such interval exists)
 	// Then these will form an acausal interval which will be caught by
 	// the caller.
-	for(int i = 0; i < minSubarraySize-1; i++)
+	for(unsigned int i = 0; i < minSubarraySize-1; i++)
 	{
 		start.pop_front();
 		stop.pop_back();

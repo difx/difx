@@ -682,7 +682,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 
 	for(vector<VexChannel>::const_iterator i = format->channels.begin(); i != format->channels.end(); i++)
 	{
-		if(i->subbandId < 0 || i->subbandId >= mode->subbands.size())
+		if(i->subbandId < 0 || i->subbandId >= static_cast<int>(mode->subbands.size()))
 		{
 			cerr << "Error: setFormat: index to subband=" << i->subbandId << " is out of range" << endl;
 			exit(0);
@@ -1507,7 +1507,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                         {
                                                 DifxDatastreamAllocZoomFreqs(dd, antennaSetup->zoomFreqs.size());
                                                 parentfreqindices = (int*)calloc(antennaSetup->zoomFreqs.size(), sizeof(int));
-                                                for(int i=0;i<antennaSetup->zoomFreqs.size();i++)
+                                                for(unsigned int i=0;i<antennaSetup->zoomFreqs.size();i++)
                                                 {
                                                         parentfreqindices[i] = -1;
                                                         zf = antennaSetup->zoomFreqs.at(i);
@@ -1537,7 +1537,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                                 }
 						DifxDatastreamAllocZoomBands(dd, nZoomBands);
 						nZoomBands = 0;
-                                                for(int i=0;i<antennaSetup->zoomFreqs.size();i++)
+                                                for(unsigned int i=0;i<antennaSetup->zoomFreqs.size();i++)
                                                 {
 							zoomsrc = 0;
 							polcount = 0;
@@ -1567,7 +1567,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                         }
 					if(antennaSetup->freqClockOffs.size() > 0)
 					{
-						if(antennaSetup->freqClockOffs.size() != 
+						if(static_cast<int>(antennaSetup->freqClockOffs.size()) != 
 							D->datastream[D->nDatastream].nRecFreq)
 						{
 							cerr << "Error: AntennaSetup for " << antName << 
@@ -1585,7 +1585,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							"accountability reasons. Aborting!" << endl;
 							exit(0);
 						}
-						for(int i=0; i<antennaSetup->freqClockOffs.size(); i++)
+						for(unsigned int i=0; i<antennaSetup->freqClockOffs.size(); i++)
 						{
 							D->datastream[D->nDatastream].clockOffset[i] = 
 								antennaSetup->freqClockOffs.at(i);

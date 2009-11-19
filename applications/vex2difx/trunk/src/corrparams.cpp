@@ -661,6 +661,8 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 
 int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomFreq)
 {
+	int nWarn = 0;
+
 	if(key == "freq" || key == "FREQ")
         {
                 zoomFreq->frequency = atof(value.c_str())*1000000; //convert to Hz
@@ -680,6 +682,13 @@ int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomF
         {
                 zoomFreq->spectralaverage = atoi(value.c_str());
         }
+	else
+	{
+		cerr << "Warning: ANTENNA: Unknown parameter '" << key << "'." << endl; 
+		nWarn++;
+	}
+
+	return nWarn;
 }
 
 int AntennaSetup::setkv(const string &key, const string &value)
@@ -802,7 +811,8 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		string s;
 		ss >> s;
-		int at, last = 0;
+		unsigned int at = 0; 
+		unsigned int last = 0;
 		while(at != string::npos)
 		{
 			at = s.find_first_of(';',last);
@@ -824,7 +834,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
                         at = value.find_first_of('/', last);
                         nestedkeyval = value.substr(last, at-last);
                         splitat = nestedkeyval.find_first_of('@');
-                        setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
+                        nWarn += setkv(nestedkeyval.substr(0,splitat), nestedkeyval.substr(splitat+1), newfreq);
                         last = at+1;
                 }
 	}
@@ -978,7 +988,7 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "jobSeries" || key == "pass")
 	{
-		for(int i = 0; i < value.size(); i++)
+		for(unsigned int i = 0; i < value.size(); i++)
 		if(!isalnum(value[i]))
 		{
 			cerr << "Error: jobSeries must be purely alphanumeric" << endl;
@@ -1564,11 +1574,11 @@ const SourceSetup *CorrParams::getSourceSetup(const string &name) const
 
 const PhaseCentre * CorrParams::getPhaseCentre(const string & difxname) const
 {
-	for(int i=0;i<sourceSetups.size();i++)
+	for(unsigned int i=0;i<sourceSetups.size();i++)
 	{
 		if(difxname == sourceSetups[i].pointingCentre.difxname)
 			return &(sourceSetups[i].pointingCentre);
-		for(int j=0;j<sourceSetups[i].phaseCentres.size();j++)
+		for(unsigned int j=0;j<sourceSetups[i].phaseCentres.size();j++)
 		{
 			if(difxname == sourceSetups[i].phaseCentres[j].difxname)
 				return &(sourceSetups[i].phaseCentres[j]);

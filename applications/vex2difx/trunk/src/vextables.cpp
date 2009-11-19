@@ -656,7 +656,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	map<string,string>::const_iterator a;
 	list<VexEvent>::const_iterator e;
 	map<string,VexInterval>::const_iterator sa;
-	int nAnt;
+	unsigned int nAnt;
 	ofstream of;
 	const list<VexEvent> &eventList = *V.getEvents();
 
@@ -759,7 +759,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		{
 			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
-				for(int antId = 0; antId < nAnt; antId++)
+				for(unsigned int antId = 0; antId < nAnt; antId++)
 				{
 					flagMask[antId] &= ~VexJobFlag::JOB_FLAG_TIME;
 				}
@@ -769,14 +769,14 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		{
 			if(fabs(e->mjd - mjdStop) < 0.5/86400.0)
 			{
-				for(int antId = 0; antId < nAnt; antId++)
+				for(unsigned int antId = 0; antId < nAnt; antId++)
 				{
 					flagMask[antId] |= VexJobFlag::JOB_FLAG_TIME;
 				}
 			}
 		}
 
-		for(int antId = 0; antId < nAnt; antId++)
+		for(unsigned int antId = 0; antId < nAnt; antId++)
 		{
 			if( (flagMask[antId] & invalidMask) == 0)
 			{
@@ -805,7 +805,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	}
 
 	// At end of loop see if any flag->unflag (or vice-versa) occurs.
-	for(int antId = 0; antId < nAnt; antId++)
+	for(unsigned int antId = 0; antId < nAnt; antId++)
 	{
 		if( (flagMask[antId] & invalidMask) != 0)
 		{
@@ -824,7 +824,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	// write data to file
 	of.open(fileName.c_str());
 	of << flags.size() << endl;
-	for(int f = 0; f < flags.size(); f++)
+	for(unsigned int f = 0; f < flags.size(); f++)
 	{
 		of << "  " << flags[f] << endl;
 	}
