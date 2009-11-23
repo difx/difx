@@ -141,10 +141,14 @@ int monserver_connect(struct monclient *monclient, char *monhostname, int window
   return(0);
 }
 
-int monserver_close(struct monclient client) {
-  if (client.nvis>0) free(client.vis); // Probably should zero, but that means passing a pointer
-  if (client.nretvis>0) free(client.visbuf);
-  return(close(client.fd));
+int monserver_close(struct monclient *client) {
+  if (client->nvis>0) delete [] client->vis; // Probably should zero, but that means passing a pointer
+  if (client->bufsize>0) delete [] client->visbuf;
+  client->nvis = 0;
+  client->bufsize = 0;
+  client->nretvis = 0;
+
+  return(close(client->fd));
 }
 
 int monserver_sendstatus(int sock, int32_t status32) {
@@ -195,16 +199,18 @@ int monserver_readvis(struct monclient *client) {
   client->numchannels = headbuf[1];
   client->ivis = 0;
   bufsize = headbuf[3];
-  if (client->nretvis != headbuf[2]) {
-    if (client->nretvis!=0) {
-      free(client->visbuf);
+  if (client->bufsize != bufsize) {
+    if (client->bufsize!=0) {
+      delete [] client->visbuf;
+      client->bufsize = 0;
     }
     client->nretvis = headbuf[2];
-    client->visbuf = (char*)malloc(bufsize);
+    client->visbuf = new char [bufsize];
     if (client->visbuf==NULL) {
       fprintf(stderr, "Error: Could not allocate memory for visibility buffer\n");
       return(1);
     }
+    client->bufsize = bufsize;
   }
   status = readnetwork(client->fd, (char*)client->visbuf, bufsize);
 
@@ -228,4 +234,118 @@ int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis) {
 
 void monserver_resetvis(struct monclient *client) {
   client->ivis=0;
+}
+
+int monserver_dupclient(struct monclient client, struct monclient *copy) {
+
+  if (client.visbuf==NULL) {
+    copy->visbuf=NULL;
+  } else {
+    copy->visbuf = new char [client.bufsize];
+    if (copy->visbuf==NULL) {
+      return(DIFXMON_MALLOCERROR);
+    }
+    memcpy(copy->visbuf,client.visbuf,client.bufsize);
+  }
+  if (client.vis==NULL) {
+    copy->vis=NULL;
+  } else {
+    copy->vis = new int32_t [client.nvis];
+    if (copy->vis==NULL) {
+      delete [] copy->visbuf;
+      return(DIFXMON_MALLOCERROR);
+    }
+    memcpy(copy->vis,client.vis,client.nvis*sizeof(int32_t));
+  }
+
+  copy->fd = 0; // Don't copy file handle
+  copy->nvis = client.nvis;
+  copy->ivis = 0; // Reset counter
+  copy->timestamp = client.timestamp;
+  copy->numchannels = client.numchannels;
+  copy->nretvis = client.nretvis;
+  copy->bufsize = client.bufsize;
+  
+  return(0);
+}
+
+// Copy all of the elements from on struct to another
+void monserver_copyclient(struct monclient client, struct monclient *copy) {
+  copy->fd = client.fd;
+  copy->nvis = client.nvis;
+  copy->ivis = client.ivis;
+  copy->timestamp = client.timestamp;
+  copy->numchannels = client.numchannels;
+  copy->nretvis = client.nretvis;
+  copy->bufsize = client.bufsize;
+  copy->visbuf = client.visbuf;
+  copy->vis = client.vis;
+}
+
+// Destroy the elements. Time to move to a full C++ object, I think
+void monserver_clear(struct monclient *client) {
+  client->fd = 0;
+  client->nvis = 0;
+  client->ivis = 0;
+  client->timestamp = -1;
+  client->numchannels = 0;
+  client->nretvis = 0;
+  client->bufsize = 0;
+  delete [] client->visbuf;
+  delete [] client->vis;
+  client->visbuf = NULL;
+  client->vis = NULL;
+}
+
+vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex) {
+  char polpair[3];
+
+  vector<DIFX_ProdConfig> products;
+  
+  int binloop = 1;
+  if(config->pulsarBinOn(configindex) && !config->scrunchOutputOn(configindex))
+    binloop = config->getNumPulsarBins(configindex);
+
+  for (int i=0;i<config->getNumBaselines();i++) {
+    int ds1index = config->getBDataStream1Index(configindex, i);
+    int ds2index = config->getBDataStream2Index(configindex, i);
+
+    for(int j=0;j<config->getBNumFreqs(configindex,i);j++) {
+      int freqindex = config->getBFreqIndex(configindex, i, j);
+
+      for(int b=0;b<binloop;b++) {
+	for(int k=0;k<config->getBNumPolProducts(configindex, i, j);k++) {
+	  config->getBPolPair(configindex,i,j,k,polpair);
+
+	  products.push_back(DIFX_ProdConfig(ds1index,
+					     ds2index,
+					     config->getTelescopeName(ds1index), 
+					     config->getTelescopeName(ds2index),
+					     config->getFreqTableFreq(freqindex),
+					     config->getFreqTableBandwidth(freqindex),
+					     polpair));	  
+	}
+      }
+    }
+  }
+  return products;
+}
+
+
+DIFX_ProdConfig::DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, 
+				 string TelName2, double freq, double bandwidth, 
+				 char polpair[3]) {
+  TelescopeIndex1 = TelIndex1;
+  TelescopeIndex2 = TelIndex2;
+  TelescopeName1 = TelName1;
+  TelescopeName2 = TelName2;
+  Bandwidth = bandwidth;
+  Freq = freq;
+  PolPair[0] = polpair[0];
+  PolPair[1] = polpair[1];
+  PolPair[2] = 0;
+}
+
+DIFX_ProdConfig::~DIFX_ProdConfig() {
+
 }
