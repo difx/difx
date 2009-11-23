@@ -404,7 +404,7 @@ foreach (@stations) {
 #   MK5B 10000
 
   if ($stationmodes->{$_}->record_transport_type eq 'S2') {
-    if ($evlbi) {
+    if ($evlbi && $udp) {
       $format = 'MARK5B';
       $framesize = 10016;
     } else {
@@ -741,6 +741,7 @@ EOF
       my $done = 0;
       my $title = sprintf("$bname %s", $globalfreq[$j]->freq);
       print HTML "<td style=\"text-align: center;\">";
+
       if ($monitorbaselines[$i][$j][0]) {
 	print HTML "<a href=\"lba-$ibaseline-f$ifreq-p0.html\">RCP</a> ";
 	push @plots, ["lba-$ibaseline-f$ifreq-p0.html", "lba-$ibaseline-f$ifreq-p0-b0.png", "$title RCP"];
@@ -750,6 +751,13 @@ EOF
 	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p1.html\">LCP</a>";
 	push @plots, ["lba-$ibaseline-f$ifreq-p1.html", "lba-$ibaseline-f$ifreq-p1-b0.png", "$title LCP"];
 	$done=1;
+      }
+
+      if ($crosspol && $monitorbaselines[$i][$j][0] && $monitorbaselines[$i][$j][1]) {
+	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p2.html\">RL</a>";
+	push @plots, ["lba-$ibaseline-f$ifreq-p2.html", "lba-$ibaseline-f$ifreq-p2-b0.png", "$title LCP"];
+	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p3.html\">LR</a>";
+	push @plots, ["lba-$ibaseline-f$ifreq-p3.html", "lba-$ibaseline-f$ifreq-p3-b0.png", "$title LCP"];
       }
       print HTML "</td>\n";
       $ifreq++ if ($done);
@@ -861,7 +869,7 @@ sub getTsys ($$) {
 	elsif ($freq < 1800) { return 420; }
 	elsif ($freq < 2500) { return 650; }
 	elsif ($freq < 5000) { return 640; }
-	elsif ($freq < 6500) { return -1; }
+	elsif ($freq < 6500) { return 1240; }
 	elsif ($freq < 8000) { return 1240; }
 	elsif ($freq < 10000) { return 560; }
 	elsif ($freq < 15000) { return 1200; }
@@ -873,7 +881,7 @@ sub getTsys ($$) {
 	elsif ($freq < 1800) { return -1; }
 	elsif ($freq < 2500) { return 400; }
 	elsif ($freq < 5000) { return 450; }
-	elsif ($freq < 6500) { return -1; }
+	elsif ($freq < 6500) { return 550; }
 	elsif ($freq < 8000) { return 550; }
 	elsif ($freq < 10000) { return 600; }
 	elsif ($freq < 15000) { return 750; }
@@ -932,8 +940,8 @@ sub getTsys ($$) {
 
 
 BEGIN {
-  %antnames = (Pa => 'PKS',
-	       At => 'CATWXXX',
+%antnames = (Pa => 'PKS',
+       At => 'CATWXXX',
 	       Mp => 'MOPRA',
 	       Cd => 'CED',
 	       Ho => 'HOB',
@@ -968,7 +976,7 @@ BEGIN {
 my %antclockoffsets;
 BEGIN {
   %antclockoffsets = (Pa => -1.57,
-                      At => -46.7,
+                      At => -37.0,
                       Mp => -0.68,
                       Ho => -12.37,
                       Cd => -5,
@@ -981,12 +989,12 @@ BEGIN {
 
 my %anttcpwindow;
 BEGIN {
-  %anttcpwindow = (Pa => -1500,
-		   At => -1500,
-		   Mp => -1500,
-		   Ho => -1500,
-		   Sh => -1500,
-		   Ks => -1500);
+  %anttcpwindow = (Pa => 400,
+		   At => 0,
+		   Mp => 180,
+		   Ho => 0,
+		   Sh => 0,
+		   Ks => 0);
 }
 
 sub vexant2calc ($) {
