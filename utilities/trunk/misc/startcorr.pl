@@ -22,7 +22,7 @@ my $machinefile;
 my $numproc;
 my $evlbi = 0;
 my $monitor = undef;
-my $offset = 30; # Offset in seconds for start time
+my $offset = 20; # Offset in seconds for start time
 my $debug = 0;
 
 GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 
@@ -39,7 +39,6 @@ die "Offset must be positive\n" if ($offset<0);
 
 #die "Must either set \$RECORDER_HOSTS or pass the -host option" 
 #  if ($evlbi && !defined $recorder_hosts);
-
 
 die "Usage: startcorr.pl [options] <mpifxcorr> <inputfile>\n" if (@ARGV!=2);
 
@@ -127,8 +126,7 @@ if ($evlbi) {
       print "Current time $hms\n";
   }
 
-
-  $startmjd = ceil(($startmjd*24*60*60+$offset)/60)/(24*60);
+  $startmjd = ceil(($startmjd*24*60*60+$offset)/10)/(24*60*6);
 
   $mjd += $seconds/(60*60*24);
 
@@ -197,9 +195,24 @@ die "Rpfits file $outfile already exists!\n" if (-e $outfile);
 my $status;
 my $pid = 0;
 
+my %rec_hosts = ();
 if (defined $recorder_hosts && $evlbi) {
     
   print "Launching recorders\n";
+
+  open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
+  while (<HOSTS>) {
+    s/^\s+//;
+    s/\s+$//;
+    next if ($_ eq '');
+    my @vals = split;
+    
+    my $tel = shift @vals;
+    die "Wrong hosts file format: $_ " if (@vals < 4);
+    $rec_hosts{$tel} = [@vals];
+  }
+  close HOSTS;
+
   
   if ($pid = fork) { # Parent
 
@@ -207,22 +220,8 @@ if (defined $recorder_hosts && $evlbi) {
 
     if (!$debug) {
       print "Waiting for DiFX to start\n";
-      sleep($offset*0.75);
+      sleep($offset*0.5);
     }
-
-    my %rec_hosts = ();
-    open(HOSTS, $recorder_hosts) || die "Could not open $recorder_hosts: $!\n";
-    while (<HOSTS>) {
-      s/^\s+//;
-      s/\s+$//;
-      next if ($_ eq '');
-      my @vals = split;
-
-      my $tel = shift @vals;
-      die "Wrong hosts file format: $_ " if (@vals < 4);
-      $rec_hosts{$tel} = [@vals];
-    }
-    close HOSTS;
 
     for (my $i=0; $i<@telescopes; $i++) {
       next if (!$active_datastreams[$i]);
@@ -264,6 +263,7 @@ if (defined $recorder_hosts && $evlbi) {
 	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
 	}
 	
+	$duration+=5;
 	$status = send_data("record_time=${duration}s", $recorder);
 	die "Failed to set recording time on $recorder\n" if (!defined $status);
 	
@@ -323,6 +323,7 @@ if (defined $recorder_hosts && $evlbi) {
 	print "***************************Not launching recorder for $telescopes[$i]\n";
       }
     }
+    exit;
   }
 }
 
@@ -337,7 +338,7 @@ if (defined $p4pg) {
 
 my $difx_options = '';
 if ($monitor) {
-  $difx_options .= " -M${monitor}:9999:1";
+  $difx_options .= " -M${monitor}:9999";
 }
 
 my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
@@ -345,6 +346,18 @@ print "$exec\n";
 system $exec if (!$debug);
 
 wait if ($pid);
+
+if (%rec_hosts) {
+  for (my $i=0; $i<@telescopes; $i++) {
+    next if (!$active_datastreams[$i]);
+    
+    my $recorder = $rec_hosts{$telescopes[$i]}->[0];
+    if ($recorder) {
+      $status = send_cmd("record-stop", $recorder);
+     warn "Failed to stop recorder on $recorder\n" if (!defined $status);
+    }
+  }
+}
 
 sub checkfile ($$) {
   my ($type, $file) = @_;
