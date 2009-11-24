@@ -3,7 +3,7 @@ aclocal
 autoconf
 autoheader
 automake -a
-./configure --prefix=${DIFX_PREFIX} 
+./configure --prefix=${DIFX_PREFIX} CXX=${OPENMPI_PREFIX}/bin/mpicxx
 make
 # (su root?)
 make install
