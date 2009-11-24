@@ -44,6 +44,8 @@ int main(int argc, const char * argv[]) {
 
   Configuration * config;
   IppsFFTSpec_R_32f* fftspec=NULL;
+  vector<double> delaysum;
+  vector<int> ndel;
   vector<struct monclient> visibilities;
   vector<struct monclient>::iterator it;
   vector<DIFX_ProdConfig> prodconfig;
@@ -89,11 +91,6 @@ int main(int argc, const char * argv[]) {
     if (status) break;
     cout << "Got visibility # " << monserver.timestamp << endl;
 
-    while (!monserver_nextvis(&monserver, &prod, &vis)) {
-      cout << " " << prod;
-    }
-    cout << endl;
-
     if (monserver.timestamp==-1) continue;
 
     atseconds = monserver.timestamp-startsec;
@@ -126,12 +123,15 @@ int main(int argc, const char * argv[]) {
   ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
 
 
-  cout << "nvis  " << visibilities.size() << endl;
+  cout << string(36, ' ') << "Delay" << endl;
+  cout << string(37, ' ') << "usec   SNR" << endl;
+
 
   for (i=0; i<(int)visibilities.size(); i++) {
     while (!monserver_nextvis(&visibilities[i], &prod, &vis)) {
+      streamsize prec;
 
-      delay = calcdelay(vis, nchan, fftspec, &delay, &snr);
+      status = calcdelay(vis, nchan, fftspec, &delay, &snr);
 
       cout << setw(3) << prod << ": ";
 
@@ -149,13 +149,47 @@ int main(int argc, const char * argv[]) {
       delay *= 1/(2*prodconfig[prod].getBandwidth()); // Really should use sampling rate
       if (prodconfig[prod].getTelescopeIndex2()==refant) delay *= -1;
 
+      prec = cout.precision();
+      cout << setprecision(3) << fixed << setw(7) << delay;
+      cout << setprecision(1) << "  (" << snr << ")" << endl;
+      cout << setprecision(prec);
+      cout.unsetf(ios_base::fixed);
 
-      cout <<  delay << endl;
-	    
-
+      if (polpair[0]==polpair[1]) {
+	int antid;
+	if (prodconfig[prod].getTelescopeIndex1()==refant)
+	  antid = prodconfig[prod].getTelescopeIndex2();
+	else
+	  antid = prodconfig[prod].getTelescopeIndex1();
+	if (antid>(int)delaysum.size()-1) {
+	  delaysum.resize(antid+1,0);
+	  ndel.resize(antid+1,0);
+	}
+	delaysum[antid] += delay;
+	ndel[antid]++;
+      }
     }
-    cout << "*****************" << endl;
+    if (nsamples>1) cout << endl;
   }
+
+  cout << "Average delays to " << config->getTelescopeName(refant) << endl;
+  cout << "These delays must be ADDED to the CLOCK DELAY value (including sign)" << endl;
+  cout << endl;
+
+  
+  ss << "updateclocks.pl " << argv[1];
+  for (i=0; i<(int)delaysum.size(); i++) {
+    if (ndel[i]>0) {
+      delay = delaysum[i]/ndel[i];
+      cout << left << setw(7) << config->getTelescopeName(i) 
+	   << right << " " << setprecision(3) << setw(7) << fixed
+	   << delay << endl;
+      ss << " " << config->getTelescopeName(i) << ":" << delay;
+    }
+  }
+  cout << "Running:" << endl;
+  cout << ss.str() << endl;
+  system(ss.str().c_str());
 }
 
 
@@ -188,9 +222,9 @@ vector<DIFX_ProdConfig> change_config(Configuration *config, int configindex, in
 int calcdelay(cf32 *vis, int nchan, IppsFFTSpec_R_32f* fftspec, double *delay, 
 	      float *snr) {
   static Ipp32f *lags=NULL;
-  Ipp32f max;
-  int imax;
-  
+  Ipp32f max, stddev;
+  int imax, i1, i2;
+
   if (lags==NULL) lags = vectorAlloc_f32(nchan*2);
 
   ippsFFTInv_CCSToR_32f((Ipp32f*)vis, lags, fftspec, 0); 
@@ -198,10 +232,21 @@ int calcdelay(cf32 *vis, int nchan, IppsFFTSpec_R_32f* fftspec, double *delay,
 
   ippsMaxIndx_32f(lags, nchan*2, &max, &imax);
 
+  // Ignore actual fringe 
+  i1 = (imax-10+nchan*2)%(nchan*2);
+  i2 = (imax+10)%(nchan*2);
+
+  if (i1<i2) {
+    ippsMove_32f(&lags[i2], &lags[i1], nchan*2-i2);
+  } else {
+    ippsMove_32f(&lags[i2], lags, nchan*2-20);    
+  }
+  ippsStdDev_32f(lags, 2*nchan-20, &stddev, ippAlgHintFast);
+
   if (imax>nchan) imax -= 2*nchan;
   
   *delay = imax;
-  *snr = 5;
+  *snr = max/stddev;
 
-  return(imax);
+  return(0);
 }
