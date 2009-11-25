@@ -357,7 +357,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				readpointer = scan->start + scan->frameoffset;
 				n = (long long)((((corrstartday - scan->mjd)*86400 
 			+ (corrstartseconds - (scan->sec + scanns*1.e-9)))
-					*framespersecond) + 0.5);
+					*config->getFramesPerSecond(configindex, streamnum)) + 0.5);
 				readpointer += n*scan->framebytes;
 				readseconds = 0;
 				readnanoseconds = 0;
