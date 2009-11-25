@@ -178,6 +178,12 @@ Configuration::Configuration(const char * configfile, int id)
       if (consistencyok)
         consistencyok = setPolycoFreqInfo(i);
     }
+
+    if(configs[i].phasedarray)
+    {
+      if (consistencyok)
+        consistencyok = processPhasedArrayConfig(configs[i].phasedarrayconfigfilename, i);
+    }
   }
   //cout << "About to open the Model, consistencyok is " << consistencyok << endl;
   if(consistencyok) {
@@ -869,8 +875,11 @@ bool Configuration::processConfig(ifstream * input)
 
 bool Configuration::processDatastreamTable(ifstream * input)
 {
-  bool ok = true;
+  datastreamdata * dsdata;
+  int configindex, freqindex, decimationfactor, tonefreq;
+  double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge;
   string line;
+  bool ok = true;
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
   datastreamtablelength = atoi(line.c_str());
@@ -894,8 +903,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
 
   for(int i=0;i<datastreamtablelength;i++)
   {
-    int configindex=-1;
-    int decimationfactor = 1;
+    dsdata = &(datastreamtable[i]);
+    configindex=-1;
     datastreamtable[i].numdatafiles = 0; //default in case its a network datastream
     datastreamtable[i].tcpwindowsizekb = 0; //default in case its a file datastream
     datastreamtable[i].portnumber = -1; //default in case its a file datastream
@@ -1040,14 +1049,14 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].numzoombands += datastreamtable[i].zoomfreqpols[j];
       datastreamtable[i].zoomfreqparentdfreqindices[j] = -1;
       for (int k=0;k<datastreamtable[i].numrecordedfreqs;k++) {
-        double parentlowbandedge = freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandedgefreq;
-        double parenthighbandedge = freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandedgefreq + freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
+        parentlowbandedge = freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandedgefreq;
+        parenthighbandedge = freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandedgefreq + freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
         if(freqtable[datastreamtable[i].recordedfreqtableindices[k]].lowersideband) {
           parentlowbandedge -= freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
           parenthighbandedge -= freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
         }
-        double lowbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq;
-        double highbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq + freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
+        lowbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq;
+        highbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq + freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
         if(freqtable[datastreamtable[i].zoomfreqtableindices[k]].lowersideband) {
           parentlowbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
           parenthighbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
@@ -1073,6 +1082,35 @@ bool Configuration::processDatastreamTable(ifstream * input)
         if(mpiid == 0) //only write one copy of this error message
           cerror << startl << "Error - attempting to refer to freq outside local table!!!" << endl;
         return false;
+      }
+    }
+    if(dsdata->phasecalintervalmhz > 0)
+    {
+      dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs];
+      dsdata->recordedfreqpcaltonefreqs = new int*[dsdata->numrecordedfreqs];
+      dsdata->maxrecordedpcaltones = 0;
+      estimatedbytes += sizeof(int)*(dsdata->numrecordedfreqs);
+      for(int j=0;j<dsdata->numrecordedfreqs;j++)
+      {
+        datastreamtable[i].numrecordedfreqpcaltones[j] = 0;
+        freqindex = dsdata->recordedfreqtableindices[j];
+        lofreq = freqtable[freqindex].bandedgefreq;
+        if(freqtable[freqindex].lowersideband)
+          lofreq -= freqtable[freqindex].bandwidth;
+        tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
+        if(tonefreq < lofreq)
+          tonefreq += dsdata->phasecalintervalmhz;
+        while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz < lofreq + freqtable[freqindex].bandwidth)
+          dsdata->numrecordedfreqpcaltones[j]++;
+        if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
+          dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
+        datastreamtable[i].recordedfreqpcaltonefreqs[j] = new int[datastreamtable[i].numrecordedfreqpcaltones[j]];
+        estimatedbytes += sizeof(int)*datastreamtable[i].numrecordedfreqpcaltones[j];
+        tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
+        if(tonefreq < lofreq)
+          tonefreq += dsdata->phasecalintervalmhz;
+        for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++)
+          datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
       }
     }
     datastreamtable[i].tcpwindowsizekb = 0;
@@ -1391,20 +1429,12 @@ bool Configuration::populateResultLengths()
   bool found;
   int threadfindex, threadbindex, coreresultindex, toadd;
   int bandsperautocorr, freqindex, freqchans, chanstoaverage, maxconfigphasecentres, xmacstridelen, binloop;
+  int numaccs;
 
   maxthreadresultlength = 0;
   maxcoreresultlength = 0;
   for(int c=0;c<numconfigs;c++)
   {
-    xmacstridelen = configs[c].xmacstridelen;
-    binloop = 1;
-    if(configs[c].pulsarbin && !configs[c].scrunchoutput)
-      binloop = configs[c].numbins;
-    if(getMaxProducts(c) > 2)
-      bandsperautocorr = 2;
-    else
-      bandsperautocorr = 1;
-
     //find a scan that matches this config
     found = false;
     maxconfigphasecentres = 1;
@@ -1419,127 +1449,182 @@ bool Configuration::populateResultLengths()
       if(mpiid == 0) //only write one copy of this error message
         cwarn << startl << "Did not find a scan matching config index " << c << endl;
     }
+    if(getMaxProducts(c) > 2)
+      bandsperautocorr = 2;
+    else
+      bandsperautocorr = 1;
 
-    //work out the offsets for threadresult, and the total length too
-    configs[c].completestridelength = new int[freqtablelength];
-    configs[c].numxmacstrides = new int[freqtablelength];
-    configs[c].threadresultfreqoffset = new int[freqtablelength];
-    configs[c].threadresultbaselineoffset = new int*[freqtablelength];
-    threadfindex = 0;
-    for(int i=0;i<freqtablelength;i++)
+    if(configs[c].phasedarray) //set up for phased array
     {
-      if(configs[c].frequsedbybaseline[i])
+      //the thread space is just for one round of results
+      threadfindex = 0;
+      if(configs[c].padomain == FREQUENCY)
       {
-        configs[c].threadresultfreqoffset[i] = threadfindex;
-        freqchans = freqtable[i].numchannels;
-        configs[c].numxmacstrides[i] = freqtable[i].numchannels/xmacstridelen;
-        configs[c].threadresultbaselineoffset[i] = new int[numbaselines];
-        threadbindex = 0;
-        for(int j=0;j<numbaselines;j++)
+        for(int f=0;f<freqtablelength;f++)
         {
-          configs[c].threadresultbaselineoffset[i][j] = threadbindex;
-          bldata = baselinetable[configs[c].baselineindices[j]];
-          if(bldata.localfreqindices[i] >= 0)
+          threadfindex += configs[c].numpafreqpols[f]*freqtable[f].numchannels;
+        }
+        configs[c].threadresultlength = threadfindex;
+      }
+      else
+      {
+        for(int f=0;f<freqtablelength;f++)
+        {
+          threadfindex += configs[c].numpafreqpols[f]*freqtable[f].numchannels;
+        }
+        configs[c].threadresultlength = threadfindex;
+      }
+
+      //the core space needs room for as many dumps as necessary
+      numaccs = configs[c].subintns/configs[c].paaccumulationns;
+      if(configs[c].padomain == FREQUENCY)
+      {
+        configs[c].coreresultlength = (configs[c].threadresultlength*numaccs*8)/configs[c].pabits;
+      }
+      else
+      {
+        configs[c].coreresultlength = (configs[c].threadresultlength*configs[c].blockspersend*8)/configs[c].pabits;
+      }
+    }
+    else //set up for normal cross-correlations
+    {
+      xmacstridelen = configs[c].xmacstridelen;
+      binloop = 1;
+      if(configs[c].pulsarbin && !configs[c].scrunchoutput)
+        binloop = configs[c].numbins;
+
+      //work out the offsets for threadresult, and the total length too
+      configs[c].completestridelength = new int[freqtablelength];
+      configs[c].numxmacstrides = new int[freqtablelength];
+      configs[c].threadresultfreqoffset = new int[freqtablelength];
+      configs[c].threadresultbaselineoffset = new int*[freqtablelength];
+      threadfindex = 0;
+      for(int i=0;i<freqtablelength;i++)
+      {
+        if(configs[c].frequsedbybaseline[i])
+        {
+          configs[c].threadresultfreqoffset[i] = threadfindex;
+          freqchans = freqtable[i].numchannels;
+          configs[c].numxmacstrides[i] = freqtable[i].numchannels/xmacstridelen;
+          configs[c].threadresultbaselineoffset[i] = new int[numbaselines];
+          threadbindex = 0;
+          for(int j=0;j<numbaselines;j++)
           {
             configs[c].threadresultbaselineoffset[i][j] = threadbindex;
-            threadbindex += binloop*bldata.numpolproducts[bldata.localfreqindices[i]]*xmacstridelen;
+            bldata = baselinetable[configs[c].baselineindices[j]];
+            if(bldata.localfreqindices[i] >= 0)
+            {
+              configs[c].threadresultbaselineoffset[i][j] = threadbindex;
+              threadbindex += binloop*bldata.numpolproducts[bldata.localfreqindices[i]]*xmacstridelen;
+            }
+          }
+          configs[c].completestridelength[i] = threadbindex;
+          threadfindex += configs[c].numxmacstrides[i]*configs[c].completestridelength[i];
+        }
+      }
+      configs[c].threadresultlength = threadfindex;
+
+      //work out the offsets for coreresult, and the total length too
+      configs[c].coreresultbaselineoffset = new int*[freqtablelength];
+      configs[c].coreresultbweightoffset  = new int*[freqtablelength];
+      configs[c].coreresultautocorroffset = new int[numdatastreams];
+      configs[c].coreresultacweightoffset = new int[numdatastreams];
+      configs[c].coreresultpcaloffset     = new int[numdatastreams];
+      coreresultindex = 0;
+      for(int i=0;i<freqtablelength;i++)
+      {
+        if(configs[c].frequsedbybaseline[i])
+        {
+          freqchans = freqtable[i].numchannels;
+          chanstoaverage = freqtable[i].channelstoaverage;
+          configs[c].coreresultbaselineoffset[i] = new int[numbaselines];
+          for(int j=0;j<numbaselines;j++)
+          {
+            bldata = baselinetable[configs[c].baselineindices[j]];
+            if(bldata.localfreqindices[i] >= 0)
+            {
+              configs[c].coreresultbaselineoffset[i][j] = coreresultindex;
+              coreresultindex += maxconfigphasecentres*binloop*bldata.numpolproducts[bldata.localfreqindices[i]]*freqchans/chanstoaverage;
+            }
           }
         }
-        configs[c].completestridelength[i] = threadbindex;
-        threadfindex += configs[c].numxmacstrides[i]*configs[c].completestridelength[i];
       }
+      for(int i=0;i<freqtablelength;i++)
+      {
+        if(configs[c].frequsedbybaseline[i])
+        {
+          configs[c].coreresultbweightoffset[i] = new int[numbaselines];
+          for(int j=0;j<numbaselines;j++)
+          {
+            bldata = baselinetable[configs[c].baselineindices[j]];
+            if(bldata.localfreqindices[i] >= 0)
+            {
+              configs[c].coreresultbweightoffset[i][j] = coreresultindex;
+              //baselineweights are only floats so need to divide by 2...
+              toadd = binloop*bldata.numpolproducts[bldata.localfreqindices[i]]/2;
+              if(toadd == 0)
+                toadd = 1; 
+              coreresultindex += toadd;
+            }
+          }
+        }
+      }
+      for(int i=0;i<numdatastreams;i++)
+      {
+        dsdata = datastreamtable[configs[c].datastreamindices[i]];
+        configs[c].coreresultautocorroffset[i] = coreresultindex;
+        for(int j=0;j<getDNumRecordedBands(c, i);j++) {
+          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
+            freqindex = getDRecordedFreqIndex(c, i, j);
+            freqchans = getFNumChannels(freqindex);
+            chanstoaverage = getFChannelsToAverage(freqindex);
+            coreresultindex += bandsperautocorr*freqchans/chanstoaverage;
+          }
+        }
+        for(int j=0;j<getDNumZoomBands(c, i);j++) {
+          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
+            freqindex = getDZoomFreqIndex(c, i, j);
+            freqchans = getFNumChannels(freqindex);
+            chanstoaverage = getFChannelsToAverage(freqindex);
+            coreresultindex += bandsperautocorr*freqchans/chanstoaverage;
+          }
+        }
+      }
+      for(int i=0;i<numdatastreams;i++)
+      {
+        dsdata = datastreamtable[configs[c].datastreamindices[i]];
+        configs[c].coreresultacweightoffset[i] = coreresultindex;
+        toadd = 0;
+        for(int j=0;j<getDNumRecordedBands(c, i);j++) {
+          if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
+            toadd += bandsperautocorr;
+          }
+        }
+        for(int j=0;j<getDNumZoomBands(c, i);j++) {
+          if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
+            toadd += bandsperautocorr;
+          }
+        }
+        //this will also be just floats, not complex, so need to divide by 2
+        toadd /= 2;
+        if(toadd == 0)
+          toadd = 1;
+        coreresultindex += toadd;
+      }
+      for(int i=0;i<numdatastreams;i++)
+      {
+        configs[c].coreresultpcaloffset[i] = coreresultindex;
+        dsdata = datastreamtable[configs[c].datastreamindices[i]];
+        if(dsdata.phasecalintervalmhz > 0)
+        {
+          for(int j=0;j<getDNumRecordedFreqs(c, i);j++)
+            coreresultindex += dsdata.recordedfreqpols[j]*getDRecordedFreqNumPCalTones(c, i, j);
+        }
+      }
+      configs[c].coreresultlength = coreresultindex;
     }
-    configs[c].threadresultlength = threadfindex;
     if(configs[c].threadresultlength > maxthreadresultlength)
       maxthreadresultlength = configs[c].threadresultlength;
-
-    //work out the offsets for coreresult, and the total length too
-    configs[c].coreresultbaselineoffset = new int*[freqtablelength];
-    configs[c].coreresultbweightoffset  = new int*[freqtablelength];
-    configs[c].coreresultautocorroffset = new int[numdatastreams];
-    configs[c].coreresultacweightoffset = new int[numdatastreams];
-    coreresultindex = 0;
-    for(int i=0;i<freqtablelength;i++)
-    {
-      if(configs[c].frequsedbybaseline[i])
-      {
-        freqchans = freqtable[i].numchannels;
-        chanstoaverage = freqtable[i].channelstoaverage;
-        configs[c].coreresultbaselineoffset[i] = new int[numbaselines];
-        for(int j=0;j<numbaselines;j++)
-        {
-          bldata = baselinetable[configs[c].baselineindices[j]];
-          if(bldata.localfreqindices[i] >= 0)
-          {
-            configs[c].coreresultbaselineoffset[i][j] = coreresultindex;
-            coreresultindex += maxconfigphasecentres*binloop*bldata.numpolproducts[bldata.localfreqindices[i]]*freqchans/chanstoaverage;
-          }
-        }
-      }
-    }
-    for(int i=0;i<freqtablelength;i++)
-    {
-      if(configs[c].frequsedbybaseline[i])
-      {
-        configs[c].coreresultbweightoffset[i] = new int[numbaselines];
-        for(int j=0;j<numbaselines;j++)
-        {
-          bldata = baselinetable[configs[c].baselineindices[j]];
-          if(bldata.localfreqindices[i] >= 0)
-          {
-            configs[c].coreresultbweightoffset[i][j] = coreresultindex;
-            //baselineweights are only floats so need to divide by 2...
-            toadd = binloop*bldata.numpolproducts[bldata.localfreqindices[i]]/2;
-            if(toadd == 0)
-              toadd = 1; 
-            coreresultindex += toadd;
-          }
-        }
-      }
-    }
-    for(int i=0;i<numdatastreams;i++)
-    {
-      dsdata = datastreamtable[configs[c].datastreamindices[i]];
-      configs[c].coreresultautocorroffset[i] = coreresultindex;
-      for(int j=0;j<getDNumRecordedBands(c, i);j++) {
-        if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
-          freqindex = getDRecordedFreqIndex(c, i, j);
-          freqchans = getFNumChannels(freqindex);
-          chanstoaverage = getFChannelsToAverage(freqindex);
-          coreresultindex += bandsperautocorr*freqchans/chanstoaverage;
-        }
-      }
-      for(int j=0;j<getDNumZoomBands(c, i);j++) {
-        if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
-          freqindex = getDZoomFreqIndex(c, i, j);
-          freqchans = getFNumChannels(freqindex);
-          chanstoaverage = getFChannelsToAverage(freqindex);
-          coreresultindex += bandsperautocorr*freqchans/chanstoaverage;
-        }
-      }
-    }
-    for(int i=0;i<numdatastreams;i++)
-    {
-      dsdata = datastreamtable[configs[c].datastreamindices[i]];
-      configs[c].coreresultacweightoffset[i] = coreresultindex;
-      toadd = 0;
-      for(int j=0;j<getDNumRecordedBands(c, i);j++) {
-        if(isFrequencyUsed(c, getDRecordedFreqIndex(c, i, j))) {
-          toadd += bandsperautocorr;
-        }
-      }
-      for(int j=0;j<getDNumZoomBands(c, i);j++) {
-        if(isFrequencyUsed(c, getDZoomFreqIndex(c, i, j))) {
-          toadd += bandsperautocorr;
-        }
-      }
-      //this will also be just floats, not complex, so need to divide by 2
-      toadd /= 2;
-      if(toadd == 0)
-        toadd = 1;
-      coreresultindex += toadd;
-    }
-    configs[c].coreresultlength = coreresultindex;
     if(configs[c].coreresultlength > maxcoreresultlength)
       maxcoreresultlength = configs[c].coreresultlength;
   }
@@ -1942,6 +2027,39 @@ bool Configuration::consistencyCheck()
     }
   }
 
+  //for each config, if it is phased array and FILTERBANK, check that the
+  //accumulation time is an integer number of FFTs and will divide evenly 
+  //into the SUBINT/#threads for all Cores
+  for(int i=0;i<numconfigs;i++)
+  {
+    if(configs[i].phasedarray == true)
+    {
+      if(configs[i].subintns%configs[i].paaccumulationns != 0)
+      {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a subintegration (" << configs[i].subintns << " ns) - aborting!" << endl;
+        return false;
+      }
+      for(int j=0;j<numcoreconfs;j++)
+      {
+        if(configs[i].subintns%(configs[i].paaccumulationns*getCNumProcessThreads(j)) != 0)
+        {
+          if(mpiid == 0) //only write one copy of this error message
+            cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a thread subintegration (" << configs[i].subintns/getCNumProcessThreads(j) << " ns for thread " << j << ") - aborting!" << endl;
+          return false;
+        }
+      }
+      ffttime = ((double)configs[i].subintns)/configs[i].blockspersend;
+      double accffts = configs[i].paaccumulationns/ffttime;
+      if(fabs(accffts)-int(accffts+0.5) > 0.00000000001 || int(accffts+0.5)%configs[i].numbufferedffts != 0)
+      {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) is not an integer number of FFTs - aborting!" << endl;
+        return false;
+      }
+    }
+  }
+
   if(databufferfactor % numdatasegments != 0)
   {
     if(mpiid == 0) //only write one copy of this error message
@@ -1966,10 +2084,89 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
     return false;
   }
   getinputline(&phasedarrayinput, &line, "OUTPUT TYPE");
+  if(line == "FILTERBANK")
+    configs[configindex].padomain = FREQUENCY;
+  else if (line == "TIMESERIES") {
+    if(mpiid == 0) //only write one copy of this warning
+      cwarn << startl << "Time series output is not yet supported..." << endl;
+    configs[configindex].padomain = TIME;
+  }
+  else {
+    if(mpiid == 0) //only write one copy of this error message
+      cerror << startl << "Unknown phased array output type " << line << " - setting to FILTERBANK" << endl;
+    configs[configindex].padomain = FREQUENCY;
+  }
   getinputline(&phasedarrayinput, &line, "OUTPUT FORMAT");
+  if(line == "DIFX") {
+    if(configs[configindex].padomain == TIME) {
+      if(mpiid == 0) //only write one copy of this error message
+        cerror << startl << "Cannot produce DIFX format data with a time series - setting output format for phased array to VDIF!" << endl;
+      configs[configindex].paoutputformat = VDIFOUT;
+    }
+    else {
+      configs[configindex].paoutputformat = DIFX;
+    }
+  }
+  else if (line == "VDIF") {
+    if(configs[configindex].padomain == FREQUENCY) {
+      if(mpiid == 0) //only write one copy of this warning
+        cerror << startl << "Cannot produce VDIF format data with a filterbank - setting output format for phased array to DIFX!" << endl;
+      configs[configindex].paoutputformat = DIFX;
+    }
+    else {
+      configs[configindex].paoutputformat = VDIFOUT;
+    }
+  }
+  else {
+    if(configs[configindex].padomain == FREQUENCY) {
+      if(mpiid == 0) //only write one copy of this error message
+        cerror << startl << "Unknown phased array output format " << line << " - setting to DIFX" << endl;
+      configs[configindex].paoutputformat = DIFX;
+    }
+    else {
+      if(mpiid == 0) //only write one copy of this error message
+        cerror << startl << "Unknown phased array output format " << line << " - setting to VDIF" << endl;
+      configs[configindex].paoutputformat = VDIFOUT;
+    }
+  }
   getinputline(&phasedarrayinput, &line, "ACC TIME (NS)");
+  configs[configindex].paaccumulationns = atoi(line.c_str());
   getinputline(&phasedarrayinput, &line, "COMPLEX OUTPUT");
+  if(line == "TRUE" || line == "true" || line == "True")
+    configs[configindex].pacomplexoutput = true;
+  else
+    configs[configindex].pacomplexoutput = false;
   getinputline(&phasedarrayinput, &line, "OUTPUT BITS");
+  configs[configindex].pabits = atoi(line.c_str());
+  configs[configindex].paweights = new double*[freqtablelength];
+  configs[configindex].numpafreqpols = new int[freqtablelength];
+  configs[configindex].papols = new char*[freqtablelength];
+  for(int i=0;i<freqtablelength;i++)
+  {
+    getinputline(&phasedarrayinput, &line, "NUM FREQ");
+    configs[configindex].numpafreqpols[i] = atoi(line.c_str());
+    if(configs[configindex].numpafreqpols[i] > 0)
+    {
+      configs[configindex].paweights[i] = new double[numdatastreams];
+      configs[configindex].papols[i] = new char[configs[configindex].numpafreqpols[i]];
+      for(int j=0;j<configs[configindex].numpafreqpols[i];j++)
+      {
+        getinputline(&phasedarrayinput, &line, "FREQ");
+        configs[configindex].papols[i][j] = line.c_str()[0];
+      }
+      for(int j=0;j<numdatastreams;j++)
+      {
+        getinputline(&phasedarrayinput, &line, "FREQ");
+        configs[configindex].paweights[i][j] = atof(line.c_str());
+        if(configs[configindex].paweights[i][j] < 0.0)
+        {
+          if(mpiid == 0)
+            cfatal << startl << "All phased array weights must be >= 0 ... aborting!" << endl;
+          return false;
+        }
+      }
+    }
+  }
   phasedarrayinput.close();
   return true;
 }

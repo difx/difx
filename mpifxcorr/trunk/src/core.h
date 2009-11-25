@@ -96,13 +96,13 @@ private:
     pthread_mutex_t autocorrcopylock;
     pthread_mutex_t bweightcopylock;
     pthread_mutex_t acweightcopylock;
+    pthread_mutex_t pcalcopylock;
   } processslot;
 
   ///Structure containing all of the pointers to scratch space for a single thread
   typedef struct {
     f32 **** baselineweight; //[freq][pulsarbin][baseline][pol]
     cf32 * threadcrosscorrs;
-    //cf32 * threadresults;
     s32 *** bins; //[fftsubloop][freq][channel]
     cf32* pulsarscratchspace;
     cf32******* pulsaraccumspace; //[freq][stride][baseline][source][polproduct][bin][channel]
@@ -176,6 +176,15 @@ private:
   * @param scratchspace Space for all of the intermediate results for this thread
   */
   void averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace);
+
+ /**
+  * Gets the PCal results from the modes and copies to the coreresults
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param modes The Mode objects which have the pcal results
+  * @param scratchspace Space for all of the intermediate results for this thread
+  */
+  void copyPCalTones(int index, int threadid, Mode ** modes, threadscratchspace * scratchspace);
 
  /**
   * Does any uvshifting necessary and averages down in frequency into the coreresults

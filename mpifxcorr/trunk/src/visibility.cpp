@@ -502,7 +502,7 @@ bool Visibility::checkSocketStatus()
 void Visibility::writedata()
 {
   f32 scale, divisor;
-  int ds1, ds2, ds1bandindex, ds2bandindex, freqindex, freqchannels;
+  int ds1, ds2, ds1bandindex, ds2bandindex, localfreqindex, freqindex, freqchannels;
   int status, resultindex, binloop;
   int dumpmjd, intsec;
   double dumpseconds;
@@ -690,6 +690,29 @@ void Visibility::writedata()
     }
   }
 
+  //calibrate the pulse cal
+  for(int i=0;i<numdatastreams;i++)
+  {
+    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    {
+      resultindex = config->getCoreResultPCalOffset(currentconfigindex, i)*2;
+      for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i); j++)
+      {
+        localfreqindex = config->getDLocalRecordedFreqIndex(currentconfigindex, i, j);
+        freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, localfreqindex);
+        freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+        if(autocorrweights[i][0][j] > 0.0)
+        {
+          scale = 1.0/(autocorrweights[i][0][j]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+          status = vectorMulC_f32_I(scale, &(floatresults[resultindex]), config->getDRecordedFreqNumPCalTones(currentconfigindex, i, localfreqindex)*2);
+          if(status != vecNoErr)
+            csevere << startl << "Error trying to amplitude calibrate the pulsecal data!!" << endl;
+        }
+        resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, localfreqindex)*2;
+      }
+    }
+  }
+
   //all calibrated, now just need to write out
   if(config->getOutputFormat() == Configuration::DIFX)
     writedifx(dumpmjd, dumpseconds);
@@ -794,10 +817,14 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
 void Visibility::writedifx(int dumpmjd, double dumpseconds)
 {
   ofstream output;
+  ofstream pcaloutput;
   char filename[256];
-  int binloop, freqindex, numpolproducts, resultindex, freqchannels;
+  char pcalfilename[256];
+  char pcalstr[256];
+  int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
+  int year, month, day, startyearmjd, dummyseconds;
   int ant1index, ant2index, sourceindex, baselinenumber;
-  double scanoffsetsecs;
+  double scanoffsetsecs, pcaldoy, cablecaldelay, tonefreq;
   bool modelok;
   double buvw[3]; //the u,v and w for this baseline at this time
   char polpair[3]; //the polarisation eg RR, LL
@@ -917,6 +944,64 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
           }
         }
       }
+    }
+  }
+
+  //now each pcal (if necessary)
+  cablecaldelay = 0.0;
+  config->mjd2ymd(dumpmjd, year, month, day);
+  config->getMJD(startyearmjd, dummyseconds, year, 1, 1, 0, 0, 0);
+  pcaldoy = dumpmjd - startyearmjd + 1.0 + dumpseconds/86400.0;
+  maxpol = 1;
+  if(config->getMaxProducts(currentconfigindex) > 1)
+    maxpol = 2;
+  polpair[0] = config->getDRecordedBandPol(0, 0, 0);
+  polpair[1] = config->getOppositePol(polpair[0]);
+  for(int i=0;i<numdatastreams;i++)
+  {
+    if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
+    {
+      sprintf(pcalfilename, "%s/PCAL_%s", config->getOutputFilename().c_str(), config->getTelescopeName(i).c_str());
+      pcaloutput.open(pcalfilename, ios::app);
+      //write the header string - note state counts are not written, and cablecal is dummy
+      sprintf(pcalstr, "%s %10.7f %9.7f %5f %d %d %d %d %d", 
+              config->getTelescopeName(i).c_str(), pcaldoy, 
+              config->getIntTime(currentconfigindex)/86400.0, cablecaldelay, 
+              maxpol, config->getDNumRecordedFreqs(currentconfigindex, i),
+              config->getDMaxRecordedPCalTones(currentconfigindex, i), 
+              0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
+      pcaloutput.write(pcalstr, strlen(pcalstr));
+      for(int p=0;p<maxpol;p++)
+      {
+        for(int j=0;j<config->getDNumRecordedFreqs(currentconfigindex, i);j++)
+        {
+          for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
+          {
+            //get the default response ready in case we don't find anything
+            sprintf(pcalstr, "  %d %.6f %.8f %.8f", -1, 0.0, 0.0, 0.0);
+
+            if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, j)) {
+              //don't write any tones we don't have
+              pcaloutput.write(pcalstr, strlen(pcalstr));
+              continue; //move on
+            }
+
+            //try to find the matching band
+            resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
+            for(int b=0;b<config->getDNumRecordedBands(currentconfigindex, i);b++)
+            {
+              if(config->getDRecordedBandPol(currentconfigindex, i, b) == polpair[p] && config->getDLocalRecordedFreqIndex(currentconfigindex, i, b) == j) {
+                tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, j, t);
+                sprintf(pcalstr, "  %d %.6f %.8f %.8f", j, tonefreq, results[resultindex+t].re, results[resultindex+t].im);
+                break;
+              }
+              resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, b));
+            }
+            pcaloutput.write(pcalstr, strlen(pcalstr));
+          }
+        }
+      }
+      pcaloutput.write("\n", 1);
     }
   }
 }

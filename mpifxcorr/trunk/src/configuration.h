@@ -48,8 +48,11 @@ to this configuration information to the other objects which actually perform th
 */
 class Configuration{
 public:
-  /// Enumeration for the kind of output than can be produced
-  enum outputformat {ASCII, DIFX};
+  /// Enumeration for the format of the output than can be produced
+  enum outputformat {ASCII, DIFX, VDIFOUT};
+
+  ///Enumeration for the type of phased array output
+  enum datadomain {TIME, FREQUENCY};
 
   /// Supported types of recorded data format
   enum dataformat {LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, MARK5B, VDIF, VLBN};
@@ -78,7 +81,7 @@ public:
   inline int getVisBufferLength() { return visbufferlength; }
   inline bool consistencyOK() {return consistencyok; }
   inline bool anyUsbXLsb(int configindex) { return configs[configindex].anyusbxlsb; }
-  inline bool phaseArrayOn(int configindex) { return configs[configindex].phasedarray; }
+  inline bool phasedArrayOn(int configindex) { return configs[configindex].phasedarray; }
   inline int getArrayStrideLength(int configindex) { return configs[configindex].arraystridelen; }
   inline int getXmacStrideLength(int configindex) { return configs[configindex].xmacstridelen; }
   inline int getNumBufferedFFTs(int configindex) { return configs[configindex].numbufferedffts; }
@@ -95,6 +98,7 @@ public:
   inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
   inline int getCoreResultACWeightOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultacweightoffset[configdatastreamindex]; }
+  inline int getCoreResultPCalOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultpcaloffset[configdatastreamindex]; }
   inline int getNumConfigs() { return numconfigs; }
   inline int getBlocksPerSend(int configindex) { return configs[configindex].blockspersend; }
   inline double getIntTime(int configindex) { return configs[configindex].inttime; }
@@ -132,6 +136,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
   inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
+  inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].maxrecordedpcaltones; }
   inline int getDNumBits(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numbits; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
@@ -171,6 +177,10 @@ public:
     {  return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numzoombands + datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedbands; }
   inline string * getDDataFileNames(int configindex, int configdatastreamindex)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].datafilenames; }
+  inline int getDRecordedFreqNumPCalTones(int configindex, int configdatastreamindex, int recordedfreqindex)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
+  inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqs[recordedfreqindex][tone]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex)
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
   inline double getDZoomFreq(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
@@ -271,6 +281,7 @@ public:
     { return telescopetable[telescopeindex].name; }
   inline int getTelescopeTableLength()
     { return telescopetablelength; }
+  inline int getDatastreamTableLength() { return datastreamtablelength; }
   inline bool isCoreProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID + numdatastreams; }
   inline bool isDatastreamProcess() { return mpiid >= fxcorr::FIRSTTELESCOPEID && mpiid < fxcorr::FIRSTTELESCOPEID + numdatastreams; }
   inline void setCommandThreadInitialised() { commandthreadinitialised = true; }
@@ -283,6 +294,12 @@ public:
   inline void setLTADumpChannels(int setval) { ltadumpchannels = setval; }
   inline int getSTADumpChannels() { return stadumpchannels; }
   inline int getLTADumpChannels() { return ltadumpchannels; }
+  inline double getFPhasedArrayDWeight(int configindex, int freqindex, int ordereddsindex)
+    { return configs[configindex].paweights[freqindex][ordereddsindex]; }
+  inline int getFPhasedArrayNumPols(int configindex, int freqindex)
+    { return configs[configindex].numpafreqpols[freqindex]; }
+  inline char getFPhaseArrayPol(int configindex, int freqindex, int polindex)
+    { return configs[configindex].papols[freqindex][polindex]; }
 
 //@}
 
@@ -527,6 +544,14 @@ private:
     bool anyusbxlsb;
     string pulsarconfigfilename;
     string phasedarrayconfigfilename;
+    outputformat paoutputformat;
+    int pabits;
+    bool pacomplexoutput;
+    int paaccumulationns;
+    double ** paweights; //[freq][datastream]
+    char ** papols; //freq][pol]
+    int * numpafreqpols; //[freq]
+    datadomain padomain;
     Polyco ** polycos;
     int  * datastreamindices;
     int  * ordereddatastreamindices;
@@ -539,9 +564,10 @@ private:
     int ** threadresultbaselineoffset; //[freq][baseline]
     //bookkeeping info for core results
     int ** coreresultbaselineoffset; //[freq][baseline]
-    int ** coreresultbweightoffset; //[freq][baseline]
+    int ** coreresultbweightoffset;  //[freq][baseline]
     int  * coreresultautocorroffset; //[datastream]
     int  * coreresultacweightoffset; //[datastream]
+    int  * coreresultpcaloffset;     //[datastream]
   } configdata;
 
   ///storage struct for data from the rule table of the input file
@@ -580,8 +606,11 @@ private:
     bool filterbank;
     int numrecordedfreqs;
     int numzoomfreqs;
-    int * recordedfreqpols;
-    int * recordedfreqtableindices;
+    int maxrecordedpcaltones;
+    int *  recordedfreqpols;
+    int *  recordedfreqtableindices;
+    int *  numrecordedfreqpcaltones;
+    int ** recordedfreqpcaltonefreqs; 
     double * recordedfreqclockoffsets;
     double * recordedfreqlooffsets;
     int * zoomfreqpols;

@@ -119,6 +119,7 @@ Model::~Model()
             vectorFree(scantable[i].delay[j][k][l]);
             vectorFree(scantable[i].wet[j][k][l]);
             vectorFree(scantable[i].dry[j][k][l]);
+            vectorFree(scantable[i].adj[j][k][l]);
           }
           delete [] scantable[i].u[j][k];
           delete [] scantable[i].v[j][k];
@@ -126,6 +127,7 @@ Model::~Model()
           delete [] scantable[i].delay[j][k];
           delete [] scantable[i].wet[j][k];
           delete [] scantable[i].dry[j][k];
+          delete [] scantable[i].adj[j][k];
         }
         for(int k=0;k<numstations;k++)
           delete [] scantable[i].clock[j][k];
@@ -135,6 +137,7 @@ Model::~Model()
         delete [] scantable[i].delay[j];
         delete [] scantable[i].wet[j];
         delete [] scantable[i].dry[j];
+        delete [] scantable[i].adj[j];
         delete [] scantable[i].clock[j];
       }
       delete [] scantable[i].u;
@@ -143,6 +146,7 @@ Model::~Model()
       delete [] scantable[i].delay;
       delete [] scantable[i].wet;
       delete [] scantable[i].dry;
+      delete [] scantable[i].adj;
       delete [] scantable[i].clock;
       delete [] scantable[i].phasecentres;
     }
@@ -512,7 +516,7 @@ bool Model::readSpacecraftData(ifstream * input)
 bool Model::readPolynomialSamples(ifstream * input)
 {
   int year, month, day, hour, minute, second, mjd, daysec;
-  string line;
+  string line, key;
   bool polyok = true;
 
   config->getinputline(input, &imfilename, "IM FILENAME");
@@ -603,6 +607,7 @@ bool Model::readPolynomialSamples(ifstream * input)
     scantable[i].delay = new f64***[scantable[i].nummodelsamples];
     scantable[i].wet = new f64***[scantable[i].nummodelsamples];
     scantable[i].dry = new f64***[scantable[i].nummodelsamples];
+    scantable[i].adj = new f64***[scantable[i].nummodelsamples];
     scantable[i].clock = new f64**[scantable[i].nummodelsamples];
     for(int j=0;j<scantable[i].nummodelsamples;j++) {
       config->getinputline(input, &line, "SCAN ", i);
@@ -623,6 +628,7 @@ bool Model::readPolynomialSamples(ifstream * input)
       scantable[i].delay[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].wet[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].dry[j] = new f64**[scantable[i].numphasecentres+1];
+      scantable[i].adj[j] = new f64**[scantable[i].numphasecentres+1];
       scantable[i].clock[j] = new f64*[numstations];
       for(int k=0;k<numstations;k++)
         scantable[i].clock[j][k] = vectorAlloc_f64(polyorder+1);
@@ -633,6 +639,7 @@ bool Model::readPolynomialSamples(ifstream * input)
         scantable[i].delay[j][k] = new f64*[numstations];
         scantable[i].wet[j][k] = new f64*[numstations];
         scantable[i].dry[j][k] = new f64*[numstations];
+        scantable[i].adj[j][k] = new f64*[numstations];
         for(int l=0;l<numstations;l++) {
           estimatedbytes += 6*8*(polyorder + 1);
           scantable[i].u[j][k][l] = vectorAlloc_f64(polyorder+1);
@@ -641,13 +648,22 @@ bool Model::readPolynomialSamples(ifstream * input)
           scantable[i].delay[j][k][l] = vectorAlloc_f64(polyorder+1);
           scantable[i].wet[j][k][l] = vectorAlloc_f64(polyorder+1);
           scantable[i].dry[j][k][l] = vectorAlloc_f64(polyorder+1);
+          scantable[i].adj[j][k][l] = vectorAlloc_f64(polyorder+1);
           config->getinputline(input, &line, "SRC ", k);
           polyok = polyok && fillPolyRow(scantable[i].delay[j][k][l], line, polyorder+1);
-          config->getinputline(input, &line, "SRC ", k);
-          polyok = polyok && fillPolyRow(scantable[i].dry[j][k][l], line, polyorder+1);
-          config->getinputline(input, &line, "SRC ", k);
-          polyok = polyok && fillPolyRow(scantable[i].wet[j][k][l], line, polyorder+1);
-          config->getinputline(input, &line, "SRC ", k);
+          config->getinputkeyval(input, &key, &line);
+          if(key.find("DRY") != string::npos) { //look for optional "DRY" delay subcomponent
+            polyok = polyok && fillPolyRow(scantable[i].dry[j][k][l], line, polyorder+1);
+            config->getinputkeyval(input, &key, &line);
+          }
+          if(key.find("WET") != string::npos) { //look for optional "WET" delay subcomponent
+            polyok = polyok && fillPolyRow(scantable[i].wet[j][k][l], line, polyorder+1);
+            config->getinputkeyval(input, &key, &line);
+          }
+          if(key.find("ADJ") != string::npos) { //look for optional "ADJ" delay subcomponent (usually for phased arrays)
+            polyok = polyok && fillPolyRow(scantable[i].adj[j][k][l], line, polyorder+1);
+            config->getinputline(input, &line, "SRC ", k);
+          }
           polyok = polyok && fillPolyRow(scantable[i].u[j][k][l], line, polyorder+1);
           config->getinputline(input, &line, "SRC ", k);
           polyok = polyok && fillPolyRow(scantable[i].v[j][k][l], line, polyorder+1);

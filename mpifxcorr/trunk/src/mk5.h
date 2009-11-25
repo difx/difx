@@ -88,8 +88,6 @@ protected:
 
   virtual int openframe();
 
-  int framebytes, payloadbytes, framespersecond;
-
   int lastconfig;
 
   // UDP values and statistics

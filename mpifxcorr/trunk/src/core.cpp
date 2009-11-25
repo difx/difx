@@ -105,6 +105,9 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
     pthread_mutex_init(&(procslots[i].acweightcopylock), NULL);
     if(perr != 0)
       csevere << startl << "Problem initialising acweightcopylock in slot " << i << "(" << perr << ")" << endl;
+    pthread_mutex_init(&(procslots[i].pcalcopylock), NULL);
+    if(perr != 0)
+      csevere << startl << "Problem initialising pcalcopylock in slot " << i << "(" << perr << ")" << endl;
     procslots[i].datalengthbytes = new int[numdatastreams];
     procslots[i].databuffer = new u8*[numdatastreams];
     procslots[i].controlbuffer = new s32*[numdatastreams];
@@ -628,6 +631,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   int freqindex, freqchannels, channelinc;
   int xmacstridelength, xmacpasses, xmacstart, destbin, destchan, localfreqindex, parentfreqindex;
   int outputoffset, input1offset, input2offset, xmacmullength;
+  int dsfreqindex;
+  char papol;
   double offsetmins, blockns;
   f32 bweight;
   Mode * m1, * m2;
@@ -722,7 +727,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex); fftsubloop++)
       {
         i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
-        offsetmins = ((double)i)*((double)config->getSubintNS(procslots[index].configindex))/(60000000000.0);
+        offsetmins = ((double)i)*blockns/60000000000.0;
         currentpolyco->getBins(offsetmins, scratchspace->bins[fftsubloop]);
       }
     }
@@ -731,7 +736,56 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     resultindex = 0;
     for(int f=0;f<config->getFreqTableLength();f++)
     {
-      if(config->isFrequencyUsed(procslots[index].configindex, f))
+      if(config->phasedArrayOn(procslots[index].configindex)) //phased array processing
+      {
+        freqchannels = config->getFNumChannels(procslots[index].configindex);
+        for(int j=0;j<config->getFPhasedArrayNumPols(procslots[index].configindex, f);j++)
+        {
+          papol = config->getFPhaseArrayPol(procslots[index].configindex, f, j);
+
+          //weight and add the results for each baseline
+          for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
+          {
+            for(int k=0;k<numdatastreams;k++)
+            {
+              vis1 = 0;
+              for(int l=0;l<config->getDNumRecordedBands(procslots[index].configindex, k);l++)
+              {
+                dsfreqindex = config->getDRecordedFreqIndex(procslots[index].configindex, k, l);
+                if(dsfreqindex == f && config->getDRecordedBandPol(procslots[index].configindex, k, l) == papol) {
+                  vis1 = modes[k]->getFreqs(l, fftsubloop);
+                  break;
+                }
+              }
+              if(vis1 == 0)
+              {
+                for(int l=0;l<config->getDNumZoomBands(procslots[index].configindex, k);l++)
+                {
+                  dsfreqindex = config->getDZoomFreqIndex(procslots[index].configindex, k, l);
+                  if(dsfreqindex == f && config->getDZoomBandPol(procslots[index].configindex, k, l) == papol) {
+                    vis1 = modes[k]->getFreqs(config->getDNumRecordedBands(procslots[index].configindex, k) + l, fftsubloop);
+                    break;
+                  }
+                }
+              }
+              if(vis1 != 0)
+              {
+                //weight the data
+                status = vectorMulC_f32((f32*)vis1, config->getFPhasedArrayDWeight(procslots[index].configindex, f, k), (f32*)scratchspace->rotated, freqchannels*2);
+                if(status != vecNoErr)
+                  cerror << startl << "Error trying to scale phased array results!" << endl;
+
+                //add it to the result
+                status = vectorAdd_cf32_I(scratchspace->rotated, &(scratchspace->threadcrosscorrs[resultindex]), freqchannels);
+                if(status != vecNoErr)
+                  cerror << startl << "Error trying to add phased array results!" << endl;
+              }
+            }
+          }
+          resultindex += freqchannels;
+        }
+      }
+      else if(config->isFrequencyUsed(procslots[index].configindex, f)) //normal processing
       {
         //All baseline freq indices into the freq table are determined by the *first* datastream
         //in the event of correlating USB with LSB data.  Hence all Nyquist offsets/channels etc
@@ -945,6 +999,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock copy mutex!!!" << endl;
 
+  //copy the PCal results
+  copyPCalTones(index, threadid, modes, scratchspace);
+
 //end the cutout of processing in "Neutered DiFX"
 #endif
 
@@ -957,6 +1014,42 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   perr = pthread_mutex_unlock(&(procslots[index].slotlocks[threadid]));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index << endl;
+}
+
+void Core::copyPCalTones(int index, int threadid, Mode ** modes, threadscratchspace * scratchspace)
+{
+  int resultindex, localfreqindex, perr;
+  cf32 pcal;
+
+  //lock the pcal copylock, so we're the only one adding to the result array (pcal section)
+  perr = pthread_mutex_lock(&(procslots[index].pcalcopylock));
+  if(perr != 0)
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying lock pcal copy mutex!!!" << endl;
+
+  //copy the pulse cal
+  for(int i=0;i<numdatastreams;i++)
+  {
+    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, i) > 0)
+    {
+      resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
+      for(int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++)
+      {
+        localfreqindex = config->getDLocalRecordedFreqIndex(procslots[index].configindex, i, j);
+        for(int k=0;k<config->getDRecordedFreqNumPCalTones(procslots[index].configindex, i, localfreqindex);k++)
+        {
+          //pcal = modes[i]->getPCal(j, k);
+          procslots[index].results[resultindex].re += pcal.re;
+          procslots[index].results[resultindex].im += pcal.im;
+          resultindex++;
+        }
+      }
+    }
+  }
+
+  //unlock the thread pcal copylock
+  perr = pthread_mutex_unlock(&(procslots[index].pcalcopylock));
+  if(perr != 0)
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock pcal copy mutex!!!" << endl;
 }
 
 void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace)
@@ -1062,7 +1155,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
   //unlock the thread autocorr copylock
   perr = pthread_mutex_unlock(&(procslots[index].autocorrcopylock));
   if(perr != 0)
-    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock bweight copy mutex!!!" << endl;
+    csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock autocorr copy mutex!!!" << endl;
 
   //lock the acweight copylock, so we're the only one adding to the result array (autocorr weight section)
   perr = pthread_mutex_lock(&(procslots[index].acweightcopylock));
