@@ -28,7 +28,7 @@ difx_config : difx_config.cpp
 monitor_server : monitor_server.cpp monserver.cpp monserver.h
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) 
 
-mon_sample: mon_sample.c monserver.cpp monserver.h
+mon_sample: mon_sample.cpp monserver.cpp monserver.h
 	$(CXX) $(CPPFLAGS) $(INCS) -o $@  $^ $(LIBS) $(PGPLOTLIBS)
 
 mon3d: mon3d.c monserver.cpp
