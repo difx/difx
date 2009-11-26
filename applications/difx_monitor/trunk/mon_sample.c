@@ -17,33 +17,55 @@
 #include <complex>
 
 #include "architecture.h"
+#include "configuration.h"
+
 #include "monserver.h"
+
 #define MAX_PROD 4
 
 float arraymax(float *array[], int nchan, int nprod);
 float arraymin(float *a[], int nchan, int nprod);
 
 int main(int argc, const char * argv[]) {
-  int status, prod, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
+  int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
+  int startsec, currentconfig;
   unsigned int iprod[MAX_PROD];
+  char polpair[3];
   struct monclient monserver;
   float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
   cf32 *vis;
+  ostringstream ss;
   IppsFFTSpec_R_32f* fftspec=NULL;
+  Configuration *config;
+  vector<DIFX_ProdConfig> products;
 
-  if(argc < 3)  {
-    fprintf(stderr, "Error - invoke with mon_sample <host> <product#>\n");
+  if(argc < 4)  {
+    cerr << "Error - invoke with mon_sample <host> <inputfile> <product#> [<product#> ...]" << endl;
     return(EXIT_FAILURE);
   }
 
-  if (argc-2>MAX_PROD) {
-    fprintf(stderr, "Error - Too many products requested\n");
+  if (argc-3>MAX_PROD) {
+    cerr << "Error - Too many products requested" << endl;
     return(EXIT_FAILURE);
   }
 
-  for (i=2; i<argc; i++) iprod[i-2] = atoi(argv[i]);
-  nprod = argc-2;
+  config = new Configuration(argv[2], 0);
+  if (!config->consistencyOK()) {
+    cerr << "Aborting" << endl;
+    exit(1);
+  }
+  status = config->loaduvwinfo(true);
+  if (!status) {
+    cerr << "Failed to load uvw - aborting\n";
+    exit(1);
+  }
+  startsec = config->getStartSeconds();
+  currentconfig = 0;
+  products = monserver_productconfig(config, currentconfig);
+
+  for (i=3; i<argc; i++) iprod[i-3] = atoi(argv[i]);
+  nprod = argc-3;
 
   for (i=0; i<nprod; i++) {
     amp[i] = NULL;
@@ -54,75 +76,78 @@ int main(int argc, const char * argv[]) {
   // Open PGPLOT first, as pgplot server seems to inherite monitor socket
   status = cpgbeg(0,"/xs",1,3);
   if (status != 1) {
-    printf("Error opening pgplot device\n");
+    cerr << "Error opening pgplot device" << endl;
   }
   cpgask(0);
 
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
 
-  printf("Opened connection to monitor server\n");
+  cout << "Opened connection to monitor server" << endl;
 
   status = monserver_requestproducts(monserver, iprod, nprod);
   if (status) exit(1);
 
-
-  printf("Sent product request\n");
+  cout << "Sent product request" << endl;
 
   status = 0;
   while (!status) {
-    printf("Waiting for visibilities\n");
+    cout << "Waiting for visibilities" << endl;
     status = monserver_readvis(&monserver);
     if (!status) {
-      printf("Got visibility # %d\n", monserver.timestamp);
+      cout << "Got visibility # " << monserver.timestamp << endl;
 
-      ivis = 0;
-      while (!monserver_nextvis(&monserver, &prod, &vis)) {
-	//printf("Got visibility for product %d\n", prod);
+      int atseconds = monserver.timestamp-startsec;
+      if(config->getConfigIndex(atseconds) != currentconfig) {
+	currentconfig = config->getConfigIndex(atseconds);
+	products = monserver_productconfig(config, currentconfig);
+	cout << "Config changes - skipping this integration" << endl;
+	continue;
+      }
 
-	// (Re)allocate arrays if number of channels changes, including first time
-	if (nchan!=monserver.numchannels) {
-	  nchan = monserver.numchannels;
+      // (Re)allocate arrays if number of channels changes, including first time
+      if (nchan!=monserver.numchannels) {
+	nchan = monserver.numchannels;
 
-	  if (xval!=NULL) vectorFree(xval);
-	  if (lagx!=NULL) vectorFree(lagx);
-	  if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
-	  for (i=0; i<nprod; i++) {
-	    if (amp[i]!=NULL) vectorFree(amp[i]);
-	    if (phase[i]!=NULL) vectorFree(phase[i]);
-	    if (lags[i]!=NULL) vectorFree(lags[i]);
-	  }
-
-	  xval = vectorAlloc_f32(nchan);
-	  lagx = vectorAlloc_f32(nchan*2);
-	  for (i=0; i<nprod; i++) {
-	    amp[i] = vectorAlloc_f32(nchan);
-	    phase[i] = vectorAlloc_f32(nchan);
-	    lags[i] = vectorAlloc_f32(nchan*2);
-	    if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
-	      fprintf(stderr, "Failed to allocate memory for plotting arrays\n");
-	      exit(1);
-	    }
-	  }
-	  if (xval==NULL || lagx==NULL) {
-	    fprintf(stderr, "Failed to allocate memory for plotting arrays\n");
-	    exit(1);
-	  }
-	  for (i=0; i<nchan; i++) {
-	    xval[i] = i;
-	  }
-	  for (i=-nchan; i<nchan; i++) {
-	    lagx[i+nchan] = i;
-	  }
-
-	  
-	  printf("Initialise FFT\n");
-	  int order = 0;
-	  while(((nchan*2) >> order) > 1)
-	    order++;
-	  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+	if (xval!=NULL) vectorFree(xval);
+	if (lagx!=NULL) vectorFree(lagx);
+	if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
+	for (i=0; i<nprod; i++) {
+	  if (amp[i]!=NULL) vectorFree(amp[i]);
+	  if (phase[i]!=NULL) vectorFree(phase[i]);
+	  if (lags[i]!=NULL) vectorFree(lags[i]);
 	}
 
+	xval = vectorAlloc_f32(nchan);
+	lagx = vectorAlloc_f32(nchan*2);
+	for (i=0; i<nprod; i++) {
+	  amp[i] = vectorAlloc_f32(nchan);
+	  phase[i] = vectorAlloc_f32(nchan);
+	  lags[i] = vectorAlloc_f32(nchan*2);
+	  if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
+	    cerr << "Failed to allocate memory for plotting arrays" << endl;
+	    exit(1);
+	  }
+	}
+	if (xval==NULL || lagx==NULL) {
+	  cerr << "Failed to allocate memory for plotting arrays" << endl;
+	  exit(1);
+	}
+	for (i=0; i<nchan; i++) {
+	  xval[i] = i;
+	}
+	for (i=-nchan; i<nchan; i++) {
+	  lagx[i+nchan] = i;
+	}
+
+	int order = 0;
+	while(((nchan*2) >> order) > 1)
+	  order++;
+	ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+      }
+
+      ivis = 0;
+      while (!monserver_nextvis(&monserver, (int*)&iprod[ivis], &vis)) {
 	ippsMagnitude_32fc(vis, amp[ivis], nchan);
 	ippsPhase_32fc(vis, phase[ivis], nchan);
 	vectorMulC_f32_I(180/M_PI, phase[ivis], nchan);
@@ -187,6 +212,28 @@ int main(int argc, const char * argv[]) {
 	cpgline(nchan*2, lagx, lags[i]);
       }
 
+      for (i=0; i<nprod; i++) {
+	products[iprod[i]].getPolPair(polpair);
+	ss << iprod[i] << ": "
+	   << products[iprod[i]].getTelescopeName1() << "-" 
+	   << products[iprod[i]].getTelescopeName2()
+	   << " " <<  polpair << " "
+	   << products[iprod[i]].getFreq() << " MHz";
+
+	cpgsch(3);
+	cpgsci(cols[i]);
+	if (i==0) {
+	  cpgmtxt("T", -1.5, 0.02, 0, ss.str().c_str());	    
+	} else if (i==1) { 
+	  cpgmtxt("T", -1.5, 0.98, 1, ss.str().c_str());	    
+	} else if (i==2) { 
+	  cpgmtxt("B", -1.5, 0.02, 0, ss.str().c_str());	    
+	} else if (i==3) { 
+	  cpgmtxt("B", -1.5, 0.98, 1, ss.str().c_str());	    
+	}
+	ss.str("");
+      }
+      cpgsch(1);
       cpgebuf();
 
     }
