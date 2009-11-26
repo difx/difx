@@ -20,6 +20,7 @@
 #include <cpgplot.h>
 #include <string.h>
 #include <sstream>
+#include <fstream>
 #include "architecture.h"
 #include "configuration.h"
 #include "monserver.h"
@@ -31,7 +32,7 @@ using namespace std;
 
 //prototypes
 void plot_results();
-void change_config();
+void change_config(const char*);
 void maxmin(f32 **vals, int nchan, int npol, float *max, float *min);
 
 Configuration * config;
@@ -97,7 +98,7 @@ int main(int argc, const char * argv[])
 
     atseconds = monserver.timestamp-startsec;
     if(config->getConfigIndex(atseconds) != currentconfigindex) 
-      change_config();
+      change_config(argv[1]);
 
     while (!monserver_nextvis(&monserver, &prod, &vis)) {
       if (prod>=nprod) {
@@ -401,9 +402,10 @@ void plot_results()
   }
 }
 
-void change_config()
-{
+void change_config(const char *inputfile) {
   int status, i;
+  ofstream html;
+  ostringstream ss;
 
   currentconfigindex = config->getConfigIndex(atseconds);
   numchannels = config->getNumChannels(currentconfigindex);
@@ -458,6 +460,100 @@ void change_config()
       cerr << "Error trying to zero visibility buffer - aborting!" << endl;
       exit(1);
     }
+  }
+
+  // Generate HTML
+  vector <string> filebase;
+  vector <string> title;
+
+  html.open("index.html", ios::out|ios::trunc);
+  if (!html.is_open()) {
+    cerr << "Warning: Failed to open index.html for writing" << endl;
+    return;
+  }
+
+  html << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">" << endl;
+  html << "<html>" << endl;
+  html << "<head>" << endl;
+  html << "<meta content=\"text/html; charset=ISO-8859-1\" http-equiv=\"content-type\">" << endl;
+  html << "<title>" << inputfile << "</title>" << endl;
+  html << "</head>" << endl;
+  html << "<body>" << endl;
+  html << "<h2 style=\"text-align: center;\">" << inputfile << "</h2>" << endl;
+  html << "<table style=\"text-align: left; width: 100%;\" border=\"1\" cellpadding=\"2\" cellspacing=\"2\">" << endl;
+  html << "<tbody>" << endl;
+
+  int binloop = 1;
+  if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
+    binloop = config->getNumPulsarBins(currentconfigindex);
+
+  for (int i=0;i<config->getNumBaselines();i++) {
+    int ds1index = config->getBDataStream1Index(currentconfigindex, i);
+    int ds2index = config->getBDataStream2Index(currentconfigindex, i);
+
+    html << "<tr>" << endl;
+    html << "<th style=\"text-align: center; background-color: rgb(204, 255, 255);\">" 
+	 << config->getTelescopeName(ds1index) << "-" 
+	 << config->getTelescopeName(ds2index) << "</th>" << endl;
+
+    for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++) {
+      int freqindex = config->getBFreqIndex(currentconfigindex, i, j);
+
+      // Skip over pulsar bins and polarisation
+      for(int b=0;b<binloop;b++) {
+	for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++) {
+	}
+      }
+      
+      html <<  "<td style=\"text-align: center;\">"
+	   << "<a href=\"lba-" << i << "-f" << j << ".html\">" 
+	   << config->getFreqTableFreq(freqindex) << " MHz" << "</a></td>" << endl;
+      
+      ss << config->getTelescopeName(ds1index) << "-" 
+	 << config->getTelescopeName(ds2index) << "   "
+	 << config->getFreqTableFreq(freqindex) << " MHz";
+      title.push_back(ss.str());
+      ss.str("");
+
+      ss << "lba-" << i << "-f" << j;
+      filebase.push_back(ss.str());
+      ss.str("");
+	    
+	//my $title = "$bname $freq";
+	//push @plots, ["lba-$ibaseline-f$ifreq.html", "lba-$ibaseline-f$ifreq-b0.png", $title];
+
+    }
+    html << "</tr>" << endl;
+  }
+
+  html << "</tbody>" << endl;
+  html << "</table>" << endl;
+  html << "</body>" << endl;
+  html << "</html>" << endl;
+
+  html.close();
+
+  for (unsigned int i=0; i< title.size(); i++) {
+    string filename;
+    filename = filebase[i]+".html";
+    html.open(filename.c_str(), ios::out|ios::trunc);
+    if (!html.is_open()) {
+      cerr << "Warning: Failed to open " << filename <<  "for writing" << endl;
+      return;
+    }
+
+    html << "<!DOCTYPE html PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">" << endl;
+    html << "<html>" << endl;
+    html << "<head>" << endl;
+    html << "<meta content=\"text/html; charset=ISO-8859-1\" http-equiv=\"content-type\">" << endl;
+    html << "<meta http-equiv=\"Refresh\" content=\"2\">" << endl;
+    html << "<title> " << title[i] << "</title>" << endl;
+    html << "</head>" << endl;
+    html << "<body>" << endl;
+    html << "<img src=\"" << filebase[i] << "-b0.png\">" << endl;
+    html << "</body>" << endl;
+    html << "</html>" << endl;
+    html.close();
   }
 }
 
