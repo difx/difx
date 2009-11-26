@@ -299,8 +299,9 @@ void monserver_clear(struct monclient *client) {
 
 vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex) {
   char polpair[3];
-
   vector<DIFX_ProdConfig> products;
+
+  polpair[2] = 0;
   
   int binloop = 1;
   if(config->pulsarBinOn(configindex) && !config->scrunchOutputOn(configindex))
@@ -325,6 +326,32 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 					     config->getFreqTableBandwidth(freqindex),
 					     polpair));	  
 	}
+      }
+    }
+  }
+
+  // Autocorrelations
+
+  int autocorrwidth = (config->getMaxProducts()>2)?2:1;
+
+  for(int i=0;i<config->getNumDataStreams();i++) {
+    for(int j=0;j<autocorrwidth;j++) {
+      for(int k=0;k<config->getDNumOutputBands(configindex, i); k++) {
+
+	polpair[0] = config->getDBandPol(configindex, i, k);
+	if (j==0)
+	  polpair[1] = polpair[0];
+	else
+	  polpair[1] = ((polpair[0] == 'R')?'L':'R');
+	int freqindex = config->getDFreqIndex(configindex, i, k);
+	
+	products.push_back(DIFX_ProdConfig(i,
+					   i,
+					   config->getDStationName(configindex, i), 
+					   "",
+					   config->getFreqTableFreq(freqindex),
+					   config->getFreqTableBandwidth(freqindex),
+					   polpair));	  
       }
     }
   }
