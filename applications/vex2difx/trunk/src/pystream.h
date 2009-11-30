@@ -44,6 +44,7 @@ private:
 	int lastSourceId;
 	int lastModeId;
 	int lastChannelSet;
+	double mjd0;
 	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
 
 	void calcIfIndex(const VexData *V);

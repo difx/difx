@@ -27,6 +27,7 @@
  *
  *==========================================================================*/
 
+#include <cmath>
 #include "pystream.h"
 
 void pystream::open(const string& antennaName, const VexData *V)
@@ -46,6 +47,7 @@ void pystream::open(const string& antennaName, const VexData *V)
 	{
 		sw[i] = "";
 	}
+	mjd0 = V->obsStart();
 	ofstream::open((string(obsCode) + string(".") + antennaName + ".py").c_str());
 }
 
@@ -78,14 +80,13 @@ void pystream::calcIfIndex(const VexData *V)
 
 void pystream::close()
 {
-	int p;
-
-	p = precision();
+	int p = precision();
 	precision(14);
 
 	if(lastValid != 0.0)
 	{
-		*this << "array.wait(" << (lastValid + 1.0/86400.0) << ")" << endl;
+		double deltat = floor((lastValid-mjd0 + 1.0/86400.0)*86400.0 + 0.5);
+		*this << "array.wait(mjdStart + " << deltat << "*second)" << endl;
 	}
 
 	precision(p);
@@ -95,6 +96,9 @@ void pystream::close()
 
 int pystream::writeHeader(const VexData *V)
 {
+	double day = floor(mjd0);
+	double sec = floor((mjd0-day)*86400.0 + 0.5);
+
 	*this << "from edu.nrao.evla.observe import Mark5C" << endl;
 	*this << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
 	*this << "from edu.nrao.evla.observe import PFBPersonality" << endl;
@@ -102,8 +106,11 @@ int pystream::writeHeader(const VexData *V)
 	*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 	*this << "from edu.nrao.evla.observe import Parameters" << endl;
 	*this << endl;
+	*this << "second = 1.0/86400.0" << endl;
+	*this << endl;
 	*this << "obsCode = '" << obsCode << "'" << endl;
 	*this << "stnCode = '" << ant << "'" << endl;
+	*this << "mjdStart = " << day << " + " << sec << "*second" << endl;
 	*this << endl;
 
 	return 0;
@@ -210,7 +217,7 @@ int pystream::writeLoifTable(const VexData *V)
 			}
 			*this << " \\" << endl;
 		}
-		*this << "]" << endl;
+		*this << "  ]" << endl;
 		if(implicitConversions.size() > 0)
 		{
 			*this << "# implicit conversion performed on basebands:";
@@ -322,9 +329,12 @@ int pystream::writeScans(const VexData *V)
 				lastSourceId = sourceId;
 			}
 
-			*this << "subarray.setRecord(" << arange->mjdStart << ", " << arange->mjdStop << ", '\%s_\%s_\%s' % (obsCode, stnCode, '" << scan->name << "') )" << endl;
-			*this << "if array.time() < " << arange->mjdStop << ":" << endl;
-			*this << "  subarray.execute(" << scan->mjdVex << ")" << endl;
+			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
+			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
+			double deltat3 = floor((scan->mjdVex-mjd0)*86400.0 + 0.5);
+			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << ", '" << scan->name << "', obsCode, stnCode) )" << endl;
+			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
+			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
 
 			lastValid = arange->mjdStop;
 		}
