@@ -112,6 +112,8 @@ Version 1.0
 * Initial version
 Version 1.1
 * More digits
+Version 1.3
+* Select on refant when making xcb files
 
 vlog
 ~~~~
