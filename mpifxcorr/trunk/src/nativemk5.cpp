@@ -203,7 +203,6 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	{
 		sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
 		XLRClose(xlrDevice);
-		sendMark5Status(MARK5_STATE_IDLE, 0, 0, 0.0, 0.0);
 	}
 }
 

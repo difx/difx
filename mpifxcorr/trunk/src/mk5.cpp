@@ -94,12 +94,50 @@ void Mk5DataStream::initialise()
 
 int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
-  int bufferindex, framesin, vlbaoffset;
+  int bufferindex, framesin, vlbaoffset, looksegment, payloadbytes, framespersecond, framebytes;
 
   bufferindex = DataStream::calculateControlParams(scan, offsetsec, offsetns);
 
   if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] == Mode::INVALID_SUBINT)
     return 0;
+
+  looksegment = atsegment;
+  if(bufferinfo[atsegment].configindex < 0) //will get garbage using this to set framebytes etc
+  {
+    //look at the following segment - normally has sensible info
+    looksegment = (atsegment+1)%numdatasegments;
+    if(bufferinfo[atsegment].nsinc != bufferinfo[looksegment].nsinc)
+    {
+      cwarn << startl << "Incorrectly set config index at scan boundary! Flagging this subint" << endl;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return bufferindex;
+    }
+  }
+  if(bufferinfo[looksegment].configindex < 0)
+  {
+    //Sometimes the next segment is still showing invalid due to the geometric delay.
+    //try the following segment - if thats no good, get out
+    //this is not entirely safe since the read thread may not have set the configindex yet, but at worst
+    //one subint will be affected
+    looksegment = (looksegment+1)%numdatasegments;
+    if(bufferinfo[looksegment].configindex < 0)
+    {
+      cwarn << startl << "Cannot find a valid configindex to set Mk5-related info.  Flagging this subint" << endl;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return bufferindex;
+    }
+    if(bufferinfo[atsegment].nsinc != bufferinfo[looksegment].nsinc)
+    {
+      cwarn << startl << "Incorrectly set config index at scan boundary! Flagging this subint" << endl;
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return bufferindex;
+    }
+  }
+
+  //if we got here, we found a configindex we are happy with.  Find out the mk5 details
+  payloadbytes = config->getFramePayloadBytes(bufferinfo[looksegment].configindex, streamnum);
+  framebytes = config->getFrameBytes(bufferinfo[looksegment].configindex, streamnum);
+  framespersecond = config->getFramesPerSecond(bufferinfo[looksegment].configindex, streamnum);
 
   //do the necessary correction to start from a frame boundary - work out the offset from the start of this segment
   vlbaoffset = bufferindex - atsegment*readbytes;
@@ -107,22 +145,22 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   if(vlbaoffset < 0)
   {
     cwarn << startl << "Mk5DataStream::calculateControlParams : vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << endl; 
-    cwarn << startl << "Mk5DataStream::calculateControlParams : readbytes=" << readbytes << ", framebytes=" << config->getFrameBytes(bufferinfo[atsegment].configindex, streamnum) << ", payloadbytes=" << config->getFramePayloadBytes(bufferinfo[atsegment].configindex, streamnum) << endl;
+    cwarn << startl << "Mk5DataStream::calculateControlParams : readbytes=" << readbytes << ", framebytes=" << framebytes << ", payloadbytes=" << payloadbytes << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     MPI_Abort(MPI_COMM_WORLD, 1);
     return 0;
   }
 
   // bufferindex was previously computed assuming no framing overhead
-  framesin = vlbaoffset/config->getFramePayloadBytes(bufferinfo[atsegment].configindex, streamnum);
+  framesin = vlbaoffset/payloadbytes;
 
   // Note here a time is needed, so we only count payloadbytes
-  int segoffns = bufferinfo[atsegment].scanns + (int)((1000000000.0*framesin)/config->getFramesPerSecond(bufferinfo[atsegment].configindex, streamnum));
+  int segoffns = bufferinfo[atsegment].scanns + (int)((1000000000.0*framesin)/framespersecond);
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = bufferinfo[atsegment].scanseconds + segoffns/1000000000;
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = segoffns%1000000000;
 
   //go back to nearest frame -- here the total number of bytes matters
-  bufferindex = atsegment*readbytes + framesin*config->getFrameBytes(bufferinfo[atsegment].configindex, streamnum);
+  bufferindex = atsegment*readbytes + framesin*framebytes;
   if(bufferindex >= bufferbytes)
   {
     cwarn << startl << "Mk5DataStream::calculateControlParams : bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;

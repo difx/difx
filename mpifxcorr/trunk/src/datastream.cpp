@@ -1282,12 +1282,12 @@ void DataStream::waitForSendComplete()
 {
   int perr, dfinished, cfinished;
   bool testonly = (atsegment != (waitsegment - 2 + numdatasegments)%numdatasegments);
-  
+
+  if((atsegment - waitsegment + numdatasegments)%numdatasegments <= 2) //we are very close so don't bother
+    return;
+
   if(bufferinfo[waitsegment].numsent > 0)
   {
-    if((atsegment - waitsegment + numdatasegments)%numdatasegments <= 2) //we are very close so don't bother
-      return;
-  
     if(testonly) // we only need to test, we're close enough that we can afford to go one segment further ahead
     {
       MPI_Testall(bufferinfo[waitsegment].numsent, bufferinfo[waitsegment].datarequests, &dfinished, datastatuses);

@@ -193,9 +193,9 @@ int setup_net(char *monhostname, int port, int window_size, int *sock) {
   return(0);
 } /* Setup Net */
 
-static void generateIdentifier(const char *inputfile, int myID, char *identifier)
+static void generateIdentifier(const char *inputfile, char *identifier)
 {
-  int i, l, s=0;
+  int i, s=0;
 
   for(i = 0; inputfile[i]; i++)
   {
@@ -210,17 +210,16 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
     s = 0;
   }
 
-  strcpy(identifier, inputfile+s);
-  l = strlen(identifier);
-  
-  // strip off ".input"
-  for(i = l-1; i > 0; i--)
+  for(i=0;i<DIFX_MESSAGE_PARAM_LENGTH-1;i++)
   {
-    if(identifier[i] == '.')
-    {
-      identifier[i] = 0;
+    if(strcmp(&(inputfile[s+i]), ".input") == 0)
       break;
-    }
+    identifier[i] = inputfile[s+i];
+  }
+  identifier[i] = 0;
+  if(i == DIFX_MESSAGE_PARAM_LENGTH-1) //job name was too long!
+  {
+    cerr << "WARNING! Job name was too long to serve as difxmessage identifier - identifier was truncated to " << identifier << endl;
   }
 }
 
@@ -244,7 +243,7 @@ int main(int argc, char *argv[])
   char * monhostname = new char[nameslength];
   int port=0, monitor_skip=0, namelen;
   char processor_name[MPI_MAX_PROCESSOR_NAME];
-  char difxMessageID[DIFX_MESSAGE_IDENTIFIER_LENGTH];
+  char difxMessageID[DIFX_MESSAGE_PARAM_LENGTH];
 
   cout << "About to run MPIInit" << endl;
 
@@ -264,7 +263,7 @@ int main(int argc, char *argv[])
   }
 
   //setup difxmessage
-  generateIdentifier(argv[1], myID, difxMessageID);
+  generateIdentifier(argv[1], difxMessageID);
   difxMessageInit(myID, difxMessageID);
   if(myID == 0)
   {

@@ -428,7 +428,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       if(status != vecNoErr)
         csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
     }
-    //cout << "Mode for DS " << datastreamindex << " is bailing out of index " << index << " because datalengthbytes is " << datalengthbytes << ", delays[index] was " << delays[index] << " and delays[index+1] was " << delays[index+1] << endl;
+    //cout << "Mode for DS " << datastreamindex << " is bailing out of index " << index << "/" << subloopindex << " which is scan " << currentscan << ", sec " << offsetseconds << ", ns " << offsetns << " because datalengthbytes is " << datalengthbytes << " and validflag was " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
     return 0.0; //don't process crap data
   }
 
