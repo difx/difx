@@ -50,8 +50,8 @@ int main(int argc, const char * argv[])
 
   //parse the config file, get the job name and identifier
   config = new Configuration(configfile.c_str(), 0);
-  jobname = config->getJobName().substr(0, DIFX_MESSAGE_PARAM_LENGTH-1);
-  identifier = string(argv[0]) + "." + jobname;
+  jobname = config->getJobName().substr(0, DIFX_MESSAGE_PARAM_LENGTH-8);
+  identifier = "difxfb." + jobname;
 
   //initialise message infrastructure and wait for a status message 
   //indicating correlation is ready to receive messages, and open outfile
