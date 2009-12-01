@@ -15,10 +15,10 @@
 
 extern char difxMessageGroup[16];
 extern int difxMessagePort;
-extern char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
+extern char difxMessageIdentifier[DIFX_MESSAGE_PARAM_LENGTH];
 extern char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH];
 extern int difxMessageMpiProcessId;
-extern char difxMessageXMLFormat[256];
+extern char difxMessageXMLFormat[320];
 extern int difxMessageSequenceNumber;
 extern char difxBinarySTAGroup[16];
 extern int difxBinarySTAPort;
