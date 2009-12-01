@@ -229,6 +229,11 @@ if len(filebaselist) < 1:
 	usage()
 	
 for filebase in filebaselist:
+	if len(filebase) > 31:
+		sendmessage(filebase, 'ABORTED', "Did not start job because jobname is too long!")
+		print "Job name %s is too long and will be skipped!" % (filebase)
+		exit(1)
+
 	v = run(filebase, machinespolicy, deletepolicy, makeuvw, override)
 
 	if v != None:
