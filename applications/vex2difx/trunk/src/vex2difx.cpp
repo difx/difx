@@ -37,6 +37,7 @@
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <difxio/difx_input.h>
+#include <difxmessage.h>
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
@@ -1916,6 +1917,13 @@ int main(int argc, char **argv)
 			}
 			v2dFile = argv[a];
 		}
+	}
+
+	if(v2dFile.size() > DIFX_MESSAGE_PARAM_LENGTH-2)
+	{
+		//job numbers into the tens of thousands will be truncated in difxmessage.  Better warn the user.
+		cout << "Filename " << v2dFile << " is too long - its job name might be truncated by difxmessage!" << endl;
+		cout << "You are strongly suggested to choose a shorter .v2d name (root shorter than 26 characters)" << endl;
 	}
 
 	if(v2dFile.size() == 0)

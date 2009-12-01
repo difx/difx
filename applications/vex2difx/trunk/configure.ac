@@ -18,6 +18,7 @@ AM_SANITY_CHECK
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 0.8)
 
 AC_ARG_WITH(spice-root, [  --with-spice-root=ROOT
                             spice root is ROOT (optional).],
@@ -38,7 +39,7 @@ fi
 AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
 
 LIBS="${LIBS} ${DIFXIO_LIBS} ${SPICE_LIBS}"
-CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${SPICE_CFLAGS}"
+CFLAGS="${CFLAGS} ${DIFXIO_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${SPICE_CFLAGS}"
 CXXFLAGS="${CFLAGS}"
 
 AC_OUTPUT([ \
