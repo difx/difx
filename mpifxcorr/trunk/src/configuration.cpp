@@ -56,7 +56,7 @@ Configuration::Configuration(const char * configfile, int id)
   if(input->fail() || !input->is_open())
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Error opening file " << configfile << " - aborting!!!" << endl;
+      cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
     consistencyok = false;
   }
   else
@@ -83,7 +83,7 @@ Configuration::Configuration(const char * configfile, int id)
       case RULE:
         if(!configread) {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - input file out of order!  Attempted to read rule details without knowledge of configurations - aborting!!!" << endl;
+            cfatal << startl << "Input file out of order!  Attempted to read rule details without knowledge of configurations - aborting!!!" << endl;
           consistencyok = false;
         }
         else
@@ -109,7 +109,7 @@ Configuration::Configuration(const char * configfile, int id)
         if(!configread || !freqread)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - input file out of order! Attempted to read baselines without knowledge of freqs - aborting!!!" << endl;
+            cfatal << startl << "Input file out of order! Attempted to read baselines without knowledge of freqs - aborting!!!" << endl;
           consistencyok = false;
         }
         consistencyok = processBaselineTable(input);
@@ -142,7 +142,7 @@ Configuration::Configuration(const char * configfile, int id)
   if(!configread || !ruleread || !commonread || !datastreamread || !freqread)
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Error - no one or more sections missing from input file - aborting!!!" << endl;
+      cfatal << startl << "One or more sections missing from input file - aborting!!!" << endl;
     consistencyok = false;
   }
   input->close();
@@ -607,12 +607,12 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
   {
     case LBASTD:
       if(stream.numbits != 2)
-        cerror << startl << "ERROR! All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
+        cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
       return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth,  stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, LBAMode::stdunpackvalues);
       break;
     case LBAVSOP:
       if(stream.numbits != 2)
-        cerror << startl << "ERROR! All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
+        cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
       return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, LBAMode::vsopunpackvalues);
       break;
     case MKIV:
@@ -625,7 +625,7 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
       break;
     default:
-      cerror << startl << "Error - unknown Mode!!!" << endl;
+      cerror << startl << "Unknown mode being requested!!!" << endl;
       return NULL;
   }
 }
@@ -888,7 +888,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   if(datastreamtablelength < numdatastreams)
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Error - not enough datastreams are supplied in the datastream table (" << datastreamtablelength << ") compared to the number of datastreams (" << numdatastreams << "!!!" << endl;
+      cfatal << startl << "Not enough datastreams are supplied in the datastream table (" << datastreamtablelength << ") compared to the number of datastreams (" << numdatastreams << "!!!" << endl;
     return false;
   }
   //create the ordereddatastream array
@@ -976,14 +976,14 @@ bool Configuration::processDatastreamTable(ifstream * input)
     datastreamtable[i].filterbank = ((line == "TRUE") || (line == "T") || (line == "true") || (line == "t"))?true:false;
     if(datastreamtable[i].filterbank) {
       if(mpiid == 0) //only write one copy of this error message
-        cwarn << startl << "Error - filterbank not yet supported!!!" << endl;
+        cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
     }
     getinputline(input, &line, "PHASE CAL INT (MHZ)");
     datastreamtable[i].phasecalintervalmhz = atoi(line.c_str());
     if(datastreamtable[i].phasecalintervalmhz != 0)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cwarn << startl << "Error - phase cal extraction not yet supported!!!" << endl;
+        cwarn << startl << "Phase cal extraction requested not yet supported!!!" << endl;
     }
 
     getinputline(input, &line, "NUM RECORDED FREQS");
@@ -1028,7 +1028,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].recordedbandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].recordedbandlocalfreqindices[j] >= datastreamtable[i].numrecordedfreqs) {
         if(mpiid == 0) //only write one copy of this error message
-          cerror << startl << "Error - attempting to refer to freq outside local table!!!" << endl;
+          cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
         return false;
       }
     }
@@ -1080,7 +1080,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].zoombandlocalfreqindices[j] = atoi(line.c_str());
       if(datastreamtable[i].zoombandlocalfreqindices[j] >= datastreamtable[i].numzoomfreqs) {
         if(mpiid == 0) //only write one copy of this error message
-          cerror << startl << "Error - attempting to refer to freq outside local table!!!" << endl;
+          cerror << startl << "Attempting to refer to freq outside local table!!!" << endl;
         return false;
       }
     }
@@ -1127,7 +1127,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     if (fabs(bpersenddouble - configs[i].blockspersend) > Mode::TINY) {
       ok = false;
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "The supplied value of subint nanoseconds (" << configs[i].subintns << ") for config " << i << " does not yield an integer number of FFTs! (FFT time is " << ffttime << "). Aborting!" << endl;
+        cfatal << startl << "The supplied value of subint nanoseconds (" << configs[i].subintns << ") for config " << i << " does not yield an integer number of FFTs! (FFT time is " << ffttime << ") - aborting!!!" << endl;
     }
   }
   if(!ok)
@@ -1138,7 +1138,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   numcoreconfs = 0;
   if(!coreinput.is_open() || coreinput.bad())
   {
-    cerror << startl << "Could not open " << coreconffilename << " - will set all numthreads to 1!!" << endl;
+    cerror << startl << "Could not open " << coreconffilename << " - will set all numthreads to 1!" << endl;
   }
   else
   {
@@ -1269,7 +1269,7 @@ bool Configuration::processFreqTable(ifstream * input)
     freqtable[i].channelstoaverage = atoi(line.c_str());
     if(freqtable[i].channelstoaverage <= 0 || (freqtable[i].channelstoaverage > 1 && freqtable[i].channelstoaverage%2 != 0)) {
       if(mpiid == 0) //only write one copy of this error message
-        cerror << startl << "Channels to average must be positive and a power of two - not the case for frequency entry " << i << "(" << freqtable[i].channelstoaverage << ") - aborting!!" << endl;
+        cerror << startl << "Channels to average must be positive and a power of two - not the case for frequency entry " << i << "(" << freqtable[i].channelstoaverage << ") - aborting!!!" << endl;
       return false;
     }
     getinputline(input, &line, "OVERSAMPLE FAC. ");
@@ -1646,7 +1646,7 @@ bool Configuration::consistencyCheck()
     if(datastreamtable[i].telescopeindex < 0 || datastreamtable[i].telescopeindex >= telescopetablelength)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Error!!! Datastream table entry " << i << " has a telescope index (" << datastreamtable[i].telescopeindex << ") that refers outside the telescope table range (table length " << telescopetablelength << ") - aborting!!!" << endl;
+        cfatal << startl << "Datastream table entry " << i << " has a telescope index (" << datastreamtable[i].telescopeindex << ") that refers outside the telescope table range (table length " << telescopetablelength << ") - aborting!!!" << endl;
       return false;
     }
 
@@ -1656,7 +1656,7 @@ bool Configuration::consistencyCheck()
       if(datastreamtable[i].recordedbandlocalfreqindices[j] < 0 || datastreamtable[i].recordedbandlocalfreqindices[j] >= datastreamtable[i].numrecordedfreqs)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has an recorded band local frequency index (band " << j << ") which is equal to " << datastreamtable[i].recordedbandlocalfreqindices[j] << " that refers outside the local frequency table range (" << datastreamtable[i].numrecordedfreqs << ") - aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has an recorded band local frequency index (band " << j << ") which is equal to " << datastreamtable[i].recordedbandlocalfreqindices[j] << " that refers outside the local frequency table range (" << datastreamtable[i].numrecordedfreqs << ") - aborting!!!" << endl;
         return false;
       }
     }
@@ -1667,7 +1667,7 @@ bool Configuration::consistencyCheck()
       if(datastreamtable[i].zoombandlocalfreqindices[j] < 0 || datastreamtable[i].zoombandlocalfreqindices[j] >= datastreamtable[i].numzoomfreqs)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has an zoom band local frequency index (band " << j << ") which is equal to " << datastreamtable[i].zoombandlocalfreqindices[j] << " that refers outside the local frequency table range (" << datastreamtable[i].numzoomfreqs << ") - aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has an zoom band local frequency index (band " << j << ") which is equal to " << datastreamtable[i].zoombandlocalfreqindices[j] << " that refers outside the local frequency table range (" << datastreamtable[i].numzoomfreqs << ") - aborting!!!" << endl;
         return false;
       }
     }
@@ -1681,7 +1681,7 @@ bool Configuration::consistencyCheck()
         if(datastreamtable[i].zoomfreqtableindices[k] < rfreqtableindex)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error!!! Datastream table entry " << i << " has a zoom band (index " << k << ") which comes earlier in the freq table than a recorded band (index " << j << ") - aborting!!!" << endl;
+            cfatal << startl << "Datastream table entry " << i << " has a zoom band (index " << k << ") which comes earlier in the freq table than a recorded band (index " << j << ") - aborting!!!" << endl;
           return false;
         }
       }
@@ -1695,7 +1695,7 @@ bool Configuration::consistencyCheck()
     if(oversamp < decim)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Error - oversamplefactor (" << oversamp << ") is less than decimation factor (" << decim << ") - aborting!!!" << endl;
+        cfatal << startl << "Oversamplefactor (" << oversamp << ") is less than decimation factor (" << decim << ") - aborting!!!" << endl;
       return false;
     }
     for(int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
@@ -1703,31 +1703,31 @@ bool Configuration::consistencyCheck()
       if(datastreamtable[i].recordedfreqtableindices[j] < 0 || datastreamtable[i].recordedfreqtableindices[j] >= freqtablelength)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has a recorded frequency index (freq " << j << ") which is equal to " << datastreamtable[i].recordedfreqtableindices[j] << " that refers outside the frequency table range (" << freqtablelength << ") - aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has a recorded frequency index (freq " << j << ") which is equal to " << datastreamtable[i].recordedfreqtableindices[j] << " that refers outside the frequency table range (" << freqtablelength << ") - aborting!!!" << endl;
         return false;
       }
       if(bandwidth != freqtable[datastreamtable[i].recordedfreqtableindices[j]].bandwidth)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - all recorded bandwidths for a given datastream must be equal - Aborting!!!!" << endl;
+          cfatal << startl << "All recorded bandwidths for a given datastream must be equal - aborting!!!!" << endl;
         return false;
       }
       if(oversamp != freqtable[datastreamtable[i].recordedfreqtableindices[j]].oversamplefactor)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - all recorded oversample factors for a given datastream must be equal - Aborting!!!!" << endl;
+          cfatal << startl << "All recorded oversample factors for a given datastream must be equal - aborting!!!!" << endl;
         return false;
       }
       if(decim != freqtable[datastreamtable[i].recordedfreqtableindices[j]].decimationfactor)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - all recorded decimations for a given datastream must be equal - Aborting!!!!" << endl;
+          cfatal << startl << "All recorded decimations for a given datastream must be equal - aborting!!!!" << endl;
         return false;
       }
       if(toaver != freqtable[datastreamtable[i].recordedfreqtableindices[j]].channelstoaverage)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - all recorded channels to average for a given datastream must be equal - Aborting!!!!" << endl;
+          cfatal << startl << "All recorded channels to average for a given datastream must be equal - aborting!!!!" << endl;
         return false;
       }
     }
@@ -1738,19 +1738,19 @@ bool Configuration::consistencyCheck()
       if(datastreamtable[i].zoomfreqtableindices[j] < 0 || datastreamtable[i].zoomfreqtableindices[j] >= freqtablelength)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") which is equal to " << datastreamtable[i].zoomfreqtableindices[j] << " that refers outside the frequency table range (" << freqtablelength << ")- aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") which is equal to " << datastreamtable[i].zoomfreqtableindices[j] << " that refers outside the frequency table range (" << freqtablelength << ") - aborting!!!" << endl;
         return false;
       }
       if(datastreamtable[i].zoomfreqparentdfreqindices[j] < 0) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") which does not fit into any of the recorded bands - aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") which does not fit into any of the recorded bands - aborting!!!" << endl;
         return false;
       }
       double zoomfreqchannelwidth = freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth/freqtable[datastreamtable[i].zoomfreqtableindices[j]].numchannels;
       double parentfreqchannelwidth = freqtable[datastreamtable[i].recordedfreqtableindices[datastreamtable[i].zoomfreqparentdfreqindices[j]]].bandwidth/freqtable[datastreamtable[i].recordedfreqtableindices[datastreamtable[i].zoomfreqparentdfreqindices[j]]].numchannels;
       if(fabs(zoomfreqchannelwidth - parentfreqchannelwidth) > Mode::TINY) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") whose channel width (" << zoomfreqchannelwidth << ") does not match its parents channel width (" << parentfreqchannelwidth << ") - aborting!!!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has a zoom frequency index (freq " << j << ") whose channel width (" << zoomfreqchannelwidth << ") does not match its parents channel width (" << parentfreqchannelwidth << ") - aborting!!!" << endl;
         return false;
       }
     }
@@ -1766,7 +1766,7 @@ bool Configuration::consistencyCheck()
       }
       if(!matchingpol) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error!!! Datastream table entry " << i << " has a zoom band (band " << j << ") which does have have a parent band of the same polarisation (" << datastreamtable[i].zoombandpols[j] << ") - aborting!" << endl;
+          cfatal << startl << "Datastream table entry " << i << " has a zoom band (band " << j << ") which does have have a parent band of the same polarisation (" << datastreamtable[i].zoombandpols[j] << ") - aborting!!!" << endl;
         return false;
       }
     }
@@ -1796,7 +1796,7 @@ bool Configuration::consistencyCheck()
     //check the fringe rotation settings
     if(configs[i].fringerotationorder < 0 || configs[i].fringerotationorder > 2) {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Error - fringe rotation order must be 0, 1 or 2 for all configurations - aborting!" << endl;
+        cfatal << startl << "Fringe rotation order must be 0, 1 or 2 for all configurations - aborting!!!" << endl;
       return false;
     }
     //check that arraystridelen is ok, and guardns is ok
@@ -1807,14 +1807,14 @@ bool Configuration::consistencyCheck()
     //for(int j=0;j<freqtablelength;j++) {
       //if(freqtable[j].numchannels % configs[i].arraystridelen != 0) {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - config[" << i << "] has a stride length of " << configs[i].arraystridelen << " which is not an integral divisor of the number of channels in frequency[" << k << "] of datastream " << j << " (which is " << nchan << ") - aborting!" << endl;
+            cfatal << startl << "Config[" << i << "] has a stride length of " << configs[i].arraystridelen << " which is not an integral divisor of the number of channels in frequency[" << k << "] of datastream " << j << " (which is " << nchan << ") - aborting!!!" << endl;
           return false;
         }
       }
       samplens = 1000.0/freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[0]].bandwidth;
       if(configs[i].guardns < 4.0*samplens*datastreamtable[configs[i].datastreamindices[j]].bytespersampledenom) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against backwards shuffling of the start of a Datastream send) guardns should be at least " << 4.0*samplens*datastreamtable[configs[i].datastreamindices[j]].bytespersampledenom << endl;
+          cfatal << startl << "Config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against backwards shuffling of the start of a Datastream send) guardns should be at least " << 4.0*samplens*datastreamtable[configs[i].datastreamindices[j]].bytespersampledenom << " - aborting!!!" << endl;
         return false;
       }
     }
@@ -1847,25 +1847,25 @@ bool Configuration::consistencyCheck()
       if(ffttime - (int)(ffttime+0.5) > 0.00000001 || ffttime - (int)(ffttime+0.5) < -0.000000001)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - FFT chunk time for config " << i << ", datastream " << j << " is not a whole number of nanoseconds (" << ffttime << ") - aborting!!!" << endl;
+          cfatal << startl << "FFT chunk time for config " << i << ", datastream " << j << " is not a whole number of nanoseconds (" << ffttime << ") - aborting!!!" << endl;
         return false;
       }
       if(fabs(numffts - int(numffts+0.5)) > Mode::TINY) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - Send of size " << configs[i].subintns << " does not yield an integer number of FFTs for datastream " << j << " in config " << i << " - ABORTING" << endl;
+          cfatal << startl << "Send of size " << configs[i].subintns << " does not yield an integer number of FFTs for datastream " << j << " in config " << i << " - aborting!!!" << endl;
         return false;
       }
       if(((double)configs[i].subintns)*(databufferfactor/numdatasegments) > ((1 << (sizeof(int)*8 - 1)) - 1))
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - increment per read in nanoseconds is " << ((double)configs[i].subintns)*(databufferfactor/numdatasegments) << " - too large to fit in an int.  ABORTING" << endl;
+          cfatal << startl << "Increment per read in nanoseconds is " << ((double)configs[i].subintns)*(databufferfactor/numdatasegments) << " - too large to fit in an int - aborting!!!" << endl;
         return false;
       }
       for (int k=1;k<getDNumRecordedFreqs(i,j);k++) {
         freqdata f = freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[k]];
         if (fabs((1000.0*f.numchannels)/f.bandwidth) - ffttime > Mode::TINY) {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - frequency " << k << " of datastream " << j << " of config " << i << " has a different bandwidth or num channels to the other freqs of this datastream - aborting!!!" << endl;
+            cfatal << startl << "Frequency " << k << " of datastream " << j << " of config " << i << " has a different bandwidth or num channels to the other freqs of this datastream - aborting!!!" << endl;
           return false;
         }
       }
@@ -1879,13 +1879,13 @@ bool Configuration::consistencyCheck()
       if(b < 0 || b >= baselinetablelength) //bad index
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - config " << i << " baseline index " << j << " refers to baseline " << b << " which is outside the range of the baseline table - aborting!!!" << endl;
+          cfatal << startl << "Config " << i << " baseline index " << j << " refers to baseline " << b << " which is outside the range of the baseline table - aborting!!!" << endl;
         return false;
       }
       if(datastreamtable[baselinetable[b].datastream2index].telescopeindex < lastt2 && datastreamtable[baselinetable[b].datastream1index].telescopeindex <= lastt1)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Error - config " << i << " baseline index " << j << " refers to baseline " << datastreamtable[baselinetable[b].datastream2index].telescopeindex << "-" << datastreamtable[baselinetable[b].datastream1index].telescopeindex << " which is out of order with the previous baseline " << lastt1 << "-" << lastt2 << " - aborting!!!" << endl;
+          cfatal << startl << "Config " << i << " baseline index " << j << " refers to baseline " << datastreamtable[baselinetable[b].datastream2index].telescopeindex << "-" << datastreamtable[baselinetable[b].datastream1index].telescopeindex << " which is out of order with the previous baseline " << lastt1 << "-" << lastt2 << " - aborting!!!" << endl;
         return false;
       }
       lastt1 = datastreamtable[baselinetable[b].datastream1index].telescopeindex;
@@ -1902,13 +1902,13 @@ bool Configuration::consistencyCheck()
         if(configs[i].xmacstridelen%chantoav != 0 && chantoav%configs[i].xmacstridelen != 0)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - config[" << i << "] has an xmac stride length of " << configs[i].xmacstridelen << " which is not 2^N x the channels to average in frequency [" << k << "] of baseline " << j << " (which is " << chantoav << ") - aborting!" << endl;
+            cfatal << startl << "Config[" << i << "] has an xmac stride length of " << configs[i].xmacstridelen << " which is not 2^N x the channels to average in frequency [" << k << "] of baseline " << j << " (which is " << chantoav << ") - aborting!!!" << endl;
           return false;
         }
         if(nchan%configs[i].xmacstridelen != 0)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error - config[" << i << "] has an xmac stride length of " << configs[i].xmacstridelen << " which is not an integer divisor of the number of channels in frequency[" << k << "] of baseline " << j << " (which is " << nchan << ") - aborting!" << endl;
+            cfatal << startl << "Config[" << i << "] has an xmac stride length of " << configs[i].xmacstridelen << " which is not an integer divisor of the number of channels in frequency[" << k << "] of baseline " << j << " (which is " << nchan << ") - aborting!!!" << endl;
           return false;
         }
       }
@@ -1923,7 +1923,7 @@ bool Configuration::consistencyCheck()
     if(baselinetable[i].datastream1index < 0 || baselinetable[i].datastream2index < 0 || baselinetable[i].datastream1index >= datastreamtablelength || baselinetable[i].datastream2index >= datastreamtablelength)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Error - baseline table entry " << i << " has a datastream index outside the datastream table range! Its two indices are " << baselinetable[i].datastream1index << ", " << baselinetable[i].datastream2index << ".  ABORTING" << endl;
+        cfatal << startl << "Baseline table entry " << i << " has a datastream index outside the datastream table range! Its two indices are " << baselinetable[i].datastream1index << ", " << baselinetable[i].datastream2index << " - aborting!!!" << endl;
       return false;
     }
 
@@ -1964,7 +1964,7 @@ bool Configuration::consistencyCheck()
         else
         {
           if(mpiid == 0) //only write one copy of this error message
-            cwarn << startl << "Warning! Baseline table entry " << i << ", frequency " << j << " is trying to correlate two different frequencies!  Correlation will go on, but the results for these bands will probably be garbage!" << endl;
+            cwarn << startl << "Baseline table entry " << i << ", frequency " << j << " is trying to correlate two different frequencies!  Correlation will go on, but the results for these bands will probably be garbage!" << endl;
           if(freqtable[freq1index].lowersideband && !freqtable[freq2index].lowersideband)
             baselinetable[i].oddlsbfreqs[j] = 1;
           else if(freqtable[freq2index].lowersideband && !freqtable[freq1index].lowersideband)
@@ -1977,14 +1977,14 @@ bool Configuration::consistencyCheck()
         if((baselinetable[i].datastream1bandindex[j][k] < 0) || (baselinetable[i].datastream1bandindex[j][k] >= (ds1.numrecordedbands + ds1.numzoombands)))
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error! Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 1 refers to a band outside datastream 1's range (" << baselinetable[i].datastream1bandindex[j][k] << ") - aborting!!!" << endl;
+            cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 1 refers to a band outside datastream 1's range (" << baselinetable[i].datastream1bandindex[j][k] << ") - aborting!!!" << endl;
           return false;
         }
         ds1 = datastreamtable[baselinetable[i].datastream2index];
         if((baselinetable[i].datastream2bandindex[j][k] < 0) || (baselinetable[i].datastream2bandindex[j][k] >= (ds1.numrecordedbands + ds1.numzoombands)))
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error! Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 2 refers to a band outside datastream 2's range (" << baselinetable[i].datastream2bandindex[j][k] << ") - aborting!!!" << endl;
+            cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 2 refers to a band outside datastream 2's range (" << baselinetable[i].datastream2bandindex[j][k] << ") - aborting!!!" << endl;
           return false;
         }
 
@@ -1996,7 +1996,7 @@ bool Configuration::consistencyCheck()
         if(freqindex != freq1index)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error! Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 1 does not match the frequency of the first polarisation product! Aborting." << endl;
+            cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 1 does not match the frequency of the first polarisation product - aborting!!!" << endl;
           return false;
         }
         if(baselinetable[i].datastream2bandindex[j][k] >= ds2.numrecordedbands) //zoom band
@@ -2006,7 +2006,7 @@ bool Configuration::consistencyCheck()
         if(freqindex != freq2index)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "Error! Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 2 does not match the frequency of the first polarisation product! Aborting." << endl;
+            cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 2 does not match the frequency of the first polarisation product - aborting!!!" << endl;
           return false;
         }
       }
@@ -2037,7 +2037,7 @@ bool Configuration::consistencyCheck()
       if(configs[i].subintns%configs[i].paaccumulationns != 0)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a subintegration (" << configs[i].subintns << " ns) - aborting!" << endl;
+          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a subintegration (" << configs[i].subintns << " ns) - aborting!!!" << endl;
         return false;
       }
       for(int j=0;j<numcoreconfs;j++)
@@ -2045,7 +2045,7 @@ bool Configuration::consistencyCheck()
         if(configs[i].subintns%(configs[i].paaccumulationns*getCNumProcessThreads(j)) != 0)
         {
           if(mpiid == 0) //only write one copy of this error message
-            cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a thread subintegration (" << configs[i].subintns/getCNumProcessThreads(j) << " ns for thread " << j << ") - aborting!" << endl;
+            cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) does not fit evenly into a thread subintegration (" << configs[i].subintns/getCNumProcessThreads(j) << " ns for thread " << j << ") - aborting!!!" << endl;
           return false;
         }
       }
@@ -2054,7 +2054,7 @@ bool Configuration::consistencyCheck()
       if(fabs(accffts)-int(accffts+0.5) > 0.00000000001 || int(accffts+0.5)%configs[i].numbufferedffts != 0)
       {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) is not an integer number of FFTs - aborting!" << endl;
+          cfatal << startl << "For config " << i << ", the requested phased array accumulation time (" << configs[i].paaccumulationns << " ns) is not an integer number of FFTs - aborting!!!" << endl;
         return false;
       }
     }
@@ -2063,7 +2063,7 @@ bool Configuration::consistencyCheck()
   if(databufferfactor % numdatasegments != 0)
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "There must be an integer number of sends per datasegment.  Presently databufferfactor is " << databufferfactor << ", and numdatasegments is " << numdatasegments << ".  ABORTING" << endl;
+      cfatal << startl << "There must be an integer number of sends per datasegment.  Presently databufferfactor is " << databufferfactor << ", and numdatasegments is " << numdatasegments << " - aborting!!!" << endl;
     return false;
   }
 
@@ -2088,7 +2088,7 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
     configs[configindex].padomain = FREQUENCY;
   else if (line == "TIMESERIES") {
     if(mpiid == 0) //only write one copy of this warning
-      cwarn << startl << "Time series output is not yet supported..." << endl;
+      cwarn << startl << "Time series output is requested but not yet supported." << endl;
     configs[configindex].padomain = TIME;
   }
   else {
@@ -2161,7 +2161,7 @@ bool Configuration::processPhasedArrayConfig(string filename, int configindex)
         if(configs[configindex].paweights[i][j] < 0.0)
         {
           if(mpiid == 0)
-            cfatal << startl << "All phased array weights must be >= 0 ... aborting!" << endl;
+            cfatal << startl << "All phased array weights must be >= 0 - aborting!!!" << endl;
           return false;
         }
       }
@@ -2301,7 +2301,7 @@ void Configuration::makeFortranString(string line, int length, char * destinatio
 void Configuration::getinputkeyval(ifstream * input, std::string * key, std::string * val)
 {
   if(input->eof())
-    cerror << startl << "Error - trying to read past the end of file!!!" << endl;
+    cerror << startl << "Trying to read past the end of file!" << endl;
   getline(*input, *key);
   while(key->length() > 0 && key->at(0) == COMMENT_CHAR) { // a comment
     //if(mpiid == 0) //only write one copy of this error message
@@ -2318,7 +2318,7 @@ void Configuration::getinputkeyval(ifstream * input, std::string * key, std::str
 void Configuration::getinputline(ifstream * input, std::string * line, std::string startofheader)
 {
   if(input->eof())
-    cerror << startl << "Trying to read past the end of file!!!" << endl;
+    cerror << startl << "Trying to read past the end of file!" << endl;
   getline(*input,*line);
   while(line->length() > 0 && line->at(0) == COMMENT_CHAR) { // a comment
     //if(mpiid == 0) //only write one copy of this error message
@@ -2329,7 +2329,7 @@ void Configuration::getinputline(ifstream * input, std::string * line, std::stri
   if(keylength < DEFAULT_KEY_LENGTH)
     keylength = DEFAULT_KEY_LENGTH;
   if(startofheader.compare((*line).substr(0, startofheader.length())) != 0) //not what we expected
-    cerror << startl << "Error - we thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
+    cerror << startl << "We thought we were reading something starting with '" << startofheader << "', when we actually got '" << (*line).substr(0, keylength) << "'" << endl;
   *line = line->substr(keylength);
 }
 

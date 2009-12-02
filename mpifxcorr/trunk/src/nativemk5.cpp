@@ -84,7 +84,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
   	if(xlrRC == XLR_FAIL)
 	{
 		XLRClose(xlrDevice);
-		cfatal << startl << "Error opening Streamstor device.  Do you have permission +rw for /dev/windrvr6?" << endl;
+		cfatal << startl << "Cannot open Streamstor device.  Either this Mark5 unit has crashed, you do not have read/write permission to /dev/windrvr6, or some other process has full control of the Streamstor device." << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
 	}
 	else
