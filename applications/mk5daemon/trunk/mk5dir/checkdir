@@ -23,23 +23,23 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id:$
-# $HeadURL:$
-# $LastChangedRevision:$
-# $Author:$
-# $LastChangedDate:$
+# $Id$
+# $HeadURL$
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
 #
 #============================================================================
 
 
 program = 'checkdir'
-version = '0.1'
+version = '0.2'
 author  = 'Walter Brisken'
-verdate = '20090818'
+verdate = '20091123'
 
 from sys import exit, argv
 from os.path import isfile, isdir
-from os import getenv
+from os import getenv, system
 from string import split, strip, upper
 from glob import glob
 import datetime
@@ -66,6 +66,12 @@ Options can include:
 
   --all
   -a         Run on all directory files
+
+  --show
+  -s         Show the directory file
+
+  --histogram
+  -H         Print a histogram of datarates
 
 If the "-a" or "--all" switch is not supplied, only those modules listed on
 the command line will be checked.  You cannot use this switch together with a 
@@ -130,7 +136,24 @@ class Scan:
 				self.name         = s[11]
 			except ValueError:
 				self.error = 'Conversion error'
+
+	def dataRate(self):
+		if self.duration < 1.0:
+			return 0
+		R = 8.0*self.bytes/self.duration/1.0e6
+		r = 512
+		for i in range(10):
+			if 1.1*R > r:
+				return r
+			else:
+				r /= 2
+		return 0
 	
+	def checkLength(self):
+		if self.bytes == 0:
+			return "Zero length scan"
+		return None
+
 	def checkTime(self):
 		if self.startDay < 51000 or self.startDay > 100000:
 			return "MJD out of range"
@@ -211,7 +234,7 @@ def checkForOrder(scans):
 
 	return None
 
-def checkFile(module, verbose=1):
+def checkFile(module, histogram, verbose=1):
 	
 	fn = dirPath + '/' + module + '.dir'
 
@@ -252,6 +275,8 @@ def checkFile(module, verbose=1):
 		scan = Scan(t)
 		scans.append(scan)
 		if scan.error == None:
+			scan.error = scan.checkLength()
+		if scan.error == None:
 			scan.error = scan.checkTime()
 		if scan.error == None:
 			scan.error = scan.checkFormat()
@@ -261,6 +286,7 @@ def checkFile(module, verbose=1):
 			mjdStart = scan.startMJD
 		if scan.stopMJD > mjdStop:
 			mjdStop = scan.stopMJD
+		histogram[scan.dataRate()] += scan.duration
 
 	for s in range(len(scans)):
 		if scans[s].error != None:
@@ -287,6 +313,16 @@ def checkFile(module, verbose=1):
 
 	return 0
 
+def printHistogram(h):
+	k = h.keys()
+	k.sort()
+	sum = 0.0
+	for key in k:
+		sum += h[key]
+	if sum < 1.0:
+		return
+	for key in k:
+		print '%3d Mbps: %5.1f hours = %4.1f%%' % (key, h[key]/3600.0, 100.0*h[key]/sum)
 
 # main
 
@@ -299,8 +335,11 @@ if not isdir(dirPath):
 	exit(0)
 
 modules = []
-verbose = 1
+verbose = 2
 doAll = False
+show = False
+histo = False
+histogram = {0:0.0, 1:0.0, 2:0.0, 4:0.0, 8:0.0, 16:0.0, 32:0.0, 64:0.0, 128:0.0, 256:0.0, 512:0.0}
 
 if len(argv) == 1:
 	print 'Use -h option for help'
@@ -314,15 +353,28 @@ for a in argv[1:]:
 			verbose -= 1
 		elif a in ['-a', '--all']:
 			doAll = True
-			verbose -= 1
+			verbose -= 2
+		elif a in ['-s', '--show']:
+			show = True
 		elif a in ['-h', '--help']:
 			usage(argv[0])
+		elif a in ['-H', '--histogram']:
+			histo = True
 		else:
 			print 'Unknown command line parameter : ', a
 			exit(0)
 	else:
 		modules.append(upper(a[:8]))
 
+if show:
+	if len(modules) != 1:
+		print 'Exactly 1 module must be specified!'
+	else:
+		fn = '%s/%s.dir' % (dirPath, modules[0])
+		print 'Displaying file: %s\n\n' % fn
+
+		system('cat %s' % fn)
+	exit(0)
 
 if doAll:
 	if len(modules) > 0:
@@ -346,5 +398,9 @@ lastm = ''
 
 for m in modules:
 	if m != lastm:
-		checkFile(m, verbose)
+		checkFile(m, histogram, verbose)
 		lastm = m
+
+if histo > 0:
+	print 'Histogram of data rate usage:'
+	printHistogram(histogram)

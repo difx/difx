@@ -73,3 +73,4 @@ Version 1.2
 * mk5dir -- add suffix to distinguish otherwise identically named scans
 * mk5dir -- fix "A" and "B" source designators
 * mk5dir -- specify time range to copy 
+* Improve file ownership/permission issues
