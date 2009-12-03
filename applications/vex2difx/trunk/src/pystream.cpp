@@ -105,6 +105,7 @@ int pystream::writeHeader(const VexData *V)
 	*this << "from edu.nrao.evla.observe import RDBE" << endl;
 	*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 	*this << "from edu.nrao.evla.observe import Parameters" << endl;
+	*this << "from edu.nrao.evla.observe import bbc" << endl;
 	*this << endl;
 	*this << "second = 1.0/86400.0" << endl;
 	*this << endl;
@@ -126,7 +127,7 @@ int pystream::writeRecorderInit(const VexData *V)
 	*this << "recorder0.setPSNMode(1)" << endl;
 	*this << "recorder0.setPacket(46, 0, 8, 5008)" << endl;
 
-	*this << "subarray.setRecorder(recorder0, None)" << endl;
+	*this << "subarray.setRecorder(recorder0)" << endl;
 	*this << endl;
 
 	return 1;
@@ -332,7 +333,7 @@ int pystream::writeScans(const VexData *V)
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 			double deltat3 = floor((scan->mjdVex-mjd0)*86400.0 + 0.5);
-			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << ", '" << scan->name << "', obsCode, stnCode) )" << endl;
+			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << ", '" << scan->name << "', obsCode, stnCode )" << endl;
 			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
 			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
 
