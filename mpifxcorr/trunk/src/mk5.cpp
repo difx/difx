@@ -57,12 +57,12 @@ void Mk5DataStream::initialise()
   udp_offset = 0;
   if (!readfromfile && !tcp) {
     if (sizeof(long long)!=8) {
-      cfatal << startl << "DataStream assumes long long is 8 bytes, it is " << sizeof(long long) << " bytes" << endl;
+      cfatal << startl << "DataStream assumes long long is 8 bytes, it is " << sizeof(long long) << " bytes - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
     udpsize = abs(tcpwindowsizebytes/1024)-20-2*4-sizeof(long long); // IP header is 20 bytes, UDP is 4x2 bytes
     if (udpsize<=0) {
-      cfatal << startl << "Datastream " << mpiid << ":" << " Warning implied UDP packet size is negative!! " << endl;
+      cfatal << startl << "Datastream " << mpiid << ":" << " implied UDP packet size is negative - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
     udpsize &= ~ 0x7;  // Ensures udpsize multiple of 64 bits
@@ -72,7 +72,7 @@ void Mk5DataStream::initialise()
     packets_arrived.resize(readbytes/udpsize+2);
 
     if (sizeof(int)!=4) {
-      cfatal << startl << "DataStream assumes int is 4 bytes, it is " << sizeof(int) << " bytes" << endl;
+      cfatal << startl << "DataStream assumes int is 4 bytes, it is " << sizeof(int) << " bytes - aborting!!!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
 
@@ -144,8 +144,7 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   if(vlbaoffset < 0)
   {
-    cwarn << startl << "Mk5DataStream::calculateControlParams : vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << endl; 
-    cwarn << startl << "Mk5DataStream::calculateControlParams : readbytes=" << readbytes << ", framebytes=" << framebytes << ", payloadbytes=" << payloadbytes << endl;
+    cfatal << startl << "Mk5DataStream::calculateControlParams: vlbaoffset<0: vlbaoffset=" << vlbaoffset << " bufferindex=" << bufferindex << " atsegment=" << atsegment << " readbytes=" << readbytes << ", framebytes=" << framebytes << ", payloadbytes=" << payloadbytes << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     MPI_Abort(MPI_COMM_WORLD, 1);
     return 0;
@@ -163,7 +162,7 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   bufferindex = atsegment*readbytes + framesin*framebytes;
   if(bufferindex >= bufferbytes)
   {
-    cwarn << startl << "Mk5DataStream::calculateControlParams : bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;
+    cfatal << startl << "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes: bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     MPI_Abort(MPI_COMM_WORLD, 1);
     return 0;
@@ -247,7 +246,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     }
 
     // set byte offset to the requested time
-    dataoffset = (long long)(jumpseconds * bytespersecond);
+    dataoffset = (long long)(jumpseconds * bytespersecond + 0.5);
     readseconds += jumpseconds;
   }
 
@@ -260,9 +259,6 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   //close the stream used to get the offset, create the one we will use to test
   delete_mark5_stream(syncteststream);
-  syncteststream = new_mark5_stream(new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
-  cverbose << startl << "Value of syncteststream after reopening was " << syncteststream << endl;
-
   cverbose << startl << "About to seek to byte " << offset << " plus " << dataoffset << " to get to the first frame" << endl;
 
   input.seekg(offset + dataoffset, ios_base::beg);
@@ -285,11 +281,13 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   offset = 0;
   corrday = config->getStartMJD();
   corrsec = config->getStartSeconds();
-  syncteststream->frame = (uint8_t *)(&(databuffer[buffersegment*(bufferbytes/numdatasegments)]));
+  syncteststream = new_mark5_stream(new_mark5_stream_memory(&(databuffer[buffersegment*(bufferbytes/numdatasegments)]), bufferbytes/numdatasegments), new_mark5_format_generic_from_string(formatname) );
   // resolve any day ambiguities
   mark5_stream_fix_mjd(syncteststream, corrday);
   mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
-  syncteststream->frame = 0;
+  delete_mark5_stream(syncteststream);
+  syncteststream = 0;
+
   deltatime = 86400*(corrday - mjd) + (model->getScanStartSec(bufferinfo[buffersegment].scan, corrday, corrsec) + bufferinfo[buffersegment].scanseconds + corrsec - sec) + double(bufferinfo[buffersegment].scanns-ns)/1e9;
 
   if(fabs(deltatime) > 1e-10) //oh oh, a problem
