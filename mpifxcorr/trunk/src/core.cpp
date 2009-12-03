@@ -91,21 +91,21 @@ Core::Core(int id, Configuration * conf, int * dids, MPI_Comm rcomm)
     for(int j=0;j<config->getFreqTableLength();j++)
     {
       for(int k=0;k<numbaselines;k++) {
-        pthread_mutex_init(&(procslots[i].viscopylocks[j][k]), NULL);
+        perr = pthread_mutex_init(&(procslots[i].viscopylocks[j][k]), NULL);
         if(perr != 0)
           csevere << startl << "Problem initialising viscopylock for freq " << j << ", baseline " << k << " in slot " << i << "(" << perr << ")" << endl;
       }
     }
-    pthread_mutex_init(&(procslots[i].autocorrcopylock), NULL);
+    perr = pthread_mutex_init(&(procslots[i].autocorrcopylock), NULL);
     if(perr != 0)
       csevere << startl << "Problem initialising autocorrcopylock in slot " << i << "(" << perr << ")" << endl;
-    pthread_mutex_init(&(procslots[i].bweightcopylock), NULL);
+    perr = pthread_mutex_init(&(procslots[i].bweightcopylock), NULL);
     if(perr != 0)
       csevere << startl << "Problem initialising bweightcopylock in slot " << i << "(" << perr << ")" << endl;
-    pthread_mutex_init(&(procslots[i].acweightcopylock), NULL);
+    perr = pthread_mutex_init(&(procslots[i].acweightcopylock), NULL);
     if(perr != 0)
       csevere << startl << "Problem initialising acweightcopylock in slot " << i << "(" << perr << ")" << endl;
-    pthread_mutex_init(&(procslots[i].pcalcopylock), NULL);
+    perr = pthread_mutex_init(&(procslots[i].pcalcopylock), NULL);
     if(perr != 0)
       csevere << startl << "Problem initialising pcalcopylock in slot " << i << "(" << perr << ")" << endl;
     procslots[i].datalengthbytes = new int[numdatastreams];

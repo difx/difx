@@ -217,9 +217,9 @@ class Model{
     int modelmjd, modelstartseconds, numstations, numsources, numscans, numeops, numspacecraft;
     int polyorder, modelincsecs, estimatedbytes;
     bool opensuccess;
+    Configuration * config;
     string calcfilename, imfilename;
     double ** binomialcoeffs;
-    Configuration * config;
     station * stationtable;
     source * sourcetable;
     eop * eoptable;
