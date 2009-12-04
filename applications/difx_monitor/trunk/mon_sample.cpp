@@ -35,6 +35,7 @@ int main(int argc, const char * argv[]) {
   float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
   cf32 *vis;
+  string sourcename;
   ostringstream ss;
   IppsFFTSpec_R_32f* fftspec=NULL;
   Configuration *config;
@@ -181,6 +182,14 @@ int main(int argc, const char * argv[]) {
 	cpgline(nchan, xval, amp[i]);
       }
 
+      // Source name
+      config->getUVW()->getSourceName(config->getStartMJD(), 
+	     atseconds+config->getStartSeconds(),sourcename);
+      cpgsci(2);
+      cpgsch(4);
+      cpgmtxt("T", -1.5, 0.02, 0, sourcename.c_str());	    
+      cpgsch(1);
+
       max = arraymax(phase, nchan, nprod);
       min = arraymin(phase, nchan, nprod);
       delta = (max-min)*0.1;
@@ -215,9 +224,12 @@ int main(int argc, const char * argv[]) {
       for (i=0; i<nprod; i++) {
 	products[iprod[i]].getPolPair(polpair);
 	ss << iprod[i] << ": "
-	   << products[iprod[i]].getTelescopeName1() << "-" 
-	   << products[iprod[i]].getTelescopeName2()
-	   << " " <<  polpair << " "
+	   << products[iprod[i]].getTelescopeName1();
+	if (products[iprod[i]].getTelescopeIndex1() 
+	    != products[iprod[i]].getTelescopeIndex2()) {
+	  ss << "-"  << products[iprod[i]].getTelescopeName2();
+	}
+	ss << " " <<  polpair << " "
 	   << products[iprod[i]].getFreq() << " MHz";
 
 	cpgsch(3);
