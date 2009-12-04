@@ -50,11 +50,9 @@ int main(int argc, const char * argv[]) {
   vector<struct monclient>::iterator it;
   vector<DIFX_ProdConfig> prodconfig;
 
-  refant = 0;
-
   if(argc < 3 || argc > 4)
   {
-    cerr << "Error - invoke with difx_monitor <inputfile> <host> [# samples]" << endl;
+    cerr << "Error - Usage: difx_monitor <inputfile> <host> [refant [# samples]]" << endl;
     return EXIT_FAILURE;
   }
 
@@ -71,8 +69,14 @@ int main(int argc, const char * argv[]) {
   }
   startsec = config->getStartSeconds();
 
-  if(argc == 4)
-    nsamples = atoi(argv[3]);
+  nsamples = 1;
+  refant = 0;
+  
+  if(argc > 3)
+    refant = atoi(argv[3]);
+
+  if(argc > 4)
+    nsamples = atoi(argv[4]);
 
   // Connect to monitor server
   status  = monserver_connect(&monserver, (char*)argv[2],  Configuration::MONITOR_TCP_WINDOWBYTES);
@@ -155,7 +159,7 @@ int main(int argc, const char * argv[]) {
       cout << setprecision(prec);
       cout.unsetf(ios_base::fixed);
 
-      if (polpair[0]==polpair[1]) {
+      if (polpair[0]==polpair[1] && snr > 10) {
 	int antid;
 	if (prodconfig[prod].getTelescopeIndex1()==refant)
 	  antid = prodconfig[prod].getTelescopeIndex2();
@@ -172,6 +176,7 @@ int main(int argc, const char * argv[]) {
     if (nsamples>1) cout << endl;
   }
 
+  cout << endl;
   cout << "Average delays to " << config->getTelescopeName(refant) << endl;
   cout << "These delays must be ADDED to the CLOCK DELAY value (including sign)" << endl;
   cout << endl;
@@ -187,7 +192,7 @@ int main(int argc, const char * argv[]) {
       ss << " " << config->getTelescopeName(i) << ":" << delay;
     }
   }
-  cout << "Running:" << endl;
+  cout << endl << "Running:" << endl;
   cout << ss.str() << endl;
   system(ss.str().c_str());
 }
@@ -199,10 +204,17 @@ vector<DIFX_ProdConfig> change_config(Configuration *config, int configindex, in
   vector<uint32_t> iproducts;
   vector<DIFX_ProdConfig> allproducts;
 
+
+  if (refant >= config->getTelescopeTableLength()) {
+    cerr << "Refant " << refant << " too large. Aborting" << endl;
+  } else {
+    cout << "Using reference telescope " << config->getTelescopeName(refant) << endl;
+  }
+
   allproducts = monserver_productconfig(config, configindex);
 
   for (i=0; i<allproducts.size(); i++) {
-    if (allproducts[i].getTelescopeIndex1()==refant || allproducts[i].getTelescopeIndex2()==refant) {
+    if ((allproducts[i].getTelescopeIndex1()==refant || allproducts[i].getTelescopeIndex2()==refant) && allproducts[i].getTelescopeIndex1()!=allproducts[i].getTelescopeIndex2()) {
       iproducts.push_back(i);
     }
   }
