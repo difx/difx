@@ -308,7 +308,7 @@ void plot_results()
       for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) {
 
 	if (j==0) {
-	  sprintf(pgplotname, "lba-auto%d-b%d.png/png",
+	  sprintf(pgplotname, "lba-auto%d-f%d-b0.png/png",
 		  i, k);
 	  status = cpgbeg(0,pgplotname,1,1);
 	} else {
@@ -443,7 +443,7 @@ void change_config(const char *inputfile) {
     order++;
   ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
 
-  nav = ceil(intseconds/config->getIntTime(currentconfigindex));
+  nav = (int)ceil(intseconds/config->getIntTime(currentconfigindex));
   cout << "#Integrations to average = " << nav << endl;
 
   resultlength = config->getResultLength(currentconfigindex);
@@ -519,11 +519,49 @@ void change_config(const char *inputfile) {
       filebase.push_back(ss.str());
       ss.str("");
 	    
-	//my $title = "$bname $freq";
-	//push @plots, ["lba-$ibaseline-f$ifreq.html", "lba-$ibaseline-f$ifreq-b0.png", $title];
-
     }
     html << "</tr>" << endl;
+  }
+
+  html << "</tbody>" << endl;
+  html << "</table>" << endl;
+  html << "<br><br>" << endl;
+
+  // Autocorrelations
+  html << "<table style=\"text-align: left; width: 100%;\" border=\"1\" cellpadding=\"2\" cellspacing=\"2\">" << endl;
+  html << "<tbody>" << endl;
+
+  //int autocorrwidth = (config->getMaxProducts()>2)?2:1;
+
+  for(int i=0;i<config->getNumDataStreams();i++) {
+
+    html << "<tr>" << endl;
+    html << "<th style=\"text-align: center; background-color: rgb(204, 255, 255);\">" 
+	 << config->getDStationName(currentconfigindex, i)
+	 << "</th>" << endl;
+
+
+    //for(int j=0;j<autocorrwidth;j++) {
+    for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) {
+
+      char pol = config->getDBandPol(currentconfigindex, i, k);
+
+      int freqindex = config->getDFreqIndex(currentconfigindex, i, k);
+
+      html << "<td style=\"text-align: center;\">" <<   config->getFreqTableFreq(freqindex) 
+	   << " MHz <a href=\"lba-auto" << i << "-f" << k << ".html\"> " << pol << "cp </a></td>" 
+	   << endl;
+
+      ss << config->getDStationName(currentconfigindex,i) << "  " 
+	 << config->getFreqTableFreq(freqindex) << " MHz";
+      title.push_back(ss.str());
+      ss.str("");
+
+      ss << "lba-auto" << i << "-f" << k;
+      filebase.push_back(ss.str());
+      ss.str("");
+    }
+    html << "<tr>" << endl;
   }
 
   html << "</tbody>" << endl;
