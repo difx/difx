@@ -279,7 +279,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 		difxMessageSendDifxAlert("mpifxcorr spawning process", DIFX_ALERT_LEVEL_INFO);
 
-		sprintf(command, "ssh -x %s@%s \"%s -np %d --bynode --hostfile %s.machines %s %s %s\"", 
+		sprintf(command, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s\"'", 
 			user,
 			S->headNode,
 			mpiWrapper,
@@ -343,7 +343,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			user = difxUser;
 		}
 
-		sprintf(command, "ssh -x %s@%s \"difxlog %s %s.difxlog 4 %d\"",
+		sprintf(command, "su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d\"'",
 			user, S->headNode, jobName, filebase, childPid);
 
 		system(command);
