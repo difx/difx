@@ -17,6 +17,18 @@ def usage():
 	print '  -h or --help : print this info and quit.'
 	print 'each "file" is a FITS file made by difx2fits\n'
 
+def reverseapd(dataline):
+	s = split(strip(dataline))
+	str = '%5d %8.5f %2d %-10s %2d %2d %-3s %-3s %2d' % \
+		(int(s[0]), float(s[1]), int(s[2]), s[3], int(s[4]), int(s[5]), s[7], s[6], int(s[8]))
+	n = int(s[8])
+	for i in range(n):
+		s2 = ' %10.4f %6.4f %10.4f %10.6f' % \
+			(-float(s[9+4*i]), float(s[10+4*i]), -float(s[11+4*i]), -float(s[12+4*i]))
+		str += s2
+	str += '\n'
+	return str
+
 # Executes a program wanting command line input.  The args here are those
 # inputs in order.
 def run(pgm, args):
@@ -38,12 +50,22 @@ def sniff(filebases, refants, dir, newNames):
 		data = open(f+'.apd', 'r').readlines()
 		if first:
 			first = 0
+			if data[0][0:8] != 'obscode:':
+				apd.write('obscode:  ')
 			apd.write(data[0])
-		for d in data[1:]:
-			for r in refants:
-				if find(d, r) > 0:
-					apd.write(d)
-					break
+		if len(refants) > 1:
+			for d in data[1:]:
+				for r in refants:
+					if find(d, r) > 0:
+						apd.write(d)
+						break
+		else:
+			for d in data[1:]:
+				s = split(d)
+				if s[6] == refants[0]:
+					apd.write(d);
+				elif s[7] == refants[0]:
+					apd.write(reverseapd(d))
 	apd.close()
 
 	# make wtsfile

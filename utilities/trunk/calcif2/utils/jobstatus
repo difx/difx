@@ -7,8 +7,8 @@ import os
 import stat
 
 program = 'jobstatus'
-version = '1.0'
-verdate = '20071219'
+version = '1.1'
+verdate = '20091204'
 author  = 'Walter Brisken'
 
 def usage():
@@ -74,9 +74,9 @@ def gettimes(input):
 	if len(file) == 0:
 		return [-1, 0, 0]
 	S = os.stat(dir[0])
-	dtime = S[stat.ST_CTIME]
+	dtime = S[stat.ST_MTIME]
 	S = os.stat(file[-1])
-	ftime = S[stat.ST_CTIME]
+	ftime = S[stat.ST_MTIME]
 	fsize = S[stat.ST_SIZE]
 	elapsed = getelapsed(file[0], file[-1], 10000)
 	return [float(ftime - dtime), fsize, float(elapsed)]
