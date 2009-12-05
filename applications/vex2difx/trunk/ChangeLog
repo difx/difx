@@ -10,6 +10,7 @@ Version 2.0
 * Adds support for multiple phase centres
 * Requires difxio 3.0
 * Add support for VLBN "format" -- that is VLBA with no data modulation
+* Use strict parsing by default
 
 Version 0.3
 ~~~~~~~~~~~

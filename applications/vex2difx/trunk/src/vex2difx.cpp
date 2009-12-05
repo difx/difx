@@ -44,7 +44,7 @@
 
 const string program("vex2difx");
 const string version("2.0");
-const string verdate("20090918");
+const string verdate("20091204");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -1806,19 +1806,22 @@ int usage(int argc, char **argv)
 	cout << endl;
 	cout << "  options can include:" << endl;
 	cout << "     -h" << endl;
-	cout << "     --help      display this information and quit." << endl;
+	cout << "     --help        display this information and quit." << endl;
 	cout << endl;
 	cout << "     -v" << endl;
-	cout << "     --verbose   increase the verbosity of the output; -v -v for more." << endl;
+	cout << "     --verbose     increase the verbosity of the output; -v -v for more." << endl;
 	cout << endl;
 	cout << "     -o" << endl;
-	cout << "     --output    create a v2d file with all defaults populated." << endl;
+	cout << "     --output      create a v2d file with all defaults populated." << endl;
 	cout << endl;
 	cout << "     -d" << endl;
 	cout << "     --delete-old  delete all jobs in this series before running." << endl;
 	cout << endl;
+	cout << "     -f" << endl;
+	cout << "     --force       continue desipte warnings." << endl;
+	cout << endl;
 	cout << "     -s" << endl;
-	cout << "     --strict      treat some warnings as errors and quit." << endl;
+	cout << "     --strict      treat some warnings as errors and quit [default]." << endl;
 	cout << endl;
 	cout << "  the v2d file is the vex2difx configuration file to process." << endl;
 	cout << endl;
@@ -1855,7 +1858,7 @@ int main(int argc, char **argv)
 	string v2dFile;
 	bool writeParams = 0;
 	bool deleteOld = 0;
-	bool strict = 0;
+	bool strict = 1;
 	int nWarn = 0;
 	int nDigit;
 	int nJob = 0;
@@ -1894,6 +1897,11 @@ int main(int argc, char **argv)
 				strcmp(argv[a], "--delete-old") == 0)
 			{
 				deleteOld = 1;
+			}
+			else if(strcmp(argv[a], "-f") == 0 ||
+				strcmp(argv[a], "--force") == 0)
+			{
+				strict = 0;
 			}
 			else if(strcmp(argv[a], "-s") == 0 ||
 				strcmp(argv[a], "--strict") == 0)
