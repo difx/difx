@@ -177,6 +177,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	FlagDatum FL;
 	const DifxConfig *dc;
 	const DifxDatastream *ds;
+	char *rv;
 	
 	FL.nBand = p_fits_keys->no_band;
 	sprintf(bandFormInt, "%dJ", FL.nBand);
@@ -220,8 +221,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	/* Write flags from file "flag" */
 	for(;;)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
+		rv = fgets(line, 999, in);
+		if(!rv)
 		{
 			break;
 		}

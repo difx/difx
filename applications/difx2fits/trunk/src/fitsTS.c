@@ -101,6 +101,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	float timeInt;
 	const DifxScan *scan;
 	FILE *in;
+	char *rv;
 	/* The following are 1-based indices for writing to FITS */
 	int32_t sourceId1, freqId1, arrayId1, antId1;
 
@@ -168,8 +169,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	
 	for(;;)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
+		rv = fgets(line, 999, in);
+		if(!rv)
 		{
 			break;
 		}

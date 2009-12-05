@@ -89,6 +89,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	float timeInt;
 	FILE *in;
 	int antId;
+	char *rv;
 	double *mjdLast;
 	/* 1-based index for FITS below */
 	int32_t antId1;
@@ -125,8 +126,8 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	
 	for(;;)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
+		rv = fgets(line, 999, in);
+		if(!rv)
 		{
 			break;
 		}

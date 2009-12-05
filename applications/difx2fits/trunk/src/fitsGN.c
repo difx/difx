@@ -219,6 +219,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 	int max = 0;
 	float *val = 0;
 	int action = 0;	/* State variable : 0= set LHS, 1= set RHS */
+	char *rv;
 
 	if(row < 0)
 	{
@@ -282,7 +283,8 @@ static int parseGN(const char *filename, int row, GainRow *G)
 		}
 		else if(c == '!') /* handle comment */
 		{
-			fgets(token, 999, in);
+			/* get rest of line */
+			rv = fgets(token, MAXTOKEN, in);
 			token[0] = 0;
 			action = 0;
 			c = 0;

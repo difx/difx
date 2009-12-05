@@ -153,7 +153,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 	if(!dv)
 	{
 		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
-			sizeof(DifxVis));
+			(int)(sizeof(DifxVis)));
 		assert(dv);
 		exit(0);
 	}
@@ -392,14 +392,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	int terms1, terms2;
 	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
 	int bin, srcindex;
+	char *rv;
 
 	//printf("About to try and read another visibility\n");
 	resetDifxParameters(dv->dp);
 
 	for(i = 0; i < 13; i++)
 	{
-		fgets(line, 99, dv->in);
-		if(feof(dv->in))
+		rv = fgets(line, 99, dv->in);
+		if(!rv)
 		{
 			/* EOF should not happen in middle of text */
 			if(i != 0)
@@ -411,7 +412,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			{
 				return NEXT_FILE_ERROR;
 			}
-			fgets(line, 99, dv->in);
+			rv = fgets(line, 99, dv->in);
 		}
 		DifxParametersaddrow(dv->dp, line);
 	}

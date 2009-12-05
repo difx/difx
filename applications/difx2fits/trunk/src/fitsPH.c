@@ -42,6 +42,7 @@ static int getNTone(const char *filename, double t1, double t2)
 	char line[1000];
 	int n, nTone, maxnTone=0;
 	double t;
+	char *rv;
 
 	in = fopen(filename, "r");
 	if(!in)
@@ -51,8 +52,8 @@ static int getNTone(const char *filename, double t1, double t2)
 	
 	for(;;)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
+		rv = fgets(line, 999, in);
+		if(!rv)
 		{
 			break;
 		}
@@ -298,6 +299,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int i, v;
 	double start, stop;
 	FILE *in;
+	char *rv;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -327,7 +329,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		return D;
 	}
 	
-	fgets(line, 999, in);
+	rv = fgets(line, 999, in);
+	if(!rv)
+	{
+		return D;
+	}
 
 	sprintf(stateFormFloat, "%dE", 4*nBand);
 	sprintf(toneFormFloat,  "%dE", nTone*nBand);
@@ -370,8 +376,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	for(;;)
 	{
-		fgets(line, 999, in);
-		if(feof(in))
+		rv = fgets(line, 999, in);
+		if(!rv)
 		{
 			break;
 		}
