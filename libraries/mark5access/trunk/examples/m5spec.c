@@ -66,7 +66,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	struct mark5_stream *ms;
 	double **data, **spec;
 	fftw_complex **zdata, **zx;
-	int c, i, j, k, status;
+	int c, i, j, status;
 	int chunk, nif;
 	long long total, unpacked;
 	FILE *out;
@@ -229,24 +229,33 @@ int main(int argc, char **argv)
 		int bufferlen = 1<<11;
 		char *buffer;
 		FILE *in;
+		int r;
 
 		buffer = malloc(bufferlen);
 		
 		in = fopen(argv[1], "r");
-		fread(buffer, bufferlen, 1, in);
+		r = fread(buffer, bufferlen, 1, in);
+		if(r < 1)
+		{
+			fprintf(stderr, "Error, buffer read failed.\n");
+		}
 		
-		mf = new_mark5_format_from_stream(
-			new_mark5_stream_memory(buffer, bufferlen/2));
+		else
+		{
+			mf = new_mark5_format_from_stream(
+				new_mark5_stream_memory(buffer, bufferlen/2));
 
-		print_mark5_format(mf);
-		delete_mark5_format(mf);
+			print_mark5_format(mf);
+			delete_mark5_format(mf);
 
-		mf = new_mark5_format_from_stream(
-			new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(
+				new_mark5_stream_memory(buffer, bufferlen/2));
 
-		print_mark5_format(mf);
-		delete_mark5_format(mf);
+			print_mark5_format(mf);
+			delete_mark5_format(mf);
+		}
 
+		fclose(in);
 		free(buffer);
 
 		return 0;

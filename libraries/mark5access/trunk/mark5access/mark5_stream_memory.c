@@ -33,15 +33,15 @@
 
 struct mark5_stream_memory
 {
-	uint8_t *start;
-	uint8_t *end;			/* derived by init() */
-	uint32_t nbytes;
+	unsigned char *start;
+	unsigned char *end;			/* derived by init() */
+	unsigned int nbytes;
 };
 
 static int mark5_stream_memory_init(struct mark5_stream *ms)
 {
-	uint8_t *start;
-	uint32_t nbytes;
+	unsigned char *start;
+	unsigned int nbytes;
 
 	sprintf(ms->streamname, "Memory");
 
@@ -58,7 +58,7 @@ static int mark5_stream_memory_init(struct mark5_stream *ms)
 
 static int mark5_stream_memory_next(struct mark5_stream *ms)
 {
-	uint8_t *end;
+	unsigned char *end;
 
 	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
 	
@@ -76,9 +76,9 @@ static int mark5_stream_memory_next(struct mark5_stream *ms)
 	return ms->framebytes;
 }
 
-static int mark5_stream_memory_seek(struct mark5_stream *ms, int64_t framenum)
+static int mark5_stream_memory_seek(struct mark5_stream *ms, long long framenum)
 {
-	uint8_t *start, *end;
+	unsigned char *start, *end;
 	
 	start = ((struct mark5_stream_memory *)(ms->inputdata))->start;
 	end = ((struct mark5_stream_memory *)(ms->inputdata))->end;
@@ -102,7 +102,7 @@ static int mark5_stream_memory_final(struct mark5_stream *ms)
 }
 
 struct mark5_stream_generic *new_mark5_stream_memory(void *data, 
-	uint32_t nbytes)
+	unsigned int nbytes)
 {
 	struct mark5_stream_generic *s;
 	struct mark5_stream_memory *M;
@@ -111,7 +111,7 @@ struct mark5_stream_generic *new_mark5_stream_memory(void *data,
 		sizeof(struct mark5_stream_generic));
 	M = (struct mark5_stream_memory *)calloc(1,
 		sizeof(struct mark5_stream_memory));
-	M->start = (uint8_t *)data;
+	M->start = (unsigned char *)data;
 	M->nbytes = nbytes;
 
 	s->init_stream = mark5_stream_memory_init;

@@ -89,8 +89,8 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	int *mjd, int *sec, double *ns)
 {
 	struct mark5_format_vdif *v;
-	uint32_t *headerwords, word0, word1;
-	uint8_t *headerbytes;
+	unsigned int *headerwords, word0, word1;
+	unsigned char *headerbytes;
 	int seconds, days;
 	int refepoch;
 
@@ -114,7 +114,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	}
 	v = (struct mark5_format_vdif *)(ms->formatdata);
 
-	headerwords = (uint32_t *)(ms->frame);
+	headerwords = (unsigned int *)(ms->frame);
 
 #ifdef WORDS_BIGENDIAN
 	/* Motorola byte order requires some fiddling */
@@ -159,7 +159,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 static int vdif_decode_1channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -216,7 +216,7 @@ static int vdif_decode_1channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -269,7 +269,7 @@ static int vdif_decode_2channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_4channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -320,7 +320,7 @@ static int vdif_decode_4channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_8channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -370,7 +370,7 @@ static int vdif_decode_8channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_16channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
@@ -430,7 +430,7 @@ static int vdif_decode_16channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_32channel_1bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
@@ -510,7 +510,7 @@ static int vdif_decode_32channel_1bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_1channel_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -559,7 +559,7 @@ static int vdif_decode_1channel_2bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_2channel_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -606,7 +606,7 @@ static int vdif_decode_2channel_2bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_4channel_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp;
 	int o, i;
 	int nblank = 0;
@@ -652,7 +652,7 @@ static int vdif_decode_4channel_2bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_8channel_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp0, *fp1;
 	int o, i;
 	int nblank = 0;
@@ -705,7 +705,7 @@ static int vdif_decode_8channel_2bit_decimation1(struct mark5_stream *ms,
 static int vdif_decode_16channel_2bit_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
 {
-	uint8_t *buf;
+	unsigned char *buf;
 	float *fp0, *fp1, *fp2, *fp3;
 	int o, i;
 	int nblank = 0;
@@ -802,8 +802,8 @@ static int one(const struct mark5_stream *ms)
 static int mark5_format_vdif_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdif *f;
-	uint32_t *headerwords, word2;
-	uint8_t *headerbytes;
+	unsigned int *headerwords, word2;
+	unsigned char *headerbytes;
 	int framensNum, framensDen, dataframelength;
 	double dns;
 
@@ -836,7 +836,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->frame = ms->datawindow;
 		ms->payload = ms->frame + ms->payloadoffset;
 
-		headerwords = (uint32_t *)(ms->frame);
+		headerwords = (unsigned int *)(ms->frame);
 
 #ifdef WORDS_BIGENDIAN
 		/* Motorola byte order requires some fiddling */

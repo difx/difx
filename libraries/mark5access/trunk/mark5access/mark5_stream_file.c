@@ -46,8 +46,8 @@
 
 struct mark5_stream_file
 {
-	int64_t offset;
-	int64_t filesize;
+	long long offset;
+	long long filesize;
 	char files[MAX_MARK5_STREAM_FILES][256];
 	int nfiles;
 	int buffersize;
@@ -55,9 +55,9 @@ struct mark5_stream_file
 	int curfile;
 	int fetchsize;
 	int in;
-	uint8_t *buffer;
-	uint8_t *end;
-	uint8_t *last;
+	unsigned char *buffer;
+	unsigned char *end;
+	unsigned char *last;
 };
 
 /* loads fetchsize bytes into memory */
@@ -128,6 +128,7 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 {
 	struct mark5_stream_file *F;
 	char fn[64];
+	int r;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
@@ -142,11 +143,17 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 	F->end = 0;
 	F->fetchsize = 0;
 	lseek64(F->in, F->offset, SEEK_SET);
-	F->buffer = (uint8_t *)calloc(1, F->buffersize);
+	F->buffer = (unsigned char *)calloc(1, F->buffersize);
 	ms->datawindow = F->buffer;
 	ms->datawindowsize = F->buffersize;
 
-	read(F->in, F->buffer, F->buffersize);
+	r = read(F->in, F->buffer, F->buffersize);
+
+	if(r < F->buffersize)
+	{
+		fprintf(stderr, "Error: mark5_stream_file_init(): file shorter than buffersize; shortenening buffer\n");
+		ms->datawindowsize = F->buffersize = r;
+	}
 
 	return 0;
 }
@@ -200,26 +207,10 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 	return ms->framebytes;
 }
 
-/* Work in progress */
-static int mark5_stream_file_next_subframe(struct mark5_stream *ms)
+static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 {
 	struct mark5_stream_file *F;
-	/* int nframes, status; */
-
-	F = (struct mark5_stream_file *)(ms->inputdata);
-	
-	if(F->fetchsize == 0)	/* finish some initialization */
-	{
-		
-	}
-
-	return 0;
-}
-
-static int mark5_stream_file_seek(struct mark5_stream *ms, int64_t framenum)
-{
-	struct mark5_stream_file *F;
-	int64_t pos;
+	long long pos;
 	int nframes, status;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
@@ -270,7 +261,7 @@ static int mark5_stream_file_final(struct mark5_stream *ms)
 }
 
 struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
-	int64_t offset)
+	long long offset)
 {
 	struct mark5_stream_generic *V;
 	struct mark5_stream_file *F;

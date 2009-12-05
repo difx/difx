@@ -185,7 +185,7 @@ static int mark5_format_init(struct mark5_stream *ms)
 
 /* Compatibility function */
 struct mark5_stream *mark5_stream_open(const char *filename, 
-	int nbit, int fanout, int64_t offset)
+	int nbit, int fanout, long long offset)
 {
 	struct mark5_stream_generic *s;
 	struct mark5_format_generic *f;
@@ -315,6 +315,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 		return new_mark5_format_mark5b(a, b, c, e);
 	}
+#if K5WORKS
 	else if(strncasecmp(formatname, "K5_32-", 6) == 0)
 	{
 		r = sscanf(formatname+6, "%d-%d-%d/%d", &a, &b, &c, &e);
@@ -343,6 +344,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 
 		return new_mark5_format_k5(a, b, c, e);
 	}
+#endif
 	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
 	{
 	  r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
@@ -698,6 +700,7 @@ struct mark5_format *new_mark5_format_from_stream(
 		return mf;
 	}
 
+#if K5WORKS
 	/* k5 */
 	f = new_mark5_format_k5(0, 0, 0, -1);
 	set_format(ms, f);
@@ -719,7 +722,7 @@ struct mark5_format *new_mark5_format_from_stream(
 		
 		return mf;
 	}
-
+#endif
 	
 	/* No match found */
 	free(mf);
@@ -922,7 +925,7 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 {
 	int status;
 	double jumpns;
-	int64_t n;
+	long long n;
 
 	if(!ms)
 	{

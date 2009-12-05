@@ -60,12 +60,12 @@ const int k5samprate[16] = {
 
 struct format_k5
 {
-	uint8_t header[MAXHEADERSIZE];
+	unsigned char header[MAXHEADERSIZE];
 	int submode;
 	int days;
 };
 
-static int findfirstframe(const uint8_t *data, int *submode)
+static int findfirstframe(const unsigned char *data, int *submode)
 {
 	int  s;
 
@@ -96,7 +96,7 @@ static int stream_frame_time_k5(const struct mark5_stream *ms,
 	int *mjd, int *sec, double *ns)
 {
 	struct format_k5 *k;
-	const uint8_t *buf;
+	const unsigned char *buf;
 	int day, year, y1;
 
 	k = (struct format_k5 *)(ms->formatdata);

@@ -46,7 +46,6 @@ typedef struct { float  re, im; } mark5_float_complex;
 #endif
 
 #include <stdio.h>
-#include <inttypes.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -95,18 +94,18 @@ struct mark5_stream
 	int framebytes;		/* total number of bytes in a frame */
 	int databytes;		/* bytes of data in a frame, incl. data */
 				/*   replacement headers */
-	int64_t framenum;	/* current complete frame, start at 0 */
+	long long framenum;	/* current complete frame, start at 0 */
 	int decimation;		/* decimation factor */
 	int nvalidatefail;	/* number of times frame validation failed */
 	int nvalidatepass;	/* number of times frame validation passed */
 	int consecutivefails;	/* number of validations failed in a row */
 
 	/* internal state parameters -- not to be used by users */
-	uint8_t *frame;
-	uint8_t *payload;
+	unsigned char *frame;
+	unsigned char *payload;
 	int payloadoffset;	    /* == payload - frame */
-	int64_t datawindowsize;     /* number of bytes resident at a time */
-	uint8_t *datawindow;	    /* pointer to data window */
+	long long datawindowsize;     /* number of bytes resident at a time */
+	unsigned char *datawindow;	    /* pointer to data window */
 	int readposition;	    /* index into frame of current read */
 
 	/* data blanking */
@@ -119,7 +118,7 @@ struct mark5_stream
 	int (*init_stream)(struct mark5_stream *ms);
 	int (*final_stream)(struct mark5_stream *ms);
 	int (*next)(struct mark5_stream *ms);
-	int (*seek)(struct mark5_stream *ms, int64_t framenum);
+	int (*seek)(struct mark5_stream *ms, long long framenum);
 	void *inputdata;
 
 	/* format commands and data pointer */
@@ -138,7 +137,7 @@ struct mark5_stream_generic
 	int (*init_stream)(struct mark5_stream *ms);	/* required */
 	int (*final_stream)(struct mark5_stream *ms);	/* required */
 	int (*next)(struct mark5_stream *ms);		/* required */
-	int (*seek)(struct mark5_stream *ms, int64_t framenum);
+	int (*seek)(struct mark5_stream *ms, long long framenum);
 	void *inputdata;
 };
 
@@ -198,12 +197,12 @@ int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp,
 /*   Memory based stream */
 
 struct mark5_stream_generic *new_mark5_stream_memory(void *data,
-	uint32_t nbytes);
+	unsigned int nbytes);
 
 /*   File based stream */
 
 struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
-	int64_t offset);
+	long long offset);
 
 int mark5_stream_file_add_infile(struct mark5_stream *ms, 
 	const char *filename);
@@ -321,7 +320,7 @@ int mark5_stream_next_frame(struct mark5_stream *ms);
 /* for compatibility */
 
 struct mark5_stream *mark5_stream_open(const char *filename,
-        int nbit, int fanout, int64_t offset);
+        int nbit, int fanout, long long offset);
 
 #define PAYLOADSIZE 20000
 #define FRAMESIZE   20160

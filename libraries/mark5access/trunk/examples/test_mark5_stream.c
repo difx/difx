@@ -85,11 +85,11 @@ int test1(const char *filename, int nbit, int ntrack,
 {
 	struct mark5_stream *ms;
 	double **data;
-	uint8_t *buffer;
+	unsigned char  *buffer;
 	FILE *in;
 	int i, j;
 
-	buffer = (uint8_t *)malloc(1<<19);
+	buffer = (unsigned char  *)malloc(1<<19);
 
 	in = fopen(filename, "r");
 	if(!in)
@@ -186,10 +186,10 @@ int test3(const char *filename, int nbit, int ntrack,
 {
 	struct mark5_stream *ms1, *ms2;
 	float **data;
-	uint8_t *buffer;
+	unsigned char  *buffer;
 	int i, j;
 
-	buffer = (uint8_t *)malloc(1<<20);
+	buffer = (unsigned char  *)malloc(1<<20);
 
 	ms1 = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
@@ -252,11 +252,11 @@ int test4(const char *filename, int nbit, int ntrack,
 {
 	struct mark5_stream *ms;
 	float **data;
-	uint8_t *buffer;
+	unsigned char  *buffer;
 	FILE *in;
 	int i, j;
 
-	buffer = (uint8_t *)malloc(1<<19);
+	buffer = (unsigned char  *)malloc(1<<19);
 
 	in = fopen(filename, "r");
 	if(!in)

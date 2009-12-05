@@ -1,3 +1,7 @@
+Version 1.4.1
+* revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
+* disable all K5 code until that is at least somewhat useful
+
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
 * Add VLBN format == VLBA without data modulation

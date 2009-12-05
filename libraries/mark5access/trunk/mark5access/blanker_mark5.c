@@ -51,12 +51,12 @@
  * identification within the unpacking steps
  */
 
-static int findfirstinvalid(const uint64_t *data, int start, int end)
+static int findfirstinvalid(const unsigned long long *data, int start, int end)
 {
 	int n, i, r, s;
-	uint32_t *data32;
+	unsigned int *data32;
 
-	data32 = (uint32_t *)data;
+	data32 = (unsigned int *)data;
 	n = end-start;
 	data += start;
 	i = n/2;
@@ -87,12 +87,12 @@ static int findfirstinvalid(const uint64_t *data, int start, int end)
 	return r;
 }
 
-static int findfirstvalid(const uint64_t *data, int start, int end)
+static int findfirstvalid(const unsigned long long *data, int start, int end)
 {
 	int n, i, r, s;
-	uint32_t *data32;
+	unsigned int *data32;
 
-	data32 = (uint32_t *)data;
+	data32 = (unsigned int *)data;
 	n = end-start;
 	data += start;
 	i = n/2;
@@ -126,7 +126,7 @@ static int findfirstvalid(const uint64_t *data, int start, int end)
 int blanker_mark5(struct mark5_stream *ms)
 {
 	int b, e, zonesize, nword;
-	uint64_t *data;
+	unsigned long long *data;
 	int startOK, endOK, zone=0;
 	int nblanked = 0;
 
@@ -146,7 +146,7 @@ int blanker_mark5(struct mark5_stream *ms)
 	zonesize = 1 << (ms->log2blankzonesize-3);
 	nword = ms->databytes/8;
 
-	data = (uint64_t *)ms->payload;
+	data = (unsigned long long *)ms->payload;
 
 	for(b = 0; b < nword; b += zonesize)
 	{
@@ -199,7 +199,7 @@ int blanker_mark5(struct mark5_stream *ms)
 int blanker_mark4(struct mark5_stream *ms)
 {
 	int b, e, zonesize, nword, n, s, delta;
-	uint64_t *data;
+	unsigned long long *data;
 	int startOK, endOK, zone=0;
 	int nblanked = 0;
 
@@ -219,7 +219,7 @@ int blanker_mark4(struct mark5_stream *ms)
 	zonesize = 1 << (ms->log2blankzonesize-3);
 	nword = ms->databytes/8;
 
-	data = (uint64_t *)ms->payload;
+	data = (unsigned long long *)ms->payload;
 
 	for(b = 0; b < nword; b += zonesize)
 	{
@@ -281,7 +281,7 @@ int blanker_mark4(struct mark5_stream *ms)
 
 int blanker_vdif(struct mark5_stream *ms)
 {
-	uint64_t *data;
+	unsigned long long *data;
 	int nword;
 	
 	if(!ms->payload)
@@ -291,7 +291,7 @@ int blanker_vdif(struct mark5_stream *ms)
 		return 0;
 	}
 
-	data = (uint64_t *)ms->payload;
+	data = (unsigned long long *)ms->payload;
 
 	nword = ms->databytes/8;
 

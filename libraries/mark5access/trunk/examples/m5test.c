@@ -58,7 +58,7 @@ int verify(const char *filename, const char *formatname, const char *f,
 {
 	struct mark5_stream *ms;
 	float **data;
-	int i, j, k, status;
+	int i, status;
 	long long chunk = 1024;
 	long long total, unpacked;
 
@@ -130,6 +130,7 @@ int verify(const char *filename, const char *formatname, const char *f,
 int main(int argc, char **argv)
 {
 	long long offset = 0;
+	int r;
 
 	if(argc == 2)
 	{
@@ -141,20 +142,27 @@ int main(int argc, char **argv)
 		buffer = malloc(bufferlen);
 		
 		in = fopen(argv[1], "r");
-		fread(buffer, bufferlen, 1, in);
-		
-		mf = new_mark5_format_from_stream(
-			new_mark5_stream_memory(buffer, bufferlen/2));
+		r = fread(buffer, bufferlen, 1, in);
+		if(r < 1)
+		{
+			fprintf(stderr, "Error: cannot read %d bytes from file\n", bufferlen);
+		}
+		else
+		{
+			mf = new_mark5_format_from_stream(
+				new_mark5_stream_memory(buffer, bufferlen/2));
 
-		print_mark5_format(mf);
-		delete_mark5_format(mf);
+			print_mark5_format(mf);
+			delete_mark5_format(mf);
 
-		mf = new_mark5_format_from_stream(
-			new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(
+				new_mark5_stream_memory(buffer, bufferlen/2));
 
-		print_mark5_format(mf);
-		delete_mark5_format(mf);
+			print_mark5_format(mf);
+			delete_mark5_format(mf);
+		}
 
+		fclose(in);
 		free(buffer);
 
 		return 0;

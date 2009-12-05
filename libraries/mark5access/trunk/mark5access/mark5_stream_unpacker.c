@@ -105,11 +105,11 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (uint8_t *)packed;
+		ms->payload = (unsigned char *)packed;
 	}
 	else
 	{
-		ms->frame = (uint8_t *)packed;
+		ms->frame = (unsigned char *)packed;
 		v = ms->validate(ms);
 		if(!v)
 		{
@@ -127,7 +127,7 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 		}
 		ms->frame = 0;
 
-		ms->payload = (uint8_t *)packed + ms->payloadoffset;
+		ms->payload = (unsigned char *)packed + ms->payloadoffset;
 	}
 	ms->readposition = 0;
 	
@@ -143,11 +143,11 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
 
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
-		ms->payload = (uint8_t *)packed;
+		ms->payload = (unsigned char *)packed;
 	}
 	else
 	{
-		ms->frame = (uint8_t *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
+		ms->frame = (unsigned char *)packed + (offsetsamples/ms->framesamples)*ms->framebytes;
 		v = ms->validate(ms);
 		if(!v)
 		{
@@ -159,7 +159,7 @@ int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
 		}
 		ms->frame = 0;
 
-		ms->payload = (uint8_t *)packed + ms->payloadoffset;
+		ms->payload = (unsigned char *)packed + ms->payloadoffset;
 	}
 	/* add to offset the integer number of frames */
 	ms->payload += ms->framebytes*(offsetsamples/ms->framesamples);
