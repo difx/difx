@@ -1019,7 +1019,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 		D->antenna[a].clockrefmjd = atof(DifxParametersvalue(ip, rows[1]));
 		D->antenna[a].clockorder  = atoi(DifxParametersvalue(ip, rows[2]));
 		r = rows[2];
-		for(i=0;i<D->antenna[a].clockorder;i++)
+		for(i=0;i<D->antenna[a].clockorder+1;i++)
 		{
 			r = DifxParametersfind2(ip, r, "CLOCK COEFF %d/%d", a, i);
 			D->antenna[a].clockcoeff[i] = atof(DifxParametersvalue(ip, r));

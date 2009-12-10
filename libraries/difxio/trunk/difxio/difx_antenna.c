@@ -107,7 +107,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 
 	fprintf(fp, "  DifxAntenna [%s] : %p\n", da->name, da);
 	fprintf(fp, "    Clock reference MJD = %f\n", da->clockrefmjd);
-	for(i=0;i<da->clockorder;i++)
+	for(i=0;i<da->clockorder+1;i++)
 	{
 		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, 
 			da->clockcoeff[i], i);
