@@ -37,7 +37,7 @@ from os import umask
 
 program = 'oms2v2d'
 version = '0.5'
-verdate = '20090904'
+verdate = '20091210'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -135,7 +135,7 @@ def writev2d(oms, v2dFile):
 	out.write('antennas =%s\n\n' % stnString)
 
 	if corr.has_key('TWEAK_INT_TIME'):
-		if not corr['TWEAK_INT_TIME'][0] in ['YES', 'yes']:
+		if corr['TWEAK_INT_TIME'][0] in ['YES', 'yes']:
 			out.write('tweakIntTime = True\n\n')
 
 	for s in oms['SOURCE_INFO']:

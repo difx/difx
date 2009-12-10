@@ -12,6 +12,7 @@ Version 2.0
 * Add support for VLBN "format" -- that is VLBA with no data modulation
 * Use strict parsing by default
 * Add deltaClock and deltaClockRate
+* Further fix to generated flags when an antenna is not in a job
 
 Version 0.3
 ~~~~~~~~~~~

@@ -697,11 +697,17 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	{
 		if(e->eventType == VexEvent::RECORD_START)
 		{
-			flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_RECORD;
+			if(antIds.count(e->name) > 0)
+			{
+				flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_RECORD;
+			}
 		}
 		else if(e->eventType == VexEvent::RECORD_STOP)
 		{
-			flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_RECORD;
+			if(antIds.count(e->name) > 0)
+			{
+				flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_RECORD;
+			}
 		}
 		else if(e->eventType == VexEvent::SCAN_START)
 		{
@@ -716,9 +722,9 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
 				{
-					if(antIds.find(sa->first) == antIds.end())
+					if(antIds.count(sa->first) == 0)
 					{
-						cerr << "Developer error: generateFlagFile: antenna " << sa->first << " not in antIds" << endl;
+						continue;
 					}
 					flagMask[antIds[sa->first]] &= ~VexJobFlag::JOB_FLAG_SCAN;
 				}
@@ -737,20 +743,24 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
 				{
+					if(antIds.count(sa->first) == 0)
+					{
+						continue;
+					}
 					flagMask[antIds[sa->first]] |= VexJobFlag::JOB_FLAG_SCAN;
 				}
 			}
 		}
 		else if(e->eventType == VexEvent::ANT_SCAN_START)
 		{
-			if(hasScan(e->scan))
+			if(hasScan(e->scan) && antIds.count(e->name) > 0)
 			{
 				flagMask[antIds[e->name]] &= ~VexJobFlag::JOB_FLAG_POINT;
 			}
 		}
 		else if(e->eventType == VexEvent::ANT_SCAN_STOP)
 		{
-			if(hasScan(e->scan))
+			if(hasScan(e->scan) && antIds.count(e->name) > 0)
 			{
 				flagMask[antIds[e->name]] |= VexJobFlag::JOB_FLAG_POINT;
 			}
@@ -759,19 +769,19 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 		{
 			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
-				for(unsigned int antId = 0; antId < nAnt; antId++)
+				for(a = vsns.begin(); a != vsns.end(); a++)
 				{
-					flagMask[antId] &= ~VexJobFlag::JOB_FLAG_TIME;
+					flagMask[antIds[a->first]] &= ~VexJobFlag::JOB_FLAG_TIME;
 				}
 			}
 		}
 		else if(e->eventType == VexEvent::JOB_STOP)
 		{
-			if(fabs(e->mjd - mjdStop) < 0.5/86400.0)
+			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
 				for(unsigned int antId = 0; antId < nAnt; antId++)
 				{
-					flagMask[antId] |= VexJobFlag::JOB_FLAG_TIME;
+					flagMask[antIds[a->first]] |= VexJobFlag::JOB_FLAG_TIME;
 				}
 			}
 		}
