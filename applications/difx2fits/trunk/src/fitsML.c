@@ -275,7 +275,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		  //printf("Working on antenna %d, phasecentre %d, polynomial %d\n", a, phasecentre, p);
 
 	          time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
+		  deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
 
 	          for(k = 0; k < array_N_POLY; k++)
 		  {

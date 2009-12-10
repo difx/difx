@@ -193,7 +193,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		  P = scan->im[ant][phasecentre] + p;
 
 		  time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - D->mjdStart)*86400.0 + P->sec;
+		  deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
 
 		  /* in general, convert from (us) to (sec) */
 		  atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
@@ -212,15 +212,15 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 		deltatn = 1.0;
 		c1 = 0.0;
-		for(j=0; j<D->antenna[ant].clockorder; j++)
+		for(j=0; j<D->antenna[antId].clockorder; j++)
 		{
-			c1 = c1 + D->antenna[ant].clockcoeff[j] * deltatn;
+			c1 = c1 + D->antenna[antId].clockcoeff[j] * deltatn;
 			deltatn = deltatn * deltat;
 		}
 		deltat2 = deltat + P->validDuration/86400.0;
 		deltatn = 1.0;
 		c2 = 0.0;
-		for(j=0; j<D->antenna[ant].clockorder; j++)
+		for(j=0; j<D->antenna[antId].clockorder; j++)
 		{
 			c2 = c2 + D->antenna[ant].clockcoeff[j] * deltatn;
 			deltatn = deltatn * deltat2;
