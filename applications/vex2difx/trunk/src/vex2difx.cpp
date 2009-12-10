@@ -44,7 +44,7 @@
 
 const string program("vex2difx");
 const string version("2.0");
-const string verdate("20091204");
+const string verdate("20091210");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -433,8 +433,8 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		}
 		A[i].clockrefmjd = clockrefmjd;
 		A[i].clockorder = 1;
-		A[i].clockcoeff[0] *= 1.0e6;	// convert to us from sec
-		A[i].clockcoeff[1] *= 1.0e6;	// convert to us/sec from sec/sec
+		A[i].clockcoeff[0] *= 1.0e6;	// convert to sec from us
+		A[i].clockcoeff[1] *= 1.0e6;	// convert to sec/sec from us/sec
 		A[i].offset[0] = ant->axisOffset;
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
@@ -461,6 +461,8 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 			}
 			A[i].networkPort = antSetup->networkPort;
 			A[i].windowSize  = antSetup->windowSize;
+			A[i].clockcoeff[0] += antSetup->deltaClock*1.0e6;	// convert to sec from us
+			A[i].clockcoeff[1] += antSetup->deltaClockRate*1.0e6;	// convert to sec/sec from us/sec
 			A[i].clockorder  = antSetup->clockorder;
 			switch(A[i].clockorder) {
 				case 5: A[i].clockcoeff[5] = antSetup->clock5;

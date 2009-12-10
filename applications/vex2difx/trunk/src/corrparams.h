@@ -117,6 +117,8 @@ public:
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
         vector<double> freqClockOffs; // clock offsets for the individual frequencies
 	VexClock clock;
+	double deltaClock;	// sec
+	double deltaClockRate;	// sec/sec
 	// flag
 	// media
 	bool polSwap;		// If true, swap polarizations
