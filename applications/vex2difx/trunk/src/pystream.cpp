@@ -52,6 +52,46 @@ void pystream::open(const string& antennaName, const VexData *V)
 	ofstream::open((string(obsCode) + string(".") + antennaName + ".py").c_str());
 }
 
+int switchPosition(const char *val)
+{
+	char c = val[0];
+
+	// make upper case
+	if(c >= 'a' && c <= 'z')
+	{
+		c -= ('a'-'A');
+	}
+
+	if(c == 'A')
+	{
+		return 1;
+	}
+	else if(c == 'B')
+	{
+		return 2;
+	}
+	else if(c == 'C')
+	{
+		return 3;
+	}
+	else if(c == 'D')
+	{
+		return 4;
+	}
+	else if(c == 'T')
+	{
+		return 5;
+	}
+	else if(c == 'G')
+	{
+		return 6;
+	}
+	else
+	{
+		return -1;
+	}
+}
+
 void pystream::calcIfIndex(const VexData *V)
 {
 	map<string,VexIF>::const_iterator it;
@@ -268,6 +308,7 @@ int pystream::writeScans(const VexData *V)
 	int n = 0;
 	int nScan;
 	map<string,VexIF>::const_iterator it;
+	const char *switchOutput[] = {"1A", "1B", "2A", "2B"};
 
 	nScan = V->nScan();
 
@@ -314,7 +355,7 @@ int pystream::writeScans(const VexData *V)
 					if(ifit->first != sw[ifit->second])
 					{
 						sw[ifit->second] = ifit->first;
-						*this << "subarray.set4x4Switch(" << ifit->second << ", '" << ifit->first << "')" << endl;
+						*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
 					}
 				}
 

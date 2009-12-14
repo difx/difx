@@ -566,10 +566,20 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 
 	if(key == "ra" || key == "RA")
 	{
+		if(pc->ra > -990)
+		{
+			cerr << "Warning: Source " << vexName << " has multiple RA assignments" << endl;
+			nWarn++;
+		}
 		pc->ra = parseCoord(value.c_str(), 'R');
 	}
 	else if(key == "dec" || key == "Dec")
 	{
+		if(pc->dec > -990)
+		{
+			cerr << "Warning: Source " << vexName << " has multiple Dec assignments" << endl;
+			nWarn++;
+		}
 		pc->dec = parseCoord(value.c_str(), 'D');
 	}
 	else if(key == "calCode")
@@ -712,77 +722,141 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "clockOffset" || key == "clock0")
 	{
+		if(clock.offset != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clockOffset definitions" << endl;
+			nWarn++;
+		}
 		ss >> clock.offset;
 		clock.offset /= 1.0e6;	// convert from us to sec
 		clock.mjdStart = 1;
 	}
 	else if(key == "clockRate" || key == "clock1")
 	{
+		if(clock.rate != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clockRate definitions" << endl;
+			nWarn++;
+		}
 		ss >> clock.rate;
 		clock.rate /= 1.0e6;	// convert from us/sec to sec/sec
 		clock.mjdStart = 1;
 	}
 	else if(key == "clock2")
 	{
-		// FIXME -- is there a us to sec conversion here?
+		if(clock2 != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clock2 definitions" << endl;
+			nWarn++;
+		}
+
 		ss >> clock2;
 		if(clockorder < 2)
 		{
 			clockorder = 2;
 		}
+		clock2 /= 1.0e6;	// convert from us/sec^2 to sec/sec^2
 	}
 	else if(key == "clock3")
 	{
-		// FIXME -- is there a us to sec conversion here?
+		if(clock3 != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clock3 definitions" << endl;
+			nWarn++;
+		}
+
 		ss >> clock3;
 		if(clockorder < 3)
 		{
 			clockorder = 3;
 		}
+		clock3 /= 1.0e6;	// convert from us/sec^3 to sec/sec^3
 	}
 	else if(key == "clock4")
 	{
-		// FIXME -- is there a us to sec conversion here?
+		if(clock4 != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clock4 definitions" << endl;
+			nWarn++;
+		}
+
 		ss >> clock4;
 		if(clockorder < 4)
 		{
 			clockorder = 4;
 		}
+		clock4 /= 1.0e6;	// convert from us/sec^4 to sec/sec^4
 	}
 	else if(key == "clock5")
 	{
-		// FIXME -- is there a us to sec conversion here?
+		if(clock5 != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clock5 definitions" << endl;
+			nWarn++;
+		}
+
 		ss >> clock5;
 		if(clockorder < 5)
 		{
 			clockorder = 5;
 		}
+		clock5 /= 1.0e6;	// convert from us/sec^5 to sec/sec^5
 	}
 	else if(key == "clockEpoch")
 	{
+		if(clock.offset_epoch > 50001.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple clockEpoch definitions" << endl;
+			nWarn++;
+		}
 		clock.offset_epoch = parseTime(value);
 		clock.mjdStart = 1;
 	}
 	else if(key == "deltaClock")
 	{
+		if(deltaClock != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple deltaClock definitions" << endl;
+			nWarn++;
+		}
 		ss >> deltaClock;
 		deltaClock /= 1.0e6;	// convert from us to sec
 	}
 	else if(key == "deltaClockRate")
 	{
+		if(deltaClockRate != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple deltaClockRate definitions" << endl;
+			nWarn++;
+		}
 		ss >> deltaClockRate;
 		deltaClockRate /= 1.0e6;	// convert from us/sec to sec/sec
 	}
 	else if(key == "X" || key == "x")
 	{
+		if(X != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple X definitions" << endl;
+			nWarn++;
+		}
 		ss >> X;
 	}
 	else if(key == "Y" || key == "y")
 	{
+		if(Y != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple Y definitions" << endl;
+			nWarn++;
+		}
 		ss >> Y;
 	}
 	else if(key == "Z" || key == "z")
 	{
+		if(Z != 0.0)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple Z definitions" << endl;
+			nWarn++;
+		}
 		ss >> Z;
 	}
 	else if(key == "format")
@@ -2022,7 +2096,6 @@ int CorrParams::loadShelves(const string& fileName)
 		for(vector<string>::const_iterator s = noShelf.begin(); s != noShelf.end(); s++)
 		{
 			cerr << " " << *s;
-			nWarn++;
 		}
 		cerr << endl;
 	}
