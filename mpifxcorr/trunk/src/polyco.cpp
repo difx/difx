@@ -384,9 +384,10 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     char buffer[80];
     int hour, minute;
     double timedouble, second, mjddouble;
+
     ifstream input(filename.c_str(), ios::in);
     if(!input.is_open() || input.bad())
-        return false; //note return with failure here!!!
+      return false; //note return with failure here!!!
 
     coefficients = 0;
 
@@ -400,6 +401,11 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 
       input.get(buffer, 11); //ignore the date - we'll use the mjd instead
       input.get(buffer, 13);
+      if(!fieldOK(buffer, 12))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the date field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
       timedouble = atof(buffer);
       hour = int(timedouble/10000);
       minute = int((timedouble - 10000*hour)/100);
@@ -407,6 +413,11 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 
       //get the mjd
       input.get(buffer, 20);
+      if(!fieldOK(buffer, 19))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the MJD field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
       mjddouble = atof(buffer);
       mjd = int(mjddouble);
       mjdfraction = double(hour)/24.0 + double(minute)/1440.0 + second/86400.0;
@@ -414,6 +425,11 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       //get the dm, dopplershift and logresidual
       input.get(buffer, 22);
       dm = atof(buffer);
+      if(!fieldOK(buffer, 19))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the DM field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
 
       input.get(buffer, 8);
       dopplershift = atof(buffer);
@@ -432,10 +448,20 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       //process the second line
       //get the refphase, reference frequency, observatory, timespan, number of coefficients, observing frequency and binary phase
       input.get(buffer, 21);
+      if(!fieldOK(buffer, 20))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the reference phase field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
       refphase = atof(buffer);
       refphase = refphase - floor(refphase);
 
       input.get(buffer, 19);
+      if(!fieldOK(buffer, 18))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the reference frequency field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
       f0 = atof(buffer);
 
       input.get(buffer, 6);
@@ -443,12 +469,27 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 
       input.get(buffer, 7);
       timespan = atoi(buffer);
+      if(!fieldOK(buffer, 6))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the timespan field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
 
       input.get(buffer, 6);
       numcoefficients = atoi(buffer);
+      if(!fieldOK(buffer, 5))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the number of coefficients field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
 
       input.get(buffer, 22);
       obsfrequency = atof(buffer);
+      if(!fieldOK(buffer, 19))
+      {
+        cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the observing frequency field contained " << buffer << ".  Aborting!" << endl;
+        return false;
+      }
 
       input.get(buffer, 6);
       binaryphase = atof(buffer);
@@ -467,6 +508,11 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       for(int i=0;i<numcoefficients;i++)
       {
           input.get(buffer, 26);
+          if(!fieldOK(buffer, 25))
+          {
+            cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the " << i << "th coefficient field contained " << buffer << ".  Aborting!" << endl;
+            return false;
+          }
           if(input.fail()) {
             csevere << startl << "Input related error processing polyco file " << filename << " coefficients!!! Will attempt clearing stream and continuing." << endl;
             input.clear();
@@ -502,4 +548,22 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     timepowerarray[0] = 1.0;
 
     return true;
+}
+
+bool Polyco::fieldOK(char * buffer, int width)
+{
+  int at;
+
+  at = 0;
+  while(at<width && buffer[at] == ' ') //skip any preceding whitespace
+    at++;
+  while(at<width && buffer[at] != ' ') //skip through the block
+    at++;
+  while(at<width && buffer[at] == ' ') //skip any trailing whitespace
+    at++;
+
+  if(at != width) //found a second alphanumeric block before end of buffer - bad polyco!
+    return false;
+
+  return true;
 }
