@@ -211,6 +211,7 @@ int extractCalcResults(DifxPolyModel *im, int index,
 {
 	struct getCALC_res *res0, *res1, *res2;
 	double d, dx, dy;
+	int rv;
 
 	res0 = &results->res[0];
 	res1 = &results->res[1];
@@ -236,15 +237,27 @@ int extractCalcResults(DifxPolyModel *im, int index,
 		im->u[index] = (C_LIGHT/results->delta)*(d-dx);
 		im->v[index] = (C_LIGHT/results->delta)*(dy-d);
 		im->w[index] = C_LIGHT*d;
+	
+		if( isnan(d)  || isinf(d)  ||
+		    isnan(dx) || isinf(dx) ||
+		    isnan(dy) || isinf(dy) )
+		{
+			rv = 1;
+		}
 	}
 	else
 	{
 		im->u[index] = res0->getCALC_res_u.record.UV[0];
 		im->v[index] = res0->getCALC_res_u.record.UV[1];
 		im->w[index] = res0->getCALC_res_u.record.UV[2];
+		
+		if(isnan(im->delay[index]) || isinf(im->delay[index]))
+		{
+			rv = 1;
+		}
 	}
 
-	return 0;
+	return rv;
 }
 
 void computePolyModel(DifxPolyModel *im, double deltaT)
@@ -262,7 +275,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 {
 	struct getCALC_arg *request;
 	struct CalcResults results;
-	int i, j, s, v;
+	int i, j, v;
 	int mjd;
 	int jobStart;
 	double sec, subInc;
@@ -272,9 +285,10 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	DifxSource *source;
 	DifxAntenna *antenna;
 	DifxJob *job;
-	int nInt, deltat;
+	int nInt;
 	int spacecraftId = -1;
 	int sourceId;
+	int nError = 0;
 
 	job = D->job;
 	antenna = D->antenna + antId;
@@ -340,7 +354,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 			}
 			/* use result to populate tabulated values */
 
-			extractCalcResults(&im[phasecentre][i], j, &results);
+			nError += extractCalcResults(&im[phasecentre][i], j, &results);
 			lastsec = sec;
 			sec += subInc;
 			if(sec >= 86400.0)
@@ -352,7 +366,12 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 		computePolyModel(&im[phasecentre][i], subInc);
 	}
 
-	return 0;
+	if(nError > 0)
+	{
+		fprintf(stderr, "Error: Antenna %s had %d invalid delays\n", D->antenna[antId].name, nError);
+	}
+
+	return nError;
 }
 
 static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
