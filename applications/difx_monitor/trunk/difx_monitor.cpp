@@ -613,7 +613,7 @@ void maxmin(f32 **vals, int nchan, int npol, float *max, float *min) {
   }
 
   delta = (*max-*min)*0.05;
-  if (delta==0) delta = 1;
+  if (delta<0.5) delta = 1;
   *min -= delta;
   *max += delta;
 
