@@ -31,12 +31,11 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  const bool DO_BIN_COUNT = false;
-  Polyco ** polycos;
-  int ** bins;
-  Polyco * currentpolyco;
+  bool readok;
   double doublesec;
-  int numpolycos, numffts;
+  int numpolycos, numffts, configindex, sourceindex;
+  char polpair[3];
+  double uvw[3];
 
   njobs = argc-1;
   if(njobs < 1) {
@@ -49,17 +48,23 @@ int main(int argc, char *argv[])
     cout << "Processing file " << i << "/" << njobs << endl;
 
     config = new Configuration(argv[i], 0);
-    if(config->getNumConfigs() > 1 || !config->pulsarBinOn(0)) {
+    if(config->getNumConfigs() > 1 || !config->pulsarBinOn(0) || config->scrunchOutputOn(0)) {
       cerr << "Error - must be a single config with pulsar binning on - aborting!" << endl;
       return EXIT_FAILURE;
     }
 
     if(i==1) {
       nbins = config->getNumPulsarBins(0);
-      nchannels = config->getNumChannels(0);
+      nchannels = config->getFNumChannels(0);
       if(nbins <= 0) {
         cerr << "Error - the first .input file had no pulsar bins - aborting!" << endl;
         return EXIT_FAILURE;
+      }
+      for(int j=1;j<config->getFreqTableLength();j++) {
+        if(config->getFNumChannels(j) != nchannels) {
+          cerr << "Error - input file " << i << " has different numbers of channels - aborting!!!" << endl;
+          return EXIT_FAILURE;
+        }
       }
       profile = new double[nbins];
       normprofile = new double[nbins];
@@ -68,16 +73,15 @@ int main(int argc, char *argv[])
         profile[j] = 0.0;
       visibilities = new float[2*nchannels];
     }
-    else if (config->getNumPulsarBins(0) != nbins || config->getNumChannels(0) != nchannels) {
-      cerr << "Number of bins/channels for file " << i << " (" << config->getNumPulsarBins(0) << "/" << config->getNumChannels(0) << ") does not match initial (" << nbins << "/" << nchannels << ") - aborting" << endl;
-      return EXIT_FAILURE;
+    else {
+      for(int j=0;j<config->getFreqTableLength();j++) {
+        cerr << "Error - input file " << i << " has different numbers of channels - aborting!!!" << endl;
+        return EXIT_FAILURE;
+      }
     }
-    if(DO_BIN_COUNT) {
-      polycos = config->getPolycos(0);
-      numpolycos = config->getNumPolycos(0);
-      bins = new int*[config->getFreqTableLength()];
-      for(int i=0;i<config->getFreqTableLength();i++)
-        bins[i] = new int[config->getNumChannels(0) + 1];
+    if (config->getNumPulsarBins(0) != nbins) {
+      cerr << "Number of bins for file " << i << " (" << config->getNumPulsarBins(0) << ") does not match initial (" << nbins << ") - aborting" << endl;
+      return EXIT_FAILURE;
     }
     startmjd = config->getStartMJD();
     startsec = config->getStartSeconds();
@@ -112,42 +116,13 @@ int main(int argc, char *argv[])
     int viscount = 0;
     double vissum = 0.0;
     int lastatsec = 0;
-    while(!(input->eof() || input->fail())) {
-      config->getinputline(input, &line, "BASELINE NUM");
-      baseline = atoi(line.c_str());
-      config->getinputline(input, &line, "MJD");
-      atmjd = atoi(line.c_str());
-      config->getinputline(input, &line, "SECONDS");
-      atsec = atoi(line.c_str());
-      doublesec = atof(line.c_str());
+    while(readok && !(input->eof() || input->fail())) {
+      readok = config->fillHeaderData(input, baseline, atmjd, doublesec, configindex, sourceindex, freqindex, polpair, bin, weight, uvw);
+      atsec = int(doublesec);
       if((atmjd-startmjd)*86400 + atsec-startsec > nextsec) {
         cout << ++runcount << "0% done" << endl;
 	nextsec += runsec/10;
       }
-      config->getinputline(input, &line, "CONFIG INDEX:");
-      config->getinputline(input, &line, "SOURCE INDEX:");
-      config->getinputline(input, &line, "FREQ INDEX:");
-      freqindex = atoi(line.c_str());
-      if(DO_BIN_COUNT) {
-        if(lastatsec != atsec) {
-          currentpolyco = Polyco::getCurrentPolyco(0, atmjd, (doublesec - config->getIntTime(0)/2.0)/86400.0, polycos, numpolycos, false);
-	  currentpolyco->setTime(atmjd, (doublesec-config->getIntTime(0)/2.0)/86400.0);
-	  lastatsec = atsec;
-	}
-	numffts = int(0.5+10000000*config->getIntTime(0)/(config->getNumChannels(0)/config->getDBandwidth(0,0,0)));
-	for(int i=0;i<numffts;i++)
-	  currentpolyco->getBins(i*config->getIntTime(0)/numffts, bins);
-      }
-      config->getinputline(input, &line, "POLARISATION PAIR:");
-      polpair = line;
-      config->getinputline(input, &line, "PULSAR BIN:");
-      bin = atoi(line.c_str());
-      config->getinputline(input, &line, "FLAGGED:");
-      config->getinputline(input, &line, "DATA WEIGHT:");
-      weight = atof(line.c_str());
-      config->getinputline(input, &line, "U (METRES):");
-      config->getinputline(input, &line, "V (METRES):");
-      config->getinputline(input, &line, "W (METRES):");
       input->read((char*)visibilities, nchannels*8);
       for(int j=1;j<nchannels-1;j++) {
         if(visibilities[2*j] > maxvisibility)
@@ -213,19 +188,6 @@ int main(int argc, char *argv[])
     normprofile[i] = (normprofile[i] - mean)/(1.0-double(ncontributingbins)*mean);
   
   cout << "Number of non-contibuting bins was " << nbins-ncontributingbins << endl;
-  if(DO_BIN_COUNT) {
-    int *** bincounts;
-    int * overallbincounts = new int[nbins];
-    bincounts = currentpolyco->getBinCounts();
-    for(int j=0;j<nbins;j++) {
-      for(int k=0;k<config->getFreqTableLength();k++) {
-        for(int l=1;l<config->getNumChannels(0)-1;l++)
-          overallbincounts[j] += bincounts[j][k][l];
-      }
-    }
-    for(int i=0;i<nbins;i++) 
-      cout << "Overall bin count " << i << " was " << overallbincounts[i] << endl;
-  }
 
   cout << "About to write out the profile file" << endl;
   //write out the profile file

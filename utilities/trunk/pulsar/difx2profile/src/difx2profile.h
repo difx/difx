@@ -31,7 +31,7 @@ double * profile;
 double * normprofile;
 double * scratch;
 float * visibilities;
-string line, difxfile, polpair;
+string line, difxfile;
 int njobs, nbins, nchannels, baseline, bin, freqindex;
 int startmjd, atmjd, startsec, atsec, nextsec, runsec, runcount;
 double profiletotal, weight;
