@@ -25,6 +25,7 @@
 #include "mk5mode.h"
 #include "configuration.h"
 #include "mode.h"
+#include "visibility.h"
 #include "alert.h"
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
@@ -2279,6 +2280,61 @@ bool Configuration::setPolycoFreqInfo(int configindex)
   delete [] numchannels;
   delete [] used;
   return ok;
+}
+
+bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3])
+{
+  int sync, version;
+  string line;
+
+  input->read((char*)(&sync), 4);
+  if(sync != Visibility::SYNC_WORD)
+  {
+    if(sync != 'BASE')
+      return false;
+
+    //if we get here, must be an old style ascii file
+    getinputline(input, &line, "LINE NUM");
+    baselinenum = atoi(line.c_str());
+    getinputline(input, &line, "MJD");
+    mjd = atoi(line.c_str());
+    getinputline(input, &line, "SECONDS");
+    seconds = atof(line.c_str());
+    getinputline(input, &line, "CONFIG INDEX");
+    configindex = atoi(line.c_str());
+    getinputline(input, &line, "SOURCE INDEX");
+    sourceindex = atoi(line.c_str());
+    getinputline(input, &line, "FREQ INDEX");
+    freqindex = atoi(line.c_str());
+    getinputline(input, &line, "POLARISATION PAIR");
+    polpair[0] = line.at(0);
+    polpair[1] = line.at(1);
+    getinputline(input, &line, "PULSAR BIN");
+    pulsarbin = atoi(line.c_str());
+    getinputline(input, &line, "FLAGGED");
+    getinputline(input, &line, "DATA WEIGHT");
+    dataweight = atof(line.c_str());
+    getinputline(input, &line, "U (METRES)");
+    uvw[0] = atof(line.c_str());
+    getinputline(input, &line, "V (METRES)");
+    uvw[1] = atof(line.c_str());
+    getinputline(input, &line, "W (METRES)");
+    uvw[2] = atof(line.c_str());
+    return true;
+  }
+  input->read((char*)(&version), 4);
+  if(version != Visibility::BINARY_HEADER_VERSION)
+    return false;
+  input->read((char*)(&baselinenum), 4);
+  input->read((char*)(&mjd), 4);
+  input->read((char*)(&seconds), 8);
+  input->read((char*)(&configindex), 4);
+  input->read((char*)(&sourceindex), 4);
+  input->read((char*)(&freqindex), 4);
+  input->read(polpair, 2);
+  input->read((char*)(&pulsarbin), 4);
+  input->read((char*)(&dataweight), 8);
+  input->read((char*)(uvw), 3*8);
 }
 
 void Configuration::makeFortranString(string line, int length, char * destination)

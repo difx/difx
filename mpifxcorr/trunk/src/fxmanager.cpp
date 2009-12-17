@@ -59,7 +59,8 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitorport(port)
 {
   bool startskip;
-  int perr;
+  int perr, minchans, confresultbytes, todiskbufferlen;
+  double headerbloatfactor;
   const string * polnames;
 
   estimatedbytes = 0;
@@ -111,6 +112,24 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
   resultlength = config->getMaxCoreResultLength();
   resultbuffer = vectorAlloc_cf32(resultlength);
   estimatedbytes += resultlength*8;
+
+  todiskbufferlen = resultlength*8;
+  for(int i=0;i<config->getNumConfigs();i++)
+  {
+    confresultbytes = config->getCoreResultLength(i)*8;
+    minchans = 999999;
+    for(int j=0;j<config->getFreqTableLength();j++)
+    {
+      if(config->isFrequencyUsed(i,j) && config->getFNumChannels(j) < minchans)
+        minchans = config->getFNumChannels(j);
+    }
+    headerbloatfactor = 1.0 + ((double)(Visibility::HEADER_BYTES))/(minchans*8);
+    if(confresultbytes*headerbloatfactor > todiskbufferlen)
+      todiskbufferlen = int(1.02*confresultbytes*headerbloatfactor); //a little extra margin to be sure
+  }
+
+  todiskbuffer = (char*)vectorAlloc_u8(todiskbufferlen);
+  estimatedbytes += todiskbufferlen;
   datastreamids = new int[numdatastreams];
   coreids = new int[numcores];
   corecounts = new int[numcores];
@@ -148,7 +167,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     polnames = LINEAR_POL_NAMES;
   for(int i=0;i<config->getVisBufferLength();i++)
   {
-    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), executetimeseconds, initscan, initsec, initns, polnames, monitor, monitorport, hostname, &mon_socket, monitor_skip);
+    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), todiskbuffer, todiskbufferlen, executetimeseconds, initscan, initsec, initns, polnames, monitor, monitorport, hostname, &mon_socket, monitor_skip);
     pthread_mutex_init(&(bufferlock[i]), NULL);
     islocked[i] = false;
     if(!visbuffer[i]->configuredOK()) { //problem with finding a polyco, probably
@@ -202,6 +221,7 @@ FxManager::~FxManager()
   delete [] datastreamids;
   delete [] coreids;
   delete [] extrareceived;
+  vectorFree(todiskbuffer);
   vectorFree(resultbuffer);
   for(int i=0;i<config->getVisBufferLength();i++)
     delete visbuffer[i];

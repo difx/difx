@@ -142,6 +142,7 @@ private:
   char * hostname;
   int monitorport, mon_socket;
   cf32 * resultbuffer;
+  char * todiskbuffer;
   Visibility ** visbuffer;
   pthread_mutex_t * bufferlock;
   bool * islocked;

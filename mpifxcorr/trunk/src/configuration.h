@@ -433,6 +433,9 @@ public:
   */
   bool stationUsed(int telescopeindex);
 
+  /// Utility function used to read header info for a difx output file record
+  bool fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3]);
+
  /**
   * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from

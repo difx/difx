@@ -41,10 +41,10 @@
 #include "alert.h"
 monsockStatusType Visibility::monsockStatus;
 
-Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, int scan, int scanstartsec, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip)
-  : config(conf), visID(id), numvisibilities(numvis), currentscan(scan), executeseconds(eseconds), currentstartseconds(scanstartsec), currentstartns(startns), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
+Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip)
+  : config(conf), visID(id), numvisibilities(numvis), todiskbuffer(dbuffer), todiskbufferlength(dbufferlen), currentscan(scan), executeseconds(eseconds), currentstartseconds(scanstartsec), currentstartns(startns), polnames(pnames), monitor(mon), portnum(port), hostname(hname), mon_socket(sock), monitor_skip(monskip)
 {
-  int status;
+  int status, binloop;
 
   //cverbose << startl << "About to create visibility " << id << "/" << numvis << endl;
   estimatedbytes = 0;
@@ -76,6 +76,17 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, int eseconds, i
   experseconds = config->getStartSeconds();
   offsetns = 0;
   changeConfig(currentconfigindex);
+  maxfiles = 1;
+  for(int i=0;i<model->getNumScans();i++)
+  {
+    binloop = 1;
+    if(config->pulsarBinOn(config->getScanConfigIndex(i)) && !config->scrunchOutputOn(config->getScanConfigIndex(i)))
+      binloop = config->getNumPulsarBins(config->getScanConfigIndex(i));
+    if(model->getNumPhaseCentres(i)*binloop > maxfiles)
+      maxfiles = model->getNumPhaseCentres(i)*binloop;
+  }
+  todiskmemptrs = new int[maxfiles];
+  estimatedbytes += maxfiles*4;
 
   //set up the initial time period this Visibility will be responsible for
   offsetns = offsetns + offsetnsperintegration;
@@ -823,7 +834,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   char pcalstr[256];
   int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
   int year, month, day, startyearmjd, dummyseconds;
-  int ant1index, ant2index, sourceindex, baselinenumber;
+  int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount;
   double scanoffsetsecs, pcaldoy, cablecaldelay, tonefreq;
   bool modelok;
   double buvw[3]; //the u,v and w for this baseline at this time
@@ -839,6 +850,12 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   else
     binloop = 1;
 
+  numfiles = binloop*model->getNumPhaseCentres(currentscan);
+  for(int f=0;f<numfiles;f++)
+  {
+    todiskmemptrs[f] = f*(todiskbufferlength/numfiles);
+  }
+
   //work out the time of this integration
   dumpmjd = expermjd + (experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds)/86400;
   dumpseconds = double((experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds)%86400) + ((double)currentstartns)/1000000000.0 + config->getIntTime(currentconfigindex)/2.0;
@@ -853,6 +870,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       resultindex = config->getCoreResultBaselineOffset(currentconfigindex, freqindex, i);
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
       numpolproducts = config->getBNumPolProducts(currentconfigindex, i, j);
+      filecount = 0;
       for(int s=0;s<model->getNumPhaseCentres(currentscan);s++)
       {
         //get the source-specific data
@@ -865,7 +883,6 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
           csevere << startl << "Could not calculate the UVW for this integration!!!" << endl;
         for(int b=0;b<binloop;b++)
         {
-          sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, s, b);
           for(int k=0;k<numpolproducts;k++) 
           {
             config->getBPolPair(currentconfigindex, i, j, k, polpair);
@@ -874,25 +891,38 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
             if(baselineweights[i][j][b][k] > 0.0)
             {
               //cout << "About to write out baseline[" << i << "][" << s << "][" << k << "] from resultindex " << resultindex << ", whose 6th vis is " << results[resultindex+6].re << " + " << results[resultindex+6].im << " i" << endl;
-              output.open(filename, ios::app);
-              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, baselineweights[i][j][b][k], buvw);
+              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, baselineweights[i][j][b][k], buvw, filecount);
 
               //close, reopen in binary and write the binary data, then close again
-              output.close();
-              output.open(filename, ios::app|ios::binary);
               //For both USB and LSB data, the Nyquist channel has already been excised by Core. In
               //the case of correlating USB with LSB data, the first datastream defines which is the 
               //Nyquist channels.  In any case, the numchannels that are written out represent the
               //the valid part of the, and run from lowest frequency to highest frequency.  For USB
               //data, the first channel is the DC - for LSB data, the last channel is the DC
-              output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
-              output.close();
+              //output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
+              memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), &(results[resultindex]), freqchannels*sizeof(cf32));
+              todiskmemptrs[filecount] += freqchannels*sizeof(cf32);
             }
 
             resultindex += freqchannels;
           }
+          filecount++;
         }
       }
+    }
+  }
+
+  //now write all the different files out to disk, one hit per file
+  filecount = 0;
+  for(int s=0;s<model->getNumPhaseCentres(currentscan);s++)
+  {
+    for(int b=0;b<binloop;b++)
+    {
+      sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, s, b);
+      output.open(filename, ios::app);
+      output.write(&(todiskbuffer[filecount*(todiskbufferlength/numfiles)]), todiskmemptrs[filecount]-filecount*(todiskbufferlength/numfiles));
+      output.close();
+      filecount++;
     }
   }
 
@@ -900,7 +930,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
     sourceindex = model->getPhaseCentreSourceIndex(currentscan, 0);
   else
     sourceindex = model->getPointingCentreSourceIndex(currentscan);
-  sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, 0, 0);
+  todiskmemptrs[0] = 0;
 
   //now each autocorrelation visibility point if necessary
   if(config->writeAutoCorrs(currentconfigindex))
@@ -930,15 +960,13 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
                 polpair[1] = polpair[0];
               else
                 polpair[1] = config->getOppositePol(polpair[0]);
-              output.open(filename, ios::app);
-              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, 0, 0, autocorrweights[i][j][k], buvw);
-              output.close();
+              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, 0, 0, autocorrweights[i][j][k], buvw, 0);
 
               //open, write the binary data and close
-              output.open(filename, ios::app|ios::binary);
               //see baseline writing section for description of treatment of USB/LSB data and the Nyquist channel
-              output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
-              output.close();
+              //output.write((char*)(&(results[resultindex])), freqchannels*sizeof(cf32));
+              memcpy(&(todiskbuffer[todiskmemptrs[0]]), &(results[resultindex]), freqchannels*sizeof(cf32));
+              todiskmemptrs[0] += freqchannels*sizeof(cf32);
             }
             resultindex += freqchannels;
           }
@@ -946,6 +974,12 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       }
     }
   }
+
+  //write out the autocorrelations, all in one hit
+  sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, 0, 0);
+  output.open(filename, ios::app);
+  output.write(todiskbuffer, todiskmemptrs[0]);
+  output.close();
 
   //now each pcal (if necessary)
   cablecaldelay = 0.0;
@@ -1044,9 +1078,9 @@ void Visibility::multicastweights()
 } 
 
 
-void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3])
+void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd, double dumpseconds, int configindex, int sourceindex, int freqindex, const char polproduct[3], int pulsarbin, int flag, float weight, double buvw[3], int filecount)
 {
-  *output << setprecision(15);
+  /* *output << setprecision(15);
   *output << "BASELINE NUM:       " << baselinenum << endl;
   *output << "MJD:                " << dumpmjd << endl;
   *output << "SECONDS:            " << dumpseconds << endl;
@@ -1060,6 +1094,68 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
   *output << "U (METRES):         " << buvw[0] << endl;
   *output << "V (METRES):         " << buvw[1] << endl;
   *output << "W (METRES):         " << buvw[2] << endl;
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "BASELINE NUM:       %d\n", baselinenum);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "MJD:                %d\n", dumpmjd);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "SECONDS:            %15.9f\n", dumpseconds);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "CONFIG INDEX:       %d\n", configindex);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "SOURCE INDEX:       %d\n", sourceindex);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "FREQ INDEX:         %d\n", freqindex);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "POLARISATION PAIR:  %c%c\n", polproduct[0], polproduct[1]);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "PULSAR BIN:         %d\n", pulsarbin);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "FLAGGED:            %d\n", flag);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "DATA WEIGHT:        %.9f\n", weight);
+  todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  if(baselinenum % 257 > 0)
+  {
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "U (METRES):         %.9f\n", buvw[0]);
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "V (METRES):         %.9f\n", buvw[1]);
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "W (METRES):         %.9f\n", buvw[2]);
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  }
+  else
+  {
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "U (METRES):         0.0\n");
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "V (METRES):         0.0\n");
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+    sprintf(&(todiskbuffer[todiskmemptrs[filecount]]), "W (METRES):         0.0\n");
+    todiskmemptrs[filecount] += strlen(&(todiskbuffer[todiskmemptrs[filecount]]));
+  }*/
+  *((unsigned int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = SYNC_WORD;
+  todiskmemptrs[filecount] += 4;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = BINARY_HEADER_VERSION;
+  todiskmemptrs[filecount] += 4;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = baselinenum;
+  todiskmemptrs[filecount] += 4;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = dumpmjd;
+  todiskmemptrs[filecount] += 4;
+  *((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = dumpseconds;
+  todiskmemptrs[filecount] += 8;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = configindex;
+  todiskmemptrs[filecount] += 4;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = sourceindex;
+  todiskmemptrs[filecount] += 4;
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = freqindex;
+  todiskmemptrs[filecount] += 4;
+  todiskbuffer[todiskmemptrs[filecount]++] = polproduct[0];
+  todiskbuffer[todiskmemptrs[filecount]++] = polproduct[1];
+  *((int*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = pulsarbin;
+  todiskmemptrs[filecount] += 4;
+  *((double*)(&(todiskbuffer[todiskmemptrs[filecount]]))) = weight;
+  todiskmemptrs[filecount] += 8;
+  memcpy(&(todiskbuffer[todiskmemptrs[filecount]]), buvw, 3*8);
+  todiskmemptrs[filecount] += 3*8;
 }
 
 void Visibility::changeConfig(int configindex)
