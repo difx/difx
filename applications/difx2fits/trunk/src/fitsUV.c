@@ -379,8 +379,10 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	int rows[N_DIFX_ROWS];
 	int i, i1, v, N, index;
 	int a1, a2;
-	int bl, scanId;
-	double mjd, iat, dt, dt2;
+	int bl, scanId, binhdrversion, headerconfindex, intmjd;
+	double mjd, iat, dt, dt2, weight;
+	double uvw[3];
+	char polpair[3];
 	int changed = 0;
 	int nFloat, readSize;
 	char line[100];
@@ -391,56 +393,114 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	const DifxPolyModel *im1, *im2;
 	int terms1, terms2;
 	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
-	int bin, srcindex;
+	int bin, srcindex, sync;
 	char *rv;
 
 	//printf("About to try and read another visibility\n");
 	resetDifxParameters(dv->dp);
 
-	for(i = 0; i < 13; i++)
+	//first of all, figure out what kind of header we are dealing with
+	v = fread(&sync, sizeof(int), 1, dv->in);
+	if(v != 1)
 	{
-		rv = fgets(line, 99, dv->in);
-		if(!rv)
+		v = DifxVisNextFile(dv);
+		if(v < 0)
 		{
-			/* EOF should not happen in middle of text */
-			if(i != 0)
+			return NEXT_FILE_ERROR;
+		}
+                v = fread(&(sync), sizeof(int), 1, dv->in);
+	}
+	if(sync == 'BASE') //old style ascii header
+	{
+		line[0] = 'B';
+		line[1] = 'A';
+		line[2] = 'S';
+		line[3] = 'E';
+		rv = fgets(line+4, 95, dv->in);
+		DifxParametersaddrow(dv->dp, line);
+		for(i = 1; i < 13; i++)
+		{
+			rv = fgets(line, 99, dv->in);
+			if(!rv)
 			{
+				/* EOF should not happen in middle of text */
 				return HEADER_READ_ERROR;
 			}
-			v = DifxVisNextFile(dv);
-			if(v < 0)
-			{
-				return NEXT_FILE_ERROR;
-			}
-			rv = fgets(line, 99, dv->in);
+			DifxParametersaddrow(dv->dp, line);
 		}
-		DifxParametersaddrow(dv->dp, line);
-	}
+		/* parse the text header */
+		if(dv->D->inputFileVersion == 0)
+		{
+			N = DifxParametersbatchfind(dv->dp, 0, difxKeys, 
+				N_DIFX_ROWS, rows);
+		}
+		else
+		{
+			N = DifxParametersbatchfind(dv->dp, 0, difxKeysOrig, 
+				N_DIFX_ROWS, rows);
+		}
+		if(N < N_DIFX_ROWS)
+		{
+			printf("ERROR: N=%d < N_DIFX_ROWS=%d\n", N, N_DIFX_ROWS);
+			return HEADER_READ_ERROR;
+		}
 
-	/* parse the text header */
-	if(dv->D->inputFileVersion == 0)
-	{
-		N = DifxParametersbatchfind(dv->dp, 0, difxKeys, 
-			N_DIFX_ROWS, rows);
+		bl           = atoi(DifxParametersvalue(dv->dp, rows[0]));
+		mjd          = atoi(DifxParametersvalue(dv->dp, rows[1]));
+		iat          = atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
+		srcindex     = atoi(DifxParametersvalue(dv->dp, rows[4]));
+		freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
+		polpair[0]   = DifxParametersvalue(dv->dp, rows[6])[0];
+		polpair[1]   = DifxParametersvalue(dv->dp, rows[6])[1];
+		polpair[2]   = 0;
+		bin          = atoi(DifxParametersvalue(dv->dp, rows[7]));
+		weight       = atof(DifxParametersvalue(dv->dp, rows[8]));
+		uvw[0]       = atof(DifxParametersvalue(dv->dp, rows[9]));
+		uvw[1]       = atof(DifxParametersvalue(dv->dp, rows[10]));
+		uvw[2]       = atof(DifxParametersvalue(dv->dp, rows[11]));
+		if(dv->D->inputFileVersion == 1) //incredibly old file, no weight info
+		{
+			weight = 1.0;
+		}
+		//printf("Baseline is %s, seconds is %s, srcindex is %s\n", DifxParametersvalue(dv->dp, rows[0]), DifxParametersvalue(dv->dp, rows[2]), DifxParametersvalue(dv->dp, rows[4]));
 	}
-	else
+	else //new style binary header
 	{
-		N = DifxParametersbatchfind(dv->dp, 0, difxKeysOrig, 
-			N_DIFX_ROWS, rows);
+		v = fread(&binhdrversion, sizeof(int), 1, dv->in);
+		if(binhdrversion == 1) //new style binary header
+		{
+			fread(&bl, sizeof(int), 1, dv->in);
+			fread(&intmjd, sizeof(int), 1, dv->in);
+			mjd = intmjd;
+			fread(&iat, sizeof(double), 1, dv->in);
+			iat /= 86400.0;
+			fread(&headerconfindex, sizeof(int), 1, dv->in);
+			fread(&srcindex, sizeof(int), 1, dv->in);
+			fread(&freqNum, sizeof(int), 1, dv->in);
+			fread(polpair, 1, 2, dv->in);
+			polpair[2] = 0;
+			fread(&bin, sizeof(int), 1, dv->in);
+			fread(&weight, sizeof(double), 1, dv->in);
+			v = fread(uvw, sizeof(double), 3, dv->in);
+			//printf("bl was %d\n", bl);
+			//printf("mjd was %f\n", mjd);
+			//printf("iat was %f\n", iat);
+			//printf("polpair was %s\n", polpair);
+			//printf("weight was %f\n", weight);
+			//printf("uvw was %f, %f, %f\n", uvw[0], uvw[1], uvw[2]);
+                        if(v < 3)
+                        {
+				fprintf(stderr, "Error parsing header - got a return val of %d when reading uvw\n", v);
+                                return HEADER_READ_ERROR;;
+                        }
+                }
+                else //dunno what to do
+                {
+                        fprintf(stderr, "Error parsing header - got a sync of %x and version of %d\n",
+                                sync, binhdrversion);
+                        return -1;
+                }
 	}
-	if(N < N_DIFX_ROWS)
-	{
-		printf("ERROR: N=%d < N_DIFX_ROWS=%d\n", N, N_DIFX_ROWS);
-		return HEADER_READ_ERROR;
-	}
-
-	bl           = atoi(DifxParametersvalue(dv->dp, rows[0]));
-	mjd          = atoi(DifxParametersvalue(dv->dp, rows[1]));
-	iat          = atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
-	freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
-	bin          = atoi(DifxParametersvalue(dv->dp, rows[7]));
-	srcindex     = atoi(DifxParametersvalue(dv->dp, rows[4]));
-	//printf("Baseline is %s, seconds is %s, srcindex is %s\n", DifxParametersvalue(dv->dp, rows[0]), DifxParametersvalue(dv->dp, rows[2]), DifxParametersvalue(dv->dp, rows[4]));
 
 	/* if chan weights are written the data volume is 3/2 as large */
 	/* for now, force nFloat = 2 (one weight for entire vis record) */
@@ -558,17 +618,10 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	dv->sourceId = scan->phsCentreSrcs[phasecentre];
 	dv->freqId = config->freqId;
 	dv->bandId = config->baselineFreq2IF[aa1][aa2][freqNum];
-	dv->polId  = getPolProdId(dv, DifxParametersvalue(dv->dp, rows[6]));
+	dv->polId  = getPolProdId(dv, polpair);
 
 	/* stash the weight for later incorporation into a record */
-	if(dv->D->inputFileVersion == 0)
-	{
-		dv->recweight = atof(DifxParametersvalue(dv->dp, rows[8]));
-	}
-	else
-	{
-		dv->recweight = 1.0;
-	}
+	dv->recweight = weight;
 
 	if(bl != dv->baseline || fabs((mjd-dv->mjd) + (iat-dv->iat))  > 1.0/86400000.0)
 	{
@@ -580,9 +633,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		index = dv->freqId + dv->nFreq*dv->polId;
 
 		/* swap phase/uvw for FITS-IDI conformance */
-		dv->U = -atof(DifxParametersvalue(dv->dp, rows[9]));
-		dv->V = -atof(DifxParametersvalue(dv->dp, rows[10]));
-		dv->W = -atof(DifxParametersvalue(dv->dp, rows[11]));
+		dv->U = -uvw[0];
+		dv->V = -uvw[1];
+		dv->W = -uvw[2];
 
 		/* recompute from polynomials if possible */
 		if(scan->im)
