@@ -42,6 +42,7 @@ public:
 	virtual void initialiseFile(int configindex, int fileindex);
 	virtual void openfile(int configindex, int fileindex);
 	virtual void loopfileread();
+	virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
 
 protected:
 	void moduleToMemory(int buffersegment);
@@ -67,6 +68,7 @@ private:
 	double lastrate;
 	int nrate;
 	int nError;
+	bool nomoredata;
 };
 
 #endif

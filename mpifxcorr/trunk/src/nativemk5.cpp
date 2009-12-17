@@ -123,6 +123,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	invalidstart = 0;
 	newscan = 0;
 	lastrate = 0.0;
+	nomoredata = false;
 	nrate = 0;
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
 }
@@ -204,6 +205,36 @@ NativeMk5DataStream::~NativeMk5DataStream()
 		sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
 		XLRClose(xlrDevice);
 	}
+}
+
+int NativeMk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
+{
+	static int last_offsetsec = -1;
+	int r;
+	
+	// call parent class equivalent function and store return value
+	r = Mk5DataStream::calculateControlParams(scan, offsetsec, offsetns);
+
+	// check to see if we should send a status update
+	if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] == Mode::INVALID_SUBINT)
+	{
+		// Every second (of data time) send a reminder to the operator
+		if(last_offsetsec > -1 && offsetsec != last_offsetsec)
+		{
+			double mjd = corrstartday + (corrstartseconds+offsetsec)/86400.0;
+			
+			// NO DATA implies that things are still good, but there is no data to be sent.
+			sendMark5Status(MARK5_STATE_NODATA, 0, 0, mjd, 0.0);
+		}
+		last_offsetsec = offsetsec;
+	}
+	else  // set last value to indicate that this interval contained data.
+	{
+		last_offsetsec = -1;
+	}
+
+	// return parent class equivalent function return value
+	return r;
 }
 
 /* Here "File" is VSN */
@@ -297,6 +328,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
+			nomoredata = true;
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
 			return;
 		}
@@ -321,6 +353,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
+			nomoredata = true;
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
 			return;
 		}
@@ -606,7 +639,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	lastval = buf[bytes/4-1];
 
 	// Check for validity
-	mark5stream->frame = (uint8_t *)data;
+	mark5stream->frame = (unsigned char *)data;
 	mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
@@ -827,6 +860,12 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 	int v = 0;
 	S_BANKSTATUS A, B;
 	XLR_RETURN_CODE xlrRC;
+
+	// If there really is no more data, override a simple NODATA with a more precise response
+	if(nomoredata == true && state == MARK5_STATE_NODATA)
+	{
+		state = MARK5_STATE_NOMOREDATA;
+	}
 
 	mk5status.state = state;
 	mk5status.status = 0;

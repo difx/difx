@@ -40,3 +40,8 @@ void NativeMk5DataStream::loopfileread()
 void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
 }
+
+int NativeMk5DataStream::calculateControlParams(int offsetsec, int offsetns)
+{
+	return -1;
+}
