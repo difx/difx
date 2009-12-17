@@ -78,6 +78,8 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 
 	vis->nchan = nchan;
 	vis->visnum = 0;
+	vis->headerversion = 1; //default to new style
+	vis->polpair[2] = 0;
 
 	return vis;
 }
@@ -108,17 +110,79 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 	char line[100];
 	char *ptr;
 
-	/* reset the parameter list */
-	resetDifxParameters(vis->params);
-
-	for(i = 0; i < 13; i++)
+	/* reset the parameter list, if needed */
+        if(vis->headerversion < 1)
 	{
-		ptr = fgets(line, 99, vis->infile);
+		resetDifxParameters(vis->params);
+	}
+
+	v = fread(&(vis->sync), sizeof(int), 1, vis->infile);
+        if(vis->sync == 'BASE') //old style ascii header
+	{
+		line[0] = 'B';
+		line[1] = 'A';
+		line[2] = 'S';
+		line[3] = 'E';
+		ptr = fgets(line+4, 95, vis->infile);
 		if(ptr == 0)
 		{
 			return -1;
 		}
 		DifxParametersaddrow(vis->params, line);
+		for(i = 1; i < 13; i++)
+		{
+			ptr = fgets(line, 99, vis->infile);
+			if(ptr == 0)
+			{
+				return -1;
+			}
+			DifxParametersaddrow(vis->params, line);
+		}
+                vis->baseline = atoi(vis->params->rows[0].value);
+		vis->mjd = atoi(vis->params->rows[1].value);
+		vis->seconds = atof(vis->params->rows[2].value);
+		vis->configindex = atoi(vis->params->rows[3].value);
+		vis->sourceindex = atoi(vis->params->rows[4].value);
+                vis->freqindex = atoi(vis->params->rows[5].value);
+                vis->polpair[0] = vis->params->rows[6].value[0];
+		vis->polpair[1] = vis->params->rows[6].value[1];
+		vis->pulsarbin = atoi(vis->params->rows[7].value);
+		vis->dataweight = atof(vis->params->rows[9].value);
+		vis->uvw[0] = atof(vis->params->rows[10].value);
+		vis->uvw[1] = atof(vis->params->rows[11].value);
+                vis->uvw[2] = atof(vis->params->rows[12].value);
+	}
+	else if (vis->sync == 0xFF00FF00)
+	{
+		v = fread(&(vis->headerversion), sizeof(int), 1, vis->infile);
+		if(vis->headerversion == 1) //new style binary header
+		{
+			v = fread(&(vis->baseline), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->mjd), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->seconds), sizeof(double), 1, vis->infile);
+			v = fread(&(vis->configindex), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->sourceindex), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->freqindex), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->polpair), 1, 2, vis->infile);
+			v = fread(&(vis->pulsarbin), sizeof(int), 1, vis->infile);
+			v = fread(&(vis->dataweight), sizeof(double), 1, vis->infile);
+			v = fread(&(vis->uvw), sizeof(double), 3, vis->infile);
+			if(v < 3)
+			{
+				return -1;
+			}
+		}
+		else //dunno what to do
+		{
+			fprintf(stderr, "Error parsing header - got a sync of %x and version of %d\n", 
+				vis->sync, vis->headerversion);
+			return -1;
+		}
+	}
+	else
+	{
+		fprintf(stderr, "Error parsing header - got a sync of %x\n", vis->sync);
+		return -1;
 	}
 
 	v = fread(vis->visdata, sizeof(cplx32f), vis->nchan, vis->infile);
@@ -135,8 +199,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid, 
 	const char *pol)
 {
-	int bl, fi, v;
-	const char *p;
+	int v;
 
 	for(;;)
 	{
@@ -145,24 +208,21 @@ int DifxVisRecordfindnext(DifxVisRecord *vis, int baseline, int freqid,
 		{
 			return -1;
 		}
-		bl = atoi(vis->params->rows[0].value);
-		fi = atoi(vis->params->rows[5].value);
-		p  = vis->params->rows[6].value;
 #if 0
 		printf("%d %d    %d %d    %s %s\n",
-			baseline, bl,
-			freqid, fi,
-			pol, p);
+			baseline, vis->baseline,
+			freqid, vis->freqindex,
+			pol, vis->polpair);
 #endif
-		if(baseline >= 0 && baseline != bl)
+		if(baseline >= 0 && baseline != vis->baseline)
 		{
 			continue;
 		}
-		if(pol && (strcmp(pol, p) != 0))
+		if(pol && (strcmp(pol, vis->polpair) != 0))
 		{
 			continue;
 		}
-		if(freqid >= 0 && freqid != fi)
+		if(freqid >= 0 && freqid != vis->freqindex)
 		{
 			continue;
 		}

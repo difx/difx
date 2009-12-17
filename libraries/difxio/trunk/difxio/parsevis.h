@@ -52,6 +52,18 @@ typedef struct
 	DifxParameters *params;		/* structure containing text params */
 	int nchan;			/* number of channels to expect */
 	int visnum;			/* counter of number of vis */
+	int sync;			/* space to store the sync value */
+        int headerversion;		/* 0=old style, 1=new binary style */
+	int baseline;			/* The baseline number (256*A1 + A2, 1 indexed) */
+	int mjd;			/* The MJD integer day */
+	double seconds;			/* The seconds offset from mjd */
+	int configindex;		/* The index to the configuration table */
+	int sourceindex;		/* The index to the source table */
+	int freqindex;			/* The index to the freq table */
+	char polpair[3];		/* The polarisation pair */
+	int pulsarbin;			/* The pulsar bin */
+	double dataweight;		/* The fractional data weight */
+	double uvw[3];			/* The u,v,w values in metres */
 	cplx32f *visdata;		/* pointer to nchan complex values (2x float) */
 } DifxVisRecord;
 
