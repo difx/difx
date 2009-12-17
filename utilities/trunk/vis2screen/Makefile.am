@@ -1,5 +1,5 @@
 bin_PROGRAMS = printDiFX RPFitsReader
-dist_bin_SCRIPTS = diffDiFX.py
+dist_bin_SCRIPTS = diffDiFX.py plotDiFX.py
 
 AM_CXXFLAGS = $(DIFXMESSAGE_CFLAGS) $(FXCORR_CFLAGS) $(IPP_CFLAGS) 
 printDiFX_SOURCES = printDiFX.cpp
