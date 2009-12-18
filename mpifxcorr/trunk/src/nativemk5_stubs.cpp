@@ -41,7 +41,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 {
 }
 
-int NativeMk5DataStream::calculateControlParams(int offsetsec, int offsetns)
+int NativeMk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
 	return -1;
 }
