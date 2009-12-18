@@ -628,8 +628,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   int resultindex, cindex, ds1index, ds2index, binloop;
   int xcblockcount, maxxcblocks, xcshiftcount;
   int acblockcount, maxacblocks, acshiftcount;
-  int freqindex, freqchannels, channelinc;
-  int xmacstridelength, xmacpasses, xmacstart, destbin, destchan, localfreqindex, parentfreqindex;
+  int freqchannels;
+  int xmacstridelength, xmacpasses, xmacstart, destbin, destchan, localfreqindex;
   int outputoffset, input1offset, input2offset, xmacmullength;
   int dsfreqindex;
   char papol;
@@ -1709,7 +1709,7 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
 
 void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newconfigindex, int oldconfigindex, int threadid)
 {
-  int localfreqindex, numstrides, stridelen, status, binloop;
+  int localfreqindex, numstrides, binloop;
 
   if(oldconfigindex >= 0)
   {
