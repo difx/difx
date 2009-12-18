@@ -18,6 +18,7 @@ int main(int argc, char** argv)
 
   string line;
   char pol[3];
+  pol[2] = 0;
   double uvw[3];
   int baseline, mjd, confindex, srcindex, freqindex, pbin, flag, numchannels;
   double u,v,w,weight,sec;
