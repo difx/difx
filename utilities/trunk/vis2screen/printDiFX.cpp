@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   pol[2] = 0;
   double uvw[3];
   int baseline, mjd, confindex, srcindex, freqindex, pbin, flag, numchannels;
-  double u,v,w,weight,sec;
+  double weight,sec;
   string filename = argv[1];
   int sepindex = filename.find_last_of('.');
   int numvispoints = atoi(filename.substr(sepindex+1).c_str());
@@ -40,6 +40,6 @@ int main(int argc, char** argv)
     numchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
     difxin.read((char*)visibilities, numchannels*2*sizeof(float));
 
-    cout << "For baseline " << baseline << ", at time " << mjd << "/" << sec << ", the source was " << srcindex << " and the config was " << confindex << ", with uvw (" << u << "," << v << "," << w << ").  For freq " << freqindex << ", pol " << pol << ", pulsar bin " << pbin << ", there are " << numchannels << " channels; visibilities[0] = " << visibilities[0] << " + " << visibilities[1] << " i.  The middle visibility is " << visibilities[numchannels] << " + " << visibilities[numchannels + 1] << " i." << ", and the weight was " << weight << endl;
+    cout << "For baseline " << baseline << ", at time " << mjd << "/" << sec << ", the source was " << srcindex << " and the config was " << confindex << ", with uvw (" << uvw[0] << "," << uvw[1] << "," << uvw[2] << ").  For freq " << freqindex << ", pol " << pol << ", pulsar bin " << pbin << ", there are " << numchannels << " channels; visibilities[0] = " << visibilities[0] << " + " << visibilities[1] << " i.  The middle visibility is " << visibilities[numchannels] << " + " << visibilities[numchannels + 1] << " i." << ", and the weight was " << weight << endl;
   }
 }
