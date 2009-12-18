@@ -120,8 +120,8 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     minchans = 999999;
     for(int j=0;j<config->getFreqTableLength();j++)
     {
-      if(config->isFrequencyUsed(i,j) && config->getFNumChannels(j) < minchans)
-        minchans = config->getFNumChannels(j);
+      if(config->isFrequencyUsed(i,j) && config->getFNumChannels(j)/config->getFChannelsToAverage(j) < minchans)
+        minchans = config->getFNumChannels(j)/config->getFChannelsToAverage(j);
     }
     headerbloatfactor = 1.0 + ((double)(Visibility::HEADER_BYTES))/(minchans*8);
     if(confresultbytes*headerbloatfactor > todiskbufferlen)

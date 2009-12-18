@@ -1818,7 +1818,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     {
       //if we are not the first thread, create a copy of the Polyco for our use
       polycos[i] = (threadid==0)?currentpolycos[i]:new Polyco(*currentpolycos[i]);
-      if(threadid == 0)
+      if(threadid != 0)
         threadbytes[threadid] += polycos[i]->getEstimatedBytes();
     }
     //cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
