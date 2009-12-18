@@ -2335,6 +2335,7 @@ bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mj
   input->read((char*)(&pulsarbin), 4);
   input->read((char*)(&dataweight), 8);
   input->read((char*)(uvw), 3*8);
+  return true;
 }
 
 void Configuration::makeFortranString(string line, int length, char * destination)
