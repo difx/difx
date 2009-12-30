@@ -85,9 +85,9 @@ void resetAccumulator(Accumulator *A)
 		A->weightMin[i] = 1000.0;
 		A->weightMax[i] = 0.0;
 		A->weightSum[i] = 0.0;
+		A->nRec[i] = 0;
 	}
 	A->mjdStart = 0;
-	memset(A->nRec, 0, A->nBBC*sizeof(int));
 }
 
 Accumulator *newAccumulatorArray(Sniffer *S, int n)
@@ -738,7 +738,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 				rate);
 
 			fprintf(S->apc, " %4d %6.4f %10.4f %10.6f",
-				specChan,
+				specChan+1,
 				2.0*specAmp/(A->weightSum[bbc]*S->nChan), 
 				specPhase,
 				specRate);
