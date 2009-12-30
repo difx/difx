@@ -576,6 +576,21 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	difxMessageSendDifxAlert("Using realtime playback", DIFX_ALERT_LEVEL_INFO);
+	xlrRC = XLRSetOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		sprintf(message, "Cannot set realtime playback mode");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+		
+		XLRClose(xlrDevice);
+		
+		return -1;
+	}
+
+        xlrRC = XLRSetFillData(xlrDevice, 0x11223344UL);
+
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{

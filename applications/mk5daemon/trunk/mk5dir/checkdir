@@ -266,6 +266,9 @@ def checkFile(module, histogram, verbose=1):
 	if nScan > len(text) - 1:
 		print '%s : Header number of scans is too large: %d > %d' % (module, nScan, len(text) - 1)
 		return 0
+
+	if nScan <= 0:
+		print '%s : No scans on module.  Try rereading the directory?' % module
 	
 	scans = []
 	errors = []
