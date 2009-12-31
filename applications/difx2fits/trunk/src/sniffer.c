@@ -724,7 +724,6 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 			if(A->isLSB[bbc])
 			{
 				phase = -phase;
-				delay = -delay;
 				rate = -rate;
 				specPhase = -specPhase;
 				specChan = S->fft_nx-1-specChan;
