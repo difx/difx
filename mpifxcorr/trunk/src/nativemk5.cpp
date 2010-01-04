@@ -124,6 +124,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	newscan = 0;
 	lastrate = 0.0;
 	nomoredata = false;
+	nfill = ninvalid = ngood = 0;
 	nrate = 0;
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
 }
@@ -200,6 +201,29 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	{
 		delete_mark5_stream(mark5stream);
 	}
+
+	if(ngood == 0 && ninvalid + nfill > 0)
+	{
+		cerror << startl << "All data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << ".  Please consider reading the module directory again and investigating the module health" << endl;
+		sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+		nError++;
+	}
+	else if(ninvalid + nfill > ngood)
+	{
+		cerror << startl << "Most of the data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" << ngood << ".  Please consider  reading the module directory again and investigating the module health" << endl;
+		sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+		nError++;
+	}
+	else if(9*(ninvalid + nfill) >= ngood)
+	{
+		int f = 100*(ninvalid + nfill)/(ninvalid + nfill + ngood);
+		cwarn << startl << f << " percent of the data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" <<     ngood << "." << endl;
+	}
+	else
+	{
+		cinfo << startl << "Data recovery statistics: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" <<     ngood << "." << endl;
+	}
+
 	if(nError == 0)
 	{
 		sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
@@ -262,6 +286,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
         if(fanout < 0)
           MPI_Abort(MPI_COMM_WORLD, 1);
 
+	cinfo << startl << "initialiseFile format=" << formatname << endl;
 	if(mark5stream)
 	{
 		delete_mark5_stream(mark5stream);
@@ -624,6 +649,26 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 			{
 				cinfo << startl << "XLROpen() success!" << endl;
 			}
+
+			xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
+			if(xlrRC != XLR_SUCCESS)
+			{
+				cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
+			}
+
+			xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR);
+			if(xlrRC == XLR_SUCCESS)
+			{
+				xlrRC = XLRSetOption(xlrDevice, SS_OPT_REALTIMEPLAYBACK);
+			}
+			if(xlrRC == XLR_SUCCESS)
+			{
+				xlrRC = XLRSetFillData(xlrDevice, FILL_PATTERN);
+			}
+			if(xlrRC != XLR_SUCCESS)
+			{
+				cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
+			}
 		}
 	}
 
@@ -644,13 +689,15 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
-	if(data[0] == FILL_PATTERN && data[1] == FILL_PATTERN)
+	if( (data[1] == FILL_PATTERN && data[2] == FILL_PATTERN) ||
+	    (data[998] == FILL_PATTERN && data[999] == FILL_PATTERN) )
 	{
 		filltime++;
+		nfill++;
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
-		if((filltime & (filltime-1)) == 0)
+		if(filltime > 5 && (filltime & (filltime-1)) == 0)
 		{
-			cwarn << startl << filltime << " consecutive Mark5 data frames replaced with fill patterns at time" << sec2 << "," << readnanoseconds << endl ;
+			cwarn << startl << filltime << " consecutive Mark5 data frames replaced with fill patterns at time " << sec2 << "," << readnanoseconds << endl ;
 		}
 
 		if(filltime > 1)
@@ -661,6 +708,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	else if((sec % 86400) != sec2 || fabs(ns - readnanoseconds) > 0.5)
 	{
 		invalidtime++;
+		ninvalid++;
 		invalidstart = readpointer;
 		bufferinfo[buffersegment].validbytes = 0;
 		// use Brian Kernighan's bit counting trick to see if invalidtime is a power of 2 
@@ -676,6 +724,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 	else
 	{
+		ngood++;
 		filltime = 0;
 		invalidtime = 0;
 	}
@@ -729,7 +778,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 
 	// Update various counters
-	readnanoseconds += bufferinfo[buffersegment].nsinc;
+	readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
+	readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
 	readseconds += readnanoseconds/1000000000;
 	readnanoseconds %= 1000000000;
         if(readseconds >= model->getScanDuration(readscan)) {
