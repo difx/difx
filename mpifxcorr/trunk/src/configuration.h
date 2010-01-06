@@ -55,7 +55,7 @@ public:
   enum datadomain {TIME, FREQUENCY};
 
   /// Supported types of recorded data format
-  enum dataformat {LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, MARK5B, VDIF, VLBN};
+  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, MARK5B, VDIF, VLBN};
 
   /// Supported sources of data
   enum datasource {UNIXFILE, MK5MODULE, EVLBI};

@@ -616,6 +616,13 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
         cerror << startl << "All LBASTD Modes must have 2 bit sampling - overriding input specification!!!" << endl;
       return new LBAMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 2/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, LBAMode::vsopunpackvalues);
       break;
+    case LBA8BIT:
+      if(stream.numbits != 8) {
+        cerror << startl << "8BIT LBA mode must have 8 bits! aborting" << endl;
+        return NULL;
+      }
+      return new LBA8BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs);
+      break;
     case MKIV:
     case VLBA:
     case VLBN:
@@ -934,8 +941,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = LBASTD;
     else if(line == "LBAVSOP")
       datastreamtable[i].format = LBAVSOP;
-    else if(line == "NZ")
-      datastreamtable[i].format = NZ;
+    else if(line == "LBA8BIT")
+      datastreamtable[i].format = LBA8BIT;
     else if(line == "K5")
       datastreamtable[i].format = K5;
     else if(line == "MKIV")
@@ -951,7 +958,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, NZ, K5, MKIV, VLBA, VLBN, MARK5B and VDIF)" << endl;
+        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B and VDIF)" << endl;
       return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");

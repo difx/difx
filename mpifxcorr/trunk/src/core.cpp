@@ -1804,7 +1804,7 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
   //get the config to create the appropriate Modes for us
   for(int i=0;i<numdatastreams;i++) {
     modes[i] = config->getMode(configindex, i);
-    if(!modes[i]->initialisedOK())
+    if(modes[i] == NULL || !modes[i]->initialisedOK())
       MPI_Abort(MPI_COMM_WORLD, 1);
     threadbytes[threadid] += modes[i]->getEstimatedBytes();
   }

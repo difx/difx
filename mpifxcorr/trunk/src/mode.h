@@ -302,4 +302,18 @@ public:
     static const s16 vsopunpackvalues[];
 };
 
+/**
+ @class LBA8BitMode
+ @brief A mode for 'Bruce' style LBA 8 bit data
+
+ Assumes running on a LITTLE-ENDIAN MACHINE!!!
+ @author Adam Deller
+ */
+class LBA8BitMode : public Mode{
+public:
+  LBA8BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs);
+
+  virtual float unpack(int sampleoffset);
+};
+
 #endif
