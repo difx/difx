@@ -141,7 +141,10 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 {
 	char message[1500];
+	char alertMessageExpanded[600];
 	char body[1200];
+
+	expandEntityRefrences(alertMessageExpanded, alertMessage);
 
 	if(difxMessagePort < 0)
 	{
@@ -164,7 +167,7 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 			  "<severity>%d</severity>"
 			"</difxAlert>",
 
-			alertMessage, 
+			alertMessageExpanded,
 			severity);
 
 		sprintf(message, difxMessageXMLFormat, 
@@ -384,7 +387,7 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	double visMJD, int numdatastreams, float *weight)
 {
 	char message[1500], weightstr[1200];
-	char stateMessageExpanded[400];
+	char stateMessageExpanded[600];
 	char body[700];
 	int i, n;
 	
@@ -427,7 +430,10 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage)
 {
 	char message[1500];
+	char stateMessageExpanded[600];
 	
+	expandEntityRefrences(stateMessageExpanded, stateMessage);
+
 	sprintf(message,
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		"<difxMessage>"
@@ -450,7 +456,7 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 		jobName,
 		difxMessageSequenceNumber++,
 		DifxStateStrings[state],
-		stateMessage);
+		stateMessageExpanded);
 
 	return difxMessageSend(message);
 }
@@ -459,6 +465,9 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
+	char infoMessageExpanded[600];
+
+	expandEntityRefrences(infoMessageExpanded, infoMessage);
 
 	sprintf(body,
 		
@@ -466,7 +475,7 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 		  "<message>%s</message>"
 		"</difxInfo>",
 
-		infoMessage);
+		infoMessageExpanded);
 
 	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_INFO],
@@ -479,6 +488,9 @@ int difxMessageSendDifxCommand(const char *command)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char body[700];
+	char commandExpanded[600];
+
+	expandEntityRefrences(commandExpanded, command);
 
 	sprintf(body,
 		
@@ -486,7 +498,7 @@ int difxMessageSendDifxCommand(const char *command)
 		  "<command>%s</command>"
 		"</difxCommand>",
 
-		command);
+		commandExpanded);
 
 	sprintf(message, difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],

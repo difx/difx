@@ -49,4 +49,8 @@ Version 0.7 20090904
 Add XML type for condition reports
   one document per disk (i.e., 8 per module)
 Test programs for condition document types
-DiFX version 1.5.1
+DiFX version 1.5.1 & 1.5.2
+
+Version 0.8
+~~~~~~~~~~~
+Do better job expanding "entities" in XML formation
