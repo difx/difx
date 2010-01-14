@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009, 2010 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -47,7 +47,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.6";
-const char verdate[] = "20090918";
+const char verdate[] = "20100104";
 
 int verbose = 0;
 int die = 0;
@@ -247,6 +247,16 @@ int main(int argc, char **argv)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		sprintf(message, "Cannot open XLR");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
+		return 0;
+	}
+
+	xlrRC = XLRSetFillData(xlrDevice, 0x11223344UL);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		sprintf(message, "Cannot set XLR fill pattern");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		fprintf(stderr, "Error: %s\n", message);
 

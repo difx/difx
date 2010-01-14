@@ -269,6 +269,7 @@ def checkFile(module, histogram, verbose=1):
 
 	if nScan <= 0:
 		print '%s : No scans on module.  Try rereading the directory?' % module
+		return 0
 	
 	scans = []
 	errors = []

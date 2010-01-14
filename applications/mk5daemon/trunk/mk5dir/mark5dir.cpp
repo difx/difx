@@ -104,12 +104,14 @@ int Mark5BankGet(SSHANDLE *xlrDevice)
 	return b;
 }
 
-/* returns 0 or 1 for bank A or B, or < 0 if module not found */
+/* returns 0 or 1 for bank A or B, or < 0 if module not found or on error */
 int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 {
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	int b = -1;
+	int bank=-1;
+	int i;
 
 	xlrRC = XLRGetBankStatus(*xlrDevice, BANK_A, &bank_stat);
 	if(xlrRC == XLR_SUCCESS)
@@ -117,13 +119,10 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 		if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
 		{
 			b = 0;
-			xlrRC = XLRSelectBank(*xlrDevice, BANK_A);
-			if(xlrRC != XLR_SUCCESS)
-			{
-				b = -2;
-			}
+			bank = BANK_A;
 		}
 	}
+
 	if(b == -1)
 	{
 		xlrRC = XLRGetBankStatus(*xlrDevice, BANK_B, &bank_stat);
@@ -132,22 +131,53 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 			if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
 			{
 				b = 1;
-				xlrRC = XLRSelectBank(*xlrDevice, BANK_B);
-				if(xlrRC != XLR_SUCCESS)
-				{
-					b = -3;
-				}
+				bank = BANK_B;
 			}
 		}
 	}
 
-	/* Close and Open the XLR device after a bank change -- a workaround to 
-	 * a streamstor bug */
-	XLRClose(*xlrDevice);
-	xlrRC = XLROpen(1, xlrDevice);
+	if(bank < 0)
+	{
+		return -1;
+	}
+
+	xlrRC = XLRGetBankStatus(*xlrDevice, bank, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		b = -4;
+		return -4;
+	}
+	if(bank_stat.Selected) // No need to bank switch
+	{
+		return b;
+	}
+
+	xlrRC = XLRSelectBank(*xlrDevice, bank);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		b = -2 - b;
+	}
+	else
+	{
+		sleep(5);
+
+		for(i = 0; i < 100; i++)
+		{
+			xlrRC = XLRGetBankStatus(*xlrDevice, bank, &bank_stat);
+			if(xlrRC != XLR_SUCCESS)
+			{
+				return -4;
+			}
+			if(bank_stat.State == STATE_READY && bank_stat.Selected)
+			{
+				break;
+			}
+			usleep(100000);
+		}
+
+		if(bank_stat.State != STATE_READY || !bank_stat.Selected)
+		{
+			b = -4;
+		}
 	}
 
 	return b;
@@ -232,7 +262,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 	long long wGoodSum=0, wBadSum=0;
 
 	/* allocate a bit more than the minimum needed */
-	bufferlen = 20160*8*10;
+	bufferlen = 20160*8*20;
 
 	bank = Mark5BankGet(xlrDevice);
 	if(bank < 0)
@@ -350,10 +380,36 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 			continue;
 		}
 		
-		if(die)
+		scan->mjd = mf->mjd;
+		scan->sec = mf->sec;
+		n = (mjdref - scan->mjd + 500) / 1000;
+		scan->mjd += n*1000;
+		
+		scan->format      = mf->format;
+		scan->frameoffset = mf->frameoffset;
+		scan->tracks      = mf->ntrack;
+		scan->framespersecond = int(1000000000.0/mf->framens + 0.5);
+		scan->framenuminsecond = int(mf->ns/mf->framens + 0.5);
+		scan->framebytes  = mf->framebytes;
+		scan->duration    = (int)((scan->length - scan->frameoffset)
+			/ scan->framebytes)/(double)(scan->framespersecond);
+		
+		delete_mark5_format(mf);
+/**/
+#if 0
+		mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer+(bufferlen/8), bufferlen));
+	
+		if(!mf)
 		{
-			break;
+			if(callback)
+			{
+				die = callback(i, module->nscans, MARK5_DIR_DECODE_ERROR, data);
+			}
+			scan->format = -1;
+			continue;
 		}
+
+		printf("sec=%d,%d  f=%d,%d  fb=%d,%d  fps=%d,%d  o=%d,%d\n", scan->sec, mf->sec, scan->framenuminsecond, int(mf->ns/mf->framens + 0.5), scan->framebytes, mf->framebytes, scan->framespersecond, int(1000000000.0/mf->framens + 0.5), scan->frameoffset, mf->frameoffset);
 
 		scan->mjd = mf->mjd;
 		scan->sec = mf->sec;
@@ -370,7 +426,8 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 			/ scan->framebytes)/(double)(scan->framespersecond);
 		
 		delete_mark5_format(mf);
-
+#endif
+/**/
 		if(callback)
 		{
 			enum Mark5DirStatus s;

@@ -42,8 +42,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.5";
-const char verdate[] = "20091021";
+const char version[] = "0.6";
+const char verdate[] = "20100104";
 
 int verbose = 0;
 int die = 0;
@@ -497,12 +497,14 @@ int main(int argc, char **argv)
 	char message[1000];
 	struct Mark5Module module;
 	SSHANDLE xlrDevice;
+	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	DifxMessageMk5Status mk5status;
 	char vsn[16] = "";
 	int v;
 	int a, b, i, s, l, nGood, nBad;
 	int scanIndex;
+	int bank = -1;
 	float replacedFrac;
 	int bail = 0;
 	double mjdStart, mjdStop;
@@ -589,8 +591,6 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
-        xlrRC = XLRSetFillData(xlrDevice, 0x11223344UL);
-
 	xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL);
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -600,6 +600,16 @@ int main(int argc, char **argv)
 		
 		XLRClose(xlrDevice);
 		
+		return -1;
+	}
+
+        xlrRC = XLRSetFillData(xlrDevice, 0x11223344UL);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		sprintf(message, "Cannot set XLR fill pattern");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
 		return -1;
 	}
 
@@ -695,24 +705,43 @@ int main(int argc, char **argv)
 
 	if(mk5status.activeBank == 'A')
 	{
-		xlrRC = XLRSelectBank(xlrDevice, BANK_A);
+		bank = BANK_A;
 	}
 	else if(mk5status.activeBank == 'B')
 	{
-		xlrRC = XLRSelectBank(xlrDevice, BANK_B);
+		bank = BANK_B;
 	}
 
-	/* Close and Open the XLR device after a bank change -- a workaround to 
-	 * a streamstor bug */
-	XLRClose(xlrDevice);
-	xlrRC = XLROpen(1, &xlrDevice);
+	if(bank < 0)
+	{
+		sprintf(message, "Cannot figure out which bank to use: '%c' requested.", mk5status.activeBank);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		fprintf(stderr, "Error: %s\n", message);
+
+		return -1;
+	}
+
+	xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		sprintf(message, "Cannot reopen XLR");
+		sprintf(message, "Cannot get bank status");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		fprintf(stderr, "Error: %s\n", message);
 		
 		return -1;
+	}
+	if(!bank_stat.Selected)
+	{
+		xlrRC = XLRSelectBank(xlrDevice, bank);
+		if(xlrRC != XLR_SUCCESS)
+		{
+			sprintf(message, "Cannot set bank");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
+		sleep(5);
 	}
 
 	mk5status.state = MARK5_STATE_COPY;
