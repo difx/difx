@@ -110,7 +110,7 @@ def run(cmd):
             raise RuntimeError, "Error running " + cmd + " in " + os.getcwd()
 
 ###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(dolibtoolize, doautoheader, prefix):
+def auto_compile(dolibtoolize, doautoheader, prefix, dompicxx):
     if reconf or os.system("autoreconf"):
         print "reconfiguring"
         run("aclocal")
@@ -120,7 +120,10 @@ def auto_compile(dolibtoolize, doautoheader, prefix):
         if doautoheader:
             run("autoheader")
         run("automake -a")
-        run("./configure --prefix=" + difxroot)
+        configstring = "./configure --prefix=" + prefix
+        if dompicxx:
+            configstring += " CXX=mpicxx"
+        run(configstring)
     run("make")
     if not noinstall:
         run("make install")
@@ -171,13 +174,16 @@ if gfortran:
 
 ###### Targets ##########################################
 
-libtargets = [["difxio",     difx_version, True,True],
-              ["difxmessage",difx_version, True,True],
-              ["mark5access",difx_version, True,True]]
+libtargets = [["difxio",     difx_version, True,True,False],
+              ["difxmessage",difx_version, True,True,False],
+              ["mark5access",difx_version, True,True,False]]
 
-apptargets = [["calcserver", difx_version, True,False],
-              ["difx2fits",  difx_version, False,True],
-              ["vex2difx",   difx_version, True,True]]
+utiltargets = [["calcif2",   difx_version, False,True,False], 
+               ["pulsar/difx2profile", difx_version, False,True,True]]
+
+apptargets = [["calcserver", difx_version, True,False,False],
+              ["difx2fits",  difx_version, False,True,False],
+              ["vex2difx",   difx_version, True,True,False]]
 
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, False,True])
@@ -252,7 +258,7 @@ if perl:
         run("mv -f libvex." + SHAREDPOSTFIX + " " + libdir)
         run("mv -f libvex.a " + libdir)
     os.chdir("../vexperl")
-    run("perl Makefile.PL PREFIX=" + dirxroot)
+    run("perl Makefile.PL PREFIX=" + difxroot)
     run("make")
     if not noinstall:
         run("make install")
@@ -296,7 +302,7 @@ for libtarget in libtargets:
     print "Building ", libtarget[0]
     print
     os.chdir(libtarget[0]  + libtarget[1])
-    auto_compile(libtarget[2], libtarget[3], difxroot)
+    auto_compile(libtarget[2], libtarget[3], difxroot, libtarget[4])
     os.chdir(thisdir)
 os.chdir(topdir)
 
@@ -309,7 +315,7 @@ for apptarget in apptargets:
     print "Building ", apptarget[0]
     print
     os.chdir(apptarget[0]  + apptarget[1])
-    auto_compile(apptarget[2], apptarget[3], difxroot)
+    auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
     os.chdir(thisdir)
 os.chdir(topdir)
 
@@ -332,6 +338,18 @@ run("make")
 if not noinstall:
     run("make install")
     run("cp -f src/*.h " + incdir)
+os.chdir(topdir)
+
+##### Make standard (autotool'd) utilities ###############
+os.chdir("utilities")
+thisdir = os.getcwd()
+print "DEBUG: Making in ",thisdir
+for utiltarget in utiltargets:
+    print "************************************" 
+    print "Building ", utiltarget[0]
+    os.chdir(utiltarget[0]  + utiltarget[1])
+    auto_compile(utiltarget[2], utiltarget[3], difxroot, utiltarget[4])
+    os.chdir(thisdir)
 os.chdir(topdir)
 
 if (force and not errors == []):
