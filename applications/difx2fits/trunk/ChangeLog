@@ -3,17 +3,16 @@ Version 3.0
   - Copy jobmatrix file
   - rename "makefilts.tmp" to "makefits.tmp"
   - Apply flags properly, even in cases with crazy subarraying
-  - Require difxio 2.12
   - Write file that summarizes jobs that went into FITS
   - Pass full command line option structure to UV writing
   - Normalize calling to all table writing functions
   - Properly populate GATEMODL table
   - Write .jobmatrix file
-  - Require difxio 2.12
   - Write new WEIGHTYP keyword
 * Adds support for multiple phase centres, zoom bands
 * Also bugfixes for freeing memory
 * Requires difxio 3.0
+* Fixes by Olaf Wuchnitz: print format for writing strings to FITS and argument order in memcpy
 
 Version 2.5
 * Require difxio 2.10

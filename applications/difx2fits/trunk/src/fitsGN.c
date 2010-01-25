@@ -405,7 +405,7 @@ int loadGainCurves(GainRow *G)
 		return -1;
 	}
 	
-	memset((char *)&files, sizeof(glob_t), 0);
+	memset((char *)&files, 0, sizeof(glob_t));
 	sprintf(pattern, "%s/*", path);
 	glob(pattern, 0, 0, &files);
 	if(files.gl_pathc == 0)

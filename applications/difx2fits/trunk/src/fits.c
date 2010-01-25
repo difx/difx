@@ -399,15 +399,21 @@ int fitsWriteString
  * RETURNS OK = 0 | ERROR = -1
  */
 {
-    char string[81];
-    char format[30];
-    char card[81];
+	char string[81];
+	char format[30];
+	char card[81];
+	int i;
 
-    sprintf (string, "%-8s= '%-8s'", key, value);
-    sprintf (format, "%%-30s / %%%ds", (int)(strlen(string)) - 77);
-    sprintf (card, format, string, comment);
- 
-    return (fitsWriteData (pFile, 80, card));
+	sprintf(string, "%-8s= '%-8s'", key, value);
+	i = strlen(string);
+	if(i < 30)
+	{
+		i = 30;
+	}
+	sprintf(format, "%%-30s / %%%ds", i-77);
+	sprintf(card, format, string, comment);
+
+	return fitsWriteData(pFile, 80, card);
 }
 
 /*******************************************************************************
