@@ -153,9 +153,9 @@ if not master_tag:
         print "You must have already source'd setup.bash/setup.csh!"
         print "DIFX_VERSION was undefined - aborting compilation"
         raise RuntimeError
-    difx_version = "/"+os.environ.get('DIFX_VERSION')
-    if difx_version != "/trunk":
-        difx_version = "/branches" + difx_version 
+    difx_version = os.environ.get('DIFX_VERSION')
+    if difx_version != "trunk":
+        difx_version = "branches/" + difx_version 
 else:
     difx_version = ''
 
@@ -195,18 +195,18 @@ topdir = os.getcwd()
 if doclean:
     if perl:
         print "**** Cleaning vexlib"
-        os.chdir("libraries/vex"+difx_version+"/vexlib")
+        os.chdir("libraries/vex/"+difx_version+"/vexlib")
         run("make clean")
         os.chdir(topdir)
     if rpfits:
         print "**** Cleaning rpfits"
         if platform == "darwin":
-            os.chdir("libraries/rpfits"+difx_version+"/darwin_x86")
+            os.chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
         else:
             if difxbits == "32":
-                os.chdir("libraries/rpfits"+difx_version+"/linux/")
+                os.chdir("libraries/rpfits/"+difx_version+"/linux/")
             else:
-                os.chdir("libraries/rpfits"+difx_version+"/linux64/")
+                os.chdir("libraries/rpfits/"+difx_version+"/linux64/")
         run("make clean")
         os.chdir(topdir)
     os.chdir("libraries")
@@ -249,7 +249,7 @@ if perl:
     print "************************************"
     print "Building vex"
     print
-    os.chdir("libraries/vex"+difx_version+"/vexlib")
+    os.chdir("libraries/vex/"+difx_version+"/vexlib")
     if platform == "darwin":
         run("make -f Makefile.osx")
     else:
@@ -269,7 +269,7 @@ if perl:
     print "************************************"
     print "Building Astro Perl"
     print
-    os.chdir("libraries/perl"+difx_version+"/Astro")
+    os.chdir("libraries/perl/"+difx_version+"/Astro")
     run("perl Makefile.PL PREFIX="+difxroot)
     run("make")
     if not noinstall:
@@ -281,18 +281,18 @@ if rpfits:
     print "Building rpfits"
     print
     if platform == "darwin":
-        os.chdir("libraries/rpfits"+difx_version+"/darwin_x86")
+        os.chdir("libraries/rpfits/"+difx_version+"/darwin_x86")
     else:
         if difxbits == "32":
-            os.chdir("libraries/rpfits"+difx_version+"/linux/")
+            os.chdir("libraries/rpfits/"+difx_version+"/linux/")
         else:
-            os.chdir("libraries/rpfits"+difx_version+"/linux64/")
+            os.chdir("libraries/rpfits/"+difx_version+"/linux64/")
     run("make")
     if not noinstall:
         run("mv -f librpfits.a " + libdir)
     os.chdir(topdir)
     if not noinstall:
-        run("cp -f libraries/rpfits"+difx_version+"/code/RPFITS.h " + incdir)
+        run("cp -f libraries/rpfits/"+difx_version+"/code/RPFITS.h " + incdir)
 
 ##### Make standard (autotool'd) libraries ###############
 os.chdir("libraries")
@@ -301,7 +301,7 @@ for libtarget in libtargets:
     print "************************************"
     print "Building ", libtarget[0]
     print
-    os.chdir(libtarget[0]  + libtarget[1])
+    os.chdir(libtarget[0]  + '/' + libtarget[1])
     auto_compile(libtarget[2], libtarget[3], difxroot, libtarget[4])
     os.chdir(thisdir)
 os.chdir(topdir)
@@ -314,7 +314,7 @@ for apptarget in apptargets:
     print "************************************"
     print "Building ", apptarget[0]
     print
-    os.chdir(apptarget[0]  + apptarget[1])
+    os.chdir(apptarget[0]  + '/' + apptarget[1])
     auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
     os.chdir(thisdir)
 os.chdir(topdir)
@@ -324,7 +324,7 @@ print "************************************"
 print "Making mpifxcorr"
 print
 
-os.chdir("mpifxcorr" + difx_version)
+os.chdir("mpifxcorr/" + difx_version)
 
 run("aclocal")
 run("autoconf")
@@ -347,7 +347,7 @@ print "DEBUG: Making in ",thisdir
 for utiltarget in utiltargets:
     print "************************************" 
     print "Building ", utiltarget[0]
-    os.chdir(utiltarget[0]  + utiltarget[1])
+    os.chdir(utiltarget[1]  + '/' + utiltarget[0])
     auto_compile(utiltarget[2], utiltarget[3], difxroot, utiltarget[4])
     os.chdir(thisdir)
 os.chdir(topdir)
