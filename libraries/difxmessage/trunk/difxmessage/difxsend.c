@@ -49,6 +49,11 @@ int expandEntityRefrences(char *dest, const char *src)
 			strcpy(dest+j, "&apos;");
 			j += 6;
 		}
+		else if(src[i] < 32)	/* ascii chars < 32 are not allowed */
+		{
+			sprintf(dest+j, "[[%2d]]", src[i]);
+			j += 6;
+		}
 		else
 		{
 			dest[j] = src[i];
@@ -245,6 +250,8 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 		
 		difxMessageSend(message);
 	}
+
+	return 0;
 }
 
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)

@@ -35,7 +35,10 @@ const char Mk5StateStrings[][24] =
 	"PlayStart",
 	"Copy",
 	"Condition",
-	"CondError"
+	"CondError",
+	"Test",
+	"TestWrite",
+	"TestRead"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
