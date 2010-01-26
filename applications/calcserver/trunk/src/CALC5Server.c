@@ -632,7 +632,7 @@ int main (int argc, char *argv[])
 /*++***********************************************************************/
  double d_mathcnst_ (chr1_ptr,chr1_len)
  char     *chr1_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and MATHCNST.H
    Function d_mathcnst is called by the Fortran subroutine GET4 which
@@ -696,8 +696,8 @@ ENVIRONMENT: vxWorks
  char     *chr1_ptr;  /* data table name */
  int      *int2_ptr;  /* data table row number, first = 0 */
  char     *chr2_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr1_ptr */
- long int  chr2_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
+ int       chr2_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and data tables.
    Function d_ftoc is called by the Fortran subroutine GET4 which
@@ -736,8 +736,8 @@ ENVIRONMENT: vxWorks
  char     *chr1_ptr;  /* data table name */
  int      *int2_ptr;  /* data table row number, first = 0 */
  char     *chr2_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr1_ptr */
- long int  chr2_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
+ int       chr2_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and data tables.
    Function mjd_ftoc is called by the Fortran subroutine GET4 which
@@ -777,8 +777,8 @@ double f_ftoc_ (int1_ptr,chr1_ptr,int2_ptr,chr2_ptr,chr1_len,chr2_len)
  char     *chr1_ptr;  /* data table name */
  int      *int2_ptr;  /* data table row number, first = 0 */
  char     *chr2_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr1_ptr */
- long int  chr2_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
+ int       chr2_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and data tables (float).
    Function f_ftoc is called by the Fortran subroutine GET4 which
@@ -825,8 +825,8 @@ int i_ftoc_ (int1_ptr,chr1_ptr,int2_ptr,chr2_ptr,chr1_len,chr2_len)
  char     *chr1_ptr;  /* data table name */
  int      *int2_ptr;  /* data table row number, first = 0 */
  char     *chr2_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr1_ptr */
- long int  chr2_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
+ int       chr2_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and data tables (int).
    Function i_ftoc is called by the Fortran subroutine GETI which
@@ -864,13 +864,13 @@ ENVIRONMENT: vxWorks
 /*++***********************************************************************/
 void c_ftoc_(ret_ptr,ret_len,int1_ptr,chr1_ptr,int2_ptr,chr2_ptr,chr1_len,chr2_len)
  char     *ret_ptr;   /* returned char string ptr */
- long int  ret_len;   /* returned string length */
+ int       ret_len;   /* returned string length */
  int      *int1_ptr;  /* job index number */
  char     *chr1_ptr;  /* data table name */
  int      *int2_ptr;  /* data table row number, first = 0 */
  char     *chr2_ptr;  /* requested variable name */
- long int  chr1_len;  /* string length for chr1_ptr */
- long int  chr2_len;  /* string length for chr2_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
+ int       chr2_len;  /* string length for chr2_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and data tables (char).
    Function c_ftoc is called by the Fortran subroutine GETA which
@@ -914,7 +914,7 @@ ENVIRONMENT: vxWorks
 int n_rows_ (int1_ptr,chr1_ptr,chr1_len)
  int      *int1_ptr;  /* job index number */
  char     *chr1_ptr;  /* data table name */
- long int  chr1_len;  /* string length for chr1_ptr */
+ int       chr1_len;  /* string length for chr1_ptr */
 /*++***********************************************************************
 %% Fortran - C interface between CALC and job table (return num_rows).
    Function n_rows is called by one of the Fortran GETx subroutines which
@@ -1364,7 +1364,7 @@ ENVIRONMENT: VLBA Correlator real-time system running under vxWorks
 */
 void c1write_ (chr1_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
-long chr1_len;		/* length of character string */
+int  chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a single character 
 * string.  It should be called from FORTRAN with the call:
@@ -1387,7 +1387,7 @@ long chr1_len;		/* length of character string */
 */
 void c1log_ (chr1_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
-long chr1_len;		/* length of character string */
+int  chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a single character 
 * string.  It should be called from FORTRAN with the call:
@@ -1413,8 +1413,8 @@ long chr1_len;		/* length of character string */
 void c2write_ (chr1_ptr, chr2_ptr, chr1_len, chr2_len)
 char *chr1_ptr;		/* pointer to first character string to be written */
 char *chr2_ptr;		/* pointer to second character string to be written */
-long chr1_len;		/* length of first character string */
-long chr2_len;		/* length of second character string */
+int  chr1_len;		/* length of first character string */
+int  chr2_len;		/* length of second character string */
 /*
 * This function is a FORTRAN callable subroutine to write two character 
 * strings.  The strings are appended, with no intervening characters.
@@ -1449,8 +1449,8 @@ void cnwrite_ (chr1_ptr, chr2_ptr, p_i2char, chr1_len, chr2_len)
 char *chr1_ptr;		/* pointer to first character string to be written */
 char *chr2_ptr;		/* pointer to second character string to be written */
 short *p_i2char;         /* number of integer*2 characters for CALC */
-long chr1_len;		/* length of first character string */
-long chr2_len;		/* length of second character string */
+int chr1_len;		/* length of first character string */
+int chr2_len;		/* length of second character string */
 /*
 * This function is a FORTRAN callable subroutine to write two character 
 * strings.  The strings are appended, with no intervening characters.
@@ -1487,8 +1487,8 @@ void cfwrite_ (chr1_ptr, chr2_ptr, p_i2char, chr1_len, chr2_len)
 char *chr1_ptr;		/* pointer to first character string to be written */
 char *chr2_ptr;		/* pointer to second character string to be written */
 short *p_i2char;         /* number of char*1 characters for CALC */
-long chr1_len;		/* length of first character string */
-long chr2_len;		/* length of second character string */
+int chr1_len;		/* length of first character string */
+int chr2_len;		/* length of second character string */
 /*
 * This function is a FORTRAN callable subroutine to write two character 
 * strings.  The strings are appended, with no intervening characters.
@@ -1526,8 +1526,8 @@ long chr2_len;		/* length of second character string */
 void c2logerror_ (chr1_ptr, chr2_ptr, chr1_len, chr2_len)
 char *chr1_ptr;		/* pointer to first character string to be written */
 char *chr2_ptr;		/* pointer to second character string to be written */
-long chr1_len;		/* length of first character string */
-long chr2_len;		/* length of second character string */
+int chr1_len;		/* length of first character string */
+int chr2_len;		/* length of second character string */
 /*
 * This function is a FORTRAN callable subroutine to write two character 
 * strings.  The strings are appended, with no intervening characters.
@@ -1565,7 +1565,7 @@ long chr2_len;		/* length of second character string */
 void d1write_ (chr1_ptr,float1_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
 double *float1_ptr;	/* pointer to double precision number to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by a REAL*8 number.  It is intended that the string be a label
@@ -1597,7 +1597,7 @@ void d2write_ (chr1_ptr,float1_ptr,float2_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
 double *float1_ptr;	/* pointer to first double number to write */
 double *float2_ptr;	/* pointer to second double number to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by two REAL*8 numbers.  It is intended that the string be a label
@@ -1632,8 +1632,8 @@ char *chr1_ptr;		/* pointer to character string to write */
 char *chr2_ptr;		/* pointer to character string to write */
 int *int1_ptr;	        /* pointer to first int number to write */
 int *int2_ptr;	        /* pointer to second int number to write */
-long chr1_len;		/* length of character string */
-long chr2_len;		/* length of character string */
+int chr1_len;		/* length of character string */
+int chr2_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write 2 character strings
 * followed by two INTEGER*4 numbers.  It is intended that the string be a label
@@ -1671,7 +1671,7 @@ char *chr1_ptr;		/* pointer to character string to write */
 double *float1_ptr,*float2_ptr,*float3_ptr,*float4_ptr,
        *float5_ptr,*float6_ptr,*float7_ptr,*float8_ptr,
        *float9_ptr,*float10_ptr;  /* pointers to dp numbers to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by ten REAL*8 numbers.  It is intended that the string be a label
@@ -1711,7 +1711,7 @@ long chr1_len;		/* length of character string */
 void r1write_ (chr1_ptr, float1_ptr, chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
 float *float1_ptr;	/* pointer to REAL number to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by a REAL*4 number.  It is intended that the string be a label
@@ -1742,7 +1742,7 @@ long chr1_len;		/* length of character string */
 void i1write_ (chr1_ptr,int1_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
 int *int1_ptr;		/* pointer to integer*4 number to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by a INTEGER*4 number.  It is intended that the string be a label
@@ -1774,7 +1774,7 @@ void i2write_ (chr1_ptr,int1_ptr,int2_ptr,chr1_len)
 char *chr1_ptr;		/* pointer to character string to write */
 int *int1_ptr;	        /* pointer to first int*4number to write */
 int *int2_ptr;	        /* pointer to second int*4 number to write */
-long chr1_len;		/* length of character string */
+int chr1_len;		/* length of character string */
 /*
 * This function is a FORTRAN callable subroutine to write a character string
 * followed by two INTEGER*4 numbers.  It is intended that the string be a label
@@ -1808,8 +1808,8 @@ long chr1_len;		/* length of character string */
 int fstr2cpy_ (chr1_ptr, chr2_ptr, chr1_len, chr2_len)
 char *chr1_ptr;		/* pointer to string to be copied to */
 char *chr2_ptr;		/* pointer to string to be copied from */
-long chr1_len;		/* length of string to be copied to.  IGNORED. */
-long chr2_len;		/* length of string to be copied from.  IGNORED. */
+int chr1_len;		/* length of string to be copied to.  IGNORED. */
+int chr2_len;		/* length of string to be copied from.  IGNORED. */
 /*
 * RETURN 0 always
 *
@@ -1842,8 +1842,8 @@ long chr2_len;		/* length of string to be copied from.  IGNORED. */
 int fstrcmp_ (chr1_ptr,chr2_ptr,chr1_len,chr2_len)
 char *chr1_ptr;		/* pointer to first string of pair to be compared */
 char *chr2_ptr;		/* pointer to second string of pair to be compared */
-long chr1_len;		/* length of first string */
-long chr2_len;		/* length of second string */
+int chr1_len;		/* length of first string */
+int chr2_len;		/* length of second string */
 /*
 * RETURN return of function strcmp()
 *
@@ -1875,8 +1875,8 @@ long chr2_len;		/* length of second string */
 int fstrcpy_ (chr1_ptr, chr2_ptr, chr1_len, chr2_len)
 char  *chr1_ptr;	/* pointer to string to be copied to */
 char  *chr2_ptr;	/* pointer to string to be copied from */
-long int chr1_len;	/* length of string to be copied to */
-long int chr2_len;	/* length of string to be copied from */
+int chr1_len;   	/* length of string to be copied to */
+int chr2_len;   	/* length of string to be copied from */
 /*
 * RETURN 0 always
 *

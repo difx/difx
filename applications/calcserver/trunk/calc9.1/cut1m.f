@@ -706,7 +706,7 @@ C     Check KUT1D for debug output.
       If (Usespline) write(6,8)' yp1, ypn', yp1, ypn
       If (Usespline) write(6,7)' Nspline, ierr4 ', Nspline, ierr4 
       WRITE(6,8)' UT1TAB  ',UT1TAB
-      WRITE(6,8)' tab_len ',tab_len
+      WRITE(6,*)' tab_len ',tab_len
       WRITE(6,7)' IEPOCH  ',IEPOCH
       WRITE(6,7)' MEPOCH  ',MEPOCH
       WRITE(6,7)' MXEPCH  ',MXEPCH
@@ -1319,6 +1319,7 @@ C     Check for debug output.
       IF (KUT1D .ne. 0) THEN
         WRITE(6,'(" Debug output for subroutine UT1MU")')
           WRITE(6,88)' SHORTP, SHORTP_DOT ', SHORTP, SHORTP_DOT
+ 87       FORMAT(A,15I8,/,(9X,15I8))
  88       FORMAT(A,4D25.16/(9X,4D25.16))
  89       FORMAT(A,4I16/(9X,4I16))
           if(Usespline) write(6,88)' XT      ', XT
@@ -1328,7 +1329,7 @@ C     Check for debug output.
      .                              y_spline
           if(Usespline) write(6,88)' ydot,ydot2,ydot3 ', ydot,ydot2,
      .                              ydot3
-          if(Usespline) write(6,88)' Nspline, ierr4 ',Nspline,ierr4
+          if(Usespline) write(6,87)' Nspline, ierr4 ',Nspline,ierr4
           WRITE(6,89)' INT     ',INT
           WRITE(6,88)' T       ',T
           WRITE(6,88)' ATMUT1  ',ATMUT1

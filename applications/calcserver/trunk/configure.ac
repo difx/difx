@@ -1,6 +1,6 @@
 AC_INIT()
 
-AM_INIT_AUTOMAKE(CalcServer, 1.2, no-define)
+AM_INIT_AUTOMAKE(CalcServer, 1.3, no-define)
 
 AC_PROG_CC
 AM_SANITY_CHECK

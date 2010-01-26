@@ -29,7 +29,7 @@ C
 C       write (6,*) "VARNAM = ", VARNAM, ".", JOBNUM
 C
 C  Catch illegal job numbers
-       IF (JOBNUM.LE.O.OR.JOBNUM.GE.9999) THEN 
+       IF (JOBNUM.LE.0.OR.JOBNUM.GE.9999) THEN 
           CALL I1WRITE ('ERROR GET4, JOBNUM = ',JOBNUM)
           IERR = 1
           GO TO 999
@@ -651,7 +651,7 @@ C
 C
 C
 C  Catch illegal job numbers
-       IF (JOBNUM.LE.O.OR.JOBNUM.GE.9999) THEN 
+       IF (JOBNUM.LE.0.OR.JOBNUM.GE.9999) THEN 
           CALL I1WRITE ('ERROR GETI, JOBNUM = ',JOBNUM)
           IERR = 1
           GO TO 999
@@ -777,7 +777,7 @@ C
        LVARB(1,1) = -999
 C
 C  Catch illegal job numbers
-       IF (JOBNUM.LE.O.OR.JOBNUM.GE.9999) THEN 
+       IF (JOBNUM.LE.0.OR.JOBNUM.GE.9999) THEN 
           CALL I1WRITE ('ERROR GETA, JOBNUM = ',JOBNUM)
           IERR = 1
           GO TO 999
