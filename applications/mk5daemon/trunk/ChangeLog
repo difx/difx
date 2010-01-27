@@ -74,3 +74,10 @@ Version 1.2
 * mk5dir -- fix "A" and "B" source designators
 * mk5dir -- specify time range to copy 
 * Improve file ownership/permission issues
+
+Version 2.0
+~~~~~~~~~~~
+* mount and dismount commands (not using DBUS yet)
+* make destination directory before copy
+* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans
+* remove auto-starting of the Mark5A program

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009, 2010 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$ 
+ * $HeadURL$
+ * $LastChangedRevision$ 
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -62,6 +62,37 @@ static void *mk5cpRun(void *ptr)
 	return 0;
 }
 
+static void makedir(Mk5Daemon *D, const char *options)
+{
+	char dir[256];
+	int a=-1;
+	int i, l;
+	char cmd[768], message[1024];
+
+	/* look for a / character and assume that is the output directory */
+	for(i = 0; options[i]; i++)
+	{
+		if(a == -1)
+		{
+			if(options[i] == '/')
+			a = i;
+		}
+		else if(options[i] <= ' ')
+		{
+			break;
+		}
+	}
+
+	l = i-a;
+	strncpy(dir, options+a, l);
+	dir[l] = 0;
+
+	sprintf(cmd, "mkdir -m 777 -p %s", dir);
+	sprintf(message, "Executing: %s\n", cmd);
+	Logger_logData(D->log, message);
+	system(cmd);
+}
+
 void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 {
 	struct mk5cpParams *P;
@@ -72,6 +103,9 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 	{
 		return;
 	}
+
+	/* Make sure output directory exists and has permissions */
+	makedir(D, options);
 
 	pthread_mutex_lock(&D->processLock);
 

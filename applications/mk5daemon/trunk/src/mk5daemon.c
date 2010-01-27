@@ -72,9 +72,6 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h             Print this help message\n"); 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --no-mark5a\n");
-	fprintf(stderr, "  -n             Don't automatically start Mark5A\n"); 
-	fprintf(stderr, "\n");
 	fprintf(stderr, "  --headnode\n");
 	fprintf(stderr, "  -H             Give head node capabilities\n");
 	fprintf(stderr, "\n");
@@ -370,7 +367,6 @@ int main(int argc, char **argv)
 	int isHeadNode = 0;
 	int i, ok=0;
 	int justStarted = 1;
-	int startMark5A = 1;
 	int halfInterval;
 	char logPath[256];
 	const char *p;
@@ -395,12 +391,7 @@ int main(int argc, char **argv)
 
 	if(argc > 1) for(i = 1; i < argc; i++)
 	{
-		if(strcmp(argv[i], "-n") == 0 ||
-		   strcmp(argv[i], "--no-mark5a") == 0)
-		{
-			startMark5A = 0;
-		}
-		else if(strcmp(argv[i], "-H") == 0 ||
+		if(strcmp(argv[i], "-H") == 0 ||
 		   strcmp(argv[i], "--headnode") == 0)
 		{
 			isHeadNode = 1;
@@ -525,15 +516,6 @@ int main(int argc, char **argv)
 				{
 					Mk5Daemon_getStreamstorVersions(D);
 					logStreamstorVersions(D);
-				}
-				if(startMark5A)
-				{
-					Mk5Daemon_startMark5A(D);
-					startMark5A = 0;
-					justStarted = 0;
-				}
-				else if(justStarted)
-				{
 					Mk5Daemon_getModules(D);
 				}
 				justStarted = 0;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009, 2010 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -113,6 +113,72 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		Logger_logData(D->log, "mpifxcorr finished\n");
 
 		D->lastMpifxcorrUpdate = 0;
+	}
+}
+
+static void mountdisk(Mk5Daemon *D, const char *diskdev)
+{
+	char dev[64];
+	char cmd[256];
+	char message[1024];
+	char rv[256] = "hidden message";
+	char *c;
+	int l;
+	FILE *p;
+	
+	sprintf(dev, "/dev/sd%s", diskdev);
+	sprintf(cmd, "/bin/mount -t auto %s /mnt/usb 2>&1", dev);
+	sprintf(message, "Executing: %s\n", cmd);
+	Logger_logData(D->log, message);
+	p = popen(cmd, "r");
+	c = fgets(rv, 255, p);
+	fclose(p);
+
+	if(c)
+	{
+		/* strip endline */
+		l = strlen(rv);
+		rv[l-1] = 0;
+
+		sprintf(message, "Mount %s attempt : %s", dev, rv);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+	}
+	else
+	{
+		sprintf(message, "Mount %s attempt : Success", dev);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+	}
+}
+
+static void umountdisk(Mk5Daemon *D)
+{
+	char cmd[256];
+	char message[1024];
+	char rv[256] = "I like chinchillas";
+	char *c;
+	int l;
+	FILE *p;
+
+	sprintf(cmd, "/bin/umount /mnt/usb 2>&1");
+	sprintf(message, "Executing: %s\n", cmd);
+	Logger_logData(D->log, message);
+	p = popen(cmd, "r");
+	c = fgets(rv, 255, p);
+	fclose(p);
+
+	if(c)
+	{
+		/* strip endline */
+		l = strlen(rv);
+		rv[l-1] = 0;
+
+		sprintf(message, "Unmount /mnt/usb attempt : %s", rv);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+	}
+	else
+	{
+		sprintf(message, "Unmount /mnt/usb attempt : Success");
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
 
@@ -291,6 +357,14 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		{
 			Mk5Daemon_sendStreamstorVersions(D);
 		}
+	}
+	else if(strncmp(cmd, "mount", 5) == 0 && strlen(cmd) > 5)
+	{
+		mountdisk(D, cmd+5);
+	}
+	else if(strcmp(cmd, "umount") == 0)
+	{
+		umountdisk(D);
 	}
 	else if(strcasecmp(cmd, "restartCalcServer") == 0)
 	{
