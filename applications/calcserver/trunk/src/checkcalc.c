@@ -19,7 +19,7 @@ int main (argc, argv)
      double delta_dly;
      char   stnnamea[8], srcname[12], axistypea[6];
      char   stnnameb[8], axistypeb[6];
-     int    i;
+     int    i, v;
 
      CLIENT    *cl;
 
@@ -118,13 +118,21 @@ int main (argc, argv)
      p_request->ypole[4]   = 0.23414;
      
      printf ("making RPC call to : %s\n", argv[1]);
-     system ("date");
+     v = system ("date");
+     if(v == -1)
+     {
+     	fprintf(stderr, "Warning -- system() failed\n");
+     }
 
      p_result = getcalc_1(p_request, cl);
 
      /**/
      printf ("return from RPC call\n");
-     system ("date");
+     v = system ("date");
+     if(v == -1)
+     {
+     	fprintf(stderr, "Warning -- system() failed\n");
+     }
 
      printf ("result: request_id = %ld\n", 
               p_result->getCALC_res_u.record.request_id);

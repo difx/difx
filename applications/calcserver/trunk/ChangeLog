@@ -1,5 +1,6 @@
 Version 1.3
 * Fixes from Olaf Wuchnitz, both in calc9.1 and in CALC5Server
+* Quash some compiler warnings by not ignoring return values of system() calls
 
 Version 1.2
 * fix syntax of ocean table and add new entry for YS
