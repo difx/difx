@@ -123,6 +123,9 @@ Version 1.0
 * Initial version
 Version 1.1
 * Select net sideband based on sky freq
+Version 1.2
+* better decipher geometry of tone/state values
+
 
 genmachines
 ~~~~~~~~~~~

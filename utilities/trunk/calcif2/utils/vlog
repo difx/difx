@@ -4,8 +4,8 @@ from sys import argv, stdout, exit
 from string import split, strip, find
 
 program = 'vlog'
-version = 1.2
-verdate = '20091026'
+version = 1.3
+verdate = '20100202'
 author  = 'Walter Brisken'
 
 def usage():
@@ -172,6 +172,8 @@ def countTones(ToneTable, StateTable):
 						nBand = polCount[pol] + 1
 				else:
 					polCount[pol] = 0
+				if nBand == 0:
+					nBand = 1
 				bandnums[chanpol] = [polCount[pol], 0]
 
 	toneIndex = {}
