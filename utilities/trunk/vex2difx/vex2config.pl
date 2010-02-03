@@ -389,6 +389,7 @@ my $iport = 52100;
 my %ports = ();
 
 foreach (@stations) {
+
   if (! exists $stationmodes->{$_}) {
     warn "Skipping $_ in DataStream table\n";
     next;
@@ -404,7 +405,7 @@ foreach (@stations) {
 #   MK5B 10000
 
   if ($stationmodes->{$_}->record_transport_type eq 'S2') {
-    if ($evlbi && $udp) {
+    if ($evlbi && ($udp || $_ eq 'Ho')) {
       $format = 'MARK5B';
       $framesize = 10016;
     } else {
@@ -521,8 +522,20 @@ EOF
   
   $count=0;
   foreach (@localfreq) {
-    my $index = $_->index;
+###    my $index = $_->index;
+    my $index = -1;
+    my $i = 0;
+    foreach my $chan (@freqindex) {
+      if ($_->freq==$chan->freq && $_->sideband eq $chan->sideband
+	  && $_->bw==$chan->bw) {
+	$index = $i;
+	last;
+      }
+      $i++;
+    }
+
     my $pol = $_->pol;
+
     my $ib1 = count2str2($count, "POL", 9);
     my $ib2 = count2str2($count, "INDEX", 9);
     print INPUT<<EOF;
@@ -689,6 +702,9 @@ $count = 0;
 foreach (@stations) {
   my $istr = count2str($count);
   my $tcpwin;
+  if ($_ eq 'Ho') {
+    $tcpwin = -1500;
+  } elsif ($udp) {
   if ($udp) {
     $tcpwin = -$udp;
   } else {
@@ -717,15 +733,9 @@ print HTML<<EOF;
 <h2 style="text-align: center;">$exper</h2>
 <table style="text-align: left; width: 100%;" border="1" cellpadding="2" cellspacing="2">
   <tbody>
-    <tr>
-      <td></td>
 EOF
 
-  foreach (@globalfreq) {
-    printf(HTML "       <th style=\"text-align: center; background-color: rgb(204, 255, 255);\"> %s</th>", $_->freq->unit('MHz')->value);
-  }
-
-  my $ibaseline=0;
+my $ibaseline=0;
   for (my $i=0; $i<@bactive; $i++)  {
     next if (! $bactive[$i]);
     my $bname = shift @{$monitorbaselines[$i]};
@@ -739,25 +749,15 @@ EOF
     my $ifreq = 0;
     for (my $j=0; $j<@globalfreq; $j++) {
       my $done = 0;
-      my $title = sprintf("$bname %s", $globalfreq[$j]->freq);
+      my $freq =  $globalfreq[$j]->freq;
+      my $title = "$bname $freq";
       print HTML "<td style=\"text-align: center;\">";
 
-      if ($monitorbaselines[$i][$j][0]) {
-	print HTML "<a href=\"lba-$ibaseline-f$ifreq-p0.html\">RCP</a> ";
-	push @plots, ["lba-$ibaseline-f$ifreq-p0.html", "lba-$ibaseline-f$ifreq-p0-b0.png", "$title RCP"];
-	$done=1;
-      }
-      if ($monitorbaselines[$i][$j][1]) {
-	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p1.html\">LCP</a>";
-	push @plots, ["lba-$ibaseline-f$ifreq-p1.html", "lba-$ibaseline-f$ifreq-p1-b0.png", "$title LCP"];
-	$done=1;
-      }
+      if ($monitorbaselines[$i][$j][0] || $monitorbaselines[$i][$j][1]) {
+	print HTML "<a href=\"lba-$ibaseline-f$ifreq.html\">$freq</a> ";
 
-      if ($crosspol && $monitorbaselines[$i][$j][0] && $monitorbaselines[$i][$j][1]) {
-	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p2.html\">RL</a>";
-	push @plots, ["lba-$ibaseline-f$ifreq-p2.html", "lba-$ibaseline-f$ifreq-p2-b0.png", "$title LCP"];
-	print HTML " <a href=\"lba-$ibaseline-f$ifreq-p3.html\">LR</a>";
-	push @plots, ["lba-$ibaseline-f$ifreq-p3.html", "lba-$ibaseline-f$ifreq-p3-b0.png", "$title LCP"];
+	push @plots, ["lba-$ibaseline-f$ifreq.html", "lba-$ibaseline-f$ifreq-b0.png", $title];
+	$done=1;
       }
       print HTML "</td>\n";
       $ifreq++ if ($done);
@@ -975,16 +975,42 @@ BEGIN {
 
 my %antclockoffsets;
 BEGIN {
-  %antclockoffsets = (Pa => -1.57,
-                      At => -37.0,
-                      Mp => -0.68,
-                      Ho => -12.37,
-                      Cd => -5,
+  %antclockoffsets = (Pa => 0,
+                      At => -40,
+                      Mp => 0,
+                      Ho => 0,
+                      Cd => 0,
                       Ti => 1.5,
                       Sh => -7.4,
 		      Ks => 1.95,
 		      Hh => -1,
                      );
+  my $clockfile;
+  if (-e 'clocks') {
+    $clockfile = 'clocks';
+  } elsif (defined $ENV{DIFX_CLOCKS} && -e $ENV{DIFX_CLOCKS}) {
+    $clockfile = $ENV{DIFX_CLOCKS};
+  } elsif (-e glob '~/.clocks') {
+    $clockfile = glob '~/.clocks';
+  }
+  if (defined $clockfile) {
+    open(CLOCK, $clockfile) || die "Could not open $clockfile: $!\n";
+    while (<CLOCK>) {
+      chomp;
+      s/\#.*$//;
+      s/^\s+//;
+      s/\s+$//;
+      next if ($_ eq '');
+      if (/^(\S\S)\s+(\S+)$/) {
+	$antclockoffsets{$1} = $2;
+      } else {
+	warn "$clockfile: Ignoring $_\n";
+      }
+    }
+    close(CLOCK);
+  }
+
+
 }
 
 my %anttcpwindow;
