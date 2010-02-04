@@ -705,7 +705,6 @@ foreach (@stations) {
   if ($_ eq 'Ho') {
     $tcpwin = -1500;
   } elsif ($udp) {
-  if ($udp) {
     $tcpwin = -$udp;
   } else {
     $tcpwin = vexant2window($_);
