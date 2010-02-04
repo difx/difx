@@ -57,10 +57,11 @@ while (<INPUT>) {
 close(INPUT) || die "Failed to close $inputfile: %!\n";
 close(OUTPUT) || die "Failed to close temp file $outputfile: $!\n";
 
+my $version = 1;
 
-if (-e "$inputfile~") {
-  unlink "$inputfile~" || die "Failed to delete backup file\n";
+if (-e "$inputfile.$version") {
+  $version++;
 }
 
-rename $inputfile, "$inputfile~" || die "Failed to backup $inputfile\n";
+rename $inputfile, "$inputfile.$version" || die "Failed to backup $inputfile\n";
 rename $outputfile, $inputfile || die "Failed to rename $outputfile $inputfile\n";
