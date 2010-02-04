@@ -11,6 +11,10 @@
  *   GNU General Public License for more details.                          *
  ***************************************************************************/
 
+#ifndef NOIPP
+#define USEIPP
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -19,12 +23,24 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <math.h>
+#ifdef USEIPP
 #include <ippi.h>
-
+#define FCMALLOC(x) ippsMalloc_32fc(x)
+#define FMALLOC(x) ippsMalloc_32f(x)
+#define FREE(x) ippsFree(x)
+#else
+//#include <complex.h>
+#include <fftw3.h>
+typedef  fftwf_complex Ipp32fc;
+typedef float Ipp32f;
+#define FCMALLOC(x) (float(*)[2])fftwf_malloc(sizeof(fftwf_complex)*x)
+#define FMALLOC(x) (float*)fftwf_malloc(sizeof(float)*x)
+#define FREE(x) fftwf_free(x)
+#endif
 #include "monserver.h"
 
 #define NTIMES 16
-#define DISPLAYCHAN 32
+#define DISPLAYCHAN 64
 
 #define X1LIMIT 0
 #define X2LIMIT 100
@@ -66,7 +82,7 @@ int main(int argc, const char * argv[]) {
   if (status) exit(1);
   printf("Sent product request\n");
 
-  lagdisplay = malloc(sizeof(float*)*NTIMES);
+  lagdisplay = (float**)malloc(sizeof(float*)*NTIMES);
   if (lagdisplay==NULL) {
     fprintf(stderr, "Failed to allocate memory for image array\n");
     exit(1);
@@ -82,15 +98,15 @@ int main(int argc, const char * argv[]) {
     exit(1);    
   }
 
-  s2opendo("/s2mono");                     /* Open the display */
+  s2opendo((char*)"/s2mono");                     /* Open the display */
 
-  s2icm("rainbow", 1000, 1500);                /* Install colour map */
+  s2icm((char*)"rainbow", 1000, 1500);                /* Install colour map */
   s2scir(1000, 1500);                          /* Set colour range */
 
   s2swin(X1LIMIT,X2LIMIT,Y1LIMIT,Y2LIMIT,Z1LIMIT,Z2LIMIT);   /* Set the window coordinates */
-  s2box("BCDET",0,0,"BCDET",0,0,"BCDET",0,0);  /* Draw coordinate box */
+  s2box((char*)"BCDET",0,0,(char*)"BCDET",0,0,(char*)"BCDET",0,0);  /* Draw coordinate box */
 
-  cs2scb(&cb);                                  /* Install the callback */
+  cs2scb((void*)&cb);                                  /* Install the callback */
   cs2dcb();
 
   signal(SIGALRM, alarm_signal);
@@ -118,12 +134,16 @@ void alarm_signal(int sig) {
 
 void cb(double *t, int *kc) {
   int i, reinit;
+#ifdef USEIPP
   IppStatus status;
+  static IppiFFTSpec_C_32fc *spec;
+#else
+  fftw_plan plan;
+#endif
   static Ipp32f max;
   static int32_t lastchans=-1;
   static  Ipp32fc *visbuf=NULL, *lags=NULL;
   static Ipp32f *lagamp=NULL;
-  static IppiFFTSpec_C_32fc *spec;
   static float tr[8];
   static int nav;
   static Ipp32fc navc;
@@ -140,21 +160,25 @@ void cb(double *t, int *kc) {
     navc.re  = nav;
     navc.im = 0;
 
-    if (visbuf!=NULL) ippsFree(visbuf);
-    visbuf = ippsMalloc_32fc(DISPLAYCHAN*NTIMES);
+    if (visbuf!=NULL) FREE(visbuf);
+    visbuf = FCMALLOC(DISPLAYCHAN*NTIMES);
 
-    if (lags!=NULL) ippsFree(lags);
-    lags = ippsMalloc_32fc(DISPLAYCHAN*NTIMES);
+    if (lags!=NULL) FREE(lags);
+    lags = FCMALLOC(DISPLAYCHAN*NTIMES);
 
-    if (lagamp!=NULL) ippsFree(lagamp);
-    lagamp = ippsMalloc_32f(DISPLAYCHAN*NTIMES);
+    if (lagamp!=NULL) FREE(lagamp);
+    lagamp = FMALLOC(DISPLAYCHAN*NTIMES);
 
+#ifdef USEIPP
     if (spec !=NULL) ippiFFTFree_C_32fc(spec);
     orderx = round(log(NTIMES)/log(2));
     ordery = round(log(DISPLAYCHAN)/log(2));
     printf("FFT: %dx%d\n", orderx, ordery);
     ippiFFTInitAlloc_C_32fc( &spec, ordery, orderx, IPP_FFT_DIV_INV_BY_N, ippAlgHintFast);
-      
+#else
+    
+#endif
+
     for (i=0; i<NTIMES; i++) {
      lagdisplay[i] = &lagamp[i*DISPLAYCHAN];
     }
@@ -191,12 +215,17 @@ void cb(double *t, int *kc) {
   }
 
   //Do the fft 
+#ifdef USEIPP
   status = ippiFFTFwd_CToC_32fc_C1R(visbuf, DISPLAYCHAN*sizeof(Ipp32fc), lags, DISPLAYCHAN*sizeof(Ipp32fc),
 				     spec, 0 );
   if (status!=ippStsNoErr) {
     fprintf(stderr, "Error calling ippiFFT. Aborting\n");
     exit(1);
   }
+#else
+  fftwf_execute(plan);
+#endif
+
 
   // Get the Lag amplitude. Also translate the origin to the middle of the
   // image, assuming symetry of the data
@@ -276,7 +305,7 @@ void *plotit (void *arg) {
   struct monclient *monserver;
   Ipp32fc *vis;
 
-  monserver = arg;
+  monserver = (struct monclient *)arg;
 
   status = 0;
   while (!status) {
@@ -290,13 +319,13 @@ void *plotit (void *arg) {
       sequence++;
       if (nchan!=monserver->numchannels) {
 	nchan = monserver->numchannels;
-	if (buf!=NULL) ippsFree(buf);
-	buf = ippsMalloc_32fc(nchan);
+	if (buf!=NULL) FREE(buf);
+	buf = FCMALLOC(nchan);
       }
 
       if (monserver_nextvis(monserver, &prod, &vis)) {
 	fprintf(stderr, "Error getting visibility. Aborting\n");
-	monserver_close(*monserver);
+	monserver_close(monserver);
 	pthread_mutex_unlock(&vismutex);	
 	exit(1);
       }
@@ -312,7 +341,7 @@ void *plotit (void *arg) {
 
   }
 
-  monserver_close(*monserver);
+  monserver_close(monserver);
 
   return(0);
 }
