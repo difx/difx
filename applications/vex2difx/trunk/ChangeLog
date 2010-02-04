@@ -6,6 +6,7 @@ Version 2.0
   - Warn if no clock values are applied on a job/antenna basis
   - oms2v2d: correct use of POLARIZATION
   - oms2v2d: respect TWEAK_INT_TIME parameter
+  - oms2v2d: trap missing FFT_SIZE and SPECTRAL_AVERAGE parameters
 * Also bugfixes related to variable initialisation
 * Adds support for multiple phase centres
 * Requires difxio 3.0
@@ -14,6 +15,9 @@ Version 2.0
 * Add deltaClock and deltaClockRate
 * More user warnings
 * Further fix to generated flags when an antenna is not in a job
+* oms2v2d: trap missing FFT_SIZE and SPECTRAL_AVERAGE parameters
+* Actually respect clock breaks!
+* Fix some logic to avert some unneeded warnings
 
 Version 0.3
 ~~~~~~~~~~~

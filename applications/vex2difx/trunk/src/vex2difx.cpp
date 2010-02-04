@@ -190,13 +190,19 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		{
 			usage[e->mjd] = usage[mjdLast];
 			mjdLast = e->mjd;
-			times.push_back(e->mjd);
+			if(JG.containsAbsolutely(e->mjd))
+			{
+				times.push_back(e->mjd);
+			}
 		}
 		else if(mjdLast < 0.0)
 		{
 			usage[e->mjd] = 0;
 			mjdLast = e->mjd;
-			times.push_back(e->mjd);
+			if(JG.containsAbsolutely(e->mjd))
+			{
+				times.push_back(e->mjd);
+			}
 		}
 
 		if(e->eventType == VexEvent::RECORD_START)
@@ -227,8 +233,11 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 			e->eventType == VexEvent::LEAP_SECOND ||
 			e->eventType == VexEvent::MANUAL_BREAK)
 		{
-			clockBreaks[e->mjd]++;
-			nClockBreaks++;
+			if(JG.containsAbsolutely(e->mjd))
+			{
+				clockBreaks[e->mjd]++;
+				nClockBreaks++;
+			}
 		}
 	}
 

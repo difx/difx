@@ -93,8 +93,9 @@ public:
 	void logicalAnd(const VexInterval &v);
 	void logicalOr(double start, double stop);
 	void logicalOr(const VexInterval &v);
-	bool contains(double mjd) { return (mjdStart <= mjd) && (mjd <= mjdStop); }
-	bool isCausal() { return (mjdStart <= mjdStop); }
+	bool contains(double mjd) const { return (mjdStart <= mjd) && (mjd <= mjdStop); }
+	bool containsAbsolutely(double mjd) const { return (mjdStart < mjd) && (mjd < mjdStop); }
+	bool isCausal() const { return (mjdStart <= mjdStop); }
 };
 
 class VexBasebandFile : public VexInterval

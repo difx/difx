@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009 by Walter Brisken                                  *
+#   Copyright (C) 2009, 2010 by Walter Brisken                            *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -107,14 +107,15 @@ def writev2d(oms, v2dFile):
 	print 'Writing: %s' % v2dFile
 	out = open(v2dFile, 'w')
 
-	if 'FFT_SIZE' in corr:
+	try:
 		nFFT = int(corr['FFT_SIZE'][0])
-	else:
-		nFFT = -1
-	if 'SPECTRAL_AVERAGE' in corr:
+	except KeyError:
+		print 'Warning: FFT SIZE not provided.  Assuming 64.'
+		nFFT = 64
+	try:
 		specAvg = int(corr['SPECTRAL_AVERAGE'][0])
-	else:
-		specAvg = -1
+	except KeyError:
+		specAvg = 1
 	
 	if 'POLARIZATION' in corr:
 		if corr['POLARIZATION'][0] == 'NO':
@@ -137,6 +138,8 @@ def writev2d(oms, v2dFile):
 	if corr.has_key('TWEAK_INT_TIME'):
 		if corr['TWEAK_INT_TIME'][0] in ['YES', 'yes']:
 			out.write('tweakIntTime = True\n\n')
+		else:
+			out.write('tweakIntTime = False\n\n')
 
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
