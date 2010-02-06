@@ -19,20 +19,27 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include <cmath>
+#include <cstring>
 #include <mpi.h>
-#include "mk5.h"
-#include "mode.h"
 #include <iomanip>
 #include <errno.h>
-#include <math.h>
-#include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include "config.h"
 #include "alert.h"
+#include "mk5.h"
+#include "mode.h"
 
 #define MAXPACKETSIZE 100000
-#define MARK5FILL 0x11223344;
+
+#ifdef WORDS_BIGENDIAN
+#define FILL_PATTERN 0x44332211UL
+#else
+#define FILL_PATTERN 0x11223344UL
+#endif
+
 
 /// Mk5DataStream -------------------------------------------------------
 
@@ -79,7 +86,7 @@ void Mk5DataStream::initialise()
     invalid_buf = new char[udpsize];
     unsigned int *tmp = (unsigned int*)invalid_buf;
     for (int i=0; i<udpsize/4; i++) {
-      tmp[i] = MARK5FILL;
+      tmp[i] = FILL_PATTERN ;
     }
 
     // UDP statistics
