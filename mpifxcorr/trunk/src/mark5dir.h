@@ -69,7 +69,8 @@ struct Mark5Module
 	int bank;
 	int nscans;
 	Mark5Scan scans[MAXSCANS];
-	unsigned int signature;
+	unsigned int signature;	/* used to determine if dir is current */
+	bool needRealtimeMode;	/* true for some classes of bad modules */
 };
 
 enum Mark5DirStatus

@@ -20,11 +20,11 @@
 //
 //============================================================================
 
-#include <mpi.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
+#include <cstring>
+#include <cstdlib>
+#include <cmath>
 #include <sys/time.h>
+#include <mpi.h>
 #include "config.h"
 #include "nativemk5.h"
 #include "alert.h"
@@ -334,6 +334,11 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		// Set the module state to "Played"
 		setDiscModuleState(xlrDevice, "Played");
+
+		if(module.needRealtimeMode)
+		{
+			cwarn << startl << "Enabled realtime playback mode" << endl;
+		}
 	}
 
 	sendMark5Status(MARK5_STATE_GOTDIR, 0, 0, startmjd, 0.0);
@@ -572,7 +577,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		}
 
 		/* Wait up to 5 seconds for a return */
-		for(i = 1; i < 60; i++)
+		for(i = 1; i < 240; i++)
 		{
 			xlrRS = XLRReadStatus(0);
 			if(xlrRS == XLR_READ_COMPLETE)
