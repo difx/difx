@@ -25,12 +25,13 @@
 
 float arraymax(float *array[], int nchan, int nprod);
 float arraymin(float *a[], int nchan, int nprod);
+void mjd2cal(int mjd, int *day, int *month, int *year);
 
 int main(int argc, const char * argv[]) {
   int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
   int startsec, currentconfig;
   unsigned int iprod[MAX_PROD];
-  char polpair[3];
+  char polpair[3], timestr[10];
   struct monclient monserver;
   float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
@@ -188,6 +189,21 @@ int main(int argc, const char * argv[]) {
       cpgsci(2);
       cpgsch(4);
       cpgmtxt("T", -1.5, 0.02, 0, sourcename.c_str());	    
+
+      // Time 
+      int seconds = atseconds+config->getStartSeconds();
+      int hours = seconds/3600;
+      seconds -= hours*3600;
+      int minutes = seconds/60;
+      seconds %= 60;
+      
+      int mjd = config->getStartMJD();
+      int day, month, year;
+      mjd2cal(mjd, &day, &month, &year);
+
+      sprintf(timestr, "%d/%d %02d:%02d:%02d", day, month, hours, minutes, seconds);
+      cpgmtxt("T", -1.5,0.98,1,timestr);
+
       cpgsch(1);
 
       max = arraymax(phase, nchan, nprod);
@@ -277,4 +293,19 @@ float arraymin(float *a[], int nchan, int nprod) {
     if (thismin<min) min = thismin;
   }
   return min;
+}
+
+void mjd2cal(int mjd, int *day, int *month, int *year) {
+  //  Julian Day number
+  int jd = mjd + 2400001;
+
+  // Do some rather cryptic calculations
+  int temp1 = 4*(jd+((6*(((4*jd-17918)/146097)))/4+1)/2-37);
+  int temp2 = 10*(((temp1-237)%1461)/4)+5;
+
+  *year = temp1/1461-4712;
+  *month =((temp2/306+2)%12)+1;
+  *day = (temp2%306)/10+1;
+
+  return;
 }
