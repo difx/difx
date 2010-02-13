@@ -1017,7 +1017,8 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
     }
   }
 
-  readnanoseconds += bufferinfo[buffersegment].nsinc;
+  readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
+  readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
   readseconds += readnanoseconds/1000000000;
   readnanoseconds %= 1000000000;
   if(readseconds >= model->getScanDuration(readscan)) {
@@ -1228,7 +1229,8 @@ void DataStream::diskToMemory(int buffersegment)
     input.read((char*)&databuffer[(buffersegment+1)*(bufferbytes/numdatasegments) - synccatchbytes], synccatchbytes);
     bufferinfo[buffersegment].validbytes -= (synccatchbytes - input.gcount());
   }
-  readnanoseconds += bufferinfo[buffersegment].nsinc;
+  readnanoseconds += (bufferinfo[buffersegment].nsinc % 1000000000);
+  readseconds += (bufferinfo[buffersegment].nsinc / 1000000000);
   readseconds += readnanoseconds/1000000000;
   readnanoseconds %= 1000000000;
   if(readseconds >= model->getScanDuration(readscan)) {
