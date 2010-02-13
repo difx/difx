@@ -9,6 +9,7 @@ Version 3.0
   - Properly populate GATEMODL table
   - Write .jobmatrix file
   - Write new WEIGHTYP keyword
+  - Sniffer: keep one more amplitude digit
 * Adds support for multiple phase centres, zoom bands
 * Also bugfixes for freeing memory
 * Requires difxio 3.0

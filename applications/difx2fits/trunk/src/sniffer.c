@@ -730,13 +730,13 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 				specRate = -specRate;
 			}
 
-			fprintf(S->apd, " %10.4f %6.4f %10.4f %10.6f", 
+			fprintf(S->apd, " %10.4f %7.5f %10.4f %10.6f", 
 				delay, 
 				2.0*amp/(A->weightSum[bbc]*S->nChan), 
 				phase, 
 				rate);
 
-			fprintf(S->apc, " %4d %6.4f %10.4f %10.6f",
+			fprintf(S->apc, " %4d %7.5f %10.4f %10.6f",
 				specChan+1,
 				2.0*specAmp/(A->weightSum[bbc]*S->nChan), 
 				specPhase,
