@@ -1,12 +1,14 @@
 Version 1.4.1
 * revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
 * disable all K5 code until that is at least somewhat useful
+* Some memory leak fixes from Alexander Neidhardt and Martin Ettl (from Wettzell)
 
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
 * Add VLBN format == VLBA without data modulation
-* Fix blank range checking for a small subset of modes
+* Fix blank range checking for a small subset of Mark4 modes
 	(Thanks to Sergei Pogrebenko and Jan Wagner for the bug report)
+* Version for DiFX-1.5.2
 
 Version 1.3.2
 * Fix sample granularity calculation for Mark5B

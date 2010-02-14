@@ -63,11 +63,12 @@ struct mark5_stream_file
 /* loads fetchsize bytes into memory */
 static int mark5_stream_file_fill(struct mark5_stream *ms)
 {
+	const int FilenameLength=128;
 	struct mark5_stream_file *F;
 	struct stat64 fileStatus;
 	int n;
 	int err;
-	char fn[64];
+	char fn[FilenameLength+1];
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
@@ -78,8 +79,8 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		close(F->in);
 		F->in = 0;
 		F->curfile++;
-		strncpy(fn, F->files[F->curfile], 64);
-		fn[63] = 0;
+		strncpy(fn, F->files[F->curfile], FilenameLength);
+		fn[FilenameLength] = 0;
 		
 		sprintf(ms->streamname, "File-%d/%d=%s", F->curfile,
 			F->nfiles, fn);
@@ -126,14 +127,15 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 
 static int mark5_stream_file_init(struct mark5_stream *ms)
 {
+	const int FilenameLength=128;
 	struct mark5_stream_file *F;
-	char fn[64];
+	char fn[FilenameLength+1];
 	int r;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
-	strncpy(fn, F->files[0], 64);
-	fn[63] = 0;
+	strncpy(fn, F->files[0], FilenameLength);
+	fn[FilenameLength] = 0;
 	sprintf(ms->streamname, "File-1/1=%s", fn);
 
 	F->curfile = 0;

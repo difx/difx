@@ -202,6 +202,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	
 	if(set_stream(ms, s) < 0)
 	{
+		delete_mark5_stream(ms);
 		fprintf(stderr, "mark5_stream_open: Incomplete stream.\n");
 		
 		return 0;
@@ -608,6 +609,9 @@ struct mark5_format *new_mark5_format_from_stream(
 	
 	if(set_stream(ms, s) < 0)
 	{
+		free(mf);
+		free(ms);
+
 		fprintf(stderr, "new_mark5_format_from_stream: "
 				"Incomplete stream.\n");
 		
@@ -617,6 +621,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	status = s->init_stream(ms);
 	if(status < 0)
 	{
+		free(mf);
 		delete_mark5_stream(ms);
 		fprintf(stderr, "new_mark5_format_from_stream: "
 				"init_stream() failed\n");
