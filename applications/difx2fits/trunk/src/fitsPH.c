@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,8 +38,9 @@
  */
 static int getNTone(const char *filename, double t1, double t2)
 {
+	const int MaxLineLength=1000;
 	FILE *in;
-	char line[1000];
+	char line[MaxLineLength+1];
 	int n, nTone, maxnTone=0;
 	double t;
 	char *rv;
@@ -52,7 +53,7 @@ static int getNTone(const char *filename, double t1, double t2)
 	
 	for(;;)
 	{
-		rv = fgets(line, 999, in);
+		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
 		{
 			break;
@@ -329,7 +330,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		return D;
 	}
 	
-	rv = fgets(line, 999, in);
+	rv = fgets(line, MaxLineLength, in);
 	if(!rv)
 	{
 		return D;
@@ -376,7 +377,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	for(;;)
 	{
-		rv = fgets(line, 999, in);
+		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
 		{
 			break;

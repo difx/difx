@@ -64,6 +64,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	int phasecentre)
 {
+	const int MaxLineLength=1000;
+
 	char bandFormFloat[4];
 	
 	/*  define the flag FITS table columns */
@@ -85,7 +87,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
 	int refDay;
-	char line[1000];
+	char line[MaxLineLength+1];
 	char antName[20];
 	float tSysRecChan[array_MAX_BANDS];
 	float tSys[2][array_MAX_BANDS];
@@ -169,7 +171,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	
 	for(;;)
 	{
-		rv = fgets(line, 999, in);
+		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
 		{
 			break;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -343,6 +343,8 @@ static double evalPoly(const double *p, int n, double x)
 	
 int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 {
+	const int MaxLineLength=100;
+
 	const char difxKeys[][MAX_DIFX_KEY_LEN] = 
 	{
 		"BASELINE NUM",
@@ -385,7 +387,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	char polpair[3];
 	int changed = 0;
 	int nFloat, readSize;
-	char line[100];
+	char line[MaxLineLength+1];
 	int freqNum;
 	int configId;
 	const DifxConfig *config;
@@ -416,11 +418,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		line[1] = 'A';
 		line[2] = 'S';
 		line[3] = 'E';
-		rv = fgets(line+4, 95, dv->in);
+		rv = fgets(line+4, MaxLineLength-4, dv->in);
 		DifxParametersaddrow(dv->dp, line);
 		for(i = 1; i < 13; i++)
 		{
-			rv = fgets(line, 99, dv->in);
+			rv = fgets(line, MaxLineLength, dv->in);
 			if(!rv)
 			{
 				/* EOF should not happen in middle of text */

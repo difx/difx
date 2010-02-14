@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -142,6 +142,8 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
 const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
+	const int MaxLineLength=1000;
+
 	char bandFormInt[4];
 
 	/*  define the flag FITS table columns */
@@ -163,7 +165,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int nRowBytes;
 	char *fitsbuf;
 	double start, stop;
-	char line[1000];
+	char line[MaxLineLength+1];
 	char antName[10];
 	int refDay;
 	int i, c, d, p, v;
@@ -221,7 +223,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	/* Write flags from file "flag" */
 	for(;;)
 	{
-		rv = fgets(line, 999, in);
+		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
 		{
 			break;
