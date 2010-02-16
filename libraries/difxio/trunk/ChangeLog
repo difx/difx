@@ -20,6 +20,7 @@
 * Shifts numchannels/oversample/decimation etc from Configuration to Freq
 * Allows use of Rule table in input file
 * Adds support for LO offsets
+* Fix memory leak (need to free baseline array)
 
 2.11
 * Post DiFX-1.5

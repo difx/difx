@@ -62,6 +62,11 @@ void deleteDifxInput(DifxInput *D)
 			deleteDifxDatastreamArray(D->datastream, 
 				D->nDatastream);
 		}
+		if(D->baseline)
+		{
+			deleteDifxBaselineArray(D->baseline,
+				D->nBaseline);
+		}
 		if(D->freq)
 		{
 			deleteDifxFreqArray(D->freq);
