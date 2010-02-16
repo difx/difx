@@ -79,7 +79,7 @@ static void initluts()
 		for(i = 0; i < 4; i++)
 		{
 			l = (b >> (2*i)) & 0x03;
-			lut1bit[b][i] = lut4level[l];
+			lut2bit[b][i] = lut4level[l];
 		}
 	}
 }
