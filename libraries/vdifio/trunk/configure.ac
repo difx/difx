@@ -22,5 +22,5 @@ AC_PROG_RANLIB
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile src/Makefile vdifio.pc])
+AC_CONFIG_FILES([Makefile src/Makefile utils/Makefile vdifio.pc])
 AC_OUTPUT

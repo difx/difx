@@ -36,6 +36,7 @@ extern "C" {
 
 #define VDIF_HEADER_BYTES		32
 #define VDIF_LEGACY_HEADER_BYTES	16
+#define MAX_VDIF_FRAME_BYTES		9032
 
 typedef struct {
 	int invalid; /* 1 is invalid, 0 is valid (normal) */

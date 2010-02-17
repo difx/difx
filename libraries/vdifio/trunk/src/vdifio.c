@@ -43,7 +43,7 @@ int getVDIFThreadID(char * rawheader)
 int getVDIFFrameBytes(char * rawheader)
 {
         int headerword = ((int*)rawheader)[2];
-	return ((headerword & 0xFFFFFF)+1)*8;
+	return (headerword & 0xFFFFFF)*8;
 }
 
 int getVDIFFrameMJD(char * rawheader)
