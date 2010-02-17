@@ -31,7 +31,7 @@ int main(int argc, const char * argv[]) {
   int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
   int startsec, currentconfig;
   unsigned int iprod[MAX_PROD];
-  char polpair[3], timestr[10];
+  char polpair[3], timestr[20];
   struct monclient monserver;
   float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
   float delta, min, max, temp;
