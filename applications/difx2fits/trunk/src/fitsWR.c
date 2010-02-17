@@ -95,10 +95,12 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	double *mjdLast;
 	/* 1-based index for FITS below */
 	int32_t antId1;
+
+	if(D == 0) return D;
 	
 	in = fopen("weather", "r");
 	
-	if(!in || D == 0)
+	if(!in)
 	{
 		return D;
 	}

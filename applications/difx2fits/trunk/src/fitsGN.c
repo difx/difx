@@ -489,8 +489,10 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 
 	nan.i32 = -1;
 
+	if (!D) return D;
+
 	G = calloc(MAXENTRIES, sizeof(GainRow));
-	if(!G || !D)
+	if(!G)
 	{
 		return D;
 	}

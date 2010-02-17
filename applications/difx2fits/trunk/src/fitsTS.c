@@ -151,6 +151,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
+	        fclose(in);
 		return 0;
 	}
 

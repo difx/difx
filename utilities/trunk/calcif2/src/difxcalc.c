@@ -211,7 +211,7 @@ int extractCalcResults(DifxPolyModel *im, int index,
 {
 	struct getCALC_res *res0, *res1, *res2;
 	double d, dx, dy;
-	int rv;
+	int rv=0;
 
 	res0 = &results->res[0];
 	res1 = &results->res[1];

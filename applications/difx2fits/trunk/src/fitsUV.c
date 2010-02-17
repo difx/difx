@@ -162,6 +162,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 	{
 		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n",
 			jobId, D->nJob);
+		free(dv);
 		return 0;
 	}
 	

@@ -2246,8 +2246,10 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
     {
       //cinfo << startl << "About to create polyco file " << polycocount << " from filename " << polycofilenames[i] << ", subcount " << j << endl;
       configs[configindex].polycos[polycocount] = new Polyco(polycofilenames[i], j, configindex, configs[configindex].numbins, getMaxNumChannels(), binphaseends, binweights, double(configs[configindex].subintns)/60000000000.0);
-      if (!configs[configindex].polycos[polycocount]->initialisedOK())
+      if (!configs[configindex].polycos[polycocount]->initialisedOK()) {
+	delete [] numsubpolycos;
         return false;
+      }
       estimatedbytes += configs[configindex].polycos[polycocount]->getEstimatedBytes();
       polycocount++;
     } 

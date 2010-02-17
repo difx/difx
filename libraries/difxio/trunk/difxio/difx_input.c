@@ -491,6 +491,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 	if(nPol != 1 && nPol != 2)
 	{
 		fprintf(stderr, "Weird number of polarizations: %d\n", nPol);
+		free(freqIds);
 		return -1;
 	}
 	dc->nPol = nPol;

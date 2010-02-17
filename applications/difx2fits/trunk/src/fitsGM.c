@@ -151,8 +151,18 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	}
 
 	onPhase  = (float *)calloc(nBand, sizeof(float));
+	if (onPhase==0) return 0;
 	offPhase = (float *)calloc(nBand, sizeof(float));
-	poly     = (double *)calloc(nPoly, sizeof(double));
+	if (offPhase==0) { 
+	  free(onPhase);
+	  return 0;
+	}
+	poly = (double *)calloc(nPoly, sizeof(double));
+	if (poly==0) {
+	  free(onPhase);
+	  free(offPhase);
+	  return(0);
+	}
 
 	sprintf(bandFormFloat,  "%1dE", nBand);  
 	sprintf(polyFormDouble, "%1dD", nPoly);  
@@ -175,6 +185,9 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
+	        free(onPhase);
+		free(offPhase);
+		free(poly);
 		return 0;
 	}
 	

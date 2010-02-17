@@ -181,12 +181,14 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	const DifxDatastream *ds;
 	char *rv;
 	
+	if (D==0) return D;
+
 	FL.nBand = p_fits_keys->no_band;
 	sprintf(bandFormInt, "%dJ", FL.nBand);
 	
 	in = fopen("flag", "r");
 	
-	if(!in || D == 0)
+	if(!in)
 	{
 		return D;
 	}
@@ -198,6 +200,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
+	        free(fitsbuf);
+		fclose(in);
 		return 0;
 	}
 

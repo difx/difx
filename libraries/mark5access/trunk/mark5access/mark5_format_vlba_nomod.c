@@ -7246,6 +7246,8 @@ struct mark5_format_generic *new_mark5_format_vlba_nomod(int Mbps, int nchan,
 	if(f->decode == 0)
 	{
 		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		free(f);
+		free(v);
 		return 0;
 	}
 

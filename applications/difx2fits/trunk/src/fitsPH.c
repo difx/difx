@@ -284,7 +284,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	char *fitsbuf, *p_fitsbuf;
-	char line[1000];
+	const int MaxLineLength=1000;
+	char line[MaxLineLength+1];
 	int nBand, nTone, nPol;
 	double time;
 	float timeInt;
@@ -333,6 +334,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	rv = fgets(line, MaxLineLength, in);
 	if(!rv)
 	{
+	        fclose(in);
 		return D;
 	}
 
@@ -355,6 +357,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
+	        fclose(in);
 		return 0;
 	}
 
