@@ -7,6 +7,8 @@ sub vexant2calc ($);
 $Astro::Time::StrSep = ':';
 $Astro::Time::StrZero = 2;
 
+my $DEFAULT_ATCA = 'W104';
+
 use strict;
 
 if (@ARGV!=1 && @ARGV!=2)
@@ -86,16 +88,21 @@ print(O pack("A20", "NUMBER ANTENNAS: "), "$numstations\n");
 print(STATION "0.0, 0.0, 0.0, 3, 0.  \$LBAREF", "\n");
 foreach $a (@ants)
 {
-  $antname = vexant2calc($stations[$count]);
+  my $antid = $a->site_id;
+  $antname = vexant2calc($antid);
   $found = 0;
-  if($antname eq 'CATXXXX') #Need some user feedback
+  if($antid eq 'At') #Need some user feedback
   {
     $old_handle = select (STDOUT);
     $| = 1;
-    print "Enter ATCA station reference (eg CATW104):\n";
+    print "Enter ATCA station reference [$DEFAULT_ATCA]: ";
     select $old_handle;
     $antname = <STDIN>;
     chomp($antname);
+    if ($antname eq '') {
+      $antname = $DEFAULT_ATCA;
+    }
+    $antname = "CAT$antname";
   }
   if($antname eq 'DSS43') #Need some user feedback
   {
@@ -107,7 +114,7 @@ foreach $a (@ants)
     chomp($antname);
   }
   $count = $count + 1;
-  print(O pack("A20", "ANTENNA $count NAME: "), $antname, "\n");
+  print(O pack("A20", "ANTENNA $count NAME: "), $antid, "\n");
   print(O pack("A20", "ANTENNA $count MOUNT: "), $a->axis_type, "\n");
 
   #See if the antenna exists in the all-new file with velocities
@@ -122,7 +129,7 @@ foreach $a (@ants)
       $x = $yearoffset*$resultsplit[4] + $resultsplit[1];
       $y = $yearoffset*$resultsplit[5] + $resultsplit[2];
       $z = $yearoffset*$resultsplit[6] + $resultsplit[3];
-      print(STATION $x, "D00, ", $y, "D00, ", $z, "D00, ", $resultsplit[8], ", ", $resultsplit[9], " \$", $resultsplit[0], "\n");
+      print(STATION $x, "D00, ", $y, "D00, ", $z, "D00, ", $resultsplit[8], ", ", $resultsplit[9], " \$", $antid, "\n");
       $found = 1;
       last; #break from the loop
     }
@@ -143,14 +150,14 @@ foreach $a (@ants)
     }
   }
   if($found == 0)
-  {
+ {
     $old_handle = select (STDOUT);
     $| = 1;
     print "Antenna $antname could not be found in either fullstation.tab or stations.tab: take it from the vex file (y/n, no aborts)? ";
     select $old_handle;
     $response = <STDIN>;
     chomp($response);
-    if($response ne "y")
+    if($response ne "y" && $response ne "Y" && $response ne '')
     {
       die "OK - aborting!!";
     }
@@ -303,7 +310,7 @@ foreach $source (@sources)
       select $old_handle;
       $response = <STDIN>;
       chomp($response);
-      if($response ne "y" and $response ne "Y")
+      if($response ne "y" && $response ne "Y" && $response ne '')
       {
         die "OK - aborting!!";
       }
@@ -336,7 +343,7 @@ print "Copying in experiment specific versions of stations.tab and source.tab...
 
 #Now actually run gencalc_delays
 print "About to run gencalc_delays...\n";
-print `\$CORR_ROOT/utilities/gencalc_delays delayuvw-$exper.in`;
+print `gencalc_delays delayuvw-$exper.in`;
 
 #Move the original files back
 print "About to move the original CALC tables back...\n";

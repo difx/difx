@@ -6,7 +6,6 @@ use Astro::Time;
 
 use POSIX qw(floor);
 
-sub vexant2calc($);
 sub vexant2clock ($);
 sub vexant2window ($);
 sub count2str ($;$);
@@ -20,8 +19,6 @@ $Astro::Time::StrSep = ':';
 $Astro::Time::StrZero = 2;
 
 use strict;
-
-my %antnames;
 
 my $nchannel = 64;
 my $tint = 2;
@@ -41,7 +38,7 @@ my $udp = 0;
 my $pulsar = 0;
 my $databufferfactor = undef;
 my $numdatasegments = 32;
-my $atca = 'WXXX';
+my $atca = undef;
 my $old = 0;
 my $monitor = 0;
 my $requested_duration = undef;
@@ -56,8 +53,7 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint, 'atca=s'=>\$atca,
 	   'swin'=>\$swin, 'monitor'=>\$monitor, 'udp=i'=>\$udp,
 	   'duration=i'=>\$requested_duration, 'files=s'=>\$files);
 
-
-$antnames{At} = 'CAT' . uc($atca);
+warn "-atca option deprecated" if (defined $atca);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -351,10 +347,9 @@ EOF
 $count = 0;
 foreach (@stations) {
   $countstr = count2str($count);
-  my $ant = vexant2calc($_);
   my $clock = vexant2clock($_);
   print INPUT <<EOF;
-TELESCOPE NAME $countstr  $ant
+TELESCOPE NAME $countstr  $_
 CLOCK DELAY (us) ${countstr}$clock
 CLOCK RATE(us/s) ${countstr}0.0
 EOF
@@ -938,40 +933,6 @@ sub getTsys ($$) {
 }
 
 
-BEGIN {
-%antnames = (Pa => 'PKS',
-       At => 'CATWXXX',
-	       Mp => 'MOPRA',
-	       Cd => 'CED',
-	       Ho => 'HOB',
-	       Ti => 'DSS43',
-               Hh => 'HART',
-               Br => 'BR' ,
-               Fd => 'FD' ,
-               Hn => 'HN' ,
-               Kp => 'KP' ,
-               La => 'LA' ,
-               Mk => 'MK' ,
-               Nl => 'NL' ,
-               Ov => 'OV' ,
-               Pt => 'PT' ,
-               Sc => 'SC' ,
-               Ks => 'KAS' ,
-               Sh => 'SHANGHAI' ,
-               Ef => 'EFLSBERG' ,
-               Wf => 'WESTFORD' ,
-               Wz => 'WETTZELL' ,
-               Wb => 'WBK' ,
-               Jb => 'JDB' ,
-               On => 'ONSALA85' ,
-               Mc => 'MEDICINA' ,
-               Nt => 'NOTO' ,
-               Tr => 'TORUN' ,
-               Cm => 'CAMBG32M' ,
-	       Kk => 'KOKEE' ,
-	      );
-}
-
 my %antclockoffsets;
 BEGIN {
   %antclockoffsets = (Pa => 0,
@@ -1020,16 +981,6 @@ BEGIN {
 		   Ho => 0,
 		   Sh => 0,
 		   Ks => 0);
-}
-
-sub vexant2calc ($) {
-  my $ant = shift @_;
-  if (exists $antnames{$ant}) {
-    return $antnames{$ant};
-  } else {
-    warn "No Calc equivalent for $ant\n";
-    return $ant;
-  }
 }
 
 sub vexant2clock ($) {
