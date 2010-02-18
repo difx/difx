@@ -901,8 +901,8 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		string s;
 		ss >> s;
-		unsigned int at = 0; 
-		unsigned int last = 0;
+		int at = 0; 
+		int last = 0;
 		while(at != string::npos)
 		{
 			at = s.find_first_of(';',last);
