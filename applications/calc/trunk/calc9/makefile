@@ -49,7 +49,7 @@ FFLAGS = -C -c -w +O2 -I2 +Q
 LIBS = 
 #
 ctest: ctest.o $(OBJS)
-	$(F77) -lg2c -lm -o ctest ctest.o $(OBJS)
+	$(F77)  -lm -o ctest ctest.o $(OBJS)
 	ar ru libcorcalc.a $(OBJS)
 #
 mbl: mbl.o $(OBJS)
