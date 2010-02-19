@@ -170,27 +170,27 @@ foreach $a (@ants)
     chop($position[2]);
     chop($position[2]);
     @axtype = $a->axis_type;
+
+    print(STATION $position[0], ", ", $position[1], ", ",  $position[2]);
     if ($axtype[0].$axtype[1] eq 'azel')
     {
-      print(STATION $position[0], ", ", $position[1], ", ",  $position[2], ", 3, ", $a->axis_offset, "  \$", 
-	    vexant2calc($a->site_id), "\n");
+	print(STATION ", 3, ");
+	
     }
     elsif ($axtype[0].$axtype[1] eq 'xyew')
     {
-      print(STATION $position[0], ", ", $position[1], ", ",  $position[2], ", 4, ", $a->axis_offset, "  \$", 
-	    vexant2calc($a->site_id), "\n");
+	print(STATION ", 4, ");
     }
     elsif ($axtype[0].$axtype[1] eq 'hadec')
     {
-      print(STATION $position[0], ", ", $position[1], ", ",  $position[2], ", 1, ", $a->axis_offset, "  \$",
-            vexant2calc($a->site_id), "\n");
+	print(STATION ", 1, ");
     }
     else
     {
       print "Warning - unknown axis type ", $a->axis_type, ", assuming azel!\n";
-      print(STATION $position[0], ", ", $position[1], ", ",  $position[2], ", 3, 0.  \$", 
-	    vexant2calc($a->site_id), "\n");
+      print(STATION ", 3, ");
     }
+    print(STATION $a->axis_offset, "  \$", $antid, "\n");
   }
 }
 
