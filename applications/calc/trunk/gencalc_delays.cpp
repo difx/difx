@@ -19,21 +19,21 @@ void processInput(string inputfilename);
 
 //constants for string lengths
 static const int SOURCE_LENGTH = 16;
-static const int SITE_LENGTH = 8;
+static const unsigned int SITE_LENGTH = 8;
 static const int HEADER_LENGTH = 21;
 
 //external FORTRAN call prototypes
 extern "C" {
-int init_calc__(char * errorstring, int strlength);
-int load_sites__(char * errorstring, int strlength);
-int load_sources__(char * sourcename, char * errorstring, int len1, int len2);
-void eop_setup__(short * utctag);
+int init_calc_(char * errorstring, int strlength);
+int load_sites_(char * errorstring, int strlength);
+int load_sources_(char * sourcename, char * errorstring, int len1, int len2);
+void eop_setup_(short * utctag);
 void tocup_();
 void initl_(int * kount);
-int get_baseline_xyz__(int * num_ants, char * ant_name, double * ant_x, double * ant_y, double * ant_z);
-bool find_source__(char * srcname, char * srcra_string, char * srcdec_string, int len1, int len2, int len3);
+int get_baseline_xyz_(int * num_ants, char * ant_name, double * ant_x, double * ant_y, double * ant_z);
+bool find_source_(char * srcname, char * srcra_string, char * srcdec_string, int len1, int len2, int len3);
 void star_(int * nloaded, double * srcra, double * srcdec);
-void v_refcalc__(char * sitename, char * sourcename, short * utctag, double * seconds, double * delay, double * delayrate, double * uvw, double * duvw, int sitelength, int sourcelength);
+void v_refcalc_(char * sitename, char * sourcename, short * utctag, double * seconds, double * delay, double * delayrate, double * uvw, double * duvw, int sitelength, int sourcelength);
 }
 //end of the extern statement
 
@@ -85,21 +85,21 @@ int main(int argc, char ** argv)
   processInput(infilename);
   
   //run all the necessary calc initialisation routines
-  status = init_calc__(errorstring, 80); //FORTRAN call - hence trailing underscore and need length of string(s) as final parameter(s)
+  status = init_calc_(errorstring, 80); //FORTRAN call - hence trailing underscore and need length of string(s) as final parameter(s)
   if(status != 0)
   {
     cerr << "Error in init_calc!  Error string: " << errorstring << endl;
     return EXIT_FAILURE;  //note EXIT from program
   }
   
-  status = load_sites__(errorstring, 80); //FORTRAN call
+  status = load_sites_(errorstring, 80); //FORTRAN call
   if(status != 0)
   {
     cerr << "Error in load_sites!  Error string: " << errorstring << endl;
     return EXIT_FAILURE;  //note EXIT from program
   }
   
-  status = load_sources__("source.tab", errorstring, 11, 80); //FORTRAN call
+  status = load_sources_((char*)"source.tab", errorstring, 11, 80); //FORTRAN call
   if(status != 0)
   {
     cerr << "Error in load_sources!  Error string: " << errorstring << endl;
@@ -160,7 +160,7 @@ int main(int argc, char ** argv)
     sprintf(headerbuffer, "TELESCOPE %u MOUNT: ", i);
     uvwoutput << setw(20) << headerbuffer << mount[i] << endl;
     sprintf(headerbuffer, "TELESCOPE %u X (m): ", i);
-    get_baseline_xyz__(&one, telescopenames[i], &antennax[0], &antennay[0], &antennaz[0]);
+    get_baseline_xyz_(&one, telescopenames[i], &antennax[0], &antennay[0], &antennaz[0]);
     uvwoutput << setw(20) << headerbuffer << antennax[0] << endl;
     sprintf(headerbuffer, "TELESCOPE %u Y (m): ", i);
     uvwoutput << setw(20) << headerbuffer << antennay[0] << endl;
@@ -172,7 +172,7 @@ int main(int argc, char ** argv)
   delayoutput << setw(20) << "NUM SCANS: " << numscans << endl;
   /*for(int i=0;i<numscans;i++)
   {
-    sourcefound = find_source__(sourcenames[i], srcra_string, srcdec_string, SOURCE_LENGTH, 20, 20);
+    sourcefound = find_source_(sourcenames[i], srcra_string, srcdec_string, SOURCE_LENGTH, 20, 20);
     if(!sourcefound)
     {
       cerr << "Error in finding source " << sourcenames[i] << "!!! RA was " << srcra_string << ", dec was " << srcdec_string << endl;
@@ -193,7 +193,7 @@ int main(int argc, char ** argv)
   for(int i=0;i<numscans;i++)
   {
     //load the current source
-    sourcefound = find_source__(sourcenames[i], srcra_string, srcdec_string, SOURCE_LENGTH, 20, 20);
+    sourcefound = find_source_(sourcenames[i], srcra_string, srcdec_string, SOURCE_LENGTH, 20, 20);
     if(!sourcefound)
     {
       cerr << "Error in finding source " << sourcenames[i] << "!!! RA was " << srcra_string << ", dec was " << srcdec_string << endl;
@@ -203,7 +203,7 @@ int main(int argc, char ** argv)
     star_(&nloaded, &srcra, &srcdec);
     cout << "Source found ok: name " << sourcenames[i] << ", ra: " << srcra_string << " or in radians " << srcra << ", dec: " << srcdec_string << " or in radians " << srcdec << endl;
     
-    eop_setup__(utctag); //FORTRAN call
+    eop_setup_(utctag); //FORTRAN call
   
     tocup_(); //FORTRAN call
   
@@ -233,7 +233,7 @@ int main(int argc, char ** argv)
       
       for(int k=0;k<numtelescopes;k++)
       {
-        v_refcalc__(telescopenames[k], sourcenames[i], utctag, &timesec, &delay, &delayrate, uvw, duvw, SITE_LENGTH, SOURCE_LENGTH);
+        v_refcalc_(telescopenames[k], sourcenames[i], utctag, &timesec, &delay, &delayrate, uvw, duvw, SITE_LENGTH, SOURCE_LENGTH);
         //delayoutput << setw(17) << delay << "\t" << setw(17) << delayrate << "\t";
         delayoutput << setw(17) << delay << "\t";
         uvwoutput << setw(17) << uvw[0] << "\t" << setw(17) << uvw[1] << "\t" << setw(17) << uvw[2] << "\t";
@@ -277,14 +277,16 @@ void processInput(string inputfilename)
   {
     input.get(header, HEADER_LENGTH);
     getline(input, line);
-    telescopenames[i] = new char[SITE_LENGTH];
+    telescopenames[i] = new char[SITE_LENGTH+1];
     if(line.length() > SITE_LENGTH)
       cerr << "Error!!! Site name " << line << " is too long - max " << SITE_LENGTH << " characters" << endl;
     else
     {
       line.copy(telescopenames[i], line.length());
-      for(int j=line.length();j<SITE_LENGTH;j++) 
+      for(unsigned int j=line.length();j<SITE_LENGTH;j++) {
 	telescopenames[i][j] = ' '; //make it look like a FORTRAN string
+        telescopenames[i][SITE_LENGTH] = 0; //make it look like a C string
+      }
       //strcpy(telescopenames[i], line.c_str());
       //telescopenames[i][line.length()] = ' '; //stomp on the trailing null char
     }
