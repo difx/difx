@@ -227,9 +227,6 @@ if (defined $recorder_hosts && $evlbi) {
       next if (!$active_datastreams[$i]);
     
       my ($recorder, $playback, $compression, $vsib_mode, $ipd);
-      if ($telescopes[$i] =~ /^CATW/) {
-	  $telescopes[$i] = 'CATW';
-      }
       $recorder = $rec_hosts{$telescopes[$i]}->[0];
       $playback = $rec_hosts{$telescopes[$i]}->[1];
       $compression = $rec_hosts{$telescopes[$i]}->[2];
