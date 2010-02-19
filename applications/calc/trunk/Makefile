@@ -9,13 +9,13 @@ clean : $(TARGETS)
 
 CC  = gcc
 CXX = g++
-CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
+CPPFLAGS = -O2 -D__PWD=\"$$PWD\" -Wall
 F77 = g77
 
-INCS = -I$(DIFXROOT)/include/ -Icalc9
-LIBS = -Lcalc9 -L$(G2CDIR) -lcorcalc -lg2c
+INCS = -Icalc9
+LIBS = -Lcalc9 -lcorcalc 
 
 gencalc_delays : gencalc_delays.cpp
 	$(MAKE) -C calc9
-	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS)
+	$(CXX) $(CPPFLAGS) $(INCS) -o $@ $^ $(LIBS) -lgfortran
 
