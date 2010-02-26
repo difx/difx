@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -71,7 +71,7 @@ int checkPid(int pid)
 	sprintf(cmd, "ps -p %d -o pid --no-headers", pid);
 	p = popen(cmd, "r");
 	c = fgets(s, 9, p);
-	fclose(p);
+	pclose(p);
 	if(c == 0)
 	{
 		return 0;
