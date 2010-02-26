@@ -358,7 +358,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(fitsbuf == 0)
 	{
 	        fclose(in);
-		return 0;
+		fprintf(stderr, "Error: DifxInput2FitsPH: Memory allocation failure\n");
+
+		exit(0);
 	}
 
 

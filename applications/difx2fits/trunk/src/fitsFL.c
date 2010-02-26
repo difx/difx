@@ -200,7 +200,6 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-	        free(fitsbuf);
 		fclose(in);
 		return 0;
 	}

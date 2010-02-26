@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -494,7 +494,9 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		return D;
+		fprintf(stderr, "DifxInput2FitsGN: Memory allocation error\n");
+
+		exit(0);
 	}
 	
 	nPol = D->nPol;
