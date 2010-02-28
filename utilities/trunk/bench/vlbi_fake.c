@@ -71,6 +71,7 @@ int main(int argc, char * const argv[]) {
   int seconds, hour, min, sec, bufsize, datarate;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
+  long *lbuf;
   double thismjd, finishmjd, ut, tbehind, t0, t1, t2, dtmp;
   float ftmp, speed;
   unsigned long long filesize, networksize, nwritten, totalsize;
@@ -144,7 +145,7 @@ int main(int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "r:n:DVvdmhH:", 
+    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:", 
 			   options, NULL);
     if (opt==EOF) break;
 
@@ -192,11 +193,13 @@ int main(int argc, char * const argv[]) {
       break;
       
     case 'd':
+      printf("Got %s\n", optarg);
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
 	fprintf(stderr, "Bad duration option %s\n", optarg);
       else {
 	duration = tmp;
+	printf("Duration = %.1f\n", duration);
       }
       break;
 
@@ -449,6 +452,11 @@ int main(int argc, char * const argv[]) {
     sprintf(msg, "Trying to allocate %d KB", bufsize/1024);
     perror(msg);
     return(1);
+  }
+  lbuf = (long*)buf;
+  srandom(1);
+  for (i=0; i<bufsize/sizeof(long); i++) {
+    lbuf[i] = random();
   }
 
   totalsize=0;
