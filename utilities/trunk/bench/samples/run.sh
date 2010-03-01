@@ -25,6 +25,7 @@ do
 
    \rm -f vc082.rpf
    sleep 2
+   echo stopmpifxcorr | at now+5min
    startcorr.pl -machinefile machines -np $np /home/vlbi/difx/bin/mpifxcorr vc082.input 2>&1 | tee corr-${log}.log
 
    sleep 5
