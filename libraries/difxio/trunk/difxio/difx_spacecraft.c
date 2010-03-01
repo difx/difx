@@ -369,8 +369,6 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 				i, j, value);
 		}
 		n += (ds[i].nPoint + 2);
-
-		return -1;
 	}
 
 	return n;

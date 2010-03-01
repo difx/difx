@@ -21,6 +21,7 @@
 * Allows use of Rule table in input file
 * Adds support for LO offsets
 * Fix memory leak (need to free baseline array)
+* Print all spacecraft entries, not just for the first spacecraft
 
 2.11
 * Post DiFX-1.5
