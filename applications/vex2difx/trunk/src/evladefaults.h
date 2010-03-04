@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2010 by Adam Deller and Walter Brisken                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -20,53 +20,22 @@
  * SVN properties (DO NOT CHANGE)
  *
  * $Id$
- * $HeadURL$
+ * $HeadURL:  $
  * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
+#ifndef __EVLADEFAULTS_H__
+#define __EVLADEFAULTS_H__
 
-#ifndef __PY_STREAM_H__
-#define __PY_STREAM_H__
-
-#include <fstream>
 #include <string>
-#include "vextables.h"
 
-class pystream : public ofstream
-{
-public:
-	enum scripttype {VLBA, EVLA};
-	void open(const string& antennaName, const VexData *V);
-	void open(const string& antennaName, const VexData *V, scripttype stype);
-	void close();
-	void addPhasingSource(const string srcname);
-	int writeHeader(const VexData *V);
-	int writeRecorderInit(const VexData *V);
-	int writeDbeInit(const VexData *V);
-	int writeLoifTable(const VexData *V);
-	int writeSourceTable(const VexData *V);
-	int writeScans(const VexData *V);
-
-private:
-	scripttype currenttype;
-	string evlavcidir;
-	string ant;
-	string sw[4];	// 4x4 switch state
-	string obsCode;
-	double lastValid;
-	int lastSourceId;
-	int lastModeId;
-	int lastChannelSet;
-	int evlaintsec, evlasbchan, evlasbbits;
-	double evlavciversion;
-	double mjd0;
-	vector<map<string,unsigned int> > ifIndex;	// for each scan, map from IF name to number
-	vector<string> phasingsources;
-
-	void calcIfIndex(const VexData *V);
-	void writeVCI(const VexData *V, int modeindex, string filename);
-};
+const double      DEFAULT_EVLA_VCI_VER = 3.5;
+const int         DEFAULT_EVLA_INT_SEC = 3;
+const int         DEFAULT_EVLA_SB_BITS = 4;
+const int         DEFAULT_EVLA_SB_CHAN = 64;
+//const std::string DEFAULT_EVLA_VCI_DIR = "/home/mchost/evla/scripts/test/";
+const std::string DEFAULT_EVLA_VCI_DIR = "./";
 
 #endif

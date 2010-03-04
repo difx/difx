@@ -179,6 +179,7 @@ class VexIF	// Note: the old "VexIF" is now called "VexChannel"
 public:
 	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCal(0.0) {}
 	string VLBABandName() const;
+	double getLowerEdgeFreq() const;
 
 	string name;
 	double ifSSLO;		// SSLO of the IF

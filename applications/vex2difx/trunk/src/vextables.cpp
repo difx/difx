@@ -247,6 +247,23 @@ const VexFormat* VexMode::getFormat(const string antName) const
 	return &it->second.format;
 }
 
+double VexIF::getLowerEdgeFreq() const
+{
+	double bandCenter = ifSSLO;
+
+	// Calculate the center of the 500-1000 MHz IF range;
+	if(ifSideBand == 'L')
+	{
+		bandCenter -= 750.0e6;
+	}
+	else
+	{
+		bandCenter += 750.0e6;
+	}
+
+	return bandCenter - 500.0e6;
+}
+
 string VexIF::VLBABandName() const
 {
 	double bandCenter = ifSSLO;

@@ -41,6 +41,8 @@ int usage(int argc, char **argv)
 {
 	cout << endl;
 	cout << program << " version " << version << "  " << author << " " << verdate << endl;
+	cout << "You must provide a vex file name as the first argument" << endl;
+	cout << "The optional second argument is --phasingsources=source1,source2... (for EVLA)" << endl;
 	cout << endl;
 
 	return 0;
@@ -62,14 +64,23 @@ bool isVLBA(const string& ant)
 	return false;
 }
 
+bool isEVLA(const string& ant)
+{
+	if(ant == "Y")
+	{
+		return true;
+	}
+
+	return false;
+}
+
 int main(int argc, char **argv)
 {
 	VexData *V;
 	CorrParams *P;
 	const VexAntenna *A;
-	int nAntenna, nScan;
+	int nAntenna, nScan, atchar, lastchar;
 	pystream py;
-
 
 	if(argc < 2)
 	{
@@ -79,6 +90,32 @@ int main(int argc, char **argv)
 	P = new CorrParams();
 	P->vexFile = string(argv[1]);
 	P->defaultSetup();
+
+	if(argc == 3)
+	{
+		//this is an interim measure to set the phasing sources for EVLA
+		if(strncmp(argv[2], "--phasingsources=", 17) == 0)
+		{
+			atchar = 17;
+			lastchar = 17;
+			while(argv[2][atchar] != '\0')
+			{
+				if(argv[2][atchar] == ',')
+				{
+					argv[2][atchar] = '\0';
+					py.addPhasingSource(string(argv[2]+lastchar));
+					atchar++;
+					lastchar = atchar;
+				}
+				atchar++;
+			}
+			py.addPhasingSource(string(argv[2]+lastchar));
+		}
+		else
+		{
+			cout << "Ignoring argument " << argv[2] << endl;
+		}
+	}	
 
 	V = loadVexFile(*P);
 
@@ -92,13 +129,20 @@ int main(int argc, char **argv)
 	for(int a = 0; a < nAntenna; a++)
 	{
 		A = V->getAntenna(a);
-		if(!isVLBA(A->name))
+		if(!isVLBA(A->name) && !isEVLA(A->name))
 		{
-			cout << "Skipping non VLBA antenna " << A->name << endl;
+			cout << "Skipping non VLBA/EVLA antenna " << A->name << endl;
 			continue;
 		}
 		cout << "Antenna " << a << " = " << A->name << endl;
-		py.open(A->name, V);
+		if(isEVLA(A->name))
+		{
+			py.open(A->name, V, pystream::EVLA);
+		}
+		else
+		{
+			py.open(A->name, V);
+		}
 
 		py.writeHeader(V);
 		py.writeRecorderInit(V);
