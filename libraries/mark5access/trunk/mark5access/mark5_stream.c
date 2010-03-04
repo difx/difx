@@ -385,7 +385,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 /* a string containg a list of supported formats */
 const char *mark5_stream_list_formats()
 {
-	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*]";
+	return "VLBA1_*-*-*-*[/*], MKIV1_*-*-*-*[/*], MARK5B-*-*-*[/*], VDIF_*-*-*-*[/*], VLBN1_*-*-*-*[/*], VDIF_*-*-*-*[/*]";
 }
                                                                                 /* given a format string, populate a structure with info about format */
 struct mark5_format *new_mark5_format_from_name(const char *formatname)

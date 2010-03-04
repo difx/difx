@@ -828,6 +828,11 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	if(ms->Mbps > 0)
 	{
 		ms->framens = 8000.0*f->databytesperpacket/ms->Mbps;
+		ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
+	}
+	else
+	{
+		fprintf(stderr, "ms->Mbps is not > 0\n");
 	}
 
 	/* Aha -- we have some data to look at to further refine the format... */
@@ -876,6 +881,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 
 		dataframelength = (word2 & 0x00FFFFFF)*8;
+		fprintf(stdout, "Dataframelength as derived from the VDIF header is %d bytes\n", dataframelength);
 		if(f->databytesperpacket == 0)
 		{
 			f->databytesperpacket = dataframelength - f->frameheadersize;
@@ -888,8 +894,8 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 
 		ms->payloadoffset = f->frameheadersize;
-		ms->databytes = f->databytesperpacket - f->frameheadersize;
-		ms->framebytes = f->databytesperpacket;
+		ms->databytes = f->databytesperpacket;
+		ms->framebytes = f->databytesperpacket + f->frameheadersize;
 		ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
 		
 
