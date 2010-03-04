@@ -69,6 +69,9 @@ int getVDIFFrameBytes(char * rawheader);
 int getVDIFFrameMJD(char * rawheader);
 int getVDIFFrameSecond(char * rawheader);
 int getVDIFFrameNumber(char * rawheader);
+int getVDIFStationID(char * rawheader);
+int getVDIFBitsPerSample(char * rawheader);
+int getVDIFNumChannels(char * rawheader);
 
 #ifdef __cplusplus
 }

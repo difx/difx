@@ -36,36 +36,62 @@ int parse_vdif_header(char * rawheader, vdif_header * parsedheader)
 
 int getVDIFThreadID(char * rawheader)
 {
-	int headerword = ((int*)rawheader)[3];
-	return ((headerword >> 16) & 0x3FF);
+	unsigned int headerword = ((unsigned int*)rawheader)[3];
+	return (int)((headerword >> 16) & 0x3FF);
 }
 
 int getVDIFFrameBytes(char * rawheader)
 {
-        int headerword = ((int*)rawheader)[2];
-	return (headerword & 0xFFFFFF)*8;
+        unsigned int headerword = ((unsigned int*)rawheader)[2];
+	return (int)(headerword & 0xFFFFFF)*8;
+}
+
+int getVDIFStationID(char * rawheader)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[3];
+	return (int)(headerword & 0xFFFF);
+}
+
+int getVDIFBitsPerSample(char * rawheader)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[3];
+	return (int)(((headerword >> 26) & 0x1F) + 1);
+}
+
+int getVDIFNumChannels(char * rawheader)
+{
+	int numchans, i;
+	unsigned int headerword = ((unsigned int*)rawheader)[2];
+	unsigned int logchans = ((headerword >> 26) & 0x1F);
+
+	numchans = 1;
+	for(i=0;i<logchans;i++)
+	{
+		numchans *= 2;
+	}
+	return numchans;
 }
 
 int getVDIFFrameMJD(char * rawheader)
 {
-        int headerword = ((int*)rawheader)[1];
-        int epoch = ((headerword >> 24) & 0x3F);
+        unsigned int headerword = ((unsigned int*)rawheader)[1];
+        int epoch = (int)((headerword >> 24) & 0x3F);
 	int mjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
 	headerword = ((int*)rawheader)[0];
-	int seconds = (headerword & 0x3FFFFFFF);
+	int seconds = (int)(headerword & 0x3FFFFFFF);
 	return mjd + seconds/86400;
 }
 
 int getVDIFFrameSecond(char * rawheader)
 {
-        int headerword = ((int*)rawheader)[0];
-        return (headerword & 0x3FFFFFFF)%86400;
+        unsigned int headerword = ((unsigned int*)rawheader)[0];
+        return (int)((headerword & 0x3FFFFFFF)%86400);
 }
 
 int getVDIFFrameNumber(char * rawheader)
 {
-        int headerword = ((int*)rawheader)[1];
-        return (headerword & 0xFFFFFF);
+        unsigned int headerword = ((unsigned int*)rawheader)[1];
+        return (int)(headerword & 0xFFFFFF);
 }
 
 

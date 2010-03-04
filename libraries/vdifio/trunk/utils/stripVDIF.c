@@ -42,10 +42,12 @@ int usage()
           author, verdate);
   fprintf(stderr, "A program to strip network headers from a VDIF format basebad data\n");
   fprintf(stderr, "file (e.g. captured from wireshark) and dump a pure VDIF stream.\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> [skipbytes]\n", program);
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> [skipbytesfront] [skipbytesback] [skipbytesinitial]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
   fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n[skipbytes=54] is the number of bytes to skip over before each header\n");
+  fprintf(stderr, "\n[skipbytesfront=48] is the number of bytes to skip over before each frame\n");
+  fprintf(stderr, "\n[skipbytesback=4] is the number of bytes to skip over after each frame\n");
+  fprintf(stderr, "\n[skipbytesinitial=30] is the number of bytes to skip over only once after opening the file\n");
 
   return 0;
 }
@@ -55,15 +57,22 @@ int main(int argc, char **argv)
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   FILE * output;
-  int skipbytes, readbytes, framebytes;
+  int skipbytesinitial, skipbytesfront, skipbytesback;
+  int readbytes, framebytes, stationid, numchannels, bitspersample;
   long long framesread;
 
-  if(argc < 3 || argc > 4)
+  if(argc < 3 || argc > 6)
     return usage();
 
-  skipbytes = 54;
-  if(argc == 4)
-    skipbytes = atoi(argv[3]);
+  skipbytesfront   = 54;
+  skipbytesback    = 4;
+  skipbytesinitial = 28;
+  if(argc > 3)
+    skipbytesfront = atoi(argv[3]);
+  if(argc > 4)
+    skipbytesback = atoi(argv[4]);
+  if(argc > 5)
+    skipbytesinitial = atoi(argv[5]);
   
   input = fopen(argv[1], "r");
   if(input == NULL)
@@ -80,28 +89,37 @@ int main(int argc, char **argv)
   }
 
   framesread = 0;
+  if(skipbytesinitial > 0)
+    readbytes = fread(buffer, 1, skipbytesinitial, input); //skip some initial wireshark bytes
   while(!feof(input)) {
-    readbytes = fread(buffer, 1, skipbytes, input); //skip the network frame header
+    if(skipbytesfront > 0)
+      readbytes = fread(buffer, 1, skipbytesfront, input); //skip the leading network frame header
     readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
     if (readbytes < VDIF_HEADER_BYTES)
       break;
+    stationid = getVDIFStationID(buffer);
+    bitspersample = getVDIFBitsPerSample(buffer);
+    numchannels = getVDIFNumChannels(buffer);
     framebytes = getVDIFFrameBytes(buffer);
+    fprintf(stdout, "Station ID is %d, bitspersample is %d, numchannels is %d, framebytes is %d\n", stationid, bitspersample, numchannels, framebytes);
     if(framebytes > MAX_VDIF_FRAME_BYTES) {
       fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
       break;
     }
     fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
-    readbytes = fread(buffer, 1, framebytes, input); //read the VDIF data segment
-    if(readbytes < framebytes) {
-      fprintf(stderr, "Problem reading %dth frame\n", framesread);
+    readbytes = fread(buffer, 1, framebytes-VDIF_HEADER_BYTES, input); //read the VDIF data segment
+    if(readbytes < framebytes-VDIF_HEADER_BYTES) {
+      fprintf(stderr, "Problem reading %dth frame - only got %d bytes\n", framesread, readbytes);
       break;
     }
-    readbytes = fwrite(buffer, 1, framebytes, output); //write out the VDIF data segment
-    if(readbytes < framebytes) {
-      fprintf(stderr, "Problem reading %dth frame\n", framesread);
+    readbytes = fwrite(buffer, 1, framebytes-VDIF_HEADER_BYTES, output); //write out the VDIF data segment
+    if(readbytes < framebytes-VDIF_HEADER_BYTES) {
+      fprintf(stderr, "Problem writing %dth frame - only wrote %d bytes\n", framesread, readbytes);
       break;
     }
     framesread++;
+    if(skipbytesback > 0)
+      readbytes = fread(buffer, 1, skipbytesback, input); //skip the trailing network frame header
   }
 
   printf("Read and wrote %lld frames\n", framesread);
