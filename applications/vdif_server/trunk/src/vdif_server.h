@@ -74,7 +74,7 @@ class VDIF_Server{
       private:
 	//methods
 	void drainsegment(int segment);
-	int getThreadBufferIndex(int second, int framenum);
+	int getThreadBufferIndex(int second, int framenum, int framethread);
 	bool threadSegmentComplete(int segment);
 
 	//variables
@@ -92,13 +92,14 @@ class VDIF_Server{
 	virtual ~VDIF_Reader();
 	
 	//methods
+        void initialise();
 	void loopread();
 	inline bool stillReading() { return stillreading; }
 	inline void stopReading() { stillreading = false; }
       
       protected:
 	//methods
-	virtual void fillsegment(int segment);
+	virtual void fillsegment(int segment) = 0;
 
 	//variables
 	VDIF_Server * parent;
@@ -151,10 +152,11 @@ class VDIF_Server{
       protected:
 	//methods
 	virtual void fillsegment(int segment);
+        void openstream(int portnumber, int tcpwindowsizebytes);
 
       private:
 	//variables
-	int tcpwindowbytes, port;
+	int tcpwindowbytes, port, socketnumber;
     };
 
     //constants
@@ -215,13 +217,13 @@ class VDIF_Server{
     //variables
     int startmjd, startseconds, executeseconds, numserversetups, numfiles;
     int threadbuffersegmentbytes, readbuffersegmentbytes, numreadbuffersegments, numthreadbuffersegments;
-    int maxthreads, sendsegment;
+    int maxthreads, sendsegment, lastreadsegment;
     string modulename, inputfile;
     string * filenames;
     int * setting_indices;
     int srctcpwin, srcport;
     datasource datasrc;
-    bool init_ok, readthreadstarted, copythreadstarted;
+    bool init_ok, readthreadstarted, copythreadstarted, sentlastdata;
     char ** threadbuffers;
     int ** socket_handles;
     threadsegmentinfo ** threadbufinfo;
