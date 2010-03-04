@@ -48,6 +48,7 @@ int vdif_createheader (vdif_header *header, int framelength, int framepersec,
 
   header->version = VDIF_VERSION;
   header->nchan = lognchan;
+  //printf("Framelength is %d bytes, framespersec is %d\n", framelength, framepersec);
   header->framelength = framelength/8;
   header->complex = 0;
   header->nbits = bits-1;
@@ -57,6 +58,7 @@ int vdif_createheader (vdif_header *header, int framelength, int framepersec,
   header->frame=0;
   header->framepersec=framepersec;
 
+  //printf("%X%X%X%X\n%X%X%X%X\n", ((unsigned char*)header)[3], ((unsigned char*)header)[2], ((unsigned char*)header)[1], ((unsigned char*)header)[0], ((unsigned char*)header)[7], ((unsigned char*)header)[6], ((unsigned char*)header)[5], ((unsigned char*)header)[4]);
   return(VDIF_NOERROR);
 }
 

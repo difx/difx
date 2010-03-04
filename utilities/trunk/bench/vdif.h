@@ -3,6 +3,7 @@
 
 #define VDIFHEADERSIZE  32  // Bytes
 #define VDIF_MAXSTR   256
+#define MAXVDIFTHREADS 64
 
 #define VDIF_NOERROR 0
 #define VDIF_ERROR 1

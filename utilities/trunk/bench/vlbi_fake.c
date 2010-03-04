@@ -68,7 +68,7 @@ int main(int argc, char * const argv[]) {
   unsigned short fnamesize;
   ssize_t ntowrite;
   int i, status, ofile, opt, tmp, sock, thisday, thismonth, thisyear, bwrote;
-  int seconds, hour, min, sec, bufsize, datarate;
+  int seconds, hour, min, sec, bufsize, datarate, currentthread;
   char msg[MAXSTR+50], filetimestr[MAXSTR];
   char *buf, *headbuf, *ptr;
   long *lbuf;
@@ -77,7 +77,7 @@ int main(int argc, char * const argv[]) {
   unsigned long long filesize, networksize, nwritten, totalsize;
   vhead *header=0;    // File header object
   mk5bheader mk5_header;
-  vdif_header vdif_header;
+  vdif_header vdif_headers[MAXVDIFTHREADS];
 
   //int monitor = 0;  
   int port = 52100;    /* Write nfiles files of size total size */
@@ -89,6 +89,7 @@ int main(int argc, char * const argv[]) {
   int dayno = -1;
   double mjd = -1;
   int numchan = 4;
+  int numthread = 1;
   datamode mode = LBADR;
   int bits=2;
   int bandwidth=16;
@@ -122,11 +123,13 @@ int main(int argc, char * const argv[]) {
     {"update", 1, 0, 'u'},
     {"window", 1, 0, 'w'},
     {"blocksize", 1, 0, 'b'},
+    {"framesize", 1, 0, 'F'},
     {"filetime", 1, 0, 'f'},
     {"udp", 1, 0, 'U'},
     {"sleep", 1, 0, 's'},
     {"usleep", 1, 0, 's'},
     {"nchan", 1, 0, 'n'},
+    {"nthread", 1, 0, 'T'},
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
     {"vdif", 0, 0, 'V'},
@@ -203,6 +206,15 @@ int main(int argc, char * const argv[]) {
       }
       break;
 
+    case 'F':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+        fprintf(stderr, "Bad framesize option %s\n", optarg);
+      else {
+        framesize = tmp;
+      }
+      break;
+
     case 'D':
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
@@ -227,6 +239,15 @@ int main(int argc, char * const argv[]) {
 	fprintf(stderr, "Bad nchan option %s\n", optarg);
       else {
 	numchan = tmp;
+      }
+      break;
+
+    case 'T':
+      status = sscanf(optarg, "%d", &tmp);
+      if (status!=1)
+        fprintf(stderr, "Bad nthread option %s\n", optarg);
+      else {
+        numthread = tmp;
       }
       break;
       
@@ -309,6 +330,7 @@ int main(int argc, char * const argv[]) {
       printf("  -p/-port <PORT>       Port number for transfer\n");
       printf("  -d/duration <DUR>     Time in (transferred) seconds to run (60)\n");
       printf("  -bandwidth <BANWIDTH> Channel bandwidth in MHz (16)\n");
+      printf("  -framesize <FRAMESIZE>(Data) frame size for VDIF data (bits)\n");
       printf("  -n/-nchan <N>         Number of 2 bit channels to assume in stream\n");
       printf("  -day <DAY>            Day of month of start time (now)\n");
       printf("  -month <MONTH>        Month of start time (now)\n");
@@ -324,6 +346,7 @@ int main(int argc, char * const argv[]) {
       printf("  -w/-window <SIZE>     TCP window size (kB)\n");
       printf("  -b/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
       printf("  -f/filesize <SIZE>    Size in sec for files (1)\n");
+      printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
       printf("  -h/-help              This list\n");
       return(1);
     break;
@@ -341,6 +364,15 @@ int main(int argc, char * const argv[]) {
   if (day==-1) day = thisday;
   if (month==-1) month = thismonth;
   if (dayno!=-1) dayno2cal(dayno, year, &day, &month);
+
+  if (numthread > 1 && mode != VDIF) {
+    fprintf(stderr, "Multiple threads can only be used with VDIF format!\n");
+    exit(1);
+  }
+  if (numthread > MAXVDIFTHREADS) {
+    fprintf(stderr, "Too many VDIF threads %d cf max %d\n", numthread, MAXVDIFTHREADS);
+    exit(1);
+  }
 
   ut = 0;
   if (strlen(timestr)>0) {
@@ -367,7 +399,8 @@ int main(int argc, char * const argv[]) {
 
   finishmjd = mjd+duration/(60.*60.*24.);
 
-  datarate = numchan*bits*bandwidth*2; // Mbps, assuming Nyquist
+  datarate = numchan*bits*bandwidth*2/numthread; // Mbps (per thread if nthread>1), assuming Nyquist
+  printf("Datarate is %d Mbps/thread\n", datarate);
 
   if (udp.enabled) {
     if (mode==LBADR) {
@@ -414,16 +447,19 @@ int main(int argc, char * const argv[]) {
     filesize = bufsize;
     if (udp.enabled) udp.size = bufsize;
 
-    status = vdif_createheader(&vdif_header, bufsize, datarate*1e6/bufsize,
-			       2, bits, numchan, "Tt");
-    if (status!=VDIF_NOERROR) {
-      fprintf(stderr, "Error creating header (%d)\n", status);
-      exit(1);
-    }
-    status = vdif_setmjd(&vdif_header, mjd);
-    if (status!=VDIF_NOERROR) {
-      fprintf(stderr, "Error setting VDIF file (%d)\n", status);
-      exit(1);
+    for(i=0;i<numthread;i++) {
+      status = vdif_createheader(&vdif_headers[i], bufsize, datarate*1e6/((bufsize-VDIFHEADERSIZE)*8),
+			         i, bits, numchan, "Tt");
+      if (status!=VDIF_NOERROR) {
+        fprintf(stderr, "Error creating header (%d)\n", status);
+        exit(1);
+      }
+    
+      status = vdif_setmjd(&vdif_headers[i], mjd);
+      if (status!=VDIF_NOERROR) {
+        fprintf(stderr, "Error setting VDIF file (%d)\n", status);
+        exit(1);
+      }
     }
     
   } else if (mode==LBADR) {
@@ -479,7 +515,10 @@ int main(int argc, char * const argv[]) {
     header = NULL; 
     strcpy(buf+MK5BHEADSIZE*4, "Chris was here");
   } else if (mode==VDIF) {
-    strcpy(buf+VDIFHEADERSIZE, "Chris was here");
+    //strcpy(buf+VDIFHEADERSIZE, "Chris was here");
+    for (i=VDIFHEADERSIZE;i<bufsize;i++) {
+      buf[i] = (char)(i%256);
+    }
   } else {
     fprintf(stderr, "Unsupported recording mode\n");
     exit(1);
@@ -493,6 +532,7 @@ int main(int argc, char * const argv[]) {
   t1 = t0;
 
   bwrote = 0;
+  currentthread=0;
   while (mjd+0.001/60/60/24<finishmjd) {
     
     if (mode==MARK5B) {
@@ -501,7 +541,7 @@ int main(int argc, char * const argv[]) {
 
     } else if (mode==VDIF) {
       ptr = buf;
-      memcpy(ptr, &vdif_header, VDIFHEADERSIZE); // Inefficent, but oh well
+      memcpy(ptr, &vdif_headers[currentthread], VDIFHEADERSIZE); // Inefficent, but oh well
     } else { // LBADR
       // Create LBADR header
       mjd2cal(mjd, &day, &month, &year, &ut);
@@ -579,8 +619,11 @@ int main(int argc, char * const argv[]) {
       next_mark5bheader(&mk5_header);
 
     } else if (mode==VDIF) {
-      mjd = vdif_mjd(&vdif_header);
-      vdif_nextheader(&vdif_header);
+      mjd = vdif_mjd(&vdif_headers[currentthread]);
+      vdif_nextheader(&vdif_headers[currentthread]);
+      currentthread++;
+      if(currentthread == numthread)
+        currentthread = 0;
 
     } else {
       mjd += filetime;
