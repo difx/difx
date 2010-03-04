@@ -18,6 +18,8 @@ Version 2.0
 * oms2v2d: trap missing FFT_SIZE and SPECTRAL_AVERAGE parameters
 * Actually respect clock breaks!
 * Fix some logic to avert some unneeded warnings
+* Don't require DIFX_VERSION to be set
+* Check that all supplied antenna, source, scan and mode names are in vex file
 
 Version 0.3
 ~~~~~~~~~~~

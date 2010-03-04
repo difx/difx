@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -331,8 +331,6 @@ public:
 class VexData
 {
 private:
-	VexAntenna &getAntenna(string name);
-
 	VexExper exper;
 	vector<VexSource> sources;
 	vector<VexScan> scans;

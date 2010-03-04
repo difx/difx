@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,7 +44,7 @@
 
 const string program("vex2difx");
 const string version("2.0");
-const string verdate("20091214");
+const string verdate("20100304");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -355,6 +355,10 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	if(difxVer)
 	{
 		strcpy(job->difxVersion, difxVer);
+	}
+	else
+	{
+		strcpy(job->difxVersion, "Unknown");
 	}
 	job->jobStart = J.mjdStart;
 	job->jobStop  = J.mjdStop;
@@ -1791,17 +1795,58 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 }
 
-static int sanityCheckSources(const VexData *V, const CorrParams *P)
+static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 {
 	vector<SourceSetup>::const_iterator s;
+	vector<AntennaSetup>::const_iterator a;
+	vector<CorrRule>::const_iterator r;
+	list<string>::const_iterator l;
+
 	int nWarn = 0;
 
 	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); s++)
 	{
 		if(V->getSource(s->vexName) == 0)
 		{
-			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but not is not in vex file" << endl;
+			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but is not in vex file" << endl;
 			nWarn++;
+		}
+	}
+
+	for(a = P->antennaSetups.begin(); a != P->antennaSetups.end(); a++)
+	{
+		if(V->getAntenna(a->vexName) == 0)
+		{
+			cerr << "Warning: antenna " << a->vexName << " referenced in .v2d file but is not in vex file" << endl;
+			nWarn++;
+		}
+	}
+
+	for(r = P->rules.begin(); r != P->rules.end(); r++)
+	{
+		for(l = r->scanName.begin(); l != r->scanName.end(); l++)
+		{
+			if(V->getScan(*l) == 0)
+			{
+				cerr << "Warning: scan " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
+				nWarn++;
+			}
+		}
+		for(l = r->sourceName.begin(); l != r->sourceName.end(); l++)
+		{
+			if(V->getSource(*l) == 0)
+			{
+				cerr << "Warning: source " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
+				nWarn++;
+			}
+		}
+		for(l = r->modeName.begin(); l != r->modeName.end(); l++)
+		{
+			if(V->getMode(*l) == 0)
+			{
+				cerr << "Warning: mode " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
+				nWarn++;
+			}
 		}
 	}
 
@@ -1984,7 +2029,7 @@ int main(int argc, char **argv)
 
 	nWarn += P->sanityCheck();
 	nWarn += V->sanityCheck();
-	nWarn += sanityCheckSources(V, P);
+	nWarn += sanityCheckConsistency(V, P);
 	if(strict && nWarn > 0)
 	{
 		cerr << "Quitting since " << nWarn <<
@@ -2048,10 +2093,20 @@ int main(int argc, char **argv)
 
 	ofstream of;
 	string jobListFile = P->jobSeries + ".joblist";
-	string difxVersion(getenv("DIFX_VERSION"));
-	if(difxVersion == "")
+	string difxVersion;
+	const char *dvstr;
+	dvstr = getenv("DIFX_VERSION");
+	if(dvstr)
 	{
-		difxVersion = "unknown";
+		difxVersion = dvstr;
+	}
+	else
+	{
+		cout << endl;
+		cout << "Warning: env. variable DIFX_VERSION is not set.  Setting to 'Unknown'" << endl;
+		cout << "This means that your version accountability is being compromised!" << endl;
+		cout << endl;
+		difxVersion = "Unknown";
 	}
 	of.open(jobListFile.c_str());
 	of.precision(12);
