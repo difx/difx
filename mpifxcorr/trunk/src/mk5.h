@@ -79,8 +79,6 @@ protected:
   virtual void initialiseFile(int configindex, int fileindex);
 
   virtual void networkToMemory(int buffersegment, int & framebytesremaining);
-  
-  void initialiseNetwork(int configindex, int buffersegment);
 
   virtual int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 

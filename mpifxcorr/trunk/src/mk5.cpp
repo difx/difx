@@ -212,13 +212,11 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
 
-  cout << "Format name is " << formatname << ", configindex is " << configindex << ", fileindex is " << fileindex << endl;
   if(syncteststream != 0)
     delete_mark5_stream(syncteststream);
   syncteststream = new_mark5_stream(
     new_mark5_stream_file(datafilenames[configindex][fileindex].c_str(), 0),
     new_mark5_format_generic_from_string(formatname) );
-  cout << "Value of syncteststream was " << syncteststream << endl;
   if(syncteststream == 0)
   {
     cwarn << startl << " could not open file " << datafilenames[configindex][fileindex] << endl;
@@ -229,7 +227,6 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   {
     cerror << startl << "Error - number of recorded bands for datastream " << streamnum << " (" << nrecordedbands << ") does not match with MkV file " << datafilenames[configindex][fileindex] << " (" << syncteststream->nchan << "), will be ignored!!!" << endl;
   }
-  cout << "Successfully used mark5stream" << endl;
 
   // resolve any day ambiguities
   mark5_stream_fix_mjd(syncteststream, corrstartday);
@@ -266,6 +263,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   //close the stream used to get the offset, create the one we will use to test
   delete_mark5_stream(syncteststream);
+  syncteststream = 0;
   cverbose << startl << "About to seek to byte " << offset << " plus " << dataoffset << " to get to the first frame" << endl;
 
   input.seekg(offset + dataoffset, ios_base::beg);
@@ -288,7 +286,14 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   offset = 0;
   corrday = config->getStartMJD();
   corrsec = config->getStartSeconds();
+  if(syncteststream != 0)
+    delete_mark5_stream(syncteststream);
   syncteststream = new_mark5_stream(new_mark5_stream_memory(&(databuffer[buffersegment*(bufferbytes/numdatasegments)]), bufferbytes/numdatasegments), new_mark5_format_generic_from_string(formatname) );
+  if(syncteststream == 0)
+  {
+    cerror << startl << "Could not create a mark5stream to test for sync!" << endl;
+    return 0; //note exit here
+  }
   // resolve any day ambiguities
   mark5_stream_fix_mjd(syncteststream, corrday);
   mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
@@ -296,11 +301,15 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   syncteststream = 0;
 
   deltatime = 86400*(corrday - mjd) + (model->getScanStartSec(bufferinfo[buffersegment].scan, corrday, corrsec) + bufferinfo[buffersegment].scanseconds + corrsec - sec) + double(bufferinfo[buffersegment].scanns-ns)/1e9;
+  //cout << "Received some data with a time " << mjd << ", " << sec << ", " << ns << endl;
 
   if(fabs(deltatime) > 1e-10) //oh oh, a problem
   {
-    cerror << startl << "Lost Sync! Will attempt to resync. Deltatime was " << deltatime << endl;
-    cdebug << startl << "Corrday was " << corrday << ", corrsec was " << corrsec << ". MJD was " << mjd << ", sec was " << sec << "> Readseconds was " << bufferinfo[buffersegment].scanseconds << ". readns was " << bufferinfo[buffersegment].scanns << ", ns was " << ns << endl;
+    if(readfromfile || readscan != 0 || readseconds != 0 || readnanoseconds != 0) //its not an error for the *first* network read
+    {
+      cerror << startl << "Lost Sync! Will attempt to resync. Deltatime was " << deltatime << endl;
+      cdebug << startl << "Corrday was " << corrday << ", corrsec was " << corrsec << ". MJD was " << mjd << ", sec was " << sec << "> Readseconds was " << bufferinfo[buffersegment].scanseconds << ". readns was " << bufferinfo[buffersegment].scanns << ", ns was " << ns << endl;
+    }
     mark5stream = new_mark5_stream(
     new_mark5_stream_memory(&databuffer[buffersegment*(bufferbytes/numdatasegments)], bufferinfo[buffersegment].validbytes), new_mark5_format_generic_from_string(formatname) );
 
@@ -338,17 +347,27 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
         } else {
           cinfo << startl << "************: Shifting " << offset << " bytes in memory to regain sync" << endl;
           memmove(ptr, ptr+offset, bufferinfo[buffersegment].validbytes-offset);
+        }
+      }
 
-          //No need to update validbytes - caller will attempt to fill the missing data
-          //just fill in the new times
-          readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
-          readnanoseconds = mark5stream->ns;
-          while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
-            readscan++;
-          while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
-            readscan--;
-          readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+      if (offset <= bufferinfo[buffersegment].validbytes)
+      {
+        //No need to update validbytes - caller will attempt to fill the missing data
+        //just fill in the new times
+        readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
+        readnanoseconds = mark5stream->ns;
+        while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
+          readscan++;
+        while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
+          readscan--;
+        readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+        //also in the buffer
+        bufferinfo[buffersegment].scanns = readnanoseconds;
+        bufferinfo[buffersegment].scanseconds = readseconds;
+        bufferinfo[buffersegment].scan = readscan;
 
+        if(readfromfile || readscan != 0 || readseconds != 0 || readnanoseconds != 0) //its not an error for the *first* network read
+        {
           cinfo << startl << "After regaining sync, the frame start day is " << mark5stream->mjd << ", the frame start seconds is " << mark5stream->sec << ", the frame start ns is " << mark5stream->ns << ", readscan is " << readscan << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
         }
       }
@@ -365,6 +384,8 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
   Configuration::dataformat format;
   double bw;
 
+  //cout << "Datastream " << mpiid << " about to read " << readbytes << " into buffer segment " << buffersegment << "; framebytesremaining is " << framebytesremaining << endl;
+
   if (udp_offset>readbytes) {
     cinfo << startl << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << endl;
     udp_offset %= readbytes;
@@ -372,7 +393,6 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
   if(bufferinfo[buffersegment].configindex != lastconfig)
   {
     //regenerate formatname (only ever likely in eVLBI, and probably not even then)
-    delete_mark5_stream(syncteststream);
     format = config->getDataFormat(bufferinfo[buffersegment].configindex, streamnum);
     nbits = config->getDNumBits(bufferinfo[buffersegment].configindex, streamnum);
     nrecordedbands = config->getDNumRecordedBands(bufferinfo[buffersegment].configindex, streamnum);
@@ -383,11 +403,11 @@ void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining
       cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
     }
-
-    syncteststream = new_mark5_stream(new_mark5_stream_unpacker(0), new_mark5_format_generic_from_string(formatname) );
   }
 
   DataStream::networkToMemory(buffersegment, framebytesremaining);
+  framebytesremaining = 2*readbytes;
+  //cout << "Datastream " << mpiid << " finished reading; framebytesremaining is now " << framebytesremaining << ", buffersegment is " << buffersegment << ", keepreading is " << keepreading << endl;
 }
 
 
@@ -642,93 +662,6 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 
   }
   return(1);
-}
-
-// This is almost identical to initialiseFile. The two should maybe be combined
-void Mk5DataStream::initialiseNetwork(int configindex, int buffersegment)
-{
-  int offset;
-  char *ptr;
-  struct mark5_stream *mark5stream;
-  int nbits, nrecordedbands, fanout;
-  Configuration::dataformat format;
-  double bw;
-
-  format = config->getDataFormat(configindex, streamnum);
-  nbits = config->getDNumBits(configindex, streamnum);
-  nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
-  bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
-
-  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getFrameBytes(configindex, streamnum), config->getDDecimationFactor(configindex, streamnum), formatname);
-  //cinfo << startl << "******* validbytes " << bufferinfo[buffersegment].validbytes << endl;
-
-  //cinfo << startl << "DataStream " << mpiid << ": Create a new Mark5 stream " << formatname << endl;
-
-  mark5stream = new_mark5_stream(
-    new_mark5_stream_memory(&databuffer[buffersegment*(bufferbytes/numdatasegments)], 
-			    bufferinfo[buffersegment].validbytes),
-    new_mark5_format_generic_from_string(formatname) );
-
-  if (mark5stream==0) {
-    cwarn << startl << "DataStream " << mpiid << ": Warning - Could not identify Mark5 segment time (" << formatname << ")" << endl;
-    // We don't need to actually set the time - it ill just be deadreckoned from that last segment. As there is no good data this does not matter
-  } else {
-
-    if(mark5stream->nchan != config->getDNumRecordedBands(configindex, streamnum))
-    {
-      cerror << startl << "Number of recorded bands for datastream " << streamnum << " (" << nrecordedbands << ") does not match with MkV data " << " (" << mark5stream->nchan << "), will be ignored!!!" << endl;
-    }
-
-    // resolve any day ambiguities
-    mark5_stream_fix_mjd(mark5stream, corrstartday);
-
-    if (configindex != lastconfig) {
-      mark5_stream_print(mark5stream);
-      lastconfig = configindex;
-    }
-
-    offset = mark5stream->frameoffset;
-
-    // If offset is non-zero we need to shuffle the data in memory to align on a frame
-    // boundary. This is the equivalent of a seek in the file case.
-    if (offset>0) { 
-      ptr = (char*)&databuffer[buffersegment*(bufferbytes/numdatasegments)];
-
-      if (offset>bufferinfo[buffersegment].validbytes) {
-	cerror << startl << "Datastream " << mpiid << ": ERROR Mark5 offset (" << offset << ") > segment size (" << bufferinfo[buffersegment].validbytes << "!!!" << endl;
-	keepreading=false;
-      } else {
-	int nread, status;
-	cinfo << startl << "************Datastream " << mpiid << ": Seeking " << offset << " bytes into stream. " << endl;
-	memmove(ptr, ptr+offset, bufferinfo[buffersegment].validbytes-offset);
-	status = readnetwork(socketnumber, ptr+bufferinfo[buffersegment].validbytes-offset, offset, &nread);
-	
-	// We *should not* update framebytes remaining (or validbyes). 
-
-	if (status==-1) { // Error reading socket
-	  cerror << startl << "Datastream " << mpiid << ": Error reading socket" << endl;
-	  keepreading=false;
-	} else if (status==0) {  // Socket closed remotely
-	  keepreading=false;
-	} else if (nread!=offset) {
-	  cerror << startl << "Datastream " << mpiid << ": Did not read enough bytes" << endl;
-	  keepreading=false;
-	}
-      }
-    }
-
-    readseconds = 86400*(mark5stream->mjd-corrstartday) + mark5stream->sec-corrstartseconds + intclockseconds;
-    readnanoseconds = mark5stream->ns;
-    while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
-      readscan++;
-    while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
-      readscan--;
-    readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
-    cinfo << startl << "DataStream " << mpiid << ": The frame start day is " << mark5stream->mjd << ", the frame start seconds is " << mark5stream->sec << ", the frame start ns is " << mark5stream->ns << ", readseconds is " << readseconds << ", readnanoseconds is " << readnanoseconds << endl;
-
-    delete_mark5_stream(mark5stream);
-  }
-
 }
 
 double tim(void) {

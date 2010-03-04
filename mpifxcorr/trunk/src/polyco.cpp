@@ -425,7 +425,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       //get the dm, dopplershift and logresidual
       input.get(buffer, 22);
       dm = atof(buffer);
-      if(!fieldOK(buffer, 19))
+      if(!fieldOK(buffer, 21))
       {
         cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the DM field contained " << buffer << ".  Aborting!" << endl;
         return false;
@@ -485,7 +485,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 
       input.get(buffer, 22);
       obsfrequency = atof(buffer);
-      if(!fieldOK(buffer, 19))
+      if(!fieldOK(buffer, 21))
       {
         cfatal << startl << "Polyco " << s+1 << "/" << subcount+1 << " is malformed - the observing frequency field contained " << buffer << ".  Aborting!" << endl;
         return false;

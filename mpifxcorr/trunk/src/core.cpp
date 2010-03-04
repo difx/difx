@@ -927,7 +927,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         modes[j]->zeroAutocorrelations();
     }
 
-    //finally, update the baselineweight in the binning, non-scrunching case
+    //finally, update the baselineweight if not doing any pulsar stuff or if scrunching
     if(!procslots[index].pulsarbin || procslots[index].scrunchoutput)
     {
       for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)

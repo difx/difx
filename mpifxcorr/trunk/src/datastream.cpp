@@ -116,6 +116,7 @@ void DataStream::initialise()
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   readseconds = 0;
+  readnanoseconds = 0;
   readfromfile = config->isReadFromFile(currentconfigindex, streamnum);
 
   for(int i=0;i<numdatasegments;i++)
@@ -298,6 +299,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     cerror << startl << "lastoffsetns less than 0 still! =" << lastoffsetns << endl;
   }
 
+  //cout << "DATASTREAM main thread: looking for scan " << scan << ", sec " << offsetsec << ", ns " << offsetns << "; atsegment is " << atsegment << ", our first locked buffer has scan " << bufferinfo[atsegment].scan << ", sec " << bufferinfo[atsegment].scanseconds << ", ns " << bufferinfo[atsegment].scanns << endl;
+
   if(scan < bufferinfo[atsegment].scan)
   {
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
@@ -321,6 +324,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   while((scan > bufferinfo[(atsegment+1)%numdatasegments].scan || (scan == bufferinfo[(atsegment+1)%numdatasegments].scan && (offsetsec > bufferinfo[(atsegment+1)%numdatasegments].scanseconds + 1 || ((offsetsec - bufferinfo[(atsegment+1)%numdatasegments].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[(atsegment+1)%numdatasegments].scanns) >= 0)))) && (keepreading || (atsegment != lastvalidsegment)))
   {
+    //cout << "Going to wait since next segment has scan " << bufferinfo[(atsegment+1)%numdatasegments].scan << ", sec " << bufferinfo[(atsegment+1)%numdatasegments].scanseconds << ", ns " << bufferinfo[(atsegment+1)%numdatasegments].scanns << endl;
     //test the to see if sends have completed from the wait segment
     waitForSendComplete();
 
@@ -354,7 +358,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
   }
-  
+
   //now that we obviously have a lock on all the data we need, fill the control buffer
   blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
 
@@ -651,7 +655,7 @@ void DataStream::loopfileread()
 
 void DataStream::loopnetworkread()
 {
-  int perr, framebytesremaining, lastvalidsegment;
+  int perr, framebytesremaining;
 
   //lock the outstanding send lock
   perr = pthread_mutex_lock(&outstandingsendlock);
@@ -1029,6 +1033,8 @@ void DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
     else
       keepreading = false;
   }
+  if(readseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) >= config->getExecuteSeconds())
+    keepreading = false;
 }
 
 int DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)

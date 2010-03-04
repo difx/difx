@@ -582,6 +582,8 @@ void Visibility::writedata()
           autocorrweights[i][j][k] = floatresults[resultindex]/fftsperintegration;
           resultindex++;
         }
+        else
+          autocorrweights[i][j][k] = 0.0;
       }
     }
   }

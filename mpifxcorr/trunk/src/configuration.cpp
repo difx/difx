@@ -507,17 +507,20 @@ int Configuration::getMaxPhaseCentres(int configindex)
 
 int Configuration::getDataBytes(int configindex, int datastreamindex)
 {
+  int validlength, payloadbytes;
   datastreamdata currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   freqdata arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
-  int validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
+  validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
   if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == VDIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
     validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+0.5)*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
-    return ((validlength/currentds.framebytes)+2)*currentds.framebytes;
+    payloadbytes = getFramePayloadBytes(configindex, datastreamindex);
+    validlength = (validlength/getFramePayloadBytes(configindex, datastreamindex) + 2)*currentds.framebytes;
+
+    //cout << "About to set databytes to " << validlength << " since currentds.framebytes is " << currentds.framebytes << " and blockspersend is " << configs[configindex].blockspersend << endl;
   }
-  else
-    return validlength;
+  return validlength;
 }
 
 int Configuration::getMaxProducts(int configindex)
