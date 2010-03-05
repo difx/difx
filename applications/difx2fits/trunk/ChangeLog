@@ -10,6 +10,7 @@ Version 3.0
   - Write .jobmatrix file
   - Write new WEIGHTYP keyword
   - Sniffer: keep one more amplitude digit
+  - Sniffer: apd and apc files: keep 2 more time digits
 * Adds support for multiple phase centres, zoom bands
 * Also bugfixes for freeing memory
 * Requires difxio 3.0

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -573,14 +573,14 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
 	{
 		/* fringe fit */
 
-		fprintf(S->apd, "%5d %8.5f %2d %-10s %2d %2d %-3s %-3s %2d",
+		fprintf(S->apd, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
 			S->D->source[A->sourceId].name, a1+1, a2+1,
 			S->D->antenna[a1].name,
 			S->D->antenna[a2].name,
 			A->nBBC);
 
-		fprintf(S->apc, "%5d %8.5f %2d %-10s %2d %2d %-3s %-3s %2d",
+		fprintf(S->apc, "%5d %10.7f %2d %-10s %2d %2d %-3s %-3s %2d",
 			(int)mjd, 24.0*(mjd-(int)mjd), A->sourceId+1,
 			S->D->source[A->sourceId].name, a1+1, a2+1,
 			S->D->antenna[a1].name,
