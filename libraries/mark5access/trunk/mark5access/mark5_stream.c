@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -946,9 +946,9 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 		{
 			return -1;
 		}
-		n = jumpns / ms->framens;
+		n = jumpns / ms->framens - 1;
 
-		status = ms->seek(ms, n);
+		status = ms->seek(ms, n + ms->framenum);
 
 		if(status < 0)
 		{
@@ -956,6 +956,8 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 		}
 
 		ms->framenum = n;
+
+		mark5_stream_next_frame(ms);
 
 		/* FIXME -- validate here? */
 

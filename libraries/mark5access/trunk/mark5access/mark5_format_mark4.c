@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@
 #define VALIDEND 19936
 
 /* the high mag value for 2-bit reconstruction */
-static const float HiMag = 3.3359;
+static const float HiMag = OPTIMAL_2BIT_HIGH;
 
 float m4lut1bit[256][8];  /* For all 1-bit modes */
 float m4lut2bit1[256][4]; /* fanout 1 @ 8/16t, fanout 4 @ 32/64t ! */

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007, 2008, 2009 by Walter Brisken                *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -41,7 +41,7 @@
 #define PAYLOADSIZE 20000
 
 /* the high mag value for 2-bit reconstruction */
-static const float HiMag = 3.3359;
+static const float HiMag = OPTIMAL_2BIT_HIGH;
 
 static unsigned int *modulate = 0;
 

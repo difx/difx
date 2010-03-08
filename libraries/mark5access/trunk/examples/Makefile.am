@@ -1,6 +1,6 @@
 
 INCLUDES = -I$(top_srcdir)/mark5access
-LDADD =    $(top_builddir)/mark5access/libmark5access.la
+LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
 
 if WITH_FFTW
 fftw_programs = m5spec
@@ -14,6 +14,7 @@ bin_PROGRAMS = \
 	test_mark5_stream \
 	test_unpacker \
 	m5test \
+	m5fold \
 	m5d \
 	$(fftw_programs)
 
