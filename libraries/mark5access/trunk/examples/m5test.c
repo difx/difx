@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,9 @@
 const char program[] = "m5test";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.0";
-const char verdate[] = "2007 Oct 6";
+const char verdate[] = "2010 Mar 8";
+
+const int ChunkSize = 1024;
 
 int usage(const char *pgm)
 {
@@ -53,13 +55,11 @@ int usage(const char *pgm)
 	return 0;
 }
 
-int verify(const char *filename, const char *formatname, const char *f,
-	long long offset)
+int verify(const char *filename, const char *formatname, long long offset)
 {
 	struct mark5_stream *ms;
 	float **data;
 	int i, status;
-	long long chunk = 1024;
 	long long total, unpacked;
 
 	total = unpacked = 0;
@@ -79,14 +79,14 @@ int verify(const char *filename, const char *formatname, const char *f,
 	data = (float **)malloc(ms->nchan*sizeof(float *));
 	for(i = 0; i < ms->nchan; i++)
 	{
-		data[i] = (float *)malloc(chunk*sizeof(float ));
+		data[i] = (float *)malloc(ChunkSize*sizeof(float ));
 	}
 
 	mark5_stream_print(ms);
 
 	for(i = 0;; i++)
 	{
-		status = mark5_stream_decode(ms, chunk, data);
+		status = mark5_stream_decode(ms, ChunkSize, data);
 		
 		if(status < 0)
 		{
@@ -95,7 +95,7 @@ int verify(const char *filename, const char *formatname, const char *f,
 		}
 		else
 		{
-			total += chunk;
+			total += ChunkSize;
 			unpacked += status;
 		}
 		if(i%1024 == 0)
@@ -103,7 +103,7 @@ int verify(const char *filename, const char *formatname, const char *f,
 			int mjd, sec;
 			double ns;
 			mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
-			printf("f=%lld mjd=%d sec=%d ns=%011.1f valid=%d invalid=%d\n", 
+			printf("frame_num=%lld mjd=%d sec=%d ns=%011.1f n_valid=%d n_invalid=%d\n", 
 				ms->framenum, mjd, sec, ns,
 				ms->nvalidatepass, ms->nvalidatefail);
 		}
@@ -178,7 +178,7 @@ int main(int argc, char **argv)
 		offset=atoll(argv[3]);
 	}
 
-	verify(argv[1], argv[2], "%2.0f ", offset);
+	verify(argv[1], argv[2], offset);
 
 	return 0;
 }

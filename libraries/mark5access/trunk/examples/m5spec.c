@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,8 +35,8 @@
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2008 Jul 6";
+const char version[] = "1.0";
+const char verdate[] = "2010 Mar 8";
 
 int usage(const char *pgm)
 {

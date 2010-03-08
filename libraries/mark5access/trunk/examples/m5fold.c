@@ -34,8 +34,8 @@
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2010 Mar 7";
+const char version[] = "1.0";
+const char verdate[] = "2010 Mar 8";
 
 const int ChunkSize = 10000;
 

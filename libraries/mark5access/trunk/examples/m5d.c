@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,7 @@
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.0";
-const char verdate[] = "2007 Oct 6";
+const char verdate[] = "2010 Mar 8";
 
 int usage(const char *pgm)
 {
