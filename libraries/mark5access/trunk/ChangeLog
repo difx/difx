@@ -3,6 +3,7 @@ Version 1.4.1
 * disable all K5 code until that is at least somewhat useful
 * Some memory leak fixes from Alexander Neidhardt and Martin Ettl (from Wettzell)
 * Add m5fold utility
+* Add some 4 and 8 bit unpackers for VDIF format
 
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
