@@ -910,13 +910,13 @@ LBA8BitMode::LBA8BitMode(Configuration * conf, int confindex, int dsindex, int r
 float LBA8BitMode::unpack(int sampleoffset)
 {
   int status;
-  char * packed = (char *)(&(data[((unpackstartsamples/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator]));
+  unsigned char * packed = (unsigned char *)(&(data[((unpackstartsamples/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator]));
 
   for(int i=0;i<unpacksamples;i++)
   {
     for(int j=0;j<numrecordedbands;j++)
     {
-      unpackedarrays[j][i] = (float)(*packed);
+      unpackedarrays[j][i] = (float)(*packed) - 128.0;
       packed++;
     }
   }
