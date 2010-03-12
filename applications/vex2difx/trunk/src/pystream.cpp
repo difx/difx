@@ -34,13 +34,10 @@
 #include "evladefaults.h"
 #include "pystream.h"
 
-void pystream::open(const string& antennaName, const VexData *V)
-{
-	open(antennaName, V, VLBA); //assume VLBA script type if not told otherwise
-}
-
 void pystream::open(const string& antennaName, const VexData *V, scripttype stype)
 {
+	string extension;
+
 	evlaintsec     = DEFAULT_EVLA_INT_SEC;
 	evlasbbits     = DEFAULT_EVLA_SB_BITS;
 	evlasbchan     = DEFAULT_EVLA_SB_CHAN;
@@ -63,7 +60,18 @@ void pystream::open(const string& antennaName, const VexData *V, scripttype styp
 		sw[i] = "";
 	}
 	mjd0 = V->obsStart();
-	ofstream::open((string(obsCode) + string(".") + antennaName + ".py").c_str());
+	
+	if(stype == GBT)
+	{
+		extension = ".turtle";
+	}
+	else
+	{
+		extension = ".py";
+	}
+
+	fileName = string(obsCode) + string(".") + antennaName + extension;
+	ofstream::open(fileName.c_str());
 }
 
 void pystream::addPhasingSource(const string srcname)
@@ -195,6 +203,11 @@ int pystream::writeHeader(const VexData *V)
 		*this << "execfile(includePath+\"printers.py\")" << endl;
 		*this << "execfile(includePath+\"tmjd.py\")" << endl;
 	}
+	else if(currenttype == GBT)
+	{
+		*this << "execfile(\"/users/gbvlbi/obs/newvlbadefs.py\")" << endl;
+		*this << "execfile(\"/users/gbvlbi/obs/" << obsCode << "_setup.py\")" << endl; 
+	}
 	*this << endl;
 	*this << "second = 1.0/86400.0" << endl;
 	*this << endl;
@@ -231,7 +244,7 @@ int pystream::writeRecorderInit(const VexData *V)
 
 int pystream::writeDbeInit(const VexData *V)
 {
-	if(currenttype == VLBA)
+	if(currenttype == VLBA || currenttype == GBT)
 	{
 		*this << "dbe0 = RDBE(0, 'pfb')" << endl;
 		*this << "dbe0.setAGC(1)" << endl;
@@ -456,6 +469,18 @@ int pystream::writeSourceTable(const VexData *V)
 	precision(p);
 
 	return nSource;
+}
+
+int pystream::writeScansGBT(const VexData *V)
+{
+	int nScan;
+
+	nScan = V->nScan();
+	for(int s = 0; s < nScan; s++)
+	{
+	}
+
+	return nScan;
 }
 
 int pystream::writeScans(const VexData *V)

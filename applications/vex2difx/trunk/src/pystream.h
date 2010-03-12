@@ -37,8 +37,7 @@
 class pystream : public ofstream
 {
 public:
-	enum scripttype {VLBA, EVLA};
-	void open(const string& antennaName, const VexData *V);
+	enum scripttype {VLBA, EVLA, GBT};
 	void open(const string& antennaName, const VexData *V, scripttype stype);
 	void close();
 	void addPhasingSource(const string srcname);
@@ -48,6 +47,7 @@ public:
 	int writeLoifTable(const VexData *V);
 	int writeSourceTable(const VexData *V);
 	int writeScans(const VexData *V);
+	int writeScansGBT(const VexData *V);
 
 private:
 	scripttype currenttype;
@@ -55,6 +55,7 @@ private:
 	string ant;
 	string sw[4];	// 4x4 switch state
 	string obsCode;
+	string fileName;
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;

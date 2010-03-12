@@ -400,6 +400,7 @@ public:
 	const list<VexEvent> *getEvents() const;
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &name);
 	void addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scanName);
+	void sortEvents();
 
 	const VexExper *getExper() const { return &exper; }
 	void setExper(const string& name, const VexInterval& experTimeRange);

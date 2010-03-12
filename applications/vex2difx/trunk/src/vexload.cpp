@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -149,7 +149,7 @@ double vexDate(char *value)
 	return mjd;
 }
 
-int getAntennas(VexData *V, Vex *v, const CorrParams& params)
+static int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexAntenna *A;
 	struct site_position *p;
@@ -285,7 +285,7 @@ int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-int getSources(VexData *V, Vex *v, const CorrParams& params)
+static int getSources(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexSource *S;
 	char *p;
@@ -399,7 +399,7 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 	return VexInterval(mjdStart, mjdStop);
 }
 
-int getScans(VexData *V, Vex *v, const CorrParams& params)
+static int getScans(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexScan *S;
 	char *scanId;
@@ -547,7 +547,7 @@ int getScans(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-int getModes(VexData *V, Vex *v, const CorrParams& params)
+static int getModes(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexMode *M;
 	void *p;
@@ -860,7 +860,7 @@ static void fixOhs(string &str)
 	}
 }
 
-int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
+static int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 {
 	Vsn *p;
 	llist *block;
@@ -932,7 +932,7 @@ int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *station)
 	return 0;
 }
 
-int getVSNs(VexData *V, Vex *v, const CorrParams& params)
+static int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 {
 	int r;
 
@@ -949,7 +949,7 @@ int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 	return 0;
 }
 
-int getEOPs(VexData *V, Vex *v, const CorrParams& params)
+static int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 {
 	llist *block;
 	Llist *defs;
@@ -1043,7 +1043,7 @@ int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	return N;
 }
 
-int getExper(VexData *V, Vex *v, const CorrParams& params)
+static int getExper(VexData *V, Vex *v, const CorrParams& params)
 {
 	llist *block;
 	Llist *defs;
@@ -1151,6 +1151,7 @@ VexData *loadVexFile(const CorrParams& P)
 	calculateScanSizes(V, P);
 	V->findLeapSeconds();
 	V->addBreaks(P.manualBreaks);
+	V->sortEvents();
 
 	return V;
 }

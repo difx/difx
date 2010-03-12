@@ -44,7 +44,7 @@
 
 const string program("vex2difx");
 const string version("2.0");
-const string verdate("20100304");
+const string verdate("20100312");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -341,6 +341,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 		V->addEvent(j->mjdStop,  VexEvent::JOB_STOP,  name.str());
 		j->assignVSNs(*V);
 	}
+	V->sortEvents();
 }
 
 DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext)

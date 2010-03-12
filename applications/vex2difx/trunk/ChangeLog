@@ -20,6 +20,7 @@ Version 2.0
 * Fix some logic to avert some unneeded warnings
 * Don't require DIFX_VERSION to be set
 * Check that all supplied antenna, source, scan and mode names are in vex file
+* Huge speed-up by not constantly sorting events
 
 Version 0.3
 ~~~~~~~~~~~

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1278,12 +1278,15 @@ const list<VexEvent> *VexData::getEvents() const
 void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name)
 {
 	events.push_back(VexEvent(mjd, eventType, name));
-	events.sort();
 }
 
 void VexData::addEvent(double mjd, VexEvent::EventType eventType, const string &name, const string &scan)
 {
 	events.push_back(VexEvent(mjd, eventType, name, scan));
+}
+
+void VexData::sortEvents()
+{
 	events.sort();
 }
 

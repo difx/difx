@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken / Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const string program("vex2script");
 const string version("0.1");
-const string verdate("20091108");
-const string author("Walter Brisken");
+const string verdate("20100304");
+const string author("Walter Brisken & Adam Deller");
 
 int usage(int argc, char **argv)
 {
@@ -66,11 +66,21 @@ bool isVLBA(const string& ant)
 
 bool isEVLA(const string& ant)
 {
-	if(ant == "Y")
+	if(ant == "Y" || ant == "Y27" || ant == "Y1")
 	{
 		return true;
 	}
 
+	return false;
+}
+
+bool isGBT(const string& ant)
+{
+	if(ant == "GB")
+	{
+		return true;
+	}
+	
 	return false;
 }
 
@@ -81,6 +91,7 @@ int main(int argc, char **argv)
 	const VexAntenna *A;
 	int nAntenna, nScan, atchar, lastchar;
 	pystream py;
+	pystream::scripttype stype;
 
 	if(argc < 2)
 	{
@@ -129,27 +140,42 @@ int main(int argc, char **argv)
 	for(int a = 0; a < nAntenna; a++)
 	{
 		A = V->getAntenna(a);
-		if(!isVLBA(A->name) && !isEVLA(A->name))
-		{
-			cout << "Skipping non VLBA/EVLA antenna " << A->name << endl;
-			continue;
-		}
-		cout << "Antenna " << a << " = " << A->name << endl;
 		if(isEVLA(A->name))
 		{
-			py.open(A->name, V, pystream::EVLA);
+			cout << "VLA antenna " << a << " = " << A->name << endl;
+			stype = pystream::EVLA;
 		}
-		else
+		else if(isGBT(A->name))
 		{
-			py.open(A->name, V);
+			cout << "GBT antenna " << a << " = " << A->name << endl;
+			stype = pystream::GBT;
 		}
+		else if(isVLBA(A->name))
+		{
+			cout << "VLBA antenna " << a << " = " << A->name << endl;
+			stype = pystream::VLBA;
+		}
+		else 
+		{
+			cout << "Skipping unknown antenna " << A->name << endl;
+			continue;
+		}
+
+		py.open(A->name, V, stype);
 
 		py.writeHeader(V);
 		py.writeRecorderInit(V);
 		py.writeDbeInit(V);
-		py.writeLoifTable(V);
-		py.writeSourceTable(V);
-		py.writeScans(V);
+		if(stype == pystream::GBT)
+		{
+			py.writeScansGBT(V);
+		}
+		else
+		{
+			py.writeLoifTable(V);
+			py.writeSourceTable(V);
+			py.writeScans(V);
+		}
 
 		py.close();
 	}
