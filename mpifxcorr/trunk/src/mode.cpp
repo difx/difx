@@ -936,7 +936,7 @@ float LBA16BitMode::unpack(int sampleoffset)
   {
     for(int j=0;j<numrecordedbands;j++)
     {
-      unpackedarrays[j][i] = (float)(*packed) - 65536.0;
+      unpackedarrays[j][i] = (float)(*packed) - 32768.0;
       packed++;
     }
   }
