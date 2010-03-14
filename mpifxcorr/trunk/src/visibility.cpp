@@ -215,6 +215,10 @@ void Visibility::updateTime()
       subintsthisintegration++;
     }
   }
+  else if((double)model->getScanDuration(currentscan) - (double)currentstartseconds - ((double)currentstartns)/1000000000.0 < config->getIntTime(currentconfigindex)) {
+    //This will be an incomplete subintegration - recalculate subintsthisintegration
+    subintsthisintegration -= ((long long)(1000000000.0*currentstartseconds + (double)currentstartns +  1000000000.0*config->getIntTime(currentconfigindex) - 1000000000.0*model->getScanDuration(currentscan)))/((long long)config->getSubintNS(currentconfigindex));
+  }
 
   configindex = 0;
   if(currentscan < model->getNumScans())

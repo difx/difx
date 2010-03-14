@@ -307,11 +307,27 @@ public:
  @brief A mode for 'Bruce' style LBA 8 bit data
 
  Assumes running on a LITTLE-ENDIAN MACHINE!!!
+ Also assumes Nyquist sampled clock
  @author Adam Deller
  */
 class LBA8BitMode : public Mode{
 public:
   LBA8BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs);
+
+  virtual float unpack(int sampleoffset);
+};
+
+/**
+ @class LBA16BitMode
+ @brief A mode for 'Bruce' style LBA 16 bit data
+
+ Assumes running on a LITTLE-ENDIAN MACHINE and the byte order of the 16 bit samples is little endian!!!
+ Also assumes Nyquist sampled clock
+ @author Adam Deller
+ */
+class LBA16BitMode : public Mode{
+public:
+  LBA16BitMode(Configuration * conf, int confindex, int dsindex, int nchan, int chanstoavg, int bpersend, int gblocks, int nfreqs, double bw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int ninputbands, int noutputbands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs);
 
   virtual float unpack(int sampleoffset);
 };

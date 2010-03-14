@@ -626,6 +626,13 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
       }
       return new LBA8BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 8/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs);
       break;
+    case LBA16BIT:
+      if(stream.numbits != 16) {
+        cerror << startl << "16BIT LBA mode must have 16 bits! aborting" << endl;
+        return NULL;
+      }
+      return new LBA16BitMode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, 16/*bits*/, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs);
+      break;
     case MKIV:
     case VLBA:
     case VLBN:
@@ -946,6 +953,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = LBAVSOP;
     else if(line == "LBA8BIT")
       datastreamtable[i].format = LBA8BIT;
+    else if(line == "LBA16BIT")
+      datastreamtable[i].format = LBA16BIT;
     else if(line == "K5")
       datastreamtable[i].format = K5;
     else if(line == "MKIV")
