@@ -773,7 +773,7 @@ int main(int argc, char **argv)
 			}
 			if(nGood == 0)
 			{
-				sprintf(message, "MJD range %12.6f to %12.6f not in any scan", mjdStart, mjdStop);
+				sprintf(message, "MJD range %14.8f to %14.8f not in any scan", mjdStart, mjdStop);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 				fprintf(stderr, "Warning: %s\n", message);
 			}

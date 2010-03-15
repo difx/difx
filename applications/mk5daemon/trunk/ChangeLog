@@ -79,5 +79,6 @@ Version 2.0
 ~~~~~~~~~~~
 * mount and dismount commands (not using DBUS yet)
 * make destination directory before copy
-* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans
+* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans (thanks Adam)
+* checkdir -- allow 800 frames per second mode
 * remove auto-starting of the Mark5A program
