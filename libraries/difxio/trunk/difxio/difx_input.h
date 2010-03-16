@@ -184,8 +184,8 @@ typedef struct
 	int *recFreqId;		/* [freq] index to DifxFreq table */
 	double *clockOffset;	/* (us) [freq] */
 	double *freqOffset;     /* Freq offsets for each frequency in Hz */
-	int *recBandFreqId;     /* [recChan] index to recFreqId[] */
-	char *recBandPolName;   /* [recChan] Polarization name (R, L, X or Y) */
+	int *recBandFreqId;     /* [recband] index to recFreqId[] */
+	char *recBandPolName;   /* [recband] Polarization name (R, L, X or Y) */
 
         int nZoomFreq;          /* number of "zoom" freqs (within recorded
 				   freqs) for this datastream */
@@ -267,6 +267,7 @@ typedef struct
         int pointingCentreSrc;  		/* index to source array */
         int nPhaseCentres;      		/* Number of correlation centres */
         int phsCentreSrcs[MAX_PHS_CENTRES]; 	/* indices to source array */
+	int orgjobPhsCentreSrcs[MAX_PHS_CENTRES];/* indices to the source array from the original (pre-merged) job */
 	int jobId;				/* 0, 1, ... nJob-1 */
         int configId;           		/* to determine freqId */
 	int nAntenna;
@@ -531,7 +532,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
-	int antennaId, int recBand, int *bandId, int *polId);
+	int antennaId, int recBand, int *freqId, int *polId);
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
 	const DifxPhasedArray *phasedarray);
 

@@ -90,6 +90,8 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	for(i=0;i<ds->nPhaseCentres;i++) {
 	        fprintf(fp, "    Phase centre %d source index = %d\n", i, 
 			ds->phsCentreSrcs[i]);
+		fprintf(fp, "    Original job phase centre %d source index = %d\n", i,
+			ds->orgjobPhsCentreSrcs[i]);
 	}
 	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
@@ -161,6 +163,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 		for(i=0;i<src->nPhaseCentres;i++)
 		{
 			dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
+			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 		}
 		printf("Done with source re-mapping\n");
 	}
@@ -170,6 +173,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 		for(i=0;i<src->nPhaseCentres;i++)
 		{
 			dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
+			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 		}
 	}
 	if(jobIdRemap)

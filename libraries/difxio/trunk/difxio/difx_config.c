@@ -345,7 +345,7 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 
 /* antennaId is the index to D->antenna */
 int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
-	int antennaId, int recBand, int *bandId, int *polId)
+	int antennaId, int recBand, int *freqId, int *polId)
 {
 	DifxConfig *dc;
 	DifxDatastream *ds;
@@ -354,7 +354,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	
 	if(recBand < 0 || antennaId < 0)
 	{
-		*bandId = -1;
+		*freqId = -1;
 		*polId = -1;
 		return 0;
 	}
@@ -393,9 +393,17 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 	{
 		return -3;
 	}
-	
-	*bandId = ds->recBandFreqId[recBand];
-	*polId = DifxConfigGetPolId(dc, ds->recBandPolName[recBand]);
+
+	if(ds->recBandFreqId[recBand] < 0 || ds->recBandFreqId[recBand] > ds->nRecFreq)
+	{
+		fprintf(stderr, "Error! recBandFreqId[%d] is %d while nRecFreq is %d\n",
+			recBand, ds->recBandFreqId[recBand], ds->nRecFreq);
+	}
+	else
+	{
+		*freqId = ds->recFreqId[ds->recBandFreqId[recBand]];
+		*polId = DifxConfigGetPolId(dc, ds->recBandPolName[recBand]);
+	}
 
 	return 0;
 }

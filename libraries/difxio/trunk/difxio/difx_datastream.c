@@ -603,7 +603,13 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 
 	for(r = 0; r < dd->nRecBand; r++)
 	{
-		if(dd->recBandFreqId[r] == freqId)
+		if(dd->recBandFreqId[r] < 0 || dd->recBandFreqId[r] >= dd->nRecFreq)
+		{
+			fprintf(stderr, "Error! recBandFreqId[%d] is %d where nRecFreq is %d\n",
+			        r, dd->recBandFreqId[r], dd->nRecFreq);
+			continue;
+		}
+		if(dd->recFreqId[dd->recBandFreqId[r]] == freqId)
 		{
 			if(dd->recBandPolName[r] <= ' ')
 			{
@@ -655,7 +661,13 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
         int n=0;
         for(z = 0; z < dd->nZoomBand; z++)
         {
-                if(dd->zoomBandFreqId[z] == freqId)
+		if(dd->zoomBandFreqId[z] < 0 || dd->zoomBandFreqId[z] >= dd->nZoomFreq)
+		{
+			fprintf(stderr, "Error! zoomBandFreqId[%d] is %d where nZoomFreq is %d\n",
+				z, dd->zoomBandFreqId[z], dd->nZoomFreq);
+				continue;
+		}
+                if(dd->zoomFreqId[dd->zoomBandFreqId[z]] == freqId)
                 {
                         if(dd->zoomBandPolName[z] <= ' ')
                         {
