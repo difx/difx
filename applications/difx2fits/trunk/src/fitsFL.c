@@ -326,7 +326,13 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 		for(c = 0; c < ds->nRecBand; c++)
 		{
 			polName = ds->recBandPolName[c];
-			freqNum = ds->recBandFreqId[c];
+			if(ds->recBandFreqId[c] < 0 || ds->recBandFreqId[c] >= ds->nRecFreq)
+			{
+				fprintf(stderr, "Error - recBandFreqId[%d] is %d, nRecFreq is %d\n",
+				        c, ds->recBandFreqId[c], ds->nRecFreq);
+				continue;
+			}
+			freqNum = ds->recFreqId[ds->recBandFreqId[c]];
 			i = dc->freqId2IF[freqNum];
 			if(polName == dc->pol[0])
 			{

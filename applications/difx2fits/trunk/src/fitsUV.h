@@ -83,9 +83,9 @@ typedef struct
 	int flagTransition;
 } DifxVis;
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId);
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre);
 void deleteDifxVis(DifxVis *dv);
-int DifxVisNextFile(DifxVis *dv);
+int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre);
 int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre);
 int DifxVisCollectRandomParams(const DifxVis *dv);
 

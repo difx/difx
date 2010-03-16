@@ -385,6 +385,8 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	}
 	keys->no_band = D->nIF;
 	keys->no_chan = -1;
+	keys->chan_bw = -1;
+	keys->ref_pixel = -1;
 	for(i=0;i<D->nBaseline;i++)
 	{
 		for(j=0;j<D->baseline[i].nFreq;j++)
@@ -411,18 +413,36 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 				"number of output channels - aborting!\n");
 				exit(0);
 			}
+			if(keys->chan_bw == -1)
+			{
+				keys->chan_bw = 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan;
+			}
+			else if(keys->chan_bw != 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan)
+			{
+				fprintf(stderr, "Error - not all used frequencies have the same "
+					"final channel bandwidth - aborting!\n");
+				exit(0);
+			}
+			if(keys->ref_pixel == -1)
+			{
+				keys->ref_pixel = 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg);
+			}
+			else if(keys->ref_pixel != 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg))
+			{
+				fprintf(stderr, "Error - not all used frequencies have the same "
+					"reference pixel - aborting!\n");
+				exit(0);
+			}
 		}
 	}
-	if(keys->no_chan == -1 || fqindex == -1)
+	if(keys->no_chan == -1 || fqindex == -1 || keys->chan_bw == -1 || keys->ref_pixel == -1)
 	{
 		fprintf(stderr, "Didn't find any used frequencies - what the?? Aborting\n");
 		exit(0);
 	}
 	keys->ref_freq = D->refFreq*1.0e6;
 	keys->ref_date = D->mjdStart;
-	keys->chan_bw = 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan;
-        //printf("Channel bandwidth is %f\n", keys->chan_bw);
-	keys->ref_pixel = 0.5 + 1.0/(2.0*D->specAvg);
+        //printf("Channel bandwidth is %f, ref pixel is %f\n", keys->chan_bw, keys->ref_pixel);
 	if(D->nPolar > 1)
 	{
 		keys->no_pol = 2;

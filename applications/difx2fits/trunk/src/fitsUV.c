@@ -114,24 +114,35 @@ static void DifxVisStartGlob(DifxVis *dv)
 	free(globstr);
 }
 
-int DifxVisNextFile(DifxVis *dv)
+int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 {
+	char suffixmatch1[32];
+	char suffixmatch2[32];
 	if(dv->in)
 	{
 		fclose(dv->in);
 		dv->in = 0;
 	}
-	dv->curFile++;
-	if(dv->curFile >= dv->nFile)
+	while(dv->in == 0)
 	{
-		printf("    JobId %d done.\n", dv->jobId);
-		return -1;
+		dv->curFile++;
+		if(dv->curFile >= dv->nFile)
+		{
+			printf("    JobId %d done.\n", dv->jobId);
+			return -1;
+		}
+		printf("    JobId %d File %d/%d : %s\n", 
+			dv->jobId,
+			dv->curFile+1, dv->nFile,
+			dv->globbuf.gl_pathv[dv->curFile]);
+		sprintf(suffixmatch1, "s%04d.b%04d", phasecentre, pulsarBin);
+		sprintf(suffixmatch2, "s%04d.b%04d", 0, pulsarBin);
+		if(strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch1) != NULL ||
+		   strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch2) != NULL)
+		{
+			dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
+		}
 	}
-	printf("    JobId %d File %d/%d : %s\n", 
-		dv->jobId,
-		dv->curFile+1, dv->nFile,
-		dv->globbuf.gl_pathv[dv->curFile]);
-	dv->in = fopen(dv->globbuf.gl_pathv[dv->curFile], "r");
 	if(!dv->in)
 	{
 		fprintf(stderr, "Error opening file : %s\n", 
@@ -142,7 +153,7 @@ int DifxVisNextFile(DifxVis *dv)
 	return 0;
 }
 
-DifxVis *newDifxVis(const DifxInput *D, int jobId)
+DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre)
 {
 	DifxVis *dv;
 	int i, c, v;
@@ -254,7 +265,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId)
 		return 0;
 	}
 
-	if(DifxVisNextFile(dv) < 0)
+	if(DifxVisNextFile(dv, pulsarBin, phasecentre) < 0)
 	{
 		fprintf(stderr, "Info: newDifxVis: DifxVisNextFile(dv) < 0\n");
 		deleteDifxVis(dv);
@@ -406,7 +417,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	v = fread(&sync, sizeof(int), 1, dv->in);
 	if(v != 1)
 	{
-		v = DifxVisNextFile(dv);
+		v = DifxVisNextFile(dv, pulsarBin, phasecentre);
 		if(v < 0)
 		{
 			return NEXT_FILE_ERROR;
@@ -553,20 +564,20 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		return SKIPPED_RECORD;
 	}
-	if((bl % 257 == 0) && ((scan->nPhaseCentres == 1 && srcindex != scan->phsCentreSrcs[0]) || 
-	   (scan->nPhaseCentres > 1  && srcindex != scan->pointingCentreSrc)))
-	{
-		printf("srcindex has been incorrectly recorded for baseline %d as %d - overriding!\n", bl, srcindex);
-		printf("number of phase centres for scan %d is %d, pointing centre source was %d and 1st phase centre source was %d\n", scanId, scan->nPhaseCentres, scan->pointingCentreSrc, scan->phsCentreSrcs[0]);
-		if(scan->nPhaseCentres == 1)
-			srcindex = scan->phsCentreSrcs[0];
-		else
-			srcindex = scan->pointingCentreSrc;
-	}
+	//if((bl % 257 == 0) && ((scan->nPhaseCentres == 1 && srcindex != scan->orgjobPhsCentreSrcs[0]) || 
+	//   (scan->nPhaseCentres > 1  && srcindex != scan->orgjobPointingCentreSrc)))
+	//{
+	//	printf("srcindex has been incorrectly recorded for baseline %d as %d - overriding!\n", bl, srcindex);
+	//	printf("number of phase centres for scan %d is %d, (original indices) pointing centre source was %d and 1st phase centre source was %d\n", scanId, scan->nPhaseCentres, scan->orgjobPointingCentreSrc, scan->orgjobPhsCentreSrcs[0]);
+	//	if(scan->nPhaseCentres == 1)
+	//		srcindex = scan->orgjobPhsCentreSrcs[0];
+	//	else
+	//		srcindex = scan->orgjobPointingCentreSrc;
+	//}
 	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, bl);
-	if(srcindex != scan->phsCentreSrcs[phasecentre] && bl%257 != 0) //don't skip autocorrelations
+	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && bl%257 != 0) //don't skip autocorrelations
 	{
-		//printf("Skipping record with srcindex %d because phasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->phsCentreSrcs[phasecentre]);
+		//printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
 		return SKIPPED_RECORD;
 	}
 
@@ -1044,7 +1055,7 @@ static int DifxVisConvert(const DifxInput *D,
 	assert(dvs);
 	for(j = 0; j < D->nJob; j++)
 	{
-		dvs[j] = newDifxVis(D, j);
+		dvs[j] = newDifxVis(D, j, opts->pulsarBin, opts->phaseCentre);
 		assert(dvs[j]);
 		if(!dvs[j])
 		{
