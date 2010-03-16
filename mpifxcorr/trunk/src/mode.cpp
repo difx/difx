@@ -879,7 +879,9 @@ LBAMode::LBAMode(Configuration * conf, int confindex, int dsindex, int recordedb
               outputshift = 3*(2-l) - 3*k;
             else
               outputshift = -k*samplesperblock + k + l;
-          else
+          else if (samplesperblock == 4) //64 MHz single pol
+	    outputshift = -2*l + 3;
+	  else
             outputshift = 0;
 
           //if(samplesperblock > 1 && numinputbands > 1) //32 MHz or 64 MHz dual pol

@@ -391,12 +391,13 @@ int main(int argc, char *argv[])
   delete [] coreids;
   delete [] datastreamids;
 
-  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
-  perr = pthread_join(commandthread, NULL);
-  if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
   if(manager) delete manager;
   if(stream) delete stream;
   if(core) delete core;
+  if(myID == 0) difxMessageSendDifxParameter("keepacting", "false", DIFX_MESSAGE_ALLMPIFXCORR);
+  perr = pthread_join(commandthread, NULL);
+  if(perr != 0) csevere << startl << "Error in closing commandthread!!!" << endl;
+
   //delete config;  	// FIXME!!! Revisit this commented out destructor sometime.
   			// It is currently commented out to prevent hang on exit
 

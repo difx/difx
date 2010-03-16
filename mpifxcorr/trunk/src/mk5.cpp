@@ -307,7 +307,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   {
     if(readfromfile || readscan != 0 || readseconds != 0 || readnanoseconds != 0) //its not an error for the *first* network read
     {
-      cerror << startl << "Lost Sync! Will attempt to resync. Deltatime was " << deltatime << endl;
+      cerror << startl << "Lost Sync on segment" << buffersegment << "! Will attempt to resync. Deltatime was " << deltatime << endl;
       cdebug << startl << "Corrday was " << corrday << ", corrsec was " << corrsec << ". MJD was " << mjd << ", sec was " << sec << "> Readseconds was " << bufferinfo[buffersegment].scanseconds << ". readns was " << bufferinfo[buffersegment].scanns << ", ns was " << ns << endl;
     }
     mark5stream = new_mark5_stream(
