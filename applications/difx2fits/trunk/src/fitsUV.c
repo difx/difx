@@ -1071,19 +1071,20 @@ static int DifxVisConvert(const DifxInput *D,
 
 	nWeight = dv->nFreq*D->nPolar;
 
+	strcpy(fileBase, out->filename);
+	l = strlen(fileBase);
+	for(i = l-1; i > 0; i--)
+	{
+		if(fileBase[i] == '.')
+		{
+			fileBase[i] = 0;
+			break;
+		}
+	}
+
 	/* Start up sniffer */
 	if(opts->sniffTime > 0.0)
 	{
-		strcpy(fileBase, out->filename);
-		l = strlen(fileBase);
-		for(i = l-1; i > 0; i--)
-		{
-			if(fileBase[i] == '.')
-			{
-				fileBase[i] = 0;
-				break;
-			}
-		}
 #ifdef HAVE_FFTW
 		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
 #endif
