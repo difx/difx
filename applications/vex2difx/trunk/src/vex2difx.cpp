@@ -245,7 +245,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	while(!changes.empty() || nClockBreaks > 0)
 	{
 		nLoop++;
-		if(nLoop > 100000) // There is clearly a problem converging!
+		if(nLoop >= 100000) // There is clearly a problem converging!
 		{
 			cerr << "Developer error! -- jobs not converging after " << nLoop << " tries.\n" << endl;
 			exit(0);

@@ -21,6 +21,7 @@ Version 2.0
 * Don't require DIFX_VERSION to be set
 * Check that all supplied antenna, source, scan and mode names are in vex file
 * Huge speed-up by not constantly sorting events
+* Fix convergence problem when there is no time gap between modules
 
 Version 0.3
 ~~~~~~~~~~~

@@ -909,7 +909,7 @@ static int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *stat
 		string vsn(p->label);
 		fixOhs(vsn);
 
-		VexInterval vsnTimeRange(vexDate(p->start), vexDate(p->stop));
+		VexInterval vsnTimeRange(vexDate(p->start)+0.001/86400.0, vexDate(p->stop));
 
 		if(!vsnTimeRange.isCausal())
 		{
