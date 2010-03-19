@@ -17,6 +17,7 @@ Version 3.0
 * Fixes by Olaf Wuchnitz: print format for writing strings to FITS and argument order in memcpy
 * Some cppcheck results from Martin Ettl
 * Don't fail to set proper .jobmatrix filename when not running sniffer
+* Properly index config table in fitsGM.c
 
 Version 2.5
 * Require difxio 2.10

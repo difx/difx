@@ -205,7 +205,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		{
 			configId = D->scan[scanId].configId;
 			config = D->config + configId;
-			if(D->config->pulsarId == psr)
+			if(config->pulsarId == psr)
 			{
 				break;
 			}
