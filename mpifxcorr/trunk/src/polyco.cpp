@@ -333,8 +333,9 @@ void Polyco::setTime(int startmjd, double startmjdfraction)
 bool Polyco::includesTime(int incmjd, double incmjdfraction)
 {
     double differencemins = (incmjd - mjd)*1440 + (incmjdfraction - mjdfraction)*1440;
+    double rangemins = double(timespan)/2.0 + 1.0/60.0; //allow an extra second range to avoid being bitten by roundoff
 
-    return (differencemins <= double(timespan/2.0)) && (differencemins >= -double(timespan/2.0));
+    return (differencemins <= rangemins) && (differencemins >= -rangemins);
 }
 
 Polyco * Polyco::getCurrentPolyco(int requiredconfig, int mjd, double mjdfraction, Polyco ** polycos, int npolycos, bool printtimes)
