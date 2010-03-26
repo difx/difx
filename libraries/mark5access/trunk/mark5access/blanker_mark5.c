@@ -282,6 +282,7 @@ int blanker_mark4(struct mark5_stream *ms)
 int blanker_vdif(struct mark5_stream *ms)
 {
 	unsigned long long *data;
+	unsigned int *header;
 	int nword;
 	
 	if(!ms->payload)
@@ -302,6 +303,17 @@ int blanker_vdif(struct mark5_stream *ms)
 
 	ms->blankzonestartvalid[0] = 0;
 
+	/* First check the invalid bit */
+	header = (unsigned int *)ms->frame;
+	if((header[0] >> 31) & 0x01)
+	{
+		//fprintf(stderr, "Skipping invalid frame\n");
+		//invalid
+		ms->blankzoneendvalid[0] = 0;
+		return 0;
+	}
+
+	/* Invalid bit is not set, check for fill pattern */
 	if(data[0] == MARK5_FILL_WORD64 || data[nword-1] == MARK5_FILL_WORD64)
 	{
 		ms->blankzoneendvalid[0] = 0;
@@ -309,6 +321,7 @@ int blanker_vdif(struct mark5_stream *ms)
 	}
 	else
 	{
+		//fprintf(stderr, "Frame is good\n");
 		ms->blankzoneendvalid[0] = 1<<30;
 		return nword;
 	}
