@@ -258,17 +258,14 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 		for(k = 0; k < ChunkSize; k++)
 		{
-			if(data[0][k] == 0.0)
+			if(data[0][k] != 0.0)
 			{
-				// A blanked sample.  all IFs are blanked simultaneously
-				sampnum++;
-				continue;
-			}
-			bin = (int)(sampnum*R) % nbin;
-			for(i = 0; i < nif; i++)
-			{
-				bins[i][bin] += data[i][k]*data[i][k];
-				weight[i][bin]++;
+				bin = (int)(sampnum*R) % nbin;
+				for(i = 0; i < nif; i++)
+				{
+					bins[i][bin] += data[i][k]*data[i][k];
+					weight[i][bin]++;
+				}
 			}
 			sampnum++;
 		}
