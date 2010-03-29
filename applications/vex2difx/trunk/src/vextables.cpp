@@ -210,7 +210,6 @@ int VexMode::getBits() const
 	{
 		if(it->second.format.nBit != nBit)
 		{
-			cerr << "Warning: differing numbers of bits : FITS will not store this information perfectly" << endl;
 			break;
 		}
 	}
