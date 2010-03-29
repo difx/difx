@@ -18,6 +18,8 @@ Version 3.0
 * Some cppcheck results from Martin Ettl
 * Don't fail to set proper .jobmatrix filename when not running sniffer
 * Properly index config table in fitsGM.c
+* makefits: pass --override-version on to difx2fits
+
 
 Version 2.5
 * Require difxio 2.10
