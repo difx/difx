@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "mark5access/mark5_stream.h"
 
 
@@ -143,7 +144,7 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	headerbytes = ms->frame;
 
 	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
-	refepoch = headerbytes[7] & 0x3F;
+	refepoch = (word1 >> 24) & 0x3F;
 
 	seconds += v->leapsecs;
 	days = seconds/86400;
@@ -1161,6 +1162,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	ms->payloadoffset = f->frameheadersize;
 	ms->databytes = f->databytesperpacket;
 	ms->framebytes = f->databytesperpacket + f->frameheadersize;
+	ms->blanker = blanker_vdif;
 
 	/* FIXME -- if nbit is not a power of 2, this formula breaks down! */
 	ms->samplegranularity = 8/(ms->nchan*ms->nbit*ms->decimation);
@@ -1170,16 +1172,37 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	}
 	
 	ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
-	ms->blanker = blanker_vdif;
-	if(ms->Mbps > 0)
-	{
-		ms->framens = 8000.0*f->databytesperpacket/ms->Mbps;
-		ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
-	}
-	else
-	{
-		fprintf(stderr, "ms->Mbps is not > 0\n");
-	}
+        f->completesamplesperword = 32/(ms->nbit*ms->nchan);
+
+        ms->framegranularity = 1;
+        if(ms->Mbps > 0)
+        {
+                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*ms->nbit;
+                framensDen = ms->Mbps;
+
+                ms->framens = (double)framensNum/(double)framensDen;
+
+                for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
+                {
+                        if((ms->framegranularity*framensNum) % framensDen == 0)
+                        {
+                                break;
+                        }
+                }
+
+                if(ms->framegranularity >= 128)
+                {
+                        fprintf(stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
+                                framensNum, framensDen);
+                        ms->framegranularity = 1;
+                }
+                ms->samprate = ms->framesamples*(1000000000.0/ms->framens);
+        }
+        else
+        {
+                fprintf(stderr, "Error - you must specify the Mbps for a VDIF mode (was set to %d)!", ms->Mbps);
+		return -1;
+        }
 
 	/* Aha -- we have some data to look at to further refine the format... */
 	if(ms->datawindow)
@@ -1244,42 +1267,11 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->framebytes = f->databytesperpacket + f->frameheadersize;
 		ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
 		
-
 		/* get time again so ms->framens is used */
 		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);
 		ms->ns = (int)(dns + 0.5);
 
 		/* WRITEME */
-	}
-
-	f->completesamplesperword = 32/(ms->nbit*ms->nchan);
-
-	ms->framegranularity = 1;
-	if(ms->Mbps > 0)
-	{
-		framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*ms->nbit;
-		framensDen = ms->Mbps;
-
-		ms->framens = (double)framensNum/(double)framensDen;
-
-		for(ms->framegranularity = 1; ms->framegranularity < 128; ms->framegranularity *= 2)
-		{
-			if((ms->framegranularity*framensNum) % framensDen == 0)
-			{
-				break;
-			}
-		}
-
-		if(ms->framegranularity >= 128)
-		{
-			fprintf(stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
-				framensNum, framensDen);
-			ms->framegranularity = 1;
-		}
-	}
-	else
-	{
-		ms->framens = 0;
 	}
 
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
@@ -1318,6 +1310,36 @@ static int mark5_format_vdif_final(struct mark5_stream *ms)
 	}
 
 	return 0;
+}
+
+static int mark5_format_vdif_validate(const struct mark5_stream *ms)
+{
+	int mjd_d, mjd_t, sec_d, sec_t;
+	double ns_d;
+	long long ns_t;
+
+	if(ms->mjd && ms->framenum % ms->framegranularity == 0)
+	{
+		mark5_stream_frame_time_vdif(ms, &mjd_d, &sec_d, &ns_d);
+
+		ns_t = (long long)(ms->framenum)*(long long)(ms->gframens/ms->framegranularity) + (long long)(ms->ns);
+		sec_t = ns_t / 1000000000L;
+		ns_t -= (long long)sec_t * 1000000000L;
+		sec_t += ms->sec;
+		mjd_t = sec_t / 86400;
+		sec_t -= mjd_t * 86400;
+		mjd_t += ms->mjd;
+
+		if(mjd_t != mjd_d || sec_t != sec_d || fabs((double)ns_t - ns_d) > 0.000001)
+		{
+			printf("VDIF validate[%lld]: %d %d %f : %d %d %lld\n",
+				ms->framenum,
+				mjd_d, sec_d, ns_d,
+				mjd_t, sec_t, ns_t);
+			return 0;
+		}
+	}
+	return 1;
 }
 
 void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs)
@@ -1427,7 +1449,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	f->gettime = mark5_stream_frame_time_vdif;
 	f->init_format = mark5_format_vdif_init;
 	f->final_format = mark5_format_vdif_final;
-	f->validate = one;
+	f->validate = mark5_format_vdif_validate;
 	f->decimation = decimation;
 	f->decode = 0;
 
