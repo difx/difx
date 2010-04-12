@@ -447,8 +447,8 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		}
 		A[i].clockrefmjd = clockrefmjd;
 		A[i].clockorder = 1;
-		A[i].clockcoeff[0] *= 1.0e6;	// convert to sec from us
-		A[i].clockcoeff[1] *= 1.0e6;	// convert to sec/sec from us/sec
+		A[i].clockcoeff[0] *= 1.0e6;	// convert to us from sec
+		A[i].clockcoeff[1] *= 1.0e6;	// convert to us/sec from sec/sec
 		A[i].offset[0] = ant->axisOffset;
 		A[i].offset[1] = 0.0;
 		A[i].offset[2] = 0.0;
@@ -475,14 +475,14 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 			}
 			A[i].networkPort = antSetup->networkPort;
 			A[i].windowSize  = antSetup->windowSize;
-			A[i].clockcoeff[0] += antSetup->deltaClock*1.0e6;	// convert to sec from us
-			A[i].clockcoeff[1] += antSetup->deltaClockRate*1.0e6;	// convert to sec/sec from us/sec
+			A[i].clockcoeff[0] += antSetup->deltaClock*1.0e6;	// convert to us from sec
+			A[i].clockcoeff[1] += antSetup->deltaClockRate*1.0e6;	// convert to us/sec from sec/sec
 			A[i].clockorder  = antSetup->clockorder;
 			switch(A[i].clockorder) {
-				case 5: A[i].clockcoeff[5] = antSetup->clock5;
-				case 4: A[i].clockcoeff[4] = antSetup->clock4;
-				case 3: A[i].clockcoeff[3] = antSetup->clock3;
-				case 2: A[i].clockcoeff[2] = antSetup->clock2;
+				case 5: A[i].clockcoeff[5] = antSetup->clock5*1.0e6; // convert to us/sec^5 from sec/sec^5
+				case 4: A[i].clockcoeff[4] = antSetup->clock4*1.0e6; // convert to us/sec^4 from sec/sec^4
+				case 3: A[i].clockcoeff[3] = antSetup->clock3*1.0e6; // convert to us/sec^3 from sec/sec^3
+				case 2: A[i].clockcoeff[2] = antSetup->clock2*1.0e6; // convert to us/sec^2 from sec/sec^2
 				case 1: break;
 				default: cerr << "Crazy clock order " << A[i].clockorder << "!" << endl;
 			}
