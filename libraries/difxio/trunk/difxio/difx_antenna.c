@@ -163,6 +163,40 @@ int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2)
 	}
 }
 
+int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2)
+{
+	int i;
+	double deltad, epochdiff, dt;
+
+	if(da1->clockorder != da2->clockorder)
+	{
+		return 0;
+	}
+	for(i=1;i<da1->clockorder;i++)
+	{
+		if(da1->clockcoeff[i] != da2->clockcoeff[i])
+		{
+			return 0;
+		}
+	}
+
+	epochdiff = (da2->clockrefmjd - da1->clockrefmjd)*86400.0;
+	dt = 1.0;
+	deltad = 0.0;
+	for(i=0;i<da1->clockorder;i++)
+	{
+		deltad += (da1->clockcoeff[i] - da2->clockcoeff[i])*dt;
+		dt *= epochdiff;
+	}
+	
+	if(fabs(deltad) > 1.0e-10)	/* give a 10^-16 sec tolerance. */
+	{
+		return 0;
+	}
+
+	return 1;
+}
+
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 {
 	int i;

@@ -22,6 +22,8 @@
 * Adds support for LO offsets
 * Fix memory leak (need to free baseline array)
 * Print all spacecraft entries, not just for the first spacecraft
+* Prevent merging of jobs that have incompatible clocks
+* Change to polynomial-based clock model (up to 5th order)
 
 2.11
 * Post DiFX-1.5

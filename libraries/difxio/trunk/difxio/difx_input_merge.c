@@ -56,9 +56,13 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	return 1;
 }
 
+/* This function determines if two DifxInput arenot mergable
+ * because difxio does not currently support it, but could
+ * in the future */
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 {
 	int f;
+	int a1, a2;
 
 	if(D1->nFreq != D2->nFreq)
 	{
@@ -70,6 +74,20 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 		if(isSameDifxFreq(D1->freq + f, D2->freq + f) == 0)
 		{
 			return 0;
+		}
+	}
+
+	for(a1 = 0; a1 < D1->nAntenna; a1++)
+	{
+		for(a2 = 0; a2 < D2->nAntenna; a2++)
+		{
+			if(isSameDifxAntenna(D1->antenna + a1, D2->antenna + a2))
+			{
+				if(!isSameDifxAntennaClock(D1->antenna + a1, D2->antenna + a2))
+				{
+					return 0;
+				}
+			}
 		}
 	}
 
