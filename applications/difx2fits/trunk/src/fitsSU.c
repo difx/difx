@@ -98,6 +98,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	/* 1-based indices for FITS file */
 	int32_t sourceId1, freqId1;
 	int *fitsSource;
+	int *fitsConfig;
 	int i, nFitsSource;
 	const DifxSource *source;
 	const DifxConfig *config;
@@ -148,21 +149,26 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		return 0;
 	}
 	
-	fitsSource = (int *)malloc(D->nSource*sizeof(int));
-	for(sourceId = 0; sourceId < D->nSource; sourceId++)
+	fitsSource = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
+	fitsConfig = (int *)malloc(D->nSource*D->nConfig*sizeof(int));
+	for(sourceId = 0; sourceId < D->nSource*D->nConfig; sourceId++)
 	{
 		fitsSource[sourceId] = -1;
 	}
 	nFitsSource = -1;
 	for(sourceId = 0; sourceId < D->nSource; sourceId++)
 	{
-		i = D->source[sourceId].fitsSourceId;
-		if(fitsSource[i] < 0)
+		for(configId = 0; configId < D->nConfig; configId++)
 		{
-			fitsSource[i] = sourceId;
-			if(i > nFitsSource)
+			i = D->source[sourceId].fitsSourceIds[configId];
+			if(fitsSource[i] < 0)
 			{
-				nFitsSource = i;
+				fitsSource[i] = sourceId;
+				fitsConfig[i] = configId;
+				if(i > nFitsSource)
+				{
+					nFitsSource = i;
+				}
 			}
 		}
 	}
@@ -178,16 +184,13 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		}
 
 		source = D->source + sourceId;
-		configId = 0;
-		printf("Setting configId to 0 for all sources - needs to be fixed!!!\n");
-		//configId = source->configId;
-		//if(configId < 0 || configId >= D->nConfig)
-		//{
-		//	fprintf(stderr, "Error: configId out of range = %d\n",
-		//		configId);
-		//	continue;
-		//}
-
+		configId = fitsConfig[i];
+		if(configId < 0 || configId >= D->nConfig)
+		{
+			fprintf(stderr, "Error: configId out of range = %d\n",
+				configId);
+			continue;
+		}
 		config = D->config + configId;
 
 		muRA = 0.0;
@@ -242,6 +245,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 
 	free(fitsbuf);
 	free(fitsSource);
+	free(fitsConfig);
 
 	return D;
 }	

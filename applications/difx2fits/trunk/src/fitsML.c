@@ -217,7 +217,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   freqId1 = config->freqId + 1;
 	   //printf("Working on phase centre %d\n", phasecentre);
 	   //printf("scan->phsCentreSrcs[phasecentre] is %d\n", scan->phsCentreSrcs[phasecentre]);
-	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceId + 1;
+	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
 	   //printf("Found the sourceId1 to be %d\n", sourceId1);
 	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
 	   

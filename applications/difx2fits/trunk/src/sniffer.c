@@ -170,7 +170,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	int a1, a2, c;
 	double tMax = 0.0;
 	FILE *log;
-	int i, m;
+	int i, j, m;
 
 	/* write summary to log file */
 	sprintf(filename, "%s.log", filebase);
@@ -191,9 +191,12 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	m = 1;
 	for(i = 0; i < D->nSource; i++)
 	{
-		if(D->source[i].fitsSourceId > m)
+		for(j = 0; j<D->nConfig; j++)
 		{
-			m = D->source[i].fitsSourceId;
+			if(D->source[i].fitsSourceIds[j] > m)
+			{
+				m = D->source[i].fitsSourceIds[j];
+			}
 		}
 	}
 	S->fitsSourceId2SourceId = (int *)malloc((m+1)*sizeof(int));
@@ -203,9 +206,12 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	}
 	for(i = 0; i < D->nSource; i++)
 	{
-		if(D->source[i].fitsSourceId >= 0)
+		for(j = 0; j<D->nConfig; j++)
 		{
-			S->fitsSourceId2SourceId[D->source[i].fitsSourceId] = i;
+			if(D->source[i].fitsSourceIds[j] >= 0)
+			{
+				S->fitsSourceId2SourceId[D->source[i].fitsSourceIds[j]] = i;
+			}
 		}
 	}
 

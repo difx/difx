@@ -404,7 +404,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 
 			freqId1 = D->config[configId].freqId + 1;
-			sourceId1 = D->source[sourceId].fitsSourceId + 1;
+			sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
 			antId1 = antId + 1;
 
 			p_fitsbuf = fitsbuf;

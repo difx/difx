@@ -625,7 +625,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		printf("        MJD=%11.5f jobId=%d scanId=%d dv->scanId=%d Source=%s  FITS SourceId=%d\n", 
 			mjd+iat, dv->jobId, scanId, dv->scanId, 
 			dv->D->source[scan->phsCentreSrcs[phasecentre]].name, 
-			dv->D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceId+1);
+			dv->D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId]+1);
 	}
 
 	dv->scanId = scanId;
@@ -789,7 +789,7 @@ int DifxVisCollectRandomParams(const DifxVis *dv)
 	/* reminder: antennaIds, sourceId, freqId are 1-based in FITS */
 	dv->record->baseline	= dv->baseline;
 	dv->record->filter	= 0;
-	dv->record->sourceId1	= dv->D->source[dv->sourceId].fitsSourceId + 1;
+	dv->record->sourceId1	= dv->D->source[dv->sourceId].fitsSourceIds[dv->configId] + 1;
 	dv->record->freqId1	= dv->freqId + 1;
 	dv->record->intTime	= dv->tInt;
 

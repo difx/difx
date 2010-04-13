@@ -155,7 +155,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   }
 	   config = D->config + configId;
 	   freqId1 = config->freqId + 1;
-	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceId + 1;
+	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
 	   jobId = D->scan[s].jobId;
 	   job = D->job + jobId;
 
