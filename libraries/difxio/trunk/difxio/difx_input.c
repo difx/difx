@@ -81,7 +81,7 @@ void deleteDifxInput(DifxInput *D)
 		}
 		if(D->source)
 		{
-			deleteDifxSourceArray(D->source);
+			deleteDifxSourceArray(D->source, D->nSource);
 		}
 		if(D->eop)
 		{
@@ -1824,7 +1824,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		D->source[i].dec = atof(DifxParametersvalue(cp, rows[2]));
 		strcpy(D->source[i].calCode, DifxParametersvalue(cp, rows[3]));
 		D->source[i].qual = atoi(DifxParametersvalue(cp, rows[4]));
-		D->source[i].fitsSourceId = i;
+		//The fitsSourceId is left unset for now - the only way to set this is by calling updateDifxInput
+		//D->source[i].fitsSourceId = i;
 		row = DifxParametersfind1(cp, 0, "SOURCE %d PM RA (ARCSEC/YR)", i);
 		if(row > 0) {
 			D->source[i].pmRA = atoi(DifxParametersvalue(cp, row));
@@ -2496,8 +2497,9 @@ static DifxInput *setFitsSourceIds(DifxInput *D)
 
 static DifxInput *deriveFitsSourceIds(DifxInput *D)
 {
-	int a, i, j, match, n=0, ci, cj;
+	int a, i, j, match, n=0, ci, cj, k, l;
 	int *fs;
+	int *fc;
 
 	if(!D)
 	{
@@ -2510,46 +2512,48 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 		return 0;
 	}
 
-	fs = (int *)calloc(D->nSource, sizeof(int));
+	fs = (int *)calloc(D->nSource*D->nConfig, sizeof(int));
+	fc = (int *)calloc(D->nSource*D->nConfig, sizeof(int));
 
 	for(i = 0; i < D->nSource; i++)
 	{
-		//ci = D->source[i].configId;
-		//if(ci < 0)
-		//{
-		//	D->source[i].fitsSourceId = -1;
-		//	continue;
-		//}
-		match = -1;
-		if(n > 0) for(a = 0; a < n; a++)
+		D->source[i].numFitsSourceIds = D->nConfig;
+		D->source[i].fitsSourceIds = (int*)malloc(D->nConfig * sizeof(int));
+		for(k = 0; k < D->nConfig; k++)
 		{
-			j = fs[a];
-			//cj = D->source[j].configId;
-			if(D->source[i].ra       == D->source[j].ra  &&
-			   D->source[i].dec      == D->source[j].dec &&
-			   D->source[i].qual     == D->source[j].qual &&
-			   //D->config[ci].freqId  == D->config[cj].freqId &&
-			   strcmp(D->source[i].calCode, D->source[j].calCode) 
-			   	== 0 &&
-			   strcmp(D->source[i].name, D->source[j].name) == 0)
+			match = -1;
+			if(n > 0) for(a = 0; a < n; a++)
 			{
-				match = a;
-				break;
+				j = fs[a];
+				l = fc[a];
+				if(D->source[i].ra       == D->source[j].ra  &&
+				   D->source[i].dec      == D->source[j].dec &&
+				   D->source[i].qual     == D->source[j].qual &&
+				   D->config[k].freqId   == D->config[l].freqId &&
+				   strcmp(D->source[i].calCode, D->source[j].calCode) 
+				   	== 0 &&
+				   strcmp(D->source[i].name, D->source[j].name) == 0)
+				{
+					match = a;
+					break;
+				}
 			}
-		}
-		if(match < 0)
-		{
-			D->source[i].fitsSourceId = n;
-			fs[n] = i;
-			n++;
-		}
-		else
-		{
-			D->source[i].fitsSourceId = match;
+			if(match < 0)
+			{
+				D->source[i].fitsSourceIds[k] = n;
+				fs[n] = i;
+				fc[n] = k;
+				n++;
+			}
+			else
+			{
+				D->source[i].fitsSourceIds[k] = match;
+			}
 		}
 	}
 
 	free(fs);
+	free(fc);
 	
 	return D;
 }
@@ -2799,11 +2803,10 @@ static int calcFreqIds(DifxInput *D)
 DifxInput *updateDifxInput(DifxInput *D)
 {
 	D = deriveDifxInputValues(D);
-	//D = deriveSourceTable(D);
+	calcFreqIds(D);
 	D = deriveFitsSourceIds(D);
 	//D = setFitsSourceIds(D);
 	setGlobalValues(D);
-	calcFreqIds(D);
 	setOrbitingAntennas(D);
 	
 	return D;

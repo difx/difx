@@ -233,7 +233,9 @@ typedef struct
 	char calCode[4];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
 	int spacecraftId;	/* -1 if not spacecraft */
-	int fitsSourceId;	/* 0-based FITS source id */
+	int numFitsSourceIds;	/* Should be equal to the number of configs */
+				/* FITS source IDs are filled in in deriveFitsSourceIds */
+	int * fitsSourceIds;	/* 0-based FITS source id */
 	double pmRA;		/* arcsec/year */
 	double pmDec; 		/* arcsec/year */
 	double parallax;	/* arcsec */
@@ -602,13 +604,13 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds);
 
 /* DifxSource functions */
 DifxSource *newDifxSourceArray(int nSource);
-void deleteDifxSourceArray(DifxSource *ds);
+void deleteDifxSourceArray(DifxSource *ds, int nSource);
 void printDifxSource(const DifxSource *ds);
 void fprintDifxSource(FILE *fp, const DifxSource *ds);
 void printDifxSourceSummary(const DifxSource *ds);
 void fprintDifxSourceSummary(FILE *fp, const DifxSource *ds);
 int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
-        int doCalcode, int doQual, int doSpacecraftID, int doFitsSourceID);
+        int doCalcode, int doQual, int doSpacecraftID);
 int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2);
 void copyDifxSource(DifxSource *dest, const DifxSource *src);
 DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1, const DifxSource *ds2, int nds2, int *sourceIdRemap, int *nds);

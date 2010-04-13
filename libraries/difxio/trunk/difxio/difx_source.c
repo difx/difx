@@ -43,7 +43,8 @@ DifxSource *newDifxSourceArray(int nSource)
 	for(s = 0; s < nSource; s++)
 	{
 		ds[s].spacecraftId = -1;
-		ds[s].fitsSourceId = -1;
+		ds[s].numFitsSourceIds = 0;
+		ds[s].fitsSourceIds = 0;
 		ds[s].pmRA = 0.0;
 		ds[s].pmDec = 0.0;
 		ds[s].parallax = 0.0;
@@ -56,23 +57,36 @@ DifxSource *newDifxSourceArray(int nSource)
 	return ds;
 }
 
-void deleteDifxSourceArray(DifxSource *ds)
+void deleteDifxSourceArray(DifxSource *ds, int nSource)
 {
+	int i;
 	if(ds)
 	{
+		for(i=0;i<nSource;i++)
+		{
+			if(ds[i].numFitsSourceIds > 0)
+			{
+				free(ds[i].fitsSourceIds);
+			}
+		}
 		free(ds);
 	}
 }
 
 void fprintDifxSource(FILE *fp, const DifxSource *ds)
 {
+	int i;
 	fprintf(fp, "  DifxSource [%s] : %p\n", ds->name, ds);
 	fprintf(fp, "    RA  =  %10.7f\n", ds->ra);
 	fprintf(fp, "    Dec = %+11.7f\n", ds->dec);
 	fprintf(fp, "    Calcode = %s\n", ds->calCode);
 	fprintf(fp, "    Qualifier = %d\n", ds->qual);
 	fprintf(fp, "    SpacecraftId = %d\n", ds->spacecraftId);
-	fprintf(fp, "    FITS SourceId = %d\n", ds->fitsSourceId);
+	fprintf(fp, "    Num FITS SourceIds = %d\n", ds->numFitsSourceIds);
+	for(i=0;i<ds->numFitsSourceIds;i++)
+	{
+		fprintf(fp, "    FITS SourceId[%d] = %d\n", i, ds->fitsSourceIds[i]);
+	}
 }
 
 void printDifxSource(const DifxSource *ds)
@@ -100,20 +114,28 @@ void printDifxSourceSummary(const DifxSource *ds)
 
 int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2)
 {
+	int i;
 	//printf("About to do the source compare on two sources with values %p, %p\n", ds1, ds2);
 	//printf("Comparing source called %s with %s\n", ds1->name, ds2->name);
-        if(strcmp(ds1->name, ds2->name) == 0      &&
-           ds1->ra           == ds2->ra           &&
-           ds1->dec          == ds2->dec          &&
-           strcmp(ds1->calCode,ds2->calCode) == 0 &&
-           ds1->qual         == ds2->qual         &&
-           ds1->spacecraftId == ds2->spacecraftId &&
-           ds1->fitsSourceId == ds2->fitsSourceId &&
-	   ds1->pmRA         == ds2->pmRA         &&
-	   ds1->pmDec        == ds2->pmDec        &&
-	   ds1->parallax     == ds2->parallax     &&
-	   ds1->pmEpoch      == ds2->pmEpoch)
+        if(strcmp(ds1->name, ds2->name) == 0          &&
+           ds1->ra               == ds2->ra           &&
+           ds1->dec              == ds2->dec          &&
+           strcmp(ds1->calCode,ds2->calCode) == 0     &&
+           ds1->qual             == ds2->qual         &&
+           ds1->spacecraftId     == ds2->spacecraftId &&
+           ds1->numFitsSourceIds == ds2->numFitsSourceIds &&
+	   ds1->pmRA             == ds2->pmRA         &&
+	   ds1->pmDec            == ds2->pmDec        &&
+	   ds1->parallax         == ds2->parallax     &&
+	   ds1->pmEpoch          == ds2->pmEpoch)
         {
+		for(i=0;i<ds1->numFitsSourceIds;i++)
+		{
+			if(ds1->fitsSourceIds[i] != ds2->fitsSourceIds[i])
+			{
+				return 0;
+			}
+		}
                 return 1;
         }
         else
@@ -124,15 +146,24 @@ int isSameDifxSource(const DifxSource *ds1, const DifxSource *ds2)
 
 void copyDifxSource(DifxSource *dest, const DifxSource *src)
 {
+	int i;
         dest->ra           = src->ra;
         dest->dec          = src->dec;
         dest->qual         = src->qual;
         dest->spacecraftId = src->spacecraftId;
-        dest->fitsSourceId = src->fitsSourceId;
+        dest->numFitsSourceIds = src->numFitsSourceIds;
         dest->pmRA         = src->pmRA;
 	dest->pmDec        = src->pmDec;
 	dest->parallax     = src->parallax;
 	dest->pmEpoch      = src->pmEpoch;
+	if(src->numFitsSourceIds > 0)
+	{
+		dest->fitsSourceIds = (int*)malloc(src->numFitsSourceIds * sizeof(int));
+		for(i=0;i<src->numFitsSourceIds;i++)
+		{
+			dest->fitsSourceIds[i] = src->fitsSourceIds[i];
+		}
+	}
 	strcpy(dest->calCode, src->calCode);
 	strcpy(dest->name, src->name);
 }
@@ -190,8 +221,7 @@ DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1,
 
 
 int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
-        int doCalcode, int doQual, int doSpacecraftID, 
-	int doFitsSourceID)
+        int doCalcode, int doQual, int doSpacecraftID)
 {
         int n;  /* number of lines written */
         int i;
@@ -222,11 +252,6 @@ int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
                 if(doSpacecraftID) {
                         writeDifxLineInt1(out, "SOURCE %d S/CRAFT ID", 
 					  i, ds[i].spacecraftId);
-                        n++;
-                }
-                if(doFitsSourceID) {
-                        writeDifxLineInt1(out, "SOURCE %d FITSSRC ID", 
-					  i, ds[i].fitsSourceId);
                         n++;
                 }
         }
