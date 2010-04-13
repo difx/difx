@@ -45,9 +45,9 @@ int usage()
   fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> [skipbytesfront] [skipbytesback] [skipbytesinitial]\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
   fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to read\n");
-  fprintf(stderr, "\n[skipbytesfront=48] is the number of bytes to skip over before each frame\n");
+  fprintf(stderr, "\n[skipbytesfront=54] is the number of bytes to skip over before each frame\n");
   fprintf(stderr, "\n[skipbytesback=4] is the number of bytes to skip over after each frame\n");
-  fprintf(stderr, "\n[skipbytesinitial=30] is the number of bytes to skip over only once after opening the file\n");
+  fprintf(stderr, "\n[skipbytesinitial=28] is the number of bytes to skip over only once after opening the file\n");
 
   return 0;
 }

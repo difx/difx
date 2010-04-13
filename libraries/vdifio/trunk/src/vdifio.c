@@ -123,4 +123,46 @@ int getVDIFFrameNumber(char * rawheader)
         return (int)(headerword & 0xFFFFFF);
 }
 
+int getVDIFFrameInvalid(char * rawheader)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[0];
+	return (int)((headerword >> 31) & 0x01);
+}
+
+void setVDIFFrameMJD(char * rawheader, int framemjd)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[1];
+	int epoch = (int)((headerword >> 24) & 0x3F);
+	int emjd = ymd2mjd(2000 + epoch/2, (epoch%2)*6+1, 1);
+	headerword = ((int*)rawheader)[0];
+	int seconds = (int)(headerword & 0x3FFFFFFF);
+	int mjd = emjd + seconds/86400;
+	if(emjd == framemjd) return; //its already right
+	headerword += (framemjd-mjd)*86400;
+	*((unsigned int*)rawheader) = headerword;
+}
+
+void setVDIFFrameSecond(char * rawheader, int framesecond)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[0];
+	headerword -= (headerword & 0x3FFFFFFF)%86400;
+	headerword += framesecond;
+	*((unsigned int*)rawheader) = headerword;
+}
+
+void setVDIFFrameNumber(char * rawheader, int framenumber)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[1];
+	headerword -= headerword & 0xFFFFFF;
+	headerword += framenumber;
+	*(&(((unsigned int*)rawheader)[1])) = headerword;
+}
+
+void setVDIFFrameInvalid(char * rawheader, unsigned int invalid)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[0];
+	headerword &= 0x7FFFFFFF; //clear the invalid bit
+	headerword |= (invalid << 31);
+	*((unsigned int*)rawheader) = headerword;
+}
 

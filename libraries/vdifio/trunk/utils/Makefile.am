@@ -5,7 +5,18 @@ LDADD = \
 	$(top_builddir)/src/libvdifio.a
 
 bin_PROGRAMS = \
-	stripVDIF 
+	stripVDIF \
+	captureUDPVDIF \
+	padVDIF 
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
+
+captureUDPVDIF_SOURCES = \
+	captureUDPVDIF.c
+
+captureUDPVDIF_LDFLAGS = \
+	-pthread
+
+padVDIF_SOURCES = \
+	padVDIF.c

@@ -72,6 +72,13 @@ int getVDIFFrameNumber(char * rawheader);
 int getVDIFStationID(char * rawheader);
 int getVDIFBitsPerSample(char * rawheader);
 int getVDIFNumChannels(char * rawheader);
+int getVDIFFrameInvalid(char * rawheader);
+
+/* Functions to set just one value from a raw header */
+void setVDIFFrameMJD(char * rawheader, int framemjd);
+void setVDIFFrameSecond(char * rawheader, int framesecond);
+void setVDIFFrameNumber(char * rawheader, int framenumber);
+void setVDIFFrameInvalid(char * rawheader, unsigned int invalid);
 
 #ifdef __cplusplus
 }
