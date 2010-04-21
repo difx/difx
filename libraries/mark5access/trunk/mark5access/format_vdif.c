@@ -1317,6 +1317,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	int mjd_d, mjd_t, sec_d, sec_t;
 	double ns_d;
 	long long ns_t;
+	unsigned int *header;
 
 	if(ms->mjd && ms->framenum % ms->framegranularity == 0)
 	{
@@ -1339,6 +1340,15 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 			return 0;
 		}
 	}
+
+	/* Check the invalid bit */
+	header = (unsigned int *)ms->frame;
+	if((header[0] >> 31) & 0x01)
+	{
+		//fprintf(stderr, "Skipping invalid frame\n");
+		return 0;
+	}
+
 	return 1;
 }
 
