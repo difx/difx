@@ -1875,7 +1875,7 @@ bool Configuration::consistencyCheck()
           cfatal << startl << "Send of size " << configs[i].subintns << " does not yield an integer number of FFTs for datastream " << j << " in config " << i << " - aborting!!!" << endl;
         return false;
       }
-      if(((double)configs[i].subintns)*(databufferfactor/numdatasegments) > ((1 << (sizeof(int)*8 - 1)) - 1))
+      if(((double)configs[i].subintns)*(databufferfactor/numdatasegments) > (((long long)1 << (sizeof(int)*8 - 1)) - 1))
       {
         if(mpiid == 0) //only write one copy of this error message
           cfatal << startl << "Increment per read in nanoseconds is " << ((double)configs[i].subintns)*(databufferfactor/numdatasegments) << " - too large to fit in an int - aborting!!!" << endl;
