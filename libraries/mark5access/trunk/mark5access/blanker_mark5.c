@@ -303,17 +303,7 @@ int blanker_vdif(struct mark5_stream *ms)
 
 	ms->blankzonestartvalid[0] = 0;
 
-	/* First check the invalid bit */
-	/*header = (unsigned int *)ms->frame;
-	if((header[0] >> 31) & 0x01)
-	{
-		//fprintf(stderr, "Skipping invalid frame\n");
-		//invalid
-		ms->blankzoneendvalid[0] = 0;
-		return 0;
-	}*/ //this is now in validate()
-
-	/* Invalid bit is not set, check for fill pattern */
+	/* Check for fill pattern */
 	if(data[0] == MARK5_FILL_WORD64 || data[nword-1] == MARK5_FILL_WORD64)
 	{
 		ms->blankzoneendvalid[0] = 0;

@@ -1250,7 +1250,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 
 		dataframelength = (word2 & 0x00FFFFFF)*8;
-		fprintf(stdout, "Dataframelength as derived from the VDIF header is %d bytes\n", dataframelength);
+		//fprintf(stdout, "Dataframelength as derived from the VDIF header is %d bytes\n", dataframelength);
 		if(f->databytesperpacket == 0)
 		{
 			f->databytesperpacket = dataframelength - f->frameheadersize;

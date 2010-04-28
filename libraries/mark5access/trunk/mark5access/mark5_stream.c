@@ -80,6 +80,12 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 			ms->consecutivefails = 0;
 		}
 	}
+
+	/* set payload pointer to point to start of actual data */
+	if(ms->frame)
+	{
+		ms->payload = ms->frame + ms->payloadoffset;
+	}
 	
 	/* blank bad data if any */
 	if(v)
@@ -89,12 +95,6 @@ int mark5_stream_next_frame(struct mark5_stream *ms)
 	else /* blank entire frame if validity check fails */
 	{
 		mark5_stream_blank_frame(ms);
-	}
-
-	/* set payload pointer to point to start of actual data */
-	if(ms->frame)
-	{
-		ms->payload = ms->frame + ms->payloadoffset;
 	}
 
 	return 0;
