@@ -1389,6 +1389,13 @@ bool Configuration::populateScanConfigList()
         calcodeapplies = true;
       if(r.qual < 0)
         qualapplies = true;
+      src = model->getScanPointingCentreSource(i);
+      if(r.sourcename.compare(src->name) == 0)
+        srcnameapplies = true;
+      if(r.calcode.compare(src->calcode) == 0)
+        calcodeapplies = true;
+      if(r.qual == src->qual)
+        calcodeapplies = true;
       for(int k=0;k<model->getNumPhaseCentres(i);k++) {
         //cout << "Looking at source " << k << " of scan " << i << endl;
         src = model->getScanPhaseCentreSource(i, k);

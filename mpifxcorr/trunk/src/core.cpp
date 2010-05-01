@@ -624,7 +624,7 @@ int Core::receivedata(int index, bool * terminate)
 
 void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
-  int status, perr, i, numfftloops;
+  int status, perr, i, numfftloops, numfftsprocessed;
   int resultindex, cindex, ds1index, ds2index, binloop;
   int xcblockcount, maxxcblocks, xcshiftcount;
   int acblockcount, maxacblocks, acshiftcount;
@@ -712,12 +712,14 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     //do the station-based processing for this batch of FFT chunks
     for(int j=0;j<numdatastreams;j++)
     {
+      numfftsprocessed = 0;
       for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
       {
         i = fftloop*config->getNumBufferedFFTs(procslots[index].configindex) + fftsubloop + startblock;
 	if(i >= startblock+numblocks)
 	  break; //may not have to fully complete last fftloop
         scratchspace->dsweights[j][fftsubloop] = modes[j]->process(i, fftsubloop);
+        numfftsprocessed++;
       }
     }
 
@@ -906,7 +908,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       }
     }
 
-    xcblockcount += config->getNumBufferedFFTs(procslots[index].configindex);
+    xcblockcount += numfftsprocessed;
     if(xcblockcount == maxxcblocks)
     {
       //shift/average and then lock results and copy data
@@ -1345,8 +1347,12 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
     uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, scratchspace, startfreq, i);
   }
 
+  //clear the thread cross-corr results
+  status = vectorZero_cf32(scratchspace->threadcrosscorrs, procslots[index].threadresultlength);
+  if(status != vecNoErr)
+    csevere << startl << "Error trying to zero threadcrosscorrs!!!" << endl;
+
   //clear the pulsar accumulation vector if necessary
-  //threadresults is cleared at the start of processData() so no need to do that now
   if(procslots[index].pulsarbin && procslots[index].scrunchoutput)
   {
     for(int f=0;f<config->getFreqTableLength();f++)
@@ -1390,7 +1396,9 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   int antenna1index, antenna2index;
   int rotatestridelen, rotatesperstride, xmacstridelen, xmaccopylen, stridestoaverage, averagesperstride, averagelength;
   double bandwidth, lofrequency, channelbandwidth, stepbandwidth;
-  double pointingcentredelay1, pointingcentredelay2, applieddelay, turns, edgeturns;
+  double applieddelay, applieddelay1, applieddelay2, turns, edgeturns;
+  double pointingcentredelay1approx[2];
+  double pointingcentredelay2approx[2];
   double * phasecentredelay1;
   double * phasecentredelay2;
   cf32* srcpointer;
@@ -1416,8 +1424,9 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
 
     antenna1index = config->getDModelFileIndex(procslots[index].configindex, config->getBDataStream1Index(procslots[index].configindex, baseline));
     antenna2index = config->getDModelFileIndex(procslots[index].configindex, config->getBDataStream2Index(procslots[index].configindex, baseline));
-    model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.0, 0, antenna1index, 0, 0, &pointingcentredelay1);
-    model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.0, 0, antenna2index, 0, 0, &pointingcentredelay2);
+    //get the pointing centre interpolator, validity range aribitrarily set to 1us (approximately the tangent)
+    model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna1index, 0, 1, pointingcentredelay1approx);
+    model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna2index, 0, 1, pointingcentredelay2approx);
     for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
     {
       model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.0, 0, antenna1index, s+1, 0, &(phasecentredelay1[s]));
@@ -1479,8 +1488,13 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
       //cout << "phasecentredelay2[" << s << "] is " << phasecentredelay2[s] << endl;
       //cout << "pointingcentredelay1 is " << pointingcentredelay1 << endl;
       //cout << "pointingcentredelay2 is " << pointingcentredelay2 << endl;
-      applieddelay = (phasecentredelay2[s]-phasecentredelay1[s]) - (pointingcentredelay2-pointingcentredelay1);
-      //cout << "Applied delay is " << applieddelay << " because delta phasecentre delay for phase centre " << s << " is " << phasecentredelay2[s]-phasecentredelay1[s] << " and delta pointingcentredelay is " << pointingcentredelay2-pointingcentredelay1 << endl;
+      applieddelay1 = phasecentredelay1[s] - pointingcentredelay1approx[1];
+      applieddelay2 = phasecentredelay2[s] - pointingcentredelay2approx[1];
+      //make correction for geometric rate over the shifted sample range
+      applieddelay1 += applieddelay1*pointingcentredelay1approx[0];
+      applieddelay2 += applieddelay2*pointingcentredelay2approx[0];
+      //cout << "Applied delay is " << applieddelay2 - applieddelay1 << ", correction is " << applieddelay2 - applieddelay1 - saveddelay << endl;
+      applieddelay = applieddelay2 - applieddelay1;
       if(fabs(applieddelay) > 1.0e-20)
       {
         edgeturns = applieddelay*lofrequency;

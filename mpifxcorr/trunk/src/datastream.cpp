@@ -112,7 +112,7 @@ void DataStream::initialise()
   while(currentconfigindex < 0 && readscan < model->getNumScans())
     currentconfigindex = config->getScanConfigIndex(++readscan);
   if(readscan == model->getNumScans()) {
-    cfatal << "Couldn't find a scan for which we had a valid config - aborting!!!" << endl;
+    cfatal << startl << "Couldn't find a scan for which we had a valid config - aborting!!!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   readseconds = 0;
