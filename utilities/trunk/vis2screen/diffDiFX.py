@@ -64,11 +64,15 @@ nextheader  = []
 freqindex   = []
 baseline    = []
 nchan       = []
+mjd         = []
+seconds     = []
 for filename in args:
     difxinputs.append(open(filename))
     freqindex.append(0)
     nchan.append(0)
     baseline.append(0)
+    mjd.append(0)
+    seconds.append(0)
     nextheader.append([])
 
 for i in range(numfiles):
@@ -87,6 +91,8 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
         baseline[i] = nextheader[i][0]
         freqindex[i] = nextheader[i][5]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
+        mjd[i] = nextheader[i][1]
+        seconds[i] = nextheader[i][2]
         buffer = difxinputs[i].read(8*nchan[i])
         if nchan[i] >= maxchannels:
             print "How embarrassing - you have tried to diff files with more than " + \

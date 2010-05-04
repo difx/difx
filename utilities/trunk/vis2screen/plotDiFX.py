@@ -105,7 +105,7 @@ while not len(nextheader[0]) == 0:
             cvis = struct.unpack("ff", buffer[8*j:8*(j+1)])
             vis[i][j] = complex(cvis[0], cvis[1])
             amp[i][j] = math.sqrt(cvis[0]*cvis[0] + cvis[1]*cvis[1])
-            phase[i][j] = math.atan2(cvis[1], cvis[0])
+            phase[i][j] = math.atan2(cvis[1], cvis[0])*180.0/math.pi
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
 	    (targetfreq < 0 or targetfreq == freqindex[i]):
             lag[i] = fft.ifft(vis[i], nchan[i])
@@ -136,7 +136,7 @@ while not len(nextheader[0]) == 0:
         pylab.title(titlestr)
         pylab.ylabel("Amplitude")
         pylab.subplot(312)
-        pylab.ylabel("Phase")
+        pylab.ylabel("Phase (deg)")
         pylab.subplot(313)
         pylab.ylabel("Lag")
         pylab.xlabel("Channel")
