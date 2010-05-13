@@ -2046,6 +2046,13 @@ int main(int argc, char **argv)
 		exit(0);
 	}
 
+	if(!isalpha(v2dFile[0]))
+	{
+		cerr << "Error: pass name (.v2d file name) must start with a letter!" << endl;
+		cerr << "Please rename it and run again." << endl;
+		exit(0);
+	}
+
 	P = new CorrParams(v2dFile);
 	if(P->vexFile.size() == 0)
 	{
