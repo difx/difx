@@ -36,8 +36,8 @@ from os.path import isfile
 from os import umask
 
 program = 'oms2v2d'
-version = '0.5'
-verdate = '20091210'
+version = '0.7'
+verdate = '20100513'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -207,15 +207,21 @@ else:
 
 omsFile = prefix + '.oms'
 v2dFile = prefix + '.v2d'
-if isfile(prefix + '.skd'):
-	vexFile = prefix + '.skd.obs'
-elif isfile(prefix + '.vex'):
+
+
+if isfile(prefix + '.skd') and isfile(prefix + '.vex'):
+	print 'Warning: Found both %s.skd and %s.vex .' % (prefix, prefix)
+	print 'Assuming %s.vex is the correct one!\n' % prefix
+
+if isfile(prefix + '.vex'):
 	vexFile = prefix + '.vex.obs'
+elif isfile(prefix + '.skd'):
+	vexFile = prefix + '.skd.obs'
 else:
-	print 'No vex file found here.  It should be called %s.skd or %s.vex.' % (prefix, prefix)
+	print 'No vex file found here.  It should be called %s.vex or %s.skd.' % (prefix, prefix)
 	if force:
-		vexFile = prefix + '.skd.obs'
-		print 'Assuming vex file is called %s.\n' % (prefix + '.skd')
+		vexFile = prefix + '.vex.obs'
+		print 'Assuming vex file is called %s.\n' % (prefix + '.vex')
 	else:
 		print 'Run with --force to continue anyway.\n'
 		exit(0)

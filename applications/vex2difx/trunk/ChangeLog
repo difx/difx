@@ -23,6 +23,7 @@ Version 2.0
 * Huge speed-up by not constantly sorting events
 * Fix convergence problem when there is no time gap between modules
 * Force v2d file to start with a letter
+* oms2v2d: warn if both .skd and .vex are found; default to .vex
 
 Version 0.3
 ~~~~~~~~~~~
