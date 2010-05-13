@@ -135,6 +135,19 @@ public:
 	string ant;
 };
 
+ostream& operator << (ostream& os, const MediaChange& x)
+{
+        int p = os.precision();
+
+        os.precision(12);
+
+        os << "MediaChange(" << x.ant << ", " << x.mjdStart << ", " << x.mjdStop << ")";
+
+        os.precision(p);
+
+        return os;
+}
+
 int nGap(const list<MediaChange> &m, double mjd)
 {
 	list<MediaChange>::const_iterator it;
@@ -169,6 +182,9 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	double start;
 	int nAnt;
 	int nLoop = 0;
+	int nEvent;
+
+	nEvent = JG.events.size();
 
 	// first initialize recordStop and usage
 	for(e = JG.events.begin(); e != JG.events.end(); e++)
@@ -209,11 +225,15 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 		{
 			if(recordStop[e->name] > 0.0)
 			{
-				changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
-				if(verbose > 0)
+				if(JG.containsAbsolutely(recordStop[e->name]) &&
+				   JG.containsAbsolutely(e->mjd))
 				{
-					cout << "Media change: " << e->name << " " << 
-						(VexInterval)(changes.back()) << endl;
+					changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
+					if(verbose > 0)
+					{
+						cout << "Media change: " << e->name << " " << 
+							(VexInterval)(changes.back()) << endl;
+					}
 				}
 			}
 		}
@@ -245,7 +265,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	while(!changes.empty() || nClockBreaks > 0)
 	{
 		nLoop++;
-		if(nLoop >= 100000) // There is clearly a problem converging!
+		if(nLoop > nEvent) // There is clearly a problem converging!
 		{
 			cerr << "Developer error! -- jobs not converging after " << nLoop << " tries.\n" << endl;
 			exit(0);
