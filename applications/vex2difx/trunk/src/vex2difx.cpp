@@ -1820,7 +1820,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	else
 	{
 		cerr << "Warning: job " << D->job->fileBase << " not written since it correlates no data" << endl;
-                cerr << "This is usually due to all frequency Ids being unselected." << endl;
+                cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
         }
 
 	if(D->nBaseline > 0)
