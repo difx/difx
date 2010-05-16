@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 PROGRAM = 'startdifx'
-VERSION = '0.3'
-VERDATE = '20080718'
+VERSION = '0.4'
+VERDATE = '20100516'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -12,11 +12,12 @@ defaultttl   = 3
 genmachines = 'genmachines -v'
 calcif      = 'calcif2'
 difx2fits   = 'difx2fits -v'
+mpiOptions  = '--mca btl ^udapl,openib --mca mpi_yield_when_idle 1 --mca rmaps seq'
 
 from sys import argv, exit
 from os import popen, getcwd, system, getenv, getpid
 from os.path import isfile, isdir
-from string import split, strip
+from string import split, strip, rfind
 from time import time
 from glob import glob
 import socket
@@ -73,6 +74,7 @@ def testdifxversion(filebase, override):
 		else:
 			print 'Quitting since --override-version not specified'
 			exit(0)
+	return ver
 	
 
 def sendmessage(filebase, state, statusmessage):
@@ -132,8 +134,9 @@ def domachines(filebase, machinespolicy):
 			return 0
 	return len(open(fn).readlines())
 
-def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
-	testdifxversion(filebase, override)
+def run(filebase, machinespolicy, deletepolicy, makeModel, override):
+
+	difxVersion = testdifxversion(filebase, override)
 
 	identifier = split(filebase, '/')[-1]
 
@@ -146,7 +149,7 @@ def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
 		return 'Error: input file %s.input not found' % filebase
 	
 	if not isfile(filebase+'.im'):
-		if makeuvw and isfile(filebase+'.calc'):
+		if makeModel and isfile(filebase+'.calc'):
 			system('%s %s.calc' % (calcif, filebase))
 		else:
 			return 'Error: model not available for %s' % filebase
@@ -168,7 +171,12 @@ def run(filebase, machinespolicy, deletepolicy, makeuvw, override):
 	cmd = 'difxlog %s %s.difxlog 4 %d &' % (identifier, filebase, getpid())
 	system(cmd);
 
-	cmd = 'mpirun -np %d --bynode --hostfile %s.machines --mca btl ^udapl,openib --mca mpi_yield_when_idle 1  mpifxcorr %s.input' % (np, filebase, filebase)
+	if difxVersion == None:
+		difxProgram = 'mpifxcorr'
+	else:
+		difxProgram = 'runmpifxcorr.' + difxVersion
+
+	cmd = 'mpirun -np %d --bynode --hostfile %s.machines %s  %s %s.input' % (np, filebase, mpiOptions, difxProgram, filebase)
 
 	sendmessage(filebase, 'Spawning', 'Spawning %d processes' % np)
 	print 'Executing: ', cmd
@@ -191,7 +199,7 @@ if len(argv) < 2:
 
 machinespolicy = 2
 deletepolicy = 0
-makeuvw = True
+makeModel = True
 makefits = False
 filebaselist = []
 cwd = getcwd()
@@ -210,7 +218,7 @@ for a in argv[1:]:
 		elif a == '-f' or a == '--force':
 			deletepolicy = 1
 		elif a == '-d' or a == '--dont-calc':
-			makeuvw = False
+			makeModel = False
 		elif a == '-F' or a == '--fits':
 			makefits = True
 		elif a == '--override-version':
@@ -229,12 +237,16 @@ if len(filebaselist) < 1:
 	usage()
 	
 for filebase in filebaselist:
-	if len(filebase) > 31:
+
+	a = rfind(filebase, "/")
+	jobname = filebase[a+1:]
+
+	if len(jobname) > 31:
 		sendmessage(filebase, 'ABORTED', "Did not start job because jobname is too long!")
-		print "Job name %s is too long and will be skipped!" % (filebase)
+		print "Job name %s is too long and will be skipped!" % filebase
 		exit(1)
 
-	v = run(filebase, machinespolicy, deletepolicy, makeuvw, override)
+	v = run(filebase, machinespolicy, deletepolicy, makeModel, override)
 
 	if v != None:
 		sendmessage(filebase, 'ABORTED', v)

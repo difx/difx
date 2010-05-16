@@ -176,7 +176,10 @@ Version 0.3
 * look at DIFX_VERSION
 * small fixes
 * respect DIFX_GROUP_ID and set permissions
-
+Version 0.4
+* check for length of job name
+* use DIFX_VERSION env var to choose which version to run
+* check for .im, not .uvw + .delay
 
 calcif
 ~~~~~~
