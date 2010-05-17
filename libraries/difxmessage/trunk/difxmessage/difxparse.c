@@ -532,6 +532,11 @@ static void XMLCALL endElement(void *userData, const char *name)
 							G->body.start.force = 1;
 						}
 					}
+					else if(strcmp(elem, "difxVersion") == 0)
+					{
+						strncpy(G->body.start.difxVersion, s, DIFX_MESSAGE_VERSION_LENGTH-1);
+						G->body.start.difxVersion[DIFX_MESSAGE_VERSION_LENGTH-1] = 0;
+					}
 					break;
 				case DIFX_MESSAGE_STOP:
 					break;
@@ -722,6 +727,8 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		{
 			printf("      %s %d\n", G->body.start.processNode[i], G->body.start.nThread[i]);
 		}
+		printf("    force = %d\n", G->body.start.force);
+		printf("    difxVersion = %s\n", G->body.start.difxVersion);
 		break;
 	case DIFX_MESSAGE_STOP:
 		break;

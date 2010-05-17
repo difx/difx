@@ -58,3 +58,4 @@ Do better job expanding "entities" in XML formation
  - encode ascii values 1-31 in [[]] so they can be idenfied and not crash parsers
 Add new Mark5 States: Test TestWrite and TestRead
 Use pclose after popen (difxlog)
+Add difxVersion to difxStartMessage
