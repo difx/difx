@@ -4,6 +4,7 @@ Version 1.4.1
 * Some memory leak fixes from Alexander Neidhardt and Martin Ettl (from Wettzell)
 * Add m5fold utility
 * Add some 4 and 8 bit unpackers for VDIF format
+* m5d and m5spec : behave better if -h is given
 
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread
