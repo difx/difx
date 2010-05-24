@@ -1338,37 +1338,6 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 	blockedfreqids.resize(D->nAntenna);
 
-	if(of)
-	{
-		const char *fileBase = D->job->fileBase;
-		double tops;	// Trillion operations
-		int p;
-
-		for(int i = 0; D->job->fileBase[i]; i++)
-		{
-			if(D->job->fileBase[i] == '/')
-			{
-				fileBase = D->job->fileBase + i + 1;
-			}
-		}
-
-		tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
-
-		*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
-		p = of->precision();
-		of->precision(4);
-		*of << tops << " ";
-		*of << (J.dataSize/1000000) << "  #";
-		of->precision(p);
-		
-
-		for(vector<string>::const_iterator ai = antList.begin(); ai != antList.end(); ai++)
-		{
-			*of << " " << *ai;
-		}
-		*of << endl;
-	}
-
 	// Allocate space for the source table - first work out how many sources we'll need
 	nTotalPhaseCentres = 0;
 	for(vector<SourceSetup>::const_iterator ss=P->sourceSetups.begin();
