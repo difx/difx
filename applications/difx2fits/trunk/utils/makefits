@@ -121,7 +121,7 @@ def mergesnifferfiles(expt, list, passname, ext, cwd, verbose, hasHeaderLine):
 
 	files = []
 	for i in list:
-		infile = '%s.%d.%s' % (expt, i, ext)
+		infile = '%s.%d.%s' % (expt, i[0], ext)
 		if isfile(infile):
 			files.append(infile)
 		else:
@@ -159,16 +159,19 @@ def genDateStr(t):
 class Job:
 	def __init__(self, str):
 		s = split(strip(str))
-		if len(s) >= 4:
+		if len(s) >= 6:
 			self.name = s[0]
 			self.mjdStart = float(s[1])
 			self.mjdStop = float(s[2])
 			self.nAnt = int(s[3])
+			self.nPulsarBins = int(s[4])
+			self.nSourceFiles = int(s[5])
 		else:
 			self.name = ''
 	def show(self, indent=0):
-		print '%sJob %s: start=%f stop=%f nAnt=%d' % \
-			(' '*indent, self.name, self.mjdStart, self.mjdStop, self.nAnt)
+		print '%sJob %s: start=%f stop=%f nPsrBins=%d nSrcFiles=%d nAnt=%d' % \
+			(' '*indent, self.name, self.mjdStart, self.mjdStop, 
+			 self.nPulsarBins, self.nSourceFiles, self.nAnt)
 	def verify(self, dir):
 		files = ['.calc', '.input', '.flag', '.im']
 		for f in files:
@@ -187,6 +190,8 @@ class JobList:
 		self.filename = filename
 		data = open(filename).readlines()
 		self.jobs = []
+		self.npsrbins = 1
+		self.nsrcfiles = 1
 		if len(data) < 2:
 			print 'Malformed .joblist file %s' % filename
 			exit(0)
@@ -203,6 +208,10 @@ class JobList:
 				print 'Malformed line %d in %s' % (n+1, filename)
 				exit(0)
 			self.jobs.append(j)
+			if self.jobs[-1].nPulsarBins > self.npsrbins:
+				self.npsrbins = self.jobs[-1].nPulsarBins
+			if self.jobs[-1].nSourceFiles > self.nsrcfiles:
+				self.nsrcfiles = self.jobs[-1].nSourceFiles
 	
 	def testversion(self, override):
 		difxVersion = getenv('DIFX_VERSION')
@@ -216,7 +225,7 @@ class JobList:
 			if override:
 				print 'Overriding version mismatch: %s != %s' % \
 					(difxVersion, self.kv['DiFX'])
-				difxVersion = 'unknwown'
+				difxVersion = 'unknown'
 			else:
 				print 'Error: file DiFX version = %s' % self.kv['DiFX']
 				print 'and current DiFX version = %s' % difxVersion
@@ -262,14 +271,17 @@ class JobList:
 			print 'Changing to directory: %s' % tmp
 		chdir(tmp)
 
-		cmd = 'difx2fits %s ' % options
-		for j in self.jobs:
-			cmd += ('../%s ' % j.name)
-		if verbose:
-			print 'Executing: %s' % cmd
-		system(cmd)
+		for b in range(s.npsrbins):
+			for s in range(s.nsrcfiles):
+				initcmd = 'difx2fits -B %d --phasecentre %d %%s ' % (b,s)
+				cmd = initcmd % options
+				for j in self.jobs:
+					cmd += ('../%s ' % j.name)
+				if verbose:
+					print 'Executing: %s' % cmd
+				system(cmd)
 		
-		files = glob('*.*.FITS')
+		files = glob('*.*.*.*.FITS')
 		if len(files) == 0:
 			print 'Error: No fits files made'
 			print 'Please clean remove %s when you are done picking up the pieces.' % tmp
@@ -286,7 +298,7 @@ class JobList:
 				print 'Error: Unexpected variety of FITS files found:', files
 				print 'Please clean remove %s when you are done picking up the pieces.' % tmp
 				exit(0)
-			indices.append(int(s[1]))
+			indices.append([int(s[1]), s[2], s[3]])
 
 		indices.sort()
 
@@ -294,10 +306,12 @@ class JobList:
 		out = open('%s/%s.fitslist' % (cwd, self.kv['pass']), 'w')
 		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0\n' % \
 			(self.kv['exper'], self.kv['pass'], self.filename, getmjd(t), self.kv['DiFX']))
-		nDigit = countDigits(indices[-1])
-		format = 'VLBA_%%s_%%s_%%0%dd_%%s.idifits' % nDigit
+		nDigit = countDigits(indices[-1][0])
+		nBinDigits = countDigits(self.npsrbins)
+		nSrcDigits = countDigits(self.nsrcfiles)
+		format = 'VLBA_%%s_%%s_BIN%%0%dd_SRC%%0%dd_%%0%dd_%%s.idifits' % (nBinDigits, nSrcDigits, nDigit)
 		for i in indices:
-			fn = '%s.%d.FITS' % (expt, i)
+			fn = '%s.bin%04d.source%04d.%d.FITS' % (expt, i[1], i[2], i[0])
 			size = getsize(fn)/1000000.0
 			archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
 			out.write('%s %4.2f %s\n' % (archfile, size, fn))
@@ -317,7 +331,7 @@ class JobList:
 		j = 1
 		format = 'VLBA_%%s_%%s_%%0%dd_%%s.jobmatrix.txt' % nDigit
 		for i in indices:
-			fn = '%s.%d.jobmatrix' % (expt, i)
+			fn = '%s.%d.jobmatrix' % (expt, i[0])
 			if isfile(fn):
 				archfile = format % (self.kv['exper'], self.kv['pass'], j, datestr)
 				cmd = 'mv %s %s/%s' % (fn, dir, archfile)
@@ -397,10 +411,16 @@ class JobList:
 
 		OK = True
 		for j in self.jobs:
+			if self.npsrbins != j.nPulsarBins:
+				print "Jobs have inconsistent number of bins (%d,%d)" % \
+					(numbins,j.nPulsarBins)
 			if j.verify(dir) == False:
 				OK = False
 			else:
 				completeJobs.append(j)
+		if self.npsrbins > 1 and self.nsrcfiles > 1:
+			print "Cannot build multiple-field and pulsar files simultaneously!"
+			return False
 		if not allowPartial:
 			return OK
 
