@@ -620,7 +620,7 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 }
 
 /* return -1 on a failure */
-static int loadPulsarConfigFile(DifxInput *D, const char *fileName)
+int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 {
 	DifxParameters *pp;
 	DifxPulsar *dp;

@@ -483,6 +483,7 @@ void fprintDifxPolycoArray(FILE *fp, const DifxPolyco *dp, int nPolyco);
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src);
 DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco);
 int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPoly, const char *filename);
+int loadPulsarConfigFile(DifxInput *D, const char *fileName);
 int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco);
 
 /* DifxPhasedArray functions */
