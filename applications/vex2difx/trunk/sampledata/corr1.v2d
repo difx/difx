@@ -1,1 +1,62 @@
+# correlation parameters
 vex=corr1.skd
+tweakIntTime=1
+mjdStart=2007y346d05h52m00s
+mjdStop =2007y346d05h53m00s
+antennas=Ef,Ma,Mc,Wz
+
+RULE default
+{
+  setup = default
+}
+
+
+SETUP default
+{
+  tInt=2
+  nChan=512
+  specAvg=8
+  doPolar=1
+  doAuto=1
+  #subintNS=0
+  #fringeRotOrder=1
+}
+
+ANTENNA Ef
+{
+	#phaseCalInt=1 #Zero turns off phase cal extraction, positive value is the interval between tones to be extracted
+	clockEpoch=2007-12-12T05:00:00
+	clockOffset=0
+	clockRate=-8.98e-5
+	file=/nas2fs/difx/jm/corr1/corr1_ef_no0019
+}
+ANTENNA Ma
+{
+	#phaseCalInt=1 #Zero turns off phase cal extraction, positive value is the interval between tones to be extracted
+	clockEpoch=2007-12-12T05:00:00
+	clockOffset=2.45
+	clockRate=0
+	file=/nas2fs/difx/jm/corr1/corr1_ma_no0019
+}
+ANTENNA Mc
+{
+	#phaseCalInt=1 #Zero turns off phase cal extraction, positive value is the interval between tones to be extracted
+	clockEpoch=2007-12-12T05:00:00
+	clockOffset=71.01
+	clockRate=-3.83e-6
+	file=/nas2fs/difx/jm/corr1/corr1_mc_no0019
+}
+ANTENNA Wz
+{
+	#phaseCalInt=1 #Zero turns off phase cal extraction, positive value is the interval between tones to be extracted
+	clockEpoch=2007-12-12T05:00:00
+	clockOffset=20
+	clockRate=0
+	file=/nas2fs/difx/jm/corr1/corr1_wz_no0019
+}
+
+EOP 54444 { tai_utc=33 ut1_utc=-0.254658 xPole=-0.047720 yPole=0.223970}
+EOP 54445 { tai_utc=33 ut1_utc=-0.254813 xPole=-0.049180 yPole=0.225510}
+EOP 54446 { tai_utc=33 ut1_utc=-0.255037 xPole=-0.050330 yPole=0.226660}
+EOP 54447 { tai_utc=33 ut1_utc=-0.255395 xPole=-0.051650 yPole=0.227750}
+EOP 54448 { tai_utc=33 ut1_utc=-0.255911 xPole=-0.053220 yPole=0.228790}
