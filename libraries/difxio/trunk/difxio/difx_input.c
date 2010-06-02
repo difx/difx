@@ -567,6 +567,10 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	D->job->duration = atoi(DifxParametersvalue(ip, rows[1]));
 	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[2])) +
 		      atof(DifxParametersvalue(ip, rows[3]))/86400.0;
+	if(atof(DifxParametersvalue(ip, rows[3])) != atoi(DifxParametersvalue(ip, rows[3])))
+	{
+		D->fracSecondStartTime = 1;
+	}
 	D->job->activeDatastreams =
 		      atoi(DifxParametersvalue(ip, rows[4]));
 	D->job->activeBaselines =

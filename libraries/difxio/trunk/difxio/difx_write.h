@@ -38,6 +38,10 @@ extern "C" {
 #include <stdio.h>
 #include "difxio/difx_input.h"
 
+double truncSeconds(double mjd);
+
+double roundSeconds(double mjd);
+
 int writeDifxLine(FILE *out, const char *key, const char *value);
 
 int writeDifxLine1(FILE *out, const char *key, int i1, const char *value);

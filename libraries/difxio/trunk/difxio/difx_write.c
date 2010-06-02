@@ -29,6 +29,26 @@
 
 #include "difxio/difx_write.h"
 
+double truncSeconds(double mjd)
+{
+	int intmjd, intsec;
+
+	intmjd = mjd;
+	intsec = (mjd - intmjd)*86400.0;
+
+	return intmjd + intsec/86400.0;
+}
+
+double roundSeconds(double mjd)
+{
+	int intmjd, intsec;
+
+	intmjd = mjd;
+	intsec = ((mjd - intmjd)*86400.0 + 0.5);
+
+	return intmjd + intsec/86400.0;
+}
+
 static int mjd2date(long mjd, int *pYear, int *pMonth, int *pDay)
 /*
  * RETURNS OK = 0 | ERROR = -1

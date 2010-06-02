@@ -66,7 +66,14 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 	writeDifxLineInt(out, "CALC PROGRAM", D->job->calcProgram);
 	writeDifxLineInt(out, "CALC VERSION", D->job->calcVersion);
 
-	writeDifxDateLines(out, D->job->mjdStart);
+	if(D->fracSecondStartTime > 0)
+	{
+		writeDifxDateLines(out, truncSeconds(D->job->mjdStart));
+	}
+	else
+	{
+		writeDifxDateLines(out, roundSeconds(D->job->mjdStart));
+	}
 	
 	writeDifxLineInt(out, "POLYNOMIAL ORDER", D->job->polyOrder);
 	writeDifxLineInt(out, "INTERVAL (SECS)", D->job->polyInterval);

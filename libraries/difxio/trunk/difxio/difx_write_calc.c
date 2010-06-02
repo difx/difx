@@ -31,16 +31,6 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
-static double truncSeconds(double mjd)
-{
-	int intmjd, intsec;
-
-	intmjd = mjd;
-	intsec = (mjd - intmjd)*86400.0;
-
-	return intmjd + intsec/86400.0;
-}
-
 int writeDifxCalc(const DifxInput *D, const char *filename)
 {
 	FILE *out;
@@ -78,8 +68,16 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	}
 
 	writeDifxLineInt(out, "JOB ID", D->job->jobId);
-	writeDifxLineDouble(out, "JOB START TIME", "%13.7f", D->job->jobStart);
-	writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", D->job->jobStop);
+	if(D->fracSecondStartTime > 0)
+	{
+		writeDifxLineDouble(out, "JOB START TIME", "%13.7f", D->job->jobStart);
+		writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", D->job->jobStop);
+	}
+	else
+	{
+		writeDifxLineDouble(out, "JOB START TIME", "%13.7f", roundSeconds(D->job->jobStart));
+		writeDifxLineDouble(out, "JOB STOP TIME", "%13.7f", roundSeconds(D->job->jobStop));
+	}
 	if(D->job->dutyCycle > 0.0)
 	{
 		writeDifxLineDouble(out, "DUTY CYCLE", "%5.3f", D->job->dutyCycle);
@@ -88,8 +86,17 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
-	writeDifxLineDouble(out, "START MJD", "%13.7f", truncSeconds(D->mjdStart));
-	writeDifxDateLines(out, D->mjdStart);
+	if(D->fracSecondStartTime > 0)
+	{
+		writeDifxLineDouble(out, "START MJD", "%13.7f", truncSeconds(D->mjdStart));
+		writeDifxDateLines(out, truncSeconds(D->mjdStart));
+	}
+	else
+	{
+		//round to nearest second - consistent with what is done in write_input
+		writeDifxLineDouble(out, "START MJD", "%13.7f", roundSeconds(D->mjdStart));
+		writeDifxDateLines(out, roundSeconds(D->mjdStart));
+	}
 	writeDifxLineInt(out, "SPECTRAL AVG", D->specAvg);
 	writeDifxLine(out, "TAPER FUNCTION", D->job->taperFunction);
 	writeDifxAntennaArray(out, D->nAntenna, D->antenna, 1, 1, 1, 0, 1);

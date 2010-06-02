@@ -44,7 +44,14 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	writeDifxLine(out, "CALC FILENAME", value);
 	sprintf(value, "%s.threads", filebase);
 	writeDifxLine(out, "CORE CONF FILENAME", value);
-	secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
+	if(D->fracSecondStartTime > 0)
+	{
+		secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
+	}
+	else
+	{
+		secs = (roundSeconds(D->mjdStop) - roundSeconds(D->mjdStart))*86400.0;
+	}
 	writeDifxLineInt(out, "EXECUTE TIME (SEC)", secs);
 	writeDifxLineInt(out, "START MJD", (int)(D->mjdStart));
 	if(D->fracSecondStartTime > 0)
@@ -54,6 +61,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	}
 	else
 	{
+		//round to nearest second - consistent with what is done in write_calc
 		secs = (D->mjdStart - (int)(D->mjdStart))*86400.0 + 0.5;
 		writeDifxLineInt(out, "START SECONDS", secs);
 	}
