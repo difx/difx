@@ -1276,7 +1276,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	vector<string> antList;
 	vector<freq> freqs;
 	int nPulsar=0;
-	int nTotalPhaseCentres;
+	int nTotalPhaseCentres, maxPulsarBins, maxScanPhaseCentres;
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, zoomsrc, polcount;
 	int * parentfreqindices;
@@ -1339,6 +1339,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	blockedfreqids.resize(D->nAntenna);
 
 	// Allocate space for the source table - first work out how many sources we'll need
+	maxPulsarBins = 0;
+	maxScanPhaseCentres = 0;
 	nTotalPhaseCentres = 0;
 	for(vector<SourceSetup>::const_iterator ss=P->sourceSetups.begin();
 		ss != P->sourceSetups.end(); ss++)
@@ -1398,6 +1400,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
 		if(sourceSetup->doPointingCentre)
 			scan->nPhaseCentres++;
+		if(scan->nPhaseCentres > maxScanPhaseCentres)
+			maxScanPhaseCentres = scan->nPhaseCentres;
 		atSource = 0;
 		pointingSrcIndex = -1;
 		for(int i=0;i<D->nSource;i++)
@@ -1507,6 +1511,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			D->config[c].pulsarId = D->nPulsar;
 			strcpy(D->pulsar[D->nPulsar].fileName, corrSetup->binConfigFile.c_str());
 			D->nPulsar++;
+			loadPulsarConfigFile(D, D->pulsar[D->nPulsar-1].fileName);
+			if(D->pulsar[D->nPulsar-1].nBin > maxPulsarBins)
+			{
+				maxPulsarBins = D->pulsar[D->nPulsar-1].nBin;
+			}
 		}
 
 		if(corrSetup->phasedArrayConfigFile.size() > 0)
@@ -1772,6 +1781,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                         tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
 
                         *of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
+			*of << maxPulsarBins << " " << maxScanPhaseCentres << " ";
                         p = of->precision();
                         of->precision(4);
                         *of << tops << " ";
