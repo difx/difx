@@ -736,22 +736,12 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 	}
 	else
 	{
-		if(opts->pulsarBin == 0 && opts->phaseCentre == 0)
-		{
-			sprintf(outFitsName, "%s%s.%d.FITS",
-				D->job[0].obsCode,
-				D->job[0].obsSession,
-				passNum);
-		}
-		else 
-		{
-			sprintf(outFitsName, "%s%s.%d.bin%04d.source%04d.FITS",
-				D->job[0].obsCode,
-				D->job[0].obsSession,
-				passNum,
-				opts->pulsarBin,
-				opts->phaseCentre);
-		}
+		sprintf(outFitsName, "%s%s.%d.bin%04d.source%04d.FITS",
+			D->job[0].obsCode,
+			D->job[0].obsSession,
+			passNum,
+			opts->pulsarBin,
+			opts->phaseCentre);
 	}
 
 	if(!opts->pretend)
