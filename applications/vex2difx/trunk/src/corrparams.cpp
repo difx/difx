@@ -1329,6 +1329,14 @@ int CorrParams::load(const string& fileName)
 				exit(0);
 			}
 			i++;
+			for(int j=0;j<sourceSetups.size();j++)
+			{
+				if(sourceSetups[j].vexName.compare(*i) == 0)
+				{
+					cerr << "Trying to add a setup for source " << *i << " which already has one! This leads to  confusion - aborting!" << endl;
+					exit(1);
+				}
+			}
 			sourceSetups.push_back(SourceSetup(*i));
 			sourceSetup = &sourceSetups.back();
 			i++;
@@ -1628,6 +1636,14 @@ const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
 
 void CorrParams::addSourceSetup(SourceSetup toadd)
 {
+	for(int i=0;i<sourceSetups.size();i++)
+	{
+		if(toadd.vexName.compare(sourceSetups[i].vexName) == 0)
+		{
+			cerr << "Trying to add a setup for source " << toadd.vexName << " which already has one! This leads to confusion - aborting!" << endl;
+			exit(1);
+		}
+	}
 	sourceSetups.push_back(toadd);
 }
 

@@ -1276,7 +1276,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	vector<string> antList;
 	vector<freq> freqs;
 	int nPulsar=0;
-	int nTotalPhaseCentres, maxPulsarBins, maxScanPhaseCentres;
+	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres;
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, zoomsrc, polcount;
 	int * parentfreqindices;
@@ -1509,12 +1509,13 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		if(corrSetup->binConfigFile.size() > 0)
 		{
 			D->config[c].pulsarId = D->nPulsar;
-			strcpy(D->pulsar[D->nPulsar].fileName, corrSetup->binConfigFile.c_str());
-			D->nPulsar++;
-			loadPulsarConfigFile(D, D->pulsar[D->nPulsar-1].fileName);
-			if(D->pulsar[D->nPulsar-1].nBin > maxPulsarBins)
+			loadPulsarConfigFile(D, corrSetup->binConfigFile.c_str());
+			nbin = D->pulsar[D->nPulsar-1].nBin;
+			if(D->pulsar[D->nPulsar-1].scrunch > 0)
+				nbin = 1;
+			if(nbin > maxPulsarBins)
 			{
-				maxPulsarBins = D->pulsar[D->nPulsar-1].nBin;
+				maxPulsarBins = nbin;
 			}
 		}
 
