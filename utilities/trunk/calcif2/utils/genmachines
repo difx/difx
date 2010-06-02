@@ -188,18 +188,32 @@ def getVsnsFromInputFile(inputfile):
 	vsns = []
 	nds = 0
 	input = open(inputfile).readlines()
+	dsindices = []
+	dssources = []
+	dscount = 0
+	dsfilecount = 0
 	for i in input:
 		if i[0:18] == 'ACTIVE DATASTREAMS':
 			s = split(i, ':')
 			if len(s) == 2:
 				nds = int(strip(s[1]))
+		if len(i.split()) == 4 and i.split()[0] == 'DATASTREAM' \
+		   and i.split()[2] == 'INDEX:':
+			dsindices.append(int(strip(i.split(':')[1].strip())))
+		if i[0:11] == 'DATA SOURCE':
+			if dscount in dsindices:
+				dssources.append(strip(i.split(':')[1].strip()))
+			dscount += 1
 		if i[0:5] == 'FILE ':
-			s = split(i, '/')
-			ds = int(strip(s[0][5:]))
-			if ds < nds:
-				s = split(i, ':')
-				if len(s) == 2:
-					vsns.append(strip(s[1]))
+			# VSNs only required for MODULES - will assume files are there for now
+			if dssources[dsfilecount] == 'MODULE':
+				s = split(i, '/')
+				ds = int(strip(s[0][5:]))
+				if ds < nds:
+					s = split(i, ':')
+					if len(s) == 2:
+						vsns.append(strip(s[1]))
+			dsfilecount += 1
 	return vsns
 
 def readmachines(machinesfile, verbose):
