@@ -761,7 +761,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 void Mode::averageFrequency()
 {
   cf32 tempsum;
-  int status, sidebandoffset, outputchans;
+  int status, outputchans;
 
   if(channelstoaverage == 1)
     return; //no need to do anything;
@@ -771,21 +771,16 @@ void Mode::averageFrequency()
   {
     for(int j=0;j<numrecordedbands;j++)
     {
-      sidebandoffset = 0;
-      if(config->getDRecordedLowerSideband(configindex, datastreamindex, config->getDRecordedFreqIndex(configindex, datastreamindex, j)))
-        sidebandoffset = 1;
-      status = vectorMean_cf32(&(autocorrelations[i][j][sidebandoffset]), channelstoaverage, &tempsum, vecAlgHintFast);
+      status = vectorMean_cf32(autocorrelations[i][j], channelstoaverage, &tempsum, vecAlgHintFast);
       if(status != vecNoErr)
         cerror << startl << "Error trying to average in frequency!" << endl;
-      autocorrelations[i][j][sidebandoffset] = tempsum;
+      autocorrelations[i][j][0] = tempsum;
       for(int k=1;k<outputchans;k++)
       {
-        status = vectorMean_cf32(&(autocorrelations[i][j][k*channelstoaverage+sidebandoffset]), channelstoaverage, &(autocorrelations[i][j][k+sidebandoffset]), vecAlgHintFast);
+        status = vectorMean_cf32(&(autocorrelations[i][j][k*channelstoaverage]), channelstoaverage, &(autocorrelations[i][j][k]), vecAlgHintFast);
         if(status != vecNoErr)
           cerror << startl << "Error trying to average in frequency!" << endl;
       }
-      if(sidebandoffset == 0) //only need to move nyquist channel for USB data
-        autocorrelations[i][j][outputchans] = autocorrelations[i][j][recordedbandchannels];
     }
   }
 }
@@ -911,7 +906,6 @@ LBA8BitMode::LBA8BitMode(Configuration * conf, int confindex, int dsindex, int r
 
 float LBA8BitMode::unpack(int sampleoffset)
 {
-  int status;
   unsigned char * packed = (unsigned char *)(&(data[((unpackstartsamples/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator]));
 
   for(int i=0;i<unpacksamples;i++)
@@ -931,7 +925,6 @@ LBA16BitMode::LBA16BitMode(Configuration * conf, int confindex, int dsindex, int
 
 float LBA16BitMode::unpack(int sampleoffset)
 {
-  int status;
   unsigned short * packed = (unsigned short *)(&(data[((unpackstartsamples/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator]));
 
   for(int i=0;i<unpacksamples;i++)

@@ -189,6 +189,10 @@ void Visibility::increment()
 void Visibility::updateTime()
 {
   int configindex;
+  if (currentscan >= model->getNumScans()) {
+    //already past the end, just return
+    return;
+  }
 
   offsetns = offsetns+offsetnsperintegration;
   subintsthisintegration = (int)(((long long)(config->getIntTime(currentconfigindex)*1000000000.0))/config->getSubintNS(currentconfigindex));
