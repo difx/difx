@@ -1458,10 +1458,14 @@ int CorrParams::load(const string& fileName)
 	is.close();
 
 	// if no setups or rules declared, make the default setup
-
-	if(corrSetups.size() == 0 && rules.size() == 0)
+	if(corrSetups.size() == 0)
 	{
 		defaultSetup();
+	}
+
+	if(rules.size() == 0)
+	{
+		defaultRule();
 	}
 
 	if(baselineList.size() == 0)
@@ -1486,6 +1490,12 @@ void CorrParams::defaultSetup()
 	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("default"));
 	rules.back().corrSetupName = "default";
+}
+
+void CorrParams::defaultRule()
+{
+	rules.push_back(CorrRule("default"));
+	rules.back().corrSetupName = corrSetups.begin()->corrSetupName;
 }
 
 void CorrParams::example()

@@ -197,6 +197,7 @@ public:
 	int load(const string& fileName);
 	void defaults();
 	void defaultSetup();
+	void defaultRule();
 	void example();
 	int sanityCheck();
 	void addSourceSetup(SourceSetup toadd);
