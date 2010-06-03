@@ -139,6 +139,7 @@ public:
 	int setkv(const string &key, const string &value);
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
+	int checkValidity();
 
 	string corrSetupName;
 

@@ -437,6 +437,47 @@ bool CorrSetup::correlateFreqId(int freqId) const
 	}
 }
 
+int CorrSetup::checkValidity()
+{
+	int nwarn = 0;
+
+	if(nChan % specAvg > 0)
+	{
+		cerr << "Non-integer number of channels remain after averaging!" << endl;
+		nwarn++;
+	}
+ 
+	if(nChan < strideLength)
+	{
+		cerr << "Array stride length " << strideLength << " is greater than the input number of channels " << nChan << endl;
+		cerr << "Probably you need to reduce the strideLength parameter" << endl;
+		nwarn++;
+	}
+
+	if(nChan % strideLength != 0)
+	{
+		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << nChan << endl;
+		cerr << "Probably you need to reduce the strideLength parameter" << endl;
+		nwarn++;
+	}
+
+	if(nChan < xmacLength)
+	{
+		cerr << "XMAC stride length " << xmacLength << " is greater than the input number of channels " << nChan << endl;
+		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
+		nwarn++;
+	}
+
+	if(nChan % xmacLength != 0)
+	{
+		cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nChan << endl;
+		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
+		nwarn++;
+	}
+
+	return nwarn;
+}
+
 double CorrSetup::bytesPerSecPerBLPerBand() const
 {
 	int pols = doPolar ? 2 : 1;
@@ -1456,6 +1497,12 @@ int CorrParams::load(const string& fileName)
 	}
 
 	is.close();
+
+	//check that all setups are sensible
+	for(int i=0;i<corrSetups.size();i++)
+	{
+		nWarn += corrSetups.at(i).checkValidity();
+	}
 
 	// if no setups or rules declared, make the default setup
 	if(corrSetups.size() == 0)
