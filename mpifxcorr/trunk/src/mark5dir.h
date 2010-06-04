@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009, 2010 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
 
 #ifndef __MARK5ACCESS_H__
 #define __MARK5ACCESS_H__
@@ -34,6 +34,14 @@
 
 #define MAXSCANS  1024 /* Maximum number of scans in SDir */
 #define MAXLENGTH   64 /* Maximum length of a scan's extended name +1 */
+
+// Test for SDK 9+
+#ifdef XLR_MAX_IP_ADDR
+typedef unsigned int streamstordatatype;
+#else
+typedef unsigned long streamstordatatype;
+#endif
+
 
 /* as implemented in Mark5 */
 struct Mark5Directory
@@ -69,7 +77,7 @@ struct Mark5Module
 	int bank;
 	int nscans;
 	Mark5Scan scans[MAXSCANS];
-	unsigned int signature;	/* used to determine if dir is current */
+	unsigned int signature;	/* a hash code used to determine if dir is current */
 	bool needRealtimeMode;	/* true for some classes of bad modules */
 };
 
@@ -108,7 +116,7 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice,
 	int (*callback)(int, int, int, void *), void *data,
 	float *replacedFrac);
 
-void countReplaced(const unsigned long *data, int len,
+void countReplaced(const streamstordatatype *data, int len,
 	long long *wGood, long long *wBad);
 
 #endif

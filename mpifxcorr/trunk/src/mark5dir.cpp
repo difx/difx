@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009, 2010 by Walter Brisken                            *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -16,16 +16,16 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
 
 #include <iostream>
 #include <cstdio>
@@ -44,6 +44,8 @@
 #endif
 
 
+using namespace std;
+
 char Mark5DirDescription[][20] =
 {
 	"Short scan",
@@ -53,7 +55,7 @@ char Mark5DirDescription[][20] =
 	"Decoded WR"
 };
 
-void countReplaced(const unsigned long *data, int len, 
+void countReplaced(const streamstordatatype *data, int len, 
 	long long *wGood, long long *wBad)
 {
 	int nBad=0;
@@ -142,7 +144,7 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 	{
 		return -4;
 	}
-	if(bank_stat.Selected) // Need to bank switch
+	if(!bank_stat.Selected) // need to change banks
 	{
 		xlrRC = XLRSelectBank(*xlrDevice, bank);
 		if(xlrRC != XLR_SUCCESS)
@@ -151,8 +153,6 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 		}
 		else
 		{
-			sleep(5);
-
 			for(int i = 0; i < 100; i++)
 			{
 				xlrRC = XLRGetBankStatus(*xlrDevice, bank, &bank_stat);
@@ -174,7 +174,6 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 		}
 	}
 
-	// Note that the following line is needed to work around a bug in Streamstor Dev Kit < 9.0
 	xlrRC = XLRGetDirectory(*xlrDevice, &dir);
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -255,7 +254,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 	char label[XLR_LABEL_LENGTH];
 	int bank;
 	unsigned long a, b;
-	unsigned long *buffer;
+	streamstordatatype *buffer;
 	int bufferlen;
 	unsigned int x, signature;
 	int die = 0;
@@ -311,7 +310,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 		return 0;
 	}
 
-	buffer = (unsigned long *)malloc(bufferlen);
+	buffer = (streamstordatatype *)malloc(bufferlen);
 	
 	memset(module, 0, sizeof(struct Mark5Module));
 	module->nscans = m5dir.nscans;
@@ -381,7 +380,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 			scan->format = -1;
 			continue;
 		}
-
+		
 		if(die)
 		{
 			break;
@@ -490,11 +489,11 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 	FILE *in;
 	struct Mark5Scan *scan;
 	char line[256];
-	int i, nscans, n;
+	int nscans, n;
 	char bank;
 	char label[XLR_LABEL_LENGTH];
 	unsigned int signature;
-	char mode[12];
+	char extra1[12], extra2[12];
 
 	if(!module)
 	{
@@ -519,7 +518,7 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 		return -1;
 	}
 
-	n = sscanf(line, "%8s %d %c %u %2s", label, &nscans, &bank, &signature, mode);
+	n = sscanf(line, "%8s %d %c %u %10s %10s", label, &nscans, &bank, &signature, extra1, extra2);
 	if(n < 3)
 	{
 		fclose(in);
@@ -529,9 +528,16 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 	{
 		signature = ~0;
 	}
-	if(n > 4)
+	if(n == 5)
 	{
-		if(strcmp(mode, "RT") == 0)
+		if(strcmp(extra1, "RT") == 0)
+		{
+			module->needRealtimeMode = true;
+		}
+	}
+	else if(n == 6)
+	{
+		if(strcmp(extra2, "RT") == 0)
 		{
 			module->needRealtimeMode = true;
 		}
@@ -548,7 +554,7 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 	module->bank = bank-'A';
 	module->signature = signature;
 
-	for(i = 0; i < nscans; i++)
+	for(int i = 0; i < nscans; i++)
 	{
 		scan = module->scans + i;
 
@@ -591,15 +597,15 @@ int saveMark5Module(struct Mark5Module *module, const char *filename)
 		return -1;
 	}
 
-	if(module->needRealtimeMode)
-	{
-		strcpy(mode, "RT");
-	}
-
 	out = fopen(filename, "w");
 	if(!out)
 	{
 		return -1;
+	}
+
+	if(module->needRealtimeMode)
+	{
+		strcpy(mode, "RT");
 	}
 
 	fprintf(out, "%8s %d %c %u %s\n",
@@ -670,9 +676,7 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice,
 
 int sanityCheckModule(const struct Mark5Module *module)
 {
-	int i;
-
-	for(i = 0; i < module->nscans; i++)
+	for(int i = 0; i < module->nscans; i++)
 	{
 		if(module->scans[i].format < 0)
 		{
