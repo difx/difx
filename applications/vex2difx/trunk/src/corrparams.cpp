@@ -942,7 +942,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		string s;
 		ss >> s;
-		int at = 0; 
+		unsigned int at = 0; 
 		int last = 0;
 		while(at != string::npos)
 		{
@@ -1370,7 +1370,7 @@ int CorrParams::load(const string& fileName)
 				exit(0);
 			}
 			i++;
-			for(int j=0;j<sourceSetups.size();j++)
+			for(unsigned int j=0;j<sourceSetups.size();j++)
 			{
 				if(sourceSetups[j].vexName.compare(*i) == 0)
 				{
@@ -1499,7 +1499,7 @@ int CorrParams::load(const string& fileName)
 	is.close();
 
 	//check that all setups are sensible
-	for(int i=0;i<corrSetups.size();i++)
+	for(unsigned int i=0;i<corrSetups.size();i++)
 	{
 		nWarn += corrSetups.at(i).checkValidity();
 	}
@@ -1693,7 +1693,7 @@ const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
 
 void CorrParams::addSourceSetup(SourceSetup toadd)
 {
-	for(int i=0;i<sourceSetups.size();i++)
+	for(unsigned int i=0;i<sourceSetups.size();i++)
 	{
 		if(toadd.vexName.compare(sourceSetups[i].vexName) == 0)
 		{

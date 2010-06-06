@@ -396,14 +396,14 @@ int pystream::writeLoifTable(const VexData *V)
 
 			//can always get away with the 2x1 GHz 8bit samplers
 			const VexIF & i1 = setup->ifs.begin()->second;
-			const VexIF & i2 = i1;
+			const VexIF *i2 = &i1;
 			if(setup->ifs.size() == 2)
 			{
-				const VexIF & i2 = (setup->ifs.begin()++)->second;
+				i2 = &(setup->ifs.begin()++)->second;
 			}
 			if(freq2 < 0)
 			{
-				freq2 = i2.getLowerEdgeFreq();
+				freq2 = i2->getLowerEdgeFreq();
 			}
 			*this << "loif" << m << " = LoIfSetup('" << i1.VLBABandName() << "', " << freq1/1.0e6 << ", 0.0, " << freq2/1.0e6 << ", 0.0)" << endl;
 			//write an appropriate VCI document, and set it up to be used
@@ -453,7 +453,7 @@ int pystream::writeSourceTable(const VexData *V)
 			//No point putting in calibrator code until its populated in the vex file
 			//*this << "intent" << s << ".addIntent('CalibratorCode=\"" << S->calCode << "\"')" << endl;
 			intentstring = "UNSPECIFIED";
-			for(int i=0;i<phasingsources.size();i++)
+			for(unsigned int i=0;i<phasingsources.size();i++)
 			{
 				if(phasingsources.at(i) == S->name)
 				{
@@ -630,7 +630,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"R\" bbid=\"4\"/>" << endl;
 	output << indent << "<widar:bbParams sourceType=\"FORM\" sourceId=\"0\" sideband=\"lower\" polarization=\"L\" bbid=\"6\"/>" << endl;
 	numindfreqs = 0;
-	for(int i=0;i<setup->ifs.size();i++,it++)
+	for(unsigned int i=0;i<setup->ifs.size();i++,it++)
 	{
 		const VexIF & vif = it->second;
 		found = false;
@@ -651,7 +651,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 		iffreqs[numindfreqs++] = vif.getLowerEdgeFreq();
 		output << indent << "<widar:baseBand singlePhaseCenter=\"yes\" name=\"" << bbnames[numindfreqs] << "\" swbbName=\"" << swbbnames[numindfreqs] << "\" inQuant=\"8\" bw=\"1024000000\" bbB=\"" << 4*numindfreqs+2 << "\" bbA=\"" << 4*numindfreqs << "\">" << endl;
 		indent += "    ";
-		for(int j=0;j<F.channels.size(); j++)
+		for(unsigned int j=0;j<F.channels.size(); j++)
 		{
 			if(F.channels[j].ifname != vif.name) //this channel belongs to the other IF
 				continue;
