@@ -95,6 +95,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // initialize memory as necessary
     current_def[0] = 0;
     numchan = 0;
+    current_scan[0] = 0;
                                     // create scan identifier
 
                                     // source name

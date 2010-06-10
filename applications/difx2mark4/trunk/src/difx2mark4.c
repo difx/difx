@@ -35,7 +35,7 @@ static int usage (const char *pgm)
         program, version, author);
     fprintf (stderr, "A program to convert DiFX format data to "
         "mark4\n\n");
-    fprintf (stderr, "Usage : %s [options] <baseFilename1> "
+    fprintf (stderr, "Usage : %s -s <scan_id> [options] <baseFilename1> "
         "[<baseFilename2> ... ] [<outfile>]\n\n", pgm);
     fprintf (stderr, "It assumed that SWIN format visibility file(s) "
         "to be converted live\n");
@@ -53,9 +53,6 @@ static int usage (const char *pgm)
     fprintf (stderr, "\noptions can include:\n");
     fprintf (stderr, "  --help\n");
     fprintf (stderr, "  -h                  Print this help message\n"); 
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --scan <scan_id>\n");
-    fprintf (stderr, "  -s     <scan_id>   ID of scan to be processed\n");
     fprintf (stderr, "\n");
 //  fprintf (stderr, "  --average <nchan>\n");
 //  fprintf (stderr, "  -a        <nchan>   Average <nchan> channels\n");
@@ -112,6 +109,12 @@ int main(int argc, char **argv)
     opts = parseCommandLine (argc, argv);
     if(opts == 0)
         return 0;
+                                    // ensure that there is a scan option specified
+    if (opts->scan == 0)
+        {
+        fprintf (stderr, "\nERROR - you must specify a scan_id!\n");
+        return usage (argv[0]);
+        }
 
     for(;;)
         {
