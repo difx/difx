@@ -759,20 +759,26 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 					F.format = "S2";
 				}
 
-				f = s2mode.find_last_of("x");
-				g = s2mode.find_last_of("-");
+				if (s2mode != "none") {
+				  f = s2mode.find_last_of("x");
+				  g = s2mode.find_last_of("-");
 
-				if(f < 0 || g < 0 || f > g)
-				{
+				  if(f < 0 || g < 0 || f > g)
+				  {
 					cerr << "Error: malformed S2 mode : " << string(value) << endl;
 					exit(0);
+				  }
+
+				  string tracks = s2mode.substr(f+1, g-f-1);
+				  string bits = s2mode.substr(g+1);
+
+				  F.nBit = atoi(bits.c_str());
+				  F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
+				  //F.nRecordChan = atoi(tracks.c_str());
+				} else {
+				  F.nBit = 2;
+				  F.nRecordChan = 0;
 				}
-
-				string tracks = s2mode.substr(f+1, g-f-1);
-				string bits = s2mode.substr(g+1);
-
-				F.nBit = atoi(bits.c_str());
-				F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
 			}
 
 			// Get rest of Subband information
@@ -782,7 +788,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 			    p;
 			    p = get_all_lowl_next())
 			{
-				vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
+			  vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
 				fvex_double(&value, &units, &freq);
 
 				vex_field(T_CHAN_DEF, p, 3, &link, &name, &value, &units);
@@ -812,7 +818,11 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 
 			if(i != F.nRecordChan)
 			{
+			  if (F.nRecordChan==0) {
+			    F.nRecordChan = i;
+			  } else {
 				cerr << "Warning: nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
+			  }
 			}
 		}
 
