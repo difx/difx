@@ -160,6 +160,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
+	int nWarn = 0;
 
 	block = find_block(B_CLOCK, v);
 
@@ -282,24 +283,37 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
-	return 0;
+	return nWarn;
 }
 
 static int getSources(VexData *V, Vex *v, const CorrParams& params)
 {
 	VexSource *S;
 	char *p;
+	int nWarn = 0;
 	
 	for(char *src = get_source_def(v); src; src=get_source_def_next())
 	{
 		S = V->newSource();
 		S->name = src;
+		if(strlen(src) > SourceSetup::MAX_SRCNAME_LENGTH)
+		{
+			cerr << "Source name " << src << " is longer than " << 
+			SourceSetup::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+			nWarn++;
+		}
 
 		for(p = (char *)get_source_lowl(src, T_SOURCE_NAME, v);
 		    p != 0;
 		    p = (char *)get_source_lowl_next())
 		{
 			S->sourceNames.push_back(string(p));
+			if(strlen(p) > SourceSetup::MAX_SRCNAME_LENGTH)
+			{
+				cerr << "Source name " << src << " is longer than " <<
+				SourceSetup::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+				nWarn++;
+			}
 		}
 
 		p = (char *)get_source_lowl(src, T_RA, v);
@@ -325,7 +339,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
-	return 0;
+	return nWarn;
 }
 
 static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, double> &antStop, unsigned int minSubarraySize)
@@ -414,6 +428,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams& params)
 	int nScanSkip = 0;
 	Llist *L;
 	map<string, VexInterval> stations;
+	int nWarn = 0;
 
 	for(L = (Llist *)get_scan(&scanId, v);
 	    L != 0;
@@ -544,7 +559,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams& params)
 		cout << "FYI: " << nScanSkip << " scans skipped because of time range selection." << endl;
 	}
 	
-	return 0;
+	return nWarn;
 }
 
 static int getModes(VexData *V, Vex *v, const CorrParams& params)
@@ -567,6 +582,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 	map<string,char> bbc2pol;
 	map<string,string> bbc2ifname;
 	map<string,Tracks> ch2tracks;
+	int nWarn =0;
 
 	for(modeId = get_mode_def(v);
 	    modeId;
@@ -836,6 +852,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 					cerr << "Warning: Mode " << M->name << " subband " << M->overSamp.size() << 
 						": requested oversample factor " << params.overSamp << 
 						" is greater than the observed oversample factor " << overSamp << endl;
+					nWarn++;
 				}
 				overSamp = params.overSamp;
 			}
@@ -850,7 +867,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams& params)
 		M->overSamp.unique();
 	}
 
-	return 0;
+	return nWarn;
 }
 
 static void fixOhs(string &str)
@@ -945,6 +962,7 @@ static int getVSN(VexData *V, Vex *v, const CorrParams& params, const char *stat
 static int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 {
 	int r;
+	int nWarn = 0;
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
 	{
@@ -956,7 +974,7 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
-	return 0;
+	return nWarn;
 }
 
 static int getEOPs(VexData *V, Vex *v, const CorrParams& params)
@@ -974,6 +992,7 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 	double refEpoch, interval;
 	VexEOP *E;
 	int N = 0;
+	int nWarn = 0;
 
 	block = find_block(B_EOP, v);
 
@@ -1041,6 +1060,7 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		if(N > 0)
 		{
 			cerr << "Warning: Mixing EOP values from vex and v2d files.  Your mileage may vary!" << endl;
+			nWarn++;
 		}
 		for(vector<VexEOP>::const_iterator e = params.eops.begin(); e != params.eops.end(); e++)
 		{
@@ -1050,7 +1070,7 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams& params)
 		}
 	}
 
-	return N;
+	return nWarn;
 }
 
 static int getExper(VexData *V, Vex *v, const CorrParams& params)
@@ -1062,6 +1082,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams& params)
 	void *p;
 	double start=0.0, stop=0.0;
 	string name;
+	int nWarn = 0;
 
 	block = find_block(B_EXPER, v);
 
@@ -1109,7 +1130,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams& params)
 
 	V->setExper(name, VexInterval(start, stop));
 
-	return 0;
+	return nWarn;
 }
 
 // Note -- this is approximate, assumes all polarizations matched
@@ -1134,11 +1155,12 @@ void calculateScanSizes(VexData *V, const CorrParams &P)
 	}
 }
 
-VexData *loadVexFile(const CorrParams& P)
+VexData *loadVexFile(const CorrParams& P, int * numWarnings)
 {
 	VexData *V;
 	Vex *v;
 	int r;
+	int nWarn = 0;
 
 	r = vex_open(P.vexFile.c_str(), &v);
 	if(r != 0)
@@ -1150,13 +1172,14 @@ VexData *loadVexFile(const CorrParams& P)
 
 	V->setDirectory(P.vexFile.substr(0, P.vexFile.find_last_of('/')));
 
-	getAntennas(V, v, P);
-	getSources(V, v, P);
-	getScans(V, v, P);
-	getModes(V, v, P);
-	getVSNs(V, v, P);
-	getEOPs(V, v, P);
-	getExper(V, v, P);
+	nWarn += getAntennas(V, v, P);
+	nWarn += getSources(V, v, P);
+	nWarn += getScans(V, v, P);
+	nWarn += getModes(V, v, P);
+	nWarn += getVSNs(V, v, P);
+	nWarn += getEOPs(V, v, P);
+	nWarn += getExper(V, v, P);
+	*numWarnings = *numWarnings + nWarn;
 
 	calculateScanSizes(V, P);
 	V->findLeapSeconds();

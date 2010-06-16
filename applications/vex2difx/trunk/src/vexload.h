@@ -21,9 +21,9 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
@@ -32,6 +32,6 @@
 
 #include "corrparams.h"
 
-VexData *loadVexFile(const CorrParams& P);
+VexData *loadVexFile(const CorrParams& P, int * numWarnings);
 
 #endif

@@ -630,6 +630,12 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	else if(key == "name" || key == "newName")
 	{
 		ss >> pc->difxname;
+		if(pc->difxname.size() > MAX_SRCNAME_LENGTH)
+		{
+			cerr << "Warning: Source " << pc->difxname << " name length exceeds " << 
+				MAX_SRCNAME_LENGTH << " characters" << endl;
+			nWarn++;
+		}
 	}
 	else if(key == "ephemObject")
 	{
@@ -942,7 +948,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		string s;
 		ss >> s;
-		unsigned int at = 0; 
+		std::string::size_type at = 0; 
 		int last = 0;
 		while(at != string::npos)
 		{

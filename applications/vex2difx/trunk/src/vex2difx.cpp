@@ -2048,7 +2048,7 @@ int main(int argc, char **argv)
 	shelfFile += string(".shelf");
 	nWarn += P->loadShelves(shelfFile);
 
-	V = loadVexFile(*P);
+	V = loadVexFile(*P, &nWarn);
 
 	if(!V)
 	{

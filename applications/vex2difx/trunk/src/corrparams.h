@@ -82,6 +82,8 @@ public:
 	int setkv(const string &key, const string &value);
 	int setkv(const string &key, const string &value, PhaseCentre * pc);
 
+	static const int MAX_SRCNAME_LENGTH = 12; //characters
+
 	bool doPointingCentre;       	  // Whether or not to correlate the pointing centre
 	string vexName;		     	  // Source name as appears in vex file
 	PhaseCentre pointingCentre;  	  // The source which is at the pointing centre

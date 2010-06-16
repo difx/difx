@@ -137,6 +137,7 @@ int main(int argc, char **argv)
 	VexData *V;
 	CorrParams *P;
 	int v;
+	int nWarn = 0;
 
 	if(argc < 2)
 	{
@@ -155,7 +156,7 @@ int main(int argc, char **argv)
 	P->defaultSetup();
 	P->vexFile = argv[1];
 
-	V = loadVexFile(*P);
+	V = loadVexFile(*P, &nWarn);
 
 	cout << V->getExper()->name << endl;
 

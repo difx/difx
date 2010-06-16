@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 	int nAntenna, nScan, atchar, lastchar;
 	pystream py;
 	pystream::scripttype stype;
+	int nWarn = 0;
 
 	if(argc < 2)
 	{
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
 		}
 	}	
 
-	V = loadVexFile(*P);
+	V = loadVexFile(*P, &nWarn);
 
 	nAntenna = V->nAntenna();
 	nScan = V->nScan();
