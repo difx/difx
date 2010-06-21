@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--norpfits] [--perl]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -35,7 +35,7 @@ Options:
 
    --g77           Use g77, rather than gfortran
 
-   --norpfits      Don't build rpfits
+   --rpfits        Build rpfits
 
    --perl          Install some non-standard perl utilities (deprecated)
 
@@ -51,7 +51,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "norpfits", "perl"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -68,7 +68,7 @@ reconf = False
 noinstall = False
 mk5d = False
 gfortran = True
-rpfits = True
+rpfits = False
 perl = False
 doclean = False
 
@@ -92,8 +92,8 @@ if len(opts) > 0:
             gfortran = False
         if o == "--perl":
             perl = True
-        if o == "--norpfits":
-            rpfits = False
+        if o == "--rpfits":
+            rpfits = True
         if o == "--clean":
             doclean = True
 
