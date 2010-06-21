@@ -23,8 +23,8 @@ import curses
 
 program = 'mk5mon'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20080501'
+version = '0.2'
+verdate = '20100526'
 
 def usage():
 	exit(1)
@@ -55,7 +55,7 @@ class Mk5state:
 				b1 = '*'
 			elif self.bank == 'B':
 				b2 = '*'
-			str = '%10s %c%8s %c%8s %14s %7.2f %11d %3d %15s %12.6f ' % \
+			str = '%10s %c%8s %c%8s %14s %7.2f %14d %3d %15s %12.6f' % \
 				(self.mk5, b1, self.vsnA, b2, self.vsnB, self.state, \
 				 self.rate, self.pos, self.scan, self.name, self.date)
 		else:
