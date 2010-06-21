@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
@@ -33,7 +34,7 @@ int main (argc, argv)
      {
         clnt_pcreateerror (argv[1]);
         printf("ERROR: rpc clnt_create fails for host : %-s\n", argv[1]);
-        exit (0);
+        exit(0);
      }
 
      p_request = &request_args;
