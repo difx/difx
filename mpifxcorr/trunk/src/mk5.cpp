@@ -378,7 +378,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   return offset;
 }
 
-void Mk5DataStream::networkToMemory(int buffersegment, int & framebytesremaining)
+void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
   int nbits, nrecordedbands, fanout;
   Configuration::dataformat format;
@@ -674,7 +674,7 @@ double tim(void) {
   return t;
 }
 
-int Mk5DataStream::openframe()
+uint64_t Mk5DataStream::openframe()
 {
   // The number of segments per "frame" is arbitrary. Just set it to ~ 5sec 
   int nsegment;

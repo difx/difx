@@ -78,13 +78,13 @@ protected:
   */
   virtual void initialiseFile(int configindex, int fileindex);
 
-  virtual void networkToMemory(int buffersegment, int & framebytesremaining);
+  virtual void networkToMemory(int buffersegment, uint64_t & framebytesremaining);
 
   virtual int readnetwork(int sock, char* ptr, int bytestoread, int* nread);
 
   virtual int testForSync(int configindex, int buffersegment);
 
-  virtual int openframe();
+  virtual uint64_t openframe();
 
   int lastconfig;
 
