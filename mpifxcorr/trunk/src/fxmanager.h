@@ -29,6 +29,7 @@
 #include "core.h"
 #include <pthread.h>
 
+
 /**
 @class FxManager
 @brief One object of this class manages the correlation
@@ -54,6 +55,9 @@ public:
   * @param port The port to send monitoring data down
   * @param monitor_skip Only send 1 in every monitor_skip visibilities to the monitor
   */
+
+  enum monsockStatusType {CLOSED, PENDING, OPENED};
+
   FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip);
   ~FxManager();
 
@@ -73,12 +77,17 @@ public:
   */
   inline int getEstimatedBytes() { return estimatedbytes; }
 
+  void MonitorThread();
+
 protected:
  /** 
   * Launches a new writing thread, that will loop through the Visibility array as fast as possible, writing out results as soon as it is allowed
   * @param thismanager Pointer to this FxManager object
   */
   static void * launchNewWriteThread(void * thismanager);
+
+  static void * launchMonitorThread(void * thismanager);
+
   
 private:
   //constants
@@ -123,13 +132,21 @@ private:
   */
   void loopwrite();
 
+  /* 
+   * Copy vis data into buffer and signal to monitor thread to start copying 
+   */
+
+  void sendMonitorData(int visID);
+  bool checkSocketStatus();
+  int openMonitorSocket();
+
   //variables
   Configuration * config;
   MPI_Comm return_comm;
   int numcores, mpiid, numdatastreams, startmjd, startseconds, initns, initsec, initscan, executetimeseconds, resultlength, numbaselines, nsincrement, currentconfigindex, newestlockedvis, oldestlockedvis, writesegment, estimatedbytes;
   double inttime;
   bool keepwriting, circularpols, writethreadinitialised, visibilityconfigok;
-  int senddata[4]; //targetcoreid, scan, scanoffsetseconds, scanoffsetnanoseconds
+  int senddata[4];
   Model * model;
   int * datastreamids;
   int * coreids;
@@ -140,16 +157,27 @@ private:
   int *** coretimes;
   bool monitor;
   char * hostname;
-  int monitorport, mon_socket;
   cf32 * resultbuffer;
   char * todiskbuffer;
   Visibility ** visbuffer;
-  pthread_mutex_t * bufferlock;
+  pthread_mutex_t * bufferlock, startlock;
   bool * islocked;
   pthread_cond_t writecond;
   pthread_t writethread;
 
   int lastsource;
+
+  // Variables needed for monitoring
+  int monitor_skip;
+  int mon_socket;
+  int monitorport;
+  pthread_cond_t monitorcond;
+  pthread_mutex_t moncondlock, monitorwritelock;
+  pthread_t monthread;
+  monsockStatusType monsockStatus;
+  char *buf;
+  int bufsize, nbuf;
+
 };
 
 #endif

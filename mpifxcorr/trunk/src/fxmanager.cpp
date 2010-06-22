@@ -31,12 +31,12 @@
 #include <signal.h>
 #include <difxmessage.h>
 #include "alert.h"
-
-//includes for socket stuff - for monitoring
-//#include <sys/socket.h>
-//#include <netdb.h>
-//#include <netinet/in.h>
-//#include <arpa/inet.h>
+#include <errno.h>
+#include <sys/socket.h>
+#include <poll.h>
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <netdb.h>
 
 bool terminatenow;
 
@@ -45,8 +45,6 @@ void catch_pipe(int sig_num)
 {
     /* re-set the signal handler again to catch_int, for next time */
     signal(SIGPIPE, catch_pipe);
-    /* and print the message */
-    cwarn << startl << "Caught a pipe signal - the monitor probably just dropped out..." << endl;
 }
 
 using namespace std;
@@ -56,7 +54,7 @@ const string FxManager::LL_CIRCULAR_POL_NAMES[4] = {"LL", "RR", "LR", "RL"};
 const string FxManager::LINEAR_POL_NAMES[4] = {"XX", "YY", "XY", "YX"};
 
 FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip)
-  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitorport(port)
+  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitorport(port), monitor_skip(monitor_skip)
 {
   bool startskip;
   int perr, minchans, confresultbytes, todiskbufferlen;
@@ -167,7 +165,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     polnames = LINEAR_POL_NAMES;
   for(int i=0;i<config->getVisBufferLength();i++)
   {
-    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), todiskbuffer, todiskbufferlen, executetimeseconds, initscan, initsec, initns, polnames, monitor, monitorport, hostname, &mon_socket, monitor_skip);
+    visbuffer[i] = new Visibility(config, i, config->getVisBufferLength(), todiskbuffer, todiskbufferlen, executetimeseconds, initscan, initsec, initns, polnames);
     pthread_mutex_init(&(bufferlock[i]), NULL);
     islocked[i] = false;
     if(!visbuffer[i]->configuredOK()) { //problem with finding a polyco, probably
@@ -204,7 +202,23 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
 
   lastsource = numdatastreams;
 
-  //cinfo << startl << "Estimated memory usage by FXManager: " << float(model->getEstimatedBytes() + config->getVisBufferLength()*visbuffer[0]->getEstimatedBytes() + resultlength*8)/1048576.0 << " MB" << endl;
+  // Launch a thread to send monitoring data
+  if (monitor) {
+    pthread_cond_init(&monitorcond, NULL);
+    pthread_mutex_init(&moncondlock, NULL);
+    pthread_mutex_init(&monitorwritelock, NULL);
+    monsockStatus = CLOSED;
+    buf = NULL;
+    bufsize = 0;
+    nbuf = 0;
+
+    perr = pthread_create(&monthread, NULL, FxManager::launchMonitorThread, (void *)(this));
+    if(perr != 0)
+      csevere << startl << "FxManager: Error in launching monitorthread!!" << endl;
+  }
+
+  //cinfo << startl << "Estimated memory usage by FXManager: " << float(uvw->getNumUVWPoints()*24 + config->getVisBufferLength()*config->getMaxResultLength()*8)/1048576.0 << " MB" << endl;
+
 }
 
 
@@ -341,9 +355,23 @@ void FxManager::execute()
   }
 
   //join the writing thread
+
+  if (monitor) {
+    // Signal Monitor Thread to quit
+    pthread_mutex_lock(&moncondlock);
+    pthread_cond_signal(&writecond);
+    pthread_mutex_unlock(&moncondlock);
+  }
+
   perr = pthread_join(writethread, NULL);
   if(perr != 0)
     csevere << startl << "Error in closing writethread!!!" << endl;
+
+  if (monitor) {
+    perr = pthread_join(monthread, NULL);
+    if(perr != 0)
+      csevere << startl << "Error in closing monitorthread!!!" << endl;
+  }
 
   cinfo << startl << "FxManager is finished" << endl;
 }
@@ -589,8 +617,10 @@ void FxManager::loopwrite()
     {
       lastconfigindex = visbuffer[writesegment]->getCurrentConfig();
     }
+
     visbuffer[writesegment]->writedata();
     visbuffer[writesegment]->multicastweights();
+    if (monitor) sendMonitorData(writesegment);
     visbuffer[writesegment]->increment();
     if(!visbuffer[writesegment]->configuredOK()) { //problem with finding a polyco, probably
       visibilityconfigok = false;
@@ -606,6 +636,7 @@ void FxManager::loopwrite()
   {
     visbuffer[(writesegment+i)%config->getVisBufferLength()]->writedata();
     visbuffer[(writesegment+i)%config->getVisBufferLength()]->multicastweights();
+    if (monitor) sendMonitorData(writesegment);
   }
 }
 
@@ -722,3 +753,276 @@ int FxManager::locateVisIndex(int coreid)
   return -1; //unreachable
 }
 
+void * FxManager::launchMonitorThread(void * thismanager)
+{
+  FxManager * me = (FxManager *)thismanager;
+
+  me->MonitorThread();
+
+  return 0;
+}
+
+void FxManager::MonitorThread()
+{
+  int perr;
+  ssize_t nwrote;
+
+
+  openMonitorSocket();
+
+  while(keepwriting) {
+    cout << "Monitor: Waiting on valid data" << endl;
+
+    pthread_mutex_lock(&moncondlock);
+    perr = pthread_cond_wait(&writecond, &moncondlock);
+    if (perr != 0)
+      csevere << startl << "Error waiting on valid monitor data!!!!" << endl;
+      // TODO QUIT HERE ON PERR?
+    pthread_mutex_unlock(&moncondlock);
+    if (!keepwriting) break;
+
+    cout << "Got it = lock monitorwritelock" << endl;
+
+    // Lock mutex until we have finished sending monitor data
+    perr = pthread_mutex_lock(&monitorwritelock);
+
+    if (nbuf==0) { // Spurious wakeup
+      pthread_mutex_unlock(&monitorwritelock);
+      continue;
+    }
+
+    if (checkSocketStatus()) {
+      if (nbuf==-1) { // Indicate nothing to send
+	int32_t atsec = -1;
+	nbuf = sizeof(int32_t);
+	nwrote = send(mon_socket, &atsec, nbuf, 0);
+      } else {
+	nwrote = send(mon_socket, buf, nbuf, 0);
+      }
+      if (nwrote==-1)
+      {
+	if (errno==EPIPE) {
+	  cerror << startl << "Monitor connection seems to have dropped out!  Will try to reconnect shortly...!" << endl;
+	}
+        else
+	{
+	  cerror << startl << "Monitor socket returns \"" << strerror(errno) << "\"" << endl;
+	}
+	close(mon_socket);
+	monsockStatus = CLOSED;
+
+      }
+      else if (nwrote != nbuf)
+      {
+	cerror << startl << "Error writing to network - will try to reconnect next Visibility 0 integration!" << endl;
+	close(mon_socket);
+	monsockStatus = CLOSED;
+      }
+      //cout << "Wrote " << nwrote << "/" << nbuf << " to network" << endl;
+    }
+    nbuf = 0;
+    perr = pthread_mutex_unlock(&monitorwritelock);
+    cout << "Monthread unlock" << endl;
+  }
+
+  if (monsockStatus!=CLOSED) {
+    close(mon_socket);
+  }
+  return;
+}
+
+
+void FxManager::sendMonitorData(int visID) {
+  int perr;
+
+  if (visID % monitor_skip !=0) return;  // Only send every monitor_skip visibilities
+
+  perr = pthread_mutex_trylock(&monitorwritelock);
+  if (perr==EBUSY) {
+    cdebug << startl << "Monitor still sending, skipping this visibility" << endl;
+    cout << "Monitor still sending, skipping this visibility" << endl;
+  } else if (perr) {
+    csevere << startl << "Error aquiring mutex lock for monitoring" << endl;
+  } else { // Clear to go
+    
+    visbuffer[visID]->copyVisData(&buf, &bufsize, &nbuf);
+    pthread_mutex_unlock(&monitorwritelock);
+
+    cout << "Signal MonitorThread" << endl;
+    // Tell monitor write thread to go
+    pthread_mutex_lock(&moncondlock);
+    cout << " got lock  ";
+    flush(cout);
+    pthread_cond_signal(&writecond);
+    cout << " sent signal  ";
+    flush(cout);
+    pthread_mutex_unlock(&moncondlock);
+    cout << "  unlock" << endl;
+  }
+}
+
+
+bool FxManager::checkSocketStatus()
+{
+  if(monsockStatus!=OPENED)
+  {
+    if (monsockStatus==PENDING)
+    {
+      cout << "monsockStatus==PENDING" << endl;
+      
+      int status;
+      struct pollfd fds[1];
+
+      fds[0].fd = mon_socket;
+      fds[0].events = POLLOUT|POLLWRBAND;
+
+      status = poll(fds, 1, 0);
+      if(status < 0)
+      {
+        cdebug << startl << "POLL FAILED" << endl;
+        perror("poll");
+        return false;
+      }
+      else if (status==0)
+      { // Nothing ready
+        cwarn << startl << "Connection to monitor socket still pending" << endl;
+        return false;
+      }
+      else
+      { // Either connected or error
+
+        /* Get the return code from the connect */
+        int ret;
+        socklen_t len=sizeof(ret);
+        status=getsockopt(mon_socket,SOL_SOCKET,SO_ERROR,&ret,&len);
+        if (status<0) {
+          mon_socket = -1;
+          monsockStatus=CLOSED;
+          perror("getsockopt");
+          cdebug << startl << "GETSOCKOPT FAILED" << endl;
+          return false;
+        }
+
+        /* ret=0 means success, otherwise it contains the errno */
+        if(ret) {
+          mon_socket = -1;
+          monsockStatus=CLOSED;
+          errno=ret;
+          //perror("connect");
+          cinfo << startl << "Connection to monitor server failed" << endl;
+          return false;
+        }
+        else
+        {
+          // Connected!
+          cinfo << startl << "Connection to monitor server succeeded" << endl;
+          cout << "Connection to monitor server succeeded" << endl;
+          monsockStatus=OPENED;
+          return true;
+        }
+      }
+    }
+    else if(openMonitorSocket() != 0)
+    {
+      if (monsockStatus != PENDING)
+      {
+        cerror << startl << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << config->getVisBufferLength() << " integrations..." << endl;
+      }
+      return false;
+    }
+  }
+  cout << "monsockStatus==OPEN" << endl;
+  return true;
+}
+
+
+//setup monitoring socket
+int FxManager::openMonitorSocket() {
+  int status, window_size;
+  unsigned long ip_addr;
+  struct hostent     *hostptr;
+  struct sockaddr_in server;    /* Socket address */
+  int saveflags;
+
+  hostptr = gethostbyname(hostname);
+  if (hostptr==NULL) {
+    cerror << startl << "Failed to look up hostname " << hostname << endl;
+    return(1);
+  }
+  
+  memcpy(&ip_addr, (char *)hostptr->h_addr, sizeof(ip_addr));
+  memset((char *) &server, 0, sizeof(server));
+  server.sin_family = AF_INET;
+  server.sin_port = htons((unsigned short)monitorport); 
+  server.sin_addr.s_addr = ip_addr;
+  
+  cinfo << startl << "Trying to connect to " << inet_ntoa(server.sin_addr) << endl;
+    
+  mon_socket = socket(AF_INET, SOCK_STREAM, 0);
+  if (mon_socket==-1) {
+    monsockStatus = CLOSED;
+    cerror << startl << "Failed to allocate socket: " << strerror(errno) << endl;
+    return(1);
+  }
+
+  /* Set the window size to TCP actually works */
+  window_size =  Configuration::MONITOR_TCP_WINDOWBYTES;
+  status = setsockopt(mon_socket, SOL_SOCKET, SO_SNDBUF,
+                      (char *) &window_size, sizeof(window_size));
+  if (status!=0) {
+    close(mon_socket);
+    mon_socket = -1;
+    monsockStatus = CLOSED;
+    cerror << startl << "Setting socket options: " << strerror(errno) << endl;
+    return(1);
+  }
+
+  saveflags=fcntl(mon_socket,F_GETFL,0);
+  if(saveflags<0) {
+    perror("fcntl1");
+    return 1;
+  }
+
+  /* Set non blocking */
+  if(fcntl(mon_socket,F_SETFL,saveflags|O_NONBLOCK)<0) {
+    perror("fcntl2");
+    close(mon_socket);
+    mon_socket = -1;
+    monsockStatus = CLOSED;
+    return 1;
+  }
+
+  // try to connect    
+  status = connect(mon_socket, (struct sockaddr *) &server, sizeof(server));
+
+  // Return original flags, ie blocking
+  if(fcntl(mon_socket,F_SETFL,saveflags)<0) {
+    perror("fcntl3");
+    close(mon_socket);
+    mon_socket = -1;
+    monsockStatus = CLOSED;
+    return 1;
+  }
+
+  /* return unless the connection was successful or the connect is
+           still in progress. */
+
+  if(status==0) {
+    monsockStatus = OPENED;
+    cinfo << startl << "Immediate connection to monitor server" << endl;
+    return 0;
+  } else {
+    if (errno!=EINPROGRESS) {
+      monsockStatus = CLOSED;
+      mon_socket = -1;
+      cerror << startl << "Connection to monitor_server failed: " << strerror(errno) << endl;
+      return 1;
+    } else {
+      monsockStatus = PENDING;
+      cout << "Monsocket in pending state" << endl;
+      return 1;
+    }
+  }
+
+  return 1;
+} /* Setup Net */

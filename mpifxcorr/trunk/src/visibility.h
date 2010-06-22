@@ -36,8 +36,6 @@ and once all data has been gathered it is written to disk, in ascii or fits form
 @author Adam Deller
 */
 
-enum monsockStatusType {CLOSED, PENDING, OPENED};
-
 class Visibility{
 public:
  /**
@@ -52,12 +50,9 @@ public:
   * @param scanstartsec The number of seconds from the start of this scan
   * @param startns The number of nanoseconds offset from the start second
   * @param pnames The names of the polarisation products eg {RR, LL, RL, LR} or {XX, YY, XY, YX}
-  * @param mon Whether to send visibility data down a monitor socket
-  * @param port The port number to send down
-  * @param hname The socket to send monitor data down
-  * @param monskip Only send 1 in every monskip visibilities to the monitor
   */
-  Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames, bool mon, int port, char * hname, int * sock, int monskip);
+
+  Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames);
 
   ~Visibility();
 
@@ -131,6 +126,9 @@ public:
 
   ///Version of the binary header
   static const int BINARY_HEADER_VERSION = 1;
+
+  void copyVisData(char **buf, int *bufsize, int *nbuf);
+
 private:
  /**
   * Changes the parameters of the Visibilty object to match the specified configuration
@@ -182,11 +180,9 @@ private:
   int visID, expermjd, experseconds, currentscan, currentstartseconds, currentstartns, offsetns, offsetnsperintegration, subintsthisintegration, subintns, numvisibilities, numdatastreams, numbaselines, currentsubints, resultlength, currentconfigindex, maxproducts, executeseconds, autocorrwidth, estimatedbytes, todiskbufferlength, maxfiles;
   double fftsperintegration, meansubintsperintegration;
   const string * polnames;
-  bool first, monitor, pulsarbinon, configuredok;
+  bool first, pulsarbinon, configuredok;
   int portnum;
   char * hostname;
-  int * mon_socket;
-  int monitor_skip;
   cf32 ** autocorrcalibs;
   f32 *** autocorrweights;
   f32 **** baselineweights;
@@ -201,7 +197,6 @@ private:
   int ** pulsarbins;
   Model * model;
   Polyco * polyco;
-  static monsockStatusType monsockStatus;
 };
 
 #endif

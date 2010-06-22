@@ -288,8 +288,8 @@ int main(int argc, char *argv[])
     monitoropt = string(argv[2]);
     size_t colindex1 = monitoropt.find_first_of(':');
     size_t colindex2 = monitoropt.find_last_of(':');
-    if(colindex2 == string::npos) 
-      // BUG: This does not work and skip ends up equaling port!!!!
+
+    if(colindex2 == colindex1) 
     {
       port = atoi(monitoropt.substr(colindex1 + 1).c_str());
       monitor_skip = 1;	
@@ -298,7 +298,6 @@ int main(int argc, char *argv[])
     {
       port = atoi(monitoropt.substr(colindex1 + 1, colindex2-colindex1-1).c_str());
       monitor_skip = atoi(monitoropt.substr(colindex2 + 1).c_str());
-
     }
     strcpy(monhostname, monitoropt.substr(2,colindex1-2).c_str());
   }
