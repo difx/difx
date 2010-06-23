@@ -335,6 +335,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	}
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;
+	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 
 	DifxDatastreamAllocFreqs(dest, src->nRecFreq);
 	DifxDatastreamAllocBands(dest, src->nRecBand);
