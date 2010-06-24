@@ -35,8 +35,8 @@
 #include "difxmessage.h"
 
 const char program[] = "difxlog";
-const char version[] = "0.2";
-const char verdate[] = "20090427";
+const char version[] = "0.3";
+const char verdate[] = "20100624";
 const char author[]  = "Walter Brisken";
 
 int usage(const char *prog)
@@ -61,14 +61,24 @@ int usage(const char *prog)
 	return 0;
 }
 
+/* There _must_ be a better way to do this test for existence of running PID! */
 int checkPid(int pid)
 {
-	char cmd[100];
+	const int CommandSize = 128;
+	char cmd[CommandSize];
 	const char *c;
 	FILE *p;
 	char s[10];
+	int v;
 
-	sprintf(cmd, "ps -p %d -o pid --no-headers", pid);
+	v = snprintf(cmd, CommandSize, "ps -p %d -o pid --no-headers", pid);
+	if(v >= CommandSize)
+	{
+		fprintf(stderr, "Developer error: checkPid: CommandSize=%d is too short\n",
+			CommandSize);
+		exit(0);
+	}
+
 	p = popen(cmd, "r");
 	c = fgets(s, 9, p);
 	pclose(p);
@@ -86,17 +96,18 @@ int checkPid(int pid)
 
 int main(int argc, char **argv)
 {
-	char identifier[256];
+	const int TagSize = 64+DIFX_MESSAGE_PARAM_LENGTH;
+	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	int logLevel = DIFX_ALERT_LEVEL_INFO;
 	int pidWatch = -1;
 	int sock;
 	int i, l;
-	char message[1024], from[32];
+	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
 	DifxMessageGeneric G;
 	FILE *out;
 	time_t t, lastt;
 	char timestr[32];
-	char tag[64+DIFX_MESSAGE_PARAM_LENGTH];
+	char tag[TagSize];
 
 	time(&lastt);
 
@@ -113,7 +124,13 @@ int main(int argc, char **argv)
 		pidWatch = atoi(argv[4]);
 	}
 
-	strcpy(identifier, argv[1]);
+	l = snprintf(identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", argv[1]);
+	if(l >= DIFX_MESSAGE_IDENTIFIER_LENGTH)
+	{
+		fprintf(stderr, "Error: Identifier '%s' exceeds %d character limit\n",
+			argv[1], DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
+		return -1;
+	}
 
 	out = fopen(argv[2], "w");
 	if(!out)
@@ -128,7 +145,7 @@ int main(int argc, char **argv)
 	for(;;)
 	{
 		from[0] = 0;
-		l = difxMessageReceive(sock, message, 1023, from);
+		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(l < 0)
 		{
 			usleep(10000);
@@ -143,7 +160,11 @@ int main(int argc, char **argv)
 
 		if(strcmp(G.identifier, identifier) == 0)
 		{
-			sprintf(tag, "%s %3d %s", timestr, G.mpiId, G.from);
+			l = snprintf(tag, TagSize, "%s %3d %s", timestr, G.mpiId, G.from);
+			if(l >= TagSize)
+			{
+				fprintf(stderr, "Developer error: TagSize is too small for timestr='%s', mpiIf=%d, from='%s'\n", timestr, G.mpiId, G.from);
+			}
 			if(G.type == DIFX_MESSAGE_ALERT)
 			{
 				DifxMessageAlert *A;

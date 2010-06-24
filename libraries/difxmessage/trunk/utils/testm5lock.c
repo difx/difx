@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2010 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,61 +19,61 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$
- * $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
- * $LastChangedRevision$
- * $Author$
- * $LastChangedDate$
+ * $Id: $
+ * $HeadURL:  $
+ * $LastChangedRevision: $
+ * $Author: $
+ * $LastChangedDate: $
  *
  *==========================================================================*/
 
 #include <stdio.h>
-#include <string.h>
 #include <unistd.h>
-#include <time.h>
-#include "difxmessage.h"
+
+#include "mark5ipc.h"
 
 
-int main(int argc, char **argv)
+int main()
 {
-	int sock;
-	int l;
-	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
-	time_t t;
-	char timestr[32];
-	DifxMessageGeneric G;
-
-	difxMessageInit(-1, argv[0]);
-	difxMessagePrint();
-
-	sock = difxMessageReceiveOpen();
+	char cmd[120];
+	char *rv;
 
 	for(;;)
 	{
-		from[0] = 0;
-		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-		if(l < 0)
-		{
-			usleep(100000);
-			continue;
-		}
-		message[l] = 0;
-		time(&t);
-		strcpy(timestr, ctime(&t));
-		timestr[strlen(timestr)-1] = 0;
-		printf("[%s %s] %s\n", timestr, from, message);
-
-		difxMessageParse(&G, message);
-		difxMessageGenericPrint(&G);
-		if(strncmp(message, "exit", 4) == 0)
+		rv = fgets(cmd, 119, stdin);
+		if(!rv)
 		{
 			break;
 		}
-
-		fflush(stdout);
+		if(cmd[0] == 'l')
+		{
+			printf("Locking\n");
+			fflush(stdout);
+			printf("Locked: %d\n", lockMark5(1));
+		}
+		else if(cmd[0] == 'n')
+		{
+			printf("Locking no wait\n");
+			fflush(stdout);
+			printf("Locked no wait: %d\n", lockMark5(0));
+		}
+		else if(cmd[0] == 'u')
+		{
+			printf("Unlocking\n");
+			fflush(stdout);
+			printf("Unlocked: %d\n", unlockMark5());
+		}
+		else if(cmd[0] == 'p')
+		{
+			printf("PID = %d\n", getMark5LockPID());
+			printf("semid = %p\n", getMark5LockSemaphoreID);
+			printf("val = %d\n", getMark5LockValue());
+		}
+		else if(cmd[0] == 'r')
+		{
+			printf("rm = %d\n", deleteMark5Lock());
+		}
 	}
-
-	difxMessageReceiveClose(sock);
 
 	return 0;
 }

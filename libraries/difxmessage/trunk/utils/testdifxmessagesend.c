@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,19 +32,24 @@
 
 int main(int argc, char **argv)
 {
-	char message[1500];
-	int r;
+	char message[DIFX_MESSAGE_LENGTH];
+	char *rv;
+	int v;
 	
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
 	for(;;)
 	{
-		fgets(message, 1499, stdin);
-		if(feof(stdin)) break;
-		message[1499] = 0;
-		r = difxMessageSend(message);
-		if(r < 0)
+		rv = fgets(message, DIFX_MESSAGE_LENGTH, stdin);
+		if(!rv)
+		{
+			break;
+		}
+		
+		message[DIFX_MESSAGE_LENGTH-1] = 0;
+		v = difxMessageSend(message);
+		if(v < 0)
 		{
 			break;
 		}

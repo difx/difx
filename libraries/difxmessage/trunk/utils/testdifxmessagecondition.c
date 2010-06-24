@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,6 @@
 
 int main(int argc, char **argv)
 {
-	char message[1500];
 	DifxMessageCondition cond;
 	int i;
 	int N = 1000000;

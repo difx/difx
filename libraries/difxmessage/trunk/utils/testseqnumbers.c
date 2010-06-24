@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,8 +37,8 @@ const int MAX_SENDER=1024;
 
 struct sender
 {
-	char name[32];
-	char identifier[32];
+	char name[DIFX_MESSAGE_PARAM_LENGTH];
+	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	int lastseq;
 };
 
@@ -93,7 +93,8 @@ int main(int argc, char **argv)
 {
 	int sock;
 	int l;
-	char message[1024], from[32];
+	char message[DIFX_MESSAGE_LENGTH];
+	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	DifxMessageGeneric G;
 	struct sender senders[MAX_SENDER];
 
@@ -107,7 +108,7 @@ int main(int argc, char **argv)
 	for(;;)
 	{
 		from[0] = 0;
-		l = difxMessageReceive(sock, message, 1023, from);
+		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(l < 0)
 		{
 			usleep(100000);

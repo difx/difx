@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,7 +38,7 @@ int main(int argc, char **argv)
 {
 	int sock;
 	int l;
-	char message[1024], from[32];
+	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
 	time_t t;
 	char timestr[32];
 	DifxMessageGeneric G;
@@ -51,7 +51,7 @@ int main(int argc, char **argv)
 	for(;;)
 	{
 		from[0] = 0;
-		l = difxMessageReceive(sock, message, 1023, from);
+		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(l < 0)
 		{
 			usleep(100000);
