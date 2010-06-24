@@ -882,7 +882,7 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 		if(p >= DIFX_MESSAGE_LENGTH)
 		{
 			fprintf(stderr, "difxMessageSendDifxParameterGeneral: message indicies overflow (%d >= %d)\n",
-				v, DIFX_MESSAGE_LENGTH);
+				p, DIFX_MESSAGE_LENGTH);
 			return -1;
 		}
 	}
