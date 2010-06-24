@@ -50,5 +50,7 @@ AC_OUTPUT([
 	Makefile \
 	difxmessage.pc \
 	difxmessage/Makefile \
+	mark5ipc.pc \
+	mark5ipc/Makefile \
 	utils/Makefile
 ])
