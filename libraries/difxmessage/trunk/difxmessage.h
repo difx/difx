@@ -1,13 +1,32 @@
-//===========================================================================
-// SVN properties (DO NOT CHANGE)
-//
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
-//
-//============================================================================
+/***************************************************************************
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
+
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
 
@@ -15,9 +34,11 @@
 extern "C" {
 #endif
 
+#define DIFX_MESSAGE_IDENTIFIER_LENGTH	32
 #define DIFX_MESSAGE_PARAM_LENGTH	32
 #define DIFX_MESSAGE_VERSION_LENGTH	32
 #define DIFX_MESSAGE_FILENAME_LENGTH	128
+#define DIFX_MESSAGE_COMMENT_LENGTH	512
 #define DIFX_MESSAGE_MAX_TARGETS	128
 #define DIFX_MESSAGE_LENGTH		1500
 #define DIFX_MESSAGE_MAX_INDEX		8
@@ -137,6 +158,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_STOP,
 	DIFX_MESSAGE_MARK5VERSION,
 	DIFX_MESSAGE_CONDITION,
+	DIFX_MESSAGE_TRANSIENT,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -260,16 +282,27 @@ typedef struct
 	int bin[DIFX_MESSAGE_N_CONDITION_BINS];
 } DifxMessageCondition;
 
+/* This is used to tell Mk5daemon to copy some data at the end of the
+ * correlation to a disk file */
+typedef struct
+{
+	char jobId[DIFX_MESSAGE_IDENTIFIER_LENGTH];
+	double startMJD;
+	double stopMJD;
+	double priority;
+	char destDir[DIFX_MESSAGE_FILENAME_LENGTH];
+	char comment[DIFX_MESSAGE_COMMENT_LENGTH];
+} DifxMessageTransient;
+
 typedef struct
 {
 	enum DifxMessageType type;
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	char to[DIFX_MESSAGE_MAX_TARGETS][DIFX_MESSAGE_PARAM_LENGTH];
 	int nTo;
-	char identifier[DIFX_MESSAGE_PARAM_LENGTH];
+	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	int mpiId;
 	int seqNumber;
-	/* FIXME -- add time of receipt ?? */
 	union
 	{
 		DifxMessageMk5Status	mk5status;
@@ -284,6 +317,7 @@ typedef struct
 		DifxMessageStart	start;
 		DifxMessageStop		stop;
 		DifxMessageCondition	condition;
+		DifxMessageTransient	transient;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
@@ -358,6 +392,7 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 	const char *value, int mpiDestination);
 int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
 	const char *value, int mpiDestination);
+int difxMessageSendDifxTransient(const DifxMessageTransient *transient);
 int difxMessageSendBinary(const char *data, int destination, int size);
 
 int difxMessageReceiveOpen();

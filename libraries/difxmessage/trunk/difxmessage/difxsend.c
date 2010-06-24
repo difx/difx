@@ -18,12 +18,23 @@
 
 const int MIN_SEND_GAP=40;
 
-int expandEntityRefrences(char *dest, const char *src)
+/* Function that replaces illegal XML string characters with the
+ * official "entity" replacements.  
+ *
+ * Returns:
+ *   Increse of string size on success, or -1 on error.
+ */
+int expandEntityRefrences(char *dest, const char *src, int maxLength)
 {
 	int i, j;
 
 	for(i = j = 0; src[i]; i++)
 	{
+		if(j >= maxLength-7)
+		{
+			return -1;
+		}
+
 		if(src[i] == '>')
 		{
 			strcpy(dest+j, "&gt;");
@@ -51,8 +62,8 @@ int expandEntityRefrences(char *dest, const char *src)
 		}
 		else if(src[i] < 32)	/* ascii chars < 32 are not allowed */
 		{
-			sprintf(dest+j, "[[%2d]]", src[i]);
-			j += 6;
+			sprintf(dest+j, "[[%3d]]", src[i]);
+			j += 7;
 		}
 		else
 		{
@@ -104,23 +115,24 @@ int difxMessageSend(const char *message)
 
 int difxMessageSendProcessState(const char *state)
 {
-	char message[200];
+	char message[DIFX_MESSAGE_LENGTH];
 
 	if(difxMessagePort < 0)
 	{
 		return -1;
 	}
 
-	sprintf(message, "%s %s", difxMessageIdentifier, state);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "%s %s", difxMessageIdentifier, state);
 	return difxMessageSend(message);
 }
 
 int difxMessageSendLoad(const DifxMessageLoad *load)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxLoad>"
 		  "<cpuLoad>%4.2f</cpuLoad>"
@@ -136,20 +148,34 @@ int difxMessageSendLoad(const DifxMessageLoad *load)
 		load->netRXRate,
 		load->netTXRate);
 
-	sprintf(message, difxMessageXMLFormat, 
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendLoad: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat, 
 		DifxMessageTypeStrings[DIFX_MESSAGE_LOAD],
 		difxMessageSequenceNumber++, body);
 	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendLoad: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
 	return difxMessageSend(message);
 }
 
 int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 {
-	char message[1500];
-	char alertMessageExpanded[600];
-	char body[1200];
-
-	expandEntityRefrences(alertMessageExpanded, alertMessage);
+	char message[DIFX_MESSAGE_LENGTH];
+	char alertMessageExpanded[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
 
 	if(difxMessagePort < 0)
 	{
@@ -165,7 +191,16 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 	}
 	else
 	{
-		sprintf(body,
+		v = expandEntityRefrences(alertMessageExpanded, alertMessage, DIFX_MESSAGE_LENGTH);
+
+		if(v < 0)
+		{
+			fprintf(stderr, "difxMessageSendDifxAlert: message body overflow in entity replacement (>= %d)\n",
+				DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
+
+		v = snprintf(body, DIFX_MESSAGE_LENGTH,
 			
 			"<difxAlert>"
 			  "<alertMessage>%s</alertMessage>"
@@ -174,11 +209,26 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 
 			alertMessageExpanded,
 			severity);
+		
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendDifxAlert: message body overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
 
-		sprintf(message, difxMessageXMLFormat, 
+		v = snprintf(message, DIFX_MESSAGE_LENGTH,
+			difxMessageXMLFormat, 
 			DifxMessageTypeStrings[DIFX_MESSAGE_ALERT],
 			difxMessageSequenceNumber++, body);
 		
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendDifxAlert: message overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
+
 		difxMessageSend(message);
 
 		/* Make sure all fatal errors go to the console */
@@ -193,20 +243,28 @@ int difxMessageSendDifxAlert(const char *alertMessage, int severity)
 
 int difxMessageSendCondition(const DifxMessageCondition *cond)
 {
-	char message[1500];
-	char body[1200];
-	char bins[32*DIFX_MESSAGE_N_CONDITION_BINS];
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	char bins[DIFX_MESSAGE_LENGTH];
 	int i;
-	char *b;
+	int b=0;
+	int v;
 
 	bins[0] = 0;
 
 	if(difxMessagePort < 0)
 	{
-		b = bins;
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
-			b += sprintf(b, " %d", cond->bin[i]);
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b,
+				" %d", cond->bin[i]);
+			
+			if(b >= DIFX_MESSAGE_LENGTH)
+			{
+				fprintf(stderr, "difxMessageSendCondition: message overflow (%d >= %d)\n",
+					b, DIFX_MESSAGE_LENGTH);
+				return -1;
+			}
 		}
 		printf("%s[%d] = %s %s\n", 
 			cond->moduleVSN, 
@@ -216,13 +274,19 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 	}
 	else
 	{
-		b = bins;
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
-			b += sprintf(b, "<bin%d>%d</bin%d>", i, cond->bin[i], i);
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b,
+				"<bin%d>%d</bin%d>", i, cond->bin[i], i);
+			if(b >= DIFX_MESSAGE_LENGTH)
+			{
+				fprintf(stderr, "difxMessageSendCondition: message overflow (%d >= %d)\n",
+					b, DIFX_MESSAGE_LENGTH);
+				return -1;
+			}
 		}
 
-		sprintf(body,
+		v = snprintf(body, DIFX_MESSAGE_LENGTH,
 			
 			"<difxCondition>"
 			  "<serialNumber>%s</serialNumber>"
@@ -244,10 +308,25 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			cond->stopMJD,
 			bins);
 
-		sprintf(message, difxMessageXMLFormat, 
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendCondition: message body overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
+
+		v = snprintf(message, DIFX_MESSAGE_LENGTH,
+			difxMessageXMLFormat, 
 			DifxMessageTypeStrings[DIFX_MESSAGE_CONDITION],
 			difxMessageSequenceNumber++, body);
 		
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendCondition: message overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
+
 		difxMessageSend(message);
 	}
 
@@ -257,12 +336,11 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
+	char body[DIFX_MESSAGE_LENGTH];
+	char scanName[DIFX_MESSAGE_MAX_SCANNAME_LEN];
 	char vsnA[10], vsnB[10];
-	char scanName[64];
 	char bank;
-	int i;
-	
+	int i, v;
 
 	if(strlen(mk5status->vsnA) != 8)
 	{
@@ -294,9 +372,17 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 	{
 		bank = toupper(mk5status->activeBank);
 	}
-	strncpy(scanName, mk5status->scanName, 63);
-	scanName[63] = 0;
-	sprintf(body, 
+
+	v = snprintf(scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN,
+		"%s", mk5status->scanName);
+	if(v >= DIFX_MESSAGE_MAX_SCANNAME_LEN)
+	{
+		fprintf(stderr, "difxMessageSendMark5Status: scanName too long (%d >= %d)\n",
+			v, DIFX_MESSAGE_MAX_SCANNAME_LEN);
+		return -1;
+	}
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 	
 		"<mark5Status>"
 		  "<bankAVSN>%s</bankAVSN>"
@@ -322,9 +408,24 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 		mk5status->rate,
 		mk5status->dataMJD);
 
-	sprintf(message, difxMessageXMLFormat, 
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark5Status: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat, 
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMark5Status: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 	
 	return difxMessageSend(message);
 }
@@ -332,12 +433,14 @@ int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status)
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
-	char dbInfo[500] = "";
+	char body[DIFX_MESSAGE_LENGTH];
+	char dbInfo[DIFX_MESSAGE_LENGTH] = "";
+	int v;
 
 	if(mk5version->DB_PCBVersion[0] != 0)
 	{
-		sprintf(dbInfo,
+		v = snprintf(dbInfo, DIFX_MESSAGE_LENGTH,
+
 		  "<DaughterBoard>"
 		    "<PCBVer>%s</PCBVer>"
 		    "<PCBType>%s</PCBType>"
@@ -351,9 +454,16 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		mk5version->DB_PCBSubType,
 		mk5version->DB_FPGAConfig,
 		mk5version->DB_FPGAConfigVersion);
+
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendMk5Version: message dbinfo overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
 	}
 
-	sprintf(body, 
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 	
 		"<mark5Version>"
 		  "<ApiVer>%s</ApiVer>"
@@ -383,9 +493,24 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		mk5version->SerialNum,
 		dbInfo);
 
-	sprintf(message, difxMessageXMLFormat, 
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMk5Version: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_MARK5STATUS],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendMk5Version: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 	
 	return difxMessageSend(message);
 }
@@ -393,12 +518,20 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	double visMJD, int numdatastreams, float *weight)
 {
-	char message[1500], weightstr[1200];
-	char stateMessageExpanded[600];
-	char body[700];
-	int i, n;
+	char message[DIFX_MESSAGE_LENGTH];
+	char weightstr[DIFX_MESSAGE_LENGTH];
+	char stateMessageExpanded[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int i, n, v;
 	
-	expandEntityRefrences(stateMessageExpanded, stateMessage);
+	v = expandEntityRefrences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
+
+	if(v < 0)
+	{
+		fprintf(stderr, "difxMessageSendDifxStatus: message body overflow in entity replacement (>= %d)\n",
+			DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 
 	weightstr[0] = 0;
 	n = 0;
@@ -407,13 +540,19 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	{
 		if(weight[i] >= 0)
 		{
-			n += sprintf(weightstr + n, 
+			n += snprintf(weightstr+n, DIFX_MESSAGE_LENGTH-n,
 				"<weight ant=\"%d\" wt=\"%5.3f\"/>", 
 				i, weight[i]);
+			if(n >= DIFX_MESSAGE_LENGTH)
+			{
+				fprintf(stderr, "difxMessageSendDifxStatus: message weightstr overflow (%d >= %d)\n",
+					v, DIFX_MESSAGE_LENGTH);
+				return -1;
+			}
 		}
 	}
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxStatus>"
 		  "<state>%s</state>"
@@ -427,21 +566,45 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 		visMJD,
 		weightstr);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxStatus: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_STATUS],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxStatus: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 	
 	return difxMessageSend(message);
 }
 
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const char *stateMessage)
 {
-	char message[1500];
-	char stateMessageExpanded[600];
-	
-	expandEntityRefrences(stateMessageExpanded, stateMessage);
+	char message[DIFX_MESSAGE_LENGTH];
+	char stateMessageExpanded[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	sprintf(message,
+	v = expandEntityRefrences(stateMessageExpanded, stateMessage, DIFX_MESSAGE_LENGTH);
+
+	if(v < 0)
+	{
+		fprintf(stderr, "difxMessageSendDifxStatus2: message body overflow in entity replacement (>= %d)\n",
+			DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+
 		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 		"<difxMessage>"
 		  "<header>"
@@ -459,11 +622,19 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 		    "</difxStatus>"
 		  "</body>"
 		"</difxMessage>\n",
+		
 		difxMessageHostname,
 		jobName,
 		difxMessageSequenceNumber++,
 		DifxStateStrings[state],
 		stateMessageExpanded);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxStatus2: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 
 	return difxMessageSend(message);
 }
@@ -471,12 +642,20 @@ int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, const 
 int difxMessageSendDifxInfo(const char *infoMessage)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
-	char infoMessageExpanded[600];
+	char body[DIFX_MESSAGE_LENGTH];
+	char infoMessageExpanded[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	expandEntityRefrences(infoMessageExpanded, infoMessage);
+	v = expandEntityRefrences(infoMessageExpanded, infoMessage, DIFX_MESSAGE_LENGTH);
 
-	sprintf(body,
+	if(v < 0)
+	{
+		fprintf(stderr, "difxMessageSendDifxInfo: message body overflow in entity replacement (>= %d)\n",
+			DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxInfo>"
 		  "<message>%s</message>"
@@ -484,22 +663,45 @@ int difxMessageSendDifxInfo(const char *infoMessage)
 
 		infoMessageExpanded);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxInfo: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_INFO],
 		difxMessageSequenceNumber++, body);
 	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxInfo: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
 	return difxMessageSend(message);
 }
 
 int difxMessageSendDifxCommand(const char *command)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
-	char commandExpanded[600];
+	char body[DIFX_MESSAGE_LENGTH];
+	char commandExpanded[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	expandEntityRefrences(commandExpanded, command);
+	v = expandEntityRefrences(commandExpanded, command, DIFX_MESSAGE_LENGTH);
+	
+	if(v < 0)
+	{
+		fprintf(stderr, "difxMessageSendDifxCommand: message body overflow in entity replacement (>= %d)\n",
+			DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxCommand>"
 		  "<command>%s</command>"
@@ -507,10 +709,25 @@ int difxMessageSendDifxCommand(const char *command)
 
 		commandExpanded);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxCommand: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_COMMAND],
 		difxMessageSequenceNumber++, body);
 	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxCommand: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
 	return difxMessageSend(message);
 }
 
@@ -524,9 +741,10 @@ int difxMessageSendDifxParameter(const char *name,
 	const char *value, int mpiDestination)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxParameter>"
 		  "<targetMpiId>%d</targetMpiId>"
@@ -538,9 +756,24 @@ int difxMessageSendDifxParameter(const char *name,
 		name,
 		value);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 
 	return difxMessageSend(message);
 }
@@ -549,9 +782,10 @@ int difxMessageSendDifxParameter1(const char *name, int index1,
 	const char *value, int mpiDestination)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxParameter>"
 		  "<targetMpiId>%d</targetMpiId>"
@@ -565,9 +799,24 @@ int difxMessageSendDifxParameter1(const char *name, int index1,
 		index1,
 		value);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter1: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter1: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 	
 	return difxMessageSend(message);
 }
@@ -576,9 +825,10 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 	const char *value, int mpiDestination)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxParameter>"
 		  "<targetMpiId>%d</targetMpiId>"
@@ -594,9 +844,24 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 		index2,
 		value);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter2: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter2: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
 	
 	return difxMessageSend(message);
 }
@@ -605,17 +870,24 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 	const char *value, int mpiDestination)
 {
 	char message[DIFX_MESSAGE_LENGTH];
-	char body[700];
-	char indices[200];
-	int i;
+	char body[DIFX_MESSAGE_LENGTH];
+	char indices[DIFX_MESSAGE_LENGTH];
+	int i, v;
 	int p=0;
 
 	for(i = 0; i < nIndex; i++)
 	{
-		p += sprintf(indices + p, "<index%d>%d</index%d>", i+1, index[i], i+1);
+		p += snprintf(indices + p, DIFX_MESSAGE_LENGTH-p,
+			"<index%d>%d</index%d>", i+1, index[i], i+1);
+		if(p >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendDifxParameterGeneral: message indicies overflow (%d >= %d)\n",
+				v, DIFX_MESSAGE_LENGTH);
+			return -1;
+		}
 	}
 
-	sprintf(body,
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
 		
 		"<difxParameter>"
 		  "<targetMpiId>%d</targetMpiId>"
@@ -629,9 +901,70 @@ int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int 
 		indices,
 		value);
 
-	sprintf(message, difxMessageXMLFormat,
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameterGeneral: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+	
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
+		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameterGeneral: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+	
+	return difxMessageSend(message);
+}
+
+int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxTransient>"
+		  "<jobId>%s</jobId>"
+		  "<startMJD>%14.8f</startMJD>"
+		  "<stopMJD>%14.8f</stopMJD>"
+		  "<priority>%f</priority>"
+		  "<destDir>%s</destDir>"
+		  "<comment>%s</comment>"
+		"</difxTransient>",
+
+		transient->jobId,
+		transient->startMJD,
+		transient->stopMJD,
+		transient->priority,
+		transient->destDir,
+		transient->comment);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxTransient: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
 		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
 		difxMessageSequenceNumber++, body);
 	
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxTransient: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
 	return difxMessageSend(message);
 }
