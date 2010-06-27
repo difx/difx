@@ -27,7 +27,7 @@ from time import asctime
 program = 'errormon'
 author  = 'Walter Brisken'
 version = '0.2'
-verdate = '20080912'
+verdate = '20100625'
 
 ##############################################################################
 # Parameters
@@ -122,6 +122,7 @@ class Parser:
         self.unit = ''
         self.mpiid = -1
         self.id = ''
+	self.tag = ''
 
     def feed(self, data):
         self._parser.Parse(data, 0)
@@ -131,8 +132,10 @@ class Parser:
         del self._parser # get rid of circular references
 
     def start(self, tag, attrs):
+        self.tag = tag
         if tag == 'difxAlert':
             self.ok = True
+	    self.tmp = ''
 
     def end(self, tag):
         if tag == 'alertMessage' and self.ok:
@@ -147,7 +150,10 @@ class Parser:
             self.mpiid = int(self.tmp)
 
     def data(self, data):
-        self.tmp = data
+        if self.tag == 'alertMessage':
+            self.tmp = self.tmp + data
+        else:
+            self.tmp = data
 
     def getinfo(self):
         if self.ok:
@@ -174,16 +180,19 @@ def run():
     s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
     #s.settimeout(dt)
 
-    while 1:
-        try:
-            message = s.recv(1024)
-            p = Parser()
-            p.feed(message)
-            level, info = p.getinfo()
-            p.close()
-            if len(info) > 0:
-                log(alertLevels[level], info)
-        except socket.timeout:
-            pass
+    try:
+	    while 1:
+		try:
+		    message = s.recv(1024)
+		    p = Parser()
+		    p.feed(message)
+		    level, info = p.getinfo()
+		    p.close()
+		    if len(info) > 0:
+			log(alertLevels[level], info)
+		except socket.timeout:
+		    pass
+    except KeyboardInterrupt:
+	    pass
 
 run()

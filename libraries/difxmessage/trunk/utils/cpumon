@@ -23,8 +23,8 @@ import curses
 
 program = 'cpumon'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20080604'
+version = '0.2'
+verdate = '20100625'
 
 def usage():
 	exit(1)
@@ -158,23 +158,26 @@ def listen(port, group):
 	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
 	s.settimeout(0.2)
 	d = Display()
-	while t < maxtime:
-		try:
-			message = s.recv(1024)
-		except socket.timeout:
-			t += dt
-			continue
+	try:
+		while t < maxtime:
+			try:
+				message = s.recv(1024)
+			except socket.timeout:
+				t += dt
+				continue
 
-		if message[0] != '<':
-			continue
+			if message[0] != '<':
+				continue
 
-		p = Parser()
-		p.feed(message)
-		machine, str = p.getinfo()
-		p.close()
-		if len(str) < 10:
-			continue
-		d.newdata([machine, str])
+			p = Parser()
+			p.feed(message)
+			machine, str = p.getinfo()
+			p.close()
+			if len(str) < 10:
+				continue
+			d.newdata([machine, str])
+	except KeyboardInterrupt:
+		d.close()
 	d.close()
 
 port = getenv('DIFX_MESSAGE_PORT')

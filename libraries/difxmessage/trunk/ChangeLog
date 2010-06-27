@@ -59,3 +59,6 @@ Do better job expanding "entities" in XML formation
 Add new Mark5 States: Test TestWrite and TestRead
 Use pclose after popen (difxlog)
 Add difxVersion to difxStartMessage
+Clean up terminal in mk5mon and cpumon
+Add mark5ipc library
+Utilities: trap Ctrl-c and handle properly
