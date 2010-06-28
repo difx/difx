@@ -288,7 +288,7 @@ int pystream::writeLoifTable(const VexData *V)
 		{
 			if(setup->ifs.size() > 2)
 			{
-				cout << "Warning: mode " << mode->name << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
+				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
 			}
 
 			*this << "loif" << m << " = VLBALoIfSetup()" << endl;
@@ -359,7 +359,7 @@ int pystream::writeLoifTable(const VexData *V)
 			//work out how many different LOs there are - complain if more than two (frequencies, not freq/pols)
 			if(setup->ifs.size() > 4)
                         {
-				cerr << "Error: mode " << mode->name << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4, I'm aborting." << endl;
+				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4, I'm aborting." << endl;
 				exit(1);
 			}
 			//better be two dual pol, otherwise abort
@@ -499,23 +499,23 @@ int pystream::writeScans(const VexData *V)
 	for(int s = 0; s < nScan; s++)
 	{
 		const VexScan *scan = V->getScan(s);
-		*this << "# Scan " << s << " = " << scan->name << endl;
+		*this << "# Scan " << s << " = " << scan->defName << endl;
 		if(scan->stations.count(ant) == 0)
 		{
-			*this << "# Antenna " << ant << " not in scan " << scan->name << endl;
+			*this << "# Antenna " << ant << " not in scan " << scan->defName << endl;
 		}
 		else
 		{
 			const VexInterval *arange = &scan->stations.find(ant)->second;
 
-			int modeId = V->getModeId(scan->modeName);
+			int modeId = V->getModeIdByDefName(scan->modeDefName);
 			if(modeId != lastModeId)
 			{
-				const VexMode* mode = V->getMode(scan->modeName);
+				const VexMode* mode = V->getModeByDefName(scan->modeDefName);
 
 				if(mode == 0)
 				{
-					cerr << "Error: scan=" << scan->name << " ant=" << ant << " mode=" << scan->modeName << " -> mode=0" << endl;
+					cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> mode=0" << endl;
 					continue;
 				}
 
@@ -523,11 +523,11 @@ int pystream::writeScans(const VexData *V)
 
 				if(setup == 0)
 				{
-					cerr << "Error: scan=" << scan->name << " ant=" << ant << " mode=" << scan->modeName << " -> setup=0" << endl;
+					cerr << "Error: scan=" << scan->defName << " ant=" << ant << " mode=" << scan->modeDefName << " -> setup=0" << endl;
 					continue;
 				}
 
-				*this << "# changing to mode " << mode->name << endl;
+				*this << "# changing to mode " << mode->defName << endl;
 				if(currenttype == VLBA)
 				{
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
@@ -554,7 +554,7 @@ int pystream::writeScans(const VexData *V)
 				lastModeId = modeId;
 			}
 
-			int sourceId = V->getSourceIdByDefName(scan->sourceName);
+			int sourceId = V->getSourceIdByDefName(scan->sourceDefName);
 			if(currenttype == EVLA)
 			{
 				*this << "intent" << sourceId << ".addIntent('ScanNumber=" << s+1 << "')" << endl;
@@ -568,7 +568,7 @@ int pystream::writeScans(const VexData *V)
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 			double deltat3 = floor((scan->mjdVex-mjd0)*86400.0 + 0.5);
-			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->name << "', obsCode, stnCode )" << endl;
+			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
 			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
 			*this << "else:" << endl;

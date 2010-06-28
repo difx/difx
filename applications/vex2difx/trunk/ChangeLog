@@ -26,6 +26,7 @@ Version 2.0
 * oms2v2d: warn if both .skd and .vex are found; default to .vex
 * Source names were confused: no distiction was made between the vex "def" name and the source name.  Fixed.
 * Check for sources with illegal names
+* Improved function/variable naming to indicate explicitly where some def names are used
 
 Version 0.3
 ~~~~~~~~~~~

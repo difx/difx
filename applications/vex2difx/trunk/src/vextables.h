@@ -110,10 +110,10 @@ class VexBasebandFile : public VexInterval
 class VexScan : public VexInterval
 {
 public:
-	string name;		// name of this scan
+	string defName;		// name of this scan
 
-	string modeName;
-	string sourceName;	// refers to "def" statement.  FIXME: really should be renamed "sourceDefName"
+	string modeDefName;
+	string sourceDefName;	
 	map<string,VexInterval> stations;
 	string corrSetupName;	// points to CorrSetup entry
 	double size;		// [bytes] approx. correlated size
@@ -212,7 +212,7 @@ public:
 	const VexSetup* getSetup(const string &antName) const;
 	const VexFormat* getFormat(const string &antName) const;
 
-	string name;
+	string defName;
 
 	double sampRate;		// (Hz)
 	vector<VexSubband> subbands;
@@ -252,7 +252,7 @@ public:
 	double getVexClocks(double mjd, double * coeffs) const;
 
 	string name;
-	string nameInVex;	// Sometimes names get changed
+	string defName;		// Sometimes names get changed
 
 	double x, y, z;		// (m) antenna position
 	double dx, dy, dz;	// (m/?) antenna position	//FIXME
@@ -369,14 +369,14 @@ public:
 	void setDirectory(const string &dir) { directory = dir; }
 
 	unsigned int nSource() const { return sources.size(); }
-	int getSourceIdByDefName(const string &name) const;
+	int getSourceIdByDefName(const string &defName) const;
 	const VexSource *getSource(unsigned int num) const;
-	const VexSource *getSourceByDefName(const string &name) const;
+	const VexSource *getSourceByDefName(const string &defName) const;
 	const VexSource *getSourceBySourceName(const string &name) const;
 
 	unsigned int nScan() const { return scans.size(); }
 	const VexScan *getScan(unsigned int num) const;
-	const VexScan *getScan(const string &name) const;
+	const VexScan *getScanByDefName(const string &defName) const;
 	void setScanSize(unsigned int num, double size);
 	void getScanList(list<string> &scans) const;
 
@@ -385,16 +385,16 @@ public:
 	const VexAntenna *getAntenna(const string &name) const;
 
 	unsigned int nMode() const { return modes.size(); }
-	int getModeId(const string &name) const;
+	int getModeIdByDefName(const string &defName) const;
 	const VexMode *getMode(unsigned int num) const;
-	const VexMode *getMode(const string &name) const;
+	const VexMode *getModeByDefName(const string &defName) const;
 
 	unsigned int nEOP() const { return eops.size(); }
 	const VexEOP *getEOP(unsigned int num) const;
 	const vector<VexEOP> &getEOPs() const { return eops; }
 
 	bool usesAntenna(const string &antennaName) const;
-	bool usesMode(const string &modeName) const;
+	bool usesMode(const string &modeDefName) const;
 
 	void addVSN(const string &antName, const string &vsn, const VexInterval &timeRange);
 	string getVSN(const string &antName, const VexInterval &timeRange) const;
