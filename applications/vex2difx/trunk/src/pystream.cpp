@@ -446,7 +446,7 @@ int pystream::writeSourceTable(const VexData *V)
 	{
 		const VexSource *S = V->getSource(s);
 		*this << "source" << s << " = Source(" << S->ra << ", " << S->dec << ")" << endl;
-		*this << "source" << s << ".setName('" << S->name << "')" << endl;
+		*this << "source" << s << ".setName('" << S->defName << "')" << endl;
 		if(currenttype == EVLA)
 		{
 			*this << "intent" << s << " = Intention()" << endl;
@@ -455,7 +455,7 @@ int pystream::writeSourceTable(const VexData *V)
 			intentstring = "UNSPECIFIED";
 			for(unsigned int i=0;i<phasingsources.size();i++)
 			{
-				if(phasingsources.at(i) == S->name)
+				if(phasingsources.at(i) == S->defName)
 				{
 					intentstring = "CALIBRATE_AUTOPHASE";
 				}
@@ -554,7 +554,7 @@ int pystream::writeScans(const VexData *V)
 				lastModeId = modeId;
 			}
 
-			int sourceId = V->getSourceId(scan->sourceName);
+			int sourceId = V->getSourceIdByDefName(scan->sourceName);
 			if(currenttype == EVLA)
 			{
 				*this << "intent" << sourceId << ".addIntent('ScanNumber=" << s+1 << "')" << endl;

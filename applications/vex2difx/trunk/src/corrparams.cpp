@@ -198,7 +198,7 @@ double parseCoord(const char *str, char type)
 }
 
 // From http://oopweb.com/CPP/Documents/CPPHOWTO/Volume/C++Programming-HOWTO-7.html
-void split(const string& str, vector<string>& tokens, const string& delimiters = " ")
+void split(const string &str, vector<string> &tokens, const string &delimiters = " ")
 {
 	// Skip delimiters at beginning.
 	string::size_type lastPos = str.find_first_not_of(delimiters, 0);
@@ -630,12 +630,6 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	else if(key == "name" || key == "newName")
 	{
 		ss >> pc->difxname;
-		if(pc->difxname.size() > MAX_SRCNAME_LENGTH)
-		{
-			cerr << "Warning: Source " << pc->difxname << " name length exceeds " << 
-				MAX_SRCNAME_LENGTH << " characters" << endl;
-			nWarn++;
-		}
 	}
 	else if(key == "ephemObject")
 	{
@@ -989,7 +983,7 @@ CorrParams::CorrParams()
 	defaults();
 }
 
-CorrParams::CorrParams(const string& fileName)
+CorrParams::CorrParams(const string &fileName)
 {
 	size_t pos;
 
@@ -1220,7 +1214,7 @@ int CorrParams::setkv(const string &key, const string &value)
 	return nWarn;
 }
 
-void CorrParams::addAntenna(const string& antName)
+void CorrParams::addAntenna(const string &antName)
 {
 	if(find(antennaList.begin(), antennaList.end(), antName) == antennaList.end())
 	{
@@ -1228,7 +1222,7 @@ void CorrParams::addAntenna(const string& antName)
 	}
 }
 
-void CorrParams::addBaseline(const string& baselineName)
+void CorrParams::addBaseline(const string &baselineName)
 {
 	size_t pos;
 
@@ -1251,7 +1245,7 @@ void CorrParams::addBaseline(const string& baselineName)
 		baselineName.substr(pos+1) ));
 }
 
-int CorrParams::load(const string& fileName)
+int CorrParams::load(const string &fileName)
 {
 	enum Parse_Mode
 	{
@@ -1742,7 +1736,27 @@ const SourceSetup *CorrParams::getSourceSetup(const string &name) const
 	return 0;
 }
 
-const PhaseCentre * CorrParams::getPhaseCentre(const string & difxname) const
+const SourceSetup *CorrParams::getSourceSetup(const vector<string> &names) const
+{
+	vector<string>::const_iterator s;
+	int i, n;
+
+	n = sourceSetups.size();
+	for(i = 0; i < n; i++)
+	{
+		for(s = names.begin(); s != names.end(); s++)
+		{
+			if(*s == sourceSetups[i].vexName)
+			{
+				return &sourceSetups[i];
+			}
+		}
+	}
+
+	return 0;
+}
+
+const PhaseCentre * CorrParams::getPhaseCentre(const string  &difxname) const
 {
 	for(unsigned int i=0;i<sourceSetups.size();i++)
 	{
@@ -1781,7 +1795,7 @@ const string &CorrParams::findSetup(const string &scan, const string &source, co
 	return none;
 }
 
-ostream& operator << (ostream& os, const CorrSetup& x)
+ostream& operator << (ostream &os, const CorrSetup &x)
 {
 	int p;
 
@@ -1808,7 +1822,7 @@ ostream& operator << (ostream& os, const CorrSetup& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const CorrRule& x)
+ostream& operator << (ostream &os, const CorrRule &x)
 {
 	bool space = false;
 	os << "RULE " << x.ruleName << endl;
@@ -1861,7 +1875,7 @@ ostream& operator << (ostream& os, const CorrRule& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const SourceSetup& x)
+ostream& operator << (ostream &os, const SourceSetup &x)
 {
 	os << "SOURCE " << x.vexName << endl;
 	os << "{" << endl;
@@ -1895,7 +1909,7 @@ ostream& operator << (ostream& os, const SourceSetup& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const AntennaSetup& x)
+ostream& operator << (ostream &os, const AntennaSetup &x)
 {
         os << "ANTENNA " << x.vexName << endl;
         os << "{" << endl;
@@ -1924,7 +1938,7 @@ ostream& operator << (ostream& os, const AntennaSetup& x)
         return os;
 }
 
-ostream& operator << (ostream& os, const CorrParams& x)
+ostream& operator << (ostream &os, const CorrParams &x)
 {
 	int p;
 
@@ -2095,7 +2109,7 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	}
 }
 
-int CorrParams::loadShelves(const string& fileName)
+int CorrParams::loadShelves(const string &fileName)
 {
 	int nWarn = 0;
 	ifstream is;
@@ -2183,7 +2197,7 @@ int CorrParams::loadShelves(const string& fileName)
 	return nWarn;
 }
 
-const char *CorrParams::getShelf(const string& vsn) const
+const char *CorrParams::getShelf(const string &vsn) const
 {
 	map<string,string>::const_iterator it;
 

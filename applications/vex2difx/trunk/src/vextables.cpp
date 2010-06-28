@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -217,7 +217,7 @@ int VexMode::getBits() const
 	return nBit;
 }
 
-const VexSetup* VexMode::getSetup(const string antName) const
+const VexSetup* VexMode::getSetup(const string &antName) const
 {
 	map<string,VexSetup>::const_iterator it;
 
@@ -231,7 +231,7 @@ const VexSetup* VexMode::getSetup(const string antName) const
 	return &it->second;
 }
 
-const VexFormat* VexMode::getFormat(const string antName) const
+const VexFormat* VexMode::getFormat(const string &antName) const
 {
 	map<string,VexSetup>::const_iterator it;
 
@@ -321,7 +321,7 @@ string VexIF::VLBABandName() const
 	return "None";
 }
 
-bool operator == (VexSubband& s1, VexSubband& s2)
+bool operator == (VexSubband &s1, VexSubband &s2)
 {
 	if(s1.freq != s2.freq) return false;
 	if(s1.bandwidth != s2.bandwidth) return false;
@@ -329,6 +329,21 @@ bool operator == (VexSubband& s1, VexSubband& s2)
 	if(s1.pol != s2.pol) return false;
 
 	return true;
+}
+
+bool VexSource::hasSourceName(const string &name) const
+{
+	vector<string>::const_iterator n;
+
+	for(n = sourceNames.begin(); n != sourceNames.end(); n++)
+	{
+		if(*n == name)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 int VexData::sanityCheck()
@@ -370,7 +385,7 @@ VexSource *VexData::newSource()
 
 // get the clock epoch as a MJD value (with fractional component), negative 
 // means not found.  Also fills in the first two coeffs, returned in seconds
-double VexAntenna::getVexClocks(double mjd, double * coeffs) const
+double VexAntenna::getVexClocks(double mjd, double *coeffs) const
 {
 	vector<VexClock>::const_iterator it;
 	double epoch = -1.0;
@@ -388,20 +403,9 @@ double VexAntenna::getVexClocks(double mjd, double * coeffs) const
 	return epoch;
 }
 
-const VexSource *VexData::getSource(const string name) const
-{
-	for(unsigned int i = 0; i < nSource(); i++)
-	{
-		if(sources[i].name == name)
-			return &sources[i];
-	}
-
-	return 0;
-}
-
 const VexSource *VexData::getSource(unsigned int num) const
 {
-	if(num < 0 || num >= nSource())
+	if(num >= nSource())
 	{
 		return 0;
 	}
@@ -409,14 +413,14 @@ const VexSource *VexData::getSource(unsigned int num) const
 	return &sources[num];
 }
 
-int VexData::getSourceId(const string name) const
+int VexData::getSourceIdByDefName(const string &name) const
 {
 	vector<VexSource>::const_iterator it;
 	int i = 0;
 
 	for(it = sources.begin(); it != sources.end(); it++)
 	{
-		if(it->name == name)
+		if(it->defName == name)
 		{
 			return i;
 		}
@@ -426,13 +430,36 @@ int VexData::getSourceId(const string name) const
 	return -1;
 }
 
+const VexSource *VexData::getSourceByDefName(const string &name) const
+{
+	for(unsigned int i = 0; i < nSource(); i++)
+	{
+		if(sources[i].defName == name)
+			return &sources[i];
+	}
+
+	return 0;
+}
+
+const VexSource *VexData::getSourceBySourceName(const string &name) const
+{
+	for(unsigned int i = 0; i < nSource(); i++)
+	{
+		for(unsigned int j = 0; j < sources[i].sourceNames.size(); j++)
+		if(sources[i].sourceNames[j] == name)
+			return &sources[i];
+	}
+
+	return 0;
+}
+
 VexScan *VexData::newScan()
 {
 	scans.push_back(VexScan());
 	return &scans.back();
 }
 
-void VexJob::assignVSNs(const VexData& V)
+void VexJob::assignVSNs(const VexData &V)
 {
 	list<string> antennas;
 	vector<string>::const_iterator s;
@@ -534,12 +561,12 @@ double VexJob::calcSize(const VexData *V) const
 	return size;
 }
 
-bool VexJobGroup::hasScan(const string& scanName) const
+bool VexJobGroup::hasScan(const string &scanName) const
 {
 	return find(scans.begin(), scans.end(), scanName) != scans.end();
 }
 
-void VexJobGroup::genEvents(const list<VexEvent>& eventList)
+void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 {
 	list<VexEvent>::const_iterator it;
 #if 0
@@ -665,7 +692,7 @@ bool VexJob::hasScan(const string &scanName) const
         return false;
 }
 
-int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned int invalidMask) const
+int VexJob::generateFlagFile(const VexData &V, const string &fileName, unsigned int invalidMask) const
 {
 	vector<VexJobFlag> flags;
 	map<string,int> antIds;
@@ -859,7 +886,7 @@ int VexJob::generateFlagFile(const VexData& V, const string &fileName, unsigned 
 	return flags.size();
 }
 
-void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, const VexData *V, double maxLength, double maxSize) const
+void VexJobGroup::createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, const VexData *V, double maxLength, double maxSize) const
 {
 	list<VexEvent>::const_iterator s, e;
 	jobs.push_back(VexJob());
@@ -926,7 +953,7 @@ void VexJobGroup::createJobs(vector<VexJob>& jobs, VexInterval& jobTimeRange, co
 	}
 }
 
-const VexScan *VexData::getScan(const string name) const
+const VexScan *VexData::getScan(const string &name) const
 {
 	for(unsigned int i = 0; i < nScan(); i++)
 	{
@@ -939,7 +966,7 @@ const VexScan *VexData::getScan(const string name) const
 
 const VexScan *VexData::getScan(unsigned int num) const
 {
-	if(num < 0 || num >= nScan())
+	if(num >= nScan())
 	{
 		return 0;
 	}
@@ -949,7 +976,7 @@ const VexScan *VexData::getScan(unsigned int num) const
 
 void VexData::setScanSize(unsigned int num, double size)
 {
-	if(num < 0 || num >= nScan())
+	if(num >= nScan())
 	{
 		return;
 	}
@@ -1007,7 +1034,17 @@ VexAntenna *VexData::newAntenna()
 	return &antennas.back();
 }
 
-const VexAntenna *VexData::getAntenna(const string name) const
+const VexAntenna *VexData::getAntenna(unsigned int num) const
+{
+	if(num >= nAntenna())
+	{
+		return 0;
+	}
+
+	return &antennas[num];
+}
+
+const VexAntenna *VexData::getAntenna(const string &name) const
 {
 	for(unsigned int i = 0; i < nAntenna(); i++)
 	{
@@ -1016,16 +1053,6 @@ const VexAntenna *VexData::getAntenna(const string name) const
 	}
 
 	return 0;
-}
-
-const VexAntenna *VexData::getAntenna(unsigned int num) const
-{
-	if(num < 0 || num >= nAntenna())
-	{
-		return 0;
-	}
-
-	return &antennas[num];
 }
 
 double VexSetup::phaseCal() const
@@ -1046,7 +1073,7 @@ double VexSetup::phaseCal() const
 	return pc;
 }
 
-const VexIF *VexSetup::getIF(const string& ifname) const
+const VexIF *VexSetup::getIF(const string &ifname) const
 {
 	map<string,VexIF>::const_iterator it;
 
@@ -1061,7 +1088,7 @@ const VexIF *VexSetup::getIF(const string& ifname) const
 	return 0;
 }
 
-bool operator ==(const VexChannel& c1, const VexChannel& c2)
+bool operator ==(const VexChannel &c1, const VexChannel &c2)
 {
 	if( (c1.recordChan  != c2.recordChan)  ||
 	    (c1.subbandId   != c2.subbandId)   ||
@@ -1077,7 +1104,7 @@ bool operator ==(const VexChannel& c1, const VexChannel& c2)
 	}
 }
 
-bool operator ==(const VexFormat& f1, const VexFormat& f2)
+bool operator ==(const VexFormat &f1, const VexFormat &f2)
 {
 	if( (f1.format      != f2.format)      ||
 	    (f1.nBit        != f2.nBit)        ||
@@ -1103,7 +1130,7 @@ VexMode *VexData::newMode()
 	return &modes.back();
 }
 
-const VexMode *VexData::getMode(const string name) const
+const VexMode *VexData::getMode(const string &name) const
 {
 	for(unsigned int i = 0; i < nMode(); i++)
 	{
@@ -1118,7 +1145,7 @@ const VexMode *VexData::getMode(const string name) const
 
 const VexMode *VexData::getMode(unsigned int num) const
 {
-	if(num < 0 || num >= nMode())
+	if(num >= nMode())
 	{
 		return 0;
 	}
@@ -1126,7 +1153,7 @@ const VexMode *VexData::getMode(unsigned int num) const
 	return &modes[num];
 }
 
-int VexData::getModeId(const string name) const
+int VexData::getModeId(const string &name) const
 {
 	vector<VexMode>::const_iterator it;
 	int i = 0;
@@ -1152,7 +1179,7 @@ VexEOP *VexData::newEOP()
 
 const VexEOP *VexData::getEOP(unsigned int num) const
 {
-	if(num < 0 || num > nEOP())
+	if(num > nEOP())
 	{
 		return 0;
 	}
@@ -1160,7 +1187,7 @@ const VexEOP *VexData::getEOP(unsigned int num) const
 	return &eops[num];
 }
 
-bool VexData::usesAntenna(const string& antennaName) const
+bool VexData::usesAntenna(const string &antennaName) const
 {
 	int n = nAntenna();
 
@@ -1175,7 +1202,7 @@ bool VexData::usesAntenna(const string& antennaName) const
 	return false;
 }
 
-bool VexData::usesMode(const string& modeName) const
+bool VexData::usesMode(const string &modeName) const
 {
 	int n = nScan();
 
@@ -1190,7 +1217,7 @@ bool VexData::usesMode(const string& modeName) const
 	return false;
 }
 
-void VexData::addVSN(const string& antName, const string& vsn, const VexInterval& timeRange)
+void VexData::addVSN(const string &antName, const string &vsn, const VexInterval &timeRange)
 {
 	int n = nAntenna();
 
@@ -1203,7 +1230,7 @@ void VexData::addVSN(const string& antName, const string& vsn, const VexInterval
 	}
 }
 
-string VexData::getVSN(const string& antName, const VexInterval& timeRange) const
+string VexData::getVSN(const string &antName, const VexInterval &timeRange) const
 {
 	const VexAntenna *A;
 	vector<VexVSN>::const_iterator v;
@@ -1237,7 +1264,7 @@ string VexData::getVSN(const string& antName, const VexInterval& timeRange) cons
 	return bestVSN;
 }
 
-void VexData::setExper(const string& name, const VexInterval& experTimeRange)
+void VexData::setExper(const string &name, const VexInterval &experTimeRange)
 {
 	double a=1.0e7, b=0.0;
 	list<VexEvent>::const_iterator it;
@@ -1328,7 +1355,7 @@ void VexData::addBreaks(const vector<double> &breaks)
         }
 }
 
-ostream& operator << (ostream& os, const VexInterval& x)
+ostream& operator << (ostream &os, const VexInterval &x)
 {
 	int p = os.precision();
 	os.precision(12);
@@ -1338,9 +1365,9 @@ ostream& operator << (ostream& os, const VexInterval& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexSource& x)
+ostream& operator << (ostream &os, const VexSource &x)
 {
-	os << "Source " << x.name << endl;
+	os << "Source " << x.defName << endl;
 	int n = x.sourceNames.size();
 	for(int i = 0; i < n; i++)
 	{
@@ -1354,7 +1381,7 @@ ostream& operator << (ostream& os, const VexSource& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexScan& x)
+ostream& operator << (ostream &os, const VexScan &x)
 {
 	map<string,VexInterval>::const_iterator iter;
 
@@ -1374,14 +1401,14 @@ ostream& operator << (ostream& os, const VexScan& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexClock& x)
+ostream& operator << (ostream &os, const VexClock &x)
 {
 	os << "Clock(" << x.mjdStart << ": " << x.offset << ", " << x.rate << ", " << x.offset_epoch << ")";
 
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexAntenna& x)
+ostream& operator << (ostream &os, const VexAntenna &x)
 {
 	os << "Antenna " << x.name <<
 		"\n   x=" << x.x << "  dx/dt=" << x.dx <<
@@ -1404,28 +1431,28 @@ ostream& operator << (ostream& os, const VexAntenna& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexSubband& x)
+ostream& operator << (ostream &os, const VexSubband &x)
 {
 	os << "[" << x.freq << " Hz, " << x.bandwidth << " Hz, sb=" << x.sideBand << ", pol=" << x.pol << "]";
 	
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexChannel& x)
+ostream& operator << (ostream &os, const VexChannel &x)
 {
 	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << "]";
 
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexIF& x)
+ostream& operator << (ostream &os, const VexIF &x)
 {
 	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCal=" << x.phaseCal << "]";
 
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexFormat& x)
+ostream& operator << (ostream &os, const VexFormat &x)
 {
 	vector<VexChannel>::const_iterator it;
 	os << "[format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
@@ -1438,7 +1465,7 @@ ostream& operator << (ostream& os, const VexFormat& x)
 	return os;
 }
 
-ostream& operator << (ostream&os, const VexSetup& x)
+ostream& operator << (ostream &os, const VexSetup &x)
 {
 	map<string,VexIF>::const_iterator it;
 	os << "    Format = " << x.format << endl;
@@ -1450,7 +1477,7 @@ ostream& operator << (ostream&os, const VexSetup& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexMode& x)
+ostream& operator << (ostream &os, const VexMode &x)
 {
 	map<string,VexSetup>::const_iterator it;
 
@@ -1468,7 +1495,7 @@ ostream& operator << (ostream& os, const VexMode& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexEOP& x)
+ostream& operator << (ostream &os, const VexEOP &x)
 {
 	os << "EOP(" << x.mjd << ", " << x.tai_utc << ", " << x.ut1_utc << ", " << (x.xPole*RAD2ASEC) << ", " << (x.yPole*RAD2ASEC) << ")";
 
@@ -1476,21 +1503,21 @@ ostream& operator << (ostream& os, const VexEOP& x)
 }
 
 
-ostream& operator << (ostream& os, const VexBasebandFile& x)
+ostream& operator << (ostream &os, const VexBasebandFile &x)
 {
 	os << "Baseband(" << x.filename << ", " << (const VexInterval&)x << ")";
 
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexVSN& x)
+ostream& operator << (ostream &os, const VexVSN &x)
 {
 	os << "VSN(" << x.name << ", " << (const VexInterval&)x << ")";
 
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexJob& x)
+ostream& operator << (ostream &os, const VexJob &x)
 {
 	vector<string>::const_iterator s;
 	map<string,string>::const_iterator v;
@@ -1516,7 +1543,7 @@ ostream& operator << (ostream& os, const VexJob& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexJobGroup& x)
+ostream& operator << (ostream &os, const VexJobGroup &x)
 {
 	int p = os.precision();
 	os.precision(12);
@@ -1528,7 +1555,7 @@ ostream& operator << (ostream& os, const VexJobGroup& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexEvent& x)
+ostream& operator << (ostream &os, const VexEvent &x)
 {
 	int d, s;
 	d = static_cast<int>(x.mjd);
@@ -1539,7 +1566,7 @@ ostream& operator << (ostream& os, const VexEvent& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexJobFlag& x)
+ostream& operator << (ostream &os, const VexJobFlag &x)
 {
 	int p = os.precision();
 
@@ -1552,7 +1579,7 @@ ostream& operator << (ostream& os, const VexJobFlag& x)
 	return os;
 }
 
-ostream& operator << (ostream& os, const VexData& x)
+ostream& operator << (ostream &os, const VexData &x)
 {
 	os << "Vex:" << endl;
 

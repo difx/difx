@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,8 +43,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("2.0");
-const string verdate("20100312");
+const string version("2.0");		// FIXME: link to configure.ac
+const string verdate("20100627");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -1379,18 +1379,18 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		S = V->getScan(*si);
 		if(!S)
 		{
-			cerr << "Error: source[" << *si << "] not found!  This cannot be!" << endl;
+			cerr << "Developer error: source[" << *si << "] not found!  This cannot be!" << endl;
 			exit(0);
 		}
 
-		const VexSource *src = V->getSource(S->sourceName);
+		const VexSource *src = V->getSourceByDefName(S->sourceName);
 
 		// Determine interval where scan and job overlap
 		VexInterval scanInterval(*S);
 		scanInterval.logicalAnd(J);
 
 		corrSetup = P->getCorrSetup(S->corrSetupName);
-		sourceSetup = P->getSourceSetup(S->sourceName);
+		sourceSetup = P->getSourceSetup(src->sourceNames);
 		if(!sourceSetup)
 		{
 			cerr << "No source setup for " << S->sourceName << " - aborting!" << endl;
@@ -1404,12 +1404,17 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			maxScanPhaseCentres = scan->nPhaseCentres;
 		atSource = 0;
 		pointingSrcIndex = -1;
-		for(int i=0;i<D->nSource;i++)
+		for(int i=0; i<D->nSource; i++)
 		{
 			if(D->source[i].ra == src->ra && D->source[i].dec == src->dec &&
 			   D->source[i].calCode[0] == src->calCode &&
 			   D->source[i].qual == src->qualifier     &&
-			   strcmp(D->source[i].name, src->name.c_str()) == 0)
+			   ( strcmp(D->source[i].name, src->defName.c_str()) == 0     ||
+			     src->hasSourceName(string(D->source[i].name))    )
+			   )
+			   // FIXME: There might be something fishy in the source name comparison above.
+			   // What happens if the source is renamed?  A better infrastructure for this is needed.
+			   // Also, code now compares against the def name in case that is the name basis
 			{
 				pointingSrcIndex = i;
 				break;
@@ -1418,7 +1423,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		if(pointingSrcIndex == -1)
 		{
 			pointingSrcIndex = D->nSource;
-			strcpy(D->source[pointingSrcIndex].name, src->name.c_str());
+			// below we take the first source name index by default
+			strcpy(D->source[pointingSrcIndex].name, src->sourceNames[0].c_str());
 			D->source[pointingSrcIndex].ra = src->ra;
 			D->source[pointingSrcIndex].dec = src->dec;
 			D->source[pointingSrcIndex].calCode[0] = src->calCode;
@@ -1817,6 +1823,26 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 }
 
+static bool illegalSourceName(const string &name)
+{
+	if(name.size() > VexSource::MAX_SRCNAME_LENGTH)
+	{
+		return true;
+	}
+	else if(name.find_first_of("/") != string::npos)
+	{
+		return true;
+	}
+	else if(name.find_first_of("_") != string::npos)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
 static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 {
 	vector<SourceSetup>::const_iterator s;
@@ -1828,7 +1854,7 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 
 	for(s = P->sourceSetups.begin(); s != P->sourceSetups.end(); s++)
 	{
-		if(V->getSource(s->vexName) == 0)
+		if(V->getSourceBySourceName(s->vexName) == 0)
 		{
 			cerr << "Warning: source " << s->vexName << " referenced in .v2d file but is not in vex file" << endl;
 			nWarn++;
@@ -1856,7 +1882,7 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 		for(l = r->sourceName.begin(); l != r->sourceName.end(); l++)
 		{
-			if(V->getSource(*l) == 0)
+			if(V->getSourceBySourceName(*l) == 0)
 			{
 				cerr << "Warning: source " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
 				nWarn++;
@@ -1868,6 +1894,69 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 			{
 				cerr << "Warning: mode " << *l << " referenced in RULE " << r->ruleName << " in .v2d file but is not in vex file" << endl;
 				nWarn++;
+			}
+		}
+	}
+
+	// Verify that final source names are legal
+	for(unsigned int s = 0; s < V->nSource(); s++)
+	{
+		const VexSource *S = V->getSource(s);
+
+		if(S->sourceNames.size() == 0)
+		{
+			cout << "Warning: vex source def block " << S->defName << " has no source names!" << endl;
+			nWarn++;
+			continue;
+		}
+		else if(S->sourceNames.size() > 1)
+		{
+			cout << "Warning: vex source def block " << S->defName << " has more than 1 source names.  Only the first is being considered!" << endl;
+			nWarn++;
+		}
+
+		const SourceSetup *sourceSetup=P->getSourceSetup(S->sourceNames);
+		if(sourceSetup && sourceSetup->pointingCentre.difxname.size() > 0)
+		{
+			if(illegalSourceName(sourceSetup->pointingCentre.difxname))
+			{
+				cerr << "Warning: illegal source name (" << sourceSetup->pointingCentre.difxname << ") provided in SOURCE section for source " << S->defName << endl;
+				nWarn++;
+			}
+		}
+		else
+		{
+			if(illegalSourceName(S->sourceNames[0]))
+			{
+				cerr << "Warning: illegal source name (" << S->sourceNames[0] << ") in vex file.  Please correct by renaming in the SOURCE section of the .v2d file" << endl;
+				nWarn++;
+			}
+		}
+		// FIXME: check phase center names for legality
+	}
+
+	// warn on two VexSources with the same sourceNames[] entries
+	if(V->nSource() > 1)
+	{
+		for(unsigned int s2 = 1; s2 < V->nSource(); s2++) 
+		{
+			const VexSource *S2 = V->getSource(s2);
+			for(unsigned int s1 = 0; s1 < s2; s1++)
+			{
+				const VexSource *S1 = V->getSource(s1);
+				for(unsigned int n2 = 0; n2 < S2->sourceNames.size(); n2++)
+				{
+					for(unsigned int n1 = 0; n1 < S1->sourceNames.size(); n1++)
+					{
+						if(S1->sourceNames[n1] == S2->sourceNames[n2])
+						{
+							cerr << "Warning: two sources with the same name:" << endl;
+							cerr << "  " << S1->defName << "[" << n1 << "] = " << S1->sourceNames[n1] << endl;
+							cerr << "  " << S2->defName << "[" << n2 << "] = " << S2->sourceNames[n2] << endl;
+							nWarn++;
+						}
+					}
+				}
 			}
 		}
 	}
@@ -2075,10 +2164,10 @@ int main(int argc, char **argv)
 		sourceSetup = P->getSourceSetup(S->sourceName);
 		if(!sourceSetup)
 		{
-			const VexSource *src = V->getSource(S->sourceName);
+			const VexSource *src = V->getSourceByDefName(S->sourceName);
 			added = new SourceSetup(S->sourceName);
 			added->doPointingCentre = true;
-			added->pointingCentre = PhaseCentre(src->ra, src->dec, src->name);
+			added->pointingCentre = PhaseCentre(src->ra, src->dec, src->sourceNames[0]);
 			added->pointingCentre.calCode = src->calCode;
 			added->pointingCentre.qualifier = src->qualifier;
 			P->addSourceSetup(*added);

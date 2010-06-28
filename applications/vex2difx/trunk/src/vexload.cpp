@@ -295,11 +295,11 @@ static int getSources(VexData *V, Vex *v, const CorrParams& params)
 	for(char *src = get_source_def(v); src; src=get_source_def_next())
 	{
 		S = V->newSource();
-		S->name = src;
-		if(strlen(src) > SourceSetup::MAX_SRCNAME_LENGTH)
+		S->defName = src;
+		if(strlen(src) > VexSource::MAX_SRCNAME_LENGTH)
 		{
 			cerr << "Source name " << src << " is longer than " << 
-			SourceSetup::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+			VexSource::MAX_SRCNAME_LENGTH << "  characters!" << endl;
 			nWarn++;
 		}
 
@@ -308,10 +308,10 @@ static int getSources(VexData *V, Vex *v, const CorrParams& params)
 		    p = (char *)get_source_lowl_next())
 		{
 			S->sourceNames.push_back(string(p));
-			if(strlen(p) > SourceSetup::MAX_SRCNAME_LENGTH)
+			if(strlen(p) > VexSource::MAX_SRCNAME_LENGTH)
 			{
 				cerr << "Source name " << src << " is longer than " <<
-				SourceSetup::MAX_SRCNAME_LENGTH << "  characters!" << endl;
+				VexSource::MAX_SRCNAME_LENGTH << "  characters!" << endl;
 				nWarn++;
 			}
 		}
@@ -329,7 +329,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams& params)
 			exit(0);
 		}
 
-		const SourceSetup *setup = params.getSourceSetup(S->name);
+		const SourceSetup *setup = params.getSourceSetup(S->defName);
 		if(setup)
 		{
 			if(setup->pointingCentre.calCode > ' ')
@@ -496,7 +496,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams& params)
 		string sourceName((char *)get_scan_source(L));
 		string modeName((char *)get_scan_mode(L));
 
-		const VexSource *src = V->getSource(sourceName);
+		const VexSource *src = V->getSourceByDefName(sourceName);
 		if(src == 0)
 		{
 			cerr << "Developer error! src == 0" << endl;

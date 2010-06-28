@@ -20,6 +20,7 @@ x. use antennas, not modules, in antenna count
 x. support time formats other than mjd
 x. support EVLBI
 18. clean up oversampling/decimation support
+19. Clean up antenna names/defs as done for sources
 
 Concerns outside vex2difx proper
 

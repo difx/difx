@@ -82,8 +82,6 @@ public:
 	int setkv(const string &key, const string &value);
 	int setkv(const string &key, const string &value, PhaseCentre * pc);
 
-	static const int MAX_SRCNAME_LENGTH = 12; //characters
-
 	bool doPointingCentre;       	  // Whether or not to correlate the pointing centre
 	string vexName;		     	  // Source name as appears in vex file
 	PhaseCentre pointingCentre;  	  // The source which is at the pointing centre
@@ -191,13 +189,13 @@ class CorrParams : public VexInterval
 {
 public:
 	CorrParams();
-	CorrParams(const string& fileName);
+	CorrParams(const string &fileName);
 
-	int loadShelves(const string& fileName);
-	const char *getShelf(const string& vsn) const;
+	int loadShelves(const string &fileName);
+	const char *getShelf(const string &vsn) const;
 
 	int setkv(const string &key, const string &value);
-	int load(const string& fileName);
+	int load(const string &fileName);
 	void defaults();
 	void defaultSetup();
 	void defaultRule();
@@ -210,6 +208,7 @@ public:
 	bool swapPol(const string &antName) const;
 	const CorrSetup *getCorrSetup(const string &name) const;
 	const SourceSetup *getSourceSetup(const string &name) const;
+	const SourceSetup *getSourceSetup(const vector<string> &names) const;
 	const PhaseCentre *getPhaseCentre(const string &difxname) const;
 	const AntennaSetup *getAntennaSetup(const string &name) const;
 	const VexClock *getAntennaClock(const string &antName) const;
@@ -265,14 +264,14 @@ public:
 	enum V2D_Mode v2dMode;
 
 private:
-	void addAntenna(const string& antName);
-	void addBaseline(const string& baselineName);
+	void addAntenna(const string &antName);
+	void addBaseline(const string &baselineName);
 	map<string,string> shelves;
 };
 
-ostream& operator << (ostream& os, const CorrSetup& x);
-ostream& operator << (ostream& os, const CorrRule& x);
-ostream& operator << (ostream& os, const CorrParams& x);
+ostream& operator << (ostream &os, const CorrSetup &x);
+ostream& operator << (ostream &os, const CorrRule &x);
+ostream& operator << (ostream &os, const CorrParams &x);
 
 bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrParams *C);
 
