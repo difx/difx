@@ -814,19 +814,18 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
               {
                 if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) > 0)
                 {
-                  //uh-oh.  Need to move the second of the two datastreams FFT results appropriately
-                  if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) == 1)
+                  //uh-oh.  Need to move any LSB datastreams' FFT results appropriately
+                  if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) > 0)
                   {
-                    input2offset = 1;
-                    if(x == xmacpasses-1)
-                      xmacmullength = xmacstridelength-1;
-                  }
-                  else
-                  {
-                    input1offset = 1;
                     outputoffset = 1;
                     if(x == xmacpasses-1)
                       xmacmullength = xmacstridelength-1;
+                    if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) == 1)
+                      //just the first is LSB
+                      input2offset = 1;
+                    else if(config->getBFreqOddLSB(procslots[index].configindex, j, localfreqindex) == 2)
+                      //just the second is LSB
+                      input1offset = 1;
                   }
                 }
               }

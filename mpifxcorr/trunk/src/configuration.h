@@ -500,6 +500,7 @@ private:
     double bandedgefreq;
     double bandwidth;
     bool lowersideband;
+    bool correlatedagainstupper;
     int numchannels;
     int channelstoaverage;
     int oversamplefactor;

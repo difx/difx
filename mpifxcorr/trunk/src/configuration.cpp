@@ -577,7 +577,8 @@ int Configuration::getCNumProcessThreads(int corenum)
 {
   if(corenum < numcoreconfs)
     return numprocessthreads[corenum];
-  return 1;
+  cwarn << startl << "Trying to get a number of threads for core " << corenum+1 << " when only " << numcoreconfs << " provided in .threads file - setting num threads for this core to " << numprocessthreads[numcoreconfs-1] << ", which was the last value in the .threads file" << endl;
+  return numprocessthreads[numcoreconfs-1];
 }
 
 bool Configuration::stationUsed(int telescopeindex)
@@ -683,7 +684,7 @@ Configuration::sectionheader Configuration::getSectionHeader(ifstream * input)
 
 bool Configuration::processBaselineTable(ifstream * input)
 {
-  int tempint, dsband;
+  int tempint, dsband, findex, matchfindex;
   int ** tempintptr;
   string line;
   datastreamdata dsdata;
@@ -767,6 +768,51 @@ bool Configuration::processBaselineTable(ifstream * input)
       tempintptr = baselinetable[i].datastream1bandindex;
       baselinetable[i].datastream1bandindex = baselinetable[i].datastream2bandindex;
       baselinetable[i].datastream2bandindex = tempintptr;
+    }
+  }
+  for(int f=0;f<freqtablelength;f++)
+  {
+    if(!freqtable[f].lowersideband)
+      continue; //only need to nadger lower sideband freqs here, and only when they are correlated against USB
+    for(int i=0;i<baselinetablelength;i++)
+    {
+      for(int j=0;j<baselinetable[i].numfreqs;j++)
+      {
+        if(bldata.freqtableindices[j] == f) //its a match - check the other datastream for USB
+        {
+          bldata = baselinetable[i];
+          dsdata = datastreamtable[bldata.datastream2index];
+          dsband = bldata.datastream2bandindex[j][0];
+          if(dsband >= dsdata.numrecordedbands) //it is a zoom band
+            findex = dsdata.zoomfreqtableindices[dsdata.zoombandlocalfreqindices[dsband-dsdata.numrecordedbands]];
+          else
+            findex = dsdata.recordedfreqtableindices[dsdata.recordedbandlocalfreqindices[dsband]];
+          if(!freqtable[findex].lowersideband)
+          {
+            //ahah! A cross LSB/USB.  Will need to change so the freqindex used is the USB
+            freqtable[f].correlatedagainstupper = true;
+          }
+        }
+      }
+    }
+    if(freqtable[f].correlatedagainstupper) //need to alter all freqindices to be the equivalent USB
+    {
+      //first find the matching USB freq
+      for(int i=0;i<freqtablelength;i++)
+      {
+        if(!freqtable[i].lowersideband && fabs(freqtable[f].bandwidth - freqtable[i].bandwidth) < Mode::TINY && fabs(freqtable[f].bandedgefreq - freqtable[f].bandwidth - freqtable[i].bandedgefreq) < Mode::TINY) //match
+          matchfindex = i;
+      }
+      for(int i=0;i<baselinetablelength;i++)
+      {
+        for(int j=0;j<baselinetable[i].numfreqs;j++)
+        {
+          if(bldata.freqtableindices[j] == f) //this baseline had referred to the LSB - replace with the USB freqindex
+          {
+            bldata.freqtableindices[j] = matchfindex;
+          }
+        }
+      }
     }
   }
   for(int f=0;f<freqtablelength;f++)
@@ -1281,6 +1327,7 @@ bool Configuration::processFreqTable(ifstream * input)
     freqtable[i].bandwidth = atof(line.c_str());
     getinputline(input, &line, "SIDEBAND ", i);
     freqtable[i].lowersideband = ((line == "L") || (line == "l") || (line == "LOWER") || (line == "lower"))?true:false;
+    freqtable[i].correlatedagainstupper = false;
     getinputline(input, &line, "NUM CHANNELS ");
     freqtable[i].numchannels = atoi(line.c_str());
     if(freqtable[i].numchannels > maxnumchannels)
@@ -1958,7 +2005,10 @@ bool Configuration::consistencyCheck()
     ds2 = datastreamtable[baselinetable[i].datastream2index];
     for(int j=0;j<baselinetable[i].numfreqs;j++)
     {
-      freq1index = baselinetable[i].freqtableindices[j];
+      if(baselinetable[i].datastream1bandindex[j][0] >= ds1.numrecordedbands) //zoom band
+        freq1index = ds1.zoomfreqtableindices[ds1.zoombandlocalfreqindices[baselinetable[i].datastream1bandindex[j][0]]-ds1.numrecordedbands];
+      else
+        freq1index = ds1.recordedfreqtableindices[ds1.recordedbandlocalfreqindices[baselinetable[i].datastream1bandindex[j][0]]];
       if(baselinetable[i].datastream2bandindex[j][0] >= ds2.numrecordedbands) //zoom band
         freq2index = ds2.zoomfreqtableindices[ds2.zoombandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]]-ds2.numrecordedbands];
       else
@@ -1997,6 +2047,11 @@ bool Configuration::consistencyCheck()
           else if(freqtable[freq2index].lowersideband && !freqtable[freq1index].lowersideband)
             baselinetable[i].oddlsbfreqs[j] = 2;
         }
+      }
+      //catch the case of LSB against LSB where there is a USB somewhere
+      else if(freqtable[freq1index].lowersideband && freqtable[freqindex].correlatedagainstupper)
+      {
+        baselinetable[i].oddlsbfreqs[j] = 3; //both are lower, but still need to be shifted
       }
       for(int k=0;k<baselinetable[i].numpolproducts[j];k++)
       {
