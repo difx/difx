@@ -131,7 +131,6 @@ static int writeDatastreamTable(FILE *out, const DifxInput *D)
 
 static int writeBaselineTable(FILE *out, const DifxInput *D)
 {
-
 	fprintf(out, "# BASELINE TABLE ###!\n");
 	writeDifxBaselineArray(out, D->nBaseline, D->baseline);
 	fprintf(out, "\n");
@@ -141,19 +140,19 @@ static int writeBaselineTable(FILE *out, const DifxInput *D)
 
 static int writeNetworkTable(FILE *out, const DifxInput *D)
 {
-        const DifxAntenna *da;
-        int a;
+        const DifxDatastream *ds;
+        int i;
 
         /* first determine if we need such a table */
-        for(a = 0; a < D->nAntenna; a++)
+        for(i = 0; i < D->nDatastream; i++)
         {
-                da = D->antenna + a;
-                if(da->windowSize != 0)
-                {
-                        break;
-                }
+                ds = D->datastream + i;
+		if(ds->dataSource == DataSourceNetwork)
+		{
+			break;
+		}
         }
-        if(a == D->nAntenna)
+        if(i == D->nDatastream)
         {
                 /* no network table needed */
                 return 0;
@@ -161,11 +160,11 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
 
         fprintf(out, "# NETWORK TABLE ####!\n");
 
-        for(a = 0; a < D->nAntenna; a++)
+        for(i = 0; i < D->nDatastream; i++)
         {
-                da = D->antenna + a;
-                writeDifxLineInt1(out, "PORT NUM %d", a, da->networkPort);
-                writeDifxLineInt1(out, "TCP WINDOW (KB) %d", a, da->windowSize);
+                ds = D->datastream + i;
+                writeDifxLineInt1(out, "PORT NUM %d", i, ds->networkPort);
+                writeDifxLineInt1(out, "TCP WINDOW (KB) %d", i, ds->windowSize);
         }
 
         fprintf(out, "\n");
@@ -176,64 +175,32 @@ static int writeNetworkTable(FILE *out, const DifxInput *D)
 static int writeDataTable(FILE *out, const DifxInput *D)
 {
 	int i, j;
- 	const DifxAntenna *da;
-	int type;	/* 0=None 1=VSN 2=Files */
+	const DifxDatastream *ds;
 
 	fprintf(out, "# DATA TABLE #######!\n");
 
-	for(i = 0; i < D->nAntenna; i++)
+	for(i = 0; i < D->nDatastream; i++)
 	{
-		if(D->datastream[i].antennaId >= 0)
+		ds = D->datastream + i;
+
+		if(ds->nFile > 0)
 		{
-			da = D->antenna + D->datastream[i].antennaId;
-			
-			type = 0;
-			if(strcmp(da->vsn, "File") == 0)
+			if(ds->file == 0)
 			{
-				type = 2;
+				fprintf(stderr, "Error: difxio:writeDataTable ds->file = 0\n");
+				return -1;
 			}
-			else if(strlen(da->vsn) == 8)
+			writeDifxLineInt1(out, "D/STREAM %d FILES", i, ds->nFile);
+			for(j = 0; j < ds->nFile; j++)
 			{
-				type = 1;
-			}
-			else if(strcasecmp(da->vsn, "None") == 0)
-			{
-				type = 0;
-			}
-			else if(strlen(da->vsn) < 8 && da->nFile > 0)
-			{
-				type = 2;
-			}
-
-
-			if(type == 1)
-			{
-				writeDifxLineInt1(out, "D/STREAM %d FILES", i, 1);
-				writeDifxLine1(out, "FILE %d/0", i, da->vsn);
-			}
-			else if(type == 2)
-			{
-				if(da->file == 0)
+				if(ds->file[j])
 				{
-					fprintf(stderr, "Error: difxio:writeDataTable da->file = 0\n");
-					return -1;
+					writeDifxLine2(out, "FILE %d/%d", i, j, ds->file[j]);
 				}
-				writeDifxLineInt1(out, "D/STREAM %d FILES", i, da->nFile);
-				for(j = 0; j < da->nFile; j++)
+				else
 				{
-					if(da->file[j])
-					{
-						writeDifxLine2(out, "FILE %d/%d", i, j, da->file[j]);
-					}
-					else
-					{
-						writeDifxLine2(out, "FILE %d/%d", i, j, "Null");
-					}
+					writeDifxLine2(out, "FILE %d/%d", i, j, "Null");
 				}
-			}
-			else
-			{
-				writeDifxLineInt1(out, "D/STREAM %d FILES", i, 0);
 			}
 		}
 		else

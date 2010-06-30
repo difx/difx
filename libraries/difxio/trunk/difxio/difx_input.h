@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,12 +33,14 @@
 #define DIFX_SESSION_LEN	4
 #define MAX_MODEL_ORDER		5
 #define MAX_PHS_CENTRES		1000
+#define DIFXIO_FILENAME_LENGTH	256
 
 #include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 
 /* Notes about antenna numbering
@@ -62,6 +64,19 @@ enum AberCorr
 };
 
 extern const char aberCorrStrings[][16];
+
+/* keep this current with datastreamTypeNames in difx_datastream.c */
+enum DataSource
+{
+	DataSourceNone = 0,
+	DataSourceModule,
+	DataSourceFile,
+	DataSourceNetwork,
+	DataSourceSHM,		/* for future use */
+	NumDataSources		/* must remain last entry */
+};
+
+extern const char dataSourceNames[][16];
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -87,7 +102,7 @@ typedef struct
 
 typedef struct
 {
-	char fileName[256];	/* filename containing polyco data */
+	char fileName[DIFXIO_FILENAME_LENGTH];	/* filename containing polyco data */
 	double dm;		/* pc/cm^3 */
 	double refFreq;		/* MHz */
 	double mjd;		/* center time for first polynomial */
@@ -99,7 +114,7 @@ typedef struct
 
 typedef struct
 {
-	char fileName[256];	/* pulsar config filename */
+	char fileName[DIFXIO_FILENAME_LENGTH];	/* pulsar config filename */
 	int nPolyco;		/* number of polyco structures in file */
 	DifxPolyco *polyco;	/* individual polyco file contents */
 	int nBin;		/* number of pulsar bins */
@@ -110,7 +125,7 @@ typedef struct
 
 typedef struct
 {
-	char fileName[256];	/* Phased array config filename */
+	char fileName[DIFXIO_FILENAME_LENGTH];	/* Phased array config filename */
 	char outputType[32];	/* FILTERBANK or TIMESERIES */
 	char outputFormat[32];	/* DIFX or VDIF */
 	double accTime;		/* Accumulation time in ns for phased array output */
@@ -174,9 +189,13 @@ typedef struct
 	int antennaId;		/* index to D->antenna */
 	float tSys;		/* 0.0 for VLBA DiFX */
 	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
+	int nFile;              /* number of files */
+        char **file;            /* list of files to correlate (if not VSN) */
+	int networkPort;        /* eVLBI port for this datastream */
+	int windowSize;         /* eVLBI TCP window size */
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
-	char dataSource[32];	/* MODULE, FILE, NET, other? */
+	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
 	int phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone */
 	int nRecFreq;		/* num freqs from this datastream */
 	int nRecBand;		/* number of base band channels recorded */
@@ -217,13 +236,8 @@ typedef struct
 	double offset[3];	/* axis offset, (m) */
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
-	char vsn[12];		/* vsn for module */
-	char shelf[20];		/* shelf location of module */
 	int spacecraftId;	/* -1 if not a spacecraft */
-	int nFile;              /* number of files */
-        char **file;            /* list of files to correlate (if not VSN) */
-	int networkPort;        /* eVLBI port for this datastream */
-	int windowSize;         /* eVLBI TCP window size */
+	char shelf[20];		/* shelf location of module -- really this should not be here! */
 } DifxAntenna;
 
 typedef struct
@@ -336,7 +350,7 @@ typedef struct
 	char calcServer[32];	/* name of calc server */
 	int calcVersion;	/* version number of calc server */
 	int calcProgram;	/* RPC program id of calc server */
-	char fileBase[256];	/* base filename for this job table */
+	char fileBase[DIFXIO_FILENAME_LENGTH];	/* base filename for this job table */
 	int activeDatastreams;
 	int activeBaselines;
 	int polyOrder;		/* polynomial model order */
@@ -392,6 +406,9 @@ typedef struct
 	DifxSpacecraft	*spacecraft;	/* optional table */
 	DifxPulsar	*pulsar;	/* optional table */
 	DifxPhasedArray	*phasedarray;	/* optional table */
+
+	/* Filenames */
+	char threadsFile[DIFXIO_FILENAME_LENGTH];	/* name of .threads file */
 } DifxInput;
 
 /* DifxJob functions */
@@ -419,7 +436,6 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 /* DifxAntenna functions */
 DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna);
-void allocateDifxAntennaFiles(DifxAntenna *da, int nFile);
 void printDifxAntenna(const DifxAntenna *da);
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);
 void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da);
@@ -433,7 +449,9 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
         int doMount, int doOffset, int doCoords, int doClock, int doShelf);
 
 /* DifxDatastream functions */
+enum DataSource stringToDataSource(const char *str);
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
+void DifxDatastreamAllocFiles(DifxDatastream *ds, int nFile);
 void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nReqFreq);
 void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
 void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq);

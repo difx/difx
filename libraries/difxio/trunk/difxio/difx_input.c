@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1113,9 +1113,13 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			fprintf(stderr, "Cannot determine data source\n");
 			return 0;
 		}
-		strncpy(D->datastream[e].dataSource, 
-			DifxParametersvalue(ip, r), 31);
-		D->datastream[e].dataSource[31] = 0;
+		D->datastream[e].dataSource = stringToDataSource( DifxParametersvalue(ip, r) );
+		if(D->datastream[e].dataSource == NumDataSources)
+		{
+			fprintf(stderr, "Error: DATA SOURCE was %s and is not supported\n",
+				DifxParametersvalue(ip, r) );
+			return 0;
+		}
 		r = DifxParametersfind(ip, r+1, "PHASE CAL INT (MHZ)");
 		if(r < 0)
 		{
@@ -1345,58 +1349,43 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 static DifxInput *parseDifxInputDataTable(DifxInput *D, 
 	const DifxParameters *ip)
 {
-	int a, i, N;
-	int r = 1;
-	const char *value;
-	DifxAntenna *da;
-	 
-  	if(!D || !ip)
- 	{
-		return 0;
- 	}
+	DifxDatastream *ds;
+	int i, j, r, N;
 
-	for(a = 0; a < D->nAntenna; a++)
+	if(!D || !ip)
 	{
-		da = D->antenna + a;
-		strcpy(da->vsn, "none");
-		r = DifxParametersfind1(ip, r, "D/STREAM %d FILES", a);
+		return 0;
+	}
+
+	r = 1;
+	for(j = 0; j < D->nAntenna; j++)
+	{
+		ds = D->datastream + j;
+		r = DifxParametersfind1(ip, r, "D/STREAM %d FILES", j);
 		if(r < 0)
 		{
-			fprintf(stderr, "D/STREAM %d FILES not found\n", a);
+			fprintf(stderr, "D/STREAM %d FILES not found\n", j);
 			return 0;
 		}
 		N = atoi(DifxParametersvalue(ip, r));
-		if(N < 1)
+		if(N < 0)
 		{
-			fprintf(stderr, "D/STREAM %d FILES has illegal value [%s]\n", a,
+			fprintf(stderr, "D/STREAM %d FILES has illegal value [%s]\n", j,
 				DifxParametersvalue(ip, r));
 			return 0;
 		}
-		if(N > 1)
+		if(N > 0)
 		{
-			allocateDifxAntennaFiles(da, N);
-		}
-		for(i = 0; i < N; i++)
-		{
-			r = DifxParametersfind2(ip, r, "FILE %d/%d", a, i);
-			if(r < 0)
- 			{
-				fprintf(stderr, "FILE %d/%d not found\n", a, i);
-				return 0;
- 			}
-			value = DifxParametersvalue(ip, r);
-			if(N == 1 && strlen(value) == 8 && value[0] != '/')
+			DifxDatastreamAllocFiles(ds, N);
+			for(i = 0; i < N; i++)
 			{
-				strncpy(da->vsn, value, 8);
-				da->vsn[8] = 0;
-			}
-			else
-			{
-				if(N == 1)
+				r = DifxParametersfind2(ip, r, "FILE %d/%d", j, i);
+				if(r < 0)
 				{
-					allocateDifxAntennaFiles(da, 1);
+					fprintf(stderr, "FILE %d/%d not found\n", j, i);
+					return 0;
 				}
-				da->file[i] = strdup(value);
+				ds->file[i] = strdup( DifxParametersvalue(ip, r) );
 			}
 		}
  	}
@@ -1407,29 +1396,29 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
         const DifxParameters *ip)
 {
-        int a;
-        int r;
-        DifxAntenna *da;
+        DifxDatastream *ds;
+        int i, r;
 
-        if(!D || !ip)
+	if(!D || !ip)
+	{
+		return 0;
+	}
+
+	r = 1;
+        for(i = 0; i < D->nDatastream; i++)
         {
-                return 0;
-        }
+                ds = D->datastream + i;
 
-        for(a = 0; a < D->nAntenna; a++)
-        {
-                da = D->antenna + a;
-
-                r = DifxParametersfind1(ip, 1, "PORT NUM %d", a);
+                r = DifxParametersfind1(ip, r, "PORT NUM %d", i);
                 if(r > 0)
                 {
-                        D->antenna[a].networkPort = atoi(DifxParametersvalue(ip, r));
+                        ds->networkPort = atoi(DifxParametersvalue(ip, r));
                 }
 
-                r = DifxParametersfind1(ip, 1, "TCP WINDOW (KB) %d", a);
+                r = DifxParametersfind1(ip, r, "TCP WINDOW (KB) %d", i);
                 if(r > 0)
                 {
-                        D->antenna[a].windowSize = atoi(DifxParametersvalue(ip, r));
+                        ds->windowSize = atoi(DifxParametersvalue(ip, r));
                 }
         }
 
@@ -2501,7 +2490,7 @@ static DifxInput *setFitsSourceIds(DifxInput *D)
 
 static DifxInput *deriveFitsSourceIds(DifxInput *D)
 {
-	int a, i, j, match, n=0, ci, cj, k, l;
+	int a, i, j, match, n=0, k, l;
 	int *fs;
 	int *fc;
 

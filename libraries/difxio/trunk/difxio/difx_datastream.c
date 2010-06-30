@@ -32,6 +32,30 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
+const char dataSourceNames[][16] = 
+{
+	"NONE",
+	"MODULE",
+	"FILE",
+	"NETWORK",
+	"SHM",
+	"ERROR"		/* takes place of NumDatastreamTypes */
+};
+
+enum DataSource stringToDataSource(const char *str)
+{
+	enum DataSource type;
+
+	for(type = 0; type < NumDataSources; type++)
+	{
+		if(strcasecmp(str, dataSourceNames[type]) == 0)
+		{
+			break;
+		}
+	}
+
+	return type;	/* value = NumDataSources impies error */
+}
 
 DifxDatastream *newDifxDatastreamArray(int nDatastream)
 {
@@ -40,6 +64,34 @@ DifxDatastream *newDifxDatastreamArray(int nDatastream)
 	dd = (DifxDatastream *)calloc(nDatastream, sizeof(DifxDatastream));
 
 	return dd;
+}
+
+void DifxDatastreamAllocFiles(DifxDatastream *ds, int nFile)
+{
+	int i;
+
+	if(ds->file)
+	{
+		for(i = 0; i < ds->nFile; i++)
+		{
+			if(ds->file[i])
+			{
+				free(ds->file[i]);
+				ds->file[i] = 0;
+			}
+		}
+		free(ds->file);
+	}
+	
+	ds->nFile = nFile;
+	if(nFile == 0)
+	{
+		ds->file = 0;
+	}
+	else
+	{
+		ds->file = (char **)calloc(nFile, sizeof(char *));
+	}
 }
 
 void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
@@ -186,6 +238,9 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd)
 		free(dd->zoomBandPolName);
 		dd->zoomBandPolName = 0;
 	}
+
+	/* allocating zero files is equivalent to deleting any existing ones */
+	DifxDatastreamAllocFiles(dd, 0);
 }
 
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream)
@@ -207,6 +262,26 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	int f;
 	fprintf(fp, "  Difx Datastream Entry[antennaId=%d] : %p\n", 
 		dd->antennaId, dd);
+	fprintf(fp, "    data source = %s\n", dataSourceNames[dd->dataSource]);
+	if(dd->nFile > 0)
+	{
+		for(f = 0; f < dd->nFile; f++)
+		{
+			if(dd->file[f])
+			{
+				fprintf(fp, "      file %d = %s\n", f, dd->file[f]);
+			}
+			else
+			{
+				fprintf(fp, "      file %d = <null>\n", f);
+			}
+		}
+	}
+	if(dd->dataSource == DataSourceNetwork)
+	{
+		fprintf(fp, "      network port = %d\n", dd->networkPort);
+		fprintf(fp, "      window size = %d\n", dd->windowSize);
+	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
 	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
@@ -316,6 +391,10 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 			return 0;
 		}
 	}
+	if(dd1->dataSource != dd2->dataSource)
+	{
+		return 0;
+	}
 
 	return 1;
 }
@@ -375,6 +454,16 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 		dest->zoomBandFreqId[c]  = src->zoomBandFreqId[c];
 		dest->zoomBandPolName[c] = src->zoomBandPolName[c];
 	}
+	if(src->nFile > 0)
+	{
+		DifxDatastreamAllocFiles(dest, src->nFile);
+		for(f = 0; f < src->nFile; f++)
+		{
+			dest->file[f] = strdup(src->file[f]);
+		}
+	}
+	dest->networkPort = src->networkPort;
+	dest->windowSize  = src->windowSize;
 }
 
 /* don't re-allocate internal structures */
@@ -560,7 +649,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
-	writeDifxLine(out, "DATA SOURCE", dd->dataSource);
+	writeDifxLine(out, "DATA SOURCE", dataSourceNames[dd->dataSource]);
 	writeDifxLine(out, "FILTERBANK USED", "FALSE");
 	writeDifxLineInt(out, "PHASE CAL INT (MHZ)", dd->phaseCalIntervalMHz);
 	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);

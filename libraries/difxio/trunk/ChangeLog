@@ -24,6 +24,7 @@
 * Print all spacecraft entries, not just for the first spacecraft
 * Prevent merging of jobs that have incompatible clocks
 * Change to polynomial-based clock model (up to 5th order)
+* Move all data source information to DifxDatastream where it should be
 
 2.11
 * Post DiFX-1.5

@@ -53,52 +53,9 @@ DifxAntenna *newDifxAntennaArray(int nAntenna)
 	return da;
 }
 
-void allocateDifxAntennaFiles(DifxAntenna *da, int nFile)
-{
-	int i;
-
-	if(da->file)
-	{
-		for(i = 0; i < da->nFile; i++)
-		{
-			if(da->file[i])
-			{
-				free(da->file[i]);
-				da->file[i] = 0;
-			}
-		}
-		free(da->file);
-		da->file = 0;
-	}
-	
-	da->nFile = nFile;
-	da->file = (char **)calloc(nFile, sizeof(char *));
-}
-
 void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna)
 {
-	int a, i;
-
-	if(da)
-	{
-		for(a = 0; a < nAntenna; a++)
-		{
-			if(da[a].nFile > 0)
-			{
-				for(i = 0; i < da[a].nFile; i++)
-				{
-					if(da[a].file[i])
-					{
-						free(da[a].file[i]);
-						da[a].file[i] = 0;
-					}
-				}
-				free(da[a].file);
-				da[a].file = 0;
-			}
-		}
-		free(da);
-	}
+	free(da);
 }
 
 void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
@@ -116,8 +73,6 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	fprintf(fp, "    nFile = %d\n", da->nFile);
-	fprintf(fp, "    VSN = %s\n", da->vsn);
 	fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
 }
 
@@ -135,8 +90,6 @@ void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
-	fprintf(fp, "    nFile = %d\n", da->nFile);
-	fprintf(fp, "    VSN = %s\n", da->vsn);
 	if(da->spacecraftId >= 0)
 	{
 		fprintf(fp, "    SpacecraftId = %d\n", da->spacecraftId);
@@ -219,17 +172,6 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	dest->dX = src->dX;
 	dest->dY = src->dY;
 	dest->dZ = src->dZ;
-	dest->networkPort = src->networkPort;
-	dest->windowSize  = src->windowSize;
-	strcpy(dest->vsn, src->vsn);
-	if(src->nFile > 0)
-	{
-		allocateDifxAntennaFiles(dest, src->nFile);
-		for(i = 0; i < src->nFile; i++)
-		{
-			dest->file[i] = strdup(src->file[i]);
-		}
-	}
 }
 
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
