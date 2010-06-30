@@ -28,6 +28,7 @@ Version 2.0
 * Check for sources with illegal names
 * Improved function/variable naming to indicate explicitly where some def names are used
 * Vex loading error messages are slightly more useful
+* Adapt to difxio changes where data source info was moved from antenna into datastream
 
 Version 0.3
 ~~~~~~~~~~~

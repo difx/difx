@@ -420,41 +420,11 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	antList.clear();
 
 	A = newDifxAntennaArray(*n);
+
 	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
 	{
 		ant = V->getAntenna(a->first);
 		strcpy(A[i].name, a->first.c_str());
-		int nFile = ant->basebandFiles.size();
-		if(nFile > 0)
-		{
-			int count = 0;
-
-			for(int j = 0; j < nFile; j++)
-			{
-				if(J.overlap(ant->basebandFiles[j]) > 0.0)
-				{
-					count++;
-				}
-			}
-
-			allocateDifxAntennaFiles(A+i, count);
-
-			count = 0;
-
-			for(int j = 0; j < nFile; j++)
-			{
-				if(J.overlap(ant->basebandFiles[j]) > 0.0)
-				{
-					A[i].file[count] = 
-						strdup(ant->basebandFiles[j].filename.c_str());
-					count++;
-				}
-			}
-		}
-		else
-		{
-			strcpy(A[i].vsn, a->second.c_str());
-		}
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
@@ -493,8 +463,6 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 			{
 				strcpy(A[i].name, antSetup->difxName.c_str());
 			}
-			A[i].networkPort = antSetup->networkPort;
-			A[i].windowSize  = antSetup->windowSize;
 			A[i].clockcoeff[0] += antSetup->deltaClock*1.0e6;	// convert to us from sec
 			A[i].clockcoeff[1] += antSetup->deltaClockRate*1.0e6;	// convert to us/sec from sec/sec
 			A[i].clockorder  = antSetup->clockorder;
@@ -515,17 +483,75 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	return A;
 }
 
-DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, int nSet, int *n)
+DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, const CorrParams *P, int nSet, int *n)
 {
 	DifxDatastream *D;
+	map<string,string>::const_iterator a;
+	const VexAntenna *ant;
 	int i;
 	
 	*n = J.vsns.size() * nSet;
+	a = J.vsns.begin();
 	D = newDifxDatastreamArray(*n);
 	for(i = 0; i < *n; i++)
 	{
 		D[i].antennaId = i % J.vsns.size();
 		D[i].tSys = 0.0;
+
+		ant = V->getAntenna(a->first);
+		D[i].dataSource = ant->dataSource;
+
+		const AntennaSetup *antennaSetup = P->getAntennaSetup(ant->name);
+		if(antennaSetup)
+		{
+			if(ant->dataSource == DataSourceNetwork)
+			{
+				D[i].windowSize = antennaSetup->windowSize;
+				D[i].networkPort = antennaSetup->networkPort;
+			}
+		}
+
+		int nFile = ant->basebandFiles.size();
+		if(ant->dataSource == DataSourceFile)
+		{
+			int count = 0;
+
+			for(int j = 0; j < nFile; j++)
+			{
+				if(J.overlap(ant->basebandFiles[j]) > 0.0)
+				{
+					count++;
+				}
+			}
+
+			DifxDatastreamAllocFiles(D+i, count);
+
+			count = 0;
+
+			for(int j = 0; j < nFile; j++)
+			{
+				if(J.overlap(ant->basebandFiles[j]) > 0.0)
+				{
+					D[i].file[count] = 
+						strdup(ant->basebandFiles[j].filename.c_str());
+					count++;
+				}
+			}
+		}
+		else if(ant->dataSource == DataSourceModule)
+		{
+			DifxDatastreamAllocFiles(D+i, 1);
+
+			D[i].file[0] = strdup(a->second.c_str());
+		}
+
+		a++;
+		// Keep recycling through...
+		if(a == J.vsns.end())
+		{
+			a = J.vsns.begin();
+		}
+
 	}
 
 	return D;
@@ -695,23 +721,6 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	{
 		cerr << "Error: setFormat: format " << format->format << " not currently supported.  Mode=" << mode->defName << ", ant=" << antName << "." << endl;
 		return 0;
-	}
-
-	strcpy(D->datastream[dsId].dataSource, "MODULE");
-
-	for(int a = 0; a < D->nAntenna; a++)
-	{
-		if(strcmp(D->antenna[a].name, antName.c_str()) == 0)
-		{
-			if(D->antenna[a].networkPort != 0)
-			{
-				strcpy(D->datastream[dsId].dataSource, "NETWORK");
-			}
-			else if(D->antenna[a].nFile > 0)
-			{
-				strcpy(D->datastream[dsId].dataSource, "FILE");
-			}
-		}
 	}
 
 	D->datastream[dsId].quantBits = format->nBit;
@@ -1494,7 +1503,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 
 	// configure datastreams
-	D->datastream = makeDifxDatastreams(J, V, D->nConfig, &(D->nDatastream));
+	D->datastream = makeDifxDatastreams(J, V, P, D->nConfig, &(D->nDatastream));
 	D->nDatastream = 0;
 	for(int c = 0; c < D->nConfig; c++)
 	{
@@ -1634,10 +1643,6 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 								antennaSetup->freqClockOffs.at(i);
 						}
 					}
-				}
-				if(J.getVSN(antName) == "None")
-				{
-					strcpy(D->datastream[D->nDatastream].dataSource, "FILE");
 				}
 				D->config[c].datastreamId[d] = D->nDatastream;
 				D->nDatastream++;

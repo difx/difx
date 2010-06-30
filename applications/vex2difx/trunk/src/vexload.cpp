@@ -225,7 +225,19 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		const AntennaSetup *antennaSetup = params.getAntennaSetup(antName);
 		if(antennaSetup)
 		{
-			A->basebandFiles = antennaSetup->basebandFiles;
+			if(antennaSetup->dataSource != DataSourceNone)
+			{
+				if(antennaSetup->dataSource == DataSourceFile ||
+				   antennaSetup->dataSource == DataSourceModule)
+				{
+					A->basebandFiles = antennaSetup->basebandFiles;
+				}
+				else
+				{
+					A->basebandFiles.clear();
+				}
+				A->dataSource = antennaSetup->dataSource;
+			}
 		}
 		const VexClock *paramClock = params.getAntennaClock(antName);
 		if(paramClock)
@@ -887,7 +899,7 @@ static void fixOhs(string &str)
 	}
 }
 
-static int getVSN(VexData *V, Vex *v, const CorrParams &params, const char *station)
+static int getVSN(VexData *V, Vex *v, const char *station)
 {
 	Vsn *p;
 	llist *block;
@@ -970,7 +982,16 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 		Upper(ant);
 		if(params.useAntenna(ant))
 		{
-			r = getVSN(V, v, params, stn);
+			const AntennaSetup *antennaSetup = params.getAntennaSetup(ant);
+			if(antennaSetup)
+			{
+				// If media is provided via v2d file, don't bother
+				if(antennaSetup->dataSource != DataSourceNone)
+				{
+					continue;
+				}
+			}
+			r = getVSN(V, v, stn);
 		}
 	}
 

@@ -37,6 +37,7 @@
 #include <cctype>
 #include <ctime>
 #include <string.h>
+#include <difxio.h>
 #include "util.h"
 #include "corrparams.h"
 
@@ -710,6 +711,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	networkPort = 0;
 	windowSize = 0;
 	phaseCalIntervalMHz = 0;
+	dataSource = DataSourceNone;
 }
 
 int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomFreq)
@@ -915,24 +917,69 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "file" || key == "files")
 	{
+		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceFile;
 		basebandFiles.push_back(VexBasebandFile(value));
 	}
 	else if(key == "filelist")
 	{
+		if(dataSource != DataSourceFile && dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceFile;
 		loadBasebandFilelist(value, basebandFiles);
 	}
 	else if(key == "networkPort")
 	{
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceNetwork;
 		ss >> networkPort;
 	}
 	else if(key == "windowSize")
 	{
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceNetwork;
 		ss >> windowSize;
 	}
 	else if(key == "UDP_MTU")
 	{
+		if(dataSource != DataSourceNetwork && dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceNetwork] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceNetwork;
 		ss >> windowSize;
 		windowSize = -windowSize;
+	}
+	else if(key == "module" || key == "vsn")
+	{
+		if(dataSource == DataSourceModule)
+		{
+			cerr << "Warning: antenna " << vexName << " has multiple vsns assigned to it.  Only using the last one = " << value << " and discarding " << basebandFiles[0].filename << endl;
+		}
+		else if(dataSource != DataSourceNone)
+		{
+			cerr << "Warning: antenna " << vexName << " had at least two kinds of data sources!: " << dataSourceNames[dataSource] << " and " << dataSourceNames[DataSourceFile] << endl;
+			nWarn++;
+		}
+		dataSource = DataSourceModule;
+		basebandFiles.clear();
+		basebandFiles.push_back(VexBasebandFile(value));
 	}
 	else if(key == "phaseCalInt")
 	{

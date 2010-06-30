@@ -35,6 +35,7 @@
 #include <vector>
 #include <map>
 #include <list>
+#include <difxio.h>
 
 #include "vextables.h"
 
@@ -125,6 +126,7 @@ public:
 	string format;		// Override format from .v2d file.  
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
+	enum DataSource dataSource;
 	vector<VexBasebandFile> basebandFiles;	// files to correlate
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size

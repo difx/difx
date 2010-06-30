@@ -35,6 +35,7 @@
 #include <string>
 #include <iostream>
 #include <map>
+#include <difxio.h>
 
 extern const double RAD2ASEC;
 
@@ -103,7 +104,9 @@ class VexBasebandFile : public VexInterval
 	public:
 	string filename;
 
-	VexBasebandFile(string name, double start=-1.0e9, double stop=1.0e9) :
+	VexBasebandFile(const string &name, const VexInterval &timeRange) : 
+		VexInterval(timeRange), filename(name) {} 
+	VexBasebandFile(const string &name, double start=-1.0e9, double stop=1.0e9) :
 		VexInterval(start, stop), filename(name) {}
 };
 
@@ -220,14 +223,6 @@ public:
 	list<int> overSamp;		// list of the oversample factors used by this mode
 };
 
-class VexVSN : public VexInterval
-{
-public:
-	string name;
-	VexVSN() {}
-	VexVSN(const string &c_name, const VexInterval &timeRange) : VexInterval(timeRange), name(c_name) {} 
-};
-
 class VexClock
 {
 public:
@@ -247,7 +242,7 @@ public:
 class VexAntenna
 {
 public:
-	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0) {}
+	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0), dataSource(DataSourceNone) {}
 
 	double getVexClocks(double mjd, double * coeffs) const;
 
@@ -260,8 +255,8 @@ public:
 	string axisType;
 	double axisOffset;	// (m)
 	vector<VexClock> clocks;
-	vector<VexVSN> vsns;
 	vector<VexBasebandFile> basebandFiles;
+	enum DataSource	dataSource;
 };
 
 class VexEOP
@@ -422,7 +417,6 @@ ostream& operator << (ostream &os, const VexSetup &x);
 ostream& operator << (ostream &os, const VexMode &x);
 ostream& operator << (ostream &os, const VexEOP &x);
 ostream& operator << (ostream &os, const VexBasebandFile &x);
-ostream& operator << (ostream &os, const VexVSN &x);
 ostream& operator << (ostream &os, const VexClock &x);
 ostream& operator << (ostream &os, const VexJob &x);
 ostream& operator << (ostream &os, const VexJobGroup &x);

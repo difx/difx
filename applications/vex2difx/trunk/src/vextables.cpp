@@ -367,11 +367,21 @@ int VexData::sanityCheck()
 
         for(vector<VexAntenna>::const_iterator it = antennas.begin(); it != antennas.end(); it++)
         {
-                if(it->vsns.size() == 0 && it->basebandFiles.size() == 0)
-                {
-                        cerr << "Warning: no media specified for antenna " << it->name << " ." << endl;
-                        nWarn++;
-                }
+		if(it->dataSource == DataSourceFile && it->basebandFiles.size() == 0)
+		{
+			cerr << "Warning: file based correlation desired but no files provided for antenna " << it->name << " ." << endl;
+			nWarn++;
+		}
+		if(it->dataSource == DataSourceModule && it->basebandFiles.size() == 0)
+		{
+			cerr << "Warning: module based correlation desired but no media specified for antenna " << it->name << " ." << endl;
+			nWarn++;
+		}
+		if(it->dataSource == DataSourceNone)
+		{
+			cerr << "Warning: data source is NONE for antenna " << it->name << " ." << endl;
+			nWarn++;
+		}
         }
 
         return nWarn;
@@ -480,10 +490,17 @@ void VexJob::assignVSNs(const VexData &V)
 	
 	for(i = antennas.begin(); i != antennas.end(); i++)
 	{
-		const string &vsn = V.getVSN(*i, *this);
-		if(vsn != "None")
+		if(V.getAntenna(*i)->dataSource != DataSourceModule)
 		{
-			vsns[*i] = vsn;
+			vsns[*i] = "None";
+		}
+		else
+		{
+			const string &vsn = V.getVSN(*i, *this);
+			if(vsn != "None")
+			{
+				vsns[*i] = vsn;
+			}
 		}
 	}
 }
@@ -1225,7 +1242,8 @@ void VexData::addVSN(const string &antName, const string &vsn, const VexInterval
 	{
 		if(antennas[i].name == antName)
 		{
-			antennas[i].vsns.push_back(VexVSN(vsn, timeRange));
+			antennas[i].basebandFiles.push_back(VexBasebandFile(vsn, timeRange));
+			antennas[i].dataSource = DataSourceModule;
 		}
 	}
 }
@@ -1233,7 +1251,7 @@ void VexData::addVSN(const string &antName, const string &vsn, const VexInterval
 string VexData::getVSN(const string &antName, const VexInterval &timeRange) const
 {
 	const VexAntenna *A;
-	vector<VexVSN>::const_iterator v;
+	vector<VexBasebandFile>::const_iterator v;
 	double best = 0.0;
 	string bestVSN("None");
 
@@ -1243,13 +1261,18 @@ string VexData::getVSN(const string &antName, const VexInterval &timeRange) cons
 		return bestVSN;
 	}
 
-	for(v = A->vsns.begin(); v != A->vsns.end(); v++)
+	if(A->dataSource != DataSourceModule)
+	{
+		return bestVSN;
+	}
+
+	for(v = A->basebandFiles.begin(); v != A->basebandFiles.end(); v++)
 	{
 		double timeOverlap = timeRange.overlap(*v);
 		if(timeOverlap > best)
 		{
 			best = timeOverlap;
-			bestVSN = v->name;
+			bestVSN = v->filename;
 		}
 	}
 
@@ -1411,21 +1434,23 @@ ostream& operator << (ostream &os, const VexClock &x)
 ostream& operator << (ostream &os, const VexAntenna &x)
 {
 	os << "Antenna " << x.name <<
-		"\n   x=" << x.x << "  dx/dt=" << x.dx <<
-		"\n   y=" << x.y << "  dy/dt=" << x.dy <<
-		"\n   z=" << x.z << "  dz/dt=" << x.dz <<
-		"\n   posEpoch=" << x.posEpoch <<
-		"\n   axisType=" << x.axisType <<
-		"\n   axisOffset=" << x.axisOffset << endl;
+		"\n  x=" << x.x << "  dx/dt=" << x.dx <<
+		"\n  y=" << x.y << "  dy/dt=" << x.dy <<
+		"\n  z=" << x.z << "  dz/dt=" << x.dz <<
+		"\n  posEpoch=" << x.posEpoch <<
+		"\n  axisType=" << x.axisType <<
+		"\n  axisOffset=" << x.axisOffset << endl;
 
-	for(vector<VexVSN>::const_iterator it = x.vsns.begin(); it != x.vsns.end(); it++)
+	os << "  dataSource=" << dataSourceNames[x.dataSource] << endl;
+
+	for(vector<VexBasebandFile>::const_iterator it = x.basebandFiles.begin(); it != x.basebandFiles.end(); it++)
 	{
-		os << "   " << *it << endl;
+		os << "  " << *it << endl;
 	}
 
 	for(vector<VexClock>::const_iterator it = x.clocks.begin(); it != x.clocks.end(); it++)
 	{
-		os << "   " << *it << endl;
+		os << "  " << *it << endl;
 	}
 
 	return os;
@@ -1506,13 +1531,6 @@ ostream& operator << (ostream &os, const VexEOP &x)
 ostream& operator << (ostream &os, const VexBasebandFile &x)
 {
 	os << "Baseband(" << x.filename << ", " << (const VexInterval&)x << ")";
-
-	return os;
-}
-
-ostream& operator << (ostream &os, const VexVSN &x)
-{
-	os << "VSN(" << x.name << ", " << (const VexInterval&)x << ")";
 
 	return os;
 }
