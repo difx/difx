@@ -63,7 +63,7 @@ static char swapPolarization(char pol)
 	}
 }
 
-static int getRecordChannel(const string chanName, const map<string,Tracks> &ch2tracks, const VexFormat &F, unsigned int n)
+static int getRecordChannel(const string &antName, const string &chanName, const map<string,Tracks> &ch2tracks, const VexFormat &F, unsigned int n)
 {
 	int delta, track;
 	map<string,Tracks>::const_iterator it;
@@ -119,7 +119,7 @@ static int getRecordChannel(const string chanName, const map<string,Tracks> &ch2
 	}
 	else
 	{
-		cerr << "Error: format " << F.format << " is not yet supported" << endl;
+		cerr << "Error: Antenna=" << antName << " format " << F.format << " is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
 		exit(0);
 	}
@@ -499,7 +499,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		const VexSource *src = V->getSourceByDefName(sourceDefName);
 		if(src == 0)
 		{
-			cerr << "Developer error! src == 0" << endl;
+			cerr << "Developer error! Scan=" << scanDefName << " src == 0" << endl;
 			exit(0);
 		}
 
@@ -512,7 +512,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 
 		if(params.getCorrSetup(corrSetupName) == 0)
 		{
-			cerr << "Error: correlator setup " << corrSetupName << " not defined!" << endl;
+			cerr << "Error: Scan=" << scanDefName << " correlator setup " << corrSetupName << " not defined!" << endl;
 			exit(0);
 		}
 
@@ -754,7 +754,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 							F.format += "1_4"; 
 							break;
 						default: 
-							cerr << "Error: fanout=" << fanout << " not legal for format " << F.format << endl;
+							cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << F.format << ".  This could be a subtle problem in the vex file." << endl;
 							exit(0);
 					}
 				}
@@ -781,7 +781,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				  if(f < 0 || g < 0 || f > g)
 				  {
-					cerr << "Error: malformed S2 mode : " << string(value) << endl;
+					cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
 					exit(0);
 				  }
 
@@ -817,7 +817,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcname]);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
-				recChanId = getRecordChannel(value, ch2tracks, F, i);
+				recChanId = getRecordChannel(antName, value, ch2tracks, F, i);
 				if(recChanId >= 0)
 				{
 					F.channels.push_back(VexChannel());
@@ -837,7 +837,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			  if (F.nRecordChan==0) {
 			    F.nRecordChan = i;
 			  } else {
-				cerr << "Warning: nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
+				cerr << "Warning: Antenna=" << antName << " nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
 			  }
 			}
 		}
@@ -849,7 +849,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				if(params.overSamp > overSamp)
 				{
-					cerr << "Warning: Mode " << M->defName << " subband " << M->overSamp.size() << 
+					cerr << "Warning: Mode=" << M->defName << " subband=" << M->overSamp.size() << 
 						": requested oversample factor " << params.overSamp << 
 						" is greater than the observed oversample factor " << overSamp << endl;
 					nWarn++;
