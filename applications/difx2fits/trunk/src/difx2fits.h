@@ -47,6 +47,8 @@ struct CommandLineOptions
 	int pretend;
 	double scale;
 	int verbose;
+	int sniffAllPhaseCentres;
+	int sniffAllBins;
 	/* some overrides */
 	int specAvg;
 	int doalldifx;

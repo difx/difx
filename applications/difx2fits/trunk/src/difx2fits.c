@@ -113,6 +113,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -k                  Keep antenna order\n");
 	fprintf(stderr, "\n");
 #ifdef HAVE_FFTW
+	fprintf(stderr, "  --sniff-all\n");
+	fprintf(stderr, "  -S                  Sniff all bins and centers\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --dont-sniff\n");
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
 	fprintf(stderr, "\n");
@@ -194,11 +197,19 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				opts->verbose++;
 			}
+#ifdef HAVE_FFTW
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
 				strcmp(argv[i], "-x") == 0)
 			{
 				opts->sniffTime = -1.0;
 			}
+			else if(strcmp(argv[i], "--sniff-all") == 0 ||
+				strcmp(argv[i], "-S") == 0)
+			{
+				opts->sniffAllBins = 1;
+				opts->sniffAllPhaseCentres = 1;
+			}
+#endif
 			else if(strcmp(argv[i], "--dont-combine") == 0 ||
 			        strcmp(argv[i], "-1") == 0)
 			{

@@ -19,6 +19,7 @@ Version 3.0
 * Don't fail to set proper .jobmatrix filename when not running sniffer
 * Properly index config table in fitsGM.c
 * makefits: pass --override-version on to difx2fits
+* by default produce sniffer output only for bin=0 phasecentre=0
 
 
 Version 2.5

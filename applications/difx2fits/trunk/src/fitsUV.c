@@ -424,6 +424,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		}
                 v = fread(&(sync), sizeof(int), 1, dv->in);
 	}
+
+	/* The following multi-character constant is legit. */
 	if(sync == 'BASE') //old style ascii header
 	{
 		line[0] = 'B';
@@ -1083,12 +1085,14 @@ static int DifxVisConvert(const DifxInput *D,
 	}
 
 	/* Start up sniffer */
-	if(opts->sniffTime > 0.0)
-	{
 #ifdef HAVE_FFTW
+	if( (opts->pulsarBin == 0 || opts->sniffAllBins) &&
+	    (opts->phaseCentre == 0 || opts->sniffAllPhaseCentres) &&
+	    opts->sniffTime > 0.0 )
+	{
 		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
-#endif
 	}
+#endif
 
 	/* Start up jobmatrix */
 	if(opts->jobMatrixDeltaT > 0)
@@ -1211,7 +1215,10 @@ static int DifxVisConvert(const DifxInput *D,
 		else
 		{
 #ifdef HAVE_FFTW
-			feedSnifferFITS(S, dv->record);
+			if(S)
+			{
+				feedSnifferFITS(S, dv->record);
+			}
 #endif
 			if(dv->record->baseline % 257 == 0)
 			{
@@ -1240,7 +1247,10 @@ static int DifxVisConvert(const DifxInput *D,
 					"DifxVisCollectRandomParams : "
 					"return value = %d\n", v);
 #ifdef HAVE_FFTW
-				deleteSniffer(S);
+				if(S)
+				{
+					deleteSniffer(S);
+				}
 #endif
 				return -3;
 			}
@@ -1263,7 +1273,10 @@ static int DifxVisConvert(const DifxInput *D,
 	free(dvs);
 
 #ifdef HAVE_FFTW
-	deleteSniffer(S);
+	if(S)
+	{
+		deleteSniffer(S);
+	}
 #endif
 	if(jobMatrix)
 	{
