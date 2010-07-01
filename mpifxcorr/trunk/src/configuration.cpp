@@ -1030,12 +1030,12 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].source = UNIXFILE;
     else if(line == "MODULE")
       datastreamtable[i].source = MK5MODULE;
-    else if(line == "EVLBI")
-      datastreamtable[i].source = EVLBI;
+    else if(line == "NETWORK")
+      datastreamtable[i].source = NETWORKSTREAM;
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE and EVLBI)" << endl;
+        cfatal << startl << "Unknown data source " << line << " (case sensitive choices are FILE, MODULE and NETWORK)" << endl;
       return false;
     }
     getinputline(input, &line, "FILTERBANK USED");
