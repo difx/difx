@@ -325,6 +325,13 @@ typedef struct
 	char _xml_string[1024];
 } DifxMessageGeneric;
 
+/* Standard message "types" for STA and LTA data */
+#define STA_AUTOCORRELATION  1
+#define STA_CROSSCORRELATION 2
+#define STA_KURTOSIS         3
+#define LTA_AUTOCORRELATION  4
+#define LTA_CROSSCORRELATION 5
+
 /* short term accumulate message type -- antenna-based data (e.g., real) */
 /* Header size made the same as for LTA data */
 typedef struct
