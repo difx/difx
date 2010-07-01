@@ -12,7 +12,8 @@ using namespace std;
 //variables
 const int MAX_CHANNELS=4096;
 static const u32 SYNC = MAX_U32;
-double dumptime, freq, maxy, inttimems;
+double dumptime, freq, inttimems;
+float miny, maxy;
 int dsindex, nchan, bandindex, threadindex, coreindex, nthreads, configindex;
 string pol, antennaname;
 float data[MAX_CHANNELS];
@@ -25,7 +26,7 @@ Model * model;
 
 //prototypes
 bool getData(ifstream * input);
-double getMax(float * data, int length);
+void getMinMax(float * data, int length, float * min, float * max);
 
 int main(int argc, char *argv[])
 {
@@ -50,11 +51,11 @@ int main(int argc, char *argv[])
   //loop through inspecting the data
   while (!input->eof()) {
     if(getData(input)) {
-      maxy = getMax(data, nchan);
-      if(maxy > 0.0) {
+      getMinMax(data, nchan, &miny, &maxy);
+      if(maxy != 0.0 || miny != 0.0) {
         sprintf(title, "Antenna=%s, Freq=%8.2f, Pol=%s, Time=%f, Int time (ms)=%5.2f, CoreID=%i, ThreadID=%i", antennaname.c_str(), freq, pol.c_str(), dumptime, inttimems, coreindex, threadindex);
         cpgpage();
-        cpgenv(0.0, (float)nchan, 0.0, maxy, 0, 1);
+        cpgenv(0.0, (float)nchan, miny, maxy, 0, 1);
         cpglab("Channel number", "Unnormalised amplitude", title);
         cpgline(nchan, xaxis, data);
         usleep(100000);
@@ -66,14 +67,16 @@ int main(int argc, char *argv[])
   }
 }
 
-double getMax(float * data, int length)
+void getMinMax(float * data, int length, float * min, float * max)
 {
-  double max = data[0];
+  *min = data[0];
+  *max = data[0];
   for (int i=1;i<length;i++) {
-    if(data[i] > max)
-      max = data[i];
+    if(data[i] > *max)
+      *max = data[i];
+    if(data[i] < *min)
+      *min = data[i];
   }
-  return max;
 }
 
 bool getData(ifstream * input)

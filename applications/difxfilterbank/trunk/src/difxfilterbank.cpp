@@ -5,16 +5,24 @@ int main(int argc, const char * argv[])
   int perr;
 
   //check for correct invocation
-  if(argc != 3 && argc != 4) {
-    cout << "Error - invoke with difxfilterbank <config file> <output file> [num channels]" << endl;
+  if(argc != 4 && argc != 5) {
+    cout << "Error - invoke with difxfilterbank <config file> <filterbank output file> <kurtosis output file> [num channels]" << endl;
+    cout << "        Set either <output file> to \"none\" if that output is not desired" << endl;
     return EXIT_FAILURE;
   }
 
   //fill in some variables
   configfile = argv[1];
-  outputfile = argv[2];
-  if (argc == 4)
-    numchannelsstring = argv[3];
+  filterbankoutputfile = argv[2];
+  kurtosisoutputfile = argv[3];
+  dofilterbank = true;
+  dokurtosis = true;
+  if(filterbankoutputfile.compare("none") == 0)
+    dofilterbank = false;
+  if(kurtosisoutputfile.compare("none") == 0)
+    dokurtosis = false;
+  if (argc == 5)
+    numchannelsstring = argv[4];
   else
     numchannelsstring = DEFAULT_CHAN_STRING;
   keepwriting = true;
@@ -57,7 +65,10 @@ int main(int argc, const char * argv[])
   //indicating correlation is ready to receive messages, and open outfile
   difxMessageInit(0, identifier.c_str());
   difxMessageInitBinary();
-  output.open(outputfile.c_str(), ios::binary|ios::trunc);
+  if(dofilterbank)
+    fboutput.open(filterbankoutputfile.c_str(), ios::binary|ios::trunc);
+  if(dokurtosis)
+    ktoutput.open(kurtosisoutputfile.c_str(), ios::binary|ios::trunc);
   mainsocket = difxMessageReceiveOpen();
   binarysocket = difxMessageBinaryOpen(BINARY_STA);
   if (mainsocket < 0 || binarysocket < 0) {
@@ -73,7 +84,10 @@ int main(int argc, const char * argv[])
     usleep(10);
 
   //send the message to start the STA dumping
-  difxMessageSendDifxParameter("dumpsta", "true", DIFX_MESSAGE_ALLCORES);
+  if(dofilterbank)
+    difxMessageSendDifxParameter("dumpsta", "true", DIFX_MESSAGE_ALLCORES);
+  if(dokurtosis)
+    difxMessageSendDifxParameter("dumpkurtosis", "true", DIFX_MESSAGE_ALLCORES);
   difxMessageSendDifxParameter("stachannels", numchannelsstring.c_str(), 
 			       DIFX_MESSAGE_ALLCORES);
 
@@ -139,6 +153,7 @@ void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, 
 //setup write thread
 void * launchWriteThread(void * nothing) {
   int perr, writesegment, nextsegment;
+  ofstream * activeoutput;
 
   perr = pthread_mutex_lock(&(locks[BUFFER_LENGTH-1]));
   if(perr != 0)
@@ -159,17 +174,28 @@ void * launchWriteThread(void * nothing) {
       cerr << "Error in writethread trying to unlock segment " << writesegment << endl;
     writesegment = nextsegment;
     nextsegment = (writesegment+1)%BUFFER_LENGTH;
-    //write it out (main thread already filtered out those not belonging to this job)
-    writeDiFXHeader(&output, starecords[writesegment]->dsindex, starecords[writesegment]->scan, 
-                    starecords[writesegment]->sec, starecords[writesegment]->ns, 
-                    starecords[writesegment]->nswidth, starecords[writesegment]->bandindex,
-                    starecords[writesegment]->nChan, starecords[writesegment]->coreindex, 
-                    starecords[writesegment]->threadindex);
-    output.write((char*)starecords[writesegment]->data, 
-                 starecords[writesegment]->nChan*sizeof(float));
+    activeoutput = 0;
+    if(dofilterbank && starecords[writesegment]->messageType == STA_AUTOCORRELATION)
+      activeoutput = &fboutput;
+    if(dokurtosis && starecords[writesegment]->messageType == STA_KURTOSIS)
+      activeoutput = &ktoutput;
+    if(activeoutput != 0)
+    {
+      //write it out (main thread already filtered out those not belonging to this job)
+      writeDiFXHeader(activeoutput, starecords[writesegment]->dsindex, starecords[writesegment]->scan, 
+                      starecords[writesegment]->sec, starecords[writesegment]->ns, 
+                      starecords[writesegment]->nswidth, starecords[writesegment]->bandindex,
+                      starecords[writesegment]->nChan, starecords[writesegment]->coreindex, 
+                      starecords[writesegment]->threadindex);
+      activeoutput->write((char*)starecords[writesegment]->data, 
+                          starecords[writesegment]->nChan*sizeof(float));
+    }
   }
 
-  output.close();
+  if(dofilterbank)
+    fboutput.close();
+  if(dokurtosis)
+    ktoutput.close();
   cout << "Write thread exiting!" << endl;
 }
     
