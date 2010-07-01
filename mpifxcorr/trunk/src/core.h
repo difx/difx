@@ -113,6 +113,8 @@ private:
     f32 * argument;
     f32 ** dsweights;
     DifxMessageSTARecord * starecord;
+    bool dumpsta;
+    bool dumpkurtosis;
   } threadscratchspace;
 
   /// Structure containing a pointer to the current Core and the sequence id of the thread that will be launched, so it knows which part of the time slice to process
@@ -176,6 +178,18 @@ private:
   * @param scratchspace Space for all of the intermediate results for this thread
   */
   void averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace);
+
+ /**
+  * Averages the kurtosis down and sends off as a series of STA dumps down a socket
+  * @param index The index in the circular send/receive buffer to be processed
+  * @param threadid The id of the thread which is doing the processing
+  * @param nsoffset The offset from start of subintegration
+  * @param nswidth The width of the dump in nanoseconds
+  * @param numblocks The number of FFTs that went into this estimation
+  * @param modes The Mode objects which have the unaveraged kurtosis results
+  * @param scratchspace Space for all of the intermediate results for this thread
+  */
+  void averageAndSendKurtosis(int index, int threadid, double nsoffset, double nswidth, int numblocks, Mode ** modes, threadscratchspace * scratchspace);
 
  /**
   * Gets the PCal results from the modes and copies to the coreresults

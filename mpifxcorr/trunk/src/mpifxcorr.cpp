@@ -69,6 +69,8 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
         config->setDumpSTAState((paramvalue == "true") || (paramvalue == "True"));
       else if (paramname == "dumplta")
         config->setDumpLTAState((paramvalue == "true") || (paramvalue == "True"));
+      else if (paramname == "dumpkurtosis")
+        config->setDumpKurtosisState((paramvalue == "true") || (paramvalue == "True"));
       else if (paramname == "stachannels")
         config->setSTADumpChannels(atoi(pmessage->paramValue));
       else if (paramname == "ltachannels")

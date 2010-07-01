@@ -139,7 +139,9 @@
 #define vectorConvert_s32f32(src, dest, length)                             ippsConvert_32s32f(src, dest, length)
 #define vectorConvert_f64f32(src, dest, length)                             ippsConvert_64f32f(src, dest, length)
 
-#define vectorDotProduct_f64(src1, src2, length, output)                    ippsDotProd_64f(src1, src2, length, output);
+#define vectorDivide_f32(src1, src2, dest, length)                          ippsDiv_32f(src1, src2, dest, length)
+
+#define vectorDotProduct_f64(src1, src2, length, output)                    ippsDotProd_64f(src1, src2, length, output)
 
 #define vectorInitFFTR_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_R_32f(fftspec, order, flag, hint)
 #define vectorInitFFTC_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_C_32f(fftspec, order, flag, hint)
@@ -192,6 +194,7 @@
 
 #define vectorSplitScaled_s16f32(src, dest, numchannels, chanlen)           ippsSplitScaled_16s32f_D2L(src, dest, numchannels, chanlen)
 
+#define vectorSquare_f32_I(srcdest, length)                                 ippsSqr_32f_I(srcdest, length)
 #define vectorSquare_f64_I(srcdest, length)                                 ippsSqr_64f_I(srcdest, length)
 
 #define vectorSub_f32_I(src, srcdest, length)                               ippsSub_32f_I(src, srcdest, length)

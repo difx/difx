@@ -267,6 +267,13 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         autocorrelations[i][j+numrecordedbands] = &(autocorrelations[i][config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex)][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)/channelstoaverage]);
       }
     }
+
+    //kurtosis-specific stuff
+    dumpkurtosis = false; //off by default
+    s1 = 0;
+    s2 = 0;
+    sk = 0;
+    kscratch = 0;
   }
 }
 
@@ -371,6 +378,20 @@ Mode::~Mode()
   }
   delete [] weights;
   delete [] autocorrelations;
+
+  if(sk != 0) //also need to delete kurtosis stuff
+  {
+    for(int i=0;i<numrecordedbands;i++)
+    {
+      vectorFree(s1[i]);
+      vectorFree(s2[i]);
+      vectorFree(sk[i]);
+    }
+    delete [] s1;
+    delete [] s2;
+    delete [] sk;
+    vectorFree(kscratch);
+  }
 }
 
 float Mode::unpack(int sampleoffset)
@@ -719,6 +740,25 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
             break;
         }
 
+        if(dumpkurtosis) //do the necessary accumulation
+        {
+          status = vectorMagnitude_cf32(fftoutputs[j][subloopindex], kscratch, recordedbandchannels);
+          if(status != vecNoErr)
+            csevere << startl << "Error taking kurtosis magnitude!" << endl;
+          status = vectorSquare_f32_I(kscratch, recordedbandchannels);
+          if(status != vecNoErr)
+            csevere << startl << "Error in first kurtosis square!" << endl;
+          status = vectorAdd_f32_I(kscratch, s1[j], recordedbandchannels);
+          if(status != vecNoErr)
+            csevere << startl << "Error in kurtosis s1 accumulation!" << endl;
+          status = vectorSquare_f32_I(kscratch, recordedbandchannels);
+          if(status != vecNoErr)
+            csevere << startl << "Error in second kurtosis square!" << endl;
+          status = vectorAdd_f32_I(kscratch, s2[j], recordedbandchannels);
+          if(status != vecNoErr)
+            csevere << startl << "Error in kurtosis s2 accumulation!" << endl;
+        }
+
         //do the frac sample correct (+ phase shifting if applicable, + fringe rotate if its post-f)
         status = vectorMul_cf32_I(fracsamprotator, fftoutputs[j][subloopindex], recordedbandchannels);
         if(status != vecNoErr)
@@ -785,6 +825,58 @@ void Mode::averageFrequency()
   }
 }
 
+void Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
+{
+  int status, kchanavg;
+  bool nonzero;
+
+  for(int i=0;i<numrecordedbands;i++)
+  {
+    nonzero = false;
+    for(int j=0;j<recordedbandchannels;j++)
+    {
+      if(s1[i][j] > 0.0)
+      {
+        nonzero = true;
+        break;
+      }
+    }
+    if(!nonzero)
+      continue;
+    status = vectorSquare_f32_I(s1[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (squaring s1)" << endl;
+    status = vectorMulC_f32_I((f32)numblocks, s2[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (scaling s2)" << endl;
+    status = vectorDivide_f32(s1[i], s2[i], sk[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (s2/s1^2)" << endl;
+    status = vectorAddC_f32_I(-1.0, sk[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (sk - 1)" << endl;
+    status = vectorMulC_f32_I((f32)numblocks/(numblocks - 1.0), sk[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (sk * numblocks/(numblocks-1))" << endl;
+    status = vectorAddC_f32_I(-1.0, sk[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Problem calculating kurtosis (sk - 1)" << endl;
+    if(maxchannels < recordedbandchannels)
+    {
+      kchanavg = recordedbandchannels/maxchannels;
+      status = vectorMulC_f32_I(1.0/((f32)kchanavg), sk[i], recordedbandchannels);
+      if(status != vecNoErr)
+        cerror << startl << "Problem calculating kurtosis (sk average)" << endl;
+      for(int j=0;j<maxchannels;j++)
+      {
+        sk[i][j] = sk[i][j*kchanavg];
+        for(int k=0;k<kchanavg;k++)
+          sk[i][j] += sk[i][j*kchanavg];
+      }
+    }
+  }
+}
+
 void Mode::zeroAutocorrelations()
 {
   int status;
@@ -798,6 +890,35 @@ void Mode::zeroAutocorrelations()
         cerror << startl << "Error trying to zero autocorrelations!" << endl;
       weights[i][j] = 0.0;
     }
+  }
+}
+
+void Mode::zeroKurtosis()
+{
+  int status;
+
+  if(sk == 0)
+  {
+    s1 = new f32*[numrecordedbands];
+    s2 = new f32*[numrecordedbands];
+    sk = new f32*[numrecordedbands];
+    kscratch = vectorAlloc_f32(recordedbandchannels);
+    for(int i=0;i<numrecordedbands;i++)
+    {
+      s1[i] = vectorAlloc_f32(recordedbandchannels);
+      s2[i] = vectorAlloc_f32(recordedbandchannels);
+      sk[i] = vectorAlloc_f32(recordedbandchannels);
+    }
+  }
+
+  for(int i=0;i<numrecordedbands;i++)
+  {
+    status = vectorZero_f32(s1[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Error trying to zero kurtosis!" << endl;
+    status = vectorZero_f32(s2[i], recordedbandchannels);
+    if(status != vecNoErr)
+      cerror << startl << "Error trying to zero kurtosis!" << endl;
   }
 }
 

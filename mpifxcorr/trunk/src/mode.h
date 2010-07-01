@@ -98,6 +98,11 @@ public:
   void zeroAutocorrelations();
 
  /**
+  * Sets the kurtosis arrays to contain 0's
+  */
+  void zeroKurtosis();
+
+ /**
   * Stores the times for the first FFT chunk to be processed
   * @param scan The current scan
   * @param seconds The offset in seconds from the start of the scan
@@ -111,11 +116,24 @@ public:
   void averageFrequency();
 
  /**
+  * Calculates the kurtosis from intermediate products and averages down in frequency if requires
+  * @param numblocks The number of FFTs that went into this average
+  * @param maxchannels The number of channels to average down to
+  */
+  void calculateAndAverageKurtosis(int numblocks, int maxchannels);
+
+ /**
   * Grabs the pointer to an autocorrelation array
   * @param crosspol Whether to return the crosspolarisation autocorrelation for this band
   * @param outputband The band index
   */
   inline cf32* getAutocorrelation(bool crosspol, int outputband) { return autocorrelations[(crosspol)?1:0][outputband]; }
+
+ /**
+  * Grabs the pointer to a kurtosis array
+  * @param outputband The band index
+  */
+  inline f32* getKurtosis(int outputband) { return sk[outputband]; }
 
  /**
   * Grabs the weight for a given band
@@ -141,6 +159,11 @@ public:
   * @return Whether this Mode was initialied ok
   */
   inline bool initialisedOK() { return initok; }
+
+ /**
+  * @param dk Whether to calculate the kurtosis or not
+  */
+  inline void setDumpKurtosis(bool dk) { dumpkurtosis = dk; }
 
  /**
   * Returns a pointer to the FFT'd data of the specified product
@@ -257,6 +280,13 @@ protected:
 
   f64 * stepxoffsquared;
   f64 * tempstepxval;
+
+  //kurtosis-specific variables
+  bool dumpkurtosis;
+  f32 *  kscratch; //[recordedbandchannels]
+  f32 ** s1; //[numrecordedbands][recordedbandchannels]
+  f32 ** s2; //[numrecordedbands][recordedbandchannels]
+  f32 ** sk; //[numrecordedbands][recordedbandchannels]
 
 private:
   ///Array containing decorrelation percentages for a given number of bits

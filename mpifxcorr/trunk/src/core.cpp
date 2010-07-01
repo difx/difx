@@ -473,7 +473,9 @@ void Core::loopprocess(int threadid)
     }
 
     //if necessary, allocate/reallocate space for the STAs
-    nowdumpingsta = config->dumpSTA();
+    nowdumpingsta = config->dumpSTA() || config->dumpKurtosis();
+    scratchspace->dumpsta = config->dumpSTA();
+    scratchspace->dumpkurtosis = config->dumpKurtosis();
     if(nowdumpingsta != dumpingsta) {
       if (scratchspace->starecord != 0) {
         delete scratchspace->starecord;
@@ -654,6 +656,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     modes[j]->setValidFlags(&(procslots[index].controlbuffer[j][3]));
     modes[j]->setData(procslots[index].databuffer[j], procslots[index].datalengthbytes[j], procslots[index].controlbuffer[j][0], procslots[index].controlbuffer[j][1], procslots[index].controlbuffer[j][2]);
     modes[j]->setOffsets(procslots[index].offsets[0], procslots[index].offsets[1], procslots[index].offsets[2]);
+    modes[j]->setDumpKurtosis(scratchspace->dumpkurtosis);
+    if(scratchspace->dumpkurtosis)
+      modes[j]->zeroKurtosis();
   }
 
   //zero the results for this thread
@@ -966,6 +971,9 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   if(acblockcount != 0) {
     averageAndSendAutocorrs(index, threadid, (startblock+acshiftcount*maxacblocks+((double)acblockcount)/2.0)*blockns, acblockcount*blockns, modes, scratchspace);
   }
+  if(scratchspace->dumpkurtosis) {
+    averageAndSendKurtosis(index, threadid, (startblock + numblocks)*blockns/2.0, numblocks*blockns, numblocks, modes, scratchspace);
+  }
 
   //lock the bweight copylock, so we're the only one adding to the result array (baseline weight section)
   perr = pthread_mutex_lock(&(procslots[index].bweightcopylock));
@@ -1065,7 +1073,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
   maxproducts = config->getMaxProducts();
 
   //if STA send needed but we can average datastream results in freq first, do so
-  if(scratchspace->starecord != 0 && config->getMinPostAvFreqChannels(procslots[index].configindex) >= config->getSTADumpChannels())
+  if(scratchspace->dumpsta && config->getMinPostAvFreqChannels(procslots[index].configindex) >= config->getSTADumpChannels())
   {
     for(int i=0;i<numdatastreams;i++) {
       modes[i]->averageFrequency();
@@ -1075,7 +1083,8 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 
   //if required, send off a message with the STA results
   //(before averaging in case high spectral resolution for the dump is required)
-  if(scratchspace->starecord != 0) {
+  if(scratchspace->dumpsta) {
+    scratchspace->starecord->messageType = STA_AUTOCORRELATION;
     scratchspace->starecord->scan = procslots[index].offsets[0];
     scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
     scratchspace->starecord->ns = procslots[index].offsets[2] + int(nsoffset);
@@ -1086,9 +1095,9 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
     scratchspace->starecord->nswidth = int(nswidth);
     for (int i=0;i<numdatastreams;i++) {
       scratchspace->starecord->dsindex = i;
-      for (int j=0;j<config->getDNumTotalBands(procslots[index].configindex, i);j++) {
+      for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
         scratchspace->starecord->nChan = config->getSTADumpChannels();
-        freqindex = config->getDTotalFreqIndex(procslots[index].configindex, i, j);
+        freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
         freqchannels = config->getFNumChannels(freqindex);
         if(datastreamsaveraged)
           freqchannels /= config->getFChannelsToAverage(freqindex);
@@ -1221,6 +1230,41 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
   perr = pthread_mutex_unlock(&(procslots[index].acweightcopylock));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock acweight copy mutex!!!" << endl;
+}
+
+void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, double nswidth, int numblocks, Mode ** modes, threadscratchspace * scratchspace)
+{
+  int status, freqchannels, freqindex;
+
+  //tell the modes to calculate the kurtosis and average it if need be
+  for(int i=0;i<numdatastreams;i++) {
+    modes[i]->calculateAndAverageKurtosis(numblocks, config->getSTADumpChannels());
+  }
+
+  scratchspace->starecord->messageType = STA_KURTOSIS;
+  scratchspace->starecord->scan = procslots[index].offsets[0];
+  scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
+  scratchspace->starecord->ns = procslots[index].offsets[2] + int(nsoffset);
+  if(scratchspace->starecord->ns >= 1000000000) {
+    scratchspace->starecord->ns -= 1000000000;
+    scratchspace->starecord->sec++;
+  }
+  scratchspace->starecord->nswidth = int(nswidth);
+  for (int i=0;i<numdatastreams;i++) {
+    scratchspace->starecord->dsindex = i;
+    for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
+      scratchspace->starecord->nChan = config->getSTADumpChannels();
+      freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
+      freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+      if (freqchannels < scratchspace->starecord->nChan)
+        scratchspace->starecord->nChan = freqchannels;
+      scratchspace->starecord->bandindex = j;
+      status = vectorCopy_f32(modes[i]->getKurtosis(j), scratchspace->starecord->data, scratchspace->starecord->nChan);
+      if(status != vecNoErr)
+        cerror << startl << "Problem copying kurtosis results from mode to sta record!" << endl;
+      difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+    }
+  }
 }
 
 void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace)

@@ -288,11 +288,13 @@ public:
   inline bool commandThreadInitialised() { return commandthreadinitialised; }
   inline void setDumpSTAState(bool setval) { dumpsta = setval; }
   inline void setDumpLTAState(bool setval) { dumplta = setval; }
+  inline void setDumpKurtosisState(bool setval) { dumpkurtosis = setval; }
   inline bool dumpSTA() { return dumpsta; }
   inline bool dumpLTA() { return dumplta; }
-  inline void setSTADumpChannels(int setval) { stadumpchannels = setval; }
+  inline bool dumpKurtosis() { return dumpkurtosis; }
+  inline void setSTADumpChannels(int setval) { stadumpchannels = setval; } //shared with kurtosis
   inline void setLTADumpChannels(int setval) { ltadumpchannels = setval; }
-  inline int getSTADumpChannels() { return stadumpchannels; }
+  inline int getSTADumpChannels() { return stadumpchannels; } //shared with kurtosis
   inline int getLTADumpChannels() { return ltadumpchannels; }
   inline double getFPhasedArrayDWeight(int configindex, int freqindex, int ordereddsindex)
     { return configs[configindex].paweights[freqindex][ordereddsindex]; }
@@ -760,7 +762,7 @@ private:
   int mpiid;
   char header[MAX_KEY_LENGTH];
   bool commonread, configread, datastreamread, freqread, ruleread, baselineread;
-  bool consistencyok, commandthreadinitialised, dumpsta, dumplta;
+  bool consistencyok, commandthreadinitialised, dumpsta, dumplta, dumpkurtosis;
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
