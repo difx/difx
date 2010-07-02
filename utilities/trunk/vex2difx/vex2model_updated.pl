@@ -114,7 +114,7 @@ foreach $a (@ants)
     chomp($antname);
   }
   $count = $count + 1;
-  print(O pack("A20", "ANTENNA $count NAME: "), $antid, "\n");
+  print(O pack("A20", "ANTENNA $count NAME: "), uc($antid), "\n");
   print(O pack("A20", "ANTENNA $count MOUNT: "), $a->axis_type, "\n");
 
   #See if the antenna exists in the all-new file with velocities
