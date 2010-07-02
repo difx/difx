@@ -45,17 +45,23 @@ int main()
 		{
 			break;
 		}
-		if(cmd[0] == 'l')
+		if(cmd[0] == '5')
 		{
 			printf("Locking\n");
 			fflush(stdout);
-			printf("Locked: %d\n", lockMark5(1));
+			printf("Locked: %d\n", lockMark5(5));
 		}
 		else if(cmd[0] == 'n')
 		{
 			printf("Locking no wait\n");
 			fflush(stdout);
-			printf("Locked no wait: %d\n", lockMark5(0));
+			printf("Locked no wait: %d\n", lockMark5(MARK5_LOCK_DONT_WAIT));
+		}
+		else if(cmd[0] == 'w')
+		{
+			printf("Locking no wait\n");
+			fflush(stdout);
+			printf("Locked no wait: %d\n", lockMark5(MARK5_LOCK_WAIT_FOREVER));
 		}
 		else if(cmd[0] == 'u')
 		{
@@ -72,6 +78,10 @@ int main()
 		else if(cmd[0] == 'r')
 		{
 			printf("rm = %d\n", deleteMark5Lock());
+		}
+		else
+		{
+			printf("Options are: 5 n w u p r\n");
 		}
 	}
 

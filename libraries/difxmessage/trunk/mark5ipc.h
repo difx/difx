@@ -34,7 +34,10 @@
 extern "C" {
 #endif
 
-int lockMark5(int wait);
+#define MARK5_LOCK_WAIT_FOREVER		-1
+#define MARK5_LOCK_DONT_WAIT		0
+
+int lockMark5(int wait);	/* max wait time in seconds, or -1 to imply wait forever */
 int unlockMark5();
 int getMark5LockPID();
 int getMark5LockValue();

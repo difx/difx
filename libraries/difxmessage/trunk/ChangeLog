@@ -62,3 +62,4 @@ Add difxVersion to difxStartMessage
 Clean up terminal in mk5mon and cpumon
 Add mark5ipc library
 Utilities: trap Ctrl-c and handle properly
+cpumon and mk5mon: catch exceptions and prevent terminal infection

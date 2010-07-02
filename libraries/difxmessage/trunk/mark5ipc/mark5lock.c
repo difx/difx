@@ -28,13 +28,14 @@
  *==========================================================================*/
 
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 
 #include "../mark5ipc.h"
 
-#define KEY_ID		94538
+#define KEY_ID		94539
 
 int semid = 0;
 
@@ -61,6 +62,7 @@ int lockMark5(int wait)
 {
 	struct sembuf sops[2];
 	int v;
+	int i = 0;
 
 	if(semid == 0)
 	{
@@ -73,13 +75,22 @@ int lockMark5(int wait)
 	sops[1].sem_num = 0;
 	sops[1].sem_op = 1;
 	sops[1].sem_flg = SEM_UNDO | IPC_NOWAIT;
-
-	if(!wait)
+	if(wait >= 0)
 	{
 		sops[0].sem_flg |= IPC_NOWAIT;
 	}
 
-	v = semop(semid, sops, 2);
+	do
+	{
+		v = semop(semid, sops, 2);
+		if(v == 0)
+		{
+			break;
+		}
+		usleep(100000);
+		i++;
+	}
+	while(i < wait*10);
 
 	return v;
 }
@@ -133,9 +144,9 @@ int getMark5LockValue()
 
 int deleteMark5Lock()
 {
-	int v;
+	int v=0;
 
-	if(semid == 0)
+	if(semid != 0)
 	{
 		v = semctl(semid, 0, IPC_RMID);
 		semid = 0;

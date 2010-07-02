@@ -24,7 +24,7 @@ import curses
 program = 'mk5mon'
 author  = 'Walter Brisken'
 version = '0.2'
-verdate = '20100625'
+verdate = '20100701'
 
 def usage():
 	exit(1)
@@ -204,7 +204,12 @@ def listen(port, group):
 			d.newdata([machine, str])
 	except KeyboardInterrupt:
 		d.close()
+		return 0
+	except:
+		d.close()
+		return 1
 	d.close()
+	return 0
 
 
 def readmachines(machinesfile, verbose):
@@ -244,4 +249,5 @@ if group == None:
 	print 'DIFX_MESSAGE_GROUP needs to be defined'
 	exit(0)
 
-listen(port, group)
+while(listen(port, group)):
+	pass
