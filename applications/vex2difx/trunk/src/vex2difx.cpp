@@ -458,15 +458,15 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		const AntennaSetup *antSetup = P->getAntennaSetup(a->first);
 		if(antSetup)
 		{
-			if(fabs(antSetup->X) > 1.0)
+			if(fabs(antSetup->X) > 0.1)
 			{
 				A[i].X = antSetup->X;
 			}
-			if(fabs(antSetup->Y) > 1.0)
+			if(fabs(antSetup->Y) > 0.1)
 			{
 				A[i].Y = antSetup->Y;
 			}
-			if(fabs(antSetup->Z) > 1.0)
+			if(fabs(antSetup->Z) > 0.1)
 			{
 				A[i].Z = antSetup->Z;
 			}
@@ -1888,7 +1888,11 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 
 	for(a = P->antennaSetups.begin(); a != P->antennaSetups.end(); a++)
 	{
-		if(V->getAntenna(a->vexName) == 0)
+		if(a->vexName == "DEFAULT")
+		{
+			cout << "FYI: Using a default antenna setup." << endl;
+		}
+		else if(V->getAntenna(a->vexName) == 0)
 		{
 			cerr << "Warning: antenna " << a->vexName << " referenced in .v2d file but is not in vex file" << endl;
 			nWarn++;
@@ -2178,6 +2182,10 @@ int main(int argc, char **argv)
 		cerr << "Quitting since " << nWarn <<
 			" warnings were found and strict mode was enabled." << endl;
 		exit(0);
+	}
+	else if(nWarn > 0)
+	{
+		cout << "FYI: Proceeding even though there were " << nWarn << " warnings." << endl;
 	}
 
 	//run through all the scans once, creating source setups for any sources

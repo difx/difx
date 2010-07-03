@@ -757,6 +757,11 @@ int AntennaSetup::setkv(const string &key, const string &value)
 
 	if(key == "name" || key == "newName")
 	{
+		if(vexName == "DEFAULT")
+		{
+			cerr << "Error: renaming the DEFAULT antenna setup is not allowed" << endl;
+			exit(0);
+		}
 		ss >> difxName;
 	}
 	else if(key == "polSwap")
@@ -1628,7 +1633,25 @@ void CorrParams::example()
 
 int CorrParams::sanityCheck()
 {
-	return 0;
+	int nWarn = 0;
+	const AntennaSetup *a = 0;
+
+	a = getAntennaSetup("DEFAULT");
+	if(a)
+	{
+		if(a->X != 0.0 || a->Y != 0 || a->Z != 0)
+		{
+			cerr << "Warning: the default antenna's coordinates are set!" << endl;
+			nWarn++;
+		}
+		if(a->clock.offset != 0 || a->clock.rate != 0 || a->clock2 != 0 || a->clock3 != 0 || a->clock4 != 0 || a->clock5 != 0 || a->clock.offset_epoch != 0 || a->deltaClock != 0 || a->deltaClockRate != 0)
+		{
+			cerr << "Warning: the default antenna's clock parameters are set!" << endl;
+			nWarn++;
+		}
+	}
+
+	return nWarn;
 }
 
 bool antennaMatch(const string &a1, const string &a2)
@@ -1741,17 +1764,24 @@ const VexClock *CorrParams::getAntennaClock(const string &antName) const
 const AntennaSetup *CorrParams::getAntennaSetup(const string &name) const
 {
 	int i, n;
+	const AntennaSetup *a = 0;
 
 	n = antennaSetups.size();
 	for(i = 0; i < n; i++)
 	{
+		if(antennaSetups[i].vexName == "DEFAULT")
+		{
+			// keep this as a placeholder in case nothing better is found
+			a = &antennaSetups[i];
+		}
 		if(name == antennaSetups[i].vexName)
 		{
-			return &antennaSetups[i];
+			a = &antennaSetups[i];
+			break;
 		}
 	}
 
-	return 0;
+	return a;
 }
 
 void CorrParams::addSourceSetup(SourceSetup toadd)
@@ -1995,6 +2025,12 @@ ostream& operator << (ostream &os, const AntennaSetup &x)
         {
                 os << "  format=" << x.format << endl;
         }
+	os << "  # dataSource=" << dataSourceNames[x.dataSource] << endl;
+	if(x.dataSource == DataSourceNetwork)
+	{
+		os << "  networkPort=" << x.networkPort << endl;
+		os << "  windowSize=" << x.windowSize << endl;
+	}
 
         os << "}" << endl;
 
@@ -2037,6 +2073,10 @@ ostream& operator << (ostream &os, const CorrParams &x)
 	os << "maxSize=" << x.maxSize/1000000.0 << " # MB" << endl;
 	os.precision(13);
 
+	if(x.threadsFile != "")
+	{
+		os << "threadsFile=" << x.threadsFile << endl;
+	}
 	os << "singleScan=" << x.singleScan << endl;
 	os << "singleSetup=" << x.singleSetup << endl;
 	os << "tweakIntTime=" << x.tweakIntegrationTime << endl;
