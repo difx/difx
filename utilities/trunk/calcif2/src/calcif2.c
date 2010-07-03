@@ -290,7 +290,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 }
 
 /* return 1 if f2 exists and is older than f1 */
-int skipFile(const char *f1, const char *f2)
+static int skipFile(const char *f1, const char *f2)
 {
 	struct stat s1, s2;
 	int r1, r2;
@@ -317,32 +317,23 @@ int skipFile(const char *f1, const char *f2)
 int runfile(const char *prefix, const CommandLineOptions *opts,
 	CalcParams *p)
 {
-	const int FilenameSize = 256;
 	DifxInput *D;
 	int v;
-	char imfile[FilenameSize];
-	char calcfile[FilenameSize];
 	const char *difxVersion;
-
-	if(strlen(prefix)+8 > FilenameSize)
-	{
-		fprintf(stderr, "Warning: filename prefix '%s' is too long.  skipping!\n", prefix);
-		return 0;
-	}
-
-	sprintf(imfile,    "%s.im",    prefix);
-	sprintf(calcfile,  "%s.calc",  prefix);
 
 	difxVersion = getenv("DIFX_VERSION");
 
+	D = loadDifxCalc(prefix);
+
 	if(opts->force == 0 &&
-	   skipFile(calcfile, imfile))
+	   skipFile(D->calcFile, D->imFile))
 	{
 		printf("skipping %s due to file ages\n", prefix);
+		deleteDifxInput(D);
+
 		return 0;
 	}
 
-	D = loadDifxCalc(prefix);
 	D = updateDifxInput(D);
         printf("Finished updating difxinput\n");
 
@@ -397,7 +388,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 			return -1;
 		}
 		printf("About to write IM file\n");
-		writeDifxIM(D,    imfile);
+		writeDifxIM(D);
 		printf("Wrote IM file\n");
 		deleteDifxInput(D);
 
