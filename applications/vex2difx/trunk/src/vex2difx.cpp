@@ -2256,7 +2256,7 @@ int main(int argc, char **argv)
 	of << "exper=" << V->getExper()->name << "  v2d=" << v2dFile <<"  pass=" << P->jobSeries << "  mjd=" << current_mjd() << "  DiFX=" << difxVersion << "  vex2difx=" << version << endl;
 	
 	nDigit=0;
-	for(int l = J.size(); l > 0; l /= 10)
+	for(int l = J.size()+P->startSeries-1; l > 0; l /= 10)
 	{
 		nDigit++;
 	}
