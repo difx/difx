@@ -31,7 +31,7 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
-int writeDifxIM(const DifxInput *D, const char *filename)
+int writeDifxIM(const DifxInput *D)
 {
 	FILE *out;
 	DifxScan *scan;
@@ -55,10 +55,10 @@ int writeDifxIM(const DifxInput *D, const char *filename)
 		return 0;
 	}
 
-	out = fopen(filename, "w");
+	out = fopen(D->imFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", filename);
+		fprintf(stderr, "Cannot open %s for write\n", D->imFile);
 		return -1;
 	}
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,18 +32,14 @@
 #include "difxio/difx_write.h"
 
 
-static int writeCommonSettings(FILE *out, const DifxInput *D, 
-	const char *filebase)
+static int writeCommonSettings(FILE *out, const DifxInput *D)
 {
-	char value[256];
 	int secs;
 	double dsecs;
 
 	fprintf(out, "# COMMON SETTINGS ##!\n");
-	sprintf(value, "%s.calc", filebase);
-	writeDifxLine(out, "CALC FILENAME", value);
-	sprintf(value, "%s.threads", filebase);
-	writeDifxLine(out, "CORE CONF FILENAME", value);
+	writeDifxLine(out, "CALC FILENAME", D->calcFile);
+	writeDifxLine(out, "CORE CONF FILENAME", D->threadsFile);
 	if(D->fracSecondStartTime > 0)
 	{
 		secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
@@ -69,8 +65,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D,
 	writeDifxLineInt(out, "ACTIVE BASELINES", D->nBaseline);
 	writeDifxLineInt(out, "VIS BUFFER LENGTH", D->visBufferLength);
 	writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
-	sprintf(value, "%s.difx", filebase);
-	writeDifxLine(out, "OUTPUT FILENAME", value);
+	writeDifxLine(out, "OUTPUT FILENAME", D->outputFile);
 	fprintf(out, "\n");
 
 	return 0;
@@ -214,22 +209,9 @@ static int writeDataTable(FILE *out, const DifxInput *D)
 	return 0;
 }
 
-int writeDifxInput(const DifxInput *D, const char *filename)
+int writeDifxInput(const DifxInput *D)
 {
 	FILE *out;
-	char filebase[256];
-	int i, l;
-
-	strcpy(filebase, filename);
-	l = strlen(filebase);
-	for(i = l-1; i > 0; i--)
-	{
-		if(filebase[i] == '.')
-		{
-			filebase[i] = 0;
-			break;
-		}
-	}
 
 	if(!D)
 	{
@@ -239,18 +221,26 @@ int writeDifxInput(const DifxInput *D, const char *filename)
 	if(!D->job)
 	{
 		fprintf(stderr, "Error: writeDifxInput: D->job == 0!\n");
+
 		return -1;
 	}
 
-	out = fopen(filename, "w");
+	if(D->inputFile[0] == 0)
+	{
+		fprintf(stderr, "Developer error: writeDifxInput: D->inputFile is null\n");
+
+		return -1;
+	}
+
+	out = fopen(D->inputFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", filename);
+		fprintf(stderr, "Cannot open %s for write\n", D->inputFile);
+
 		return -1;
 	}
 
-	//printf("About to start writing input file\n");
-	writeCommonSettings(out, D, filebase);
+	writeCommonSettings(out, D);
 	writeConfigurations(out, D);
 	writeRuleTable(out, D);
 	writeFreqTable(out, D);

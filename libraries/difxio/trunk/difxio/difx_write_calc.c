@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -31,12 +31,9 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
-int writeDifxCalc(const DifxInput *D, const char *filename)
+int writeDifxCalc(const DifxInput *D)
 {
 	FILE *out;
-	char filebase[256];
-	char value[256];
-	int i, l;
 
 	if(!D)
 	{
@@ -46,24 +43,22 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	if(!D->job)
 	{
 		fprintf(stderr, "writeDifxCalc: job=0\n");
+
 		return -1;
 	}
 
-	strcpy(filebase, filename);
-	l = strlen(filebase);
-	for(i = l-1; i > 0; i--)
+	if(D->calcFile[0] == 0)
 	{
-		if(filebase[i] == '.')
-		{
-			filebase[i] = 0;
-			break;
-		}
+		fprintf(stderr, "developer error: writeDifxCalc: D->calcFile is null\n");
+
+		return -1;
 	}
 
-	out = fopen(filename, "w");
+	out = fopen(D->calcFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", filename);
+		fprintf(stderr, "Cannot open %s for write\n", D->calcFile);
+
 		return -1;
 	}
 
@@ -104,8 +99,7 @@ int writeDifxCalc(const DifxInput *D, const char *filename)
 	writeDifxScanArray(out, D->nScan, D->scan, D->config);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
-	sprintf(value, "%s.im", filebase);
-	writeDifxLine(out, "IM FILENAME", value);
+	writeDifxLine(out, "IM FILENAME", D->imFile);
 
 	fclose(out);
 

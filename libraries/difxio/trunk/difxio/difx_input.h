@@ -408,7 +408,11 @@ typedef struct
 	DifxPhasedArray	*phasedarray;	/* optional table */
 
 	/* Filenames */
-	char threadsFile[DIFXIO_FILENAME_LENGTH];	/* name of .threads file */
+	char inputFile[DIFXIO_FILENAME_LENGTH];
+	char calcFile[DIFXIO_FILENAME_LENGTH];
+	char imFile[DIFXIO_FILENAME_LENGTH];
+	char threadsFile[DIFXIO_FILENAME_LENGTH];
+	char outputFile[DIFXIO_FILENAME_LENGTH];
 } DifxInput;
 
 /* DifxJob functions */
@@ -688,9 +692,9 @@ int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
 
 /* Writing functions */
-int writeDifxIM(const DifxInput *D, const char *filename);
-int writeDifxCalc(const DifxInput *D, const char *filename);
-int writeDifxInput(const DifxInput *D, const char *filename);
+int writeDifxIM(const DifxInput *D);
+int writeDifxCalc(const DifxInput *D);
+int writeDifxInput(const DifxInput *D);
 
 #ifdef __cplusplus
 }

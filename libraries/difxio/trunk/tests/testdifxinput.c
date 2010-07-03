@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@ int main(int argc, char **argv)
 	
 	if(argc < 2)
 	{
-		printf("Usage : %s <inputfilebase>\n", argv[0]);
+		printf("Usage : %s <inputfilebase> ...\n", argv[0]);
 		return 0;
 	}
 	
@@ -101,10 +101,16 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
+	strcpy(D->inputFile, "input.test");
+	strcpy(D->calcFile, "calc.test");
+	strcpy(D->threadsFile, "threads.test");
+	strcpy(D->imFile, "im.test");
+	strcpy(D->outputFile, "output.test");
+
 	printDifxInput(D);
 
-	writeDifxCalc(D, "calc.out");
-	writeDifxInput(D, "input.out");
+	writeDifxCalc(D);
+	writeDifxInput(D);
 
 	deleteDifxInput(D);
 

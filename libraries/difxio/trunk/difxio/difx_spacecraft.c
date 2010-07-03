@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -344,9 +344,10 @@ int evaluateDifxSpacecraft(const DifxSpacecraft *sc, int mjd, double fracMjd,
 
 int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 {
+	const int MaxLineLength = 256;
 	int n;
-	int i, j;
-	char value[256];
+	int i, j, v;
+	char value[MaxLineLength];
 	const sixVector *V;
 	long double mjd;
 
@@ -360,11 +361,18 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 		{
 			V = ds[i].pos + j;
 			mjd = V->mjd + V->fracDay;
-			sprintf(value, "%17.12Lf %18.14Le %18.14Le %18.14Le "
-						"%18.14Le %18.14Le %18.14Le", 
+			v = snprintf(value, MaxLineLength,
+				"%17.12Lf "
+				"%18.14Le %18.14Le %18.14Le "
+				"%18.14Le %18.14Le %18.14Le", 
 				mjd, 
 				V->X, V->Y, V->Z,
 				V->dX, V->dY, V->dZ);
+			if(v >= MaxLineLength)
+			{
+				fprintf(stderr, "Error: Spacecraft %d row %d is too long!\n", i, j);
+				return -1;
+			}
 			writeDifxLine2(out, "SPACECRAFT %d ROW %d", 
 				i, j, value);
 		}

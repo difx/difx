@@ -25,6 +25,7 @@
 * Prevent merging of jobs that have incompatible clocks
 * Change to polynomial-based clock model (up to 5th order)
 * Move all data source information to DifxDatastream where it should be
+* Respect and track all filenames rather than assume systematically named files
 
 2.11
 * Post DiFX-1.5

@@ -137,6 +137,11 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 		return;
 	}
 
+	fprintf(fp, "  input file = %s\n", D->inputFile);
+	fprintf(fp, "  threads (core conf) file = %s\n", D->threadsFile);
+	fprintf(fp, "  calc file = %s\n", D->calcFile);
+	fprintf(fp, "  im (model) file = %s\n", D->imFile);
+	fprintf(fp, "  output file = %s\n", D->outputFile);
 	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
 	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
 	fprintf(fp, "  vis buffer length = %d\n", D->visBufferLength);
@@ -538,16 +543,19 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	const char commonKeys[][MAX_DIFX_KEY_LEN] =
 	{
 		"CALC FILENAME",
+		"CORE CONF FILENAME",
 		"EXECUTE TIME (SEC)",
 		"START MJD",
 		"START SECONDS",
 		"ACTIVE DATASTREAMS",
 		"ACTIVE BASELINES",
-		"VIS BUFFER LENGTH"
+		"VIS BUFFER LENGTH",
+		"OUTPUT FILENAME"
 	};
 	const int N_COMMON_ROWS = sizeof(commonKeys)/sizeof(commonKeys[0]);
 	int N;
 	int rows[N_COMMON_ROWS];
+	int v;
 	
 	if(!D || !ip)
 	{
@@ -564,19 +572,37 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 
 	/* Initialize some of the structures */
 	
-	D->job->duration = atoi(DifxParametersvalue(ip, rows[1]));
-	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[2])) +
-		      atof(DifxParametersvalue(ip, rows[3]))/86400.0;
-	if(atof(DifxParametersvalue(ip, rows[3])) != atoi(DifxParametersvalue(ip, rows[3])))
+	D->job->duration = atoi(DifxParametersvalue(ip, rows[2]));
+	D->job->mjdStart = atoi(DifxParametersvalue(ip, rows[3])) +
+		      atof(DifxParametersvalue(ip, rows[4]))/86400.0;
+	if(atof(DifxParametersvalue(ip, rows[4])) != atoi(DifxParametersvalue(ip, rows[4])))
 	{
 		D->fracSecondStartTime = 1;
 	}
 	D->job->activeDatastreams =
-		      atoi(DifxParametersvalue(ip, rows[4]));
-	D->job->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[5]));
-	D->visBufferLength =
+	D->job->activeBaselines =
 		      atoi(DifxParametersvalue(ip, rows[6]));
+	D->visBufferLength =
+		      atoi(DifxParametersvalue(ip, rows[7]));
+	v = snprintf(D->calcFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[0]));
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "populateInput: CALC FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+		return 0;
+	}
+	v = snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[1]));
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "populateInput: CORE CONF FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+		return 0;
+	}
+	v = snprintf(D->outputFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[8]));
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "populateInput: OUTPUT FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+		return 0;
+	}
 
 	if(DifxParametersfind(ip, 0, "DATA HEADER O/RIDE") > 0)
 	{
@@ -1585,7 +1611,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		sizeof(spacecraftKeys)/sizeof(spacecraftKeys[0]);
 	
 	int rows[20];
-	int a, i, j, k, c, s, N, row, n, r, applies, src;
+	int a, i, j, k, c, s, N, row, n, r, applies, src, v;
 	const char *str;
 	double time;
 	//int nFound, nTel, nSrc, startsec, dursec;
@@ -2035,6 +2061,19 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			D->spacecraft[s].pos[i].fracDay = 
 				((int)(time*86400.0 + 0.5))/86400.0;
 		}
+	}
+
+	row = DifxParametersfind(cp, 0, "IM FILENAME");
+	if(row < 0)
+	{
+		fprintf(stderr, "File %s has no IM FILENAME specified!\n", D->calcFile);
+		return 0;
+	}
+	v = snprintf(D->imFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(cp, row) );
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "File %s IM FILENAME is too long\n", D->calcFile);
+		return 0;
 	}
 
 	return D;
@@ -2809,31 +2848,54 @@ DifxInput *loadDifxInput(const char *filePrefix)
 {
 	DifxParameters *ip, *cp, *mp;
 	DifxInput *D, *DSave;
-	char inputFile[256];
-	char calcFile[256];
-	char flagFile[256];
-	char modelFile[256];
-	int c;
+	char inputFile[DIFXIO_FILENAME_LENGTH];
+	char flagFile[DIFXIO_FILENAME_LENGTH];
+	const char *calcFile;
+	const char *modelFile;
+	int c, r;
 
-	sprintf(inputFile, "%s.input", filePrefix);
-	sprintf(calcFile,  "%s.calc",  filePrefix);
-	sprintf(flagFile,  "%s.flag",  filePrefix);
-	sprintf(modelFile, "%s.im",   filePrefix);
+	/* make .input filename and open it. */
+	r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH,
+		"%s.input", filePrefix);
+	if(r >= DIFXIO_FILENAME_LENGTH)
+	{
+		return 0;
+	}
 
 	ip = newDifxParametersfromfile(inputFile);
-	cp = newDifxParametersfromfile(calcFile);
-	mp = newDifxParametersfromfile(modelFile);
+	if(!ip)
+	{
+		return 0;
+	}
 
-	if(!ip || !cp)
+	/* get .calc filename and open it. */
+	r = DifxParametersfind(ip, 0, "CALC FILENAME");
+	if(r < 0)
+	{
+		return 0;
+	}
+	calcFile = DifxParametersvalue(ip, r);
+
+	cp = newDifxParametersfromfile(calcFile);
+	if(!cp)
 	{
 		deleteDifxParameters(ip);
-		deleteDifxParameters(cp);
-		deleteDifxParameters(mp);
 		
 		return 0;
 	}
 
+	/* get .im filename and open it. */
+	r = DifxParametersfind(cp, 0, "IM FILENAME");
+	if(r < 0)
+	{
+		return 0;
+	}
+	modelFile = DifxParametersvalue(cp, r);
+
+	mp = newDifxParametersfromfile(modelFile);
+
 	D = DSave = newDifxInput();
+	strcpy(D->inputFile, inputFile);
 
 	/* When creating a DifxInput via this function, there will always
 	 * be a single DifxJob
@@ -2842,7 +2904,6 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	D->nJob = 1;
 	strcpy(D->job->fileBase, filePrefix);
 	D = populateInput(D, ip);
-	
 	D = populateCalc(D, cp);
 	if(mp)
 	{
@@ -2858,7 +2919,11 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	deleteDifxParameters(cp);
 	deleteDifxParameters(mp);
 
+	/* read in flags, if any */
+	sprintf(flagFile,  "%s.flag",  filePrefix);
 	populateFlags(D, flagFile);
+
+
 	for(c = 0; c < D->nConfig; c++)
 	{
 		DifxConfigMapAntennas(D->config + c, D->datastream);
@@ -2871,20 +2936,35 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 {
 	DifxParameters *ip, *cp;
 	DifxInput *D, *DSave;
-	char inputFile[256];
-	char calcFile[256];
-	int c;
+	char inputFile[DIFXIO_FILENAME_LENGTH];
+	const char *calcFile;
+	int c, r;
 
-	sprintf(inputFile, "%s.input", filePrefix);
-	sprintf(calcFile,  "%s.calc",  filePrefix);
+	r = snprintf(inputFile, DIFXIO_FILENAME_LENGTH,
+		"%s.input", filePrefix);
+	if(r >= DIFXIO_FILENAME_LENGTH)
+	{
+		return 0;
+	}
 
 	ip = newDifxParametersfromfile(inputFile);
-	cp = newDifxParametersfromfile(calcFile);
-
 	if(!ip)
 	{
+		return 0;
+	}
+
+	r = DifxParametersfind(ip, 0, "CALC FILENAME");
+	if(r < 0)
+	{
+		return 0;
+	}
+
+	calcFile = DifxParametersvalue(ip, r);
+
+	cp = newDifxParametersfromfile(calcFile);
+	if(!cp)
+	{
 		deleteDifxParameters(ip);
-		deleteDifxParameters(cp);
 		
 		return 0;
 	}

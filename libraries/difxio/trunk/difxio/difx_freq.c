@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -57,10 +57,10 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 	fprintf(fp, "    Freq = %f MHz\n", df->freq);
 	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
 	fprintf(fp, "    Sideband = %c\n", df->sideband);
-        fprintf(fp, "    Num Chan = %c\n", df->nChan);
-        fprintf(fp, "    Spec Avg = %c\n", df->specAvg);
-        fprintf(fp, "    Oversamp = %c\n", df->overSamp);
-        fprintf(fp, "    Decimation = %c\n", df->decimation);
+        fprintf(fp, "    Num Chan = %d\n", df->nChan);
+        fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
+        fprintf(fp, "    Oversamp = %d\n", df->overSamp);
+        fprintf(fp, "    Decimation = %d\n", df->decimation);
 }
 
 void printDifxFreq(const DifxFreq *df)
