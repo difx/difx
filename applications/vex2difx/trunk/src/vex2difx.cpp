@@ -368,7 +368,6 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 {
 	DifxJob *job;
 	const char *difxVer;
-	char format[16];
 
 	*n = 1;
 	job = newDifxJobArray(*n);
@@ -398,9 +397,21 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	job->dutyCycle = J.dutyCycle;
 
 	// The following line defines the format of the job filenames
-	sprintf(format, "%%s/%%s_%%0%dd%%c", nDigit);
 
-	sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
+	if(J.jobId > 0)
+	{
+		char format[20];
+		sprintf(format, "%%s/%%s_%%0%dd%%c", nDigit);
+		sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
+	}
+	else
+	{
+		if(ext != 0)
+		{
+			cerr << "WARNING: ext!=0 and making job names without extensions!" << endl;
+		}
+		sprintf(job->fileBase, "%s/%s", directory.c_str(), J.jobSeries.c_str());
+	}
 
 	return job;
 }
@@ -432,7 +443,7 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 		clockrefmjd = ant->getVexClocks(J.mjdStart, A[i].clockcoeff);
 		if(clockrefmjd < 0.0)
 		{
-			cerr << "WARNING:  Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
+			cerr << "WARNING: Job " << J.jobSeries << " " << J.jobId << ": no clock offsets being applied to antenna " << a->first << endl;
 			cerr << "          Unless this is intentional, your results will suffer!" << endl;
 		}
 		A[i].clockrefmjd = clockrefmjd;
@@ -1756,15 +1767,24 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 	if(D->nBaseline > 0)
 	{
+		snprintf(D->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input",   D->job->fileBase);
+		snprintf(D->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",    D->job->fileBase);
+		snprintf(D->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im  ",    D->job->fileBase);
+		snprintf(D->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",    D->job->fileBase);
+		if(P->threadsFile != "")
+		{
+			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, P->threadsFile.c_str());
+		}
+		else
+		{
+			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", D->job->fileBase);
+		}
+
 		// write input file
-		ostringstream inputName;
-		inputName << D->job->fileBase << ".input";
-		writeDifxInput(D, inputName.str().c_str());
+		writeDifxInput(D);
 
 		// write calc file
-		ostringstream calcName;
-		calcName << D->job->fileBase << ".calc";
-		writeDifxCalc(D, calcName.str().c_str());
+		writeDifxCalc(D);
 
 		// write flag file
 		ostringstream flagName;

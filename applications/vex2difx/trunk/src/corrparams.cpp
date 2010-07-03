@@ -1054,6 +1054,7 @@ CorrParams::CorrParams(const string &fileName)
 void CorrParams::defaults()
 {
 	jobSeries = "job";
+	threadsFile = "";
 	minSubarraySize = 2;
 	maxGap = 180.0/86400.0;		// 3 minutes
 	singleScan = false;
@@ -1079,6 +1080,26 @@ void CorrParams::defaults()
 	overSamp = 0;
 }
 
+void pathify(string &filename)
+{
+	if(filename[0] == '/')
+	{
+		return;
+	}
+
+	char cwd[1024];
+	string fn;
+
+	if(getcwd(cwd, 1023) == 0)
+	{
+		cerr << "Cannot getcwd()" << endl;
+		exit(0);
+	}
+	fn = string(cwd) + string("/") + filename;
+
+	filename = fn;
+}
+
 int CorrParams::setkv(const string &key, const string &value)
 {
 	stringstream ss;
@@ -1090,23 +1111,13 @@ int CorrParams::setkv(const string &key, const string &value)
 	if(key == "vex")
 	{
 		ss >> vexFile;
-
-		if(vexFile[0] != '/')
-		{
-			char cwd[1024];
-			string inFile;
-
-			ptr = getcwd(cwd, 1023);
-			if(ptr == 0)
-			{
-				cerr << "Cannot getcwd()" << endl;
-				exit(0);
-			}
-			inFile = string(cwd);
-			inFile += string("/");
-			inFile += vexFile;
-			vexFile = inFile;
-		}
+		pathify(vexFile);
+	}
+	else if(key == "threadsFile")
+	{
+		ss >> threadsFile;
+		pathify(threadsFile);
+		
 	}
 	else if(key == "mjdStart" || key == "start")
 	{
@@ -1178,6 +1189,11 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "startSeries")
 	{
 		ss >> startSeries;
+		if(startSeries < 0)
+		{
+			cerr << "Error: startSeries cannot be < 0" << endl;
+			exit(0);
+		}
 	}
 	else if(key == "dataBufferFactor")
 	{

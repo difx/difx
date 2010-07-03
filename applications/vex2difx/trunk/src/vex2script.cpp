@@ -103,6 +103,7 @@ int main(int argc, char **argv)
 	P = new CorrParams();
 	P->vexFile = string(argv[1]);
 	P->defaultSetup();
+	P->minSubarraySize = 1;
 
 	if(argc == 3)
 	{

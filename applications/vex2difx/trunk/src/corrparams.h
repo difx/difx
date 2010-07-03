@@ -220,6 +220,7 @@ public:
 	/* global parameters */
 	int parseWarnings;
 	string vexFile;
+	string threadsFile;
 	unsigned int minSubarraySize;
 	double maxGap;		// days
 	bool singleScan;
