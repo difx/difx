@@ -710,7 +710,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	clock5 = 0.0;
 	networkPort = 0;
 	windowSize = 0;
-	phaseCalIntervalMHz = 0;
+	phaseCalIntervalMHz = -1;
 	dataSource = DataSourceNone;
 }
 
@@ -1635,6 +1635,12 @@ int CorrParams::sanityCheck()
 {
 	int nWarn = 0;
 	const AntennaSetup *a = 0;
+
+	if(minSubarraySize > antennaList.size() && antennaList.size() > 0)
+	{
+		cerr << "Warning: the antenna list has fewer than minSubarray antennas.  No jobs will be made." << endl;
+		nWarn++;
+	}
 
 	a = getAntennaSetup("DEFAULT");
 	if(a)

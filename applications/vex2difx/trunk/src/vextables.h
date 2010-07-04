@@ -164,6 +164,7 @@ public:
 	double bbcFreq;		// tuning of the BBC (Hz)
 	double bbcBandwidth;	// bandwidth (Hz)
 	char bbcSideBand;	// sideband of the BBC
+	vector<int> tones;	// pulse cal tones to extract, directly from PHASE_CAL_DETECT
 };
 
 class VexFormat
@@ -183,7 +184,7 @@ public:
 class VexIF	// Note: the old "VexIF" is now called "VexChannel"
 {
 public:
-	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCal(0.0) {}
+	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCalIntervalMHz(0) {}
 	string VLBABandName() const;
 	double getLowerEdgeFreq() const;
 
@@ -191,13 +192,13 @@ public:
 	double ifSSLO;		// SSLO of the IF
 	char ifSideBand;	// U or L
 	char pol;		// R or L
-	double phaseCal;	// (Hz), typically 1,000,000 or 5,000,000
+	int phaseCalIntervalMHz; // MHz, typically 1 or 5 (or 0 if none)
 };
 
 class VexSetup	// Container for all antenna-specific settings
 {
 public:
-	double phaseCal() const;
+	int phaseCalIntervalMHz() const;
 	const VexIF *getIF(const string &ifname) const;
 
 	VexFormat format;

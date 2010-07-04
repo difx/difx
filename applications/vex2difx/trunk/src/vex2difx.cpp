@@ -44,11 +44,11 @@
 
 const string program("vex2difx");
 const string version("2.0");		// FIXME: link to configure.ac
-const string verdate("20100628");
+const string verdate("20100704");
 const string author("Walter Brisken/Adam Deller");
 
 
-double current_mjd()
+static double current_mjd()
 {
 	struct timeval t;
 	gettimeofday(&t, 0);
@@ -56,7 +56,7 @@ double current_mjd()
 }
 
 // A is assumed to be the first scan in time order
-bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
+static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
 	if(((B->mjdStart < A->mjdStop) && (fabs(B->mjdStart-A->mjdStop)>0.00000001)) ||
 	   (B->mjdStart > A->mjdStop + P->maxGap))
@@ -75,7 +75,7 @@ bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 	return true;
 }
 
-void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
+static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
 {
 	list<string> scans;
 	V->getScanList(scans);
@@ -148,7 +148,7 @@ ostream& operator << (ostream& os, const MediaChange& x)
         return os;
 }
 
-int nGap(const list<MediaChange> &m, double mjd)
+static int nGap(const list<MediaChange> &m, double mjd)
 {
 	list<MediaChange>::const_iterator it;
 	int n=0;
@@ -164,7 +164,7 @@ int nGap(const list<MediaChange> &m, double mjd)
 	return n;
 }
 
-void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
+static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrParams *P, int verbose)
 {
 	list<VexEvent>::const_iterator e;
 	list<double>::const_iterator t;
@@ -323,7 +323,7 @@ void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const CorrPa
 	}
 }
 
-void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
+static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 {
 	vector<VexJobGroup> JG;
 	vector<VexJob>::iterator j;
@@ -364,7 +364,7 @@ void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int verbose)
 	V->sortEvents();
 }
 
-DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext)
+static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext)
 {
 	DifxJob *job;
 	const char *difxVer;
@@ -416,7 +416,7 @@ DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const stri
 	return job;
 }
 
-DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParams *P, int *n, vector<string>& antList)
+static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParams *P, int *n, vector<string>& antList)
 {
 	const VexAntenna *ant;
 	DifxAntenna *A;
@@ -494,17 +494,17 @@ DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const CorrParam
 	return A;
 }
 
-DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, const CorrParams *P, int nSet, int *n)
+static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, const CorrParams *P, int nSet)
 {
 	DifxDatastream *D;
 	map<string,string>::const_iterator a;
 	const VexAntenna *ant;
-	int i;
+	int i, nDatastream;
 	
-	*n = J.vsns.size() * nSet;
+	nDatastream = J.vsns.size() * nSet;
 	a = J.vsns.begin();
-	D = newDifxDatastreamArray(*n);
-	for(i = 0; i < *n; i++)
+	D = newDifxDatastreamArray(nDatastream);
+	for(i = 0; i < nDatastream; i++)
 	{
 		D[i].antennaId = i % J.vsns.size();
 		D[i].tSys = 0.0;
@@ -1289,6 +1289,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	const PhaseCentre *phaseCentre;
 	const AntennaSetup *antennaSetup;
 	const VexMode *mode;
+	const VexSetup* setup;
 	const VexScan *S;
 	set<string> configSet;
 	set<string> spacecraftSet;
@@ -1514,7 +1515,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 
 	// configure datastreams
-	D->datastream = makeDifxDatastreams(J, V, P, D->nConfig, &(D->nDatastream));
+	D->datastream = makeDifxDatastreams(J, V, P, D->nConfig);
 	D->nDatastream = 0;
 	for(int c = 0; c < D->nConfig; c++)
 	{
@@ -1560,11 +1561,18 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			int v = setFormat(D, D->nDatastream, freqs, mode, antName, corrSetup);
 			if(v)
 			{
+				setup = mode->getSetup(antName);
 				antennaSetup = P->getAntennaSetup(antName);
+				dd = &(D->datastream[D->nDatastream]);
+				dd->phaseCalIntervalMHz = setup->phaseCalIntervalMHz();
+
 				if(antennaSetup)
 				{
-					dd = &(D->datastream[D->nDatastream]);
-					dd->phaseCalIntervalMHz = antennaSetup->phaseCalIntervalMHz;
+					if(antennaSetup->phaseCalIntervalMHz >= 0)
+					{
+						// Override with the .v2d value
+						dd->phaseCalIntervalMHz = antennaSetup->phaseCalIntervalMHz;
+					}
 					nZoomBands = 0;
 					if(antennaSetup->zoomFreqs.size() > 0)
                                         {
@@ -1765,7 +1773,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
  	//All averaging will always be in correlator by default, not difx2fits
 	D->specAvg  = 1;
 
-	if(D->nBaseline > 0)
+	if(D->nBaseline > 0 || P->minSubarraySize == 1)
 	{
 		snprintf(D->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input",   D->job->fileBase);
 		snprintf(D->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",    D->job->fileBase);
@@ -1834,7 +1842,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                 cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
         }
 
-	if(D->nBaseline > 0)
+	if(D->nBaseline > 0 || P->minSubarraySize == 1)
 	{
 		// clean up and return that job was created
 		deleteDifxInput(D);

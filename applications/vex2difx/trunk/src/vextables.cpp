@@ -1072,16 +1072,16 @@ const VexAntenna *VexData::getAntenna(const string &name) const
 	return 0;
 }
 
-double VexSetup::phaseCal() const
+int VexSetup::phaseCalIntervalMHz() const
 {
 	map<string,VexIF>::const_iterator it;
-	double p;
-	double pc = 0.0;
+	int p;
+	int pc = 0;
 
 	for(it = ifs.begin(); it != ifs.end(); it++)
 	{
-		p = it->second.phaseCal;
-		if(p > 0.0 && (p < pc || pc == 0.0))
+		p = it->second.phaseCalIntervalMHz;
+		if(p > 0 && (p < pc || pc == 0))
 		{
 			pc = p;
 		}
@@ -1472,7 +1472,7 @@ ostream& operator << (ostream &os, const VexChannel &x)
 
 ostream& operator << (ostream &os, const VexIF &x)
 {
-	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCal=" << x.phaseCal << "]";
+	os << "[name=" << x.name << ", SSLO=" << x.ifSSLO << ", sb=" << x.ifSideBand << ", pol=" << x.pol << ", phaseCalInterval=" << x.phaseCalIntervalMHz << " MHz]";
 
 	return os;
 }

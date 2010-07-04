@@ -595,6 +595,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	map<string,string> bbc2ifname;
 	map<string,Tracks> ch2tracks;
 	int nWarn =0;
+	double phaseCal;
 
 	for(modeDefName = get_mode_def(v);
 	    modeDefName;
@@ -675,11 +676,29 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				vex_field(T_IF_DEF, p, 6, &link, &name, &value, &units);
 				if(value)
 				{
-					fvex_double(&value, &units, &vif.phaseCal);
+					fvex_double(&value, &units, &phaseCal);
 				}
 				else
 				{
-					vif.phaseCal = 0.0;
+					phaseCal = 0.0;
+				}
+				if(fabs(phaseCal) < 1.0)
+				{
+					vif.phaseCalIntervalMHz = 0;
+				}
+				else if(fabs(phaseCal-1000000.0) < 1.0)
+				{
+					vif.phaseCalIntervalMHz = 1;
+				}
+				else if(fabs(phaseCal-5000000.0) < 1.0)
+				{
+					vif.phaseCalIntervalMHz = 5;
+				}
+				else
+				{
+					cerr << "Warning: Unsupported pulse cal interval of " << (phaseCal/1000000.0) << " MHz requested for antenna " << antName << "." << endl;
+					nWarn++;
+					vif.phaseCalIntervalMHz = static_cast<int>((phaseCal + 0.5)/1000000.0);
 				}
 			}
 

@@ -297,7 +297,7 @@ int pystream::writeLoifTable(const VexData *V)
 				const VexIF &i = it->second;
 				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
 			}
-			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCal()/1.0e6) << ")" << endl;
+			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
 			*this << "channelSet" << m << " = [ \\" << endl;
 
 			vector<unsigned int> implicitConversions;
