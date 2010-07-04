@@ -1465,7 +1465,17 @@ ostream& operator << (ostream &os, const VexSubband &x)
 
 ostream& operator << (ostream &os, const VexChannel &x)
 {
-	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << "]";
+	vector<int>::const_iterator v;
+	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
+	for(v = x.tones.begin(); v != x.tones.end(); v++)
+	{
+		if(v != x.tones.begin())
+		{
+			os << ",";
+		}
+		os << *v;
+	}
+	os << "]";
 
 	return os;
 }

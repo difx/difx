@@ -583,7 +583,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	char *value, *units;
 	char *bbcname;
 	double freq, bandwidth, sampRate;
-	char sideBand;
 	string format, chanName;
 	int chanNum;
 	int nTrack, fanout;
@@ -616,6 +615,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			const string &antName = V->getAntenna(a)->defName;
 			string antName2 = V->getAntenna(a)->defName;
 			const AntennaSetup *antennaSetup;
+			map<string, vector<int> > pcalMap;
 
 			Upper(antName2);
 			bool swapPol = params.swapPol(antName2);
@@ -828,6 +828,22 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 			}
 
+			// Get pulse cal extraction information
+			for(p = get_all_lowl(antName.c_str(), modeDefName, T_PHASE_CAL_DETECT, B_PHASE_CAL_DETECT, v);
+			    p;
+			    p = get_all_lowl_next())
+			{
+				vex_field(T_PHASE_CAL_DETECT, p, 1, &link, &name, &value, &units);
+				vector<int> &Q = pcalMap[string(value)];
+				
+				for(int q = 2; ; q++)
+				{
+					int y = vex_field(T_PHASE_CAL_DETECT, p, q, &link, &name, &value, &units);
+					if(y < 0) break;
+					Q.push_back(atoi(value));
+				}
+			}
+
 			// Get rest of Subband information
 			unsigned int i = 0;
 			
@@ -839,13 +855,16 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				fvex_double(&value, &units, &freq);
 
 				vex_field(T_CHAN_DEF, p, 3, &link, &name, &value, &units);
-				sideBand = value[0];
+				char sideBand = value[0];
 				
 				vex_field(T_CHAN_DEF, p, 4, &link, &name, &value, &units);
 				fvex_double(&value, &units, &bandwidth);
 
 				vex_field(T_CHAN_DEF, p, 6, &link, &name, &bbcname, &units);
 				subbandId = M->addSubband(freq, bandwidth, sideBand, bbc2pol[bbcname]);
+
+				vex_field(T_CHAN_DEF, p, 7, &link, &name, &value, &units);
+				string phaseCalName(value);
 
 				vex_field(T_CHAN_DEF, p, 5, &link, &name, &value, &units);
 				recChanId = getRecordChannel(antName, value, ch2tracks, F, i);
@@ -858,6 +877,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					F.channels.back().bbcFreq = freq;
 					F.channels.back().bbcBandwidth = bandwidth;
 					F.channels.back().bbcSideBand = sideBand;
+					F.channels.back().tones = pcalMap[phaseCalName];
 				}
 
 				i++;
