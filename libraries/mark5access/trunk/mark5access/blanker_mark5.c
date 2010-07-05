@@ -282,7 +282,6 @@ int blanker_mark4(struct mark5_stream *ms)
 int blanker_vdif(struct mark5_stream *ms)
 {
 	unsigned long long *data;
-	unsigned int *header;
 	int nword;
 	
 	if(!ms->payload)

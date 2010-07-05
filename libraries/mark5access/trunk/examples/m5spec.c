@@ -26,9 +26,11 @@
 // $LastChangedDate$
 //
 //============================================================================
+
+#include <stdio.h>
 #include <complex.h>
 #include <stdlib.h>
-#include <complex.h>
+#include <string.h>
 #include <fftw3.h>
 #include <math.h>
 #include "../mark5access/mark5_stream.h"
@@ -36,7 +38,7 @@
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.0";
-const char verdate[] = "2010 May 24";
+const char verdate[] = "2010 Jul 05";
 
 int usage(const char *pgm)
 {

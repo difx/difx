@@ -27,7 +27,9 @@
 //
 //============================================================================
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5d";

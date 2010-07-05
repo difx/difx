@@ -26,9 +26,9 @@
 // $LastChangedDate: 2010-02-26 10:37:16 -0700 (Fri, 26 Feb 2010) $
 //
 //============================================================================
+
 #include <complex.h>
 #include <stdlib.h>
-#include <complex.h>
 #include <math.h>
 #include "../mark5access/mark5_stream.h"
 
@@ -138,6 +138,7 @@ double inverseerf(double x)
 	{
 		c = log(1.0-x*x);
 		b = 2.0/(M_PI*a) + 0.5*c;
+
 		return sqrt(-b + sqrt(b*b - c/a) );
 	}
 }
@@ -154,9 +155,11 @@ double correctpower(double x)
 	return 1.0/(M_SQRT2*inverseerf( (x-a)/(1.0-a) ) );
 }
 
+/*
 void testierf()
 {
 	double x, y, z;
+
 	for(x = 0.0; x < 10.0; x += 0.2)
 	{
 		y = erf(x);
@@ -164,6 +167,7 @@ void testierf()
 		printf("%f %f %f\n", x, y, z);
 	}
 }
+*/
 
 int fold(const char *filename, const char *formatname, int nbin, int nint,
 	double freq, const char *outfile, long long offset)

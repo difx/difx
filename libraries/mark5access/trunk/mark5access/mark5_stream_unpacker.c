@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -108,9 +108,6 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked, 
 	int nsamp)
 {
-	int v = 1;
-	int c;
-
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (unsigned char *)packed;
@@ -130,8 +127,6 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed, 
 	int offsetsamples, float **unpacked, int nsamp)
 {
-	int v = 1;
-
 	if(ms->next == mark5_stream_unpacker_next_noheaders)
 	{
 		ms->payload = (unsigned char *)packed;
