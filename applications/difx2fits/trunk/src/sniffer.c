@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -166,14 +166,20 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	const char *filebase, double solInt)
 {
 	Sniffer *S;
-	char filename[256];
+	char filename[DIFXIO_FILENAME_LENGTH];
 	int a1, a2, c;
 	double tMax = 0.0;
 	FILE *log;
-	int i, j, m;
+	int i, j, m, v;
 
 	/* write summary to log file */
-	sprintf(filename, "%s.log", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.log", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer log filename too long.  No sniffing today\n");
+
+		return 0;
+	}
 	log = fopen(filename, "w");
 	fprintDifxInputSummary(log, D);
 	fclose(log);
@@ -240,54 +246,94 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	S->solInt = tMax * S->nTime;
 	
 	/* Open fringe fit files */
-	sprintf(filename, "%s.apd", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.apd", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer apd filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
 	S->apd = fopen(filename, "w");
 	if(!S->apd)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", filename);
 		deleteSniffer(S);
+
 		return 0;
 	}
 	fprintf(S->apd, "obscode:  %s\n", D->job->obsCode);
 
-	sprintf(filename, "%s.apc", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.apc", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer apc filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
 	S->apc = fopen(filename, "w");
 	if(!S->apc)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", filename);
 		deleteSniffer(S);
+		
 		return 0;
 	}
 	fprintf(S->apc, "obscode:  %s\n", D->job->obsCode);
 
 	/* Open weights file */
-	sprintf(filename, "%s.wts", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.wts", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer wts filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
 	S->wts = fopen(filename, "w");
 	if(!S->wts)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", filename);
 		deleteSniffer(S);
+		
 		return 0;
 	}
 	fprintf(S->wts, "PLOTWT summary: %s\n", D->job->obsCode);
 
 	/* Open acband file */
-	sprintf(filename, "%s.acb", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.acb", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer acb filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
 	S->acb = fopen(filename, "w");
 	if(!S->acb)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", filename);
 		deleteSniffer(S);
+		
 		return 0;
 	}
 
 	/* Open xcband file */
-	sprintf(filename, "%s.xcb", filebase);
+	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.xcb", filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\nError: sniffer xcb filename too long.  No sniffing today\n");
+		deleteSniffer(S);
+
+		return 0;
+	}
 	S->xcb = fopen(filename, "w");
 	if(!S->xcb)
 	{
 		fprintf(stderr, "Cannot open %s for write\n", filename);
 		deleteSniffer(S);
+		
 		return 0;
 	}
 	

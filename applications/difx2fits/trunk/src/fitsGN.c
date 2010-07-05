@@ -193,7 +193,7 @@ static int getQuote(FILE *in, char *token)
 		else if(c == '\n')
 		{
 			token[i] = 0;
-			fprintf(stderr, "Warning -- EOL found in quotes: %s\n",
+			fprintf(stderr, "Warning: Gain table parsing: EOL found in quotes: %s\n",
 				token);
 			return 0;
 		}
@@ -392,9 +392,10 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 int loadGainCurves(GainRow *G)
 {
 	char *path;
-	char pattern[256];
+	char pattern[DIFXIO_FILENAME_LENGTH];
 	glob_t files;
 	int nRow = 0;
+	int v;
 	unsigned int f;
 	
 	path = getenv("GAIN_CURVE_PATH");
@@ -402,17 +403,26 @@ int loadGainCurves(GainRow *G)
 	{
 		printf("\n    GAIN_CURVE_PATH not set -- skipping GN table.\n");
 		printf("                            ");
+
 		return -1;
 	}
 	
 	memset((char *)&files, 0, sizeof(glob_t));
-	sprintf(pattern, "%s/*", path);
+	v = snprintf(pattern, DIFXIO_FILENAME_LENGTH, "%s/*", path);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "\n    loadGainCurves: glob pattern too long.\n");
+		printf("                            ");
+
+		return -2;
+	}
 	glob(pattern, 0, 0, &files);
 	if(files.gl_pathc == 0)
 	{
 		printf("\n    No files found in $GAIN_CURVE_PATH\n");
 		printf("                            ");
-		return -2;
+
+		return -3;
 	}
 	
 	for(f = 0; f < files.gl_pathc; f++)

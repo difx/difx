@@ -189,7 +189,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 	}
 	else
 	{
-		printf("\n    Warning -- setting EOPs to zero\n");
+		printf("\n    Warning: setting EOPs to zero\n");
 		printf("                            ");
 		for(e = 0; e < 5; e++)
 		{

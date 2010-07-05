@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,6 +32,7 @@
 #include <string.h>
 #include <strings.h>
 #include <assert.h>
+#include <difxio/parsevis.h>
 #include "config.h"
 #include "fitsUV.h"
 #include "jobmatrix.h"
@@ -425,8 +426,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
                 v = fread(&(sync), sizeof(int), 1, dv->in);
 	}
 
-	/* The following multi-character constant is legit. */
-	if(sync == 'BASE') //old style ascii header
+	if(sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
 	{
 		line[0] = 'B';
 		line[1] = 'A';
@@ -480,7 +480,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		}
 		//printf("Baseline is %s, seconds is %s, srcindex is %s\n", DifxParametersvalue(dv->dp, rows[0]), DifxParametersvalue(dv->dp, rows[2]), DifxParametersvalue(dv->dp, rows[4]));
 	}
-	else //new style binary header
+	else if(sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
 	{
 		v = fread(&binhdrversion, sizeof(int), 1, dv->in);
 		if(binhdrversion == 1) //new style binary header
@@ -507,15 +507,22 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
                         if(v < 3)
                         {
 				fprintf(stderr, "Error parsing header - got a return val of %d when reading uvw\n", v);
-                                return HEADER_READ_ERROR;;
+				return HEADER_READ_ERROR;
                         }
                 }
                 else //dunno what to do
                 {
                         fprintf(stderr, "Error parsing header - got a sync of %x and version of %d\n",
                                 sync, binhdrversion);
-                        return -1;
+                        
+			return HEADER_READ_ERROR;
                 }
+	}
+	else
+	{
+		fprintf(stderr, "Error parsing header - got an unrecognized sync of %xd\n", sync);
+
+		return HEADER_READ_ERROR;
 	}
 
 	/* if chan weights are written the data volume is 3/2 as large */
@@ -553,7 +560,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	configId = scan->configId;
 	if(configId >= dv->D->nConfig) 
 	{
-		fprintf(stderr, "Developer error: configId = %d\n", configId);
+		fprintf(stderr, "Developer error: configId = %d  ", configId);
 		fprintf(stderr, "ScanId was %d\n", scanId);
 		exit(0);
 	}
@@ -811,7 +818,7 @@ static int RecordIsInvalid(const DifxVis *dv)
 		if(isnan(d[i]) || isinf(d[i]))
 		{
 
-			printf("Warning -- record with !finite value: ");
+			printf("Warning: record with !finite value: ");
 			printf("a1=%d a2=%d mjd=%13.7f\n",
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
@@ -823,7 +830,7 @@ static int RecordIsInvalid(const DifxVis *dv)
 	{
 		if(d[i] > 1.0e10 || d[i] < -1.0e10)
 		{
-			printf("Warning -- record with extreme value: ");
+			printf("Warning: record with extreme value: ");
 			printf("a1=%d a2=%d mjd=%13.7f value=%e\n",
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
