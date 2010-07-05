@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -49,7 +49,7 @@ void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 
 	if(!b)
 	{
-		fprintf(stderr, "Error : DifxBaselineAllocFreqs : b = 0\n");
+		fprintf(stderr, "Error: DifxBaselineAllocFreqs: b = 0\n");
 		return;
 	}
 	if(b->nPolProd)
@@ -89,19 +89,19 @@ void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
 {
 	if(!b)
 	{
-		fprintf(stderr, "Error : DifxBaselineAllocPolProds : b = 0\n");
+		fprintf(stderr, "Error: DifxBaselineAllocPolProds: b = 0\n");
 		return;
 	}
 	if(freq < 0 || freq >= b->nFreq)
 	{
-		fprintf(stderr, "Error : DifxBaselineAllocPolProds : "
+		fprintf(stderr, "Error: DifxBaselineAllocPolProds: "
 			"freq=%d outside range=%d\n", freq, b->nFreq);
 		return;
 	}
 
 	if(!b->recChanA || !b->recChanB || !b->nPolProd)
 	{
-		fprintf(stderr, "Error : DifxBaselineAllocPolProds : "
+		fprintf(stderr, "Error: DifxBaselineAllocPolProds: "
 			"recChanA or recChanB or nPolProd is zero\n");
 		return;
 	}

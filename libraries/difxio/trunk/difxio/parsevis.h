@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,6 +45,11 @@ typedef float complex cplx32f;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
+#define VISRECORD_SYNC_WORD_DIFX1	(('B' << 24) + ('A' << 16) + ('S' << 8) + 'E')
+#define VISRECORD_SYNC_WORD_DIFX2	0xFF00FF00
+
 
 typedef struct
 {

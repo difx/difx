@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,6 +40,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 	if(vis == 0)
 	{
 		fprintf(stderr, "newDifxVisRecord : malloc error\n");
+
 		return 0;
 	}
 
@@ -48,6 +49,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 	{
 		fprintf(stderr, "newDifxVisRecord : malloc error\n");
 		free(vis);
+		
 		return 0;
 	}
 	
@@ -64,6 +66,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 		fprintf(stderr, "Cannot open %s\n", filename);
 		free(vis->visdata);
 		free(vis);
+		
 		return 0;
 	}
 
@@ -73,6 +76,7 @@ DifxVisRecord *newDifxVisRecord(const char *filename, int nchan)
 	{
 		fprintf(stderr, "newDifxVisRecord : newDifxParameters error\n");
 		deleteDifxVisRecord(vis);
+		
 		return 0;
 	}
 
@@ -95,10 +99,12 @@ void deleteDifxVisRecord(DifxVisRecord *vis)
 		if(vis->visdata)
 		{
 			free(vis->visdata);
+			vis->visdata = 0;
 		}
 		if(vis->params)
 		{
 			deleteDifxParameters(vis->params);
+			vis->params = 0;
 		}
 		free(vis);
 	}
@@ -106,8 +112,9 @@ void deleteDifxVisRecord(DifxVisRecord *vis)
 
 int DifxVisRecordgetnext(DifxVisRecord *vis)
 {
+	const int MaxLineLength=99;
 	int i, v;
-	char line[100];
+	char line[MaxLineLength+1];
 	char *ptr;
 
 	/* reset the parameter list, if needed */
@@ -117,13 +124,14 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 	}
 
 	v = fread(&(vis->sync), sizeof(int), 1, vis->infile);
-        if(vis->sync == 'BASE') //old style ascii header
+
+        if(vis->sync == VISRECORD_SYNC_WORD_DIFX1) /* old style ascii header */
 	{
 		line[0] = 'B';
 		line[1] = 'A';
 		line[2] = 'S';
 		line[3] = 'E';
-		ptr = fgets(line+4, 95, vis->infile);
+		ptr = fgets(line+4, MaxLineLength-4, vis->infile);
 		if(ptr == 0)
 		{
 			return -1;
@@ -131,7 +139,7 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		DifxParametersaddrow(vis->params, line);
 		for(i = 1; i < 13; i++)
 		{
-			ptr = fgets(line, 99, vis->infile);
+			ptr = fgets(line, MaxLineLength, vis->infile);
 			if(ptr == 0)
 			{
 				return -1;
@@ -152,10 +160,10 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 		vis->uvw[1] = atof(vis->params->rows[11].value);
                 vis->uvw[2] = atof(vis->params->rows[12].value);
 	}
-	else if (vis->sync == 0xFF00FF00)
+	else if (vis->sync == VISRECORD_SYNC_WORD_DIFX2)
 	{
 		v = fread(&(vis->headerversion), sizeof(int), 1, vis->infile);
-		if(vis->headerversion == 1) //new style binary header
+		if(vis->headerversion == 1) /* new style binary header */
 		{
 			v = fread(&(vis->baseline), sizeof(int), 1, vis->infile);
 			v = fread(&(vis->mjd), sizeof(int), 1, vis->infile);
@@ -172,22 +180,28 @@ int DifxVisRecordgetnext(DifxVisRecord *vis)
 				return -1;
 			}
 		}
-		else //dunno what to do
+		else /* dunno what to do */
 		{
-			fprintf(stderr, "Error parsing header - got a sync of %x and version of %d\n", 
-				vis->sync, vis->headerversion);
+			fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x and version of %d for visibility number %d\n", 
+				vis->sync, vis->headerversion, vis->visnum);
+
 			return -1;
 		}
 	}
 	else
 	{
-		fprintf(stderr, "Error parsing header - got a sync of %x\n", vis->sync);
+		fprintf(stderr, "Error: DifxVisRecordgetnext: got a sync of %x for visibility number %d\n", 
+			vis->sync, vis->visnum);
+
 		return -1;
 	}
 
 	v = fread(vis->visdata, sizeof(cplx32f), vis->nchan, vis->infile);
 	if(v < vis->nchan)
 	{
+		fprintf(stderr, "Error: DifxVisRecordgetnext: incomplete visibility record number %d\n",
+			vis->visnum);
+
 		return -1;
 	}
 

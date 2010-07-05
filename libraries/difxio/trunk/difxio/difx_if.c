@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -162,12 +162,12 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		baselineId = dc->baselineId[b];
 		if(baselineId < 0 || baselineId >= D->nBaseline)
 		{
-			fprintf(stderr, "Error! baselineId=%d\n", baselineId);
+			fprintf(stderr, "Error: baselineId=%d\n", baselineId);
 		}
 		db = D->baseline + baselineId;
 		if(db->dsA < 0 || db->dsB < 0)
 		{	
-			fprintf(stderr, "Error! dsA=%d dsB=%d\n", 
+			fprintf(stderr, "Error: dsA=%d dsB=%d\n", 
 				db->dsA, db->dsB);
 		}
 		for(a1 = 0; a1 < nAnt; a1++) 
@@ -180,7 +180,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		if(a1 < 0 || a1 >= nAnt)
 		{
 			fprintf(stderr, 
-				"Error! makeBaselineFreq2IF : a1=%d nA=%d",
+				"Error: makeBaselineFreq2IF : a1=%d nA=%d",
 				a1, D->nAntenna);
 		}
 		for(a2 = 0; a2 < nAnt; a2++) 
@@ -204,7 +204,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 
 			if(rcA < 0 || rcA >= D->datastream[db->dsA].nRecBand)
 			{
-				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+				fprintf(stderr, "Error: makeBaselineFreq2IF : "
 					"rcA = %d, range = %d\n",
 					rcA, D->datastream[db->dsA].nRecBand);
 				exit(0);
@@ -212,7 +212,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 
 			if(rcB < 0 || rcB >= D->datastream[db->dsB].nRecBand)
 			{
-				fprintf(stderr, "Error! makeBaselineFreq2IF : "
+				fprintf(stderr, "Error: makeBaselineFreq2IF : "
 					"rcB = %d, range = %d\n",
 					rcB, D->datastream[db->dsB].nRecBand);
 				exit(0);
@@ -223,7 +223,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 				fqA = D->datastream[db->dsA].zoomBandFreqId[rcA-D->datastream[db->dsA].nRecBand];
 				if(fqA < 0 || fqA >= D->datastream[db->dsA].nZoomFreq)
 				{
-					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					fprintf(stderr, "Error: makeBaselineFreq2IF : "
 						"local freq id=%d out of range %d\n",
 						fqA, D->datastream[db->dsA].nZoomFreq);
 					exit(0);
@@ -236,7 +236,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 				fqA = D->datastream[db->dsA].recBandFreqId[rcA];
 				if(fqA < 0 || fqA >= D->datastream[db->dsA].nRecFreq)
 				{
-					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					fprintf(stderr, "Error: makeBaselineFreq2IF : "
 					"local freq id=%d out of range %d\n",
 					fqA, D->datastream[db->dsA].nRecFreq);
 					exit(0);
@@ -249,7 +249,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 				fqB = D->datastream[db->dsB].zoomBandFreqId[rcB-D->datastream[db->dsB].nRecBand];
 				if(fqB < 0 || fqB >= D->datastream[db->dsB].nZoomFreq)
 				{
-					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					fprintf(stderr, "Error: makeBaselineFreq2IF : "
 						"local freq id=%d out of range %d\n",
 						fqB, D->datastream[db->dsB].nZoomFreq);
 					exit(0);
@@ -262,7 +262,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 				fqB = D->datastream[db->dsB].recBandFreqId[rcB];
 				if(fqB < 0 || fqB >= D->datastream[db->dsB].nRecFreq)
 				{
-					fprintf(stderr, "Error! makeBaselineFreq2IF : "
+					fprintf(stderr, "Error: makeBaselineFreq2IF : "
 						"local freq id=%d out of range %d\n",
 						fqB, D->datastream[db->dsB].nRecFreq);
 					exit(0);
@@ -280,7 +280,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 			
 			if(fqA < 0 || fqA >= D->nFreq)
 			{
-				fprintf(stderr,"Error! "
+				fprintf(stderr,"Error: "
 					"makeBaselineFreq2IF : f=%d nF=%d",
 					fqA, D->nFreq);
 			}
@@ -304,7 +304,7 @@ int makeBaselineFreq2IF(DifxInput *D, int configId)
 		if(a < 0 || a >= nAnt)
 		{
 			fprintf(stderr,
-				"Warning! makeBaselineFreq2IF : a=%d nA=%d\n",
+				"Warning: makeBaselineFreq2IF : a=%d nA=%d\n",
 				a, nAnt);
 			continue;
 		}

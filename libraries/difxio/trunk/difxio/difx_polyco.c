@@ -158,8 +158,9 @@ DifxPolyco *dupDifxPolycoArray(const DifxPolyco *src, int nPolyco)
 
 int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filename)
 {
+	const int BufferSize=160;
 	FILE *in;
-	char buffer[160];
+	char buffer[BufferSize];
 	char *ptr;
 	int r, c, len;
 	DifxPolyco *dp;
@@ -174,7 +175,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 
 	for(;;)
 	{	
-		ptr = fgets(buffer, 159, in);
+		ptr = fgets(buffer, BufferSize-1, in);
 		if(ptr == 0)
 		{
 			if(*nPolyco < 1)
@@ -195,34 +196,38 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		r = sscanf(buffer, "%*s%*s%*f%lf%lf", &dp->mjd, &dp->dm);
 		if(r != 2)
 		{
-			fprintf(stderr, "Error parsing [%s] from %s\n",
+			fprintf(stderr, "Error: loadPulsarPolycoFile: cannot parse [%s] from %s\n",
 				buffer, filename);
 			fclose(in);
+			
 			return -1;
 		}
 
-		ptr = fgets(buffer, 159, in);
+		ptr = fgets(buffer, BufferSize-1, in);
 		if(ptr == 0)
 		{
 			fprintf(stderr, "Early EOF in %s\n", filename);
 			fclose(in);
+			
 			return -1;
 		}
 		r = sscanf(buffer, "%*d%lf%lf%*d%d%d%lf", 
 			&dp->p0, &dp->f0, &dp->nBlk, &dp->nCoef, &dp->refFreq);
 		if(r != 5)
 		{
-			fprintf(stderr, "Error parsing [%s] from %s\n",
+			fprintf(stderr, "Error: loadPulsarPolycoFile: cannot parse [%s] from %s\n",
 				buffer, filename);
 			fclose(in);
+			
 			return -1;
 		}
 
 		if(dp->nCoef < 1 || dp->nCoef > 24)
 		{
-			fprintf(stderr, "Too many coefs(%d) in file %s\n",
+			fprintf(stderr, "Error: loadPulsarPolycoFile: too many coefs(%d) in file %s\n",
 				dp->nCoef, filename);
 			fclose(in);
+
 			return -1;
 		}
 
@@ -246,7 +251,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		}
 
 		/* get the end of line character out of the file */
-		ptr = fgets(buffer, 159, in);	
+		ptr = fgets(buffer, BufferSize-1, in);	
 
 		// Correct for "FUT time" 
 		if(dp->mjd < 20000.0)

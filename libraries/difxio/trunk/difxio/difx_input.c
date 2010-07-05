@@ -585,19 +585,19 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 		      atoi(DifxParametersvalue(ip, rows[6]));
 	D->visBufferLength =
 		      atoi(DifxParametersvalue(ip, rows[7]));
-	v = snprintf(D->calcFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[0]));
+	v = snprintf(D->calcFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: CALC FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
 		return 0;
 	}
-	v = snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[1]));
+	v = snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[1]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: CORE CONF FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
 		return 0;
 	}
-	v = snprintf(D->outputFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(ip, rows[8]));
+	v = snprintf(D->outputFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[8]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: OUTPUT FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
@@ -606,7 +606,7 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 
 	if(DifxParametersfind(ip, 0, "DATA HEADER O/RIDE") > 0)
 	{
-		printf("Warning -- parsing old version of input file.\n");
+		printf("Warning: parsing old version of input file.\n");
 		printf("  Watch out for unusual behavior!\n");
 		D->inputFileVersion = 1;	/* pre-Perth Merge version */
 	}
@@ -1769,7 +1769,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		{
 			if(i == 0)
 			{
-				fprintf(stderr, "Warning -- no antenna axis "
+				fprintf(stderr, "Warning: no antenna axis "
 					"offsets available\n");
 				break;
 			}
@@ -1970,7 +1970,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 						}
 						else
 						{
-							fprintf(stderr, "Warning! Rules produce conflicting configs for scan %d!\n", i);
+							fprintf(stderr, "Warning: Rules produce conflicting configs for scan %d!\n", i);
 						}
 						applies = 0;
 					}
@@ -2069,7 +2069,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		fprintf(stderr, "File %s has no IM FILENAME specified!\n", D->calcFile);
 		return 0;
 	}
-	v = snprintf(D->imFile, DIFXIO_FILENAME_LENGTH, DifxParametersvalue(cp, row) );
+	v = snprintf(D->imFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(cp, row) );
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "File %s IM FILENAME is too long\n", D->calcFile);

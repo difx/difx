@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -396,7 +396,7 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 
 	if(ds->recBandFreqId[recBand] < 0 || ds->recBandFreqId[recBand] > ds->nRecFreq)
 	{
-		fprintf(stderr, "Error! recBandFreqId[%d] is %d while nRecFreq is %d\n",
+		fprintf(stderr, "Error: recBandFreqId[%d] is %d while nRecFreq is %d\n",
 			recBand, ds->recBandFreqId[recBand], ds->nRecFreq);
 	}
 	else

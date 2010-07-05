@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -695,7 +695,7 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 	{
 		if(dd->recBandFreqId[r] < 0 || dd->recBandFreqId[r] >= dd->nRecFreq)
 		{
-			fprintf(stderr, "Error! recBandFreqId[%d] is %d where nRecFreq is %d\n",
+			fprintf(stderr, "Error: recBandFreqId[%d] is %d where nRecFreq is %d\n",
 			        r, dd->recBandFreqId[r], dd->nRecFreq);
 			continue;
 		}
@@ -753,7 +753,7 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
         {
 		if(dd->zoomBandFreqId[z] < 0 || dd->zoomBandFreqId[z] >= dd->nZoomFreq)
 		{
-			fprintf(stderr, "Error! zoomBandFreqId[%d] is %d where nZoomFreq is %d\n",
+			fprintf(stderr, "Error: zoomBandFreqId[%d] is %d where nZoomFreq is %d\n",
 				z, dd->zoomBandFreqId[z], dd->nZoomFreq);
 				continue;
 		}
