@@ -56,33 +56,33 @@ void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 	{
 		free(b->nPolProd);
 	}
-	if(b->recChanA)
+	if(b->recBandA)
 	{
 		for(i = 0; i < b->nFreq; i++)
 		{
-			if(b->recChanA[i])
+			if(b->recBandA[i])
 			{
-				free(b->recChanA[i]);
+				free(b->recBandA[i]);
 			}
 		}
-		free(b->recChanA);
+		free(b->recBandA);
 	}
-	if(b->recChanB)
+	if(b->recBandB)
 	{
 		for(i = 0; i < b->nFreq; i++)
 		{
-			if(b->recChanB[i])
+			if(b->recBandB[i])
 			{
-				free(b->recChanB[i]);
+				free(b->recBandB[i]);
 			}
 		}
-		free(b->recChanB);
+		free(b->recBandB);
 	}
 
 	b->nFreq = nFreq;
 	b->nPolProd = (int *)calloc(nFreq, sizeof(int));
-	b->recChanA = (int **)calloc(nFreq, sizeof(int *));
-	b->recChanB = (int **)calloc(nFreq, sizeof(int *));
+	b->recBandA = (int **)calloc(nFreq, sizeof(int *));
+	b->recBandB = (int **)calloc(nFreq, sizeof(int *));
 }
 
 void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
@@ -99,32 +99,32 @@ void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
 		return;
 	}
 
-	if(!b->recChanA || !b->recChanB || !b->nPolProd)
+	if(!b->recBandA || !b->recBandB || !b->nPolProd)
 	{
 		fprintf(stderr, "Error: DifxBaselineAllocPolProds: "
-			"recChanA or recChanB or nPolProd is zero\n");
+			"recBandA or recBandB or nPolProd is zero\n");
 		return;
 	}
 
-	if(b->recChanA[freq])
+	if(b->recBandA[freq])
 	{
-		free(b->recChanA[freq]);
+		free(b->recBandA[freq]);
 	}
-	if(b->recChanB[freq])
+	if(b->recBandB[freq])
 	{
-		free(b->recChanB[freq]);
+		free(b->recBandB[freq]);
 	}
 
 	b->nPolProd[freq] = nPol;
 	if(nPol > 0)
 	{
-		b->recChanA[freq] = (int *)calloc(nPol, sizeof(int));
-		b->recChanB[freq] = (int *)calloc(nPol, sizeof(int));
+		b->recBandA[freq] = (int *)calloc(nPol, sizeof(int));
+		b->recBandB[freq] = (int *)calloc(nPol, sizeof(int));
 	}
 	else
 	{
-		b->recChanA[freq] = 0;
-		b->recChanB[freq] = 0;
+		b->recBandA[freq] = 0;
+		b->recBandB[freq] = 0;
 	}
 }
 
@@ -137,29 +137,29 @@ void deleteDifxBaselineInternals(DifxBaseline *db)
 		free(db->nPolProd);
 		db->nPolProd = 0;
 	}
-	if(db->recChanA)
+	if(db->recBandA)
 	{
 		for(f = 0; f < db->nFreq; f++)
 		{
-			if(db->recChanA[f])
+			if(db->recBandA[f])
 			{
-				free(db->recChanA[f]);
+				free(db->recBandA[f]);
 			}
 		}
-		free(db->recChanA);
-		db->recChanA = 0;
+		free(db->recBandA);
+		db->recBandA = 0;
 	}
-	if(db->recChanB)
+	if(db->recBandB)
 	{
 		for(f = 0; f < db->nFreq; f++)
 		{
-			if(db->recChanB[f])
+			if(db->recBandB[f])
 			{
-				free(db->recChanB[f]);
+				free(db->recBandB[f]);
 			}
 		}
-		free(db->recChanB);
-		db->recChanB = 0;
+		free(db->recBandB);
+		db->recBandB = 0;
 	}
 }
 
@@ -231,8 +231,8 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 		}
 		for(p = 0; p < db1->nPolProd[f]; p++)
 		{
-			if(db1->recChanA[f][p] != db2->recChanA[f][p] ||
-			   db1->recChanB[f][p] != db2->recChanB[f][p])
+			if(db1->recBandA[f][p] != db2->recBandA[f][p] ||
+			   db1->recBandB[f][p] != db2->recBandB[f][p])
 			{
 				return 0;
 			}
@@ -264,8 +264,8 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 		DifxBaselineAllocPolProds(dest, f, src->nPolProd[f]);
 		for(p = 0; p < dest->nPolProd[f]; p++)
 		{
-			dest->recChanA[f][p] = src->recChanA[f][p];
-			dest->recChanB[f][p] = src->recChanB[f][p];
+			dest->recBandA[f][p] = src->recBandA[f][p];
+			dest->recBandB[f][p] = src->recBandB[f][p];
 		}
 	}
 }
@@ -275,13 +275,13 @@ void moveDifxBaseline(DifxBaseline *dest, DifxBaseline *src)
 	dest->dsA = src->dsA;
 	dest->dsB = src->dsB;
 	dest->nPolProd = src->nPolProd;
-	dest->recChanA = src->recChanA;
-	dest->recChanB = src->recChanB;
+	dest->recBandA = src->recBandA;
+	dest->recBandB = src->recBandB;
 
 	/* "unlink" internal structures */
 	src->nPolProd = 0;
-	src->recChanA = 0;
-	src->recChanB = 0;
+	src->recBandA = 0;
+	src->recBandB = 0;
 }
 
 int simplifyDifxBaselines(DifxInput *D)
@@ -424,9 +424,9 @@ int writeDifxBaselineArray(FILE *out, int nBaseline, const DifxBaseline *db)
 			for(p = 0; p < b->nPolProd[f]; p++)
 			{
 				writeDifxLineInt1(out, "D/STREAM A BAND %d", p,
-					b->recChanA[f][p]);
+					b->recBandA[f][p]);
 				writeDifxLineInt1(out, "D/STREAM B BAND %d", p,
-					b->recChanB[f][p]);
+					b->recBandB[f][p]);
 				n += 2;
 			}
 		}

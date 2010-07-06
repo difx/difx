@@ -81,14 +81,11 @@ void DifxDatastreamAllocFiles(DifxDatastream *ds, int nFile)
 			}
 		}
 		free(ds->file);
+		ds->file = 0;
 	}
 	
 	ds->nFile = nFile;
-	if(nFile == 0)
-	{
-		ds->file = 0;
-	}
-	else
+	if(nFile > 0)
 	{
 		ds->file = (char **)calloc(nFile, sizeof(char *));
 	}
@@ -99,104 +96,12 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 	if(dd->recFreqId)
 	{
 		free(dd->recFreqId);
+		dd->recFreqId = 0;
 	}
-	if(dd->nRecPol)
-	{
-		free(dd->nRecPol);
-	}
-	if(dd->clockOffset)
-	{
-		free(dd->clockOffset);
-	}
-	if(dd->freqOffset)
-	{
-		free(dd->freqOffset);
-	}
-	dd->nRecFreq = nRecFreq;
-	dd->recFreqId = (int *)calloc(nRecFreq, sizeof(int));
-	dd->nRecPol = (int *)calloc(nRecFreq, sizeof(int));
-	dd->clockOffset = (double *)calloc(nRecFreq, sizeof(double));
-	dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
-        if(dd->zoomFreqId)
-        {
-                free(dd->zoomFreqId);
-        }
-        if(dd->nZoomPol)
-        {
-                free(dd->nZoomPol);
-        }
-        dd->nZoomFreq = 0;
-        dd->zoomFreqId = 0;
-        dd->nZoomPol = 0;
-}
-
-void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
-{
-	if(dd->recBandFreqId)
-	{
-		free(dd->recBandFreqId);
-	}
-	if(dd->recBandPolName)
-	{
-		free(dd->recBandPolName);
-	}
-	dd->nRecBand = nRecBand;
-	dd->recBandFreqId = (int *)calloc(nRecBand, sizeof(int));
-	dd->recBandPolName = (char *)calloc(nRecBand, sizeof(char));
-	if(dd->zoomBandFreqId)
-	{
-		free(dd->zoomBandFreqId);
-	}
-	if(dd->zoomBandPolName)
-	{
-		free(dd->zoomBandPolName);
-	}
-	dd->nZoomBand = 0; //for now
-	dd->zoomBandFreqId = 0;
-	dd->zoomBandPolName = 0;
-}
-
-void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq)
-{
-        if(dd->zoomFreqId)
-        {
-                free(dd->zoomFreqId);
-        }
-        if(dd->nZoomPol)
-        {
-                free(dd->nZoomPol);
-        }
-	dd->nZoomFreq = nZoomFreq;
-        dd->zoomFreqId = (int *)calloc(nZoomFreq, sizeof(int));
-        dd->nZoomPol = (int *)calloc(nZoomFreq, sizeof(int));
-}
-
-void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand)
-{
-        if(dd->zoomBandFreqId)
-        {
-                free(dd->zoomBandFreqId);
-        }
-        if(dd->zoomBandPolName)
-        {
-                free(dd->zoomBandPolName);
-        }
-        dd->nZoomBand = nZoomBand;
-        dd->zoomBandFreqId = (int *)calloc(nZoomBand, sizeof(int));
-        dd->zoomBandPolName = (char *)calloc(nZoomBand, sizeof(char));
-}
-
-void deleteDifxDatastreamInternals(DifxDatastream *dd)
-{
 	if(dd->nRecPol)
 	{
 		free(dd->nRecPol);
 		dd->nRecPol = 0;
-	}
-	if(dd->recFreqId)
-	{
-		free(dd->recFreqId);
-		dd->recFreqId = 0;
 	}
 	if(dd->clockOffset)
 	{
@@ -208,6 +113,31 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd)
 		free(dd->freqOffset);
 		dd->freqOffset = 0;
 	}
+
+	if(dd->zoomFreqId)
+	{
+		free(dd->zoomFreqId);
+		dd->zoomFreqId = 0;
+	}
+	if(dd->nZoomPol)
+	{
+		free(dd->nZoomPol);
+		dd->nZoomPol = 0;
+	}
+	dd->nZoomFreq = 0;
+
+	dd->nRecFreq = nRecFreq;
+	if(nRecFreq > 0)
+	{
+		dd->recFreqId = (int *)calloc(nRecFreq, sizeof(int));
+		dd->nRecPol = (int *)calloc(nRecFreq, sizeof(int));
+		dd->clockOffset = (double *)calloc(nRecFreq, sizeof(double));
+		dd->freqOffset = (double *)calloc(nRecFreq, sizeof(double));
+	}
+}
+
+void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
+{
 	if(dd->recBandFreqId)
 	{
 		free(dd->recBandFreqId);
@@ -218,16 +148,7 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd)
 		free(dd->recBandPolName);
 		dd->recBandPolName = 0;
 	}
-	if(dd->nZoomPol)
-	{
-		free(dd->nZoomPol);
-		dd->nZoomPol = 0;
-	}
-	if(dd->zoomFreqId)
-	{
-		free(dd->zoomFreqId);
-		dd->zoomFreqId = 0;
-	}
+
 	if(dd->zoomBandFreqId)
 	{
 		free(dd->zoomBandFreqId);
@@ -238,6 +159,63 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd)
 		free(dd->zoomBandPolName);
 		dd->zoomBandPolName = 0;
 	}
+	dd->nZoomBand = 0; //for now
+
+	dd->nRecBand = nRecBand;
+	if(nRecBand > 0)
+	{
+		dd->recBandFreqId = (int *)calloc(nRecBand, sizeof(int));
+		dd->recBandPolName = (char *)calloc(nRecBand, sizeof(char));
+	}
+}
+
+void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq)
+{
+	if(dd->zoomFreqId)
+	{
+		free(dd->zoomFreqId);
+		dd->zoomFreqId = 0;
+	}
+	if(dd->nZoomPol)
+	{
+		free(dd->nZoomPol);
+		dd->nZoomPol = 0;
+	}
+	dd->nZoomFreq = nZoomFreq;
+	if(nZoomFreq > 0)
+	{
+		dd->zoomFreqId = (int *)calloc(nZoomFreq, sizeof(int));
+		dd->nZoomPol = (int *)calloc(nZoomFreq, sizeof(int));
+	}
+}
+
+void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand)
+{
+	if(dd->zoomBandFreqId)
+	{
+		free(dd->zoomBandFreqId);
+		dd->zoomBandFreqId = 0;
+	}
+	if(dd->zoomBandPolName)
+	{
+		free(dd->zoomBandPolName);
+		dd->zoomBandPolName = 0;
+	}
+	dd->nZoomBand = nZoomBand;
+	if(nZoomBand > 0)
+	{
+		dd->zoomBandFreqId = (int *)calloc(nZoomBand, sizeof(int));
+		dd->zoomBandPolName = (char *)calloc(nZoomBand, sizeof(char));
+	}
+}
+
+void deleteDifxDatastreamInternals(DifxDatastream *dd)
+{
+	/* The following will deallocate several arrays */
+	DifxDatastreamAllocBands(dd, 0);
+
+	/* The following will deallocate several arrays */
+	DifxDatastreamAllocFreqs(dd, 0);
 
 	/* allocating zero files is equivalent to deleting any existing ones */
 	DifxDatastreamAllocFiles(dd, 0);
@@ -292,7 +270,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, " (%d, %d)", dd->recFreqId[f], dd->nRecPol[f]);
 	}
 	fprintf(fp, "\n");
-	fprintf(fp, "    (freq(index to above), pol)[recchan] =");
+	fprintf(fp, "    (freq(index to above), pol)[recBand] =");
 	for(f = 0; f < dd->nRecBand; f++)
 	{
 		fprintf(fp, " (%d, %c)", dd->recBandFreqId[f], dd->recBandPolName[f]);
@@ -305,7 +283,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, " (%d, %d)", dd->zoomFreqId[f], dd->nZoomPol[f]);
 	}
 	fprintf(fp, "\n");
-	fprintf(fp, "    (freq(index to above), pol)[recchan] =");
+	fprintf(fp, "    (freq(index to above), pol)[recBand] =");
 	for(f = 0; f < dd->nZoomBand; f++)
 	{
 		fprintf(fp, " (%d, %c)", dd->zoomBandFreqId[f], dd->zoomBandPolName[f]);
@@ -391,10 +369,13 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 			return 0;
 		}
 	}
+#if 0
+	/* I think this check is unnecessary */
 	if(dd1->dataSource != dd2->dataSource)
 	{
 		return 0;
 	}
+#endif
 
 	return 1;
 }
@@ -690,16 +671,16 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 {
 	int r;
 	int n=0;
+	int localFqId;
 
 	for(r = 0; r < dd->nRecBand; r++)
 	{
-		if(dd->recBandFreqId[r] < 0 || dd->recBandFreqId[r] >= dd->nRecFreq)
+		localFqId = dd->recBandFreqId[r];
+		if(localFqId < 0 || localFqId >= dd->nRecFreq)
 		{
-			fprintf(stderr, "Error: recBandFreqId[%d] is %d where nRecFreq is %d\n",
-			        r, dd->recBandFreqId[r], dd->nRecFreq);
-			continue;
+			fprintf(stderr, "Error: DifxDatastreamGetRecChans: localFqId=%d out of range (%d)\n", localFqId, dd->nRecFreq);
 		}
-		if(dd->recFreqId[dd->recBandFreqId[r]] == freqId)
+		else if(dd->recFreqId[localFqId] == freqId)
 		{
 			if(dd->recBandPolName[r] <= ' ')
 			{
@@ -707,11 +688,13 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 			}
 			if(n >= 2)
 			{
-				fprintf(stderr, "Warning: skipping dup rechan\n");
+				fprintf(stderr, "Warning: skipping dup rechan 1: r=%d freqId=%d localFqId=%d\n",
+					r, freqId, localFqId);
 			}
 			else if(n == 1 && dd->recBandPolName[r] == pols[0])
 			{
-				fprintf(stderr, "Warning: skipping dup rechan\n");
+				fprintf(stderr, "Warning: skipping dup rechan 2: r=%d freqId=%d localFqId=%d\n",
+					r, freqId, localFqId);
 			}
 			else
 			{
@@ -722,6 +705,7 @@ int DifxDatastreamGetRecBands(DifxDatastream *dd, int freqId, char *pols, int *r
 		}
 	}
 
+	/* check to see if a swap to cannonical polarization order is due */
 	if(n == 2)
 	{
 		if(pols[0] == 'L' && pols[1] == 'R')
@@ -765,11 +749,11 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
                         }
                         if(n >= 2)
                         {
-                                fprintf(stderr, "Warning: skipping dup zoomchan\n");
+                                fprintf(stderr, "Warning: skipping dup zoomchan 1: z=%d freqId=%d\n", z, freqId);
                         }
                         else if(n == 1 && dd->zoomBandPolName[z] == pols[0])
                         {
-                                fprintf(stderr, "Warning: skipping dup zoomchan\n");
+                                fprintf(stderr, "Warning: skipping dup zoomchan 2: z=%d freqId=%d\n", z, freqId);
                         }
                         else
                         {
@@ -780,6 +764,7 @@ int DifxDatastreamGetZoomBands(DifxDatastream *dd, int freqId, char *pols, int *
                 }
         }
 
+	/* check to see if a swap to cannonical polarization order is due */
 	if(n == 2)
         {
                 if(pols[0] == 'L' && pols[1] == 'R')

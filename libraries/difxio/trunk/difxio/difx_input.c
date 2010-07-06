@@ -145,7 +145,6 @@ void fprintDifxInput(FILE *fp, const DifxInput *D)
 	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
 	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
 	fprintf(fp, "  vis buffer length = %d\n", D->visBufferLength);
-	//fprintf(fp, "  FFT size = %d\n", D->nFFT);
 	fprintf(fp, "  Input Channels = %d\n", D->nInChan);
 	fprintf(fp, "  Start Channel = %d\n", D->startChan);
 	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
@@ -238,7 +237,6 @@ void fprintDifxInputSummary(FILE *fp, const DifxInput *D)
 
 	fprintf(fp, "  mjdStart = %14.8f\n", D->mjdStart);
 	fprintf(fp, "  mjdStop  = %14.8f\n", D->mjdStop);
-	//fprintf(fp, "  FFT size = %d\n", D->nFFT);
 	//fprintf(fp, "  Input Channels = %d\n", D->nInChan);
 	fprintf(fp, "  Start Channel = %d\n", D->startChan);
 	fprintf(fp, "  Spectral Avg = %d\n", D->specAvg);
@@ -366,159 +364,166 @@ static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
 	return antMap;
 }
 
-/* add x to list of integers if not already in list.  return new list size */
-static int addtolist(int *list, int x, int n)
+static int polMaskValue(char polName)
 {
-	int i;
-	
-	if(n < 0)
+	switch(polName)
 	{
-		return n;
+		case 'R':
+		case 'r':
+			return DIFXIO_POL_R;
+		case 'L':
+		case 'l':
+			return DIFXIO_POL_L;
+		case 'X':
+		case 'x':
+			return DIFXIO_POL_X;
+		case 'Y':
+		case 'y':
+			return DIFXIO_POL_Y;
+		default:
+			return DIFXIO_POL_ERROR;
 	}
-	if(n == 0)
-	{
-		list[0] = x;
-		return 1;
-	}
-	for(i = 0; i < n; i++)
-	{
-		if(list[i] == x)
-		{
-			return n;
-		}
-	}
-	list[n] = x;
-
-	return n+1;
 }
 
-static int makeFreqId2IFmap(DifxInput *D, int configId)
+/* This function populates four array fields (and their
+ * scalar-valued companions) in a DifxConfig object:
+ *   freqId2IF[]
+ *   freqIdUsed[]
+ *   IF[]
+ *   pol[]
+ */
+static int generateAipsIFs(DifxInput *D, int configId)
 {
 	DifxConfig *dc;
-	DifxDatastream *ds;
+	DifxBaseline *db;
+	int bl, blId, dsId, rc, fqId, localFqId;
 	int *freqIds;
-	int p, a, f, c, i;
-	int maxFreqId=0;
-	int nPol = 0;
-	int haspol[4] = {0, 0, 0, 0};	/* indices are: 0-R, 1-L, 2-X, 3-Y */
+	int p, f, i;
+	char polName;
 
 	if(configId < 0)
 	{
-		fprintf(stderr, "Warning: makeFreqId2IFmap: configId = %d\n",
+		fprintf(stderr, "Warning: generateAipsIFs: configId = %d\n",
 			configId);
 		return 0;
 	}
 
 	dc = D->config + configId;
-	dc->nIF = 0;
 
-	freqIds = (int *)calloc(D->nFreq, sizeof(int));
 
-	/* go through datastreams associated with this config and collect all
-	 * distinct Freq table ids
-	 */
-	
-	/* here "a" is "datastream # within configuration", not "antenna" */
-	for(a = 0; a < dc->nDatastream; a++)
+	/* Prepare some arrays */
+	if(dc->freqIdUsed)
 	{
-		if(dc->datastreamId[a] < 0)
-		{
-			continue;
-		}
-		
-		ds = D->datastream + dc->datastreamId[a];
-		for(f = 0; f < ds->nRecFreq; f++)
-		{
-			dc->nIF = addtolist(freqIds, ds->recFreqId[f], dc->nIF);
-			if(ds->recFreqId[f] > maxFreqId)
-			{
-				maxFreqId = ds->recFreqId[f];
-			}
-		}
-		for(f = 0; f < ds->nZoomFreq; f++)
-		{
-			dc->nIF = addtolist(freqIds, ds->zoomFreqId[f], dc->nIF);
-			if(ds->zoomFreqId[f] > maxFreqId)
-			{
-				maxFreqId = ds->zoomFreqId[f];
-			}
-		}
+		free(dc->freqIdUsed);
 	}
-	
-	/* Allocate space */
+	dc->freqIdUsed = (int *)calloc(D->nFreq+1, sizeof(int));
+	dc->freqIdUsed[D->nFreq] = -1;
+
+	if(dc->IF)
+	{
+		deleteDifxIFArray(dc->IF);
+		dc->IF = 0;
+	}
+	D->nIF = 0;
+
 	if(dc->freqId2IF)
 	{
 		free(dc->freqId2IF);
 	}
-	dc->freqId2IF = (int *)calloc((maxFreqId+2), sizeof(int));
-	dc->freqId2IF[maxFreqId+1] = -1;
-
-	/* determine which polarizations are present.  All IFs in this 
-	 * config will maintain slots for all polariazations, even if
-	 * this ends up making wasted space in FITS files
-	 */
-
-	/* here "a" is "datastream # within configuration", not "antenna" */
-	for(a = 0; a < dc->nDatastream; a++)
+	dc->freqId2IF = (int *)malloc((D->nFreq+2)*sizeof(int));
+	for(f = 0; f < D->nFreq; f++)
 	{
-		if(dc->datastreamId[a] < 0)
+		dc->freqId2IF[f] = -1;
+	}
+	dc->freqId2IF[D->nFreq] = -2;	/* special list terminator */
+
+	dc->polMask = 0;
+	dc->nPol = 0;
+	dc->pol[0] = dc->pol[1] = ' ';
+
+
+	/* Look for used D->freq[] entries and polarization entries */
+	for(bl = 0; bl < dc->nBaseline; bl++)
+	{
+		blId = dc->baselineId[bl];
+		if(blId < 0)
 		{
 			continue;
 		}
+		db = D->baseline + blId;
 
-		ds = D->datastream + dc->datastreamId[a];
-		for(c = 0; c < ds->nRecBand; c++)
+		/* f here refers to the baseline frequency list */
+		for(f = 0; f < db->nFreq; f++)
 		{
-			switch(ds->recBandPolName[c])
+			if(db->nPolProd[f] < 0)
 			{
-				case 'R': 
-					haspol[0] = 1; 
-					break;
-				case 'L': 
-					haspol[1] = 1; 
-					break;
-				case 'X': 
-					haspol[2] = 1; 
-					break;
-				case 'Y': 
-					haspol[3] = 1; 
-					break;
-				default:
-					fprintf(stderr, "Warning: Unknown pol %c\n",
-						ds->recBandPolName[c]);
+				continue;
+			}
+			for(p = 0; p < db->nPolProd[f]; p++)
+			{
+				dsId = db->dsA;
+				rc = db->recBandA[f][p];
+				localFqId = D->datastream[dsId].recBandFreqId[rc];
+				polName = D->datastream[dsId].recBandPolName[rc];
+				fqId = D->datastream[dsId].recFreqId[localFqId];
+				dc->freqIdUsed[fqId]++;
+				dc->polMask |= polMaskValue(polName);
+
+				dsId = db->dsB;
+				rc = db->recBandB[f][p];
+				localFqId = D->datastream[dsId].recBandFreqId[rc];
+				polName = D->datastream[dsId].recBandPolName[rc];
+				fqId = D->datastream[dsId].recFreqId[localFqId];
+				dc->freqIdUsed[fqId]++;
+				dc->polMask |= polMaskValue(polName);
 			}
 		}
 	}
-	for(p = 0; p < 4; p++)
+
+	if(dc->polMask & DIFXIO_POL_ERROR || 
+	   dc->polMask == 0 || 
+	   ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY)) )
 	{
-		nPol += haspol[p];
-	}
-	if(nPol != 1 && nPol != 2)
-	{
-		fprintf(stderr, "Weird number of polarizations: %d\n", nPol);
-		free(freqIds);
+		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x -- unsupported!\n", dc->polMask);
 		return -1;
 	}
-	dc->nPol = nPol;
-	p = 0;
-	dc->pol[1] = ' ';
-	if(haspol[0])
+
+	/* populate polarization matrix for this configuration */
+	if(dc->polMask & DIFXIO_POL_R)
 	{
-		dc->pol[p++] = 'R';
+		dc->pol[dc->nPol] = 'R';
+		dc->nPol++;
 	}
-	if(haspol[1])
+	if(dc->polMask & DIFXIO_POL_L)
 	{
-		dc->pol[p++] = 'L';
+		dc->pol[dc->nPol] = 'L';
+		dc->nPol++;
 	}
-	if(haspol[2])
+	if(dc->polMask & DIFXIO_POL_X)
 	{
-		dc->pol[p++] = 'X';
+		dc->pol[dc->nPol] = 'X';
+		dc->nPol++;
 	}
-	if(haspol[3])
+	if(dc->polMask & DIFXIO_POL_Y)
 	{
-		dc->pol[p++] = 'Y';
+		dc->pol[dc->nPol] = 'Y';
+		dc->nPol++;
 	}
 
+	/* Actually construct the IF array */
+
+	/* First count IFs and make map to freqId */
+	freqIds = (int *)calloc(D->nFreq, sizeof(int));
+	for(fqId = 0; fqId < D->nFreq; fqId++)
+	{
+		if(dc->freqIdUsed[fqId] > 0)
+		{
+			freqIds[dc->nIF] = fqId;
+			dc->nIF++;
+		}
+	}
+
+	/* Then actually build it */
 	dc->IF = newDifxIFArray(dc->nIF);
 	for(i = 0; i < dc->nIF; i++)
 	{
@@ -527,7 +532,7 @@ static int makeFreqId2IFmap(DifxInput *D, int configId)
 		dc->IF[i].freq     = D->freq[f].freq;
 		dc->IF[i].bw       = D->freq[f].bw;
 		dc->IF[i].sideband = D->freq[f].sideband;
-		dc->IF[i].nPol     = nPol;
+		dc->IF[i].nPol     = dc->nPol;
 		dc->IF[i].pol[0]   = dc->pol[0];
 		dc->IF[i].pol[1]   = dc->pol[1];
 	}
@@ -1353,7 +1358,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 						"not found\n", p);
 					return 0;
 				}
-				D->baseline[b].recChanA[f][p] =
+				D->baseline[b].recBandA[f][p] =
 					atoi(DifxParametersvalue(ip, r));
 				r = DifxParametersfind1(ip, r+1, 
 					"D/STREAM B BAND %d", p);
@@ -1363,7 +1368,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 						"not found\n", p);
 					return 0;
 				}
-				D->baseline[b].recChanB[f][p] =
+				D->baseline[b].recBandB[f][p] =
 					atoi(DifxParametersvalue(ip, r));
 			}
 		}
@@ -1453,7 +1458,7 @@ static DifxInput *parseDifxInputNetworkTable(DifxInput *D,
 
 static DifxInput *deriveDifxInputValues(DifxInput *D)
 {
-	int a, b, c, e, qb;
+	int dsId, fqId, c, e, qb, v;
 	DifxDatastream *ds;
 	
 	if(!D)
@@ -1469,12 +1474,12 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 
 	/* Set reference frequency to the lowest of the freqs */
 	D->refFreq = 0.0;
-	for(b = 0; b < D->nFreq; b++)
+	for(fqId = 0; fqId < D->nFreq; fqId++)
 	{
-		if(D->freq[b].freq < D->refFreq || D->refFreq <= 0.0)
+		if(D->freq[fqId].freq < D->refFreq || D->refFreq <= 0.0)
 		{
-			printf("Setting refFreq to %f\n", D->freq[b].freq);
-			D->refFreq = D->freq[b].freq;
+			printf("Setting refFreq to %f\n", D->freq[fqId].freq);
+			D->refFreq = D->freq[fqId].freq;
 		}
 	}
 
@@ -1485,10 +1490,9 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		D->config[c].quantBits = -1;
 		qb = 0;
 
-		/* here "a" is "datastream # within conf", not "antenna" */
-		for(a = 0; a < D->config[c].nDatastream; a++)
+		for(dsId = 0; dsId < D->config[c].nDatastream; dsId++)
 		{
-			e = D->config[c].datastreamId[a];
+			e = D->config[c].datastreamId[dsId];
 			if(e < 0)
 			{
 				continue;
@@ -1513,8 +1517,12 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 
 	for(c = 0; c < D->nConfig; c++)
 	{
-		makeFreqId2IFmap(D, c);
-		makeBaselineFreq2IF(D, c);
+		v = generateAipsIFs(D, c);
+		if(v < 0)
+		{
+			fprintf(stderr, "Fatal error processing configId %d\n", c);
+			return 0;
+		}
 	}
 
 	return D;
@@ -2558,10 +2566,10 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 			{
 				j = fs[a];
 				l = fc[a];
-				if(D->source[i].ra       == D->source[j].ra  &&
-				   D->source[i].dec      == D->source[j].dec &&
-				   D->source[i].qual     == D->source[j].qual &&
-				   D->config[k].freqId   == D->config[l].freqId &&
+				if(D->source[i].ra         == D->source[j].ra  &&
+				   D->source[i].dec        == D->source[j].dec &&
+				   D->source[i].qual       == D->source[j].qual &&
+				   D->config[k].fitsFreqId == D->config[l].fitsFreqId &&
 				   strcmp(D->source[i].calCode, D->source[j].calCode) 
 				   	== 0 &&
 				   strcmp(D->source[i].name, D->source[j].name) == 0)
@@ -2803,28 +2811,28 @@ static int calcFreqIds(DifxInput *D)
 		return 0;
 	}
 	
-	D->config[0].freqId = nFQ;
+	D->config[0].fitsFreqId = nFQ;
 	nFQ++;
 	
 	if(D->nConfig < 2)
 	{
-		return 0;
+		return 1;
 	}
 
 	for(c = 1; c < D->nConfig; c++)
 	{
-		D->config[c].freqId = -1;
+		D->config[c].fitsFreqId = -1;
 		for(d = 0; d < c; d++)
 		{
 			if(sameFQ(&(D->config[c]), &(D->config[d])))
 			{
-				D->config[c].freqId = D->config[d].freqId;
+				D->config[c].fitsFreqId = D->config[d].fitsFreqId;
 				d = c; /* terminate inner loop */
 			}
 		}
-		if(D->config[c].freqId == -1)
+		if(D->config[c].fitsFreqId == -1)
 		{
-			D->config[c].freqId = nFQ;
+			D->config[c].fitsFreqId = nFQ;
 			nFQ++;
 		}
 	}

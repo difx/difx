@@ -35,6 +35,15 @@
 #define MAX_PHS_CENTRES		1000
 #define DIFXIO_FILENAME_LENGTH	256
 
+#define DIFXIO_POL_R		0x01
+#define DIFXIO_POL_L		0x02
+#define DIFXIO_POL_X		0x10
+#define DIFXIO_POL_Y		0x20
+#define DIFXIO_POL_ERROR	0x100
+#define DIFXIO_POL_RL		(DIFXIO_POL_R | DIFXIO_POL_L)
+#define DIFXIO_POL_XY		(DIFXIO_POL_X | DIFXIO_POL_Y)
+
+
 #include <stdio.h>
 
 #ifdef __cplusplus
@@ -148,6 +157,7 @@ typedef struct
 	int phasedArrayId;	/* -1 if not phased array mode */
 	int nPol;		/* number of pols in datastreams (1 or 2) */
 	char pol[2];		/* the polarizations */
+	int polMask;		/* bit field using DIFX_POL_x from above */
 	int doPolar;		/* >0 if cross hands to be correlated */
 	int doAutoCorr;		/* >0 if autocorrelations are to be written to disk */
 	int quantBits;		/* 1 or 2 */
@@ -161,11 +171,11 @@ typedef struct
 	
 	int nIF;		/* number of FITS IFs to create */
 	DifxIF *IF;		/* FITS IF definitions */
-	int freqId;		/* 0-based number -- uniq FITS IF[] index */
-	int *freqId2IF;		/* map from freq table index to IF */
+	int fitsFreqId;		/* 0-based number -- uniq FITS IF[] index NOT AN INDEX TO DifxFreq[]! */
+	int *freqId2IF;		/* map from freq table [0 to nFreq] index to IF [0 to nIF-1] or -1 */
+				/* a value of -1 indicates this Freq is not used */
+	int *freqIdUsed;	/* Is the Freq table index used by this config? */
 
-	int ***baselineFreq2IF;	/* [a1][a2][freqNum] -> IF 
-				 * Indices are antenna numbers from .difx/ */
 	int *ant2dsId;		/* map from .input file antenna# to internal
 				 * DifxDatastream Id. [0..nAntenna-1]
 				 * this should be used only in conjunction
@@ -197,20 +207,21 @@ typedef struct
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
 	int phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone */
-	int nRecFreq;		/* num freqs from this datastream */
-	int nRecBand;		/* number of base band channels recorded */
-	int *nRecPol;		/* [freq] */
-	int *recFreqId;		/* [freq] index to DifxFreq table */
-	double *clockOffset;	/* (us) [freq] */
-	double *freqOffset;     /* Freq offsets for each frequency in Hz */
-	int *recBandFreqId;     /* [recband] index to recFreqId[] */
-	char *recBandPolName;   /* [recband] Polarization name (R, L, X or Y) */
 
-        int nZoomFreq;          /* number of "zoom" freqs (within recorded
-				   freqs) for this datastream */
-	int nZoomBand;          /* number of zoom subbands */
-	int *nZoomPol;          /* [zoomfreq] */
-	int *zoomFreqId;        /* [zoomfreq] index to DifxFreq table */
+	double *clockOffset;	/* (us) [freq] */
+	double *freqOffset;	/* Freq offsets for each frequency in Hz */
+	
+	int nRecFreq;		/* number of freqs recorded in this datastream */
+	int nRecBand;		/* number of base band channels recorded */
+	int *nRecPol;		/* [recfreq] */
+	int *recFreqId;		/* [recfreq] index to DifxFreq table */
+	int *recBandFreqId;	/* [recband] index to recFreqId[] */
+	char *recBandPolName;	/* [recband] Polarization name (R, L, X or Y) */
+
+        int nZoomFreq;		/* number of "zoom" freqs (within recorded freqs) for this datastream */
+	int nZoomBand;		/* number of zoom subbands */
+	int *nZoomPol;		/* [zoomfreq] */
+	int *zoomFreqId;	/* [zoomfreq] index to DifxFreq table */
 	int *zoomBandFreqId;	/* [zoomband] index to zoomfreqId[] */
 	char *zoomBandPolName;	/* [zoomband] Polarization name (R, L, X or Y) */
 } DifxDatastream;
@@ -220,8 +231,8 @@ typedef struct
 	int dsA, dsB;		/* indices to datastream table */
 	int nFreq;
 	int *nPolProd;		/* [freq] */
-	int **recChanA;		/* [freq][productIndex] */
-	int **recChanB;		/* [freq][productIndex] */
+	int **recBandA;		/* [freq][productIndex] */
+	int **recBandB;		/* [freq][productIndex] */
 } DifxBaseline;
 
 typedef struct
@@ -375,7 +386,6 @@ typedef struct
 	int nOutChan;		/* number of channels to write to FITS, only set for difx2fits */
 				/* Statchan, nInChan and nOutChan are all set haphazardly, and
 				   will certainly have odd things if not all freqs are the same */
-	//int nFFT;		/* size of FFT used */
 	int visBufferLength;	/* number of visibility buffers in mpifxcorr */
 
 	int nIF;		/* maximum num IF across configs */
@@ -557,7 +567,7 @@ DifxConfig *mergeDifxConfigArrays(const DifxConfig *dc1, int ndc1,
 	const int *pulsarIdRemap, int *ndc);
 int DifxConfigCalculateDoPolar(DifxConfig *dc, DifxBaseline *db);
 int DifxConfigGetPolId(const DifxConfig *dc, char polName);
-int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
+int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	int antennaId, int recBand, int *freqId, int *polId);
 int writeDifxConfigArray(FILE *out, int nConfig, const DifxConfig *dc, const DifxPulsar *pulsar,
 	const DifxPhasedArray *phasedarray);
@@ -646,10 +656,6 @@ void fprintDifxIF(FILE *fp, const DifxIF *di);
 void printDifxIFSummary(const DifxIF *di);
 void fprintDifxIFSummary(FILE *fp, const DifxIF *di);
 int isSameDifxIF(const DifxIF *di1, const DifxIF *di2);
-void deleteBaselineFreq2IF(int ***map);
-void printBaselineFreq2IF(int ***map, int nAnt, int nChan);
-void fprintBaselineFreq2IF(FILE *fp, int ***map, int nAnt, int nChan);
-int makeBaselineFreq2IF(DifxInput *D, int configId);
 
 /* DifxAntennaFlag functions */
 DifxAntennaFlag *newDifxAntennaFlagArray(int nFlag);

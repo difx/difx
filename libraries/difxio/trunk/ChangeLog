@@ -26,6 +26,10 @@
 * Change to polynomial-based clock model (up to 5th order)
 * Move all data source information to DifxDatastream where it should be
 * Respect and track all filenames rather than assume systematically named files
+* rename all recChan variables to recBand for better uniformity
+* remove baselineFreq2IF array which was complex and wrong and not needed
+* RCFreqId was used with two meanings (that usually gave the same value).
+  The true usage is now used everywhere. (Thanks to Randall Wayth for helping find this in DiFX 1.5!)
 
 2.11
 * Post DiFX-1.5

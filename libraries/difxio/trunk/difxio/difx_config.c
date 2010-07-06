@@ -108,11 +108,6 @@ void deleteDifxConfigInternals(DifxConfig *dc)
 		free(dc->freqId2IF);
 		dc->freqId2IF = 0;
 	}
-	if(dc->baselineFreq2IF)
-	{
-		deleteBaselineFreq2IF(dc->baselineFreq2IF);
-		dc->baselineFreq2IF = 0;
-	}
 	if(dc->ant2dsId)
 	{
 		free(dc->ant2dsId);
@@ -137,7 +132,6 @@ void deleteDifxConfigArray(DifxConfig *dc, int nConfig)
 void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 {
 	int i;
-	int nAnt;
 	char p0, p1;
 
 	fprintf(fp, "  Difx Config [%s] : %p\n", dc->name, dc);
@@ -152,6 +146,7 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 	p0 = dc->pol[0] ? dc->pol[0] : ' ';
 	p1 = dc->pol[1] ? dc->pol[1] : ' ';
 	fprintf(fp, "    polarization [%d] = %c%c\n", dc->nPol, p0, p1);
+	fprintf(fp, "    polMask = 0x%03x\n", dc->polMask);
 	fprintf(fp, "    doPolar = %d\n", dc->doPolar);
 	fprintf(fp, "    quantization bits = %d\n", dc->quantBits);
 	fprintf(fp, "    datastream ids [%d] =", dc->nDatastream);
@@ -169,9 +164,18 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 	if(dc->freqId2IF)
 	{
 		fprintf(fp, "    frequency to IF map =");
-		for(i = 0; dc->freqId2IF[i] >= 0; i++)
+		for(i = 0; dc->freqId2IF[i] >= -1; i++)
 		{
 			fprintf(fp, " %d", dc->freqId2IF[i]);
+		}
+		fprintf(fp, "\n");
+	}
+	if(dc->freqIdUsed)
+	{
+		fprintf(fp, "    frequency usage =");
+		for(i = 0; dc->freqIdUsed[i] >= 0; i++)
+		{
+			fprintf(fp, " %d", dc->freqIdUsed[i]);
 		}
 		fprintf(fp, "\n");
 	}
@@ -192,15 +196,6 @@ void fprintDifxConfig(FILE *fp, const DifxConfig *dc)
 			fprintDifxIF(fp, dc->IF+i);
 		}
 	}
-
-	if(dc->baselineFreq2IF)
-	{
-		/* count number of antennas in the array first */
-		for(nAnt = 0; dc->baselineFreq2IF[nAnt]; nAnt++);
-		
-		fprintf(fp, "    baselineFreq2IF map:\n");
-		fprintBaselineFreq2IF(fp, dc->baselineFreq2IF, nAnt, dc->nIF);
-	}
 }
 
 void printDifxConfig(const DifxConfig *dc)
@@ -212,6 +207,10 @@ void fprintDifxConfigSummary(FILE *fp, const DifxConfig *dc)
 {
 	int i;
 
+	if(!dc)
+	{
+		return;
+	}
 	fprintf(fp, "  Difx Config [%s]\n", dc->name);
 	fprintf(fp, "    tInt  = %f sec\n", dc->tInt);
 	if(dc->pulsarId >= 0)
@@ -254,7 +253,7 @@ int isSameDifxConfig(const DifxConfig *dc1, const DifxConfig *dc2)
 	   dc1->nDatastream != dc2->nDatastream ||
 	   dc1->nBaseline != dc2->nBaseline ||
 	   dc1->nIF != dc2->nIF ||
-	   dc1->freqId != dc2->freqId)
+	   dc1->fitsFreqId != dc2->fitsFreqId)
 	{
 		return 0;
 	}
@@ -343,14 +342,30 @@ int DifxConfigGetPolId(const DifxConfig *dc, char polName)
 	return -1;
 }
 
-/* antennaId is the index to D->antenna */
-int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
+/* Inputs:
+ *   D         -- pointer to DifxInput structure
+ *   configId  -- index for D->config (must be in [0 to D->nConfig-1])
+ *   antennaId -- index to D->antenna (must be in [0 to D->nAntenna-1])
+ *   recBand   -- record band number for specified antenna.  This is
+ *                index to the datastream "local frequency table"
+ * Outputs:
+ *   freqId    -- index to D->freq (in [0 to D->nFreq-1])
+ *                or -1 on out of range
+ *   polId     -- polarization ID for config.  pols are prioritized
+ *                in order R, L, X, Y.  Value is 0 or 1
+ *                or -1 on out of range
+ * Return:
+ *   0         -- success
+ *   <0        -- some error occurred
+ */
+int DifxConfigRecBand2FreqPol(const DifxInput *D, int configId,
 	int antennaId, int recBand, int *freqId, int *polId)
 {
 	DifxConfig *dc;
-	DifxDatastream *ds;
+	DifxDatastream *ds = 0;
 	int datastreamId;
 	int d;
+	int localFqId;
 	
 	if(recBand < 0 || antennaId < 0)
 	{
@@ -384,7 +399,8 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 			break;
 		}
 	}
-	if(datastreamId >= dc->nDatastream)
+
+	if(datastreamId >= dc->nDatastream || ds == 0)
 	{
 		return -4;
 	}
@@ -394,16 +410,15 @@ int DifxConfigRecChan2IFPol(const DifxInput *D, int configId,
 		return -3;
 	}
 
-	if(ds->recBandFreqId[recBand] < 0 || ds->recBandFreqId[recBand] > ds->nRecFreq)
+	localFqId = ds->recBandFreqId[recBand];
+	if(localFqId < 0 || localFqId >= ds->nRecFreq)
 	{
-		fprintf(stderr, "Error: recBandFreqId[%d] is %d while nRecFreq is %d\n",
-			recBand, ds->recBandFreqId[recBand], ds->nRecFreq);
+		fprintf(stderr, "DifxConfigRecBand2FreqPol: localFqId=%d is out of range (nFreq=%d)\n", localFqId, ds->nRecFreq);
+		return -5;
 	}
-	else
-	{
-		*freqId = ds->recFreqId[ds->recBandFreqId[recBand]];
-		*polId = DifxConfigGetPolId(dc, ds->recBandPolName[recBand]);
-	}
+
+	*freqId = ds->recFreqId[localFqId];
+	*polId = DifxConfigGetPolId(dc, ds->recBandPolName[recBand]);
 
 	return 0;
 }
@@ -507,12 +522,12 @@ void moveDifxConfig(DifxConfig *dest, DifxConfig *src)
 {
 	memcpy(dest, src, sizeof(DifxConfig));
 
-	/* unlink some pointers to prevent doubel freeing */
+	/* unlink some pointers to prevent double freeing */
 	src->datastreamId = 0;
 	src->baselineId = 0;
 	src->IF = 0;
 	src->freqId2IF = 0;
-	src->baselineFreq2IF = 0;
+	src->freqIdUsed = 0;
 	src->ant2dsId = 0;
 }
 
