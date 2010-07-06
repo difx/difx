@@ -402,7 +402,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	{
 		for(j=0;j<D->baseline[i].nFreq;j++)
 		{
-			band = D->baseline[i].recChanA[j][0];
+			band = D->baseline[i].recBandA[j][0];
 			dds = &(D->datastream[D->baseline[i].dsA]);
 			if(band >= dds->nRecBand)
 			{

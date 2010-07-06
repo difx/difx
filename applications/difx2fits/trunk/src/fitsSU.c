@@ -204,7 +204,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		decEpoch = source->dec * 180.0 / M_PI;
 		RAApp = RAEpoch;
 		decApp = decEpoch;
-		freqId1 = config->freqId + 1;  /* FITS 1-based */
+		freqId1 = config->fitsFreqId + 1;  /* FITS 1-based */
 		strcpypad(sourceName, source->name, 16);
 
 		p_fitsbuf = fitsbuf;

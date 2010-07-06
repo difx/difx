@@ -20,7 +20,7 @@ Version 3.0
 * Properly index config table in fitsGM.c
 * makefits: pass --override-version on to difx2fits
 * by default produce sniffer output only for bin=0 phasecentre=0
-
+* conform to new variable names in difxio, and more importantly, don't go out of the way to get frequency labelling wrong!
 
 Version 2.5
 * Require difxio 2.10

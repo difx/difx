@@ -120,11 +120,11 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 
 	for(c = 0; c < D->nConfig; c++)
 	{
-		if(D->config[c].freqId < freqId1)
+		if(D->config[c].fitsFreqId < freqId1)
 		{
 			continue;	/* already got this freqid */
 		}
-		freqId1 = D->config[c].freqId + 1; /* FITS fqId starts at 1 */
+		freqId1 = D->config[c].fitsFreqId + 1; /* FITS fqId starts at 1 */
 		for(a = 0; a < D->nAntenna; a++)
 		{
 			p_fitsbuf = fitsbuf;

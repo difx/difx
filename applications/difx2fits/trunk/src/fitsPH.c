@@ -88,7 +88,7 @@ static int parsePulseCal(const char *line,
 	int phasecentre)
 {
 	int np, nb, nt, ns;
-	int nRecChan, recChan;
+	int nRecBand, recBand;
 	int n, p, i, v;
 	int polId, bandId, tone, state;
 	int pol, band;
@@ -106,7 +106,7 @@ static int parsePulseCal(const char *line,
 	nan.i32 = -1;
 
 	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
-		cableCal, &np, &nb, &nt, &ns, &nRecChan, &p);
+		cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
 		return -1;
@@ -172,18 +172,18 @@ static int parsePulseCal(const char *line,
 			for(tone = 0; tone < nt; tone++)
 			{
 				n = sscanf(line, "%d%lf%f%f%n", 
-					&recChan, &A, &B, &C, &p);
+					&recBand, &A, &B, &C, &p);
 				if(n < 4)
 				{
 					return -4;
 				}
 				line += p;
-				if(recChan < 0 || recChan >= nRecChan)
+				if(recBand < 0 || recBand >= nRecBand)
 				{
 					continue;
 				}
-				v = DifxConfigRecChan2IFPol(D, *configId,
-					*antId, recChan, &bandId, &polId);
+				v = DifxConfigRecBand2FreqPol(D, *configId,
+					*antId, recBand, &bandId, &polId);
 				if(v >= 0)
 				{
 					if(bandId < 0 || polId < 0)
@@ -191,8 +191,8 @@ static int parsePulseCal(const char *line,
 						fprintf(stderr, "Error: derived "
 							"bandId and polId (%d,%d) are "
 							"not legit.  From "
-							"recChan=%d.\n",
-							bandId, polId, recChan);
+							"recBand=%d.\n",
+							bandId, polId, recBand);
 						continue;
 					}
 					freqs[polId][tone + bandId*nt] = A*1.0e6;
@@ -223,10 +223,10 @@ static int parsePulseCal(const char *line,
 		{
 			for(band = 0; band < nb; band++)
 			{
-				n = sscanf(line, "%d%n", &recChan, &p);
+				n = sscanf(line, "%d%n", &recBand, &p);
 				line += p;
-				v = DifxConfigRecChan2IFPol(D, *configId,
-					*antId, recChan, &bandId, &polId);
+				v = DifxConfigRecBand2FreqPol(D, *configId,
+					*antId, recBand, &bandId, &polId);
 				for(state = 0; state < 4; state++)
 				{
 					if(state < ns)
@@ -403,7 +403,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				continue;
 			}
 
-			freqId1 = D->config[configId].freqId + 1;
+			freqId1 = D->config[configId].fitsFreqId + 1;
 			sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
 			antId1 = antId + 1;
 

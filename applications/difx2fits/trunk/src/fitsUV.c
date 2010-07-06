@@ -401,7 +401,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	int changed = 0;
 	int nFloat, readSize;
 	char line[MaxLineLength+1];
-	int freqNum;
+	int freqId;
 	int configId;
 	const DifxConfig *config;
 	const DifxScan *scan;
@@ -465,7 +465,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		mjd          = atoi(DifxParametersvalue(dv->dp, rows[1]));
 		iat          = atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
 		srcindex     = atoi(DifxParametersvalue(dv->dp, rows[4]));
-		freqNum      = atoi(DifxParametersvalue(dv->dp, rows[5]));
+		freqId      = atoi(DifxParametersvalue(dv->dp, rows[5]));
 		polpair[0]   = DifxParametersvalue(dv->dp, rows[6])[0];
 		polpair[1]   = DifxParametersvalue(dv->dp, rows[6])[1];
 		polpair[2]   = 0;
@@ -485,18 +485,20 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		v = fread(&binhdrversion, sizeof(int), 1, dv->in);
 		if(binhdrversion == 1) //new style binary header
 		{
-			fread(&bl, sizeof(int), 1, dv->in);
-			fread(&intmjd, sizeof(int), 1, dv->in);
+			/* Note: the following 9 freads have their return value ignored.  The value is captured to prevent warning at compile time. */
+			v = fread(&bl, sizeof(int), 1, dv->in);
+			v = fread(&intmjd, sizeof(int), 1, dv->in);
 			mjd = intmjd;
-			fread(&iat, sizeof(double), 1, dv->in);
+			v = fread(&iat, sizeof(double), 1, dv->in);
 			iat /= 86400.0;
-			fread(&headerconfindex, sizeof(int), 1, dv->in);
-			fread(&srcindex, sizeof(int), 1, dv->in);
-			fread(&freqNum, sizeof(int), 1, dv->in);
-			fread(polpair, 1, 2, dv->in);
+			v = fread(&headerconfindex, sizeof(int), 1, dv->in);
+			v = fread(&srcindex, sizeof(int), 1, dv->in);
+			v = fread(&freqId, sizeof(int), 1, dv->in);
+			v = fread(polpair, 1, 2, dv->in);
 			polpair[2] = 0;
-			fread(&bin, sizeof(int), 1, dv->in);
-			fread(&weight, sizeof(double), 1, dv->in);
+			v = fread(&bin, sizeof(int), 1, dv->in);
+			v = fread(&weight, sizeof(double), 1, dv->in);
+
 			v = fread(uvw, sizeof(double), 3, dv->in);
 			//printf("bl was %d\n", bl);
 			//printf("mjd was %f\n", mjd);
@@ -605,6 +607,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		dv->flagTransition = 0;
 	}
 
+	if(config->freqIdUsed[freqId] <= 0)
+	{
+		return SKIPPED_RECORD;
+	}
+
 	aa1 = a1 = (bl/256) - 1;
 	aa2 = a2 = (bl%256) - 1;
 
@@ -639,8 +646,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	dv->scanId = scanId;
 	dv->sourceId = scan->phsCentreSrcs[phasecentre];
-	dv->freqId = config->freqId;
-	dv->bandId = config->baselineFreq2IF[aa1][aa2][freqNum];
+	dv->freqId = config->fitsFreqId;
+	dv->bandId = config->freqId2IF[freqId];
 	dv->polId  = getPolProdId(dv, polpair);
 
 	/* stash the weight for later incorporation into a record */

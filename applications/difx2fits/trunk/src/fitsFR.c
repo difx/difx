@@ -100,11 +100,11 @@ const DifxInput *DifxInput2FitsFR(const DifxInput *D,
 		config = D->config + configId;
 
 		/* only write one row per unique frequency ID */
-		if(config->freqId < freqId1)
+		if(config->fitsFreqId < freqId1)
 		{
 			continue;
 		}
-		freqId1 = config->freqId + 1;
+		freqId1 = config->fitsFreqId + 1;
 
 		for(i = 0; i < nBand; i++)
 		{

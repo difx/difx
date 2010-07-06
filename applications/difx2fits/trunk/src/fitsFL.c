@@ -53,13 +53,13 @@ typedef struct
 
 
 static int parseFlag(char *line, int refDay, char *antName, float timeRange[2], 
-	char *reason, int *recChan)
+	char *reason, int *recBand)
 {
 	int l;
 	int n;
 
 	n = sscanf(line, "%s%f%f%d%n", antName, timeRange+0, timeRange+1,
-		recChan, &l);
+		recBand, &l);
 
 	if(n < 4)
 	{
@@ -170,7 +170,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int refDay;
 	int i, c, d, p, v;
 	int hasData[2][array_MAX_BANDS];
-	int recChan;
+	int recBand;
 	int configId = 0;	/* currently only support 1 config */
 	int antennaId;
 	char polName;
@@ -238,7 +238,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			continue;
 		}
 		else if(parseFlag(line, refDay, antName, FL.timeRange, 
-			FL.reason, &recChan))
+			FL.reason, &recBand))
 		{
 			if(strncmp(FL.reason, "recorder", 8) == 0)
 			{
@@ -256,8 +256,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			 * polarization index (polId).  Both are zero-based
 			 * numbers, with -1 implying "all values"
 			 */
-			v = DifxConfigRecChan2IFPol(D, configId,
-				antennaId, recChan, &FL.bandId, &FL.polId);
+			v = DifxConfigRecBand2FreqPol(D, configId,
+				antennaId, recBand, &FL.bandId, &FL.polId);
 			if(v < 0)
 			{
 				continue;
@@ -300,11 +300,11 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	    dc = D->config + configId;
 
 	    /* want to loop only over unique freqIds */
-	    if(dc->freqId < FL.freqId1)
+	    if(dc->fitsFreqId < FL.freqId1)
 	    {
 	    	continue;       /* this freqId1 done already */
 	    }
-	    FL.freqId1 = dc->freqId + 1;
+	    FL.freqId1 = dc->fitsFreqId + 1;
 	    for(d = 0; d < dc->nDatastream; d++)
 	    {
 		if(dc->datastreamId[d] < 0)

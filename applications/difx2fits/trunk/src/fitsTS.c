@@ -34,20 +34,20 @@
 #include "other.h"
 
 
-/* ant D.O.Y. dur(days) nRecChan (tsys, bandName)[nRecChan] */
+/* ant D.O.Y. dur(days) nRecBand (tsys, bandName)[nRecBand] */
 static int parseTsys(const char *line, char *antName, 
 	double *time, float *timeInt, float tSys[])
 {
 	int p;
-	int n, i, nRecChan;
+	int n, i, nRecBand;
 
-	n = sscanf(line, "%s%lf%f%d%n", antName, time, timeInt, &nRecChan, &p);
+	n = sscanf(line, "%s%lf%f%d%n", antName, time, timeInt, &nRecBand, &p);
 	if(n != 4)
 	{
 		return -1;
 	}
 
-	for(i = 0; i < nRecChan; i++)
+	for(i = 0; i < nRecBand; i++)
 	{
 		line += p;
 		n = sscanf(line, "%f%*s%n", tSys + i, &p);
@@ -57,7 +57,7 @@ static int parseTsys(const char *line, char *antName,
 		}
 	}
 	
-	return nRecChan;
+	return nRecBand;
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
@@ -89,14 +89,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int refDay;
 	char line[MaxLineLength+1];
 	char antName[20];
-	float tSysRecChan[array_MAX_BANDS];
+	float tSysRecBand[array_MAX_BANDS];
 	float tSys[2][array_MAX_BANDS];
 	float tAnt[2][array_MAX_BANDS];
 	int nBand;
 	int configId, sourceId, scanId;
 	int i, j, nPol=0;
 	int bandId, polId, antId;
-	int nRecChan;
+	int nRecBand;
 	int v;
 	double f;
 	double time, mjd;
@@ -185,8 +185,8 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		}
 		else 
 		{
-			nRecChan = parseTsys(line, antName, &time, 
-				&timeInt, tSysRecChan);
+			nRecBand = parseTsys(line, antName, &time, 
+				&timeInt, tSysRecBand);
 
 			/* discard records for unused antennas */
 			antId = DifxInputGetAntennaId(D, antName);
@@ -219,7 +219,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 
 			configId = scan->configId;
-			freqId1 = D->config[configId].freqId + 1;
+			freqId1 = D->config[configId].fitsFreqId + 1;
 
 			for(j = 0; j < 2; j++)
 			{
@@ -232,9 +232,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			/* Take the recorder channel order data and populate
 			 * into [polId][bandId] order
 			 */
-			for(i = 0; i < nRecChan; i++)
+			for(i = 0; i < nRecBand; i++)
 			{
-				v = DifxConfigRecChan2IFPol(D, configId,
+				v = DifxConfigRecBand2FreqPol(D, configId,
 					antId, i, &bandId, &polId);
 				if(v < 0)
 				{
@@ -245,12 +245,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 					fprintf(stderr, "Error: derived "
 						"bandId and polId (%d,%d) are "
 						"not legit.  From "
-						"recChan=%d.\n", 
+						"recBand=%d.\n", 
 						bandId, polId, i);
 				}
-				if(tSysRecChan[i] < 990.0)
+				if(tSysRecBand[i] < 990.0)
 				{
-					tSys[polId][bandId] = tSysRecChan[i];
+					tSys[polId][bandId] = tSysRecBand[i];
 				}
 				else
 				{
