@@ -21,6 +21,7 @@ x. support time formats other than mjd
 x. support EVLBI
 18. clean up oversampling/decimation support
 19. Clean up antenna names/defs as done for sources
+20. Currently corrparams is used both during vex parsing and at input building time.  It would be nice to eventually make the vex parsing independent of corrparams.
 
 Concerns outside vex2difx proper
 

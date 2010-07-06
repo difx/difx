@@ -914,8 +914,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
                                         npol = 0;
                                         for(u = 0; u < n1; u++)
                                         {
-                                                bl->recChanA[nFreq][npol] = a1c[u];
-                                                bl->recChanB[nFreq][npol] = a1c[u];
+                                                bl->recBandA[nFreq][npol] = a1c[u];
+                                                bl->recBandB[nFreq][npol] = a1c[u];
                                                 npol++;
                                         }
 
@@ -930,10 +930,10 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
                                         if(npol == 2 && corrSetup->doPolar)
                                         {
                                                 // configure cross hands here
-                                                bl->recChanA[nFreq][2] = bl->recChanA[nFreq][0];
-                                                bl->recChanB[nFreq][2] = bl->recChanB[nFreq][1];
-                                                bl->recChanA[nFreq][3] = bl->recChanA[nFreq][1];
-                                                bl->recChanB[nFreq][3] = bl->recChanB[nFreq][0];
+                                                bl->recBandA[nFreq][2] = bl->recBandA[nFreq][0];
+                                                bl->recBandB[nFreq][2] = bl->recBandB[nFreq][1];
+                                                bl->recBandA[nFreq][3] = bl->recBandA[nFreq][1];
+                                                bl->recBandB[nFreq][3] = bl->recBandB[nFreq][0];
                                         }
                                         else
                                         {
@@ -1026,8 +1026,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 							{
 								if(a1p[u] == a2p[v])
 								{
-									bl->recChanA[nFreq][npol] = a1c[u];
-									bl->recChanB[nFreq][npol] = a2c[v];
+									bl->recBandA[nFreq][npol] = a1c[u];
+									bl->recBandB[nFreq][npol] = a2c[v];
 									npol++;
 								}
 							}
@@ -1044,10 +1044,10 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						if(npol == 2 && corrSetup->doPolar)
 						{
 							// configure cross hands here
-							bl->recChanA[nFreq][2] = bl->recChanA[nFreq][0];
-							bl->recChanB[nFreq][2] = bl->recChanB[nFreq][1];
-							bl->recChanA[nFreq][3] = bl->recChanA[nFreq][1];
-							bl->recChanB[nFreq][3] = bl->recChanB[nFreq][0];
+							bl->recBandA[nFreq][2] = bl->recBandA[nFreq][0];
+							bl->recBandB[nFreq][2] = bl->recBandB[nFreq][1];
+							bl->recBandA[nFreq][3] = bl->recBandA[nFreq][1];
+							bl->recBandB[nFreq][3] = bl->recBandB[nFreq][0];
 						}
 						else
 						{
@@ -1078,8 +1078,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
                                                         {
                                                                 if(a1p[u] == a2p[v])
                                                                 {
-                                                                        bl->recChanA[nFreq][npol] = D->datastream[a1].nRecBand + a1c[u];
-                                                                        bl->recChanB[nFreq][npol] = D->datastream[a2].nRecBand + a2c[v];
+                                                                        bl->recBandA[nFreq][npol] = D->datastream[a1].nRecBand + a1c[u];
+                                                                        bl->recBandB[nFreq][npol] = D->datastream[a2].nRecBand + a2c[v];
                                                                         npol++;
                                                                 }
                                                         }
@@ -1096,10 +1096,10 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
                                                 if(npol == 2 && corrSetup->doPolar)
                                                 {
                                                         // configure cross hands here
-                                                        bl->recChanA[nFreq][2] = bl->recChanA[nFreq][0];
-                                                        bl->recChanB[nFreq][2] = bl->recChanB[nFreq][1];
-                                                        bl->recChanA[nFreq][3] = bl->recChanA[nFreq][1];
-                                                        bl->recChanB[nFreq][3] = bl->recChanB[nFreq][0];
+                                                        bl->recBandA[nFreq][2] = bl->recBandA[nFreq][0];
+                                                        bl->recBandB[nFreq][2] = bl->recBandB[nFreq][1];
+                                                        bl->recBandA[nFreq][3] = bl->recBandA[nFreq][1];
+                                                        bl->recBandB[nFreq][3] = bl->recBandB[nFreq][0];
                                                 }
                                                 else
                                                 {
