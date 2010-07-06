@@ -90,7 +90,7 @@ static int parsePulseCal(const char *line,
 	int np, nb, nt, ns;
 	int nRecBand, recBand;
 	int n, p, i, v;
-	int polId, bandId, tone, state;
+	int freqId, polId, bandId, tone, state;
 	int pol, band;
 	int scanId;
 	double A;
@@ -183,16 +183,28 @@ static int parsePulseCal(const char *line,
 					continue;
 				}
 				v = DifxConfigRecBand2FreqPol(D, *configId,
-					*antId, recBand, &bandId, &polId);
+					*antId, recBand, &freqId, &polId);
 				if(v >= 0)
 				{
-					if(bandId < 0 || polId < 0)
+					if(freqId < 0 || polId < 0)
 					{
 						fprintf(stderr, "Error: derived "
-							"bandId and polId (%d,%d) are "
+							"freqId and polId (%d,%d) are "
 							"not legit.  From "
 							"recBand=%d.\n",
-							bandId, polId, recBand);
+							freqId, polId, recBand);
+						continue;
+					}
+					else if(freqId >= D->nFreq)
+					{
+						fprintf(stderr, "parsePulseCal(1): Developer error: freqId=%d, nFreq=%d\n",
+							freqId, D->nFreq);
+						continue;
+					}
+					bandId = D->config[*configId].freqId2IF[freqId];
+					if(bandId < 0)
+					{
+						/* This sub-band is not to go to the FITS file */
 						continue;
 					}
 					freqs[polId][tone + bandId*nt] = A*1.0e6;
@@ -226,23 +238,47 @@ static int parsePulseCal(const char *line,
 				n = sscanf(line, "%d%n", &recBand, &p);
 				line += p;
 				v = DifxConfigRecBand2FreqPol(D, *configId,
-					*antId, recBand, &bandId, &polId);
-				for(state = 0; state < 4; state++)
+					*antId, recBand, &freqId, &polId);
+				if(v > 0)
 				{
-					if(state < ns)
+					if(freqId < 0 || polId < 0)
 					{
-						n = sscanf(line, "%f%n", &B, &p);
-						if(n < 1)
+						fprintf(stderr, "parsePulseCal(2): Developer error: derived "
+							"freqId and polId (%d,%d) are "
+							"not legit.  From "
+							"recBand=%d.\n",
+							freqId, polId, recBand);
+						continue;
+					}
+					else if(freqId >= D->nFreq)
+					{
+						fprintf(stderr, "parsePulseCal(2): Developer error: freqId=%d, nFreq=%d\n",
+							freqId, D->nFreq);
+						continue;
+					}
+					bandId = D->config[*configId].freqId2IF[freqId];
+					if(bandId < 0)
+					{
+						/* This sub-band is not to go to the FITS file */
+						continue;
+					}
+					for(state = 0; state < 4; state++)
+					{
+						if(state < ns)
 						{
-							return -5;
+							n = sscanf(line, "%f%n", &B, &p);
+							if(n < 1)
+							{
+								return -5;
+							}
+							line += p;
 						}
-						line += p;
+						else
+						{
+							B = 0.0;
+						}
+						stateCount[polId][state + bandId*4] = B;
 					}
-					else
-					{
-						B = 0.0;
-					}
-					stateCount[polId][state + bandId*4] = B;
 				}
 			}
 		}

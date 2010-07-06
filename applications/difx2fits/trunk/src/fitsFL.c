@@ -174,7 +174,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int configId = 0;	/* currently only support 1 config */
 	int antennaId;
 	char polName;
-	int freqNum;
+	int freqId, polId;
 	FILE *in;
 	FlagDatum FL;
 	const DifxConfig *dc;
@@ -257,9 +257,29 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			 * numbers, with -1 implying "all values"
 			 */
 			v = DifxConfigRecBand2FreqPol(D, configId,
-				antennaId, recBand, &FL.bandId, &FL.polId);
+				antennaId, recBand, &freqId, &polId);
 			if(v < 0)
 			{
+				continue;
+			}
+
+			if(recBand < 0)
+			{
+				FL.bandId = -1;
+			}
+			else if(freqId >= 0 && freqId < D->nFreq)
+			{
+				FL.bandId = D->config[configId].freqId2IF[freqId];
+				if(FL.bandId < 0)
+				{
+					/* This sub-band is not going into the FITS file */
+					 continue;
+				}
+			}
+			else
+			{
+				/* This shouldn't happen -- a recBand not associated with a Freq? */
+				fprintf(stderr, "DifxInput2FitsFL: Developer error: DifxConfigRecChan2FreqPol returned freqId = %d polId = %d\n", freqId, polId);
 				continue;
 			}
 
@@ -332,8 +352,8 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				        c, ds->recBandFreqId[c], ds->nRecFreq);
 				continue;
 			}
-			freqNum = ds->recFreqId[ds->recBandFreqId[c]];
-			i = dc->freqId2IF[freqNum];
+			freqId = ds->recFreqId[ds->recBandFreqId[c]];
+			i = dc->freqId2IF[freqId];
 			if(polName == dc->pol[0])
 			{
 				p = 0;

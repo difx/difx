@@ -95,7 +95,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int nBand;
 	int configId, sourceId, scanId;
 	int i, j, nPol=0;
-	int bandId, polId, antId;
+	int freqId, bandId, polId, antId;
 	int nRecBand;
 	int v;
 	double f;
@@ -235,18 +235,26 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			for(i = 0; i < nRecBand; i++)
 			{
 				v = DifxConfigRecBand2FreqPol(D, configId,
-					antId, i, &bandId, &polId);
+					antId, i, &freqId, &polId);
 				if(v < 0)
 				{
 					continue;
 				}
-				if(bandId < 0 || polId < 0)
+				if(freqId < 0 || polId < 0 || freqId >= D->nFreq)
 				{
-					fprintf(stderr, "Error: derived "
-						"bandId and polId (%d,%d) are "
+					fprintf(stderr, "Developer error: derived "
+						"freqId and polId (%d,%d) are "
 						"not legit.  From "
 						"recBand=%d.\n", 
-						bandId, polId, i);
+						freqId, polId, i);
+
+					return 0;
+				}
+				bandId = D->config[configId].freqId2IF[freqId];
+				if(bandId < 0)
+				{
+					/* This Freq is not entering this FITS file */
+					continue;
 				}
 				if(tSysRecBand[i] < 990.0)
 				{
