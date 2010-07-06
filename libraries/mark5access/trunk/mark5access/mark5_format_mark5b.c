@@ -2159,8 +2159,14 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 			}
 			else
 			{
-				fprintf(stderr, "Warning -- rate calc. "
-					"suspect ns0=ns1=%d k=%d\n", ns1, k);
+				fprintf(stderr, "Warning: mark5_format_mark5b_init: assuming 2048-16-2\n");
+
+				ms->framens = 39062.5;
+				ms->Mbps = 2048;
+				ms->nchan = 16;
+				ms->nbit = 2;
+				ms->framesamples = 2500;
+				ms->samprate = 64000000;
 			}
 		}
 	}
