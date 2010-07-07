@@ -129,7 +129,7 @@ foreach $a (@ants)
       $x = $yearoffset*$resultsplit[4] + $resultsplit[1];
       $y = $yearoffset*$resultsplit[5] + $resultsplit[2];
       $z = $yearoffset*$resultsplit[6] + $resultsplit[3];
-      print(STATION $x, "D00, ", $y, "D00, ", $z, "D00, ", $resultsplit[8], ", ", $resultsplit[9], " \$", $antid, "\n");
+      print(STATION $x, "D00, ", $y, "D00, ", $z, "D00, ", $resultsplit[8], ", ", $resultsplit[9], " \$", uc($antid), "\n");
       $found = 1;
       last; #break from the loop
     }
