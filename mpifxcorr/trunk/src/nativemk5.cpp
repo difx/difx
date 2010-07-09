@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <sys/time.h>
+#include <ctype.h>
 #include "config.h"
 #include "nativemk5.h"
 #include "alert.h"
@@ -263,6 +264,15 @@ NativeMk5DataStream::~NativeMk5DataStream()
 {
 	if(mark5stream)
 	{
+		if(mark5stream->nvalidatefail > mark5stream->nvalidatepass/49)
+		{
+			cerror << startl << "There were " << mark5stream->nvalidatefail << "/" << (mark5stream->nvalidatefail + mark5stream->nvalidatepass) << " data validation failures.  This number is high and might indicate a problem with the formatter at the station.  This is unlikely to be a playback problem." << endl;
+		}
+		else if(mark5stream->nvalidatefail > 0)
+		{
+			cwarn << startl << "There were " << mark5stream->nvalidatefail << "/" << (mark5stream->nvalidatefail + mark5stream->nvalidatepass) << " data validation failures." << endl;
+		}
+
 		delete_mark5_stream(mark5stream);
 	}
 
@@ -890,6 +900,48 @@ void NativeMk5DataStream::loopfileread()
   cinfo << startl << "Readthread is exiting! Filecount was " << filesread[bufferinfo[lastvalidsegment].configindex] << ", confignumfiles was " << confignumfiles[bufferinfo[lastvalidsegment].configindex] << ", dataremaining was " << dataremaining << ", keepreading was " << keepreading << endl;
 }
 
+static bool legalVSN(const char *vsn)
+{
+	int nSep = 0;
+
+	for(int i = 0; i < 8; i++)
+	{
+		if(vsn[i] == '+' || vsn[i] == '-')
+		{
+			if(nSep > 0 || i == 0 || i == 7)
+			{
+				return false;
+			}
+			nSep++;
+		}
+		else if(isalpha(vsn[i]))
+		{
+			if(nSep != 0)
+			{
+				return false;
+			}
+		}
+		else if(isdigit(vsn[i]))
+		{
+			if(nSep != 1)
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	if(nSep != 1)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long long position, double dataMJD, float rate)
 {
 	int v = 0;
@@ -932,11 +984,19 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 			{
 				strcpy(mk5status.vsnA, "none");
 			}
+			else if(!legalVSN(mk5status.vsnA))
+			{
+				strcpy(mk5status.vsnA, "badvsn");
+			}
 			strncpy(mk5status.vsnB, B.Label, 8);
 			mk5status.vsnB[8] = 0;
 			if(strncmp(mk5status.vsnB, "LABEL NO", 8) == 0)
 			{
 				strcpy(mk5status.vsnB, "none");
+			}
+			else if(!legalVSN(mk5status.vsnB))
+			{
+				strcpy(mk5status.vsnB, "badvsn");
 			}
 			if(A.Selected)
 			{
