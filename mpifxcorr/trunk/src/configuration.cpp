@@ -1708,7 +1708,7 @@ bool Configuration::populateResultLengths()
 
 bool Configuration::consistencyCheck()
 {
-  int tindex, count, freqindex, freq1index, freq2index;
+  int tindex, count, freqindex, freq1index, freq2index, confindex, timesec, initscan, initsec;
   double bandwidth, sampletimens, ffttime, numffts, f1, f2;
   datastreamdata ds1, ds2;
   baselinedata bl;
@@ -2147,6 +2147,31 @@ bool Configuration::consistencyCheck()
     if(mpiid == 0) //only write one copy of this error message
       cfatal << startl << "There must be an integer number of sends per datasegment.  Presently databufferfactor is " << databufferfactor << ", and numdatasegments is " << numdatasegments << " - aborting!!!" << endl;
     return false;
+  }
+
+  //if there is any pulsar binning, make sure we have polycos
+  initscan = 0;
+  while(model->getScanEndSec(initscan, startmjd, startseconds) < 0)
+    initscan++;
+  initsec = -(model->getScanStartSec(initscan, startmjd, startseconds));
+  if(initsec < 0)
+    initsec = 0;
+  for(int i=initscan;i<model->getNumScans();i++)
+  {
+    confindex =  scanconfigindices[i];
+    if(configs[confindex].pulsarbin)
+    {
+      for(int j=initsec;j<=model->getScanDuration(i);j++)
+      {
+        timesec = model->getScanStartSec(i, startmjd, startseconds) + startseconds + j;
+        if(Polyco::getCurrentPolyco(confindex, startmjd, timesec/86400.0, configs[confindex].polycos, configs[confindex].numpolycos, false) == NULL) {
+          if(mpiid == 0) //only write one copy of this error message
+            cfatal << startl << "Could not find a polyco to cover MJD " << startmjd + timesec/86400 << ", sec " << timesec % 86400 << " - aborting!!!" << endl;
+          return false;
+        }
+      }
+    }
+    initsec = 0;
   }
 
   return true;
