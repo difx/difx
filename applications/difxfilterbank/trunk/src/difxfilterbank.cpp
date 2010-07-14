@@ -28,6 +28,7 @@ int main(int argc, const char * argv[])
   keepwriting = true;
   numchans = atoi(numchannelsstring.c_str());
   binarymsglength = sizeof(DifxMessageSTARecord) + numchans*sizeof(f32);
+  cout << "About to allocate " << binarymsglength*BUFFER_LENGTH << " bytes in receive buffer" <<     endl;
   for(int i=0;i<BUFFER_LENGTH;i++) {
     perr = pthread_mutex_init(&(locks[i]), NULL);
     if(perr != 0)
