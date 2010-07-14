@@ -28,6 +28,7 @@
 //============================================================================
 
 #include <complex.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "../mark5access/mark5_stream.h"
@@ -35,7 +36,7 @@
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.0";
-const char verdate[] = "2010 Mar 8";
+const char verdate[] = "2010 Jul 13";
 
 const int ChunkSize = 10000;
 
@@ -303,7 +304,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 	for(c = 0; c < nbin; c++)
 	{
-		fprintf(out, "%f ", c/(freq*nbin));
+		fprintf(out, "%11.9f ", c/(freq*nbin));
 		for(i = 0; i < nif; i++)
 		{
 			fprintf(out, " %f", bins[i][c]);
