@@ -7,7 +7,8 @@ LDADD = \
 bin_PROGRAMS = \
 	stripVDIF \
 	captureUDPVDIF \
-	padVDIF 
+	padVDIF \
+	printVDIF 
 
 stripVDIF_SOURCES = \
 	stripVDIF.c
@@ -20,3 +21,6 @@ captureUDPVDIF_LDFLAGS = \
 
 padVDIF_SOURCES = \
 	padVDIF.c
+
+printVDIF_SOURCES = \
+	printVDIF.c
