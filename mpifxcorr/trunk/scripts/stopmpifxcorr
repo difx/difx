@@ -17,7 +17,7 @@ def getpids():
 		s = split(strip(p))
 		if len(s) < 2:
 			continue
-		if s[0] != programname:
+		if s[3] != programname:
 			continue
 		pids.append(int(s[0]))
 	return pids
