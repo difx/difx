@@ -1,3 +1,12 @@
+Version 2.0.0, 2010 July 14
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* Many bugfixes to both band matching and multiple phase centres
+* Visibilities now written out in binary format
+* New polyco parser and checker is more forgiving of TEMPO2 generated polycos
+* Can now produce kurtosis dumps every STA under the command of difxfilterbank
+* Many nativemk5 inmprovements migrated from 1.5
+* Many more minor bugfixes
+
 Version 2.0, 2009 September 24
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Many, many changes both visibly and under the hood
