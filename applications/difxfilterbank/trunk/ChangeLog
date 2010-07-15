@@ -1,0 +1,7 @@
+Version 0.1
+~~~~~~~~~~~
+* Initial version of difxfilterbank
+
+Version 0.2
+~~~~~~~~~~~
+* Updated to allow capture/dumping of kurtosis data in addition to autocorrelation filterbank
