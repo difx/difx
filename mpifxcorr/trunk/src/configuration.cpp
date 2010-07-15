@@ -575,6 +575,8 @@ int Configuration::getDMatchingBand(int configindex, int datastreamindex, int ba
 
 int Configuration::getCNumProcessThreads(int corenum)
 {
+  if(numcoreconfs == 0)
+    return 1;
   if(corenum < numcoreconfs)
     return numprocessthreads[corenum];
   cwarn << startl << "Trying to get a number of threads for core " << corenum+1 << " when only " << numcoreconfs << " provided in .threads file - setting num threads for this core to " << numprocessthreads[numcoreconfs-1] << ", which was the last value in the .threads file" << endl;
