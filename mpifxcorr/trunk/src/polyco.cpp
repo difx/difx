@@ -426,8 +426,8 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       //check if we missed anything non-important
       if (iss.fail()) {
         cwarn << startl << "Hit end of first line prematurely (missed dopplershift and/or logresidual).  Likely everything is ok - continuing." << endl;
-        iss.clear();
       }
+      iss.clear(); //in case we hit the end of the line
 
       //process the second line
       getline(input, strbuffer); 
@@ -450,14 +450,16 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
       iss >> binaryphase;
       //check if we missed anything non-important
       if (iss.fail()) {
-        iss.clear(); //non-binary pulsars don't have anything here
+        ; //non-binary pulsars don't have anything here, so no point actually issuing a warning
       }
+      iss.clear(); //in case we hit the end of the line
 
       //grab all the coefficients
       coefficients = new double[numcoefficients];
       for(int i=0;i<numcoefficients;i++)
       {
         if(i%3 == 0) {
+          iss.clear(); //clear the eof
           getline(input, strbuffer);
           iss.str(strbuffer);
         }
@@ -502,22 +504,4 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
     timepowerarray[0] = 1.0;
 
     return true;
-}
-
-bool Polyco::fieldOK(char * buffer, int width)
-{
-  int at;
-
-  at = 0;
-  while(at<width && buffer[at] == ' ') //skip any preceding whitespace
-    at++;
-  while(at<width && buffer[at] != ' ') //skip through the block
-    at++;
-  while(at<width && buffer[at] == ' ') //skip any trailing whitespace
-    at++;
-
-  if(at != width) //found a second alphanumeric block before end of buffer - bad polyco!
-    return false;
-
-  return true;
 }

@@ -173,14 +173,6 @@ protected:
   */
   void calculateDMPhaseOffsets(double offsetmins);
 
- /**
-  * Checks for misaligned data in a field (more than one block of alphanumeric)
-  * @param buffer the field to check
-  * @param width The number of characters in the field
-  * @return false if the field is bad
-  */
-  bool fieldOK(char * buffer, int width);
-
   string pulsarname;
   int configindex, numbins, maxchannels, numfreqs, observatory, timespan, numcoefficients, mjd, estimatedbytes;
   double mjdfraction, dt0, dm, dopplershift, logresidual, refphase, f0, obsfrequency, binaryphase, minbinwidth, calclengthmins;
