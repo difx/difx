@@ -778,11 +778,11 @@ bool Configuration::processBaselineTable(ifstream * input)
       continue; //only need to nadger lower sideband freqs here, and only when they are correlated against USB
     for(int i=0;i<baselinetablelength;i++)
     {
+      bldata = baselinetable[i];
       for(int j=0;j<baselinetable[i].numfreqs;j++)
       {
         if(bldata.freqtableindices[j] == f) //its a match - check the other datastream for USB
         {
-          bldata = baselinetable[i];
           dsdata = datastreamtable[bldata.datastream2index];
           dsband = bldata.datastream2bandindex[j][0];
           if(dsband >= dsdata.numrecordedbands) //it is a zoom band
@@ -2051,7 +2051,7 @@ bool Configuration::consistencyCheck()
         }
       }
       //catch the case of LSB against LSB where there is a USB somewhere
-      else if(freqtable[freq1index].lowersideband && freqtable[freqindex].correlatedagainstupper)
+      else if(freqtable[freq1index].lowersideband && freqtable[freq2index].correlatedagainstupper)
       {
         baselinetable[i].oddlsbfreqs[j] = 3; //both are lower, but still need to be shifted
       }
