@@ -799,6 +799,7 @@ bool Configuration::processBaselineTable(ifstream * input)
     }
     if(freqtable[f].correlatedagainstupper) //need to alter all freqindices to be the equivalent USB
     {
+      matchfindex = 0;
       //first find the matching USB freq
       for(int i=0;i<freqtablelength;i++)
       {
@@ -807,6 +808,7 @@ bool Configuration::processBaselineTable(ifstream * input)
       }
       for(int i=0;i<baselinetablelength;i++)
       {
+        bldata = baselinetable[i];
         for(int j=0;j<baselinetable[i].numfreqs;j++)
         {
           if(bldata.freqtableindices[j] == f) //this baseline had referred to the LSB - replace with the USB freqindex
