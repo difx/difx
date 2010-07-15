@@ -1777,7 +1777,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	{
 		snprintf(D->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input",   D->job->fileBase);
 		snprintf(D->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",    D->job->fileBase);
-		snprintf(D->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im  ",    D->job->fileBase);
+		snprintf(D->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    D->job->fileBase);
 		snprintf(D->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",    D->job->fileBase);
 		if(P->threadsFile != "")
 		{
