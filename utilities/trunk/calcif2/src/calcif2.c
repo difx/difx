@@ -335,9 +335,6 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	}
 
 	D = updateDifxInput(D);
-        printf("Finished updating difxinput\n");
-
-	printf("D->mjdStart=%14.8f  D->job->mjdStart=%14.8f\n", D->mjdStart, D->job->mjdStart);
 	
 	if(D)
 	{
