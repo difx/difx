@@ -451,18 +451,30 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 {
 	dest->antennaId = src->antennaId;
+	dest->tSys = src->tSys;
 	strcpy(dest->dataFormat, src->dataFormat);
+	dest->networkPort = src->networkPort;
+	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
+	dest->dataFrameSize = src->dataFrameSize;
+	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
+	dest->dataSource = src->dataSource;
+	dest->nRecFreq = src->nRecFreq;
+	dest->nRecBand = src->nRecBand;
 	dest->recFreqId = src->recFreqId;
 	dest->nRecPol = src->nRecPol;
 	dest->clockOffset = src->clockOffset;
 	dest->freqOffset = src->freqOffset;
 	dest->recBandFreqId = src->recBandFreqId;
 	dest->recBandPolName = src->recBandPolName;
+	dest->nZoomFreq = src->nZoomFreq;
+	dest->nZoomBand = src->nZoomBand;
 	dest->zoomFreqId = src->zoomFreqId;
 	dest->nZoomPol = src->nZoomPol;
 	dest->zoomBandFreqId = src->zoomBandFreqId;
 	dest->zoomBandPolName = src->zoomBandPolName;
+	dest->nFile = src->nFile;
+	dest->file = src->file;
 
 	/* unlink src data structures */
 	src->recFreqId = 0;
@@ -475,6 +487,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	src->nZoomPol = 0;
 	src->zoomBandFreqId = 0;
 	src->zoomBandPolName = 0;
+	src->file = 0;
 }
 
 int simplifyDifxDatastreams(DifxInput *D)

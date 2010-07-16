@@ -958,7 +958,6 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 			return 0;
 		}
 		strcpy(D->rule[rule].configName, DifxParametersvalue(ip, r));
-		printf("Rule %d applies to config %s\n", rule, D->rule[rule].configName);
 	}
 	return D;
 }
@@ -1478,7 +1477,6 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 	{
 		if(D->freq[fqId].freq < D->refFreq || D->refFreq <= 0.0)
 		{
-			printf("Setting refFreq to %f\n", D->freq[fqId].freq);
 			D->refFreq = D->freq[fqId].freq;
 		}
 	}
