@@ -699,6 +699,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 	int antennaId);
 int DifxInputGetScanId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
+int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
 
