@@ -36,7 +36,7 @@
 
 const char program[] = "difxlog";
 const char version[] = "0.3";
-const char verdate[] = "20100624";
+const char verdate[] = "20100717";
 const char author[]  = "Walter Brisken";
 
 int usage(const char *prog)
@@ -64,23 +64,24 @@ int usage(const char *prog)
 /* There _must_ be a better way to do this test for existence of running PID! */
 int checkPid(int pid)
 {
-	const int CommandSize = 128;
-	char cmd[CommandSize];
+	const int CommandLength = 128;
+	const int StrLength = 16;
+	char cmd[CommandLength];
 	const char *c;
 	FILE *p;
 	char s[10];
 	int v;
 
-	v = snprintf(cmd, CommandSize, "ps -p %d -o pid --no-headers", pid);
-	if(v >= CommandSize)
+	v = snprintf(cmd, CommandLength, "ps -p %d -o pid --no-headers", pid);
+	if(v >= CommandLength)
 	{
-		fprintf(stderr, "Developer error: checkPid: CommandSize=%d is too short\n",
-			CommandSize);
+		fprintf(stderr, "Developer error: checkPid: CommandLength=%d is too small (%d wanted)\n",
+			CommandLength, v);
 		exit(0);
 	}
 
 	p = popen(cmd, "r");
-	c = fgets(s, 9, p);
+	c = fgets(s, StrLength-1, p);
 	pclose(p);
 	if(c == 0)
 	{
@@ -96,7 +97,8 @@ int checkPid(int pid)
 
 int main(int argc, char **argv)
 {
-	const int TagSize = 64+DIFX_MESSAGE_PARAM_LENGTH;
+	const int TimeLength = 32;
+	const int TagLength = 64+DIFX_MESSAGE_PARAM_LENGTH;
 	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	int logLevel = DIFX_ALERT_LEVEL_INFO;
 	int pidWatch = -1;
@@ -106,8 +108,8 @@ int main(int argc, char **argv)
 	DifxMessageGeneric G;
 	FILE *out;
 	time_t t, lastt;
-	char timestr[32];
-	char tag[TagSize];
+	char timestr[TimeLength];
+	char tag[TagLength];
 
 	time(&lastt);
 
@@ -160,14 +162,14 @@ int main(int argc, char **argv)
 
 		if(strcmp(G.identifier, identifier) == 0)
 		{
-			l = snprintf(tag, TagSize, "%s %3d %s", timestr, G.mpiId, G.from);
-			if(l >= TagSize)
+			l = snprintf(tag, TagLength, "%s %3d %s", timestr, G.mpiId, G.from);
+			if(l >= TagLength)
 			{
-				fprintf(stderr, "Developer error: TagSize is too small for timestr='%s', mpiIf=%d, from='%s'\n", timestr, G.mpiId, G.from);
+				fprintf(stderr, "Developer error: TagLength is too small for timestr='%s', mpiIf=%d, from='%s'\n", timestr, G.mpiId, G.from);
 			}
 			if(G.type == DIFX_MESSAGE_ALERT)
 			{
-				DifxMessageAlert *A;
+				const DifxMessageAlert *A;
 
 				A = &G.body.alert;
 				if(A->severity <= logLevel)
@@ -178,7 +180,7 @@ int main(int argc, char **argv)
 			}
 			else if(G.type == DIFX_MESSAGE_STATUS)
 			{
-				DifxMessageStatus *S;
+				const DifxMessageStatus *S;
 
 				S = &G.body.status;
 				
@@ -193,6 +195,21 @@ int main(int argc, char **argv)
 					}
 					fprintf(out, "\n");
 				}
+			}
+			else if(G.type == DIFX_MESSAGE_TRANSIENT)
+			{
+				const DifxMessageTransient *T;
+
+				T = &G.body.transient;
+
+				fprintf(out, "Transient event received: jobId=%s priority=%f startMJD=%14.8f stopMJD=%14.8f destDir=\"%s\" comment=\"%s\"\n",
+					T->jobId, 
+					T->priority,
+					T->startMJD,
+					T->stopMJD,
+					T->destDir,
+					T->comment);
+				fflush(out);
 			}
 		}
 

@@ -63,4 +63,6 @@ Clean up terminal in mk5mon and cpumon
 Add mark5ipc library
 Utilities: trap Ctrl-c and handle properly
 cpumon and mk5mon: catch exceptions and prevent terminal infection
+difxlog: Log transient messages
+testdifxmessagereceive: allow selection of one message type, add in-line help
 New definitions for autocorrelation, crosscorrelation and kurtosis STA and LTA dumps
