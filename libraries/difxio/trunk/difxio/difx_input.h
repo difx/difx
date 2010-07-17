@@ -97,6 +97,8 @@ typedef struct
 	int specAvg;            /* This is averaging within mpifxcorr  */
 	int overSamp;
 	int decimation;
+	int nTone;		/* Number of pulse cal tones */
+	int *tone;		/* Array of tone indices */
 } DifxFreq;
 
 /* To become a FITS IF */
@@ -437,9 +439,12 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 
 /* DifxFreq functions */
 DifxFreq *newDifxFreqArray(int nFreq);
-void deleteDifxFreqArray(DifxFreq *df);
+void DifxFreqAllocTones(DifxFreq *df, int nTone);
+void deleteDifxFreqInternals(DifxFreq *df);
+void deleteDifxFreqArray(DifxFreq *df, int nFreq);
 void printDifxFreq(const DifxFreq *df);
 void fprintDifxFreq(FILE *fp, const DifxFreq *df);
+int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2);
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 int simplifyDifxFreqs(DifxInput *D);

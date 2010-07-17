@@ -43,16 +43,53 @@ DifxFreq *newDifxFreqArray(int nFreq)
 	return df;
 }
 
-void deleteDifxFreqArray(DifxFreq *df)
+void DifxFreqAllocTones(DifxFreq *df, int nTone)
 {
+	if(!df)
+	{
+		fprintf(stderr, "Error: DifxFreqAllocTones: b = 0 nTone = %d\n", nTone);
+		return;
+	}
+	if(df->tone)
+	{
+		free(df->tone);
+		df->tone = 0;
+	}
+
+	if(nTone > 0)
+	{
+		df->tone = (int *)calloc(1, sizeof(int) );
+		df->nTone = nTone;
+	}
+	else
+	{
+		df->nTone = 0;
+	}
+}
+
+void deleteDifxFreqInternals(DifxFreq *df)
+{
+	DifxFreqAllocTones(df, 0);
+}
+
+void deleteDifxFreqArray(DifxFreq *df, int nFreq)
+{
+	int f;
+
 	if(df)
 	{
+		for(f = 0; f < nFreq; f++)
+		{
+			deleteDifxFreqInternals(df + f);
+		}
 		free(df);
 	}
 }
 
 void fprintDifxFreq(FILE *fp, const DifxFreq *df)
 {
+	int t;
+
 	fprintf(fp, "  Difx Freq : %p\n", df);
 	fprintf(fp, "    Freq = %f MHz\n", df->freq);
 	fprintf(fp, "    Bandwidth = %f MHz\n", df->bw);
@@ -61,11 +98,44 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
         fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
         fprintf(fp, "    Oversamp = %d\n", df->overSamp);
         fprintf(fp, "    Decimation = %d\n", df->decimation);
+	fprintf(fp, "    Num tones = %d\n", df->nTone);
+	if(df->nTone > 0)
+	{
+		fprintf(fp, "     ");
+		for(t = 0; t < df->nTone; t++)
+		{
+			fprintf(fp, " %d", df->tone[t]);
+		}
+		fprintf(fp, "\n");
+	}
 }
 
 void printDifxFreq(const DifxFreq *df)
 {
 	fprintDifxFreq(stdout, df);
+}
+
+int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2)
+{
+	int t;
+
+	if(df1->nTone != df2->nTone)
+	{
+		return 0;
+	}
+
+	if(df1->nTone > 0)
+	{
+		for(t = 0; t < df1->nTone; t++)
+		{
+			if(df1->tone[t] != df2->tone[t])
+			{
+				return 0;
+			}
+		}
+	}
+
+	return 1;
 }
 
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
@@ -76,7 +146,8 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
 	   df1->specAvg    == df2->specAvg &&
 	   df1->nChan      == df2->nChan &&
 	   df1->overSamp   == df2->overSamp &&
-	   df1->decimation == df2->decimation)
+	   df1->decimation == df2->decimation &&
+	   isSameDifxFreqToneSet(df1, df2) )
 	{
 		return 1;
 	}
@@ -88,6 +159,8 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
 
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 {
+	int t;
+
 	dest->freq       = src->freq;
 	dest->bw         = src->bw;
 	dest->sideband   = src->sideband;
@@ -95,6 +168,15 @@ void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 	dest->specAvg    = src->specAvg;
 	dest->overSamp   = src->overSamp;
 	dest->decimation = src->decimation;
+
+	DifxFreqAllocTones(dest, src->nTone);
+	if(src->nTone > 0)
+	{
+		for(t = 0; t < src->nTone; t++)
+		{
+			dest->tone[t] = src->tone[t];
+		}
+	}
 }
 
 int simplifyDifxFreqs(DifxInput *D)
@@ -228,8 +310,7 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 {
-	int n;
-	int i;
+	int n, i, t;
 	char sb[2];
 
 	writeDifxLineInt(out, "FREQ ENTRIES", nFreq);
@@ -248,6 +329,14 @@ int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df)
 		writeDifxLineInt1(out, "CHANS TO AVG %d", i, df[i].specAvg);
 		writeDifxLineInt1(out, "OVERSAMPLE FAC. %d", i, df[i].overSamp);
 		writeDifxLineInt1(out, "DECIMATION FAC. %d", i, df[i].decimation);
+		writeDifxLineInt1(out, "PHASE CALS %d OUT", i, df[i].nTone);
+		if(df[i].nTone > 0)
+		{
+			for(t = 0; t < df[i].nTone; t++)
+			{
+				writeDifxLineInt2(out, "PHASE CAL %d/%d INDEX", i, t, df[i].tone[t]);
+			}
+		}
 	}
 
 	return n;
