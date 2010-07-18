@@ -60,6 +60,16 @@ int usage(const char *pgm)
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
+	printf("Options can include:\n\n");
+	printf("  --verbose\n");
+	printf("  -v           Be more verbose in operation\n\n");
+	printf("  --quiet\n");
+	printf("  -q           Be quieter\n\n");
+	printf("  -n <number>  Integrate over <number> chunks of data [1000]\n\n");
+	printf("  --offset <number>\n");
+	printf("  -o <number>  Jump <number> bytes into the file [0]\n\n");
+	printf("  --interval <number>\n");
+	printf("  -i <number>  Assume a pulse cal comb interval of <number> MHz [1]\n\n");
 
 	return 0;
 }
@@ -84,11 +94,11 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 		d = tonePhase[i] - tonePhase[i-1];
 		if(d - ref > M_PI)
 		{
-			d -= 2*M_PI;
+			d -= 2.0*M_PI;
 		}
 		if(ref - d > M_PI)
 		{
-			d += 2*M_PI;
+			d += 2.0*M_PI;
 		}
 		sum += d/(toneFreq_MHz[i] - toneFreq_MHz[i-1]);
 		n++;
@@ -97,8 +107,6 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 	window = fabs(500.0/(toneFreq_MHz[nTone/2+1] - toneFreq_MHz[nTone/2]));
 
 	delay = 1000.0*(sum/n)/(2.0*M_PI);
-
-	printf("delay = %f  window = %f\n", delay, window);
 
 	while(delay > window)
 	{
@@ -112,7 +120,16 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 	return delay;
 }
 
-static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw_MHz, int interval_MHz, int *toneFreq_MHz, double *toneAmp, double *tonePhase)
+static double mod2pi(double x)
+{
+	int n;
+
+	n = (int)(x / (2.0*M_PI));
+
+	return x - n*2.0*M_PI;
+}
+
+static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw_MHz, int interval_MHz, int ns, int *toneFreq_MHz, double *toneAmp, double *tonePhase)
 {
 	int nTone;
 	int startTone;
@@ -147,7 +164,8 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
 			toneAmp[nTone] = sqrt(z*~z);
-			tonePhase[nTone] = atan2(creal(z),cimag(z));
+			tonePhase[nTone] = mod2pi(atan2(creal(z),cimag(z)) - 2.0*M_PI*(ns/1000000.0)*(f - freq_kHz));
+			/* FIXME -- are the signs correct above? */
 		}
 	}
 	else
@@ -172,7 +190,8 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
 			toneAmp[nTone] = sqrt(z*~z);
-			tonePhase[nTone] = atan2(creal(z), cimag(z));
+			tonePhase[nTone] = mod2pi(atan2(creal(z), cimag(z)) - 2.0*M_PI*(ns/1000000.0)*(f - freq_kHz));
+			/* FIXME -- is the total sign correct above? */
 		}
 	}
 
@@ -193,6 +212,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	double tonePhase[MaxTones];
 	int toneFreq[MaxTones];
 	fftw_plan plan;
+	int ns;
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(inFile, offset),
@@ -206,7 +226,8 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	}
 
 	bw_MHz = ms->samprate/2.0e6;
-	
+	ns = ms->ns;
+
 	if(verbose > 0)
 	{
 		mark5_stream_print(ms);
@@ -310,7 +331,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 			f0 = fabs(freq_kHz[i]/1000.0);
 			f1 = fabs(freq_kHz[i]/1000.0 + bw_MHz);
 
-			nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, 
+			nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns,
 				toneFreq, toneAmp, tonePhase);
 
 			delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase);
@@ -323,15 +344,15 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 			}
 			else
 			{
-				if(verbose >= 0)
+				for(j = 0; j < nTone; j++)
 				{
-					for(j = 0; j < nTone; j++)
+					if(verbose >= 0)
 					{
 						printf("  Tone %2d  Freq=%d MHz  Amp=%6.4f  Phase=%+6.2f deg\n",
-							j, toneFreq[j], toneAmp[j], tonePhase[j]*180/M_PI);
-						fprintf(out, "%d %d %6.4f %+6.2f\n",
-							j, toneFreq[j], toneAmp[j], tonePhase[j]*180/M_PI);
+							j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI);
 					}
+					fprintf(out, "%d %d %6.4f %+6.2f %f\n",
+						j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
 				}
 				if(nTone > 1)
 				{
