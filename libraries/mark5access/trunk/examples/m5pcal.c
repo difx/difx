@@ -164,8 +164,8 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 			z = spectrum[chan];
 			toneFreq_MHz[nTone] = f/1000.0;
 			toneAmp[nTone] = sqrt(z*~z);
-			tonePhase[nTone] = mod2pi(atan2(creal(z),cimag(z)) - 2.0*M_PI*(ns/1000000.0)*(f - freq_kHz));
-			/* FIXME -- are the signs correct above? */
+			tonePhase[nTone] = mod2pi(atan2(creal(z),cimag(z)) + 2.0*M_PI*(ns/1000000.0)*(f - freq_kHz));
+			/* FIXME -- is the total sign correct above? */
 		}
 	}
 	else
