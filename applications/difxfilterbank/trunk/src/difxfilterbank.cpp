@@ -139,6 +139,22 @@ int main(int argc, const char * argv[])
 void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, int nswidth,  
 		    int bandindex, int nchan, int coreindex, int threadindex)
 {
+  int data[10];
+
+  data[0] = SYNC;
+  data[1] = dsindex;
+  data[2] = scan;
+  data[3] = sec;
+  data[4] = ns;
+  data[5] = nswidth;
+  data[6] = bandindex;
+  data[7] = nchan;
+  data[8] = coreindex;
+  data[9] = threadindex;
+
+  output->write((char *)data, sizeof(data));
+
+/* 
   output->write((char*)&SYNC, sizeof(int));
   output->write((char*)&dsindex, sizeof(int));
   output->write((char*)&scan, sizeof(int));
@@ -149,6 +165,7 @@ void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, 
   output->write((char*)&nchan, sizeof(int));
   output->write((char*)&coreindex, sizeof(int));
   output->write((char*)&threadindex, sizeof(int));
+*/
 }
 
 //setup write thread

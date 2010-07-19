@@ -1,2 +1,2 @@
-SUBDIRS = src utilities
+SUBDIRS = src utilities transient_daemon
 
