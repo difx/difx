@@ -973,8 +973,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D,
 		"NUM CHANNELS %d",
 		"CHANS TO AVG %d",
 		"OVERSAMPLE FAC. %d",
-		"DECIMATION FAC. %d",
-		"PHASE CALS %d OUT"
+		"DECIMATION FAC. %d"
 	};
 	const int N_FREQ_ROWS = sizeof(freqKeys)/sizeof(freqKeys[0]);
 	int b, r, t, N;
@@ -1011,17 +1010,22 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D,
 		D->freq[b].specAvg  = atoi(DifxParametersvalue(ip, rows[4]));
 		D->freq[b].overSamp = atoi(DifxParametersvalue(ip, rows[5]));
 		D->freq[b].decimation = atoi(DifxParametersvalue(ip, rows[6]));
-		DifxFreqAllocTones(D->freq, atoi(DifxParametersvalue(ip, rows[7])));
-		r = rows[7];
-		for(t = 0; t < D->freq[b].nTone; t++)
+		
+		r = DifxParametersfind1(ip, rows[6]+1, "PHASE CALS %d OUT", b);
+		if(r > 0)
 		{
-			r = DifxParametersfind2(ip, r+1, "PHASE CAL %d/%d INDEX", b, t);
-			if(r < 0)
+			DifxFreqAllocTones(D->freq, atoi(DifxParametersvalue(ip, r)));
+			for(t = 0; t < D->freq[b].nTone; t++)
 			{
-				fprintf(stderr, "PHASE CAL %d/%d INDEX not found in .input file\n", b, t);
-				D->freq[b].tone[t] = atoi(DifxParametersvalue(ip, r));
+				r = DifxParametersfind2(ip, r+1, "PHASE CAL %d/%d INDEX", b, t);
+				if(r < 0)
+				{
+					fprintf(stderr, "PHASE CAL %d/%d INDEX not found in .input file\n", b, t);
+					D->freq[b].tone[t] = atoi(DifxParametersvalue(ip, r));
+				}
 			}
 		}
+
 		D->nInChan = D->freq[b].nChan;
 		D->nOutChan = D->freq[b].nChan/D->freq[b].specAvg;
 	}
