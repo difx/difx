@@ -859,7 +859,7 @@ uint64_t DataStream::openframe()
   
   framesize = framesize - LBA_HEADER_LENGTH;
 
-  if (framesize>ULLONG_MAX) {
+  if (framesize>UINT64_MAX) {
     keepreading=false;
     cerror << startl << "Network stream trying to send too large frame - aborting!!!" << endl;
     return(0);
