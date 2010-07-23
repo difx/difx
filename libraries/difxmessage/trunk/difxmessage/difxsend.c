@@ -778,6 +778,50 @@ int difxMessageSendDifxParameter(const char *name,
 	return difxMessageSend(message);
 }
 
+int difxMessageSendDifxParameterTo(const char *name,
+        const char *value, const char *to)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int v;
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+		
+		"<difxParameter>"
+		  "<targetMpiId>%d</targetMpiId>"
+		  "<name>%s</name>"
+		  "<value>%s</value>"
+		"</difxParameter>",
+
+		-10,
+		name,
+		value);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter: message body overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageToXMLFormat,
+		to,
+		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
+		difxMessageSequenceNumber++, 
+		body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxParameter: message overflow (%d >= %d)\n",
+			v, DIFX_MESSAGE_LENGTH);
+		return -1;
+	}
+
+	return difxMessageSend(message);
+
+}
+
 int difxMessageSendDifxParameter1(const char *name, int index1,
 	const char *value, int mpiDestination)
 {

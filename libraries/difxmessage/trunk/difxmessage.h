@@ -393,6 +393,8 @@ int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);
 int difxMessageSendDifxParameter(const char *name, 
 	const char *value, int mpiDestination);
+int difxMessageSendDifxParameterTo(const char *name, 
+	const char *value, const char *to);
 int difxMessageSendDifxParameter1(const char *name, int index1, 
 	const char *value, int mpiDestination);
 int difxMessageSendDifxParameter2(const char *name, int index1, int index2, 

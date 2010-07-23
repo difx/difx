@@ -13,12 +13,15 @@
 
 #include "../difxmessage.h"
 
+#define DIFX_MESSAGE_FORMAT_LENGTH    320
+
 extern char difxMessageGroup[16];
 extern int difxMessagePort;
 extern char difxMessageIdentifier[DIFX_MESSAGE_PARAM_LENGTH];
 extern char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH];
 extern int difxMessageMpiProcessId;
-extern char difxMessageXMLFormat[320];
+extern char difxMessageXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH];
+extern char difxMessageToXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH];
 extern int difxMessageSequenceNumber;
 extern char difxBinarySTAGroup[16];
 extern int difxBinarySTAPort;

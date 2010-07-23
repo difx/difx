@@ -65,7 +65,7 @@ int main(int argc, char **argv)
 	int sock;
 	enum DifxMessageType type = DIFX_MESSAGE_UNKNOWN;
 	int i, l;
-	int verbose = 0;
+	int verbose = 1;
 	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
 	time_t t;
 	char timestr[TimeLength];
@@ -136,12 +136,11 @@ int main(int argc, char **argv)
 			printf("[%s %s] ", timestr, from);
 			difxMessageGenericPrint(&G);
 			printf("\n");
-			fflush(stdout);
-		}
-		else if(verbose)
-		{
-			printf("[%s %s] %s\n", timestr, from, message);
-			printf("\n");
+			if(verbose)
+			{
+				printf("[%s %s] %s\n", timestr, from, message);
+				printf("\n");
+			}
 			fflush(stdout);
 		}
 	}

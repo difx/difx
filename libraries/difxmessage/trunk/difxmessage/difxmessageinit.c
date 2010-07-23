@@ -17,7 +17,6 @@
 #include "difxmessageinternal.h"
 
 #define MAX_GROUP_SIZE			16
-#define DIFX_MESSAGE_FORMAT_LENGTH	320
 
 char difxMessageGroup[MAX_GROUP_SIZE] = "";
 int difxMessagePort = -1; 
@@ -25,6 +24,7 @@ char difxMessageIdentifier[DIFX_MESSAGE_IDENTIFIER_LENGTH] = "";
 char difxMessageHostname[DIFX_MESSAGE_PARAM_LENGTH] = "";
 int difxMessageMpiProcessId = -1;
 char difxMessageXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH] = "";
+char difxMessageToXMLFormat[DIFX_MESSAGE_FORMAT_LENGTH] = "";
 int difxMessageSequenceNumber = 0;
 char difxBinarySTAGroup[MAX_GROUP_SIZE] = "";
 int difxBinarySTAPort = -1;
@@ -84,6 +84,27 @@ int difxMessageInit(int mpiId, const char *identifier)
 		"<difxMessage>"
 		  "<header>"
 		    "<from>%s</from>"
+		    "<mpiProcessId>%d</mpiProcessId>"
+		    "<identifier>%s</identifier>"
+		    "<type>%%s</type>"
+		  "</header>"
+		  "<body>"
+		    "<seqNumber>%%d</seqNumber>"
+		    "%%s"
+		  "</body>"
+		"</difxMessage>",
+		
+		difxMessageHostname, 
+		difxMessageMpiProcessId,
+		difxMessageIdentifier);
+
+	v = snprintf(difxMessageToXMLFormat, DIFX_MESSAGE_FORMAT_LENGTH,
+		
+		"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n"
+		"<difxMessage>"
+		  "<header>"
+		    "<from>%s</from>"
+		    "<to>%%s</to>"
 		    "<mpiProcessId>%d</mpiProcessId>"
 		    "<identifier>%s</identifier>"
 		    "<type>%%s</type>"
