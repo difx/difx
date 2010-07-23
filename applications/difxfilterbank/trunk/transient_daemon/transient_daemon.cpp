@@ -10,7 +10,7 @@
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 Jul 22";
+const char verdate[] = "2010 Jul 23";
 
 const char dispatcherProgram[] = "transient_dispatcher";
 /* Command line params are: configfile jobid dmfile */
@@ -31,6 +31,7 @@ public:
 	int verbose;
 	int selfTest;
 	int startEnable;
+	int nLaunch;
 	char lastCommand[CommandLength];
 	char hostname[DIFX_MESSAGE_PARAM_LENGTH];
 
@@ -43,6 +44,7 @@ TransientDaemonState::TransientDaemonState()
 	verbose = 0;
 	selfTest = 0;
 	startEnable = 1;
+	nLaunch = 0;
 	lastCommand[0] = 0;
 	gethostname(hostname, DIFX_MESSAGE_PARAM_LENGTH);
 }
@@ -53,6 +55,7 @@ void TransientDaemonState::print() const
 	printf("  verbose=%d\n", verbose);
 	printf("  selfTest=%d\n", selfTest);
 	printf("  startEnable=%d\n", startEnable);
+	printf("  nLaunch=%d\n", nLaunch);
 	printf("  Last Command=%s\n", lastCommand);
 }
 
@@ -215,6 +218,7 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 	char command[CommandLength];
 	int v, pid;
 	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
+	char alertMessage[DIFX_MESSAGE_LENGTH];
 	char dmGenCmd[CommandLength];
 
 	difxMessageParse(&G, message);
@@ -228,34 +232,35 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 		}
 		break;
 	case DIFX_MESSAGE_START:
+		state->lastCommand[0] = 0;
+		if(state->verbose > 1)
+		{
+			printf("%s: START %s %s\n", G.identifier, G.body.start.inputFilename, G.body.start.difxVersion);
+		}
+
+		generateIdentifier(G.body.start.inputFilename, 0, identifier);
+		v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
+		if(v != 0)
+		{
+			fprintf(stderr, "Error %d generating the DM command\n", v);
+			return -1;
+		}
+
+		v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
+		if(v >= CommandLength)
+		{
+			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d)\n",
+				CommandLength, v);
+
+			return -2;
+		}
+
+		strcpy(state->lastCommand, command);
+
 		if(state->startEnable)
 		{
-			state->lastCommand[0] = 0;
-			if(state->verbose > 1)
-			{
-				printf("%s: START %s %s\n", G.identifier, G.body.start.inputFilename, G.body.start.difxVersion);
-			}
-
-			generateIdentifier(G.body.start.inputFilename, 0, identifier);
-			v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
-			if(v != 0)
-			{
-				fprintf(stderr, "Error %d generating the DM command\n", v);
-				return -1;
-			}
-
-			v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
-			if(v >= CommandLength)
-			{
-				fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d)\n",
-					CommandLength, v);
-				return -2;
-			}
-			else
-			{
-				pid = runCommand(command, state->verbose);
-				strcpy(state->lastCommand, command);
-			}
+			pid = runCommand(command, state->verbose);
+			state->nLaunch++;
 		}
 		else
 		{
@@ -279,12 +284,39 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 			else if(strcmp(G.body.param.paramName, "restart") == 0)
 			{
 				runCommand(state->lastCommand, state->verbose);
+				state->nLaunch++;
 			}
 			else if(strcmp(G.body.param.paramName, "test") == 0)
 			{
 				state->selfTest = atoi(G.body.param.paramValue);
 			}
-			else if(strcmp(G.body.param.paramName, "die") == 0)
+			else if(strcmp(G.body.param.paramName, "kill") == 0)
+			{
+				v = snprintf(command, CommandLength, "killall -INT %s", dispatcherProgram);
+				if(v >= CommandLength)
+				{
+					printf("Error: CommandLength=%d is too short (needs to be > %d\n", 
+						CommandLength, v);
+				}
+				else
+				{
+					if(state->verbose > 0)
+					{
+						printf("Executing: %s\n", command);
+					}
+					system(command);
+				}
+			}
+			else if(strcmp(G.body.param.paramName, "getstate") == 0)
+			{
+				v = snprintf(alertMessage, DIFX_MESSAGE_LENGTH, "%s state: verbose=%d selfTest=%d enable=%d nLaunch=%d", program, state->verbose, state->selfTest, state->startEnable, state->nLaunch);
+				if(v >= DIFX_MESSAGE_LENGTH)
+				{
+					printf("Error: alertMessage truncated due to length\n");
+				}
+				difxMessageSendDifxAlert(alertMessage, DIFX_ALERT_LEVEL_INFO);
+			}
+			else if(strcmp(G.body.param.paramName, "stop_transient_daemon") == 0)
 			{
 				die = 1;
 			}
@@ -330,18 +362,23 @@ int transientdaemon(TransientDaemonState *state)
 
 	sock = difxMessageReceiveOpen();
 
+	/* Program event loop */
 	for(;;)
 	{
+		if(state->selfTest > 0)
+		{
+			state->selfTest--;
+			v = handleMessage(testMessage, state);
+			if(v)
+			{
+				fprintf(stderr, "Error=%d handling command %s\n", v, testMessage);
+			}
+		}
+			
 		from[0] = 0;
 		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
 		if(l < 0)
 		{
-			if(state->selfTest > 0)
-			{
-				state->selfTest--;
-				strcpy(message, testMessage);
-			}
-			
 			usleep(100000);
 
 			continue;

@@ -215,6 +215,8 @@ void * launchWriteThread(void * nothing) {
   if(dokurtosis)
     ktoutput.close();
   cout << "Write thread exiting!" << endl;
+
+  return 0;
 }
     
 
