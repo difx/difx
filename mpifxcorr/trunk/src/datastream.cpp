@@ -29,7 +29,6 @@
 #include <errno.h>
 #include <string.h>
 #include <strings.h>
-#include <limits.h>
 #include <math.h>
 #include "config.h"
 #include "alert.h"

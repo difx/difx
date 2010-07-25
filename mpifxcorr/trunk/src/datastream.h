@@ -19,8 +19,11 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #ifndef DATASTREAM_H
 #define DATASTREAM_H
+
+#define __STDC_LIMIT_MACROS
 
 #include <mpi.h>
 #include <string>
@@ -28,7 +31,6 @@
 #include <vector>
 #include <iostream>
 #include <pthread.h>
-#include <stdint.h>
 #include "architecture.h"
 #include "configuration.h"
 
