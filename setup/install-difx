@@ -183,7 +183,8 @@ utiltargets = [["calcif2",   difx_version, False,True,False],
 
 apptargets = [["calcserver", difx_version, True,False,False],
               ["difx2fits",  difx_version, False,True,False],
-              ["vex2difx",   difx_version, True,True,False]]
+              ["vex2difx",   difx_version, True,True,False],
+              ["difx2mark4", difx_version, True,True,False]]
 
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, False,True])

@@ -36,9 +36,8 @@ POST_UNINSTALL = :
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(top_srcdir)/configure $(top_srcdir)/utils/Makefile.in \
-	AUTHORS COPYING ChangeLog INSTALL NEWS depcomp install-sh \
-	missing
+	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
+	config.guess config.sub depcomp install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -47,7 +46,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = utils/Makefile
+CONFIG_CLEAN_FILES =
 SOURCES =
 DIST_SOURCES =
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
@@ -69,13 +68,13 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/rjc/difx2mark4/missing --run aclocal-1.9
+ACLOCAL = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run aclocal-1.9
 AMDEP_FALSE = #
 AMDEP_TRUE = 
-AMTAR = ${SHELL} /home/rjc/difx2mark4/missing --run tar
-AUTOCONF = ${SHELL} /home/rjc/difx2mark4/missing --run autoconf
-AUTOHEADER = ${SHELL} /home/rjc/difx2mark4/missing --run autoheader
-AUTOMAKE = ${SHELL} /home/rjc/difx2mark4/missing --run automake-1.9
+AMTAR = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run tar
+AUTOCONF = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run autoconf
+AUTOHEADER = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run autoheader
+AUTOMAKE = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run automake-1.9
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -103,7 +102,7 @@ LDFLAGS =
 LIBOBJS = 
 LIBS = -lm  -L/home/rjc/difx/lib -ldifxio -lm   -lfftw3 -lm  
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /home/rjc/difx2mark4/missing --run makeinfo
+MAKEINFO = ${SHELL} /home/rjc/difx/applications/difx2mark4/trunk/missing --run makeinfo
 OBJEXT = o
 PACKAGE = difx2fits
 PACKAGE_BUGREPORT = Walter Brisken <wbrisken@nrao.edu>
@@ -138,7 +137,7 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = /home/rjc/difx2mark4/install-sh
+install_sh = /home/rjc/difx/applications/difx2mark4/trunk/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -147,7 +146,7 @@ mandir = ${datarootdir}/man
 mkdir_p = mkdir -p --
 oldincludedir = /usr/include
 pdfdir = ${docdir}
-prefix = 
+prefix = /home/rjc/difx
 program_transform_name = s,x,x,
 psdir = ${docdir}
 sbindir = ${exec_prefix}/sbin
@@ -216,8 +215,6 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
-utils/Makefile: $(top_builddir)/config.status $(top_srcdir)/utils/Makefile.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 uninstall-info-am:
 
 # This directory's subdirectories are mostly independent; you can cd
@@ -355,7 +352,6 @@ distclean-tags:
 distdir: $(DISTFILES)
 	$(am__remove_distdir)
 	mkdir $(distdir)
-	$(mkdir_p) $(distdir)/utils
 	@srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`; \
 	topsrcdirstrip=`echo "$(top_srcdir)" | sed 's|.|.|g'`; \
 	list='$(DISTFILES)'; for file in $$list; do \
