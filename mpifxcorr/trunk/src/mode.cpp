@@ -25,10 +25,10 @@
 #include "math.h"
 #include "architecture.h"
 #include "alert.h"
+#include "pcal.h"
 
 //using namespace std;
 const float Mode::TINY = 0.000000001;
-
 
 Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock)
   : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), twicerecordedbandchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), fringerotationorder(fringerotorder), arraystridelength(arraystridelen), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
@@ -275,6 +275,24 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     sk = 0;
     kscratch = 0;
   }
+  // Phase cal stuff
+  if(config->getDPhaseCalIntervalMHz(configindex, datastreamindex))
+  {
+    pcalresults = new cf32*[numrecordedbands];
+    extractor = new PCal*[numrecordedbands];
+    pcalnbins = new int[numrecordedbands];
+    for(int i=0;i<numrecordedbands;i++)
+    {
+      localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
+
+      pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
+      extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
+                                  1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
+                                      config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), 0);
+      pcalnbins[i] = extractor[i]->getNBins();
+      cdebug << startl << "Band " << i << " phase cal extractor buffer length (N bins)" << pcalnbins[i] << endl;
+    }
+  }
 }
 
 Mode::~Mode()
@@ -379,6 +397,17 @@ Mode::~Mode()
   delete [] weights;
   delete [] autocorrelations;
 
+  if(config->getDPhaseCalIntervalMHz(configindex, datastreamindex))
+  {
+    for(int i=0;i<numrecordedbands;i++) {
+       delete extractor[i];
+       delete pcalresults[i];
+    }
+    delete[] pcalresults;
+    delete[] extractor;
+    delete[] pcalnbins;
+  }
+
   if(sk != 0) //also need to delete kurtosis stuff
   {
     for(int i=0;i<numrecordedbands;i++)
@@ -438,6 +467,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   f32* currentstepchannelfreqs;
   int indices[10];
   //cout << "For Mode of datastream " << datastreamindex << ", index " << index << ", validflags is " << validflags[index/FLAGS_PER_INT] << ", after shift you get " << ((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) << endl;
+  
   if((datalengthbytes <= 1) || (offsetseconds == INVALID_SUBINT) || (((validflags[index/FLAGS_PER_INT] >> (index%FLAGS_PER_INT)) & 0x01) == 0))
   {
     for(int i=0;i<numrecordedbands;i++)
@@ -488,6 +518,19 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 
   nearestsampletime = nearestsample*sampletime;
   fracsampleerror = float(starttime - nearestsampletime);
+
+  if(!(config->getDPhaseCalIntervalMHz(configindex, datastreamindex) == 0)) 
+  {
+      for(int i=0;i<numrecordedbands;i++)
+      {
+        extractor[i]->adjustSampleOffset(datasamples+nearestsample);
+        // status = extractor[i]->extractAndIntegrate(unpackedarrays[i], unpacksamples);
+	status = extractor[i]->extractAndIntegrate(&(unpackedarrays[i][nearestsample
+	    - unpackstartsamples]), twicerecordedbandchannels);
+        if(status != true)
+          csevere << startl << "Error in phase cal extractAndIntegrate" << endl;
+      }
+  }
 
   integerdelay = 0;
   switch(fringerotationorder) {
@@ -968,6 +1011,26 @@ void Mode::setData(u8 * d, int dbytes, int dscan, int dsec, int dns)
   datasec = dsec;
   datans = dns;
   unpackstartsamples = -999999999;
+  datasamples = datans/(sampletime*1e3);
+}
+
+void Mode::resetpcal()
+{
+  for(int i=0;i<numrecordedbands;i++)
+  {
+    extractor[i]->clear();
+  }
+}
+
+void Mode::finalisepcal()
+{
+  for(int i=0;i<numrecordedbands;i++)
+  {
+    uint64_t samples = extractor[i]->getFinalPCal(pcalresults[i]);
+    if ((samples == 0) && (datasec != INVALID_SUBINT) && (datalengthbytes > 1)) {
+        //cdebug << startl << "finalisepcal band " << i << " samples==0 over valid subint " << datasec << "s+" << datans << "ns" << endl;
+    }
+  }
 }
 
 const float Mode::decorrelationpercentage[] = {0.63662, 0.88, 0.94, 0.96, 0.98, 0.99, 0.996, 0.998}; //note these are just approximate!!!
@@ -1061,3 +1124,4 @@ float LBA16BitMode::unpack(int sampleoffset)
 
 const s16 LBAMode::stdunpackvalues[] = {MAX_S16/4, -MAX_S16/4 - 1, 3*MAX_S16/4, -3*MAX_S16/4 - 1};
 const s16 LBAMode::vsopunpackvalues[] = {-3*MAX_S16/4 - 1, MAX_S16/4, -MAX_S16/4 - 1, 3*MAX_S16/4};
+// vim: shiftwidth=2:softtabstop=2:expandtab

@@ -1008,3 +1008,4 @@ int FxManager::openMonitorSocket() {
 
   return 1;
 } /* Setup Net */
+// vim: shiftwidth=2:softtabstop=2:expandtab

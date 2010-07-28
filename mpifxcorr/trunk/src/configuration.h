@@ -181,6 +181,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numrecordedfreqpcaltones[recordedfreqindex]; }
   inline int getDRecordedFreqPCalToneFreq(int configindex, int configdatastreamindex, int recordedfreqindex, int tone)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaltonefreqs[recordedfreqindex][tone]; }
+  inline double getDRecordedFreqPCalOffsetsHz(int configindex, int configdatastreamindex, int recordedfreqindex)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqpcaloffsetshz[recordedfreqindex]; }
   inline double getDRecordedFreq(int configindex, int configdatastreamindex, int datastreamrecordedfreqindex)
     { return freqtable[datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedfreqtableindices[datastreamrecordedfreqindex]].bandedgefreq; }
   inline double getDZoomFreq(int configindex, int configdatastreamindex, int datastreamzoomfreqindex)
@@ -617,6 +619,7 @@ private:
     int *  recordedfreqtableindices;
     int *  numrecordedfreqpcaltones;
     int ** recordedfreqpcaltonefreqs; 
+    int * recordedfreqpcaloffsetshz;
     double * recordedfreqclockoffsets;
     double * recordedfreqlooffsets;
     int * zoomfreqpols;
@@ -783,3 +786,4 @@ private:
 };
 
 #endif
+// vim: shiftwidth=2:softtabstop=2:expandtab

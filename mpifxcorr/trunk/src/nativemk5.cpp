@@ -1062,3 +1062,4 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 
 	return v;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

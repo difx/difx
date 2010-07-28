@@ -29,3 +29,4 @@ namespace fxcorr
 }
 
 static const int FLAGS_PER_INT = 30;
+// vim: shiftwidth=2:softtabstop=2:expandtab

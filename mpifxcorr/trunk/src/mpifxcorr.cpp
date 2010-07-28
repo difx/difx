@@ -405,3 +405,4 @@ int main(int argc, char *argv[])
   cinfo << startl << "MPI ID " << myID << " says BYE!" << endl;
   return EXIT_SUCCESS;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

@@ -85,3 +85,4 @@ public:
 };
 
 #endif
+// vim: shiftwidth=2:softtabstop=2:expandtab

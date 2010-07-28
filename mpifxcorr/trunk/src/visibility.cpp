@@ -575,8 +575,8 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   char pcalstr[256];
   int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
   int year, month, day, startyearmjd, dummyseconds;
-  int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount;
-  double scanoffsetsecs, pcaldoy, cablecaldelay, tonefreq;
+  int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
+  double scanoffsetsecs, pcaldoy, cablecaldelay;
   bool modelok;
   double buvw[3]; //the u,v and w for this baseline at this time
   char polpair[3]; //the polarisation eg RR, LL
@@ -739,45 +739,46 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       sprintf(pcalfilename, "%s/PCAL_%s", config->getOutputFilename().c_str(), config->getTelescopeName(i).c_str());
       pcaloutput.open(pcalfilename, ios::app);
       //write the header string - note state counts are not written, and cablecal is dummy
-      sprintf(pcalstr, "%s %10.7f %9.7f %5f %d %d %d %d %d", 
-              config->getTelescopeName(i).c_str(), pcaldoy, 
-              config->getIntTime(currentconfigindex)/86400.0, cablecaldelay, 
+      sprintf(pcalstr, "%s %10.7f %9.7f %.2f %d %d %d %d %d",
+              config->getTelescopeName(i).c_str(), pcaldoy,
+              config->getIntTime(currentconfigindex)/86400.0, cablecaldelay,
               maxpol, config->getDNumRecordedFreqs(currentconfigindex, i),
               config->getDMaxRecordedPCalTones(currentconfigindex, i), 
               0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
       pcaloutput.write(pcalstr, strlen(pcalstr));
       for(int p=0;p<maxpol;p++)
       {
-        for(int j=0;j<config->getDNumRecordedFreqs(currentconfigindex, i);j++)
+        for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
+        //we have to loop over bands as they are used to index the pcal results
         {
-          for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
+          if(config->getDRecordedBandPol(currentconfigindex, i, j) != polpair[p]) {
+	    //skip band if it's not the right polarisation without writing out dummy pcal
+	    continue;
+          }
+          //Go to the matching band in the pcal results
+          resultindex = config->getCoreResultPCalOffset(currentconfigindex, i) +
+                        j*config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j));
+	  for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
           {
             //get the default response ready in case we don't find anything
-            sprintf(pcalstr, "  %d %.6f %.8f %.8f", -1, 0.0, 0.0, 0.0);
-
-            if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, j)) {
-              //don't write any tones we don't have
-              pcaloutput.write(pcalstr, strlen(pcalstr));
-              continue; //move on
-            }
-
-            //try to find the matching band
-            resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
-            for(int b=0;b<config->getDNumRecordedBands(currentconfigindex, i);b++)
-            {
-              if(config->getDRecordedBandPol(currentconfigindex, i, b) == polpair[p] && config->getDLocalRecordedFreqIndex(currentconfigindex, i, b) == j) {
-                tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, j, t);
-                sprintf(pcalstr, "  %d %.6f %.8f %.8f", j, tonefreq, results[resultindex+t].re, results[resultindex+t].im);
-                break;
-              }
-              resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, b));
-            }
+	    sprintf(pcalstr, " %3d %d %.5e %.5e", -1, 0, 0.0, 0.0);
+	      
+            //write out empty tone and continue for any tones outside the bandwidth of the channel.
+	    if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
+		pcaloutput.write(pcalstr, strlen(pcalstr));
+		continue; //move on
+	    }
+	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
+            sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
+	    results[resultindex+t].re,
+	    results[resultindex+t].im);
             pcaloutput.write(pcalstr, strlen(pcalstr));
           }
         }
       }
       pcaloutput.write("\n", 1);
     }
+    pcaloutput.close();
   }
 }
 
@@ -1028,3 +1029,4 @@ void Visibility::changeConfig(int configindex)
     cverbose << startl << "Finished the pulsar bin initialisation" << endl;
   }
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

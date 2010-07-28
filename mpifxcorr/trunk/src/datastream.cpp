@@ -1319,3 +1319,4 @@ void DataStream::waitForSendComplete()
   else //already done!  can advance for next time
     waitsegment = (waitsegment + 1)%numdatasegments;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

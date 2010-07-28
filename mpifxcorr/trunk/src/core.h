@@ -198,7 +198,7 @@ private:
   * @param modes The Mode objects which have the pcal results
   * @param scratchspace Space for all of the intermediate results for this thread
   */
-  void copyPCalTones(int index, int threadid, Mode ** modes, threadscratchspace * scratchspace);
+  void copyPCalTones(int index, int threadid, Mode ** modes);
 
  /**
   * Does any uvshifting necessary and averages down in frequency into the coreresults
@@ -253,3 +253,4 @@ private:
 };
 
 #endif
+// vim: shiftwidth=2:softtabstop=2:expandtab

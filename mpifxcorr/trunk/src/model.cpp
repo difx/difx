@@ -711,3 +711,4 @@ Model::axistype Model::getMount(string mount)
   cerror << startl << "Warning - unknown mount type: Assuming Az-El" << endl;
   return ALTAZ;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

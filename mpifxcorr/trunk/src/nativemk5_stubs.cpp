@@ -45,3 +45,4 @@ int NativeMk5DataStream::calculateControlParams(int scan, int offsetsec, int off
 {
 	return -1;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

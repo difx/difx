@@ -22,11 +22,13 @@ mpifxcorr_SOURCES = \
 	mk5mode.cpp \
 	polyco.cpp \
 	alert.cpp \
+	pcal.cpp \
 	$(mark5_files)
 
 library_includedir = $(includedir)/mpifxcorr
 library_include_HEADERS = \
 	fxmanager.h \
+	pcal.h \
 	core.h \
 	datastream.h \
 	architecture.h \
@@ -44,6 +46,7 @@ library_include_HEADERS = \
 
 lib_LIBRARIES = libmpifxcorr.a libfxcorr.a
 libmpifxcorr_a_SOURCES = \
+	pcal.cpp \
 	configuration.cpp \
 	mode.cpp \
 	core.cpp \
@@ -59,6 +62,7 @@ libmpifxcorr_a_SOURCES = \
 
 libfxcorr_a_SOURCES = \
 	configuration.cpp \
+	pcal.cpp \
 	mode.cpp \
 	mk5mode.cpp \
 	polyco.cpp \

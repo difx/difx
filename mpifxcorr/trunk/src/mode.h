@@ -24,6 +24,7 @@
 
 #include "architecture.h"
 #include "configuration.h"
+#include "pcal.h"
 #include <iostream>
 #include <fstream>
 #include <cstdlib>
@@ -83,6 +84,12 @@ public:
   * @param dns The offset in nanoseconds from the integer second
   */
   void setData(u8 * d, int dbytes, int dscan, int dsec, int dns);
+
+ /**
+  * reset all pcal objects
+  */
+  void resetpcal();
+  void finalisepcal();
 
  /**
   * Calculates fringe rotation and fractional sample correction arrays and FFTs, and autocorrelates
@@ -192,6 +199,17 @@ public:
   /** Constant for comparing two floats for equality (for freqs and bandwidths etc) */
   static const float TINY;
 
+  /**
+   * Returns a single pcal result.
+   * @param outpubband The band to get
+   * @param tone The number of the tone to get
+   * @return pcal result
+   */
+  inline cf32 getPcal(int outputband, int tone) 
+  { 
+    return pcalresults[outputband][tone]; 
+  }
+  
   ///constant indicating no valid data in a subint
   static const int INVALID_SUBINT = -99999999;
 
@@ -207,7 +225,7 @@ protected:
   virtual float unpack(int sampleoffset);
   
   Configuration * config;
-  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, twicerecordedbandchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, estimatedbytes;
+  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, twicerecordedbandchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, estimatedbytes, datasamples, avgdelsamples;
   int fringerotationorder, arraystridelength, numstrides;
   double recordedbandwidth, blockclock, sampletime; //MHz, microseconds
   double a0, b0, c0, a, b, c, quadadd1, quadadd2;
@@ -240,6 +258,11 @@ protected:
   cf32 * fracsamprotator;
   cf32 * fftd;
 
+  // variables for pcal
+  int * pcalnbins;
+  cf32 ** pcalresults;
+  PCal ** extractor;
+  
   f64 * subxoff;
   f64 * subxval;
   f64 * subphase;
@@ -363,3 +386,4 @@ public:
 };
 
 #endif
+// vim: shiftwidth=2:softtabstop=2:expandtab

@@ -251,6 +251,13 @@ Configuration::~Configuration()
       delete [] datastreamtable[i].zoombandpols;
       delete [] datastreamtable[i].zoombandlocalfreqindices;
       delete [] datastreamtable[i].datafilenames;
+      if(datastreamtable[i].phasecalintervalmhz > 0) {
+	for (int j=0;j<datastreamtable[i].numrecordedfreqs;j++)
+	  delete [] datastreamtable[i].recordedfreqpcaltonefreqs[j];
+	delete [] datastreamtable[i].numrecordedfreqpcaltones;
+	delete [] datastreamtable[i].recordedfreqpcaltonefreqs;
+	delete [] datastreamtable[i].recordedfreqpcaloffsetshz;
+      }
     }
     delete [] datastreamtable;
   }
@@ -1158,6 +1165,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     {
       dsdata->numrecordedfreqpcaltones = new int[dsdata->numrecordedfreqs];
       dsdata->recordedfreqpcaltonefreqs = new int*[dsdata->numrecordedfreqs];
+      dsdata->recordedfreqpcaloffsetshz = new int[dsdata->numrecordedfreqs];
       dsdata->maxrecordedpcaltones = 0;
       estimatedbytes += sizeof(int)*(dsdata->numrecordedfreqs);
       for(int j=0;j<dsdata->numrecordedfreqs;j++)
@@ -1168,7 +1176,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
         if(freqtable[freqindex].lowersideband)
           lofreq -= freqtable[freqindex].bandwidth;
         tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
-        if(tonefreq < lofreq)
+        if(tonefreq <= lofreq)
           tonefreq += dsdata->phasecalintervalmhz;
         while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz < lofreq + freqtable[freqindex].bandwidth)
           dsdata->numrecordedfreqpcaltones[j]++;
@@ -1181,6 +1189,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
           tonefreq += dsdata->phasecalintervalmhz;
         for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++)
           datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
+        dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0]) - long(1e6*lofreq);
       }
     }
     datastreamtable[i].tcpwindowsizekb = 0;
@@ -1347,6 +1356,12 @@ bool Configuration::processFreqTable(ifstream * input)
     freqtable[i].oversamplefactor = atoi(line.c_str());
     getinputline(input, &line, "DECIMATION FAC. ");
     freqtable[i].decimationfactor = atoi(line.c_str());
+    getinputline(input, &line, "PHASE CALS ");
+    int npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
+    for(int j=0;j<npcals;j++)
+    {
+      getinputline(input, &line, "PHASE CAL ");
+    }
     freqtable[i].matchingwiderbandindex = -1;
     freqtable[i].matchingwiderbandoffset = -1;
   }
@@ -2535,4 +2550,4 @@ void Configuration::mjd2ymd(int mjd, int & year, int & month, int & day)
   month = (m + 2)%12 + 1;
   day = d + 1;
 }
-
+// vim: shiftwidth=2:softtabstop=2:expandtab

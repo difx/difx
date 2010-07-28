@@ -61,3 +61,4 @@ Alert& Alert::sendAlert()
 
 	return *this;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

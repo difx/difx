@@ -505,3 +505,4 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 
     return true;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

@@ -686,3 +686,4 @@ int sanityCheckModule(const struct Mark5Module *module)
 
 	return 0;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab

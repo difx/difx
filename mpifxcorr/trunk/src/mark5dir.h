@@ -120,3 +120,4 @@ void countReplaced(const streamstordatatype *data, int len,
 	long long *wGood, long long *wBad);
 
 #endif
+// vim: shiftwidth=2:softtabstop=2:expandtab

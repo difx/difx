@@ -640,6 +640,10 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   Mode * m1, * m2;
   cf32 * vis1;
   cf32 * vis2;
+  uint64_t offsetsamples;
+  double sampletimens;
+  int starttimens;
+  int fftsize;
 
 //following statement used to cut all all processing for "Neutered DiFX"
 #ifndef NEUTERED_DIFX
@@ -659,6 +663,23 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     modes[j]->setDumpKurtosis(scratchspace->dumpkurtosis);
     if(scratchspace->dumpkurtosis)
       modes[j]->zeroKurtosis();
+    
+    //reset pcal
+    if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, j) > 0)
+    {
+      // Calculate the sample time. Every band has the same bandwidth.
+      sampletimens = 1.0/(2.0*config->getDRecordedBandwidth(procslots[index].configindex, j, 0))*1e+3;
+      
+      // Get the ns start time of the whole block.
+      starttimens = procslots[index].offsets[2];
+      
+      // Calculate the FFT size in number of samples.
+      fftsize = 2*config->getFNumChannels(config->getDRecordedFreqIndex(procslots[index].configindex, j, 0));
+      
+      // Calculate the number of offset samples. The modulo PCal bins is done in the pcal object!
+      offsetsamples = starttimens/sampletimens + startblock*fftsize;
+      modes[j]->resetpcal();
+    }
   }
 
   //zero the results for this thread
@@ -1009,7 +1030,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock copy mutex!!!" << endl;
 
   //copy the PCal results
-  copyPCalTones(index, threadid, modes, scratchspace);
+  copyPCalTones(index, threadid, modes);
 
 //end the cutout of processing in "Neutered DiFX"
 #endif
@@ -1025,7 +1046,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     csevere << startl << "PROCESSTHREAD " << mpiid << "/" << threadid << " error trying unlock mutex " << index << endl;
 }
 
-void Core::copyPCalTones(int index, int threadid, Mode ** modes, threadscratchspace * scratchspace)
+void Core::copyPCalTones(int index, int threadid, Mode ** modes)
 {
   int resultindex, localfreqindex, perr;
   cf32 pcal;
@@ -1040,16 +1061,16 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes, threadscratchsp
   {
     if(config->getDPhaseCalIntervalMHz(procslots[index].configindex, i) > 0)
     {
+      modes[i]->finalisepcal();
       resultindex = config->getCoreResultPCalOffset(procslots[index].configindex, i);
       for(int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++)
       {
         localfreqindex = config->getDLocalRecordedFreqIndex(procslots[index].configindex, i, j);
         for(int k=0;k<config->getDRecordedFreqNumPCalTones(procslots[index].configindex, i, localfreqindex);k++)
         {
-          //pcal = modes[i]->getPCal(j, k);
-          procslots[index].results[resultindex].re += pcal.re;
-          procslots[index].results[resultindex].im += pcal.im;
-          resultindex++;
+          procslots[index].results[resultindex].re += modes[i]->getPcal(j,k).re;
+          procslots[index].results[resultindex].im += modes[i]->getPcal(j,k).im;
+	  resultindex++;
         }
       }
     }
@@ -1881,4 +1902,4 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     //cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
   }
 }
-
+// vim: shiftwidth=2:softtabstop=2:expandtab

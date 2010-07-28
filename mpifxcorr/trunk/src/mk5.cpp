@@ -716,3 +716,4 @@ uint64_t Mk5DataStream::openframe()
 
   return readbytes*nsegment;
 }
+// vim: shiftwidth=2:softtabstop=2:expandtab
