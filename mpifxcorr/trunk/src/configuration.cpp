@@ -1327,6 +1327,7 @@ void Configuration::processDataTable(ifstream * input)
 bool Configuration::processFreqTable(ifstream * input)
 {
   string line;
+  int npcals;
 
   getinputline(input, &line, "FREQ ENTRIES");
   freqtablelength = atoi(line.c_str());
@@ -1364,6 +1365,12 @@ bool Configuration::processFreqTable(ifstream * input)
     }
     freqtable[i].matchingwiderbandindex = -1;
     freqtable[i].matchingwiderbandoffset = -1;
+    getinputline(input, &line, "DECIMATION FAC. ");
+    npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
+    for(int j=0;j<npcals ;j++)
+      {
+      getinputline(input, &line, "PHASE CAL ")
+      }
   }
   //now look for matching wider bands
   for(int i=freqtablelength-1;i>0;i--)
