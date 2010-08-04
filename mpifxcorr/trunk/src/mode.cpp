@@ -359,7 +359,6 @@ Mode::~Mode()
       status = vectorFreeFFTR_f32(pFFTSpecR);
       if(status != vecNoErr)
         csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
-      vectorFree(fftd);
       break;
   }
 
