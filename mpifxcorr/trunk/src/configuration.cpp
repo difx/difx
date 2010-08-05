@@ -2083,8 +2083,7 @@ bool Configuration::consistencyCheck()
             cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 1 refers to a band outside datastream 1's range (" << baselinetable[i].datastream1bandindex[j][k] << ") - aborting!!!" << endl;
           return false;
         }
-        ds1 = datastreamtable[baselinetable[i].datastream2index];
-        if((baselinetable[i].datastream2bandindex[j][k] < 0) || (baselinetable[i].datastream2bandindex[j][k] >= (ds1.numrecordedbands + ds1.numzoombands)))
+        if((baselinetable[i].datastream2bandindex[j][k] < 0) || (baselinetable[i].datastream2bandindex[j][k] >= (ds2.numrecordedbands + ds2.numzoombands)))
         {
           if(mpiid == 0) //only write one copy of this error message
             cfatal << startl << "Baseline table entry " << i << ", frequency " << j << ", polarisation product " << k << " for datastream 2 refers to a band outside datastream 2's range (" << baselinetable[i].datastream2bandindex[j][k] << ") - aborting!!!" << endl;
