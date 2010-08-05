@@ -867,6 +867,11 @@ uint64_t DataStream::openframe()
   // Read filename size then ignore it
   if (fnamesize>LBA_HEADER_LENGTH) {
     buf = (char *)realloc(buf, fnamesize);
+    if(buf == 0) // reallocation of memory failed - we're hosed
+    {
+      cerror << startl << "Error attempting to reallocate filename buffer to length " << fnamesize << " - aborting!" << endl;
+      return 0;
+    }
   }
   status = readnetwork(socketnumber, buf, fnamesize, &nread);
   if (status==-1) { // Error reading socket
