@@ -307,7 +307,13 @@ class JobList:
 		indices.sort()
 
 		j = 1
-		out = open('%s/%s.fitslist' % (cwd, self.kv['pass']), 'w')
+		fitslistfile = '%s/%s.fitslist' % (cwd, self.kv['pass'])
+		if os.path.exists(fitslistfile):
+			print "FITS listing file " + fitslistfile + " already exists - not proceeding!"
+			print "Remove this file if the FITS files listed within have already been"
+			print "archived or are not required"
+			exit(0)
+		out = open(fitslistfile, 'w')
 		out.write('exper=%s  pass=%s  jobs=%s  mjd=%9.7f  DiFX=%s  difx2fits=0\n' % \
 			(self.kv['exper'], self.kv['pass'], self.filename, getmjd(t), self.kv['DiFX']))
 		nDigit = countDigits(indices[-1][0])
