@@ -400,7 +400,7 @@ Mode::~Mode()
   {
     for(int i=0;i<numrecordedbands;i++) {
        delete extractor[i];
-       delete pcalresults[i];
+       delete[] pcalresults[i];
     }
     delete[] pcalresults;
     delete[] extractor;

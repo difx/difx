@@ -208,6 +208,7 @@ Configuration::Configuration(const char * configfile, int id)
   commandthreadinitialised = false;
   dumpsta = false;
   dumplta = false;
+  dumpkurtosis = false;
   stadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
   ltadumpchannels = DEFAULT_MONITOR_NUMCHANNELS;
 
@@ -1187,8 +1188,9 @@ bool Configuration::processDatastreamTable(ifstream * input)
         tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
         if(tonefreq < lofreq)
           tonefreq += dsdata->phasecalintervalmhz;
-        for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++)
+        for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
           datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
+        }
         dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0]) - long(1e6*lofreq);
       }
     }
