@@ -564,9 +564,11 @@ int CorrRule::setkv(const string &key, const string &value)
 	return nWarn;
 }
 
+const string PhaseCentre::DEFAULT_NAME = "";
+
 PhaseCentre::PhaseCentre()
 {
-	initialise(-999, -999, "");
+	initialise(DEFAULT_RA, DEFAULT_DEC, DEFAULT_NAME);
 }
 
 PhaseCentre::PhaseCentre(double r, double d, string name)

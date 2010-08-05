@@ -992,7 +992,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
                                                 {
                                                         continue;
                                                 }
-	
+
 						DifxBaselineAllocPolProds(bl, nFreq, 4);
 	
 						n1 = DifxDatastreamGetRecBands(D->datastream+a1, freqId, a1p, a1c);
@@ -1197,7 +1197,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	config->tInt = corrSetup->tInt;
 	minBW = mode->sampRate/2.0;
-        fftdurNS = ((int)(corrSetup->nChan*2*(0.5/minBW)*1000000.0 + 0.5));
+        fftdurNS = ((int)(corrSetup->nChan*2*(0.5/minBW)*1000000000.0 + 0.5));
 	if(corrSetup->subintNS > 0)
 	{
 		config->subintNS = corrSetup->subintNS;
@@ -1206,7 +1206,11 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		config->subintNS = (int)((corrSetup->tInt/25.0)*1000000000.0 + 0.5);
 		if(config->subintNS % fftdurNS != 0)
+		{
+			cout << "Adjusting subintNS by " << config->subintNS % fftdurNS;
+			cout << " since it was a non-integer multuiple of fftdurNS (" << fftdurNS << ")" << endl;
 			config->subintNS -= (config->subintNS % fftdurNS);
+		}
 	}
 		
 	config->guardNS = corrSetup->guardNS;
@@ -1287,6 +1291,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	const CorrSetup *corrSetup;
 	const SourceSetup *sourceSetup;
 	const PhaseCentre *phaseCentre;
+	const PhaseCentre * pointingCentre;
 	const AntennaSetup *antennaSetup;
 	const VexMode *mode;
 	const VexSetup* setup;
@@ -1416,6 +1421,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		{
 			cerr << "No source setup for " << S->sourceDefName << " - aborting!" << endl;
 		}
+		pointingCentre = &(sourceSetup->pointingCentre);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
 		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
@@ -1450,6 +1456,19 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			D->source[pointingSrcIndex].dec = src->dec;
 			D->source[pointingSrcIndex].calCode[0] = src->calCode;
 			D->source[pointingSrcIndex].qual = src->qualifier;
+			//overwrite with stuff from the source setup if it exists
+			if(pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0)
+			{
+				strcpy(D->source[pointingSrcIndex].name, pointingCentre->difxname.c_str());
+			}
+			if(pointingCentre->ra > PhaseCentre::DEFAULT_RA)
+			{
+				D->source[pointingSrcIndex].ra = pointingCentre->ra;
+			}
+			if(pointingCentre->dec > PhaseCentre::DEFAULT_DEC)
+			{
+				 D->source[pointingSrcIndex].dec = pointingCentre->dec;
+			}
 			D->nSource++;
 		}
 		scan->pointingCentreSrc = pointingSrcIndex;
@@ -1840,6 +1859,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	{
 		cerr << "Warning: job " << D->job->fileBase << " not written since it correlates no data" << endl;
                 cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
+		cerr << "It is also possible that the vex file is faulty and missing e.g. a $IF section, leading " << endl;
+		cerr << "to missing polarisation information." << endl;
         }
 
 	if(D->nBaseline > 0 || P->minSubarraySize == 1)
