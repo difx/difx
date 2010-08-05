@@ -1356,12 +1356,12 @@ bool Configuration::processFreqTable(ifstream * input)
     freqtable[i].oversamplefactor = atoi(line.c_str());
     getinputline(input, &line, "DECIMATION FAC. ");
     freqtable[i].decimationfactor = atoi(line.c_str());
-    //getinputline(input, &line, "PHASE CALS ");
-    //int npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
-    //for(int j=0;j<npcals;j++)
-    //{
-    //  getinputline(input, &line, "PHASE CAL ");
-    //}
+    getinputline(input, &line, "PHASE CALS ");
+    int npcals = atoi(line.c_str()); //mpifxcorr doesn't need to store this information
+    for(int j=0;j<npcals;j++)
+    {
+      getinputline(input, &line, "PHASE CAL ");
+    }
     freqtable[i].matchingwiderbandindex = -1;
     freqtable[i].matchingwiderbandoffset = -1;
   }
