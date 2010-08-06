@@ -361,6 +361,12 @@ public:
   inline int getScanConfigIndex(int scan) { return scanconfigindices[scan]; }
 
  /**
+  * @param freqindex The index of the frequency to find the opposite sideband for
+  * @return The frequency table index of the freq which matches freqindex but is opposite sideband (-1 if not found)
+  */
+  int getOppositeSidebandFreqIndex(int freqindex);
+
+ /**
   * @param configindex The index of the configuration being used (from the table in the input file)
   * @return The maximum number of frequencies being used by any datastream during this configuration
   */

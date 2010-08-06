@@ -513,6 +513,26 @@ int Configuration::getMaxPhaseCentres(int configindex)
   return maxphasecentres;
 }
 
+int Configuration::getOppositeSidebandFreqIndex(int freqindex)
+{
+  int toreturn = -1;
+  freqdata f1 = freqtable[freqindex];
+
+  for(int i=0;i<freqtablelength;i++)
+  {
+    freqdata f = freqtable[i];
+    if(f.bandwidth == f1.bandwidth && f.lowersideband != f1.lowersideband && f.numchannels == f1.numchannels && f.channelstoaverage == f1.channelstoaverage && f.oversamplefactor == f1.oversamplefactor && f.decimationfactor == f1.decimationfactor)
+    {
+      if(f.lowersideband && f1.bandedgefreq + f1.bandwidth == f.bandedgefreq)
+        toreturn = i;
+      if(!f.lowersideband && f.bandedgefreq + f.bandwidth == f1.bandedgefreq)
+        toreturn = i;
+    }
+  }
+
+  return toreturn;
+}
+
 int Configuration::getDataBytes(int configindex, int datastreamindex)
 {
   int validlength, payloadbytes;

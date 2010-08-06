@@ -459,7 +459,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, delay1, delay2;
   f32 phaserotationfloat, fracsampleerror;
-  int status, count, nearestsample, integerdelay, dcchannel;
+  int status, count, nearestsample, integerdelay, dcchannel, acoffset;
   cf32* fftptr;
   cf32* fracsampptr1;
   cf32* fracsampptr2;
@@ -590,12 +590,17 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     //and is excised entirely, so both USB and LSB data start at the same place (no sidebandoffset)
     currentstepchannelfreqs = stepchannelfreqs;
     dcchannel = 0;
+    acoffset = 0;
     fracsampptr1 = &(fracsamprotator[0]);
     fracsampptr2 = &(fracsamprotator[arraystridelength]);
     if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
     {
       currentstepchannelfreqs = lsbstepchannelfreqs;
       dcchannel = recordedbandchannels-1;
+      if(config->anyUsbXLsb(configindex))
+      {
+        acoffset++;
+      }
     }
 
     //get ready to apply fringe rotation, if its pre-F
@@ -811,8 +816,8 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         if(status != vecNoErr)
           csevere << startl << "Error in conjugate!!!" << status << endl;
 
-        //do the autocorrelation (skipping Nyquist channel)
-        status = vectorAddProduct_cf32(fftoutputs[j][subloopindex], conjfftoutputs[j][subloopindex], autocorrelations[0][j], recordedbandchannels);
+        //do the autocorrelation (skipping Nyquist channel - if any LSB * USB correlations, shift all LSB bands to appear as USB)
+        status = vectorAddProduct_cf32(fftoutputs[j][subloopindex]+acoffset, conjfftoutputs[j][subloopindex]+acoffset, autocorrelations[0][j]+acoffset, recordedbandchannels-acoffset);
         if(status != vecNoErr)
           csevere << startl << "Error in autocorrelation!!!" << status << endl;
 
@@ -824,10 +829,10 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     //if we need to, do the cross-polar autocorrelations
     if(calccrosspolautocorrs && count > 1)
     {
-      status = vectorAddProduct_cf32(fftoutputs[indices[0]][subloopindex], conjfftoutputs[indices[1]][subloopindex], autocorrelations[1][indices[0]], recordedbandchannels);
+      status = vectorAddProduct_cf32(fftoutputs[indices[0]][subloopindex]+acoffset, conjfftoutputs[indices[1]][subloopindex]+acoffset, autocorrelations[1][indices[0]]+acoffset, recordedbandchannels-acoffset);
       if(status != vecNoErr)
         csevere << startl << "Error in cross-polar autocorrelation!!!" << status << endl;
-      status = vectorAddProduct_cf32(fftoutputs[indices[1]][subloopindex], conjfftoutputs[indices[0]][subloopindex], autocorrelations[1][indices[1]], recordedbandchannels);
+      status = vectorAddProduct_cf32(fftoutputs[indices[1]][subloopindex]+acoffset, conjfftoutputs[indices[0]][subloopindex]+acoffset, autocorrelations[1][indices[1]]+acoffset, recordedbandchannels-acoffset);
       if(status != vecNoErr)
         csevere << startl << "Error in cross-polar autocorrelation!!!" << status << endl;
 
