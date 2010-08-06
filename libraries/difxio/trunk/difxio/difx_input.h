@@ -208,7 +208,11 @@ typedef struct
 	int quantBits;		/* quantization bits */
 	int dataFrameSize;	/* (bytes) size of formatted data frame */
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
+
 	int phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone */
+	int nRecTone;     /* number of pcal tones in the *recorded* baseband*/
+	int *recToneFreq; /* Frequency of each pcal tone in the *recorded* baseband in MHz */
+	int *recToneOut;  /* bool Recorded pcal written out?*/
 
 	double *clockOffset;	/* (us) [freq] */
 	double *freqOffset;	/* Freq offsets for each frequency in Hz */
@@ -475,6 +479,8 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nReqFreq);
 void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
 void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq);
 void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand);
+void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones);
+void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq *df);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);

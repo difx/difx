@@ -1308,6 +1308,8 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			a = atoi(DifxParametersvalue(ip, r));
 			D->datastream[e].zoomBandFreqId[i] = D->datastream[e].zoomFreqId[a];
 		}
+		//Figure out how many phase cal tones and their location for each band
+		DifxDatastreamCalculatePhasecalTones(&(D->datastream[e]), &(D->freq[D->datastream[e].recFreqId[0]]));
 	}
 
 	return D;

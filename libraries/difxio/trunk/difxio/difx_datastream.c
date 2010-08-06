@@ -114,18 +114,6 @@ void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nRecFreq)
 		dd->freqOffset = 0;
 	}
 
-	if(dd->zoomFreqId)
-	{
-		free(dd->zoomFreqId);
-		dd->zoomFreqId = 0;
-	}
-	if(dd->nZoomPol)
-	{
-		free(dd->nZoomPol);
-		dd->nZoomPol = 0;
-	}
-	dd->nZoomFreq = 0;
-
 	dd->nRecFreq = nRecFreq;
 	if(nRecFreq > 0)
 	{
@@ -148,18 +136,6 @@ void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand)
 		free(dd->recBandPolName);
 		dd->recBandPolName = 0;
 	}
-
-	if(dd->zoomBandFreqId)
-	{
-		free(dd->zoomBandFreqId);
-		dd->zoomBandFreqId = 0;
-	}
-	if(dd->zoomBandPolName)
-	{
-		free(dd->zoomBandPolName);
-		dd->zoomBandPolName = 0;
-	}
-	dd->nZoomBand = 0; //for now
 
 	dd->nRecBand = nRecBand;
 	if(nRecBand > 0)
@@ -209,6 +185,76 @@ void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand)
 	}
 }
 
+void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones)
+{
+	if(dd->recToneFreq)
+	{
+		free(dd->recToneFreq);
+		dd->recToneFreq = 0;
+	}
+	if(dd->recToneOut)
+	{
+		free(dd->recToneOut);
+		dd->recToneOut = 0;
+	}
+	dd->nRecTone = nTones;
+	if(nTones > 0)
+	{
+		dd->recToneFreq = (int *)calloc(nTones, sizeof(int));
+		dd->recToneOut = (int *)calloc(nTones, sizeof(int));
+	}
+}
+
+/* Must have rec band/freq and freq table filled in before calling this function */
+void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq * df)
+{
+	double lofreq;
+	int tonefreq, i, t;
+
+	if(dd->nRecFreq == 0)
+	{
+		/* Can't do anything... */
+		return;
+	}
+
+	/*find bottom end of baseband*/
+	lofreq = df->freq;
+	if(df->sideband == 'L')
+	{
+		lofreq -= df->bw;
+	}
+
+	/*lowest frequency pcal */
+	tonefreq = (((int)lofreq) / dd->phaseCalIntervalMHz) * dd->phaseCalIntervalMHz;
+	if(tonefreq <= lofreq)
+	{
+		tonefreq += dd->phaseCalIntervalMHz;
+	}
+
+	/*calculate number of recorded tones*/
+	while(tonefreq + dd->nRecTone * dd->phaseCalIntervalMHz < lofreq + df->bw)
+	{
+		dd->nRecTone++;
+	}
+
+	/* Allocate the tone frequency and on/off arrays */
+	DifxDatastreamAllocPhasecalTones(dd, dd->nRecTone);
+
+	/* Fill in the tone frequencies and on/off values */
+	for(i = 0; i < dd->nRecTone; i++)
+	{
+		dd->recToneFreq[i] = tonefreq + i * dd->phaseCalIntervalMHz;
+		for(t = 0; t < df->nTone; t++)
+		{
+			if(df->tone[t] = i)
+			{
+				dd->recToneOut[i] = 1;
+				break;
+			}
+		}
+	}
+}
+
 void deleteDifxDatastreamInternals(DifxDatastream *dd)
 {
 	/* The following will deallocate several arrays */
@@ -216,6 +262,15 @@ void deleteDifxDatastreamInternals(DifxDatastream *dd)
 
 	/* The following will deallocate several arrays */
 	DifxDatastreamAllocFreqs(dd, 0);
+
+	/* The following will deallocate several arrays */
+	DifxDatastreamAllocZoomBands(dd, 0);
+
+	/* The following will deallocate several arrays */
+	DifxDatastreamAllocZoomFreqs(dd, 0);
+
+	/* The following will deallocate several arrays */
+	DifxDatastreamAllocPhasecalTones(dd, 0);
 
 	/* allocating zero files is equivalent to deleting any existing ones */
 	DifxDatastreamAllocFiles(dd, 0);
@@ -289,6 +344,13 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, " (%d, %c)", dd->zoomBandFreqId[f], dd->zoomBandPolName[f]);
 	}
 	fprintf(fp, "\n");
+	fprintf(fp, "    phaseCalIntMHZ = %d\n", dd->phaseCalIntervalMHz);
+	fprintf(fp, "    nRecPhaseCalTones = %d\n", dd->nRecTone);
+	for(f = 0; f < dd->nRecTone; f++)
+	{
+		fprintf(fp, "     Tone %d freq = %d MHz, written = %d\n", f, dd->recToneFreq[f], dd->recToneOut[f]);
+	}
+	fprintf(fp, "\n");
 }
 
 void printDifxDatastream(const DifxDatastream *dd)
@@ -315,7 +377,8 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	   dd1->nRecFreq != dd2->nRecFreq ||
 	   dd1->nRecBand != dd2->nRecBand ||
 	   dd1->nZoomFreq != dd2->nZoomFreq ||
-	   dd1->nZoomBand != dd2->nZoomBand)
+	   dd1->nZoomBand != dd2->nZoomBand ||
+	   dd1->phaseCalIntervalMHz != dd2->phaseCalIntervalMHz)
 	{
 		return 0;
 	}
@@ -396,9 +459,13 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	strcpy(dest->dataFormat, src->dataFormat);
 	dest->quantBits = src->quantBits;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
+	dest->nRecTone = src->nRecTone;
 
 	DifxDatastreamAllocFreqs(dest, src->nRecFreq);
 	DifxDatastreamAllocBands(dest, src->nRecBand);
+	DifxDatastreamAllocZoomFreqs(dest, src->nZoomFreq);
+	DifxDatastreamAllocZoomBands(dest, src->nZoomBand);
+	DifxDatastreamAllocPhasecalTones(dest, src->nRecTone);
 	for(f = 0; f < dest->nRecFreq; f++)
 	{
 		dest->nRecPol[f] = src->nRecPol[f];
@@ -435,6 +502,11 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 		dest->zoomBandFreqId[c]  = src->zoomBandFreqId[c];
 		dest->zoomBandPolName[c] = src->zoomBandPolName[c];
 	}
+	for(c = 0; c < dest->nRecTone; c++)
+	{
+		dest->recToneFreq[c] = src->recToneFreq[c];
+		dest->recToneOut[c]  = src->recToneOut[c];
+	}
 	if(src->nFile > 0)
 	{
 		DifxDatastreamAllocFiles(dest, src->nFile);
@@ -458,6 +530,9 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->quantBits = src->quantBits;
 	dest->dataFrameSize = src->dataFrameSize;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
+	dest->nRecTone = src->nRecTone;
+	dest->recToneFreq = src->recToneFreq;
+	dest->recToneOut = src->recToneOut;
 	dest->dataSource = src->dataSource;
 	dest->nRecFreq = src->nRecFreq;
 	dest->nRecBand = src->nRecBand;
@@ -488,6 +563,8 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	src->zoomBandFreqId = 0;
 	src->zoomBandPolName = 0;
 	src->file = 0;
+	src->recToneFreq = 0;
+	src->recToneOut = 0;
 }
 
 int simplifyDifxDatastreams(DifxInput *D)
