@@ -85,14 +85,14 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
 
     if (pcal_offset_hz == 0.0f) {
         cwarn << startl << "Warning: non-standard pcal mode (0 offset)" << endl;
-        return new PCalExtractorTrivial(bandwidth_hz, pcal_spacing_hz, sampleoffset);
+        return new PCalExtractorTrivial(bandwidth_hz, (int)pcal_spacing_hz, sampleoffset);
     }
     // if ( __unlikely ((2*bandwidth_hz / gcd(2*bandwidth_hz,pcal_spacing_hz)) > someLengthLimit) ) {
     //    use oscillator implementation instead
     // } else {
     int No, Np;
-    No = 2*bandwidth_hz / gcd(pcal_offset_hz, 2*bandwidth_hz);
-    Np = 2*bandwidth_hz / gcd(pcal_spacing_hz, 2*bandwidth_hz);
+    No = (int)(2*bandwidth_hz / gcd(pcal_offset_hz, (long int)(2*bandwidth_hz)));
+    Np = (int)(2*bandwidth_hz / gcd((long int)(pcal_spacing_hz), (long int)(2*bandwidth_hz)));
     if ((No % Np) == 0 /* && (!want_timedomain_delay) */) {
         return new PCalExtractorImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
     }
@@ -128,7 +128,7 @@ long long PCal::gcd(long a, long b)
 bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32* out, const uint64_t sampleoffset)
 {
     size_t Nbins = 2*_N_tones;
-    size_t maxtoneperiod = _fs_hz/gcd(_pcaloffset_hz,_fs_hz);
+    size_t maxtoneperiod = (size_t) (_fs_hz/gcd(_pcaloffset_hz,(long int)(_fs_hz)));
     double dphi = 2*M_PI * (-_pcaloffset_hz/_fs_hz);
     vecStatus s;
     cf32 pcalout[Nbins];
@@ -186,8 +186,8 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing
     _fs_hz   = 2*bandwidth_hz;
     _pcaloffset_hz  = 0;
     _pcalspacing_hz = pcal_spacing_hz;
-    _N_bins  = _fs_hz / gcd(std::abs((double)pcal_spacing_hz), _fs_hz);
-    _N_tones = std::floor(bandwidth_hz / pcal_spacing_hz);
+    _N_bins  = (int)(_fs_hz / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
+    _N_tones = (int)(std::floor(bandwidth_hz / pcal_spacing_hz));
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -332,10 +332,10 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     _fs_hz          = 2 * bandwidth_hz;
     _pcaloffset_hz  = pcal_offset_hz;
     _pcalspacing_hz = pcal_spacing_hz;
-    _N_bins         = _fs_hz / gcd(std::abs((double)pcal_spacing_hz), _fs_hz);
-    _N_tones        = std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1;
+    _N_bins         = (int)(_fs_hz / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
+    _N_tones        = (int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
     _cfg = new pcal_config_pimpl();
-    _cfg->rotatorlen = _fs_hz / gcd(std::abs((double)_pcaloffset_hz), _fs_hz);
+    _cfg->rotatorlen = (size_t)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -516,7 +516,7 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
             csevere << startl << "Error in Copy in PCalExtractorShifting::getFinalPCal " << vectorGetStatusString(s) << endl;
     } else {
         // Copy only the interesting bins
-        size_t step = std::floor(_N_bins*(_pcalspacing_hz/_fs_hz));
+        size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
         for (size_t n=0; n<(size_t)_N_tones; n++) {
             size_t idx = n*step;
             if (idx >= (size_t)_N_bins) { break; }
@@ -537,8 +537,8 @@ PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, doub
     _fs_hz          = 2 * bandwidth_hz;
     _pcalspacing_hz = pcal_spacing_hz;
     _pcaloffset_hz  = pcal_offset_hz;
-    _N_bins         = _fs_hz / gcd(std::abs((double)_pcaloffset_hz), _fs_hz);
-    _N_tones        = std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1;
+    _N_bins         = (int)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
+    _N_tones        = (int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
     _cfg = new pcal_config_pimpl();
 
     /* Prep for FFT/DFT */
@@ -679,8 +679,8 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
     }
  
     /* Copy only the interesting bins */
-    size_t step = std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz));
-    size_t offset = std::floor(double(_N_bins*_pcaloffset_hz)/_fs_hz);
+    size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
+    size_t offset = (size_t)(std::floor(double(_N_bins*_pcaloffset_hz)/_fs_hz));
     // cout << "step=" << step << " offset=" << offset << endl;
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
@@ -782,8 +782,8 @@ PCalExtractorDummy::PCalExtractorDummy(double bandwidth_hz, double pcal_spacing_
 {
   /* ignore all */
   _fs_hz   = 2*bandwidth_hz;
-  _N_bins  = _fs_hz / gcd(std::abs(pcal_spacing_hz), _fs_hz);
-  _N_tones = std::floor(bandwidth_hz / pcal_spacing_hz);
+  _N_bins  = (int)(_fs_hz / gcd((long int)(std::abs(pcal_spacing_hz)), (long int)(_fs_hz)));
+  _N_tones = (int)(std::floor(bandwidth_hz / pcal_spacing_hz));
   _cfg = (pcal_config_pimpl*)1;
   this->clear();
   cdebug << startl << "PCalExtractorDummy: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << endl;

@@ -1211,7 +1211,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
         for(int k=0;k<datastreamtable[i].numrecordedfreqpcaltones[j];k++) {
           datastreamtable[i].recordedfreqpcaltonefreqs[j][k] = tonefreq + k*dsdata->phasecalintervalmhz;
         }
-        dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0]) - long(1e6*lofreq);
+        dsdata->recordedfreqpcaloffsetshz[j] = long(1e6*datastreamtable[i].recordedfreqpcaltonefreqs[j][0] - 1e6*lofreq);
       }
     }
     datastreamtable[i].tcpwindowsizekb = 0;
