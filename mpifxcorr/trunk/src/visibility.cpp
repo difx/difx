@@ -815,10 +815,18 @@ void Visibility::multicastweights()
     dumpseconds -= 86400.0;
   }
 
+  //calculate the weights that will be multicast out.  These are averages over recorded bands
   for(int i=0;i<numdatastreams;i++)
   {
-    for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
-      weight[i] += autocorrweights[i][0][j]/config->getDNumRecordedBands(currentconfigindex, i);
+    int n = config->getDNumRecordedBands(currentconfigindex, i);
+
+    weight[i] = 0.0;
+    if(n > 0)
+    {
+      for(int j=0;j<n;j++)
+        weight[i] += autocorrweights[i][0][j];
+      weight[i] /= n;
+    }
   }
 
   mjd = dumpmjd + dumpseconds/86400.0;
