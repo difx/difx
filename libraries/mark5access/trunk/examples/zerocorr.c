@@ -39,7 +39,7 @@
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 Aug 06";
+const char verdate[] = "2010 Aug 07";
 
 const int MaxLineLen = 256;
 
@@ -74,12 +74,17 @@ typedef struct
 {
 	DataStream *ds1, *ds2;
 	char *confFile;
-	char *outputFile;
-	int nFFT;
 	int nChan;
 	fftw_complex *visibility;
+	fftw_complex *lags;
+	fftw_plan plan;
 	double *ac1, *ac2;
-	FILE *out;
+	FILE *outVis;
+	FILE *outLag;
+
+	char *visFile;
+	char *lagFile;
+	int nFFT;
 } Baseline;
 
 void deleteDataStream(DataStream *ds);
@@ -280,7 +285,7 @@ Baseline *newBaseline(const char *confFile)
 {
 	Baseline *B;
 	FILE *in;
-	const int NItem = 2;
+	const int NItem = 3;
 	char buffer[NItem][MaxLineLen+1];
 	int i;
 	char *v;
@@ -332,25 +337,39 @@ Baseline *newBaseline(const char *confFile)
 	}
 	
 	B->nChan = abs(B->ds1->nChan);
-	B->outputFile = strdup(buffer[0]);
-	B->nFFT = atoi(buffer[1]);
+	B->visFile = strdup(buffer[0]);
+	B->lagFile = strdup(buffer[1]);
+	B->nFFT = atoi(buffer[2]);
 	if(B->nFFT <= 0)
 	{
 		B->nFFT = 0x7FFFFFFF;	/* effectively no limit */
 	}
 	B->visibility = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
+	B->lags = (fftw_complex *)calloc(B->nChan, sizeof(fftw_complex));
 	B->ac1 = (double *)calloc(B->nChan, sizeof(double));
 	B->ac2 = (double *)calloc(B->nChan, sizeof(double));
 
-	B->out = fopen(B->outputFile, "w");
-	if(!B->out)
+	B->outVis = fopen(B->visFile, "w");
+	if(!B->outVis)
 	{
-		fprintf(stderr, "Cannot open %s for output\n", B->outputFile);
+		fprintf(stderr, "Cannot open %s for output\n", B->visFile);
 
 		deleteBaseline(B);
 
 		return 0;
 	}
+
+	B->outLag = fopen(B->lagFile, "w");
+	if(!B->outLag)
+	{
+		fprintf(stderr, "Cannot open %s for output\n", B->lagFile);
+
+		deleteBaseline(B);
+
+		return 0;
+	}
+
+	B->plan = fftw_plan_dft_1d(B->nChan, B->visibility, B->lags, FFTW_BACKWARD, FFTW_ESTIMATE);
 
 	return B;
 }
@@ -364,15 +383,25 @@ void deleteBaseline(Baseline *B)
 			free(B->confFile);
 			B->confFile = 0;
 		}
-		if(B->outputFile)
+		if(B->visFile)
 		{
-			free(B->outputFile);
-			B->outputFile = 0;
+			free(B->visFile);
+			B->visFile = 0;
+		}
+		if(B->lagFile)
+		{
+			free(B->lagFile);
+			B->lagFile = 0;
 		}
 		if(B->visibility)
 		{
 			free(B->visibility);
 			B->visibility = 0;
+		}
+		if(B->lags)
+		{
+			free(B->lags);
+			B->lags = 0;
 		}
 		if(B->ac1)
 		{
@@ -384,11 +413,22 @@ void deleteBaseline(Baseline *B)
 			free(B->ac2);
 			B->ac2 = 0;
 		}
-		if(B->out)
+		if(B->outVis)
 		{
-			fclose(B->out);
-			B->out = 0;
+			fclose(B->outVis);
+			B->outVis = 0;
 		}
+		if(B->outLag)
+		{
+			fclose(B->outLag);
+			B->outLag = 0;
+		}
+		if(B->plan)
+		{
+			fftw_destroy_plan(B->plan);
+			B->plan = 0;
+		}
+
 		free(B);
 	}
 }
@@ -403,7 +443,8 @@ void printBaseline(const Baseline *B)
 	printDataStream(B->ds1);
 	printDataStream(B->ds2);
 	printf("  conf file = %s\n", B->confFile);
-	printf("  output file = %s\n", B->outputFile);
+	printf("  visibility output file = %s\n", B->visFile);
+	printf("  lag function output file = %s\n", B->lagFile);
 	printf("  nFFT = %d\n", B->nFFT);
 	printf("  nChan = %d\n", B->nChan);
 }
@@ -437,15 +478,25 @@ int usage(const char *pgm)
 "  13  First channel to correlate\n"
 "  14  Number of channels to correlate (negative for LSB)\n"
 "Other general parameters:\n"
-"  15  Name of output file\n"
-"  16  Number of FFTs to process\n\n");
-	printf("The output file (specified in line 16 above) has 6 columns:\n"
+"  15  Name of output visibility file\n"
+"  16  Name of output lag file\n"
+"  17  Number of FFTs to process\n\n");
+	printf("The visibility output file (specified in line 15 above) has 8 columns:\n"
 "   1  Channel (spectral point) number\n"
 "   2  Frequency relative to first spectral channel (NYI)\n"
 "   3  Real value of the visibility\n"
 "   4  Imaginary value of the visibility\n"
-"   5  Autocorrelation of the first datastream (real only)\n"
-"   6  Autocorrelation of the second datastream (real only)\n\n");
+"   5  Amplitude\n"
+"   6  Phase\n"
+"   7  Autocorrelation of the first datastream (real only)\n"
+"   8  Autocorrelation of the second datastream (real only)\n\n");
+	printf("The lags output file (specified in line 16 above) has 4 columns:\n"
+"   1  Channel (spectral point) number\n"
+"   2  Time lag (NYI)\n"
+"   3  Real value of the lag function\n"
+"   4  Imaginary value of the lag function\n"
+"   5  Amplitude\n"
+"   6  Phase\n\n");
 
 	return 0;
 }
@@ -453,8 +504,9 @@ int usage(const char *pgm)
 int zerocorr(const char *confFile, int verbose)
 {
 	Baseline *B;
-	int n, j, v;
+	int n, j, v, t, index;
 	sighandler_t oldsiginthand;
+	double x, y;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
@@ -510,7 +562,24 @@ int zerocorr(const char *confFile, int verbose)
 		printf("%d FFTs processed\n", n);
 		for(j = 0; j < B->nChan; j++)
 		{
-			fprintf(B->out, "%d %f %f %f %f %f\n", j, 0.0, creal(B->visibility[j])/n, cimag(B->visibility[j])/n, B->ac1[j]/n, B->ac2[j]/n);
+			x = creal(B->visibility[j])/n;
+			y = cimag(B->visibility[j])/n;
+			fprintf(B->outVis, "%d %f  %f %f %f %f  %f %f\n", j, 0.0, x, y, sqrt(x*x+y*y), atan2(y, x), B->ac1[j]/n, B->ac2[j]/n);
+		}
+
+		fftw_execute(B->plan);
+
+		for(j = 0; j < B->nChan; j++)
+		{
+			index = (j + B->nChan/2) % B->nChan; 
+			t = index;
+			if(t >= B->nChan/2)
+			{
+				t -= B->nChan;
+			}
+			x = creal(B->lags[index])/n;
+			y = cimag(B->lags[index])/n;	
+			fprintf(B->outLag, "%d %f  %f %f %f %f\n", t, 0.0, x, y, sqrt(x*x+y*y), atan2(y, x));
 		}
 	}
 
