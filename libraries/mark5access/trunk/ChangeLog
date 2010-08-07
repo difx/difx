@@ -7,6 +7,7 @@ Version 1.4.1
 * m5d and m5spec : behave better if -h is given
 * mark5_format_mark5b_init: if no nanoseconds in headers, then assume 2048-16-2 (this is to support Mark5B mode via Mark5C)
 * Put pcal utility in this package
+* Add zerocorr -- a zero baseline cross correlator
 
 Version 1.4.0
 * Add VDIF format -- but only for formats with 1 thread

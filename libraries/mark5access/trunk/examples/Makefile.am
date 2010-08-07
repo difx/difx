@@ -5,11 +5,14 @@ LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
 if WITH_FFTW
 fftw_programs = \
 	m5pcal \
-	m5spec
+	m5spec \
+	zerocorr
 m5spec_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5spec_LDADD = $(FFTW3_LIBS) $(LDADD)
 m5pcal_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
 m5pcal_LDADD = $(FFTW3_LIBS) $(LDADD)
+zerocorr_CFLAGS = $(FFTW3_CFLAGS) $(INCLUDES)
+zerocorr_LDADD = $(FFTW3_LIBS) $(LDADD)
 else
 fftw_programs = 
 endif
@@ -39,3 +42,6 @@ test_mark5_stream_SOURCES = \
 
 test_unpacker_SOURCES = \
 	test_unpacker.c
+
+zerocorr_SOURCES = \
+	zerocorr.c

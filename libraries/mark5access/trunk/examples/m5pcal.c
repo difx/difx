@@ -70,11 +70,13 @@ int usage(const char *pgm)
 	printf("  -o <number>  Jump <number> bytes into the file [0]\n\n");
 	printf("  --interval <number>\n");
 	printf("  -i <number>  Assume a pulse cal comb interval of <number> MHz [1]\n\n");
+	printf("  --edge <number>\n");
+	printf("  -e <number>  Don't use channels closer than <number> MHz to the edge in delay calc.\n\n");
 
 	return 0;
 }
 
-static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *tonePhase)
+static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *tonePhase, double bandCenter, double bandValid)
 {
 	int i, n=0;
 	double d, sum=0.0;
@@ -91,6 +93,15 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 
 	for(i = 1; i < nTone; i++)
 	{
+		double f0 = toneFreq_MHz[i-1];
+		double f1 = toneFreq_MHz[i];
+
+		if( fabs(f0 - bandCenter) > bandValid ||
+		    fabs(f1 - bandCenter) > bandValid )
+		{
+			continue;
+		}
+		
 		d = tonePhase[i] - tonePhase[i-1];
 		if(d - ref > M_PI)
 		{
@@ -100,8 +111,13 @@ static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *t
 		{
 			d += 2.0*M_PI;
 		}
-		sum += d/(toneFreq_MHz[i] - toneFreq_MHz[i-1]);
+		sum += d/(f1 - f0);
 		n++;
+	}
+
+	if(n < 1)
+	{
+		return 0;
 	}
 
 	window = fabs(500.0/(toneFreq_MHz[nTone/2+1] - toneFreq_MHz[nTone/2]));
@@ -198,7 +214,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 	return nTone;
 }
 
-int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, int verbose)
+int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose)
 {
 	struct mark5_stream *ms;
 	double bw_MHz;
@@ -220,13 +236,19 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 
 	if(!ms)
 	{
-		printf("Error: problem opening %s\n", inFile);
+		fprintf(stderr, "Error: problem opening %s\n", inFile);
 		
 		return 0;
 	}
 
 	bw_MHz = ms->samprate/2.0e6;
 	ns = ms->ns;
+
+	if(edge_MHz < 0.0)
+	{
+		edge_MHz = bw_MHz / 16.0;
+		printf("Edge band not provided; taking 1/16 of the bandwidth = %f MHz\n", edge_MHz);
+	}
 
 	if(verbose > 0)
 	{
@@ -317,24 +339,41 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 		/* FFT */
 		for(i = 0; i < nFreq; i++)
 		{
+			double sum = 0.0;
+			double factor;
+
 			plan = fftw_plan_dft_1d(ChunkSize, bins[i], bins[i], FFTW_FORWARD, FFTW_ESTIMATE);
 			fftw_execute(plan);
 			fftw_destroy_plan(plan);
+
+			for(j = 0; j < ChunkSize/2; j++)
+			{
+				sum += bins[i][j]*~bins[i][j];
+			}
+			factor = 1.0/sqrt(sum);
+			for(j = 0; j < ChunkSize; j++)
+			{
+				bins[i][j] *= factor;
+			}
 		}
 
 		/* write data out */
 
 		for(i = 0; i < nFreq; i++)
 		{
+			double bandCenter, bandValid;
 			double f0, f1, delay;
 
 			f0 = fabs(freq_kHz[i]/1000.0);
 			f1 = fabs(freq_kHz[i]/1000.0 + bw_MHz);
 
+			bandCenter = 0.5*(f0+f1);
+			bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
+
 			nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns,
 				toneFreq, toneAmp, tonePhase);
 
-			delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase);
+			delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
 
 			printf("Sub-band %d = %f-%f MHz\n\n", i, f0, f1);
 
@@ -424,6 +463,7 @@ int main(int argc, char **argv)
 	const char *format = 0;
 	long long offset = 0LL;
 	int nInt = 1000;
+	double edge_MHz = -1;
 	double v;
 
 	for(i = 1; i < argc; i++)
@@ -485,9 +525,15 @@ int main(int argc, char **argv)
 					i++;
 					interval_MHz = atol(argv[i]);
 				}
+				else if(strcmp(argv[i], "--edge") == 0 ||
+					strcmp(argv[i], "-e") == 0)
+				{
+					i++;
+					edge_MHz = atof(argv[i]);
+				}
 				else
 				{
-					fprintf(stderr, "I'm not sure what to do with command line argument <%s>\n",
+					fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
 						argv[i]);
 
 					return 0;
@@ -495,7 +541,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "I'm not sure what to do with command line argument <%s>\n",
+				fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
 					argv[i]);
 
 				return 0;
@@ -516,7 +562,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "I'm not sure what to do with command line argument <%s>\n",
+			fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
 				argv[i]);
 
 
@@ -530,7 +576,7 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
-	pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, verbose);
+	pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose);
 
 	return 0;
 }
