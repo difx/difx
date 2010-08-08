@@ -60,6 +60,7 @@ typedef struct
 	double **data;
 	fftw_complex *zdata, *spec;
 	fftw_plan plan;
+	double deltaF;
 
 	char *inputFile;
 	char *dataFormat;
@@ -81,6 +82,7 @@ typedef struct
 	double *ac1, *ac2;
 	FILE *outVis;
 	FILE *outLag;
+	double deltaF, deltaT;
 
 	char *visFile;
 	char *lagFile;
@@ -178,6 +180,8 @@ DataStream *newDataStream(FILE *in)
 	ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
 	ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_MEASURE);
 
+	ds->deltaF = (double)(ds->ms->samprate)/(double)(ds->fftSize);
+
 	return ds;
 }
 
@@ -236,6 +240,7 @@ void deleteDataStream(DataStream *ds)
 int feedDataStream(DataStream *ds)
 {
 	int i, status;
+	double scale;
 
 	status = mark5_stream_decode_double(ds->ms, ds->fftSize/2, ds->data);
 
@@ -246,11 +251,13 @@ int feedDataStream(DataStream *ds)
 
 	fftw_execute(ds->plan);
 
+	scale = 2.0/(ds->fftSize);
+
 	if(ds->nChan > 0)
 	{
 		for(i = 0; i < ds->nChan; i++)
 		{
-			ds->spec[i] = ds->zdata[ds->startChan+i];
+			ds->spec[i] = ds->zdata[ds->startChan+i]*scale;
 		}
 	}
 	else
@@ -258,7 +265,7 @@ int feedDataStream(DataStream *ds)
 		for(i = 0; i < -ds->nChan; i++)
 		{
 			/* FIXME : I think this conjugation is needed! -WFB 20100806 */
-			ds->spec[i] = ~ds->zdata[ds->startChan-i];
+			ds->spec[i] = ~ds->zdata[ds->startChan-i]*scale;
 		}
 	}
 
@@ -279,6 +286,7 @@ void printDataStream(const DataStream *ds)
 	printf("    fft size = %d\n", ds->fftSize);
 	printf("    start channel = %d\n", ds->startChan);
 	printf("    number of channels to keep = %d\n", ds->nChan);
+	printf("    deltaF = %f Hz\n", ds->deltaF);
 }
 
 Baseline *newBaseline(const char *confFile)
@@ -371,6 +379,10 @@ Baseline *newBaseline(const char *confFile)
 
 	B->plan = fftw_plan_dft_1d(B->nChan, B->visibility, B->lags, FFTW_BACKWARD, FFTW_ESTIMATE);
 
+	/* FIXME: check that ds1 and ds2 have same */
+	B->deltaF = B->ds1->deltaF;
+	B->deltaT = 1.0/(2.0*B->nChan*B->ds1->deltaF);
+
 	return B;
 }
 
@@ -447,6 +459,8 @@ void printBaseline(const Baseline *B)
 	printf("  lag function output file = %s\n", B->lagFile);
 	printf("  nFFT = %d\n", B->nFFT);
 	printf("  nChan = %d\n", B->nChan);
+	printf("  deltaF = %f Hz\n", B->deltaF);
+	printf("  deltaT = %e s\n", B->deltaT);
 }
 
 
@@ -459,10 +473,10 @@ int usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A zero baseline cross correlator\n\n");
-	printf("Usage: %s [ -h | <conf file> ]\n\n", pgm);
-	printf("The conf file should have 16 lines as follows:\n"
+	printf("Usage: %s [ -h | <conf file> ]\n\n", pgm)7
+	printf("The conf file should have 17 lines as follows:\n"
 "For the first datastream:\n"
-"   1  Input file name\n"
+"   1  Input baseband data file name\n"
 "   2  Input format (e.g., Mark5B-2048-16-2)\n"
 "   3  Input sub-band to process (0-based index)\n"
 "   4  Offset into the file (bytes)\n"
@@ -470,7 +484,7 @@ int usage(const char *pgm)
 "   6  First channel (spectral point) to correlate\n"
 "   7  Number of channels to correlate (negative for LSB)\n"
 "For the second datastream:\n"
-"   8  Input file name\n"
+"   8  Input baseband data file name\n"
 "   9  Input format (e.g., Mark5B-2048-16-2)\n"
 "  10  Input sub-band to process (0-based index)\n"
 "  11  Offset into the file (bytes)\n"
@@ -483,20 +497,21 @@ int usage(const char *pgm)
 "  17  Number of FFTs to process\n\n");
 	printf("The visibility output file (specified in line 15 above) has 8 columns:\n"
 "   1  Channel (spectral point) number\n"
-"   2  Frequency relative to first spectral channel (NYI)\n"
+"   2  Frequency relative to first spectral channel (Hz)\n"
 "   3  Real value of the visibility\n"
 "   4  Imaginary value of the visibility\n"
 "   5  Amplitude\n"
 "   6  Phase\n"
 "   7  Autocorrelation of the first datastream (real only)\n"
 "   8  Autocorrelation of the second datastream (real only)\n\n");
-	printf("The lags output file (specified in line 16 above) has 4 columns:\n"
+	printf("The lags output file (specified in line 16 above) has 7 columns:\n"
 "   1  Channel (spectral point) number\n"
-"   2  Time lag (NYI)\n"
+"   2  Time lag (sec)\n"
 "   3  Real value of the lag function\n"
 "   4  Imaginary value of the lag function\n"
 "   5  Amplitude\n"
-"   6  Phase\n\n");
+"   6  Phase\n"
+"   7  Window function\n\n");
 
 	return 0;
 }
@@ -504,9 +519,9 @@ int usage(const char *pgm)
 int zerocorr(const char *confFile, int verbose)
 {
 	Baseline *B;
-	int n, j, v, t, index;
+	int n, j, v, index;
 	sighandler_t oldsiginthand;
-	double x, y;
+	double x, y, window, scale;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
@@ -523,7 +538,7 @@ int zerocorr(const char *confFile, int verbose)
 
 	for(n = 0; n < B->nFFT; n++)
 	{
-		if(verbose > 1 && n % 10 == 0)
+		if(verbose > 1 && n % 100 == 0)
 		{
 			printf("%d of %d FFTs complete\n", n, B->nFFT);
 		}
@@ -560,26 +575,27 @@ int zerocorr(const char *confFile, int verbose)
 	else
 	{
 		printf("%d FFTs processed\n", n);
+
+		scale = 1.0/(n);
+
 		for(j = 0; j < B->nChan; j++)
 		{
-			x = creal(B->visibility[j])/n;
-			y = cimag(B->visibility[j])/n;
-			fprintf(B->outVis, "%d %f  %f %f %f %f  %f %f\n", j, 0.0, x, y, sqrt(x*x+y*y), atan2(y, x), B->ac1[j]/n, B->ac2[j]/n);
+			x = creal(B->visibility[j])*scale;
+			y = cimag(B->visibility[j])*scale;
+			fprintf(B->outVis, "%d %e  %f %f %f %f  %f %f\n", j, j*B->deltaF, x, y, sqrt(x*x+y*y), atan2(y, x), B->ac1[j]/n, B->ac2[j]/n);
 		}
 
 		fftw_execute(B->plan);
 
-		for(j = 0; j < B->nChan; j++)
+		scale = 1.0/(n);
+
+		for(j = -B->nChan/2+1; j < B->nChan/2; j++)
 		{
-			index = (j + B->nChan/2) % B->nChan; 
-			t = index;
-			if(t >= B->nChan/2)
-			{
-				t -= B->nChan;
-			}
-			x = creal(B->lags[index])/n;
-			y = cimag(B->lags[index])/n;	
-			fprintf(B->outLag, "%d %f  %f %f %f %f\n", t, 0.0, x, y, sqrt(x*x+y*y), atan2(y, x));
+			index = j >= 0 ? j : j+B->nChan;
+			window = (B->nChan/2 - abs(j))/(float)(B->nChan/2);
+			x = creal(B->lags[index])*scale;
+			y = cimag(B->lags[index])*scale;	
+			fprintf(B->outLag, "%d %e  %f %f %f %f  %f\n", j, j*B->deltaT, x, y, sqrt(x*x+y*y), atan2(y, x), window);
 		}
 	}
 
