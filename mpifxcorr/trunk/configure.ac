@@ -57,6 +57,16 @@ PKG_CHECK_MODULES(DIFXMESSAGE,
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
 
 dnl **********************************************************
+dnl **** Find mark5ipc library                            ****
+dnl **********************************************************
+m5ipc_enabled=true
+PKG_CHECK_MODULES(MARK5IPC,
+        mark5ipc >= 0.8,
+	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
+	m5ipc_enabled=false)
+AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
+
+dnl **********************************************************
 dnl **** Look for StreamStor libraries                    ****
 dnl **** cause native Mark5 to be built if found.         ****
 dnl **********************************************************
@@ -80,8 +90,8 @@ PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.2)
 dnl **********************************************************
 
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS}"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
+LIBS="${M5ACCESS_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS}"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"

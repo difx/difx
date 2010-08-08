@@ -30,6 +30,10 @@
 #include "nativemk5.h"
 #include "alert.h"
 
+#if HAVE_MARK5IPC
+#include <mark5ipc.h>
+#endif
+
 #ifdef WORDS_BIGENDIAN
 #define FILL_PATTERN 0x44332211UL
 #else
@@ -77,6 +81,9 @@ void *watchdogFunction(void *data)
 			{
 				cfatal << startl << "Watchdog caught a hang-up executing: " << nativeMk5->watchdogStatement << " Aborting!!!" << endl;
 				nativeMk5->sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+#if HAVE_MARK5IPC
+                                unlockMark5();
+#endif
 				MPI_Abort(MPI_COMM_WORLD, 1);
 			}
 			else if(deltat != lastdeltat && deltat > 4)
@@ -127,6 +134,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 {
 	XLR_RETURN_CODE xlrRC;
 	int perr;
+        int v;
 
 	/* each data buffer segment contains an integer number of frames, 
 	 * because thats the way config determines max bytes
@@ -135,7 +143,18 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	executeseconds = conf->getExecuteSeconds();
 
 	nError = 0;
-	
+
+#if HAVE_MARK5IPC
+        v = lockMark5(5);
+        {
+                if(v)
+                {
+                        cfatal << startl << "Cannot obtain lock for Streamstor device." << endl;
+                        MPI_Abort(MPI_COMM_WORLD, 1);
+                }
+        }
+#endif
+
 	sendMark5Status(MARK5_STATE_OPENING, 0, 0, 0.0, 0.0);
 
 	cinfo << startl << "Opening Streamstor" << endl;
@@ -143,6 +162,9 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
   
   	if(xlrRC == XLR_FAIL)
 	{
+#if HAVE_MARK5IPC
+                unlockMark5();
+#endif
 		WATCHDOG( XLRClose(xlrDevice) );
 		cfatal << startl << "Cannot open Streamstor device.  Either this Mark5 unit has crashed, you do not have read/write permission to /dev/windrvr6, or some other process has full control of the Streamstor device." << endl;
 		MPI_Abort(MPI_COMM_WORLD, 1);
@@ -303,6 +325,9 @@ NativeMk5DataStream::~NativeMk5DataStream()
 #ifdef HAVE_DIFXMESSAGE
 		sendMark5Status(MARK5_STATE_CLOSE, 0, 0, 0.0, 0.0);
 #endif
+#if HAVE_MARK5IPC
+                unlockMark5();
+#endif
 		WATCHDOG( XLRClose(xlrDevice) );
 	}
 
@@ -365,7 +390,12 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, framebytes, config->getDDecimationFactor(configindex, streamnum), formatname);
         if(fanout < 0)
-          MPI_Abort(MPI_COMM_WORLD, 1);
+        {
+#if HAVE_MARK5IPC
+                unlockMark5();
+#endif
+                MPI_Abort(MPI_COMM_WORLD, 1);
+        }
 
 	cinfo << startl << "initialiseFile format=" << formatname << endl;
 	if(mark5stream)
