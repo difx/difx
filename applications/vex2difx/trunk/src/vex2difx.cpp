@@ -735,6 +735,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	}
 
 	D->datastream[dsId].quantBits = format->nBit;
+	strcpy(D->datastream[dsId].dataSampling, "REAL");
 	DifxDatastreamAllocBands(D->datastream + dsId, n2);
 
 	for(vector<VexChannel>::const_iterator i = format->channels.begin(); i != format->channels.end(); i++)
