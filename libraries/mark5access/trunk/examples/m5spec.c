@@ -33,12 +33,27 @@
 #include <string.h>
 #include <fftw3.h>
 #include <math.h>
+#include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.0";
-const char verdate[] = "2010 Jul 05";
+const char version[] = "1.1";
+const char verdate[] = "2010 Aug 08";
+
+int die = 0;
+
+typedef void (*sighandler_t)(int);
+
+sighandler_t oldsiginthand;
+
+void siginthand(int j)
+{
+	printf("\nBeing killed.  Partial results will be saved.\n\n");
+	die = 1;
+
+	signal(SIGINT, oldsiginthand);
+}
 
 int usage(const char *pgm)
 {
@@ -124,6 +139,11 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	for(j = 0; j < nint; j++)
 	{
+		if(die)
+		{
+			break;
+		}
+
 		status = mark5_stream_decode_double(ms, chunk, data);
 		
 		if(status < 0)
@@ -224,6 +244,8 @@ int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int nchan, nint;
+
+	oldsiginthand = signal(SIGINT, siginthand);
 
 	if(argc == 2)
 	{

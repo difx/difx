@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: m5spec.c 1989 2010-02-26 17:37:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 1989 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-02-26 10:37:16 -0700 (Fri, 26 Feb 2010) $
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -34,16 +34,31 @@
 #include <math.h>
 #include <ctype.h>
 #include <fftw3.h>
+#include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
+const char version[] = "0.2";
 const char verdate[] = "2010 Jul 17";
 
 const int ChunkSize = 6400;
 const int MaxTones = 64;
 const int MaxFreqs = 64;
+
+int die = 0;
+
+typedef void (*sighandler_t)(int);
+
+sighandler_t oldsiginthand;
+
+void siginthand(int j)
+{
+	printf("\nBeing killed.  Partial results will be saved.\n\n");
+	die = 1;
+
+	signal(SIGINT, oldsiginthand);
+}
 
 int usage(const char *pgm)
 {
@@ -280,6 +295,10 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 
 	for(k = 0; k < nInt; k++)
 	{
+		if(die)
+		{
+			break;
+		}
 		status = mark5_stream_decode_double(ms, ChunkSize, data);
 		
 		if(status < 0)
@@ -465,6 +484,8 @@ int main(int argc, char **argv)
 	int nInt = 1000;
 	double edge_MHz = -1;
 	double v;
+
+	oldsiginthand = signal(SIGINT, siginthand);
 
 	for(i = 1; i < argc; i++)
 	{

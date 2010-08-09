@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: m5spec.c 2293 2010-07-05 16:42:46Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 2293 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-07-05 10:42:46 -0600 (Mon, 05 Jul 2010) $
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -39,7 +39,7 @@
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 Aug 07";
+const char verdate[] = "2010 Aug 08";
 
 const int MaxLineLen = 256;
 
@@ -473,8 +473,13 @@ int usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A zero baseline cross correlator\n\n");
-	printf("Usage: %s [ -h | <conf file> ]\n\n", pgm);
-	printf("The conf file should have 17 lines as follows:\n"
+	printf("Usage: %s [ <options> ] <conf file>\n\n", pgm);
+	printf("options can include:\n\n");
+	printf("  --help\n");
+	printf("  -h         Print this help information and quit\n\n");
+	printf("  --verbose\n");
+	printf("  -v         Increase the output verbosity\n\n");
+	printf("The conf file should have 17 lines as follows:\n\n"
 "For the first datastream:\n"
 "   1  Input baseband data file name\n"
 "   2  Input format (e.g., Mark5B-2048-16-2)\n"
@@ -494,7 +499,7 @@ int usage(const char *pgm)
 "Other general parameters:\n"
 "  15  Name of output visibility file\n"
 "  16  Name of output lag file\n"
-"  17  Number of FFTs to process\n\n");
+"  17  Number of FFTs to process (if -1, run on entire input files)\n\n");
 	printf("The visibility output file (specified in line 15 above) has 8 columns:\n"
 "   1  Channel (spectral point) number\n"
 "   2  Frequency relative to first spectral channel (Hz)\n"
@@ -512,7 +517,8 @@ int usage(const char *pgm)
 "   5  Amplitude\n"
 "   6  Phase\n"
 "   7  Window function\n\n");
-
+	printf("Control-C will stop this program after the next FFT is completed and\n"
+"will write the partial results to the output files.\n\n");
 	return 0;
 }
 
@@ -606,21 +612,46 @@ int zerocorr(const char *confFile, int verbose)
 
 int main(int argc, char **argv)
 {
-	if(argc == 2)
+	int a;
+	int verbose = 0;
+	const char *confFile = 0;
+
+	if(argc <= 1)
 	{
-		if(strcmp(argv[1], "-h") == 0 ||
-		   strcmp(argv[1], "--help") == 0)
+		return usage(argv[0]);
+	}
+
+	for(a = 1; a < argc; a++)
+	{
+		if(strcmp(argv[a], "-h") == 0 ||
+		   strcmp(argv[a], "--help") == 0)
 		{
 			return usage(argv[0]);
 		}
+		else if(strcmp(argv[a], "-v") == 0 ||
+		   strcmp(argv[a], "--verbose") == 0)
+		{
+			verbose++;
+		}
+		else if(confFile == 0)
+		{
+			confFile = argv[a];
+		}
 		else
 		{
-			zerocorr(argv[1], 2);
+			fprintf(stderr, "\nSorry, I don't know what to do with `%s'\n", argv[a]);
+			fprintf(stderr, "Run with -h for usage instructions\n\n");
+			return 0;
 		}
+	}
+
+	if(confFile == 0)
+	{
+		fprintf(stderr, "\nError: no conf file provided on the command line.  Quitting.\n\n");
 	}
 	else
 	{
-		return usage(argv[0]);
+		zerocorr(confFile, verbose);
 	}
 
 	return 0;

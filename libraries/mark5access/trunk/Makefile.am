@@ -1,6 +1,6 @@
 SUBDIRS = mark5access bbsum examples
 
-DIST_SUBDIRS = mark5access bbsum examples doc
+DIST_SUBDIRS = mark5access bbsum examples
 
 library_includedir = $(includedir)
 library_include_HEADERS = mark5access.h

@@ -29,14 +29,29 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5test";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.0";
-const char verdate[] = "2010 Mar 8";
+const char version[] = "1.1";
+const char verdate[] = "2010 Aug 08";
 
 const int ChunkSize = 1024;
+
+int die = 0;
+
+typedef void (*sighandler_t)(int);
+
+sighandler_t oldsiginthand;
+
+void siginthand(int j)
+{
+	printf("\nBeing killed.\n\n");
+	die = 1;
+
+	signal(SIGINT, oldsiginthand);
+}
 
 int usage(const char *pgm)
 {
@@ -88,6 +103,10 @@ int verify(const char *filename, const char *formatname, long long offset)
 
 	for(i = 0;; i++)
 	{
+		if(die)
+		{
+			break;
+		}
 		status = mark5_stream_decode(ms, ChunkSize, data);
 		
 		if(status < 0)
@@ -133,6 +152,8 @@ int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int r;
+
+	oldsiginthand = signal(SIGINT, siginthand);
 
 	if(argc == 2)
 	{

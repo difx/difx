@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: m5spec.c 1989 2010-02-26 17:37:16Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 1989 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-02-26 10:37:16 -0700 (Fri, 26 Feb 2010) $
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -31,14 +31,29 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <signal.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.0";
-const char verdate[] = "2010 Jul 13";
+const char version[] = "1.1";
+const char verdate[] = "2010 Aug 08";
 
 const int ChunkSize = 10000;
+
+int die = 0;
+
+typedef void (*sighandler_t)(int);
+
+sighandler_t oldsiginthand;
+
+void siginthand(int j)
+{
+	printf("\nBeing killed.  Partial results will be saved.\n\n");
+	die = 1;
+
+	signal(SIGINT, oldsiginthand);
+}
 
 int usage(const char *pgm)
 {
@@ -243,6 +258,11 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 	for(j = 0; j < nint; j++)
 	{
+		if(die)
+		{
+			break;
+		}
+
 		status = mark5_stream_decode_double(ms, ChunkSize, data);
 		
 		if(status < 0)
@@ -339,6 +359,8 @@ int main(int argc, char **argv)
 	{
 		return usage(argv[0]);
 	}
+
+	oldsiginthand = signal(SIGINT, siginthand);
 
 	nbin = atol(argv[3]);
 	nint = atol(argv[4]);
