@@ -1024,6 +1024,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     datastreamtable[i].telescopeindex = atoi(line.c_str());
     getinputline(input, &line, "TSYS");
     datastreamtable[i].tsys = atof(line.c_str());
+
     getinputline(input, &line, "DATA FORMAT");
     if(line == "LBASTD")
       datastreamtable[i].format = LBASTD;
@@ -1056,6 +1057,18 @@ bool Configuration::processDatastreamTable(ifstream * input)
 
     getinputline(input, &line, "DATA FRAME SIZE");
     datastreamtable[i].framebytes = atoi(line.c_str());
+
+    getinputline(input, &line, "DATA SAMPLING");
+    if(line == "REAL")
+      datastreamtable[i].sampling = REAL;
+    else if(line == "COMPLEX")
+      datastreamtable[i].sampling = COMPLEX;
+    else
+    {
+      if(mpiid == 0) //only write one copy of this error message
+        cfatal << startl << "Unknown sampling type " << line << " (case sensitive choices are REAL or COMPLEX)" << endl;
+      return false;
+    }
 
     getinputline(input, &line, "DATA SOURCE");
     if(line == "FILE")
