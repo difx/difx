@@ -214,26 +214,48 @@ if doclean:
     os.chdir("libraries")
     thisdir = os.getcwd()
     for libtarget in libtargets:
-        print "**** Cleaning "+libtarget[0]
-        os.chdir(libtarget[0] + '/' + libtarget[1])
-        run("make clean")
+        targetdir = libtarget[0] + '/' + libtarget[1]
+        if os.path.exists(targetdir):
+            print
+            print "**** Cleaning "+targetdir
+            os.chdir(targetdir)
+            run("make clean")
+        else:
+            print
+            print "**** Skipping "+targetdir
+            print
         os.chdir(thisdir)
 
     os.chdir("../applications")
     thisdir = os.getcwd()
     for apptarget in apptargets:
-        print "**** Cleaning "+apptarget[0]
-        os.chdir(apptarget[0] + '/' + apptarget[1])
-        run("make clean")
+        targetdir = apptarget[0] + '/' + apptarget[1]
+        if os.path.exists(targetdir):
+            print
+            print "**** Cleaning "+targetdir
+            os.chdir(targetdir)
+            run("make clean")
+        else:
+            print
+            print "**** Skipping "+targetdir
+            print
         os.chdir(thisdir)
 
     os.chdir("../utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
-        print "**** Cleaning "+utiltarget[0]
-        os.chdir(utiltarget[1] + '/' + utiltarget[0])
-        run("make clean")
+        targetdir = utiltarget[1] + '/' + utiltarget[0]
+        if os.path.exists(targetdir):
+            print
+            print "**** Cleaning "+targetdir
+            os.chdir(targetdir)
+            run("make clean")
+        else:
+            print
+            print "**** Skipping "+targetdir
+            print
         os.chdir(thisdir)
+
     os.chdir(topdir)
     sys.exit(0)  # Clean exit
 
@@ -308,24 +330,36 @@ if rpfits:
 os.chdir("libraries")
 thisdir = os.getcwd()
 for libtarget in libtargets:
-    print "************************************"
-    print "Building ", libtarget[0]
-    print
-    os.chdir(libtarget[0]  + '/' + libtarget[1])
-    auto_compile(libtarget[2], libtarget[3], difxroot, libtarget[4])
+    targetdir = libtarget[0]  + '/' + libtarget[1] 
+    if os.path.exists(targetdir):
+        print "************************************"
+        print "Building ", targetdir
+        print
+        os.chdir(targetdir)
+        auto_compile(libtarget[2], libtarget[3], difxroot, libtarget[4])
+    else:
+        print
+        print "******* Skipping "+targetdir
+        print
     os.chdir(thisdir)
+
 os.chdir(topdir)
 
 ##### Make standard (autotool'd) applications ############
 os.chdir("applications")
 thisdir = os.getcwd()
-print "DEBUG: Making in ",thisdir
 for apptarget in apptargets:
-    print "************************************"
-    print "Building ", apptarget[0]
-    print
-    os.chdir(apptarget[0]  + '/' + apptarget[1])
-    auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
+    targetdir = apptarget[0]  + '/' + apptarget[1] 
+    if os.path.exists(targetdir):
+        print "************************************"
+        print "Building ", apptarget[0]
+        print
+        os.chdir(targetdir)
+        auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
+    else:
+        print
+        print "******* Skipping "+targetdir
+        print
     os.chdir(thisdir)
 os.chdir(topdir)
 
@@ -353,12 +387,17 @@ os.chdir(topdir)
 ##### Make standard (autotool'd) utilities ###############
 os.chdir("utilities")
 thisdir = os.getcwd()
-print "DEBUG: Making in ",thisdir
 for utiltarget in utiltargets:
-    print "************************************" 
-    print "Building ", utiltarget[0]
-    os.chdir(utiltarget[1]  + '/' + utiltarget[0])
-    auto_compile(utiltarget[2], utiltarget[3], difxroot, utiltarget[4])
+    targetdir = utiltarget[1]  + '/' + utiltarget[0] 
+    if os.path.exists(targetdir):
+        print "************************************" 
+        print "Building ", utiltarget[0]
+        os.chdir(targetdir)
+        auto_compile(utiltarget[2], utiltarget[3], difxroot, utiltarget[4])
+    else:
+        print
+        print "******* Skipping "+targetdir
+        print
     os.chdir(thisdir)
 os.chdir(topdir)
 
