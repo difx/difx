@@ -1153,6 +1153,15 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		D->datastream[e].dataFrameSize = 
 			atoi(DifxParametersvalue(ip, r));
 
+		r = DifxParametersfind(ip, r+1, "DATA SAMPLING");
+		if(r < 0)
+		{
+			fprintf(stderr, "DATA SAMPLING not found\n");
+			return 0;
+		}
+		strncpy(D->datastream[e].dataSampling,
+			DifxParametersvalue(ip, r), 31);
+	
 		r = DifxParametersfind(ip, r+1, "DATA SOURCE");
 		if(r < 0)
 		{

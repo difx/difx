@@ -317,6 +317,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
+	fprintf(fp, "    sampling = %s\n", dd->dataSampling);
 	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
 	fprintf(fp, "    nRecBand = %d\n", dd->nRecBand);
 	fprintf(fp, "    (RecFreqId, nRecPol)[freq] =");
@@ -374,6 +375,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	
 	if(dd1->antennaId != antennaId2 ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
+	   strcmp(dd1->dataSampling, dd2->dataSampling) != 0 ||
 	   dd1->nRecFreq != dd2->nRecFreq ||
 	   dd1->nRecBand != dd2->nRecBand ||
 	   dd1->nZoomFreq != dd2->nZoomFreq ||
@@ -457,6 +459,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 		dest->antennaId = src->antennaId;
 	}
 	strcpy(dest->dataFormat, src->dataFormat);
+	strcpy(dest->dataSampling, src->dataSampling);
 	dest->quantBits = src->quantBits;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 	dest->nRecTone = src->nRecTone;
@@ -525,6 +528,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->antennaId = src->antennaId;
 	dest->tSys = src->tSys;
 	strcpy(dest->dataFormat, src->dataFormat);
+	strcpy(dest->dataSampling, src->dataSampling);
 	dest->networkPort = src->networkPort;
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
@@ -720,6 +724,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
+	writeDifxLine(out, "DATA SAMPLING", dd->dataSampling);
 	writeDifxLine(out, "DATA SOURCE", dataSourceNames[dd->dataSource]);
 	writeDifxLine(out, "FILTERBANK USED", "FALSE");
 	writeDifxLineInt(out, "PHASE CAL INT (MHZ)", dd->phaseCalIntervalMHz);

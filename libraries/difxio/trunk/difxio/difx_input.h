@@ -201,6 +201,7 @@ typedef struct
 	int antennaId;		/* index to D->antenna */
 	float tSys;		/* 0.0 for VLBA DiFX */
 	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
+	char dataSampling[32];	/* REAL or COMPLEX */
 	int nFile;              /* number of files */
         char **file;            /* list of files to correlate (if not VSN) */
 	int networkPort;        /* eVLBI port for this datastream */
