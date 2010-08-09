@@ -473,7 +473,7 @@ int usage(const char *pgm)
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A zero baseline cross correlator\n\n");
-	printf("Usage: %s [ -h | <conf file> ]\n\n", pgm)7
+	printf("Usage: %s [ -h | <conf file> ]\n\n", pgm);
 	printf("The conf file should have 17 lines as follows:\n"
 "For the first datastream:\n"
 "   1  Input baseband data file name\n"
