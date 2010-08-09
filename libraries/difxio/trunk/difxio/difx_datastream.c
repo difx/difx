@@ -211,7 +211,7 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq * df)
 	double lofreq;
 	int tonefreq, i, t;
 
-	if(dd->nRecFreq == 0)
+	if(dd->nRecFreq == 0 || dd->phaseCalIntervalMHz == 0)
 	{
 		/* Can't do anything... */
 		return;
