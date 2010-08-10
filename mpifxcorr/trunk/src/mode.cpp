@@ -917,8 +917,8 @@ void Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
       for(int j=0;j<maxchannels;j++)
       {
         sk[i][j] = sk[i][j*kchanavg];
-        for(int k=0;k<kchanavg;k++)
-          sk[i][j] += sk[i][j*kchanavg];
+        for(int k=1;k<kchanavg;k++)
+          sk[i][j] += sk[i][j*kchanavg + k];
       }
     }
   }
