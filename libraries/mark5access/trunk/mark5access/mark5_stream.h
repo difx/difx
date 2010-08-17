@@ -35,15 +35,9 @@
 #define _GNU_SOURCE
 #endif
 
-/* do the fftw trick -- if <complex.h> has been included, use it */
-
-#ifdef _Complex_I
+#include <complex.h>
 typedef double complex mark5_double_complex;
 typedef float  complex mark5_float_complex;
-#else
-typedef struct { double re, im; } mark5_double_complex;
-typedef struct { float  re, im; } mark5_float_complex;
-#endif
 
 #include <stdio.h>
 
@@ -126,6 +120,7 @@ struct mark5_stream
 	int (*init_format)(struct mark5_stream *ms);
 	int (*final_format)(struct mark5_stream *ms);
 	int (*decode)(struct mark5_stream *ms, int nsamp, float **data);
+        int (*complex_decode)(struct mark5_stream *ms, int nsamp, mark5_float_complex **data);
 	int (*validate)(const struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, int *mjd, 
 		int *sec, double *ns);
@@ -148,6 +143,8 @@ struct mark5_format_generic
 	int (*final_format)(struct mark5_stream *ms);	/* required */
 	int (*decode)(struct mark5_stream *ms, 		/* required */
 		int nsamp, float **data); 
+	int (*complex_decode)(struct mark5_stream *ms,
+		int nsamp, mark5_float_complex **data); 
 	int (*validate)(const struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, 	/* required */
 		int *mjd, int *sec, double *ns);
@@ -220,6 +217,12 @@ int mark5_unpack(struct mark5_stream *ms, void *packed, float **unpacked,
 int mark5_unpack_with_offset(struct mark5_stream *ms, void *packed,
 	int offsetsamples, float **unpacked, int nsamp);
 
+int mark5_unpack_complex(struct mark5_stream *ms, void *packed, 
+			 mark5_float_complex **unpacked, int nsamp);
+
+int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed,
+	int offsetsamples, mark5_float_complex **unpacked, int nsamp);
+
 
 /* SPECIFIC FORMAT TYPES */
 
@@ -245,7 +248,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 
 struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	int nchan, int nbit, int decimation, 
-	int databytesperpacket, int frameheadersize);
+	int databytesperpacket, int frameheadersize, int usecomplex);
 
 void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs);
 

@@ -359,6 +359,7 @@ static int format_k5_init(struct mark5_stream *ms)
 		return 0;
 	}
 
+	ms->decode = 0;
 	switch(decoderindex)
 	{
 		case 0 : ms->decode = k5_decode_1bitstream_1bit; break;
@@ -370,7 +371,8 @@ static int format_k5_init(struct mark5_stream *ms)
 		case 6 : ms->decode = k5_decode_4bitstream_4bit; break;
 		case 7 : ms->decode = k5_decode_4bitstream_8bit; break;
 	}
-	
+	ms->complex_decode = 0;
+
 	ms->gframens = (int)(ms->framegranularity*ms->framens + 0.5);
 
 	format_k5_make_formatname(ms);

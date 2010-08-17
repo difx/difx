@@ -7102,6 +7102,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	f->validate = mark5_format_mark4_validate;
 	f->decimation = decimation;
 	f->decode = 0;
+	f->complex_decode = 0;
 	switch(decoderindex)
 	{
 		case 0  : f->decode = mark4_decode_1bit_1track_fanout1_decimation1; break;
@@ -7126,8 +7127,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 		case 19 : f->decode = mark4_decode_1bit_64track_fanout2_decimation1; break;
 		case 20 : f->decode = mark4_decode_1bit_64track_fanout4_decimation1; break;
 		        
-		        
-		        
+		       		        
 		case 24 : f->decode = mark4_decode_2bit_2track_fanout1_decimation1; break;
 		        
 		        

@@ -7164,6 +7164,7 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	f->final_format = mark5_format_vlba_final;
 	f->validate = mark5_format_vlba_validate;
 	f->decimation = decimation;
+	f->complex_decode = 0;
 	switch(decoderindex)
 	{
 		case 0  : f->decode = vlba_decode_1bit_1track_fanout1_decimation1; break;

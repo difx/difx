@@ -2329,6 +2329,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->validate = one;
 	f->decimation = decimation;
 	f->decode = 0;
+	f->complex_decode = 0;
 	switch(decoderindex)
 	{
 		case 0 : f->decode = mark5b_decode_1bitstream_1bit_decimation1; break;
