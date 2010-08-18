@@ -33,7 +33,8 @@ typedef struct vdif_header {
 } vdif_header;
   
 int vdif_createheader (vdif_header *header, int framelength, int framepersec,
-		       int threadid,  int bits, int nchan, char stationid[3]);
+		       int threadid,  int bits, int nchan, int complex,
+		       char stationid[3]);
 int vdif_settime (vdif_header *header, time_t time);
 int vdif_nextheader(vdif_header *header);
 double vdif_mjd(vdif_header *header);

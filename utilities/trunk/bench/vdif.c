@@ -23,10 +23,9 @@ int main(void) {
 #define VDIF_VERSION 0
 
 int vdif_createheader (vdif_header *header, int framelength, int framepersec,
-		       int threadid,  int bits, int nchan,  char stationid[3]) {
+		       int threadid,  int bits, int nchan,  int complex, 
+		       char stationid[3]) {
   int lognchan;
-
-  header->epoch = 0;
 
   if (VDIF_VERSION>7) return(VDIF_ERROR);
   if (bits>32 || bits<1) return(VDIF_ERROR);
@@ -48,9 +47,8 @@ int vdif_createheader (vdif_header *header, int framelength, int framepersec,
 
   header->version = VDIF_VERSION;
   header->nchan = lognchan;
-  //printf("Framelength is %d bytes, framespersec is %d\n", framelength, framepersec);
   header->framelength = framelength/8;
-  header->complex = 0;
+  header->complex = complex;
   header->nbits = bits-1;
   header->threadid = threadid;
   header->stationid = stationid[0]<<8 | stationid[1];
@@ -58,7 +56,6 @@ int vdif_createheader (vdif_header *header, int framelength, int framepersec,
   header->frame=0;
   header->framepersec=framepersec;
 
-  //printf("%X%X%X%X\n%X%X%X%X\n", ((unsigned char*)header)[3], ((unsigned char*)header)[2], ((unsigned char*)header)[1], ((unsigned char*)header)[0], ((unsigned char*)header)[7], ((unsigned char*)header)[6], ((unsigned char*)header)[5], ((unsigned char*)header)[4]);
   return(VDIF_NOERROR);
 }
 

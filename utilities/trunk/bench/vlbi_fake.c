@@ -94,6 +94,7 @@ int main(int argc, char * const argv[]) {
   int bits=2;
   int bandwidth=16;
   int framesize=10000;
+  int complex=0;  /* Use complex sampling, if VDIF */
   //float rate = 0; /* Limit read/write to this data rate */
   float updatetime = 1; /* 1 second update by default */
   float filetime = 1; /* 1 second "files" */
@@ -133,6 +134,7 @@ int main(int argc, char * const argv[]) {
     {"mark5b", 0, 0, 'B'},
     {"mk5b", 0, 0, 'B'},
     {"vdif", 0, 0, 'V'},
+    {"complex", 0, 0, 'c'},
     {"help", 0, 0, 'h'},
     {0, 0, 0, 0}
   };
@@ -148,7 +150,7 @@ int main(int argc, char * const argv[]) {
   
   /* Read command line options */
   while (1) {
-    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:", 
+    opt = getopt_long_only(argc, argv, "r:n:DVvd:mhH:f:", 
 			   options, NULL);
     if (opt==EOF) break;
 
@@ -196,7 +198,6 @@ int main(int argc, char * const argv[]) {
       break;
       
     case 'd':
-      printf("Got %s\n", optarg);
       status = sscanf(optarg, "%d", &tmp);
       if (status!=1)
 	fprintf(stderr, "Bad duration option %s\n", optarg);
@@ -324,6 +325,10 @@ int main(int argc, char * const argv[]) {
       mode = VDIF;
       break;
 
+    case 'c':
+      complex = 1;
+      break;
+
     case 'h':
       printf("Usage: vlbi_fake [options]\n");
       printf("  -H/host <HOSTNAME>    Remote host to connect to\n");
@@ -347,6 +352,7 @@ int main(int argc, char * const argv[]) {
       printf("  -b/blocksize <SIZE>   Blocksize to write, kB (1 MB default)\n");
       printf("  -f/filesize <SIZE>    Size in sec for files (1)\n");
       printf("  -nthread <NUM>        Number of threads (VDIF only)\n");
+      printf("  -complex              Complex samples (VDIF only)\n");
       printf("  -h/-help              This list\n");
       return(1);
     break;
@@ -367,6 +373,10 @@ int main(int argc, char * const argv[]) {
 
   if (numthread > 1 && mode != VDIF) {
     fprintf(stderr, "Multiple threads can only be used with VDIF format!\n");
+    exit(1);
+  }
+  if (complex && mode != VDIF) {
+    fprintf(stderr, "Complex sampling can only be used with VDIF format!\n");
     exit(1);
   }
   if (numthread > MAXVDIFTHREADS) {
@@ -448,8 +458,9 @@ int main(int argc, char * const argv[]) {
     if (udp.enabled) udp.size = bufsize;
 
     for(i=0;i<numthread;i++) {
-      status = vdif_createheader(&vdif_headers[i], bufsize, datarate*1e6/((bufsize-VDIFHEADERSIZE)*8),
-			         i, bits, numchan, "Tt");
+      status = vdif_createheader(&vdif_headers[i], bufsize, 
+				 datarate*1e6/((bufsize-VDIFHEADERSIZE)*8),
+			         i, bits, numchan, complex, "Tt");
       if (status!=VDIF_NOERROR) {
         fprintf(stderr, "Error creating header (%d)\n", status);
         exit(1);
