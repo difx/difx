@@ -96,7 +96,7 @@ int verify(const char *filename, const char *formatname, long long offset)
 	data = (float **)malloc(ms->nchan*sizeof(float *));
 	for(i = 0; i < ms->nchan; i++)
 	{
-		data[i] = (float *)malloc(ChunkSize*sizeof(float ));
+		data[i] = (float *)malloc(ChunkSize*sizeof(float));
 	}
 
 	mark5_stream_print(ms);

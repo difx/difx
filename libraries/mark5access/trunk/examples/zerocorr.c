@@ -143,19 +143,6 @@ DataStream *newDataStream(FILE *in)
 	ds->fftSize = atoi(buffer[4]);
 	ds->startChan = atoi(buffer[5]);
 	ds->nChan = atoi(buffer[6]);
-
-	if(ds->startChan < 0 || 
-	   ds->startChan >= ds->fftSize/2 || 
-	   ds->startChan + ds->nChan < -1 || 
-	   ds->startChan + ds->nChan > ds->fftSize/2)
-	{
-		printf("Input parameters are not legal for file %s\n", ds->inputFile);
-
-		deleteDataStream(ds);
-
-		return 0;
-	}
-
 	ds->ms = new_mark5_stream(
 		new_mark5_stream_file(ds->inputFile, ds->offset),
 		new_mark5_format_generic_from_string(ds->dataFormat) );
@@ -178,7 +165,7 @@ DataStream *newDataStream(FILE *in)
 	}
 	ds->zdata = (fftw_complex *)calloc(ds->fftSize/2+2, sizeof(fftw_complex));
 	ds->spec = (fftw_complex *)calloc(abs(ds->nChan), sizeof(fftw_complex));
-	ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_MEASURE);
+	ds->plan = fftw_plan_dft_r2c_1d(ds->fftSize, ds->data[ds->subBand], ds->zdata, FFTW_ESTIMATE);
 
 	ds->deltaF = (double)(ds->ms->samprate)/(double)(ds->fftSize);
 
@@ -334,9 +321,9 @@ Baseline *newBaseline(const char *confFile)
 
 	fclose(in);
 
-	if(abs(B->ds1->nChan) != abs(B->ds2->nChan) || B->ds1->nChan <= 0)
+	if(abs(B->ds1->nChan) != abs(B->ds2->nChan))
 	{
-		fprintf(stderr, "Number of channels per datastream must match and be positive (%d %d)\n",
+		fprintf(stderr, "Number of channels per datastream must match (%d %d)\n",
 			B->ds1->nChan, B->ds2->nChan);
 
 		deleteBaseline(B);
@@ -381,7 +368,7 @@ Baseline *newBaseline(const char *confFile)
 
 	/* FIXME: check that ds1 and ds2 have same */
 	B->deltaF = B->ds1->deltaF;
-	B->deltaT = 1.0/(2.0*B->nChan*B->ds1->deltaF);
+	B->deltaT = 1.0/(B->nChan*B->ds1->deltaF);
 
 	return B;
 }
