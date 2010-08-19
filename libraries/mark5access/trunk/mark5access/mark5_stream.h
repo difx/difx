@@ -35,9 +35,15 @@
 #define _GNU_SOURCE
 #endif
 
+#include <features.h>
+#if !defined(__cplusplus) || __GNUC_PREREQ(4,3)
 #include <complex.h>
 typedef double complex mark5_double_complex;
 typedef float  complex mark5_float_complex;
+#else
+typedef struct { double re, im; } mark5_double_complex;
+typedef struct { float  re, im; } mark5_float_complex;
+#endif
 
 #include <stdio.h>
 
