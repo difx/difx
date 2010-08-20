@@ -35,8 +35,15 @@
 #define _GNU_SOURCE
 #endif
 
-#include <features.h>
-#if !defined(__cplusplus) || __GNUC_PREREQ(4,3)
+// Pinched from Linux features.h, as OSX does not have it
+#if defined __GNUC__ && defined __GNUC_MINOR__
+# define __GNUC_PREREQ(maj, min) \
+        ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+# define __GNUC_PREREQ(maj, min) 0
+#endif
+
+#if !defined(__cplusplus) || !defined(__GNUC_PREREQ) || __GNUC_PREREQ(4,3)
 #include <complex.h>
 typedef double complex mark5_double_complex;
 typedef float  complex mark5_float_complex;
