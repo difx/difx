@@ -332,6 +332,7 @@ thisdir = os.getcwd()
 for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
     if os.path.exists(targetdir):
+        print
         print "************************************"
         print "Building ", targetdir
         print
@@ -351,6 +352,7 @@ thisdir = os.getcwd()
 for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
     if os.path.exists(targetdir):
+        print
         print "************************************"
         print "Building ", apptarget[0]
         print
@@ -364,6 +366,7 @@ for apptarget in apptargets:
 os.chdir(topdir)
 
 ##### Make mpifxcorr #####################################
+print
 print "************************************"
 print "Making mpifxcorr"
 print
@@ -390,6 +393,7 @@ thisdir = os.getcwd()
 for utiltarget in utiltargets:
     targetdir = utiltarget[1]  + '/' + utiltarget[0] 
     if os.path.exists(targetdir):
+        print
         print "************************************" 
         print "Building ", utiltarget[0]
         os.chdir(targetdir)
