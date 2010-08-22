@@ -37,6 +37,10 @@
 const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
+
+const double DefaultSniffInterval = 30.0;
+const double DefaultJobMatrixInterval = 20.0;
+
 const int binomialcoeffs[6][6] = {{1,0,0,0,0,0},{1,1,0,0,0,0},{1,2,1,0,0,0},
 				{1,3,3,1,0,0},{1,4,6,4,1,0},{1,5,10,10,5,1}};
 
@@ -105,7 +109,7 @@ static int usage(const char *pgm)
 		"by <scale>\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --deltat <deltat>\n");
-	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix\n");
+	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix (default %3.1f)\n", DefaultJobMatrixInterval);
 	fprintf(stderr, " --phasecentre	<p>    Create a fits file for all the "
 		"<p>th phase centres (default 0)\n");
 	fprintf(stderr, "\n");
@@ -118,6 +122,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --dont-sniff\n");
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --sniff-time <t>\n");
+	fprintf(stderr, "  -x           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
 	fprintf(stderr, "\n");
 #endif
 	fprintf(stderr, "  --verbose\n");
@@ -137,8 +144,8 @@ struct CommandLineOptions *newCommandLineOptions()
 		sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
-	opts->sniffTime = 30.0;
-	opts->jobMatrixDeltaT = 20.0;
+	opts->sniffTime = DefaultSniffInterval;
+	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->phaseCentre = 0;
 
 	return opts;
@@ -251,6 +258,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					i++;
 					opts->jobMatrixDeltaT = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--sniff-time") == 0 ||
+					strcmp(argv[i], "-T") == 0)
+				{
+					i++;
+					opts->sniffTime = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--average") == 0 ||
 				        strcmp(argv[i], "-a") == 0)
