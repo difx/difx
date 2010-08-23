@@ -202,6 +202,10 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 
 		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
 		A->axisType = string(q->axis1) + string(q->axis2);
+		if(A->axisType.compare("hadec") == 0)
+		{
+			A->axisType = "equa";
+		}
 
 		r = (struct dvalue *)get_station_lowl(stn, T_SITE_POSITION_EPOCH, B_SITE, v);
 		if(r)
