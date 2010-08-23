@@ -313,6 +313,22 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	request->axis_type_b = antenna->mount;
 	request->axis_off_b = antenna->offset[0];
 
+	//check that the antenna mount is a valid type
+	if(!(strcmp(antenna->mount, "AZEL") == 0 ||
+		strcmp(antenna->mount, "azel") == 0 ||
+		strcmp(antenna->mount, "ALTZ") == 0 ||
+		strcmp(antenna->mount, "altz") == 0 ||
+		strcmp(antenna->mount, "EQUA") == 0 ||
+		strcmp(antenna->mount, "equa") == 0 ||
+		strcmp(antenna->mount, "XYEW") == 0 ||
+		strcmp(antenna->mount, "xyew") == 0 ||
+		strcmp(antenna->mount, "XYNS") == 0 ||
+		strcmp(antenna->mount, "xtns") == 0))
+	{
+		printf("Bad mount type %s for station %s\n", antenna->mount, antenna->name);
+		return -1;
+	}
+
 	request->source = source->name;
 	if(spacecraftId < 0)
 	{
