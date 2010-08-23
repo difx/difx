@@ -687,14 +687,16 @@ C
              GO TO 900
           END IF
 C
+C         Changed by Adam Deller to not skip first station on 
+C         account of it being geocenter (replace I-2 with I-1)
           IF (NDIM1.GT.1) THEN
              IF (fstrcmp(VARNAM,'AXISTYPS      ').eq.0) THEN
                 NROWS = N_ROWS(JOBNUM,'station')
                 IF (NROWS.LT.(NDIM1-1).OR.NROWS.LE.0) GO TO 999
                 IVARB(1,1,1) = 3
-                DO I = 2, NDIM1
+                DO I = 1, NDIM1
                   IERR=fstrcpy(KEYNAME,C_FTOC(JOBNUM,'station',
-     +                                      I-2,'AXISTYPE'))
+     +                                      I-1,'AXISTYPE'))
 C               Compare with axistypes and pass integer code
                   IVARB(I,1,1) = 3
                   IF (fstrcmp(KEYNAME,'EQUA').eq.0)
