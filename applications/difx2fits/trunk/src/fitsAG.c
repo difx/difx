@@ -193,9 +193,17 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		{
 			row.mountType = 1;
 		}
-		else
+		else if (strcasecmp(antenna->mount, "azel") == 0 ||
+			strcasecmp(antenna->mount, "altz") == 0)
 		{
 			row.mountType = 0;
+		}
+		else
+		{
+			printf("\n\nUnknown mount type %s for antenna %s!\n", antenna->mount, antenna->name);
+			printf("Will not continue - change antenna mount type to one of [azel,equa,xyew,xyns] in .calc file!\n");
+			printf("You may need to recalculate the model and recorrelate!\n\n");
+			exit(0);
 		}
 		for(i = 0; i < 3; i++)
 		{
