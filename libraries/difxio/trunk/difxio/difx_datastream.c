@@ -246,7 +246,7 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq * df)
 		dd->recToneFreq[i] = tonefreq + i * dd->phaseCalIntervalMHz;
 		for(t = 0; t < df->nTone; t++)
 		{
-			if(df->tone[t] = i)
+			if(df->tone[t] == i)
 			{
 				dd->recToneOut[i] = 1;
 				break;
