@@ -6,8 +6,6 @@
 
 #define MAX_EOPS 5
 
-/* FIXME check mount type azel/altz */
-
 static struct timeval TIMEOUT = {10, 0};
 
 struct CalcResults
@@ -289,6 +287,7 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	int spacecraftId = -1;
 	int sourceId;
 	int nError = 0;
+	char mount[MAX_ANTENNA_MOUNT_NAME_LENGTH];
 
 	job = D->job;
 	antenna = D->antenna + antId;
@@ -306,23 +305,16 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	request = &(p->request);
 	spacecraftId = source->spacecraftId;
 
+	/* this is needed to get around xdr_string not coping well with const strings */
+	strncpy(mount, antennaMountTypeNames[antenna->mount], MAX_ANTENNA_MOUNT_NAME_LENGTH-1);
+	mount[MAX_ANTENNA_MOUNT_NAME_LENGTH-1] = 0;
+
 	request->station_b = antenna->name;
 	request->b_x = antenna->X;
 	request->b_y = antenna->Y;
 	request->b_z = antenna->Z;
-	request->axis_type_b = antenna->mount;
+	request->axis_type_b = mount;
 	request->axis_off_b = antenna->offset[0];
-
-	//check that the antenna mount is a valid type
-	if(!(strcasecmp(antenna->mount, "AZEL") == 0 ||
-		strcasecmp(antenna->mount, "ALTZ") == 0 ||
-		strcasecmp(antenna->mount, "EQUA") == 0 ||
-		strcasecmp(antenna->mount, "XYEW") == 0 ||
-		strcasecmp(antenna->mount, "XYNS") == 0))
-	{
-		printf("Bad mount type %s for station %s\n", antenna->mount, antenna->name);
-		return -1;
-	}
 
 	request->source = source->name;
 	if(spacecraftId < 0)
