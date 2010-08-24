@@ -191,7 +191,6 @@ int pystream::writeHeader(const VexData *V)
 	if(currenttype == VLBA)
 	{
 		*this << "from edu.nrao.evla.observe import MatrixSwitch" << endl;
-		*this << "from edu.nrao.evla.observe import PFBPersonality" << endl;
 		*this << "from edu.nrao.evla.observe import RDBE" << endl;
 		*this << "from edu.nrao.evla.observe import VLBALoIfSetup" << endl;
 		*this << "from edu.nrao.evla.observe import Parameters" << endl;
@@ -233,8 +232,8 @@ int pystream::writeRecorderInit(const VexData *V)
 	// FIXME For now, set up single recorder in Mark5B mode
 	// Need to check requested format/mode first
 	*this << "recorder0.setMode('Mark5B')" << endl;
-	*this << "recorder0.setPSNMode(1)" << endl;
-	*this << "recorder0.setPacket(46, 0, 8, 5008)" << endl;
+	*this << "recorder0.setPSNMode(0)" << endl;
+	*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 
 	*this << "subarray.setRecorder(recorder0)" << endl;
 	*this << endl;
@@ -247,10 +246,10 @@ int pystream::writeDbeInit(const VexData *V)
 	if(currenttype == VLBA || currenttype == GBT)
 	{
 		*this << "dbe0 = RDBE(0, 'pfb')" << endl;
-		*this << "dbe0.setAGC(1)" << endl;
+		*this << "dbe0.setALC(1)" << endl;
 		*this << "dbe0.setFormat('Mark5B')" << endl;
-		*this << "dbe0.setPacket(46, 0, 8, 5008)" << endl;
-		*this << "subarray.setDBE(dbe0, None)" << endl;
+		*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
+		*this << "subarray.setDBE(dbe0)" << endl;
 		*this << endl;
 	}
 	else if(currenttype == EVLA)
@@ -568,11 +567,12 @@ int pystream::writeScans(const VexData *V)
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 			double deltat3 = floor((scan->mjdVex-mjd0)*86400.0 + 0.5);
+	*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
 			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
 			*this << "else:" << endl;
-			*this << "  print \"Skipping scan which ended at time \" + str(mjdStart+deltat2*second) + \" since array.time is \" + str(array.time())" << endl;
+			*this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 << "*second) + \" since array.time is \" + str(array.time())" << endl;
 
 			lastValid = arange->mjdStop;
 		}

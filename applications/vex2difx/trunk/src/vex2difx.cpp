@@ -439,7 +439,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
-		strcpy(A[i].mount, ant->axisType.c_str());
+		A[i].mount = stringToMountType(ant->axisType.c_str());
 		clockrefmjd = ant->getVexClocks(J.mjdStart, A[i].clockcoeff);
 		if(clockrefmjd < 0.0)
 		{
