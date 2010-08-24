@@ -558,7 +558,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  // Resync
 	  packet_oo++;  // This could be duplicate but we cannot tell
 	  // Probably should decrease packet dropped count, maybe (it was not counted after all)
-	} else if (sequence==packet_segmentend) { 
+	} else if (static_cast<long long>(sequence)==packet_segmentend) { 
 	  //cinfo << startl << "**Segmentend " << packet_index << " (" << packet_segmentend << ")" << endl;
 	  int bytes;
 	  if (udp_offset==udpsize && segmentsize==1)
@@ -647,7 +647,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	if (i==0) {
 	  memcpy(ptr, invalid_buf, udp_offset); // CHECK INITIAL FULL OR EMPTY BUFFER
 	} else if (i==packet_segmentend-packet_segmentstart) {
-          if (udp_offset+(i-1)*udpsize+(bytestoread-udp_offset)%udpsize > bytestoread) 
+          if (static_cast<int>(udp_offset+(i-1)*udpsize+(bytestoread-udp_offset)%udpsize) > bytestoread) 
             cwarn << startl << "Internal Error, trying to copy pass buffer size" << endl;
 	  else 
 	    memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,(bytestoread-udp_offset)%udpsize);

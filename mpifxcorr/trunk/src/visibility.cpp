@@ -36,7 +36,7 @@
 #include "alert.h"
 
 Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames)
-  : config(conf), visID(id), numvisibilities(numvis), todiskbuffer(dbuffer), todiskbufferlength(dbufferlen), currentscan(scan), executeseconds(eseconds), currentstartseconds(scanstartsec), currentstartns(startns), polnames(pnames)
+  : config(conf), visID(id), currentstartseconds(scanstartsec), currentstartns(startns), numvisibilities(numvis), executeseconds(eseconds), todiskbufferlength(dbufferlen), polnames(pnames), todiskbuffer(dbuffer)
 {
   int status, binloop;
 
@@ -229,7 +229,7 @@ void Visibility::updateTime()
 
 void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
   char *ptr;
-  int ntowrite, nwrot, i;
+  int ntowrite;
   int32_t atsec, datasize, numchans;
 
 
@@ -263,8 +263,6 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
 
   memcpy(ptr, results, resultlength*sizeof(cf32));
   *nbuf = ntowrite;
-
-  return;
 }
 
 void Visibility::writedata()

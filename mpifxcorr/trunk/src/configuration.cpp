@@ -34,7 +34,7 @@ Configuration::Configuration(const char * configfile, int id)
   : mpiid(id), consistencyok(true)
 {
   string configfilestring = configfile;
-  int basestart = configfilestring.find_last_of('/');
+  size_t basestart = configfilestring.find_last_of('/');
   if(basestart == string::npos)
     basestart = 0;
   else
@@ -2445,7 +2445,8 @@ bool Configuration::setPolycoFreqInfo(int configindex)
 
 bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3])
 {
-  int sync, version;
+  unsigned int sync;
+  int version;
   string line;
 
   input->read((char*)(&sync), 4);

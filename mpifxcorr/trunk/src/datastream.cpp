@@ -975,7 +975,8 @@ int DataStream::initialiseFrame(char * frameheader)
 void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
   char *ptr;
-  int bytestoread, nread, status, synccatchbytes;
+  unsigned int bytestoread;
+  int nread, status, synccatchbytes;
 
   //do the buffer housekeeping
   waitForBuffer(buffersegment);

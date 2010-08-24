@@ -626,7 +626,8 @@ int Core::receivedata(int index, bool * terminate)
 
 void Core::processdata(int index, int threadid, int startblock, int numblocks, Mode ** modes, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
-  int status, perr, i, numfftloops, numfftsprocessed;
+#ifndef NEUTERED_DIFX
+  int status, i, numfftloops, numfftsprocessed;
   int resultindex, cindex, ds1index, ds2index, binloop;
   int xcblockcount, maxxcblocks, xcshiftcount;
   int acblockcount, maxacblocks, acshiftcount;
@@ -644,6 +645,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   double sampletimens;
   int starttimens;
   int fftsize;
+#endif
+  int perr;
 
 //following statement used to cut all all processing for "Neutered DiFX"
 #ifndef NEUTERED_DIFX

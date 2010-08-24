@@ -270,7 +270,7 @@ bool Model::calculateDelayInterpolator(int scanindex, f64 offsettime, f64 timesp
 
 bool Model::addClockTerms(string antennaname, double refmjd, int order, double * terms)
 {
-  double clockdistance, dt, polysampleclock;
+  double clockdistance;
   double * clockdt;
 
   if(scantable == 0) //hasn't been allocated yet
