@@ -55,7 +55,7 @@ class PCal {
 
    public:
       PCal() {};
-      ~PCal() {};
+      virtual ~PCal() {};
    private:
       PCal(const PCal& o); /* no copy */
       PCal& operator= (const PCal& o); /* no assign */

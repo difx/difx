@@ -54,7 +54,7 @@ const string FxManager::LL_CIRCULAR_POL_NAMES[4] = {"LL", "RR", "LR", "RL"};
 const string FxManager::LINEAR_POL_NAMES[4] = {"XX", "YY", "XY", "YX"};
 
 FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, int id, MPI_Comm rcomm, bool mon, char * hname, int port, int monitor_skip)
-  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitorport(port), monitor_skip(monitor_skip)
+  : config(conf), return_comm(rcomm), numcores(ncores), mpiid(id), visibilityconfigok(true), monitor(mon), hostname(hname), monitor_skip(monitor_skip), monitorport(port)
 {
   bool startskip;
   int perr, minchans, confresultbytes, todiskbufferlen;

@@ -35,6 +35,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 {
   int status, localfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
+  int pcalOffset;
   estimatedbytes = 0;
 
   model = config->getModel();
@@ -286,9 +287,12 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       localfreqindex = conf->getDLocalRecordedFreqIndex(confindex, dsindex, i);
 
       pcalresults[i] = new cf32[conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex)];
+
+      pcalOffset = static_cast<int>(config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex) + 0.5);
+
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
-                                      config->getDRecordedFreqPCalOffsetsHz(configindex, dsindex, localfreqindex), 0);
+                                      pcalOffset, 0);
       pcalnbins[i] = extractor[i]->getNBins();
       cdebug << startl << "Band " << i << " phase cal extractor buffer length (N bins)" << pcalnbins[i] << endl;
     }
@@ -1015,7 +1019,7 @@ void Mode::setData(u8 * d, int dbytes, int dscan, int dsec, int dns)
   datasec = dsec;
   datans = dns;
   unpackstartsamples = -999999999;
-  datasamples = datans/(sampletime*1e3);
+  datasamples = static_cast<int>(datans/(sampletime*1e3));
 }
 
 void Mode::resetpcal()

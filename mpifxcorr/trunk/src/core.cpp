@@ -677,7 +677,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       fftsize = 2*config->getFNumChannels(config->getDRecordedFreqIndex(procslots[index].configindex, j, 0));
       
       // Calculate the number of offset samples. The modulo PCal bins is done in the pcal object!
-      offsetsamples = starttimens/sampletimens + startblock*fftsize;
+      offsetsamples = static_cast<uint64_t>(starttimens/sampletimens) + startblock*fftsize;
       modes[j]->resetpcal();
     }
   }
@@ -735,6 +735,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   //process each chunk of FFTs in turn
   for(int fftloop=0;fftloop<numfftloops;fftloop++)
   {
+    numfftsprocessed = 0;   // not strictly needed, but to prevent compiler warning
     //do the station-based processing for this batch of FFT chunks
     for(int j=0;j<numdatastreams;j++)
     {
@@ -1049,7 +1050,6 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
 void Core::copyPCalTones(int index, int threadid, Mode ** modes)
 {
   int resultindex, localfreqindex, perr;
-  cf32 pcal;
 
   //lock the pcal copylock, so we're the only one adding to the result array (pcal section)
   perr = pthread_mutex_lock(&(procslots[index].pcalcopylock));
@@ -1463,8 +1463,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   double applieddelay, applieddelay1, applieddelay2, turns, edgeturns;
   double pointingcentredelay1approx[2];
   double pointingcentredelay2approx[2];
-  double * phasecentredelay1;
-  double * phasecentredelay2;
+  double * phasecentredelay1 = 0;
+  double * phasecentredelay2 = 0;
   cf32* srcpointer;
   cf32 meanresult;
 
@@ -1545,6 +1545,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   coreindex = config->getCoreResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
   for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
   {
+    applieddelay = 0.0;  // not strictly needed, but avoids compiler warning
     if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
     {
       //work out the correct rotator for this frequency and phase centre
@@ -1659,9 +1660,12 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
     csevere << startl << "PROCESSTHREAD " << threadid << " error trying unlock copy mutex for frequency table entry " << freqindex << ", baseline " << baseline << "!!! Perr is " << perr << endl;
 
   //free the phasecentredelay vectors if necessary
-  if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
+  if(phasecentredelay1)
   {
     delete [] phasecentredelay1;
+  }
+  if(phasecentredelay2)
+  {
     delete [] phasecentredelay2;
   }
 }

@@ -61,7 +61,7 @@ Polyco::Polyco(string filename, int subcount, int confindex, int nbins, int maxc
 }
 
 Polyco::Polyco(const Polyco & tocopy)
-  : pulsarname(tocopy.pulsarname), configindex(tocopy.configindex), numbins(tocopy.numbins), numfreqs(tocopy.numfreqs), observatory(tocopy.observatory), timespan(tocopy.timespan), numcoefficients(tocopy.numcoefficients), mjd(tocopy.mjd), mjdfraction(tocopy.mjdfraction), dm(tocopy.dm), dopplershift(tocopy.dopplershift), logresidual(tocopy.logresidual), refphase(tocopy.refphase), f0(tocopy.f0), obsfrequency(tocopy.obsfrequency), binaryphase(tocopy.binaryphase), minbinwidth(tocopy.minbinwidth), maxchannels(tocopy.maxchannels), dt0(tocopy.dt0), calclengthmins(tocopy.calclengthmins)
+  : pulsarname(tocopy.pulsarname), configindex(tocopy.configindex), numbins(tocopy.numbins), maxchannels(tocopy.maxchannels), numfreqs(tocopy.numfreqs), observatory(tocopy.observatory), timespan(tocopy.timespan), numcoefficients(tocopy.numcoefficients), mjd(tocopy.mjd), mjdfraction(tocopy.mjdfraction), dt0(tocopy.dt0), dm(tocopy.dm), dopplershift(tocopy.dopplershift), logresidual(tocopy.logresidual), refphase(tocopy.refphase), f0(tocopy.f0), obsfrequency(tocopy.obsfrequency), binaryphase(tocopy.binaryphase), minbinwidth(tocopy.minbinwidth), calclengthmins(tocopy.calclengthmins)
 {
   int status;
   //cinfo << startl << "Started copying a polyco" << endl;
@@ -384,7 +384,6 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
 {
     string strbuffer;
     istringstream iss;
-    char buffer[80];
     int hour, minute;
     double timedouble, second, mjddouble;
 
