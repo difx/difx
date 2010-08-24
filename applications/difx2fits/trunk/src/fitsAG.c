@@ -180,37 +180,13 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		row.dy = antenna->dY;
 		row.dz = antenna->dZ;
 		row.antId1 = a+1;
-		if(strcasecmp(antenna->mount, "xyew") == 0)
-		{
-			row.mountType = 3;
-		}
-		else if(strcasecmp(antenna->mount, "xyns") == 0)
+		row.mountType = antenna->mount;
+		if(antenna->mount == AntennaMountXYNS)
 		{
 			printf("\n\nWarning: mount type XYNS is not handled in AIPS so is being set to XYEW.\n");
 			printf("Expect parallactic angles to be calculated incorrectly.\n\n");
-			row.mountType = 3;
 		}
-		else if(strcasecmp(antenna->mount, "spac") == 0)
-		{
-			row.mountType = 2;
-		}
-		else if(strcasecmp(antenna->mount, "equa") == 0)
-		{
-			row.mountType = 1;
-		}
-		else if (strcasecmp(antenna->mount, "azel") == 0 ||
-			strcasecmp(antenna->mount, "altz") == 0)
-		{
-			row.mountType = 0;
-		}
-		else
-		{
-			printf("\n\nUnknown mount type %s for antenna %s!\n", antenna->mount, antenna->name);
-			printf("Will not continue - change antenna mount type to one of [azel,equa,xyew,xyns] in .calc file!\n");
-			printf("You may need to recalculate the model and recorrelate!\n\n");
 
-			exit(0);
-		}
 		for(i = 0; i < 3; i++)
 		{
 			row.offset[i] = antenna->offset[i];
