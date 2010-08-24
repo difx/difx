@@ -34,6 +34,64 @@
 #include "difxio/difx_input.h"
 #include "difxio/difx_write.h"
 
+/* These names must match what calcserver expects */
+const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH] =
+{
+	"AZEL",
+	"EQUA",
+	"SPACE",	/* note: this will fall back to AZEL in calcserver */
+	"XYEW",
+	"NASR",		/* note: this will correctly fall back to AZEL in calcserver */
+	"NASL",		/* note: this will correctly fall back to AZEL in calcserver */
+	"XYNS",		/* note: no FITS-IDI support */
+	"OTHER"		/* don't expect the right parallactic angle or delay model! */
+};
+
+enum AntennaMountType stringToMountType(const char *str)
+{
+	if(strcasecmp(str, "AZEL") == 0 ||
+	   strcasecmp(str, "ALTZ") == 0 ||
+	   strcasecmp(str, "ALTAZ") == 0)
+	{
+		return AntennaMountAltAz;
+	}
+	if(strcasecmp(str, "EQUA") == 0 ||
+	   strcasecmp(str, "EQUAT") == 0 ||
+	   strcasecmp(str, "EQUATORIAL") == 0 ||
+	   strcasecmp(str, "HADEC") == 0)
+	{
+		return AntennaMountEquatorial;
+	}
+	if(strcasecmp(str, "SPACE") == 0 ||
+	   strcasecmp(str, "ORBIT") == 0 ||
+	   strcasecmp(str, "ORBITING") == 0)
+	{
+		return AntennaMountOrbiting;
+	}
+	if(strcasecmp(str, "XYEW") == 0)
+	{
+		return AntennaMountXYEW;
+	}
+	if(strcasecmp(str, "NASMYTH-R") == 0 ||
+	   strcasecmp(str, "NASMYTHR") == 0 ||
+	   strcasecmp(str, "NASR") == 0)
+	{
+		return AntennaMountNasmythR;
+	}
+	if(strcasecmp(str, "NASMYTH-L") == 0 ||
+	   strcasecmp(str, "NASMYTHL") == 0 ||
+	   strcasecmp(str, "NASL") == 0)
+	{
+		return AntennaMountNasmythL;
+	}
+	if(strcasecmp(str, "XYNS") == 0)
+	{
+		return AntennaMountXYNS;
+	}
+	
+	return AntennaMountOther;
+	
+}
 
 DifxAntenna *newDifxAntennaArray(int nAntenna)
 {
@@ -69,7 +127,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da)
 		fprintf(fp, "    Clock coeff[%d] = %e us/s^%d\n", i, 
 			da->clockcoeff[i], i);
 	}
-	fprintf(fp, "    Mount = %s\n", da->mount);
+	fprintf(fp, "    Mount = %d = %s\n", da->mount, antennaMountTypeNames[da->mount]);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
@@ -86,7 +144,7 @@ void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da)
 	fprintf(fp, "  %s\n", da->name);
 	fprintf(fp, "    Clock: Ref time %f, Order = %d, linear approx %e us + %e us/s\n", 
 		da->clockrefmjd, da->clockorder, da->clockcoeff[0], da->clockcoeff[1]);
-	fprintf(fp, "    Mount = %s\n", da->mount);
+	fprintf(fp, "    Mount = %s\n", antennaMountTypeNames[da->mount]);
 	fprintf(fp, "    Offset = %f, %f, %f m\n", 
 		da->offset[0], da->offset[1], da->offset[2]);
 	fprintf(fp, "    X, Y, Z = %f, %f, %f m\n", da->X, da->Y, da->Z);
@@ -161,7 +219,7 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	{
 		dest->clockcoeff[i] = src->clockcoeff[i];
 	}
-	strcpy(dest->mount, src->mount);
+	dest->mount = src->mount;
 	for(i = 0; i < 3; i++)
 	{
 		dest->offset[i] = src->offset[i];
@@ -250,7 +308,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 		if(doMount)
 		{
 			writeDifxLine1(out, "TELESCOPE %d MOUNT", i,
-				da[i].mount);
+				antennaMountTypeNames[da[i].mount]);
 			n++;
 		}
 		if(doOffset)

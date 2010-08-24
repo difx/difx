@@ -30,6 +30,8 @@
 #ifndef __DIFX_INPUT_H__
 #define __DIFX_INPUT_H__
 
+#include <stdio.h>
+
 #define DIFX_SESSION_LEN	4
 #define MAX_MODEL_ORDER		5
 #define MAX_PHS_CENTRES		1000
@@ -43,8 +45,9 @@
 #define DIFXIO_POL_RL		(DIFXIO_POL_R | DIFXIO_POL_L)
 #define DIFXIO_POL_XY		(DIFXIO_POL_X | DIFXIO_POL_Y)
 
-
-#include <stdio.h>
+#define MAX_ABER_CORR_STRING_LENGTH	16
+#define MAX_DATA_SOURCE_NAME_LENGTH	16
+#define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +67,7 @@ extern "C" {
  * DifxConfig.ant2dsId[][]
  */
 
+/* keep this current with aberCorrStrings in difx_job.c */
 enum AberCorr
 {
 	AberCorrUncorrected = 0,
@@ -72,7 +76,8 @@ enum AberCorr
 	NumAberCorrOptions
 };
 
-extern const char aberCorrStrings[][16];
+extern const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH];
+
 
 /* keep this current with datastreamTypeNames in difx_datastream.c */
 enum DataSource
@@ -85,7 +90,27 @@ enum DataSource
 	NumDataSources		/* must remain last entry */
 };
 
-extern const char dataSourceNames[][16];
+extern const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH];
+
+
+/* keep this current with antennaMountTypeNames in difx_antenna.c */
+/* Note that the numbering scheme is based on the FITS-IDI defs, but with XYNS added at end */
+/* See AIPS memo 114 for the list of mount types */
+enum AntennaMountType
+{
+	AntennaMountAltAz = 0,
+	AntennaMountEquatorial = 1,
+	AntennaMountOrbiting = 2,	/* note: uncertain calc support */
+	AntennaMountXYEW = 3,		/* Hobart is the prime example */
+	AntennaMountNasmythR = 4,	/* note: in calcserver, falls back to azel as is appropriate */
+	AntennaMountNasmythL = 5,	/* note: no calcserver, falls back to azel as is appropriate */
+	AntennaMountXYNS = 6,		/* note: no FITS-IDI/AIPS support */
+	AntennaMountOther = 7,		/* set to this if different from the others */
+	NumAntennaMounts
+};
+
+extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
+
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -250,7 +275,7 @@ typedef struct
 	int clockorder;		/* Polynomial order of the clock model */
 	double clockcoeff[MAX_MODEL_ORDER+1];	/* clock polynomial 
 				   coefficients (us, us/s, us/s^2... */
-	char mount[8];		/* azel, ... */
+	enum AntennaMountType mount;
 	double offset[3];	/* axis offset, (m) */
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
@@ -458,6 +483,7 @@ DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,
 int writeDifxFreqArray(FILE *out, int nFreq, const DifxFreq *df);
 
 /* DifxAntenna functions */
+enum AntennaMountType stringToMountType(const char *str);
 DifxAntenna *newDifxAntennaArray(int nAntenna);
 void deleteDifxAntennaArray(DifxAntenna *da, int nAntenna);
 void printDifxAntenna(const DifxAntenna *da);

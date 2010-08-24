@@ -32,7 +32,7 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
-const char dataSourceNames[][16] = 
+const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] = 
 {
 	"NONE",
 	"MODULE",

@@ -1819,7 +1819,13 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			continue;
 		}
 		nFound++;
-		strcpy(D->antenna[a].mount, DifxParametersvalue(cp, rows[1]));
+		D->antenna[a].mount = stringToMountType(DifxParametersvalue(cp, rows[1]));
+		if(D->antenna[a].mount >= AntennaMountOther)
+		{
+			fprintf(stderr, "Warning: populateCalc: unknown antenna mount type encountered\n"
+				"for telescope table entry %d: %s.  Changing to AZEL\n",
+				i, DifxParametersvalue(cp, rows[1]));
+		}
 		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
 		D->antenna[a].offset[1]= 0.0;	/* FIXME */
 		D->antenna[a].offset[2]= 0.0;	/* FIXME */

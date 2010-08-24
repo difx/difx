@@ -33,7 +33,7 @@
 #include "difxio/difx_input.h"
 #include "difxio/parsedifx.h"
 
-const char aberCorrStrings[][16] = 
+const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH] = 
 {
 	"UNCORRECTED",
 	"APPROXIMATE",
