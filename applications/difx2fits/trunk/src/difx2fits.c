@@ -110,7 +110,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --deltat <deltat>\n");
 	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix (default %3.1f)\n", DefaultJobMatrixInterval);
-	fprintf(stderr, " --phasecentre	<p>    Create a fits file for all the "
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --phasecentre <p>\n");
+	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the "
 		"<p>th phase centres (default 0)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --keep-order\n");
@@ -289,7 +291,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					i++;
 					opts->startChan = atof(argv[i]);
 				}
-				else if(strcmp(argv[i], "--phasecentre") == 0)
+				else if(strcmp(argv[i], "--phasecentre") == 0 ||
+					strcmp(argv[i], "--phasecenter") == 0)
 				{
 					i++;
 					opts->phaseCentre = atoi(argv[i]);
