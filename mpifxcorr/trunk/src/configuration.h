@@ -99,6 +99,7 @@ public:
   inline int getThreadResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].threadresultbaselineoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultBaselineOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbaselineoffset[freqindex][configbaselineindex]; }
   inline int getCoreResultBWeightOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbweightoffset[freqindex][configbaselineindex]; }
+  inline int getCoreResultBShiftDecorrOffset(int configindex, int freqindex, int configbaselineindex) { return configs[configindex].coreresultbshiftdecorroffset[freqindex][configbaselineindex]; }
   inline int getCoreResultAutocorrOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultautocorroffset[configdatastreamindex]; }
   inline int getCoreResultACWeightOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultacweightoffset[configdatastreamindex]; }
   inline int getCoreResultPCalOffset(int configindex, int configdatastreamindex) { return configs[configindex].coreresultpcaloffset[configdatastreamindex]; }
@@ -566,7 +567,7 @@ private:
     bool pacomplexoutput;
     int paaccumulationns;
     double ** paweights; //[freq][datastream]
-    char ** papols; //freq][pol]
+    char   ** papols;    //[freq][pol]
     int * numpafreqpols; //[freq]
     datadomain padomain;
     Polyco ** polycos;
@@ -575,16 +576,17 @@ private:
     int  * baselineindices;
     bool * frequsedbybaseline;
     //bookkeeping info for thread results
-    int  * numxmacstrides; //[freq]
-    int  * completestridelength; //[freq]
-    int  * threadresultfreqoffset; //[freq]
-    int ** threadresultbaselineoffset; //[freq][baseline]
+    int  * numxmacstrides;              //[freq]
+    int  * completestridelength;        //[freq]
+    int  * threadresultfreqoffset;      //[freq]
+    int ** threadresultbaselineoffset;  //[freq][baseline]
     //bookkeeping info for core results
-    int ** coreresultbaselineoffset; //[freq][baseline]
-    int ** coreresultbweightoffset;  //[freq][baseline]
-    int  * coreresultautocorroffset; //[datastream]
-    int  * coreresultacweightoffset; //[datastream]
-    int  * coreresultpcaloffset;     //[datastream]
+    int ** coreresultbaselineoffset;    //[freq][baseline]
+    int ** coreresultbweightoffset;     //[freq][baseline]
+    int ** coreresultbshiftdecorroffset;//[freq][baseline]
+    int  * coreresultautocorroffset;    //[datastream]
+    int  * coreresultacweightoffset;    //[datastream]
+    int  * coreresultpcaloffset;        //[datastream]
   } configdata;
 
   ///storage struct for data from the rule table of the input file

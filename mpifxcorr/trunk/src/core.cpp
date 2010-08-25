@@ -357,6 +357,7 @@ void Core::loopprocess(int threadid)
   threadscratchspace * scratchspace = new threadscratchspace;
   scratchspace->threadcrosscorrs = vectorAlloc_cf32(maxthreadresultlength);
   scratchspace->baselineweight = new f32***[config->getFreqTableLength()];
+  scratchspace->baselineshiftdecorr = new f32**[config->getFreqTableLength()];
   scratchspace->dsweights = new f32*[numdatastreams];
   for(int i=0;i<numdatastreams;i++)
     scratchspace->dsweights[i] = new f32[config->getMaxNumBufferedFFTs()];
@@ -424,7 +425,7 @@ void Core::loopprocess(int threadid)
   }
 
   //create the baselineweight and xmacstrideoffset arrays
-  allocateConfigSpecificThreadArrays(scratchspace->baselineweight, procslots[0].configindex, -1, threadid); //don't need to delete old space
+  allocateConfigSpecificThreadArrays(scratchspace->baselineweight, scratchspace->baselineshiftdecorr, procslots[0].configindex, -1, threadid); //don't need to delete old space
 
   //set to first configuration and set up, creating Modes, Polycos etc
   lastconfigindex = procslots[0].configindex;
@@ -506,7 +507,7 @@ void Core::loopprocess(int threadid)
       updateconfig(lastconfigindex, currentslot->configindex, threadid, startblock, numblocks, numpolycos, pulsarbin, modes, polycos, false);
       cinfo << startl << "Core " << mpiid << " threadid " << threadid << ": config changed successfully - pulsarbin is now " << pulsarbin << endl;
       createPulsarVaryingSpace(scratchspace->pulsaraccumspace, &(scratchspace->bins), currentslot->configindex, lastconfigindex, threadid);
-      allocateConfigSpecificThreadArrays(scratchspace->baselineweight, currentslot->configindex, lastconfigindex, threadid);
+      allocateConfigSpecificThreadArrays(scratchspace->baselineweight, scratchspace->baselineshiftdecorr, currentslot->configindex, lastconfigindex, threadid);
       lastconfigindex = currentslot->configindex;
     }
   }
@@ -547,7 +548,7 @@ void Core::loopprocess(int threadid)
   vectorFree(scratchspace->channelsums);
   vectorFree(scratchspace->argument);
   if(scratchspace->starecord != 0) {
-    delete scratchspace->starecord;
+    free(scratchspace->starecord);
   }
   delete scratchspace;
 
@@ -690,7 +691,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   if(status != vecNoErr)
     csevere << startl << "Error trying to zero threadcrosscorrs!!!" << endl;
 
-  //zero the baselineweights for this thread
+  //zero the baselineweights and baselineshiftdecorrs for this thread
   for(int i=0;i<config->getFreqTableLength();i++)
   {
     if(config->isFrequencyUsed(procslots[index].configindex, i))
@@ -705,6 +706,19 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             status = vectorZero_f32(scratchspace->baselineweight[i][b][j], config->getBNumPolProducts(procslots[index].configindex, j, localfreqindex));
             if(status != vecNoErr)
               csevere << startl << "Error trying to zero baselineweight[" << i << "][" << b << "][" << j << "]!!!" << endl;
+          }
+        }
+      }
+      if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
+      {
+        for(int j=0;j<numbaselines;j++)
+        {
+          localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, j, i);
+          if(localfreqindex >= 0)
+          {
+            status = vectorZero_f32(scratchspace->baselineshiftdecorr[i][j], model->getNumPhaseCentres(procslots[index].offsets[0]));
+            if(status != vecNoErr)
+              csevere << startl << "Error trying to zero baselineshiftdecorr[" << i << "][" << j << "]!!!" << endl;
           }
         }
       }
@@ -941,7 +955,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     if(xcblockcount == maxxcblocks)
     {
       //shift/average and then lock results and copy data
-      uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)maxxcblocks)/2.0)*blockns, currentpolyco, scratchspace);
+      uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)maxxcblocks)/2.0)*blockns, maxxcblocks*blockns, currentpolyco, scratchspace);
       //reset the xcblockcount, increment xcshiftcount
       xcblockcount = 0;
       xcshiftcount++;
@@ -991,7 +1005,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   }
 
   if(xcblockcount != 0) {
-    uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)xcblockcount)/2.0)*blockns, currentpolyco, scratchspace);
+    uvshiftAndAverage(index, threadid, (startblock+xcshiftcount*maxxcblocks+((double)xcblockcount)/2.0)*blockns, xcblockcount*blockns, currentpolyco, scratchspace);
   }
   if(acblockcount != 0) {
     averageAndSendAutocorrs(index, threadid, (startblock+acshiftcount*maxacblocks+((double)acblockcount)/2.0)*blockns, acblockcount*blockns, modes, scratchspace);
@@ -1020,6 +1034,22 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
             for(int j=0;j<config->getBNumPolProducts(procslots[index].configindex,i,localfreqindex);j++)
             {
               procslots[index].floatresults[resultindex] += scratchspace->baselineweight[f][b][i][j];
+              resultindex++;
+            }
+          }
+        }
+      }
+      if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
+      {
+        for(int i=0;i<numbaselines;i++)
+        {
+          localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, i, f);
+          if(localfreqindex >= 0)
+          {
+            resultindex = config->getCoreResultBShiftDecorrOffset(procslots[index].configindex, f, i)*2;
+            for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
+            {
+              procslots[index].floatresults[resultindex] += scratchspace->baselineshiftdecorr[f][i][s];
               resultindex++;
             }
           }
@@ -1291,7 +1321,7 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
   }
 }
 
-void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace)
+void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, double nswidth, Polyco * currentpolyco, threadscratchspace * scratchspace)
 {
   int status, startbaselinefreq, atbaselinefreq, startbaseline, startfreq, endbaseline, binloop;
   int localfreqindex, baselinefreqs;
@@ -1392,7 +1422,7 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
     {
       for(int i=startbaseline;i<numbaselines;i++)
       {
-        uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, scratchspace, f, i);
+        uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, nswidth, scratchspace, f, i);
       }
       startbaseline = 0;
     }
@@ -1405,13 +1435,13 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
     {
       for(int i=0;i<numbaselines;i++)
       {
-        uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, scratchspace, f, i);
+        uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, nswidth, scratchspace, f, i);
       }
     }
   }
   for(int i=0;i<endbaseline;i++)
   {
-    uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, scratchspace, startfreq, i);
+    uvshiftAndAverageBaselineFreq(index, threadid, nsoffset, nswidth, scratchspace, startfreq, i);
   }
 
   //clear the thread cross-corr results
@@ -1456,7 +1486,7 @@ void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * 
   }
 }
 
-void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, threadscratchspace * scratchspace, int freqindex, int baseline)
+void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, double nswidth, threadscratchspace * scratchspace, int freqindex, int baseline)
 {
   int status, perr, threadbinloop, threadindex, threadstart, numstrides, numaverages;
   int localfreqindex, freqchannels, coreindex, coreoffset, corebinloop, channelinc, rotatorlength, dest;
@@ -1464,13 +1494,16 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   int rotatestridelen, rotatesperstride, xmacstridelen, xmaccopylen, stridestoaverage, averagesperstride, averagelength;
   double bandwidth, lofrequency, channelbandwidth, stepbandwidth;
   double applieddelay, applieddelay1, applieddelay2, turns, edgeturns;
+  double delaywindow, maxphasechange, timesmeardecorr, delaydecorr;
   double pointingcentredelay1approx[2];
   double pointingcentredelay2approx[2];
-  double * phasecentredelay1 = 0;
-  double * phasecentredelay2 = 0;
+  double ** phasecentredelay1 = 0;
+  double ** phasecentredelay2 = 0;
+  double ** differentialdelay = 0;
   cf32* srcpointer;
   cf32 meanresult;
 
+  delaywindow = config->getFNumChannels(freqindex)/(config->getFreqTableBandwidth(freqindex)); //max lag (plus and minus)
   localfreqindex = config->getBLocalFreqIndex(procslots[index].configindex, baseline, freqindex);
   xmacstridelen = config->getXmacStrideLength(procslots[index].configindex);
   rotatestridelen = config->getArrayStrideLength(procslots[index].configindex);
@@ -1486,27 +1519,41 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   //allocate space for the phase centre delays if necessary, and calculate pointing centre delays
   if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
   {
-    phasecentredelay1 = new double[model->getNumPhaseCentres(procslots[index].offsets[0])];
-    phasecentredelay2 = new double[model->getNumPhaseCentres(procslots[index].offsets[0])];
+    phasecentredelay1 = new double*[model->getNumPhaseCentres(procslots[index].offsets[0])];
+    phasecentredelay2 = new double*[model->getNumPhaseCentres(procslots[index].offsets[0])];
+    differentialdelay = new double*[model->getNumPhaseCentres(procslots[index].offsets[0])];
+    for(int i=0;i<model->getNumPhaseCentres(procslots[index].offsets[0]);i++)
+    {
+      phasecentredelay1[i] = new double[2];
+      phasecentredelay2[i] = new double[2];
+      differentialdelay[i] = new double[2];
+    }
 
     antenna1index = config->getDModelFileIndex(procslots[index].configindex, config->getBDataStream1Index(procslots[index].configindex, baseline));
     antenna2index = config->getDModelFileIndex(procslots[index].configindex, config->getBDataStream2Index(procslots[index].configindex, baseline));
+
     //get the pointing centre interpolator, validity range aribitrarily set to 1us (approximately the tangent)
     model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna1index, 0, 1, pointingcentredelay1approx);
     model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna2index, 0, 1, pointingcentredelay2approx);
     for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
     {
-      model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.0, 0, antenna1index, s+1, 0, &(phasecentredelay1[s]));
-      model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.0, 0, antenna2index, s+1, 0, &(phasecentredelay2[s]));
+      model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna1index, s+1, 1, phasecentredelay1[s]);
+      model->calculateDelayInterpolator(procslots[index].offsets[0], procslots[index].offsets[1] + double(procslots[index].offsets[2]+nsoffset)/1000000000.0, 0.000001, 1, antenna2index, s+1, 1, phasecentredelay2[s]);
+
+      //work out the correct delay (and rate of delay) for this phase centre
+      applieddelay1 = phasecentredelay1[s][1] - pointingcentredelay1approx[1];
+      applieddelay2 = phasecentredelay2[s][1] - pointingcentredelay2approx[1];
+      //make correction for geometric rate over the shifted sample range
+      applieddelay1 += applieddelay1*pointingcentredelay1approx[0];
+      applieddelay2 += applieddelay2*pointingcentredelay2approx[0];
+      //cout << "Applied delay is " << applieddelay2 - applieddelay1 << ", correction is " << applieddelay2 - applieddelay1 - saveddelay << endl;
+      differentialdelay[s][1] = applieddelay2 - applieddelay1;
+      differentialdelay[s][0] = phasecentredelay2[s][0] + pointingcentredelay1approx[0] - (phasecentredelay1[s][0] + pointingcentredelay2approx[0]);
+      //cout << "Differential delay [" << s << "][1] = " << differentialdelay[s][1] << endl;
+      //cout << "Differential delay [" << s << "][0] = " << differentialdelay[s][0] << " since antenna 1 delays were " << phasecentredelay1[s][0] << ", " << pointingcentredelay1approx[0] << ", and antenna 2 delays were " << phasecentredelay2[s][0] << ", " << pointingcentredelay2approx[0] << endl;
+      //cout << "DD (ant 1) was " << phasecentredelay1[s][0] - pointingcentredelay1approx[0] << ", (ant 2) was " << phasecentredelay2[s][0] - pointingcentredelay2approx[0] << endl;
     }
   }
-
-  //lock the mutex for this segment of the copying
-  perr = pthread_mutex_lock(&(procslots[index].viscopylocks[freqindex][baseline]));
-  if(perr != 0)
-    csevere << startl << "PROCESSTHREAD " << threadid << " error trying lock copy mutex for frequency table entry " << freqindex << ", baseline " << baseline << "!!!" << endl;
-
-  //cinfo << startl << "For index " << index << ", thread " << threadid << " is working on freqindex " << freqindex << ", baseline " << baseline << endl;
 
   freqchannels = config->getFNumChannels(freqindex);
   channelinc = config->getFChannelsToAverage(freqindex);
@@ -1546,23 +1593,30 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   }
 
   coreindex = config->getCoreResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
+
+  //lock the mutex for this segment of the copying
+  perr = pthread_mutex_lock(&(procslots[index].viscopylocks[freqindex][baseline]));
+  if(perr != 0)
+    csevere << startl << "PROCESSTHREAD " << threadid << " error trying lock copy mutex for frequency table entry " << freqindex << ", baseline " << baseline << "!!!" << endl;
+
+  //actually do the rotation (if necessary), averaging (if necessary) and copying
   for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
   {
-    applieddelay = 0.0;  // not strictly needed, but avoids compiler warning
     if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
     {
       //work out the correct rotator for this frequency and phase centre
-      //cout << "phasecentredelay1[" << s << "] is " << phasecentredelay1[s] << endl;
-      //cout << "phasecentredelay2[" << s << "] is " << phasecentredelay2[s] << endl;
+      //cout << "phasecentredelay1[" << s << "] is " << phasecentredelay1[s][1] << endl;
+      //cout << "phasecentredelay2[" << s << "] is " << phasecentredelay2[s][1] << endl;
       //cout << "pointingcentredelay1 is " << pointingcentredelay1 << endl;
       //cout << "pointingcentredelay2 is " << pointingcentredelay2 << endl;
-      applieddelay1 = phasecentredelay1[s] - pointingcentredelay1approx[1];
-      applieddelay2 = phasecentredelay2[s] - pointingcentredelay2approx[1];
+      //applieddelay1 = phasecentredelay1[s][1] - pointingcentredelay1approx[1];
+      //applieddelay2 = phasecentredelay2[s][1] - pointingcentredelay2approx[1];
       //make correction for geometric rate over the shifted sample range
-      applieddelay1 += applieddelay1*pointingcentredelay1approx[0];
-      applieddelay2 += applieddelay2*pointingcentredelay2approx[0];
+      //applieddelay1 += applieddelay1*pointingcentredelay1approx[0];
+      //applieddelay2 += applieddelay2*pointingcentredelay2approx[0];
       //cout << "Applied delay is " << applieddelay2 - applieddelay1 << ", correction is " << applieddelay2 - applieddelay1 - saveddelay << endl;
-      applieddelay = applieddelay2 - applieddelay1;
+      //applieddelay = applieddelay2 - applieddelay1;
+      applieddelay = differentialdelay[s][1];
       if(fabs(applieddelay) > 1.0e-20)
       {
         edgeturns = applieddelay*lofrequency;
@@ -1655,21 +1709,48 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
     coreindex += corebinloop*config->getBNumPolProducts(procslots[index].configindex,baseline,localfreqindex)*freqchannels/channelinc;
   }
 
-  //cinfo << startl << "For index " << index << ", thread " << threadid << " is about to finish freqindex " << freqindex << ", baseline " << baseline << endl;
-
   //unlock the mutex for this segment of the copying
   perr = pthread_mutex_unlock(&(procslots[index].viscopylocks[freqindex][baseline]));
   if(perr != 0)
     csevere << startl << "PROCESSTHREAD " << threadid << " error trying unlock copy mutex for frequency table entry " << freqindex << ", baseline " << baseline << "!!! Perr is " << perr << endl;
 
+  //calculate the decorrelation for each freq/baseline/source
+  if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
+  {
+    for(int s=0;s<model->getNumPhaseCentres(procslots[index].offsets[0]);s++)
+    {
+      timesmeardecorr = 1.0;
+      delaydecorr = 1.0;
+      if(fabs(differentialdelay[s][0]) > 1e-18)
+      {
+        maxphasechange  = TWO_PI*differentialdelay[s][0]*(nswidth/1000.0)*config->getFreqTableFreq(freqindex);
+        timesmeardecorr = sin(maxphasechange/2.0) / (maxphasechange/2.0);
+      }
+      if(fabs(differentialdelay[s][1]) > 1e-18)
+      {
+        //maxphasechange  = TWO_PI*differentialdelay[s][1]*config->getFreqTableBandwidth(freqindex)/config->getFNumChannels(freqindex);
+        //cout << "BW smearing: max phase change is " << maxphasechange << endl;
+        //bwsmeardecorr   = sin(maxphasechange/2.0) / (maxphasechange/2.0);
+        delaydecorr     = 1.0 - fabs(differentialdelay[s][1] / delaywindow);
+        //cout << "1.0 - Time smear decorr is " << 1.0-timesmeardecorr << ", 1.0 - bw smear decorr is " << 1.0-bwsmeardecorr << ", 1.0 - delaydecorr is " << 1.0-delaydecorr << "(diff. delay is " << differentialdelay[s][1] << ", delay window is " << delaywindow << ")" << endl;
+      }
+      //scratchspace->baselineshiftdecorr[freqindex][baseline][s] += nswidth*timesmeardecorr*bwsmeardecorr*delaydecorr;
+      scratchspace->baselineshiftdecorr[freqindex][baseline][s] += nswidth*timesmeardecorr*delaydecorr;
+    }
+  }
+
   //free the phasecentredelay vectors if necessary
   if(phasecentredelay1)
   {
+    for(int i=0;i<model->getNumPhaseCentres(procslots[index].offsets[0]);i++)
+    {
+      delete [] phasecentredelay1[i];
+      delete [] phasecentredelay2[i];
+      delete [] differentialdelay[i];
+    }
     delete [] phasecentredelay1;
-  }
-  if(phasecentredelay2)
-  {
     delete [] phasecentredelay2;
+    delete [] differentialdelay;
   }
 }
 
@@ -1792,7 +1873,7 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
   }
 }
 
-void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newconfigindex, int oldconfigindex, int threadid)
+void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, f32 *** baselineshiftdecorr, int newconfigindex, int oldconfigindex, int threadid)
 {
   int localfreqindex, numstrides, binloop;
 
@@ -1818,6 +1899,19 @@ void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newco
             delete [] baselineweight[i][b];
           }
           delete [] baselineweight[i];
+        }
+        if(config->getMaxPhaseCentres(oldconfigindex) > 1)
+        {
+          for(int j=0;j<numbaselines;j++)
+          {
+            localfreqindex = config->getBLocalFreqIndex(oldconfigindex, j, i);
+            if(localfreqindex > 0)
+            {
+              threadbytes[threadid] -= 4*config->getMaxPhaseCentres(oldconfigindex);
+              vectorFree(baselineshiftdecorr[i][j]);
+            }
+            delete [] baselineshiftdecorr[i];
+          }
         }
         numstrides = config->getFNumChannels(i)/config->getXmacStrideLength(oldconfigindex);
         if(config->getFNumChannels(i)%config->getXmacStrideLength(oldconfigindex) != 0)
@@ -1848,6 +1942,20 @@ void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newco
             {
               threadbytes[threadid] += 4*config->getBNumPolProducts(newconfigindex, j, localfreqindex);
               baselineweight[i][b][j] = vectorAlloc_f32(config->getBNumPolProducts(newconfigindex, j, localfreqindex));
+            }
+          }
+        }
+        if(config->getMaxPhaseCentres(newconfigindex) > 1)
+        {
+          //allocate the baselineshiftdecorr array
+          baselineshiftdecorr[i] = new f32*[numbaselines];
+          for(int j=0;j<numbaselines;j++)
+          {
+            localfreqindex = config->getBLocalFreqIndex(newconfigindex, j, i);
+            if(localfreqindex >= 0)
+            {
+              threadbytes[threadid] += 4*config->getMaxPhaseCentres(newconfigindex);
+              baselineshiftdecorr[i][j] = vectorAlloc_f32(config->getMaxPhaseCentres(newconfigindex));
             }
           }
         }

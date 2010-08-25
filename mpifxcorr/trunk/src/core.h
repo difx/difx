@@ -102,6 +102,7 @@ private:
   ///Structure containing all of the pointers to scratch space for a single thread
   typedef struct {
     f32 **** baselineweight; //[freq][pulsarbin][baseline][pol]
+    f32 *** baselineshiftdecorr; //[freq][baseline][phasecentre]
     cf32 * threadcrosscorrs;
     s32 *** bins; //[fftsubloop][freq][channel]
     cf32* pulsarscratchspace;
@@ -136,11 +137,12 @@ private:
  /**
   * Allocates or deallocates the required space for thread-specific arrays which vary in size with config
   * @param baselineweight The array for baseline weights [freq][bin][baseline][pol]
+  * @param baselineshiftdecorr The array for baseline shift decorrelation corrections [freq][baseline][phasecentre]
   * @param newconfigindex The index of the config which is to be used
   * @param oldconfigindex The index of the config which was previously being used
   * @param threadid The thread for which this will be done
   */
-  void allocateConfigSpecificThreadArrays(f32 **** baselineweight, int newconfigindex, int oldconfigindex, int threadid);
+  void allocateConfigSpecificThreadArrays(f32 **** baselineweight, f32 *** baselineshiftdecorr, int newconfigindex, int oldconfigindex, int threadid);
 
  /**
   * While the correlation is continuing, processes the given thread's share of the next element in the send/receive circular buffer
@@ -205,21 +207,23 @@ private:
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
+  * @param nswidth The width of the time range covered by this uv shift, in ns
   * @param currentpolyco The correct Polyco object for this time slice - null if not pulsar binning
   * @param scratchspace Space for all of the intermediate results for this thread
   */
-  void uvshiftAndAverage(int index, int threadid, double nsoffset, Polyco * currentpolyco, threadscratchspace * scratchspace);
+  void uvshiftAndAverage(int index, int threadid, double nsoffset, double nswidth, Polyco * currentpolyco, threadscratchspace * scratchspace);
 
  /**
   * Does any uvshifting necessary and averages down in frequency into the coreresults
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
+  * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
   * @param scratchspace Space for all of the intermediate results for this thread
   * @param freqindex The frequency (from the frequency table) to process
   * @param baseline The baseline to process
   */
-  void uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, threadscratchspace * scratchspace, int freqindex, int baseline);
+  void uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffset, double nswidth, threadscratchspace * scratchspace, int freqindex, int baseline);
 
  /**
   * Updates all the parameters for processing thread when the configuration changes

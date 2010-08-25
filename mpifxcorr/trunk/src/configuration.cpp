@@ -1655,11 +1655,12 @@ bool Configuration::populateResultLengths()
       //work out the offsets for coreresult, and the total length too
       configs[c].coreresultbaselineoffset = new int*[freqtablelength];
       configs[c].coreresultbweightoffset  = new int*[freqtablelength];
+      configs[c].coreresultbshiftdecorroffset = new int*[freqtablelength];
       configs[c].coreresultautocorroffset = new int[numdatastreams];
       configs[c].coreresultacweightoffset = new int[numdatastreams];
       configs[c].coreresultpcaloffset     = new int[numdatastreams];
       coreresultindex = 0;
-      for(int i=0;i<freqtablelength;i++)
+      for(int i=0;i<freqtablelength;i++) //first the cross-correlations
       {
         if(configs[c].frequsedbybaseline[i])
         {
@@ -1677,7 +1678,7 @@ bool Configuration::populateResultLengths()
           }
         }
       }
-      for(int i=0;i<freqtablelength;i++)
+      for(int i=0;i<freqtablelength;i++) //then the baseline weights
       {
         if(configs[c].frequsedbybaseline[i])
         {
@@ -1689,15 +1690,33 @@ bool Configuration::populateResultLengths()
             {
               configs[c].coreresultbweightoffset[i][j] = coreresultindex;
               //baselineweights are only floats so need to divide by 2...
-              toadd = binloop*bldata.numpolproducts[bldata.localfreqindices[i]]/2;
-              if(toadd == 0)
-                toadd = 1; 
+              toadd  = binloop*bldata.numpolproducts[bldata.localfreqindices[i]]/2;
+              toadd += binloop*bldata.numpolproducts[bldata.localfreqindices[i]]%2;
               coreresultindex += toadd;
             }
           }
         }
       }
-      for(int i=0;i<numdatastreams;i++)
+      for(int i=0;i<freqtablelength;i++) //then the shift decorrelation factors (multi-field only)
+      {
+        if(configs[c].frequsedbybaseline[i])
+        {
+          configs[c].coreresultbshiftdecorroffset[i] = new int[numbaselines];
+          for(int j=0;j<numbaselines;j++)
+          {
+            bldata = baselinetable[configs[c].baselineindices[j]];
+            if(bldata.localfreqindices[i] >= 0 && maxconfigphasecentres > 1)
+            {
+              configs[c].coreresultbshiftdecorroffset[i][j] = coreresultindex;
+              //shift decorrelation factors are only floats so need to divide by 2...
+              toadd  = maxconfigphasecentres/2;
+              toadd += maxconfigphasecentres%2;
+              coreresultindex += toadd;
+            }
+          }
+        }
+      }
+      for(int i=0;i<numdatastreams;i++) //then the autocorrelations
       {
         dsdata = datastreamtable[configs[c].datastreamindices[i]];
         configs[c].coreresultautocorroffset[i] = coreresultindex;
@@ -1718,7 +1737,7 @@ bool Configuration::populateResultLengths()
           }
         }
       }
-      for(int i=0;i<numdatastreams;i++)
+      for(int i=0;i<numdatastreams;i++) //then the autocorrelation weights
       {
         dsdata = datastreamtable[configs[c].datastreamindices[i]];
         configs[c].coreresultacweightoffset[i] = coreresultindex;
@@ -1739,7 +1758,7 @@ bool Configuration::populateResultLengths()
           toadd = 1;
         coreresultindex += toadd;
       }
-      for(int i=0;i<numdatastreams;i++)
+      for(int i=0;i<numdatastreams;i++) //and finally the pcals
       {
         configs[c].coreresultpcaloffset[i] = coreresultindex;
         dsdata = datastreamtable[configs[c].datastreamindices[i]];

@@ -186,6 +186,7 @@ private:
   cf32 ** autocorrcalibs;
   f32 *** autocorrweights;
   f32 **** baselineweights;
+  f32 ***  baselineshiftdecorrs;
   std::string * telescopenames;
   cf32 * results;
   char * todiskbuffer;

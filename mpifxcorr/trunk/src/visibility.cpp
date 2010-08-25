@@ -36,7 +36,7 @@
 #include "alert.h"
 
 Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames)
-  : config(conf), visID(id), currentstartseconds(scanstartsec), currentstartns(startns), numvisibilities(numvis), executeseconds(eseconds), todiskbufferlength(dbufferlen), polnames(pnames), todiskbuffer(dbuffer)
+  : config(conf), visID(id), currentscan(scan), currentstartseconds(scanstartsec), currentstartns(startns), numvisibilities(numvis), executeseconds(eseconds), todiskbufferlength(dbufferlen), polnames(pnames), todiskbuffer(dbuffer)
 {
   int status, binloop;
 
@@ -93,18 +93,30 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
 
 Visibility::~Visibility()
 {
+  int pulsarwidth;
+
   vectorFree(results);
   for(int i=0;i<numdatastreams;i++)
     delete [] autocorrcalibs[i];
   delete [] autocorrcalibs;
 
+  pulsarwidth = 1;
+  if(pulsarbinon && !config->scrunchOutputOn(currentconfigindex))
+    pulsarwidth = config->getNumPulsarBins(currentconfigindex);
+
   for(int i=0;i<numbaselines;i++)
   {
-    for(int j=0;j<config->getBNumFreqs(currentconfigindex, i);j++)
+    for(int j=0;j<config->getBNumFreqs(currentconfigindex, i);j++) {
+      for(int k=0;k<pulsarwidth;k++)
+        delete [] baselineweights[i][j][k];
       delete [] baselineweights[i][j];
+      delete [] baselineshiftdecorrs[i][j];
+    }
     delete [] baselineweights[i];
+    delete [] baselineshiftdecorrs[i];
   }
   delete [] baselineweights;
+  delete [] baselineshiftdecorrs;
 
   if(pulsarbinon) {
     for(int i=0;i<config->getFreqTableLength();i++) {
@@ -145,8 +157,13 @@ string sec2time(const int& sec) {
 
 void Visibility::increment()
 {
-  int status;
-  int sec = experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds;
+  int status, sec;
+
+  if (currentscan >= model->getNumScans()) {
+    //already past the end, just return
+    return;
+  }
+  sec = experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds;
 
   cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << ".  The approximate mjd/seconds is " << expermjd + sec/86400 << "/" << (sec)%86400 << endl;
 
@@ -315,6 +332,20 @@ void Visibility::writedata()
       }
     }
   }
+  if(model->getNumPhaseCentres(currentscan) > 1) {
+    //grab the shift decorrelations
+    for(int i=0;i<numbaselines;i++) {
+      for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++) {
+        freqindex = config->getBFreqIndex(currentconfigindex, i, j);
+        resultindex = config->getCoreResultBShiftDecorrOffset(currentconfigindex, freqindex, i)*2;
+        for(int s=0;s<model->getNumPhaseCentres(currentscan);s++) {
+          //its in units of integration width in ns, so scale to get something which is 1.0 for no decorrelation
+          baselineshiftdecorrs[i][j][s] = floatresults[resultindex]/(1000000000.0*config->getIntTime(currentconfigindex));
+          resultindex++;
+        }
+      }
+    }
+  }
 
   for(int i=0;i<numdatastreams;i++)
   {
@@ -389,6 +420,10 @@ void Visibility::writedata()
               else
                 scale = 0.0;
             }
+
+            //further scale by decorrelation if uv shifting was done
+            if(model->getNumPhaseCentres(currentscan) > 1)
+              scale /= baselineshiftdecorrs[i][j][s];
 
             //amplitude calibrate the data
             if(scale > 0.0)
@@ -574,6 +609,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
   int year, month, day, startyearmjd, dummyseconds;
   int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
+  float currentweight;
   double scanoffsetsecs, pcaldoy, cablecaldelay;
   bool modelok;
   double buvw[3]; //the u,v and w for this baseline at this time
@@ -630,7 +666,11 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
             if(baselineweights[i][j][b][k] > 0.0)
             {
               //cout << "About to write out baseline[" << i << "][" << s << "][" << k << "] from resultindex " << resultindex << ", whose 6th vis is " << results[resultindex+6].re << " + " << results[resultindex+6].im << " i" << endl;
-              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, baselineweights[i][j][b][k], buvw, filecount);
+              if(model->getNumPhaseCentres(currentscan) > 1)
+                currentweight = baselineweights[i][j][b][k]*baselineshiftdecorrs[i][j][s];
+              else
+                currentweight = baselineweights[i][j][b][k];
+              writeDiFXHeader(&output, baselinenumber, dumpmjd, dumpseconds, currentconfigindex, sourceindex, freqindex, polpair, b, 0, currentweight, buvw, filecount);
 
               //close, reopen in binary and write the binary data, then close again
               //For both USB and LSB data, the Nyquist channel has already been excised by Core. In
@@ -928,6 +968,7 @@ void Visibility::changeConfig(int configindex)
     autocorrcalibs = new cf32*[numdatastreams];
     autocorrweights = new f32**[numdatastreams];
     baselineweights = new f32***[numbaselines];
+    baselineshiftdecorrs = new f32**[numbaselines];
     binweightsums = new f32**[config->getFreqTableLength()];
     binscales = new cf32**[config->getFreqTableLength()];
     pulsarbins = new s32*[config->getFreqTableLength()];
@@ -950,9 +991,11 @@ void Visibility::changeConfig(int configindex)
       for(int j=0;j<config->getBNumFreqs(currentconfigindex, i);j++) {
         for(int k=0;k<pulsarwidth;k++)
           delete [] baselineweights[i][j][k];
+        delete [] baselineshiftdecorrs[i][j];
         delete [] baselineweights[i][j];
       }
       delete [] baselineweights[i];
+      delete [] baselineshiftdecorrs[i];
     }
     if(pulsarbinon) {
       cverbose << startl << "Starting to delete some pulsar arrays" << endl;
@@ -995,8 +1038,10 @@ void Visibility::changeConfig(int configindex)
   for(int i=0;i<numbaselines;i++)
   {
     baselineweights[i] = new f32**[config->getBNumFreqs(configindex, i)];
+    baselineshiftdecorrs[i] = new f32*[config->getBNumFreqs(configindex, i)];
     for(int j=0;j<config->getBNumFreqs(configindex, i);j++) {
       baselineweights[i][j] = new f32*[pulsarwidth];
+      baselineshiftdecorrs[i][j] = new f32[config->getMaxPhaseCentres(configindex)];
       for(int k=0;k<pulsarwidth;k++)
         baselineweights[i][j][k] = new f32[config->getBNumPolProducts(configindex, i, j)];
     }
