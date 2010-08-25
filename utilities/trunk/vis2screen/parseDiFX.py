@@ -81,11 +81,11 @@ def get_freqtable_info(inputfile):
     freqs = []
     for i in range(numfreqs):
         freqs.append(Freq())
-        freqs[-1].freq = float(lines[at+i*7+2][20:])
-        freqs[-1].bandwidth = float(lines[at+i*7+3][20:])
+        freqs[-1].freq = float(lines[at+i*8+2][20:])
+        freqs[-1].bandwidth = float(lines[at+i*8+3][20:])
         if lines[at+i*7+4][20:21] == 'L':
             freqs[-1].lsb = True
-        freqs[-1].numchan = int(lines[at+i*7+5][20:])
-        freqs[-1].specavg = int(lines[at+i*7+6][20:])
+        freqs[-1].numchan = int(lines[at+i*8+5][20:])
+        freqs[-1].specavg = int(lines[at+i*8+6][20:])
 
     return (numfreqs, freqs)
