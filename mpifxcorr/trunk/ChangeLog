@@ -5,6 +5,7 @@ Version 2.0.0, 2010 July 14
 * New polyco parser and checker is more forgiving of TEMPO2 generated polycos
 * Can now produce kurtosis dumps every STA under the command of difxfilterbank
 * Many nativemk5 inmprovements migrated from 1.5
+* Decorrelation correction is applied if uv shifting is done
 * Many more minor bugfixes
 
 Version 2.0, 2009 September 24
