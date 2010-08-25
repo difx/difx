@@ -234,10 +234,10 @@ int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
                 writeDifxLine1(out, "SOURCE %d NAME", i, ds[i].name);
                 n++;
 		writeDifxLineDouble1(out, "SOURCE %d RA", i, 
-				     "%15.13f", ds[i].ra);
+				     "%17.15f", ds[i].ra);
                 n++;
                 writeDifxLineDouble1(out, "SOURCE %d DEC", i, 
-				     "%15.13f",  ds[i].dec);
+				     "%17.15f",  ds[i].dec);
                 n++;
 		if(doCalcode) {
 			writeDifxLine1(out, "SOURCE %d CALCODE", 
