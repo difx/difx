@@ -610,7 +610,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 
 	if(key == "ra" || key == "RA")
 	{
-		if(pc->ra > -990)
+		if(pc->ra > PhaseCentre::DEFAULT_RA)
 		{
 			cerr << "Warning: Source " << vexName << " has multiple RA assignments" << endl;
 			nWarn++;
@@ -619,7 +619,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	}
 	else if(key == "dec" || key == "Dec")
 	{
-		if(pc->dec > -990)
+		if(pc->dec > PhaseCentre::DEFAULT_DEC)
 		{
 			cerr << "Warning: Source " << vexName << " has multiple Dec assignments" << endl;
 			nWarn++;
@@ -1992,11 +1992,11 @@ ostream& operator << (ostream &os, const SourceSetup &x)
 	{
 		os << " Pointing centre is not correlated" << endl;
 	}
-	if(x.pointingCentre.ra > -990)
+	if(x.pointingCentre.ra > PhaseCentre::DEFAULT_RA)
 	{
 		os << "  pointing centre ra=" << x.pointingCentre.ra << " # J2000" << endl;
 	}
-	if(x.pointingCentre.dec > -990)
+	if(x.pointingCentre.dec > PhaseCentre::DEFAULT_DEC)
 	{
 		os << "  pointing centre dec=" << x.pointingCentre.dec << " # J2000" << endl;
 	}
