@@ -698,13 +698,13 @@ bool Model::fillPolyRow(f64* vals, string line, int npoly)
 //utility routine which returns an integer which FITS expects based on the type of mount
 Model::axistype Model::getMount(string mount)
 {
-  if(mount.compare("azel") == 0 || mount.compare("altz") == 0) //its an azel mount
+  if(strcasecmp(mount.c_str(), "azel") == 0) //its an azel mount
     return ALTAZ;
-  if(mount.compare("equa") == 0 || mount.compare("hadec") == 0) //equatorial mount
+  if(strcasecmp(mount.c_str(), "equa") == 0) //equatorial mount
     return RADEC;
-  if(mount.compare("orbi") == 0) //orbital mount
+  if(strcasecmp(mount.c_str(), "orbi") == 0) //orbital mount
     return ORB;
-  if((mount.substr(0,2)).compare("xy") == 0) //xy mount
+  if(strcasecmp(mount.substr(0,2).c_str(), "xy") == 0) //xy mount
     return XY;
 
   //otherwise unknown

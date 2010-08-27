@@ -461,7 +461,7 @@ float Mode::unpack(int sampleoffset)
 
 float Mode::process(int index, int subloopindex)  //frac sample error, fringedelay and wholemicroseconds are in microseconds 
 {
-  double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, delay1, delay2;
+  double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, d0, d1, d2;
   f32 phaserotationfloat, fracsampleerror;
   int status, count, nearestsample, integerdelay, dcchannel, acoffset;
   cf32* fftptr;
@@ -538,14 +538,16 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   integerdelay = 0;
   switch(fringerotationorder) {
     case 0: //post-F
-      integerdelay = int(averagedelay);
+      integerdelay = static_cast<int>(averagedelay);
       break;
     case 1: //linear
-      delay1 = interpolator[0]*index*index + interpolator[1]*index + interpolator[2];
-      delay2 = interpolator[0]*(index+1)*(index+1) + interpolator[1]*(index+1) + interpolator[2];
-      integerdelay = int(delay1);
-      a = delay2-delay1;
-      b = delay1 - integerdelay;
+      d0 = interpolator[0]*index*index + interpolator[1]*index + interpolator[2];
+      d1 = interpolator[0]*(index+0.5)*(index+0.5) + interpolator[1]*(index+0.5) + interpolator[2];
+      d2 = interpolator[0]*(index+1)*(index+1) + interpolator[1]*(index+1) + interpolator[2];
+      a = d2-d0;
+      b = d0 + (d1 - (a*0.5 + d0))/3.0;
+      integerdelay = static_cast<int>(b);
+      b -= integerdelay;
 
       status = vectorMulC_f64(subxoff, a, subxval, arraystridelength);
       if(status != vecNoErr)
