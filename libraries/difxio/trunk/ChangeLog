@@ -30,6 +30,8 @@
 * remove baselineFreq2IF array which was complex and wrong and not needed
 * RCFreqId was used with two meanings (that usually gave the same value).
   The true usage is now used everywhere. (Thanks to Randall Wayth for helping find this in DiFX 1.5!)
+* Precision in source positions increased by two digits, now matches the 1.5 branch
+* Rounding error fixed when mjdStart/Stop manually specified
 
 2.11
 * Post DiFX-1.5

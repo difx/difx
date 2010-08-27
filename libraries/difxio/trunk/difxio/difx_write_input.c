@@ -46,7 +46,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	}
 	else
 	{
-		secs = (roundSeconds(D->mjdStop) - roundSeconds(D->mjdStart))*86400.0;
+		secs = (roundSeconds(D->mjdStop) - roundSeconds(D->mjdStart))*86400.0 + 0.0001;
 	}
 	writeDifxLineInt(out, "EXECUTE TIME (SEC)", secs);
 	writeDifxLineInt(out, "START MJD", (int)(D->mjdStart));
