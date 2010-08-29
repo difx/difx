@@ -31,6 +31,7 @@ Version 2.0
 * Adapt to difxio changes where data source info was moved from antenna into datastream
 * Support default ANTENNA setup in .v2d file
 * Support new namings in difxio.  recChan -> recBand
+* Fix year definition ( was correct in difx 1.5 for quite some time )
 
 Version 0.3
 ~~~~~~~~~~~
