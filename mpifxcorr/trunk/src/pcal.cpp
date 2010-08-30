@@ -166,7 +166,7 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
     s = vectorFreeDFTC_cf32(dftspec);
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTFree PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl; 
-    free(dftworkbuf);
+    vectorFree(dftworkbuf);
     return true;
 }
 
@@ -208,13 +208,13 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing
 PCalExtractorTrivial::~PCalExtractorTrivial()
 {
     vecStatus s;
-    free(_cfg->pcal_complex);
-    free(_cfg->pcal_real);
+    vectorFree(_cfg->pcal_complex);
+    vectorFree(_cfg->pcal_real);
     s = vectorFreeDFTC_cf32(_cfg->dftspec);
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTFree in PCalExtractorTrivial::~PCalExtractorTrivial " << vectorGetStatusString(s) << endl; 
-    free(_cfg->dftworkbuf);
-    free(_cfg->dft_out);
+    vectorFree(_cfg->dftworkbuf);
+    vectorFree(_cfg->dft_out);
     delete _cfg;
 }
 
@@ -369,15 +369,15 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
 PCalExtractorShifting::~PCalExtractorShifting()
 {
     vecStatus s;
-    free(_cfg->pcal_complex);
-    free(_cfg->pcal_real);
-    free(_cfg->rotator);
-    free(_cfg->rotated);
+    vectorFree(_cfg->pcal_complex);
+    vectorFree(_cfg->pcal_real);
+    vectorFree(_cfg->rotator);
+    vectorFree(_cfg->rotated);
     s = vectorFreeDFTC_cf32(_cfg->dftspec);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFree in PCalExtractorShifting::~PCalExtractorShifting " << vectorGetStatusString(s) << endl;
-    free(_cfg->dftworkbuf);
-    free(_cfg->dft_out);
+    vectorFree(_cfg->dftworkbuf);
+    vectorFree(_cfg->dft_out);
     delete _cfg;
 }
 
@@ -563,13 +563,13 @@ PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, doub
 PCalExtractorImplicitShift::~PCalExtractorImplicitShift()
 {
     vecStatus s;
-    free(_cfg->pcal_complex);
-    free(_cfg->pcal_real);
+    vectorFree(_cfg->pcal_complex);
+    vectorFree(_cfg->pcal_real);
     s = vectorFreeDFTC_cf32(_cfg->dftspec);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFree in PCalExtractorImplicitShift::~PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
-    free(_cfg->dftworkbuf);
-    free(_cfg->dft_out);
+    vectorFree(_cfg->dftworkbuf);
+    vectorFree(_cfg->dft_out);
     delete _cfg;
 }
 
