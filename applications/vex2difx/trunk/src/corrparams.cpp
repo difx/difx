@@ -193,6 +193,7 @@ double parseCoord(const char *str, char type)
 			cerr << "Error parsing coordinate value " << str << endl;
 			exit(0);
 		}
+		v *= sign;
 	}
 
 	return v;
