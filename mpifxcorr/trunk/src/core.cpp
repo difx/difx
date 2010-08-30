@@ -1119,6 +1119,8 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 {
   int maxproducts, resultindex, perr, status;
   int freqindex, parentfreqindex, channelinc, freqchannels;
+  double minimumweight, stasamples;
+  float renormvalue;
   bool datastreamsaveraged, writecrossautocorrs;
   f32 * acdata;
 
@@ -1153,6 +1155,11 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         scratchspace->starecord->nChan = config->getSTADumpChannels();
         freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
         freqchannels = config->getFNumChannels(freqindex);
+        stasamples = 0.001*nswidth*2*config->getFreqTableBandwidth(freqindex);
+        minimumweight = MINIMUM_FILTERBANK_WEIGHT*stasamples/(2*freqchannels);
+        if(modes[i]->getWeight(false, j) < minimumweight)
+          continue; //dodgy packet, less than 1/3 of normal data, so don't send it
+        renormvalue = (2*freqchannels)/(stasamples*modes[i]->getWeight(false, j));
         if(datastreamsaveraged)
           freqchannels /= config->getFChannelsToAverage(freqindex);
         if (freqchannels < scratchspace->starecord->nChan)
@@ -1165,6 +1172,9 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
           for (int l=1;l<channelinc;l++)
             scratchspace->starecord->data[k] += acdata[2*(k*channelinc+l)];
         }
+        status = vectorMulC_f32_I(renormvalue, scratchspace->starecord->data, scratchspace->starecord->nChan);
+        if(status != vecNoErr)
+          cerror << startl << "Error converting filterbank data from energy to power!" << endl;
         //cout << "About to send the binary message" << endl;
         difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
       }
@@ -1289,6 +1299,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, double nswidth, int numblocks, Mode ** modes, threadscratchspace * scratchspace)
 {
   int status, freqchannels, freqindex;
+  double minimumweight, stasamples;
 
   //tell the modes to calculate the kurtosis and average it if need be
   for(int i=0;i<numdatastreams;i++) {
@@ -1310,6 +1321,10 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
       scratchspace->starecord->nChan = config->getSTADumpChannels();
       freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
       freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+      stasamples = 0.001*nswidth*2*config->getFreqTableBandwidth(freqindex);
+      minimumweight = MINIMUM_FILTERBANK_WEIGHT*stasamples/(2*freqchannels);
+      if(modes[i]->getWeight(false, j) < minimumweight)
+        continue; //dodgy packet, less than 1/3 of normal data, so don't send it
       if (freqchannels < scratchspace->starecord->nChan)
         scratchspace->starecord->nChan = freqchannels;
       scratchspace->starecord->bandindex = j;

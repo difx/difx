@@ -65,6 +65,9 @@ public:
   /// The number of elements in the send/receive circular buffer
   static const int RECEIVE_RING_LENGTH = 4;
 
+  /// The minimum weight for filterbank STA data to be sent
+  static const double MINIMUM_FILTERBANK_WEIGHT = 0.333;
+
 protected:
  /** 
   * Launches a new processing thread, which will work on a portion of the time slice every time an element in the circular buffer is processed
