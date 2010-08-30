@@ -21,6 +21,7 @@
 //============================================================================
 
 #include <sstream>
+#include <strings.h>
 #include "architecture.h"
 #include "configuration.h"
 #include "alert.h"

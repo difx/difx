@@ -31,6 +31,7 @@
 #include <vector>
 #include <iostream>
 #include <pthread.h>
+#include <stdint.h>
 #include "architecture.h"
 #include "configuration.h"
 
