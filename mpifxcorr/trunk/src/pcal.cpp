@@ -41,8 +41,6 @@ using std::endl;
 
 using namespace std;
 
-#include <malloc.h>    // memalign
-
 class pcal_config_pimpl {
   public:
     pcal_config_pimpl()  {};
@@ -155,7 +153,7 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
     s = vectorGetDFTBufSizeC_cf32(dftspec, &wbufsize);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTGetBufSize in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl;
-    u8* dftworkbuf = (u8*)memalign(128, wbufsize);
+    u8* dftworkbuf = vectorAlloc_u8(wbufsize);
 
     cf32 dftout[Nbins];
     s = vectorDFT_CtoC_cf32(pcalout, dftout, dftspec, dftworkbuf);
@@ -197,12 +195,12 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing
     s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTGetBufSize PCalExtractorTrivial::PCalExtractorTrivial " << vectorGetStatusString(s) << endl; 
-    _cfg->dftworkbuf = (u8*)memalign(128, wbufsize);
+    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
     /* Allocate */
-    _cfg->pcal_complex = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 2);
-    _cfg->pcal_real    = (f32*)memalign(128, sizeof(f32) * _N_bins * 2);
-    _cfg->dft_out      = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 1);
+    _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
+    _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
+    _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
     this->clear();
     cdebug << startl << "PCalExtractorTrivial: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize << endl;
 }
@@ -348,14 +346,14 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorShifting::PCalExtractorShifting " << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = (u8*)memalign(128, wbufsize);
+    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
     /* Allocate */
-    _cfg->pcal_complex = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 2);
-    _cfg->pcal_real    = (f32*)memalign(128, sizeof(f32) * _N_bins * 2);
-    _cfg->rotator = (cf32*)memalign(128, sizeof(cf32) * _cfg->rotatorlen * 2);
-    _cfg->rotated = (cf32*)memalign(128, sizeof(cf32) * _cfg->rotatorlen * 2);
-    _cfg->dft_out = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 1);
+    _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
+    _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
+    _cfg->rotator = vectorAlloc_cf32(_cfg->rotatorlen * 2);
+    _cfg->rotated = vectorAlloc_cf32(_cfg->rotatorlen * 2);
+    _cfg->dft_out = vectorAlloc_cf32(_N_bins * 1);
     this->clear();
 
     /* Prepare frequency shifter/mixer lookup */
@@ -551,12 +549,12 @@ PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, doub
     s = vectorGetDFTBufSizeC_cf32(_cfg->dftspec, &wbufsize);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTGetBufSize in PCalExtractorImplicitShift::PCalExtractorImplicitShift " << vectorGetStatusString(s) << endl;
-    _cfg->dftworkbuf = (u8*)memalign(128, wbufsize);
+    _cfg->dftworkbuf = vectorAlloc_u8(wbufsize);
 
     /* Allocate */
-    _cfg->pcal_complex = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 2);
-    _cfg->pcal_real    = (f32*) memalign(128, sizeof(f32)  * _N_bins * 2);
-    _cfg->dft_out      = (cf32*)memalign(128, sizeof(cf32) * _N_bins * 1);
+    _cfg->pcal_complex = vectorAlloc_cf32(_N_bins * 2);
+    _cfg->pcal_real    = vectorAlloc_f32(_N_bins * 2);
+    _cfg->dft_out      = vectorAlloc_cf32(_N_bins * 1);
     this->clear();
     cdebug << startl << "PCalExtractorImplicitShift: _Ntones = " << _N_tones << ", _N_bins = " << _N_bins << ", wbufsize = " << wbufsize << endl;
 }
@@ -912,11 +910,11 @@ int main(int argc, char** argv)
    PCal* extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
    int numtones = extractor->getLength();
    cerr << "extractor->getLength() tone count is " << numtones;
-   cf32* out = (cf32*)memalign(128, sizeof(cf32)*numtones);
-   cf32* ref = (cf32*)memalign(128, sizeof(cf32)*numtones);
+   cf32* out = vectorAlloc_cf32(numtones);
+   cf32* ref = vectorAlloc_cf32(numtones);
 
    /* Make test data for fixed -90deg or sloping -90deg+5deg*ToneNr phase */
-   float* data = (float*)memalign(128, samplecount*sizeof(float));
+   float* data = vectorAlloc_f32(samplecount);
    for (long n=0; n<samplecount; n++) {
       data[n] = 0; //rand()*1e-9;
       for (int t=0; t<numtones; t++) {
