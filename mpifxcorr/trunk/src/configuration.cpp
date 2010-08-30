@@ -1335,7 +1335,7 @@ bool Configuration::processRuleTable(ifstream * input)
         rules[i].configindex = j;
       }
     }
-    if(rules[i].configindex < 0) {
+    if(rules[i].configindex < 0 && rules[i].configname.compare("SKIP") != 0) {
       if(mpiid == 0) //only write one copy of this error message
         cfatal << startl << "Found a rule with config name " << rules[i].configname << " that doesn't match any configs - aborting!" << endl;
       return false;
@@ -1508,6 +1508,12 @@ bool Configuration::populateScanConfigList()
           calcodeapplies = true;
       }
       if(applies && srcnameapplies && calcodeapplies && qualapplies) {
+        if(r.configname.compare("SKIP") == 0) {
+          if(mpiid == 0) //only write one copy of this message
+            cinfo << startl << "Scan " << i << " on source " << src->name << " will be skipped because rule " << j << " applied" << endl;
+          scanconfigindices[i] = -1;
+          break; //SKIPs take precedence over other rules, must break to ensure a subsequent rule is not applied
+        }
         if(scanconfigindices[i] < 0 || scanconfigindices[i] == r.configindex) {
           scanconfigindices[i] = r.configindex;
         }
