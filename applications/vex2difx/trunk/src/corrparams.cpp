@@ -291,7 +291,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	doAuto = true;
 	fringeRotOrder = 1;
 	strideLength = 16;
-	xmacLength = 128;
+	xmacLength = 0;
 	numBufferedFFTs = 1;
 	subintNS = 0;
 	guardNS = 1000;
@@ -470,11 +470,14 @@ int CorrSetup::checkValidity()
 		nwarn++;
 	}
 
-	if(nChan % xmacLength != 0)
+	if(xmacLength > 0)
 	{
-		cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nChan << endl;
-		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
-		nwarn++;
+		if(nChan % xmacLength != 0)
+		{
+			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nChan << endl;
+			cerr << "Probably you need to reduce the xmacLength parameter" << endl;
+			nwarn++;
+		}
 	}
 
 	return nwarn;

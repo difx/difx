@@ -1217,7 +1217,21 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->guardNS = corrSetup->guardNS;
 	config->fringeRotOrder = corrSetup->fringeRotOrder;
 	config->strideLength = corrSetup->strideLength;
-	config->xmacLength = corrSetup->xmacLength;
+	if(corrSetup->xmacLength == 0)
+	{
+		if(corrSetup->nChan > 128)
+		{
+			config->xmacLength = 128;
+		}
+		else
+		{
+			config->xmacLength = corrSetup->nChan;
+		}
+	}
+	else
+	{
+		config->xmacLength = corrSetup->xmacLength;
+	}
 	config->numBufferedFFTs = corrSetup->numBufferedFFTs;
 	config->pulsarId = -1;		// FIXME -- from setup
 	config->doPolar = corrSetup->doPolar;
