@@ -1299,11 +1299,11 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, double nswidth, int numblocks, Mode ** modes, threadscratchspace * scratchspace)
 {
   int status, freqchannels, freqindex;
-  double minimumweight, stasamples;
+  bool * valid = new bool[numdatastreams];
 
   //tell the modes to calculate the kurtosis and average it if need be
   for(int i=0;i<numdatastreams;i++) {
-    modes[i]->calculateAndAverageKurtosis(numblocks, config->getSTADumpChannels());
+    valid[i] = modes[i]->calculateAndAverageKurtosis(numblocks, config->getSTADumpChannels());
   }
 
   scratchspace->starecord->messageType = STA_KURTOSIS;
@@ -1316,24 +1316,24 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
   }
   scratchspace->starecord->nswidth = int(nswidth);
   for (int i=0;i<numdatastreams;i++) {
-    scratchspace->starecord->dsindex = i;
-    for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
-      scratchspace->starecord->nChan = config->getSTADumpChannels();
-      freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
-      freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
-      stasamples = 0.001*nswidth*2*config->getFreqTableBandwidth(freqindex);
-      minimumweight = MINIMUM_FILTERBANK_WEIGHT*stasamples/(2*freqchannels);
-      if(modes[i]->getWeight(false, j) < minimumweight)
-        continue; //dodgy packet, less than 1/3 of normal data, so don't send it
-      if (freqchannels < scratchspace->starecord->nChan)
-        scratchspace->starecord->nChan = freqchannels;
-      scratchspace->starecord->bandindex = j;
-      status = vectorCopy_f32(modes[i]->getKurtosis(j), scratchspace->starecord->data, scratchspace->starecord->nChan);
-      if(status != vecNoErr)
-        cerror << startl << "Problem copying kurtosis results from mode to sta record!" << endl;
-      difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+    if(valid[i]) {
+      scratchspace->starecord->dsindex = i;
+      for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
+        scratchspace->starecord->nChan = config->getSTADumpChannels();
+        freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
+        freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+        if (freqchannels < scratchspace->starecord->nChan)
+          scratchspace->starecord->nChan = freqchannels;
+        scratchspace->starecord->bandindex = j;
+        status = vectorCopy_f32(modes[i]->getKurtosis(j), scratchspace->starecord->data, scratchspace->starecord->nChan);
+        if(status != vecNoErr)
+          cerror << startl << "Problem copying kurtosis results from mode to sta record!" << endl;
+        difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+      }
     }
   }
+
+  delete [] valid;
 }
 
 void Core::uvshiftAndAverage(int index, int threadid, double nsoffset, double nswidth, Polyco * currentpolyco, threadscratchspace * scratchspace)

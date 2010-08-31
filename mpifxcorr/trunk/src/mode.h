@@ -126,8 +126,9 @@ public:
   * Calculates the kurtosis from intermediate products and averages down in frequency if requires
   * @param numblocks The number of FFTs that went into this average
   * @param maxchannels The number of channels to average down to
+  * @return True if there are valid kurtosis data
   */
-  void calculateAndAverageKurtosis(int numblocks, int maxchannels);
+  bool calculateAndAverageKurtosis(int numblocks, int maxchannels);
 
  /**
   * Grabs the pointer to an autocorrelation array

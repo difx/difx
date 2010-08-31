@@ -878,7 +878,7 @@ void Mode::averageFrequency()
   }
 }
 
-void Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
+bool Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
 {
   int status, kchanavg;
   bool nonzero;
@@ -928,6 +928,8 @@ void Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
       }
     }
   }
+
+  return nonzero;
 }
 
 void Mode::zeroAutocorrelations()
