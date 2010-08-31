@@ -20,43 +20,29 @@
 //
 //============================================================================
 
-#include <mpi.h>
-#include <string.h>
-#include <stdlib.h>
-#include <math.h>
-#include <sys/time.h>
+#include <cstring>
+#include <cstdlib>
 #include <ctype.h>
+#include <cmath>
+#include <sys/time.h>
+#include <mpi.h>
 #include "config.h"
 #include "nativemk5.h"
+#include "watchdog.h"
 #include "alert.h"
 
 #if HAVE_MARK5IPC
 #include <mark5ipc.h>
 #endif
 
-#ifdef WORDS_BIGENDIAN
-#define FILL_PATTERN 0x44332211UL
-#else
-#define FILL_PATTERN 0x11223344UL
-#endif
 
-
-/* This macro is meant to contain a full c++ statement, usually one
- * including a StreamStor command.  It talks to the watchdog thread
- * which will wake things up if the command takes too long.
- */
-#define WATCHDOG(statement) \
-{ \
-	pthread_mutex_lock(&watchdogLock); \
-	watchdogTime = time(0); \
-	watchdogStatement = #statement; \
-	pthread_mutex_unlock(&watchdogLock); \
-	statement; \
-	pthread_mutex_lock(&watchdogLock); \
-	watchdogTime = 0; \
-	watchdogStatement = ""; \
-	pthread_mutex_unlock(&watchdogLock); \
-}
+time_t watchdogTime;
+int watchdogVerbose;
+char watchdogStatement[256];
+pthread_mutex_t watchdogLock;
+char watchdogXLRError[XLR_ERROR_LENGTH+1];
+int watchdogTimeout;
+pthread_t watchdogThread;
 
 void *watchdogFunction(void *data)
 {
@@ -67,28 +53,31 @@ void *watchdogFunction(void *data)
 	for(;;)
 	{
 		usleep(100000);
-		pthread_mutex_lock(&nativeMk5->watchdogLock);
+		pthread_mutex_lock(&watchdogLock);
 
-		if(nativeMk5->watchdogStatement == "DIE")
+		if(strcmp(watchdogStatement, "DIE") == 0)
 		{
-			pthread_mutex_unlock(&nativeMk5->watchdogLock);
+			pthread_mutex_unlock(&watchdogLock);
 			return 0;
 		}
-		else if(nativeMk5->watchdogTime != 0)
+		else if(watchdogTime != 0)
 		{
-			deltat = time(0) - nativeMk5->watchdogTime;
+			deltat = time(0) - watchdogTime;
 			if(deltat > 60)  // Nothing should take 60 seconds to complete!
 			{
-				cfatal << startl << "Watchdog caught a hang-up executing: " << nativeMk5->watchdogStatement << " Aborting!!!" << endl;
-				nativeMk5->sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+				cfatal << startl << "Watchdog caught a hang-up executing: " << watchdogStatement << " Aborting!!!" << endl;
+				if(nativeMk5)
+				{
+					nativeMk5->sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+				}
 #if HAVE_MARK5IPC
-                                unlockMark5();
+				unlockMark5();
 #endif
 				MPI_Abort(MPI_COMM_WORLD, 1);
 			}
 			else if(deltat != lastdeltat && deltat > 4)
 			{
-				cwarn << startl << "Waiting " << deltat << " seconds executing: " << nativeMk5->watchdogStatement << endl;
+				cwarn << startl << "Waiting " << deltat << " seconds executing: " << watchdogStatement << endl;
 				lastdeltat = deltat;
 			}
 		}
@@ -97,8 +86,36 @@ void *watchdogFunction(void *data)
 			lastdeltat = 0;
 		}
 
-		pthread_mutex_unlock(&nativeMk5->watchdogLock);
+		pthread_mutex_unlock(&watchdogLock);
 	}
+}
+
+int initWatchdog()
+{
+	int perr;
+
+	pthread_mutex_init(&watchdogLock, NULL);
+	watchdogStatement[0] = 0;
+	watchdogXLRError[0] = 0;
+	watchdogTime = 0;
+	watchdogTimeout = 20;
+	perr = pthread_create(&watchdogThread, NULL, watchdogFunction, 0);
+
+	if(perr != 0)
+	{
+		fprintf(stderr, "Error: could not launch watchdog thread!\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+void stopWatchdog()
+{
+	pthread_mutex_lock(&watchdogLock);
+	strcpy(watchdogStatement, "DIE");
+	pthread_mutex_unlock(&watchdogLock);
+	pthread_join(watchdogThread, NULL);
 }
 
 static int dirCallback(int scan, int nscan, int status, void *data)
@@ -149,6 +166,8 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
         {
                 if(v)
                 {
+                        sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+                        nError++;
                         cfatal << startl << "Cannot obtain lock for Streamstor device." << endl;
                         MPI_Abort(MPI_COMM_WORLD, 1);
                 }
@@ -174,7 +193,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 		cinfo << startl << "Success opening Streamstor device" << endl;
 	}
 
-	// FIXME -- for non-bank-mode operation, need to look at the modules to determine what to do here.
+	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
 	WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -184,7 +203,7 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 	if(xlrRC == XLR_SUCCESS)
 	{
-		WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, FILL_PATTERN) );
+		WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 	}
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -205,15 +224,14 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 	nfill = ninvalid = ngood = 0;
 	nrate = 0;
 	sendMark5Status(MARK5_STATE_OPEN, 0, 0, 0.0, 0.0);
-	pthread_mutex_init(&watchdogLock, NULL);
-	watchdogTime = 0;
-	watchdogStatement = "";
-	perr = pthread_create(&watchdogThread, NULL, watchdogFunction, this);
-	if(perr != 0)
-	{
-		csevere << startl << "Cannot create the nativemk5 watchdog thread!" << endl;
-		MPI_Abort(MPI_COMM_WORLD, 1);
-	}
+
+        // Start up mark5 watchdog thread
+        perr = initWatchdog();
+        if(perr != 0)
+        {
+                csevere << startl << "Cannot create the nativemk5 watchdog thread!" << endl;
+                MPI_Abort(MPI_COMM_WORLD, 1);
+        }
 }
 
 void NativeMk5DataStream::setDiscModuleState(SSHANDLE xlrDevice, const char *newState)
@@ -306,7 +324,7 @@ NativeMk5DataStream::~NativeMk5DataStream()
 	}
 	else if(ninvalid + nfill > ngood)
 	{
-		cerror << startl << "Most of ithe data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" << ngood << ".  Please consider reading the module directory again and investigating the module health" << endl;
+		cerror << startl << "Most of the data from this module was discarded: ninvalid=" << ninvalid << " nfill=" << nfill << " ngood=" << ngood << ".  Please consider reading the module directory again and investigating the module health" << endl;
 		sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
 		nError++;
 	}
@@ -331,10 +349,8 @@ NativeMk5DataStream::~NativeMk5DataStream()
 		WATCHDOG( XLRClose(xlrDevice) );
 	}
 
-	pthread_mutex_lock(&watchdogLock);
-	watchdogStatement = "DIE";
-	pthread_mutex_unlock(&watchdogLock);
-	pthread_join(watchdogThread, NULL);
+        // stop watchdog thread
+        stopWatchdog();
 }
 
 int NativeMk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
@@ -422,31 +438,39 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		cinfo << startl << "getting module info" << endl;
 		v = getCachedMark5Module(&module, &xlrDevice, corrstartday, 
 			datafilenames[configindex][fileindex].c_str(), 
-			mk5dirpath, &dirCallback, &mk5status, 0);
+			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1);
 
 		if(v < 0)
 		{
-			cerror << startl << "Module " << 
-				datafilenames[configindex][fileindex] << 
-				" not found in unit - aborting!!!" << endl;
+                
+			cerror << startl << "Directory for module " << datafilenames[configindex][fileindex] << " is not up to date" << endl;
 			dataremaining = false;
-			return;
+			sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
+			nError++;
+			WATCHDOG( XLRClose(xlrDevice) );
+#if HAVE_MARK5IPC
+			unlockMark5();
+#endif
+			MPI_Abort(MPI_COMM_WORLD, 1);
 		}
 
 		v = sanityCheckModule(&module);
 		if(v < 0)
 		{
-			csevere << startl << "Module " << 
+			cerror << startl << "Module " << 
 				datafilenames[configindex][fileindex] <<
-				" contains undecoded scans - aborting!!!" << endl;
+				" contains undecoded scans" << endl;
 			dataremaining = false;
+
 			return;
 		}
 
 		// Set the module state to "Played"
-		setDiscModuleState(xlrDevice, "Played");
 
-		if(module.needRealtimeMode)
+                // Don't do this anymore!
+		// setDiscModuleState(xlrDevice, "Played");
+
+		if(module.mode == MARK5_READ_MODE_RT)
 		{
 			cwarn << startl << "Enabled realtime playback mode" << endl;
 		}
@@ -693,8 +717,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
-	if( (data[1] == FILL_PATTERN && data[2] == FILL_PATTERN) ||
-	    (data[998] == FILL_PATTERN && data[999] == FILL_PATTERN) )
+	if( (data[1] == MARK5_FILL_PATTERN && data[2] == MARK5_FILL_PATTERN) ||
+	    (data[998] == MARK5_FILL_PATTERN && data[999] == MARK5_FILL_PATTERN) )
 	{
 		filltime++;
 		nfill++;

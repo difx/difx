@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009, 2010 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,18 +32,46 @@
 
 #include <xlrapi.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define MAXSCANS  1024 /* Maximum number of scans in SDir */
 #define MAXLENGTH   64 /* Maximum length of a scan's extended name +1 */
 
-// Test for SDK 9+
-#ifdef XLR_MAX_IP_ADDR
-typedef unsigned int streamstordatatype;
+#ifndef MARK5_FILL_PATTERN
+#ifdef WORDS_BIGENDIAN
+#define MARK5_FILL_PATTERN 0x44332211UL
 #else
-typedef unsigned long streamstordatatype;
+#define MARK5_FILL_PATTERN 0x11223344UL
+#endif
 #endif
 
 
-/* as implemented in Mark5 */
+#define DIRECTORY_NOT_CACHED	-7
+
+#define MODULE_STATUS_UNKNOWN	0x00
+#define MODULE_STATUS_ERASED	0x01
+#define MODULE_STATUS_PLAYED	0x02
+#define MODULE_STATUS_RECORDED	0x04
+#define MODULE_STATUS_BANK_MODE	0x08
+
+enum Mark5ReadMode
+{
+	MARK5_READ_MODE_NORMAL = 0,
+	MARK5_READ_MODE_RT
+};
+
+// Test for SDK 9+
+#ifdef XLR_MAX_IP_ADDR
+#define SDKVERSION 9
+typedef unsigned int streamstordatatype;
+#else
+#define SDKVERSION 8
+typedef unsigned long streamstordatatype;
+#endif
+
+/* as implemented in Mark5A */
 struct Mark5Directory
 {
 	int nscans; /* Number of scans herein */
@@ -56,6 +84,44 @@ struct Mark5Directory
 	double playRate; /* Playback clock rate, MHz */
 };
 
+/* first updated version as defined by Hastack Mark5 Memo #081 */
+struct Mark5DirectoryHeaderVer1
+{
+	int version;		/* should be 1 */
+	int status;		/* bit field: see MODULE_STATUS_xxx above */
+	char vsn[32];
+	char vsnPrev[32];	/* "continued from" VSN */
+	char vsnNext[32];	/* "continued to" VSN */
+	char zeros[24];
+};
+
+struct Mark5DirectoryScanHeaderVer1
+{
+	unsigned int typeNumber;	/* and scan number; see memo 81 */
+	unsigned short frameLength;
+	char station[2];
+	char scanName[32];
+	char expName[8];
+	long long startByte;
+	long long stopByte;
+};
+
+struct Mark5DirectoryLegacyBodyVer1
+{
+	unsigned char timeBCD[8];	/* version dependent time code. */
+	int firstFrame;
+	int byteOffset;
+	int trackRate;
+	int nTrack;
+	char zeros[40];
+};
+
+struct Mark5DirectoryVDIFBodyVer1
+{
+	unsigned short data[8][4];	/* packed bit fields for up to 8 thread groups */
+};
+
+/* Internal representation of .dir files */
 struct Mark5Scan
 {
 	char name[MAXLENGTH];
@@ -78,7 +144,9 @@ struct Mark5Module
 	int nscans;
 	Mark5Scan scans[MAXSCANS];
 	unsigned int signature;	/* a hash code used to determine if dir is current */
-	bool needRealtimeMode;	/* true for some classes of bad modules */
+	enum Mark5ReadMode mode;
+	int dirVersion;		/* directory version = 0 for pre memo 81 */
+	int fast;		/* if true, the directory came from the ModuleUserDirectory only */
 };
 
 enum Mark5DirStatus
@@ -92,7 +160,20 @@ enum Mark5DirStatus
 	MARK5_COPY_SUCCESS
 };
 
+struct DriveInformation
+{
+	char model[XLR_MAX_DRIVENAME+1];
+	char serial[XLR_MAX_DRIVESERIAL+1];
+	char rev[XLR_MAX_DRIVEREV+1];
+	int failed;
+	long long capacity;	/* in bytes */
+};
+
+
 extern char Mark5DirDescription[][20];
+extern char Mark5ReadModeName[][10];
+
+const char *moduleStatusName(int status);
 
 /* returns active bank: 0 or 1 for bank A or B, or -1 if none */
 int Mark5BankGet(SSHANDLE *xlrDevice);
@@ -114,10 +195,34 @@ int sanityCheckModule(const struct Mark5Module *module);
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac);
+	float *replacedFrac, int force, int fast, int cacheOnly);
 
 void countReplaced(const streamstordatatype *data, int len,
 	long long *wGood, long long *wBad);
 
+int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop);
+
+int getModuleDirectoryVersion(SSHANDLE *xlrDevice, int *dirVersion, int *dirLength, int *moduleStatus);
+
+int isLegalModuleLabel(const char *label);
+
+int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate, int *moduleStatus);
+
+int setModuleLabel(SSHANDLE *xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
+
+int resetModuleDirectory(SSHANDLE *xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
+
+int getDriveInformation(SSHANDLE *xlrDevice, struct DriveInformation drive[8], int *totalCapacity);
+
+int roundModuleSize(long long a);
+
+int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState);
+
+int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState);
+
+#ifdef __cplusplus
+}
 #endif
-// vim: shiftwidth=2:softtabstop=2:expandtab
+
+
+#endif

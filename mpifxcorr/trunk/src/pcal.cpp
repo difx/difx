@@ -538,6 +538,7 @@ PCalExtractorImplicitShift::PCalExtractorImplicitShift(double bandwidth_hz, doub
     _N_bins         = (int)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
     _N_tones        = (int)(std::floor((bandwidth_hz - pcal_offset_hz) / pcal_spacing_hz) + 1);
     _cfg = new pcal_config_pimpl();
+    cdebug << startl << "fs_hz is " << _fs_hz << ", pcaloffset_hz is " << _pcaloffset_hz << endl;
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;

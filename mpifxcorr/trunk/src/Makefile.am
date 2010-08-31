@@ -41,6 +41,7 @@ library_include_HEADERS = \
 	polyco.h \
 	mark5dir.h \
 	nativemk5.h \
+	watchdog.h \
 	mpifxcorr.h \
 	alert.h 
 

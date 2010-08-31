@@ -76,12 +76,6 @@ private:
 	int nError;
 	bool nomoredata;
 	int nfill, ninvalid, ngood;
-
-public:
-	time_t watchdogTime;
-	string watchdogStatement;
-	pthread_mutex_t watchdogLock;
-	pthread_t watchdogThread;
 };
 
 #endif
