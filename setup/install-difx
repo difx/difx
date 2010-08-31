@@ -184,7 +184,8 @@ utiltargets = [["calcif2",   difx_version, False,True,False],
 apptargets = [["calcserver", difx_version, True,False,False],
               ["difx2fits",  difx_version, False,True,False],
               ["vex2difx",   difx_version, True,True,False],
-              ["difx2mark4", difx_version, True,True,False]]
+              ["difx2mark4", difx_version, True,True,False],
+              ["difxfilterbank", difx_version,False,False,True]]
 
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, False,True])
@@ -346,25 +347,6 @@ for libtarget in libtargets:
 
 os.chdir(topdir)
 
-##### Make standard (autotool'd) applications ############
-os.chdir("applications")
-thisdir = os.getcwd()
-for apptarget in apptargets:
-    targetdir = apptarget[0]  + '/' + apptarget[1] 
-    if os.path.exists(targetdir):
-        print
-        print "************************************"
-        print "Building ", apptarget[0]
-        print
-        os.chdir(targetdir)
-        auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
-    else:
-        print
-        print "******* Skipping "+targetdir
-        print
-    os.chdir(thisdir)
-os.chdir(topdir)
-
 ##### Make mpifxcorr #####################################
 print
 print "************************************"
@@ -385,6 +367,25 @@ run("make")
 if not noinstall:
     run("make install")
     run("cp -f src/*.h " + incdir)
+os.chdir(topdir)
+
+##### Make standard (autotool'd) applications ############
+os.chdir("applications")
+thisdir = os.getcwd()
+for apptarget in apptargets:
+    targetdir = apptarget[0]  + '/' + apptarget[1] 
+    if os.path.exists(targetdir):
+        print
+        print "************************************"
+        print "Building ", apptarget[0]
+        print
+        os.chdir(targetdir)
+        auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
+    else:
+        print
+        print "******* Skipping "+targetdir
+        print
+    os.chdir(thisdir)
 os.chdir(topdir)
 
 ##### Make standard (autotool'd) utilities ###############
