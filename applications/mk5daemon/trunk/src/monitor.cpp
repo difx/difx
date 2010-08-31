@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009, 2010 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,31 +19,30 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$ 
+ * $Id$
  * $HeadURL$
- * $LastChangedRevision$ 
+ * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <string.h>
+
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
-#include <stdlib.h>
 #include <difxmessage.h>
 #include "mk5daemon.h"
 
 int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 {
-	int t;
-
 	if(G->nTo < 1)
 	{
 		return 0;
 	}
 
-	for(t = 0; t < G->nTo; t++)
+	for(int t = 0; t < G->nTo; t++)
 	{
 		if(strcasecmp(D->hostName, G->to[t]) == 0)
 		{
@@ -115,24 +114,37 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		D->lastMpifxcorrUpdate = 0;
 	}
 }
-
+		
 static void mountdisk(Mk5Daemon *D, const char *diskdev)
 {
 	char dev[64];
-	char cmd[256];
-	char message[1024];
+	char command[MAX_COMMAND_SIZE];
+	char message[MAX_MESSAGE_SIZE];
 	char rv[256] = "hidden message";
 	char *c;
 	int l;
-	FILE *p;
+	FILE *pin;
+
+	if(strlen(diskdev) > 10)
+	{
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Mount: device name is bogus: /dev/sd%s", diskdev);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+	
+		return;
+	}
 	
 	sprintf(dev, "/dev/sd%s", diskdev);
-	sprintf(cmd, "/bin/mount -t auto %s /mnt/usb 2>&1", dev);
-	sprintf(message, "Executing: %s\n", cmd);
+	
+	snprintf(command, MAX_COMMAND_SIZE,
+		"/bin/mount -t auto %s /mnt/usb 2>&1", dev);
+
+	snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
-	p = popen(cmd, "r");
-	c = fgets(rv, 255, p);
-	fclose(p);
+
+	pin = popen(command, "r");
+	c = fgets(rv, 255, pin);
+	pclose(pin);
 
 	if(c)
 	{
@@ -140,31 +152,35 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 		l = strlen(rv);
 		rv[l-1] = 0;
 
-		sprintf(message, "Mount %s attempt : %s", dev, rv);
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Mount %s attempt : %s", dev, rv);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
 	else
 	{
-		sprintf(message, "Mount %s attempt : Success", dev);
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Mount %s attempt : Success", dev);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
 
 static void umountdisk(Mk5Daemon *D)
 {
-	char cmd[256];
-	char message[1024];
+	const char *command;
+	char message[MAX_MESSAGE_SIZE];
 	char rv[256] = "I like chinchillas";
 	char *c;
 	int l;
-	FILE *p;
+	FILE *pin;
 
-	sprintf(cmd, "/bin/umount /mnt/usb 2>&1");
-	sprintf(message, "Executing: %s\n", cmd);
+	command = "/bin/umount /mnt/usb 2>&1";
+	
+	snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
-	p = popen(cmd, "r");
-	c = fgets(rv, 255, p);
-	fclose(p);
+
+	pin = popen(command, "r");
+	c = fgets(rv, 255, pin);
+	pclose(pin);
 
 	if(c)
 	{
@@ -172,12 +188,14 @@ static void umountdisk(Mk5Daemon *D)
 		l = strlen(rv);
 		rv[l-1] = 0;
 
-		sprintf(message, "Unmount /mnt/usb attempt : %s", rv);
+		snprintf(message, MAX_MESSAGE_SIZE, 
+			"Unmount /mnt/usb attempt : %s", rv);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
 	else
 	{
-		sprintf(message, "Unmount /mnt/usb attempt : Success");
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Unmount /mnt/usb attempt : Success");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
@@ -185,7 +203,7 @@ static void umountdisk(Mk5Daemon *D)
 static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	const char *cmd;
-	char logMessage[1024];
+	char message[MAX_MESSAGE_SIZE];
 	if(!messageForMe(D, G))
 	{
 		return;
@@ -193,9 +211,10 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	cmd = G->body.command.command;
 
-	sprintf(logMessage, "Command: from=%s identifier=%s command=%s\n", 
+	snprintf(message, MAX_MESSAGE_SIZE,
+		"Command: from=%s identifier=%s command=%s\n", 
 		G->from, G->identifier, cmd);
-	Logger_logData(D->log, logMessage);
+	Logger_logData(D->log, message);
 
 	if(strcasecmp(cmd, "GetVSN") == 0)
 	{
@@ -208,21 +227,7 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_resetMark5A(D);
-		}
-	}
-	else if(strcasecmp(cmd, "StartMark5A") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMark5A(D);
-		}
-	}
-	else if(strcasecmp(cmd, "StopMark5A") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_stopMark5A(D);
+			Mk5Daemon_resetStreamstor(D);
 		}
 	}
 	else if(strcasecmp(cmd, "Reboot") == 0)
@@ -247,41 +252,28 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 	else if(strcasecmp(cmd, "killmpifxcorr") == 0)
 	{
-		system("killall -9 mpifxcorr");
+		Mk5Daemon_system(D, "killall -9 mpifxcorr", 1);
+		Mk5Daemon_system(D, "killall -9 mpirun", 1);
 	}
 	else if(strcasecmp(cmd, "getdirA") == 0)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "A", "");
+			Mk5Daemon_startMk5Dir(D, "A");
 		}
 	}
 	else if(strcasecmp(cmd, "getdirB") == 0)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "B", "");
+			Mk5Daemon_startMk5Dir(D, "B");
 		}
 	}
 	else if(strcasecmp(cmd, "getdir") == 0)
 	{
 		if(D->isMk5)
 		{
-			Mk5Daemon_startMk5Dir(D, "AB", "");
-		}
-	}
-	else if(strcasecmp(cmd, "safedirA") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMk5Dir(D, "A", "--partial");
-		}
-	}
-	else if(strcasecmp(cmd, "safedirB") == 0)
-	{
-		if(D->isMk5)
-		{
-			Mk5Daemon_startMk5Dir(D, "B", "--partial");
+			Mk5Daemon_startMk5Dir(D, "AB");
 		}
 	}
 	else if(strcasecmp(cmd, "stopdir") == 0)
@@ -289,6 +281,41 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		if(D->isMk5)
 		{
 			Mk5Daemon_stopMk5Dir(D);
+		}
+	}
+	else if(strcasecmp(cmd, "erase") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startCondition(D, "");
+		}
+	}
+	else if(strcasecmp(cmd, "condition") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startCondition(D, "-c");
+		}
+	}
+	else if(strcasecmp(cmd, "conditionR") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startCondition(D, "-c");
+		}
+	}
+	else if(strcasecmp(cmd, "conditionW") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_startCondition(D, "-c");
+		}
+	}
+	else if(strcasecmp(cmd, "stopcondition") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_stopCondition(D);
 		}
 	}
 	else if(strcasecmp(cmd, "discon") == 0)
@@ -366,27 +393,21 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		umountdisk(D);
 	}
-	else if(strcasecmp(cmd, "restartCalcServer") == 0)
-	{
-		if(D->isHeadNode)
-		{
-			Mk5Daemon_restartCalcServer(D);
-		}
-	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{
 		printf("[%s]\n", cmd);
 	}
 	else
 	{
-		sprintf(logMessage, "Command=%s not recognized!\n", cmd);
-		Logger_logData(D->log, logMessage);
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Command=%s not recognized!\n", cmd);
+		Logger_logData(D->log, message);
 	}
 }
 
 static void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
-	char logMessage[1024];
+	char message[MAX_MESSAGE_SIZE];
 	const DifxMessageCondition *c;
 
 	if(!messageForMe(D, G))
@@ -396,16 +417,52 @@ static void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	c = &G->body.condition;
 
-	sprintf(logMessage, "Condition report: from=%s identifier=%s disk=%s[%d]=%s\n", 
-		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
-	Logger_logData(D->log, logMessage);
+	snprintf(message, MAX_MESSAGE_SIZE, 
+		"Condition report: from=%s identifier=%s disk=%s[%d]=%s\n", 
+		G->from, G->identifier, c->moduleVSN, c->moduleSlot, 
+		c->serialNumber);
+	Logger_logData(D->log, message);
+}
+
+static void handleTransient(Mk5Daemon *D, const DifxMessageGeneric *G)
+{
+	char message[MAX_MESSAGE_SIZE];
+	const DifxMessageTransient *transient;
+	transient = &G->body.transient;
+	bool v;
+
+	v = D->eventManager.addEvent(transient);
+	if(!v)
+	{
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Transient event NOT queued: jobId=%s priority=%f startMJD=%14.8f stopMJD=%14.8f destDir=\"%s\" comment=\"%s\"\n",
+			transient->jobId,
+			transient->priority,
+			transient->startMJD,
+			transient->stopMJD,
+			transient->destDir,
+			transient->comment);
+		Logger_logData(D->log, message);
+	}
+	else
+	{
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"Transient event queued: jobId=%s priority=%f startMJD=%14.8f stopMJD=%14.8f destDir=\"%s\" comment=\"%s\"\n",
+			transient->jobId,
+			transient->priority,
+			transient->startMJD,
+			transient->stopMJD,
+			transient->destDir,
+			transient->comment);
+		Logger_logData(D->log, message);
+	}
 }
 
 static void *monitorMultiListen(void *ptr)
 {
 	Mk5Daemon *D;
 	int sock, n, v;
-	char message[2000], from[20];
+	char message[MAX_MESSAGE_SIZE], from[20];
 	DifxMessageGeneric G;
 
 	D = (Mk5Daemon *)ptr;
@@ -419,7 +476,7 @@ static void *monitorMultiListen(void *ptr)
 
 	while(!D->dieNow)
 	{
-		n = difxMessageReceive(sock, message, 1999, from);
+		n = difxMessageReceive(sock, message, MAX_MESSAGE_SIZE-1, from);
 
 		if(n > 0)
 		{
@@ -439,6 +496,8 @@ static void *monitorMultiListen(void *ptr)
 			case DIFX_MESSAGE_CONDITION:
 				handleCondition(D, &G);
 				break;
+			case DIFX_MESSAGE_TRANSIENT:
+				handleTransient(D, &G);
 			default:
 				break;
 			}

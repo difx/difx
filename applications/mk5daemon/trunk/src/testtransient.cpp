@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2010 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,77 +19,61 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <string.h>
-#include <difxmessage.h>
-#include "mk5daemon.h"
-#include "proc.h"
+#include <cstring>
+#include "transient.h"
 
-int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
-{
-	long long curRX, curTX;
-	long long d;
-	float l1, l5, l15;
-	int memused, memtot;
-	char logMessage[256];
-	int v;
+ int main()
+ {
+	EventManager E;
+	DifxMessageTransient dt;
 
-	/* LOAD */
-	v = procGetCPU(&l1, &l5, &l15);
-	if(v < 0)
+	E.print();
+
+	dt.startMJD = 45000.0;
+	dt.stopMJD = 55000.0;
+	dt.priority = 4.0;
+	strcpy(dt.destDir, "/dev/null");
+
+	EventQueue *Q = E.startJob("jobXX");
+	E.print();
+	EventQueue *R = E.startJob("jobYY");
+
+	Q->addMark5Unit("mk5-1");
+	Q->addMark5Unit("mk5-2");
+	Q->setUser("Homer");
+	R->addMark5Unit("mk5-3");
+	R->addMark5Unit("mk5-4");
+	R->setUser("Marge");
+
+	for(int g = 0; g < 10; g++)
 	{
-		return v;
+		dt.priority = g;
+		strcpy(dt.jobId, "jobXX");
+		E.addEvent(&dt);
+		dt.priority = 10-g;
+		strcpy(dt.jobId, "jobYY");
+		E.addEvent(&dt);
+		dt.priority = g;
+		strcpy(dt.jobId, "jobZZ");
+		E.addEvent(&dt);
+		E.print();
 	}
 
-	/* MEMORY USAGE */
-	v = procGetMem(&memused, &memtot);
-	if(v < 0)
-	{
-		return v;
-	}
+	E.print();
 
-	/* NETWORK */
-	v = procGetNet(&curRX, &curTX);
-	if(v < 0)
-	{
-		return v;
-	}
+	E.stopJob("jobXX", 500);
 
-	/* on 32 bit machines, proc stores only 32 bit values */
-	if(D->lastRX > 0 || D->lastTX > 0) 
-	{
-		d = curRX - D->lastRX;
-		D->load.netRXRate = d/D->loadMonInterval;
+	E.print();
+	E.stopJob("jobYY", 5000);
+	E.print();
 
-		d = curTX - D->lastTX;
-		D->load.netTXRate = d/D->loadMonInterval;
-	}
-	else
-	{
-		D->load.netRXRate = 0;
-		D->load.netTXRate = 0;
-	}
-
-	D->lastRX = curRX;
-	D->lastTX = curTX;
-	
-	D->load.cpuLoad = l1;
-	D->load.totalMemory = memtot;
-	D->load.usedMemory = memused;
-
-	sprintf(logMessage, "LOAD: %13.7f %4.2f %d %d %5.3f %5.3f  %d  %d\n", mjd,
-		D->load.cpuLoad, D->load.usedMemory, D->load.totalMemory,
-		D->load.netRXRate*8.0e-6, D->load.netTXRate*8.0e-6, D->process, D->processDone);
-	
-	Logger_logData(D->log, logMessage);
-	
-	return difxMessageSendLoad(&D->load);
-}
+ 	return 0;
+ }

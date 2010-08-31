@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009, 2010 by Walter Brisken                            *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,17 +19,17 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$ 
+ * $Id$
  * $HeadURL$
- * $LastChangedRevision$ 
+ * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include "mk5daemon.h"
 
@@ -42,22 +42,23 @@ struct mk5cpParams
 static void *mk5cpRun(void *ptr)
 {
 	struct mk5cpParams *params;
-	char cmd[640];
+	char command[MAX_COMMAND_SIZE];
 
 	params = (struct mk5cpParams *)ptr;
 
 	Logger_logData(params->D->log, "mk5cp starting\n");
 
-	sprintf(cmd, "su -l difx -c 'mk5cp %s'", params->options);
-	system(cmd);
+	snprintf(command, MAX_COMMAND_SIZE, "su -l difx -c 'mk5cp %s'", 
+		params->options);
+	Mk5Daemon_system(params->D, command, 1);
 
 	Logger_logData(params->D->log, "mk5cp done\n");
 
 	params->D->processDone = 1;
 
-	pthread_exit(0);
-
 	free(params);
+
+	pthread_exit(0);
 
 	return 0;
 }
@@ -67,7 +68,7 @@ static void makedir(Mk5Daemon *D, const char *options)
 	char dir[256];
 	int a=-1;
 	int i, l;
-	char cmd[768], message[1024];
+	char command[MAX_COMMAND_SIZE];
 
 	/* look for a / character and assume that is the output directory */
 	for(i = 0; options[i]; i++)
@@ -87,17 +88,14 @@ static void makedir(Mk5Daemon *D, const char *options)
 	strncpy(dir, options+a, l);
 	dir[l] = 0;
 
-	sprintf(cmd, "mkdir -m 777 -p %s", dir);
-	sprintf(message, "Executing: %s\n", cmd);
-	Logger_logData(D->log, message);
-	system(cmd);
+	snprintf(command, MAX_COMMAND_SIZE, "mkdir -m 777 -p %s", dir);
+
+	Mk5Daemon_system(D, command, 1);
 }
 
 void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 {
 	struct mk5cpParams *P;
-
-	P = (struct mk5cpParams *)calloc(1, sizeof(struct mk5cpParams));
 
 	if(!D->isMk5)
 	{
@@ -106,6 +104,8 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 
 	/* Make sure output directory exists and has permissions */
 	makedir(D, options);
+
+	P = (struct mk5cpParams *)calloc(1, sizeof(struct mk5cpParams));
 
 	pthread_mutex_lock(&D->processLock);
 
@@ -124,5 +124,5 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *options)
 
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D)
 {
-	system("killall -HUP mk5cp");
+	Mk5Daemon_system(D, "killall -INT mk5cp", 1);
 }

@@ -1,9 +1,15 @@
-CC = g++
-CCLD = g++
-
 bin_PROGRAMS = \
 	mk5cp \
-	mk5dir
+	mk5dir \
+	mk5erase \
+	mk5lock \
+	recover \
+	testmod \
+	vsn
+
+dist_bin_SCRIPTS = \
+	checkdir
+
 
 mk5cp_LDADD = \
 	${M5ACCESS_LIBS}
@@ -11,11 +17,60 @@ mk5cp_LDADD = \
 mk5dir_LDADD = \
 	${M5ACCESS_LIBS}
 
+mk5erase_LDADD = \
+	${M5ACCESS_LIBS}
+
+recover_LDADD = \
+	${M5ACCESS_LIBS}
+
+testmod_LDADD = \
+	${M5ACCESS_LIBS}
+
+vsn_LDADD = \
+	${M5ACCESS_LIBS}
+
 
 mk5cp_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
 	mark5dir.cpp \
+	mark5dir.h \
 	mk5cp.cpp
 
 mk5dir_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
 	mark5dir.cpp \
+	mark5dir.h \
 	mk5dir.cpp
+
+mk5erase_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mk5erase.cpp
+
+mk5lock_SOURCES = \
+	mk5lock.cpp
+
+recover_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	recover.cpp
+
+testmod_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	testmod.cpp
+
+vsn_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	vsn.cpp

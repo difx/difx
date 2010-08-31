@@ -1,10 +1,40 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+/***************************************************************************
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
+
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <xlrapi.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <difxmessage.h>
+#include <mark5ipc.h>
 #include "mk5daemon.h"
 
 int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
@@ -15,8 +45,16 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
-	char message[120+(XLR_ERROR_LENGTH)];
+	char message[MAX_MESSAGE_SIZE];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
+	const char id[]="GetStreamstorVersions";
+	int v;
+
+	v = lockStreamstor(D, id, MARK5_LOCK_DONT_WAIT);
+	if(v < 0)
+	{
+		return 0;
+	}
 	
 	xlrRC = XLROpen(1, &xlrDevice);
 	D->nXLROpen++;
@@ -24,7 +62,8 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: Mk5Daemon_getStreamstorVersions: "
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"ERROR: Mk5Daemon_getStreamstorVersions: "
 			"Cannot open streamstor card.  N=%d "
 			"Error=%u (%s)\n",
 			D->nXLROpen,
@@ -32,6 +71,9 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 			xlrErrorStr);
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
+
+		unlockStreamstor(D, id);
+
 		return 1;
 	}
 
@@ -40,13 +82,17 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: Mk5Daemon_getStreamstorVersions: "
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"ERROR: Mk5Daemon_getStreamstorVersions: "
 			"Cannot get StreamStor versions. "
 			"Error=%u (%s)\n",
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
+
+		unlockStreamstor(D, id);
+
 		return 2;
 	}
 
@@ -65,13 +111,17 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: Mk5Daemon_getStreamstorVersions: "
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"ERROR: Mk5Daemon_getStreamstorVersions: "
 			"Cannot get Device information. "
 			"Error=%u (%s)\n",
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
+
+		unlockStreamstor(D, id);
+
 		return 2;
 	}
 
@@ -85,13 +135,17 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 		{
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
-			sprintf(message, "ERROR: Mk5Daemon_getStreamstorVersions: "
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"ERROR: Mk5Daemon_getStreamstorVersions: "
 				"Cannot get Daughter Board information. "
 				"Error=%u (%s)\n",
 				xlrError,
 				xlrErrorStr);
 			Logger_logData(D->log, message);
 			XLRClose(xlrDevice);
+
+			unlockStreamstor(D, id);
+
 			return 2;
 		}
 		strcpy(D->mk5ver.DB_PCBVersion, dbInfo.PCBVersion);
@@ -103,6 +157,8 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 
 	XLRClose(xlrDevice);
 
+	unlockStreamstor(D, id);
+
 	return 0;
 }
 
@@ -113,9 +169,10 @@ int Mk5Daemon_sendStreamstorVersions(Mk5Daemon *D)
 
 int logStreamstorVersions(Mk5Daemon *D)
 {
-	char message[200];
-	sprintf(message, "XLR Versions: Api=%s(%s) Firmware=%s(%s) "
-			 "Monitor=%s Xbar=%s Ata=%s UAta=%s Driver=%s\n",
+	char message[MAX_MESSAGE_SIZE];
+	snprintf(message, MAX_MESSAGE_SIZE,
+		"XLR Versions: Api=%s(%s) Firmware=%s(%s) "
+		"Monitor=%s Xbar=%s Ata=%s UAta=%s Driver=%s\n",
 		D->mk5ver.ApiVersion,
 		D->mk5ver.ApiDateCode,
 		D->mk5ver.FirmwareVersion,
@@ -126,12 +183,16 @@ int logStreamstorVersions(Mk5Daemon *D)
 		D->mk5ver.UAtaVersion,
 		D->mk5ver.DriverVersion);
 	Logger_logData(D->log, message);
-	sprintf(message, "Streamstor: BoardType=%s SerialNum=%d\n", 
+
+	snprintf(message, MAX_MESSAGE_SIZE,
+		"Streamstor: BoardType=%s SerialNum=%d\n", 
 		D->mk5ver.BoardType,
 		D->mk5ver.SerialNum);
 	Logger_logData(D->log, message);
-	sprintf(message, "DaughterBoard: PCBType=%s PCBSubType=%s PCBVersion=%s "
-			 "FPGAConfig=%s FPGAConfigVersion=%s\n",
+	
+	snprintf(message, MAX_MESSAGE_SIZE,
+		"DaughterBoard: PCBType=%s PCBSubType=%s PCBVersion=%s "
+		"FPGAConfig=%s FPGAConfigVersion=%s\n",
 		D->mk5ver.DB_PCBType,
 		D->mk5ver.DB_PCBSubType,
 		D->mk5ver.DB_PCBVersion,

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,17 +19,17 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
@@ -50,8 +50,6 @@ const char DefaultDifxGroup[] = "224.2.2.1";
 const char DefaultLogPath[] = "/tmp";
 const char headNode[] = "swc000";
 const char difxUser[] = "difx";
-const char stopCalcServerCommand[] = "/etc/init.d/calcserver stop";
-const char startCalcServerCommand[] = "/etc/init.d/calcserver start";
 
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
@@ -78,9 +76,6 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --condition-watch\n");
 	fprintf(stderr, "  -w             Start the condition-watch program\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --monitor-queue\n");
-	fprintf(stderr, "  -m             Periodically update the queue (VLBA only)\n");
-	fprintf(stderr, "\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Don't multicast any status\n");
 	fprintf(stderr, "\n");
@@ -105,7 +100,6 @@ int usage(const char *pgm)
 Mk5Daemon *newMk5Daemon(const char *logPath)
 {
 	Mk5Daemon *D;
-	char message[80];
 
 	D = (Mk5Daemon *)calloc(1, sizeof(Mk5Daemon));
 	
@@ -118,34 +112,48 @@ Mk5Daemon *newMk5Daemon(const char *logPath)
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
 	pthread_mutex_init(&D->processLock, 0);
-	sprintf(message, "mk5daemon starting");
-	difxMessageSendDifxInfo(message);
+	difxMessageSendDifxInfo("mk5daemon starting");
 
 	return D;
 }
 
+int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
+{
+	int v;
+	char message[MAX_MESSAGE_SIZE];
+
+	if(verbose)
+	{
+		snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s\n", command);
+	
+		Logger_logData(D->log, message);
+	}
+
+	v = system(command);
+
+	// For some reason system returns -1 even if successful
+	// possibly because of the fork()ed, threaded, ... situation?
+#if 0
+	if(v == -1)
+	{
+		snprintf(message, MAX_MESSAGE_SIZE, 
+			"system() failed running: %s\n", command);
+
+		Logger_logData(D->log, message);
+	}
+#endif
+
+	return v;
+}
+
 void deleteMk5Daemon(Mk5Daemon *D)
 {
-	char message[80];
-
-	sprintf(message, "mk5daemon stopping");
-	difxMessageSendDifxInfo(message);
+	difxMessageSendDifxInfo("mk5daemon stopping");
 	signalDie = 0;
 	if(D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
-		if(D->process == PROCESS_MARK5A)
-		{
-			Mk5Daemon_stopMark5A(D);
-			while(!D->processDone)
-			{
-				usleep(100000);
-			}
-			pthread_mutex_lock(&D->processLock);
-			pthread_join(D->processThread, 0);
-			pthread_mutex_unlock(&D->processLock);
-		}
 		deleteLogger(D->log);
 		free(D);
 	}
@@ -154,23 +162,24 @@ void deleteMk5Daemon(Mk5Daemon *D)
 /* FIXME -- move to a /proc query */
 int running(const char *name)
 {
-	FILE *in;
+	const int MaxLineLength = 512;
+	FILE *pin;
 	int n;
-	char cmd[256];
-	char line[512];
+	char command[MAX_COMMAND_SIZE];
+	char line[MaxLineLength];
 
-	sprintf(cmd, "ps -e | grep %s", name);
+	snprintf(command, MAX_COMMAND_SIZE,  "ps -e | grep %s", name);
 
-	in = popen(cmd, "r");
-	if(!in)
+	pin = popen(command, "r");
+	if(!pin)
 	{
 		printf("ERROR Cannot run ps\n");
 		return 1;
 	}
 
-	n = fread(line, 1, 512, in);
-	line[511] = 0;
-	fclose(in);
+	n = fread(line, 1, MaxLineLength, pin);
+	line[MaxLineLength-1] = 0;
+	pclose(pin);
 
 	if(n > 0)
 	{
@@ -185,7 +194,7 @@ int running(const char *name)
 int checkStreamstor(Mk5Daemon *D, time_t t)
 {
 	int v, busy;
-	char logMessage[128];
+	char message[MAX_MESSAGE_SIZE];
 
 	if(!D->isMk5)
 	{
@@ -240,7 +249,7 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		D->idleCount++;
 	}
 
-	if(D->idleCount > maxIdle && D->process != PROCESS_NONE & !D->processDone)
+	if(D->idleCount > maxIdle && D->process != PROCESS_NONE && !D->processDone)
 	{
 		pthread_mutex_lock(&D->processLock);
 		Logger_logData(D->log, 
@@ -259,10 +268,11 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		pthread_mutex_lock(&D->processLock);
 		if(!running("mpifxcorr"))
 		{
-			sprintf(logMessage, 
+			snprintf(message, MAX_MESSAGE_SIZE,
 				"Detected premature end of mpifxcorr at %s\n",
 				ctime(&t));
-			Logger_logData(D->log, logMessage);
+			Logger_logData(D->log, message);
+
 			D->process = PROCESS_NONE;
 		}
 		else
@@ -288,7 +298,7 @@ void sigintHandler(int j)
 void startConditionWatch(const Mk5Daemon *D)
 {
 	const char *user;
-	char command[1024];
+	char command[MAX_COMMAND_SIZE];
 
 	Logger_logData(D->log, "Starting condition_watch");
 
@@ -303,58 +313,10 @@ void startConditionWatch(const Mk5Daemon *D)
 		user = difxUser;
 	}
 
-	sprintf(command, "ssh -f %s@%s condition_watch", user, D->hostName);
+	snprintf(command, MAX_COMMAND_SIZE, "ssh -f %s@%s condition_watch", 
+		user, D->hostName);
 
-	system(command);
-
-	exit(0);
-}
-
-void Mk5Daemon_queueMon(Mk5Daemon *D)
-{
-	const char *user;
-	char command[256];
-	char message[512];
-
-	user = getenv("DIFX_USER_ID");
-	if(!user)
-	{
-		user = difxUser;
-	}
-
-	sprintf(command, "ssh -f %s@%s difxqueue prod /users/difx/public_html/difx.queue", user, D->hostName);
-	sprintf(message, "Checking queue: %s\n", command);
-
-	Logger_logData(D->log, message);
-
-	if(fork())
-	{
-		return;
-	}
-
-	system(command);
-
-	exit(0);
-}
-
-void Mk5Daemon_restartCalcServer(Mk5Daemon *D)
-{
-	char message[512];
-
-	sprintf(message, "Restarting calcServer with commands:\n  %s\n  %s\n",
-		stopCalcServerCommand,
-		startCalcServerCommand);
-
-	Logger_logData(D->log, message);
-
-	if(fork())
-	{
-		return;
-	}
-
-	system(stopCalcServerCommand);
-	sleep(1);
-	system(startCalcServerCommand);
+	Mk5Daemon_system(D, command, 1);
 
 	exit(0);
 }
@@ -363,7 +325,8 @@ int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
 	time_t t, lastTime, firstTime;
-	char logMessage[128], str[16];
+	char message[MAX_MESSAGE_SIZE];
+	char str[16];
 	int isHeadNode = 0;
 	int i, ok=0;
 	int justStarted = 1;
@@ -372,12 +335,11 @@ int main(int argc, char **argv)
 	const char *p;
 	double mjd;
 	int startCW = 0;
-	int monQueue = 0;
 
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
 	{
-		sprintf(logPath, p);
+		strcpy(logPath, p);
 	}
 	else
 	{
@@ -400,11 +362,6 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--condition-watch") == 0)
 		{
 			startCW = 1;
-		}
-		else if(strcmp(argv[i], "-m") == 0 ||
-		   strcmp(argv[i], "--monitor-queue") == 0)
-		{
-			monQueue = 1;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -431,15 +388,13 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			fprintf(stderr, "Unrecognized command line argument %s\n\n", argv[i]);
-
 			return usage(argv[0]);
 		}
 	}
 
 	if(setuid(0) != 0)
 	{
-		fprintf(stderr, "Need suid root permission.  Bailing.\n");
+		fprintf(stderr, "Needs to run with root permission.  Bailing.\n");
 		return 0;
 	}
 
@@ -464,13 +419,9 @@ int main(int argc, char **argv)
 	D = newMk5Daemon(logPath);
 	D->isHeadNode = isHeadNode;
 
-	if(isHeadNode && monQueue > 0)
-	{
-		D->queueMonInterval = 15*60;	/* check queue every 15 minutes */
-	}
-
-	sprintf(logMessage, "Starting %s ver. %s\n", program, version);
-	Logger_logData(D->log, logMessage);
+	snprintf(message, MAX_MESSAGE_SIZE, "Starting %s ver. %s\n", 
+		program, version);
+	Logger_logData(D->log, message);
 
 	if(startCW && isHeadNode)
 	{
@@ -494,19 +445,20 @@ int main(int argc, char **argv)
 
 			ok = (checkStreamstor(D, t) == 0);
 
-			if((D->queueMonInterval > 0) && (t % D->queueMonInterval) == 0)
-			{
-				Mk5Daemon_queueMon(D);
-			}
-
 			if( (t % D->loadMonInterval) == 0)
 			{
 				Mk5Daemon_loadMon(D, mjd);
 			}
-
-			if(t % D->loadMonInterval == halfInterval)
+			else if( (t % D->loadMonInterval) == halfInterval)
 			{
-				Mk5Daemon_getModules(D);
+				if(D->skipGetModule)
+				{
+					D->skipGetModule = 0;
+				}
+				else
+				{
+					Mk5Daemon_getModules(D);
+				}
 			}
 
 			if(t - firstTime > 15 && D->isMk5 &&
@@ -522,11 +474,12 @@ int main(int argc, char **argv)
 			}
 		}
 
-		usleep(200000);
+		usleep(100000);
 	}
 
-	sprintf(logMessage, "Stopping %s ver. %s\n", program, version);
-	Logger_logData(D->log, logMessage);
+	snprintf(message, MAX_MESSAGE_SIZE, "Stopping %s ver. %s\n", 
+		program, version);
+	Logger_logData(D->log, message);
 
 	deleteMk5Daemon(D);
 

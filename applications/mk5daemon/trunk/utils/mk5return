@@ -4,9 +4,9 @@ from os import system
 from sys import argv
 
 program = 'mk5return'
-version = '0.3'
+version = '0.2'
 author  = 'Walter Brisken'
-verdate = '20090605'
+verdate = '20090412'
 
 def usage(prog):
 	print '\n%s ver %s  %s  %s' % (program, version, author, verdate)
@@ -35,9 +35,6 @@ for a in argv[1:]:
 	elif a in ['-v', '--verbose']:
 		verbose = True
 	else:
-		if len(a) < 2:
-			print 'Warning: single character unit number:', a
-			print 'This will have no effect -- please run again with 0 prepended.\n'
 		cmd = cmd + ' %s' % a
 
 if verbose:

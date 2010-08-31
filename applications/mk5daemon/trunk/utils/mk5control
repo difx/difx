@@ -6,9 +6,9 @@ from os import getenv
 import socket
 
 program = 'mk5command'
-version = '0.2'
+version = '0.4'
 author  = 'Walter Brisken <wbrisken@nrao.edu>'
-verdate = '20080613'
+verdate = '20100527'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -26,13 +26,27 @@ def usage(pgm):
 	print '  Reboot -- reboots the machine'
 	print '  Poweroff -- powers off the machine'
 	print '  Clear -- used to clear errant "busy" state'
-	print '  stopmk5daemon -- tell the mk5daemon program to quit\n'
+	print '  stopmk5daemon -- tell the mk5daemon program to quit'
+	print '  killmpifxcorr -- kill -9 mpifxcorr and mpirin'
+	print '  getdirA, getdirB -- get directory of module in A or B'
+	print '  getdir -- get directory of all loaded modules'
+	print '  stopdir -- stop a getdir in progress'
+	print '  condition, conditionR, conditionW -- condition module A'
+	print '  stopcondition -- stop a conditioning process'
+	print '  copy -- copy data from module to file; see below'
+	print '  stopcopy -- stop a copy in progress'
+	print '  getver -- tell machine to report its version info'
+	print '  mountXX -- mount /dev/sdXX /mnt/usb'
+	print '  umount -- umount /mnt/usb\n'
 	print '<machines> is a list of cluster members to receive the message;'
 	print '  the format is as follows:'
 	print '    general: the explicit computer hostname, or "all" for all'
 	print '    mark5 units:  01 through 24, or "mark5" for all'
 	print '    processor node:  000 though 999, or "swc" for all'
 	print '    ranges are allowed:  12-18 or 001-010\n'
+	print 'Data copying requires additional parameters corresponding to the'
+	print 'parameters needed by program mk5cp.\n'
+	print 'Example: mk5control "copy A 12-14 /mnt/usb/bb269a/BR" 03\n'
 	
 
 def sendCommand(cmd, units, verbose):

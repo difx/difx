@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,17 +19,17 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$ 
+ * $Id$
  * $HeadURL$
- * $LastChangedRevision$ 
+ * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include "mk5daemon.h"
 
@@ -37,42 +37,42 @@ struct mk5dirParams
 {
 	Mk5Daemon *D;
 	char bank[10];
-	const char *extraArgs;
 };
 
 static void *mk5dirRun(void *ptr)
 {
 	struct mk5dirParams *params;
-	char cmd[128];
+	char command[MAX_COMMAND_SIZE];
 
 	params = (struct mk5dirParams *)ptr;
 
 	Logger_logData(params->D->log, "mk5dir starting\n");
 
-	sprintf(cmd, "su -l difx -c 'mk5dir %s %s'", params->extraArgs, params->bank);
-	system(cmd);
+	snprintf(command, MAX_COMMAND_SIZE, "su -l difx -c 'mk5dir %s'", 
+		params->bank);
+	Mk5Daemon_system(params->D, command, 1);
 
 	Logger_logData(params->D->log, "mk5dir done\n");
 
 	params->D->processDone = 1;
 
-	pthread_exit(0);
-
 	free(params);
+
+	pthread_exit(0);
 
 	return 0;
 }
 
-void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs)
+void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank)
 {
 	struct mk5dirParams *P;
-
-	P = (struct mk5dirParams *)calloc(1, sizeof(struct mk5dirParams));
 
 	if(!D->isMk5)
 	{
 		return;
 	}
+
+	P = (struct mk5dirParams *)calloc(1, sizeof(struct mk5dirParams));
 
 	pthread_mutex_lock(&D->processLock);
 
@@ -84,7 +84,6 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs
 		P->D = D;
 		strncpy(P->bank, bank, 9);
 		P->bank[9] = 0;
-		P->extraArgs = extraArgs;
 		pthread_create(&D->processThread, 0, &mk5dirRun, P);
 	}
 
@@ -93,5 +92,5 @@ void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs
 
 void Mk5Daemon_stopMk5Dir(Mk5Daemon *D)
 {
-	system("killall -HUP mk5dir");
+	Mk5Daemon_system(D, "killall -INT mk5dir", 1);
 }

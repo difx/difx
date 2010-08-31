@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,9 +19,9 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id$ 
+ * $Id$
  * $HeadURL$
- * $LastChangedRevision$ 
+ * $LastChangedRevision$
  * $Author$
  * $LastChangedDate$
  *
@@ -33,19 +33,23 @@
 #include <time.h>
 #include <difxmessage.h>
 #include "logger.h"
+#include "transient.h"
 
 extern const char difxUser[];
+
+#define MAX_COMMAND_SIZE	768
+#define MAX_MESSAGE_SIZE	1024
 
 enum ProcessType
 {
 	PROCESS_NONE = 0,
 	PROCESS_RESET,
 	PROCESS_SSOPEN,
-	PROCESS_MARK5A,
 	PROCESS_DATASTREAM,
 	PROCESS_MK5DIR,
 	PROCESS_MK5COPY,
 	PROCESS_SSERASE,
+	PROCESS_CONDITION,
 	PROCESS_UNKNOWN
 };
 
@@ -60,7 +64,6 @@ typedef struct
 	pthread_mutex_t processLock;
 	int processDone;
 	int loadMonInterval;		/* seconds */
-	int queueMonInterval;		/* seconds */
 	int dieNow;
 	char vsnA[10], vsnB[10];
 	char hostName[32];
@@ -72,27 +75,31 @@ typedef struct
 	long long lastRX, lastTX;
 	int idleCount;
 	int nXLROpen;
+	EventManager eventManager;	/* for tracking transient events */
+	int skipGetModule;
+	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
-void Mk5Daemon_queueMon(Mk5Daemon *D);
 int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D);
 int Mk5Daemon_sendStreamstorVersions(Mk5Daemon *D);
 int logStreamstorVersions(Mk5Daemon *D);
 void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
-void Mk5Daemon_startMark5A(Mk5Daemon *D);
-void Mk5Daemon_stopMark5A(Mk5Daemon *D);
-void Mk5Daemon_resetMark5A(Mk5Daemon *D);
-void Mk5Daemon_restartCalcServer(Mk5Daemon *D);
+int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
+int unlockStreamstor(Mk5Daemon *D, const char *identifier);
+void Mk5Daemon_resetStreamstor(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
+int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
-void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank, const char *extraArgs);
+void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Dir(Mk5Daemon *D);
 void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
+void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
+void Mk5Daemon_stopCondition(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2010 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,104 +19,96 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
-#include <string.h>
-#include "logger.h"
+#include "mk5daemon.h"
 
-static int Logger_newFile(Logger *log, int mjd)
+struct conditionParams
 {
-	char filename[256];
+	Mk5Daemon *D;
+	const char *options;
+};
 
-	if(log->out)
+static void *conditionRun(void *ptr)
+{
+	struct conditionParams *params;
+	char command[MAX_COMMAND_SIZE];
+	char message[MAX_MESSAGE_SIZE];
+	FILE *pin;
+	char *rv;
+
+	params = (struct conditionParams *)ptr;
+
+	Logger_logData(params->D->log, "mk5erase starting\n");
+
+	snprintf(command, MAX_COMMAND_SIZE, "mk5erase --force %s %s", params->options, params->D->vsnA);
+
+	pin = popen(command, "r");
+	for(;;)
 	{
-		fclose(log->out);
+		rv = fgets(message, MAX_MESSAGE_SIZE, pin);
+		if(rv == 0)
+		{
+			break;
+		}
+		message[MAX_MESSAGE_SIZE-1] = 0;
+		if(message[0] == '>')
+		{
+			Logger_logData(params->D->log, message);
+		}
 	}
+	fclose(pin);
 
-	sprintf(filename, "%s/%s.%05d.log",
-		log->logPath, log->hostName, mjd);
+	Logger_logData(params->D->log, "mk5erase done\n");
 
-	log->out = fopen(filename, "a");
+	params->D->processDone = 1;
+
+	free(params);
+
+	pthread_exit(0);
 
 	return 0;
 }
 
-Logger *newLogger(const char *logPath)
+void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options)
 {
-	Logger *log;
-	time_t t;
-	int mjd;
+	struct conditionParams *P;
 
-	t = time(0);
+	if(!D->isMk5)
+	{
+		return;
+	}
 
-	log = (Logger *)calloc(1, sizeof(Logger));
+	P = (struct conditionParams *)calloc(1, sizeof(struct conditionParams));
 
-	strcpy(log->logPath, logPath);
-	gethostname(log->hostName, 32);
-	log->hostName[31] = 0;
+	pthread_mutex_lock(&D->processLock);
 
-	mjd = (int)(40587.0 + t/86400.0);
+	if(D->process == PROCESS_NONE)
+	{
+		D->processDone = 0;
+		D->process = PROCESS_CONDITION;
 
-	Logger_newFile(log, mjd);
+		P->D = D;
+		P->options = options;
+		pthread_create(&D->processThread, 0, &conditionRun, P);
+	}
 
-	pthread_mutex_init(&log->lock, 0);
-
-	return log;
+	pthread_mutex_unlock(&D->processLock);
 }
 
-void deleteLogger(Logger *log)
+void Mk5Daemon_stopCondition(Mk5Daemon *D)
 {
-	if(log)
-	{
-		pthread_mutex_destroy(&log->lock);
-		if(log->out)
-		{
-			fclose(log->out);
-		}
-		free(log);
-	}
-}
-
-int Logger_logData(Logger *log, const char *message)
-{
-	time_t t;
-	struct tm curTime;
-	double mjd;
-
-	t = time(0);
-	gmtime_r(&t, &curTime);
+	int v;
 	
-	pthread_mutex_lock(&log->lock);
-	
-	if(t != log->lastTime)
-	{
-		mjd = 40587.0 + t/86400.0;
-
-		if(t/86400 != log->lastTime/86400)
-		{
-			Logger_newFile(log, (int)(mjd+0.1));
-		}
-		log->lastTime = t;
-		fprintf(log->out, "\n");
-		fprintf(log->out, "%04d/%03d %02d:%02d:%02d = %13.7f\n",
-			curTime.tm_year+1900, curTime.tm_yday+1,
-			curTime.tm_hour, curTime.tm_min, curTime.tm_sec,
-			mjd);
-	}
-	fprintf(log->out, message);
-	fflush(log->out);
-
-	pthread_mutex_unlock(&log->lock);
-
-	return 0;
+	v = system("killall -s SIGINT mk5erase");
 }

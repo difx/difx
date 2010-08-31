@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,16 +19,16 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id:$ 
- * $HeadURL:$
- * $LastChangedRevision:$ 
- * $Author:$
- * $LastChangedDate:$
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
-#include <stdio.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
 #include "proc.h"
 
 /* routines to get useful information from /proc */
@@ -38,6 +38,7 @@ int procGetMem(int *memused, int *memtot)
 	FILE *in;
 	char line[100];
 	char key[100];
+	char *c;
 	int val;
 
 	*memused = 0;
@@ -51,8 +52,8 @@ int procGetMem(int *memused, int *memtot)
 	
 	for(;;)
 	{
-		fgets(line, 99, in);
-		if(feof(in))
+		c = fgets(line, 99, in);
+		if(!c)
 		{
 			break;
 		}
@@ -81,9 +82,9 @@ int procGetNet(long long *rx, long long *tx)
 	static long long lasttx[10] = {0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL};
 	FILE *in;
 	char line[100];
+	char *c;
 	long long a, b;
 	int v;
-	int i;
 
 	*rx = 0LL;
 	*tx = 0LL;
@@ -94,10 +95,10 @@ int procGetNet(long long *rx, long long *tx)
 		return -1;
 	}
 
-	for(i = 0; i < 10; i++)
+	for(int i = 0; i < 10; i++)
 	{
-		fgets(line, 99, in);
-		if(feof(in))
+		c = fgets(line, 99, in);
+		if(!c)
 		{
 			break;
 		}
@@ -143,6 +144,7 @@ int procGetCPU(float *l1, float *l5, float *l15)
 {
 	FILE *in;
 	char line[100];
+	char *c;
 
 	in = fopen("/proc/loadavg", "r");
 	if(!in)
@@ -150,8 +152,15 @@ int procGetCPU(float *l1, float *l5, float *l15)
 		return -1;
 	}
 
-	fgets(line, 99, in);
-	sscanf(line, "%f%f%f", l1, l5, l15);
+	c = fgets(line, 99, in);
+	if(c)
+	{
+		sscanf(line, "%f%f%f", l1, l5, l15);
+	}
+	else
+	{
+		*l1 = *l5 = *l15 = 0;
+	}
 
 	fclose(in);
 
@@ -162,6 +171,7 @@ int procGetStreamstor(int *busy)
 {
 	FILE *in;
 	char line[100];
+	char *c;
 
 	*busy = 0;
 
@@ -173,8 +183,8 @@ int procGetStreamstor(int *busy)
 
 	for(;;)
 	{
-		fgets(line, 99, in);
-		if(feof(in))
+		c = fgets(line, 99, in);
+		if(!c)
 		{
 			break;
 		}

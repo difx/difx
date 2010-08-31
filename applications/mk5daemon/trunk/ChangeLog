@@ -1,32 +1,64 @@
-Version 0.1
+Version 1.4
 ~~~~~~~~~~~
-* Initial version.  consists of a merge of LogM5 and mk5agent
+* Post DiFX-1.5.3
+* Check that input file exists before attempting correlation
+* mk5dir: Mark4 directories from after 2009 Dec 31 would end up with wrong MJD
+* Support for Streamstor SDK 9.0
+* Support for difxVersion in difxStartMessage
+* Don't launch a job near time(0)%10 = 5 to avoid getModules clash
+* Add "recover" Mark5 utility
+* Add mk5erase (similar to SSErase from Haystack) 
+* Fix timerange mk5cp and add byterange copy
+* Use mark5ipc to lock out access to /dev/windrvr6 
+* Remove compatibility with Mark5A program
+* Add very nascent mk5lock utility
+* mk5dir: now by default will change the disk module state
+* testmod: add timing
 
-Version 0.3
+Version 1.3
 ~~~~~~~~~~~
-* bug fixes.  quite usable now.
-* more logging
+* set svn properties
+* mk5dir, mk5cp: use XLRGetDirectory to work around streamstor bug
+* mk5dir: add --force option
+* mount and dismount commands (not using DBUS yet)
+* make destination directory before copy
+* Mark5 maint programs testmod and vsn added
+* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans (thanks Adam)
+* remove auto-starting of the Mark5A program
+* Fix compiler warnings and move to safer string manipulation
+* rename .c to .cpp to reflect the fact that g++ is needed
+* close popen with pclose (suggested by Martin Ettl)
+* complain if /tmp or correlation destination directory are running low on space
+* update in-line help for mk5control
+* infrastructure in place for transient event copy
+* checkdir -- allow 800 frames per second mode
+* Version for DiFX-1.5.3
 
-Version 0.4
+Version 1.2
 ~~~~~~~~~~~
-* more and improved logging
-* usage
+* mk5dir -- add suffix to distinguish otherwise identically named scans
+* Clean up permissions and ownership issues when spawning jobs
+* Improve bankswitching
+* Version for DiFX-1.5.2
 
-Version 0.5
+Version 1.1
 ~~~~~~~~~~~
-* add mk5dir
+* XLRClose / XLROpen after XLRSelectBank to prevent read errors
+* add checkdir
+* Version for DiFX-1.5.1
 
-Version 0.6
+Version 1.0
 ~~~~~~~~~~~
-* fix stopmark5a hang -- mutex not unlocked
-* fix die on quit -- unused %s
+* Version for DiFX-1.5
 
-Version 0.7
+Version 0.9
 ~~~~~~~~~~~
-* separate out proc.[ch]
-* function to look for windrvr use
-* periodically report VSNs
-* This version is for NRAO-DiFX 1.1
+* go back to using ssh to start new processes -- ensures up-to-date enviromnent
+* ignore child signal to prevent defunct processes
+* use password file to get proper user ids
+* spawn difxlog when starting a job
+* fix dual-link network performance tracking
+* option to start condition_watch upon startup
 
 Version 0.8
 ~~~~~~~~~~~
@@ -45,40 +77,32 @@ Version 0.8
 * mk5dir and mk5cp now report on replaced data
 * track StreamStor versions
 
-Version 0.9
+Version 0.7
 ~~~~~~~~~~~
-* go back to using ssh to start new processes -- ensures up-to-date enviromnent
-* ignore child signal to prevent defunct processes
-* use password file to get proper user ids
-* spawn difxlog when starting a job
-* fix dual-link network performance tracking
-* option to start condition_watch upon startup
+* separate out proc.[ch]
+* function to look for windrvr use
+* periodically report VSNs
+* This version is for NRAO-DiFX 1.1
 
-Version 1.0
+Version 0.6
 ~~~~~~~~~~~
-* Version for DiFX-1.5
+* fix stopmark5a hang -- mutex not unlocked
+* fix die on quit -- unused %s
 
-Version 1.1
+Version 0.5
 ~~~~~~~~~~~
-* Post DiFX-1.5
-* Option to have difxqueue run every 15 minutes
-* mk5dir option to run in real-time mode
-* restartCalcServer command accepted
-* XLRClose / XLROpen after XLRSelectBank to prevent read errors
-* add checkdir
+* add mk5dir
 
-Version 1.2
+Version 0.4
 ~~~~~~~~~~~
-* Post DiFX-1.5.1
-* mk5dir -- add suffix to distinguish otherwise identically named scans
-* mk5dir -- fix "A" and "B" source designators
-* mk5dir -- specify time range to copy 
-* Improve file ownership/permission issues
+* more and improved logging
+* usage
 
-Version 2.0
+Version 0.3
 ~~~~~~~~~~~
-* mount and dismount commands (not using DBUS yet)
-* make destination directory before copy
-* checkdir -- ultraverbose mode (-v -v -v -v) to print nicely formatted list of scans (thanks Adam)
-* checkdir -- allow 800 frames per second mode
-* remove auto-starting of the Mark5A program
+* bug fixes.  quite usable now.
+* more logging
+
+Version 0.1
+~~~~~~~~~~~
+* Initial version.  consists of a merge of LogM5 and mk5agent

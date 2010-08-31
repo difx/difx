@@ -1,20 +1,49 @@
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <xlrapi.h>
+/***************************************************************************
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
+ *
+ *==========================================================================*/
+
+#include <cstdio>
+#include <cstring>
+#include <cstdlib>
 #include <unistd.h>
 #include <ctype.h>
+#include <xlrapi.h>
 #include <difxmessage.h>
+#include <mark5ipc.h>
 #include "mk5daemon.h"
 
 
 /* see if vsn matches <chars> {+|-} <digits> */
 int legalVSN(const char *vsn)
 {
-	int i;
 	int state=0;
 
-	for(i = 0; i < 8; i++)
+	for(int i = 0; i < 8; i++)
 	{
 		switch(state)
 		{
@@ -57,8 +86,16 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
-	char message[100+(XLR_ERROR_LENGTH)];
+	char message[MAX_MESSAGE_SIZE];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
+	const char id[] = "GetModules";
+	int v;
+
+	v = lockStreamstor(D, id, MARK5_LOCK_DONT_WAIT);
+	if(v < 0)
+	{
+		return 0;
+	}
 	
 	xlrRC = XLROpen(1, &xlrDevice);
 	D->nXLROpen++;
@@ -66,13 +103,17 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: XLR_get_modules: "
+		snprintf(message, MAX_MESSAGE_SIZE, 
+			"ERROR: XLR_get_modules: "
 			"Cannot open streamstor card.  N=%d "
 			"Error=%u (%s)\n",
 			D->nXLROpen,
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
+
+		unlockStreamstor(D, id);
+
 		return 1;
 	}
 
@@ -84,13 +125,15 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		{
 			/* this means no modules loaded */
 			vsna[0] = vsnb[0] = 0;
-			sprintf(message, "XLR VSNs: <%s> <%s> N=%d\n",
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"XLR VSNs: <%s> <%s> N=%d\n",
 				vsna, vsnb, D->nXLROpen);
 		}
 		else
 		{
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
-			sprintf(message, "ERROR: XLR_get_modules: "
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"ERROR: XLR_get_modules: "
 				"Cannot set SkipCheckDir.  N=%d "
 				"Error=%u (%s)\n",
 				D->nXLROpen,
@@ -99,10 +142,12 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		}
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
+
+		unlockStreamstor(D, id);
+		
 		return 0;
 	}
 	
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
 	if(xlrRC != XLR_SUCCESS)
 	{
@@ -110,7 +155,8 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: XLR_get_modules: "
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"ERROR: XLR_get_modules: "
 			"BANK_B XLRGetBankStatus failed.  N=%d "
 			"Error=%u (%s)\n",
 			D->nXLROpen,
@@ -135,7 +181,8 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: XLR_get_modules: "
+		snprintf(message, MAX_MESSAGE_SIZE,
+			"ERROR: XLR_get_modules: "
 			"BANK_A XLRGetBankStatus failed.  N=%d "
 			"Error=%u (%s)\n",
 			D->nXLROpen,
@@ -155,81 +202,11 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 	XLRClose(xlrDevice);
 
-	sprintf(message, "XLR VSNs: <%s> <%s> N=%d\n",
+	unlockStreamstor(D, id);
+
+	snprintf(message, MAX_MESSAGE_SIZE, "XLR VSNs: <%s> <%s> N=%d\n",
 		vsna, vsnb, D->nXLROpen);
 	Logger_logData(D->log, message);
-
-	return 0;
-}
-
-static int Mark5A_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
-{
-	char message[512];
-	int i, n;
-	char *ptr[8];
-	int nptr = 0;
-
-	vsna[0] = vsnb[0] = 0;
-
-	n = mark5command("bank_set?\n", message, 511);
-
-	if(n < 0)
-	{
-		switch(n)
-		{
-		case -1:
-			Logger_logData(D->log, "cannot make socket");	
-			break;
-		case -2:
-			Logger_logData(D->log, "cannot connect to Mark5A");	
-			break;
-		case -3:
-			Logger_logData(D->log, "error sending bank_set? to Mark5A");
-			break;
-		case -4:
-			Logger_logData(D->log, "error recving from Mark5A");
-			break;
-		}
-		return 1;
-	}
-
-	for(i = 0; message[i] && nptr < 8; i++)
-	{
-		if(message[i] == ':')
-		{
-			ptr[nptr] = message+i+2;
-			message[i] = 0;
-			nptr++;
-		}
-	}
-
-	if(nptr >= 2)
-	{
-		if(ptr[0][0] == 'A' && ptr[0][1] <= ' ' && ptr[1][0] != '-')
-		{
-			strncpy(vsna, ptr[1], 8);
-			vsna[8] = 0;
-		}
-		if(ptr[0][0] == 'B' && ptr[0][1] <= ' ' && ptr[1][0] != '-')
-		{
-			strncpy(vsnb, ptr[1], 8);
-			vsnb[8] = 0;
-		}
-	}
-
-	if(nptr >= 4)
-	{
-		if(ptr[2][0] == 'A' && ptr[2][1] <= ' ' && ptr[3][0] != '-')
-		{
-			strncpy(vsna, ptr[3], 8);
-			vsna[8] = 0;
-		}
-		if(ptr[2][0] == 'B' && ptr[2][1] <= ' ' && ptr[3][0] != '-')
-		{
-			strncpy(vsnb, ptr[3], 8);
-			vsnb[8] = 0;
-		}
-	}
 
 	return 0;
 }
@@ -239,7 +216,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 	int n;
 	char vsnA[16], vsnB[16];
-	char message[1000];
+	char message[MAX_MESSAGE_SIZE];
 
 	if(!D->isMk5)
 	{
@@ -266,17 +243,6 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 			dm.state = MARK5_STATE_ERROR;
 		}
 		break;
-	case PROCESS_MARK5A:
-		n = Mark5A_get_modules(vsnA, vsnB, D);
-		if(n == 0)
-		{
-			dm.state = MARK5_STATE_BUSY;
-		}
-		else
-		{
-			dm.state = MARK5_STATE_ERROR;
-		}
-		break;
 	default:
 		pthread_mutex_unlock(&D->processLock);
 		return;
@@ -287,8 +253,10 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	{
 		if(legalVSN(D->vsnA))
 		{
-			sprintf(message, "Module %s removed from bank A", D->vsnA);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module %s removed from bank A", D->vsnA);
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_VERBOSE);
 		}
 		if(vsnA[0] == 0)
 		{
@@ -296,14 +264,18 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(legalVSN(vsnA))
 		{
-			sprintf(message, "Module %s inserted into bank A", vsnA);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module %s inserted into bank A", vsnA);
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_VERBOSE);
 			strncpy(D->vsnA, vsnA, 8);
 		}
 		else if(strcmp(D->vsnA, "illegalA") != 0)
 		{
-			sprintf(message, "Module with illegal VSN inserted into bank A");
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module with illegal VSN inserted into bank A");
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_ERROR);
 			strcpy(D->vsnA, "illegalA");
 		}
 	}
@@ -311,8 +283,10 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	{
 		if(legalVSN(D->vsnB))
 		{
-			sprintf(message, "Module %s removed from bank B", D->vsnB);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module %s removed from bank B", D->vsnB);
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_VERBOSE);
 		}
 		if(vsnB[0] == 0)
 		{
@@ -320,14 +294,18 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(legalVSN(vsnB))
 		{
-			sprintf(message, "Module %s inserted into bank B", vsnB);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module %s inserted into bank B", vsnB);
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_VERBOSE);
 			strncpy(D->vsnB, vsnB, 8);
 		}
 		else if(strcmp(D->vsnB, "illegalB") != 0)
 		{
-			sprintf(message, "Module with illegal VSN inserted into bank B");
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			snprintf(message, MAX_MESSAGE_SIZE,
+				"Module with illegal VSN inserted into bank B");
+			difxMessageSendDifxAlert(message, 
+				DIFX_ALERT_LEVEL_ERROR);
 			strcpy(D->vsnB, "illegalB");
 		}
 	}
@@ -345,9 +323,17 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
-	char message[100+(XLR_ERROR_LENGTH)];
+	char message[MAX_MESSAGE_SIZE];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
-	int i, bank;
+	int bank;
+	const char id[] = "BankPower";
+	int v;
+
+	v = lockStreamstor(D, id, MARK5_LOCK_DONT_WAIT);
+	if(v != 0)
+	{
+		return 0;
+	}
 	
 	xlrRC = XLROpen(1, &xlrDevice);
 	D->nXLROpen++;
@@ -355,17 +341,21 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		sprintf(message, "ERROR: XLR_disc_power: "
+		snprintf(message, MAX_MESSAGE_SIZE, 
+			"ERROR: XLR_disc_power: "
 			"Cannot open streamstor card.  N=%d "
 			"Error=%u (%s)\n",
 			D->nXLROpen,
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
+
+		unlockStreamstor(D, id);
+
 		return 1;
 	}
 
-	for(i = 0; banks[i]; i++)
+	for(int i = 0; banks[i]; i++)
 	{
 		if(banks[i] == 'A' || banks[i] == 'a')
 		{
@@ -377,7 +367,8 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		}
 		else
 		{
-			sprintf(message, "XLR_disc_power: illegal args: "
+			snprintf(message, MAX_MESSAGE_SIZE, 
+				"XLR_disc_power: illegal args: "
 				"bank=%c, on=%d\n", banks[i], on);
 			Logger_logData(D->log, message);
 			continue;
@@ -394,7 +385,8 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		{
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
-			sprintf(message, "XLR_disc_power: error for "
+			snprintf(message, MAX_MESSAGE_SIZE, 
+				"XLR_disc_power: error for "
 				"bank=%c on=%d Error=%u (%s)\n",
 				banks[i], on, xlrError, xlrErrorStr);
 			Logger_logData(D->log, message);
@@ -402,6 +394,8 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	}
 
 	XLRClose(xlrDevice);
+
+	unlockStreamstor(D, id);
 
 	return 0;
 }

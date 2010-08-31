@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2010 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,22 +19,64 @@
 /*===========================================================================
  * SVN properties (DO NOT CHANGE)
  *
- * $Id: proc.h 1953 2010-02-10 20:57:48Z WalterBrisken $
- * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/branches/difx-1.5/src/proc.h $
- * $LastChangedRevision: 1953 $
- * $Author: WalterBrisken $
- * $LastChangedDate: 2010-02-10 13:57:48 -0700 (Wed, 10 Feb 2010) $
+ * $Id$
+ * $HeadURL$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
-#ifndef __PROC_H__
-#define __PROC_H__
+#ifndef __TRANSIENT_H__
+#define __TRANSIENT_H__
 
-/* routines to get useful information from /proc */
+#include <string>
+#include <list>
+#include <pthread.h>
+#include <difxmessage.h>
 
-int procGetMem(int *memused, int *memtot);
-int procGetNet(long long *rx, long long *tx);
-int procGetCPU(float *l1, float *l5, float *l15);
-int procGetStreamstor(int *busy);
+using namespace std;
+
+class Event
+{
+public:
+	Event(double start, double stop, double pri) : 
+		startMJD(start), stopMJD(stop), priority(pri) {}
+	double startMJD, stopMJD, priority;
+
+	friend bool operator< (Event &t1, Event &t2);
+};
+
+class EventQueue
+{
+public:
+	EventQueue(string id) : jobId(id), destDir("nowhere"), user("nobody"), maxSize(5) {}
+	string jobId;
+	string destDir;
+	string user;
+	unsigned int maxSize;
+	list<Event> events;
+	list<string> units;
+
+	void addMark5Unit(const char *unit);
+	void addEvent(const DifxMessageTransient *dt);
+	void setUser(const char *u);
+	int copy(double maxDuration);
+	void print() const;
+};
+
+class EventManager
+{
+public:
+	list<EventQueue> queues;
+	pthread_mutex_t lock;
+
+	EventManager();
+	~EventManager();
+	EventQueue *startJob(const char *jobId);
+	void stopJob(const char *jobId, double maxDuration);
+	bool addEvent(const DifxMessageTransient *dt);
+	void print();
+};
 
 #endif
