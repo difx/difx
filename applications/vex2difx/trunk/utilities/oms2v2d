@@ -110,12 +110,14 @@ def writev2d(oms, v2dFile):
 	try:
 		nFFT = int(corr['FFT_SIZE'][0])
 	except KeyError:
-		print 'Warning: FFT SIZE not provided.  Assuming 64.'
-		nFFT = 64
+		print 'Warning: FFT SIZE not provided.  Assuming 256.'
+		nFFT = 256
 	try:
 		specAvg = int(corr['SPECTRAL_AVERAGE'][0])
 	except KeyError:
-		specAvg = 1
+		specAvg = 256/nFFT
+		if specAvg == 0:
+			specAvg = 1
 	
 	if 'POLARIZATION' in corr:
 		if corr['POLARIZATION'][0] == 'NO':
@@ -158,9 +160,12 @@ def writev2d(oms, v2dFile):
 		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  nChan = %d\n' % (nFFT/(2*specAvg)))
+		out.write('  nChan = %d\n' % (nFFT/2))
+                out.write('  specAvg = %d\n' % (specAvg))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
+	if nFFT > 256:
+		out.write('  numBufferedFFTs = 10\n')
 	out.write('}\n')
 	out.close()
 
