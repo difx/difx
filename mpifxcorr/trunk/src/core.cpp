@@ -1011,7 +1011,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
     averageAndSendAutocorrs(index, threadid, (startblock+acshiftcount*maxacblocks+((double)acblockcount)/2.0)*blockns, acblockcount*blockns, modes, scratchspace);
   }
   if(scratchspace->dumpkurtosis) {
-    averageAndSendKurtosis(index, threadid, (startblock + numblocks)*blockns/2.0, numblocks*blockns, numblocks, modes, scratchspace);
+    averageAndSendKurtosis(index, threadid, (startblock + numblocks/2.0)*blockns, numblocks*blockns, numblocks, modes, scratchspace);
   }
 
   //lock the bweight copylock, so we're the only one adding to the result array (baseline weight section)
