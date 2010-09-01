@@ -78,6 +78,19 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
   todiskmemptrs = new int[maxfiles];
   estimatedbytes += maxfiles*4;
 
+  //ensure that the output files are ready to go
+  ofstream output;
+  char filename[256];
+  for(int s=0;s<model->getNumPhaseCentres(0);s++)
+  {
+    for(int b=0;b<binloop;b++)
+    {
+      sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, s, b);
+      output.open(filename, ios::trunc);
+      output.close();
+    }
+  }
+
   //set up the initial time period this Visibility will be responsible for
   offsetns = offsetns + offsetnsperintegration;
   subintsthisintegration = (int)(((long long)(config->getIntTime(currentconfigindex)*1000000000.0))/config->getSubintNS(currentconfigindex));
