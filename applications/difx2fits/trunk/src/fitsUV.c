@@ -500,12 +500,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			v = fread(&weight, sizeof(double), 1, dv->in);
 
 			v = fread(uvw, sizeof(double), 3, dv->in);
-			//printf("bl was %d\n", bl);
-			//printf("mjd was %f\n", mjd);
-			//printf("iat was %f\n", iat);
-			//printf("polpair was %s\n", polpair);
-			//printf("weight was %f\n", weight);
-			//printf("uvw was %f, %f, %f\n", uvw[0], uvw[1], uvw[2]);
                         if(v < 3)
                         {
 				fprintf(stderr, "Error parsing header - got a return val of %d when reading uvw\n", v);
@@ -1131,7 +1125,7 @@ static int DifxVisConvert(const DifxInput *D,
 	mjd2fits((int)D->mjdStart, dateStr);
 	fitsWriteString(out, "DATE-OBS", dateStr, "");
 
-// Soon! fitsWriteString(out, "EQUINOX", "J2000", "");
+	fitsWriteString(out, "EQUINOX", "J2000", "");
 	fitsWriteString(out, "WEIGHTYP", "CORRELAT", "");
 
 	fitsWriteString(out, "TELESCOP", "VLBA", "");

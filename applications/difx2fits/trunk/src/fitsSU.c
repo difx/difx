@@ -53,8 +53,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"FREQOFF", bandFormDouble, "freq. offset from ref freq.","HZ"},
 		{"RAEPO", "1D", "Right Ascension at EPOCH", "DEGREES"},
 		{"DECEPO", "1D", "Declination at EPOCH", "DEGREES"},
-		{"EPOCH", "1D", "epoch 1950.0B or J2000", "YEARS"},
-// Soon!        {"EQUINOX", "8A", "Mean equinox"},
+		{"EQUINOX", "8A", "Mean equinox"},
 		{"RAAPP", "1D", "apparent RA at 0 IAT ref day", "DEGREES"},
 		{"DECAPP", "1D", "apparent Dec at 0 IAT ref day", "DEGREES"},
 		{"SYSVEL", bandFormDouble, "systemic velocity at ref pixel", 
@@ -64,8 +63,8 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		{"RESTFREQ", bandFormDouble, "line rest frequency", "HZ"},
 		{"PMRA", "1D", "proper motion in RA", "DEG/DAY"},
 		{"PMDEC", "1D", "proper motion in Dec", "DEG/DAY"},
-		{"PARALLAX", "1E", "parallax of source", "ARCSEC"}
-// Soon!        {"EPOCH", "1D", "Epoch of observation", "YEARS"}
+		{"PARALLAX", "1E", "parallax of source", "ARCSEC"},
+		{"EPOCH", "1D", "Epoch of observation", "YEARS"}
 	};
 
 	int nColumn;
@@ -197,10 +196,14 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		}
 		config = D->config + configId;
 
+		
+		/* Note: if any of these 4 nubmers are changed, expect AIPS to not handle these correctly */
 		muRA = 0.0;
 		muDec = 0.0;
 		parallax = 0.0;
 		epoch = 2000.0;
+
+
 		sourceId1 = i + 1;	/* FITS sourceId1 is 1-based */
 		qual = source->qual;
 		strcpypad(calCode, source->calCode, 4);
@@ -226,8 +229,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ARRAY(freqOffset, p_fitsbuf, nBand);
 		FITS_WRITE_ITEM (RAEpoch, p_fitsbuf);
 		FITS_WRITE_ITEM (decEpoch, p_fitsbuf);
-		FITS_WRITE_ITEM (epoch, p_fitsbuf);
-// Soon!        FITS_WRITE_ARRAY(equinox, p_fitsbuf, 8);
+		FITS_WRITE_ARRAY(equinox, p_fitsbuf, 8);
 		FITS_WRITE_ITEM (RAApp, p_fitsbuf);
 		FITS_WRITE_ITEM (decApp, p_fitsbuf);
 		FITS_WRITE_ARRAY(sysVel, p_fitsbuf, nBand);
@@ -237,7 +239,7 @@ const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 		FITS_WRITE_ITEM (muRA, p_fitsbuf);
 		FITS_WRITE_ITEM (muDec, p_fitsbuf);
 		FITS_WRITE_ITEM (parallax, p_fitsbuf);
-// Soon!        FITS_WRITE_ITEM (epoch, p_fitsbuf);
+		FITS_WRITE_ITEM (epoch, p_fitsbuf);
 
 		testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "SU");
 

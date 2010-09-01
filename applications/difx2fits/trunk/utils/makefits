@@ -308,7 +308,7 @@ class JobList:
 
 		j = 1
 		fitslistfile = '%s/%s.fitslist' % (cwd, self.kv['pass'])
-		if os.path.exists(fitslistfile):
+		if isfile(fitslistfile):
 			print "FITS listing file " + fitslistfile + " already exists - not proceeding!"
 			print "Remove this file if the FITS files listed within have already been"
 			print "archived or are not required"
