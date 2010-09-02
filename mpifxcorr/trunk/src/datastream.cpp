@@ -1066,7 +1066,9 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
     if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
     {
       //copy some data into the previous segment to make sure it stays contiguous
-      bytestocopy = bufferinfo[previoussegment].sendbytes - bufferinfo[previoussegment].validbytes;
+      bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
+      if(bytestocopy > bufferinfo[previoussegment].sendbytes) //one send is the worst case we need to deal with
+        bytestocopy = bufferinfo[previoussegment].sendbytes;
       if(bytestocopy > bufferinfo[buffersegment].validbytes)
         bytestocopy = bufferinfo[buffersegment].validbytes;
       if(bytestocopy > 0)
@@ -1304,7 +1306,9 @@ void DataStream::diskToMemory(int buffersegment)
     if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
     {
       //copy some data into the previous segment to make sure it stays contiguous
-      bytestocopy = bufferinfo[previoussegment].sendbytes - bufferinfo[previoussegment].validbytes;
+      bytestocopy = readbytes - bufferinfo[previoussegment].validbytes;
+      if(bytestocopy > bufferinfo[previoussegment].sendbytes) //one send is the worst case we need to deal with
+        bytestocopy = bufferinfo[previoussegment].sendbytes;
       if(bytestocopy > bufferinfo[buffersegment].validbytes)
         bytestocopy = bufferinfo[buffersegment].validbytes;
       if(bytestocopy > 0)
