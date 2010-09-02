@@ -1,0 +1,5 @@
+Version 0.1
+~~~~~~~~~~~
+* Initial implementation of vdifio
+* Serves multiple VDIF threads from one source to multiple sinks
+* Version for DiFX-2.0.0
