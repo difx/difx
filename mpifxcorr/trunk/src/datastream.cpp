@@ -584,14 +584,25 @@ void DataStream::loopfileread()
       if(perr != 0)
         csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
-      //unlock the previous section
-      perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
-      if(perr != 0)
-        csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      if(!isnewfile) //can unlock previous section immediately
+      {
+        //unlock the previous section
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));      if(perr != 0)
+          csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
 
       //do the read
       diskToMemory(lastvalidsegment);
       numread++;
+
+      if(isnewfile) //had to wait before unlocking file
+      {
+        //unlock the previous section
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
+        if(perr != 0)
+          csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
+      isnewfile = false;
     }
     if(keepreading)
     {
@@ -693,13 +704,24 @@ void DataStream::loopnetworkread()
       if(perr != 0)
         csevere << startl << "Error in telescope readthread lock of buffer section!!!" << lastvalidsegment << endl;
 
-      //unlock the previous section
-      perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
-      if(perr != 0)
-        csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      if(!isnewfile) //can unlock immediately
+      {
+        //unlock the previous section
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
+        if(perr != 0)
+          csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
 
       //do the read
       networkToMemory(lastvalidsegment, framebytesremaining);
+
+      if(isnewfile) //had to wait before unlocking
+      {
+        //unlock the previous section
+        perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));        if(perr != 0)
+          csevere << startl << "Error in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
+      }
+      isnewfile = false;
     }
     if(keepreading)
     {
@@ -918,6 +940,8 @@ uint64_t DataStream::openframe()
   if (status < 0)
     return 0; //note exit here! Some problem with header
 
+  isnewfile = true;
+
   free(buf);
   return framesize;
 }
@@ -976,7 +1000,7 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
 {
   char *ptr;
   unsigned int bytestoread;
-  int nread, status, synccatchbytes;
+  int nread, status, synccatchbytes, previoussegment, validns, nextns, bytestocopy;
 
   //do the buffer housekeeping
   waitForBuffer(buffersegment);
@@ -1033,6 +1057,29 @@ void DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaini
     else
       keepreading = false;
   }
+
+  previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
+  if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
+  {
+    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = bufferinfo[previoussegment].scanns + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    {
+      //copy some data into the previous segment to make sure it stays contiguous
+      bytestocopy = bufferinfo[previoussegment].sendbytes - bufferinfo[previoussegment].validbytes;
+      if(bytestocopy > bufferinfo[buffersegment].validbytes)
+        bytestocopy = bufferinfo[buffersegment].validbytes;
+      if(bytestocopy > 0)
+      {
+        cinfo << startl << "Copying " << bytestocopy << " bytes to ensure databuffer segment " << previoussegment << " has enough data for a full send" << endl;
+        status = vectorCopy_u8(&databuffer[buffersegment*(bufferbytes/numdatasegments) + bufferinfo[previoussegment].validbytes],
+                               &databuffer[previoussegment*(bufferbytes/numdatasegments)], bytestocopy);
+        if(status != vecNoErr)
+          cerror << startl << "Error copying " << bytestocopy << " bytes back to segment " << previoussegment << endl;
+      }
+    }
+  }
+
   if(readseconds + model->getScanStartSec(readscan, corrstartday, corrstartseconds) >= config->getExecuteSeconds())
     keepreading = false;
 }
@@ -1158,6 +1205,7 @@ void DataStream::openfile(int configindex, int fileindex)
 
   cinfo << startl << "Datastream " << mpiid << " has opened file index " << fileindex << ", which was " << datafilenames[configindex][fileindex] << endl;
 
+  isnewfile = true;
   //read the header and set the appropriate times etc based on this information
   initialiseFile(configindex, fileindex);
 }
@@ -1221,7 +1269,7 @@ void DataStream::initialiseFile(int configindex, int fileindex)
 
 void DataStream::diskToMemory(int buffersegment)
 {
-  int synccatchbytes;
+  int synccatchbytes, previoussegment, validns, nextns, status, bytestocopy;
 
   //do the buffer housekeeping
   waitForBuffer(buffersegment);
@@ -1246,6 +1294,28 @@ void DataStream::diskToMemory(int buffersegment)
     }
     else
       keepreading = false;
+  }
+
+  previoussegment  = (buffersegment + numdatasegments - 1 )% numdatasegments;
+  if(bufferinfo[previoussegment].readto && bufferinfo[previoussegment].validbytes < bufferinfo[previoussegment].sendbytes && bufferinfo[previoussegment].configindex == bufferinfo[buffersegment].configindex)
+  {
+    validns =((long long)bufferinfo[previoussegment].validbytes)*((long long)bufferinfo[previoussegment].nsinc)/readbytes;
+    nextns = bufferinfo[previoussegment].scanns + validns;
+    if(bufferinfo[buffersegment].scan == bufferinfo[previoussegment].scan && bufferinfo[buffersegment].scanns == (nextns%1000000000) && bufferinfo[buffersegment].scanseconds == (bufferinfo[previoussegment].scanseconds + nextns/1000000000))
+    {
+      //copy some data into the previous segment to make sure it stays contiguous
+      bytestocopy = bufferinfo[previoussegment].sendbytes - bufferinfo[previoussegment].validbytes;
+      if(bytestocopy > bufferinfo[buffersegment].validbytes)
+        bytestocopy = bufferinfo[buffersegment].validbytes;
+      if(bytestocopy > 0)
+      {
+        cinfo << startl << "Copying " << bytestocopy << " bytes to ensure databuffer segment " << previoussegment << " has enough data for a full send" << endl;
+        status = vectorCopy_u8(&databuffer[buffersegment*(bufferbytes/numdatasegments) + bufferinfo[previoussegment].validbytes],
+                               &databuffer[previoussegment*(bufferbytes/numdatasegments)], bytestocopy);
+        if(status != vecNoErr)
+          cerror << startl << "Error copying " << bytestocopy << " bytes back to segment " << previoussegment << endl;
+      }
+    }
   }
 
   if(input.eof() || input.peek() == EOF)

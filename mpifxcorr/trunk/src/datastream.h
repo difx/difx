@@ -258,7 +258,7 @@ protected:
   int * filesread;
   int * confignumfiles;
   double a, b, c;
-  bool readthreadstarted, keepreading, readfromfile, tcp;
+  bool readthreadstarted, keepreading, readfromfile, tcp, isnewfile;
   u8 * databuffer;
   pthread_t readerthread;
   pthread_cond_t readcond;
