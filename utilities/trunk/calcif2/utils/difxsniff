@@ -5,8 +5,8 @@ from os import chdir, popen, system, getcwd
 from string import strip, split, find, lower, upper
 
 program = 'difxsniff'
-version = '1.4'
-verdate = '20100213'
+version = '2.0'
+verdate = '20100902'
 author  = 'Walter Brisken'
 
 def usage():
@@ -47,66 +47,92 @@ def sniff(filebases, refants, dir, newNames):
 	apd = open(dir+'datafile.lis', 'w')
 	first = 1
 	for f in filebases:
-		data = open(f+'.apd', 'r').readlines()
+		f = open(f+'.apd', 'r')
+		l = f.readline()
 		if first:
-			first = 0
-			if data[0][0:8] != 'obscode:':
+			if l[0:8] != 'obscode:':
 				apd.write('obscode:  ')
-			apd.write(data[0])
+			apd.write(l)
+			first = 0
 		if len(refants) > 1:
-			for d in data[1:]:
+			while 1:
+				l = f.readline()
+				if l == '':
+					break
 				for r in refants:
-					if find(d, r) > 0:
+					if find(l, r) > 0:
 						apd.write(d)
 						break
 		else:
-			for d in data[1:]:
-				s = split(d)
+			while 1:
+				l = f.readline()
+				if l == '':
+					break
+				s = split(l)
 				if s[6] == refants[0]:
-					apd.write(d);
+					apd.write(l);
 				elif s[7] == refants[0]:
-					apd.write(reverseapd(d))
+					apd.write(reverseapd(l))
+		f.close()
 	apd.close()
 
 	# make wtsfile
 	wts = open(dir+'wtsfile.lis.sum', 'w')
 	first = 1
 	for f in filebases:
-		data = open(f+'.wts', 'r').readlines()
+		f = open(f+'.wts', 'r')
+		l = f.readline()
+		# only write the first line for the first file
 		if first:
 			first = 0
-			wts.write(data[0])
-		for d in data[1:]:
-			wts.write(d)
+			wts.write(l)
+		while 1:
+			l = f.readline()
+			if l == '':
+				break
+			wts.write(l)
+		f.close()
 	wts.close()
 
 	# make acbandfile
 	acb = open(dir+'acbandfile.lis', 'w')
 	for f in filebases:
-		data = open(f+'.acb', 'r').readlines()
-		for d in data:
-			acb.write(d)
+		f = open(f+'.acb', 'r')
+		for l in f:
+			acb.write(l)
+		f.close()
 	acb.close()
 
 	# make xcbandfile
 	xcb = open(dir+'xcbandfile.lis', 'w')
 	for f in filebases:
-		data = open(f+'.xcb', 'r').readlines()
-		l = len(data)
-		i = 0
-		while(i < l):
-			v = split(data[i])
+		f = open(f+'.xcb', 'r')
+		while 1:
+			data = []
+			l = f.readline()
+			if l == '':
+				break
+			data.append(l)
+			v = split(l)
 			nif = int(v[-1])
 			nch = int(v[-3])
 			n = 2 + nif + nif*nch
+			for i in range(1,n):
+				l = f.readline()
+				if l == '':
+					print 'premature end of file: ', (f+'.xcb')
+					break
+				data.append(l)
+			if len(data) != n:
+				break;
 			hasref = 0
 			for r in refants:
-				if find(data[i+2+nif], r) > 0:
+				if find(data[2+nif], r) > 0:
 					hasref += 1
 			if hasref > 0:
-				for j in range(i, i+n):
-					xcb.write(data[j])
-			i += n
+				for l in data:
+					xcb.write(l)
+		f.close()
 	xcb.close()
 	
 	if len(dir) > 0:
