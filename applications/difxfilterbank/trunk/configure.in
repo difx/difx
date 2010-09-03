@@ -47,6 +47,14 @@ else
         IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore -lpthread"
         echo "32/64 bit unspecified - assuming 32 bit for IPP"
 fi
+
+if test "$OSTYPE" == "darwin"; then
+          X11LIBS=""
+else
+          X11LIBS="-lX11"
+fi
+
+AC_SUBST(X11LIBS)
 AC_SUBST(IPP_CFLAGS)
 AC_SUBST(IPP_LIBS)
 dnl **********************************************************
