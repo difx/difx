@@ -163,8 +163,8 @@ int convertMark4 (struct CommandLineOptions *opts)
                     struct CommandLineOptions *, char *);
     int createType1s (DifxInput *, char *, char *, char *, struct stations *,
                       struct CommandLineOptions *, char *);
-    int createType3s (DifxInput *, char *, char *, struct stations *,
-                      struct CommandLineOptions *, char *);
+    int createType3s (DifxInput *, char *, char *, char *, struct stations *,
+                      struct CommandLineOptions *);
 
     difxVersion = getenv ("DIFX_VERSION");
     if(!difxVersion)
@@ -329,27 +329,13 @@ int convertMark4 (struct CommandLineOptions *opts)
             return 0;
             }
                                     // create type3 files for each station
-        if (createType3s (D, node, rcode, stns, opts, rootname) < 0)
+        if (createType3s (D, opts->baseFile[i], node, rcode, stns, opts) < 0)
             {
             deleteDifxInput(D);
             fprintf (stderr, "Could not create type 3 files\n");
             return 0;
             }
-/*
-        if(fitsWriteOpen(&outfile, node) < 0)
-            {
-            deleteDifxInput(D);
-            fprintf (stderr, "Cannot open output file\n");
-            return 0;
-            }
-
-        if(DifxInput2FitsTables(D, &outfile, opts) == D)
-            {
-            printf ("\nConversion successful\n\n");
-            }
-        
-        fitsWriteClose(&outfile);
-*/      }
+        }
 
     deleteDifxInput(D);
     opts->baseFile[i] = 0;          // mark this as converted

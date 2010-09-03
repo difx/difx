@@ -133,8 +133,10 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // for now, assume there is only one datafile present
     do
         dent = readdir (pdir);
-    while                           // ignore . and .. file names
-        (strcmp (dent->d_name, ".") == 0 || strcmp (dent->d_name, "..") == 0);
+    while                           // ignore ".", "..", and pcal file names
+        (strcmp (dent->d_name, ".") == 0 
+      || strcmp (dent->d_name, "..") == 0
+      || strncmp (dent->d_name, "PCAL", 4) == 0);
 
     strcpy (inname, dirname);
     strcat (inname, "/");
@@ -248,9 +250,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         strncpy (u.t120.baseline, blines[n], 2);
                                     // insert index# for this channel
         u.t120.index = D->nPolar * rec.freq_index + 1;
-        for (i=0; i<4; i++)         // tack on offset that represents polarization
-            if (strncmp (poltab[i], rec.pols, 2) == 0)
-                u.t120.index += i;
+                                    // tack on offset that represents polarization
+                                    // iff there is more than one polarization present
+        if (D->nPolar > 1)
+            for (i=0; i<4; i++)     
+                if (strncmp (poltab[i], rec.pols, 2) == 0)
+                    u.t120.index += i;
         u.t120.ap = n120[n] / t100.nindex;
                                     // write a type 120 record to the appropriate file
         write_t120 (&u.t120, fout[n]);

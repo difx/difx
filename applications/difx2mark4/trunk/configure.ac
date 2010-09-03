@@ -1,4 +1,4 @@
-AC_INIT([difx2fits], [3.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difx2mark4], [1.0], [Roger Cappallo <rjc@haystack.mit.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN

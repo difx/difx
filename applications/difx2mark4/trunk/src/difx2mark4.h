@@ -89,6 +89,7 @@ struct stations
 #include "type_300.h"
 #include "type_301.h"
 #include "type_302.h"
+#include "type_309.h"
 
                                     // byte swap prototypes
 short short_reverse (short);

@@ -26,6 +26,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         nsite = 0;
 
     char inname[256],
+         v2dname[256],
          line[256],
          s[256],
          *pst[50],
@@ -87,7 +88,8 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                            " enddef;\n",
                            "END_EXTRA"};
     FILE *fin,
-         *fout;
+         *fout,
+         *fv2d;
                                     // function prototypes
     char single_code (char *);
     void conv2date (double, struct date *);
@@ -104,19 +106,39 @@ int createRoot (char *baseFile,     // common part of difx fileset name
     if (opts->verbose > 0)
         fprintf (stderr, "source %s\n", source);
                                     // form input file name
-    strcpy (inname, baseFile);
+    strcpy (v2dname, baseFile);
                                     // see if base file name ends in _xxx
-    pchar = strrchr (inname, '_');
+    pchar = strrchr (v2dname, '_');
     if (pchar != NULL)
         *pchar = 0;                 // yes, truncate job# portion of name
-    strcat (inname, ".vex");
+    strcat (v2dname, ".v2d");
 
-                                    // open input (.vex) file
+                                    // open vex2difx (.v2d) file
+    fv2d = fopen (v2dname, "r");
+    if (fv2d == NULL)
+        {
+        perror ("difx2mark4");
+        fprintf (stderr, "fatal error opening v2d file %s\n", v2dname);
+        return (-1);
+        }
+                                    // read v2d file looking for vex = stmt
+    while (fgets (line, 256, fv2d) != NULL)
+        {
+        if ((pchar = strstr (line, "vex = ")) != NULL)
+            {
+            sscanf (pchar, "vex = %s", inname);
+            break;
+            }
+        }
+
+    if (opts->verbose > 0)
+        fprintf (stderr, "vex file name <%s>\n", inname);
+                                    // open input vex file
     fin = fopen (inname, "r");
     if (fin == NULL)
         {
         perror ("difx2mark4");
-        fprintf (stderr, "fatal error opening input file %s\n", inname);
+        fprintf (stderr, "fatal error opening input vex file %s\n", inname);
         return (-1);
         }
 
@@ -290,10 +312,11 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     (stns+nsite)->mk4_id = c;
                     
                     if (opts->verbose > 0)
-                        fprintf (stderr, "intl_name %c%c difx_name %c%c mk4_id %c\n",
+                        fprintf (stderr, "intl_name %c%c difx_name %c%c mk4_id %c "
+                                         "difx site index %d\n",
                            *((stns+nsite)->intl_name), *((stns+nsite)->intl_name+1),
                            *((stns+nsite)->difx_name), *((stns+nsite)->difx_name+1),
-                           (stns+nsite)->mk4_id);
+                           (stns+nsite)->mk4_id, (stns+nsite)->dind);
                     nsite++;
                     (stns+nsite)->mk4_id = 0; // null-terminate list 
                     }

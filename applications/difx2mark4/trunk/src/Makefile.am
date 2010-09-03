@@ -13,10 +13,18 @@ difx2mark4_SOURCES = \
 	write_t100.c \
 	write_t101.c \
 	write_t120.c \
+	write_t300.c \
+	write_t301.c \
+	write_t302.c \
+	write_t309.c \
 	mk4_typedefs.h \
 	type_000.h \
 	type_100.h \
 	type_101.h \
 	type_120.h \
+	type_300.h \
+	type_301.h \
+	type_302.h \
+	type_309.h \
 	difx2mark4.h
 
