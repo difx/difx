@@ -1014,15 +1014,15 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D,
 		r = DifxParametersfind1(ip, rows[6]+1, "PHASE CALS %d OUT", b);
 		if(r > 0)
 		{
-			DifxFreqAllocTones(D->freq, atoi(DifxParametersvalue(ip, r)));
+			DifxFreqAllocTones(&(D->freq[b]), atoi(DifxParametersvalue(ip, r)));
 			for(t = 0; t < D->freq[b].nTone; t++)
 			{
 				r = DifxParametersfind2(ip, r+1, "PHASE CAL %d/%d INDEX", b, t);
 				if(r < 0)
 				{
 					fprintf(stderr, "PHASE CAL %d/%d INDEX not found in .input file\n", b, t);
-					D->freq[b].tone[t] = atoi(DifxParametersvalue(ip, r));
 				}
+				D->freq[b].tone[t] = atoi(DifxParametersvalue(ip, r));
 			}
 		}
 

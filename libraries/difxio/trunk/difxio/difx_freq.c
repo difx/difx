@@ -58,7 +58,7 @@ void DifxFreqAllocTones(DifxFreq *df, int nTone)
 
 	if(nTone > 0)
 	{
-		df->tone = (int *)calloc(1, sizeof(int) );
+		df->tone = (int *)calloc(nTone, sizeof(int) );
 		df->nTone = nTone;
 	}
 	else
