@@ -51,7 +51,7 @@ dnl **** Find difxmessage library                         ****
 dnl **********************************************************
 dm_enabled=true
 PKG_CHECK_MODULES(DIFXMESSAGE,
-        difxmessage >= 0.8,
+        difxmessage >= 7.4,
         [AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
         dm_enabled=false)
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
@@ -61,7 +61,7 @@ dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
 PKG_CHECK_MODULES(MARK5IPC,
-        mark5ipc >= 0.8,
+        mark5ipc >= 7.4,
 	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
 	m5ipc_enabled=false)
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
@@ -86,7 +86,7 @@ dnl **********************************************************
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
 dnl **********************************************************
-PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.3.2)
+PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.1)
 dnl **********************************************************
 
 
