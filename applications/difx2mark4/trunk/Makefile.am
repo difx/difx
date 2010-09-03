@@ -1,7 +1,4 @@
 SUBDIRS = \
-	src \
-	utils
+	src
 DIST_SUBDIRS = \
-	src \
-	utils
-
+	src

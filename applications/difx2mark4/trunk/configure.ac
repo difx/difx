@@ -41,6 +41,5 @@ fi
 
 AC_OUTPUT([ \
 	Makefile \
-	src/Makefile \
-	utils/Makefile \
+	src/Makefile
 ])
