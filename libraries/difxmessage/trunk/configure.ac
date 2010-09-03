@@ -1,4 +1,4 @@
-AC_INIT([difxmessage], [0.8], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([difxmessage], [7.4], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 
@@ -49,8 +49,8 @@ LIBS=${EXPAT_LIBS}
 AC_OUTPUT([
 	Makefile \
 	difxmessage.pc \
-	difxmessage/Makefile \
 	mark5ipc.pc \
+	difxmessage/Makefile \
 	mark5ipc/Makefile \
 	utils/Makefile
 ])

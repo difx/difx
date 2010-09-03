@@ -1,13 +1,65 @@
-Version 0.1  20080311
+Version 7.4
 ~~~~~~~~~~~
-Initial version
+Added different types of binary message (STA/ autocorrelation, cross-correlation, kurtosis)
+Some fixes for array lengths
+Version for DiFX-2.0.0
 
-Version 0.2  20080518
+Version 7.3
 ~~~~~~~~~~~
-Add XML parsing routines
-More structured document types
-Add generic document union and associated processing
-NRAO-DiFX version 1.1
+Add difxVersion to difxStartMessage
+cpumon and mk5mon: catch exceptions and prevent terminal infection
+Add mark5ipc library
+difxlog: Log transient messages
+testdifxmessagereceive: allow selection of one message type, add in-line help
+For DiFX-1.5.4
+
+Version 7.2
+~~~~~~~~~~~
+Add transient XML type
+Fix errormon/errormon2 in cases where "entities" are in message strings
+Use pclose after popen (difxlog)
+Lots of protection against excessive string lengths
+For DiFX-1.5.3
+
+Version 7.1
+~~~~~~~~~~~
+Do better job expanding "entities" in XML formation
+ - do expansion more universally
+ - encode ascii values 1-31, 128-255 in [[]] so they can be idenfied and not crash parsers
+Add new Mark5 States: Test TestWrite and TestRead
+Improve safety of string manipulation
+ - TODO: entity expansion safety
+
+Version 0.7 20090904
+~~~~~~~~~~~
+Add XML type for condition reports
+  one document per disk (i.e., 8 per module)
+Test programs for condition document types
+DiFX version 1.5.1
+unchanged for DiFX-1.5.2
+
+Version 0.6 20090518
+~~~~~~~~~~~
+Improvements to difxlog
+DiFX version 1.5
+
+Version 0.5 20090131
+~~~~~~~~~~~
+Complete change from DifxMessageError to DifxMessageAlert
+Add Mark5Version message type
+Add Daughterboard information to Mark5Version messages
+Implement a minimum send delay (set to 40us now) to prevent loss of messages
+  when many are sent at nearly the same time.  Warning -- this could have 
+  performance impacts!
+
+Version 0.4 20090121
+~~~~~~~~~~~
+Escape characters in xml messages: < > & ' "
+  see http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
+Add initial version of "mk5display", a python gui to watch a bank of Mark5 units. 
+  This is basically a toy, not for real use at the moment.
+Add difxStopMessage
+Add difxlog
 
 Version 0.3  20080715
 ~~~~~~~~~~~
@@ -21,48 +73,13 @@ Add DifxMessageParameter type
 Add DifxMessageStart 
 Started distinguishing between STA and LTA types
 
-Version 0.4 20090121
+Version 0.2  20080518
 ~~~~~~~~~~~
-Escape characters in xml messages: < > & ' "
-  see http://en.wikipedia.org/wiki/List_of_XML_and_HTML_character_entity_references
-Add initial version of "mk5display", a python gui to watch a bank of Mark5 units. 
-  This is basically a toy, not for real use at the moment.
-Add difxStopMessage
-Add difxlog
+Add XML parsing routines
+More structured document types
+Add generic document union and associated processing
+NRAO-DiFX version 1.1
 
-Version 0.5 20090131
+Version 0.1  20080311
 ~~~~~~~~~~~
-Complete change from DifxMessageError to DifxMessageAlert
-Add Mark5Version message type
-Add Daughterboard information to Mark5Version messages
-Implement a minimum send delay (set to 40us now) to prevent loss of messages
-  when many are sent at nearly the same time.  Warning -- this could have 
-  performance impacts!
-
-Version 0.6 20090518
-~~~~~~~~~~~
-Improvements to difxlog
-DiFX version 1.5
-
-Version 0.7 20090904
-~~~~~~~~~~~
-Add XML type for condition reports
-  one document per disk (i.e., 8 per module)
-Test programs for condition document types
-DiFX version 1.5.1 & 1.5.2
-
-Version 0.8
-~~~~~~~~~~~
-Do better job expanding "entities" in XML formation
- - do expansion more universally
- - encode ascii values 1-31 in [[]] so they can be idenfied and not crash parsers
-Add new Mark5 States: Test TestWrite and TestRead
-Use pclose after popen (difxlog)
-Add difxVersion to difxStartMessage
-Clean up terminal in mk5mon and cpumon
-Add mark5ipc library
-Utilities: trap Ctrl-c and handle properly
-cpumon and mk5mon: catch exceptions and prevent terminal infection
-difxlog: Log transient messages
-testdifxmessagereceive: allow selection of one message type, add in-line help
-New definitions for autocorrelation, crosscorrelation and kurtosis STA and LTA dumps
+Initial version
