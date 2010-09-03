@@ -1,3 +1,4 @@
+#include <string.h>
 #include "difxfilterbank.h"
 
 int main(int argc, const char * argv[])
