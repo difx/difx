@@ -1094,7 +1094,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     if(datastreamtable[i].phasecalintervalmhz != 0)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cwarn << startl << "Phase cal extraction requested not yet supported!!!" << endl;
+        cwarn << startl << "Experimental feature enabled: phase cal extraction not yet supported by difx2fits!!! " << endl;
     }
 
     getinputline(input, &line, "NUM RECORDED FREQS");
