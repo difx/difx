@@ -51,7 +51,7 @@ dnl **** Find difxmessage library                         ****
 dnl **********************************************************
 dm_enabled=true
 PKG_CHECK_MODULES(DIFXMESSAGE,
-        difxmessage >= 7.4,
+        [difxmessage >= 2.0.0 difxmessage < 7],
         [AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
         dm_enabled=false)
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
@@ -61,7 +61,7 @@ dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
 PKG_CHECK_MODULES(MARK5IPC,
-        mark5ipc >= 7.4,
+        [mark5ipc >= 2.0.0 mark5ipc < 7],
 	[AC_DEFINE([HAVE_MARK5IPC], 1, [1=has MARK5IPC])],
 	m5ipc_enabled=false)
 AM_CONDITIONAL(WITH_MARK5IPC, $m5ipc_enabled)
