@@ -1,0 +1,4 @@
+Utilities are generally unversioned - first entry 06 Sep 2010, ATD
+* Rearranged structure to eliminate out of date code
+* Made use of IPPLINKLIBS
+* Version for DiFX 2.0.0
