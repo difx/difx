@@ -83,7 +83,7 @@ enum Mark5Blanker
 struct mark5_stream
 {
 	/* globally readable values -- should not be changed */
-	char streamname[80];	/* name of stream */
+	char streamname[256];	/* name of stream */
 	char formatname[80];	/* name of format */
 	enum Mark5Format format;/* format id */
 	int Mbps;		/* total data rate */
