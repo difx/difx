@@ -12,8 +12,8 @@ AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 AC_CHECK_LIB(pthread, pthread_create,,[AC_MSG_ERROR("need libpthread")])
 AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.0.0)
-PKG_CHECK_MODULES(MARK5IPC, mark5ipc >= 2.0.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.0.0 difxmessage < 7])
+PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.0.0 mark5ipc < 7])
 PKG_CHECK_MODULES(STREAMSTOR, streamstor)
 PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.1)
 LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a ${prefix}/lib/libmark5ipc.a"
