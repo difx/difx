@@ -40,9 +40,9 @@ fi
 dnl **********************************************************
 
 # Checks for libraries.
-PKG_CHECK_MODULES(DIFXIO, difxio >= 2.9)
-PKG_CHECK_MODULES(FXCORR, fxcorr >= 1.5)
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 0.5)
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0)
+PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.0)
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.0.0)
 PKG_CHECK_MODULES(VDIFIO, vdifio >= 0.1)
 
 # Checks for header files.
