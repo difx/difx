@@ -2,10 +2,10 @@ calcif2
 ~~~~~~~
 Version 2.0
 * Writes im files only (no delay/uvw/rate) and allows multi-phase centre
-* Version for DiFX-2.0
 * Warn when NaN or Inf delays are made
 * difxsniff: Retain extra digit in amplitude column
 * Requires difxio 3.0
+* Version for DiFX-2.0.0
 
 Version 1.1
 * Fix bug: didn't respect polynomial order/increment from command line
