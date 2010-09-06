@@ -1,5 +1,6 @@
-Version 7.4
+Version 2.0.0
 ~~~~~~~~~~~
+Re-numbered version from 7.4 (the jump from 0.7 to 7.1 some time ago was a mistake)
 Added different types of binary message (STA/ autocorrelation, cross-correlation, kurtosis)
 Some fixes for array lengths
 Version for DiFX-2.0.0
