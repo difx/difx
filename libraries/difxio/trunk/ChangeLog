@@ -32,6 +32,7 @@
   The true usage is now used everywhere. (Thanks to Randall Wayth for helping find this in DiFX 1.5!)
 * Precision in source positions increased by two digits, now matches the 1.5 branch
 * Rounding error fixed when mjdStart/Stop manually specified
+* Allow unused rules to be thrown out from a DifxInput
 * Version for DiFX-2.0.0
 
 2.11
