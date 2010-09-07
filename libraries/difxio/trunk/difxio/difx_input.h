@@ -616,6 +616,8 @@ void deleteDifxRuleArray(DifxRule *dr);
 void fprintDifxRule(FILE *fp, const DifxRule *dc);
 void printDifxRule(const DifxRule *dr);
 int writeDifxRuleArray(FILE *out, const DifxInput *D);
+void copyDifxRule(DifxRule * dest, DifxRule * src);
+int simplifyDifxRules(DifxInput *D);
 int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const DifxSource * src);
 
 /* DifxPolyModel functions */

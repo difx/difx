@@ -52,6 +52,17 @@ DifxRule *newDifxRuleArray(int nRule)
         return dr;
 }
 
+void copyDifxRule(DifxRule * dest, DifxRule * src)
+{
+	strcpy(dest->configName, src->configName);
+	strcpy(dest->sourcename, src->sourcename);
+	strcpy(dest->scanId,     src->scanId);
+	strcpy(dest->calCode,    src->calCode);
+	dest->qual     = src->qual;
+	dest->mjdStart = src->mjdStart;
+	dest->mjdStop  = src->mjdStop;
+}
+
 void deleteDifxRuleArray(DifxRule *dr)
 {
 	free(dr);
@@ -130,5 +141,44 @@ int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const Difx
 	return 1;
 }
 
+int simplifyDifxRules(DifxInput *D)
+{
+	int r, c, used, numdeleted;
+	DifxRule * dr;
+	DifxConfig * dc;
 
+	numdeleted = 0;
+	for(r=0;r<D->nRule;r++)
+	{
+		dr = D->rule + r;
+		used = 0;
+		for(c=0;c<D->nConfig;c++)
+		{
+			dc = D->config+c;
+			if(strcmp(dc->name, dr->configName) == 0)
+			{
+				used = 1;
+			}
+		}
+		if(!used)
+		{
+			numdeleted++;
+		}
+		if(numdeleted > 0 && r+1 > numdeleted)
+		{
+			copyDifxRule(D->rule + r - numdeleted, dr);
+		}
+	}
+	D->nRule -= numdeleted;
+	if(numdeleted > 0)
+	{
+		D->rule = realloc(D->rule, D->nRule*sizeof(DifxRule));
+		if(D->rule == 0)
+		{
+			fprintf(stderr, "Error reallocating DifxRule array!\n");
+			exit(1);
+		}
+	}
+	return numdeleted;
+}
 
