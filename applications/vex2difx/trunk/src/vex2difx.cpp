@@ -1796,6 +1796,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	simplifyDifxBaselines(D);
 	simplifyDifxConfigs(D);
 
+	//delete any unused rules
+	simplifyDifxRules(D);
+
 	//delete the "blocked freq" array
 	blockedfreqids.clear();
 
