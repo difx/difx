@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20100903";
+const char verdate[] = "20100907";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -89,6 +89,8 @@ int usage(const char *pgm)
 	printf("  -b <b>     Read/write <b> blocks per test (default=%d)\n\n", defaultNBlock);
 	printf("  --dirfile <f>\n");
 	printf("  -o <f>     Write the entire module directory to file <f>\n\n");
+	printf("  --speed\n");
+	printf("  -S         Streamline tests for speed measurement\n\n");
 	printf("  --position <p>\n");
 	printf("  -p <p>     Start read tests from pointer position <p>\n\n");
 	printf("and <bank> should be either A or B\n\n");
@@ -165,7 +167,7 @@ int writeblock(SSHANDLE xlrDevice, int num, char *buffer, int size, int nRep, do
 	return 0;
 }
 
-static long long readblock(SSHANDLE xlrDevice, int num, char *buffer1, char *buffer2, int size, int nRep, long long ptr, double *timeAccumulator)
+static long long readblock(SSHANDLE xlrDevice, int num, char *buffer1, char *buffer2, int size, int nRep, long long ptr, double *timeAccumulator, int fast)
 {
 	int r, v;
 	long long pos, L = 0;
@@ -184,7 +186,14 @@ static long long readblock(SSHANDLE xlrDevice, int num, char *buffer1, char *buf
 		a = pos>>32;
 		b = pos & 0xFFFFFFFF;
 		WATCHDOGTEST( XLRReadData(xlrDevice, (streamstordatatype *)buffer2, a, b, size) );
-		v = comparebuffers(buffer1, buffer2, size);
+		if(fast)
+		{
+			v = 0;
+		}
+		else
+		{
+			v = comparebuffers(buffer1, buffer2, size);
+		}
 		L += v;
 		printf("."); fflush(stdout);
 		if(die)
@@ -244,7 +253,7 @@ int getLabels(SSHANDLE xlrDevice, DifxMessageMk5Status *mk5status)
 	return 0;
 }
 
-int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr)
+int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -278,6 +287,11 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 	buffer1 = (char *)malloc(bufferSize);
 	buffer2 = (char *)malloc(bufferSize);
 	memset(&mk5status, 0, sizeof(mk5status));
+	
+	if(fast)
+	{
+		setbuffer(0, buffer1, bufferSize);
+	}
 
 	WATCHDOGTEST( xlrRC = XLROpen(1, &xlrDevice) );
 	if(xlrRC != XLR_SUCCESS)
@@ -464,7 +478,10 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 				difxMessageSendMark5Status(&mk5status);
 
 				printf("\nTest %d/%d\n", n+1, nWrite);
-				setbuffer(n, buffer1, bufferSize);
+				if(!fast)
+				{
+					setbuffer(n, buffer1, bufferSize);
+				}
 
 				v = writeblock(xlrDevice, n, buffer1, bufferSize, nRep, &writeTime);
 				if(v < 0)
@@ -475,13 +492,16 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 				mk5status.state = MARK5_STATE_TESTREAD;
 				difxMessageSendMark5Status(&mk5status);
 
-				L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, 0, &readTime);
+				L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, 0, &readTime, fast);
 				if(L < 0)
 				{
 					return -1;
 				}
 
-				printf("%Ld/%Ld differ\n", L, (long long)bufferSize*nRep);
+				if(!fast)
+				{
+					printf("%Ld/%Ld differ\n", L, (long long)bufferSize*nRep);
+				}
 
 				totalError += L;
 				totalBytes += (long long)bufferSize*nRep;
@@ -498,6 +518,10 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 
 			printf("Total write time = %7.5f sec -> %5.3f Mbps\n", writeTime, writeRate);
 			printf("Total read time  = %7.5f sec -> %5.3f Mbps\n", readTime, readRate);
+			if(!fast)
+			{
+				printf("** Timings could be affected by comparisons.  Run with --speed for more accurate timing\n");
+			}
 			printf("\n");
 
 			for(d = 0; d < 8; d++)
@@ -523,7 +547,10 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 			{
 				printf("User interrupt: Stopping test early!\n");
 			}
-			printf("\nTotal: %Ld/%Ld bytes differ\n", totalError, totalBytes);
+			if(!fast)
+			{
+				printf("\nTotal: %Ld/%Ld bytes differ\n", totalError, totalBytes);
+			}
 
 			v = snprintf(message, DIFX_MESSAGE_LENGTH, "%8s test complete: %Ld/%Ld bytes read incorrectly", vsn, totalError, totalBytes);
 			if(v >= DIFX_MESSAGE_LENGTH)
@@ -596,15 +623,16 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 				return -1;
 			}
 
-
 			printf("\nTest %d/%d\n", n+1, nWrite);
-			setbuffer(n, buffer1, bufferSize);
-
+			if(!fast)
+			{
+				setbuffer(n, buffer1, bufferSize);
+			}
 			
 			mk5status.state = MARK5_STATE_TESTREAD;
 			difxMessageSendMark5Status(&mk5status);
 
-			L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, ptr, &readTime);
+			L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, ptr, &readTime, fast);
 			if(L < 0)
 			{
 				return -1;
@@ -621,6 +649,10 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 		printf("\n");
 		readRate = totalBytes/(1.25e5*readTime);
 		printf("Total read time = %7.5f sec -> %5.3f Mbps\n", readTime, readRate);
+		if(!fast)
+		{
+			printf("** Timings could be affected by comparisons.  Run with --speed for more accurate timing\n");
+		}
 		printf("\n");
 
 		for(d = 0; d < 8; d++)
@@ -677,6 +709,7 @@ int main(int argc, char **argv)
 	int readOnly = 0;
 	int verbose = 0;
 	int force = 0;
+	int fast = 0;
 	int options = SS_OPT_DRVSTATS;
 	char *dirFile = 0;
 	long long ptr = 0;
@@ -722,6 +755,11 @@ int main(int argc, char **argv)
 			        strcmp(argv[a], "--skipdircheck") == 0)
 			{
 				options |= SS_OPT_SKIPCHECKDIR;
+			}
+			else if(strcmp(argv[a], "-S") == 0 ||
+			        strcmp(argv[a], "--speed") == 0)
+			{
+				fast = 1;
 			}
 			else if(a+1 < argc)
 			{
@@ -799,7 +837,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = testModule(bank, readOnly, nRep, blockSize, nBlock, options, force, dirFile, ptr);
+		v = testModule(bank, readOnly, nRep, blockSize, nBlock, options, force, dirFile, ptr, fast);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
