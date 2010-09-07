@@ -1,11 +1,15 @@
-.PHONY : all clean
+.PHONY : all clean install
 
-TARGETS := difx_monitor monitor_server mon_sample difx_config vcal
+//TARGETS := difx_monitor monitor_server mon_sample difx_config vcal
+TARGETS :=  monitor_server mon_sample difx_config vcal
 
-all   : $(TARGETS)
+all    : $(TARGETS)
 
-clean : $(TARGETS)
+clean  : $(TARGETS)
 	rm -f *.o $^
+
+install: $(TARGETS)
+	cp $(TARGETS) $(DIFXROOT)/bin
 
 CXX = $(MPICXX) -g -Wall
 #CPPFLAGS = -O2 -D__PWD=\"$$PWD\"

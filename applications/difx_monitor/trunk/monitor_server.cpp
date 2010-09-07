@@ -33,6 +33,15 @@ using namespace std;
 
 #define MAXCLIENTS  20
 
+struct datadescrstruct {
+  int32_t timestampsec;      // Current correlator time
+  int32_t numchannels;       // Number of spectral points per product
+  //int32_t npulsarbin;        // Number of pulsar bins
+  //int32_t nphasecentre;      // Number of phase centres
+  cf32 *buffer;
+};
+
+
 //prototypes
 void plot_results();
 void change_config();
@@ -44,25 +53,23 @@ int pollfd_remove(struct pollfd *fds, nfds_t *nfds, int fd);
 int monclient_add(struct monclient *clients,  int *nclient, int maxclient, int fd);
 int monclient_remove(struct monclient *clients, int *nclient, int fd);
 struct monclient* monclient_find(struct monclient *clients, int nclient, int fd);
-void monclient_addproduct(struct monclient *client, int nproduct, int32_t products[]);
-int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t numchannels, 
-			  int32_t thisbuffersize, cf32 *buffer);
+void monclient_addproduct(struct monclient *client, int nproduct, struct product_offset offsets[]);
+int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, 
+			  struct datadescrstruct *datadescr);
 
 int main(int argc, const char * argv[]) {
   int status, i, j;
   char *tcpwindow;
   int32_t thisbuffersize;
-
-  cf32 *resultbuffer;
+  //cf32 *resultbuffer;
   int port;                  // TCP port to listen on
   int serversocket=0;        // Socket to listen for connections on
   int difxsocket=0;          // Socket to receive data from mpifxcorr
   int monitorsocket=0;       // Socket for monitor clients to connect to
   int tcp_windowsize = -1;   // TCP windowsize for socket connection to mpifxcorr in kbytes
   int32_t buffersize = 0;    // current size of buffer to receive data blob from mpifxcorr
-  int32_t numchannels;       // Number of spectral points per product
-  int32_t timestampsec;      // Current correlator time
   int nclient=0;             // Number of currently conncted clients
+  struct datadescrstruct datadescr;
   struct monclient clients[MAXCLIENTS]; // Details on client connections
   struct pollfd pollfds[MAXCLIENTS+3];  // Sockets to monitor for messages
   nfds_t nfds;               // Number of sockets being monitored by poll
@@ -188,8 +195,10 @@ int main(int argc, const char * argv[]) {
 	} else {
 	  cout << "About to get a visibility" << endl;
 
+	  status = DIFXMON_NOERROR;
+
 	  // Receive the timestamp
-	  status = readnetwork(difxsocket, (char*)(&timestampsec), sizeof(int32_t));
+	  readint(difxsocket, &datadescr.timestampsec, &status);
 	  if (status) { // Error reading socket
 	    close(difxsocket);
 	    pollfd_remove(pollfds, &nfds, difxsocket);
@@ -197,39 +206,32 @@ int main(int argc, const char * argv[]) {
 	  }
 
 	  //if not skipping this vis
-	  if(!(timestampsec < 0))  {
-	    cout << "Got visibility # " << timestampsec << endl;
+	  if(!(datadescr.timestampsec < 0))  { // timestamp will always be >=0. Need to reassess
+	    cout << "Got visibility # " << datadescr.timestampsec << endl;
       
 	    // Get buffersize to follow
-	    status = readnetwork(difxsocket, (char*)(&thisbuffersize), sizeof(int32_t));
-	    if (status) { // Error reading socket
-	      break;
-	    }
+	    readint(difxsocket, &thisbuffersize, &status);
+	    if (status) break; // Error reading socket
 
-	    // Get number of channels
-	    status = readnetwork(difxsocket, (char*)(&numchannels), sizeof(int32_t));
-	    if (status) { // Error reading socket
-	      break;
-	    }
+	    cout << "DEBUG: Buffersize=  " << thisbuffersize << endl;
 
 	    if (thisbuffersize>buffersize) {
 	      if (buffersize>0) 
-		ippsFree(resultbuffer);
+		ippsFree(datadescr.buffer);
 	      
-	      resultbuffer = vectorAlloc_cf32(thisbuffersize);
+	      datadescr.buffer = vectorAlloc_cf32(thisbuffersize);
 	      buffersize = thisbuffersize;
 	    }
 
 	    //receive the results into a buffer
-	    status = readnetwork(difxsocket, (char*)resultbuffer, thisbuffersize*sizeof(cf32));
+	    status = readnetwork(difxsocket, (char*)datadescr.buffer, buffersize*sizeof(cf32));
 	    if (status) { // Error reading socket
 	      break;
 	    }
 
 	    for (j=0; j<nclient; j++) {
 	      cout << "Sending vis data to fd " << clients[j].fd << " " << flush;
-	      status = monclient_sendvisdata(clients[j], timestampsec, numchannels, 
-					     thisbuffersize, resultbuffer);
+	      status = monclient_sendvisdata(clients[j], thisbuffersize, &datadescr);
 	      if (status) {
 		pollfd_remove(pollfds, &nfds, clients[j].fd);
 		monclient_remove(clients, &nclient, clients[j].fd);
@@ -275,9 +277,13 @@ int main(int argc, const char * argv[]) {
 		close(fd);
 	      }
 	    } else if (nproduct>0) {
-	      int32_t *buf = new int32_t [nproduct];
+	      struct product_offset *buf = new struct product_offset [nproduct];
 
-	      status = readnetwork(fd, (char*)buf, nproduct*sizeof(int32_t));
+	      status = DIFXMON_NOERROR;
+	      for (i=0; i<nproduct; i++) {
+		readint(fd, &buf[i].offset, &status);
+		readint(fd, &buf[i].npoints, &status);
+	      }
 	      if (status) {
 		pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
@@ -472,16 +478,17 @@ struct monclient* monclient_find(struct monclient *clients, int nclient, int fd)
 }
 
 // Set the product return adday for a monclient
-void monclient_addproduct(struct monclient *client, int nproduct, int32_t products[]) {
+void monclient_addproduct(struct monclient *client, int nproduct, struct product_offset offsets[]){
   int i;
 
   if (client->nvis>0) delete [] client->vis;
   
   if (nproduct>0) {
     client->nvis = nproduct;
-    client->vis = new int32_t [nproduct];
+    client->vis = new struct product_offset [nproduct];
     for (i=0; i<nproduct; i++) {
-      client->vis[i] = products[i];
+      client->vis[i].offset = offsets[i].offset;
+      client->vis[i].npoints = offsets[i].npoints;
     }
   } else {
     client->nvis=0;
@@ -490,16 +497,18 @@ void monclient_addproduct(struct monclient *client, int nproduct, int32_t produc
   return;
 }
 
-int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t numchannels, 
-			  int32_t thisbuffersize, cf32 *buffer) {
-  int nvis, maxvis, i, status, all;
-  
+int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struct datadescrstruct *datadescr) {
+  int maxvis, i, status, all, nc;
+  int32_t buffersize;
+
   if (client.nvis==0) return(0);
 
-  maxvis = thisbuffersize/(numchannels+1);
+  //maxvis = thisbuffersize/nc;
   all = 0;
 
-  if (client.nvis>0 && client.vis[0] == -1) {
+#if 0
+  // Need to think this code through now
+  if (client.nvis>0 && client.vis[0].offset == -1) {
     all=1;
     nvis=maxvis;
   } else {
@@ -513,37 +522,42 @@ int monclient_sendvisdata(struct monclient client, int32_t timestampsec, int32_t
     }
   }
   if (nvis==0) return(0); // Not an error...
+#endif
 
   //  Send 
   //     int32_t     timestampsec
-  //     int32_t     numchannels
   //     int32_t     nvis
   //     int32_t     buffersize (following)
   // For each visibility:
-  //     int32_t     vis number
+  //     int32_t     numchannels
   //     cf32[numchannels]   
 
   status = 0;
-  sendint(client.fd, timestampsec, &status);
-  sendint(client.fd, numchannels, &status);
-  sendint(client.fd, nvis, &status);
-  sendint(client.fd, nvis*(sizeof(int32_t)+numchannels*sizeof(cf32)), &status);
+  sendint(client.fd, datadescr->timestampsec, &status);
+  sendint(client.fd, client.nvis, &status);
+
+  buffersize = 0;
+  for (i=0; i<client.nvis; i++) 
+    buffersize += client.vis[i].npoints*sizeof(cf32) + sizeof(int32_t);
+  
+  sendint(client.fd, buffersize, &status);
 
   if (all) {
     for (i=0; i<maxvis; i++) {
       sendint(client.fd, i, &status);
       if (status) return(status);
-      status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*i), 
-			    numchannels*sizeof(cf32));
+      status = writenetwork(client.fd, (char*)(datadescr->buffer+nc*i), 
+			    nc*sizeof(cf32));
     }
   } else {
     for (i=0; i<client.nvis; i++) {
-      if (client.vis[i] < maxvis) {
-	sendint(client.fd, client.vis[i], &status);
+      //      if (client.vis[i] < maxvis) {
+	sendint(client.fd, client.vis[i].npoints, &status);
 	if (status) return(status);
-	status = writenetwork(client.fd, (char*)(buffer+(numchannels+1)*client.vis[i]), 
-			      numchannels*sizeof(cf32));
-      }
+	status = writenetwork(client.fd, 
+			      (char*)(datadescr->buffer+client.vis[i].offset), 
+			      client.vis[i].npoints*sizeof(cf32));
+	//      }
     }
   }
   return(status);

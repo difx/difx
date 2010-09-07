@@ -43,6 +43,7 @@ int main(int argc, const char * argv[]) {
   ostringstream ss;
 
   Configuration * config;
+  Model * model;
   IppsFFTSpec_R_32f* fftspec=NULL;
   vector<double> delaysum;
   vector<int> ndel;
@@ -62,11 +63,7 @@ int main(int argc, const char * argv[]) {
     cerr << "Aborting" << endl;
     exit(1);
   }
-  status = config->loaduvwinfo(true);
-  if (!status) {
-    cerr << "Failed to load uvw - aborting\n";
-    exit(1);
-  }
+  model = config->getModel();
   startsec = config->getStartSeconds();
 
   nsamples = 1;
@@ -98,8 +95,9 @@ int main(int argc, const char * argv[]) {
     if (monserver.timestamp==-1) continue;
 
     atseconds = monserver.timestamp-startsec;
-    if(config->getConfigIndex(atseconds) != currentconfig) {
-      currentconfig = config->getConfigIndex(atseconds);
+    int thisconfig = sec2config(config, atseconds);
+    if(thisconfig != currentconfig) {
+      currentconfig = thisconfig;
       nsamples = 0;
       prodconfig = change_config(config, currentconfig, refant, monserver);
       for (i=0; i<count; i++) {
@@ -200,13 +198,14 @@ int main(int argc, const char * argv[]) {
 
 vector<DIFX_ProdConfig> change_config(Configuration *config, int configindex, int refant, struct monclient client) {
   int status;
-  unsigned int i;
-  vector<uint32_t> iproducts;
-  vector<DIFX_ProdConfig> allproducts;
+  unsigned int i, nprod;
+  vector<int> iproducts;
+  vector<DIFX_ProdConfig> allproducts, selectedproducts;
 
 
   if (refant >= config->getTelescopeTableLength()) {
     cerr << "Refant " << refant << " too large. Aborting" << endl;
+    exit(1);
   } else {
     cout << "Using reference telescope " << config->getTelescopeName(refant) << endl;
   }
@@ -216,17 +215,24 @@ vector<DIFX_ProdConfig> change_config(Configuration *config, int configindex, in
   for (i=0; i<allproducts.size(); i++) {
     if ((allproducts[i].getTelescopeIndex1()==refant || allproducts[i].getTelescopeIndex2()==refant) && allproducts[i].getTelescopeIndex1()!=allproducts[i].getTelescopeIndex2()) {
       iproducts.push_back(i);
+      selectedproducts.push_back(allproducts[i]);
     }
   }
 
-  if (iproducts.size()==0) {
+  nprod = iproducts.size();
+  if (nprod==0) {
     cout << "No baselines selected" << endl;
     allproducts.clear();
     return allproducts;
   }
 
-  status = monserver_requestproducts(client, &iproducts[0], iproducts.size());
-  // What if status bad?
+  struct product_offset *offsets = new struct product_offset [nprod];
+  set_productoffsets(nprod, &iproducts[0], offsets, allproducts);
+
+  status = monserver_requestproducts_byoffset(client, offsets, nprod);
+  if (status) exit(1);
+
+  delete offsets;
 
   return allproducts;
 }

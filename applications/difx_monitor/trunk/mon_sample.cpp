@@ -29,8 +29,8 @@ void mjd2cal(int mjd, int *day, int *month, int *year);
 
 int main(int argc, const char * argv[]) {
   int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
-  int startsec, currentconfig;
-  unsigned int iprod[MAX_PROD];
+  int mjd, startsec, currentconfig, currentscan;
+  int iprod[MAX_PROD];
   char polpair[3], timestr[20];
   struct monclient monserver;
   float *xval=NULL, *amp[MAX_PROD], *phase[MAX_PROD], *lags[MAX_PROD], *lagx=NULL;
@@ -40,7 +40,9 @@ int main(int argc, const char * argv[]) {
   ostringstream ss;
   IppsFFTSpec_R_32f* fftspec=NULL;
   Configuration *config;
+  Model * model;
   vector<DIFX_ProdConfig> products;
+  struct product_offset plotprod[MAX_PROD];
 
   if(argc < 4)  {
     cerr << "Error - invoke with mon_sample <host> <inputfile> <product#> [<product#> ...]" << endl;
@@ -57,17 +59,17 @@ int main(int argc, const char * argv[]) {
     cerr << "Aborting" << endl;
     exit(1);
   }
-  status = config->loaduvwinfo(true);
-  if (!status) {
-    cerr << "Failed to load uvw - aborting\n";
-    exit(1);
-  }
+  model = config->getModel();
   startsec = config->getStartSeconds();
-  currentconfig = 0;
+  mjd = config->getStartMJD();
+  currentscan = 0;
+  currentconfig = config->getScanConfigIndex(currentscan);
   products = monserver_productconfig(config, currentconfig);
 
   for (i=3; i<argc; i++) iprod[i-3] = atoi(argv[i]);
   nprod = argc-3;
+
+  set_productoffsets(nprod, iprod, plotprod, products);
 
   for (i=0; i<nprod; i++) {
     amp[i] = NULL;
@@ -75,7 +77,7 @@ int main(int argc, const char * argv[]) {
     lags[i] = NULL;
   }
 
-  // Open PGPLOT first, as pgplot server seems to inherite monitor socket
+  // Open PGPLOT first, as pgplot server seems to inherit monitor socket
   status = cpgbeg(0,"/xs",1,3);
   if (status != 1) {
     cerr << "Error opening pgplot device" << endl;
@@ -87,7 +89,7 @@ int main(int argc, const char * argv[]) {
 
   cout << "Opened connection to monitor server" << endl;
 
-  status = monserver_requestproducts(monserver, iprod, nprod);
+  status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
   if (status) exit(1);
 
   cout << "Sent product request" << endl;
@@ -100,11 +102,29 @@ int main(int argc, const char * argv[]) {
       cout << "Got visibility # " << monserver.timestamp << endl;
 
       int atseconds = monserver.timestamp-startsec;
-      if(config->getConfigIndex(atseconds) != currentconfig) {
-	currentconfig = config->getConfigIndex(atseconds);
-	products = monserver_productconfig(config, currentconfig);
-	cout << "Config changes - skipping this integration" << endl;
-	continue;
+      if (atseconds < model->getScanStartSec(currentscan, mjd, startsec)
+	  || atseconds > model->getScanStartSec(currentscan, mjd, startsec)) {
+
+	int scan = 0;
+	while (scan<model->getNumScans()) {
+	  if (atseconds>model->getScanEndSec(scan, mjd, startsec)) {
+	    scan++;
+	  } else {
+	    break;
+	  }
+	}
+	currentscan = scan;
+	int newconfig = config->getScanConfigIndex(currentscan);
+
+	if(newconfig != currentconfig) {
+	  currentconfig = newconfig;
+	  products = monserver_productconfig(config, currentconfig);
+	  set_productoffsets(nprod, iprod, plotprod, products);
+	  status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
+	  if (status) exit(1);
+	  cout << "Config changes - skipping this integration" << endl;
+	  continue;
+	}
       }
 
       // (Re)allocate arrays if number of channels changes, including first time
@@ -184,8 +204,7 @@ int main(int argc, const char * argv[]) {
       }
 
       // Source name
-      config->getUVW()->getSourceName(config->getStartMJD(), 
-	     atseconds+config->getStartSeconds(),sourcename);
+      sourcename = model->getScanIdentifier(currentscan);
       cpgsci(2);
       cpgsch(4);
       cpgmtxt("T", -1.5, 0.02, 0, sourcename.c_str());	    
@@ -197,7 +216,7 @@ int main(int argc, const char * argv[]) {
       int minutes = seconds/60;
       seconds %= 60;
       
-      int mjd = config->getStartMJD();
+      // BUG: Fails for scans which wrap day boundary.
       int day, month, year;
       mjd2cal(mjd, &day, &month, &year);
 
@@ -309,3 +328,4 @@ void mjd2cal(int mjd, int *day, int *month, int *year) {
 
   return;
 }
+

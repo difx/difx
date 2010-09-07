@@ -16,10 +16,15 @@ using std::string;
 #define DIFXMON_BADPRODUCTS     2
 #define DIFXMON_MALLOCERROR     3
 
+struct product_offset {
+  int32_t offset;
+  int32_t npoints;
+};
+
 struct monclient {
   int     fd;       /* file descriptor */
   int     nvis;     /* Number of visibilities to return */
-  int32_t *vis;     /* Visibilities numbers to  return*/
+  struct product_offset *vis;     /* Offset/#points of Visibilities to return */
   int32_t timestamp; /* Correlator time field */
   int32_t numchannels; /* Number of spectral points/visibility */
   int32_t bufsize;    /* Size contained in visbuf */
@@ -31,7 +36,7 @@ struct monclient {
 class DIFX_ProdConfig {
  public:
 
-  DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, string TelName2, double freq, double bandwidth, char polpair[3]);
+  DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, string TelName2, double freq, double bandwidth, char polpair[3], int nbin, int nphasecentre, int offset, int nchan);
   ~DIFX_ProdConfig();
 
   inline int getTelescopeIndex1 () { return TelescopeIndex1; }
@@ -41,6 +46,8 @@ class DIFX_ProdConfig {
   inline string getTelescopeName1 () { return TelescopeName1; }
   inline string getTelescopeName2 () { return TelescopeName2; }
   inline void getPolPair(char polpair[3]) {polpair[0]=PolPair[0]; polpair[1]=PolPair[1]; polpair[2]=0;}
+  inline int getOffset () { return Offset; }
+  inline int getNFreqChannels () { return Nchan; }
 
  private:
 
@@ -51,17 +58,22 @@ class DIFX_ProdConfig {
   char PolPair[3];
   double Freq;
   double Bandwidth;
+  int Nbin;
+  int Nphasecentre;
+  int Offset;
+  int Nchan;
 
 };
 
 int readnetwork(int sock, char* ptr, int bytestoread);
 int writenetwork(int sock, char* ptr, int bytestowrite);
 void sendint(int sock, int32_t val, int *status);
+void readint(int sock, int32_t *val, int *status);
 
 int monserver_connect(struct monclient *monserver, char *monhostname, int window_size);
 int monserver_sendstatus(int sock, int32_t status32);
-int monserver_requestproduct(struct monclient client, unsigned int product);
-int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod);
+//int monserver_requestproduct(struct monclient client, unsigned int product);
+int monserver_requestproducts_byoffset(struct monclient client, struct product_offset offset[], int nprod);
 int monserver_requestall(struct monclient client);
 int monserver_readvis(struct monclient *client);
 int monserver_close(struct monclient *monserver);
@@ -70,7 +82,8 @@ void monserver_resetvis(struct monclient *client);
 void monserver_copyclient(struct monclient client, struct monclient *copy);
 int monserver_dupclient(struct monclient client, struct monclient *copy);
 void monserver_clear(struct monclient *client);
+int sec2config (Configuration *config, int sec);
 vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex);
-
+int set_productoffsets(int nprod, int iprod[], struct product_offset offsets[], vector<DIFX_ProdConfig> products);
 
 #endif

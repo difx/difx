@@ -31,13 +31,12 @@ using namespace std;
 #define MAXPOL 4
 
 //prototypes
-void plot_results();
-void change_config(const char*);
+void plot_results(Configuration * config, Model * model);
+void change_config(Configuration * config, int configindex, const char*);
 void maxmin(f32 **vals, int nchan, int npol, float *max, float *min);
 
-Configuration * config;
-int socketnumber, currentconfigindex, maxresultlength, nav, atseconds;
-int resultlength, numchannels, nprod=0;
+int socketnumber, currentconfigindex, maxresultlength, nav, atseconds, currentscan;
+int resultlength, numchannels, nprod=0, mjd;
 double intseconds = 1;
 IppsFFTSpec_R_32f* fftspec=NULL;
 cf32 ** products=NULL;
@@ -51,6 +50,8 @@ int main(int argc, const char * argv[])
   int prod, nvis, startsec;
   cf32 *vis;
   struct monclient monserver;
+  Configuration * config;
+  Model * model;
 
   if(argc < 3 || argc > 4)
   {
@@ -60,12 +61,15 @@ int main(int argc, const char * argv[])
 
   //work out the config stuff
   config = new Configuration(argv[1], 0);
-  config->loaduvwinfo(true);
+  if (!config->consistencyOK()) {
+    cerr << "Aborting" << endl;
+    exit(1);
+  }
+  model = config->getModel();
   startsec = config->getStartSeconds();
 
   if(argc == 4)
     intseconds = atof(argv[3]);
-
 
   status  = monserver_connect(&monserver, (char*)argv[2],  Configuration::MONITOR_TCP_WINDOWBYTES);
   if (status) exit(1);
@@ -74,8 +78,10 @@ int main(int argc, const char * argv[])
   if (status) exit(1);
 
   //get into the loop of receiving, processing and plotting!
-  currentconfigindex = -1;
+  currentconfigindex = 0;
+  currentscan = 0;
   atseconds = 0;
+  change_config(config, currentconfigindex, argv[1]);
 
   umask(002);
 
@@ -97,8 +103,27 @@ int main(int argc, const char * argv[])
     if (monserver.timestamp==-1) continue;
 
     atseconds = monserver.timestamp-startsec;
-    if(config->getConfigIndex(atseconds) != currentconfigindex) 
-      change_config(argv[1]);
+
+    if (atseconds < model->getScanStartSec(currentscan, mjd, startsec)
+	|| atseconds > model->getScanStartSec(currentscan, mjd, startsec)) {
+
+      int scan = 0;
+      while (scan<model->getNumScans()) {
+	if (atseconds>model->getScanEndSec(scan, mjd, startsec)) {
+	  scan++;
+	} else {
+	  break;
+	}
+      }
+      if (scan>=model->getNumScans()) scan = model->getNumScans()-1;
+      currentscan = scan;
+      int newconfig = config->getScanConfigIndex(currentscan);
+
+      if(newconfig != currentconfigindex) {
+	currentconfigindex = newconfig;
+	change_config(config, currentconfigindex, argv[1]);
+      }
+    }
 
     while (!monserver_nextvis(&monserver, &prod, &vis)) {
       if (prod>=nprod) {
@@ -116,7 +141,7 @@ int main(int argc, const char * argv[])
 
     //plot
     if(nvis==nav) {
-      plot_results();
+      plot_results(config, model);
       nvis=0;
       for (i=0; i<nprod; i++) {
 	status = vectorZero_cf32(products[i], numchannels);
@@ -132,7 +157,7 @@ int main(int argc, const char * argv[])
   monserver_close(&monserver);
 }
 
-void plot_results()
+void plot_results(Configuration * config, Model * model)
 {
   int i, j, k, npol;
   char pgplotname[256];
@@ -233,8 +258,9 @@ void plot_results()
 	  }
 
 	  // Annotate
-	  config->getUVW()->getSourceName(config->getStartMJD(), 
-		  atseconds+config->getStartSeconds(),sourcename);
+	  sourcename = model->getScanIdentifier(currentscan);
+	  //	  config->getUVW()->getSourceName(config->getStartMJD(), 
+	  //	  atseconds+config->getStartSeconds(),sourcename);
 
 	  cpgsci(4);
 	  cpgsch(2.5);
@@ -305,7 +331,7 @@ void plot_results()
   int autocorrwidth = (config->getMaxProducts()>1)?2:1;
   for(int i=0;i<config->getNumDataStreams();i++) {
     for(int j=0;j<autocorrwidth;j++) {
-      for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) {
+      for(int k=0;k<config->getDNumRecordedBands(currentconfigindex, i); k++) {
 
 	if (j==0) {
 	  sprintf(pgplotname, "lba-auto%d-f%d-b0.png/png",
@@ -363,17 +389,17 @@ void plot_results()
 	  cpgmtxt("T", -1.5,0.02, 0, ss.str().c_str());	    
 	  ss.str("");
 
-	  int freqindex = config->getDFreqIndex(currentconfigindex, i, k);
+	  int freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, k);
 	  ss << config->getFreqTableFreq(freqindex) << " MHz";
 	  cpgmtxt("T", -2.6,0.98,1,ss.str().c_str());	    
 	  ss.str("");
 
 	  ss << timestr << "     " 
-	     << config->getDBandPol(currentconfigindex, i, k);
+	     << config->getDRecordedBandPol(currentconfigindex, i, k);
 	  if (j==0)
-	    ss << config->getDBandPol(currentconfigindex, i, k);
+	    ss << config->getDRecordedBandPol(currentconfigindex, i, k);
 	  else
-	    ss << ((config->getDBandPol(currentconfigindex, i, k) == 'R')?'L':'R');
+	    ss << ((config->getDRecordedBandPol(currentconfigindex, i, k) == 'R')?'L':'R');
 	  cpgmtxt("T", -1.5,0.98,1,ss.str().c_str());
 	  ss.str("");
 
@@ -402,13 +428,12 @@ void plot_results()
   }
 }
 
-void change_config(const char *inputfile) {
+void change_config(Configuration * config, int configindex, const char *inputfile) {
   int status, i;
   ofstream html;
   ostringstream ss;
 
-  currentconfigindex = config->getConfigIndex(atseconds);
-  numchannels = config->getNumChannels(currentconfigindex);
+  numchannels = config->getFNumChannels(currentconfigindex);
 
   cout << "New config " << currentconfigindex << " at " << atseconds << endl;
 
@@ -446,9 +471,9 @@ void change_config(const char *inputfile) {
   nav = (int)ceil(intseconds/config->getIntTime(currentconfigindex));
   cout << "#Integrations to average = " << nav << endl;
 
-  resultlength = config->getResultLength(currentconfigindex);
+  resultlength = config->getCoreResultBWeightOffset(currentconfigindex, 0, 0);
 
-  nprod = resultlength/(numchannels+1);
+  nprod = resultlength/(numchannels);
   cout << "Got " << nprod << " products" << endl;
 
   products = new cf32*[nprod];
@@ -542,11 +567,11 @@ void change_config(const char *inputfile) {
 
 
     //for(int j=0;j<autocorrwidth;j++) {
-    for(int k=0;k<config->getDNumOutputBands(currentconfigindex, i); k++) {
+    for(int k=0;k<config->getDNumRecordedBands(currentconfigindex, i); k++) {
 
-      char pol = config->getDBandPol(currentconfigindex, i, k);
+      char pol = config->getDRecordedBandPol(currentconfigindex, i, k);
 
-      int freqindex = config->getDFreqIndex(currentconfigindex, i, k);
+      int freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, k);
 
       html << "<td style=\"text-align: center;\">" <<   config->getFreqTableFreq(freqindex) 
 	   << " MHz <a href=\"lba-auto" << i << "-f" << k << ".html\"> " << pol << "cp </a></td>" 

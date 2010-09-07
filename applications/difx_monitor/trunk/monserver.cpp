@@ -65,6 +65,12 @@ void sendint(int sock, int32_t val, int *status) {
   return;
 }
 
+void readint(int sock, int32_t *val, int *status) {
+  if (*status) return;
+  *status = readnetwork(sock, (char*)&val, sizeof(int32_t)); 
+  return;
+}
+
 int monserver_connect(struct monclient *monclient, char *monhostname, int window_size) {
   int sock, status;
   int32_t status32;
@@ -155,24 +161,27 @@ int monserver_sendstatus(int sock, int32_t status32) {
   return(writenetwork(sock, (char*)&status32, sizeof(status32)));
 }
 
-int monserver_requestproduct(struct monclient client, unsigned int product) {
-  return monserver_requestproducts(client, &product, 1);
-}
+//int monserver_requestproduct(struct monclient client, unsigned int product) {
+//  return monserver_requestproducts(client, &product, 1);
+//}
 
-int monserver_requestproducts(struct monclient client, unsigned int product[], int nprod) {
+int monserver_requestproducts_byoffset(struct monclient client, struct product_offset offset[], int nprod) {
   int status, i;
   int32_t  status32;
   
   status = DIFXMON_NOERROR;
 
-  sendint(client.fd, nprod, &status);
-
-  for (i=0; i<nprod; i++) 
-    sendint(client.fd, product[i], &status);
   if (status) return(status);
 
   status32 = 0;
-  status = readnetwork(client.fd, (char*)&status32, sizeof(status32));
+
+  sendint(client.fd, nprod, &status);
+  for (i=0; i<nprod; i++) {
+    sendint(client.fd, offset[i].offset, &status);
+    sendint(client.fd, offset[i].npoints, &status);
+
+  }
+  readint(client.fd, &status32, &status);
   if (status) return(status);
 
   if (status32!=DIFXMON_NOERROR) {
@@ -183,10 +192,10 @@ int monserver_requestproducts(struct monclient client, unsigned int product[], i
   return(0);
 }
 
-int monserver_requestall(struct monclient client) {
-  unsigned int product=-1;
-  return monserver_requestproducts(client, &product, 1);
-}
+//int monserver_requestall(struct monclient client) {
+//  unsigned int product=-1;
+//  return monserver_requestproducts(client, &product, 1);
+//}
 
 int monserver_readvis(struct monclient *client) {
   int status;
@@ -250,12 +259,12 @@ int monserver_dupclient(struct monclient client, struct monclient *copy) {
   if (client.vis==NULL) {
     copy->vis=NULL;
   } else {
-    copy->vis = new int32_t [client.nvis];
+    copy->vis = new struct product_offset [client.nvis];
     if (copy->vis==NULL) {
       delete [] copy->visbuf;
       return(DIFXMON_MALLOCERROR);
     }
-    memcpy(copy->vis,client.vis,client.nvis*sizeof(int32_t));
+    memcpy(copy->vis,client.vis,client.nvis*sizeof(struct product_offset));
   }
 
   copy->fd = 0; // Don't copy file handle
@@ -300,10 +309,10 @@ void monserver_clear(struct monclient *client) {
 vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex) {
   char polpair[3];
   vector<DIFX_ProdConfig> products;
+  int binloop = 1;
 
   polpair[2] = 0;
   
-  int binloop = 1;
   if(config->pulsarBinOn(configindex) && !config->scrunchOutputOn(configindex))
     binloop = config->getNumPulsarBins(configindex);
 
@@ -313,18 +322,27 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 
     for(int j=0;j<config->getBNumFreqs(configindex,i);j++) {
       int freqindex = config->getBFreqIndex(configindex, i, j);
+      int resultindex = config->getCoreResultBaselineOffset(configindex, freqindex, i);
+      int freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
 
-      for(int b=0;b<binloop;b++) {
-	for(int k=0;k<config->getBNumPolProducts(configindex, i, j);k++) {
-	  config->getBPolPair(configindex,i,j,k,polpair);
+      for(int s=0;s<config->getMaxPhaseCentres(configindex);s++) {
+	for(int b=0;b<binloop;b++) {
+	  for(int k=0;k<config->getBNumPolProducts(configindex, i, j);k++) {
+	    config->getBPolPair(configindex,i,j,k,polpair);
 
-	  products.push_back(DIFX_ProdConfig(ds1index,
-					     ds2index,
-					     config->getTelescopeName(ds1index), 
-					     config->getTelescopeName(ds2index),
-					     config->getFreqTableFreq(freqindex),
-					     config->getFreqTableBandwidth(freqindex),
-					     polpair));	  
+	    products.push_back(DIFX_ProdConfig(ds1index,
+					       ds2index,
+					       config->getTelescopeName(ds1index), 
+					       config->getTelescopeName(ds2index),
+					       config->getFreqTableFreq(freqindex),
+					       config->getFreqTableBandwidth(freqindex),
+					       polpair,
+					       s,
+					       b,
+					       resultindex,
+					       freqchannels));
+	    resultindex += freqchannels;
+	  }
 	}
       }
     }
@@ -336,14 +354,14 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 
   for(int i=0;i<config->getNumDataStreams();i++) {
     for(int j=0;j<autocorrwidth;j++) {
-      for(int k=0;k<config->getDNumOutputBands(configindex, i); k++) {
+      for(int k=0;k<config->getDNumRecordedBands(configindex, i); k++) {
 
-	polpair[0] = config->getDBandPol(configindex, i, k);
+	polpair[0] = config->getDRecordedBandPol(configindex, i, k);
 	if (j==0)
 	  polpair[1] = polpair[0];
 	else
 	  polpair[1] = ((polpair[0] == 'R')?'L':'R');
-	int freqindex = config->getDFreqIndex(configindex, i, k);
+	int freqindex = config->getDRecordedFreqIndex(configindex, i, k);
 	
 	products.push_back(DIFX_ProdConfig(i,
 					   i,
@@ -351,7 +369,11 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 					   "",
 					   config->getFreqTableFreq(freqindex),
 					   config->getFreqTableBandwidth(freqindex),
-					   polpair));	  
+					   polpair,
+					   0,
+					   0,
+					   0,
+					   0));
       }
     }
   }
@@ -361,7 +383,8 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 
 DIFX_ProdConfig::DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1, 
 				 string TelName2, double freq, double bandwidth, 
-				 char polpair[3]) {
+				 char polpair[3], int nbin, int nphasecentre, int offset,
+				 int nchan) {
   TelescopeIndex1 = TelIndex1;
   TelescopeIndex2 = TelIndex2;
   TelescopeName1 = TelName1;
@@ -371,8 +394,40 @@ DIFX_ProdConfig::DIFX_ProdConfig(int TelIndex1, int TelIndex2, string TelName1,
   PolPair[0] = polpair[0];
   PolPair[1] = polpair[1];
   PolPair[2] = 0;
+  Nbin = nbin;
+  Nphasecentre = nphasecentre;
+  Offset = offset;
+  Nchan = nchan;
 }
 
 DIFX_ProdConfig::~DIFX_ProdConfig() {
 
+}
+
+int sec2config (Configuration *config, int sec) {
+  Model * model = config->getModel();
+  int startsec = config->getStartSeconds();
+  int mjd = config->getStartMJD();
+  int scan = 0;
+
+  while (scan<model->getNumScans()) {
+    if (sec>model->getScanEndSec(scan, mjd, startsec)) {
+      scan++;
+    } else {
+      break;
+    }
+  }
+  return config->getScanConfigIndex(scan);
+}
+
+int set_productoffsets(int nprod, int iprod[], struct product_offset offsets[], vector<DIFX_ProdConfig> products) {
+  int i;
+  int maxprod = products.size();
+
+  for (i=0; i<nprod; i++) {
+    if (iprod[i]>maxprod) return(DIFXMON_BADPRODUCTS);
+    offsets[i].offset = products[iprod[i]].getOffset();
+    offsets[i].npoints = products[iprod[i]].getNFreqChannels();
+  }
+  return(DIFXMON_NOERROR);
 }
