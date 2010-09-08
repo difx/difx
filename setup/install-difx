@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -37,6 +37,8 @@ Options:
 
    --rpfits        Build rpfits
 
+   --withmonitor   Try to build the difx_monitor application (requires pgplot)
+
    --perl          Install some non-standard perl utilities (deprecated)
 
    --clean         Run make clean for all components
@@ -51,7 +53,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -71,6 +73,7 @@ gfortran = True
 rpfits = False
 perl = False
 doclean = False
+domonitor = False
 
 # read arguments
 
@@ -94,6 +97,8 @@ if len(opts) > 0:
             perl = True
         if o == "--rpfits":
             rpfits = True
+        if o == "--withmonitor":
+            domonitor = True
         if o == "--clean":
             doclean = True
 
@@ -110,8 +115,8 @@ def run(cmd):
             raise RuntimeError, "Error running " + cmd + " in " + os.getcwd()
 
 ###### Subroutine to do the compiling of an auto-tool ###
-def auto_compile(dolibtoolize, doautoheader, prefix, dompicxx):
-    if reconf or os.system("autoreconf"):
+def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
+    if (doreconf and (reconf or os.system("autoreconf"))):
         print "reconfiguring"
         run("aclocal")
         if dolibtoolize:
@@ -155,7 +160,7 @@ if not master_tag:
         raise RuntimeError
     difx_version = os.environ.get('DIFX_VERSION')
     if difx_version != "trunk":
-        difx_version = "branches/" + difx_version 
+        difx_version = "branches/" + difx_version
 else:
     difx_version = ''
 
@@ -174,21 +179,24 @@ if gfortran:
 
 ###### Targets ##########################################
 
-libtargets = [["difxio",     difx_version, True,True,False],
-              ["difxmessage",difx_version, True,True,False],
-              ["mark5access",difx_version, True,True,False]]
+libtargets = [["difxio",     difx_version, True,True,True,False],
+              ["difxmessage",difx_version, True,True,True,False],
+              ["mark5access",difx_version, True,True,True,False]]
 
-utiltargets = [["calcif2",   difx_version, False,True,False], 
-               ["pulsar/difx2profile", difx_version, False,True,True]]
+utiltargets = [["calcif2",   difx_version, True,False,True,False], 
+               ["pulsar/difx2profile", difx_version, True,False,True,True],
+               ["vis2screen",difx_version, True,False,False,True]]
 
-apptargets = [["calcserver", difx_version, True,False,False],
-              ["difx2fits",  difx_version, False,True,False],
-              ["vex2difx",   difx_version, True,True,False],
-              ["difx2mark4", difx_version, True,True,False],
-              ["difxfilterbank", difx_version,False,False,True]]
+apptargets = [["calcserver", difx_version, True,True,False,False],
+              ["difx2fits",  difx_version, True,False,True,False],
+              ["vex2difx",   difx_version, True,True,True,False],
+              ["difx2mark4", difx_version, True,True,True,False],
+              ["difxfilterbank", difx_version, True,False,False,True]]
 
 if mk5d:
-    apptargets.append(["mk5daemon", difx_version, False,True])
+    apptargets.append(["mk5daemon", difx_version, True,False,True,False])
+if domonitor:
+    apptargets.append(["difx_monitor", difx_version, False,False,False,False])
 
 if not master_tag:
     os.chdir("..")
@@ -227,7 +235,8 @@ if doclean:
             print
         os.chdir(thisdir)
 
-    os.chdir("../applications")
+    os.chdir(topdir)
+    os.chdir("applications")
     thisdir = os.getcwd()
     for apptarget in apptargets:
         targetdir = apptarget[0] + '/' + apptarget[1]
@@ -242,7 +251,8 @@ if doclean:
             print
         os.chdir(thisdir)
 
-    os.chdir("../utilities")
+    os.chdir(topdir)
+    os.chdir("utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
         targetdir = utiltarget[1] + '/' + utiltarget[0]
@@ -259,6 +269,7 @@ if doclean:
 
     os.chdir(topdir)
     sys.exit(0)  # Clean exit
+
 
 ##### Make directories if required ######################
 if not noinstall:
@@ -279,6 +290,7 @@ if not noinstall:
 
 ##### Compile non-standard libraries ####################
 if perl:
+    print
     print "************************************"
     print "Building vex"
     print
@@ -297,8 +309,7 @@ if perl:
         run("make install")
     os.chdir(topdir)
 
-    print "***DEBUG", os.getcwd()
-
+    print
     print "************************************"
     print "Building Astro Perl"
     print
@@ -310,6 +321,7 @@ if perl:
         os.chdir(topdir)
 
 if rpfits:
+    print
     print "************************************"
     print "Building rpfits"
     print
@@ -334,17 +346,17 @@ for libtarget in libtargets:
     targetdir = libtarget[0]  + '/' + libtarget[1] 
     if os.path.exists(targetdir):
         print
+        print
         print "************************************"
         print "Building ", targetdir
         print
         os.chdir(targetdir)
-        auto_compile(libtarget[2], libtarget[3], difxroot, libtarget[4])
+        auto_compile(libtarget[2], libtarget[3], libtarget[4], difxroot, libtarget[5])
     else:
         print
         print "******* Skipping "+targetdir
         print
     os.chdir(thisdir)
-
 os.chdir(topdir)
 
 ##### Make mpifxcorr #####################################
@@ -360,8 +372,8 @@ run("autoconf")
 run("autoheader")
 run("automake")
 rpfitsopt = ''
-if not rpfits:
-    rpfitsopt = ' --without-rpfits '
+if rpfits:
+    rpfitsopt = ' --with-rpfits '
 run("./configure CXX=" + mpicxx + rpfitsopt + " --prefix=" + difxroot)
 run("make")
 if not noinstall:
@@ -376,11 +388,12 @@ for apptarget in apptargets:
     targetdir = apptarget[0]  + '/' + apptarget[1] 
     if os.path.exists(targetdir):
         print
+        print
         print "************************************"
         print "Building ", apptarget[0]
         print
         os.chdir(targetdir)
-        auto_compile(apptarget[2], apptarget[3], difxroot, apptarget[4])
+        auto_compile(apptarget[2], apptarget[3], apptarget[4], difxroot, apptarget[5])
     else:
         print
         print "******* Skipping "+targetdir
@@ -392,13 +405,17 @@ os.chdir(topdir)
 os.chdir("utilities")
 thisdir = os.getcwd()
 for utiltarget in utiltargets:
-    targetdir = utiltarget[1]  + '/' + utiltarget[0] 
+    if (utiltarget[1] == ''):
+        targetdir = utiltarget[0]
+    else:
+        targetdir= utiltarget[1]  + '/' + utiltarget[0]
     if os.path.exists(targetdir):
+        print
         print
         print "************************************" 
         print "Building ", utiltarget[0]
         os.chdir(targetdir)
-        auto_compile(utiltarget[2], utiltarget[3], difxroot, utiltarget[4])
+        auto_compile(utiltarget[2], utiltarget[3], utiltarget[4], difxroot, utiltarget[5])
     else:
         print
         print "******* Skipping "+targetdir
@@ -407,6 +424,8 @@ for utiltarget in utiltargets:
 os.chdir(topdir)
 
 if (force and not errors == []):
+    print
+    print
     print "************************************"
     print "WARNING: Errors were encountered during installation"
     print
