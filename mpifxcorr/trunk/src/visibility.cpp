@@ -256,12 +256,18 @@ void Visibility::updateTime()
   }
 }
 
-
 void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
   char *ptr;
-  int ntowrite;
-  int32_t atsec, datasize, numchans;
+  int ntowrite, nwrot, i;
+  int32_t atsec, datasize;
 
+  /* Data Blob sent to monitor_server is:
+
+     uint32_t time (seconds)
+     uint32_t datasize (bytes)
+     complex float[]  Cross correlation data
+     complex float[] Autocorrelation data
+  */
 
   if (currentsubints==0) { // Nothing to send
     *nbuf = -1;
@@ -269,10 +275,10 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
   }
 
   atsec = currentstartseconds+experseconds;
-  datasize = resultlength;
-  numchans = config->getFNumChannels(currentconfigindex);
 
-  ntowrite = (4+4+4+resultlength*sizeof(cf32));
+  datasize = config->getCoreResultLength(currentconfigindex);
+
+  ntowrite = sizeof(uint32_t)*2 + datasize*sizeof(cf32);
 
   if (*bufsize < ntowrite) {
     if (*bufsize>0) delete [] *buf;
@@ -282,16 +288,15 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
 
   ptr = *buf;
 
-  memcpy(ptr, &atsec, 4);
-  ptr +=4;
+  memcpy(ptr, &atsec, sizeof(uint32_t));
+  ptr +=sizeof(uint32_t);
 
-  memcpy(ptr, &datasize, 4);
-  ptr +=4;
+  memcpy(ptr, &datasize, sizeof(uint32_t));
+  ptr +=sizeof(uint32_t);
 
-  memcpy(ptr, &numchans, 4);
-  ptr +=4;
+  memcpy(ptr, results, datasize);
+  ptr += datasize;
 
-  memcpy(ptr, results, resultlength*sizeof(cf32));
   *nbuf = ntowrite;
 }
 
