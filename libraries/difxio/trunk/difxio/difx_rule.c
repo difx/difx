@@ -164,7 +164,7 @@ int simplifyDifxRules(DifxInput *D)
 		{
 			numdeleted++;
 		}
-		if(numdeleted > 0 && r+1 > numdeleted)
+		if(numdeleted > 0 && r+1 > numdeleted && used)
 		{
 			copyDifxRule(D->rule + r - numdeleted, dr);
 		}
