@@ -1,3 +1,6 @@
+Version 1.4.2
+* Post 2.0.0 tagging
+
 Version 1.4.1
 * revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
 * disable all K5 code until that is at least somewhat useful
@@ -9,6 +12,7 @@ Version 1.4.1
 * Put pcal utility in this package
 * Add zerocorr -- a zero baseline cross correlator
 * Add sigint catching to several utils
+* Improve string (mostly filename) handling safety with snprintf
 * Version for DiFX-2.0.0
 
 Version 1.4.0

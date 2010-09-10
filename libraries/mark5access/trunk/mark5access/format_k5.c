@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -203,7 +203,8 @@ static int format_k5_make_formatname(struct mark5_stream *ms)
 
 	k = (struct format_k5 *)(ms->formatdata);
 	
-	sprintf(ms->formatname, "%s-%d-%d-%d", k5formatname[k->submode],
+	snprintf(ms->formatname, MARK5_STREAM_ID_LENGTH,
+		"%s-%d-%d-%d", k5formatname[k->submode],
 		ms->Mbps, ms->nchan, ms->nbit);
 
 	return 0;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -48,7 +48,7 @@ struct mark5_stream_file
 {
 	long long offset;
 	long long filesize;
-	char files[MAX_MARK5_STREAM_FILES][256];
+	char files[MAX_MARK5_STREAM_FILES][MARK5_STREAM_ID_LENGTH];
 	int nfiles;
 	int buffersize;
 
@@ -63,12 +63,10 @@ struct mark5_stream_file
 /* loads fetchsize bytes into memory */
 static int mark5_stream_file_fill(struct mark5_stream *ms)
 {
-	const int FilenameLength=128;
 	struct mark5_stream_file *F;
 	struct stat64 fileStatus;
 	int n;
 	int err;
-	char fn[FilenameLength+1];
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
@@ -79,11 +77,10 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		close(F->in);
 		F->in = 0;
 		F->curfile++;
-		strncpy(fn, F->files[F->curfile], FilenameLength);
-		fn[FilenameLength] = 0;
 		
-		sprintf(ms->streamname, "File-%d/%d=%s", F->curfile,
-			F->nfiles, fn);
+		snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH,
+			"File-%d/%d=%s", 
+			F->curfile, F->nfiles, F->files[F->curfile]);
 		if(F->curfile >= F->nfiles)
 		{
 			break;
@@ -127,16 +124,13 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 
 static int mark5_stream_file_init(struct mark5_stream *ms)
 {
-	const int FilenameLength=128;
 	struct mark5_stream_file *F;
-	char fn[FilenameLength+1];
 	int r;
 
 	F = (struct mark5_stream_file *)(ms->inputdata);
 
-	strncpy(fn, F->files[0], FilenameLength);
-	fn[FilenameLength] = 0;
-	sprintf(ms->streamname, "File-1/1=%s", fn);
+	snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH, 
+		"File-1/1=%s", F->files[0]);
 
 	F->curfile = 0;
 	F->buffer = 0;
@@ -314,7 +308,6 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 {
 	struct mark5_stream_file *F;
-	char fn[64];
 
 	if(ms->init_stream != mark5_stream_file_init)
 	{
@@ -329,10 +322,9 @@ int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 	{
 		strcpy(F->files[F->nfiles], filename);
 		F->nfiles++;
-		strncpy(fn, filename, 64);
-		fn[63] = 0;
-		sprintf(ms->streamname, "File-%d/%d=%-64s", F->curfile,
-			F->nfiles, fn);
+		snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH,
+			"File-%d/%d=%s", F->curfile,
+			F->nfiles, filename);
 	
 		return F->nfiles;
 	}

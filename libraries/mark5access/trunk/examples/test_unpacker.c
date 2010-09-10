@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -43,7 +44,7 @@ int usage(const char *pgm)
 
 int conf(float ***data, struct mark5_stream **ms, const char *format, int samples, int os)
 {
-	char fmt[100];
+	char fmt[MARK5_STREAM_ID_LENGTH];
 	int i, j;
 
 	if(os == 1)
@@ -52,7 +53,7 @@ int conf(float ***data, struct mark5_stream **ms, const char *format, int sample
 	}
 	else
 	{
-		sprintf(fmt, "%s/%d", format, os);
+		snprintf(fmt, MARK5_STREAM_ID_LENGTH, "%s/%d", format, os);
 	}
 	printf("Initialize %s\n", fmt);
 

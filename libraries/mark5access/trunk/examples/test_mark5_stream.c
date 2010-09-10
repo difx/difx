@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007, 2008 by Walter Brisken                      *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include "../mark5access/mark5_stream.h"
@@ -310,7 +311,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 	float **data;
 	int i, j, k;
 	FILE *out;
-	char fn[1000];
+	char fn[MARK5_STREAM_ID_LENGTH];
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
@@ -318,7 +319,8 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		printf("Problem opening %s\n", filename);
+		
 		return 0;
 	}
 
@@ -330,7 +332,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	mark5_stream_print(ms);
 
-	sprintf(fn, "ms.%s", ms->formatname);
+	snprintf(fn, MARK5_STREAM_ID_LENGTH,"ms.%s", ms->formatname);
 
 	out = fopen(fn, "w");
 

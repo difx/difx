@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006, 2007 by Walter Brisken                            *
+ *   Copyright (C) 2006-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,7 +43,7 @@ static int mark5_stream_memory_init(struct mark5_stream *ms)
 	unsigned char *start;
 	unsigned int nbytes;
 
-	sprintf(ms->streamname, "Memory");
+	snprintf(ms->streamname, MARK5_STREAM_ID_LENGTH, "Memory");
 
 	start = ((struct mark5_stream_memory *)(ms->inputdata))->start;
 	nbytes = ((struct mark5_stream_memory *)(ms->inputdata))->nbytes;
