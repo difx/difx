@@ -16,7 +16,7 @@
 #include "../difxmessage.h"
 #include "difxmessageinternal.h"
 
-const int MIN_SEND_GAP=40;
+const int MIN_SEND_GAP=20;
 
 /* Function that replaces illegal XML string characters with the
  * official "entity" replacements.  
