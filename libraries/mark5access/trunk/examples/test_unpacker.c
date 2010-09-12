@@ -49,7 +49,7 @@ int conf(float ***data, struct mark5_stream **ms, const char *format, int sample
 
 	if(os == 1)
 	{
-		strcpy(fmt, format);
+		snprintf(fmt, MARK5_STREAM_ID_LENGTH, "%s", format);
 	}
 	else
 	{
