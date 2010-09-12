@@ -56,6 +56,7 @@ extern "C" {
 #define MODULE_STATUS_BANK_MODE	0x08
 #define MODULE_EXTENDED_VSN_LENGTH	32
 #define MODULE_SCAN_NAME_LENGTH		32
+#define MODULE_LEGACY_SCAN_LENGTH	64
 #define MODULE_MAX_SCANS	1024 /* Maximum number of scans in SDir */
 
 enum Mark5ReadMode
@@ -78,7 +79,7 @@ struct Mark5Directory
 {
 	int nscans; /* Number of scans herein */
 	int n; /* Next scan to be accessed by "next_scan" */
-	char scanName[MODULE_MAX_SCANS][MODULE_SCAN_NAME_LENGTH]; /* Extended name */
+	char scanName[MODULE_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH]; /* Extended name */
 	unsigned long long start[MODULE_MAX_SCANS]; /* Start byte position */
 	unsigned long long length[MODULE_MAX_SCANS]; /* Length in bytes */
 	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
@@ -126,7 +127,7 @@ struct Mark5DirectoryVDIFBodyVer1
 /* Internal representation of .dir files */
 struct Mark5Scan
 {
-	char name[MODULE_SCAN_NAME_LENGTH];
+	char name[MODULE_LEGACY_SCAN_LENGTH];
 	long long start;
 	long long length;
 	double duration;	/* scan duration in seconds */

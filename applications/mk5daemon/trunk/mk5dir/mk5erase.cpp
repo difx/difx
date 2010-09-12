@@ -273,7 +273,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 			done = done/nPass + 50.0*pass;
 			mk5status->position = devInfo.NumBuses*len;
 			mk5status->rate = 8*devInfo.NumBuses*bytes/(printInterval*1000000.0);
-			snprintf(mk5status->scanName, MODULE_SCAN_NAME_LENGTH, "%s[%4.2f%%]", opName, done);
+			snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%4.2f%%]", opName, done);
 			if(bytes > 0)
 			{
 				if(mk5status->rate < lowestRate)

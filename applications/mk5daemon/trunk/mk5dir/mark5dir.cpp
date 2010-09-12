@@ -380,7 +380,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 
 static int uniquifyScanNames(struct Mark5Module *module)
 {
-	char scanNames[MODULE_MAX_SCANS][MODULE_SCAN_NAME_LENGTH];
+	char scanNames[MODULE_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH];
 	int nameCount[MODULE_MAX_SCANS];
 	int origIndex[MODULE_MAX_SCANS];
 	int i, j, n=0;
@@ -395,7 +395,7 @@ static int uniquifyScanNames(struct Mark5Module *module)
 		return 0;
 	}
 
-	strcpy(scanNames[0], module->scans[0].name);
+	snprintf(scanNames[0], MODULE_LEGACY_SCAN_LENGTH, "%s", module->scans[0].name);
 	nameCount[0] = 1;
 	origIndex[0] = 0;
 	n = 1;
@@ -407,14 +407,14 @@ static int uniquifyScanNames(struct Mark5Module *module)
 			if(strcmp(scanNames[j], module->scans[i].name) == 0)
 			{
 				nameCount[j]++;
-				snprintf(module->scans[i].name, MODULE_SCAN_NAME_LENGTH,
+				snprintf(module->scans[i].name, MODULE_LEGACY_SCAN_LENGTH,
 					"%s_%04d", scanNames[j], nameCount[j]);
 				break;
 			}
 		}
 		if(j == n)
 		{
-			strcpy(scanNames[n], module->scans[i].name);
+			snprintf(scanNames[n], MODULE_LEGACY_SCAN_LENGTH, "%s", module->scans[i].name);
 			nameCount[n] = 1;
 			origIndex[n] = i;
 			n++;
@@ -427,7 +427,7 @@ static int uniquifyScanNames(struct Mark5Module *module)
 		if(nameCount[j] > 1)
 		{
 			i = origIndex[j];
-			snprintf(module->scans[i].name, MODULE_SCAN_NAME_LENGTH,
+			snprintf(module->scans[i].name, MODULE_LEGACY_SCAN_LENGTH,
 				"%s_%04d", scanNames[j], 1);
 		}
 	}
@@ -459,6 +459,24 @@ static void convertTimeBCD(const unsigned char *timeBCD, int *mjd, int *sec)
 			((timeBCD[6] & 0x0F) >> 0)*1000;
 		*mjd = doy2mjd(year, doy);
 	}
+}
+
+static void expandScanName1(char *dest, int maxLength, const struct Mark5DirectoryScanHeaderVer1 *scanHeader)
+{
+	char str1[MODULE_SCAN_NAME_LENGTH+1];
+	char str2[3];
+	char str3[9];
+
+	strncpy(str1, scanHeader->scanName, MODULE_SCAN_NAME_LENGTH);
+	str1[MODULE_SCAN_NAME_LENGTH] = 0;
+
+	strncpy(str2, scanHeader->station, 2);
+	str2[2] = 0;
+
+	strncpy(str3, scanHeader->expName, 8);
+	str3[8] = 0;
+
+	snprintf(dest, maxLength, "%s_%s_%s", str3, str2, str1);
 }
 
 static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref, 
@@ -617,7 +635,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 		module->nscans = len/128 - 1;
 	}
 	module->bank = bank;
-	strcpy(module->label, label);
+	snprintf(module->label, XLR_LABEL_LENGTH, "%s", label);
 	module->signature = signature;
 	module->dirVersion = dirVersion;
 	module->mode = MARK5_READ_MODE_NORMAL;
@@ -635,7 +653,8 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 
 			scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
 			type = scanHeader->typeNumber & 0xFF;
-			snprintf(scan->name, MODULE_SCAN_NAME_LENGTH, scanHeader->scanName);
+			
+			expandScanName1(scan->name, MODULE_LEGACY_SCAN_LENGTH, scanHeader);
 			scan->start  = scanHeader->startByte;
 			scan->length = scanHeader->stopByte - scanHeader->startByte;
 			scan->framebytes  = scanHeader->frameLength;
@@ -706,7 +725,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 
 			if(dirVersion == 0)
 			{
-				strncpy(scan->name, m5dir->scanName[i], MODULE_SCAN_NAME_LENGTH);
+				snprintf(scan->name, MODULE_LEGACY_SCAN_LENGTH, "%s", m5dir->scanName[i]);
 				scan->start  = m5dir->start[i];
 				scan->length = m5dir->length[i];
 			}
@@ -714,8 +733,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 			{
 				const struct Mark5DirectoryScanHeaderVer1 *scanHeader;
 				scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
-				strncpy(scan->name, scanHeader->scanName, 32);
-				scan->name[31] = 0;
+				expandScanName1(scan->name, MODULE_LEGACY_SCAN_LENGTH, scanHeader);
 				scan->start  = scanHeader->startByte;
 				scan->length = scanHeader->stopByte - scanHeader->startByte;
 			}
@@ -955,7 +973,7 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 		return -1;
 	}
 
-	strcpy(module->label, label);
+	snprintf(module->label, XLR_LABEL_LENGTH, "%s", label);
 	module->nscans = nscans;
 	module->bank = bank-'A';
 	module->signature = signature;
