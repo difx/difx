@@ -45,7 +45,14 @@
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20100711";
+const char verdate[] = "20100912";
+
+enum WriteProtectAction
+{
+	WPA_NONE	= 0,
+	WPA_SET,
+	WPA_CLEAR
+};
 
 int usage(const char *pgm)
 {
@@ -65,6 +72,10 @@ int usage(const char *pgm)
 	printf("  -r         Set module state to 'Recorded'\n\n");
 	printf("  --erased\n");
 	printf("  -e         Set module state to 'Erased'\n\n");
+	printf("  --writeprotect\n");
+	printf("  -w         Write protect the module\n\n");
+	printf("  --unwriteprotect\n");
+	printf("  -u         Unprotect the module against writing\n\n");
 	printf("<bank> should be either A or B.\n\n");
 	printf("<vsn> is the new module VSN (must be 8 characters long).\n");
 	printf("  If not provided, the existing VSN will be returned.\n\n");
@@ -84,7 +95,7 @@ int roundsize(int s)
 	return a*5;
 }
 
-int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
+int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, int force, int verbose)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -162,7 +173,7 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 	}
 	else
 	{
-		v = getModuleDirectoryVersion(&xlrDevice, &dirVersion, 0, &moduleStatus);
+		v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, &moduleStatus);
 		if(v < 0)
 		{
 			return v;
@@ -180,6 +191,7 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 		printf("\nModule directory version is %d\n", dirVersion);
 		printf("This module contains %lld bytes of recorded data and is %4.2f%% full.\n", dir.Length,
 			100.0*roundModuleSize(dir.Length)/capacity);
+		printf("Write protection is %s.", bankStat.WriteProtected ? "ON" : "OFF");
 	}
 	else
 	{
@@ -188,7 +200,7 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 
 	printf("\n");
 
-	nDrive = getDriveInformation(&xlrDevice, drive, &capacity);
+	nDrive = getDriveInformation(xlrDevice, drive, &capacity);
 
 	printf("This module consists of %d drives totalling about %d GB:\n",
 		nDrive, capacity);
@@ -270,7 +282,7 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 				rate = nDrive*128;
 			}
 
-			v = setModuleLabel(&xlrDevice, newVSN, moduleStatus, dirVersion, capacity, rate);
+			v = setModuleLabel(xlrDevice, newVSN, moduleStatus, dirVersion, capacity, rate);
 			if(v < 0)
 			{
 				return v;
@@ -280,7 +292,7 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 			{
 				if(needsNewDir)
 				{
-					v = resetModuleDirectory(&xlrDevice, newVSN, moduleStatus, dirVersion, capacity, rate);
+					v = resetModuleDirectory(xlrDevice, newVSN, moduleStatus, dirVersion, capacity, rate);
 					if(v < 0)
 					{
 						return v;
@@ -297,7 +309,8 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 
 				WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, data) );
 				dirHeader->status = moduleStatus;
-				sprintf(dirHeader->vsn, "%s/%d/%d", newVSN, capacity, rate);
+				snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
+					"%s/%d/%d", newVSN, capacity, rate);
 				WATCHDOGTEST( XLRSetUserDir(xlrDevice, data, dirLength) );
 
 				free(data);
@@ -316,6 +329,33 @@ int setvsn(int bank, char *newVSN, int newStatus, int force, int verbose)
 		printf("\nNot changing VSN.\n");
 	}
 
+	if(wpa != WPA_NONE)
+	{
+		printf("\nAbout to %s write protection on this module.\n", wpa == WPA_SET ? "SET" : "CLEAR");
+
+		if(force == 0)
+		{
+			printf("Is this OK? [y|n]\n");
+			rv = fgets(resp, 10, stdin);
+		}
+		if(force || resp[0] == 'Y' || resp[0] == 'y')
+		{
+			switch(wpa)
+			{
+			case WPA_NONE:
+				printf("Developer error: wpa == WPA_NONE\n");
+				break;
+			case WPA_SET:
+				WATCHDOGTEST( XLRSetWriteProtect(xlrDevice) );
+				break;
+			case WPA_CLEAR:
+				WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
+				break;
+			}
+		}
+		
+	}
+
 	WATCHDOG( XLRClose(xlrDevice) );
 
 	return 0;
@@ -330,6 +370,7 @@ int main(int argc, char **argv)
 	int force = 0;
 	int newStatus = 0;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
+	enum WriteProtectAction wpa = WPA_NONE;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -383,6 +424,26 @@ int main(int argc, char **argv)
 					return -1;
 				}
 				newStatus = MODULE_STATUS_RECORDED;
+			}
+			else if(strcmp(argv[a], "-w") == 0 ||
+			   strcmp(argv[a], "--writeprotect") == 0)
+			{
+				if(wpa == WPA_CLEAR)
+				{
+					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
+					return -1;
+				}
+				wpa = WPA_SET;
+			}
+			else if(strcmp(argv[a], "-u") == 0 ||
+			   strcmp(argv[a], "--unwriteprotect") == 0)
+			{
+				if(wpa == WPA_SET)
+				{
+					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
+					return -1;
+				}
+				wpa = WPA_CLEAR;
 			}
 			else
 			{
@@ -459,7 +520,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = setvsn(bank, newVSN, newStatus, force, verbose);
+		v = setvsn(bank, newVSN, newStatus, wpa, force, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

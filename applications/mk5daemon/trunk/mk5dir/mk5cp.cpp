@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.7";
-const char verdate[] = "20100820";
+const char verdate[] = "20100910";
 
 int verbose = 0;
 int die = 0;
@@ -57,33 +57,47 @@ void siginthand(int j)
 {
 	if(verbose)
 	{
-		printf("Being killed\n");
+		fprintf(stderr, "Being killed\n");
 	}
 	die = 1;
 }
 
 int usage(const char *pgm)
 {
-	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
-	printf("A program to copy Mark5 module scans via XLR calls\n");
-	printf("\nUsage : %s [<options>] { <bank> | <vsn> } <scans> <output path>\n\n", pgm);
-	printf("options can include:\n");
-	printf("  --help\n");
-	printf("  -h             Print this help message\n\n");
-	printf("  --verbose\n");
-	printf("  -v             Be more verbose\n\n");
-	printf("  --force\n");
-	printf("  -f             Continue even if dir is screwy\n\n");
-	printf("<bank> is either A or B or Active\n\n");
-	printf("<vsn> is a valid module VSN (8 characters)\n\n");
-	printf("<scans> is a string containing a list of scans to copy.  No whitespace\n    "
+	int v;
+	int cat = 0;
+
+
+	v = strlen(pgm);
+	if(v >= 6 && strcmp(pgm+v-6, "mk5cat") == 0)
+	{
+		cat = 1;
+	}
+	
+	fprintf(stderr, "\n%s ver. %s   %s %s\n\n", cat ? "mk5cat" : program, version, author, verdate);
+	fprintf(stderr, "A program to copy Mark5 module scans via XLR calls\n");
+	fprintf(stderr, "\nUsage : %s [<options>] { <bank> | <vsn> } <scans>%s\n\n", pgm, cat ? "" : " <output path>");
+	fprintf(stderr, "options can include:\n");
+	fprintf(stderr, "  --help\n");
+	fprintf(stderr, "  -h             Print this help message\n\n");
+	fprintf(stderr, "  --verbose\n");
+	fprintf(stderr, "  -v             Be more verbose\n\n");
+	fprintf(stderr, "  --force\n");
+	fprintf(stderr, "  -f             Continue even if dir is screwy\n\n");
+	fprintf(stderr, "<bank> is either A or B or Active\n\n");
+	fprintf(stderr, "<vsn> is a valid module VSN (8 characters)\n\n");
+	fprintf(stderr, "<scans> is a string containing a list of scans to copy.  No whitespace\n    "
 		"is allowed.  Ranges are allowed.  Examples:  1  or  3,5  or  1,3,6-9\n");
-	printf("The <scans> string can also be an MJD range to copy.\n  Example: 54321.112_54321_113\n");
-	printf("The <scans> string can also be a byte range to copy.\n  Example: 38612201536_38619201536\n");
-	printf("<output path> is a directory where files will be dumped\n");
-	printf("Environment variable MARK5_DIR_PATH should point to the location of\n");
-	printf("the directory to be written.  The output filename will be:\n");
-	printf("  $MARK5_DIR_PATH/<vsn>.dir\n\n");
+	fprintf(stderr, "The <scans> string can also be an MJD range to copy.\n  Example: 54321.112_54321_113\n");
+	fprintf(stderr, "The <scans> string can also be a byte range to copy.\n  Example: 38612201536_38619201536\n");
+	if(!cat)
+	{
+		fprintf(stderr, "<output path> is a directory where files will be dumped\n");
+		fprintf(stderr, "Environment variable MARK5_DIR_PATH should point to the location of\n");
+		fprintf(stderr, "the module directories.  The output filename will be:\n");
+		fprintf(stderr, "  $MARK5_DIR_PATH/<vsn>.dir\n");
+		fprintf(stderr, "If <output path> is the hyphen (-), then all output goes to stdout\n\n");
+	}
 
 	return 0;
 }
@@ -100,7 +114,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 
 	if(verbose)
 	{
-		printf("%d/%d %d\n", scan, nscan, status);
+		fprintf(stderr, "%d/%d %d\n", scan, nscan, status);
 	}
 
 	return die;
@@ -164,19 +178,26 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
 
-	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", outpath, outname); 
-
-	printf("outname = %s\n", filename);
-
-	out = fopen(filename, "w");
-	if(!out)
+	if(strcmp(outpath, "-") == 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-
-		return -1;
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s", outname); 
+		out = stdout;
 	}
+	else
+	{
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%s", outpath, outname); 
+		out = fopen(filename, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
+	}
+
+	fprintf(stderr, "outname = %s\n", filename);
 
 	readptr = byteStart;
 	togo = byteStop-byteStart;
@@ -188,8 +209,8 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 
 	if(verbose)
 	{
-		printf("Writing %s\n", filename);
-		printf("start/length = %Ld/%Ld\n", byteStart, byteStop-byteStart);
+		fprintf(stderr, "Writing %s\n", filename);
+		fprintf(stderr, "start/length = %Ld/%Ld\n", byteStart, byteStop-byteStart);
 	}
 
 	rate = 0.0;
@@ -209,7 +230,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 		}
 		if(verbose)
 		{
-			printf("%Ld = %Ld/%Ld\n", readptr, readptr-byteStart, byteStop-byteStart);
+			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-byteStart, byteStop-byteStart);
 		}
 		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "[%Ld%%]", 100*(readptr-byteStart)/(byteStop-byteStart));
 		mk5status->position = readptr;
@@ -230,9 +251,16 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 		v = fwrite(data, 1, len, out);
 		if(v < len)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outpath);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-			fprintf(stderr, "Error: %s\n", message);
+			if(out == stdout)
+			{
+				fprintf(stderr, "mk5cp: Broken pipe.\n");
+			}
+			else
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outpath);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
 			
 			break;
 		}
@@ -262,7 +290,10 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 		togo -= len;
 	}
 
-	fclose(out);
+	if(out != stdout)
+	{
+		fclose(out);
+	}
 	free(data);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copied scan %d. %Ld bytes total, %Ld bytes replaced.", scanNum+1, 4*(wGood+wBad), 4*wBad);
@@ -308,19 +339,26 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
 
-	snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name); 
-
-	printf("outname = %s\n", filename);
-
-	out = fopen(filename, "w");
-	if(!out)
+	if(strcmp(outpath, "-") == 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-		fprintf(stderr, "Error: %s\n", message);
-
-		return -1;
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name); 
+		out = stdout;
 	}
+	else
+	{
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name); 
+		out = fopen(filename, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open file %s for write.  Check permissions!", filename);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
+	}
+
+	fprintf(stderr, "outname = %s\n", filename);
 
 	readptr = scan->start;
 	togo = scan->length;
@@ -332,8 +370,8 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 
 	if(verbose)
 	{
-		printf("Writing %s\n", filename);
-		printf("start/length = %Ld/%Ld\n", scan->start, scan->length);
+		fprintf(stderr, "Writing %s\n", filename);
+		fprintf(stderr, "start/length = %Ld/%Ld\n", scan->start, scan->length);
 	}
 
 	rate = 0.0;
@@ -353,7 +391,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		}
 		if(verbose)
 		{
-			printf("%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
+			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
 		}
 		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name, 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
@@ -383,9 +421,16 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		v = fwrite(data+(skip/4), 1, len-skip, out);
 		if(v < len-skip)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outpath);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-			fprintf(stderr, "Error: %s\n", message);
+			if(out == stdout)
+			{
+				fprintf(stderr, "mk5cp: Broken pipe.\n");
+			}
+			else
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outpath);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
 			
 			break;
 		}
@@ -415,7 +460,10 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		togo -= len;
 	}
 
-	fclose(out);
+	if(out != stdout)
+	{
+		fclose(out);
+	}
 	free(data);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Copied scan %d. %Ld bytes total, %Ld bytes replaced.", scanNum+1, 4*(wGood+wBad), 4*wBad);
@@ -570,7 +618,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 
 	if(strlen(vsn) == 8)
 	{
-		v = getCachedMark5Module(&module, &xlrDevice, mjdnow, 
+		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status,
 			&replacedFrac, false, 0, 1);
 		if(replacedFrac > 0.01)
@@ -735,7 +783,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		{
 			int a;
 
-			printf("scanlist = %s\n", scanlist);
+			fprintf(stderr, "scanlist = %s\n", scanlist);
 
 			v = sscanf(scanlist, "%d%n", &a, &s);
 			scanlist += s;
@@ -761,7 +809,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 				b = a;
 			}
 
-			printf("reading %d to %d\n", a, b);
+			fprintf(stderr, "reading %d to %d\n", a, b);
 
 			for(int i = a; i <= b; i++)
 			{
@@ -834,19 +882,19 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans copied from module %8s to %s", nGood, module.label, outpath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			printf("%s\n", message);
+			fprintf(stderr, "%s\n", message);
 		}
 		if(nBad > 0)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans NOT copied from module %8s to %s", nBad, module.label, outpath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-			printf("%s\n", message);
+			fprintf(stderr, "%s\n", message);
 		}
 		if(nGood == 0 && nBad == 0)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "No scans match with code %s on module %8s", scanlist, module.label);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
-			printf("%s\n", message);
+			fprintf(stderr, "%s\n", message);
 		}
 	}
 	else
@@ -878,7 +926,16 @@ int main(int argc, char **argv)
 	int v;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
 
-	difxMessageInit(-1, "mk5cp");
+	v = strlen(argv[0]);
+	if(v >= 6 && strcmp(argv[0]+v-6, "mk5cat") == 0)
+	{
+		difxMessageInit(-1, "mk5cat");
+		outpath = "-";
+	}
+	else
+	{
+		difxMessageInit(-1, program);
+	}
 
 	if(argc < 2)
 	{
@@ -887,8 +944,19 @@ int main(int argc, char **argv)
 
 	for(int a = 1; a < argc; a++)
 	{
-		if(strcmp(argv[a], "-h") == 0 ||
-		   strcmp(argv[a], "--help") == 0)
+		if(strcmp(argv[a], "-") == 0)
+		{
+			if(scanlist != 0 && outpath == 0)
+			{
+				outpath = argv[a];
+			}
+			else
+			{
+				return usage(argv[0]);
+			}
+		}
+		else if(strcmp(argv[a], "-h") == 0 ||
+			strcmp(argv[a], "--help") == 0)
 		{
 			return usage(argv[0]);
 		}

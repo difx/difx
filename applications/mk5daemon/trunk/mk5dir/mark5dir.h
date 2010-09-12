@@ -37,8 +37,6 @@
 extern "C" {
 #endif
 
-#define MAXSCANS  1024 /* Maximum number of scans in SDir */
-#define MAXLENGTH   64 /* Maximum length of a scan's extended name +1 */
 
 #ifndef MARK5_FILL_PATTERN
 #ifdef WORDS_BIGENDIAN
@@ -56,6 +54,9 @@ extern "C" {
 #define MODULE_STATUS_PLAYED	0x02
 #define MODULE_STATUS_RECORDED	0x04
 #define MODULE_STATUS_BANK_MODE	0x08
+#define MODULE_EXTENDED_VSN_LENGTH	32
+#define MODULE_SCAN_NAME_LENGTH		32
+#define MODULE_MAX_SCANS	1024 /* Maximum number of scans in SDir */
 
 enum Mark5ReadMode
 {
@@ -77,9 +78,9 @@ struct Mark5Directory
 {
 	int nscans; /* Number of scans herein */
 	int n; /* Next scan to be accessed by "next_scan" */
-	char scanName[MAXSCANS][MAXLENGTH]; /* Extended name */
-	unsigned long long start[MAXSCANS]; /* Start byte position */
-	unsigned long long length[MAXSCANS]; /* Length in bytes */
+	char scanName[MODULE_MAX_SCANS][MODULE_SCAN_NAME_LENGTH]; /* Extended name */
+	unsigned long long start[MODULE_MAX_SCANS]; /* Start byte position */
+	unsigned long long length[MODULE_MAX_SCANS]; /* Length in bytes */
 	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
 	long long plapnt; /* Play offset, bytes */
 	double playRate; /* Playback clock rate, MHz */
@@ -90,9 +91,9 @@ struct Mark5DirectoryHeaderVer1
 {
 	int version;		/* should be 1 */
 	int status;		/* bit field: see MODULE_STATUS_xxx above */
-	char vsn[32];
-	char vsnPrev[32];	/* "continued from" VSN */
-	char vsnNext[32];	/* "continued to" VSN */
+	char vsn[MODULE_EXTENDED_VSN_LENGTH];
+	char vsnPrev[MODULE_EXTENDED_VSN_LENGTH];	/* "continued from" VSN */
+	char vsnNext[MODULE_EXTENDED_VSN_LENGTH];	/* "continued to" VSN */
 	char zeros[24];
 };
 
@@ -101,7 +102,7 @@ struct Mark5DirectoryScanHeaderVer1
 	unsigned int typeNumber;	/* and scan number; see memo 81 */
 	unsigned short frameLength;
 	char station[2];
-	char scanName[32];
+	char scanName[MODULE_SCAN_NAME_LENGTH];
 	char expName[8];
 	long long startByte;
 	long long stopByte;
@@ -125,7 +126,7 @@ struct Mark5DirectoryVDIFBodyVer1
 /* Internal representation of .dir files */
 struct Mark5Scan
 {
-	char name[MAXLENGTH];
+	char name[MODULE_SCAN_NAME_LENGTH];
 	long long start;
 	long long length;
 	double duration;	/* scan duration in seconds */
@@ -143,7 +144,7 @@ struct Mark5Module
 	char label[XLR_LABEL_LENGTH];
 	int bank;
 	int nscans;
-	Mark5Scan scans[MAXSCANS];
+	Mark5Scan scans[MODULE_MAX_SCANS];
 	unsigned int signature;	/* a hash code used to determine if dir is current */
 	enum Mark5ReadMode mode;
 	int dirVersion;		/* directory version = 0 for pre memo 81 */
@@ -179,10 +180,12 @@ const char *moduleStatusName(int status);
 /* returns active bank: 0 or 1 for bank A or B, or -1 if none */
 int Mark5BankGet(SSHANDLE *xlrDevice);
 
-/* returns 0 or 1 for bank A or B, or < 0 if module not found */
-int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn);
+int Mark5GetActiveBankWriteProtect(SSHANDLE xlrDevice);
 
-int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int mjdref,
+/* returns 0 or 1 for bank A or B, or < 0 if module not found */
+int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
+
+int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref,
 	int (*callback)(int, int, int, void *), void *data);
 
 void printMark5Module(const struct Mark5Module *module);
@@ -193,7 +196,7 @@ int saveMark5Module(struct Mark5Module *module, const char *filename);
 
 int sanityCheckModule(const struct Mark5Module *module);
 
-int getCachedMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, 
+int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
 	float *replacedFrac, int force, int fast, int cacheOnly);
@@ -203,17 +206,17 @@ void countReplaced(const streamstordatatype *data, int len,
 
 int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop);
 
-int getModuleDirectoryVersion(SSHANDLE *xlrDevice, int *dirVersion, int *dirLength, int *moduleStatus);
+int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLength, int *moduleStatus);
 
 int isLegalModuleLabel(const char *label);
 
 int parseModuleLabel(const char *label, char *vsn, int *totalCapacity, int *rate, int *moduleStatus);
 
-int setModuleLabel(SSHANDLE *xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
+int setModuleLabel(SSHANDLE xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
 
-int resetModuleDirectory(SSHANDLE *xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
+int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int dirVersion, int totalCapacity, int rate);
 
-int getDriveInformation(SSHANDLE *xlrDevice, struct DriveInformation drive[8], int *totalCapacity);
+int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], int *totalCapacity);
 
 int roundModuleSize(long long a);
 

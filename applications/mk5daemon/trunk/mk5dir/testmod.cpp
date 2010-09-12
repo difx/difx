@@ -293,12 +293,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 		setbuffer(0, buffer1, bufferSize);
 	}
 
-	WATCHDOGTEST( xlrRC = XLROpen(1, &xlrDevice) );
-	if(xlrRC != XLR_SUCCESS)
-	{
-		fprintf(stderr, "Error: Cannot open streamstor device\n");
-		return -1;
-	}
+	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
 
@@ -355,7 +350,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 		printf("Current module status is %s\n", moduleStatusName(moduleStatus));
 	}
 
-	v = getModuleDirectoryVersion(&xlrDevice, &dirVersion, 0, 
+	v = getModuleDirectoryVersion(xlrDevice, &dirVersion, 0, 
 		(moduleStatus ? 0 : &moduleStatus) );
 	if(v < 0)
 	{
@@ -374,7 +369,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 
 	printf("\n");
 
-	nDrive = getDriveInformation(&xlrDevice, drive, &capacity);
+	nDrive = getDriveInformation(xlrDevice, drive, &capacity);
 
 	printf("This module consists of %d drives totalling about %d GB:\n",
 		nDrive, capacity);
@@ -564,13 +559,13 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 
 			WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_NONE) );
 
-			v = setModuleLabel(&xlrDevice, vsn, MODULE_STATUS_ERASED, dirVersion, capacity, rate);
+			v = setModuleLabel(xlrDevice, vsn, MODULE_STATUS_ERASED, dirVersion, capacity, rate);
 			if(v < 0)
 			{
 				return -1;
 			}
 
-			v = resetModuleDirectory(&xlrDevice, vsn, MODULE_STATUS_ERASED, dirVersion, capacity, rate);
+			v = resetModuleDirectory(xlrDevice, vsn, MODULE_STATUS_ERASED, dirVersion, capacity, rate);
 			if(v < 0)
 			{
 				return -1;
@@ -681,7 +676,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 
 		strncpy(vsn, label, 8);
 		vsn[8] = 0;
-		sprintf(message, "%8s read test complete", vsn);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%8s read test complete", vsn);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 		mk5status.state = MARK5_STATE_CLOSE;

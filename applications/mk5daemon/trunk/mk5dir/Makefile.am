@@ -1,4 +1,5 @@
 bin_PROGRAMS = \
+	mk5cat \
 	mk5cp \
 	mk5dir \
 	mk5erase \
@@ -10,6 +11,9 @@ bin_PROGRAMS = \
 dist_bin_SCRIPTS = \
 	checkdir
 
+
+mk5cat_LDADD = \
+	${M5ACCESS_LIBS}
 
 mk5cp_LDADD = \
 	${M5ACCESS_LIBS}
@@ -29,6 +33,13 @@ testmod_LDADD = \
 vsn_LDADD = \
 	${M5ACCESS_LIBS}
 
+
+mk5cat_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mk5cp.cpp
 
 mk5cp_SOURCES = \
 	watchdog.cpp \

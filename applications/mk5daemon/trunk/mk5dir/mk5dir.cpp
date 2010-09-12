@@ -194,6 +194,10 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 
 			return -1;
 		}
+		else
+		{
+			dmsMode = DMS_MODE_UPDATE;
+		}
 	}
 
 	mjdnow = (int)(40587.0 + time(0)/86400.0);
@@ -204,7 +208,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 		mk5dirpath = ".";
 	}
 
-	v = getCachedMark5Module(module, &xlrDevice, mjdnow, 
+	v = getCachedMark5Module(module, xlrDevice, mjdnow, 
 		vsn, mk5dirpath, &dirCallback, 
 		mk5status, &replacedFrac, force, fast, 0);
 	if(replacedFrac > 0.01)

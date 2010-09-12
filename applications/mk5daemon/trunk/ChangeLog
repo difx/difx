@@ -1,3 +1,8 @@
+Version 1.4.1
+~~~~~~~~~~~~
+* Post DiFX-1.5.4
+* NOTE: Active version is now in DiFX-2.0
+
 Version 1.4
 ~~~~~~~~~~~
 * Post DiFX-1.5.3
@@ -13,6 +18,8 @@ Version 1.4
 * Remove compatibility with Mark5A program
 * Add very nascent mk5lock utility
 * mk5dir: now by default will change the disk module state
+* add mk5cat
+* vsn: write protection setting and getting
 * testmod: add timing
 * Version for DiFX-2.0.0
 

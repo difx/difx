@@ -127,14 +127,14 @@ void siginthand(int j)
 	die = 1;
 }
 
-int getModuleLabel(SSHANDLE *xlrDevice, int bank, char label[XLR_LABEL_LENGTH+1])
+int getModuleLabel(SSHANDLE xlrDevice, int bank, char label[XLR_LABEL_LENGTH+1])
 {
 	S_BANKSTATUS bankStatus;
 	S_DIR dir;
 
 	label[0] = 0;
 
-	WATCHDOGTEST( XLRGetBankStatus(*xlrDevice, bank, &bankStatus) );
+	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStatus) );
 	if(bankStatus.State != STATE_READY)
 	{
 		return -1;
@@ -142,26 +142,26 @@ int getModuleLabel(SSHANDLE *xlrDevice, int bank, char label[XLR_LABEL_LENGTH+1]
 	
 	/* get label */
 	
-	WATCHDOGTEST( XLRSelectBank(*xlrDevice, bank) );
+	WATCHDOGTEST( XLRSelectBank(xlrDevice, bank) );
 
 	/* the following line is essential to work around an apparent streamstor bug */
-	WATCHDOGTEST( XLRGetDirectory(*xlrDevice, &dir) );
+	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
 
-	WATCHDOGTEST( XLRGetLabel(*xlrDevice, label) );
+	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 
 	label[XLR_LABEL_LENGTH] = 0;
 
 	return 0;
 }
 
-int erase(SSHANDLE *xlrDevice)
+int erase(SSHANDLE xlrDevice)
 {
-	WATCHDOGTEST( XLRErase(*xlrDevice, SS_OVERWRITE_NONE) );
+	WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_NONE) );
 
 	return 0;
 }
 
-int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, DifxMessageMk5Status *mk5status, int verbose, int getData, const struct DriveInformation drive[8], int *rate)
+int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, DifxMessageMk5Status *mk5status, int verbose, int getData, const struct DriveInformation drive[8], int *rate)
 {
 	XLR_RETURN_CODE xlrRC;
 	S_DEVSTATUS devStatus;
@@ -186,32 +186,32 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 	mk5status->state = MARK5_STATE_CONDITION;
 	difxMessageSendMark5Status(mk5status);
 	
-	WATCHDOGTEST( XLRGetDeviceInfo(*xlrDevice, &devInfo) );
+	WATCHDOGTEST( XLRGetDeviceInfo(xlrDevice, &devInfo) );
 
 	/* configure collection of drive statistics */
-	WATCHDOGTEST( XLRSetOption(*xlrDevice, SS_OPT_DRVSTATS) );
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
 		driveStats[b].range = statsRange[b];
 		driveStats[b].count = 0;
 	}
-	WATCHDOGTEST( XLRSetDriveStats(*xlrDevice, driveStats) );
+	WATCHDOGTEST( XLRSetDriveStats(xlrDevice, driveStats) );
 
 	if(mode == CONDITION_WRITE_ONLY)
 	{
-		WATCHDOGTEST( XLRErase(*xlrDevice, SS_OVERWRITE_RANDOM_PATTERN) );
+		WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_RANDOM_PATTERN) );
 		nPass = 1;
 		strcpy(opName, "W");
 	}
 	else if(mode == CONDITION_READ_ONLY)
 	{
-		WATCHDOGTEST( XLRErase(*xlrDevice, SS_OVERWRITE_RW_PATTERN) );
+		WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_RW_PATTERN) );
 		nPass = 1;
 		strcpy(opName, "R");
 	}
 	else
 	{
-		WATCHDOGTEST( XLRErase(*xlrDevice, SS_OVERWRITE_RW_PATTERN) );
+		WATCHDOGTEST( XLRErase(xlrDevice, SS_OVERWRITE_RW_PATTERN) );
 		nPass = 2;
 		strcpy(opName, "RW");
 	}
@@ -220,8 +220,9 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 
 	if(getData)
 	{
-		char fileName[128];
-		sprintf(fileName, "%s.timedata", vsn);
+		const int FilenameLength = 256;
+		char fileName[FilenameLength];
+		snprintf(fileName, FilenameLength, "%s.timedata", vsn);
 		printf("Opening %s for output...\n", fileName);
 		out = fopen(fileName, "w");
 		if(!out)
@@ -233,12 +234,12 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 
 	for(int n = 0; ; n++)
 	{
-		WATCHDOG( len = XLRGetLength(*xlrDevice) );
+		WATCHDOG( len = XLRGetLength(xlrDevice) );
 		if(lenLast < 0)
 		{
 			lenFirst = lenLast = len;
 		}
-		WATCHDOGTEST( XLRGetDeviceStatus(*xlrDevice, &devStatus) );
+		WATCHDOGTEST( XLRGetDeviceStatus(xlrDevice, &devStatus) );
 		if(!devStatus.Recording)
 		{
 			break;	/* must be done */
@@ -272,7 +273,7 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 			done = done/nPass + 50.0*pass;
 			mk5status->position = devInfo.NumBuses*len;
 			mk5status->rate = 8*devInfo.NumBuses*bytes/(printInterval*1000000.0);
-			sprintf(mk5status->scanName, "%s[%4.2f%%]", opName, done);
+			snprintf(mk5status->scanName, MODULE_SCAN_NAME_LENGTH, "%s[%4.2f%%]", opName, done);
 			if(bytes > 0)
 			{
 				if(mk5status->rate < lowestRate)
@@ -301,7 +302,8 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 			mk5status->dataMJD = dt/SEC_DAY;
 			difxMessageSendMark5Status(mk5status);
 
-			sprintf(message, ". Time = %8.3f  Pos = %14Ld  Rate = %7.2f  Done = %5.2f %%\n",
+			snprintf(message, DIFX_MESSAGE_LENGTH,
+				". Time = %8.3f  Pos = %14Ld  Rate = %7.2f  Done = %5.2f %%\n",
 				dt, mk5status->position, mk5status->rate, done);
 			printf("%s", message);
 			if(out)
@@ -333,7 +335,7 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 
 	if(devStatus.Recording)
 	{
-		WATCHDOG( xlrRC = XLRStop(*xlrDevice) );
+		WATCHDOG( xlrRC = XLRStop(xlrDevice) );
 	}
 
 	if(!die)
@@ -354,7 +356,7 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 
 		for(int d = 0; d < 8; d++)
 		{
-			WATCHDOG( xlrRC = XLRGetDriveInfo(*xlrDevice, d/2, d%2, &driveInfo) );
+			WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 			if(xlrRC == XLR_SUCCESS)
 			{
 				condMessage.moduleSlot = d;
@@ -370,7 +372,7 @@ int condition(SSHANDLE *xlrDevice, const char *vsn, enum ConditionMode mode, Dif
 				{
 					condMessage.bin[i] = -1;
 				}
-				WATCHDOG( xlrRC = XLRGetDriveStats(*xlrDevice, d/2, d%2, driveStats) );
+				WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 				if(xlrRC == XLR_SUCCESS)
 				{
 					for(int i = 0; i < XLR_MAXBINS; i++)
@@ -421,9 +423,9 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 
-	getModuleLabel(&xlrDevice, BANK_A, label);
+	getModuleLabel(xlrDevice, BANK_A, label);
 	strncpy(mk5status.vsnA, label, 8);
-	getModuleLabel(&xlrDevice, BANK_B, label);
+	getModuleLabel(xlrDevice, BANK_B, label);
 
 	if(mode != CONDITION_ERASE_ONLY)
 	{
@@ -441,7 +443,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 
 	if(strncmp(vsn, label, 8) != 0)
 	{
-		getModuleLabel(&xlrDevice, BANK_A, label);
+		getModuleLabel(xlrDevice, BANK_A, label);
 		if(strncmp(vsn, label, 8) != 0)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
@@ -498,7 +500,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	WATCHDOGTEST( XLRClearWriteProtect(xlrDevice) );
 
 	/* Get drive info */
-	nDrive = getDriveInformation(&xlrDevice, drive, &totalCapacity);
+	nDrive = getDriveInformation(xlrDevice, drive, &totalCapacity);
 
 	printf("> Module %s consists of %d drives totalling about %d GB:\n",
 		vsn, nDrive, totalCapacity);
@@ -517,7 +519,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	if(mode == CONDITION_ERASE_ONLY)
 	{
 		/* here just erasing */
-		v = erase(&xlrDevice);
+		v = erase(xlrDevice);
 		if(v < 0)
 		{
 			/* Something bad happened.  Bail! */
@@ -527,7 +529,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	else
 	{
 		/* here doing the full condition */
-		v = condition(&xlrDevice, vsn, mode, &mk5status, verbose, getData, drive, &rate);
+		v = condition(xlrDevice, vsn, mode, &mk5status, verbose, getData, drive, &rate);
 		if(v < 0)
 		{
 			/* Something bad happened.  Bail! */
@@ -540,7 +542,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		newStatus = MODULE_STATUS_UNKNOWN;
 	}
 
-	v = resetModuleDirectory(&xlrDevice, vsn, newStatus, dirVersion, totalCapacity, rate);
+	v = resetModuleDirectory(xlrDevice, vsn, newStatus, dirVersion, totalCapacity, rate);
 	if(v < 0)
 	{
 		/* Something bad happened to the XLR device.  Bail! */
@@ -548,7 +550,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	}
 	dirVersion = v;
 
-	v = setModuleLabel(&xlrDevice, vsn, newStatus, dirVersion, totalCapacity, rate);
+	v = setModuleLabel(xlrDevice, vsn, newStatus, dirVersion, totalCapacity, rate);
 	if(v < 0)
 	{
 		/* Something bad happened to the XLR device.  Bail! */
