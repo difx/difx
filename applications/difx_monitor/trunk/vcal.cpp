@@ -33,7 +33,7 @@ int calcdelay(cf32 *vis, int nchan, IppsFFTSpec_R_32f* fftspec, double *delay,
 	      float *snr);
 
 int main(int argc, const char * argv[]) {
-  int i, status, nchan, atseconds, count, prod;
+  int i, status, nchan, atseconds, count, prod, numchan;
   int startsec, nsamples, currentconfig, refant;
   float snr;
   cf32 *vis=NULL;
@@ -114,24 +114,26 @@ int main(int argc, const char * argv[]) {
   monserver_close(&monserver);
 
 
-  // (Re)allocate arrays if number ofc hannels changes, including first time
-  nchan = monserver.numchannels;
-
-  //lagx = vectorAlloc_f32(nchan*2);
-
-  int order = 0;
-  while(((nchan*2) >> order) > 1) order++;
-
-  ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
-
+  nchan = 0;
 
   cout << string(36, ' ') << "Delay" << endl;
   cout << string(37, ' ') << "usec   SNR" << endl;
 
 
   for (i=0; i<(int)visibilities.size(); i++) {
-    while (!monserver_nextvis(&visibilities[i], &prod, &vis)) {
+    while (!monserver_nextvis(&visibilities[i], &prod, &numchan, &vis)) {
       streamsize prec;
+
+      if (nchan==0) {
+	int order = 0;
+	nchan = numchan;
+	while(((nchan*2) >> order) > 1) order++;
+
+	ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+      } else if (nchan!=numchan) {
+	cerr << "Do not support differing number of channels. Abort" << endl;
+	exit(1);
+      }
 
       status = calcdelay(vis, nchan, fftspec, &delay, &snr);
 

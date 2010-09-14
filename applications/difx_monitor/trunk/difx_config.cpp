@@ -12,6 +12,7 @@
 #include "configuration.h"
 #include <iomanip>
 #include <sstream>
+#include <iostream>
 
 using namespace std;
 
@@ -60,13 +61,13 @@ int main(int argc, const char * argv[]) {
 	for(int k=0;k<npols;k++) {
 	  config->getBPolPair(iconfig,i,j,k,polpair);
 	    
-	  cout << setw(3) << prod;
-
-	  if (binloop*nphasecentres>1) {
-	    cout << "--" << prod+binloop*nphasecentres*npols-npols;
+	  if (binloop*nphasecentres==1) {
+	    cout << setw(3) << prod <<": ";
+	  } else {
+	    ostringstream oss;
+	    oss << prod << "-" << prod+binloop*nphasecentres*npols-npols << " ";
+	    cout << right << setw(10) << oss.str();
 	  }
-
-	  cout << ": ";
 
 	  ss << config->getTelescopeName(ds1index) << "-" 
 	     << config->getTelescopeName(ds2index);
@@ -87,7 +88,7 @@ int main(int argc, const char * argv[]) {
 	  cout << endl;
 	  prod++;
 	}
-	prod += binloop*nphasecentres-1;
+	prod += binloop*nphasecentres*npols-npols;
       }
     }
   
@@ -98,7 +99,7 @@ int main(int argc, const char * argv[]) {
       for(int j=0;j<autocorrwidth;j++) {
 	for(int k=0;k<config->getDNumRecordedBands(iconfig, i); k++) {
 	  
-	  cout << setw(3) << prod << ": " << left << setw(15) 
+	  cout << setw(7) << prod << ": " << left << setw(15) 
 	       << config->getDStationName(iconfig, i) << " " << right;
 	  
 	  char firstpol = config->getDRecordedBandPol(iconfig, i, k);

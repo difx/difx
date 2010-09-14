@@ -35,14 +35,9 @@ using namespace std;
 
 struct datadescrstruct {
   int32_t timestampsec;      // Current correlator time
-  int32_t numchannels;       // Number of spectral points per product
-  //int32_t npulsarbin;        // Number of pulsar bins
-  //int32_t nphasecentre;      // Number of phase centres
   cf32 *buffer;
 };
 
-
-//prototypes
 void plot_results();
 void change_config();
 int openstream(int portnumber, int tcpwindowsizebytes, int backlog=1);
@@ -147,7 +142,7 @@ int main(int argc, const char * argv[]) {
 	} else {
 	  cerr << "Warning: serversocket received poll error message: " << revents << endl;
 	}
-
+	break;
       } else if (fd == monitorsocket && revents) {
 	int newsock;
 
@@ -183,7 +178,7 @@ int main(int argc, const char * argv[]) {
 	    }
 	  }
 	}
-
+	break;
       } else if (fd == difxsocket && revents) {
 
 	if (revents & POLLHUP) { // Connection went away
@@ -191,7 +186,7 @@ int main(int argc, const char * argv[]) {
 	  close(difxsocket);
 	  pollfd_remove(pollfds, &nfds, difxsocket);
 	  difxsocket = 0;
-
+	  break;
 	} else {
 	  cout << "About to get a visibility" << endl;
 
@@ -199,6 +194,9 @@ int main(int argc, const char * argv[]) {
 
 	  // Receive the timestamp
 	  readint(difxsocket, &datadescr.timestampsec, &status);
+
+	  cout << "Got " << datadescr.timestampsec << endl;
+
 	  if (status) { // Error reading socket
 	    close(difxsocket);
 	    pollfd_remove(pollfds, &nfds, difxsocket);
@@ -206,7 +204,7 @@ int main(int argc, const char * argv[]) {
 	  }
 
 	  //if not skipping this vis
-	  if(!(datadescr.timestampsec < 0))  { // timestamp will always be >=0. Need to reassess
+	  if(!(datadescr.timestampsec < 0))  { 
 	    cout << "Got visibility # " << datadescr.timestampsec << endl;
       
 	    // Get buffersize to follow
@@ -224,7 +222,7 @@ int main(int argc, const char * argv[]) {
 	    }
 
 	    //receive the results into a buffer
-	    status = readnetwork(difxsocket, (char*)datadescr.buffer, buffersize*sizeof(cf32));
+	    status = readnetwork(difxsocket, (char*)datadescr.buffer, thisbuffersize*sizeof(cf32));
 	    if (status) { // Error reading socket
 	      break;
 	    }
@@ -244,11 +242,13 @@ int main(int argc, const char * argv[]) {
 	    }
 	  }
 	}
+	break;
       } else if (revents) {
 	if (revents & POLLHUP) { // Connection closed
 	  pollfd_remove(pollfds, &nfds, fd);
 	  monclient_remove(clients, &nclient, fd);
 	  close(fd);
+	  break;
 	} else if (revents==POLLIN) { // Message from client requesting products
 	  int32_t nproduct;
 	  struct monclient *thisclient ;
@@ -260,9 +260,10 @@ int main(int argc, const char * argv[]) {
 	    pollfd_remove(pollfds, &nfds, fd);
 	    monclient_remove(clients, &nclient, fd);
 	    close(fd);
+	    break;
 	  }
 
-	  status = readnetwork(fd, (char*)&nproduct, sizeof(int32_t));
+	  readint(fd, &nproduct, &status);
 	  if (status) { // Error reading socket
 	    cerr << "Problem reading fd " << fd << " closing" << endl;
 	    pollfd_remove(pollfds, &nfds, fd);
@@ -275,19 +276,22 @@ int main(int argc, const char * argv[]) {
 		pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
 		close(fd);
+		break;
 	      }
 	    } else if (nproduct>0) {
 	      struct product_offset *buf = new struct product_offset [nproduct];
-
+	      cout << "DEBUG: Reading " << nproduct << " products" << endl;
 	      status = DIFXMON_NOERROR;
 	      for (i=0; i<nproduct; i++) {
 		readint(fd, &buf[i].offset, &status);
 		readint(fd, &buf[i].npoints, &status);
+		readint(fd, &buf[i].product, &status);
 	      }
 	      if (status) {
 		pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
 		close(fd);
+		break;
 	      }
 	      monclient_addproduct(thisclient, nproduct, buf);
 
@@ -299,6 +303,7 @@ int main(int argc, const char * argv[]) {
 	      }
 	    
 	      delete [] buf;
+	      break;
 	    }
 	  }
 	}
@@ -489,6 +494,7 @@ void monclient_addproduct(struct monclient *client, int nproduct, struct product
     for (i=0; i<nproduct; i++) {
       client->vis[i].offset = offsets[i].offset;
       client->vis[i].npoints = offsets[i].npoints;
+      client->vis[i].product = offsets[i].product;
     }
   } else {
     client->nvis=0;
@@ -530,6 +536,7 @@ int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struc
   //     int32_t     buffersize (following)
   // For each visibility:
   //     int32_t     numchannels
+  //     int32_t     product #
   //     cf32[numchannels]   
 
   status = 0;
@@ -538,7 +545,7 @@ int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struc
 
   buffersize = 0;
   for (i=0; i<client.nvis; i++) 
-    buffersize += client.vis[i].npoints*sizeof(cf32) + sizeof(int32_t);
+    buffersize += client.vis[i].npoints*sizeof(cf32) + sizeof(int32_t)*2;
   
   sendint(client.fd, buffersize, &status);
 
@@ -553,6 +560,7 @@ int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struc
     for (i=0; i<client.nvis; i++) {
       //      if (client.vis[i] < maxvis) {
 	sendint(client.fd, client.vis[i].npoints, &status);
+	sendint(client.fd, client.vis[i].product, &status);
 	if (status) return(status);
 	status = writenetwork(client.fd, 
 			      (char*)(datadescr->buffer+client.vis[i].offset), 

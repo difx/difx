@@ -67,7 +67,7 @@ void sendint(int sock, int32_t val, int *status) {
 
 void readint(int sock, int32_t *val, int *status) {
   if (*status) return;
-  *status = readnetwork(sock, (char*)&val, sizeof(int32_t)); 
+  *status = readnetwork(sock, (char*)val, sizeof(int32_t)); 
   return;
 }
 
@@ -179,7 +179,7 @@ int monserver_requestproducts_byoffset(struct monclient client, struct product_o
   for (i=0; i<nprod; i++) {
     sendint(client.fd, offset[i].offset, &status);
     sendint(client.fd, offset[i].npoints, &status);
-
+    sendint(client.fd, offset[i].product, &status);
   }
   readint(client.fd, &status32, &status);
   if (status) return(status);
@@ -199,21 +199,21 @@ int monserver_requestproducts_byoffset(struct monclient client, struct product_o
 
 int monserver_readvis(struct monclient *client) {
   int status;
-  int32_t headbuf[4], bufsize;
+  int32_t headbuf[3], bufsize;
 
   status = readnetwork(client->fd, (char*)&headbuf, sizeof(headbuf)); 
   if (status) return(status);
 
   client->timestamp = headbuf[0];
-  client->numchannels = headbuf[1];
   client->ivis = 0;
-  bufsize = headbuf[3];
+  client->ioffset = 0;
+  client->nretvis = headbuf[1];
+  bufsize = headbuf[2];
   if (client->bufsize != bufsize) {
     if (client->bufsize!=0) {
       delete [] client->visbuf;
       client->bufsize = 0;
     }
-    client->nretvis = headbuf[2];
     client->visbuf = new char [bufsize];
     if (client->visbuf==NULL) {
       fprintf(stderr, "Error: Could not allocate memory for visibility buffer\n");
@@ -226,17 +226,18 @@ int monserver_readvis(struct monclient *client) {
   return(status);
 }
 
-int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis) {
+int monserver_nextvis(struct monclient *client, int *product, int *nchan,
+		      Ipp32fc **vis) {
   int ivis = client->ivis;
 
   if (ivis >= client->nretvis)  return(1);
 
-  *product = *(int32_t*)(client->visbuf+ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(Ipp32fc)));
-
-  *vis = (Ipp32fc*)(client->visbuf+sizeof(int32_t) + ivis*(sizeof(int32_t) 
-   	                         + client->numchannels*sizeof(Ipp32fc)));
-
+  *nchan = *(int32_t*)(client->visbuf+client->ioffset);
+  client->ioffset += sizeof(int32_t);
+  *product = *(int32_t*)(client->visbuf+client->ioffset);
+  client->ioffset += sizeof(int32_t);
+  *vis = (Ipp32fc*)(client->visbuf+client->ioffset);
+  client->ioffset += *nchan*sizeof(cf32);
   client->ivis++;
   return(0);
 }
@@ -271,7 +272,7 @@ int monserver_dupclient(struct monclient client, struct monclient *copy) {
   copy->nvis = client.nvis;
   copy->ivis = 0; // Reset counter
   copy->timestamp = client.timestamp;
-  copy->numchannels = client.numchannels;
+  //copy->numchannels = client.numchannels;
   copy->nretvis = client.nretvis;
   copy->bufsize = client.bufsize;
   
@@ -284,7 +285,7 @@ void monserver_copyclient(struct monclient client, struct monclient *copy) {
   copy->nvis = client.nvis;
   copy->ivis = client.ivis;
   copy->timestamp = client.timestamp;
-  copy->numchannels = client.numchannels;
+  //copy->numchannels = client.numchannels;
   copy->nretvis = client.nretvis;
   copy->bufsize = client.bufsize;
   copy->visbuf = client.visbuf;
@@ -297,7 +298,7 @@ void monserver_clear(struct monclient *client) {
   client->nvis = 0;
   client->ivis = 0;
   client->timestamp = -1;
-  client->numchannels = 0;
+  //client->numchannels = 0;
   client->nretvis = 0;
   client->bufsize = 0;
   delete [] client->visbuf;
@@ -353,6 +354,8 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
   int autocorrwidth = (config->getMaxProducts()>2)?2:1;
 
   for(int i=0;i<config->getNumDataStreams();i++) {
+    int offset = config->getCoreResultAutocorrOffset(configindex, i);
+
     for(int j=0;j<autocorrwidth;j++) {
       for(int k=0;k<config->getDNumRecordedBands(configindex, i); k++) {
 
@@ -362,7 +365,8 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 	else
 	  polpair[1] = ((polpair[0] == 'R')?'L':'R');
 	int freqindex = config->getDRecordedFreqIndex(configindex, i, k);
-	
+	int nchan = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+
 	products.push_back(DIFX_ProdConfig(i,
 					   i,
 					   config->getDStationName(configindex, i), 
@@ -372,8 +376,9 @@ vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int confi
 					   polpair,
 					   0,
 					   0,
-					   0,
-					   0));
+					   offset,
+					   nchan));
+	offset += nchan;
       }
     }
   }
@@ -428,6 +433,7 @@ int set_productoffsets(int nprod, int iprod[], struct product_offset offsets[], 
     if (iprod[i]>maxprod) return(DIFXMON_BADPRODUCTS);
     offsets[i].offset = products[iprod[i]].getOffset();
     offsets[i].npoints = products[iprod[i]].getNFreqChannels();
+    offsets[i].product = iprod[i];
   }
   return(DIFXMON_NOERROR);
 }

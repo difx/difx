@@ -29,7 +29,7 @@ void mjd2cal(int mjd, int *day, int *month, int *year);
 
 int main(int argc, const char * argv[]) {
   int status, i, ivis, nchan=0, nprod, cols[MAX_PROD] = {2,3,4,5};
-  int mjd, startsec, currentconfig, currentscan;
+  int mjd, startsec, currentconfig, currentscan, numchan;
   int iprod[MAX_PROD];
   char polpair[3], timestr[20];
   struct monclient monserver;
@@ -89,6 +89,7 @@ int main(int argc, const char * argv[]) {
 
   cout << "Opened connection to monitor server" << endl;
 
+  cout << "DEBUG  NPROD=" << nprod;
   status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
   if (status) exit(1);
 
@@ -127,49 +128,54 @@ int main(int argc, const char * argv[]) {
 	}
       }
 
-      // (Re)allocate arrays if number of channels changes, including first time
-      if (nchan!=monserver.numchannels) {
-	nchan = monserver.numchannels;
+      ivis = 0;
+      while (!monserver_nextvis(&monserver, (int*)&iprod[ivis], &numchan, &vis)) {
+	if (nchan!=numchan) {
+	  if (ivis==0) {
+	    // (Re)allocate arrays if number of channels changes, including first time
+	    nchan = numchan;
+	    cout << "Number of channels = " << nchan << endl;
+	    if (xval!=NULL) vectorFree(xval);
+	    if (lagx!=NULL) vectorFree(lagx);
+	    if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
+	    for (i=0; i<nprod; i++) {
+	      if (amp[i]!=NULL) vectorFree(amp[i]);
+	      if (phase[i]!=NULL) vectorFree(phase[i]);
+	      if (lags[i]!=NULL) vectorFree(lags[i]);
+	    }
 
-	if (xval!=NULL) vectorFree(xval);
-	if (lagx!=NULL) vectorFree(lagx);
-	if (fftspec!=NULL) ippsFFTFree_R_32f(fftspec);
-	for (i=0; i<nprod; i++) {
-	  if (amp[i]!=NULL) vectorFree(amp[i]);
-	  if (phase[i]!=NULL) vectorFree(phase[i]);
-	  if (lags[i]!=NULL) vectorFree(lags[i]);
-	}
-
-	xval = vectorAlloc_f32(nchan);
-	lagx = vectorAlloc_f32(nchan*2);
-	for (i=0; i<nprod; i++) {
-	  amp[i] = vectorAlloc_f32(nchan);
-	  phase[i] = vectorAlloc_f32(nchan);
-	  lags[i] = vectorAlloc_f32(nchan*2);
-	  if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
-	    cerr << "Failed to allocate memory for plotting arrays" << endl;
-	    exit(1);
+	    xval = vectorAlloc_f32(nchan);
+	    lagx = vectorAlloc_f32(nchan*2);
+	    for (i=0; i<nprod; i++) {
+	      amp[i] = vectorAlloc_f32(nchan);
+	      phase[i] = vectorAlloc_f32(nchan);
+	      lags[i] = vectorAlloc_f32(nchan*2);
+	      if (amp[i]==NULL || phase[i]==NULL || lags[i]==NULL) {
+		cerr << "Failed to allocate memory for plotting arrays" << endl;
+		exit(1);
+	      }
+	    }
+	    if (xval==NULL || lagx==NULL) {
+	      cerr << "Failed to allocate memory for plotting arrays" << endl;
+	      exit(1);
+	    }
+	    for (i=0; i<nchan; i++) {
+	      xval[i] = i;
+	    }
+	    for (i=-nchan; i<nchan; i++) {
+	      lagx[i+nchan] = i;
+	    }
+	    
+	    int order = 0;
+	    while(((nchan*2) >> order) > 1)
+	      order++;
+	    ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
+	  } else  {
+	    cerr << "Does not support mixed number of channels between products" << endl;
+	    exit(1); // Should do a cleaner exit
 	  }
 	}
-	if (xval==NULL || lagx==NULL) {
-	  cerr << "Failed to allocate memory for plotting arrays" << endl;
-	  exit(1);
-	}
-	for (i=0; i<nchan; i++) {
-	  xval[i] = i;
-	}
-	for (i=-nchan; i<nchan; i++) {
-	  lagx[i+nchan] = i;
-	}
 
-	int order = 0;
-	while(((nchan*2) >> order) > 1)
-	  order++;
-	ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
-      }
-
-      ivis = 0;
-      while (!monserver_nextvis(&monserver, (int*)&iprod[ivis], &vis)) {
 	ippsMagnitude_32fc(vis, amp[ivis], nchan);
 	ippsPhase_32fc(vis, phase[ivis], nchan);
 	vectorMulC_f32_I(180/M_PI, phase[ivis], nchan);

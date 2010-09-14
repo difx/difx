@@ -19,6 +19,7 @@ using std::string;
 struct product_offset {
   int32_t offset;
   int32_t npoints;
+  int32_t product;
 };
 
 struct monclient {
@@ -26,11 +27,12 @@ struct monclient {
   int     nvis;     /* Number of visibilities to return */
   struct product_offset *vis;     /* Offset/#points of Visibilities to return */
   int32_t timestamp; /* Correlator time field */
-  int32_t numchannels; /* Number of spectral points/visibility */
+  //  int32_t numchannels; /* Number of spectral points/visibility */
   int32_t bufsize;    /* Size contained in visbuf */
   int32_t nretvis;    /* Number of visibilities actually returned */
   char *visbuf; /* buffer of returned visibilities, int32_t followed by numchannel complexfloat */
   int ivis;
+  int ioffset;
 };
 
 class DIFX_ProdConfig {
@@ -77,7 +79,8 @@ int monserver_requestproducts_byoffset(struct monclient client, struct product_o
 int monserver_requestall(struct monclient client);
 int monserver_readvis(struct monclient *client);
 int monserver_close(struct monclient *monserver);
-int monserver_nextvis(struct monclient *client, int *product, Ipp32fc **vis);
+int monserver_nextvis(struct monclient *client, int *product, int *nchan,
+		      Ipp32fc **vis);
 void monserver_resetvis(struct monclient *client);
 void monserver_copyclient(struct monclient client, struct monclient *copy);
 int monserver_dupclient(struct monclient client, struct monclient *copy);
