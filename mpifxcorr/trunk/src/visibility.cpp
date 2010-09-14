@@ -288,13 +288,13 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
 
   ptr = *buf;
 
-  memcpy(ptr, &atsec, sizeof(uint32_t));
-  ptr +=sizeof(uint32_t);
+  memcpy(ptr, &atsec, sizeof(int32_t));
+  ptr +=sizeof(int32_t);
 
   memcpy(ptr, &datasize, sizeof(uint32_t));
   ptr +=sizeof(uint32_t);
 
-  memcpy(ptr, results, datasize);
+  memcpy(ptr, results, datasize*sizeof(cf32));
   ptr += datasize;
 
   *nbuf = ntowrite;
