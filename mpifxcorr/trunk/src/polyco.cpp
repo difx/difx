@@ -482,6 +482,7 @@ bool Polyco::loadPolycoFile(string filename, int subcount)
         }
         coefficients[i] = atof(strbuffer.c_str());
       }
+      iss.clear();
     }
     input.close();
 
