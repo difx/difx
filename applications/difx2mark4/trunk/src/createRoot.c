@@ -109,6 +109,14 @@ int createRoot (char *baseFile,     // common part of difx fileset name
 
     if (opts->verbose > 0)
         fprintf (stderr, "source %s\n", source);
+                                    // modify source (change . to _) name
+    i = 0;
+    while (source[i] != 0)
+        {
+        if (source[i] == '.')
+            source[i] = '_';
+        i++;
+        }
                                     // form input file name
     strcpy (v2dname, baseFile);
                                     // see if base file name ends in _xxx
@@ -151,7 +159,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // create the new root file name
     strcpy (rootname, node);
     strcat (rootname, "/");
-    strcat (rootname, D->source->name);
+    strcat (rootname, source);
     strcat (rootname, ".");
     strcat (rootname, rcode);
     fprintf (stderr, "output rootfile: %s\n", rootname);
@@ -232,12 +240,30 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                          pchar = strstr (line, "K4-2/M4");
                          strcpy (pchar, "K4;\n");
                          }
+                    else if (strncmp (pst[2], "K4-2", 4) == 0)
+                         {
+                         pchar = strstr (line, "K4-2");
+                         strcpy (pchar, "K4;\n");
+                         }
                     else if (strncmp (pst[2], "none", 4) == 0)
                          {
                          pchar = strstr (line, "none");
                          strcpy (pchar, "Mark4;\n");
                          }
                     }               
+                else if (strncmp (pst[0], "recording_system_ID", 19) == 0)
+                    {               // patch up invalid (K2) ID's
+                    if (isalpha (*pst[2]))
+                         {          // ID must be numeric, set to 0
+                         pchar = strstr (line, pst[2]);
+                         strncpy (pchar, "0000000", strlen (pst[2]));
+                         }
+                    }
+                else if (strncmp (pst[0], "record_transport_type", 21) == 0)
+                    {               // comment out invalid (K5) type
+                    if (strncmp (pst[2], "K5", 2) == 0)
+                         line[0] = '*';
+                    }
                 else if (strncmp (pst[0], "tape_motion", 11) == 0 
                       || strncmp (pst[0], "tape_length", 11) == 0)
                     line[0] = '*';  // comment out tape motion and tape

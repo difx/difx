@@ -7,6 +7,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
 #include "difx2mark4.h"
 
 #define NUMFILS 80                  // max number of type 1 output files
@@ -36,7 +39,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
          blines[NUMFILS][3],        // null-terminated baselines list
          poltab [4][3] = {"LL", "RR", "LR", "RL"},
          lchan_id[5],
-         rchan_id[5];
+         rchan_id[5],
+         buff[20];;
     
     double q_factor,                // quantization correction factor
            sb_factor[64];           // +1 | -1 for USB | LSB by channel
@@ -45,6 +49,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
          *fout[NUMFILS];
     DIR *pdir;
     struct dirent *dent;
+    struct tm *mod_time;
+    struct stat attrib;
 
     struct type_000 t000;
     struct type_100 t100;
@@ -192,7 +198,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 fprintf (stderr, "created type 1 output file %s\n", outname);
 
                                     // construct and write type 000 record
-                strcpy (t000.date, "2000001-000000"); // dummy date
+                stat (inname, &attrib);
+                mod_time = gmtime (&(attrib.st_mtime));
+                sprintf (buff, "%4d%03d-%02d%02d%02d", mod_time->tm_year+1900,
+                         mod_time->tm_yday, mod_time->tm_hour,
+                         mod_time->tm_min,  mod_time->tm_sec);
+                strcpy (t000.date, buff);
                 strcpy (t000.name, outname);
                 fwrite (&t000, sizeof (t000), 1, fout[n]);
 
@@ -243,9 +254,16 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // copy visibilities into type 120 record
         for (i=0; i<nvis; i++)
             {                       // conjugate LSB for rotator direction difference
-            u.t120.ld.spec[i].re = rec.comp[i].real * SCALE * q_factor;
-            u.t120.ld.spec[i].im = rec.comp[i].imag * SCALE * q_factor 
-                                                    * sb_factor[rec.freq_index];
+            if (sb_factor[rec.freq_index] > 0)
+                {
+                u.t120.ld.spec[i].re = rec.comp[i].real * SCALE * q_factor;
+                u.t120.ld.spec[i].im = rec.comp[i].imag * SCALE * q_factor;
+                }
+            else                    // reverse order of points in LSB spectrum
+                {
+                u.t120.ld.spec[nvis-i-1].re =  rec.comp[i].real * SCALE * q_factor;
+                u.t120.ld.spec[nvis-i-1].im = -rec.comp[i].imag * SCALE * q_factor;
+                }
             }
         strncpy (u.t120.baseline, blines[n], 2);
                                     // insert index# for this channel

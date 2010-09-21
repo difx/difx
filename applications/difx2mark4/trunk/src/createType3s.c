@@ -39,7 +39,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         norm_corr,
         isb,
         record_chan,
-        tonindex[16];
+        once = FALSE;
 
     double t,
            tint,
@@ -48,7 +48,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            f_rel,
            srate,
            cquad,
-           squad;
+           squad,
+           xtones[16];
 
     char outname[256],
          pcal_filnam[256],
@@ -186,7 +187,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                              ant, t, tint, cable_delay, t309.rot, t309.acc_period);
                                     // initialize list of next available tone location
                 for (i=0; i<16; i++)
-                    tonindex[i] = 0;
+                    xtones[i] = 0;
+                t309.ntones = 0;
                                     // loop over tones within record
                 for (np=0; np<npol; np++)
                     for (nc=0; nc<nchan; nc++)
@@ -207,24 +209,43 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     sprintf (buff, "C%02dU", j);
                                     buff[3] = (D->freq+j)->sideband;
                                     strcpy (t309.chan[j].chan_name, buff);
+
+                                    // find out which tone slot this goes in
+                                    for (i=0; i<16; i++)
+                                        {
+                                        if (f_rel == xtones[i])
+                                            break;
+                                        else if (xtones[i] == 0.0)
+                                            {
+                                            xtones[i] = f_rel;
+                                            t309.ntones++;
+                                            break;
+                                            }
+                                        }
+                                    // did we run out of slots before finding tone?
+                                    if (i == 16)
+                                        {
+                                        if (!once)
+                                            {
+                                            fprintf (stderr, "more than 16 baseband pcal tones"
+                                                             " - ignoring the rest\n");
+                                            once = TRUE;
+                                            }
+                                        continue;
+                                        }
                                     // renormalize correlations to those created in the DOM
                                     norm_corr = - floor (cquad * srate * 128.0 + 0.5);
-                                    memcpy (&t309.chan[j].acc[tonindex[j]][0], &norm_corr, 4);
-                                    norm_corr = floor (squad * srate * 128.0 + 0.5);
-                                    memcpy (&t309.chan[j].acc[tonindex[j]][1], &norm_corr, 4);
+                                    memcpy (&t309.chan[j].acc[i][0], &norm_corr, 4);
 
-                                    // 16 tone freqs are spread through channel records
-                                    t309.chan[tonindex[j]].freq = f_rel;
-                                    tonindex[j]++;
+                                    norm_corr =   floor (squad * srate * 128.0 + 0.5);
+                                    memcpy (&t309.chan[j].acc[i][1], &norm_corr, 4);
+
+                                    // 16 tone freqs (in Hz) are spread through channel recs
+                                    t309.chan[i].freq = 1e6 * f_rel;
                                     break;
                                     }
                                 }
                             }
-                                    // find maximum number of tones in any one channel
-                t309.ntones = tonindex[0];
-                for (i=1; i<16; i++)
-                    if (tonindex[i] > t309.ntones)
-                        t309.ntones = tonindex[i];
                                     // write output record
                 write_t309 (&t309, fout[n]);
                 }
