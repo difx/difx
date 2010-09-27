@@ -226,10 +226,20 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			}
 			dest->im[destAntenna] = (DifxPolyModel **)calloc(dest->nPhaseCentres+1,
 							sizeof(DifxPolyModel *));
+			if(dest->im[destAntenna] == 0)
+			{
+				fprintf(stderr, "Error allocating space for IM table! Aborting");
+				exit(1);
+			}
 			for(j=0;j<src->nPhaseCentres+1;j++)
 			{
 				dest->im[destAntenna][j] = dupDifxPolyModelColumn(
 						src->im[srcAntenna][j], dest->nPoly);
+				if(dest->im[destAntenna][j] == 0)
+				{
+					fprintf(stderr, "Error allocating space for IM table! Aborting");
+					exit(1);
+				}
 			}
 		}
 	}
