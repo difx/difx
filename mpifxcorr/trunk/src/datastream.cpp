@@ -339,13 +339,6 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //in case the atsegment has changed...
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][0] = scan;
 
-  //if we are in the last segment and not reading any more, and right at the end of the current segment, bail out
-  if(!keepreading && (atsegment == lastvalidsegment) && bufferindex == bufferbytes)
-  {
-    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
-    return 0; //note exit here!!!!
-  }
-
   //look at the segment we are in now - if we want to look wholly before this or the buffer segment is bad then 
   //can't continue, fill control buffer with -1 and bail out
   if((scan < bufferinfo[atsegment].scan) || (offsetsec < bufferinfo[atsegment].scanseconds - 1) || ((offsetsec - bufferinfo[atsegment].scanseconds < 2) && ((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + lastoffsetns - bufferinfo[atsegment].scanns < 0)))
@@ -392,6 +385,13 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   //align the index to nearest previous 16 bit boundary
   if(bufferindex % 2 != 0)
     bufferindex--;
+
+  //if we are in the last segment and not reading any more, and right at the end of the current segment, bail out
+  if(!keepreading && (atsegment == lastvalidsegment) && bufferindex == bufferbytes)
+  {
+    bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+    return 0; //note exit here!!!!
+  }
 
   int count=0;
   while(bufferindex < atsegment*readbytes && count < bufferinfo[atsegment].blockspersend)
