@@ -91,6 +91,10 @@ void deleteDifxInput(DifxInput *D)
 		{
 			deleteDifxJobArray(D->job);
 		}
+		if(D->rule)
+		{
+			deleteDifxRuleArray(D->rule);
+		}
 		free(D);
 	}
 }
