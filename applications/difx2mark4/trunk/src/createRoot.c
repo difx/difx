@@ -51,13 +51,13 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                       "$SITE", "$BBC", "$DAS", "$FREQ", "$HEAD_POS", "$IF",
                       "$PHASE_CAL_DETECT", "$PASS_ORDER", "$PROCEDURES", "$ROLL",
                       "$SCHEDULING_PARAMS", "$SCHED", "$SEFD", "$SOURCE", "$TRACKS",
-                      "$EOP", "END_LIST"};
+                      "$EOP", "$CLOCK", "END_LIST"};
 
     enum block_tokens {NO_BLOCK, GLOBAL, EXPER, MODE, STATION, ANTENNA,
                       SITE, BBC, DAS, FREQ, HEAD_POS, IF,
                       PHASE_CAL_DETECT, PASS_ORDER, PROCEDURES, ROLL,
                       SCHEDULING_PARAMS, SCHED, SEFD, SOURCE, TRACKS,
-                      EOP, END_LIST};
+                      EOP, CLOCK, END_LIST};
                                     // lines to be appended to output root file
     char *extra_lines[] = {"$EVEX_REV;\n", 
                            " rev = 1.0;\n", 
@@ -108,7 +108,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
     if (D->nJob != 1)
         {
         perror ("difx2mark4");
-        fprintf (stderr, "Error: Only one job may be selected and this must contain only one scan\n", v2dname);
+        fprintf (stderr, "Error: Only one job may be selected and this must contain only one scan\n");
         return (-1);
         }
                                     // find start time
@@ -262,6 +262,11 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                          pchar = strstr (line, "K4-2");
                          strcpy (pchar, "K4;\n");
                          }
+                    else if (strncmp (pst[2], "VLBA", 4) == 0)
+                         {
+                         pchar = strstr (line, "VLBA");
+                         strcpy (pchar, "VLBA;\n");
+                         }
                     else if (strncmp (pst[2], "none", 4) == 0)
                          {
                          pchar = strstr (line, "none");
@@ -348,7 +353,9 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // correct scan, insert one copy of ff ref time
                 else if (strncmp (pst[0], "scan", 4) == 0)
                     {
-                    conv2date (D->scan->mjdStart + D->scan->durSeconds / 172800.0, &caltime);
+                    //FIXME calculate this properly taking into account different scan lengths
+                    //      for different antennas. See also stcodes/compute_reftime.c
+                    conv2date (D->scan->mjdStart + 10 / 86400.0, &caltime);
                     sprintf (buff, 
                              "    fourfit_reftime = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
                              caltime.year, caltime.day, 
@@ -492,6 +499,9 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                 break;
 
                                     // nothing special needs to be done for these blocks
+            case CLOCK:
+                                    //this will be replaced with new clock table
+                    line[0] = 0;
             case BBC:
             case IF:
             case HEAD_POS:
