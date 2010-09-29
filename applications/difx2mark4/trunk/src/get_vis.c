@@ -10,12 +10,12 @@
 #define NUMFILS 30                  // max number of type 1 output files
 
 // there is one type 1 output file for each baseline in the difx scan
-//     get_vis (FILE *, struct vis_record *);
+//     get_vis (FILE *, vis_record *);
 
 
 int get_vis (FILE *fin,             // SWIN format file with visibilities
              int nvis,              // number of visibilities in record
-             struct vis_record *pr) // pointer to data structure to be output 
+             vis_record *pr) // pointer to data structure to be output 
     {
     static int nrec = 0;
                                     // test first and last reads for error or EOF

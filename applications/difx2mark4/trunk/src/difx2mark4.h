@@ -53,7 +53,7 @@ struct CommandLineOptions
     double jobMatrixDeltaT; /* seconds */
     };
 
-struct vis_record
+typedef struct 
     {
     int sync;
     int version;
@@ -72,7 +72,7 @@ struct vis_record
         float real;
         float imag;
         } comp[MAX_VIS];
-    };
+    } vis_record;
 
 struct stations
     {

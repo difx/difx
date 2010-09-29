@@ -15,6 +15,40 @@
 #define NUMFILS 80                  // max number of type 1 output files
 #define SCALE 10000.0               // amplitude factor to normalize for fourfit
 
+//FIXME add other sanity checks from difx2fits fitsUV.c
+int RecordIsFlagged(vis_record *vr, const DifxJob *job)
+{
+	double mjd;
+	int a1, a2;
+	int i;
+
+
+	if(job->nFlag <= 0)
+	{
+		return 0;
+	}
+
+	mjd = vr->mjd + vr->iat/86400.;
+	a1  = (vr->baseline/256) - 1;
+	a2  = (vr->baseline%256) - 1;
+
+	for(i = 0; i < job->nFlag; i++)
+	{
+		if(job->flag[i].mjd1 <= mjd &&
+		   job->flag[i].mjd2 >= mjd)
+		{
+			if(job->flag[i].antennaId == a1 ||
+			   job->flag[i].antennaId == a2)
+			{
+                                //fprintf (stderr, "flagged visibility baseline %d-%d mjd %f\n", a1+1, a2+1, mjd);
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+
 int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                   char *baseFile,   // string containing common part of difx file names
                   char *node,       // directory for output fileset
@@ -29,6 +63,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         n,
         nvis,
         pol,
+        nread,                      // number of visibility records read
+        nflagged,                   // number of visibility records flagged
         base_index[NUMFILS],        // base_index[i] contains baseline for file fout[i]
         n120[NUMFILS],              // # of records in each t120 file
         n120_flipped;
@@ -51,6 +87,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     struct dirent *dent;
     struct tm *mod_time;
     struct stat attrib;
+    vis_record rec;
 
     struct type_000 t000;
     struct type_100 t100;
@@ -61,13 +98,13 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         float dummy[2058];          // reserve enough space for 1024 vis.
         } u;
 
-    struct vis_record rec;
                                     // function prototypes
-    int get_vis (FILE *, int, struct vis_record *);
+    int get_vis (FILE *, int, vis_record *);
     void conv2date (double, struct date *);
     void write_t100 (struct type_100 *, FILE *);
     void write_t101 (struct type_101 *, FILE *);
     void write_t120 (struct type_120 *, FILE *);
+    int RecordIsFlagged(vis_record *vr, const DifxJob *job);
 
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
@@ -83,6 +120,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         n120[i] = 0;
         }
                                     // number of (spectral) visibility points per array
+    nread = 0;
+    nflagged = 0;
     nvis = D->nOutChan;
                                     // clear record areas
     memset (&t000, 0, sizeof (t000));
@@ -155,6 +194,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         fprintf (stderr, "fatal error opening input data file %s\n", inname);
         return (-1);
         }
+
     fprintf (stderr, "opened input file %s\n", inname);
                                     // loop over all records in input file
     while (TRUE)
@@ -163,6 +203,14 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         if (get_vis (fin, nvis, &rec))
             break;                  // encountered a read error or EOF; stop looping
 
+                                    // check if either antenna is flagged a priori
+                                    // for this baseline. If so, disregard and move on
+        nread++;
+        if (RecordIsFlagged(&rec, D->job)) //only one job for now
+            {
+            nflagged++;
+            continue;
+            }
                                     // find the output file for this baseline
         for (n=0; n<NUMFILS; n++)
             {
@@ -298,5 +346,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         }
     fclose (fin);
                                     // print summary information
+    fprintf (stderr, "%8d DiFX visibility records read\n", nread);
+    fprintf (stderr, "%8d DiFX visibiyity records flagged (slew time)\n", nflagged);
     return (0);
     }
