@@ -49,7 +49,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            srate,
            cquad,
            squad,
-           xtones[16];
+           xtones[16],
+           deltat,
+           clockdrift;
 
     char outname[256],
          pcal_filnam[256],
@@ -150,9 +152,20 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     {
                     t301.delay_spline[l] 
                       = -1.e-6 * ((**(D->scan->im+n))->delay[l] + (D->antenna+n)->clockcoeff[l]);
+                    
 
                     t302.phase_spline[l] = t301.delay_spline[l] * (D->freq+j)->freq;
                     }
+                //FIXME quick hack to take account of clock rate between start of the poly and  start of clock model. 
+                //See Model::addClockTerms in mpifxcorr model.cpp for full treatment for polynomial clock model
+		//See also fitsMC.c in difx2fits clockorder; j++
+		deltat = ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd)*86400. + (**(D->scan->im+n))->sec;
+                clockdrift = deltat * 1.e-6 * (D->antenna+n)->clockcoeff[1];
+                t301.delay_spline[0] -= clockdrift;
+                //printf ("deltat of %e s   ", deltat);
+                //printf ("clock coefficient of %e s/s   ", 1.e-6 * (D->antenna+n)->clockcoeff[1]);
+                //printf ("added clock drift of %e s\n", clockdrift);
+
                 write_t301 (&t301, fout[n]);
                 write_t302 (&t302, fout[n]);
                 }

@@ -83,7 +83,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         n120[i] = 0;
         }
                                     // number of (spectral) visibility points per array
-    nvis = D->freq->nChan / D->freq->specAvg;
+    nvis = D->nOutChan;
                                     // clear record areas
     memset (&t000, 0, sizeof (t000));
     memset (&t100, 0, sizeof (t100));

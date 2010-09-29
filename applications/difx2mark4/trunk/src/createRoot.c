@@ -101,7 +101,18 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // initialize memory as necessary
     current_def[0] = 0;
     current_scan[0] = 0;
+    inname[0] = 0;
     mjdStart = 0.0;
+
+                                    // check number of scans in job is 1
+    if (D->nJob != 1)
+        {
+        perror ("difx2mark4");
+        fprintf (stderr, "Error: Only one job may be selected and this must contain only one scan\n", v2dname);
+        return (-1);
+        }
+                                    // find start time
+    mjdStart = D->job->mjdStart;
                                     // create scan identifier
 
                                     // source name
@@ -133,7 +144,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         fprintf (stderr, "fatal error opening v2d file %s\n", v2dname);
         return (-1);
         }
-                                    // read v2d file pulling out useful info
+                                    // read v2d file pulling out vex file name
     while (fgets (line, 256, fv2d) != NULL)
         {
         if ((pchar = strstr (line, "vex = ")) != NULL)
@@ -141,9 +152,15 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         else if ((pchar = strstr (line, "antennas = ")) != NULL)
             sscanf (pchar, "antennas = %s", antlist);
 
-        else if ((pchar = strstr (line, "mjdStart = ")) != NULL)
-            sscanf (pchar, "mjdStart = %lf", &mjdStart);
         }
+
+    if (inname == NULL)
+        {
+        perror ("difx2mark4");
+        fprintf (stderr, "Error reading vex file name from v2d file %s\n", v2dname);
+        return (-1);
+        }
+    
 
     if (opts->verbose > 0)
         fprintf (stderr, "vex file name <%s>\n", inname);
@@ -290,6 +307,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     sprintf (buff, "C%02dU :", numchan++);
                     if (*pst[5] == 'L')
                         buff[3] = 'L';
+                    //FIXME set X or S band 
                     strcat (buff, strchr (line, '=') + 1);
                                     // chop off line just after = sign
                     *(strchr (line, '=')+2) = 0;
@@ -490,6 +508,8 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         if (strncmp (pst[0], "enddef", 6) == 0)
             current_def[0] = 0;
         }
+
+        fprintf (stderr, "number of stations: %d\n", nsite);
                                     // append extra statements to the end of the file
         strcpy (line, "$CLOCK;\n");
         fputs (line, fout); 
