@@ -12,6 +12,8 @@
 #include <time.h>
 #include "difx2mark4.h"
 
+#define XS_CONVENTION
+
 #define NUMFILS 80                  // max number of type 1 output files
 #define SCALE 10000.0               // amplitude factor to normalize for fourfit
 
@@ -267,9 +269,22 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     ch = (D->nPolar > 1) ? 2 * i     : i;
                     sprintf (lchan_id, "C%02d?", ch);
                     lchan_id[3] = (D->freq+i)->sideband;
+                                    //FIXME quick fix for X/S observations.
+#ifdef XS_CONVENTION
+			    if (D->freq[i].freq < 3000)
+                                lchan_id[0] = 'S';
+                            else
+                                lchan_id[0] = 'X';
+#endif
                     ch = (D->nPolar > 1) ? 2 * i + 1 : i;
                     sprintf (rchan_id, "C%02d?", ch);
                     rchan_id[3] = (D->freq+i)->sideband;
+#ifdef XS_CONVENTION
+			    if (D->freq[i].freq < 3000)
+                                lchan_id[0] = 'S';
+                            else
+                                lchan_id[0] = 'X';
+#endif
                                     // loop over 1, 2, or 4 pol'n. products
                     for (pol=0; pol<D->nPolar; pol++)
                         {
@@ -347,6 +362,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     fclose (fin);
                                     // print summary information
     fprintf (stderr, "%8d DiFX visibility records read\n", nread);
-    fprintf (stderr, "%8d DiFX visibiyity records flagged (slew time)\n", nflagged);
+    fprintf (stderr, "%8d DiFX visibility records discarded (slew time)\n", nflagged);
     return (0);
     }

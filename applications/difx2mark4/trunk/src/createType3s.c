@@ -10,6 +10,8 @@
 #include <math.h>
 #include "difx2mark4.h"
 
+#define XS_CONVENTION
+
 #define NUMFILS 50                  // maximum number of station files
 #define LINEMAX 20000               // max size of a pcal file line
 
@@ -138,6 +140,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             {
             sprintf (t301.chan_id, "C%02d?", i);
             t301.chan_id[3] = (D->freq+i)->sideband;
+#ifdef XS_CONVENTION
+	    if (D->freq[i].freq < 3000)
+                t301.chan_id[0] = 'S';
+            else
+                t301.chan_id[0] = 'X';
+#endif
             strcpy (t302.chan_id, t301.chan_id); 
                                     // loop over polynomial intervals
             for (j=0; j<D->scan->nPoly; j++)
@@ -221,6 +229,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     {
                                     sprintf (buff, "C%02dU", j);
                                     buff[3] = (D->freq+j)->sideband;
+#ifdef XS_CONVENTION
+				    if (D->freq[j].freq < 3000)
+                                        buff[0] = 'S';
+                                    else
+                                        buff[0] = 'X';
+#endif
                                     strcpy (t309.chan[j].chan_name, buff);
 
                                     // find out which tone slot this goes in

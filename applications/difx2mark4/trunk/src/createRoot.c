@@ -8,6 +8,8 @@
 #include <math.h>
 #include <ctype.h>
 #include "difx2mark4.h"
+
+#define XS_CONVENTION
  
 int createRoot (char *baseFile,     // common part of difx fileset name
                 char *node,         // directory for output fileset
@@ -313,6 +315,13 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     if (*pst[5] == 'L')
                         buff[3] = 'L';
                     //FIXME set X or S band 
+#ifdef XS_CONVENTION
+                    if (pst[2][1] == 'X')
+                        buff[0] = 'X';
+                    if (pst[2][1] == 'S')
+                        buff[0] = 'S';
+#endif
+
                     strcat (buff, strchr (line, '=') + 1);
                                     // chop off line just after = sign
                     *(strchr (line, '=')+2) = 0;
@@ -363,34 +372,14 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     strcat (line, buff);
                     }
                                     // omit stations that didn't get correlated from scan
-                else if (strncmp (pst[0], "station", 7) == 0)
-                    {
-                    if (strstr (antlist, pst[2]) == NULL)
-                        line[0] = 0;
-                                    // this station participates, use difx start
-                    else 
-                        {
-                        sprintf (buff, " 00 sec : %d sec : : : : 0 ; * overridden times\n", 
-                                 D->scan->durSeconds);
-                        pchar = strchr (line, ':');
-                        strcpy (pchar+2, buff);
-                        }
-                    }
-                                    // process start
-                else if (strncmp (pst[0], "start", 6) == 0)
-                    {
-                                    // if start was overridden within .v2d,then generate
-                                    // new scan start
-                    if (mjdStart > 0.0)
-                        {
-                        conv2date (D->scan->mjdStart, &caltime);
-                        sprintf (buff, "  start = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
-                             caltime.year, caltime.day, 
-                             caltime.hour, caltime.minute, (int) caltime.second);
-                        strcat (line, buff);
 
-                        }
-                    }
+                                    // FIXME difxio scan start time is time when first
+                                    // antenna comes on source. It may also be different
+                                    // if mjdStart is set to the middle of a scan in
+                                    // the .v2d file. For now we will copy the scan
+                                    // verbatim from the vex file to avoid having to 
+                                    // fiddle the individual antenna start and stop times
+                           
                 break;
 
             case SCHEDULING_PARAMS: // the scheduling_params block is deleted
