@@ -365,7 +365,7 @@ static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int ver
 	V->sortEvents();
 }
 
-static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext)
+static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const string &vexFile)
 {
 	DifxJob *job;
 	const char *difxVer;
@@ -375,21 +375,22 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	difxVer = getenv("DIFX_VERSION");
 	if(difxVer)
 	{
-		strcpy(job->difxVersion, difxVer);
+		snprintf(job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", difxVer);
 	}
 	else
 	{
-		strcpy(job->difxVersion, "Unknown");
+		snprintf(job->difxVersion, DIFXIO_VERSION_LENGTH, "%s", "Unknown");
 	}
+	snprintf(job->vexFile, DIFXIO_FILENAME_LENGTH, "%s", vexFile.c_str());
 	job->jobStart = J.mjdStart;
 	job->jobStop  = J.mjdStop;
 	job->mjdStart = J.mjdStart;
 	job->duration = trunc((J.mjdStop - J.mjdStart) * 86400.0 + 0.001);
 	job->jobId    = J.jobId;
 	job->subarrayId = 0;
-	strncpy(job->obsCode, obsCode.c_str(), 8);
+	snprintf(job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s", obsCode.c_str());
 	job->obsCode[7] = 0;
-	strcpy(job->taperFunction, "UNIFORM");
+	snprintf(job->taperFunction, DIFXIO_TAPER_LENGTH, "%s", "UNIFORM");
 	job->polyOrder = 5;
 	job->polyInterval = 120;
 	job->aberCorr = AberCorrExact;
@@ -401,9 +402,16 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 
 	if(J.jobId > 0)
 	{
-		char format[20];
-		sprintf(format, "%%s/%%s_%%0%dd%%c", nDigit);
-		sprintf(job->fileBase, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
+		const int FormatLength = 20;
+		char format[FormatLength];
+		int p;
+
+		p = snprintf(format, FormatLength, "%%s/%%s_%%0%dd%%c", nDigit);
+		if(p >= FormatLength)
+		{
+			cerr << "Developer error: fileBase being truncated.  p = " << p << endl;
+		}
+		snprintf(job->fileBase, DIFXIO_FILENAME_LENGTH, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
 	}
 	else
 	{
@@ -411,7 +419,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 		{
 			cerr << "WARNING: ext!=0 and making job names without extensions!" << endl;
 		}
-		sprintf(job->fileBase, "%s/%s", directory.c_str(), J.jobSeries.c_str());
+		snprintf(job->fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
 	}
 
 	return job;
@@ -436,7 +444,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 	for(i = 0, a = J.vsns.begin(); a != J.vsns.end(); i++, a++)
 	{
 		ant = V->getAntenna(a->first);
-		strcpy(A[i].name, a->first.c_str());
+		snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", a->first.c_str());
 		A[i].X = ant->x + ant->dx*(mjd-ant->posEpoch)*86400.0;
 		A[i].Y = ant->y + ant->dy*(mjd-ant->posEpoch)*86400.0;
 		A[i].Z = ant->z + ant->dz*(mjd-ant->posEpoch)*86400.0;
@@ -473,7 +481,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 			}
 			if(antSetup->difxName.size() > 0)
 			{
-				strcpy(A[i].name, antSetup->difxName.c_str());
+				snprintf(A[i].name, DIFXIO_NAME_LENGTH, "%s", antSetup->difxName.c_str());
 			}
 			A[i].clockcoeff[0] += antSetup->deltaClock*1.0e6;	// convert to us from sec
 			A[i].clockcoeff[1] += antSetup->deltaClockRate*1.0e6;	// convert to us/sec from sec/sec
@@ -489,7 +497,7 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 		}
 
 		antList.push_back(a->first);
-		strcpy(A[i].shelf, P->getShelf(a->second));
+		snprintf(A[i].shelf, DIFXIO_SHELF_LENGTH, "%s", P->getShelf(a->second));
 	}
 
 	return A;
@@ -782,7 +790,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one scan simultaneously" << endl;
 				exit(0);
 			}
-			strcpy(D->rule[i].scanId, P->rules[i].scanName.front().c_str());
+			snprintf(D->rule[i].scanId, DIFXIO_NAME_LENGTH, "%s", P->rules[i].scanName.front().c_str());
 		}
 		if(P->rules[i].sourceName.size() > 0)
 		{
@@ -791,7 +799,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 				cerr << "Cannot handle rules for more than one source simultaneously" << endl;
 				exit(0);
 			}
-			strcpy(D->rule[i].sourcename, P->rules[i].sourceName.front().c_str());
+			snprintf(D->rule[i].sourceName, DIFXIO_NAME_LENGTH, "%s", P->rules[i].sourceName.front().c_str());
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
@@ -816,7 +824,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 			}
 			D->rule[i].qual = P->rules[i].qualifier.front();
 		}
-		strcpy(D->rule[i].configName, P->rules[i].corrSetupName.c_str());
+		snprintf(D->rule[i].configName, DIFXIO_NAME_LENGTH, "%s", P->rules[i].corrSetupName.c_str());
 	}
 }
 
@@ -1189,12 +1197,12 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	c = configs.size();
 	configs.push_back(pair<string,string>(S->modeDefName, S->corrSetupName));
 	config = D->config + c;
-	strcpy(config->name, configName.c_str());
+	snprintf(config->name, DIFXIO_NAME_LENGTH, "%s", configName.c_str());
 	for(int i=0;i<D->nRule;i++)
 	{
 		if(strcmp(D->rule[i].configName, S->corrSetupName.c_str()) == 0)
 		{
-			strcpy(D->rule[i].configName, configName.c_str());
+			snprintf(D->rule[i].configName, DIFXIO_NAME_LENGTH, "%s", configName.c_str());
 		}
 	}
 	config->tInt = corrSetup->tInt;
@@ -1371,7 +1379,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
-	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext);
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext, P->vexFile);
 	
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
@@ -1467,15 +1475,15 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		{
 			pointingSrcIndex = D->nSource;
 			// below we take the first source name index by default
-			strcpy(D->source[pointingSrcIndex].name, src->sourceNames[0].c_str());
+			snprintf(D->source[pointingSrcIndex].name, DIFXIO_NAME_LENGTH, "%s", src->sourceNames[0].c_str());
 			D->source[pointingSrcIndex].ra = src->ra;
 			D->source[pointingSrcIndex].dec = src->dec;
 			D->source[pointingSrcIndex].calCode[0] = src->calCode;
 			D->source[pointingSrcIndex].qual = src->qualifier;
 			//overwrite with stuff from the source setup if it exists
-			if(pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0)
+			if(pointingCentre->difxName.compare(PhaseCentre::DEFAULT_NAME) != 0)
 			{
-				strcpy(D->source[pointingSrcIndex].name, pointingCentre->difxname.c_str());
+				snprintf(D->source[pointingSrcIndex].name,DIFXIO_NAME_LENGTH, "%s",  pointingCentre->difxName.c_str());
 			}
 			if(pointingCentre->ra > PhaseCentre::DEFAULT_RA)
 			{
@@ -1483,7 +1491,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			}
 			if(pointingCentre->dec > PhaseCentre::DEFAULT_DEC)
 			{
-				 D->source[pointingSrcIndex].dec = pointingCentre->dec;
+				D->source[pointingSrcIndex].dec = pointingCentre->dec;
 			}
 			D->nSource++;
 		}
@@ -1499,7 +1507,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 				if(D->source[i].ra == p->ra && D->source[i].dec == p->dec &&
 					D->source[i].calCode[0] == p->calCode &&
 					D->source[i].qual == p->qualifier     &&
-					strcmp(D->source[i].name, p->difxname.c_str()) == 0)
+					strcmp(D->source[i].name, p->difxName.c_str()) == 0)
 				{
 					foundSrcIndex = i;
 					break;
@@ -1508,7 +1516,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			if(foundSrcIndex == -1)
 			{
 				foundSrcIndex = D->nSource;
-				strcpy(D->source[foundSrcIndex].name, p->difxname.c_str());
+				snprintf(D->source[foundSrcIndex].name, DIFXIO_NAME_LENGTH, "%s", p->difxName.c_str());
 				D->source[foundSrcIndex].ra = p->ra;
 				D->source[foundSrcIndex].dec = p->dec;
 				D->source[foundSrcIndex].calCode[0] = p->calCode;
@@ -1523,16 +1531,16 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		scan->startSeconds = static_cast<int>((scanInterval.mjdStart - J.mjdStart)*86400.0 + 0.01);
 		scan->durSeconds = static_cast<int>(scanInterval.duration_seconds() + 0.01);
 		scan->configId = getConfigIndex(configs, D, V, P, S);
-		strcpy(scan->identifier, S->defName.c_str());
-		strcpy(scan->obsModeName, S->modeDefName.c_str());
+		snprintf(scan->identifier, DIFXIO_NAME_LENGTH, "%s", S->defName.c_str());
+		snprintf(scan->obsModeName, DIFXIO_NAME_LENGTH, "%s", S->modeDefName.c_str());
 
 		if(sourceSetup->pointingCentre.ephemFile.size() > 0)
-			spacecraftSet.insert(sourceSetup->pointingCentre.difxname);
+			spacecraftSet.insert(sourceSetup->pointingCentre.difxName);
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin();
 			p != sourceSetup->phaseCentres.end();p++)
 		{
 			if(p->ephemFile.size() > 0)
-				spacecraftSet.insert(p->difxname);
+				spacecraftSet.insert(p->difxName);
 		}
 	}
 
@@ -1584,7 +1592,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		if(corrSetup->phasedArrayConfigFile.size() > 0)
 		{
 			D->config[c].phasedArrayId = D->nPhasedArray;
-			strcpy(D->phasedarray[D->nPhasedArray].fileName, 
+			snprintf(D->phasedarray[D->nPhasedArray].fileName, DIFXIO_FILENAME_LENGTH, "%s",
 				corrSetup->phasedArrayConfigFile.c_str());
 			D->nPhasedArray++;
 		}
@@ -1742,7 +1750,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			if(verbose > 0)
 			{
 				cout << "Computing ephemeris:" << endl;
-				cout << "  source name = " << phaseCentre->difxname << endl;
+				cout << "  source name = " << phaseCentre->difxName << endl;
 				cout << "  ephem object name = " << phaseCentre->ephemObject << endl;
 				cout << "  mjd = " << mjdint << "  deltat = " << deltat << endl;
 				cout << "  startPoint = " << n0 << "  nPoint = " << nPoint << endl;
@@ -1760,7 +1768,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			}
 
 			// give the spacecraft table the right name so it can be linked to the source
-			strcpy(ds->name, phaseCentre->difxname.c_str());
+			snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", phaseCentre->difxName.c_str());
 		}
 
 		//Fill in the spacecraft IDs in the DifxInput object
@@ -1819,7 +1827,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		snprintf(D->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",    D->job->fileBase);
 		if(P->threadsFile != "")
 		{
-			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, P->threadsFile.c_str());
+			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
 		}
 		else
 		{
@@ -1993,11 +2001,11 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		}
 
 		const SourceSetup *sourceSetup=P->getSourceSetup(S->sourceNames);
-		if(sourceSetup && sourceSetup->pointingCentre.difxname.size() > 0)
+		if(sourceSetup && sourceSetup->pointingCentre.difxName.size() > 0)
 		{
-			if(illegalSourceName(sourceSetup->pointingCentre.difxname))
+			if(illegalSourceName(sourceSetup->pointingCentre.difxName))
 			{
-				cerr << "Warning: illegal source name (" << sourceSetup->pointingCentre.difxname << ") provided in SOURCE section for source " << S->defName << endl;
+				cerr << "Warning: illegal source name (" << sourceSetup->pointingCentre.difxName << ") provided in SOURCE section for source " << S->defName << endl;
 				nWarn++;
 			}
 		}

@@ -1,3 +1,9 @@
+Version 2.0.1
+~~~~~~~~~~~~~
+* Post DiFX-2.0.0
+* move most strcpy to snprintf and make use of parameterized string lengths in difxio
+* add vexfile to .calc
+
 Version 2.0
 ~~~~~~~~~~~
 * Jumped because in the mean-time difx-1.5 branch had gone to 1.1

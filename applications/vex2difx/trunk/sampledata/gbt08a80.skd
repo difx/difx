@@ -626,7 +626,7 @@ def AR;
   clock_early = 1995y263d12h00m : 1.5 usec;
   clock_early = 1996y263d12h00m : 1.6 usec;
   clock_early = 1997y263d12h00m : 1.7 usec;
-  clock_early = 1999y263d12h00m : 1.7 usec;
+  clock_early = 1999y263d12h00m : 1.7 usec : 2000y1d00h00m : 0.0e-12;
 enddef;
 def GB;
   clock_early = : 1.5 usec;

@@ -71,7 +71,7 @@ public:
 	//variables
 	double ra;	  //radians
 	double dec;	  //radians
-	string difxname;
+	string difxName;
         char calCode;
 	int qualifier;
 	// ephemeris

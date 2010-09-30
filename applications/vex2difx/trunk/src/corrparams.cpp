@@ -77,16 +77,16 @@ bool isTrue(const string &str)
 // 4. vex time
 double parseTime(const string &timeStr)
 {
+	const int TimeLength=54;
 	double mjd;
-	char str[64];
+	char str[TimeLength];
 	char *p;
 	double t;
 	int n;
 	struct tm tm;
 	char dummy;
 
-	strncpy(str, timeStr.c_str(), 63);
-	str[63] = 0;
+	snprintf(str, TimeLength, "%s", timeStr.c_str());
 
 	// Test for ISO 8601
 	p = strptime(str, "%FT%T", &tm);
@@ -584,7 +584,7 @@ void PhaseCentre::initialise(double r, double d, string name)
 {
 	ra = r;
 	dec = d;
-	difxname = name;
+	difxName = name;
 	calCode = ' ';
 	ephemDeltaT = 60.0; //seconds
 	qualifier = 0;
@@ -636,7 +636,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	}
 	else if(key == "name" || key == "newName")
 	{
-		ss >> pc->difxname;
+		ss >> pc->difxName;
 	}
 	else if(key == "ephemObject")
 	{
@@ -1115,7 +1115,6 @@ int CorrParams::setkv(const string &key, const string &value)
 {
 	stringstream ss;
 	int nWarn = 0;
-	char *ptr;
 
 	ss << value;
 	
@@ -1861,15 +1860,15 @@ const SourceSetup *CorrParams::getSourceSetup(const vector<string> &names) const
 	return 0;
 }
 
-const PhaseCentre * CorrParams::getPhaseCentre(const string  &difxname) const
+const PhaseCentre * CorrParams::getPhaseCentre(const string  &difxName) const
 {
 	for(unsigned int i=0;i<sourceSetups.size();i++)
 	{
-		if(difxname == sourceSetups[i].pointingCentre.difxname)
+		if(difxName == sourceSetups[i].pointingCentre.difxName)
 			return &(sourceSetups[i].pointingCentre);
 		for(unsigned int j=0;j<sourceSetups[i].phaseCentres.size();j++)
 		{
-			if(difxname == sourceSetups[i].phaseCentres[j].difxname)
+			if(difxName == sourceSetups[i].phaseCentres[j].difxName)
 				return &(sourceSetups[i].phaseCentres[j]);
 		}
 	}
@@ -1984,9 +1983,9 @@ ostream& operator << (ostream &os, const SourceSetup &x)
 {
 	os << "SOURCE " << x.vexName << endl;
 	os << "{" << endl;
-	if(x.pointingCentre.difxname.size() > 0)
+	if(x.pointingCentre.difxName.size() > 0)
 	{
-		os << "  pointing centre name=" << x.pointingCentre.difxname << endl;
+		os << "  pointing centre name=" << x.pointingCentre.difxName << endl;
 	}
 	if(x.doPointingCentre)
 	{
