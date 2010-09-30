@@ -64,7 +64,7 @@ DifxSpacecraft *dupDifxSpacecraftArray(const DifxSpacecraft *src, int n)
 
 	for(s = 0; s < n; s++)
 	{
-		strcpy(dest[s].name, src[s].name);
+		snprintf(dest[s].name, DIFXIO_NAME_LENGTH, "%s", src[s].name);
 		dest[s].nPoint = src[s].nPoint;
 		dest[s].pos = (sixVector *)calloc(dest[s].nPoint,
 			sizeof(sixVector));
@@ -128,7 +128,12 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	ldpool_c(naifFile);
 	spklef_c(ephemFile, &spiceHandle);
 
-	strcpy(ds->name, objectName);
+	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
+	if(p >= DIFXIO_NAME_LENGTH)
+	{
+		fprintf(stder, "Warning: computeDifxSpacecraftEphemeris: spacecraft name %s is too long %d > %d\n",
+			objectName, p, DIFXIO_NAME_LENGTH-1);
+	}
 	ds->nPoint = nPoint;
 	ds->pos = (sixVector *)calloc(nPoint, sizeof(sixVector));
 	for(p = 0; p < nPoint; p++)
@@ -161,7 +166,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 {
-	strcpy(dest->name, src->name);
+	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
 	dest->nPoint = src->nPoint;
 	dest->pos = (sixVector *)calloc(dest->nPoint, sizeof(sixVector));
 	memcpy(dest->pos, src->pos, dest->nPoint*sizeof(sixVector));
@@ -170,7 +175,7 @@ static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
 static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
 	const DifxSpacecraft *src2)
 {
-	strcpy(dest->name, src1->name);
+	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src1->name);
 	
 	/* FIXME -- write me! for now just copy the first one found */
 	copySpacecraft(dest, src1);

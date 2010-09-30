@@ -140,7 +140,7 @@ int isSameDifxPulsar(const DifxPulsar *dp1, const DifxPulsar *dp2)
 
 void copyDifxPulsar(DifxPulsar *dest, const DifxPulsar *src)
 {
-	strcpy(dest->fileName, src->fileName);
+	snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
 	dest->nPolyco = src->nPolyco;
 	dest->polyco = dupDifxPolycoArray(src->polyco, src->nPolyco);
 	dest->nBin = src->nBin;

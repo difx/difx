@@ -164,8 +164,8 @@ void copyDifxSource(DifxSource *dest, const DifxSource *src)
 			dest->fitsSourceIds[i] = src->fitsSourceIds[i];
 		}
 	}
-	strcpy(dest->calCode, src->calCode);
-	strcpy(dest->name, src->name);
+	snprintf(dest->calCode, DIFXIO_CALCODE_LENGTH, "%s", src->calCode);
+	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
 }
 
 /* merge two DifxSource tables into an new one.  sourceIdRemap will contain the

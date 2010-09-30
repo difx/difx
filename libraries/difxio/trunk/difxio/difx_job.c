@@ -48,9 +48,9 @@ DifxJob *newDifxJobArray(int nJob)
 	dj = (DifxJob *)calloc(nJob, sizeof(DifxJob));
 	for(j = 0; j < nJob; j++)
 	{
-		strcpy(dj[j].obsCode, "DIFX");
-		strcpy(dj[j].taperFunction, "UNIFORM");
-		strcpy(dj[j].calcServer, "UNKNOWN");
+		snprintf(dj[j].obsCode,       DIFXIO_OBSCODE_LENGTH,  "%s", "DIFX");
+		snprintf(dj[j].taperFunction, DIFXIO_TAPER_LENGTH,    "%s", "UNIFORM");
+		snprintf(dj[j].calcServer,    DIFXIO_HOSTNAME_LENGTH, "%s", "UNKNOWN");
 		dj[j].calcProgram = -1;
 		dj[j].calcVersion = -1;
 	}

@@ -32,22 +32,29 @@
 
 #include <stdio.h>
 
-#define DIFX_SESSION_LEN	4
-#define MAX_MODEL_ORDER		5
-#define MAX_PHS_CENTRES		1000
-#define DIFXIO_FILENAME_LENGTH	256
-
-#define DIFXIO_POL_R		0x01
-#define DIFXIO_POL_L		0x02
-#define DIFXIO_POL_X		0x10
-#define DIFXIO_POL_Y		0x20
-#define DIFXIO_POL_ERROR	0x100
-#define DIFXIO_POL_RL		(DIFXIO_POL_R | DIFXIO_POL_L)
-#define DIFXIO_POL_XY		(DIFXIO_POL_X | DIFXIO_POL_Y)
-
+#define MAX_MODEL_ORDER			5
+#define MAX_PHS_CENTRES			1000
 #define MAX_ABER_CORR_STRING_LENGTH	16
 #define MAX_DATA_SOURCE_NAME_LENGTH	16
 #define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
+
+#define DIFXIO_FILENAME_LENGTH		256
+#define DIFXIO_NAME_LENGTH		32
+#define DIFXIO_CALCODE_LENGTH		4
+#define DIFXIO_VERSION_LENGTH		64
+#define DIFXIO_HOSTNAME_LENGTH		32
+#define DIFXIO_OBSCODE_LENGTH		8
+#define DIFXIO_SESSION_LENGTH		8
+#define DIFXIO_TAPER_LENGTH		8
+#define DIFXIO_SHELF_LENGTH		8
+
+#define DIFXIO_POL_R			0x01
+#define DIFXIO_POL_L			0x02
+#define DIFXIO_POL_X			0x10
+#define DIFXIO_POL_Y			0x20
+#define DIFXIO_POL_ERROR		0x100
+#define DIFXIO_POL_RL			(DIFXIO_POL_R | DIFXIO_POL_L)
+#define DIFXIO_POL_XY			(DIFXIO_POL_X | DIFXIO_POL_Y)
 
 #ifdef __cplusplus
 extern "C" {
@@ -162,9 +169,11 @@ typedef struct
 typedef struct
 {
 	char fileName[DIFXIO_FILENAME_LENGTH];	/* Phased array config filename */
-	char outputType[32];	/* FILTERBANK or TIMESERIES */
-	char outputFormat[32];	/* DIFX or VDIF */
+	/* FIXME: next two parameters should become enums */
+	char outputType[DIFXIO_NAME_LENGTH];	/* FILTERBANK or TIMESERIES */
+	char outputFormat[DIFXIO_NAME_LENGTH];	/* DIFX or VDIF */
 	double accTime;		/* Accumulation time in ns for phased array output */
+	/* FIXME: below should be part of an enum */
 	int complexOutput;	/* 1=true (complex output), 0=false (real output) */
 	int quantBits;		/* Bits to re-quantise to */
 } DifxPhasedArray;
@@ -211,13 +220,13 @@ typedef struct
 
 typedef struct
 {
-	char sourcename[32];	/* (DiFX) name of source, optional */
-	char scanId[32];	/* Scan identifier from vex file, optional */
-	char calCode[4];	/* calCode, optional */
+	char sourceName[DIFXIO_NAME_LENGTH];  /* (DiFX) name of source, optional */
+	char scanId[DIFXIO_NAME_LENGTH];      /* Scan identifier from vex file, optional */
+	char calCode[DIFXIO_CALCODE_LENGTH];  /* calCode, optional */
 	int qual;		/* Source qualifier, optional */
 	double mjdStart;	/* start time, optional */
 	double mjdStop; 	/* stop time, optional */
-	char configName[32];	/* Name of the configuration to which 
+	char configName[DIFXIO_NAME_LENGTH];  /* Name of the configuration to which 
 				   this rule is applied */	
 } DifxRule;
 
@@ -225,8 +234,10 @@ typedef struct
 {
 	int antennaId;		/* index to D->antenna */
 	float tSys;		/* 0.0 for VLBA DiFX */
-	char dataFormat[32];	/* e.g., VLBA, MKIV, ... */
-	char dataSampling[32];	/* REAL or COMPLEX */
+	char dataFormat[DIFXIO_NAME_LENGTH];   /* e.g., VLBA, MKIV, ... */
+
+	/* FIXME: dataSampling should become an enum */
+	char dataSampling[DIFXIO_NAME_LENGTH]; /* REAL or COMPLEX */
 	int nFile;              /* number of files */
         char **file;            /* list of files to correlate (if not VSN) */
 	int networkPort;        /* eVLBI port for this datastream */
@@ -269,7 +280,7 @@ typedef struct
 
 typedef struct
 {
-	char name[32];		/* null terminated */
+	char name[DIFXIO_NAME_LENGTH];		/* null terminated */
 	int origId;		/* antennaId before a sort */
 	double clockrefmjd;	/* Reference time for clock polynomial */
 	int clockorder;		/* Polynomial order of the clock model */
@@ -280,14 +291,14 @@ typedef struct
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
 	int spacecraftId;	/* -1 if not a spacecraft */
-	char shelf[20];		/* shelf location of module -- really this should not be here! */
+	char shelf[DIFXIO_SHELF_LENGTH];  /* shelf location of module -- really this should not be here! */
 } DifxAntenna;
 
 typedef struct
 {
 	double ra, dec;		/* radians */
-	char name[32];		/* source name */
-	char calCode[4];	/* usually only 1 char long */
+	char name[DIFXIO_NAME_LENGTH];		/* source name */
+	char calCode[DIFXIO_CALCODE_LENGTH];	/* usually only 1 char long */
 	int qual;		/* source qualifier */
 	int spacecraftId;	/* -1 if not spacecraft */
 	int numFitsSourceIds;	/* Should be equal to the number of configs */
@@ -319,8 +330,8 @@ typedef struct
 	double mjdEnd;				/* (day) */
 	int startSeconds;			/* Since model reference (top of calc file) */
 	int durSeconds; 			/* Duration of the scan */
-        char identifier[32];          		/* Usually a zero-based number */
-	char obsModeName[32];			/* Identifying the "mode" of observation */
+        char identifier[DIFXIO_NAME_LENGTH];	/* Usually a zero-based number */
+	char obsModeName[DIFXIO_NAME_LENGTH];	/* Identifying the "mode" of observation */
 	int maxNSBetweenUVShifts;		/* Maximum interval until data must be shifted/averaged */
 	int maxNSBetweenACAvg;			/* Maximum interval until autocorrelations are sent/averaged */
         int pointingCentreSrc;  		/* index to source array */
@@ -356,7 +367,7 @@ typedef struct
 
 typedef struct
 {
-	char name[32];		/* name of spacecraft */
+	char name[DIFXIO_NAME_LENGTH];	/* name of spacecraft */
 	int nPoint;		/* number of entries in ephemeris */
 	sixVector *pos;		/* array of positions and velocities */
 } DifxSpacecraft;
@@ -379,7 +390,7 @@ typedef struct
 
 typedef struct
 {
-	char difxVersion[64];	/* Name of difx version in .calc file */
+	char difxVersion[DIFXIO_VERSION_LENGTH];  /* Name of difx version in .calc file */
 	double jobStart;	/* cjobgen job start time (mjd) */
 	double jobStop;		/* cjobgen job start time (mjd) */
 	double mjdStart;	/* subjob start time (mjd) */
@@ -387,12 +398,15 @@ typedef struct
 	int jobId;		/* correlator job number */
 	int subjobId;		/* difx specific sub-job id */
 	int subarrayId;		/* sub array number of the specified sub-job */
-	char obsCode[8];	/* project name */
-	char obsSession[8];	/* project session (e.g., A, B, C1) */
-	char taperFunction[8];	/* usually "UNIFORM" */
-	char calcServer[32];	/* name of calc server */
+	char obsCode[DIFXIO_OBSCODE_LENGTH];	 /* project name */
+	char obsSession[DIFXIO_SESSION_LENGTH];	 /* project session (e.g., A, B, C1) */
+
+	/* FIXME; taperFunction should become an enum */
+	char taperFunction[DIFXIO_TAPER_LENGTH]; /* usually "UNIFORM" */
+	char calcServer[DIFXIO_HOSTNAME_LENGTH]; /* name of calc server */
 	int calcVersion;	/* version number of calc server */
 	int calcProgram;	/* RPC program id of calc server */
+	char vexFile[DIFXIO_FILENAME_LENGTH];
 	char fileBase[DIFXIO_FILENAME_LENGTH];	/* base filename for this job table */
 	int activeDatastreams;
 	int activeBaselines;

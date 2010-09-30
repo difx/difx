@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -143,8 +143,7 @@ static void parserow(DifxRow *row)
 	}
 
 	row->key = (char *)malloc(lastprintable+2);
-	strncpy(row->key, line, lastprintable+1);
-	row->key[lastprintable+1] = 0;
+	snprintf(row->key, lastprintable+1, "%s", line);
 	
 	if(colon < 0)
 	{
@@ -168,9 +167,7 @@ static void parserow(DifxRow *row)
 	if(firstprintable >= 0)
 	{
 		row->value = (char *)malloc(lastprintable-firstprintable+2);
-		strncpy(row->value, line+firstprintable,
-			lastprintable-firstprintable+1);
-		row->value[lastprintable-firstprintable+1] = 0;
+		snprintf(row->value, lastprintable-firstprintable+1, "%s", line+firstprintable);
 	}
 	else
 	{

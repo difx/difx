@@ -642,9 +642,9 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 
 	/* Fill in the info about quantisation, format etc for this phased array output */
 	r = DifxParametersfind(pp, 0, "OUTPUT TYPE");
-	strcpy(dpa->outputType, DifxParametersvalue(pp, r));
+	snprintf(dpa->outputType, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "OUTPUT FORMAT");
-	strcpy(dpa->outputFormat, DifxParametersvalue(pp, r));
+	snprintf(dpa->outputFormat, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "ACC TIME (NS)");
 	dpa->accTime = atoi(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "COMPLEX OUTPUT");
@@ -687,7 +687,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	dp->nPolyco = 0;
 	dp->polyco = 0;
 
-	strcpy(dp->fileName, fileName);
+	snprintf(dp->fileName, DIFXIO_FILENAME_LENGTH, "%s", fileName);
 
 	for(i = 0; i < nPolycoFiles; i++)
 	{
@@ -805,7 +805,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"< %d\n", N, N_CONFIG_ROWS);
 			return 0;
 		}
-		strcpy(dc->name,         DifxParametersvalue(ip, rows[0]));
+		snprintf(dc->name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
 		dc->tInt           = atof(DifxParametersvalue(ip, rows[1]));
 		dc->subintNS       = atoi(DifxParametersvalue(ip, rows[2]));
 		dc->guardNS        = atoi(DifxParametersvalue(ip, rows[3]));
@@ -928,17 +928,17 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 		r = DifxParametersfind1(ip, r+1, "RULE %d SOURCE", rule);
 		if(r>=0)
 		{
-			strcpy(D->rule[rule].sourcename, DifxParametersvalue(ip, r));
+			snprintf(D->rule[rule].sourceName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d SCAN ID", rule);
 		if(r>=0)
 		{
-			strcpy(D->rule[rule].scanId, DifxParametersvalue(ip, r));
+			snprintf(D->rule[rule].scanId, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d CALCODE", rule);
 		if(r>=0)
 		{
-			strcpy(D->rule[rule].calCode, DifxParametersvalue(ip, r));
+			snprintf(D->rule[rule].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d QUAL", rule);
 		if(r>=0)
@@ -961,7 +961,7 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 			fprintf(stderr, "RULE %d CONFIG NAME not found\n", rule);
 			return 0;
 		}
-		strcpy(D->rule[rule].configName, DifxParametersvalue(ip, r));
+		snprintf(D->rule[rule].configName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
 	}
 	return D;
 }
@@ -1075,7 +1075,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 				"< %d\n", N, N_ANT_ROWS);
 			return 0;
 		}
-		strcpy(D->antenna[a].name, DifxParametersvalue(ip, rows[0]));
+		snprintf(D->antenna[a].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
 		D->antenna[a].clockrefmjd = atof(DifxParametersvalue(ip, rows[1]));
 		D->antenna[a].clockorder  = atoi(DifxParametersvalue(ip, rows[2]));
 		r = rows[2];
@@ -1137,8 +1137,8 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			fprintf(stderr, "DATA FORMAT not found\n");
 			return 0;
 		}
-		strncpy(D->datastream[e].dataFormat,
-			DifxParametersvalue(ip, r), 31);
+		snprintf(D->datastream[e].dataFormat, DIFXIO_NAME_LENGTH, "%s",
+			DifxParametersvalue(ip, r));
 	
 		r = DifxParametersfind(ip, r+1, "QUANTISATION BITS");
 		if(r < 0)
@@ -1163,8 +1163,8 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			fprintf(stderr, "DATA SAMPLING not found\n");
 			return 0;
 		}
-		strncpy(D->datastream[e].dataSampling,
-			DifxParametersvalue(ip, r), 31);
+		snprintf(D->datastream[e].dataSampling, DIFXIO_NAME_LENGTH, "%s",
+			DifxParametersvalue(ip, r));
 	
 		r = DifxParametersfind(ip, r+1, "DATA SOURCE");
 		if(r < 0)
@@ -1666,7 +1666,8 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	}
 
 	D->job->jobId    = atoi(DifxParametersvalue(cp, rows[0]));
-	strcpy(D->job->obsCode, DifxParametersvalue(cp, rows[1]));
+	snprintf(D->job->obsCode, DIFXIO_OBSCODE_LENGTH, "%s",
+		DifxParametersvalue(cp, rows[1]));
 	nTel             = atoi(DifxParametersvalue(cp, rows[2]));
 	D->nSource       = atoi(DifxParametersvalue(cp, rows[3]));
 	D->nScan         = atoi(DifxParametersvalue(cp, rows[4]));
@@ -1707,21 +1708,32 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	row = DifxParametersfind(cp, 0, "DIFX VERSION");
 	if(row > 0)
 	{
-		strncpy(D->job->difxVersion, DifxParametersvalue(cp, row), 63);
-		D->job->difxVersion[63] = 0;
+		snprintf(D->job->difxVersion, DIFXIO_VERSION_LENGTH, "%s",
+			DifxParametersvalue(cp, row));
 	}
 
 	row = DifxParametersfind(cp, 0, "SESSION");
 	if(row >= 0)
 	{
-		strncpy(D->job->obsSession, DifxParametersvalue(cp, row), 7);
-		D->job->obsSession[7] = 0;
+		snprintf(D->job->obsSession, DIFXIO_SESSION_LENGTH, "%s",
+			DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "TAPER FUNCTION");
 	if(row >= 0)
 	{
-		strncpy(D->job->taperFunction, DifxParametersvalue(cp, row), 7);
-		D->job->taperFunction[7] = 0;
+		snprintf(D->job->taperFunction, DIFXIO_TAPER_LENGTH, "%s",
+			DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "VEX FILE");
+	if(row >= 0)
+	{
+		snprintf(D->job->vexFile, DIFXIO_FILENAME_LENGTH, "%s",
+			DifxParametersvalue(cp, row));
+	}
+	row = DifxParametersfind(cp, 0, "DUTY CYCLE");
+	if(row >= 0)
+	{
+		D->job->dutyCycle = atof(DifxParametersvalue(cp, row));
 	}
 	row = DifxParametersfind(cp, 0, "JOB START TIME");
 	if(row >= 0)
@@ -1839,7 +1851,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		row = DifxParametersfind1(cp, 0, "TELESCOPE %d SHELF", a);
 		if(row > 0)
 		{
-			strcpy(D->antenna[a].shelf, 
+			snprintf(D->antenna[a].shelf, DIFXIO_SHELF_LENGTH, "%s", 
 				DifxParametersvalue(cp, row));
 		}
 	}
@@ -1877,10 +1889,10 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
                 {
                         return 0;
                 }
-		strcpy(D->source[i].name, DifxParametersvalue(cp, rows[0]));
+		snprintf(D->source[i].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
 		D->source[i].ra = atof(DifxParametersvalue(cp, rows[1]));
 		D->source[i].dec = atof(DifxParametersvalue(cp, rows[2]));
-		strcpy(D->source[i].calCode, DifxParametersvalue(cp, rows[3]));
+		snprintf(D->source[i].calCode, DIFXIO_CALCODE_LENGTH, "%s", DifxParametersvalue(cp, rows[3]));
 		D->source[i].qual = atoi(DifxParametersvalue(cp, rows[4]));
 		//The fitsSourceId is left unset for now - the only way to set this is by calling updateDifxInput
 		//D->source[i].fitsSourceId = i;
@@ -1938,7 +1950,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			fprintf(stderr, "SCAN %d OBS MODE NAME not found\n", i);
 			return 0;
 		}
-                strcpy(D->scan[i].obsModeName, DifxParametersvalue(cp, row));
+                snprintf(D->scan[i].obsModeName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
 		row = DifxParametersfind1(cp, row, "SCAN %d UVSHIFT INTERVAL (NS)", i);
 		if(row < 0) {
 		    fprintf(stderr, "SCAN %d UVSHIFT INTERVAL (NS) not found\n", i);
@@ -1986,7 +1998,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				//printf("Checking if rule %d applies to scan %d, phase centre %d\n", r, i, src);
 				//printf("The phase centre src index is %d\n", D->scan[i].phsCentreSrcs[src]);
 				//printf("And its name is %s\n", D->source[D->scan[i].phsCentreSrcs[src]].name);
-				//printf("Rule sourcename is %s\n", D->rule[r].sourcename);
+				//printf("Rule sourceName is %s\n", D->rule[r].sourceName);
 				if(ruleAppliesToScanSource(&(D->rule[r]), &(D->scan[i]), &(D->source[D->scan[i].phsCentreSrcs[src]])) != 0)
 				{
 					applies = 1;
@@ -2063,7 +2075,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 			fprintf(stderr, "Spacecraft %d table screwed up\n", s);
 			return 0;
 		}
-		strcpy(D->spacecraft[s].name, DifxParametersvalue(cp, rows[0]));
+		snprintf(D->spacecraft[s].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, rows[0]));
 		D->spacecraft[s].nPoint = 
 			atoi(DifxParametersvalue(cp, rows[1]));
 		D->spacecraft[s].pos = (sixVector *)calloc(
@@ -2130,8 +2142,8 @@ static DifxInput *parseCalcServerInfo(DifxInput *D, DifxParameters *p)
 	r = DifxParametersfind(p, 0, "CALC SERVER");
 	if(r >= 0)
 	{
-		strncpy(D->job->calcServer, DifxParametersvalue(p, r), 32);
-		D->job->calcServer[31] = 0;
+		snprintf(D->job->calcServer, DIFXIO_HOSTNAME_LENGTH, "%s",
+			DifxParametersvalue(p, r));
 	}
 
 	r = DifxParametersfind(p, 0, "CALC PROGRAM");
@@ -2934,14 +2946,14 @@ DifxInput *loadDifxInput(const char *filePrefix)
 	mp = newDifxParametersfromfile(modelFile);
 
 	D = DSave = newDifxInput();
-	strcpy(D->inputFile, inputFile);
+	snprintf(D->inputFile, DIFXIO_FILENAME_LENGTH, "%s", inputFile);
 
 	/* When creating a DifxInput via this function, there will always
 	 * be a single DifxJob
 	 */
 	D->job = newDifxJobArray(1);
 	D->nJob = 1;
-	strcpy(D->job->fileBase, filePrefix);
+	snprintf(D->job->fileBase, DIFXIO_FILENAME_LENGTH, "%s", filePrefix);
 	D = populateInput(D, ip);
 	D = populateCalc(D, cp);
 	if(mp)
@@ -3015,7 +3027,7 @@ DifxInput *loadDifxCalc(const char *filePrefix)
 	 */
 	D->job = newDifxJobArray(1);
 	D->nJob = 1;
-	strcpy(D->job->fileBase, filePrefix);
+	snprintf(D->job->fileBase, DIFXIO_FILENAME_LENGTH, "%s", filePrefix);
 	D = populateInput(D, ip);
 	D = populateCalc(D, cp);
 

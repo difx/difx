@@ -41,7 +41,7 @@ DifxRule *newDifxRuleArray(int nRule)
         for(r = 0; r < nRule; r++)
         {
 		dr[r].configName[0] = 0;
-                dr[r].sourcename[0] = 0;
+                dr[r].sourceName[0] = 0;
                 dr[r].scanId[0] = 0;
 		dr[r].calCode[0] = 0;
 		dr[r].qual = -1;
@@ -54,10 +54,10 @@ DifxRule *newDifxRuleArray(int nRule)
 
 void copyDifxRule(DifxRule * dest, DifxRule * src)
 {
-	strcpy(dest->configName, src->configName);
-	strcpy(dest->sourcename, src->sourcename);
-	strcpy(dest->scanId,     src->scanId);
-	strcpy(dest->calCode,    src->calCode);
+	snprintf(dest->configName, DIFXIO_NAME_LENGTH,    "%s", src->configName);
+	snprintf(dest->sourceName, DIFXIO_NAME_LENGTH,    "%s", src->sourceName);
+	snprintf(dest->scanId,     DIFXIO_NAME_LENGTH,    "%s", src->scanId);
+	snprintf(dest->calCode,    DIFXIO_CALCODE_LENGTH, "%s", src->calCode);
 	dest->qual     = src->qual;
 	dest->mjdStart = src->mjdStart;
 	dest->mjdStop  = src->mjdStop;
@@ -71,7 +71,7 @@ void deleteDifxRuleArray(DifxRule *dr)
 void fprintDifxRule(FILE *fp, const DifxRule *dr)
 {
 	fprintf(fp, "  Difx Rule for config %s : %p\n", dr->configName, dr);
-	fprintf(fp, "    source  = %s\n", dr->sourcename);
+	fprintf(fp, "    source  = %s\n", dr->sourceName);
 	fprintf(fp, "    scanId  = %s\n", dr->scanId);
 	fprintf(fp, "    calCode = %s\n", dr->calCode);
 	fprintf(fp, "    qual    = %d\n", dr->qual);
@@ -95,8 +95,8 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 	for(i=0;i<D->nRule;i++)
 	{
 		dr = D->rule + i;
-		if(strcmp(dr->sourcename, "") != 0) {
-			writeDifxLine1(out, "RULE %d SOURCE", i, dr->sourcename);
+		if(strcmp(dr->sourceName, "") != 0) {
+			writeDifxLine1(out, "RULE %d SOURCE", i, dr->sourceName);
 			n = n+1;
 		}
 		if(strcmp(dr->scanId, "") != 0) {
@@ -129,7 +129,7 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 
 int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const DifxSource * src)
 {
-	if((strcmp(dr->sourcename, "") != 0 && strcmp(src->name, dr->sourcename) != 0) ||
+	if((strcmp(dr->sourceName, "") != 0 && strcmp(src->name, dr->sourceName) != 0) ||
 	   (strcmp(dr->scanId, "") != 0  && strcmp(ds->identifier, dr->scanId) != 0) ||
 	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||
 	   (dr->qual >= 0 && src->qual != dr->qual) ||

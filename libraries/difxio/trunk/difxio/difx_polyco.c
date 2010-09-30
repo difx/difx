@@ -118,7 +118,7 @@ void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
 {
 	int c;
 
-	strcpy(dest->fileName, src->fileName);
+	snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
 	if(dest->coef)
 	{
 		free(dest->coef);
@@ -191,7 +191,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 		dp = (*dpArray) + (*nPolyco);
 		dp->nCoef = 0;
 		dp->coef = 0;
-		strcpy(dp->fileName, filename);
+		snprintf(dp->fileName, DIFXIO_FILENAME_LENGTH, "%s", filename);
 
 		r = sscanf(buffer, "%*s%*s%*f%lf%lf", &dp->mjd, &dp->dm);
 		if(r != 2)

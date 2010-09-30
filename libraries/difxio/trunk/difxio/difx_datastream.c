@@ -458,8 +458,8 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	{
 		dest->antennaId = src->antennaId;
 	}
-	strcpy(dest->dataFormat, src->dataFormat);
-	strcpy(dest->dataSampling, src->dataSampling);
+	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
+	snprintf(dest->dataSampling, DIFXIO_NAME_LENGTH, "%s", src->dataSampling);
 	dest->quantBits = src->quantBits;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 	dest->nRecTone = src->nRecTone;
@@ -527,8 +527,8 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 {
 	dest->antennaId = src->antennaId;
 	dest->tSys = src->tSys;
-	strcpy(dest->dataFormat, src->dataFormat);
-	strcpy(dest->dataSampling, src->dataSampling);
+	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
+	snprintf(dest->dataSampling, DIFXIO_NAME_LENGTH, "%s", src->dataSampling);
 	dest->networkPort = src->networkPort;
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;

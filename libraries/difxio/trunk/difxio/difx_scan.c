@@ -151,8 +151,8 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
         dest->durSeconds   = src->durSeconds;
 	dest->maxNSBetweenUVShifts = src->maxNSBetweenUVShifts;
 	dest->maxNSBetweenACAvg = src->maxNSBetweenACAvg;
-	strcpy(dest->identifier, src->identifier);
-	strcpy(dest->obsModeName, src->obsModeName);
+	snprintf(dest->identifier, DIFXIO_NAME_LENGTH, "%s", src->identifier);
+	snprintf(dest->obsModeName, DIFXIO_NAME_LENGTH, "%s", src->obsModeName);
 	dest->nPhaseCentres = src->nPhaseCentres;
 	if(sourceIdRemap)
 	{

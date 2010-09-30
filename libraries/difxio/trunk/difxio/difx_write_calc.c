@@ -81,6 +81,10 @@ int writeDifxCalc(const DifxInput *D)
 	writeDifxLine(out, "DIFX VERSION", D->job->difxVersion);
 	writeDifxLineInt(out, "SUBJOB ID", D->job->subjobId);
 	writeDifxLineInt(out, "SUBARRAY ID", D->job->subarrayId);
+	if(D->job->vexFile[0] != 0)
+	{
+		writeDifxLine(out, "VEX FILE", D->job->vexFile);
+	}
 	if(D->fracSecondStartTime > 0)
 	{
 		writeDifxLineDouble(out, "START MJD", "%13.7f", truncSeconds(D->mjdStart));

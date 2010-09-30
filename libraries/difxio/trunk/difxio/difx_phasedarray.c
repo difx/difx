@@ -93,9 +93,9 @@ int isSameDifxPhasedArray(const DifxPhasedArray *dpa1, const DifxPhasedArray *dp
 
 void copyDifxPhasedArray(DifxPhasedArray *dest, const DifxPhasedArray *src)
 {
-	strcpy(dest->fileName, src->fileName);
-	strcpy(dest->outputType, src->outputType);
-	strcpy(dest->outputFormat, src->outputFormat);
+	snprintf(dest->fileName, DIFXIO_NAME_LENGTH, "%s", src->fileName);
+	snprintf(dest->outputType, DIFXIO_NAME_LENGTH, "%s", src->outputType);
+	snprintf(dest->outputFormat, DIFXIO_NAME_LENGTH, "%s", src->outputFormat);
 	dest->accTime = src->accTime;
 	dest->complexOutput = src->complexOutput;
 	dest->quantBits = src->quantBits;

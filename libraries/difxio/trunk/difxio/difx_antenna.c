@@ -212,7 +212,7 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 {
 	int i;
 	
-	strcpy(dest->name, src->name);
+	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
 	dest->clockrefmjd = src->clockrefmjd;
 	dest->clockorder  = src->clockorder;
 	for(i=0; i<MAX_MODEL_ORDER; i++)

@@ -455,7 +455,7 @@ void copyDifxConfig(DifxConfig *dest, const DifxConfig *src,
 	dest->tInt = src->tInt;
 	dest->subintNS = src->subintNS;
 	dest->guardNS = src->guardNS;
-	strcpy(dest->name, src->name);
+	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src->name);
 	dest->fringeRotOrder = src->fringeRotOrder;
 	dest->strideLength = src->strideLength;
 	dest->xmacLength = src->xmacLength;
