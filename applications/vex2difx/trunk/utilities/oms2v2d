@@ -153,6 +153,10 @@ def writev2d(oms, v2dFile):
 		out.write('SOURCE %s {%s }\n' % (s['SOURCE_NAME'][0], srcParams))
 	out.write('\n')
 
+	for s in stations:
+		out.write('ANTENNA %s { phaseCalInt = 0 }\n' % (s))
+	out.write('\n')
+
 	out.write('SETUP default\n')
 	out.write('{\n')
 
@@ -166,6 +170,7 @@ def writev2d(oms, v2dFile):
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:
 		out.write('  numBufferedFFTs = 10\n')
+	out.write('  maxNSBetweenACAvg = 2000000\n')
 	out.write('}\n')
 	out.close()
 
