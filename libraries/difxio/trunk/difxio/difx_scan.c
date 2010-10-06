@@ -231,6 +231,13 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 				fprintf(stderr, "Error allocating space for IM table! Aborting");
 				exit(1);
 			}
+			if(src->im[srcAntenna] == 0)
+			{
+				dest->im[destAntenna] = 0;
+				continue; //must have had a change of num antennas at some stage
+				//fprintf(stderr, "Missing info for antenna %d\n", srcAntenna);
+				//exit(1);
+			}
 			for(j=0;j<src->nPhaseCentres+1;j++)
 			{
 				dest->im[destAntenna][j] = dupDifxPolyModelColumn(
