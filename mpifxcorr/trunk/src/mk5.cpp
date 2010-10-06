@@ -167,6 +167,23 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   //go back to nearest frame -- here the total number of bytes matters
   bufferindex = atsegment*readbytes + framesin*framebytes;
+
+  //if we are right at the end of the last segment, and there is a jump after this segment, bail out
+  if(bufferindex == bufferbytes)
+  {
+    if(bufferinfo[atsegment].scan != bufferinfo[(atsegment+1)%numdatasegments].scan ||
+      ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 +
+        bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns - bufferinfo[atsegment].nsinc != 0))
+    {
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return 0; //note exit here!!!!
+    }
+    else
+    {
+      cwarn << startl << "Developer error - bufferindex == bufferbytes in a 'normal' situation" << endl;
+    }
+  }
+
   if(bufferindex >= bufferbytes)
   {
     cfatal << startl << "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes: bufferindex=" << bufferindex << " >= bufferbytes=" << bufferbytes << " atsegment = " << atsegment << endl;
