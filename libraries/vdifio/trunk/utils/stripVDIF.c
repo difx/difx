@@ -109,12 +109,12 @@ int main(int argc, char **argv)
     fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
     readbytes = fread(buffer, 1, framebytes-VDIF_HEADER_BYTES, input); //read the VDIF data segment
     if(readbytes < framebytes-VDIF_HEADER_BYTES) {
-      fprintf(stderr, "Problem reading %dth frame - only got %d bytes\n", framesread, readbytes);
+      fprintf(stderr, "Problem reading %lldth frame - only got %d bytes\n", framesread, readbytes);
       break;
     }
     readbytes = fwrite(buffer, 1, framebytes-VDIF_HEADER_BYTES, output); //write out the VDIF data segment
     if(readbytes < framebytes-VDIF_HEADER_BYTES) {
-      fprintf(stderr, "Problem writing %dth frame - only wrote %d bytes\n", framesread, readbytes);
+      fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
       break;
     }
     framesread++;
@@ -125,4 +125,6 @@ int main(int argc, char **argv)
   printf("Read and wrote %lld frames\n", framesread);
   fclose(input);
   fclose(output);
+
+  return 0;
 }

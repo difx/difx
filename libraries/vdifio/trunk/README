@@ -3,7 +3,7 @@ aclocal
 autoconf
 autoheader
 automake -a
-./configure --prefix=${DIFXROOT}
+./configure --prefix=${DIFX_PREFIX}
 make
 # (su root?)
 make install

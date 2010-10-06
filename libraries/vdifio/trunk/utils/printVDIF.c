@@ -50,7 +50,6 @@ int usage()
 
 int main(int argc, char **argv)
 {
-  int VERBOSE = 0;
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
@@ -103,6 +102,8 @@ int main(int argc, char **argv)
     framesread++;
   }
 
-  printf("Read %lld %lld frames\n", framesread);
+  printf("Read %lld frames\n", framesread);
   fclose(input);
+
+  return 0;
 }

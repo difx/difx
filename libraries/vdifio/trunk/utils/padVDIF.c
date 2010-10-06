@@ -60,7 +60,7 @@ int main(int argc, char **argv)
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
   int nextmjd, nextsecond, nextnumber;
   int overwritemjd, overwritesecond, overwritenumber;
-  int offsetmjd, offsetsecond, offsetnumber;
+  int offsetmjd=0, offsetsecond=0, offsetnumber=0;
   int packetdropped;
   long long framesread, frameswrote;
 
@@ -161,7 +161,7 @@ int main(int argc, char **argv)
       setVDIFFrameInvalid(buffer, 1);
       readbytes = fwrite(buffer, 1, framebytes, output); //write out the VDIF packet
       if(readbytes < framebytes) {
-        fprintf(stderr, "Problem writing %dth frame - only wrote %d bytes\n", framesread, readbytes);
+        fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
         break;
       }
       frameswrote++;
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
     setVDIFFrameInvalid(buffer, frameinvalid);
     readbytes = fwrite(buffer, 1, framebytes, output); //write out the VDIF packet
     if(readbytes < framebytes) {
-      fprintf(stderr, "Problem writing %dth frame - only wrote %d bytes\n", framesread, readbytes);
+      fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
       break;
     }
     frameswrote++;
@@ -220,4 +220,6 @@ int main(int argc, char **argv)
   printf("Read %lld and wrote %lld frames\n", framesread, frameswrote);
   fclose(input);
   fclose(output);
+
+  return 0;
 }

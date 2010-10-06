@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -74,7 +75,6 @@ int usage()
 void * launchNewWriteThread(void * w)
 {
   FILE * output;
-  char filename[256];
   writethreaddata * wtd = (writethreaddata*)w;
   int perr, writesegment, wrotebytes, wrotesegments;
 
@@ -122,6 +122,8 @@ void * launchNewWriteThread(void * w)
 
   //release last lock and close the output file
   fclose(output);
+
+  return 0;
 }
 
 int main(int argc, char **argv)
@@ -130,15 +132,13 @@ int main(int argc, char **argv)
   int serversock, status, socketnumber, receivedbytes, udpbufbytes, udpport;
   int currentframes;
   int done;
-  socklen_t client_len;
-  struct sockaddr_in server, client;    /* Socket address */
+  struct sockaddr_in server;    /* Socket address */
   struct msghdr msg;
   struct iovec iov[1];
 
   //non-UDP socket related variables
-  char buffer[MAX_VDIF_FRAME_BYTES];
   int skipbytesfront, skipbytesback;
-  int perr, readbytes, stationid, numchannels, bitspersample, i;
+  int perr, i;
   writethreaddata wtd;
   pthread_t writethread;
   long long framesread;
@@ -259,7 +259,7 @@ int main(int argc, char **argv)
                getVDIFFrameMJD(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8),
                getVDIFFrameSecond(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8),
                getVDIFNumChannels(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes + 8));
-        printf("The hex value of that first byte is %x\n", 
+        printf("The hex value of that first byte is %llx\n", 
                *((unsigned long long*)(wtd.receivebuffers[wtd.fillsegment] + wtd.udpframesize*currentframes)));
       }
     }
@@ -293,4 +293,6 @@ int main(int argc, char **argv)
   perr = pthread_join(writethread, NULL);
   if(perr != 0)
     fprintf(stderr, "Error in joining writethread!!!");
+
+    return 0;
 }
