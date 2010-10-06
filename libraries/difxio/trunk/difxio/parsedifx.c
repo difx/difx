@@ -143,7 +143,7 @@ static void parserow(DifxRow *row)
 	}
 
 	row->key = (char *)malloc(lastprintable+2);
-	snprintf(row->key, lastprintable+1, "%s", line);
+	snprintf(row->key, lastprintable+2, "%s", line);
 	
 	if(colon < 0)
 	{
@@ -167,7 +167,7 @@ static void parserow(DifxRow *row)
 	if(firstprintable >= 0)
 	{
 		row->value = (char *)malloc(lastprintable-firstprintable+2);
-		snprintf(row->value, lastprintable-firstprintable+1, "%s", line+firstprintable);
+		snprintf(row->value, lastprintable-firstprintable+2, "%s", line+firstprintable);
 	}
 	else
 	{

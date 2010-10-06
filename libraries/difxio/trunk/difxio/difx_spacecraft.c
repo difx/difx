@@ -131,7 +131,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 	p = snprintf(ds->name, DIFXIO_NAME_LENGTH, "%s", objectName);
 	if(p >= DIFXIO_NAME_LENGTH)
 	{
-		fprintf(stder, "Warning: computeDifxSpacecraftEphemeris: spacecraft name %s is too long %d > %d\n",
+		fprintf(stderr, "Warning: computeDifxSpacecraftEphemeris: spacecraft name %s is too long %d > %d\n",
 			objectName, p, DIFXIO_NAME_LENGTH-1);
 	}
 	ds->nPoint = nPoint;
