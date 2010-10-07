@@ -37,7 +37,7 @@ from os import umask
 
 program = 'oms2v2d'
 version = '0.7'
-verdate = '20100513'
+verdate = '20101006'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -245,6 +245,7 @@ if isfile(v2dFile):
 		print 'Warning: overwriting exisiting file %s.\n' % v2dFile
 	else:
 		print 'Error: output file %s exists.  Run with --force to continue.\n' % v2dFile
+		exit(0)
 
 oms = readOMS(omsFile)
 
