@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 	if(dmsMaskStr)
 	{
 		dmsMask = atoi(dmsMaskStr);
-		if(dmsMask & 2 == 0)
+		if((dmsMask & 2) == 0)
 		{
 			dmsMode = DMS_MODE_NO_UPDATE;
 		}
