@@ -44,7 +44,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.7";
-const char verdate[] = "20100820";
+const char verdate[] = "20101007";
 
 enum DMS_Mode
 {
@@ -418,6 +418,18 @@ int main(int argc, char **argv)
 	int fast=0;
 	enum DMS_Mode dmsMode = DMS_MODE_FAIL_UNLESS_SAFE;
 	int v;
+	const char *dmsMaskStr;
+	int dmsMask = 7;
+
+	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
+	if(dmsMaskStr)
+	{
+		dmsMask = atoi(dmsMaskStr);
+		if(dmsMask & 2 == 0)
+		{
+			dmsMode = DMS_MODE_NO_UPDATE;
+		}
+	}
 
 	difxMessageInit(-1, "mk5dir");
 
