@@ -9,8 +9,6 @@
 #include <ctype.h>
 #include "difx2mark4.h"
 
-#define XS_CONVENTION
- 
 int createRoot (char *baseFile,     // common part of difx fileset name
                 char *node,         // directory for output fileset
                 char *rcode,        // 6 letter root suffix
@@ -91,20 +89,21 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                            " def log_dummy;\n",
                            " enddef;\n",
                            "END_EXTRA"};
-    double mjdStart;
           
+    extern struct fbands fband[MAX_FBANDS];
+
     FILE *fin,
          *fout,
          *fv2d;
                                     // function prototypes
     char single_code (char *);
     void conv2date (double, struct date *);
+    char getband (double);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
     current_scan[0] = 0;
     inname[0] = 0;
-    mjdStart = 0.0;
 
                                     // check number of scans in job is 1
     if (D->nJob != 1)
@@ -113,8 +112,6 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         fprintf (stderr, "Error: Only one job may be selected and this must contain only one scan\n");
         return (-1);
         }
-                                    // find start time
-    mjdStart = D->job->mjdStart;
                                     // create scan identifier
 
                                     // source name
@@ -153,7 +150,6 @@ int createRoot (char *baseFile,     // common part of difx fileset name
             sscanf (pchar, "vex = %s", inname);
         else if ((pchar = strstr (line, "antennas = ")) != NULL)
             sscanf (pchar, "antennas = %s", antlist);
-
         }
 
     if (inname == NULL)
@@ -251,6 +247,10 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // as it causes problems with vex parser
                 break;
 
+            case CLOCK:             //the clock section will be replaced with new clock table
+                    line[0] = 0;
+                    break;
+
             case DAS:
                 if (strncmp (pst[0], "electronics_rack_type", 21) == 0)
                     {               // patch up invalid rack types
@@ -263,11 +263,6 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                          {
                          pchar = strstr (line, "K4-2");
                          strcpy (pchar, "K4;\n");
-                         }
-                    else if (strncmp (pst[2], "VLBA", 4) == 0)
-                         {
-                         pchar = strstr (line, "VLBA");
-                         strcpy (pchar, "VLBA;\n");
                          }
                     else if (strncmp (pst[2], "none", 4) == 0)
                          {
@@ -311,16 +306,9 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                                     // insert channel names in chan_def stmts
                 else if (strncmp (pst[0], "chan_def", 8) == 0)
                     {
-                    sprintf (buff, "C%02dU :", numchan++);
+                    sprintf (buff, "%c%02dU :", getband (atof (pst[3])), numchan++);
                     if (*pst[5] == 'L')
                         buff[3] = 'L';
-                    //FIXME set X or S band 
-#ifdef XS_CONVENTION
-                    if (pst[2][1] == 'X')
-                        buff[0] = 'X';
-                    if (pst[2][1] == 'S')
-                        buff[0] = 'S';
-#endif
 
                     strcat (buff, strchr (line, '=') + 1);
                                     // chop off line just after = sign
@@ -364,7 +352,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     {
                     //FIXME calculate this properly taking into account different scan lengths
                     //      for different antennas. See also stcodes/compute_reftime.c
-                    conv2date (D->scan->mjdStart + 10 / 86400.0, &caltime);
+                    conv2date (D->scan->mjdStart + D->scan->durSeconds / 172800.0, &caltime);
                     sprintf (buff, 
                              "    fourfit_reftime = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
                              caltime.year, caltime.day, 
@@ -372,6 +360,29 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     strcat (line, buff);
                     }
                                     // omit stations that didn't get correlated from scan
+                else if (strncmp (pst[0], "station", 7) == 0)
+                    {
+                    if (strstr (antlist, pst[2]) == NULL)
+                        line[0] = 0;
+                                    // this station participates, use difx start
+                    else 
+                        {
+                        sprintf (buff, " 00 sec : %d sec : : : : 0 ; * overridden times\n", 
+                                 D->scan->durSeconds);
+                        pchar = strchr (line, ':');
+                        strcpy (pchar+2, buff);
+                        }
+                    }
+                                    // process start
+                else if (strncmp (pst[0], "start", 6) == 0)
+                    {
+                                    // generate fresh scan start, in case it was overridden
+                    conv2date (D->scan->mjdStart, &caltime);
+                    sprintf (buff, "  start = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
+                         caltime.year, caltime.day, 
+                         caltime.hour, caltime.minute, (int) caltime.second);
+                    strcpy (line, buff);
+                    }
 
                                     // FIXME difxio scan start time is time when first
                                     // antenna comes on source. It may also be different
@@ -488,9 +499,6 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                 break;
 
                                     // nothing special needs to be done for these blocks
-            case CLOCK:
-                                    //this will be replaced with new clock table
-                    line[0] = 0;
             case BBC:
             case IF:
             case HEAD_POS:
@@ -548,4 +556,16 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         fclose (fin);
         fclose (fout);
         return (1);
+    }
+
+char getband (double freq)
+    {
+    extern struct fbands fband[MAX_FBANDS];
+    int i;
+    char c;
+
+    for (i=0; i<MAX_FBANDS; i++)
+        if (fband[i].flo <= freq && freq <= fband[i].fhi)
+            c = fband[i].code;
+    return c;
     }

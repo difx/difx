@@ -21,11 +21,10 @@
 
 #include <difxio/difx_input.h>
 
-#define array_MAX_BANDS 32
-#define array_MAX_TONES 64
 #define MAX_INPUT_FILES 4096
 #define MAX_VIS 512
 #define MAX_STN 50
+#define MAX_FBANDS 20 
 
 enum booleans {FALSE, TRUE};
 
@@ -80,6 +79,13 @@ struct stations
     char mk4_id;                    // single char mk4 station code
     char intl_name[2];              // two letter international stn name
     char difx_name[2];              // two letter code used by difx
+    };
+
+struct fbands
+    {
+    char code;
+    double flo;
+    double fhi;
     };
 
 #include "type_000.h"

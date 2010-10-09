@@ -19,10 +19,10 @@ void write_t309 (struct type_309 *pt309,
     t309.rot         = double_reverse (pt309->rot);
     t309.acc_period  = double_reverse (pt309->acc_period);
 
-    for (i=0; i<16; i++)
+    for (i=0; i<64; i++)
         {
         t309.chan[i].freq = double_reverse (pt309->chan[i].freq);
-        for (j=0; j<16; j++)
+        for (j=0; j<64; j++)
             {
             t309.chan[i].acc[j][0] = int_reverse (t309.chan[i].acc[j][0]);
             t309.chan[i].acc[j][1] = int_reverse (t309.chan[i].acc[j][1]);

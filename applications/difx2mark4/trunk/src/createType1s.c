@@ -107,6 +107,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     void write_t101 (struct type_101 *, FILE *);
     void write_t120 (struct type_120 *, FILE *);
     int RecordIsFlagged(vis_record *vr, const DifxJob *job);
+    char getband (double);
 
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
@@ -267,24 +268,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     {
                                     // prepare ID strings for both pols, if there
                     ch = (D->nPolar > 1) ? 2 * i     : i;
-                    sprintf (lchan_id, "C%02d?", ch);
+                    sprintf (lchan_id, "%c%02d?", getband (D->freq[i].freq), ch);
                     lchan_id[3] = (D->freq+i)->sideband;
-                                    //FIXME quick fix for X/S observations.
-#ifdef XS_CONVENTION
-			    if (D->freq[i].freq < 3000)
-                                lchan_id[0] = 'S';
-                            else
-                                lchan_id[0] = 'X';
-#endif
+
                     ch = (D->nPolar > 1) ? 2 * i + 1 : i;
-                    sprintf (rchan_id, "C%02d?", ch);
+                    sprintf (rchan_id, "%c%02d?", getband (D->freq[i].freq), ch);
                     rchan_id[3] = (D->freq+i)->sideband;
-#ifdef XS_CONVENTION
-			    if (D->freq[i].freq < 3000)
-                                lchan_id[0] = 'S';
-                            else
-                                lchan_id[0] = 'X';
-#endif
                                     // loop over 1, 2, or 4 pol'n. products
                     for (pol=0; pol<D->nPolar; pol++)
                         {

@@ -10,10 +10,10 @@
 #include <math.h>
 #include "difx2mark4.h"
 
-#define XS_CONVENTION
 
 #define NUMFILS 50                  // maximum number of station files
 #define LINEMAX 20000               // max size of a pcal file line
+#define NPC_TONES 64                // max number of pcal tones (and channels)
 
 int createType3s (DifxInput *D,     // difx input structure, already filled
                   char *baseFile,   // string containing common part of difx file names
@@ -28,6 +28,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         k,
         l,
         n,
+        jf,
         npol,
         nchan,
         ntones,
@@ -51,7 +52,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            srate,
            cquad,
            squad,
-           xtones[16],
+           xtones[NPC_TONES],
            deltat,
            clockdrift;
 
@@ -93,7 +94,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     memcpy (t302.version_no, "00", 3);
     
     memcpy (t309.record_id, "309", 3);
-    memcpy (t309.version_no, "00", 3);
+    memcpy (t309.version_no, "01", 3);
                                     // pre-calculate sample rate (samples/s)
     srate = 2e6 * D->freq->bw * D->freq->overSamp;
                                     // loop over all antennas in scan
@@ -138,14 +139,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // loop over channels
         for (i=0; i<D->nFreq; i++)
             {
-            sprintf (t301.chan_id, "C%02d?", i);
+            sprintf (t301.chan_id, "%c%02d?", getband (D->freq[i].freq), i);
             t301.chan_id[3] = (D->freq+i)->sideband;
-#ifdef XS_CONVENTION
-	    if (D->freq[i].freq < 3000)
-                t301.chan_id[0] = 'S';
-            else
-                t301.chan_id[0] = 'X';
-#endif
             strcpy (t302.chan_id, t301.chan_id); 
                                     // loop over polynomial intervals
             for (j=0; j<D->scan->nPoly; j++)
@@ -166,8 +161,9 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     }
                 //FIXME quick hack to take account of clock rate between start of the poly and  start of clock model. 
                 //See Model::addClockTerms in mpifxcorr model.cpp for full treatment for polynomial clock model
-		//See also fitsMC.c in difx2fits clockorder; j++
-		deltat = ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd)*86400. + (**(D->scan->im+n))->sec;
+                //See also fitsMC.c in difx2fits clockorder; j++
+                deltat = ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd)*86400. 
+                       + (**(D->scan->im+n))->sec;
                 clockdrift = deltat * 1.e-6 * (D->antenna+n)->clockcoeff[1];
                 t301.delay_spline[0] -= clockdrift;
                 //printf ("deltat of %e s   ", deltat);
@@ -207,7 +203,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                              "\nrot %lf acc_period %lf\n",
                              ant, t, tint, cable_delay, t309.rot, t309.acc_period);
                                     // initialize list of next available tone location
-                for (i=0; i<16; i++)
+                for (i=0; i<NPC_TONES; i++)
                     xtones[i] = 0;
                 t309.ntones = 0;
                                     // loop over tones within record
@@ -219,26 +215,24 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                             sscanf (line + nchars, "%d%lf%lf%lf%n", 
                                     &record_chan, &freq, &cquad, &squad, &mchars);
                             nchars += mchars;
-                            for (j=0; j<D->nFreq; j++)
+                            for (j=0; j<D->nFreq*npol; j++)
                                 {
-                                isb = ((D->freq+j)->sideband == 'U') ? 1 : -1;
-                                f_rel = isb * (freq - (D->freq+j)->freq);
-                                    // is it within the jth frequency band?
-                                if (f_rel > 0.0 && f_rel < (D->freq+j)->bw)
+                                jf = j / npol;
+                                    // skip over non-matching polarizations
+                                if (np != j % npol)
+                                    continue;  
+                                isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
+                                f_rel = isb * (freq - (D->freq+jf)->freq);
+                                    // is it within the jfth frequency band?
+                                if (f_rel > 0.0 && f_rel < (D->freq+jf)->bw)
                                     // yes, insert phasor info into correct slot
                                     {
-                                    sprintf (buff, "C%02dU", j);
-                                    buff[3] = (D->freq+j)->sideband;
-#ifdef XS_CONVENTION
-				    if (D->freq[j].freq < 3000)
-                                        buff[0] = 'S';
-                                    else
-                                        buff[0] = 'X';
-#endif
+                                    sprintf (buff, "%c%02dU", getband (D->freq[jf].freq), j);
+                                    buff[3] = (D->freq+jf)->sideband;
                                     strcpy (t309.chan[j].chan_name, buff);
 
                                     // find out which tone slot this goes in
-                                    for (i=0; i<16; i++)
+                                    for (i=0; i<NPC_TONES; i++)
                                         {
                                         if (f_rel == xtones[i])
                                             break;
@@ -250,25 +244,25 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                             }
                                         }
                                     // did we run out of slots before finding tone?
-                                    if (i == 16)
+                                    if (i == NPC_TONES)
                                         {
                                         if (!once)
                                             {
-                                            fprintf (stderr, "more than 16 baseband pcal tones"
-                                                             " - ignoring the rest\n");
+                                            fprintf (stderr, "more than %d baseband pcal tones"
+                                                             " - ignoring the rest\n", NPC_TONES);
                                             once = TRUE;
                                             }
                                         continue;
                                         }
                                     // renormalize correlations to those created in the DOM
-                                    norm_corr = - floor (cquad * srate * 128.0 + 0.5);
+                                    norm_corr = - floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
                                     memcpy (&t309.chan[j].acc[i][0], &norm_corr, 4);
 
-                                    norm_corr =   floor (squad * srate * 128.0 + 0.5);
+                                    norm_corr =   floor (squad * srate * t309.acc_period * 128.0 + 0.5);
                                     memcpy (&t309.chan[j].acc[i][1], &norm_corr, 4);
 
-                                    // 16 tone freqs (in Hz) are spread through channel recs
-                                    t309.chan[i].freq = 1e6 * f_rel;
+                                    // tone freqs (in Hz) are spread through channel recs
+                                    t309.chan[i].freq = 1e6 * isb * f_rel;
                                     break;
                                     }
                                 }

@@ -54,38 +54,33 @@ static int usage (const char *pgm)
     fprintf (stderr, "  --help\n");
     fprintf (stderr, "  -h                  Print this help message\n"); 
     fprintf (stderr, "\n");
-//  fprintf (stderr, "  --average <nchan>\n");
-//  fprintf (stderr, "  -a        <nchan>   Average <nchan> channels\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --beginchan <chan>\n");
-//  fprintf (stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --difx\n");
-//  fprintf (stderr, "   -d                 Run on all .difx files in directory\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --no-model\n");
-//  fprintf (stderr, "  -n                  Don't write model (ML) table\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --dont-combine\n");
-//  fprintf (stderr, "  -1                  Don't combine jobs\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --outchans <nchan>\n");
-//  fprintf (stderr, "  -o         <nchan>  Write <nchan> channels\n");
-//  fprintf (stderr, "\n");
-//  fprintf (stderr, "  --deltat <deltat>\n");
-//  fprintf (stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix\n");
-//  fprintf (stderr, "  --keep-order\n");
-//  fprintf (stderr, "  -k                  Keep antenna order\n");
-//  fprintf (stderr, "\n");
     fprintf (stderr, "  --verbose\n");
     fprintf (stderr, "  -v                  Be verbose.  -v -v for more!\n");
     fprintf (stderr, "\n");
-//  fprintf (stderr, "  --override-version  Ignore difx versions\n");
-//  fprintf (stderr, "\n");
+    fprintf (stderr, "  -b <code> <flow> <fhigh>\n");
+    fprintf (stderr, " to specify non-default frequency band codes\n");
+    fprintf (stderr, "\n");
 
     return 0;
     }
 
+                                    // global table of frequency bands
+struct fbands fband[MAX_FBANDS] = {'B',      0.0, 999999.9,  // default to band B
+                                   'I',    100.0,    150.0,
+                                   'G',    150.0,    225.0,
+                                   'P',    225.0,    390.0,
+                                   'L',    390.0,   1550.0,
+                                   'S',   1550.0,   3900.0,
+                                   'C',   3900.0,   6200.0,
+                                   'X',   6200.0,  10900.0,
+                                   'K',  10900.0,  36000.0,
+                                   'Q',  36000.0,  46000.0,
+                                   'V',  46000.0,  56000.0,
+                                   'W',  56000.0, 100000.0,
+                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+                                   
+  
 int main(int argc, char **argv)
     {
     struct CommandLineOptions *opts;
@@ -442,6 +437,30 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                 {
                 opts->overrideVersion = 1;
                 }
+            else if (argv[i][1] == 'b')
+                {                   // frequency band override
+                if (argc < i + 2)
+                    {
+                    usage (program);
+                    deleteCommandLineOptions(opts);
+                    return 0;
+                    }
+               for (l=0; l<MAX_FBANDS; l++)
+                   {
+                   if (fband[l].code)
+                       continue;
+                   if (l == MAX_FBANDS)
+                       {
+                       fprintf (stderr, "too many freq bands\n");
+                       deleteCommandLineOptions(opts);
+                       return 0;
+                       }
+                   fband[l].code = argv[++i][0];
+                   fband[l].flo = atof (argv[++i]);
+                   fband[l].fhi = atof (argv[++i]);
+                   break;
+                   }
+                }
             else if(i+1 < argc) /* one parameter arguments */
                 {
                 if(strcmp (argv[i], "--scan") == 0 ||
@@ -475,12 +494,6 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                     {
                     i++;
                     opts->nOutChan = atof(argv[i]);
-                    }
-                else if(strcmp (argv[i], "--beginchan") == 0 ||
-                        strcmp (argv[i], "-b") == 0)
-                    {
-                    i++;
-                    opts->startChan = atof(argv[i]);
                     }
                 else
                     {
