@@ -45,12 +45,15 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20100907";
+const char verdate[] = "20101011";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
 const int defaultNRep = 2;
 const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
+
+#define MODE_READ	0x01
+#define MODE_WRITE	0x02
 
 int die = 0;
 typedef void (*sighandler_t)(int);
@@ -77,6 +80,8 @@ int usage(const char *pgm)
 	printf("  -h         Print help info and quit\n\n");
 	printf("  --readonly\n");
 	printf("  -r         Perform read-only test\n\n");
+	printf("  --writeonly\n");
+	printf("  -w         Perform write-only test\n\n");
 	printf("  --realtime\n");
 	printf("  -R         Enable real-time mode (sometimes needed for bad packs)\n\n");
 	printf("  --skipdircheck\n");
@@ -253,7 +258,7 @@ int getLabels(SSHANDLE xlrDevice, DifxMessageMk5Status *mk5status)
 	return 0;
 }
 
-int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
+int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int options, int force, const char *dirFile, long long ptr, int fast)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -385,13 +390,18 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 			drive[d].failed ? "FAILED" : "OK");
 	}
 
-	if(!readOnly)
+	if(mode & MODE_WRITE)
 	{
+		if(!(mode & MODE_READ))
+		{
+			fast = 1;
+		}
+
 		if(!force && (dir.Length > 0 || 
 			      moduleStatus == MODULE_STATUS_PLAYED ||
 			      moduleStatus == MODULE_STATUS_RECORDED) )
 		{
-			printf("\nAbout to perform destructive write/read test.\n");
+			printf("\nAbout to perform destructive write test.\n");
 			printf("This module contains %lld bytes of recorded data\n", dir.Length);
 			printf("This test will erase all data on this module!\n");
 			printf("Do you wish to continue? [y|n]\n");
@@ -487,18 +497,21 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 				mk5status.state = MARK5_STATE_TESTREAD;
 				difxMessageSendMark5Status(&mk5status);
 
-				L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, 0, &readTime, fast);
-				if(L < 0)
+				if(mode & MODE_READ)
 				{
-					return -1;
-				}
+					L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, 0, &readTime, fast);
+					if(L < 0)
+					{
+						return -1;
+					}
 
-				if(!fast)
-				{
-					printf("%Ld/%Ld differ\n", L, (long long)bufferSize*nRep);
-				}
+					if(!fast)
+					{
+						printf("%Ld/%Ld differ\n", L, (long long)bufferSize*nRep);
+					}
 
-				totalError += L;
+					totalError += L;
+				}
 				totalBytes += (long long)bufferSize*nRep;
 				if(die)
 				{
@@ -512,10 +525,13 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 			readRate = totalBytes/(1.25e5*readTime);
 
 			printf("Total write time = %7.5f sec -> %5.3f Mbps\n", writeTime, writeRate);
-			printf("Total read time  = %7.5f sec -> %5.3f Mbps\n", readTime, readRate);
-			if(!fast)
+			if(mode & MODE_READ)
 			{
-				printf("** Timings could be affected by comparisons.  Run with --speed for more accurate timing\n");
+				printf("Total read time  = %7.5f sec -> %5.3f Mbps\n", readTime, readRate);
+				if(!fast)
+				{
+					printf("** Timings could be affected by comparisons.  Run with --speed for more accurate timing\n");
+				}
 			}
 			printf("\n");
 
@@ -550,7 +566,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 			v = snprintf(message, DIFX_MESSAGE_LENGTH, "%8s test complete: %Ld/%Ld bytes read incorrectly", vsn, totalError, totalBytes);
 			if(v >= DIFX_MESSAGE_LENGTH)
 			{
-				fprintf(stderr, "Error: completion message too long\n");
+				fprintf(stderr, "Developer error: completion message too long %d > %d\n", v, DIFX_MESSAGE_LENGTH);
 			}
 			else
 			{
@@ -578,7 +594,7 @@ int testModule(int bank, int readOnly, int nWrite, int bufferSize, int nRep, int
 			difxMessageSendMark5Status(&mk5status);
 		}
 	}
-	else /* Read-only test here */
+	else if(mode & MODE_READ) /* Read-only test here */
 	{
 		WATCHDOG( dirLen = XLRGetUserDirLength(xlrDevice) );
 		if(dirLen > 8)
@@ -701,7 +717,7 @@ int main(int argc, char **argv)
 	int nRep = defaultNRep;
 	int blockSize = defaultBlockSize;
 	int nBlock = defaultNBlock;
-	int readOnly = 0;
+	int mode = MODE_READ | MODE_WRITE;
 	int verbose = 0;
 	int force = 0;
 	int fast = 0;
@@ -739,7 +755,12 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-r") == 0 ||
 			        strcmp(argv[a], "--readonly") == 0)
 			{
-				readOnly = 1;
+				mode = MODE_READ;
+			}
+			else if(strcmp(argv[a], "-w") == 0 ||
+			        strcmp(argv[a], "--writeonly") == 0)
+			{
+				mode = MODE_WRITE;
 			}
 			else if(strcmp(argv[a], "-R") == 0 ||
 			        strcmp(argv[a], "--realtime") == 0)
@@ -832,7 +853,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = testModule(bank, readOnly, nRep, blockSize, nBlock, options, force, dirFile, ptr, fast);
+		v = testModule(bank, mode, nRep, blockSize, nBlock, options, force, dirFile, ptr, fast);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
