@@ -739,14 +739,14 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   maxxcblocks -= maxxcblocks%config->getNumBufferedFFTs(procslots[index].configindex);
   if(maxxcblocks == 0) {
     maxxcblocks = config->getNumBufferedFFTs(procslots[index].configindex);
-    cwarn << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenXCAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxxcblocks*blockns << " ns" << endl;
+    cverbose << startl << "Requested cross-correlation shift/average time of " << model->getMaxNSBetweenXCAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxxcblocks*blockns << " ns" << endl;
   }
 
   maxacblocks = ((int)(model->getMaxNSBetweenACAvg(procslots[index].offsets[0])/blockns));
   maxacblocks -= maxacblocks%config->getNumBufferedFFTs(procslots[index].configindex);
   if(maxacblocks == 0) {
     maxacblocks = config->getNumBufferedFFTs(procslots[index].configindex);
-    cwarn << startl << "Requested autocorrelation shift/average time of " << model->getMaxNSBetweenACAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxacblocks*blockns << " ns" << endl;
+    cverbose << startl << "Requested autocorrelation shift/average time of " << model->getMaxNSBetweenACAvg(procslots[index].offsets[0]) << " ns cannot be met with " << config->getNumBufferedFFTs(procslots[index].configindex) << " FFTs being buffered; the time resolution which will be attained is " << maxacblocks*blockns << " ns" << endl;
   }
 
   //process each chunk of FFTs in turn

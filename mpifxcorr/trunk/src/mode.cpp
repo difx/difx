@@ -881,7 +881,7 @@ void Mode::averageFrequency()
 bool Mode::calculateAndAverageKurtosis(int numblocks, int maxchannels)
 {
   int status, kchanavg;
-  bool nonzero;
+  bool nonzero = false;
 
   for(int i=0;i<numrecordedbands;i++)
   {

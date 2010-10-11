@@ -343,10 +343,19 @@ bool Model::readCommonData(ifstream * input)
 {
   int year, month, day, hour, minute, second;
   double mjd;
+  string key = "";
   string line = "";
 
   //Get the start time
-  config->getinputline(input, &line, "START MJD");
+  config->getinputkeyval(input, &key, &line);
+  if(key.find("VEX") != string::npos) { //look for the VEX line, skip it if present
+    config->getinputline(input, &line, "START MJD");
+  }
+  else {
+    if(key.find("START MJD") == string::npos) {
+      cerror << startl << "Went looking for START MJD (or maybe VEX FILE), but got " << key << endl;
+    }
+  }
   mjd = atof(line.c_str());
   config->getinputline(input, &line, "START YEAR");
   year = atoi(line.c_str());

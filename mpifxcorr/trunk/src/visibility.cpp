@@ -38,7 +38,7 @@
 Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer, int dbufferlen, int eseconds, int scan, int scanstartsec, int startns, const string * pnames)
   : config(conf), visID(id), currentscan(scan), currentstartseconds(scanstartsec), currentstartns(startns), numvisibilities(numvis), executeseconds(eseconds), todiskbufferlength(dbufferlen), polnames(pnames), todiskbuffer(dbuffer)
 {
-  int status, binloop;
+  int status, binloop, maxbinloop = 1;
 
   //cverbose << startl << "About to create visibility " << id << "/" << numvis << endl;
   estimatedbytes = 0;
@@ -74,6 +74,8 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
       binloop = config->getNumPulsarBins(config->getScanConfigIndex(i));
     if(model->getNumPhaseCentres(i)*binloop > maxfiles)
       maxfiles = model->getNumPhaseCentres(i)*binloop;
+    if(binloop > maxbinloop)
+      maxbinloop = binloop;
   }
   todiskmemptrs = new int[maxfiles];
   estimatedbytes += maxfiles*4;
@@ -83,7 +85,7 @@ Visibility::Visibility(Configuration * conf, int id, int numvis, char * dbuffer,
   char filename[256];
   for(int s=0;s<model->getNumPhaseCentres(0);s++)
   {
-    for(int b=0;b<binloop;b++)
+    for(int b=0;b<maxbinloop;b++)
     {
       sprintf(filename, "%s/DIFX_%05d_%06d.s%04d.b%04d", config->getOutputFilename().c_str(), expermjd, experseconds, s, b);
       output.open(filename, ios::trunc);
