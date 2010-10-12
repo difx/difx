@@ -257,7 +257,7 @@ void Core::execute()
 
     //send off a message if we are back at the start of the buffer
     if(numreceived % RECEIVE_RING_LENGTH == 0)
-      cinfo << startl << "CORE: " << numreceived-(numcomplete+1) << " unprocessed segments, 1 being processed, and " << RECEIVE_RING_LENGTH-(numreceived-numcomplete) << " to be sent" << endl;
+      cverbose << startl << "CORE: " << numreceived-(numcomplete+1) << " unprocessed segments, 1 being processed, and " << RECEIVE_RING_LENGTH-(numreceived-numcomplete) << " to be sent" << endl;
 
     if(terminate)
       break;

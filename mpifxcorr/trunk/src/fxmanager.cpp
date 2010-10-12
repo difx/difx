@@ -517,7 +517,7 @@ void FxManager::printSummary(int visindex)
   numvis = (newestlockedvis+config->getVisBufferLength()-oldestlockedvis)%config->getVisBufferLength();
   cinfo << startl << numvis << "/" << config->getVisBufferLength() << " visibilities locked for accumulation, most recent index is " << newestlockedvis << endl;
   numvis = (oldestlockedvis+config->getVisBufferLength()-writesegment)%config->getVisBufferLength();
-  cinfo << startl << numvis << "/" << config->getVisBufferLength() << " visibilities ready to write out from " << writesegment << endl;
+  cverbose << startl << numvis << "/" << config->getVisBufferLength() << " visibilities ready to write out from " << writesegment << endl;
 
   visbufferduration = inttime*config->getVisBufferLength();
   minsubints = MAX_S32;
@@ -539,7 +539,7 @@ void FxManager::printSummary(int visindex)
     }
     meansubints += ((double)corecounts[c])/numcores;
   }
-  cinfo << startl << "Min/Mean/Max number of subints processed is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;
+  cverbose << startl << "Min/Mean/Max number of subints processed is " << minsubints << "/" << meansubints << "/" << maxsubints << ", mincoreindex is " << minsubintindex << ", maxcoreindex is " << maxsubintindex << endl;
   if(visindex == config->getVisBufferLength()-1)
   {
     minsubints = MAX_S32;
