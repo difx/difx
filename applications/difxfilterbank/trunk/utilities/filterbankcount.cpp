@@ -97,8 +97,11 @@ bool getData(ifstream * input, bool verbose)
   pol = config->getDRecordedBandPol(configindex, dsindex, bandindex);
   antennaname = config->getDStationName(configindex, dsindex);
 
-  if(verbose)
-    cout << "Data from core " << coreindex << ", thread " << threadindex << ", time " << dumptime << endl;
+  if(verbose) {
+    cout << "Data from core " << coreindex << ", thread " << threadindex << ", MJD " << int(dumptime);
+    cout << ", sec " << int(86400*(dumptime-int(dumptime)));
+    cout << ", ns " << ns << endl;
+  }
 
   if(nchan > MAX_CHANNELS) {
     cout << "nchan=" << nchan << " is greater than MAX_CHANNELS=" << MAX_CHANNELS;
