@@ -1211,6 +1211,12 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	if(corrSetup->subintNS > 0)
 	{
 		config->subintNS = corrSetup->subintNS;
+		if(config->subintNS % fftdurNS != 0)
+		{
+			cerr << "The provided subintNS (" << config->subintNS << ") is not an integer multiple ";
+			cerr << "of the FFT duration (" << fftdurNS << ")! Aborting." << endl;
+			exit(0);
+		}
 	}
 	else
 	{
@@ -1218,7 +1224,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		if(config->subintNS % fftdurNS != 0)
 		{
 			cout << "Adjusting subintNS by " << config->subintNS % fftdurNS;
-			cout << " since it was a non-integer multuiple of fftdurNS (" << fftdurNS << ")" << endl;
+			cout << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
 			config->subintNS -= (config->subintNS % fftdurNS);
 		}
 	}
@@ -1326,7 +1332,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	vector<string> antList;
 	vector<freq> freqs;
 	int nPulsar=0;
-	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres;
+	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftdurNS;
+	double srcra, srcdec;
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, zoomsrc, polcount;
 	int * parentfreqindices;
@@ -1351,7 +1358,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	corrSetup = P->getCorrSetup(corrSetupName);
 	if(!corrSetup)
 	{
-		cerr << "Error: writeJob(): correlator setup " << corrSetupName << "Not found!" << endl;
+		cerr << "Error: writeJob(): correlator setup " << corrSetupName << ": Not found!" << endl;
 		exit(0);
 	}
 
@@ -1396,6 +1403,13 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		ss != P->sourceSetups.end(); ss++)
 	{
 		nTotalPhaseCentres += ss->phaseCentres.size()+1;
+		pointingCentre = &(ss->pointingCentre);
+		if((pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0) ||
+		   (pointingCentre->ra > PhaseCentre::DEFAULT_RA) ||
+		   (pointingCentre->dec > PhaseCentre::DEFAULT_DEC))
+		{
+			nTotalPhaseCentres++;
+		}
 	}
 	allocateSourceTable(D, nTotalPhaseCentres);
 
@@ -1446,30 +1460,53 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			cerr << "No source setup for " << S->sourceDefName << " - aborting!" << endl;
 		}
 		pointingCentre = &(sourceSetup->pointingCentre);
-		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
-		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
 		if(sourceSetup->doPointingCentre)
+		{
 			scan->nPhaseCentres++;
+		}
 		if(scan->nPhaseCentres > maxScanPhaseCentres)
+		{
 			maxScanPhaseCentres = scan->nPhaseCentres;
+		}
 		atSource = 0;
 		pointingSrcIndex = -1;
+		srcra = src->ra;
+		srcdec = src->dec;
+		if(pointingCentre->ra > PhaseCentre::DEFAULT_RA)
+		{
+			srcra = pointingCentre->ra;
+		}
+		if(pointingCentre->dec > PhaseCentre::DEFAULT_DEC)
+		{
+			srcdec = pointingCentre->dec;
+		}
 		for(int i=0; i<D->nSource; i++)
 		{
-			if(D->source[i].ra == src->ra && D->source[i].dec == src->dec &&
+			if(D->source[i].ra == srcra && D->source[i].dec == srcdec &&
 			   D->source[i].calCode[0] == src->calCode &&
-			   D->source[i].qual == src->qualifier     &&
-			   ( strcmp(D->source[i].name, src->defName.c_str()) == 0     ||
-			     src->hasSourceName(string(D->source[i].name))    )
-			   )
-			   // FIXME: There might be something fishy in the source name comparison above.
-			   // What happens if the source is renamed?  A better infrastructure for this is needed.
-			   // Also, code now compares against the def name in case that is the name basis
-			{
-				pointingSrcIndex = i;
-				break;
+			   D->source[i].qual == src->qualifier)
+			 {
+			 	if(pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0)
+				{
+					if(strcmp(D->source[i].name, pointingCentre->difxname.c_str()) == 0)
+					{
+						pointingSrcIndex = i;
+						break;
+					}
+				}
+				else
+				{
+					if(strcmp(D->source[i].name, src->defName.c_str()) == 0)
+					{
+						pointingSrcIndex = i;
+						break;
+					}
+				}
 			}
+			// FIXME: There might be something fishy in the source name comparison above.
+			// What happens if the source is renamed?  A better infrastructure for this is needed.
+			// Also, code now compares against the def name in case that is the name basis
 		}
 		if(pointingSrcIndex == -1)
 		{
@@ -1497,7 +1534,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		}
 		scan->pointingCentreSrc = pointingSrcIndex;
 		if(sourceSetup->doPointingCentre)
+		{
 			scan->phsCentreSrcs[atSource++] = pointingSrcIndex;
+		}
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin();
 			p != sourceSetup->phaseCentres.end();p++)
 		{
@@ -1531,16 +1570,42 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		scan->startSeconds = static_cast<int>((scanInterval.mjdStart - J.mjdStart)*86400.0 + 0.01);
 		scan->durSeconds = static_cast<int>(scanInterval.duration_seconds() + 0.01);
 		scan->configId = getConfigIndex(configs, D, V, P, S);
+		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
+		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
+		mode = V->getModeByDefName(configs[scan->configId].first);
+		fftdurNS = ((int)(corrSetup->nChan*2*1000000000.0/mode->sampRate + 0.5));
+		if(corrSetup->numBufferedFFTs*fftdurNS > corrSetup->maxNSBetweenACAvg)
+		{
+			cout << "Adjusting maxNSBetweenACAvg since the number of buffered FFTs (";
+			cout << corrSetup->numBufferedFFTs << ") gives a duration of ";
+			cout << corrSetup->numBufferedFFTs*fftdurNS << ", longer that that specified (";
+			cout << corrSetup->maxNSBetweenACAvg << ")" << endl;
+			scan->maxNSBetweenACAvg = corrSetup->numBufferedFFTs*fftdurNS;
+		}
+		if(corrSetup->numBufferedFFTs*fftdurNS > corrSetup->maxNSBetweenUVShifts)
+		{
+			cout << "The number of buffered FFTs (" << corrSetup->numBufferedFFTs;
+			cout << ") gives a duration of " << corrSetup->numBufferedFFTs*fftdurNS;
+			cout << ", longer that that specified for the UV shift interval (";
+			cout << corrSetup->maxNSBetweenUVShifts;
+			cout << "). Reduce FFT buffering or increase allowed interval!" << endl;
+			exit(0);
+		}
+
 		snprintf(scan->identifier, DIFXIO_NAME_LENGTH, "%s", S->defName.c_str());
 		snprintf(scan->obsModeName, DIFXIO_NAME_LENGTH, "%s", S->modeDefName.c_str());
 
 		if(sourceSetup->pointingCentre.ephemFile.size() > 0)
+		{
 			spacecraftSet.insert(sourceSetup->pointingCentre.difxName);
+		}
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin();
 			p != sourceSetup->phaseCentres.end();p++)
 		{
 			if(p->ephemFile.size() > 0)
+			{
 				spacecraftSet.insert(p->difxName);
+			}
 		}
 	}
 
