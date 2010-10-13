@@ -6,6 +6,10 @@ Version 2.0.0, 2010 July 14
 * Can now produce kurtosis dumps every STA under the command of difxfilterbank
 * Many nativemk5 inmprovements migrated from 1.5
 * Decorrelation correction is applied if uv shifting is done
+* Catch rare datastream error where file ends exactly at end of databuffer 
+  for a Mk5 files
+* Allow for new VEX FILE line in calc file to be optional
+* Bugfix for polycos with more than one entry
 * Many more minor bugfixes
 
 Version 2.0, 2009 September 24
