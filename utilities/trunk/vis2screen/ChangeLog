@@ -1,3 +1,4 @@
 Utilities are generally unversioned: first entry 06 Sep 2010, ATD
 * Changed makefile to use IPPLINKLIBS and got rid of RPFITSReader
+* printDiFX: check for infinite visibilities/weights
 * Version for DiFX 2.0.0
