@@ -186,6 +186,7 @@ int pystream::writeHeader(const VexData *V)
 {
 	double day = floor(mjd0);
 	double sec = floor((mjd0-day)*86400.0 + 0.5);
+        lastValid  = mjd0-(5.0/86400.0);
 
 	*this << "from edu.nrao.evla.observe import Mark5C" << endl;
 	if(currenttype == VLBA)
@@ -210,6 +211,8 @@ int pystream::writeHeader(const VexData *V)
 	*this << endl;
 	*this << "second = 1.0/86400.0" << endl;
 	*this << endl;
+	*this << "deltat2 = 1" << endl;
+	*this << endl;
 	*this << "obsCode = '" << obsCode << "'" << endl;
 	if(currenttype == VLBA)
 	{
@@ -227,7 +230,7 @@ int pystream::writeHeader(const VexData *V)
 
 int pystream::writeRecorderInit(const VexData *V)
 {
-	*this << "recorder0 = Mark5C(-1)" << endl;
+	*this << "recorder0 = Mark5C('-1')" << endl;
 
 	// FIXME For now, set up single recorder in Mark5B mode
 	// Need to check requested format/mode first
@@ -297,6 +300,13 @@ int pystream::writeLoifTable(const VexData *V)
 				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
 			}
 			*this << "loif" << m << ".setPhaseCal(" << (setup->phaseCalIntervalMHz()) << ")" << endl;
+                        // auto gain/attenuation control
+                        *this << "loif" << m << ".setDBEParams(0, -1, -1, 10, 0)" << endl;
+                        *this << "loif" << m << ".setDBEParams(1, -1, -1, 10, 0)" << endl;
+
+                        *this << "loif" << m << ".setDBERemember(0, 1)" << endl;
+                        *this << "loif" << m << ".setDBERemember(1, 1)" << endl;
+
 			*this << "channelSet" << m << " = [ \\" << endl;
 
 			vector<unsigned int> implicitConversions;
@@ -566,8 +576,9 @@ int pystream::writeScans(const VexData *V)
 
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
-			double deltat3 = floor((scan->mjdVex-mjd0)*86400.0 + 0.5);
-	*this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
+	                // execute() at previous stop time minus 5 seconds
+			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
+                        *this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
 			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
 			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
