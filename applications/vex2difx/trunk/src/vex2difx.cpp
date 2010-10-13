@@ -1404,7 +1404,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	{
 		nTotalPhaseCentres += ss->phaseCentres.size()+1;
 		pointingCentre = &(ss->pointingCentre);
-		if((pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0) ||
+		if((pointingCentre->difxName.compare(PhaseCentre::DEFAULT_NAME) != 0) ||
 		   (pointingCentre->ra > PhaseCentre::DEFAULT_RA) ||
 		   (pointingCentre->dec > PhaseCentre::DEFAULT_DEC))
 		{
@@ -1487,9 +1487,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			   D->source[i].calCode[0] == src->calCode &&
 			   D->source[i].qual == src->qualifier)
 			 {
-			 	if(pointingCentre->difxname.compare(PhaseCentre::DEFAULT_NAME) != 0)
+			 	if(pointingCentre->difxName.compare(PhaseCentre::DEFAULT_NAME) != 0)
 				{
-					if(strcmp(D->source[i].name, pointingCentre->difxname.c_str()) == 0)
+					if(strcmp(D->source[i].name, pointingCentre->difxName.c_str()) == 0)
 					{
 						pointingSrcIndex = i;
 						break;
