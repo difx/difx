@@ -2,7 +2,6 @@ Version 2.0.1
 ~~~~~~~~~~~~~
 * Post DiFX-2.0.0
 * move most strcpy to snprintf and make use of parameterized string lengths in difxio
-* add vexfile to .calc
 
 Version 2.0
 ~~~~~~~~~~~
@@ -40,6 +39,9 @@ Version 2.0
 * Fix year definition ( was correct in difx 1.5 for quite some time )
 * Better default some difx2.0 specific parameters
 * Don't write out rules which are not used in a given job
+* improve checking of subintNS and averaging intervals
+* prevent a crash when source RA and decs are changed
+* add vexfile to .calc
 * Version for DiFX-2.0.0
 
 Version 0.3
