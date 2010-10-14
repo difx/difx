@@ -931,7 +931,7 @@ int set_FB_Config(FB_Config *fb_config) {
 /*****************************
 ******************************/
 void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) {
-    const char *optstring = "di:o:t:T:f:P:c:";
+    const char *optstring = "di:o:t:T:f:P:c:s:";
     int result=0;
 
     if (argc ==1) print_usage();
