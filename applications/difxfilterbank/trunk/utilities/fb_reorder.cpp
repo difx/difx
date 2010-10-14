@@ -324,7 +324,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
     ChunkHeader header;
     float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0;
-    int64_t this_time,last_time=-1,timeslots[MAX_TIMESLOTS];
+    int64_t this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
 
     chanvals = (float *) malloc(sizeof(float)*fb_config->n_chans);
     n_chunks_to_add = fb_config->n_streams * fb_config->n_bands;
@@ -349,6 +349,16 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             fprintf(stderr,"ERROR: inconsistency between nchans in packet (%d) and config (%d)\n",
                     header.n_channels,fb_config->n_chans);
             exit(1);
+        }
+
+        if (header.scan_id != options.scan_index) {
+            fprintf(stderr,"ERROR: got a packet with scan index %d. Expecting: %d.\n",
+                    header.scan_id,options.scan_index);
+            fprintf(stderr,"have processed %lld bytes. printing header and exiting\n",(long long)n_bytes_total);
+            printChunkHeader(&header,stderr);
+
+            done=1;
+            continue;
         }
 
         //printChunkHeader(&header,fpd);
@@ -426,7 +436,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
         }
 
         // calculate the tcal fraction for this packet
-        if (options.tcal_period_ns != 0) {
+        if (options.tcal_period_ns != 0 && (this_time != last_time || header.stream_id != last_stream)) {
             res = tcal_predict(difxconfig->getModel(), this_time, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
@@ -484,7 +494,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                 }
             }
         }
-
+        last_stream = header.stream_id;
         last_time = this_time;
     }
 
@@ -886,7 +896,7 @@ int set_FB_Config(FB_Config *fb_config) {
 
     // sanity check: calculate the approximate duration of STA dumps and compare to the desired output
     // time resolution
-    subint_ns = difxconfig->getSubintNS(difxconfig->getScanConfigIndex(options.scan_index));
+    subint_ns = difxconfig->getSubintNS(difxconfig->getScanConfigIndex(options.scan_index))/difxconfig->getCNumProcessThreads(0);
     max_ac_ns = (difxconfig->getModel())->getMaxNSBetweenACAvg(options.scan_index);
     subint_ns = (subint_ns < max_ac_ns ? subint_ns: max_ac_ns);
 
