@@ -118,6 +118,7 @@ public:
 	string modeDefName;
 	string sourceDefName;	
 	map<string,VexInterval> stations;
+	map<string,bool> recordEnable;
 	string corrSetupName;	// points to CorrSetup entry
 	double size;		// [bytes] approx. correlated size
 	double mjdVex;		// The start time listed in the vex file

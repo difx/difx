@@ -438,7 +438,8 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 	double startAnt, stopAnt;
 	int nScanSkip = 0;
 	Llist *L;
-	map<string, VexInterval> stations;
+	map<string,VexInterval> stations;
+	map<string,bool> recordEnable;
 	int nWarn = 0;
 
 	for(L = (Llist *)get_scan(&scanId, v);
@@ -454,6 +455,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		startScan = 1e99;
 		stopScan = 0.0;
 		stations.clear();
+		recordEnable.clear();
 		for(p = get_station_scan(L); 
 		    p;
 		    p = get_station_scan_next())
@@ -481,6 +483,9 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 			{
 				stopScan = stopAnt;
 			}
+
+			vex_field(T_STATION, p, 7, &link, &name, &value, &units);
+			recordEnable[stationName] = (atoi(value) != 0);
 
 			stations[stationName] = VexInterval(startAnt, stopAnt);
 
@@ -547,6 +552,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		S->setTimeRange(timeRange);
 		S->defName = scanDefName;
 		S->stations = stations;
+		S->recordEnable = recordEnable;
 		S->modeDefName = modeDefName;
 		S->sourceDefName = sourceDefName;
 		S->corrSetupName = corrSetupName;

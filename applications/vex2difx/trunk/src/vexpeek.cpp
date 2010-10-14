@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -50,7 +50,10 @@ void usage(const char *pgm)
 	cout << endl;
 	cout << "A program to print essential information from a vex file." << endl;
 	cout << endl;
-	cout << "Usage: " << pgm << " <vex filename>" << endl;
+	cout << "Usage: " << pgm << " <vex filename> [-v]" << endl;
+	cout << endl;
+	cout << "Option:" << endl;
+	cout << "  -v or --verbose : print entire vextables structure of vexfile" << endl;
 	cout << endl;
 }
 
@@ -154,14 +157,22 @@ int main(int argc, char **argv)
 
 	P = new CorrParams();
 	P->defaultSetup();
+	P->minSubarraySize = 1;
 	P->vexFile = argv[1];
 
 	V = loadVexFile(*P, &nWarn);
 
-	cout << V->getExper()->name << endl;
+	if(argc > 2 && (strcmp(argv[2], "-v") == 0 || strcmp(argv[2], "--verbose")) )
+	{
+		cout << *V << endl;
+		cout << endl;
+	}
+	else
+	{
+		cout << V->getExper()->name << endl;
 
-	antennaSummary(V);
-
+		antennaSummary(V);
+	}
 
 	delete V;
 

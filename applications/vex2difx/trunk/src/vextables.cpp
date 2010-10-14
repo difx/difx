@@ -1406,17 +1406,20 @@ ostream& operator << (ostream &os, const VexSource &x)
 
 ostream& operator << (ostream &os, const VexScan &x)
 {
-	map<string,VexInterval>::const_iterator iter;
-
 	os << "Scan " << x.defName << 
 		"\n  timeRange=" << (const VexInterval&)x <<
 		"\n  mode=" << x.modeDefName <<
 		"\n  source=" << x.sourceDefName << 
 		"\n  size=" << x.size << " bytes \n";
 
-	for(iter = x.stations.begin(); iter != x.stations.end(); iter++)
+	for(map<string,VexInterval>::const_iterator iter = x.stations.begin(); iter != x.stations.end(); iter++)
 	{
 		os << "  " << iter->first << " range=" << iter->second << endl;
+	}
+
+	for(map<string,bool>::const_iterator iter = x.recordEnable.begin(); iter != x.recordEnable.end(); iter++)
+	{
+		os << "  " << iter->first << " enable=" << iter->second << endl;
 	}
 
 	os << "  setup=" << x.corrSetupName << endl;

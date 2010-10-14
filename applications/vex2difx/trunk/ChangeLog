@@ -1,7 +1,9 @@
 Version 2.0.1
 ~~~~~~~~~~~~~
 * Post DiFX-2.0.0
+* add -v option to vexpeek
 * move most strcpy to snprintf and make use of parameterized string lengths in difxio
+* add recordEnable map to VexScan.
 
 Version 2.0
 ~~~~~~~~~~~
