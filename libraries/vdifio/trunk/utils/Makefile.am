@@ -8,6 +8,7 @@ bin_PROGRAMS = \
 	stripVDIF \
 	captureUDPVDIF \
 	padVDIF \
+	cleanVDIF \
 	printVDIF 
 
 stripVDIF_SOURCES = \
@@ -21,6 +22,9 @@ captureUDPVDIF_LDFLAGS = \
 
 padVDIF_SOURCES = \
 	padVDIF.c
+
+cleanVDIF_SOURCES = \
+	cleanVDIF.c
 
 printVDIF_SOURCES = \
 	printVDIF.c

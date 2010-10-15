@@ -41,32 +41,50 @@ int usage()
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
   fprintf(stderr, "A program to dump some basic info about VDIF packets to the screen\n");
-  fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps>\n", program);
-  fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
+  fprintf(stderr, "\nUsage: %s <VDIF input file> <VDIF output file> <Mbps> [-v]\n", program);
+  fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read and clean\n");
+  fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to write\n");
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
+  fprintf(stderr, "\n[-v] verbose mode on\n");
+  fprintf(stderr, "The input file must at least start with one valid packet\n");
 
   return 0;
 }
 
 int main(int argc, char **argv)
 {
-  char buffer[MAX_VDIF_FRAME_BYTES];
+  char buffer[MAX_VDIF_FRAME_BYTES*2];
   FILE * input;
+  FILE * output;
   int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond;
-  int packetdropped;
-  long long framesread;
+  int bufferoffset, wrotebytes, wholemissedpackets, extrareadbytes;
+  int i, verbose;
+  long long framesread, invalidpackets, invalidbytes;
 
-  if(argc != 3)
+  if(argc != 4 && argc != 5)
     return usage();
-  
+
+  if(argc == 5)
+    verbose = 1;
+  else
+    verbose = 0;
+
   input = fopen(argv[1], "r");
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
     exit(1);
   }
+  output = fopen(argv[2], "w");
+  if(input == NULL)
+  {
+    fprintf(stderr, "Cannot open output file %s\n", argv[2]);
+    exit(1);
+  }
 
-  datambps = atoi(argv[2]);
+  datambps = atoi(argv[3]);
+  invalidpackets = 0;
+  invalidbytes = 0;
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
@@ -79,32 +97,73 @@ int main(int argc, char **argv)
   frameinvalid = getVDIFFrameInvalid(buffer);
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
- 
+
   fseek(input, 0, SEEK_SET); //go back to the start
 
   framesread = 0;
   while(!feof(input)) {
-    packetdropped = 0;
+    bufferoffset = 0;
+    wholemissedpackets = 0;
+    extrareadbytes = 0;
     readbytes = fread(buffer, 1, framebytes, input); //read the whole VDIF packet
     if (readbytes < framebytes) {
       fprintf(stderr, "Header read failed - probably at end of file.\n");
       break;
     }
-    framemjd = getVDIFFrameMJD(buffer);
-    framesecond = getVDIFFrameSecond(buffer);
-    framenumber = getVDIFFrameNumber(buffer);
-    frameinvalid = getVDIFFrameInvalid(buffer);
-    printf("MJD is %d, second is %d, framenumber is %d, frameinvalid is %d\n", framemjd, framesecond, framenumber, frameinvalid);
-    printf("Threadid is %d, stationid is %d\n", getVDIFThreadID(buffer), getVDIFStationID(buffer));
-    if(getVDIFFrameBytes(buffer) != framebytes) { 
-      fprintf(stderr, "Framebytes has changed! Can't deal with this, aborting\n");
+
+    while(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
+      //almost certainly some bogus packet.  Try looking ahead
+      if(verbose)
+        fprintf(stderr, "Lost the VDIF stream - skipping ahead to look for next packet\n");
+      bufferoffset += 8;
+      if(bufferoffset == framebytes) {
+        for(i=0;i<extrareadbytes;i++)
+          buffer[i] = buffer[framebytes+i];
+        readbytes = fread(buffer, 1, framebytes-extrareadbytes, input); //read the whole VDIF packet
+        if (readbytes < framebytes-extrareadbytes) {
+          fprintf(stderr, "Header read failed - probably at end of file.\n");
+          invalidpackets++;
+          invalidbytes += bufferoffset + wholemissedpackets*framebytes;
+          break;
+        }
+        bufferoffset = 0;
+        extrareadbytes = 0;
+        wholemissedpackets++;
+      }
+      if(framebytes - bufferoffset < VDIF_HEADER_BYTES) {
+        readbytes = fread(buffer + VDIF_HEADER_BYTES + bufferoffset, 1, 8, input);
+        extrareadbytes += 8;
+      }
+    }
+    if(bufferoffset > 0 || wholemissedpackets > 0) {
+      invalidpackets++;
+      invalidbytes += bufferoffset + wholemissedpackets*framebytes;
+    }
+    if(bufferoffset > 0) {
+      readbytes = fread(buffer+framebytes+extrareadbytes, 1, bufferoffset-extrareadbytes, input);
+      if(readbytes < bufferoffset-extrareadbytes) {
+        fprintf(stderr, "Header read failed - probably at end of file.\n");
+        break;
+      }
+    }
+    framemjd = getVDIFFrameMJD(buffer+bufferoffset);
+    framesecond = getVDIFFrameSecond(buffer+bufferoffset);
+    framenumber = getVDIFFrameNumber(buffer+bufferoffset);
+    frameinvalid = getVDIFFrameInvalid(buffer+bufferoffset);
+    if(getVDIFFrameBytes(buffer+bufferoffset) != framebytes) {
+      fprintf(stderr, "Framebytes has changed (%d)! Can't deal with this, aborting\n", getVDIFFrameBytes(buffer+bufferoffset));
+      fprintf(stderr, "Bufferoffset was %d, wholemissedpackets was %d\n", bufferoffset, wholemissedpackets);
       break;
     }
     framesread++;
+    wrotebytes = fwrite(buffer+bufferoffset, 1, framebytes, output);
+    if(wrotebytes != framebytes)
+      fprintf(stderr, "Write failed!\n");
   }
 
-  printf("Read %lld frames\n", framesread);
+  printf("Read %lld frames, skipped over %lld dodgy packets containing %lld dodgy bytes\n", framesread, invalidpackets, invalidbytes);
   fclose(input);
 
   return 0;
 }
+
