@@ -117,6 +117,7 @@ void print_usage();
 // globals
 static int debug=0;
 static uint64_t abs_start_time_ns=0;
+static int64_t first_time=-1;
 static FILE *fpd;
 
 Configuration * difxconfig;
@@ -324,7 +325,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
     ChunkHeader header;
     float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0;
-    int64_t first_time=-1,this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
+    int64_t this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
 
     chanvals = (float *) malloc(sizeof(float)*fb_config->n_chans);
     n_chunks_to_add = fb_config->n_streams * fb_config->n_bands;
@@ -658,7 +659,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
         // median value per channel.
         if (options.tcal_period_ns != 0) {
             int res;
-            res = tcal_predict(difxconfig->getModel(), time_ns, header.int_time_ns,
+            res = tcal_predict(difxconfig->getModel(), time_ns - first_time, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
             if (res != 0) {
