@@ -387,7 +387,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             if(debug) {
                 fprintf(fpd,"WARNING: discarding chunk with time %lld. start time: %lld\n",
                         (long long) this_time,(long long) bufinfo->starttime);
-                printChunkHeader(&header,fpd);
+                printChunkHeader(&header,stderr);
             }
             continue;
         }
@@ -442,7 +442,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed. Printing header and exiting\n");
-                printChunkHeader(&header,fpd);
+                printChunkHeader(&header,stderr);
                 return 1;
             }
         }
@@ -662,7 +662,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed in sendEarliestBuffer. Printing header and exiting\n");
-                printChunkHeader(&header,fpd);
+                printChunkHeader(&header,stderr);
                 return 1;
             }
         }
@@ -952,7 +952,7 @@ void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) 
             break;
           case 't': options->buf_time = atof(optarg);
             break;
-          case 'T': options->int_time_ns = atof(optarg);
+          case 'T': options->int_time_ns = atoi(optarg);
             break;
           case 'd': debug = 1;
             fprintf(fpd,"Debugging on...\n");
