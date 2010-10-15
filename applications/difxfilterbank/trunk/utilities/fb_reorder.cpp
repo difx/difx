@@ -202,7 +202,7 @@ to be tied to a 1pps signal so turns on exactly at the start of every second. Th
 since the start of the scan, so by combining the known time of the start of the scan with the delay
 model and time offset of the actual pakcet, one can predict the tcal signal.
 The signal is assumed to be on 50% of the time.
-The amount of signal present in the integration can is then a piecewise linear function with 5 segments
+The amount of signal present in the integration is then a piecewise linear function with 5 segments
 depending on where the integration boundaries intersect with the transition of tcal
 ******************************/
 int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, int antennaindex,float *result) {
@@ -324,7 +324,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
     ChunkHeader header;
     float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0;
-    int64_t this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
+    int64_t first_time=-1,this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
 
     chanvals = (float *) malloc(sizeof(float)*fb_config->n_chans);
     n_chunks_to_add = fb_config->n_streams * fb_config->n_bands;
@@ -369,6 +369,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
         if (!init_header) {
             init_header=1;
             bufinfo->starttime = this_time;
+            first_time = this_time;
             bufinfo->endtime = bufinfo->starttime + ((int64_t)bufinfo->bufsize-1)*options.int_time_ns;
             abs_start_time_ns = this_time;
         }
@@ -437,11 +438,11 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
         // calculate the tcal fraction for this packet
         if (options.tcal_period_ns != 0 && (this_time != last_time || header.stream_id != last_stream)) {
-            res = tcal_predict(difxconfig->getModel(), this_time, header.int_time_ns,
+            res = tcal_predict(difxconfig->getModel(), this_time-first_time, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
             if (res != 0) {
-                fprintf(stderr,"ERROR: tcal_predict failed. Printing header and exiting\n");
+                fprintf(stderr,"ERROR: tcal_predict failed after %lld bytes. Printing header and exiting\n",(long long)n_bytes_total);
                 printChunkHeader(&header,stderr);
                 return 1;
             }
