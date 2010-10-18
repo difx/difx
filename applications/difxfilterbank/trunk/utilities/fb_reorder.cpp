@@ -218,7 +218,10 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
 
       // apply delay
       res = model->calculateDelayInterpolator(options.scan_index, time_offset_ns*1e-9, 0.0, 1, antennaindex, 0, 0, &delay);
-      if (res != true) return EXIT_FAILURE;
+      if (res != true) {
+          cerr << "ERROR: calculateDelayInterpolator failed for scan: " << options.scan_index << ". Antenna index: " << antennaindex << ". Offset ns: " << time_offset_ns << endl;
+          return EXIT_FAILURE;
+      }
       time_offset_ns -= delay*1000;
 
       while(time_offset_ns < 0) time_offset_ns += options.tcal_period_ns;
@@ -444,6 +447,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed after %lld bytes. Printing header and exiting\n",(long long)n_bytes_total);
+                fprintf(stderr,"This time: %lld. First time: %lld\n",(long long)this_time,(long long)first_time);
                 printChunkHeader(&header,stderr);
                 return 1;
             }
@@ -622,11 +626,11 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
 ******************************/
 int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     static int have_non_zero =0;
-    static uint64_t last_median_time_ns=0;
+    static int64_t last_median_time_ns=0;
 
     ChunkHeader header;
     int stream,band,chunk_index=0,n_written,buf_ind;
-    uint64_t time_ns;
+    int64_t time_ns;
     float tcal_frac =0.0;
 
     buf_ind = bufinfo->startindex;
@@ -639,12 +643,19 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     header.int_time_ns = options.int_time_ns;
 
     // the thread index is implicit time ordering within the larger group
+    if (bufinfo->buffers[buf_ind].n_added ==0) {
+        header.time_s = bufinfo->starttime / 1000000000;
+        header.time_ns = bufinfo->starttime % 1000000000;
+    }
+    else {
+        header.time_s = bufinfo->buffers[buf_ind].time_s;
+        header.time_ns= bufinfo->buffers[buf_ind].time_ns;
+    }
     header.thread_id = bufinfo->buffers[buf_ind].thread_id;
-    header.time_s = bufinfo->buffers[buf_ind].time_s;
-    header.time_ns= bufinfo->buffers[buf_ind].time_ns;
 
     // form medians for subtracting tcal and padding missing data, if we haven't done so recently
-    time_ns = (uint64_t)bufinfo->buffers[buf_ind].time_ns + (uint64_t)header.time_s * 1000000000L;
+    time_ns = (int64_t)header.time_ns + (int64_t)header.time_s * 1000000000L;
+
     if (last_median_time_ns ==0 || (time_ns -last_median_time_ns)/header.int_time_ns >= N_MEDIAN) {
         if (debug) fprintf(fpd,"Forming medians after %lld integration times\n",(long long) ((time_ns -last_median_time_ns)/header.int_time_ns));
         FormMedians(fb_config, bufinfo);
@@ -664,6 +675,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed in sendEarliestBuffer. Printing header and exiting\n");
+                fprintf(stderr,"Buffer time: %lld. First time: %lld\n",(long long)time_ns,(long long)first_time);
                 printChunkHeader(&header,stderr);
                 return 1;
             }
