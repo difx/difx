@@ -48,6 +48,7 @@
 #include <math.h>
 #include <float.h>
 #include <assert.h>
+#include "difxmessage.h"
 #include "configuration.h"
 #include "model.h"
 #include "difx_fb.h"
@@ -140,6 +141,9 @@ int main(const int argc, char * const argv[]) {
 
     // parse command-line
     parse_cmdline(argc, argv,&options);
+
+    // init DiFX message
+    difxMessageInit(-1, PROGNAME); 
 
     // parse the DiFX configuration file
     difxconfig = new Configuration(options.configfilename, 0);
