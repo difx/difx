@@ -104,7 +104,8 @@ def run(maxlevel):
 	try:
 		while 1:
 			try:
-				message = s.recv(1024)
+			    message = s.recv(1500)
+			    if len(message) > 0 and message[0] == '<':
 				p = Parser()
 				p.feed(message)
 				info = p.getinfo()

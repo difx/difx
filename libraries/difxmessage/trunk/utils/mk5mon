@@ -187,7 +187,7 @@ def listen(port, group):
 	try:
 		while t < maxtime:
 			try:
-				message = s.recv(1024)
+				message = s.recv(1500)
 			except socket.timeout:
 				t += dt
 				continue

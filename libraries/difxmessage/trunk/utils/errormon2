@@ -24,10 +24,10 @@ from xml.parsers import expat
 from copy import deepcopy
 from time import asctime
 
-program = 'errormon'
+program = 'errormon2'
 author  = 'Walter Brisken'
-version = '0.2'
-verdate = '20100625'
+version = '0.3'
+verdate = '20101020'
 
 ##############################################################################
 # Parameters
@@ -128,8 +128,12 @@ class Parser:
         self._parser.Parse(data, 0)
 
     def close(self):
-        self._parser.Parse("", 1) # end of data
-        del self._parser # get rid of circular references
+	try:
+        	self._parser.Parse("", 1) # end of data
+        	del self._parser # get rid of circular references
+	except expat.ExpatError:
+		print 'Error parsing :', self.message, " len=", len(self.message)
+		exit(0)
 
     def start(self, tag, attrs):
         self.tag = tag
@@ -183,13 +187,14 @@ def run():
     try:
 	    while 1:
 		try:
-		    message = s.recv(1024)
-		    p = Parser()
-		    p.feed(message)
-		    level, info = p.getinfo()
-		    p.close()
-		    if len(info) > 0:
-			log(alertLevels[level], info)
+		    message = s.recv(1500)
+		    if len(message) > 0 and message[0] == '<':
+			p = Parser()
+			p.feed(message)
+			level, info = p.getinfo()
+			p.close()
+			if len(info) > 0:
+				log(alertLevels[level], info)
 		except socket.timeout:
 		    pass
     except KeyboardInterrupt:

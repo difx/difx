@@ -228,7 +228,7 @@ class Mark5s(gtk.DrawingArea):
 
     def idle(self):
 	try:
-		message = self.socket.recv(1024)
+		message = self.socket.recv(1500)
 	except socket.timeout:
 		return 1
 	if message[0] != '<':
