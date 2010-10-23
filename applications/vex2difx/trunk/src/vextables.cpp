@@ -839,7 +839,7 @@ int VexJob::generateFlagFile(const VexData &V, const string &fileName, unsigned 
 		{
 			if(fabs(e->mjd - mjdStart) < 0.5/86400.0)
 			{
-				for(unsigned int antId = 0; antId < nAnt; antId++)
+				for(a = vsns.begin(); a != vsns.end(); a++)
 				{
 					flagMask[antIds[a->first]] |= VexJobFlag::JOB_FLAG_TIME;
 				}
