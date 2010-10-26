@@ -1383,6 +1383,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	D->mjdStop  = J.mjdStop;
 	D->visBufferLength = P->visBufferLength;
 	D->dataBufferFactor = P->dataBufferFactor;
+	D->outputFormat = P->outputFormat;
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);

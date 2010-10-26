@@ -247,6 +247,7 @@ public:
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor
+	enum OutputFormatType outputFormat; // DIFX or ASCII
 
 	list<string> antennaList;
 	list<pair<string,string> > baselineList;

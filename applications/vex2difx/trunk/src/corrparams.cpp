@@ -1089,6 +1089,7 @@ void CorrParams::defaults()
 	visBufferLength = 32;
 	v2dMode = V2D_MODE_NORMAL;
 	overSamp = 0;
+	outputFormat = DIFX;
 }
 
 void pathify(string &filename)
@@ -1272,6 +1273,16 @@ int CorrParams::setkv(const string &key, const string &value)
 		{
 			cerr << "Warning: Illegal value " << value << " for mode" << endl;
 			nWarn++;
+		}
+	}
+	else if(key == "outputFormat")
+	{
+	        string s;
+	        ss >> s;
+		Upper(s);
+		if (s == "ASCII")
+		{
+		  outputFormat = ASCII;
 		}
 	}
 	else if(key == "overSamp")
@@ -2099,6 +2110,7 @@ ostream& operator << (ostream &os, const CorrParams &x)
 	os << "sendLength=" << x.sendLength << " # seconds" << endl;
 	os << "sendSize=" << x.sendSize << " # Bytes" << endl;
 	os << "overSamp=" << x.overSamp << endl;
+	os << "outputFormat=" << x.outputFormat << endl;
 	
 	if(!x.antennaList.empty())
 	{
