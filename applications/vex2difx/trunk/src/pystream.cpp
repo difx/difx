@@ -505,10 +505,13 @@ int pystream::writeScans(const VexData *V)
 	p = precision();
 	precision(14);
 
-	for(int s = 0; s < nScan; s++)
+	for(int s = -1; s < nScan; s++)
 	{
-		const VexScan *scan = V->getScan(s);
-		*this << "# Scan " << s << " = " << scan->defName << endl;
+		const VexScan *scan = (s==-1)?V->getScan(0):V->getScan(s);
+		if( s ==  -1 )
+			*this << "# Setup Scan " << endl;
+                else
+			*this << "# Scan " << s << " = " << scan->defName << endl;
 		if(scan->stations.count(ant) == 0)
 		{
 			*this << "# Antenna " << ant << " not in scan " << scan->defName << endl;
@@ -574,18 +577,26 @@ int pystream::writeScans(const VexData *V)
 				lastSourceId = sourceId;
 			}
 
+                        // TODO Once we control antenna movements, make sure we do not include antenna movement in
+                        // the setup scan if end time of first scan has already elapsed, so we do not interfere with
+                        // movement of antenna for subsequent scans. We still must execute all other setups steps.
 			double deltat1 = floor((arange->mjdStart-mjd0)*86400.0 + 0.5);
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 	                // execute() at previous stop time minus 5 seconds
 			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
                         *this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
-			*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
-			*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
-			*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
-			*this << "else:" << endl;
-			*this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 << "*second) + \" since array.time is \" + str(array.time())" << endl;
+			if( s != -1 ) {
+				*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
+				*this << "if array.time() < mjdStart + " << deltat2 << "*second:" << endl;
+				*this << "  subarray.execute(mjdStart + " << deltat3 << "*second)" << endl;
+				*this << "else:" << endl;
+				*this << "  print \"Skipping scan which ended at time \" + str(mjdStart+" << deltat2 << "*second) + \" since array.time is \" + str(array.time())" << endl;
+				lastValid = arange->mjdStop;
+                        } else {
+				*this << "# Setup scan - run right away, but do not start recording" << endl;
+				*this << "subarray.execute( array.time() )" << endl;
+                        }
 
-			lastValid = arange->mjdStop;
 		}
 
 		*this << endl;
