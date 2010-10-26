@@ -74,7 +74,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	writeDifxLineInt(out, "ACTIVE DATASTREAMS", D->nDatastream);
 	writeDifxLineInt(out, "ACTIVE BASELINES", D->nBaseline);
 	writeDifxLineInt(out, "VIS BUFFER LENGTH", D->visBufferLength);
-	if (D->outputFormat==DIFX)
+	if (D->outputFormat==OutputFormatDIFX)
 	  writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
 	else
 	  writeDifxLine(out, "OUTPUT FORMAT", "ASCII");

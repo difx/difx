@@ -118,8 +118,8 @@ enum AntennaMountType
 
 enum OutputFormatType
 {
-	DIFX = 0,
-	ASCII = 1,
+	OutputFormatDIFX = 0,
+	OutputFormatASCII = 1,
 	NumOutputFormat
 };
 
