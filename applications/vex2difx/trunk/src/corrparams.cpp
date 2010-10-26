@@ -1089,7 +1089,7 @@ void CorrParams::defaults()
 	visBufferLength = 32;
 	v2dMode = V2D_MODE_NORMAL;
 	overSamp = 0;
-	outputFormat = DIFX;
+	outputFormat = OutputFormatDIFX;
 }
 
 void pathify(string &filename)
@@ -1282,7 +1282,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		Upper(s);
 		if (s == "ASCII")
 		{
-		  outputFormat = ASCII;
+		  outputFormat = OutputFormatASCII;
 		}
 	}
 	else if(key == "overSamp")
