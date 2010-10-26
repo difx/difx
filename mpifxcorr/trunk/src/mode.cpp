@@ -1001,6 +1001,7 @@ void Mode::setOffsets(int scan, int seconds, int ns)
     srcindex = 0;
 
   foundok = model->calculateDelayInterpolator(currentscan, (double)offsetseconds + ((double)offsetns)/1000000000.0, blockspersend*2*recordedbandchannels*sampletime/1e6, blockspersend, config->getDModelFileIndex(configindex, datastreamindex), srcindex, 2, interpolator);
+  interpolator[2] -= 1000000*intclockseconds;
 
   if(!foundok) {
     cerror << startl << "Could not find a Model interpolator for scan " << scan << " offsetseconds " << seconds << " offsetns " << ns << " - will torch this subint!" << endl;
