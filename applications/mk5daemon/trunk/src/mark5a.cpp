@@ -68,12 +68,6 @@ int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait)
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 		}
 	}
-	else
-	{
-		strncpy(D->streamstorLockIdentifer, identifier,
-			DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
-		D->streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH-1] = 0;
-	}
 
 	return v;
 }
@@ -100,10 +94,6 @@ int unlockStreamstor(Mk5Daemon *D, const char *identifier)
 	else
 	{
 		v = unlockMark5();
-
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Identifier=%s got Streamstor lcok.", identifier);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 
 		D->streamstorLockIdentifer[0] = 0;
 	}
