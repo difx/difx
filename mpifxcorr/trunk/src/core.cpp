@@ -479,7 +479,7 @@ void Core::loopprocess(int threadid)
     scratchspace->dumpkurtosis = config->dumpKurtosis();
     if(nowdumpingsta != dumpingsta) {
       if (scratchspace->starecord != 0) {
-        delete scratchspace->starecord;
+        free(scratchspace->starecord);
         scratchspace->starecord = 0;
       }
       if(nowdumpingsta) {
