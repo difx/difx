@@ -40,15 +40,25 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	fprintf(out, "# COMMON SETTINGS ##!\n");
 	writeDifxLine(out, "CALC FILENAME", D->calcFile);
 	writeDifxLine(out, "CORE CONF FILENAME", D->threadsFile);
-	if(D->fracSecondStartTime > 0)
+	dsecs = (D->mjdStop - D->mjdStart)*86400.0;
+	if (dsecs<1)  // Very short job
 	{
-		secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
-	}
-	else
+	       writeDifxLineDouble(out, "EXECUTE TIME (SEC)", "%.3f", dsecs);
+
+	} 
+	else 
 	{
-		secs = (roundSeconds(D->mjdStop) - roundSeconds(D->mjdStart))*86400.0 + 0.0001;
+	       if (D->fracSecondStartTime > 0)
+	       {
+		   secs = (D->mjdStop - D->mjdStart)*86400.0 + 0.5;
+	       }
+	       else
+	       {
+		    secs = (roundSeconds(D->mjdStop) - roundSeconds(D->mjdStart))*86400.0 + 0.0001;
+	       }
+	       writeDifxLineInt(out, "EXECUTE TIME (SEC)", secs);
 	}
-	writeDifxLineInt(out, "EXECUTE TIME (SEC)", secs);
+
 	writeDifxLineInt(out, "START MJD", (int)(D->mjdStart));
 	if(D->fracSecondStartTime > 0)
 	{
@@ -64,7 +74,10 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	writeDifxLineInt(out, "ACTIVE DATASTREAMS", D->nDatastream);
 	writeDifxLineInt(out, "ACTIVE BASELINES", D->nBaseline);
 	writeDifxLineInt(out, "VIS BUFFER LENGTH", D->visBufferLength);
-	writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
+	if (D->outputFormat==DIFX)
+	  writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
+	else
+	  writeDifxLine(out, "OUTPUT FORMAT", "ASCII");
 	writeDifxLine(out, "OUTPUT FILENAME", D->outputFile);
 	fprintf(out, "\n");
 

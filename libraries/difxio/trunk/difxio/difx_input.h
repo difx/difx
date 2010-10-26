@@ -116,8 +116,14 @@ enum AntennaMountType
 	NumAntennaMounts
 };
 
-extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
+enum OutputFormatType
+{
+	DIFX = 0,
+	ASCII = 1,
+	NumOutputFormat
+};
 
+extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -445,8 +451,9 @@ typedef struct
 	int quantBits;		/* 0 if if different in configs; or 1 or 2 */
 	char polPair[4];	/* "  " if different in configs */
 	int dataBufferFactor;
-	int nDataSegments;
-	
+        int nDataSegments;
+        enum OutputFormatType outputFormat;
+
 	int nAntenna, nConfig, nRule, nFreq, nScan, nSource, nEOP, nFlag;
 	int nDatastream, nBaseline, nSpacecraft, nPulsar, nPhasedArray, nJob;
 	DifxJob		*job;
