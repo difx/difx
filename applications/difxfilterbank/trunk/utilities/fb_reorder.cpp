@@ -74,6 +74,7 @@ typedef struct {
     char *configfilename;
     float buf_time;
     int  scan_index;
+    int  n_chan_override;
     uint32_t  tcal_period_ns;
     uint32_t  int_time_ns;
 } GlobalOptions;
@@ -898,7 +899,12 @@ int set_FB_Config(FB_Config *fb_config) {
     int s,b;
     int subint_ns, max_ac_ns;
 
-    fb_config->n_chans     = difxconfig->getSTADumpChannels();
+    if (options.n_chan_override > 0) {
+        fb_config->n_chans = options.n_chan_override;
+    }
+    else {    
+        fb_config->n_chans = difxconfig->getSTADumpChannels();
+    }
     fb_config->n_streams   = difxconfig->getNumDataStreams();
     fb_config->n_bands     = difxconfig->getDNumRecordedBands(difxconfig->getScanConfigIndex(options.scan_index), 0);
 
@@ -949,7 +955,7 @@ int set_FB_Config(FB_Config *fb_config) {
 /*****************************
 ******************************/
 void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) {
-    const char *optstring = "di:o:t:T:f:P:c:s:";
+    const char *optstring = "di:o:t:T:f:P:c:s:C:";
     int result=0;
 
     if (argc ==1) print_usage();
@@ -971,6 +977,8 @@ void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) 
           case 't': options->buf_time = atof(optarg);
             break;
           case 'T': options->int_time_ns = atoi(optarg);
+            break;
+          case 'C': options->n_chan_override = atoi(optarg);
             break;
           case 'd': debug = 1;
             fprintf(fpd,"Debugging on...\n");
@@ -1004,8 +1012,9 @@ void print_usage() {
     fprintf(stderr,"-i filename\tThe name of the input file. Default: stdin, or use '-' for stdin.\n");
     fprintf(stderr,"-o filename\tThe name of the output file. Default: stdout, or use '-' for stdout.\n");
     fprintf(stderr,"-f filename\tThe name of the flags file. Default: no flags\n");
-    fprintf(stderr,"-t num     \tThe time in seconds to buffer for delayed packets. Default: %g.\n",BUF_DELAY_DEFAULT);
+    fprintf(stderr,"-t num     \tThe time in seconds to buffer for delayed packets. Default: %g.\n", BUF_DELAY_DEFAULT);
     fprintf(stderr,"-T num     \tThe desired output integration time for regridded data in ns. Default: %d\n",DEFAULT_INTTIME);
+    fprintf(stderr,"-C num     \tOverride number of channels expected in an STA packet. Default: use config object.\n");
     fprintf(stderr,"-d         \tEnable debugging. Writes to stderr.\n");
     exit(1);
 }
