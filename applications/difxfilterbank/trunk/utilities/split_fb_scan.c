@@ -79,7 +79,7 @@ void openOutfile(char *filename,int scan_id) {
         fprintf(stderr,"Unable to open output file name <%s>\n",temp);
         exit(1);
     }    
-    if (debug) fprintf(stdout,"Creating new scan file: %s\n",filename);
+    if (debug) fprintf(stdout,"Creating new scan file: %s\n",temp);
 }
 
 /*****************************
