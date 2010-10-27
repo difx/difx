@@ -1570,6 +1570,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		scan->mjdEnd = scanInterval.mjdStop;
 		scan->startSeconds = static_cast<int>((scanInterval.mjdStart - J.mjdStart)*86400.0 + 0.01);
 		scan->durSeconds = static_cast<int>(scanInterval.duration_seconds() + 0.01);
+		if (scan->durSeconds==0) scan->durSeconds = 1;
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
 		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
