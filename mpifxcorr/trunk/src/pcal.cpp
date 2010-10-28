@@ -335,6 +335,8 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
     _cfg = new pcal_config_pimpl();
     _cfg->rotatorlen = (size_t)(_fs_hz / gcd((long int)(std::abs((double)_pcaloffset_hz)), (long int)(_fs_hz)));
 
+    _cfg->rotatorlen = _N_bins * _cfg->rotatorlen / gcd ((long int)(_cfg->rotatorlen), (long int)(_N_bins));
+
     /* Prep for FFT/DFT */
     int wbufsize = 0;
     vecStatus s;
@@ -363,7 +365,7 @@ PCalExtractorShifting::PCalExtractorShifting(double bandwidth_hz, double pcal_sp
         _cfg->rotator[n].re = f32(cos(arg));
         _cfg->rotator[n].im = f32(sin(arg));
     }
-    cdebug << startl << "PcalExtractorShifting: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize << endl;
+    cdebug << startl << "PcalExtractorShifting: _Ntones=" << _N_tones << ", _N_bins=" << _N_bins << ", wbufsize=" << wbufsize  << ", rotatorlen=" << _cfg->rotatorlen << endl;
 }
 
 PCalExtractorShifting::~PCalExtractorShifting()

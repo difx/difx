@@ -815,16 +815,16 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
       pcaloutput.write(pcalstr, strlen(pcalstr));
       for(int p=0;p<maxpol;p++)
       {
+        resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
         for(int j=0;j<config->getDNumRecordedBands(currentconfigindex, i);j++)
         //we have to loop over bands as they are used to index the pcal results
         {
           if(config->getDRecordedBandPol(currentconfigindex, i, j) != polpair[p]) {
-	    //skip band if it's not the right polarisation without writing out dummy pcal
-	    continue;
+            // update resultindex by the tones we are skipping over
+            resultindex += config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j));
+	      //skip band if it's not the right polarisation without writing out dummy pcal
+	      continue;
           }
-          //Go to the matching band in the pcal results
-          resultindex = config->getCoreResultPCalOffset(currentconfigindex, i) +
-                        j*config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j));
 	  for(int t=0;t<config->getDMaxRecordedPCalTones(currentconfigindex, i);t++)
           {
             //get the default response ready in case we don't find anything
@@ -837,9 +837,10 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 	    }
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
             sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
-	    results[resultindex+t].re,
-	    results[resultindex+t].im);
+	    results[resultindex].re,
+	    results[resultindex].im);
             pcaloutput.write(pcalstr, strlen(pcalstr));
+          resultindex++;
           }
         }
       }
