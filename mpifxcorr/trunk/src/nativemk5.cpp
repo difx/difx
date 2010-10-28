@@ -489,7 +489,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		} while(scan-module.scans < module.nscans && scan->duration < 0.1);
 		if(scan-module.scans >= module.nscans)
 		{
-			cwarn << startl << "No more data on module [" << mpiid << "]" << endl;
+			cwarn << startl << "No more data for this job on this module" << endl;
 			scan = 0;
 			dataremaining = false;
 			keepreading = false;
@@ -582,6 +582,17 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		cinfo << startl << "Scan info. start = " << scan->start << " off = " << scan->frameoffset << " size = " << scan->framebytes << endl;
 	}
+
+        if(readpointer == -1)
+        {
+	  cwarn << startl << "No data for this job on this module" << endl;
+	  scan = 0;
+	  dataremaining = false;
+	  keepreading = false;
+	  nomoredata = true;
+	  sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+	  return;
+        }
 
 	sendMark5Status(MARK5_STATE_GOTDIR, scan-module.scans+1, readpointer, scan->mjd+(scan->sec+scanns*1.e-9)/86400.0, 0.0);
 
