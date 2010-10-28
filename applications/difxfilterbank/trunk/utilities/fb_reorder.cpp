@@ -219,7 +219,9 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
     int64_t offset_periods;
     int res;
 
-    if(time_offset_ns*1e-9 < model->getScanDuration(options.scan_index)) {
+    // check for valid time range. Need extra half second on the end because sometimes the geotime adjusted
+    // time stamps go a little over the nominated scan length
+    if(time_offset_ns*1e-9 < model->getScanDuration(options.scan_index)+0.5) {
 
       // apply delay
       res = model->calculateDelayInterpolator(options.scan_index, time_offset_ns*1e-9, 0.0, 1, antennaindex, 0, 0, &delay);
