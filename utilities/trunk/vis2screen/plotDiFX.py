@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import sys, os, struct, time, pylab, math
+import sys, os, struct, time, pylab, math, numpy
 import parseDiFX
 from optparse import OptionParser
 from numpy import fft
@@ -12,12 +12,14 @@ parser.add_option("-f", "--freq", dest="freq", metavar="targetfreq", default="-1
 parser.add_option("-b", "--baseline", dest="baseline", metavar="targetbaseline", default="-1",
                   help="Only display visibilities from this baseline num")
 parser.add_option("-c", "--maxchannels", dest="maxchannels", metavar="MAXCHANNELS",
-                  default="16384",
+                  default="33000",
                   help="The length of the array that will be allocated to hold vis results")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
+parser.add_option("--toscreen", dest="toscreen", default=False, action="store_true",
+                  help="Plot to the screen, otherwise to png files")
 (options, args) = parser.parse_args()
 
 if len(args) < 1:
@@ -30,12 +32,17 @@ targetfreq = int(options.freq)
 maxchannels    = int(options.maxchannels)
 verbose        = options.verbose
 inputfile      = options.inputfile
+toscreen       = options.toscreen
 
 if inputfile == "":
     parser.error("You must supply an input file!")
 
 (numfreqs, freqs) = parseDiFX.get_freqtable_info(inputfile)
-if numfreqs == 0:
+(numtelescopes, telescopes) = parseDiFX.get_telescopetable_info(inputfile)
+(numdatastreams, datastreams) = parseDiFX.get_datastreamtable_info(inputfile)
+(numbaselines, baselines) = parseDiFX.get_baselinetable_info(inputfile)
+
+if numfreqs == 0 or numtelescopes == 0 or numdatastreams == 0 or numbaselines == 0:
     parser.error("Couldn't parse input file " + inputfile + " correctly")
 
 chans = []
@@ -87,6 +94,8 @@ for i in range(numfiles):
 while not len(nextheader[0]) == 0:
     print "Looping..."
     for i in range(numfiles):
+        snr = 0
+        delayoffsetus = 0
         if len(nextheader[i]) == 0:
             nextheader[0] = [] #Will cause an exit
             break
@@ -123,16 +132,40 @@ while not len(nextheader[0]) == 0:
                         break
             if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
                (targetfreq < 0 or freqindex[0] == targetfreq):
+                maxlag = max(lagamp[i])
+                maxindex = lagamp[i].index(maxlag)
+                delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth*2)
                 pylab.subplot(311)
                 pylab.plot(chans[:nchan[i]], amp[i][:nchan[i]], linestyles[i])
                 pylab.subplot(312)
                 pylab.plot(chans[:nchan[i]], phase[i][:nchan[i]], linestyles[i])
                 pylab.subplot(313)
                 pylab.plot(chans[:nchan[i]], lagamp[i][:nchan[i]], linestyles[i])
+                lagamp[i][maxindex] = 0
+                if maxindex > 0:
+                    lagamp[i][maxindex-1] = 0
+                if maxindex < len(lagamp)-1:
+                    lagamp[i][maxindex+1] = 0
+                rms = numpy.std(lagamp[i])
+                snr = maxlag/rms
+                print snr
+                print maxlag
     if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
        (targetfreq < 0 or freqindex[0] == targetfreq):
         pylab.subplot(311)
-        titlestr = "Baseline " + str(baseline[0]) + ", Freq " + str(freqindex[0]) + ", pol " + polpair[0] + ", MJD " + str(mjd[0]+seconds[0]/86400.0)
+        ant1index = baseline[0] / 256 - 1
+        ant2index = baseline[0] % 256 - 1
+        ant1name  = telescopes[ant1index].name
+        ant2name  = telescopes[ant2index].name
+        lowfreq   = freqs[freqindex[0]].freq
+        hifreq    = freqs[freqindex[0]].freq + freqs[freqindex[0]].bandwidth
+        print seconds[0]
+        hour      = int(seconds[0]/3600)
+        minute    = int(seconds[0]/60 - 60*hour)
+        second    = int(seconds[0] - (3600*hour + 60*minute))
+        mjdstring = "%d %02d:%02d:%02d" % (mjd[0], hour, minute, second)
+        titlestr = "Baseline %s-%s, Freq %.2f-%.2f, pol %s, date %s" % \
+                   (ant1name, ant2name, lowfreq, hifreq, polpair[0], mjdstring)
         pylab.title(titlestr)
         pylab.ylabel("Amplitude")
         pylab.subplot(312)
@@ -140,7 +173,12 @@ while not len(nextheader[0]) == 0:
         pylab.subplot(313)
         pylab.ylabel("Lag")
         pylab.xlabel("Channel")
-        pylab.show()
+        pylab.figtext(0.0,0.0,"Fringe S/N %0.2f @ offset %0.2f us (%s)" % \
+                      (snr, delayoffsetus, "raw S/N is overestimated - corrected value ~%0.2f" % ((snr-3)/2)))
+        if toscreen:
+            pylab.show()
+        else:
+            pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
     for i in range(numfiles):
         nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
     
