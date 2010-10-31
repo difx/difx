@@ -163,7 +163,6 @@ def get_baselinetable_info(inputfile):
     val, lines = nextinputline(lines[at+1:])
     numbaselines = int(val)
     baselines = []
-    lines = lines[1:]
     for i in range(numbaselines):
         baselines.append(Baseline())
         val, lines = nextinputline(lines[1:])
@@ -173,8 +172,8 @@ def get_baselinetable_info(inputfile):
         val, lines = nextinputline(lines[1:])
         baselines[-1].nfreq = int(val)
         baselines[-1].freqpols = []
-        baselines[-1].dsabandindex
-        baselines[-1].dsbbandindex
+        baselines[-1].dsabandindex = []
+        baselines[-1].dsbbandindex = []
         for j in range(baselines[-1].nfreq):
             baselines[-1].dsabandindex.append([])
             baselines[-1].dsbbandindex.append([])
@@ -250,7 +249,7 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].zoomfreqindex.append(int(val))
             val, lines = nextinputline(lines[1:])
-            datastreams[-1].zoonfreqpols.append(int(val))
+            datastreams[-1].zoomfreqpols.append(int(val))
             datastreams[-1].nzoomband  += datastreams[-1].zoomfreqpols[-1]
         datastreams[-1].zoombandpol = []
         datastreams[-1].zoombandindex = []
