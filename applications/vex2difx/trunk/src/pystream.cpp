@@ -251,6 +251,7 @@ int pystream::writeDbeInit(const VexData *V)
 		*this << "dbe0 = RDBE(0, 'pfb')" << endl;
 		*this << "dbe0.setALC(1)" << endl;
 		*this << "dbe0.setFormat('Mark5B')" << endl;
+                *this << "dbe0.setPSNMode(0)" << endl;
 		*this << "dbe0.setPacket(0, 0, 40, 5008)" << endl;
 		*this << "subarray.setDBE(dbe0)" << endl;
 		*this << endl;
