@@ -1,2 +1,2 @@
-SUBDIRS = src utilities transient_daemon
+SUBDIRS = src utilities transient_daemon transient_wrapper
 
