@@ -83,20 +83,14 @@ int unlockStreamstor(Mk5Daemon *D, const char *identifier)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Identifier=%s trying to unlock Streamstor.  Identifier=%s maintains control.", identifier, D->streamstorLockIdentifer);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 		}
-		else
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Some other unknown process maintains the lock.");
-		}
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
-	else
-	{
-		v = unlockMark5();
 
-		D->streamstorLockIdentifer[0] = 0;
-	}
+	v = unlockMark5();
+
+	D->streamstorLockIdentifer[0] = 0;
+	
 
 	return v;
 }
