@@ -1,0 +1,60 @@
+From wbrisken@parallax Thu Nov 11 14:56:12 2010
+Date: Thu, 11 Nov 2010 14:56:11 -0700 (MST)
+From: Walter Brisken <wbrisken@parallax>
+To: V-FASTER exploder <cira-vfastr@lists.curtin.edu.au>
+Subject: New architecture for transient capture
+
+
+Hi folks,
+
+Its a holiday here so I'm doing something fun: trying to figure out how to
+properly implement the code to capture baseband data for interesting events.
+My initial concept had a fatal flaw in that information needed was collected
+by the wrong fork() and digging out of that situation would have involved
+all sorts of complicated locks and so on.  I think I have a better concept
+now.  I'll try to describe that here.
+
+The general framework that we have to live with is as follows.  The operator
+GUI sends a message to the software correlator head node "mk5daemon" process
+specifying the job to start and the list of processors and mark5 units to
+use.  A fork() call within mk5daemon allows a change of userid from which
+the whole process is started.  There are two critical end of job messages.
+The first, DIFX_STATE_DONE, is sent from mpifxcorr itself indicating that
+the job completed properly.  The second, DIFX_STATE_MPIDONE, is emitted by
+the fork()ed mk5daemon process that started the correlator, indicating to
+the gui that the next job can be started.  The transient copy has to happen
+between these to function calls.
+
+My new concept calls for mpifxcorr itself to be called from yet another
+wrapper program that first sets up a multicast receiver to listens for and
+prioritizes transient event messages and then spawns mpifxcorr.  Once that
+process exits, if DIFX_STATE_DONE was received (rather than receiving
+DIFX_STATE_ABORTING or nothing at all) the copying can begin.  Since each
+Mark5 unit will be running its own wrapper program, the copying will
+automatically happen in parallel, and each unit will copy as much data as it
+can within the predetermined time window (typically a couple % of the job
+run-time; perhaps we can link this to the database to see how big the queue
+is and dynamically change the maximum copy duration...).  Once the time
+limit, or copy queue, has run out, the wrapper program will exit and
+mk5daemon will finally emit DIFX_STATE_MPIDONE.
+
+There are several additional benefits to this.  One is that each version of
+difx can have its own independent version of this wrapper program. Second,
+each wrapper program only has to be responsible for one job and one Mark5
+unit.
+
+There is one pitfall to this whole design that was present even in the
+earlier design.  This transient copy will only work for data residing on a
+Mark5 unit, not the case where baseband data is stored on a disk file. This
+will mean that testing will be slightly hindered, but I don't see that as a
+big draw back.  With some work a different copying algorithm could be used
+that could use disk files.  Unlike the initial design, the full information
+about the job can be accessed by the wrapper program that would allow
+non-mark5 copying to be contemplated.
+
+I hope today to at least get the infrastructure in place to use the wrapper
+program and I'll see how far I get before sundown.
+
+	Cheers,
+
+	Walter

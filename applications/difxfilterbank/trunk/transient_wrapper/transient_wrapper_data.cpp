@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "transient_wrapper_data.h"
 
 TransientWrapperData *newTransientWrapperData()
@@ -29,6 +30,8 @@ void deleteTransientWrapperData(TransientWrapperData *T)
 
 void printTransientWrapperData(const TransientWrapperData *T)
 {
+	int e;
+
 	printf("TransientWrapperData [%p]\n", T);
 	if(T)
 	{
@@ -39,5 +42,76 @@ void printTransientWrapperData(const TransientWrapperData *T)
 		printf("  verbose = %d\n", T->verbose);
 		printf("  rank = %d\n", T->rank);
 		printf("  doCopy = %d\n", T->doCopy);
+		printf("  executeTime = %d\n", T->executeTime);
+		printf("  nTransient = %d\n", T->nTransient);
+		printf("  nEvent = %d\n", T->nEvent);
+		for(e = 0; e < T->nEvent; e++)
+		{
+			printf("    event[%d] = [%12.6f,%12.6f], %f\n", e, 
+				T->event[e].startMJD, T->event[e].stopMJD,
+				T->event[e].priority);
+		}
 	}
+}
+
+/* Note this sorts on priority only and puts the _highest_ priority events first */
+static int eventCompare(const void *p1, const void *p2)
+{
+	const TransientEvent *e1, *e2;
+
+	e1 = (TransientEvent *)p1;
+	e2 = (TransientEvent *)p2;
+
+	if(e1->priority > e2->priority)
+	{
+		return -1;
+	}
+	else if(e1->priority == e2->priority)
+	{
+		return 0;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
+void sortEvents(TransientWrapperData *T)
+{
+	if(T->nEvent > 1)
+	{
+		qsort(T->event, T->nEvent, sizeof(TransientEvent), eventCompare);
+
+		/* trim down list to maximum allowed if needed */
+		if(T->nEvent > MAX_EVENTS)
+		{
+			T->nEvent = MAX_EVENTS;
+		}
+	}
+}
+
+void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+
+	T->nTransient++;
+
+	if(transient->startMJD > T->D->mjdStop || transient->stopMJD < T->D->mjdStart)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH,
+			"Transient received out of job time range ([%12.6f,%12.6f] not in [%12.6f,%12.6f])",
+			transient->startMJD, transient->stopMJD,
+			T->D->mjdStart, T->D->mjdStop);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+	}
+
+	if(T->nEvent >= MAX_EVENTS + EXTRA_EVENTS)
+	{
+		sortEvents(T);
+	}
+
+	T->event[T->nEvent].startMJD = transient->startMJD;
+	T->event[T->nEvent].stopMJD  = transient->stopMJD;
+	T->event[T->nEvent].priority = transient->priority;
+	T->nEvent++;
 }

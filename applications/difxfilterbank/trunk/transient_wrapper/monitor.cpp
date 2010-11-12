@@ -22,12 +22,18 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	const DifxMessageTransient *transient;
-	int v;
 
 	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH))
 	{
 		transient = &G->body.transient;
-
+		if(T->verbose > 0)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
+				"Adding transient [%12.6f,%12.6f] with prioritiy %f",
+				transient->startMJD, transient->stopMJD,
+				transient->priority);
+		}
+		addEvent(T, transient);
 	}
 }
 
@@ -83,5 +89,6 @@ void stopMulticastMonitor(TransientWrapperData *T)
 {
 	T->monitorThreadDie = 1;
 	pthread_join(T->monitorThread, 0);
+	sortEvents(T);
 }
 

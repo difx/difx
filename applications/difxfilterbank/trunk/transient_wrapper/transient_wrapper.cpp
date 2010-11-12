@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "transient_wrapper_data.h"
 
 const char program[] = "transient_wrapper";
@@ -21,6 +22,7 @@ int execute(int argc, char **argv, TransientWrapperData *T)
 	char command[MaxCommandLength+1];
 	int a, rv;
 	int start = 1;
+	time_t t1, t2;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -52,9 +54,11 @@ int execute(int argc, char **argv, TransientWrapperData *T)
 		printf("Executing: %s\n", command);
 	}
 
+	t1 = time(0);
 	rv = system(command);
+	t2 = time(0);
 
-	return rv;
+	return t2-t1;
 }
 
 int parsecommandline(int argc, char **argv, TransientWrapperData *T)
@@ -243,13 +247,13 @@ int main(int argc, char **argv)
 		startMulticastMonitor(T);
 	}
 
-	execute(argc, argv, T);
+	T->executeTime = execute(argc, argv, T);
 
 	if(T->doCopy)
 	{
 		stopMulticastMonitor(T);
 
-		if(T->difxState == DIFX_STATE_DONE)
+		if(T->difxState == DIFX_STATE_DONE && T->executeTime > 3)
 		{
 			/* Here is where we do the copying! */
 		}
