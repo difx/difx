@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <ctime>
 #include <unistd.h>
 #include <pwd.h>
 #include <sys/statvfs.h>
@@ -162,7 +161,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	const char *difxProgram;
 	int returnValue;
 	char altDifxProgram[64];
-	time_t t1, t2;
 	const char *user;
 
 	if(!G)
@@ -491,37 +489,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* here is where the spawning of mpifxcorr happens... */
 	if(childPid == 0)
 	{
-#if 0
-		// Avoid the period when modules are being checked
-		int tm = time(0) % D->loadMonInterval;
-		if(tm == D->loadMonInterval/2 - 2)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Time=%d  sleeping 3 seconds to avoid collision", (int)time(0));
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			sleep(3);
-		}
-		else if(tm == D->loadMonInterval/2 - 1)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Time=%d  sleeping 2 seconds to avoid collision", (int)time(0));
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			sleep(2);
-		}
-		else if(tm == D->loadMonInterval/2)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Time=%d  sleeping 1 second to avoid collision", (int)time(0));
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			sleep(1);
-		}
-		else
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Time=%d  no sleeping to be done", (int)time(0));
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-		}
-#endif
 		if(S->force && outputExists)
 		{
 			snprintf(command, MAX_COMMAND_SIZE, 
@@ -553,31 +520,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, 
 			message);
 
-		/* register this job with the Transient Event Monitor */
-//		printf("EventQueue *Q = D->eventManager.startJob(%s);\n", jobName);
-//		D->eventManager.print();
-//		EventQueue *Q = D->eventManager.startJob(jobName);
-//		for(int i = 0; i < S->nDatastream; i++)
-//		{
-//			printf("Q->addMark5Unit(%s)\n", S->datastreamNode[i]);
-//			Q->addMark5Unit(S->datastreamNode[i]);
-//		}
-//		printf("Q->setUser(%s)\n", user);
-//		Q->setUser(user);
-//		D->eventManager.print();
-		/* cause mpifxcorr to run! */
-
-//		printf("Starting correlation\n");
-		t1 = time(0);
 		returnValue = Mk5Daemon_system(D, command, 1);
-		t2 = time(0);
-
-		/* deregister this job with the Transient Event Monitor after 
-		 * performing any needed data copying
-		 */
-//		printf("D->eventManager.stopJob(jobName, (t2-t1)/100.0);\n");
-//		D->eventManager.stopJob(jobName, (t2-t1)/100.0);
-//		printf("All done\n");
 
 		/* FIXME -- make use of returnValue  */
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");

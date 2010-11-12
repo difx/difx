@@ -19,9 +19,7 @@ mk5daemon_SOURCES = \
 	proc.h \
 	versions.cpp \
 	mk5daemon.cpp \
-	mk5daemon.h \
-	transient.cpp \
-	transient.h
+	mk5daemon.h 
 
 testtransient_SOURCES = \
 	testtransient.cpp \

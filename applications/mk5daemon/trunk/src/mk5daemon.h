@@ -33,7 +33,6 @@
 #include <time.h>
 #include <difxmessage.h>
 #include "logger.h"
-#include "transient.h"
 
 extern const char difxUser[];
 
@@ -74,7 +73,6 @@ typedef struct
 	long long lastRX, lastTX;
 	int idleCount;
 	int nXLROpen;
-	EventManager eventManager;	/* for tracking transient events */
 	int skipGetModule;
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 } Mk5Daemon;
