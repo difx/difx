@@ -1,10 +1,12 @@
+#include <stdio.h>
 #include "transient_wrapper_data.h"
 
 static void handleDifxStatus(TransientWrapperData *T, const DifxMessageGeneric *G)
 {
 	const DifxMessageStatus *status;
 
-	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH))
+
+	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH) == 0)
 	{
 		status = &G->body.status;
 
@@ -23,9 +25,10 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 	char message[DIFX_MESSAGE_LENGTH];
 	const DifxMessageTransient *transient;
 
-	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH))
+	transient = &G->body.transient;
+
+	if(strncmp(transient->jobId, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH) == 0)
 	{
-		transient = &G->body.transient;
 		if(T->verbose > 0)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
@@ -34,6 +37,10 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 				transient->priority);
 		}
 		addEvent(T, transient);
+	}
+	else
+	{
+		printf("transient for jobId <%s> ignored (looking for <%s>)\n", transient->jobId, T->identifier);
 	}
 }
 

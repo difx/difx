@@ -37,13 +37,13 @@ void printTransientWrapperData(const TransientWrapperData *T)
 	printf("TransientWrapperData [%p]\n", T);
 	if(T)
 	{
+		printf("  identifier = %s\n", T->identifier);
+		printf("  rank = %d\n", T->rank);
 		printf("  DifxState = %s [%d]\n", DifxStateStrings[T->difxState], T->difxState);
 		printf("  outputPath = %s\n", T->outputPath);
 		printf("  filePrefix = %s\n", T->filePrefix);
-		printf("  identifier = %s\n", T->identifier);
 		printf("  monitorThreadDie = %d\n", T->monitorThreadDie);
 		printf("  verbose = %d\n", T->verbose);
-		printf("  rank = %d\n", T->rank);
 		printf("  doCopy = %d\n", T->doCopy);
 		printf("  executeTime = %d\n", T->executeTime);
 		printf("  maxCopyOverhead = %f\n", T->maxCopyOverhead);
@@ -100,24 +100,26 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 
 	T->nTransient++;
 
-	if(transient->startMJD > T->D->mjdStop || transient->stopMJD < T->D->mjdStart)
+	if(transient->startMJD > T->D->job->jobStop || transient->stopMJD < T->D->job->jobStart)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Transient received out of job time range ([%12.6f,%12.6f] not in [%12.6f,%12.6f])",
 			transient->startMJD, transient->stopMJD,
-			T->D->mjdStart, T->D->mjdStop);
+			T->D->job->jobStart, T->D->job->jobStop);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
-
-	if(T->nEvent >= MAX_EVENTS + EXTRA_EVENTS)
+	else
 	{
-		sortEvents(T);
-	}
+		if(T->nEvent >= MAX_EVENTS + EXTRA_EVENTS)
+		{
+			sortEvents(T);
+		}
 
-	T->event[T->nEvent].startMJD = transient->startMJD;
-	T->event[T->nEvent].stopMJD  = transient->stopMJD;
-	T->event[T->nEvent].priority = transient->priority;
-	T->nEvent++;
+		T->event[T->nEvent].startMJD = transient->startMJD;
+		T->event[T->nEvent].stopMJD  = transient->stopMJD;
+		T->event[T->nEvent].priority = transient->priority;
+		T->nEvent++;
+	}
 }
 
 int copyBasebandData(const TransientWrapperData *T)

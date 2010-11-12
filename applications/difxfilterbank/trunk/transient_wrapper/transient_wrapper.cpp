@@ -245,14 +245,17 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	printTransientWrapperData(T);
+	if(T->verbose > 0)
+	{
+		printTransientWrapperData(T);
+	}
 
 	if(T->verbose > 1)
 	{
 		printDifxInput(T->D);
 	}
 
-	if(T->doCopy)
+	if(T->doCopy > 0)
 	{
 		startMulticastMonitor(T);
 	}
@@ -269,7 +272,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	printTransientWrapperData(T);
+	if(T->verbose > 0)
+	{
+		printTransientWrapperData(T);
+	}
 
 	deleteTransientWrapperData(T);
 
