@@ -1,24 +1,21 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <difxmessage.h>
-#include <difxio.h>
+#include "transient_wrapper_data.h"
 
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.1";
 const char verdate[] = "2010 Nov. 11";
 
-int verbose = 0;
-
 int usage(const char *pgm)
 {
-	printf("%s ver. %s  %s  %s\n\n", program, version, verdate, author);
+	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 
 	return 0;
 }
 
-int execute(int argc, char **argv)
+int execute(int argc, char **argv, TransientWrapperData *T)
 {
 	const unsigned int MaxCommandLength = 1023;
 	char command[MaxCommandLength+1];
@@ -50,7 +47,7 @@ int execute(int argc, char **argv)
 		return -1;
 	}
 
-	if(verbose)
+	if(T->verbose)
 	{
 		printf("Executing: %s\n", command);
 	}
@@ -60,7 +57,7 @@ int execute(int argc, char **argv)
 	return rv;
 }
 
-int parsecommandline(int argc, char **argv)
+int parsecommandline(int argc, char **argv, TransientWrapperData *T)
 {
 	int a;
 	int stop = 0;
@@ -80,12 +77,12 @@ int parsecommandline(int argc, char **argv)
 			if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				T->verbose++;
 			}
 			else if(strcmp(argv[a], "-q") == 0 ||
 			   strcmp(argv[a], "--quite") == 0)
 			{
-				verbose--;
+				T->verbose--;
 			}
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
@@ -144,15 +141,16 @@ char *stripInputFile(const char *inputFile)
 	return filePrefix;
 }
 
-int main(int argc, char **argv)
+TransientWrapperData *initialize(int argc, char **argv)
 {
+	TransientWrapperData *T;
 	const char *inputFile, *pgm;
-	char *filePrefix;
 	char message[DIFX_MESSAGE_LENGTH];
 	int index;
-	DifxInput *D;
-	
-	index = parsecommandline(argc, argv);
+
+	T = newTransientWrapperData();
+
+	index = parsecommandline(argc, argv, T);
 
 	pgm = argv[index+1];
 	inputFile = argv[index+2];
@@ -165,47 +163,67 @@ int main(int argc, char **argv)
 		difxMessageSendDifxAlert("Malformed command line", DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
 
+		deleteTransientWrapperData(T);
+
 		return 0;
 	}
 
-	printf("Verbose = %d  pgm = %s  inputFile = %s\n", verbose, program, inputFile);
+	printf("Verbose = %d  pgm = %s  inputFile = %s\n", T->verbose, program, inputFile);
 
-	filePrefix = stripInputFile(inputFile);
-	if(!filePrefix)
+	T->filePrefix = stripInputFile(inputFile);
+	if(!T->filePrefix)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Malformed .input file name: %s", inputFile);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
 
+		deleteTransientWrapperData(T);
+
 		return 0;
 	}
 
-	D = loadDifxInput(filePrefix);
-	if(!D)
+	T->D = loadDifxInput(T->filePrefix);
+	if(!T->D)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Problem opening DiFX job %s", filePrefix);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Problem opening DiFX job %s", T->filePrefix);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
 
+		deleteTransientWrapperData(T);
+
 		return 0;
 	}
 
-	if(verbose > 1)
+	if(T->verbose > 1)
 	{
-		printDifxInput(D);
+		printDifxInput(T->D);
 	}
 
-	execute(argc, argv);
+	return T;
+}
 
-	if(D)
+int main(int argc, char **argv)
+{
+	TransientWrapperData *T;
+	
+	T = initialize(argc, argv);
+	if(T == 0)
 	{
-		deleteDifxInput(D);
+		return 0;
 	}
 
-	if(filePrefix)
+	startMulticastMonitor(T);
+
+	execute(argc, argv, T);
+
+	stopMulticastMonitor(T);
+
+	if(T->difxState == DIFX_STATE_DONE)
 	{
-		free(filePrefix);
+		/* Here is where we do the copying! */
 	}
+
+	deleteTransientWrapperData(T);
 
 	return 0;
 }
