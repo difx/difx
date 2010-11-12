@@ -9,7 +9,7 @@ const char author[] = "Walter Brisken";
 const char version[] = "0.1";
 const char verdate[] = "2010 Nov. 11";
 
-const char defaultOutputPath[] = "/export/home/mark5";
+const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
 
 int usage(const char *pgm)
 {

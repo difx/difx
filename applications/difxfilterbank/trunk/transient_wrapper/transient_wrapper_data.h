@@ -28,6 +28,7 @@ typedef struct
 	int doCopy;
 	double maxCopyOverhead;
 	int executeTime;
+	int nMerged;
 	int nTransient;		/* count of total number of transient messages received */
 	int nEvent;		/* count of number of events in memory (<= nTransient) */
 	TransientEvent event[MAX_EVENTS+EXTRA_EVENTS];
