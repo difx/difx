@@ -1000,7 +1000,7 @@ int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 
 	v = snprintf(message, DIFX_MESSAGE_LENGTH,
 		difxMessageXMLFormat,
-		DifxMessageTypeStrings[DIFX_MESSAGE_PARAMETER],
+		DifxMessageTypeStrings[DIFX_MESSAGE_TRANSIENT],
 		difxMessageSequenceNumber++, body);
 	
 	if(v >= DIFX_MESSAGE_LENGTH)
