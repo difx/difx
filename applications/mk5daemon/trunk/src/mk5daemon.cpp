@@ -120,11 +120,11 @@ Mk5Daemon *newMk5Daemon(const char *logPath)
 int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
 {
 	int v;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 
 	if(verbose)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s\n", command);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 	
 		Logger_logData(D->log, message);
 	}
@@ -136,7 +136,7 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose)
 #if 0
 	if(v == -1)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"system() failed running: %s\n", command);
 
 		Logger_logData(D->log, message);
@@ -194,7 +194,7 @@ int running(const char *name)
 int checkStreamstor(Mk5Daemon *D, time_t t)
 {
 	int v, busy;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 
 	if(!D->isMk5)
 	{
@@ -268,7 +268,7 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		pthread_mutex_lock(&D->processLock);
 		if(!running("mpifxcorr"))
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Detected premature end of mpifxcorr at %s\n",
 				ctime(&t));
 			Logger_logData(D->log, message);
@@ -325,7 +325,7 @@ int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
 	time_t t, lastTime, firstTime;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	char str[16];
 	int isHeadNode = 0;
 	int i, ok=0;
@@ -419,7 +419,7 @@ int main(int argc, char **argv)
 	D = newMk5Daemon(logPath);
 	D->isHeadNode = isHeadNode;
 
-	snprintf(message, MAX_MESSAGE_SIZE, "Starting %s ver. %s\n", 
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", 
 		program, version);
 	Logger_logData(D->log, message);
 
@@ -477,7 +477,7 @@ int main(int argc, char **argv)
 		usleep(100000);
 	}
 
-	snprintf(message, MAX_MESSAGE_SIZE, "Stopping %s ver. %s\n", 
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Stopping %s ver. %s\n", 
 		program, version);
 	Logger_logData(D->log, message);
 

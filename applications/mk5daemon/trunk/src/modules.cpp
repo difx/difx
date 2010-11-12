@@ -86,7 +86,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
 	const char id[] = "GetModules";
 	int v;
@@ -103,7 +103,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"ERROR: XLR_get_modules: "
 			"Cannot open streamstor card.  N=%d "
 			"Error=%u (%s)\n",
@@ -125,14 +125,14 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		{
 			/* this means no modules loaded */
 			vsna[0] = vsnb[0] = 0;
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"XLR VSNs: <%s> <%s> N=%d\n",
 				vsna, vsnb, D->nXLROpen);
 		}
 		else
 		{
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: "
 				"Cannot set SkipCheckDir.  N=%d "
 				"Error=%u (%s)\n",
@@ -155,7 +155,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: XLR_get_modules: "
 			"BANK_B XLRGetBankStatus failed.  N=%d "
 			"Error=%u (%s)\n",
@@ -181,7 +181,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"ERROR: XLR_get_modules: "
 			"BANK_A XLRGetBankStatus failed.  N=%d "
 			"Error=%u (%s)\n",
@@ -204,7 +204,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 	unlockStreamstor(D, id);
 
-	snprintf(message, MAX_MESSAGE_SIZE, "XLR VSNs: <%s> <%s> N=%d\n",
+	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> <%s> N=%d\n",
 		vsna, vsnb, D->nXLROpen);
 	Logger_logData(D->log, message);
 
@@ -216,7 +216,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 	int n;
 	char vsnA[16], vsnB[16];
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 
 	if(!D->isMk5)
 	{
@@ -253,7 +253,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	{
 		if(legalVSN(D->vsnA))
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module %s removed from bank A", D->vsnA);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
@@ -264,7 +264,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(legalVSN(vsnA))
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module %s inserted into bank A", vsnA);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
@@ -272,7 +272,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(strcmp(D->vsnA, "illegalA") != 0)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module with illegal VSN inserted into bank A");
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_ERROR);
@@ -283,7 +283,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	{
 		if(legalVSN(D->vsnB))
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module %s removed from bank B", D->vsnB);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
@@ -294,7 +294,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(legalVSN(vsnB))
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module %s inserted into bank B", vsnB);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
@@ -302,7 +302,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		}
 		else if(strcmp(D->vsnB, "illegalB") != 0)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module with illegal VSN inserted into bank B");
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_ERROR);
@@ -323,7 +323,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
 	int bank;
 	const char id[] = "BankPower";
@@ -341,7 +341,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 	{
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"ERROR: XLR_disc_power: "
 			"Cannot open streamstor card.  N=%d "
 			"Error=%u (%s)\n",
@@ -367,7 +367,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		}
 		else
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"XLR_disc_power: illegal args: "
 				"bank=%c, on=%d\n", banks[i], on);
 			Logger_logData(D->log, message);
@@ -385,7 +385,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		{
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"XLR_disc_power: error for "
 				"bank=%c on=%d Error=%u (%s)\n",
 				banks[i], on, xlrError, xlrErrorStr);

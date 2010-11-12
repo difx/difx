@@ -39,7 +39,7 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 	long long d;
 	float l1, l5, l15;
 	int memused, memtot;
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	int v;
 
 	/* LOAD */
@@ -85,7 +85,7 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd)
 	D->load.totalMemory = memtot;
 	D->load.usedMemory = memused;
 
-	snprintf(message, MAX_MESSAGE_SIZE,
+	snprintf(message, DIFX_MESSAGE_LENGTH,
 		"LOAD: %13.7f %4.2f %d %d %5.3f %5.3f  %d  %d\n", mjd,
 		D->load.cpuLoad, D->load.usedMemory, D->load.totalMemory,
 		D->load.netRXRate*8.0e-6, D->load.netTXRate*8.0e-6, D->process, D->processDone);

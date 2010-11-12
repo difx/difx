@@ -81,7 +81,7 @@ static int getUse(const Uses *U, const char *hostname)
 static int checkDiskFree(const char *path, long long minFree)
 {
 	struct statvfs fiData;
-	char message[MAX_MESSAGE_SIZE] = "";
+	char message[DIFX_MESSAGE_LENGTH] = "";
 	int v;
 	long long freeSpace;
 	
@@ -92,20 +92,20 @@ static int checkDiskFree(const char *path, long long minFree)
 		freeSpace = fiData.f_bsize * fiData.f_bavail;
 		if(freeSpace < minFree)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"%s has less than %lld bytes free.  mpifxcorr will likely crash!", 
 				path, minFree);
 		}
 		else if(fiData.f_ffree < 3)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"%s has no free inodes.  mpifxcorr will likely crash!", 
 				path);
 		}
 	}
 	else
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"statvfs failed when accessing directory %s : it seems not to exist!", 
 			path);
 	}
@@ -150,7 +150,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	char filebase[DIFX_MESSAGE_FILENAME_LENGTH];
 	char filename[DIFX_MESSAGE_FILENAME_LENGTH];
 	char destdir[DIFX_MESSAGE_FILENAME_LENGTH];
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	char command[MAX_COMMAND_SIZE];
 	FILE *out;
 	Uses *uses;
@@ -215,14 +215,14 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* Check to make sure the input file exists */
 	if(access(S->inputFilename, R_OK) != 0)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Input file %s not found -- cannot correlate it!",
 			S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		return;
 	}
 
-	snprintf(message, MAX_MESSAGE_SIZE,
+	snprintf(message, DIFX_MESSAGE_LENGTH,
 		"DiFX version %s to be started", S->difxVersion);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
@@ -240,7 +240,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	returnValue = checkDiskFree(destdir, 100000000);
 	if(returnValue < 0)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"The output directory %s is full, mpifxcorr will not be started.", 
 			destdir);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
@@ -284,12 +284,12 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	if(access(S->inputFilename, F_OK) != 0)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Input file %s does not exist.  Aborting correlation.",
 			S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Mk5Daemon_startMpifxcorr: input file %s does not exist\n", 
 			S->inputFilename);
 		Logger_logData(D->log, message);
@@ -305,12 +305,12 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	
 	if(outputExists && !S->force)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Output file %s exists.  Aborting correlation.", 
 			filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Mk5Daemon_startMpifxcorr: output file %s exists\n", 
 			filename);
 		Logger_logData(D->log, message);
@@ -339,11 +339,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	out = fopen(filename, "w");
 	if(!out)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Cannot open %s for write", filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
-		snprintf(message, MAX_MESSAGE_SIZE,
+		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"Mk5Daemon_startMpifxcorr: cannot open %s for write\n", 
 			filename);
 		Logger_logData(D->log, message);
@@ -394,11 +394,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	out = fopen(filename, "w");
 	if(!out)
 	{
-		snprintf(message, MAX_MESSAGE_SIZE, "Cannot open %s for write", 
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", 
 			filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Mk5Daemon_startMpifxcorr: cannot open %s for write\n", 
 			filename);
 
@@ -459,7 +459,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		difxProgram = S->difxProgram;
 
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Using specified Difx Program: %s", difxProgram);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
@@ -467,7 +467,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		snprintf(altDifxProgram, 63, "runmpifxcorr.%s", S->difxVersion);
 		difxProgram = altDifxProgram;
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Using Difx Program wrapper: %s", difxProgram);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
@@ -475,7 +475,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		difxProgram = defaultDifxProgram;
 
-		snprintf(message, MAX_MESSAGE_SIZE, 
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
 			"Warning: using default Difx Program: %s", difxProgram);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
@@ -496,28 +496,28 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		int tm = time(0) % D->loadMonInterval;
 		if(tm == D->loadMonInterval/2 - 2)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"Time=%d  sleeping 3 seconds to avoid collision", (int)time(0));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			sleep(3);
 		}
 		else if(tm == D->loadMonInterval/2 - 1)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"Time=%d  sleeping 2 seconds to avoid collision", (int)time(0));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			sleep(2);
 		}
 		else if(tm == D->loadMonInterval/2)
 		{
-			snprintf(message, MAX_MESSAGE_SIZE, 
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"Time=%d  sleeping 1 second to avoid collision", (int)time(0));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			sleep(1);
 		}
 		else
 		{
-			snprintf(message, MAX_MESSAGE_SIZE,
+			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Time=%d  no sleeping to be done", (int)time(0));
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		}
@@ -527,7 +527,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			snprintf(command, MAX_COMMAND_SIZE, 
 				"/bin/rm -rf %s.difx/", filebase);
 
-			snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s", command);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		
 			Mk5Daemon_system(D, command, 1);
@@ -545,10 +545,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			difxProgram,
 			S->inputFilename);
 
-		snprintf(message, MAX_MESSAGE_SIZE, "Executing: %s", command);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
-		snprintf(message, MAX_MESSAGE_SIZE, "Spawning %d processes", 
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Spawning %d processes", 
 			1 + S->nDatastream + S->nProcess);
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, 
 			message);

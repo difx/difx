@@ -43,7 +43,7 @@ static void *conditionRun(void *ptr)
 {
 	struct conditionParams *params;
 	char command[MAX_COMMAND_SIZE];
-	char message[MAX_MESSAGE_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
 	FILE *pin;
 	char *rv;
 
@@ -56,12 +56,12 @@ static void *conditionRun(void *ptr)
 	pin = popen(command, "r");
 	for(;;)
 	{
-		rv = fgets(message, MAX_MESSAGE_SIZE, pin);
+		rv = fgets(message, DIFX_MESSAGE_LENGTH, pin);
 		if(rv == 0)
 		{
 			break;
 		}
-		message[MAX_MESSAGE_SIZE-1] = 0;
+		message[DIFX_MESSAGE_LENGTH-1] = 0;
 		if(message[0] == '>')
 		{
 			Logger_logData(params->D->log, message);
