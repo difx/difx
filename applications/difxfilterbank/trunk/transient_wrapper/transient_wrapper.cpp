@@ -9,6 +9,8 @@ const char author[] = "Walter Brisken";
 const char version[] = "0.1";
 const char verdate[] = "2010 Nov. 11";
 
+const char defaultOutputPath[] = "/export/home/mark5";
+
 int usage(const char *pgm)
 {
 	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
@@ -95,6 +97,11 @@ int parsecommandline(int argc, char **argv, TransientWrapperData *T)
 
 				exit(0);
 			}
+			else if(strcmp(argv[a], "-n") == 0 ||
+			   strcmp(argv[a], "--nocopy") == 0)
+			{
+				T->doCopy = -1;
+			}
 		}
 	}
 
@@ -151,6 +158,8 @@ TransientWrapperData *initialize(int argc, char **argv)
 	int i, index;
 
 	T = newTransientWrapperData();
+
+	T->outputPath = defaultOutputPath;
 
 	index = parsecommandline(argc, argv, T);
 
@@ -209,7 +218,8 @@ TransientWrapperData *initialize(int argc, char **argv)
 		T->rank = atoi(rankStr);
 		if(T->rank > 0 && T->rank <= T->D->nDatastream)
 		{
-			if(T->D->datastream[T->rank-1].dataSource == DataSourceModule)
+			if(T->D->datastream[T->rank-1].dataSource == DataSourceModule &&
+			   T->doCopy == 0)
 			{
 				T->doCopy = 1;
 			}
@@ -249,13 +259,13 @@ int main(int argc, char **argv)
 
 	T->executeTime = execute(argc, argv, T);
 
-	if(T->doCopy)
+	if(T->doCopy > 0)
 	{
 		stopMulticastMonitor(T);
 
-		if(T->difxState == DIFX_STATE_DONE && T->executeTime > 3)
+		if(T->difxState == DIFX_STATE_DONE && T->executeTime > 3 && T->nEvent > 0)
 		{
-			/* Here is where we do the copying! */
+			copyBasebandData(T);
 		}
 	}
 
