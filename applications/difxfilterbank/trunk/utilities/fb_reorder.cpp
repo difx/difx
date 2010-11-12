@@ -63,6 +63,7 @@
 #define DEFAULT_NBANDS      8        // default number of bands per stream
 
 #define N_MEDIAN            100
+#define MED_CALC_SKIP       10       // only re-calculate the medians every MED_CALC_SKIP*N_MEDIAN time steps
 #define TCAL_PERIOD_VLBA    12500000 // nanosec
 
 #define MAX_TIMESLOTS       3
@@ -75,6 +76,7 @@ typedef struct {
     float buf_time;
     int  scan_index;
     int  n_chan_override;
+    int  auto_flag;
     uint32_t  tcal_period_ns;
     uint32_t  int_time_ns;
 } GlobalOptions;
@@ -99,6 +101,9 @@ typedef struct {
   int       *med_ind[2];                // array of logical dimensions [N_streams][N_bands]
   float     *med_dat[2];                // array of logical dimensions [N_streams][N_bands][N_MEDIAN][N_chan]
   float     *medians[2];                // array of logical dimensions [N_streams][N_bands][N_chan]
+  float     *stddevs[2];                // array of logical dimensions [N_streams][N_bands][N_chan]
+  float     *band_medians[2];           // array of logical dimensions [N_streams][N_bands]
+  float     *band_stddevs[2];           // array of logical dimensions [N_streams][N_bands]
 } BufInfo;
 
 
@@ -139,6 +144,7 @@ int main(const int argc, char * const argv[]) {
     options.buf_time = BUF_DELAY_DEFAULT;
     options.tcal_period_ns = TCAL_PERIOD_VLBA;
     options.int_time_ns = DEFAULT_INTTIME;
+    options.auto_flag = 0;
 
     // parse command-line
     parse_cmdline(argc, argv,&options);
@@ -204,10 +210,10 @@ int main(const int argc, char * const argv[]) {
 
 /*****************************
 calculate if and how much a tcal signal is present in STA spectrometer data. The tcal signal is assumed
-to be tied to a 1pps signal so turns on exactly at the start of every second. The STA packets have a time
+to be tied to a 1pps signal so is tied to the start of every second. The STA packets have a time
 since the start of the scan, so by combining the known time of the start of the scan with the delay
 model and time offset of the actual pakcet, one can predict the tcal signal.
-The signal is assumed to be on 50% of the time.
+The signal is assumed to be on 50% of the time, starting with being "off".
 The amount of signal present in the integration is then a piecewise linear function with 5 segments
 depending on where the integration boundaries intersect with the transition of tcal
 ******************************/
@@ -224,7 +230,7 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
     if(time_offset_ns*1e-9 < model->getScanDuration(options.scan_index)+0.5) {
 
       // apply delay
-      res = model->calculateDelayInterpolator(options.scan_index, time_offset_ns*1e-9, 0.0, 1, antennaindex, 0, 0, &delay);
+      res = model->calculateDelayInterpolator(options.scan_index, time_offset_ns*1e-9, 0.0, 0, antennaindex, 0, 0, &delay);
       if (res != true) {
           cerr << "ERROR: calculateDelayInterpolator failed for scan: " << options.scan_index << ". Antenna index: " << antennaindex << ". Offset ns: " << time_offset_ns << endl;
           return EXIT_FAILURE;
@@ -234,26 +240,27 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
       while(time_offset_ns < 0) time_offset_ns += options.tcal_period_ns;
       offset_periods = time_offset_ns/options.tcal_period_ns;
 
-      phase = (float)(time_offset_ns - offset_periods*options.tcal_period_ns)/(float)options.tcal_period_ns;           // calculate how many tcal periods this has been
+      // calculate how many tcal periods this has been
+      phase = (float)(time_offset_ns - offset_periods*options.tcal_period_ns)/(float)options.tcal_period_ns;
 
       if (debug) printf("For antenna %d the delay is %f us. The phase is %f. ",antennaindex,delay,phase);
       if (phase < pwf_tcal/2) {
-        frac_on = 0.5 +phase/pwf_tcal;
+        frac_on = 0.5 - phase/pwf_tcal;
       }
       else if (phase >= pwf_tcal/2 && phase < 0.5-pwf_tcal/2) {
-        frac_on = 1.0;
-      }
-      else if (phase >= 0.5-pwf_tcal/2 && phase < 0.5+pwf_tcal/2) {
-        frac_on = (-phase + 0.5 + pwf_tcal/2)/pwf_tcal;
-      }
-      else if (phase >= 0.5+pwf_tcal/2 && phase < 1.0-pwf_tcal/2) {
         frac_on = 0.0;
       }
+      else if (phase >= 0.5-pwf_tcal/2 && phase < 0.5+pwf_tcal/2) {
+        frac_on = 0.5 + (phase - 0.5)/pwf_tcal;
+      }
+      else if (phase >= 0.5+pwf_tcal/2 && phase < 1.0-pwf_tcal/2) {
+        frac_on = 1.0;
+      }
       else {
-        frac_on = (-1.0 + phase)/pwf_tcal + 0.5;
+        frac_on = (1.0 - phase)/pwf_tcal + 0.5;
       }
       if (debug) {
-        printf("At offset %02.4f ns, the Tcal is %f on\n",1e-9*time_offset_ns , frac_on );
+        printf("At offset %02.4f s, the Tcal is %f on\n",1e-9*time_offset_ns , frac_on );
       }
       *result = frac_on;
     }
@@ -399,7 +406,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             if(debug) {
                 fprintf(fpd,"WARNING: discarding chunk with time %lld. start time: %lld\n",
                         (long long) this_time,(long long) bufinfo->starttime);
-                printChunkHeader(&header,stderr);
+                printChunkHeader(&header,fpd);
             }
             continue;
         }
@@ -557,19 +564,26 @@ int compare_float(const void *p1, const void *p2) {
 }
 
 
+void local_qsort(float *dat, int size) {
+}
+
 /*****************************
 ******************************/
 void printMedians(FB_Config *fb_config, BufInfo *bufinfo) {
-    int tcal_state_index,stream,band,i;
+    int tcal_state_index,stream,band,chan;
 
     for(tcal_state_index=0; tcal_state_index < (options.tcal_period_ns ==0 ? 1: 2); tcal_state_index++) {
         fprintf(fpd,"printMedians: tcal state: %d\n",tcal_state_index);
         for(stream = 0; stream< fb_config->n_streams; stream++) {
             fprintf(fpd,"stream: %d\n",stream);
             for(band=0; band < fb_config->n_bands; band++) {
-                fprintf(fpd,"band: %d\n",band);
-                for(i=0; i< N_MEDIAN; i++) {
-                    fprintf(fpd,"%f ",bufinfo->medians[tcal_state_index][i]);
+                int band_offset = fb_config->n_chans*(band + stream*fb_config->n_bands);
+                fprintf(fpd,"band: %d. Stddev across band: %f. Chan median,stddev over all medians:\n",band,
+                        bufinfo->band_stddevs[tcal_state_index][stream*fb_config->n_bands + band]);
+
+                for(chan=0; chan< fb_config->n_chans; chan++) {
+                    fprintf(fpd,"%f,%f ",bufinfo->medians[tcal_state_index][band_offset + chan],
+                                        bufinfo->stddevs[tcal_state_index][band_offset + chan]);
                 }
                 fprintf(fpd,"\n");
             }
@@ -582,7 +596,7 @@ void printMedians(FB_Config *fb_config, BufInfo *bufinfo) {
 ******************************/
 void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
     int stream, band, chan, samp, offset_bulk, offset, med_index=0,tcal_state_index;
-    float chandata[N_MEDIAN],total;
+    float chandata[N_MEDIAN];
 
     for(tcal_state_index=0; tcal_state_index < (options.tcal_period_ns ==0 ? 1: 2); tcal_state_index++) {
         med_index =0;
@@ -593,34 +607,69 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
                 // logical dimension [N_MEDIANS][n_chans]. We want to sort the N_MEDIAN values for each channel
                 // which requires the data within this little block to be transposed.
                 for (chan=0; chan < fb_config->n_chans; chan++) {
+                    med_index = (band + stream*fb_config->n_bands)*fb_config->n_chans + chan;
                     // skip flagged channels
                     if (fb_config->flags[stream][band][chan]) {
-                        bufinfo->medians[tcal_state_index][med_index++] = 0.0;
+                        bufinfo->medians[tcal_state_index][med_index] = 0.0;
+                        bufinfo->stddevs[tcal_state_index][med_index] = 0.0;
                         continue;
                     }
+                    // transpose and copy to a local array
                     for(samp=0; samp< N_MEDIAN; samp++) {
                         offset = offset_bulk + chan + fb_config->n_chans*samp;
                         chandata[samp] = bufinfo->med_dat[tcal_state_index][offset];
                     }
                     // we have now extracted the N_MEDIAN samples we want to form the median for
-/*
-                    // sort them and take the middle element. this is slower
-                    qsort(chandata,N_MEDIAN,sizeof(float),compare_float);
-                    bufinfo->medians[med_index++] = chandata[N_MEDIAN/2];
-*/
 /* */
-                    // or we could just take the mean.... faster
-                    total=0;
-
-                    for (samp=0; samp < N_MEDIAN; samp++) {
-                        total += chandata[samp];
-//                        if (stream==1 && band == 0) fprintf(fpd,"%f %f ",chandata[samp],total);
+                    // sort them and take the middle element for median and use the interquartile range
+                    // for a robust variance estimator. this is slower
+                    // The variance using interquartile range (for normal distribution) is:
+                    // var = ((x_0.75 - x_0.25)/1.35)^2 where x_0.75 and x_0.25 are the sorted data values at the
+                    // 75th and 25th percentile, respectively.
+                    {
+                        qsort(chandata,N_MEDIAN,sizeof(float),compare_float);
+                        bufinfo->medians[tcal_state_index][med_index] = chandata[N_MEDIAN/2];
+                        bufinfo->stddevs[tcal_state_index][med_index] = (chandata[3*N_MEDIAN/4] - chandata[N_MEDIAN/4])/1.35;
                     }
-//                    if (stream==1 && band == 0) fprintf(fpd,"\naverage: %f\n",total/N_MEDIAN);
 
-                    total /= N_MEDIAN;
-                    bufinfo->medians[tcal_state_index][med_index++] = total;
+/*
+                    // or we could just take the mean and variance.... faster
+                    {
+                        float total=0,mean;
 
+                        for (samp=0; samp < N_MEDIAN; samp++) {
+                            total += chandata[samp];
+                            // if (stream==1 && band == 0) fprintf(fpd,"%f %f ",chandata[samp],total);
+                        }
+                        // if (stream==1 && band == 0) fprintf(fpd,"\naverage: %f\n",total/N_MEDIAN);
+                        mean = total/N_MEDIAN;
+                        bufinfo->medians[tcal_state_index][med_index] = mean;
+                        total=0;
+                        for (samp=0; samp < N_MEDIAN; samp++) {
+                            total += (chandata[samp]-mean)*(chandata[samp]-mean);
+                        }
+                        bufinfo->stddevs[tcal_state_index][med_index] = total/N_MEDIAN;
+                    }
+*/
+                }
+                // now estimate the variance of the median power across the band, which can be used to identify
+                // various forms of RFI.
+                if (options.auto_flag) {
+                    float dat[fb_config->n_chans],sig;
+
+                    // copy the data then sort the copy
+                    memcpy(dat,bufinfo->medians[tcal_state_index] + (band + stream*fb_config->n_bands)*fb_config->n_chans,
+                            sizeof(float)*fb_config->n_chans);
+                    qsort(dat,fb_config->n_chans,sizeof(float),compare_float);
+                    // set the variance based on interquartile range
+                    sig = (dat[3*fb_config->n_chans/4] - dat[fb_config->n_chans/4])/1.35;
+                    bufinfo->band_medians[tcal_state_index][band + stream*fb_config->n_bands] = dat[fb_config->n_chans/2];
+                    bufinfo->band_stddevs[tcal_state_index][band + stream*fb_config->n_bands] = sig;
+                    if(debug) {
+                        fprintf(fpd,"Stddev nums for str/band %d,%d: 25th pc: %f, 75th pc: %f med: %f, sig: %f\n",
+                                stream,band,dat[fb_config->n_chans/4],dat[3*fb_config->n_chans/4],dat[fb_config->n_chans/2],
+                                sig);
+                    }
                 }
             }
         }
@@ -651,7 +700,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
 
     // the thread index is implicit time ordering within the larger group
     if (bufinfo->buffers[buf_ind].n_added ==0) {
-        header.time_s = bufinfo->starttime / 1000000000;
+        header.time_s  = bufinfo->starttime / 1000000000;
         header.time_ns = bufinfo->starttime % 1000000000;
     }
     else {
@@ -663,13 +712,14 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     // form medians for subtracting tcal and padding missing data, if we haven't done so recently
     time_ns = (int64_t)header.time_ns + (int64_t)header.time_s * 1000000000L;
 
-    if (last_median_time_ns ==0 || (time_ns -last_median_time_ns)/header.int_time_ns >= N_MEDIAN) {
+    if (last_median_time_ns ==0 || (time_ns -last_median_time_ns)/header.int_time_ns >= N_MEDIAN*MED_CALC_SKIP) {
         if (debug) fprintf(fpd,"Forming medians after %lld integration times\n",(long long) ((time_ns -last_median_time_ns)/header.int_time_ns));
         FormMedians(fb_config, bufinfo);
         last_median_time_ns = time_ns;
     }
 
     for(stream=0; stream < fb_config->n_streams; stream++) {
+        int tcal_state_index=0;
 
         header.stream_id = stream;
 
@@ -686,6 +736,8 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                 printChunkHeader(&header,stderr);
                 return 1;
             }
+            // if the tcal was on for more than 50% of the time for this timestep, then use the appropriate statistics
+            if (tcal_frac > 0.5) tcal_state_index=1;
         }
 
         for(band=0; band < fb_config->n_bands; band++) {
@@ -705,7 +757,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
             med_offset = header.n_channels*(band + stream*fb_config->n_bands);
  
             // if the data is zero (i.e. nothing there) then just write zeros
-            if (dat[0] != 0.0) {
+            if (dat[1] != 0.0) {
                 float wgt = 1.0/(bufinfo->buffers[buf_ind].weights[chunk_index]);
 
                 // normalise the data. must do this before subtracting medians
@@ -713,18 +765,44 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                     dat[chan] *= wgt;
                 }            
 
-                // subtract weighted medians for tcal off
+                // subtract weighted medians for tcal off or partially off
                 if (tcal_frac != 1.0) {
                     SubtractMedians(bufinfo->medians[0] + med_offset, dat, header.n_channels, 1.0-tcal_frac);
                 }
-                // subtract weighted medians for tcal on
+                // subtract weighted medians for tcal on or partially on
                 if (tcal_frac != 0.0) {
-                    SubtractMedians(bufinfo->medians[1] + med_offset, dat, header.n_channels,tcal_frac);
+                    SubtractMedians(bufinfo->medians[1] + med_offset, dat, header.n_channels, tcal_frac);
                 }
 
                 // apply flags (must do this after median subtract)
                 for (chan=0; chan<header.n_channels; chan++) {
                     if (fb_config->flags[stream][band][chan]) dat[chan] = 0.0;
+                }
+
+                // apply flags for band-wide variance. Can't use this for small numbers of channels
+                if (options.auto_flag && 
+                        bufinfo->band_stddevs[tcal_state_index][band + stream*fb_config->n_bands] > 0 &&
+                        header.n_channels > 7) {
+                    int band_offset = band + stream*fb_config->n_bands;
+                    int chan_offset= header.n_channels*band_offset;
+                    float sig_band = bufinfo->band_stddevs[tcal_state_index][band_offset];
+
+                    for (chan=0; chan<header.n_channels; chan++) {
+                        // flag channels that have consistently high power over the median time period
+                        // compared to the majority of channels in the same band 
+                        if (fabs(bufinfo->medians[tcal_state_index][chan_offset+chan] - 
+                                bufinfo->band_medians[tcal_state_index][band_offset]) > 4*sig_band) {
+                            dat[chan] = 0.0;
+                        }
+
+                        // flag very high/low instantaneous power in a band. The data is median subtracted at this point.
+                        // Be careful not to flag real signal here! Set threshold high...
+                        float sig_chan = bufinfo->stddevs[tcal_state_index][chan_offset+chan];
+                        if (fabs(dat[chan]) > 6*sig_chan) {
+                            dat[chan] = 0.0;
+                        }
+
+                    }    
                 }
 
             }
@@ -762,7 +840,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
 
 /*****************************
 ******************************/
-void SubtractMedians(float * medians, float * data, const int nchan, float weight) {
+void SubtractMedians(float * medians, float * data, const int nchan,const float weight) {
     int i;
     for (i=0; i<nchan; i++) {
         if (data[i] !=0) data[i] -= medians[i]*weight;
@@ -795,6 +873,9 @@ void freeBuffers(BufInfo *bufinfo) {
         if(bufinfo->med_ind[i] != NULL) free(bufinfo->med_ind[i]);
         if(bufinfo->med_dat[i] != NULL) free(bufinfo->med_dat[i]);
         if(bufinfo->medians[i] != NULL) free(bufinfo->medians[i]);
+        if(bufinfo->stddevs[i] != NULL) free(bufinfo->stddevs[i]);
+        if(bufinfo->band_stddevs[i] != NULL) free(bufinfo->band_stddevs[i]);
+        if(bufinfo->band_medians[i] != NULL) free(bufinfo->band_medians[i]);
     }
 }
 
@@ -835,7 +916,10 @@ int initBuffers(FB_Config *fb_config, BufInfo *bufinfo) {
         bufinfo->med_ind[i] = (int *) calloc(fb_config->n_streams * fb_config->n_bands,sizeof(int));
         bufinfo->med_dat[i] = (float *) calloc(floats_per_quanta*N_MEDIAN,sizeof(float));
         bufinfo->medians[i] = (float *) calloc(floats_per_quanta,sizeof(float));
-        if(bufinfo->med_ind[i]==NULL || bufinfo->med_dat[i] ==NULL || bufinfo->medians[i]==NULL) {
+        bufinfo->stddevs[i] = (float *) calloc(floats_per_quanta,sizeof(float));
+        bufinfo->band_stddevs[i] = (float *) calloc(fb_config->n_streams * fb_config->n_bands,sizeof(float));
+        bufinfo->band_medians[i] = (float *) calloc(fb_config->n_streams * fb_config->n_bands,sizeof(float));
+        if(bufinfo->med_ind[i]==NULL || bufinfo->med_dat[i] ==NULL || bufinfo->medians[i]==NULL || bufinfo->stddevs[i]==NULL) {
             fprintf(stderr,"initBuffers: no malloc\n");
             exit(1);
         }
@@ -957,7 +1041,7 @@ int set_FB_Config(FB_Config *fb_config) {
 /*****************************
 ******************************/
 void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) {
-    const char *optstring = "di:o:t:T:f:P:c:s:C:";
+    const char *optstring = "Fdi:o:t:T:f:P:c:s:C:";
     int result=0;
 
     if (argc ==1) print_usage();
@@ -981,6 +1065,8 @@ void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) 
           case 'T': options->int_time_ns = atoi(optarg);
             break;
           case 'C': options->n_chan_override = atoi(optarg);
+            break;
+          case 'F': options->auto_flag = 1;
             break;
           case 'd': debug = 1;
             fprintf(fpd,"Debugging on...\n");
@@ -1017,6 +1103,7 @@ void print_usage() {
     fprintf(stderr,"-t num     \tThe time in seconds to buffer for delayed packets. Default: %g.\n", BUF_DELAY_DEFAULT);
     fprintf(stderr,"-T num     \tThe desired output integration time for regridded data in ns. Default: %d\n",DEFAULT_INTTIME);
     fprintf(stderr,"-C num     \tOverride number of channels expected in an STA packet. Default: use config object.\n");
+    fprintf(stderr,"-F         \tEnable autoflagging.\n");
     fprintf(stderr,"-d         \tEnable debugging. Writes to stderr.\n");
     exit(1);
 }

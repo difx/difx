@@ -1,6 +1,8 @@
 /*****
 simple code to extract some essential info from a DiFX configuration (.input) file.
 
+Randall Wayth. 2009/2010. This forms part of the fb_reorder utility.
+
 *****/
 #include <stdio.h>
 #include <sys/types.h>
@@ -10,6 +12,8 @@ simple code to extract some essential info from a DiFX configuration (.input) fi
 #include <string.h>
 #include <ctype.h>
 #include "readConfig.h"
+
+#define MAX_LINE 1024
 
 /*****************************
 Utility to search the a "config" file for the key part of key-value pair, and return pointer to
@@ -78,10 +82,11 @@ char *loadConfigFile(char *filename) {
 
 
 /*****************************
+ read a flag file to flag combinations of stream/band/channels.
 ******************************/
 int readFlagsFile(char *filename, FB_Config *fb_config) {
     int stream,band,chan;
-    char line[1024];
+    char line[MAX_LINE];
     FILE *fp=NULL;
 
     fp = fopen(filename,"r");
@@ -89,7 +94,7 @@ int readFlagsFile(char *filename, FB_Config *fb_config) {
         fprintf(stderr,"readFlagsFile: Cannot open file <%s>\n",filename);
         return 1;
     }
-    while (fgets(line,1023,fp)!=NULL) {
+    while (fgets(line,MAX_LINE-1,fp)!=NULL) {
         if (line[0] == '\0' || line[0] == '\n' || line[0] == '#') continue;  // skip blank and comment lines
 
         if(sscanf(line,"ALLCHAN %d",&chan)==1) {
