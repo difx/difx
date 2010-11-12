@@ -4,14 +4,17 @@ static void handleDifxStatus(TransientWrapperData *T, const DifxMessageGeneric *
 {
 	const DifxMessageStatus *status;
 
-	status = &G->body.status;
-
-	T->difxState = status->state;
-	if(T->difxState == DIFX_STATE_ABORTING ||
-	   T->difxState == DIFX_STATE_TERMINATED ||
-	   T->difxState == DIFX_STATE_DONE)
+	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH))
 	{
-		T->monitorThreadDie = 1;
+		status = &G->body.status;
+
+		T->difxState = status->state;
+		if(T->difxState == DIFX_STATE_ABORTING ||
+		   T->difxState == DIFX_STATE_TERMINATED ||
+		   T->difxState == DIFX_STATE_DONE)
+		{
+			T->monitorThreadDie = 1;
+		}
 	}
 }
 
@@ -21,9 +24,11 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 	const DifxMessageTransient *transient;
 	int v;
 
-	transient = &G->body.transient;
+	if(strncmp(G->identifier, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH))
+	{
+		transient = &G->body.transient;
 
-
+	}
 }
 
 static void *multicastMonitor(void *ptr)

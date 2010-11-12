@@ -135,9 +135,6 @@ char *stripInputFile(const char *inputFile)
 
 	filePrefix[l-6] = 0;
 
-	printf("before = %s\n", inputFile);
-	printf("after  = %s\n", filePrefix);
-
 	return filePrefix;
 }
 
@@ -145,8 +142,9 @@ TransientWrapperData *initialize(int argc, char **argv)
 {
 	TransientWrapperData *T;
 	const char *inputFile, *pgm;
+	const char *rankStr;
 	char message[DIFX_MESSAGE_LENGTH];
-	int index;
+	int i, index;
 
 	T = newTransientWrapperData();
 
@@ -154,8 +152,6 @@ TransientWrapperData *initialize(int argc, char **argv)
 
 	pgm = argv[index+1];
 	inputFile = argv[index+2];
-
-	difxMessageInit(-1, program);
 
 	if(index < 0)
 	{
@@ -194,9 +190,30 @@ TransientWrapperData *initialize(int argc, char **argv)
 		return 0;
 	}
 
-	if(T->verbose > 1)
+	T->identifier = T->filePrefix;
+	for(i = 0; T->filePrefix[i]; i++)
 	{
-		printDifxInput(T->D);
+		if(T->filePrefix[i] == '/')
+		{
+			T->identifier = T->filePrefix + i + 1;
+		}
+	}
+
+	rankStr = getenv("OMPI_COMM_WORLD_RANK");
+	if(rankStr)
+	{
+		T->rank = atoi(rankStr);
+		if(T->rank > 0 && T->rank <= T->D->nDatastream)
+		{
+			if(T->D->datastream[T->rank-1].dataSource == DataSourceModule)
+			{
+				T->doCopy = 1;
+			}
+		}
+	}
+	else
+	{
+		T->rank = -1;
 	}
 
 	return T;
@@ -205,6 +222,8 @@ TransientWrapperData *initialize(int argc, char **argv)
 int main(int argc, char **argv)
 {
 	TransientWrapperData *T;
+
+	difxMessageInit(-1, program);
 	
 	T = initialize(argc, argv);
 	if(T == 0)
@@ -212,16 +231,31 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	startMulticastMonitor(T);
+	printTransientWrapperData(T);
+
+	if(T->verbose > 1)
+	{
+		printDifxInput(T->D);
+	}
+
+	if(T->doCopy)
+	{
+		startMulticastMonitor(T);
+	}
 
 	execute(argc, argv, T);
 
-	stopMulticastMonitor(T);
-
-	if(T->difxState == DIFX_STATE_DONE)
+	if(T->doCopy)
 	{
-		/* Here is where we do the copying! */
+		stopMulticastMonitor(T);
+
+		if(T->difxState == DIFX_STATE_DONE)
+		{
+			/* Here is where we do the copying! */
+		}
 	}
+
+	printTransientWrapperData(T);
 
 	deleteTransientWrapperData(T);
 

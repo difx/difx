@@ -8,16 +8,21 @@
 typedef struct
 {
 	DifxInput *D;
-	int difxState;
+	enum DifxState difxState;
 	pthread_t monitorThread;
 	char *filePrefix;
+	char *identifier;	/* must match that used difxmessage by mpifxcorr */
 	int verbose;
 	int monitorThreadDie;
+	int rank;
+	int doCopy;
 } TransientWrapperData;
 
 TransientWrapperData *newTransientWrapperData();
 
 void deleteTransientWrapperData(TransientWrapperData *T);
+
+void printTransientWrapperData(const TransientWrapperData *T);
 
 void startMulticastMonitor(TransientWrapperData *T);
 
