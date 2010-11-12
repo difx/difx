@@ -71,14 +71,22 @@ dnl **** Look for StreamStor libraries                    ****
 dnl **** cause native Mark5 to be built if found.         ****
 dnl **********************************************************
 ss_enabled=true
-PKG_CHECK_MODULES(SS,
-	streamstor >= 8.0,
-	[AC_DEFINE([HAVE_XLRAPI_H], 1, [1=has SS])],
-	ss_enabled=false)
-AM_CONDITIONAL(WITH_SS, $ss_enabled)
-if test ss_enabled = false; then
-	echo 'No suitable streamstor.pc file found so native mark5 support will be suppressed.  See       documentation if you are surprised by this.'
+PKG_CHECK_EXISTS([streamstor >= 8.0],
+	[ PKG_CHECK_MODULES(SS, streamstor) ],
+	[ AC_MSG_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH])
+	  ss_enabled=false])
+if test ${ss_enabled} = true; then
+	CPPFLAGS="${CPPFLAGS} ${SS_CFLAGS}"
+	CXXFLAGS="${CXXFLAGS} ${SS_CFLAGS}"
+	AC_CHECK_HEADERS([xlrapi.h])
+else
+	SS_CFLAGS=""
+	SS_LIBS=""
+	echo 'No suitable streamstor.pc file was found so the native'
+	echo 'Mark5 support will be suppressed.  See the documentation'
+	echo 'if you are surprised by this.'
 fi
+AM_CONDITIONAL(WITH_SS, $ss_enabled)
 
 dnl **********************************************************
 dnl **** Find mark5access library                         ****
