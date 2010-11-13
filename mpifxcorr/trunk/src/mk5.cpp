@@ -214,16 +214,18 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 {
   int offset;
   int nbits, nrecordedbands, fanout, jumpseconds, currentdsseconds;
+  Configuration::datasampling sampling;
   Configuration::dataformat format;
   double bw, bytespersecond;
   long long dataoffset = 0;
 
   format = config->getDataFormat(configindex, streamnum);
+  sampling = config->getDSampling(configindex, streamnum);
   nbits = config->getDNumBits(configindex, streamnum);
   nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
   bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
 
-  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getFrameBytes(configindex, streamnum), config->getDDecimationFactor(configindex, streamnum), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, config->getFrameBytes(configindex, streamnum), config->getDDecimationFactor(configindex, streamnum), formatname);
   if (fanout < 0) {
     cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -257,6 +259,15 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   readseconds = 86400*(syncteststream->mjd-corrstartday) + syncteststream->sec-corrstartseconds + intclockseconds;
   readnanoseconds = int(syncteststream->ns);
   currentdsseconds = activesec + model->getScanStartSec(activescan, config->getStartMJD(), config->getStartSeconds());
+
+  //cout << "Mk5DataStream::initialiseFile" << endl;
+  //cout << "  framens= " << syncteststream->framens << endl;
+  //cout << "   offset= " << syncteststream->frameoffset << endl;
+  //cout << "   mjd= " << syncteststream->mjd << endl;
+  //cout << "   sec= " << syncteststream->sec << endl;
+  //cout << "    ns= " << syncteststream->ns << endl;
+  //cout << "    ns= " << syncteststream->ns << endl;
+  //cout << endl;
 
   if (currentdsseconds  > readseconds+1)
   {
@@ -399,6 +410,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 {
   int nbits, nrecordedbands, fanout;
   Configuration::dataformat format;
+  Configuration::datasampling sampling;
   double bw;
 
   //cout << "Datastream " << mpiid << " about to read " << readbytes << " into buffer segment " << buffersegment << "; framebytesremaining is " << framebytesremaining << endl;
@@ -412,10 +424,11 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
     //regenerate formatname (only ever likely in eVLBI, and probably not even then)
     format = config->getDataFormat(bufferinfo[buffersegment].configindex, streamnum);
     nbits = config->getDNumBits(bufferinfo[buffersegment].configindex, streamnum);
+    sampling = config->getDSampling(bufferinfo[buffersegment].configindex, streamnum);
     nrecordedbands = config->getDNumRecordedBands(bufferinfo[buffersegment].configindex, streamnum);
     bw = config->getDRecordedBandwidth(bufferinfo[buffersegment].configindex, streamnum, 0);
 
-    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getFrameBytes(bufferinfo[buffersegment].configindex, streamnum), config->getDDecimationFactor(bufferinfo[buffersegment].configindex, streamnum), formatname);
+    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, config->getFrameBytes(bufferinfo[buffersegment].configindex, streamnum), config->getDDecimationFactor(bufferinfo[buffersegment].configindex, streamnum), formatname);
     if (fanout < 0) {
       cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);

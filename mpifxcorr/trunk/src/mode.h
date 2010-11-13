@@ -60,6 +60,7 @@ public:
   * @param nrecordedbands The total number of subbands recorded
   * @param nzoombands The number of subbands to be taken from withing the recorded bands - can be zero
   * @param nbits The number of bits per sample
+  * @param sampling The bit sampling type (real/complex)
   * @param unpacksamp The number of samples to unpack in one hit
   * @param fbank Whether to use a polyphase filterbank to channelise (instead of FFT)
   * @param fringerotorder The interpolation order across an FFT (Oth, 1st or 2nd order; 0th = post-F)
@@ -67,7 +68,7 @@ public:
   * @param cacorrs Whether cross-polarisation autocorrelations are to be calculated
   * @param bclock The recorder clock-out frequency in MHz ("block clock")
   */
-  Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
+  Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
 
  /**
   * Stores the delay information for the current block series
@@ -226,14 +227,14 @@ protected:
   virtual float unpack(int sampleoffset);
   
   Configuration * config;
-  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, twicerecordedbandchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, estimatedbytes, datasamples, avgdelsamples;
-  int fringerotationorder, arraystridelength, numstrides;
+  int configindex, datastreamindex, recordedbandchannels, channelstoaverage, blockspersend, guardsamples, fftchannels, numrecordedfreqs, numrecordedbands, numzoombands, numbits, bytesperblocknumerator, bytesperblockdenominator, currentscan, offsetseconds, offsetns, order, flag, fftbuffersize, unpacksamples, unpackstartsamples, estimatedbytes, datasamples, avgdelsamples;
+  int fringerotationorder, arraystridelength, numfrstrides, numfracstrides;
   double recordedbandwidth, blockclock, sampletime; //MHz, microseconds
   double a0, b0, c0, a, b, c, quadadd1, quadadd2;
   double fftstartmicrosec, fftdurationmicrosec, intclockseconds;
   f32 dataweight;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
-  int datascan, datasec, datans, datalengthbytes;
+  int datascan, datasec, datans, datalengthbytes, usecomplex;
   bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok;
   double * recordedfreqclockoffsets;
   double * recordedfreqlooffsets;
@@ -241,6 +242,7 @@ protected:
   s16 *   lookup;
   s16 *   linearunpacked;
   f32 **  unpackedarrays;
+  cf32 **  unpackedcomplexarrays;
   cf32*** fftoutputs;
   cf32*** conjfftoutputs;
   f32 **  weights;

@@ -30,20 +30,29 @@
 //using namespace std;
 const float Mode::TINY = 0.000000001;
 
-Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock)
-  : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), twicerecordedbandchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), fringerotationorder(fringerotorder), arraystridelength(arraystridelen), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
+Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock)
+  : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), fftchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), fringerotationorder(fringerotorder), arraystridelength(arraystridelen), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
 {
   int status, localfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
   int pcalOffset;
   estimatedbytes = 0;
 
+  if (sampling==Configuration::COMPLEX) 
+    usecomplex=1;
+  else
+    usecomplex=0;
+
   model = config->getModel();
   initok = true;
   intclockseconds = int(floor(config->getDClockCoeff(configindex, dsindex, 0)/1000000.0 + 0.5));
-  numstrides = twicerecordedbandchannels/arraystridelength;
+  if (usecomplex) fftchannels /=2;
+
+  numfracstrides = numfrstrides = fftchannels/arraystridelength;
+  if (usecomplex) numfracstrides *= 2;
   sampletime = 1.0/(2.0*recordedbandwidth); //microseconds
-  fftdurationmicrosec = twicerecordedbandchannels*sampletime;
+  if (usecomplex) sampletime *= 2.0;
+  fftdurationmicrosec = fftchannels*sampletime;  // This is never used??
   flaglength = blockspersend/FLAGS_PER_INT;
   if(blockspersend%FLAGS_PER_INT > 0)
     flaglength++;
@@ -64,11 +73,13 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
   }
   else
   {
-    bytesperblocknumerator = (numrecordedbands*samplesperblock*numbits*decimationfactor)/8;
+    int numsamplebits = numbits;
+    if (usecomplex) numsamplebits *=2;
+    bytesperblocknumerator = (numrecordedbands*samplesperblock*numsamplebits*decimationfactor)/8;
     if(bytesperblocknumerator == 0)
     {
       bytesperblocknumerator = 1;
-      bytesperblockdenominator = 8/(numrecordedbands*samplesperblock*numbits*decimationfactor);
+      bytesperblockdenominator = 8/(numrecordedbands*samplesperblock*numsamplebits*decimationfactor);
       unpacksamples += bytesperblockdenominator*sizeof(u16)*samplesperblock;
     }
     else
@@ -81,9 +92,11 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       numlookups++;
 
     unpackedarrays = new f32*[numrecordedbands];
+    if (usecomplex) unpackedcomplexarrays = new cf32*[numrecordedbands];
     for(int i=0;i<numrecordedbands;i++) {
       unpackedarrays[i] = vectorAlloc_f32(unpacksamples);
-      estimatedbytes += 4*unpacksamples;
+      estimatedbytes += sizeof(f32)*unpacksamples;
+      if (usecomplex) unpackedcomplexarrays[i] = (cf32*) unpackedarrays[i];
     }
 
     interpolator = new f64[3];
@@ -99,7 +112,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       {
         if(j<numrecordedbands)
         {
-	  if(fringerotationorder == 0)
+	  if(fringerotationorder == 0) // post-F
 	  {
 	    fftoutputs[j][k] = vectorAlloc_cf32(recordedbandchannels+1);
             conjfftoutputs[j][k] = vectorAlloc_cf32(recordedbandchannels+1);
@@ -114,8 +127,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         else
         {
           localfreqindex = config->getDLocalZoomFreqIndex(confindex, dsindex, j-numrecordedbands);
-	  fftoutputs[j] = &(fftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex)][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
-	  conjfftoutputs[j] = &(conjfftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex,localfreqindex)][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
+	  fftoutputs[j][k] = &(fftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex)][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
+	  conjfftoutputs[j][k] = &(conjfftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex,localfreqindex)][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
 	}
       }
     }
@@ -127,13 +140,13 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
 
     //initialise the fft info
     order = 0;
-    while((twicerecordedbandchannels) >> order != 1)
+    while((fftchannels) >> order != 1)
       order++;
     flag = vecFFT_NoReNorm;
     hint = vecAlgHintFast;
 
     switch(fringerotationorder) {
-      case 2:
+      case 2: // Quadratic
         piecewiserotator = vectorAlloc_cf32(arraystridelength);
         quadpiecerotator = vectorAlloc_cf32(arraystridelength);
         estimatedbytes += 2*8*arraystridelength;
@@ -145,9 +158,9 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         subquadcos   = vectorAlloc_f32(arraystridelength);
         estimatedbytes += (8+8+4+4+4)*arraystridelength;
 
-        stepxoffsquared = vectorAlloc_f64(numstrides);
-        tempstepxval    = vectorAlloc_f64(numstrides);
-        estimatedbytes += 16*numstrides;
+        stepxoffsquared = vectorAlloc_f64(numfrstrides);
+        tempstepxval    = vectorAlloc_f64(numfrstrides);
+        estimatedbytes += 16*numfrstrides;
       case 1:
         subxoff  = vectorAlloc_f64(arraystridelength);
         subxval  = vectorAlloc_f64(arraystridelength);
@@ -157,26 +170,26 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         subcos   = vectorAlloc_f32(arraystridelength);
         estimatedbytes += (3*8+3*4)*arraystridelength;
 
-        stepxoff  = vectorAlloc_f64(numstrides);
-        stepxval  = vectorAlloc_f64(numstrides);
-        stepphase = vectorAlloc_f64(numstrides);
-        steparg   = vectorAlloc_f32(numstrides);
-        stepsin   = vectorAlloc_f32(numstrides);
-        stepcos   = vectorAlloc_f32(numstrides);
-        stepcplx  = vectorAlloc_cf32(numstrides);
-        estimatedbytes += (3*8+3*4+8)*numstrides;
+        stepxoff  = vectorAlloc_f64(numfrstrides);
+        stepxval  = vectorAlloc_f64(numfrstrides);
+        stepphase = vectorAlloc_f64(numfrstrides);
+        steparg   = vectorAlloc_f32(numfrstrides);
+        stepsin   = vectorAlloc_f32(numfrstrides);
+        stepcos   = vectorAlloc_f32(numfrstrides);
+        stepcplx  = vectorAlloc_cf32(numfrstrides);
+        estimatedbytes += (3*8+3*4+8)*numfrstrides;
 
-        complexunpacked = vectorAlloc_cf32(twicerecordedbandchannels);
-        complexrotator = vectorAlloc_cf32(twicerecordedbandchannels);
-        fftd = vectorAlloc_cf32(twicerecordedbandchannels);
-        estimatedbytes += 3*8*twicerecordedbandchannels;
+	complexunpacked = vectorAlloc_cf32(fftchannels);
+	complexrotator = vectorAlloc_cf32(fftchannels);
+	fftd = vectorAlloc_cf32(fftchannels);
+	estimatedbytes += 3*sizeof(cf32)*fftchannels;
 
         for(int i=0;i<arraystridelength;i++)
-          subxoff[i] = (double(i)/double(twicerecordedbandchannels));
-        for(int i=0;i<numstrides;i++)
-          stepxoff[i] = double(i*arraystridelength)/double(twicerecordedbandchannels);
-        if(fringerotationorder == 2) {
-          for(int i=0;i<numstrides;i++)
+          subxoff[i] = (double(i)/double(fftchannels));
+        for(int i=0;i<numfrstrides;i++)
+          stepxoff[i] = double(i*arraystridelength)/double(fftchannels);
+        if(fringerotationorder == 2) { // Quadratic
+          for(int i=0;i<numfrstrides;i++)
             stepxoffsquared[i] = stepxoff[i]*stepxoff[i];
         }
 
@@ -214,17 +227,17 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       //lsbsubchannelfreqs[i] = (float)((-TWO_PI*(arraystridelength-(i+1))*recordedbandwidth)/recordedbandchannels);
     }
 
-    stepfracsamparg = vectorAlloc_f32(numstrides/2);
-    stepfracsampsin = vectorAlloc_f32(numstrides/2);
-    stepfracsampcos = vectorAlloc_f32(numstrides/2);
-    stepfracsampcplx = vectorAlloc_cf32(numstrides/2);
-    stepchannelfreqs = vectorAlloc_f32(numstrides/2);
-    lsbstepchannelfreqs = vectorAlloc_f32(numstrides/2);
-    estimatedbytes += (5*2+4)*numstrides;
+    stepfracsamparg = vectorAlloc_f32(numfracstrides/2);
+    stepfracsampsin = vectorAlloc_f32(numfracstrides/2);
+    stepfracsampcos = vectorAlloc_f32(numfracstrides/2);
+    stepfracsampcplx = vectorAlloc_cf32(numfracstrides/2);
+    stepchannelfreqs = vectorAlloc_f32(numfracstrides/2);
+    lsbstepchannelfreqs = vectorAlloc_f32(numfracstrides/2);
+    estimatedbytes += (5*2+4)*numfracstrides;
 
-    for(int i=0;i<numstrides/2;i++) {
+    for(int i=0;i<numfracstrides/2;i++) {
       stepchannelfreqs[i] = (float)((TWO_PI*i*arraystridelength*recordedbandwidth)/recordedbandchannels);
-      lsbstepchannelfreqs[i] = (float)((-TWO_PI*((numstrides/2-i)*arraystridelength-1)*recordedbandwidth)/recordedbandchannels);
+      lsbstepchannelfreqs[i] = (float)((-TWO_PI*((numfracstrides/2-i)*arraystridelength-1)*recordedbandwidth)/recordedbandchannels);
     }
 
     fracsamprotator = vectorAlloc_cf32(recordedbandchannels);
@@ -323,7 +336,7 @@ Mode::~Mode()
   delete [] unpackedarrays;
 
   switch(fringerotationorder) {
-    case 2:
+    case 2: // Quadratic
       vectorFree(piecewiserotator);
       vectorFree(quadpiecerotator);
 
@@ -488,21 +501,21 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 
   fftcentre = index+0.5;
   averagedelay = interpolator[0]*fftcentre*fftcentre + interpolator[1]*fftcentre + interpolator[2];
-  fftstartmicrosec = index*twicerecordedbandchannels*sampletime;
+  fftstartmicrosec = index*fftchannels*sampletime; //CHRIS CHECK
   starttime = (offsetseconds-datasec)*1000000.0 + double(offsetns - datans)/1000.0 + fftstartmicrosec - averagedelay;
   //cout << "starttime for " << datastreamindex << " is " << starttime << endl;
   nearestsample = int(starttime/sampletime + 0.5);
-  //cout << "nearestsample for " << datastreamindex << " is " << nearestsample << endl;
-  walltimesecs = model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + ((double)offsetns)/1000000000.0 + fftstartmicrosec/1000000.0;
+  //cout << "nearestsample for " << datastreamindex << " is " << nearestsample << endl; 
+ walltimesecs  =model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + ((double)offsetns)/1000000000.0 + fftstartmicrosec/1000000.0;
 
   //if we need to, unpack some more data - first check to make sure the pos is valid at all
   //cout << "Datalengthbytes for " << datastreamindex << " is " << datalengthbytes << endl;
-  //cout << "Twicerecordedbandchannels for " << datastreamindex << " is " << twicerecordedbandchannels << endl;
+  //cout << "Fftchannels for " << datastreamindex << " is " << fftchannels << endl;
   //cout << "samplesperblock for " << datastreamindex << " is " << samplesperblock << endl;
   //cout << "nearestsample for " << datastreamindex << " is " << nearestsample << endl;
   //cout << "bytesperblocknumerator for " << datastreamindex << " is " << bytesperblocknumerator << endl;
   //cout << "bytesperblockdenominator for " << datastreamindex << " is " << bytesperblockdenominator << endl;
-  if(nearestsample < -1 || (((nearestsample + twicerecordedbandchannels)/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator > datalengthbytes)
+  if(nearestsample < -1 || (((nearestsample + fftchannels)/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator > datalengthbytes)
   {
     cerror << startl << "MODE error for datastream " << datastreamindex << " - trying to process data outside range - aborting!!! nearest sample was " << nearestsample << ", the max bytes should be " << datalengthbytes << ".  offsetseconds was " << offsetseconds << ", offsetns was " << offsetns << ", index was " << index << ", average delay was " << averagedelay << ", datasec was " << datasec << ", datans was " << datans << ", fftstartmicrosec was " << fftstartmicrosec << endl;
     return 0.0;
@@ -512,7 +525,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     nearestsample = 0;
     dataweight = unpack(nearestsample);
   }
-  else if(nearestsample < unpackstartsamples || nearestsample > unpackstartsamples + unpacksamples - twicerecordedbandchannels)
+  else if(nearestsample < unpackstartsamples || nearestsample > unpackstartsamples + unpacksamples - fftchannels)
     //need to unpack more data
     dataweight = unpack(nearestsample);
 
@@ -529,7 +542,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         extractor[i]->adjustSampleOffset(datasamples+nearestsample);
         // status = extractor[i]->extractAndIntegrate(unpackedarrays[i], unpacksamples);
 	status = extractor[i]->extractAndIntegrate(&(unpackedarrays[i][nearestsample
-	    - unpackstartsamples]), twicerecordedbandchannels);
+	    - unpackstartsamples]), fftchannels);
         if(status != true)
           csevere << startl << "Error in phase cal extractAndIntegrate" << endl;
       }
@@ -552,7 +565,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       status = vectorMulC_f64(subxoff, a, subxval, arraystridelength);
       if(status != vecNoErr)
         csevere << startl << "Error in linearinterpolate, subval multiplication" << endl;
-      status = vectorMulC_f64(stepxoff, a, stepxval, numstrides);
+      status = vectorMulC_f64(stepxoff, a, stepxval, numfrstrides);
       if(status != vecNoErr)
         csevere << startl << "Error in linearinterpolate, stepval multiplication" << endl;
       status = vectorAddC_f64_I(b, subxval, arraystridelength);
@@ -572,13 +585,13 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       status = vectorMulC_f64(subxoff, 2*a*stepxoff[1], subquadxval, arraystridelength);
       if(status != vecNoErr)
         csevere << startl << "Error in quadinterpolate, subquadval multiplication" << endl;
-      status = vectorMulC_f64(stepxoff, b, stepxval, numstrides);
+      status = vectorMulC_f64(stepxoff, b, stepxval, numfrstrides);
       if(status != vecNoErr)
         csevere << startl << "Error in quadinterpolate, stepval multiplication" << endl;
-      status = vectorMulC_f64(stepxoffsquared, a, tempstepxval, numstrides);
+      status = vectorMulC_f64(stepxoffsquared, a, tempstepxval, numfrstrides);
       if(status != vecNoErr)
         csevere << startl << "Error in quadinterpolate, tempstepval multiplication" << endl;
-      status = vectorAdd_f64_I(tempstepxval, stepxval, numstrides);
+      status = vectorAdd_f64_I(tempstepxval, stepxval, numfrstrides);
       if(status != vecNoErr)
         csevere << startl << "Error in quadinterpolate, stepval addition!!!" << endl;
       status = vectorAddC_f64_I(c, subxval, arraystridelength);
@@ -612,11 +625,11 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     //get ready to apply fringe rotation, if its pre-F
     lofreq = config->getDRecordedFreq(configindex, datastreamindex, i);
     switch(fringerotationorder) {
-      case 1:
+      case 1: // linear
         status = vectorMulC_f64(subxval, lofreq, subphase, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in linearinterpolate lofreq sub multiplication!!!" << status << endl;
-        status = vectorMulC_f64(stepxval, lofreq, stepphase, numstrides);
+        status = vectorMulC_f64(stepxval, lofreq, stepphase, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error in linearinterpolate lofreq step multiplication!!!" << status << endl;
         if(fractionalLoFreq) {
@@ -627,28 +640,28 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         for(int j=0;j<arraystridelength;j++) {
           subarg[j] = -TWO_PI*(subphase[j] - int(subphase[j]));
         }
-        for(int j=0;j<numstrides;j++) {
+        for(int j=0;j<numfrstrides;j++) {
           steparg[j] = -TWO_PI*(stepphase[j] - int(stepphase[j]));
         }
         status = vectorSinCos_f32(subarg, subsin, subcos, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in sin/cos of sub rotate argument!!!" << endl;
-        status = vectorSinCos_f32(steparg, stepsin, stepcos, numstrides);
+        status = vectorSinCos_f32(steparg, stepsin, stepcos, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error in sin/cos of step rotate argument!!!" << endl;
         status = vectorRealToComplex_f32(subcos, subsin, complexrotator, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error assembling sub into complex!!!" << endl;
-        status = vectorRealToComplex_f32(stepcos, stepsin, stepcplx, numstrides);
+        status = vectorRealToComplex_f32(stepcos, stepsin, stepcplx, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error assembling step into complex!!!" << endl;
-        for(int j=1;j<numstrides;j++) {
+        for(int j=1;j<numfrstrides;j++) {
           status = vectorMulC_cf32(complexrotator, stepcplx[j], &complexrotator[j*arraystridelength], arraystridelength);
           if(status != vecNoErr)
             csevere << startl << "Error doing the time-saving complex multiplication!!!" << endl;
         }
         break;
-      case 2:
+      case 2: // Quadratic
         status = vectorMulC_f64(subxval, lofreq, subphase, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in quadinterpolate lofreq sub multiplication!!!" << status << endl;
@@ -660,14 +673,14 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         status = vectorMulC_f64(subquadxval, lofreq, subquadphase, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in quadinterpolate lofreq subquad multiplication!!!" << status << endl;
-        status = vectorMulC_f64(stepxval, lofreq, stepphase, numstrides);
+        status = vectorMulC_f64(stepxval, lofreq, stepphase, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error in quadinterpolate lofreq step multiplication!!!" << status << endl;
         for(int j=0;j<arraystridelength;j++) {
           subarg[j] = -TWO_PI*(subphase[j] - int(subphase[j]));
           subquadarg[j] = -TWO_PI*(subquadphase[j] - int(subquadphase[j]));
         }
-        for(int j=0;j<numstrides;j++) {
+        for(int j=0;j<numfrstrides;j++) {
           steparg[j] = -TWO_PI*(stepphase[j] - int(stepphase[j]));
         }
         status = vectorSinCos_f32(subarg, subsin, subcos, arraystridelength);
@@ -676,7 +689,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         status = vectorSinCos_f32(subquadarg, subquadsin, subquadcos, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error in sin/cos of subquad rotate argument!!!" << endl;
-        status = vectorSinCos_f32(steparg, stepsin, stepcos, numstrides);
+        status = vectorSinCos_f32(steparg, stepsin, stepcos, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error in sin/cos of step rotate argument!!!" << endl;
         status = vectorRealToComplex_f32(subcos, subsin, piecewiserotator, arraystridelength);
@@ -685,10 +698,10 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         status = vectorRealToComplex_f32(subquadcos, subquadsin, quadpiecerotator, arraystridelength);
         if(status != vecNoErr)
           csevere << startl << "Error assembling sub into complex" << endl;
-        status = vectorRealToComplex_f32(stepcos, stepsin, stepcplx, numstrides);
+        status = vectorRealToComplex_f32(stepcos, stepsin, stepcplx, numfrstrides);
         if(status != vecNoErr)
           csevere << startl << "Error assembling step into complex" << endl;
-        for(int j=0;j<numstrides;j++) {
+        for(int j=0;j<numfrstrides;j++) {
           status = vectorMulC_cf32(piecewiserotator, stepcplx[j], &complexrotator[j*arraystridelength], arraystridelength);
           if(status != vecNoErr)
             csevere << startl << "Error doing the time-saving complex mult (striding)" << endl;
@@ -704,12 +717,12 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       csevere << startl << "Error in frac sample correction, arg generation (sub)!!!" << status << endl;
       exit(1);
     }
-    status = vectorMulC_f32(currentstepchannelfreqs, fracsampleerror - recordedfreqclockoffsets[i], stepfracsamparg, numstrides/2);
+    status = vectorMulC_f32(currentstepchannelfreqs, fracsampleerror - recordedfreqclockoffsets[i], stepfracsamparg, numfracstrides/2);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, arg generation (step)!!!" << status << endl;
 
     //sort out any LO offsets (+ fringe rotation if its post-F)
-    if(fringerotationorder == 0) { // do both LO offset and fringe rotation
+    if(fringerotationorder == 0) { // do both LO offset and fringe rotation  (post-F)
       phaserotation = (averagedelay-integerdelay)*lofreq;
       if(fractionalLoFreq)
         phaserotation += integerdelay*(lofreq-int(lofreq));
@@ -734,16 +747,16 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     status = vectorSinCos_f32(subfracsamparg, subfracsampsin, subfracsampcos, arraystridelength);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, sin/cos (sub)!!!" << status << endl;
-    status = vectorSinCos_f32(stepfracsamparg, stepfracsampsin, stepfracsampcos, numstrides/2);
+    status = vectorSinCos_f32(stepfracsamparg, stepfracsampsin, stepfracsampcos, numfracstrides/2);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, sin/cos (sub)!!!" << status << endl;
     status = vectorRealToComplex_f32(subfracsampcos, subfracsampsin, fracsampptr1, arraystridelength);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, real to complex (sub)!!!" << status << endl;
-    status = vectorRealToComplex_f32(stepfracsampcos, stepfracsampsin, stepfracsampcplx, numstrides/2);
+    status = vectorRealToComplex_f32(stepfracsampcos, stepfracsampsin, stepfracsampcplx, numfracstrides/2);
     if(status != vecNoErr)
       csevere << startl << "Error in frac sample correction, real to complex (step)!!!" << status << endl;
-    for(int j=1;j<numstrides/2;j++) {
+    for(int j=1;j<numfracstrides/2;j++) {
       status = vectorMulC_cf32(fracsampptr1, stepfracsampcplx[j], &(fracsampptr2[(j-1)*arraystridelength]), arraystridelength);
       if(status != vecNoErr)
         csevere << startl << "Error doing the time-saving complex multiplication in frac sample correction!!!" << endl;
@@ -759,6 +772,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
             fftptr = (config->getDRecordedLowerSideband(configindex, datastreamindex, i))?conjfftoutputs[j][subloopindex]:fftoutputs[j][subloopindex];
 
             //do the fft
+	    // Chris add C2C fft for complex data
             status = vectorFFT_RtoC_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), (f32*)fftptr, pFFTSpecR, fftbuffer);
             if(status != vecNoErr)
               csevere << startl << "Error in FFT!!!" << status << endl;
@@ -770,18 +784,25 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
                 csevere << startl << "Error in conjugate!!!" << status << endl;
             }
             break;
-          case 1:
-          case 2:
-            status = vectorRealToComplex_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), NULL, complexunpacked, twicerecordedbandchannels);
-            if(status != vecNoErr)
-              csevere << startl << "Error in real->complex conversion" << endl;
-            status = vectorMul_cf32_I(complexrotator, complexunpacked, twicerecordedbandchannels);
-            if(status != vecNoErr)
-              csevere << startl << "Error in fringe rotation!!!" << status << endl;
-            status = vectorFFT_CtoC_cf32(complexunpacked, fftd, pFFTSpecC, fftbuffer);
+  	  case 1: // Linear
+  	  case 2: // Quadratic
+	    if (usecomplex) {
+	      status = vectorMul_cf32(complexrotator, &unpackedcomplexarrays[j][nearestsample - unpackstartsamples], complexunpacked, fftchannels);
+              //CJP// status = vectorCopy_cf32(&unpackedcomplexarrays[j][nearestsample - unpackstartsamples], complexunpacked, recordedbandchannels);
+	      if(status != vecNoErr)
+		csevere << startl << "Error in real->complex conversion" << endl;
+	    } else {
+	      status = vectorRealToComplex_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), NULL, complexunpacked, fftchannels);
+	      if(status != vecNoErr)
+		csevere << startl << "Error in real->complex conversion" << endl;
+	      status = vectorMul_cf32_I(complexrotator, complexunpacked, fftchannels);
+	      //if(status != vecNoErr)
+	      //	csevere << startl << "Error in fringe rotation!!!" << status << endl;
+	    }
+	    status = vectorFFT_CtoC_cf32(complexunpacked, fftd, pFFTSpecC, fftbuffer);
             if(status != vecNoErr)
               csevere << startl << "Error doing the FFT!!!" << endl;
-            if(config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
+            if(!usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
               status = vectorCopy_cf32(&(fftd[recordedbandchannels+1]), fftoutputs[j][subloopindex], recordedbandchannels-1);
               fftoutputs[j][subloopindex][recordedbandchannels-1] = fftd[0];
             }
@@ -821,6 +842,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         status = vectorConj_cf32(fftoutputs[j][subloopindex], conjfftoutputs[j][subloopindex], recordedbandchannels);
         if(status != vecNoErr)
           csevere << startl << "Error in conjugate!!!" << status << endl;
+
 
         //do the autocorrelation (skipping Nyquist channel - if any LSB * USB correlations, shift all LSB bands to appear as USB)
         status = vectorAddProduct_cf32(fftoutputs[j][subloopindex]+acoffset, conjfftoutputs[j][subloopindex]+acoffset, autocorrelations[0][j]+acoffset, recordedbandchannels-acoffset);
@@ -1000,7 +1022,9 @@ void Mode::setOffsets(int scan, int seconds, int ns)
   else
     srcindex = 0;
 
-  foundok = model->calculateDelayInterpolator(currentscan, (double)offsetseconds + ((double)offsetns)/1000000000.0, blockspersend*2*recordedbandchannels*sampletime/1e6, blockspersend, config->getDModelFileIndex(configindex, datastreamindex), srcindex, 2, interpolator);
+  f64 timespan = blockspersend*2*recordedbandchannels*sampletime/1e6;
+  if (usecomplex) timespan/=2;
+  foundok = model->calculateDelayInterpolator(currentscan, (double)offsetseconds + ((double)offsetns)/1000000000.0, timespan, blockspersend, config->getDModelFileIndex(configindex, datastreamindex), srcindex, 2, interpolator);
   interpolator[2] -= 1000000*intclockseconds;
 
   if(!foundok) {
@@ -1050,7 +1074,7 @@ const float Mode::decorrelationpercentage[] = {0.63662, 0.88, 0.94, 0.96, 0.98, 
 
 
 LBAMode::LBAMode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, const s16* unpackvalues)
-  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,(recordedbw<16.0)?recordedbw*2.0:32.0)
+  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,Configuration::REAL,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,(recordedbw<16.0)?recordedbw*2.0:32.0)
 {
   int shift, outputshift;
   int count = 0;
@@ -1098,7 +1122,7 @@ LBAMode::LBAMode(Configuration * conf, int confindex, int dsindex, int recordedb
 }
 
 LBA8BitMode::LBA8BitMode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs)
-  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,recordedbw*2.0)
+  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,Configuration::REAL,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,recordedbw*2.0)
 {}
 
 float LBA8BitMode::unpack(int sampleoffset)
@@ -1117,7 +1141,7 @@ float LBA8BitMode::unpack(int sampleoffset)
 }
 
 LBA16BitMode::LBA16BitMode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs)
-  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,recordedbw*2.0)
+  : Mode(conf,confindex,dsindex,recordedbandchan,chanstoavg,bpersend,gsamples,nrecordedfreqs,recordedbw,recordedfreqclkoffs,recordedfreqlooffs,nrecordedbands,nzoombands,nbits,Configuration::REAL,recordedbandchan*2,fbank,fringerotorder,arraystridelen,cacorrs,recordedbw*2.0)
 {}
 
 float LBA16BitMode::unpack(int sampleoffset)

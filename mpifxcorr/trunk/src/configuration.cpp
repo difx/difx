@@ -286,7 +286,7 @@ Configuration::~Configuration()
   delete [] numprocessthreads;
 }
 
-int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, int framebytes, int decimationfactor, char *formatname)
+int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, char *formatname)
 {
   int fanout=1, mbps;
 
@@ -337,10 +337,16 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
     case VDIF:
-      if(decimationfactor > 1)
-        sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+      if (sampling==COMPLEX) 
+	if(decimationfactor > 1)
+	  sprintf(formatname, "VDIFC_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+	else
+	  sprintf(formatname, "VDIFC_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
       else
-        sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
+	if(decimationfactor > 1)
+	  sprintf(formatname, "VDIF_%d-%d-%d-%d/%d", framebytes-32, mbps, nchan, nbits, decimationfactor);
+	else
+	  sprintf(formatname, "VDIF_%d-%d-%d-%d", framebytes-32, mbps, nchan, nbits);
       break;
     default:
       cfatal << startl << "genMk5FormatName : unsupported format encountered" << endl;
@@ -366,7 +372,7 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
       payloadsize = framebytes - 16;
       break;
     case VDIF:
-      payloadsize = framebytes - 32;
+      payloadsize = framebytes - 32; // This is wrong for "legacy" VDIF (should be 16)
       break;
     default:
       payloadsize = framebytes;
@@ -388,7 +394,7 @@ void Configuration::getFrameInc(int configindex, int configdatastreamindex, int 
   decimationfactor = getDDecimationFactor(configindex, configdatastreamindex);
   payloadsize = getFramePayloadBytes(configindex, configdatastreamindex);
 
-  seconds = payloadsize*8/(samplerate*nchan*qb*decimationfactor);
+  seconds = payloadsize*8/(samplerate*nchan*qb*decimationfactor); // Works for complex data, even if technically "wrong"
   sec = int(seconds);
   ns = int(1.0e9*(seconds - sec));
 }
@@ -406,7 +412,7 @@ int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex
   payloadsize = getFramePayloadBytes(configindex, configdatastreamindex);
 
   // This will always work out to be an integer 
-  return int(samplerate*nchan*qb*decimationfactor/(8*payloadsize) + 0.5);
+  return int(samplerate*nchan*qb*decimationfactor/(8*payloadsize) + 0.5); // Works for complex data
 }
 
 int Configuration::getMaxDataBytes()
@@ -670,8 +676,9 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case MARK5B:
     case VDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
+      if (stream.sampling==COMPLEX) framesamples /=2;
       framebytes = getFrameBytes(configindex, datastreamindex);
-      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
+      return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
       break;
     default:
       cerror << startl << "Unknown mode being requested!!!" << endl;
@@ -1120,14 +1127,17 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].numrecordedbands += datastreamtable[i].recordedfreqpols[j];
     }
     decimationfactor = freqtable[datastreamtable[i].recordedfreqtableindices[0]].decimationfactor;
-    datastreamtable[i].bytespersamplenum = (datastreamtable[i].numrecordedbands*datastreamtable[i].numbits*decimationfactor)/8;
+    int numsamplebits = datastreamtable[i].numbits;
+    if (datastreamtable[i].sampling==COMPLEX) numsamplebits *=2;
+    datastreamtable[i].bytespersamplenum = (datastreamtable[i].numrecordedbands*numsamplebits*decimationfactor)/8;
     if(datastreamtable[i].bytespersamplenum == 0)
     {
       datastreamtable[i].bytespersamplenum = 1;
-      datastreamtable[i].bytespersampledenom = 8/(datastreamtable[i].numrecordedbands*datastreamtable[i].numbits*decimationfactor);
+      datastreamtable[i].bytespersampledenom = 8/(datastreamtable[i].numrecordedbands*numsamplebits*decimationfactor);
     }
     else
       datastreamtable[i].bytespersampledenom = 1;
+
     datastreamtable[i].recordedbandpols = new char[datastreamtable[i].numrecordedbands];
     datastreamtable[i].recordedbandlocalfreqindices = new int[datastreamtable[i].numrecordedbands];
     estimatedbytes += datastreamtable[i].numrecordedbands*5;
@@ -1166,13 +1176,13 @@ bool Configuration::processDatastreamTable(ifstream * input)
           parentlowbandedge -= freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
           parenthighbandedge -= freqtable[datastreamtable[i].recordedfreqtableindices[k]].bandwidth;
         }
-        lowbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq;
-        highbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandedgefreq + freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
-        if(freqtable[datastreamtable[i].zoomfreqtableindices[k]].lowersideband) {
-          parentlowbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
-          parenthighbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[k]].bandwidth;
+        lowbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandedgefreq;
+        highbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandedgefreq + freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
+        if(freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband) {
+          parentlowbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
+          parenthighbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
         }
-        if (highbandedge < parenthighbandedge && lowbandedge > parentlowbandedge) {
+        if (highbandedge <= parenthighbandedge && lowbandedge >= parentlowbandedge) {
           datastreamtable[i].zoomfreqparentdfreqindices[j] = k;
           datastreamtable[i].zoomfreqchanneloffset[j] = (int)(((lowbandedge - parentlowbandedge)/freqtable[datastreamtable[i].recordedfreqtableindices[0]].bandwidth)*freqtable[datastreamtable[i].recordedfreqtableindices[0]].numchannels);
           if (freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband)
@@ -2088,7 +2098,6 @@ bool Configuration::consistencyCheck()
     }
   }
 
-
   //check the baseline table entries
   for(int i=0;i<baselinetablelength;i++)
   {
@@ -2104,12 +2113,12 @@ bool Configuration::consistencyCheck()
     ds2 = datastreamtable[baselinetable[i].datastream2index];
     for(int j=0;j<baselinetable[i].numfreqs;j++)
     {
-      if(baselinetable[i].datastream1bandindex[j][0] >= ds1.numrecordedbands) //zoom band
-        freq1index = ds1.zoomfreqtableindices[ds1.zoombandlocalfreqindices[baselinetable[i].datastream1bandindex[j][0]]-ds1.numrecordedbands];
+      if(baselinetable[i].datastream1bandindex[j][0] >= ds1.numrecordedbands) //zoom band 
+        freq1index = ds1.zoomfreqtableindices[ds1.zoombandlocalfreqindices[baselinetable[i].datastream1bandindex[j][0]-ds1.numrecordedbands]];
       else
         freq1index = ds1.recordedfreqtableindices[ds1.recordedbandlocalfreqindices[baselinetable[i].datastream1bandindex[j][0]]];
       if(baselinetable[i].datastream2bandindex[j][0] >= ds2.numrecordedbands) //zoom band
-        freq2index = ds2.zoomfreqtableindices[ds2.zoombandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]]-ds2.numrecordedbands];
+        freq2index = ds2.zoomfreqtableindices[ds2.zoombandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]-ds2.numrecordedbands]];
       else
         freq2index = ds2.recordedfreqtableindices[ds2.recordedbandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]]];
       if(freq1index != freq2index)
@@ -2170,7 +2179,7 @@ bool Configuration::consistencyCheck()
 
         //check that the freqs pointed at match
         if(baselinetable[i].datastream1bandindex[j][k] >= ds1.numrecordedbands) //zoom band
-          freqindex = ds1.zoomfreqtableindices[ds1.zoombandlocalfreqindices[baselinetable[i].datastream1bandindex[j][k]]-ds1.numrecordedbands];
+          freqindex = ds1.zoomfreqtableindices[ds1.zoombandlocalfreqindices[baselinetable[i].datastream1bandindex[j][k]-ds1.numrecordedbands]];
         else
           freqindex = ds1.recordedfreqtableindices[ds1.recordedbandlocalfreqindices[baselinetable[i].datastream1bandindex[j][k]]];
         if(freqindex != freq1index)
@@ -2180,7 +2189,7 @@ bool Configuration::consistencyCheck()
           return false;
         }
         if(baselinetable[i].datastream2bandindex[j][k] >= ds2.numrecordedbands) //zoom band
-          freqindex = ds2.zoomfreqtableindices[ds2.zoombandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]]-ds2.numrecordedbands];
+          freqindex = ds2.zoomfreqtableindices[ds2.zoombandlocalfreqindices[baselinetable[i].datastream2bandindex[j][0]-ds2.numrecordedbands]];
         else
           freqindex = ds2.recordedfreqtableindices[ds2.recordedbandlocalfreqindices[baselinetable[i].datastream2bandindex[j][k]]];
         if(freqindex != freq2index)
@@ -2500,7 +2509,7 @@ bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mj
     if(sync != 'BASE')
       return false;
 
-    //if we get here, must be an old style ascii file
+    //if we get.d2 here, must be an old style ascii file
     getinputline(input, &line, "LINE NUM");
     baselinenum = atoi(line.c_str());
     getinputline(input, &line, "MJD");

@@ -144,6 +144,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].maxrecordedpcaltones; }
   inline int getDNumBits(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numbits; }
+  inline datasampling getDSampling(int configindex, int configdatastreamindex) 
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].sampling; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
     { datastreamdata ds = datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]]; return ds.recordedfreqtableindices[ds.recordedbandlocalfreqindices[datastreamrecordedbandindex]]; }
   inline int getDZoomFreqIndex(int configindex, int configdatastreamindex, int datastreamzoombandindex)
@@ -343,7 +345,7 @@ public:
   * @param decimationfactor The number of samples to throw away during unpacking
   * @param formatname character array representing format name (set during method)
   */
-  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, int framebytes, int decimationfactor, char *formatname);
+  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, char *formatname);
 
  /**
   * @return The Model object which contains geometric model information

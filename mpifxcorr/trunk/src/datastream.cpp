@@ -277,14 +277,17 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   foundok = model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus1);
   delayus1 -= intclockseconds*1000000;
   firstoffsetns = offsetns - static_cast<int>(delayus1*1000);
-  foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
+  int64_t dataspanns = bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens;
+  if (bufferinfo[atsegment].sampling== Configuration::COMPLEX) dataspanns /=2;
+  
+  foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + dataspanns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
   delayus2 -= intclockseconds*1000000;
   if(!foundok) {
     cerror << startl << "Could not find a Model interpolator for scan " << scan << " offsetseconds " << offsetsec << " offsetns " << offsetns << " - will torch this subint!" << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
   }
-  lastoffsetns = offsetns + int(bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens - 1000*delayus2 + 0.5);
+  lastoffsetns = offsetns + int(dataspanns - 1000*delayus2 + 0.5);
   //cout << mpiid << ": delayus1 is " << delayus1 << ", delayus2 is " << delayus2 << endl;
   if(lastoffsetns < 0)
   {
@@ -521,7 +524,9 @@ void DataStream::updateConfig(int segmentindex)
   bufferinfo[segmentindex].bytespersamplenum = config->getDBytesPerSampleNum(bufferinfo[segmentindex].configindex, streamnum);
   bufferinfo[segmentindex].bytespersampledenom = config->getDBytesPerSampleDenom(bufferinfo[segmentindex].configindex, streamnum);
   bufferinfo[segmentindex].numchannels = config->getFNumChannels(config->getDRecordedFreqIndex(bufferinfo[segmentindex].configindex, streamnum, 0));
+  bufferinfo[segmentindex].sampling = config->getDSampling(bufferinfo[segmentindex].configindex, streamnum);
   bufferinfo[segmentindex].sampletimens = 500.0/config->getDRecordedBandwidth(bufferinfo[segmentindex].configindex,streamnum,0);
+  if (bufferinfo[segmentindex].sampling==Configuration::COMPLEX) bufferinfo[segmentindex].sampletimens *= 2;
   bufferinfo[segmentindex].bytesbetweenintegerns = 0;
   double nsaccumulate = 0.0;
   do {

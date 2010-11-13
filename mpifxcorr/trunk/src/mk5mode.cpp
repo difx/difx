@@ -24,22 +24,26 @@
 #include "mk5.h"
 #include "alert.h"
 
-Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format)
-  : Mode(conf, confindex, dsindex, recordedbandchan, chanstoavg, bpersend, gsamples, nrecordedfreqs, recordedbw, recordedfreqclkoffs, recordedfreqlooffs, nrecordedbands, nzoombands, nbits, recordedbandchan*2+4, fbank, fringerotorder, arraystridelen, cacorrs, recordedbw*2)
+Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, int framebytes, int framesamples, Configuration::dataformat format)
+  : Mode(conf, confindex, dsindex, recordedbandchan, chanstoavg, bpersend, gsamples, nrecordedfreqs, recordedbw, recordedfreqclkoffs, recordedfreqlooffs, nrecordedbands, nzoombands, nbits, sampling, recordedbandchan*2+4, fbank, fringerotorder, arraystridelen, cacorrs, recordedbw*2)
 {
   char formatname[64];
 
-  fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, framebytes, conf->getDDecimationFactor(confindex, dsindex), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, sampling, framebytes, conf->getDDecimationFactor(confindex, dsindex), formatname);
   if(fanout < 0)
     initok = false;
   else
   {
     // since we allocated the max amount of space needed above, we need to change
     // this to the number actually needed.
-    unpacksamples = recordedbandchan*2;
     this->framesamples = framesamples;
-    samplestounpack = recordedbandchan*2;
-
+    if (usecomplex) {
+      unpacksamples = recordedbandchan;
+      samplestounpack = recordedbandchan;
+    } else {
+      unpacksamples = recordedbandchan*2;
+      samplestounpack = recordedbandchan*2;
+    }
     //create the mark5_stream used for unpacking
     mark5stream = new_mark5_stream(
         new_mark5_stream_unpacker(0),
@@ -78,13 +82,16 @@ float Mk5Mode::unpack(int sampleoffset)
   int mungedoffset;
 
   //work out where to start from
-  framesin = (sampleoffset/framesamples);
+  framesin = (sampleoffset/framesamples);  // This is never used?? 
   unpackstartsamples = sampleoffset - (sampleoffset % mark5stream->samplegranularity);
 
   //unpack one frame plus one FFT size worth of samples
-  goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
+  if (usecomplex) 
+    goodsamples = mark5_unpack_complex_with_offset(mark5stream, data, unpackstartsamples, (mark5_float_complex**)unpackedcomplexarrays, samplestounpack);
+  else
+    goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
   if(mark5stream->samplegranularity > 1)
-  {
+    { // CHRIS not sure what this is mean to do
     mungedoffset = sampleoffset % mark5stream->samplegranularity;
     for(int i = 0; i < mungedoffset; i++) {
       if(unpackedarrays[0][i] != 0.0) {

@@ -100,6 +100,7 @@ protected:
     int numchannels;
     int numsent;
     double sampletimens;
+    Configuration::datasampling sampling;
     MPI_Request * datarequests;
     MPI_Request * controlrequests;
     s32 ** controlbuffer;
