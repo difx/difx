@@ -255,10 +255,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         continue;
                                         }
                                     // renormalize correlations to those created in the DOM
-                                    norm_corr = - floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
+                                    norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
                                     memcpy (&t309.chan[j].acc[i][0], &norm_corr, 4);
 
-                                    norm_corr =   floor (squad * srate * t309.acc_period * 128.0 + 0.5);
+                                    norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
                                     memcpy (&t309.chan[j].acc[i][1], &norm_corr, 4);
 
                                     // tone freqs (in Hz) are spread through channel recs

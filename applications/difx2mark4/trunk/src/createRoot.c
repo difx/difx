@@ -25,7 +25,8 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         current_block,
         numchan,
         nsite = 0,
-        durs;
+        durs,
+        tarco = FALSE;              // true iff target_correlator = has been done
 
     char inname[256],
          v2dname[256],
@@ -51,13 +52,13 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                       "$SITE", "$BBC", "$DAS", "$FREQ", "$HEAD_POS", "$IF",
                       "$PHASE_CAL_DETECT", "$PASS_ORDER", "$PROCEDURES", "$ROLL",
                       "$SCHEDULING_PARAMS", "$SCHED", "$SEFD", "$SOURCE", "$TRACKS",
-                      "$EOP", "$CLOCK", "END_LIST"};
+                      "$EOP", "$CLOCK", "$TAPELOG_OBS", "END_LIST"};
 
     enum block_tokens {NO_BLOCK, GLOBAL, EXPER, MODE, STATION, ANTENNA,
                       SITE, BBC, DAS, FREQ, HEAD_POS, IF,
                       PHASE_CAL_DETECT, PASS_ORDER, PROCEDURES, ROLL,
                       SCHEDULING_PARAMS, SCHED, SEFD, SOURCE, TRACKS,
-                      EOP, CLOCK, END_LIST};
+                      EOP, CLOCK, TAPELOG_OBS, END_LIST};
                                     // lines to be appended to output root file
     char *extra_lines[] = {"$EVEX_REV;\n", 
                            " rev = 1.0;\n", 
@@ -296,7 +297,15 @@ int createRoot (char *baseFile,     // common part of difx fileset name
 
             case EXPER:             // modify target_correlator
                 if (strcmp (pst[0], "target_correlator") == 0)
+                    {
                     strcpy (line, "target_correlator = difx;\n");
+                    tarco = TRUE;
+                    }
+                else if (strncmp (pst[0], "enddef", 6) == 0 && tarco == FALSE)
+                    {
+                    strcpy (line, "  target_correlator = difx;\n  enddef;\n");
+                    tarco = TRUE;
+                    }
                 break;
 
             case FREQ:          
@@ -378,10 +387,19 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                     {
                                     // generate fresh scan start, in case it was overridden
                     conv2date (D->scan->mjdStart, &caltime);
-                    sprintf (buff, "  start = %04hdy%03hdd%02hdh%02hdm%02ds;\n",
+                    sprintf (buff, "  start = %04hdy%03hdd%02hdh%02hdm%02ds;",
                          caltime.year, caltime.day, 
                          caltime.hour, caltime.minute, (int) caltime.second);
-                    strcpy (line, buff);
+                    if ((pchar = strchr (line, ';')) == NULL)
+                        {
+                        strcpy (line, buff);
+                        strcat (line, "\n");
+                        }
+                    else            // copy rest of stmts from the start line
+                        {
+                        strcat (buff, pchar+1);
+                        strcpy (line, buff);
+                        }
                     }
 
                                     // FIXME difxio scan start time is time when first
@@ -507,6 +525,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
             case PROCEDURES:
             case ROLL:
             case SEFD:
+            case TAPELOG_OBS:
             default:
                 break;
             }

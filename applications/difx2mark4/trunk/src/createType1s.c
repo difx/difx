@@ -112,7 +112,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // initialize memory as necessary
                                     // quantization correction factor is pi/2 for
                                     // 1 bit, or 1.13 for 2 bit (see TMS, p.272)
-    q_factor = (D->quantBits == 1) ? 1.57 : 1.13;
+                                    // Also, in 2 bit mode, difx mean square is 3.219
+                                    // (for 0 correlation)
+    // q_factor = (D->quantBits == 1) ? 1.57 : 1.13 / 3.219;
+    q_factor = 1.0;
+    if (opts->verbose > 0)
+        fprintf (stderr, "visibility scale factor %9.5lf\n", q_factor * SCALE);
                                     // compensate for LSB fringe rotator direction
     for (i=0; i<D->nFreq; i++)
         sb_factor[i] = ((D->freq+i)->sideband == 'U') ? 1.0 : -1.0;
