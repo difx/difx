@@ -1,6 +1,6 @@
 bin_PROGRAMS = filterbank2screen filterbankcount fb_reorder split_fb_scan
 
-AM_CXXFLAGS = $(FXCORR_CFLAGS) $(DIFXMESSAGE_CFLAGS) $(IPP_CFLAGS)
+AM_CXXFLAGS = $(FXCORR_CFLAGS) $(DIFXMESSAGE_CFLAGS) $(IPP_CFLAGS) -I$(PGPLOTDIR)
 
 filterbank2screen_SOURCES = filterbank2screen.cpp
 filterbank2screen_LDADD = $(FXCORR_LIBS) $(DIFXMESSAGE_LIBS) $(IPP_LIBS) -lcpgplot -lpgplot $(X11LIBS)
