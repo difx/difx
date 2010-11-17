@@ -117,6 +117,10 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		return n;
 	}
+	else if (F.format == "VDIF")
+	{
+		return n;
+	}
 	else
 	{
 		cerr << "Error: Antenna=" << antName << " format " << F.format << " is not yet supported" << endl;

@@ -3,8 +3,6 @@ AM_YFLAGS = -d -y
 AM_CPPFLAGS = -Dyyerror=vexerror -Dyylval=vexlval -Dyyin=vexin -Dyyparse=vexparse -Dyylex=vexlex
 
 BUILT_SOURCES = \
-	vex_parse.tab.h \
-	vex_parse.tab.c \
 	vex_parse.c 
 
 library_includedir = $(includedir)

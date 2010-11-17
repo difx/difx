@@ -721,6 +721,11 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		strcpy(D->datastream[dsId].dataFormat, "MARK5B");
 		D->datastream[dsId].dataFrameSize = 10016;
 	}
+	else if(format->format == string("VDIF"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VDIF");
+		D->datastream[dsId].dataFrameSize = 1032;
+	}
 	else if(format->format == string("S2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");
@@ -779,27 +784,45 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 
 void populateRuleTable(DifxInput *D, const CorrParams *P)
 {
+	string towrite;
+	list<string>::const_iterator s;
 	D->nRule = P->rules.size();
 	D->rule = newDifxRuleArray(D->nRule);
 	for(int i=0;i<D->nRule;i++)
 	{
 		if(P->rules[i].scanName.size() > 0)
 		{
-			if(P->rules[i].scanName.size() > 1)
+			//if(P->rules[i].scanName.size() > 1)
+			//{
+			//	cerr << "Cannot handle rules for more than one scan simultaneously" << endl;
+			//	exit(0);
+			//
+			//}
+			towrite = P->rules[i].scanName.front();
+			for(s = (P->rules[i].scanName).begin(); s != (P->rules[i].scanName).end(); s++)
 			{
-				cerr << "Cannot handle rules for more than one scan simultaneously" << endl;
-				exit(0);
+				if(*s == P->rules[i].scanName.front())
+					continue;
+				towrite += "," + *s;
 			}
-			snprintf(D->rule[i].scanId, DIFXIO_NAME_LENGTH, "%s", P->rules[i].scanName.front().c_str());
+			snprintf(D->rule[i].scanId, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
 		}
 		if(P->rules[i].sourceName.size() > 0)
 		{
-			if(P->rules[i].sourceName.size() > 1)
+			//if(P->rules[i].sourceName.size() > 1)
+			//{
+			//	cerr << "Cannot handle rules for more than one source simultaneously" << endl;
+			//	exit(0);
+			//
+			//}
+			towrite = P->rules[i].sourceName.front();
+			for(s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); s++)
 			{
-				cerr << "Cannot handle rules for more than one source simultaneously" << endl;
-				exit(0);
+				if(*s == P->rules[i].sourceName.front())
+					continue;
+				towrite += "," + *s;
 			}
-			snprintf(D->rule[i].sourceName, DIFXIO_NAME_LENGTH, "%s", P->rules[i].sourceName.front().c_str());
+			snprintf(D->rule[i].sourceName, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
