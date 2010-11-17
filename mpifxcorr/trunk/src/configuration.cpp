@@ -195,8 +195,8 @@ Configuration::Configuration(const char * configfile, int id)
     if(consistencyok)
       consistencyok = model->addClockTerms(telescopetable[i].name, telescopetable[i].clockrefmjd, telescopetable[i].clockorder, telescopetable[i].clockpoly);
   }
-  estimatedbytes += model->getEstimatedBytes();
-  //cout << "About to populateScanConfigList(), consistencyok is " << consistencyok << endl;
+  if(consistencyok)
+    estimatedbytes += model->getEstimatedBytes();
   if(consistencyok)
     consistencyok = populateScanConfigList();
   if(consistencyok)

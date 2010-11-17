@@ -311,8 +311,8 @@ int main(int argc, char *argv[])
   {
     //There was a problem with the input file, so shut down gracefully
     cfatal << startl << "Config encountered inconsistent setup in config file - aborting correlation" << endl;
-    MPI_Barrier(world);
-    MPI_Finalize();
+    //MPI_Barrier(world); MPI_Finalize(); does not always shut down, so
+    MPI_Abort(MPI_COMM_WORLD, 1);
     return EXIT_FAILURE;
   }
 
