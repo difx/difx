@@ -353,7 +353,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
 
   // FIXME -- talk to Adam about this next check.  -WFB
-  if(offsetsec > bufferinfo[atsegment].scanseconds + 1)
+  if(offsetsec > bufferinfo[atsegment].scanseconds + bufferinfo[atsegment].nsinc/1000000000 + 1)
   {
     //if(mpiid == 1)
     //  cout << "Bailing out2: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
@@ -456,6 +456,19 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
         bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] |= 1<<(i%FLAGS_PER_INT);
       else if(bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 + bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > i*blockbytes)
         bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3+i/FLAGS_PER_INT] |= 1<<(i%FLAGS_PER_INT);
+    }
+    bool somegooddata = false;
+    int numcontrolints = bufferinfo[atsegment].blockspersend/FLAGS_PER_INT;
+    if(bufferinfo[atsegment].blockspersend%FLAGS_PER_INT > 0)
+      numcontrolints++;
+    for(int i=0;i<bufferinfo[atsegment].blockspersend/FLAGS_PER_INT;i++)
+    {
+      if(bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][3 + i] > 0)
+        somegooddata = true;
+    }
+    if(!somegooddata) {
+      bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
+      return 0;
     }
   }
 

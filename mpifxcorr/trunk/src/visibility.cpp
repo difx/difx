@@ -260,7 +260,7 @@ void Visibility::updateTime()
 
 void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
   char *ptr;
-  int ntowrite, nwrot, i;
+  int ntowrite;
   int32_t atsec, datasize;
 
   /* Data Blob sent to monitor_server is:

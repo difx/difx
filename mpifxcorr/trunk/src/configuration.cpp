@@ -1494,6 +1494,8 @@ void Configuration::processNetworkTable(ifstream * input)
 bool Configuration::populateScanConfigList()
 {
   bool applies, srcnameapplies, calcodeapplies, qualapplies;
+  istringstream iss;
+  string token;
   Model::source * src;
   ruledata r;
 
@@ -1504,8 +1506,15 @@ bool Configuration::populateScanConfigList()
     for(int j=0;j<numrules;j++) {
       applies = true;
       r = rules[j];
-      if((r.scanId.compare("") != 0) && (r.scanId.compare(model->getScanIdentifier(i)) != 0))
+      if((r.scanId.compare("") != 0)) {
         applies = false;
+        iss.str(r.scanId);
+        while(getline(iss, token, ',')) {
+          if(token.compare(model->getScanIdentifier(i)) == 0)
+            applies = true;
+        }
+        iss.clear();
+      }
       if(r.mjdStart > 0 && r.mjdStart > model->getScanStartMJD(i))
         applies = false;
       if(r.mjdStop > 0 && r.mjdStop > model->getScanEndMJD(i))
@@ -1521,8 +1530,12 @@ bool Configuration::populateScanConfigList()
       if(r.qual < 0)
         qualapplies = true;
       src = model->getScanPointingCentreSource(i);
-      if(r.sourcename.compare(src->name) == 0)
-        srcnameapplies = true;
+      iss.str(r.sourcename);
+      while(getline(iss, token, ',')) {
+         if(token.compare(src->name) == 0)
+           srcnameapplies = true;
+      }
+      iss.clear();
       if(r.calcode.compare(src->calcode) == 0)
         calcodeapplies = true;
       if(r.qual == src->qual)
@@ -1530,8 +1543,12 @@ bool Configuration::populateScanConfigList()
       for(int k=0;k<model->getNumPhaseCentres(i);k++) {
         //cout << "Looking at source " << k << " of scan " << i << endl;
         src = model->getScanPhaseCentreSource(i, k);
-        if(r.sourcename.compare(src->name) == 0)
-          srcnameapplies = true;
+        iss.str(r.sourcename);
+        while(getline(iss, token, ',')) {
+          if(token.compare(src->name) == 0)
+            srcnameapplies = true;
+        }
+        iss.clear();
         if(r.calcode.compare(src->calcode) == 0)
           calcodeapplies = true;
         if(r.qual == src->qual)
