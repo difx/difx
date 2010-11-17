@@ -404,7 +404,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
-	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, framebytes, config->getDDecimationFactor(configindex, streamnum), formatname);
+	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), formatname);
         if(fanout < 0)
         {
 #if HAVE_MARK5IPC
