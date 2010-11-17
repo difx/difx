@@ -1,0 +1,12 @@
+Version 1.13
+~~~~~~~~~~~~
+* Lots of fixes
+* Version for DiFX-1.5.3
+
+Version 1.12
+~~~~~~~~~~~~
+* DiFX-1.5 version
+* Sign flip on $CLOCK value to match vex convention
+* getvex: retrieve uncompressed cal.vlba files
+* don't truncate clocks at antenna on-source times
+* Tagged for DiFX-1.5.2 version

@@ -1,0 +1,15 @@
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Don't forget to do the following as root after installation:
+
+#   chown root @prefix@/bin/e2ecopy
+#   chmod +s @prefix@/bin/e2ecopy
+#   cp conditionwatch /etc/init.d ; chmod 655 /etc/init.d/conditionwatch
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
