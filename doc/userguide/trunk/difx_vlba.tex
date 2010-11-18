@@ -1,0 +1,549 @@
+
+
+
+\section{Running DiFX at the VLBA correlator {\small (VLBA Specific)}} \label{sec:run}
+
+In this section are instructions for using the NRAO adapted DiFX to correlate data that has already been prepared for correlation by the VLBA hardware correlator.
+Some aspects of this section may still apply to correlation of other data.
+Currently no graphical user interface exists, so these instructions are command line only; these instructions will change when the operator interface is complete.
+This section assumes that the software is properly installed and environment variables are set appropriately for use which will be the case for correlator operators.
+While there are several steps in performing the software correlation, nothing is too complicated.
+
+Note that this section will see considerable enhancements as experience in running the correlator is gained.
+
+\subsection{Sharing resources with hardware correlator}
+
+The Mark5 units attached to the VLBA correlator are used in three different ways for correlation: 1.~An installed module can be played through the VLBA hardware correlator, 2.~The CPU(s) inside the Mark5 unit can be used for software correlator processing, and 3.~An installed module can be played into the software correlator.
+Functions 1 and 2 can be done simultaneously without conflict.  
+Likewise, functions 2 and 3 can also be done simultaneously without conflict.
+Functions 1 and 3 cannot be done at the same time.
+In fact, the software correlator will refuse to use Mark5 units that are currently ``Online'' with regard to the hardware correlator.
+The Mark5 units need to be explicitly set to playback on a particular correlator.  
+See \S\S\ref{sec:take} \& \ref{sec:return} for instructions.
+These two functions cleanly stop and start, respectively, the {\tt Mark5A} program that is needed for the hardware correlator.
+It is only the playback of the Mark5 modules that has any chance of conflict between the software and hardware correlators.
+The hardware correlator can be correlating, idle, in standby, or completely off during software correlation.
+
+\subsubsection{Taking a Mark5 unit} \label{sec:take}
+
+Two actions must be taken to safely transfer a Mark5 unit from serving the hardware to serving the software correlator.
+Here ``safely'' implies no loss of data and no need for an unnecessary reboot; if done properly, no reboots of any computer should be needed.
+First the Mark5 unit must be taken off-line from the hardware correlator {\tt SYSDISCS} screen.
+Multiple units can be taken off-line simultaneously by highlighting multiple units.
+Like usual, units currently assigned to a job cannot be taken off-line.
+Second, the Mark5A program must be stopped on the Mark5 unit(s).
+This can be done with the {\tt mk5take} program (\S\ref{sec:mk5takeprogram}).
+For example, to ``take'' units 8, 9 and 11, one would issue the following command from the shell prompt
+
+\begin{itemize}
+\item[] {\tt mk5take 08 09 11}
+\end{itemize}
+
+Any number of units can be taken off-line at once with {\tt mk5take}.
+Note: if a Mark5 unit is rebooted, {\tt mk5take} will need to be run on that unit again once it comes to life as the {\tt Mark5A} will be automatically started on each reboot (except for units fx01 through fx03 which never run the {\tt Mark5A} program).
+You may need to wait 15 seconds or so after reboot is complete for this to work.
+
+\subsubsection{Returning a Mark5 unit} \label{sec:return}
+
+Once a Mark5 unit is again needed for use with the hardware correlator, it must be returned.
+It is important to make sure the software correlator is not using the particular Mark5 unit for playback before continuing.
+First the Mark5A program must be restarted, which can be done with the {\tt mk5return} program (\S\ref{sec:mk5returnprogram}), e.g.,
+
+\begin{itemize}
+\item[] {\tt mk5return 08 09 11}
+\end{itemize}
+
+Again, any number of Mark5 units can be returned in one call.
+After a few seconds the effectiveness of this can be tested with the {\tt mk5status program}; all units expected to be used for the hardware correlator should be in the READY state.
+Once this is the case, the units can once again be put Online with the {\tt SYSDISCS} screen.
+No reboots should be needed if things go well.
+
+
+
+\subsection{Software correlation based on vex files}
+
+With VLBA DiFX version 1.5 comes correlation based on the {\tt .vex} files rather than the hardware correlator jobs scripts.
+This new path frees operations from a host of difficult to maintain software, including {\tt cjobgen} and its associated software.
+The vex-based correlation was first documented a memo titled ``VLBA-DIFX Operations Plan'' \cite{opsplan}.
+Step-by-step instructions describing the process is repeated here.
+The particular case being exemplified here is based on the complicated pulsar astrometry project.
+Most real-life examples will be simpler, but some may be more complex.
+Note that these instructions represent the expected way to proceed, but changes to the software architecture may introduces changes to some of these steps.
+
+It should be kept in mind that all actions performed by the analysts will be {\em pass based} which means one or more jobs at a time.
+Rarely will analysts have to worry about individual jobs or FITS files.
+The correlator operators on the other hand work entirely on the job basis.
+Commands to be issued by the analysts are preceded by an arrow ( $\longrightarrow$ ).
+In general, all files written in the processes that follow are readable and writable by everyone in the {\tt vlba\_difx} group.
+The exception is data sent to the archive staging area, which is readable and writable only by {\tt e2emgr}.
+
+\begin{enumerate}
+
+\item
+First change to the project directory.
+Assume that the project is called BX123 and that it was observed in December 2009.
+
+$\longrightarrow$ {\tt cd /home/vlbiobs/astronomy/dec09/bx123}
+
+\item
+Extract from the monitor database the Mark5 module logs, clock offsets and rates, and EOPs making a new vex file called {\tt bx123.skd.obs} and a file called {\tt bx123.skd.shelf}.
+The original (schedule) vex file that was used during observation is never to be modified.  
+In extreme cases, the new vex file being created in this step {\tt bx123.skd.obs} can be hand edited to reflect what actually happened during observation, but doing this should be extremely rare. 
+This step locks in the EOP values that will be used for each job made for this project.
+
+$\longrightarrow$ {\tt db2vex bx123.skd}
+
+\item
+Next form the template input file for {\tt vex2difx} from the {\tt .oms} file written by {\tt sched} .
+This creates {\tt bx123.v2d} .
+
+$\longrightarrow$ {\tt oms2v2d bx123.oms}
+
+\item
+For simple experiments it is likely that the {\tt .v2d} file  created in the previous step can be used unmodified.
+For this complicated experiment changes will need to be made.
+Since this project requires four correlator {\em passes}, this {\tt .v2d} file will need to be copied four times and each one edited to reflect the purpose of the correlator pass.
+Sophisticated VLBA users may provide their own set of {\tt .v2d} files that might need light editing before use.
+
+$\longrightarrow$ {\tt cp bx123.v2d clock.v2d}
+
+$\longrightarrow$ {\tt emacs clock.v2d}
+
+\item
+VLBA-DiFX {\tt .input} files are generated at this point using {\tt vex2difx}.
+By design, {\tt vex2difx} has no options associated with it -- it is entirely configured through the {\tt .v2d} files.
+In the case below, the files {\tt clock\_1.input}, {\tt clock\_1.calc}, and {\tt clock\_1.flag} will be created.
+This command will also make a file called {\tt clock.joblist} that lists each job created for this correlator pass with a summary of the job properties, such as start and stop times and number of stations.
+
+$\longrightarrow$ {\tt vex2difx clock.v2d}
+
+\item
+If the correlator jobs created above are deemed ready to run, they are sent to the correlator queue.
+In this process three things will occur: 1. {\tt CALC} will be run to generate the correlator delay models needed for correlation, 2. the {\tt .input} files generated by {\tt vex2difx} will be copied to the software correlator run directory, and 3. the VLBA database will be told that the jobs are ready.
+At this time, a priority can be set to the jobs being sent to the correlator, making them appear at the top of the queue.
+Otherwise the jobs in the queue will appear in observe time order.
+In the example below, the option {\tt -p 1} indicates that this job should run with elevated priority.
+Supplying {\tt clock} with no prefix implies queuing all the jobs in the clock pass.
+Individual jobs could be queued by specifying a list of {\tt .input} files.
+
+$\longrightarrow$ {\tt difxqueue -p 1 add clock}
+
+\item
+When the jobs are complete, which can be determined with {\tt difxqueue} using the {\tt list} action, the correlator output is converted to FITS format.
+Data ``sniffing'' happens automatically during this step.
+The command to do this will ensure that all of the jobs in the pass have been successfully correlated.
+Note that the number of FITS files created is not necessarily the same as the number of correlator jobs.
+A file called {\tt clock.fitslist} will be generated in this step that lists all of the fits files that are part of this correlator pass including for each FITS file a list of the jobs that contributed to that FITS file. 
+The program {\tt makefits} will use program {\tt difx2fits} to do the actual conversion.
+
+
+$\longrightarrow$ {\tt makefits clock.joblist}
+
+\item
+The sniffer output files are at this point inspected.
+Program {\tt difxsniff} is run to produce plots which are identical to those produced by sniffer today. 
+Multiple reference antennas (in this example, Los Alamos and Kitt Peak) can be provided at the same time.
+Sniffer plots and the data that is used to generate them will be placed in a sub-directory of the project directory called {\tt sniffer/clock} for a pass called ``clock''.
+
+$\longrightarrow$ {\tt difxsniff LA KP clock.fitslist}
+
+$\longrightarrow$ {\tt gv sniffer/clock/apdfile.ps}
+
+\item
+If the FITS files are deemed acceptable, they are entered into the VLBA data archive.
+
+$\longrightarrow$ {\tt difxarch clock.fitslist}
+
+\item
+Finally, once data has been archived, the intermediate files should be removed from the head node:
+
+$\longrightarrow$ {\tt difxclean bx123}
+
+Note that this final step is needed only after the entire project is ready for releasing and should not be done every time between completion of job passes.
+
+\end{enumerate}
+
+
+
+\subsection{Software correlation based on FXCORR job files}
+
+The initial deployment of the software correlator at the VLBA relied on conversion of hardware correlator (FXCORR) job scripts ({\tt .fx} files) to DiFX {\tt .input} files.
+This procedure is being phased out in favor of correlation based on {\tt .vex} files; the instructions for correlation based on this earlier pathway is explained below mainly for historical reference.
+This pathway into DiFX may still be useful in some circumstances.
+The procedure below does not go into any detail about what is actually happening at each step, please find details in other sections of this manual.
+Only steps \ref{item:take} though \ref{item:done} below require the correlator-specific hardware so the pre- and post- correlation steps could all be run by the analysts rather than operators.
+In the example that follows, project BM264 segment G will be correlated:
+\begin{enumerate}
+\item Log into the head node as user: {\tt ssh -l difx \$DIFX\_HEAD\_NODE}
+\item Change directories to the job root directory: {\tt cd \$JOB\_ROOT}
+\item Copy the job scripts and monitor data over: {\tt getjobs bm264g} (\S\ref{sec:getjobs})
+\item Enter the project directory: {\tt cd bm264g}
+\item At this time it would be convenient to open another terminal, log into {\tt \$DIFX\_HEAD\_NODE} as difx, and change to the {\tt \$JOB\_ROOT} directory so that it is easy to monitor the progress in one window while running the correlation in the other.
+\item Generate the DiFX input files: {\tt job2difx *.fx} (\S\ref{sec:job2difx}).
+\item Look over the list of jobs to be done: {\tt joblist} (\S\ref{sec:joblist}). \label{item:jl}
+\item Determine which modules are needed, either by looking at the {\tt .fx} files or with the use of {\tt jobdisks} (\S\ref{sec:jobdisks}).
+Install these modules into Mark5 units, making sure not to put two modules that are needed by the same job into the same unit.
+\item Off-line the units using the hardware correlator {\tt SYSDISCS} screen and ``take'' them (\S\ref{sec:take}). \label{item:take}
+Note that if no hardware correlation is to occur it is okay to ``take'' all of the Mark5 units for convenience.
+\item \label{item:sd} At this point one could start the correlation of all the jobs with a single command: {\tt startdifx *.input} (\S\ref{sec:startdifx}), but it is recommended to start just one job first to make sure things are working: {e.g. \tt startdifx job1240.000.input} .
+\item When output stops and the command prompt is given back, the processing is either done or something failed.
+If a job is encountered that requires a module that is not mounted, processing will stop with a warning that the module could not be found.
+At this point, you should load the desired module and again type {\tt startdifx *.input} to continue processing. 
+\item When done, return the Mark5 units if they are needed by the hardware correlator (\S\ref{sec:return}). \label{item:done}
+\item Generate fits files for all correlated jobs: {\tt difx2fits -d} (\S\ref{sec:difx2fits}). \label{item:end}
+\end{enumerate}
+
+If a job is encountered and a required module for that job is not installed in a Mark5 unit that has been ``taken'', the correlation process will stop.
+The needed module will be listed in an error report, or can be identified using the {\tt jobdisks} (\S\ref{sec:jobdisks}) program.
+
+
+\subsection{Common failure modes}
+
+Here is a list of some common failure modes and some hints to identifying and solving them.
+In general, it is often useful to look at the correlator log.
+The DOI will keep in a buffer the running log from the recent correlation sessions.
+Copies of all logs are stored in {\tt \$DIFX\_QUEUE/}{\em project} .
+Note that {\em project} in this context includes the segment code and is completely capitalized.
+
+\subsubsection{Directory contains undecoded scans}
+
+Occasionally a message of the form {\tt Module }{\em module} {\tt directory contains undecoded scans!} will appear.
+This means that one or more scans for the module named {\em module} was not properly read or decoded.
+This should first be verified by examining the module directory file, called {\tt \$MARK5\_DIR\_PATH/}{\em module}{\tt .dir} .
+This examination is best done with program {\tt checkdir} which looks for a number of possible abnormalities.
+Rows where the eleventh column contains a negative number are scans that were not decoded properly.
+A known problem occasionally causes many consecutive scans at the end to be improperly read and thus undecoded.  
+If this is the case, rename the existing directory file and try reacquiring the directory.
+Usually it will start working immediately.
+
+If one or a small number scans repeatedly cannot be decoded, the scan may be corrupted for some reason.
+In this case, simply delete the row(s) from the directory file and then decrement the number following the module name on the first line of the file by the number of scans deleted; this count of the number of scans listed in the file must remain accurate.
+This operation will cause the correlator to skip over these affected scans and data will be lost, so use appropriate judgement in these cases.
+
+\subsubsection{Directory read fails on partial module}
+
+Modules containing less than 8 working disks can be problematic.  
+It is suggested that modules of this type have their directories read
+preemptively using a special command:
+
+\noindent
+$\longrightarrow$ {\tt mk5control safedirA 12}
+
+\noindent
+which is the command to {\em safely} read the directory of the module in bank {\tt A} of {\tt mark5fx12}.
+
+\subsubsection{Mark5 unit hangs while reading directory}
+
+Typically the first thing one should do if a hang occurs is to try again.
+For directory reading this can be attempted with the {\tt mk5control} program.
+For instance, if the module in bank {\tt A} of {\tt mark5fx12} hangs during the directory read, stop the correlation process with the DOI or via {\tt stopmpifxcorr} and then issue:
+
+\noindent
+$\longrightarrow$ {\tt mk5control getdirA 12}
+
+\noindent
+If this also fails, or never starts, reboot the unit via the DOI or
+
+\noindent
+$\longrightarrow$ {\tt mk5control reboot 12}
+
+\noindent
+or
+
+\noindent
+$\longrightarrow$ {\tt ssh 12 /sbin/reboot} if it really refuses to reboot.
+
+Once the unit comes back, try retrieving the directory again.
+
+
+\subsubsection{Mark5 unit hung} %FIXME
+Unfortunately, there are still some instabilities with Mark5 units that result in various kinds of hangs; some units appear more sensitive than others.
+Often a failed Mark5 can be identified with the last few lines of error messages output from {\tt mpifxcorr}.
+To verify, first attempt to {\tt ssh} into that unit.
+If that is successful, try watching the output of {\tt cpumon} and {\tt mk5mon} (or the equivalent from the {\tt DOI}).
+If no updates come from {\tt cpumon} then it is likely that the computer has seized and requires a hard reboot.
+Otherwise if {\tt mk5mon} shows no updates, the problem is likely with the Streamstor card and/or disk module.
+If logging into the Mark5 unit works, try resetting the Streamstor card with:
+
+{\tt mk5control reset } {\it unitNumber}
+
+\noindent where {\it unitNumber} is, for example, 07 for mark5fx07 or 23 for mark5fx23.
+The Mark5 state shown in {\tt mk5mon} should change to ``Resetting''.
+If it does not, then it is likely a reboot is needed.
+
+If none of the above works, try rebooting the particular Mark5 unit and starting over.
+Note: as currently configured, a Mark5 unit will restart the {\tt Mark5A} upon boot, so you will need to use {\tt mk5take} to stop that before attempting software correlation on that unit again.  
+Make sure to give the Mark5 unit enough time to initialize the {\tt Mark5A} program before running {\tt mk5take} (i.e., wait for module lights to cycle).
+
+A possibly more reliable way to identify a hung Mark5 unit is to start a new instance of {\tt mk5mon} (\S\ref{sec:mk5mon}) in a terminal and issue the following command: 
+
+{\tt mk5control getvsn mark5}
+
+\noindent A hung Mark5 will not show up in the list of units.
+
+\subsubsection{Module moved}
+If a required module has been removed or moved since {\tt genmachines} has run, {\tt mpifxcorr} will not be able to correlate.
+In this case DiFX will fail, spitting out a substantial amount of debug information.
+You can try again by running {\tt genmachines} {\em baseFilename}{\tt .input} to force the recreation of the {\tt .machines} file.
+If this program fails, it will report an error that may aid in diagnostics.
+Note that this scenario will not happen if the Difx Operator Interface or {\tt startdifx} (\S\ref{sec:startdifx}) is used to run the correlator.
+
+\subsection{Correlating data files} \label{sec:datafiles}
+
+The operating instructions up to this point have focused on correlation directly off Mark5 modules.
+Correlation off files is also supported, as is a mixed mode where files and modules are correlated together.
+The scripts described in this document don't (to date) make correlation of files easy, but it is possible to do so by hand editing files.
+It is expected that enhancements to the scripts will make correlation from files much easier in future versions of DiFX.
+Two files will need manipulation: {\tt .input} and {\tt .machines}.
+In the {\tt .input} file, every entry in the {\tt DATASTREAM} table that corresponds to a disk file needs the {\tt DATA SOURCE} value changed from {\tt MODULE} to {\tt FILE}.
+The {\tt .machines} file will likely have to be constructed completely by hand.
+See \S\ref{sec:machines} for a detailed description of the format of that file.
+Note that it is no longer necessary for the data files to be visible to all cluster computers -- they can reside on local drives that are not exported, including USB or Firewire drives, but this requires that the datastream nodes listed in the {\tt .machines} file be in the order in which the antennas are listed in the {\tt .input} file.
+
+\noindent 
+{\em Note:} you must use the {\tt -n} option to {\tt startdifx} when starting the correlation or the hand-edited {\tt .machines} file will be overwritten.
+
+
+\subsection{The VLBA database}
+
+Many of the existing VLBA tools (such as the Observation Management System (OMS), {\tt mon2db}, {\tt cjobgen}, and others) make use of an Oracle database for persistent storage of various information related to projects that use either the VLBA antennas or correlator.
+Many aspects of VLBA-DiFX are not a good match for the existing database tables; adapting the existing tables to work nicely with VLBA-DiFX will be disruptive and have implications for much existing code, including software that will not be needed once FXCORR is shut down.
+The proposed solution to this dilemma is to use a parallel set of database tables for correlation and archiving when using VLBA-DiFX.
+The use of existing software for generation of FXCORR jobs will continue unchanged.
+For projects to be correlated using VLBA-DiFX, {\tt OMS} will still be used for observation preparation tasks, but will not be used in preparation of correlation or anything that occurs beyond that in the project's life cycle.  Instead, {\tt vex2difx} will be used to generate jobs, {\tt difxqueue} will be used in lieu of {\tt OMS} to stage correlator jobs, and {\tt difxarch} will be used in the archiving of data.
+The queuing tool {\tt difxqueue} will be used to display the state of the VLBA-DiFX job queue as well as populate it.
+The new tools will access three new database tables: DIFXQUEUE and DIFXLOG; the contents of these tables is shown in Tables\,\ref{tab:difxqueue}\,\&\,\ref{tab:difxlog}.
+
+\begin{table}[h]
+\vspace{2mm}
+\begin{center}
+\renewcommand{\tabcolsep}{1.4mm}
+\begin{tabular}{lll}
+\hline
+\hline
+   \multicolumn{1}{l}{Column}
+ & \multicolumn{1}{l}{Type}
+ & \multicolumn{1}{l}{Comments}
+\\
+\hline
+PROPOSAL	& VARCHAR2(10)	& The proposal code \\
+SEGMENT		& VARCHAR2(2)	& Segment (epoch) of proposal, or blank \\
+JOB\_PASS	& VARCHAR2(32)	& Name of correlator pass (e.g. ``geodesy'') \\
+JOB\_NUMBER	& INT		& Number of job in the pass \\
+PRIORITY	& INT		& Number indicating the priority of the job in the queue \\
+		&		& 1 is highest \\
+JOB\_START	& DATE		& Observe time of job start \\
+JOB\_STOP	& DATE		& Observe time of job stop \\
+SPEEDUP         & FLOAT         & Estimated speed-up factor for job \\
+INPUT\_FILE	& VARCHAR2(512)	& Full path of the VLBA-DiFX input file \\
+STATUS		& VARCHAR2(32)	& Status of the job, perhaps ``QUEUED'', ``KILLED'', \\
+		&		& ``RUNNING'', ''FAILED'', ''UNKNOWN'' or ``COMPLETE'' \\
+NUM\_ANT	& INT		& Number of antennas in the job \\
+\hline
+\end{tabular}
+\end{center}
+\caption{
+The DIFXQUEUE database table.
+This table is based on the FXQUEUE table currently used by {\tt OMS}.
+Entries to this table will be initially made by {\tt difxqueue}.
+The STATUS field will be automatically updated as appropriate during correlation.
+\label{tab:difxqueue}}
+\end{table}
+
+\begin{table}[h]
+\vspace{2mm}
+\begin{center}
+\renewcommand{\tabcolsep}{1.4mm}
+\begin{tabular}{lll}
+\hline
+\hline
+   \multicolumn{1}{l}{Column}
+ & \multicolumn{1}{l}{Type}
+ & \multicolumn{1}{l}{Comments}
+\\
+\hline
+PROPOSAL	& VARCHAR2(10)	& The proposal code \\
+SEGMENT		& VARCHAR2(2)	& Segment (epoch) of proposal, or blank \\
+JOB\_PASS	& VARCHAR2(32)	& Name of correlator pass (e.g. ``geodesy'') \\
+JOB\_NUMBER	& INT		& Number of job in the pass \\
+CORR\_START	& DATE		& Start time/date of correlation \\
+CORR\_STOP	& DATE		& Stop time/date of correlation \\
+SPEEDUP         & FLOAT         & Measured speed-up factor \\
+INPUT\_FILE     & VARCHAR2(512) & File name of .input file \\
+OUTPUT\_FILE	& VARCHAR2(512)	& File name of correlator output \\
+OUTPUT\_SIZE	& INT		& Size (in $10^6$\,bytes) of correlator output \\
+CORR\_STATUS	& VARCHAR2(32)	& Status of correlation, typically ``COMPLETED'' \\
+\hline
+\end{tabular}
+\end{center}
+\caption{
+The DIFXLOG database table.  This table is based on the FXLOG table currently used by {\tt OMS}.
+A row will be written to this table after each successful correlation by the DiFX Operator Interface.
+\label{tab:difxlog}}
+\end{table}
+
+\subsection{Archiving} \label{sec:archive}
+
+Archiving of VLBA-DiFX data will be done on a per-pass basis.
+All {\tt .FITS} files associated with a single correlator pass will be archived together.
+A particular staging directory for VLBA-DiFX data has been set up.
+Populating the archive amounts to first copying the files to be archived to this directory making sure that the first character of the file name is ``.''.
+Once the entire file is transferred this file is renamed without the leading period.
+This system is the standard way to populate the Next Generation Archive System (NGAS) \cite{ngas} without potential for an incompletely copied file to be archived.
+The file names will be composed only of alpha-numeric characters and ``.'' and ``\_''.
+These characters have no special meaning in any relevant software, including http, XML, bash/Linux command lines, the Oracle database parser, etc.  File names will have the following format:
+
+\vspace{5pt}
+
+{\tt VLBA\_}{\em projectCode}{\tt \_}{\em passName}{\tt \_}{\em fileNum}{\tt \_}{\em corrDate}{\tt T}{\em corrTime}{\tt .idifits}
+
+\vspace{5pt}
+
+\noindent
+where the italicized fields, which themselves will be limited to alphanumeric characters, are as follows:
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+\hline
+Field & Type & Comment \\
+\hline
+{\em projectCode}	& string		& Project code, including segment if appropriate \\
+{\em passName}		& string		& Name of the pass, as set in the {\tt .v2d} file \\
+{\em fileNum}		& integer		& FITS file sequence number within pass \\
+{\em corrDate}		& date ({\em yymmdd})	& Date corresponding to correlation completion \\
+{\em corrTime}		& time ({\em hhmmss})	& Time corresponding to correlation completion \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+Parameter {\em fileNum} is the sequence number of the created {\tt .FITS} file which may or may not have a direct correspondence with the job sequence number within the correlator pass.
+An example archive file name relevant to the sample project used in this memo may be:
+
+\vspace{5pt}
+
+{\tt VLBA\_BX123\_clock\_1\_091223T032133.idifits}
+
+\vspace{5pt}
+
+\noindent
+All files produced for a given pass will be placed in a single directory, 
+
+\vspace{5pt}
+
+{\tt \$DIFX\_ARCHIVE\_ROOT/}{\em projectCode}{\tt /}{\em passName}
+
+\vspace{5pt}
+
+\noindent
+where {\tt DIFX\_ARCHIVE\_ROOT/} is an environment variable pointing to the head of the archive staging area for VLBA-DiFX.
+During the transfer to the archive, the {\em projectCode} portion of the directory tree will begin with a period that is to be renamed once all files are completely copied.
+This will allow the archive loader to logically group together all the files of the pass.
+If needed, an index file listing the association of archive {\tt .FITS} files and correlator jobs can also be placed in this directory.
+In order to ensure the atomic nature of correlator passes in the archive, the renaming of the copied files from the temporary versions starting with ``.'' will not occur until all archive files are transferred.
+The {\tt .fitslist} file produced by {\tt difx2fits} would serve this purpose.
+An archive loader will periodically (initially about every 30 minutes, but perhaps later with much shorter intervals)\ look for new files in the archive staging area to store.
+The archive data will be available moments later for users wanting to download the data.
+
+\subsection{Ownership and permissions of files} \label{sec:permissions}
+
+This section describes how the different user accounts interact within the DiFX correlation process.
+This is VLBA operations specific.
+No fewer than 4 user accounts are used in the life cycle of a DiFX project:
+
+\begin{itemize}
+
+\item {\it analysts}: 
+The analysts account is used to prepare the {\tt .input} and other files used to run DiFX.
+These files retain {\em analysts} ownership in the {\tt /home/vlbiobs/astronomy} area and while queued.
+
+\item {\it root}:
+The root account owns the {\tt mk5daemon} processes that run on each of the Mark5 and software correlator computers.
+
+\item {\it difx}:
+User account {\it difx} is used to actually run {\tt mpifxcorr} (and {\tt difxlog}) during correlation.
+This is important, as the {\it difx} account has all of the proper environment variables set up.
+The DiFX Operator Interface may also be run as user {\it difx}.
+
+\item {\it e2emgr}:
+The data archive requires that the files staged for entry into the archive be given {\it e2emgr} ownership.
+This is accomplished with the prgram {\tt e2ecopy} which runs with root priviledges and hence can change its userid to {\it e2emgr} as needed.
+
+\end{itemize}
+
+By default, all files will have owner and group read/write permission and global read permission.
+
+\subsection{Copying baseband data} \label{sec:datacopy}
+
+Some users wish to perform their own analysis on baseband VLBI data.
+This section describes the procedure for copying data and ends with guidelines that should be sent to each user requesting data to be copied.
+The guidelines are there to streamline the process and to minimize the change of problems.
+
+\subsubsection{Performing the data copy}
+
+{\em FIXME : write me!}
+
+\subsubsection{Guidelines to users}
+
+Users wishing to retain a copy of the baseband data should make sure to
+conform to the following guidelines.  Please note that many of the
+instructions below are there to ensure that root access is not required in
+the copying of the data.  If root access is needed as a result of failure to
+comply, a delay in the copying will be incurred.
+
+\begin{enumerate}
+\item Arrangement for data copy should be made prior to observing.
+
+\item The external disk must have a working USB2 connector for data transfer.
+We specifically do not support Firewire at this time.  
+We do not support power-over-USB drives.
+
+\item Each disk should have a sticker label attached with the owner's name, institution, phone number, shipping address and email.  
+The project code should be clearly marked as well.  
+If multiple disks are shipped, each should have a unique serial number clearly labeled on the disk.
+
+\item The external disk must be preformatted with a standard Linux filesystem (ext2 or ext3).
+It is preferred that the options {\tt -m 0 -T largefile4} are used with {\tt mke2fs} and it is also suggusted that the {\tt -L} option is used to specify a volume name/number that matches the labelled serial number.
+
+\item It is the user's responsibility to ensure that sufficient post-formatted capacity is available on the disks.
+
+\item A world-writable root-level directory with the name of each project to be copied should be made.
+The directory name should contain only uppercase letters and numbers.
+
+\item The disk should be empty upon delivery.  
+NRAO will not be responsible for data that is deleted.  
+The root-level directory(s) mentioned above should be the only exception(s).
+
+\item Include the power transformer/cable and USB cable with the disk.  
+It is recommended that owner labels be attached to each of these.
+
+\item Note to foreign users: please ensure that the power supply has either a NEMA 1-15 / Type~A ungrounded power connector or a NEMA 5-15 / Type~B grounded power connector and that the power supply works on 110V/60Hz.
+If this is accomplished using an adapter, it must be included in the box with the disk.
+
+\item Foreign users will be responsible for customs charges and are encouraged to contact NRAO well in advance of any shipment to minimize cost.
+
+\end{enumerate}
+
+
+
+
+\subsection{Some comments on channels}
+
+This section discusses the accountability of channel identification through the entire DiFX system.
+While much of this discussion will not be of use outside NRAO, the terminology discussed here might help explain other portions of this document.  
+The subject of this section is baseband channels, not individual frequency channels that the correlator produces from
+the baseband channels.
+
+Baseband channels are individual digital data streams containing a time-series of sampled voltages representing data from a particular portion of the spectrum from one polarization.
+Each baseband channel is assigned a recorder channel number.
+For a given baseband data format (i.e., VLBA, Mark4, Mark5B, ...) a particular recorder channel number is assigned to a fixed number of tracks or bitstreams.
+This mapping is contained in the {\tt track} row in the {\tt format} table of the {\tt .fx} job script and can be different for each antenna.
+This mapping is also reflected in the {\tt .input} file in the {\tt datastream} table.
+
+DiFX correlates baseband channels from multiple antennas to produce visibilities.
+From each correlated baseline, one or two basebands from one telescope will be correlated against one or two basebands of another, resulting in up to four products for a particular sub-band.
+This is to allow full polarization correlation.
+Each sub-band (called an IF in AIPS) is given a sub-band number; in general 1 or 2 recorder channels map to each sub-band.
+Note that an observation can simultaneously observe some sub-bands consisting of only one baseband and some with two basebands.
+In cases such as this the matrix containing the visibility products on a particular baseline will be large enough in each dimension (i.e., polarization product, sub-band) to contain all of the results, even if this consumes more storage than necessary; flags are written that invalidate portions of the visibility matrix that are not produced by the correlator.  

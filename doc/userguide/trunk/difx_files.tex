@@ -1,0 +1,1959 @@
+\section{Description of various files} \label{sec:files}
+
+In the descriptions that follow, the locations of some files is given as {\tt /home/vlbiobs}, meaning the directory {\tt /home/vlbiobs/astronomy/}{\em mmmyy}{\tt /}{\em project} or one of its subdirectories.  
+Here {\em mmmyy} is the month and year of the project's observation (i.e., {\tt jan08}) and project is the full project name, with segment, in lower case, such as {\tt bw088n}.
+In what follows, the ``software correlator project directory'' (sometimes ``project directory'') refers to the directory from which software correlation is to proceed.
+This directory can be created by {\tt getjobs} (\S\ref{sec:getjobs}).
+File names beginning with a period (e.g., {\tt .acb}) represent file name extensions, typically (but not always) to job file bases, such as {\tt job121.000} .
+Examples of many of the following file types for a particular VLBA correlator job are stashed at \url{http://www.aoc.nrao.edu/~wbrisken/NRAO-DiFX-1.1/} .
+
+
+
+
+
+
+% .acb ------------------------------------------------------------------------
+
+\subsection{.acb} \label{sec:acb}
+
+\vspace{-20pt}\hspace{60pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .acb} file. 
+This file contains auto-correlation spectra for each antenna for each source.
+In order to minimize the output data size, spectra for the same source will only be repeated once per 15 minutes.
+The file contains many concatenated records.
+Each record has the spectra for all baseband channels for a particular antenna and has the following format.  
+Note that no spaces are allowed within any field.
+Values in {\tt typewriter} font without comments are explicit strings that are required.
+
+\begin{center}
+\begin{tabular}{l l l l}
+\hline
+Line(s) & Value & Units & Comments \\
+\hline
+1 & {\tt timerange:} & & \\
+  & {\it MJD}    & integer $\ge 1$    & MJD day number corresponding to line \\
+  & {\it start time} & string & e.g., {\tt 13h34m22.6s} \\
+  & {\it stop time}  & string & e.g., {\tt 13h34m52.0s} \\
+  & {\tt obscode:} & & \\
+  & {\it observe code} & string & e.g., MT831 \\
+  & {\tt chans:} & & \\
+  & {\it n}$_{\mathrm{chan}}$ & $\ge 1$ & number of channels per baseband channel \\
+  & {\tt x} & & \\
+  & {\it n}$_{\mathrm{BBC}}$ & $\ge 1$ & number of baseband channels \\
+\hline
+2 & {\tt source:} & & \\
+  & {\it source name} & string & e.g., {\tt 0316+413} \\
+  & {\tt bandw:} & & \\
+  & {\it bandwidth} & MHz & baseband channel bandwidth \\
+  & {\tt MHz} & & \\
+\hline
+3 to 2+$n_{\mathrm{BBC}}$ & {\tt bandfreq:} & & \\
+  & {\it frequency} & GHz & band edge (SSLO) frequency of baseband channel \\
+  & {\tt GHz polar:} & & \\
+  & {\it polarization} & 2 chars & e.g. {\tt RR} or {\tt LL} \\
+  & {\tt side:} & & \\
+  & {\it sideband} & {\tt U} or {\tt L} & for upper or lower sideband \\
+  & {\tt bbchan:} & & \\
+  & {\it bbc} & {\tt 0} & Currently not used but needed for conformity \\
+\hline
+3+$n_{\mathrm{BBC}}$ to & {\it antenna number} & $\ge 1$ & antenna table index \\
+2+$n_{\mathrm{BBC}}(n_{\mathrm{chan}}+1)$  & {\it antenna name} & string & \\
+  & {\it channel number} & $\ge 1$ & $= \mathrm{chan} + (\mathrm{bbc}-1) \cdot n_{\mathrm{chan}}$ for chan, bbc $\ge 1$ \\
+  & {\it amplitude} & $\ge 0.0$ & \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+The above are repeated for each auto-correlation spectrum record.
+This file can be plotted directly with {\tt plotbp} or handled more automatically with {\tt difxsniff}.
+
+
+
+
+
+
+% .apc ------------------------------------------------------------------------
+
+\subsection{.apc} \label{sec:apc}
+
+\vspace{-20pt}\hspace{60pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+This file type is nearly identical to the better known {\tt .apd} file; the name acronym refers to Amplitude Phase Channel.
+The amplitude, phase, and rate for the brightest channel is determined for each IF for each solution interval.
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .apc} file. 
+This file contains {\em channel-based} fringe fit solutions typically every 30 seconds for the entire experiment.
+These solutions are not of calibration quality but are sufficient for use in evaluating the data quality.
+
+The first line in the file is the observation code, e.g., {\tt MT831} .
+
+Each subsequent line has the same format with the following fields:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+{\it MJD}           & integer $\ge 1$    & MJD day number corresponding to line \\
+{\it hour}          & $\ge 0.0$, $< 24.0$ & hour within day \\
+{\it source number} & integer $\ge 1$    & source table index \\
+{\it source name}   & string             & name of source; no spaces allowed \\
+{\it ant1 number}   & integer $\ge 1$    & antenna table index for first antenna \\
+{\it ant2 number}   & integer $\ge 1$    & antenna table index for second antenna \\
+{\it ant1 name}     & string             & name of antenna 1; no spaces allowed \\
+{\it ant2 name}     & string             & name of antenna 2; no spaces allowed \\
+{\it n}$_{\mathrm{BBC}}$  & integer $\ge 1$    & number of baseband channels, $n_{\mathrm{BBC}}$ \\
+& & The next four columns are repeated $n_{\mathrm{BBC}}$ times \\
+\hline
+{\it channel}       & $\ge 1$, $\le n_\mathrm{chan}$            & the strongest channel \\
+{\it amplitude}     & $\ge 0.0$          & the amplitude of the peak channel \\
+{\it phase}         & degrees            & phase of the peak channel \\
+{\it rate}          & Hz                 & the channel phase rate \\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+
+% .apd ------------------------------------------------------------------------
+
+\subsection{.apd} \label{sec:apd}
+
+\vspace{-20pt}\hspace{60pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .apd} file. 
+This file contains Amplitude, Phase, Delay (hence the name) and rate results from fringe fit solutions typically every 30 seconds for the entire experiment.
+These solutions are not of calibration quality but are sufficient for use in evaluating the data quality.
+
+The first line in the file is the observation code, e.g., {\tt MT831} .
+
+Each subsequent line has the same format with the following fields:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+{\it MJD}           & integer $\ge 1$    & MJD day number corresponding to line \\
+{\it hour}          & $\ge 0.0$, $< 24.0$ & hour within day \\
+{\it source number} & integer $\ge 1$    & source table index \\
+{\it source name}   & string             & name of source; no spaces allowed \\
+{\it ant1 number}   & integer $\ge 1$    & antenna table index for first antenna \\
+{\it ant2 number}   & integer $\ge 1$    & antenna table index for second antenna \\
+{\it ant1 name}     & string             & name of antenna 1; no spaces allowed \\
+{\it ant2 name}     & string             & name of antenna 2; no spaces allowed \\
+{\it n}$_{\mathrm{BBC}}$  & integer $\ge 1$    & number of baseband channels, $n_{\mathrm{BBC}}$ \\
+& & The next four columns are repeated $n_{\mathrm{BBC}}$ times \\
+\hline
+{\it delay}         & ns                 & the fringe fit delay \\
+{\it amplitude}     & $\ge 0.0$          & the amplitude of fringe fit peak \\
+{\it phase}         & degrees            & phase of fringe fit peak \\
+{\it rate}          & Hz                 & the fringe fit rate \\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+
+
+
+% .binconfig ------------------------------------------------------------------
+
+\subsection{.binconfig} \label{sec:binconfig}
+
+\vspace{-20pt}\hspace{90pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+The {\tt .binconfig} file is a file created by the user of DiFX and referenced by the {\tt .input} file to specify pulsar options.
+The file uses the standard DiFX input file format and has the following parameters:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM POLYCO FILES      & integer $\ge 1$ & Number of polyco files to read ({\em nPoly}) \\
+                      &                 & The next row is duplicated {\em nPoly} times \\
+POLYCO FILE {\em p}   & string          & Name of {\em p}$^{th}$ polynomial file \\
+NUM PULSAR BINS       & integer $\ge 1$ & Number of pulse bins to create ({\em nBin}) \\
+SCRUNCH OUTPUT        & boolean         & Sum weighted bins?  If not, write all bins \\
+                      &                 & The next rows are duplicated {\em nBin} times \\
+BIN PHASE END {\em b} & float 0.0-1.0   & Pulsar phase where bin ends \\
+BIN WEIGHT {\em b}    & float $\ge 0.0$ & Weight to use when scrunching \\
+\hline
+\end{tabular}
+\end{center}
+
+The start of one bin is equal to the end of the previous bin; bins wrap around phase 1.0.
+The BIN PHASE END parameters must be listed in ascending phase order.
+See Sec.~\ref{sec:pulsars} for example usage of {\tt .binconfig} files.
+
+
+
+
+
+
+% cal.vlba --------------------------------------------------------------------
+
+\subsection{cal.vlba} \label{sec:cal}
+
+Monitor data that gets attached to FITS files is extracted by {\tt tsm} into a file called {\em project}{\tt cal.vlba} where {\em project} is the name of the project, i.e., {\tt bg167} or {\tt bc120a}.
+A single file contains the monitor data for all antennas for the duration of the project.
+The file is left in {\tt /home/vlbiobs} and is compressed with {\tt gzip} after some time to save disk space, resulting in additional file extension {\tt .gz}.
+The program {\tt getjobs} (\S\ref{sec:getjobs}) can be used to copy this file from its original location in {\tt /home/vlbiobs} and uncompress the file if needed.
+A program called {\tt vlog} (sec \S\ref{sec:vlog}) reads this file and produces files called {\tt flag}, {\tt pcal}, {\tt tsys}, and {\tt weather} in the software correlator project directory.
+
+
+
+
+
+
+
+% .calc -----------------------------------------------------------------------
+
+\subsection{.calc} \label{sec:calc}
+
+The main use of the {\tt .calc} file is to drive the geometric model calculations but this file also serves as a convenient place to store information that is contained in the {\tt .fx} file but not in the {\tt .input file} and is needed for {\tt .FITS} file creation.
+In the DiFX system, one {\tt .calc} file is created by {\tt job2difx} (\S\ref{sec:job2difx}) for each {\tt .input} file.
+This file is read by {\tt calcif2}) (\S\ref{sec:calcif2}) to produce a tabulated delay model, $u, v, w$ values, and estimates of atmospheric delay contributions.
+
+In brief, the parameters in this file that are relevant for correlation include time, locations and geometries of antennas, pointing of antennas (and hence delay centers) as a function of time and the Earth orientation parameters relevant for the correlator job in question.
+Additional parameters that are stuffed into this file include spectral averaging, project name, and information about sources such as calibration code and qualifiers.
+In the NRAO application of DiFX, source names are faked in the actual {\tt .input} file in order to allow multiple different configurations for the same source.
+A parameter called {\em realname} accompanies each source name in the {\tt .calc} file to correctly populate the source file in {\tt .FITS} file creation.
+
+The syntax of this file is similar to that of the {\tt .input} file.
+The file consists entirely of key-value pairs separated by a colon.
+The value column is not constrained to start in column 21 as it is for the files used by {\tt mpifxcorr}.
+There are five sections in the {\tt .calc} file; these sections are not separated by any explicit mark in the file.
+
+The first section contains values that are fixed for the entire experiment and at all antennas --- all data in this section is scalar.
+In the following table, all numbers are assumed to be floating point unless further restricted.
+The keys and allowed values in this section are summarized below.
+Optional keys are identified with a $\star$.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+JOB ID             & integer $\ge 1$& taken from {\tt .fx} file \\
+\Oa{JOB START TIME}     & MJD + fraction & start time of original {\tt .fx} file \\
+\Oa{JOB STOP TIME}      & MJD + fraction & end time of original {\tt .fx} file \\
+OBSCODE            & string         & observation code assigned to project \\
+\Oa{SESSION}            & short string   & session suffix to OBSCODE, e.g., {\tt A} or {\tt BE} \\
+\Oa{DIFX VERSION}       & string         & version of correlator, e.g. {\tt DIFX-1.5} \\
+\Oa{SUBJOB ID}          & integer $\ge 0$& subjob id assigned by {\tt job2difx} (\S\ref{sec:job2difx}) \\
+\Oa{SUBARRAY ID}        & integer $\ge 0$& subarray id assigned by {\tt job2difx} \\
+START MJD          & MJD + fraction & start time of this subjob \\
+START YEAR         & integer        & calendar year of START MJD \\
+START MONTH        & integer        & calendar month of START MJD \\
+START DAY          & integer        & day of calendar month of START MJD \\
+START HOUR         & integer        & hour of START MJD \\
+START MINUTE       & integer        & minute of START MJD \\
+START SECOND       & integer        & second of START MJD \\
+INCREMENT (SECS)   & integer        & seconds between computed model points ({\em inc}) \\
+\Oa{SPECTRAL AVG}       & integer $\ge 1$& number of channels to average in FITS creation \\
+\Oa{START CHANNEL}      & integer $\ge 0$& start channel number (before averaging) \\
+\Oa{OUTPUT CHANNELS}    & integer $\ge 1$& total number of channels to write to FITS \\
+                   & $> 0.0 , < 1.0$& fraction of total channels to write to FITS \\
+\Oa{TAPER FUNCTION}     & string         & currently only {\tt UNIFORM} is supported \\
+DELAY FILENAME     & string         & filename, including path, of {\tt .delay} file to create \\
+UVW FILENAME       & string         & filename, including path, of {\tt .uvw} file to create \\
+RATE FILENAME      & string         & filename, including path, of {\tt .rate} file to create \\
+IM FILENAME        & string         & filename, including path, of {\tt .im} file to create \\
+\hline
+\end{tabular}
+\end{center}
+
+%See the discussion on spectral selection and averaging in \S\ref{sec:selection} for more information on {\tt SPECTRAL AVG}, {START CHANNEL} and {OUTPUT CHANNELS}.
+%Note that all three of these parameters are optional with defaults that result in no averaging and writing of all channels.
+
+The second section contains antenna(telescope) specific information.
+After an initial parameter defining the number of telescopes, there are {\em nTelescope} sections (one for each antenna), each with the following six parameters.
+Lowercase {\em t} in the table below is used to indicate the telescope index, an integer ranging from 0 to {\em nTelescope} - 1.
+Note that in cases where units are provided under the Key column, these units are actually part of the key.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM TELESCOPES               & integer $\ge 1$& number of telescopes ({\em nTelescope}). \\
+&& The rows below are duplicated {\em nTelescope} times. \\
+\hline
+TELESCOPE {\em t} NAME       & string & upper case antenna name abbreviation \\
+TELESCOPE {\em t} MOUNT      & string & the mount type: altz, equa, xyew, or xyns \\
+TELESCOPE {\em t} OFFSET (m) & meters & axis offset in meters \\
+TELESCOPE {\em t} X (m)      & meters & X geocentric coordinate of antenna at date \\
+TELESCOPE {\em t} Y (m)      & meters & Y geocentric coordinate of antenna at date \\
+TELESCOPE {\em t} Z (m)      & meters & Z geocentric coordinate of antenna at date \\
+\Oa{TELESCOPE} {\em t} SHELF & string & shelf location of module to correlate \difxoneone \\
+\hline
+\end{tabular}
+\end{center}
+
+Note that the antenna locations are currently taken from the {\tt .fx} job script written by {\tt cjoggen} and are valid for the date of observation.
+
+The third section contains scan specific information.
+Except for one initial line specifying the number of scans, {\em nScan}, this section is composed of nine parameters per scan.
+Each parameter is indexed by {\em s} which ranges from 0 to {\em nScan} - 1.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM SCANS              & integer $\ge 1$ & number of scans ({\em nScan}). \\
+&& The rows below are duplicated {\em nScan} times. \\
+\hline
+SCAN {\em s} POINTS    & $\ge 1$         & duration of scan in units of {\em inc} \\
+SCAN {\em s} START PT  & integer $\ge 0$ & start time of scan in units of {\em inc} since MJD START \\
+SCAN {\em s} SRC NAME  & string          & systematic name to match that used in {\tt .input file} \\
+SCAN {\em s} REAL NAME & string          & name to use for source in the FITS output file \\
+SCAN {\em s} SRC RA    & radians         & J2000 right ascension\\
+SCAN {\em s} SRC DEC   & radians         & J2000 declination \\
+SCAN {\em s} CALCODE   & string          & usually uppercase letters \\
+SCAN {\em s} QUAL      & integer $\ge 0$ & source qualifier \\
+%SCAN {\em s} OVERSAMP  & integer $\ge 1$ & oversample factor for this scan \difxoneone \\
+\hline
+\end{tabular}
+\end{center}
+
+The fourth section contains Earth orientation parameters (EOP).
+Except for one initial line specifying the number of days of EOPs, {\em nEOP}, this section is composed of five parameters per day of sampled EOP values.
+Each parameter is indexed by {\em e} which ranges from 0 to {\em nEOP} - 1.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM EOP                    & integer $\ge 1$ & number of tabulated EOP values ({\em nEOP}) \\
+&& The rows below are duplicated {\em nEOP} times. \\
+\hline
+EOP {\em e} TIME (MJD)     & MJD + fraction  & time of sample; fraction almost always zero \\
+EOP {\em e} TAI\_UTC (sec) & integer seconds & leap seconds accrued at time of job start \\
+EOP {\em e} UT1\_UTC (sec) & seconds         & UT1 - UTC \\
+EOP {\em e} XPOLE (arcsec) & arc seconds     & X coordinate of polar offset \\
+EOP {\em e} YPOLE (arcsec) & arc seconds     & Y coordinate of polar offset \\
+\hline
+\end{tabular}
+\end{center}
+
+The final (completely optional) section has a table for positions and velocites of spacecraft.
+Each spacecraft is indexed by {\em s} and each row thereof by {\em r}.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+\Oa{NUM SPACECRAFT}             & integer $\ge 0$ & number of spacecraft ({\em nSpacecraft}) \\
+&& Everything below is duplicated {\em nSpacecraft} times. \\
+\hline
+SPACECRAFT {\em s} NAME    & string          & name of spacecraft \\
+SPACECRAFT {\em s} ROWS    & integer $\ge 1$ & number of data rows, {\em nRow}$_s$ for spacecraft {\em s} \\
+&& The row below is repeated {\em nRow}$_s$ times. \\
+\hline
+SPACECRAFT {\em s} ROW {\em r} & 7 numbers & tabulated data --- see below \\
+\hline
+\end{tabular}
+\end{center}
+
+Each data vector of data consists of seven double precision values: time (mjd), $x$, $y$, and $z$ (meters), and $\dot{x}$, $\dot{y}$, and $\dot{z}$ (meters per second).
+These values should be separated by spaces.
+
+
+
+
+
+
+% .delay ----------------------------------------------------------------------
+
+\subsection{.delay} \label{sec:delay}
+
+The {\tt .delay} files contain tabulated interferometer model delays for each antenna for an entire DiFX job.
+This file type is typically produced by {\tt calcif2} within DiFX.
+Note that the values of the delays in this file have the opposite sign as compared to those generated by CALC and those stored in {\tt .FITS} files, that is, a more positive delay implies ``closer to the source''; negative delays are behind the Earth center, and hence for ground-based antennas are below the horizon.
+
+The file consists entirely of key-value pairs separated by a colon.
+There are two sections in the {\tt .delay} file; these sections are not separated by any explicit mark in the file.
+
+The first section contains values that are fixed for the entire experiment --- all data in this section is scalar.
+In the following table, all numbers are assumed to be floating point unless further restricted.
+The keys and allowed values in this section are summarized below:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+START YEAR         & integer        & calendar year of START MJD \\
+START MONTH        & integer        & calendar month of START MJD \\
+START DAY          & integer        & day of calendar month of START MJD \\
+START HOUR         & integer        & hour of START MJD \\
+START MINUTE       & integer        & minute of START MJD \\
+START SECOND       & integer        & second of START MJD \\
+INCREMENT (SECS)   & integer        & seconds between computed model points ({\em inc}) \\
+NUM TELESCOPES     & integer        & number of telescopes, {\em nTelescope} with delay data \\
+                   &                & the following line is repeated {\em nTelescope} times \\
+\hline
+TELESCOPE {\em t} NAME: & string    & {\em t} starts at 0 \\
+\hline
+\end{tabular}
+\end{center}
+
+The second section contains the scan-based information.
+First is a line indicating the number of scans to follow.
+Then for each scan, numbered by {\em s} ranging from 0 to {\em nScan} - 1, there are 3 lines containing information about the scan, including the number of sampled points within that scan, {\em nPoint}.
+Finally there are {\em nPoint}$_\mathit{s}$ + 3 lines containing the tabulated delays (in microseconds), numbered $-$1 through {\em nPoints}$_\mathit{s}$ + 1, indexed with {\em p}.
+Note that this includes one sample before the start of the scan and at least one after the scan end, allowing for a quadratic interpolation across the entire scan.
+This information is summarized in the following table:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM SCANS              & integer $\ge 1$ & number of scans ({\em nScan}). \\
+&& The rows below are duplicated {\em nScan} times. \\
+\hline
+SCAN {\em s} POINTS    & $\ge 1$         & duration of scan in units of {\em inc} ({\em nPoints}$_\mathit{s}$) \\
+SCAN {\em s} START PT  & integer $\ge 0$ & start time of scan in units of {\em inc} since MJD START \\
+SCAN {\em s} SRC NAME  & string          & systematic name to match that used in {\tt .input file} \\
+\hline
+RELATIVE INC {\em p}   & array; see below & {\em nPoint}$_\mathit{s}$ + 3 of these lines per scan \\
+\hline
+\end{tabular}
+\end{center}
+
+Like for the {\tt .rate} and {\tt .uvw} files, the values reported in this file extend one full mode increment ({\em inc}) before and after the actual duration of the scan, and hence will overlap in time by 2$\times$ {\em inc} with consecutive scans.
+
+This file is typically produced by {\tt calcif2}.
+
+
+
+
+
+% .difx/ ----------------------------------------------------------------------
+
+\subsection{.difx/} \label{sec:difx}
+
+The SWIN format visibilities written by {\tt mpifxcorr} are written to a directory with extension {\tt .difx}.
+Typically there will be a single file in this directory, but it is possible that the output data will be split into
+multiple smaller files if the first output file gets too large or if correlation is continued from a point midway through correlation (feature yet to be implemented).
+
+These files contain visibility data records.
+Each record contains the visibility spectrum for one polarization of one baseband channel of one baseline for one integration time.  
+Each starts with a text header and is followed by binary data.
+The text header uses the typical DiFX parameters format with the ``Key'' starting at the beginning of a text line and ending with a colon, and the value starting in the 21st column of text.
+The header rows occur in the following order:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+BASELINE NUM       & integer & $= (a_1+1)*256 + (a_2+1)$ for $a_1, a_2 \ge 1$ \\
+MJD                & integer & date of visibility centroid \\
+SECONDS            & float   & seconds since beginning of MJD \\
+CONFIG INDEX       & $\ge 0$ & index to {\tt .input} file configuration table \\
+SOURCE INDEX       & $\ge 0$ & index to {\tt .delay} file scan number \\
+FREQ INDEX         & $\ge 0$ & index to {\tt .input} frequency table \\
+POLARISATION PAIR  & 2 of ({\tt R}, {\tt L}, {\tt X}, {\tt Y}) & e.g., {\tt RR} or {\tt RL} \\
+DATA WEIGHT        & $\ge 0.0$ & data weight for spectrum; typically $\sim 1$ \\
+U (METRES)         & meters & $u$ component of baseline vector \\ 
+V (METRES)         & meters & $v$ component of baseline vector \\
+W (METRES)         & meters & $w$ component of baseline vector \\
+\hline
+\end{tabular}
+\end{center}
+
+Following the end-of-line mark for the last header row begins binary data in the form of (real, imaginary) pairs of 32-bit floating point numbers.
+The {\tt .input} file parameter {\tt NUM CHANNELS} indicates the number of
+complex values to expect.  
+In the case of upper sideband data, the first reported channel is the ``zero frequency'' channel, that is its sky frequency is equal to the value in the frequency table for this spectrum.  
+The Nyquist channel is not retained.
+For lower sideband data, the last channel is the ``zero frequency'' channel.
+That is, in all cases, the spectrum is in order of increasing frequency and the Nyquist channel is excised.
+
+
+
+
+
+
+
+% .difxlog --------------------------------------------------------------------
+
+\subsection{.difxlog} \label{sec:dotdifxlog}
+\vspace{-20pt}\hspace{80pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+The {\tt difxlog} program (\S\ref{sec:difxlogprogram}) captures {\tt DifxAlertMessage} and {\tt DifxStatusMessage} message types that are sent from an ongoing software correlation process and writes the information contained within to a human readable text file.
+One line of text is produced for each received message.
+The first five columns contain the date and time in {\em ddd MMM dd hh:mm:ss yyyy} format (e.g., {\tt Wed Apr 22 12:48:41 2009}).
+The sixth column contains a word describing the contents of the remainder of the line:  Options are:
+\begin{itemize}
+\item[] {\tt STATUS} : The status of the process is described
+\item[] {\tt WEIGHTS} : The playback weights for each antenna are listed
+\item[] {\em other} : This word represents an alert severity level (one of {\tt FATAL}, {\tt SEVERE}, {\tt ERROR}, {\tt WARNING}, {\tt INFO}, {\tt VERBOSE} and {\tt DEBUG}) and is followed by the alert message itself.
+\end{itemize}
+
+
+
+
+
+
+% $DIFX_MACHINES --------------------------------------------------------------
+
+\subsection{\$DIFX\_MACHINES} \label{sec:difxmachines}
+
+Environment variable {\tt DIFX\_MACHINES} should point to a file containing a list of machines that are to be considered elements of the software correlator.
+Program {\tt genmachines} (\S\ref{sec:genmachines}) uses this file and information within a {\tt .input} file to populate the {\tt .machines} file needed by {\tt mpifxcorr}.
+Because usually only one node in a cluster has direct access to a particular Mark5 module (or data from that module), the ordering of computer names in the {\tt .machines} file is important.
+Rows in the {\tt \$DIFX\_MACHINES} file contain up to three items, the last one being optional.
+The first column is the name of the machine.
+The second column is the number of processes to schedule on that machine (typically the number of CPU cores).
+The third column is a 1 if the machine is a Mark5 unit and 0 otherwise.
+If this column is omitted, the machine will be assumed to be a Mark5 unit if the first 5 characters of the computer name are {\tt mark5}, and will be assumed not to be otherwise.
+Comments in this file begin with an octothorpe (\#).
+Lines with fewer than two columns (after excision of comments) are ignored.
+
+
+
+
+
+
+
+% .dir ------------------------------------------------------------------------
+
+\subsection{.dir} \label{sec:dir}
+
+Reading directory information off Mark5 modules can take a bit of time (measured in minutes usually).
+Since the same modules are often accessed multiple times, the directories are cached in {\tt \$MARK5\_DIR\_PATH/} .
+In this directory, there will be one file per module that has been used, named {\em VSN}{\tt .dir}, where {\em VSN} is the volume serial number of the module, i.e. NRAO$-$023.
+The format of these files is as follows:
+The first line contains three fields: {\em VSN}, the number of scans on the module, {\em nScan}, and either {\tt A} or {\tt B} indicating the last bank the module was installed in.
+At the end of this line the characters {\em RT} can be added (by hand) which will cause the modules to be accessed using {\em Real-Time} mode which is tolerant of missing or bad disks within the module.
+Then there are {\em nScan} rows containing information about each scan, each with 11 columns.
+Values are floating point unless otherwise noted.
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+Start byte & 64-bit integer bytes & offset of the scan on the Mark5 module \\
+Length & 64-bit integer bytes & length of the scan \\
+Start day & integer MJD & the modified Julian day of the scan start \\
+Start time & integer seconds & the scan start time \\
+Frame num & integer & frame number since last second tick \\
+Frames per sec & integer & number of frames per second \\
+Scan Duration & seconds & the duration of the scan \\
+Frame size & integer bytes & the length of one data frame, including headers \\
+Frame offset & integer bytes & the offset to the start of the first entire frame \\
+Tracks & integer & the number of data tracks \\
+Format & integer & 0 for VLBA format, 1 for Mark4 format, 2 for Mark5B \\
+Name & string & scan name, usually including the project code and station \\
+\hline
+\end{tabular}
+\end{center}
+
+{\em Note:} The directory format used for DiFX differs from that used by the hardware correlator (found in {\em /home/fxcorr/mark5}) and are not interchangeable.
+
+
+
+
+
+
+
+% .FITS -----------------------------------------------------------------------
+
+\subsection{.FITS} \label{sec:FITS}
+
+The {\tt .FITS} files discussed here are produced by {\tt difx2fits}.
+They aim to conform to the same table structures as the FITS-IDI files produced by the VLBA correlator.
+The format is described in AIPS Memo 102, ``The FITS Interferometry Data Interchange Format'', however, this memo is a bit out of date and the data structures described are not in exact agreement with those made by the VLBA correlator; in all cases the format of data produced by the VLBA hardware correlator is favored where the two disagree.
+The tables in these FITS files have a nearly 1 to 1 relationship with the tables that are seen within AIPS, though their two letter abbreviations differ.
+The following tables are produced by {\tt difx2fits}:
+\begin{center}
+\begin{tabular}{l l}
+\hline
+Table & Description \\
+\hline
+AG & The array geometry table \\
+SU & The source table \\
+AN & The antenna table \\
+FR & The frequency table \\
+ML & The model table \\
+CT & The correlator (eop) table \\
+MC & The model components table \\
+SO & The spacecraft orbit table \difxoneone \\
+UV & The visibility data table \\
+FG & The flag table \\
+TS & The system temperature table \\
+PH & The phase calibration table (pulse cals and state counts) \\
+WR & The weather table \\
+GN & The gain curve table \\
+GM & The pulsar gate model table \difxoneone \\
+\hline
+\end{tabular}
+\end{center}
+Not all of these tables will always be written.
+
+
+
+
+
+
+
+% .fitslist -------------------------------------------------------------------
+
+\subsection{.fitslist} \label{sec:fitslist}
+
+\vspace{-20pt}\hspace{85pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+A {\tt .fitslist} file is written by {\tt makefits} and contains the entire list of {\tt .FITS} files for the correlator pass.
+Due to the different constraints of the correlation process and the FITS-IDI format, the number of resultant FITS files may be greater or less than the number of jobs.
+This file type is used by {\tt difxarch} to ensure that all of the correlated output ends up in the archive.
+The file is composed of two parts: a header line and one line for each {\tt .FITS} file.
+The header line consists of a series of {\em key=value} pairs.  
+Each {\em key} and {\em value} must have no whitespace and no whitespace should separate these words from their connecting {\tt =} sign.
+While any number of key-value pairs may be specified, the following ones (which are case sensitive) are expected to be present:
+\begin{enumerate}
+\item {\tt exper} : the name of the experiment, including the segment code
+\item {\tt pass} : the name of the correlator pass
+\item {\tt jobs} : the name of the {\tt .joblist} file used by {\tt makefits}
+\item {\tt mjd} : the modified Julian day when {\tt makefits} created this file
+\item {\tt DiFX} : the version name for the DiFX deployment (the value of {\tt \$DIFX\_VERSION} when {\tt vex2difx} was run)
+\item {\tt difx2fits} : the version of {\tt difx2fits} that was run
+\end{enumerate}
+Each additional line contains information for one {\tt .FITS} file of the correlation pass.
+These lines contain three fields:
+\begin{enumerate}
+\item {\em archiveName} : the name of the file that will get injected into the archive (see \S\ref{sec:archive})
+\item {\em fileSize} : the size of the file in MB
+\item {\em origName} : the name of the file as produced by {\tt difx2fits} (via {\tt makefits})
+\end{enumerate}
+
+
+
+
+
+
+
+% .flag -----------------------------------------------------------------------
+
+\subsection{.flag} \label{sec:dotflag}
+
+The program {\tt job2difx} may write a {\tt .flag} file for each {\tt .input} file it creates.
+This file is used by {\tt difx2fits} to exclude nonsense baselines that might have been correlated.
+This can occur when multiple subarrays are coming and going.
+The format of this text file is as follows.
+The first line contains an integer, $n$ --- the number of flag lines to follow.
+The next $n$ lines each have three numbers: $MJD_1$, $MJD_2$ and $ant$.
+The first two floating point numbers determine the time range of the flag in Modified Julian Days.
+The last integer number is the antenna number to flag --- a zero-based index corresponding
+to the {\tt TELESCOPE} table of the corresponding {\tt .input} file.
+
+
+
+
+
+
+
+% flag ------------------------------------------------------------------------
+
+\subsection{flag} \label{sec:flag}
+
+A file called {\tt flag} is created when program {\tt vlog} operates on the {\tt cal.vlba} file.
+This file contains lists of antenna-based flags generated by the on-line system that should be applied to the visibility data.
+This file contains two kinds of lines.
+Comment lines begin with an octothorpe (\#) and contain no vital information.
+Flag lines always consist of exactly 5 fields:
+\begin{enumerate}
+\item {\em antId} : Station name abbreviation, e.g., {\tt LA}
+\item {\em start} : Beginning of flagged period (day of year, including fractional portion)
+\item {\em end} : End of flagged period (day of year, including fractional portion)
+\item {\em recChan} : Record channel affected; -1 for all record channels, otherwise a zero-based index
+\item {\em reason} : Reason for flag, enclosed in single quotes, truncated to 24 characters
+\end{enumerate}
+The flag rows are sorted first by antenna, and then start time.
+
+
+
+
+
+
+
+% .fx -------------------------------------------------------------------------
+
+\subsection{.fx} \label{sec:fx}
+
+The program {\tt cjobgen} is used to create job scripts (with filename extension {\tt .fx}) for use with the VLBA hardware correlator.
+Although the functionality of {\tt cjobgen} will eventually be replaced, it is convenient to use the {\tt .fx} files it creates in the interim as they contain all the information required to calculate a delay model and drive the software correlator.
+These files are converted by {\tt job2difx} (\S\ref{sec:job2difx}) to produce {\tt .input} files to control correlation and {\tt .calc} files to drive the delay model generator.
+Note that there will not in general be a 1 to 1 relationship between {\tt .fx} files and {\tt .input} or {\tt .calc} files due to combination of multiple passes and splitting due to frequency changes.
+The program {\tt getjobs} (\S\ref{sec:getjobs}) can be used to copy these files from their original location in {\tt /home/vlbiobs}.
+
+
+
+
+
+
+
+% .im -------------------------------------------------------------------------
+
+\subsection{.im} \label{sec:im}
+
+\vspace{-20pt}\hspace{60pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+The {\tt .im} file contains polynomial models used by {\tt difx2fits} in the creation of {\tt FITS} files.
+After a header that is similar to that of a {\tt .rate} file, the contents are organized hierarchically with scan number, sub-scan interval, and antenna number being successively faster-incrementing values.
+The keys and allowed values in this section are summarized below:
+Note that the values of the delay polynomials in this file have the opposite sign as compared to those generated by CALC and those stored in {\tt .FITS} files.
+Keys preceded by $\star$ are optional.
+Note that all polynomials are expanded about their {\tt MJD, SEC} start time and use seconds as the unit of time.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+\Oa{CALC SERVER}        & string         & name of the calc server computer used \\
+\Oa{CALC PROGRAM}       & integer        & RPC program ID of the calc server used \\
+\Oa{CALC VERSION}       & integer        & RPC version ID of the calc server used \\
+START MJD          & MJD + fraction & start time of this subjob \\
+START YEAR         & integer        & calendar year of START MJD \\
+START MONTH        & integer        & calendar month of START MJD \\
+START DAY          & integer        & day of calendar month of START MJD \\
+START HOUR         & integer        & hour of START MJD \\
+START MINUTE       & integer        & minute of START MJD \\
+START SECOND       & integer        & second of START MJD \\
+POLYNOMIAL ORDER   & 2, 3, 4 or 5   & polynomial order of interferometer model {\em order} \\
+INTERVAL (SECS)    & integer        & interval between new polynomial models \\
+ABERRATION CORR    & $\left\{\begin{array}{l}\mbox{\tt UNCORRECTED}\\\mbox{\tt APPROXIMATE}\\\mbox{\tt EXACT}\end{array}\right.$ & level of $u, v, w$ aberration correction \\
+NUM TELESCOPES               & integer $\ge 1$& number of telescopes ({\em nTelescope}) \\
+&& The row below is duplicated {\em nTelescope} times. \\
+\hline
+TELESCOPE {\em t} NAME       & string & upper case antenna name abbreviation \\
+\hline
+NUM SCANS          & integer $\ge 1$ & number of scans ({\em nScan}). \\
+&& Everything below is duplicated {\em nScan} times. \\
+\hline
+SCAN {\em s} SRC NAME  & string          & systematic name to match that used in {\tt .input file} \\
+SCAN {\em s} NUM POLY  & $\ge 1$         & number of polynomials covering scan ({\em nPoly}$_\mathit{s}$) \\
+&& Everything below is duplicated {\em nPoly} times. \\
+\hline
+SCAN {\em s} POLY {\em p} MJD  & integer $\ge 0$ & the start MJD of this polynomial \\
+SCAN {\em s} POLY {\em p} SEC  & integer $\ge 0$ & the start sec of this polynomial \\
+&& Everything below is duplicated {\em nTelescope} times. \\
+ANT {\em a} DELAY (us) & {\em order}+1 numbers & terms of delay polynomial \\
+ANT {\em a} DRY (us)   & {\em order}+1 numbers & terms of dry atmosphere \\
+ANT {\em a} WET (us)   & {\em order}+1 numbers & terms of wet atmosphere \\
+ANT {\em a} U (m)      & {\em order}+1 numbers & terms of baseline $u$ \\ 
+ANT {\em a} V (m)      & {\em order}+1 numbers & terms of baseline $v$ \\ 
+ANT {\em a} W (m)      & {\em order}+1 numbers & terms of baseline $w$ \\ 
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+
+% .input ----------------------------------------------------------------------
+
+\subsection{.input} \label{sec:input}
+
+This section describes the {\tt .input} file format used by {\tt mpifxcorr} to drive correlation.
+Because NRAO-DiFX 1.0 uses a non-standard branch of {\tt mpifxcorr} some of the data fields will differ from those used in the official version, either in parameter name or in the available range of values.
+Currently the parameters must be in the order listed here.
+To get the most out of this section it is advisable to look at an actual file while reading.
+An example file is stashed at \url{http://www.aoc.nrao.edu/~wbrisken/NRAO-DiFX-1.1/} .
+In the tables below, numbers are assumed to floating point unless otherwise stated.
+
+Note that the input file format has undergone a few minor changes since NRAO-DiFX version 1.0.
+
+\subsubsection{Common settings table}
+
+Below are the keywords and allowed values for entries in the common settings table.
+This table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# COMMON SETTINGS ##!+} 
+\end{itemize}
+This is always the first table in a {\tt .input} file.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+DELAY FILENAME     & string & name and full path to {\tt .delay} file \\
+UVW FILENAME       & string & name and full path to {\tt .uvw} file \\
+CORE CONF FILENAME & string & name and full path to {\tt .threads} file \\
+EXECUTE TIME (SEC) & integer seconds & observe time covered by this {\tt .input} file \\
+START MJD          & integer MJD & start date \\
+START SECONDS      & integer seconds & start time \\
+ACTIVE DATASTREAMS & integer $\ge 2$ & number of antennas ({\em nAntenna}) \\
+ACTIVE BASELINES   & integer $\ge 1$ & number of baselines to correlate ({\em nBaseline}) \\
+VIS BUFFER LENGTH  & integer $\ge 1$ & the number of concurrent integrations to allow \difxoneone \\
+OUTPUT FORMAT      & boolean & always {\tt SWIN} here \\
+OUTPUT FILENAME    & string & name of output {\tt .difx} directory \\
+\hline
+\end{tabular}
+\end{center}
+
+Typically, $\mathit{nBaseline} = \mathit{nAntenna} \cdot (\mathit{nAntenna}-1)/2$.  Autocorrelations are not included in this count.
+
+\subsubsection{Configurations table}
+
+Below are the keywords and allowed values for entries in the configurations table.
+This table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# CONFIGURATIONS ###!+}
+\end{itemize}
+Two indexes are used for repeated keys.  
+The index over datastream (antenna) is {\em d}, running from 0 to {\em nAntenna} - 1 and the index over baseline is {\em b}, running from 0 to {\em nBaseline} - 1.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM CONFIGURATIONS & integer $\ge 1$ & number of modes in file ({\em nConfig}) \\
+\hline
+CONFIG SOURCE      & string & name of configuration \\
+INT TIME (SEC)     & seconds & integration time \\
+NUM CHANNELS       & integer $\ge 1$ & number of channels (FFT size, {\em nFFT}, is twice this) \\
+CHANNELS TO AVERAGE& integer $\ge 1$ & not yet supported (set to 1) \\
+OVERSAMPLE FACTOR  & integer $\ge 1$ & total oversampling factor of baseband data  \difxoneone \\
+DECIMATION FACTOR  & integer $\ge 1$ & portion of oversampling to handle by decimation \difxoneone \\
+BLOCKS PER SEND    & integer $\ge 1$ & number of FFT sizes to send at a time to a core \\
+GUARD BLOCKS       & integer $\ge 0$ & number of extra blocks to send for overlap \\
+POST-F FRINGE ROT  & boolean & fringe rotate after FFT?  Always {\em FALSE} here \\
+QUAD DELAY INTERP  & boolean & use quadratic, not linear, delay interpolation \\
+WRITE AUTOCORRS    & boolean & enable auto-correlations; {\em TRUE} here \\
+PULSAR BINNING     & boolean & enable pulsar mode; {\em FALSE} for now \\
+PULSAR CONFIG FILE & string & ({\em only if BINNING is True}) see \S~\ref{sec:psrconfigfile} \\
+DATASTREAM {\em d} INDEX & integer $\ge 0$ & DATASTREAM table index, starting at 0 \\
+BASELINE {\em b} INDEX   & integer $\ge 0$ & BASELINE table index, starting at 0 \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Frequency table} \label{table:freq}
+
+Below are the keywords and allowed values for entries in the frequency table which defines all possible sub-bands used by the configurations in this file.
+Each sub-band of each configuration is mapped to one of these through a value in the datastream table (\S\ref{table:datastream}).
+Each entry in this table has three parameters which are replicated for each frequency table entry.
+This table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# FREQ TABLE #######!+}
+\end{itemize}
+The table below uses {\em f} to represent the frequency index, which ranges from 0 to {\em nFreq} - 1.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+FREQ ENTRIES & integer $\ge 1$ & number of frequency setups ({\em nFreq}) \\
+\hline
+FREQ (MHZ) {\em f} & MHz & sky frequency at band edge \\
+BW (MHZ) {\em f} & MHz & bandwidth of sub-band \\
+SIDEBAND {\em f} & {\tt U} or  {\tt L} & net sideband of sub-band \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Telescope table}
+
+Below are the keywords and allowed values for entries in the telescope table which tabulates antenna names and their associated peculiar clock offsets, and the time derivatives of these offsets.
+Much of the other antenna-specific information is stored in the datastream table (\S\ref{table:datastream}).
+Each datastream of each configuration is mapped to one of these through a value in the datastream table.
+Each entry in this table has three parameters which are replicated for each telescope table entry.
+This table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# TELESCOPE TABLE ##!+}
+\end{itemize}
+The table below uses {\em a} to represent the antenna index, which ranges from 0 to {\em nAntenna} - 1.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+TELESCOPE ENTRIES & integer $\ge 1$ & number of antennas ({\em nAntenna}) \\
+\hline
+TELESCOPE NAME {\em a} & string & abbreviation of antenna name \\
+CLOCK DELAY (us) {\em a} & $\mu$sec & clock error at start of associated {\tt .delay} file \\
+CLOCK RATE(us/s) {\em a} & $\mu$sec/sec & rate at which antenna clock is drifting \\
+\hline
+\end{tabular}
+\end{center}
+
+Note that the reference time for the clock offset is the start of the {\tt .calc} file, not the start of the {\tt .input} file!
+This start time is always in integer number of seconds since beginning of day.
+
+\subsubsection{Datastream table} \label{table:datastream}
+
+The datastream table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# DATASTREAM TABLE #!+}
+\end{itemize}
+The table below uses {\em f} to represent the frequency index, which ranges from 0 to {\em nFreq} - 1.
+A second index, {\em i}, is used to cover the range 0 to $\mathit{nBB}$ - 1, where the total number of basebands is given by $\mathit{nBB} \equiv \sum_f \mathit{nPol}_f$.
+In the DiFX system, all sub-bands must have the same polarization structure, so $\mathit{nBB} = \mathit{nFreq} \cdot \mathit{nPol}$.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+DATASTREAM ENTRIES & integer $\ge 1$ & number of antennas ({\em nDatastream}) \\
+DATA BUFFER FACTOR & integer $\ge 1$ &  \\
+NUM DATA SEGMENTS  & integer $\ge 1$ &  \\
+\hline
+TELESCOPE INDEX & integer $\ge 0$ & telescope table index of datastream \\
+TSYS & Kelvin & if zero (normal in NRAO usage), don't scale data by {\em tsys} \\
+DATA FORMAT & string & data format \\
+QUANTISATION BITS & integer $\ge 1$ & bits per sample \\
+DATA FRAME SIZE & integer $\ge 1$ & bytes in one frame(or file) of data \difxoneone \\
+DATA SOURCE & string & {\tt FILE} (see \S\ref{sec:datafiles}) or {\tt MODULE} for Mark5 playback \difxoneone \\
+FILTERBANK USED & boolean & currently only {\tt FALSE} \\
+NUM FREQS & integer $\ge 0$ & number of different frequencies for this datastream \\
+\hline
+FREQ TABLE INDEX {\em f} & integer $\ge 0$ & \\
+CLK OFFSET {\em f} (us) & $\mu$sec & \\
+NUM POLS {\em f} & 1 or 2 & for NRAO usage, all such parameters must be the same \\
+\hline
+INPUT BAND {\em i} POL & {\em R} or {\em L} & polarization identity \\
+INPUT BAND {\em i} INDEX & integer $\ge 1$ & index to frequency setting array above; {\em nBB} per entry \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Baseline table}
+
+In order to retain the highest level of configurability, each baseline can be independently configured at some level.
+This datastream table begins with header 
+\begin{itemize}
+\item[] {\tt \verb+# BASELINE TABLE ###!+}
+\end{itemize}
+The baseline table has multiple entries, each one corresponding to a pair of antennas, labeled {\tt A} and {\tt B} in the table.
+For each of {\em nBaseline} baseline entries, {\em nFreq} sub-bands are processed, and for each a total of {\em nProd} polarization products are formed.
+Indexes for each of these dimensions are {\em b}, {\em f} and {\em p} respectively, each starting count at 0.
+Within the DiFX context, all baselines must have the same {\em nFreq} and {\em nProd}, though this is not a requirement of {\tt mpifxcorr} in general.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+BASELINE ENTRIES & integer $\ge 1$ & number of entries in table, {\em nBaseline} \\
+\hline
+D/STREAM A INDEX {\em b} & integer $\ge 0$ & datastream table index of first antenna \\
+D/STREAM B INDEX {\em b} & integer $\ge 0$ & datastream table index of second antenna \\
+NUM FREQS {\em b} & integer $\ge 1$ & number of frequencies on this baseline, {\em nFreq$_\mathit{b}$} \\
+POL PRODUCTS {\em b}/{\em f} & integer $\ge 1$ & number of polarization products, {\em nProd$_\mathit{b}$} \\
+D/STREAM A BAND {\em p} & integer $\ge 0$ & index to frequency array in datastream table \\
+D/STREAM B BAND {\em p} & integer $\ge 0$ & same as abovem, but for antenna {\tt B}, not {\tt A} \\
+\hline
+\end{tabular}
+\end{center}
+
+\subsubsection{Data Table}
+
+In the following table, {\em d} is the datastream index, ranging from 0 to {\em nDatastream} - 1 and {\em f} is the file index ranging from 0 to {\em nFile$_\mathit{d}$}.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+D/STREAM {\em d} FILES & integer $\ge 1$ & number of files {\em nFile$_\mathit{d}$} associated with datastream {\em d} \\
+FILE {\em d}/{\em f} & string & name of file or module associated with datastream {\em d} \\
+\hline
+\end{tabular}
+\end{center}
+
+For datastreams reading off Mark5 modules, {\em nFile} will always be 1 and the filename is the {\em VSN} of the module being read.
+
+
+
+
+
+
+
+% .joblist --------------------------------------------------------------------
+
+\subsection{.joblist} \label{sec:joblistfile}
+
+\vspace{-20pt}\hspace{80pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+A single {\tt .joblist} file is written by {\tt vex2difx} (\S\ref{sec:vex2difx}) as it produces the DiFX {\tt .input} (and other) files for a given correlator pass.
+This file contains the list of jobs to run and some versioning information that allows improved accountability of the software versions being used.
+This file us used by {\tt difxqueue} and {\tt makefits} to ensure that a complete set of jobs is accounted for.
+The file is composed of two parts: a header line and one line for each job.
+The header line consists of a series of {\em key=value} pairs.  
+Each {\em key} and {\em value} must have no whitespace and no whitespace should separate these words from their connecting {\tt =} sign.
+While any number of key-value pairs may be specified, the following ones (which are case sensitive) are expected to be present:
+\begin{enumerate}
+\item {\tt exper} : the name of the experiment, including the segment code
+\item {\tt v2d} : the {\tt vex2difx} input file used to produce the jobs of this pass
+\item {\tt pass} : the name of the correlator pass
+\item {\tt mjd} : the modified Julian day when {\tt vex2difx} created this file
+\item {\tt DiFX} : the version name for the DiFX deployment (the value of {\tt \$DIFX\_VERSION} when {\tt vex2difx} was run)
+\item {\tt vex2difx} : the version of {\tt vex2difx} that was run
+\end{enumerate}
+Each additional line contains information for one job in the pass.
+The columns are:
+\begin{enumerate}
+\item {\em jobName} : the name/prefix of the job
+\item {\em mjdStart} : the observe start time of the job
+\item {\em mjdStop} : the observe stop time of the job
+\item {\em nAnt} : the number of antennas in the job
+\item {\em tOps} : estimated number of trillion floating point operations required to run the job
+\item {\em outSize} : estimated FITS file output size (MB)
+\end{enumerate}
+Usually the comment character {\tt \#} followed by a list of station codes is appended to the end of each line.
+
+
+
+
+
+
+
+
+% .jobmatrix ------------------------------------------------------------------
+
+\subsection{.jobmatrix} \label{sec:jobmatrixfile}
+
+\vspace{-20pt}\hspace{105pt}
+\difxonefive
+
+\vspace{7pt} 
+
+\noindent
+As of version~2.6 of {\tt difx2fits} a file with extension {\tt .jobmatrix} will be written for each {\tt .FITS} file created.
+This file is meant as a summary for human use and as such does not have a format that should be considered fixed.
+The file contains a 2-dimensional map (antenna number vs.\ time) of which jobs contributed to the {\tt .FITS} file.
+
+
+
+
+
+% .log ------------------------------------------------------------------------
+
+\subsection{.log} \label{sec:log}
+
+\vspace{-20pt}\hspace{65pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .log} file. 
+This file contains a summary of the contents of that {\tt .FITS} file.
+It is analogous to the {\tt logfile.lis} file produced by the old {\tt FITSsniffer} program.
+This file is free-form ASCII that is intended for viewing by human eyes, and is should not be used as input to any software as the format is not guaranteed to remain constant.
+
+
+
+
+
+
+
+% .machines -------------------------------------------------------------------
+
+\subsection{.machines} \label{sec:machines}
+
+The {\tt .machines} file is used by {\tt mpirun} to determine which machines will run {\tt mpifxcorr}.
+This is a text file containing a list of computers, one to a line possibly with additional options listed, on which to spawn the software correlator process.
+As a general rule the MPI rank, a unique number for each process that starts at 0, are allocated in the order that the computer names are listed.
+This general rule can break down in cases where the same computer name is listed more than once; the behavior in this case depends on the MPI implementation being used.
+MPI rank 0 will always be the manager process.
+Ranks 1 through {\em nDatastream} will each be a datastream process.
+Additional processes will be computing (core) processes.
+If more processes are specified for {\tt mpirun} with the {\tt -np} option than there are lines in this file, the file will be read again from the top, so the processes will be assigned in a cyclic fashion (again, this depends somewhat on the MPI implementation and the other parameters passed to {\tt mpirun}; for DiFX with OpenMPI, this assumes {\tt --bynode} is used).
+If the program {\tt startdifx} is used to start the correlation process, the number of processes to start is determined by the number of lines in this file.
+If wrapping to the top of this file is desired, dummy comment lines (beginning with \#) can be put at the end of the {\tt .machines} file to artificially raise the number of processes to spawn.
+Within DiFX, this file is typically produced by {\tt genmachines}.
+Keep in mind that this file is directly read by the MPI execution program {\tt mpirun} and the format of the file may differ depending on the MPI implementation that you are using.
+With OpenMPI appending {\tt slots=1 max-slots=1} to the end of each line ensures that a single instance of {\tt mpifxcorr} is run on that machine.
+If both a datastream process and a core process are to be run on the same computer, then using options {\tt slots=1 max-slots=2} might be appropriate.
+
+
+
+
+
+
+
+
+
+% .oms ------------------------------------------------------------------------
+
+\subsection{.oms} \label{sec:oms}
+
+A {\tt .oms} file is written by {\tt sched} and contains machine (and human) readable information that is useful in setting up correlator jobs.
+In the case of the VLBA DiFX correlator, program {\tt oms2v2d} (\S\ref{sec:oms2v2d}) uses this file to prepare a template {\tt .v2d} file (\S\ref{sec:v2d}) that contains some information not available in the vex file, such as intended integration time and number of channels.
+
+
+
+
+
+
+
+
+% .params ---------------------------------------------------------------------
+
+\subsection{.params} \label{sec:params}
+\vspace{-20pt}\hspace{85pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+A file with extension {\tt .params} is written by {\tt vex2difx} (\S\ref{sec:vex2difx}) when it is provided with the {\tt -o} option.
+This file is a duplicate of the {\tt .v2d} file that was supplied but with all unspecified parameters listed with the defaults that they assumed.
+The format is exactly the same as the {\tt .v2d} files; see \S\ref{sec:v2d} for documentation of the format.
+The {\tt .params} file can be used as a legal {\tt .v2d} file if necessary.
+
+
+
+
+
+
+
+% pcal ------------------------------------------------------------------------
+
+\subsection{pcal} \label{sec:pcal}
+
+A file called {\tt pcal} is created when program {\tt vlog} operates on the {\tt cal.vlba} file.
+This file contains three measurements: the cable length calibration, pulse calibration, and state counts.
+This file contains two kinds of lines.
+Comment lines begin with an octothorpe (\#) and contain no vital information.
+Data lines always contain 8 fixed-size fields:
+\begin{enumerate}
+\item {\em antId} : Station name abbreviation, e.g., {\tt LA}
+\item {\em day} : Time centroid of measurement (day of year, including fractional portion)
+\item {\em dur} : Duration of measurement (days)
+\item {\em cableCal} : Cable calibration measurement (picoseconds)
+\item {\em nPol} : Number of polarizations with measurements 
+\item {\em nBand} : Number of sub-bands with measurements 
+\item {\em nTone} : Number of pulse cal tones detected per band per polarization, possibly zero 
+\item {\em nState} : Number of state count states measured per band per polarization, possibly zero
+\item {\em nRecChan} : Number of record channels at time of measurement ($\le$ \em{nPol * nBand})
+\end{enumerate}
+Following these eight fields are two variable-length arrays of numbers.
+The first variable-length field is the pulse cal data field consisting of {\em nPol*nBand*nTone} groups of four numbers.
+The first member of this group is the recorder channel number (zero-based) corresponding to the measurement.
+The second member of this group is the tone sky frequency (MHz).
+The third and fourth are respectively the real and imaginary parts of the tone measured at the given sky frequency.
+The order in which the groups are presented (in `C' language array syntax, as used throughout this document) is $[${\em nPol}$][${\em nBand}$][${\em nTone}$]$.
+Note that if there are fewer than {\em nPol*nBand} record channels, the record channel will be $-1$ for some groups.
+The second variable-length field is the state count data.
+For each band of each polarization, {\em nState} + 1 values are listed.
+The first number is the record channel number or -1 if that polarization/band combination was not observed or monitored.
+The remainder contain state counts.
+{\em nState} can be either 0 or $2^{\mathit nBit}$, where {\em nBit} is the number of quantization bits.
+The order in which these groups are listed is $[${\em nPol}$][${\em nBand}$]$.
+
+
+
+
+
+
+
+% .polyco ---------------------------------------------------------------------
+
+\subsection{.polyco} \label{sec:polycofile} 
+
+\vspace{-20pt}\hspace{85pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+A polyco file contains a single polynomial for pulse phase that is valid for a fraction (up to 100\%) of a job file.
+An additional numeric suffix is appended to the filename specifying the polynomial index for a particular {\tt .pulsar} file that shares the same base name.
+The format of the file is the same as a Tempo pulsar file \cite{tempo}.
+
+
+
+
+
+
+
+% .pulsar ------------------------------------------------- REVISE ME ---------
+
+\subsection{.pulsar} \label{sec:psrconfigfile} 
+
+\vspace{-20pt}\hspace{85pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+Within the scope of DiFX, all pulsar configuration files will adopt the {\tt .pulsar} suffix.
+There will be a separate .pulsar file for each pulsar-configuration combination in each {\\ .fx} file that is converted to DiFX input file format by {\tt job2difx}; a series of 4 numbers preceding the suffix indicates which source number, frequency id, correlator table entry, and configuration the file belongs to.
+Multiple subjobs derived from a single {\tt .fx} file may share {\tt .pulsar} files.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM POLYCO FILES       & integer $\ge 1$ & number of polyco files to look at ({\em nPoly}) \\
+&& The row below is duplicated {\em nPoly} times. \\
+POLYCO FILE {\em p}    & string & filename of {\em p}$^{\mathrm{th}}$ polyco file; see \S~\ref{sec:polycofile} \\
+NUM PULSAR BINS        & integer $\ge 1$ & number of pulsar bins to consider ({\em nBin}) \\
+SCRUNCH OUTPUT         & boolean         & TRUE for regular ``gating''; FALSE not yet supported \\
+&& The two rows below are duplicated {\em nBin} times. \\
+BIN PHASE END {\em b}  & float & pulse phase (in periods) of end of bin {\em b} \\
+BIN WEIGHT {\em b}     & float $\ge 0$ & weight to apply to bin {\em b} \\
+\hline
+\end{tabular}
+\end{center}
+
+
+
+
+
+
+
+
+% .rate -----------------------------------------------------------------------
+
+\subsection{.rate} \label{sec:rate}
+
+In order to deliver model information to {\tt difx2fits} that is not needed by {\tt mpifxcorr}, an additional file is written by {\tt calcif2}.
+The format of this file is most similar to that of the {\tt .uvw} files, however the payload in this file is very different.
+Note that the values of the delays in this file have the opposite sign as compared to those generated by CALC and those stored in {\tt .FITS} files.
+
+The file consists entirely of key-value pairs separated by a colon.
+There are three sections in the {\tt .rate} file; these sections are not separated by any explicit mark in the file.
+
+The first section contains values that are fixed for the entire experiment and at all antennas --- all data in this section is scalar.
+In the following table, all numbers are assumed to be floating point unless further restricted.
+The keys and allowed values in this section are summarized below.
+Keys preceded by $\star$ are optional.
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+\Oa{CALC SERVER}        & string         & name of the calc server computer used \\
+\Oa{CALC PROGRAM}       & integer        & RPC program ID of the calc server used \\
+\Oa{CALC VERSION}       & integer        & RPC version ID of the calc server used \\
+START MJD          & MJD + fraction & start time of this subjob \\
+START YEAR         & integer        & calendar year of START MJD \\
+START MONTH        & integer        & calendar month of START MJD \\
+START DAY          & integer        & day of calendar month of START MJD \\
+START HOUR         & integer        & hour of START MJD \\
+START MINUTE       & integer        & minute of START MJD \\
+START SECOND       & integer        & second of START MJD \\
+INCREMENT (SECS)   & integer        & seconds between computed model points ({\em inc}) \\
+\hline
+\end{tabular}
+\end{center}
+
+The second section contains antenna(telescope) specific information.
+This section is absolutely identical to the telescope section describe for the {\tt .calc} file (see second table in \S\ref{sec:calc}) so its description will be omitted here.
+
+The third and final section contains the scan-based information.
+First is a line indicating the number of scans to follow.
+Then for each scan, numbered by {\em s} ranging from 0 to {\em nScan} - 1, there are 5 lines containing information about the scan, including the number of sampled points within that scan, {\em nPoint}.
+Finally there are {\em nPoint}$_\mathit{s}$ + 3 lines containing the tabulated data, numbered $-$1 through {\em nPoints}$_\mathit{s}$ + 1, indexed with {\em p}.
+Note that this includes one sample before the start of the scan and at least one after the scan end, allowing for a quadratic interpolation across the entire scan.
+This information is summarized in the following table:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM SCANS              & integer $\ge 1$ & number of scans ({\em nScan}). \\
+&& The rows below are duplicated {\em nScan} times. \\
+\hline
+SCAN {\em s} POINTS    & $\ge 1$         & duration of scan in units of {\em inc} ({\em nPoints}$_\mathit{s}$) \\
+SCAN {\em s} START PT  & integer $\ge 0$ & start time of scan in units of {\em inc} since MJD START \\
+SCAN {\em s} SRC NAME  & string          & systematic name to match that used in {\tt .input file} \\
+SCAN {\em s} SRC RA    & radians         & J2000 right ascension\\
+SCAN {\em s} SRC DEC   & radians         & J2000 declination \\
+\hline
+RELATIVE INC {\em p}   & array; see below & {\em nPoint}$_\mathit{s}$ + 3 of these lines per scan \\
+\hline
+\end{tabular}
+\end{center}
+
+Like for the {\tt .delay} and {\tt .uvw} files, the values reported in this file extend one full mode increment ({\em inc}) before and after the actual duration of the scan, and hence will overlap in time by 2$\times$ {\em inc} with consecutive scans.
+The {\tt RELATIVE INC} lines contain triplets of values for each antenna.
+The first member of the triplet is the time derivative of the geometric delay, in $\mu$s/s.
+The second and third elements are the estimated dry and wet atmospheric delay terms, respectively, in $\mu$s.
+
+This file is typically produced by {\tt calcif2}.
+
+
+
+
+
+
+
+% .shelf ----------------------------------------------------------------------
+
+\subsection{.shelf} \label{sec:shelf}
+
+\vspace{-20pt}\hspace{75pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+The vex file format (see \S\ref{sec:dotvex} and references within) does not have a formal slot to record the shelf location of media, so {\tt db2vex} stashes the shelf location in a separate file.
+This information is critical for the correlator operators to know where to find modules for a project and for analysts preparing correlator jobs to know if media have arrived.
+The {\tt .shelf} file is used by {\tt vex2difx} when writing {\tt .calc files}.
+It can also be used as input to {\tt getshelf}.
+The file format is very simple.
+One row is used for each module that was used in the observation.
+Typically rows are sorted in the same order as antennas in the {\tt .input} file.
+The comment character is {\tt \#} -- any text following this character on a line is ignored.
+Each line contains 3 white-space separated columns:
+\begin{enumerate}
+\item {\em antId} : The typically 2 letter station abbreviation
+\item {\em vsn} : The volume serial number of the media (e.g., {\tt NRAO-123})
+\item {\em shelf} : The shelf location, which can be any string without whitespace (e.g., {\tt BD89}), or {\tt none} if the media is not at the correlator 
+\end{enumerate}
+
+
+
+
+
+
+
+% .threads --------------------------------------------------------------------
+
+\subsection{.threads} \label{sec:threads}
+
+The {\tt .threads} file tells {\tt mpifxcorr} how many threads to start on each processing node.
+Within DiFX, this file is typically produced by {\tt genmachines}.
+The {\tt.threads} file has a very simple format.
+The first line starts with {\tt NUMBER OF CORES:}.
+Starting at column 21 is an integer that should be equal to the number of processing nodes ({\em nCore}) specified in the corresponding {\tt .machines} file.
+Each line thereafter should contain a single integer starting at column 1.
+There should be {\em nCore} such lines.
+
+
+
+
+
+
+
+
+% tsys ------------------------------------------------------------------------
+
+\subsection{tsys} \label{sec:tsys}
+
+A file called {\tt tsys} is created when program {\tt vlog} operates on the {\tt cal.vlba} file.
+This file contains measurements of the system temperature and name of receiver for each baseband channel.
+This file contains two finds of lines.
+Comment lines begin with an octothorpe (\#) and contain no vital information.
+Data lines always contain 4 fixed-size fields:
+\begin{enumerate}
+\item {\em antId} : Station name abbreviation, e.g., {\tt LA}
+\item {\em day} : Time centroid of measurement (day of year, including fractional portion)
+\item {\em dur} : Duration of measurement (days); currently set to zero for lack of information
+\item {\em nRecChan} : Number of baseband channels recorded 
+\end{enumerate}
+Following these 4 fields are {\em nRecChan} pairs of values, one for each baseband channel.
+The first element of each pair is the system temperature (in K) and the second is the receiver name (e.g., {\tt 4cm}, or {\tt 7mm}).
+
+
+
+
+
+
+
+% weather ---------------------------------------------------------------------
+
+\subsection{weather} \label{sec:weather}
+
+A file called {\tt weather} is created when program {\tt vlog} operates on the {\tt cal.vlba} file.
+This file contains tabulated values of various meteorological measurements.
+This file contains two finds of lines.
+Comment lines begin with an octothorpe (\#) and contain no vital information.
+Data lines always contain 8 fixed-size fields:
+\begin{enumerate}
+\item {\em antId} : Station name abbreviation, e.g., {\tt LA}
+\item {\em day} : Time of measurement (day of year, including fractional portion)
+\item {\em T} : Ambient temperature (Centigrade)
+\item {\em P} : Pressure (mbar)
+\item {\em dewPoint} : Dew point (Centigrade)
+\item {\em windSpeed} : Wind speed (m/s)
+\item {\em windDir} : Wind direction (degrees E of N)
+\item {\em precip} : Accumulated rain since UT midnight (cm)
+\item {\em windGust} : Maximum wind gust over collection period (m/s)
+\end{enumerate}
+
+
+
+
+
+
+
+
+% .wts ------------------------------------------------------------------------
+
+\subsection{.wts} \label{sec:wts}
+
+\vspace{-20pt}\hspace{60pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .wts} file. 
+This file contains statistics of the data weights, typically dominated by the completeness of records as determined by the data transport system, over a typically 30 second long period.
+
+The first line is simply the observe code, e.g., {\tt MT831} .
+
+Each additional line in the file is a complete record for a given antenna for a given interval, containing information for each baseband channel separately.
+The format of these lines is as follows:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+{\it MJD}                & integer $\ge 1$     & MJD day number corresponding to line \\
+{\it hour}               & $\ge 0.0$, $< 24.0$ & hour within day \\
+{\it antenna number}     & $\ge 1$             & antenna table index \\
+{\it antenna name}       & string              & \\
+{\it n}$_{\mathrm{BBC}}$ & $\ge 1$             & Number of baseband channels \\
+{\it mean weight}        & $\ge 0.0$           & This column repeated $n_{\mathrm{BBC}}$ times \\
+{\it min weight}         & $\ge 0.0$           & This column repeated $n_{\mathrm{BBC}}$ times \\
+{\it max weight}         & $\ge 0.0$           & This column repeated $n_{\mathrm{BBC}}$ times \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+This file can be used directly with plotting program {\tt plotwt} or used more automatically with {\tt difxsniff}.
+
+
+
+
+
+
+
+% .uvw ------------------------------------------------------------------------
+
+\subsection{.uvw} \label{sec:uvw}
+
+The {\tt .uvw} file contains tabulated baseline vectors.
+The values in this file are interpolated to produce values valid for integration centroids and included in the visibility file output by {\tt mpifxcorr}.
+This file consists entirely of key-value pairs separated by a colon.
+There are three sections in the {\tt .uvw} file; these sections are not separated by any explicit mark in the file.
+
+The first section contains values that are fixed for the entire experiment and at all antennas --- all data in this section is scalar.
+In the following table, all numbers are assumed to be floating point unless further restricted.
+The keys and allowed values in this section are summarized below:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+START YEAR         & integer        & calendar year of START MJD \\
+START MONTH        & integer        & calendar month of START MJD \\
+START DAY          & integer        & day of calendar month of START MJD \\
+START HOUR         & integer        & hour of START MJD \\
+START MINUTE       & integer        & minute of START MJD \\
+START SECOND       & integer        & second of START MJD \\
+INCREMENT (SECS)   & integer        & seconds between tabulated baseline vectors ({\em inc}) \\
+\hline
+\end{tabular}
+\end{center}
+
+The second section contains antenna(telescope) specific information with the following format:
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM TELESCOPES               & integer $\ge 1$& number of telescopes ({\em nTelescope}). \\
+&& The rows below are duplicated {\em nTelescope} times. \\
+\hline
+TELESCOPE {\em t} NAME       & string & upper case antenna name abbreviation \\
+TELESCOPE {\em t} MOUNT      & string & the mount type: altz, equa, xyew, or xyns \\
+TELESCOPE {\em t} X (m)      & meters & X geocentric coordinate of antenna at date \\
+TELESCOPE {\em t} Y (m)      & meters & Y geocentric coordinate of antenna at date \\
+TELESCOPE {\em t} Z (m)      & meters & Z geocentric coordinate of antenna at date \\
+\hline
+\end{tabular}
+\end{center}
+
+The third and final section contains the scan-based information.
+First is a line indicating the number of scans to follow.
+Then for each scan, numbered by {\em s} ranging from 0 to {\em nScan} - 1, there are 5 lines containing information about the scan, including the number of sampled points within that scan, {\em nPoint}.
+Finally there are {\em nPoint}$_\mathit{s}$ + 3 lines containing the tabulated data, numbered $-$1 through {\em nPoints}$_\mathit{s}$ + 1, indexed with {\em p}.
+Note that this includes one sample before the start of the scan and at least one after the scan end, allowing for a quadratic interpolation across the entire scan.
+This information is summarized in the following table:
+
+\begin{center}
+\begin{tabular}{l l l}
+\hline
+Key & Units/allowed values & Comments \\
+\hline
+NUM SCANS              & integer $\ge 1$ & number of scans ({\em nScan}). \\
+&& The rows below are duplicated {\em nScan} times. \\
+\hline
+SCAN {\em s} POINTS    & $\ge 1$         & duration of scan in units of {\em inc} ({\em nPoints}$_\mathit{s}$) \\
+SCAN {\em s} START PT  & integer $\ge 0$ & start time of scan in units of {\em inc} since MJD START \\
+SCAN {\em s} SRC NAME  & string          & systematic name to match that used in {\tt .input file} \\
+SCAN {\em s} SRC RA    & radians         & J2000 right ascension\\
+SCAN {\em s} SRC DEC   & radians         & J2000 declination \\
+\hline
+RELATIVE INC {\em p}   & array; see below & {\em nPoint}$_\mathit{s}$ + 3 of these lines per scan \\
+\hline
+\end{tabular}
+\end{center}
+
+Like for the {\tt .delay} and {\tt .rate} files, the values reported in this file extend one full mode increment ({\em inc}) before and after the actual duration of the scan, and hence will overlap in time by 2$\times$ {\em inc} with consecutive scans.
+The {\tt RELATIVE INC} lines contain triplets of values for each antenna, representing in order the $u$, $v$, and $w$ components of the baseline vector, all expressed in meters from the earth center.
+
+This file is typically produced by {\tt calcif2}.
+
+
+
+
+
+
+
+
+% .v2d ------------------------------------------------------------------------
+
+\subsection{.v2d} \label{sec:v2d}
+
+\vspace{-20pt}\hspace{65pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+The {\tt .v2d} file is used to specify correlation options to {\tt vex2difx} and adjust the way in which it forms DiFX input files based on the {\tt .vex} file.
+The {\tt .v2d} file consists of a number of global parameters that affect the way that jobs are created and several sections that can customize correlation on a per-source, per mode, or per scan basis.  
+All parameters (those that are global and those that reside inside sections) are specified by a parameter name, the equal sign, and one value, or a comma-separated list of values, that cannot contain whitespace.  
+Whitespace is not required except to keep parameter names, values, and section names separate.  
+All parameter names and values are case sensitive except for source names and antenna names.  
+The \# is a comment character; any text after this on a line is ignored.
+
+Most parameters are one of the following types:
+\begin{itemize}
+\item {\bf bool} : A boolean value that can be True or False.  Any value starting with {\tt 0}, {\tt f}, {\tt F}, or {\tt -} will be considered False and otherwise True.
+\item {\bf float} : A floating point number.  Can be of the forms: {\tt 1.23}, {\tt 1.2e-4}, {\tt -12.6}, {\tt 4}
+\item {\bf int} : An integer.
+\item {\bf string} : Any sequence of printable(non-whitespace) characters.  Certain fields require strings of a maximum length or certain form.
+\item {\bf date} : A date field; see below.
+\item {\bf array} :  Array can be of any of the four above types and are indicated by enclosing brackets, e.g., $[$int$]$.  The empty list is indicated with $[ ]$ which is usually implied to be all-inclusive.
+\end{itemize}
+
+All times used in {\tt vex2difx} are in Universal Time and are internally represented as a double precision value.
+The integer part of this value is the date corresponding to 0$^h$ UT.
+The fractional part, when multiplied by 86400, gives the number of seconds since 0$^h$ UT.
+Note that this format does not allow one to specify the actual leap second if one occurs on that day.
+Several date formats are supported:
+\begin{itemize}
+\item {\bf Modified Julian Day} : A decimal MJD possibly including fractional day.  E.g.: {\tt 54345.341944}
+\item {\bf Vex time format} : A string of the form: {\tt 2009y245d08h12m24s}
+\item {\bf VLBA-like format} : A string of the form: {\tt 2009SEP02-08:12:24}
+\item {\bf ISO 8601 format} : A string of the form: {\tt 2009-09-02T08:12:24}
+\end{itemize}
+
+Global parameters can be specified one or many per line such as:
+
+\noindent
+{\tt maxGap = 2000 \# seconds}
+
+\noindent
+or
+
+\noindent
+{\tt mjdStart = 52342.522 mjdStop=52342.532}
+
+The following parameter names are recognized:
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Defaults & Comments \\
+\hline
+vex              & string &       &              & filename of the vex file to process; {\bf this is required} \\
+mjdStart         & date   &       & obs.\ start  & discard any scans or partial scans before this time \\
+mjdStop          & date   &       & obs.\ stop   & discard any scans or partial scans after this time \\
+break            & date   &       &              & list of MJD date/times where jobs are forced to be broken \\
+minSubarray      & int    &       & 2            & don't make jobs for subarrays with fewer antennas than this \\
+maxGap           & float  & sec   & 180          & split an observation into multiple jobs if there are \\
+                 &        &       &              & correlation gaps longer than this number \\
+singleScan       & bool   &       & False        & if True, split each scan into its own job \\
+singleSetup      & bool   &       & True         & if True, allow only one setup per job; True is required \\
+                 &        &       &              & for FITS-IDI conversion \\
+maxLength        & float  & sec   & 7200         & don't allow individual jobs longer than this amount of time \\
+minLength        & float  & sec   & 2            & don't allow individual jobs shorter than this amount of time \\
+maxSize          & float  & MB    & 2000         & max FITS-IDI file size to allow \\
+dataBufferFactor & int    &       & 32           & the {\tt mpifxcorr} DATABUFFERFACTOR parameter \\
+nDataSegments    & int    &       & 8            & the {\tt mpifxcorr} NUMDATASEGMENTS parameter \\
+jobSeries        & string &       &              & the base filename of {\tt .input} and {\tt .calc} files to be \\
+                 &        &       &              & created; defaults to the base name of the {\tt .v2d} file \\
+startSeries      & int    &       & 20           & the default starting number for jobs created \\
+sendLength       & float  & sec   & 0.262144     & roughly the amount of data to send at a time from \\
+                 &        &       &              & datastream processes to core processes \\
+antennas         & $[$string$]$ &  & $[ ]$ = all & a comma separated list of antennas to include in correlation \\
+baselines        & $[$string$]$ &  & $[ ]$ = all & a comma separated list of baselines to correlate; see below \\
+padScans         & bool   &       & True         & insert non-correlation scans in recording gaps to prevent \\
+                 &        &       &              & {\tt mpifxcorr} from complaining \\
+invalidMask      & int    &       & 0xFFFF       & this bit-field selects which flag conditions are considered \\
+                 &        &       &              & when writing flag file: 1=Recording, 2=On source, 4=Job \\
+		 &        &       &              & time range, 8=Antenna in job \\
+visBufferLength  & int    &       & 32           & number of visibility buffers to allocate in mpifxcorr \\
+simFXCORR        & bool   &       & False        & simulate the VLBA HW correlator $t_{\mathrm{int}}$ and start times \\
+overSamp         & int    &       &              & force all basebands to use the given oversample factor \\
+mode             & string &       & normal       & mode of operation; see below \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+The {\em baselines} parameter supports the wildcard character {\tt *} an individual antenna name, or lists of antenna names separated by {\tt +} on each side of a hyphen ({\tt -}).
+Multiple baseline designators can be listed.
+Examples:
+\begin{itemize}
+\item {\tt A1-A2} : Only correlate one baseline
+\item {\tt A1-A2, A3-A4} : Correlate 2 baselines
+\item {\tt *-*} : Correlate all baselines
+\item {\tt A1-*} {\em or} {\tt *-A1} : Correlate all baselines to antenna A1
+\item {\tt A1+A2-*} : Correlate all baselines to antenna A1 or A2
+\item {\tt A1+A2-A3+A4+A5} : Correlate 6 baselines
+\end{itemize}
+
+A source section can be used to change the properties of an individual source, such as its position or name.
+In the future this is where multiple correlation centers for a given source will be specified.
+A source section is enclosed in a pair of curly braces after the keyword SOURCE followed by the name of a source, for example
+
+\begin{Verbatim}[commandchars=\|\[\]]
+  SOURCE 3C273
+  {
+    |bfit[source parameters go here]
+  }
+\end{Verbatim}
+
+\noindent
+or equivalently
+
+\begin{Verbatim}[commandchars=\|\[\]]
+  SOURCE 3c273 { |bfit[source parameters go here] }
+\end{Verbatim}
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Defaults & Comments \\
+\hline
+ra             &        & J2000 &         & right ascension, e.g., {\tt 12h34m12.6s} or {\tt 12:34:12.6} \\
+dec            &        & J2000 &         & declination, e.g., {\tt 34d12'23.1}" or {\tt 34:12:23.1} \\
+name           & string &       &         & new name for source \\
+calCode        & char   &       & ' '     & calibration code, typically {\tt A}, {\tt B}, {\tt C} for calibrators, {\tt G} for a gated \\
+               &        &       &         & pulsar, or blank for normal target \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+
+An antenna section allows properties of an individual antenna, such as position, name, or clock/LO offsets, to be adjusted. 
+Note that the ``late'' convention is used in {\em clockOffset} and {\em clockRate}, unlike the ``early'' convention used in the {\tt .vex} file itself (see \S\ref{sec:clockconventions}).
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Defaults & Comments \\
+\hline
+name           & string &       &           & new name to assign to this antenna \\
+polSwap        & bool   &       & False     & swap the polarizations (i.e., {\tt L} $\Leftrightarrow$ {\tt R}) for this antenna \\
+clockOffset    & float  & us    & vex value & overrides the clock offset value from the vex file \\
+clockRate      & float  & us/s  & vex value & overrides the clock offset rate value from the vex file \\
+clockEpoch     & date   &       & vex value & overrides the epoch of the clock rate value; must be present if \\
+               &        &       &           & clockRate or clockOffset parameter is set \\
+deltaClock     & float  & us    & 0.0       & adds to the clock offset (either the vex value or the clockOffset above  \\
+deltaClockRate & float  & us/s  & 0.0       & adds to the clock rate (either the vex value or the clockRate above \\
+X              & float  & m     & vex value & change the X coordinate of the antenna location \\
+Y              & float  & m     & vex value & change the Y coordinate of the antenna location \\
+Z              & float  & m     & vex value & change the Z coordinate of the antenna location \\
+format         & string &       &           & force format to be one of VLBA, MKIV, Mark5B or S2 \\
+file           & strings &      & (none)    & a comma separated list of data files to correlate \\
+filelist       & string  &      &           & a filename listing files for the DATA TABLE \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+Setup sections are enclosed in braces after the word SETUP and a name given to this setup section.
+The setup name is referenced by a RULE section (see below).
+A setup with the special name {\tt default} will be applied to any scans not otherwise assigned to setups by rule sections.
+If no setup sections are defined, a setup called {\tt default}, with all default parameters, will be implicitly created and applied to all scans.
+The order of setup sections is immaterial.
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Defaults & Comments \\
+\hline
+tInt           & float  & sec   & 2       & integration time \\
+nChan          & int    &       & 16      & number of channels per spectral window; must be $2^n$ \\
+doPolar        & bool   &       & True    & correlate cross hands when possible \\
+blocksPerSend  & int    &       &         & the {\tt mpifxcorr} BLOCKSPERSEND parameter; defaults to a \\
+               &        &       &         & value that depends on other parameters \\
+specAvg        & int    &       & 1       & how many channels to average together after correlation \\
+startChan      & int    &       & 0       & first (unaveraged) channel to include in output \\
+nOutChan       & int    &       & {\em nChan} & truncate after this many output channels \\
+postFFringe    & bool   &       & False   & do fringe rotation after FFT? \\
+binConfig      & string &       & none    & if specified, apply this pulsar bin config file to this setup \\
+freqId         & $[$int$]$ &    & $[ ]$ = all& frequency bands to correlate \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+Earth Orientation Parameter (EOP) data can be provided via one or more EOP sections.
+EOP data should be provided either in the {\tt .v2d} file or in the vex file, but not both.
+Normally the vex file would be used to set EOP values, but there may be cases (eVLBI?) that want to use the vex file from {\tt sched} without any modification.
+Like ANTENNA and SOURCE sections, each EOP section has a name.
+The name must be in a form that can be converted directly to a date (see above for legal date formats).
+Conventional use suggests that these dates should correspond to 0 hours UT; deviation from this practice is at the users risk.
+There are four parameters that should all be set within an EOP section:
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Defaults & Comments \\
+\hline
+tai\_utc & float & sec    & & TAI minus UTC; the leap-second count  \\
+ut1\_utc & float & sec    & & UT1 minus UTC; Earth rotation phase \\
+xPole    & float & arcsec & & X component of spin axis offset \\
+yPole    & float & arcsec & & Y component of spin axis offset \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+A rule section is used to assign a setup to a particular source name, calibration code (currently not supported), scan name, or vex mode.
+The order of rule sections {\em does} matter as the order determines the priority of the rules.
+The first rule that matches a scan is applied to that scan.
+The correlator setup used for scans that match a rule is determined by the parameter called ``setup''.
+A special setup name {\tt SKIP} causes matching scans not to be correlated.
+Any parameters not specified are interpreted as fully inclusive.
+Note that multiple rule sections can reference the same setup section.
+Multiple values may be applied to any of the parameters except for ``setup''.
+This is accomplished by comma separation of the values in a single assignment or with repeated assignments.
+Thus
+
+\begin{verbatim}
+  RUlE rule1
+  {
+    source = 3C84,3C273
+    setup = BrightSourceSetup
+  }
+\end{verbatim}
+
+\noindent
+is equivalent to
+
+\begin{verbatim}
+  RULE rule2
+  {
+    source = 3C84 3C273
+    setup = BrightSourceSetup
+  }
+\end{verbatim}
+
+\noindent
+is equivalent to
+
+\begin{verbatim}
+  RULE rule3
+  {
+    source = 3C84
+    source = 3C273
+    setup = BrightSourceSetup
+  }
+\end{verbatim}
+
+The names given to rules (e.g., rule1, rule2 and rule3 above) are not used anywhere (yet) but are required to be unique.
+
+\begin{center}
+\begin{tabular}{l l l l l}
+\hline
+Name & Type & Units & Comments \\
+\hline
+scan           & $[$string$]$ &   & one or more scan name, as specified in the vex file, to select with this rule \\
+source         & $[$string$]$ &   & one or more source name, as specified in the vex file, to select with this rule \\
+calCode        & $[$char$]$   &   & one or more calibration code to select with this rule \\
+mode           & $[$string$]$ &   & one or more modes as defined in the vex file to select with this rule \\
+setup          & string       &   & The name of the SETUP section to use, or SKIP if this rule describes scans \\
+               &              &   & not to correlate \\
+\hline
+\hline
+\end{tabular}
+\end{center}
+
+Note that source names and calibration codes reassigned by source sections are not used.
+Only the names and calibration codes in the vex file are compared.
+
+There are currently two modes of operation supported by {\tt vex2difx}.  
+The mode used in the vast majority of situations is called {\tt normal} and is the default if none is specified.
+Currently one alternative mode, {\tt profile}, is supported.
+This mode is useful for generating pulse profiles that would be useful for pulsar gating, scrunching, and binning.
+The difference compared to normal mode is that the standard autocorrelations are turned off and instead are computed as if they are cross correlations.
+This allows multiple pulsar bins to be stored. 
+No formal cross correlations are performed. 
+To be useful, one must create and specify a {\tt .binconfig} file and select only the pulsar(s) from the experiment.
+
+See \url{http://cira.ivec.org/dokuwiki/doku.php/difx/vex2difx} for more complete information and examples.
+
+
+
+
+
+
+
+
+% .xcb ------------------------------------------------------------------------
+
+\subsection{.xcb} \label{sec:xcb}
+
+\vspace{-20pt}\hspace{60pt}
+\difxoneone
+
+\vspace{7pt}
+
+\noindent
+When generation of sniffer output files is not disabled, each {\tt .FITS} file written by {\tt difx2fits} will be accompanied by a corresponding {\tt .xcb} file. 
+This file contains cross-correlation spectra for each antenna for each baseline.
+In order to minimize the output data size, spectra for the same source will only be repeated once per 15 minutes.
+The file contains many concatenated records.
+Each record has the spectra for all baseband channels for a particular baseline and has the following format which is very similar to that of the {\tt .acb} files. 
+Note that no spaces are allowed within any field.
+Values in {\tt typewriter} font without comments are explicit strings that are required.
+
+\begin{center}
+\begin{tabular}{l l l l}
+\hline
+Line(s) & Value & Units & Comments \\
+\hline
+1 & {\tt timerange:}          &                    & \\
+  & {\it MJD}                 & integer $\ge 1$    & MJD day number corresponding to line \\
+  & {\it start time}          & string             & e.g., {\tt 13h34m22.6s} \\
+  & {\it stop time}           & string             & e.g., {\tt 13h34m52.0s} \\
+  & {\tt obscode:}            &                    & \\
+  & {\it observe code}        & string             & e.g., {\tt MT831} \\
+  & {\tt chans:}              &                    & \\
+  & {\it n}$_{\mathrm{chan}}$ & $\ge 1$            & number of channels per baseband channel \\
+  & {\tt x}                   &                    & \\
+  & {\it n}$_{\mathrm{BBC}}$  & $\ge 1$            & number of baseband channels \\
+\hline
+2 & {\tt source:}             &                    & \\
+  & {\it source name}         & string             & e.g., {\tt 0316+413} \\
+  & {\tt bandw:}              &                    & \\
+  & {\it bandwidth}           & MHz                & baseband channel bandwidth \\
+  & {\tt MHz}                 &                    & \\
+\hline
+3 to 2+$n_{\mathrm{BBC}}$ 
+  & {\tt bandfreq:}           &                    & \\
+  & {\it frequency}           & GHz                & band edge (SSLO) frequency of baseband channel \\
+  & {\tt GHz polar:}          &                    & \\
+  & {\it polarization}        & 2 chars            & e.g., {\tt RR} or {\tt LL} \\
+  & {\tt side:}               &                    & \\
+  & {\it sideband}            & {\tt U} or {\tt L} & for upper or lower sideband \\
+  & {\tt bbchan:}             &                    & \\
+  & {\it bbc}                 & {\tt 0}            & Currently not used but needed for conformity \\
+\hline
+3+$n_{\mathrm{BBC}}$ to 
+  & {\it ant1 number}    & $\ge 1$            & number of first antenna \\
+2+$n_{\mathrm{BBC}}(n_{\mathrm{chan}}+1)$  
+  & {\it ant2 number}    & $\ge 1$            & \\
+  & {\it ant1 name}      & string             & \\
+  & {\it ant2 name}      & string             & \\
+  & {\it channel number}      & $\ge 1$            & $= \mathrm{chan} + (\mathrm{bbc}-1) \cdot n_{\mathrm{chan}}$ for chan, bbc $\ge 1$ \\
+  & {\it amplitude}           & $\ge 0.0$          & \\
+  & {\it phase}               & degrees            & \\
+\hline
+\end{tabular}
+\end{center}
+
+\noindent
+The above are repeated for each cross correlation spectrum record.
+This file can be plotted directly with {\tt plotbp} or handled more automatically with {\tt difxsniff}.
+
+
+
+
+
+
+
+
+% .ved .skd .vex.obs .skd.obs -------------------------------------------------
+
+\subsection{.vex, .skd, .vex.obs, \& .skd.obs} \label{sec:dotvex}
+
+\vspace{-20pt}\hspace{225pt}
+\difxonefive
+
+\vspace{7pt}
+
+\noindent
+The vex (Vlbi EXperiment) file \cite{vex} format is a standard observation description format used globally for scheduling observations and for driving the correlation thereof.
+The original vex file for an experiment is typically created by {\tt sched} or {\tt sked}. 
+In the former case (the case used by most astronomical VLBI), the vex file has the unfortunate file extension {\tt .skd}; in the later, the file extension is usually the less confusing {\tt .vex} .
+These two vex formatted files contain only observation-scheduling based information.
+A small amount of information based on the actualities of the observation are added by {\tt db2vex}, producing a new vex file with an additional file extension {\tt .obs} .
+Please see vex documentation external to this manual for more information.

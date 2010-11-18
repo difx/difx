@@ -1,0 +1,41 @@
+/home/swc/ difx root directory: a 1.5 TB partion on swc000 
+  difx/ all data related to operations ends up under this directory
+    directories/ cached Mark5 module directories; environment variable \ "MARK5_DIR_PATH" points here
+      NRAO-120.dir
+      NRAO-123.dir
+      VIPSU-05.dir
+    gaincurves/ directory of symlinks to gain curve files; environment \ variable "GAIN_CURVE_PATH" points here
+      gain.ar symlink to "/home/jansky3/vlbaops/TCAL/gain.ar"
+    intel/ directory containing various Intel Performance Primitives library versions
+    projects/ active project data; environment variable "JOB_ROOT" \ points here
+      bc120e/
+      mt831/
+    queue/ working directory for correlation 
+      MT920/
+    tar/ various source code tar balls
+    tests/ active test data; environment variable "TESTS" points here
+  DiFX-1.5/ version 1.5 files; set prefix to this during installation
+    bin/ ver 1.5 programs
+      calcif2
+      vex2difx
+      mpifxcorr
+      startdifx
+    lib/ libraries for ver 1.5
+    setup_difx script to set environment for version 1.5
+    src/ frozen source code for ver 1.5
+      calcserver/
+      difx2fits/
+      difxio/
+      difxmessage/
+      job2difx/
+        calcif/
+      mark5access/
+      mk5daemon/
+      mpifxcorr/
+      openmpi-1.2.7/
+      vex2difx/
+  DiFX-trunk/ development branch
+    bin/ programs
+    lib/ libraries  
+    setup_difx script to set environment for development version
+    src/ source

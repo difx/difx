@@ -1,0 +1,48 @@
+\section{Conventions} \label{sec:conventions}
+
+\subsection{Clock offsets and rates} \label{sec:clockconventions}
+
+The clock offset (and its first derivative with respect to time, the clock rate) are stored in a number of places through the correlator toolchain.
+The convention used by vex is that the clock offset is positive if the Data Acquisition System (DAS) time tick is early (i.e., the station clock is running fast) and accordingly the full name in the vex file is {\em clock\_early}.
+In all other parts of the system the opposite sign convention is used, that is the clock offset is how late (slow) the DAS clock is.
+In particular, all VLBA correlator job files, the VLBA database, the DiFX {\tt .input} file and FITS formatted output files all use the ``late'' clock convention.
+Note in particular that the {\em clockOffset} and {\em clockRate} parameters of the ANTENNA sections in the {\tt .v2d} files use the ``late'' convention, not vex's ``early'' convention. 
+
+\subsection{Geometric delays and rates} \label{delayconventions}
+
+The delays used to align datastreams before correlation are nominally produced by the Goddard CALC package.
+The calculations are done on an antenna basis using the Earth center for antenna A and the requested station for antenna B and thus results in a negative delay for sources above the horizon.
+The core of DiFX uses the opposite convention and thus the delays and their time derivatives (rates) as stored in the {\tt .delay}, {\tt .rate} and {\tt .im} files use the ``positive delay above horizon'' convention.
+The FITS-IDI files (as produced by {\tt difx2fits} and the VLBA hardware correlator) use the same convention as CALC, that is ``negative delay above horizon''.
+
+\subsection{Antenna coordinates} \label{sec:antennacoordconventions}
+
+Geocentric $(X,Y,Z)$ coordinates are used universally within the software correlator and its associated files.
+This usage pattern extends to cover {\tt sched}, CALC, the VLBA database and the existing hardware correlator as well.
+The values are everywhere reported in meters.
+The $Z$-axis points from the Earth center to the geographic North pole.
+The $X$-axis points from the Earth center to the intersection of the Greenwich meridian and the equator (geographic longitude $0^{\circ}$, latitude $0^{\circ}$).
+The $Y$-axis is orthogonal to both, forming a right handed coordinate system; The $Y$-axis thus points from the Earth center to geographic longitude $90^{\circ}$E, latitude $0^{\circ}$.
+The unit-length basis vectors for this coordinate system are called $\hat{x}$, $\hat{y}$, and $\hat{z}$.
+The only exception to the above stated rules is within the AIPS software package.
+Task FITLD flips the sign of the $Y$ coordinate, apparently to maintain consistency with software behavior established in the early days of VLBI.
+
+\subsection{Baseline coordinates} \label{sec:uvwvconventions}
+
+The baseline vectors are traditionally put in a coordinate system that is fixed to the celestial sphere rather than the Earth; see the discussion in \S\ref{sec:calcif2} for a discussion of coordinates that is mathematically more precise.
+The unit-length basis vectors for this coordinate system are called $\hat{u}$, $\hat{v}$, and $\hat{w}$.
+The axes are defined so that $\hat{w}$ points in the direction of the observed source tangent point, the $\hat{u}$ is orthogonal to both the vector pointing to the celestial north pole $\hat{N}$ ($\delta_{\rm J2000} = +90^{\circ}$) and $\hat{w}$, and $\hat{v}$ orthogonal to $\hat{u}$ and $\hat{w}$.  
+Note that the sign of the $\hat{v}$ is such that $\hat{v} \cdot \hat{N} > 0$ and $\{\hat{u}, \hat{v}, \hat{w}\}$ form a right-handed coordinate system.
+A baseline vector $\vec{B}_{ij}$ is defined for an ordered pair of antennas, indexed by $i$ and $j$ at geocentric coordinates $\vec{x}_i$ and $\vec{x}_j$.
+For convenience, the Earth center will be denoted by $\vec{x}_0$ which has coordinate value $\vec{0}$.
+The $(u, v, w)$ coordinates for baseline vector $\vec{B}_{ij}$ is given by$(\vec{B}_{ij} \cdot \hat{u}, \vec{B}_{ij} \cdot \hat{v}, \vec{B}_{ij} \cdot \hat{w})$.
+There are two natural conventions for defining baseline vectors: $\vec{B}_{ij} = \vec{x}_i - \vec{x}_j$ and $\vec{B}_{ij}  = -\vec{x}_i + \vec{x}_j$, which will be refered to as first-plus and second-plus respectively; both conventions are used within the correlator system.
+Antenna-based baseline vectors are stored in polynomial form in the {\tt .im} file and tabulated in the {\tt .uvw} file.
+In all cases antenna-based baseline vectors are baseline vectors defined as $\vec{B}_i \equiv \vec{B}_{0i} = \pm \vec{x}_0 \mp \vec{x}_i$.
+The values stored in the {\tt .im} and {\tt .uvw} files adopt the first-plus convention.
+For antennas on the Earth surface this implies that the $w$ baseline component is always negative for antennas that see the target source above the horizon.
+The {\tt difx} format output from {\tt mpifxcorr} contains a baseline vector for each visibility spectrum computed from the locations of the antenna pair using the first-plus convention.
+Note that in this file output, the reported baseline number is $256*i + j$ and $i$ and $j$ are antenna indices starting at 1.
+The FITS-IDI format written by {\tt difx2fits} adheres to the second-plus convention.
+
+\subsection{Visibility phase} \label{phaseconventions}
