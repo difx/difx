@@ -42,7 +42,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         norm_corr,
         isb,
         record_chan,
-        once = FALSE;
+        once = FALSE,
+        nclock;
 
     double t,
            tint,
@@ -54,7 +55,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
            squad,
            xtones[NPC_TONES],
            deltat,
-           clockdrift;
+           clock[6];
 
     char outname[256],
          pcal_filnam[256],
@@ -148,27 +149,23 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 t301.interval = (short int) j;
                 t302.interval = t301.interval;
                                     // units of difx are usec, ff uses sec
+                                    // shift clock polynomial to start of model interval
+                deltat = 8.64e4 * ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd) 
+                                                   + (**(D->scan->im+n))->sec;
+                nclock = getDifxAntennaShiftedClock (D->antenna+n, deltat, 6, clock);
                                     // difx delay doesn't have clodk added in, so
                                     // we must do it here; also apply sign reversal
                                     // for opposite delay convention
                 for (l=0; l<6; l++)
                     {
                     t301.delay_spline[l] 
-                      = -1.e-6 * ((**(D->scan->im+n))->delay[l] + (D->antenna+n)->clockcoeff[l]);
-                    
+                      = -1.e-6 * (**(D->scan->im+n))->delay[l];
+
+                    if (l < nclock) // add in those clock coefficients that are valid
+                        t301.delay_spline[l] -= 1e-6 * clock[l];
 
                     t302.phase_spline[l] = t301.delay_spline[l] * (D->freq+j)->freq;
                     }
-                //FIXME quick hack to take account of clock rate between start of the poly and  start of clock model. 
-                //See Model::addClockTerms in mpifxcorr model.cpp for full treatment for polynomial clock model
-                //See also fitsMC.c in difx2fits clockorder; j++
-                deltat = ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd)*86400. 
-                       + (**(D->scan->im+n))->sec;
-                clockdrift = deltat * 1.e-6 * (D->antenna+n)->clockcoeff[1];
-                t301.delay_spline[0] -= clockdrift;
-                //printf ("deltat of %e s   ", deltat);
-                //printf ("clock coefficient of %e s/s   ", 1.e-6 * (D->antenna+n)->clockcoeff[1]);
-                //printf ("added clock drift of %e s\n", clockdrift);
 
                 write_t301 (&t301, fout[n]);
                 write_t302 (&t302, fout[n]);
