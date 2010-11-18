@@ -1,5 +1,5 @@
 INCLUDES = \
-	-I$(top_srcdir)/difxmessage
+	-I$(top_srcdir)
 
 LDADD = \
 	$(top_builddir)/difxmessage/libdifxmessage.la \
