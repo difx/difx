@@ -232,6 +232,47 @@ void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src)
 	dest->dZ = src->dZ;
 }
 
+/* dt is in microseconds */
+/* returns number of coefficients copied = order+1, or < 0 on error */
+int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClockSize, double *clockOut)
+{
+	int i;
+	double a[MAX_MODEL_ORDER+1];
+	double t2, t3, t4, t5;
+
+	if(!da)
+	{
+		return -1;
+	}
+    
+	if(outputClockSize < da->clockorder+1)
+	{
+		return -2;
+	}
+
+	for(i = 0; i < MAX_MODEL_ORDER+1; i++)             // pad out input array to full order with 0's
+	{
+		a[i] = (i <= da->clockorder) ? da->clockcoeff[i] : 0.0;
+	}
+
+	t2 = dt * dt;
+	t3 = t2 * dt;
+	t4 = t2 * t2;
+	t5 = t3 * t2;
+
+	switch(da->clockorder)
+	{
+		case 5: clockOut[5] = a[5];
+		case 4: clockOut[4] = a[4] + 5 * a[5] * dt;
+		case 3: clockOut[3] = a[3] + 4 * a[4] * dt + 10 * a[5] * t2;
+		case 2: clockOut[2] = a[2] + 3 * a[3] * dt +  6 * a[4] * t2 + 10 * a[5] * t3;
+		case 1: clockOut[1] = a[1] + 2 * a[2] * dt +  3 * a[3] * t2 +  4 * a[4] * t3 + 5 * a[5] * t4;
+		case 0: clockOut[0] = a[0] +     a[1] * dt +      a[2] * t2 +      a[3] * t3 +     a[4] * t4 + a[5] * t5; 
+	}
+
+	return da->clockorder + 1;
+}
+
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	const DifxAntenna *da2, int nda2, int *antennaIdRemap, int *nda)
 {

@@ -512,6 +512,7 @@ void fprintDifxAntenna(FILE *fp, const DifxAntenna *da);
 void fprintDifxAntennaSummary(FILE *fp, const DifxAntenna *da);
 int isSameDifxAntenna(const DifxAntenna *da1, const DifxAntenna *da2);
 int isSameDifxAntennaClock(const DifxAntenna *da1, const DifxAntenna *da2);
+int getDifxAntennaShiftedClock(const DifxAntenna *da, double dt, int outputClockSize, double *clockOut);
 void copyDifxAntenna(DifxAntenna *dest, const DifxAntenna *src);
 DifxAntenna *mergeDifxAntennaArrays(const DifxAntenna *da1, int nda1,
 	const DifxAntenna *da2, int nda2, int *antennaIdRemap,
