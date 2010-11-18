@@ -186,7 +186,6 @@ Configuration::Configuration(const char * configfile, int id)
         consistencyok = processPhasedArrayConfig(configs[i].phasedarrayconfigfilename, i);
     }
   }
-  //cout << "About to open the Model, consistencyok is " << consistencyok << endl;
   if(consistencyok) {
     model = new Model(this, calcfilename);
     consistencyok = model->openSuccess();
