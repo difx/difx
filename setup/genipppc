@@ -1,0 +1,108 @@
+#!/bin/env python
+
+from sys import argv, exit
+from string import split, lower
+from os import getenv
+
+program = 'genipppc'
+version = '0.1'
+verdate = '20101118'
+author  = 'Walter Brisken <wbrisken@nrao.edu>'
+
+def usage(prog):
+	print '\n%s ver. %s  %s  %s\n' % (program, version, verdate, author)
+	print 'Usage: %s [options] <ipp path> [<ipp version>]\n'
+	print 'options can include:'
+	print '  -h, --help     print help info\n'
+	print '<ipp path> is the install path of Intel Performance Primitives\n'
+
+def getippversion(path):
+	possibilities = []
+	s = split(path, '/')
+	for part in s:
+		t = split(part, '.')
+		if len(t) > 2:
+			possibilities.append(part)
+	if len(possibilities) < 1:
+		print 'Sorry, cannot determine ipp version from path'
+		exit(0)
+	if len(possibilities) > 1:
+		print 'Guessing version == %s' % possibilities[0]
+
+	return possibilities[0]
+	
+# fixme: possibly should use uname to get this information
+def getarch():
+	bs = getenv('DIFXBITS') 
+	if bs != None:
+		return int(bs)
+	else:
+		print 'Warning: defaulting to 32 bit assumption'
+		return 32
+
+def genipppc(path, ippversion):
+	# if no version actually supplied, try to guess from path
+	if ippversion == '':
+		ippversion = getippversion(path)
+	ipparch = getarch()
+
+	major = int(split(ippversion, '.')[0])
+	out = open('ipp.pc', 'w')
+	out.write('base = %s\n' % path)
+	out.write('\n')
+	out.write('Name: ipp\n')
+	out.write('Description: Intel Performance Primitives\n')
+	out.write('Requires:\n')
+	out.write('Version: %s\n' % ippversion)
+	
+	mac = False
+	ostype = getenv('OSTYPE')
+	if ostype != None:
+		ostype = lower(ostype)
+		if ostype[:6] == 'darwin':
+			mac = True
+
+	if major == 6:
+		if mac:
+			libdir = 'Libraries'
+		else:
+			libdir = 'sharedlib'
+		if ipparch == 32:
+			out.write('Libs: -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % libdir)
+			out.write('Cflags: -I${base}/include\n')
+		else:
+			out.write('Libs: -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % libdir)
+			out.write('Cflags: -I${base}/include\n')
+	elif major == 7:
+		if ipparch == 32:
+			out.write('Libs: -L${base}/lib/ia32 -L${base}/ipp/lib/ia32 -lipps -lippvm -lippcore -liomp5\n')
+			out.write('Cflags: -I${base}/ipp/include\n')
+		else:
+			out.write('Libs: -L${base}/lib/intel64 -L${base}/ipp/lib/intel64 -lipps -lippvm -lippcore -liomp5\n')
+			out.write('Cflags: -I${base}/ipp/include\n')
+	else:
+		print 'Sorry, IPP %d not yet supported by this script\n' % major
+
+	out.close()
+
+
+ipppath = ''
+ippversion = ''
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a in ['--help', '-h']:
+			usage(argv[0])
+			exit(0)
+		else:
+			print 'Unrecognised option: %s .  See help with -h .' % a
+			exit(0)
+	else:
+		if ipppath == '':
+			ipppath = a
+		elif ippversion == '':
+			ippversion = a
+		else:
+			print 'Unexpected parameter: %s .  See help with -h .' % a
+
+genipppc(ipppath, ippversion)
