@@ -48,6 +48,7 @@
 //act on an XML command message which was received
 bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
   string paramname, paramvalue;
+  bool ok;
 
   //Only act on parameter setting commands
   //cout << "received a message" << endl;
@@ -75,7 +76,8 @@ bool actOnCommand(Configuration * config, DifxMessageGeneric * difxmessage) {
         config->setSTADumpChannels(atoi(pmessage->paramValue));
       else if (paramname == "ltachannels")
         config->setLTADumpChannels(atoi(pmessage->paramValue));
-      //else if (pmessage->paramname == "clock stuff")
+      else if (paramname == "clockupdate")
+        ok = config->updateClock(paramvalue);
       else {
         cwarn << startl << config->getMPIId() << ": warning - received a parameter instruction regarding " <<  pmessage->paramName << " which cannot be honored and will be ignored!" << endl;
       }

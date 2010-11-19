@@ -192,7 +192,7 @@ Configuration::Configuration(const char * configfile, int id)
   }
   for(int i=0;i<telescopetablelength;i++) {
     if(consistencyok)
-      consistencyok = model->addClockTerms(telescopetable[i].name, telescopetable[i].clockrefmjd, telescopetable[i].clockorder, telescopetable[i].clockpoly);
+      consistencyok = model->addClockTerms(telescopetable[i].name, telescopetable[i].clockrefmjd, telescopetable[i].clockorder, telescopetable[i].clockpoly, false);
   }
   if(consistencyok)
     estimatedbytes += model->getEstimatedBytes();
@@ -2511,6 +2511,39 @@ bool Configuration::setPolycoFreqInfo(int configindex)
   delete [] numchannels;
   delete [] used;
   return ok;
+}
+
+bool Configuration::updateClock(std::string clockstring)
+{
+  int at, count, antennaindex;
+  double deltaclock[Model::MAX_POLY_ORDER+1];
+  double * poly;
+
+  count = 0;
+  for(int i=0;i<Model::MAX_POLY_ORDER+1;i++)
+    deltaclock[i] = 0.0;
+  at = clockstring.find_first_of(":");
+  if(at == string::npos) {
+    cerror << startl << "Received a dodgy deltaclock parameter string: " << clockstring << endl;
+    return false;
+  }
+  antennaindex = atoi(clockstring.substr(0,at).c_str());
+  while(at != string::npos && count < Model::MAX_POLY_ORDER+1) {
+    clockstring = clockstring.substr(at+1);
+    at = clockstring.find_first_of(":");
+    deltaclock[count] = atof(clockstring.substr(0,at).c_str());
+    count++;
+  }
+  if(count == Model::MAX_POLY_ORDER+1) {
+    cerror << startl << "Tried to add a clock of too-high order! String was " << clockstring << ", leaving clocks unchanged" << endl;
+    return false;
+  }
+  poly = new double[count];
+  for(int i=0;i<count;i++)
+    poly[i] = deltaclock[i];
+
+  model->updateClock(antennaindex, count-1, poly);
+  delete [] poly;
 }
 
 bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3])

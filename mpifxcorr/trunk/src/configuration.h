@@ -453,6 +453,12 @@ public:
   bool fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3]);
 
  /**
+  * Update clock values during an observation
+  * @param clockstring antennaindex:zeroorderoffset[:1storderoffset:2ndorderoffset...]
+  */
+  bool updateClock(std::string clockstring);
+
+ /**
   * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
   * @param input Open input stream to read from
   * @param line Existing string to store value in

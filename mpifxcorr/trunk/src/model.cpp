@@ -155,6 +155,14 @@ Model::~Model()
   }
 }
 
+void Model::updateClock(int antennaindex, int order, double * deltaclock)
+{
+  string antennaname = stationtable[antennaindex].name;
+  double refmjd = modelmjd + (double)modelstartseconds/86400.0;
+
+  addClockTerms(antennaname, refmjd, order, deltaclock, true);
+}
+
 bool Model::interpolateUVW(int scanindex, double offsettime, int antennaindex1, int antennaindex2, int scansourceindex, double* uvw)
 {
   int scansample, polyoffset;
@@ -269,7 +277,7 @@ bool Model::calculateDelayInterpolator(int scanindex, f64 offsettime, f64 timesp
   return true;
 }
 
-bool Model::addClockTerms(string antennaname, double refmjd, int order, double * terms)
+bool Model::addClockTerms(string antennaname, double refmjd, int order, double * terms, bool isupdate)
 {
   double clockdistance;
   double * clockdt;
@@ -298,8 +306,19 @@ bool Model::addClockTerms(string antennaname, double refmjd, int order, double *
           clockdt[0] = 1.0;
           for(int l=1;l<=order;l++)
             clockdt[l] = clockdt[l-1]*clockdistance;
-          for(int l=0;l<=polyorder;l++)
-            scantable[j].clock[k][i][l] = 0.0;
+          if(!isupdate) {
+            for(int l=0;l<=polyorder;l++)
+              scantable[j].clock[k][i][l] = 0.0;
+          }
+          else { //first subtract the old clock model out of delay
+            for(int p=0;p<scantable[j].numphasecentres+1;p++)
+            {
+              for(int l=0;l<=polyorder;l++)
+              {
+                scantable[j].delay[k][p][i][l] -= scantable[j].clock[k][i][l];
+              }
+            }
+          }
           for(int l=0;l<=order;l++)
           {
             for(int m=l;m<=order;m++)
