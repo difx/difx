@@ -33,6 +33,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include <difxmessage.h>
+#include "config.h"
 #include "mk5daemon.h"
 
 int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
@@ -216,7 +217,33 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		G->from, G->identifier, cmd);
 	Logger_logData(D->log, message);
 
-	if(strcasecmp(cmd, "GetVSN") == 0)
+	if(strcasecmp(cmd, "Reboot") == 0)
+	{
+		Mk5Daemon_reboot(D);
+	}
+	else if(strcasecmp(cmd, "Poweroff") == 0)
+	{
+		Mk5Daemon_poweroff(D);
+	}
+	else if(strcasecmp(cmd, "stopmk5daemon") == 0)
+	{
+		D->dieNow = 1;
+	}
+	else if(strcasecmp(cmd, "killmpifxcorr") == 0)
+	{
+		Mk5Daemon_system(D, "killall -9 mpifxcorr", 1);
+		Mk5Daemon_system(D, "killall -9 mpirun", 1);
+	}
+#ifdef HAVE_XLRAPI_H
+	else if(strcasecmp(cmd, "Clear") == 0)
+	{
+		D->process = PROCESS_NONE;
+		if(D->isMk5)
+		{
+			Mk5Daemon_getModules(D);
+		}
+	}
+	else if(strcasecmp(cmd, "GetVSN") == 0)
 	{
 		if(D->isMk5)
 		{
@@ -229,31 +256,6 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 		{
 			Mk5Daemon_resetStreamstor(D);
 		}
-	}
-	else if(strcasecmp(cmd, "Reboot") == 0)
-	{
-		Mk5Daemon_reboot(D);
-	}
-	else if(strcasecmp(cmd, "Poweroff") == 0)
-	{
-		Mk5Daemon_poweroff(D);
-	}
-	else if(strcasecmp(cmd, "Clear") == 0)
-	{
-		D->process = PROCESS_NONE;
-		if(D->isMk5)
-		{
-			Mk5Daemon_getModules(D);
-		}
-	}
-	else if(strcasecmp(cmd, "stopmk5daemon") == 0)
-	{
-		D->dieNow = 1;
-	}
-	else if(strcasecmp(cmd, "killmpifxcorr") == 0)
-	{
-		Mk5Daemon_system(D, "killall -9 mpifxcorr", 1);
-		Mk5Daemon_system(D, "killall -9 mpirun", 1);
 	}
 	else if(strcasecmp(cmd, "getdirA") == 0)
 	{
@@ -385,6 +387,7 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_sendStreamstorVersions(D);
 		}
 	}
+#endif
 	else if(strncmp(cmd, "mount", 5) == 0 && strlen(cmd) > 5)
 	{
 		mountdisk(D, cmd+5);
@@ -492,3 +495,36 @@ void Mk5Daemon_stopMonitor(Mk5Daemon *D)
 {
 	pthread_join(D->monitorThread, 0);
 }
+
+void Mk5Daemon_reboot(Mk5Daemon *D)
+{
+	const char command[] = "/sbin/reboot";
+
+	DifxMessageMk5Status dm;
+
+	memset(&dm, 0, sizeof(DifxMessageMk5Status));
+	strncpy(dm.vsnA, D->vsnA, 8);
+	strncpy(dm.vsnB, D->vsnB, 8);
+	dm.state = MARK5_STATE_REBOOTING;
+	difxMessageSendMark5Status(&dm);
+
+	D->dieNow = 1;
+	Mk5Daemon_system(D, command, 1);
+}
+
+void Mk5Daemon_poweroff(Mk5Daemon *D)
+{
+	const char command[] = "/sbin/poweroff";
+
+	DifxMessageMk5Status dm;
+
+	memset(&dm, 0, sizeof(DifxMessageMk5Status));
+	strncpy(dm.vsnA, D->vsnA, 8);
+	strncpy(dm.vsnB, D->vsnB, 8);
+	dm.state = MARK5_STATE_POWEROFF;
+	difxMessageSendMark5Status(&dm);
+
+	D->dieNow = 1;
+	Mk5Daemon_system(D, command, 1);
+}
+

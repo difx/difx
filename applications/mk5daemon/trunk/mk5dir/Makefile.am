@@ -1,3 +1,4 @@
+if WITH_STREAMSTOR
 bin_PROGRAMS = \
 	mk5cat \
 	mk5cp \
@@ -10,6 +11,10 @@ bin_PROGRAMS = \
 
 dist_bin_SCRIPTS = \
 	checkdir
+else
+bin_PROGRAMS = 
+dist_bin_SCRIPTS = 
+endif
 
 
 mk5cat_LDADD = \

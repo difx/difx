@@ -32,6 +32,7 @@
 
 #include <time.h>
 #include <difxmessage.h>
+#include "config.h"
 #include "logger.h"
 
 extern const char difxUser[];
@@ -78,19 +79,21 @@ typedef struct
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
-int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D);
-int Mk5Daemon_sendStreamstorVersions(Mk5Daemon *D);
 int logStreamstorVersions(Mk5Daemon *D);
-void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
-int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
-int unlockStreamstor(Mk5Daemon *D, const char *identifier);
 void Mk5Daemon_resetStreamstor(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
 int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
+void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
+#ifdef HAVE_XLRAPI_H
+int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
+int unlockStreamstor(Mk5Daemon *D, const char *identifier);
+int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D);
+int Mk5Daemon_sendStreamstorVersions(Mk5Daemon *D);
+void Mk5Daemon_getModules(Mk5Daemon *D);
 void Mk5Daemon_startMk5Dir(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Dir(Mk5Daemon *D);
 void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
@@ -99,6 +102,6 @@ void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
 void Mk5Daemon_stopCondition(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
-void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
+#endif
 
 #endif

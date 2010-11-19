@@ -133,36 +133,3 @@ void Mk5Daemon_resetStreamstor(Mk5Daemon *D)
 
 	Mk5Daemon_getModules(D);
 }
-
-void Mk5Daemon_reboot(Mk5Daemon *D)
-{
-	const char command[] = "/sbin/reboot";
-
-	DifxMessageMk5Status dm;
-
-	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
-	dm.state = MARK5_STATE_REBOOTING;
-	difxMessageSendMark5Status(&dm);
-
-	D->dieNow = 1;
-	Mk5Daemon_system(D, command, 1);
-}
-
-void Mk5Daemon_poweroff(Mk5Daemon *D)
-{
-	const char command[] = "/sbin/poweroff";
-
-	DifxMessageMk5Status dm;
-
-	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
-	dm.state = MARK5_STATE_POWEROFF;
-	difxMessageSendMark5Status(&dm);
-
-	D->dieNow = 1;
-	Mk5Daemon_system(D, command, 1);
-}
-

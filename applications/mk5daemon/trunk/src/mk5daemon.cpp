@@ -73,9 +73,6 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --headnode\n");
 	fprintf(stderr, "  -H             Give head node capabilities\n");
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --condition-watch\n");
-	fprintf(stderr, "  -w             Start the condition-watch program\n");
-	fprintf(stderr, "\n");
 	fprintf(stderr, "  --quiet\n");
 	fprintf(stderr, "  -q             Don't multicast any status\n");
 	fprintf(stderr, "\n");
@@ -295,32 +292,6 @@ void sigintHandler(int j)
 	signal(SIGINT, oldsigintHandler);
 }
 
-void startConditionWatch(const Mk5Daemon *D)
-{
-	const char *user;
-	char command[MAX_COMMAND_SIZE];
-
-	Logger_logData(D->log, "Starting condition_watch");
-
-	if(fork())
-	{
-		return;
-	}
-	
-	user = getenv("DIFX_USER_ID");
-	if(!user)
-	{
-		user = difxUser;
-	}
-
-	snprintf(command, MAX_COMMAND_SIZE, "ssh -f %s@%s condition_watch", 
-		user, D->hostName);
-
-	Mk5Daemon_system(D, command, 1);
-
-	exit(0);
-}
-
 int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
@@ -328,13 +299,15 @@ int main(int argc, char **argv)
 	char message[DIFX_MESSAGE_LENGTH];
 	char str[16];
 	int isHeadNode = 0;
-	int i, ok=0;
-	int justStarted = 1;
+	int i;
 	int halfInterval;
 	char logPath[256];
 	const char *p;
 	double mjd;
-	int startCW = 0;
+#ifdef HAVE_XLRAPI_H
+	int ok=0;
+	int justStarted = 1;
+#endif
 
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
@@ -357,11 +330,6 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--headnode") == 0)
 		{
 			isHeadNode = 1;
-		}
-		else if(strcmp(argv[i], "-w") == 0 ||
-		   strcmp(argv[i], "--condition-watch") == 0)
-		{
-			startCW = 1;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -423,11 +391,6 @@ int main(int argc, char **argv)
 		program, version);
 	Logger_logData(D->log, message);
 
-	if(startCW && isHeadNode)
-	{
-		startConditionWatch(D);
-	}
-
 	oldsigintHandler = signal(SIGINT, sigintHandler);
 
 	firstTime = lastTime = time(0);
@@ -443,12 +406,15 @@ int main(int argc, char **argv)
 		{
 			lastTime = t;
 
+#ifdef HAVE_XLRAPI_H
 			ok = (checkStreamstor(D, t) == 0);
+#endif
 
 			if( (t % D->loadMonInterval) == 0)
 			{
 				Mk5Daemon_loadMon(D, mjd);
 			}
+#ifdef HAVE_XLRAPI_H
 			else if( (t % D->loadMonInterval) == halfInterval)
 			{
 				if(D->skipGetModule)
@@ -460,7 +426,6 @@ int main(int argc, char **argv)
 					Mk5Daemon_getModules(D);
 				}
 			}
-
 			if(t - firstTime > 15 && D->isMk5 &&
 				strncasecmp(D->hostName, "mark5", 5) == 0)
 			{
@@ -472,6 +437,7 @@ int main(int argc, char **argv)
 				}
 				justStarted = 0;
 			}
+#endif
 		}
 
 		usleep(100000);
