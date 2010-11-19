@@ -13,6 +13,7 @@ bin_PROGRAMS = \
 	testseqnumbers \
 	testm5lock \
 	sendtransient \
+	updatedifxclock \
 	difxlog
 
 dist_bin_SCRIPTS = \
@@ -39,6 +40,9 @@ testdifxmessagereceivecond_SOURCES = \
 
 sendtransient_SOURCES = \
 	sendtransient.c
+
+updatedifxclock_SOURCES = \
+	updatedifxclock.c
 
 difxlog_SOURCES = \
 	difxlog.c
