@@ -1,5 +1,6 @@
 SUBDIRS = \
 	difxio \
+	utils \
 	tests
 
 library_includedir = $(includedir)
