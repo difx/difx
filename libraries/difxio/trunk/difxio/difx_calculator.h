@@ -33,13 +33,24 @@
 
 typedef struct
 {
-	int nConfig, nAntenna, nBaseline;
+	int nAntenna;
+	int nBaseline;
+} DifxCalculatorConfig;
+
+typedef struct
+{
+	int nConfig;
 	double speedUp;
+	DifxCalculatorConfig *config;
 } DifxCalculator;
 
 DifxCalculator *newDifxCalculator();
 
 void deleteDifxCalculator(DifxCalculator *C);
+
+DifxCalculatorConfig *newDifxCalculatorConfigArray(int n);
+
+void deleteDifxCalculatorConfigArray(DifxCalculatorConfig *c, int n);
 
 int populateDifxCalculator(DifxCalculator *C, const DifxInput *D);
 

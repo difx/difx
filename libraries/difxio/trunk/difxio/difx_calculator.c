@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include "difx_calculator.h"
 
+const char printFormat[] = "%-24s%-15s%s\n";
 
 DifxCalculator *newDifxCalculator()
 {
@@ -49,24 +50,117 @@ void deleteDifxCalculator(DifxCalculator *C)
 {
 	if(C)
 	{
+		if(C->config)
+		{
+			deleteDifxCalculatorConfigArray(C->config, C->nConfig);
+		}
 		free(C);
+	}
+}
+
+DifxCalculatorConfig *newDifxCalculatorConfigArray(int n)
+{
+	DifxCalculatorConfig *c;
+
+	c = (DifxCalculatorConfig *)calloc(n, sizeof(DifxCalculatorConfig));
+
+	return c;
+}
+
+void deleteDifxCalculatorConfigArray(DifxCalculatorConfig *c, int n)
+{
+	if(c)
+	{
+		free(c);
 	}
 }
 
 int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 {
+	DifxCalculatorConfig *c;
+	DifxConfig *d;
+	int i;
+
 	if(!D || !C)
 	{
 		return -1;
 	}
+	
+	if(C->config)
+	{
+		deleteDifxCalculatorConfigArray(C->config, C->nConfig);
+	}
 
 	C->nConfig = D->nConfig;
+	C->config = newDifxCalculatorConfigArray(C->nConfig);
+
+	for(i = 0; i < D->nConfig; i++)
+	{
+		c = &C->config[i];
+		d = &D->config[i];
+		c->nAntenna = d->nAntenna;
+		c->nBaseline = d->nBaseline;
+	}
 
 	return 0;
 }
 
+static void printString(const char *p, const char *v, const char *n)
+{
+	char nullstring[] = "";
+	if(n == 0) 
+	{
+		n = nullstring;
+	}
+
+	printf(printFormat, p, v, n);
+}
+
+static void printInt(const char *p, int v, const char *n)
+{
+	const int MaxLen = 16;
+	char nullstring[] = "";
+	char tmp[MaxLen];
+
+	if(n == 0) 
+	{
+		n = nullstring;
+	}
+
+	snprintf(tmp, MaxLen, "%d", v);
+
+	printf(printFormat, p, tmp, n);
+}
+
+static void printDouble(const char *p, double v, const char *n)
+{
+	const int MaxLen = 16;
+	char nullstring[] = "";
+	char tmp[MaxLen];
+
+	if(n == 0) 
+	{
+		n = nullstring;
+	}
+
+	snprintf(tmp, MaxLen, "%f", v);
+
+	printf(printFormat, p, tmp, n);
+}
+
 void printDifxCalculator(const DifxCalculator *C)
 {
+	int i;
+	const DifxCalculatorConfig *c;
 
-	printf("Number of Configurations = %d\n", C->nConfig);
+	printf("\nNumber of Configurations = %d\n\n", C->nConfig);
+
+	for(i = 0; i < C->nConfig; i++)
+	{
+		c = &C->config[i];
+		printf("CONFIG %d\n", i);
+		printString("PARAMETER", "VALUE", "NOTE");
+		printInt("Number of telescopes", c->nAntenna,  0);
+		printInt("Number of baselines",  c->nBaseline, 0);
+	}
 }
