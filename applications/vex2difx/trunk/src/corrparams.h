@@ -235,6 +235,8 @@ public:
 	bool padScans;
 	bool simFXCORR;		// set integration and start times to match VLBA HW correlator
 	bool tweakIntegrationTime;      // nadger the integration time to make values nice
+	int nCore;
+	int nThread;
 	double maxLength;	// [days]
 	double minLength;	// [days]
 	double maxSize;		// [bytes] -- break jobs for output filesize

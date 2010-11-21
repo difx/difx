@@ -1082,7 +1082,6 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	tweakIntegrationTime = true;
 	sendLength = 0.0;		// (s) zero implies use sendSize to dictate sends
 	sendSize = 6000000;             // Bytes
 	invalidMask = ~0;		// write flags for all types of invalidity
@@ -1090,6 +1089,8 @@ void CorrParams::defaults()
 	v2dMode = V2D_MODE_NORMAL;
 	overSamp = 0;
 	outputFormat = OutputFormatDIFX;
+	nCore = 0;
+	nThread = 0;
 }
 
 void pathify(string &filename)
@@ -1159,6 +1160,14 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "singleScan")
 	{
 		singleScan = isTrue(value);
+	}
+	else if(key == "nCore")
+	{
+		ss >> nCore;
+	}
+	else if(key == "nThread")
+	{
+		ss >> nThread;
 	}
 	else if(key == "singleSetup")
 	{
@@ -1240,7 +1249,7 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "tweakIntTime")
 	{
-		tweakIntegrationTime = isTrue(value);
+		/* No longer does anything */
 	}
 	else if(key == "antennas")
 	{
@@ -1673,6 +1682,15 @@ int CorrParams::sanityCheck()
 		}
 	}
 
+	if(nThread != 0 || nCore != 0)
+	{
+		if(nThread <= 0 || nCore <= 0)
+		{
+			cerr << "Warning: nThreads and nCore must either both or neither be set." << endl;
+			nWarn++;
+		}
+	}
+
 	return nWarn;
 }
 
@@ -2101,7 +2119,11 @@ ostream& operator << (ostream &os, const CorrParams &x)
 	}
 	os << "singleScan=" << x.singleScan << endl;
 	os << "singleSetup=" << x.singleSetup << endl;
-	os << "tweakIntTime=" << x.tweakIntegrationTime << endl;
+	if(x.nCore > 0 && x.nThread > 0)
+	{
+		os << "nCore=" << x.nCore << endl;
+		os << "nThread=" << x.nCore << endl;
+	}
 	os << "mediaSplit=" << x.mediaSplit << endl;
 	os << "jobSeries=" << x.jobSeries << endl;
 	os << "startSeries=" << x.startSeries << endl;

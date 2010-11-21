@@ -1930,6 +1930,16 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		// write calc file
 		writeDifxCalc(D);
 
+		// write threads file if requested
+		if(P->nCore > 0 && P->nThread > 0)
+		{
+			DifxInputAllocThreads(D, P->nCore);
+			DifxInputSetThreads(D, P->nThread);
+
+			// FIXME: ultimately move this to writeDifxInput()
+			DifxInputWriteThreads(D);
+		}
+
 		// write flag file
 		ostringstream flagName;
 		flagName << D->job->fileBase << ".flag";
