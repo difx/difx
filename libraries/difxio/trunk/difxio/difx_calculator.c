@@ -30,7 +30,10 @@
 #include <stdlib.h>
 #include "difx_calculator.h"
 
-const char printFormat[] = "%-24s%-15s%s\n";
+const char printFormat[] = "%-26s%-15s%s\n";
+
+const int defaultNCore = 10;
+const double defaultNThread = 7;
 
 DifxCalculator *newDifxCalculator()
 {
@@ -79,7 +82,7 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 {
 	DifxCalculatorConfig *c;
 	DifxConfig *d;
-	int i;
+	int i, j, k, nc;
 
 	if(!D || !C)
 	{
@@ -94,12 +97,95 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 	C->nConfig = D->nConfig;
 	C->config = newDifxCalculatorConfigArray(C->nConfig);
 
+	C->nCore = 0;
+	C->nThread = 0;
+
+	if(D->nCore > 0 && D->nThread != 0)
+	{
+		C->nCore = D->nCore;
+		for(i = 0; i < C->nCore; i++)
+		{
+			C->nThread += D->nThread[i];
+		}
+		C->nThread /= C->nCore;
+		C->hasThreadsFile = 1;
+	}
+	else
+	{
+		C->hasThreadsFile = 0;
+		C->nCore = defaultNCore;
+		C->nThread = defaultNThread;
+	}
+
 	for(i = 0; i < D->nConfig; i++)
 	{
 		c = &C->config[i];
 		d = &D->config[i];
+
+		c->nBand = 0.0;
+		c->nPolPerBand = 0.0;
+		c->nPol = 0;
+		c->nBit = 0.0;
+		c->bandwidth = 0.0;
+		c->nChan = 0.0;
+
 		c->nAntenna = d->nAntenna;
 		c->nBaseline = d->nBaseline;
+		c->nDataSegment = D->nDataSegments;
+		c->dataBufferFactor = D->dataBufferFactor;
+
+		for(j = 0; j < D->nFreq; j++)
+		{
+			if(D->freq[j].nChan > c->nChan)
+			{
+				c->nChan = D->freq[j].nChan;
+			}
+		}
+
+		for(j = 0; j < d->nBaseline; j++)
+		{
+			int bl = d->baselineId[j];
+			
+			c->nBand += D->baseline[bl].nFreq;
+			for(k = 0; k < D->baseline[bl].nFreq; k++)
+			{
+				if(D->baseline[bl].nPolProd[k] > c->nPol)
+				{
+					c->nPol = D->baseline[bl].nPolProd[k];
+				}
+				c->nPolPerBand += D->baseline[bl].nPolProd[k];
+			}
+		}
+		c->nPolPerBand /= c->nBand;
+		c->nBand /= c->nBaseline;
+		if(c->nPol > 1)
+		{
+			c->nPol = 2;
+		}
+		c->nPolPerBand /= c->nPol;
+
+		nc = 0;
+		for(j = 0; j < d->nDatastream; j++)
+		{
+			int ds = d->datastreamId[j];
+			
+			c->nBit += D->datastream[ds].quantBits;
+			for(k = 0; k < D->datastream[ds].nRecBand; k++)
+			{
+				int f;
+
+				f = D->datastream[ds].recBandFreqId[k];
+				f = D->datastream[ds].recFreqId[f];
+				if(f < 0 || f > D->nFreq)
+				{
+					printf("ACK i=%d, j=%d, k = %d -> f=%d\n", i, j, k, f);
+				}
+				c->bandwidth += D->freq[f].bw;
+				nc++;
+			}
+		}
+		c->nBit /= d->nDatastream;
+		c->bandwidth /= nc;
 	}
 
 	return 0;
@@ -132,18 +218,23 @@ static void printInt(const char *p, int v, const char *n)
 	printf(printFormat, p, tmp, n);
 }
 
-static void printDouble(const char *p, double v, const char *n)
+static void printDouble(const char *p, double v, const char *n, const char *fmt)
 {
 	const int MaxLen = 16;
 	char nullstring[] = "";
 	char tmp[MaxLen];
+
+	if(fmt == 0)
+	{
+		fmt = "%f";
+	}
 
 	if(n == 0) 
 	{
 		n = nullstring;
 	}
 
-	snprintf(tmp, MaxLen, "%f", v);
+	snprintf(tmp, MaxLen, fmt, v);
 
 	printf(printFormat, p, tmp, n);
 }
@@ -153,14 +244,29 @@ void printDifxCalculator(const DifxCalculator *C)
 	int i;
 	const DifxCalculatorConfig *c;
 
-	printf("\nNumber of Configurations = %d\n\n", C->nConfig);
+	printf("\n");
+	printInt("Number of Configurations", C->nConfig, 0);
+	printInt("Number of Cores", C->nCore, C->hasThreadsFile ? "" : "Default since no .threads file");
+	printDouble("Number of Threads", C->nThread, C->hasThreadsFile ? "" : "Default since no .threads file", "%3.1f");
+	printf("\n");
 
 	for(i = 0; i < C->nConfig; i++)
 	{
 		c = &C->config[i];
 		printf("CONFIG %d\n", i);
-		printString("PARAMETER", "VALUE", "NOTE");
-		printInt("Number of telescopes", c->nAntenna,  0);
-		printInt("Number of baselines",  c->nBaseline, 0);
+		printString("PARAMETER",              "VALUE",             "NOTE");
+		printInt("Number of telescopes",      c->nAntenna,         0);
+		printInt("Number of baselines",       c->nBaseline,        0);
+		printDouble("Number of bands",        c->nBand,            "Averaged over baselines", "%3.1f");
+		printDouble("Bandwidth (MHz)",        c->bandwidth,        0, 0);
+		printInt("Decimation factor",         c->decimationFactor, 0);
+		printInt("Number of polarizations",   c->nPol,             0);
+		printDouble("Pol. products per band", c->nPolPerBand,      "Averaged over baselines", "%3.1f");
+		printDouble("Bits per sample",        c->nBit,             "Averaged over baselines", "%3.1f");
+		printInt("Blocks per send",           c->blocksPerSend,    0);
+		printInt("Spectral points per band",  c->nChan,            "As correlated");
+		printInt("Data buffer factor",        c->dataBufferFactor, 0);
+		printInt("Number of data segments",   c->nDataSegment,     0);
+		printf("\n");
 	}
 }

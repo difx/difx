@@ -40,9 +40,6 @@ DifxInput *newDifxInput()
 
 	D = (DifxInput *)calloc(1, sizeof(DifxInput));
 	D->specAvg = 1;
-	D->startChan = 0;
-	D->nOutChan = 0;
-	D->nInChan = 0;
 	D->visBufferLength = 32;
 
 	return D;
@@ -94,6 +91,10 @@ void deleteDifxInput(DifxInput *D)
 		if(D->rule)
 		{
 			deleteDifxRuleArray(D->rule);
+		}
+		if(D->nThread)
+		{
+			DifxInputAllocThreads(D, 0);
 		}
 		free(D);
 	}
@@ -1591,6 +1592,9 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 
 	/* NETWORK TABLE */
 	D = parseDifxInputNetworkTable(D, ip);
+
+	/* THREADS per CORE */
+	DifxInputLoadThreads(D);
 
 	return D;
 }

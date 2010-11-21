@@ -110,7 +110,7 @@ enum AntennaMountType
 	AntennaMountOrbiting = 2,	/* note: uncertain calc support */
 	AntennaMountXYEW = 3,		/* Hobart is the prime example */
 	AntennaMountNasmythR = 4,	/* note: in calcserver, falls back to azel as is appropriate */
-	AntennaMountNasmythL = 5,	/* note: no calcserver, falls back to azel as is appropriate */
+	AntennaMountNasmythL = 5,	/* note: in calcserver, falls back to azel as is appropriate */
 	AntennaMountXYNS = 6,		/* note: no FITS-IDI/AIPS support */
 	AntennaMountOther = 7,		/* set to this if different from the others */
 	NumAntennaMounts
@@ -454,6 +454,9 @@ typedef struct
         int nDataSegments;
         enum OutputFormatType outputFormat;
 
+	int nCore;		/* from the .threads file, or zero if no file */
+	int *nThread;		/* [coreId]: how many threads to use on each core */
+
 	int nAntenna, nConfig, nRule, nFreq, nScan, nSource, nEOP, nFlag;
 	int nDatastream, nBaseline, nSpacecraft, nPulsar, nPhasedArray, nJob;
 	DifxJob		*job;
@@ -759,6 +762,10 @@ int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
+void DifxInputAllocThreads(DifxInput *D, int nCore);
+void DifxInputSetThreads(DifxInput *D, int nThread);
+int DifxInputLoadThreads(DifxInput *D);
+int DifxInputWriteThreads(DifxInput *D);
 
 /* Writing functions */
 int writeDifxIM(const DifxInput *D);

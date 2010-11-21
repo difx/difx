@@ -47,7 +47,7 @@ void DifxFreqAllocTones(DifxFreq *df, int nTone)
 {
 	if(!df)
 	{
-		fprintf(stderr, "Error: DifxFreqAllocTones: b = 0 nTone = %d\n", nTone);
+		fprintf(stderr, "Error: DifxFreqAllocTones: df = 0 nTone = %d\n", nTone);
 		return;
 	}
 	if(df->tone)

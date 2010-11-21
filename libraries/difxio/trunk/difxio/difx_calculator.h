@@ -35,12 +35,25 @@ typedef struct
 {
 	int nAntenna;
 	int nBaseline;
+	double nBand;
+	double bandwidth;
+	int decimationFactor;
+	double nPol;
+	double nPolPerBand;
+	double nBit;
+	int blocksPerSend;
+	int nChan;
+	int dataBufferFactor;
+	int nDataSegment;
 } DifxCalculatorConfig;
 
 typedef struct
 {
 	int nConfig;
 	double speedUp;
+	int nCore;
+	double nThread;
+	int hasThreadsFile;
 	DifxCalculatorConfig *config;
 } DifxCalculator;
 
