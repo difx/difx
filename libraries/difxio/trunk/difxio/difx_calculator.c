@@ -30,7 +30,7 @@
 #include <stdlib.h>
 #include "difx_calculator.h"
 
-const char printFormat[] = "%-26s%-15s%s\n";
+const char printFormat[] = "%-28s%-15s%s\n";
 
 const int defaultNCore = 10;
 const double defaultNThread = 7;
@@ -96,6 +96,8 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 
 	C->nConfig = D->nConfig;
 	C->config = newDifxCalculatorConfigArray(C->nConfig);
+	C->tObs = 86400.0*(D->mjdStop - D->mjdStart);
+	C->visibilityLength = D->visBufferLength;
 
 	C->nCore = 0;
 	C->nThread = 0;
@@ -178,14 +180,46 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 				f = D->datastream[ds].recFreqId[f];
 				if(f < 0 || f > D->nFreq)
 				{
-					printf("ACK i=%d, j=%d, k = %d -> f=%d\n", i, j, k, f);
+					printf("ACK! i=%d j=%d k=%d -> f=%d\n", i, j, k, f);
 				}
-				c->bandwidth += D->freq[f].bw;
+				c->bandwidth += D->freq[f].bw*D->freq[f].decimation*1.0e6;
 				nc++;
 			}
 		}
 		c->nBit /= d->nDatastream;
 		c->bandwidth /= nc;
+
+		c->tSubint = d->subintNS*1.0e-9;
+		c->tGuard = d->guardNS*1.0e-9;
+		c->tInt = d->tInt;
+
+		/* derived parameters */
+		c->subintsPerInt = c->tInt/c->tSubint;
+		c->visibilitySize = (c->nAntenna + c->nBaseline)*(8*c->nChan*c->nBand*c->nPol*c->nPolPerBand);
+		c->recDataRate = c->nBand*c->bandwidth*c->nPol*c->nBit*2.0;
+		c->basebandMessageSize = c->tSubint*c->recDataRate/8.0;
+		c->blocksPerSend = c->basebandMessageSize/(c->nBit*c->nChan*2.0*c->nBand*c->nPol/8);
+		c->basebandReadSize = c->basebandMessageSize*c->dataBufferFactor/c->nDataSegment;
+		c->datastreamOutputRate = c->recDataRate * C->speedUp;
+		c->coreInputRatio = c->nAntenna/(double)(C->nCore);
+		c->coreInputRate = c->recDataRate*c->coreInputRatio*C->speedUp;
+		c->coreOutputRatio = c->visibilitySize/(c->nAntenna*c->basebandMessageSize);
+		c->coreOutputRate = c->coreInputRate*c->coreOutputRatio;
+		c->managerInputRate = c->coreOutputRate*C->nCore;
+		c->diskDataRate = c->visibilitySize/c->tInt;
+		c->datasetSize = c->diskDataRate*C->tObs;
+
+		/* FIXME: verify still same in 2.0.0 */
+		/* FIXME: consider n phase center */
+		c->datastreamBufferSize = c->basebandMessageSize*c->dataBufferFactor;
+		c->modeSize = c->basebandMessageSize + ((c->nBand*c->nPol*c->nChan*4)*(2+2+2+1)+c->nChan*4.0*(2+2+2+2+2+2+2+3+5));
+		c->coreSize = 4.0*((c->nAntenna*c->modeSize) + (c->nAntenna+c->nBaseline)*c->visibilitySize) + C->nThread*c->visibilitySize;
+		c->managerSize = c->visibilitySize*C->visibilityLength;
+
+		c->datastreamBufferDur = c->datastreamBufferSize*8/c->recDataRate;
+		c->datastreamReadDur = c->datastreamBufferDur/c->nDataSegment;
+		c->managerSlack = C->visibilityLength*c->tInt/2.0;
+		c->coreBufferDur = C->nCore*4.0*c->tSubint;
 	}
 
 	return 0;
@@ -239,6 +273,51 @@ static void printDouble(const char *p, double v, const char *n, const char *fmt)
 	printf(printFormat, p, tmp, n);
 }
 
+void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
+{
+	printString("PARAMETER",               "VALUE",             "NOTE");
+	printInt("Number of telescopes",       c->nAntenna,         0);
+	printInt("Number of baselines",        c->nBaseline,        0);
+	printDouble("Number of bands",         c->nBand,            "Averaged over baselines", "%3.1f");
+	printDouble("Bandwidth (MHz)",         c->bandwidth*1.0e-6, 0, 0);
+	printInt("Number of polarizations",    c->nPol,             0);
+	printDouble("Pol. products per band",  c->nPolPerBand,      "Averaged over baselines", "%3.1f");
+	printDouble("Bits per sample",         c->nBit,             "Averaged over baselines", "%3.1f");
+	printDouble("Blocks per send",         c->blocksPerSend,    "Has to be integral!", "%3.1f");
+	printInt("Spectral points per band",   c->nChan,            "As correlated");
+	printInt("Data buffer factor",         c->dataBufferFactor, 0);
+	printInt("Number of data segments",    c->nDataSegment,     0);
+	printf("\n");
+	printString("NETWORK / DISK USAGE",    "VALUE",             "NOTE");
+	printDouble("Record data rate (Mbps)", c->recDataRate*1.0e-6, 0, "%3.1f");
+	printDouble("DS output rate (Mbps)",   c->datastreamOutputRate*1.0e-6, 0, 0);
+	printDouble("Baseband msg. size (MB)", c->basebandMessageSize*1.0e-6, "Datastream to Core send; want a few MB", 0);
+	printDouble("Baseband read size (MB)", c->basebandReadSize*1.0e-6, "Typically want ~10 to 50 MB", 0);
+	printDouble("Core input data ratio",   c->coreInputRatio,   "Really should be << 1.0", 0);
+	printDouble("Core input rate (Mbps)",  c->coreInputRate*1.0e-6,    0, 0);
+	printDouble("Core output data ratio",  c->coreOutputRatio,  0, 0);
+	printDouble("Core output rate (Mbps)", c->coreOutputRate*1.0e-6,   0, 0);
+	printDouble("Manager input rate (Mbps)", c->managerInputRate*1.0e-6,  0, 0);
+	printDouble("Disk output rate (MB/s)", c->diskDataRate*1.0e-6, 0, 0);
+	printDouble("Dataset size (MB)",       c->datasetSize*1.0e-6,  0, 0);
+	printf("\n");
+	printString("MEMORY USAGE",            "VALUE",             "NOTE");
+	printDouble("Size of DS buffer (MB)",  c->datastreamBufferSize*1.0e-6,  0, 0);
+	printDouble("Size of vis. dump (B)",   c->visibilitySize,  0, "%1.0f");
+	printDouble("Size of Mode object (MB)",c->modeSize*1.0e-6, 0, 0);
+	printDouble("Core memory usage (MB)",  c->coreSize*1.0e-6, 0, 0);
+	printDouble("Manager memory usage (MB)", c->managerSize*1.0e-6, 0, 0);
+	printf("\n");
+	printString("TIMES",                   "VALUE",             "NOTE");
+	printDouble("Integration time (s)",  c->tInt,             0, 0);
+	printDouble("Subint time (ms)",        c->tSubint*1000.0,   0, 0);
+	printDouble("Subints per int",         c->subintsPerInt,    "If not an integer, expect variable weights", 0);
+	printDouble("DS buffer obs. dur. (s)", c->datastreamBufferDur, 0, 0);
+	printDouble("DS read obs. dur. (s)",   c->datastreamReadDur, "Must not exceed 2^31 ms (~2 sec)", 0);
+	printDouble("Manager slack (sec)",     c->managerSlack, 0, 0);
+	printDouble("Core buffer obs. dur. (s)", c->coreBufferDur, 0, 0);
+}
+
 void printDifxCalculator(const DifxCalculator *C)
 {
 	int i;
@@ -246,27 +325,19 @@ void printDifxCalculator(const DifxCalculator *C)
 
 	printf("\n");
 	printInt("Number of Configurations", C->nConfig, 0);
-	printInt("Number of Cores", C->nCore, C->hasThreadsFile ? "" : "Default since no .threads file");
-	printDouble("Number of Threads", C->nThread, C->hasThreadsFile ? "" : "Default since no .threads file", "%3.1f");
+	printInt("Number of Core processes", C->nCore, C->hasThreadsFile ? "" : "Default since no .threads file");
+	printDouble("Number of Threads per Core", C->nThread, C->hasThreadsFile ? "Should be <= number of CPU cores per node" : "Default since no .threads file", "%3.1f");
+	printInt("Vis. buffer length", C->visibilityLength, "");
+	printDouble("Speedup factor", C->speedUp, "", 0);
+	printDouble("Observe dur. (Hours)", C->tObs/1440.0, 0, 0);
+	printDouble("Correlation dur. (Hours)", C->tObs/C->speedUp/1440.0, 0, 0);
 	printf("\n");
 
 	for(i = 0; i < C->nConfig; i++)
 	{
 		c = &C->config[i];
-		printf("CONFIG %d\n", i);
-		printString("PARAMETER",              "VALUE",             "NOTE");
-		printInt("Number of telescopes",      c->nAntenna,         0);
-		printInt("Number of baselines",       c->nBaseline,        0);
-		printDouble("Number of bands",        c->nBand,            "Averaged over baselines", "%3.1f");
-		printDouble("Bandwidth (MHz)",        c->bandwidth,        0, 0);
-		printInt("Decimation factor",         c->decimationFactor, 0);
-		printInt("Number of polarizations",   c->nPol,             0);
-		printDouble("Pol. products per band", c->nPolPerBand,      "Averaged over baselines", "%3.1f");
-		printDouble("Bits per sample",        c->nBit,             "Averaged over baselines", "%3.1f");
-		printInt("Blocks per send",           c->blocksPerSend,    0);
-		printInt("Spectral points per band",  c->nChan,            "As correlated");
-		printInt("Data buffer factor",        c->dataBufferFactor, 0);
-		printInt("Number of data segments",   c->nDataSegment,     0);
+		printf("---- CONFIG %d ----\n", i);
+		printDifxCalculatorConfig(c);
 		printf("\n");
 	}
 }

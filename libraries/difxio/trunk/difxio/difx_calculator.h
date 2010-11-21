@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #ifndef __DIFX_CALCULATOR_H__
 #define __DIFX_CALCULATOR_H__
 
@@ -33,27 +34,66 @@
 
 typedef struct
 {
+	/* fundamental parameters */
 	int nAntenna;
 	int nBaseline;
 	double nBand;
-	double bandwidth;
-	int decimationFactor;
+	double bandwidth;		/* Hz */
 	double nPol;
 	double nPolPerBand;
 	double nBit;
-	int blocksPerSend;
 	int nChan;
 	int dataBufferFactor;
 	int nDataSegment;
+	double tSubint;			/* seconds */
+	double tGuard;			/* seconds */
+	int arrayStride;
+	int xmacStride;
+	double tInt;			/* seconds */
+
+	/* network / disk usage */
+	double blocksPerSend;
+	double basebandMessageSize;	/* bytes */
+	double basebandReadSize;	/* bytes */
+	double recDataRate;		/* bps */
+	double datastreamOutputRate;	/* bps */
+	double coreInputRatio;
+	double coreInputRate;		/* bps */
+	double coreOutputRatio;
+	double coreOutputRate;		/* bps */
+	double managerInputRate;	/* bps */
+	double diskDataRate;		/* bytes/sec */
+	double datasetSize;		/* bytes */
+
+	/* memory usage */
+	double datastreamBufferSize;	/* bytes */
+	double visibilitySize;		/* bytes */
+	double modeSize;		/* bytes */
+	double coreSize;		/* bytes */
+	double managerSize;		/* bytes */
+
+	/* times */
+	double subintsPerInt;
+	double datastreamBufferDur;	/* seconds */
+	double datastreamReadDur;	/* seconds */
+	double managerSlack;		/* seconds */
+	double coreBufferDur;		/* seconds */
+
 } DifxCalculatorConfig;
 
 typedef struct
 {
+	/* fundamental parameters */
 	int nConfig;
 	double speedUp;
 	int nCore;
 	double nThread;
+	int visibilityLength;
+	double tObs;	/* seconds */
 	int hasThreadsFile;
+
+	/* derived parameters */
+
 	DifxCalculatorConfig *config;
 } DifxCalculator;
 
@@ -66,6 +106,8 @@ DifxCalculatorConfig *newDifxCalculatorConfigArray(int n);
 void deleteDifxCalculatorConfigArray(DifxCalculatorConfig *c, int n);
 
 int populateDifxCalculator(DifxCalculator *C, const DifxInput *D);
+
+void printDifxCalculatorConfig(const DifxCalculatorConfig *c);
 
 void printDifxCalculator(const DifxCalculator *C);
 
