@@ -4,6 +4,9 @@ Version 2.0.1
 * add -v option to vexpeek
 * move most strcpy to snprintf and make use of parameterized string lengths in difxio
 * add recordEnable map to VexScan.
+* fix back-to-back scan handling when singleScan = False
+* fix media changes that occur immediately before a scan change
+* don't error-out if an ANTENNA block does not correspond to an entry in antennas list
 
 Version 2.0
 ~~~~~~~~~~~

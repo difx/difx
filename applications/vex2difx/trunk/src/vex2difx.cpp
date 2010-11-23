@@ -2083,11 +2083,6 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 		{
 			cout << "FYI: Using a default antenna setup." << endl;
 		}
-		else if(V->getAntenna(a->vexName) == 0)
-		{
-			cerr << "Warning: antenna " << a->vexName << " referenced in .v2d file but is not in vex file" << endl;
-			nWarn++;
-		}
 	}
 
 	for(r = P->rules.begin(); r != P->rules.end(); r++)
