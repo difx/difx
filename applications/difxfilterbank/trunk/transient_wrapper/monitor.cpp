@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "transient_wrapper_data.h"
 
 static void handleDifxStatus(TransientWrapperData *T, const DifxMessageGeneric *G)
