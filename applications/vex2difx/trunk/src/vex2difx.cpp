@@ -63,6 +63,10 @@ static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrPar
 	{
 		return false;
 	}
+	if(A->overlap(*B) >= -0.1/86400.0)
+	{
+		return false;
+	}
 	if(P->singleScan)
 	{
 		return false;
