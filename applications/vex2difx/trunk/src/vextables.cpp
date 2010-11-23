@@ -390,6 +390,7 @@ int VexData::sanityCheck()
 VexSource *VexData::newSource()
 {
 	sources.push_back(VexSource());
+
 	return &sources.back();
 }
 
@@ -694,6 +695,7 @@ void VexJobGroup::genEvents(const list<VexEvent> &eventList)
 		}
 	}
 }
+
 bool VexJob::hasScan(const string &scanName) const
 {
         vector<string>::const_iterator it;

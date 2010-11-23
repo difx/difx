@@ -75,6 +75,8 @@ static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrPar
 	return true;
 }
 
+// Divides scans into different groups where each group contains scans that can be correlated at the same time.
+// This does not pay attention to media or clock breaks
 static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrParams *P, int verbose)
 {
 	list<string> scans;
@@ -184,6 +186,7 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 	int nAnt;
 	int nLoop = 0;
 	int nEvent;
+	VexInterval scanRange;
 
 	nEvent = JG.events.size();
 
@@ -194,11 +197,21 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 		{
 			recordStop[e->name] = -1.0;
 		}
+		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd < scanRange.mjdStart))
+		{
+			scanRange.mjdStart = e->mjd;
+		}
+		if(e->eventType == VexEvent::SCAN_START && (scanRange.mjdStart < 1.0 || e->mjd > scanRange.mjdStop))
+		{
+			scanRange.mjdStop = e->mjd;
+		}
 
 		usage[e->mjd] = 0;
 		clockBreaks[e->mjd] = 0;
 	}
 	nAnt = recordStop.size();
+
+	scanRange.logicalAnd(*P);	// Shrink time range to v2d start / stop interval
 
 	// populate changes, times, and usage
 	for(e = JG.events.begin(); e != JG.events.end(); e++)
@@ -227,7 +240,8 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 			if(recordStop[e->name] > 0.0)
 			{
 				if(JG.containsAbsolutely(recordStop[e->name]) &&
-				   JG.containsAbsolutely(e->mjd))
+				   JG.containsAbsolutely(e->mjd) &&
+				   scanRange.containsAbsolutely(e->mjd))
 				{
 					changes.push_back(MediaChange(e->name, recordStop[e->name], e->mjd));
 					if(verbose > 0)
@@ -266,9 +280,26 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 	while(!changes.empty() || nClockBreaks > 0)
 	{
 		nLoop++;
-		if(nLoop > nEvent) // There is clearly a problem converging!
+		if(nLoop > nEvent+3) // There is clearly a problem converging!
 		{
-			cerr << "Developer error! -- jobs not converging after " << nLoop << " tries.\n" << endl;
+			cerr << "Developer error: jobs not converging after " << nLoop << " tries.\n" << endl;
+
+			cerr << "Events:" << endl;
+			list<VexEvent>::const_iterator iter;
+			for(iter = JG.events.begin(); iter != JG.events.end(); iter++)
+			{
+				cerr << "   " << *iter << endl;
+			}
+
+			cerr << "nClockBreaks = " << nClockBreaks << endl;
+
+			cerr << "Media Changes remaining were:" << endl;
+			list<MediaChange>::const_iterator it;
+			for(it = changes.begin(); it != changes.end(); it++)
+			{
+				cerr << "   " << *it << endl;
+			}
+
 			exit(0);
 		}
 

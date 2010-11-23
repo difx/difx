@@ -2018,11 +2018,11 @@ ostream& operator << (ostream &os, const SourceSetup &x)
 	}
 	if(x.doPointingCentre)
 	{
-		os << " Pointing centre is correlated" << endl;
+		os << "  pointing centre is correlated" << endl;
 	}
 	else
 	{
-		os << " Pointing centre is not correlated" << endl;
+		os << "  pointing centre is not correlated" << endl;
 	}
 	if(x.pointingCentre.ra > PhaseCentre::DEFAULT_RA)
 	{

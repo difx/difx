@@ -1,4 +1,4 @@
-AC_INIT([vex2difx], [2.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([vex2difx], [2.0.1], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER([config.h])
 
 AC_C_BIGENDIAN
@@ -17,8 +17,8 @@ AM_SANITY_CHECK
 
 AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 
-PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0)
-PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.0.0 difxmessage < 7])
+PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0.1)
+PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.0.1 difxmessage < 7])
 
 AC_ARG_WITH(spice-root, [  --with-spice-root=ROOT
                             spice root is ROOT (optional).],
