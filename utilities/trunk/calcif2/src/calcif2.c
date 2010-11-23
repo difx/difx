@@ -318,11 +318,27 @@ static int skipFile(const char *f1, const char *f2)
 int runfile(const char *prefix, const CommandLineOptions *opts,
 	CalcParams *p)
 {
+	const int FilenameLength = 256;
 	DifxInput *D;
+	FILE *in;
+	char fn[FilenameLength];
 	int v;
 	const char *difxVersion;
 
 	difxVersion = getenv("DIFX_VERSION");
+
+	snprintf(fn, FilenameLength, "%s.calc", prefix);
+	in = fopen(fn, "r");
+	if(!in)
+	{
+		fprintf(stderr, "File %s not found or cannot be opened.  Quitting.\n", fn);
+
+		return -1;
+	}
+	else
+	{
+		fclose(in);
+	}
 
 	D = loadDifxCalc(prefix);
 
