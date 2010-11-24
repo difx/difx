@@ -1118,7 +1118,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
 void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace)
 {
   int maxproducts, resultindex, perr, status;
-  int freqindex, parentfreqindex, channelinc, freqchannels;
+  int freqindex, parentfreqindex, chans_to_avg, freqchannels;
   double minimumweight, stasamples;
   float renormvalue;
   bool datastreamsaveraged, writecrossautocorrs;
@@ -1159,18 +1159,31 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         minimumweight = MINIMUM_FILTERBANK_WEIGHT*stasamples/(2*freqchannels);
         if(modes[i]->getWeight(false, j) < minimumweight)
           continue; //dodgy packet, less than 1/3 of normal data, so don't send it
-        renormvalue = (2*freqchannels)/(stasamples*modes[i]->getWeight(false, j));
-        if(datastreamsaveraged)
+
+        // normalise the STA data to maintain units of power spectral density. This means dividing by
+        // the number of channels (since we use an un-normalised FFT) and the number of integrations (i.e. time)
+        // which is the weight
+        renormvalue = 1.0/(2*freqchannels*modes[i]->getWeight(false, j));
+        
+        if(datastreamsaveraged) {
+          // if the data has been averaged above, then we need to adjust normalisation factor
+          // because channels are summed below, not averaged
+          renormvalue /= config->getFChannelsToAverage(freqindex);
           freqchannels /= config->getFChannelsToAverage(freqindex);
+        }
+
+        // in the unlikely case that we want more STA channels than are actually present.
         if (freqchannels < scratchspace->starecord->nChan)
           scratchspace->starecord->nChan = freqchannels;
-        channelinc = freqchannels/scratchspace->starecord->nChan;
+        // how many channels to average here for STA dumps
+        chans_to_avg = freqchannels/scratchspace->starecord->nChan;
+
         scratchspace->starecord->bandindex = j;
         acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
         for (int k=0;k<scratchspace->starecord->nChan;k++) {
-          scratchspace->starecord->data[k] = acdata[2*k*channelinc];
-          for (int l=1;l<channelinc;l++)
-            scratchspace->starecord->data[k] += acdata[2*(k*channelinc+l)];
+          scratchspace->starecord->data[k] = acdata[2*k*chans_to_avg];
+          for (int l=1;l<chans_to_avg;l++)
+            scratchspace->starecord->data[k] += acdata[2*(k*chans_to_avg+l)];
         }
         status = vectorMulC_f32_I(renormvalue, scratchspace->starecord->data, scratchspace->starecord->nChan);
         if(status != vecNoErr)
