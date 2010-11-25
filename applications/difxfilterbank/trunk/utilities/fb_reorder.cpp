@@ -62,7 +62,7 @@
 #define DEFAULT_NSTREAMS    10       // default number of antennas contributing data
 #define DEFAULT_NBANDS      8        // default number of bands per stream
 
-#define N_MEDIAN            100
+#define N_MEDIAN            50
 #define MED_CALC_SKIP       10       // only re-calculate the medians every MED_CALC_SKIP*N_MEDIAN time steps
 #define TCAL_PERIOD_VLBA    12500000 // nanosec
 
@@ -210,8 +210,8 @@ int main(const int argc, char * const argv[]) {
 
 /*****************************
 calculate if and how much a tcal signal is present in STA spectrometer data. The tcal signal is assumed
-to be tied to a 1pps signal so is tied to the start of every second. The STA packets have a time
-since the start of the scan, so by combining the known time of the start of the scan with the delay
+to be tied to a 1pps signal so is tied to the start of every second at each station. The STA packets have a time
+since the start of the scan at geocenter, so by combining the known time of the start of the scan with the delay
 model and time offset of the actual pakcet, one can predict the tcal signal.
 The signal is assumed to be on 50% of the time, starting with being "off".
 The amount of signal present in the integration is then a piecewise linear function with 5 segments
@@ -222,7 +222,7 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
     float frac_on;      // fraction of time that the tcal was on during an integration
     float phase;        // how far through a tcal cycle is the middle of integration, between 0 and 1
     float pwf_tcal = (float)int_width_ns/(float)options.tcal_period_ns;  // packet width as a fraction of the tcal period
-    int64_t offset_periods;
+    int64_t offset_periods,time_offset_ns_withdelay=0;
     int res;
 
     // check for valid time range. Need extra half second on the end because sometimes the geotime adjusted
@@ -235,13 +235,13 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
           cerr << "ERROR: calculateDelayInterpolator failed for scan: " << options.scan_index << ". Antenna index: " << antennaindex << ". Offset ns: " << time_offset_ns << endl;
           return EXIT_FAILURE;
       }
-      time_offset_ns -= delay*1000;
+      time_offset_ns_withdelay = time_offset_ns - delay*1000;
 
-      while(time_offset_ns < 0) time_offset_ns += options.tcal_period_ns;
-      offset_periods = time_offset_ns/options.tcal_period_ns;
+      while(time_offset_ns_withdelay < 0) time_offset_ns_withdelay += options.tcal_period_ns;
+      offset_periods = time_offset_ns_withdelay/options.tcal_period_ns;
 
       // calculate how many tcal periods this has been
-      phase = (float)(time_offset_ns - offset_periods*options.tcal_period_ns)/(float)options.tcal_period_ns;
+      phase = (float)(time_offset_ns_withdelay - offset_periods*options.tcal_period_ns)/(float)options.tcal_period_ns;
 
       if (debug) printf("For antenna %d the delay is %f us. The phase is %f. ",antennaindex,delay,phase);
       if (phase < pwf_tcal/2) {
@@ -260,7 +260,8 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
         frac_on = (1.0 - phase)/pwf_tcal + 0.5;
       }
       if (debug) {
-        printf("At offset %02.4f s, the Tcal is %f on\n",1e-9*time_offset_ns , frac_on );
+        printf("At offset %03.4f s (%03.4f s with delay), the Tcal is %f on\n",
+                1e-9*time_offset_ns,1e-9*time_offset_ns_withdelay, frac_on );
       }
       *result = frac_on;
     }
@@ -387,9 +388,12 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
         if (!init_header) {
             init_header=1;
             bufinfo->starttime = this_time;
-            first_time = this_time;
+            first_time = (this_time/1000000000)*1000000000;
             bufinfo->endtime = bufinfo->starttime + ((int64_t)bufinfo->bufsize-1)*options.int_time_ns;
             abs_start_time_ns = this_time;
+            if(debug) {
+                fprintf(fpd,"First packet time: %lld. Rounded first time: %lld\n",(long long)this_time,(long long)first_time);
+            }
         }
 
         // read the data for this chunk.
@@ -632,6 +636,7 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
                         bufinfo->stddevs[tcal_state_index][med_index] = (chandata[3*N_MEDIAN/4] - chandata[N_MEDIAN/4])/1.35;
                     }
 
+/* */
 /*
                     // or we could just take the mean and variance.... faster
                     {
@@ -650,7 +655,7 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
                         }
                         bufinfo->stddevs[tcal_state_index][med_index] = total/N_MEDIAN;
                     }
-*/
+/* */
                 }
                 // now estimate the variance of the median power across the band, which can be used to identify
                 // various forms of RFI.
