@@ -304,7 +304,11 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 					{
 						printf("Executing: %s\n", command);
 					}
-					system(command);
+					v = system(command);
+					if(v == -1)
+					{
+						printf("Error executing %s\n", command);
+					}
 				}
 			}
 			else if(strcmp(G.body.param.paramName, "getstate") == 0)

@@ -1,4 +1,4 @@
-bin_PROGRAMS = filterbank2screen filterbankcount fb_reorder split_fb_scan
+bin_PROGRAMS = filterbankcount fb_reorder split_fb_scan filterbank2screen
 
 AM_CXXFLAGS = $(FXCORR_CFLAGS) $(DIFXMESSAGE_CFLAGS) $(IPP_CFLAGS) -I$(PGPLOTDIR)
 

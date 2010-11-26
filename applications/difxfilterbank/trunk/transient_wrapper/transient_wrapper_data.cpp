@@ -164,12 +164,22 @@ int copyBasebandData(const TransientWrapperData *T)
 	{
 		fprintf(stderr, "Error: pathname is too long (%d vs. %d)\n",
 			v, DIFX_MESSAGE_FILENAME_LENGTH);
+		
 		return 0;
 	}
 
 	snprintf(command, MaxCommandLength, 
 		"mkdir -p %s", outDir);
-	system(command);
+	v = system(command);
+	if(v == -1)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
+			"Error: cannot execute %s\n", command);
+		fprintf(stderr, "%s\n", message);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		
+		return 0;
+	}
 
 	t1 = t2 = time(0);
 	for(e = 0; e < T->nEvent; e++)
@@ -187,7 +197,19 @@ int copyBasebandData(const TransientWrapperData *T)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s",
 			command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-		//system(command);
+		
+		//v = system(command);
+		v = 0;
+		
+		if(v == -1)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, 
+				"Error: cannot execute %s\n", command);
+			fprintf(stderr, "%s\n", message);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+
+			return e;
+		}
 
 		t2 = time(0);
 	}

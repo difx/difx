@@ -31,7 +31,7 @@ FILE *fpin=NULL;
 int debug=0;
 
 int main(int argc, char *argv[]) {
-    int i,n_chans;
+    int i,v,n_chans;
     float data[MAX_CHANS];
     ChunkHeader header;
 
@@ -60,8 +60,14 @@ int main(int argc, char *argv[]) {
         if (outfiles[header.scan_id] == NULL) openOutfile(infilename,header.scan_id);
 
         /* write the packet to the appropriate outfile */
-        fwrite(&header,sizeof(ChunkHeader),1,outfiles[header.scan_id]);
-        if (fwrite(data,sizeof(float)*n_chans,1,outfiles[header.scan_id])!= 1) {
+        v = fwrite(&header,sizeof(ChunkHeader),1,outfiles[header.scan_id]);
+	if(v != 1) {
+            fprintf(stderr,"Error writing for scan %d",header.scan_id);
+            exit(1);
+	}
+
+        v = fwrite(data,sizeof(float)*n_chans,1,outfiles[header.scan_id]);
+	if(v != 1) {
             fprintf(stderr,"Error writing for scan %d",header.scan_id);
             exit(1);
         }

@@ -1,14 +1,14 @@
 AC_INIT(src/difxfilterbank.cpp)
 
 PACKAGE=difxfilterbank
-VERSION=0.2
+VERSION=0.3
 
 AM_INIT_AUTOMAKE($PACKAGE, $VERSION)
 
-DIFXMESSAGE_REQUIRED_VERSION=2.0
+DIFXMESSAGE_REQUIRED_VERSION=2.0.1
 DIFXMESSAGE_MAX_VERSION=7
 FXCORR_REQUIRED_VERSION=2.0
-DIFXIO_REQUIRED_VERSION=3.0
+DIFXIO_REQUIRED_VERSION=3.0.1
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= $DIFXMESSAGE_REQUIRED_VERSION difxmessage < $DIFXMESSAGE_MAX_VERSION])
 PKG_CHECK_MODULES(DIFXIO, difxio >= $DIFXIO_REQUIRED_VERSION)
 PKG_CHECK_MODULES(FXCORR, fxcorr >= $FXCORR_REQUIRED_VERSION)
@@ -22,32 +22,7 @@ AC_SUBST(FXCORR_LIBS)
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
 dnl **********************************************************
-if test "$OSTYPE" == "darwin"; then
-        ipp_libname="Libraries"
-else
-        ipp_libname="sharedlib"
-fi
-AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT
-                          ipp root is ROOT (optional).  Use env variable
-                          IPPROOT otherwise.],
-ipp_root="$withval", ipp_root="")
-if test x"$ipp_root" != "x"; then
-        IPP_CFLAGS="-I$ipp_root/include"
-        IPP_LIBS="-L$ipp_root/$ipp_libname"
-else
-        IPP_CFLAGS="-I$IPPROOT/include"
-        IPP_LIBS="-L$IPPROOT/$ipp_libname"
-fi
-
-
-if test "$DIFXBITS" == "32"; then
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore -lpthread"
-elif test "$DIFXBITS" == "64"; then
-        IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -liomp5 -lippcoreem64t -lpthread"
-else
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore -lpthread"
-        echo "32/64 bit unspecified - assuming 32 bit for IPP"
-fi
+PKG_CHECK_MODULES(IPP, ipp)
 
 if test "$OSTYPE" == "darwin"; then
           X11LIBS=""
