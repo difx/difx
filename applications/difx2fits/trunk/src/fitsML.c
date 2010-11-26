@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 20082010 by Walter Brisken & Adam Deller                *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,9 +33,9 @@
 #include "config.h"
 #include "difx2fits.h"
 
-#define array_N_POLY 6
+#define array_N_POLY	(MAX_MODEL_ORDER+1)
 
-double current_mjd()
+static double current_mjd()
 {
 	struct timeval t;
 	const double MJD_UNIX0=40587.0; /* MJD at beginning of unix time */
@@ -45,26 +45,6 @@ double current_mjd()
 	return MJD_UNIX0 + (t.tv_sec + t.tv_usec*1.0e-6)/86400.0;
 }
 		
-/* given four samples, calculate polynomial referenced to time of second one */
-void calcPolynomial(double gpoly[array_N_POLY], 
-	double a, double b, double c, double d,
-	double deltaT)
-{
-	int i;
-
-	for(i = 0; i < array_N_POLY; i++)
-	{
-		gpoly[i] = 0.0;
-	}
-
-	/* FIXME -- for now just assume linear! */
-	a = d = 0.0; /* line to prevent compiler warning */
-
-	/* don't convert to convert to seconds from nanosec */
-	gpoly[0] = b * 1.0e-6;
-	gpoly[1] = (c-b) * 1.0e-6 / deltaT;
-}
-
 const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	int phasecentre)
@@ -106,11 +86,12 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	char str[80];
-	int a, i, j, k, p, s, antId;
+	int a, i, k, p, s, antId;
 	double ppoly[array_MAX_BANDS][array_N_POLY];
 	double gpoly[array_N_POLY];
 	double prate[array_MAX_BANDS][array_N_POLY];
 	double grate[array_N_POLY];
+	double shiftedClock[array_N_POLY];
 	float freqVar[array_MAX_BANDS];
 	float faraday;
 	int configId, jobId, dsId;
@@ -121,11 +102,12 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	const DifxScan *scan;
 	const DifxJob *job;
 	const DifxConfig *config;
+	const DifxAntenna *da;
 	const DifxPolyModel *P;
 	float dispDelay;
 	float dispDelayRate;
 	double start;
-	double deltat, deltatn;
+	double deltat;
 	double freq;
 	int *skip;
 	int skipped=0;
@@ -253,6 +235,8 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 			continue;
 		}
 
+		da = D->antenna + antId;
+
 		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
@@ -263,7 +247,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		      if(skip[antId] == 0)
 		      {
 		        printf("\n    Polynomial model error : skipping antId %d = %s",
-				antId, D->antenna[antId].name);
+				antId, da->name);
 		        skip[antId]++;
 		        printed++;
 		        skipped++;
@@ -275,7 +259,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		  //printf("Working on antenna %d, phasecentre %d, polynomial %d\n", a, phasecentre, p);
 
 	          time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
+		  deltat = (P->mjd - da->clockrefmjd)*86400.0 + P->sec;
 
 	          for(k = 0; k < array_N_POLY; k++)
 		  {
@@ -285,19 +269,15 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		}
 		else	   /* use tabulated model */
 		{
-		  fprintf(stderr, "No IM info available - skipping ML creation\n");
-		  continue;
+			fprintf(stderr, "No IM info available: skipping ML creation\n");
+			continue;
 		}
 
 		/* Add in the clock model */
-		for(k = 0; k < array_N_POLY; k++)
+		getDifxAntennaShiftedClock(da, deltat, array_N_POLY, shiftedClock);
+		for(k = 0; k <= da->clockorder; k++)
 		{
-			deltatn = 1.0;
-			for(i = k; i < array_N_POLY; i++)
-			{
-				gpoly[k] -= D->antenna[antId].clockcoeff[i]*deltatn*binomialcoeffs[i][i-k]*1.0e-6;
-				deltatn = deltatn * deltat;
-			}
+			gpoly[k] -= shiftedClock[k]*1.0e-6;
 		}
 
 		/* All others are derived from gpoly */
@@ -307,13 +287,13 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		}
 		grate[array_N_POLY-1] = 0.0;
 		
-		for(j = 0; j < nBand; j++)
+		for(i = 0; i < nBand; i++)
 		{
-			freq = config->IF[j].freq*1.0e6;
+			freq = config->IF[i].freq*1.0e6;
 			for(k = 0; k < array_N_POLY; k++)
 			{
-				ppoly[j][k] = gpoly[k]*freq;
-				prate[j][k] = grate[k]*freq;
+				ppoly[i][k] = gpoly[k]*freq;
+				prate[i][k] = grate[k]*freq;
 			}
 		}
 

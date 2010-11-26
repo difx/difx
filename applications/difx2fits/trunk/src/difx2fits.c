@@ -671,6 +671,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 				printf("Merging %s\n", opts->baseFile[i]);
 			}
 
+			printf("About to merge in file %d/%d\n", i+1, opts->nBaseFile);
 			D = mergeDifxInputs(D1, D2, opts->verbose);
 
 			deleteDifxInput(D1);

@@ -5,7 +5,7 @@ autoconf
 autoheader
 automake -a
 
-./configure --prefix=${DIFX_PREFIX}  CXX=${OPENMPI_PREFIX}/bin/mpicxx
+./configure --prefix=${DIFXROOT}
 make
 # (su root?)
 make install
