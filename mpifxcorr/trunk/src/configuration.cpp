@@ -2544,6 +2544,8 @@ bool Configuration::updateClock(std::string clockstring)
 
   model->updateClock(antennaindex, count-1, poly);
   delete [] poly;
+
+  return true;
 }
 
 bool Configuration::fillHeaderData(ifstream * input, int & baselinenum, int & mjd, double & seconds, int & configindex, int & sourceindex, int & freqindex, char polpair[3], int & pulsarbin, double & dataweight, double uvw[3])
