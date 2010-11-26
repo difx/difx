@@ -106,15 +106,19 @@ int main(int argc, char **argv)
       fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
       break;
     }
-    fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
+    readbytes = fwrite(buffer, 1, VDIF_HEADER_BYTES, output); //write out the VDIF header
+    if(readbytes != VDIF_HEADER_BYTES) {
+      fprintf(stderr, "Problem writing %lldth VDIF header - only wrote %d / %d bytes\n", framesread, readbytes, VDIF_HEADER_BYTES);
+      break;
+    }
     readbytes = fread(buffer, 1, framebytes-VDIF_HEADER_BYTES, input); //read the VDIF data segment
     if(readbytes < framebytes-VDIF_HEADER_BYTES) {
-      fprintf(stderr, "Problem reading %lldth frame - only got %d bytes\n", framesread, readbytes);
+      fprintf(stderr, "Problem reading %lldth frame - only got %d / %d bytes\n", framesread, readbytes, framebytes-VDIF_HEADER_BYTES);
       break;
     }
     readbytes = fwrite(buffer, 1, framebytes-VDIF_HEADER_BYTES, output); //write out the VDIF data segment
     if(readbytes < framebytes-VDIF_HEADER_BYTES) {
-      fprintf(stderr, "Problem writing %lldth frame - only wrote %d bytes\n", framesread, readbytes);
+      fprintf(stderr, "Problem writing %lldth frame - only wrote %d / %d bytes\n", framesread, readbytes, framebytes-VDIF_HEADER_BYTES);
       break;
     }
     framesread++;
