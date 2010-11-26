@@ -35,8 +35,8 @@
 #include "difxmessage.h"
 
 const char program[] = "difxlog";
-const char version[] = "0.3";
-const char verdate[] = "20100717";
+const char version[] = "0.4";
+const char verdate[] = "20101126";
 const char author[]  = "Walter Brisken";
 
 int usage(const char *prog)
@@ -69,7 +69,7 @@ int checkPid(int pid)
 	char cmd[CommandLength];
 	const char *c;
 	FILE *p;
-	char s[10];
+	char s[StrLength];
 	int v;
 
 	v = snprintf(cmd, CommandLength, "ps -p %d -o pid --no-headers", pid);
@@ -131,6 +131,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error: Identifier '%s' exceeds %d character limit\n",
 			argv[1], DIFX_MESSAGE_IDENTIFIER_LENGTH-1);
+
 		return -1;
 	}
 
@@ -138,6 +139,7 @@ int main(int argc, char **argv)
 	if(!out)
 	{
 		fprintf(stderr, "Error: cannot open %s for write\n", argv[2]);
+
 		return -1;
 	}
 
