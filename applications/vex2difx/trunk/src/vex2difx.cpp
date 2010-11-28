@@ -34,6 +34,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
+#include <algorithm>
 #include <sys/time.h>
 #include <sys/stat.h>
 #include <difxio/difx_input.h>
@@ -452,7 +453,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	{
 		if(ext != 0)
 		{
-			cerr << "WARNING: ext!=0 and making job names without extensions!" << endl;
+			cerr << "Warning: ext!=0 and making job names without extensions!" << endl;
 		}
 		snprintf(job->fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
 	}
@@ -780,6 +781,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	else
 	{
 		cerr << "Error: setFormat: format " << format->format << " not currently supported.  Mode=" << mode->defName << ", ant=" << antName << "." << endl;
+
 		return 0;
 	}
 
@@ -792,6 +794,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		if(i->subbandId < 0 || i->subbandId >= static_cast<int>(mode->subbands.size()))
 		{
 			cerr << "Error: setFormat: index to subband=" << i->subbandId << " is out of range" << endl;
+
 			exit(0);
 		}
 		int r = i->recordChan;
@@ -802,6 +805,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
 			cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
+
 			exit(0);
 		}
 		D->datastream[dsId].recBandFreqId[r] = getBand(bandMap, fqId);
@@ -823,38 +827,30 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 	list<string>::const_iterator s;
 	D->nRule = P->rules.size();
 	D->rule = newDifxRuleArray(D->nRule);
-	for(int i=0;i<D->nRule;i++)
+	for(int i = 0; i < D->nRule; i++)
 	{
 		if(P->rules[i].scanName.size() > 0)
 		{
-			//if(P->rules[i].scanName.size() > 1)
-			//{
-			//	cerr << "Cannot handle rules for more than one scan simultaneously" << endl;
-			//	exit(0);
-			//
-			//}
 			towrite = P->rules[i].scanName.front();
 			for(s = (P->rules[i].scanName).begin(); s != (P->rules[i].scanName).end(); s++)
 			{
 				if(*s == P->rules[i].scanName.front())
+				{
 					continue;
+				}
 				towrite += "," + *s;
 			}
 			snprintf(D->rule[i].scanId, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
 		}
 		if(P->rules[i].sourceName.size() > 0)
 		{
-			//if(P->rules[i].sourceName.size() > 1)
-			//{
-			//	cerr << "Cannot handle rules for more than one source simultaneously" << endl;
-			//	exit(0);
-			//
-			//}
 			towrite = P->rules[i].sourceName.front();
 			for(s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); s++)
 			{
 				if(*s == P->rules[i].sourceName.front())
+				{
 					continue;
+				}
 				towrite += "," + *s;
 			}
 			snprintf(D->rule[i].sourceName, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
@@ -868,6 +864,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 			if(P->rules[i].calCode.size() > 1)
 			{
 				cerr << "Cannot handle rules for more than one calCode simultaneously" << endl;
+
 				exit(0);
 			}
 			D->rule[i].calCode[0] = P->rules[i].calCode.front();
@@ -878,6 +875,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 			if(P->rules[i].qualifier.size() > 1)
 			{
 				cerr << "Cannot handle rules for more than one qualifier simultaneously" << endl;
+				
 				exit(0);
 			}
 			D->rule[i].qual = P->rules[i].qualifier.front();
@@ -888,17 +886,40 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 
 void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 {
+	vector<int> tones;
+	DifxFreq *df;
+	int bw;
+
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
 	for(unsigned int f = 0; f < freqs.size(); f++)
 	{
-		D->freq[f].freq = freqs[f].fq/1.0e6;
-		D->freq[f].bw   = freqs[f].bw/1.0e6;
-		D->freq[f].sideband = freqs[f].sideBand;
-		D->freq[f].nChan = freqs[f].nChan;
-		D->freq[f].specAvg = freqs[f].specAvg;
-		D->freq[f].overSamp = freqs[f].overSamp;
-		D->freq[f].decimation = freqs[f].decimation;
+		df = D->freq + f;
+
+		df->freq = freqs[f].fq/1.0e6;
+		df->bw   = freqs[f].bw/1.0e6;
+		df->sideband = freqs[f].sideBand;
+		df->nChan = freqs[f].nChan;
+		df->specAvg = freqs[f].specAvg;
+		df->overSamp = freqs[f].overSamp;
+		df->decimation = freqs[f].decimation;
+		
+		// populate pulse cal tones
+		tones.clear();
+		bw = static_cast<int>(df->bw+0.1);
+
+		// FIXME: need to get tone information into here
+
+		if(tones.size() > 0)
+		{
+			sort(tones.begin(), tones.end());
+			DifxFreqAllocTones(df, tones.size());
+		
+			for(unsigned int t = 0; t < tones.size(); t++)
+			{
+				df->tone[t] = tones[t];
+			}
+		}
 	}
 }
 
@@ -1472,26 +1493,6 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 	allocateSourceTable(D, nTotalPhaseCentres);
 
-	//run through all the scans once, creating source setups for any sources
-	//that don't have one 
-	//scan = D->scan;
-	//for(vector<string>::const_iterator si = J.scans.begin(); si != J.scans.end(); si++, scan++)
-	//{
-	//	SourceSetup * added;
-	//	S = V->getScan(*si);
-	//	sourceSetup = P->getSourceSetup(S->sourceName);
-	//	if(!sourceSetup)
-	//	{
-	//		const VexSource *src = V->getSource(S->sourceName);
-	//		added = new SourceSetup(S->sourceName);
-	//		added->doPointingCentre = true;
-	//		added->pointingCentre = PhaseCentre(src->ra, src->dec, src->name);
-	//		added->pointingCentre.calCode = src->calCode;
-	//		added->pointingCentre.qualifier = src->qualifier;
-	//		P->addSourceSetup(*added);
-	//	}
-	//}
-
 	// Make rule table
 	populateRuleTable(D, P);
 
@@ -1503,6 +1504,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		if(!S)
 		{
 			cerr << "Developer error: source[" << *si << "] not found!  This cannot be!" << endl;
+			
 			exit(0);
 		}
 
@@ -1516,7 +1518,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		sourceSetup = P->getSourceSetup(src->sourceNames);
 		if(!sourceSetup)
 		{
-			cerr << "No source setup for " << S->sourceDefName << " - aborting!" << endl;
+			cerr << "Error: no source setup for " << S->sourceDefName << ".  Aborting!" << endl;
+
+			exit(0);
 		}
 		pointingCentre = &(sourceSetup->pointingCentre);
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
@@ -1540,7 +1544,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		{
 			srcdec = pointingCentre->dec;
 		}
-		for(int i=0; i<D->nSource; i++)
+		for(int i = 0; i < D->nSource; i++)
 		{
 			if(D->source[i].ra == srcra && D->source[i].dec == srcdec &&
 			   D->source[i].calCode[0] == src->calCode &&
@@ -1579,7 +1583,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			//overwrite with stuff from the source setup if it exists
 			if(pointingCentre->difxName.compare(PhaseCentre::DEFAULT_NAME) != 0)
 			{
-				snprintf(D->source[pointingSrcIndex].name,DIFXIO_NAME_LENGTH, "%s",  pointingCentre->difxName.c_str());
+				snprintf(D->source[pointingSrcIndex].name, DIFXIO_NAME_LENGTH, "%s", pointingCentre->difxName.c_str());
 			}
 			if(pointingCentre->ra > PhaseCentre::DEFAULT_RA)
 			{
@@ -1597,10 +1601,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			scan->phsCentreSrcs[atSource++] = pointingSrcIndex;
 		}
 		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin();
-			p != sourceSetup->phaseCentres.end();p++)
+			p != sourceSetup->phaseCentres.end();
+			p++)
 		{
 			foundSrcIndex = -1;
-			for(int i=0;i<D->nSource;i++)
+			for(int i = 0; i < D->nSource; i++)
 			{
 				if(D->source[i].ra == p->ra && D->source[i].dec == p->dec &&
 					D->source[i].calCode[0] == p->calCode &&
@@ -1750,7 +1755,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                                 {
                                                         parentfreqindices[i] = -1;
                                                         zf = antennaSetup->zoomFreqs.at(i);
-                                                        for(int j=0;j<dd->nRecFreq;j++)
+                                                        for(int j = 0; j < dd->nRecFreq; j++)
                                                         {
                                                                 if(matchingFreq(zf, dd, j, freqs))
                                                                         parentfreqindices[i] = j;
@@ -1759,7 +1764,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                                         {
                                                                 cerr << "Error: Cannot find a parent freq for zoom band " <<
                                                                         i << " of datastream " << a << endl;
-                                                                exit(0);
+                                                                
+								exit(0);
                                                         }
                                                         fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
                                                                         freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
@@ -1776,21 +1782,22 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                                 }
 						DifxDatastreamAllocZoomBands(dd, nZoomBands);
 						nZoomBands = 0;
-                                                for(unsigned int i=0;i<antennaSetup->zoomFreqs.size();i++)
+                                                for(unsigned int i = 0; i < antennaSetup->zoomFreqs.size(); i++)
                                                 {
 							zoomsrc = 0;
 							polcount = 0;
-                                                        for(int j=0;j<dd->nZoomPol[i];j++)
+                                                        for(int j = 0; j < dd->nZoomPol[i]; j++)
                                                         {
                                                                 dd->zoomBandFreqId[nZoomBands] = dd->zoomFreqId[i];
-								for(int k=zoomsrc;k<dd->nRecBand;k++)
+								for(int k = zoomsrc; k < dd->nRecBand; k++)
 								{
 									if(dd->recBandFreqId[k] == parentfreqindices[i])
 									{
 										dd->zoomBandPolName[nZoomBands] =
 											dd->recBandPolName[k];
-										zoomsrc = k+1;
+										zoomsrc = k + 1;
 										polcount++;
+
 										break;
 									}
 								}
@@ -1798,7 +1805,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
                                                         }
 							if(polcount != dd->nZoomPol[i])
 							{
-								cout << "Developer error - didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
+								cout << "Developer error: didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
+								
 								exit(0);
 							}
                                                 }
@@ -1812,8 +1820,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							cerr << "Error: AntennaSetup for " << antName << 
 							" has only " << antennaSetup->freqClockOffs.size() << 
 							" freqClockOffsets specified but " << 
-							dd->nRecFreq << 
-							" recorded frequencies - aborting!" << endl;
+							dd->nRecFreq << " recorded frequencies - aborting!" << endl;
+
 							exit(0);
 						}
 						if(antennaSetup->freqClockOffs.front() != 0.0)
@@ -1822,9 +1830,10 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							" has a non-zero clock offset for the first " << 
 							"frequency offset. This is not allowed for model " << 
 							"accountability reasons. Aborting!" << endl;
+							
 							exit(0);
 						}
-						for(unsigned int i=0; i<antennaSetup->freqClockOffs.size(); i++)
+						for(unsigned int i = 0; i < antennaSetup->freqClockOffs.size(); i++)
 						{
 							D->datastream[D->nDatastream].clockOffset[i] = 
 								antennaSetup->freqClockOffs.at(i);
@@ -1841,6 +1850,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	if(nPulsar != D->nPulsar)
 	{
 		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
+		
 		exit(0);
 	}
 
@@ -1862,8 +1872,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			phaseCentre = P->getPhaseCentre(*s);
 			if(!phaseCentre)
 			{
-				cerr << "Developer error - couldn't find " << *s << 
-					" in the spacecraft table, aborting!)" << endl;
+				cerr << "Developer error: couldn't find " << *s << " in the spacecraft table, aborting!)" << endl;
+				
 				exit(0);
 			}
 			mjdint = static_cast<int>(J.mjdStart);
@@ -1888,7 +1898,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			phaseCentre->ephemFile.c_str());
 			if(v != 0)
 			{
-				cerr << "Error -- ephemeris calculation failed.  Must stop." << endl;
+				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
+				
 				exit(0);
 			}
 
@@ -1909,7 +1920,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			}
 			if(D->source[s].spacecraftId < 0)
 			{
-				cerr << "Developer error - couldn't cross-match spacecraft names! Aborting" << endl;
+				cerr << "Developer error: couldn't cross-match spacecraft names! Aborting" << endl;
 			}
 		}
 	}
@@ -2294,6 +2305,7 @@ int main(int argc, char **argv)
 			{
 				cerr << "Error: unknown option " << argv[a] << endl;
 				cerr << "Run with -h for help information." << endl;
+				
 				exit(0);
 			}
 		}
@@ -2303,6 +2315,7 @@ int main(int argc, char **argv)
 			{
 				cerr << "Error: multiple configuration files provided, only one expected." << endl;
 				cerr << "Run with -h for help information." << endl;
+				
 				exit(0);
 			}
 			v2dFile = argv[a];
@@ -2320,6 +2333,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Error: configuration (.v2d) file expected." << endl;
 		cerr << "Run with -h for help information." << endl;
+		
 		exit(0);
 	}
 
@@ -2327,6 +2341,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Error: you cannot have an underscore (_) in the filename!" << endl;
 		cerr << "Please rename it and run again." << endl;
+		
 		exit(0);
 	}
 
@@ -2334,6 +2349,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Error: pass name (.v2d file name) must start with a letter!" << endl;
 		cerr << "Please rename it and run again." << endl;
+		
 		exit(0);
 	}
 
@@ -2341,6 +2357,7 @@ int main(int argc, char **argv)
 	if(P->vexFile.size() == 0)
 	{
 		cerr << "Error: vex file parameter (vex) not found in file." << endl;
+		
 		exit(0);
 	}
 
@@ -2357,6 +2374,7 @@ int main(int argc, char **argv)
 	if(!V)
 	{
 		cerr << "Error: cannot load vex file: " << P->vexFile << endl;
+		
 		exit(0);
 	}
 
@@ -2367,6 +2385,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Quitting since " << nWarn <<
 			" warnings were found and strict mode was enabled." << endl;
+		
 		exit(0);
 	}
 	else if(nWarn > 0)
@@ -2376,7 +2395,7 @@ int main(int argc, char **argv)
 
 	//run through all the scans once, creating source setups for any sources
 	//that don't have one
-	for(unsigned int i=0;i<V->nScan();i++)
+	for(unsigned int i = 0; i < V->nScan(); i++)
 	{
 		SourceSetup * added;
 		S = V->getScan(i);
@@ -2384,6 +2403,7 @@ int main(int argc, char **argv)
 		if(!sourceSetup)
 		{
 			const VexSource *src = V->getSourceByDefName(S->sourceDefName);
+			
 			added = new SourceSetup(S->sourceDefName);
 			added->doPointingCentre = true;
 			added->pointingCentre = PhaseCentre(src->ra, src->dec, src->sourceNames[0]);
@@ -2401,6 +2421,27 @@ int main(int argc, char **argv)
 		cout << *P << endl;
 	}
 
+	if(deleteOld)
+        {
+		const int CommandSize = 512;
+                char cmd[CommandSize];
+		int v;
+
+                v = snprintf(cmd, CommandSize, "rm -f %s.params %s_*.{input,calc,flag}", v2dFile.c_str(), P->jobSeries.c_str());
+		if(v < CommandSize)
+		{
+			if(verbose > 1)
+			{
+				cerr << "About to execute: " << cmd << endl;
+			}
+			runCommand(cmd, verbose);
+		}
+		else
+		{
+			cerr << "Developer warning: deletion of old files failed due to string length: " << v << " >= " << CommandSize << endl;
+		}
+        }
+
 	if(writeParams)
 	{
 		ofstream of;
@@ -2411,27 +2452,11 @@ int main(int argc, char **argv)
 		of.close();
 	}
 
-	if(deleteOld)
-        {
-                char cmd[512];
-
-                sprintf(cmd, "rm -f %s.params", v2dFile.c_str());
-		runCommand(cmd, verbose);
-
-                sprintf(cmd, "rm -f %s_*.input", P->jobSeries.c_str());
-		runCommand(cmd, verbose);
-
-                sprintf(cmd, "rm -f %s_*.calc", P->jobSeries.c_str());
-		runCommand(cmd, verbose);
-
-                sprintf(cmd, "rm -f %s_*.flag", P->jobSeries.c_str());
-		runCommand(cmd, verbose);
-        }
-
 	ofstream of;
 	string jobListFile = P->jobSeries + ".joblist";
 	string difxVersion;
 	const char *dvstr;
+
 	dvstr = getenv("DIFX_VERSION");
 	if(dvstr)
 	{

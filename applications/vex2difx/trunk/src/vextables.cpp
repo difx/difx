@@ -1109,18 +1109,24 @@ const VexIF *VexSetup::getIF(const string &ifname) const
 
 bool operator ==(const VexChannel &c1, const VexChannel &c2)
 {
-	if( (c1.recordChan  != c2.recordChan)  ||
-	    (c1.subbandId   != c2.subbandId)   ||
-	    (c1.ifname      != c2.ifname)      ||
-	    (c1.bbcFreq     != c2.bbcFreq)     ||
-	    (c1.bbcSideBand != c2.bbcSideBand) )
+	if( (c1.recordChan   != c2.recordChan)   ||
+	    (c1.subbandId    != c2.subbandId)    ||
+	    (c1.ifname       != c2.ifname)       ||
+	    (c1.bbcFreq      != c2.bbcFreq)      ||
+	    (c1.bbcSideBand  != c2.bbcSideBand)  ||
+	    (c1.tones.size() != c2.tones.size()) )
 	{
 		return false;
 	}
-	else
+	for(unsigned int i = 0; i < c1.tones.size(); i++)
 	{
-		return true;
+		if(c1.tones[i] != c2.tones[i])
+		{
+			return false;
+		}
 	}
+
+	return true;
 }
 
 bool operator ==(const VexFormat &f1, const VexFormat &f2)

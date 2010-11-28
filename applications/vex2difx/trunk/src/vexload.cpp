@@ -59,6 +59,7 @@ static char swapPolarization(char pol)
 		return 'X';
 	default:
 		cerr << "Error: unknown polarization: " << pol << endl;
+
 		exit(0);
 	}
 }
@@ -86,16 +87,24 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 		if(track < 34)
 		{
 			if(track % 2 == 0) 
+			{
 				return (track-2)/delta;
-			else 
+			}
+			else
+			{
 				return (track+29)/delta;
+			}
 		}
 		else
 		{
 			if(track % 2 == 0)
+			{
 				return (track+30)/delta;
+			}
 			else
+			{
 				return (track+61)/delta;
+			}
 		}
 	}
 	else if(F.format == "MARK5B") 
@@ -125,6 +134,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		cerr << "Error: Antenna=" << antName << " format " << F.format << " is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
+
 		exit(0);
 	}
 
@@ -848,9 +858,22 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				for(int q = 2; ; q++)
 				{
 					int y = vex_field(T_PHASE_CAL_DETECT, p, q, &link, &name, &value, &units);
-					if(y < 0) break;
-					Q.push_back(atoi(value));
+					if(y < 0)
+					{
+						break;
+					}
+					int v = atoi(value);
+					if(v == 0)
+					{
+						// zero value implies next value indicates state counting
+						q++;
+					}
+					else
+					{
+						Q.push_back(v);
+					}
 				}
+				sort(Q.begin(), Q.end());
 			}
 
 			// Get rest of Subband information
