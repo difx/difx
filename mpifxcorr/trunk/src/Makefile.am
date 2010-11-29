@@ -45,6 +45,9 @@ library_include_HEADERS = \
 	mpifxcorr.h \
 	alert.h 
 
+# historically these have been in both $(includedir)/{.,mpifxcorr}
+include_HEADERS = $(library_include_HEADERS)
+
 lib_LIBRARIES = libmpifxcorr.a libfxcorr.a
 libmpifxcorr_a_SOURCES = \
 	pcal.cpp \

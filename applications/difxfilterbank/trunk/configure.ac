@@ -37,5 +37,6 @@ dnl **********************************************************
 
 AC_PROG_CXX
 AC_PROG_CC
+AC_F77_LIBRARY_LDFLAGS
 
 AC_OUTPUT(Makefile src/Makefile utilities/Makefile transient_daemon/Makefile transient_wrapper/Makefile)

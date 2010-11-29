@@ -14,8 +14,8 @@ library_include_HEADERS = \
 lib_LTLIBRARIES = \
 	libvex.la
 
-vex_parse.tab.h: vex_parse.y
-	bison -d vex_parse.y
+vex_parse.tab.h: $(srcdir)/vex_parse.y
+	bison -d $(srcdir)/vex_parse.y
 
 print_vex.o: vex_parse.tab.h
 
@@ -26,7 +26,7 @@ libvex_la_SOURCES = \
 	vex_get.c \
 	vex_put.c \
 	vex_util.c \
-	vex_parse.y \
+	$(srcdir)/vex_parse.y \
 	vex.yy.l
 
 pkgconfigdir = $(libdir)/pkgconfig
