@@ -62,7 +62,7 @@ def genipppc(path, ippversion):
 		if ostype[:6] == 'darwin':
 			mac = True
 
-	if major == 6:
+	if major == 6 or major == 5:
 		if mac:
 			libdir = 'Libraries'
 		else:
