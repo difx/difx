@@ -1242,6 +1242,21 @@ bool VexData::usesMode(const string &modeDefName) const
 	return false;
 }
 
+unsigned int VexData::nVSN(const string &antName) const
+{
+	const VexAntenna *A;
+
+	A = getAntenna(antName);
+	if(!A)
+	{
+		return 0;
+	}
+	else
+	{
+		return A->basebandFiles.size();
+	}
+}
+
 void VexData::addVSN(const string &antName, const string &vsn, const VexInterval &timeRange)
 {
 	int n = nAntenna();

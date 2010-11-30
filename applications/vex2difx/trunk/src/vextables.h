@@ -393,6 +393,7 @@ public:
 	bool usesAntenna(const string &antennaName) const;
 	bool usesMode(const string &modeDefName) const;
 
+	unsigned int nVSN(const string &antName) const;
 	void addVSN(const string &antName, const string &vsn, const VexInterval &timeRange);
 	string getVSN(const string &antName, const VexInterval &timeRange) const;
 

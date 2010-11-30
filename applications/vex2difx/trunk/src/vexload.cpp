@@ -64,6 +64,23 @@ static char swapPolarization(char pol)
 	}
 }
 
+static void fixOhs(string &str)
+{
+	unsigned int i;
+
+	for(i = 0; i < str.length(); i++)
+	{
+		if(str[i] == '-' || str[i] == '+')
+		{
+			break;
+		}
+		if(str[i] == '0')
+		{
+			str[i] = 'O';
+		}
+	}
+}
+
 static int getRecordChannel(const string &antName, const string &chanName, const map<string,Tracks> &ch2tracks, const VexFormat &F, unsigned int n)
 {
 	int delta, track;
@@ -148,17 +165,85 @@ int DOYtoMJD(int year, int doy)
 
 double vexDate(char *value)
 {
-	int ints[4];
-	double mjd, seconds = 0.0;
-
-	for(int i = 0; i < 4; i++)
+	double mjd;
+	int n = 0;
+	
+	for(int i = 0; value[i]; i++)
 	{
-		ints[i] = 0;
+		if(isalpha(value[i]))
+		{
+			n++;
+		}
 	}
 
-	sscanf(value, "%dy%dd%dh%dm%lfs", ints, ints+1, ints+2, ints+3, &seconds);
-	mjd = DOYtoMJD(ints[0], ints[1]);
-	mjd += ints[2]/24.0 + ints[3]/1440.0 + seconds/86400.0;
+	if(n == 0)
+	{
+		// assume this is mjd
+		mjd = atof(value);
+		if(sscanf(value, "%lf", &mjd) != 1)
+		{
+			cerr << "Error: vex date is not in usable format: " << value << endl;
+
+			exit(0);
+		}
+	}
+	else
+	{
+		int i;
+		int start = 0;
+		double years = 0.0;
+		double days = 0.0;
+		double hours = 0.0;
+		double minutes = 0.0;
+		double seconds = 0.0;
+		double x;
+
+		for(i = 0; value[i]; i++)
+		{
+			if(isalpha(value[i]))
+			{
+				if(sscanf(value+start, "%lf", &x) != 1)
+				{
+					cerr << "Error: vex date is not in usable format: " << value << endl;
+
+					exit(0);
+				}
+				switch(value[i])
+				{
+				case 'y':
+					years = x;
+					break;
+				case 'd':
+					days = x;
+					break;
+				case 'h':
+					hours = x;
+					break;
+				case 'm':
+					minutes = x;
+					break;
+				case 's':
+					seconds = x;
+					break;
+				default:
+					cerr << "Error: vex date is not in usable format: " << value << endl;
+
+					exit(0);
+				}
+
+				start = i+1;
+			}
+		}
+
+		if(start != i)
+		{
+			cerr << "Error: trailing characters in vex date: " << value << endl;
+
+			exit(0);
+		}
+
+		mjd = DOYtoMJD( (int)(floor(years+0.1)), (int)(floor(days+0.1)) ) + hours/24.0 + minutes/1440.0 + seconds/86400.0;
+	}
 
 	return mjd;
 }
@@ -174,6 +259,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 	llist *block;
 	Llist *defs;
 	Llist *lowls;
+	void *c;
 	int nWarn = 0;
 
 	block = find_block(B_CLOCK, v);
@@ -225,7 +311,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 			int link;
 			vex_field(T_SITE_POSITION_EPOCH, (void *)r, 1, &link, &name, &value, &units);
 
-			A->posEpoch = atof(value);
+			A->posEpoch = vexDate(value);
 		}
 		else
 		{
@@ -257,52 +343,159 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		{
 			A->clocks.push_back(*paramClock);
 		}
-		else if(block)
+		else 
 		{
-			defs = ((struct block *)block->ptr)->items;
-			if(defs)
+			for(c = get_station_lowl(stn, T_CLOCK_EARLY, B_CLOCK, v);
+			    c;
+			    c = get_station_lowl_next())
 			{
-				defs = find_def(defs, stn);
-			}
-			if(defs)
-			{
-				for(lowls = find_lowl(((Def *)((Lowl *)defs->ptr)->item)->refs, T_CLOCK_EARLY);
-				    lowls;
-				    lowls = lowls->next)
-				{
-					if(((Lowl *)lowls->ptr)->statement != T_CLOCK_EARLY)
-					{
-						continue;
-					}
+				char *value;
+				char *units;
+				int name;
+				int link;
 
-					C = (Clock_early *)(((Lowl *)lowls->ptr)->item);
-					if(C)
+				vex_field(T_CLOCK_EARLY, c, 1, &link, &name, &value, &units);
+				if(value)
+				{
+					mjd = vexDate(value);
+				}
+				else
+				{
+					mjd = 0.0;
+				}
+				A->clocks.push_back(VexClock());
+				VexClock &clock = A->clocks.back();
+				clock.mjdStart = mjd;
+				V->addEvent(mjd, VexEvent::CLOCK_BREAK, antName);
+
+				vex_field(T_CLOCK_EARLY, c, 2, &link, &name, &value, &units);
+				if(value && units)
+				{
+					fvex_double(&value, &units, &clock.offset);
+				}
+
+				vex_field(T_CLOCK_EARLY, c, 3, &link, &name, &value, &units);
+				if(value)
+				{
+					clock.offset_epoch = vexDate(value);
+					vex_field(T_CLOCK_EARLY, c, 4, &link, &name, &value, &units);
+					if(value)
 					{
-						if(C->start)
+						if(units)
 						{
-							mjd = vexDate(C->start);
+							fvex_double(&value, &units, &clock.rate);
 						}
 						else
 						{
-							mjd = 0.0;
+							clock.rate = atof(value);
 						}
-						A->clocks.push_back(VexClock());
-						VexClock &clock = A->clocks.back();
-						clock.mjdStart = mjd;
-						V->addEvent(mjd, VexEvent::CLOCK_BREAK, antName);
-						if(C->offset)
-						{
-							fvex_double(&(C->offset->value), &(C->offset->units), &clock.offset);
-						}
-						if(C->rate && C->origin) 
-						{
-							clock.rate = atof(C->rate->value);
-							clock.offset_epoch = vexDate(C->origin);
-						}
-						
-						// vex has the opposite sign convention, so swap
-						clock.flipSign();
 					}
+				}
+				clock.flipSign();
+			}
+
+			// As a last resort, look for unlinked clock blocks
+			// FIXME: note: the following should eventually be removed once proper linking in vex files is in place
+			if(A->clocks.size() == 0 && block)
+			{
+				defs = ((struct block *)block->ptr)->items;
+				if(defs)
+				{
+					defs = find_def(defs, stn);
+				}
+				if(defs)
+				{
+					for(lowls = find_lowl(((Def *)((Lowl *)defs->ptr)->item)->refs, T_CLOCK_EARLY);
+					    lowls;
+					    lowls = lowls->next)
+					{
+						if(((Lowl *)lowls->ptr)->statement != T_CLOCK_EARLY)
+						{
+							continue;
+						}
+
+						C = (Clock_early *)(((Lowl *)lowls->ptr)->item);
+						if(C)
+						{
+							if(C->start)
+							{
+								mjd = vexDate(C->start);
+							}
+							else
+							{
+								mjd = 0.0;
+							}
+							A->clocks.push_back(VexClock());
+							VexClock &clock = A->clocks.back();
+							clock.mjdStart = mjd;
+							V->addEvent(mjd, VexEvent::CLOCK_BREAK, antName);
+							if(C->offset)
+							{
+								fvex_double(&(C->offset->value), &(C->offset->units), &clock.offset);
+							}
+							if(C->rate && C->origin) 
+							{
+								clock.rate = atof(C->rate->value);
+								clock.offset_epoch = vexDate(C->origin);
+							}
+							
+							// vex has the opposite sign convention, so swap
+							clock.flipSign();
+						}
+					}
+				}
+			}
+		}
+
+		if(!antennaSetup || antennaSetup->dataSource == DataSourceNone)
+		{
+			for(c = get_station_lowl(stn, T_VSN, B_TAPELOG_OBS, v);
+			    c;
+			    c = get_station_lowl_next())
+			{
+				char *value;
+				char *units;
+				int name;
+				int link;
+				double t1 = 0.0, t2 = 0.0;
+
+				vex_field(T_VSN, c, 2, &link, &name, &value, &units);
+				if(!value)
+				{
+					cerr << "VSN absent for antenna " << stn << endl;
+					break;
+				}
+				string vsn(value);
+				fixOhs(vsn);
+
+				vex_field(T_VSN, c, 3, &link, &name, &value, &units);
+				if(value)
+				{
+					t1 = vexDate(value);
+				}
+				vex_field(T_VSN, c, 4, &link, &name, &value, &units);
+				if(value)
+				{
+					t2 = vexDate(value);
+				}
+
+				if(t1 == 0.0 || t2 == 0.0)
+				{
+					cerr << "VSN " << vsn << "doesn't have proper time range" << endl;
+					break;
+				}
+
+				VexInterval vsnTimeRange(t1+0.001/86400.0, t2);
+
+				if(!vsnTimeRange.isCausal())
+				{
+					cerr << "Error: Record stop (" << t2 << ") precedes record start (" << t1 << ") for antenna " << stn << ", module " << vsn << " ." << endl;
+				}
+				else
+				{
+					V->addVSN(antName, vsn, vsnTimeRange);
+					V->addEvent(vsnTimeRange.mjdStart, VexEvent::RECORD_START, antName);
+					V->addEvent(vsnTimeRange.mjdStop, VexEvent::RECORD_STOP, antName);
 				}
 			}
 		}
@@ -953,23 +1146,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 	return nWarn;
 }
 
-static void fixOhs(string &str)
-{
-	unsigned int i;
-
-	for(i = 0; i < str.length(); i++)
-	{
-		if(str[i] == '-' || str[i] == '+')
-		{
-			break;
-		}
-		if(str[i] == '0')
-		{
-			str[i] = 'O';
-		}
-	}
-}
-
 static int getVSN(VexData *V, Vex *v, const char *station)
 {
 	Vsn *p;
@@ -1023,7 +1199,7 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 
 		if(!vsnTimeRange.isCausal())
 		{
-			cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " . " << endl;
+			cerr << "Error: Record stop (" << p->stop << ") precedes record start (" << p->start << ") for antenna " << antName << ", module " << vsn << " ." << endl;
 			quit = true;
 		}
 		else
@@ -1051,6 +1227,13 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 	{
 		string ant(stn);
 		Upper(ant);
+
+		if(V->nVSN(ant) > 0)
+		{
+			// Media already populated
+			continue;
+		}
+
 		if(params.useAntenna(ant))
 		{
 			const AntennaSetup *antennaSetup = params.getAntennaSetup(ant);

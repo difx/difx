@@ -7,6 +7,10 @@ Version 2.0.1
 * fix back-to-back scan handling when singleScan = False
 * fix media changes that occur immediately before a scan change
 * don't error-out if an ANTENNA block does not correspond to an entry in antennas list
+* Follow refs to CLOCK entries; fall back on unreffed clocks only if no other clocks found first
+* Follow refs to TAPELOG_OBS entries; fall back on unreffed VSNs only if no other VSNs found first
+* Support proper vex epoch for SITE; allow mjd to continue to work
+* Generalize vexDate just a bit to allow for the posibility of vexdate without all date fields
 
 Version 2.0
 ~~~~~~~~~~~
