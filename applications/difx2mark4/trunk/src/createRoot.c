@@ -45,7 +45,8 @@ int createRoot (char *baseFile,     // common part of difx fileset name
          line[30000],
          def_block[30000];
 
-    struct date caltime;
+    struct date caltime,
+                valtime;
 
 
     char *blocks[] = {"$NO_BLOCK", "$GLOBAL", "$EXPER", "$MODE", "$STATION", "$ANTENNA",
@@ -327,7 +328,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                 break;
                                     
             case GLOBAL:
-                                    // insert a dummy EOP ref
+                                    // insert a dummy EOP ref (which is fine for fourfit)
                 if (strncmp (pst[0], "$GLOBAL", 7) == 0)
                     strcat (line, "    ref $EOP = EOPXXX;\n"); 
                 else if (strncmp (pst[0], "ref", 3) == 0 
@@ -545,14 +546,17 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         while ((stns+n)->mk4_id != 0 && n < MAX_STN)
             {
             k = (stns+n)->dind;     // index into difx arrays for this station #n
+                                    // calculation time is ref epoch for linear model
             conv2date ((D->antenna + k) -> clockrefmjd, &caltime);
+                                    // calculation time is epoch of start of validity
+            conv2date (D->mjdStart, &valtime);
                                     // note that the difx clock convention is
                                     // opposite that of vex, thus the minus signs
             sprintf (line, " def %c%c; clock_early = %04hdy%03hdd%02hdh%02hdm%02ds :"
                "%6.3lf usec : %04hdy%03hdd%02hdh%02hdm%02ds : %le ; enddef;\n", 
                 (stns + n)->intl_name[0], (stns + n)->intl_name[1], 
-                caltime.year, caltime.day, caltime.hour,
-                caltime.minute, (int)caltime.second, -(D->antenna+k)->clockcoeff[0],
+                valtime.year, valtime.day, valtime.hour,
+                valtime.minute, (int)valtime.second, -(D->antenna+k)->clockcoeff[0],
                 caltime.year, caltime.day, caltime.hour,
                 caltime.minute, (int)caltime.second, -1e-6 * (D->antenna+k)->clockcoeff[1]);
             n++;

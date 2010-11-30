@@ -159,7 +159,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 for (l=0; l<6; l++)
                     {
                     t301.delay_spline[l] 
-                      = -1.e-6 * (**(D->scan->im+n))->delay[l];
+                      = -1.e-6 * (**(D->scan->im+n)+j)->delay[l];
 
                     if (l < nclock) // add in those clock coefficients that are valid
                         t301.delay_spline[l] -= 1e-6 * clock[l];
