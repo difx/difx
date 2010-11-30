@@ -13,7 +13,7 @@ Build and Install DiFX
 
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
-        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] \\
+        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--nofb] \\
         [--noinstall] [--reconf] [--noconf] [--clean] \\
         [--g77] [--cache='name'] [--targ='...'] [--pristine]
 
@@ -28,8 +28,8 @@ For the standard libraries and applications, build-difx will try to run
 autoreconf first.  If this fails, step by step configuration will be tried.
 
 Options:
--f --force         Carry on regardless of any errors (all failed commands will
-                   be listed at the end.
+-f --force         Carry on regardless of any errors (all failed commands
+                   will be listed at the end.)
 
 -h --help          Display this help message and quit.
 
@@ -42,6 +42,8 @@ Options:
    --rpfits        Build rpfits
 
    --perl          Install some non-standard perl utilities (deprecated)
+
+   --nofb          Do not build filterbank (which requires pgplot)
 
    --noinstall     Don't install, only build.
 
@@ -73,7 +75,7 @@ Options:
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
-        "mk5daemon", "withmonitor", "rpfits", "perl",
+        "mk5daemon", "withmonitor", "rpfits", "perl", "nofb",
         "noinstall", "reconf", "noconf", "clean",
         "g77", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
@@ -102,6 +104,7 @@ cache = 'none'
 errors = []
 noconf = False
 pristine = False
+dofb = True
 
 # read options
 if len(opts) > 0:
@@ -121,6 +124,8 @@ if len(opts) > 0:
             rpfits = True
         if o == "--perl":
             perl = True
+        if o == "--nofb":
+            dofb = False
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -202,9 +207,10 @@ utiltargets = [["calcif2",   difx_version, True,False,True,False],
 apptargets = [["calcserver", difx_version, True,True,False,False],
               ["difx2fits",  difx_version, True,False,True,False],
               ["vex2difx",   difx_version, True,True,True,False],
-              ["difx2mark4", difx_version, True,True,True,False],
-              ["difxfilterbank", difx_version, True,False,False,True]]
+              ["difx2mark4", difx_version, True,True,True,False]]
 
+if dofb:
+    apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
