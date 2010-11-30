@@ -11,6 +11,7 @@ Version 2.0.1
 * Follow refs to TAPELOG_OBS entries; fall back on unreffed VSNs only if no other VSNs found first
 * Support proper vex epoch for SITE; allow mjd to continue to work
 * Generalize vexDate just a bit to allow for the posibility of vexdate without all date fields
+* Add sampling parameter to ANTENNA confuration
 
 Version 2.0
 ~~~~~~~~~~~

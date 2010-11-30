@@ -132,6 +132,7 @@ public:
 				// This is sometimes needed because format not known always at scheduling time
 				// Possible values: S2 VLBA MkIV/Mark4 Mark5B . Is converted to all caps on load
 	enum DataSource dataSource;
+	enum SamplingType dataSampling;
 	vector<VexBasebandFile> basebandFiles;	// files to correlate
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size

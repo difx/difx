@@ -541,29 +541,37 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 
 static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, const CorrParams *P, int nSet)
 {
-	DifxDatastream *D;
+	DifxDatastream *datastreams;
+	DifxDatastream *dd;
 	map<string,string>::const_iterator a;
 	const VexAntenna *ant;
 	int i, nDatastream;
 	
 	nDatastream = J.vsns.size() * nSet;
 	a = J.vsns.begin();
-	D = newDifxDatastreamArray(nDatastream);
+	datastreams = newDifxDatastreamArray(nDatastream);
 	for(i = 0; i < nDatastream; i++)
 	{
-		D[i].antennaId = i % J.vsns.size();
-		D[i].tSys = 0.0;
+		dd = datastreams + i;
+
+		dd->antennaId = i % J.vsns.size();
+		dd->tSys = 0.0;
 
 		ant = V->getAntenna(a->first);
-		D[i].dataSource = ant->dataSource;
+		dd->dataSource = ant->dataSource;
 
 		const AntennaSetup *antennaSetup = P->getAntennaSetup(ant->name);
 		if(antennaSetup)
 		{
 			if(ant->dataSource == DataSourceNetwork)
 			{
-				D[i].windowSize = antennaSetup->windowSize;
-				D[i].networkPort = antennaSetup->networkPort;
+				dd->windowSize = antennaSetup->windowSize;
+				dd->networkPort = antennaSetup->networkPort;
+			}
+
+			if(antennaSetup->dataSampling < NumSamplingTypes)
+			{
+				dd->dataSampling = antennaSetup->dataSampling;
 			}
 		}
 
@@ -580,7 +588,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 				}
 			}
 
-			DifxDatastreamAllocFiles(D+i, count);
+			DifxDatastreamAllocFiles(dd, count);
 
 			count = 0;
 
@@ -588,7 +596,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 			{
 				if(J.overlap(ant->basebandFiles[j]) > 0.0)
 				{
-					D[i].file[count] = 
+					dd->file[count] = 
 						strdup(ant->basebandFiles[j].filename.c_str());
 					count++;
 				}
@@ -596,9 +604,9 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 		}
 		else if(ant->dataSource == DataSourceModule)
 		{
-			DifxDatastreamAllocFiles(D+i, 1);
+			DifxDatastreamAllocFiles(dd, 1);
 
-			D[i].file[0] = strdup(a->second.c_str());
+			dd->file[0] = strdup(a->second.c_str());
 		}
 
 		a++;
@@ -610,7 +618,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 
 	}
 
-	return D;
+	return datastreams;
 }
 
 // round up to the next power of two
@@ -786,7 +794,6 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	}
 
 	D->datastream[dsId].quantBits = format->nBit;
-	strcpy(D->datastream[dsId].dataSampling, "REAL");
 	DifxDatastreamAllocBands(D->datastream + dsId, n2);
 
 	for(vector<VexChannel>::const_iterator i = format->channels.begin(); i != format->channels.end(); i++)

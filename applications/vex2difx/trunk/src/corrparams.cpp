@@ -718,6 +718,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	windowSize = 0;
 	phaseCalIntervalMHz = -1;
 	dataSource = DataSourceNone;
+	dataSampling = NumSamplingTypes;	/* flag that no sampling is is identified here */
 }
 
 int AntennaSetup::setkv(const string &key, const string &value, ZoomFreq * zoomFreq)
@@ -766,6 +767,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		if(vexName == "DEFAULT")
 		{
 			cerr << "Error: renaming the DEFAULT antenna setup is not allowed" << endl;
+			
 			exit(0);
 		}
 		ss >> difxName;
@@ -784,6 +786,16 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		ss >> clock.offset;
 		clock.offset /= 1.0e6;	// convert from us to sec
 		clock.mjdStart = 1;
+	}
+	else if(key == "sampling")
+	{
+		dataSampling = stringToSamplingType(value.c_str());
+		if(dataSampling >= NumSamplingTypes)
+		{
+			cerr << "Error: antenna " << vexName << " has illegal samping type set: " << value << endl;
+
+			exit(0);
+		}
 	}
 	else if(key == "clockRate" || key == "clock1")
 	{
