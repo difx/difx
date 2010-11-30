@@ -32,6 +32,7 @@
 #include <string.h>
 #include "difxio/difx_write.h"
 
+/* Note: these values cannot have whitespace */
 const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] = 
 {
 	"NONE",
@@ -39,6 +40,14 @@ const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH] =
 	"FILE",
 	"NETWORK",
 	"SHM",
+	"ERROR"		/* takes place of NumDatastreamTypes */
+};
+
+/* Note: these values cannot have whitespace */
+const char samplingTypeNames[][MAX_SAMPLING_NAME_LENGTH] =
+{
+	"REAL",
+	"COMPLEX",
 	"ERROR"		/* takes place of NumDatastreamTypes */
 };
 
@@ -55,6 +64,21 @@ enum DataSource stringToDataSource(const char *str)
 	}
 
 	return type;	/* value = NumDataSources impies error */
+}
+
+enum SamplingType stringToSamplingType(const char *str)
+{
+	enum SamplingType type;
+
+	for(type = 0; type < NumSamplingTypes; type++)
+	{
+		if(strcasecmp(str, samplingTypeNames[type]) == 0)
+		{
+			break;
+		}
+	}
+
+	return type;
 }
 
 DifxDatastream *newDifxDatastreamArray(int nDatastream)
@@ -317,7 +341,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	}
 	fprintf(fp, "    format = %s\n", dd->dataFormat);
 	fprintf(fp, "    quantization bits = %d\n", dd->quantBits);
-	fprintf(fp, "    sampling = %s\n", dd->dataSampling);
+	fprintf(fp, "    sampling = %s\n", samplingTypeNames[dd->dataSampling]);
 	fprintf(fp, "    nRecFreq = %d\n", dd->nRecFreq);
 	fprintf(fp, "    nRecBand = %d\n", dd->nRecBand);
 	fprintf(fp, "    (RecFreqId, nRecPol)[freq] =");
@@ -375,15 +399,17 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	
 	if(dd1->antennaId != antennaId2 ||
 	   strcmp(dd1->dataFormat, dd2->dataFormat) != 0 ||
-	   strcmp(dd1->dataSampling, dd2->dataSampling) != 0 ||
+	   dd1->dataSampling != dd2->dataSampling ||
 	   dd1->nRecFreq != dd2->nRecFreq ||
 	   dd1->nRecBand != dd2->nRecBand ||
 	   dd1->nZoomFreq != dd2->nZoomFreq ||
 	   dd1->nZoomBand != dd2->nZoomBand ||
+	   dd1->dataSource != dd2->dataSource ||
 	   dd1->phaseCalIntervalMHz != dd2->phaseCalIntervalMHz)
 	{
 		return 0;
 	}
+
 	for(f = 0; f < dd1->nRecFreq; f++)
 	{
 		if(freqIdRemap)
@@ -434,13 +460,6 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 			return 0;
 		}
 	}
-#if 0
-	/* I think this check is unnecessary */
-	if(dd1->dataSource != dd2->dataSource)
-	{
-		return 0;
-	}
-#endif
 
 	return 1;
 }
@@ -459,7 +478,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 		dest->antennaId = src->antennaId;
 	}
 	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
-	snprintf(dest->dataSampling, DIFXIO_NAME_LENGTH, "%s", src->dataSampling);
+	dest->dataSampling = src->dataSampling;
 	dest->quantBits = src->quantBits;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 	dest->nRecTone = src->nRecTone;
@@ -528,7 +547,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->antennaId = src->antennaId;
 	dest->tSys = src->tSys;
 	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
-	snprintf(dest->dataSampling, DIFXIO_NAME_LENGTH, "%s", src->dataSampling);
+	dest->dataSampling = src->dataSampling;
 	dest->networkPort = src->networkPort;
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
@@ -724,7 +743,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLine(out, "DATA FORMAT", dd->dataFormat);
 	writeDifxLineInt(out, "QUANTISATION BITS", dd->quantBits);
 	writeDifxLineInt(out, "DATA FRAME SIZE", dd->dataFrameSize);
-	writeDifxLine(out, "DATA SAMPLING", dd->dataSampling);
+	writeDifxLine(out, "DATA SAMPLING", samplingTypeNames[dd->dataSampling]);
 	writeDifxLine(out, "DATA SOURCE", dataSourceNames[dd->dataSource]);
 	writeDifxLine(out, "FILTERBANK USED", "FALSE");
 	writeDifxLineInt(out, "PHASE CAL INT (MHZ)", dd->phaseCalIntervalMHz);

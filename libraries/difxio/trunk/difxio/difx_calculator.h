@@ -43,6 +43,8 @@ typedef struct
 	double nPolPerBand;
 	double nBit;
 	int nChan;
+	int nPhaseCenter;
+	double specAvg;			/* averaged over baselines.  Weird: yes. */
 	int dataBufferFactor;
 	int nDataSegment;
 	double tSubint;			/* seconds */

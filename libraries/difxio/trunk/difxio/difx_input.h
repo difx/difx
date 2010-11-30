@@ -37,6 +37,7 @@
 #define MAX_ABER_CORR_STRING_LENGTH	16
 #define MAX_DATA_SOURCE_NAME_LENGTH	16
 #define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
+#define MAX_SAMPLING_NAME_LENGTH	16
 
 #define DIFXIO_FILENAME_LENGTH		256
 #define DIFXIO_NAME_LENGTH		32
@@ -80,7 +81,7 @@ enum AberCorr
 	AberCorrUncorrected = 0,
 	AberCorrApproximate,
 	AberCorrExact,
-	NumAberCorrOptions
+	NumAberCorrOptions	/* must remain as last entry */
 };
 
 extern const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH];
@@ -94,11 +95,20 @@ enum DataSource
 	DataSourceFile,
 	DataSourceNetwork,
 	DataSourceSHM,		/* for future use */
-	NumDataSources		/* must remain last entry */
+	NumDataSources		/* must remain as last entry */
 };
 
 extern const char dataSourceNames[][MAX_DATA_SOURCE_NAME_LENGTH];
 
+/* keep this current with samplingTypeNames in difx_datastream.c */
+enum SamplingType
+{
+	SamplingReal = 0,
+	SamplingComplex,	/* "standard" complex sampling: separate quanization of real and imag */
+	NumSamplingTypes	/* must remain as last entry */
+};
+
+extern const char samplingTypeNames[][MAX_SAMPLING_NAME_LENGTH];
 
 /* keep this current with antennaMountTypeNames in difx_antenna.c */
 /* Note that the numbering scheme is based on the FITS-IDI defs, but with XYNS added at end */
@@ -113,14 +123,14 @@ enum AntennaMountType
 	AntennaMountNasmythL = 5,	/* note: in calcserver, falls back to azel as is appropriate */
 	AntennaMountXYNS = 6,		/* note: no FITS-IDI/AIPS support */
 	AntennaMountOther = 7,		/* set to this if different from the others */
-	NumAntennaMounts
+	NumAntennaMounts		/* must remain as last entry */
 };
 
 enum OutputFormatType
 {
 	OutputFormatDIFX = 0,
 	OutputFormatASCII = 1,
-	NumOutputFormat
+	NumOutputFormat			/* must remain as last entry */
 };
 
 extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
@@ -242,8 +252,7 @@ typedef struct
 	float tSys;		/* 0.0 for VLBA DiFX */
 	char dataFormat[DIFXIO_NAME_LENGTH];   /* e.g., VLBA, MKIV, ... */
 
-	/* FIXME: dataSampling should become an enum */
-	char dataSampling[DIFXIO_NAME_LENGTH]; /* REAL or COMPLEX */
+	enum SamplingType dataSampling; /* REAL or COMPLEX */
 	int nFile;              /* number of files */
         char **file;            /* list of files to correlate (if not VSN) */
 	int networkPort;        /* eVLBI port for this datastream */
@@ -525,6 +534,7 @@ int writeDifxAntennaArray(FILE *out, int nAntenna, const DifxAntenna *da,
 
 /* DifxDatastream functions */
 enum DataSource stringToDataSource(const char *str);
+enum SamplingType stringToSamplingType(const char *str);
 DifxDatastream *newDifxDatastreamArray(int nDatastream);
 void DifxDatastreamAllocFiles(DifxDatastream *ds, int nFile);
 void DifxDatastreamAllocFreqs(DifxDatastream *dd, int nReqFreq);

@@ -135,6 +135,18 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 		c->nBaseline = d->nBaseline;
 		c->nDataSegment = D->nDataSegments;
 		c->dataBufferFactor = D->dataBufferFactor;
+		c->nPhaseCenter = 1;
+
+		for(j = 0; j < D->nScan; j++)
+		{
+			if(D->scan[j].configId == i)
+			{
+				if(D->scan[j].nPhaseCentres > c->nPhaseCenter)
+				{
+					c->nPhaseCenter = D->scan[j].nPhaseCentres;
+				}
+			}
+		}
 
 		for(j = 0; j < D->nFreq; j++)
 		{
@@ -143,6 +155,8 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 				c->nChan = D->freq[j].nChan;
 			}
 		}
+
+		c->specAvg = 0;
 
 		for(j = 0; j < d->nBaseline; j++)
 		{
@@ -183,19 +197,25 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 					printf("ACK! i=%d j=%d k=%d -> f=%d\n", i, j, k, f);
 				}
 				c->bandwidth += D->freq[f].bw*D->freq[f].decimation*1.0e6;
+				c->specAvg += D->freq[f].bw*D->freq[f].specAvg;
 				nc++;
 			}
 		}
 		c->nBit /= d->nDatastream;
 		c->bandwidth /= nc;
+		c->specAvg /= nc;
 
 		c->tSubint = d->subintNS*1.0e-9;
 		c->tGuard = d->guardNS*1.0e-9;
 		c->tInt = d->tInt;
 
 		/* derived parameters */
+
+		/* FIXME: consider n phase center */
+		/* FIXME: pulsar phase bins? */
+		/* FIXME: does nChanAvg play a role in the following calculations? */
 		c->subintsPerInt = c->tInt/c->tSubint;
-		c->visibilitySize = (c->nAntenna + c->nBaseline)*(8*c->nChan*c->nBand*c->nPol*c->nPolPerBand);
+		c->visibilitySize = c->nPhaseCenter*(c->nAntenna + c->nBaseline)*(8*c->nChan*c->nBand*c->nPol*c->nPolPerBand/c->specAvg);
 		c->recDataRate = c->nBand*c->bandwidth*c->nPol*c->nBit*2.0;
 		c->basebandMessageSize = c->tSubint*c->recDataRate/8.0;
 		c->blocksPerSend = c->basebandMessageSize/(c->nBit*c->nChan*2.0*c->nBand*c->nPol/8);
@@ -209,12 +229,10 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 		c->diskDataRate = c->visibilitySize/c->tInt;
 		c->datasetSize = c->diskDataRate*C->tObs;
 
-		/* FIXME: verify still same in 2.0.0 */
-		/* FIXME: consider n phase center */
 		c->datastreamBufferSize = c->basebandMessageSize*c->dataBufferFactor;
 		c->modeSize = c->basebandMessageSize + ((c->nBand*c->nPol*c->nChan*4)*(2+2+2+1)+c->nChan*4.0*(2+2+2+2+2+2+2+3+5));
 		c->coreSize = 4.0*((c->nAntenna*c->modeSize) + (c->nAntenna+c->nBaseline)*c->visibilitySize) + C->nThread*c->visibilitySize;
-		c->managerSize = c->visibilitySize*C->visibilityLength;
+		c->managerSize = c->visibilitySize*C->visibilityLength*c->nPhaseCenter;
 
 		c->datastreamBufferDur = c->datastreamBufferSize*8/c->recDataRate;
 		c->datastreamReadDur = c->datastreamBufferDur/c->nDataSegment;
@@ -285,6 +303,7 @@ void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
 	printDouble("Bits per sample",         c->nBit,             "Averaged over baselines", "%3.1f");
 	printDouble("Blocks per send",         c->blocksPerSend,    "Has to be integral!", "%3.1f");
 	printInt("Spectral points per band",   c->nChan,            "As correlated");
+	printDouble("Spetral averaging",       c->specAvg,          "Averaged over bands", "%3.1f");
 	printInt("Data buffer factor",         c->dataBufferFactor, 0);
 	printInt("Number of data segments",    c->nDataSegment,     0);
 	printf("\n");

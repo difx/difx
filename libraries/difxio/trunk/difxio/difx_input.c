@@ -1128,6 +1128,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "TELESCOPE INDEX not found\n");
+			
 			return 0;
 		}
 		D->datastream[e].antennaId = atoi(DifxParametersvalue(ip, r));
@@ -1136,6 +1137,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "DATA FORMAT not found\n");
+			
 			return 0;
 		}
 		snprintf(D->datastream[e].dataFormat, DIFXIO_NAME_LENGTH, "%s",
@@ -1145,6 +1147,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "Cannot determine quantization bits\n");
+			
 			return 0;
 		}
 		D->datastream[e].quantBits = atoi(DifxParametersvalue(ip, r));
@@ -1153,6 +1156,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "Cannot determine data frame size\n");
+			
 			return 0;
 		}
 		D->datastream[e].dataFrameSize = 
@@ -1162,28 +1166,40 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "DATA SAMPLING not found\n");
+			
 			return 0;
 		}
-		snprintf(D->datastream[e].dataSampling, DIFXIO_NAME_LENGTH, "%s",
-			DifxParametersvalue(ip, r));
-	
+		D->datastream[e].dataSampling = stringToSamplingType( DifxParametersvalue(ip, r) );
+		if(D->datastream[e].dataSampling >= NumSamplingTypes)
+		{
+			fprintf(stderr, "Error: DATA SAMPLING was %s and is not supported\n", 
+				DifxParametersvalue(ip, r) );
+			
+			return 0;
+		}
+		
 		r = DifxParametersfind(ip, r+1, "DATA SOURCE");
 		if(r < 0)
 		{
 			fprintf(stderr, "Cannot determine data source\n");
+			
 			return 0;
 		}
 		D->datastream[e].dataSource = stringToDataSource( DifxParametersvalue(ip, r) );
-		if(D->datastream[e].dataSource == NumDataSources)
+		if(D->datastream[e].dataSource >= NumDataSources)
 		{
 			fprintf(stderr, "Error: DATA SOURCE was %s and is not supported\n",
 				DifxParametersvalue(ip, r) );
+			
 			return 0;
 		}
+
 		r = DifxParametersfind(ip, r+1, "PHASE CAL INT (MHZ)");
 		if(r < 0)
 		{
 			fprintf(stderr, "Cannot determine phase cal interval\n");
+
+			return 0;
 		}
 		D->datastream[e].phaseCalIntervalMHz = atoi(DifxParametersvalue(ip,r));
 
@@ -1191,6 +1207,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "NUM RECORDED FREQS not found\n");
+			
 			return 0;
 		}
 
@@ -1257,6 +1274,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			{
 				fprintf(stderr, "Error: parseDifxInputDatastreamTable: "
 					"REC BAND %d INDEX not found\n", i);
+
 				return 0;
 			}
 			a = atoi(DifxParametersvalue(ip, r));
@@ -1267,6 +1285,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "NUM ZOOM FREQS not found\n");
+			
 			return 0;
 		}
 		nZoomBand = 0;
@@ -1317,6 +1336,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			{
 				fprintf(stderr, "Error: parseDifxInputDatastreamTable: "
 					"ZOOM BAND %d INDEX not found\n", i);
+				
 				return 0;
 			}
 			a = atoi(DifxParametersvalue(ip, r));

@@ -5,7 +5,7 @@ To install from a .tar.gz distribution:
 
 tar zxvf difxio-XXX.tar.gz
 cd difxio-XXX
-./configure --prefix=<prefix>     (replace <prefix> with the base install dir)
+./configure --prefix=${DIFXROOT}
 make
 (maybe become root here)
 make install
@@ -19,7 +19,7 @@ autoconf
 autoheader
 automake -a
 
-./configure --prefix=${DIFX_PREFIX}
+./configure --prefix=${DIFXROOT}
 make
 # (su root?)
 make install
