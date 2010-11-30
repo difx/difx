@@ -32,3 +32,4 @@ libvex_la_SOURCES = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = vex.pc
 
+CLEANFILES = vex_parse.tab.[ch] vex_parse.[ch] vex.yy.c
