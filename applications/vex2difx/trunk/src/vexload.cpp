@@ -1076,7 +1076,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			    p;
 			    p = get_all_lowl_next())
 			{
-			  vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
+				vex_field(T_CHAN_DEF, p, 2, &link, &name, &value, &units);
 				fvex_double(&value, &units, &freq);
 
 				vex_field(T_CHAN_DEF, p, 3, &link, &name, &value, &units);
@@ -1110,13 +1110,16 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 			if(i != F.nRecordChan)
 			{
-			  if (F.nRecordChan==0) {
-			    F.nRecordChan = i;
-			  } else {
-				cerr << "Warning: Antenna=" << antName << " nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
-			  }
+				if (F.nRecordChan==0)
+				{
+					F.nRecordChan = i;
+				}
+				else
+				{
+					cerr << "Warning: Antenna=" << antName << " nchan=" << i << " != F.nRecordChan=" << F.nRecordChan << endl;
+				}
 			}
-		}
+		} // End of antenna loop
 
 		for(vector<VexSubband>::iterator it = M->subbands.begin(); it != M->subbands.end(); it++)
 		{

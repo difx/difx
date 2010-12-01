@@ -12,6 +12,7 @@ Version 2.0.1
 * Support proper vex epoch for SITE; allow mjd to continue to work
 * Generalize vexDate just a bit to allow for the posibility of vexdate without all date fields
 * Add sampling parameter to ANTENNA confuration
+* When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
 
 Version 2.0
 ~~~~~~~~~~~
