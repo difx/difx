@@ -15,6 +15,8 @@ char single_code (char *station)
          "j Jc", "k Kp", "l La", "m Mk", "n Nl", "o Ov", "p Pt", "q Qb", "r Ro",
          "s Sc", "t Ti", "u Ur", "v Pv", "w Wb", "x xx", "y Y ", "z xx"};
 
+    update_stations(getenv("HOPS_STATION_CODE"), code_table);
+
     c = 0;
                                     // find station in code table
     for (i=0; i<52; i++)

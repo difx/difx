@@ -105,5 +105,6 @@ long long_reverse (long);
 float float_reverse (float);
 double double_reverse (double);
 
+void update_stations(char*,char[52][4]);
 
 #endif
