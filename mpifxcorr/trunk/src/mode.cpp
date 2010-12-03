@@ -761,6 +761,10 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
       if(status != vecNoErr)
         csevere << startl << "Error doing the time-saving complex multiplication in frac sample correction!!!" << endl;
     }
+    // now do the first arraystridelength elements (which are different from fracsampptr1 for LSB case)
+    status = vectorMulC_cf32_I(stepfracsampcplx[0], fracsampptr1, arraystridelength);
+    if(status != vecNoErr)
+    csevere << startl << "Error doing the first bit of the time-saving complex multiplication in frac sample correction!!!" << endl;
 
     for(int j=0;j<numrecordedbands;j++)
     {
