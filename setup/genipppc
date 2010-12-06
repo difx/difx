@@ -1,8 +1,10 @@
-#!/bin/env python
+#!/usr/bin/env python
 
 from sys import argv, exit
 from string import split, lower
-from os import getenv
+from os import getenv, readlink
+from os.path import islink, join, dirname
+import re
 
 program = 'genipppc'
 version = '0.1'
@@ -17,19 +19,22 @@ def usage(prog):
 	print '<ipp path> is the install path of Intel Performance Primitives\n'
 
 def getippversion(path):
-	possibilities = []
+	if islink(path):
+		path = join(dirname(path), readlink(path))
+
 	s = split(path, '/')
+	possibilities = []
 	for part in s:
 		t = split(part, '.')
-		if len(t) > 2:
+		if len(t) > 1:
 			possibilities.append(part)
 	if len(possibilities) < 1:
 		print 'Sorry, cannot determine ipp version from path'
 		exit(0)
 	if len(possibilities) > 1:
-		print 'Guessing version == %s' % possibilities[0]
+		print 'Guessing version == %s' % possibilities[-1]
 
-	return possibilities[0]
+	return possibilities[-1]
 	
 # fixme: possibly should use uname to get this information
 def getarch():
@@ -41,6 +46,14 @@ def getarch():
 		return 32
 
 def genipppc(path, ippversion):
+	# if no path supplied, take it from $IPPROOT
+	if path == '':
+		path = getenv('IPPROOT')
+	# Still not set?
+	if path == None:
+		print 'Sorry, $IPPROOT not set and no path given'
+		return
+
 	# if no version actually supplied, try to guess from path
 	if ippversion == '':
 		ippversion = getippversion(path)
