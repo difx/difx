@@ -8,14 +8,15 @@ from os.path import isfile, isdir
 from glob import glob
 import datetime
 import cx_Oracle
+import popen2
 from time import localtime, asctime
 
 dbname = getenv("VLBA_DB")
 
 program = 'difxqueue'
-version = '0.6'
+version = '0.7'
 author  = 'Walter Brisken'
-verdate = '20100315'
+verdate = '20101206'
 
 clusterHorsepower = 0.24
 	
@@ -934,6 +935,30 @@ class Pass:
 			if verbose > 1:
 				print 'Executing: %s' % cmd
 			system(cmd)
+
+		# use checkmpifxcorr to verify files
+		nGood = 0
+		nBad = 0
+		for j in jobs:
+			print 'Checking %s' % j.name
+			cmd = 'checkmpifxcorr %s/%s.input' % (queueDir, j.name)
+			p, q = popen2.popen4(cmd)
+			output = p.readlines()
+			p.close()
+			q.close()
+
+			if output[-1][0:9] == 'No errors':
+				print 'Looks good'
+				nGood += 1
+			else:
+				print 'One or more errors with input files:'
+				for s in output:
+					print '  %s' % strip(s)
+				nBad += 1
+
+		print '%d/%d jobs passed sanity check' % (nGood, nGood+nBad)
+		if nBad > 0:
+			print 'You might want to dequeue these jobs and fix them!'
 
 def verify(action):
 	print '\nThe %s action is about to be applied to all matching jobs' %\
