@@ -41,9 +41,6 @@ const char version[] = VERSION;
 const double DefaultSniffInterval = 30.0;
 const double DefaultJobMatrixInterval = 20.0;
 
-const int binomialcoeffs[6][6] = {{1,0,0,0,0,0},{1,1,0,0,0,0},{1,2,1,0,0,0},
-				{1,3,3,1,0,0},{1,4,6,4,1,0},{1,5,10,10,5,1}};
-
 static int usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s\n\n",
