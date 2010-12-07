@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--noipp] [--ipp]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -43,6 +43,10 @@ Options:
 
    --clean         Run make clean for all components
 
+   --noipp         Don't try and install ipp package config file
+
+   --ipp           Force installation of ipp package config file (default don't overwrite existing)
+
     """
     pass
 
@@ -53,7 +57,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "noipp", "ipp"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -74,6 +78,7 @@ rpfits = False
 perl = False
 doclean = False
 domonitor = False
+doipp = 0
 
 # read arguments
 
@@ -99,6 +104,10 @@ if len(opts) > 0:
             rpfits = True
         if o == "--withmonitor":
             domonitor = True
+        if o == "--ipp":
+            doipp = 1
+        if o == "--noipp":
+            doipp = -1
         if o == "--clean":
             doclean = True
 
@@ -142,7 +151,7 @@ if not difxroot:
     raise RuntimeError, "DIFXROOT must be defined"
 bindir = difxroot + '/bin/'
 libdir = difxroot + '/lib/'
-pkgdir = difxroot + '/lib/pkg-config/'
+pkgdir = difxroot + '/lib/pkgconfig/'
 incdir = difxroot + '/include/'
 ipproot = os.environ.get('IPPROOT')
 ipplib32 = os.environ.get('IPPLIB32')
@@ -198,6 +207,7 @@ if mk5d:
 if domonitor:
     apptargets.append(["difx_monitor", difx_version, False,False,False,False])
 
+startdir = os.getcwd()
 if not master_tag:
     os.chdir("..")
 topdir = os.getcwd()
@@ -287,6 +297,24 @@ if not noinstall:
         os.mkdir(pkgdir)
     if not os.path.exists(incdir):
         os.mkdir(incdir)
+
+##### Install IPP package config file if appropriate  ###
+
+    if doipp<0:
+        print "************************************"
+        print "Not installing IPP .pc file"
+        print
+    else:
+        if os.path.exists(pkgdir+"/ipp.pc") and doipp==0:
+            print "************************************"
+            print pkgdir+" already exists"
+            print
+        else:
+            print "************************************"
+            print "Creating "+pkgdir+"ipp.pc"
+            run(startdir+"/genipppc "+ipproot)
+            run("mv ipp.pc "+pkgdir)
+            print
 
 ##### Compile non-standard libraries ####################
 if perl:
