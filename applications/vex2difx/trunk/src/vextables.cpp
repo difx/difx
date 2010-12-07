@@ -224,7 +224,8 @@ const VexSetup* VexMode::getSetup(const string &antName) const
 	it = setups.find(antName);
 	if(it == setups.end())
 	{
-		cerr << "Error: antName=" << antName << " not found" << endl;
+		cerr << "Error: VexMode::getSetup: antName=" << antName << " not found." << endl;
+		
 		exit(0);
 	}
 
@@ -238,7 +239,8 @@ const VexFormat* VexMode::getFormat(const string &antName) const
 	it = setups.find(antName);
 	if(it == setups.end())
 	{
-		cerr << "Error: antName=" << antName << " not found" << endl;
+		cerr << "Error: VexMode::getFormat: antName=" << antName << " not found." << endl;
+
 		exit(0);
 	}
 
@@ -323,12 +325,17 @@ string VexIF::VLBABandName() const
 
 bool operator == (VexSubband &s1, VexSubband &s2)
 {
-	if(s1.freq != s2.freq) return false;
-	if(s1.bandwidth != s2.bandwidth) return false;
-	if(s1.sideBand != s2.sideBand) return false;
-	if(s1.pol != s2.pol) return false;
-
-	return true;
+	if(s1.pol       != s2.pol      ||
+	   s1.freq      != s2.freq     ||
+	   s1.sideBand  != s2.sideBand ||
+	   s1.bandwidth != s2.bandwidth)
+	{
+		return false;
+	}
+	else
+	{
+		return true;
+	}
 }
 
 bool VexSource::hasSourceName(const string &name) const

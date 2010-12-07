@@ -463,9 +463,9 @@ static DifxAntenna *makeDifxAntennas(const VexJob& J, const VexData *V, const Co
 {
 	const VexAntenna *ant;
 	DifxAntenna *A;
-	int i;
 	double clockrefmjd, mjd;
 	map<string,string>::const_iterator a;
+	int i;
 
 	mjd = 0.5*(V->obsStart() + V->obsStop());
 
@@ -543,12 +543,12 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 	DifxDatastream *dd;
 	map<string,string>::const_iterator a;
 	const VexAntenna *ant;
-	int i, nDatastream;
+	int nDatastream;
 	
 	nDatastream = J.vsns.size() * nSet;
 	a = J.vsns.begin();
 	datastreams = newDifxDatastreamArray(nDatastream);
-	for(i = 0; i < nDatastream; i++)
+	for(int i = 0; i < nDatastream; i++)
 	{
 		dd = datastreams + i;
 
@@ -594,8 +594,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 			{
 				if(J.overlap(ant->basebandFiles[j]) > 0.0)
 				{
-					dd->file[count] = 
-						strdup(ant->basebandFiles[j].filename.c_str());
+					dd->file[count] = strdup(ant->basebandFiles[j].filename.c_str());
 					count++;
 				}
 			}
@@ -690,6 +689,7 @@ int getBand(vector<pair<int,int> >& bandMap, int fqId)
 		if(it->first == fqId)
 		{
 			it->second++;
+
 			return i;
 		}
 	}
@@ -708,6 +708,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 	if(antId < 0 || antId >= D->nAntenna)
 	{
 		cerr << "Error: setFormat: antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
+		
 		exit(0);
 	}
 	const VexFormat* format = mode->getFormat(antName);
@@ -830,6 +831,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 {
 	string towrite;
 	list<string>::const_iterator s;
+
 	D->nRule = P->rules.size();
 	D->rule = newDifxRuleArray(D->nRule);
 	for(int i = 0; i < D->nRule; i++)
@@ -862,13 +864,13 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
-			cerr << "Cannot rule on modeName at this time - ignoring" << endl;
+			cerr << "Cannot rule on modeName at this time; ignoring." << endl;
 		}
 		if(P->rules[i].calCode.size() > 0)
 		{
 			if(P->rules[i].calCode.size() > 1)
 			{
-				cerr << "Cannot handle rules for more than one calCode simultaneously" << endl;
+				cerr << "Cannot handle rules for more than one calCode simultaneously." << endl;
 
 				exit(0);
 			}
@@ -879,7 +881,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 		{
 			if(P->rules[i].qualifier.size() > 1)
 			{
-				cerr << "Cannot handle rules for more than one qualifier simultaneously" << endl;
+				cerr << "Cannot handle rules for more than one qualifier simultaneously." << endl;
 				
 				exit(0);
 			}
@@ -931,7 +933,7 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 // warning: assumes same number of datastreams == antennas for each config
 void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *corrSetup, vector<set <int> > blockedfreqids)
 {	
-	int a1, a2, f, n1, n2, u, v;
+	int n1, n2;
 	int npol;
 	int a1c[2], a2c[2];
 	char a1p[2], a2p[2];
@@ -982,7 +984,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 			config->doAutoCorr = 0;
 
 			// Instead, make autocorrlations from scratch
-			for(a1 = 0; a1 < config->nDatastream; a1++)
+			for(int a1 = 0; a1 < config->nDatastream; a1++)
 			{
 				bl->dsA = config->datastreamId[a1];
 				bl->dsB = config->datastreamId[a1];
@@ -992,7 +994,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 				nFreq = 0; // this counts the actual number of freqs
 
 				// Note: here we need to loop over all datastreams associated with this antenna!
-				for(f = 0; f < D->datastream[a1].nRecFreq; f++)
+				for(int f = 0; f < D->datastream[a1].nRecFreq; f++)
 				{
 					freqId = D->datastream[a1].recFreqId[f];
 
@@ -1006,16 +1008,13 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 					n1 = DifxDatastreamGetRecBands(D->datastream+a1, freqId, a1p, a1c);
 
 					npol = 0;
-					for(u = 0; u < n1; u++)
+					for(int u = 0; u < n1; u++)
 					{
-						for(v = 0; v < n1; v++)
+						if(corrSetup->doPolar)
 						{
-							if(u == v || corrSetup->doPolar)
-							{
-								bl->recBandA[nFreq][npol] = a1c[u];
-								bl->recBandB[nFreq][npol] = a1c[v];
-								npol++;
-							}
+							bl->recBandA[nFreq][npol] = a1c[u];
+							bl->recBandB[nFreq][npol] = a1c[u];
+							npol++;
 						}
 					}
 					bl->nPolProd[nFreq] = npol;
@@ -1044,9 +1043,9 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 		}
 		else
 		{
-			for(a1 = 0; a1 < config->nDatastream-1; a1++)
+			for(int a1 = 0; a1 < config->nDatastream-1; a1++)
 			{
-				for(a2 = a1+1; a2 < config->nDatastream; a2++)
+				for(int a2 = a1+1; a2 < config->nDatastream; a2++)
 				{
 					bl->dsA = config->datastreamId[a1];
 					bl->dsB = config->datastreamId[a2];
@@ -1061,7 +1060,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 					nFreq = 0; // this counts the actual number of freqs
 
 					// Note: here we need to loop over all datastreams associated with this antenna!
-					for(f = 0; f < D->datastream[a1].nRecFreq; f++)
+					for(int f = 0; f < D->datastream[a1].nRecFreq; f++)
 					{
 						freqId = D->datastream[a1].recFreqId[f];
 
@@ -1106,9 +1105,9 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						}
 
 						npol = 0;
-						for(u = 0; u < n1; u++)
+						for(int u = 0; u < n1; u++)
 						{
-							for(v = 0; v < n2; v++)
+							for(int v = 0; v < n2; v++)
 							{
 								if(corrSetup->doPolar || a1p[u] == a2p[v])
 								{
@@ -1130,7 +1129,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 
 						nFreq++;
 					}
-					for(f = 0; f < D->datastream[a1].nZoomFreq; f++)
+					for(int f = 0; f < D->datastream[a1].nZoomFreq; f++)
 					{
 						freqId = D->datastream[a1].zoomFreqId[f];
 
@@ -1145,9 +1144,9 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						n2 = DifxDatastreamGetZoomBands(D->datastream+a2, freqId, a2p, a2c);
 
 						npol = 0;
-						for(u = 0; u < n1; u++)
+						for(int u = 0; u < n1; u++)
 						{
-							for(v = 0; v < n2; v++)
+							for(int v = 0; v < n2; v++)
 							{
 								if(corrSetup->doPolar || a1p[u] == a2p[v])
 								{
@@ -1214,13 +1213,13 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	const CorrSetup *corrSetup;
 	const VexMode *mode;
 	string configName;
-	double sendLength;
-	double minBW;
+	double minBW;		// [Hz]
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
 	if(corrSetup == 0)
 	{
 		cerr << "Error: correlator setup[" << S->corrSetupName << "] == 0" << endl;
+		
 		exit(0);
 	}
 
@@ -1228,6 +1227,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	if(mode == 0)
 	{
 		cerr << "Error: mode[" << S->modeDefName << "] == 0" << endl;
+		
 		exit(0);
 	}
 
@@ -1240,15 +1240,13 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 	}
 
-	sendLength = P->sendLength;
-
 	configName = S->modeDefName + string("_") + S->corrSetupName;
 
 	c = configs.size();
 	configs.push_back(pair<string,string>(S->modeDefName, S->corrSetupName));
 	config = D->config + c;
 	snprintf(config->name, DIFXIO_NAME_LENGTH, "%s", configName.c_str());
-	for(int i=0;i<D->nRule;i++)
+	for(int i = 0; i < D->nRule; i++)
 	{
 		if(strcmp(D->rule[i].configName, S->corrSetupName.c_str()) == 0)
 		{
@@ -1263,18 +1261,35 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		config->subintNS = corrSetup->subintNS;
 		if(config->subintNS % fftdurNS != 0)
 		{
-			cerr << "The provided subintNS (" << config->subintNS << ") is not an integer multiple ";
-			cerr << "of the FFT duration (" << fftdurNS << ")! Aborting." << endl;
+			cerr << "The provided subintNS (" << config->subintNS << ") is not an integer multiple of the FFT duration (" << fftdurNS << ")! Aborting." << endl;
+
 			exit(0);
 		}
 	}
 	else
 	{
-		config->subintNS = (int)((corrSetup->tInt/25.0)*1000000000.0 + 0.5);
+		int divisors[] = {1, 2, 5, 10, 25, 50, 125, 250, 625, 0};	// Must be 0 terminated
+
+		for(int d = 0; divisors[d]; d++)
+		{
+			double msgSize, dataRate, readSize;
+
+			config->subintNS = (int)((corrSetup->tInt/divisors[d])*1000000000.0 + 0.5);
+			dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
+			msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
+			readSize = msgSize*P->dataBufferFactor/P->nDataSegments;
+
+			cout << "div=" << divisors[d] << " subintNS=" << config->subintNS << " readSize=" << readSize << endl;
+			
+			// stop when readSize falls below specifed maximum (default to 25MB)
+			if(readSize < P->readSize)
+			{
+				break;
+			}
+		}
 		if(config->subintNS % fftdurNS != 0)
 		{
-			cout << "Adjusting subintNS by " << config->subintNS % fftdurNS;
-			cout << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
+			cout << "Adjusting subintNS by " << config->subintNS % fftdurNS << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
 			config->subintNS -= (config->subintNS % fftdurNS);
 		}
 	}
@@ -1324,7 +1339,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->nPol = mode->getPols(config->pol);
 	config->quantBits = mode->getBits();
 
-	// FIXME -- reset sendLength based on subintNS, then readjust tInt, perhaps
 
 	return c;
 }

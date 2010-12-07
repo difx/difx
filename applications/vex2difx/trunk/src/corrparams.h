@@ -245,8 +245,7 @@ public:
 	int startSeries;	// start job series at this number
 	int dataBufferFactor;
 	int nDataSegments;
-	double sendLength;	// (s) amount of data to send from datastream to core at a time
-	int sendSize;           // (Bytes) amount of data to send from datastream to core at a time (overrides sendLength)
+	int readSize;           // (Bytes) amount of data to read into datastream at a time (overrides sendLength)
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor

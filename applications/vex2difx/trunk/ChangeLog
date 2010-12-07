@@ -13,6 +13,7 @@ Version 2.0.1
 * Generalize vexDate just a bit to allow for the posibility of vexdate without all date fields
 * Add sampling parameter to ANTENNA confuration
 * When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
+* Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
 
 Version 2.0
 ~~~~~~~~~~~

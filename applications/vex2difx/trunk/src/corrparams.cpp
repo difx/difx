@@ -1094,8 +1094,7 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	sendLength = 0.0;		// (s) zero implies use sendSize to dictate sends
-	sendSize = 6000000;             // Bytes
+	readSize = 25000000;		// Bytes
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 32;
 	v2dMode = V2D_MODE_NORMAL;
@@ -1235,13 +1234,9 @@ int CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> nDataSegments;
 	}
-	else if(key == "sendLength")
+	else if(key == "readSize")
 	{
-		ss >> sendLength;
-	}
-	else if(key == "sendSize")
-	{
-		ss >> sendSize;
+		ss >> readSize;
 	}
 	else if(key == "padScans")
 	{
@@ -2141,8 +2136,7 @@ ostream& operator << (ostream &os, const CorrParams &x)
 	os << "startSeries=" << x.startSeries << endl;
 	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
 	os << "nDataSegments=" << x.nDataSegments << endl;
-	os << "sendLength=" << x.sendLength << " # seconds" << endl;
-	os << "sendSize=" << x.sendSize << " # Bytes" << endl;
+	os << "readSize=" << x.readSize << " # Bytes" << endl;
 	os << "overSamp=" << x.overSamp << endl;
 	os << "outputFormat=" << x.outputFormat << endl;
 	
