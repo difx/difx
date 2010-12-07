@@ -24,13 +24,27 @@ dnl **** Set path for Intel Performance Primitive library ****
 dnl **********************************************************
 PKG_CHECK_MODULES(IPP, ipp)
 
+dnl OSX does not need libX11 for PGPLOT
 if test "$OSTYPE" == "darwin"; then
           X11LIBS=""
 else
           X11LIBS="-lX11"
 fi
 
+dnl **********************************************************
+dnl **** Check PGPLOTDIR it set and only use it it is
+dnl **********************************************************
+if test "x$PGPLOTDIR" == "x"; then
+   	  PGPLOTINC=""
+  	  PGPLOTLIB=""
+else
+	  PGPLOTINC = "-I$(PGPLOTDIR)"
+  	  PGPLOTLIB = "-L$(PGPLOTDIR)"
+fi
+
 AC_SUBST(X11LIBS)
+AC_SUBST(PGPLOTINC)
+AC_SUBST(PGPLOTLIB)
 AC_SUBST(IPP_CFLAGS)
 AC_SUBST(IPP_LIBS)
 dnl **********************************************************
