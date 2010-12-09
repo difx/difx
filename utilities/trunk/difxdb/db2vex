@@ -252,7 +252,7 @@ def getClockFromDB(db, stn, timerange, verbose):
 		print 'Executing database query: %s' % query
 	cursor.execute(query)
 	gps_offsets = cursor.fetchall()
-	if len(gps_offset) == 0:
+	if len(gps_offsets) == 0:
 		return []
 	gps_offset = gps_offsets[-1][-1]
 
