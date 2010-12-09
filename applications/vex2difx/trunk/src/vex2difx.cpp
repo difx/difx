@@ -718,7 +718,7 @@ static int getToneSetId(vector<vector<int> > &toneSets, const vector<int> &tones
 }
 	
 static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<int> >& toneSets, const VexMode *mode, 
-			const string &antName, const CorrSetup *corrSetup)
+			const string &antName, const CorrSetup *corrSetup, enum V2D_Mode v2dMode)
 {
 	vector<pair<int,int> > bandMap;
 
@@ -821,10 +821,22 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 			exit(0);
 		}
+
 		int r = i->recordChan;
+		unsigned int toneSetId, fqId;
 		const VexSubband& subband = mode->subbands[i->subbandId];
-		unsigned int toneSetId = getToneSetId(toneSets, i->tones);
-		int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
+		
+		if(v2dMode == V2D_MODE_PROFILE)
+		{
+			// In profile mode don't extract any tones
+			toneSetId = 0;
+		}
+		else
+		{
+			toneSetId = getToneSetId(toneSets, i->tones);
+		}
+		
+		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
 				corrSetup->nChan, corrSetup->specAvg, 1, 1, toneSetId);
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
@@ -1765,7 +1777,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		for(int a = 0; a < D->nAntenna; a++)
 		{
 			string antName = antList[a];
-			int v = setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup);
+			int v = setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup, P->v2dMode);
 			if(v)
 			{
 				setup = mode->getSetup(antName);
