@@ -14,6 +14,7 @@ Version 2.0.1
 * Add sampling parameter to ANTENNA confuration
 * When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
 * Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
+* Propagate .vex file phase cal extraction into .input file
 
 Version 2.0
 ~~~~~~~~~~~

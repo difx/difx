@@ -44,8 +44,8 @@
 #include "vexload.h"
 
 const string program("vex2difx");
-const string version("2.0");		// FIXME: link to configure.ac
-const string verdate("20100704");
+const string version("2.0.1");		// FIXME: link to configure.ac
+const string verdate("20101209");
 const string author("Walter Brisken/Adam Deller");
 
 
@@ -619,6 +619,7 @@ static DifxDatastream *makeDifxDatastreams(const VexJob& J, const VexData *V, co
 }
 
 // round up to the next power of two
+// There must be a more elegant solution!
 int next2(int x)
 {
 	int n=0; 
@@ -646,8 +647,8 @@ int next2(int x)
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0) 
-		: fq(f), bw(b), sideBand(s), nChan(n), specAvg(sA), overSamp(os), decimation(d) {};
+	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0, unsigned int t=0) 
+		: fq(f), bw(b), sideBand(s), nChan(n), specAvg(sA), overSamp(os), decimation(d), toneSetId(t) {};
 	double fq;
 	double bw;
 	char sideBand;
@@ -655,10 +656,11 @@ public:
 	int specAvg;
 	int overSamp;
 	int decimation;
+	unsigned int toneSetId;
 };
 
-int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
-		int sA, int os, int d)
+static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
+		int sA, int os, int d, unsigned int t)
 {
 	for(unsigned int i = 0; i < freqs.size(); i++)
 	{
@@ -668,18 +670,19 @@ int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
 		   nC == freqs[i].nChan &&
 		   sA == freqs[i].specAvg &&
 		   os == freqs[i].overSamp &&
-		   d  == freqs[i].decimation)
+		   d  == freqs[i].decimation &&
+		   t  == freqs[i].toneSetId)
 		{
 			return i;
 		}
 	}
 
-	freqs.push_back(freq(fq, bw, sb, nC, sA, os, d));
+	freqs.push_back(freq(fq, bw, sb, nC, sA, os, d, t));
 
 	return freqs.size() - 1;
 }
 
-int getBand(vector<pair<int,int> >& bandMap, int fqId)
+static int getBand(vector<pair<int,int> >& bandMap, int fqId)
 {
 	vector<pair<int,int> >::iterator it;
 	int i;
@@ -698,8 +701,23 @@ int getBand(vector<pair<int,int> >& bandMap, int fqId)
 
 	return bandMap.size() - 1;
 }
+
+static int getToneSetId(vector<vector<int> > &toneSets, const vector<int> &tones)
+{
+	for(unsigned int i = 0; i < toneSets.size(); i++)
+	{
+		if(toneSets[i] == tones)
+		{
+			return i;
+		}
+	}
+
+	toneSets.push_back(tones);
+
+	return toneSets.size() - 1;
+}
 	
-static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode *mode, 
+static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<int> >& toneSets, const VexMode *mode, 
 			const string &antName, const CorrSetup *corrSetup)
 {
 	vector<pair<int,int> > bandMap;
@@ -805,8 +823,9 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, const VexMode 
 		}
 		int r = i->recordChan;
 		const VexSubband& subband = mode->subbands[i->subbandId];
+		unsigned int toneSetId = getToneSetId(toneSets, i->tones);
 		int fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->nChan, corrSetup->specAvg, 1, 1);
+				corrSetup->nChan, corrSetup->specAvg, 1, 1, toneSetId);
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
@@ -891,9 +910,8 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 	}
 }
 
-void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
+static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vector<vector<int> > &toneSets)
 {
-	vector<int> tones;
 	DifxFreq *df;
 	int bw;
 
@@ -910,16 +928,16 @@ void populateFreqTable(DifxInput *D, const vector<freq>& freqs)
 		df->specAvg = freqs[f].specAvg;
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;
-		
-		// populate pulse cal tones
-		tones.clear();
-		bw = static_cast<int>(df->bw+0.1);
+		if(freqs[f].toneSetId < 0 || freqs[f].toneSetId >= toneSets.size())
+		{
+			cerr << "Developer error: populateFreqTable: toneSetId=" << freqs[f].toneSetId << " nToneSet=" << toneSets.size() << endl;
+		}
+		const vector<int> &tones = toneSets[freqs[f].toneSetId];
 
-		// FIXME: need to get tone information into here
+		bw = static_cast<int>(df->bw+0.1);
 
 		if(tones.size() > 0)
 		{
-			sort(tones.begin(), tones.end());
 			DifxFreqAllocTones(df, tones.size());
 		
 			for(unsigned int t = 0; t < tones.size(); t++)
@@ -1279,8 +1297,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
 			readSize = msgSize*P->dataBufferFactor/P->nDataSegments;
 
-			cout << "div=" << divisors[d] << " subintNS=" << config->subintNS << " readSize=" << readSize << endl;
-			
 			// stop when readSize falls below specifed maximum (default to 25MB)
 			if(readSize < P->readSize)
 			{
@@ -1414,6 +1430,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	vector<pair<string,string> > configs;
 	vector<string> antList;
 	vector<freq> freqs;
+	vector<vector<int> > toneSets;
 	int nPulsar=0;
 	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftdurNS;
 	double srcra, srcdec;
@@ -1424,10 +1441,15 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	ZoomFreq zf;
 	vector<set <int> > blockedfreqids;
 
+	// Initialize toneSets with the trivial case, which is used for all zoom bands
+	vector<int> noTones;
+	toneSets.push_back(noTones);
+
 	// Assume same correlator setup for all scans
 	if(J.scans.size() == 0)
 	{
 		cerr << "Developer error: writeJob(): J.scans.size() = 0" << endl;
+
 		exit(0);
 	}
 	
@@ -1435,6 +1457,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	if(!S)
 	{
 		cerr << "Developer error: writeJob() top: scan[" << J.scans.front() << "] = 0" << endl;
+
 		exit(0);
 	}
 	corrSetupName = S->corrSetupName;
@@ -1442,6 +1465,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	if(!corrSetup)
 	{
 		cerr << "Error: writeJob(): correlator setup " << corrSetupName << ": Not found!" << endl;
+
 		exit(0);
 	}
 
@@ -1454,6 +1478,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		if(!S)
 		{
 			cerr << "Developer error: writeJob() loop: scan[" << *si << "] = 0" << endl;
+
 			exit(0);
 		}
 		configName = S->modeDefName + string("_") + S->corrSetupName;
@@ -1699,14 +1724,16 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		mode = V->getModeByDefName(configs[c].first);
 		if(mode == 0)
 		{
-			cerr << "Error: mode[" << configs[c].first << "] is null" << endl;
+			cerr << "Developer error: writeJob: mode[" << configs[c].first << "] is null" << endl;
+
 			exit(0);
 		}
 
 		corrSetup = P->getCorrSetup(configs[c].second);
 		if(corrSetup == 0)
 		{
-			cerr << "Error: correlator setup[" << configs[c].second << "] is null" << endl;
+			cerr << "Developer error: writeJob: correlator setup[" << configs[c].second << "] is null" << endl;
+
 			exit(0);
 		}
 
@@ -1716,7 +1743,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			loadPulsarConfigFile(D, corrSetup->binConfigFile.c_str());
 			nbin = D->pulsar[D->nPulsar-1].nBin;
 			if(D->pulsar[D->nPulsar-1].scrunch > 0)
+			{
 				nbin = 1;
+			}
 			if(nbin > maxPulsarBins)
 			{
 				maxPulsarBins = nbin;
@@ -1732,10 +1761,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		}
 
 		int d = 0;
+
 		for(int a = 0; a < D->nAntenna; a++)
 		{
 			string antName = antList[a];
-			int v = setFormat(D, D->nDatastream, freqs, mode, antName, corrSetup);
+			int v = setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup);
 			if(v)
 			{
 				setup = mode->getSetup(antName);
@@ -1762,12 +1792,13 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							for(int j = 0; j < dd->nRecFreq; j++)
 							{
 								if(matchingFreq(zf, dd, j, freqs))
+								{
 									parentfreqindices[i] = j;
+								}
 							}
 							if(parentfreqindices[i] < 0)
 							{
-								cerr << "Error: Cannot find a parent freq for zoom band " <<
-									i << " of datastream " << a << endl;
+								cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << a << endl;
 							
 								exit(0);
 							}
@@ -1775,7 +1806,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 									freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
 									int(corrSetup->nChan*zf.bandwidth/
 									freqs[dd->recFreqId[parentfreqindices[i]]].bw),
-									corrSetup->specAvg, 1, 1);
+									corrSetup->specAvg, 1, 1, 0);	// final zero points to the noTone pulse cal setup.
 							dd->zoomFreqId[i] = fqId;
 							dd->nZoomPol[i] = dd->nRecPol[parentfreqindices[i]];
 							nZoomBands += dd->nRecPol[parentfreqindices[i]];
@@ -1930,7 +1961,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 
 	// Make frequency table
-	populateFreqTable(D, freqs);
+	populateFreqTable(D, freqs, toneSets);
 
 	// Make baseline table
 	populateBaselineTable(D, P, corrSetup, blockedfreqids);
