@@ -38,8 +38,8 @@ if test "x$PGPLOTDIR" == "x"; then
    	  PGPLOTINC=""
   	  PGPLOTLIB=""
 else
-	  PGPLOTINC = "-I$(PGPLOTDIR)"
-  	  PGPLOTLIB = "-L$(PGPLOTDIR)"
+	  PGPLOTINC="-I${PGPLOTDIR}"
+  	  PGPLOTLIB="-L${PGPLOTDIR}"
 fi
 
 AC_SUBST(X11LIBS)
