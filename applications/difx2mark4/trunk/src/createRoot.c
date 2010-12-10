@@ -163,7 +163,10 @@ int createRoot (char *baseFile,     // common part of difx fileset name
     
 
     if (opts->verbose > 0)
+        {
         fprintf (stderr, "vex file name <%s>\n", inname);
+        fprintf (stderr, "antenna list %s\n", antlist);
+        }
                                     // open input vex file
     fin = fopen (inname, "r");
     if (fin == NULL)
@@ -383,6 +386,16 @@ int createRoot (char *baseFile,     // common part of difx fileset name
                         strcpy (pchar+2, buff);
                         }
                     }
+                                    // sanity check that source matches difx's
+                else if (strncmp (pst[0], "source", 6) == 0)
+                    {
+                    if (strcmp (pst[2], D->source->name))
+                        {
+                        fprintf (stderr, "difx source %s differs from %s - check scan!\n",
+                                 D->source->name, pst[2]);
+                        return (-1);
+                        }
+                    }
                                     // process start
                 else if (strncmp (pst[0], "start", 6) == 0)
                     {
@@ -537,6 +550,12 @@ int createRoot (char *baseFile,     // common part of difx fileset name
         }
 
         fprintf (stderr, "number of stations: %d\n", nsite);
+        if (nsite != D->nAntenna)
+            {
+            fprintf (stderr, "ERROR: number of stations in v2d disagrees with nAntenna %d\n",
+                     D->nAntenna);
+            return (-1);
+            }
                                     // append extra statements to the end of the file
         strcpy (line, "$CLOCK;\n");
         fputs (line, fout); 

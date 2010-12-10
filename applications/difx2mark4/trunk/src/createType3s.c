@@ -128,7 +128,12 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         memcpy (t300.intl_id, (stns+k)->intl_name, 2);
         memcpy (t300.name, (stns+k)->difx_name, 2);
         t300.name[2] = 0;           // null terminate to form string
-
+                                    // check that model was read in OK
+        if (D->scan->im == 0)
+            {
+            fprintf (stderr, "ERROR: problem accessing model array\n");
+            return (-1);
+            }
         t = (***(D->scan->im)).mjd + (***(D->scan->im)).sec / 86400.0;
         conv2date (t, &t300.model_start);
 
