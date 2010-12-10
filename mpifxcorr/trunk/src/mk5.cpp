@@ -296,7 +296,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 
   input.seekg(offset + dataoffset, ios_base::beg);
   if (input.peek() == EOF) {
-    cinfo << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
+    cinfo << startl << "File " << datafilenames[configindex][fileindex] << " ended before the currently desired time" << endl;
     dataremaining = false;
     input.clear();
   }
