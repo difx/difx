@@ -15,7 +15,8 @@ Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--nofb] \\
         [--noinstall] [--reconf] [--noconf] [--clean] \\
-        [--g77] [--cache='name'] [--targ='...'] [--pristine]
+        [--g77] [--noipp] [--ipp] \\
+        [--cache='name'] [--targ='...'] [--pristine]
 
 Builds and installs mpifxcorr and associated tools.  If invoked from the
 setup directory, the build will be within the source directory heirarchy,
@@ -55,6 +56,11 @@ Options:
 
    --g77           Use g77, rather than gfortran
 
+   --noipp         Don't try and install ipp package config file
+
+   --ipp           Force installation of ipp package config file
+                   (default doesn't overwrite existing)
+
    --cache='name'  Speeds up the configuration using cache files
                    'name' and 'name-CXX' in the build directory
 
@@ -77,7 +83,7 @@ try:
         ["force", "help", "verb",
         "mk5daemon", "withmonitor", "rpfits", "perl", "nofb",
         "noinstall", "reconf", "noconf", "clean",
-        "g77", "cache=", "targ=", "pristine" ])
+        "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -105,6 +111,7 @@ errors = []
 noconf = False
 pristine = False
 dofb = True
+doipp = 0
 
 # read options
 if len(opts) > 0:
@@ -137,6 +144,10 @@ if len(opts) > 0:
             doclean = True
         if o == "--g77":
             gfortran = False
+        if o == "--ipp":
+            doipp = 1
+        if o == "--noipp":
+            doipp = -1
         if o == "--cache":
             cache = a
         if o == "--targ":
@@ -246,14 +257,17 @@ if blddir == topdir + '/setup':
     if verb:
         print;print "Building/Installing from the source directory"
     inbdir = False
+    startdir = topdir + '/setup'
 elif master_tag and blddir == topdir:
     if verb:
         print;print "Building/Installing from the master tag source directory"
     inbdir = False
+    startdir = topdir
 else:
     if verb:
         print;print "Building/Installing from the build directory:"
     inbdir = True
+    startdir = topdir + '/setup'
 
 if cache != 'none':
     cache = ' --cache-file=' + blddir + '/' + cache
@@ -430,6 +444,23 @@ if not noinstall:
         os.mkdir(pkgdir)
     if not os.path.exists(incdir):
         os.mkdir(incdir)
+
+    ##### Install IPP package config file if appropriate  ###
+    if doipp<0:
+        print "************************************"
+        print "Not installing IPP .pc file"
+        print
+    else:
+        if os.path.exists(pkgdir+"/ipp.pc") and doipp==0:
+            print "************************************"
+            print pkgdir+" already exists"
+            print
+        else:
+            print "************************************"
+            print "Creating "+pkgdir+"ipp.pc"
+            run(startdir+"/genipppc "+ipproot)
+            run("mv ipp.pc "+pkgdir)
+            print
 
 ##### Compile non-standard libraries ####################
 if perl:
