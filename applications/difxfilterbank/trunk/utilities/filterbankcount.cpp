@@ -99,7 +99,7 @@ bool getData(ifstream * input, bool verbose)
 
   if(verbose) {
     cout << "Data from core " << coreindex << ", thread " << threadindex << ", MJD " << int(dumptime);
-    cout << ", sec " << int(86400*(dumptime-int(dumptime)));
+    cout << ", sec " << static_cast<int>(86400*(dumptime-int(dumptime)));
     cout << ", ns " << ns << endl;
   }
 

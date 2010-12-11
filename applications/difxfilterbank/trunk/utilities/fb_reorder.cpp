@@ -222,7 +222,8 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
     float frac_on;      // fraction of time that the tcal was on during an integration
     float phase;        // how far through a tcal cycle is the middle of integration, between 0 and 1
     float pwf_tcal = (float)int_width_ns/(float)options.tcal_period_ns;  // packet width as a fraction of the tcal period
-    int64_t offset_periods,time_offset_ns_withdelay=0;
+    int64_t offset_periods;
+    int64_t time_offset_ns_withdelay=0;
     int res;
 
     // check for valid time range. Need extra half second on the end because sometimes the geotime adjusted
@@ -235,7 +236,8 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
           cerr << "ERROR: calculateDelayInterpolator failed for scan: " << options.scan_index << ". Antenna index: " << antennaindex << ". Offset ns: " << time_offset_ns << endl;
           return EXIT_FAILURE;
       }
-      time_offset_ns_withdelay = time_offset_ns - delay*1000;
+      // FIXME: is the rounding below as desired?  Probably doesn't make a difference.  -WFB
+      time_offset_ns_withdelay = static_cast<int64_t>(time_offset_ns - delay*1000);
 
       while(time_offset_ns_withdelay < 0) time_offset_ns_withdelay += options.tcal_period_ns;
       offset_periods = time_offset_ns_withdelay/options.tcal_period_ns;
@@ -637,10 +639,11 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
                     }
 
 /* */
-/*
+#if 0
                     // or we could just take the mean and variance.... faster
                     {
-                        float total=0,mean;
+                        float total=0.0;
+			float mean;
 
                         for (samp=0; samp < N_MEDIAN; samp++) {
                             total += chandata[samp];
@@ -655,6 +658,7 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
                         }
                         bufinfo->stddevs[tcal_state_index][med_index] = total/N_MEDIAN;
                     }
+#endif
 /* */
                 }
                 // now estimate the variance of the median power across the band, which can be used to identify
@@ -890,7 +894,7 @@ void freeBuffers(BufInfo *bufinfo) {
 int initBuffers(FB_Config *fb_config, BufInfo *bufinfo) {
     int i,floats_per_quanta;
 
-    bufinfo->bufsize = ceil(options.buf_time/(options.int_time_ns*1e-9));
+    bufinfo->bufsize = static_cast<int>(ceil(options.buf_time/(options.int_time_ns*1e-9)));
 
     floats_per_quanta = fb_config->n_streams * fb_config->n_bands * fb_config->n_chans;
 

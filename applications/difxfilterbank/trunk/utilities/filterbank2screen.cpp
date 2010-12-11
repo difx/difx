@@ -1,9 +1,9 @@
-#include "cpgplot.h"
 #include <fstream>
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <cpgplot.h>
 #include "architecture.h"
 #include "configuration.h"
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
       if(maxy != 0.0 || miny != 0.0) {
         sprintf(title, "Antenna=%s, Freq=%8.2f, Pol=%s, Time=%f, Int time (ms)=%5.2f, CoreID=%i, ThreadID=%i", antennaname.c_str(), freq, pol.c_str(), dumptime, inttimems, coreindex, threadindex);
         cpgpage();
-        cpgenv(0.0, (float)nchan, miny, maxy, 0, 1);
+        cpgenv(0.0, static_cast<float>(nchan), miny, maxy, 0, 1);
         cpglab("Channel number", "Unnormalised amplitude", title);
         cpgline(nchan, xaxis, data);
         usleep(100000);
@@ -81,7 +81,8 @@ void getMinMax(float * data, int length, float * min, float * max)
 
 bool getData(ifstream * input)
 {
-  int sync, configindex, scan, sec, ns, nswidth, extrachan = 0;
+  u32 sync;
+  int configindex, scan, sec, ns, nswidth, extrachan = 0;
 
   cout << "About to start another block" << endl;
   input->read((char*)&sync, sizeof(int));
