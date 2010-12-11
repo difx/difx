@@ -130,7 +130,7 @@ VDIF_Server::~VDIF_Server()
 
 bool VDIF_Server::serve_data()
 {
-  int lastsendsegment, perr;
+  int lastsendsegment;
 
   //initialise the read and thread buffers
   initialiseBuffers();
@@ -586,6 +586,8 @@ void * VDIF_Server::launchNewReadThread(void * thisserver)
   vs->vdr->initialise();
   vs->vdr->loopread();
   cout << "READER: Done!" << endl;
+
+  return 0;
 }
 
 void * VDIF_Server::launchNewCopyThread(void * thisserver)
@@ -593,6 +595,8 @@ void * VDIF_Server::launchNewCopyThread(void * thisserver)
   VDIF_Server * vs = (VDIF_Server*)thisserver;
   vs->vdc = new VDIF_Copier(vs);
   vs->vdc->loopcopy();
+
+  return 0;
 }
 
 /* VDIF_Copier */
@@ -623,7 +627,8 @@ VDIF_Server::VDIF_Copier::VDIF_Copier(VDIF_Server * p)
 VDIF_Server::VDIF_Copier::~VDIF_Copier() {}
 
 void VDIF_Server::VDIF_Copier::loopcopy() {
-  int nextsegment, atsegment;
+  int nextsegment = -1;
+  int atsegment;
   cout << "VDIF Copier in loopcopy: stillcopying is " << stillcopying << endl;
   while(stillcopying) {
     cout << "VDIF Copier is about to drain segment " << readsegment << ", oldestthreadsegment is " << oldestthreadsegment << ", newestthreadsegment is " << newestthreadsegment << endl;
@@ -638,20 +643,27 @@ void VDIF_Server::VDIF_Copier::loopcopy() {
       break;
     readsegment = nextsegment;
   }
-  parent->unlockReadSegment(nextsegment);
-  cout << "VDIF COPIER has fallen out of loop - either told to stop, or hit lastreadsegment" << endl;
-  cout << "VDIF COPIER had oldestthreadsegment " << oldestthreadsegment << ", newestthreadsegment " << newestthreadsegment << endl;
-  for(int i=0;i<=(newestthreadsegment-oldestthreadsegment+numthreadsegments)%numthreadsegments;i++) {
-    atsegment = (oldestthreadsegment+i)%numthreadsegments;
-    cout << "VDIF COPIER is unlocking threadsegment " << atsegment << endl;
-    for(int j=0;j<parent->maxthreads;j++)
-      cout << "Thread " << j << " had filled " << parent->threadbufinfo[j][i].framesfilled << "/" << parent->threadbufinfo[j][i].framesrequired << " frames" << endl;
-    parent->unlockThreadSegment(atsegment);
+  if(nextsegment > -1) {
+    parent->unlockReadSegment(nextsegment);
+    cout << "VDIF COPIER has fallen out of loop - either told to stop, or hit lastreadsegment" << endl;
+    cout << "VDIF COPIER had oldestthreadsegment " << oldestthreadsegment << ", newestthreadsegment " << newestthreadsegment << endl;
+    for(int i=0;i<=(newestthreadsegment-oldestthreadsegment+numthreadsegments)%numthreadsegments;i++) {
+      atsegment = (oldestthreadsegment+i)%numthreadsegments;
+      cout << "VDIF COPIER is unlocking threadsegment " << atsegment << endl;
+      for(int j=0;j<parent->maxthreads;j++)
+        cout << "Thread " << j << " had filled " << parent->threadbufinfo[j][i].framesfilled << "/" << parent->threadbufinfo[j][i].framesrequired << " frames" << endl;
+      parent->unlockThreadSegment(atsegment);
+    }
+  } else {
+    cout << "VDIF COPIER: loopcopy: no segments copied" << endl;
   }
 }
 
 void VDIF_Server::VDIF_Copier::drainsegment(int segment) {
-  int numframes, framebytes, framethread, framemjd, framesecond, framenumber;
+  int numframes, framebytes, framethread;
+  int framemjd = -1;
+  int framesecond = -1;
+  int framenumber = -1;
   int jobsecond, threadbufferindex, bufferframenum;
   char * buffer;
   char * destination;
@@ -818,7 +830,7 @@ void VDIF_Server::VDIF_Reader::loopread()
 }
 
 VDIF_Server::VDIF_File_Reader::VDIF_File_Reader(VDIF_Server * p, int nfiles, string * fnames)
-  : VDIF_Reader(p), numfiles(nfiles), filenames(fnames), atfile(0), fileopen(false)
+  : VDIF_Reader(p), numfiles(nfiles), atfile(0), filenames(fnames), fileopen(false)
 {}
 
 VDIF_Server::VDIF_File_Reader::~VDIF_File_Reader() {}
@@ -865,7 +877,8 @@ VDIF_Server::VDIF_Network_Reader::~VDIF_Network_Reader() {}
 void VDIF_Server::VDIF_Network_Reader::fillsegment(int segment)
 {
   readsegmentinfo * info = &(parent->readbufinfo[segment]);
-  int framemjd, framesecond, readsecond, bytesremaining, bytesread, nr;
+  int framemjd, framesecond, readsecond, bytesremaining, bytesread;
+  int nr=0;  // FIXME: is this a good initial value? --WFB
   char * writeto = &(parent->readbuffer[segment*parent->readbuffersegmentbytes]);
   char * ptr = writeto;
 

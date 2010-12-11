@@ -14,41 +14,8 @@ AM_CONFIG_HEADER([config.h])
 AC_PROG_CXX
 AC_PROG_RANLIB
 
-dnl **********************************************************
-dnl **** Set path for Intel Performance Primitive library ****
-dnl **********************************************************
-if test "$OSTYPE" == "darwin"; then
-        ipp_libname="Libraries"
-else
-        ipp_libname="sharedlib"
-fi
-
-AC_ARG_WITH(ipp-root, [AS_HELP_STRING([--with-ipp-root=ROOT],[ipp root is ROOT (optional).  Use env variable IPPROOT otherwise.])], ipp_root="$withval", ipp_root="")
-if test x"$ipp_root" != "x"; then
-        IPP_CFLAGS="-I$ipp_root/include"
-        IPP_LIBS="-L$ipp_root/$ipp_libname"
-else
-        IPP_CFLAGS="-I$IPPROOT/include"
-        IPP_LIBS="-L$IPPROOT/$ipp_libname"
-fi
-
-if test x"$IPPLINKLIBS" != x; then
-        IPP_LIBS=$IPP_LIBS" $IPPLINKLIBS"
-else
-        if test "$DIFXBITS" == "32"; then
-                IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
-        elif test "$DIFXBITS" == "64"; then
-                IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -lippcoreem64t"
-        else
-                IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
-                echo "32/64 bit unspecified - assuming 32 bit for IPP"
-        fi
-fi
-AC_SUBST(IPP_CFLAGS)
-AC_SUBST(IPP_LIBS)
-dnl **********************************************************
-
 # Checks for libraries.
+PKG_CHECK_MODULES(IPP, ipp)
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0)
 PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.0)
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.0.0 difxmessage < 7])
