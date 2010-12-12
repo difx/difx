@@ -134,6 +134,7 @@ struct mark5_stream
 	int (*init_format)(struct mark5_stream *ms);
 	int (*final_format)(struct mark5_stream *ms);
 	int (*decode)(struct mark5_stream *ms, int nsamp, float **data);
+	int (*count)(struct mark5_stream *ms, int nsamp, unsigned int *highstates);
         int (*complex_decode)(struct mark5_stream *ms, int nsamp, mark5_float_complex **data);
 	int (*validate)(const struct mark5_stream *ms);
 	int (*gettime)(const struct mark5_stream *ms, int *mjd, 
@@ -157,6 +158,8 @@ struct mark5_format_generic
 	int (*final_format)(struct mark5_stream *ms);	/* required */
 	int (*decode)(struct mark5_stream *ms, 		/* required */
 		int nsamp, float **data); 
+	int (*count)(struct mark5_stream *ms,
+		int nsamp, unsigned int *highstates); 
 	int (*complex_decode)(struct mark5_stream *ms,
 		int nsamp, mark5_float_complex **data); 
 	int (*validate)(const struct mark5_stream *ms);
@@ -203,6 +206,8 @@ int mark5_stream_decode_complex(struct mark5_stream *ms, int nsamp,
 int mark5_stream_decode_double_complex(struct mark5_stream *ms, int nsamp, 
 	mark5_double_complex **data);
 
+int mark5_stream_count_high_states(struct mark5_stream *ms, int nsamp,
+	unsigned int *highstates);
 
 /* SPECIFIC STREAM TYPES */
 

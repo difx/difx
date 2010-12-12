@@ -1898,11 +1898,6 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 	return 0;
 }
 
-static int one(const struct mark5_stream *ms)
-{
-	return 1;
-}
-
 static int mark5_format_vdif_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdif *f;
@@ -2223,6 +2218,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;
+	f->count = 0;
 
 	if (!usecomplex) 
 	{

@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "config.h"
 #include "mark5access/mark5_stream.h"
 
@@ -50,6 +51,12 @@ static float lut2bit1[2][256][4]; /* fanout 1 @ 8/16t, fanout 4 @ 32/64t ! */
 static float lut2bit2[2][256][4]; /* fanout 2 @ 8/16t, fanout 1 @ 32/64t   */
 static float lut2bit3[2][256][4]; /* fanout 4 @ 8/16t, fanout 2 @ 32/64t   */
 static float zeros[8];
+
+/* for use in counting high states */
+/* Note: modulation does not change the absolute value of a sample.  convenient! */
+static unsigned char countlut2bit1[256][4]; /* fanout 1 @ 8/16t, fanout 4 @ 32/64t ! */
+static unsigned char countlut2bit2[256][4]; /* fanout 2 @ 8/16t, fanout 1 @ 32/64t   */
+static unsigned char countlut2bit3[256][4]; /* fanout 4 @ 8/16t, fanout 2 @ 32/64t   */
 
 /* ! 2bit/fanout4 use the following in decoding 32 and 64 track data: */
 
@@ -109,6 +116,14 @@ static void initluts()
 			l = ((b>>s)&1) + (((b>>m)&1)<<1);
 			lut2bit1[0][b][i] =  lut4level[l];
 			lut2bit1[1][b][i] = -lut4level[l];
+			if(fabs(lut2bit1[0][b][i]) < 1.1)
+			{
+				countlut2bit1[b][i] = 0;
+			}
+			else
+			{
+				countlut2bit1[b][i] = 1;
+			}
 		}
 
 		/* lut2bit2 */
@@ -119,6 +134,14 @@ static void initluts()
 			l = ((b>>s)&1) + (((b>>m)&1)<<1);
 			lut2bit2[0][b][i] =  lut4level[l];
 			lut2bit2[1][b][i] = -lut4level[l];
+			if(fabs(lut2bit2[0][b][i]) < 1.1)
+			{
+				countlut2bit2[b][i] = 0;
+			}
+			else
+			{
+				countlut2bit2[b][i] = 1;
+			}
 		}
 
 		/* lut2bit3 */
@@ -129,6 +152,14 @@ static void initluts()
 			l = ((b>>s)&1) + (((b>>m)&1)<<1);
 			lut2bit3[0][b][i] =  lut4level[l];
 			lut2bit3[1][b][i] = -lut4level[l];
+			if(fabs(lut2bit3[0][b][i]) < 1.1)
+			{
+				countlut2bit3[b][i] = 0;
+			}
+			else
+			{
+				countlut2bit3[b][i] = 1;
+			}
 		}
 	}
 }
@@ -3061,8 +3092,7 @@ static int vlba_decode_1bit_64track_fanout1_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -3189,8 +3219,7 @@ static int vlba_decode_1bit_64track_fanout1_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 16;
 			nblank++;
 		}
@@ -3319,21 +3348,8 @@ static int vlba_decode_1bit_64track_fanout1_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
-			i++;
-			fp4 = zeros;
-			i++;
-			fp5 = zeros;
-			i++;
-			fp6 = zeros;
-			i++;
-			fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
+			i += 7;
 			nblank++;
 		}
 		else
@@ -3459,8 +3475,7 @@ static int vlba_decode_1bit_64track_fanout2_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -3588,8 +3603,7 @@ static int vlba_decode_1bit_64track_fanout2_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -3686,21 +3700,8 @@ static int vlba_decode_1bit_64track_fanout2_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
-			i++;
-			fp4 = zeros;
-			i++;
-			fp5 = zeros;
-			i++;
-			fp6 = zeros;
-			i++;
-			fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
+			i += 7;
 			nblank++;
 		}
 		else
@@ -3794,8 +3795,7 @@ static int vlba_decode_1bit_64track_fanout4_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -3926,8 +3926,7 @@ static int vlba_decode_1bit_64track_fanout4_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -4025,21 +4024,8 @@ static int vlba_decode_1bit_64track_fanout4_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
-			i++;
-			fp4 = zeros;
-			i++;
-			fp5 = zeros;
-			i++;
-			fp6 = zeros;
-			i++;
-			fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
+			i += 7;
 			nblank++;
 		}
 		else
@@ -6127,8 +6113,7 @@ static int vlba_decode_2bit_64track_fanout1_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -6223,8 +6208,7 @@ static int vlba_decode_2bit_64track_fanout1_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 16;
 			nblank++;
 		}
@@ -6321,21 +6305,8 @@ static int vlba_decode_2bit_64track_fanout1_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
-			i++;
-			fp4 = zeros;
-			i++;
-			fp5 = zeros;
-			i++;
-			fp6 = zeros;
-			i++;
-			fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
+			i += 7;
 			nblank++;
 		}
 		else
@@ -6429,8 +6400,7 @@ static int vlba_decode_2bit_64track_fanout2_decimation1(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -6526,8 +6496,7 @@ static int vlba_decode_2bit_64track_fanout2_decimation2(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			i += 8;
 			nblank++;
 		}
@@ -6608,21 +6577,8 @@ static int vlba_decode_2bit_64track_fanout2_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[zone] || 
 		   i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
-			i++;
-			fp4 = zeros;
-			i++;
-			fp5 = zeros;
-			i++;
-			fp6 = zeros;
-			i++;
-			fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
+			i += 7;
 			nblank++;
 		}
 		else
@@ -6703,8 +6659,7 @@ static int vlba_decode_2bit_64track_fanout4_decimation1(struct mark5_stream *ms,
 		if(8*i <  ms->blankzonestartvalid[zone] || 
 		   8*i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			nblank++;
 		}
 		else
@@ -6796,8 +6751,7 @@ static int vlba_decode_2bit_64track_fanout4_decimation2(struct mark5_stream *ms,
 		if(8*i <  ms->blankzonestartvalid[zone] || 
 		   8*i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			nblank++;
 		}
 		else
@@ -6872,8 +6826,7 @@ static int vlba_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms,
 		if(8*i <  ms->blankzonestartvalid[zone] || 
 		   8*i >= ms->blankzoneendvalid[zone])
 		{
-			fp0 = fp1 = fp2 = fp3 = zeros;
-			fp4 = fp5 = fp6 = fp7 = zeros;
+			fp0 = fp1 = fp2 = fp3 = fp4 = fp5 = fp6 = fp7 = zeros;
 			nblank++;
 		}
 		else
@@ -6898,6 +6851,2668 @@ static int vlba_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms,
 		data[5][o] = fp6[0];
 		data[6][o] = fp5[0];
 		data[7][o] = fp7[0];
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned long long *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 8*i;
+
+	return nsamp - 4*nblank;
+}
+
+/************************ 2-bit state counters *********************/
+/* Note -- these only count high vs. low states, not full state counts */
+
+static int vlba_count_2bit_2track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_2track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i += 2;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_2track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_4track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_4track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+		}
+		i += 2;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_4track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation;
+	
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_4track_fanout2_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+			highstates[0] += fp[1];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_4track_fanout2_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_4track_fanout2_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+			highstates[2] += fp[2];
+			highstates[3] += fp[3];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+
+static int vlba_count_2bit_8track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+			highstates[2] += fp[2];
+			highstates[3] += fp[3];
+		}
+		i += 2;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+
+static int vlba_count_2bit_8track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit1[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[1];
+			highstates[2] += fp[2];
+			highstates[3] += fp[3];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_8track_fanout2_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[2];
+			highstates[0] += fp[1];
+			highstates[1] += fp[3];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout2_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[2];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout2_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit2[buf[i]];
+			highstates[0] += fp[0];
+			highstates[1] += fp[2];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout4_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o+=4)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit3[buf[i]];
+			highstates[0] += fp[0];
+			highstates[0] += fp[1];
+			highstates[0] += fp[2];
+			highstates[0] += fp[3];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout4_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit3[buf[i]];
+			highstates[0] += fp[0];
+			highstates[0] += fp[2];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_8track_fanout4_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp;
+	int o, i, df;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	df = ms->decimation/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			fp = countlut2bit3[buf[i]];
+			highstates[0] += fp[0];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit1[buf[i]];
+			i++;
+			fp1 = countlut2bit1[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_16track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit1[buf[i]];
+			i++;
+			fp1 = countlut2bit1[buf[i]];
+			i += 3;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+		}
+		m += 2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_16track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+	df = ms->decimation*2 - 1;
+	df2 = ms->decimation;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i++;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit1[buf[i]];
+			i++;
+			fp1 = countlut2bit1[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_16track_fanout2_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[0] += fp0[1];
+			highstates[1] += fp0[3];
+			highstates[2] += fp1[1];
+			highstates[3] += fp1[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout2_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout2_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+	df = ms->decimation - 1;
+	df2 = ms->decimation/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i++;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout4_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o+=4)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[0] += fp0[1];
+			highstates[1] += fp1[1];
+			highstates[0] += fp0[2];
+			highstates[1] += fp1[2];
+			highstates[0] += fp0[3];
+			highstates[1] += fp1[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout4_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 2;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[0] += fp0[2];
+			highstates[1] += fp1[2];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_16track_fanout4_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/2;
+	df = ms->decimation/2 - 1;
+	df2 = ms->decimation/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i++;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_32track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 8;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			i += 5;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+		}
+		m += 2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_32track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+	df = ms->decimation*4 - 3;
+	df2 = ms->decimation;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 3;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_32track_fanout2_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+			highstates[0] += fp0[2];
+			highstates[1] += fp1[2];
+			highstates[2] += fp2[2];
+			highstates[3] += fp3[2];
+			highstates[4] += fp0[3];
+			highstates[5] += fp1[3];
+			highstates[6] += fp2[3];
+			highstates[7] += fp3[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout2_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 4;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout2_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/4;
+	df = ms->decimation*2 - 3;
+	df2 = ms->decimation/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 3;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout4_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned int *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned int *)(ms->payload);
+	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
+	l2 = ms->log2blankzonesize - 2;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o+=4)
+	{
+		zone = i >> l2;
+
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder32(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+			highstates[0] += fp0[1];
+			highstates[1] += fp2[1];
+			highstates[2] += fp1[1];
+			highstates[3] += fp3[1];
+			highstates[0] += fp0[2];
+			highstates[1] += fp2[2];
+			highstates[2] += fp1[2];
+			highstates[3] += fp3[2];
+			highstates[0] += fp0[3];
+			highstates[1] += fp2[3];
+			highstates[2] += fp1[3];
+			highstates[3] += fp3[3];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned int *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 4*i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout4_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned int *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned int *)(ms->payload);
+	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
+	l2 = ms->log2blankzonesize - 2;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> l2;
+
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder32(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+			highstates[0] += fp0[2];
+			highstates[1] += fp2[2];
+			highstates[2] += fp1[2];
+			highstates[3] += fp3[2];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned int *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 4*i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_32track_fanout4_decimation4(struct mark5_stream *ms, int nsamp,
+	unsigned int *highstates)
+{
+	unsigned int *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3;
+	int o, i, df;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned int *)(ms->payload);
+	i = ms->readposition >> 2;  /* note here that i counts 32-bit words */
+	l2 = ms->log2blankzonesize - 2;
+	df = ms->decimation/4;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> l2;
+
+		if(4*i <  ms->blankzonestartvalid[zone] || 
+		   4*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder32(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+		}
+		i += df;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned int *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 4*i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout1_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 8;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			i++;
+			fp4 = countlut2bit2[buf[i]];
+			i++;
+			fp5 = countlut2bit2[buf[i]];
+			i++;
+			fp6 = countlut2bit2[buf[i]];
+			i++;
+			fp7 = countlut2bit2[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+			highstates[16] += fp4[0];
+			highstates[17] += fp4[2];
+			highstates[18] += fp5[0];
+			highstates[19] += fp5[2];
+			highstates[20] += fp6[0];
+			highstates[21] += fp6[2];
+			highstates[22] += fp7[0];
+			highstates[23] += fp7[2];
+			highstates[24] += fp4[1];
+			highstates[25] += fp4[3];
+			highstates[26] += fp5[1];
+			highstates[27] += fp5[3];
+			highstates[28] += fp6[1];
+			highstates[29] += fp6[3];
+			highstates[30] += fp7[1];
+			highstates[31] += fp7[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_64track_fanout1_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 16;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			i++;
+			fp4 = countlut2bit2[buf[i]];
+			i++;
+			fp5 = countlut2bit2[buf[i]];
+			i++;
+			fp6 = countlut2bit2[buf[i]];
+			i++;
+			fp7 = countlut2bit2[buf[i]];
+			i += 9;
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+			highstates[16] += fp4[0];
+			highstates[17] += fp4[2];
+			highstates[18] += fp5[0];
+			highstates[19] += fp5[2];
+			highstates[20] += fp6[0];
+			highstates[21] += fp6[2];
+			highstates[22] += fp7[0];
+			highstates[23] += fp7[2];
+			highstates[24] += fp4[1];
+			highstates[25] += fp4[3];
+			highstates[26] += fp5[1];
+			highstates[27] += fp5[3];
+			highstates[28] += fp6[1];
+			highstates[29] += fp6[3];
+			highstates[30] += fp7[1];
+			highstates[31] += fp7[3];
+		}
+		m += 2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_64track_fanout1_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+	df = ms->decimation*8 - 7;
+	df2 = ms->decimation;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 7;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit2[buf[i]];
+			i++;
+			fp1 = countlut2bit2[buf[i]];
+			i++;
+			fp2 = countlut2bit2[buf[i]];
+			i++;
+			fp3 = countlut2bit2[buf[i]];
+			i++;
+			fp4 = countlut2bit2[buf[i]];
+			i++;
+			fp5 = countlut2bit2[buf[i]];
+			i++;
+			fp6 = countlut2bit2[buf[i]];
+			i++;
+			fp7 = countlut2bit2[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[2];
+			highstates[2] += fp1[0];
+			highstates[3] += fp1[2];
+			highstates[4] += fp2[0];
+			highstates[5] += fp2[2];
+			highstates[6] += fp3[0];
+			highstates[7] += fp3[2];
+			highstates[8] += fp0[1];
+			highstates[9] += fp0[3];
+			highstates[10] += fp1[1];
+			highstates[11] += fp1[3];
+			highstates[12] += fp2[1];
+			highstates[13] += fp2[3];
+			highstates[14] += fp3[1];
+			highstates[15] += fp3[3];
+			highstates[16] += fp4[0];
+			highstates[17] += fp4[2];
+			highstates[18] += fp5[0];
+			highstates[19] += fp5[2];
+			highstates[20] += fp6[0];
+			highstates[21] += fp6[2];
+			highstates[22] += fp7[0];
+			highstates[23] += fp7[2];
+			highstates[24] += fp4[1];
+			highstates[25] += fp4[3];
+			highstates[26] += fp5[1];
+			highstates[27] += fp5[3];
+			highstates[28] += fp6[1];
+			highstates[29] += fp6[3];
+			highstates[30] += fp7[1];
+			highstates[31] += fp7[3];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - nblank;
+}
+
+static int vlba_count_2bit_64track_fanout2_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 8;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			i++;
+			fp4 = countlut2bit3[buf[i]];
+			i++;
+			fp5 = countlut2bit3[buf[i]];
+			i++;
+			fp6 = countlut2bit3[buf[i]];
+			i++;
+			fp7 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+			highstates[8] += fp4[0];
+			highstates[9] += fp5[0];
+			highstates[10] += fp6[0];
+			highstates[11] += fp7[0];
+			highstates[12] += fp4[1];
+			highstates[13] += fp5[1];
+			highstates[14] += fp6[1];
+			highstates[15] += fp7[1];
+			highstates[0] += fp0[2];
+			highstates[1] += fp1[2];
+			highstates[2] += fp2[2];
+			highstates[3] += fp3[2];
+			highstates[4] += fp0[3];
+			highstates[5] += fp1[3];
+			highstates[6] += fp2[3];
+			highstates[7] += fp3[3];
+			highstates[8] += fp4[2];
+			highstates[9] += fp5[2];
+			highstates[10] += fp6[2];
+			highstates[11] += fp7[2];
+			highstates[12] += fp4[3];
+			highstates[13] += fp5[3];
+			highstates[14] += fp6[3];
+			highstates[15] += fp7[3];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout2_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 8;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			i++;
+			fp4 = countlut2bit3[buf[i]];
+			i++;
+			fp5 = countlut2bit3[buf[i]];
+			i++;
+			fp6 = countlut2bit3[buf[i]];
+			i++;
+			fp7 = countlut2bit3[buf[i]];
+			i++;
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+			highstates[8] += fp4[0];
+			highstates[9] += fp5[0];
+			highstates[10] += fp6[0];
+			highstates[11] += fp7[0];
+			highstates[12] += fp4[1];
+			highstates[13] += fp5[1];
+			highstates[14] += fp6[1];
+			highstates[15] += fp7[1];
+		}
+		m++;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout2_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned char *buf;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, m, df, df2;
+	int zone;
+	int nblank = 0;
+
+	buf = ms->payload;
+	i = ms->readposition;
+	m = i/8;
+	df = ms->decimation*4 - 7;
+	df2 = ms->decimation/2;
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> ms->log2blankzonesize;
+
+		if(i <  ms->blankzonestartvalid[zone] || 
+		   i >= ms->blankzoneendvalid[zone])
+		{
+			i += 7;
+			nblank++;
+		}
+		else
+		{
+			fp0 = countlut2bit3[buf[i]];
+			i++;
+			fp1 = countlut2bit3[buf[i]];
+			i++;
+			fp2 = countlut2bit3[buf[i]];
+			i++;
+			fp3 = countlut2bit3[buf[i]];
+			i++;
+			fp4 = countlut2bit3[buf[i]];
+			i++;
+			fp5 = countlut2bit3[buf[i]];
+			i++;
+			fp6 = countlut2bit3[buf[i]];
+			i++;
+			fp7 = countlut2bit3[buf[i]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp1[0];
+			highstates[2] += fp2[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp0[1];
+			highstates[5] += fp1[1];
+			highstates[6] += fp2[1];
+			highstates[7] += fp3[1];
+			highstates[8] += fp4[0];
+			highstates[9] += fp5[0];
+			highstates[10] += fp6[0];
+			highstates[11] += fp7[0];
+			highstates[12] += fp4[1];
+			highstates[13] += fp5[1];
+			highstates[14] += fp6[1];
+			highstates[15] += fp7[1];
+		}
+		i += df;
+		m += df2;
+
+		if(m >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = ms->payload;
+			i = 0;
+			m = 0;
+		}
+	}
+
+	ms->readposition = i;
+
+	return nsamp - 2*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout4_decimation1(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned long long *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned long long *)(ms->payload);
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
+	l2 = ms->log2blankzonesize - 3;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o+=4)
+	{
+		zone = i >> l2;
+
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder64(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			fp4 = countlut2bit1[bytes[4]];
+			fp5 = countlut2bit1[bytes[5]];
+			fp6 = countlut2bit1[bytes[6]];
+			fp7 = countlut2bit1[bytes[7]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp4[0];
+			highstates[5] += fp6[0];
+			highstates[6] += fp5[0];
+			highstates[7] += fp7[0];
+			highstates[0] += fp0[1];
+			highstates[1] += fp2[1];
+			highstates[2] += fp1[1];
+			highstates[3] += fp3[1];
+			highstates[4] += fp4[1];
+			highstates[5] += fp6[1];
+			highstates[6] += fp5[1];
+			highstates[7] += fp7[1];
+			highstates[0] += fp0[2];
+			highstates[1] += fp2[2];
+			highstates[2] += fp1[2];
+			highstates[3] += fp3[2];
+			highstates[4] += fp4[2];
+			highstates[5] += fp6[2];
+			highstates[6] += fp5[2];
+			highstates[7] += fp7[2];
+			highstates[0] += fp0[3];
+			highstates[1] += fp2[3];
+			highstates[2] += fp1[3];
+			highstates[3] += fp3[3];
+			highstates[4] += fp4[3];
+			highstates[5] += fp6[3];
+			highstates[6] += fp5[3];
+			highstates[7] += fp7[3];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned long long *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 8*i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout4_decimation2(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned long long *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned long long *)(ms->payload);
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
+	l2 = ms->log2blankzonesize - 3;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o+=2)
+	{
+		zone = i >> l2;
+
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder64(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			fp4 = countlut2bit1[bytes[4]];
+			fp5 = countlut2bit1[bytes[5]];
+			fp6 = countlut2bit1[bytes[6]];
+			fp7 = countlut2bit1[bytes[7]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp4[0];
+			highstates[5] += fp6[0];
+			highstates[6] += fp5[0];
+			highstates[7] += fp7[0];
+			highstates[0] += fp0[2];
+			highstates[1] += fp2[2];
+			highstates[2] += fp1[2];
+			highstates[3] += fp3[2];
+			highstates[4] += fp4[2];
+			highstates[5] += fp6[2];
+			highstates[6] += fp5[2];
+			highstates[7] += fp7[2];
+		}
+		i++;
+
+		if(i >= PAYLOADSIZE)
+		{
+			if(mark5_stream_next_frame(ms) < 0)
+			{
+				return -1;
+			}
+			buf = (unsigned long long *)(ms->payload);
+			i = 0;
+		}
+	}
+
+	ms->readposition = 8*i;
+
+	return nsamp - 4*nblank;
+}
+
+static int vlba_count_2bit_64track_fanout4_decimation4(struct mark5_stream *ms, 
+	int nsamp, unsigned int *highstates)
+{
+	unsigned long long *buf, bits;
+	unsigned char *fp0, *fp1, *fp2, *fp3, *fp4, *fp5, *fp6, *fp7;
+	int o, i, df;
+	unsigned char *bytes;
+	int zone, l2;
+	int nblank = 0;
+
+	buf = (unsigned long long *)(ms->payload);
+	i = ms->readposition >> 3;  /* note here that i counts 64-bit words */
+	l2 = ms->log2blankzonesize - 3;
+	df = ms->decimation/4;
+
+	bytes = (unsigned char *)(& bits);
+
+	for(o = 0; o < nsamp; o++)
+	{
+		zone = i >> l2;
+
+		if(8*i <  ms->blankzonestartvalid[zone] || 
+		   8*i >= ms->blankzoneendvalid[zone])
+		{
+			nblank++;
+		}
+		else
+		{
+			bits = reorder64(buf[i]);
+			fp0 = countlut2bit1[bytes[0]];
+			fp1 = countlut2bit1[bytes[1]];
+			fp2 = countlut2bit1[bytes[2]];
+			fp3 = countlut2bit1[bytes[3]];
+			fp4 = countlut2bit1[bytes[4]];
+			fp5 = countlut2bit1[bytes[5]];
+			fp6 = countlut2bit1[bytes[6]];
+			fp7 = countlut2bit1[bytes[7]];
+			highstates[0] += fp0[0];
+			highstates[1] += fp2[0];
+			highstates[2] += fp1[0];
+			highstates[3] += fp3[0];
+			highstates[4] += fp4[0];
+			highstates[5] += fp6[0];
+			highstates[6] += fp5[0];
+			highstates[7] += fp7[0];
+		}
+		i += df;
 
 		if(i >= PAYLOADSIZE)
 		{
@@ -7165,135 +9780,353 @@ struct mark5_format_generic *new_mark5_format_vlba(int Mbps, int nchan,
 	f->validate = mark5_format_vlba_validate;
 	f->decimation = decimation;
 	f->complex_decode = 0;
+	f->count = 0;
 	switch(decoderindex)
 	{
-		case 0  : f->decode = vlba_decode_1bit_1track_fanout1_decimation1; break;
-
-
-		case 3  : f->decode = vlba_decode_1bit_2track_fanout1_decimation1; break;
-		case 4  : f->decode = vlba_decode_1bit_2track_fanout2_decimation1; break;
-		
-		case 6  : f->decode = vlba_decode_1bit_4track_fanout1_decimation1; break;
-		case 7  : f->decode = vlba_decode_1bit_4track_fanout2_decimation1; break;
-		case 8  : f->decode = vlba_decode_1bit_4track_fanout4_decimation1; break;
-		case 9  : f->decode = vlba_decode_1bit_8track_fanout1_decimation1; break;
-		case 10 : f->decode = vlba_decode_1bit_8track_fanout2_decimation1; break;
-		case 11 : f->decode = vlba_decode_1bit_8track_fanout4_decimation1; break;
-		case 12 : f->decode = vlba_decode_1bit_16track_fanout1_decimation1; break;
-		case 13 : f->decode = vlba_decode_1bit_16track_fanout2_decimation1; break;
-		case 14 : f->decode = vlba_decode_1bit_16track_fanout4_decimation1; break;
-		case 15 : f->decode = vlba_decode_1bit_32track_fanout1_decimation1; break;
-		case 16 : f->decode = vlba_decode_1bit_32track_fanout2_decimation1; break;
-		case 17 : f->decode = vlba_decode_1bit_32track_fanout4_decimation1; break;
-		case 18 : f->decode = vlba_decode_1bit_64track_fanout1_decimation1; break;
-		case 19 : f->decode = vlba_decode_1bit_64track_fanout2_decimation1; break;
-		case 20 : f->decode = vlba_decode_1bit_64track_fanout4_decimation1; break;
-		
-		
-		
-		case 24 : f->decode = vlba_decode_2bit_2track_fanout1_decimation1; break;
-		
-		
-		case 27 : f->decode = vlba_decode_2bit_4track_fanout1_decimation1; break;
-		case 28 : f->decode = vlba_decode_2bit_4track_fanout2_decimation1; break;
-		
-		case 30 : f->decode = vlba_decode_2bit_8track_fanout1_decimation1; break;
-		case 31 : f->decode = vlba_decode_2bit_8track_fanout2_decimation1; break;
-		case 32 : f->decode = vlba_decode_2bit_8track_fanout4_decimation1; break;
-		case 33 : f->decode = vlba_decode_2bit_16track_fanout1_decimation1; break;
-		case 34 : f->decode = vlba_decode_2bit_16track_fanout2_decimation1; break;
-		case 35 : f->decode = vlba_decode_2bit_16track_fanout4_decimation1; break;
-		case 36 : f->decode = vlba_decode_2bit_32track_fanout1_decimation1; break;
-		case 37 : f->decode = vlba_decode_2bit_32track_fanout2_decimation1; break;
-		case 38 : f->decode = vlba_decode_2bit_32track_fanout4_decimation1; break;
-		case 39 : f->decode = vlba_decode_2bit_64track_fanout1_decimation1; break;
-		case 40 : f->decode = vlba_decode_2bit_64track_fanout2_decimation1; break;
-		case 41 : f->decode = vlba_decode_2bit_64track_fanout4_decimation1; break;
-		case 42 : f->decode = vlba_decode_1bit_1track_fanout1_decimation2; break;
-		
-		
-		case 45 : f->decode = vlba_decode_1bit_2track_fanout1_decimation2; break;
-		case 46 : f->decode = vlba_decode_1bit_2track_fanout2_decimation2; break;
-		
-		case 48 : f->decode = vlba_decode_1bit_4track_fanout1_decimation2; break;
-		case 49 : f->decode = vlba_decode_1bit_4track_fanout2_decimation2; break;
-		case 50 : f->decode = vlba_decode_1bit_4track_fanout4_decimation2; break;
-		case 51 : f->decode = vlba_decode_1bit_8track_fanout1_decimation2; break;
-		case 52 : f->decode = vlba_decode_1bit_8track_fanout2_decimation2; break;
-		case 53 : f->decode = vlba_decode_1bit_8track_fanout4_decimation2; break;
-		case 54 : f->decode = vlba_decode_1bit_16track_fanout1_decimation2; break;
-		case 55 : f->decode = vlba_decode_1bit_16track_fanout2_decimation2; break;
-		case 56 : f->decode = vlba_decode_1bit_16track_fanout4_decimation2; break;
-		case 57 : f->decode = vlba_decode_1bit_32track_fanout1_decimation2; break;
-		case 58 : f->decode = vlba_decode_1bit_32track_fanout2_decimation2; break;
-		case 59 : f->decode = vlba_decode_1bit_32track_fanout4_decimation2; break;
-		case 60 : f->decode = vlba_decode_1bit_64track_fanout1_decimation2; break;
-		case 61 : f->decode = vlba_decode_1bit_64track_fanout2_decimation2; break;
-		case 62 : f->decode = vlba_decode_1bit_64track_fanout4_decimation2; break;
-		
-		
-		
-		case 66 : f->decode = vlba_decode_2bit_2track_fanout1_decimation2; break;
-		
-		
-		case 69 : f->decode = vlba_decode_2bit_4track_fanout1_decimation2; break;
-		case 70 : f->decode = vlba_decode_2bit_4track_fanout2_decimation2; break;
-		
-		case 72 : f->decode = vlba_decode_2bit_8track_fanout1_decimation2; break;
-		case 73 : f->decode = vlba_decode_2bit_8track_fanout2_decimation2; break;
-		case 74 : f->decode = vlba_decode_2bit_8track_fanout4_decimation2; break;
-		case 75 : f->decode = vlba_decode_2bit_16track_fanout1_decimation2; break;
-		case 76 : f->decode = vlba_decode_2bit_16track_fanout2_decimation2; break;
-		case 77 : f->decode = vlba_decode_2bit_16track_fanout4_decimation2; break;
-		case 78 : f->decode = vlba_decode_2bit_32track_fanout1_decimation2; break;
-		case 79 : f->decode = vlba_decode_2bit_32track_fanout2_decimation2; break;
-		case 80 : f->decode = vlba_decode_2bit_32track_fanout4_decimation2; break;
-		case 81 : f->decode = vlba_decode_2bit_64track_fanout1_decimation2; break;
-		case 82 : f->decode = vlba_decode_2bit_64track_fanout2_decimation2; break;
-		case 83 : f->decode = vlba_decode_2bit_64track_fanout4_decimation2; break;
-		case 84 : f->decode = vlba_decode_1bit_1track_fanout1_decimation4; break;
-		
-		
-		case 87 : f->decode = vlba_decode_1bit_2track_fanout1_decimation4; break;
-		case 88 : f->decode = vlba_decode_1bit_2track_fanout2_decimation4; break;
-		
-		case 90 : f->decode = vlba_decode_1bit_4track_fanout1_decimation4; break;
-		case 91 : f->decode = vlba_decode_1bit_4track_fanout2_decimation4; break;
-		case 92 : f->decode = vlba_decode_1bit_4track_fanout4_decimation4; break;
-		case 93 : f->decode = vlba_decode_1bit_8track_fanout1_decimation4; break;
-		case 94 : f->decode = vlba_decode_1bit_8track_fanout2_decimation4; break;
-		case 95 : f->decode = vlba_decode_1bit_8track_fanout4_decimation4; break;
-		case 96 : f->decode = vlba_decode_1bit_16track_fanout1_decimation4; break;
-		case 97 : f->decode = vlba_decode_1bit_16track_fanout2_decimation4; break;
-		case 98 : f->decode = vlba_decode_1bit_16track_fanout4_decimation4; break;
-		case 99 : f->decode = vlba_decode_1bit_32track_fanout1_decimation4; break;
-		case 100: f->decode = vlba_decode_1bit_32track_fanout2_decimation4; break;
-		case 101: f->decode = vlba_decode_1bit_32track_fanout4_decimation4; break;
-		case 102: f->decode = vlba_decode_1bit_64track_fanout1_decimation4; break;
-		case 103: f->decode = vlba_decode_1bit_64track_fanout2_decimation4; break;
-		case 104: f->decode = vlba_decode_1bit_64track_fanout4_decimation4; break;
-		
-		
-		
-		case 108: f->decode = vlba_decode_2bit_2track_fanout1_decimation4; break;
-		
-		
-		case 111: f->decode = vlba_decode_2bit_4track_fanout1_decimation4; break;
-		case 112: f->decode = vlba_decode_2bit_4track_fanout2_decimation4; break;
-		
-		case 114: f->decode = vlba_decode_2bit_8track_fanout1_decimation4; break;
-		case 115: f->decode = vlba_decode_2bit_8track_fanout2_decimation4; break;
-		case 116: f->decode = vlba_decode_2bit_8track_fanout4_decimation4; break;
-		case 117: f->decode = vlba_decode_2bit_16track_fanout1_decimation4; break;
-		case 118: f->decode = vlba_decode_2bit_16track_fanout2_decimation4; break;
-		case 119: f->decode = vlba_decode_2bit_16track_fanout4_decimation4; break;
-		case 120: f->decode = vlba_decode_2bit_32track_fanout1_decimation4; break;
-		case 121: f->decode = vlba_decode_2bit_32track_fanout2_decimation4; break;
-		case 122: f->decode = vlba_decode_2bit_32track_fanout4_decimation4; break;
-		case 123: f->decode = vlba_decode_2bit_64track_fanout1_decimation4; break;
-		case 124: f->decode = vlba_decode_2bit_64track_fanout2_decimation4; break;
-		case 125: f->decode = vlba_decode_2bit_64track_fanout4_decimation4; break;
-		default:  f->decode = 0;
+		case 0:
+			f->decode = vlba_decode_1bit_1track_fanout1_decimation1;
+			break;
+		case 3:
+			f->decode = vlba_decode_1bit_2track_fanout1_decimation1;
+			break;
+		case 4:
+			f->decode = vlba_decode_1bit_2track_fanout2_decimation1;
+			break;
+		case 6:
+			f->decode = vlba_decode_1bit_4track_fanout1_decimation1;
+			break;
+		case 7:
+			f->decode = vlba_decode_1bit_4track_fanout2_decimation1;
+			break;
+		case 8:
+			f->decode = vlba_decode_1bit_4track_fanout4_decimation1;
+			break;
+		case 9:
+			f->decode = vlba_decode_1bit_8track_fanout1_decimation1;
+			break;
+		case 10:
+			f->decode = vlba_decode_1bit_8track_fanout2_decimation1;
+			break;
+		case 11:
+			f->decode = vlba_decode_1bit_8track_fanout4_decimation1;
+			break;
+		case 12:
+			f->decode = vlba_decode_1bit_16track_fanout1_decimation1;
+			break;
+		case 13:
+			f->decode = vlba_decode_1bit_16track_fanout2_decimation1;
+			break;
+		case 14:
+			f->decode = vlba_decode_1bit_16track_fanout4_decimation1;
+			break;
+		case 15:
+			f->decode = vlba_decode_1bit_32track_fanout1_decimation1;
+			break;
+		case 16:
+			f->decode = vlba_decode_1bit_32track_fanout2_decimation1;
+			break;
+		case 17:
+			f->decode = vlba_decode_1bit_32track_fanout4_decimation1;
+			break;
+		case 18:
+			f->decode = vlba_decode_1bit_64track_fanout1_decimation1;
+			break;
+		case 19:
+			f->decode = vlba_decode_1bit_64track_fanout2_decimation1;
+			break;
+		case 20:
+			f->decode = vlba_decode_1bit_64track_fanout4_decimation1;
+			break;
+		case 24:
+			f->decode = vlba_decode_2bit_2track_fanout1_decimation1; 
+			f->count = vlba_count_2bit_2track_fanout1_decimation1;
+			break;
+		case 27:
+			f->decode = vlba_decode_2bit_4track_fanout1_decimation1;
+			f->count = vlba_count_2bit_4track_fanout1_decimation1;
+			break;
+		case 28:
+			f->decode = vlba_decode_2bit_4track_fanout2_decimation1;
+			f->count = vlba_count_2bit_4track_fanout2_decimation1;
+			break;
+		case 30:
+			f->decode = vlba_decode_2bit_8track_fanout1_decimation1;
+			f->count = vlba_count_2bit_8track_fanout1_decimation1;
+			break;
+		case 31:
+			f->decode = vlba_decode_2bit_8track_fanout2_decimation1;
+			f->count = vlba_count_2bit_8track_fanout2_decimation1;
+			break;
+		case 32:
+			f->decode = vlba_decode_2bit_8track_fanout4_decimation1;
+			f->count = vlba_count_2bit_8track_fanout4_decimation1;
+			break;
+		case 33:
+			f->decode = vlba_decode_2bit_16track_fanout1_decimation1;
+			f->count = vlba_count_2bit_16track_fanout1_decimation1;
+			break;
+		case 34:
+			f->decode = vlba_decode_2bit_16track_fanout2_decimation1;
+			f->count = vlba_count_2bit_16track_fanout2_decimation1;
+			break;
+		case 35:
+			f->decode = vlba_decode_2bit_16track_fanout4_decimation1;
+			f->count = vlba_count_2bit_16track_fanout4_decimation1;
+			break;
+		case 36:
+			f->decode = vlba_decode_2bit_32track_fanout1_decimation1;
+			f->count = vlba_count_2bit_32track_fanout1_decimation1;
+			break;
+		case 37:
+			f->decode = vlba_decode_2bit_32track_fanout2_decimation1;
+			f->count = vlba_count_2bit_32track_fanout2_decimation1;
+			break;
+		case 38:
+			f->decode = vlba_decode_2bit_32track_fanout4_decimation1;
+			f->count = vlba_count_2bit_32track_fanout4_decimation1;
+			break;
+		case 39:
+			f->decode = vlba_decode_2bit_64track_fanout1_decimation1;
+			f->count = vlba_count_2bit_64track_fanout1_decimation1;
+			break;
+		case 40:
+			f->decode = vlba_decode_2bit_64track_fanout2_decimation1;
+			f->count = vlba_count_2bit_64track_fanout2_decimation1;
+			break;
+		case 41:
+			f->decode = vlba_decode_2bit_64track_fanout4_decimation1;
+			f->count = vlba_count_2bit_64track_fanout4_decimation1;
+			break;
+		case 42:
+			f->decode = vlba_decode_1bit_1track_fanout1_decimation2;
+			break;
+		case 45:
+			f->decode = vlba_decode_1bit_2track_fanout1_decimation2;
+			break;
+		case 46:
+			f->decode = vlba_decode_1bit_2track_fanout2_decimation2;
+			break;
+		case 48:
+			f->decode = vlba_decode_1bit_4track_fanout1_decimation2;
+			break;
+		case 49:
+			f->decode = vlba_decode_1bit_4track_fanout2_decimation2;
+			break;
+		case 50:
+			f->decode = vlba_decode_1bit_4track_fanout4_decimation2;
+			break;
+		case 51:
+			f->decode = vlba_decode_1bit_8track_fanout1_decimation2;
+			break;
+		case 52:
+			f->decode = vlba_decode_1bit_8track_fanout2_decimation2;
+			break;
+		case 53:
+			f->decode = vlba_decode_1bit_8track_fanout4_decimation2;
+			break;
+		case 54:
+			f->decode = vlba_decode_1bit_16track_fanout1_decimation2;
+			break;
+		case 55:
+			f->decode = vlba_decode_1bit_16track_fanout2_decimation2;
+			break;
+		case 56:
+			f->decode = vlba_decode_1bit_16track_fanout4_decimation2;
+			break;
+		case 57:
+			f->decode = vlba_decode_1bit_32track_fanout1_decimation2;
+			break;
+		case 58:
+			f->decode = vlba_decode_1bit_32track_fanout2_decimation2;
+			break;
+		case 59:
+			f->decode = vlba_decode_1bit_32track_fanout4_decimation2;
+			break;
+		case 60:
+			f->decode = vlba_decode_1bit_64track_fanout1_decimation2;
+			break;
+		case 61:
+			f->decode = vlba_decode_1bit_64track_fanout2_decimation2;
+			break;
+		case 62:
+			f->decode = vlba_decode_1bit_64track_fanout4_decimation2;
+			break;
+		case 66:
+			f->decode = vlba_decode_2bit_2track_fanout1_decimation2;
+			f->count = vlba_count_2bit_2track_fanout1_decimation2;
+			break;
+		case 69:
+			f->decode = vlba_decode_2bit_4track_fanout1_decimation2;
+			f->count = vlba_count_2bit_4track_fanout1_decimation2;
+			break;
+		case 70:
+			f->decode = vlba_decode_2bit_4track_fanout2_decimation2;
+			f->count = vlba_count_2bit_4track_fanout2_decimation2;
+			break;
+		case 72:
+			f->decode = vlba_decode_2bit_8track_fanout1_decimation2;
+			f->count = vlba_count_2bit_8track_fanout1_decimation2;
+			break;
+		case 73:
+			f->decode = vlba_decode_2bit_8track_fanout2_decimation2;
+			f->count = vlba_count_2bit_8track_fanout2_decimation2;
+			break;
+		case 74:
+			f->decode = vlba_decode_2bit_8track_fanout4_decimation2;
+			f->count = vlba_count_2bit_8track_fanout4_decimation2;
+			break;
+		case 75:
+			f->decode = vlba_decode_2bit_16track_fanout1_decimation2;
+			f->count = vlba_count_2bit_16track_fanout1_decimation2;
+			break;
+		case 76:
+			f->decode = vlba_decode_2bit_16track_fanout2_decimation2;
+			f->count = vlba_count_2bit_16track_fanout2_decimation2;
+			break;
+		case 77:
+			f->decode = vlba_decode_2bit_16track_fanout4_decimation2;
+			f->count = vlba_count_2bit_16track_fanout4_decimation2;
+			break;
+		case 78:
+			f->decode = vlba_decode_2bit_32track_fanout1_decimation2;
+			f->count = vlba_count_2bit_32track_fanout1_decimation2;
+			break;
+		case 79:
+			f->decode = vlba_decode_2bit_32track_fanout2_decimation2;
+			f->count = vlba_count_2bit_32track_fanout2_decimation2;
+			break;
+		case 80:
+			f->decode = vlba_decode_2bit_32track_fanout4_decimation2;
+			f->count = vlba_count_2bit_32track_fanout4_decimation2;
+			break;
+		case 81:
+			f->decode = vlba_decode_2bit_64track_fanout1_decimation2;
+			f->count = vlba_count_2bit_64track_fanout1_decimation2;
+			break;
+		case 82:
+			f->decode = vlba_decode_2bit_64track_fanout2_decimation2;
+			f->count = vlba_count_2bit_64track_fanout2_decimation2;
+			break;
+		case 83:
+			f->decode = vlba_decode_2bit_64track_fanout4_decimation2;
+			f->count = vlba_count_2bit_64track_fanout4_decimation2;
+			break;
+		case 84:
+			f->decode = vlba_decode_1bit_1track_fanout1_decimation4;
+			break;
+		case 87:
+			f->decode = vlba_decode_1bit_2track_fanout1_decimation4;
+			break;
+		case 88:
+			f->decode = vlba_decode_1bit_2track_fanout2_decimation4;
+			break;
+		case 90:
+			f->decode = vlba_decode_1bit_4track_fanout1_decimation4;
+			break;
+		case 91:
+			f->decode = vlba_decode_1bit_4track_fanout2_decimation4;
+			break;
+		case 92:
+			f->decode = vlba_decode_1bit_4track_fanout4_decimation4;
+			break;
+		case 93:
+			f->decode = vlba_decode_1bit_8track_fanout1_decimation4;
+			break;
+		case 94:
+			f->decode = vlba_decode_1bit_8track_fanout2_decimation4;
+			break;
+		case 95:
+			f->decode = vlba_decode_1bit_8track_fanout4_decimation4;
+			break;
+		case 96:
+			f->decode = vlba_decode_1bit_16track_fanout1_decimation4;
+			break;
+		case 97:
+			f->decode = vlba_decode_1bit_16track_fanout2_decimation4;
+			break;
+		case 98:
+			f->decode = vlba_decode_1bit_16track_fanout4_decimation4;
+			break;
+		case 99:
+			f->decode = vlba_decode_1bit_32track_fanout1_decimation4;
+			break;
+		case 100:
+			f->decode = vlba_decode_1bit_32track_fanout2_decimation4;
+			break;
+		case 101:
+			f->decode = vlba_decode_1bit_32track_fanout4_decimation4;
+			break;
+		case 102:
+			f->decode = vlba_decode_1bit_64track_fanout1_decimation4;
+			break;
+		case 103:
+			f->decode = vlba_decode_1bit_64track_fanout2_decimation4;
+			break;
+		case 104:
+			f->decode = vlba_decode_1bit_64track_fanout4_decimation4;
+			break;
+		case 108:
+			f->decode = vlba_decode_2bit_2track_fanout1_decimation4;
+			f->count = vlba_count_2bit_2track_fanout1_decimation4;
+			break;
+		case 111:
+			f->decode = vlba_decode_2bit_4track_fanout1_decimation4;
+			f->count = vlba_count_2bit_4track_fanout1_decimation4;
+			break;
+		case 112:
+			f->decode = vlba_decode_2bit_4track_fanout2_decimation4;
+			f->count = vlba_count_2bit_4track_fanout2_decimation4;
+			break;
+		case 114:
+			f->decode = vlba_decode_2bit_8track_fanout1_decimation4;
+			f->count = vlba_count_2bit_8track_fanout1_decimation4;
+			break;
+		case 115:
+			f->decode = vlba_decode_2bit_8track_fanout2_decimation4;
+			f->count = vlba_count_2bit_8track_fanout2_decimation4;
+			break;
+		case 116:
+			f->decode = vlba_decode_2bit_8track_fanout4_decimation4;
+			f->count = vlba_count_2bit_8track_fanout4_decimation4;
+			break;
+		case 117:
+			f->decode = vlba_decode_2bit_16track_fanout1_decimation4;
+			f->count = vlba_count_2bit_16track_fanout1_decimation4;
+			break;
+		case 118:
+			f->decode = vlba_decode_2bit_16track_fanout2_decimation4;
+			f->count = vlba_count_2bit_16track_fanout2_decimation4;
+			break;
+		case 119:
+			f->decode = vlba_decode_2bit_16track_fanout4_decimation4;
+			f->count = vlba_count_2bit_16track_fanout4_decimation4;
+			break;
+		case 120:
+			f->decode = vlba_decode_2bit_32track_fanout1_decimation4;
+			f->count = vlba_count_2bit_32track_fanout1_decimation4;
+			break;
+		case 121:
+			f->decode = vlba_decode_2bit_32track_fanout2_decimation4;
+			f->count = vlba_count_2bit_32track_fanout2_decimation4;
+			break;
+		case 122:
+			f->decode = vlba_decode_2bit_32track_fanout4_decimation4;
+			f->count = vlba_count_2bit_32track_fanout4_decimation4;
+			break;
+		case 123:
+			f->decode = vlba_decode_2bit_64track_fanout1_decimation4;
+			f->count = vlba_count_2bit_64track_fanout1_decimation4;
+			break;
+		case 124:
+			f->decode = vlba_decode_2bit_64track_fanout2_decimation4;
+			f->count = vlba_count_2bit_64track_fanout2_decimation4;
+			break;
+		case 125:
+			f->decode = vlba_decode_2bit_64track_fanout4_decimation4;
+			f->count = vlba_count_2bit_64track_fanout4_decimation4;
+			break;
+		default:
+			f->decode = 0;
 	}
 
 	if(f->decode == 0)

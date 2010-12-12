@@ -852,8 +852,8 @@ static int mark5b_decode_16bitstream_1bit_decimation1(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
-			nblank++;
 			i += 2;
+			nblank++;
 		}
 		else
 		{
@@ -913,8 +913,8 @@ static int mark5b_decode_16bitstream_1bit_decimation2(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = zeros;
-			nblank++;
 			i += 4;
+			nblank++;
 		}
 		else
 		{
@@ -1037,8 +1037,8 @@ static int mark5b_decode_32bitstream_1bit_decimation1(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
 			i += 4;
+			nblank++;
 		}
 		else
 		{
@@ -1118,8 +1118,8 @@ static int mark5b_decode_32bitstream_1bit_decimation2(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
 			i += 8;
+			nblank++;
 		}
 		else
 		{
@@ -1199,13 +1199,8 @@ static int mark5b_decode_32bitstream_1bit_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			i += 3;
 			nblank++;
 		}
 		else
@@ -1805,9 +1800,8 @@ static int mark5b_decode_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp0 = zeros;
+			fp0 = fp1 = zeros;
 			i++;
-			fp1 = zeros;
 			nblank++;
 		}
 		else
@@ -1859,8 +1853,8 @@ static int mark5b_decode_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
 			i += 4;
+			nblank++;
 		}
 		else
 		{
@@ -1924,8 +1918,8 @@ static int mark5b_decode_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 		   i >= ms->blankzoneendvalid[0])
 		{
 			fp0 = fp1 = fp2 = fp3 = zeros;
-			nblank++;
 			i += 8;
+			nblank++;
 		}
 		else
 		{
@@ -1989,13 +1983,8 @@ static int mark5b_decode_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 		if(i <  ms->blankzonestartvalid[0] ||
 		   i >= ms->blankzoneendvalid[0])
 		{
-			fp0 = zeros;
-			i++;
-			fp1 = zeros;
-			i++;
-			fp2 = zeros;
-			i++;
-			fp3 = zeros;
+			fp0 = fp1 = fp2 = fp3 = zeros;
+			i += 3;
 			nblank++;
 		}
 		else
@@ -2330,49 +2319,116 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	f->decimation = decimation;
 	f->decode = 0;
 	f->complex_decode = 0;
+	f->count = 0;
 	switch(decoderindex)
 	{
-		case 0 : f->decode = mark5b_decode_1bitstream_1bit_decimation1; break;
-		case 1 : f->decode = mark5b_decode_2bitstream_1bit_decimation1; break;
-		case 2 : f->decode = mark5b_decode_4bitstream_1bit_decimation1; break;
-		case 3 : f->decode = mark5b_decode_8bitstream_1bit_decimation1; break;
-		case 4 : f->decode = mark5b_decode_16bitstream_1bit_decimation1; break;
-		case 5 : f->decode = mark5b_decode_32bitstream_1bit_decimation1; break;
-
-		case 7 : f->decode = mark5b_decode_2bitstream_2bit_decimation1; break;
-		case 8 : f->decode = mark5b_decode_4bitstream_2bit_decimation1; break;
-		case 9 : f->decode = mark5b_decode_8bitstream_2bit_decimation1; break;
-		case 10: f->decode = mark5b_decode_16bitstream_2bit_decimation1; break;
-		case 11: f->decode = mark5b_decode_32bitstream_2bit_decimation1; break;
-		case 12: f->decode = mark5b_decode_1bitstream_1bit_decimation2; break;
-		case 13: f->decode = mark5b_decode_2bitstream_1bit_decimation2; break;
-		case 14: f->decode = mark5b_decode_4bitstream_1bit_decimation2; break;
-		case 15: f->decode = mark5b_decode_8bitstream_1bit_decimation2; break;
-		case 16: f->decode = mark5b_decode_16bitstream_1bit_decimation2; break;
-		case 17: f->decode = mark5b_decode_32bitstream_1bit_decimation2; break;
-
-		case 19: f->decode = mark5b_decode_2bitstream_2bit_decimation2; break;
-		case 20: f->decode = mark5b_decode_4bitstream_2bit_decimation2; break;
-		case 21: f->decode = mark5b_decode_8bitstream_2bit_decimation2; break;
-		case 22: f->decode = mark5b_decode_16bitstream_2bit_decimation2; break;
-		case 23: f->decode = mark5b_decode_32bitstream_2bit_decimation2; break;
-		case 24: /* special case needing explicit decimation4 case */
-			if(decimation == 4)
-			 f->decode = mark5b_decode_1bitstream_1bit_decimation4; 
-			else if(decimation % 8 == 0)
-			 f->decode = mark5b_decode_1bitstream_1bit_decimation8; 
+		case 0:
+			f->decode = mark5b_decode_1bitstream_1bit_decimation1;
 			break;
-		case 25: f->decode = mark5b_decode_2bitstream_1bit_decimation4; break;
-		case 26: f->decode = mark5b_decode_4bitstream_1bit_decimation4; break;
-		case 27: f->decode = mark5b_decode_8bitstream_1bit_decimation4; break;
-		case 28: f->decode = mark5b_decode_16bitstream_1bit_decimation4; break;
-		case 29: f->decode = mark5b_decode_32bitstream_1bit_decimation4; break;
-
-		case 31: f->decode = mark5b_decode_2bitstream_2bit_decimation4; break;
-		case 32: f->decode = mark5b_decode_4bitstream_2bit_decimation4; break;
-		case 33: f->decode = mark5b_decode_8bitstream_2bit_decimation4; break;
-		case 34: f->decode = mark5b_decode_16bitstream_2bit_decimation4; break;
-		case 35: f->decode = mark5b_decode_32bitstream_2bit_decimation4; break;
+		case 1:
+			f->decode = mark5b_decode_2bitstream_1bit_decimation1;
+			break;
+		case 2:
+			f->decode = mark5b_decode_4bitstream_1bit_decimation1;
+			break;
+		case 3:
+			f->decode = mark5b_decode_8bitstream_1bit_decimation1;
+			break;
+		case 4:
+			f->decode = mark5b_decode_16bitstream_1bit_decimation1;
+			break;
+		case 5:
+			f->decode = mark5b_decode_32bitstream_1bit_decimation1;
+			break;
+		case 7:
+			f->decode = mark5b_decode_2bitstream_2bit_decimation1;
+			break;
+		case 8:
+			f->decode = mark5b_decode_4bitstream_2bit_decimation1;
+			break;
+		case 9:
+			f->decode = mark5b_decode_8bitstream_2bit_decimation1;
+			break;
+		case 10:
+			f->decode = mark5b_decode_16bitstream_2bit_decimation1;
+			break;
+		case 11:
+			f->decode = mark5b_decode_32bitstream_2bit_decimation1;
+			break;
+		case 12:
+			f->decode = mark5b_decode_1bitstream_1bit_decimation2;
+			break;
+		case 13:
+			f->decode = mark5b_decode_2bitstream_1bit_decimation2;
+			break;
+		case 14:
+			f->decode = mark5b_decode_4bitstream_1bit_decimation2;
+			break;
+		case 15:
+			f->decode = mark5b_decode_8bitstream_1bit_decimation2;
+			break;
+		case 16:
+			f->decode = mark5b_decode_16bitstream_1bit_decimation2;
+			break;
+		case 17:
+			f->decode = mark5b_decode_32bitstream_1bit_decimation2;
+			break;
+		case 19:
+			f->decode = mark5b_decode_2bitstream_2bit_decimation2;
+			break;
+		case 20:
+			f->decode = mark5b_decode_4bitstream_2bit_decimation2;
+			break;
+		case 21:
+			f->decode = mark5b_decode_8bitstream_2bit_decimation2;
+			break;
+		case 22:
+			f->decode = mark5b_decode_16bitstream_2bit_decimation2;
+			break;
+		case 23:
+			f->decode = mark5b_decode_32bitstream_2bit_decimation2;
+			break;
+		case 24:
+			/* special case needing explicit decimation4 case */
+			if(decimation == 4)
+			{
+				f->decode = mark5b_decode_1bitstream_1bit_decimation4; 
+			}
+			else if(decimation % 8 == 0)
+			{
+				f->decode = mark5b_decode_1bitstream_1bit_decimation8; 
+			}
+			break;
+		case 25:
+			f->decode = mark5b_decode_2bitstream_1bit_decimation4;
+			break;
+		case 26:
+			f->decode = mark5b_decode_4bitstream_1bit_decimation4;
+			break;
+		case 27:
+			f->decode = mark5b_decode_8bitstream_1bit_decimation4;
+			break;
+		case 28:
+			f->decode = mark5b_decode_16bitstream_1bit_decimation4;
+			break;
+		case 29:
+			f->decode = mark5b_decode_32bitstream_1bit_decimation4;
+			break;
+		case 31:
+			f->decode = mark5b_decode_2bitstream_2bit_decimation4;
+			break;
+		case 32:
+			f->decode = mark5b_decode_4bitstream_2bit_decimation4;
+			break;
+		case 33:
+			f->decode = mark5b_decode_8bitstream_2bit_decimation4;
+			break;
+		case 34:
+			f->decode = mark5b_decode_16bitstream_2bit_decimation4;
+			break;
+		case 35:
+			f->decode = mark5b_decode_32bitstream_2bit_decimation4;
+			break;
 	}
 
 	if(f->decode == 0)
@@ -2380,6 +2436,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 		fprintf(stderr, "Illegal combination of decimation, bitstreams and bits\n");
 		free(f);
 		free(m);
+
 		return 0;
 	}
 

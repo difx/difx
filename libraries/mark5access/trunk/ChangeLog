@@ -1,5 +1,6 @@
 Version 1.4.2
 * Post 2.0.0 tagging
+* Start adding state counting for use in power detection.  2-bit sampling supported only at this time.
 
 Version 1.4.1
 * revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
