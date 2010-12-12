@@ -30,6 +30,7 @@ AM_PROG_CC_C_O
 AM_PROG_LIBTOOL
 AM_SANITY_CHECK
 
+AC_CHECK_LIB(m, erf,,[AC_MSG_ERROR("need libm")])
 PKG_CHECK_MODULES(FFTW3, fftw3, [hasfftw=true], [hasfftw=false])
 
 AC_SUBST(FFTW3_CFLAGS)

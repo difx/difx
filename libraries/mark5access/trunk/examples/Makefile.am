@@ -20,6 +20,7 @@ endif
 bin_PROGRAMS = \
 	m5d \
 	m5fold \
+	m5tsys \
 	m5test \
 	test_mark5_stream \
 	test_unpacker \
@@ -27,6 +28,9 @@ bin_PROGRAMS = \
 
 m5d_SOURCES = \
 	m5d.c
+
+m5tsys_SOURCES = \
+	m5tsys.c
 
 m5pcal_SOURCES = \
 	m5pcal.c

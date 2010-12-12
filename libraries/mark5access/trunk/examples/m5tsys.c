@@ -20,7 +20,7 @@
 // SVN properties (DO NOT CHANGE)
 //
 // $Id$
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
+// $HeadURL: $
 // $LastChangedRevision$
 // $Author$
 // $LastChangedDate$
@@ -32,9 +32,9 @@
 #include <string.h>
 #include "../mark5access/mark5_stream.h"
 
-const char program[] = "m5d";
+const char program[] = "m5states";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.0";
+const char version[] = "0.1";
 const char verdate[] = "2010 May 24";
 
 int usage(const char *pgm)
@@ -42,7 +42,7 @@ int usage(const char *pgm)
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 decoder.  Can decode VLBA, Mark3/4, and Mark5B "
+	printf("A Mark5 state counter.  Can decode VLBA, Mark3/4, and Mark5B "
 		"formats using the\nmark5access library.\n\n");
 	printf("Usage : %s <file> <dataformat> <n> [<offset>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
@@ -51,22 +51,51 @@ int usage(const char *pgm)
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n\n");
-	printf("  <n> is the number of samples per channel to decode\n\n");
-	printf("  <offset> is number of bytes into file to start decoding\n\n");
+	printf("  <n> is the number of samples per channel to count\n\n");
+	printf("  <offset> is number of bytes into file to start count\n\n");
 
 	return 0;
 }
 
-int decode(const char *filename, const char *formatname, const char *f,
-	long long offset, long long n)
+void printpower(int sec, int nchan, unsigned int *pOn, unsigned int *pOff, int nOn, int nOff)
+{
+	int k;
+	double fOn = 0.0, fOff = 0.0;
+	double powerOn, powerOff;
+
+	printf("%5d %7d %7d", sec, nOn, nOff);
+	for(k = 0; k < nchan; k++)
+	{
+		if(nOn > 0)
+		{
+			fOn = pOn[k]/(double)nOn;
+		}
+		if(nOff > 0)
+		{
+			fOff = pOff[k]/(double)nOff;
+		}
+		
+		powerOn = high_state_fraction_to_power(fOn);
+		powerOff = high_state_fraction_to_power(fOff);
+
+		printf(" %5.3f %5.3f", powerOn, powerOff);
+	}
+	printf("\n");
+}
+
+int decode(const char *filename, const char *formatname, long long offset, long long n)
 {
 	struct mark5_stream *ms;
-	float **data;
-	int i, j, k, status;
-	long long chunk = 1024;
-	long long total, unpacked;
+	unsigned int *pOn, *pOff;
+	int k, status;
+	long long chunk = 2000;
+	long long nOn, nOff;
+	int mjd, sec, lastsec = -1;
+	double ns;
+	int phase, on;
 
-	total = unpacked = 0;
+	nOn = 0;
+	nOff = 0;
 
 	ms = new_mark5_stream(
 		new_mark5_stream_file(filename, offset),
@@ -78,11 +107,8 @@ int decode(const char *filename, const char *formatname, const char *f,
 		return 0;
 	}
 
-	data = (float **)malloc(ms->nchan*sizeof(float *));
-	for(i = 0; i < ms->nchan; i++)
-	{
-		data[i] = (float *)malloc(chunk*sizeof(float ));
-	}
+	pOn = (unsigned int *)calloc(ms->nchan, sizeof(unsigned int));
+	pOff = (unsigned int *)calloc(ms->nchan, sizeof(unsigned int));
 
 	mark5_stream_print(ms);
 
@@ -98,7 +124,31 @@ int decode(const char *filename, const char *formatname, const char *f,
 		{
 			chunk = n;
 		}
-		status = mark5_stream_decode(ms, chunk, data);
+
+		mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
+		phase = (int)(ns * 160.0e-9);
+		on = (phase % 2 == 0);
+
+		if(sec != lastsec && nOn + nOff > 0)
+		{
+			printpower(lastsec, ms->nchan, pOn, pOff, nOn, nOff);
+			for(k = 0; k < ms->nchan; k++)
+			{
+				pOn[k] = pOff[k] = 0.0;
+			}
+			nOn = nOff = 0;
+		}
+
+		lastsec = sec;
+
+		if(on)
+		{
+			status = mark5_stream_count_high_states(ms, chunk, pOn);
+		}
+		else
+		{
+			status = mark5_stream_count_high_states(ms, chunk, pOff);
+		}
 		
 		if(status < 0)
 		{
@@ -107,27 +157,24 @@ int decode(const char *filename, const char *formatname, const char *f,
 		}
 		else
 		{
-			total += chunk;
-			unpacked += status;
-		}
-
-		for(j = 0; j < chunk; j++)
-		{
-			for(k = 0; k < ms->nchan; k++)
+			if(on)
 			{
-				printf(f, data[k][j]);
+				nOn += status;
 			}
-			printf("\n");
+			else
+			{
+				nOff += status;
+			}
 		}
 	}
 
-	fprintf(stderr, "%Ld / %Ld samples unpacked\n", unpacked, total);
-
-	for(i = 0; i < ms->nchan; i++)
+	if(nOn + nOff > 0)
 	{
-		free(data[i]);
+		printpower(lastsec, ms->nchan, pOn, pOff, nOn, nOff);
 	}
-	free(data);
+
+	free(pOn);
+	free(pOff);
 
 	delete_mark5_stream(ms);
 
@@ -200,7 +247,7 @@ int main(int argc, char **argv)
 		offset=atoll(argv[4]);
 	}
 
-	decode(argv[1], argv[2], "%2.0f ", offset, n);
+	decode(argv[1], argv[2], offset, n);
 
 	return 0;
 }

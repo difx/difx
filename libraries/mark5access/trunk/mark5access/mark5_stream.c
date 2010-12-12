@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <errno.h>
 #include "mark5access/mark5_stream.h"
 
@@ -1252,3 +1253,68 @@ int mark5_stream_fix_mjd(struct mark5_stream *ms, int refmjd)
 	}
 }
 
+
+
+#if 0
+/* series expansion from wikipedia */
+static double inverseerfbyseries(double x)
+{
+	return (1.0/M_2_SQRTPI)*
+	(
+		x +
+		(M_PI/12.0)*x*x*x +
+		(7.0*M_PI*M_PI/480.0)*x*x*x*x*x +
+		(127.0*M_PI*M_PI*M_PI/40320.0)*x*x*x*x*x*x*x +
+		(4369.0*M_PI*M_PI*M_PI*M_PI/5806080.0)*x*x*x*x*x*x*x*x*x +
+		(34807.0*M_PI*M_PI*M_PI*M_PI*M_PI/182476800.0)*x*x*x*x*x*x*x*x*x*x*x  /* + ... */
+	);
+}
+#endif
+
+/* Approximation by Sergei Winitzki: 
+ * http://homepages.physik.uni-muenchen.de/~Winitzki/erf-approx.pdf*/
+static double inverseerf(double x)
+{
+	const double a = 8.0/(3.0*M_PI) * (M_PI-3.0)/(4.0-M_PI);
+	double b, c;
+
+	if(x == 0.0)
+	{
+		return 0.0;
+	}
+	else if(x < 0.0)
+	{
+		return -inverseerf(-x);
+	}
+	else
+	{
+		c = log(1.0-x*x);
+		b = 2.0/(M_PI*a) + 0.5*c;
+
+		return sqrt(-b + sqrt(b*b - c/a) );
+	}
+}
+
+/* send into this function <v^2>, where |v| = 1 or OPTIMAL_2BIT_HIGH */
+double correct_2bit_power(double x)
+{
+	const double a = OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
+
+	if(x <= 0.0)
+	{
+		return -1.0;
+	}
+
+	return 1.0/(M_SQRT2*inverseerf( (x-a)/(1.0-a) ) );
+}
+
+/* input:  fraction of counts in a high state.
+   output: total power, corrected for 2bit quantization */
+double high_state_fraction_to_power(double x)
+{
+	double v2;
+
+	v2 = (1.0-x) + x*OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
+
+	return correct_2bit_power(v2);
+}

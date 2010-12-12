@@ -329,6 +329,11 @@ void delete_mark5_format(struct mark5_format *mf);
 void print_mark5_format(const struct mark5_format *mf);
 
 
+/* OTHER USEFUL FUNCTIONS */
+double correct_2bit_power(double x);
+double high_state_fraction_to_power(double x);
+
+
 /* BELOW HERE USER BEWARE -- If you are using any functionality defined
  * below this comment then your code may not function properly with
  * future versions of this library.
