@@ -147,7 +147,8 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		printf("Error: problem opening %s\n", filename);
+
 		return 0;
 	}
 
@@ -170,7 +171,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 	out = fopen(outfile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Error -- cannot open %s for write\n", outfile);
+		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
 		delete_mark5_stream(ms);
 
 		return 0;

@@ -171,7 +171,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 
 	if(bw_MHz < 0.1)
 	{
-		fprintf(stderr, "Bandwidth below 125 kHz not supported\n");
+		fprintf(stderr, "Error: bandwidth below 125 kHz not supported\n");
 
 		return 0;
 	}

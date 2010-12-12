@@ -35,14 +35,14 @@
 const char program[] = "m5states";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 May 24";
+const char verdate[] = "2010 Dec 12";
 
 int usage(const char *pgm)
 {
 	printf("\n");
 
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
-	printf("A Mark5 state counter.  Can decode VLBA, Mark3/4, and Mark5B "
+	printf("A Mark5 switched power generator for VLBA, Mark3/4, and Mark5B "
 		"formats using the\nmark5access library.\n\n");
 	printf("Usage : %s <file> <dataformat> <n> [<offset>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
@@ -78,12 +78,12 @@ void printpower(int sec, int nchan, unsigned int *pOn, unsigned int *pOff, int n
 		powerOn = high_state_fraction_to_power(fOn);
 		powerOff = high_state_fraction_to_power(fOff);
 
-		printf(" %5.3f %5.3f", powerOn, powerOff);
+		printf(" %7.5f %7.5f", powerOn, powerOff);
 	}
 	printf("\n");
 }
 
-int decode(const char *filename, const char *formatname, long long offset, long long n)
+int calcpower(const char *filename, const char *formatname, long long offset, long long n)
 {
 	struct mark5_stream *ms;
 	unsigned int *pOn, *pOff;
@@ -103,7 +103,8 @@ int decode(const char *filename, const char *formatname, long long offset, long 
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		printf("Error: problem opening %s\n", filename);
+
 		return 0;
 	}
 
@@ -112,11 +113,14 @@ int decode(const char *filename, const char *formatname, long long offset, long 
 
 	mark5_stream_print(ms);
 
-	if(n % ms->samplegranularity > 0)
+	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		n -= (n % ms->samplegranularity);
-		printf("Warning -- reducing read size to %Ld\n", n);
+		printf("Warning: reducing read size from %Ld", n);
+		n -= (n % (long long)(ms->samplegranularity));
+		printf(" to %Ld\n", n);
 	}
+
+	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
 
 	for(; n > 0; n -= chunk)
 	{
@@ -125,7 +129,6 @@ int decode(const char *filename, const char *formatname, long long offset, long 
 			chunk = n;
 		}
 
-		mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
 		phase = (int)(ns * 160.0e-9);
 		on = (phase % 2 == 0);
 
@@ -165,6 +168,13 @@ int decode(const char *filename, const char *formatname, long long offset, long 
 			{
 				nOff += status;
 			}
+		}
+
+		ns += chunk*1.0e9/ms->samprate;
+		if(ns > 1.0e9)
+		{
+			ns -= 1.0e9;
+			sec++;
 		}
 	}
 
@@ -240,14 +250,14 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
-	n = atol(argv[3]);
+	n = atoll(argv[3]);
 
 	if(argc > 4)
 	{
 		offset=atoll(argv[4]);
 	}
 
-	decode(argv[1], argv[2], offset, n);
+	calcpower(argv[1], argv[2], offset, n);
 
 	return 0;
 }

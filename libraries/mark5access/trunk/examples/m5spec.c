@@ -102,7 +102,8 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		printf("Error: problem opening %s\n", filename);
+
 		return 0;
 	}
 
@@ -111,7 +112,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	out = fopen(outfile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Error -- cannot open %s for write\n", outfile);
+		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
 		delete_mark5_stream(ms);
 
 		return 0;

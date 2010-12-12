@@ -34,8 +34,8 @@
 
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.0";
-const char verdate[] = "2010 May 24";
+const char version[] = "1.1";
+const char verdate[] = "2010 Dec 12";
 
 int usage(const char *pgm)
 {
@@ -74,7 +74,8 @@ int decode(const char *filename, const char *formatname, const char *f,
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		printf("Error: problem opening %s\n", filename);
+
 		return 0;
 	}
 
@@ -86,10 +87,11 @@ int decode(const char *filename, const char *formatname, const char *f,
 
 	mark5_stream_print(ms);
 
-	if(n % ms->samplegranularity > 0)
+	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		n -= (n % ms->samplegranularity);
-		printf("Warning -- reducing read size to %Ld\n", n);
+		printf("Warning: reducing read size from %Ld", n);
+		n -= (n % (long long)(ms->samplegranularity));
+		printf(" to %Ld\n", n);
 	}
 
 	for(; n > 0; n -= chunk)
@@ -193,7 +195,7 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
-	n = atol(argv[3]);
+	n = atoll(argv[3]);
 
 	if(argc > 4)
 	{
