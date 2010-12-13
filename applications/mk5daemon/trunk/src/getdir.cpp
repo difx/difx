@@ -48,7 +48,7 @@ static void *mk5dirRun(void *ptr)
 
 	Logger_logData(params->D->log, "mk5dir starting\n");
 
-	snprintf(command, MAX_COMMAND_SIZE, "su -l difx -c 'mk5dir %s'", 
+	snprintf(command, MAX_COMMAND_SIZE, "su -l %s -c 'mk5dir %s'", params->D->userID,
 		params->bank);
 	Mk5Daemon_system(params->D, command, 1);
 
