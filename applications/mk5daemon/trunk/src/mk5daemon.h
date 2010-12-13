@@ -76,6 +76,7 @@ typedef struct
 	int nXLROpen;
 	int skipGetModule;
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
+	char userID[256];
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
@@ -88,6 +89,7 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
+#define HAVE_XLRAPI_H 1
 #ifdef HAVE_XLRAPI_H
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
 int unlockStreamstor(Mk5Daemon *D, const char *identifier);
