@@ -79,6 +79,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --log-path <path>\n");
 	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --user <user>\n");
+	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx') \n"); 
+	fprintf(stderr, "\n");
 	fprintf(stderr, "Note: This program responds to the following "
 			"environment variables:\n");
 	fprintf(stderr, "  DIFX_LOG_DIR : change log path from default [%s]\n",
@@ -89,12 +92,13 @@ int usage(const char *pgm)
 		"from default [%d]\n", DefaultDifxMonitorPort);
 	fprintf(stderr, "  STREAMSTOR_BIB_PATH : change streamstor firmware "
 		"path from default\n");
+	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", difxUser);
 	fprintf(stderr, "\n");
 
 	return 0;
 }
 
-Mk5Daemon *newMk5Daemon(const char *logPath)
+Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID)
 {
 	Mk5Daemon *D;
 
@@ -105,6 +109,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath)
 	D->loadMonInterval = 10;	/* seconds */
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
+	strncpy(D->userID, userID, 255);
 	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
@@ -302,7 +307,8 @@ int main(int argc, char **argv)
 	int i;
 	int halfInterval;
 	char logPath[256];
-	const char *p;
+	const char *p, *u;
+	char userID[256];
 	double mjd;
 #ifdef HAVE_XLRAPI_H
 	int ok=0;
@@ -318,6 +324,18 @@ int main(int argc, char **argv)
 	{
 		strcpy(logPath, DefaultLogPath);
 	}
+
+	u = getenv ("DIFX_USER_ID");
+	if (u)
+	{
+		strcpy(userID, u);
+	}
+	else
+	{
+                strcpy(userID, difxUser);
+
+	}
+	
 
 	sprintf(str, "%d", DefaultDifxMonitorPort);
 	setenv("DIFX_MESSAGE_PORT", str, 0);
@@ -340,6 +358,12 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--quiet") == 0)
 		{
 			setenv("DIFX_MESSAGE_PORT", "-1", 1);
+		}
+		else if( strcmp(argv[i], "-u") == 0 || strcmp(argv[i], "--user") == 0)
+		{
+			i++;
+			strcpy(userID, argv[i]);
+			
 		}
 		else if(i < argc-1)
 		{
@@ -384,7 +408,7 @@ int main(int argc, char **argv)
 
 	difxMessagePrint();
 
-	D = newMk5Daemon(logPath);
+	D = newMk5Daemon(logPath, userID);
 	D->isHeadNode = isHeadNode;
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", 
