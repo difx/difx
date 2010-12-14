@@ -980,7 +980,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
   datastreamdata * dsdata;
   int configindex, freqindex, decimationfactor, tonefreq;
   double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge;
-  string line;
+  string line = "";;
+  string key = "";
   bool ok = true;
 
   getinputline(input, &line, "DATASTREAM ENTRIES");
@@ -1095,7 +1096,19 @@ bool Configuration::processDatastreamTable(ifstream * input)
       if(mpiid == 0) //only write one copy of this error message
         cwarn << startl << "Filterbank channelization requested but not yet supported!!!" << endl;
     }
-    getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    getinputkeyval(input, &key, &line);
+    if(key.find("TCAL FREQUENCY") != string::npos) {
+      datastreamtable[i].switchedpowerfrequency = atoi(line.c_str());
+      getinputline(input, &line, "PHASE CAL INT (MHZ)");
+    }
+    else {
+      datastreamtable[i].switchedpowerfrequency = 0;
+      if(key.find("PHASE CAL INT (MHZ)") == string::npos) {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "Went looking for PHASE CAL INT (MHZ) (or maybe TCAL FREQUENCY), but got " << key << endl;
+        return false;
+      }
+    }
     datastreamtable[i].phasecalintervalmhz = atoi(line.c_str());
     if(datastreamtable[i].phasecalintervalmhz != 0)
     {
@@ -2515,7 +2528,8 @@ bool Configuration::setPolycoFreqInfo(int configindex)
 
 bool Configuration::updateClock(std::string clockstring)
 {
-  int at, count, antennaindex;
+  size_t at;
+  int count, antennaindex;
   double deltaclock[Model::MAX_POLY_ORDER+1];
   double * poly;
 

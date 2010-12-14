@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include "architecture.h"
 #include "configuration.h"
+#include "switchedpower.h"
 
 using namespace std;
 
@@ -160,6 +161,7 @@ protected:
   Model * model;
   string ** datafilenames;
   ifstream input;
+  SwitchedPower *switchedpower;
 
   static const int LBA_HEADER_LENGTH = 4096;
  

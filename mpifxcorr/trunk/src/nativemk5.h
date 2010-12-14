@@ -25,9 +25,9 @@
 
 #include <pthread.h>
 #include <time.h>
+#include <mark5access.h>
 #include "mode.h"
 #include "datastream.h"
-#include "mark5access.h"
 #include "config.h"
 
 #ifdef HAVE_XLRAPI_H

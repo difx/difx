@@ -48,6 +48,15 @@ Mk5DataStream::Mk5DataStream(Configuration * conf, int snum, int id, int ncores,
 {
   //each data buffer segment contains an integer number of frames, because thats the way config determines max bytes
   lastconfig = -1;
+
+  // switched power output assigned a name based on the datastream number (MPIID-1)
+  int spf = conf->getDSwitchedPowerFrequency(id-1);
+  if(spf > 0)
+  {
+    switchedpower = new SwitchedPower(conf->getOutputFilename(), id);
+    switchedpower->frequency = spf;
+    cout << "DS " << (id-1) << ": tcalfreq = " << spf << endl;
+  }
 }
 
 Mk5DataStream::~Mk5DataStream()
@@ -325,8 +334,6 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   // resolve any day ambiguities
   mark5_stream_fix_mjd(syncteststream, corrday);
   mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
-  delete_mark5_stream(syncteststream);
-  syncteststream = 0;
 
   deltatime = 86400*(corrday - mjd) + (model->getScanStartSec(bufferinfo[buffersegment].scan, corrday, corrsec) + bufferinfo[buffersegment].scanseconds + corrsec - intclockseconds - sec) + double(bufferinfo[buffersegment].scanns-ns)/1e9;
   //cout << "Received some data with a time " << mjd << ", " << sec << ", " << ns << endl;
@@ -351,7 +358,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
     {
       if(mark5stream->nchan != config->getDNumRecordedBands(configindex, streamnum))
       {
-        cerror << startl << "Number of recorded bands for datastream " << streamnum << " (" << config->getDNumRecordedBands(configindex, streamnum) << ") does not match with MkV data " << " (" << mark5stream->nchan << "), will be ignored!!!" << endl;
+        cerror << startl << "Number of recorded bands for datastream " << streamnum << " (" << config->getDNumRecordedBands(configindex, streamnum) << ") does not match with Mark5 data " << " (" << mark5stream->nchan << "), will be ignored!!!" << endl;
       }
 
       // resolve any day ambiguities
@@ -361,6 +368,9 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
         cinfo << startl << "Config has changed!" << endl;
         mark5_stream_print(mark5stream);
         lastconfig = configindex;
+        if(switchedpower) {
+          switchedpower->flush();
+        }
       }
 
       offset = mark5stream->frameoffset;
@@ -402,6 +412,17 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
       delete_mark5_stream(mark5stream);
     }
   }
+  else
+  {
+    // Switched power detection
+    if(switchedpower)
+    {
+      switchedpower->feed(syncteststream);
+    }
+  }
+
+  delete_mark5_stream(syncteststream);
+  syncteststream = 0;
 
   return offset;
 }

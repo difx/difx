@@ -43,6 +43,7 @@ DataStream::DataStream(Configuration * conf, int snum, int id, int ncores, int *
   activescan = 0;
   activesec = 0;
   activens = 0;
+  switchedpower = 0;
 }
 
 
@@ -66,6 +67,8 @@ DataStream::~DataStream()
   delete [] bufferinfo;
   delete [] filesread;
   delete [] confignumfiles;
+  if(switchedpower)
+    delete switchedpower;
 }
 
 

@@ -140,6 +140,8 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].tsys; }
   inline int getDPhaseCalIntervalMHz(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].phasecalintervalmhz; }
+  inline int getDSwitchedPowerFrequency(int datastreamindex)
+    { return datastreamtable[datastreamindex].switchedpowerfrequency; }
   inline int getDMaxRecordedPCalTones(int configindex, int configdatastreamindex)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].maxrecordedpcaltones; }
   inline int getDNumBits(int configindex, int configdatastreamindex) 
@@ -625,6 +627,7 @@ private:
     datasource source;
     datasampling sampling;
     int phasecalintervalmhz;
+    int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
     int bytespersamplenum;
     int bytespersampledenom;

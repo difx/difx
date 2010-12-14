@@ -19,8 +19,8 @@
 // $LastChangedDate$
 //
 //============================================================================
+#include <mark5access.h>
 #include "mode.h"
-#include "mark5access.h"
 
 /** 
  @class Mk5Mode 

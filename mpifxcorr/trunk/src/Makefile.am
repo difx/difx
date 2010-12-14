@@ -23,6 +23,7 @@ mpifxcorr_SOURCES = \
 	polyco.cpp \
 	alert.cpp \
 	pcal.cpp \
+	switchedpower.cpp \
 	$(mark5_files)
 
 library_includedir = $(includedir)/mpifxcorr
@@ -43,6 +44,7 @@ library_include_HEADERS = \
 	nativemk5.h \
 	watchdog.h \
 	mpifxcorr.h \
+	switchedpower.h \
 	alert.h 
 
 # historically these have been in both $(includedir)/{.,mpifxcorr}
@@ -62,6 +64,7 @@ libmpifxcorr_a_SOURCES = \
         model.cpp \
 	visibility.cpp \
 	alert.cpp \
+	switchedpower.cpp \
 	$(mark5_files)
 
 libfxcorr_a_SOURCES = \
@@ -80,6 +83,7 @@ neuteredmpifxcorr_SOURCES = \
 	core.cpp \
 	datastream.cpp \
 	mk5.cpp \
+	switchedpower.cpp \
 	$(mark5_files)
 
 neuteredmpifxcorr_CXXFLAGS = -DNEUTERED_DIFX $(AM_CXXFLAGS)

@@ -2,6 +2,7 @@ Version 2.0.1
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * Added new checkmpifxcorr utility
 * Updates to phase cal extraction
+* Added switched power detection (enable with TCAL FREQUENCY, optional line just above PHASE CAL INT (MHZ) ), currently only for mark5access based unpackers, and only works on 2-bit data.
 
 Version 2.0.0, 2010 July 14
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
