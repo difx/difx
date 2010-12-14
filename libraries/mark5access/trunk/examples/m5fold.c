@@ -85,40 +85,6 @@ int usage(const char *pgm)
 	return 0;
 }
 
-/* returns theoretical <v^2> for 2 bit samples for a given power level, p */
-double powerfunc(double p)
-{
-	double n1=0.0;
-
-	/* calculate n1 -- the fraction of samples in the "low" state */
-	if(p <= 0.0)
-	{
-		n1 = 1.0;
-	}
-	else
-	{
-		n1 = erf(M_SQRT1_2/p);
-	}
-
-	return n1 + (1.0-n1)*OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
-}
-
-void plotpower()
-{
-	FILE *out;
-	double p, q;
-
-	out = fopen("powerfunc.txt", "w");
-
-	for(p = 0; p < 5.0; p += 0.01)
-	{
-		q = powerfunc(p);
-		fprintf(out, "%f %f\n", p, q); 
-	}
-
-	fclose(out);
-}
-
 int fold(const char *filename, const char *formatname, int nbin, int nint,
 	double freq, const char *outfile, long long offset)
 {
@@ -309,7 +275,7 @@ int main(int argc, char **argv)
 
 	if(argc > 7)
 	{
-		offset=atoll(argv[7]);
+		offset = atoll(argv[7]);
 	}
 
 	fold(argv[1], argv[2], nbin, nint, freq, argv[6], offset);

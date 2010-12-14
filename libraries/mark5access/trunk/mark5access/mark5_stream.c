@@ -1299,13 +1299,16 @@ static double inverseerf(double x)
 double correct_2bit_power(double x)
 {
 	const double a = OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
+	double f;
 
 	if(x <= 0.0)
 	{
 		return -1.0;
 	}
 
-	return 1.0/(M_SQRT2*inverseerf( (x-a)/(1.0-a) ) );
+	f = inverseerf( (a-x)/(a-1.0) );
+
+	return 1.0/(f*f);
 }
 
 /* input:  fraction of counts in a high state.

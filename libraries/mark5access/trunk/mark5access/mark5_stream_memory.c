@@ -66,6 +66,7 @@ static int mark5_stream_memory_next(struct mark5_stream *ms)
 	if(ms->frame + ms->framebytes > end)
 	{
 		ms->readposition = -1;
+
 		return -1;
 	}
 
