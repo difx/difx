@@ -717,6 +717,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	networkPort = 0;
 	windowSize = 0;
 	phaseCalIntervalMHz = -1;
+	tcalFrequency = -1;
 	dataSource = DataSourceNone;
 	dataSampling = NumSamplingTypes;	/* flag that no sampling is is identified here */
 }
@@ -1007,6 +1008,10 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
+	}
+	else if(key == "tcalFreq")
+	{
+		ss >> tcalFrequency;
 	}
 	else if(key == "freqClockOffs")
 	{
@@ -2078,6 +2083,8 @@ ostream& operator << (ostream &os, const AntennaSetup &x)
 		os << "  networkPort=" << x.networkPort << endl;
 		os << "  windowSize=" << x.windowSize << endl;
 	}
+	os << "  phaseCalInt=" << x.phaseCalIntervalMHz << endl;
+	os << "  tcalFreq=" << x.tcalFrequency << endl;
 
         os << "}" << endl;
 
@@ -2305,6 +2312,7 @@ int CorrParams::loadShelves(const string &fileName)
 		if(sscanf(s, "%s%s%s", a, v, ms) != 3)
 		{
 			cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << endl;
+
 			exit(0);
 		}
 

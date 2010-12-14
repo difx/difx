@@ -137,6 +137,7 @@ public:
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	int tcalFrequency;	// Hz (= 80 for VLBA)
 	vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
 };
 

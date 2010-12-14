@@ -15,6 +15,7 @@ Version 2.0.1
 * When cross-pol enabled, allow correlation of R-L even if one antenna doesn't have both polarizations
 * Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
 * Propagate .vex file phase cal extraction into .input file
+* Pass tcalFreq from .v2d to .input
 
 Version 2.0
 ~~~~~~~~~~~

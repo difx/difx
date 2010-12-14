@@ -1787,6 +1787,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 				if(antennaSetup)
 				{
+					if(antennaSetup->tcalFrequency >= 0)
+					{
+						// use .v2d value
+						dd->tcalFrequency = antennaSetup->tcalFrequency;
+					}
 					if(antennaSetup->phaseCalIntervalMHz >= 0)
 					{
 						// Override with the .v2d value
