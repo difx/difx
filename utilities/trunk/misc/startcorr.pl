@@ -54,7 +54,7 @@ if (defined $p4pg) {
   # Should also check machinefile is consistent
 }
 
-my ($delay, $uvw, $threads, $duration, $mjd, $seconds, $outfile);
+my ($calc, $threads, $duration, $mjd, $seconds, $outfile);
 
 my @active_datastreams = ();
 my @telescopes = ();
@@ -67,10 +67,8 @@ my $bandwidth = undef;
 # Grab the values we need from the input file
 open(INPUT, $input) || die "Could not open $input: $!\n";
 while (<INPUT>) {
-  if (/DELAY FILENAME:     (\S+)/) {
-    $delay = $1;
-  } elsif (/UVW FILENAME:       (\S+)/) {
-    $uvw = $1;
+  if (/CALC FILENAME:      (\S+)/) {
+    $calc = $1;
   } elsif (/CORE CONF FILENAME: (\S+)/) {
     $threads = $1;
   } elsif (/EXECUTE TIME \(SEC\): (\S+)/) {
@@ -106,16 +104,14 @@ while (<INPUT>) {
 close(INPUT);
 
 # Check the input file is vaguely sane
-die "DELAY FILENAME not found\n" if (!defined $delay);
-die "UVW FILENAME not found\n" if (!defined $uvw);
+die "CALC FILENAME not found\n" if (!defined $calc);
 die "CORE CONF FILENAME not found\n" if (!defined $threads);
 die "EXECUTE TIME not found\n" if (!defined $duration);
 die "START MJD not found\n" if (!defined $mjd);
 die "START SECONDS not found\n" if (!defined $seconds);
 die "OUTPUT FILENAME not found\n" if (!defined $outfile);
 
-checkfile('Delay file', $delay);
-checkfile('Uvw file', $uvw);
+checkfile('Calc file', $calc);
 checkfile('Thread file', $threads);
 
 if ($evlbi) {
@@ -161,9 +157,9 @@ if ($evlbi) {
   # Rewrite the output file
   my $output;
   if ($input =~ /^(.*)\.([^.]+)$/) {
-    $output = "$1-run.$2";
+    $output = "$1-${filetime}.$2";
   } else {
-    $output = "$input-run";
+    $output = "$input-${filetime}";
   }
 
   open(INPUT, $input) || die "Could not reopen $input: $!\n";
@@ -191,7 +187,7 @@ if ($evlbi) {
 die "Rpfits file $outfile already exists!\n" if (-e $outfile);
 
 ##########
-# Launch ATNF evlbi clients
+# Launch LBA evlbi clients
 my $status;
 my $pid = 0;
 
@@ -225,47 +221,48 @@ if (defined $recorder_hosts && $evlbi) {
 
     for (my $i=0; $i<@telescopes; $i++) {
       next if (!$active_datastreams[$i]);
-    
+      my $ant = $telescopes[$i];
+
+
       my ($recorder, $playback, $compression, $vsib_mode, $ipd);
-      $recorder = $rec_hosts{$telescopes[$i]}->[0];
-      $playback = $rec_hosts{$telescopes[$i]}->[1];
-      $compression = $rec_hosts{$telescopes[$i]}->[2];
-      $vsib_mode = $rec_hosts{$telescopes[$i]}->[3];
-      $ipd = $rec_hosts{$telescopes[$i]}->[4];
+      $recorder = $rec_hosts{$ant}->[0];
+      $playback = $rec_hosts{$ant}->[1];
+      $compression = $rec_hosts{$ant}->[2];
+      $vsib_mode = $rec_hosts{$ant}->[3];
+      $ipd = $rec_hosts{$ant}->[4];
+      my $tcpwin = $tcpwin[$i];
+      my $udp = 0;
+      if ($tcpwin<0) {
+	$udp = -$tcpwin;
+	$tcpwin = 0;
+      }
 
       if ($recorder) {
-	$status = send_data("remote_host=$playback", $recorder);
-	die "Failed to set remote_host on $recorder\n" if (!defined $status);
+	$status = send_data("add_host=evlbi_$ant,$playback,$telport[$i],$tcpwin,1", $recorder);
+	die "Failed to set add_host on $recorder\n" if (!defined $status);
+
+	#$status = send_data("remote_host=$playback", $recorder);
+	#die "Failed to set remote_host on $recorder\n" if (!defined $status);
 	
-	$status = send_data("remote_port=$telport[$i]", $recorder);
-	die "Failed to set port on $recorder\n" if (!defined $status);
-	if ($tcpwin[$i]<0) {
-	  my $udp = -$tcpwin[$i];
-	  $status = send_data("udp=$udp", $recorder);
-	  die "Failed to set UDP on $recorder\n" if (!defined $status);
-	  $status = send_data("tcp_window_size=0", $recorder);
-	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
-	  if (defined $ipd) {
-	    $status = send_data("ipd=$ipd", $recorder);
-	    die "Failed to set IPD on $recorder\n" if (!defined $status);
-	  } else {
-	    $status = send_data("ipd=0", $recorder);
-	    die "Failed to set IPD on $recorder\n" if (!defined $status);
-	  }
-      
-	} else {
-	  $status = send_data("udp=0", $recorder);
-	  die "Failed to turn off UDP on $recorder\n" if (!defined $status);
-	  $status = send_data("tcp_window_size=$tcpwin[$i]", $recorder);
-	  die "Failed to set tcp windowsize on $recorder\n" if (!defined $status);
+	#$status = send_data("remote_port=$telport[$i]", $recorder);
+	#die "Failed to set port on $recorder\n" if (!defined $status);
+
+	# UDP
+	if ($udp) {
+
+ 	  #$status = send_data("udp=$udp", $recorder);
+ 	  #die "Failed to set UDP on $recorder\n" if (!defined $status);
+
+	  $ipd = 0 if (!defined $ipd);
+	  $status = send_data("modify_host=evlbi_$ant,$udp,$ipd", $recorder);
+	  die "Failed to enable udp on $recorder\n" if (!defined $status);
 	}
-	
+
+	$status = send_data("recordingdisk=evlbi_$ant:",$recorder);
+
 	$duration+=5;
 	$status = send_data("record_time=${duration}s", $recorder);
 	die "Failed to set recording time on $recorder\n" if (!defined $status);
-	
-	$status = send_data("evlbi=on", $recorder);
-	die "Failed to turn on evlbi mode $recorder\n" if (!defined $status);
 	
 	$status = send_data("filesize=2s", $recorder);
 	die "Failed to set filesize on $recorder\n" if (!defined $status);
@@ -282,7 +279,7 @@ if (defined $recorder_hosts && $evlbi) {
 	$status = send_data("vsib_mode=$vsib_mode", $recorder);
 	die "Failed to set vsib_mode on $recorder\n" if (!defined $status);
 
-	$status = send_data("filename_prefix=$telescopes[$i]", $recorder);
+	$status = send_data("filename_prefix=$ant", $recorder);
 	die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
 	
 	if ($format[$i] eq 'MARK5B') {
@@ -306,8 +303,6 @@ if (defined $recorder_hosts && $evlbi) {
 	die "Failed to launch recorder on $recorder\n" if (!defined $status);
 
 	# Turn off evlbi
-	$status = send_data("evlbi=off", $recorder);
-	warn "Failed to turn off evlbi mode $recorder\n" if (!defined $status);
 	$status = send_data("filesize=10s", $recorder);
 	die "Failed to set filesize on $recorder\n" if (!defined $status);
 	$status = send_data("round_start=on", $recorder);
@@ -315,9 +310,9 @@ if (defined $recorder_hosts && $evlbi) {
 	$status = send_data("onebit=off", $recorder);
 	die "Failed to set mark5b on $recorder\n" if (!defined $status);
  
-	print "Launched $telescopes[$i] on $recorder\n" if ($recorder);
+	print "Launched $ant on $recorder\n" if ($recorder);
       } else {
-	print "***************************Not launching recorder for $telescopes[$i]\n";
+	print "***************************Not launching recorder for $ant\n";
       }
     }
     exit;
@@ -347,11 +342,18 @@ wait if ($pid);
 if (%rec_hosts) {
   for (my $i=0; $i<@telescopes; $i++) {
     next if (!$active_datastreams[$i]);
+    my $ant = $telescopes[$i];
     
-    my $recorder = $rec_hosts{$telescopes[$i]}->[0];
+    my $recorder = $rec_hosts{$ant}->[0];
     if ($recorder) {
       $status = send_cmd("record-stop", $recorder);
-     warn "Failed to stop recorder on $recorder\n" if (!defined $status);
+      warn "Failed to stop recorder on $recorder\n" if (!defined $status);
+
+      $status = send_data("recordingdisk=2", $recorder);
+      warn "Failed to reset recording disk on $recorder\n" if (!defined $status);
+
+      $status = send_data("rem_host=evlbi_$ant", $recorder);
+      warn "Failed to remove remote host on $recorder\n" if (!defined $status);
     }
   }
 }
