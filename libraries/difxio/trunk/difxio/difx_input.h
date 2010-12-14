@@ -262,6 +262,7 @@ typedef struct
 	enum DataSource dataSource;	/* MODULE, FILE, NET, other? */
 
 	int phaseCalIntervalMHz;/* 0 if no phase cal extraction, otherwise extract every tone */
+	int tcalFrequency;	/* 0 if no switched power extraction to be done.  =80 for VLBA */
 	int nRecTone;     /* number of pcal tones in the *recorded* baseband*/
 	int *recToneFreq; /* Frequency of each pcal tone in the *recorded* baseband in MHz */
 	int *recToneOut;  /* bool Recorded pcal written out?*/

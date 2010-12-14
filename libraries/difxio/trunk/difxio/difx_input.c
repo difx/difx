@@ -320,13 +320,14 @@ static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
 	else
 	{
 		fprintf(stderr, "deriveAntMap: NUM TELESCOPES not defined\n");
+
 		return 0;
 	}
 	
 	if(nTel < D->nAntenna)
 	{
-		fprintf(stderr, "deriveAntMap: NUM TELESCOPES too small: \n"
-			"%d < %d\n", nTel, D->nAntenna);
+		fprintf(stderr, "deriveAntMap: NUM TELESCOPES too small: \n%d < %d\n", 
+			nTel, D->nAntenna);
 	}
 
 	antMap = (int *)malloc(nTel* sizeof(int));
@@ -337,9 +338,9 @@ static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
 		r = DifxParametersfind1(p, r+1, "TELESCOPE %d NAME", t);
 		if(r < 0)
 		{
-			fprintf(stderr, "deriveAntMap: TELESCOPE %d NAME not "
-				"found\n", t);
+			fprintf(stderr, "deriveAntMap: TELESCOPE %d NAME not found\n", t);
 			free(antMap);
+			
 			return 0;
 		}
 		a = DifxInputGetAntennaId(D, DifxParametersvalue(p, r));
@@ -358,6 +359,7 @@ static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
 	{
 		fprintf(stderr, "deriveAntMap: too few antenna name matches\n");
 		free(antMap);
+
 		return 0;
 	}
 
@@ -408,8 +410,8 @@ static int generateAipsIFs(DifxInput *D, int configId)
 
 	if(configId < 0)
 	{
-		fprintf(stderr, "Warning: generateAipsIFs: configId = %d\n",
-			configId);
+		fprintf(stderr, "Warning: generateAipsIFs: configId = %d\n", configId);
+
 		return 0;
 	}
 
@@ -489,7 +491,8 @@ static int generateAipsIFs(DifxInput *D, int configId)
 	   dc->polMask == 0 || 
 	   ((dc->polMask & DIFXIO_POL_RL) && (dc->polMask & DIFXIO_POL_XY)) )
 	{
-		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x -- unsupported!\n", dc->polMask);
+		fprintf(stderr, "Error: generateAipsIFs: polMask = 0x%03x is unsupported!\n", dc->polMask);
+
 		return -1;
 	}
 
@@ -575,8 +578,8 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	N = DifxParametersbatchfind(ip, 0, commonKeys, N_COMMON_ROWS, rows);
 	if(N < N_COMMON_ROWS)
 	{
-		fprintf(stderr, "populateInput: N < N_COMMON_ROWS %d < %d\n",
-			N, N_COMMON_ROWS);
+		fprintf(stderr, "populateInput: N < N_COMMON_ROWS %d < %d\n", N, N_COMMON_ROWS);
+
 		return 0;
 	}
 
@@ -589,28 +592,28 @@ static DifxInput *parseDifxInputCommonTable(DifxInput *D,
 	{
 		D->fracSecondStartTime = 1;
 	}
-	D->job->activeDatastreams =
-		      atoi(DifxParametersvalue(ip, rows[5]));
-	D->job->activeBaselines =
-		      atoi(DifxParametersvalue(ip, rows[6]));
-	D->visBufferLength =
-		      atoi(DifxParametersvalue(ip, rows[7]));
+	D->job->activeDatastreams = atoi(DifxParametersvalue(ip, rows[5]));
+	D->job->activeBaselines   = atoi(DifxParametersvalue(ip, rows[6]));
+	D->visBufferLength        = atoi(DifxParametersvalue(ip, rows[7]));
 	v = snprintf(D->calcFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: CALC FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+
 		return 0;
 	}
 	v = snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[1]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: CORE CONF FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+
 		return 0;
 	}
 	v = snprintf(D->outputFile, DIFXIO_FILENAME_LENGTH, "%s", DifxParametersvalue(ip, rows[8]));
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "populateInput: OUTPUT FILENAME too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
+
 		return 0;
 	}
 
@@ -635,6 +638,7 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 	if(!pp) 
 	{
 		fprintf(stderr, "Problem opening or reading %s\n", fileName);
+
 		return -1;
 	}
 
@@ -650,9 +654,10 @@ static int loadPhasedArrayConfigFile(DifxInput *D, const char *fileName)
 	dpa->accTime = atoi(DifxParametersvalue(pp, r));
 	r = DifxParametersfind(pp, r, "COMPLEX OUTPUT");
 	dpa->complexOutput = 0;
-	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE") == 0 || 
-		strcasecmp(DifxParametersvalue(pp, r), "True") == 0)
+	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE"))
+	{
 		dpa->complexOutput = 1;
+	}
 	r = DifxParametersfind(pp, r, "OUTPUT BITS");
 	dpa->quantBits = atoi(DifxParametersvalue(pp, r));
 
@@ -671,6 +676,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	if(!pp)
 	{
 		fprintf(stderr, "Problem opening or reading %s\n", fileName);
+
 		return -1;
 	}
 
@@ -682,6 +688,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	{
 		deleteDifxParameters(pp);
 		fprintf(stderr, "NUM POLYCO FILES not found\n");
+
 		return -1;
 	}
 	nPolycoFiles = atoi(DifxParametersvalue(pp, r));
@@ -697,6 +704,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		{
 			deleteDifxParameters(pp);
 			fprintf(stderr, "POLYCO FILE %d not found\n", i);
+
 			return -1;
 		}
 		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco,
@@ -704,6 +712,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		if(r < 0)
 		{
 			deleteDifxParameters(pp);
+
 			return -1;
 		}
 	}
@@ -713,6 +722,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	{
 		deleteDifxParameters(pp);
 		fprintf(stderr, "NUM PULSAR BINS not found\n");
+
 		return -1;
 	}
 	dp->nBin = atoi(DifxParametersvalue(pp, r));
@@ -724,6 +734,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 	{
 		deleteDifxParameters(pp);
 		fprintf(stderr, "SCRUNCH OUTPUT not found\n");
+
 		return -1;
 	}
 	if(strcasecmp(DifxParametersvalue(pp, r), "TRUE") == 0)
@@ -738,6 +749,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		{
 			deleteDifxParameters(pp);
 			fprintf(stderr, "BIN PHASE END %d not found\n", i);
+
 			return -1;
 		}
 		dp->binEnd[i] = atof(DifxParametersvalue(pp, r));
@@ -747,6 +759,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 		{
 			deleteDifxParameters(pp);
 			fprintf(stderr, "BIN WEIGHT %d not found\n", i);
+
 			return -1;
 		}
 		dp->binWeight[i] = atof(DifxParametersvalue(pp, r));
@@ -789,6 +802,7 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 	if(r < 0)
 	{
 		fprintf(stderr, "NUM CONFIGURATIONS not found\n");
+
 		return 0;
 	}
 	D->nConfig  = atoi(DifxParametersvalue(ip, r));
@@ -801,9 +815,9 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 			configKeys, N_CONFIG_ROWS, rows);
 		if(N < N_CONFIG_ROWS)
 		{
-			fprintf(stderr, "parseDifxInputConfigurations: "
-				"N < N_CONFIG_ROWS %d "
+			fprintf(stderr, "parseDifxInputConfigurations: N < N_CONFIG_ROWS %d "
 				"< %d\n", N, N_CONFIG_ROWS);
+
 			return 0;
 		}
 		snprintf(dc->name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
@@ -826,9 +840,9 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"PULSAR CONFIG FILE");
 			if(r <= 0)
 			{
-				fprintf(stderr, "input file row %d : "
-					"PULSAR CONFIG FILE expected\n",
+				fprintf(stderr, "input file row %d : PULSAR CONFIG FILE expected\n",
 					rows[9] + 2);
+
 				return 0;
 			}
 			dc->pulsarId = loadPulsarConfigFile(D,
@@ -845,9 +859,9 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"PHASED ARRAY CONFIG FILE");
 			if(r <= 0)
 			{
-				fprintf(stderr, "input file row %d : "
-					"PHASED ARRAY CONFIG FILE expected\n",
+				fprintf(stderr, "input file row %d : PHASED ARRAY CONFIG FILE expected\n",
 					rows[10] + 2);
+
 				return 0;
 			}
 			dc->phasedArrayId = loadPhasedArrayConfigFile(D,
@@ -879,8 +893,8 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"DATASTREAM %d INDEX", a);
 			if(r < 0)
 			{
-				fprintf(stderr, 
-					"DATASTREAM %d INDEX not found\n", a);
+				fprintf(stderr, "DATASTREAM %d INDEX not found\n", a);
+
 				return 0;
 			}
 			dc->datastreamId[a] = atoi(DifxParametersvalue(ip, r));
@@ -900,8 +914,8 @@ static DifxInput *parseDifxInputConfigurationTable(DifxInput *D,
 				"BASELINE %d INDEX", b);
 			if(r < 0)
 			{
-				fprintf(stderr, 
-					"BASELINE %d INDEX not found\n", b);
+				fprintf(stderr, "BASELINE %d INDEX not found\n", b);
+
 				return 0;
 			}
 			dc->baselineId[b] = atoi(DifxParametersvalue(ip, r));
@@ -920,6 +934,7 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 	if(r<0)
 	{
 		fprintf(stderr, "NUM RULES not found\n");
+
 		return 0;
 	}
 	D->nRule = atoi(DifxParametersvalue(ip, r));
@@ -960,6 +975,7 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 		if(r<0)
 		{
 			fprintf(stderr, "RULE %d CONFIG NAME not found\n", rule);
+
 			return 0;
 		}
 		snprintf(D->rule[rule].configName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
@@ -993,6 +1009,7 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D,
 	if(r < 0)
 	{
 		fprintf(stderr, "FREQ ENTRIES not found\n");
+
 		return 0;
 	}
 	D->nFreq    = atoi(DifxParametersvalue(ip, r));
@@ -1004,8 +1021,8 @@ static DifxInput *parseDifxInputFreqTable(DifxInput *D,
 			b, N_FREQ_ROWS, rows);
 		if(N < N_FREQ_ROWS)
 		{
-			fprintf(stderr, "populateInput: N < N_FREQ_ROWS %d "
-				"< %d\n", N, N_FREQ_ROWS);
+			fprintf(stderr, "populateInput: N < N_FREQ_ROWS %d < %d\n", N, N_FREQ_ROWS);
+
 			return 0;
 		}
 		D->freq[b].freq     = atof(DifxParametersvalue(ip, rows[0]));
@@ -1060,6 +1077,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 	if(r < 0)
 	{
 		fprintf(stderr, "TELESCOPE ENTRIES not found\n");
+
 		return 0;
 	}
 	D->nAntenna = atoi(DifxParametersvalue(ip, r));
@@ -1072,8 +1090,8 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 			a, N_ANT_ROWS, rows);
 		if(N < N_ANT_ROWS)
 		{
-			fprintf(stderr, "populateInput: N < N_ANT_ROWS %d "
-				"< %d\n", N, N_ANT_ROWS);
+			fprintf(stderr, "populateInput: N < N_ANT_ROWS %d < %d\n", N, N_ANT_ROWS);
+
 			return 0;
 		}
 		snprintf(D->antenna[a].name, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, rows[0]));
@@ -1093,7 +1111,7 @@ static DifxInput *parseDifxInputTelescopeTable(DifxInput *D,
 static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 	const DifxParameters *ip)
 {
-	int a, e, i, r, r2, v, nr, nz;
+	int a, e, i, r, r1, r2, v, nr, nz;
 	int nRecBand, nZoomBand;
 
 	if(!D || !ip)
@@ -1105,6 +1123,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 	if(r < 0)
 	{
 		fprintf(stderr, "Cannot find DATASTREAM TABLE\n");
+
 		return 0;
 	}
 	D->nDatastream = atoi(DifxParametersvalue(ip, r));
@@ -1194,6 +1213,13 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			return 0;
 		}
 
+		/* note use of r1 here: this parameter is optional and not unique. */
+		r1 = DifxParametersfind(ip, r+1, "TCAL FREQUENCY");
+		if(r1 > 0 && r1 < r+5)
+		{
+			D->datastream[e].tcalFrequency = atoi(DifxParametersvalue(ip, r1));
+		}
+
 		r = DifxParametersfind(ip, r+1, "PHASE CAL INT (MHZ)");
 		if(r < 0)
 		{
@@ -1201,7 +1227,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 
 			return 0;
 		}
-		D->datastream[e].phaseCalIntervalMHz = atoi(DifxParametersvalue(ip,r));
+		D->datastream[e].phaseCalIntervalMHz = atoi(DifxParametersvalue(ip, r));
 
 		r = DifxParametersfind(ip, r+1, "NUM RECORDED FREQS");
 		if(r < 0)
@@ -1369,6 +1395,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "D/STREAM A INDEX %d not found\n", b);
+
 			return 0;
 		}
 		D->baseline[b].dsA = atoi(DifxParametersvalue(ip, r));
@@ -1376,6 +1403,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "D/STREAM B INDEX %d not found\n", b);
+			
 			return 0;
 		}
 		D->baseline[b].dsB = atoi(DifxParametersvalue(ip, r));
@@ -1383,6 +1411,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "NUM FREQS %d not found\n", b);
+			
 			return 0;
 		}
 		DifxBaselineAllocFreqs(D->baseline + b, atoi(DifxParametersvalue(ip, r)));
@@ -1393,8 +1422,8 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 				b, f);
 			if(r < 0)
 			{
-				fprintf(stderr, "POL PRODUCTS %d/%d "
-					"not found\n", b, f);
+				fprintf(stderr, "POL PRODUCTS %d/%d not found\n", b, f);
+			
 				return 0;
 			}
 			DifxBaselineAllocPolProds(D->baseline + b, f, 
@@ -1405,8 +1434,8 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 					"D/STREAM A BAND %d", p);
 				if(r < 0)
 				{
-					fprintf(stderr, "D/STREAM A BAND %d "
-						"not found\n", p);
+					fprintf(stderr, "D/STREAM A BAND %d not found\n", p);
+
 					return 0;
 				}
 				D->baseline[b].recBandA[f][p] =
@@ -1415,8 +1444,8 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 					"D/STREAM B BAND %d", p);
 				if(r < 0)
 				{
-					fprintf(stderr, "D/STREAM B BAND %d "
-						"not found\n", p);
+					fprintf(stderr, "D/STREAM B BAND %d not found\n", p);
+
 					return 0;
 				}
 				D->baseline[b].recBandB[f][p] =
@@ -1447,6 +1476,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 		if(r < 0)
 		{
 			fprintf(stderr, "D/STREAM %d FILES not found\n", j);
+
 			return 0;
 		}
 		N = atoi(DifxParametersvalue(ip, r));
@@ -1454,6 +1484,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 		{
 			fprintf(stderr, "D/STREAM %d FILES has illegal value [%s]\n", j,
 				DifxParametersvalue(ip, r));
+
 			return 0;
 		}
 		if(N > 0)
@@ -1465,6 +1496,7 @@ static DifxInput *parseDifxInputDataTable(DifxInput *D,
 				if(r < 0)
 				{
 					fprintf(stderr, "FILE %d/%d not found\n", j, i);
+
 					return 0;
 				}
 				ds->file[i] = strdup( DifxParametersvalue(ip, r) );
@@ -1520,6 +1552,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 	if(D->nConfig < 1)
 	{
 		fprintf(stderr, "deriveDifxInputValues : nConfig < 1\n");
+
 		return 0;
 	}
 
@@ -1571,6 +1604,7 @@ static DifxInput *deriveDifxInputValues(DifxInput *D)
 		if(v < 0)
 		{
 			fprintf(stderr, "Fatal error processing configId %d\n", c);
+
 			return 0;
 		}
 	}
@@ -1583,6 +1617,7 @@ static DifxInput *populateInput(DifxInput *D, const DifxParameters *ip)
 	if(!D || !ip)
 	{
 		fprintf(stderr, "populateInput: D = 0 or ip = 0\n");
+
 		return 0;
 	}
 
@@ -1700,6 +1735,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	if(D->nAntenna == 0)
 	{
 		fprintf(stderr, "Error: populateCalc: D->nAntenna == 0\n");
+
 		return 0;
 	}
 	D->source = newDifxSourceArray(D->nSource);
@@ -1842,8 +1878,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		{
 			if(i == 0)
 			{
-				fprintf(stderr, "Warning: no antenna axis "
-					"offsets available\n");
+				fprintf(stderr, "Warning: no antenna axis offsets available\n");
 				break;
 			}
 			else

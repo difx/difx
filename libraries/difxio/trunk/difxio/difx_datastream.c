@@ -369,6 +369,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 		fprintf(fp, " (%d, %c)", dd->zoomBandFreqId[f], dd->zoomBandPolName[f]);
 	}
 	fprintf(fp, "\n");
+	fprintf(fp, "    tcalFrequency = %d\n", dd->tcalFrequency);
 	fprintf(fp, "    phaseCalIntMHZ = %d\n", dd->phaseCalIntervalMHz);
 	fprintf(fp, "    nRecPhaseCalTones = %d\n", dd->nRecTone);
 	for(f = 0; f < dd->nRecTone; f++)
@@ -405,6 +406,7 @@ int isSameDifxDatastream(const DifxDatastream *dd1, const DifxDatastream *dd2,
 	   dd1->nZoomFreq != dd2->nZoomFreq ||
 	   dd1->nZoomBand != dd2->nZoomBand ||
 	   dd1->dataSource != dd2->dataSource ||
+	   dd1->tcalFrequency != dd2->tcalFrequency ||
 	   dd1->phaseCalIntervalMHz != dd2->phaseCalIntervalMHz)
 	{
 		return 0;
@@ -480,6 +482,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
 	dest->dataSampling = src->dataSampling;
 	dest->quantBits = src->quantBits;
+	dest->tcalFrequency = src->tcalFrequency;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 	dest->nRecTone = src->nRecTone;
 
@@ -552,6 +555,7 @@ void moveDifxDatastream(DifxDatastream *dest, DifxDatastream *src)
 	dest->windowSize = src->windowSize;
 	dest->quantBits = src->quantBits;
 	dest->dataFrameSize = src->dataFrameSize;
+	dest->tcalFrequency = src->tcalFrequency;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
 	dest->nRecTone = src->nRecTone;
 	dest->recToneFreq = src->recToneFreq;
@@ -746,6 +750,10 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	writeDifxLine(out, "DATA SAMPLING", samplingTypeNames[dd->dataSampling]);
 	writeDifxLine(out, "DATA SOURCE", dataSourceNames[dd->dataSource]);
 	writeDifxLine(out, "FILTERBANK USED", "FALSE");
+	if(dd->tcalFrequency > 0)
+	{
+		writeDifxLineInt(out, "TCAL FREQUENCY", dd->tcalFrequency);
+	}
 	writeDifxLineInt(out, "PHASE CAL INT (MHZ)", dd->phaseCalIntervalMHz);
 	writeDifxLineInt(out, "NUM RECORDED FREQS", dd->nRecFreq);
 	for(i = 0; i < dd->nRecFreq; i++)

@@ -4,6 +4,7 @@
 * Get rid of strcpy and strncpy in favor of more friendly snprintf
 * Add optional VEX FILE parameter to .calc file
 * Introduce new enum SamplingType 
+* Add infrastructure for tcalFrequency
 
 3.0
 * Includes the following changes merged (hopefully correctly) from the DiFX-1.5 branch;
