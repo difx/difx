@@ -1,6 +1,7 @@
 Version 3.0.1
 * Post 2.0.0
 * Make use of clock shifting function in difxio
+* Add in Difx-based tsys, all except getting tcal scaling in place
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:
