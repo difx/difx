@@ -282,7 +282,7 @@ static double unscaledTsys(const SwitchedPower *sp)
 	return 0.5*(a+b)/(a-b);
 }
 
-int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int phasecentre, 
+int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, double avgSeconds, int phasecentre, 
 	int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
@@ -294,7 +294,6 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 	FILE *in;
 	SwitchedPower measurement[array_MAX_BANDS*2];
 	SwitchedPower average[array_MAX_BANDS*2];
-//	double pCal[];
 	double mjd1, mjd2, mjd;
 	double accumStart = -1, accumEnd = -1;
 	int antId;
@@ -319,7 +318,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 	}
 
 	v = snprintf(filename, MaxFilenameLength, 
-		"%s/SWITCHEDPOWER_%d", D->outputFile, datastreamId);
+		"%s.difx/SWITCHEDPOWER_%d", fileBase, datastreamId);
 	if(v >= MaxFilenameLength)
 	{
 		fprintf(stderr, "Developer error: getDifxTsys filename length wanted to be %d bytes long, not %d\n",
@@ -567,7 +566,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	float tAnt[2][array_MAX_BANDS];
 	int nBand;
 	int configId, sourceId, scanId;
-	int i, nPol=0;
+	int i, j, nPol=0;
 	int freqId, bandId, polId, antId;
 	int nRecBand;
 	int v, d;
@@ -632,10 +631,14 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 	for(d = 0; d < D->nDatastream; d++)
 	{
-		antId = getDifxTsys(D, d, 60, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
-		if(antId >= 0)
+		for(j = 0; j < D->nJob; j++)
 		{
-			hasDifxTsys[antId] = 1;
+			/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
+			antId = getDifxTsys(D, d, D->job[j].fileBase, 60, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+			if(antId >= 0)
+			{
+				hasDifxTsys[antId]++;
+			}
 		}
 	}
 
