@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,12 +28,144 @@
 //============================================================================
 #include <stdlib.h>
 #include <sys/types.h>
-#include <strings.h>
+#include <string.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
 
-static float tAnt[2][array_MAX_BANDS];
+typedef struct
+{
+	char antenna[8];
+	char receiver[8];
+	float freq, tcalR, tcalL;
+} TCal;
+
+TCal *tCals = 0;
+int nTcal;
+
+
+int loadTcals()
+{
+	const int MaxLineLength = 100;
+	char line[MaxLineLength];
+	const char *tcalFilename;
+	char *rv;
+	FILE *in;
+	int i;
+	int nAlloc = 0;
+
+
+	tcalFilename = getenv("TCAL_FILE");
+	if(tcalFilename == 0)
+	{
+		return -1;
+	}
+	in = fopen(tcalFilename, "r");
+	if(!in)
+	{
+		return -2;
+	}
+
+	nAlloc = 4000;
+	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
+
+	for(i = nTcal = 0; ; i++)
+	{
+		rv = fgets(line, MaxLineLength, in);
+		if(!rv)
+		{
+			break;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		if(nTcal >= nAlloc)
+		{
+			nAlloc += 1000;
+			tCals = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
+		}
+		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
+			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
+		nTcal++;
+	}
+
+	fclose(in);
+
+	return 0;
+}
+
+float getTcalValue(const char *antname, float freq, char pol)
+{
+	int i;
+	int besti;
+	int secondbesti;
+	float bestf, w1, w2, df;
+
+	if(nTcal == 0)
+	{
+		return 1.0;
+	}
+
+	besti = -1;
+	bestf = 1e9;
+	df = 1e9;
+	for(i = 0; i < nTcal; i++)
+	{
+		df = fabs(freq - tCals[i].freq);
+		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
+		{
+			bestf = df;
+			besti = i;
+		}
+	}
+	
+	if(besti < 0)
+	{
+		return 1.0;
+	}
+
+	bestf = tCals[besti].freq;
+
+	secondbesti = -1;
+	if(besti > 0 && bestf > freq && 
+	   strcmp(tCals[besti].antenna, tCals[besti-1].antenna) == 0 &&
+	   strcmp(tCals[besti].receiver, tCals[besti-1].receiver) == 0)
+	{
+		secondbesti = besti - 1;
+	}
+	else if(besti < nTcal-1 && bestf < freq && 
+	        strcmp(tCals[besti].antenna, tCals[besti+1].antenna) == 0 &&
+	        strcmp(tCals[besti].receiver, tCals[besti+1].receiver) == 0)
+	{
+		secondbesti = besti + 1;
+	}
+
+	if(secondbesti >= 0)
+	{
+		w1 = fabs( (tCals[secondbesti].freq - freq)/(tCals[secondbesti].freq - bestf) );
+		w2 = fabs( (tCals[besti].freq - freq)/(tCals[secondbesti].freq - bestf) );
+	}
+	else
+	{
+		secondbesti = besti;
+		w1 = 1.0;
+		w2 = 0.0;
+	}
+
+	if(pol == 'r' || pol == 'R')
+	{
+		return w1*tCals[besti].tcalR + w2*tCals[secondbesti].tcalR;
+	}
+	else if(pol == 'l' || pol == 'L')
+	{
+		return w1*tCals[besti].tcalL + w2*tCals[secondbesti].tcalL;
+	}
+	else
+	{
+		return 1.0;
+	}
+}
 
 void nanify(float X[2][array_MAX_BANDS])
 {
@@ -178,6 +310,13 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 	double windowDuration = 0;	/* in days */
 	double dumpWindow = 0;		/* mjd of end of window */
 	DifxScan *scan;
+	float tSys[2][array_MAX_BANDS];
+	float tAnt[2][array_MAX_BANDS];
+
+	if(tCals == 0)
+	{
+		loadTcals();
+	}
 
 	v = snprintf(filename, MaxFilenameLength, 
 		"%s/SWITCHEDPOWER_%d", D->outputFile, datastreamId);
@@ -193,6 +332,8 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 	{
 		return -1;
 	}
+
+	nanify(tAnt);
 
 	antId = D->datastream[datastreamId].antennaId;
 
@@ -226,12 +367,15 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 
 		if(scanId != currentScanId)
 		{
+			if(currentScanId >= 0)
+			{
+				doDump = 1;
+			}
 			if(scanId >= 0)
 			{
 				double s, e;
 				int nWindow;
 
-				doDump = 1;
 				scan = D->scan + scanId;
 				configId = scan->configId;
 				s = mjd1;	/* usually this will be > scan->mjdStart */
@@ -261,6 +405,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 			fprintf(stderr, "Developer error: getDifxTsys: ds=%d scanId=%d n=%d "
 				"nBand=%d mjd1=%12.6f mjd2=%12.6f\n",
 				datastreamId, scanId, n, nBand, mjd1, mjd2);
+
 			exit(0);
 		}
 
@@ -280,8 +425,8 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 				// write Tsys row to file
 				int freqId, bandId, polId, sourceId;
 				int32_t freqId1, antId1, sourceId1, arrayId1;
-				float tSys[2][array_MAX_BANDS];
 				double time;
+				float freq, tCal;
 				float timeInt;
 
 				time = (accumStart + accumEnd)*0.5 - (int)(D->mjdStart);
@@ -321,7 +466,17 @@ int getDifxTsys(const DifxInput *D, int datastreamId, double avgSeconds, int pha
 						/* This Freq is not entering this FITS file */
 						continue;
 					}
-					tSys[polId][bandId] = unscaledTsys(average + i);
+					freq = D->freq[freqId].freq;
+					if(D->freq[freqId].sideband == 'L')
+					{
+						freq -= D->freq[freqId].bw*0.5;
+					}
+					else
+					{
+						freq += D->freq[freqId].bw*0.5;
+					}
+					tCal = getTcalValue(D->antenna[antId].name, freq, D->config[currentConfigId].pol[polId]);
+					tSys[polId][bandId] = tCal*unscaledTsys(average + i);
 				}
 			
 				p_fitsbuf = fitsbuf;
@@ -409,6 +564,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	char antName[DIFXIO_NAME_LENGTH];
 	float tSysRecBand[2*array_MAX_BANDS];
 	float tSys[2][array_MAX_BANDS];
+	float tAnt[2][array_MAX_BANDS];
 	int nBand;
 	int configId, sourceId, scanId;
 	int i, nPol=0;
@@ -476,7 +632,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 
 	for(d = 0; d < D->nDatastream; d++)
 	{
-		antId = getDifxTsys(D, d, 20, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+		antId = getDifxTsys(D, d, 60, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
 		if(antId >= 0)
 		{
 			hasDifxTsys[antId] = 1;
