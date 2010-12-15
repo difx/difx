@@ -63,6 +63,11 @@ Mk5DataStream::~Mk5DataStream()
 {
   if(syncteststream != 0)
     delete_mark5_stream(syncteststream);
+  if(switchedpower)
+  {
+    delete switchedpower;
+    switchedpower = 0;
+  }
 }
 
 void Mk5DataStream::initialise()

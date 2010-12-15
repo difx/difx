@@ -394,7 +394,6 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	long long n;
 	int doUpdate = 0;
 	char *mk5dirpath;
-	char formatname[64];
 	int nbits, nrecordedbands, framebytes;
 	Configuration::dataformat format;
 	double bw;
@@ -787,6 +786,25 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		ngood++;
 		filltime = 0;
 		invalidtime = 0;
+
+                // feed switched power detector
+                if(switchedpower)
+                {
+                  struct mark5_stream *m5stream = new_mark5_stream(
+                    new_mark5_stream_memory(data, bytes),
+                    new_mark5_format_generic_from_string(formatname) );
+                  if(m5stream)
+                  {
+                    mark5_stream_fix_mjd(m5stream, config->getStartMJD());
+                    switchedpower->feed(m5stream);
+                    delete_mark5_stream(m5stream);
+                  }
+                }
+                else
+                {
+                  cout << "no switched power" << endl;
+                }
+
 	}
 
 

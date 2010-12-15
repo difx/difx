@@ -45,7 +45,7 @@ SwitchedPower::~SwitchedPower()
 void SwitchedPower::init()
 {
 	frequency = 80;
-	interval = 5;
+	interval = 1;
 	startsec = -1;
 	datastreamId = -1;
 	nchan = 0;
@@ -61,7 +61,7 @@ int SwitchedPower::open()
 
 	sprintf(switchedPowerFilename, "%s/SWITCHEDPOWER_%d", filepath.c_str(), datastreamId);
 
-	cout << "making file: " << switchedPowerFilename << endl;
+	cout << "Making switched power file: " << switchedPowerFilename << endl;
 
 	output.open(switchedPowerFilename, ios::out | ios::app);
 	if(!output.fail())
