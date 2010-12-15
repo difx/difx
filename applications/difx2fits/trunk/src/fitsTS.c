@@ -477,7 +477,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 					tCal = getTcalValue(D->antenna[antId].name, freq, D->config[currentConfigId].pol[polId]);
 					tSys[polId][bandId] = tCal*unscaledTsys(average + i);
 				}
-			
+
 				p_fitsbuf = fitsbuf;
 			
 				FITS_WRITE_ITEM (time, p_fitsbuf);
@@ -512,7 +512,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 		}
 
 		nBand = n;
-		if(mjd > 0 && scanId > 0 && nBand > 0)
+		if(mjd > 0 && scanId >= 0 && nBand > 0)
 		{
 			accumulateSwitchedPower(average, measurement, nBand);
 			if(nAccum == 0)
