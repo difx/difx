@@ -2462,14 +2462,14 @@ static int mark5b_count_16bitstream_2bit_decimation1(struct mark5_stream *ms,
 			i++;
 			fp1 = countlut2bit[buf[i]];
 			i++;
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
 		}
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -2513,14 +2513,14 @@ static int mark5b_count_16bitstream_2bit_decimation2(struct mark5_stream *ms,
 			i++;
 			fp1 = countlut2bit[buf[i]];
 			i += 3;
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
 		}
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -2564,14 +2564,14 @@ static int mark5b_count_16bitstream_2bit_decimation4(struct mark5_stream *ms,
 			fp0 = countlut2bit[buf[i]];
 			i++;
 			fp1 = countlut2bit[buf[i]];
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
 		}
 		i += df;
 
@@ -2620,22 +2620,22 @@ static int mark5b_count_32bitstream_2bit_decimation1(struct mark5_stream *ms,
 			i++;
 			fp3 = countlut2bit[buf[i]];
 			i++;
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
-			highstates[8] = fp2[0];
-			highstates[9] = fp2[1];
-			highstates[10] = fp2[2];
-			highstates[11] = fp2[3];
-			highstates[12] = fp3[0];
-			highstates[13] = fp3[1];
-			highstates[14] = fp3[2];
-			highstates[15] = fp3[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+			highstates[8] += fp2[0];
+			highstates[9] += fp2[1];
+			highstates[10] += fp2[2];
+			highstates[11] += fp2[3];
+			highstates[12] += fp3[0];
+			highstates[13] += fp3[1];
+			highstates[14] += fp3[2];
+			highstates[15] += fp3[3];
 		}
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -2683,22 +2683,22 @@ static int mark5b_count_32bitstream_2bit_decimation2(struct mark5_stream *ms,
 			i++;
 			fp3 = countlut2bit[buf[i]];
 			i += 5;
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
-			highstates[8] = fp2[0];
-			highstates[9] = fp2[1];
-			highstates[10] = fp2[2];
-			highstates[11] = fp2[3];
-			highstates[12] = fp3[0];
-			highstates[13] = fp3[1];
-			highstates[14] = fp3[2];
-			highstates[15] = fp3[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+			highstates[8] += fp2[0];
+			highstates[9] += fp2[1];
+			highstates[10] += fp2[2];
+			highstates[11] += fp2[3];
+			highstates[12] += fp3[0];
+			highstates[13] += fp3[1];
+			highstates[14] += fp3[2];
+			highstates[15] += fp3[3];
 		}
 
 		if(i >= MK5B_PAYLOADSIZE)
@@ -2746,22 +2746,22 @@ static int mark5b_count_32bitstream_2bit_decimation4(struct mark5_stream *ms,
 			fp2 = countlut2bit[buf[i]];
 			i++;
 			fp3 = countlut2bit[buf[i]];
-			highstates[0] = fp0[0];
-			highstates[1] = fp0[1];
-			highstates[2] = fp0[2];
-			highstates[3] = fp0[3];
-			highstates[4] = fp1[0];
-			highstates[5] = fp1[1];
-			highstates[6] = fp1[2];
-			highstates[7] = fp1[3];
-			highstates[8] = fp2[0];
-			highstates[9] = fp2[1];
-			highstates[10] = fp2[2];
-			highstates[11] = fp2[3];
-			highstates[12] = fp3[0];
-			highstates[13] = fp3[1];
-			highstates[14] = fp3[2];
-			highstates[15] = fp3[3];
+			highstates[0] += fp0[0];
+			highstates[1] += fp0[1];
+			highstates[2] += fp0[2];
+			highstates[3] += fp0[3];
+			highstates[4] += fp1[0];
+			highstates[5] += fp1[1];
+			highstates[6] += fp1[2];
+			highstates[7] += fp1[3];
+			highstates[8] += fp2[0];
+			highstates[9] += fp2[1];
+			highstates[10] += fp2[2];
+			highstates[11] += fp2[3];
+			highstates[12] += fp3[0];
+			highstates[13] += fp3[1];
+			highstates[14] += fp3[2];
+			highstates[15] += fp3[3];
 		}
 		i += df;
 
