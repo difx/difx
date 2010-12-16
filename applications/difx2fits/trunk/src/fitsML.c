@@ -197,10 +197,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 	   config = D->config + configId;
 	   freqId1 = config->fitsFreqId + 1;
-	   //printf("Working on phase centre %d\n", phasecentre);
-	   //printf("scan->phsCentreSrcs[phasecentre] is %d\n", scan->phsCentreSrcs[phasecentre]);
 	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
-	   //printf("Found the sourceId1 to be %d\n", sourceId1);
 	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
 	   
 	   if(scan->im)
@@ -213,15 +210,11 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		fprintf(stderr, "No IM info available - skipping generation of ML table\n");
 		continue;
 	   }
-	   //printf("np is %d\n", np);
-	   //printf("scan->nAntenna is %d\n", scan->nAntenna);
 
 	   for(p = 0; p < np; p++)
 	   {
-	      //printf("np is %d, scan->nAntenna is %d\n", np, scan->nAntenna);
-	      for(a = 0; a < scan->nAntenna; a++)
+	      for(a = 0; a < config->nAntenna; a++)
 	      {
-	        //printf("Doing poly %d, antenna %d\n", p, a);
 		dsId = config->ant2dsId[a];
 		if(dsId < 0 || dsId >= D->nDatastream)
 		{
@@ -240,37 +233,27 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
-	        if(scan->im)  /* use polynomial model */
+		if(scan->im[a] == 0)
 		{
-		  if(scan->im[a] == 0)
+		  if(skip[antId] == 0)
 		  {
-		      if(skip[antId] == 0)
-		      {
-		        printf("\n    Polynomial model error : skipping antId %d = %s",
-				antId, da->name);
-		        skip[antId]++;
-		        printed++;
-		        skipped++;
-		      }
-		      continue;
+		    printf("\n    Polynomial model error : skipping antId %d = %s",
+		        antId, da->name);
+		    skip[antId]++;
+		    printed++;
+		    skipped++;
 		  }
-	       
-		  P = scan->im[a][phasecentre] + p;
-		  //printf("Working on antenna %d, phasecentre %d, polynomial %d\n", a, phasecentre, p);
-
-	          time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - da->clockrefmjd)*86400.0 + P->sec;
-
-	          for(k = 0; k < array_N_POLY; k++)
-		  {
-		    //printf("About to look for poly %d of %d", k, array_N_POLY);
-		    gpoly[k] = -P->delay[k]*1.0e-6;
-		  }
+		  continue;
 		}
-		else	   /* use tabulated model */
+	       
+		P = scan->im[antId][phasecentre] + p;
+
+	        time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
+		deltat = (P->mjd - da->clockrefmjd)*86400.0 + P->sec;
+
+	        for(k = 0; k < array_N_POLY; k++)
 		{
-			fprintf(stderr, "No IM info available: skipping ML creation\n");
-			continue;
+		  gpoly[k] = -P->delay[k]*1.0e-6;
 		}
 
 		/* Add in the clock model */

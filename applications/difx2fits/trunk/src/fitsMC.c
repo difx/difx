@@ -72,7 +72,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
  	int nRowBytes;
 	char *p_fitsbuf, *fitsbuf;
 	int nBand, nPol;
-	int b, j, s, p, np, ant;
+	int b, j, s, p, np, a;
 	float LOOffset[array_MAX_BANDS];
 	float LORate[array_MAX_BANDS];
 	float dispDelay;
@@ -86,6 +86,9 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	double atmosDelay, atmosRate;
 	double clock, clockRate, c1, c2;
 	int configId, jobId, dsId, antId;
+	int *skip;
+	int skipped=0;
+	int printed=0;
 	/* 1-based indices for FITS file */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
@@ -130,7 +133,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 	arrayId1 = 1;
 
-	/* some values that are always zero */              
+	/* some values that are always zero */
 	for(b = 0; b < nBand; b++)
 	{
 		LOOffset[b] = 0.0;
@@ -139,6 +142,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 	dispDelay = 0.0;
 	dispDelayRate = 0.0;
+
+	skip = (int *)calloc(D->nAntenna, sizeof(int));
 
 	for(s = 0; s < D->nScan; s++)
 	{
@@ -172,43 +177,50 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   for(p = 0; p < np; p++)
 	   {
 	      /* loop over original .input file antenna list */
-	      for(ant = 0; ant < scan->nAntenna; ant++)
+	      for(a = 0; a < config->nAntenna; a++)
 	      {
-	        dsId = config->ant2dsId[ant];
+	        dsId = config->ant2dsId[a];
 		if(dsId < 0 || dsId >= D->nDatastream)
 		{
 			continue;
 		}
+		/* convert to D->antenna[] index ... */
 		antId = D->datastream[dsId].antennaId;
 
-		antId1 = config->datastreamId[ant] + 1;
-
-		if(scan->im)  /* use polynomial model */
+		if(antId < 0 || antId >= scan->nAntenna)
 		{
-		  if(scan->im[ant] == 0)
-		  {
-		    continue;
-		  }
-
-		  P = scan->im[ant][phasecentre] + p;
-
-		  time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
-		  deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
-
-		  /* in general, convert from (us) to (sec) */
-		  atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
-		  atmosRate  = (P->dry[1] + P->wet[1])*1.0e-6;
-
-		  /* here correct the sign of delay, and remove atmospheric
-		   * portion of it. */
-		  delay     = -P->delay[0]*1.0e-6 - atmosDelay;
-		  delayRate = -P->delay[1]*1.0e-6 - atmosRate;
-		}
-		else
-		{
-		  fprintf(stderr, "No IM info available - skipping MC creation!\n");
 		  continue;
 		}
+
+		/* ... and to FITS antennaId */
+		antId1 = antId + 1;
+
+		if(scan->im[antId] == 0)
+		{
+		  if(skip[antId] == 0)
+		  {
+		    printf("\n    Polynomial model error : skipping antId %d = %s", 
+		      antId, D->antenna[antId].name);
+		    skip[antId]++;
+		    printed++;
+		    skipped++;
+		  }
+		  continue;
+		}
+
+		P = scan->im[antId][phasecentre] + p;
+
+		time = P->mjd - (int)(D->mjdStart) + P->sec/86400.0;
+		deltat = (P->mjd - D->antenna[antId].clockrefmjd)*86400.0 + P->sec;
+
+		/* in general, convert from (us) to (sec) */
+		atmosDelay = (P->dry[0] + P->wet[0])*1.0e-6;
+		atmosRate  = (P->dry[1] + P->wet[1])*1.0e-6;
+
+		/* here correct the sign of delay, and remove atmospheric
+		 * portion of it. */
+		delay     = -P->delay[0]*1.0e-6 - atmosDelay;
+		delayRate = -P->delay[1]*1.0e-6 - atmosRate;
 
 		deltatn = 1.0;
 		c1 = 0.0;
@@ -222,7 +234,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		c2 = 0.0;
 		for(j=0; j<D->antenna[antId].clockorder; j++)
 		{
-			c2 = c2 + D->antenna[ant].clockcoeff[j] * deltatn;
+			c2 = c2 + D->antenna[antId].clockcoeff[j] * deltatn;
 			deltatn = deltatn * deltat2;
 		}
 		
@@ -258,12 +270,18 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 #endif
 		fitsWriteBinRow(out, fitsbuf);
 		
-	     } /* Antenna loop */
+	      } /* Antenna loop */
 	   } /* Intervals in scan loop */
 	} /* Scan loop */
+
+	if(printed)
+	{
+		printf("\n                            ");
+	}
   
 	/* release buffer space */
 	free(fitsbuf);
+	free(skip);
 
 	return D;
 }
