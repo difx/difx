@@ -318,7 +318,10 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if noconf and os.path.exists('config.status'):
         print "Re-using existing configuration"
     else:
-        configstring = cfp + "/configure --prefix=" + prefix + cache
+	configstring = cfp + "/configure --prefix=" + prefix
+	if cache != 'none':
+	    configstring += cache
+        # configstring = cfp + "/configure --prefix=" + prefix + cache
         if dompicxx:
             if cache != 'none':
                 configstring += "-CXX"
