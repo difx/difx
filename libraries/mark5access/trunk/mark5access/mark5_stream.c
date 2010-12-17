@@ -1299,25 +1299,35 @@ static double inverseerf(double x)
 double correct_2bit_power(double x)
 {
 	const double a = OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
-	double f;
 
-	if(x <= 0.0)
+	if(x > 0.0 && x <= 1.0)
+	{
+		double f;
+		
+		f = inverseerf( (a-x)/(a-1.0) );
+
+		return 0.5/(f*f);
+	}
+	else
 	{
 		return -1.0;
 	}
-
-	f = inverseerf( (a-x)/(a-1.0) );
-
-	return 1.0/(f*f);
 }
 
 /* input:  fraction of counts in a high state.
-   output: total power, corrected for 2bit quantization */
+   output: total power, corrected for 2bit quantization, normalized to about 1 for optimal state counts */
 double high_state_fraction_to_power(double x)
 {
-	double v2;
+	if(x > 0.0 && x <= 1.0)
+	{
+		double f;
+		
+		f = inverseerf(1.0-x);
 
-	v2 = (1.0-x) + x*OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
-
-	return correct_2bit_power(v2);
+		return 0.5/(f*f);
+	}
+	else
+	{
+		return -1.0;
+	}
 }
