@@ -3536,3 +3536,52 @@ int DifxInputGetMaxTones(const DifxInput *D)
 
 	return maxTones;
 }
+
+int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
+{
+	int s, d;
+	int configId, dsId;
+
+	if(!D)
+	{
+		return -2;
+	}
+
+	if(jobId < 0 || jobId >= D->nJob)
+	{
+		return -3;
+	}
+
+	if(antId < 0 || jobId >= D->nAntenna)
+	{
+		return -4;
+	}
+
+	/* This is a bit convoluted.  Loop over scans attempting to connect a configId to the jobId, ... */
+	for(s = 0; s < D->nScan; s++)
+	{
+		if(D->scan[s].jobId != jobId)
+		{
+			continue;
+		}
+		configId = D->scan[s].configId;
+		if(configId < 0 || configId >= D->nConfig)
+		{
+			continue;
+		}
+		for(d = 0; d < D->config[configId].nDatastream; d++)
+		{
+			dsId = D->config[configId].datastreamId[d];
+			if(dsId < 0 || dsId >= D->nDatastream)
+			{
+				continue;
+			}
+			if(D->datastream[dsId].antennaId == antId)
+			{
+				return dsId;
+			}
+		}
+	}
+
+	return -1;
+}

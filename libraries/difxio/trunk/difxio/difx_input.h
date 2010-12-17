@@ -771,6 +771,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 int DifxInputGetScanId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetMaxTones(const DifxInput *D);
+int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
 void DifxInputAllocThreads(DifxInput *D, int nCore);
