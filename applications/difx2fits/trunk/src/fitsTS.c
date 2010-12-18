@@ -289,7 +289,7 @@ static double unscaledTsys(const SwitchedPower *sp)
 	}
 }
 
-int getDifxTsys(const DifxInput *D, int jobId, int antId, const char *fileBase, double avgSeconds, int phasecentre, 
+int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int phasecentre, 
 	int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
@@ -330,7 +330,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, const char *fileBase, 
 		return dsId;
 	}
 
-	v = snprintf(filename, MaxFilenameLength, "%s.difx/SWITCHEDPOWER_%d", fileBase, dsId);
+	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, dsId);
 
 	if(v >= MaxFilenameLength)
 	{
@@ -648,7 +648,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		for(jobId = 0; jobId < D->nJob; jobId++)
 		{
 			/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
-			dsId = getDifxTsys(D, jobId, antId, D->job[jobId].fileBase, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+			dsId = getDifxTsys(D, jobId, antId, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
 			if(dsId >= 0)
 			{
 				hasDifxTsys[antId]++;

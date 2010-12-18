@@ -74,6 +74,7 @@ static int DifxVisInitData(DifxVis *dv)
 	if(dv->record == 0)
 	{
 		assert(dv->record);
+
 		exit(0);
 	}
 	dv->weight = dv->record->data;
@@ -88,25 +89,26 @@ static int DifxVisInitData(DifxVis *dv)
 static void DifxVisStartGlob(DifxVis *dv)
 {
 	char *globstr;
-	const char suffix[] = ".difx/DIFX*";
+	const char suffix[] = "/DIFX*";
 
-	globstr = calloc(strlen(dv->D->job[dv->jobId].fileBase)+
-		strlen(suffix)+8, 1);
+	globstr = calloc(strlen(dv->D->job[dv->jobId].outputFile) + strlen(suffix) + 8, 1);
 	if(globstr == 0)
 	{
 		assert(globstr);
+
 		exit(0);
 	}
 
-	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].fileBase, suffix);
+	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].outputFile, suffix);
 
 	glob(globstr, 0, 0, &dv->globbuf);
 	dv->nFile = dv->globbuf.gl_pathc;
 
 	if(dv->nFile == 0)
 	{
-		fprintf(stderr, "Error: no data files for job %s\n",
-			dv->D->job[dv->jobId].fileBase);
+		fprintf(stderr, "Error: no data files in %s\n",
+			dv->D->job[dv->jobId].outputFile);
+
 		exit(0);
 	}	
 
@@ -356,43 +358,7 @@ static double evalPoly(const double *p, int n, double x)
 	
 int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 {
-	const int MaxLineLength=100;
-
-	const char difxKeys[][MAX_DIFX_KEY_LEN] = 
-	{
-		"BASELINE NUM",
-		"MJD",
-		"SECONDS",
-		"CONFIG INDEX",
-		"SOURCE INDEX",
-		"FREQ INDEX",
-		"POLARISATION PAIR",
-		"PULSAR BIN",
-		"DATA WEIGHT",
-		"U (METRES)",
-		"V (METRES)",
-		"W (METRES)"
-	};
-
-	const char difxKeysOrig[][MAX_DIFX_KEY_LEN] = 
-	{
-		"BASELINE NUM",
-		"MJD",
-		"SECONDS",
-		"CONFIG INDEX",
-		"SOURCE INDEX",
-		"FREQ INDEX",
-		"POLARISATION PAIR",
-		"PULSAR BIN",
-		"WEIGHTS WRITTEN",
-		"U (METRES)",
-		"V (METRES)",
-		"W (METRES)"
-	};
-
-	const int N_DIFX_ROWS = sizeof(difxKeys)/sizeof(difxKeys[0]);
-	int rows[N_DIFX_ROWS];
-	int i, i1, v, N, index;
+	int i, i1, v, index;
 	int a1, a2;
 	int bl, scanId, binhdrversion, headerconfindex, intmjd;
 	double mjd, iat, dt, dt2, weight;
@@ -400,7 +366,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	char polpair[3];
 	int changed = 0;
 	int nFloat, readSize;
-	char line[MaxLineLength+1];
 	int freqId;
 	int configId;
 	const DifxConfig *config;
@@ -409,7 +374,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	int terms1, terms2;
 	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
 	int bin, srcindex, sync;
-	char *rv;
 
 	//printf("About to try and read another visibility\n");
 	resetDifxParameters(dv->dp);
@@ -428,57 +392,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	if(sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
 	{
-		line[0] = 'B';
-		line[1] = 'A';
-		line[2] = 'S';
-		line[3] = 'E';
-		rv = fgets(line+4, MaxLineLength-4, dv->in);
-		DifxParametersaddrow(dv->dp, line);
-		for(i = 1; i < 13; i++)
-		{
-			rv = fgets(line, MaxLineLength, dv->in);
-			if(!rv)
-			{
-				/* EOF should not happen in middle of text */
-				return HEADER_READ_ERROR;
-			}
-			DifxParametersaddrow(dv->dp, line);
-		}
-		/* parse the text header */
-		if(dv->D->inputFileVersion == 0)
-		{
-			N = DifxParametersbatchfind(dv->dp, 0, difxKeys, 
-				N_DIFX_ROWS, rows);
-		}
-		else
-		{
-			N = DifxParametersbatchfind(dv->dp, 0, difxKeysOrig, 
-				N_DIFX_ROWS, rows);
-		}
-		if(N < N_DIFX_ROWS)
-		{
-			printf("ERROR: N=%d < N_DIFX_ROWS=%d\n", N, N_DIFX_ROWS);
-			return HEADER_READ_ERROR;
-		}
+		fprintf(stderr, "Error: This version of difx2fits will not work with DiFX 1.x data\n");
 
-		bl           = atoi(DifxParametersvalue(dv->dp, rows[0]));
-		mjd          = atoi(DifxParametersvalue(dv->dp, rows[1]));
-		iat          = atof(DifxParametersvalue(dv->dp, rows[2]))/86400.0;
-		srcindex     = atoi(DifxParametersvalue(dv->dp, rows[4]));
-		freqId      = atoi(DifxParametersvalue(dv->dp, rows[5]));
-		polpair[0]   = DifxParametersvalue(dv->dp, rows[6])[0];
-		polpair[1]   = DifxParametersvalue(dv->dp, rows[6])[1];
-		polpair[2]   = 0;
-		bin          = atoi(DifxParametersvalue(dv->dp, rows[7]));
-		weight       = atof(DifxParametersvalue(dv->dp, rows[8]));
-		uvw[0]       = atof(DifxParametersvalue(dv->dp, rows[9]));
-		uvw[1]       = atof(DifxParametersvalue(dv->dp, rows[10]));
-		uvw[2]       = atof(DifxParametersvalue(dv->dp, rows[11]));
-		if(dv->D->inputFileVersion == 1) //incredibly old file, no weight info
-		{
-			weight = 1.0;
-		}
-		//printf("Baseline is %s, seconds is %s, srcindex is %s\n", DifxParametersvalue(dv->dp, rows[0]), DifxParametersvalue(dv->dp, rows[2]), DifxParametersvalue(dv->dp, rows[4]));
+		return HEADER_READ_ERROR;
 	}
 	else if(sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
 	{
@@ -502,13 +418,13 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			v = fread(uvw, sizeof(double), 3, dv->in);
                         if(v < 3)
                         {
-				fprintf(stderr, "Error parsing header - got a return val of %d when reading uvw\n", v);
+				fprintf(stderr, "Error parsing header: got a return val of %d when reading uvw\n", v);
 				return HEADER_READ_ERROR;
                         }
                 }
                 else //dunno what to do
                 {
-                        fprintf(stderr, "Error parsing header - got a sync of %x and version of %d\n",
+                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n",
                                 sync, binhdrversion);
                         
 			return HEADER_READ_ERROR;
@@ -516,7 +432,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	}
 	else
 	{
-		fprintf(stderr, "Error parsing header - got an unrecognized sync of %xd\n", sync);
+		fprintf(stderr, "Error parsing header: got an unrecognized sync of %xd\n", sync);
 
 		return HEADER_READ_ERROR;
 	}
@@ -556,13 +472,14 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	configId = scan->configId;
 	if(configId >= dv->D->nConfig) 
 	{
-		fprintf(stderr, "Developer error: configId = %d  ", configId);
-		fprintf(stderr, "ScanId was %d\n", scanId);
+		fprintf(stderr, "Developer error: DifxVisNewUVData: configId=%d  nConfig=%d  scanId=%d", configId, dv->D->nConfig, scanId);
+
 		exit(0);
 	}
 	if(configId < 0)
 	{
-		fprintf(stderr, "configId doesn't match - skipping!\n");
+		fprintf(stderr, "configId doesn't match: skipping!\n");
+		
 		return SKIPPED_RECORD;
 	}
 	if(phasecentre >= scan->nPhaseCentres)
@@ -580,9 +497,10 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	//		srcindex = scan->orgjobPointingCentreSrc;
 	//}
 	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, bl);
-	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && bl%257 != 0) //don't skip autocorrelations
+	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && (bl % 257 != 0) ) //don't skip autocorrelations
 	{
 		//printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
+
 		return SKIPPED_RECORD;
 	}
 
@@ -594,6 +512,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		/* Nope! */
 		dv->flagTransition = 1;
+
 		return SKIPPED_RECORD;
 	}
 	else
@@ -613,6 +532,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	   a2 < 0 || a2 >= config->nAntenna)
 	{
 		printf("Error: illegal baseline %d -> %d-%d\n", bl, a1, a2);
+		
 		return -8;
 	}
 
@@ -622,8 +542,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	if(d1 < 0 || d1 >= dv->D->nDatastream || 
 	   d2 < 0 || d2 >= dv->D->nDatastream)
 	{
-		printf("Error: baseline %d -> datastreams %d-%d\n",
-			bl, d1, d2);
+		printf("Error: baseline %d -> datastreams %d-%d\n", bl, d1, d2);
+
 		return -9;
 	}
 	a1 = dv->D->datastream[d1].antennaId;
@@ -664,7 +584,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		/* recompute from polynomials if possible */
 		if(scan->im)
 		{
-			double u,v,w;
+			double u, v, w;
 			int n;
 
 			n = getDifxScanIMIndex(scan, mjd, iat, &dt);
@@ -677,8 +597,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			if(scan->im[a1] && scan->im[a2])
 			{
 				//printf("About to look at the actual im object\n");
-				im1 = scan->im[a1][phasecentre+1];
-	                        im2 = scan->im[a2][phasecentre+1];
+				im1 = scan->im[a1][phasecentre + 1];
+	                        im2 = scan->im[a2][phasecentre + 1];
 				//printf("Got the im structures - they are %p and %p\n", im1, im2);
 				if(!(im1 && im2))
 				{
@@ -721,7 +641,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		if(!changed)	/* cannot change config within integration */
 		{
-			fprintf(stderr, "configId changes withing integration - skipping!\n");
+			fprintf(stderr, "configId changes within integration: skipping!\n");
+
 			return CONFIG_CHANGE_ERROR;
 		}
 		dv->configId = configId;
@@ -738,8 +659,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	if(dv->bandId <  0 || dv->bandId >= dv->nFreq)
 	{
-		fprintf(stderr, "Parameter problem: bandId should be in "
-				"[0, %d), was %d\n", 
+		fprintf(stderr, "Parameter problem: bandId should be in [0, %d), was %d\n", 
 				dv->nFreq, dv->bandId);
 		
 		return BAND_ID_ERROR;
@@ -747,8 +667,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	
 	if(dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
 	{
-		fprintf(stderr, "Parameter problem: polId should be in "
-				"[0, %d), was %d\n",
+		fprintf(stderr, "Parameter problem: polId should be in [0, %d), was %d\n",
 				dv->D->nPolar, dv->polId);
 
 		return POL_ID_ERROR;
@@ -758,6 +677,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	if(nFloat > dv->nComplex)
 	{
 		printf("nFloat > dv->nComplex\n");
+
 		return NFLOAT_ERROR;
 	}
 	
@@ -819,11 +739,11 @@ static int RecordIsInvalid(const DifxVis *dv)
 		if(isnan(d[i]) || isinf(d[i]))
 		{
 
-			printf("Warning: record with !finite value: ");
-			printf("a1=%d a2=%d mjd=%13.7f\n",
+			printf("Warning: record with !finite value: a1=%d a2=%d mjd=%13.7f\n",
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
 				dv->mjd + dv->iat);
+
 			return 1;
 		}
 	}
@@ -831,12 +751,12 @@ static int RecordIsInvalid(const DifxVis *dv)
 	{
 		if(d[i] > 1.0e10 || d[i] < -1.0e10)
 		{
-			printf("Warning: record with extreme value: ");
-			printf("a1=%d a2=%d mjd=%13.7f value=%e\n",
+			printf("Warning: record with extreme value: a1=%d a2=%d mjd=%13.7f value=%e\n",
 				(dv->record->baseline/256) - 1,
 				(dv->record->baseline%256) - 1,
 				dv->mjd,
 				d[i]);
+
 			return 1;
 		}
 	}
@@ -907,16 +827,10 @@ static int RecordIsFlagged(const DifxVis *dv)
 static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 {
 	double scale;
+	
+	/* A fudge factor */
+	scale = 4.576;
 
-	if(D->inputFileVersion == 0) /* Perth merge and after */
-	{
-		scale = 4.576;
-	}
-	else
-	{
-		fprintf(stderr, "Can't handle old versions of DiFX properly - aborting!\n");
-		exit(1);
-	}
 	if(D->quantBits == 2)
 	{
 		scale /= (3.3359*3.3359);
@@ -977,13 +891,11 @@ static int storevis(DifxVis *dv)
 			/* swap phase/uvw for FITS-IDI conformance */
 			if(k % 3 == 1 && !isLSB)
 			{
-				dv->data[index+k] -= dv->scale*
-					dv->spectrum[dv->nComplex*i+k];
+				dv->data[index+k] -= dv->scale*dv->spectrum[dv->nComplex*i+k];
 			}
 			else
 			{
-				dv->data[index+k] += dv->scale*
-					dv->spectrum[dv->nComplex*i+k];
+				dv->data[index+k] += dv->scale*dv->spectrum[dv->nComplex*i+k];
 			}
 		}
 	}
@@ -1312,4 +1224,3 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 
 	return D;
 }
-

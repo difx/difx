@@ -30,27 +30,6 @@
 #include <stdlib.h>
 #include "jobmatrix.h"
 
-static const char *stripDir(const char *fn)
-{
-	const char *out;
-	int i;
-
-	out = fn;
-
-	for(i = 0; fn[i] != 0; i++)
-	{
-		if(fn[i] == '/')
-		{
-			if(fn[i+1] != 0)
-			{
-				out = fn+i+1;
-			}
-		}
-	}
-
-	return out;
-}
-
 struct _JobMatrix
 {
 	int **matrix;
@@ -97,8 +76,9 @@ void writeJobMatrix(JobMatrix *jm)
 	int *jobList;
 	FILE *out;
 	int nJob;
-	char outname[256];
-	int a, t, j;
+	char label[DIFXIO_FILENAME_LENGTH];
+	char outname[DIFXIO_FILENAME_LENGTH];
+	int a, t, j, v;
 	char name[4];
 	char timeStr[40];
 	char lastday[10] = "";
@@ -111,7 +91,14 @@ void writeJobMatrix(JobMatrix *jm)
 	nJob = jm->D->nJob;
 	jobList = (int *)calloc(nJob, sizeof(int));
 	
-	sprintf(outname, "%s.jobmatrix", jm->filebase);
+	v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s.jobmatrix", jm->filebase);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "Developer error: writeJobMatrix: outname wants %d bytes, not %d\n",
+			v, DIFXIO_FILENAME_LENGTH);
+		
+		return;
+	}
 	out = fopen(outname, "w");
 
 	for(a = 0; a < jm->nAntenna; a++)
@@ -134,8 +121,7 @@ void writeJobMatrix(JobMatrix *jm)
 			else if(jm->matrix[t][a] < jm->D->nJob)
 			{
 				jobList[jm->matrix[t][a]] = 1;
-				fprintf(out, "%c  ", 
-					'A' + (jm->matrix[t][a]%26));
+				fprintf(out, "%c  ", 'A' + (jm->matrix[t][a]%26));
 			}
 			else
 			{
@@ -158,8 +144,8 @@ void writeJobMatrix(JobMatrix *jm)
 
 		if(j < nJob && jobList[j])
 		{
-			fprintf(out, "   %c = %s", 'A'+(j%26),
-				stripDir(jm->D->job[j].fileBase));
+			generateDifxJobFileBase(jm->D->job + j, label);
+			fprintf(out, "   %c = %s", 'A'+(j%26), label);
 			j++;
 		}
 
