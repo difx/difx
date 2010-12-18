@@ -40,6 +40,13 @@ int writeDifxCalc(const DifxInput *D)
 		return -1;
 	}
 
+	if(D->nJob != 1)
+	{
+		fprintf(stderr, "writeDifxCalc: nJob = %d (not 1)\n", 
+			D->nJob);
+		return -1;
+	}
+
 	if(!D->job)
 	{
 		fprintf(stderr, "writeDifxCalc: job=0\n");
@@ -47,17 +54,17 @@ int writeDifxCalc(const DifxInput *D)
 		return -1;
 	}
 
-	if(D->calcFile[0] == 0)
+	if(D->job->calcFile[0] == 0)
 	{
-		fprintf(stderr, "developer error: writeDifxCalc: D->calcFile is null\n");
+		fprintf(stderr, "developer error: writeDifxCalc: D->job->calcFile is null\n");
 
 		return -1;
 	}
 
-	out = fopen(D->calcFile, "w");
+	out = fopen(D->job->calcFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", D->calcFile);
+		fprintf(stderr, "Cannot open %s for write\n", D->job->calcFile);
 
 		return -1;
 	}
@@ -103,7 +110,8 @@ int writeDifxCalc(const DifxInput *D)
 	writeDifxScanArray(out, D->nScan, D->scan, D->config);
 	writeDifxEOPArray(out, D->nEOP, D->eop);
 	writeDifxSpacecraftArray(out, D->nSpacecraft, D->spacecraft);
-	writeDifxLine(out, "IM FILENAME", D->imFile);
+	writeDifxLine(out, "IM FILENAME", D->job->imFile);
+	writeDifxLine(out, "FLAG FILENAME", D->job->flagFile);
 
 	fclose(out);
 

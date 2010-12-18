@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -73,14 +73,22 @@ void deleteDifxJobArray(DifxJob *dj)
 
 void fprintDifxJob(FILE *fp, const DifxJob *dj)
 {
-	fprintf(fp, "    Job ID = %d\n", dj->jobId);
-	fprintf(fp, "    Project = %s\n", dj->obsCode);
+	fprintf(fp, "  DifxJob : %p\n", dj);
+	fprintf(fp, "    job ID = %d\n", dj->jobId);
+	fprintf(fp, "    project = %s\n", dj->obsCode);
 	if(dj->obsSession[0])
 	{
-		fprintf(fp, "    Session = %s\n", dj->obsSession);
+		fprintf(fp, "    session = %s\n", dj->obsSession);
 	}
-	fprintf(fp, "    Start = MJD %12.6f\n", dj->mjdStart);
-	fprintf(fp, "    Duration = %f sec\n", dj->duration);
+	fprintf(fp, "    start = MJD %12.6f\n", dj->mjdStart);
+	fprintf(fp, "    duration = %f sec\n", dj->duration);
+	fprintf(fp, "    vex file = %s\n", dj->vexFile);
+	fprintf(fp, "    input file = %s\n", dj->inputFile);
+	fprintf(fp, "    threads (core conf) file = %s\n", dj->threadsFile);
+	fprintf(fp, "    calc file = %s\n", dj->calcFile);
+	fprintf(fp, "    im (model) file = %s\n", dj->imFile);
+	fprintf(fp, "    flag file = %s\n", dj->flagFile);
+	fprintf(fp, "    output file = %s\n", dj->outputFile);
 }
 
 void printDifxJob(const DifxJob *dj)
@@ -132,4 +140,46 @@ DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	}
 
 	return dj;
+}
+
+/* Warning: fileBase should be at least DIFXIO_FILENAME_LENGTH long */
+void generateDifxJobFileBase(DifxJob *dj, char *fileBase)
+{
+	int i, p;
+
+	fileBase[0] = 0;
+
+	if(!dj)
+	{
+		return;
+	}
+
+	for(i = p = 0; dj->outputFile[i]; i++)
+	{
+		if(dj->outputFile[i] == '/')
+		{
+			if(dj->outputFile[i+1] != 0)
+			{
+				p = i + 1;
+			}
+		}
+	}
+
+	strcpy(fileBase, dj->outputFile + p);
+
+	for(i = p = 0; fileBase[i]; i++)
+	{
+		if(fileBase[i] == '.')
+		{
+			if(fileBase[i+1] != 0)
+			{
+				p = i;
+			}
+		}
+	}
+
+	if(p > 0)
+	{
+		fileBase[p] = 0;
+	}
 }

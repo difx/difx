@@ -101,11 +101,11 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	strcpy(D->inputFile, "input.test");
-	strcpy(D->calcFile, "calc.test");
-	strcpy(D->threadsFile, "threads.test");
-	strcpy(D->imFile, "im.test");
-	strcpy(D->outputFile, "output.test");
+	strcpy(D->job->inputFile, "input.test");
+	strcpy(D->job->calcFile, "calc.test");
+	strcpy(D->job->threadsFile, "threads.test");
+	strcpy(D->job->imFile, "im.test");
+	strcpy(D->job->outputFile, "output.test");
 
 	printDifxInput(D);
 

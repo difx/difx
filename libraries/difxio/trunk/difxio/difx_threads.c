@@ -84,14 +84,14 @@ int DifxInputLoadThreads(DifxInput *D)
 	char *rv;
 	int n, nCore, i;
 
-	if(D->threadsFile[0] == 0)
+	if(D->job->threadsFile[0] == 0)
 	{
 		return 0;
 	}
 
 	DifxInputAllocThreads(D, 0);
 
-	in = fopen(D->threadsFile, "r");
+	in = fopen(D->job->threadsFile, "r");
 	if(!in)
 	{
 		/* This could be normal, so don't raise a fuss */
@@ -102,7 +102,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	rv = fgets(line, MaxLineLen, in);
 	if(!rv)
 	{
-		fprintf(stderr, "Line %d of %s : unexpected EOF\n", 1, D->threadsFile);
+		fprintf(stderr, "Line %d of %s : unexpected EOF\n", 1, D->job->threadsFile);
 		fclose(in);
 
 		return -1;
@@ -110,7 +110,7 @@ int DifxInputLoadThreads(DifxInput *D)
 
 	if(strncmp(line, "NUMBER OF CORES:    ", 20) != 0 || strlen(line) < 21)
 	{
-		fprintf(stderr, "Line %d of %s : format error\n", 1, D->threadsFile);
+		fprintf(stderr, "Line %d of %s : format error\n", 1, D->job->threadsFile);
 		
 		return -2;
 	}
@@ -118,7 +118,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	n = sscanf(line+20, "%d", &nCore);
 	if(n != 1)
 	{
-		fprintf(stderr, "Line %d of %s : format error\n", 1, D->threadsFile);
+		fprintf(stderr, "Line %d of %s : format error\n", 1, D->job->threadsFile);
 		
 		return -2;
 	}
@@ -130,7 +130,7 @@ int DifxInputLoadThreads(DifxInput *D)
 		rv = fgets(line, MaxLineLen, in);
 		if(!rv)
 		{
-			fprintf(stderr, "Line %d of %s : unexpected EOF\n", i+2, D->threadsFile);
+			fprintf(stderr, "Line %d of %s : unexpected EOF\n", i+2, D->job->threadsFile);
 			fclose(in);
 			DifxInputAllocThreads(D, 0);
 
@@ -139,7 +139,7 @@ int DifxInputLoadThreads(DifxInput *D)
 		n = sscanf(line, "%d", &D->nThread[i]);
 		if(n != 1)
 		{
-			fprintf(stderr, "Line %d of %s : format error\n", i+2, D->threadsFile);
+			fprintf(stderr, "Line %d of %s : format error\n", i+2, D->job->threadsFile);
 			fclose(in);
 			DifxInputAllocThreads(D, 0);
 
@@ -162,7 +162,14 @@ int DifxInputWriteThreads(DifxInput *D)
 		return 0;
 	}
 
-	if(D->threadsFile[0] == 0)
+	if(D->nJob != 1)
+	{
+		fprintf(stderr, "writeDifxThreads: nJob = %d (not 1)\n", 
+			D->nJob);
+		return -1;
+	}
+
+	if(D->job->threadsFile[0] == 0)
 	{
 		return 0;
 	}
@@ -172,10 +179,10 @@ int DifxInputWriteThreads(DifxInput *D)
 		return 0;
 	}
 
-	out = fopen(D->threadsFile, "w");
+	out = fopen(D->job->threadsFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Error: cannot open %s for write\n", D->threadsFile);
+		fprintf(stderr, "Error: cannot open %s for write\n", D->job->threadsFile);
 
 		return -1;
 	}

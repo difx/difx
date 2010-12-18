@@ -38,8 +38,8 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	double dsecs;
 
 	fprintf(out, "# COMMON SETTINGS ##!\n");
-	writeDifxLine(out, "CALC FILENAME", D->calcFile);
-	writeDifxLine(out, "CORE CONF FILENAME", D->threadsFile);
+	writeDifxLine(out, "CALC FILENAME", D->job->calcFile);
+	writeDifxLine(out, "CORE CONF FILENAME", D->job->threadsFile);
 	dsecs = (D->mjdStop - D->mjdStart)*86400.0;
 	if (dsecs<1)  // Very short job
 	{
@@ -78,7 +78,7 @@ static int writeCommonSettings(FILE *out, const DifxInput *D)
 	  writeDifxLine(out, "OUTPUT FORMAT", "SWIN");
 	else
 	  writeDifxLine(out, "OUTPUT FORMAT", "ASCII");
-	writeDifxLine(out, "OUTPUT FILENAME", D->outputFile);
+	writeDifxLine(out, "OUTPUT FILENAME", D->job->outputFile);
 	fprintf(out, "\n");
 
 	return 0;
@@ -238,17 +238,24 @@ int writeDifxInput(const DifxInput *D)
 		return -1;
 	}
 
-	if(D->inputFile[0] == 0)
+	if(D->nJob != 1)
 	{
-		fprintf(stderr, "Developer error: writeDifxInput: D->inputFile is null\n");
+		fprintf(stderr, "writeDifxInput: nJob = %d (not 1)\n", 
+			D->nJob);
+		return -1;
+	}
+
+	if(D->job->inputFile[0] == 0)
+	{
+		fprintf(stderr, "Developer error: writeDifxInput: D->job->inputFile is null\n");
 
 		return -1;
 	}
 
-	out = fopen(D->inputFile, "w");
+	out = fopen(D->job->inputFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", D->inputFile);
+		fprintf(stderr, "Cannot open %s for write\n", D->job->inputFile);
 
 		return -1;
 	}

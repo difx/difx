@@ -55,10 +55,10 @@ int writeDifxIM(const DifxInput *D)
 		return 0;
 	}
 
-	out = fopen(D->imFile, "w");
+	out = fopen(D->job->imFile, "w");
 	if(!out)
 	{
-		fprintf(stderr, "Cannot open %s for write\n", D->imFile);
+		fprintf(stderr, "Cannot open %s for write\n", D->job->imFile);
 		return -1;
 	}
 

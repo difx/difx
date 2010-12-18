@@ -422,8 +422,6 @@ typedef struct
 	char calcServer[DIFXIO_HOSTNAME_LENGTH]; /* name of calc server */
 	int calcVersion;	/* version number of calc server */
 	int calcProgram;	/* RPC program id of calc server */
-	char vexFile[DIFXIO_FILENAME_LENGTH];
-	char fileBase[DIFXIO_FILENAME_LENGTH];	/* base filename for this job table */
 	int activeDatastreams;
 	int activeBaselines;
 	int polyOrder;		/* polynomial model order */
@@ -433,11 +431,19 @@ typedef struct
 
 	int nFlag;
 	DifxAntennaFlag *flag;  /* flags to be applied at FITS building time */
+
+	/* Filenames */
+	char vexFile[DIFXIO_FILENAME_LENGTH];
+	char inputFile[DIFXIO_FILENAME_LENGTH];
+	char calcFile[DIFXIO_FILENAME_LENGTH];
+	char imFile[DIFXIO_FILENAME_LENGTH];
+	char flagFile[DIFXIO_FILENAME_LENGTH];
+	char threadsFile[DIFXIO_FILENAME_LENGTH];
+	char outputFile[DIFXIO_FILENAME_LENGTH];
 } DifxJob;
 
 typedef struct
 {
-	int inputFileVersion;	/* version of input file to parse. 0=current */
 	int fracSecondStartTime;/* allow writing of fractional second start time? */
 	double mjdStart;	/* start of combined dataset */
 	double mjdStop;		/* end of combined dataset */
@@ -482,13 +488,6 @@ typedef struct
 	DifxSpacecraft	*spacecraft;	/* optional table */
 	DifxPulsar	*pulsar;	/* optional table */
 	DifxPhasedArray	*phasedarray;	/* optional table */
-
-	/* Filenames */
-	char inputFile[DIFXIO_FILENAME_LENGTH];
-	char calcFile[DIFXIO_FILENAME_LENGTH];
-	char imFile[DIFXIO_FILENAME_LENGTH];
-	char threadsFile[DIFXIO_FILENAME_LENGTH];
-	char outputFile[DIFXIO_FILENAME_LENGTH];
 } DifxInput;
 
 /* DifxJob functions */
@@ -497,6 +496,7 @@ void deleteDifxJobArray(DifxJob *dj);
 void printDifxJob(const DifxJob *dj);
 void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap);
+void generateDifxJobFileBase(DifxJob *dj, char *fileBase);
 DifxJob *mergeDifxJobArrays(const DifxJob *dj1, int ndj1,
 	const DifxJob *dj2, int ndj2, int *jobIdRemap, 
 	int *antennaIdRemap, int *ndj);

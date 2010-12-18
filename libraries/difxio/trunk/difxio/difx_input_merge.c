@@ -45,12 +45,6 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	{
 		return 0;
 	}
-
-	if(D1->inputFileVersion != D2->inputFileVersion)
-	{
-		printf("Warning: merging input files of different versions!\n");
-		printf("  This might work, if you are lucky!\n");
-	}
 	
 	return 1;
 }
