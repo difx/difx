@@ -399,10 +399,12 @@ static void makeJobs(vector<VexJob>& J, VexData *V, const CorrParams *P, int ver
 	V->sortEvents();
 }
 
-static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const string &vexFile)
+static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, const string& obsCode, int *n, int nDigit, char ext, const string &vexFile, const string &threadsFile)
 {
 	DifxJob *job;
 	const char *difxVer;
+	char fileBase[DIFXIO_FILENAME_LENGTH];
+	int v;
 
 	*n = 1;
 	job = newDifxJobArray(*n);
@@ -438,22 +440,49 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	{
 		const int FormatLength = 20;
 		char format[FormatLength];
-		int p;
 
-		p = snprintf(format, FormatLength, "%%s/%%s_%%0%dd%%c", nDigit);
-		if(p >= FormatLength)
+		v = snprintf(format, FormatLength, "%%s/%%s_%%0%dd%%c", nDigit);
+		if(v >= FormatLength)
 		{
-			cerr << "Developer error: fileBase being truncated.  p = " << p << endl;
+			cerr << "Developer error: makeDifxJob: format being truncated.  Needed " << v << " bytes." << endl;
+
+			exit(0);
 		}
-		snprintf(job->fileBase, DIFXIO_FILENAME_LENGTH, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
+		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
 	}
 	else
 	{
 		if(ext != 0)
 		{
-			cerr << "Warning: ext!=0 and making job names without extensions!" << endl;
+			cerr << "Warning: makeDifxJob: ext!=0 and making job names without extensions!" << endl;
+
+			exit(0);
 		}
-		snprintf(job->fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
+		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
+	}
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		cerr << "Developer error: makeDifxJob: fileBase needed " << v << " bytes." << endl;
+
+		exit(0);
+	}
+
+	snprintf(job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
+	snprintf(job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",  fileBase);
+	snprintf(job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag",  fileBase);
+	snprintf(job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    fileBase);
+	snprintf(job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",  fileBase);
+	if(threadsFile != "")
+	{
+		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", threadsFile.c_str());
+	}
+	else
+	{
+		v = snprintf(job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", fileBase);
+	}
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		cerr << "Developer error: makeDifxJob: threadsFile wanted " << v << " bytes, not " << DIFXIO_FILENAME_LENGTH << " .  Truncating."  << endl;
 	}
 
 	return job;
@@ -1507,7 +1536,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	D->nDataSegments = P->nDataSegments;
 
 	D->antenna = makeDifxAntennas(J, V, P, &(D->nAntenna), antList);
-	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext, P->vexFile);
+	D->job = makeDifxJob(V->getDirectory(), J, D->nAntenna, V->getExper()->name, &(D->nJob), nDigit, ext, P->vexFile, P->threadsFile);
 	
 	D->nScan = J.scans.size();
 	D->scan = newDifxScanArray(D->nScan);
@@ -2009,18 +2038,6 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 	if(D->nBaseline > 0 || P->minSubarraySize == 1)
 	{
-		snprintf(D->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input",   D->job->fileBase);
-		snprintf(D->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc",    D->job->fileBase);
-		snprintf(D->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im",    D->job->fileBase);
-		snprintf(D->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx",    D->job->fileBase);
-		if(P->threadsFile != "")
-		{
-			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s", P->threadsFile.c_str());
-		}
-		else
-		{
-			snprintf(D->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", D->job->fileBase);
-		}
 
 		// write input file
 		writeDifxInput(D);
@@ -2039,9 +2056,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		}
 
 		// write flag file
-		ostringstream flagName;
-		flagName << D->job->fileBase << ".flag";
-		J.generateFlagFile(*V, flagName.str(), P->invalidMask);
+		J.generateFlagFile(*V, D->job->flagFile, P->invalidMask);
 
 		if(verbose > 2)
 		{
@@ -2050,17 +2065,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 		if(of)
 		{
-			const char *fileBase = D->job->fileBase;
+			char fileBase[DIFXIO_FILENAME_LENGTH];
 			double tops;    // Trillion operations
 			int p;
 
-			for(int i = 0; D->job->fileBase[i]; i++)
-			{
-				if(D->job->fileBase[i] == '/')
-				{
-					fileBase = D->job->fileBase + i + 1;
-				}
-			}
+			generateDifxJobFileBase(D->job, fileBase);
 
 			tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
 
@@ -2082,7 +2091,11 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	}
 	else
 	{
-		cerr << "Warning: job " << D->job->fileBase << " not written since it correlates no data" << endl;
+		char fileBase[DIFXIO_FILENAME_LENGTH];
+
+		generateDifxJobFileBase(D->job, fileBase);
+
+		cerr << "Warning: job " << fileBase << " not written since it correlates no data" << endl;
 		cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
 		cerr << "It is also possible that the vex file is faulty and missing e.g. a $IF section, leading " << endl;
 		cerr << "to missing polarisation information." << endl;

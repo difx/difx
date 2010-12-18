@@ -718,7 +718,7 @@ bool VexJob::hasScan(const string &scanName) const
         return false;
 }
 
-int VexJob::generateFlagFile(const VexData &V, const string &fileName, unsigned int invalidMask) const
+int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned int invalidMask) const
 {
 	vector<VexJobFlag> flags;
 	map<string,int> antIds;
@@ -901,7 +901,7 @@ int VexJob::generateFlagFile(const VexData &V, const string &fileName, unsigned 
 	}
 
 	// write data to file
-	of.open(fileName.c_str());
+	of.open(fileName);
 	of << flags.size() << endl;
 	for(unsigned int f = 0; f < flags.size(); f++)
 	{

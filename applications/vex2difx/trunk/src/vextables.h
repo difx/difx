@@ -290,7 +290,7 @@ public:
 	void assignVSNs(const VexData &V);
 	string getVSN(const string &antName) const;
 	bool hasScan(const string &scanName) const;
-	int generateFlagFile(const VexData &V, const string &fileName, unsigned int invalidMask=0xFFFFFFFF) const;
+	int generateFlagFile(const VexData &V, const char *fileName, unsigned int invalidMask=0xFFFFFFFF) const;
 
 	// return the approximate number of Operations required to compute this scan
 	double calcOps(const VexData *V, int fftSize, bool doPolar) const;
