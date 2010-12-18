@@ -38,8 +38,9 @@ const char program[] = PACKAGE_NAME;
 const char author[]  = PACKAGE_BUGREPORT;
 const char version[] = VERSION;
 
-const double DefaultSniffInterval = 30.0;
-const double DefaultJobMatrixInterval = 20.0;
+const double DefaultSniffInterval = 30.0;	/* sec */
+const double DefaultJobMatrixInterval = 20.0;	/* sec */
+const double DefaultDifxTsysInterval = 60.0;	/* sec */
 
 static int usage(const char *pgm)
 {
@@ -108,6 +109,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --deltat <deltat>\n");
 	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix (default %3.1f)\n", DefaultJobMatrixInterval);
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --difx-tsys-interval\n");
+	fprintf(stderr, "  -i       <interval> Set the Difx-derived tsys interval (sec) (default %3.1f)\n", DefaultDifxTsysInterval);
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --phasecentre <p>\n");
 	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the "
 		"<p>th phase centres (default 0)\n");
@@ -123,7 +127,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -x                  Don't produce sniffer output\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --sniff-time <t>\n");
-	fprintf(stderr, "  -x           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
+	fprintf(stderr, "  -T           <t>    Sniff output on a <t> second timescale (default %3.1f)\n", DefaultSniffInterval);
 	fprintf(stderr, "\n");
 #endif
 	fprintf(stderr, "  --verbose\n");
@@ -146,6 +150,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->sniffTime = DefaultSniffInterval;
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->phaseCentre = 0;
+	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
 
 	return opts;
 }
@@ -257,6 +262,12 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					i++;
 					opts->jobMatrixDeltaT = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--difx-tsys-interval") == 0 ||
+					strcmp(argv[i], "-i") == 0)
+				{
+					i++;
+					opts->DifxTsysAvgSeconds = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--sniff-time") == 0 ||
 					strcmp(argv[i], "-T") == 0)
@@ -569,7 +580,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  TS -- system temperature  ");
 	fflush(stdout);
-	D = DifxInput2FitsTS(D, &keys, out, opts->phaseCentre);
+	D = DifxInput2FitsTS(D, &keys, out, opts->phaseCentre, opts->DifxTsysAvgSeconds);
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 

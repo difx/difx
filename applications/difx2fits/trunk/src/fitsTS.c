@@ -279,10 +279,17 @@ static double unscaledTsys(const SwitchedPower *sp)
 	a = sp->pOn/sp->wOn;
 	b = sp->pOff/sp->wOff;
 
-	return 0.5*(a+b)/(a-b);
+	if(a > b)
+	{
+		return 0.5*(a+b)/(a-b);
+	}
+	else
+	{
+		return -1.0;
+	}
 }
 
-int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, double avgSeconds, int phasecentre, 
+int getDifxTsys(const DifxInput *D, int jobId, int antId, const char *fileBase, double avgSeconds, int phasecentre, 
 	int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
@@ -296,7 +303,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 	SwitchedPower average[array_MAX_BANDS*2];
 	double mjd1, mjd2, mjd;
 	double accumStart = -1, accumEnd = -1;
-	int antId;
+	int dsId;
 	int configId = -1;
 	int scanId = -1;
 	int i, v, n;
@@ -317,12 +324,18 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 		loadTcals();
 	}
 
-	v = snprintf(filename, MaxFilenameLength, 
-		"%s.difx/SWITCHEDPOWER_%d", fileBase, datastreamId);
+	dsId = DifxInputGetDatastreamId(D, jobId, antId);
+	if(dsId < 0)
+	{
+		return dsId;
+	}
+
+	v = snprintf(filename, MaxFilenameLength, "%s.difx/SWITCHEDPOWER_%d", fileBase, dsId);
+
 	if(v >= MaxFilenameLength)
 	{
-		fprintf(stderr, "Developer error: getDifxTsys filename length wanted to be %d bytes long, not %d\n",
-			v, MaxFilenameLength);
+		fprintf(stderr, "Developer error: getDifxTsys jobId=%d antId=%d dsId=%d filename length wanted to be %d bytes long, not %d\n",
+			jobId, antId, dsId, v, MaxFilenameLength);
 		
 		return -1;
 	}
@@ -333,8 +346,6 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 	}
 
 	nanify(tAnt);
-
-	antId = D->datastream[datastreamId].antennaId;
 
 	for(;;)
 	{
@@ -403,7 +414,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 		{
 			fprintf(stderr, "Developer error: getDifxTsys: ds=%d scanId=%d n=%d "
 				"nBand=%d mjd1=%12.6f mjd2=%12.6f\n",
-				datastreamId, scanId, n, nBand, mjd1, mjd2);
+				dsId, scanId, n, nBand, mjd1, mjd2);
 
 			exit(0);
 		}
@@ -475,7 +486,10 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 						freq += D->freq[freqId].bw*0.5;
 					}
 					tCal = getTcalValue(D->antenna[antId].name, freq, D->config[currentConfigId].pol[polId]);
-					tSys[polId][bandId] = tCal*unscaledTsys(average + i);
+					if(tCal > 0.0)
+					{
+						tSys[polId][bandId] = tCal*unscaledTsys(average + i);
+					}
 				}
 
 				p_fitsbuf = fitsbuf;
@@ -512,7 +526,7 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 		}
 
 		nBand = n;
-		if(mjd > 0 && scanId >= 0 && nBand > 0)
+		if(mjd > 0 && scanId >= 0 && nBand > 0 && !isAntennaFlagged(D->job + jobId, mjd, antId))
 		{
 			accumulateSwitchedPower(average, measurement, nBand);
 			if(nAccum == 0)
@@ -529,12 +543,12 @@ int getDifxTsys(const DifxInput *D, int datastreamId, const char *fileBase, doub
 
 	fclose(in);
 
-	return antId;
+	return dsId;
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre)
+	int phasecentre, double DifxTsysAvgSeconds)
 {
 	const int MaxLineLength=1000;
 
@@ -566,10 +580,10 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	float tAnt[2][array_MAX_BANDS];
 	int nBand;
 	int configId, sourceId, scanId;
-	int i, j, nPol=0;
-	int freqId, bandId, polId, antId;
+	int i, nPol=0;
+	int freqId, bandId, polId, antId, jobId, dsId;
 	int nRecBand;
-	int v, d;
+	int v;
 	double f;
 	double time, mjd;
 	float timeInt;
@@ -629,13 +643,13 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	
 	in = fopen("tsys", "r");
 
-	for(d = 0; d < D->nDatastream; d++)
+	for(antId = 0; antId < D->nAntenna; antId++)
 	{
-		for(j = 0; j < D->nJob; j++)
+		for(jobId = 0; jobId < D->nJob; jobId++)
 		{
 			/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
-			antId = getDifxTsys(D, d, D->job[j].fileBase, 60, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
-			if(antId >= 0)
+			dsId = getDifxTsys(D, jobId, antId, D->job[jobId].fileBase, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+			if(dsId >= 0)
 			{
 				hasDifxTsys[antId]++;
 			}
@@ -690,8 +704,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			}
 
 			sourceId = scan->phsCentreSrcs[phasecentre];
-			if(sourceId < 0 || mjd < D->mjdStart || 
-				mjd > D->mjdStop)
+			if(sourceId < 0)
 			{
 				continue;
 			}
