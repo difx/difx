@@ -342,8 +342,15 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 
 	D = loadDifxCalc(prefix);
 
+	if(D == 0)
+	{
+		fprintf(stderr, "Error: loadDifxCalc returned 0\n");
+
+		return -1;
+	}
+
 	if(opts->force == 0 &&
-	   skipFile(D->calcFile, D->imFile))
+	   skipFile(D->job->calcFile, D->job->imFile))
 	{
 		printf("skipping %s due to file ages\n", prefix);
 		deleteDifxInput(D);
