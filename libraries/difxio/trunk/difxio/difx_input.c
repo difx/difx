@@ -3615,7 +3615,7 @@ int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
 		return -3;
 	}
 
-	if(antId < 0 || jobId >= D->nAntenna)
+	if(antId < 0 || antId >= D->nAntenna)
 	{
 		return -4;
 	}
