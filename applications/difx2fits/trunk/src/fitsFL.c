@@ -181,7 +181,10 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	const DifxDatastream *ds;
 	char *rv;
 	
-	if (D==0) return D;
+	if(D==0)
+	{
+		return D;
+	}
 
 	FL.nBand = p_fits_keys->no_band;
 	sprintf(bandFormInt, "%dJ", FL.nBand);
@@ -201,6 +204,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	if(fitsbuf == 0)
 	{
 		fclose(in);
+		
 		return 0;
 	}
 

@@ -151,17 +151,28 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	}
 
 	onPhase  = (float *)calloc(nBand, sizeof(float));
-	if (onPhase==0) return 0;
+	if(onPhase == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate onPhase (%d)\n", nBand);
+
+		exit(0);
+	}
 	offPhase = (float *)calloc(nBand, sizeof(float));
-	if (offPhase==0) { 
-	  free(onPhase);
-	  return 0;
+	if(offPhase == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate offPhase (%d)\n", nBand);
+		free(onPhase);
+
+		exit(0);
 	}
 	poly = (double *)calloc(nPoly, sizeof(double));
-	if (poly==0) {
-	  free(onPhase);
-	  free(offPhase);
-	  return(0);
+	if(poly == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate poly (%d)\n", nPoly);
+		free(onPhase);
+		free(offPhase);
+		
+		exit(0);
 	}
 
 	sprintf(bandFormFloat,  "%1dE", nBand);  
@@ -184,16 +195,12 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	
-	if(fitsbuf == 0 ||
-	   onPhase == 0 ||
-	   offPhase == 0 ||
-	   poly == 0)
+	if(fitsbuf == 0)
 	{
-		if(fitsbuf) free(fitsbuf);
-		if(onPhase) free(onPhase);
-		if(offPhase) free(offPhase);
-		if(poly) free(poly);
-		fprintf(stderr, "DifxInput2FitsGM: Memory allocation error\n");
+		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate fitsbuf(%d)\n", nRowBytes);
+		free(onPhase);
+		free(offPhase);
+		free(poly);
 
 		exit(0);
 	}

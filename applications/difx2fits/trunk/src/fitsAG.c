@@ -33,8 +33,6 @@
 #include "config.h"
 #include "difx2fits.h"
 
-const double defaultIATUTC=33.0;
-
 static double arrayGMST(int mjd)
 {
     double mjd2000 = 51545.0;
@@ -160,8 +158,8 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 	}
 	else
 	{
-		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", defaultIATUTC);
-		fitsWriteFloat(out, "IATUTC", defaultIATUTC, "");
+		printf("\n\nWarning: IATUTC is not provided.  Assuming %3.1f seconds.\n\n", (double)(DEFAULT_IAT_UTC) );
+		fitsWriteFloat(out, "IATUTC", (double)(DEFAULT_IAT_UTC), "");
 	}
 	
   	arrayWriteKeys(p_fits_keys, out);

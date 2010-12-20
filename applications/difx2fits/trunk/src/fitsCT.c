@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2009 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -195,7 +195,7 @@ const DifxInput *DifxInput2FitsCT(const DifxInput *D,
 		{
 			row.time    = e-2;
 			row.ut1_utc = 0.0;
-			row.iat_utc = 33;
+			row.iat_utc = DEFAULT_IAT_UTC;
 			row.a1_iat  = 0.0;
 			row.ut1Type = 'X';
 			row.wobX    = 0.0;

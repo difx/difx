@@ -72,7 +72,7 @@ const DifxInput *DifxInput2FitsHeader(const DifxInput *D,
 	fitsWriteString(out, "ORIGIN", "VLBA Correlator", "");
 	fitsWriteString(out, "CORRELAT", "DIFX", "");
 	fitsWriteString(out, "DATE-OBS", ref_date, "");
-	mjd2fits ((int)timeMjd (), strng);
+	mjd2fits((int)timeMjd (), strng);
 	fitsWriteString(out, "DATE-MAP", strng, "Correlation date");
 	fitsWriteLogical(out, "GROUPS", 1, "");
 	fitsWriteInteger(out, "GCOUNT", 0, "");

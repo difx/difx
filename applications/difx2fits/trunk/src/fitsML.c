@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 20082010 by Walter Brisken & Adam Deller                *
+ *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -146,7 +146,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-		return 0;
+		fprintf(stderr, "Error: DifxInput2FitsML: could not allocate fitsbuf (%d bytes)\n", nRowBytes);
+
+		exit(0);
 	}
   
 	/* write standard FITS header keywords and values to output file */

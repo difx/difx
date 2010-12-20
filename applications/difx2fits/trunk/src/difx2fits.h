@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2010 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,6 +35,9 @@
 #define array_MAX_BANDS 32
 #define array_MAX_TONES	64
 #define MAX_INPUT_FILES 4096
+
+/* This sets leap secons if for some reason they were not otherwise conveyed */
+#define DEFAULT_IAT_UTC 33
 
 struct CommandLineOptions
 {

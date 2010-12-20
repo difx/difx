@@ -40,7 +40,7 @@
 #define MAXENTRIES	5000
 #define MAXTOKEN	512
 #define MAXTAB		6
-#define NBANDS		12
+#define N_VLBA_BANDS	12
 
 typedef struct
 {
@@ -54,21 +54,21 @@ typedef struct
 	float time[8];
 } GainRow;
 	
-static const float bandEdges[NBANDS+1] = 
+static const float bandEdges[N_VLBA_BANDS+1] = 
 {
 	0, 	/* 90cm P  */
 	450,	/* 50cm    */
 	900, 	/* 21cm L  */
-	1550, 	/* 18cm L  */
+	1550, 	/* 18cm L  Different from above due to two separate gain curve files */
 	2000,	/* 13cm S  */
 	4000,	/* 6cm  C  */
 	6000,	/* 4cm  X  */
 	10000,	/* 2cm  U  */
 	18000, 	/* 1cm  K  */
-	26000, 	/*      Ka */
+	26000, 	/*      Ka  Not yet existing */
 	40000,	/* 7mm  Q  */
 	70000,	/* 3mm  W  */
-	100000
+	100000	/* end of list marker */
 };
 
 /* freq in MHz, t in days since ref day */
@@ -82,9 +82,9 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 	double efreq, dfreq;
 
 	efreq = 1e11;
-	eband = NBANDS;
+	eband = N_VLBA_BANDS;
 
-	for(i = 0; i < NBANDS; i++)
+	for(i = 0; i < N_VLBA_BANDS; i++)
 	{
 		if(freq > bandEdges[i] && freq < bandEdges[i+1])
 		{
@@ -153,6 +153,7 @@ static int getNoQuote(char firstchar, FILE *in, char *token)
 		if(c == EOF)
 		{
 			token[i] = 0;
+
 			return EOF;
 		}
 		else if(isalnum(c) || c == '.' || c == '-' || c == '+')
@@ -162,12 +163,14 @@ static int getNoQuote(char firstchar, FILE *in, char *token)
 			if(i >= MAXTOKEN)
 			{
 				token[i] = 0;
+
 				return EOF;
 			}
 		}
 		else
 		{
 			token[i] = 0;
+
 			return c;
 		}
 	}
@@ -183,18 +186,20 @@ static int getQuote(FILE *in, char *token)
 		if(c == EOF)
 		{
 			token[i] = 0;
+
 			return EOF;
 		}
 		else if(c == '\'')
 		{
 			token[i] = 0;
+
 			return 0;
 		}
 		else if(c == '\n')
 		{
 			token[i] = 0;
-			fprintf(stderr, "Warning: Gain table parsing: EOL found in quotes: %s\n",
-				token);
+			fprintf(stderr, "Warning: Gain table parsing: EOL found in quotes: %s\n", token);
+
 			return 0;
 		}
 		else
@@ -204,6 +209,7 @@ static int getQuote(FILE *in, char *token)
 			if(i >= MAXTOKEN)
 			{
 				token[i] = 0;
+
 				return EOF;
 			}
 		}
@@ -304,8 +310,9 @@ static int parseGN(const char *filename, int row, GainRow *G)
 			action = 0;
 			if(row >= MAXENTRIES)
 			{
-				fprintf(stderr, "ERROR -- too many rows\n");
+				fprintf(stderr, "Error: parseGN: too many rows in file %s\n", filename);
 				fclose(in);
+
 				return -1;
 			}
 			c = 0;
@@ -378,7 +385,7 @@ static void GainRowsSetTimeBand(GainRow *G, int nRow)
 					    G[i].time[6]) +
 					    G[i].time[7]/24.0;
 		}
-		for(j = 0; j < NBANDS; j++)
+		for(j = 0; j < N_VLBA_BANDS; j++)
 		{
 			freq = G[i].freq[0];
 			if(freq > bandEdges[j] && freq < bandEdges[j+1])
@@ -401,7 +408,7 @@ int loadGainCurves(GainRow *G)
 	path = getenv("GAIN_CURVE_PATH");
 	if(path == 0)
 	{
-		printf("\n    GAIN_CURVE_PATH not set -- skipping GN table.\n");
+		printf("\n    GAIN_CURVE_PATH not set; skipping GN table.\n");
 		printf("                            ");
 
 		return -1;
@@ -499,12 +506,16 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 
 	nan.i32 = -1;
 
-	if (!D) return D;
+	if(!D)
+	{
+		return D;
+	}
 
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		fprintf(stderr, "DifxInput2FitsGN: Memory allocation error\n");
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocation G (%d bytes)\n", 
+			MAXENTRIES*sizeof(GainRow));
 
 		exit(0);
 	}
@@ -528,15 +539,19 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	nRow = loadGainCurves(G);
 	if(nRow < 0)
 	{
+		/* gain file not found.  Not necessarily a problem. */
 		free(G);
+
 		return D;
 	}
 
 	/* calloc space for storing table in FITS format */
 	if((fitsbuf = (char *)calloc(nRowBytes, 1)) == 0)
 	{
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate fitsbuf (%d bytes)\n", nRowBytes);
 		free(G);
-		return 0;
+
+		exit(0);
 	}
 
 	/* spew out the table header */
@@ -596,8 +611,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 				nTerm[i] = G[r].nPoly;
 				for(j = 0; j < MAXTAB; j++)
 				{
-					gain[i*MAXTAB + j] = (j < nTerm[i]) ? 
-						G[r].poly[j] : 0.0;
+					gain[i*MAXTAB + j] = (j < nTerm[i]) ?  G[r].poly[j] : 0.0;
 				}
 				for(p = 0; p < nPol; p++)
 				{
@@ -622,10 +636,8 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 				FITS_WRITE_ARRAY(xType, p_fitsbuf, nBand);
 				FITS_WRITE_ARRAY(yType, p_fitsbuf, nBand);
 				FITS_WRITE_ARRAY(xVal, p_fitsbuf, nBand);
-				FITS_WRITE_ARRAY(yVal, p_fitsbuf, 
-					nBand*MAXTAB);
-				FITS_WRITE_ARRAY(gain, p_fitsbuf,
-					nBand*MAXTAB);
+				FITS_WRITE_ARRAY(yVal, p_fitsbuf, nBand*MAXTAB);
+				FITS_WRITE_ARRAY(gain, p_fitsbuf, nBand*MAXTAB);
 				FITS_WRITE_ARRAY(sens[p], p_fitsbuf, nBand);
 			}
 

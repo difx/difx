@@ -170,7 +170,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   }
 	   else
 	   {
-	   	fprintf(stderr, "No im table available - aborting MC file creation\n");
+	   	fprintf(stderr, "No im table available; aborting MC file creation\n");
 		continue;
 	   }
 
@@ -224,7 +224,7 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 
 		deltatn = 1.0;
 		c1 = 0.0;
-		for(j=0; j<D->antenna[antId].clockorder; j++)
+		for(j = 0; j < D->antenna[antId].clockorder; j++)
 		{
 			c1 = c1 + D->antenna[antId].clockcoeff[j] * deltatn;
 			deltatn = deltatn * deltat;
