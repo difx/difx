@@ -235,7 +235,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		/* ... and to FITS antennaId */
 		antId1 = antId + 1;
 
-		if(scan->im[a] == 0)
+		if(scan->im[antId] == 0)
 		{
 		  if(skip[antId] == 0)
 		  {
