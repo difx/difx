@@ -245,6 +245,9 @@ FxManager::~FxManager()
   delete [] islocked;
   delete [] bufferlock;
 
+  // This line helps with jobs not reporting fully finishing -WFB 20101223
+  usleep(10000);
+
   if(terminatenow)
   {
     difxMessageSendDifxStatus(DIFX_STATE_TERMINATED, "", 0.0, 0, 0);
