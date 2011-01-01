@@ -2,6 +2,8 @@ AC_INIT([difxmessage], [2.0.1], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER([config.h])
 
+AC_CONFIG_MACRO_DIR([m4])
+
 #shared library versioning
 LIBRARY_VERSION=0:0:0
 #               | | |
