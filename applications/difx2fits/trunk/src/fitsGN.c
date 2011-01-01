@@ -514,7 +514,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocation G (%d bytes)\n", 
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocation G (%lu bytes)\n", 
 			MAXENTRIES*sizeof(GainRow));
 
 		exit(0);
