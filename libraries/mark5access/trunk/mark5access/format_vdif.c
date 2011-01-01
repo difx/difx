@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: $
+// $Id$
 // $HeadURL: $
-// $LastChangedRevision: 1310 $
-// $Author: $
-// $LastChangedDate: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 

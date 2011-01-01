@@ -2,6 +2,8 @@ AC_INIT([mark5access], [1.4.2], [Walter Brisken <wbrisken@nrao.edu>])
 
 AM_CONFIG_HEADER(config.h)
 
+AC_CONFIG_MACRO_DIR([m4])
+
 AC_C_BIGENDIAN
 
 #shared library versioning

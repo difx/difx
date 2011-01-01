@@ -1,3 +1,5 @@
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = mark5access bbsum examples doc
 
 DIST_SUBDIRS = mark5access bbsum examples doc
