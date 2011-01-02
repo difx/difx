@@ -759,7 +759,22 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		exit(0);
 	}
 	const VexFormat* format = mode->getFormat(antName);
+	const VexSetup* setup = mode->getSetup(antName);
 	int n2 = next2(format->nRecordChan);
+
+	if(format == 0)
+	{
+		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> format=0" << endl;
+
+		exit(0);
+	}
+
+	if(setup == 0)
+	{
+		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> setup=0" << endl;
+
+		exit(0);
+	}
 
 	if(format->format == string("VLBA1_1"))
 	{
@@ -855,7 +870,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		unsigned int toneSetId, fqId;
 		const VexSubband& subband = mode->subbands[i->subbandId];
 		
-		if(v2dMode == V2D_MODE_PROFILE)
+		if(v2dMode == V2D_MODE_PROFILE || setup->phaseCalIntervalMHz() == 0)
 		{
 			// In profile mode don't extract any tones
 			toneSetId = 0;
