@@ -223,7 +223,7 @@ static void generateIdentifier(const char *inputfile, char *identifier)
   identifier[i] = 0;
   if(i == DIFX_MESSAGE_PARAM_LENGTH-1) //job name was too long!
   {
-    cerr << "WARNING! Job name was too long to serve as difxmessage identifier - identifier was truncated to " << identifier << endl;
+    cwarn << "Job name was too long to serve as difxmessage identifier; identifier was truncated to " << identifier << endl;
   }
 }
 
@@ -260,7 +260,7 @@ int main(int argc, char *argv[])
 
   if(argc < 2 || argc > 3)
   {
-    cerr << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+    cerr << "Error: invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;
@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
   {
     if(isDifxMessageInUse())
     {
-      cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!!" << endl;
+      cout << "NOTE: difxmessage is in use.  If you are not running errormon/errormon2, you are missing all the (potentially important) info messages!" << endl;
     }
   }
 
@@ -283,7 +283,7 @@ int main(int argc, char *argv[])
   {
     if(!(argv[2][0]=='-' && argv[2][1]=='M'))
     {
-      cfatal << startl << "Error - invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
+      cfatal << startl << "Invoke with mpifxcorr <inputfilename> [-M<monhostname>:port[:monitor_skip]]" << endl;
       MPI_Barrier(world);
       MPI_Finalize();
       return EXIT_FAILURE;
@@ -331,7 +331,7 @@ int main(int argc, char *argv[])
   numcores = numprocs - (fxcorr::FIRSTTELESCOPEID + numdatastreams);
   if(numcores < 1)
   {
-    cfatal << startl << "Error - must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!!!" << endl;
+    cfatal << startl << "Must be invoked with at least " << fxcorr::FIRSTTELESCOPEID + numdatastreams + 1 << " processors (was invoked with " << numprocs << " processors) - aborting!" << endl;
     MPI_Barrier(world);
     MPI_Finalize();
     return EXIT_FAILURE;

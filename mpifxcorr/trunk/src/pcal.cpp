@@ -625,7 +625,7 @@ void PCalExtractorImplicitShift::adjustSampleOffset(const size_t sampleoffset)
 bool PCalExtractorImplicitShift::extractAndIntegrate(f32 const* samples, const size_t len)
 {
     if (_finalized) { 
-        cerror << startl << "Error: PCalExtractorImplicitShift::extractAndIntegrate on finalized class!" << endl;
+        cerror << startl << "PCalExtractorImplicitShift::extractAndIntegrate on finalized class!" << endl;
         return false; 
     }
 
@@ -835,7 +835,7 @@ void PCalExtractorDummy::adjustSampleOffset(const size_t sampleoffset)
 bool PCalExtractorDummy::extractAndIntegrate(f32 const* samples, const size_t len)
 {
   if (false && _finalized) { 
-      cerror << startl << "Error: Dummy::extract on finalized results!" << endl;
+      cerror << startl << "Dummy::extract on finalized results!" << endl;
       return false; 
   }
   _samplecount += len;

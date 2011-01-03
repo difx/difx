@@ -258,7 +258,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   }
   if(syncteststream->nchan != config->getDNumRecordedBands(configindex, streamnum))
   {
-    cerror << startl << "Error - number of recorded bands for datastream " << streamnum << " (" << nrecordedbands << ") does not match with MkV file " << datafilenames[configindex][fileindex] << " (" << syncteststream->nchan << "), will be ignored!!!" << endl;
+    cerror << startl << "Number of recorded bands for datastream " << streamnum << " (" << nrecordedbands << ") does not match with MkV file " << datafilenames[configindex][fileindex] << " (" << syncteststream->nchan << "), will be ignored!" << endl;
   }
 
   // resolve any day ambiguities

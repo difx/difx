@@ -956,7 +956,7 @@ bool Configuration::processConfig(ifstream * input)
     if(configs[i].phasedarray)
     {
       if(mpiid == 0) //only write one copy of this error message
-        cwarn << startl << "Error - phased array is not yet supported!!!" << endl;
+        cwarn << startl << "PHASED ARRAY = TRUE but phased array mode is not yet supported!" << endl;
       getinputline(input, &configs[i].phasedarrayconfigfilename, "PHASED ARRAY CONFIG FILE");
     }
     for(int j=0;j<numdatastreams;j++)

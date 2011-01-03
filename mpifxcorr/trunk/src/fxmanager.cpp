@@ -95,7 +95,7 @@ FxManager::FxManager(Configuration * conf, int ncores, int * dids, int * cids, i
     MPI_Abort(MPI_COMM_WORLD, 1);
   }
   if(startskip && config->getStartNS() != 0) {
-    cwarn << startl << "WARNING!!! Fractional start time of " << startseconds << " seconds plus " << initns << " ns was specified, but the start time corresponded to a configuration not specified in the input file and hence we are skipping to the first valid scan after the specified start (" << initscan << ")! The ns offset will be set to 0!!!" << endl;
+    cwarn << startl << "Fractional start time of " << startseconds << " seconds plus " << initns << " ns was specified, but the start time corresponded to a configuration not specified in the input file and hence we are skipping to the first valid scan after the specified start (" << initscan << ")! The ns offset will be set to 0!!!" << endl;
     initns = 0;
   }
   inttime = config->getIntTime(currentconfigindex);
@@ -468,7 +468,7 @@ void FxManager::receiveData(bool resend)
       extrareceived[sourceid]++;
     }
     if (visindex < 0)
-      cerror << startl << "Error - stale data was received from core " << sourceid << " regarding scan " << subintscan << ", time " << scantime << " seconds - it will be ignored!!!" << endl;
+      cwarn << startl << "Stale data was received from core " << sourceid << " regarding scan " << subintscan << ", time " << scantime << " seconds - it will be ignored!!!" << endl;
     else
     {
       //now store the data - if we have sufficient sub-accumulations received, release this 
@@ -501,7 +501,7 @@ void FxManager::receiveData(bool resend)
   }
   else
   {
-    cinfo << startl << "Invalid data was recieved from core " << sourcecore << " regarding scan " << subintscan << ", offset " << scantime << " seconds" << endl;
+    cwarn << startl << "Invalid data was recieved from core " << sourcecore << " regarding scan " << subintscan << ", offset " << scantime << " seconds" << endl;
 
     //immediately get some more data heading to that node
     if(resend)
@@ -662,7 +662,7 @@ int FxManager::locateVisIndex(int coreid)
 
   if((newestlockedvis-oldestlockedvis+vblength)%vblength >= vblength/2) 
   { 
-    cerror << startl << "Error - data was received which is too recent (scan " << corescan << ", " << coresec << " sec + " << corens << "ns)!  Will force write-out of oldest Visibility" << endl; 
+    cwarn << startl << "Data was received which is too recent (scan " << corescan << ", " << coresec << " sec + " << corens << "ns).  Will force write-out of oldest Visibility" << endl; 
     //abandon the oldest vis, even though it hasn't been filled yet 
     perr = pthread_mutex_unlock(&(bufferlock[oldestlockedvis])); 
     if(perr != 0) 
@@ -717,7 +717,7 @@ int FxManager::locateVisIndex(int coreid)
         return newestlockedvis;
     }
     //d'oh - its newer than we can handle - have to drop old data until we catch up
-    cerror << startl << "Error - data was received which is too recent (scan " << corescan << ", " << coresec << " sec + " << corens << "ns)!  Will force existing data to be dropped until we have caught up coreid="<< coreid << endl;
+    cwarn << startl << "Data was received which is too recent (scan " << corescan << ", " << coresec << " sec + " << corens << "ns).  Will force existing data to be dropped until we have caught up coreid="<< coreid << endl;
 
     while(difference > inttime)
     {
@@ -913,7 +913,7 @@ bool FxManager::checkSocketStatus()
     {
       if (monsockStatus != PENDING)
       {
-        cerror << startl << "WARNING: Monitor socket could not be opened - monitoring not proceeding! Will try again after " << config->getVisBufferLength() << " integrations..." << endl;
+        cerror << startl << "Monitor socket could not be opened; monitoring not proceeding! Will try again after " << config->getVisBufferLength() << " integrations..." << endl;
       }
       return false;
     }
