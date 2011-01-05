@@ -1063,7 +1063,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					}
 					else
 					{
-						Q.push_back(v);
+						Q.push_back(v-1);	// Move from vex's 1-based tones to DiFX's 0-based
 					}
 				}
 				sort(Q.begin(), Q.end());
