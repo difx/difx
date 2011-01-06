@@ -1,0 +1,40 @@
+#!/bin/env python
+
+from sys import stderr
+from os import getenv
+from os.path import isfile
+from string import strip, split
+
+antennas = ['br', 'eb', 'fd', 'gb', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc']
+receivers = ['90cm', '20cm', '13cm', '6cm', '4cm', '2cm', '1cm', '7mm', '3mm']
+
+
+def readfile(fn, a, r):
+	stderr.write('Reading %s\n' % fn)
+	data = open(fn).readlines()
+	ready = 0
+	print '# %s' % fn
+	for d in data:
+		if d[:8] == 'RECEIVER':
+			if ready:
+				return
+			else:
+				ready = 1
+		else:
+			s = split(strip(d))
+			if len(s) == 3:
+				print '%-4s %-8s %-5s %-5s %-5s' % (a, r, s[0], s[2], s[1])
+
+
+tcalpath = getenv('TCAL_PATH')
+
+if tcalpath == None:
+	stderr.write('Error: need to have TCAL_PATH defined\n')
+else:
+	print '# Columns are: antenna, receiver, frequency(MHz), tCal_R(K), tCal_L(K)'
+	for a in antennas:
+		for r in receivers:
+			fn = '%s/%s.%s' % (tcalpath, r, a)
+			if isfile(fn):
+				readfile(fn, a, r)
+		
