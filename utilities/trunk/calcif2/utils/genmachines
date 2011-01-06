@@ -12,8 +12,8 @@ from copy import deepcopy
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.10'
-verdate = '20080620'
+version = '0.11'
+verdate = '20110106'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -192,27 +192,28 @@ def getVsnsFromInputFile(inputfile):
 	dssources = []
 	dscount = 0
 	dsfilecount = 0
-	for i in input:
-		if i[0:18] == 'ACTIVE DATASTREAMS':
-			s = split(i, ':')
-			if len(s) == 2:
-				nds = int(strip(s[1]))
-		if len(i.split()) == 4 and i.split()[0] == 'DATASTREAM' \
-		   and i.split()[2] == 'INDEX:':
-			dsindices.append(int(strip(i.split(':')[1].strip())))
-		if i[0:11] == 'DATA SOURCE':
+	for inputLine in input:
+		s = split(inputLine, ':')
+		if len(s) < 2:
+			continue;
+		key = s[0].strip()
+		keyparts = key.split()
+		value = s[1].strip()
+		if key == 'ACTIVE DATASTREAMS':
+			nds = int(value)
+		if len(keyparts) == 3 and keyparts[0] == 'DATASTREAM' and keyparts[2] == 'INDEX':
+			dsindices.append(int(value))
+		if key == 'DATA SOURCE':
 			if dscount in dsindices:
-				dssources.append(strip(i.split(':')[1].strip()))
+				dssources.append(value)
 			dscount += 1
-		if i[0:5] == 'FILE ':
+		if len(keyparts) == 2 and keyparts[0] == 'FILE':
 			# VSNs only required for MODULES - will assume files are there for now
 			if dssources[dsfilecount] == 'MODULE':
-				s = split(i, '/')
-				ds = int(strip(s[0][5:]))
+				s = split(keyparts[1], '/')
+				ds = int(strip(s[0]))
 				if ds < nds:
-					s = split(i, ':')
-					if len(s) == 2:
-						vsns.append(strip(s[1]))
+					vsns.append(value)
 			dsfilecount += 1
 	return vsns
 

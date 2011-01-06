@@ -1,5 +1,8 @@
 calcif2
 ~~~~~~~
+Version 2.0.1
+* Post version 2.0
+
 Version 2.0
 * Writes im files only (no delay/uvw/rate) and allows multi-phase centre
 * Warn when NaN or Inf delays are made
@@ -135,6 +138,9 @@ Version 1.2
 
 genmachines
 ~~~~~~~~~~~
+Version 0.11
+* fix for > 10 antennas and do some cleanup
+
 Version 0.9
 * genmachines2 is now genmachines
 * the old genmachines is now genmachines.old and is not installed

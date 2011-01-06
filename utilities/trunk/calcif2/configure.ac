@@ -1,4 +1,4 @@
-AC_INIT([calcif2], [2.0], [Walter Brisken <wbrisken@nrao.edu>])
+AC_INIT([calcif2], [2.0.1], [Walter Brisken <wbrisken@nrao.edu>])
 AM_CONFIG_HEADER(config.h)
 
 AM_INIT_AUTOMAKE
