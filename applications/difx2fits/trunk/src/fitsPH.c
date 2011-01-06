@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken @ John Morgan               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
+#include "config.h"
 #include "difx2fits.h"
 #include "other.h"
 
@@ -105,6 +106,10 @@ static int getNTone(const char *filename, double t1, double t2)
 			break;
 		}
 		n = sscanf(line, "%s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
+		if(n != 3)
+		{
+			continue;
+		}
 		if(t >= t1 && t <= t2)
 		{
 			if(nTone > maxnTone)
@@ -376,8 +381,9 @@ static int parsePulseCalCableCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-          printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
-          return -3;
+		printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
+		
+		return -3;
         }
 
 	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
@@ -388,8 +394,10 @@ static int parsePulseCalCableCal(const char *line,
 	}
 	
 	*cableCal *= 1e-12;
+
 	return 0;
 }
+
 /* The following function is for parsing a line of the files containing 
  * The DiFX-extracted pulse cals */
 static int parseDifxPulseCal(const char *line, 
@@ -427,7 +435,8 @@ static int parseDifxPulseCal(const char *line,
 		&cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
 	if(n != 9)
 	{
-		fprintf(stderr, "Error scanning header\n");
+		fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
+
 		return -1;
 	}
 	line += p;
@@ -438,6 +447,7 @@ static int parseDifxPulseCal(const char *line,
 	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
 		//printf("out of mjd range\n");
+
 		return -1;
 	}
 
@@ -449,8 +459,9 @@ static int parseDifxPulseCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-          printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
-          return -3;
+		//printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
+
+		return -3;
         }
 
 	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
@@ -602,8 +613,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
 	int stationpcal = 0;
-	char antName[20];
+	char antName[DIFXIO_NAME_LENGTH];
 
+	/* Note: this particular form of NAN is needed for FITS-IDI compliance */
 	union
 	{
 		int32_t i32;

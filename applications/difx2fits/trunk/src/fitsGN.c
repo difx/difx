@@ -37,16 +37,17 @@
 #include "other.h"
 
 
-#define MAXENTRIES	5000
-#define MAXTOKEN	512
-#define MAXTAB		6
-#define N_VLBA_BANDS	12
+#define MAXENTRIES		5000UL
+#define MAXTOKEN		512
+#define MAXTAB			6
+#define N_VLBA_BANDS		12
+#define ANTENNA_NAME_LENGTH	4
 
 typedef struct
 {
 	float mjd1, mjd2;
 	int band;
-	char antName[4];
+	char antName[ANTENNA_NAME_LENGTH];
 	int nFreq, nPoly, nDPFU, nTime;
 	float freq[2];
 	float poly[MAXTAB];
@@ -123,22 +124,24 @@ static int getGainRow(GainRow *G, int nRow, const char *antName,
 	return bestr;
 }
 
-static int testAntenna(const char *token, char *value)
+static int isHSAAntenna(const char *token)
 {
 	const char antennas[] = " AR BR EB FD GB HN KP LA MK NL OV PT SC Y ";
 	char matcher[8];
 
-	if(strlen(token) > 4)
+	if(strlen(token) >= ANTENNA_NAME_LENGTH)
 	{
-		return -1;
+		return 0;
 	}
 	sprintf(matcher, " %s ", token);
 	if(strstr(antennas, matcher) != 0)
 	{
-		strcpy(value, token);
+		return 1;
 	}
-	
-	return 0;
+	else
+	{	
+		return 0;
+	}
 }
 				
 static int getNoQuote(char firstchar, FILE *in, char *token)
@@ -225,6 +228,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 	int max = 0;
 	float *val = 0;
 	int action = 0;	/* State variable : 0= set LHS, 1= set RHS */
+	int v;
 	char *rv;
 
 	if(row < 0)
@@ -339,8 +343,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 				{
 					if((*ctr) > max)
 					{
-						fprintf(stderr, 
-					"Too many values %d>%d\n", *ctr, max);
+						fprintf(stderr, "Too many values %d>%d\n", *ctr, max);
 					}
 					else
 					{
@@ -351,7 +354,16 @@ static int parseGN(const char *filename, int row, GainRow *G)
 			}
 			else
 			{
-				testAntenna(token, G[row].antName);
+				if(isHSAAntenna(token))
+				{
+					v = snprintf(G[row].antName, ANTENNA_NAME_LENGTH, "%s", token);
+					if(v >= ANTENNA_NAME_LENGTH)
+					{
+						fprintf(stderr, "Developer error: antenna name wanted %d characters while only %d are allowed\n",
+							v, ANTENNA_NAME_LENGTH-1);
+					}
+				}
+
 			}
 			
 		}

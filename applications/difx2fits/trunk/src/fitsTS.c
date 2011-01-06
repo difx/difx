@@ -44,6 +44,28 @@ TCal *tCals = 0;
 int nTcal;
 
 
+/* Really this looks at the type of BBC used, so EB is included. */
+static int isVLBAAntenna(const char *token)
+{
+	const char antennas[] = " BR EB FD HN KP LA MK NL OV PT SC ";
+	char matcher[8];
+
+	if(strlen(token) >= 4)
+	{
+		return 0;
+	}
+	sprintf(matcher, " %s ", token);
+	if(strstr(antennas, matcher) != 0)
+	{
+		return 1;
+	}
+	else
+	{	
+		return 0;
+	}
+}
+
+
 int loadTcals()
 {
 	const int MaxLineLength = 100;
@@ -318,6 +340,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 	DifxScan *scan;
 	float tSys[2][array_MAX_BANDS];
 	float tAnt[2][array_MAX_BANDS];
+	double fudgeFactor;
 
 	if(tCals == 0)
 	{
@@ -328,6 +351,18 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 	if(dsId < 0)
 	{
 		return dsId;
+	}
+
+	/* This factor accounts for the fact that the VLBA BBC has an apparent 
+	 * total power scaling issue of about 6.5%
+	 */
+	if(isVLBAAntenna(D->antenna[antId].name))
+	{
+		fudgeFactor = 1.07;
+	}
+	else
+	{
+		fudgeFactor = 1.0;
 	}
 
 	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, dsId);
@@ -488,7 +523,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 					tCal = getTcalValue(D->antenna[antId].name, freq, D->config[currentConfigId].pol[polId]);
 					if(tCal > 0.0)
 					{
-						tSys[polId][bandId] = tCal*unscaledTsys(average + i);
+						tSys[polId][bandId] = tCal*unscaledTsys(average + i)*fudgeFactor;
 					}
 				}
 
@@ -643,15 +678,18 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	
 	in = fopen("tsys", "r");
 
-	for(antId = 0; antId < D->nAntenna; antId++)
+	if(DifxTsysAvgSeconds > 0.0)
 	{
-		for(jobId = 0; jobId < D->nJob; jobId++)
+		for(antId = 0; antId < D->nAntenna; antId++)
 		{
-			/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
-			dsId = getDifxTsys(D, jobId, antId, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
-			if(dsId >= 0)
+			for(jobId = 0; jobId < D->nJob; jobId++)
 			{
-				hasDifxTsys[antId]++;
+				/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
+				dsId = getDifxTsys(D, jobId, antId, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+				if(dsId >= 0)
+				{
+					hasDifxTsys[antId]++;
+				}
 			}
 		}
 	}
