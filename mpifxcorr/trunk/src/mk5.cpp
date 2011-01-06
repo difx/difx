@@ -50,12 +50,11 @@ Mk5DataStream::Mk5DataStream(Configuration * conf, int snum, int id, int ncores,
   lastconfig = -1;
 
   // switched power output assigned a name based on the datastream number (MPIID-1)
-  int spf = conf->getDSwitchedPowerFrequency(id-1);
-  if(spf > 0)
+  int spf_Hz = conf->getDSwitchedPowerFrequency(id-1);
+  if(spf_Hz > 0)
   {
     switchedpower = new SwitchedPower(conf->getOutputFilename(), id);
-    switchedpower->frequency = spf;
-    cout << "DS " << (id-1) << ": tcalfreq = " << spf << endl;
+    switchedpower->frequency = spf_Hz;
   }
 }
 

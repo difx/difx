@@ -800,11 +800,6 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
                     delete_mark5_stream(m5stream);
                   }
                 }
-                else
-                {
-                  cout << "no switched power" << endl;
-                }
-
 	}
 
 
