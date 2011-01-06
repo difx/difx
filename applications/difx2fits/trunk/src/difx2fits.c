@@ -587,6 +587,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("  PH -- phase cal           ");
 	fflush(stdout);
 	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre);
+	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
