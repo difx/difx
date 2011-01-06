@@ -838,7 +838,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
             sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
 	    results[resultindex].re,
-	    results[resultindex].im);
+	    -results[resultindex].im);
             pcaloutput.write(pcalstr, strlen(pcalstr));
           resultindex++;
           }
