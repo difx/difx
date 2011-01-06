@@ -216,6 +216,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // identify channel and tone
                             sscanf (line + nchars, "%d%lf%lf%lf%n", 
                                     &record_chan, &freq, &cquad, &squad, &mchars);
+			            // swap sign of imaginary part
+			    squad *= -1;
                             nchars += mchars;
                             for (j=0; j<D->nFreq*npol; j++)
                                 {
