@@ -340,11 +340,12 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 	if(!die)
 	{
-		char hostname[32];
+		const int hostnameLength = 32;
+		char hostname[hostnameLength];
 
 		printf("> %s Conditioning %s took %7.2f seconds\n", opName, vsn, dt);
 
-		gethostname(hostname, 32);
+		gethostname(hostname, hostnameLength);
 		printf("> Hostname %s\n", hostname);
 
 		*rate = 128*(int)(lowestRate/128.0);
@@ -386,7 +387,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 				}
 				else
 				{
-					XLRGetErrorMessage(message, XLRGetLastError( ));
+					XLRGetErrorMessage(message, XLRGetLastError());
 					printf(" : %s", message);
 				}
 				printf("\n");
@@ -434,7 +435,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Conditioning requires module %s to be alone in bank A.", vsn);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-			fprintf(stderr,  "%s\n", message);
+			fprintf(stderr, "%s\n", message);
 			WATCHDOG( XLRClose(xlrDevice) );
 
 			return -1;
@@ -448,7 +449,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
 				"Module %s not found", vsn);
-			fprintf(stderr,  "%s\n", message);
+			fprintf(stderr, "%s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			WATCHDOG( XLRClose(xlrDevice) );
 
@@ -479,7 +480,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Extended VSN is corrupt.  Assuming rate = 1024 Mbps.");
-			fprintf(stderr,  "Warning: %s\n", message);
+			fprintf(stderr, "Warning: %s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			rate = 1024;
 		}
@@ -488,7 +489,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH,
 			"No extended VSN found.  Assuming rate = 1024 Mbps.");
-		fprintf(stderr,  "Warning: %s\n", message);
+		fprintf(stderr, "Warning: %s\n", message);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		rate = 1024;
 	}

@@ -952,15 +952,15 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 
 	for(j = 4; j < n; j++)
 	{
-		if(strcmp(extra[j], "RT") == 0)
+		if(strcmp(extra[j-4], "RT") == 0)
 		{
 			module->mode = MARK5_READ_MODE_RT;
 		}
-		else if(strcmp(extra[j], "Fast") == 0)
+		else if(strcmp(extra[j-4], "Fast") == 0)
 		{
 			module->fast = 1;
 		}
-		else if(sscanf(extra[j], "%d", &i) == 1)
+		else if(sscanf(extra[j-4], "%d", &i) == 1)
 		{
 			module->dirVersion = i;
 		}
