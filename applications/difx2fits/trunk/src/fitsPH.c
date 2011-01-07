@@ -76,7 +76,7 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 		fprintf(stderr, "Error opening file : %s\n", filename);
 		return -1;
 	}
-	printf("Opened File %s\n", filename);
+	printf("      Opened File %s\n", filename);
 	return 0;
 }
 	
@@ -628,6 +628,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		return D;
 	}
 
+	printf("\n");
 	nBand = D->nIF;
 	nPol = D->nPol;
 
@@ -640,8 +641,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	in = fopen("pcal", "r");
 	if(in)
 	{
-		printf("Station-extracted pcals available\n");
-		stationpcal = 1;
+		printf("    Station-extracted pcals available\n");
 		//check if it will be used and if so, how many tones it contains
 		for(i = 0; i < D->nDatastream; i++)
 		{
@@ -655,12 +655,19 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	else
 	{
 		in = 0;
-		printf("\nWarning: Station pcal file not found. No station pcal or cable cal measurements available\n");
+		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
 	}
-	printf("\n");
 
 
 	nDifxTone = DifxInputGetMaxTones(D);
+	if(nDifxTone == 0)
+	{
+		printf("    No Tones extracted by DiFX\n");
+	}
+	else
+	{
+		printf("    DiFX-extracted tones available\n");
+	}
 
 	if(nDifxTone > nTone)
 	{
@@ -674,11 +681,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(nTone < 1)
 	{
-		printf("Error: nTone = 0\n");
 		return D;
 	}
 
-	if(nDifxTone < 2)
+	if(nTone < 2)
 	{
 		printf("Warning: nTone <2 \n");
 	}
@@ -718,11 +724,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	antId = 0;
 	arrayId1 = 1;
 
-	//in = fopen("pcal", "r");
-
 	for(a = 0; a < D->nAntenna; a++)
 	{
-		printf("Processing %s\n", D->antenna[a].name);
+		printf("    Processing %s\n", D->antenna[a].name);
+
 		for(j = 0; j < D->nJob; j++)
 		{
 			dsId = DifxInputGetDatastreamId(D, j, a);
@@ -731,21 +736,35 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				/*antenna not present in this job*/
 				continue;/*to next job*/
 			}
-			v = getDifxPcalFile(D, a, j, &in2);
-			if(v != 0)
+
+			if(D->datastream[dsId].phaseCalIntervalMHz > 0)
 			{
-				break;/*to next job*/
+				v = getDifxPcalFile(D, a, j, &in2);
+				if(v != 0)
+				{
+					/*Error message given in getDifxPcalFile*/
+					continue;/*to next job*/
+				}
+			}
+			else
+			{
+				/*Don't mix DiFX and station pcals*/
+				if(nDifxTone)
+				{
+					printf("Warning: no pcals for Antenna %s in JobId %d\n", D->antenna[a].name, j);
+					continue;/*to next job*/
+				}
 			}
 
 			/* set defaults */
-
 			cableCal = 0.0;
 			cableTime = 0.0;
 			cableTimeInt = -1.0;
+
 			/*rewind(in) below this loop*/
 			while(1)
 			{
-				if(in && D->datastream[dsId].phaseCalIntervalMHz < 1)/*try reading pcal file*/
+				if(in && !nDifxTone)/*try reading pcal file*/
 				{
 					rv = fgets(line, MaxLineLength, in);
 					if(!rv)
@@ -772,18 +791,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						{
 							continue;/*to next line in file*/
 						}
-						if(time < D->job[j].jobStart - refDay) 
-						{
-							continue;/*to next line in file*/
-						}
-						if(time > D->job[j].jobStop - refDay) 
-						{
-							break;/*to next job*/
-						}
 					}
 				}
 				else/*reading difx-extracted pcals*/
-				{
+				{	
 					rv = fgets(line, MaxLineLength, in2);
 					if(!rv)
 					{
@@ -899,6 +910,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				fitsWriteBinRow(out, fitsbuf);
 				//printf("Entry Written\n");
 			}/*end while*/
+			if(!nDifxTone)
+			{
+				break;/*to next antenna*/
+			}
 		}/*end job loop*/
 		if(in)
 		{
