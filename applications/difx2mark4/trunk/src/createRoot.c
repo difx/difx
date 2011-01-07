@@ -101,6 +101,7 @@ int createRoot (char *baseFile,     // common part of difx fileset name
     char single_code (char *);
     void conv2date (double, struct date *);
     char getband (double);
+    void fake_bocf_period(char [256], DifxInput *);
 
                                     // initialize memory as necessary
     current_def[0] = 0;
@@ -587,7 +588,12 @@ int createRoot (char *baseFile,     // common part of difx fileset name
             {
             if (strncmp (extra_lines[i], " AP_length", 10) == 0)
                 {
-                sprintf (buff, " AP_length = %5.2lf sec;\n", D->config->tInt);
+                sprintf (buff, " AP_length = %7.4lf sec;\n", D->config->tInt);
+                fputs (buff, fout);
+                }
+            else if (strncmp (extra_lines[i], " bocf_period", 12) == 0)
+                {
+                fake_bocf_period(buff, D);
                 fputs (buff, fout);
                 }
             else
@@ -610,4 +616,27 @@ char getband (double freq)
         if (fband[i].flo <= freq && freq <= fband[i].fhi)
             c = fband[i].code;
     return c;
+    }
+
+/*
+ * fourfit requires that the AP (D->config->tInt) be an integral
+ * number of bocf periods.  There is no bocf period in the s/w
+ * correlator, but the subintNS period is perhaps similar.
+ * If it isn't suitable, we'll just quarter the AP and move on.
+ *
+ * ap_in_sysclks = rint ((double)param->acc_period * 32e6 / param->speedup);
+ * ap_in_sysclks % param->bocf_period == 0 is required
+ *
+ * bocf units are 32e6/s == 32e-3/ns
+ */
+void fake_bocf_period(char buff[256], DifxInput *D)
+    {
+    unsigned long ap_in_sysclks, bocf_period, nn;
+    ap_in_sysclks = rint((double)D->config->tInt * 32e6 / 1.0);
+    bocf_period = (D->config->subintNS * 32) / 1000;
+    if (ap_in_sysclks % bocf_period != 0)
+	bocf_period = ap_in_sysclks / 4;
+
+    sprintf (buff, " bocf_period = %d;\n*subintNS = %d;\n",
+	bocf_period, D->config->subintNS);
     }
