@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -352,11 +352,11 @@ int Mark5BankSetByVSN(SSHANDLE *xlrDevice, const char *vsn)
 
 static int uniquifyScanNames(struct Mark5Module *module)
 {
-	char scanNames[MAXSCANS][MAXLENGTH];
-	int nameCount[MAXSCANS];
-	int origIndex[MAXSCANS];
+	char scanNames[MAX_SCANS_PER_MODULE][MAX_SCAN_NAME_LENGTH];
+	int nameCount[MAX_SCANS_PER_MODULE];
+	int origIndex[MAX_SCANS_PER_MODULE];
 	int i, j, n=0;
-	char tmpStr[MAXLENGTH+5];
+	char tmpStr[MAX_SCAN_NAME_LENGTH+5];
 
 	if(!module)
 	{
@@ -381,8 +381,8 @@ static int uniquifyScanNames(struct Mark5Module *module)
 			{
 				nameCount[j]++;
 				sprintf(tmpStr, "%s_%04d", scanNames[j], nameCount[j]);
-				strncpy(module->scans[i].name, tmpStr, MAXLENGTH-1);
-				module->scans[i].name[MAXLENGTH-1] = 0;
+				strncpy(module->scans[i].name, tmpStr, MAX_SCAN_NAME_LENGTH-1);
+				module->scans[i].name[MAX_SCAN_NAME_LENGTH-1] = 0;
 				break;
 			}
 		}
@@ -402,8 +402,8 @@ static int uniquifyScanNames(struct Mark5Module *module)
 		{
 			i = origIndex[j];
 			sprintf(tmpStr, "%s_%04d", scanNames[j], 1);
-			strncpy(module->scans[i].name, tmpStr, MAXLENGTH-1);
-			module->scans[i].name[MAXLENGTH-1] = 0;
+			strncpy(module->scans[i].name, tmpStr, MAX_SCAN_NAME_LENGTH-1);
+			module->scans[i].name[MAX_SCAN_NAME_LENGTH-1] = 0;
 		}
 	}
 
@@ -680,7 +680,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE *xlrDevice, int m
 
 			if(dirVersion == 0)
 			{
-				strncpy(scan->name, m5dir->scanName[i], MAXLENGTH);
+				strncpy(scan->name, m5dir->scanName[i], MAX_SCAN_NAME_LENGTH);
 				scan->start  = m5dir->start[i];
 				scan->length = m5dir->length[i];
 			}
@@ -922,7 +922,7 @@ int loadMark5Module(struct Mark5Module *module, const char *filename)
 		}
 	}
 
-	if(nscans > MAXSCANS || nscans < 0)
+	if(nscans > MAX_SCANS_PER_MODULE || nscans < 0)
 	{
 		fclose(in);
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,8 +36,8 @@
 extern "C" {
 #endif
 
-#define MAXSCANS  1024 /* Maximum number of scans in SDir */
-#define MAXLENGTH   64 /* Maximum length of a scan's extended name +1 */
+#define MAX_SCANS_PER_MODULE  1024 /* Maximum number of scans in SDir */
+#define MAX_SCAN_NAME_LENGTH   64 /* Maximum length of a scan's extended name +1 */
 
 #ifndef MARK5_FILL_PATTERN
 #ifdef WORDS_BIGENDIAN
@@ -76,9 +76,9 @@ struct Mark5Directory
 {
 	int nscans; /* Number of scans herein */
 	int n; /* Next scan to be accessed by "next_scan" */
-	char scanName[MAXSCANS][MAXLENGTH]; /* Extended name */
-	unsigned long long start[MAXSCANS]; /* Start byte position */
-	unsigned long long length[MAXSCANS]; /* Length in bytes */
+	char scanName[MAX_SCANS_PER_MODULE][MAX_SCAN_NAME_LENGTH]; /* Extended name */
+	unsigned long long start[MAX_SCANS_PER_MODULE]; /* Start byte position */
+	unsigned long long length[MAX_SCANS_PER_MODULE]; /* Length in bytes */
 	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
 	long long plapnt; /* Play offset, bytes */
 	double playRate; /* Playback clock rate, MHz */
@@ -124,7 +124,7 @@ struct Mark5DirectoryVDIFBodyVer1
 /* Internal representation of .dir files */
 struct Mark5Scan
 {
-	char name[MAXLENGTH];
+	char name[MAX_SCAN_NAME_LENGTH];
 	long long start;
 	long long length;
 	double duration;	/* scan duration in seconds */
@@ -142,7 +142,7 @@ struct Mark5Module
 	char label[XLR_LABEL_LENGTH];
 	int bank;
 	int nscans;
-	Mark5Scan scans[MAXSCANS];
+	Mark5Scan scans[MAX_SCANS_PER_MODULE];
 	unsigned int signature;	/* a hash code used to determine if dir is current */
 	enum Mark5ReadMode mode;
 	int dirVersion;		/* directory version = 0 for pre memo 81 */

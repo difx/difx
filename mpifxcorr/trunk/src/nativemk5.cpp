@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken and Adam Deller             *
+ *   Copyright (C) 2007-2011 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -120,25 +120,39 @@ void stopWatchdog()
 
 static int dirCallback(int scan, int nscan, int status, void *data)
 {
-	char message[256];
+	const int MessageLength=200;
+	char message[MessageLength];
+	int v;
 	DifxMessageMk5Status *mk5status;
 
 	mk5status = (DifxMessageMk5Status *)data;
 	mk5status->scanNumber = scan + 1;
 	mk5status->position = nscan;
-	sprintf(mk5status->scanName, "%s", Mark5DirDescription[status]);
+	v = snprintf(mk5status->scanName, MAX_SCAN_NAME_LENGTH,
+		"%s", Mark5DirDescription[status]);
+	if(v >= MessageLength)
+	{
+		fprintf(stderr, "Warning: dirCallback: scanName: v=%d, >= %d\n", v, MAX_SCAN_NAME_LENGTH);
+	}
+
 	difxMessageSendMark5Status(mk5status);
 
 	if(status == MARK5_DIR_READ_ERROR)
 	{
-		sprintf(message, "XLR read error in decoding of scan %d\n", 
-			scan+1);
+		v = snprintf(message, MessageLength, 
+			"XLR read error in decoding of scan %d\n", scan+1);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 	}
 	else if(status == MARK5_DIR_DECODE_ERROR)
 	{
-		sprintf(message, "cannot decode scan %d\n", scan+1);
+		v = snprintf(message, MessageLength, 
+			"cannot decode scan %d\n", scan+1);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+	}
+
+	if(v >= MessageLength)
+	{
+		fprintf(stderr, "Warning: dirCallback: message: v=%d, >= %d\n", v, MessageLength);
 	}
 
 	return 0;
@@ -193,21 +207,21 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 		cinfo << startl << "Success opening Streamstor device" << endl;
 	}
 
+	WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+	if(xlrRC == XLR_SUCCESS)
+	{
+		WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
+	if(xlrRC != XLR_SUCCESS)
+	{
+		cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
+	}
+
 	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
 	WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
-	}
-
-	WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-	if(xlrRC == XLR_SUCCESS)
-	{
-		WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
-	}
-	if(xlrRC != XLR_SUCCESS)
-	{
-		cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
 	}
 
 	module.nscans = -1;
@@ -701,7 +715,8 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	xlrRD.XferLength = bytes;
 	xlrRD.BufferAddr = (streamstordatatype *)buf;
 
-	WATCHDOG( xlrRC = XLRRead(xlrDevice, &xlrRD) );
+	//WATCHDOG( xlrRC = XLRRead(xlrDevice, &xlrRD) );
+	WATCHDOG( xlrRC = XLRReadData(xlrDevice, xlrRD.BufferAddr, xlrRD.AddrHi, xlrRD.AddrLo, xlrRD.XferLength) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrEC = XLRGetLastError();
@@ -714,6 +729,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 		double errorTime = corrstartday + (readseconds + corrstartseconds + readnanoseconds*1.0e-9)/86400.0;
 		sendMark5Status(MARK5_STATE_ERROR, scan-module.scans+1, readpointer, errorTime, 0.0);
 		nError++;
+
 		return;
 	}
 
@@ -1140,4 +1156,3 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 
 	return v;
 }
-// vim: shiftwidth=2:softtabstop=2:expandtab
