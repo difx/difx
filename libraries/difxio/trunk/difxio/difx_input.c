@@ -3586,17 +3586,28 @@ int DifxInputSimFXCORR(DifxInput *D)
 /* FIXME: Perhaps this needs special treatment for band match/zoom bands */
 int DifxInputGetMaxTones(const DifxInput *D)
 {
-	int f;
+	int f, d, fd;
 	int maxTones = 0;
 
-	for(f = 0; f < D->nFreq; f++)
+	for(d = 0; d < D->nDatastream; d++)
 	{
-		if(D->freq[f].nTone > maxTones)
+		if(D->datastream[d].phaseCalIntervalMHz == 0)
 		{
-			maxTones = D->freq[f].nTone;
+			continue;
+		}
+		for(f = 0; f < D->datastream[d].nRecFreq; f++)
+		{
+			fd = D->datastream[d].recFreqId[f];
+			if (fd < 0)
+			{
+				break;
+			}
+			if(D->freq[fd].nTone > maxTones)
+			{
+				maxTones = D->freq[fd].nTone;
+			}
 		}
 	}
-
 	return maxTones;
 }
 
