@@ -422,11 +422,11 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   //if we had to skip some, make sure we account for the possibly changed delay
   if(count > 0) {
-    cout << "Datastream " << mpiid << " is realigning bufferindex - it was " << bufferindex << endl;
+    //cout << "Datastream " << mpiid << " is realigning bufferindex - it was " << bufferindex << endl;
     bufferindex -= (int(count*1000.0*(delayus2 - delayus1)/(bufferinfo[atsegment].sampletimens*bufferinfo[atsegment].blockspersend) + 0.5)*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
     //re-align the index to nearest previous 16 bit boundary
     bufferindex -= bufferindex%2;
-    cout << "Datastream " << mpiid << " has realigned bufferindex to " << bufferindex << endl;
+    //cout << "Datastream " << mpiid << " has realigned bufferindex to " << bufferindex << endl;
   }
   //change the bufferindex backwards til we hit a byte boundary where the ns is an integer value
   segoffbytes = bufferindex - atsegment*readbytes;
