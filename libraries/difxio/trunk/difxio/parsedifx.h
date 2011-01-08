@@ -102,6 +102,12 @@ void DifxStringArrayclear(DifxStringArray *sa);
 /* Print to stdout the list of strings */
 void DifxStringArrayprint(const DifxStringArray *sa);
 
+/* Copy all members of src to dest, without first deleting contents of dest */
+int DifxStringArrayappend(DifxStringArray *dest, const DifxStringArray *src);
+
+/* Check for membership of DifxStringArray: return 1 if true */
+int DifxStringArraycontains(const DifxStringArray *sa, const char *str);
+
 /* Print contents of structure to stdout */
 void printDifxParameters(const DifxParameters *dp);
 

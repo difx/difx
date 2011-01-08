@@ -475,7 +475,14 @@ int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max)
 
 	if(str)
 	{
-		sa->str[sa->n] = strndup(str, max);
+		if(max > 0)
+		{
+			sa->str[sa->n] = strndup(str, max);
+		}
+		else
+		{
+			sa->str[sa->n] = strdup(str);
+		}
 	}
 	else
 	{
@@ -536,6 +543,44 @@ int DifxStringArrayaddlist(DifxStringArray *sa, const char *str)
 	}
 
 	return sa->n;
+}
+
+int DifxStringArrayappend(DifxStringArray *dest, const DifxStringArray *src)
+{
+	int i;
+
+	if(src->n > 0)
+	{
+		for(i = 0; i < src->n; i++)
+		{
+			DifxStringArrayadd(dest, src->str[i], 0);
+		}
+	}
+
+	return src->n;
+}
+
+int DifxStringArraycontains(const DifxStringArray *sa, const char *str)
+{
+	int i;
+
+	if(!sa)
+	{
+		return 0;
+	}
+	if(sa->n <= 0)
+	{
+		return 0;
+	}
+	for(i = 0; i < sa->n; i++)
+	{
+		if(strcmp(sa->str[i], str) == 0)
+		{
+			return 1;
+		}
+	}
+
+	return 0;
 }
 
 void DifxStringArrayprint(const DifxStringArray *sa)
