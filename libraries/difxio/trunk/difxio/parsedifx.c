@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -27,6 +27,7 @@
 //
 //============================================================================
 
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -232,8 +233,7 @@ int DifxParametersaddrow(DifxParameters *dp, const char *line)
 	row = &dp->rows[dp->num_rows];
 	dp->num_rows++;
 
-	row->line = (char *)malloc(strlen(line)+1);
-	strcpy(row->line, line);
+	row->line = strdup(line);
 
 	parserow(row);
 
@@ -243,7 +243,7 @@ int DifxParametersaddrow(DifxParameters *dp, const char *line)
 DifxParameters *newDifxParametersfromfile(const char *filename)
 {
 	DifxParameters *dp;
-	char line[2000];
+	char line[MAX_DIFX_INPUT_LINE_LENGTH+1];
 	char *ptr;
 	FILE *in;
 
@@ -258,7 +258,7 @@ DifxParameters *newDifxParametersfromfile(const char *filename)
 
 	for(;;)
 	{
-		ptr = fgets(line, 1999, in);
+		ptr = fgets(line, MAX_DIFX_INPUT_LINE_LENGTH, in);
 		if(ptr == 0)
 		{
 			break;
@@ -445,4 +445,138 @@ int DifxParametersbatchfind2(const DifxParameters *dp, int start,
 	}
 
 	return n;
+}
+
+void DifxStringArrayinit(DifxStringArray *sa)
+{
+	sa->n = 0;
+	sa->nAlloc = 0;
+	sa->str = 0;
+}
+
+int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max)
+{
+	if(!sa)
+	{
+		return -1;
+	}
+
+	if(sa->nAlloc == 0)
+	{
+		sa->nAlloc = 16;
+		sa->n = 0;
+		sa->str = (char **)malloc(sa->nAlloc*sizeof(char *));
+	}
+	else if(sa->nAlloc <= sa->n)
+	{
+		sa->nAlloc *= 2;
+		sa->str = (char **)realloc(sa->str, sa->nAlloc*sizeof(char *));
+	}
+
+	if(str)
+	{
+		sa->str[sa->n] = strndup(str, max);
+	}
+	else
+	{
+		sa->str[sa->n] = strdup("");
+	}
+
+	sa->n++;
+
+	return sa->n;
+}
+
+int DifxStringArrayaddlist(DifxStringArray *sa, const char *str)
+{
+	int start = 0;
+	int i;
+	int a, b;
+
+	if(!sa)
+	{
+		return -1;
+	}
+
+	for(i = 0; ; i++)
+	{
+		if(str[i] == 0 || str[i] == ',')
+		{
+			if(i > start)
+			{
+				for(a = start; a < i; a++)
+				{
+					if(str[a] > ' ')
+					{
+						break;
+					}
+				}
+				for(b = i-1; b >= start; b--)
+				{
+					if(str[b] > ' ')
+					{
+						break;
+					}
+				}
+				if(b >= a)
+				{
+					DifxStringArrayadd(sa, str+a, b-a+1);
+				}
+			}
+
+			start = i+1;
+		}
+
+		if(str[i] == 0)
+		{
+			/* done */
+
+			break;
+		}
+	}
+
+	return sa->n;
+}
+
+void DifxStringArrayprint(const DifxStringArray *sa)
+{
+	int i;
+
+	printf("DifxStringArray [%p]\n", sa);
+	if(sa)
+	{
+		printf("  n=%d\n", sa->n);
+		if(sa->n > 0)
+		{
+			for(i = 0; i < sa->n; i++)
+			{
+				printf("  str[%d]=%s\n", i, sa->str[i]);
+			}
+		}
+	}
+}
+
+void DifxStringArrayclear(DifxStringArray *sa)
+{
+	int i;
+
+	if(!sa)
+	{
+		return;
+	}
+
+	if(sa->nAlloc > 0)
+	{
+		for(i = 0; i < sa->n; i++)
+		{
+			if(sa->str[i])
+			{
+				free(sa->str[i]);
+			}
+		}
+		free(sa->str);
+		sa->nAlloc = 0;
+		sa->n = 0;
+		sa->str = 0;
+	}
 }

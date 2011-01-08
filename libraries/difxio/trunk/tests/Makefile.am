@@ -1,12 +1,13 @@
 INCLUDES = \
-        -I$(top_srcdir)/difxio
+        -I$(top_srcdir)
 
 LDADD = $(top_builddir)/difxio/libdifxio.la -lm
 
 bin_PROGRAMS = \
 	testdifxinput \
 	testparsedifx \
-	testparsevis
+	testparsevis \
+	teststringarray
 
 testdifxinput_SOURCES = \
 	testdifxinput.c
@@ -16,4 +17,7 @@ testparsedifx_SOURCES = \
 	
 testparsevis_SOURCES  = \
 	testparsevis.c
+
+teststringarray_SOURCES  = \
+	teststringarray.c
 

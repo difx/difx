@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -30,7 +30,13 @@
 #ifndef __PARSEDIFX__
 #define __PARSEDIFX__
 
-#define MAX_DIFX_KEY_LEN	32
+/* the following is the maximum length a difx .input (or .calc, ...) line can be.
+ * the large value is dictacted by need to support a nearly limitless number of
+ * scans or sources in a RULE table
+ */
+#define	MAX_DIFX_INPUT_LINE_LENGTH	8192
+
+#define MAX_DIFX_KEY_LEN		32
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,9 +55,19 @@ typedef struct
 typedef struct
 {
 	int num_rows;	/* number of rows populated */
-	int alloc_rows;	/* number of rows allocated */
+	int alloc_rows;	/* number of rows allocated; not to be updated by users */
 	DifxRow *rows;	/* pointer to allocated row structures */
 } DifxParameters;
+
+typedef struct
+{
+	char **str;
+	int n;
+
+	int nAlloc;	/* number of rows allocated; not to be updated by users */
+} DifxStringArray;
+
+
 
 /* Allocate new structure with given number of rows */
 DifxParameters *newDifxParameters();
@@ -70,6 +86,21 @@ void growDifxParameters(DifxParameters *dp);
 
 /* Add another line of text to structure and parse at same time */
 int DifxParametersaddrow(DifxParameters *dp, const char *line);
+
+/* Initialize a string array; not needed if the structure starts as binary zero */
+void DifxStringArrayinit(DifxStringArray *sa);
+
+/* Add string to array, using strndup */
+int DifxStringArrayadd(DifxStringArray *sa, const char *str, int max);
+
+/* Take a comma separated string list and parcel out into a string array */
+int DifxStringArrayaddlist(DifxStringArray *sa, const char *str);
+
+/* Erase allocated memory of a DifxStringArray */
+void DifxStringArrayclear(DifxStringArray *sa);
+
+/* Print to stdout the list of strings */
+void DifxStringArrayprint(const DifxStringArray *sa);
 
 /* Print contents of structure to stdout */
 void printDifxParameters(const DifxParameters *dp);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *   Copyright (C) 2011 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -28,91 +28,51 @@
  *==========================================================================*/
 
 #include <stdio.h>
-#include <string.h>
-#include "difxio/difx_input.h"
+#include <math.h>
+#include "difxio/parsedifx.h"
+#include "difxio/difx_write.h"
 
-int main(int argc, char **argv)
+int main()
 {
-	DifxInput *D = 0;
-	int a;
-	int verbose = 0;
-	int mergable, compatible;
-	
-	if(argc < 2)
-	{
-		printf("Usage : %s <inputfilebase> ...\n", argv[0]);
-		return 0;
-	}
-	
-	for(a = 1; a < argc; a++)
-	{
-		if(strcmp(argv[a], "-v") == 0 ||
-		   strcmp(argv[a], "--verbose") == 0)
-		{
-			verbose++;
-			continue;
-		}
-		if(D == 0)
-		{
-			D = loadDifxInput(argv[a]);
-		}
-		else
-		{
-			DifxInput *D1, *D2;
+	FILE *out;
+	DifxStringArray sa;
 
-			D1 = D;
-			D2 = loadDifxInput(argv[a]);
-			if(D2)
-			{
-				mergable = areDifxInputsMergable(D1, D2);
-				compatible = areDifxInputsCompatible(D1, D2);
-				if(mergable && compatible)
-				{
-					D = mergeDifxInputs(D1, D2, verbose);
-					deleteDifxInput(D1);
-					deleteDifxInput(D2);
-				}
-				else
-				{
-					printf("cannot merge jobs: mergable=%d compatible=%d\n",
-						mergable, compatible);
-					deleteDifxInput(D1);
-					deleteDifxInput(D2);
-					D = 0;
-				}
-			}
-			else
-			{
-				deleteDifxInput(D);
-				D = 0;
-			}
-		}
-		if(!D)
-		{
-			fprintf(stderr, "D == 0.  quitting\n");
-			return 0;
-		}
-	}
+	DifxStringArrayinit(&sa);	/* needed because the array started out uninitialized */
 
-	D = updateDifxInput(D);
-	if(!D)
-	{
-		fprintf(stderr, "update failed: D == 0.  quitting\n");
-		return 0;
-	}
+	out = fopen("wwh.txt", "w");
 
-	strcpy(D->job->inputFile, "input.test");
-	strcpy(D->job->calcFile, "calc.test");
-	strcpy(D->job->threadsFile, "threads.test");
-	strcpy(D->job->imFile, "im.test");
-	strcpy(D->job->outputFile, "output.test");
+	DifxStringArrayprint(&sa);
 
-	printDifxInput(D);
+	DifxStringArrayadd(&sa, "Walter Brisken", 6);
+	DifxStringArrayadd(&sa, "was", 6);
+	DifxStringArrayadd(&sa, "here", 6);
 
-	writeDifxCalc(D);
-	writeDifxInput(D);
+	writeDifxLineStringArray(out, "STATEMENT", &sa);
 
-	deleteDifxInput(D);
+	DifxStringArrayprint(&sa);
+
+	DifxStringArrayclear(&sa);
+
+	DifxStringArrayaddlist(&sa, "Was,Walter,here?");
+
+	writeDifxLineStringArray(out, "QUESTION", &sa);
+
+	DifxStringArrayprint(&sa);
+
+	DifxStringArrayclear(&sa);
+
+	DifxStringArrayaddlist(&sa, "There,once,was,a,man,from,Nantucket.,Or,was,there?,I,think,that,story,sounds,crazy,apocryphal.");
+
+	DifxStringArrayprint(&sa);
+
+	writeDifxLineStringArray(out, "STORY", &sa);
+
+	DifxStringArrayclear(&sa);
+
+	writeDifxLine(out, "ONE", "one");
+	writeDifxLineDouble(out, "PI", "%e", M_PI);
+
+	fclose(out);
 
 	return 0;
 }

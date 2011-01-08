@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -29,7 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "parsevis.h"
+#include "difxio/parsevis.h"
 
 const char program[] = "difxfringe";
 const char version[] = "0.0";

@@ -36,6 +36,7 @@ extern "C" {
 
 
 #include <stdio.h>
+#include "difxio/parsedifx.h"
 #include "difxio/difx_input.h"
 
 double truncSeconds(double mjd);
@@ -73,13 +74,17 @@ int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
 	const char *format, double value);
 
 
-int writeDifxLineArray(FILE *out, const char *key, double *array, int n);
+int writeDifxLineArray(FILE *out, const char *key, 
+	const double *array, int n);
 
-int writeDifxLineArray1(FILE *out, const char *key, int i1, double *array,
-	int n);
+int writeDifxLineArray1(FILE *out, const char *key, int i1, 
+	const double *array, int n);
 
 int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2, 
-	double *array, int n);
+	const double *array, int n);
+
+int writeDifxLineStringArray(FILE *out, const char *key,
+	const DifxStringArray *sa);
 
 
 int writeDifxDateLines(FILE *out, double mjd);
