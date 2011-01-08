@@ -904,7 +904,6 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 void populateRuleTable(DifxInput *D, const CorrParams *P)
 {
-	string towrite;
 	list<string>::const_iterator s;
 
 	D->nRule = P->rules.size();
@@ -913,29 +912,17 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 	{
 		if(P->rules[i].scanName.size() > 0)
 		{
-			towrite = P->rules[i].scanName.front();
 			for(s = (P->rules[i].scanName).begin(); s != (P->rules[i].scanName).end(); s++)
 			{
-				if(*s == P->rules[i].scanName.front())
-				{
-					continue;
-				}
-				towrite += "," + *s;
+				DifxStringArrayadd(&D->rule[i].scanId, s->c_str(), 0);
 			}
-			snprintf(D->rule[i].scanId, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
 		}
 		if(P->rules[i].sourceName.size() > 0)
 		{
-			towrite = P->rules[i].sourceName.front();
 			for(s = (P->rules[i].sourceName).begin(); s != (P->rules[i].sourceName).end(); s++)
 			{
-				if(*s == P->rules[i].sourceName.front())
-				{
-					continue;
-				}
-				towrite += "," + *s;
+				DifxStringArrayadd(&D->rule[i].sourceName, s->c_str(), 0);
 			}
-			snprintf(D->rule[i].sourceName, DIFXIO_NAME_LENGTH, "%s", towrite.c_str());
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
