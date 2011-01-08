@@ -932,12 +932,14 @@ static DifxInput *parseDifxInputRuleTable(DifxInput *D,
 		r = DifxParametersfind1(ip, r+1, "RULE %d SOURCE", rule);
 		if(r>=0)
 		{
-			snprintf(D->rule[rule].sourceName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			//snprintf(D->rule[rule].sourceName, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			DifxStringArrayaddlist(&D->rule[rule].sourceName, DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d SCAN ID", rule);
 		if(r>=0)
 		{
-			snprintf(D->rule[rule].scanId, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			//snprintf(D->rule[rule].scanId, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(ip, r));
+			DifxStringArrayaddlist(&D->rule[rule].scanId, DifxParametersvalue(ip, r));
 		}
 		r = DifxParametersfind1(ip, r+1, "RULE %d CALCODE", rule);
 		if(r>=0)

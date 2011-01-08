@@ -31,6 +31,7 @@
 #define __DIFX_INPUT_H__
 
 #include <stdio.h>
+#include "parsedifx.h"
 
 #define MAX_MODEL_ORDER			5
 #define MAX_PHS_CENTRES			1000
@@ -236,8 +237,8 @@ typedef struct
 
 typedef struct
 {
-	char sourceName[DIFXIO_NAME_LENGTH];  /* (DiFX) name of source, optional */
-	char scanId[DIFXIO_NAME_LENGTH];      /* Scan identifier from vex file, optional */
+	DifxStringArray sourceName;	/* (DiFX) name(s) of source, optional */
+	DifxStringArray scanId;		/* Scan identifier(s) from vex file, optional */
 	char calCode[DIFXIO_CALCODE_LENGTH];  /* calCode, optional */
 	int qual;		/* Source qualifier, optional */
 	double mjdStart;	/* start time, optional */

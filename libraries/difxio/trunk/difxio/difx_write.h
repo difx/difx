@@ -86,6 +86,8 @@ int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2,
 int writeDifxLineStringArray(FILE *out, const char *key,
 	const DifxStringArray *sa);
 
+int writeDifxLineStringArray1(FILE *out, const char *key,
+	int i1, const DifxStringArray *sa);
 
 int writeDifxDateLines(FILE *out, double mjd);
 

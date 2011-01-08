@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Adam Deller                                     *
+ *   Copyright (C) 2009-2011 by Adam Deller & Walter Brisken               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,10 +40,6 @@ DifxRule *newDifxRuleArray(int nRule)
         dr = (DifxRule *)calloc(nRule, sizeof(DifxRule));
         for(r = 0; r < nRule; r++)
         {
-		dr[r].configName[0] = 0;
-                dr[r].sourceName[0] = 0;
-                dr[r].scanId[0] = 0;
-		dr[r].calCode[0] = 0;
 		dr[r].qual = -1;
 		dr[r].mjdStart = -1.0;
 		dr[r].mjdStop = -1.0;
@@ -52,11 +48,13 @@ DifxRule *newDifxRuleArray(int nRule)
         return dr;
 }
 
-void copyDifxRule(DifxRule * dest, DifxRule * src)
+void copyDifxRule(DifxRule *dest, DifxRule *src)
 {
 	snprintf(dest->configName, DIFXIO_NAME_LENGTH,    "%s", src->configName);
-	snprintf(dest->sourceName, DIFXIO_NAME_LENGTH,    "%s", src->sourceName);
-	snprintf(dest->scanId,     DIFXIO_NAME_LENGTH,    "%s", src->scanId);
+	DifxStringArrayclear(&dest->sourceName);
+	DifxStringArrayappend(&dest->sourceName, &src->sourceName);
+	DifxStringArrayclear(&dest->scanId);
+	DifxStringArrayappend(&dest->scanId, &src->scanId);
 	snprintf(dest->calCode,    DIFXIO_CALCODE_LENGTH, "%s", src->calCode);
 	dest->qual     = src->qual;
 	dest->mjdStart = src->mjdStart;
@@ -70,9 +68,35 @@ void deleteDifxRuleArray(DifxRule *dr)
 
 void fprintDifxRule(FILE *fp, const DifxRule *dr)
 {
+	int i;
+
 	fprintf(fp, "  Difx Rule for config %s : %p\n", dr->configName, dr);
-	fprintf(fp, "    source  = %s\n", dr->sourceName);
-	fprintf(fp, "    scanId  = %s\n", dr->scanId);
+	fprintf(fp, "    source  = ");
+	if(dr->sourceName.n > 0)
+	{
+		for(i = 0; i < dr->sourceName.n; i++)
+		{
+			if(i > 0)
+			{
+				fprintf(fp, ", ");
+			}
+			fprintf(fp, "%s", dr->sourceName.str[i]);
+		}
+	}
+	fprintf(fp, "\n");
+	fprintf(fp, "    scanId  = ");
+	if(dr->scanId.n > 0)
+	{
+		for(i = 0; i < dr->scanId.n; i++)
+		{
+			if(i > 0)
+			{
+				fprintf(fp, ", ");
+			}
+			fprintf(fp, "%s", dr->scanId.str[i]);
+		}
+	}
+	fprintf(fp, "\n");
 	fprintf(fp, "    calCode = %s\n", dr->calCode);
 	fprintf(fp, "    qual    = %d\n", dr->qual);
 	fprintf(fp, "    mjdStart= %f\n", dr->mjdStart);
@@ -92,31 +116,37 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 
 	writeDifxLineInt(out, "NUM RULES", D->nRule);
 	n = 1;
-	for(i=0;i<D->nRule;i++)
+	for(i = 0; i < D->nRule; i++)
 	{
 		dr = D->rule + i;
-		if(strcmp(dr->sourceName, "") != 0) {
-			writeDifxLine1(out, "RULE %d SOURCE", i, dr->sourceName);
+		if(dr->sourceName.n > 0)
+		{
+			writeDifxLineStringArray1(out, "RULE %d SOURCE", i, &dr->sourceName);
 			n = n+1;
 		}
-		if(strcmp(dr->scanId, "") != 0) {
-			writeDifxLine1(out, "RULE %d SCAN ID", i, dr->scanId);
+		if(dr->scanId.n > 0)
+		{
+			writeDifxLineStringArray1(out, "RULE %d SCAN ID", i, &dr->scanId);
 			n = n+1;
 		}
-		if(strcmp(dr->calCode, "") != 0) {
+		if(strcmp(dr->calCode, "") != 0)
+		{
 			writeDifxLine1(out, "RULE %d CALCODE", i, dr->calCode);
 			n = n+1;
 		}
-		if(dr->qual >= 0) {
+		if(dr->qual >= 0)
+		{
 			writeDifxLineInt1(out, "RULE %d QUAL", i, dr->qual);
 			n = n+1;
 		}
-		if(dr->mjdStart > 0.0) {
+		if(dr->mjdStart > 0.0)
+		{
 			writeDifxLineDouble1(out, "RULE %d MJD START", 
 					     i, "%15.8f", dr->mjdStart);
 			n = n+1;
 		}
-		if(dr->mjdStop > 0.0) {
+		if(dr->mjdStop > 0.0)
+		{
 			writeDifxLineDouble1(out, "RULE %d MJD STOP",
 					     i, "%15.8f", dr->mjdStop);
 			n = n+1;
@@ -124,35 +154,37 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 		writeDifxLine1(out, "RULE %d CONFIG NAME", i, dr->configName);
 		n = n+1;
 	}
+	
 	return n;
 }
 
-int ruleAppliesToScanSource(const DifxRule * dr, const DifxScan * ds, const DifxSource * src)
+int ruleAppliesToScanSource(const DifxRule *dr, const DifxScan *ds, const DifxSource *src)
 {
-	if((strcmp(dr->sourceName, "") != 0 && strcmp(src->name, dr->sourceName) != 0) ||
-	   (strcmp(dr->scanId, "") != 0  && strcmp(ds->identifier, dr->scanId) != 0) ||
-	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||
-	   (dr->qual >= 0 && src->qual != dr->qual) ||
+	if((dr->sourceName.n > 0 && DifxStringArraycontains(&dr->sourceName, src->name) == 0) ||
+	   (dr->scanId.n > 0  && DifxStringArraycontains(&dr->scanId, ds->identifier) == 0) ||
+	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||	/* FIXME: look at list of calcodes */
+	   (dr->qual >= 0 && src->qual != dr->qual) || /* FIXME: look at list of quals */
 	   (dr->mjdStart > 0.0 && ds->mjdStart < dr->mjdStart) || 
 	   (dr->mjdStop > 0.0 && ds->mjdEnd > ds->mjdEnd))
 	{
 		return 0;
 	}
+
 	return 1;
 }
 
 int simplifyDifxRules(DifxInput *D)
 {
 	int r, c, used, numdeleted;
-	DifxRule * dr;
-	DifxConfig * dc;
+	DifxRule *dr;
+	DifxConfig *dc;
 
 	numdeleted = 0;
-	for(r=0;r<D->nRule;r++)
+	for(r = 0; r < D->nRule; r++)
 	{
 		dr = D->rule + r;
 		used = 0;
-		for(c=0;c<D->nConfig;c++)
+		for(c = 0; c < D->nConfig; c++)
 		{
 			dc = D->config+c;
 			if(strcmp(dc->name, dr->configName) == 0)
@@ -175,10 +207,12 @@ int simplifyDifxRules(DifxInput *D)
 		D->rule = realloc(D->rule, D->nRule*sizeof(DifxRule));
 		if(D->rule == 0)
 		{
-			fprintf(stderr, "Error reallocating DifxRule array!\n");
+			fprintf(stderr, "Error: simplifyDifxRules: cannot reallocate DifxRule array!\n");
+			
 			exit(1);
 		}
 	}
+	
 	return numdeleted;
 }
 
