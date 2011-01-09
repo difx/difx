@@ -14,9 +14,9 @@ from time import localtime, asctime
 dbname = getenv("VLBA_DB")
 
 program = 'difxqueue'
-version = '0.7'
+version = '0.8'
 author  = 'Walter Brisken'
-verdate = '20101206'
+verdate = '20110109'
 
 clusterHorsepower = 0.24
 	
@@ -54,10 +54,10 @@ arguments.  See examples for use cases:
 
   add        Add job(s) to the queue
 
-    arguments = <pass name> [list of job numbers]
+    arguments = <pass name> [list of job numbers (ranges OK)]
 
     example 1:   difxqueue add clock
-    example 2:   difxqueue add geodesy 3 4 5
+    example 2:   difxqueue add geodesy 3 4 5 8-12
 
   bump       Increase the priority of job(s)
 
@@ -67,10 +67,10 @@ arguments.  See examples for use cases:
 
   del        Remove job(s) from the queue
 
-    arguements = <pass name> [list of job numbers]
+    arguements = <pass name> [list of job numbers (ranges OK)]
 
     example 1:   difxqueue del clock
-    example 2:   difxqueue del geodesy 3 4 5
+    example 2:   difxqueue del geodesy 3 4 5 11-32
 
   list       List all jobs within a pass
 
@@ -128,9 +128,18 @@ arguments.  See examples for use cases:
 def getnumbers(stringlist):
 	numbers = []
 	for s in stringlist:
-		i = int(s)
-		if not i in numbers:
-			numbers.append(i)
+		sp = split(s, '-')
+		if len(sp) == 1:
+			a = b = int(sp[0])
+		if len(sp) == 2:
+			a = int(sp[0])
+			b = int(sp[1])
+			if b < a:
+				print 'Range specifier "%s" is not conformant' % s
+				exit(0);
+		for i in range(a, b+1):
+			if not i in numbers:
+				numbers.append(i)
 	numbers.sort()
 
 	return numbers
