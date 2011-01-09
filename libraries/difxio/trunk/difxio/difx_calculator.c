@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -312,9 +312,9 @@ void printDifxCalculatorConfig(const DifxCalculatorConfig *c)
 	printDouble("DS output rate (Mbps)",   c->datastreamOutputRate*1.0e-6, 0, 0);
 	printDouble("Baseband msg. size (MB)", c->basebandMessageSize*1.0e-6, "Datastream to Core send; want a few MB", 0);
 	printDouble("Baseband read size (MB)", c->basebandReadSize*1.0e-6, "Typically want ~10 to 50 MB", 0);
-	printDouble("Core input data ratio",   c->coreInputRatio,   "Really should be << 1.0", 0);
+	printDouble("Core input data ratio",   c->coreInputRatio,   0, 0);
 	printDouble("Core input rate (Mbps)",  c->coreInputRate*1.0e-6,    0, 0);
-	printDouble("Core output data ratio",  c->coreOutputRatio,  0, 0);
+	printDouble("Core output data ratio",  c->coreOutputRatio,  "Really should be << 1.0", 0);
 	printDouble("Core output rate (Mbps)", c->coreOutputRate*1.0e-6,   0, 0);
 	printDouble("Manager input rate (Mbps)", c->managerInputRate*1.0e-6,  0, 0);
 	printDouble("Disk output rate (MB/s)", c->diskDataRate*1.0e-6, 0, 0);
