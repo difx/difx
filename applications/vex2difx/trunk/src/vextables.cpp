@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -161,10 +161,28 @@ int VexMode::getPols(char *pols) const
 
 	for(it = subbands.begin(); it != subbands.end(); it++)
 	{
-		if(it->pol == 'R') R=true;
-		if(it->pol == 'L') L=true;
-		if(it->pol == 'X') X=true;
-		if(it->pol == 'Y') Y=true;
+		if(it->pol == 'R')
+		{
+			R = true;
+		}
+		else if(it->pol == 'L')
+		{
+			L = true;
+		}
+		else if(it->pol == 'X')
+		{
+			X = true;
+		}
+		else if(it->pol == 'Y')
+		{
+			Y = true;
+		}
+		else
+		{
+			cerr << "Error: VexMode::getPols: subband with illegal polarization (" << it->pol << ") encountered." << endl;
+			
+			exit(0);
+		}
 	}
 
 	if(R) 
@@ -1306,14 +1324,6 @@ string VexData::getVSN(const string &antName, const VexInterval &timeRange) cons
 		}
 	}
 
-	if(bestVSN == "None")
-	{
-		if(A->basebandFiles.size() > 0)
-		{
-			bestVSN = "File";
-		}
-	}
-
 	return bestVSN;
 }
 
@@ -1411,6 +1421,7 @@ void VexData::addBreaks(const vector<double> &breaks)
 ostream& operator << (ostream &os, const VexInterval &x)
 {
 	int p = os.precision();
+
 	os.precision(12);
 	os << "mjd(" << x.mjdStart << "," << x.mjdStop << ")";
 	os.precision(p);
@@ -1420,8 +1431,9 @@ ostream& operator << (ostream &os, const VexInterval &x)
 
 ostream& operator << (ostream &os, const VexSource &x)
 {
-	os << "Source " << x.defName << endl;
 	int n = x.sourceNames.size();
+
+	os << "Source " << x.defName << endl;
 	for(int i = 0; i < n; i++)
 	{
 		os << "  name=" << x.sourceNames[i] << endl;
@@ -1499,6 +1511,7 @@ ostream& operator << (ostream &os, const VexSubband &x)
 ostream& operator << (ostream &os, const VexChannel &x)
 {
 	vector<int>::const_iterator v;
+	
 	os << "[IF=" << x.ifname << " s=" << x.subbandId << " -> r=" << x.recordChan << " tones=";
 	for(v = x.tones.begin(); v != x.tones.end(); v++)
 	{
@@ -1523,6 +1536,7 @@ ostream& operator << (ostream &os, const VexIF &x)
 ostream& operator << (ostream &os, const VexFormat &x)
 {
 	vector<VexChannel>::const_iterator it;
+	
 	os << "[format=" << x.format << ", nBit=" << x.nBit << ", nChan=" << x.nRecordChan;
 	for(it = x.channels.begin(); it != x.channels.end(); it++)
 	{
@@ -1536,6 +1550,7 @@ ostream& operator << (ostream &os, const VexFormat &x)
 ostream& operator << (ostream &os, const VexSetup &x)
 {
 	map<string,VexIF>::const_iterator it;
+	
 	os << "    Format = " << x.format << endl;
 	for(it = x.ifs.begin(); it != x.ifs.end(); it++)
 	{
@@ -1583,6 +1598,7 @@ ostream& operator << (ostream &os, const VexJob &x)
 	vector<string>::const_iterator s;
 	map<string,string>::const_iterator v;
 	int p = os.precision();
+	
 	os.precision(12);
 	os << "Job " << x.jobSeries << "_" << x.jobId << endl;
 	os << "  " << (const VexInterval&)x << endl;
@@ -1607,10 +1623,9 @@ ostream& operator << (ostream &os, const VexJob &x)
 ostream& operator << (ostream &os, const VexJobGroup &x)
 {
 	int p = os.precision();
-	os.precision(12);
-
-	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << endl;
 	
+	os.precision(12);
+	os << "Group: scans " << x.scans.front() << " - " << x.scans.back() << " = " << (const VexInterval &)x << endl;
 	os.precision(p);
 	
 	return os;
@@ -1619,6 +1634,7 @@ ostream& operator << (ostream &os, const VexJobGroup &x)
 ostream& operator << (ostream &os, const VexEvent &x)
 {
 	int d, s;
+
 	d = static_cast<int>(x.mjd);
 	s = static_cast<int>((x.mjd - d)*86400.0 + 0.5);
 
@@ -1642,9 +1658,9 @@ ostream& operator << (ostream &os, const VexJobFlag &x)
 
 ostream& operator << (ostream &os, const VexData &x)
 {
-	os << "Vex:" << endl;
-
 	int n = x.nSource();
+
+	os << "Vex:" << endl;
 	os << n << " sources:" << endl;
 	for(int i = 0; i < n; i++)
 	{
