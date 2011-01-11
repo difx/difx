@@ -1300,7 +1300,7 @@ double correct_2bit_power(double x)
 {
 	const double a = OPTIMAL_2BIT_HIGH*OPTIMAL_2BIT_HIGH;
 
-	if(x > 0.0 && x <= 1.0)
+	if(x > 0.0 && x <= a)
 	{
 		double f;
 		
