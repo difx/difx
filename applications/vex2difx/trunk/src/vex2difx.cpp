@@ -1331,9 +1331,21 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		int divisors[] = {1, 2, 5, 10, 25, 50, 125, 250, 625, 0};	// Must be 0 terminated
 
+		if(corrSetup->tInt/625 > 2.048)
+		{
+			cerr << "Error: Integration time (" << corrSetup->tInt << " s) is too long." << endl;
+			exit(0);
+		}
+
 		for(int d = 0; divisors[d]; d++)
 		{
 			double msgSize, dataRate, readSize;
+
+			if(corrSetup->tInt/divisors[d] > 2.048)
+			{
+				/* This would make a subint > 2^31 seconds */
+				continue;
+			}
 
 			config->subintNS = (int)((corrSetup->tInt/divisors[d])*1000000000.0 + 0.5);
 			dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
@@ -1348,7 +1360,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 		if(config->subintNS % fftdurNS != 0)
 		{
-			cout << "Adjusting subintNS by " << config->subintNS % fftdurNS << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
+			cout << "Adjusting subintNS(" << config->subintNS << ") by " << config->subintNS % fftdurNS << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
 			config->subintNS -= (config->subintNS % fftdurNS);
 		}
 	}
