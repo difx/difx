@@ -123,7 +123,6 @@ enum DifxState
 	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
 	DIFX_STATE_MPIDONE,	/* mpi process has finished */
 	DIFX_STATE_CRASHED,	/* mpi process has crashed */
-	DIFX_STATE_LASTCALL,	/* sent by manager after last baseband read was commanded */
 	NUM_DIFX_STATES		/* this needs to be the last line of enum */
 };
 

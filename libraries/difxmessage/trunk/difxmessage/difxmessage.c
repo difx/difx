@@ -71,7 +71,6 @@ const char DifxStateStrings[][24] =
 	"Terminating",
 	"Terminated",
 	"MpiDone",
-	"LastCall",
 	"Crashed"
 };
 
