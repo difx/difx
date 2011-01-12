@@ -1330,12 +1330,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	else
 	{
 		int divisors[] = {1, 2, 5, 10, 25, 50, 125, 250, 625, 0};	// Must be 0 terminated
-
-		if(corrSetup->tInt/625 > 2.048)
-		{
-			cerr << "Error: Integration time (" << corrSetup->tInt << " s) is too long." << endl;
-			exit(0);
-		}
+		bool ok = false;
 
 		for(int d = 0; divisors[d]; d++)
 		{
@@ -1352,12 +1347,22 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
 			readSize = msgSize*P->dataBufferFactor/P->nDataSegments;
 
+			ok = true;
+
 			// stop when readSize falls below specifed maximum (default to 25MB)
 			if(readSize < P->readSize)
 			{
 				break;
 			}
 		}
+
+		if(ok == false)
+		{
+			cerr << "Error: Integration time (" << corrSetup->tInt << " s) is too long for automatic subintNS determination.  You must manually set it in the .v2d file." << endl;
+
+			exit(0);
+		}
+
 		if(config->subintNS % fftdurNS != 0)
 		{
 			cout << "Adjusting subintNS(" << config->subintNS << ") by " << config->subintNS % fftdurNS << " since it was a non-integer multiple of fftdurNS (" << fftdurNS << ")" << endl;
