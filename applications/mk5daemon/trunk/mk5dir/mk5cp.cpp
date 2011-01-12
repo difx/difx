@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -640,7 +640,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	{
 		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status,
-			&replacedFrac, false, 0, 1);
+			&replacedFrac, false, 0, 1, -1, -1);
 		if(replacedFrac > 0.01)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,

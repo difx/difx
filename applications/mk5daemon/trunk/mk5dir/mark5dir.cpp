@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -480,7 +480,8 @@ static void expandScanName1(char *dest, int maxLength, const struct Mark5Directo
 }
 
 static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mjdref, 
-	int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly)
+	int (*callback)(int, int, int, void *), void *data, float *replacedFrac, int cacheOnly,
+	int startScan, int stopScan)
 {
 	XLR_RETURN_CODE xlrRC;
 	Mark5Directory *m5dir;
@@ -640,11 +641,21 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	module->dirVersion = dirVersion;
 	module->mode = MARK5_READ_MODE_NORMAL;
 
+	if(startScan < 0)
+	{
+		startScan = 0;
+	}
+
+	if(stopScan < 0 || stopScan > module->nscans)
+	{
+		stopScan = module->nscans;
+	}
+
 	if(module->fast && dirVersion > 0)
 	{
 		printf("Doing fast dir\n");
 
-		for(int i = 0; i < module->nscans; i++)
+		for(int i = startScan; i < stopScan; i++)
 		{
 			struct Mark5DirectoryScanHeaderVer1 *scanHeader;
 			int type;
@@ -759,6 +770,13 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 
 			a = scan->start>>32;
 			b = scan->start % (1LL<<32);
+
+			if(i < startScan || i >= stopScan)
+			{
+				scan->format = -8;
+
+				continue;
+			}
 
 			xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen);
 
@@ -1066,7 +1084,8 @@ int saveMark5Module(struct Mark5Module *module, const char *filename)
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac, int force, int fast, int cacheOnly)
+	float *replacedFrac, int force, int fast, int cacheOnly, 
+	int startScan, int stopScan)
 {
 	const int FilenameLength = 256;
 	char filename[FilenameLength];
@@ -1090,7 +1109,7 @@ int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice,
 	{
 		module->fast = 1;
 	}
-	v = getMark5Module(module, xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly);
+	v = getMark5Module(module, xlrDevice, mjdref, callback, data, replacedFrac, cacheOnly, startScan, stopScan);
 
 	if(v >= 0)
 	{

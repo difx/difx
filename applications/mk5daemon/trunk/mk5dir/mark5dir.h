@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -200,7 +200,7 @@ int sanityCheckModule(const struct Mark5Module *module);
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac, int force, int fast, int cacheOnly);
+	float *replacedFrac, int force, int fast, int cacheOnly, int startScan, int stopScan);
 
 void countReplaced(const streamstordatatype *data, int len,
 	long long *wGood, long long *wBad);

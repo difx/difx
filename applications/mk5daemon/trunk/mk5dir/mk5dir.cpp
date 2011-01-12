@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -43,8 +43,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.7";
-const char verdate[] = "20101007";
+const char version[] = "0.8";
+const char verdate[] = "20110111";
 
 enum DMS_Mode
 {
@@ -92,6 +92,10 @@ int usage(const char *pgm)
 	printf("  -s             Only change disk module state if SDK8 unit or new dir type\n\n");
 	printf("  --dmsforce\n");
 	printf("  -d             Proceed with change of DMS even if ths makes module unreadable in SDK8\n\n");
+	printf("  --begin <b>\n");
+	printf("  -b <b>         Begin with scan number <b> (a 1-based number)\n\n");  
+	printf("  --end <e>\n");
+	printf("  -e <e>         End with scan number <e> (a 1-based number)\n\n");  
 	printf("<bank> is either A or B\n\n");
 	printf("<vsn> is a valid module VSN (8 characters)\n\n");
 	printf("Environment variable MARK5_DIR_PATH should point to the location of\n");
@@ -171,7 +175,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
-static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Status *mk5status, int force, int fast, enum DMS_Mode dmsMode)
+static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Status *mk5status, int force, int fast, enum DMS_Mode dmsMode, int startScan, int stopScan)
 {
 	int v;
 	int mjdnow;
@@ -210,7 +214,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 
 	v = getCachedMark5Module(module, xlrDevice, mjdnow, 
 		vsn, mk5dirpath, &dirCallback, 
-		mk5status, &replacedFrac, force, fast, 0);
+		mk5status, &replacedFrac, force, fast, 0, startScan, stopScan);
 	if(replacedFrac > 0.01)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
@@ -291,7 +295,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 	return v;
 }
 
-static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode)
+static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int startScan, int stopScan)
 {
 	struct Mark5Module module;
 	DifxMessageMk5Status mk5status;
@@ -338,7 +342,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode)
 		if(strlen(mk5status.vsnA) == 8)
 		{
 			mk5status.activeBank = 'A';
-			v = getDirCore(&module, mk5status.vsnA, &mk5status, force, fast, dmsMode);
+			v = getDirCore(&module, mk5status.vsnA, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
 				strcpy(modules, mk5status.vsnA);
@@ -351,7 +355,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode)
 		if(strlen(mk5status.vsnB) == 8)
 		{
 			mk5status.activeBank = 'B';
-			v = getDirCore(&module, mk5status.vsnB, &mk5status, force, fast, dmsMode);
+			v = getDirCore(&module, mk5status.vsnB, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
 				if(modules[0])
@@ -379,7 +383,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode)
 				mk5status.activeBank = 'B';
 			}
 
-			v = getDirCore(&module, vsn, &mk5status, force, fast, dmsMode);
+			v = getDirCore(&module, vsn, &mk5status, force, fast, dmsMode, startScan, stopScan);
 			if(v >= 0)
 			{
 				strcpy(modules, vsn);
@@ -420,6 +424,8 @@ int main(int argc, char **argv)
 	int v;
 	const char *dmsMaskStr;
 	int dmsMask = 7;
+	int startScan = -1;
+	int stopScan = -1;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
 	if(dmsMaskStr)
@@ -475,6 +481,25 @@ int main(int argc, char **argv)
 		{
 			dmsMode = DMS_MODE_UPDATE;
 		}
+		else if(argv[a][0] == '-' && a+1 < argc)
+		{
+			if(strcmp(argv[a], "-b") == 0 ||
+			   strcmp(argv[a], "--begin") == 0)
+			{
+				a++;
+				startScan = atoi(argv[a]) - 1;
+			}
+			else if(strcmp(argv[a], "-e") == 0 ||
+			   strcmp(argv[a], "--end") == 0)
+			{
+				a++;
+				stopScan = atoi(argv[a]);
+			}
+			else
+			{
+				return usage(argv[0]);
+			}
+		}
 		else if(vsn[0] == 0)
 		{
 			strncpy(vsn, argv[a], 8);
@@ -507,7 +532,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5dir(vsn, force, fast, dmsMode);
+		v = mk5dir(vsn, force, fast, dmsMode, startScan, stopScan);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
