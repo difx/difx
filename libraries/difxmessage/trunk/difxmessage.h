@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -123,6 +123,7 @@ enum DifxState
 	DIFX_STATE_TERMINATED,	/* Finished cleaning up adter SIGINT */
 	DIFX_STATE_MPIDONE,	/* mpi process has finished */
 	DIFX_STATE_CRASHED,	/* mpi process has crashed */
+	DIFX_STATE_LASTCALL,	/* sent by manager after last baseband read was commanded */
 	NUM_DIFX_STATES		/* this needs to be the last line of enum */
 };
 
