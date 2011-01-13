@@ -607,7 +607,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int refDay;
 	int i, a, dsId, j, k, n, v;
 	double start, stop;
-	FILE *in, *in2;
+	FILE *in=0;
+	FILE *in2=0;
 	char *rv;
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
