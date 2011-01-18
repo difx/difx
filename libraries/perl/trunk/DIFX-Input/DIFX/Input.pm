@@ -10,17 +10,17 @@ DIFX::Input - Perl parser of the DiFX input file
 
 =head1 DESCRIPTION
 
-  Parses a DiFX input file
+  Parses a DIFX .input file
 
 =head1 Methods
 
 =item B<new>
 
-   blag
+   blah
 
-=head2 VEX ACCESS
+=head2 Someting
 
-=item B<vexptr>
+=item B<inut>
 
   blah.
 
@@ -40,7 +40,7 @@ BEGIN {
   use vars qw($VERSION @ISA @EXPORT);
 
   @ISA = qw(Exporter);
-  @EXPORT_OK = qw();
+  @EXPORT_OK = qw(make_field);
 
   use Carp;
 }
@@ -48,6 +48,533 @@ BEGIN {
 $VERSION = '0.4';
 
 use strict;
+
+
+sub print_hash(\%) {
+  my $hash = shift;
+  while (my ($key, $val) = each (%{$hash})) {
+    print "$key => $val\n";
+  }
+  return;
+}
+
+sub make_field ($$) {
+  my ($subname, $field) = @_;
+  my ($package, $filename, $line)  = caller();
+
+  my $sub = ("package $package;
+              sub $subname {
+                my \$self = shift;
+                if (\@_) { \$self->[$field] = shift }
+                return \$self->[$field];
+              }");
+  eval $sub;
+}
+
+
+package DIFX::Input::Freq;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Freq
+
+  ?????
+
+=head2 Fields
+
+    name           String
+    clockrefmjd    float
+    clockpolyorder Integer
+    clockcoeff     Array of floats
+
+=cut
+
+use constant FREQ => 0;
+use constant BW => 1;
+use constant SIDEBAND => 2;
+use constant NUMCHANNELS => 3;
+use constant CHANSTOAVG => 4;
+use constant OVERSAMPLEFAC => 5;
+use constant DECIMATIONFAC => 6;
+use constant PHASECALSOUT => 7;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %freq = @_;
+  my $self = [$freq{FREQ},
+	      $freq{BW},
+	      $freq{SIDEBAND},
+	      $freq{NCHAN},
+	      $freq{CHANTOAVG},
+	      $freq{OVERSAMPLE},
+	      $freq{DECIMATION},
+	      $freq{PHASECALOUT}];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('freq', 'FREQ');
+make_field('bw', 'BW');
+make_field('sideband', 'SIDEBAND');
+make_field('numchannels', 'NUMCHANNELS');
+make_field('chanstoavg', 'CHANSTOAVG');
+make_field('oversample', 'OVERSAMPLEFAC');
+make_field('decimation', 'DECIMATIONFAC');
+make_field('phasecalsout', 'PHASECALSOUT');
+
+package DIFX::Input::Telescope;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Telescope
+
+  ?????
+
+=head2 Fields
+
+    name           String
+    clockrefmjd    float
+    clockpolyorder Integer
+    clockcoeff     Array of floats
+
+=cut
+
+use constant NAME => 0;
+use constant MJD => 1;
+use constant ORDER => 2;
+use constant COEFF => 3;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %telescope = @_;
+  my $self = [$telescope{NAME},
+	      $telescope{REFMJD},
+	      $telescope{CLOCKPOLYORDER},
+	      $telescope{CLOCKCOEFF}];
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('name', 'NAME');
+make_field('clockrefmjd', 'MJD');
+make_field('clockpolyorder', 'ORDER');
+
+sub clockcoeff {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[COEFF]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=$self->clockpolyorder) {
+	warn "$n out of range for clock coeff\n";
+	return undef;
+      } else {
+	return $self->[COEFF]->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid clock coeff index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+
+package DIFX::Input::Baseline::Pol;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Baseline::Pol
+
+  Baseline Polarisation Indices
+
+=head2 Fields
+
+    PolA           Integer
+    PolB           Integer
+
+=cut
+
+use constant POLA => 0;
+use constant POLB => 1;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %baseline = @_;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('polA', 'POLA');
+make_field('polB', 'POLB');
+
+package DIFX::Input::Baseline;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Baseline
+
+  Baseline entry
+
+=head2 Fields
+
+    dstreamA       Integer
+    dstreamB       Integer
+    freqs          Array of DIFX::Input::Baseline::Freq
+
+
+=cut
+
+use constant DSTREAMINDEXA => 0;
+use constant DSTREAMINDEXB => 1;
+use constant FREQS => 2;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %baseline = @_;
+
+  my @freqs;
+  foreach (@{$baseline{FREQ}}) {
+    my @pols;
+    foreach (@{$_}) {
+      push @pols, new DIFX::Input::Baseline::Pol($_->{POLA},$_->{POLB});
+    }
+    push @freqs, [@pols];
+  }
+
+  my $self = [$baseline{DSTREAMAINDEX},
+	      $baseline{DSTREAMBINDEX},
+	      [@freqs]
+	     ];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('dstreamA', 'DSTREAMINDEXA');
+make_field('dstreamB', 'DSTREAMINDEXB');
+
+# Should change to allow full array return of give index
+sub freqs {
+  my $self = shift;
+  return @{$self->[FREQS]};
+}
+
+
+package DIFX::Input::DataStream::Freq;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStream::Freq
+
+  ?????
+
+=head2 Fields
+
+    index          Integer
+    clockoffset    Float (usec)
+    freqoffset     Float(usec)
+    numpol         Integer
+
+=cut
+
+use constant INDEX => 0;
+use constant CLOCKOFFSET => 1;
+use constant FREQOFFSET => 2;
+use constant NUMPOL => 3;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %baseline = @_;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('index', 'INDEX');
+make_field('clockoffset', 'CLOCKOFFSET');
+make_field('freqoffset', 'FREQOFFSET');
+make_field('numpol', 'NUMPOL');
+
+
+package DIFX::Input::DataStream::RecBand;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStream::RecBand
+
+  ?????
+
+=head2 Fields
+
+    pol            Character
+    index          Integer
+
+=cut
+
+use constant POL => 0;
+use constant INDEX => 1;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %baseline = @_;
+
+  my $self = [@_];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('index', 'INDEX');
+make_field('pol', 'POL');
+
+package DIFX::Input::DataStream;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStream
+
+  Baseline entry
+
+=head2 Fields
+
+    tsys           float
+    dataformat     string
+    quantisationbits integer
+    bits           integer
+    dataframesize  integer
+    datasampling   string
+    datasource     string
+    filterbankused integer
+    phasecalint    integer
+    xxx          Array of XXX
+
+=cut
+
+use constant TSYS       => 0;
+use constant DATAFORMAT => 1;
+use constant BITS       => 2;
+use constant FRAMESIZE  => 3;
+use constant SAMPLING   => 4;
+use constant SOURCE     => 5;
+use constant FILTERBANK => 6;
+use constant PHASECAL   => 7;
+use constant FREQS      => 8;
+use constant RECBAND    => 9;
+use constant NFREQ      => 10;
+use constant NRECBAND   => 10;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %datastream = %{$_[0]};
+
+  my @freq;
+  foreach (@{$datastream{FREQ}}) {
+    push @freq, new DIFX::Input::DataStream::Freq($_->{REFINDEX},
+						  $_->{CLKOFFSET},
+						  $_->{FREQOFFSET},
+						  $_->{NPOL});
+  }
+
+  my @recband;
+  foreach (@{$datastream{RECBAND}}) {
+    push @recband, new DIFX::Input::DataStream::RecBand($_->{POL}, $_->{INDEX});
+  }
+  
+  my $self = [$datastream{TSYS},
+	      $datastream{DATAFORMAT},
+	      $datastream{QUANTISATION},
+	      $datastream{DATAFRAMESIZE},
+	      $datastream{DATASAMPLING},
+	      $datastream{DATASOURCE},
+	      $datastream{FILTERBANK},
+	      $datastream{PHASECALINT},
+	      [@freq],
+	      [@recband]
+	     ];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('tsys', 'TSYS');
+make_field('dataformat', 'DATAFORMAT');
+make_field('quantisationbits', 'BITS');
+make_field('bits', 'BITS');
+make_field('dataframesize', 'FRAMESIZE');
+make_field('datasampling', 'SAMPLING');
+make_field('datasource', 'SOURCE');
+make_field('filterbankused', 'FILTERBANK');
+make_field('phasecalint', 'PHASECAL');
+
+sub nfreq {
+  my $self = shift;
+  if (!(defined $self->[NFREQ])) {
+    $self->[NFREQ] = scalar(@{$self->[FREQS]});
+  }
+  return $self->[NFREQ];
+}
+
+sub nrecband {
+  my $self = shift;
+  if (!(defined $self->[NRECBAND])) {
+    $self->[NRECBAND] = scalar(@{$self->[RECBAND]});
+  }
+  return $self->[NRECBAND];
+}
+
+sub freqs {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[FREQS]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=$self->nfreq) {
+	warn "$n out of range for frequency table\n";
+	return undef;
+      } else {
+	return $self->[FREQS]->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid frequency table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+sub recbands {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[RECBAND]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=$self->nrecband) {
+	warn "$n out of range for frequency table\n";
+	return undef;
+      } else {
+	return $self->[RECBAND]->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid frequency table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+
+package DIFX::Input::DataStreamTable;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::DataStreamTable
+
+  Baseline entry
+
+=head2 Fields
+
+    databufferfactor   Integer
+    numdatasegments    Integer
+    datastreams        Array of DIFX::Input::DataStream
+    ndatastream        Size of datastreams array
+=cut
+
+use constant DBUFFACTOR => 0;
+use constant NUMDSEG => 1;
+use constant DATASTREAM => 2;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %datastreamtable = @_;
+
+  my @datastream = ();
+
+  foreach (@{$datastreamtable{DATASTREAM}}) {
+    push @datastream, new DIFX::Input::DataStream($_);
+  }
+
+  my $self = [$datastreamtable{DATABUFFERFACTOR},
+	      $datastreamtable{NUMDATASEGMENTS},,
+	      [@datastream]
+	     ];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('databufferfactor', 'DBUFFACTOR');
+make_field('numdatasegments', 'NUMDSEG');
+
+
+sub ndatastream {
+  my $self = shift;
+  return scalar(@{$self->[DATASTREAM]});
+}
+
+sub datastreams {
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->[DATASTREAM]};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=@{$self->{DATASTREAM}}) {
+	warn "$n out of range for datastream array\n";
+	return undef;
+      } else {
+	return $self->{DATASTREAM}->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid datastream index\n";
+    }
+  }
+  # Only get here on error
+  
+  return undef;
+}
+
+package DIFX::Input;
 
 sub print_hash(\%);
 
@@ -154,8 +681,8 @@ sub new {
   my %rules = ();
   my @freq = ();
   my @telescope = ();
-  my %datastream = ();
-  my @baseline = ();
+  my $datastream;
+  my @baselines = ();
   
   my $nexttable = parseline($line);
   while (defined $nexttable && $nexttable != INPUT_EOF) {
@@ -170,9 +697,9 @@ sub new {
     } elsif ($nexttable == INPUT_TELESCOPE) {
       ($nexttable, @telescope) = parse_telescope(\*INPUT);
     } elsif ($nexttable == INPUT_DATASTREAM) {
-      ($nexttable, %datastream) = parse_datastream(\*INPUT);
+      ($nexttable, $datastream) = parse_datastream(\*INPUT);
     } elsif ($nexttable == INPUT_BASELINE) {
-      ($nexttable, @baseline) = parse_baseline(\*INPUT);
+      ($nexttable, @baselines) = parse_baseline(\*INPUT);
     } elsif ($nexttable == INPUT_DATA) {
       $nexttable = parse_data(\*INPUT);
     } elsif ($nexttable == INPUT_NETWORK) {
@@ -181,77 +708,127 @@ sub new {
   }
   close(INPUT);
 
-  #print "\n*****COMMON*****\n";
-  #print_hash(%common);
-
-  #print "\n***CONFIG***\n";
-  #my $n=1;
-  #while (my ($key, $val) = each (%config)) {
-  #  print "Config $n: $key\n";
-  #  print_hash(%{$val});
-  #  print "\n";
-  #  $n++;
-  #}
-
-  #print "***FREQ***\n";
-  #$n = 0;
-  #foreach (@freq) {
-  #  print "Freq $n\n";
-  #  print_hash(%{$_});
-  #  print "\n";
-  #  $n++;
-  #}
-
-  #print "*****TELESCOPE*****\n";
-  #$n = 0;
-  #foreach (@telescope) {
-  #  print "Telescope $n\n";
-  #  print_hash(%{$_});
-  #  print "\n";
-  #  $n++;
-  #}
-
-  #print "*****DATASTREAM*****\n";
-  #print_hash(%datastream);
-  #print "\n";
-  #foreach (@{$datastream{DATASTREAM}}) {
-  #  print_hash(%{$_});
-  #  print "\n";
-  #}
-
-  #print "*****BASELINE*****\n";
-  #$n = 0;
-  #foreach (@baseline) {
-  #  print "Baseline $n\n";
-  #  print_hash(%{$_});
-  #  my $f = 0;
-  #  foreach (@{$_->{FREQ}}) {
-  #    print "FREQ $f\n";
-  #    my $p=0;
-  #    foreach (@{$_}) {
-#	print "POL $p\n";
-#	print_hash(%{$_});
-#	$p++;
- #     }
-  #    $f++;
-   # }
-   # print "\n";
-   # $n++;
-  #}
-
   my $self = {
 	      COMMON => {%common},
 	      CONFIG => {%config},
 	      RULES => {%rules},
 	      FREQ => [@freq],
 	      TELESCOPE => [@telescope],
-	      DATASTREAM => {%datastream},
-	      BASELINE => [@baseline]
+	      DATASTREAM => $datastream,
+	      BASELINE => [@baselines]
 	     };
   bless ($self, $class);
 
   return $self;
 }
+
+sub baseline {
+  # Return baselines
+  # Can be called as $input->basline()     - Return array of baseline values
+  #                  $input->sched(10)      - Return nth baseline
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->{BASELINE}};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=@{$self->{BASELINE}}) {
+	warn "$n out of range for baseline array\n";
+	return undef;
+      } else {
+	return $self->{BASELINE}->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid baseline index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+sub datastream {
+  # Return baselines
+  # Can be called as $input->basline()     - Return array of baseline values
+  #                  $input->sched(10)      - Return nth baseline
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return datastreamtable object
+    return $self->{DATASTREAM};
+  } else {
+    my $n = $_[0];
+    
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth datastream object
+      if ($n>=$self->{DATASTREAM}->ndatastream) {
+	warn "$n out of range for baseline array\n";
+	return undef;
+      } else {
+	return $self->{DATASTREAM}->datastreams([$n]);
+      }
+    } else {
+      warn "$_[0] is an invalid baseline index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+sub freq {
+  # Return freq table entry
+  # Can be called as $input->freq()     - Return array of telescopes
+  #                  $input->freq(10)   - Return 10th telescope
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->{FREQ}};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=@{$self->{FREQ}}) {
+	warn "$n out of range for frequency table\n";
+	return undef;
+      } else {
+	return $self->{FREQ}->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid frequency table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+sub telescope {
+  # Return telecopes
+  # Can be called as $input->telescope()     - Return array of telescopes
+  #                  $input->telescope(10)   - Return 10th telescope
+  my $self = shift;
+
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->{TELESCOPE}};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=@{$self->{TELESCOPE}}) {
+	warn "$n out of range for telescope array\n";
+	return undef;
+      } else {
+	return $self->{TELESCOPE}->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid telescope index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+
+# The following are for the actual parsing of the input file and should not be sued externally
 
 sub parse_common($) {
   my $fh = shift;
@@ -384,7 +961,7 @@ sub parse_freq($) {
     ($key, $val) = parseline($line,1);
     if (!defined $val) {
       if (%freq) {
-	push @freq, {%freq};
+	push @freq, new DIFX::Input::Freq(%freq);
       }
       return($key, @freq)
     }
@@ -399,7 +976,7 @@ sub parse_freq($) {
       warn "Inconsistent freq indexing: $key (expect $ifreq) not $1\n" if ($ifreq != $1);
       $ifreq++;
       if (%freq) {
-	push @freq, {%freq};
+	push @freq, new DIFX::Input::Freq(%freq);
 	%freq = ();
       }
       $freq{FREQ} = $val;
@@ -429,7 +1006,7 @@ sub parse_freq($) {
     }
   }
   if (%freq) {
-    push @freq, {%freq};
+    push @freq, new DIFX::Input::Freq(%freq);
   }
   return (INPUT_EOF, @freq);
 }
@@ -447,7 +1024,7 @@ sub parse_telescope($) {
     if (!defined $val) {
       if (%telescope) {
 	$telescope{CLOCKCOEFF} = [@clockpoly];
-	push @telescope, {%telescope};
+	push @telescope, new DIFX::Input::Telescope(%telescope);
       }
       return($key, @telescope)
     }
@@ -463,7 +1040,7 @@ sub parse_telescope($) {
       $itel++;
       if (%telescope) {
 	$telescope{CLOCKCOEFF} = [@clockpoly];
-	push @telescope, {%telescope};
+	push @telescope, new DIFX::Input::Telescope(%telescope);
 	%telescope = ();
 	@clockpoly = ();
       }
@@ -477,14 +1054,14 @@ sub parse_telescope($) {
     } elsif ($key =~ /CLOCK COEFF (\d+)\/(\d+)/) {
       warn "Inconsistent telescope indexing: $line\n" if ($itel-1 != $1);
       warn "Inconsistent clock indexing: $line\n" if (@clockpoly != $2);
-      push @clockpoly, $2;
+      push @clockpoly, $val;
     } else {
       warn "Ignoring $line\n";
     }
   }
   if (%telescope) {
     $telescope{CLOCKCOEFF} = [@clockpoly];
-    push @telescope, {%telescope};
+    push @telescope, new DIFX::Input::Telescope(%telescope);
   }
   return (INPUT_EOF, @telescope);
 }
@@ -514,7 +1091,8 @@ sub parse_datastream($) {
 	$datastream[$tindex] =  {%datastream};
       }
       $datastreams{DATASTREAM} = [@datastream];
-      return($key, %datastreams)
+      my $datastreamtable = new DIFX::Input::DataStreamTable(%datastreams);
+      return($key, $datastreamtable)
     }
 
     if ($key eq 'DATASTREAM ENTRIES') {
@@ -523,7 +1101,7 @@ sub parse_datastream($) {
 	return undef;
       }
       $nstream = $val;
-    } elsif ($key eq 'DATA BUFFER FACTOR') {
+   } elsif ($key eq 'DATA BUFFER FACTOR') {
       $datastreams{DATABUFFERFACTOR} = $val;
     } elsif ($key eq 'NUM DATA SEGMENTS') {
       $datastreams{NUMDATASEGMENTS} = $val;
@@ -555,7 +1133,7 @@ sub parse_datastream($) {
     } elsif ($key eq 'DATA SOURCE') {
       $datastream{DATASOURCE} = $val;
     } elsif ($key eq 'FILTERBANK USED') {
-      $datastream{FITERBANK} = $val;
+      $datastream{FILTERBANK} = $val;
     } elsif ($key eq 'PHASE CAL INT (MHZ)') {
       $datastream{PHASECALINT} = $val;
     } elsif ($key eq 'NUM RECORDED FREQS') {
@@ -601,7 +1179,9 @@ sub parse_datastream($) {
     $datastream[$tindex] =  {%datastream};
   }
   $datastreams{DATASTREAM} = [@datastream];
-  return (INPUT_EOF, %datastreams);
+
+  my $datastreamtable = new DIFX::Input::DatastreamTable(%datastreams);
+  return(INPUT_EOF, $datastreamtable)
 }
 
 
@@ -627,13 +1207,12 @@ sub parse_baseline($) {
 	push @freq, [@pol] if (@pol);
     
 	$baseline{FREQ} = [@freq];
-	push @baselines, {%baseline};
+	push @baselines, new DIFX::Input::Baseline(%baseline);
 	%baseline = ();
       }
       return (INPUT_EOF, @baselines);
       
-      # TODO - Finalize
-      return($key, @baselines)
+      #return($key, @baselines)  Is this needed and the logic is wrong?
     }
 
     if ($key eq 'BASELINE ENTRIES') {
@@ -652,7 +1231,7 @@ sub parse_baseline($) {
 	$baseline{FREQ} = [@freq];
 	@freq = ();
 
-	push @baselines, {%baseline};
+	push @baselines, new DIFX::Input::Baseline(%baseline);
 	%baseline = ();
       }
       warn "Inconsistent datastream indexing: $key\n" if ($ibaseline != $1);
@@ -692,12 +1271,11 @@ sub parse_baseline($) {
     }
   }
 
-  # TODO SAVE VALUES
   if (%baseline) {
     push @freq, [@pol] if (@pol);
     
     $baseline{FREQ} = [@freq];
-    push @baselines, {%baseline};
+    push @baselines, new DIFX::Input::Baseline(%baseline);
     %baseline = ();
   }
   return (INPUT_EOF, @baselines);
@@ -727,13 +1305,7 @@ sub parse_network($) {
   return (INPUT_EOF, %network);
 }
 
-sub print_hash(\%) {
-  my $hash = shift;
-  while (my ($key, $val) = each (%{$hash})) {
-    print "$key => $val\n";
-  }
-  return;
-}
+
 
 1;
 
