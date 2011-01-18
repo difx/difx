@@ -546,6 +546,25 @@ string VexJob::getVSN(const string &antName) const
 	return string("None");
 }
 
+/* Modified from http://www-graphics.stanford.edu/~seander/bithacks.html */
+static int intlog2(unsigned int v)
+{
+	const unsigned int b[] = {0x2, 0xC, 0xF0, 0xFF00, 0xFFFF0000};
+	const unsigned int S[] = {1, 2, 4, 8, 16};
+	unsigned int r = 0; // result of log2(v) will go here
+
+	for(int i = 4; i >= 0; i--) 
+	{
+		if(v & b[i])
+		{
+			v >>= S[i];
+			r |= S[i];
+		} 
+	}
+
+	return r;
+}
+
 double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
 {
 	double ops = 0.0;
@@ -583,7 +602,7 @@ double VexJob::calcOps(const VexData *V, int fftSize, bool doPolar) const
 		// Estimate number of operations based on VLBA Sensitivity Upgrade Memo 16
 		// Note: currently this does not consider oversampling
 		// Note: this assumes all polarizations are matched
-		opsPerSample = 16.0 + 5.0*log(fftSize)/log(2.0) + 2.5*nAnt*nPol;
+		opsPerSample = 16.0 + 5.0*intlog2(fftSize) + 2.5*nAnt*nPol;
 		ops += opsPerSample*seconds*sampRate*nSubband*nAnt;
 
 	}
