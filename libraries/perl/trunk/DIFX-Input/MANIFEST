@@ -1,4 +1,4 @@
-./DIFX/Input.pm
-./Makefile.PL
-./MANIFEST
-./test.pl
+Input.pm
+Makefile.PL
+MANIFEST
+test.pl
