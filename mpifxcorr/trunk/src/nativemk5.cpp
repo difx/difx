@@ -26,6 +26,7 @@
 #include <cmath>
 #include <sys/time.h>
 #include <mpi.h>
+#include <unistd.h>
 #include "config.h"
 #include "nativemk5.h"
 #include "watchdog.h"

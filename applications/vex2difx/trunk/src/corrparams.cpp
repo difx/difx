@@ -37,6 +37,7 @@
 #include <cctype>
 #include <ctime>
 #include <string.h>
+#include <unistd.h>
 #include <difxio.h>
 #include "util.h"
 #include "corrparams.h"

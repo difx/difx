@@ -30,6 +30,7 @@
 #include <string.h>
 #include <strings.h>
 #include <math.h>
+#include <unistd.h>
 #include "config.h"
 #include "alert.h"
 

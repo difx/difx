@@ -33,6 +33,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <difxmessage.h>
 #include <mark5access.h>
 #include "mark5dir.h"
