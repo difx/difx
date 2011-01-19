@@ -71,6 +71,71 @@ sub make_field ($$) {
   eval $sub;
 }
 
+package DIFX::Input::Common;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Common
+
+  ?????
+
+=head2 Fields
+
+    calcfilename        String
+    coreconffilename    String
+    executetime         Integer
+    startmjd            Integer
+    startseconds        Integer
+    activedatastreams   Integer
+    activebaselines     Integer
+    visbufferlength     Integer
+    outputformat        String
+    outputfilename      String
+
+=cut
+
+use constant CALCFILENAME => 0;
+use constant CORECONFFILENAME => 1;
+use constant EXECUTETIME => 2;
+use constant STARTMJD => 3;
+use constant STARTSECONDS => 4;
+use constant ACTIVEDATASTREAMS => 5;
+use constant ACTIVEBASELINES => 6;
+use constant VISBUFFERLENGTH => 7;
+use constant OUTPUTFORMAT => 8;
+use constant OUTPUTFILENAME => 9;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my %common = @_;
+  my $self = [$common{CALCFILENAME},
+	      $common{CORECONF},
+	      $common{EXECUTE},
+	      $common{STARTMJD},
+	      $common{STARTSECONDS},
+	      $common{ACTIVEDATASTREAMS},
+	      $common{ACTIVEBAELINES},
+	      $common{VISBUFFERLENGTH},
+	      $common{OUTPUTFORMAT},
+	      $common{OUTPUTFILENAME}];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('calcfilename', 'CALCFILENAME');
+make_field('coreconffilename', 'CORECONFFILENAME');
+make_field('executetime', 'EXECUTETIME');
+make_field('startmjd', 'STARTMJD');
+make_field('startseconds', 'STARTSECONDS');
+make_field('activedatastreams', 'ACTIVEDATASTREAMS');
+make_field('activebaselines', 'ACTIVEBASELINES');
+make_field('visbufferlength', 'VISBUFFERLENGTH');
+make_field('outputformat', 'OUTPUTFORMAT');
+make_field('outputfilename', 'OUTPUTFILENAME');
 
 package DIFX::Input::Freq;
 use Carp;
@@ -190,7 +255,7 @@ sub clockcoeff {
 }
 
 
-package DIFX::Input::Baseline::Pol;
+package DIFX::Input::Baseline::Band;
 use Carp;
 use DIFX::Input qw(make_field);
 
@@ -200,13 +265,13 @@ use DIFX::Input qw(make_field);
 
 =head2 Fields
 
-    PolA           Integer
-    PolB           Integer
+    BandA          Integer
+    BandB          Integer
 
 =cut
 
-use constant POLA => 0;
-use constant POLB => 1;
+use constant BANDA => 0;
+use constant BANDB => 1;
 
 sub new {
   my $proto = shift;
@@ -221,8 +286,8 @@ sub new {
   return $self;
 }
 
-make_field('polA', 'POLA');
-make_field('polB', 'POLB');
+make_field('bandA', 'BANDA');
+make_field('bandB', 'BANDB');
 
 package DIFX::Input::Baseline;
 use Carp;
@@ -255,7 +320,7 @@ sub new {
   foreach (@{$baseline{FREQ}}) {
     my @pols;
     foreach (@{$_}) {
-      push @pols, new DIFX::Input::Baseline::Pol($_->{POLA},$_->{POLB});
+      push @pols, new DIFX::Input::Baseline::Band($_->{POLA},$_->{POLB});
     }
     push @freqs, [@pols];
   }
@@ -676,8 +741,8 @@ sub new {
     return;
   }
   
-  my %common = ();
-  my %config = ();
+  my $common;
+  my %config;
   my %rules = ();
   my @freq = ();
   my @telescope = ();
@@ -687,7 +752,7 @@ sub new {
   my $nexttable = parseline($line);
   while (defined $nexttable && $nexttable != INPUT_EOF) {
     if ($nexttable == INPUT_COMMON) {
-      ($nexttable, %common) = parse_common(\*INPUT);
+      ($nexttable, $common) = parse_common(\*INPUT);
     } elsif ($nexttable == INPUT_CONFIG) {
       ($nexttable, %config) = parse_config(\*INPUT);
     } elsif ($nexttable == INPUT_RULES) {
@@ -709,7 +774,7 @@ sub new {
   close(INPUT);
 
   my $self = {
-	      COMMON => {%common},
+	      COMMON => $common,
 	      CONFIG => {%config},
 	      RULES => {%rules},
 	      FREQ => [@freq],
@@ -720,6 +785,12 @@ sub new {
   bless ($self, $class);
 
   return $self;
+}
+
+sub common {
+  my $self = shift;
+
+  return $self->{COMMON};
 }
 
 sub baseline {
@@ -837,7 +908,8 @@ sub parse_common($) {
   my ($key, $val, $line);
   while ($line = nextline($fh)) {
     ($key, $val) = parseline($line);
-    return($key, %common) if (!defined $val);
+    my $common = new DIFX::Input::Common(%common);
+    return($key, $common) if (!defined $val);
 
     if ($key eq 'CALC FILENAME') {
       $common{CALCFILENAME} = $val;
@@ -863,7 +935,8 @@ sub parse_common($) {
       warn "Ignoring $line\n";
     }
   }
-  return (INPUT_EOF, %common);
+  my $common = new DIFX::Input::Common(%common);
+  return (INPUT_EOF, $common);
 }
 
 sub parse_config($) {

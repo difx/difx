@@ -13,8 +13,22 @@ my $filename = shift @ARGV;
 
 my $input = new DIFX::Input($filename);
 
+my $common = $input->common;
+
+print "# COMMON SETTINGS ##!\n";
+printf "CALC FILENAME:      %s\n", $common->calcfilename;
+printf "CORE CONF FILENAME: %s\n", $common->coreconffilename;
+printf "EXECUTE TIME (SEC): %.3f\n", $common->executetime;
+printf "START MJD:          %d\n", $common->startmjd;
+printf "START SECONDS:      %d\n", $common->startseconds;
+printf "ACTIVE DATASTREAMS: %d\n", $common->activedatastreams;
+printf "ACTIVE BASELINES:   %d\n", $common->activebaselines;
+printf "VIS BUFFER LENGTH:  %d\n", $common->visbufferlength;
+printf "OUTPUT FORMAT:      %s\n", $common->outputformat;
+printf "OUTPUT FILENAME:    %s\n", $common->outputfilename;
+
 my @freq = $input->freq;
-print "# FREQ TABLE #######!\n";
+print "\n# FREQ TABLE #######!\n";
 printf "FREQ ENTRIES:     %d\n", scalar(@freq);
 $i = 0;
 foreach (@freq) {
@@ -97,8 +111,8 @@ foreach (@baselines) {
     printf "POL PRODUCTS $i/$j:   %d\n", scalar(@$_);
     my $k = 0;
     foreach (@$_) {
-      printf "D/STREAM A BAND $k:  %d\n", $_->polA;
-      printf "D/STREAM B BAND $k:  %d\n", $_->polB;
+      printf "D/STREAM A BAND $k:  %d\n", $_->bandA;
+      printf "D/STREAM B BAND $k:  %d\n", $_->bandB;
       $k++;
     }
     $j++;
