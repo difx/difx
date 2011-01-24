@@ -17,7 +17,6 @@ sub checkfile($$);
 sub send_data($$);
 sub send_cmd($$);
 
-my $p4pg;
 my $machinefile;
 my $numproc;
 my $evlbi = 0;
@@ -25,20 +24,17 @@ my $monitor = undef;
 my $offset = 20; # Offset in seconds for start time
 my $debug = 0;
 
-GetOptions('p4pg=s'=>\$p4pg, '-machinefile=s'=>\$machinefile, 
+GetOptions('-machinefile=s'=>\$machinefile, 
            'np=i'=>\$numproc, 'evlbi'=>\$evlbi, 'offset=i'=>\$offset,
 	   'monitor=s'=>\$monitor, 'debug'=>\$debug, 'hosts=s'=>\$recorder_hosts);
 
 # Check passed files exist etc
 
-if (!(defined $p4pg) && !(defined $machinefile && defined $numproc)) {
-  die "Must specify either p4pg file or machinefile and np\n";
+if (!(defined $machinefile && defined $numproc)) {
+  die "Must specify machinefile and np\n";
 }
 
 die "Offset must be positive\n" if ($offset<0);
-
-#die "Must either set \$RECORDER_HOSTS or pass the -host option" 
-#  if ($evlbi && !defined $recorder_hosts);
 
 die "Usage: startcorr.pl [options] <mpifxcorr> <inputfile>\n" if (@ARGV!=2);
 
@@ -46,13 +42,7 @@ my $mpifxcorr = shift @ARGV;
 my $input = shift @ARGV;
 
 checkfile('Input file', $input);
-
-if (defined $p4pg) {
-  checkfile('p4pg', $p4pg);
-} else {
-  checkfile('machine', $machinefile);
-  # Should also check machinefile is consistent
-}
+checkfile('machine', $machinefile);
 
 my ($calc, $threads, $duration, $mjd, $seconds, $outfile);
 
@@ -321,12 +311,7 @@ if (defined $recorder_hosts && $evlbi) {
 
 # mpifxcorr options
 
-my $mpioptions;
-if (defined $p4pg) {
-  $mpioptions = "-p4pg $p4pg";
-} else {
-  $mpioptions = "-machinefile $machinefile -np $numproc";
-}
+my  $mpioptions = "-machinefile $machinefile -np $numproc";
 
 my $difx_options = '';
 if ($monitor) {
