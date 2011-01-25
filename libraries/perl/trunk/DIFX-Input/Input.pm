@@ -639,6 +639,40 @@ sub datastreams {
   return undef;
 }
 
+package DIFX::Input::Network;
+use Carp;
+use DIFX::Input qw(make_field);
+
+=head1 DIFX::Input::Network
+
+  ?????
+
+=head2 Fields
+
+    portnum             Integer
+    tcpwindow           Integer
+
+=cut
+
+use constant PORTNUM => 0;
+use constant TCPWIN => 1;
+
+sub new {
+  my $proto = shift;
+  my $class = ref($proto) || $proto;
+
+  my $self = [shift, shift];
+
+  bless ($self, $class);
+
+  return $self;
+}
+
+make_field('portnum', 'PORTNUM');
+make_field('port', 'PORTNUM');
+make_field('tcpwindow', 'TCPWIN');
+make_field('tcpwin', 'TCPWIN');
+
 package DIFX::Input;
 
 sub print_hash(\%);
@@ -748,6 +782,8 @@ sub new {
   my @telescope = ();
   my $datastream;
   my @baselines = ();
+  my @network = ();
+  my @data = ();
   
   my $nexttable = parseline($line);
   while (defined $nexttable && $nexttable != INPUT_EOF) {
@@ -766,9 +802,9 @@ sub new {
     } elsif ($nexttable == INPUT_BASELINE) {
       ($nexttable, @baselines) = parse_baseline(\*INPUT);
     } elsif ($nexttable == INPUT_DATA) {
-      $nexttable = parse_data(\*INPUT);
+      ($nexttable, @data) = parse_data(\*INPUT);
     } elsif ($nexttable == INPUT_NETWORK) {
-      $nexttable = parse_network(\*INPUT);
+      ($nexttable, @network) = parse_network(\*INPUT);
     }
   }
   close(INPUT);
@@ -780,7 +816,8 @@ sub new {
 	      FREQ => [@freq],
 	      TELESCOPE => [@telescope],
 	      DATASTREAM => $datastream,
-	      BASELINE => [@baselines]
+	      BASELINE => [@baselines],
+	      NETWORK => [@network]
 	     };
   bless ($self, $class);
 
@@ -898,8 +935,34 @@ sub telescope {
   return undef;
 }
 
+sub network {
+  # Return network table
+  # Can be called as $input->network()     - Return array of baseline values
+  #                  $input->network(10)      - Return nth baseline
+  my $self = shift;
 
-# The following are for the actual parsing of the input file and should not be sued externally
+  if (@_==0) { # No arguments, return a copy of the entire array
+    return @{$self->{NETWORK}};
+  } else {
+    my $n = $_[0];
+    if ($n =~ /^\s*\d+\s*$/) { # Number, so we want nth scan
+      if ($n>=@{$self->{NETWORK}}) {
+	warn "$n out of range for network table\n";
+	return undef;
+      } else {
+	return $self->{NETWORK}->[$n];
+      }
+    } else {
+      warn "$_[0] is an invalid network table index\n";
+    }
+  }
+  # Only get here on error
+
+  return undef;
+}
+
+
+# The following are for the actual parsing of the input file and should not be used externally
 
 sub parse_common($) {
   my $fh = shift;
@@ -1283,9 +1346,7 @@ sub parse_baseline($) {
 	push @baselines, new DIFX::Input::Baseline(%baseline);
 	%baseline = ();
       }
-      return (INPUT_EOF, @baselines);
-      
-      #return($key, @baselines)  Is this needed and the logic is wrong?
+      return ($key, @baselines);
     }
 
     if ($key eq 'BASELINE ENTRIES') {
@@ -1355,7 +1416,6 @@ sub parse_baseline($) {
 }
 
 sub parse_data($) {
-  #print "DATA\n";
   my $fh = shift;
   my %data = ();
   my ($key, $val, $line);
@@ -1367,15 +1427,29 @@ sub parse_data($) {
 }
 
 sub parse_network($) {
-  #print "NETWORK\n";
   my $fh = shift;
-  my %network = ();
-  my ($key, $val, $line);
+  my @network = ();
+
+  my ($key, $val, $line, $port);
+  my $index = 0;
   while ($line = nextline($fh)) {
     ($key, $val) = parseline($line);
-    return($key, %network) if (!defined $val);
+    return($key, @network) if (!defined $val);
+
+    if ($key =~ /PORT NUM (\d+)/) {
+      warn "Unexpected index $1 on $line\n" if ($1 != $index);
+      $port = $val;
+   } elsif ($key =~ /TCP WINDOW \(KB\) (\d+)/) {
+      warn "Unexpected index $1 on $line\n" if ($1 != $index);
+      $index++;
+      push @network, new DIFX::Input::Network($port, $val);
+      $port = undef;
+    } else {
+      warn "Ignoring $key\n";
+    }
   }
-  return (INPUT_EOF, %network);
+
+  return (INPUT_EOF, @network);
 }
 
 

@@ -120,3 +120,12 @@ foreach (@baselines) {
   $i++;
 }
 
+my @network = $input->network;
+
+$i=0;
+print "\n# NETWORK TABLE ####!\n" if (@network>1);
+foreach (@network) {
+  printf "PORT NUM %d:         %d\n", $i, $_->port;
+  printf "TCP WINDOW (KB) %d:  %d\n", $i, $_->tcpwin;
+  $i++;
+}
