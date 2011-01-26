@@ -69,10 +69,26 @@ int getVDIFThreadID(char * rawheader)
 	return (int)((headerword >> 16) & 0x3FF);
 }
 
+void setVDIFThreadID(char * rawheader, int threadid)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[3];
+	headerword &= 0xFC00FFFF;
+	headerword |= (threadid & 0x3FF) << 16;
+        ((unsigned int*)rawheader)[3] = headerword;
+}
+
 int getVDIFFrameBytes(char * rawheader)
 {
         unsigned int headerword = ((unsigned int*)rawheader)[2];
 	return (int)(headerword & 0xFFFFFF)*8;
+}
+
+void setVDIFFrameBytes(char * rawheader, int bytes)
+{
+	unsigned int headerword = ((unsigned int*)rawheader)[2];
+	headerword &= 0xFF000000;
+	headerword |= (bytes & 0xFFFFFF) / 8;
+	((unsigned int*)rawheader)[2] = headerword;
 }
 
 int getVDIFStationID(char * rawheader)
@@ -99,6 +115,20 @@ int getVDIFNumChannels(char * rawheader)
 		numchans *= 2;
 	}
 	return numchans;
+}
+
+void setVDIFNumChannels(char * rawheader, int numchannels)
+{
+	unsigned int logchans = 0;
+	while(numchannels > 1)
+	{
+		numchannels /= 2;
+		logchans++;
+	}
+	unsigned int headerword = ((unsigned int*)rawheader)[2];
+	headerword &= 0x83FFFFFF;
+	headerword |= logchans << 26;
+	((unsigned int*)rawheader)[2] = headerword;
 }
 
 int getVDIFFrameMJD(char * rawheader)

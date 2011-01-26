@@ -7,8 +7,10 @@ LDADD = \
 bin_PROGRAMS = \
 	stripVDIF \
 	captureUDPVDIF \
+	multi2singlethreadVDIF \
 	padVDIF \
 	cleanVDIF \
+	fakemultiVDIF \
 	printVDIF 
 
 stripVDIF_SOURCES = \
@@ -20,11 +22,17 @@ captureUDPVDIF_SOURCES = \
 captureUDPVDIF_LDFLAGS = \
 	-pthread
 
+multi2singlethreadVDIF_SOURCES = \
+	multi2singlethreadVDIF.c
+
 padVDIF_SOURCES = \
 	padVDIF.c
 
 cleanVDIF_SOURCES = \
 	cleanVDIF.c
+
+fakemultiVDIF_SOURCES = \
+	fakemultiVDIF.c
 
 printVDIF_SOURCES = \
 	printVDIF.c

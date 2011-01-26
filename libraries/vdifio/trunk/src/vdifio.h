@@ -79,6 +79,9 @@ void setVDIFFrameMJD(char * rawheader, int framemjd);
 void setVDIFFrameSecond(char * rawheader, int framesecond);
 void setVDIFFrameNumber(char * rawheader, int framenumber);
 void setVDIFFrameInvalid(char * rawheader, unsigned int invalid);
+void setVDIFFrameBytes(char * rawheader, int bytes);
+void setVDIFNumChannels(char * rawheader, int numchannels);
+void setVDIFThreadID(char * rawheader, int threadid);
 
 #ifdef __cplusplus
 }
