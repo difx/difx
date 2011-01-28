@@ -461,7 +461,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
   }
 
   DataStream::networkToMemory(buffersegment, framebytesremaining);
-  framebytesremaining = 2*readbytes;
+  //framebytesremaining = 2*readbytes;
   //cout << "Datastream " << mpiid << " finished reading; framebytesremaining is now " << framebytesremaining << ", buffersegment is " << buffersegment << ", keepreading is " << keepreading << endl;
 }
 
@@ -734,7 +734,7 @@ uint64_t Mk5DataStream::openframe()
   // The number of segments per "frame" is arbitrary. Just set it to ~ 5sec 
   int nsegment;
   nsegment = (int)(2.0e9/bufferinfo[0].nsinc+0.1);
-
+  
   if (!tcp) {
     // Print statistics. 
     double delta, thistime;
@@ -767,7 +767,6 @@ uint64_t Mk5DataStream::openframe()
     npacket = 0;
     packet_sum = 0;
   }
-
 
   return readbytes*nsegment;
 }
