@@ -23,6 +23,11 @@
 #include <signal.h>
 #include <sys/time.h>
 #include <math.h>
+
+#include "configuration.h"
+
+#define USEIPP
+
 #ifdef USEIPP
 #include <ippi.h>
 #define FCMALLOC(x) ippsMalloc_32fc(x)
@@ -61,24 +66,38 @@ float **lagdisplay;
 int sequence, lastseq;
 
 int main(int argc, const char * argv[]) {
-  int status, iprod;
+  int status, iprod, currentscan, currentconfig;
   struct monclient monserver;
   pthread_t plotthread;
   struct itimerval timeval;
   sigset_t set;
+  vector<DIFX_ProdConfig> products;
+  struct product_offset plotprod;
+  Configuration *config;
 
-  if(argc != 3)  {
-    fprintf(stderr, "Error - invoke with mon_sample <host> <product#>\n");
+  if(argc != 4 )  {
+    fprintf(stderr, "Error - invoke with mon_sample <host> <input> <product#>\n");
     return(EXIT_FAILURE);
   }
-  iprod = atoi(argv[2]);
+  iprod = atoi(argv[3]);
+
+  config = new Configuration(argv[2], 0);
+  if (!config->consistencyOK()) {
+    cerr << "Aborting" << endl;
+    exit(1);
+  }
 
   status  = monserver_connect(&monserver, (char*)argv[1], -1);
   if (status) exit(1);
 
   printf("Opened connection to monitor server\n");
 
-  status = monserver_requestproduct(monserver, iprod);
+  currentscan = 0;
+  currentconfig = config->getScanConfigIndex(currentscan);
+  products = monserver_productconfig(config, currentconfig);
+  set_productoffsets(1, &iprod, &plotprod, products);
+
+  status = monserver_requestproducts_byoffset(monserver, &plotprod, 1);
   if (status) exit(1);
   printf("Sent product request\n");
 
@@ -301,7 +320,7 @@ void cb(double *t, int *kc) {
 }
 
 void *plotit (void *arg) {
-  int status, prod;
+  int status, prod, numchan;
   struct monclient *monserver;
   Ipp32fc *vis;
 
@@ -317,28 +336,25 @@ void *plotit (void *arg) {
       pthread_mutex_lock(&vismutex);	
       timestamp=monserver->timestamp;
       sequence++;
-      if (nchan!=monserver->numchannels) {
-	nchan = monserver->numchannels;
-	if (buf!=NULL) FREE(buf);
-	buf = FCMALLOC(nchan);
-      }
 
-      if (monserver_nextvis(monserver, &prod, &vis)) {
+      if (monserver_nextvis(monserver, &prod, &numchan, &vis)) {
 	fprintf(stderr, "Error getting visibility. Aborting\n");
 	monserver_close(monserver);
 	pthread_mutex_unlock(&vismutex);	
 	exit(1);
       }
+      if (nchan!=numchan) {
+	nchan = numchan;
+	if (buf!=NULL) FREE(buf);
+	buf = FCMALLOC(nchan);
+      }
+
       ippsCopy_32fc(vis, buf, nchan);
 
       pthread_mutex_unlock(&vismutex);	
       
       printf("Got visibility for product %d\n", prod);
     } 
-
-
-
-
   }
 
   monserver_close(monserver);

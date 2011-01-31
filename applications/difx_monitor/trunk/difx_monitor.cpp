@@ -35,23 +35,31 @@ void plot_results(Configuration * config, Model * model);
 void change_config(Configuration * config, int configindex, const char*);
 void maxmin(f32 **vals, int nchan, int npol, float *max, float *min);
 
-int socketnumber, currentconfigindex, maxresultlength, nav, atseconds, currentscan;
+int socketnumber, currentconfig, maxresultlength, nav, atseconds, currentscan;
 int resultlength, numchannels, nprod=0, mjd;
 double intseconds = 1;
 IppsFFTSpec_R_32f* fftspec=NULL;
-cf32 ** products=NULL;
+cf32 ** productvis=NULL;
 f32  *phase[MAXPOL], *amplitude[MAXPOL];
 f32 *lags[MAXPOL];
 f32 *xval=NULL;
 
 int main(int argc, const char * argv[])
 {
-  int i, status = 1;
+  int i, status = 1, numchan;
   int prod, nvis, startsec;
   cf32 *vis;
   struct monclient monserver;
-  Configuration * config;
+ Configuration * config;
   Model * model;
+  vector<DIFX_ProdConfig> products;
+  struct product_offset *plotprod;
+
+  for (i=0; i<MAXPOL; i++) {
+    phase[i] = NULL;
+    amplitude[i] = NULL;
+    lags[i] = NULL;
+  }
 
   if(argc < 3 || argc > 4)
   {
@@ -74,22 +82,23 @@ int main(int argc, const char * argv[])
   status  = monserver_connect(&monserver, (char*)argv[2],  Configuration::MONITOR_TCP_WINDOWBYTES);
   if (status) exit(1);
 
-  status = monserver_requestall(monserver);
+  currentscan = 0;
+  currentconfig = config->getScanConfigIndex(currentscan);
+  products = monserver_productconfig(config, currentconfig);
+  plotprod = NULL;
+  status = set_productoffsets_all(&nprod, &plotprod, products);
+  if (status) exit(1);
+  cout << "Got " << nprod << " products" << endl;
+
+  status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
   if (status) exit(1);
 
   //get into the loop of receiving, processing and plotting!
-  currentconfigindex = 0;
-  currentscan = 0;
   atseconds = 0;
-  change_config(config, currentconfigindex, argv[1]);
+  change_config(config, currentconfig, argv[1]);
 
   umask(002);
 
-  for (i=0; i<MAXPOL; i++) {
-    phase[i] = NULL;
-    amplitude[i] = NULL;
-    lags[i] = NULL;
-  }
 
   nvis=0;
   while (1) {
@@ -119,19 +128,28 @@ int main(int argc, const char * argv[])
       currentscan = scan;
       int newconfig = config->getScanConfigIndex(currentscan);
 
-      if(newconfig != currentconfigindex) {
-	currentconfigindex = newconfig;
-	change_config(config, currentconfigindex, argv[1]);
+      if(newconfig != currentconfig) {
+	currentconfig = newconfig;
+
+	products = monserver_productconfig(config, currentconfig);
+	status = set_productoffsets_all(&nprod, &plotprod, products);
+	if (status) exit(1);
+	cout << "Got " << nprod << " products" << endl;
+  
+	status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
+	if (status) exit(1);
+
+	change_config(config, currentconfig, argv[1]);
       }
     }
 
-    while (!monserver_nextvis(&monserver, &prod, &vis)) {
+    while (!monserver_nextvis(&monserver, &prod, &numchan, &vis)) {
       if (prod>=nprod) {
 	cerr << "Got product larger than expected - aborting" << endl;
 	exit(1);
       }
 
-      status = vectorAdd_cf32_I(vis, products[prod], numchannels);
+      status = vectorAdd_cf32_I(vis, productvis[prod], numchannels);
 
       if(status != vecNoErr) {
 	cerr << "Error trying to add to accumulation buffer - aborting!" << endl;
@@ -144,7 +162,7 @@ int main(int argc, const char * argv[])
       plot_results(config, model);
       nvis=0;
       for (i=0; i<nprod; i++) {
-	status = vectorZero_cf32(products[i], numchannels);
+	status = vectorZero_cf32(productvis[i], numchannels);
 	if(status != vecNoErr) {
 	  cerr << "Error trying to zero visibility buffer - aborting!" << endl;
 	  exit(1);
@@ -176,7 +194,7 @@ void plot_results(Configuration * config, Model * model)
   div.im = 0;
   for(int i=0;i<nprod;i++) {
 
-    status = vectorMulC_cf32_I(div, products[i], numchannels);
+    status = vectorMulC_cf32_I(div, productvis[i], numchannels);
     if(status != vecNoErr) {
           cerr << "Error trying to add to accumulation buffer - aborting!" << endl;
 	  exit(1);
@@ -184,44 +202,41 @@ void plot_results(Configuration * config, Model * model)
   }
 
   int binloop = 1;
-  if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
-    binloop = config->getNumPulsarBins(currentconfigindex);
+  if(config->pulsarBinOn(currentconfig) && !config->scrunchOutputOn(currentconfig))
+    binloop = config->getNumPulsarBins(currentconfig);
 
   int at = 0;
-  //int sourceindex = config->getSourceIndex
-  for(i=0;i<config->getNumBaselines();i++)
-  {
+  for(i=0;i<config->getNumBaselines();i++)  {
 
-    int ds1index = config->getBDataStream1Index(currentconfigindex, i);
-    int ds2index = config->getBDataStream2Index(currentconfigindex, i);
+    int ds1index = config->getBDataStream1Index(currentconfig, i);
+    int ds2index = config->getBDataStream2Index(currentconfig, i);
 
-    for(j=0;j<config->getBNumFreqs(currentconfigindex,i);j++)
-    {
-      int freqindex = config->getBFreqIndex(currentconfigindex, i, j);
-      for(int b=0;b<binloop;b++) {
-	npol = config->getBNumPolProducts(currentconfigindex,i,j);
+    for(j=0;j<config->getBNumFreqs(currentconfig,i);j++)    {
+      int freqindex = config->getBFreqIndex(currentconfig, i, j);
+      for (int b=0;b<binloop;b++) {
+	npol = config->getBNumPolProducts(currentconfig,i,j);
 	if (npol>MAXPOL) {
 	  cerr << "Too many polarisation products - aborting" << endl;
 	  exit(1);
 	}
         for(k=0;k<npol;k++) {
-          config->getBPolPair(currentconfigindex,i,j,k,polpair[k]);
+          config->getBPolPair(currentconfig,i,j,k,polpair[k]);
 
 	  // Calculate amplitude, phase and lags
-	  status = vectorPhase_cf32(products[at], phase[k], numchannels);
+	  status = vectorPhase_cf32(productvis[at], phase[k], numchannels);
 	  if(status != vecNoErr) {
 	    cerr << "Error trying to calculate phase - aborting!" << endl;
 	    exit(1);
 	  }
 	  vectorMulC_f32_I(180/M_PI, phase[k], numchannels);
 
-	  status = vectorMagnitude_cf32(products[at], amplitude[k], numchannels);
+	  status = vectorMagnitude_cf32(productvis[at], amplitude[k], numchannels);
 	  if(status != vecNoErr) {
 	    cerr << "Error trying to calculate amplitude - aborting!" << endl;
 	    exit(1);
 	  }
 
-	  ippsFFTInv_CCSToR_32f((Ipp32f*)products[at], lags[k], fftspec, 0);
+	  ippsFFTInv_CCSToR_32f((Ipp32f*)productvis[at], lags[k], fftspec, 0);
 	  //rearrange the lags into order
 	  for(int l=0;l<numchannels;l++) {
             temp = lags[k][l];
@@ -331,7 +346,7 @@ void plot_results(Configuration * config, Model * model)
   int autocorrwidth = (config->getMaxProducts()>1)?2:1;
   for(int i=0;i<config->getNumDataStreams();i++) {
     for(int j=0;j<autocorrwidth;j++) {
-      for(int k=0;k<config->getDNumRecordedBands(currentconfigindex, i); k++) {
+      for(int k=0;k<config->getDNumRecordedBands(currentconfig, i); k++) {
 
 	if (j==0) {
 	  sprintf(pgplotname, "lba-auto%d-f%d-b0.png/png",
@@ -352,7 +367,7 @@ void plot_results(Configuration * config, Model * model)
 
 	  // Plot Amplitude
 
-	  status = vectorMagnitude_cf32(products[at], amplitude[0], numchannels);
+	  status = vectorMagnitude_cf32(productvis[at], amplitude[0], numchannels);
 	  if(status != vecNoErr) {
 	    cerr << "Error trying to calculate amplitude - aborting!" << endl;
 	    exit(1);
@@ -384,27 +399,27 @@ void plot_results(Configuration * config, Model * model)
 	    cpgsch(2);
 	  }
 
-	  ss << config->getDStationName(currentconfigindex, i) 
+	  ss << config->getDStationName(currentconfig, i) 
 	     << "  " << sourcename; 
 	  cpgmtxt("T", -1.5,0.02, 0, ss.str().c_str());	    
 	  ss.str("");
 
-	  int freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, k);
+	  int freqindex = config->getDRecordedFreqIndex(currentconfig, i, k);
 	  ss << config->getFreqTableFreq(freqindex) << " MHz";
 	  cpgmtxt("T", -2.6,0.98,1,ss.str().c_str());	    
 	  ss.str("");
 
 	  ss << timestr << "     " 
-	     << config->getDRecordedBandPol(currentconfigindex, i, k);
+	     << config->getDRecordedBandPol(currentconfig, i, k);
 	  if (j==0)
-	    ss << config->getDRecordedBandPol(currentconfigindex, i, k);
+	    ss << config->getDRecordedBandPol(currentconfig, i, k);
 	  else
-	    ss << ((config->getDRecordedBandPol(currentconfigindex, i, k) == 'R')?'L':'R');
+	    ss << ((config->getDRecordedBandPol(currentconfig, i, k) == 'R')?'L':'R');
 	  cpgmtxt("T", -1.5,0.98,1,ss.str().c_str());
 	  ss.str("");
 
 	  if (j!=0) {
-	    status = vectorPhase_cf32(products[at], phase[0], numchannels);
+	    status = vectorPhase_cf32(productvis[at], phase[0], numchannels);
 	    if(status != vecNoErr) {
 	      cerr << "Error trying to calculate phase - aborting!" << endl;
 	      exit(1);
@@ -433,9 +448,10 @@ void change_config(Configuration * config, int configindex, const char *inputfil
   ofstream html;
   ostringstream ss;
 
-  numchannels = config->getFNumChannels(currentconfigindex);
+  numchannels = config->getFNumChannels(currentconfig);  /* This is the wrong way to do things, but seems
+							    to work for now. */
 
-  cout << "New config " << currentconfigindex << " at " << atseconds << endl;
+  cout << "New config " << currentconfig << " at " << atseconds << endl;
 
   if(xval) vectorFree(xval);
   if(fftspec) ippsFFTFree_R_32f(fftspec);
@@ -446,17 +462,18 @@ void change_config(Configuration * config, int configindex, const char *inputfil
     if(amplitude[i]) vectorFree(amplitude[i]);
   }
 
-  if (products) {
+  if (productvis) {
     for (i=0; i<nprod; i++) {
-      if (products[i]) vectorFree(products[i]);
+      if (productvis[i]) vectorFree(productvis[i]);
     }
-    delete [] products;
+    delete [] productvis;
   }
 
   xval = vectorAlloc_f32(numchannels*2);
   for(int i=0;i<numchannels*2;i++)
     xval[i] = i;
 
+  cout << "Allocate arrays" << endl;
   for (i=0; i<MAXPOL; i++) {
     lags[i] = vectorAlloc_f32(numchannels*2);
     phase[i] = vectorAlloc_f32(numchannels);
@@ -468,19 +485,16 @@ void change_config(Configuration * config, int configindex, const char *inputfil
     order++;
   ippsFFTInitAlloc_R_32f(&fftspec, order, IPP_FFT_NODIV_BY_ANY, ippAlgHintFast);
 
-  nav = (int)ceil(intseconds/config->getIntTime(currentconfigindex));
+  nav = (int)ceil(intseconds/config->getIntTime(currentconfig));
   cout << "#Integrations to average = " << nav << endl;
 
-  resultlength = config->getCoreResultBWeightOffset(currentconfigindex, 0, 0);
+  resultlength = config->getCoreResultBWeightOffset(currentconfig, 0, 0);
 
-  nprod = resultlength/(numchannels);
-  cout << "Got " << nprod << " products" << endl;
-
-  products = new cf32*[nprod];
+  productvis = new cf32*[nprod];
   for (i=0; i<nprod; i++) {
-    products[i] = vectorAlloc_cf32(numchannels);
+    productvis[i] = vectorAlloc_cf32(numchannels);
 
-    status = vectorZero_cf32(products[i], numchannels);
+    status = vectorZero_cf32(productvis[i], numchannels);
     if(status != vecNoErr) {
       cerr << "Error trying to zero visibility buffer - aborting!" << endl;
       exit(1);
@@ -509,24 +523,24 @@ void change_config(Configuration * config, int configindex, const char *inputfil
   html << "<tbody>" << endl;
 
   int binloop = 1;
-  if(config->pulsarBinOn(currentconfigindex) && !config->scrunchOutputOn(currentconfigindex))
-    binloop = config->getNumPulsarBins(currentconfigindex);
+  if(config->pulsarBinOn(currentconfig) && !config->scrunchOutputOn(currentconfig))
+    binloop = config->getNumPulsarBins(currentconfig);
 
   for (int i=0;i<config->getNumBaselines();i++) {
-    int ds1index = config->getBDataStream1Index(currentconfigindex, i);
-    int ds2index = config->getBDataStream2Index(currentconfigindex, i);
+    int ds1index = config->getBDataStream1Index(currentconfig, i);
+    int ds2index = config->getBDataStream2Index(currentconfig, i);
 
     html << "<tr>" << endl;
     html << "<th style=\"text-align: center; background-color: rgb(204, 255, 255);\">" 
 	 << config->getTelescopeName(ds1index) << "-" 
 	 << config->getTelescopeName(ds2index) << "</th>" << endl;
 
-    for(int j=0;j<config->getBNumFreqs(currentconfigindex,i);j++) {
-      int freqindex = config->getBFreqIndex(currentconfigindex, i, j);
+    for(int j=0;j<config->getBNumFreqs(currentconfig,i);j++) {
+      int freqindex = config->getBFreqIndex(currentconfig, i, j);
 
       // Skip over pulsar bins and polarisation
       for(int b=0;b<binloop;b++) {
-	for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++) {
+	for(int k=0;k<config->getBNumPolProducts(currentconfig, i, j);k++) {
 	}
       }
       
@@ -562,22 +576,22 @@ void change_config(Configuration * config, int configindex, const char *inputfil
 
     html << "<tr>" << endl;
     html << "<th style=\"text-align: center; background-color: rgb(204, 255, 255);\">" 
-	 << config->getDStationName(currentconfigindex, i)
+	 << config->getDStationName(currentconfig, i)
 	 << "</th>" << endl;
 
 
     //for(int j=0;j<autocorrwidth;j++) {
-    for(int k=0;k<config->getDNumRecordedBands(currentconfigindex, i); k++) {
+    for(int k=0;k<config->getDNumRecordedBands(currentconfig, i); k++) {
 
-      char pol = config->getDRecordedBandPol(currentconfigindex, i, k);
+      char pol = config->getDRecordedBandPol(currentconfig, i, k);
 
-      int freqindex = config->getDRecordedFreqIndex(currentconfigindex, i, k);
+      int freqindex = config->getDRecordedFreqIndex(currentconfig, i, k);
 
       html << "<td style=\"text-align: center;\">" <<   config->getFreqTableFreq(freqindex) 
 	   << " MHz <a href=\"lba-auto" << i << "-f" << k << ".html\"> " << pol << "cp </a></td>" 
 	   << endl;
 
-      ss << config->getDStationName(currentconfigindex,i) << "  " 
+      ss << config->getDStationName(currentconfig,i) << "  " 
 	 << config->getFreqTableFreq(freqindex) << " MHz";
       title.push_back(ss.str());
       ss.str("");
