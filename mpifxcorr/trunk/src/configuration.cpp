@@ -40,6 +40,15 @@ Configuration::Configuration(const char * configfile, int id)
   else
     basestart = basestart+1;
   jobname = configfilestring.substr(basestart, string(configfile).find_last_of('.')-basestart);
+  char * difxmtu = getenv("DIFX_MTU");
+  if(difxmtu == 0)
+    mtu = 1500;
+  else
+    mtu = atoi(difxmtu);
+  if (mtu > 9000) {
+    cerror << startl << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
+    mtu = 9000;
+  }
 
   sectionheader currentheader = INPUT_EOF;
   commonread = false;

@@ -116,7 +116,7 @@ private:
     cf32 * channelsums;
     f32 * argument;
     f32 ** dsweights;
-    DifxMessageSTARecord * starecord;
+    DifxMessageSTARecord * starecordbuffer;
     bool dumpsta;
     bool dumpkurtosis;
   } threadscratchspace;

@@ -31,6 +31,11 @@ PKG_CHECK_MODULES(DIFXMESSAGE,
 AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
 
 dnl **********************************************************
+dnl **** Find vdifio library                              ****
+dnl **********************************************************
+PKG_CHECK_MODULES(VDIFIO, vdifio >= 0.1)
+
+dnl **********************************************************
 dnl **** Find mark5ipc library                            ****
 dnl **********************************************************
 m5ipc_enabled=true
@@ -69,8 +74,8 @@ PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.2)
 dnl **********************************************************
 
 
-CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
-LIBS="${M5ACCESS_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS}"
+CXXFLAGS="${CXXFLAGS} ${M5ACCESS_CFLAGS} ${VDIFIO_CFLAGS} ${IPP_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${CFLAG_QUIET}"
+LIBS="${M5ACCESS_LIBS} ${VDIFIO_LIBS} ${SS_LIBS} ${IPP_LIBS} ${DIFXMESSAGE_LIBS} ${MARK5IPC_LIBS}"
 
 echo "CXXFLAGS = ${CXXFLAGS}"
 echo "LIBS = ${LIBS}"

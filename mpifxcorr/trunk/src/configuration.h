@@ -245,6 +245,7 @@ public:
   inline int getNumBaselines() { return numbaselines; }
   inline int getMaxNumChannels() { return maxnumchannels; }
   inline int getMaxNumPulsarBins() { return maxnumpulsarbins; }
+  inline int getMTU() { return mtu; }
   inline int getExecuteSeconds() { return executeseconds; }
   inline int getStartMJD() { return startmjd; }
   inline int getStartSeconds() { return startseconds; }
@@ -792,7 +793,7 @@ private:
   int visbufferlength, databufferfactor, numdatasegments;
   int numdatastreams, numbaselines, numcoreconfs;
   int executeseconds, startmjd, startseconds, startns;
-  int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts;
+  int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts, mtu;
   int stadumpchannels, ltadumpchannels;
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, estimatedbytes;
   string calcfilename, modelfilename, coreconffilename, outputfilename, jobname;

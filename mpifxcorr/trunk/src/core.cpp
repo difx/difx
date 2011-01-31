@@ -368,7 +368,7 @@ void Core::loopprocess(int threadid)
 
   scratchspace->pulsarscratchspace=0;
   scratchspace->pulsaraccumspace=0;
-  scratchspace->starecord = 0;
+  scratchspace->starecordbuffer = 0;
 
   pulsarbin = false;
   somepulsarbin = false;
@@ -478,17 +478,15 @@ void Core::loopprocess(int threadid)
     scratchspace->dumpsta = config->dumpSTA();
     scratchspace->dumpkurtosis = config->dumpKurtosis();
     if(nowdumpingsta != dumpingsta) {
-      if (scratchspace->starecord != 0) {
-        free(scratchspace->starecord);
-        scratchspace->starecord = 0;
+      if (scratchspace->starecordbuffer != 0) {
+        free(scratchspace->starecordbuffer);
+        scratchspace->starecordbuffer = 0;
       }
       if(nowdumpingsta) {
         stadumpchannels = config->getSTADumpChannels();
-        scratchspace->starecord = (DifxMessageSTARecord*)malloc(sizeof(DifxMessageSTARecord) + sizeof(f32)*stadumpchannels);
-        scratchspace->starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
-        scratchspace->starecord->threadindex = threadid;
-        scratchspace->starecord->nChan = stadumpchannels;
-        sprintf(scratchspace->starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
+        scratchspace->starecordbuffer = (DifxMessageSTARecord*)malloc(config->getMTU());
+        if(sizeof(DifxMessageSTARecord) + sizeof(f32)*stadumpchannels > config->getMTU())
+          cerror << startl << "Can't even fit one DiFXSTAMessage into an MTU! No STA dumping will be possible" << endl;
       }
       dumpingsta = nowdumpingsta;
     }
@@ -547,8 +545,8 @@ void Core::loopprocess(int threadid)
   vectorFree(scratchspace->rotated);
   vectorFree(scratchspace->channelsums);
   vectorFree(scratchspace->argument);
-  if(scratchspace->starecord != 0) {
-    free(scratchspace->starecord);
+  if(scratchspace->starecordbuffer != 0) {
+    free(scratchspace->starecordbuffer);
   }
   delete scratchspace;
 
@@ -1117,12 +1115,13 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
 
 void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace)
 {
-  int maxproducts, resultindex, perr, status;
+  int maxproducts, resultindex, perr, status, bytecount, recordsize;
   int freqindex, parentfreqindex, chans_to_avg, freqchannels;
   double minimumweight, stasamples;
   float renormvalue;
   bool datastreamsaveraged, writecrossautocorrs;
   f32 * acdata;
+  DifxMessageSTARecord * starecord;
 
   datastreamsaveraged = false;
   writecrossautocorrs = modes[0]->writeCrossAutoCorrs();
@@ -1139,20 +1138,31 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 
   //if required, send off a message with the STA results
   //(before averaging in case high spectral resolution for the dump is required)
-  if(scratchspace->dumpsta) {
-    scratchspace->starecord->messageType = STA_AUTOCORRELATION;
-    scratchspace->starecord->scan = procslots[index].offsets[0];
-    scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
-    scratchspace->starecord->ns = procslots[index].offsets[2] + int(nsoffset);
-    if(scratchspace->starecord->ns >= 1000000000) {
-      scratchspace->starecord->ns -= 1000000000;
-      scratchspace->starecord->sec++;
-    }
-    scratchspace->starecord->nswidth = int(nswidth);
+  recordsize = sizeof(DifxMessageSTARecord) + sizeof(f32)*config->getSTADumpChannels();
+  if(scratchspace->dumpsta && recordsize <= config->getMTU()) {
     for (int i=0;i<numdatastreams;i++) {
-      scratchspace->starecord->dsindex = i;
+      bytecount = 0;
+      starecord = scratchspace->starecordbuffer;
       for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
-        scratchspace->starecord->nChan = config->getSTADumpChannels();
+        if(bytecount + recordsize > config->getMTU()) {
+          difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+          bytecount = 0;
+        }
+        starecord = scratchspace->starecordbuffer + bytecount;
+        starecord->messageType = STA_AUTOCORRELATION;
+        starecord->dsindex = i;
+        starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
+        starecord->threadindex = threadid;
+        sprintf(starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
+        starecord->nChan = config->getSTADumpChannels();
+        starecord->scan = procslots[index].offsets[0];
+        starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
+        starecord->ns = procslots[index].offsets[2] + int(nsoffset);
+        if(starecord->ns >= 1000000000) {
+          starecord->ns -= 1000000000;
+          starecord->sec++;
+        }
+        starecord->nswidth = int(nswidth);
         freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
         freqchannels = config->getFNumChannels(freqindex);
         stasamples = 0.001*nswidth*2*config->getFreqTableBandwidth(freqindex);
@@ -1173,24 +1183,25 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         }
 
         // in the unlikely case that we want more STA channels than are actually present.
-        if (freqchannels < scratchspace->starecord->nChan)
-          scratchspace->starecord->nChan = freqchannels;
+        if (freqchannels < starecord->nChan)
+          starecord->nChan = freqchannels;
         // how many channels to average here for STA dumps
-        chans_to_avg = freqchannels/scratchspace->starecord->nChan;
+        chans_to_avg = freqchannels/starecord->nChan;
 
-        scratchspace->starecord->bandindex = j;
+        starecord->bandindex = j;
         acdata = (f32*)(modes[i]->getAutocorrelation(false, j));
-        for (int k=0;k<scratchspace->starecord->nChan;k++) {
-          scratchspace->starecord->data[k] = acdata[2*k*chans_to_avg];
+        for (int k=0;k<starecord->nChan;k++) {
+          starecord->data[k] = acdata[2*k*chans_to_avg];
           for (int l=1;l<chans_to_avg;l++)
-            scratchspace->starecord->data[k] += acdata[2*(k*chans_to_avg+l)];
+            starecord->data[k] += acdata[2*(k*chans_to_avg+l)];
         }
-        status = vectorMulC_f32_I(renormvalue, scratchspace->starecord->data, scratchspace->starecord->nChan);
+        status = vectorMulC_f32_I(renormvalue, starecord->data, starecord->nChan);
         if(status != vecNoErr)
           cerror << startl << "Error converting filterbank data from energy to power!" << endl;
         //cout << "About to send the binary message" << endl;
-        difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+        bytecount += sizeof(DifxMessageSTARecord) + sizeof(f32)*starecord->nChan;
       }
+      difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
     }
     //cout << "Finished doing some STA stuff" << endl;
   }
@@ -1311,38 +1322,51 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
 
 void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, double nswidth, int numblocks, Mode ** modes, threadscratchspace * scratchspace)
 {
-  int status, freqchannels, freqindex;
+  int status, freqchannels, freqindex, recordsize, bytecount;
   bool * valid = new bool[numdatastreams];
+  DifxMessageSTARecord * starecord;
 
   //tell the modes to calculate the kurtosis and average it if need be
   for(int i=0;i<numdatastreams;i++) {
     valid[i] = modes[i]->calculateAndAverageKurtosis(numblocks, config->getSTADumpChannels());
   }
 
-  scratchspace->starecord->messageType = STA_KURTOSIS;
-  scratchspace->starecord->scan = procslots[index].offsets[0];
-  scratchspace->starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
-  scratchspace->starecord->ns = procslots[index].offsets[2] + int(nsoffset);
-  if(scratchspace->starecord->ns >= 1000000000) {
-    scratchspace->starecord->ns -= 1000000000;
-    scratchspace->starecord->sec++;
-  }
-  scratchspace->starecord->nswidth = int(nswidth);
+  recordsize = sizeof(DifxMessageSTARecord) + sizeof(f32)*config->getSTADumpChannels();
   for (int i=0;i<numdatastreams;i++) {
+    bytecount = 0;
+    starecord = scratchspace->starecordbuffer;
     if(valid[i]) {
-      scratchspace->starecord->dsindex = i;
       for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
-        scratchspace->starecord->nChan = config->getSTADumpChannels();
+        if(bytecount + recordsize > config->getMTU()) {
+          difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+          bytecount = 0;
+        }
+        starecord = scratchspace->starecordbuffer + bytecount;
+        starecord->messageType = STA_KURTOSIS;
+        starecord->dsindex = i;
+        starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
+        starecord->threadindex = threadid;
+        sprintf(starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
+        starecord->nChan = config->getSTADumpChannels();
+        starecord->scan = procslots[index].offsets[0];
+        starecord->sec = model->getScanStartSec(procslots[index].offsets[0], startmjd, startseconds) + procslots[index].offsets[1];
+        starecord->ns = procslots[index].offsets[2] + int(nsoffset);
+        if(starecord->ns >= 1000000000) {
+          starecord->ns -= 1000000000;
+          starecord->sec++;
+        }
+        starecord->nswidth = int(nswidth);
         freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
         freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
-        if (freqchannels < scratchspace->starecord->nChan)
-          scratchspace->starecord->nChan = freqchannels;
-        scratchspace->starecord->bandindex = j;
-        status = vectorCopy_f32(modes[i]->getKurtosis(j), scratchspace->starecord->data, scratchspace->starecord->nChan);
+        if (freqchannels < starecord->nChan)
+          starecord->nChan = freqchannels;
+        starecord->bandindex = j;
+        status = vectorCopy_f32(modes[i]->getKurtosis(j), starecord->data, starecord->nChan);
         if(status != vecNoErr)
           cerror << startl << "Problem copying kurtosis results from mode to sta record!" << endl;
-        difxMessageSendBinary((const char *)(scratchspace->starecord), BINARY_STA, sizeof(DifxMessageSTARecord) + sizeof(f32)*scratchspace->starecord->nChan);
+        bytecount += sizeof(DifxMessageSTARecord) + sizeof(f32)*starecord->nChan;
       }
+      difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
     }
   }
 
