@@ -181,20 +181,14 @@ int main(int argc, const char * argv[]) {
   cout << "These delays must be ADDED to the CLOCK DELAY value (including sign)" << endl;
   cout << endl;
 
-  
-  ss << "updateclocks.pl " << argv[1];
   for (i=0; i<(int)delaysum.size(); i++) {
     if (ndel[i]>0) {
       delay = delaysum[i]/ndel[i];
       cout << left << setw(7) << config->getTelescopeName(i) 
 	   << right << " " << setprecision(3) << setw(7) << fixed
 	   << delay << endl;
-      ss << " " << config->getTelescopeName(i) << ":" << delay;
     }
   }
-  cout << endl << "Running:" << endl;
-  cout << ss.str() << endl;
-  system(ss.str().c_str());
 }
 
 
