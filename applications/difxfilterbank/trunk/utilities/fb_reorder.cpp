@@ -48,6 +48,7 @@
 #include <math.h>
 #include <float.h>
 #include <assert.h>
+#include <time.h>
 #include "difxmessage.h"
 #include "configuration.h"
 #include "model.h"
@@ -1051,7 +1052,14 @@ int set_FB_Config(FB_Config *fb_config) {
 ******************************/
 void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) {
     const char *optstring = "Fdi:o:t:T:f:P:c:s:C:";
-    int result=0;
+    int result=0,i;
+    time_t timenow;
+
+    timenow = time(NULL);
+    fprintf(fpd,"Program started at %s. Dumping command line\n",asctime(gmtime(&timenow)));
+    for (i=0; i<argc; i++) fprintf(fpd,"%s ",argv[i]);
+    fprintf(fpd,"\n");
+
 
     if (argc ==1) print_usage();
 
