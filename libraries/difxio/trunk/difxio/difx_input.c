@@ -1991,6 +1991,14 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 	k = 0;
 	for(i = 0; i < D->nScan; i++)
 	{
+		row = DifxParametersfind1(cp, 0, "SCAN %d IDENTIFIER", i);
+                if(row < 0)
+		{
+			fprintf(stderr, "SCAN %d START (S) not found\n", i);
+                
+			return 0;
+                }
+                snprintf(D->scan[i].identifier, DIFXIO_NAME_LENGTH, "%s", DifxParametersvalue(cp, row));
 		row = DifxParametersfind1(cp, 0, "SCAN %d START (S)", i);
                 if(row < 0)
 		{

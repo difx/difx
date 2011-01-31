@@ -128,7 +128,7 @@ void printDifxScan(const DifxScan *ds)
 
 void fprintDifxScanSummary(FILE *fp, const DifxScan *ds)
 {
-	fprintf(fp, "  Start=%12.6f end=%12.6f source=%s\n", 
+	fprintf(fp, "  Start=%12.6f end=%12.6f identifier=%s\n", 
 		ds->mjdStart, ds->mjdEnd, ds->identifier);
 	fprintf(fp, "    PointingSourceIndex = %d\n", ds->pointingCentreSrc);
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
