@@ -88,5 +88,6 @@ void monserver_clear(struct monclient *client);
 int sec2config (Configuration *config, int sec);
 vector<DIFX_ProdConfig> monserver_productconfig(Configuration *config, int configindex);
 int set_productoffsets(int nprod, int iprod[], struct product_offset offsets[], vector<DIFX_ProdConfig> products);
+int set_productoffsets_all(int *nprod, struct product_offset **offsets, vector<DIFX_ProdConfig> products);
 
 #endif

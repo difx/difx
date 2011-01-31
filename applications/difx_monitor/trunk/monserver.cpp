@@ -437,3 +437,19 @@ int set_productoffsets(int nprod, int iprod[], struct product_offset offsets[], 
   }
   return(DIFXMON_NOERROR);
 }
+
+int set_productoffsets_all(int *nprod, struct product_offset **offsets, vector<DIFX_ProdConfig> products) {
+  int i;
+  *nprod = products.size();
+
+  if (*offsets!=NULL) delete [] (*offsets);
+  *offsets = new struct product_offset[*nprod];
+  if (*offsets==NULL) return(DIFXMON_MALLOCERROR);
+
+  for (i=0; i<*nprod; i++) {
+    (*offsets)[i].offset = products[i].getOffset();
+    (*offsets)[i].npoints = products[i].getNFreqChannels();
+    (*offsets)[i].product = i;
+  }
+  return(DIFXMON_NOERROR);
+}
