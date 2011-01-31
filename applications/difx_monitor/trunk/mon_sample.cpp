@@ -250,7 +250,7 @@ int main(int argc, const char * argv[]) {
       max = arraymax(lags, nchan*2, nprod);
       min = arraymin(lags, nchan*2, nprod);
       delta = (max-min)*0.1;
-      if (delta==0.0) delta = 0.5;
+      if (delta<1e-10) delta = 0.5;
       min -= delta;
       max += delta;
       cpgsci(1);
