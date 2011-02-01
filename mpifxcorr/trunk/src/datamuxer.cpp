@@ -103,6 +103,8 @@ bool VDIFMuxer::initialise()
     cfatal << startl << "Too many threads/too high bit resolution - can't fit one complete timestep in a 32 bit word! Aborting." << endl;
     return false;
   }
+
+  return true;
 }
 
 bool VDIFMuxer::validData(int bufferframe)
@@ -119,7 +121,7 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
   char * outptr;
   unsigned int * outputwordptr;
   unsigned int copyword;
-  int outputframecount, goodframesfromstart, processindex, count;
+  int outputframecount, goodframesfromstart, processindex;
 
   outputframecount = 0;
   goodframesfromstart = 0;
