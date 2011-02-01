@@ -180,7 +180,8 @@ void Visibility::increment()
   }
   sec = experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds;
 
-  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << ".  The approximate mjd/seconds is " << expermjd + sec/86400 << "/" << (sec)%86400 << endl;
+  cinfo << startl << "Vis. " << visID << " is incrementing, since currentsubints = " << currentsubints << endl;
+  cinfo << startl << "The approximate mjd/seconds is " << expermjd + sec/86400 << "/" << (sec)%86400 << endl;
 
   currentsubints = 0;
   for(int i=0;i<numvisibilities;i++) //adjust the start time and offset
@@ -276,7 +277,7 @@ void Visibility::copyVisData(char **buf, int *bufsize, int *nbuf) {
     return;
   }
 
-  atsec = currentstartseconds+experseconds;
+  atsec = experseconds + model->getScanStartSec(currentscan, expermjd, experseconds) + currentstartseconds;
 
   datasize = config->getCoreResultLength(currentconfigindex);
 
