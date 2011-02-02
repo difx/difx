@@ -22,10 +22,12 @@ int main(void) {
 
 #define VDIF_VERSION 0
 
-int vdif_createheader (vdif_header *header, int framelength, int framepersec,
-		       int threadid,  int bits, int nchan,  int complex, 
-		       char stationid[3]) {
+int vdif_createheader(vdif_header *header, int framelength, int framepersec,
+		      int threadid,  int bits, int nchan,  int iscomplex,
+		      char stationid[3]) {
   int lognchan;
+
+  header->epoch = 0;
 
   if (VDIF_VERSION>7) return(VDIF_ERROR);
   if (bits>32 || bits<1) return(VDIF_ERROR);
@@ -48,7 +50,10 @@ int vdif_createheader (vdif_header *header, int framelength, int framepersec,
   header->version = VDIF_VERSION;
   header->nchan = lognchan;
   header->framelength = framelength/8;
-  header->complex = complex;
+  if (iscomplex)
+    header->complex = 1;
+  else
+    header->complex = 0;
   header->nbits = bits-1;
   header->threadid = threadid;
   header->stationid = stationid[0]<<8 | stationid[1];
@@ -108,7 +113,7 @@ int vdif_settime(vdif_header *header, time_t time) {
 int vdif_setmjd(vdif_header *header, double mjd) {
   time_t time;
 
-  time = (mjd-UNIXZERO_MJD)*60*60*24;
+  time = (mjd-UNIXZERO_MJD)*60*60*24+0.5;
 
   return vdif_settime(header, time);
 }
