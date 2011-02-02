@@ -461,7 +461,7 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
   }
 
   DataStream::networkToMemory(buffersegment, framebytesremaining);
-  //framebytesremaining = 2*readbytes;
+  framebytesremaining = 2*readbytes;
   //cout << "Datastream " << mpiid << " finished reading; framebytesremaining is now " << framebytesremaining << ", buffersegment is " << buffersegment << ", keepreading is " << keepreading << endl;
 }
 
