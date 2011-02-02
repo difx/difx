@@ -210,7 +210,8 @@ int main(int argc, const char * argv[]) {
       }
 
       // Source name
-      sourcename = model->getScanIdentifier(currentscan);
+      //sourcename = model->getScanIdentifier(currentscan);
+      sourcename = model->getScanPointingCentreSource(currentscan)->name;
       cpgsci(2);
       cpgsch(4);
       cpgmtxt("T", -1.5, 0.02, 0, sourcename.c_str());	    
