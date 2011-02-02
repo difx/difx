@@ -213,6 +213,8 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->mjdStart = newD->scan->mjdStart = newD->job->jobStart = newD->job->mjdStart = mjd1;
 	newD->mjdStop  = newD->scan->mjdEnd   = newD->job->jobStop  = mjd2;
 	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
+	newD->scan->startSeconds = 0;
+	newD->scan->durSeconds = newD->job->duration;
 
 	/* Then change all data sources to FILE and point to those files */
 	for(dsId = 0; dsId < newD->nDatastream; dsId++)
