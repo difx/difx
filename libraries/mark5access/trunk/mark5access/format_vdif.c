@@ -1880,8 +1880,13 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 {
 	if(ms->format == MK5_FORMAT_VDIF)	/* True VDIF header, not legacy */
 	{
-		sprintf(ms->formatname, "VDIF-%d-%d-%d", ms->Mbps,
-			ms->nchan, ms->nbit);
+	  if (ms->complex_decode) 
+	    sprintf(ms->formatname, "VDIFC-%d-%d-%d", ms->Mbps,
+		    ms->nchan, ms->nbit);
+	  else
+	    sprintf(ms->formatname, "VDIF-%d-%d-%d", ms->Mbps,
+		    ms->nchan, ms->nbit);
+
 	}
 	else if(ms->format == MK5_FORMAT_VDIFL)	/* Must be legacy mode, so add an L to VDIF name */
 	{
@@ -1902,7 +1907,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 {
 	struct mark5_format_vdif *f;
 	unsigned int *headerwords, word2;
-	unsigned char *headerbytes;
+	unsigned char *headerbytes, bitspersample;
 	int framensNum, framensDen, dataframelength;
 	double dns;
 
@@ -1914,25 +1919,28 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 
 	f = (struct mark5_format_vdif *)(ms->formatdata);
 
+	bitspersample = ms->nbit;
+	if (ms->complex_decode) bitspersample *= 2;
+
 	ms->payloadoffset = f->frameheadersize;
 	ms->databytes = f->databytesperpacket;
 	ms->framebytes = f->databytesperpacket + f->frameheadersize;
 	ms->blanker = blanker_vdif;
 
 	/* FIXME -- if nbit is not a power of 2, this formula breaks down! */
-	ms->samplegranularity = 8/(ms->nchan*ms->nbit*ms->decimation);
+	ms->samplegranularity = 8/(ms->nchan*bitspersample*ms->decimation);
 	if(ms->samplegranularity <= 0)
 	{
 		ms->samplegranularity = 1;
 	}
 	
-	ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
-        f->completesamplesperword = 32/(ms->nbit*ms->nchan);
+	ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
+        f->completesamplesperword = 32/(bitspersample*ms->nchan);
 
         ms->framegranularity = 1;
         if(ms->Mbps > 0)
         {
-                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*ms->nbit;
+                framensNum = 250*f->databytesperpacket*f->completesamplesperword*ms->nchan*bitspersample;
                 framensDen = ms->Mbps;
 
                 ms->framens = (double)framensNum/(double)framensDen;
@@ -2020,7 +2028,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		ms->payloadoffset = f->frameheadersize;
 		ms->databytes = f->databytesperpacket;
 		ms->framebytes = f->databytesperpacket + f->frameheadersize;
-		ms->framesamples = ms->databytes*8/(ms->nchan*ms->nbit*ms->decimation);
+		ms->framesamples = ms->databytes*8/(ms->nchan*bitspersample*ms->decimation);
 		
 		/* get time again so ms->framens is used */
 		ms->gettime(ms, &ms->mjd, &ms->sec, &dns);

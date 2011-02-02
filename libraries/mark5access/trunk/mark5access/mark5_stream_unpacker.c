@@ -218,7 +218,7 @@ int mark5_unpack_complex_with_offset(struct mark5_stream *ms, void *packed,
 	ms->payload += ms->framebytes*(offsetsamples/ms->framesamples);
 
 	/* set readposition to first desired sample */
-	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*ms->decimation/8;
+	ms->readposition = (offsetsamples % ms->framesamples)*ms->nchan*ms->nbit*2*ms->decimation/8;
 
 	ms->blanker(ms);
 

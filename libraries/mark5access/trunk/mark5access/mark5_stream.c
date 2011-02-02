@@ -1000,7 +1000,11 @@ int mark5_stream_copy(struct mark5_stream *ms, int nbytes, char *data)
 		return -1;
 	}
 
-	q = ms->samplegranularity*ms->nchan*ms->nbit*ms->decimation/8;
+	int bitspersample = ms->nbit;
+	if (ms->complex_decode) bitspersample *= 2;
+
+	q = ms->samplegranularity*ms->nchan*bitspersample*ms->decimation/8; 
+	if (q==0) q=1;  // WALTER IS THIS RIGHT???
 	if(nbytes % q != 0)
 	{
 		return -1;
