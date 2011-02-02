@@ -89,7 +89,6 @@ int main(int argc, const char * argv[]) {
 
   cout << "Opened connection to monitor server" << endl;
 
-  cout << "DEBUG  NPROD=" << nprod;
   status = monserver_requestproducts_byoffset(monserver, plotprod, nprod);
   if (status) exit(1);
 
