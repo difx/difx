@@ -211,8 +211,6 @@ int main(int argc, const char * argv[]) {
 	    readint(difxsocket, &thisbuffersize, &status);
 	    if (status) break; // Error reading socket
 
-	    cout << "DEBUG: Buffersize=  " << thisbuffersize << endl;
-
 	    if (thisbuffersize>buffersize) {
 	      if (buffersize>0) 
 		ippsFree(datadescr.buffer);
@@ -280,7 +278,6 @@ int main(int argc, const char * argv[]) {
 	      }
 	    } else if (nproduct>0) {
 	      struct product_offset *buf = new struct product_offset [nproduct];
-	      cout << "DEBUG: Reading " << nproduct << " products" << endl;
 	      status = DIFXMON_NOERROR;
 	      for (i=0; i<nproduct; i++) {
 		readint(fd, &buf[i].offset, &status);
