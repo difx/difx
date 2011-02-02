@@ -149,7 +149,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	}
 	else
 	{
-		cerr << "Error: Antenna=" << antName << " format " << F.format << " is not yet supported" << endl;
+		cerr << "Error: Antenna=" << antName << " format \"" << F.format << "\" is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
 
 		exit(0);
