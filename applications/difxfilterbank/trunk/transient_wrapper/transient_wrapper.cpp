@@ -7,7 +7,7 @@
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 Nov. 11";
+const char verdate[] = "2011 Feb 2";
 
 const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
 

@@ -116,6 +116,7 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 	}
 	else
 	{
+#if 0
 		if(T->nEvent > 0)
 		{
 			printf("Cool.  Merging two events!\n");
@@ -129,7 +130,7 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 			}
 			merged = 1;
 		}
-
+#endif
 		if(merged == 0)
 		{
 			if(T->nEvent >= MAX_EVENTS + EXTRA_EVENTS)
@@ -147,23 +148,133 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 	T->nMerged += merged;
 }
 
+static void genDifxFiles(const TransientWrapperData *T, int eventId)
+{
+	DifxInput *newD;
+	int i, v;
+	FILE *out;
+	double mjd;
+	double mjd1, mjd2;
+	char outDir[DIFXIO_FILENAME_LENGTH];
+	char baseName[DIFXIO_FILENAME_LENGTH];
+	char fileName[DIFXIO_FILENAME_LENGTH];
+	DifxScan *S;
+	int scanId, configId, dsId, freqId;
+
+	/* use center of range for scan id */
+	mjd = (T->event[eventId].startMJD + T->event[eventId].stopMJD)/2.0;
+
+	mjd1 = T->event[eventId].startMJD;
+	mjd2 = T->event[eventId].stopMJD;
+
+	mjd1 = floor(mjd1*86400.0)/86400.0;
+	mjd2 = ceil(mjd2*86400.0)/86400.0;
+
+	scanId = DifxInputGetScanId(T->D, mjd);
+	if(scanId < 0 || scanId >= T->D->nScan)
+	{
+		fprintf(stderr, "Error: mjd=%f not claimed by any scan\n", mjd);
+		
+		return;
+	}
+	configId = T->D->scan[scanId].configId;
+	if(configId < 0 || configId >= T->D->nConfig)
+	{
+		fprintf(stderr, "Error: configId=%d for scanId=%d\n", configId, scanId);
+
+		return;
+	}
+
+	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, 
+		"%s/%s%s/%s",
+		T->outputPath, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
+
+	snprintf(baseName, DIFXIO_FILENAME_LENGTH,
+		"%s/transient_%03d", outDir, eventId+1);
+
+	newD = loadDifxInput(T->filePrefix);
+
+	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
+
+	/* First change the name of the job and all of the paths */
+	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
+	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseName);
+	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseName);
+	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseName);
+	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseName);
+	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseName);
+	
+	/* Then select the appropriate scan and reduce its timerange */
+	S = newDifxScanArray(1);
+	copyDifxScan(S, newD->scan+scanId, 0, 0, 0, 0);
+	deleteDifxScanArray(newD->scan, newD->nScan);
+	newD->scan = S;
+	newD->nScan = 1;
+	newD->mjdStart = newD->scan->mjdStart = newD->job->jobStart = newD->job->mjdStart = mjd1;
+	newD->mjdStop  = newD->scan->mjdEnd   = newD->job->jobStop  = mjd2;
+	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
+
+	/* Then change all data sources to FILE and point to those files */
+	for(dsId = 0; dsId < newD->nDatastream; dsId++)
+	{
+		newD->datastream[dsId].dataSource = DataSourceFile;
+		if(newD->datastream[dsId].nFile == 1)
+		{
+			snprintf(fileName, DIFXIO_FILENAME_LENGTH,
+				"%s/%d/%s_%12.6f_%12.6f_0", outDir, dsId+1, 
+				newD->datastream[dsId].file[0],
+				T->event[eventId].startMJD,
+				T->event[eventId].stopMJD);
+			free(newD->datastream[dsId].file[0]);
+			newD->datastream[dsId].file[0] = strdup(fileName);
+		}
+	}
+
+	/* Finally change correlation parameters */
+	newD->config[configId].tInt = 0.000256;
+	newD->config[configId].subintNS = 256000;
+	for(freqId = 0; freqId <= newD->nFreq; freqId++)
+	{
+		newD->freq[freqId].nChan = 128;
+		newD->freq[freqId].specAvg = 2;
+	}
+	DifxInputAllocThreads(newD, 2);
+	DifxInputSetThreads(newD, 1);
+
+	/* And write it! */
+	writeDifxInput(newD);
+	writeDifxCalc(newD);
+	writeDifxIM(newD);
+	DifxInputWriteThreads(newD);
+
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseName);
+	out = fopen(fileName, "w");
+	for(i = 0; i < newD->nDatastream+3; i++)
+	{
+		fprintf(out, "boom\n");
+	}
+	fclose(out);
+
+	deleteDifxInput(newD);
+}
+
 int copyBasebandData(const TransientWrapperData *T)
 {
 	const unsigned int MaxCommandLength = 1024;
 	char command[MaxCommandLength];
 	char message[DIFX_MESSAGE_LENGTH];
 	time_t t1, t2;
-	char outDir[DIFX_MESSAGE_FILENAME_LENGTH];
+	char outDir[DIFXIO_FILENAME_LENGTH];
 	int v, e;
 
-	v = snprintf(outDir, DIFX_MESSAGE_FILENAME_LENGTH, 
+	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, 
 		"%s/%s%s/%s/%d",
 		T->outputPath, T->D->job->obsCode, T->D->job->obsSession, T->identifier, T->rank);
 	
-	if(v >= DIFX_MESSAGE_FILENAME_LENGTH)
+	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
 		fprintf(stderr, "Error: pathname is too long (%d vs. %d)\n",
-			v, DIFX_MESSAGE_FILENAME_LENGTH);
+			v, DIFXIO_FILENAME_LENGTH);
 		
 		return 0;
 	}
@@ -194,12 +305,15 @@ int copyBasebandData(const TransientWrapperData *T)
 			T->event[e].startMJD, T->event[e].stopMJD,
 			outDir);
 
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s",
-			command);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		
-		//v = system(command);
-		v = 0;
+		v = system(command);
+
+		if(T->rank == 1) /* only generate files once */
+		{
+			genDifxFiles(T, e);
+		}
 		
 		if(v == -1)
 		{

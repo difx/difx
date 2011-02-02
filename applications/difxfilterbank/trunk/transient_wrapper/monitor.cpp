@@ -36,6 +36,7 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 				"Adding transient [%12.6f,%12.6f] with prioritiy %f",
 				transient->startMJD, transient->stopMJD,
 				transient->priority);
+			printf("%s\n", message);
 		}
 		addEvent(T, transient);
 	}
