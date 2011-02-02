@@ -5,6 +5,7 @@ use IO::Socket;
 use Carp;
 use Astro::Time;
 use POSIX;
+use DIFX::Input;
 
 use strict;
 
@@ -16,13 +17,24 @@ $recorder_hosts = $ENV{RECORDER_HOSTS} if ($ENV{RECORDER_HOSTS});
 sub checkfile($$);
 sub send_data($$);
 sub send_cmd($$);
+sub launch_lbadr($$$$$$$$$$$);
+sub stop_lbadr ($$);
+sub launch_mark5($$$$$$$$$);
+sub stop_mark5 ($);
+sub lbastation($);
 
 my $machinefile;
 my $numproc;
 my $evlbi = 0;
 my $monitor = undef;
-my $offset = 20; # Offset in seconds for start time
+my $offset = 10; # Offset in seconds for start time
 my $debug = 0;
+my $mk5debug = 1;
+
+# Machines which are not really Mark5
+my @LBADR = ('hovsi.phys.utas.edu.au', 'cavsi1-ext', 'cavsi2-ext',
+	     'mpvsi1-ext', 'mpvsi2-ext', 'pkvsi1-ext', 'pkvsi2-ext');
+
 
 GetOptions('-machinefile=s'=>\$machinefile, 
            'np=i'=>\$numproc, 'evlbi'=>\$evlbi, 'offset=i'=>\$offset,
@@ -39,59 +51,25 @@ die "Offset must be positive\n" if ($offset<0);
 die "Usage: startcorr.pl [options] <mpifxcorr> <inputfile>\n" if (@ARGV!=2);
 
 my $mpifxcorr = shift @ARGV;
-my $input = shift @ARGV;
+my $finput = shift @ARGV;
 
-checkfile('Input file', $input);
+checkfile('Input file', $finput);
 checkfile('machine', $machinefile);
 
-my ($calc, $threads, $duration, $mjd, $seconds, $outfile);
+#my @active_datastreams = ();
 
-my @active_datastreams = ();
-my @telescopes = ();
-my @format = ();
-my @telport = ();
-my @tcpwin = ();
-my @bits = ();
-my $bandwidth = undef;
+my $input = new DIFX::Input($finput);
+my @telescopes = $input->telescope;
+my @datastream = $input->datastream->datastreams;
+my @freqs = $input->freq;
+my @network = $input->network;
 
-# Grab the values we need from the input file
-open(INPUT, $input) || die "Could not open $input: $!\n";
-while (<INPUT>) {
-  if (/CALC FILENAME:      (\S+)/) {
-    $calc = $1;
-  } elsif (/CORE CONF FILENAME: (\S+)/) {
-    $threads = $1;
-  } elsif (/EXECUTE TIME \(SEC\): (\S+)/) {
-    $duration = $1;
-  } elsif (/START MJD:          (\d+)/) {
-    $mjd = $1;
-  } elsif (/START SECONDS:      (\d+)/) {
-    $seconds = $1;
-  } elsif (/OUTPUT FILENAME:    (\S+)/) {
-    $outfile = $1;
-  } elsif (/DATASTREAM \d INDEX: (\d+)/) {
-    $active_datastreams[$1] = 1;
-  } elsif (/BW \(MHZ\) \d+:\s+(\S+)/) {
-    if (!defined $bandwidth) {
-      $bandwidth = $1;
-    } else {
-      if ($bandwidth != $1) {
-	die "Do not support mixed bandwidth ($bandwidth/$1)\n";
-      }
-    }
-  } elsif (/TELESCOPE NAME \d+:\s+(\S+)/) {
-    push @telescopes, $1;
-  } elsif (/DATA FORMAT:\s+(\S+)/) {
-    push @format, $1;
-  } elsif (/QUANTISATION BITS:\s+(\S+)/) {
-    push @bits, $1;
-  } elsif (/PORT NUM \d+:\s+(\d+)/) {
-    push @telport, $1;
-  } elsif (/TCP WINDOW \(KB\) \d+:\s*(-?\d+)/) {
-    push @tcpwin, $1;
-  }
-}
-close(INPUT);
+my $calc = $input->common->calcfilename;
+my $threads = $input->common->calcfilename;
+my $duration = $input->common->executetime;
+my $mjd = $input->common->startmjd;
+my $seconds = $input->common->startseconds;
+my $outfile = $input->common->outputfilename;
 
 # Check the input file is vaguely sane
 die "CALC FILENAME not found\n" if (!defined $calc);
@@ -146,13 +124,13 @@ if ($evlbi) {
 
   # Rewrite the output file
   my $output;
-  if ($input =~ /^(.*)\.([^.]+)$/) {
+  if ($finput =~ /^(.*)\.([^.]+)$/) {
     $output = "$1-${filetime}.$2";
   } else {
-    $output = "$input-${filetime}";
+    $output = "$finput-${filetime}";
   }
 
-  open(INPUT, $input) || die "Could not reopen $input: $!\n";
+  open(INPUT, $finput) || die "Could not reopen $finput: $!\n";
   open(OUTPUT, '>', $output) || die "Could not open $output: $!\n";
 
   while (<INPUT>) {
@@ -171,13 +149,13 @@ if ($evlbi) {
   close(INPUT);
   close(OUTPUT);
 
-  $input = $output;
+  $finput = $output;
 }
 
 die "Rpfits file $outfile already exists!\n" if (-e $outfile);
 
 ##########
-# Launch LBA evlbi clients
+# Launch clients
 my $status;
 my $pid = 0;
 
@@ -206,101 +184,44 @@ if (defined $recorder_hosts && $evlbi) {
 
     if (!$debug) {
       print "Waiting for DiFX to start\n";
-      sleep($offset*0.5);
+      #sleep($offset*0.5);
+      sleep(3);
     }
 
+    warn "Need to check active datastream\n";
     for (my $i=0; $i<@telescopes; $i++) {
-      next if (!$active_datastreams[$i]);
-      my $ant = $telescopes[$i];
+      #next if (!$active_datastreams[$i]);
 
+      my $ant = $telescopes[$i]->name;
 
-      my ($recorder, $playback, $compression, $vsib_mode, $ipd);
-      $recorder = $rec_hosts{$ant}->[0];
-      $playback = $rec_hosts{$ant}->[1];
-      $compression = $rec_hosts{$ant}->[2];
-      $vsib_mode = $rec_hosts{$ant}->[3];
-      $ipd = $rec_hosts{$ant}->[4];
-      my $tcpwin = $tcpwin[$i];
-      my $udp = 0;
-      if ($tcpwin<0) {
-	$udp = -$tcpwin;
-	$tcpwin = 0;
-      }
-
-      if ($recorder) {
-	$status = send_data("add_host=evlbi_$ant,$playback,$telport[$i],$tcpwin,1", $recorder);
-	die "Failed to set add_host on $recorder\n" if (!defined $status);
-
-	#$status = send_data("remote_host=$playback", $recorder);
-	#die "Failed to set remote_host on $recorder\n" if (!defined $status);
-	
-	#$status = send_data("remote_port=$telport[$i]", $recorder);
-	#die "Failed to set port on $recorder\n" if (!defined $status);
-
-	# UDP
-	if ($udp) {
-
- 	  #$status = send_data("udp=$udp", $recorder);
- 	  #die "Failed to set UDP on $recorder\n" if (!defined $status);
-
-	  $ipd = 0 if (!defined $ipd);
-	  $status = send_data("modify_host=evlbi_$ant,$udp,$ipd", $recorder);
-	  die "Failed to enable udp on $recorder\n" if (!defined $status);
+      if (exists $rec_hosts{$ant}) {
+	my $bandwidth = undef;
+	# Determine bandwidth for this datastream
+	foreach ($datastream[$i]->freqs) {
+	  my $bw = $freqs[$_->index]->bw;
+	  if (defined $bandwidth && $bandwidth != $bw) {
+	    die "Do not support mixed bandwidth for $ant: $bw & $bandwidth\n";
+	  } else {
+	    $bandwidth = $bw;
+	  }
 	}
 
-	$status = send_data("recordingdisk=evlbi_$ant:",$recorder);
+	my $format = $datastream[$i]->dataformat;
+	my ($recorder, $playback, $compression, $vsib_mode, $ipd) = @{$rec_hosts{$ant}};
+	# $commpression => mask for Mark5b
+	# $compression => trackrate for Mark5A, $vsib_mode => ntrack
 
-	$duration+=5;
-	$status = send_data("record_time=${duration}s", $recorder);
-	die "Failed to set recording time on $recorder\n" if (!defined $status);
-	
-	$status = send_data("filesize=2s", $recorder);
-	die "Failed to set filesize on $recorder\n" if (!defined $status);
-	
-	$status = send_data("round_start=off", $recorder);
-	die "Failed to set round start off, on $recorder\n" if (!defined $status);
-	
-	$status = send_data("bandwidth=$bandwidth", $recorder);
-	die "Failed to set bandwidth on $recorder\n" if (!defined $status);
+	if ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
+	  launch_lbadr($ant, $recorder, $playback, $compression, $vsib_mode, $ipd,
+		       $format, $datastream[$i]->bits, $bandwidth,
+		       $network[$i]->tcpwin, $network[$i]->port);
+	} elsif ($format eq 'MARK5B' || $format eq 'MKIV') {
+	  launch_mark5($recorder, $playback, $format, $bandwidth, $compression, $compression,
+		       $vsib_mode, $network[$i]->tcpwin, $ipd);
 
-	$status = send_data("compression=$compression", $recorder);
-	die "Failed to set compression on $recorder\n" if (!defined $status);
-
-	$status = send_data("vsib_mode=$vsib_mode", $recorder);
-	die "Failed to set vsib_mode on $recorder\n" if (!defined $status);
-
-	$status = send_data("filename_prefix=$ant", $recorder);
-	die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
-	
-	if ($format[$i] eq 'MARK5B') {
-	  $status = send_data("mark5b=on", $recorder);
-	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
-	} elsif ($format[$i] eq 'LBAVSOP' || $format[$i] eq 'LBASTD') {
-	  $status = send_data("mark5b=off", $recorder);
-	  die "Failed to turn off mark5b on $recorder\n" if (!defined $status);
 	} else {
-	  die "Unsupported data format $format[$i]\n";
+	  print "Cannot launch $format recorder\n";
 	}
-	if ($bits[$i]==1) {
-	  $status = send_data("onebit=on", $recorder);
-	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
-	} else {
-	  $status = send_data("onebit=off", $recorder);
-	  die "Failed to set mark5b on $recorder\n" if (!defined $status);
-	}
-
-	$status = send_cmd("record-start", $recorder);
-	die "Failed to launch recorder on $recorder\n" if (!defined $status);
-
-	# Turn off evlbi
-	$status = send_data("filesize=10s", $recorder);
-	die "Failed to set filesize on $recorder\n" if (!defined $status);
-	$status = send_data("round_start=on", $recorder);
-	die "Failed to set round start on, on $recorder\n" if (!defined $status);
-	$status = send_data("onebit=off", $recorder);
-	die "Failed to set mark5b on $recorder\n" if (!defined $status);
- 
-	print "Launched $ant on $recorder\n" if ($recorder);
       } else {
 	print "***************************Not launching recorder for $ant\n";
       }
@@ -318,7 +239,7 @@ if ($monitor) {
   $difx_options .= " -M${monitor}:9999";
 }
 
-my $exec = "mpirun $mpioptions $mpifxcorr $input $difx_options";
+my $exec = "mpirun $mpioptions $mpifxcorr $finput $difx_options";
 print "$exec\n";
 system $exec if (!$debug);
 
@@ -326,19 +247,17 @@ wait if ($pid);
 
 if (%rec_hosts) {
   for (my $i=0; $i<@telescopes; $i++) {
-    next if (!$active_datastreams[$i]);
-    my $ant = $telescopes[$i];
-    
+    #next if (!$active_datastreams[$i]); ## REENABLE THIS!!!
+    my $ant = $telescopes[$i]->name;
     my $recorder = $rec_hosts{$ant}->[0];
+    my $format = $datastream[$i]->dataformat;
+
     if ($recorder) {
-      $status = send_cmd("record-stop", $recorder);
-      warn "Failed to stop recorder on $recorder\n" if (!defined $status);
-
-      $status = send_data("recordingdisk=2", $recorder);
-      warn "Failed to reset recording disk on $recorder\n" if (!defined $status);
-
-      $status = send_data("rem_host=evlbi_$ant", $recorder);
-      warn "Failed to remove remote host on $recorder\n" if (!defined $status);
+      if ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
+	stop_lbadr($recorder, $ant);
+      } elsif ($format eq 'MARK5B' || $format eq 'MKIV') {
+	stop_mark5($recorder);
+      }
     }
   }
 }
@@ -366,8 +285,12 @@ sub server_comm {
     # Connect to the recorder server
     my $socket = IO::Socket::INET->new(PeerAddr => $recorder,
 				       PeerPort => RECORDER_SERVER,
-				      )
-      || die "Could not connect to $recorder\n";
+				      );
+
+    if (!$socket) {
+      warn "Could not connect to $recorder\n";
+      return;
+    }
 
     print $socket "<$type>$message</$type>";
 
@@ -398,4 +321,228 @@ sub send_data($$) {
 
 sub send_cmd($$) {
   return server_comm('cmnd', shift, shift);
+}
+
+
+sub launch_lbadr($$$$$$$$$$$) {
+  my ($ant, $recorder, $playback, $compression, $vsib_mode, $ipd,
+      $format, $bits, $bandwidth, $tcpwin, $port) = @_;
+
+  my $udp = 0;
+  if ($tcpwin<0) {
+    $udp = -$tcpwin;
+    $tcpwin = 0;
+  }
+  
+  $status = send_data("add_host=evlbi_$ant,$playback,$port,$tcpwin,1", $recorder);
+  die "Failed to set add_host on $recorder\n" if (!defined $status);
+
+
+  # UDP
+  if ($udp) {
+
+    $ipd = 0 if (!defined $ipd);
+    $status = send_data("modify_host=evlbi_$ant,$udp,$ipd", $recorder);
+    die "Failed to enable udp on $recorder\n" if (!defined $status);
+  }
+
+  $status = send_data("recordingdisk=evlbi_$ant:",$recorder);
+
+  $duration+=5;
+  $status = send_data("record_time=${duration}s", $recorder);
+  die "Failed to set recording time on $recorder\n" if (!defined $status);
+	
+  $status = send_data("filesize=2s", $recorder);
+  die "Failed to set filesize on $recorder\n" if (!defined $status);
+	
+  $status = send_data("round_start=off", $recorder);
+  die "Failed to set round start off, on $recorder\n" if (!defined $status);
+	
+  $status = send_data("bandwidth=$bandwidth", $recorder);
+  die "Failed to set bandwidth on $recorder\n" if (!defined $status);
+
+  $status = send_data("compression=$compression", $recorder);
+  die "Failed to set compression on $recorder\n" if (!defined $status);
+  
+  $status = send_data("vsib_mode=$vsib_mode", $recorder);
+  die "Failed to set vsib_mode on $recorder\n" if (!defined $status);
+
+  $status = send_data("filename_prefix=$ant", $recorder);
+  die "Failed to set filename_prefix on $recorder\n" if (!defined $status);
+	
+  if ($format eq 'MARK5B') {
+    $status = send_data("mark5b=on", $recorder);
+    die "Failed to set mark5b on $recorder\n" if (!defined $status);
+  } elsif ($format eq 'LBAVSOP' || $format eq 'LBASTD') {
+    $status = send_data("mark5b=off", $recorder);
+    die "Failed to turn off mark5b on $recorder\n" if (!defined $status);
+  } else {
+    die "Unsupported data format $format\n";
+  }
+  if ($bits==1) {
+    $status = send_data("onebit=on", $recorder);
+    die "Failed to set mark5b on $recorder\n" if (!defined $status);
+  } else {
+    $status = send_data("onebit=off", $recorder);
+    die "Failed to set mark5b on $recorder\n" if (!defined $status);
+  }
+
+  $status = send_cmd("record-start", $recorder);
+  die "Failed to launch recorder on $recorder\n" if (!defined $status);
+
+
+
+  # Turn off evlbi
+  $status = send_data("filesize=10s", $recorder);
+  die "Failed to set filesize on $recorder\n" if (!defined $status);
+  $status = send_data("round_start=on", $recorder);
+  die "Failed to set round start on, on $recorder\n" if (!defined $status);
+  $status = send_data("onebit=off", $recorder);
+  die "Failed to set mark5b on $recorder\n" if (!defined $status);
+ 
+  print "Launched $ant on $recorder\n" if ($recorder);
+
+  return;
+}
+
+sub stop_lbadr ($$) {
+  my ($recorder, $ant) = @_;
+  my $status = send_cmd("record-stop", $recorder);
+  warn "Failed to stop recorder on $recorder\n" if (!defined $status);
+  
+  $status = send_data("recordingdisk=2", $recorder);
+  warn "Failed to reset recording disk on $recorder\n" if (!defined $status);
+  
+  $status = send_data("rem_host=evlbi_$ant", $recorder);
+  warn "Failed to remove remote host on $recorder\n" if (!defined $status);
+}
+
+sub mark5_command ($$) {
+  my ($mark5, $cmd) = @_;
+
+  print "$cmd\n" if ($mk5debug);
+  print $mark5 "$cmd\n";
+  my $response =  <$mark5>;
+
+  print "$response\n" if ($mk5debug);
+  return($response);
+}
+
+sub mark5_connect ($) {
+  my ($host) = @_;
+
+  my $mark5 = IO::Socket::INET->new(PeerAddr => $host,
+				    PeerPort => 2620);
+  die "Could not connect to $host:2620\n" if (!$mark5);
+
+  return $mark5;
+}
+
+sub mark5_disconnect ($) {
+  my $mark5 = shift;
+
+  $mark5->close();
+}
+
+sub mark5_config ($$$$$$$$$$;$) {
+  my ($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, $test) = @_;
+  $test = 0 if (!defined $test);
+
+  my $winbytes = $winsize*1024;
+  my $protocol;
+
+  if ($mark5b) {
+    mark5_command($mark5, "1pps_source=vsi");
+    if ($test) {
+      mark5_command($mark5, "clock_set=$rate:int:$rate");
+    } else {
+      mark5_command($mark5, "clock_set=$rate:ext:$rate");
+    }
+    mark5_command($mark5, "dot_set=:force");
+    mark5_command($mark5, "dot?");
+
+    my $decimation = $rate/($bandwidth*2);
+    if ($test) {
+      mark5_command($mark5, "mode=tvg:$mask:$decimation");
+    } else {
+      mark5_command($mark5, "mode=ext:$mask:$decimation");
+    }
+  } else {
+    if ($test) {
+      mark5_command($mark5, "mode=tvg:$ntrack");
+    } else {
+      mark5_command($mark5, "mode=mark4:$ntrack");
+    }
+    mark5_command($mark5, "play_rate=data:$rate");
+  }
+
+  if ($udp) {
+    mark5_command($mark5, "mtu=$mtu");
+    mark5_command($mark5, "net_protocol=udp");
+    mark5_command($mark5, "ipd=$ipd");
+  } else {
+    mark5_command($mark5, "net_protocol=tcp:$winbytes:131072:8");
+  }
+
+}
+
+sub mark5_start ($$) {
+  my ($mark5, $host) = @_;
+  mark5_command($mark5, "in2net=connect:$host");
+  mark5_command($mark5, "in2net=on");
+}
+
+sub mark5_stop ($) {
+  my $mark5 = shift;
+  mark5_command($mark5, "in2net=disconnect");
+}
+
+sub launch_mark5 ($$$$$$$$$) {
+  my ($recorder, $host, $format, $bandwidth, $mask, $rate, $ntrack, $winsize, $ipd) = @_;
+
+  my $mark5b = 0;
+  if ($format eq 'MARK5B') {
+    $mark5b = 1;
+    $rate = 32;
+  }
+
+  my $udp = 0;
+  my $mtu = 0;
+  if ($winsize<0) {
+    $udp = 1;
+    $mtu = -$winsize;
+  }
+
+  my $mark5 = mark5_connect($recorder);
+  if ($mark5) {
+    mark5_stop($mark5);
+    mark5_config($mark5, $mark5b, $bandwidth, $mask, $rate, $ntrack, $winsize, $udp, $mtu, $ipd, 0);
+    mark5_start($mark5, $host);
+    mark5_disconnect($mark5);
+  } else {
+    warn "\n\n************************************\n\n";
+    warn "Failed to connect to mark5 $recorder\n";
+    warn "\n************************************\n\n";
+  }
+}
+
+sub stop_mark5 ($) {
+  my $recorder = shift;
+  my $mark5 = mark5_connect($recorder);
+  if ($mark5) {
+    mark5_stop($mark5);
+    mark5_disconnect($mark5);
+  } else {
+    warn "\n\n************************************\n\n";
+    warn "Failed to connect to mark5 $recorder - did not stop\n";
+    warn "\n************************************\n\n";
+  }
+}
+
+sub lbastation($) {
+  my $recorder = shift;
+  foreach (@LBADR) {
+    return(1) if ($recorder eq $_);
+  }
+  return 0;
 }
