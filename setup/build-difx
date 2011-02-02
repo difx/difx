@@ -209,7 +209,8 @@ if gfortran:
 
 libtargets = [["difxio",     difx_version, True,True,True,False],
               ["difxmessage",difx_version, True,True,True,False],
-              ["mark5access",difx_version, True,True,True,False]]
+              ["mark5access",difx_version, True,True,True,False],
+              ["vdifio",     difx_version, True,True,True,False]]
 
 utiltargets = [["calcif2",   difx_version, True,False,True,False], 
                ["pulsar/difx2profile", difx_version, True,False,True,True],
@@ -318,9 +319,9 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if noconf and os.path.exists('config.status'):
         print "Re-using existing configuration"
     else:
-	configstring = cfp + "/configure --prefix=" + prefix
-	if cache != 'none':
-	    configstring += cache
+        configstring = cfp + "/configure --prefix=" + prefix
+        if cache != 'none':
+            configstring += cache
         # configstring = cfp + "/configure --prefix=" + prefix + cache
         if dompicxx:
             if cache != 'none':
