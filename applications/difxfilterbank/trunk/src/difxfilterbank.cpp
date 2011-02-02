@@ -3,7 +3,16 @@
 
 int main(int argc, const char * argv[])
 {
-  int perr;
+  int perr, mtu;
+  char * difxmtu = getenv("DIFX_MTU");
+  if(difxmtu == 0)
+    mtu = 1500;
+  else
+    mtu = atoi(difxmtu);
+  if (mtu > 9000) {
+    cerr << "DIFX_MTU was set to " << mtu << " - resetting to 9000 bytes (max)" << endl;
+    mtu = 9000;
+  }
 
   //check for correct invocation
   if(argc != 4 && argc != 5) {
@@ -29,12 +38,13 @@ int main(int argc, const char * argv[])
   keepwriting = true;
   numchans = atoi(numchannelsstring.c_str());
   binarymsglength = sizeof(DifxMessageSTARecord) + numchans*sizeof(f32);
-  cout << "About to allocate " << binarymsglength*BUFFER_LENGTH << " bytes in receive buffer" <<     endl;
+  cout << "About to allocate " << mtu<< " bytes in each element receive buffer" <<     endl;
   for(int i=0;i<BUFFER_LENGTH;i++) {
     perr = pthread_mutex_init(&(locks[i]), NULL);
     if(perr != 0)
       cerr << "Problem initialising lock " << i << endl;
-    starecords[i] = (DifxMessageSTARecord*)malloc(binarymsglength);
+    starecords[i] = (DifxMessageSTARecord*)malloc(mtu);
+    numrecords[i] = 0;
   }
 
   //lock the first slot, and fire up the write thread
@@ -97,7 +107,7 @@ int main(int argc, const char * argv[])
   while(keepwriting) {
     //get a binary message
     int nbytes = difxMessageBinaryRecv(binarysocket, (char*)starecords[atsegment], 
-                                       binarymsglength, sendername);
+                                       mtu, sendername);
 
 
     //check it belongs to us
@@ -107,6 +117,7 @@ int main(int argc, const char * argv[])
         cout << "Problem with binary message or timeout - carrying on..." << endl;
       }
       else {
+        numrecords[atsegment] = nbytes / binarymsglength;
         perr = pthread_mutex_lock(&(locks[(atsegment+1)%BUFFER_LENGTH]));
         if(perr != 0)
           cerr << "Main thread problem locking " << (atsegment+1)%BUFFER_LENGTH << endl;
@@ -173,6 +184,7 @@ void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, 
 void * launchWriteThread(void * nothing) {
   int perr, writesegment, nextsegment;
   ofstream * activeoutput;
+  DifxMessageSTARecord * starecord;
 
   perr = pthread_mutex_lock(&(locks[BUFFER_LENGTH-1]));
   if(perr != 0)
@@ -200,14 +212,14 @@ void * launchWriteThread(void * nothing) {
       activeoutput = &ktoutput;
     if(activeoutput != 0)
     {
-      //write it out (main thread already filtered out those not belonging to this job)
-      writeDiFXHeader(activeoutput, starecords[writesegment]->dsindex, starecords[writesegment]->scan, 
-                      starecords[writesegment]->sec, starecords[writesegment]->ns, 
-                      starecords[writesegment]->nswidth, starecords[writesegment]->bandindex,
-                      starecords[writesegment]->nChan, starecords[writesegment]->coreindex, 
-                      starecords[writesegment]->threadindex);
-      activeoutput->write((char*)starecords[writesegment]->data, 
-                          starecords[writesegment]->nChan*sizeof(float));
+      for(int i=0;i<numrecords[writesegment];i++) {
+        starecord = (DifxMessageSTARecord *)((char*)starecords + i*binarymsglength);
+        //write it out (main thread already filtered out those not belonging to this job)
+        writeDiFXHeader(activeoutput, starecord->dsindex, starecord->scan, 
+                        starecord->sec, starecord->ns, starecord->nswidth, starecord->bandindex,
+                        starecord->nChan, starecord->coreindex, starecord->threadindex);
+        activeoutput->write((char*)starecord->data, starecord->nChan*sizeof(float));
+      }
     }
   }
 
@@ -220,7 +232,6 @@ void * launchWriteThread(void * nothing) {
   return 0;
 }
     
-
 //setup message receive thread
 void * launchCommandMonitorThread(void * c) {
   Configuration * config = (Configuration*) c;
