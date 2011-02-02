@@ -469,10 +469,11 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 /****
  ASSUMPTIONS
 
- udp_offset is left containing number of bytes still to be consumed from last UDP packet. If
- first packet from next frame is missing then udp_offset points to END of initial data. It is
- assumed only udpsize bytes are available though. udp_buf actually contains the left over bytes 
- so that must be dealt with before any more data is read.
+ udp_offset is left containing number of bytes still to be consumed
+ from last UDP packet. If first packet from next frame is missing then
+ udp_offset points to END of initial data. It is assumed only udpsize
+ bytes are available though. udp_buf actually contains the left over
+ bytes so that must be dealt with before any more data is read.
 
 *****/
 
@@ -716,6 +717,8 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     udp_offset = next_udpoffset;
 
   }
+
+  // UPDATE NUMBER OF BYTES READ TO UDP PACKET STATISTICS
   return(1);
 }
 
