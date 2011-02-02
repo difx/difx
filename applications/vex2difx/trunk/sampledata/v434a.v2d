@@ -1,0 +1,69 @@
+vex=v434a.vex
+mjdStart = 2010y328d17h00m00s
+mjdStop = 2010y328d18h00m00s
+#maxGap = 1000
+#maxLength = 86400
+maxSize = 40
+
+SETUP default
+{
+  nChan = 32
+  tInt = 2.0
+  specAvg = 1
+}
+
+RULE default
+{
+  setup = default
+}
+
+ANTENNA MP
+{
+  format = LBAVSOP
+  filelist = mp.filelist
+  clockOffset = -0.2525
+  clockRate = 0.0
+  clockEpoch = 55496.6979167
+}
+
+ANTENNA AT
+{
+  format = LBAVSOP
+  filelist = at.filelist
+  clockOffset = -35.3864943844
+  clockRate = -9.02138836079e-08
+  clockEpoch = 55524.7916667
+}
+
+ANTENNA CD
+{
+  format = LBAVSOP
+  filelist = cd.filelist
+  clockOffset = -10.388865559
+  clockRate = 5.49542388222e-07
+  clockEpoch = 55524.7916667
+}
+
+ANTENNA HO
+{
+  format = LBAVSOP
+  filelist = ho.filelist
+  clockOffset = -10.4122549872
+  clockRate = -2.06384754269e-07
+  clockEpoch = 55524.7916667
+}
+
+ANTENNA PA
+{ 
+  format = LBAVSOP
+  filelist = pa.filelist
+  clockOffset = 2.35516701237
+  clockRate = 7.26095832663e-08
+  clockEpoch = 55524.7916667
+}
+
+EOP 55522 { xPole=0.204770 yPole=0.254290 tai_utc=34 ut1_utc=-0.112985 }
+EOP 55523 { xPole=0.204120 yPole=0.252470 tai_utc=34 ut1_utc=-0.113481 }
+EOP 55524 { xPole=0.202860 yPole=0.250780 tai_utc=34 ut1_utc=-0.113958 }
+EOP 55525 { xPole=0.201140 yPole=0.248900 tai_utc=34 ut1_utc=-0.114507 }
+EOP 55526 { xPole=0.199890 yPole=0.247090 tai_utc=34 ut1_utc=-0.115206 }
