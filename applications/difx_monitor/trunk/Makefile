@@ -9,7 +9,7 @@ clean  : $(TARGETS)
 	rm -f *.o $^
 
 install: $(TARGETS)
-	cp $(TARGETS) $(DIFXROOT)/bin
+	cp $(TARGETS) stripinput.pl $(DIFXROOT)/bin
 
 CXX = $(MPICXX) -g -Wall
 #CPPFLAGS = -O2 -D__PWD=\"$$PWD\"
