@@ -22,6 +22,7 @@
 #include "datamuxer.h"
 #include "vdifio.h"
 #include "alert.h"
+#include <string.h>
 
 DataMuxer::DataMuxer(Configuration * conf, int dsindex, int id, int nthreads, int sbytes)
   : config(conf), datastreamindex(dsindex), mpiid(id), numthreads(nthreads), segmentbytes(sbytes)
