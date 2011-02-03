@@ -1,10 +1,8 @@
 #!/usr/bin/python
-#import matplotlib
-#matplotlib.use("pdf")
 import sys, os, struct, time, pylab, math, numpy
 import parseDiFX
 from optparse import OptionParser
-from matplotlib.ticker import FuncFormatter
+from matplotlib.ticker import FuncFormatter, MaxNLocator, NullFormatter
 from numpy import fft
 
 ## GLOBAL VARIABLES ##
@@ -16,8 +14,9 @@ offsetfreq= 0.0 # MHz
 def xindex2ms(x, pos):
     return '%1.1f' % (x*inttime)
 
-def yindex2MHz(y, pos):
-    return '%1.1f' % (offsetfreq + y*chanwidth)
+# Use a lambda function to generate the function we need
+def make_yindex2MHz(minfreq):
+    return lambda y,pos: '%1.1f' % (minfreq + y*chanwidth)
 
 ## OPTIONS PARSING ###
 helpstr = "plotDynamicSpectrum.py [options] <difx file 1>\n\n"
@@ -133,44 +132,55 @@ if savednchan > 0:
         numpyphase = numpy.zeros((savednchan, vislen), numpy.float32)
         for i in range(savednchan):
             for j in range(vislen):
-	        numpyamp[i][j] = amp[0][i][j]
-	        numpyphase[i][j] = phase[0][i][j]
+                # Flip the data so highest frequency is on top
+	        numpyamp[i][j] = amp[0][i][vislen-j-1]
+	        numpyphase[i][j] = phase[0][i][vislen-j-1]
 	ax = pylab.subplot(2,1,1)
 	xformatter = FuncFormatter(xindex2ms)
-        yformatter = FuncFormatter(yindex2MHz)
+        yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
 	pylab.title("Amplitude")
         pylab.ylabel("Freq (MHz)")
 	ax.xaxis.set_major_formatter(xformatter)
         ax.yaxis.set_major_formatter(yformatter)
-        pylab.imshow(numpyamp, aspect='auto')
+        pylab.imshow(numpyamp, aspect='auto', origin='lower')
 	ax = pylab.subplot(2,1,2)
 	pylab.title("Phase")
         pylab.xlabel("Time (s)")
         pylab.ylabel("Freq (MHz)")
         ax.xaxis.set_major_formatter(xformatter)
         ax.yaxis.set_major_formatter(yformatter)
-        pylab.imshow(numpyphase, aspect='auto')
+        pylab.imshow(numpyphase, aspect='auto', origin='lower')
 	if targetbaseline < 0:
             pylab.savefig("dynamicspectra.bscrunch.f%d.png" % (targetfreq), format="png")
 	else:
 	    pylab.savefig("dynamicspectra.b%d.f%d.png" % (targetbaseline, targetfreq), format="png")
     else: # Want to display all freqs, one after another
+        pylab.figure(figsize=(15,9))
+        pylab.suptitle('All frequencies for %s' % inputfile)
         for i in range(numfreqs):
             offsetfreq = freqs[i].freq
             chanwidth = freqs[i].bandwidth / (freqs[i].numchan/freqs[i].specavg)
 	    numpyamp = numpy.zeros((savednchan, vislen), numpy.float32)
 	    for j in range(savednchan):
 	        for k in range(vislen):
-		    numpyamp[j][k] = amp[i][j][k]
+                    # Flip the data so highest frequency is on top
+		    numpyamp[j][k] = amp[i][j][vislen-k-1]
 	    ax = pylab.subplot(numfreqs,1,i+1)
-	    xformatter = FuncFormatter(xindex2ms)
-	    yformatter = FuncFormatter(yindex2MHz)
-            ax.xaxis.set_major_formatter(xformatter)
-	    ax.yaxis.set_major_formatter(yformatter)
-	    pylab.ylabel("Freq (MHz)")
+            pylab.subplots_adjust(wspace=0.05, hspace=0.02,
+                                  top=0.95, bottom=0.08, left=0.125, right = 0.9)
+            # Only show the x axis ticks and labels for the final plot
             if i==numfreqs-1:
+                xformatter = FuncFormatter(xindex2ms)
+                ax.xaxis.set_major_formatter(xformatter)
 	        pylab.xlabel("Time (s)")
-	    pylab.imshow(numpyamp, aspect='auto')
+            else:
+                ax.xaxis.set_major_formatter(NullFormatter())
+	    yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
+	    ax.yaxis.set_major_formatter(yformatter)
+            # Limit the number of y tick labels to 4
+            ax.yaxis.set_major_locator(MaxNLocator(4))
+	    pylab.ylabel("Freq (MHz)")
+	    pylab.imshow(numpyamp, aspect='auto', origin='lower')
 	if targetbaseline < 0:
 	    pylab.savefig("dynamicspectra.bscrunch.png", format="png")
 	else:
