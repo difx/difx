@@ -2,7 +2,6 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
-
 #include "transient_wrapper_data.h"
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
@@ -11,11 +10,22 @@
 TransientWrapperData *newTransientWrapperData()
 {
 	TransientWrapperData *T;
+	const char *rankStr;
 
 	T = (TransientWrapperData *)calloc(1, sizeof(TransientWrapperData));
 
 	T->difxState = DIFX_STATE_SPAWNING;
 	T->maxCopyOverhead = 0.04;
+
+	rankStr = getenv("OMPI_COMM_WORLD_RANK");
+	if(rankStr)
+	{
+		T->rank = atoi(rankStr);
+	}
+	else
+	{
+		T->rank = -1;
+	}
 
 	return T;
 }
@@ -152,11 +162,13 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 
 static void genDifxFiles(const TransientWrapperData *T, int eventId)
 {
+	const int MaxCommandLength = 512;
 	DifxInput *newD;
 	int i, v;
 	FILE *out;
 	double mjd;
 	double mjd1, mjd2;
+	char command[MaxCommandLength];
 	char outDir[DIFXIO_FILENAME_LENGTH];
 	char baseName[DIFXIO_FILENAME_LENGTH];
 	char fileName[DIFXIO_FILENAME_LENGTH];
@@ -216,21 +228,24 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->mjdStop  = newD->scan->mjdEnd   = newD->job->jobStop  = mjd2;
 	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
 	newD->scan->startSeconds = 0;
-	newD->scan->durSeconds = newD->job->duration;
+	newD->scan->durSeconds = (int)ceil(newD->job->duration);
 
 	/* Then change all data sources to FILE and point to those files */
 	for(dsId = 0; dsId < newD->nDatastream; dsId++)
 	{
-		newD->datastream[dsId].dataSource = DataSourceFile;
-		if(newD->datastream[dsId].nFile == 1)
+		if(newD->datastream[dsId].dataSource == DataSourceModule)
 		{
-			snprintf(fileName, DIFXIO_FILENAME_LENGTH,
-				"%s/%d/%s_%12.6f_%12.6f_0", outDir, dsId+1, 
-				newD->datastream[dsId].file[0],
-				T->event[eventId].startMJD,
-				T->event[eventId].stopMJD);
-			free(newD->datastream[dsId].file[0]);
-			newD->datastream[dsId].file[0] = strdup(fileName);
+			newD->datastream[dsId].dataSource = DataSourceFile;
+			if(newD->datastream[dsId].nFile == 1)
+			{
+				snprintf(fileName, DIFXIO_FILENAME_LENGTH,
+					"%s/%d/%s_%12.6f_%12.6f_0", outDir, dsId+1, 
+					newD->datastream[dsId].file[0],
+					T->event[eventId].startMJD,
+					T->event[eventId].stopMJD);
+				free(newD->datastream[dsId].file[0]);
+				newD->datastream[dsId].file[0] = strdup(fileName);
+			}
 		}
 	}
 
@@ -258,6 +273,28 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		fprintf(out, "boom\n");
 	}
 	fclose(out);
+
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.input.bash", baseName);
+	out = fopen(fileName, "w");
+	fprintf(out, "export DIFX_MESSAGE_PORT=50201\n");
+	fprintf(out, "export DIFX_MESSAGE_GROUP=224.2.2.4\n");
+	fprintf(out, "echo \"Starting DiFX with non-standard message address: port=${DIFX_MESSAGE_PORT} group=${DIFX_MESSAGE_GROUP}\"\n");
+	fprintf(out, "$@\n");
+	fclose(out);
+	v = snprintf(command, MaxCommandLength, "chmod +x %s", fileName);
+	if(v < MaxCommandLength)
+	{
+		if(T->verbose)
+		{
+			printf("Executing: %s\n", command);
+		}
+		v = system(command);
+	}
+	else
+	{
+		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n",
+			MaxCommandLength, v);
+	}
 
 	deleteDifxInput(newD);
 }
@@ -304,15 +341,18 @@ int copyBasebandData(const TransientWrapperData *T)
 			break;
 		}
 
-		snprintf(command, MaxCommandLength, 
-			"mk5cp Active %12.6f_%12.6f %s", 
-			T->event[e].startMJD, T->event[e].stopMJD,
-			outDir);
+		if(T->D->datastream[T->rank-1].dataSource == DataSourceModule)
+		{
+			snprintf(command, MaxCommandLength, 
+				"mk5cp Active %12.6f_%12.6f %s", 
+				T->event[e].startMJD, T->event[e].stopMJD,
+				outDir);
 
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
-		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-		
-		v = system(command);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+			
+			v = system(command);
+		}
 
 		if(T->rank == 1) /* only generate files once */
 		{

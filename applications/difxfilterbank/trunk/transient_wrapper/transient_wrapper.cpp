@@ -2,14 +2,16 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <ctype.h>
 #include "transient_wrapper_data.h"
 
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2011 Feb 2";
+const char verdate[] = "2011 Feb 3";
 
 const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
+const int minFreeMB = 1000000;	/* don't copy unless there are this many MB free in the above path */
 
 int usage(const char *pgm)
 {
@@ -149,19 +151,70 @@ char *stripInputFile(const char *inputFile)
 	return filePrefix;
 }
 
+static int getFreeMB(const char *path)
+{
+	const int MaxCommandLength=256;
+	const int MaxLineLength=256;
+	char cmd[MaxCommandLength];
+	char line[MaxLineLength];
+	FILE *pin;
+	int v, size = 0;
+	char *s;
+
+	v = snprintf(cmd, MaxCommandLength, "df -m %s\n", path);
+
+	pin = popen(cmd, "r");
+	if(!pin)
+	{
+		fprintf(stderr, "Error: pipe for <%s> failed\n", cmd);
+	}
+	else
+	{
+		while(!feof(pin))
+		{
+			s = fgets(line, MaxLineLength-1, pin);
+			if(!s)
+			{
+				break;
+			}
+			if(isalpha(line[0]))
+			{
+				v = sscanf(line, "%*s %*d %*d %d", &size);
+			}
+			else
+			{
+				v = sscanf(line, "%*d %*d %d", &size);
+			}
+			if(v == 1)
+			{
+				break;
+			}
+		}
+
+		fclose(pin);
+	}
+
+	return size;
+}
+
 TransientWrapperData *initialize(int argc, char **argv)
 {
 	TransientWrapperData *T;
 	const char *inputFile, *pgm;
-	const char *rankStr;
 	char message[DIFX_MESSAGE_LENGTH];
-	int i, index;
+	int df, i, index;
 
 	T = newTransientWrapperData();
 
 	T->outputPath = defaultOutputPath;
 
 	index = parsecommandline(argc, argv, T);
+
+	if(T->rank > 0)
+	{
+		/* demote verbosity of all but the main thread by one.  Use an extra -v if needed */
+		T->verbose--;
+	}
 
 	pgm = argv[index+1];
 	inputFile = argv[index+2];
@@ -212,22 +265,28 @@ TransientWrapperData *initialize(int argc, char **argv)
 		}
 	}
 
-	rankStr = getenv("OMPI_COMM_WORLD_RANK");
-	if(rankStr)
+	if(T->rank > 0 && T->rank <= T->D->nDatastream)
 	{
-		T->rank = atoi(rankStr);
-		if(T->rank > 0 && T->rank <= T->D->nDatastream)
+		if( (T->D->datastream[T->rank-1].dataSource == DataSourceModule ||
+		     T->D->datastream[T->rank-1].dataSource == DataSourceFile) &&
+		   T->doCopy == 0)
 		{
-			if(T->D->datastream[T->rank-1].dataSource == DataSourceModule &&
-			   T->doCopy == 0)
-			{
-				T->doCopy = 1;
-			}
+			T->doCopy = 1;
 		}
 	}
-	else
+
+	if(T->doCopy > 0)
 	{
-		T->rank = -1;
+		/* Make sure there is > 1TB free on disks */
+		df = getFreeMB(defaultOutputPath);
+		if(T->verbose)
+		{
+			printf("Free space on %s = %d MB\n", defaultOutputPath, df);
+		}
+		if(df < minFreeMB)
+		{
+			T->doCopy = 0;
+		}
 	}
 
 	return T;
