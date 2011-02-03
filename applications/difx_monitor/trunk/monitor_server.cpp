@@ -33,6 +33,8 @@ using namespace std;
 
 #define MAXCLIENTS  20
 
+#define DEBUG 0
+
 struct datadescrstruct {
   int32_t timestampsec;      // Current correlator time
   cf32 *buffer;
@@ -43,7 +45,7 @@ void change_config();
 int openstream(int portnumber, int tcpwindowsizebytes, int backlog=1);
 void closestream(int sock);
 int waitforconnection (int serversock);
-int pollfd_add(struct pollfd *fds, nfds_t *nfds, nfds_t max_fds, int fd, short events);
+int pollfd_add(struct pollfd *fds, nfds_t *nfds, int fd, short events);
 int pollfd_remove(struct pollfd *fds, nfds_t *nfds, int fd);
 int monclient_add(struct monclient *clients,  int *nclient, int maxclient, int fd);
 int monclient_remove(struct monclient *clients, int *nclient, int fd);
@@ -100,8 +102,8 @@ int main(int argc, const char * argv[]) {
   memset((char *) &pollfds, 0, sizeof(pollfds));
 
   nfds = 0;
-  pollfd_add(pollfds, &nfds, MAXCLIENTS+3, serversocket, POLLIN);
-  pollfd_add(pollfds, &nfds, MAXCLIENTS+3, monitorsocket, POLLIN);
+  pollfd_add(pollfds, &nfds, serversocket, POLLIN);
+  pollfd_add(pollfds, &nfds, monitorsocket, POLLIN);
 
   while (1) {
     int nfd;
@@ -115,11 +117,18 @@ int main(int argc, const char * argv[]) {
       exit(1);
     } else if (nfd==0) continue;
 
+#if DEBUG
+    printf(" Got %d descriptors waiting\n", nfd);
+#endif    
+
     // Look at all available events
     for (i=0; i<(int)nfds; i++) {
       int fd = pollfds[i].fd;
       short revents = pollfds[i].revents;
-      if (revents==0) continue;
+      if (revents==0) {
+	printf("Warning: Skipping descriptor %d because revents==0\n", fd);
+	continue;
+      }
       
       if (fd == serversocket && revents) {
 	printf("Event on serversocket %d (%d)\n", fd, revents);
@@ -137,7 +146,7 @@ int main(int argc, const char * argv[]) {
 	    cout << "Ignoring multiple connection attempts" << endl;
 	  } else {
 	    difxsocket = asocket;
-	    pollfd_add(pollfds, &nfds, MAXCLIENTS+3, difxsocket, POLLIN);
+	    pollfd_add(pollfds, &nfds, difxsocket, POLLIN);
 	  }
 	} else {
 	  cerr << "Warning: serversocket received poll error message: " << revents << endl;
@@ -151,7 +160,7 @@ int main(int argc, const char * argv[]) {
 	  newsock = waitforconnection(monitorsocket);
 	  if (newsock>0) {
 
-	    status = pollfd_add(pollfds, &nfds, MAXCLIENTS+3, newsock, POLLIN);
+	    status = pollfd_add(pollfds, &nfds, newsock, POLLIN);
 	    if (status) {
 	      cerr << "Too many clients connected, ignoring connection" << endl;
 	      status = monserver_sendstatus(newsock, DIFXMON_TOOMANYCLIENTS);
@@ -180,7 +189,7 @@ int main(int argc, const char * argv[]) {
 	}
 	break;
       } else if (fd == difxsocket && revents) {
-
+	
 	if (revents & POLLHUP) { // Connection went away
 	  cout << "Connection to mpifxcorr dropped" << endl;
 	  close(difxsocket);
@@ -304,6 +313,8 @@ int main(int argc, const char * argv[]) {
 	    }
 	  }
 	}
+      } else {
+	printf("Warning %d on descriptor %d ignored\n", revents, fd);
       }
     }
   }
@@ -396,12 +407,24 @@ void closestream(int sock)
 }
 
 // Add a pollfd struct to the end of a pollfd array. Return 1 if not enough space
-int pollfd_add(struct pollfd *fds, nfds_t *nfds, nfds_t max_fds, int fd, short events) {
-  if (*nfds>=max_fds) return(1); // No space left
+int pollfd_add(struct pollfd *fds, nfds_t *nfds, int fd, short events) {
+  if (DEBUG) printf("pollfd_add\n");
+
+  if (*nfds>=MAXCLIENTS+3) {
+    printf("Warning: Too many clients connected. Increase MAXCLIENTS and recompile\n");
+    return(1); // No space left
+  }
 
   fds[*nfds].fd = fd;
   fds[*nfds].events = events;
   (*nfds)++;
+
+#if DEBUG
+  nfds_t i;
+  for (i=0; i<*nfds; i++) {
+    printf("%3d    %d\n", fds[i].fd, fds[i].events);
+  }
+#endif
 
   return(0);
 }
@@ -409,6 +432,14 @@ int pollfd_add(struct pollfd *fds, nfds_t *nfds, nfds_t max_fds, int fd, short e
 // Find fd in the polfd array and remove it (compressing the array). Return 1 if fd not found
 int pollfd_remove(struct pollfd *fds, nfds_t *nfds, int fd) {
   int i, n;
+#if DEBUG 
+  nfds_t j;
+  printf("pollfd_remove\n");
+  printf("Initially:\n");
+  for (j=0; j<*nfds; j++) {
+    printf("%3d    %d\n", fds[j].fd, fds[j].events);
+  }
+#endif
 
   n = -1;
   for (i=0; i<(int)*nfds; i++) {
@@ -425,6 +456,13 @@ int pollfd_remove(struct pollfd *fds, nfds_t *nfds, int fd) {
     fds[i].events = fds[i+1].events;
   }
   fds[*nfds].revents=0;
+
+#if DEBUG 
+  printf("Now:\n");
+  for (j=0; j<*nfds; j++) {
+    printf("%3d    %d\n", fds[j].fd, fds[j].events);
+  }
+#endif
   
   return(0);
 }
@@ -501,31 +539,10 @@ void monclient_addproduct(struct monclient *client, int nproduct, struct product
 }
 
 int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struct datadescrstruct *datadescr) {
-  int maxvis, i, status, all, nc;
+  int i, status;
   int32_t buffersize;
 
   if (client.nvis==0) return(0);
-
-  //maxvis = thisbuffersize/nc;
-  all = 0;
-
-#if 0
-  // Need to think this code through now
-  if (client.nvis>0 && client.vis[0].offset == -1) {
-    all=1;
-    nvis=maxvis;
-  } else {
-    nvis=0;
-    for (i=0; i<client.nvis; i++) {
-      if (client.vis[i] < maxvis) 
-	nvis++;
-      else {
-	cout << endl << "Warning: Skipping requested product " << client.vis[i] << endl;
-      }
-    }
-  }
-  if (nvis==0) return(0); // Not an error...
-#endif
 
   //  Send 
   //     int32_t     timestampsec
@@ -546,24 +563,16 @@ int monclient_sendvisdata(struct monclient client, int32_t thisbuffersize, struc
   
   sendint(client.fd, buffersize, &status);
 
-  if (all) {
-    for (i=0; i<maxvis; i++) {
-      sendint(client.fd, i, &status);
-      if (status) return(status);
-      status = writenetwork(client.fd, (char*)(datadescr->buffer+nc*i), 
-			    nc*sizeof(cf32));
-    }
-  } else {
-    for (i=0; i<client.nvis; i++) {
-      //      if (client.vis[i] < maxvis) {
-	sendint(client.fd, client.vis[i].npoints, &status);
-	sendint(client.fd, client.vis[i].product, &status);
-	if (status) return(status);
-	status = writenetwork(client.fd, 
-			      (char*)(datadescr->buffer+client.vis[i].offset), 
-			      client.vis[i].npoints*sizeof(cf32));
-	//      }
-    }
+  for (i=0; i<client.nvis; i++) {
+    //      if (client.vis[i] < maxvis) {
+    sendint(client.fd, client.vis[i].npoints, &status);
+    sendint(client.fd, client.vis[i].product, &status);
+    if (status) return(status);
+    status = writenetwork(client.fd, 
+			  (char*)(datadescr->buffer+client.vis[i].offset), 
+			  client.vis[i].npoints*sizeof(cf32));
+    //      }
+    
   }
   return(status);
 }
