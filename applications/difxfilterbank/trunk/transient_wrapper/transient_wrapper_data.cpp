@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
+#include <string.h>
+
 #include "transient_wrapper_data.h"
 
 #define min(x,y) (((x) < (y)) ? (x) : (y))
