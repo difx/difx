@@ -1,0 +1,244 @@
+/***************************************************************************
+ *   Copyright (C) 2006 by Adam Deller                                     *
+ *                                                                         *
+ *   This program is free for non-commercial use: see the license file     *
+ *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
+ *   details.                                                              *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.                  *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id: mpifxcorr.cpp 2818 2010-11-19 23:36:12Z AdamDeller $
+// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mpifxcorr.cpp $
+// $LastChangedRevision: 2818 $
+// $Author: AdamDeller $
+// $LastChangedDate: 2010-11-19 16:36:12 -0700 (Fri, 19 Nov 2010) $
+//
+//============================================================================
+
+#include <mpi.h>
+#include "visibility.h"
+#include "configuration.h"
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <fstream>
+
+#define BUFFER_SIZE 2000
+
+int main(int argc, char *argv[])
+{
+  Configuration * config;
+  Model * model;
+  char * inputdifxfile;
+  int * baselineindices;
+  double * vistimes;
+  double ** dmdelays;
+  int ** dmoffsets;
+  char ***** visibilities;
+  char * copypointer;
+  cf32 * cvis;
+  char * tempbuffer;
+  char pol[3];
+  ifstream input;
+  ofstream output;
+  string savedir, reldifxfile, savedifxfile;
+  int lastslash, fchan, numfreqs, lastconfigindex, maxnumintegrations;
+  int mindelayoffset, maxdelayoffset, poloffset;
+  int startmjd, currentmjd, currentfreq, baseline, offset;
+  double dm, dur, inttime, chanfreq, startseconds, currentseconds;
+  pol[2] = 0;
+
+  if(argc != 4)
+  {
+    cerr << "Error - invoke with dedisperse_difx <inputfilename> <inputdifxfile> <dm>" << endl;
+    return EXIT_FAILURE;
+  }
+
+  config = new Configuration(argv[1], 0);
+  inputdifxfile = argv[2];
+  dm = atof(argv[3]);
+
+  //check that the config is ok
+  if(!config->consistencyOK())
+  {
+    //There was a problem with the input file, so shut down gracefully
+    cerr << "Config encountered inconsistent setup in config file - please check setup" << endl;
+    return EXIT_FAILURE;
+  }
+
+  //check that the saved data directory does not already exist, create it if possible
+  savedir = config->getOutputFilename() + "/undedispersed/";
+  int flag = mkdir(savedir.c_str(), 0775);
+  if(flag < 0) {
+    cerr << "Error trying to create directory " << savedir << ": " << flag << ", ABORTING!" << endl;
+    exit(1);
+  }
+
+  //check that the input difx file does exist
+  input.open(inputdifxfile, ifstream::in);
+  if(input.fail()) {
+    cerr << "Error - problem opening input file " << inputdifxfile << endl;
+    exit(1);
+  }
+  input.close();
+
+  //bail out if more than one config
+  if(config->getNumConfigs() > 1) {
+    cerr << "Cannot deal with multi-config data yet - aborting!" << endl;
+    exit(1);
+  }
+
+  //bail out if more than one scan
+  if(model->getNumScans() > 1) {
+    cerr << "Cannot deal with multi-scan data yet - aborting!" << endl;
+    exit(1);
+  }
+
+  //work out the baseline indices
+  baselineindices = new int[(config->getTelescopeTableLength()+1)*257];
+  for(int i=0;i<config->getNumBaselines() + config->getNumDataStreams();i++) {
+    if(i<config->getNumBaselines())
+      baselineindices[256*(1+config->getDTelescopeIndex(0, config->getBDataStream1Index(0, i))) + 1+config->getDTelescopeIndex(0, config->getBDataStream2Index(0, i))] = i;
+    else
+      baselineindices[257*(1+config->getDTelescopeIndex(0, i-config->getNumBaselines()))] = i;
+  }
+
+  //move the input difx file to the saved directory
+  system(("mv " + string(inputdifxfile) + " " + savedir).c_str());
+  lastslash = string(inputdifxfile).find_last_of('/');
+  if(lastslash == string::npos)
+    lastslash = -1;
+  savedifxfile = savedir + string(inputdifxfile).substr(lastslash+1);
+
+  //work out the maximum buffer length required
+  maxnumintegrations = 0;
+  for(int i=0;i<model->getNumScans();i++) {
+    if(model->getScanDuration(i) > config->getExecuteSeconds())
+      dur = model->getScanDuration(i);
+    else
+      dur = config->getExecuteSeconds();
+    inttime = config->getIntTime(config->getScanConfigIndex(i));
+    if(dur/inttime > maxnumintegrations)
+      maxnumintegrations = (int)(dur/inttime + 0.99999); //round up if non-integer
+  }
+
+  //bail out if its too long to fit in one big buffer
+  if(maxnumintegrations > 100000) {
+    cerr << "Due to lazy buffering, can't do huge files yet - aborting!" << endl;
+    exit(1);
+  }
+
+  //create the array of dm delays, dm offsets and the visibility buffer
+  lastconfigindex = -1;
+  tempbuffer = new char[Visibility::HEADER_BYTES + sizeof(cf32)*config->getMaxNumChannels()];
+  visibilities = new char****[maxnumintegrations];
+  vistimes = new double[maxnumintegrations];
+  for(int i=0;i<maxnumintegrations;i++) {
+    visibilities[i] = new char***[config->getNumBaselines() + config->getNumDataStreams()];
+  }
+
+  mindelayoffset = 9999999;
+  maxdelayoffset = 0;
+  dmdelays = new double*[config->getFreqTableLength()];
+  dmoffsets = new int*[config->getFreqTableLength()];
+  for(int i=0;i<config->getFreqTableLength();i++) {
+    fchan = config->getFNumChannels(i)/config->getFChannelsToAverage(i);
+    dmdelays[i] = new double[config->getFNumChannels(i)];
+    dmoffsets[i] = new int[config->getFNumChannels(i)];
+    for(int j=0;j<fchan;j++) {
+      chanfreq = 0.001 * (config->getFreqTableFreq(i) + ((double)j)*config->getFreqTableBandwidth(i)/fchan);
+      dmdelays[i][j] = 4.15 * dm / (chanfreq * chanfreq);
+      dmoffsets[i][j] = (int)((dmdelays[i][j] + inttime/2.0) / (inttime));
+      if(dmoffsets[i][j] < mindelayoffset)
+        mindelayoffset = dmoffsets[i][j];
+      if(dmoffsets[i][j] > maxdelayoffset)
+        maxdelayoffset = dmoffsets[i][j];
+    }
+  }
+
+  //open the input and output files, step through each visibility and delay as appropriate
+  input.open(savedifxfile.c_str(), ifstream::binary|ifstream::in);
+  output.open(inputdifxfile, ios::trunc|ios::binary);
+
+  model = config->getModel();
+  startmjd = config->getStartMJD();
+  startseconds = config->getStartSeconds() + config->getStartNS()/1.0e9;
+  for(int i=0;i<model->getNumScans();i++) {
+    if(config->getScanConfigIndex(i) != lastconfigindex) {
+      lastconfigindex = config->getScanConfigIndex(i);
+      inttime = config->getIntTime(lastconfigindex);
+      for(int j=0;j<maxnumintegrations;j++) {
+        for(int k=0;k<config->getNumBaselines() + config->getNumDataStreams();k++) {
+          visibilities[j][k] = new char**[config->getFreqTableLength()];
+          for(int l=0;l<config->getFreqTableLength();l++) {
+            fchan = config->getFNumChannels(l)/config->getFChannelsToAverage(l);
+            visibilities[j][k][l] = new char*[4];
+            for(int m=0;m<4;m++) {
+              visibilities[j][k][l][m] = new char[Visibility::HEADER_BYTES + sizeof(cf32)*fchan];
+              memset(visibilities[j][k][l][m], 0, Visibility::HEADER_BYTES + sizeof(cf32)*fchan);
+            }
+          }
+        }
+      }
+    }
+    if(i==0)
+      input.read(tempbuffer, Visibility::HEADER_BYTES);
+    while(!input.eof()) {
+      currentmjd = *((int*)(tempbuffer+12));
+      currentseconds  = *((double*)(tempbuffer+16));
+      currentfreq = *((int*)(tempbuffer+28));
+      baseline = *((int*)(tempbuffer+8));
+      pol[0] = tempbuffer[32];
+      pol[1] = tempbuffer[33];
+      offset = int(((currentmjd-startmjd)*86400 + (currentseconds-startseconds))/inttime + 0.5);
+      if(offset > maxnumintegrations) {
+        cerr << "Trying to store data that won't fit into allocated buffer... Aborting!" << endl;
+        exit(1);
+      }
+      poloffset = 0;
+      if(pol[0] == 'L' && pol[1] == 'L')
+        poloffset = 1;
+      else if(pol[0] == 'R' && pol[1] == 'L')
+        poloffset = 2;
+      else if(pol[0] == 'L' && pol[1] == 'R')
+        poloffset = 3;
+      fchan = config->getFNumChannels(currentfreq)/config->getFChannelsToAverage(currentfreq);
+      memcpy(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset], tempbuffer, Visibility::HEADER_BYTES);
+      input.read(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset] + Visibility::HEADER_BYTES, sizeof(cf32)*fchan);
+    }
+    for(int i=0;i<maxnumintegrations-(maxdelayoffset-mindelayoffset);i++) {
+      for(int j=0;j<config->getNumBaselines() + config->getNumDataStreams();j++) {
+        for(int k=0;k<config->getFreqTableLength();k++) {
+          fchan = config->getFNumChannels(k)/config->getFChannelsToAverage(k);
+          for(int l=0;l<4;l++) {
+            if(visibilities[i][j][k][l][0] != 0) {
+              //fix the time header
+              *((double*)(visibilities[i][j][k][l]+16)) -= mindelayoffset*inttime;
+              cvis = (cf32*)(visibilities[i][j][k][l] + Visibility::HEADER_BYTES);
+              for(int m=0;m<fchan;m++) {
+                copypointer = visibilities[i+dmoffsets[k][m]-mindelayoffset][j][k][l] + Visibility::HEADER_BYTES + m*sizeof(cf32);
+                if(*copypointer == 0) {
+                  cvis[m].re = 0.0;
+                  cvis[m].im = 0.0;
+                }
+                else {
+                  cvis[m] = *((cf32*)(copypointer));
+                }
+              }
+              output.write(visibilities[i][j][k][l], Visibility::HEADER_BYTES + fchan*sizeof(cf32));
+            }
+          }
+        }
+      }
+    }
+  }
+
+  input.close();
+  output.close();
+}
