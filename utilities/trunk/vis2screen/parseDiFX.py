@@ -20,6 +20,16 @@ def nextinputline(inputlines):
     val = inputlines[0][sepindex:]
     return val[:-1], inputlines
 
+class Config:
+    name = ""
+    inttime = 0.0
+    subintns = 0
+    guardns = 0
+    fringerotorder = 0
+    arraystridelen = 0
+    xmacstridelen = 0
+    numbufferedffts = 0
+
 class Freq:
     bandwidth = 0.0
     freq = 0.0
@@ -216,7 +226,9 @@ def get_datastreamtable_info(inputfile):
         val, lines = nextinputline(lines[1:])
         datastreams[-1].datasource = val
         val, lines = nextinputline(lines[1:])
-        datastreams[-1].datasource = (val == "TRUE")
+        datastreams[-1].filterbankused = (val == "TRUE")
+	if "TCAL" in lines[1]:
+	    lines = lines[1:]
         val, lines = nextinputline(lines[1:])
         datastreams[-1].phasecalint = int(val)
         val, lines = nextinputline(lines[1:])
@@ -259,7 +271,39 @@ def get_datastreamtable_info(inputfile):
             val, lines = nextinputline(lines[1:])
             datastreams[-1].zoombandindex.append(int(val))
     return(numdatastreams, datastreams)
-        
+
+def get_configtable_info(inputfile):
+    input = open(inputfile)
+    lines = input.readlines()
+    input.close()
+
+    at = 0
+    while at < len(lines) and lines[at] != "# CONFIGURATIONS ###!\n":
+        at += 1
+
+    if at == len(lines):
+        return (0, [])
+
+    numconfigs = int(lines[at+1][20:])
+    configs = []
+    at += 2
+    for i in range(numconfigs):
+        configs.append(Config())
+        configs[-1].name    = lines[at+0][20:]
+        configs[-1].inttime = float(lines[at+1][20:])
+        configs[-1].subintns= int(lines[at+2][20:])
+	configs[-1].guardns = int(lines[at+3][20:])
+	configs[-1].fringerotorder = int(lines[at+4][20:])
+	configs[-1].arraystridelen = int(lines[at+5][20:])
+	configs[-1].xmacstridelen  = int(lines[at+6][20:])
+	configs[-1].numbufferedFFTs= int(lines[at+7][20:])
+	if i < numconfigs-1:
+	    at += 11
+	    while not "CONFIG NAME:" in lines[at]:
+	        at += 1
+
+    return (numconfigs, configs)
+
 def get_freqtable_info(inputfile):
     input = open(inputfile)
     lines = input.readlines()
@@ -274,13 +318,15 @@ def get_freqtable_info(inputfile):
 
     numfreqs = int(lines[at+1][20:])
     freqs = []
+    at += 2
     for i in range(numfreqs):
         freqs.append(Freq())
-        freqs[-1].freq = float(lines[at+i*8+2][20:])
-        freqs[-1].bandwidth = float(lines[at+i*8+3][20:])
-        if lines[at+i*7+4][20:21] == 'L':
+        freqs[-1].freq = float(lines[at+0][20:])
+        freqs[-1].bandwidth = float(lines[at+1][20:])
+        if lines[at+2][20:21] == 'L':
             freqs[-1].lsb = True
-        freqs[-1].numchan = int(lines[at+i*8+5][20:])
-        freqs[-1].specavg = int(lines[at+i*8+6][20:])
-
+        freqs[-1].numchan = int(lines[at+3][20:])
+        freqs[-1].specavg = int(lines[at+4][20:])
+	nphasecal = int(lines[at+7][20:])
+        at += 8 + nphasecal
     return (numfreqs, freqs)
