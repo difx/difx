@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include <cpgplot.h>
 #include "architecture.h"
 #include "configuration.h"

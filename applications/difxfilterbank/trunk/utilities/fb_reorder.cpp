@@ -124,8 +124,7 @@ void print_usage();
 
 // globals
 static int debug=0;
-static uint64_t abs_start_time_ns=0;
-static int64_t first_time=-1;
+static int64_t scan_start_time_ns=0;
 static FILE *fpd;
 
 Configuration * difxconfig;
@@ -214,9 +213,11 @@ calculate if and how much a tcal signal is present in STA spectrometer data. The
 to be tied to a 1pps signal so is tied to the start of every second at each station. The STA packets have a time
 since the start of the scan at geocenter, so by combining the known time of the start of the scan with the delay
 model and time offset of the actual pakcet, one can predict the tcal signal.
-The signal is assumed to be on 50% of the time, starting with being "off".
+The signal is assumed to be on 50% of the time, turning "on" at the start of a second.
 The amount of signal present in the integration is then a piecewise linear function with 5 segments
 depending on where the integration boundaries intersect with the transition of tcal
+
+time_offset_ns is the time corresponding to the middle of the integration time, not the start
 ******************************/
 int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, int antennaindex,float *result) {
     double delay=0.0;   // antenna delay relative to geocenter (microsec)
@@ -237,8 +238,8 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
           cerr << "ERROR: calculateDelayInterpolator failed for scan: " << options.scan_index << ". Antenna index: " << antennaindex << ". Offset ns: " << time_offset_ns << endl;
           return EXIT_FAILURE;
       }
-      // FIXME: is the rounding below as desired?  Probably doesn't make a difference.  -WFB
-      time_offset_ns_withdelay = static_cast<int64_t>(time_offset_ns - delay*1000);
+      time_offset_ns_withdelay = static_cast<int64_t>(time_offset_ns - delay*1000.0);
+//      time_offset_ns_withdelay = static_cast<int64_t>(time_offset_ns);
 
       while(time_offset_ns_withdelay < 0) time_offset_ns_withdelay += options.tcal_period_ns;
       offset_periods = time_offset_ns_withdelay/options.tcal_period_ns;
@@ -246,24 +247,24 @@ int tcal_predict(Model * model, int64_t time_offset_ns, uint32_t int_width_ns, i
       // calculate how many tcal periods this has been
       phase = (float)(time_offset_ns_withdelay - offset_periods*options.tcal_period_ns)/(float)options.tcal_period_ns;
 
-      if (debug) printf("For antenna %d the delay is %f us. The phase is %f. ",antennaindex,delay,phase);
       if (phase < pwf_tcal/2) {
-        frac_on = 0.5 - phase/pwf_tcal;
+        frac_on = 0.5 + phase/pwf_tcal;
       }
       else if (phase >= pwf_tcal/2 && phase < 0.5-pwf_tcal/2) {
-        frac_on = 0.0;
-      }
-      else if (phase >= 0.5-pwf_tcal/2 && phase < 0.5+pwf_tcal/2) {
-        frac_on = 0.5 + (phase - 0.5)/pwf_tcal;
-      }
-      else if (phase >= 0.5+pwf_tcal/2 && phase < 1.0-pwf_tcal/2) {
         frac_on = 1.0;
       }
+      else if (phase >= 0.5-pwf_tcal/2 && phase < 0.5+pwf_tcal/2) {
+        frac_on = 0.5 + (0.5 - phase)/pwf_tcal;
+      }
+      else if (phase >= 0.5+pwf_tcal/2 && phase < 1.0-pwf_tcal/2) {
+        frac_on = 0.0;
+      }
       else {
-        frac_on = (1.0 - phase)/pwf_tcal + 0.5;
+        frac_on = (phase - 1.0)/pwf_tcal + 0.5;
       }
       if (debug) {
-        printf("At offset %03.4f s (%03.4f s with delay), the Tcal is %f on\n",
+        printf("For antenna %d the delay is %f us. The phase is %f. ",antennaindex,delay,phase);
+        printf("At offset %03.6f s (%03.4f s with delay), the Tcal is %f on\n",
                 1e-9*time_offset_ns,1e-9*time_offset_ns_withdelay, frac_on );
       }
       *result = frac_on;
@@ -291,10 +292,22 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
                         float timeslot_frac[MAX_TIMESLOTS], int *n_time_slots) {
     int min_slot,max_slot,i;
     float frac_min, frac_max;
+    int64_t excess_time;
 
+    // calculate the min/max indexes in the output buffer. Note that this_time is the time at the start of the
+    // packet here, not the center
     min_slot = this_time/options.int_time_ns;
     max_slot = (this_time + packet_int_time_ns)/options.int_time_ns;
-    frac_min = 1.0 - (float)(this_time - min_slot*options.int_time_ns)/(float)packet_int_time_ns;
+
+    // calculate how much time this packet goes past the edge of the first slot, if any
+    excess_time = this_time + packet_int_time_ns - (min_slot+1)*options.int_time_ns;
+    if (excess_time > 0) {
+        frac_min = (float)(packet_int_time_ns-excess_time)/(float)packet_int_time_ns;
+    }
+    else {
+        frac_min = 1.0;
+    }
+//    frac_min = 1.0 - (float)(this_time - min_slot*options.int_time_ns)/(float)packet_int_time_ns;
     frac_max = (float)((this_time+packet_int_time_ns) - max_slot*options.int_time_ns )/(float)packet_int_time_ns;
 
     for (i=0; i<MAX_TIMESLOTS; i++) {
@@ -306,7 +319,10 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
 
     // now consider cases:
     if (max_slot == min_slot+1) {
-        if (frac_max == 0.0) *n_time_slots =1;  // case 4
+        if (frac_max == 0.0) {
+            *n_time_slots =1;  // case 4
+            timeslot_frac[0] = 1.0;
+        }
         else {
             *n_time_slots = 2;                 // case 2
             timeslot_frac[0] = (float)(options.int_time_ns*(min_slot+1) - this_time)/(float)packet_int_time_ns;
@@ -327,7 +343,7 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
         return 1;
     }
     if (debug) {
-        fprintf(fpd,"time: %lld, packet int time: %d, output int time: %d, min: %d, max: %d, frac_min: %f, frac_max: %f\n",
+        fprintf(fpd,"pkt start time: %lld, packet int time: %d, output int time: %d, min: %d, max: %d, frac_min: %f, frac_max: %f\n",
                 (long long) this_time, packet_int_time_ns, options.int_time_ns, min_slot, max_slot,frac_min,frac_max);
         for (i=0; i< *n_time_slots; i++) fprintf(fpd,"slot %lld, frac: %f\n",(long long) timeslots[i],timeslot_frac[i]);
     }
@@ -339,8 +355,6 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
 /*****************************
 ******************************/
 int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
-    static int init_header=0;
-
     uint64_t n_bytes_total = 0;
     size_t n_read;
     int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
@@ -350,6 +364,15 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
     chanvals = (float *) malloc(sizeof(float)*fb_config->n_chans);
     n_chunks_to_add = fb_config->n_streams * fb_config->n_bands;
+
+    // get the number of seconds offset from the job start time for this scan
+    scan_start_time_ns = difxconfig->getModel()->getScanStartSec(options.scan_index, difxconfig->getStartMJD(), difxconfig->getStartSeconds());
+    scan_start_time_ns *= 1000000000;
+    if(debug) {
+        fprintf(fpd,"Scan start offset relative to job: %lld\n",(long long)scan_start_time_ns);
+    }
+    bufinfo->starttime = scan_start_time_ns;
+    bufinfo->endtime = bufinfo->starttime + ((int64_t)bufinfo->bufsize-1)*options.int_time_ns;
 
     while (!done) {
         // read the header
@@ -387,18 +410,6 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
         this_time = (int64_t)header.time_ns + (int64_t)header.time_s*1000000000L;
 
-        // if this is the first packet, use the time to set the start/end times in the buffer
-        if (!init_header) {
-            init_header=1;
-            bufinfo->starttime = this_time;
-            first_time = (this_time/1000000000)*1000000000;
-            bufinfo->endtime = bufinfo->starttime + ((int64_t)bufinfo->bufsize-1)*options.int_time_ns;
-            abs_start_time_ns = this_time;
-            if(debug) {
-                fprintf(fpd,"First packet time: %lld. Rounded first time: %lld\n",(long long)this_time,(long long)first_time);
-            }
-        }
-
         // read the data for this chunk.
         n_read = fread(chanvals,sizeof(float)*header.n_channels,1,fpin);
         if(n_read == 0) {
@@ -420,13 +431,14 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
         // If this is outside the times we have in the buffers, we have to send
         // buffer(s) to make space.
-        if (this_time + header.int_time_ns > bufinfo->endtime + options.int_time_ns) {
+        if (this_time + header.int_time_ns/2 > bufinfo->endtime + options.int_time_ns) {
             int status=0;
 
-            offset = ((this_time + header.int_time_ns) - (bufinfo->endtime + options.int_time_ns))/options.int_time_ns;
+            // calculate how many buffer cells the end of this packet goes past
+            offset = ((this_time + header.int_time_ns/2) - (bufinfo->endtime + options.int_time_ns))/options.int_time_ns;
             if (offset == 0) offset += 1;   // for fraction of a output buffer
             if(debug) {
-                fprintf(fpd,"doReorder: no buffer available for chunk with time %lld + %d. ",
+                fprintf(fpd,"doReorder: no buffer available for chunk with center time %lld and width %d. ",
                             (long long) this_time,  header.int_time_ns);
                 fprintf(fpd,"End time: %lld + %d. Need to send %d time slots\n",
                             (long long)bufinfo->endtime, options.int_time_ns, offset);
@@ -457,18 +469,20 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
         // calculate the fraction of tcal
         // don't recalculate if this packet's time is the same as last time
         if (this_time != last_time) {
-            res = calcTimeSlotOverlap(this_time - bufinfo->starttime, header.int_time_ns, timeslots, timeslot_frac, &n_time_slots);
+            res = calcTimeSlotOverlap((this_time -header.int_time_ns/2) - (bufinfo->starttime), header.int_time_ns, timeslots, timeslot_frac, &n_time_slots);
             assert(res == 0);
         }
 
-        // calculate the tcal fraction for this packet
+        // calculate the tcal fraction for this packet. Note that different streams will have different
+        // tcal phase
         if (options.tcal_period_ns != 0 && (this_time != last_time || header.stream_id != last_stream)) {
-            res = tcal_predict(difxconfig->getModel(), this_time-first_time, header.int_time_ns,
+            if (debug) fprintf(fpd,"calcing tcal for ant %d at time %lld\n",header.stream_id,(long long)this_time);
+            res = tcal_predict(difxconfig->getModel(), this_time-scan_start_time_ns, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed after %lld bytes. Printing header and exiting\n",(long long)n_bytes_total);
-                fprintf(stderr,"This time: %lld. First time: %lld\n",(long long)this_time,(long long)first_time);
+                fprintf(stderr,"This time: %lld. First time: %lld\n",(long long)this_time,(long long)scan_start_time_ns);
                 printChunkHeader(&header,stderr);
                 return 1;
             }
@@ -708,19 +722,23 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     header.scan_id = options.scan_index;
     header.int_time_ns = options.int_time_ns;
 
-    // the thread index is implicit time ordering within the larger group
+    // note time conventions. STA packets have time that is the center time, cells in the buffer have time that
+    // is the start time for the cell. Need to add half the cell int time to be consistent on output
+    int64_t bufstarttime;
     if (bufinfo->buffers[buf_ind].n_added ==0) {
-        header.time_s  = bufinfo->starttime / 1000000000;
-        header.time_ns = bufinfo->starttime % 1000000000;
+        bufstarttime = bufinfo->starttime + options.int_time_ns/2;
     }
     else {
-        header.time_s = bufinfo->buffers[buf_ind].time_s;
-        header.time_ns= bufinfo->buffers[buf_ind].time_ns;
+        bufstarttime = (int64_t)bufinfo->buffers[buf_ind].time_s*1000000000
+                     + (int64_t)bufinfo->buffers[buf_ind].time_ns
+                     + (int64_t)options.int_time_ns/2;
     }
+    header.time_s  = bufstarttime / 1000000000;
+    header.time_ns = bufstarttime % 1000000000;
     header.thread_id = bufinfo->buffers[buf_ind].thread_id;
 
     // form medians for subtracting tcal and padding missing data, if we haven't done so recently
-    time_ns = (int64_t)header.time_ns + (int64_t)header.time_s * 1000000000L;
+    time_ns = (int64_t)header.time_ns + (int64_t)header.time_s*1000000000L;
 
     if (last_median_time_ns ==0 || (time_ns -last_median_time_ns)/header.int_time_ns >= N_MEDIAN*MED_CALC_SKIP) {
         if (debug) fprintf(fpd,"Forming medians after %lld integration times\n",(long long) ((time_ns -last_median_time_ns)/header.int_time_ns));
@@ -737,12 +755,12 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
         // median value per channel.
         if (options.tcal_period_ns != 0) {
             int res;
-            res = tcal_predict(difxconfig->getModel(), time_ns - first_time, header.int_time_ns,
+            res = tcal_predict(difxconfig->getModel(), time_ns - scan_start_time_ns, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
             if (res != 0) {
                 fprintf(stderr,"ERROR: tcal_predict failed in sendEarliestBuffer. Printing header and exiting\n");
-                fprintf(stderr,"Buffer time: %lld. First time: %lld\n",(long long)time_ns,(long long)first_time);
+                fprintf(stderr,"Buffer time: %lld. First time: %lld\n",(long long)time_ns,(long long)scan_start_time_ns);
                 printChunkHeader(&header,stderr);
                 return 1;
             }
@@ -765,9 +783,9 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
             // calculate the array index offsets for the data and medians
             dat = bufinfo->buffers[buf_ind].data + chunk_index*header.n_channels;
             med_offset = header.n_channels*(band + stream*fb_config->n_bands);
- 
+
             // if the data is zero (i.e. nothing there) then just write zeros
-            if (dat[1] != 0.0) {
+            if (dat[0] !=0.0 && dat[1] != 0.0) {
                 float wgt = 1.0/(bufinfo->buffers[buf_ind].weights[chunk_index]);
 
                 // normalise the data. must do this before subtracting medians
@@ -814,7 +832,12 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
 
                     }    
                 }
-
+                if(debug) fprintf(fpd,"sent after median subtract for stream %d, band %d\n",stream,band);
+            }
+            else {
+              if (debug) {
+                fprintf(fpd,"sending all zero for stream %d, band %d\n",stream,band);
+              }
             }
 
             // write the data for this chunk
@@ -1052,13 +1075,19 @@ int set_FB_Config(FB_Config *fb_config) {
 ******************************/
 void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options) {
     const char *optstring = "Fdi:o:t:T:f:P:c:s:C:";
-    int result=0,i;
-    time_t timenow;
+    int result=0;
 
-    timenow = time(NULL);
-    fprintf(fpd,"Program started at %s. Dumping command line\n",asctime(gmtime(&timenow)));
-    for (i=0; i<argc; i++) fprintf(fpd,"%s ",argv[i]);
-    fprintf(fpd,"\n");
+/*
+    {
+      time_t timenow;
+      int i;
+      
+      timenow = time(NULL);
+      fprintf(stderr,"Program started at %s Dumping command line\n",asctime(gmtime(&timenow)));
+      for (i=0; i<argc; i++) fprintf(fpd,"%s ",argv[i]);
+      fprintf(stderr,"\n");
+    }
+*/
 
 
     if (argc ==1) print_usage();
