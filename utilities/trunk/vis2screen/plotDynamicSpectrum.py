@@ -132,9 +132,8 @@ if savednchan > 0:
         numpyphase = numpy.zeros((savednchan, vislen), numpy.float32)
         for i in range(savednchan):
             for j in range(vislen):
-                # Flip the data so highest frequency is on top
-	        numpyamp[i][j] = amp[0][i][vislen-j-1]
-	        numpyphase[i][j] = phase[0][i][vislen-j-1]
+	        numpyamp[i][j] = amp[0][i][j]
+	        numpyphase[i][j] = phase[0][i][j]
 	ax = pylab.subplot(2,1,1)
 	xformatter = FuncFormatter(xindex2ms)
         yformatter = FuncFormatter(make_yindex2MHz(offsetfreq))
@@ -157,14 +156,18 @@ if savednchan > 0:
     else: # Want to display all freqs, one after another
         pylab.figure(figsize=(15,9))
         pylab.suptitle('All frequencies for %s' % inputfile)
+        freqvals = [f.freq for f in freqs]
+        # Sort by freq, then reverse the order so highest is first
+        sortedfreqinds = numpy.argsort(freqvals)[::-1]
         for i in range(numfreqs):
-            offsetfreq = freqs[i].freq
-            chanwidth = freqs[i].bandwidth / (freqs[i].numchan/freqs[i].specavg)
+            f = freqs[sortedfreqinds[i]]
+            a = amp[sortedfreqinds[i]]
+            offsetfreq = f.freq
+            chanwidth = f.bandwidth / (f.numchan/f.specavg)
 	    numpyamp = numpy.zeros((savednchan, vislen), numpy.float32)
 	    for j in range(savednchan):
 	        for k in range(vislen):
-                    # Flip the data so highest frequency is on top
-		    numpyamp[j][k] = amp[i][j][vislen-k-1]
+		    numpyamp[j][k] = a[j][k]
 	    ax = pylab.subplot(numfreqs,1,i+1)
             pylab.subplots_adjust(wspace=0.05, hspace=0.02,
                                   top=0.95, bottom=0.08, left=0.125, right = 0.9)
