@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
   int ** dmoffsets;
   char ***** visibilities;
   char * copypointer;
-  cf32 * cvis;
+  char * outputpointer;
   char * tempbuffer;
   char pol[3];
   ifstream input;
@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
   int lastslash, fchan, numfreqs, lastconfigindex, maxnumintegrations;
   int mindelayoffset, maxdelayoffset, poloffset;
   int startmjd, currentmjd, currentfreq, baseline, offset;
-  double dm, dur, inttime, chanfreq, startseconds, currentseconds;
+  double dm, dur, inttime, chanfreq, startseconds, currentseconds, lastseconds;
   pol[2] = 0;
 
   if(argc != 4)
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     cerr << "Config encountered inconsistent setup in config file - please check setup" << endl;
     return EXIT_FAILURE;
   }
+  model = config->getModel();
 
   //check that the saved data directory does not already exist, create it if possible
   savedir = config->getOutputFilename() + "/undedispersed/";
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
 
   //work out the maximum buffer length required
   maxnumintegrations = 0;
+  inttime = 0.0;
   for(int i=0;i<model->getNumScans();i++) {
     if(model->getScanDuration(i) > config->getExecuteSeconds())
       dur = model->getScanDuration(i);
@@ -153,7 +155,7 @@ int main(int argc, char *argv[])
     dmoffsets[i] = new int[config->getFNumChannels(i)];
     for(int j=0;j<fchan;j++) {
       chanfreq = 0.001 * (config->getFreqTableFreq(i) + ((double)j)*config->getFreqTableBandwidth(i)/fchan);
-      dmdelays[i][j] = 4.15 * dm / (chanfreq * chanfreq);
+      dmdelays[i][j] = 0.00415 * dm / (chanfreq * chanfreq);
       dmoffsets[i][j] = (int)((dmdelays[i][j] + inttime/2.0) / (inttime));
       if(dmoffsets[i][j] < mindelayoffset)
         mindelayoffset = dmoffsets[i][j];
@@ -166,7 +168,6 @@ int main(int argc, char *argv[])
   input.open(savedifxfile.c_str(), ifstream::binary|ifstream::in);
   output.open(inputdifxfile, ios::trunc|ios::binary);
 
-  model = config->getModel();
   startmjd = config->getStartMJD();
   startseconds = config->getStartSeconds() + config->getStartNS()/1.0e9;
   for(int i=0;i<model->getNumScans();i++) {
@@ -187,19 +188,29 @@ int main(int argc, char *argv[])
         }
       }
     }
-    if(i==0)
+    if(i==0) {
       input.read(tempbuffer, Visibility::HEADER_BYTES);
-    while(!input.eof()) {
       currentmjd = *((int*)(tempbuffer+12));
       currentseconds  = *((double*)(tempbuffer+16));
-      currentfreq = *((int*)(tempbuffer+28));
+      lastseconds = currentseconds;
+      offset = int(((currentmjd-startmjd)*86400 + (currentseconds-startseconds))/inttime);
+    }
+    int readcount = 0;
+    while(!input.eof()) {
+      readcount += 1;
+      currentmjd = *((int*)(tempbuffer+12));
+      currentseconds  = *((double*)(tempbuffer+16));
+      currentfreq = *((int*)(tempbuffer+32));
       baseline = *((int*)(tempbuffer+8));
-      pol[0] = tempbuffer[32];
-      pol[1] = tempbuffer[33];
-      offset = int(((currentmjd-startmjd)*86400 + (currentseconds-startseconds))/inttime + 0.5);
-      if(offset > maxnumintegrations) {
-        cerr << "Trying to store data that won't fit into allocated buffer... Aborting!" << endl;
-        exit(1);
+      pol[0] = tempbuffer[36];
+      pol[1] = tempbuffer[37];
+      if(currentseconds > lastseconds) {
+        offset++;
+        if(offset > maxnumintegrations) {
+          cerr << "Trying to store data that won't fit into allocated buffer... Aborting!" << endl;
+          exit(1);
+        }
+	lastseconds = currentseconds;
       }
       poloffset = 0;
       if(pol[0] == 'L' && pol[1] == 'L')
@@ -211,28 +222,29 @@ int main(int argc, char *argv[])
       fchan = config->getFNumChannels(currentfreq)/config->getFChannelsToAverage(currentfreq);
       memcpy(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset], tempbuffer, Visibility::HEADER_BYTES);
       input.read(visibilities[offset][baselineindices[baseline]][currentfreq][poloffset] + Visibility::HEADER_BYTES, sizeof(cf32)*fchan);
+      input.read(tempbuffer, Visibility::HEADER_BYTES);
     }
+    cout << "Read " << readcount << " visibility dumps" << endl;
+    cout << "Mindelayoffset is " << mindelayoffset << ", maxdelayoffset is " << maxdelayoffset << endl;
+    cout << "maxnumintegrations is " << maxnumintegrations << endl;
     for(int i=0;i<maxnumintegrations-(maxdelayoffset-mindelayoffset);i++) {
       for(int j=0;j<config->getNumBaselines() + config->getNumDataStreams();j++) {
         for(int k=0;k<config->getFreqTableLength();k++) {
           fchan = config->getFNumChannels(k)/config->getFChannelsToAverage(k);
           for(int l=0;l<4;l++) {
-            if(visibilities[i][j][k][l][0] != 0) {
+            if(*((int*)visibilities[i][j][k][l]) != 0) {
               //fix the time header
               *((double*)(visibilities[i][j][k][l]+16)) -= mindelayoffset*inttime;
-              cvis = (cf32*)(visibilities[i][j][k][l] + Visibility::HEADER_BYTES);
+              outputpointer = visibilities[i][j][k][l] + Visibility::HEADER_BYTES;
               for(int m=0;m<fchan;m++) {
                 copypointer = visibilities[i+dmoffsets[k][m]-mindelayoffset][j][k][l] + Visibility::HEADER_BYTES + m*sizeof(cf32);
-                if(*copypointer == 0) {
-                  cvis[m].re = 0.0;
-                  cvis[m].im = 0.0;
-                }
-                else {
-                  cvis[m] = *((cf32*)(copypointer));
-                }
+		memcpy(outputpointer+m*sizeof(cf32), copypointer, sizeof(cf32));
               }
               output.write(visibilities[i][j][k][l], Visibility::HEADER_BYTES + fchan*sizeof(cf32));
             }
+	    //else {
+	    //  cout << "Skipping a missing visibility from offset " << i << " baseline " << j << " freq " << k << " pol " << l << endl;
+	    //}
           }
         }
       }
