@@ -412,6 +412,9 @@ int difxMessageBinaryOpen(int destination);
 int difxMessageBinaryClose(int sock);
 int difxMessageBinaryRecv(int sock, char *message, int maxlen, char *from);
 
+void fprintDifxMessageSTARecord(FILE *out, const DifxMessageSTARecord *record, int printData);
+void printDifxMessageSTARecord(const DifxMessageSTARecord *record, int printData);
+
 int difxMessageParse(DifxMessageGeneric *G, const char *message);
 void difxMessageGenericPrint(const DifxMessageGeneric *G);
 

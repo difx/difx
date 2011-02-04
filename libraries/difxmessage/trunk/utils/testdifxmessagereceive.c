@@ -39,6 +39,7 @@ const char version[] = "1.0";
 const char verdate[] = "20100717";
 const char author[]  = "Walter Brisken";
 
+const int MAX_MTU = 9000;
 
 int usage(const char *cmd)
 {
@@ -48,6 +49,7 @@ int usage(const char *cmd)
 	printf("Usage:  %s [options]  [type]\n\n", cmd);
 	printf("Options can be:\n\n");
 	printf("  -h or --help   : Print this help info\n\n");
+	printf("  -b or --binary : Write binary records to file binary.out\n\n");
 	printf("Type is a number from 1 to %d and refers to the following message types\n\n",
 		NUM_DIFX_MESSAGE_TYPES-1);
 	for(i = 1; i < NUM_DIFX_MESSAGE_TYPES; i++)
@@ -66,7 +68,8 @@ int main(int argc, char **argv)
 	enum DifxMessageType type = DIFX_MESSAGE_UNKNOWN;
 	int i, l;
 	int verbose = 1;
-	char message[DIFX_MESSAGE_LENGTH], from[DIFX_MESSAGE_PARAM_LENGTH];
+	int binary = 0;
+	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	time_t t;
 	char timestr[TimeLength];
 	DifxMessageGeneric G;
@@ -84,6 +87,11 @@ int main(int argc, char **argv)
 		{
 			verbose++;
 		}
+		else if(strcmp(argv[1], "-b") == 0 ||
+		   strcmp(argv[1], "--binary") == 0)
+		{
+			binary = 1;
+		}
 		else
 		{
 			type = atoi(argv[1]);
@@ -97,55 +105,95 @@ int main(int argc, char **argv)
 		}
 	}
 
-	difxMessageInit(-1, argv[0]);
-
-	sock = difxMessageReceiveOpen();
-
-	printf("\n");
-
-	for(;;)
+	if(binary)
 	{
-		from[0] = 0;
-		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-		if(l < 0)
-		{
-			usleep(100000);
-			continue;
-		}
-		message[l] = 0;
-		time(&t);
-		l = snprintf(timestr, TimeLength, "%s", ctime(&t));
-		if(l >= TimeLength)
-		{
-			fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d\n",
-				TimeLength, l);
-			exit(0);
-		}
+		char message[MAX_MTU];
+		FILE *out;
 
-		for(i = 0; timestr[i]; i++)
+		difxMessageInitBinary();
+
+		sock = difxMessageBinaryOpen(BINARY_STA);
+
+		out = fopen("binary.out", "w");
+
+		for(;;)
 		{
-			if(timestr[i] < ' ')
+			l = difxMessageBinaryRecv(sock, message, MAX_MTU, from);
+			if(l <= 0)
 			{
-				timestr[i] = ' ';
+				usleep(100000);
+
+				continue;
+			}
+			else
+			{
+				fwrite(message, 1, l, out);
+				printf(".");
+				fflush(stdout);
 			}
 		}
 
-		difxMessageParse(&G, message);
-		if(type == DIFX_MESSAGE_UNKNOWN || type == G.type)
-		{
-			printf("[%s %s] ", timestr, from);
-			difxMessageGenericPrint(&G);
-			printf("\n");
-			if(verbose)
-			{
-				printf("[%s %s] %s\n", timestr, from, message);
-				printf("\n");
-			}
-			fflush(stdout);
-		}
+		fclose(out);
+
+		difxMessageBinaryClose(sock);
 	}
+	else
+	{
+		char message[DIFX_MESSAGE_LENGTH];
 
-	difxMessageReceiveClose(sock);
+		difxMessageInit(-1, argv[0]);
+
+		sock = difxMessageReceiveOpen();
+
+		printf("\n");
+
+		for(;;)
+		{
+			from[0] = 0;
+			l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
+			if(l < 0)
+			{
+				usleep(100000);
+
+				continue;
+			}
+			message[l] = 0;
+			time(&t);
+			l = snprintf(timestr, TimeLength, "%s", ctime(&t));
+			if(l >= TimeLength)
+			{
+				fprintf(stderr, "Developer error: TimeLength=%d is too small (wants %d\n",
+					TimeLength, l);
+
+				exit(0);
+			}
+
+			for(i = 0; timestr[i]; i++)
+			{
+				if(timestr[i] < ' ')
+				{
+					timestr[i] = ' ';
+				}
+			}
+
+			difxMessageParse(&G, message);
+			if(type == DIFX_MESSAGE_UNKNOWN || type == G.type)
+			{
+				printf("[%s %s] ", timestr, from);
+				difxMessageGenericPrint(&G);
+				printf("\n");
+				if(verbose)
+				{
+					printf("[%s %s] %s\n", timestr, from, message);
+					printf("\n");
+				}
+				fflush(stdout);
+			}
+		}
+
+		difxMessageReceiveClose(sock);
+
+	}
 
 	return 0;
 }
