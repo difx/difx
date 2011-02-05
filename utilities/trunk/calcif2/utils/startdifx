@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 PROGRAM = 'startdifx'
-VERSION = '0.4'
-VERDATE = '20100516'
+VERSION = '0.5'
+VERDATE = '20110204'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -12,15 +12,20 @@ defaultttl   = 3
 genmachines = 'genmachines -v'
 calcif      = 'calcif2'
 difx2fits   = 'difx2fits -v'
-mpiOptions  = '--mca btl ^udapl,openib --mca mpi_yield_when_idle 1 --mca rmaps seq'
+mpiOptions  = '--mca mpi_yield_when_idle 1 --mca rmaps seq'
 
-from sys import argv, exit
-from os import popen, getcwd, system, getenv, getpid
+from sys import argv, exit, stdout
+from os import popen, getcwd, system, getenv, getpid, environ
 from os.path import isfile, isdir
-from string import split, strip, rfind
-from time import time
+from string import split, strip, find, rfind, upper, lower
+from time import time, asctime
 from glob import glob
+from copy import deepcopy
+from xml.parsers import expat
 import socket
+import struct
+import socket
+
 
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
@@ -40,6 +45,8 @@ def usage():
 	print '          will not run genmachines, even if needed\n'
 	print '  -d or --dont-calc'
 	print '          will not run calcif, even if needed\n'
+	print '  -m or --message'
+	print '          start difx via DifxStartMessage\n'
 	print '  -F or --fits'
 	print '          generate 1 fits file per job at end of each\n'
 	print '  --override-version'
@@ -49,6 +56,145 @@ def usage():
 	print 'can be used to override the default group/port of %s/%d\n' % \
 		(defaultgroup, defaultport)
 	exit(0)
+
+
+
+
+
+
+
+
+class Parser:
+
+    def __init__(self):
+        self._parser = expat.ParserCreate()
+        self._parser.StartElementHandler = self.start
+        self._parser.EndElementHandler = self.end
+        self._parser.CharacterDataHandler = self.data
+	self.message = ''
+	self.mjd = 0.0
+	self.state = ''
+	self.tmp = ''
+	self.ok = False
+	self.unit = ''
+	self.mpiid = -1
+	self.id = ''
+	self.tag = ''
+
+    def feed(self, data):
+        self._parser.Parse(data, 0)
+
+    def close(self):
+        self._parser.Parse("", 1) # end of data
+        del self._parser # get rid of circular references
+
+    def start(self, tag, attrs):
+        self.tag = tag
+        self.tmp = ''
+        if tag == 'difxStatus':
+                self.ok = True
+
+    def end(self, tag):
+        if tag == 'message' and self.ok:
+		self.message = self.tmp
+	elif tag == 'state':
+		self.state = self.tmp
+	elif tag == 'visibilityMJD':
+		self.mjd = float(self.tmp)
+	elif tag == 'from':
+		self.unit = lower(self.tmp)
+	elif tag == 'identifier':
+		self.id = self.tmp
+	elif tag == 'mpiProcessId':
+		self.mpiid = int(self.tmp)
+
+    def data(self, data):
+        if self.tag == 'message':
+            self.tmp = self.tmp + data	
+        else:
+            self.tmp = data
+
+    def getinfo(self):
+	if self.ok:
+        	return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiid, self.unit, self.id, self.state, self.message)
+	else:
+		return ''
+
+def watchjob(jobId):
+	
+	print 'watching %s' % jobId
+
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		print 'DIFX_MESSAGE_PORT needs to be defined'
+		exit(0)
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		exit(0)
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	#s.settimeout(dt)
+
+	try:
+		while 1:
+			try:
+			    message = s.recv(1500)
+			    if len(message) > 0 and message[0] == '<':
+				p = Parser()
+				p.feed(message)
+				info = p.getinfo()
+				p.close()
+				if p.ok and p.id == jobId:
+					if p.state == 'Running':
+						stdout.write('.')
+						stdout.flush()
+					else:
+						stdout.write("<%s>" % p.state)
+						stdout.flush()
+					if p.state == 'MpiDone' or p.state == 'Crashed':
+						return
+			except socket.timeout:
+				pass
+	except KeyboardInterrupt:
+		pass
+
+
+
+
+
+
+def updateenvironment(filename):
+	
+	savedenvironment = []
+	
+	if isfile(filename):
+		lines = open(filename).readlines()
+		for l in lines:
+			if l[0] == '#':
+				continue
+			e = split(strip(l))
+			if len(e) == 2:
+				savedenvironment.append([e[0], getenv(e[0])])
+				environ[e[0]] = e[1]
+
+	return savedenvironment
+
+
+def restoreenvironment(savedenvironment):
+
+	for e in savedenvironment:
+		if e[1] == None:
+			del environ[e[0]]
+		else:
+			environ[e[0]] = e[1]
+
 
 def getjobdifxversion(filebase):
 	files = glob(filebase+'.calc')
@@ -114,7 +260,99 @@ def sendmessage(filebase, state, statusmessage):
 		(socket.gethostname(), identifier, state, statusmessage)
 	
 	sock.sendto(message, (group, port) )
+
+# getnodes depends on the particular assumptions made by genmachines
+def getnodes(fileBase):
+
+	threads = []
+	machines = []
+	datastreams = []
+	processors = {}
+
+	print fileBase
+
+	threadData = open(fileBase + '.threads').readlines()
+	for t in threadData[1:]:
+		threads.append(int(t))
+	machineData = open(fileBase + '.machines').readlines()
 	
+	nDatastream = len(machineData) - len(threads) - 1
+
+	for m in range(1, nDatastream+1):
+		datastreams.append(split(strip(machineData[m]))[0])
+
+	for m in range(1+nDatastream, len(machineData)):
+		i = m - 1 - nDatastream
+		t = threads[i]
+		if processors.has_key(t):
+			processors[t].append(split(strip(machineData[m]))[0])
+		else:
+			processors[t] = [(split(strip(machineData[m]))[0])]
+
+	return datastreams, processors
+
+def sendstartmessage(fileBase, difxVersion):
+
+	inputFile = fileBase + '.input'
+
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultgroup
+	
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultport
+	else:
+		port = int(port)
+		
+	headNode = getenv('DIFX_HEAD_NODE')
+	
+	identifier = split(filebase, '/')[-1]
+	
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
+
+	dsList, pList = getnodes(fileBase)
+
+	dataStreams = ""
+	for d in dsList:
+		dataStreams = dataStreams + d + " "
+	dataStreams = dataStreams.strip()
+	processors = ""
+	pKeys = pList.keys()
+	for p in pKeys:
+		processors = processors + "<process threads=\"%s\" nodes=\"" % p
+		for q in pList[p]:
+			processors = processors + q + " "
+		processors = processors.strip() + "\"/>"
+	
+	message = \
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+		"<difxMessage>" \
+		  "<header>" \
+		    "<from>startdifx</from>" \
+		    "<to>%s</to>" \
+		    "<mpiProcessId>-1</mpiProcessId>" \
+		    "<identifier>%s</identifier>" \
+		    "<type>DifxStart</type>" \
+		  "</header>" \
+		  "<body>" \
+		    "<difxStart>" \
+		      "<input>%s</input>" \
+		      "<manager node=\"%s\"/>" \
+		      "<datastream nodes=\"%s\"/>" \
+		      "%s" \
+		      "<difxVersion>%s</difxVersion>" \
+		    "</difxStart>" \
+		  "</body>" \
+		"</difxMessage>\n" % \
+		(headNode, identifier, inputFile, headNode, dataStreams, processors, difxVersion)
+
+	print "Sending: ", message
+
+	sock.sendto(message, (group, port) )
+
+	watchjob(split(fileBase, '/')[-1])
 
 # verify presense of .machines file
 def domachines(filebase, machinespolicy):
@@ -132,9 +370,43 @@ def domachines(filebase, machinespolicy):
 				return 0
 		else:
 			return 0
+
 	return len(open(fn).readlines())
 
-def run(filebase, machinespolicy, deletepolicy, makeModel, override):
+# Start difx with DifxStartMessage
+def runmessage(filebase, machinespolicy, deletepolicy, makeModel, override):
+
+	difxVersion = testdifxversion(filebase, override)
+
+	identifier = split(filebase, '/')[-1]
+
+	if not isfile(filebase+'.input'):
+		return 'Error: input file %s.input not found' % filebase
+	
+	if not isfile(filebase+'.im'):
+		if makeModel and isfile(filebase+'.calc'):
+			system('%s %s.calc' % (calcif, filebase))
+		else:
+			return 'Error: model not available for %s' % filebase
+	
+	if isdir(filebase+'.difx') or isfile(filebase+'.difx'):
+		if deletepolicy == 1:
+			print 'Removing %s.difx' % filebase
+			sendmessage(filebase, 'Info', 'Deleting %s.difx' % filebase)
+			system('rm -rf %s.difx' % filebase)
+		else:
+			return 'Error: output file %s.difx exists' % filebase
+	
+	np = domachines(filebase, machinespolicy)
+	if np <= 0:
+		return 'Error: %s.machines not found' % filebase
+
+	sendstartmessage(filebase, difxVersion)
+
+	return None
+
+# Start difx directly with mpirun
+def rundirect(filebase, machinespolicy, deletepolicy, makeModel, override):
 
 	difxVersion = testdifxversion(filebase, override)
 
@@ -194,6 +466,19 @@ def run(filebase, machinespolicy, deletepolicy, makeModel, override):
 
 	return None
 
+
+def run(filebase, machinespolicy, deletepolicy, makeModel, override, usestartmessage):
+	
+	savedenvironment = updateenvironment(filebase+'.input.env')
+	if usestartmessage:
+		rv = runmessage(filebase, machinespolicy, deletepolicy, makeModel, override)
+	else:
+		rv = rundirect(filebase, machinespolicy, deletepolicy, makeModel, override)
+	restoreenvironment(savedenvironment)
+
+	return rv
+
+
 if len(argv) < 2:
 	usage()
 
@@ -204,6 +489,7 @@ makefits = False
 filebaselist = []
 cwd = getcwd()
 override = False
+usestartmessage = False
 
 for a in argv[1:]:
 	if a[0] == '-':
@@ -215,6 +501,8 @@ for a in argv[1:]:
 			machinespolicy = 1
 		elif a == '-n' or a == '--nomachines':
 			machinespolicy = 0
+		elif a == '-m' or a == '--message':
+			usestartmessage = True
 		elif a == '-f' or a == '--force':
 			deletepolicy = 1
 		elif a == '-d' or a == '--dont-calc':
@@ -246,7 +534,7 @@ for filebase in filebaselist:
 		print "Job name %s is too long and will be skipped!" % filebase
 		exit(1)
 
-	v = run(filebase, machinespolicy, deletepolicy, makeModel, override)
+	v = run(filebase, machinespolicy, deletepolicy, makeModel, override, usestartmessage)
 
 	if v != None:
 		sendmessage(filebase, 'ABORTED', v)

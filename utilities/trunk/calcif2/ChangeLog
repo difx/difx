@@ -191,6 +191,8 @@ Version 0.4
 * check for length of job name
 * use DIFX_VERSION env var to choose which version to run
 * check for .im, not .uvw + .delay
+Version 0.5
+* -m option to use difxmessage
 
 calcif
 ~~~~~~
