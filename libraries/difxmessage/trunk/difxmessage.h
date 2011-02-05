@@ -30,6 +30,8 @@
 #ifndef __DIFX_MESSAGE_H__
 #define __DIFX_MESSAGE_H__
 
+#include <stdio.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
