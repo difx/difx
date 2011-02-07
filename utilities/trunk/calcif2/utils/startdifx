@@ -363,7 +363,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 	cmd = 'grep "CORE CONF FILENAME" %s.input' % fileBase
 	f = popen(cmd, 'r').readlines()
 	if len(f) == 1:
-		threadsFile = f[0]
+		threadsFile = strip(split(f[0], ':')[-1])
 	else:
 		threadsFile = fileBase + '.threads'
 
@@ -374,9 +374,9 @@ def doMachines(fileBase, machinesPolicy, cache):
 		if verbose > 1:
 			print 'Executing: %s' % cmd
 		system(cmd)
+		cmd = 'cp %s %s' % (cache[1], threadsFile);
 		if verbose > 1:
 			print 'Executing: %s' % cmd
-		cmd = 'cp %s %s' % (cache[1], threadsFile);
 		system(cmd)
 	else:
 		if machinesPolicy == 2:
