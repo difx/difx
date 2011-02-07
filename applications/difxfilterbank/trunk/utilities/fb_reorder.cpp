@@ -57,7 +57,7 @@
 
 #define PROGNAME "fb_reorder"
 #define FB_HEAD_N_ELEMENTS  10       // each header item is a 4-byte int
-#define BUF_DELAY_DEFAULT   4.0      // default buffer window (seconds) to wait for delayed/lost packets
+#define BUF_DELAY_DEFAULT   8.0      // default buffer window (seconds) to wait for delayed/lost packets
 #define DEFAULT_INTTIME 1000000      // default integration time of autocorrelations (ns)
 #define DEFAULT_NCHANS      32       // default number of channels per band from the filterbank
 #define DEFAULT_NSTREAMS    10       // default number of antennas contributing data
@@ -449,7 +449,8 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                 fprintf(stderr,"Current buffer end time: %g\n",bufinfo->endtime*1e-9);
                 fprintf(stderr,"have processed %lld bytes. printing header\n",(long long)n_bytes_total);
                 printChunkHeader(&header,stderr);
-                return 1;
+                //return 1;
+                continue;
             }
             for(int i=0; i <offset; i++) {
                 buf_ind = bufinfo->startindex; // startindex gets changed with each call to sendEarliest
@@ -467,7 +468,8 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
         // calculate the timeslot(s) for this packet in output grid.
         // calculate the fraction of tcal
-        // don't recalculate if this packet's time is the same as last time
+        // don't recalculate if this packet's time is the same as last time, since they all have to be identical
+        // since DiFX threads/cores do calcs for ALL streams for a given time within the same core
         if (this_time != last_time) {
             res = calcTimeSlotOverlap((this_time -header.int_time_ns/2) - (bufinfo->starttime), header.int_time_ns, timeslots, timeslot_frac, &n_time_slots);
             assert(res == 0);
@@ -1055,6 +1057,7 @@ int set_FB_Config(FB_Config *fb_config) {
         fprintf(fpd,"num chans:   %d\n",fb_config->n_chans);
         fprintf(fpd,"STA integration time (approx): %d (ns)\n",subint_ns);
     }
+    options.int_time_ns = subint_ns;
 
     fb_config->flags = (unsigned char ***) calloc(fb_config->n_streams,sizeof(unsigned char **));
     assert(fb_config->flags != NULL);
@@ -1147,7 +1150,7 @@ void print_usage() {
     fprintf(stderr,"-o filename\tThe name of the output file. Default: stdout, or use '-' for stdout.\n");
     fprintf(stderr,"-f filename\tThe name of the flags file. Default: no flags\n");
     fprintf(stderr,"-t num     \tThe time in seconds to buffer for delayed packets. Default: %g.\n", BUF_DELAY_DEFAULT);
-    fprintf(stderr,"-T num     \tThe desired output integration time for regridded data in ns. Default: %d\n",DEFAULT_INTTIME);
+    fprintf(stderr,"-T num     \tThe desired output integration time for regridded data in ns. Default: from DiFX config\n");
     fprintf(stderr,"-C num     \tOverride number of channels expected in an STA packet. Default: use config object.\n");
     fprintf(stderr,"-F         \tEnable autoflagging.\n");
     fprintf(stderr,"-d         \tEnable debugging. Writes to stderr.\n");
