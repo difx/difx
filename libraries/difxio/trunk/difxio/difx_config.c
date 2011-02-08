@@ -533,8 +533,10 @@ void moveDifxConfig(DifxConfig *dest, DifxConfig *src)
 
 int simplifyDifxConfigs(DifxInput *D)
 {
-	int c, c1, c0, s;
+	int c, c1, c0, s, r;
 	int n0;
+	DifxRule *dr;
+	DifxConfig *dc;
 
 	n0 = D->nConfig;
 	if(n0 < 2)
@@ -562,7 +564,7 @@ int simplifyDifxConfigs(DifxInput *D)
 		}
 		else
 		{
-			/* 1. renumber this an all higher references to configs */
+			/* 1. renumber this and all higher references to configs */
 			for(s = 0; s < D->nScan; s++)
 			{
 				c0 = D->scan[s].configId;
@@ -577,10 +579,22 @@ int simplifyDifxConfigs(DifxInput *D)
 				D->scan[s].configId = c0;
 			}
 
-			/* 2. reduce number of configs */
+			/* 2. Change all rules referring to this config to refer to identical config */
+			for(r=0;r<D->nRule;r++)
+			{
+				dr = D->rule + r;
+				dc = D->config + c;
+				if(strcmp(dc->name, dr->configName) == 0)
+				{
+					dc = D->config + c1;
+					snprintf(dr->configName, DIFXIO_NAME_LENGTH, "%s", dc->name);
+				}
+			}
+
+			/* 3. reduce number of configs */
 			D->nConfig--;
 
-			/* 3. delete this config and bump up higher ones */
+			/* 4. delete this config and bump up higher ones */
 			deleteDifxConfigInternals(D->config+c);
 			for(c1 = c; c1 < D->nConfig; c1++)
 			{
