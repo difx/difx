@@ -1,8 +1,31 @@
+#include <pthread.h>
 #include <string.h>
+#include <string>
+#include <fstream>
+#include "architecture.h"
+#include "configuration.h"
+#include "difxmessage.h"
 #include "difxfilterbank.h"
+
+// Variables
+int mainsocket, binarysocket, numchans;
+int binarymsglength, atsegment;
+string configfile, filterbankoutputfile, kurtosisoutputfile, identifier, jobname, numchannelsstring;
+bool dofilterbank, dokurtosis, keepwriting, writethreadinitialised;
+ofstream fboutput, ktoutput;
+pthread_t commandthread;
+pthread_t writethread;
+pthread_cond_t writecond;
+char sendername[DIFX_MESSAGE_PARAM_LENGTH];
+char *starecords[BUFFER_LENGTH];
+int numrecords[BUFFER_LENGTH];
+pthread_mutex_t locks[BUFFER_LENGTH];
+Configuration * config;
+int debug=0;
 
 int main(int argc, const char * argv[])
 {
+  DifxMessageSTARecord *record;
   int perr, mtu;
   char * difxmtu = getenv("DIFX_MTU");
   if(difxmtu == 0)
@@ -38,12 +61,13 @@ int main(int argc, const char * argv[])
   keepwriting = true;
   numchans = atoi(numchannelsstring.c_str());
   binarymsglength = sizeof(DifxMessageSTARecord) + numchans*sizeof(f32);
-  cout << "About to allocate " << mtu<< " bytes in each element receive buffer" <<     endl;
+  cout << "Binary message length is "<< binarymsglength << " bytes for " << numchans << " channels" << endl;
+  cout << "About to allocate " << mtu<< " bytes in each of "<<BUFFER_LENGTH<<" receive buffers" << endl;
   for(int i=0;i<BUFFER_LENGTH;i++) {
     perr = pthread_mutex_init(&(locks[i]), NULL);
     if(perr != 0)
       cerr << "Problem initialising lock " << i << endl;
-    starecords[i] = (DifxMessageSTARecord*)malloc(mtu);
+    starecords[i] = (char *)calloc(1,mtu);
     numrecords[i] = 0;
   }
 
@@ -106,26 +130,36 @@ int main(int argc, const char * argv[])
   atsegment = 0;
   while(keepwriting) {
     //get a binary message
-    int nbytes = difxMessageBinaryRecv(binarysocket, (char*)starecords[atsegment], 
-                                       mtu, sendername);
+    int nbytes = difxMessageBinaryRecv(binarysocket, starecords[atsegment], mtu, sendername);
+    if (nbytes > mtu) {
+      cerr<<"Error: read a message of len "<<nbytes<<" bytes, but can only handle "<<mtu<<endl;
+    }
+    // timeout? just try again...
+    if (nbytes <=0) continue;
 
+    if (debug) {
+      cerr << "Reader: at segmenmt "<<atsegment<<endl;
+    }
+    record = (DifxMessageSTARecord *)(starecords[atsegment]);
+    fprintDifxMessageSTARecord(stderr,record,0);
 
     //check it belongs to us
-    if(strcmp(starecords[atsegment]->identifier, jobname.c_str()) == 0) {
-      //check there is actually some data
-      if (nbytes <= 0 && keepwriting) {
-        cout << "Problem with binary message or timeout - carrying on..." << endl;
+    if(strcmp(record->identifier, jobname.c_str()) == 0) {
+      numrecords[atsegment] = nbytes / binarymsglength;
+      if (debug) {
+        cerr << "Reader: Got a message with id "<< record->identifier <<endl;
+        cerr << "Reader: There are "<<numrecords[atsegment]<< " records in this buffer"<<endl;
       }
-      else {
-        numrecords[atsegment] = nbytes / binarymsglength;
-        perr = pthread_mutex_lock(&(locks[(atsegment+1)%BUFFER_LENGTH]));
-        if(perr != 0)
+      if (nbytes % binarymsglength != 0) {
+          cerr << "Error: received msg length "<<nbytes<<" is not integer multiple of binarymsglength "<<binarymsglength<<endl;
+      }
+      perr = pthread_mutex_lock(&(locks[(atsegment+1)%BUFFER_LENGTH]));
+      if(perr != 0)
           cerr << "Main thread problem locking " << (atsegment+1)%BUFFER_LENGTH << endl;
-        atsegment = (atsegment+1)%BUFFER_LENGTH;
-        perr = pthread_mutex_unlock(&(locks[(atsegment+BUFFER_LENGTH-1)%BUFFER_LENGTH]));
-        if(perr != 0)
+      atsegment = (atsegment+1)%BUFFER_LENGTH;
+      perr = pthread_mutex_unlock(&(locks[(atsegment+BUFFER_LENGTH-1)%BUFFER_LENGTH]));
+      if(perr != 0)
           cerr << "Main thread problem unlocking " << (atsegment+BUFFER_LENGTH-1)%BUFFER_LENGTH << endl;
-      }
     }
   }
 
@@ -166,18 +200,6 @@ void writeDiFXHeader(ofstream * output, int dsindex, int scan, int sec, int ns, 
 
   output->write((char *)data, sizeof(data));
 
-/* 
-  output->write((char*)&SYNC, sizeof(int));
-  output->write((char*)&dsindex, sizeof(int));
-  output->write((char*)&scan, sizeof(int));
-  output->write((char*)&sec, sizeof(int));
-  output->write((char*)&ns, sizeof(int));
-  output->write((char*)&nswidth, sizeof(int));
-  output->write((char*)&bandindex, sizeof(int));
-  output->write((char*)&nchan, sizeof(int));
-  output->write((char*)&coreindex, sizeof(int));
-  output->write((char*)&threadindex, sizeof(int));
-*/
 }
 
 //setup write thread
@@ -206,14 +228,25 @@ void * launchWriteThread(void * nothing) {
     writesegment = nextsegment;
     nextsegment = (writesegment+1)%BUFFER_LENGTH;
     activeoutput = 0;
-    if(dofilterbank && starecords[writesegment]->messageType == STA_AUTOCORRELATION)
+    if(dofilterbank && starecord->messageType == STA_AUTOCORRELATION)
       activeoutput = &fboutput;
-    if(dokurtosis && starecords[writesegment]->messageType == STA_KURTOSIS)
+    if(dokurtosis && starecord->messageType == STA_KURTOSIS)
       activeoutput = &ktoutput;
     if(activeoutput != 0)
     {
       for(int i=0;i<numrecords[writesegment];i++) {
-        starecord = (DifxMessageSTARecord *)((char*)starecords + i*binarymsglength);
+        starecord = (DifxMessageSTARecord *)(starecords[writesegment] + i*binarymsglength);
+        if (debug) {
+          cerr<<"Writer: in buf index "<<writesegment<<". Writing record "<< i<< " of "<<numrecords[writesegment]<<" records in the buf"<<endl;
+        }
+
+        if (starecord->nChan <=0) {
+          cerr<<"Writer error: buf index "<<writesegment<< ". record thinks there are "<<starecord->nChan <<" channels. Printing STA header and exiting"<<endl;
+          fprintDifxMessageSTARecord(stdout,starecord,0);
+          keepwriting=false;
+          return false;
+        }
+
         //write it out (main thread already filtered out those not belonging to this job)
         writeDiFXHeader(activeoutput, starecord->dsindex, starecord->scan, 
                         starecord->sec, starecord->ns, starecord->nswidth, starecord->bandindex,
