@@ -300,7 +300,7 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
     max_slot = (this_time + packet_int_time_ns)/options.int_time_ns;
 
     // calculate how much time this packet goes past the edge of the first slot, if any
-    excess_time = this_time + packet_int_time_ns - (min_slot+1)*options.int_time_ns;
+    excess_time = this_time + packet_int_time_ns - (min_slot+1)*(int64_t)options.int_time_ns;
     if (excess_time > 0) {
         frac_min = (float)(packet_int_time_ns-excess_time)/(float)packet_int_time_ns;
     }
@@ -308,7 +308,7 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
         frac_min = 1.0;
     }
 //    frac_min = 1.0 - (float)(this_time - min_slot*options.int_time_ns)/(float)packet_int_time_ns;
-    frac_max = (float)((this_time+packet_int_time_ns) - max_slot*options.int_time_ns )/(float)packet_int_time_ns;
+    frac_max = (float)((this_time+packet_int_time_ns) - max_slot*(int64_t)options.int_time_ns )/(float)packet_int_time_ns;
 
     for (i=0; i<MAX_TIMESLOTS; i++) {
         timeslot_frac[i] = 1.0;                 // set default results
@@ -325,7 +325,7 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
         }
         else {
             *n_time_slots = 2;                 // case 2
-            timeslot_frac[0] = (float)(options.int_time_ns*(min_slot+1) - this_time)/(float)packet_int_time_ns;
+            timeslot_frac[0] = (float)((int64_t)options.int_time_ns*(min_slot+1) - this_time)/(float)packet_int_time_ns;
         }
     }
     else if ( max_slot == min_slot+2) {
@@ -359,7 +359,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     size_t n_read;
     int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
     ChunkHeader header;
-    float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0;
+    float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0,pkt_weight;
     int64_t this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
 
     chanvals = (float *) malloc(sizeof(float)*fb_config->n_chans);
@@ -490,8 +490,11 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             }
         }
 
+        pkt_weight=(float)header.int_time_ns/(float)options.int_time_ns;
+
         // loop over all the time slots that this packet overlaps
         for (int ts = 0; ts < n_time_slots; ts++) {
+
             // work out which buffer the data goes into
             buf_ind = (timeslots[ts] + bufinfo->startindex)%bufinfo->bufsize;
 
@@ -521,10 +524,10 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
             // copy the data into the buffer, and apply the weight based on fractional overlap
             for (int j=0; j< header.n_channels; j++) {
-                bufinfo->buffers[buf_ind].data[data_offset+j] += chanvals[j] * timeslot_frac[ts];
+                bufinfo->buffers[buf_ind].data[data_offset+j] += chanvals[j] * timeslot_frac[ts] * pkt_weight;
             }
             // add the fractional timeslot overlap to the weight for this set of chans
-            bufinfo->buffers[buf_ind].weights[header.band_id + header.stream_id*fb_config->n_bands] += timeslot_frac[ts];
+            bufinfo->buffers[buf_ind].weights[header.band_id + header.stream_id*fb_config->n_bands] += timeslot_frac[ts] * pkt_weight;
 
             // if the data is non-zero, set flags and use it for running medians
             if(chanvals[0] != 0.0) {
