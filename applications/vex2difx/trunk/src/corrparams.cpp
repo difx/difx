@@ -29,6 +29,7 @@
 
 #define _XOPEN_SOURCE
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <algorithm>
 #include <fstream>
@@ -1250,7 +1251,10 @@ int CorrParams::setkv(const string &key, const string &value)
 	}
 	else if(key == "invalidMask")
 	{
-		ss >> invalidMask;
+	  stringstream sss;
+	  
+	        sss << setbase(16) << value;
+		sss >> invalidMask;
 	}
 	else if(key == "visBufferLength")
 	{
