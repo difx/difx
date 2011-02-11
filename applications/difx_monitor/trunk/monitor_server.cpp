@@ -25,6 +25,7 @@
 #include <math.h>
 #include <string.h>
 #include <sstream>
+#include <stack>
 #include "architecture.h"
 #include  "monserver.h"
 #include "ipps.h"
@@ -33,7 +34,7 @@ using namespace std;
 
 #define MAXCLIENTS  20
 
-#define DEBUG 0
+#define DEBUG 1
 
 struct datadescrstruct {
   int32_t timestampsec;      // Current correlator time
@@ -70,6 +71,7 @@ int main(int argc, const char * argv[]) {
   struct monclient clients[MAXCLIENTS]; // Details on client connections
   struct pollfd pollfds[MAXCLIENTS+3];  // Sockets to monitor for messages
   nfds_t nfds;               // Number of sockets being monitored by poll
+  stack <int> removestack;
 
   if(argc != 2)  {
     cerr << "Error - invoke with difx_monitor <port>" << endl;
@@ -102,7 +104,9 @@ int main(int argc, const char * argv[]) {
   memset((char *) &pollfds, 0, sizeof(pollfds));
 
   nfds = 0;
+  if (DEBUG) printf("Add serversocket (for difx)\n");
   pollfd_add(pollfds, &nfds, serversocket, POLLIN);
+  if (DEBUG) printf("Add monitorsocket (for client)\n");
   pollfd_add(pollfds, &nfds, monitorsocket, POLLIN);
 
   while (1) {
@@ -117,18 +121,14 @@ int main(int argc, const char * argv[]) {
       exit(1);
     } else if (nfd==0) continue;
 
-#if DEBUG
-    printf(" Got %d descriptors waiting\n", nfd);
-#endif    
+    if (DEBUG) printf(" Got %d descriptors waiting\n", nfd);
 
     // Look at all available events
     for (i=0; i<(int)nfds; i++) {
       int fd = pollfds[i].fd;
       short revents = pollfds[i].revents;
-      if (revents==0) {
-	printf("Warning: Skipping descriptor %d because revents==0\n", fd);
-	continue;
-      }
+      if (DEBUG) printf("  %d: fd %d   %d\n", i, fd, revents);
+      if (revents==0) continue;
       
       if (fd == serversocket && revents) {
 	printf("Event on serversocket %d (%d)\n", fd, revents);
@@ -151,11 +151,14 @@ int main(int argc, const char * argv[]) {
 	} else {
 	  cerr << "Warning: serversocket received poll error message: " << revents << endl;
 	}
-	break;
+	//break;
       } else if (fd == monitorsocket && revents) {
 	int newsock;
 
+	if (DEBUG) printf("Got connection on monitorsocket\n");
+
 	if (revents==POLLIN) { // Connection request
+	  if (DEBUG) printf("Got connection request\n");
 	
 	  newsock = waitforconnection(monitorsocket);
 	  if (newsock>0) {
@@ -186,16 +189,21 @@ int main(int argc, const char * argv[]) {
 	      }
 	    }
 	  }
+#if DEBUG
+	} else {
+	  printf(" revents==%d.  Ignored\n", revents);
+#endif
 	}
-	break;
+	//break;
       } else if (fd == difxsocket && revents) {
 	
 	if (revents & POLLHUP) { // Connection went away
 	  cout << "Connection to mpifxcorr dropped" << endl;
 	  close(difxsocket);
-	  pollfd_remove(pollfds, &nfds, difxsocket);
+	  //pollfd_remove(pollfds, &nfds, difxsocket);
+	  removestack.push(difxsocket);
 	  difxsocket = 0;
-	  break;
+
 	} else {
 	  cout << "About to get a visibility" << endl;
 
@@ -208,7 +216,8 @@ int main(int argc, const char * argv[]) {
 
 	  if (status) { // Error reading socket
 	    close(difxsocket);
-	    pollfd_remove(pollfds, &nfds, difxsocket);
+	    removestack.push(difxsocket);
+	    //pollfd_remove(pollfds, &nfds, difxsocket);
 	    difxsocket = 0;
 	  }
 
@@ -238,7 +247,8 @@ int main(int argc, const char * argv[]) {
 	      cout << "Sending vis data to fd " << clients[j].fd << " " << flush;
 	      status = monclient_sendvisdata(clients[j], thisbuffersize, &datadescr);
 	      if (status) {
-		pollfd_remove(pollfds, &nfds, clients[j].fd);
+		removestack.push(clients[j].fd);
+		//pollfd_remove(pollfds, &nfds, clients[j].fd);
 		monclient_remove(clients, &nclient, clients[j].fd);
 		monserver_close(&clients[j]);
 		j--;  //Not sure this will work....
@@ -249,73 +259,87 @@ int main(int argc, const char * argv[]) {
 	    }
 	  }
 	}
-	break;
+	//break;
       } else if (revents) {
 	if (revents & POLLHUP) { // Connection closed
-	  pollfd_remove(pollfds, &nfds, fd);
+	  if (DEBUG) printf("Connection %d closed\n", fd);
+	  removestack.push(fd);
+	  //pollfd_remove(pollfds, &nfds, fd);
 	  monclient_remove(clients, &nclient, fd);
 	  close(fd);
-	  break;
+	  //break;
 	} else if (revents==POLLIN) { // Message from client requesting products
 	  int32_t nproduct;
 	  struct monclient *thisclient ;
 
+	  if (DEBUG) printf("Request from client on fd %d\n", fd);
 	  // Find the appropriate monclient
 	  thisclient = monclient_find(clients, nclient, fd);
 	  if (thisclient==NULL) {
 	    cerr << "Internal error: Could not find fd " << fd << endl;
-	    pollfd_remove(pollfds, &nfds, fd);
+	    removestack.push(fd);
+	    //pollfd_remove(pollfds, &nfds, fd);
 	    monclient_remove(clients, &nclient, fd);
 	    close(fd);
-	    break;
+	    //break;
 	  }
 
 	  readint(fd, &nproduct, &status);
 	  if (status) { // Error reading socket
 	    cerr << "Problem reading fd " << fd << " closing" << endl;
-	    pollfd_remove(pollfds, &nfds, fd);
+	    removestack.push(fd);
+	    //pollfd_remove(pollfds, &nfds, fd);
 	    monclient_remove(clients, &nclient, fd);
 	    close(fd);
 	  } else {
+	    if (DEBUG) printf("Requested %d products\n", nproduct);
 	    if (nproduct<0) {
 	      status = monserver_sendstatus(fd, DIFXMON_BADPRODUCTS);
 	      if (status) {
-		pollfd_remove(pollfds, &nfds, fd);
+		removestack.push(fd);
+		//pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
 		close(fd);
-		break;
+		//break;
 	      }
 	    } else if (nproduct>0) {
 	      struct product_offset *buf = new struct product_offset [nproduct];
 	      status = DIFXMON_NOERROR;
-	      for (i=0; i<nproduct; i++) {
-		readint(fd, &buf[i].offset, &status);
-		readint(fd, &buf[i].npoints, &status);
-		readint(fd, &buf[i].product, &status);
+	      for (j=0; j<nproduct; j++) {
+		readint(fd, &buf[j].offset, &status);
+		readint(fd, &buf[j].npoints, &status);
+		readint(fd, &buf[j].product, &status);
 	      }
 	      if (status) {
-		pollfd_remove(pollfds, &nfds, fd);
+		removestack.push(fd);		
+		//pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
 		close(fd);
-		break;
+		continue;
 	      }
 	      monclient_addproduct(thisclient, nproduct, buf);
 
 	      status = monserver_sendstatus(fd, DIFXMON_NOERROR);
 	      if (status) {
-		pollfd_remove(pollfds, &nfds, fd);
+		removestack.push(fd);
+		//pollfd_remove(pollfds, &nfds, fd);
 		monclient_remove(clients, &nclient, fd);
 		close(fd);
 	      }
 	    
 	      delete [] buf;
-	      break;
+	      //break;
 	    }
 	  }
 	}
       } else {
 	printf("Warning %d on descriptor %d ignored\n", revents, fd);
       }
+    }
+
+    while (!removestack.empty()) {
+      pollfd_remove(pollfds, &nfds, removestack.top());
+      removestack.pop();
     }
   }
 }
