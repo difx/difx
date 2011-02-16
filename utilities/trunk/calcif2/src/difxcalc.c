@@ -410,7 +410,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 	int1 = sec1/p->increment;
 	int2 = (sec2 + p->increment - 1)/p->increment;
 	nInt = int2 - int1;
-	if(isLast)
+	if(isLast || sec2 % p->increment == 0)
 	{
 		nInt++;
 	}
