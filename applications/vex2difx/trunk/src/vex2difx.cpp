@@ -831,6 +831,16 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		strcpy(D->datastream[dsId].dataFormat, "VDIF");
 		D->datastream[dsId].dataFrameSize = 1032;
 	}
+	else if(format->format.substr(0,4) == string("VDIF"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, "VDIF");
+		D->datastream[dsId].dataFrameSize = atoi(format->format.substr(5).c_str());
+	}
+	else if(format->format.substr(0,14) == string("INTERLACEDVDIF"))
+	{
+		strcpy(D->datastream[dsId].dataFormat, format->format.substr(0,format->format.find_last_of('/')).c_str());
+		D->datastream[dsId].dataFrameSize = atoi(format->format.substr(format->format.find_last_of('/')+1).c_str());
+	}
 	else if(format->format == string("S2"))
 	{
 		strcpy(D->datastream[dsId].dataFormat, "LBAVSOP");

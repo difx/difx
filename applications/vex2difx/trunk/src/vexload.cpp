@@ -143,7 +143,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 	{
 		return n;
 	}
-	else if (F.format == "VDIF")
+	else if (F.format.substr(0,4) == "VDIF" || F.format.substr(0,14) == "INTERLACEDVDIF")
 	{
 		return n;
 	}
@@ -1003,6 +1003,15 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				}
 				F.nRecordChan = ch2tracks.size();
 				F.nBit = nBit;
+			}
+			if(F.format == "VDIF")
+			{
+				F.nBit = 2;
+			}
+			else if(F.format.find_first_of("VDIF") != string::npos)
+			{
+				F.nBit = atoi(F.format.substr(F.format.find_last_of('/') + 1).c_str());
+				F.format = F.format.substr(0, F.format.find_last_of('/'));
 			}
 
 			// Is it an S2 mode?
