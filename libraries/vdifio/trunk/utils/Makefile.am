@@ -11,6 +11,7 @@ bin_PROGRAMS = \
 	padVDIF \
 	cleanVDIF \
 	fakemultiVDIF \
+	extractSingleVDIFThread \
 	printVDIF 
 
 stripVDIF_SOURCES = \
@@ -27,6 +28,9 @@ multi2singlethreadVDIF_SOURCES = \
 
 padVDIF_SOURCES = \
 	padVDIF.c
+
+extractSingleVDIFThread_SOURCES = \
+	extractSingleVDIFThread.c
 
 cleanVDIF_SOURCES = \
 	cleanVDIF.c
