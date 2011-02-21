@@ -238,7 +238,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 				//fprintf(stderr, "Missing info for antenna %d\n", srcAntenna);
 				//exit(1);
 			}
-			for(j=0;j<src->nPhaseCentres+1;j++)
+			for(j = 0; j < src->nPhaseCentres+1; j++)
 			{
 				dest->im[destAntenna][j] = dupDifxPolyModelColumn(
 						src->im[srcAntenna][j], dest->nPoly);

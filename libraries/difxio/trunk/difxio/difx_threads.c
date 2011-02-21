@@ -152,7 +152,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	return 0;
 }
 
-int DifxInputWriteThreads(DifxInput *D)
+int DifxInputWriteThreads(const DifxInput *D)
 {
 	FILE *out;
 	int i;

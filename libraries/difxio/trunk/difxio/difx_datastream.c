@@ -776,7 +776,7 @@ int writeDifxDatastream(FILE *out, const DifxDatastream *dd)
 	for(i = 0; i < dd->nZoomFreq; i++)
 	{
 		writeDifxLineInt1(out, "ZOOM FREQ INDEX %d", i, dd->zoomFreqId[i]);
-		writeDifxLineInt1(out, "ZOOM REC POLS %d", i, dd->nZoomPol[i]);
+		writeDifxLineInt1(out, "NUM ZOOM POLS %d", i, dd->nZoomPol[i]);
 	}
 	for(i = 0; i < dd->nZoomBand; i++)
 	{
