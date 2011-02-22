@@ -398,9 +398,11 @@ static int generateAipsIFs(DifxInput *D, int configId)
 {
 	DifxConfig *dc;
 	DifxBaseline *db;
-	int bl, blId, dsId, rc, fqId, localFqId;
+	DifxDatastream *ds;
+	int bl, blId, dsId, band, zb, fqId, localFqId;
 	int *freqIds;
 	int p, f, i;
+	int polValue;
 	char polName;
 
 	if(configId < 0)
@@ -464,20 +466,64 @@ static int generateAipsIFs(DifxInput *D, int configId)
 			for(p = 0; p < db->nPolProd[f]; p++)
 			{
 				dsId = db->dsA;
-				rc = db->recBandA[f][p];
-				localFqId = D->datastream[dsId].recBandFreqId[rc];
-				polName = D->datastream[dsId].recBandPolName[rc];
-				fqId = D->datastream[dsId].recFreqId[localFqId];
+				ds = D->datastream + dsId;
+				band = db->bandA[f][p];
+				if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
+				{
+					fprintf(stderr, "Error: generateAipsIFs: bandA=%d out of range: baselineId=%d nRecBandA=%d nZoomBandA=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
+					
+					exit(0);
+				}
+				if(band < ds->nRecBand)	/* this is a rec band */
+				{
+					localFqId = ds->recBandFreqId[band];
+					polName = ds->recBandPolName[band];
+					fqId = ds->recFreqId[localFqId];
+				}
+				else /* this is a zoom band */
+				{
+					zb = band - ds->nRecBand;
+					localFqId = ds->zoomBandFreqId[zb];
+					polName = ds->zoomBandPolName[zb];
+					fqId = ds->zoomFreqId[localFqId];
+				}
 				dc->freqIdUsed[fqId]++;
-				dc->polMask |= polMaskValue(polName);
+				polValue = polMaskValue(polName);
+				if(polValue == DIFXIO_POL_ERROR)
+				{
+					fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandA=%d\n", polName, bl, f, fqId, localFqId, p, band);
+				}
+				dc->polMask |= polValue;
 
 				dsId = db->dsB;
-				rc = db->recBandB[f][p];
-				localFqId = D->datastream[dsId].recBandFreqId[rc];
-				polName = D->datastream[dsId].recBandPolName[rc];
-				fqId = D->datastream[dsId].recFreqId[localFqId];
+				ds = D->datastream + dsId;
+				band = db->bandB[f][p];
+				if(band < 0 || band >= ds->nRecBand + ds->nZoomBand)
+				{
+					fprintf(stderr, "Error: generateAipsIFs: bandB=%d out of range: baselineId=%d nRecBandB=%d nZoomBandB=%d\n", band, bl, ds->nRecBand, ds->nZoomBand);
+					
+					exit(0);
+				}
+				if(band < ds->nRecBand)	/* this is a rec band */
+				{
+					localFqId = ds->recBandFreqId[band];
+					polName = ds->recBandPolName[band];
+					fqId = ds->recFreqId[localFqId];
+				}
+				else /* this is a zoom band */
+				{
+					zb = band - ds->nRecBand;
+					localFqId = ds->zoomBandFreqId[zb];
+					polName = ds->zoomBandPolName[zb];
+					fqId = ds->zoomFreqId[localFqId];
+				}
 				dc->freqIdUsed[fqId]++;
-				dc->polMask |= polMaskValue(polName);
+				polValue = polMaskValue(polName);
+				if(polValue == DIFXIO_POL_ERROR)
+				{
+					fprintf(stderr, "bad pol name: <%c> for baselineId=%d f=%d fqId=%d localFqIf=%d polId=%d bandB=%d\n", polName, bl, f, fqId, localFqId, p, band);
+				}
+				dc->polMask |= polValue;
 			}
 		}
 	}
@@ -1304,6 +1350,8 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 			
 			return 0;
 		}
+		DifxDatastreamAllocZoomFreqs(D->datastream + e, 
+			atoi(DifxParametersvalue(ip, r)));
 		nZoomBand = 0;
 		for(i = 0; i < D->datastream[e].nZoomFreq; i++)
 		{
@@ -1322,7 +1370,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		for(i = 0; ; i++)
 		{
 			v = DifxParametersfind1(ip, r,
-				"REC BAND %d POL", i);
+				"ZOOM BAND %d POL", i);
 			if(v <= 0 || v > r+2*i+2)
 			{
 				break;
@@ -1334,6 +1382,9 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 		{
 			nZoomBand = nz;
 		}
+
+		DifxDatastreamAllocZoomBands(D->datastream + e, nZoomBand);
+		
 		for(i = 0; i < nZoomBand; i++)
 		{
 			r = DifxParametersfind1(ip, r+1,
@@ -1356,7 +1407,7 @@ static DifxInput *parseDifxInputDatastreamTable(DifxInput *D,
 				return 0;
 			}
 			a = atoi(DifxParametersvalue(ip, r));
-			D->datastream[e].zoomBandFreqId[i] = D->datastream[e].zoomFreqId[a];
+			D->datastream[e].zoomBandFreqId[i] = a;
 		}
 		//Figure out how many phase cal tones and their location for each band
 		DifxDatastreamCalculatePhasecalTones(&(D->datastream[e]), &(D->freq[D->datastream[e].recFreqId[0]]));
@@ -1428,8 +1479,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 
 					return 0;
 				}
-				D->baseline[b].recBandA[f][p] =
-					atoi(DifxParametersvalue(ip, r));
+				D->baseline[b].bandA[f][p] = atoi(DifxParametersvalue(ip, r));
 				r = DifxParametersfind1(ip, r+1, 
 					"D/STREAM B BAND %d", p);
 				if(r < 0)
@@ -1438,8 +1488,7 @@ static DifxInput *parseDifxInputBaselineTable(DifxInput *D,
 
 					return 0;
 				}
-				D->baseline[b].recBandB[f][p] =
-					atoi(DifxParametersvalue(ip, r));
+				D->baseline[b].bandB[f][p] = atoi(DifxParametersvalue(ip, r));
 			}
 		}
 	}
@@ -3668,4 +3717,50 @@ int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId)
 	}
 
 	return -1;
+}
+
+int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq)
+{
+	int band;
+	DifxDatastream *ds;
+	int zb, localFreqId, freqId;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(baselineId > D->nBaseline || baselineId < 0)
+	{
+		return -2;
+	}
+	if(baselineFreq > D->baseline[baselineId].nFreq || baselineFreq < 0)
+	{
+		return -3;
+	}
+	if(D->baseline[baselineId].dsA < 0 || D->baseline[baselineId].dsA > D->nDatastream)
+	{
+		return -4;
+	}
+
+	ds = D->datastream + D->baseline[baselineId].dsA;
+
+	band = D->baseline[baselineId].bandA[baselineFreq][0];
+	if(band < 0 || band > ds->nRecBand + ds->nZoomBand)
+	{
+		return -5;
+	}
+
+	if(band < ds->nRecBand)	/* a record band */
+	{
+		localFreqId = ds->recBandFreqId[band];
+		freqId = ds->recFreqId[localFreqId];
+	}
+	else /* a zoom band */
+	{
+		zb = band - ds->nRecBand;
+		localFreqId = ds->zoomBandFreqId[zb];
+		freqId = ds->zoomFreqId[localFreqId];
+	}
+
+	return freqId;
 }

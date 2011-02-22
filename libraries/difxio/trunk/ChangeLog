@@ -7,6 +7,7 @@
 * Add infrastructure for tcalFrequency
 * Add DifxStringArray, which will be used for storing scan names and source names in DifxRule blocks
 * Clean up, a little bit, the low level writing routines
+* Considerable fixes to zoom band support
 
 3.0
 * Includes the following changes merged (hopefully correctly) from the DiFX-1.5 branch;

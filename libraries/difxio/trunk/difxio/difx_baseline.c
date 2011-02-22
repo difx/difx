@@ -56,33 +56,33 @@ void DifxBaselineAllocFreqs(DifxBaseline *b, int nFreq)
 	{
 		free(b->nPolProd);
 	}
-	if(b->recBandA)
+	if(b->bandA)
 	{
 		for(i = 0; i < b->nFreq; i++)
 		{
-			if(b->recBandA[i])
+			if(b->bandA[i])
 			{
-				free(b->recBandA[i]);
+				free(b->bandA[i]);
 			}
 		}
-		free(b->recBandA);
+		free(b->bandA);
 	}
-	if(b->recBandB)
+	if(b->bandB)
 	{
 		for(i = 0; i < b->nFreq; i++)
 		{
-			if(b->recBandB[i])
+			if(b->bandB[i])
 			{
-				free(b->recBandB[i]);
+				free(b->bandB[i]);
 			}
 		}
-		free(b->recBandB);
+		free(b->bandB);
 	}
 
 	b->nFreq = nFreq;
 	b->nPolProd = (int *)calloc(nFreq, sizeof(int));
-	b->recBandA = (int **)calloc(nFreq, sizeof(int *));
-	b->recBandB = (int **)calloc(nFreq, sizeof(int *));
+	b->bandA = (int **)calloc(nFreq, sizeof(int *));
+	b->bandB = (int **)calloc(nFreq, sizeof(int *));
 }
 
 void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
@@ -99,32 +99,32 @@ void DifxBaselineAllocPolProds(DifxBaseline *b, int freq, int nPol)
 		return;
 	}
 
-	if(!b->recBandA || !b->recBandB || !b->nPolProd)
+	if(!b->bandA || !b->bandB || !b->nPolProd)
 	{
 		fprintf(stderr, "Error: DifxBaselineAllocPolProds: "
-			"recBandA or recBandB or nPolProd is zero\n");
+			"bandA or bandB or nPolProd is zero\n");
 		return;
 	}
 
-	if(b->recBandA[freq])
+	if(b->bandA[freq])
 	{
-		free(b->recBandA[freq]);
+		free(b->bandA[freq]);
 	}
-	if(b->recBandB[freq])
+	if(b->bandB[freq])
 	{
-		free(b->recBandB[freq]);
+		free(b->bandB[freq]);
 	}
 
 	b->nPolProd[freq] = nPol;
 	if(nPol > 0)
 	{
-		b->recBandA[freq] = (int *)calloc(nPol, sizeof(int));
-		b->recBandB[freq] = (int *)calloc(nPol, sizeof(int));
+		b->bandA[freq] = (int *)calloc(nPol, sizeof(int));
+		b->bandB[freq] = (int *)calloc(nPol, sizeof(int));
 	}
 	else
 	{
-		b->recBandA[freq] = 0;
-		b->recBandB[freq] = 0;
+		b->bandA[freq] = 0;
+		b->bandB[freq] = 0;
 	}
 }
 
@@ -137,29 +137,29 @@ void deleteDifxBaselineInternals(DifxBaseline *db)
 		free(db->nPolProd);
 		db->nPolProd = 0;
 	}
-	if(db->recBandA)
+	if(db->bandA)
 	{
 		for(f = 0; f < db->nFreq; f++)
 		{
-			if(db->recBandA[f])
+			if(db->bandA[f])
 			{
-				free(db->recBandA[f]);
+				free(db->bandA[f]);
 			}
 		}
-		free(db->recBandA);
-		db->recBandA = 0;
+		free(db->bandA);
+		db->bandA = 0;
 	}
-	if(db->recBandB)
+	if(db->bandB)
 	{
 		for(f = 0; f < db->nFreq; f++)
 		{
-			if(db->recBandB[f])
+			if(db->bandB[f])
 			{
-				free(db->recBandB[f]);
+				free(db->bandB[f]);
 			}
 		}
-		free(db->recBandB);
-		db->recBandB = 0;
+		free(db->bandB);
+		db->bandB = 0;
 	}
 }
 
@@ -231,8 +231,8 @@ int isSameDifxBaseline(const DifxBaseline *db1, const DifxBaseline *db2,
 		}
 		for(p = 0; p < db1->nPolProd[f]; p++)
 		{
-			if(db1->recBandA[f][p] != db2->recBandA[f][p] ||
-			   db1->recBandB[f][p] != db2->recBandB[f][p])
+			if(db1->bandA[f][p] != db2->bandA[f][p] ||
+			   db1->bandB[f][p] != db2->bandB[f][p])
 			{
 				return 0;
 			}
@@ -264,8 +264,8 @@ void copyDifxBaseline(DifxBaseline *dest, const DifxBaseline *src,
 		DifxBaselineAllocPolProds(dest, f, src->nPolProd[f]);
 		for(p = 0; p < dest->nPolProd[f]; p++)
 		{
-			dest->recBandA[f][p] = src->recBandA[f][p];
-			dest->recBandB[f][p] = src->recBandB[f][p];
+			dest->bandA[f][p] = src->bandA[f][p];
+			dest->bandB[f][p] = src->bandB[f][p];
 		}
 	}
 }
@@ -275,13 +275,13 @@ void moveDifxBaseline(DifxBaseline *dest, DifxBaseline *src)
 	dest->dsA = src->dsA;
 	dest->dsB = src->dsB;
 	dest->nPolProd = src->nPolProd;
-	dest->recBandA = src->recBandA;
-	dest->recBandB = src->recBandB;
+	dest->bandA = src->bandA;
+	dest->bandB = src->bandB;
 
 	/* "unlink" internal structures */
 	src->nPolProd = 0;
-	src->recBandA = 0;
-	src->recBandB = 0;
+	src->bandA = 0;
+	src->bandB = 0;
 }
 
 int simplifyDifxBaselines(DifxInput *D)
@@ -424,9 +424,9 @@ int writeDifxBaselineArray(FILE *out, int nBaseline, const DifxBaseline *db)
 			for(p = 0; p < b->nPolProd[f]; p++)
 			{
 				writeDifxLineInt1(out, "D/STREAM A BAND %d", p,
-					b->recBandA[f][p]);
+					b->bandA[f][p]);
 				writeDifxLineInt1(out, "D/STREAM B BAND %d", p,
-					b->recBandB[f][p]);
+					b->bandB[f][p]);
 				n += 2;
 			}
 		}

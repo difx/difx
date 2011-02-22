@@ -156,8 +156,8 @@ typedef struct
 	double freq;		/* (MHz) */
 	double bw;		/* (MHz) */
 	char sideband;		/* U or L -- net sideband */
-	int nPol;
-	char pol[2];		/* polarization codes : L R X or Y. */
+	int nPol;		/* 1 or 2 */
+	char pol[2];		/* polarization codes (one per nPol) : L R X or Y. */
 } DifxIF;
 
 typedef struct
@@ -167,7 +167,7 @@ typedef struct
 	double refFreq;		/* MHz */
 	double mjd;		/* center time for first polynomial */
 	int nCoef;		/* number of coefficients per polynomial */
-	int  nBlk;		/* number of minutes spanned by each */
+	int nBlk;		/* number of minutes spanned by each */
 	double p0, f0;
 	double *coef;
 } DifxPolyco;
@@ -198,7 +198,7 @@ typedef struct
 /* From DiFX config table, with additional derived information */
 typedef struct
 {
-	char name[32];		/* name for configuration */
+	char name[DIFXIO_NAME_LENGTH];  /* name for configuration */
 	double tInt;		/* integration time (sec) */
 	int subintNS;		/* Length of a subint in nanoseconds */
 	int guardNS;		/* "Guard" nanoseconds appended to the end of a send */
@@ -291,8 +291,11 @@ typedef struct
 	int dsA, dsB;		/* indices to datastream table */
 	int nFreq;
 	int *nPolProd;		/* [freq] */
-	int **recBandA;		/* [freq][productIndex] */
-	int **recBandB;		/* [freq][productIndex] */
+
+	/* note: band in excess of nRecBand are assumed to be zoom bands */
+	int **bandA;		/* [freq][productIndex] */
+	int **bandB;		/* [freq][productIndex] */
+
 } DifxBaseline;
 
 typedef struct
@@ -772,6 +775,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 int DifxInputGetScanId(const DifxInput *D, double mjd);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
 int DifxInputGetMaxTones(const DifxInput *D);
+int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq);
 int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
 int DifxInputSortAntennas(DifxInput *D, int verbose);
 int DifxInputSimFXCORR(DifxInput *D);
