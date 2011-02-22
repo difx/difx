@@ -254,8 +254,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					i++;
 					opts->scale = atof(argv[i]);
-					printf("Scaling data by %f\n", 
-						opts->scale);
+					printf("Scaling data by %f\n", opts->scale);
 				}
 				else if(strcmp(argv[i], "--deltat") == 0 ||
 					strcmp(argv[i], "-t") == 0)
@@ -309,6 +308,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					printf("Unknown param %s\n", argv[i]);
 					deleteCommandLineOptions(opts);
+
 					return 0;
 				}
 			}
@@ -316,6 +316,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			{
 				printf("Unknown param %s\n", argv[i]);
 				deleteCommandLineOptions(opts);
+
 				return 0;
 			}
 		}
@@ -326,6 +327,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				printf("Error: too many input files!\n");
 				printf("Max = %d\n", MAX_INPUT_FILES);
 				deleteCommandLineOptions(opts);
+
 				return 0;
 			}
 			l = strlen(argv[i]);
@@ -357,6 +359,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			printf("Error: too many input files!\n");
 			printf("Max = %d\n", MAX_INPUT_FILES);
 			deleteCommandLineOptions(opts);
+			
 			return 0;
 		}
 		opts->nBaseFile = globbuf.gl_pathc;
@@ -371,6 +374,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 	{
 		printf("Error: Cannot supply output filename for multiple output files\n");
 		deleteCommandLineOptions(opts);
+
 		return 0;
 	}
 
@@ -393,9 +397,8 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
-	int i, j, band;
+	int i, j;
 	int fqindex=-1;
-	DifxDatastream * dds;
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
@@ -414,38 +417,33 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			keys->stk_1 = -6;
 			break;
 		default:
-			fprintf(stderr, "Error: unknown polarization (%c)\n", 
-				D->polPair[0]);
+			fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
 			exit(0);
 	}
 	keys->no_band = D->nIF;
 	keys->no_chan = -1;
 	keys->chan_bw = -1;
 	keys->ref_pixel = -1;
-	for(i=0;i<D->nBaseline;i++)
+	for(i = 0; i < D->nBaseline; i++)
 	{
-		for(j=0;j<D->baseline[i].nFreq;j++)
+		for(j = 0; j < D->baseline[i].nFreq; j++)
 		{
-			band = D->baseline[i].recBandA[j][0];
-			dds = &(D->datastream[D->baseline[i].dsA]);
-			if(band >= dds->nRecBand)
+			fqindex = DifxInputGetFreqIdByBaselineFreq(D, i, j);
+			if(fqindex < 0)
 			{
-				fqindex = dds->zoomBandFreqId[band - dds->nRecBand];
-				fqindex = dds->zoomFreqId[fqindex];
+				fprintf(stderr, "Error: populateFitsKeywords: fqindex=%d for baseline=%d freq=%d\n", fqindex, i, j);
+
+				exit(0);
 			}
-			else
-			{
-				fqindex = dds->recBandFreqId[band];
-				fqindex = dds->recFreqId[fqindex];
-			}
+
 			if(keys->no_chan == -1)
 			{
 				keys->no_chan = D->freq[fqindex].nChan/D->freq[fqindex].specAvg;
 			}
 			else if(D->freq[fqindex].nChan/D->freq[fqindex].specAvg != keys->no_chan)
 			{
-				fprintf(stderr, "Error: not all used frequencies have the same "
-				"number of output channels - aborting!\n");
+				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same number of output channels\n");
+
 				exit(0);
 			}
 			if(keys->chan_bw == -1)
@@ -454,8 +452,8 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			}
 			else if(keys->chan_bw != 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan)
 			{
-				fprintf(stderr, "Error: not all used frequencies have the same "
-					"final channel bandwidth - aborting!\n");
+				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same final channel bandwidth\n");
+
 				exit(0);
 			}
 			if(keys->ref_pixel == -1)
@@ -464,15 +462,16 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			}
 			else if(keys->ref_pixel != 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg))
 			{
-				fprintf(stderr, "Error: not all used frequencies have the same "
-					"reference pixel - aborting!\n");
+				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same reference pixel\n");
+
 				exit(0);
 			}
 		}
 	}
 	if(keys->no_chan == -1 || fqindex == -1 || keys->chan_bw == -1 || keys->ref_pixel == -1)
 	{
-		fprintf(stderr, "Didn't find any used frequencies - what the?? Aborting\n");
+		fprintf(stderr, "Error: populateFitsKeywords: Didn't find any used frequencies\n");
+
 		exit(0);
 	}
 	keys->ref_freq = D->refFreq*1.0e6;
@@ -757,6 +756,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		fprintf(stderr, "Data geometry changes during obs, cannot "
 			"make into FITS.\n");
 		deleteDifxInput(D);
+
 		return 0;
 	}
 
@@ -797,6 +797,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		{
 			deleteDifxInput(D);
 			fprintf(stderr, "Cannot open output file\n");
+
 			return 0;
 		}
 
