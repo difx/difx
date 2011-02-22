@@ -153,6 +153,11 @@ int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 	return n;
 }
 
+int VexMode::getOversampleFactor() const
+{
+	return static_cast<int>(sampRate/(2.0*subbands[0].bandwidth) + 0.001);
+}
+
 int VexMode::getPols(char *pols) const
 {
 	int n=0;

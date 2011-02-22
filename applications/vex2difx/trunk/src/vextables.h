@@ -216,6 +216,7 @@ public:
 	int getBits() const;
 	const VexSetup* getSetup(const string &antName) const;
 	const VexFormat* getFormat(const string &antName) const;
+	int getOversampleFactor() const;
 
 	string defName;
 

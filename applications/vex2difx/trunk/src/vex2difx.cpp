@@ -56,6 +56,19 @@ static double current_mjd()
 	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
 }
 
+int calcDecimation(int overSamp)
+{
+	// FIXME: handle non 2^n overSamp here
+	if(overSamp > 2)
+	{
+		return overSamp / 2;
+	}
+	else
+	{
+		return 1;
+	}
+}
+
 // A is assumed to be the first scan in time order
 static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
@@ -750,6 +763,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 			const string &antName, const CorrSetup *corrSetup, enum V2D_Mode v2dMode)
 {
 	vector<pair<int,int> > bandMap;
+	int overSamp, decimation;
 
 	int antId = D->datastream[dsId].antennaId;
 	if(antId < 0 || antId >= D->nAntenna)
@@ -775,6 +789,9 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 
 		exit(0);
 	}
+
+	overSamp = mode->getOversampleFactor();
+	decimation = calcDecimation(overSamp);
 
 	if(format->format == string("VLBA1_1"))
 	{
@@ -891,7 +908,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		}
 		
 		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->nChan, corrSetup->specAvg, 1, 1, toneSetId);
+				corrSetup->nChan, corrSetup->specAvg, overSamp, decimation, toneSetId);
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
@@ -981,6 +998,14 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->specAvg = freqs[f].specAvg;
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;
+
+		// This is to correct for the fact that mpifxcorr does not know about oversampling
+		if(df->overSamp > df->decimation)
+		{
+			df->bw *= df->overSamp/df->decimation;
+			df->overSamp = df->decimation;
+		}
+
 		if(freqs[f].toneSetId < 0 || freqs[f].toneSetId >= toneSets.size())
 		{
 			cerr << "Developer error: populateFreqTable: toneSetId=" << freqs[f].toneSetId << " nToneSet=" << toneSets.size() << endl;
@@ -1083,8 +1108,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 					{
 						if(corrSetup->doPolar)
 						{
-							bl->recBandA[nFreq][npol] = a1c[u];
-							bl->recBandB[nFreq][npol] = a1c[u];
+							bl->bandA[nFreq][npol] = a1c[u];
+							bl->bandB[nFreq][npol] = a1c[u];
 							npol++;
 						}
 					}
@@ -1149,7 +1174,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 						}
 
 						DifxBaselineAllocPolProds(bl, nFreq, 4);
-	
+
 						n1 = DifxDatastreamGetRecBands(D->datastream+a1, freqId, a1p, a1c);
 						n2 = DifxDatastreamGetRecBands(D->datastream+a2, freqId, a2p, a2c);
 						if(n2 == 0)
@@ -1182,8 +1207,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 							{
 								if(corrSetup->doPolar || a1p[u] == a2p[v])
 								{
-									bl->recBandA[nFreq][npol] = a1c[u];
-									bl->recBandB[nFreq][npol] = a2c[v];
+									bl->bandA[nFreq][npol] = a1c[u];
+									bl->bandB[nFreq][npol] = a2c[v];
 									npol++;
 								}
 							}
@@ -1200,14 +1225,12 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 
 						nFreq++;
 					}
+
 					for(int f = 0; f < D->datastream[a1].nZoomFreq; f++)
 					{
 						freqId = D->datastream[a1].zoomFreqId[f];
 
-						if(!corrSetup->correlateFreqId(freqId))
-						{
-							continue;
-						}
+						// Unlike for recbands, don't query corrSetup->correlateFreqId as all defined zoom bands should be correlated
 
 						DifxBaselineAllocPolProds(bl, nFreq, 4);
 
@@ -1221,8 +1244,8 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 							{
 								if(corrSetup->doPolar || a1p[u] == a2p[v])
 								{
-									bl->recBandA[nFreq][npol] = D->datastream[a1].nRecBand + a1c[u];
-									bl->recBandB[nFreq][npol] = D->datastream[a2].nRecBand + a2c[v];
+									bl->bandA[nFreq][npol] = D->datastream[a1].nRecBand + a1c[u];
+									bl->bandB[nFreq][npol] = D->datastream[a2].nRecBand + a2c[v];
 									npol++;
 								}
 							}
@@ -1239,7 +1262,6 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 
 						nFreq++;
 					}
-
 	
 					bl->nFreq = nFreq;
 	
@@ -1419,6 +1441,30 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	//	config->overSamp /= 2;
 	//	config->decimation *= 2;
 	//}
+#if 0
+	config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
+	cout << "OS=" << config->overSamp << endl;
+	if(config->overSamp <= 0)
+	{
+		cerr << "Error: configName=" << configName << " overSamp=" << config->overSamp << endl;
+		cerr << "samprate=" << mode->sampRate << " bw=" << mode->subbands[0].bandwidth << endl;
+
+		exit(0);
+	}
+
+	if(config->overSamp > 2)
+	{
+		config->decimation = config->oversamp/2;
+	}
+	cout << "Deci=" << config->decimation << endl;
+#endif
+	// try to get a good balance of oversampling and decim
+	//while(config->overSamp % 4 == 0)
+	//{
+	//	config->overSamp /= 2;
+	//	config->decimation *= 2;
+	//}
+	
 	DifxConfigAllocDatastreamIds(config, config->nDatastream, c*config->nDatastream);
 	DifxConfigAllocBaselineIds(config, config->nBaseline, c*config->nBaseline);
 
@@ -1462,7 +1508,7 @@ bool matchingFreq(ZoomFreq zoomfreq, DifxDatastream * dd, int dfreqindex, vector
 		{
 			return false;
 		}
-			if(zoomfreq.frequency + zoomfreq.bandwidth  > f.fq + f.bw)
+		if(zoomfreq.frequency + zoomfreq.bandwidth  > f.fq + f.bw)
 		{
 			return false;
 		}
@@ -1482,7 +1528,7 @@ bool matchingFreq(ZoomFreq zoomfreq, DifxDatastream * dd, int dfreqindex, vector
 	return false;
 }
 
-int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSamp, int verbose, ofstream *of, int nDigit, char ext)
+int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int verbose, ofstream *of, int nDigit, char ext)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -1507,6 +1553,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, zoomsrc, polcount;
 	int * parentfreqindices;
+	int overSamp, decimation;
 	DifxDatastream * dd;
 	ZoomFreq zf;
 	vector<set <int> > blockedfreqids;
@@ -1799,6 +1846,16 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 			exit(0);
 		}
 
+		if(os < 0)
+		{
+			overSamp = mode->getOversampleFactor();
+		}
+		else
+		{
+			overSamp = os;
+		}
+		decimation = calcDecimation(overSamp);
+
 		corrSetup = P->getCorrSetup(configs[c].second);
 		if(corrSetup == 0)
 		{
@@ -1881,7 +1938,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 									freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
 									int(corrSetup->nChan*zf.bandwidth/
 									freqs[dd->recFreqId[parentfreqindices[i]]].bw),
-									corrSetup->specAvg, 1, 1, 0);	// final zero points to the noTone pulse cal setup.
+									corrSetup->specAvg, overSamp, decimation, 0);	// final zero points to the noTone pulse cal setup.
 							dd->zoomFreqId[i] = fqId;
 							dd->nZoomPol[i] = dd->nRecPol[parentfreqindices[i]];
 							nZoomBands += dd->nRecPol[parentfreqindices[i]];
@@ -1898,13 +1955,12 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 							polcount = 0;
 							for(int j = 0; j < dd->nZoomPol[i]; j++)
 							{
-								dd->zoomBandFreqId[nZoomBands] = dd->zoomFreqId[i];
+								dd->zoomBandFreqId[nZoomBands] = i;
 								for(int k = zoomsrc; k < dd->nRecBand; k++)
 								{
 									if(dd->recBandFreqId[k] == parentfreqindices[i])
 									{
-										dd->zoomBandPolName[nZoomBands] =
-											dd->recBandPolName[k];
+										dd->zoomBandPolName[nZoomBands] = dd->recBandPolName[k];
 										zoomsrc = k + 1;
 										polcount++;
 
@@ -1927,19 +1983,15 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 						if(static_cast<int>(antennaSetup->freqClockOffs.size()) != 
 							D->datastream[D->nDatastream].nRecFreq)
 						{
-							cerr << "Error: AntennaSetup for " << antName << 
-							" has only " << antennaSetup->freqClockOffs.size() << 
-							" freqClockOffsets specified but " << 
-							dd->nRecFreq << " recorded frequencies - aborting!" << endl;
+							cerr << "Error: AntennaSetup for " << antName << " has only " << antennaSetup->freqClockOffs.size() << 
+								" freqClockOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
 							exit(0);
 						}
 						if(antennaSetup->freqClockOffs.front() != 0.0)
 						{
-							cerr << "Error: AntennaSetup for " << antName <<
-							" has a non-zero clock offset for the first " << 
-							"frequency offset. This is not allowed for model " << 
-							"accountability reasons. Aborting!" << endl;
+							cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << 
+								" frequency offset. This is not allowed for model " << "accountability reasons." << endl;
 							
 							exit(0);
 						}
@@ -2025,12 +2077,13 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 				if(strcmp(D->spacecraft[sc].name, D->source[s].name) == 0)
 				{
 					D->source[s].spacecraftId = sc;
+					
 					break;
 				}
 			}
 			if(D->source[s].spacecraftId < 0)
 			{
-				cerr << "Developer error: couldn't cross-match spacecraft names! Aborting" << endl;
+				cerr << "Developer error: For source=" << D->source[s].name << " spacecraftId=" << D->source[s].spacecraftId << endl; 
 			}
 		}
 	}
@@ -2067,7 +2120,6 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 
 	if(D->nBaseline > 0 || P->minSubarraySize == 1)
 	{
-
 		// write input file
 		writeDifxInput(D);
 
@@ -2128,6 +2180,8 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int overSam
 		cerr << "This is often due to media not being specified or all frequency Ids being unselected." << endl;
 		cerr << "It is also possible that the vex file is faulty and missing e.g. a $IF section, leading " << endl;
 		cerr << "to missing polarisation information." << endl;
+
+		cerr << "nBaseline=" << D->nBaseline << "  minSubarraySize=" << P->minSubarraySize << endl;
 	}
 
 	if(D->nBaseline > 0 || P->minSubarraySize == 1)
@@ -2582,21 +2636,22 @@ int main(int argc, char **argv)
 		}
 		const VexScan *S = V->getScanByDefName(j->scans[0]);
 		const VexMode *M = V->getModeByDefName(S->modeDefName);
-		int n = 0;
-		for(list<int>::const_iterator k = M->overSamp.begin(); k != M->overSamp.end(); k++)
-		{
-			char ext=0;
-			if(M->overSamp.size() > 1)
-			{
-				ext='a'+n;
-			}
-			nJob += writeJob(*j, V, P, *k, verbose, &of, nDigit, ext);
-			n++;
-		}
-		if(M->overSamp.size() > 1)
-		{
-			nMulti++;
-		}
+		//int n = 0;
+		//for(list<int>::const_iterator k = M->overSamp.begin(); k != M->overSamp.end(); k++)
+		//{
+		//	char ext=0;
+		//	if(M->overSamp.size() > 1)
+		//	{
+		//		ext='a'+n;
+		//	}
+		//	nJob += writeJob(*j, V, P, *k, verbose, &of, nDigit, ext);
+		//	n++;
+		//}
+		//if(M->overSamp.size() > 1)
+		//{
+		//	nMulti++;
+		//}
+		nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0);
 	}
 	of.close();
 

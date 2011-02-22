@@ -127,6 +127,7 @@ double parseTime(const string &timeStr)
 	cerr << "3. VLBA-like format    2009SEP02-08:12:24" << endl;
 	cerr << "4. ISO 8601 format     2009-09-02T08:12:24" << endl;
 	cerr << endl;
+
 	exit(0);
 }
 
@@ -139,6 +140,7 @@ double parseCoord(const char *str, char type)
 	if(type != ' ' && type != 'R' && type != 'D')
 	{
 		cerr << "Programmer error: parseCoord: parameter 'type' has illegal value = " << type << endl;
+		
 		exit(0);
 	}
 
@@ -193,6 +195,7 @@ double parseCoord(const char *str, char type)
 		else
 		{
 			cerr << "Error parsing coordinate value " << str << endl;
+
 			exit(0);
 		}
 		v *= sign;
@@ -233,6 +236,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 	if(is.fail())
 	{
 		cerr << "Error: cannot open " << fileName << endl;
+
 		exit(0);
 	}
 
@@ -277,6 +281,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 		else
 		{
 			cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << endl;
+
 			exit(0);
 		}
 	}
@@ -313,6 +318,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	{
 		cerr << "Error: You are running vex2difx on a vex file." << endl;
 		cerr << "Please run on a vex2difx input file (.v2d) instead." << endl;
+
 		exit(0);
 	}
 	else if(key == "tInt")
@@ -380,6 +386,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 			if(ptr == 0)
 			{
 				cerr << "Cannot getcwd()" << endl;
+
 				exit(0);
 			}
 			inFile = string(cwd);
@@ -401,6 +408,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 			if(ptr == 0)
 			{
 				cerr << "Cannot getcwd()" << endl;
+
 				exit(0);
 			}
 			inFile = string(cwd);
@@ -598,6 +606,7 @@ void PhaseCentre::initialise(double r, double d, string name)
 SourceSetup::SourceSetup(const string &name) : vexName(name)
 {
 	doPointingCentre = true;
+	pointingCentre.difxName = name;
 }
 
 int SourceSetup::setkv(const string &key, const string &value)
@@ -1124,6 +1133,7 @@ void pathify(string &filename)
 	if(getcwd(cwd, 1023) == 0)
 	{
 		cerr << "Cannot getcwd()" << endl;
+
 		exit(0);
 	}
 	fn = string(cwd) + string("/") + filename;
@@ -1220,6 +1230,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		if(!isalnum(value[i]))
 		{
 			cerr << "Error: jobSeries must be purely alphanumeric" << endl;
+
 			exit(0);	
 		}
 		ss >> jobSeries;
@@ -1230,6 +1241,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		if(startSeries < 0)
 		{
 			cerr << "Error: startSeries cannot be < 0" << endl;
+			
 			exit(0);
 		}
 	}
@@ -1341,12 +1353,14 @@ void CorrParams::addBaseline(const string &baselineName)
 	if(pos == string::npos)
 	{
 		cerr << "Error in baseline designation: " << baselineName << " -- a hyphen is required." << endl;
+
 		exit(0);
 	}
 
 	if(pos == 0 || pos == baselineName.length()-1)
 	{
 		cerr << "Error in baseline designation: " << baselineName << " -- need characters before and after the hyphen." << endl;
+		
 		exit(0);
 	}
 
@@ -1383,6 +1397,7 @@ int CorrParams::load(const string &fileName)
 	if(is.fail())
 	{
 		cerr << "Error: cannot open " << fileName << endl;
+
 		exit(0);
 	}
 
@@ -1439,6 +1454,7 @@ int CorrParams::load(const string &fileName)
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
 				cerr << "Error: SETUP out of place." << endl;
+				
 				exit(0);
 			}
 			i++;
@@ -1448,6 +1464,7 @@ int CorrParams::load(const string &fileName)
 			if(*i != "{")
 			{
 				cerr << "Error: '{' expected." << endl;
+				
 				exit(0);
 			}
 			key = "";
@@ -1458,6 +1475,7 @@ int CorrParams::load(const string &fileName)
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
 				cerr << "Error: RULE out of place." << endl;
+				
 				exit(0);
 			}
 			i++;
@@ -1467,6 +1485,7 @@ int CorrParams::load(const string &fileName)
 			if(*i != "{")
 			{
 				cerr << "Error: '{' expected." << endl;
+				
 				exit(0);
 			}
 			key = "";
@@ -1477,6 +1496,7 @@ int CorrParams::load(const string &fileName)
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
 				cerr << "Error: SOURCE out of place." << endl;
+				
 				exit(0);
 			}
 			i++;
@@ -1484,8 +1504,9 @@ int CorrParams::load(const string &fileName)
 			{
 				if(sourceSetups[j].vexName.compare(*i) == 0)
 				{
-					cerr << "Trying to add a setup for source " << *i << " which already has one! This leads to  confusion - aborting!" << endl;
-					exit(1);
+					cerr << "Error: Trying to add a setup for source " << *i << " which already has one!" << endl;
+					
+					exit(0);
 				}
 			}
 			sourceSetups.push_back(SourceSetup(*i));
@@ -1494,6 +1515,7 @@ int CorrParams::load(const string &fileName)
 			if(*i != "{")
 			{
 				cerr << "Error: '{' expected." << endl;
+
 				exit(0);
 			}
 			key = "";
@@ -1504,6 +1526,7 @@ int CorrParams::load(const string &fileName)
 			if(parseMode != PARSE_MODE_GLOBAL)
 			{
 				cerr << "Error: ANTENNA out of place." << endl;
+				
 				exit(0);
 			}
 			i++;
@@ -1515,6 +1538,7 @@ int CorrParams::load(const string &fileName)
 			if(*i != "{")
 			{
 				cerr << "Error: '{' expected." << endl;
+
 				exit(0);
 			}
 			key = "";
@@ -1525,6 +1549,7 @@ int CorrParams::load(const string &fileName)
 			if(parseMode != PARSE_MODE_GLOBAL)
                         {
                                 cerr << "Error: ANTENNA out of place." << endl;
+
                                 exit(0);
                         }
                         i++;
@@ -1536,6 +1561,7 @@ int CorrParams::load(const string &fileName)
                         if(*i != "{")
                         {
                                 cerr << "Error: '{' expected." << endl;
+
                                 exit(0);
                         }
                         key = "";
@@ -1560,6 +1586,7 @@ int CorrParams::load(const string &fileName)
 			if(key == "")
 			{
 				cerr << "Error: legal parameter name expected before " << *i << endl;
+
 				exit(0);
 			}
 			value = *i;
@@ -1590,6 +1617,7 @@ int CorrParams::load(const string &fileName)
 			if(keyWaiting == true)
 			{
 				cerr << "Parse error in file " << fileName << " : Unused token: " << last << " before token: " << *i << endl;
+
 				exit(0);
 			}
 			keyWaitingTemp = true;
@@ -1847,8 +1875,9 @@ void CorrParams::addSourceSetup(SourceSetup toadd)
 	{
 		if(toadd.vexName.compare(sourceSetups[i].vexName) == 0)
 		{
-			cerr << "Trying to add a setup for source " << toadd.vexName << " which already has one! This leads to confusion - aborting!" << endl;
-			exit(1);
+			cerr << "Error: Trying to add a setup for source " << toadd.vexName << " which already has one!" << endl;
+
+			exit(0);
 		}
 	}
 	sourceSetups.push_back(toadd);
@@ -2260,7 +2289,8 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 		if(A->tInt    == B->tInt    &&
 		   A->nChan   == B->nChan   &&
 		   A->doPolar == B->doPolar &&
-		   A->doAuto  == B->doAuto     )
+		   A->doAuto  == B->doAuto  &&
+		   A->binConfigFile.compare(B->binConfigFile) == 0)
 		{
 			return true;
 		}
