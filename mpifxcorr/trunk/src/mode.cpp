@@ -321,8 +321,10 @@ Mode::~Mode()
   {
     for(int k=0;k<config->getNumBufferedFFTs(configindex);k++)
     {
-      vectorFree(fftoutputs[j][k]);
-      vectorFree(conjfftoutputs[j][k]);
+      if(j<numrecordedbands) {
+        vectorFree(fftoutputs[j][k]);
+        vectorFree(conjfftoutputs[j][k]);
+      }
     }
     delete [] fftoutputs[j];
     delete [] conjfftoutputs[j];
