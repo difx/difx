@@ -800,12 +800,16 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	}
 	else
 	{
+		static int nt=0;
+
 		ngood++;
 		filltime = 0;
 		invalidtime = 0;
 
+		nt++;
+
                 // feed switched power detector
-                if(switchedpower)
+                if(switchedpower && (nt % 4 == 0) )
                 {
                   struct mark5_stream *m5stream = new_mark5_stream(
                     new_mark5_stream_memory(data, bytes),
