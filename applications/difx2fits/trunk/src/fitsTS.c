@@ -666,8 +666,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		return 0;
 	}
 
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes, 
-		"SYSTEM_TEMPERATURE");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");
 	arrayWriteKeys(p_fits_keys, out);
 	fitsWriteInteger(out, "NO_POL", nPol, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
@@ -684,7 +683,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		{
 			for(jobId = 0; jobId < D->nJob; jobId++)
 			{
-				/* FIXME: eventually change to using outputFile when that is moved to DifxJob */
 				dsId = getDifxTsys(D, jobId, antId, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
 				if(dsId >= 0)
 				{

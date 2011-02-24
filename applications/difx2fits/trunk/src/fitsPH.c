@@ -35,12 +35,16 @@
 
 //phase values from mpifxcorr currently have to be inverted to match FITS conversion
 
-const float pcaltiny = 1e-10; //FIXME review once we've got pcal amplitudes sorted
-const int MaxLineLength=10000;//FIXME even this could be too small!!
+#warning FIXME: review once we've got pcal amplitudes sorted
+const float pcaltiny = 1e-10;
+
+#warning FIXME: even this could be too small!
+const int MaxLineLength=10000;
 
 int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
 {
 	int p, b, t;
+	
 	for(p = 0; p < nPol; p++)
 	{
 		for(b = 0; b < nBand; b++)
@@ -54,6 +58,7 @@ int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int
 			}
 		}
 	}
+	
 	return 1;
 }
 
@@ -74,9 +79,11 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 	if(!*file)
 	{
 		fprintf(stderr, "Error opening file : %s\n", filename);
+
 		return -1;
 	}
 	printf("      Opened File %s\n", filename);
+	
 	return 0;
 }
 	
@@ -88,10 +95,9 @@ static int getNTone(const char *filename, double t1, double t2)
 	int n, nTone, maxnTone=0;
 	double t;
 	char *rv;
-	char antName1[20];
+	char antName1[DIFXIO_NAME_LENGTH];
 
-
-	//FIXME also check that nBand and nPol don't exceed D->nIF and D->nPol
+#warning FIXME: also check that nBand and nPol of each line in the file don't exceed D->nIF and D->nPol
 	in = fopen(filename, "r");
 	if(!in)
 	{
@@ -146,7 +152,7 @@ static int parsePulseCal(const char *line,
 	double A;
 	float B, C;
 	double mjd;
-	char antName[20];
+	char antName[DIFXIO_NAME_LENGTH];
 	
 	union
 	{
@@ -184,8 +190,7 @@ static int parsePulseCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-          printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
-          return -3;
+		return -3;
         }
 
 	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
@@ -232,10 +237,7 @@ static int parsePulseCal(const char *line,
 				{
 					if(freqId < 0 || polId < 0)
 					{
-						fprintf(stderr, "Error: derived "
-							"freqId and polId (%d,%d) are "
-							"not legit.  From "
-							"recBand=%d.\n",
+						fprintf(stderr, "Error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
 							freqId, polId, recBand);
 						continue;
 					}
@@ -255,17 +257,13 @@ static int parsePulseCal(const char *line,
 					if((B >= 999.89 && B < 999.91) ||
 					   (C >= 999.89 && C < 999.91))
 					{
-					  pulseCalRe[polId][tone + bandId*nt] = 
-						nan.f;
-					  pulseCalIm[polId][tone + bandId*nt] = 
-						nan.f;
+					  pulseCalRe[polId][tone + bandId*nt] = nan.f;
+					  pulseCalIm[polId][tone + bandId*nt] = nan.f;
 					}
 					else
 					{
-					  pulseCalRe[polId][tone + bandId*nt] = 
-						B*cos(C*M_PI/180.0);
-					  pulseCalIm[polId][tone + bandId*nt] = 
-						B*sin(C*M_PI/180.0);
+					  pulseCalRe[polId][tone + bandId*nt] = B*cos(C*M_PI/180.0);
+					  pulseCalIm[polId][tone + bandId*nt] = B*sin(C*M_PI/180.0);
 					}
 				}
 			}
@@ -288,16 +286,16 @@ static int parsePulseCal(const char *line,
 					if(freqId < 0 || polId < 0)
 					{
 						fprintf(stderr, "parsePulseCal(2): Developer error: derived "
-							"freqId and polId (%d,%d) are "
-							"not legit.  From "
-							"recBand=%d.\n",
+							"freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
 							freqId, polId, recBand);
+						
 						continue;
 					}
 					else if(freqId >= D->nFreq)
 					{
 						fprintf(stderr, "parsePulseCal(2): Developer error: freqId=%d, nFreq=%d\n",
 							freqId, D->nFreq);
+
 						continue;
 					}
 					bandId = D->config[*configId].freqId2IF[freqId];
@@ -343,7 +341,7 @@ static int parsePulseCalCableCal(const char *line,
 	int n, p;
 	int scanId;
 	double mjd;
-	char antName[20];
+	char antName[DIFXIO_NAME_LENGTH];
 
 	union
 	{
@@ -352,9 +350,7 @@ static int parsePulseCalCableCal(const char *line,
 	} nan;
 	nan.i32 = -1;
 	
-	n = sscanf(line, "%s%lf%f%lf%n", antName, time, timeInt, 
-		cableCal, &p);
-	//printf("\n n%d %f\n", n, *cableCal);
+	n = sscanf(line, "%s%lf%f%lf%n", antName, time, timeInt, cableCal, &p);
 	if(n != 4)
 	{
 		return -1;
@@ -381,8 +377,6 @@ static int parsePulseCalCableCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-		printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
-		
 		return -3;
         }
 
@@ -420,7 +414,7 @@ static int parseDifxPulseCal(const char *line,
 	double A;
 	float B, C;
 	double mjd;
-	char antName[20];
+	char antName[DIFXIO_NAME_LENGTH];
 	double cableCal;
 	float timeInt;
 
@@ -446,8 +440,6 @@ static int parseDifxPulseCal(const char *line,
 
 	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
-		//printf("out of mjd range\n");
-
 		return -1;
 	}
 
@@ -459,8 +451,6 @@ static int parseDifxPulseCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-		//printf("Skipping scan %d as the requested phase centre was not used\n", scanId);
-
 		return -3;
         }
 
@@ -475,7 +465,7 @@ static int parseDifxPulseCal(const char *line,
 	{
 		for(i = 0; i < nBand*nTone; i++)
 		{
-			//FIXME should these be set to nan instead?
+#warning FIXME: should these be set to nan instead?
 			freqs[pol][i] = 0.0;
 			pulseCalRe[pol][i] = 0.0;
 			pulseCalIm[pol][i] = 0.0;
@@ -490,17 +480,18 @@ static int parseDifxPulseCal(const char *line,
 	/* Read in pulse cal information */
 	for(pol = 0; pol < D->nPol; pol++)
 	{
-		//FIXME double-check there's no possibility of pols getting swapped
-		j = 0;/*band index within freqs, pulseCalRe and pulseCalIm*/
+#warning FIXME: double-check there's no possibility of pols getting swapped
+		j = 0; /* band index within freqs, pulseCalRe and pulseCalIm */
 		for(band = 0; band < D->datastream[dsId].nRecFreq; band++)
 		{
 			if(j >= nBand)
 			{
-				printf("Warning: trying to read too many bands in pol %d band %d\n", pol, band);
+				printf("Warning: parseDifxPulseCal: trying to read too many bands in pol %d band %d\n", pol, band);
+				
 				break;
 			}
-			k = 0;/*tone index within freqs, pulseCalRe and pulseCalIm*/
-			/*set up pcal information for this band*/
+			k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
+			/* set up pcal information for this band */
 			DifxDatastreamCalculatePhasecalTones(&(D->datastream[dsId]), &(D->freq[D->datastream[dsId].recFreqId[band]]));
 			for(tone = 0; tone < D->datastream[dsId].nRecTone; tone++)
 			{
@@ -509,11 +500,12 @@ static int parseDifxPulseCal(const char *line,
 					&recBand, &A, &B, &C, &p);
 				if(n < 4)
 				{
-					printf("Warning: Error scanning line\n");
+					printf("Warning: parseDifxPulseCal: Error scanning line\n");
+					
 					return -4;
 				}
 				line += p;
-				/*Only write out specified frequencies*/
+				/* Only write out specified frequencies */
 				if(D->datastream[dsId].recToneOut[tone] == 0)
 				{
 					continue;
@@ -521,17 +513,16 @@ static int parseDifxPulseCal(const char *line,
 
 				if(k >= nTone)
 				{
-					printf("Warning: trying to extract too many tones in pol %d band %d\n", pol, band);
+					printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d band %d\n", pol, band);
+					
 					break;
 				}
 				
 				freqs[pol][j*nTone + k] = (double) D->datastream[dsId].recToneFreq[tone]*1.0e6;
 				if(B < pcaltiny && B > -pcaltiny && C < pcaltiny && C > -pcaltiny)
 				{
-				  pulseCalRe[pol][j*nTone + k] = 
-					nan.f;
-				  pulseCalIm[pol][j*nTone + k] = 
-					nan.f;
+					pulseCalRe[pol][j*nTone + k] = nan.f;
+					pulseCalIm[pol][j*nTone + k] = nan.f;
 				}
 				else
 				{
@@ -542,16 +533,15 @@ static int parseDifxPulseCal(const char *line,
 			}
 			while(k < nTone)
 			{
-				pulseCalRe[pol][j*nTone + k] = 
-				nan.f;
-				pulseCalIm[pol][j*nTone + k] = 
-				nan.f;
+				pulseCalRe[pol][j*nTone + k] = nan.f;
+				pulseCalIm[pol][j*nTone + k] = nan.f;
 				k++;
 			}
 			j++;
 		}
-		//n.b. unused bands at the end will be set to zero rather than NaN
+		/* n.b. unused bands at the end will be set to zero rather than NaN */
 	}
+
 	return 0;
 }
 
@@ -613,7 +603,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	/* The following are 1-based indices for FITS format */
 	int32_t antId1, arrayId1, sourceId1, freqId1;
 
-	int stationpcal = 0;
 	char antName[DIFXIO_NAME_LENGTH];
 
 	/* Note: this particular form of NAN is needed for FITS-IDI compliance */
@@ -678,6 +667,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(nTone*nBand > array_MAX_TONES)
 	{
 		printf("Developer Error: nTone*nBand exceeds array_MAX_TONES\n");
+
 		return D;
 	}
 	if(nTone < 1)

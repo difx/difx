@@ -61,7 +61,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	double start, stop;
 	char *p_fitsbuf;
 	int a, b, c;
-	char antName[8];
+	char antName[DIFXIO_NAME_LENGTH];
 	double time;
 	float timeInt;
 	char polTypeA;

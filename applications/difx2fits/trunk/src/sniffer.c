@@ -861,10 +861,14 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	mjd += data->iat;
 	a1 = data->baseline/256 - 1;
 	a2 = data->baseline%256 - 1;
-	scanId = DifxInputGetScanId(S->D, mjd);
+	scanId = DifxInputGetScanIdByAntennaId(S->D, mjd, a1);
 	if(scanId < 0 || scanId > S->D->nScan)
 	{
 		return 0;
+	}
+	if(scanId != DifxInputGetScanIdByAntennaId(S->D, mjd, a2))
+	{
+		fprintf(stderr, "Warning: feedSnifferFITS: antenna1=%d and antenna2=%d refer to different scans\n", a1, a2);
 	}
 
 	configId = S->D->scan[scanId].configId;

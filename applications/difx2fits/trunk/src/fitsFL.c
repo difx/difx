@@ -166,7 +166,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	char *fitsbuf;
 	double start, stop;
 	char line[MaxLineLength+1];
-	char antName[10];
+	char antName[DIFXIO_NAME_LENGTH];
 	int refDay;
 	int i, c, d, p, v;
 	int hasData[2][array_MAX_BANDS];

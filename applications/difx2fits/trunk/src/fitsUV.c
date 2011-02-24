@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -78,10 +78,10 @@ static int DifxVisInitData(DifxVis *dv)
 		exit(0);
 	}
 	dv->weight = dv->record->data;
-	/* FIXME -- here add a similar thing for gateId? */
 	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
 	dv->sourceId = -1;
 	dv->scanId = -1;
+#warning FIXME: here add a similar thing for gateId?
 
 	return 0;
 }
@@ -359,8 +359,10 @@ static double evalPoly(const double *p, int n, double x)
 int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 {
 	int i, i1, v, index;
-	int a1, a2;
-	int bl, scanId, binhdrversion, headerconfindex, intmjd;
+	int antId1, antId2;	/* These reference the DifxInput Antenna */
+	int bl;			/* bl number computed from antId1 and antId2 */
+	int dsId1, dsId2;	/* This refers to DifxInput Datastream table */
+	int scanId, binhdrversion, headerconfindex, intmjd;
 	double mjd, iat, dt, dt2, weight;
 	double uvw[3];
 	char polpair[3];
@@ -372,10 +374,9 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	const DifxScan *scan;
 	const DifxPolyModel *im1, *im2;
 	int terms1, terms2;
-	int d1, d2, aa1, aa2;	/* FIXME -- temporary */
+	int configBaselineId, configAntennaId1, configAntennaId2;	/* These are local to the config */
 	int bin, srcindex, sync;
 
-	//printf("About to try and read another visibility\n");
 	resetDifxParameters(dv->dp);
 
 	//first of all, figure out what kind of header we are dealing with
@@ -402,7 +403,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		if(binhdrversion == 1) //new style binary header
 		{
 			/* Note: the following 9 freads have their return value ignored.  The value is captured to prevent warning at compile time. */
-			v = fread(&bl, sizeof(int), 1, dv->in);
+			v = fread(&configBaselineId, sizeof(int), 1, dv->in);
 			v = fread(&intmjd, sizeof(int), 1, dv->in);
 			mjd = intmjd;
 			v = fread(&iat, sizeof(double), 1, dv->in);
@@ -449,7 +450,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	/* Drop all records (except autocorrelations) not associated
 	 * with the requested pulsar bin */
-	if(bin != pulsarBin && bl % 257 != 0)
+	if(bin != pulsarBin && configBaselineId % 257 != 0)
 	{
 		return SKIPPED_RECORD;
 	}
@@ -458,8 +459,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		dv->pulsarBin = bin;
 	}
 
-	/* FIXME -- look at sourceId in the record as a check */
-	/* FIXME -- look at configId in the record as a check */
+#warning FIXME: look at sourceId in the record as a check
+#warning FIXME: look at configId in the record as a check
 
 	/* scanId at middle of integration */
 	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+iat, dv->jobId);
@@ -486,18 +487,18 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		return SKIPPED_RECORD;
 	}
-	//if((bl % 257 == 0) && ((scan->nPhaseCentres == 1 && srcindex != scan->orgjobPhsCentreSrcs[0]) || 
+	//if((configBaselineId % 257 == 0) && ((scan->nPhaseCentres == 1 && srcindex != scan->orgjobPhsCentreSrcs[0]) || 
 	//   (scan->nPhaseCentres > 1  && srcindex != scan->orgjobPointingCentreSrc)))
 	//{
-	//	printf("srcindex has been incorrectly recorded for baseline %d as %d - overriding!\n", bl, srcindex);
+	//	printf("srcindex has been incorrectly recorded for baseline %d as %d - overriding!\n", configBaselineId, srcindex);
 	//	printf("number of phase centres for scan %d is %d, (original indices) pointing centre source was %d and 1st phase centre source was %d\n", scanId, scan->nPhaseCentres, scan->orgjobPointingCentreSrc, scan->orgjobPhsCentreSrcs[0]);
 	//	if(scan->nPhaseCentres == 1)
 	//		srcindex = scan->orgjobPhsCentreSrcs[0];
 	//	else
 	//		srcindex = scan->orgjobPointingCentreSrc;
 	//}
-	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, bl);
-	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && (bl % 257 != 0) ) //don't skip autocorrelations
+	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, configBaselineId);
+	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
 	{
 		//printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
 
@@ -525,30 +526,32 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		return SKIPPED_RECORD;
 	}
 
-	aa1 = a1 = (bl/256) - 1;
-	aa2 = a2 = (bl%256) - 1;
+	configAntennaId1 = (configBaselineId/256) - 1;
+	configAntennaId2 = (configBaselineId%256) - 1;
 
-	if(a1 < 0 || a1 >= config->nAntenna ||
-	   a2 < 0 || a2 >= config->nAntenna)
+	if(configAntennaId1 < 0 || configAntennaId1 >= config->nAntenna ||
+	   configAntennaId2 < 0 || configAntennaId2 >= config->nAntenna)
 	{
-		printf("Error: illegal baseline %d -> %d-%d\n", bl, a1, a2);
+		printf("Error: illegal config[%d] baseline %d -> %d-%d\n", configId, configBaselineId, configAntennaId1, configAntennaId2);
 		
 		return -8;
 	}
 
 	/* translate from .input file antId to index for D->antenna via dsId */
-	d1 = config->ant2dsId[a1];
-	d2 = config->ant2dsId[a2];
-	if(d1 < 0 || d1 >= dv->D->nDatastream || 
-	   d2 < 0 || d2 >= dv->D->nDatastream)
+	dsId1 = config->ant2dsId[configAntennaId1];
+	dsId2 = config->ant2dsId[configAntennaId2];
+	if(dsId1 < 0 || dsId1 >= dv->D->nDatastream || 
+	   dsId2 < 0 || dsId2 >= dv->D->nDatastream)
 	{
-		printf("Error: baseline %d -> datastreams %d-%d\n", bl, d1, d2);
+		printf("Error: baseline %d -> datastreams %d-%d\n", configBaselineId, dsId1, dsId2);
 
 		return -9;
 	}
-	a1 = dv->D->datastream[d1].antennaId;
-	a2 = dv->D->datastream[d2].antennaId;
-	bl = (a1+1)*256 + (a2+1);
+
+	/* These are DifxInput-wide antenna and baseline ids */
+	antId1 = dv->D->datastream[dsId1].antennaId;
+	antId2 = dv->D->datastream[dsId2].antennaId;
+	bl = (antId1+1)*256 + (antId2+1);
 	
 	if(verbose >= 1 && scanId != dv->scanId)
 	{
@@ -594,11 +597,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			w = dv->W;
 
 			/* use .difx/ antenna indices for model tables */
-			if(scan->im[a1] && scan->im[a2])
+			if(scan->im[antId1] && scan->im[antId2])
 			{
 				//printf("About to look at the actual im object\n");
-				im1 = scan->im[a1][phasecentre + 1];
-	                        im2 = scan->im[a2][phasecentre + 1];
+				im1 = scan->im[antId1][phasecentre + 1];
+	                        im2 = scan->im[antId2][phasecentre + 1];
 				//printf("Got the im structures - they are %p and %p\n", im1, im2);
 				if(!(im1 && im2))
 				{
@@ -632,7 +635,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 			    !dv->flagTransition) 
 			{
 				printf("Warning: UVW diff: %d %d %d-%d %f %f  %f %f  %f %f  %f %f\n", 
-					scanId, n, aa1, aa2, mjd+iat, dt, u, dv->U, v, dv->V, w, dv->W);
+					scanId, n, antId1, antId2, mjd+iat, dt, u, dv->U, v, dv->V, w, dv->W);
 			}
 		}
 	}
@@ -923,9 +926,9 @@ static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin, int phasecentr
 	return 0;
 }
 
-static int DifxVisConvert(const DifxInput *D, 
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
-	struct CommandLineOptions *opts)
+const DifxInput *DifxInput2FitsUV(const DifxInput *D,
+	struct fits_keywords *p_fits_keys,
+	struct fitsPrivate *out, struct CommandLineOptions *opts)
 {
 	int i, j, l, v;
 	float visScale = 1.0;
@@ -970,6 +973,12 @@ static int DifxVisConvert(const DifxInput *D,
 		{"FLUX", fluxFormFloat, "data matrix", "UNCALIB"}
 	};
 
+	if(D == 0)
+	{
+		return 0;
+	}
+
+	printf("\n");
 	/* allocate one DifxVis per job */
 
 	scale = getDifxScaleFactor(D, opts->scale, opts->verbose);
@@ -984,6 +993,7 @@ static int DifxVisConvert(const DifxInput *D,
 		{
 			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
 				j, D->nJob);
+
 			return 0;
 		}
 		dvs[j]->scale = scale;
@@ -1164,16 +1174,14 @@ static int DifxVisConvert(const DifxInput *D,
 			v = DifxVisCollectRandomParams(dv);
 			if(v < 0)
 			{
-				fprintf(stderr, "Error in "
-					"DifxVisCollectRandomParams : "
-					"return value = %d\n", v);
+				fprintf(stderr, "Error in DifxVisCollectRandomParams : return value = %d\n", v);
 #ifdef HAVE_FFTW
 				if(S)
 				{
 					deleteSniffer(S);
 				}
 #endif
-				return -3;
+				return 0;
 			}
 
 			readvisrecord(dv, opts->verbose, opts->pulsarBin, opts->phaseCentre);
@@ -1205,22 +1213,8 @@ static int DifxVisConvert(const DifxInput *D,
 		deleteJobMatrix(jobMatrix);
 	}
 
-	return 0;
-}
-
-/* FIXME -- merge this function with DifxVisConvert */
-const DifxInput *DifxInput2FitsUV(const DifxInput *D,
-	struct fits_keywords *p_fits_keys,
-	struct fitsPrivate *out, struct CommandLineOptions *opts)
-{
-	if(D == 0)
-	{
-		return 0;
-	}
-
-	printf("\n");
-	DifxVisConvert(D, p_fits_keys, out, opts);
 	printf("                            ");
 
 	return D;
 }
+

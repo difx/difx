@@ -83,7 +83,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	int nColumn;
 	int nRowBytes;
 	char **fitsbuf, *p_fitsbuf;
-	char antName[64];
+	char antName[DIFXIO_NAME_LENGTH];
 	char line[MaxLineLength+1];
 	double mjd;
 	int refDay;
