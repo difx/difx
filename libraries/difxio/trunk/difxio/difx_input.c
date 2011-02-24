@@ -1945,8 +1945,11 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 				i, DifxParametersvalue(cp, rows[1]));
 		}
 		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
-		D->antenna[a].offset[1]= 0.0;	/* FIXME */
-		D->antenna[a].offset[2]= 0.0;	/* FIXME */
+
+#warning FIXME: In the future add other two axes of axis offset
+		D->antenna[a].offset[1]= 0.0;
+		D->antenna[a].offset[2]= 0.0;
+
 		D->antenna[a].X        = atof(DifxParametersvalue(cp, rows[3]));
 		D->antenna[a].Y        = atof(DifxParametersvalue(cp, rows[4]));
 		D->antenna[a].Z        = atof(DifxParametersvalue(cp, rows[5]));
@@ -2374,7 +2377,8 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	antMap = deriveAntMap(D, mp, &nTel);
 	if(antMap == 0)
 	{
-		fprintf(stderr, "populateIM: deriveAntMap failed\n");
+		fprintf(stderr, "Error: populateIM: deriveAntMap failed\n");
+		
 		return 0;
 	}
 
@@ -2383,7 +2387,8 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	r = DifxParametersfind(mp, 0, "POLYNOMIAL ORDER");
 	if(r < 0)
 	{
-		fprintf(stderr, "IM: POLYNOMIAL ORDER not found\n");
+		fprintf(stderr, "Error: populateIM: POLYNOMIAL ORDER not found\n");
+		
 		return 0;
 	}
 	order = atoi(DifxParametersvalue(mp, r));
@@ -2392,8 +2397,9 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	r = DifxParametersfind(mp, 0, "INTERVAL (SECS)");
 	if(r < 0)
 	{
-		fprintf(stderr, "IM: INTERVAL (SECS) not found\n");
+		fprintf(stderr, "Error: populateIM: INTERVAL (SECS) not found\n");
 		free(antMap);
+		
 		return 0;
 	}
 	interval = atoi(DifxParametersvalue(mp, r));
@@ -2402,7 +2408,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	r = DifxParametersfind(mp, 0, "ABERRATION CORR");
 	if(r < 0)
 	{
-		fprintf(stderr, "Assuming aberration not corrected\n");
+		fprintf(stderr, "Warning: populateIM: Assuming aberration not corrected\n");
 	}
 	for(ac = 0; ac < NumAberCorrOptions; ac++)
 	{
@@ -2416,31 +2422,33 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 	r = DifxParametersfind(mp, 0, "NUM SCANS");
 	if(r < 0)
 	{
-		fprintf(stderr, "IM: NUM SCANS not found\n");
+		fprintf(stderr, "Error: populateIM: NUM SCANS not found\n");
 		free(antMap);
+		
 		return 0;
 	}
 
 	nScan = atoi(DifxParametersvalue(mp, r));
 	if(D->nScan != nScan)
 	{
-		fprintf(stderr, "IM: NUM SCANS disagrees\n");
+		fprintf(stderr, "Error: populateIM: NUM SCANS disagrees\n");
 		free(antMap);
+
 		return 0;
 	}
 
 	for(s = 0; s < nScan; s++)
 	{
-		//printf("Looping through scan %d/%d\n", s+1, nScan);
-		/* FIXME -- validate source name, ... */
+#warning FIXME: validate source name, ...
 
 		scan = D->scan + s;
 
 		r = DifxParametersfind1(mp, r, "SCAN %d NUM POLY", s);
 		if(r < 0)
 		{
-			fprintf(stderr, "IM: Malformed scan\n");
+			fprintf(stderr, "Error: populateIM: Malformed scan\n");
 			free(antMap);
+			
 			return 0;
 		}
 
@@ -2448,16 +2456,15 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 		scan->im = newDifxPolyModelArray(scan->nAntenna, scan->nPhaseCentres + 1, 
 						 scan->nPoly);
 
-		//printf("Created PolyModelArray, with %d antennas\n", scan->nAntenna);
 		for(p = 0; p < scan->nPoly; p++)
 		{
-			//printf("Working on poly %d/%d\n", p+1, scan->nPoly);
 			r = DifxParametersfind2(mp, r, "SCAN %d POLY %d MJD",
 				s, p);
 			if(r < 0)
 			{
-				printf("Could not find SCAN %d POLY %d MJD", s, p);
+				fprintf(stderr, "Error: populateIM: Could not find SCAN %d POLY %d MJD", s, p);
 				free(antMap);
+				
 				return 0;
 			}
 			mjd = atoi(DifxParametersvalue(mp, r));
@@ -2465,8 +2472,9 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 				s, p);
 			if(r < 0)
 			{
-				printf("Could not find SCAN %d POLY %d SEC", s, p);
+				fprintf(stderr, "Error: populateIM: Could not find SCAN %d POLY %d SEC", s, p);
 				free(antMap);
+				
 				return 0;
 			}
 			sec = atoi(DifxParametersvalue(mp, r));
@@ -2498,7 +2506,8 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 						t, scan->im[a][src][p].w, order+1);
 					if(r < 0)
 					{
-						printf("Could not find SRC %d ANT %d W (m)\n", src, t);
+						fprintf(stderr, "Error: populateIM: Could not find SRC %d ANT %d W (m)\n", src, t);
+						
 						return 0;
 					}
 				}
@@ -3318,33 +3327,6 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 	return -1;
 }
 
-/* return -1 if no suitable scan found */
-/* FIXME -- this function is ill-posed */
-int DifxInputGetScanId(const DifxInput *D, double mjd)
-{
-	int c, scanId;
-
-	if(!D)
-	{
-		return -1;
-	}
-
-	for(scanId = 0; scanId < D->nScan; scanId++)
-	{
-		c = D->scan[scanId].configId;
-		if(c < 0 || c >= D->nConfig)
-		{
-			continue;
-		}
-		if(mjd < D->scan[scanId].mjdEnd && mjd >= D->scan[scanId].mjdStart)
-		{
-			return scanId;
-		}
-	}
-
-	return -1;
-}
-
 int DifxInputGetPointingSourceIdByJobId(const DifxInput *D, double mjd, int jobId)
 {
 	int scanId;
@@ -3637,12 +3619,9 @@ int DifxInputSimFXCORR(DifxInput *D)
 
 	/* Now that clocks have their own reference times, this doesn't matter */
 
-	/* FIXME -- reset BLOCKSPERSEND here? */
-
 	return 0;
 }
 
-/* FIXME: Perhaps this needs special treatment for band match/zoom bands */
 int DifxInputGetMaxTones(const DifxInput *D)
 {
 	int f, d, fd;

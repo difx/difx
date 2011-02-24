@@ -355,6 +355,7 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	{
 		fprintf(fp, " (%d, %c)", dd->recBandFreqId[f], dd->recBandPolName[f]);
 	}
+	fprintf(fp, "\n");
 	fprintf(fp, "    nZoomFreq = %d\n", dd->nZoomFreq);
 	fprintf(fp, "    nZoomBand = %d\n", dd->nZoomBand);
 	fprintf(fp, "    (ZoomFreqId, nZoomPol)[freq] =");

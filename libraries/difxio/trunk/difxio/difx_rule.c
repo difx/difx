@@ -26,6 +26,7 @@
 // $LastChangedDate: $
 //
 //============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -160,10 +161,11 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 
 int ruleAppliesToScanSource(const DifxRule *dr, const DifxScan *ds, const DifxSource *src)
 {
+#warning FIXME: need to eventually handle lists of calCodes and quals
 	if((dr->sourceName.n > 0 && DifxStringArraycontains(&dr->sourceName, src->name) == 0) ||
 	   (dr->scanId.n > 0  && DifxStringArraycontains(&dr->scanId, ds->identifier) == 0) ||
-	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||	/* FIXME: look at list of calcodes */
-	   (dr->qual >= 0 && src->qual != dr->qual) || /* FIXME: look at list of quals */
+	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||
+	   (dr->qual >= 0 && src->qual != dr->qual) ||
 	   (dr->mjdStart > 0.0 && ds->mjdStart < dr->mjdStart) || 
 	   (dr->mjdStop > 0.0 && ds->mjdEnd > ds->mjdEnd))
 	{

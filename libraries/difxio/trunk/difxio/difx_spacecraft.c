@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,7 +26,6 @@
 // $LastChangedDate$
 //
 //============================================================================
-
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -156,12 +155,13 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 
 	spkuef_c(spiceHandle);
 	clpool_c();
-#else
-	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
-	return -1;
-#endif
 
 	return 0;
+#else
+	fprintf(stderr, "Error: computeDifxSpacecraftEphemeris: spice not compiled into difxio.\n");
+	
+	return -1;
+#endif
 }
 
 static void copySpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src)
@@ -177,7 +177,7 @@ static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
 {
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src1->name);
 	
-	/* FIXME -- write me! for now just copy the first one found */
+#warning FIXME: write me! for now just copy the first one found
 	copySpacecraft(dest, src1);
 }
 
@@ -191,12 +191,14 @@ DifxSpacecraft *mergeDifxSpacecraft(const DifxSpacecraft *ds1, int nds1,
 	if(nds1 <= 0 && nds2 <= 0)
 	{
 		*nds = 0;
+
 		return 0;
 	}
 
 	if(nds2 <= 0)
 	{
 		*nds = nds1;
+
 		return dupDifxSpacecraftArray(ds1, nds1);
 	}
 
@@ -376,10 +378,10 @@ int writeDifxSpacecraftArray(FILE *out, int nSpacecraft, DifxSpacecraft *ds)
 			if(v >= MaxLineLength)
 			{
 				fprintf(stderr, "Error: Spacecraft %d row %d is too long!\n", i, j);
+
 				return -1;
 			}
-			writeDifxLine2(out, "SPACECRAFT %d ROW %d", 
-				i, j, value);
+			writeDifxLine2(out, "SPACECRAFT %d ROW %d", i, j, value);
 		}
 		n += (ds[i].nPoint + 2);
 	}

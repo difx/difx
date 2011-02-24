@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -33,7 +33,7 @@
 #include "difxio/difx_input.h"
 
 
-/* FIXME -- add condition structure */
+#warning FIXME: add condition structure
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
 	if(D1->specAvg != D2->specAvg ||
