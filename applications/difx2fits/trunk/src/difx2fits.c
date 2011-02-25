@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -134,6 +134,10 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -v                  Be verbose.  -v -v for more!\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --override-version  Ignore difx versions\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
+	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
+	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
 	fprintf(stderr, "\n");
 
 	return 0;

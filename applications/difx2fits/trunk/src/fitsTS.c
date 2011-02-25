@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -189,7 +189,7 @@ float getTcalValue(const char *antname, float freq, char pol)
 	}
 }
 
-void nanify(float X[2][array_MAX_BANDS])
+static void nanify(float X[2][array_MAX_BANDS])
 {
 	int i;
 
@@ -236,7 +236,10 @@ static int parseTsys(const char *line, char *antName,
 
 typedef struct
 {
-	double pOn, wOn, pOff, wOff;
+	double pOn;	/* power in the on state */
+	double wOn;	/* weight for the on state = 1/sigma^2 */
+	double pOff;	/* power in the off state */
+	double wOff;	/* weight for the on state = 1/sigma^2 */
 } SwitchedPower;
 
 static int readSwitchedPower(const char *line, double *mjd1, double *mjd2, SwitchedPower *sp, int max)
@@ -311,7 +314,7 @@ static double unscaledTsys(const SwitchedPower *sp)
 	}
 }
 
-int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int phasecentre, 
+int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double avgSeconds, int phasecentre, 
 	int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
@@ -325,7 +328,6 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 	SwitchedPower average[array_MAX_BANDS*2];
 	double mjd1, mjd2, mjd;
 	double accumStart = -1, accumEnd = -1;
-	int dsId;
 	int configId = -1;
 	int scanId = -1;
 	int i, v, n;
@@ -347,12 +349,6 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 		loadTcals();
 	}
 
-	dsId = DifxInputGetDatastreamId(D, jobId, antId);
-	if(dsId < 0)
-	{
-		return dsId;
-	}
-
 	/* This factor accounts for the fact that the VLBA BBC has an apparent 
 	 * total power scaling issue of about 6.5%
 	 */
@@ -365,12 +361,12 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 		fudgeFactor = 1.0;
 	}
 
-	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, dsId);
+	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, origDsId);
 
 	if(v >= MaxFilenameLength)
 	{
-		fprintf(stderr, "Developer error: getDifxTsys jobId=%d antId=%d dsId=%d filename length wanted to be %d bytes long, not %d\n",
-			jobId, antId, dsId, v, MaxFilenameLength);
+		fprintf(stderr, "Developer error: getDifxTsys jobId=%d antId=%d origDsId=%d filename length wanted to be %d bytes long, not %d\n",
+			jobId, antId, origDsId, v, MaxFilenameLength);
 		
 		return -1;
 	}
@@ -447,16 +443,15 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 		}
 		else if(scanId >= 0 && n != nBand)
 		{
-			fprintf(stderr, "Developer error: getDifxTsys: ds=%d scanId=%d n=%d "
-				"nBand=%d mjd1=%12.6f mjd2=%12.6f\n",
-				dsId, scanId, n, nBand, mjd1, mjd2);
+			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nBand=%d mjd1=%12.6f mjd2=%12.6f\n",
+				antId, origDsId, scanId, n, nBand, mjd1, mjd2);
 
 			exit(0);
 		}
 
 		if(configId != currentConfigId)
 		{
-			// Get updated pcal value
+#warning FIXME: Get updated tcal values
 		}
 
 		if(doDump)
@@ -578,7 +573,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, double avgSeconds, int
 
 	fclose(in);
 
-	return dsId;
+	return 1;
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
@@ -586,8 +581,10 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int phasecentre, double DifxTsysAvgSeconds)
 {
 	const int MaxLineLength=1000;
+	const int MaxDatastreamsPerAntenna=8;
 
 	char bandFormFloat[4];
+	int origDsIds[MaxDatastreamsPerAntenna];
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -616,9 +613,9 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int nBand;
 	int configId, sourceId, scanId;
 	int i, nPol=0;
-	int freqId, bandId, polId, antId, jobId, dsId;
+	int freqId, bandId, polId, antId, jobId;
 	int nRecBand;
-	int v;
+	int v, n;
 	double f;
 	double time, mjd;
 	float timeInt;
@@ -683,10 +680,18 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 		{
 			for(jobId = 0; jobId < D->nJob; jobId++)
 			{
-				dsId = getDifxTsys(D, jobId, antId, DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
-				if(dsId >= 0)
+				n = DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(origDsIds, D, antId, jobId, MaxDatastreamsPerAntenna);
+				if(n > 1)
 				{
-					hasDifxTsys[antId]++;
+					fprintf(stderr, "\nWarning: > 1 datastream for antennaId=%d.  This has not been tested.\n", antId);
+				}
+				for(i = 0; i < n; i++)
+				{
+					v = getDifxTsys(D, jobId, antId, origDsIds[i], DifxTsysAvgSeconds, phasecentre, nRowBytes, fitsbuf, nColumn, columns, out);
+					if(v >= 0)
+					{
+						hasDifxTsys[antId]++;
+					}
 				}
 			}
 		}
