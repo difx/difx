@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -444,6 +444,17 @@ typedef struct
 	char flagFile[DIFXIO_FILENAME_LENGTH];
 	char threadsFile[DIFXIO_FILENAME_LENGTH];
 	char outputFile[DIFXIO_FILENAME_LENGTH];
+
+	/* Remappings.  These are null arrays unless some renumbering from original values occurred */
+	int *jobIdRemap;	/* confusingly, not the same jobId as that in this structure, but rather index to DifxJob */
+	int *freqIdRemap;
+	int *antennaIdRemap;
+	int *datastreamIdRemap;
+	int *baselineIdRemap;
+	int *pulsarIdRemap;
+	int *configIdRemap;
+	int *sourceIdRemap;
+	int *spacecraftIdRemap;
 } DifxJob;
 
 typedef struct
@@ -773,6 +784,8 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId);
 int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
 	int antennaId);
 int DifxInputGetAntennaId(const DifxInput *D, const char *antennaName);
+int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount);
+int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount);
 int DifxInputGetMaxTones(const DifxInput *D);
 int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int baselineFreq);
 int DifxInputGetDatastreamId(const DifxInput *D, int jobId, int antId);
@@ -787,6 +800,14 @@ int DifxInputWriteThreads(const DifxInput *D);
 int writeDifxIM(const DifxInput *D);
 int writeDifxCalc(const DifxInput *D);
 int writeDifxInput(const DifxInput *D);
+
+/* Remap functions */
+void fprintRemap(FILE *out, const char *name, const int *Remap);
+void printRemap(const char *name, const int *Remap);
+int *newRemap(int nItem);
+void deleteRemap(int *Remap);
+int *dupRemap(const int *Remap);
+int sizeofRemap(const int *Remap);
 
 #ifdef __cplusplus
 }

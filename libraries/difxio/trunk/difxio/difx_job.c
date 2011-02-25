@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -67,6 +67,52 @@ void deleteDifxJobArray(DifxJob *dj)
 			deleteDifxAntennaFlagArray(dj->flag);
 			dj->flag = 0;
 		}
+		if(dj->jobIdRemap)
+		{
+			deleteRemap(dj->freqIdRemap);
+			dj->freqIdRemap = 0;
+		}
+		if(dj->freqIdRemap)
+		{
+			deleteRemap(dj->freqIdRemap);
+			dj->freqIdRemap = 0;
+		}
+		if(dj->antennaIdRemap)
+		{
+			deleteRemap(dj->antennaIdRemap);
+			dj->antennaIdRemap = 0;
+		}
+		if(dj->datastreamIdRemap)
+		{
+			deleteRemap(dj->datastreamIdRemap);
+			dj->datastreamIdRemap = 0;
+		}
+		if(dj->baselineIdRemap)
+		{
+			deleteRemap(dj->baselineIdRemap);
+			dj->baselineIdRemap = 0;
+		}
+		if(dj->pulsarIdRemap)
+		{
+			deleteRemap(dj->pulsarIdRemap);
+			dj->pulsarIdRemap = 0;
+		}
+		if(dj->configIdRemap)
+		{
+			deleteRemap(dj->configIdRemap);
+			dj->configIdRemap = 0;
+		}
+		if(dj->sourceIdRemap)
+		{
+			deleteRemap(dj->sourceIdRemap);
+			dj->sourceIdRemap = 0;
+		}
+		if(dj->spacecraftIdRemap)
+		{
+			deleteRemap(dj->spacecraftIdRemap);
+			dj->spacecraftIdRemap = 0;
+		}
+
 		free(dj);
 	}
 }
@@ -89,6 +135,15 @@ void fprintDifxJob(FILE *fp, const DifxJob *dj)
 	fprintf(fp, "    im (model) file = %s\n", dj->imFile);
 	fprintf(fp, "    flag file = %s\n", dj->flagFile);
 	fprintf(fp, "    output file = %s\n", dj->outputFile);
+	fprintRemap(fp, "  jobId", dj->jobIdRemap);
+	fprintRemap(fp, "  freqId", dj->freqIdRemap);
+	fprintRemap(fp, "  antennaId", dj->antennaIdRemap);
+	fprintRemap(fp, "  datastreamId", dj->datastreamIdRemap);
+	fprintRemap(fp, "  baselineId", dj->baselineIdRemap);
+	fprintRemap(fp, "  pulsarId", dj->pulsarIdRemap);
+	fprintRemap(fp, "  configId", dj->configIdRemap);
+	fprintRemap(fp, "  sourceId", dj->sourceIdRemap);
+	fprintRemap(fp, "  spacecraftId", dj->spacecraftIdRemap);
 }
 
 void printDifxJob(const DifxJob *dj)
@@ -112,6 +167,16 @@ void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap)
 				src->flag + f, antennaIdRemap);
 		}
 	}
+
+	dest->jobIdRemap = dupRemap(src->jobIdRemap);
+	dest->freqIdRemap = dupRemap(src->freqIdRemap);
+	dest->antennaIdRemap = dupRemap(src->antennaIdRemap);
+	dest->datastreamIdRemap = dupRemap(src->datastreamIdRemap);
+	dest->baselineIdRemap = dupRemap(src->baselineIdRemap);
+	dest->pulsarIdRemap = dupRemap(src->pulsarIdRemap);
+	dest->configIdRemap = dupRemap(src->configIdRemap);
+	dest->sourceIdRemap = dupRemap(src->sourceIdRemap);
+	dest->spacecraftIdRemap = dupRemap(src->spacecraftIdRemap);
 }
 
 /* simply append dj2 after dj1 return new size on call stack : ndj */

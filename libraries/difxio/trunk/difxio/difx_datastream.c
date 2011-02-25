@@ -377,7 +377,6 @@ void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd)
 	{
 		fprintf(fp, "     Tone %d freq = %d MHz, written = %d\n", f, dd->recToneFreq[f], dd->recToneOut[f]);
 	}
-	fprintf(fp, "\n");
 }
 
 void printDifxDatastream(const DifxDatastream *dd)

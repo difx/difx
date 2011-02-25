@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -3742,4 +3742,73 @@ int DifxInputGetFreqIdByBaselineFreq(const DifxInput *D, int baselineId, int bas
 	}
 
 	return freqId;
+}
+
+int DifxInputGetDatastreamIdsByAntennaId(int *dsIds, const DifxInput *D, int antennaId, int maxCount)
+{
+	int n = 0;
+	int d;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(antennaId >= D->nAntenna)
+	{
+		return -2;
+	}
+	if(D->nDatastream <= 0)
+	{
+		return 0;
+	}
+
+	for(d = 0; d < D->nDatastream; d++)
+	{
+		if(D->datastream[d].antennaId == antennaId)
+		{
+			if(dsIds && n < maxCount)
+			{
+				dsIds[n] = d;
+			}
+			n++;
+		}
+	}
+
+	return n;
+}
+
+int DifxInputGetOriginalDatastreamIdsByAntennaIdJobId(int *dsIds, const DifxInput *D, int antennaId, int jobId, int maxCount)
+{
+	int n;
+	int m = 0;
+	int i, j;
+
+	if(D->nJob <= jobId)
+	{
+		return -2;
+	}
+
+	n = DifxInputGetDatastreamIdsByAntennaId(dsIds, D, antennaId, maxCount);
+
+	if(n <= 0 || D->job[jobId].datastreamIdRemap == 0)
+	{
+		return n;
+	}
+
+	/* There may be fewer datastreans here */
+	for(i = 0; i < n; i++)
+	{
+		for(j = 0; D->job[jobId].datastreamIdRemap[j] >= 0; j++)
+		{
+			if(D->job[jobId].datastreamIdRemap[j] == dsIds[i])
+			{
+				dsIds[m] = j;
+				m++;
+
+				break;
+			}
+		}
+	}
+
+	return m;
 }

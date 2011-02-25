@@ -36,6 +36,7 @@
 #warning FIXME: add condition structure
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
+#warning FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?
 	if(D1->specAvg != D2->specAvg ||
 	   //D1->startChan != D2->startChan ||
 	   //D1->nInChan != D2->nInChan ||
@@ -45,11 +46,13 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 	{
 		return 0;
 	}
+
+#warning FIXME: check that D2 has no remappings as those would become lost
 	
 	return 1;
 }
 
-/* This function determines if two DifxInput arenot mergable
+/* This function determines if two DifxInput are not mergable
  * because difxio does not currently support it, but could
  * in the future */
 int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
@@ -87,37 +90,19 @@ int areDifxInputsCompatible(const DifxInput *D1, const DifxInput *D2)
 	return 1;
 }
 
-static void printRemap(const char *name, const int *Remap, int n)
-{
-	int i;
-	printf("  %s Remap =", name);
-	if(n == 0 || Remap == 0)
-	{
-		printf(" None\n");
-	}
-	else
-	{
-		for(i = 0; i < n; i++)
-		{
-			printf(" %d", Remap[i]);
-		}
-		printf("\n");
-	}
-}
-
-DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, 
-	int verbose)
+DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose)
 {
 	DifxInput *D;
-	int *jobIdRemap = 0;
-	int *freqIdRemap = 0;
-	int *antennaIdRemap = 0;
-	int *datastreamIdRemap = 0;
-	int *baselineIdRemap = 0;
-	int *pulsarIdRemap = 0;
-	int *configIdRemap = 0;
-	int *sourceIdRemap = 0;
-	int *spacecraftIdRemap = 0;
+	DifxJob *job;
+	int *jobIdRemap;
+	int *freqIdRemap;
+	int *antennaIdRemap;
+	int *datastreamIdRemap;
+	int *baselineIdRemap;
+	int *pulsarIdRemap;
+	int *configIdRemap;
+	int *sourceIdRemap;
+	int *spacecraftIdRemap;
 
 	if(!D1 || !D2)
 	{
@@ -125,20 +110,28 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 	}
 
 	/* allocate some scratch space */
-	jobIdRemap        = (int *)calloc(D2->nJob, sizeof(int));
-	freqIdRemap       = (int *)calloc(D2->nFreq, sizeof(int));
-	antennaIdRemap    = (int *)calloc(D2->nAntenna, sizeof(int));
-	datastreamIdRemap = (int *)calloc(D2->nDatastream, sizeof(int));
-	baselineIdRemap   = (int *)calloc(D2->nBaseline, sizeof(int));
-	sourceIdRemap     = (int *)calloc(D2->nSource, sizeof(int));
+	jobIdRemap        = newRemap(D2->nJob);
+	freqIdRemap       = newRemap(D2->nFreq);
+	antennaIdRemap    = newRemap(D2->nAntenna);
+	datastreamIdRemap = newRemap(D2->nDatastream);
+	baselineIdRemap   = newRemap(D2->nBaseline);
+	sourceIdRemap     = newRemap(D2->nSource);
+	configIdRemap     = newRemap(D2->nConfig);
 	if(D2->nPulsar > 0)
 	{
-		pulsarIdRemap = (int *)calloc(D2->nPulsar, sizeof(int));
+		pulsarIdRemap = newRemap(D2->nPulsar);
 	}
-	configIdRemap     = (int *)calloc(D2->nConfig, sizeof(int));
+	else
+	{
+		pulsarIdRemap = 0;
+	}
 	if(D2->nSpacecraft > 0)
 	{
-		spacecraftIdRemap = (int *)calloc(D2->nSpacecraft, sizeof(int));
+		spacecraftIdRemap = newRemap(D2->nSpacecraft);
+	}
+	else
+	{
+		spacecraftIdRemap = 0;
 	}
 
 	/* allocate the big D */
@@ -227,36 +220,21 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2,
 		D2->spacecraft, D2->nSpacecraft,
 		spacecraftIdRemap, &(D->nSpacecraft));
 
-	/* print remappings */
-	if(verbose > 1)
-	{
-		printRemap("jobId", jobIdRemap, D2->nJob);
-		printRemap("freqId", freqIdRemap, D2->nFreq);
-		printRemap("antennaId", antennaIdRemap, D2->nAntenna);
-		printRemap("sourceId", sourceIdRemap, D2->nSource);
-		printRemap("datastreamId", datastreamIdRemap, D2->nDatastream);
-		printRemap("baselineId", baselineIdRemap, D2->nBaseline);
-		printRemap("pulsarId", pulsarIdRemap, D2->nPulsar);
-		printRemap("configId", configIdRemap, D2->nConfig);
-		printRemap("spacecraftId", spacecraftIdRemap, D2->nSpacecraft);
-	}
-	
-	/* clean up */
-	free(jobIdRemap);
-	free(freqIdRemap);
-	free(antennaIdRemap);
-	free(datastreamIdRemap);
-	free(baselineIdRemap);
-	if(pulsarIdRemap)
-	{
-		free(pulsarIdRemap);
-	}
-	free(configIdRemap);
-	free(sourceIdRemap);
-	if(spacecraftIdRemap)
-	{
-		free(spacecraftIdRemap);
-	}
+	/* store the remappings of the added job in case it is useful later */
+	job = D->job + D1->nJob;	/* points to first (probably only) job from D2 */
+	job->jobIdRemap = jobIdRemap;
+	job->freqIdRemap = freqIdRemap;
+	job->antennaIdRemap = antennaIdRemap;
+	job->datastreamIdRemap = datastreamIdRemap;
+	job->baselineIdRemap = baselineIdRemap;
+	job->pulsarIdRemap = pulsarIdRemap;
+	job->configIdRemap = configIdRemap;
+	job->sourceIdRemap = sourceIdRemap;
+	job->spacecraftIdRemap = spacecraftIdRemap;
 
+#warning FIXME: should these functions be needed?
+	//simplifyDifxDatastreams(D);
+	//simplifyDifxBaselines(D);
+	
 	return D;
 }

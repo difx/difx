@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -98,16 +98,19 @@ void fprintDifxFreq(FILE *fp, const DifxFreq *df)
         fprintf(fp, "    Spec Avg = %d\n", df->specAvg);
         fprintf(fp, "    Oversamp = %d\n", df->overSamp);
         fprintf(fp, "    Decimation = %d\n", df->decimation);
-	fprintf(fp, "    Num tones = %d\n", df->nTone);
+	fprintf(fp, "    Num tones = %d  [", df->nTone);
 	if(df->nTone > 0)
 	{
-		fprintf(fp, "     ");
 		for(t = 0; t < df->nTone; t++)
 		{
-			fprintf(fp, " %d", df->tone[t]);
+			if(t > 0)
+			{
+				fprintf(fp, " ");
+			}
+			fprintf(fp, "%d", df->tone[t]);
 		}
-		fprintf(fp, "\n");
 	}
+	fprintf(fp, "]\n");
 }
 
 void printDifxFreq(const DifxFreq *df)
