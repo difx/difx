@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -482,6 +482,7 @@ void copyDifxDatastream(DifxDatastream *dest, const DifxDatastream *src,
 	}
 	snprintf(dest->dataFormat, DIFXIO_NAME_LENGTH, "%s", src->dataFormat);
 	dest->dataSampling = src->dataSampling;
+	dest->dataSource = src->dataSource;
 	dest->quantBits = src->quantBits;
 	dest->tcalFrequency = src->tcalFrequency;
 	dest->phaseCalIntervalMHz = src->phaseCalIntervalMHz;
@@ -708,7 +709,7 @@ DifxDatastream *mergeDifxDatastreamArrays(const DifxDatastream *dd1, int ndd1,
 				break;
 			}
 		}
-		if(i == ndd1)
+		if(i == ndd1)	/* no match found.  This must be a new one */
 		{
 			datastreamIdRemap[j] = *ndd;
 			(*ndd)++;
