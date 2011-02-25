@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,9 +35,10 @@
 
 int procGetMem(int *memused, int *memtot)
 {
+	const int MaxLineLength=256;
 	FILE *in;
-	char line[100];
-	char key[100];
+	char line[MaxLineLength+1];
+	char key[MaxLineLength+1];
 	char *c;
 	int val;
 
@@ -52,7 +53,7 @@ int procGetMem(int *memused, int *memtot)
 	
 	for(;;)
 	{
-		c = fgets(line, 99, in);
+		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
 			break;
@@ -78,10 +79,12 @@ int procGetMem(int *memused, int *memtot)
 
 int procGetNet(long long *rx, long long *tx)
 {
-	static long long lastrx[10] = {0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL};
-	static long long lasttx[10] = {0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL, 0LL};
+	const int MaxInterfaces=10;
+	const int MaxLineLength=256;
+	static long long lastrx[MaxInterfaces] = {0};
+	static long long lasttx[MaxInterfaces] = {0};
 	FILE *in;
-	char line[100];
+	char line[MaxLineLength+1];
 	char *c;
 	long long a, b;
 	int v;
@@ -95,17 +98,16 @@ int procGetNet(long long *rx, long long *tx)
 		return -1;
 	}
 
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < MaxInterfaces; i++)
 	{
-		c = fgets(line, 99, in);
+		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
 			break;
 		}
-		if(strncmp(line, "  eth", 5) == 0)
+		if(strncmp(line, "  eth", 5) == 0 || strncmp(line, "  ib", 4) == 0)
 		{
-			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", 
-				&a, &b);
+			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", &a, &b);
 			if(v >= 2)
 			{
 
@@ -142,8 +144,9 @@ int procGetNet(long long *rx, long long *tx)
 
 int procGetCPU(float *l1, float *l5, float *l15)
 {
+	const int MaxLineLength=256;
 	FILE *in;
-	char line[100];
+	char line[MaxLineLength+1];
 	char *c;
 
 	in = fopen("/proc/loadavg", "r");
@@ -152,7 +155,7 @@ int procGetCPU(float *l1, float *l5, float *l15)
 		return -1;
 	}
 
-	c = fgets(line, 99, in);
+	c = fgets(line, MaxLineLength, in);
 	if(c)
 	{
 		sscanf(line, "%f%f%f", l1, l5, l15);
@@ -169,8 +172,9 @@ int procGetCPU(float *l1, float *l5, float *l15)
 
 int procGetStreamstor(int *busy)
 {
+	const int MaxLineLength=256;
 	FILE *in;
-	char line[100];
+	char line[MaxLineLength+1];
 	char *c;
 
 	*busy = 0;
@@ -183,7 +187,7 @@ int procGetStreamstor(int *busy)
 
 	for(;;)
 	{
-		c = fgets(line, 99, in);
+		c = fgets(line, MaxLineLength, in);
 		if(!c)
 		{
 			break;

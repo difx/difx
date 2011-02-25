@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -214,7 +214,7 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 void Mk5Daemon_getModules(Mk5Daemon *D)
 {
 	DifxMessageMk5Status dm;
-	int n;
+	int n, v;
 	char vsnA[16], vsnB[16];
 	char message[DIFX_MESSAGE_LENGTH];
 
@@ -229,6 +229,16 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	pthread_mutex_lock(&D->processLock);
 
 	vsnA[0] = vsnB[0] = 0;
+
+	if(D->process != PROCESS_NONE)
+	{
+		v = lockStreamstor(D, "getvsn", 0);
+		if(v >= 0)
+		{
+			unlockStreamstor(D, "getvsn");
+			D->process = PROCESS_NONE;
+		}
+	}
 
 	switch(D->process)
 	{
@@ -246,7 +256,6 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	default:
 		pthread_mutex_unlock(&D->processLock);
 		return;
-		break;
 	}
 
 	if(strncmp(D->vsnA, vsnA, 8) != 0)
