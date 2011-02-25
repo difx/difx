@@ -140,10 +140,12 @@ Polyco::~Polyco()
     vectorFree(timepowerarray);
     vectorFree(absolutephases);
     vectorFree(binphases);
+    vectorFree(binweights);
 
     if(numfreqs > 0)
     {
       vectorFree(lofrequencies);
+      vectorFree(bandwidths);
       for(int i=0;i<numfreqs;i++)
       {
         vectorFree(dmPhaseOffsets[i]);
@@ -151,6 +153,8 @@ Polyco::~Polyco()
       }
       delete [] dmPhaseOffsets;
       delete [] channeldmdelays;
+      delete [] numchannels;
+      delete [] computefor;
       /*for(int i=0;i<numbins;i++)
       {
         for(int j=0;j<numfreqs;j++)

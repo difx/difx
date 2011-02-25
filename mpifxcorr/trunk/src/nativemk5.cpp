@@ -208,16 +208,6 @@ NativeMk5DataStream::NativeMk5DataStream(Configuration * conf, int snum,
 		cinfo << startl << "Success opening Streamstor device" << endl;
 	}
 
-	WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
-	if(xlrRC == XLR_SUCCESS)
-	{
-		WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-	}
-	if(xlrRC != XLR_SUCCESS)
-	{
-		cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
-	}
-
 	// FIXME: for non-bank-mode operation, need to look at the modules to determine what to do here.
 	WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	if(xlrRC != XLR_SUCCESS)
@@ -412,6 +402,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	int nbits, nrecordedbands, framebytes;
 	Configuration::dataformat format;
 	double bw;
+	XLR_RETURN_CODE xlrRC;
 
 	format = config->getDataFormat(configindex, streamnum);
 	nbits = config->getDNumBits(configindex, streamnum);
@@ -486,6 +477,20 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 
 		if(module.mode == MARK5_READ_MODE_RT)
 		{
+			WATCHDOG( xlrRC = XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+			if(xlrRC == XLR_SUCCESS)
+			{
+				WATCHDOG( xlrRC = XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+			}
+			if(xlrRC != XLR_SUCCESS)
+			{
+				cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
+			}
+			WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+			if(xlrRC != XLR_SUCCESS)
+			{
+				cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
+			}
 			cwarn << startl << "Enabled realtime playback mode" << endl;
 		}
 	}

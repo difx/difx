@@ -474,9 +474,9 @@ void Core::loopprocess(int threadid)
     }
 
     //if necessary, allocate/reallocate space for the STAs
-    nowdumpingsta = config->dumpSTA() || config->dumpKurtosis();
     scratchspace->dumpsta = config->dumpSTA();
     scratchspace->dumpkurtosis = config->dumpKurtosis();
+    nowdumpingsta = scratchspace->dumpsta || scratchspace->dumpkurtosis;
     if(nowdumpingsta != dumpingsta) {
       if (scratchspace->starecordbuffer != 0) {
         free(scratchspace->starecordbuffer);
@@ -958,7 +958,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
       xcblockcount = 0;
       xcshiftcount++;
     }
-    acblockcount += config->getNumBufferedFFTs(procslots[index].configindex);
+    acblockcount += numfftsprocessed;
     if(acblockcount == maxacblocks)
     {
       //shift/average and then lock results and copy data
@@ -1145,13 +1145,14 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
       starecord = scratchspace->starecordbuffer;
       for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
         if(bytecount + recordsize > config->getMTU()) {
-          difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+          difxMessageSendBinary((const char *)(scratchspace->starecordbuffer), BINARY_STA, bytecount);
           bytecount = 0;
         }
-        starecord = scratchspace->starecordbuffer + bytecount;
+        starecord = (DifxMessageSTARecord *)((char*)scratchspace->starecordbuffer + bytecount);
         starecord->messageType = STA_AUTOCORRELATION;
         starecord->dsindex = i;
         starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
+    starecord->coreindex=999;  // WFB: remove this!
         starecord->threadindex = threadid;
         sprintf(starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
         starecord->nChan = config->getSTADumpChannels();
@@ -1167,8 +1168,9 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         freqchannels = config->getFNumChannels(freqindex);
         stasamples = 0.001*nswidth*2*config->getFreqTableBandwidth(freqindex);
         minimumweight = MINIMUM_FILTERBANK_WEIGHT*stasamples/(2*freqchannels);
-        if(modes[i]->getWeight(false, j) < minimumweight)
+        if(modes[i]->getWeight(false, j) < minimumweight) {
           continue; //dodgy packet, less than 1/3 of normal data, so don't send it
+        }
 
         // normalise the STA data to maintain units of power spectral density. This means dividing by
         // the number of channels (since we use an un-normalised FFT) and the number of integrations (i.e. time)
@@ -1201,7 +1203,7 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         //cout << "About to send the binary message" << endl;
         bytecount += sizeof(DifxMessageSTARecord) + sizeof(f32)*starecord->nChan;
       }
-      difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+      difxMessageSendBinary((const char *)(scratchspace->starecordbuffer), BINARY_STA, bytecount);
     }
     //cout << "Finished doing some STA stuff" << endl;
   }
@@ -1338,10 +1340,10 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
     if(valid[i]) {
       for (int j=0;j<config->getDNumRecordedBands(procslots[index].configindex, i);j++) {
         if(bytecount + recordsize > config->getMTU()) {
-          difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+          difxMessageSendBinary((const char *)(scratchspace->starecordbuffer), BINARY_STA, bytecount);
           bytecount = 0;
         }
-        starecord = scratchspace->starecordbuffer + bytecount;
+        starecord = (DifxMessageSTARecord *)((char*)scratchspace->starecordbuffer + bytecount);
         starecord->messageType = STA_KURTOSIS;
         starecord->dsindex = i;
         starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
@@ -1366,7 +1368,7 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
           cerror << startl << "Problem copying kurtosis results from mode to sta record!" << endl;
         bytecount += sizeof(DifxMessageSTARecord) + sizeof(f32)*starecord->nChan;
       }
-      difxMessageSendBinary((const char *)(starecord), BINARY_STA, bytecount);
+      difxMessageSendBinary((const char *)(scratchspace->starecordbuffer), BINARY_STA, bytecount);
     }
   }
 
@@ -1810,8 +1812,10 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
 {
   int status, freqchannels, localfreqindex;
 
+  cdebug << startl << "Just entering Core::createPulsarVaryingSpace" << endl;
   if(oldconfigindex >= 0 && config->pulsarBinOn(oldconfigindex))
   {
+    cdebug << startl << "Going to delete the old bins..." << endl;
     for(int i=0;i<config->getNumBufferedFFTs(oldconfigindex);i++)
     {
       for(int f=0;f<config->getFreqTableLength();f++)
@@ -1826,8 +1830,10 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
       delete [] (*bins)[i];
     }
     delete [] *bins;
+    cdebug << startl << "Finished deleting old bins..." << endl;
     if(config->scrunchOutputOn(oldconfigindex))
     {
+      cdebug << startl << "Going to delete old acc space" << endl;
       //need to delete the old pulsar accumulation space/bin space
       for(int f=0;f<config->getFreqTableLength();f++)
       {
@@ -1864,7 +1870,7 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
       }
     }
   }
-
+  cdebug << startl << "Finished deleting old pulsar scratch space" << endl;
   if(newconfigindex >= 0 && config->pulsarBinOn(newconfigindex))
   {
     *bins = new s32**[config->getNumBufferedFFTs(newconfigindex)];
@@ -1909,6 +1915,10 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
                     for(int k=0;k<config->getNumPulsarBins(newconfigindex);k++)
                     {
                       pulsaraccumspace[f][x][i][s][j][k] = vectorAlloc_cf32(freqchannels);
+                      if(pulsaraccumspace[f][x][i][s][j][k] == NULL) {
+                        cfatal << startl << "Could not allocate pulsar scratch space (out of memory?) - I must abort!" << endl;
+                        MPI_Abort(MPI_COMM_WORLD, 1);
+                      }
                       threadbytes[threadid] += 8*freqchannels;
                       status = vectorZero_cf32(pulsaraccumspace[f][x][i][s][j][k], freqchannels);
                       if(status != vecNoErr)
@@ -1923,6 +1933,7 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
       }
     }
   }
+  cdebug << startl << "Finished allocating new pulsar scratch space" << endl;
 }
 
 void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, f32 *** baselineshiftdecorr, int newconfigindex, int oldconfigindex, int threadid)
@@ -2046,14 +2057,18 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     }
   }
 
+  cdebug << startl << "About to create some new modes..." << endl;
   //get the config to create the appropriate Modes for us
   for(int i=0;i<numdatastreams;i++) {
     modes[i] = config->getMode(configindex, i);
-    if(modes[i] == NULL || !modes[i]->initialisedOK())
+    if(modes[i] == NULL || !modes[i]->initialisedOK()) {
+      cfatal << startl << "Problem initialising a mode during a config change - aborting!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);
+    }
     threadbytes[threadid] += modes[i]->getEstimatedBytes();
   }
 
+  cdebug << startl << "New modes created, now for pulsar stuff if applicable" << endl;
   pulsarbin = config->pulsarBinOn(configindex);
   if(pulsarbin)
   {
@@ -2068,5 +2083,6 @@ void Core::updateconfig(int oldconfigindex, int configindex, int threadid, int &
     }
     //cinfo << startl << "Core " << mpiid << " thread " << threadid << ": polycos created/copied successfully!"  << endl;
   }
+  cdebug << startl << "Pulsar stuff dealt with" << endl;
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab
