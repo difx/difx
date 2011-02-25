@@ -105,7 +105,7 @@ int procGetNet(long long *rx, long long *tx)
 		{
 			break;
 		}
-		if(strncmp(line, "  eth", 5) == 0 || strncmp(line, "  ib", 4) == 0)
+		if(strncmp(line, "  eth", 5) == 0 || strncmp(line, "   ib", 5) == 0)
 		{
 			v = sscanf(line+7, "%lld%*d%*d%*d%*d%*d%*d%*d%lld", &a, &b);
 			if(v >= 2)
