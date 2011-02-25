@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -161,7 +161,7 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	}
 }
 
-/* FIXME -- move to a /proc query */
+#warning FIXME: move this to a proc query
 int running(const char *name)
 {
 	const int MaxLineLength = 512;
@@ -259,7 +259,9 @@ int checkStreamstor(Mk5Daemon *D, time_t t)
 		difxMessageSendDifxAlert(
 			"Some process gave back control of windrvr6", 
 			DIFX_ALERT_LEVEL_INFO);
-		/* FIXME -- watch for timeout here */
+
+#warning FIXME: watch for a timeout here
+
 		D->process = PROCESS_NONE;
 		pthread_mutex_unlock(&D->processLock);
 	}

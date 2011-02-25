@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,7 +36,7 @@
 #include "mk5daemon.h"
 
 const char defaultMpiWrapper[] = "mpirun";
-const char defaultMpiOptions[] = "--mca btl ^udapl,openib --mca mpi_yield_when_idle 1 --mca rmaps seq";
+const char defaultMpiOptions[] = "--mca mpi_yield_when_idle 1 --mca rmaps seq";
 const char defaultDifxProgram[] = "mpifxcorr";
 
 typedef struct
@@ -520,12 +520,11 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, 
 			message);
 
+#warning FIXME: make use of this return value
 		returnValue = Mk5Daemon_system(D, command, 1);
 
-		/* FIXME -- make use of returnValue  */
 		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
-		difxMessageSendDifxAlert("mpifxcorr process done", 
-			DIFX_ALERT_LEVEL_INFO);
+		difxMessageSendDifxAlert("mpifxcorr process done", DIFX_ALERT_LEVEL_INFO);
 
 		/* change ownership to match input file */
 		snprintf(command, MAX_COMMAND_SIZE, 

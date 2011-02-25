@@ -816,7 +816,8 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 				break;
 			}
 
-			/* Fix mjd.  FIXME: this should be done in mark5access */
+			/* Fix mjd. */
+#warning FIXME: this should be in mark5access
 			if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
 			{
 				n = (mjdref - mf->mjd + 500) / 1000;
