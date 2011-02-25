@@ -1182,7 +1182,7 @@ int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *
 	}
 
 	delta = (*byteStop - scan->frameoffset) % scan->framebytes;
-	*byteStop  -= delta;
+	*byteStop -= delta;
 
 	return 1;
 }

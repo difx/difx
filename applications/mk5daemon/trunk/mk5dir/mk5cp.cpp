@@ -178,6 +178,17 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 	double rate;
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
+	int skip;
+
+	if(byteStart % 8 != 0)
+	{
+		skip = byteStart % 8;
+		byteStart -= (byteStart % 8);
+	}
+	if(byteStop % 8 != 0)
+	{
+		byteStop += (8-byteStart % 8);
+	}
 
 	if(strcmp(outpath, "-") == 0)
 	{
@@ -218,7 +229,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 	gettimeofday(&t0, 0);
 	gettimeofday(&t1, 0);
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion of scan %d to file %s", scanNum+1, filename);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Copying portion (%Ld, %Ld) of scan %d to file %s", byteStart, byteStop, scanNum+1, filename);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	for(int i = 0; togo > 0; i++)
@@ -239,6 +250,10 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 		difxMessageSendMark5Status(mk5status);
 		if(togo < chunksize)
 		{
+			if(togo % 8 != 0)
+			{
+				togo -= (togo % 8);
+			}
 			len = togo;
 		}
 
@@ -249,7 +264,8 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 
 		countReplaced(data, len/4, &wGood, &wBad);
 
-		v = fwrite(data, 1, len, out);
+		v = fwrite(((char *)data)+skip, 1, len-skip, out)+skip;
+
 		if(v < len)
 		{
 			if(out == stdout)
@@ -266,7 +282,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 			break;
 		}
 		gettimeofday(&t2, 0);
-		dt = (t2.tv_sec-t1.tv_sec) + 1.0e-6*(t2.tv_usec-t1.tv_usec);
+		dt = (t2.tv_sec - t1.tv_sec) + 1.0e-6*(t2.tv_usec - t1.tv_usec);
 
 		if(dt > 0.0)
 		{
@@ -274,7 +290,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 		}
 		t1 = t2;
 
-		dt = t2.tv_sec-t0.tv_sec;
+		dt = t2.tv_sec - t0.tv_sec;
 
 		if(dt >= 10)
 		{
@@ -289,6 +305,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 
 		readptr += chunksize;
 		togo -= len;
+		skip = 0;
 	}
 
 	if(out != stdout)
