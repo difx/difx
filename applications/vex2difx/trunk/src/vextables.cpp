@@ -233,7 +233,9 @@ int VexMode::getBits() const
 	{
 		if(it->second.format.nBit != nBit)
 		{
-			break;
+			cerr << "Error: getBits: differing number of bits not supported." << endl;
+			
+			exit(0);
 		}
 	}
 

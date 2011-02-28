@@ -933,15 +933,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			if(F.format == "")
 			{
 				p = get_all_lowl(antName.c_str(), modeDefName, T_TRACK_FRAME_FORMAT, B_TRACKS, v);
-			}
-			else
-			{
-				p = 0;
-			}
-			if(p || F.format == "VLBA" || F.format == "VLBN" || F.format == "MKIV" || F.format == "MARK5B")
-			{
-				// If not overridden in v2d file
-				if(F.format == "")
+				if(p)
 				{
 					vex_field(T_TRACK_FRAME_FORMAT, p, 1, &link, &name, &value, &units);
 					F.format = string(value);
@@ -950,7 +942,16 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						F.format = "MKIV";
 					}
 				}
+				else
+				{
+					cerr << "Unable to determine data format for antenna " << antName << endl;
 
+					exit(0);
+				}
+			}
+
+			if(F.format == "VLBA" || F.format == "VLBN" || F.format == "MKIV" || F.format == "MARK5B")
+			{
 				for(p = get_all_lowl(antName.c_str(), modeDefName, T_FANOUT_DEF, B_TRACKS, v);
 				    p;
 				    p = get_all_lowl_next())
@@ -1004,8 +1005,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				F.nRecordChan = ch2tracks.size();
 				F.nBit = nBit;
 			}
-			if(F.format == "VDIF")
+			else if(F.format == "VDIF")
 			{
+				cout << "Warning: Antenna " << antName << " has incompletely defined VDIF format.  Assuming 2 bits." << endl;
+
 				F.nBit = 2;
 			}
 			else if(F.format.find_first_of("VDIF") != string::npos)
