@@ -1938,7 +1938,7 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
 
 void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, f32 *** baselineshiftdecorr, int newconfigindex, int oldconfigindex, int threadid)
 {
-  int localfreqindex, numstrides, binloop;
+  int localfreqindex, binloop;
 
   if(oldconfigindex >= 0)
   {
@@ -1976,10 +1976,6 @@ void Core::allocateConfigSpecificThreadArrays(f32 **** baselineweight, f32 *** b
             delete [] baselineshiftdecorr[i];
           }
         }
-        numstrides = config->getFNumChannels(i)/config->getXmacStrideLength(oldconfigindex);
-        if(config->getFNumChannels(i)%config->getXmacStrideLength(oldconfigindex) != 0)
-          numstrides++;
-        threadbytes[threadid] -= 4*numstrides;
       }
     }
   }

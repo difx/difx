@@ -55,7 +55,7 @@ public:
   enum datadomain {TIME, FREQUENCY};
 
   /// Supported types of recorded data format
-  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, K5, MKIV, VLBA, MARK5B, VDIF, VLBN};
+  enum dataformat {LBASTD, LBAVSOP, LBA8BIT, LBA16BIT, K5, MKIV, VLBA, MARK5B, VDIF, INTERLACEDVDIF, VLBN};
 
   /// Supported sources of data
   enum datasource {UNIXFILE, MK5MODULE, NETWORKSTREAM};
@@ -119,6 +119,8 @@ public:
     { return datastreamfreqindex == datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].recordedbandlocalfreqindices[datastreamrecordedbandindex]; }
   inline int getDDataBufferFactor() { return databufferfactor; }
   inline int getDNumDataSegments() { return numdatasegments; }
+  inline int isDMuxed(int configindex, int configdatastreamindex) 
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].ismuxed; }
   inline int getDTelescopeIndex(int configindex, int configdatastreamindex)
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].telescopeindex; }
   inline int getDModelFileIndex(int configindex, int configdatastreamindex)
@@ -146,6 +148,12 @@ public:
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].maxrecordedpcaltones; }
   inline int getDNumBits(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].numbits; }
+  //inline int getDFramesPerSecond(int configindex, int configdatastreamindex)
+  //  { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].framespersecond; }
+  inline int getDNumMuxThreads(int configindex, int configdatastreamindex)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].nummuxthreads; }
+  inline int * getDMuxThreadMap(int configindex, int configdatastreamindex)
+    { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].muxthreadmap; }
   inline datasampling getDSampling(int configindex, int configdatastreamindex) 
     { return datastreamtable[configs[configindex].datastreamindices[configdatastreamindex]].sampling; }
   inline int getDRecordedFreqIndex(int configindex, int configdatastreamindex, int datastreamrecordedbandindex)
@@ -272,7 +280,7 @@ public:
     datasource s;
     f = datastreamtable[configs[0].datastreamindices[datastreamindex]].format;
     s = datastreamtable[configs[0].datastreamindices[datastreamindex]].source;
-    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF) && (s == UNIXFILE || s == NETWORKSTREAM)); 
+    return ((f == MKIV || f == VLBA || f == VLBN || f == MARK5B || f == VDIF || f == INTERLACEDVDIF) && (s == UNIXFILE || s == NETWORKSTREAM)); 
   }
   inline bool isNativeMkV(int datastreamindex) 
   { 
@@ -346,9 +354,10 @@ public:
   * @param nbits The number of bits per sample
   * @param framebytes The number of bytes in a frame
   * @param decimationfactor The number of samples to throw away during unpacking
+  * @param numthreads The number of (interlaced) threads
   * @param formatname character array representing format name (set during method)
   */
-  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, char *formatname);
+  int genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname);
 
  /**
   * @return The Model object which contains geometric model information
@@ -627,6 +636,7 @@ private:
     dataformat format;
     datasource source;
     datasampling sampling;
+    bool ismuxed;
     int phasecalintervalmhz;
     int switchedpowerfrequency; // e.g., 80 Hz for VLBA
     int numbits;
@@ -634,7 +644,9 @@ private:
     int bytespersampledenom;
     int framesamples;
     int framebytes;
-    int framens;
+    int framespersecond;
+    int nummuxthreads;
+    int * muxthreadmap;
     bool filterbank;
     int numrecordedfreqs;
     int numzoomfreqs;
@@ -775,6 +787,13 @@ private:
   * @return Whether the polyco frequency values were set successfully (false should abort)
   */
   bool setPolycoFreqInfo(int configindex);
+
+ /**
+  * Parses the thread mapping string for a muxed VDIF datastream and sets up the configuration
+  * @param configindex The index of the datastream to be set up (from the table in the input file)
+  * @param muxinfo The string containing comma-separated thread list to be muxed together
+  */
+  void setDatastreamMuxInfo(int datastreamindex, string muxinfo);
 
   ///The length of keywords in all input files
   static const int DEFAULT_KEY_LENGTH = 20;

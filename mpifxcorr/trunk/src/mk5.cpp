@@ -31,6 +31,7 @@
 #include "alert.h"
 #include "mk5.h"
 #include "mode.h"
+#include "vdifio.h"
 
 #define MAXPACKETSIZE 100000
 
@@ -62,16 +63,14 @@ Mk5DataStream::~Mk5DataStream()
 {
   if(syncteststream != 0)
     delete_mark5_stream(syncteststream);
-  if(switchedpower)
-  {
-    delete switchedpower;
-    switchedpower = 0;
-  }
 }
 
 void Mk5DataStream::initialise()
 {
   DataStream::initialise();
+
+  int framebytes = config->getFrameBytes(0, streamnum);
+  int nframes = readbytes / framebytes;
 
   syncteststream = 0;
   udp_offset = 0;
@@ -110,6 +109,14 @@ void Mk5DataStream::initialise()
     packet_sum = 0;
   }
 
+  if(config->isDMuxed(0, streamnum)) {
+    if(config->getDataFormat(0, streamnum) == Configuration::INTERLACEDVDIF) {
+      nframes = config->getDNumMuxThreads(0, streamnum) * readbytes / ((framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(0, streamnum) + VDIF_HEADER_BYTES);
+      datamuxer = new VDIFMuxer(config, streamnum, mpiid, config->getDNumMuxThreads(0, streamnum), framebytes, nframes, config->getFramesPerSecond(0, streamnum)/config->getDNumMuxThreads(0, streamnum), config->getDNumBits(0, streamnum), config->getDMuxThreadMap(0, streamnum));
+    }
+    else
+      cfatal << startl << "Requested a muxed datastream but format has no muxed equivalent!" << endl;
+  }
 }
 
 int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
@@ -158,6 +165,11 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   payloadbytes = config->getFramePayloadBytes(bufferinfo[looksegment].configindex, streamnum);
   framebytes = config->getFrameBytes(bufferinfo[looksegment].configindex, streamnum);
   framespersecond = config->getFramesPerSecond(bufferinfo[looksegment].configindex, streamnum);
+  if(config->isDMuxed(bufferinfo[looksegment].configindex, streamnum)) {
+    payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
+    framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
+    framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
+  }
 
   //do the necessary correction to start from a frame boundary - work out the offset from the start of this segment
   vlbaoffset = bufferindex - atsegment*readbytes;
@@ -214,18 +226,24 @@ void Mk5DataStream::updateConfig(int segmentindex)
   if(bufferinfo[segmentindex].configindex < 0) //If the config < 0 we can skip this scan
     return;
 
+  int framebytes = config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum);
+  int framespersecond = config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum);
+  if(config->isDMuxed(bufferinfo[segmentindex].configindex, streamnum)) {
+    framebytes = (framebytes - VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum) + VDIF_HEADER_BYTES;
+    framespersecond /= config->getDNumMuxThreads(bufferinfo[segmentindex].configindex, streamnum);
+  }
+
   //correct the nsinc - should be number of frames*frame time
-  bufferinfo[segmentindex].nsinc = int(((bufferbytes/numdatasegments)/config->getFrameBytes(bufferinfo[segmentindex].configindex, streamnum))*(1000000000.0/double(config->getFramesPerSecond(bufferinfo[segmentindex].configindex, streamnum))) + 0.5);
+  bufferinfo[segmentindex].nsinc = int(((bufferbytes/numdatasegments)/framebytes)*(1000000000.0/double(framespersecond)) + 0.5);
 
   //take care of the case where an integral number of frames is not an integral number of blockspersend - ensure sendbytes is long enough
-
   //note below, the math should produce a pure integer, but add 0.5 to make sure that the fuzziness of floats doesn't cause an off-by-one error
   bufferinfo[segmentindex].sendbytes = int(((((double)bufferinfo[segmentindex].sendbytes)* ((double)config->getSubintNS(bufferinfo[segmentindex].configindex)))/(config->getSubintNS(bufferinfo[segmentindex].configindex) + config->getGuardNS(bufferinfo[segmentindex].configindex)) + 0.5));
 }
 
 void Mk5DataStream::initialiseFile(int configindex, int fileindex)
 {
-  int offset;
+  int offset, framebytes;
   int nbits, nrecordedbands, fanout, jumpseconds, currentdsseconds;
   Configuration::datasampling sampling;
   Configuration::dataformat format;
@@ -237,8 +255,11 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   nbits = config->getDNumBits(configindex, streamnum);
   nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
   bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
-
-  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, config->getFrameBytes(configindex, streamnum), config->getDDecimationFactor(configindex, streamnum), formatname);
+  framebytes = config->getFrameBytes(configindex, streamnum);
+  if(config->isDMuxed(configindex, streamnum)) {
+    nrecordedbands = 1;
+  }
+  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   if (fanout < 0) {
     cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
     MPI_Abort(MPI_COMM_WORLD, 1);
@@ -255,7 +276,7 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
     dataremaining = false;
     return;
   }
-  if(syncteststream->nchan != config->getDNumRecordedBands(configindex, streamnum))
+  if(syncteststream->nchan != nrecordedbands)
   {
     cerror << startl << "Number of recorded bands for datastream " << streamnum << " (" << nrecordedbands << ") does not match with MkV file " << datafilenames[configindex][fileindex] << " (" << syncteststream->nchan << "), will be ignored!" << endl;
   }
@@ -302,9 +323,14 @@ void Mk5DataStream::initialiseFile(int configindex, int fileindex)
   readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
   cverbose << startl << "The frame start is day=" << syncteststream->mjd << ", seconds=" << syncteststream->sec << ", ns=" << syncteststream->ns << ", readscan=" << readscan << ", readseconds=" << readseconds << ", readns=" << readnanoseconds << endl;
 
-  //close the stream used to get the offset, create the one we will use to test
+  //close the stream used to get the offset, regenerate format name for appropriate in-memory (muxed if muxing)
   delete_mark5_stream(syncteststream);
   syncteststream = 0;
+  if(config->isDMuxed(configindex, streamnum)) {
+    framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(configindex, streamnum) + VDIF_HEADER_BYTES;
+    nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
+  }
+  fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
   cverbose << startl << "About to seek to byte " << offset << " plus " << dataoffset << " to get to the first frame" << endl;
 
   input.seekg(offset + dataoffset, ios_base::beg);
@@ -340,7 +366,6 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   mark5_stream_get_frame_time(syncteststream, &mjd, &sec, &ns);
 
   deltatime = 86400*(corrday - mjd) + (model->getScanStartSec(bufferinfo[buffersegment].scan, corrday, corrsec) + bufferinfo[buffersegment].scanseconds + corrsec - intclockseconds - sec) + double(bufferinfo[buffersegment].scanns-ns)/1e9;
-  //cout << "Received some data with a time " << mjd << ", " << sec << ", " << ns << endl;
 
   if(fabs(deltatime) > 1e-10) //oh oh, a problem
   {
@@ -433,7 +458,7 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
 
 void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
-  int nbits, nrecordedbands, fanout;
+  int nbits, nrecordedbands, fanout, framebytes;
   Configuration::dataformat format;
   Configuration::datasampling sampling;
   double bw;
@@ -452,8 +477,12 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
     sampling = config->getDSampling(bufferinfo[buffersegment].configindex, streamnum);
     nrecordedbands = config->getDNumRecordedBands(bufferinfo[buffersegment].configindex, streamnum);
     bw = config->getDRecordedBandwidth(bufferinfo[buffersegment].configindex, streamnum, 0);
-
-    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, config->getFrameBytes(bufferinfo[buffersegment].configindex, streamnum), config->getDDecimationFactor(bufferinfo[buffersegment].configindex, streamnum), formatname);
+    framebytes = config->getFrameBytes(bufferinfo[buffersegment].configindex, streamnum);
+    if(config->isDMuxed(bufferinfo[buffersegment].configindex, streamnum)) {
+      framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[buffersegment].configindex, streamnum) + VDIF_HEADER_BYTES;
+      nrecordedbands = 1;
+    }
+    fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, sampling, framebytes, config->getDDecimationFactor(bufferinfo[buffersegment].configindex, streamnum), config->getDNumMuxThreads(bufferinfo[buffersegment].configindex, streamnum), formatname);
     if (fanout < 0) {
       cfatal << startl << "Fanount is " << fanout << ", which is impossible - no choice but to abort!" << endl;
       MPI_Abort(MPI_COMM_WORLD, 1);

@@ -505,9 +505,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   averagedelay = interpolator[0]*fftcentre*fftcentre + interpolator[1]*fftcentre + interpolator[2];
   fftstartmicrosec = index*fftchannels*sampletime; //CHRIS CHECK
   starttime = (offsetseconds-datasec)*1000000.0 + double(offsetns - datans)/1000.0 + fftstartmicrosec - averagedelay;
-  //cout << "starttime for " << datastreamindex << " is " << starttime << endl;
   nearestsample = int(starttime/sampletime + 0.5);
-  //cout << "nearestsample for " << datastreamindex << " is " << nearestsample << endl; 
  walltimesecs  =model->getScanStartSec(currentscan, config->getStartMJD(), config->getStartSeconds()) + offsetseconds + ((double)offsetns)/1000000000.0 + fftstartmicrosec/1000000.0;
 
   //if we need to, unpack some more data - first check to make sure the pos is valid at all
@@ -601,8 +599,6 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
         csevere << startl << "Error in quadinterpolate, subval addition!!!" << endl;
       break;
   }
-
-  //cout << "Done initial fringe rotation stuff, subquadsin is now " << subquadsin << endl;
 
   for(int i=0;i<numrecordedfreqs;i++)
   {
@@ -1012,10 +1008,8 @@ void Mode::setOffsets(int scan, int seconds, int ns)
   currentscan = scan;
   offsetseconds = seconds;
   offsetns = ns;
-
   if(datasec <= INVALID_SUBINT)
     return; //there is no valid data - this whole subint will be ignored
-
   if(currentscan != datascan) {
     cerror << startl << "Received a request to process scan " << currentscan << " (" << seconds << "/" << ns << " but received data from scan " << datascan << " (" << datasec << "/" << datans << ") - I'm confused and will ignore this data!" << endl;
     datalengthbytes = 0; //torch the whole subint - can't work with different scans!

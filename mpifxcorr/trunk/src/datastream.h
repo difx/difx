@@ -34,6 +34,7 @@
 #include <stdint.h>
 #include "architecture.h"
 #include "configuration.h"
+#include "datamuxer.h"
 #include "switchedpower.h"
 
 using namespace std;
@@ -162,6 +163,7 @@ protected:
   string ** datafilenames;
   ifstream input;
   SwitchedPower *switchedpower;
+  DataMuxer * datamuxer;
 
   static const int LBA_HEADER_LENGTH = 4096;
  

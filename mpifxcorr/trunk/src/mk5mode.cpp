@@ -29,7 +29,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
 {
   char formatname[64];
 
-  fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, sampling, framebytes, conf->getDDecimationFactor(confindex, dsindex), formatname);
+  fanout = config->genMk5FormatName(format, nrecordedbands, recordedbw, nbits, sampling, framebytes, conf->getDDecimationFactor(confindex, dsindex), conf->getDNumMuxThreads(confindex, dsindex), formatname);
   if(fanout < 0)
     initok = false;
   else
@@ -60,7 +60,7 @@ Mk5Mode::Mk5Mode(Configuration * conf, int confindex, int dsindex, int recordedb
       sprintf(mark5stream->streamname, "DS%d", dsindex);
       if(framesamples != mark5stream->framesamples)
       {
-        cfatal << startl << "Mk5Mode::Mk5Mode : framesamples inconsistent (" << framesamples << "/" << mark5stream->framesamples << ")" << endl;
+        cfatal << startl << "Mk5Mode::Mk5Mode : framesamples inconsistent (told " << framesamples << "/ stream says " << mark5stream->framesamples << ") - for stream index " << dsindex << endl;
         initok = false;
       }
       else

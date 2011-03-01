@@ -47,10 +47,30 @@ public:
   virtual ~DataMuxer();
 
  /**
-  * Accessor method for demuxbuffer
-  * @return pointer to start of demuxbuffer
+  * Looks for any bad data in the demux buffer and excises it
+  * @param checkbuffer The place to start checking
+  * @param bytestocheck The number of bytes which must be checked
+  * @return Number of additional bytes which must be read in at the end of the buffer to refill it
   */
-  inline u8* getDemuxBuffer() { return demuxbuffer; }
+  virtual int datacheck(u8 * checkbuffer, int bytestocheck) = 0;
+
+ /**
+  * Does the initialising - sets up reference times, etc
+  * @return True for success, false for some kind of failure
+  */
+  virtual bool initialise() = 0;
+
+ /**
+  * Accessor method for demuxbuffer
+  * @return pointer to start of demuxbuffer section to be written to
+  */
+  virtual u8* getCurrentDemuxBuffer() = 0;
+
+ /**
+  * Accessor method for demux buffer segment byte size
+  * @return segment size in bytes
+  */
+  inline int getSegmentBytes() { return segmentbytes; }
 
  /**
   * Accessor method for estimated number of bytes
@@ -63,13 +83,12 @@ public:
   */
   inline void incrementReadCounter() { readcount++; }
 
-
-protected:
  /**
   * De-interlaces one segments worth of data
+  * @param validbytes The number of bytes which contain valid data to be de-interlaced
   * @return True for success, false for some kind of failure
   */
-  virtual bool deinterlace() = 0;
+  virtual bool deinterlace(int validbytes) = 0;
 
  /**
   * Does the multiplexing for one segment's worth of data (pure virtual - must be overridden in derived class)
@@ -81,6 +100,7 @@ protected:
   ///constants
   static const int DEMUX_BUFFER_FACTOR = 4;
 
+protected:
   ///additional buffers
   u8 * demuxbuffer;
   u8** threadbuffers;
@@ -116,13 +136,27 @@ public:
 
   virtual ~VDIFMuxer();
 
-protected:
+ /**
+  * Looks for any bad data in the demux buffer and excises it
+  * @param checkbuffer The place to start checking
+  * @param bytestocheck The number of bytes which must be checked
+  * @return Number of additional bytes which must be read in at the end of the buffer to refill it
+  */
+  virtual int datacheck(u8 * checkbuffer, int bytestocheck);
+
  /**
   * Does the initialising - looks at first frame and sets reference times etc
   * @return True for success, false for some kind of failure
   */
-  bool initialise();
+  virtual bool initialise();
 
+ /**
+  * Accessor method for demuxbuffer
+  * @return pointer to start of demuxbuffer section to be written to
+  */
+  virtual inline u8* getCurrentDemuxBuffer() { return demuxbuffer + (readcount%DEMUX_BUFFER_FACTOR)*segmentbytes; }
+
+protected:
  /**
   * Checks if all required frames are present from all threads
   * @param bufferframe The buffer frame index to check
@@ -132,9 +166,10 @@ protected:
 
  /**
   * De-interlaces one segments worth of data
+  * @param validbytes The number of bytes which contain valid data to be de-interlaced
   * @return True for success, false for some kind of failure
   */
-  virtual bool deinterlace();
+  virtual bool deinterlace(int validbytes);
 
  /**
   * Does the multiplexing for one segment's worth of data

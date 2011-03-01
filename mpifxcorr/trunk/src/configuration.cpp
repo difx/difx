@@ -27,6 +27,7 @@
 #include "mode.h"
 #include "visibility.h"
 #include "alert.h"
+#include "vdifio.h"
 
 int Configuration::MONITOR_TCP_WINDOWBYTES;
 
@@ -294,7 +295,7 @@ Configuration::~Configuration()
   delete [] numprocessthreads;
 }
 
-int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, char *formatname)
+int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int nbits, datasampling sampling, int framebytes, int decimationfactor, int numthreads, char *formatname)
 {
   int fanout=1, mbps;
 
@@ -344,6 +345,10 @@ int Configuration::genMk5FormatName(dataformat format, int nchan, double bw, int
       else
         sprintf(formatname, "Mark5B-%d-%d-%d", mbps, nchan, nbits);
       break;
+    case INTERLACEDVDIF:
+      //framebytes = (framebytes-32)*numthreads + 32;
+      //mbps /= nchan;
+      //nchan = 1;
     case VDIF:
       if (sampling==COMPLEX) 
 	if(decimationfactor > 1)
@@ -379,6 +384,7 @@ int Configuration::getFramePayloadBytes(int configindex, int configdatastreamind
     case MARK5B:
       payloadsize = framebytes - 16;
       break;
+    case INTERLACEDVDIF:
     case VDIF:
       payloadsize = framebytes - 32; // This is wrong for "legacy" VDIF (should be 16)
       break;
@@ -410,7 +416,7 @@ void Configuration::getFrameInc(int configindex, int configdatastreamindex, int 
 int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex)
 {
   int nchan, qb, decimationfactor;
-  int payloadsize;
+  int payloadsize, toreturn;
   double samplerate; /* in Hz */
 
   nchan = getDNumRecordedBands(configindex, configdatastreamindex);
@@ -419,7 +425,7 @@ int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex
   decimationfactor = getDDecimationFactor(configindex, configdatastreamindex);
   payloadsize = getFramePayloadBytes(configindex, configdatastreamindex);
 
-  // This will always work out to be an integer 
+  // This will always work out to be an integer
   return int(samplerate*nchan*qb*decimationfactor/(8*payloadsize) + 0.5); // Works for complex data
 }
 
@@ -549,16 +555,22 @@ int Configuration::getOppositeSidebandFreqIndex(int freqindex)
 
 int Configuration::getDataBytes(int configindex, int datastreamindex)
 {
-  int validlength, payloadbytes;
+  int validlength, payloadbytes, framebytes;
   datastreamdata currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
   freqdata arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
-  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == VDIF)
+  if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == VDIF || currentds.format == INTERLACEDVDIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
     validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+0.5)*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
     payloadbytes = getFramePayloadBytes(configindex, datastreamindex);
-    validlength = (validlength/getFramePayloadBytes(configindex, datastreamindex) + 2)*currentds.framebytes;
+    framebytes = currentds.framebytes;
+    if(currentds.format == INTERLACEDVDIF) //account for change to larger packets after muxing
+    {
+      payloadbytes *= 2;
+      framebytes = payloadbytes + VDIF_HEADER_BYTES;
+    }
+    validlength = (validlength/payloadbytes + 2)*framebytes;
 
     //cout << "About to set databytes to " << validlength << " since currentds.framebytes is " << currentds.framebytes << " and blockspersend is " << configs[configindex].blockspersend << endl;
   }
@@ -683,9 +695,14 @@ Mode* Configuration::getMode(int configindex, int datastreamindex)
     case VLBN:
     case MARK5B:
     case VDIF:
+    case INTERLACEDVDIF:
       framesamples = getFramePayloadBytes(configindex, datastreamindex)*8/(getDNumBits(configindex, datastreamindex)*getDNumRecordedBands(configindex, datastreamindex)*streamdecimationfactor);
-      if (stream.sampling==COMPLEX) framesamples /=2;
       framebytes = getFrameBytes(configindex, datastreamindex);
+      if (stream.sampling==COMPLEX) framesamples /=2;
+      if(stream.format == INTERLACEDVDIF) { //separate frames for each subband - change numsamples, framebytes to the muxed version
+        framesamples *= getDNumRecordedBands(configindex, datastreamindex);
+        framebytes = (framebytes - VDIF_HEADER_BYTES)*getDNumRecordedBands(configindex, datastreamindex) + VDIF_HEADER_BYTES;
+      }
       return new Mk5Mode(this, configindex, datastreamindex, streamrecbandchan, streamchanstoaverage, conf.blockspersend, guardsamples, stream.numrecordedfreqs, streamrecbandwidth, stream.recordedfreqclockoffsets, stream.recordedfreqlooffsets, stream.numrecordedbands, stream.numzoombands, stream.numbits, stream.sampling, stream.filterbank, conf.fringerotationorder, conf.arraystridelen, conf.writeautocorrs, framebytes, framesamples, stream.format);
       break;
     default:
@@ -987,8 +1004,8 @@ bool Configuration::processConfig(ifstream * input)
 bool Configuration::processDatastreamTable(ifstream * input)
 {
   datastreamdata * dsdata;
-  int configindex, freqindex, decimationfactor, tonefreq;
-  double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge;
+  int configindex, freqindex, decimationfactor, tonefreq, bytespersecond;
+  double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge, recbandwidth;
   string line = "";;
   string key = "";
   bool ok = true;
@@ -1042,6 +1059,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
     datastreamtable[i].tsys = atof(line.c_str());
 
     getinputline(input, &line, "DATA FORMAT");
+    datastreamtable[i].ismuxed = false;
     if(line == "LBASTD")
       datastreamtable[i].format = LBASTD;
     else if(line == "LBAVSOP")
@@ -1062,10 +1080,15 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].format = MARK5B;
     else if(line == "VDIF")
       datastreamtable[i].format = VDIF;
+    else if(line.substr(0,14) == "INTERLACEDVDIF") {
+      datastreamtable[i].format = INTERLACEDVDIF;
+      datastreamtable[i].ismuxed = true;
+      setDatastreamMuxInfo(i, line.substr(15));
+    }
     else
     {
       if(mpiid == 0) //only write one copy of this error message
-        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B and VDIF)" << endl;
+        cfatal << startl << "Unknown data format " << line << " (case sensitive choices are LBASTD, LBAVSOP, LBA8BIT, K5, MKIV, VLBA, VLBN, MARK5B, VDIF and INTERLACEDVDIF)" << endl;
       return false;
     }
     getinputline(input, &line, "QUANTISATION BITS");
@@ -1148,7 +1171,22 @@ bool Configuration::processDatastreamTable(ifstream * input)
       datastreamtable[i].numrecordedbands += datastreamtable[i].recordedfreqpols[j];
     }
     decimationfactor = freqtable[datastreamtable[i].recordedfreqtableindices[0]].decimationfactor;
+    recbandwidth = freqtable[datastreamtable[i].recordedfreqtableindices[0]].bandwidth;
     int numsamplebits = datastreamtable[i].numbits;
+    /*int bytespersecond = numsamplebits*datastreamtable[i].numrecordedbands*decimationfactor*(((int)(1000000*recbandwidth*2))/8);
+    switch(datastreamtable[i].format) {
+      case VDIF:
+        datastreamtable[i].framespersecond = bytespersecond / (datastreamtable[i].framebytes-VDIF_HEADER_BYTES);
+        cout << "for normal VDIF, framespersecond is " << datastreamtable[i].framespersecond << endl;
+        break;
+      case INTERLACEDVDIF:
+        datastreamtable[i].framespersecond = bytespersecond / ((datastreamtable[i].framebytes-VDIF_HEADER_BYTES)*datastreamtable[i].nummuxthreads);
+        cout << "bytespersecond is " << bytespersecond << ", and payloadbytes is " << (datastreamtable[i].framebytes-VDIF_HEADER_BYTES)*datastreamtable[i].nummuxthreads << " s0 framespersecond is " << datastreamtable[i].framespersecond << endl;
+        break;
+      default:
+        datastreamtable[i].framespersecond = bytespersecond / datastreamtable[i].framebytes; //not very useful for non-VDIF
+        break;
+    }*/
     if (datastreamtable[i].sampling==COMPLEX) numsamplebits *=2;
     datastreamtable[i].bytespersamplenum = (datastreamtable[i].numrecordedbands*numsamplebits*decimationfactor)/8;
     if(datastreamtable[i].bytespersamplenum == 0)
@@ -1853,10 +1891,28 @@ bool Configuration::populateResultLengths()
   return true;
 }
 
+void Configuration::setDatastreamMuxInfo(int datastreamindex, string muxinfo)
+{
+  int threadindices[500];
+  int at = muxinfo.find_first_of(":");
+  datastreamtable[datastreamindex].nummuxthreads = 0;
+
+  while(at != string::npos) {
+    threadindices[datastreamtable[datastreamindex].nummuxthreads++] = atoi(muxinfo.substr(0,at).c_str());
+    muxinfo = muxinfo.substr(at+1);
+    at = muxinfo.find_first_of(":");
+  }
+  threadindices[datastreamtable[datastreamindex].nummuxthreads++] = atoi(muxinfo.substr(0,at).c_str());
+  datastreamtable[datastreamindex].muxthreadmap = new int[datastreamtable[datastreamindex].nummuxthreads];
+  for(int i=0;i<datastreamtable[datastreamindex].nummuxthreads;i++)
+    datastreamtable[datastreamindex].muxthreadmap[i] = threadindices[i];
+}
+
 bool Configuration::consistencyCheck()
 {
-  int tindex, count, freqindex, freq1index, freq2index, confindex, timesec, initscan, initsec;
+  int tindex, count, freqindex, freq1index, freq2index, confindex, timesec, initscan, initsec, framebytes, numbits;
   double bandwidth, sampletimens, ffttime, numffts, f1, f2;
+  bool ismuxed;
   datastreamdata ds1, ds2;
   baselinedata bl;
 
@@ -1999,10 +2055,36 @@ bool Configuration::consistencyCheck()
     tindex = datastreamtable[configs[0].datastreamindices[i]].telescopeindex;
     for(int j=1;j<numconfigs;j++)
     {
-      if(tindex != datastreamtable[configs[0].datastreamindices[i]].telescopeindex)
+      if(tindex != datastreamtable[configs[j].datastreamindices[i]].telescopeindex)
       {
         if(mpiid == 0) //only write one copy of this error message
           cfatal << startl << "All configs must have the same telescopes!  Config " << j << " datastream " << i << " refers to different telescopes - aborting!!!" << endl;
+        return false;
+      }
+    }
+  }
+
+  //check that for all configs, if a datastream is muxed in one it is muxed in all, and frame size / num bits stays the same
+  for(int i=0;i<numdatastreams;i++)
+  {
+    ismuxed = datastreamtable[configs[0].datastreamindices[i]].ismuxed;
+    framebytes = datastreamtable[configs[0].datastreamindices[i]].framebytes;
+    for(int j=1;j<numconfigs;j++)
+    {
+      if(ismuxed != datastreamtable[configs[j].datastreamindices[i]].ismuxed)
+      {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "If one config for a datastream is muxed, all must be! Config " << j << " datastream " << i << " differs from the first config - aborting!" << endl;
+        return false;
+      }
+      if(ismuxed && framebytes != datastreamtable[configs[j].datastreamindices[i]].framebytes) {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "If mux'ing, all configs must have the same frame bytes for a given datastream - not so for config " << j << " datastream " << i << " - aborting!" << endl;
+        return false;
+      }
+      if(ismuxed && numbits != datastreamtable[configs[j].datastreamindices[i]].numbits) {
+        if(mpiid == 0) //only write one copy of this error message
+          cfatal << startl << "If mux'ing, all configs must have the same bits per sample for a given datastream - not so for config " << j << " datastream " << i << " - aborting!" << endl;
         return false;
       }
     }

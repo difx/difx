@@ -409,7 +409,11 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	nrecordedbands = config->getDNumRecordedBands(configindex, streamnum);
 	framebytes = config->getFrameBytes(configindex, streamnum);
         bw = config->getDRecordedBandwidth(configindex, streamnum, 0);
-	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), formatname);
+        if(config->isDMuxed(configindex, streamnum)) {
+          framebytes = (framebytes-32)*config->getDNumMuxThreads(configindex, streamnum) + 32;
+          nrecordedbands = 1;
+        }
+	fanout = config->genMk5FormatName(format, nrecordedbands, bw, nbits, config->getDSampling(configindex, streamnum), framebytes, config->getDDecimationFactor(configindex, streamnum), config->getDNumMuxThreads(configindex, streamnum), formatname);
         if(fanout < 0)
         {
 #if HAVE_MARK5IPC

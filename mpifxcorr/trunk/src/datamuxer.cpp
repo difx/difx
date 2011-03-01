@@ -22,6 +22,7 @@
 #include "datamuxer.h"
 #include "vdifio.h"
 #include "alert.h"
+#include <stdio.h>
 #include <string.h>
 
 DataMuxer::DataMuxer(Configuration * conf, int dsindex, int id, int nthreads, int sbytes)
@@ -56,9 +57,10 @@ const unsigned int VDIFMuxer::bitmask[9] = {0, 1, 3, 7, 15, 31, 63, 127, 255};
 VDIFMuxer::VDIFMuxer(Configuration * conf, int dsindex, int id, int nthreads, int iframebytes, int rframes, int fpersec, int bitspersamp, int * tmap)
   : DataMuxer(conf, dsindex, id, nthreads, iframebytes*rframes), inputframebytes(iframebytes), readframes(rframes), framespersecond(fpersec), bitspersample(bitspersamp)
 {
+  cverbose << startl << "VDIFMuxer: framespersecond is " << framespersecond << ", iframebytes is " << inputframebytes << endl;
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
   processframenumber = 0;
-  numthreadbufframes = readframes / numthreads;
+  numthreadbufframes = readframes * DEMUX_BUFFER_FACTOR / numthreads;
   activemask = bitmask[bitspersample];
   threadindexmap = new int[numthreads];
   bufferframefull = new bool*[numthreads];
@@ -67,7 +69,7 @@ VDIFMuxer::VDIFMuxer(Configuration * conf, int dsindex, int id, int nthreads, in
     threadindexmap[i] = tmap[i];
     bufferframefull[i] = new bool[numthreadbufframes];
     for(int j=0;j<numthreadbufframes;j++)
-      bufferframefull[j] = false;
+      bufferframefull[i][j] = false;
   }  
 }
 
@@ -108,6 +110,37 @@ bool VDIFMuxer::initialise()
   return true;
 }
 
+int VDIFMuxer::datacheck(u8 * checkbuffer, int bytestocheck)
+{
+  int consumedbytes, byteoffset, bytestoread;
+
+  //loop over one read's worth of data, shifting any time we find a bad packet
+  consumedbytes = 0;
+  bytestoread = 0;
+  while(consumedbytes < bytestocheck - (inputframebytes-1)) {
+    if(getVDIFFrameBytes((char*)checkbuffer + consumedbytes) != inputframebytes) {
+      cwarn << startl << "Bad packet detected in VDIF datastream" << endl;
+      byteoffset = 4;
+      while(getVDIFFrameBytes((char*)checkbuffer + consumedbytes + byteoffset) != inputframebytes && consumedbytes + byteoffset < bytestocheck) {
+        byteoffset += 4;
+      }
+      if(consumedbytes + byteoffset < bytestocheck) {
+        cwarn << startl << "Length of interloper packet was " << byteoffset << " bytes" << endl;
+      }
+      else {
+        cwarn << startl << "Reached end of checkbuffer before end of interloper packet - " << byteoffset << " bytes read" << endl;
+      }
+      bytestoread += byteoffset;
+      memmove((char*)checkbuffer + consumedbytes, (char*)checkbuffer + consumedbytes + byteoffset, bytestocheck - (consumedbytes + byteoffset));
+      consumedbytes += byteoffset;
+    }
+    else {
+      consumedbytes += inputframebytes;
+    }
+  }
+  return bytestoread; 
+} 
+
 bool VDIFMuxer::validData(int bufferframe)
 {
   for(int i = 0;i < numthreads; i++) {
@@ -128,9 +161,9 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
   goodframesfromstart = 0;
 
   //loop over one read's worth of data
-  for(int f=0;f<readframes;f++) {
+  for(int f=0;f<readframes/numthreads;f++) {
     //rearrange one frame
-    processindex = processframenumber % (readframes*DEMUX_BUFFER_FACTOR);
+    processindex = processframenumber % (readframes*DEMUX_BUFFER_FACTOR/numthreads);
     if(validData(processindex)) {
       //copy in and tweak up the VDIF header
       outptr = (char *)(outputbuffer + outputframecount*outputframebytes);
@@ -159,7 +192,7 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
 
       //clear the data we just used
       for(int i=0;i<numthreads;i++)
-        bufferframefull[i][processframenumber % numthreadbufframes] = 0;
+        bufferframefull[i][processindex] = false;
       if(outputframecount == goodframesfromstart)
         goodframesfromstart++;
       outputframecount++;
@@ -173,7 +206,7 @@ int VDIFMuxer::multiplex(u8 * outputbuffer)
   return goodframesfromstart*outputframebytes;
 }
 
-bool VDIFMuxer::deinterlace()
+bool VDIFMuxer::deinterlace(int validbytes)
 {
   int framethread, framebytes, framemjd, framesecond, framenumber;
   int frameoffset, frameindex, threadindex;
@@ -181,8 +214,10 @@ bool VDIFMuxer::deinterlace()
   bool found;
   char * inputptr;
 
-  for(int i=0;i<readframes;i++) {
-    inputptr = (char *)(demuxbuffer+i*inputframebytes);
+  //cout << "Deinterlacing: deinterlacecount is " << deinterlacecount << endl;
+  //cout << "Will start from " << (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes << " frames in" << endl;
+  for(int i=0;i<validbytes/inputframebytes;i++) {
+    inputptr = (char *)(demuxbuffer + i*inputframebytes + (deinterlacecount%DEMUX_BUFFER_FACTOR)*readframes*inputframebytes);
     framethread = getVDIFThreadID(inputptr);
     framebytes = getVDIFFrameBytes(inputptr);
     framemjd = getVDIFFrameMJD(inputptr);
@@ -202,7 +237,9 @@ bool VDIFMuxer::deinterlace()
       }
     }
     if(!found) {
-      cdebug << startl << "Skipping packet from threadId " << framethread << endl;
+      cdebug << startl << "Skipping packet from threadId " << framethread << ", numthreads is " << numthreads << ", mapping is " << endl;
+      for(int j=0;j<numthreads;j++)
+        cdebug << startl << threadindexmap[j] << endl;
       continue;
     }
 
@@ -210,22 +247,25 @@ bool VDIFMuxer::deinterlace()
     currentframenumber = ((long long)((framemjd-refframemjd)*86400 + framesecond - refframesecond))*framespersecond + framenumber - refframenumber;
     if (currentframenumber < 0) {
       cdebug << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << -currentframenumber << " frames earlier than the first frame in the file" << endl;
+      cdebug << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
       continue;
     }
     frameoffset  = (int) (currentframenumber - processframenumber);
     if(frameoffset < 0) {
       cwarn << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << -frameoffset << " frames earlier than the current frame being processed" << endl;
+      cdebug << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
       continue;
     }
     if(frameoffset > readframes*DEMUX_BUFFER_FACTOR/numthreads) {
-      cfatal << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << frameoffset << "frames after the current frame being processed - must be a large in the file, which is not supported" << endl;
+      cfatal << startl << "Discarding a frame from thread " << framethread << " which is timestamped " << frameoffset << " frames after the current frame being processed - must be a large offset in the file, which is not supported" << endl;
+      cfatal << startl << "Currentframenumber is " << currentframenumber << ", processframenumber is " << processframenumber << ", framesecond is " << framesecond << ", refframesecond is " << refframesecond << ", framenumber is " << framenumber << ", refframenumber is " << refframenumber << ", framespersecond is " << framespersecond << endl;
       return false;
     }
     frameindex = (int)(currentframenumber % numthreadbufframes);
     if (bufferframefull[threadindex][frameindex]) {
-      cwarn << startl << "Frame at index " << frameindex << " (which was count " << currentframenumber << ") was already full - probably a major time gap in the file, which is not supported" << endl;
+      cwarn << startl << "Frame at index " << frameindex << " (which was count " << currentframenumber << ") was already full for thread " << threadindex << " - probably a major time gap in the file, which is not supported" << endl;
     }
-    memcpy(threadbuffers[threadindex] + frameindex*framebytes, demuxbuffer + i*framebytes, framebytes);
+    memcpy(threadbuffers[threadindex] + frameindex*framebytes, inputptr, framebytes);
     bufferframefull[threadindex][frameindex] = true;
   }
   deinterlacecount++;
