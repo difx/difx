@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,7 +36,7 @@ const DifxInput *DifxInput2FitsAN(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
 	/*  define the antenna characteristic FITS table columns */
-	char bandFormFloat[4];
+	char bandFormFloat[8];
 	struct fitsBinTableColumn columns[] =
 	{
 		{"TIME", "1D", "time of center of interval", "DAYS"},

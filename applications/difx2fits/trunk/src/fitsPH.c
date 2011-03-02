@@ -549,9 +549,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	int phasecentre)
 {
-	char stateFormFloat[4];
-	char toneFormDouble[4];
-	char toneFormFloat[4];
+	char stateFormFloat[8];
+	char toneFormDouble[8];
+	char toneFormFloat[8];
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =

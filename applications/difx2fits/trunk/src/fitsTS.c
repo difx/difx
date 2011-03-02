@@ -583,7 +583,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	const int MaxLineLength=1000;
 	const int MaxDatastreamsPerAntenna=8;
 
-	char bandFormFloat[4];
+	char bandFormFloat[8];
 	int origDsIds[MaxDatastreamsPerAntenna];
 	
 	/*  define the flag FITS table columns */

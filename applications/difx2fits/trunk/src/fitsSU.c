@@ -35,8 +35,8 @@
 const DifxInput *DifxInput2FitsSU(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out)
 {
-	char bandFormDouble[4];
-	char bandFormFloat[4];
+	char bandFormDouble[8];
+	char bandFormFloat[8];
 
 	struct fitsBinTableColumn columns[] =
 	{

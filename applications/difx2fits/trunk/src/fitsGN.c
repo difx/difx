@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -462,9 +462,9 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 {
 	GainRow *G;
 	int nRow;
-	char bandFormInt[4];
-	char bandFormFloat[4];
-	char tabFormFloat[4];
+	char bandFormInt[8];
+	char bandFormFloat[8];
+	char tabFormFloat[8];
 	
 	/*  define the flag FITS table columns */
 	struct fitsBinTableColumn columns[] =
@@ -526,7 +526,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	G = calloc(MAXENTRIES, sizeof(GainRow));
 	if(!G)
 	{
-		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocation G (%lu bytes)\n", 
+		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", 
 			MAXENTRIES*sizeof(GainRow));
 
 		exit(0);
@@ -537,7 +537,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	sprintf(bandFormInt, "%dJ", nBand);
 	sprintf(bandFormFloat, "%dE", nBand);
 	sprintf(tabFormFloat, "%dE", MAXTAB*nBand);
-	
+
 	if(nPol == 2)
 	{
 		nColumn = NELEMENTS(columns);
@@ -614,8 +614,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 					{
 						printf("\n");
 					}
-					fprintf(stderr, "    No gain curve for station '%s'\n",
-						antName);
+					fprintf(stderr, "    No gain curve for station '%s'\n", antName);
 					messages++;
 					bad = 1;
 					break;
