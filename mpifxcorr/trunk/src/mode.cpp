@@ -33,7 +33,7 @@ const float Mode::TINY = 0.000000001;
 Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock)
   : config(conf), configindex(confindex), datastreamindex(dsindex), recordedbandchannels(recordedbandchan), channelstoaverage(chanstoavg), blockspersend(bpersend), guardsamples(gsamples), fftchannels(recordedbandchan*2), numrecordedfreqs(nrecordedfreqs), numrecordedbands(nrecordedbands), numzoombands(nzoombands), numbits(nbits), unpacksamples(unpacksamp), fringerotationorder(fringerotorder), arraystridelength(arraystridelen), recordedbandwidth(recordedbw), blockclock(bclock), filterbank(fbank), calccrosspolautocorrs(cacorrs), recordedfreqclockoffsets(recordedfreqclkoffs), recordedfreqlooffsets(recordedfreqlooffs)
 {
-  int status, localfreqindex;
+  int status, localfreqindex, parentfreqindex;
   int decimationfactor = config->getDDecimationFactor(configindex, datastreamindex);
   int pcalOffset;
   estimatedbytes = 0;
@@ -127,9 +127,18 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         else
         {
           localfreqindex = config->getDLocalZoomFreqIndex(confindex, dsindex, j-numrecordedbands);
-	  fftoutputs[j][k] = &(fftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex)][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
-	  conjfftoutputs[j][k] = &(conjfftoutputs[config->getDZoomFreqParentFreqIndex(confindex, dsindex,localfreqindex)][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
-	}
+          parentfreqindex = config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex);
+          fftoutputs[j][k] = 0;
+          conjfftoutputs[j][k] = 0;
+          for(int l=0;l<numrecordedbands;l++) {
+            if(config->getDRecordedFreqIndex(confindex, dsindex, l) == parentfreqindex && config->getDRecordedBandPol(confindex, dsindex, l) == config->getDZoomBandPol(confindex, dsindex, j-numrecordedbands)) {
+              fftoutputs[j][k] = &(fftoutputs[l][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
+	      conjfftoutputs[j][k] = &(conjfftoutputs[l][k][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)]);
+            }
+          }
+          if(fftoutputs[j][k] == 0)
+            csevere << startl << "Couldn't find the parent band for zoom band " << j-numrecordedbands << endl;
+        }
       }
     }
     dataweight = 0.0;
@@ -278,7 +287,15 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       for(int j=0;j<numzoombands;j++)
       {
         localfreqindex = config->getDLocalZoomFreqIndex(confindex, dsindex, j);
-        autocorrelations[i][j+numrecordedbands] = &(autocorrelations[i][config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex)][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)/channelstoaverage]);
+        parentfreqindex = config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex);
+        autocorrelations[i][j+numrecordedbands] = 0;
+        for(int l=0;l<numrecordedbands;l++) {
+          if(config->getDRecordedFreqIndex(confindex, dsindex, l) == parentfreqindex && config->getDRecordedBandPol(confindex, dsindex, l) == config->getDZoomBandPol(confindex, dsindex, j)) {
+            autocorrelations[i][j+numrecordedbands] = &(autocorrelations[i][l][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)/channelstoaverage]);
+          }
+        }
+        if(autocorrelations[i][j+numrecordedbands] == 0)
+          csevere << startl << "Couldn't find the parent band for autocorr of zoom band " << j << endl;
       }
     }
 

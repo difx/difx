@@ -5,6 +5,7 @@ Version 2.0.1
 * Added switched power detection (enable with TCAL FREQUENCY, optional line just above PHASE CAL INT (MHZ) ), currently only for mark5access based unpackers, and only works on 2-bit data.
 * Fix parsing of mark5 directory files: stepping through extra parameters had a bug.
 * Native Mark5: Swap order of fill pattern setting and bank mode setting to better work around certain module problems
+* Fix zoom-bands for all but special cases that just worked despite the logic in the code. (WFB paraphrasing for ATD)
 
 Version 2.0.0, 2010 July 14
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
