@@ -3,6 +3,7 @@ Version 3.0.1
 * Make use of clock shifting function in difxio
 * Add in Difx-based pulse cal data
 * Add in Difx-based tsys
+* Fix TSys values in the zoom band cases
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:

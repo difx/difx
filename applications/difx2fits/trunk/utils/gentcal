@@ -5,9 +5,11 @@ from os import getenv
 from os.path import isfile
 from string import strip, split
 
+vff = 1.07	# VLBA fudge factor
+
 antennas = ['br', 'eb', 'fd', 'gb', 'hn', 'kp', 'la', 'mk', 'nl', 'ov', 'pt', 'sc']
 receivers = ['90cm', '20cm', '13cm', '6cm', '4cm', '2cm', '1cm', '7mm', '3mm']
-
+ff = {'br':vff, 'eb':1.0, 'fd':vff, 'gb':1.0, 'hn':vff, 'kp':vff, 'la':vff, 'mk':vff, 'nl':vff, 'ov':vff, 'pt':vff, 'sc':vff}
 
 def readfile(fn, a, r):
 	stderr.write('Reading %s\n' % fn)
@@ -23,7 +25,10 @@ def readfile(fn, a, r):
 		else:
 			s = split(strip(d))
 			if len(s) == 3:
-				print '%-4s %-8s %-5s %-5s %-5s' % (a, r, s[0], s[2], s[1])
+				try:
+					print '%-4s %-8s %-5s %5.2f %5.2f' % (a, r, s[0], float(s[2])*ff[a], float(s[1])*ff[a])
+				except ValueError:
+					print '%-4s %-8s %-5s %-5s %-5s' % (a, r, s[0], s[2], s[1])
 
 
 tcalpath = getenv('TCAL_PATH')

@@ -422,9 +422,16 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			break;
 		default:
 			fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
+
 			exit(0);
 	}
 	keys->no_band = D->nIF;
+	if(D->nIF > array_MAX_BANDS)
+	{
+		fprintf(stderr, "Error: too many (%d) IFs in this data.  This program is compiled for only %d.\n", D->nIF, array_MAX_BANDS);
+
+		exit(0);
+	}
 	keys->no_chan = -1;
 	keys->chan_bw = -1;
 	keys->ref_pixel = -1;

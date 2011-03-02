@@ -43,29 +43,6 @@ typedef struct
 TCal *tCals = 0;
 int nTcal;
 
-
-/* Really this looks at the type of BBC used, so EB is included. */
-static int isVLBAAntenna(const char *token)
-{
-	const char antennas[] = " BR EB FD HN KP LA MK NL OV PT SC ";
-	char matcher[8];
-
-	if(strlen(token) >= 4)
-	{
-		return 0;
-	}
-	sprintf(matcher, " %s ", token);
-	if(strstr(antennas, matcher) != 0)
-	{
-		return 1;
-	}
-	else
-	{	
-		return 0;
-	}
-}
-
-
 int loadTcals()
 {
 	const int MaxLineLength = 100;
@@ -314,8 +291,70 @@ static double unscaledTsys(const SwitchedPower *sp)
 	}
 }
 
-int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double avgSeconds, int phasecentre, 
-	int nRowBytes, char *fitsbuf, int nColumn, const struct fitsBinTableColumn *columns,
+static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, int configId, int antId,
+	const SwitchedPower *average, int nRecBand)
+{
+	int i, p, r, v;
+	int freqId, polId;
+	const DifxConfig *dc;
+	double freq, tCal;
+
+	dc = D->config + configId;
+
+	for(i = 0; i < D->nIF; i++)
+	{
+		for(p = 0; p < dc->IF[i].nPol; p++)
+		{
+			/* search for a compatible record band.  This should allow zoom bands to work. */
+			for(r = 0; r < nRecBand; r++)
+			{
+				v = DifxConfigRecBand2FreqPol(D, configId, antId, r, &freqId, &polId);
+
+				if(v < 0)
+				{
+					continue;
+				}
+			
+				if(polId < 0 || freqId < 0 || freqId >= D->nFreq)
+				{
+					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
+						freqId, polId, r);
+
+					exit(0);
+				}
+
+				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				{
+					break;
+				}
+			}
+			if(r < nRecBand) /* match found */
+			{
+				freq = dc->IF[i].freq;
+				if(dc->IF[i].sideband == 'L')
+				{
+					freq -= dc->IF[i].bw*0.5;
+				}
+				else
+				{
+					freq += dc->IF[i].bw*0.5;
+				}
+				/* Note: could do better by considering full band Tsys variations */
+				tCal = getTcalValue(D->antenna[antId].name, freq, D->config[configId].pol[polId]);
+				if(tCal > 0.0)
+				{
+					tSys[p][i] = tCal*unscaledTsys(average + r);
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, 
+	double avgSeconds, int phasecentre, int nRowBytes, char *fitsbuf, 
+	int nColumn, const struct fitsBinTableColumn *columns,
 	struct fitsPrivate *out)
 {
 	const int MaxFilenameLength=256;
@@ -331,7 +370,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 	int configId = -1;
 	int scanId = -1;
 	int i, v, n;
-	int nBand = -1;;
+	int nRecBand = -1;
 	char *rv;
 	int currentScanId = -1;
 	int currentConfigId = -1;
@@ -342,23 +381,14 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 	DifxScan *scan;
 	float tSys[2][array_MAX_BANDS];
 	float tAnt[2][array_MAX_BANDS];
-	double fudgeFactor;
+	int sourceId;
+	int32_t freqId1, antId1, sourceId1, arrayId1;
+	double time;
+	float timeInt;
 
 	if(tCals == 0)
 	{
 		loadTcals();
-	}
-
-	/* This factor accounts for the fact that the VLBA BBC has an apparent 
-	 * total power scaling issue of about 6.5%
-	 */
-	if(isVLBAAntenna(D->antenna[antId].name))
-	{
-		fudgeFactor = 1.07;
-	}
-	else
-	{
-		fudgeFactor = 1.0;
 	}
 
 	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, origDsId);
@@ -441,17 +471,12 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 				dumpWindow += windowDuration;
 			}
 		}
-		else if(scanId >= 0 && n != nBand)
+		else if(scanId >= 0 && n != nRecBand)
 		{
-			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nBand=%d mjd1=%12.6f mjd2=%12.6f\n",
-				antId, origDsId, scanId, n, nBand, mjd1, mjd2);
+			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nRecBand=%d mjd1=%12.6f mjd2=%12.6f\n",
+				antId, origDsId, scanId, n, nRecBand, mjd1, mjd2);
 
 			exit(0);
-		}
-
-		if(configId != currentConfigId)
-		{
-#warning FIXME: Get updated tcal values
 		}
 
 		if(doDump)
@@ -463,12 +488,6 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 			   scan->phsCentreSrcs[phasecentre] >= 0)
 			{
 				// write Tsys row to file
-				int freqId, bandId, polId, sourceId;
-				int32_t freqId1, antId1, sourceId1, arrayId1;
-				double time;
-				float freq, tCal;
-				float timeInt;
-
 				time = (accumStart + accumEnd)*0.5 - (int)(D->mjdStart);
 				timeInt = accumEnd - accumStart;
 
@@ -481,46 +500,7 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 				freqId1 = D->config[currentConfigId].fitsFreqId + 1;
 
 				nanify(tSys);
-				
-				for(i = 0; i < nBand; i++)
-				{
-					v = DifxConfigRecBand2FreqPol(D, configId,
-						antId, i, &freqId, &polId);
-					if(v < 0)
-					{
-						continue;
-					}
-					if(freqId < 0 || polId < 0 || freqId >= D->nFreq)
-					{
-						fprintf(stderr, "Developer error: derived freqId and "
-							"polId (%d,%d) are not legit.  From antId=%d, recBand=%d.\n", 
-							antId, freqId, polId, i);
-
-						fclose(in);
-
-						return 0;
-					}
-					bandId = D->config[configId].freqId2IF[freqId];
-					if(bandId < 0)
-					{
-						/* This Freq is not entering this FITS file */
-						continue;
-					}
-					freq = D->freq[freqId].freq;
-					if(D->freq[freqId].sideband == 'L')
-					{
-						freq -= D->freq[freqId].bw*0.5;
-					}
-					else
-					{
-						freq += D->freq[freqId].bw*0.5;
-					}
-					tCal = getTcalValue(D->antenna[antId].name, freq, D->config[currentConfigId].pol[polId]);
-					if(tCal > 0.0)
-					{
-						tSys[polId][bandId] = tCal*unscaledTsys(average + i)*fudgeFactor;
-					}
-				}
+				populateDifxTSys(tSys, D, currentConfigId, antId, average, nRecBand);
 
 				p_fitsbuf = fitsbuf;
 			
@@ -555,10 +535,10 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 			break;
 		}
 
-		nBand = n;
-		if(mjd > 0 && scanId >= 0 && nBand > 0 && !isAntennaFlagged(D->job + jobId, mjd, antId))
+		nRecBand = n;
+		if(mjd > 0 && scanId >= 0 && nRecBand > 0 && !isAntennaFlagged(D->job + jobId, mjd, antId))
 		{
-			accumulateSwitchedPower(average, measurement, nBand);
+			accumulateSwitchedPower(average, measurement, nRecBand);
 			if(nAccum == 0)
 			{
 				accumStart = mjd1;
@@ -574,6 +554,52 @@ int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId, double a
 	fclose(in);
 
 	return 1;
+}
+
+static int populateTSys(float tSys[][array_MAX_BANDS], 
+	const DifxInput *D, int configId, int antId, const float tSysRecBand[], int nRecBand)
+{
+	int i, p, r, v;
+	int freqId, polId;
+	const DifxConfig *dc;
+
+	dc = D->config + configId;
+
+	for(i = 0; i < D->nIF; i++)
+	{
+		for(p = 0; p < dc->IF[i].nPol; p++)
+		{
+			/* search for a compatible record band.  This should allow zoom bands to work. */
+			for(r = 0; r < nRecBand; r++)
+			{
+				v = DifxConfigRecBand2FreqPol(D, configId, antId, r, &freqId, &polId);
+			
+				if(v < 0)
+				{
+					continue;
+				}
+			
+				if(polId < 0 || freqId < 0 || freqId >= D->nFreq)
+				{
+					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
+						freqId, polId, r);
+
+					exit(0);
+				}
+
+				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
+				{
+					break;
+				}
+			}
+			if(r < nRecBand) /* match found */
+			{
+				tSys[p][i] = tSysRecBand[r];
+			}
+		}
+	}
+
+	return 0;
 }
 
 const DifxInput *DifxInput2FitsTS(const DifxInput *D,
@@ -613,7 +639,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int nBand;
 	int configId, sourceId, scanId;
 	int i, nPol=0;
-	int freqId, bandId, polId, antId, jobId;
+	int antId, jobId;
 	int nRecBand;
 	int v, n;
 	double f;
@@ -754,41 +780,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 			freqId1 = D->config[configId].fitsFreqId + 1;
 			
 			nanify(tSys);
-
-			/* Take the recorder channel order data and populate
-			 * into [polId][bandId] order
-			 */
-			for(i = 0; i < nRecBand; i++)
-			{
-				v = DifxConfigRecBand2FreqPol(D, configId,
-					antId, i, &freqId, &polId);
-				if(v < 0)
-				{
-					continue;
-				}
-				if(freqId < 0 || polId < 0 || freqId >= D->nFreq)
-				{
-					fprintf(stderr, "Developer error: derived freqId and "
-						"polId (%d,%d) are not legit.  From recBand=%d.\n", 
-						freqId, polId, i);
-
-					fclose(in);
-					free(hasDifxTsys);
-					free(fitsbuf);
-
-					return 0;
-				}
-				bandId = D->config[configId].freqId2IF[freqId];
-				if(bandId < 0)
-				{
-					/* This Freq is not entering this FITS file */
-					continue;
-				}
-				if(tSysRecBand[i] < 990.0)
-				{
-					tSys[polId][bandId] = tSysRecBand[i];
-				}
-			}
+			populateTSys(tSys, D, configId, antId, tSysRecBand, nRecBand);
 
 			/* 1-based values for FITS */
 			antId1 = antId + 1;
