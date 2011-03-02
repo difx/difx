@@ -525,6 +525,7 @@ void printDifxFreq(const DifxFreq *df);
 void fprintDifxFreq(FILE *fp, const DifxFreq *df);
 int isSameDifxFreqToneSet(const DifxFreq *df1, const DifxFreq *df2);
 int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2);
+int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df);
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src);
 int simplifyDifxFreqs(DifxInput *D);
 DifxFreq *mergeDifxFreqArrays(const DifxFreq *df1, int ndf1,

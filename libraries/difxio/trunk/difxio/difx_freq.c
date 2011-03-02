@@ -160,6 +160,48 @@ int isSameDifxFreq(const DifxFreq *df1, const DifxFreq *df2)
 	}
 }
 
+int isDifxIFInsideDifxFreq(const DifxIF *di, const DifxFreq *df)
+{
+	double imax, imin, fmax, fmin;
+	const double epsilon=1.0e-7;	/* 0.1 Hz tolerance */
+
+	if(di->sideband == 'U')
+	{
+		imin = di->freq;
+		imax = di->freq + di->bw;
+	}
+	else if(di->sideband == 'L')
+	{
+		imin = di->freq - di->bw;
+		imax = di->freq;
+	}
+	else
+	{
+		fprintf(stderr, "Error: isDifxIFInsideDifxFreq: encountered DifxIF with sideband = '%c'; this needs to be one of U or L\n", di->sideband);
+
+		exit(0);
+	}
+
+	if(df->sideband == 'U')
+	{
+		fmin = df->freq;
+		fmax = df->freq + df->bw;
+	}
+	else if(df->sideband == 'L')
+	{
+		fmin = df->freq - df->bw;
+		fmax = df->freq;
+	}
+	else
+	{
+		fprintf(stderr, "Error: isDifxIFInsideDifxFreq: encountered DifxFreq with sideband = '%c'; this needs to be one of U or L\n", df->sideband);
+
+		exit(0);
+	}
+
+	return (imin + epsilon >= fmin && imax - epsilon <= fmax);
+}
+
 void copyDifxFreq(DifxFreq *dest, const DifxFreq *src)
 {
 	int t;
