@@ -173,7 +173,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	char baseName[DIFXIO_FILENAME_LENGTH];
 	char fileName[DIFXIO_FILENAME_LENGTH];
 	DifxScan *S;
-	int scanId, configId, dsId, freqId;
+	int scanId, configId;
 
 	/* use center of range for scan id */
 	mjd = (T->event[eventId].startMJD + T->event[eventId].stopMJD)/2.0;
@@ -184,7 +184,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	mjd1 = floor(mjd1*86400.0)/86400.0;
 	mjd2 = ceil(mjd2*86400.0)/86400.0;
 
-	scanId = DifxInputGetScanId(T->D, mjd);
+	scanId = DifxInputGetScanIdByJobId(T->D, mjd, 0);
 	if(scanId < 0 || scanId >= T->D->nScan)
 	{
 		fprintf(stderr, "Error: mjd=%f not claimed by any scan\n", mjd);
@@ -210,6 +210,11 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
 
+snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.orig", baseName);
+out = fopen(fileName, "w");
+fprintDifxInput(out, newD);
+fclose(out);
+
 	/* First change the name of the job and all of the paths */
 	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
 	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseName);
@@ -217,6 +222,8 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseName);
 	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseName);
 	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseName);
+
+/*  */
 	
 	/* Then select the appropriate scan and reduce its timerange */
 	S = newDifxScanArray(1);
@@ -229,6 +236,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
 	newD->scan->startSeconds = 0;
 	newD->scan->durSeconds = (int)ceil(newD->job->duration);
+#if 0
 
 	/* Then change all data sources to FILE and point to those files */
 	for(dsId = 0; dsId < newD->nDatastream; dsId++)
@@ -260,6 +268,8 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	DifxInputAllocThreads(newD, 2);
 	DifxInputSetThreads(newD, 1);
 
+#endif
+
 	/* And write it! */
 	writeDifxInput(newD);
 	writeDifxCalc(newD);
@@ -274,12 +284,10 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	}
 	fclose(out);
 
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.input.bash", baseName);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.input.env", baseName);
 	out = fopen(fileName, "w");
-	fprintf(out, "export DIFX_MESSAGE_PORT=50201\n");
-	fprintf(out, "export DIFX_MESSAGE_GROUP=224.2.2.4\n");
-	fprintf(out, "echo \"Starting DiFX with non-standard message address: port=${DIFX_MESSAGE_PORT} group=${DIFX_MESSAGE_GROUP}\"\n");
-	fprintf(out, "$@\n");
+	fprintf(out, "DIFX_MESSAGE_PORT 50201\n");
+	fprintf(out, "DIFX_MESSAGE_GROUP 224.2.2.4\n");
 	fclose(out);
 	v = snprintf(command, MaxCommandLength, "chmod +x %s", fileName);
 	if(v < MaxCommandLength)
@@ -295,6 +303,12 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n",
 			MaxCommandLength, v);
 	}
+
+
+snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.new", baseName);
+out = fopen(fileName, "w");
+fprintDifxInput(out, newD);
+fclose(out);
 
 	deleteDifxInput(newD);
 }

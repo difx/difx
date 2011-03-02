@@ -8,22 +8,22 @@
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2011 Feb 3";
+const char verdate[] = "2011 Mar 1";
 
 const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
 const int minFreeMB = 1000000;	/* don't copy unless there are this many MB free in the above path */
 
-int usage(const char *pgm)
+static int usage(const char *pgm)
 {
 	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 
 	return 0;
 }
 
-int execute(int argc, char **argv, TransientWrapperData *T)
+static int execute(int argc, char **argv, TransientWrapperData *T)
 {
 	const unsigned int MaxCommandLength = 1023;
-	char command[MaxCommandLength+1];
+	char command[MaxCommandLength + 1];
 	int a, rv;
 	int start = 1;
 	time_t t1, t2;
@@ -32,7 +32,7 @@ int execute(int argc, char **argv, TransientWrapperData *T)
 	{
 		if(strcmp(argv[a], "--") == 0)
 		{
-			start = a+1;
+			start = a + 1;
 		}
 	}
 
@@ -62,10 +62,51 @@ int execute(int argc, char **argv, TransientWrapperData *T)
 	rv = system(command);
 	t2 = time(0);
 
-	return t2-t1;
+	return t2 - t1;
 }
 
-int parsecommandline(int argc, char **argv, TransientWrapperData *T)
+static void updateenvironment(const char *inputFile)
+{
+	const int MaxLineLength=1024;
+	char line[MaxLineLength], key[MaxLineLength], value[MaxLineLength];
+	char envFile[DIFXIO_FILENAME_LENGTH];
+	int v;
+	char *rv;
+	FILE *in;
+
+	v = snprintf(envFile, DIFXIO_FILENAME_LENGTH, "%s.env", inputFile);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "Developer error: not enough space for filename (%d >= %d)\n", v, DIFXIO_FILENAME_LENGTH);
+		
+		return;
+	}
+
+	in = fopen(envFile, "r");
+	if(in)
+	{
+		while(!feof(in))
+		{
+			rv = fgets(line, MaxLineLength, in);
+			if(!rv)
+			{
+				break;
+			}
+			if(line[0] == '#')
+			{
+				continue;
+			}
+			if(sscanf(line, "%s%s", key, value) != 2)
+			{
+				continue;
+			}
+			setenv(key, value, 1);
+		}
+		fclose(in);
+	}
+}
+
+static int parsecommandline(int argc, char **argv, TransientWrapperData *T)
 {
 	int a;
 	int stop = 0;
@@ -218,6 +259,8 @@ TransientWrapperData *initialize(int argc, char **argv)
 
 	pgm = argv[index+1];
 	inputFile = argv[index+2];
+
+	updateenvironment(inputFile);
 
 	if(index < 0)
 	{

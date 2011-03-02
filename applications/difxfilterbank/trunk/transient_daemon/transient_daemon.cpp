@@ -10,7 +10,7 @@
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2010 Jul 23";
+const char verdate[] = "2011 Feb 03";
 
 const char dispatcherProgram[] = "transient_dispatcher";
 /* Command line params are: configfile jobid dmfile */
@@ -112,6 +112,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 		if(identifier[i] == '.')
 		{
 			identifier[i] = 0;
+
 			break;
 		}
 	}
@@ -129,14 +130,16 @@ int getDMGenCommand(const char *inputFile, char *command)
 	dp = newDifxParametersfromfile(inputFile);
 	if(!dp)
 	{
-		fprintf(stderr, "Cannot open %s for read\n", inputFile);
+		fprintf(stderr, "Cannot open %s for read.\n", inputFile);
+		
 		return -1;
 	}
 
 	r = DifxParametersfind(dp, 0, "FREQ ENTRIES");
 	if(r < 0)
 	{
-		fprintf(stderr, "Cannot find FREQ ENTRIES in %s\n", inputFile);
+		fprintf(stderr, "Cannot find FREQ ENTRIES in %s.\n", inputFile);
+		
 		return -2;
 	}
 	nFreq = atoi(DifxParametersvalue(dp, r));
@@ -145,7 +148,8 @@ int getDMGenCommand(const char *inputFile, char *command)
 		r = DifxParametersfind1(dp, r, "FREQ (MHZ) %d", i);
 		if(r < 0)
 		{
-			fprintf(stderr, "Cannot find FREQ (MHZ) %d in %s\n", i, inputFile);
+			fprintf(stderr, "Cannot find FREQ (MHZ) %d in %s.\n", i, inputFile);
+			
 			return -3;
 		}
 		freq = atof(DifxParametersvalue(dp, r));
@@ -158,8 +162,9 @@ int getDMGenCommand(const char *inputFile, char *command)
 	v = snprintf(command, CommandLength, "`%s %f`", DMGeneratorProgram, minFreq);
 	if(v >= CommandLength)
 	{
-		fprintf(stderr, "Error: CommandLength=%d is too small.  Needs to be > %d\n",
+		fprintf(stderr, "Error: CommandLength=%d is too small.  Needs to be > %d.\n",
 			CommandLength, v);
+		
 		return -3;
 	}
 
@@ -173,7 +178,7 @@ int runCommand(const char *command, int verbose)
 
 	if(verbose > 0)
 	{
-		printf("About to execute : %s \n", command);
+		printf("About to execute '%s'.\n", command);
 	}
 	pid = fork();
 	if(pid)
@@ -184,14 +189,14 @@ int runCommand(const char *command, int verbose)
 	{
 		if(verbose > 1)
 		{
-			printf("<forked and now executing>\n");
+			printf("<Forked and now executing.>\n");
 		}
 
 		v = system(command);
 
 		if(verbose > 1)
 		{
-			printf("<Execution compted.  Return value was %d\n", v);
+			printf("<Execution completed.  Return value was %d.>\n", v);
 		}
 		
 		exit(0);
@@ -242,14 +247,15 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 		v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
 		if(v != 0)
 		{
-			fprintf(stderr, "Error %d generating the DM command\n", v);
+			fprintf(stderr, "Error %d generating the DM command.\n", v);
+
 			return -1;
 		}
 
 		v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
 		if(v >= CommandLength)
 		{
-			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d)\n",
+			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n",
 				CommandLength, v);
 
 			return -2;
@@ -295,7 +301,7 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 				v = snprintf(command, CommandLength, "killall -INT %s", dispatcherProgram);
 				if(v >= CommandLength)
 				{
-					printf("Error: CommandLength=%d is too short (needs to be > %d\n", 
+					printf("Error: CommandLength=%d is too short (needs to be > %d)\n", 
 						CommandLength, v);
 				}
 				else
@@ -361,7 +367,7 @@ int transientdaemon(TransientDaemonState *state)
 		difxMessagePrint();
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Transient Daemon starting");
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Transient Daemon starting.");
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 
 	sock = difxMessageReceiveOpen();
@@ -375,7 +381,7 @@ int transientdaemon(TransientDaemonState *state)
 			v = handleMessage(testMessage, state);
 			if(v)
 			{
-				fprintf(stderr, "Error=%d handling command %s\n", v, testMessage);
+				fprintf(stderr, "Error=%d handling command '%s'.\n", v, testMessage);
 			}
 		}
 			
@@ -400,7 +406,7 @@ int transientdaemon(TransientDaemonState *state)
 		v = handleMessage(message, state);
 		if(v)
 		{
-			fprintf(stderr, "Error=%d handling command %s\n", v, message);
+			fprintf(stderr, "Error=%d handling command '%s'.\n", v, message);
 		}
 	}
 
@@ -448,7 +454,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
+				fprintf(stderr, "I'm not sure what to do with command line argument '%s'.\n",
 					argv[a]);
 
 				return 0;

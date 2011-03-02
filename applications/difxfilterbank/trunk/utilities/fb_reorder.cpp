@@ -4,7 +4,7 @@
    July, 2009. Randall Wayth.
    Feb, 2010. Update for new filterbank header format (not backwards compatible)
 
-    The VLBA fileterbank output is a binary file with a large (undetermined) number of chunks of data.
+    The VLBA filterbank output is a binary file with a large (undetermined) number of chunks of data.
     Each chunk has a 10-item header, which each item is a 4-byte signed int. The header consists of:
  0: marker (always = -1)
  1: datastream ID
