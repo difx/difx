@@ -81,7 +81,7 @@ static int DifxVisInitData(DifxVis *dv)
 	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
 	dv->sourceId = -1;
 	dv->scanId = -1;
-#warning FIXME: here add a similar thing for gateId?
+#warning "FIXME: here add a similar thing for gateId?"
 
 	return 0;
 }
@@ -119,13 +119,17 @@ static void DifxVisStartGlob(DifxVis *dv)
 
 int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 {
-	char suffixmatch1[32];
-	char suffixmatch2[32];
+	const int MaxSuffixLength=32;
+	char suffixmatch1[MaxSuffixLength];
+	char suffixmatch2[MaxSuffixLength];
+	int v1, v2;
+
 	if(dv->in)
 	{
 		fclose(dv->in);
 		dv->in = 0;
 	}
+
 	while(dv->in == 0)
 	{
 		dv->curFile++;
@@ -138,8 +142,12 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 			dv->jobId,
 			dv->curFile+1, dv->nFile,
 			dv->globbuf.gl_pathv[dv->curFile]);
-		sprintf(suffixmatch1, "s%04d.b%04d", phasecentre, pulsarBin);
-		sprintf(suffixmatch2, "s%04d.b%04d", 0, pulsarBin);
+		v1 = snprintf(suffixmatch1, MaxSuffixLength, "s%04d.b%04d", phasecentre, pulsarBin);
+		v2 = snprintf(suffixmatch2, MaxSuffixLength, "s%04d.b%04d", 0, pulsarBin);
+		if(v1 >= MaxSuffixLength || v2 >= MaxSuffixLength)
+		{
+			fprintf(stderr, "Developer error: DifxVisNextFile: MaxSuffixLength=%d too small: v1=%d v2=%d\n", MaxSuffixLength, v1, v2);
+		}
 		if(strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch1) != NULL ||
 		   strstr(dv->globbuf.gl_pathv[dv->curFile], suffixmatch2) != NULL)
 		{
@@ -148,8 +156,8 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 	}
 	if(!dv->in)
 	{
-		fprintf(stderr, "Error opening file : %s\n", 
-			dv->globbuf.gl_pathv[dv->curFile]);
+		fprintf(stderr, "Error opening file %s\n", dv->globbuf.gl_pathv[dv->curFile]);
+
 		return -1;
 	}
 
@@ -159,7 +167,7 @@ int DifxVisNextFile(DifxVis *dv, int pulsarBin, int phasecentre)
 DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentre)
 {
 	DifxVis *dv;
-	int i, c, v;
+	int i, j, c, v;
 	int polMask = 0;
 
 	dv = (DifxVis *)calloc(1, sizeof(DifxVis));
@@ -169,6 +177,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 		fprintf(stderr, "Error: newDifxVis: dv=calloc failed, size=%d\n",
 			(int)(sizeof(DifxVis)));
 		assert(dv);
+
 		exit(0);
 	}
 
@@ -177,6 +186,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 		fprintf(stderr, "Error: newDifxVis: jobId = %d, nJob = %d\n",
 			jobId, D->nJob);
 		free(dv);
+		
 		return 0;
 	}
 	
@@ -203,47 +213,33 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 		}
 		for(i = 0; i < D->nIF; i++)
 		{
-			if(D->config[c].IF[i].pol[0] == 'R' ||
-			   D->config[c].IF[i].pol[1] == 'R')
+			for(j = 0; j < D->config[c].IF[i].nPol; j++)
 			{
-				polMask |= 0x01;
-			}
-			if(D->config[c].IF[i].pol[0] == 'L' ||
-			   D->config[c].IF[i].pol[1] == 'L')
-			{
-				polMask |= 0x02;
-			}
-			if(D->config[c].IF[i].pol[0] == 'X' ||
-			   D->config[c].IF[i].pol[1] == 'X')
-			{
-				polMask |= 0x10;
-			}
-			if(D->config[c].IF[i].pol[0] == 'Y' ||
-			   D->config[c].IF[i].pol[1] == 'Y')
-			{
-				polMask |= 0x20;
+				polMask |= polMaskValue(D->config[c].IF[i].pol[j]);
 			}
 		}
 	}
 
 	/* check for polarization confusion */
-	if( ((polMask & 0x0F) > 0 && (polMask & 0xF0) > 0) || polMask == 0 )
+	if( ( (polMask & DIFXIO_POL_RL) != 0 && (polMask & DIFXIO_POL_XY) != 0 ) || 
+	    (polMask & DIFXIO_POL_ERROR) != 0 ||
+	    (polMask == 0) )
 	{
-		fprintf(stderr, "Error: bad polarization combinations : %x\n",
-			polMask);
+		fprintf(stderr, "Error: bad polarization combinations : %x\n", polMask);
 		deleteDifxVis(dv);
+
 		return 0;
 	}
 
-	if(polMask & 0x01)
+	if(polMask & DIFXIO_POL_R)
 	{
 		dv->polStart = -1;
 	}
-	else if(polMask & 0x02)
+	else if(polMask & DIFXIO_POL_L)
 	{
 		dv->polStart = -2;
 	}
-	else if(polMask & 0x10)
+	else if(polMask & DIFXIO_POL_X)
 	{
 		dv->polStart = -5;
 	}
@@ -265,6 +261,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 			v, (int)(sizeof(struct UVrow)),
 			dv->nComplex*dv->nFreq*dv->D->nPolar*dv->D->nOutChan);
 		deleteDifxVis(dv);
+		
 		return 0;
 	}
 
@@ -272,6 +269,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 	{
 		fprintf(stderr, "Info: newDifxVis: DifxVisNextFile(dv) < 0\n");
 		deleteDifxVis(dv);
+		
 		return 0;
 	}
 
@@ -309,8 +307,7 @@ void deleteDifxVis(DifxVis *dv)
 
 static int getPolProdId(const DifxVis *dv, const char *polPair)
 {
-	const char polSeq[8][4] = 
-		{"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
+	const char polSeq[8][4] = {"RR", "LL", "RL", "LR", "XX", "YY", "XY", "YX"};
 	int p;
 
 	for(p = 0; p < 8; p++)
@@ -420,6 +417,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
                         if(v < 3)
                         {
 				fprintf(stderr, "Error parsing header: got a return val of %d when reading uvw\n", v);
+
 				return HEADER_READ_ERROR;
                         }
                 }
@@ -459,8 +457,8 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		dv->pulsarBin = bin;
 	}
 
-#warning FIXME: look at sourceId in the record as a check
-#warning FIXME: look at configId in the record as a check
+#warning "FIXME: look at sourceId in the record as a check"
+#warning "FIXME: look at configId in the record as a check"
 
 	/* scanId at middle of integration */
 	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+iat, dv->jobId);

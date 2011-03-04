@@ -35,10 +35,10 @@
 
 //phase values from mpifxcorr currently have to be inverted to match FITS conversion
 
-#warning FIXME: review once we've got pcal amplitudes sorted
+#warning "FIXME: review once we've got pcal amplitudes sorted"
 const float pcaltiny = 1e-10;
 
-#warning FIXME: even this could be too small!
+#warning "FIXME: even this could be too small!"
 const int MaxLineLength=10000;
 
 int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
@@ -97,7 +97,7 @@ static int getNTone(const char *filename, double t1, double t2)
 	char *rv;
 	char antName1[DIFXIO_NAME_LENGTH];
 
-#warning FIXME: also check that nBand and nPol of each line in the file don't exceed D->nIF and D->nPol
+#warning "FIXME: also check that nBand and nPol of each line in the file don't exceed D->nIF and D->nPol"
 	in = fopen(filename, "r");
 	if(!in)
 	{
@@ -465,7 +465,7 @@ static int parseDifxPulseCal(const char *line,
 	{
 		for(i = 0; i < nBand*nTone; i++)
 		{
-#warning FIXME: should these be set to nan instead?
+#warning "FIXME: should these be set to nan instead?"
 			freqs[pol][i] = 0.0;
 			pulseCalRe[pol][i] = 0.0;
 			pulseCalIm[pol][i] = 0.0;
@@ -480,7 +480,7 @@ static int parseDifxPulseCal(const char *line,
 	/* Read in pulse cal information */
 	for(pol = 0; pol < D->nPol; pol++)
 	{
-#warning FIXME: double-check there's no possibility of pols getting swapped
+#warning "FIXME: double-check there's no possibility of pols getting swapped"
 		j = 0; /* band index within freqs, pulseCalRe and pulseCalIm */
 		for(band = 0; band < D->datastream[dsId].nRecFreq; band++)
 		{
