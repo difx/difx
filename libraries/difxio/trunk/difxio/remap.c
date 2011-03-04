@@ -108,3 +108,27 @@ int sizeofRemap(const int *Remap)
 
 	return n;
 }
+
+int reverseRemap(const int *Remap, int y)      /* find index corresponding to y */
+{
+	int i;
+
+	if(!Remap)
+	{
+		/* if no Remap array, assume the identity transform */
+
+		return y;
+	}
+	else
+	{
+		for(i = 0; Remap[i] >= 0; i++)
+		{
+			if(Remap[i] == y)
+			{
+				return y;
+			}
+		}
+	}
+
+	return -1;
+}

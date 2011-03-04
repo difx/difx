@@ -811,6 +811,7 @@ int *newRemap(int nItem);
 void deleteRemap(int *Remap);
 int *dupRemap(const int *Remap);
 int sizeofRemap(const int *Remap);
+int reverseRemap(const int *Remap, int y);	/* find index corresponding to y */
 
 #ifdef __cplusplus
 }
