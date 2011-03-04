@@ -4,6 +4,7 @@ Version 3.0.1
 * Add in Difx-based pulse cal data
 * Add in Difx-based tsys
 * Fix TSys values in the zoom band cases
+* Fix Pulse cal values in the zoom band cases
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:
