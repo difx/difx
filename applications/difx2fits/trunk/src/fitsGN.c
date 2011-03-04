@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
@@ -510,12 +511,14 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 	/* 1-based indices for FITS file */
 	int32_t antId1, freqId1, arrayId1;
 	const DifxConfig *config;
+
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
 		float f;
 	} nan;
-
 	nan.i32 = -1;
 
 	if(!D)

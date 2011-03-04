@@ -26,6 +26,7 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <strings.h>
@@ -39,7 +40,7 @@
 const float pcaltiny = 1e-10;
 
 #warning "FIXME: even this could be too small!"
-const int MaxLineLength=10000;
+const int MaxLineLength = 10000;
 
 int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
 {
@@ -130,6 +131,12 @@ static int getNTone(const char *filename, double t1, double t2)
 	return maxnTone;
 }
 
+inline int isUndefinedVLBA(double v)
+{
+	/* A VLBA specialty! */
+	return (v > 999.89 && v < 999.91);
+}
+
 /* The following function is for parsing a line of the 
  * station-extracted `pcal' file. */
 static int parsePulseCal(const char *line, 
@@ -154,6 +161,8 @@ static int parsePulseCal(const char *line,
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
 	
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
@@ -169,7 +178,8 @@ static int parsePulseCal(const char *line,
 	}
 	line += p;
 
-	if(*cableCal > 999.89 && *cableCal < 999.91)
+	/* A VLBA specialty! */
+	if(isUndefinedVLBA(*cableCal))
 	{
 		*cableCal = nan.f;
 	}
@@ -205,9 +215,9 @@ static int parsePulseCal(const char *line,
 		for(i = 0; i < array_MAX_TONES; i++)
 		{
 			freqs[pol][i] = 0.0;
-			pulseCalRe[pol][i] = 0.0;
-			pulseCalIm[pol][i] = 0.0;
-			stateCount[pol][i] = 0.0;
+			pulseCalRe[pol][i] = nan.f;
+			pulseCalIm[pol][i] = nan.f;
+			stateCount[pol][i] = nan.f;
 		}
 	}
 
@@ -231,8 +241,7 @@ static int parsePulseCal(const char *line,
 				{
 					continue;
 				}
-				v = DifxConfigRecBand2FreqPol(D, *configId,
-					antId, recBand, &freqId, &polId);
+				v = DifxConfigRecBand2FreqPol(D, *configId, antId, recBand, &freqId, &polId);
 				if(v >= 0)
 				{
 					if(freqId < 0 || polId < 0)
@@ -254,16 +263,15 @@ static int parsePulseCal(const char *line,
 						continue;
 					}
 					freqs[polId][tone + bandId*nt] = A*1.0e6;
-					if((B >= 999.89 && B < 999.91) ||
-					   (C >= 999.89 && C < 999.91))
+					if(isUndefinedVLBA(B) || isUndefinedVLBA(C))
 					{
-					  pulseCalRe[polId][tone + bandId*nt] = nan.f;
-					  pulseCalIm[polId][tone + bandId*nt] = nan.f;
+						pulseCalRe[polId][tone + bandId*nt] = nan.f;
+						pulseCalIm[polId][tone + bandId*nt] = nan.f;
 					}
 					else
 					{
-					  pulseCalRe[polId][tone + bandId*nt] = B*cos(C*M_PI/180.0);
-					  pulseCalIm[polId][tone + bandId*nt] = B*sin(C*M_PI/180.0);
+						pulseCalRe[polId][tone + bandId*nt] = B*cos(C*M_PI/180.0);
+						pulseCalIm[polId][tone + bandId*nt] = B*sin(C*M_PI/180.0);
 					}
 				}
 			}
@@ -285,8 +293,7 @@ static int parsePulseCal(const char *line,
 				{
 					if(freqId < 0 || polId < 0)
 					{
-						fprintf(stderr, "parsePulseCal(2): Developer error: derived "
-							"freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
+						fprintf(stderr, "parsePulseCal(2): Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
 							freqId, polId, recBand);
 						
 						continue;
@@ -343,6 +350,8 @@ static int parsePulseCalCableCal(const char *line,
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
 
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
@@ -354,11 +363,6 @@ static int parsePulseCalCableCal(const char *line,
 	if(n != 4)
 	{
 		return -1;
-	}
-
-	if(*cableCal > 999.89 && *cableCal < 999.91)
-	{
-		*cableCal = nan.f;
 	}
 
 	*time -= refDay;
@@ -387,7 +391,15 @@ static int parsePulseCalCableCal(const char *line,
 		return -3;
 	}
 	
-	*cableCal *= 1e-12;
+	if(isUndefinedVLBA(*cableCal))
+	{
+		*cableCal = nan.f;
+	}
+	else
+	{
+		/* convert from ps to s */
+		*cableCal *= 1e-12;
+	}
 
 	return 0;
 }
@@ -418,6 +430,8 @@ static int parseDifxPulseCal(const char *line,
 	double cableCal;
 	float timeInt;
 
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
@@ -465,15 +479,14 @@ static int parseDifxPulseCal(const char *line,
 	{
 		for(i = 0; i < nBand*nTone; i++)
 		{
-#warning "FIXME: should these be set to nan instead?"
 			freqs[pol][i] = 0.0;
-			pulseCalRe[pol][i] = 0.0;
-			pulseCalIm[pol][i] = 0.0;
+			pulseCalRe[pol][i] = nan.f;
+			pulseCalIm[pol][i] = nan.f;
 			pulseCalRate[pol][i] = 0.0;
 		}
 		for(i = 0; i < nBand*4; i++)
 		{
-			stateCount[pol][i] = 0.0;
+			stateCount[pol][i] = nan.f;
 		}
 	}
 
@@ -496,8 +509,7 @@ static int parseDifxPulseCal(const char *line,
 			for(tone = 0; tone < D->datastream[dsId].nRecTone; tone++)
 			{
 
-				n = sscanf(line, "%d%lf%f%f%n", 
-					&recBand, &A, &B, &C, &p);
+				n = sscanf(line, "%d%lf%f%f%n", &recBand, &A, &B, &C, &p);
 				if(n < 4)
 				{
 					printf("Warning: parseDifxPulseCal: Error scanning line\n");
@@ -519,22 +531,11 @@ static int parseDifxPulseCal(const char *line,
 				}
 				
 				freqs[pol][j*nTone + k] = (double) D->datastream[dsId].recToneFreq[tone]*1.0e6;
-				if(B < pcaltiny && B > -pcaltiny && C < pcaltiny && C > -pcaltiny)
-				{
-					pulseCalRe[pol][j*nTone + k] = nan.f;
-					pulseCalIm[pol][j*nTone + k] = nan.f;
-				}
-				else
+				if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 				{
 					pulseCalRe[pol][j*nTone + k] = B;
 					pulseCalIm[pol][j*nTone + k] = C;
 				}
-				k++;
-			}
-			while(k < nTone)
-			{
-				pulseCalRe[pol][j*nTone + k] = nan.f;
-				pulseCalIm[pol][j*nTone + k] = nan.f;
 				k++;
 			}
 			j++;
@@ -605,7 +606,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	char antName[DIFXIO_NAME_LENGTH];
 
-	/* Note: this particular form of NAN is needed for FITS-IDI compliance */
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
@@ -839,7 +841,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								}
 								v = parsePulseCalCableCal(line, a, &sourceId, &cableTime, &cableTimeInt, 
 									&cableCalOut, refDay, D, &configId, phasecentre);
-								//printf("\n%f %f %e", cableTime, cableTimeInt, cableCalOut);
 								if(v < 0)
 								{
 									continue;/*to next line in file*/
@@ -878,18 +879,13 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 				for(k = 0; k < nPol; k++)
 				{
-					FITS_WRITE_ARRAY(stateCount[k], p_fitsbuf,
-						4*nBand);
+					FITS_WRITE_ARRAY(stateCount[k], p_fitsbuf, 4*nBand);
 					if(nTone > 0)
 					{
-						FITS_WRITE_ARRAY(freqs[k],
-							p_fitsbuf, nTone*nBand);
-						FITS_WRITE_ARRAY(pulseCalRe[k], 
-							p_fitsbuf, nTone*nBand);
-						FITS_WRITE_ARRAY(pulseCalIm[k], 
-							p_fitsbuf, nTone*nBand);
-						FITS_WRITE_ARRAY(pulseCalRate[k], 
-							p_fitsbuf, nTone*nBand);
+						FITS_WRITE_ARRAY(freqs[k], p_fitsbuf, nTone*nBand);
+						FITS_WRITE_ARRAY(pulseCalRe[k], p_fitsbuf, nTone*nBand);
+						FITS_WRITE_ARRAY(pulseCalIm[k], p_fitsbuf, nTone*nBand);
+						FITS_WRITE_ARRAY(pulseCalRate[k], p_fitsbuf, nTone*nBand);
 					}
 				}
 
@@ -899,7 +895,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 				fitsWriteBinRow(out, fitsbuf);
-				//printf("Entry Written\n");
 			}/*end while*/
 			if(!nDifxTone)
 			{

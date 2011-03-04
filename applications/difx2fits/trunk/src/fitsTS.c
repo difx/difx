@@ -26,12 +26,14 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdlib.h>
 #include <sys/types.h>
 #include <string.h>
 #include "config.h"
 #include "difx2fits.h"
 #include "other.h"
+
 
 typedef struct
 {
@@ -40,8 +42,19 @@ typedef struct
 	float freq, tcalR, tcalL;
 } TCal;
 
+typedef struct
+{
+	double pOn;	/* power in the on state */
+	double wOn;	/* weight for the on state = 1/sigma^2 */
+	double pOff;	/* power in the off state */
+	double wOff;	/* weight for the on state = 1/sigma^2 */
+} SwitchedPower;
+
+
+/* This is somewhat ugly.  Perhaps move these internal to some function? */
 TCal *tCals = 0;
 int nTcal;
+
 
 int loadTcals()
 {
@@ -52,7 +65,6 @@ int loadTcals()
 	FILE *in;
 	int i;
 	int nAlloc = 0;
-
 
 	tcalFilename = getenv("TCAL_FILE");
 	if(tcalFilename == 0)
@@ -170,7 +182,8 @@ static void nanify(float X[2][array_MAX_BANDS])
 {
 	int i;
 
-	/* a portable way to set NaNs that is compatible with FITS */
+	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
+	 * wants, namely 0xFFFFFFFF */
 	union
 	{
 		int32_t i32;
@@ -210,14 +223,6 @@ static int parseTsys(const char *line, char *antName,
 	
 	return nRecBand;
 }
-
-typedef struct
-{
-	double pOn;	/* power in the on state */
-	double wOn;	/* weight for the on state = 1/sigma^2 */
-	double pOff;	/* power in the off state */
-	double wOff;	/* weight for the on state = 1/sigma^2 */
-} SwitchedPower;
 
 static int readSwitchedPower(const char *line, double *mjd1, double *mjd2, SwitchedPower *sp, int max)
 {
