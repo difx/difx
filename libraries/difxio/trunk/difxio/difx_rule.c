@@ -161,7 +161,7 @@ int writeDifxRuleArray(FILE *out, const DifxInput *D)
 
 int ruleAppliesToScanSource(const DifxRule *dr, const DifxScan *ds, const DifxSource *src)
 {
-#warning FIXME: need to eventually handle lists of calCodes and quals
+#warning "FIXME: need to eventually handle lists of calCodes and quals"
 	if((dr->sourceName.n > 0 && DifxStringArraycontains(&dr->sourceName, src->name) == 0) ||
 	   (dr->scanId.n > 0  && DifxStringArraycontains(&dr->scanId, ds->identifier) == 0) ||
 	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||

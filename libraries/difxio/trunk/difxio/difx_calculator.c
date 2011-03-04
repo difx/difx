@@ -211,9 +211,9 @@ int populateDifxCalculator(DifxCalculator *C, const DifxInput *D)
 
 		/* derived parameters */
 
-#warning FIXME: consider n phase center
-#warning FIXME: pulsar phase bins?
-#warning FIXME: does nChanAvg play a role in the following calculations?
+#warning "FIXME: consider n phase center"
+#warning "FIXME: pulsar phase bins?"
+#warning "FIXME: does nChanAvg play a role in the following calculations?"
 		c->subintsPerInt = c->tInt/c->tSubint;
 		c->visibilitySize = c->nPhaseCenter*(c->nAntenna + c->nBaseline)*(8*c->nChan*c->nBand*c->nPol*c->nPolPerBand/c->specAvg);
 		c->recDataRate = c->nBand*c->bandwidth*c->nPol*c->nBit*2.0;

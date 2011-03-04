@@ -136,7 +136,6 @@ static int writeDifxLineKey(FILE *out, const char *key)
 	return 0;
 }
 
-/* FIXME: change to prevent copy of value */
 int writeDifxLine(FILE *out, const char *key, const char *value)
 {
 	writeDifxLineKey(out, key);

@@ -796,6 +796,7 @@ void DifxInputAllocThreads(DifxInput *D, int nCore);
 void DifxInputSetThreads(DifxInput *D, int nThread);
 int DifxInputLoadThreads(DifxInput *D);
 int DifxInputWriteThreads(const DifxInput *D);
+int polMaskValue(char polName);
 
 /* Writing functions */
 int writeDifxIM(const DifxInput *D);

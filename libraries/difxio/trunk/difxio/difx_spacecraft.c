@@ -177,7 +177,7 @@ static void mergeSpacecraft(DifxSpacecraft *dest, const DifxSpacecraft *src1,
 {
 	snprintf(dest->name, DIFXIO_NAME_LENGTH, "%s", src1->name);
 	
-#warning FIXME: write me! for now just copy the first one found
+#warning "FIXME: write me! for now just copy the first one found"
 	copySpacecraft(dest, src1);
 }
 

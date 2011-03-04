@@ -33,10 +33,10 @@
 #include "difxio/difx_input.h"
 
 
-#warning FIXME: add condition structure
+#warning "FIXME: add condition structure"
 int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 {
-#warning FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?
+#warning "FIXME: startChan, nInChan and nOutChan are probably vestigial; clean them up?"
 	if(D1->specAvg != D2->specAvg ||
 	   //D1->startChan != D2->startChan ||
 	   //D1->nInChan != D2->nInChan ||
@@ -47,7 +47,7 @@ int areDifxInputsMergable(const DifxInput *D1, const DifxInput *D2)
 		return 0;
 	}
 
-#warning FIXME: check that D2 has no remappings as those would become lost
+#warning "FIXME: check that D2 has no remappings as those would become lost"
 	
 	return 1;
 }
@@ -232,7 +232,7 @@ DifxInput *mergeDifxInputs(const DifxInput *D1, const DifxInput *D2, int verbose
 	job->sourceIdRemap = sourceIdRemap;
 	job->spacecraftIdRemap = spacecraftIdRemap;
 
-#warning FIXME: should these functions be needed?
+#warning "FIXME: should these functions be needed?"
 	//simplifyDifxDatastreams(D);
 	//simplifyDifxBaselines(D);
 	

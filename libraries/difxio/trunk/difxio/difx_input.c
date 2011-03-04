@@ -366,7 +366,7 @@ static int *deriveAntMap(const DifxInput *D, DifxParameters *p, int *nTelescope)
 	return antMap;
 }
 
-static int polMaskValue(char polName)
+int polMaskValue(char polName)
 {
 	switch(polName)
 	{
@@ -1946,7 +1946,7 @@ static DifxInput *populateCalc(DifxInput *D, DifxParameters *cp)
 		}
 		D->antenna[a].offset[0]= atof(DifxParametersvalue(cp, rows[2]));
 
-#warning FIXME: In the future add other two axes of axis offset
+#warning "FIXME: In the future add other two axes of axis offset"
 		D->antenna[a].offset[1]= 0.0;
 		D->antenna[a].offset[2]= 0.0;
 
@@ -2439,7 +2439,7 @@ static DifxInput *populateIM(DifxInput *D, DifxParameters *mp)
 
 	for(s = 0; s < nScan; s++)
 	{
-#warning FIXME: validate source name, ...
+#warning "FIXME: validate source name, ..."
 
 		scan = D->scan + s;
 
