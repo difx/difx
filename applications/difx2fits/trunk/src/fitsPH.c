@@ -140,6 +140,69 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 	return n;
 }
 
+/* This function is not really well posed and although it looks like it
+ * belongs in difxio it should stay here until its fundamental problem is
+ * fixed.  That is that it implicitly assumes one datastream per antenna.
+ * to get around that, the specific datastream should be passed into this
+ * function.  --WFB
+ */
+int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configId, int recFreq, int polId, int maxCount)
+{
+	DifxConfig *dc;
+	DifxDatastream *dd = 0;
+	DifxFreq *df;
+	int n = 0;
+	int i, p;
+	char polName;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(recFreq < 0 || dsId >= D->nDatastream || dsId < 0 || configId >= D->nConfig || configId < 0)
+	{
+		return -2;
+	}
+
+	dc = D->config + configId;
+
+	if(polId >= dc->nPol)
+	{
+		return -1;
+	}
+
+	dd = D->datastream + dsId;
+
+	polName = dc->pol[polId];
+
+	if(recFreq >= dd->nRecFreq)
+	{
+		return -3;
+	}
+
+	df = D->freq + dd->recFreqId[recFreq];
+
+	for(i = 0; i < dc->nIF; i++)
+	{
+		if(isDifxIFInsideDifxFreq(dc->IF + i, df))
+		{
+			for(p = 0; p < dc->IF[i].nPol; p++)
+			{
+				if(dc->IF[i].pol[p] == polName)
+				{
+					if(n < maxCount)
+					{
+						IFs[n] = i;
+					}
+					n++;
+				}
+			}
+		}
+	}
+
+	return n;
+}
+
 int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
 {
 	int p, b, t;
@@ -503,12 +566,16 @@ static int parseDifxPulseCal(const char *line,
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
+	const DifxFreq *df;
+	DifxDatastream *ds;
 	int np, nb, nt, ns;
-	int nRecBand, recBand;
-	int n, p, i, j, k;
+	int nRecBand, nIF, recBand;
+	int IFs[array_MAX_BANDS];
+	int n, p, i, k;
 	int tone;
-	int pol, band;
-	int scanId;
+	int toneIndex;
+	int pol, recFreq;
+	int scanId, freqId;
 	double A;
 	float B, C;
 	double mjd;
@@ -543,7 +610,9 @@ static int parseDifxPulseCal(const char *line,
 		return -1;
 	}
 
-	scanId = DifxInputGetScanIdByAntennaId(D, mjd, D->datastream[dsId].antennaId);
+	ds = D->datastream + dsId;
+
+	scanId = DifxInputGetScanIdByAntennaId(D, mjd, ds->antennaId);
 	if(scanId < 0)
 	{	
 		return -3;
@@ -563,16 +632,13 @@ static int parseDifxPulseCal(const char *line,
 	
 	for(pol = 0; pol < 2; pol++)
 	{
-		for(i = 0; i < nBand*nTone; i++)
+		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
 		{
-			freqs[pol][i] = 0.0;
-			pulseCalRe[pol][i] = nan.f;
-			pulseCalIm[pol][i] = nan.f;
-			pulseCalRate[pol][i] = 0.0;
-		}
-		for(i = 0; i < nBand*4; i++)
-		{
-			stateCount[pol][i] = nan.f;
+			freqs[pol][toneIndex] = 0.0;
+			pulseCalRe[pol][toneIndex] = nan.f;
+			pulseCalIm[pol][toneIndex] = nan.f;
+			pulseCalRate[pol][toneIndex] = 0.0;
+			stateCount[pol][toneIndex] = nan.f;	/* the length of this array is the same as the others */
 		}
 	}
 
@@ -580,21 +646,27 @@ static int parseDifxPulseCal(const char *line,
 	for(pol = 0; pol < D->nPol; pol++)
 	{
 #warning "FIXME: double-check there's no possibility of pols getting swapped"
-		j = 0; /* band index within freqs, pulseCalRe and pulseCalIm */
-		for(band = 0; band < D->datastream[dsId].nRecFreq; band++)
+		
+		/* Here we procede with confidence that there are the correct number of recFreqs and tones within each */
+		for(recFreq = 0; recFreq < ds->nRecFreq; recFreq++)
 		{
-			if(j >= nBand)
+			if(recFreq >= nBand)
 			{
-				printf("Warning: parseDifxPulseCal: trying to read too many bands in pol %d band %d\n", pol, band);
+				printf("Warning: parseDifxPulseCal: trying to read too many bands in pol %d recFreq %d\n", pol, recFreq);
 				
 				break;
 			}
-			k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
-			/* set up pcal information for this band */
-			DifxDatastreamCalculatePhasecalTones(&(D->datastream[dsId]), &(D->freq[D->datastream[dsId].recFreqId[band]]));
-			for(tone = 0; tone < D->datastream[dsId].nRecTone; tone++)
-			{
 
+			freqId = ds->recFreqId[recFreq];
+			df = D->freq + freqId;
+
+			/* set up pcal information for this recFreq */
+			/* WFB: This is _really_ ugly here: we should not be modifying the DifxInput structure! */
+			DifxDatastreamCalculatePhasecalTones(ds, df);
+
+			k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
+			for(tone = 0; tone < ds->nRecTone; tone++)
+			{
 				n = sscanf(line, "%d%lf%f%f%n", &recBand, &A, &B, &C, &p);
 				if(n < 4)
 				{
@@ -603,6 +675,7 @@ static int parseDifxPulseCal(const char *line,
 					return -4;
 				}
 				line += p;
+
 				/* Only write out specified frequencies */
 				if(D->datastream[dsId].recToneOut[tone] == 0)
 				{
@@ -611,20 +684,29 @@ static int parseDifxPulseCal(const char *line,
 
 				if(k >= nTone)
 				{
-					printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d band %d\n", pol, band);
+					printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d recFreq %d\n", pol, recFreq);
 					
 					break;
 				}
-				
-				freqs[pol][j*nTone + k] = D->datastream[dsId].recToneFreq[tone]*1.0e6;
-				if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
+
+				nIF = DifxInputGetIFsByRecFreq(IFs, D, dsId, *configId, recFreq, pol, array_MAX_BANDS);
+
+				if(nIF > 0)
 				{
-					pulseCalRe[pol][j*nTone + k] = B;
-					pulseCalIm[pol][j*nTone + k] = C;
+					for(i = 0; i < nIF; i++)
+					{
+						toneIndex = IFs[i]*nTone + k;
+						
+						if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
+						{
+							freqs[pol][toneIndex] = D->datastream[dsId].recToneFreq[tone]*1.0e6;	/* MHz to Hz */
+							pulseCalRe[pol][toneIndex] = B;
+							pulseCalIm[pol][toneIndex] = C;
+						}
+					}
+					k++;
 				}
-				k++;
 			}
-			j++;
 		}
 	}
 
