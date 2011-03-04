@@ -279,6 +279,59 @@ void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df
 	}
 }
 
+/* Fills in provided array toneFreq[] (of max length maxCount)
+ * with either -1, meaning don't process this tone, or a positive
+ * number indicating the pulse cal tone frequency 
+ *
+ * Return the number of tones extracted by DiFX.
+ */
+int DifxDatastreamGetPhasecalTones(double *toneFreq, const DifxDatastream *dd, const DifxFreq *df, int maxCount)
+{
+	int nRecTone;
+	int toneFreq0;
+	double loFreq;
+	int i, t;
+
+	if(dd->nRecFreq == 0 || dd->phaseCalIntervalMHz == 0)
+	{
+		/* No tones to extract */
+		return 0;
+	}
+
+	/*find bottom end of baseband*/
+	loFreq = df->freq;
+	if(df->sideband == 'L')
+	{
+		loFreq -= df->bw;
+	}
+
+	/*lowest frequency pcal */
+	toneFreq0 = (((int)(loFreq + 0.01)) / dd->phaseCalIntervalMHz) * dd->phaseCalIntervalMHz;
+	if(toneFreq0 <= loFreq)
+	{
+		toneFreq0 += dd->phaseCalIntervalMHz;
+	}
+
+	/*calculate number of recorded tones*/
+	nRecTone = (int)((loFreq + df->bw - toneFreq0)/dd->phaseCalIntervalMHz) + 1;
+
+	for(t = 0; t < maxCount; t++)
+	{
+		toneFreq[t] = -1.0;	/* flag as not used */
+	}
+
+	for(t = 0; t < df->nTone; t++)
+	{
+		i = df->tone[t];
+		if(i >= 0 && i < maxCount)
+		{
+			toneFreq[i] = toneFreq0 + i*dd->phaseCalIntervalMHz;
+		}
+	}
+
+	return nRecTone;
+}
+
 void deleteDifxDatastreamInternals(DifxDatastream *dd)
 {
 	/* The following will deallocate several arrays */
