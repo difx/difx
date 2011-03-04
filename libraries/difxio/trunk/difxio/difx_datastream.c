@@ -230,7 +230,7 @@ void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones)
 }
 
 /* Must have rec band/freq and freq table filled in before calling this function */
-void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq * df)
+void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df)
 {
 	double lofreq;
 	int tonefreq, i, t;

@@ -559,7 +559,7 @@ void DifxDatastreamAllocBands(DifxDatastream *dd, int nRecBand);
 void DifxDatastreamAllocZoomFreqs(DifxDatastream *dd, int nZoomFreq);
 void DifxDatastreamAllocZoomBands(DifxDatastream *dd, int nZoomBand);
 void DifxDatastreamAllocPhasecalTones(DifxDatastream *dd, int nTones);
-void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, DifxFreq *df);
+void DifxDatastreamCalculatePhasecalTones(DifxDatastream *dd, const DifxFreq *df);
 void deleteDifxDatastreamInternals(DifxDatastream *dd);
 void deleteDifxDatastreamArray(DifxDatastream *dd, int nDatastream);
 void fprintDifxDatastream(FILE *fp, const DifxDatastream *dd);
