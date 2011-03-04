@@ -60,7 +60,7 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 	DifxFreq *df;
 	int n = 0;
 	int i, d, p;
-	int dsId;
+	int dsId, localFreqId;
 	char polName;
 
 	if(!D)
@@ -116,7 +116,8 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 		return -4;
 	}
 
-	df = D->freq + dd->recFreqId[recBand];
+	localFreqId = dd->recBandFreqId[recBand];
+	df = D->freq + dd->recFreqId[localFreqId];
 
 	for(i = 0; i < dc->nIF; i++)
 	{
@@ -124,11 +125,14 @@ int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId
 		{
 			for(p = 0; p < dc->IF[i].nPol; p++)
 			{
-				if(dc->IF[i].pol[p] == polName && n < maxCount)
+				if(dc->IF[i].pol[p] == polName)
 				{
-					IFs[n] = i;
+					if(n < maxCount)
+					{
+						IFs[n] = i;
+					}
+					n++;
 				}
-				n++;
 			}
 		}
 	}
@@ -246,6 +250,7 @@ static int parsePulseCal(const char *line,
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
 	float stateCount[2][array_MAX_TONES], 
+	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
@@ -255,6 +260,7 @@ static int parsePulseCal(const char *line,
 	int nRecBand, recBand;
 	int n, p, i;
 	int polId, tone, s;
+	int toneIndex;
 	int pol, band;
 	int scanId;
 	double A;
@@ -319,12 +325,13 @@ static int parsePulseCal(const char *line,
 	
 	for(pol = 0; pol < 2; pol++)
 	{
-		for(i = 0; i < array_MAX_TONES; i++)
+		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
 		{
-			freqs[pol][i] = 0.0;
-			pulseCalRe[pol][i] = nan.f;
-			pulseCalIm[pol][i] = nan.f;
-			stateCount[pol][i] = nan.f;
+			freqs[pol][toneIndex] = 0.0;
+			pulseCalRe[pol][toneIndex] = nan.f;
+			pulseCalIm[pol][toneIndex] = nan.f;
+			stateCount[pol][toneIndex] = nan.f;
+			pulseCalRate[pol][toneIndex] = 0.0;
 		}
 	}
 
@@ -356,14 +363,16 @@ static int parsePulseCal(const char *line,
 					{
 						for(i = 0; i < nIF; i++)
 						{
+							toneIndex = tone + IFs[i]*nt;
+
 							/* Subtlety here: in case multiple recBands correspond to the same FITS IF,
 							 * let the one corresponding to the first survive; this is the default 
 							 * elsewhere in difx2fits and other programs */
-							if(freqs[polId][tone + i*nt] != 0.0)
+							if(freqs[polId][toneIndex] == 0.0)
 							{
-								freqs[polId][tone + i*nt] = A*1.0e6;	/* convert to Hz from MHz */
-								pulseCalRe[polId][tone + i*nt] = B*cos(C*M_PI/180.0);
-								pulseCalIm[polId][tone + i*nt] = B*sin(C*M_PI/180.0);
+								freqs[polId][toneIndex] = A*1.0e6;	/* convert to Hz from MHz */
+								pulseCalRe[polId][toneIndex] = B*cos(C*M_PI/180.0);
+								pulseCalIm[polId][toneIndex] = B*sin(C*M_PI/180.0);
 							}
 						}
 					}
@@ -851,7 +860,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
 							&cableCal, freqs, pulseCalRe, pulseCalIm,
-							stateCount, refDay, D, &configId, phasecentre);
+							stateCount, pulseCalRate, refDay, D, &configId, phasecentre);
 						if(v < 0)
 						{
 							continue;/*to next line in file*/
