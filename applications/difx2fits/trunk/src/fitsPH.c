@@ -42,6 +42,100 @@ const float pcaltiny = 1e-10;
 #warning "FIXME: even this could be too small!"
 const int MaxLineLength = 10000;
 
+
+#warning "FIXME: the generation of this FITS table is quite broken with regard to multiple datastreams per antenna."
+
+
+
+/* This function is not really well posed and although it looks like it
+ * belongs in difxio it should stay here until its fundamental problem is
+ * fixed.  That is that it implicitly assumes one datastream per antenna.
+ * to get around that, the specific datastream should be passed into this
+ * function.  --WFB
+ */
+int DifxInputGetIFsByRecBand(int *IFs, int *polId, const DifxInput *D, int antId, int configId, int recBand, int maxCount)
+{
+	DifxConfig *dc;
+	DifxDatastream *dd = 0;
+	DifxFreq *df;
+	int n = 0;
+	int i, d, p;
+	int dsId;
+	char polName;
+
+	if(!D)
+	{
+		return -1;
+	}
+	if(recBand < 0 || antId >= D->nAntenna || antId < 0 || configId >= D->nConfig || configId < 0)
+	{
+		return -2;
+	}
+
+	dc = D->config + configId;
+
+	for(d = 0; d < dc->nDatastream; d++)
+	{
+		dsId = dc->datastreamId[d];
+		if(dsId >= 0 && dsId < D->nDatastream)
+		{
+			if(D->datastream[dsId].antennaId == antId)
+			{
+				dd = D->datastream + dsId;
+
+				break;
+			}
+		}
+	}
+
+	if(!dd)
+	{
+		return 0;
+	}
+
+	if(recBand >= dd->nRecBand)
+	{
+		return -3;
+	}
+
+	polName = dd->recBandPolName[recBand];
+
+	if(dc->nPol > 0 && dc->pol[0] == polName)
+	{
+		*polId = 0;
+	}
+	else if(dc->nPol > 1 && dc->pol[1] == polName)
+	{
+		*polId = 1;
+	}
+	else
+	{
+		fprintf(stderr, "Developer error: DifxInputGetIFsByRecBand: polName=%c not in configId=%d\n", 
+			polName, configId);
+
+		return -4;
+	}
+
+	df = D->freq + dd->recFreqId[recBand];
+
+	for(i = 0; i < dc->nIF; i++)
+	{
+		if(isDifxIFInsideDifxFreq(dc->IF + i, df))
+		{
+			for(p = 0; p < dc->IF[i].nPol; p++)
+			{
+				if(dc->IF[i].pol[p] == polName && n < maxCount)
+				{
+					IFs[n] = i;
+				}
+				n++;
+			}
+		}
+	}
+
+	return n;
+}
+
 int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
 {
 	int p, b, t;
@@ -67,6 +161,7 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 {
 	char filename[DIFXIO_FILENAME_LENGTH];
 	const char suffix[] = "/PCAL_";
+
 	if(*file)
 	{
 		fclose(*file);
@@ -75,7 +170,7 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 
 	sprintf(filename, "%s%s%s", D->job[jobId].outputFile,
 			 suffix, D->antenna[antId].name);
-	//printf("Opening File %s\n", filename);
+
 	*file = fopen(filename, "r");
 	if(!*file)
 	{
@@ -88,7 +183,11 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 	return 0;
 }
 	
-/* go through pcal file, determine maximum number of tones.*/
+/* Go through pcal file, determine maximum number of tones.
+ * Note that this one file can contain different numbers of tones at different times,
+ * so the output should only be used to set an upper limit on array sizes and
+ * things of that ilk.
+ */
 static int getNTone(const char *filename, double t1, double t2)
 {
 	FILE *in;
@@ -98,7 +197,6 @@ static int getNTone(const char *filename, double t1, double t2)
 	char *rv;
 	char antName1[DIFXIO_NAME_LENGTH];
 
-#warning "FIXME: also check that nBand and nPol of each line in the file don't exceed D->nIF and D->nPol"
 	in = fopen(filename, "r");
 	if(!in)
 	{
@@ -137,8 +235,9 @@ inline int isUndefinedVLBA(double v)
 	return (v > 999.89 && v < 999.91);
 }
 
-/* The following function is for parsing a line of the 
- * station-extracted `pcal' file. */
+/* The following function is for parsing a line of the station-extracted `pcal' file. 
+ * Here there is an implicit assumption that there is one datastream per antenna 
+ */
 static int parsePulseCal(const char *line, 
 	int antId,
 	int *sourceId,
@@ -150,10 +249,12 @@ static int parsePulseCal(const char *line,
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
-	int np, nb, nt, ns;
+	int IFs[array_MAX_BANDS];
+	int states[array_MAX_STATES];
+	int np, nb, nt, ns, nIF;
 	int nRecBand, recBand;
-	int n, p, i, v;
-	int freqId, polId, bandId, tone, state;
+	int n, p, i;
+	int polId, tone, s;
 	int pol, band;
 	int scanId;
 	double A;
@@ -177,6 +278,12 @@ static int parsePulseCal(const char *line,
 		return -1;
 	}
 	line += p;
+
+	if(ns > array_MAX_STATES)
+	{
+		fprintf(stderr, "Developer error: parsePulseCal: array_MAX_STATES=%d is to small (needs to be %d)\n",
+			array_MAX_STATES, ns);
+	}
 
 	/* A VLBA specialty! */
 	if(isUndefinedVLBA(*cableCal))
@@ -221,17 +328,17 @@ static int parsePulseCal(const char *line,
 		}
 	}
 
-	*cableCal *= 1e-12;
+	*cableCal *= 1e-12;	/* convert to s from ps */
 
 	/* Read in pulse cal information */
 	for(pol = 0; pol < np; pol++)
 	{
+		/* Loop over number of recorded bands in .pc file. */
 		for(band = 0; band < nb; band++)
 		{
 			for(tone = 0; tone < nt; tone++)
 			{
-				n = sscanf(line, "%d%lf%f%f%n", 
-					&recBand, &A, &B, &C, &p);
+				n = sscanf(line, "%d%lf%f%f%n", &recBand, &A, &B, &C, &p);
 				if(n < 4)
 				{
 					return -4;
@@ -241,37 +348,24 @@ static int parsePulseCal(const char *line,
 				{
 					continue;
 				}
-				v = DifxConfigRecBand2FreqPol(D, *configId, antId, recBand, &freqId, &polId);
-				if(v >= 0)
+				if(!isUndefinedVLBA(B) && !isUndefinedVLBA(C))
 				{
-					if(freqId < 0 || polId < 0)
+					/* get a list of IFs (which could be zoom bands) corresponding to a recBand */
+					nIF = DifxInputGetIFsByRecBand(IFs, &polId, D, antId, *configId, recBand, array_MAX_BANDS);
+					if(nIF > 0 && polId >= 0 && polId < 2)
 					{
-						fprintf(stderr, "Error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
-							freqId, polId, recBand);
-						continue;
-					}
-					else if(freqId >= D->nFreq)
-					{
-						fprintf(stderr, "parsePulseCal(1): Developer error: freqId=%d, nFreq=%d\n",
-							freqId, D->nFreq);
-						continue;
-					}
-					bandId = D->config[*configId].freqId2IF[freqId];
-					if(bandId < 0)
-					{
-						/* This sub-band is not to go to the FITS file */
-						continue;
-					}
-					freqs[polId][tone + bandId*nt] = A*1.0e6;
-					if(isUndefinedVLBA(B) || isUndefinedVLBA(C))
-					{
-						pulseCalRe[polId][tone + bandId*nt] = nan.f;
-						pulseCalIm[polId][tone + bandId*nt] = nan.f;
-					}
-					else
-					{
-						pulseCalRe[polId][tone + bandId*nt] = B*cos(C*M_PI/180.0);
-						pulseCalIm[polId][tone + bandId*nt] = B*sin(C*M_PI/180.0);
+						for(i = 0; i < nIF; i++)
+						{
+							/* Subtlety here: in case multiple recBands correspond to the same FITS IF,
+							 * let the one corresponding to the first survive; this is the default 
+							 * elsewhere in difx2fits and other programs */
+							if(freqs[polId][tone + i*nt] != 0.0)
+							{
+								freqs[polId][tone + i*nt] = A*1.0e6;	/* convert to Hz from MHz */
+								pulseCalRe[polId][tone + i*nt] = B*cos(C*M_PI/180.0);
+								pulseCalIm[polId][tone + i*nt] = B*sin(C*M_PI/180.0);
+							}
+						}
 					}
 				}
 			}
@@ -283,50 +377,32 @@ static int parsePulseCal(const char *line,
 		/* Read in state count information */
 		for(pol = 0; pol < np; pol++)
 		{
+			/* Loop over number of recorded bands in .pc file. */
 			for(band = 0; band < nb; band++)
 			{
 				n = sscanf(line, "%d%n", &recBand, &p);
 				line += p;
-				v = DifxConfigRecBand2FreqPol(D, *configId,
-					antId, recBand, &freqId, &polId);
-				for(state = 0; state < 4; state++)
-				{
-					if(freqId < 0 || polId < 0)
-					{
-						fprintf(stderr, "parsePulseCal(2): Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n",
-							freqId, polId, recBand);
-						
-						continue;
-					}
-					else if(freqId >= D->nFreq)
-					{
-						fprintf(stderr, "parsePulseCal(2): Developer error: freqId=%d, nFreq=%d\n",
-							freqId, D->nFreq);
 
-						continue;
-					}
-					bandId = D->config[*configId].freqId2IF[freqId];
-					if(bandId < 0)
+				for(s = 0; s < ns; s++)
+				{
+					n = sscanf(line, "%f%n", &B, &p);
+					if(n < 1)
 					{
-						/* This sub-band is not to go to the FITS file */
-						continue;
+						return -5;
 					}
-					for(state = 0; state < 4; state++)
+					line += p;
+					states[s] = B;
+				}
+
+				nIF = DifxInputGetIFsByRecBand(IFs, &polId, D, antId, *configId, recBand, array_MAX_BANDS);
+				if(nIF > 0 && polId >= 0 && polId < 2)
+				{
+					for(s = 0; s < ns; s++)
 					{
-						if(state < ns)
+						for(i = 0; i < nIF; i++)
 						{
-							n = sscanf(line, "%f%n", &B, &p);
-							if(n < 1)
-							{
-								return -5;
-							}
-							line += p;
+							stateCount[polId][s + i*4] = states[s];
 						}
-						else
-						{
-							B = 0.0;
-						}
-						stateCount[polId][state + bandId*4] = B;
 					}
 				}
 			}
@@ -335,6 +411,7 @@ static int parsePulseCal(const char *line,
 
 	return 0;
 }
+
 /* The following function is for parsing a line of the 
  * station-extracted `pcal' file and extracting only the cable cal
  * value */
@@ -530,7 +607,7 @@ static int parseDifxPulseCal(const char *line,
 					break;
 				}
 				
-				freqs[pol][j*nTone + k] = (double) D->datastream[dsId].recToneFreq[tone]*1.0e6;
+				freqs[pol][j*nTone + k] = D->datastream[dsId].recToneFreq[tone]*1.0e6;
 				if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 				{
 					pulseCalRe[pol][j*nTone + k] = B;
@@ -540,7 +617,6 @@ static int parseDifxPulseCal(const char *line,
 			}
 			j++;
 		}
-		/* n.b. unused bands at the end will be set to zero rather than NaN */
 	}
 
 	return 0;
@@ -668,18 +744,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	if(nTone*nBand > array_MAX_TONES)
 	{
-		printf("Developer Error: nTone*nBand exceeds array_MAX_TONES\n");
+		printf("Developer Error: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n",
+			nTone, nBand, array_MAX_TONES);
 
 		return D;
 	}
 	if(nTone < 1)
 	{
 		return D;
-	}
-
-	if(nTone < 2)
-	{
-		printf("Warning: nTone <2 \n");
 	}
 
 	sprintf(stateFormFloat, "%dE", 4*nBand);

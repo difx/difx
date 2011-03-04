@@ -32,9 +32,10 @@
 #include <difxio/difx_input.h>
 #include "fits.h"
 
-#define array_MAX_BANDS 32
-#define array_MAX_TONES	64
-#define MAX_INPUT_FILES 4096
+#define array_MAX_BANDS		32
+#define array_MAX_TONES		64
+#define array_MAX_STATES	16
+#define MAX_INPUT_FILES		4096
 
 /* This sets leap secons if for some reason they were not otherwise conveyed */
 #define DEFAULT_IAT_UTC 33
