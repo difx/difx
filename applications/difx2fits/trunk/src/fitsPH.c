@@ -228,15 +228,27 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 {
 	char filename[DIFXIO_FILENAME_LENGTH];
 	const char suffix[] = "/PCAL_";
+	int jobAntId;
 
 	if(*file)
 	{
-		fclose(*file);
-		*file = 0;
+		if(*file)
+		{
+			fclose(*file);
+			*file = 0;
+		}
+	}
+
+	jobAntId = reverseRemap(D->job[jobId].antennaIdRemap, antId);
+	if(jobAntId < 0 || jobAntId >= D->nAntenna)
+	{
+		/* This antenna must not have participated in this job */
+
+		return -1;
 	}
 
 	sprintf(filename, "%s%s%s", D->job[jobId].outputFile,
-			 suffix, D->antenna[antId].name);
+			 suffix, D->antenna[jobAntId].name);
 
 	*file = fopen(filename, "r");
 	if(!*file)
@@ -816,7 +828,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	else
 	{
-		in = 0;
 		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
 	}
 
@@ -901,7 +912,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				v = getDifxPcalFile(D, a, j, &in2);
 				if(v != 0)
 				{
-					/*Error message given in getDifxPcalFile*/
+					/* Error message given in getDifxPcalFile if needed */
 					continue;/*to next job*/
 				}
 			}
