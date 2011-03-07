@@ -941,6 +941,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						F.format = "MKIV";
 					}
+					else if(F.format == "Mark5B")
+					{
+						F.format = "MARK5B";
+					}
 				}
 				else
 				{

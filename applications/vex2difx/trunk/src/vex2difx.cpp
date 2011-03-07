@@ -953,7 +953,8 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 		}
 		if(P->rules[i].modeName.size() > 0)
 		{
-			cerr << "Cannot rule on modeName at this time; ignoring." << endl;
+			// Note: this is not a problem as the mode selection is being done by vex2difx
+			//cerr << "Cannot rule on modeName at this time; ignoring." << endl;
 		}
 		if(P->rules[i].calCode.size() > 0)
 		{
