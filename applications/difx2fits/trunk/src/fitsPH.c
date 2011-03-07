@@ -253,11 +253,10 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 	*file = fopen(filename, "r");
 	if(!*file)
 	{
-		fprintf(stderr, "Error opening file : %s\n", filename);
+		fprintf(stderr, "\nError opening file : %s\n", filename);
 
 		return -1;
 	}
-	printf("      Opened File %s\n", filename);
 	
 	return 0;
 }
@@ -578,6 +577,7 @@ static int parseDifxPulseCal(const char *line,
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
+	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	int np, nb, nt, ns;
@@ -691,14 +691,18 @@ static int parseDifxPulseCal(const char *line,
 					line += p;
 
 					/* Only write out specified frequencies */
-					if(toneFreq[tone] > 0.0)
+					if(toneFreq[tone] < 0.0)
 					{
 						continue;
 					}
 
 					if(k >= nTone)
 					{
-						printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d recFreq %d\n", pol, recFreq);
+						if(tooMany[pol][recFreq] == 0)
+						{
+							printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d recFreq %d\n", pol, recFreq);
+						}
+						tooMany[pol][recFreq]++;
 						
 						break;
 					}
@@ -839,7 +843,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	else
 	{
-		printf("    DiFX-extracted tones available\n");
+		printf("    DiFX-extracted tones available:");
 	}
 
 	if(nDifxTone > nTone)
@@ -896,7 +900,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
-		printf("    Processing %s\n", D->antenna[a].name);
+		printf(" %s", D->antenna[a].name);
 
 		for(j = 0; j < D->nJob; j++)
 		{
@@ -1089,6 +1093,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 
 	free(fitsbuf);
+
+	if(nDifxTone > 0)
+	{	
+		printf("\n");
+	}
 
 	return D;
 }
