@@ -323,7 +323,7 @@ static int parsePulseCal(const char *line,
 	double freqs[2][array_MAX_TONES], 
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
-	float stateCount[2][array_MAX_TONES], 
+	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
@@ -404,8 +404,11 @@ static int parsePulseCal(const char *line,
 			freqs[pol][toneIndex] = 0.0;
 			pulseCalRe[pol][toneIndex] = nan.f;
 			pulseCalIm[pol][toneIndex] = nan.f;
-			stateCount[pol][toneIndex] = nan.f;
 			pulseCalRate[pol][toneIndex] = 0.0;
+		}
+		for(s = 0; s < array_MAX_STATES*array_MAX_BANDS; s++)
+		{
+			stateCount[pol][s] = nan.f;
 		}
 	}
 
@@ -572,12 +575,13 @@ static int parseDifxPulseCal(const char *line,
 	double freqs[2][array_MAX_TONES], 
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
-	float stateCount[2][array_MAX_TONES],
+	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
 	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
+	static int tooFew[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	int np, nb, nt, ns;
@@ -651,7 +655,11 @@ static int parseDifxPulseCal(const char *line,
 			pulseCalRe[pol][toneIndex] = nan.f;
 			pulseCalIm[pol][toneIndex] = nan.f;
 			pulseCalRate[pol][toneIndex] = 0.0;
-			stateCount[pol][toneIndex] = nan.f;	/* the length of this array is the same as the others */
+		}
+		for(i = 0; i < array_MAX_STATES*array_MAX_BANDS; i++)
+		{
+			/* No state counts are available for difx extracted pcals */
+			stateCount[pol][i] = nan.f;
 		}
 	}
 
@@ -725,6 +733,16 @@ static int parseDifxPulseCal(const char *line,
 						k++;
 					}
 				}
+				if(k < nTone)
+				{
+					if(tooFew[pol][recFreq] == 0)
+					{
+						printf("Warning: parseDifxPulseCal: Not enough extracted tones for pol %d recFreq %d\n", pol, recFreq);
+					}
+					tooFew[pol][recFreq]++;
+					
+					break;
+				}
 			}
 		}
 	}
@@ -777,7 +795,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	double freqs[2][array_MAX_TONES];
 	float pulseCalRe[2][array_MAX_TONES];
 	float pulseCalIm[2][array_MAX_TONES];
-	float stateCount[2][array_MAX_TONES];
+	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
 	int configId;
 	int antId, sourceId;
@@ -793,13 +811,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char antName[DIFXIO_NAME_LENGTH];
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
-	 * wants, namely 0xFFFFFFFF */
+	 * wants, namely 0xFFFFFFFF, or 0xFFFFFFFFFFFFFFFF for double */
 	union
 	{
-		int32_t i32;
+		int64_t i64;
+		double d;
 		float f;
 	} nan;
-	nan.i32 = -1;
+	nan.i64 = -1;
 
 	if(D == 0)
 	{
@@ -1034,7 +1053,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						else
 						{
-							cableCal = nan.f;
+							cableCal = nan.d;
 						}
 					}
 					else
@@ -1050,13 +1069,13 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 				p_fitsbuf = fitsbuf;
 			
-				FITS_WRITE_ITEM (time, p_fitsbuf);
-				FITS_WRITE_ITEM (timeInt, p_fitsbuf);
-				FITS_WRITE_ITEM (sourceId1, p_fitsbuf);
-				FITS_WRITE_ITEM (antId1, p_fitsbuf);
-				FITS_WRITE_ITEM (arrayId1, p_fitsbuf);
-				FITS_WRITE_ITEM (freqId1, p_fitsbuf);
-				FITS_WRITE_ITEM (cableCal, p_fitsbuf);
+				FITS_WRITE_ITEM(time, p_fitsbuf);
+				FITS_WRITE_ITEM(timeInt, p_fitsbuf);
+				FITS_WRITE_ITEM(sourceId1, p_fitsbuf);
+				FITS_WRITE_ITEM(antId1, p_fitsbuf);
+				FITS_WRITE_ITEM(arrayId1, p_fitsbuf);
+				FITS_WRITE_ITEM(freqId1, p_fitsbuf);
+				FITS_WRITE_ITEM(cableCal, p_fitsbuf);
 
 				for(k = 0; k < nPol; k++)
 				{
