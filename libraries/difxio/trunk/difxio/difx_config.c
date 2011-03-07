@@ -113,6 +113,11 @@ void deleteDifxConfigInternals(DifxConfig *dc)
 		free(dc->ant2dsId);
 		dc->ant2dsId = 0;
 	}
+	if(dc->freqIdUsed)
+	{
+		free(dc->freqIdUsed);
+		dc->freqIdUsed = 0;
+	}
 }
 
 void deleteDifxConfigArray(DifxConfig *dc, int nConfig)
