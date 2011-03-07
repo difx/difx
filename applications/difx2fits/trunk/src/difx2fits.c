@@ -44,17 +44,12 @@ const double DefaultDifxTsysInterval = 60.0;	/* sec */
 
 static int usage(const char *pgm)
 {
-	fprintf(stderr, "\n%s ver. %s   %s\n\n",
-		program, version, author);
-	fprintf(stderr, "A program to convert DiFX format data to "
-		"FITS-IDI\n\n");
-	fprintf(stderr, "Usage : %s [options] <baseFilename1> "
-		"[<baseFilename2> ... ] [<outfile>]\n\n", pgm);
-	fprintf(stderr, "It assumed that SWIN format visibility file(s) "
-		"to be converted live\n");
+	fprintf(stderr, "\n%s ver. %s   %s\n\n", program, version, author);
+	fprintf(stderr, "A program to convert DiFX format data to FITS-IDI\n\n");
+	fprintf(stderr, "Usage : %s [options] <baseFilename1> [<baseFilename2> ... ] [<outfile>]\n\n", pgm);
+	fprintf(stderr, "It assumed that SWIN format visibility file(s) to be converted live\n");
 	fprintf(stderr, "in directory <baseFilename>.difx/\n");
-	fprintf(stderr, "It is also assumed that at least 3 additional "
-		"files exist:\n");
+	fprintf(stderr, "It is also assumed that at least 3 additional files exist:\n");
 	fprintf(stderr, "  <baseFilename>.input    DiFX input file\n");
 	fprintf(stderr, "  <baseFilename>.uvw      DiFX UVW file\n");
 	fprintf(stderr, "  <baseFilename>.delay    DiFX delay model\n\n");
@@ -65,17 +60,13 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  <baseFilename>.flag     Antenna-based flagging\n\n");
 	fprintf(stderr, "VLBA calibration transfer will produce 4 files:\n");
 	fprintf(stderr, "  flag, tsys, pcal, weather\n");
-	fprintf(stderr, "If these are present in the current directory, they "
-		"will be used to\n");
+	fprintf(stderr, "If these are present in the current directory, they will be used to\n");
 	fprintf(stderr, "form the FL, TS, PH and WR tables\n\n");
-	fprintf(stderr, "If env variable GAIN_CURVE_PATH is set, gain curves "
-		"will be looked for\n");
+	fprintf(stderr, "If env variable GAIN_CURVE_PATH is set, gain curves will be looked for\n");
 	fprintf(stderr, "and turned into a GN table\n\n");
 		
-	fprintf(stderr, "The output file <outfile> will be written in "
-		"FITS-IDI format nearly\n");
-	fprintf(stderr, "identical to that made at the VLBA HW correlator.  "
-		"The first two optional\n");
+	fprintf(stderr, "The output file <outfile> will be written in FITS-IDI format nearly\n");
+	fprintf(stderr, "identical to that made at the VLBA HW correlator.  The first two optional\n");
 	fprintf(stderr, "files are required for full model accountability.\n");
 	fprintf(stderr, "\noptions can include:\n");
 	fprintf(stderr, "  --help\n");
@@ -147,8 +138,7 @@ struct CommandLineOptions *newCommandLineOptions()
 {
 	struct CommandLineOptions *opts;
 
-	opts = (struct CommandLineOptions *)calloc(1, 
-		sizeof(struct CommandLineOptions));
+	opts = (struct CommandLineOptions *)calloc(1, sizeof(struct CommandLineOptions));
 	
 	opts->writemodel = 1;
 	opts->sniffTime = DefaultSniffInterval;
@@ -169,12 +159,17 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 		{
 			for(i = 0; i < opts->nBaseFile; i++)
 			{
-				free(opts->baseFile[i]);
+				if(opts->baseFile[i])
+				{
+					free(opts->baseFile[i]);
+					opts->baseFile[i] = 0;
+				}
 			}
 		}
 		if(opts->fitsFile)
 		{
 			free(opts->fitsFile);
+			opts->fitsFile = 0;
 		}
 		free(opts);
 	}
@@ -341,8 +336,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			}
 			else
 			{
-				opts->baseFile[opts->nBaseFile] = 
-					strdup(argv[i]);
+				opts->baseFile[opts->nBaseFile] = strdup(argv[i]);
 				opts->nBaseFile++;
 			}
 		}
@@ -707,7 +701,11 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		{
 			D = D2;
 		}
-		opts->baseFile[i] = 0;
+		if(opts->baseFile[i])
+		{
+			free(opts->baseFile[i]);
+			opts->baseFile[i] = 0;
+		}
 		nConverted++;
 		if(opts->dontCombine)
 		{
@@ -858,8 +856,7 @@ int main(int argc, char **argv)
 		nFits++;
 	}
 
-	printf("%d of %d jobs converted to %d FITS files\n", nConverted,
-		opts->nBaseFile, nFits);
+	printf("%d of %d jobs converted to %d FITS files\n", nConverted, opts->nBaseFile, nFits);
 
 	if(nConverted != opts->nBaseFile)
 	{

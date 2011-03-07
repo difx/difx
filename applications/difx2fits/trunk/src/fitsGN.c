@@ -455,6 +455,8 @@ int loadGainCurves(GainRow *G)
 		GainRowsSetTimeBand(G, nRow);
 	}
 
+	globfree(&files);
+
 	return nRow;
 }
 

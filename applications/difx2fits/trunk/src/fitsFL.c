@@ -174,7 +174,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	int configId = 0;	/* currently only support 1 config */
 	int antennaId;
 	char polName;
-	int freqId, polId;
+	int freqId;
 	FILE *in;
 	FlagDatum FL;
 	const DifxConfig *dc;
@@ -260,8 +260,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			 * polarization index (polId).  Both are zero-based
 			 * numbers, with -1 implying "all values"
 			 */
-			v = DifxConfigRecBand2FreqPol(D, configId,
-				antennaId, recBand, &freqId, &polId);
+			v = DifxConfigRecBand2FreqPol(D, configId, antennaId, recBand, &freqId, &FL.polId);
 			if(v < 0)
 			{
 				continue;
@@ -283,7 +282,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			else
 			{
 				/* This shouldn't happen -- a recBand not associated with a Freq? */
-				fprintf(stderr, "DifxInput2FitsFL: Developer error: DifxConfigRecChan2FreqPol returned freqId = %d polId = %d\n", freqId, polId);
+				fprintf(stderr, "DifxInput2FitsFL: Developer error: DifxConfigRecChan2FreqPol returned freqId = %d polId = %d\n", freqId, FL.polId);
 				continue;
 			}
 
@@ -308,8 +307,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 
 			FL.baselineId1[0] = antennaId + 1;
 
-			writeFLrow(out, fitsbuf, nRowBytes, 
-				columns, nColumn, &FL);
+			writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
 		}
 	}
 
@@ -352,7 +350,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			polName = ds->recBandPolName[c];
 			if(ds->recBandFreqId[c] < 0 || ds->recBandFreqId[c] >= ds->nRecFreq)
 			{
-				fprintf(stderr, "Error - recBandFreqId[%d] is %d, nRecFreq is %d\n",
+				fprintf(stderr, "Error: recBandFreqId[%d] is %d, nRecFreq is %d\n",
 				        c, ds->recBandFreqId[c], ds->nRecFreq);
 				continue;
 			}
@@ -383,8 +381,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				{
 					FL.bandId = i;
 					FL.polId = p;
-					writeFLrow(out, fitsbuf, nRowBytes,
-						columns, nColumn, &FL);
+					writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
 				}
 			}
 		}
