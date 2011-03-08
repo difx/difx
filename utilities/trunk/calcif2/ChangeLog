@@ -2,6 +2,7 @@ calcif2
 ~~~~~~~
 Version 2.0.1
 * Post version 2.0
+* Some cleanup, valgrind compliance, improved error messages, improved use of difxio constants
 
 Version 2.0
 * Writes im files only (no delay/uvw/rate) and allows multi-phase centre

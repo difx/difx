@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -56,8 +85,8 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	}
 	else
 	{
-		fprintf(stderr, "Not enough eop values present (%d < %d)\n", 
-			D->nEOP, MAX_EOPS);
+		fprintf(stderr, "Not enough eop values present (%d < %d)\n", D->nEOP, MAX_EOPS);
+
 		return -1;
 	}
 
@@ -66,14 +95,14 @@ int difxCalcInit(const DifxInput *D, CalcParams *p)
 	   D->eop[0].mjd          > D->mjdStop)
 	{
 		fprintf(stderr, "EOPs don't bracket the observation.\n");
+
 		return -2;
 	}
 
 	return 0;
 }
 
-static int calcSpacecraftPosition(const DifxInput *D,
-	struct getCALC_arg *request, int spacecraftId)
+static int calcSpacecraftPosition(const DifxInput *D, struct getCALC_arg *request, int spacecraftId)
 {
 	DifxSpacecraft *sc;
 	sixVector pos;
@@ -112,8 +141,7 @@ static int calcSpacecraftPosition(const DifxInput *D,
 	return 0;
 }
 
-static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
-	const CalcParams *p)
+static int callCalc(struct getCALC_arg *request, struct CalcResults *results, const CalcParams *p)
 {
 	double ra, dec;
 	int i;
@@ -143,12 +171,13 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 	if(clnt_stat != RPC_SUCCESS)
 	{
 		fprintf(stderr, "clnt_call failed!\n");
+
 		return -1;
 	}
 	if(results->res[0].error)
 	{
-		fprintf(stderr,"An error occured: %s\n",
-			results->res[0].getCALC_res_u.errmsg);
+		fprintf(stderr,"Error: callCalc: %s\n", results->res[0].getCALC_res_u.errmsg);
+
 		return -2;
 	}
 
@@ -169,12 +198,13 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 		if(clnt_stat != RPC_SUCCESS)
 		{
 			fprintf(stderr, "clnt_call failed!\n");
+
 			return -1;
 		}
 		if(results->res[1].error)
 		{
-			fprintf(stderr,"An error occured: %s\n",
-				results->res[1].getCALC_res_u.errmsg);
+			fprintf(stderr,"Error: callCalc: %s\n", results->res[1].getCALC_res_u.errmsg);
+
 			return -2;
 		}
 
@@ -190,12 +220,13 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 		if(clnt_stat != RPC_SUCCESS)
 		{
 			fprintf(stderr, "clnt_call failed!\n");
+
 			return -1;
 		}
 		if(results->res[2].error)
 		{
-			fprintf(stderr,"An error occured: %s\n",
-				results->res[2].getCALC_res_u.errmsg);
+			fprintf(stderr,"Error: callCalc: %s\n", results->res[2].getCALC_res_u.errmsg);
+
 			return -2;
 		}
 		
@@ -206,8 +237,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results,
 	return 0;
 }
 
-int extractCalcResults(DifxPolyModel *im, int index, 
-	struct CalcResults *results)
+static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *results)
 {
 	struct getCALC_res *res0, *res1, *res2;
 	double d, dx, dy;
@@ -260,7 +290,7 @@ int extractCalcResults(DifxPolyModel *im, int index,
 	return rv;
 }
 
-void computePolyModel(DifxPolyModel *im, double deltaT)
+static void computePolyModel(DifxPolyModel *im, double deltaT)
 {
 	computePoly(im->delay, im->order+1, deltaT);
 	computePoly(im->dry,   im->order+1, deltaT);
@@ -299,9 +329,13 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	mjd = (int)(job->mjdStart);
 	jobStart = (int)(86400.0*(job->mjdStart - mjd) + 0.5);
         if(phasecentre == 0) // this is the pointing centre
+	{
 		sourceId = scan->pointingCentreSrc;
+	}
 	else
+	{
 		sourceId = scan->phsCentreSrcs[phasecentre-1];
+	}
 	source = D->source + sourceId;
 	subInc = p->increment/(double)(p->order);
 	request = &(p->request);
@@ -341,19 +375,19 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 			{
 				if(spacecraftId >= 0)
 				{
-					v = calcSpacecraftPosition(D, 
-						request, spacecraftId);
+					v = calcSpacecraftPosition(D, request, spacecraftId);
 					if(v < 0)
 					{
-						printf("Spacecraft %d table out of time range\n", spacecraftId);
+						printf("Error: antennaCalc: Spacecraft %d table out of time range\n", spacecraftId);
+
 						return -1;
 					}
 				}
 				v = callCalc(request, &results, p);
 				if(v < 0)
 				{
-					printf("Bad: callCalc = %d\n", v);
-					/* oops -- an error! */
+					printf("Error: antennaCalc: callCalc = %d\n", v);
+					
 					return -1;
 				}
 			}
@@ -399,8 +433,7 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 
 	scan->nAntenna = D->nAntenna;
 
-	scan->im = (DifxPolyModel ***)calloc(scan->nAntenna, 
-		sizeof(DifxPolyModel **));
+	scan->im = (DifxPolyModel ***)calloc(scan->nAntenna, sizeof(DifxPolyModel **));
 
 	mjd = (int)(job->mjdStart);
 	jobStart = (int)(86400.0*(job->mjdStart - mjd) + 0.5);
@@ -418,12 +451,10 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 
 	for(antId = 0; antId < scan->nAntenna; antId++)
 	{
-		scan->im[antId] = (DifxPolyModel **)calloc(scan->nPhaseCentres+1,
-				sizeof(DifxPolyModel*));
+		scan->im[antId] = (DifxPolyModel **)calloc(scan->nPhaseCentres+1, sizeof(DifxPolyModel*));
 		for(k=0;k<scan->nPhaseCentres+1;k++)
 		{
-			scan->im[antId][k] = (DifxPolyModel *)calloc(nInt, 
-				sizeof(DifxPolyModel));
+			scan->im[antId][k] = (DifxPolyModel *)calloc(nInt, sizeof(DifxPolyModel));
 			im = scan->im[antId][k];
 			sec = int1*p->increment;
 			mjd = (int)(job->mjdStart);
@@ -486,8 +517,8 @@ int difxCalc(DifxInput *D, CalcParams *p)
 		}
 		if(scan->im)
 		{
-			fprintf(stderr, "Error: scan %d: model already "
-				"exists\n", scanId);
+			fprintf(stderr, "Error: difxCalc: scan %d: model already exists\n", scanId);
+
 			return -2;
 		}
 		if(scanId == D->nScan - 1)

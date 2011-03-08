@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -26,7 +55,7 @@ typedef struct
 	int force;
 	int doall;
 	double delta;	/* derivative step size, radians. <0 for noaber */
-	char calcServer[32];
+	char calcServer[DIFXIO_NAME_LENGTH];
 	int calcProgram;
 	int calcVersion;
 	int nFile;
@@ -85,6 +114,7 @@ int usage()
 		"command line\n");
 	fprintf(stderr, "      overrides all.\n");
 	fprintf(stderr, "\n");
+
 	return 0;
 }
 
@@ -109,7 +139,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 {
 	CommandLineOptions *opts;
 	glob_t globbuf;
-	int i;
+	int i, v;
 	char *cs;
 	int die = 0;
 
@@ -157,6 +187,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			{
 				usage();
 				deleteCommandLineOptions(opts);
+				
 				return 0;
 			}
 			else if(strcmp(argv[i], "--override-version") == 0)
@@ -169,8 +200,13 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				   strcmp(argv[i], "-s") == 0)
 				{
 					i++;
-					strncpy(opts->calcServer, argv[i], 31);
-					opts->calcServer[31] = 0;
+					v = snprintf(opts->calcServer, DIFXIO_NAME_LENGTH, "%s", argv[i]);
+					if(v >= DIFXIO_NAME_LENGTH)
+					{
+						fprintf(stderr, "Error: calcServer name, %s, is too long (more than %d chars)\n",
+							argv[i], DIFXIO_NAME_LENGTH-1);
+						die++;
+					}
 				}
 				else if(strcmp(argv[i], "--order") == 0 ||
 					strcmp(argv[i], "-o") == 0)
@@ -260,12 +296,13 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		cs = getenv("CALC_SERVER");
 		if(cs)
 		{
-			strncpy(opts->calcServer, cs, 31);
-			opts->calcServer[31] = 0;
+			v = snprintf(opts->calcServer, DIFXIO_NAME_LENGTH, "%s", cs ? cs : "localhost");
 		}
-		else
+		if(v >= DIFXIO_NAME_LENGTH)
 		{
-			strcpy(opts->calcServer, "localhost");
+			fprintf(stderr, "Error: env var CALC_SERVER is set to a name that is too long, %s (should be < 32 chars)\n",
+				cs ? cs : "localhost");
+			die++;
 		}
 	}
 
@@ -284,6 +321,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		}
 		fprintf(stderr, "Use -h option for help.\n");
 		deleteCommandLineOptions(opts);
+
 		return 0;
 	}
 
@@ -318,16 +356,20 @@ static int skipFile(const char *f1, const char *f2)
 int runfile(const char *prefix, const CommandLineOptions *opts,
 	CalcParams *p)
 {
-	const int FilenameLength = 256;
 	DifxInput *D;
 	FILE *in;
-	char fn[FilenameLength];
+	char fn[DIFXIO_FILENAME_LENGTH];
 	int v;
 	const char *difxVersion;
 
 	difxVersion = getenv("DIFX_VERSION");
 
-	snprintf(fn, FilenameLength, "%s.calc", prefix);
+	v = snprintf(fn, DIFXIO_FILENAME_LENGTH, "%s.calc", prefix);
+	if(v >= DIFXIO_FILENAME_LENGTH)
+	{
+		fprintf(stderr, "Error: filename %s.calc is too long (max %d chars)\n", 
+			prefix, DIFXIO_FILENAME_LENGTH-1);
+	}
 	in = fopen(fn, "r");
 	if(!in)
 	{
@@ -364,7 +406,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	{
 		if(difxVersion && D->job->difxVersion[0])
 		{
-			if(strncmp(difxVersion, D->job->difxVersion, 63))
+			if(strncmp(difxVersion, D->job->difxVersion, DIFXIO_VERSION_LENGTH-1))
 			{
 				printf("Attempting to run calcif2 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
 				if(opts->overrideVersion)
@@ -375,17 +417,18 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 				{
 					fprintf(stderr, "Won't run without --override-version.\n");
 					deleteDifxInput(D);
+
 					return -1;
 				}
 			}
 		}
 		else if(!D->job->difxVersion[0])
 		{
-			printf("Warning -- working on unversioned job\n");
+			printf("Warning: working on unversioned job\n");
 		}
 
-		strncpy(D->job->calcServer, opts->calcServer, 31);
-		D->job->calcServer[31] = 0;
+		/* we know opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */
+		strcpy(D->job->calcServer, opts->calcServer);
 		D->job->calcProgram = opts->calcProgram;
 		D->job->calcVersion = opts->calcVersion;
 
@@ -399,6 +442,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		{
 			deleteDifxInput(D);
 			fprintf(stderr, "difxCalcInit returned %d\n", v);
+
 			return -1;
 		}
 		v = difxCalc(D, p);
@@ -406,6 +450,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		{
 			deleteDifxInput(D);
 			fprintf(stderr, "difxCalc returned %d\n", v);
+
 			return -1;
 		}
 		printf("About to write IM file\n");
@@ -423,6 +468,10 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 
 void deleteCalcParams(CalcParams *p)
 {
+	if(p->clnt)
+	{
+		clnt_destroy(p->clnt);
+	}
 	free(p);
 }
 
@@ -436,20 +485,19 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	p->order = opts->polyOrder;
 	p->delta = opts->delta;
 
-	strncpy(p->calcServer, opts->calcServer, 31);
-	p->calcServer[31] = 0;
+	/* We know that opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */
+	strcpy(p->calcServer, opts->calcServer);
 	p->calcProgram = opts->calcProgram;
 	p->calcVersion = opts->calcVersion;
 	p->allowNegDelay = opts->allowNegDelay;
 
-	p->clnt = clnt_create(p->calcServer, p->calcProgram, p->calcVersion, 
-		"tcp");
+	p->clnt = clnt_create(p->calcServer, p->calcProgram, p->calcVersion, "tcp");
 	if(!p->clnt)
 	{
 		clnt_pcreateerror(p->calcServer);
-		printf("ERROR: rpc clnt_create fails for host : %-s\n",
-			p->calcServer);
+		printf("ERROR: rpc clnt_create fails for host : %-s\n", p->calcServer);
 		deleteCalcParams(p);
+
 		return 0;
 	}
 	if(opts->verbose > 1)
@@ -479,6 +527,7 @@ int run(const CommandLineOptions *opts)
 	if(!p)
 	{
 		fprintf(stderr, "Cannot initialize CalcParams\n");
+
 		return -1;
 	}
 
