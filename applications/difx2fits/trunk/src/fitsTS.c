@@ -819,9 +819,15 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	if(in)
 	{
 		fclose(in);
+		in = 0;
 	}
 	free(hasDifxTsys);
 	free(fitsbuf);
+	if(tCals)
+	{
+		free(tCals);
+		tCals = 0;
+	}
 
 	return D;
 }

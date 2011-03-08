@@ -1177,6 +1177,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 				if(S)
 				{
 					deleteSniffer(S);
+					S = 0;
 				}
 #endif
 				return 0;
@@ -1203,6 +1204,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	if(S)
 	{
 		deleteSniffer(S);
+		S = 0;
 	}
 #endif
 	if(jobMatrix)

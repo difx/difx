@@ -416,10 +416,6 @@ void deleteSniffer(Sniffer *S)
 			}
 			free(S->accum);
 		}
-		if(S->fftbuffer)
-		{
-			free(S->fftbuffer);
-		}
 		if(S->plan1)
 		{
 			fftw_destroy_plan(S->plan1);
@@ -427,6 +423,10 @@ void deleteSniffer(Sniffer *S)
 		if(S->plan2)
 		{
 			fftw_destroy_plan(S->plan2);
+		}
+		if(S->fftbuffer)
+		{
+			fftw_free(S->fftbuffer);
 		}
 		free(S);
 	}

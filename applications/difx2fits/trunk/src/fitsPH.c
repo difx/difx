@@ -1109,6 +1109,12 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	if(in)
 	{
 		fclose(in);
+		in = 0;
+	}
+	if(in2)
+	{
+		fclose(in2);
+		in2 =0;
 	}
 
 	free(fitsbuf);
