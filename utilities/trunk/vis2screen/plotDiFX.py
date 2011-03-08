@@ -159,6 +159,9 @@ while not len(nextheader[0]) == 0:
         ant2name  = telescopes[ant2index].name
         lowfreq   = freqs[freqindex[0]].freq
         hifreq    = freqs[freqindex[0]].freq + freqs[freqindex[0]].bandwidth
+        if freqs[freqindex[0]].lsb:
+            lowfreq -= freqs[freqindex[0]].bandwidth
+            hifreq -= freqs[freqindex[0]].bandwidth
         print seconds[0]
         hour      = int(seconds[0]/3600)
         minute    = int(seconds[0]/60 - 60*hour)
