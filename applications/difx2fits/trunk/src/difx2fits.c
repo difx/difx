@@ -94,8 +94,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -o         <nchan>  Write <nchan> channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --scale <scale>\n");
-	fprintf(stderr, "  -s      <scale>     Scale visibility data "
-		"by <scale>\n");
+	fprintf(stderr, "  -s      <scale>     Scale visibility data " "by <scale>\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --deltat <deltat>\n");
 	fprintf(stderr, "  -t       <deltat>   Set interval (sec) in printing job matrix (default %3.1f)\n", DefaultJobMatrixInterval);
@@ -104,8 +103,7 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  -i       <interval> Set the Difx-derived tsys interval (sec) (default %3.1f)\n", DefaultDifxTsysInterval);
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --phasecentre <p>\n");
-	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the "
-		"<p>th phase centres (default 0)\n");
+	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the " "<p>th phase centres (default 0)\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --keep-order\n");
 	fprintf(stderr, "  -k                  Keep antenna order\n");
@@ -370,7 +368,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 
 	if(opts->nBaseFile > 0 && opts->dontCombine && opts->fitsFile)
 	{
-		printf("Error: Cannot supply output filename for multiple output files\n");
+		printf("Error: Cannot supply output filename for multiple output files.\n");
 		deleteCommandLineOptions(opts);
 
 		return 0;
@@ -501,6 +499,12 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	long long last_bytes = 0;
 
 	populateFitsKeywords(D, &keys);
+
+	if(opts->verbose > 0)
+	{
+		printf("\n");
+		printFitsKeywords(&keys);
+	}
 	
 	printf("\nWriting FITS tables:\n");
 

@@ -655,6 +655,29 @@ int mjd2fits
 }
 
 
+void fprintFitsKeywords(FILE *out, const struct fits_keywords *keys)
+{
+	fprintf(out, "FITS keywords [%p]\n", keys);
+	if(keys)
+	{
+		fprintf(out, "  Obs code = %s\n", keys->obscode);
+		fprintf(out, "  Num Stokes = %d\n", keys->no_stkd);
+		fprintf(out, "  First Stokes = %d\n", keys->stk_1);
+		fprintf(out, "  Num bands = %d (either single or dual pol)\n", keys->no_band);
+		fprintf(out, "  Num chans = %d (per band)\n", keys->no_chan);
+		fprintf(out, "  Ref freq = %3.1f Hz\n", keys->ref_freq);
+		fprintf(out, "  Chan BW = %3.1f Hz\n", keys->chan_bw);
+		fprintf(out, "  Ref pixel = %f\n", keys->ref_pixel);
+		fprintf(out, "  Ref date = MJD %d\n", keys->ref_date);
+		fprintf(out, "  Num pol = %d (maximum in any band)\n", keys->no_pol);
+	}
+}
+
+void printFitsKeywords(const struct fits_keywords *keys)
+{
+	fprintFitsKeywords(stdout, keys);
+}
+
 void arrayWriteKeys
     (
     struct fits_keywords *p_fits_keys,	/* uv FITS table keywords */

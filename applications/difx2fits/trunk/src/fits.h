@@ -102,6 +102,8 @@ int FitsBinRowByteSwap(const struct fitsBinTableColumn *columns, int nColumns,
         void *data);
 int fitsTypeSize(char);
 int mjd2fits(int, char *);
+void fprintFitsKeywords(FILE *out, const struct fits_keywords *keys);
+void printFitsKeywords(const struct fits_keywords *keys);
 void arrayWriteKeys(struct fits_keywords *p_fits_keys,
 	struct fitsPrivate *p_fitsfile);
 void strcpypad(char *dest, const char *src, int n);
