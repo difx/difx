@@ -689,8 +689,8 @@ int next2(int x)
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0, unsigned int t=0) 
-		: fq(f), bw(b), sideBand(s), nChan(n), specAvg(sA), overSamp(os), decimation(d), toneSetId(t) {};
+	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0, int iz=0, unsigned int t=0) 
+		: fq(f), bw(b), sideBand(s), nChan(n), specAvg(sA), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t) {};
 	double fq;
 	double bw;
 	char sideBand;
@@ -699,10 +699,11 @@ public:
 	int overSamp;
 	int decimation;
 	unsigned int toneSetId;
+	int isZoomFreq;
 };
 
 static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
-		int sA, int os, int d, unsigned int t)
+		int sA, int os, int d, int iz, unsigned int t)
 {
 	for(unsigned int i = 0; i < freqs.size(); i++)
 	{
@@ -713,13 +714,14 @@ static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
 		   sA == freqs[i].specAvg &&
 		   os == freqs[i].overSamp &&
 		   d  == freqs[i].decimation &&
+		   iz == freqs[i].isZoomFreq &&
 		   t  == freqs[i].toneSetId)
 		{
 			return i;
 		}
 	}
 
-	freqs.push_back(freq(fq, bw, sb, nC, sA, os, d, t));
+	freqs.push_back(freq(fq, bw, sb, nC, sA, os, d, iz, t));
 
 	return freqs.size() - 1;
 }
@@ -908,7 +910,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		}
 		
 		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->nChan, corrSetup->specAvg, overSamp, decimation, toneSetId);
+				corrSetup->nChan, corrSetup->specAvg, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
@@ -1003,7 +1005,14 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		// This is to correct for the fact that mpifxcorr does not know about oversampling
 		if(df->overSamp > df->decimation)
 		{
-			df->bw *= df->overSamp/df->decimation;
+			if(freqs[f].isZoomFreq == 0) // Don't correct zoom bands as the bandwidth is already correct
+			{
+				df->bw *= df->overSamp/df->decimation;
+			}
+			else	// Instead, correct the number of channels
+			{
+				df->nChan = df->nChan*df->decimation/df->overSamp;
+			}
 			df->overSamp = df->decimation;
 		}
 
@@ -1939,7 +1948,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 									freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
 									int(corrSetup->nChan*zf.bandwidth/
 									freqs[dd->recFreqId[parentfreqindices[i]]].bw),
-									corrSetup->specAvg, overSamp, decimation, 0);	// final zero points to the noTone pulse cal setup.
+									corrSetup->specAvg, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 							dd->zoomFreqId[i] = fqId;
 							dd->nZoomPol[i] = dd->nRecPol[parentfreqindices[i]];
 							nZoomBands += dd->nRecPol[parentfreqindices[i]];
