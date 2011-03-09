@@ -7,6 +7,7 @@ Version 3.0.1
 * Fix Pulse cal values in the zoom band cases
 * DiFX extracted pulse cals: ensure proper antennaIds for merged job cases
 * valgrind used to track down some memory leaks
+* print fits keywords for each fits file when -v is supplied
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:

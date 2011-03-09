@@ -37,7 +37,7 @@
 
 typedef struct
 {
-	int bandId;
+	int bandMask[array_MAX_BANDS];
 	int polId;
 	int nBand;
 	/* names ending in 1 are 1-based indices for FITS */
@@ -75,36 +75,17 @@ static int parseFlag(char *line, int refDay, char *antName, float timeRange[2],
 }
 
 
-
 static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
 	struct fitsBinTableColumn *columns, int nColumn, const FlagDatum *FL)
 {
 	char *p_fitsbuf;
-	int polMask[4], bandMask[array_MAX_BANDS];
-	int i;
+	int polMask[4];
 
 	p_fitsbuf = fitsbuf;
 
-	/* Derive band flag Mask */
-	if(FL->bandId < 0)
-	{
-		for(i = 0; i < FL->nBand; i++)
-		{
-			bandMask[i] = 1;
-		}
-	}
-	else
-	{
-		for(i = 0; i < FL->nBand; i++)
-		{
-			bandMask[i] = 0;
-		}
-		bandMask[FL->bandId] = 1;
-	}
-	
 	/* Derive polarization Mask */
-	polMask[2] = polMask[3] = 1;
-	if(FL->polId < 0)
+
+	if(FL->polId < 0)	/* Flag all pols */
 	{
 		polMask[0] = 1;
 		polMask[1] = 1;
@@ -120,12 +101,15 @@ static void writeFLrow(struct fitsPrivate *out, char *fitsbuf, int nRowBytes,
 		polMask[1] = 1;
 	}
 
+	/* Cross pol terms are always affected */
+	polMask[2] = polMask[3] = 1;
+
 	FITS_WRITE_ITEM (FL->sourceId1, p_fitsbuf);	  /* SOURCE ID */
 	FITS_WRITE_ITEM (FL->arrayId1, p_fitsbuf);	  /* ARRAY ID */
 	FITS_WRITE_ITEM (FL->baselineId1, p_fitsbuf);	  /* ANTENNA IDS */
 	FITS_WRITE_ITEM (FL->freqId1, p_fitsbuf);	  /* FREQ ID */
 	FITS_WRITE_ITEM (FL->timeRange, p_fitsbuf);	  /* TIME RANAGE */
-	FITS_WRITE_ARRAY(bandMask, p_fitsbuf, FL->nBand); /* BANDS */
+	FITS_WRITE_ARRAY(FL->bandMask, p_fitsbuf, FL->nBand); /* BANDS */
 	FITS_WRITE_ITEM (FL->chanRange1, p_fitsbuf);	  /* CHANNELS */
 	FITS_WRITE_ITEM (polMask, p_fitsbuf);		  /* POLARIZATIONS */
 	FITS_WRITE_ARRAY(FL->reason, p_fitsbuf, 40);	  /* REASON */
@@ -168,25 +152,28 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	char line[MaxLineLength+1];
 	char antName[DIFXIO_NAME_LENGTH];
 	int refDay;
-	int i, c, d, p, v;
-	int hasData[2][array_MAX_BANDS];
+	int i, v;
 	int recBand;
-	int configId = 0;	/* currently only support 1 config */
+#warning "FIXME: only one configId supported here"
+	int configId = 0;
 	int antennaId;
-	char polName;
 	int freqId;
 	FILE *in;
 	FlagDatum FL;
 	const DifxConfig *dc;
-	const DifxDatastream *ds;
 	char *rv;
-	
+#if 0
+	int p, d, c;
+	const DifxDatastream *ds;
+	char polName;
+	int hasData[2][array_MAX_BANDS];
+#endif	
 	if(D==0)
 	{
 		return D;
 	}
 
-	FL.nBand = p_fits_keys->no_band;
+	FL.nBand = p_fits_keys->no_band;	/* same as D->nIF, as set in populateFitsKeywords */
 	sprintf(bandFormInt, "%dJ", FL.nBand);
 	
 	in = fopen("flag", "r");
@@ -241,22 +228,47 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 		{
 			continue;
 		}
-		else if(parseFlag(line, refDay, antName, FL.timeRange, 
-			FL.reason, &recBand))
+		else if(parseFlag(line, refDay, antName, FL.timeRange, FL.reason, &recBand))
 		{
 			if(strncmp(FL.reason, "recorder", 8) == 0)
 			{
+				/* No need to propagate flags for recorder not recording */
+
 				continue;
 			}
 
+			/* Tune up the flag time range */
+			if(FL.timeRange[0] > stop || FL.timeRange[1] < start)
+			{
+				continue;
+			}
+			if(FL.timeRange[0] < start)
+			{
+				FL.timeRange[0] = start;
+			}
+			if(FL.timeRange[1] > stop)
+			{
+				FL.timeRange[1] = stop;
+			}
+			if(strcmp(FL.reason, "observing system idle") == 0)
+			{
+				/* Observation ended at this site.  Flag remainder of it */
+
+				FL.timeRange[1] = 1.0;
+			}
+			
+			/* Set antenna of flag.  ALL flags are associated with exactly 1 antenna. */
 			antennaId = DifxInputGetAntennaId(D, antName);
 			if(antennaId < 0)
 			{
 				continue;
 			}
+			FL.baselineId1[0] = antennaId + 1;
+
+			dc = D->config + configId;
 
 			/* convert the recorder channel number into FITS
-			 * useful values -- the IF index (bandId) and the
+			 * useful values: the IF index (bandId) and the
 			 * polarization index (polId).  Both are zero-based
 			 * numbers, with -1 implying "all values"
 			 */
@@ -266,47 +278,18 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 				continue;
 			}
 
-			if(recBand < 0)
+			/* Then cycle through all IFs to see if that IF is flagged or not */
+			for(i = 0; i < D->nIF; i++)
 			{
-				FL.bandId = -1;
-			}
-			else if(freqId >= 0 && freqId < D->nFreq)
-			{
-				FL.bandId = D->config[configId].freqId2IF[freqId];
-				if(FL.bandId < 0)
+				if(recBand < 0 || isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
 				{
-					/* This sub-band is not going into the FITS file */
-					 continue;
+					FL.bandMask[i] = 1;
+				}
+				else
+				{
+					FL.bandMask[i] = 0;
 				}
 			}
-			else
-			{
-				/* This shouldn't happen -- a recBand not associated with a Freq? */
-				fprintf(stderr, "DifxInput2FitsFL: Developer error: DifxConfigRecChan2FreqPol returned freqId = %d polId = %d\n", freqId, FL.polId);
-				continue;
-			}
-
-			if(strcmp(FL.reason, "observing system idle") == 0)
-			{
-				FL.timeRange[1] = 1.0;
-			}
-			
-			if(FL.timeRange[0] > stop || FL.timeRange[1] < start)
-			{
-				continue;
-			}
-			
-			if(FL.timeRange[0] < start)
-			{
-				FL.timeRange[0] = start;
-			}
-			if(FL.timeRange[1] > stop)
-			{
-				FL.timeRange[1] = stop;
-			}
-
-			FL.baselineId1[0] = antennaId + 1;
-
 			writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
 		}
 	}
@@ -316,6 +299,46 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	FL.timeRange[1] = stop;
 	strcpy(FL.reason, "This Band/Pol not observed");
 
+	/* Assumption here is all antennas observed the same frequencies and pols */
+	/* If that assumption fails, no real harm is done as the vis records would contain all zeros */
+
+	dc = D->config + configId;
+	for(i = 0; i < D->nIF; i++)
+	{
+		FL.bandMask[i] = 0;
+	}
+	for(i = 0; i < D->nIF; i++)
+	{
+		if(dc->IF[i].nPol < dc->nPol)	/* Aha, a pol is missing.  Flag it */
+		{
+			FL.bandMask[i] = 1;
+			
+			if(dc->IF[i].nPol > 0 && dc->IF[i].pol[0] == dc->pol[0])
+			{
+				FL.polId = 1;
+			}
+			else if(dc->IF[i].nPol > 0 && dc->IF[i].pol[0] == dc->pol[1])
+			{
+				FL.polId = 0;
+			}
+			else
+			{
+				/* Should not happen! */
+				fprintf(stderr, "\nDeveloper error: flagging all pols of IF=%d\n", i);
+				FL.polId = -1;
+			}
+
+			for(antennaId = 0; antennaId < D->nAntenna; antennaId++)
+			{
+				FL.baselineId1[0] = antennaId + 1;
+				writeFLrow(out, fitsbuf, nRowBytes, columns, nColumn, &FL);
+			}
+			
+			FL.bandMask[i] = 0;
+		}
+	}
+
+#if 0
 	FL.freqId1 = 0;
 	for(configId = 0; configId < D->nConfig; configId++)
 	{
@@ -334,6 +357,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 			continue;
 		}
 
+#warning "FIXME: here we assume 1:1 mapping between antennaId and datastreamId"
 		ds = D->datastream + dc->datastreamId[d];
 		FL.baselineId1[0] = ds->antennaId + 1;
 
@@ -387,6 +411,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 		}
 	    }
 	}
+#endif
 
 	/* close the file, free memory, and return */
 	fclose(in);
