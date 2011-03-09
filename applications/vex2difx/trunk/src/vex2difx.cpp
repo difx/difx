@@ -698,8 +698,8 @@ public:
 	int specAvg;
 	int overSamp;
 	int decimation;
-	unsigned int toneSetId;
 	int isZoomFreq;
+	unsigned int toneSetId;
 };
 
 static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
@@ -2644,8 +2644,8 @@ int main(int argc, char **argv)
 		{
 			cout << *j;
 		}
-		const VexScan *S = V->getScanByDefName(j->scans[0]);
-		const VexMode *M = V->getModeByDefName(S->modeDefName);
+		//const VexScan *S = V->getScanByDefName(j->scans[0]);
+		//const VexMode *M = V->getModeByDefName(S->modeDefName);
 		//int n = 0;
 		//for(list<int>::const_iterator k = M->overSamp.begin(); k != M->overSamp.end(); k++)
 		//{
