@@ -22,12 +22,16 @@ bin_PROGRAMS = \
 	m5fold \
 	m5tsys \
 	m5test \
+	test5b \
 	test_mark5_stream \
 	test_unpacker \
 	$(fftw_programs)
 
 m5d_SOURCES = \
 	m5d.c
+
+test5b_SOURCES = \
+	test5b.c
 
 m5tsys_SOURCES = \
 	m5tsys.c
