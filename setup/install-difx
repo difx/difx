@@ -300,18 +300,17 @@ if not noinstall:
         os.mkdir(incdir)
 
 ##### Install IPP package config file if appropriate  ###
-
+    print "************************************"
+    print "Setting up directories"
+    print
     if doipp<0:
-        print "************************************"
         print "Not installing IPP .pc file"
         print
     else:
         if os.path.exists(pkgdir+"/ipp.pc") and doipp==0:
-            print "************************************"
-            print pkgdir+" already exists"
+            print pkgdir+"ipp.pc already exists"
             print
         else:
-            print "************************************"
             print "Creating "+pkgdir+"ipp.pc"
             run(startdir+"/genipppc "+ipproot)
             run("mv ipp.pc "+pkgdir)
