@@ -17,32 +17,9 @@ AC_PROG_RANLIB
 dnl **********************************************************
 dnl **** Set path for Intel Performance Primitive library ****
 dnl **********************************************************
-if test "$OSTYPE" == "darwin"; then
-        ipp_libname="Libraries"
-else
-        ipp_libname="sharedlib"
-fi
 
-AC_ARG_WITH(ipp-root, [  --with-ipp-root=ROOT
-                          ipp root is ROOT (optional).  Use env variable
-                          IPPROOT otherwise.],
-ipp_root="$withval", ipp_root="")
-if test x"$ipp_root" != "x"; then
-        IPP_CFLAGS="-I$ipp_root/include"
-        IPP_LIBS="-L$ipp_root/$ipp_libname"
-else
-        IPP_CFLAGS="-I$IPPROOT/include"
-        IPP_LIBS="-L$IPPROOT/$ipp_libname"
-fi
+PKG_CHECK_MODULES(IPP, ipp)
 
-if test "$DIFXBITS" == "32"; then
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm -lippcore"
-elif test "$DIFXBITS" == "64"; then
-        IPP_LIBS=$IPP_LIBS" -lippsem64t -lguide -lippvmem64t -lippcoreem64t"
-else
-        IPP_LIBS=$IPP_LIBS" -lipps -lguide -lippvm"
-        echo "32/64 bit unspecified - assuming 32 bit for IPP"
-fi
 dnl **********************************************************
 
 # Checks for libraries.
