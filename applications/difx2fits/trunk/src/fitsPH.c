@@ -350,6 +350,21 @@ static int parsePulseCal(const char *line,
 		float f;
 	} nan;
 	nan.i32 = -1;
+	
+	for(pol = 0; pol < 2; pol++)
+	{
+		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
+		{
+			freqs[pol][toneIndex] = 0.0;
+			pulseCalRe[pol][toneIndex] = nan.f;
+			pulseCalIm[pol][toneIndex] = nan.f;
+			pulseCalRate[pol][toneIndex] = 0.0;
+		}
+		for(s = 0; s < array_MAX_STATES*array_MAX_BANDS; s++)
+		{
+			stateCount[pol][s] = nan.f;
+		}
+	}
 
 	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, timeInt, 
 		cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
@@ -363,6 +378,8 @@ static int parsePulseCal(const char *line,
 	{
 		fprintf(stderr, "Developer error: parsePulseCal: array_MAX_STATES=%d is to small (needs to be %d)\n",
 			array_MAX_STATES, ns);
+
+		exit(0);
 	}
 
 	/* A VLBA specialty! */
@@ -395,21 +412,6 @@ static int parsePulseCal(const char *line,
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
 		return -3;
-	}
-	
-	for(pol = 0; pol < 2; pol++)
-	{
-		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
-		{
-			freqs[pol][toneIndex] = 0.0;
-			pulseCalRe[pol][toneIndex] = nan.f;
-			pulseCalIm[pol][toneIndex] = nan.f;
-			pulseCalRate[pol][toneIndex] = 0.0;
-		}
-		for(s = 0; s < array_MAX_STATES*array_MAX_BANDS; s++)
-		{
-			stateCount[pol][s] = nan.f;
-		}
 	}
 
 	*cableCal *= 1e-12;	/* convert to s from ps */
@@ -608,6 +610,22 @@ static int parseDifxPulseCal(const char *line,
 		float f;
 	} nan;
 	nan.i32 = -1;
+	
+	for(pol = 0; pol < 2; pol++)
+	{
+		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
+		{
+			freqs[pol][toneIndex] = 0.0;
+			pulseCalRe[pol][toneIndex] = nan.f;
+			pulseCalIm[pol][toneIndex] = nan.f;
+			pulseCalRate[pol][toneIndex] = 0.0;
+		}
+		for(i = 0; i < array_MAX_STATES*array_MAX_BANDS; i++)
+		{
+			/* No state counts are available for difx extracted pcals */
+			stateCount[pol][i] = nan.f;
+		}
+	}
 
 	n = sscanf(line, "%s%lf%f%lf%d%d%d%d%d%n", antName, time, &timeInt, 
 		&cableCal, &np, &nb, &nt, &ns, &nRecBand, &p);
@@ -645,22 +663,6 @@ static int parseDifxPulseCal(const char *line,
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
 		return -3;
-	}
-	
-	for(pol = 0; pol < 2; pol++)
-	{
-		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
-		{
-			freqs[pol][toneIndex] = 0.0;
-			pulseCalRe[pol][toneIndex] = nan.f;
-			pulseCalIm[pol][toneIndex] = nan.f;
-			pulseCalRate[pol][toneIndex] = 0.0;
-		}
-		for(i = 0; i < array_MAX_STATES*array_MAX_BANDS; i++)
-		{
-			/* No state counts are available for difx extracted pcals */
-			stateCount[pol][i] = nan.f;
-		}
 	}
 
 	/* Read in pulse cal information */

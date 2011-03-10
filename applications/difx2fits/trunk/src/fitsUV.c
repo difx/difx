@@ -1020,6 +1020,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	    opts->sniffTime > 0.0 )
 	{
 		S = newSniffer(D, dv->nComplex, fileBase, opts->sniffTime);
+		if(S && opts->verbose > 1)
+		{
+			printf("    Sniffer memory usage ~= %lldMB\n", getSnifferMemoryUsage(S)/1000000);
+		}
 	}
 #endif
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008, 2009 by Walter Brisken                            *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,15 +34,18 @@
 #include <fftw3.h>
 #include "fitsUV.h"
 
+#define MAX_SNIFFER_MEMORY 1000000000LL
+
 struct _Sniffer;
 
 typedef struct _Sniffer Sniffer;
 
-Sniffer *newSniffer(const DifxInput *D, int nComplex, 
-	const char *filebase, double solint);
+Sniffer *newSniffer(const DifxInput *D, int nComplex, const char *filebase, double solint);
 
 void deleteSniffer(Sniffer *S);
 
 int feedSnifferFITS(Sniffer *S, const struct UVrow *data);
+
+long long getSnifferMemoryUsage(const Sniffer *S);
 
 #endif

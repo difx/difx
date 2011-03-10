@@ -60,6 +60,7 @@ struct _Sniffer
 	const DifxInput *D;
 	int nRec;			/* total records sniffed */
 	int nPol, nStokes, nIF, nTime, nChan, nAntenna;
+	long long memoryNeed;
 	int nComplex;
 	int minInt;
 	int configId;
@@ -235,12 +236,21 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 	if(S->nTime <= 1)
 	{
 		S->nTime = 1;
-		fprintf(stderr, "\nWarning: sniffer interval is not long "
-			"compared to integration time.\n");
+		fprintf(stderr, "\nWarning: sniffer interval is not long compared to integration time.\n");
 		fprintf(stderr, "Changing to %f seconds.\n\n",
 		tMax * S->nTime);
 	}
 	S->solInt = tMax * S->nTime;
+
+	S->memoryNeed = (long long)(S->nTime)*S->nChan*S->nIF*S->nPol*S->nAntenna*S->nAntenna*sizeof(fftw_complex);
+	if(S->memoryNeed > MAX_SNIFFER_MEMORY)
+	{
+		fprintf(stderr, "    ** DISABLING SNIFFER AS THE MEMORY REQUIREMENTS ARE EXCESSIVE (%lldMB > %lldMB) **\n",
+			S->memoryNeed/1000000, MAX_SNIFFER_MEMORY/1000000);
+		deleteSniffer(S);
+
+		return 0;
+	}
 	
 	/* Open fringe fit files */
 	v = snprintf(filename, DIFXIO_FILENAME_LENGTH, "%s.apd", filebase);
@@ -334,6 +344,7 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		return 0;
 	}
 	
+#warning "FIXME: I think almost twice as much memory is being allocated as is needed -WFB"
 	S->accum = (Accumulator **)malloc(S->nAntenna*sizeof(Accumulator *));
 	for(a1 = 0; a1 < S->nAntenna; a1++)
 	{
@@ -364,6 +375,18 @@ Sniffer *newSniffer(const DifxInput *D, int nComplex,
 		FFTW_FORWARD, FFTW_MEASURE);
 
 	return S;
+}
+
+long long getSnifferMemoryUsage(const Sniffer *S)
+{
+	if(S)
+	{
+		return S->memoryNeed;
+	}
+	else
+	{
+		return 0LL;
+	}
 }
 
 void deleteSniffer(Sniffer *S)
