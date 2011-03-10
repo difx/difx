@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--noipp] [--ipp]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--withfb] [--noipp] [--ipp]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -41,6 +41,8 @@ Options:
 
    --perl          Install some non-standard perl utilities (deprecated)
 
+   --withfb        Build filterbank (which requires pgplot)
+
    --clean         Run make clean for all components
 
    --noipp         Don't try and install ipp package config file
@@ -57,7 +59,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "noipp", "ipp"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "withfb", "noipp", "ipp"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -78,6 +80,7 @@ rpfits = False
 perl = False
 doclean = False
 domonitor = False
+dofb = False
 doipp = 0
 
 # read arguments
@@ -104,6 +107,8 @@ if len(opts) > 0:
             rpfits = True
         if o == "--withmonitor":
             domonitor = True
+        if o == "--withfb":
+            dofb = True
         if o == "--ipp":
             doipp = 1
         if o == "--noipp":
@@ -200,9 +205,10 @@ utiltargets = [["calcif2",   difx_version, True,False,True,False],
 apptargets = [["calcserver", difx_version, True,True,False,False],
               ["difx2fits",  difx_version, True,False,True,False],
               ["vex2difx",   difx_version, True,True,True,False],
-              ["difx2mark4", difx_version, True,True,True,False],
-              ["difxfilterbank", difx_version, True,False,False,True]]
+              ["difx2mark4", difx_version, True,True,True,False]]
 
+if dofb:
+    apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
@@ -398,7 +404,7 @@ os.chdir("mpifxcorr/" + difx_version)
 run("aclocal")
 run("autoconf")
 run("autoheader")
-run("automake")
+run("automake -a")
 rpfitsopt = ''
 if rpfits:
     rpfitsopt = ' --with-rpfits '

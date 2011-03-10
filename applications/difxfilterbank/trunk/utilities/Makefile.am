@@ -4,6 +4,7 @@ AM_CXXFLAGS = $(FXCORR_CFLAGS) $(DIFXMESSAGE_CFLAGS) $(IPP_CFLAGS) $(PGPLOTINC)
 
 filterbank2screen_SOURCES = filterbank2screen.cpp
 filterbank2screen_LDADD = $(FXCORR_LIBS) $(DIFXMESSAGE_LIBS) $(IPP_LIBS) $(PGPLOTLIB) -lcpgplot -lpgplot $(X11LIBS) #$(FLIBS)
+# FLIBS should have been set by AC_F77_LIBRARY_LDFLAGS in configure
 
 printfilterbank_SOURCES = printfilterbank.cpp
 printfilterbank_LDADD = $(FXCORR_LIBS) $(DIFXMESSAGE_LIBS) $(IPP_LIBS) 

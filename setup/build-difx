@@ -13,7 +13,7 @@ Build and Install DiFX
 
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
-        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--nofb] \\
+        [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
         [--noinstall] [--reconf] [--noconf] [--clean] \\
         [--g77] [--noipp] [--ipp] \\
         [--cache='name'] [--targ='...'] [--pristine]
@@ -44,7 +44,7 @@ Options:
 
    --perl          Install some non-standard perl utilities (deprecated)
 
-   --nofb          Do not build filterbank (which requires pgplot)
+   --withfb        Build filterbank (which requires pgplot)
 
    --noinstall     Don't install, only build.
 
@@ -81,7 +81,7 @@ Options:
 try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
-        "mk5daemon", "withmonitor", "rpfits", "perl", "nofb",
+        "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
         "noinstall", "reconf", "noconf", "clean",
         "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
@@ -110,7 +110,7 @@ cache = 'none'
 errors = []
 noconf = False
 pristine = False
-dofb = True
+dofb = False
 doipp = 0
 
 # read options
@@ -131,8 +131,8 @@ if len(opts) > 0:
             rpfits = True
         if o == "--perl":
             perl = True
-        if o == "--nofb":
-            dofb = False
+        if o == "--withfb":
+            dofb = True
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -451,16 +451,13 @@ if not noinstall:
 
     ##### Install IPP package config file if appropriate  ###
     if doipp<0:
-        print "************************************"
         print "Not installing IPP .pc file"
         print
     else:
         if os.path.exists(pkgdir+"/ipp.pc") and doipp==0:
-            print "************************************"
-            print pkgdir+" already exists"
+            print pkgdir+"ipp.pc already exists"
             print
         else:
-            print "************************************"
             print "Creating "+pkgdir+"ipp.pc"
             run(startdir+"/genipppc "+ipproot)
             run("mv ipp.pc "+pkgdir)
