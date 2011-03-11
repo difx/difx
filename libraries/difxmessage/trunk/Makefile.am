@@ -5,6 +5,9 @@ SUBDIRS = \
 	mark5ipc \
 	utils
 
+EXTRA_DIST = \
+	difxmessage.spec
+
 library_includedir = $(includedir)
 library_include_HEADERS = \
 	difxmessage.h \

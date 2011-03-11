@@ -1,0 +1,59 @@
+Summary: DiFX library for sending and receiving multicast messages
+Name: difxmessage
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/difxmessage-@version@-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: difxmessage-@version@.tar.gz
+
+%description
+C libraries and utilities useful for interprocess communication
+
+%prep
+%setup -q 
+
+%build
+./configure --prefix=$RPM_BUILD_ROOT/usr
+make
+
+%install
+make install
+
+%files
+/usr/lib/libdifxmessage.la
+/usr/lib/libdifxmessage.so.0.0.0
+/usr/lib/libdifxmessage.so.0
+/usr/lib/libdifxmessage.so
+/usr/lib/libdifxmessage.a
+/usr/lib/libmark5ipc.la
+/usr/lib/libmark5ipc.so.0.0.0
+/usr/lib/libmark5ipc.so.0
+/usr/lib/libmark5ipc.so
+/usr/lib/libmark5ipc.a
+/usr/lib/pkgconfig/difxmessage.pc
+/usr/lib/pkgconfig/mark5ipc.pc
+/usr/include/difxmessage.h
+/usr/include/mark5ipc.h
+/usr/include/difxmessage/difxmessageinternal.h
+/usr/bin/testdifxmessagesend
+/usr/bin/testdifxmessagereceive
+/usr/bin/testdifxmessagecondition
+/usr/bin/testdifxmessagereceivecond
+/usr/bin/testm5lock
+/usr/bin/testseqnumbers
+/usr/bin/sendtransient
+/usr/bin/updatedifxclock
+/usr/bin/difxlog
+/usr/bin/mk5mon
+/usr/bin/cpumon
+/usr/bin/errormon
+/usr/bin/errormon2
+/usr/bin/statemon
+/usr/bin/mk5display
+
+%changelog
+* Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
+- First rpm version
