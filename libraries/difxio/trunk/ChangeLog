@@ -10,6 +10,7 @@
 * Considerable fixes to zoom band support
 * Add Remap[] arrays inside DifxJob to account for pre-merged array indices
 * Add some accessor functions to return a list of datastreams associated with an antenna.  This will be used to allow multiple datastreams per antenna.
+* Add infrastructure to make redhat .rpm file
 
 3.0
 * Includes the following changes merged (hopefully correctly) from the DiFX-1.5 branch;

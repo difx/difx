@@ -47,9 +47,13 @@ AM_CONDITIONAL(HAVE_SPICE, $spice_enabled)
 spicelibs="$SPICE_LIBS"
 AC_SUBST(spicelibs)
 
+version=AC_PACKAGE_VERSION
+AC_SUBST(version)
+
 AC_OUTPUT([
 	Makefile \
 	difxio.pc \
+	difxio.spec \
 	difxio/Makefile \
 	tests/Makefile \
 	utils/Makefile

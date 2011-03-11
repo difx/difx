@@ -3,6 +3,9 @@ SUBDIRS = \
 	utils \
 	tests
 
+EXTRA_DIST = \
+	difxio.spec
+
 library_includedir = $(includedir)
 library_include_HEADERS = difxio.h
 
