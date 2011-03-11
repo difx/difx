@@ -70,7 +70,8 @@ int main(int argc, char **argv)
 	int verbose = 1;
 	int binary = 0;
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
-	time_t t;
+	time_t t, lastt = 0;
+	int np=0;
 	char timestr[TimeLength];
 	DifxMessageGeneric G;
 	enum DifxMessageType;
@@ -87,10 +88,15 @@ int main(int argc, char **argv)
 		{
 			verbose++;
 		}
+		else if(strcmp(argv[1], "-B") == 0 ||
+		   strcmp(argv[1], "--Binary") == 0)
+		{
+			binary+=2;
+		}
 		else if(strcmp(argv[1], "-b") == 0 ||
 		   strcmp(argv[1], "--binary") == 0)
 		{
-			binary = 1;
+			binary++;
 		}
 		else
 		{
@@ -107,18 +113,34 @@ int main(int argc, char **argv)
 
 	if(binary)
 	{
+		if(binary >= 2)
+		{
+			printf("Warning: not writing a file, just printing dots\n");
+		}
+
 		char message[MAX_MTU];
-		FILE *out;
+		FILE *out = 0;
 
 		difxMessageInitBinary();
 
 		sock = difxMessageBinaryOpen(BINARY_STA);
 
-		out = fopen("binary.out", "w");
+		if(binary == 1)
+		{
+			out = fopen("binary.out", "w");
+		}
 
 		for(;;)
 		{
 			l = difxMessageBinaryRecv(sock, message, MAX_MTU, from);
+			time(&t);
+			if(t != lastt)
+			{
+				lastt = t;
+				printf("[%d]", np);
+				np = 0;
+				fflush(stdout);
+			}
 			if(l <= 0)
 			{
 				usleep(100000);
@@ -127,13 +149,20 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				fwrite(message, 1, l, out);
+				np++;
+				if(out)
+				{
+					fwrite(message, 1, l, out);
+				}
 				printf(".");
 				fflush(stdout);
 			}
 		}
 
-		fclose(out);
+		if(out)
+		{
+			fclose(out);
+		}
 
 		difxMessageBinaryClose(sock);
 	}
