@@ -47,7 +47,7 @@ def getippversion(path):
 	else:
 		print "Reading version from ", ippheader
 		for line in open(ippheader):
-			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
+			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)', line)
 			if (m != None):
 				print "Got version ", m.group(1)
 				return m.group(1)
