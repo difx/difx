@@ -178,7 +178,7 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outpath, const char *outname, 
 	double rate;
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
-	int skip;
+	int skip = 0;
 
 	if(byteStart % 8 != 0)
 	{
@@ -540,7 +540,7 @@ static int parseByteRange(long long *start, long long *stop, const char *scanlis
 {
 	if(sscanf(scanlist, "%Ld_%Ld", start, stop) == 2)
 	{
-		if(*start >= *stop)
+		if(*start < *stop)
 		{
 			return 1;
 		}
