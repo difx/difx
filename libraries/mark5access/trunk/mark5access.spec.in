@@ -1,0 +1,48 @@
+Summary: Library for decoding VLBI baseband formats: Mark4, VLBA and Mark5B
+Name: mark5access
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/mark5access-@version@-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: mark5access-@version@.tar.gz
+
+%description
+Baseband data decoder
+
+%prep
+%setup -q 
+
+%build
+./configure --prefix=$RPM_BUILD_ROOT/usr
+make
+
+%install
+make install
+
+%files
+/usr/lib/libmark5access.la
+/usr/lib/libmark5access.so.0.0.0
+/usr/lib/libmark5access.so.0
+/usr/lib/libmark5access.so
+/usr/lib/libmark5access.a
+/usr/lib/pkgconfig/mark5access.pc
+/usr/bin/bbsum
+/usr/bin/m5d
+/usr/bin/m5fold
+/usr/bin/m5pcal
+/usr/bin/m5spec
+/usr/bin/m5test
+/usr/bin/m5tsys
+/usr/bin/test5b
+/usr/bin/test_mark5_stream
+/usr/bin/test_unpacker
+/usr/bin/zerocorr
+/usr/include/mark5access.h
+/usr/include/mark5access/mark5_stream.h
+
+%changelog
+* Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
+- First rpm version
