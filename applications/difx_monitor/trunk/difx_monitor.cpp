@@ -273,9 +273,8 @@ void plot_results(Configuration * config, Model * model)
 	  }
 
 	  // Annotate
-	  sourcename = model->getScanIdentifier(currentscan);
-	  //	  config->getUVW()->getSourceName(config->getStartMJD(), 
-	  //	  atseconds+config->getStartSeconds(),sourcename);
+	  //sourcename = model->getScanIdentifier(currentscan);
+	  sourcename = model->getScanPointingCentreSource(currentscan)->name;
 
 	  cpgsci(4);
 	  cpgsch(2.5);
