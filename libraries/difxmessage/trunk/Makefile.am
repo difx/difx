@@ -1,12 +1,13 @@
-ACLOCAL_AMFLAGS = -I m4
-
 SUBDIRS = \
 	difxmessage \
 	mark5ipc \
 	utils
 
 EXTRA_DIST = \
-	difxmessage.spec
+	difxmessage.spec.in
+
+dist-hook: difxmessage.spec
+	cp difxmessage.spec $(distdir)
 
 library_includedir = $(includedir)
 library_include_HEADERS = \

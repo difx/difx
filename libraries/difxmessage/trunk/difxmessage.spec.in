@@ -13,14 +13,14 @@ Source: difxmessage-@version@.tar.gz
 C libraries and utilities useful for interprocess communication
 
 %prep
-%setup -q 
+%setup -q -n difxmessage-@version@
 
 %build
-./configure --prefix=$RPM_BUILD_ROOT/usr
+%configure
 make
 
 %install
-make install
+%makeinstall
 
 %files
 /usr/lib/libdifxmessage.la
