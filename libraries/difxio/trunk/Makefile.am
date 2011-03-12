@@ -4,7 +4,10 @@ SUBDIRS = \
 	tests
 
 EXTRA_DIST = \
-	difxio.spec
+	difxio.spec.in
+
+dist-hook: difxio.spec
+	cp difxio.spec $(distdir)
 
 library_includedir = $(includedir)
 library_include_HEADERS = difxio.h

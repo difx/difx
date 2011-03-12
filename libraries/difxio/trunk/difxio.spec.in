@@ -13,14 +13,14 @@ Source: difxio-@version@.tar.gz
 C libraries and utilities useful for manipulation of difx files
 
 %prep
-%setup -q 
+%setup -q -n difxio-@version@
 
 %build
-./configure --prefix=$RPM_BUILD_ROOT/usr
+%configure
 make
 
 %install
-make install
+%makeinstall
 
 %files
 /usr/lib/libdifxio.la
