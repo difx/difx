@@ -1,5 +1,3 @@
-ACLOCAL_AMFLAGS = -I m4
-
 SUBDIRS = \
 	mark5access \
 	bbsum \
@@ -8,7 +6,10 @@ SUBDIRS = \
 
 EXTRA_DIST = \
 	TODO \
-	mark5access.spec
+	mark5access.spec.in
+
+dist-hook: mark5access.spec
+	cp mark5access.spec $(distdir)
 
 DIST_SUBDIRS = \
 	mark5access \

@@ -13,14 +13,14 @@ Source: mark5access-@version@.tar.gz
 Baseband data decoder
 
 %prep
-%setup -q 
+%setup -q -n mark5access-@version@
 
 %build
-./configure --prefix=$RPM_BUILD_ROOT/usr
+%configure
 make
 
 %install
-make install
+%makeinstall
 
 %files
 /usr/lib/libmark5access.la
