@@ -1,4 +1,16 @@
-SUBDIRS= src utils mk5dir
+EXTRA_DIST = \
+	mk5daemon.spec.in
 
-DIST_SUBDIRS = src utils mk5dir
+dist-hook: mk5daemon.spec
+	cp mk5daemon.spec $(distdir)
+
+SUBDIRS = \
+	src \
+	utils \
+	mk5dir
+
+DIST_SUBDIRS = \
+	src \
+	utils \
+	mk5dir
 

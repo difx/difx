@@ -40,10 +40,14 @@ LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a ${prefix}/lib/li
 CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${STREAMSTOR_CFLAGS}"
 CXXFLAGS="${CPPFLAGS}"
 
+version=AC_PACKAGE_VERSION
+AC_SUBST(version)
+
 echo "CFLAGS=" $CFLAGS
 
 AC_OUTPUT([ \
 	Makefile \
+	mk5daemon.spec \
 	src/Makefile \
 	utils/Makefile \
 	mk5dir/Makefile
