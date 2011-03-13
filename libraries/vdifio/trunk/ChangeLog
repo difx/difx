@@ -1,3 +1,8 @@
+Version 0.2
+~~~~~~~~~~~
+* Post DiFX-2.0.0
+* Ability to make RPM files
+
 Version 0.1
 ~~~~~~~~~~~
 * Initial implementation of vdifio

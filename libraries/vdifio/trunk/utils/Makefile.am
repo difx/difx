@@ -1,5 +1,5 @@
 INCLUDES = \
-	-I$(top_srcdir)/src
+	-I$(top_srcdir)/src -D_FILE_OFFSET_BITS=64
 
 LDADD = \
 	$(top_builddir)/src/libvdifio.a

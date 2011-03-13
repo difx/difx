@@ -1,0 +1,42 @@
+Summary: Library and utilities to work with VDIF data
+Name: vdifio
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/vdifio-@version@-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: vdifio-@version@.tar.gz
+
+%description
+DiFX library and utilities for working with VDIF data
+
+%prep
+%setup -q -n vdifio-@version@
+
+%build
+%configure
+make
+
+%install
+%makeinstall
+
+%files
+/usr/lib/libvdifio.a
+/usr/lib/pkgconfig/vdifio.pc
+/usr/include/vdifio.h
+/usr/bin/stripVDIF
+/usr/bin/captureUDPVDIF
+/usr/bin/multi2singlethreadVDIF
+/usr/bin/padVDIF
+/usr/bin/cleanVDIF
+/usr/bin/fakemultiVDIF
+/usr/bin/extractSingleVDIFThread
+/usr/bin/countVDIFPackets
+/usr/bin/printVDIF
+
+
+%changelog
+* Sun Mar 13 2011 Walter Brisken <wbrisken@nrao.edu>
+- First rpm version

@@ -70,10 +70,10 @@ int validData(int ** bufferframefull, int bufferframe, int numthreads, int verbo
   return 1;
 }
 
-int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
+void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbufferframes, int numthreadbufframes, int framespersecond, int * threadindexmap, char ** threadbuffers, int ** bufferframefull, int processframenumber, int numthreads, int refframemjd, int refframesecond, int refframenumber, int verbose)
 {
   int i, j;
-  int inputframecount, readbytes, found, frameoffset, frameindex;
+  int inputframecount, readbytes, frameoffset, frameindex;
   int framebytes, framemjd, framesecond, framenumber, framethread, frameinvalid, threadindex;
   long long currentframenumber;
 
@@ -97,15 +97,14 @@ int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuffe
       exit(1);
     }
     //check that this thread is wanted
-    found = 0;
+    threadindex = -1;
     for(j=0;j<numthreads;j++) {
       if(threadindexmap[j] == framethread) {
-        found = 1;
         threadindex = j;
         break;
       }
     }
-    if(!found) {
+    if(threadindex < 0) {
       if(verbose) {
         fprintf(stderr, "Skipping packet from threadId %d\n", framethread);
         continue;
@@ -120,12 +119,12 @@ int readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuffe
     }
     frameoffset  = (int) (currentframenumber - processframenumber);
     if(frameoffset < 0) {
-      fprintf(stderr, "Discarding a frame from thread %d which is timestamped %lld frames earlier than the current frame being processed\n", framethread, -frameoffset);
+      fprintf(stderr, "Discarding a frame from thread %d which is timestamped %d frames earlier than the current frame being processed\n", framethread, -frameoffset);
       continue;
     }
     frameindex = (int)(currentframenumber % numthreadbufframes);
     if (bufferframefull[threadindex][frameindex]) {
-      fprintf(stderr, "Frame at index %d, which was count %d was already full - aborting!\n", frameindex, currentframenumber);
+      fprintf(stderr, "Frame at index %d, which was count %lld was already full - aborting!\n", frameindex, currentframenumber);
       exit(1);
     }
     if(verbose) {
@@ -159,7 +158,7 @@ int main(int argc, char **argv)
   //long long * currentthreadreadframe; //[numthreads]
   //int * threadlastbufferindex; // [numthreads]
   int * threadindexmap; // [numthreads]
-  int f, i, j, k, l, count, found, verbose, inputatbit, outputatbit, processindex;
+  int f, i, j, k, l, count, verbose, inputatbit, outputatbit, processindex;
   unsigned int copyword, activemask;
   int wordsperinputframe, wordsperoutputframe, samplesperinputword, samplesperoutputword;
   long long currentframenumber, processframenumber, invalidpackets, invalidbytes;

@@ -1,8 +1,8 @@
+AC_INIT([VDIFIO], [0.2], [difxusers at googlegroups.com])
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.50)
-AC_INIT([VDIFIO], [0.1], [difxusers at googlegroups.com])
 PACKAGE_VERSION=AC_PACKAGE_VERSION
 AC_SUBST([PACKAGE_VERSION])
 AC_SUBST([LIBRARY_VERSION])
@@ -22,5 +22,16 @@ AC_PROG_RANLIB
 
 # Checks for library functions.
 
-AC_CONFIG_FILES([Makefile src/Makefile utils/Makefile vdifio.pc])
+# Preparte output files
+
+version=AC_PACKAGE_VERSION
+AC_SUBST(version)
+
+AC_CONFIG_FILES([
+	Makefile
+	vdifio.spec
+	src/Makefile
+	utils/Makefile
+	vdifio.pc
+])
 AC_OUTPUT
