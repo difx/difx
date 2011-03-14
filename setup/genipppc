@@ -46,11 +46,19 @@ def getippversion(path):
 					
 	else:
 		print "Reading version from ", ippheader
+		major = minor = None
 		for line in open(ippheader):
 			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)', line)
 			if (m != None):
 				print "Got version ", m.group(1)
 				return m.group(1)
+			if (major == None):
+			    major = search('#define\s+IPP_VERSION_MAJOR\s+(\S)', line)
+			if (minor == None):
+			    minor = search('#define\s+IPP_VERSION_MINOR\s+(\S)', line)
+		if (major != None and minor != None):
+			print "Have version ", major.group(1) + "." + minor.group(1)
+			return major.group(1) + "." + minor.group(1)
 		print "Sorry, cannot find IPP_VERSION_STR in ", ippheader
 		exit(0)
 	
