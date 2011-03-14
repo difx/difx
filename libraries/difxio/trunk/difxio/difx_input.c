@@ -3264,10 +3264,9 @@ int DifxInputGetScanIdByJobId(const DifxInput *D, double mjd, int jobId)
 }
 
 /* return -1 if no suitable scan found */
-int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, 
-	int antennaId)
+int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd, int antennaId)
 {
-	int d, c, scanId, dsId, antId=0;
+	int d, configId, scanId, dsId, antId=0;
 	const DifxConfig *config;
 
 	if(!D)
@@ -3277,29 +3276,29 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 
 	for(scanId = 0; scanId < D->nScan; scanId++)
 	{
-		c = D->scan[scanId].configId;
-		if(c < 0 || c >= D->nConfig)
+		if(mjd > D->scan[scanId].mjdEnd  ||
+		   mjd < D->scan[scanId].mjdStart)
 		{
 			continue;
 		}
-		config = D->config + c;
+		configId = D->scan[scanId].configId;
+		if(configId < 0 || configId >= D->nConfig)
+		{
+			continue;
+		}
+		config = D->config + configId;
 
 		/* here "d" is "datastream # within conf.", not "antenanId" */
 		for(d = 0; d < config->nDatastream; d++)
 		{
 			dsId = config->datastreamId[d];
 			if(dsId < 0 || 
-			   dsId >= D->nDatastream ||
-			   dsId >= config->nDatastream)
+			   dsId >= D->nDatastream)
 			{
 				continue;
 			}
 			
 			antId = D->datastream[dsId].antennaId;
-			if(antId < 0 || antId >= D->nAntenna)
-			{
-				continue;
-			}
 			
 			if(antennaId == antId)
 			{
@@ -3308,6 +3307,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 		}
 		if(d == config->nDatastream)
 		{
+			/* end of loop reached without finding a match */
 			continue;
 		}
 
@@ -3316,9 +3316,7 @@ int DifxInputGetScanIdByAntennaId(const DifxInput *D, double mjd,
 			continue;
 		}
 		
-		if(mjd <  D->scan[scanId].mjdEnd   &&
-		   mjd >= D->scan[scanId].mjdStart &&
-		   D->scan[scanId].im[antId] != 0)
+		if(D->scan[scanId].im[antId] != 0)
 		{
 			return scanId;
 		}

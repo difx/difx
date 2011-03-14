@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -56,8 +56,7 @@ void deleteDifxScanInternals(DifxScan *ds)
 {
 	if(ds->im)
 	{
-		deleteDifxPolyModelArray(ds->im, ds->nAntenna, 
-					 ds->nPhaseCentres+1);
+		deleteDifxPolyModelArray(ds->im, ds->nAntenna, ds->nPhaseCentres+1);
 		ds->im = 0;
 	}
 }
@@ -65,6 +64,7 @@ void deleteDifxScanInternals(DifxScan *ds)
 void deleteDifxScanArray(DifxScan *ds, int nScan)
 {
 	int s;
+
 	if(ds)
 	{
 		for(s = 0; s < nScan; s++)
@@ -77,7 +77,7 @@ void deleteDifxScanArray(DifxScan *ds, int nScan)
 
 void fprintDifxScan(FILE *fp, const DifxScan *ds)
 {
-	int i,j;
+	int i, j, nModel;
 
 	fprintf(fp, "  DifxScan [%s] : %p\n", ds->identifier, ds);
 	fprintf(fp, "    Start = MJD %12.6f\n", ds->mjdStart);
@@ -87,23 +87,35 @@ void fprintDifxScan(FILE *fp, const DifxScan *ds)
 	fprintf(fp, "    Max NS between AC averages = %d\n", ds->maxNSBetweenACAvg);
 	fprintf(fp, "    Pointing centre source index = %d\n", ds->pointingCentreSrc);
         fprintf(fp, "    Number of phase centres = %d\n", ds->nPhaseCentres);
-	for(i=0;i<ds->nPhaseCentres;i++) {
-	        fprintf(fp, "    Phase centre %d source index = %d\n", i, 
-			ds->phsCentreSrcs[i]);
-		fprintf(fp, "    Original job phase centre %d source index = %d\n", i,
-			ds->orgjobPhsCentreSrcs[i]);
+	for(i = 0; i < ds->nPhaseCentres; i++) 
+	{
+	        fprintf(fp, "    Phase centre %d source index = %d\n", 
+			i, ds->phsCentreSrcs[i]);
+		fprintf(fp, "    Original job phase centre %d source index = %d\n",
+			i, ds->orgjobPhsCentreSrcs[i]);
 	}
 	fprintf(fp, "    nAntenna %d\n", ds->nAntenna);
+
 	fprintf(fp, "    ConfigId = %d\n", ds->configId);
+
+	if(ds->nPhaseCentres < 1 || ds->pointingCentreSrc == ds->phsCentreSrcs[0])
+	{
+		nModel = ds->nPhaseCentres;
+	}
+	else
+	{
+		nModel = ds->nPhaseCentres + 1;
+	}
+
 	if(ds->nPoly > 0 && ds->nAntenna > 1)
 	{
 		if(ds->im)
 		{
-			for(i=0;i<ds->nAntenna;i++)
+			for(i = 0; i < ds->nAntenna; i++)
 			{
 				if(ds->im[i])
 				{
-					for(j=0;j<ds->nPhaseCentres+1;j++)
+					for(j = 0; j < nModel; j++)
 					{
 						fprintDifxPolyModel(fp, ds->im[i][j]);
 					}
@@ -170,7 +182,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	else
 	{
 		dest->pointingCentreSrc = src->pointingCentreSrc;
-		for(i=0;i<src->nPhaseCentres;i++)
+		for(i = 0; i < src->nPhaseCentres; i++)
 		{
 			dest->phsCentreSrcs[i] = src->phsCentreSrcs[i];
 			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
@@ -304,10 +316,14 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 			src = 2;
 		}
 		printf("Taking scan from src %d: ", src);
-		if(i1>=0)
+		if(i1 >= 0)
+		{
 			printf("ds1[%d] starts at %f; ", i1, ds1[i1].mjdStart);
-		if(i2>=0)
+		}
+		if(i2 >= 0)
+		{
                         printf("ds2[%d] starts at %f", i2, ds2[i2].mjdStart);
+		}
 		printf("\n");
 
 		/* do the copy and increments */
@@ -335,6 +351,7 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	*nds = i;
 
 	printf("After merging two inputs, which had nScan %d and %d, the result has nScan %d\n", nds1, nds2, *nds);
+	
 	return ds;
 }
 
@@ -390,8 +407,7 @@ int getDifxScanIMIndex(const DifxScan *ds, double mjd, double iat, double *dt)
 }
 
 /* dc must point to the base of a configuration array */
-int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, 
-	const DifxConfig *dc)
+int writeDifxScan(FILE *out, const DifxScan *ds, int scanId, const DifxConfig *dc)
 {
 	int i;
 
@@ -405,20 +421,17 @@ int writeDifxScan(FILE *out, const DifxScan *ds, int scanId,
 	writeDifxLineInt1(out, "SCAN %d AC AVG INTERVAL (NS)", scanId, ds->maxNSBetweenACAvg);
 	writeDifxLineInt1(out, "SCAN %d POINTING SRC", scanId, ds->pointingCentreSrc);
         writeDifxLineInt1(out, "SCAN %d NUM PHS CTRS", scanId, ds->nPhaseCentres);
-	for(i=0;i<ds->nPhaseCentres;i++)
+	for(i = 0; i < ds->nPhaseCentres; i++)
 	{
-		writeDifxLineInt2(out, "SCAN %d PHS CTR %d", scanId, i, 
-				  ds->phsCentreSrcs[i]);
+		writeDifxLineInt2(out, "SCAN %d PHS CTR %d", scanId, i, ds->phsCentreSrcs[i]);
 	}
 
 	return 7+ds->nPhaseCentres;
 }
 
-int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, 
-	const DifxConfig *dc)
+int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds, const DifxConfig *dc)
 {
-	int i;
-	int n;
+	int i, n;
 
 	writeDifxLineInt(out, "NUM SCANS", nScan);
 	n = 1;
@@ -428,5 +441,5 @@ int writeDifxScanArray(FILE *out, int nScan, const DifxScan *ds,
 		n += writeDifxScan(out, ds, i, dc);
 	}
 
-	return 0;
+	return n;
 }
