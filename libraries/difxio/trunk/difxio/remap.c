@@ -82,6 +82,7 @@ int *dupRemap(const int *Remap)
 		return 0;
 	}
 
+	/* count size of Remap */
 	for(n = 0; Remap[n] >= 0; n++) {}
 
 	r2 = newRemap(n);
