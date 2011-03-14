@@ -227,33 +227,21 @@ int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int
 int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 {
 	char filename[DIFXIO_FILENAME_LENGTH];
-	const char suffix[] = "/PCAL_";
-	int jobAntId;
+	const char prefix[] = "/PCAL_";
 
 	if(*file)
 	{
-		if(*file)
-		{
-			fclose(*file);
-			*file = 0;
-		}
-	}
-
-	jobAntId = reverseRemap(D->job[jobId].antennaIdRemap, antId);
-	if(jobAntId < 0 || jobAntId >= D->nAntenna)
-	{
-		/* This antenna must not have participated in this job */
-
-		return -1;
+		fclose(*file);
+		*file = 0;
 	}
 
 	sprintf(filename, "%s%s%s", D->job[jobId].outputFile,
-			 suffix, D->antenna[jobAntId].name);
+			 prefix, D->antenna[antId].name);
 
 	*file = fopen(filename, "r");
 	if(!*file)
 	{
-		fprintf(stderr, "\nError opening file : %s\n", filename);
+		fprintf(stderr, "\nError opening file: %s\n", filename);
 
 		return -1;
 	}
@@ -642,7 +630,7 @@ static int parseDifxPulseCal(const char *line,
 
 	if(mjd < D->mjdStart || mjd > D->mjdStop)
 	{
-		return -1;
+		return -2;
 	}
 
 	dd = D->datastream + dsId;
@@ -655,14 +643,14 @@ static int parseDifxPulseCal(const char *line,
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
         {
-		return -3;
+		return -4;
         }
 
 	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
 	*configId = D->scan[scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
-		return -3;
+		return -5;
 	}
 
 	/* Read in pulse cal information */
@@ -696,7 +684,7 @@ static int parseDifxPulseCal(const char *line,
 					{
 						printf("Warning: parseDifxPulseCal: Error scanning line\n");
 						
-						return -4;
+						return -6;
 					}
 					line += p;
 

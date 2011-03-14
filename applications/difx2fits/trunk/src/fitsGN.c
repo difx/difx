@@ -619,7 +619,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 					{
 						printf("\n");
 					}
-					fprintf(stderr, "    No gain curve for station '%s'\n", antName);
+					printf("    No gain curve for station '%s'\n", antName);
 					messages++;
 					bad = 1;
 					break;

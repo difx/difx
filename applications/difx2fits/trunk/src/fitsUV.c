@@ -1198,8 +1198,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	printf("      %d records written\n", nWritten);
 	if(opts->verbose > 1)
 	{
-		printf("        Note : 1 record is all data from 1 baseline\n");
-		printf("        for 1 timestamp\n");
+		printf("        Note : 1 record is all data from 1 baseline for 1 timestamp\n");
 	}
 
 	free(dvs);

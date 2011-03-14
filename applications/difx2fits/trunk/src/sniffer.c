@@ -845,7 +845,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	Accumulator *A;
 	int a1, a2;
 	int i, p;
-	int configId, sourceId, scanId;
+	int configId, sourceId, scanId, scanId2;
 	float weight;
 	int isLSB;
 	int stride, offset, bbc, index;
@@ -871,13 +871,14 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 	a1 = data->baseline/256 - 1;
 	a2 = data->baseline%256 - 1;
 	scanId = DifxInputGetScanIdByAntennaId(S->D, mjd, a1);
-	if(scanId < 0 || scanId > S->D->nScan)
+	scanId2 = DifxInputGetScanIdByAntennaId(S->D, mjd, a2);
+	if(scanId < 0 || scanId > S->D->nScan || scanId2 < 0 || scanId2 > S->D->nScan)
 	{
 		return 0;
 	}
-	if(scanId != DifxInputGetScanIdByAntennaId(S->D, mjd, a2))
+	if(scanId != scanId2)
 	{
-		fprintf(stderr, "Warning: feedSnifferFITS: antenna1=%d and antenna2=%d refer to different scans\n", a1, a2);
+		fprintf(stderr, "Warning: feedSnifferFITS: antenna1=%d and antenna2=%d refer to different scans (%d and %d)\n", a1, a2, scanId, scanId2);
 	}
 
 	configId = S->D->scan[scanId].configId;
