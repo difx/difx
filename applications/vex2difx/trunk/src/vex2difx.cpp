@@ -1810,6 +1810,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			cout << ", longer that that specified for the UV shift interval (";
 			cout << corrSetup->maxNSBetweenUVShifts;
 			cout << "). Reduce FFT buffering or increase allowed interval!" << endl;
+
 			exit(0);
 		}
 

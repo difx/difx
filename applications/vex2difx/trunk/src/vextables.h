@@ -157,6 +157,7 @@ class VexChannel		// Antenna-specific baseband channel details
 {
 public:
 	VexChannel() : recordChan(0), subbandId(-1) {}
+	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 
 	unsigned int recordChan;// channel number on recorded media

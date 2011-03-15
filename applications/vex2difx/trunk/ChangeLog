@@ -16,6 +16,7 @@ Version 2.0.1
 * Try different subintNS until the readsize becomes reasonable (probably some tuning to be done still)
 * Propagate .vex file phase cal extraction into .input file
 * Pass tcalFreq from .v2d to .input
+* Support several different modes of pulse cal tone selection
 
 Version 2.0
 ~~~~~~~~~~~

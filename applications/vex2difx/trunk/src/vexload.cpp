@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -1034,25 +1034,29 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					F.format = "S2";
 				}
 
-				if (s2mode != "none") {
-				  f = s2mode.find_last_of("x");
-				  g = s2mode.find_last_of("-");
+				if (s2mode != "none")
+				{
+					f = s2mode.find_last_of("x");
+					g = s2mode.find_last_of("-");
 
-				  if(f < 0 || g < 0 || f > g)
-				  {
-					cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
-					exit(0);
-				  }
+					if(f < 0 || g < 0 || f > g)
+					{
+						cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
+					
+						exit(0);
+					}
 
-				  string tracks = s2mode.substr(f+1, g-f-1);
-				  string bits = s2mode.substr(g+1);
+					string tracks = s2mode.substr(f+1, g-f-1);
+					string bits = s2mode.substr(g+1);
 
-				  F.nBit = atoi(bits.c_str());
-				  F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
-				  //F.nRecordChan = atoi(tracks.c_str());
-				} else {
-				  F.nBit = 2;
-				  F.nRecordChan = 0;
+					F.nBit = atoi(bits.c_str());
+					F.nRecordChan = atoi(tracks.c_str())/F.nBit; // should equal bbc2pol.size();
+					//F.nRecordChan = atoi(tracks.c_str());
+				} 
+				else 
+				{
+					F.nBit = 2;
+					F.nRecordChan = 0;
 				}
 			}
 
@@ -1118,7 +1122,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					F.channels.back().bbcFreq = freq;
 					F.channels.back().bbcBandwidth = bandwidth;
 					F.channels.back().bbcSideBand = sideBand;
-					F.channels.back().tones = pcalMap[phaseCalName];
+					if(antennaSetup && antennaSetup->toneSelection != ToneSelectionVex)
+					{
+						F.channels.back().selectTones(
+							antennaSetup->phaseCalIntervalMHz, 
+							antennaSetup->toneSelection,
+							antennaSetup->toneGuardMHz);
+					}
+					else
+					{
+						F.channels.back().tones = pcalMap[phaseCalName];
+					}
 				}
 
 				i++;

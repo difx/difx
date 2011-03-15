@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -137,6 +137,8 @@ public:
 	int networkPort;	// For eVLBI : port for this antenna
 	int windowSize;		// For eVLBI : TCP window size
 	int phaseCalIntervalMHz;// 0 if no phase cal extraction, positive gives interval between tones to extract
+	enum ToneSelection toneSelection;	// Which tones to propagate to FITS
+	double toneGuardMHz;	// to avoid getting tones too close to band edges; default = bandwidth/8
 	int tcalFrequency;	// Hz (= 80 for VLBA)
 	vector<ZoomFreq> zoomFreqs;//List of zoom freqs to add for this antenna
 };

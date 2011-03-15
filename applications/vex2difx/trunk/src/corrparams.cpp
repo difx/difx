@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -46,7 +46,6 @@
 const double MJD_UNIX0 = 40587.0;	// MJD at beginning of unix time
 const double SEC_DAY = 86400.0;
 const double MUSEC_DAY = 86400000000.0;
-
 
 /* round to nearest second */
 static double roundSeconds(double mjd)
@@ -728,6 +727,8 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	networkPort = 0;
 	windowSize = 0;
 	phaseCalIntervalMHz = -1;
+	toneGuardMHz = -1.0;
+	toneSelection = ToneSelectionVex;
 	tcalFrequency = -1;
 	dataSource = DataSourceNone;
 	dataSampling = NumSamplingTypes;	/* flag that no sampling is is identified here */
@@ -1019,6 +1020,22 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	else if(key == "phaseCalInt")
 	{
 		ss >> phaseCalIntervalMHz;
+	}
+	else if(key == "toneGuard")
+	{
+		ss >> toneGuardMHz;
+	}
+	else if(key == "toneSelection")
+	{
+		string ts;
+		ss >> ts;
+		toneSelection = stringToToneSelection(ts.c_str());
+		if(toneSelection == ToneSelectionUnknown)
+		{
+			cerr << "Error: antenna " << vexName << " unsupported value of toneSelection (" << ts << ") provided." << endl;
+			nWarn++;
+			toneSelection = ToneSelectionVex;
+		}
 	}
 	else if(key == "tcalFreq")
 	{

@@ -133,6 +133,123 @@ void VexInterval::logicalOr(const VexInterval &v)
 	}
 }
 
+void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz)
+{
+	double epsilonHz = 1.0;
+	int tonesInBand;
+	int firstToneMHz;
+
+	if(guardBandMHz < 0.0)
+	{
+		guardBandMHz = bbcBandwidth*1.0e-6/8.0;	// default to 1/8 of the band
+	}
+
+	if(bbcSideBand == 'U')
+	{
+		firstToneMHz = static_cast<int>((bbcFreq + epsilonHz)*1.0e-6 + toneIntervalMHz);
+		tonesInBand = static_cast<int>((bbcFreq + bbcBandwidth)*1.0e-6 - firstToneMHz)/toneIntervalMHz + 1;
+	}
+	else
+	{
+		firstToneMHz = static_cast<int>((bbcFreq - epsilonHz)*1.0e-6);
+		tonesInBand = static_cast<int>(firstToneMHz - (bbcFreq - bbcBandwidth)*1.0e-6)/toneIntervalMHz + 1;
+	}
+
+	if(selection != ToneSelectionVex)
+	{
+		tones.clear();
+	}
+	switch(selection)
+	{
+	case ToneSelectionVex:
+		// Nothing to do
+		break;
+	case ToneSelectionNone:
+		// Nothing to do
+		break;
+	case ToneSelectionEnds:
+		tones.push_back(0);
+		tones.push_back(tonesInBand - 1);
+		break;
+	case ToneSelectionAll:
+		for(int i = 0; i < tonesInBand; i++)
+		{
+			tones.push_back(i);
+		}
+		break;
+	case ToneSelectionSmart:
+		for(int i = 0; i < tonesInBand; i++)
+		{
+			if(bbcSideBand == 'U')
+			{
+				double f = firstToneMHz + i*toneIntervalMHz;
+				if(f > (bbcFreq*1.0e-6+guardBandMHz) && f < ((bbcFreq+bbcBandwidth)*1.0e-6-guardBandMHz))
+				{
+					if(tones.size() < 2)
+					{
+						tones.push_back(i);
+					}
+					else
+					{
+						tones[1] = i;
+					}
+				}
+			}
+			else
+			{
+				double f = firstToneMHz - i*toneIntervalMHz;
+				if(f < (bbcFreq*1.0e-6-guardBandMHz) && f > ((bbcFreq-bbcBandwidth)*1.0e-6+guardBandMHz))
+				{
+					if(tones.size() < 2)
+					{
+						tones.push_back(i);
+					}
+					else
+					{
+						tones[1] = i;
+					}
+				}
+			}
+		}
+		if(tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/200)
+		{
+			// If not enough tones are found, recurse a bit...
+			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
+		}
+		break;
+	case ToneSelectionMost:
+		for(int i = 0; i < tonesInBand; i++)
+		{
+			if(bbcSideBand == 'U')
+			{
+				double f = firstToneMHz + i*toneIntervalMHz;
+				if(f > (bbcFreq*1.0e-6+guardBandMHz) && f < ((bbcFreq+bbcBandwidth)*1.0e-6-guardBandMHz))
+				{
+					tones.push_back(i);
+				}
+			}
+			else
+			{
+				double f = firstToneMHz - i*toneIntervalMHz;
+				if(f < (bbcFreq*1.0e-6-guardBandMHz) && f > ((bbcFreq-bbcBandwidth)*1.0e-6+guardBandMHz))
+				{
+					tones.push_back(i);
+				}
+			}
+		}
+		if(tones.size() < 2 && guardBandMHz > bbcBandwidth*1.0e-6/200)
+		{
+			// If not enough tones are found, recurse a bit...
+			selectTones(toneIntervalMHz, selection, guardBandMHz/2.0);	
+		}
+		break;
+	default:
+		cerr << "Error: selectTones: unexpected value of selection: " << selection << endl;
+		
+		exit(0);
+	}
+}
+
 int VexMode::addSubband(double freq, double bandwidth, char sideband, char pol)
 {
 	int i, n;
