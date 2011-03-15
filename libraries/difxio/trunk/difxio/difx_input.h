@@ -39,6 +39,7 @@
 #define MAX_DATA_SOURCE_NAME_LENGTH	16
 #define MAX_ANTENNA_MOUNT_NAME_LENGTH	8
 #define MAX_SAMPLING_NAME_LENGTH	16
+#define MAX_TONE_SELECTION_STRING_LENGTH 12
 
 #define DIFXIO_FILENAME_LENGTH		256
 #define DIFXIO_NAME_LENGTH		32
@@ -135,6 +136,23 @@ enum OutputFormatType
 };
 
 extern const char antennaMountTypeNames[][MAX_ANTENNA_MOUNT_NAME_LENGTH];
+
+/* keep this current with toneSelectionNames[] in difx_input.c */
+enum ToneSelection
+{
+	ToneSelectionVex = 0,	// trust the vex file	[default]
+	ToneSelectionNone,	// Don't pass any tones along
+	ToneSelectionEnds,	// send along two tones at edges of the band
+	ToneSelectionAll,	// send along all tones
+	ToneSelectionSmart,	// like Ends, but try to stay toneGuard MHz away from band edges
+	ToneSelectionMost,	// all except those within toneGuard
+	ToneSelectionUnknown,	// an error condition
+
+	NumToneSelections	// needs to be at end of list
+};
+
+extern const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH];
+
 
 /* Straight from DiFX frequency table */
 typedef struct
@@ -762,6 +780,7 @@ DifxAntennaFlag *mergeDifxAntennaFlagArrays(const DifxAntennaFlag *df1,
 	const int *antennaIdRemap, int *ndf);
 
 /* DifxInput functions */
+enum ToneSelection stringToToneSelection(const char *str);
 DifxInput *newDifxInput();
 void deleteDifxInput(DifxInput *D);
 void printDifxInput(const DifxInput *D);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -179,7 +179,6 @@ DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1,
         int i, j;
 
         *nds = nds1;
-	printf("Starting with %d entries\n", nds1);
 
         /* first identify entries that differ and assign new sourceIds to them */
         for(j = 0; j < nds2; j++)
@@ -198,7 +197,6 @@ DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1,
                         (*nds)++;
                 }
         }
-	printf("Will finally need %d entries\n", *nds);
 
         /* Allocate and copy */
         ds = newDifxSourceArray(*nds);
@@ -211,7 +209,6 @@ DifxSource *mergeDifxSourceArrays(const DifxSource *ds1, int nds1,
                 i = sourceIdRemap[j];
                 if(i >= nds1)
                 {
-			printf("Copying to position %d\n", i);
                         copyDifxSource(ds + i, ds2 + j);
                 }
         }
@@ -233,25 +230,23 @@ int writeDifxSourceArray(FILE *out, int nSource, const DifxSource *ds,
         {
                 writeDifxLine1(out, "SOURCE %d NAME", i, ds[i].name);
                 n++;
-		writeDifxLineDouble1(out, "SOURCE %d RA", i, 
-				     "%17.15f", ds[i].ra);
+		writeDifxLineDouble1(out, "SOURCE %d RA", i, "%17.15f", ds[i].ra);
                 n++;
-                writeDifxLineDouble1(out, "SOURCE %d DEC", i, 
-				     "%17.15f",  ds[i].dec);
+                writeDifxLineDouble1(out, "SOURCE %d DEC", i, "%17.15f",  ds[i].dec);
                 n++;
-		if(doCalcode) {
-			writeDifxLine1(out, "SOURCE %d CALCODE", 
-				       i, ds[i].calCode);
+		if(doCalcode) 
+		{
+			writeDifxLine1(out, "SOURCE %d CALCODE", i, ds[i].calCode);
 			n++;
 		}
-		if(doQual) {
-			writeDifxLineInt1(out, "SOURCE %d QUAL", 
-					  i, ds[i].qual);
+		if(doQual)
+		{
+			writeDifxLineInt1(out, "SOURCE %d QUAL", i, ds[i].qual);
 	                n++;
 		}
-                if(doSpacecraftID) {
-                        writeDifxLineInt1(out, "SOURCE %d S/CRAFT ID", 
-					  i, ds[i].spacecraftId);
+                if(doSpacecraftID)
+		{
+                        writeDifxLineInt1(out, "SOURCE %d S/CRAFT ID", i, ds[i].spacecraftId);
                         n++;
                 }
         }

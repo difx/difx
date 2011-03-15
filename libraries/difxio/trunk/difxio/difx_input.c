@@ -35,6 +35,32 @@
 
 const int MaxFlags = 32000;
 
+const char toneSelectionNames[][MAX_TONE_SELECTION_STRING_LENGTH] =
+{
+	"vex",
+	"none",
+	"ends",
+	"all",
+	"smart",
+	"most",
+	"unknown"
+};
+
+enum ToneSelection stringToToneSelection(const char *str)
+{
+	enum ToneSelection ts;
+
+	for(ts = 0; ts < NumToneSelections; ts++)
+	{
+		if(strcasecmp(str, toneSelectionNames[ts]) == 0)
+		{
+			break;
+		}
+	}
+
+	return ts;
+}
+
 /* allocate empty structure, do minimal initialization */
 DifxInput *newDifxInput()
 {

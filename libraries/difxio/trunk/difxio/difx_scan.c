@@ -168,16 +168,16 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 	dest->nPhaseCentres = src->nPhaseCentres;
 	if(sourceIdRemap)
 	{
-		printf("About to do the source re-mapping\n");
-		printf("Source pointing centre was %d\n", src->pointingCentreSrc);
-		printf("This will be re-mapped to %d\n", sourceIdRemap[src->pointingCentreSrc]);
+//		printf("About to do the source re-mapping\n");
+//		printf("Source pointing centre was %d\n", src->pointingCentreSrc);
+//		printf("This will be re-mapped to %d\n", sourceIdRemap[src->pointingCentreSrc]);
 		dest->pointingCentreSrc = sourceIdRemap[src->pointingCentreSrc];
 		for(i=0;i<src->nPhaseCentres;i++)
 		{
 			dest->phsCentreSrcs[i] = sourceIdRemap[src->phsCentreSrcs[i]];
 			dest->orgjobPhsCentreSrcs[i] = src->orgjobPhsCentreSrcs[i];
 		}
-		printf("Done with source re-mapping\n");
+//		printf("Done with source re-mapping\n");
 	}
 	else
 	{
@@ -241,6 +241,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 			if(dest->im[destAntenna] == 0)
 			{
 				fprintf(stderr, "Error allocating space for IM table! Aborting");
+
 				exit(1);
 			}
 			if(src->im[srcAntenna] == 0)
@@ -257,6 +258,7 @@ void copyDifxScan(DifxScan *dest, const DifxScan *src,
 				if(dest->im[destAntenna][j] == 0)
 				{
 					fprintf(stderr, "Error allocating space for IM table! Aborting");
+
 					exit(1);
 				}
 			}
@@ -282,7 +284,6 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 	*nds = nds1 + nds2;
 	ds = newDifxScanArray(*nds);
 
-	printf("ds1 has %d scans; ds2 has %d scans\n", nds1, nds2);
 	for(;;)
 	{
 		if(i1 >= nds1)
@@ -315,16 +316,6 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 		{
 			src = 2;
 		}
-		printf("Taking scan from src %d: ", src);
-		if(i1 >= 0)
-		{
-			printf("ds1[%d] starts at %f; ", i1, ds1[i1].mjdStart);
-		}
-		if(i2 >= 0)
-		{
-                        printf("ds2[%d] starts at %f", i2, ds2[i2].mjdStart);
-		}
-		printf("\n");
 
 		/* do the copy and increments */
 		if(src == 1)
@@ -350,8 +341,10 @@ DifxScan *mergeDifxScanArrays(const DifxScan *ds1, int nds1,
 
 	*nds = i;
 
+/*
 	printf("After merging two inputs, which had nScan %d and %d, the result has nScan %d\n", nds1, nds2, *nds);
-	
+*/
+
 	return ds;
 }
 
