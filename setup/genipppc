@@ -48,7 +48,7 @@ def getippversion(path):
 		print "Reading version from ", ippheader
 		major = minor = None
 		for line in open(ippheader):
-			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)', line)
+			m = search('#define\s+IPP_VERSION_STR\s+"(\S+)"', line)
 			if (m != None):
 				print "Got version ", m.group(1)
 				return m.group(1)
@@ -107,18 +107,19 @@ def genipppc(path, ippversion):
 		else:
 			libdir = 'sharedlib'
 		if ipparch == 32:
-			out.write('Libs: -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % libdir)
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lipps -lguide -lippvm -lippcore\n' % (libdir,libdir))
 			out.write('Cflags: -I${base}/include\n')
 		else:
-			out.write('Libs: -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % libdir)
+			out.write('Libs: -Wl,-rpath,${base}/%s -L${base}/%s -lippsem64t -lguide -lippvmem64t -lippcoreem64t\n' % (libdir,libdir))
 			out.write('Cflags: -I${base}/include\n')
 	elif major == 7:
 		if ipparch == 32:
-			out.write('Libs: -L${base}/lib/ia32 -L${base}/ipp/lib/ia32 -lipps -lippvm -lippcore -liomp5\n')
-			out.write('Cflags: -I${base}/ipp/include\n')
+			libdir = 'ia32'
 		else:
-			out.write('Libs: -L${base}/lib/intel64 -L${base}/ipp/lib/intel64 -lipps -lippvm -lippcore -liomp5\n')
-			out.write('Cflags: -I${base}/ipp/include\n')
+			libdir = 'intel64'
+		out.write('Libs: -Wl,-rpath,${base}/lib/%s -Wl,-rpath,${base}/ipp/lib/%s -L${base}/lib/%s -L${base}/ipp/lib/%s -lipps -lippvm -lippcore -liomp5\n' % (libdir,libdir,libdir,libdir))
+		out.write('Cflags: -I${base}/ipp/include\n')
+
 	else:
 		print 'Sorry, IPP %d not yet supported by this script\n' % major
 
