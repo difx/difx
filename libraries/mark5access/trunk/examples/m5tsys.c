@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,8 +34,8 @@
 
 const char program[] = "m5states";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2010 Dec 12";
+const char version[] = "0.2";
+const char verdate[] = "2011 Mar 15";
 
 int usage(const char *pgm)
 {
@@ -44,7 +44,7 @@ int usage(const char *pgm)
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("A Mark5 switched power generator for VLBA, Mark3/4, and Mark5B "
 		"formats using the\nmark5access library.\n\n");
-	printf("Usage : %s <file> <dataformat> <n> [<offset>]\n\n", pgm);
+	printf("Usage : %s <file> <dataformat> [<n>] [<offset>]\n\n", pgm);
 	printf("  <file> is the name of the input file\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
@@ -53,6 +53,7 @@ int usage(const char *pgm)
 	printf("    Mark5B-512-16-2\n\n");
 	printf("  <n> is the number of samples per channel to count\n\n");
 	printf("  <offset> is number of bytes into file to start count\n\n");
+	printf("If <n> is not provided or is < 0, then the whole file is processed.\n\n");
 
 	return 0;
 }
@@ -93,6 +94,11 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 	int mjd, sec, lastsec = -1;
 	double ns;
 	int phase, on;
+
+	if(n < 0)
+	{
+		n = 1LL << 60;	/* in otherwords, the entire file */
+	}
 
 	nOn = 0;
 	nOff = 0;
@@ -155,7 +161,6 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 		
 		if(status < 0)
 		{
-			printf("<EOF> status=%d\n", status);
 			break;
 		}
 		else
@@ -194,7 +199,7 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 int main(int argc, char **argv)
 {
 	long long offset = 0;
-	long long n;
+	long long n = -1;
 	int r;
 
 	if(argc == 2)
@@ -226,14 +231,12 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen/2));
 
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
 
-			mf = new_mark5_format_from_stream(
-				new_mark5_stream_memory(buffer, bufferlen/2));
+			mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, bufferlen/2));
 
 			print_mark5_format(mf);
 			delete_mark5_format(mf);
@@ -245,16 +248,19 @@ int main(int argc, char **argv)
 		return 0;
 	}
 
-	else if(argc < 4)
+	else if(argc < 3)
 	{
 		return usage(argv[0]);
 	}
 
-	n = atoll(argv[3]);
+	if(argc > 3)
+	{
+		n = atoll(argv[3]);
+	}
 
 	if(argc > 4)
 	{
-		offset=atoll(argv[4]);
+		offset = atoll(argv[4]);
 	}
 
 	calcpower(argv[1], argv[2], offset, n);

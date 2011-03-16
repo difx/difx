@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2011 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -38,8 +38,8 @@
 
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2010 Aug 08";
+const char version[] = "0.2";
+const char verdate[] = "2011 Mar 15";
 
 const int MaxLineLen = 256;
 
@@ -304,6 +304,12 @@ Baseline *newBaseline(const char *confFile)
 
 		return 0;
 	}
+
+	if(B->ds1->ms->sec != B->ds2->ms->sec ||
+	   B->ds1->ms->ns  != B->ds2->ms->ns)
+	{
+		printf("\n\n*** WARNING *** Data stream times do not match ***\n\n");
+	}
 	
 	for(i = 0; i < NItem; i++)
 	{
@@ -449,10 +455,6 @@ void printBaseline(const Baseline *B)
 	printf("  deltaF = %f Hz\n", B->deltaF);
 	printf("  deltaT = %e s\n", B->deltaT);
 }
-
-
-
-
 
 int usage(const char *pgm)
 {
@@ -628,6 +630,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "\nSorry, I don't know what to do with `%s'\n", argv[a]);
 			fprintf(stderr, "Run with -h for usage instructions\n\n");
+
 			return 0;
 		}
 	}

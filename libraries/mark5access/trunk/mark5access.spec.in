@@ -6,6 +6,7 @@ License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/mark5access-@version@-buildroot
 Requires: gcc >= 4.1.0
+Requires: fftw3 >= 3.2.0
 Prefix: /usr
 Source: mark5access-@version@.tar.gz
 
