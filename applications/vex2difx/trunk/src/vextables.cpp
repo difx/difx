@@ -139,6 +139,11 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 	int tonesInBand;
 	int firstToneMHz;
 
+	if(toneIntervalMHz <= 0)
+	{
+		return;
+	}
+
 	if(guardBandMHz < 0.0)
 	{
 		guardBandMHz = bbcBandwidth*1.0e-6/8.0;	// default to 1/8 of the band
@@ -155,10 +160,25 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 		tonesInBand = static_cast<int>(firstToneMHz - (bbcFreq - bbcBandwidth)*1.0e-6)/toneIntervalMHz + 1;
 	}
 
-	if(selection != ToneSelectionVex)
+	if(selection == ToneSelectionVex)
+	{
+		vector<int>::iterator it;
+
+		// Here what we do is turn negative tone indices (i.e., counting from end of band) to positive ones
+		for(it = tones.begin(); it != tones.end(); it++)
+		{
+			if(*it < 0)
+			{
+				*it = tonesInBand + *it;	// For 8 tones: -1 -> 7, -2 -> 6, ...
+			}
+		}
+		sort(tones.begin(), tones.end());
+	}
+	else
 	{
 		tones.clear();
 	}
+
 	switch(selection)
 	{
 	case ToneSelectionVex:

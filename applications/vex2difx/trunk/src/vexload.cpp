@@ -1122,17 +1122,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					F.channels.back().bbcFreq = freq;
 					F.channels.back().bbcBandwidth = bandwidth;
 					F.channels.back().bbcSideBand = sideBand;
-					if(antennaSetup && antennaSetup->toneSelection != ToneSelectionVex)
-					{
-						F.channels.back().selectTones(
-							antennaSetup->phaseCalIntervalMHz, 
-							antennaSetup->toneSelection,
-							antennaSetup->toneGuardMHz);
-					}
-					else
+					if(antennaSetup && antennaSetup->toneSelection == ToneSelectionVex)
 					{
 						F.channels.back().tones = pcalMap[phaseCalName];
 					}
+
+					// This is called even for vex selected tones as negative tones 
+					// are turned positive and result tone order becomes sorted
+					F.channels.back().selectTones(
+						antennaSetup->phaseCalIntervalMHz, 
+						antennaSetup->toneSelection,
+						antennaSetup->toneGuardMHz);
 				}
 
 				i++;
