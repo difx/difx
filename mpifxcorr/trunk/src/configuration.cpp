@@ -1142,11 +1142,6 @@ bool Configuration::processDatastreamTable(ifstream * input)
       }
     }
     datastreamtable[i].phasecalintervalmhz = atoi(line.c_str());
-    if(datastreamtable[i].phasecalintervalmhz != 0)
-    {
-      if(mpiid == 0) //only write one copy of this error message
-        cwarn << startl << "Experimental feature enabled: phase cal extraction not yet supported by difx2fits!!! " << endl;
-    }
 
     getinputline(input, &line, "NUM RECORDED FREQS");
     datastreamtable[i].numrecordedfreqs = atoi(line.c_str());
@@ -1238,8 +1233,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
         lowbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandedgefreq;
         highbandedge = freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandedgefreq + freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
         if(freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband) {
-          parentlowbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
-          parenthighbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
+          lowbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
+          highbandedge -= freqtable[datastreamtable[i].zoomfreqtableindices[j]].bandwidth;
         }
         if (highbandedge <= parenthighbandedge && lowbandedge >= parentlowbandedge) {
           datastreamtable[i].zoomfreqparentdfreqindices[j] = k;
