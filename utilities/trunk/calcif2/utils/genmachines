@@ -12,8 +12,8 @@ from copy import deepcopy
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.11'
-verdate = '20110106'
+version = '0.12'
+verdate = '20110317'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -302,6 +302,15 @@ def writemachines(basename, hostname, machines, cores, results, vsns, \
 		threads.append(e)
 	return threads
 
+def uniqueVsns(vsns):
+	d = {}
+	for v in vsns:
+		d[v] = 1
+	if len(d) != len(vsns):
+		return 0
+	else:
+		return 1
+
 def run(files, machinesfile, overheadcores, verbose, dothreads):
 	ok = True
 
@@ -320,6 +329,10 @@ def run(files, machinesfile, overheadcores, verbose, dothreads):
 		exit(1)
 				
 	vsns = getVsnsFromInputFile(infile)
+
+	if not uniqueVsns(vsns):
+		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
+		exit(1)
 
 	results, conflicts, missing, notidle = getVsnsByMulticast(5, vsns, verbose)
 
