@@ -3,13 +3,13 @@
 from getopt import getopt
 from sys import stdout, argv, exit
 from os.path import isfile, isdir
-from os import getcwd
+from os import getcwd, system
 from string import split, strip, find
 
 program = 'difxcopy'
 version = '0.2'
 author  = 'Walter Brisken'
-verdate = '20090427'
+verdate = '20110319'
 
 fileTypes = ['input', 'calc', 'flag']
 
@@ -34,8 +34,20 @@ def usage(prog):
 def outstring(k, v):
 	key = k + ':'
 	return '%-20s%s' % (key, v)
+			
+def handleVex(pathName, destination, verbose, vexFiles):
+	pair = [pathName, destination]
+	if not pair in vexFiles:
+		vexFiles.append(pair)
+		cmd = 'cp %s %s' % (pathName, destination)
+		if verbose:
+			print 'Vex copy %s --> %s\n' % (pathName, destination)
+		system(cmd)
+	else:
+		if verbose > 1:
+			print 'Not copying vex file %s to %s more than once\n' % (pathName, destination)
 
-def copyfile(pathName, destination, listOfFiles, verbose):
+def copyfile(pathName, destination, listOfFiles, verbose, vexFiles):
 	if destination[-1] == '/':
 		dest = destination
 	else:
@@ -49,7 +61,7 @@ def copyfile(pathName, destination, listOfFiles, verbose):
 
 	if isdir(pathName):
 		if verbose:
-			print 'Skipping %s -- it is a directory.' % pathName
+			print 'Skipping %s as it is a directory.' % pathName
 		return []
 	
 	if not isfile(pathName):
@@ -77,7 +89,7 @@ def copyfile(pathName, destination, listOfFiles, verbose):
 		else:
 			fn = strip(indata[colonPos+1:])
 			s = split(fn, '/')
-			if len(s) == 1:
+			if len(s) == 1 or fn[0] != '/':
 				outdata = indata
 			else:
 				outdata = outstring(indata[:colonPos], dest + s[-1]) + '\n'
@@ -98,9 +110,12 @@ def copyfile(pathName, destination, listOfFiles, verbose):
 		pathName = f
 		if pathName[0] != '/':
 			pathName = getcwd()+'/'+pathName
-		copyfile(pathName, destination, listOfFiles, verbose)
+		if len(pathName) > 4 and pathName[-4:] == '.vex':
+			handleVex(pathName, destination, verbose, vexFiles)
+		else:
+			copyfile(pathName, destination, listOfFiles, verbose, vexFiles)
 
-def copyfiles(jobPrefix, destination, verbose):
+def copyfiles(jobPrefix, destination, verbose, vexFiles):
 	j = split(jobPrefix)[-1]
 	listOfFiles = []
 	for f in fileTypes:
@@ -108,7 +123,7 @@ def copyfiles(jobPrefix, destination, verbose):
 		if pathName[0] != '/':
 			pathName = getcwd()+'/'+pathName
 		if isfile(pathName) and pathName not in listOfFiles:
-			copyfile(pathName, destination, listOfFiles, verbose)
+			copyfile(pathName, destination, listOfFiles, verbose, vexFiles)
 
 prefixes = []
 verbose = 0
@@ -130,6 +145,10 @@ if len(prefixes) < 2:
 
 destination = prefixes[-1]
 prefixes = prefixes[:-1]
+vexFiles = []
 
 for p in prefixes:
-	copyfiles(p, destination, verbose)
+	if not isfile(p) and not isfile(p+'.input'):
+		print 'No job named %s found here.  Continuing anyway.' % p
+	else:
+		copyfiles(p, destination, verbose, vexFiles)
