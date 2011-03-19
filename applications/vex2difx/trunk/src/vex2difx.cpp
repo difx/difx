@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken & Adam Deller               *
+ *   Copyright (C) 2009-2011 by Walter Brisken & Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -52,7 +52,9 @@ const string author("Walter Brisken/Adam Deller");
 static double current_mjd()
 {
 	struct timeval t;
+
 	gettimeofday(&t, 0);
+
 	return MJD_UNIX0 + t.tv_sec/SEC_DAY + t.tv_usec/MUSEC_DAY;
 }
 
@@ -2199,12 +2201,14 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	{
 		// clean up and return that job was created
 		deleteDifxInput(D);
+
 		return 1;
 	}
 	else
 	{
 		// clean up and return that job was not created
 		deleteDifxInput(D);
+
 		return 0;
 	}
 }
@@ -2393,6 +2397,7 @@ void runCommand(const char *cmd, int verbose)
 	if(s == -1)
 	{
 		cerr << "Error executing: " << cmd << endl;
+
 		exit(0);
 	}
 }

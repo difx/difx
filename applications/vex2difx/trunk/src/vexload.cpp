@@ -544,6 +544,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		if(strcmp(p, "J2000") != 0)
 		{
 			cerr << "Error: only J2000 ref frame is supported." << endl;
+
 			exit(0);
 		}
 
@@ -570,12 +571,14 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 	if(minSubarraySize < 1)
 	{
 		cerr << "Developer error: adjustTimeRange: minSubarraySize = " << minSubarraySize << " is < 1" << endl;
+
 		exit(0);
 	}
 
 	if(antStart.size() != antStop.size())
 	{
 		cerr << "Developer error: adjustTimeRange: size mismatch" << endl;
+
 		exit(0);
 	}
 
@@ -723,6 +726,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		if(src == 0)
 		{
 			cerr << "Developer error! Scan=" << scanDefName << " src == 0" << endl;
+
 			exit(0);
 		}
 
@@ -736,6 +740,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		if(params.getCorrSetup(corrSetupName) == 0)
 		{
 			cerr << "Error: Scan=" << scanDefName << " correlator setup " << corrSetupName << " not defined!" << endl;
+
 			exit(0);
 		}
 
@@ -843,9 +848,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			{
 				if(antennaSetup->format.size() > 0)
 				{
-					cout << "Setting antenna format to " << 
-						antennaSetup->format <<
-						" for antenna " << antName << endl;
+					cout << "Setting antenna format to " << antennaSetup->format << " for antenna " << antName << endl;
 				}
 				F.format = antennaSetup->format;
 			}
@@ -1003,6 +1006,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 							break;
 						default: 
 							cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << F.format << ".  This could be a subtle problem in the vex file." << endl;
+
 							exit(0);
 					}
 				}
@@ -1083,7 +1087,9 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					}
 					else
 					{
-						Q.push_back(v-1);	// Move from vex's 1-based tones to DiFX's 0-based
+						// Move from vex's 1-based tones to DiFX's 0-based; negative tone numbers don't change
+						int difxToneId = (v > 1) ? (v - 1) : v;
+						Q.push_back(difxToneId);
 					}
 				}
 				sort(Q.begin(), Q.end());

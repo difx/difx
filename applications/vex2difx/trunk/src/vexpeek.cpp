@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -40,7 +40,7 @@
 
 const string program("vexpeep");
 const string version("0.2");
-const string verdate("20090518");
+const string verdate("20110319");
 const string author("Walter Brisken");
 
 void usage(const char *pgm)
@@ -103,32 +103,37 @@ void antennaSummary(const VexData *V)
 
 int testVex(const string &vexFile)
 {
+	const int MaxLineLength=128;
 	ifstream is;
-	char s[128];
+	char s[MaxLineLength];
 
 	is.open(vexFile.c_str());
 	if(is.fail())
 	{
 		cerr << "Error: vex2difx cannot open " << vexFile << endl;
+
 		return -1;
 	}
 
-	is.getline(s, 128);
+	is.getline(s, MaxLineLength);
 	if(is.eof())
 	{
 		cerr << "Error: unexpected end of file: " << vexFile << endl;
+
 		return -2;
 	}
 
 	if(strncmp(s, "$EXPER ", 7) == 0)
 	{
 		cerr << "Error: " << vexFile << " looks like a sked input file and is not vex formatted." << endl;
+
 		return -3;
 	}
 
 	if(strncmp(s, "VEX", 3) != 0)
 	{
 		cerr << "Error: " << vexFile << " is not a vex file." << endl;
+
 		return -4;
 	}
 
@@ -145,6 +150,7 @@ int main(int argc, char **argv)
 	if(argc < 2)
 	{
 		usage(argv[0]);
+
 		return 0;
 	}
 
@@ -152,6 +158,7 @@ int main(int argc, char **argv)
 	if(v != 0)
 	{
 		cout << "Error code " << v << endl;
+
 		return 0;
 	}
 

@@ -225,9 +225,10 @@ void split(const string &str, vector<string> &tokens, const string &delimiters =
 
 int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &basebandFiles)
 {
+	const int MaxLineLength=1024;
 	ifstream is;
 	int n=0;
-	char s[1024];
+	char s[MaxLineLength];
 	vector<string> tokens;
 
 	is.open(fileName.c_str());
@@ -241,7 +242,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 
 	for(int line=1; ; line++)
 	{
-		is.getline(s, 1024);
+		is.getline(s, MaxLineLength);
 		if(is.eof())
 		{
 			break;

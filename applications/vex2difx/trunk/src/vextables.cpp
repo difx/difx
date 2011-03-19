@@ -76,6 +76,7 @@ bool operator<(const VexEvent &a, const VexEvent &b)
 	{
 		return false;
 	}
+
 	return a.name < b.name;
 }
 
@@ -615,7 +616,9 @@ const VexSource *VexData::getSourceByDefName(const string &defName) const
 	for(unsigned int i = 0; i < nSource(); i++)
 	{
 		if(sources[i].defName == defName)
+		{
 			return &sources[i];
+		}
 	}
 
 	return 0;
@@ -626,8 +629,12 @@ const VexSource *VexData::getSourceBySourceName(const string &name) const
 	for(unsigned int i = 0; i < nSource(); i++)
 	{
 		for(unsigned int j = 0; j < sources[i].sourceNames.size(); j++)
-		if(sources[i].sourceNames[j] == name)
-			return &sources[i];
+		{
+			if(sources[i].sourceNames[j] == name)
+			{
+				return &sources[i];
+			}
+		}
 	}
 
 	return 0;
@@ -636,6 +643,7 @@ const VexSource *VexData::getSourceBySourceName(const string &name) const
 VexScan *VexData::newScan()
 {
 	scans.push_back(VexScan());
+
 	return &scans.back();
 }
 
@@ -1175,7 +1183,9 @@ const VexScan *VexData::getScanByDefName(const string &defName) const
 	for(unsigned int i = 0; i < nScan(); i++)
 	{
 		if(scans[i].defName == defName)
+		{
 			return &scans[i];
+		}
 	}
 
 	return 0;
@@ -1238,6 +1248,7 @@ int VexEOP::setkv(const string &key, const string &value)
 VexAntenna *VexData::newAntenna()
 {
 	antennas.push_back(VexAntenna());
+
 	return &antennas.back();
 }
 
@@ -1256,7 +1267,9 @@ const VexAntenna *VexData::getAntenna(const string &name) const
 	for(unsigned int i = 0; i < nAntenna(); i++)
 	{
 		if(antennas[i].name == name)
+		{
 			return &antennas[i];
+		}
 	}
 
 	return 0;
@@ -1340,6 +1353,7 @@ bool operator ==(const VexFormat &f1, const VexFormat &f2)
 VexMode *VexData::newMode()
 {
 	modes.push_back(VexMode());
+
 	return &modes.back();
 }
 
@@ -1387,6 +1401,7 @@ int VexData::getModeIdByDefName(const string &defName) const
 VexEOP *VexData::newEOP()
 {
 	eops.push_back(VexEOP());
+
 	return &eops.back();
 }
 
