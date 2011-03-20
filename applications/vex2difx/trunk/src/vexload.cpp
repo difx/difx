@@ -1135,10 +1135,17 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 					// This is called even for vex selected tones as negative tones 
 					// are turned positive and result tone order becomes sorted
-					F.channels.back().selectTones(
-						antennaSetup->phaseCalIntervalMHz, 
-						antennaSetup->toneSelection,
-						antennaSetup->toneGuardMHz);
+					if(antennaSetup)
+					{
+						F.channels.back().selectTones(
+							antennaSetup->phaseCalIntervalMHz, 
+							antennaSetup->toneSelection,
+							antennaSetup->toneGuardMHz);
+					}
+					else
+					{
+						F.channels.back().selectTones(-1, ToneSelectionVex, 0);
+					}
 				}
 
 				i++;
