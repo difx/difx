@@ -648,8 +648,8 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 		D2 = loadDifxInput(opts->baseFile[i]);
 		if(!D2)
 		{
-			fprintf(stderr, "loadDifxInput failed on <%s>.\n",
-				opts->baseFile[i]);
+			fprintf(stderr, "loadDifxInput failed on <%s>.\n", opts->baseFile[i]);
+
 			return 0;
 		}
 		if(opts->specAvg)
@@ -681,6 +681,7 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 			   !areDifxInputsCompatible(D1, D2))
 			{
 				deleteDifxInput(D2);
+
 				continue;
 			}
 			else if(opts->verbose > 1)
@@ -688,7 +689,6 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 				printf("Merging %s\n", opts->baseFile[i]);
 			}
 
-			printf("About to merge in file %d/%d\n", i+1, opts->nBaseFile);
 			D = mergeDifxInputs(D1, D2, opts->verbose);
 
 			deleteDifxInput(D1);
@@ -696,8 +696,8 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 			if(!D)
 			{
-				fprintf(stderr, "Merging failed on <%s>.\n",
-					opts->baseFile[i]);
+				fprintf(stderr, "Merging failed on <%s>.\n", opts->baseFile[i]);
+
 				return 0;
 			}
 		}

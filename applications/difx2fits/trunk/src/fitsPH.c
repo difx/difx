@@ -572,6 +572,7 @@ static int parseDifxPulseCal(const char *line,
 {
 	static int tooMany[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
 	static int tooFew[2][array_MAX_BANDS] = { {0} };	/* zeros the values */
+	static int lastDsId = -1;
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	int np, nb, nt, ns;
@@ -599,6 +600,19 @@ static int parseDifxPulseCal(const char *line,
 	} nan;
 	nan.i32 = -1;
 	
+	if(dsId != lastDsId)
+	{
+		for(pol = 0; pol < 2; pol++)
+		{
+			for(i = 0; i < array_MAX_BANDS; i++)
+			{
+				tooMany[pol][i] = 0;
+				tooFew[pol][i] = 0;
+			}
+		}
+		lastDsId = dsId;
+	}
+
 	for(pol = 0; pol < 2; pol++)
 	{
 		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
@@ -698,7 +712,7 @@ static int parseDifxPulseCal(const char *line,
 					{
 						if(tooMany[pol][recFreq] == 0)
 						{
-							printf("Warning: parseDifxPulseCal: trying to extract too many tones in pol %d recFreq %d\n", pol, recFreq);
+							printf("\nWarning: parseDifxPulseCal: trying to extract too many (%d >= %d) tones in pol %d recFreq %d\n", k, nTone, pol, recFreq);
 						}
 						tooMany[pol][recFreq]++;
 						
@@ -727,7 +741,7 @@ static int parseDifxPulseCal(const char *line,
 				{
 					if(tooFew[pol][recFreq] == 0)
 					{
-						printf("Warning: parseDifxPulseCal: Not enough extracted tones for pol %d recFreq %d\n", pol, recFreq);
+						printf("\nWarning: parseDifxPulseCal: Not enough (%d < %d) extracted tones for pol %d recFreq %d\n", k, nTone, pol, recFreq);
 					}
 					tooFew[pol][recFreq]++;
 					
@@ -910,6 +924,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		printf(" %s", D->antenna[a].name);
+		fflush(stdout);
 
 		for(j = 0; j < D->nJob; j++)
 		{
