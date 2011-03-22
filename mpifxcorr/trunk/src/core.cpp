@@ -1116,7 +1116,7 @@ void Core::copyPCalTones(int index, int threadid, Mode ** modes)
 void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, double nswidth, Mode ** modes, threadscratchspace * scratchspace)
 {
   int maxproducts, resultindex, perr, status, bytecount, recordsize;
-  int freqindex, parentfreqindex, chans_to_avg, freqchannels;
+  int freqindex, localfreqindex, parentfreqindex, numrecordedbands, chans_to_avg, freqchannels;
   double minimumweight, stasamples;
   float renormvalue;
   bool datastreamsaveraged, writecrossautocorrs;
@@ -1269,14 +1269,16 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
     for(int k=0;k<config->getDNumTotalBands(procslots[index].configindex, j);k++)
     {
       freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
+      numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, j);
       if(config->isFrequencyUsed(procslots[index].configindex, freqindex))
       {
-        if(k>=config->getDNumRecordedBands(procslots[index].configindex, j))
+        if(k>=numrecordedbands)
         {
           //need to get the weight from the parent band
-          parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, j, freqindex);
-          for(int l=0;l<config->getDNumRecordedBands(procslots[index].configindex, j);l++) {
-            if(config->getDRecordedFreqIndex(procslots[index].configindex, j, l) == parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, j, k-config->getDNumRecordedBands(procslots[index].configindex, j)) == config->getDRecordedBandPol(procslots[index].configindex, j, l)) {
+          localfreqindex = config->getDLocalZoomFreqIndex(procslots[index].configindex, j, k-numrecordedbands);
+          parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, j, localfreqindex);
+          for(int l=0;l<numrecordedbands;l++) {
+            if(config->getDLocalRecordedFreqIndex(procslots[index].configindex, j, l) == parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, j, k-numrecordedbands) == config->getDRecordedBandPol(procslots[index].configindex, j, l)) {
               procslots[index].floatresults[resultindex] += modes[j]->getWeight(false, l);
             }
           }
@@ -1293,14 +1295,16 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
       for(int k=0;k<config->getDNumTotalBands(procslots[index].configindex, j);k++)
       {
         freqindex = config->getDTotalFreqIndex(procslots[index].configindex, j, k);
+        numrecordedbands = config->getDNumRecordedBands(procslots[index].configindex, j);
         if(config->isFrequencyUsed(procslots[index].configindex, freqindex)) {
-          if(k>=config->getDNumRecordedBands(procslots[index].configindex, j))
+          if(k>=numrecordedbands)
           {
             //need to get the weight from the parent band
-            parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, j, freqindex);
-            for(int l=0;l<config->getDNumRecordedBands(procslots[index].configindex, j);l++)
+            localfreqindex = config->getDLocalZoomFreqIndex(procslots[index].configindex, j, k-numrecordedbands);
+            parentfreqindex = config->getDZoomFreqParentFreqIndex(procslots[index].configindex, j, localfreqindex);
+            for(int l=0;l<numrecordedbands;l++)
             {
-              if(config->getDRecordedFreqIndex(procslots[index].configindex, j, l) == parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, j, k-config->getDNumRecordedBands(procslots[index].configindex, j)) == config->getDRecordedBandPol(procslots[index].configindex, j, l))
+              if(config->getDLocalRecordedFreqIndex(procslots[index].configindex, j, l) == parentfreqindex && config->getDZoomBandPol(procslots[index].configindex, j, k-numrecordedbands) == config->getDRecordedBandPol(procslots[index].configindex, j, l))
               {
                 procslots[index].floatresults[resultindex] += modes[j]->getWeight(false, l);
               }

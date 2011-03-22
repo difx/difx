@@ -416,7 +416,7 @@ void Configuration::getFrameInc(int configindex, int configdatastreamindex, int 
 int Configuration::getFramesPerSecond(int configindex, int configdatastreamindex)
 {
   int nchan, qb, decimationfactor;
-  int payloadsize, toreturn;
+  int payloadsize;
   double samplerate; /* in Hz */
 
   nchan = getDNumRecordedBands(configindex, configdatastreamindex);
@@ -1239,8 +1239,8 @@ bool Configuration::processDatastreamTable(ifstream * input)
         if (highbandedge <= parenthighbandedge && lowbandedge >= parentlowbandedge) {
           datastreamtable[i].zoomfreqparentdfreqindices[j] = k;
           datastreamtable[i].zoomfreqchanneloffset[j] = (int)(((lowbandedge - parentlowbandedge)/freqtable[datastreamtable[i].recordedfreqtableindices[0]].bandwidth)*freqtable[datastreamtable[i].recordedfreqtableindices[0]].numchannels);
-          if (freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband)
-            datastreamtable[i].zoomfreqchanneloffset[j] += freqtable[datastreamtable[i].zoomfreqtableindices[j]].numchannels;
+          //if (freqtable[datastreamtable[i].zoomfreqtableindices[j]].lowersideband)
+          //  datastreamtable[i].zoomfreqchanneloffset[j] += freqtable[datastreamtable[i].zoomfreqtableindices[j]].numchannels;
         }
       }
     }
@@ -2064,6 +2064,7 @@ bool Configuration::consistencyCheck()
   {
     ismuxed = datastreamtable[configs[0].datastreamindices[i]].ismuxed;
     framebytes = datastreamtable[configs[0].datastreamindices[i]].framebytes;
+    numbits = datastreamtable[configs[0].datastreamindices[i]].numbits;
     for(int j=1;j<numconfigs;j++)
     {
       if(ismuxed != datastreamtable[configs[j].datastreamindices[i]].ismuxed)
