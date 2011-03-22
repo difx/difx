@@ -304,12 +304,12 @@ The new features include:
 \item Tweak Integration Time feature of {\tt vex2difx} often does the wrong thing.
 \end{enumerate}
 
-DiFX 1.5.4 may be released before the end of August, 2010.
+DiFX 1.5.4 was released on October 12, 2010.
 
-\subsection{DiFX 2.0}
+\subsection{DiFX 2.0.0}
 
-DiFX 2.0 will be based on an upgraded {\tt mpifxcorr} that breaks {\tt .input} file compatibility with the 1.0 series.
-It is expected that this new version will allow more flexible correlation of mis-matched bands and correlation at multiple phase centers along with general performance improvements.
+DiFX 2.0.0 is based on an upgraded {\tt mpifxcorr} that breaks {\tt .input} file compatibility with the 1.0 series.
+This new version will allow more flexible correlation of mis-matched bands and correlation at multiple phase centers along with general performance improvements.
 Development of the 2.0 capabilities will occur in parallel with the 1.0 series features.
 
 \subsubsection{New features}
@@ -319,13 +319,51 @@ Development of the 2.0 capabilities will occur in parallel with the 1.0 series f
 \item Massive multi-phase center capabilitiy.
 \item New utitility {\tt zerocorr} added.
 \item External pulse cal extraction utility {\tt m5pcal} added.
+\item DiFX output format is all-binary, meaning speed and disk savings
 \end{enumerate}
+
+\subsection{Known bugs}
+
+\begin{enumerate}
+\item Zoom band support has multiple problems.
+\end{enumerate}
+
+DiFX 2.0.0 was released on October 12, 2010.
+
+\subsection{DiFX 2.0.1}
+
+DiFX 2.0.1 is a bug fix and clean-up version in response to numerous improvements to DiFX 2.0.0.
+There are a number of new features as well.
+
+\subsubsection{New features}
+
+\begin{enumerate}
+\item New utility {\tt checkmpifxcorr} to validate DiFX input files
+\item Switched power detection in {\tt mpifxcorr}
+\item Early multi-thread VDIF format support
+\item RedHat RPM file generation for some packages (can extend to others on request)
+\item Improvements to method of selecting which pulse cal tones get propagated to FITS
+\item Initial complex sampling support
+\end{enumerate}
+
+\subsubsection{Bug fixes}
+
+\begin{enumerate}
+\item Fix model accountability bug in difx2fits when combining jobs
+\item Numerous fixes for zoom bands (in {\tt mpifxcorr}, {\tt vex2difx} \& {\tt difx2fits})
+\item Native Mark5 has improved stability for cranky modules
+\item Numerous fixes for DiFX-based phase cal extraction (mostly in {\tt difx2fits}, mostly for multi-job)
+\item Fractional bit correction for a portion of lower sideband data got broken in difx 2.0.0. Fixed.
+\item Migrate {\tt difxcalculator} to DiFX 2; was not complete for DiFX 2.0.0
+\end{enumerate}
+
+DiFX 2.0.1 is expected to be released in April 2011.
 
 \subsection{Features left to implement}
 
-Here is a list of other features to add to NRAO-DiFX that are not directly tied to any particular version:
+Here is a list of other features to add to DiFX that are not directly tied to any particular version:
 \begin{enumerate}
-\item VDIF support
+\item Full VDIF support
 \item Support for K5 format
 \item Pulsar bins with proper output format
 \item Fast-forwarding over unneeded data in the native Mark5 module datastream
@@ -337,7 +375,6 @@ Here is a list of other features to add to NRAO-DiFX that are not directly tied 
 \item Spectral selection between FFT and cross-correlation to allow for greater spectral resolution
 \item Conversion of DiFX output to Mark4 correlator format
 \item Support for antenna local oscillator offsets
-\item Correlation of multiple simultaneous phase centers
 \end{enumerate}
 
 \subsection{DiFX and AIPS}
