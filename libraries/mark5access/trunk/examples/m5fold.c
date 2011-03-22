@@ -68,7 +68,8 @@ int usage(const char *pgm)
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
-	printf("    Mark5B-512-16-2\n\n");
+	printf("    Mark5B-512-16-2\n");
+	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <nbin> is the number of bins per if across 1 period\n");
 	printf("         if negative, the conversion to true power is not performed\n\n");
 	printf("  <nint> is the number of %d sample chunks to work on\n\n", ChunkSize);

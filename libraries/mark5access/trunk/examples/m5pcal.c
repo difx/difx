@@ -73,7 +73,8 @@ int usage(const char *pgm)
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
-	printf("    Mark5B-512-16-2\n\n");
+	printf("    Mark5B-512-16-2\n");
+	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("Options can include:\n\n");
 	printf("  --verbose\n");

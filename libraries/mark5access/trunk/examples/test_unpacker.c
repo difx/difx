@@ -36,6 +36,8 @@ int usage(const char *pgm)
 {
 	printf("Usage : %s <format> [<n> [<offset>] ]\n", pgm);
 	printf("\n  <format> is something like VLBA1_4-128-8-2\n");
+	printf("             or for VDIF: VDIF_1000-64-1-2\n");
+	printf("             (where 1000 is payload size in bytes)\n");
 	printf("\n  <n>      is samples to look at [default 32]\n");
 	printf("\n  <offset> is samples to slip [default 0]\n\n");
 
