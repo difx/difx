@@ -79,6 +79,7 @@ class Baseline:
 
 def parse_output_header(input):
     toreturn = []
+    orgbuffer = ""
     buffer = input.read(4)
     if buffer == "":
         return toreturn
@@ -87,50 +88,91 @@ def parse_output_header(input):
             print "Non-recognised sync word: ascii " + buffer + ", binary %x" % (struct.unpack("I", buffer)[0])
             return toreturn
         #Must be the old style file.  Suck it up.
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #baselinenum
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #mjd
-        toreturn.append(float((input.readline().split(':')[1]).strip())) #seconds
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #configindex
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #srcindex
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #freqindex
-        toreturn.append((input.readline().split(':')[1].strip())) #polpair
-        toreturn.append(int((input.readline().split(':')[1]).strip())) #pulsarbin
-        input.readline() #Skip over flagged
-        toreturn.append(float((input.readline().split(':')[1]).strip())) #dataweight
-        toreturn.append(float((input.readline().split(':')[1]).strip())) #u
-        toreturn.append(float((input.readline().split(':')[1]).strip())) #v
-        toreturn.append(float((input.readline().split(':')[1]).strip())) #w
+	orgbuffer += buffer
+	buffer = input.readline()
+	orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #baselinenum
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #mjd
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(float((buffer.split(':')[1]).strip())) #seconds
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #configindex
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #srcindex
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #freqindex
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append((buffer.split(':')[1].strip())) #polpair
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(int((buffer.split(':')[1]).strip())) #pulsarbin
+	buffer = input.readline()
+        orgbuffer += buffer
+        buffer = input.readline() #Skip over flagged
+	orgbuffer += buffer
+        toreturn.append(float((buffer.split(':')[1]).strip())) #dataweight
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(float((buffer.split(':')[1]).strip())) #u
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(float((buffer.split(':')[1]).strip())) #v
+	buffer = input.readline()
+        orgbuffer += buffer
+        toreturn.append(float((buffer.split(':')[1]).strip())) #w
     else:
         #It is the new style file.  Hooray.
+	orgbuffer += buffer
         buffer = input.read(4)
+	orgbuffer += buffer
         if struct.unpack("i", buffer)[0] != 1:
             #Don't know how to unpack this version - return empty
             return toreturn
         #Ok, we can deal with this
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #baselinenum
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #mjd
         buffer = input.read(8)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #seconds
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #configindex
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #srcindex
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #freqindex
         buffer = input.read(2)
+	orgbuffer += buffer
         toreturn.append(buffer)                        #polpair
         buffer = input.read(4)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("i", buffer)[0]) #pulsarbin
         buffer = input.read(8)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #dataweight
         buffer = input.read(8)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #u
         buffer = input.read(8)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #v
         buffer = input.read(8)
+	orgbuffer += buffer
         toreturn.append(struct.unpack("d", buffer)[0]) #w
+    toreturn.append(orgbuffer)
     return toreturn 
 
 def get_telescopetable_info(inputfile):
