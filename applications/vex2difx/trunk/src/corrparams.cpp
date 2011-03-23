@@ -661,7 +661,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	{
 		ss >> pc->naifFile;
 	}
-	else if(key == "doPointingCentre")
+	else if(key == "doPointingCentre" || key == "doPointingCenter")
 	{
 		if(value == "true" || value == "True" || value == "TRUE" || value == "t" || value == "T")
 		{
@@ -672,7 +672,7 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 			doPointingCentre = false;
 		}
 	}
-	else if(key == "addPhaseCentre")
+	else if(key == "addPhaseCentre" || key == "addPhaseCenter")
 	{
 		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /
 		//eg addPhaseCentre = name@1010-1212/RA@10:10:21.1/Dec@-12:12:00.34
