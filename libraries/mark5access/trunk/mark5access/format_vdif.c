@@ -1881,16 +1881,16 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 	if(ms->format == MK5_FORMAT_VDIF)	/* True VDIF header, not legacy */
 	{
 	  if (ms->complex_decode) 
-	    sprintf(ms->formatname, "VDIFC-%d-%d-%d-%d", ms->databytes, 
+	    sprintf(ms->formatname, "VDIFC_%d-%d-%d-%d", ms->databytes, 
 		    ms->Mbps, ms->nchan, ms->nbit);
 	  else
-	    sprintf(ms->formatname, "VDIF-%d-%d-%d-%d", ms->databytes,
+	    sprintf(ms->formatname, "VDIF_%d-%d-%d-%d", ms->databytes,
 		    ms->Mbps, ms->nchan, ms->nbit);
 
 	}
 	else if(ms->format == MK5_FORMAT_VDIFL)	/* Must be legacy mode, so add an L to VDIF name */
 	{
-		sprintf(ms->formatname, "VDIFL-%d-%d-%d-%d", ms->databytes,
+		sprintf(ms->formatname, "VDIFL_%d-%d-%d-%d", ms->databytes,
 			ms->Mbps, ms->nchan, ms->nbit);
 	}
 	else
