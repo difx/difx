@@ -107,7 +107,7 @@ int getVDIFNumChannels(char * rawheader)
 {
 	int numchans, i;
 	unsigned int headerword = ((unsigned int*)rawheader)[2];
-	unsigned int logchans = ((headerword >> 26) & 0x1F);
+	unsigned int logchans = ((headerword >> 24) & 0x1F);
 
 	numchans = 1;
 	for(i=0;i<logchans;i++)
@@ -127,7 +127,7 @@ void setVDIFNumChannels(char * rawheader, int numchannels)
 	}
 	unsigned int headerword = ((unsigned int*)rawheader)[2];
 	headerword &= 0x83FFFFFF;
-	headerword |= logchans << 26;
+	headerword |= logchans << 24;
 	((unsigned int*)rawheader)[2] = headerword;
 }
 
