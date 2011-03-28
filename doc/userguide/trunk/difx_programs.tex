@@ -116,7 +116,7 @@ At this time it seems {\tt CalcServer} cannot be compiled for 64-bit machines.
 
 
 
-% checkmpifxcorr ------------------------------------------ INCOMPLETE --------
+% checkmpifxcorr --------------------------------------------------------------
 
 \subsection{checkmpifxcorr {\small $\mathrm{(package: mpifxcorr)}$}}
 
@@ -126,10 +126,14 @@ At this time it seems {\tt CalcServer} cannot be compiled for 64-bit machines.
 \vspace{7pt}
 
 \noindent
-Program {\tt checkmpifxcorr} 
+Program {\tt checkmpifxcorr} reads the {\tt .input} and other associated files for a DiFX job and parses them with the same logic used by {\tt mpifxcorr} in order to determine their validity.
 
+\begin{itemize}
+\item[] Usage: {\tt checkmpifxcorr} {\em configFile}
+\end{itemize}
 
-
+All of the files referenced from the provided {\tt .input} file are read as well (excepting any baseband files or the {\tt .vex} file).
+This check has proven especially useful for pulsar processing.
 
 
 
@@ -280,6 +284,7 @@ The columns displayed are:
 \item Network transmit rate (Mbps)
 \end{enumerate}
 
+Bug: {\tt cpumon} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -453,7 +458,9 @@ This program is inspired by the {\tt difx\_calculator.xls} spread sheet availabl
 \item[] Example: {\tt difxcalculator mt933\_01}
 \end{itemize}
 
+Bug: does not respond nicely to {\tt -h} on command line.
 
+Bug: does not take into consideration multiple phase centers or zoom bands.
 
 
 
@@ -793,6 +800,9 @@ Program {\tt errormon} listens for multicast messages of the {\tt difxError} var
 See \S~\ref{sec:difxalertmessage} for a list of severity codes.
 If no {\em maxSeverity} is provided, the default level of 8 will cause no selection to occur; all messages will be printed.
 
+A similar program, {\tt errormon2}, does nearly the same thing, but defaults to a less verbose output, and sends output to stderr rather than stdout.
+
+Bug: {\tt errormon} and {\tt errormon2} do not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -1482,9 +1492,9 @@ The command line options supported are:
 \item[] {\em options} can be:
 \begin{itemize}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -q} or {\tt --quiet} : be less verbose and don't mulitcast state
 \item[] {\tt -H} or {\tt --head-node} : give head-node permissions
 \item[] {\tt -l} {\em logPath} or {\tt --log-path} {\em logPath} : put logs in directory {\em logPath}, not {\tt /tmp}
-\item[] {\tt -w} or {\tt --condition-watch} : run {\tt condition\_watch} on startup (must also supply {\tt -H} or equivalent
 \end{itemize}
 \end{itemize}
 
@@ -1496,7 +1506,7 @@ Please be sure not to have multiple instances of {\tt mk5daemon} running at any 
 
 
 
-% mk5dir -------------------------------------------------- INCOMPLETE --------
+% mk5dir ----------------------------------------------------------------------
 
 \subsection{mk5dir {\small $\mathrm{(package: mark5daemon)}$}} \label{sec:mk5dir}
 
@@ -1508,6 +1518,8 @@ Please be sure not to have multiple instances of {\tt mk5daemon} running at any 
 \noindent
 Program {\tt mk5dir} extracts the directory from a module.
 Normally one would not call this program directly but would use the {\tt getdir} option of {\tt mk5control}.
+By default this program will change the disk module state to {\tt played}.
+There is a danger that if this is done with an SDK~9 unit and the disk is later needed in an SDK~8 unit that it will no longer be readable in the later without a full reset of its VSN.
 
 \begin{itemize}
 \item[] Usage: {\tt mk5dir} $[$ {\em options} $]$ \{ {\em bank} $\mid$ {\em VSN} \}
@@ -1516,6 +1528,12 @@ Normally one would not call this program directly but would use the {\tt getdir}
 \item[] {\tt -h} or {\tt --help} : print usage information and exit
 \item[] {\tt -v} or {\tt --verbose} : increase verbosity: print directory to screen
 \item[] {\tt -f} or {\tt --force} : force directory read even if current
+\item[] {\tt -F} or {\tt --fast} : get format details from new-style directory
+\item[] {\tt -n} or {\tt --nodms} : get directory but don't change disk module state
+\item[] {\tt -s} or {\tt --safedms} : only change disk module state if SDK~8 unit or new dir type
+\item[] {\tt -d} or {\tt --dmsforce} : proceed with change of module state even if this makes module unreadable in SDK~8 units
+\item[] {\tt -b} {\em b} or {\tt --begin} {\em b} : begin with scan number {\em b}
+\item[] {\tt -e} {\em e} or {\tt --end} {\em e} : end with scan number {\em b}
 \end{itemize}
 \item[] {\em bank} is one of {\tt A}, {\tt B} or {\tt AB}
 \item[] {\em VSN} is a valid 8-character VSN of a loaded module
@@ -1612,6 +1630,7 @@ The columns being displayed are:
 \item Scan name of data being played, if playing
 \end{enumerate}
 
+Bug: {\tt mk5mon} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -1810,7 +1829,7 @@ These can be overriden with environment variables {\tt DIFX\_MESSAGE\_GROUP} and
 
 
 
-% statemon ------------------------------------------------ INCOMPLETE --------
+% statemon --------------------------------------------------------------------
 
 \subsection{statemon {\small $\mathrm{(package: difxmessage)}$}} \label{sec:statemon} 
 
@@ -1897,24 +1916,60 @@ These files should closely resemble the input files if the parsing was done prop
 \item[] Usage: {\tt testdifxinput} $[$ {\em options} $]$ {\em inputFilePrefix1} $[$ {\em inputFilePrefix2} $ \cdots ]$
 \item[] {\em options} can be:
 \begin{itemize}
-yy\item[] {\tt -v} or {\tt --verbose} : be a bit more verbose
+\item[] {\tt -v} or {\tt --verbose} : be a bit more verbose
 \end{itemize}
 \item[] {\em inputFilePrefix}$n$ is the base name of an input file
 \end{itemize}
 
+Bugs: does not respond nicely to {\tt -h} on the command line.
 
 
 
 
 
 
-
-% testdifxmessagereceive ---------------------------------- INCOMPLETE --------
+% testdifxmessagereceive ------------------------------------------------------
 
 \subsection{testdifxmessagereceive{\small $\mathrm{(package: difxmessage)}$}} \label{sec:difxmessage}
 
+\vspace{-20pt}\hspace{180pt}
+\difxoneone
 
+\vspace{7pt}
 
+\noindent
+Test program {\tt testdifxmessagereceive} captures multicast DiFX messages and prints them to the screen.
+Both the raw XML is shown and the decoded values.
+It is mostly useful as a tool for examining the correctness of the multicast messages that are broadcast and is not intended to be part of an operational system.
+There is a special binary mode which instead listens for the multicast high time resolution autocorrelations.
+In this mode, only a terse summary of what is received is printed (see the source code for more information).
+
+\begin{itemize}
+\item[] Usage: {\tt testdifxmessagereceive}  $[$ {\em options} $]$  $[$ {\em type} $]$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print help information
+\item[] {\tt -b} or {\tt --binary} : generate output based on binary records
+\end{itemize}
+\item[] {\em type} is the kind of message to capture (not for use with binary records):
+\begin{enumerate}
+\item DifxLoadMessage
+\item DifxAlertMessage
+\item Mark5StatusMessage
+\item DifxStatusMessage
+\item DifxInfoMessage
+\item DifxDatastreamMessage
+\item DifxCommand
+\item DifxParameter
+\item DifxStart
+\item DifxStop
+\item Mark5VersionMessage
+\item Mark5ConditionMessage
+\item DifxTransientMessage
+\end{enumerate}
+\end{itemize}
+
+If {\em type} is not provided, all message types will be captured.
 
 
 
@@ -2145,7 +2200,7 @@ Thus, when {\tt db2vex} is run some of these error messages may be seen.
 \end{itemize}
 Running with no command line arguments will print usage information to the terminal and exit.
 
-
+Bug: {\tt vexpeek} does not respond nicely to {\tt -h} on the command line.
 
 
 
@@ -2176,7 +2231,7 @@ Normally {\tt vlog} will be run automatically when {\tt getjobs} (\S\ref{sec:get
 
 
 
-% vsn ----------------------------------------------------- INCOMPLETE ---------
+% vsn --------------------------------------------------------------------------
 
 \subsection{vsn {\small $\mathrm{(package: mk5daemon)}$}} \label{sec:vsntool}
 
