@@ -1046,27 +1046,13 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		string s;
 		ss >> s;
-		std::string::size_type at = 0; 
-		int last = 0;
-		while(at != string::npos)
-		{
-			at = s.find_first_of(';',last);
-			freqClockOffs.push_back(atof(s.substr(last, at-last).c_str()));
-			last = at+1;
-		}
+                freqClockOffs.push_back(s.c_str());
 	}
 	else if(key =="loOffsets")
 	{
 		string s;
 		ss >> s;
-		std::string::size_type at = 0;
-		int last = 0;
-		while(at != string::npos)
-		{
-			at = s.find_first_of(';',last);
-			loOffsets.push_back(atof(s.substr(last, at-last).c_str()));
-			last = at+1;
-		}
+		loOffsets.push_back(s.c_str());
 	}
 	else if(key == "addZoomFreq")
 	{
