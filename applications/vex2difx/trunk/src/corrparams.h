@@ -122,6 +122,7 @@ public:
 	int clockorder;		// Order of clock poly (if overriding)
 	double clock2, clock3, clock4, clock5;	// Clock coefficients (if overriding)
         vector<double> freqClockOffs; // clock offsets for the individual frequencies
+	vector<double> loOffsets; //LO offsets for each individual frequency
 	VexClock clock;
 	double deltaClock;	// sec
 	double deltaClockRate;	// sec/sec

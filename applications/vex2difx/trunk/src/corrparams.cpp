@@ -1055,6 +1055,19 @@ int AntennaSetup::setkv(const string &key, const string &value)
 			last = at+1;
 		}
 	}
+	else if(key =="loOffsets")
+	{
+		string s;
+		ss >> s;
+		std::string::size_type at = 0;
+		int last = 0;
+		while(at != string::npos)
+		{
+			at = s.find_first_of(';',last);
+			loOffsets.push_back(atof(s.substr(last, at-last).c_str()));
+			last = at+1;
+		}
+	}
 	else if(key == "addZoomFreq")
 	{
 		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /

@@ -2014,6 +2014,21 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 								antennaSetup->freqClockOffs.at(i);
 						}
 					}
+					if(antennaSetup->loOffsets.size() > 0)
+					{
+						if(static_cast<int>(antennaSetup->loOffsets.size()) !=
+							D->datastream[D->nDatastream].nRecFreq)
+						{
+							cerr << "Error: AntennaSetup for " << antName << " has only " << antennaSetup->loOffsets.size() <<
+								" loOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
+							exit(0);
+						}
+						for(unsigned int i = 0; i < antennaSetup->loOffsets.size(); i++)
+						{
+							D->datastream[D->nDatastream].freqOffset[i] = 
+								antennaSetup->loOffsets.at(i);
+						}
+					}
 				}
 				D->config[c].datastreamId[d] = D->nDatastream;
 				D->nDatastream++;
