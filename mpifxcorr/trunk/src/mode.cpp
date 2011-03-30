@@ -323,6 +323,8 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
       extractor[i] = PCal::getNew(1e6*recordedbandwidth, 
                                   1e6*config->getDPhaseCalIntervalMHz(configindex, datastreamindex),
                                       pcalOffset, 0);
+      if (extractor[i]->getLength() != conf->getDRecordedFreqNumPCalTones(configindex, dsindex, localfreqindex))
+        csevere << startl << "Developer Error: configuration.cpp and pcal.cpp do not agree on the number of tones." << endl;
       pcalnbins[i] = extractor[i]->getNBins();
       cdebug << startl << "Band " << i << " phase cal extractor buffer length (N bins)" << pcalnbins[i] << endl;
     }

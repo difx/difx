@@ -899,7 +899,8 @@ int main(int argc, char** argv)
    uint64_t usedsamplecount;
 
    if (argc < 6) {
-      cerr << "Usage: " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset>";
+      cerr << "Usage: " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset>\n";
+      cerr << "e.g.   " << argv[0] << " 32000 16e6 1e6 510e3 0\n";
       return -1;
    }
    long samplecount = atof(argv[1]);
@@ -991,7 +992,7 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
       }
       angle += step;
    }
-   cerr << "Extracted versus expected: " << ((pass) ? "PASS" : "NO PASS (or PASS but missed phase ambiguity)");
+   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "NO PASS (or PASS but missed phase ambiguity)\n");
 }
 
 #endif

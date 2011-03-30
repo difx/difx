@@ -1277,7 +1277,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
           tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
           if(tonefreq == lofreq)
             tonefreq -= dsdata->phasecalintervalmhz;
-          while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz > lofreq - freqtable[freqindex].bandwidth)
+          while(tonefreq - dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz >= lofreq - freqtable[freqindex].bandwidth)
             dsdata->numrecordedfreqpcaltones[j]++;
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
@@ -1295,7 +1295,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
           tonefreq = (int(lofreq)/dsdata->phasecalintervalmhz)*dsdata->phasecalintervalmhz;
           if(tonefreq <= lofreq)
             tonefreq += dsdata->phasecalintervalmhz;
-          while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz < lofreq + freqtable[freqindex].bandwidth)
+          while(tonefreq + dsdata->numrecordedfreqpcaltones[j]*dsdata->phasecalintervalmhz <= lofreq + freqtable[freqindex].bandwidth)
             dsdata->numrecordedfreqpcaltones[j]++;
           if(dsdata->numrecordedfreqpcaltones[j] > dsdata->maxrecordedpcaltones)
             dsdata->maxrecordedpcaltones = dsdata->numrecordedfreqpcaltones[j];
