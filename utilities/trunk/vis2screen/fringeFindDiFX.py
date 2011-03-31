@@ -60,6 +60,7 @@ for i in range(maxchannels):
 difxinput = open(args[0])
 nextheader = parseDiFX.parse_output_header(difxinput)
 
+nchan = -1
 while not len(nextheader) == 0:
     baseline  = nextheader[0]
     mjd       = nextheader[1]
@@ -92,6 +93,10 @@ while not len(nextheader) == 0:
             print "Detection on time %d:%f, baseline %d, freq index %d, pol %s on channel %d at S/N: %f" % \
                   (mjd, seconds, baseline, freqindex, polpair, maxlagchan - nchan/2, maxlagamp/lagamprms)
     nextheader = parseDiFX.parse_output_header(difxinput)
+
+if nchan < 0:
+    print "Problem opening file " + args[0]
+    sys.exit()
 
 maxlagamp = numpy.max(lagampsum[:nchan])
 lagamprms = numpy.std(lagampsum[:nchan])
