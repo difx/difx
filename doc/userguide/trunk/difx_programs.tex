@@ -334,9 +334,9 @@ The {\tt --vsnProjectCode} was intended for a pathological situation where a pro
 
 
 
-% diffDiFX.py --------------------------------------------- INCOMPLETE --------
+% diffDiFX.py ------------------------------------------------------------------
 
-\subsection{diffDiFX.py {\small $\mathrm{(package: difxmessage)}$}} \label{sec:diffDiFX} 
+\subsection{diffDiFX.py {\small $\mathrm{(package: vis2screen)}$}} \label{sec:diffDiFX} 
 
 \vspace{-20pt}\hspace{200pt}
 \difxtwozero
@@ -344,10 +344,30 @@ The {\tt --vsnProjectCode} was intended for a pathological situation where a pro
 \vspace{7pt}
 
 \noindent
-Program {\tt diffDiFX.py} ...
+Program {\tt diffDiFX.py} generates a context-sensitive difference of two DiFX output files for detailed version testing.  Corresponding visibility records are differenced and statistics on the differences are accumulated and printed at the end of the processing.
+
+\begin{itemize}
+\item[] Usage: {\tt diffDiFX.py} $[$ {\em options} $]$ $\{$ {\em difxfile1} {\em difxfile2}$]$ $\}$
+\item[] {\em options} can be:
+\begin{itemize}
+\item[] {\tt -h} or {\tt --help} : print usage information and exit
+\item[] {\tt -f FREQ} or {\tt --freq=FREQ} : Only look at visibilities from this FREQ index
+\item[] {\tt -b BASELINE} or {\tt --baseline=BASELINE} : Only look at visibilities from this BASELINE num
+\item[] {\tt -t THRESHOLD} or {\tt --threshold=THRESHOLD} : Display any difference that exceeds THRESHOLD
+\item[] {\tt -s SKIPRECORDS} or {\tt --skiprecords=SKIPRECORDS} : Skip SKIPRECORDS records before starting comparison
+\item[] {\tt -m MAXRECORDS} or {\tt --maxrecords=MAXRECORDS} : Stop after comparing MAXRECORDS (if >0) records
+\item[] {\tt -p PRINTINTERVAL} or {\tt --printinterval=PRINTINTERVAL} : Print a summary every PRINTINTERVAL records
+\item[] {\tt -c MAXCHANNELS} or {\tt --maxchannels=MAXCHANNELS} : The length of the array that will be allocated to hold vis results
+\item[] {\tt -v} or {\tt --verbose} : Turn verbose printing on
+\item[] {\tt -i INPUTFILE} or {\tt --inputfile=INPUTFILE} : Parse INPUTFILE for the correlation setup
+\end{itemize}
+\item[] {\em difxfile1} is the first difx file to compare
+\item[] {\em difxfile2} is the second difx file to compare 
+\item[] Example: {\tt difxDiFX.py -i example\_1.input example\_1.difx/DIFX\_55523\_025239.s0000.b0000} \\ {\tt comparison\_1.difx/DIFX\_55523\_025239.s0000.b0000}
+\end{itemize}
 
 
-
+\noindent if the error for any record exceeds the specified threshold a verbose error message is printed.  Summary statistics are printed at the end of the file.  Warnings are printed if the headers do not match between the two files.
 
 
 
@@ -1746,7 +1766,7 @@ Program {\tt padVDIF} ...
 
 
 
-% printDiFX ----------------------------------------------- INCOMPLETE --------
+% printDiFX --------------------------------------------------------------------
 
 \subsection{printDiFX.py {\small $\mathrm{(package: vis2screen)}$} \label{sec:printDiFX}}
 
@@ -1756,13 +1776,22 @@ Program {\tt padVDIF} ...
 \vspace{7pt}
 
 \noindent
-Program {\tt printDiFX} ...
+Program {\tt printDiFX} prints a summary of the visibility information in a DiFX output file.  It loops through all the records printing some basic info about frequencies, baselines, polarisations, times etc, plus a couple of selected visibility values from the start and middle of the record, to the screen.
 
-FIXME: other vis2screen utilities need doco
+\begin{itemize}
+\item[] Usage: {\tt printDiFX} {\em difxfile} {\em inputfile}
+
+\item[] {\em difxfile} is the full name of the visibility file in the .difx directory
+\item[] {\em inputfile} is the path to the input file used to generate this difx output
+\end{itemize}
+\begin{itemize}
+\item[] Example: {\tt printDiFX example\_1.difx/DIFX\_55523\_025239.s0000.b0000 example\_1.input}
+\end{itemize}
 
 
 
-% printVDIF ----------------------------------------------- INCOMPLETE --------
+
+% printVDIF -------------------------------------------------------------------
 
 \subsection{printVDIF {\small $\mathrm{(package: vdifio)}$} \label{sec:printVDIF}}
 
@@ -1772,8 +1801,16 @@ FIXME: other vis2screen utilities need doco
 \vspace{7pt}
 
 \noindent
-Program {\tt printVDIF} ...
+Program {\tt printVDIF} loops through a VDIF file inspecting each packet header and printing some basic summary info (time etc) to the screen.
 
+\begin{itemize}
+\item[] Usage: {\tt printVDIF} {\em vdiffile} {\em Mbps}
+
+\item[] {\em vdiffile} is the recorded VDIF file to inspect
+\item[] {\em Mbps} is the data rate in megabits/second
+
+\item[] Example: {\tt printVDIF example.vdif 256}
+\end{itemize}
 
 
 
