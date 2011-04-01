@@ -1046,15 +1046,12 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	{
 		double d;
 		ss >> d;
-                //freqClockOffs.push_back(s.c_str());
 		freqClockOffs.push_back(d);
-		//cout << "DEBUG: " << ss << " becomes " << d << endl;
 	}
 	else if(key =="loOffsets")
 	{
 		double d;
 		ss >> d;
-		//loOffsets.push_back(s.c_str());
 		loOffsets.push_back(d);
 	}
 	else if(key == "addZoomFreq")
