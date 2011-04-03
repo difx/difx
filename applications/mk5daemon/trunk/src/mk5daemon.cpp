@@ -82,6 +82,9 @@ int usage(const char *pgm)
 	fprintf(stderr, "  --user <user>\n");
 	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx') \n"); 
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --isMk5 \n");
+	fprintf(stderr, "  -m             force mk5daemon on this host to act as Mark5 regardless of hostname \n"); 
+	fprintf(stderr, "\n");
 	fprintf(stderr, "Note: This program responds to the following "
 			"environment variables:\n");
 	fprintf(stderr, "  DIFX_LOG_DIR : change log path from default [%s]\n",
@@ -98,7 +101,7 @@ int usage(const char *pgm)
 	return 0;
 }
 
-Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID)
+Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 {
 	Mk5Daemon *D;
 
@@ -109,6 +112,10 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID)
 	D->loadMonInterval = 10;	/* seconds */
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
+	if (isMk5)
+	{
+		D->isMk5 = 1;
+	}
 	strncpy(D->userID, userID, 255);
 	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
 	signalDie = &D->dieNow;
@@ -306,6 +313,7 @@ int main(int argc, char **argv)
 	char message[DIFX_MESSAGE_LENGTH];
 	char str[16];
 	int isHeadNode = 0;
+	int isMk5 = 0;
 	int i;
 	int halfInterval;
 	char logPath[256];
@@ -365,8 +373,12 @@ int main(int argc, char **argv)
 		{
 			i++;
 			strcpy(userID, argv[i]);
-			
 		}
+		else if ( strcmp(argv[i], "-m") == 0 ||  strcmp(argv[i], "--isMk5") == 0)
+		{
+                        strcpy(userID, argv[i]);
+			isMk5 = 1;
+                }
 		else if(i < argc-1)
 		{
 			if(strcmp(argv[i], "-l") == 0 ||
@@ -410,7 +422,7 @@ int main(int argc, char **argv)
 
 	difxMessagePrint();
 
-	D = newMk5Daemon(logPath, userID);
+	D = newMk5Daemon(logPath, userID, isMk5);
 	D->isHeadNode = isHeadNode;
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", 
