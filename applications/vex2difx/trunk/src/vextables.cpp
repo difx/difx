@@ -362,7 +362,8 @@ int VexMode::getPols(char *pols) const
 
 int VexMode::getBits() const
 {
-	unsigned int nBit;
+	static int firstTime = 1;
+	unsigned int nBit = 0;
 	map<string,VexSetup>::const_iterator it;
 
 	nBit = setups.begin()->second.format.nBit;
@@ -371,10 +372,20 @@ int VexMode::getBits() const
 	{
 		if(it->second.format.nBit != nBit)
 		{
-			cerr << "Error: getBits: differing number of bits not supported." << endl;
-			
-			exit(0);
+			if(nBit != 0 && firstTime)
+			{
+				cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.format.nBit << endl;
+				cerr << "  Will proceed, but note that some metadata may be incorrect." << endl;
+
+				firstTime = 0;
+			}
+
+			if(it->second.format.nBit > nBit)
+			{
+				nBit = it->second.format.nBit;
+			}
 		}
+
 	}
 
 	return nBit;

@@ -279,6 +279,12 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		Upper(A->name);
 
 		p = (struct site_position *)get_station_lowl(stn, T_SITE_POSITION, B_SITE, v);
+		if(p == 0)
+		{
+			cerr << "Error: cannot find site position for antenna " << antName << " in the vex file." << endl;
+
+			exit(0);
+		}
 		fvex_double(&(p->x->value), &(p->x->units), &A->x);
 		fvex_double(&(p->y->value), &(p->y->units), &A->y);
 		fvex_double(&(p->z->value), &(p->z->units), &A->z);
@@ -296,6 +302,12 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		}
 
 		q = (struct axis_type *)get_station_lowl(stn, T_AXIS_TYPE, B_ANTENNA, v);
+		if(q == 0)
+		{
+			cerr << "Error: cannot find axis type for antenna " << antName << " in the vex file." << endl;
+
+			exit(0);
+		}
 		A->axisType = string(q->axis1) + string(q->axis2);
 		if(A->axisType.compare("hadec") == 0)
 		{
@@ -319,6 +331,12 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		}
 
 		r = (struct dvalue *)get_station_lowl(stn, T_AXIS_OFFSET, B_ANTENNA, v);
+		if(r == 0)
+		{
+			cerr << "Error: cannot find axis offset for antenna " << antName << " in the vex file." << endl;
+
+			exit(0);
+		}
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 
 		const AntennaSetup *antennaSetup = params.getAntennaSetup(antName);
@@ -535,12 +553,30 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		}
 
 		p = (char *)get_source_lowl(src, T_RA, v);
+		if(!p)
+		{
+			cerr << "Error: Cannot find right ascension for source " << src << endl;
+
+			exit(0);
+		}
 		fvex_ra(&p, &S->ra);
 
 		p = (char *)get_source_lowl(src, T_DEC, v);
+		if(!p)
+		{
+			cerr << "Error: Cannot find declination for source " << src << endl;
+
+			exit(0);
+		}
 		fvex_dec(&p, &S->dec);
 
 		p = (char *)get_source_lowl(src, T_REF_COORD_FRAME, v);
+		if(!p)
+		{
+			cerr << "Error: Cannot find ref coord frame for source " << src << endl;
+
+			exit(0);
+		}
 		if(strcmp(p, "J2000") != 0)
 		{
 			cerr << "Error: only J2000 ref frame is supported." << endl;
