@@ -104,30 +104,40 @@ int main(int argc, char **argv)
 	P->vexFile = string(argv[1]);
 	P->defaultSetup();
 	P->minSubarraySize = 1;
+        py.setDBEPersonality("\0");
 
-	if(argc == 3)
+	for( int count=2; count < argc; count++)
 	{
 		//this is an interim measure to set the phasing sources for EVLA
-		if(strncmp(argv[2], "--phasingsources=", 17) == 0)
+		if(strncmp(argv[count], "--phasingsources=", 17) == 0)
 		{
 			atchar = 17;
 			lastchar = 17;
-			while(argv[2][atchar] != '\0')
+			while(argv[count][atchar] != '\0')
 			{
-				if(argv[2][atchar] == ',')
+				if(argv[count][atchar] == ',')
 				{
-					argv[2][atchar] = '\0';
-					py.addPhasingSource(string(argv[2]+lastchar));
+					argv[count][atchar] = '\0';
+					py.addPhasingSource(string(argv[count]+lastchar));
 					atchar++;
 					lastchar = atchar;
 				}
 				atchar++;
 			}
-			py.addPhasingSource(string(argv[2]+lastchar));
+			py.addPhasingSource(string(argv[count]+lastchar));
 		}
-		else
+                else if(strncmp(argv[count], "--dbepersonality=", 17) == 0) {
+			atchar = 17;
+			lastchar = 17;
+			while(argv[count][atchar] != '\0')
+			{
+				atchar++;
+			}
+			py.setDBEPersonality(string(argv[count]+lastchar));
+                }
+                else
 		{
-			cout << "Ignoring argument " << argv[2] << endl;
+			cout << "Ignoring argument " << argv[count] << endl;
 		}
 	}	
 
