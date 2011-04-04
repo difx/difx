@@ -248,7 +248,31 @@ int pystream::writeDbeInit(const VexData *V)
 {
 	if(currenttype == VLBA || currenttype == GBT)
 	{
-		*this << "dbe0 = RDBE(0, 'pfb')" << endl;
+                int m = 0;
+		const VexMode *mode = V->getMode(m);
+		const VexSetup *setup = mode->getSetup(ant);
+		if(setup)
+		{
+                    const VexFormat &F = setup->format;
+                    if( F.channels.size() > 0  &&
+                        F.channels.size() <= 8 ) {
+                        // DDC
+                        *this << "dbe0 = RDBE(0, 'ddc'";
+                        if( dbefileName[0] == '\0' )
+                                *this << ")" << endl;
+                        else
+                                *this << ", '" << dbefileName << "')" << endl;
+                    } else if( F.channels.size() == 16 )
+                        // PFB
+                        *this << "dbe0 = RDBE(0, 'pfb')" << endl;
+                    else {
+                        cerr << "Incorrect number of channels: " << F.channels.size() << endl;
+                        exit(0);
+                    }
+		}
+                // use PFB as default for now
+                else
+                    *this << "dbe0 = RDBE(0, 'pfb')" << endl;
 		*this << "dbe0.setALC(1)" << endl;
 		*this << "dbe0.setFormat('Mark5B')" << endl;
                 *this << "dbe0.setPSNMode(0)" << endl;
@@ -269,6 +293,7 @@ int pystream::writeLoifTable(const VexData *V)
 	map<string,VexIF>::const_iterator it;
 	int p;
 	stringstream ss;
+        int init_channels = 0;
 
 	unsigned int nMode = V->nMode();
 
@@ -289,6 +314,14 @@ int pystream::writeLoifTable(const VexData *V)
 
 		if(currenttype == VLBA)
 		{
+                        if( m == 0) {
+                            init_channels = F.channels.size();
+                        } else if( init_channels != F.channels.size() ) {
+                            cerr << "number of channels deviates from init" << init_channels
+                                 << " vs " << F.channels.size() << endl;
+                            exit(0);
+                        }
+
 			if(setup->ifs.size() > 2)
 			{
 				cout << "Warning: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 2" << endl;
@@ -585,6 +618,12 @@ int pystream::writeScans(const VexData *V)
 			double deltat2 = floor((arange->mjdStop-mjd0)*86400.0 + 0.5);
 	                // execute() at previous stop time minus 5 seconds
 			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
+                        // just in case our setup scan caused the auto leveling to lock onto a bad value make
+                        // it forget
+                        if( s == 0 ) {
+                            *this << "loif" << modeId << ".setDBEForget(0)" << endl;
+                            *this << "loif" << modeId << ".setDBEForget(1)" << endl;
+                        }
                         *this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 			if( s != -1 ) {
 				*this << "subarray.setRecord(mjdStart + " << deltat1 << "*second, mjdStart+" << deltat2 << "*second, '" << scan->defName << "', obsCode, stnCode )" << endl;
@@ -712,4 +751,8 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	output << indent << "</widar:vciRequest>" << endl;
 	output.close();
 	delete [] iffreqs;
+}
+
+void pystream::setDBEPersonality(string filename) {
+    dbefileName = filename;
 }
