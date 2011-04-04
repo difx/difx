@@ -25,8 +25,11 @@ bin_PROGRAMS = \
 	test5b \
 	test_mark5_stream \
 	test_unpacker \
+	directory2filelist \
 	$(fftw_programs)
 
+directory2filelist_SOURCES = \
+	directory2filelist.c
 m5d_SOURCES = \
 	m5d.c
 
