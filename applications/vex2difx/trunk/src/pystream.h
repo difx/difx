@@ -48,6 +48,7 @@ public:
 	int writeSourceTable(const VexData *V);
 	int writeScans(const VexData *V);
 	int writeScansGBT(const VexData *V);
+        void setDBEPersonality(string filename);
 
 private:
 	scripttype currenttype;
@@ -56,6 +57,7 @@ private:
 	string sw[4];	// 4x4 switch state
 	string obsCode;
 	string fileName;
+	string dbefileName;
 	double lastValid;
 	int lastSourceId;
 	int lastModeId;
