@@ -12,8 +12,8 @@ from copy import deepcopy
 
 program = 'genmachines'
 author  = 'Walter Brisken'
-version = '0.12'
-verdate = '20110317'
+version = '0.13'
+verdate = '20110404'
 
 defaultDifxMessagePort = 50200
 defaultDifxMessageGroup = '224.2.2.1'
@@ -102,7 +102,7 @@ def vsn_request():
 	      '<from>%s</from>' \
 	      '%s' \
 	      '<mpiProcessId>-1</mpiProcessId>' \
-	      '<identifier>mk5control</identifier>' \
+	      '<identifier>genmachines</identifier>' \
 	      '<type>DifxCommand</type>' \
 	    '</header>' \
 	    '<body>' \
@@ -209,13 +209,13 @@ def getVsnsFromInputFile(inputfile):
 			dscount += 1
 		if len(keyparts) == 2 and keyparts[0] == 'FILE':
 			# VSNs only required for MODULES - will assume files are there for now
+			s = split(keyparts[1], '/')
+			ds = int(strip(s[0]))
+
 			if dssources[dsfilecount] == 'MODULE':
-				s = split(keyparts[1], '/')
-				ds = int(strip(s[0]))
 				if ds < nds:
 					vsns.append(value)
-			dsfilecount += 1
-	return vsns
+	return (dssources, vsns)
 
 def readmachines(machinesfile, verbose):
 	machines = []
@@ -249,17 +249,35 @@ def writethreads(basename, threads):
 		o.write('%d\n' % t)
 	o.close()
 
-def writemachines(basename, hostname, machines, cores, results, vsns, \
+def writemachines(basename, hostname, machines, cores, results, vsns, dssources, ismk5, \
 	overheadcores, verbose):
 	dsnodes = []
 	threads = []
 	extrathreads = []
 	quit = False
-	for v in vsns:
-		for r in results:
-			if r[1] == v or r[2] == v:
-				dsnodes.append(r[0])
-	
+
+	moduleCount = 0
+	for ds in dssources:
+		if ds == "FILE":
+			for m in machines:
+				# don't use the head node
+				if m == hostname:
+					continue
+				# don't use machines already used as ds nodes
+				if m in dsnodes:
+					continue
+				# don't use mark5 machines
+				if ismk5[m] == 1:
+					continue
+				dsnodes.append(m)		
+				break
+
+		elif ds == "MODULE":
+			for r in results:
+				if  r[1] == vsns[moduleCount] or r[2] == vsns[moduleCount]:
+                                	dsnodes.append(r[0])
+			moduleCount += 1
+
 	for d in dsnodes:
 		if not d in machines:
 			print '%s not enabled in machines file' % d
@@ -328,7 +346,8 @@ def run(files, machinesfile, overheadcores, verbose, dothreads):
 		print 'expecting input file'
 		exit(1)
 				
-	vsns = getVsnsFromInputFile(infile)
+	(dssources,vsns) = getVsnsFromInputFile(infile)
+
 
 	if not uniqueVsns(vsns):
 		print 'ERROR: at least one duplicate VSN exists in %s !' % infile
@@ -363,7 +382,7 @@ def run(files, machinesfile, overheadcores, verbose, dothreads):
 		return 1
 
 	t = writemachines(basename, hostname, machines, cores, results, \
-		vsns, overheadcores, verbose)
+		vsns, dssources, ismk5, overheadcores, verbose)
 
 	if len(t) == 0:
 		return 1
