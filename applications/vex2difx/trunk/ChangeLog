@@ -23,6 +23,7 @@ Version 2.0.1
 * Change the nChan input parameter to mean the number of post-averaged channels
   - Clarified in several places in the code whether nChan is nInputChan or nOutputChan
 * FIXMEs are now #warnings
+* Default pulse cal tone extraction mode is smart: that is take the two most extreme tones per band that are not within the outer 1/8 of the band if possible.
 
 Version 2.0
 ~~~~~~~~~~~

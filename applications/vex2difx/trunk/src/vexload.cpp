@@ -242,7 +242,7 @@ double vexDate(char *value)
 			exit(0);
 		}
 
-		mjd = DOYtoMJD( (int)(floor(years+0.1)), (int)(floor(days+0.1)) ) + hours/24.0 + minutes/1440.0 + seconds/86400.0;
+		mjd = DOYtoMJD( static_cast<int>(floor(years+0.1)), static_cast<int>(floor(days+0.1)) ) + hours/24.0 + minutes/1440.0 + seconds/86400.0;
 	}
 
 	return mjd;

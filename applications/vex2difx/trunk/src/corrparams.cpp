@@ -738,7 +738,7 @@ AntennaSetup::AntennaSetup(const string &name) : vexName(name)
 	windowSize = 0;
 	phaseCalIntervalMHz = -1;
 	toneGuardMHz = -1.0;
-	toneSelection = ToneSelectionVex;
+	toneSelection = ToneSelectionSmart;
 	tcalFrequency = -1;
 	dataSource = DataSourceNone;
 	dataSampling = NumSamplingTypes;	/* flag that no sampling is is identified here */

@@ -722,7 +722,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 			{
 				centrefreq -= F.channels[i].bbcBandwidth;
 			}
-			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbbits << "\" centralFreq=\"" << ((long long)centrefreq) << "\" bw=\"" << ((int)F.channels[j].bbcBandwidth) << "\">" << endl;
+			output << indent << "<widar:subBand sbid=\"" << j << "\" rqNumBits=\"" << evlasbbits << "\" centralFreq=\"" << ((long long)centrefreq) << "\" bw=\"" << static_cast<int>(F.channels[j].bbcBandwidth) << "\">" << endl;
 			indent += "    ";
 			output << indent << "<widar:polProducts>" << endl;
 			indent += "    ";
