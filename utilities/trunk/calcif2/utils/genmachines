@@ -212,7 +212,7 @@ def getVsnsFromInputFile(inputfile):
 			s = split(keyparts[1], '/')
 			ds = int(strip(s[0]))
 
-			if dssources[dsfilecount] == 'MODULE':
+			if dssources[ds] == 'MODULE':
 				if ds < nds:
 					vsns.append(value)
 	return (dssources, vsns)
