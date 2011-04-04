@@ -285,7 +285,7 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 	if(e > 0)
 	{
-		printf("mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
+		//printf("mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
 		return 0;
 	}
 
