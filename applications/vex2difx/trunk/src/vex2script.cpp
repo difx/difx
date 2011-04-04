@@ -138,8 +138,6 @@ int main(int argc, char **argv)
 
 	cout << "nAntenna = " << nAntenna << "  nScan = " << nScan << endl;
 
-	//nAntenna = 1;	// FIXME -- removeme
-
 	for(int a = 0; a < nAntenna; a++)
 	{
 		A = V->getAntenna(a);

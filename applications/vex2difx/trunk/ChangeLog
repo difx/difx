@@ -19,6 +19,10 @@ Version 2.0.1
 * Support several different modes of pulse cal tone selection
 * Allow different numbers of bits on different antennas within same Mode (Thanks Jasper Horrell for the bug report)
 * Catch a few vex problems before segfaulting (thanks Chris Phillips for the bug report)
+* Fix bug estimating the output size of the correlation
+* Change the nChan input parameter to mean the number of post-averaged channels
+  - Clarified in several places in the code whether nChan is nInputChan or nOutputChan
+* FIXMEs are now #warnings
 
 Version 2.0
 ~~~~~~~~~~~

@@ -413,7 +413,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 			}
 
 			// As a last resort, look for unlinked clock blocks
-			// FIXME: note: the following should eventually be removed once proper linking in vex files is in place
+#warning: "FIXME: note: the following should eventually be removed once proper linking in vex files is in place"
 			if(A->clocks.size() == 0 && block)
 			{
 				defs = ((struct block *)block->ptr)->items;
@@ -1490,8 +1490,7 @@ static int getExper(VexData *V, Vex *v, const CorrParams &params)
 	return nWarn;
 }
 
-// Note -- this is approximate, assumes all polarizations matched
-// And no IFs being selected out
+// Note: this is approximate, assumes all polarizations matched and no IFs being selected out
 void calculateScanSizes(VexData *V, const CorrParams &P)
 {
 	int nScan, nSubband, nBaseline;

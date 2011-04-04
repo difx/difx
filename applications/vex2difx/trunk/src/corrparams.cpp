@@ -292,8 +292,8 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
-	specAvg = 8;
-	nChan = 128;
+	specAvg = 0;
+	nOutputChan = 16;
 	doPolar = true;
 	doAuto = true;
 	fringeRotOrder = 1;
@@ -304,6 +304,16 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	guardNS = 1000;
 	maxNSBetweenUVShifts = 2000000000;
 	maxNSBetweenACAvg = 2000000000;
+}
+
+int CorrSetup::fftSize() const
+{
+	return nOutputChan*specAvg*2;
+}
+
+int CorrSetup::nInputChan() const
+{
+	return nOutputChan*specAvg;
 }
 
 int CorrSetup::setkv(const string &key, const string &value)
@@ -327,7 +337,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "nChan")
 	{
-		ss >> nChan;
+		ss >> nOutputChan;
 	}
 	else if(key == "doPolar")
 	{
@@ -379,10 +389,10 @@ int CorrSetup::setkv(const string &key, const string &value)
 		
 		if(binConfigFile[0] != '/')
 		{
-			char cwd[1024];
+			char cwd[DIFXIO_FILENAME_LENGTH];
 			string inFile;
 
-			ptr = getcwd(cwd, 1023);
+			ptr = getcwd(cwd, DIFXIO_FILENAME_LENGTH-1);
 			if(ptr == 0)
 			{
 				cerr << "Cannot getcwd()" << endl;
@@ -401,10 +411,10 @@ int CorrSetup::setkv(const string &key, const string &value)
 
 		if(phasedArrayConfigFile[0] != '/')
 		{
-			char cwd[1024];
+			char cwd[DIFXIO_FILENAME_LENGTH];
 			string inFile;
 
-			ptr = getcwd(cwd, 1023);
+			ptr = getcwd(cwd, DIFXIO_FILENAME_LENGTH-1);
 			if(ptr == 0)
 			{
 				cerr << "Cannot getcwd()" << endl;
@@ -449,42 +459,36 @@ bool CorrSetup::correlateFreqId(int freqId) const
 	}
 }
 
-int CorrSetup::checkValidity()
+int CorrSetup::checkValidity() const
 {
 	int nwarn = 0;
 
-	if(nChan % specAvg > 0)
+	if(nInputChan() < strideLength)
 	{
-		cerr << "Non-integer number of channels remain after averaging!" << endl;
-		nwarn++;
-	}
- 
-	if(nChan < strideLength)
-	{
-		cerr << "Array stride length " << strideLength << " is greater than the input number of channels " << nChan << endl;
+		cerr << "Array stride length " << strideLength << " is greater than the input number of channels " << nInputChan() << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		nwarn++;
 	}
 
-	if(nChan % strideLength != 0)
+	if(nInputChan() % strideLength != 0)
 	{
-		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << nChan << endl;
+		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << nInputChan() << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
 		nwarn++;
 	}
 
-	if(nChan < xmacLength)
+	if(nInputChan() < xmacLength)
 	{
-		cerr << "XMAC stride length " << xmacLength << " is greater than the input number of channels " << nChan << endl;
+		cerr << "XMAC stride length " << xmacLength << " is greater than the input number of channels " << nInputChan() << endl;
 		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 		nwarn++;
 	}
 
 	if(xmacLength > 0)
 	{
-		if(nChan % xmacLength != 0)
+		if(nInputChan() % xmacLength != 0)
 		{
-			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nChan << endl;
+			cerr << "XMAC stride length " << xmacLength << " does not divide evenly into input number of channels " << nInputChan() << endl;
 			cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 			nwarn++;
 		}
@@ -499,7 +503,7 @@ double CorrSetup::bytesPerSecPerBLPerBand() const
 
 	// assume 8 bytes per complex
 
-	return 8*nChan*pols/tInt;
+	return 8*nOutputChan*pols/tInt;
 }
 
 CorrRule::CorrRule(const string &name) : ruleName(name)
@@ -538,30 +542,35 @@ int CorrRule::setkv(const string &key, const string &value)
 	if(key == "scanName" || key == "scan")
 	{
 		string s;
+
 		ss >> s;
 		scanName.push_back(s);
 	}
 	else if(key == "sourceName" || key == "source")
 	{
 		string s;
+		
 		ss >> s;
 		sourceName.push_back(s);
 	}
 	else if(key == "modeName" || key == "mode")
 	{
 		string s;
+		
 		ss >> s;
 		modeName.push_back(s);
 	}
 	else if(key == "calCode")
 	{
 		char c;
+		
 		ss >> c;
 		calCode.push_back(c);
 	}
 	else if(key == "qualifier")
 	{
 		int i;
+		
 		ss >> i;
 		qualifier.push_back(i);
 	}
@@ -674,8 +683,8 @@ int SourceSetup::setkv(const string &key, const string &value, PhaseCentre * pc)
 	}
 	else if(key == "addPhaseCentre" || key == "addPhaseCenter")
 	{
-		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /
-		//eg addPhaseCentre = name@1010-1212/RA@10:10:21.1/Dec@-12:12:00.34
+		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
+		// e.g., addPhaseCentre = name@1010-1212/RA@10:10:21.1/Dec@-12:12:00.34
 		phaseCentres.push_back(PhaseCentre());
 		PhaseCentre * newpc = &(phaseCentres.back());
 		last = 0;
@@ -1045,25 +1054,27 @@ int AntennaSetup::setkv(const string &key, const string &value)
 	else if(key == "freqClockOffs")
 	{
 		double d;
+
 		ss >> d;
 		freqClockOffs.push_back(d);
 	}
 	else if(key =="loOffsets")
 	{
 		double d;
+		
 		ss >> d;
 		loOffsets.push_back(d);
 	}
 	else if(key == "addZoomFreq")
 	{
-		//this is a bit tricky - all parameters must be together, with @ replacing =, and separated by /
-                //eg addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
-		//only freq and bw are compulsory - default is parent values and don't correlate parent
+		// This is a bit tricky.  All parameters must be together, with @ replacing =, and separated by /
+                // e.g., addZoomFreq = freq@1649.99/bw@1.0/correlateparent@TRUE/specAvg@8
+		// only freq and bw are compulsory; default is parent values and don't correlate parent
                 zoomFreqs.push_back(ZoomFreq());
                 ZoomFreq * newfreq = &(zoomFreqs.back());
                 last = 0;
                 at = 0;
-                while(at !=string::npos)
+                while(at != string::npos)
                 {
                         at = value.find_first_of('/', last);
                         nestedkeyval = value.substr(last, at-last);
@@ -1144,10 +1155,10 @@ void pathify(string &filename)
 		return;
 	}
 
-	char cwd[1024];
+	char cwd[DIFXIO_FILENAME_LENGTH];
 	string fn;
 
-	if(getcwd(cwd, 1023) == 0)
+	if(getcwd(cwd, DIFXIO_FILENAME_LENGTH-1) == 0)
 	{
 		cerr << "Cannot getcwd()" << endl;
 
@@ -1397,10 +1408,12 @@ int CorrParams::load(const string &fileName)
 		PARSE_MODE_ANTENNA,
 		PARSE_MODE_EOP
 	};
-	
+
+	const int MaxLineLength = 1024;
+
 	ifstream is;
 	vector<string> tokens;
-	char s[1024];
+	char s[MaxLineLength];
 	CorrSetup   *corrSetup=0;
 	CorrRule    *rule=0;
 	SourceSetup *sourceSetup=0;
@@ -1420,7 +1433,7 @@ int CorrParams::load(const string &fileName)
 
 	for(;;)
 	{
-		is.getline(s, 1024);
+		is.getline(s, MaxLineLength);
 		if(is.eof())
 		{
 			break;
@@ -1653,12 +1666,6 @@ int CorrParams::load(const string &fileName)
 
 	is.close();
 
-	//check that all setups are sensible
-	for(unsigned int i=0;i<corrSetups.size();i++)
-	{
-		nWarn += corrSetups.at(i).checkValidity();
-	}
-
 	// if no setups or rules declared, make the default setup
 	if(corrSetups.size() == 0)
 	{
@@ -1675,12 +1682,45 @@ int CorrParams::load(const string &fileName)
 		addBaseline("*-*");
 	}
 
+	// set specAvg if not set
+	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
+	{
+#warning "FIXME: This logic should extend to setting of xmacLength and strideLength"
+#warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
+
+		if(c->specAvg == 0)
+		{
+			c->specAvg = 128/c->nOutputChan;
+			if(c->specAvg == 0)
+			{
+				c->specAvg = 1;
+			}
+		}
+
+		if(corrSetup->xmacLength == 0)
+		{
+			if(corrSetup->nInputChan() > 128)
+			{
+				corrSetup->xmacLength = 128;
+			}
+			else
+			{
+				corrSetup->xmacLength = corrSetup->nInputChan();
+			}
+		}
+	}
+
+	//check that all setups are sensible
+	for(vector<CorrSetup>::const_iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
+	{
+		nWarn += c->checkValidity();
+	}
+
 	if(v2dMode == V2D_MODE_PROFILE)
 	{
-		int n = corrSetups.size();
-		for(int i = 0; i < n; i++)
+		for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
 		{
-			corrSetups[i].doPolar = false;
+			c->doPolar = false;
 		}
 	}
 
@@ -1705,7 +1745,8 @@ void CorrParams::example()
 	singleSetup = false;
 	corrSetups.push_back(CorrSetup("1413+15"));
 	corrSetups.back().tInt = 1.0;
-	corrSetups.back().nChan = 64;
+	corrSetups.back().nOutputChan = 16;
+	corrSetups.back().specAvg = 4;
 	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
 	rules.back().sourceName.push_back(string("1413+15"));
@@ -2001,7 +2042,7 @@ ostream& operator << (ostream &os, const CorrSetup &x)
 	os << "SETUP " << x.corrSetupName << endl;
 	os << "{" << endl;
 	os << "  tInt=" << x.tInt << endl;
-	os << "  nChan=" << x.nChan << endl;
+	os << "  nChan=" << x.nOutputChan << endl;
 	os << "  doPolar=" << x.doPolar << endl;
 	os << "  doAuto=" << x.doAuto << endl;
 	os << "  subintNS=" << x.subintNS << endl;
@@ -2303,10 +2344,10 @@ bool areCorrSetupsCompatible(const CorrSetup *A, const CorrSetup *B, const CorrP
 	}
 	if(C->singleSetup)
 	{
-		if(A->tInt    == B->tInt    &&
-		   A->nChan   == B->nChan   &&
-		   A->doPolar == B->doPolar &&
-		   A->doAuto  == B->doAuto  &&
+		if(A->tInt        == B->tInt        &&
+		   A->nOutputChan == B->nOutputChan &&
+		   A->doPolar     == B->doPolar     &&
+		   A->doAuto      == B->doAuto      &&
 		   A->binConfigFile.compare(B->binConfigFile) == 0)
 		{
 			return true;

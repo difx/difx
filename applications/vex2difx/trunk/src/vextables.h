@@ -254,7 +254,7 @@ public:
 	string defName;		// Sometimes names get changed
 
 	double x, y, z;		// (m) antenna position
-	double dx, dy, dz;	// (m/?) antenna position	//FIXME
+	double dx, dy, dz;	// (m/sec) antenna velocity
 	double posEpoch;	// mjd
 	string axisType;
 	double axisOffset;	// (m)

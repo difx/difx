@@ -42,9 +42,10 @@
 #include "vextables.h"
 #include "corrparams.h"
 #include "vexload.h"
+#include "../config.h"
 
+const string version(VERSION);
 const string program("vex2difx");
-const string version("2.0.1");		// FIXME: link to configure.ac
 const string verdate("20101209");
 const string author("Walter Brisken/Adam Deller");
 
@@ -60,7 +61,7 @@ static double current_mjd()
 
 int calcDecimation(int overSamp)
 {
-	// FIXME: handle non 2^n overSamp here
+#warning "FIXME: handle non 2^n overSamp here"
 	if(overSamp > 2)
 	{
 		return overSamp / 2;
@@ -125,7 +126,7 @@ static void genJobGroups(vector<VexJobGroup> &JGs, const VexData *V, const CorrP
 				continue;
 			}
 
-			// FIXME -- verify modes are compatible
+#warning "FIXME: verify modes are compatible"
 			if(areCorrSetupsCompatible(corrSetup1, corrSetup2, P) &&
 			   areScansCompatible(scan1, scan2, P))
 			{
@@ -692,16 +693,18 @@ class freq
 {
 public:
 	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0, int iz=0, unsigned int t=0) 
-		: fq(f), bw(b), sideBand(s), nChan(n), specAvg(sA), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t) {};
+		: fq(f), bw(b), sideBand(s), nInputChan(n), specAvg(sA), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t) {};
 	double fq;
 	double bw;
 	char sideBand;
-	int nChan;
+	int nInputChan;	// number of input channels
 	int specAvg;
 	int overSamp;
 	int decimation;
 	int isZoomFreq;
 	unsigned int toneSetId;
+
+	int nOutputChan() const { return nInputChan/specAvg; }
 };
 
 static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
@@ -712,7 +715,7 @@ static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
 		if(fq == freqs[i].fq &&
 		   bw == freqs[i].bw &&
 		   sb == freqs[i].sideBand &&
-		   nC == freqs[i].nChan &&
+		   nC == freqs[i].nInputChan &&
 		   sA == freqs[i].specAvg &&
 		   os == freqs[i].overSamp &&
 		   d  == freqs[i].decimation &&
@@ -912,7 +915,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		}
 		
 		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->nChan, corrSetup->specAvg, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
+				corrSetup->nInputChan(), corrSetup->specAvg, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
@@ -999,7 +1002,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->freq = freqs[f].fq/1.0e6;
 		df->bw   = freqs[f].bw/1.0e6;
 		df->sideband = freqs[f].sideBand;
-		df->nChan = freqs[f].nChan;
+		df->nChan = freqs[f].nInputChan;	// df->nChan is the number of pre-averaged channels
 		df->specAvg = freqs[f].specAvg;
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;
@@ -1054,13 +1057,14 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
 
-	// FIXME : below assumes nAntenna = nDatastream!
+#warning "FIXME : below assumes nAntenna == nDatastream!"
 	if(P->v2dMode == V2D_MODE_PROFILE)
 	{
 		// Here use nAntenna as nBaseline
 		for(configId = 0; configId < D->nConfig; configId++)
 		{
 			int nD = D->config[configId].nDatastream;
+
 			D->nBaseline += nD;
 		}
 	}
@@ -1070,6 +1074,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 		for(configId = 0; configId < D->nConfig; configId++)
 		{
 			int nD = D->config[configId].nDatastream;
+			
 			D->nBaseline += nD*(nD-1)/2;
 		}
 	}
@@ -1360,7 +1365,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	config->tInt = corrSetup->tInt;
 	minBW = mode->sampRate/2.0;
-	fftdurNS = ((int)(corrSetup->nChan*2*(0.5/minBW)*1000000000.0 + 0.5));
+	fftdurNS = ((int)(corrSetup->fftSize()*(0.5/minBW)*1000000000.0 + 0.5));
 	if(corrSetup->subintNS > 0)
 	{
 		config->subintNS = corrSetup->subintNS;
@@ -1417,23 +1422,11 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->guardNS = corrSetup->guardNS;
 	config->fringeRotOrder = corrSetup->fringeRotOrder;
 	config->strideLength = corrSetup->strideLength;
-	if(corrSetup->xmacLength == 0)
-	{
-		if(corrSetup->nChan > 128)
-		{
-			config->xmacLength = 128;
-		}
-		else
-		{
-			config->xmacLength = corrSetup->nChan;
-		}
-	}
-	else
-	{
-		config->xmacLength = corrSetup->xmacLength;
-	}
+	config->xmacLength = corrSetup->xmacLength;
 	config->numBufferedFFTs = corrSetup->numBufferedFFTs;
-	config->pulsarId = -1;		// FIXME -- from setup
+
+#warning "FIXME: is setting pulsarId = -1 correct"
+	config->pulsarId = -1;
 	config->doPolar = corrSetup->doPolar;
 	config->doAutoCorr = 1;
 	config->nAntenna = D->nAntenna;
@@ -1490,7 +1483,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream * dd, int dfreqindex, const vector<freq> freqs)
 {
 	double channeloffset;
-	freq f = freqs.at(dd->recFreqId[dfreqindex]);
+	const freq &f = freqs[dd->recFreqId[dfreqindex]];
 
 	if(f.sideBand == 'L')
 	{
@@ -1506,7 +1499,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream * dd, in
 		{
 			return false;
 		}
-		channeloffset = ((f.fq - zoomfreq.frequency)/f.bw)*f.nChan;
+		channeloffset = ((f.fq - zoomfreq.frequency)/f.bw)*f.nInputChan;
 		if(fabs(channeloffset - int(channeloffset+0.5)) > 0.000001)
 		{
 			return false;
@@ -1528,7 +1521,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream * dd, in
 		{
 			return false;
 		}
-		channeloffset = ((zoomfreq.frequency - f.fq)/f.bw)*f.nChan;
+		channeloffset = ((zoomfreq.frequency - f.fq)/f.bw)*f.nInputChan;
 		if(fabs(channeloffset - int(channeloffset+0.5)) > 0.000001)
 		{
 			return false;
@@ -1725,7 +1718,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 					}
 				}
 			}
-			// FIXME: There might be something fishy in the source name comparison above.
+#warning "FIXME: There might be something fishy in the source name comparison above."
 			// What happens if the source is renamed?  A better infrastructure for this is needed.
 			// Also, code now compares against the def name in case that is the name basis
 		}
@@ -1791,12 +1784,15 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		scan->mjdEnd = scanInterval.mjdStop;
 		scan->startSeconds = static_cast<int>((scanInterval.mjdStart - J.mjdStart)*86400.0 + 0.01);
 		scan->durSeconds = static_cast<int>(scanInterval.duration_seconds() + 0.01);
-		if (scan->durSeconds==0) scan->durSeconds = 1;
+		if(scan->durSeconds == 0)
+		{
+			scan->durSeconds = 1;
+		}
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
 		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
 		mode = V->getModeByDefName(configs[scan->configId].first);
-		fftdurNS = ((int)(corrSetup->nChan*2*1000000000.0/mode->sampRate + 0.5));
+		fftdurNS = ((int)(corrSetup->fftSize()*1000000000.0/mode->sampRate + 0.5));
 		if(corrSetup->numBufferedFFTs*fftdurNS > corrSetup->maxNSBetweenACAvg)
 		{
 			cout << "Adjusting maxNSBetweenACAvg since the number of buffered FFTs (";
@@ -1823,8 +1819,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			spacecraftSet.insert(sourceSetup->pointingCentre.difxName);
 		}
-		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin();
-			p != sourceSetup->phaseCentres.end();p++)
+		for(vector<PhaseCentre>::const_iterator p=sourceSetup->phaseCentres.begin(); p != sourceSetup->phaseCentres.end(); p++)
 		{
 			if(p->ephemFile.size() > 0)
 			{
@@ -1949,7 +1944,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							}
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
 									freqs[dd->recFreqId[parentfreqindices[i]]].sideBand,
-									int(corrSetup->nChan*zf.bandwidth/
+									int(corrSetup->nInputChan()*zf.bandwidth/
 									freqs[dd->recFreqId[parentfreqindices[i]]].bw),
 									corrSetup->specAvg, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 							dd->zoomFreqId[i] = fqId;
@@ -2160,7 +2155,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			DifxInputAllocThreads(D, P->nCore);
 			DifxInputSetThreads(D, P->nThread);
 
-			// FIXME: ultimately move this to writeDifxInput()
+#warning "FIXME: ultimately move this to writeDifxInput()"
 			DifxInputWriteThreads(D);
 		}
 
@@ -2180,7 +2175,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 
 			generateDifxJobFileBase(D->job, fileBase);
 
-			tops = J.calcOps(V, corrSetup->nChan*2, corrSetup->doPolar) * 1.0e-12;
+			tops = J.calcOps(V, corrSetup->fftSize(), corrSetup->doPolar) * 1.0e-12;
 
 			*of << fileBase << " " << J.mjdStart << " " << J.mjdStop << " " << D->nAntenna << " ";
 			*of << maxPulsarBins << " " << maxScanPhaseCentres << " ";
@@ -2336,7 +2331,7 @@ static int sanityCheckConsistency(const VexData *V, const CorrParams *P)
 				nWarn++;
 			}
 		}
-		// FIXME: check phase center names for legality
+#warning "FIXME: check phase center names for legality"
 	}
 
 	// warn on two VexSources with the same sourceNames[] entries

@@ -151,7 +151,9 @@ public:
 	int setkv(const string &key, const string &value);
 	bool correlateFreqId(int freqId) const;
 	double bytesPerSecPerBLPerBand() const;
-	int checkValidity();
+	int checkValidity() const;
+	int fftSize() const;
+	int nInputChan() const;
 
 	string corrSetupName;
 
@@ -160,7 +162,7 @@ public:
 	bool doAuto;		// write autocorrelations
 	int subintNS;		// Duration of a subintegration in nanoseconds
 	int guardNS;		// Number of "guard" ns tacked on to end of a send
-	int nChan;		// For the narrowest band 
+	int nOutputChan;	// Post-averaged number of channels for the narrowest band 
 				// (all others will have same spectral resolution)
 	int specAvg;
 	int maxNSBetweenUVShifts; //Mostly for multi-phase centres

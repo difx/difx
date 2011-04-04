@@ -232,7 +232,7 @@ int pystream::writeRecorderInit(const VexData *V)
 {
 	*this << "recorder0 = Mark5C('-1')" << endl;
 
-	// FIXME For now, set up single recorder in Mark5B mode
+#warning "FIXME For now, set up single recorder in Mark5B mode"
 	// Need to check requested format/mode first
 	*this << "recorder0.setMode('Mark5B')" << endl;
 	*this << "recorder0.setPSNMode(0)" << endl;
