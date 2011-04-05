@@ -1,6 +1,5 @@
-
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -45,8 +44,8 @@
 
 const char program[] = "recover";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20100822";
+const char version[] = "0.2";
+const char verdate[] = "20110315";
 
 int usage(const char *pgm)
 {
@@ -91,6 +90,7 @@ int recoverModule(int type, int bank, int force)
 	{
 		fprintf(stderr, "Bank %c not ready\n", 'A'+bank);
 		WATCHDOG( XLRClose(xlrDevice) );
+		
 		return -1;
 	}
 	if(!bankStat.Selected)
@@ -128,11 +128,11 @@ int recoverModule(int type, int bank, int force)
 		{
 			printf("About to attempt recover=%d on this module.  Continue? [y/n]", type);
 			rv = fgets(str, 9, stdin);
-			if(strcasecmp(str, "y") == 0)
+			if(str[0] == 'y')
 			{
 				go = 1;
 			}
-			else if(strcasecmp(str, "n") == 0)
+			else if(str[0] == 'n')
 			{
 				go = 0;
 			}
@@ -212,6 +212,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Unknown option: %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+				
 				return -1;
 			}
 		}
@@ -223,6 +224,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: type %s not recognized.  Want 0, 1, or 2",
 					argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+				
 				return -1;
 			}
 		}
@@ -232,6 +234,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+				
 				return -1;
 			}
 			else if(argv[a][0] == 'A' || argv[a][0] == 'a')
@@ -246,6 +249,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+				
 				return -1;
 			}
 		}
@@ -253,6 +257,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "Error: too many arguments given.\n");
 			fprintf(stderr, "Run with -h for help info\n");
+
 			return -1;
 		}
 	}
@@ -261,6 +266,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error: incomplete command line\n");
 		fprintf(stderr, "Run with -h for help info\n");
+		
 		return -1;
 	}
 

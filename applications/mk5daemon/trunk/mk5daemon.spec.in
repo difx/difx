@@ -33,8 +33,6 @@ make
 /usr/bin/mk5dir
 /usr/bin/mk5erase
 /usr/bin/mk5lock
-/usr/bin/mk5return
-/usr/bin/mk5take
 /usr/bin/recover
 /usr/bin/testmod
 /usr/bin/vsn

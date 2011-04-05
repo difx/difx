@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -122,6 +122,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	{
 		fprintf(stderr, "Bank %c not ready\n", 'A'+bank);
 		WATCHDOG( XLRClose(xlrDevice) );
+
 		return -1;
 	}
 	if(!bankStat.Selected)
@@ -401,6 +402,7 @@ int main(int argc, char **argv)
 				if(newStatus != 0 && newStatus != MODULE_STATUS_ERASED)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
+
 					return -1;
 				}
 				newStatus = MODULE_STATUS_ERASED;
@@ -411,6 +413,7 @@ int main(int argc, char **argv)
 				if(newStatus != 0 && newStatus != MODULE_STATUS_PLAYED)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
+
 					return -1;
 				}
 				newStatus = MODULE_STATUS_PLAYED;
@@ -421,6 +424,7 @@ int main(int argc, char **argv)
 				if(newStatus != 0 && newStatus != MODULE_STATUS_RECORDED)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
+
 					return -1;
 				}
 				newStatus = MODULE_STATUS_RECORDED;
@@ -431,6 +435,7 @@ int main(int argc, char **argv)
 				if(wpa == WPA_CLEAR)
 				{
 					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
+
 					return -1;
 				}
 				wpa = WPA_SET;
@@ -441,6 +446,7 @@ int main(int argc, char **argv)
 				if(wpa == WPA_SET)
 				{
 					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
+
 					return -1;
 				}
 				wpa = WPA_CLEAR;
@@ -449,6 +455,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Unknown option: %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+
 				return -1;
 			}
 		}
@@ -458,6 +465,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+
 				return -1;
 			}
 			else if(argv[a][0] == 'A' || argv[a][0] == 'a')
@@ -472,6 +480,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
+
 				return -1;
 			}
 		}
@@ -481,6 +490,7 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: VSN length must be 8 characters\n");
 				fprintf(stderr, "Run with -h for help info\n");
+
 				return 0;
 			}
 			strcpy(newVSN, argv[a]);
@@ -496,6 +506,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "Error: no bank specified\n");
 		fprintf(stderr, "Run with -h for help info\n");
+
 		return -1;
 	}
 

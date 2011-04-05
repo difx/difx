@@ -713,6 +713,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	if(bail)
 	{
 		fprintf(stderr, "Bailing!\n");
+
 		return -1;
 	}
 

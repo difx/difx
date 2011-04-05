@@ -27,7 +27,6 @@
  *
  *==========================================================================*/
 
-
 #include <iostream>
 #include <stdio.h>
 #include <string.h>
@@ -1582,6 +1581,7 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState)
 	if(labelLength >= XLR_LABEL_LENGTH)
 	{
 		cerr << "Module label is not terminated!" << endl;
+
 		return -1;
 	}
 

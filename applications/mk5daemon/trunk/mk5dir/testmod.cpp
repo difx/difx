@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -44,8 +44,8 @@
 
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20101011";
+const char version[] = "0.2";
+const char verdate[] = "20110315";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -108,7 +108,10 @@ void setbuffer(int num, char *buffer, int size)
 {
 	int i;
 
-	for(i = 0; i < size; i++) buffer[i] = (num+i) & 0xFF;
+	for(i = 0; i < size; i++) 
+	{
+		buffer[i] = (num+i) & 0xFF;
+	}
 }
 
 int comparebuffers(const char *buf1, const char *buf2, int size)
@@ -314,6 +317,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 	{
 		fprintf(stderr, "Bank %c not ready\n", 'A'+bank);
 		WATCHDOG( XLRClose(xlrDevice) );
+
 		return -1;
 	}
 	if(!bankStat.Selected)
@@ -419,6 +423,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			if(xlrRC != XLR_SUCCESS)
 			{
 				fprintf(stderr, "XLRErase Failed\n");
+
 				return -1;
 			}
 
@@ -431,6 +436,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				{
 					fprintf(stderr, "XLRGetUserDir Failed\n");
 					free(buffer);
+
 					return -1;
 				}
 
@@ -456,6 +462,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				{
 					fprintf(stderr, "XLRSetUserDir Failed\n");
 					free(buffer);
+
 					return -1;
 				}
 
@@ -476,6 +483,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				if(getLabels(xlrDevice, &mk5status) < 0)
 				{
 					fprintf(stderr, "Error getting bank status\n");
+
 					return -1;
 				}
 
@@ -605,6 +613,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			{
 				fprintf(stderr, "XLRGetUserDir Failed\n");
 				free(buffer);
+
 				return -1;
 			}
 
@@ -631,6 +640,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			if(getLabels(xlrDevice, &mk5status) < 0)
 			{
 				fprintf(stderr, "Error getting bank status\n");
+
 				return -1;
 			}
 
@@ -808,6 +818,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Unknown option %s\n", argv[a]);
 					fprintf(stderr, "Run with -h for help info\n");
+
 					return -1;
 				}
 				a++;
@@ -817,6 +828,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "Unexpected parameter: %s\n", argv[a]);
 			fprintf(stderr, "Run with -h for help info\n");
+
 			return -1;
 		}
 	}
@@ -825,6 +837,7 @@ int main(int argc, char **argv)
 	{
 		fprintf(stderr, "No bank specified\n");
 		fprintf(stderr, "Run with -h for help info\n");
+
 		return -1;
 	}
 
