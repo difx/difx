@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2011 by Helge Rottmann                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: m5test.c 2403 2010-08-18 20:58:21Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/libraries/mark5access/trunk/mark5access/mark5_stream.c $
-// $LastChangedRevision: 2403 $
-// $Author: WalterBrisken $
-// $LastChangedDate: 2010-08-18 22:58:21 +0200 (Mi, 18 Aug 2010) $
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -79,14 +79,12 @@ int usage(const char *pgm)
 int verify(const char *filename, const char *formatname, int refMJD)
 {
 	struct mark5_stream *ms;
-	float **data;
 	int i;
 	int  status = 0;
-	long long total, unpacked;
 	int mjd, sec;
-        double ns, startmjd, stopmjd;
+        double ns, startmjd, stopmjd=0.0;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, 0),
 		new_mark5_format_generic_from_string(formatname) );
 
@@ -164,8 +162,6 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 int main(int argc, char **argv)
 {
-	long long offset = 0;
-	int r;
 	struct dirent *ep;
 	char filename[2048];
 	int refMJD = 57000;
@@ -181,7 +177,7 @@ int main(int argc, char **argv)
 	DIR *dp = opendir(argv[1]);
 	if (dp != NULL)
 	{
-		while (ep = readdir (dp))
+		while ( (ep = readdir (dp)) )
 		{
 			if ((strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
 			{

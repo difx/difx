@@ -104,7 +104,7 @@ int calcpower(const char *filename, const char *formatname, long long offset, lo
 	nOn = 0;
 	nOff = 0;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
 		new_mark5_format_generic_from_string(formatname) );
 

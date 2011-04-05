@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -2217,6 +2217,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
+	f->formatdatasize = sizeof(struct mark5_format_vdif);
 	
 	/* set some function pointers */
 	f->gettime = mark5_stream_frame_time_vdif;

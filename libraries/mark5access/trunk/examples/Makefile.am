@@ -18,6 +18,7 @@ fftw_programs =
 endif
 
 bin_PROGRAMS = \
+	directory2filelist \
 	m5d \
 	m5fold \
 	m5tsys \
@@ -25,11 +26,11 @@ bin_PROGRAMS = \
 	test5b \
 	test_mark5_stream \
 	test_unpacker \
-	directory2filelist \
 	$(fftw_programs)
 
 directory2filelist_SOURCES = \
 	directory2filelist.c
+
 m5d_SOURCES = \
 	m5d.c
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -104,6 +104,7 @@ struct mark5_stream_generic *new_mark5_stream_unpacker(int noheaders)
 	V->seek = 0;
 	V->final_stream = 0;
 	V->inputdata = 0;
+	V->inputdatasize = 0;
 
 	return V;
 }

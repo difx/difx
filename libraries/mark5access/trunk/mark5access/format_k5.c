@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007-2010 by Walter Brisken                             *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -418,6 +418,7 @@ struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = k;
+	f->formatdatasize = sizeof(struct mark5_format_k5);
 	f->gettime = stream_frame_time_k5;
 	f->init_format = format_k5_init;
 	f->final_format = format_k5_final;

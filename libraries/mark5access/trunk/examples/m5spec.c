@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -97,7 +97,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	total = unpacked = 0;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
 		new_mark5_format_generic_from_string(formatname) );
 

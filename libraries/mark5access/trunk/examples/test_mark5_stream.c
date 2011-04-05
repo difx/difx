@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -42,7 +42,7 @@ int test0(const char *filename, int nbit, int ntrack,
 	double **data;
 	int i, j;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
 		new_mark5_format_vlba(nbit, ntrack, fanout) );
 
@@ -103,7 +103,7 @@ int test1(const char *filename, int nbit, int ntrack,
 
 	fclose(in);
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_memory(buffer, 1<<19),
 		new_mark5_format_vlba(nbit, ntrack, fanout) );
 
@@ -192,11 +192,11 @@ int test3(const char *filename, int nbit, int ntrack,
 
 	buffer = (unsigned char  *)malloc(1<<20);
 
-	ms1 = new_mark5_stream(
+	ms1 = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
 		new_mark5_format_vlba(nbit, ntrack, fanout) );
 
-	ms2 = new_mark5_stream(
+	ms2 = new_mark5_stream_absorb(
 		new_mark5_stream_unpacker(1),
 		new_mark5_format_vlba(nbit, ntrack, fanout) );
 
@@ -313,7 +313,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 	FILE *out;
 	char fn[MARK5_STREAM_ID_LENGTH];
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
 		new_mark5_format_generic_from_string(formatname) );
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -6997,6 +6997,7 @@ struct mark5_format_generic *new_mark5_format_vlba_nomod(int Mbps, int nchan,
 	f->nchan = nchan;
 	f->nbit = nbit;
 	f->formatdata = v;
+	f->formatdatasize = sizeof(struct mark5_format_vlba_nomod);
 	f->gettime = mark5_format_vlba_nomod_frame_time;
 	f->fixmjd = mark5_format_vlba_nomod_fixmjd;
 	f->init_format = mark5_format_vlba_nomod_init;

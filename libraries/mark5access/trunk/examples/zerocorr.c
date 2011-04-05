@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -143,7 +143,7 @@ DataStream *newDataStream(FILE *in)
 	ds->fftSize = atoi(buffer[4]);
 	ds->startChan = atoi(buffer[5]);
 	ds->nChan = atoi(buffer[6]);
-	ds->ms = new_mark5_stream(
+	ds->ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(ds->inputFile, ds->offset),
 		new_mark5_format_generic_from_string(ds->dataFormat) );
 

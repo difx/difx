@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -120,6 +120,7 @@ struct mark5_stream_generic *new_mark5_stream_memory(void *data,
 	s->seek = mark5_stream_memory_seek;
 	s->final_stream = mark5_stream_memory_final;
 	s->inputdata = M;
+	s->inputdatasize = sizeof(struct mark5_stream_memory);
 
 	return s;
 }

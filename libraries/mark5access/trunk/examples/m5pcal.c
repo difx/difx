@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2011 by Walter Brisken                                  *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -246,7 +246,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	fftw_plan plan;
 	int ns;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(inFile, offset),
 		new_mark5_format_generic_from_string(format) );
 

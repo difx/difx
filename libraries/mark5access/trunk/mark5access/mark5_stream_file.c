@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -92,18 +92,18 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		if(F->in < 0)
 		{
 			fprintf(stderr, "File cannot be opened (2) : <%s> : "
-				"in = %d\n",
-				F->files[F->curfile], F->in);
+				"in = %d\n", F->files[F->curfile], F->in);
 			perror(0);
+
 			return -1;
 		}
 		err = fstat64(F->in, &fileStatus);
 		if(err < 0)
 		{
 			fprintf(stderr, "Error looking at file (2) : "
-				"<%s> : err = %d\n",
-				F->files[F->curfile], err);
+				"<%s> : err = %d\n", F->files[F->curfile], err);
 			perror(0);
+
 			return -1;
 		}
 
@@ -114,6 +114,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 	if(n < ms->framebytes)
 	{
 		ms->readposition = -1;
+
 		return -1;
 	}
 	
@@ -177,9 +178,7 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 
 		/* back up stream a bit to load whole frames */
 
-		lseek64(F->in, 
-			F->offset + ms->frameoffset + nf*ms->framebytes, 
-			SEEK_SET);
+		lseek64(F->in, F->offset + ms->frameoffset + nf*ms->framebytes, SEEK_SET);
 	}
 
 	/* usually this is all that needs to be done */
@@ -199,6 +198,7 @@ static int mark5_stream_file_next(struct mark5_stream *ms)
 	if(ms->frame + ms->framebytes > F->last)
 	{
 		ms->readposition = -1;
+
 		return -1;
 	}
 
@@ -219,7 +219,7 @@ static int mark5_stream_file_seek(struct mark5_stream *ms, long long framenum)
 	
 	pos = framenum*ms->framebytes + ms->frameoffset;
 
-	/* FIXME -- look into other files? */
+#warning "FIXME: look into other files?"
 	if(framenum < 0 || pos > F->filesize)	
 	{
 		return -1;
@@ -282,25 +282,23 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 
 	if(in < 0)
 	{
-		fprintf(stderr, "File cannot be opened (1) : <%s> : in = %d\n", 
-			filename, in);
+		fprintf(stderr, "File cannot be opened (1) : <%s> : in = %d\n", filename, in);
 		perror(0);
+
 		return 0;
 	}
 	err = fstat64(in, &fileStatus);
 	if(err < 0)
 	{
-		fprintf(stderr, "Error looking at file (1) : <%s> : "
-			"err = %d\n", filename, err);
+		fprintf(stderr, "Error looking at file (1) : <%s> : " "err = %d\n", filename, err);
 		perror(0);
 		close(in);
+
 		return 0;
 	}
 
-	V = (struct mark5_stream_generic *)calloc(1,
-		sizeof(struct mark5_stream_generic));
-	F = (struct mark5_stream_file *)calloc(1,
-		sizeof(struct mark5_stream_file));
+	V = (struct mark5_stream_generic *)calloc(1, sizeof(struct mark5_stream_generic));
+	F = (struct mark5_stream_file *)calloc(1, sizeof(struct mark5_stream_file));
 
 	F->in = in;
 	if(in == 0)
@@ -323,6 +321,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 	V->seek = mark5_stream_file_seek;
 	V->final_stream = mark5_stream_file_final;
 	V->inputdata = F;
+	V->inputdatasize = sizeof(struct mark5_stream_file);
 
 	return V;
 }
@@ -333,8 +332,8 @@ int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 
 	if(ms->init_stream != mark5_stream_file_init)
 	{
-		fprintf(stderr, "mark5_stream_add_infile: "
-			"Wrong stream type!\n");
+		fprintf(stderr, "mark5_stream_add_infile: " "Wrong stream type!\n");
+
 		return -1;
 	}
 

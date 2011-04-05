@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -150,6 +150,7 @@ struct mark5_stream_generic
 	int (*next)(struct mark5_stream *ms);		/* required */
 	int (*seek)(struct mark5_stream *ms, long long framenum);
 	void *inputdata;
+	int inputdatasize;
 };
 
 struct mark5_format_generic
@@ -167,13 +168,22 @@ struct mark5_format_generic
 		int *mjd, int *sec, double *ns);
 	int (*fixmjd)(struct mark5_stream *ms, int refmjd);
 	void *formatdata;
+	int formatdatasize;
 	int Mbps;
 	int nchan;
 	int nbit;
 	int decimation;					/* decimationling factor */
 };
 
-struct mark5_stream *new_mark5_stream(struct mark5_stream_generic *s,
+void delete_mark5_stream_generic(struct mark5_stream_generic *s);
+
+void delete_mark5_format_generic(struct mark5_format_generic *f);
+
+struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
+	const struct mark5_format_generic *f);
+
+/* same as new_mark5_stream() but deletes s and f upon creation */
+struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s,
 	struct mark5_format_generic *f);
 
 void delete_mark5_stream(struct mark5_stream *ms);

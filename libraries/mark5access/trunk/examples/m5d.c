@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006-2010 by Walter Brisken                             *
+ *   Copyright (C) 2006-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -69,13 +69,12 @@ int decode(const char *filename, const char *formatname, const char *f,
 
 	total = unpacked = 0;
 
-	ms = new_mark5_stream(
+	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(filename, offset),
-		new_mark5_format_generic_from_string(formatname) );
-
+		new_mark5_format_generic_from_string(formatname));
 	if(!ms)
 	{
-		printf("Error: problem opening %s\n", filename);
+		fprintf(stderr, "Error: problem opening or decoding %s\n", filename);
 
 		return 0;
 	}
@@ -83,14 +82,14 @@ int decode(const char *filename, const char *formatname, const char *f,
 	data = (float **)malloc(ms->nchan*sizeof(float *));
 	for(i = 0; i < ms->nchan; i++)
 	{
-		data[i] = (float *)malloc(chunk*sizeof(float ));
+		data[i] = (float *)malloc(chunk*sizeof(float));
 	}
 
 	mark5_stream_print(ms);
 
 	if(n % (long long)(ms->samplegranularity) > 0LL)
 	{
-		printf("Warning: reducing read size from %Ld", n);
+		printf("EOF reached; reducing read size from %Ld", n);
 		n -= (n % (long long)(ms->samplegranularity));
 		printf(" to %Ld\n", n);
 	}
@@ -160,6 +159,7 @@ int main(int argc, char **argv)
 		if(!in)
 		{
 			fprintf(stderr, "Error: cannot open file '%s'\n", argv[1]);
+
 			return 0;
 		}
 
