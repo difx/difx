@@ -72,14 +72,8 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --help\n");
 	fprintf(stderr, "  -h                  Print this help message\n"); 
 	fprintf(stderr, "\n");
-	fprintf(stderr, "  --average <nchan>\n");
-	fprintf(stderr, "  -a        <nchan>   Average <nchan> channels\n");
-	fprintf(stderr, "\n");
 	fprintf(stderr, "  --bin        <bin>\n");
 	fprintf(stderr, "  -B           <bin>  Select on this pulsar bin number\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "  --beginchan <chan>\n");
-	fprintf(stderr, "  -b          <chan>  Skip <chan> correlated channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --difx\n");
 	fprintf(stderr, "   -d                 Run on all .difx files in directory\n");
@@ -89,9 +83,6 @@ static int usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --dont-combine\n");
 	fprintf(stderr, "  -1                  Don't combine jobs\n");
-	fprintf(stderr, "\n");
-	fprintf(stderr, "  --outchans <nchan>\n");
-	fprintf(stderr, "  -o         <nchan>  Write <nchan> channels\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --scale <scale>\n");
 	fprintf(stderr, "  -s      <scale>     Scale visibility data " "by <scale>\n");
@@ -271,29 +262,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 					i++;
 					opts->sniffTime = atof(argv[i]);
 				}
-				else if(strcmp(argv[i], "--average") == 0 ||
-				        strcmp(argv[i], "-a") == 0)
-				{
-					i++;
-					opts->specAvg = atoi(argv[i]);
-				}
 				else if(strcmp(argv[i], "--bin") == 0 ||
 					strcmp(argv[i], "-B") == 0)
 				{
 					i++;
 					opts->pulsarBin = atoi(argv[i]);
-				}
-				else if(strcmp(argv[i], "--outchans") == 0 ||
-				        strcmp(argv[i], "-o") == 0)
-				{
-					i++;
-					opts->nOutChan = atof(argv[i]);
-				}
-				else if(strcmp(argv[i], "--beginchan") == 0 ||
-				        strcmp(argv[i], "-b") == 0)
-				{
-					i++;
-					opts->startChan = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--phasecentre") == 0 ||
 					strcmp(argv[i], "--phasecenter") == 0)
