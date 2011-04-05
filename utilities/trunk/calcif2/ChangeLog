@@ -40,6 +40,8 @@ Version 1.2
 * warn about case sensitive and don't make directory if not found
 * respect DIFX_GROUP_ID and set permissions
 
+* Removed from project for version 2.0.1
+
 joblist
 ~~~~~~~
 Version 1.4
@@ -54,6 +56,8 @@ Version 1.2
 
 job2difx
 ~~~~~~~~
+* Removed from project for version 2.0.1
+
 Version 1.11
 * Post NRAO-DiFX 1.1
 
