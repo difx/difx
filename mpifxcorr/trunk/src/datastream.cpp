@@ -305,6 +305,13 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   }
   if(lastoffsetns < 0)
   {
+    offsetsec -= 1;
+    offsetns += 1000000000;
+    firstoffsetns += 1000000000;
+    lastoffsetns += 1000000000;
+  }
+  if(lastoffsetns < 0)
+  {
     cerror << startl << "lastoffsetns less than 0 still! =" << lastoffsetns << endl;
   }
 

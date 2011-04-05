@@ -59,6 +59,7 @@ void *watchdogFunction(void *data)
 		if(strcmp(watchdogStatement, "DIE") == 0)
 		{
 			pthread_mutex_unlock(&watchdogLock);
+			
 			return 0;
 		}
 		else if(watchdogTime != 0)
@@ -76,7 +77,7 @@ void *watchdogFunction(void *data)
 #endif
 				MPI_Abort(MPI_COMM_WORLD, 1);
 			}
-			else if(deltat != lastdeltat && deltat > 4)
+			else if(deltat != lastdeltat && deltat > 8)
 			{
 				cwarn << startl << "Waiting " << deltat << " seconds executing: " << watchdogStatement << endl;
 				lastdeltat = deltat;
@@ -105,6 +106,7 @@ int initWatchdog()
 	if(perr != 0)
 	{
 		fprintf(stderr, "Error: could not launch watchdog thread!\n");
+
 		return -1;
 	}
 
@@ -248,6 +250,7 @@ void NativeMk5DataStream::setDiscModuleState(SSHANDLE xlrDevice, const char *new
 	if(xlrRC != XLR_SUCCESS)
 	{
 		cerror << startl << "Cannot read the Mark5 module label" << endl;
+
 		return;
 	}
 
@@ -261,6 +264,7 @@ void NativeMk5DataStream::setDiscModuleState(SSHANDLE xlrDevice, const char *new
 	if(labelLength >= XLR_LABEL_LENGTH)
 	{
 		cwarn << startl << "Module label is not terminated!" << endl;
+
 		return;
 	}
 
@@ -427,7 +431,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	{
 		delete_mark5_stream(mark5stream);
 	}
-	mark5stream = new_mark5_stream(
+	mark5stream = new_mark5_stream_absorb(
 	  new_mark5_stream_unpacker(0),
 	  new_mark5_format_generic_from_string(formatname) );
 
@@ -518,6 +522,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			keepreading = false;
 			nomoredata = true;
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+
 			return;
 		}
 		scanns = int(1000000000.0*scan->framenuminsecond/scan->framespersecond + 0.1);
@@ -543,6 +548,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			keepreading = false;
 			nomoredata = true;
 			sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+
 			return;
 		}
 	}
@@ -600,6 +606,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			cerror << startl << "No valid data found.  Stopping playback!" << endl;
 			dataremaining = false;
 			sendMark5Status(MARK5_STATE_NODATA, 0, 0, 0.0, 0.0);
+
 			return;
 		}
 
@@ -614,6 +621,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	  keepreading = false;
 	  nomoredata = true;
 	  sendMark5Status(MARK5_STATE_NOMOREDATA, 0, 0, 0.0, 0.0);
+
 	  return;
         }
 
@@ -661,6 +669,7 @@ void NativeMk5DataStream::openfile(int configindex, int fileindex)
 			" is exiting because fileindex is " << fileindex << 
 			", while confignumconfigfiles is " << 
 			confignumfiles[configindex] << endl;
+
 		return;
 	}
 
@@ -684,6 +693,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	struct timeval tv;
 	int mjd, sec, sec2;
 	double ns;
+	bool hasFilledData;
 
 	/* All reads of a module must be 64 bit aligned */
 	bytes = readbytes;
@@ -702,6 +712,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	{
 		bufferinfo[buffersegment].validbytes = 0;
 		dataremaining = false;
+
 		return;
 	}
 
@@ -753,8 +764,13 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
-	if( (data[1] == MARK5_FILL_PATTERN && data[2] == MARK5_FILL_PATTERN) ||
-	    (data[998] == MARK5_FILL_PATTERN && data[999] == MARK5_FILL_PATTERN) )
+	hasFilledData = (data[1] == MARK5_FILL_PATTERN && data[2] == MARK5_FILL_PATTERN);
+	if(!hasFilledData && bytes > 4000)
+	{
+		hasFilledData = (data[998] == MARK5_FILL_PATTERN && data[999] == MARK5_FILL_PATTERN);
+	}
+
+	if(hasFilledData)
 	{
 		filltime++;
 		nfill++;
@@ -820,7 +836,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
                 // feed switched power detector
                 if(switchedpower && (nt % 4 == 0) )
                 {
-                  struct mark5_stream *m5stream = new_mark5_stream(
+                  struct mark5_stream *m5stream = new_mark5_stream_absorb(
                     new_mark5_stream_memory(data, bytes),
                     new_mark5_format_generic_from_string(formatname) );
                   if(m5stream)
