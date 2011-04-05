@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2006 by Adam Deller                                     *
+ *   Copyright (C) 2011 by Adam Deller                                     *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -12,11 +12,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: mpifxcorr.cpp 2818 2010-11-19 23:36:12Z AdamDeller $
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/trunk/src/mpifxcorr.cpp $
-// $LastChangedRevision: 2818 $
-// $Author: AdamDeller $
-// $LastChangedDate: 2010-11-19 16:36:12 -0700 (Fri, 19 Nov 2010) $
+// $Id$
+// $HeadURL: $
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
 //
 //============================================================================
 
@@ -48,10 +48,11 @@ int main(int argc, char *argv[])
   ifstream input;
   ofstream output;
   string savedir, reldifxfile, savedifxfile;
-  int lastslash, fchan, numfreqs, lastconfigindex, maxnumintegrations;
+  unsigned int lastslash;
+  int fchan, lastconfigindex, maxnumintegrations;
   int mindelayoffset, maxdelayoffset, poloffset;
-  int startmjd, currentmjd, currentfreq, baseline, offset;
-  double dm, dur, inttime, chanfreq, startseconds, currentseconds, lastseconds;
+  int startmjd, currentmjd, currentfreq, baseline, offset=0;
+  double dm, dur, inttime, chanfreq, startseconds, currentseconds, lastseconds=0;
   pol[2] = 0;
 
   if(argc != 4)
