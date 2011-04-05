@@ -52,7 +52,7 @@ sighandler_t oldsiginthand;
 
 void siginthand(int j)
 {
-	printf("\nBeing killed.\n\n");
+	fprintf(stderr, "\nBeing killed.\n\n");
 	die = 1;
 
 	signal(SIGINT, oldsiginthand);
@@ -92,7 +92,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 	if(!ms)
 	{
-		printf("problem opening %s\n", filename);
+		fprintf(stderr, "problem opening %s\n", filename);
 		return 0;
 	}
 
