@@ -506,7 +506,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	sendMark5Status(MARK5_STATE_GOTDIR, 0, 0, startmjd, 0.0);
 
 	// find starting position
-  
+
 	if(scan != 0)  /* just continue by reading next valid scan */
 	{
 		cinfo << startl << "Advancing to next Mark5 module scan" << endl;
@@ -530,13 +530,13 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 		scanstart = scan->mjd + (scan->sec + scanns*1.e-9)/86400.0;
 		scanend = scanstart + scan->duration/86400.0;
 		readpointer = scan->start + scan->frameoffset;
-		readseconds = (scan->mjd-corrstartday)*86400 + scan->sec - corrstartseconds;
+		readseconds = (scan->mjd-corrstartday)*86400 + scan->sec - corrstartseconds + intclockseconds;
 		readnanoseconds = scanns;
                 while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
                   readscan++;
                 while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
                   readscan--;
-                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
 
 		cinfo << startl << "After scan change: readscan = " << readscan << " rs = " << readseconds << "  rns = " << readnanoseconds << endl;
 
@@ -567,14 +567,13 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			{
 				cinfo << startl << "NM5 : scan found(1) : " << (i+1) << endl;
 				readpointer = scan->start + scan->frameoffset;
-				readseconds = (scan->mjd-corrstartday)*86400 
-					+ scan->sec - corrstartseconds;
+				readseconds = (scan->mjd-corrstartday)*86400 + scan->sec - corrstartseconds + intclockseconds;
 				readnanoseconds = scanns;
                                 while(readscan < (model->getNumScans()-1) && model->getScanEndSec(readscan, corrstartday, corrstartseconds) < readseconds)
                                   readscan++;
                                 while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
                                   readscan--;
-                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
 				break;
 			}
 			else if(startmjd < scanend) /* obs starts within data */
@@ -583,7 +582,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				readpointer = scan->start + scan->frameoffset;
 				n = (long long)((
 					( ( (corrstartday - scan->mjd)*86400 
-					+ corrstartseconds - scan->sec) - scanns*1.e-9)
+					+ corrstartseconds - intclockseconds - scan->sec) - scanns*1.e-9)
 					*config->getFramesPerSecond(configindex, streamnum)) + 0.5);
 				readpointer += n*scan->framebytes;
 				readseconds = 0;
@@ -592,7 +591,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
                                   readscan++;
                                 while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
                                   readscan--;
-                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
+                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
 				break;
 			}
 		}
@@ -761,6 +760,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	// Check for validity
 	mark5stream->frame = (uint8_t *)data;
 	mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
+	sec += intclockseconds;
 	mark5stream->frame = 0;
 	sec2 = (model->getScanStartSec(readscan, corrstartday, corrstartseconds) + readseconds + corrstartseconds) % 86400;
 
