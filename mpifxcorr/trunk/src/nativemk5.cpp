@@ -536,7 +536,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
                   readscan++;
                 while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
                   readscan--;
-                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
+                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 
 		cinfo << startl << "After scan change: readscan = " << readscan << " rs = " << readseconds << "  rns = " << readnanoseconds << endl;
 
@@ -573,7 +573,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
                                   readscan++;
                                 while(readscan > 0 && model->getScanStartSec(readscan, corrstartday, corrstartseconds) > readseconds)
                                   readscan--;
-                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds) + intclockseconds;
+                                readseconds = readseconds - model->getScanStartSec(readscan, corrstartday, corrstartseconds);
 				break;
 			}
 			else if(startmjd < scanend) /* obs starts within data */
@@ -582,7 +582,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 				readpointer = scan->start + scan->frameoffset;
 				n = (long long)((
 					( ( (corrstartday - scan->mjd)*86400 
-					+ corrstartseconds - intclockseconds - scan->sec) - scanns*1.e-9)
+					+ corrstartseconds - scan->sec) - scanns*1.e-9)
 					*config->getFramesPerSecond(configindex, streamnum)) + 0.5);
 				readpointer += n*scan->framebytes;
 				readseconds = 0;
