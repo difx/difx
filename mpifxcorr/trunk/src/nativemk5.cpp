@@ -131,11 +131,11 @@ static int dirCallback(int scan, int nscan, int status, void *data)
 	mk5status = (DifxMessageMk5Status *)data;
 	mk5status->scanNumber = scan + 1;
 	mk5status->position = nscan;
-	v = snprintf(mk5status->scanName, MAX_SCAN_NAME_LENGTH,
+	v = snprintf(mk5status->scanName, MODULE_SCAN_NAME_LENGTH,
 		"%s", Mark5DirDescription[status]);
 	if(v >= MessageLength)
 	{
-		fprintf(stderr, "Warning: dirCallback: scanName: v=%d, >= %d\n", v, MAX_SCAN_NAME_LENGTH);
+		fprintf(stderr, "Warning: dirCallback: scanName: v=%d, >= %d\n", v, MODULE_SCAN_NAME_LENGTH);
 	}
 
 	difxMessageSendMark5Status(mk5status);
@@ -449,9 +449,9 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	{
 		doUpdate = 1;
 		cinfo << startl << "getting module info" << endl;
-		v = getCachedMark5Module(&module, &xlrDevice, corrstartday, 
+		v = getCachedMark5Module(&module, xlrDevice, corrstartday, 
 			datafilenames[configindex][fileindex].c_str(), 
-			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1);
+			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1, -1, -1);
 
 		if(v < 0)
 		{
