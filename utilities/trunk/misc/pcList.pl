@@ -25,6 +25,9 @@ my  $MATRIXFILE	=   "";			#   Jobmatrixfile
 
 my  $help           =   0;
 my  $mode           =   "";
+my  $exclude	    = "";
+my  $calcSummary    = "";
+my  @excludeStations    = ();
 my  $i		    =   0;
 my  @Anzahl_Stationen	=   ();
 my  @Stations		=   ();
@@ -35,12 +38,13 @@ my  @joblist	=   ();
 my  %vexStationSum = ();
 my  %stationSum = ();
 my  $maxScanName = 0;
+my  $maxDifxName = 0;
 my  $maxSourceName = 0;
 my  $maxModeName = 0;
 my  $vexScanCount = 0;
 #----------------------------------------------------------------------
 
-&GetOptions("help" => \$help, "mode=s" => \$mode, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &printUsage(); 
+&GetOptions("help" => \$help, "mode=s" => \$mode,  "exclude=s" => \$exclude, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &printUsage(); 
 
 if ($help || $VEXFILE eq "" || $MATRIXFILE eq "")
 {
@@ -58,13 +62,13 @@ exit(0);
 ################
 sub main
 {      
-	my %stationSums = ();
+    my %stationSums = ();
 
 
     open(MATRIXFILE,$MATRIXFILE)    || die "Jobmatrix file named \"$MATRIXFILE\" not found\n";
     @joblist = <MATRIXFILE>;
 
-    #lese erste Zeile (enthält stationen)
+    # read first line (contains stations)
     foreach $_ (@joblist)                       
         {
         chomp($_);                                
@@ -76,6 +80,11 @@ sub main
 	open(MATRIXFILE,$MATRIXFILE)    || die "Jobmatrix file named \"$MATRIXFILE\" not found\n";
 	open(VEXFILE,   $VEXFILE)	    || die "Vex file named \"$VEXFILE\" not found\n";
 	open(FILOUT,">$VEXFILE.pclist")  || die "cannot create \"$VEXFILE.pclist\" \n";
+	open(RECOROUT,">recor.joblist")  || die "cannot create \"recor.joblist\" \n";
+
+	$calcSummary = `grep IDENTIFIER: *.calc`;
+
+	@excludeStations = split (/,/, uc($exclude));
 
 	&getStationsFromVex();
 	&parseVex();
@@ -84,8 +93,10 @@ sub main
 	close   (VEXFILE);
 	close   (MATRIXFILE);
 	close   (FILOUT);
+	close   (RECOROUT);
 
 }
+
 
 ###################################
 #
@@ -103,6 +114,12 @@ sub getStationsFromVex
     {
         $st_text	=~  y/[ ]//d;
 	@SplitAnzahl    =   split   (/[=;]/, $st_text);
+	
+	# check if this station was exluded by the user (via the -e option)
+	if (grep $_ eq uc($SplitAnzahl[1]), @excludeStations)
+	{
+		next;
+	}
         push	(@Stations, uc($SplitAnzahl[1]));
     }
 
@@ -136,20 +153,32 @@ sub parseVex
 		# look for scan start
 		if ($vexLine =~ /^scan\s+(.+);/)
 		{
+			$vexScans[$scanCount]{"MAX_DURATION"} = 0;
+			$vexScans[$scanCount]{"MODE"} = "";
+			$vexScans[$scanCount]{"DIFXFILE"} = "";
+			$vexScans[$scanCount]{"SOURCE"} = "";
+
 			$scanName = $1;
 
-			$vexScans[$scanCount]{"NAME"} = $1;
-			#print "$1 \n";
+			$vexScans[$scanCount]{"NAME"} = $scanName;
+
+			# lookup scan name in the *calc file in order to determine the input filename
+			my $str = "(.*)\\.calc:.*IDENTIFIER:\\s+$scanName";
+			if ($calcSummary =~ /$str/)
+			{
+				$vexScans[$scanCount]{"DIFXFILE"} = $1;
+			}
 
 			if (length($scanName) > $maxScanName)
 			{	
 				$maxScanName = length($scanName)
 			}
+			if (length($1) > $maxDifxName)
+                        {
+                                $maxDifxName = length($1)
+                        }
 
-			
-			$vexScans[$scanCount]{"MAX_DURATION"} = 0;
-			$vexScans[$scanCount]{"MODE"} = "";
-			$vexScans[$scanCount]{"SOURCE"} = "";
+
 
 			$isScanBlock = 1;
 			next;
@@ -239,8 +268,8 @@ sub compare
 	my $value = "";
 
 
-	print"$maxScanName $maxSourceName $maxModeName\n";
-	my $headerLen = length($vexScanCount) + $maxScanName + $maxSourceName + $maxModeName + 4;
+	#print"$maxScanName $maxSourceName $maxModeName\n";
+	my $headerLen = $maxDifxName + $maxScanName + $maxSourceName + $maxModeName + 4;
 	my $headerBlank = "";
 	for ($i=0; $i < $headerLen; $i++)
 	{
@@ -286,11 +315,12 @@ sub compare
 		%stationSums = &parseJobmatrix ( $vexStart, $vexStop);
 
 		# matrix output
-		my $format = "%" . length($vexScanCount) . "s %" . $maxScanName . "s %" . $maxSourceName . "s %" . $maxModeName . "s " ;
-		printf FILOUT  $format, $i+1, $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
-		printf $format, $i+1, $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
+		my $format = "%" . $maxDifxName . "s %" . $maxScanName . "s %" . $maxSourceName . "s %" . $maxModeName . "s " ;
+		printf FILOUT  $format, $vexScans[$i]{"DIFXFILE"} , $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
+		printf $format, $vexScans[$i]{"DIFXFILE"}, $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
 
 		# loop over all stations
+		my $missing = "";
 		foreach $station (@Stations)
 		{
 			#check if this station takes part in this vex scan
@@ -304,10 +334,10 @@ sub compare
 					#print "$key: $value $stationSum{$key}";
 					if ($targetTime > $stationSums{$station})
 					{
-					    #print "Station $station should have $vexScans[$i]{'STATION_DURATION'}{$station} sec. Has  $stationSums{$station} sec\n";
-						my $percentage = sprintf ("%#.2d", $stationSums{$station} / $targetTime * 100);
+					    my $percentage = sprintf ("%#.2d", $stationSums{$station} / $targetTime * 100);
 					    print FILOUT "$percentage ";
 					    print color("red"), "$percentage ";
+					    $missing .= "$station ";
 					}
 					else
 					{
@@ -319,7 +349,9 @@ sub compare
 				{
 					print FILOUT "x  ";
 					print color("red"), "x  ";
-					#print "$VexScan Station $key not found\n";
+
+                                        $missing .= "$station ";
+
 				}
 
 
@@ -332,7 +364,11 @@ sub compare
 		}
 		print FILOUT "\n";
 		print color("black"), "\n";
-		#print " $value";
+
+		if (($missing ne "") and ($vexScans[$i]{"DIFXFILE"} ne ""))
+		{
+			print RECOROUT $vexScans[$i]{"DIFXFILE"} . " # $missing\n";
+		}
 	}
 }
 
@@ -432,9 +468,7 @@ sub parseJobmatrix
 			# convert calendar date to seconds
 			$seconds = &jobmatrixTime2Seconds ($1, $2, $3, $4, $5, $6);
 
-			#print "time convert: $1 $2 $3 $4 $5 $6 => $seconds\n";
-
-			# extract the station participating in this time interval
+			# extract the stations participating in this time interval
 			@stations = &readStations ($line);
 
 		}
@@ -442,22 +476,16 @@ sub parseJobmatrix
 		{
 			$seconds = &jobmatrixTime2Seconds ($year, $month, $day, $1, $2, $3);
 
-
-			#print "time: $1 $2 $3 ";
 			@stations = &readStations ($line);
-			#print "$seconds\n";
 
 		}
 	
-		#print "Compare: $seconds  $vexStart  $vexStop \n";
-		
 		# check if jobmatrix time is in the vex scan time interval
 		if ($seconds >=  ($vexStart - 20) &&   $seconds <  $vexStop )
 		{ 
 
 
 			$scanOpenFlag = 1;
-	 		#print "In scan; $seconds  $vexStart  $vexStop $line\n";
 
 			# Stations
 			my $stationNum = 0;
@@ -467,11 +495,9 @@ sub parseJobmatrix
 				if ($station ne "  ")
 				{
 					my $stationName = $MatrixStationen[$stationNum];		
-					#print "$stationName $station\n";
 					$stationSum{$stationName} += 20;
 				}
 
-				#print "SUM :" . $stationSum{$station} ."\n";
 				$stationNum++;
 			}
 
@@ -538,9 +564,9 @@ sub printUsage
     print "---------------------------------------------------------------------------- \n";    
     print "USAGE\n";
     print "---------------------------------------------------------------------------- \n";    
-    print " pcList.pl -v vexfile -j jobmatrixfile [-m mode]\n";    
+    print " pcList.pl -v vexfile -j jobmatrixfile [-m mode] \n";    
     print "\n";    
-    print "if option -m is used only scans having the selected mode will be processed.\n";    
+    print "-m {mode}:	 process only scans having the selected mode\n";    
     print "\n";    
     print "\n";    
     print "---------------------------------------------------------------------------- \n";    
