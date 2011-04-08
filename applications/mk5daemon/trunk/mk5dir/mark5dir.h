@@ -31,7 +31,6 @@
 #define __MARK5ACCESS_H__
 
 #include <xlrapi.h>
-#include "config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -127,7 +126,7 @@ struct Mark5DirectoryVDIFBodyVer1
 /* Internal representation of .dir files */
 struct Mark5Scan
 {
-	char name[MODULE_LEGACY_SCAN_LENGTH];
+	char name[MODULE_SCAN_NAME_LENGTH];
 	long long start;
 	long long length;
 	double duration;	/* scan duration in seconds */
@@ -179,7 +178,7 @@ extern char Mark5ReadModeName[][10];
 const char *moduleStatusName(int status);
 
 /* returns active bank: 0 or 1 for bank A or B, or -1 if none */
-int Mark5BankGet(SSHANDLE *xlrDevice);
+int Mark5BankGet(SSHANDLE xlrDevice);
 
 int Mark5GetActiveBankWriteProtect(SSHANDLE xlrDevice);
 

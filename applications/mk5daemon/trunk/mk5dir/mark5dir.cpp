@@ -380,7 +380,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 
 static int uniquifyScanNames(struct Mark5Module *module)
 {
-	char scanNames[MODULE_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH];
+	char scanNames[MODULE_MAX_SCANS][MODULE_SCAN_NAME_LENGTH];
 	int nameCount[MODULE_MAX_SCANS];
 	int origIndex[MODULE_MAX_SCANS];
 	int i, j, n=0;
@@ -395,7 +395,7 @@ static int uniquifyScanNames(struct Mark5Module *module)
 		return 0;
 	}
 
-	snprintf(scanNames[0], MODULE_LEGACY_SCAN_LENGTH, "%s", module->scans[0].name);
+	snprintf(scanNames[0], MODULE_SCAN_NAME_LENGTH, "%s", module->scans[0].name);
 	nameCount[0] = 1;
 	origIndex[0] = 0;
 	n = 1;
@@ -407,14 +407,14 @@ static int uniquifyScanNames(struct Mark5Module *module)
 			if(strcmp(scanNames[j], module->scans[i].name) == 0)
 			{
 				nameCount[j]++;
-				snprintf(module->scans[i].name, MODULE_LEGACY_SCAN_LENGTH,
+				snprintf(module->scans[i].name, MODULE_SCAN_NAME_LENGTH,
 					"%s_%04d", scanNames[j], nameCount[j]);
 				break;
 			}
 		}
 		if(j == n)
 		{
-			snprintf(scanNames[n], MODULE_LEGACY_SCAN_LENGTH, "%s", module->scans[i].name);
+			snprintf(scanNames[n], MODULE_SCAN_NAME_LENGTH, "%s", module->scans[i].name);
 			nameCount[n] = 1;
 			origIndex[n] = i;
 			n++;
@@ -427,7 +427,7 @@ static int uniquifyScanNames(struct Mark5Module *module)
 		if(nameCount[j] > 1)
 		{
 			i = origIndex[j];
-			snprintf(module->scans[i].name, MODULE_LEGACY_SCAN_LENGTH,
+			snprintf(module->scans[i].name, MODULE_SCAN_NAME_LENGTH,
 				"%s_%04d", scanNames[j], 1);
 		}
 	}
@@ -653,8 +653,6 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 
 	if(module->fast && dirVersion > 0)
 	{
-		printf("Doing fast dir\n");
-
 		for(int i = startScan; i < stopScan; i++)
 		{
 			struct Mark5DirectoryScanHeaderVer1 *scanHeader;
@@ -665,7 +663,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 			scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
 			type = scanHeader->typeNumber & 0xFF;
 			
-			expandScanName1(scan->name, MODULE_LEGACY_SCAN_LENGTH, scanHeader);
+			expandScanName1(scan->name, MODULE_SCAN_NAME_LENGTH, scanHeader);
 			scan->start  = scanHeader->startByte;
 			scan->length = scanHeader->stopByte - scanHeader->startByte;
 			scan->framebytes  = scanHeader->frameLength;
@@ -736,7 +734,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 
 			if(dirVersion == 0)
 			{
-				snprintf(scan->name, MODULE_LEGACY_SCAN_LENGTH, "%s", m5dir->scanName[i]);
+				snprintf(scan->name, MODULE_SCAN_NAME_LENGTH, "%s", m5dir->scanName[i]);
 				scan->start  = m5dir->start[i];
 				scan->length = m5dir->length[i];
 			}
@@ -744,7 +742,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 			{
 				const struct Mark5DirectoryScanHeaderVer1 *scanHeader;
 				scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
-				expandScanName1(scan->name, MODULE_LEGACY_SCAN_LENGTH, scanHeader);
+				expandScanName1(scan->name, MODULE_SCAN_NAME_LENGTH, scanHeader);
 				scan->start  = scanHeader->startByte;
 				scan->length = scanHeader->stopByte - scanHeader->startByte;
 			}
@@ -768,9 +766,6 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 				scan->length -= 4;
 			}
 
-			a = scan->start>>32;
-			b = scan->start % (1LL<<32);
-
 			if(i < startScan || i >= stopScan)
 			{
 				scan->format = -8;
@@ -778,6 +773,8 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 				continue;
 			}
 
+			a = scan->start>>32;
+			b = scan->start % (1LL<<32);
 			xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen);
 
 			if(xlrRC == XLR_FAIL)
@@ -1085,7 +1082,7 @@ int saveMark5Module(struct Mark5Module *module, const char *filename)
 int getCachedMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, 
 	int mjdref, const char *vsn, const char *dir,
 	int (*callback)(int, int, int, void *), void *data,
-	float *replacedFrac, int force, int fast, int cacheOnly, 
+	float *replacedFrac, int force, int fast, int cacheOnly,
 	int startScan, int stopScan)
 {
 	const int FilenameLength = 256;
