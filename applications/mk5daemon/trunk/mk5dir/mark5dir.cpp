@@ -39,6 +39,56 @@
 #include "watchdog.h"
 
 
+/* as implemented in Mark5A */
+struct Mark5LegacyDirectory
+{
+	int nscans; /* Number of scans herein */
+	int n; /* Next scan to be accessed by "next_scan" */
+	char scanName[MODULE_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH]; /* Extended name */
+	unsigned long long start[MODULE_MAX_SCANS]; /* Start byte position */
+	unsigned long long length[MODULE_MAX_SCANS]; /* Length in bytes */
+	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
+	long long plapnt; /* Play offset, bytes */
+	double playRate; /* Playback clock rate, MHz */
+};
+
+/* first updated version as defined by Hastack Mark5 Memo #081 */
+struct Mark5DirectoryHeaderVer1
+{
+	int version;		/* should be 1 */
+	int status;		/* bit field: see MODULE_STATUS_xxx above */
+	char vsn[MODULE_EXTENDED_VSN_LENGTH];
+	char vsnPrev[MODULE_EXTENDED_VSN_LENGTH];	/* "continued from" VSN */
+	char vsnNext[MODULE_EXTENDED_VSN_LENGTH];	/* "continued to" VSN */
+	char zeros[24];
+};
+
+struct Mark5DirectoryScanHeaderVer1
+{
+	unsigned int typeNumber;	/* and scan number; see memo 81 */
+	unsigned short frameLength;
+	char station[2];
+	char scanName[MODULE_SCAN_NAME_LENGTH];
+	char expName[8];
+	long long startByte;
+	long long stopByte;
+};
+
+struct Mark5DirectoryLegacyBodyVer1
+{
+	unsigned char timeBCD[8];	/* version dependent time code. */
+	int firstFrame;
+	int byteOffset;
+	int trackRate;
+	int nTrack;
+	char zeros[40];
+};
+
+struct Mark5DirectoryVDIFBodyVer1
+{
+	unsigned short data[8][4];	/* packed bit fields for up to 8 thread groups */
+};
+
 const char *moduleStatusName(int status)
 {
 	if(status & MODULE_STATUS_RECORDED)
@@ -484,7 +534,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	int startScan, int stopScan)
 {
 	XLR_RETURN_CODE xlrRC;
-	Mark5Directory *m5dir;
+	struct Mark5LegacyDirectory *m5dir;
 	unsigned char *dirData;
 	int len, n;
 	int j;
@@ -535,7 +585,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	 * 0.  Otherwise check for divisibility by 128.  If so, then it is considered 
 	 * new style, and the version number can be extracted from the header.
 	 */
-	oldLen1 = (int)sizeof(struct Mark5Directory);
+	oldLen1 = (int)sizeof(struct Mark5LegacyDirectory);
 	oldLen2 = oldLen1 + 64 + 8*88;	/* 88 = sizeof(S_DRIVEINFO) */
 	oldLen3 = oldLen1 + 64 + 16*88;
 	if(len == oldLen1 || len == oldLen2 || len == oldLen3)
@@ -548,7 +598,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	}
 	else
 	{
-		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5Directory)), len);
+		printf("size=%d  len=%d\n", static_cast<int>(sizeof(struct Mark5LegacyDirectory)), len);
 
 		return -3;
 	}
@@ -558,7 +608,7 @@ static int getMark5Module(struct Mark5Module *module, SSHANDLE xlrDevice, int mj
 	{
 		return -4;
 	}
-	m5dir = (struct Mark5Directory *)dirData;
+	m5dir = (struct Mark5LegacyDirectory *)dirData;
 
 	xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData);
 	if(xlrRC != XLR_SUCCESS)
@@ -1660,6 +1710,35 @@ int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState)
 	{
 		WATCHDOGTEST( XLRSetWriteProtect(xlrDevice) );
 	}
+
+	return 0;
+}
+
+int setDiscModuleVSNNew(SSHANDLE xlrDevice, int newStatus, const char *newVSN, int capacity, int rate)
+{
+	struct Mark5DirectoryHeaderVer1 *dirHeader;
+	int dirLength;
+	char *data;
+
+	data = (char *)malloc(dirLength);
+	dirHeader = (struct Mark5DirectoryHeaderVer1 *)data;
+
+	WATCHDOG( dirLength = XLRGetUserDirLength(xlrDevice) );
+
+	WATCHDOGTEST( XLRGetUserDir(xlrDevice, dirLength, 0, data) );
+
+	if(newStatus >= 0)
+	{
+		dirHeader->status = newStatus;
+	}
+	if(newVSN)
+	{
+		snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH, "%s/%d/%d", newVSN, capacity, rate);
+	}
+
+	WATCHDOGTEST( XLRSetUserDir(xlrDevice, data, dirLength) );
+
+	free(data);
 
 	return 0;
 }

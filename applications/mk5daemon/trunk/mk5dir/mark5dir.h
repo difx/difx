@@ -73,56 +73,6 @@ typedef unsigned int streamstordatatype;
 typedef unsigned long streamstordatatype;
 #endif
 
-/* as implemented in Mark5A */
-struct Mark5Directory
-{
-	int nscans; /* Number of scans herein */
-	int n; /* Next scan to be accessed by "next_scan" */
-	char scanName[MODULE_MAX_SCANS][MODULE_LEGACY_SCAN_LENGTH]; /* Extended name */
-	unsigned long long start[MODULE_MAX_SCANS]; /* Start byte position */
-	unsigned long long length[MODULE_MAX_SCANS]; /* Length in bytes */
-	unsigned long long recpnt; /* Record offset, bytes (not a pointer) */
-	long long plapnt; /* Play offset, bytes */
-	double playRate; /* Playback clock rate, MHz */
-};
-
-/* first updated version as defined by Hastack Mark5 Memo #081 */
-struct Mark5DirectoryHeaderVer1
-{
-	int version;		/* should be 1 */
-	int status;		/* bit field: see MODULE_STATUS_xxx above */
-	char vsn[MODULE_EXTENDED_VSN_LENGTH];
-	char vsnPrev[MODULE_EXTENDED_VSN_LENGTH];	/* "continued from" VSN */
-	char vsnNext[MODULE_EXTENDED_VSN_LENGTH];	/* "continued to" VSN */
-	char zeros[24];
-};
-
-struct Mark5DirectoryScanHeaderVer1
-{
-	unsigned int typeNumber;	/* and scan number; see memo 81 */
-	unsigned short frameLength;
-	char station[2];
-	char scanName[MODULE_SCAN_NAME_LENGTH];
-	char expName[8];
-	long long startByte;
-	long long stopByte;
-};
-
-struct Mark5DirectoryLegacyBodyVer1
-{
-	unsigned char timeBCD[8];	/* version dependent time code. */
-	int firstFrame;
-	int byteOffset;
-	int trackRate;
-	int nTrack;
-	char zeros[40];
-};
-
-struct Mark5DirectoryVDIFBodyVer1
-{
-	unsigned short data[8][4];	/* packed bit fields for up to 8 thread groups */
-};
-
 /* Internal representation of .dir files */
 struct Mark5Scan
 {
@@ -223,6 +173,8 @@ int roundModuleSize(long long a);
 int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState);
 
 int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState);
+
+int setDiscModuleVSNNew(SSHANDLE xlrDevice, int newStatus, const char *newVSN, int capacity, int rate);
 
 #ifdef __cplusplus
 }

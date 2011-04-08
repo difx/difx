@@ -302,19 +302,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 			}
 			else
 			{
-				char *data;
-				struct Mark5DirectoryHeaderVer1 *dirHeader;
-
-				data = (char *)malloc(dirLength);
-				dirHeader = (struct Mark5DirectoryHeaderVer1 *)data;
-
-				WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, dirLength, 0, data) );
-				dirHeader->status = moduleStatus;
-				snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
-					"%s/%d/%d", newVSN, capacity, rate);
-				WATCHDOGTEST( XLRSetUserDir(xlrDevice, data, dirLength) );
-
-				free(data);
+				setDiscModuleVSNNew(xlrDevice, moduleStatus, newVSN, capacity, rate);
 			}
 
 			printf("New extended VSN is %s/%d/%d\n", newVSN, capacity, rate);
