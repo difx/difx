@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -34,9 +34,11 @@
 #include <time.h>
 #include "difxmessage.h"
 
+#define BINARY_OUTPUT_FILE	"binary.out"
+
 const char program[] = "testdifxmessagereceive";
-const char version[] = "1.0";
-const char verdate[] = "20100717";
+const char version[] = "1.1";
+const char verdate[] = "20110409";
 const char author[]  = "Walter Brisken";
 
 const int MAX_MTU = 9000;
@@ -49,7 +51,7 @@ int usage(const char *cmd)
 	printf("Usage:  %s [options]  [type]\n\n", cmd);
 	printf("Options can be:\n\n");
 	printf("  -h or --help   : Print this help info\n\n");
-	printf("  -b or --binary : Write binary records to file binary.out\n\n");
+	printf("  -b or --binary : Write binary records to file %s\n\n", BINARY_OUTPUT_FILE);
 	printf("Type is a number from 1 to %d and refers to the following message types\n\n",
 		NUM_DIFX_MESSAGE_TYPES-1);
 	for(i = 1; i < NUM_DIFX_MESSAGE_TYPES; i++)
@@ -66,7 +68,7 @@ int main(int argc, char **argv)
 	const int TimeLength = 32;
 	int sock;
 	enum DifxMessageType type = DIFX_MESSAGE_UNKNOWN;
-	int i, l;
+	int i, l, v;
 	int verbose = 1;
 	int binary = 0;
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
@@ -104,10 +106,10 @@ int main(int argc, char **argv)
 			if(type <= 0 || type >= NUM_DIFX_MESSAGE_TYPES)
 			{
 				fprintf(stderr, "Illegal message type requested.  Run with -h for help\n");
+
 				return 0;
 			}
-			printf("Listening only for message of type %d = %s\n", 
-				type, DifxMessageTypeStrings[type]);
+			printf("Listening only for message of type %d = %s\n", type, DifxMessageTypeStrings[type]);
 		}
 	}
 
@@ -127,7 +129,7 @@ int main(int argc, char **argv)
 
 		if(binary == 1)
 		{
-			out = fopen("binary.out", "w");
+			out = fopen(BINARY_OUTPUT_FILE, "w");
 		}
 
 		for(;;)
@@ -152,7 +154,13 @@ int main(int argc, char **argv)
 				np++;
 				if(out)
 				{
-					fwrite(message, 1, l, out);
+					v = fwrite(message, 1, l, out);
+					if(v != l)
+					{
+						fprintf(stderr, "Error: write to %s failed; disk full?\n", BINARY_OUTPUT_FILE);
+
+						break;
+					}
 				}
 				printf(".");
 				fflush(stdout);
