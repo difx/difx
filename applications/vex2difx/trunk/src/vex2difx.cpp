@@ -1057,7 +1057,7 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 	// Calculate maximum number of possible baselines based on list of configs
 	D->nBaseline = 0;
 
-#warning "FIXME : below assumes nAntenna == nDatastream!"
+#warning "FIXME: below assumes nAntenna == nDatastream!"
 	if(P->v2dMode == V2D_MODE_PROFILE)
 	{
 		// Here use nAntenna as nBaseline

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken / Adam Deller               *
+ *   Copyright (C) 2009-2011 by Walter Brisken / Adam Deller               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -267,6 +267,7 @@ int pystream::writeDbeInit(const VexData *V)
                         *this << "dbe0 = RDBE(0, 'pfb')" << endl;
                     else {
                         cerr << "Incorrect number of channels: " << F.channels.size() << endl;
+
                         exit(0);
                     }
 		}
@@ -293,7 +294,7 @@ int pystream::writeLoifTable(const VexData *V)
 	map<string,VexIF>::const_iterator it;
 	int p;
 	stringstream ss;
-        int init_channels = 0;
+        unsigned int init_channels = 0;
 
 	unsigned int nMode = V->nMode();
 
@@ -314,11 +315,12 @@ int pystream::writeLoifTable(const VexData *V)
 
 		if(currenttype == VLBA)
 		{
-                        if( m == 0) {
+                        if(m == 0) {
                             init_channels = F.channels.size();
                         } else if( init_channels != F.channels.size() ) {
                             cerr << "number of channels deviates from init" << init_channels
                                  << " vs " << F.channels.size() << endl;
+
                             exit(0);
                         }
 
@@ -354,7 +356,8 @@ int pystream::writeLoifTable(const VexData *V)
 				const VexIF *vif = setup->getIF(F.channels[i].ifname);
 				if(!vif)
 				{
-					cerr << "Developer error" << endl;
+					cerr << "Developer error: setup->getIF(" << F.channels[i].ifname << ") returned NULL" << endl;
+
 					exit(0);
 				}
 				double freq = F.channels[i].bbcFreq;
@@ -402,7 +405,8 @@ int pystream::writeLoifTable(const VexData *V)
 			//work out how many different LOs there are - complain if more than two (frequencies, not freq/pols)
 			if(setup->ifs.size() > 4)
                         {
-				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4, I'm aborting." << endl;
+				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4" << endl;
+
 				exit(1);
 			}
 			//better be two dual pol, otherwise abort
@@ -429,7 +433,8 @@ int pystream::writeLoifTable(const VexData *V)
 						{
 							if(i.getLowerEdgeFreq() != freq2)
 							{
-								cerr << "More than 2 IF frequencies - aborting!" << endl;
+								cerr << "Error: More than 2 IF frequencies" << endl;
+
 								exit(1);
 							}
 						}
@@ -668,6 +673,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	if(!output.is_open() || output.fail())
 	{
 		cout << "Could not open VCI file " << filename << " - aborting!" << endl;
+
 		exit(1);
 	}
 
