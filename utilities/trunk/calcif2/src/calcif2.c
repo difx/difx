@@ -46,8 +46,8 @@
 
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
-const char version[] = "2.0";
-const char verdate[] = "20091214";
+const char version[] = "2.0.1";
+const char verdate[] = "20110409";
 
 typedef struct
 {
@@ -222,8 +222,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				}
 				else if(argv[i][0] == '-')
 				{
-					printf("Error: Illegal option : %s\n", 
-						argv[i]);
+					printf("Error: Illegal option : %s\n", argv[i]);
 					die++;
 				}
 			}
@@ -239,8 +238,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			opts->nFile++;
 			if(opts->nFile >= MAX_FILES)
 			{
-				fprintf(stderr, "Error: Too many files (%d max)\n", 
-					MAX_FILES);
+				fprintf(stderr, "Error: Too many files (%d max)\n", MAX_FILES);
 				die++;
 			}
 		}
@@ -266,7 +264,7 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 
 	if(opts->nFile > 0 && opts->doall)
 	{
-		fprintf(stderr, "--all and files!\n");
+		fprintf(stderr, "Error: option '--all' provided with files!\n");
 		die++;
 	}
 	else if(opts->doall > 0)
@@ -297,12 +295,12 @@ CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 		if(cs)
 		{
 			v = snprintf(opts->calcServer, DIFXIO_NAME_LENGTH, "%s", cs ? cs : "localhost");
-		}
-		if(v >= DIFXIO_NAME_LENGTH)
-		{
-			fprintf(stderr, "Error: env var CALC_SERVER is set to a name that is too long, %s (should be < 32 chars)\n",
-				cs ? cs : "localhost");
-			die++;
+			if(v >= DIFXIO_NAME_LENGTH)
+			{
+				fprintf(stderr, "Error: env var CALC_SERVER is set to a name that is too long, %s (should be < 32 chars)\n",
+					cs ? cs : "localhost");
+				die++;
+			}
 		}
 	}
 
@@ -386,7 +384,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 
 	if(D == 0)
 	{
-		fprintf(stderr, "Error: loadDifxCalc returned 0\n");
+		fprintf(stderr, "Error: loadDifxCalc(\"%s\") returned 0\n", prefix);
 
 		return -1;
 	}
@@ -394,7 +392,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 	if(opts->force == 0 &&
 	   skipFile(D->job->calcFile, D->job->imFile))
 	{
-		printf("skipping %s due to file ages\n", prefix);
+		printf("Skipping %s due to file ages.\n", prefix);
 		deleteDifxInput(D);
 
 		return 0;
@@ -453,9 +451,15 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 
 			return -1;
 		}
-		printf("About to write IM file\n");
+		if(opts->verbose > 0)
+		{
+			printf("About to write IM file\n");
+		}
 		writeDifxIM(D);
-		printf("Wrote IM file\n");
+		if(opts->verbose > 0)
+		{
+			printf("Wrote IM file\n");
+		}
 		deleteDifxInput(D);
 
 		return 0;
@@ -495,7 +499,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	if(!p->clnt)
 	{
 		clnt_pcreateerror(p->calcServer);
-		printf("ERROR: rpc clnt_create fails for host : %-s\n", p->calcServer);
+		printf("Error: RPC clnt_create fails for host : %-s\n", p->calcServer);
 		deleteCalcParams(p);
 
 		return 0;
@@ -526,7 +530,7 @@ int run(const CommandLineOptions *opts)
 	p = newCalcParams(opts);
 	if(!p)
 	{
-		fprintf(stderr, "Cannot initialize CalcParams\n");
+		fprintf(stderr, "Error: Cannot initialize CalcParams\n");
 
 		return -1;
 	}
