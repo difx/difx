@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken and Adam Deller                  *
+ *   Copyright (C) 2007-2011 by Walter Brisken and Adam Deller             *
  *                                                                         *
  *   This program is free for non-commercial use: see the license file     *
  *   at http://astronomy.swin.edu.au:~adeller/software/difx/ for more      *
@@ -56,8 +56,9 @@ protected:
 
 private:
 #ifdef HAVE_XLRAPI_H
-	struct Mark5Module module;
-	struct Mark5Scan *scan;
+	Mark5Module module;
+        int scanNum;
+	const Mark5Scan *scan;
 	long long readpointer;
 	SSHANDLE xlrDevice;
 #endif
