@@ -439,7 +439,6 @@ int Mark5Module::load(const char *filename)
 {
 	const int MaxLineLength = 255;
 	FILE *in;
-	struct Mark5Scan *scan;
 	char line[MaxLineLength+1];
 	int i, j, nscans, n;
 	char *v;
@@ -524,8 +523,6 @@ int Mark5Module::load(const char *filename)
 int Mark5Module::save(const char *filename) const
 {
 	FILE *out;
-	struct Mark5Scan *scan;
-	int i;
 	
 	out = fopen(filename, "w");
 	if(!out)
