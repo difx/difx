@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.7";
-const char verdate[] = "20100910";
+const char verdate[] = "20110408";
 
 int verbose = 0;
 int die = 0;
@@ -584,7 +584,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	char outname[DIFX_MESSAGE_FILENAME_LENGTH];
 
 	char message[DIFX_MESSAGE_LENGTH];
-	struct Mark5Module module;
+	Mark5Module module;
 	SSHANDLE xlrDevice;
 	S_BANKSTATUS bank_stat;
 	DifxMessageMk5Status mk5status;
@@ -592,9 +592,9 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	memset(&mk5status, 0, sizeof(mk5status));
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
-	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -648,14 +648,11 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
 
-	memset(&module, 0, sizeof(module));
-	module.bank = -1;
-
 	oldsiginthand = signal(SIGINT, siginthand);
 
 	if(strlen(vsn) == 8)
 	{
-		v = getCachedMark5Module(&module, xlrDevice, mjdnow, 
+		v = module.getCachedDirectory(xlrDevice, mjdnow, 
 			vsn, mk5dirpath, &dirCallback, &mk5status,
 			&replacedFrac, false, 0, 1, -1, -1);
 		if(replacedFrac > 0.01)
@@ -686,12 +683,12 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		}
 		else if(verbose > 0)
 		{
-			printMark5Module(&module);
+			module.print();
 		}
 
 		if(v >= 0)
 		{
-			v = sanityCheckModule(&module);
+			v = module.sanityCheck();
 			if(v < 0)
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s directory contains undecoded scans!", vsn);
@@ -761,9 +758,9 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		/* first look for mjd range */
 		if(parseMjdRange(&mjdStart, &mjdStop, scanlist))	
 		{
-			for(scanIndex = 0; scanIndex < module.nscans; scanIndex++)
+			for(scanIndex = 0; scanIndex < module.nScans(); scanIndex++)
 			{
-				scan = module.scans+scanIndex;
+				scan = &module.scans[scanIndex];
 				if(!getByteRange(scan, &byteStart, &byteStop, mjdStart, mjdStop))
 				{
 					continue;
@@ -857,10 +854,10 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 					{
 						break;
 					}
-					if(i > 0 && i <= module.nscans)
+					if(i > 0 && i <= module.nScans())
 					{
 						scanIndex = i-1;
-						v = copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+						v = copyScan(xlrDevice, module.label, outpath, scanIndex, &module.scans[scanIndex], &mk5status);
 						if(v == 0)
 						{
 							nGood++;
@@ -876,7 +873,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 					}
 					else
 					{
-						snprintf(message, DIFX_MESSAGE_LENGTH, "Scan number %d out of range.  nScan = %d", i, module.nscans);
+						snprintf(message, DIFX_MESSAGE_LENGTH, "Scan number %d out of range.  nScan = %d", i, module.nScans());
 						difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 						fprintf(stderr, "Warning: %s\n", message);
 						nBad++;
@@ -901,12 +898,12 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		else
 		{
 			l = strlen(scanlist);
-			for(int i = 0; i < module.nscans; i++)
+			for(int i = 0; i < module.nScans(); i++)
 			{
 				if(strncasecmp(module.scans[i].name, scanlist, l) == 0)
 				{
 					scanIndex = i;
-					v = copyScan(xlrDevice, module.label, outpath, scanIndex, module.scans+scanIndex, &mk5status);
+					v = copyScan(xlrDevice, module.label, outpath, scanIndex, &module.scans[scanIndex], &mk5status);
 					if(v == 0) 
 					{
 						nGood++;
@@ -953,7 +950,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 
 	/* Send final "IDLE" state message so everyone knows we're done */
 	mk5status.state = MARK5_STATE_IDLE;
-	mk5status.scanNumber = module.nscans;
+	mk5status.scanNumber = module.nScans();
 	mk5status.scanName[0] = 0;
 	mk5status.position = 0;
 	mk5status.activeBank = ' ';

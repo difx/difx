@@ -43,7 +43,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.8";
-const char verdate[] = "20110111";
+const char verdate[] = "20110408";
 
 enum DMS_Mode
 {
@@ -184,6 +184,12 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 	int dmsUpdate = 0;
 	int len;
 
+	if(verbose > 1)
+	{
+		printf("getDirCore: vsn=%s force=%d fast=%d startScan=%d stopScan=%d\n",
+			vsn, force, fast, startScan, stopScan);
+	}
+
 	if(dmsMode == DMS_MODE_FAIL_UNLESS_SAFE)
 	{
 		WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
@@ -211,7 +217,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 		mk5dirpath = ".";
 	}
 
-	v = getCachedMark5Module(module, xlrDevice, mjdnow, 
+	v = module->getCachedDirectory(xlrDevice, mjdnow, 
 		vsn, mk5dirpath, &dirCallback, 
 		mk5status, &replacedFrac, force, fast, 0, startScan, stopScan);
 	if(replacedFrac > 0.01)
@@ -235,7 +241,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 	}
 	else if(v == 0 && verbose > 0)
 	{
-		printMark5Module(module);
+		module->print();
 	}
 
 	switch(dmsMode)
@@ -296,7 +302,7 @@ static int getDirCore(struct Mark5Module *module, char *vsn, DifxMessageMk5Statu
 
 static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int startScan, int stopScan)
 {
-	struct Mark5Module module;
+	Mark5Module module;
 	DifxMessageMk5Status mk5status;
 	char message[DIFX_MESSAGE_LENGTH];
 	char modules[100] = "";
@@ -305,9 +311,9 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	memset(&mk5status, 0, sizeof(mk5status));
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
-	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
@@ -321,18 +327,17 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	{
 		mk5status.activeBank = 'A';
 		strcpy(vsn, mk5status.vsnA);
+		WATCHDOGTEST( XLRSelectBank(xlrDevice, BANK_A) );
 	}
 	if(strcasecmp(vsn, "B") == 0 && mk5status.vsnB[0] != 0)
 	{
 		mk5status.activeBank = 'B';
 		strcpy(vsn, mk5status.vsnB);
+		WATCHDOGTEST( XLRSelectBank(xlrDevice, BANK_B) );
 	}
 
 	mk5status.state = MARK5_STATE_GETDIR;
 	difxMessageSendMark5Status(&mk5status);
-
-	memset(&module, 0, sizeof(module));
-	module.bank = -1;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
@@ -347,9 +352,8 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 				strcpy(modules, mk5status.vsnA);
 			}
 		}
-
-		memset(&module, 0, sizeof(module));
-		module.bank = -1;
+		
+		module.clear();
 
 		if(strlen(mk5status.vsnB) == 8)
 		{
@@ -405,7 +409,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	WATCHDOG( XLRClose(xlrDevice) );
 
 	mk5status.state = MARK5_STATE_IDLE;
-	mk5status.scanNumber = module.nscans;
+	mk5status.scanNumber = module.nScans();
 	mk5status.scanName[0] = 0;
 	mk5status.position = 0;
 	mk5status.activeBank = ' ';
