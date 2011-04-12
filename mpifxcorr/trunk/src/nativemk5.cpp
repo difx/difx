@@ -380,15 +380,21 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	if(module.nScans() < 0)
 	{
 		doUpdate = 1;
-		cinfo << startl << "getting module info" << endl;
+		cinfo << startl << "Getting module " << datafilenames[configindex][fileindex] << "info." << endl;
 		v = module.getCachedDirectory(xlrDevice, corrstartday, 
 			datafilenames[configindex][fileindex].c_str(), 
 			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1, -1, -1);
 
 		if(v < 0)
 		{
-                
-			cerror << startl << "Directory for module " << datafilenames[configindex][fileindex] << " is not up to date" << endl;
+                	if(module.error.str().size() > 0)
+			{
+				cerror << startl << module.error.str() << endl;
+			}
+			else
+			{
+				cerror << startl << "Directory for module " << datafilenames[configindex][fileindex] << " is not up to date.  Error code is " << v << " .  You should have received a more detailed error message than this!" << endl;
+			}
 			dataremaining = false;
 			sendMark5Status(MARK5_STATE_ERROR, 0, 0, 0.0, 0.0);
 			nError++;
@@ -1016,7 +1022,7 @@ int NativeMk5DataStream::sendMark5Status(enum Mk5State state, int scanNum, long 
 	mk5status.scanNumber = scanNum;
 	if(scan)
 	{
-		strcpy(mk5status.scanName, scan->name);
+		strcpy(mk5status.scanName, scan->name.c_str());
 	}
 	else
 	{
