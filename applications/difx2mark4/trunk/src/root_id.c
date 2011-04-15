@@ -44,3 +44,4 @@ int year, day, hour, min, sec;
 
         return(code);
 }
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

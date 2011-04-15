@@ -33,7 +33,7 @@ static void dump_stations(char *file, char *suffix, char code_table[52][4])
     for (i=0; i<52 && code_table[i]; i++)   
 	fprintf(ofp, "%4.4s\n", code_table[i]);
     fflush(ofp);
-    close(ofp);
+    fclose(ofp);
     free(name);
 }
 
@@ -163,3 +163,4 @@ int main(int argc, char **argv)
     return(ers);
 }
 #endif /* STANDALONE_CHECK */
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

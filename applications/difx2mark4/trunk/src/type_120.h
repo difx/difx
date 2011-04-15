@@ -118,4 +118,6 @@ struct type_120
 #define E_REM_LINK        0x04000000   /* Rem link error (dav=0,err=1,rdy=0)  */
 #define E_REM_SYNC        0x08000000   /* Rem link not synced                 */
 
+void write_t120 (struct type_120 *, FILE *);
+
 #endif

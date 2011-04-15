@@ -9,14 +9,16 @@
 #include <stdlib.h>
 #include <math.h>
 #include "difx2mark4.h"
+#include "other.h"
 
 
 #define NUMFILS 50                  // maximum number of station files
-#define LINEMAX 20000               // max size of a pcal file line
 #define NPC_TONES 64                // max number of pcal tones (and channels)
 
 int createType3s (DifxInput *D,     // difx input structure, already filled
-                  char *baseFile,   // string containing common part of difx file names
+                  int startJob,
+                  int endJob,
+                  int scanId,
                   char *node,       // directory for output fileset
                   char *rcode,      // 6 letter root suffix
                   struct stations *stns, // structure containing names of stations
@@ -25,7 +27,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     {
     int i,
         j,
-        k,
+        b,
         l,
         n,
         jf,
@@ -43,9 +45,15 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         isb,
         record_chan,
         once = FALSE,
+        refDay,
+        start,
         nclock;
 
+        size_t linemax = 10000;
+
+
     double t,
+           mjd,
            tint,
            cable_delay,
            freq,
@@ -61,12 +69,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
          pcal_filnam[256],
          ant[16],
          buff[5],
-         line[LINEMAX];
+         *line;
 
     FILE *fin;
-    FILE *fout[NUMFILS];
-
-    DifxPolyModel *pdpm;
+    FILE *fout;
 
     struct type_000 t000;
     struct type_300 t300;
@@ -99,47 +105,60 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // pre-calculate sample rate (samples/s)
     srate = 2e6 * D->freq->bw * D->freq->overSamp;
                                     // loop over all antennas in scan
-    for (n=0; n<D->nAntenna; n++)
+    line = calloc(linemax, sizeof(char));
+    if(line == 0)
         {
+        fprintf(stderr, "Error, malloc of line failed\n");
+        return (-1);
+        }
+                                    // doy of start of observation
+    mjd2dayno((int)(D->mjdStart), &refDay);
+
+    for (n = 0; n < D->nAntenna; n++)
+        {                           // n incremented at bottom 
+                                    // and at every continue
+        if (stns[n].invis == 0)
+            continue;
         strcpy (outname, node);     // form output file name
         strcat (outname, "/");
 
         outname[strlen(outname)+1] = 0;
-        k = (stns+n)->dind;
-        outname[strlen(outname)] = (stns+k)->mk4_id;
+        outname[strlen(outname)] = (stns+n)->mk4_id;
         strcat (outname, "..");
         strcat (outname, rcode);
                                     // now open the file just named
-        fout[n] = fopen (outname, "w");
-        if (fout[n] == NULL)
+        fout = fopen (outname, "w");
+        if (fout == NULL)
             {
             perror ("difx2mark4");
             fprintf (stderr, "fatal error opening output type3 file %s\n", outname);
+            free(line);
             return (-1);
             }
-        fprintf (stderr, "created type 3 output file %s\n", outname);
+        printf ("    created type 3 output file %s\n", outname);
                                     // all files need a type 000 record
         strcpy (t000.date, "2001001-123456");
         strcpy (t000.name, outname);
-        fwrite (&t000, sizeof (t000), 1, fout[n]);
+        fwrite (&t000, sizeof (t000), 1, fout);
 
                                     // finish forming type 300 and write it
-        t300.id = (stns+k)->mk4_id;
-        memcpy (t300.intl_id, (stns+k)->intl_name, 2);
-        memcpy (t300.name, (stns+k)->difx_name, 2);
+        t300.id = (stns+n)->mk4_id;
+        memcpy (t300.intl_id, (stns+n)->intl_name, 2);
+        memcpy (t300.name, (stns+n)->difx_name, 2);
         t300.name[2] = 0;           // null terminate to form string
                                     // check that model was read in OK
-        if (D->scan->im == 0)
+        if (D->scan[scanId].im == 0)
             {
             fprintf (stderr, "ERROR: problem accessing model array\n");
+            free(line);
             return (-1);
             }
-        t = (***(D->scan->im)).mjd + (***(D->scan->im)).sec / 86400.0;
+        t = (***(D->scan[scanId].im)).mjd + (***(D->scan[scanId].im)).sec / 86400.0;
         conv2date (t, &t300.model_start);
 
-        t300.model_interval = (float)(***(D->scan->im)).validDuration;
-        t300.nsplines = (short int) D->scan->nPoly;
-        write_t300 (&t300, fout[n]);
+        t300.model_interval = (float)(***(D->scan[scanId].im)).validDuration;
+        t300.nsplines = (short int) D->scan[scanId].nPoly;
+        write_t300 (&t300, fout);
 
                                     // construct type 301 and 302's and write them
                                     // loop over channels
@@ -149,14 +168,14 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             t301.chan_id[3] = (D->freq+i)->sideband;
             strcpy (t302.chan_id, t301.chan_id); 
                                     // loop over polynomial intervals
-            for (j=0; j<D->scan->nPoly; j++)
+            for (j=0; j<D->scan[scanId].nPoly; j++)
                 {
                 t301.interval = (short int) j;
                 t302.interval = t301.interval;
                                     // units of difx are usec, ff uses sec
                                     // shift clock polynomial to start of model interval
-                deltat = 8.64e4 * ((**(D->scan->im+n))->mjd - (D->antenna+n)->clockrefmjd) 
-                                                   + (**(D->scan->im+n))->sec;
+                deltat = 8.64e4 * ((**(D->scan[scanId].im+n))->mjd - (D->antenna+n)->clockrefmjd) 
+                                                   + (**(D->scan[scanId].im+n))->sec;
                 nclock = getDifxAntennaShiftedClock (D->antenna+n, deltat, 6, clock);
                                     // difx delay doesn't have clodk added in, so
                                     // we must do it here; also apply sign reversal
@@ -164,118 +183,143 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 for (l=0; l<6; l++)
                     {
                     t301.delay_spline[l] 
-                      = -1.e-6 * (**(D->scan->im+n)+j)->delay[l];
+                      = -1.e-6 * (**(D->scan[scanId].im+n)+j)->delay[l];
 
                     if (l < nclock) // add in those clock coefficients that are valid
                         t301.delay_spline[l] -= 1e-6 * clock[l];
 
-                    t302.phase_spline[l] = t301.delay_spline[l] * (D->freq+j)->freq;
+                    t302.phase_spline[l] = t301.delay_spline[l] * (D->freq+i)->freq;
                     }
 
-                write_t301 (&t301, fout[n]);
-                write_t302 (&t302, fout[n]);
+                write_t301 (&t301, fout);
+                write_t302 (&t302, fout);
                 }
             }
 
                                     // construct type 309 pcal records and write them
                                     // check to see if there is a input pcal file for this antenna
-        strncpy (pcal_filnam, baseFile, 242);
-        strcat (pcal_filnam, ".difx/PCAL_"); 
-        strcat (pcal_filnam, t300.name); 
-        
-        fin = fopen (pcal_filnam, "r");
-        if (fin == NULL)
-            printf ("No input phase cal for antenna %s\n", t300.name);
-        else
+        for (j = startJob; j < endJob; j++)
             {
-                                    // input data is present - loop over records
-                                    // read next input record
-            while (fgets (line, LINEMAX, fin) != NULL)
+            strncpy (pcal_filnam, D->job[j].outputFile, 242);
+            strcat (pcal_filnam, "/PCAL_"); 
+            strcat (pcal_filnam, t300.name); 
+            
+            fin = fopen (pcal_filnam, "r");
+            if (fin == NULL)
+                printf ("      No input phase cal file %s for antenna %s\n",
+                        pcal_filnam, t300.name);
+            else
                 {
-                sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", &ant, &t, &tint, &cable_delay, 
-                                 &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
+                                        // input data is present - loop over records
+                                        // read next input record
+                while (TRUE)
+                    {
+                    i = getline(&line, &linemax, fin);
+                    if (i < 0)          //EOF
+                        break;
+                    sscanf (line, "%s%lf%lf%lf%d%d%d%d%d%n", ant, &t, &tint, &cable_delay, 
+                                     &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
+                    mjd = t - refDay + (int)(D->mjdStart);
 
-                                    // calculate and insert rot start time of record
-                t309.rot = 3.2e7 * 8.64e4 * (t - 1.0);
-                                    // pcal integration period same as main AP
-                t309.acc_period =  D->config->tInt;
-                                    // debug print
-                if (opts->verbose > 1)
-                    fprintf (stderr, "pcal record ant %s t %lf tint %lf cable_delay %lf"
-                             "\nrot %lf acc_period %lf\n",
-                             ant, t, tint, cable_delay, t309.rot, t309.acc_period);
-                                    // initialize list of next available tone location
-                for (i=0; i<NPC_TONES; i++)
-                    xtones[i] = 0;
-                t309.ntones = 0;
-                                    // loop over tones within record
-                for (np=0; np<npol; np++)
-                    for (nc=0; nc<nchan; nc++)
-                        for (nt=0; nt<ntones; nt++)
-                            {
-                                    // identify channel and tone
-                            sscanf (line + nchars, "%d%lf%lf%lf%n", 
-                                    &record_chan, &freq, &cquad, &squad, &mchars);
-			            // swap sign of imaginary part
-			    squad *= -1;
-                            nchars += mchars;
-                            for (j=0; j<D->nFreq*npol; j++)
+                    if(mjd < D->scan[scanId].mjdStart)
+                                        // skip to next line
+                        {
+                        if (opts->verbose > 1)
+                            printf("      pcal early %13.6f<%13.6f\n", mjd, D->scan[scanId].mjdStart);
+                        continue;
+                        }
+                    if(mjd > D->scan[scanId].mjdEnd)
+                        {
+                        if (opts->verbose > 1)
+                            printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdStart);
+                        break;
+                        }
+
+                                        // calculate and insert rot start time of record
+                    t309.rot = 3.2e7 * 8.64e4 * (t - 1.0);
+                                        // pcal integration period same as main AP
+                    t309.acc_period =  D->config->tInt;
+                                        // debug print
+                    if (opts->verbose > 2)
+                        printf ("      pcal record ant %s t %lf tint %lf cable_delay %lf"
+                              "\n      rot %lf acc_period %lf\n",
+                                 ant, t, tint, cable_delay, t309.rot, t309.acc_period);
+                                        // initialize list of next available tone location
+                    for (i=0; i<NPC_TONES; i++)
+                        xtones[i] = 0;
+                    t309.ntones = 0;
+                                        // loop over tones within record
+                    for (np=0; np<npol; np++)
+                        for (nc=0; nc<nchan; nc++)
+                            for (nt=0; nt<ntones; nt++)
                                 {
-                                jf = j / npol;
-                                    // skip over non-matching polarizations
-                                if (np != j % npol)
-                                    continue;  
-                                isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
-                                f_rel = isb * (freq - (D->freq+jf)->freq);
-                                    // is it within the jfth frequency band?
-                                if (f_rel > 0.0 && f_rel < (D->freq+jf)->bw)
-                                    // yes, insert phasor info into correct slot
+                                        // identify channel and tone
+                                sscanf (line + nchars, "%d%lf%lf%lf%n", 
+                                        &record_chan, &freq, &cquad, &squad, &mchars);
+                                        // swap sign of imaginary part
+                                squad *= -1;
+                                nchars += mchars;
+                                for (b=0; b<D->nFreq*npol; b++)
                                     {
-                                    sprintf (buff, "%c%02dU", getband (D->freq[jf].freq), j);
-                                    buff[3] = (D->freq+jf)->sideband;
-                                    strcpy (t309.chan[j].chan_name, buff);
-
-                                    // find out which tone slot this goes in
-                                    for (i=0; i<NPC_TONES; i++)
+                                    jf = b / npol;
+                                        // skip over non-matching polarizations
+                                    if (np != b % npol)
+                                        continue;  
+                                    isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
+                                    f_rel = isb * (freq - (D->freq+jf)->freq);
+                                        // is it within the jfth frequency band?
+                                    if (f_rel > 0.0 && f_rel < (D->freq+jf)->bw)
+                                        // yes, insert phasor info into correct slot
                                         {
-                                        if (f_rel == xtones[i])
-                                            break;
-                                        else if (xtones[i] == 0.0)
-                                            {
-                                            xtones[i] = f_rel;
-                                            t309.ntones++;
-                                            break;
-                                            }
-                                        }
-                                    // did we run out of slots before finding tone?
-                                    if (i == NPC_TONES)
-                                        {
-                                        if (!once)
-                                            {
-                                            fprintf (stderr, "more than %d baseband pcal tones"
-                                                             " - ignoring the rest\n", NPC_TONES);
-                                            once = TRUE;
-                                            }
-                                        continue;
-                                        }
-                                    // renormalize correlations to those created in the DOM
-                                    norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
-                                    memcpy (&t309.chan[j].acc[i][0], &norm_corr, 4);
+                                        sprintf (buff, "%c%02dU", getband (D->freq[jf].freq), b);
+                                        buff[3] = (D->freq+jf)->sideband;
+                                        strcpy (t309.chan[b].chan_name, buff);
 
-                                    norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
-                                    memcpy (&t309.chan[j].acc[i][1], &norm_corr, 4);
+                                        // find out which tone slot this goes in
+                                        for (i=0; i<NPC_TONES; i++)
+                                            {
+                                            if (f_rel == xtones[i])
+                                                break;
+                                            else if (xtones[i] == 0.0)
+                                                {
+                                                xtones[i] = f_rel;
+                                                t309.ntones++;
+                                                break;
+                                                }
+                                            }
+                                        // did we run out of slots before finding tone?
+                                        if (i == NPC_TONES)
+                                            {
+                                            if (!once)
+                                                {
+                                                fprintf (stderr, "more than %d baseband pcal tones"
+                                                                 " - ignoring the rest\n", NPC_TONES);
+                                                once = TRUE;
+                                                }
+                                            continue;
+                                            }
+                                        // renormalize correlations to those created in the DOM
+                                        norm_corr = - isb * floor (cquad * srate * t309.acc_period * 128.0 + 0.5);
+                                        memcpy (&t309.chan[b].acc[i][0], &norm_corr, 4);
 
-                                    // tone freqs (in Hz) are spread through channel recs
-                                    t309.chan[i].freq = 1e6 * isb * f_rel;
-                                    break;
+                                        norm_corr = floor (squad * srate * t309.acc_period * 128.0 + 0.5);
+                                        memcpy (&t309.chan[b].acc[i][1], &norm_corr, 4);
+
+                                        // tone freqs (in Hz) are spread through channel recs
+                                        t309.chan[i].freq = 1e6 * isb * f_rel;
+                                        break;
+                                        }
                                     }
                                 }
-                            }
-                                    // write output record
-                write_t309 (&t309, fout[n]);
+                                        // write output record
+                    write_t309 (&t309, fout);
+                    }
+                fclose(fin);
                 }
             }
-
+        fclose(fout);
         }
+    free(line);
     return 0;
     }
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

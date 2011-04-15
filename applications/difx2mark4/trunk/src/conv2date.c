@@ -16,7 +16,7 @@
 void conv2date (double dmjd,
                 struct date *pdate) // returned date structure
     {
-    int i, mjd, ihh, imm, iss;
+    int mjd, ihh, imm, iss;
     int icen4, icen, iyr4, iyr, iday;
 
     dmjd = dmjd + 1e-8;             // guard against truncation to lower second
@@ -67,3 +67,4 @@ void conv2date (double dmjd,
     pdate->second = iss;
     return;
 }
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

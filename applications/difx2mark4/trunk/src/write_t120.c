@@ -14,7 +14,7 @@ void write_t120 (struct type_120 *pt120,
     union u_tag
         {
         struct type_120 t120;
-        float dummy[2058];              // large enough for 1024 lags
+        float dummy[2*MAX_VIS+10];  // large enough for MAX_VIS lags
         } u;
 
     nbytes = (char *) &u.t120.ld.spec[0].re - (char *) &u + 8 * pt120->nlags;

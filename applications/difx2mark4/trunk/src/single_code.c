@@ -36,7 +36,7 @@ char single_code (char *station)
                 {
                 strncpy (&code_table[i][2], station, 2);
                 c = code_table[i][0];
-                fprintf (stderr, "Invented new code %c for station %c%c\n",
+                printf ("      Invented new code %c for station %c%c\n",
                          c, station[0], station[1]);
                 break;
                 }
@@ -44,4 +44,4 @@ char single_code (char *station)
                                     // if no usunsed slot was found, c will be 0
     return c;
     }
-                  
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

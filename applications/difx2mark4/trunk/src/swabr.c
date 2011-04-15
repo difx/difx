@@ -1,6 +1,6 @@
 /* swabr.c - byte reversing procedures to be used for conversion
  * between Big-Endian and Small-Endian formats
-/*
+ *
  * Created by David E. Flynt, 8/8/94
  * modified by rjc, 2005.9.2, to optimize for speed, by
  * eliminating loops. Probably should be implemented as macro's someday.
@@ -116,3 +116,4 @@ double double_reverse (double j)
 		
 	return j;
     }
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

@@ -45,6 +45,7 @@ struct type_309
     U32       acc[64][2];             // accumulators for 64 freqs x 2 quads (C..S)
     } chan[64];
   };
+void write_t309 (struct type_309 *, FILE *);
 
 #endif 
 

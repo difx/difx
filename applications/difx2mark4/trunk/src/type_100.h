@@ -26,4 +26,6 @@ struct type_100
     short        nblocks;               /* # blocks per index number */
     };
 
+void write_t100 (struct type_100 *, FILE *);
+
 #endif

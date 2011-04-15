@@ -18,4 +18,5 @@ struct type_301
     double	delay_spline[6];	/* Delay spline coefficients */
     };
 
+void write_t301 (struct type_301 *, FILE *);
 #endif

@@ -22,4 +22,5 @@ struct type_300
     short       nsplines;               /* Number of splines in scan */
     };
 
+void write_t300 (struct type_300 *, FILE *);
 #endif

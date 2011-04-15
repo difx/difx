@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <glob.h>
 #include <sys/stat.h>
 #include <time.h>
@@ -35,8 +36,8 @@ static int usage (const char *pgm)
         program, version, author);
     fprintf (stderr, "A program to convert DiFX format data to "
         "mark4\n\n");
-    fprintf (stderr, "Usage : %s -s <scan_id> [options] <baseFilename1> "
-        "[<baseFilename2> ... ] [<outfile>]\n\n", pgm);
+    fprintf (stderr, "Usage : %s [options] <baseFilename1> "
+        "[<baseFilename2> ... ] \n\n", pgm);
     fprintf (stderr, "It assumed that SWIN format visibility file(s) "
         "to be converted live\n");
     fprintf (stderr, "in directory <baseFilename>.difx/\n");
@@ -57,39 +58,50 @@ static int usage (const char *pgm)
     fprintf (stderr, "  --verbose\n");
     fprintf (stderr, "  -v                  Be verbose.  -v -v for more!\n");
     fprintf (stderr, "\n");
-    fprintf (stderr, "  -b <code> <flow> <fhigh>\n");
-    fprintf (stderr, " to specify non-default frequency band codes\n");
+    fprintf (stderr, "  --difx\n");
+    fprintf (stderr, "  -d                  Run on all .difx files in directory\n");
+    fprintf (stderr, "\n");
+    fprintf (stderr, "  --override-version  Ignore difx versions\n");
+    fprintf (stderr, "\n");
+    fprintf (stderr, "  --experiment-number\n");
+    fprintf (stderr, "  -e                  Set the experiment number (default 1234)\n");
+    fprintf (stderr, "                      Must be a four-digit number\n");
+    fprintf (stderr, "\n");
+    fprintf (stderr, "  --pretend\n");
+    fprintf (stderr, "  -p                  dry run\n");
     fprintf (stderr, "\n");
 
     return 0;
     }
 
                                     // global table of frequency bands
-struct fbands fband[MAX_FBANDS] = {'B',      0.0, 999999.9,  // default to band B
-                                   'I',    100.0,    150.0,
-                                   'G',    150.0,    225.0,
-                                   'P',    225.0,    390.0,
-                                   'L',    390.0,   1550.0,
-                                   'S',   1550.0,   3900.0,
-                                   'C',   3900.0,   6200.0,
-                                   'X',   6200.0,  10900.0,
-                                   'K',  10900.0,  36000.0,
-                                   'Q',  36000.0,  46000.0,
-                                   'V',  46000.0,  56000.0,
-                                   'W',  56000.0, 100000.0,
-                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                                   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+struct fbands fband[MAX_FBANDS] = {{'B',      0.0, 999999.9},  // default to band B
+                                   {'I',    100.0,    150.0},
+                                   {'G',    150.0,    225.0},
+                                   {'P',    225.0,    390.0},
+                                   {'L',    390.0,   1550.0},
+                                   {'S',   1550.0,   3900.0},
+                                   {'C',   3900.0,   6200.0},
+                                   {'X',   6200.0,  10900.0},
+                                   {'K',  10900.0,  36000.0},
+                                   {'Q',  36000.0,  46000.0},
+                                   {'V',  46000.0,  56000.0},
+                                   {'W',  56000.0, 100000.0},
+                                   {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, 
+                                   {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
                                    
   
+int newScan(DifxInput *,  struct CommandLineOptions*, char *, int, int *, FILE **, char *);
+
 int main(int argc, char **argv)
     {
     struct CommandLineOptions *opts;
     int nConverted = 0;
-    int n, nMark4 = 0;
+    int n, nScan = 0;
                                     // function prototypes
     struct CommandLineOptions *parseCommandLine (int, char **);
     void deleteCommandLineOptions (struct CommandLineOptions *);
-    int convertMark4 (struct CommandLineOptions *);
+    int convertMark4 (struct CommandLineOptions *, int *);
 
     if(argc < 2)
         {
@@ -104,25 +116,18 @@ int main(int argc, char **argv)
     opts = parseCommandLine (argc, argv);
     if(opts == 0)
         return 0;
-                                    // ensure that there is a scan option specified
-    if (opts->scan == 0)
-        {
-        fprintf (stderr, "\nERROR - you must specify a scan_id!\n");
-        return usage (argv[0]);
-        }
 
+    /* merge as many jobs as possible and process */
     for(;;)
         {
-        n = convertMark4 (opts);
+        n = convertMark4(opts, &nScan);
         if(n <= 0)
             break;
-             
         nConverted += n;
-        nMark4++;
         }
 
     printf ("%d of %d DiFX filesets converted to %d Mark4 filesets\n", nConverted,
-        opts->nBaseFile, nMark4);
+        opts->nBaseFile, nScan);
 
     if(nConverted != opts->nBaseFile)
         printf ("\n*** Warning -- not all input files converted!\n");
@@ -134,39 +139,24 @@ int main(int argc, char **argv)
     return 0;
     }
 
-int convertMark4 (struct CommandLineOptions *opts)
+int convertMark4 (struct CommandLineOptions *opts, int *nScan)
     {
     DifxInput *D, *D1, *D2;
     // struct fitsPrivate outfile;
-    char node[256],
-         site_ids[50],              // ordered, null-terminated list of side id's
-         stn_names[50][2];
-
-    struct stations stns[MAX_STN];
-
-    int i;
+    char node[DIFXIO_FILENAME_LENGTH*2+1];
+    int i, scanId, newScanId, oldJobId, err;
+    int jobId = 0;
     int nConverted = 0;
     const char *difxVersion;
-    char *rcode,                    // six-letter timecode suffix
-         rootname[256];             // full root filename
-    time_t now;
-    struct tm *t;
-
-                                    // prototypes
-    char *root_id(int, int, int, int, int);
-    int createRoot (char *, char *, char *, struct stations *, DifxInput *, 
-                    struct CommandLineOptions *, char *);
-    int createType1s (DifxInput *, char *, char *, char *, struct stations *,
-                      struct CommandLineOptions *, char *);
-    int createType3s (DifxInput *, char *, char *, char *, struct stations *,
-                      struct CommandLineOptions *);
+    char corrdate[16];
+    FILE *vis_file = 0;
+    struct stat stat_s;
 
     difxVersion = getenv ("DIFX_VERSION");
     if(!difxVersion)
         printf ("Warning: env. var. DIFX_VERSION is not set\n");
 
     D = 0;
-    opts->dontCombine = TRUE;       // for now, don't allow file combining
 
     for(i = 0; i < opts->nBaseFile; i++)
         {
@@ -229,7 +219,7 @@ int convertMark4 (struct CommandLineOptions *opts)
         else
             D = D2;
              
-        // opts->baseFile[i] = 0;
+        opts->baseFile[i] = 0;
         nConverted++;
         if(opts->dontCombine)
             break;
@@ -275,8 +265,7 @@ int convertMark4 (struct CommandLineOptions *opts)
 
     if(D->nIF <= 0 || D->nPolar <= 0)
         {
-        fprintf (stderr, "Data geometry changes during obs, cannot "
-            "make into FITS.\n");
+        fprintf (stderr, "Data geometry changes during obs\n");
         deleteDifxInput(D);
         return 0;
         }
@@ -288,55 +277,159 @@ int convertMark4 (struct CommandLineOptions *opts)
         strcpy(D->job->taperFunction, "UNIFORM");
         }
 
-    if(opts->fitsFile)
-        strcpy(node, opts->fitsFile);
-         
-    else
-        strcpy (node, ".");         // default to current node??
+
 
     if(!opts->pretend)
         {
+                                 // this is not a drill, start conversion
+        err = stat(opts->exp_no, &stat_s);
+                                 // err true if file doesn't exist
+        if(!err)
+            {
+            if(S_ISDIR(stat_s.st_mode))
+                {
+                                 // If directory already exists, use it!
+                if(opts->verbose > 1)
+                    printf ("Using existing directory %s\n", opts->exp_no);
+                }
+            else
+                err = 1;
+            }
+        else if(err)
+            {
+                                // Otherwise create directory
+                if(mkdir(opts->exp_no, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
+                    {
+                    fprintf (stderr, "Error creating output directory %s\n", opts->exp_no);
+                    return 0;
+                    }
+            }
+        strcpy (node, opts->exp_no);
+
         if(!opts->keepOrder)
             DifxInputSortAntennas(D, opts->verbose);
              
 
         if(opts->verbose > 2)
             printDifxInput(D);
-             
-                                    // generate 6-char rootcode timestamp
-        now = time((time_t *)NULL);
-        t = localtime(&now);
-        rcode = root_id (t->tm_year, t->tm_yday+1,
-                         t->tm_hour, t->tm_min, t->tm_sec);
 
-                                    // create root from vex file
-        if (createRoot (opts->baseFile[i], node, rcode, stns, D, opts, rootname) < 0)
+        scanId=0;
+        oldJobId = -2;
+        
+        printf("\n");
+        while (jobId < D->nJob)
             {
-            deleteDifxInput(D);
-            fprintf (stderr, "Could not create root file\n");
-            return 0;
+            if(oldJobId != jobId)
+                {
+                printf("Processing job %d/%d\n", jobId, D->nJob);
+                oldJobId = jobId;
+                }
+            if(D->scan[scanId].identifier[0] == 0)
+                {
+                fprintf(stderr, "Developer Error (difxio) scanId %d has no scan identifier!\n", scanId);
+                scanId++;
+                return -1;
+                }
+            printf("  Processing scan %d/%d: %s\n", scanId, D->nScan, D->scan[scanId].identifier);
+                                                // convert scan
+                                                // scanId and j can be incremented
+                                                // by newScan
+            newScanId = newScan(D, opts, node, scanId, &jobId, &vis_file, corrdate);
+            //printf ("newScan file pointer %x\n", vis_file);
+            if(newScanId < 0)
+                break;
+            else
+                scanId = newScanId;
+            *nScan += 1;
             }
-                                    // create type1 files for each baseline
-        if (createType1s (D, opts->baseFile[i], node, rcode, stns, opts, rootname) < 0)
+        printf("%d of %d scans converted!\n", *nScan, D->nScan);
+        deleteDifxInput(D);
+        return jobId;
+        }
+    return 0;
+    }
+    
+int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanId, int *jobId, FILE **vis_file, char *corrdate)
+{
+    int startJobId,
+        nextScanId,
+        i,
+        err;
+    time_t now;
+    struct tm *t;
+    struct stat stat_s;
+    char *rcode,                    // six-letter timecode suffix
+         rootname[DIFXIO_NAME_LENGTH],             // full root filename
+         path[DIFXIO_NAME_LENGTH+5];
+
+    struct stations stns[D->nAntenna];
+
+                                // make scan directory
+    snprintf(path, DIFXIO_NAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
+    //strncat(node, "/", DIFXIO_NAME_LENGTH);
+    //strncat(node, D->scan[scanId].identifier, DIFXIO_NAME_LENGTH);
+    err = stat(path, &stat_s);
+    if(!err)
+        {
+        if(S_ISDIR(stat_s.st_mode))
             {
-            deleteDifxInput(D);
-            fprintf (stderr, "Could not create type 1 files\n");
-            return 0;
+                             // If directory already exists, use it!
+            if(opts->verbose > 1)
+                printf ("Using existing directory %s\n", path);
             }
-                                    // create type3 files for each station
-        if (createType3s (D, opts->baseFile[i], node, rcode, stns, opts) < 0)
+        else
+            err = 1;
+            }
+    else if(err)
+        {
+                                // Otherwise create directory
+        if(mkdir(path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH))
             {
-            deleteDifxInput(D);
-            fprintf (stderr, "Could not create type 3 files\n");
-            return 0;
+                fprintf (stderr, "Error creating output directory %s\n", path);
+                return 0;
             }
         }
+    
+                                // generate 6-char rootcode timestamp
+    now = time((time_t *)NULL);
+    t = localtime(&now);
+    rcode = root_id (t->tm_year, t->tm_yday+1,
+                     t->tm_hour, t->tm_min, t->tm_sec);
+                                // initialise stns with all DiFX antennas
+    for (i = 0; i < D->nAntenna; i++)
+        {
+        stns[i].inscan = 0;
+        stns[i].invis = 0;
+        stns[i].mk4_id = 0;
+        strncpy (stns[i].difx_name, D->antenna[i].name, 2);
+        }
+                                // create root from vex file
+    startJobId = *jobId;
+    printf ("    Generating root file\n");
+    if (createRoot (D, jobId, scanId, path, rcode, stns, opts, rootname) < 0)
+        {
+        fprintf (stderr, "Could not create root file\n");
+        return -1;
+        }
+                                // create type1 files for each baseline
+    printf ("    Generating Type 1s\n");
+    nextScanId = createType1s (D, jobId, scanId, path, rcode, stns, opts, rootname, vis_file, corrdate);
+    //printf ("newScan file pointer %x\n", *vis_file);
+    if (nextScanId < 0)
+        {
+        fprintf (stderr, "Could not create type 1 files\n");
+        return -1;
+        }
 
-    deleteDifxInput(D);
-    opts->baseFile[i] = 0;          // mark this as converted
-
-    return nConverted;
-    }
+                                // create type3 files for each station
+    printf ("    Generating Type 3s\n");
+    if (createType3s (D, startJobId, *jobId, scanId, path, rcode, stns, opts) < 0)
+        {
+        fprintf (stderr, "Could not create type 3 files\n");
+        return -1;
+        }
+    return(nextScanId);
+}
 
 struct CommandLineOptions *newCommandLineOptions()
     {
@@ -366,10 +459,7 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
                 free(opts->baseFile[i]);
                 }
             }
-        if(opts->fitsFile)
-            {
-            free(opts->fitsFile);
-            }
+        free(opts->in);
         free(opts);
         }
     }
@@ -377,10 +467,12 @@ void deleteCommandLineOptions(struct CommandLineOptions *opts)
 struct CommandLineOptions *parseCommandLine(int argc, char **argv)
     {
     struct CommandLineOptions *opts;
-    int i, l;
+    int i, j, l;
     glob_t globbuf;
 
     opts = newCommandLineOptions();
+                    // set default experiment number
+    strcpy(opts->exp_no, "1234");
 
     for(i = 1; i < argc; i++)
         {
@@ -463,14 +555,29 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                 }
             else if(i+1 < argc) /* one parameter arguments */
                 {
-                if(strcmp (argv[i], "--scan") == 0 ||
-                   strcmp (argv[i], "-s") == 0)
+                if (strcmp (argv[i], "--experiment-no") == 0 ||
+                     strcmp (argv[i], "-e") == 0)
                     {
                     i++;
-                    opts->scan = strdup (argv[i]);
-                    printf ("Processing scan %s\n", 
-                        opts->scan);
-                    }
+                    if(strlen(argv[i]) != 4)
+                        {
+                        printf("Warning: experiment number must be 4 digits.  Keeping default '1234'\n");
+                        continue;
+                        }
+                            
+                        for(j=0; j<4; j++)
+                            {
+                            if(!isdigit(argv[i][j]))
+                                {
+                                printf("Warning: experiment number must be numeric.  Keeping default '1234'\n");
+                                //FIXME
+                                j=0;
+                                break;
+                                }
+                            }
+                        if(j==4)
+                            strncpy(opts->exp_no, argv[i], 4+1);
+                        }
                 else if(strcmp (argv[i], "--deltat") == 0 ||
                     strcmp (argv[i], "-t") == 0)
                     {
@@ -518,17 +625,9 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                 deleteCommandLineOptions(opts);
                 return 0;
                 }
-            l = strlen (argv[i]);
-            if(l > 5 && strcasecmp(argv[i]+l-5, ".FITS") == 0)
-                {
-                opts->fitsFile = strdup(argv[i]);
-                }
-            else
-                {
-                opts->baseFile[opts->nBaseFile] = 
-                    strdup(argv[i]);
-                opts->nBaseFile++;
-                }
+            opts->baseFile[opts->nBaseFile] = 
+                strdup(argv[i]);
+            opts->nBaseFile++;
             }
         }
 
@@ -557,13 +656,6 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
         globfree(&globbuf);
         }
 
-    if(opts->nBaseFile > 0 && opts->dontCombine && opts->fitsFile)
-        {
-        printf ("Error -- Cannot supply output filename for multiple output files\n");
-        deleteCommandLineOptions(opts);
-        return 0;
-        }
-
     /* if input file ends in .difx, trim it */
     for(i = 0; i < opts->nBaseFile; i++)
         {
@@ -577,8 +669,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
             opts->baseFile[i][l-5] = 0;
             }
         }
-
+    opts->in = malloc(opts->nBaseFile*sizeof(FILE*));
     return opts;
     }
-
-
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

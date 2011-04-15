@@ -22,6 +22,7 @@ difx2mark4_SOURCES = \
 	write_t301.c \
 	write_t302.c \
 	write_t309.c \
+	other.c \
 	mk4_typedefs.h \
 	type_000.h \
 	type_100.h \
@@ -31,7 +32,8 @@ difx2mark4_SOURCES = \
 	type_301.h \
 	type_302.h \
 	type_309.h \
-	difx2mark4.h
+	difx2mark4.h \
+	other.h
 
 update_station_chk_SOURCES = update_stations.c single_code.c
 update_station_chk_CPPFLAGS = -DSTANDALONE_CHECK=1 -DAWK=\"@AWK@\"

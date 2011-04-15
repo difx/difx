@@ -18,4 +18,5 @@ struct type_302
     double	phase_spline[6];	/* Phase spline coefficients */
     };
 
+void write_t302 (struct type_302 *, FILE *);
 #endif

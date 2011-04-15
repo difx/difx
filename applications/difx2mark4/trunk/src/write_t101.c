@@ -26,3 +26,4 @@ void write_t101 (struct type_101 *pt101,
     fwrite (&t101, sizeof (struct type_101), 1, fout);
     return;
     }
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

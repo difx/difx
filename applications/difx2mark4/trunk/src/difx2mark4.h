@@ -22,16 +22,18 @@
 #include <difxio/difx_input.h>
 
 #define MAX_INPUT_FILES 4096
-#define MAX_VIS 512
+#define MAX_VIS 4096
 #define MAX_STN 50
 #define MAX_FBANDS 20 
+#define EXP_CODE_LEN 4
 
 enum booleans {FALSE, TRUE};
 
 struct CommandLineOptions
     {
-    char *fitsFile;
+    char exp_no[EXP_CODE_LEN+1];
     char *baseFile[MAX_INPUT_FILES];
+    FILE **in;
     char *scan;
     int nBaseFile;
     int writemodel;
@@ -75,7 +77,8 @@ typedef struct
 
 struct stations
     {
-    int dind;                       // index from difx number to this array
+    int inscan;                     // in scan according to vex SCHED block
+    int invis;                      // visibilities found in .difx/ data for this antenna
     char mk4_id;                    // single char mk4 station code
     char intl_name[2];              // two letter international stn name
     char difx_name[2];              // two letter code used by difx
@@ -97,14 +100,34 @@ struct fbands
 #include "type_302.h"
 #include "type_309.h"
 
-                                    // byte swap prototypes
+
+                                    // conv2date.c
+void conv2date (double, struct date *);
+                                    // createRoot.c
+int createRoot (DifxInput *, int *, int, char *, char *, struct stations *,
+                struct CommandLineOptions *, char *);
+char getband (double);
+                                    // createType1s.c
+int createType1s (DifxInput *, int *, int, char *, char *, struct stations *,
+                  struct CommandLineOptions *, char *, FILE **, char *);
+                                    // createType3s.c
+int createType3s (DifxInput *, int, int, int, char *, char *, struct stations *,
+                  struct CommandLineOptions *);
+                                    // get_vis.c
+int get_vis_header (FILE *, vis_record *);
+                                    // root_id.c
+char *root_id(int, int, int, int, int);
+                                    // single_code.c
+char single_code (char *);
+                                    // swabr.c
 short short_reverse (short);
 unsigned short unsig_reverse (unsigned short);
 int int_reverse (int);
 long long_reverse (long);
 float float_reverse (float);
 double double_reverse (double);
-
+                                    // update_stations.c
 void update_stations(char*,char[52][4]);
 
 #endif
+// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s

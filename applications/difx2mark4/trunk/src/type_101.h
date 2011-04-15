@@ -25,4 +25,5 @@ struct type_101
     int          blocks[1];             /* One entry per block in snake */
     };
 
+void write_t101 (struct type_101 *, FILE *);
 #endif
