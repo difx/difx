@@ -761,7 +761,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		const VexSource *src = V->getSourceByDefName(sourceDefName);
 		if(src == 0)
 		{
-			cerr << "Developer error! Scan=" << scanDefName << " src == 0" << endl;
+			cerr << "Vex error! Scan " << scanDefName << " references source " << sourceDefName << " which is not in the source table." << endl;
 
 			exit(0);
 		}

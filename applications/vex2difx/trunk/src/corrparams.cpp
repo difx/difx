@@ -297,8 +297,9 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	doPolar = true;
 	doAuto = true;
 	fringeRotOrder = 1;
-	strideLength = 16;
+	strideLength = 0;
 	xmacLength = 0;
+	explicitXmacLength = false;
 	numBufferedFFTs = 1;
 	subintNS = 0;
 	guardNS = 1000;
@@ -378,6 +379,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "xmacLength")
 	{
 		ss >> xmacLength;
+		explicitXmacLength = true;
 	}
 	else if(key == "numBufferedFFTs")
 	{
@@ -1685,7 +1687,6 @@ int CorrParams::load(const string &fileName)
 	// set specAvg if not set
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
 	{
-#warning "FIXME: This logic should extend to setting of xmacLength and strideLength"
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
 
 		if(c->specAvg == 0)
@@ -1706,6 +1707,16 @@ int CorrParams::load(const string &fileName)
 			else
 			{
 				corrSetup->xmacLength = corrSetup->nInputChan();
+			}
+		}
+		if(corrSetup->strideLength == 0)
+		{
+			corrSetup->strideLength = 1;
+			int tempcount = corrSetup->nInputChan();
+			while(corrSetup->strideLength < tempcount)
+			{
+				corrSetup->strideLength *= 2;
+				tempcount /= 2;
 			}
 		}
 	}

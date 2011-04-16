@@ -157,6 +157,7 @@ public:
 
 	string corrSetupName;
 
+	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
 	double tInt;		// integration time
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations

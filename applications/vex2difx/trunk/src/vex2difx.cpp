@@ -1556,7 +1556,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	int nTotalPhaseCentres, nbin, maxPulsarBins, maxScanPhaseCentres, fftDurNS;
 	double srcra, srcdec;
 	int pointingSrcIndex, foundSrcIndex, atSource;
-	int nZoomBands, fqId, zoomsrc, polcount;
+	int nZoomBands, fqId, zoomsrc, polcount, zoomChans, minChans;
 	int overSamp, decimation;
 	DifxDatastream *dd;
 	vector<set <int> > blockedfreqids;
@@ -1892,6 +1892,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 
 		int d = 0;
 
+		minChans = corrSetup->nInputChan();
 		for(int a = 0; a < D->nAntenna; a++)
 		{
 			string antName = antList[a];
@@ -1942,11 +1943,14 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							
 								exit(0);
 							}
+							zoomChans = static_cast<int>(corrSetup->nInputChan()*zf.bandwidth/freqs[dd->recFreqId[parentFreqIndices[i]]].bw);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
 									freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
-									static_cast<int>(corrSetup->nInputChan()*zf.bandwidth/
-									freqs[dd->recFreqId[parentFreqIndices[i]]].bw),
-									corrSetup->specAvg, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
+									zoomChans, corrSetup->specAvg, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
+							if(zoomChans < minChans)
+							{
+								minChans = zoomChans;
+							}
 							dd->zoomFreqId[i] = fqId;
 							dd->nZoomPol[i] = dd->nRecPol[parentFreqIndices[i]];
 							nZoomBands += dd->nRecPol[parentFreqIndices[i]];
@@ -2032,6 +2036,18 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 				D->config[c].datastreamId[d] = D->nDatastream;
 				D->nDatastream++;
 				d++;
+			}
+		}
+		if(corrSetup->xmacLength > minChans)
+		{
+			if(corrSetup->explicitXmacLength)
+			{
+				cerr << "Error: xmacLength set explicitly to " << corrSetup->xmacLength << ", but minChans (from a zoom freq) was " << minChans << endl;
+				exit(1);
+			}
+			else
+			{
+				D->config[c].xmacLength = minChans;
 			}
 		}
 	}
@@ -2234,10 +2250,6 @@ static bool illegalSourceName(const string &name)
 		return true;
 	}
 	else if(name.find_first_of("/") != string::npos)
-	{
-		return true;
-	}
-	else if(name.find_first_of("_") != string::npos)
 	{
 		return true;
 	}
