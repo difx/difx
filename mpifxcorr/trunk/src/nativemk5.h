@@ -46,7 +46,7 @@ public:
 	virtual void openfile(int configindex, int fileindex);
 	virtual void loopfileread();
 	virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
-	int sendMark5Status(enum Mk5State state, int scanNumber, long long position, double dataMJD, float rate);
+	int sendMark5Status(enum Mk5State state, long long position, double dataMJD, float rate);
 
 protected:
 	void moduleToMemory(int buffersegment);
@@ -58,7 +58,7 @@ private:
 #ifdef HAVE_XLRAPI_H
 	Mark5Module module;
         int scanNum;
-	const Mark5Scan *scan;
+	const Mark5Scan *scanPointer;
 	long long readpointer;
 	SSHANDLE xlrDevice;
 #endif

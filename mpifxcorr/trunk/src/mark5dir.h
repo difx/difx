@@ -91,7 +91,13 @@ public:
 	void parseDirEntry(const char *line);
 	int writeDirEntry(FILE *out) const;
 	int sanityCheck() const;
+	int nsStart() const;
+	double secStart() const;
+	double mjdStart() const;
+	double mjdEnd() const;
 };
+
+bool operator<(const Mark5Scan &a, const Mark5Scan &b);
 
 class Mark5Module
 {
@@ -114,6 +120,7 @@ public:
 	void print() const;
 	int load(const char *filename);
 	int save(const char *filename);
+	void sort();
 	int sanityCheck();
 	int uniquifyScanNames();
 	int readDirectory(SSHANDLE xlrDevice, int mjdref,

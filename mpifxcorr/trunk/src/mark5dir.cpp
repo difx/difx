@@ -32,6 +32,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <algorithm>
 #include <unistd.h>
 #include <difxmessage.h>
 #include <mark5access.h>
@@ -400,6 +401,65 @@ int Mark5Scan::sanityCheck() const
 	return nError;
 }
 
+int Mark5Scan::nsStart() const
+{
+	return static_cast<int>(1000000000.0*framenuminsecond/framespersecond + 0.1);
+}
+
+double Mark5Scan::secStart() const
+{
+	int scanns = static_cast<int>(1000000000.0*framenuminsecond/framespersecond + 0.1);
+
+	return sec + scanns*1.e-9;
+}
+
+double Mark5Scan::mjdStart() const
+{
+	int scanns = static_cast<int>(1000000000.0*framenuminsecond/framespersecond + 0.1);
+
+	return mjd + (sec + scanns*1.e-9)/86400.0;
+}
+
+double Mark5Scan::mjdEnd() const
+{
+	int scanns = static_cast<int>(1000000000.0*framenuminsecond/framespersecond + 0.1);
+
+	return mjd + (sec + scanns*1.e-9 + duration)/86400.0;
+}
+
+
+bool operator<(const Mark5Scan &a, const Mark5Scan &b)
+{
+	if(a.mjd < b.mjd)
+	{
+		return true;
+	}
+	else if(a.mjd > b.mjd)
+	{
+		return false;
+	}
+	else if(a.sec < b.sec)
+	{
+		return true;
+	}
+	else if(a.sec > b.sec)
+	{
+		return false;
+	}
+	else if(a.framenuminsecond < b.framenuminsecond)
+	{
+		return true;
+	}
+	else if(a.framenuminsecond > b.framenuminsecond)
+	{
+		return false;
+	}
+	else
+	{
+		return (a.name < b.name);
+	}
+}
+
 //------------------------- Mark5Module ----------------------------
 
 Mark5Module::Mark5Module()
@@ -562,6 +622,11 @@ int Mark5Module::save(const char *filename)
 	fclose(out);
 
 	return 0;
+}
+
+void Mark5Module::sort()
+{
+	std::sort(scans.begin(), scans.end());
 }
 
 int Mark5Module::sanityCheck()
@@ -969,6 +1034,12 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	dirVersion = newDirVersion;
 	mode = MARK5_READ_MODE_NORMAL;
 
+	if(dirVersion == 0 && nscans > MODULE_LEGACY_MAX_SCANS)
+	{
+		fprintf(stderr, "Warning: Legacy module with %d scans (only %d scans allowed!)\n", nscans, MODULE_LEGACY_MAX_SCANS);
+		nscans = MODULE_LEGACY_MAX_SCANS;
+	}
+
 	if(startScan < 0)
 	{
 		startScan = 0;
@@ -1201,6 +1272,8 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	free(dirData);
 
 	uniquifyScanNames();
+
+	sort();
 
 	return -die;
 }
