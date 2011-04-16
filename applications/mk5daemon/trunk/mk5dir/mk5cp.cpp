@@ -359,12 +359,12 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 
 	if(strcmp(outpath, "-") == 0)
 	{
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name); 
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
 		out = stdout;
 	}
 	else
 	{
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name); 
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s/%8s_%03d_%s", outpath, vsn, scanNum+1, scan->name.c_str()); 
 		out = fopen(filename, "w");
 		if(!out)
 		{
@@ -411,7 +411,7 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outpath, int scanN
 		{
 			fprintf(stderr, "%Ld = %Ld/%Ld\n", readptr, readptr-scan->start, scan->length);
 		}
-		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name, 100*(readptr-scan->start)/scan->length);
+		snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s[%Ld%%]", scan->name.c_str(), 100*(readptr-scan->start)/scan->length);
 		mk5status->position = readptr;
 		mk5status->rate = rate;
 		difxMessageSendMark5Status(mk5status);
@@ -765,7 +765,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 				{
 					continue;
 				}
-				snprintf(outname, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s_%d", module.label, scanlist, nGood+nBad);
+				snprintf(outname, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s_%d", module.label.c_str(), scanlist, nGood+nBad);
 				v = copyByteRange(xlrDevice, outpath, outname, scanIndex, byteStart, byteStop, &mk5status);
 				if(v == 0)
 				{
@@ -791,7 +791,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		/* next look for byte range */
 		else if(parseByteRange(&byteStart, &byteStop, scanlist))
 		{
-			snprintf(outname, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", module.label, scanlist);
+			snprintf(outname, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%s", module.label.c_str(), scanlist);
 			v = copyByteRange(xlrDevice, outpath, outname, -1, byteStart, byteStop, &mk5status);
 
 			if(v == 0)
@@ -857,7 +857,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 					if(i > 0 && i <= module.nScans())
 					{
 						scanIndex = i-1;
-						v = copyScan(xlrDevice, module.label, outpath, scanIndex, &module.scans[scanIndex], &mk5status);
+						v = copyScan(xlrDevice, module.label.c_str(), outpath, scanIndex, &module.scans[scanIndex], &mk5status);
 						if(v == 0)
 						{
 							nGood++;
@@ -898,12 +898,13 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 		else
 		{
 			l = strlen(scanlist);
+			// FIXME: use iterator
 			for(int i = 0; i < module.nScans(); i++)
 			{
-				if(strncasecmp(module.scans[i].name, scanlist, l) == 0)
+				if(strncasecmp(module.scans[i].name.c_str(), scanlist, l) == 0)
 				{
 					scanIndex = i;
-					v = copyScan(xlrDevice, module.label, outpath, scanIndex, &module.scans[scanIndex], &mk5status);
+					v = copyScan(xlrDevice, module.label.c_str(), outpath, scanIndex, &module.scans[scanIndex], &mk5status);
 					if(v == 0) 
 					{
 						nGood++;
@@ -922,19 +923,19 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 
 		if(nGood > 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans copied from module %8s to %s", nGood, module.label, outpath);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans copied from module %8s to %s", nGood, module.label.c_str(), outpath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 			fprintf(stderr, "%s\n", message);
 		}
 		if(nBad > 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans NOT copied from module %8s to %s", nBad, module.label, outpath);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "%d scans NOT copied from module %8s to %s", nBad, module.label.c_str(), outpath);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
 		}
 		if(nGood == 0 && nBad == 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "No scans match with code %s on module %8s", scanlist, module.label);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "No scans match with code %s on module %8s", scanlist, module.label.c_str());
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
 		}

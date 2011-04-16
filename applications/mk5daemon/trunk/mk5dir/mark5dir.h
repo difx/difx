@@ -31,6 +31,8 @@
 #define __MARK5DIR_H__
 
 #include <vector>
+#include <string>
+#include <sstream>
 #include <xlrapi.h>
 
 #ifndef MARK5_FILL_PATTERN
@@ -71,7 +73,7 @@ typedef unsigned long streamstordatatype;
 class Mark5Scan
 {
 public:
-	char name[MODULE_SCAN_NAME_LENGTH];
+	std::string name;
 	long long start;
 	long long length;
 	double duration;	/* scan duration in seconds */
@@ -89,18 +91,27 @@ public:
 	void parseDirEntry(const char *line);
 	int writeDirEntry(FILE *out) const;
 	int sanityCheck() const;
+	int nsStart() const;
+	double secStart() const;
+	double mjdStart() const;
+	double mjdEnd() const;
 };
+
+bool operator<(const Mark5Scan &a, const Mark5Scan &b);
 
 class Mark5Module
 {
 public:
 	std::vector<Mark5Scan> scans;
-	char label[XLR_LABEL_LENGTH];
+	//char label[XLR_LABEL_LENGTH];
+	std::string label;
+	std::stringstream error;
 	int bank;
 	unsigned int signature;	/* a hash code used to determine if dir is current */
 	enum Mark5ReadMode mode;
 	int dirVersion;		/* directory version = 0 for pre memo 81 */
 	int fast;		/* if true, the directory came from the ModuleUserDirectory only */
+	
 
 	Mark5Module();
 	~Mark5Module();
@@ -108,7 +119,8 @@ public:
 	int nScans() const { return scans.size(); }
 	void print() const;
 	int load(const char *filename);
-	int save(const char *filename) const;
+	int save(const char *filename);
+	void sort();
 	int sanityCheck();
 	int uniquifyScanNames();
 	int readDirectory(SSHANDLE xlrDevice, int mjdref,
