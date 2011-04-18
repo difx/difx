@@ -94,7 +94,7 @@ typedef struct {
 
 typedef struct {
   int	bufsize;                        // number of buffers (time steps)
-  int   startindex,endindex;            // index of earliest and latest buffer in ring buffer.
+  int   startindex;                     // index of earliest buffer in ring buffer.
   int64_t    starttime,endtime;         // time of earliest and latest buffer, in ns.
   FB_Quanta *buffers;                   // array the size of bufsize
                                         // median data. We keep two sets of median info, one when the tcal is off
@@ -406,8 +406,6 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             continue;
         }
 
-        //printChunkHeader(&header,fpd);
-
         this_time = (int64_t)header.time_ns + (int64_t)header.time_s*1000000000L;
 
         // read the data for this chunk.
@@ -434,9 +432,8 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
         if (this_time + header.int_time_ns/2 > bufinfo->endtime + options.int_time_ns) {
             int status=0;
 
-            // calculate how many buffer cells the end of this packet goes past
-            offset = ((this_time + header.int_time_ns/2) - (bufinfo->endtime + options.int_time_ns))/options.int_time_ns;
-            if (offset == 0) offset += 1;   // for fraction of a output buffer
+            // calculate how many buffer cells the end of this packet goes past. Include 1 extra to account for fraction of buffer
+            offset = ((this_time + header.int_time_ns/2) - (bufinfo->endtime + options.int_time_ns))/options.int_time_ns + 1;
             if(debug) {
                 fprintf(fpd,"doReorder: no buffer available for chunk with center time %lld and width %d. ",
                             (long long) this_time,  header.int_time_ns);
@@ -464,10 +461,10 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                     return status;
                 }
             }
+            if (debug) fprintf(fpd,"New start index: %d. Start time: %lld\n",bufinfo->startindex,(long long)bufinfo->starttime);
         }
 
         // calculate the timeslot(s) for this packet in output grid.
-        // calculate the fraction of tcal
         // don't recalculate if this packet's time is the same as last time, since they all have to be identical
         // since DiFX threads/cores do calcs for ALL streams for a given time within the same core
         if (this_time != last_time) {
@@ -475,8 +472,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             assert(res == 0);
         }
 
-        // calculate the tcal fraction for this packet. Note that different streams will have different
-        // tcal phase
+        // calculate the tcal fraction for this packet. Note that different streams will have different tcal phase
         if (options.tcal_period_ns != 0 && (this_time != last_time || header.stream_id != last_stream)) {
             if (debug) fprintf(fpd,"calcing tcal for ant %d at time %lld\n",header.stream_id,(long long)this_time);
             res = tcal_predict(difxconfig->getModel(), this_time-scan_start_time_ns, header.int_time_ns,
@@ -506,10 +502,18 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                 bufinfo->buffers[buf_ind].time_ns = buf_time%1000000000;
                 bufinfo->buffers[buf_ind].thread_id = header.thread_id;
 
-                if (debug) fprintf(fpd,"New buffer ind: %d for time %d.%09d, for header %d.%09d\n",buf_ind,
+                if (debug) fprintf(fpd,"New buffer ind: %d for time %d.%09d, for header %d.%09d. Slots: %d.\n",buf_ind,
                                bufinfo->buffers[buf_ind].time_s,bufinfo->buffers[buf_ind].time_ns,
-                               header.time_s,header.time_ns);
+                               header.time_s,header.time_ns,n_time_slots);
             }
+/*
+            if (buf_ind==144) {
+                fprintf(fpd,"bufind: %d. added: %d. ",buf_ind,bufinfo->buffers[buf_ind].n_added);
+                printChunkHeader(&header,fpd);
+                fprintf(fpd,"starttime: %lld, endtime: %lld, startindex: %d\n",
+                    (long long)bufinfo->starttime,(long long) bufinfo->endtime,bufinfo->startindex);
+            }
+*/
             bufinfo->buffers[buf_ind].n_added++;
 /* 
             if(buf_ind==0) {
@@ -727,7 +731,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     header.scan_id = options.scan_index;
     header.int_time_ns = options.int_time_ns;
 
-    // note time conventions. STA packets have time that is the center time, cells in the buffer have time that
+    // note time conventions. STA packets have time that is the center time. Cells in the buffer have time that
     // is the start time for the cell. Need to add half the cell int time to be consistent on output
     int64_t bufstarttime;
     if (bufinfo->buffers[buf_ind].n_added ==0) {
@@ -760,6 +764,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
         // median value per channel.
         if (options.tcal_period_ns != 0) {
             int res;
+            if (debug) fprintf(fpd,"Bufsend %d: calcing tcal for ant %d at time %lld\n",buf_ind,header.stream_id,(long long)time_ns);
             res = tcal_predict(difxconfig->getModel(), time_ns - scan_start_time_ns, header.int_time_ns,
                      difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
                      &tcal_frac);
@@ -869,7 +874,6 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
 
     // update times and indexes.
     bufinfo->startindex = (bufinfo->startindex + 1)%bufinfo->bufsize;
-    bufinfo->endindex = (bufinfo->endindex + 1)%bufinfo->bufsize;    
     bufinfo->starttime += options.int_time_ns;
     bufinfo->endtime += options.int_time_ns;
     return 0;
@@ -890,8 +894,8 @@ void SubtractMedians(float * medians, float * data, const int nchan,const float 
 /*****************************
 ******************************/
 void printChunkHeader(ChunkHeader *header,FILE *fp) {
-    fprintf(fp,"time: %d.%09d, thread: %d, core: %d, scan: %d, stream: %d, band: %d, chans: %d\n",
-	header->time_s, header->time_ns, header->thread_id, header->core_id, header->scan_id,
+    fprintf(fp,"time: %d.%09d, int_time_ns: %d, thread: %d, scan: %d, stream: %d, band: %d, chans: %d\n",
+	header->time_s, header->time_ns, header->int_time_ns, header->thread_id, header->scan_id,
             header->stream_id, header->band_id, header->n_channels);
     fflush(fp);
 }
