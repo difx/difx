@@ -86,10 +86,11 @@ typedef struct {
     uint32_t time_s;
     uint32_t time_ns;
     int32_t thread_id;
-    int     n_added;
+    float   n_added;
     int     nonzero;
     float  *data;                       // array of logical dimensions [N_streams][N_bands][N_chan]
     float  *weights;                    // array of logical dimensions [N_streams][N_bands] (same weight for all chans)
+    float  *tcal_weights;               // array of logical dimensions [N_streams][N_bands] (same weight for all chans)
 } FB_Quanta;
 
 typedef struct {
@@ -111,6 +112,7 @@ typedef struct {
 // function prototypes
 int  doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout);
 void printChunkHeader(ChunkHeader *header, FILE *fp);
+void printChunkContents(ChunkHeader *header,float *chanvals, FILE *fp);
 int InsertMedianBuffer(ChunkHeader *header, BufInfo *bufinfo, FB_Config *fb_config, float *data, float tcal_frac);
 int  sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout);
 void SubtractMedians(float *medians, float * data,const int nchan, float weight);
@@ -335,6 +337,7 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
     else if ( max_slot == min_slot) {
         *n_time_slots = 1;                      // case 3
         timeslot_frac[0] = 1.0;
+        timeslot_frac[1] = 0.0;
     }
     else {
         fprintf(stderr,"calcTimeSlotOverlap: oops, the impossible happened.\nTime: %lld, packet int time: %d, output int time: %d\n",
@@ -451,8 +454,8 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             }
             for(int i=0; i <offset; i++) {
                 buf_ind = bufinfo->startindex; // startindex gets changed with each call to sendEarliest
-                if(debug) fprintf(fpd,"Sending earliest (%scomplete - %d/%d) buffer with index %d, time %d.%d\n",
-                                    (n_chunks_to_add==bufinfo->buffers[buf_ind].n_added ? "":"in"),
+                if(debug) fprintf(fpd,"Sending earliest (%scomplete - %.1f/%d) buffer with index %d, time %d.%d\n",
+                                    (n_chunks_to_add==roundf(bufinfo->buffers[buf_ind].n_added) ? "":"in"),
                                     bufinfo->buffers[buf_ind].n_added,n_chunks_to_add,buf_ind,
                                     bufinfo->buffers[buf_ind].time_s,bufinfo->buffers[buf_ind].time_ns);
                 status = sendEarliestBuffer(fb_config, bufinfo, fpout);
@@ -486,7 +489,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             }
         }
 
-        pkt_weight=(float)header.int_time_ns/(float)options.int_time_ns;
+        pkt_weight = (float)header.int_time_ns/(float)options.int_time_ns;
 
         // loop over all the time slots that this packet overlaps
         for (int ts = 0; ts < n_time_slots; ts++) {
@@ -506,22 +509,9 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                                bufinfo->buffers[buf_ind].time_s,bufinfo->buffers[buf_ind].time_ns,
                                header.time_s,header.time_ns,n_time_slots);
             }
-/*
-            if (buf_ind==144) {
-                fprintf(fpd,"bufind: %d. added: %d. ",buf_ind,bufinfo->buffers[buf_ind].n_added);
-                printChunkHeader(&header,fpd);
-                fprintf(fpd,"starttime: %lld, endtime: %lld, startindex: %d\n",
-                    (long long)bufinfo->starttime,(long long) bufinfo->endtime,bufinfo->startindex);
-            }
-*/
-            bufinfo->buffers[buf_ind].n_added++;
-/* 
-            if(buf_ind==0) {
-                printf("chunk: %d ",first_count);
-                printChunkHeader(&header);
-                first_count++;
-            }
-*/
+
+            bufinfo->buffers[buf_ind].n_added += pkt_weight*timeslot_frac[ts];
+
             // calculate the offset from the start of the buffer for this chunk
             // data is ordered by stream, then band (then channel)
             data_offset = fb_config->n_chans * (header.band_id + header.stream_id * fb_config->n_bands);
@@ -532,6 +522,21 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             }
             // add the fractional timeslot overlap to the weight for this set of chans
             bufinfo->buffers[buf_ind].weights[header.band_id + header.stream_id*fb_config->n_bands] += timeslot_frac[ts] * pkt_weight;
+            // add the fractional tcal to the tcal_weight for this set of chans
+            bufinfo->buffers[buf_ind].tcal_weights[header.band_id + header.stream_id*fb_config->n_bands] +=
+                                                                timeslot_frac[ts] * pkt_weight * tcal_frac;
+/**/
+            if (debug && buf_ind==246 && header.stream_id==0) {
+                fprintf(fpd,"bufind: %d. added: %.2f. This frac: %.2f. Weight: %f, tcal_weight: %f\n",
+                    buf_ind,bufinfo->buffers[buf_ind].n_added,timeslot_frac[ts],
+                    bufinfo->buffers[buf_ind].weights[header.band_id + header.stream_id*fb_config->n_bands],
+                    bufinfo->buffers[buf_ind].tcal_weights[header.band_id + header.stream_id*fb_config->n_bands]);
+                printChunkHeader(&header,fpd);
+                printChunkContents(&header,chanvals,fpd);
+                fprintf(fpd,"starttime: %lld, endtime: %lld, startindex: %d\n",
+                    (long long)bufinfo->starttime,(long long) bufinfo->endtime,bufinfo->startindex);
+            }
+/**/
 
             // if the data is non-zero, set flags and use it for running medians
             if(chanvals[0] != 0.0) {
@@ -608,12 +613,18 @@ void printMedians(FB_Config *fb_config, BufInfo *bufinfo) {
             fprintf(fpd,"stream: %d\n",stream);
             for(band=0; band < fb_config->n_bands; band++) {
                 int band_offset = fb_config->n_chans*(band + stream*fb_config->n_bands);
-                fprintf(fpd,"band: %d. Stddev across band: %f. Chan median,stddev over all medians:\n",band,
+                fprintf(fpd,"band: %d. Stddev across band: %f. Chan median over all medians:\n",band,
                         bufinfo->band_stddevs[tcal_state_index][stream*fb_config->n_bands + band]);
 
                 for(chan=0; chan< fb_config->n_chans; chan++) {
-                    fprintf(fpd,"%f,%f ",bufinfo->medians[tcal_state_index][band_offset + chan],
-                                        bufinfo->stddevs[tcal_state_index][band_offset + chan]);
+                    fprintf(fpd,"%f,",bufinfo->medians[tcal_state_index][band_offset + chan]);
+                }
+                fprintf(fpd,"\n");
+                fprintf(fpd,"band: %d. Stddev across band: %f. Chan stddev over all medians:\n",band,
+                        bufinfo->band_stddevs[tcal_state_index][stream*fb_config->n_bands + band]);
+
+                for(chan=0; chan< fb_config->n_chans; chan++) {
+                    fprintf(fpd,"%f,",bufinfo->stddevs[tcal_state_index][band_offset + chan]);
                 }
                 fprintf(fpd,"\n");
             }
@@ -760,24 +771,6 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
 
         header.stream_id = stream;
 
-        // calculate the tcal fraction for this output stream. We will need to subtract a weighted mean of the
-        // median value per channel.
-        if (options.tcal_period_ns != 0) {
-            int res;
-            if (debug) fprintf(fpd,"Bufsend %d: calcing tcal for ant %d at time %lld\n",buf_ind,header.stream_id,(long long)time_ns);
-            res = tcal_predict(difxconfig->getModel(), time_ns - scan_start_time_ns, header.int_time_ns,
-                     difxconfig->getDModelFileIndex(difxconfig->getScanConfigIndex(options.scan_index),header.stream_id),
-                     &tcal_frac);
-            if (res != 0) {
-                fprintf(stderr,"ERROR: tcal_predict failed in sendEarliestBuffer. Printing header and exiting\n");
-                fprintf(stderr,"Buffer time: %lld. First time: %lld\n",(long long)time_ns,(long long)scan_start_time_ns);
-                printChunkHeader(&header,stderr);
-                return 1;
-            }
-            // if the tcal was on for more than 50% of the time for this timestep, then use the appropriate statistics
-            if (tcal_frac > 0.5) tcal_state_index=1;
-        }
-
         for(band=0; band < fb_config->n_bands; band++) {
             int chan,med_offset;
             float *dat;
@@ -790,6 +783,9 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                 return 1;
             }
 
+            // set tcal state to choose stats for autoflagging
+            if (bufinfo->buffers[buf_ind].tcal_weights[chunk_index] > 0.5) tcal_state_index =1;
+
             // calculate the array index offsets for the data and medians
             dat = bufinfo->buffers[buf_ind].data + chunk_index*header.n_channels;
             med_offset = header.n_channels*(band + stream*fb_config->n_bands);
@@ -797,11 +793,19 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
             // if the data is zero (i.e. nothing there) then just write zeros
             if (dat[0] !=0.0 && dat[1] != 0.0) {
                 float wgt = 1.0/(bufinfo->buffers[buf_ind].weights[chunk_index]);
+                tcal_frac = bufinfo->buffers[buf_ind].tcal_weights[chunk_index];
+
+                if (debug && header.stream_id==0 && buf_ind==246) {
+                    fprintf(fpd,"Weight: %f, tcal_weight: %f\n",wgt,tcal_frac);
+                    printChunkContents(&header,dat,fpd);
+                }
 
                 // normalise the data. must do this before subtracting medians
                 for (chan=0; chan<header.n_channels; chan++) {
                     dat[chan] *= wgt;
                 }            
+
+                if (debug && header.stream_id==0 && buf_ind==246) printChunkContents(&header,dat,fpd);
 
                 // subtract weighted medians for tcal off or partially off
                 if (tcal_frac != 1.0) {
@@ -861,7 +865,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
       }
 
       have_non_zero = 1;
-      if (debug) fprintf(fpd,"Sent buffer for time: %d.%09d. Additions: %d\n",bufinfo->buffers[buf_ind].time_s,
+      if (debug) fprintf(fpd,"Sent buffer for time: %d.%09d. Additions: %f\n",bufinfo->buffers[buf_ind].time_s,
                             bufinfo->buffers[buf_ind].time_ns, bufinfo->buffers[buf_ind].n_added);
 
     // clear this buffer for next time index.
@@ -871,6 +875,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     bufinfo->buffers[buf_ind].time_ns = 0;
     memset(bufinfo->buffers[buf_ind].data,'\0',sizeof(float)*fb_config->n_streams * fb_config->n_bands * fb_config->n_chans);
     memset(bufinfo->buffers[buf_ind].weights,'\0',sizeof(float)*fb_config->n_streams * fb_config->n_bands);
+    memset(bufinfo->buffers[buf_ind].tcal_weights,'\0',sizeof(float)*fb_config->n_streams * fb_config->n_bands);
 
     // update times and indexes.
     bufinfo->startindex = (bufinfo->startindex + 1)%bufinfo->bufsize;
@@ -900,6 +905,16 @@ void printChunkHeader(ChunkHeader *header,FILE *fp) {
     fflush(fp);
 }
 
+/*****************************
+******************************/
+void printChunkContents(ChunkHeader *header,float *chanvals, FILE *fp) {
+    int chan;
+    for (chan=0; chan < header->n_channels; chan++) {
+        fprintf(fpd,"%f,",chanvals[chan]);
+    }
+    fprintf(fpd,"\n");
+}
+
 
 /*****************************
 ******************************/
@@ -909,6 +924,7 @@ void freeBuffers(BufInfo *bufinfo) {
     for (i=0; i<bufinfo->bufsize; i++) {
         if (bufinfo->buffers[i].data != NULL) free(bufinfo->buffers[i].data);
         if (bufinfo->buffers[i].weights != NULL) free(bufinfo->buffers[i].weights);
+        if (bufinfo->buffers[i].tcal_weights != NULL) free(bufinfo->buffers[i].tcal_weights);
     }
     free(bufinfo->buffers);
     for (i=0; i< 2; i++) {
@@ -947,7 +963,8 @@ int initBuffers(FB_Config *fb_config, BufInfo *bufinfo) {
         // allocate space for all the data within a chunk
         bufinfo->buffers[i].data = (float *) calloc(floats_per_quanta,sizeof(float));
         bufinfo->buffers[i].weights = (float *) calloc(fb_config->n_streams * fb_config->n_bands,sizeof(float));
-        if (bufinfo->buffers[i].data == NULL || bufinfo->buffers[i].weights == NULL ) {
+        bufinfo->buffers[i].tcal_weights = (float *) calloc(fb_config->n_streams * fb_config->n_bands,sizeof(float));
+        if (bufinfo->buffers[i].data == NULL || bufinfo->buffers[i].weights == NULL || bufinfo->buffers[i].tcal_weights ==NULL) {
             fprintf(stderr,"initBuffers: no malloc\n");
             exit(1);
         }
