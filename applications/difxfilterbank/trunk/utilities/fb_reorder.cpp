@@ -3,14 +3,16 @@
 
    July, 2009. Randall Wayth.
    Feb, 2010. Update for new filterbank header format (not backwards compatible)
+    Early 2011. Regridding version.
 
     The VLBA filterbank output is a binary file with a large (undetermined) number of chunks of data.
     Each chunk has a 10-item header, which each item is a 4-byte signed int. The header consists of:
  0: marker (always = -1)
  1: datastream ID
  2: scan index
- 3: time since start (seconds)
- 4: time since start (nanosec)
+ 3: time since job start (seconds). Time index for this packet, corresponding to the middle of the integration window.
+    So the time this packet applies to is this_time - integration_time/2 to time_time + integration_time/2
+ 4: time since job start (nanosec)
  5: integration time (nanosec)
  6: band ID (which is a combination of freq and pol)
  7: number of channels of data to follow
@@ -22,21 +24,33 @@
     time offset. This corresponds to n_streams*n_bands chunks, each of which has n_channels
     float data.
 
-    The program maintains a number of buffers, which is dictated by the "-t" command-line argument. Each buffer
-    corresponds to a quantum of data for different times. As data chunks arrive, they are inserted into the relevant
-    buffer. In the case where packets are not lost, the earliest buffer will be sent when it is full, which will
-    (hopefully) be before data chunks from much later arrive. In the case where data chunks are lost or delayed, the
-    earliest buffer will be sent (with zeros filling missing data) when a data chunk for a new (most recent) time
-    quantum arrives. The sent buffer is then freed for use in the new time quantum.
+    The program maintains a number of buffers in a ring. The number of which is dictated by the "-t" command-line argument.
+    Each buffer corresponds to data for a specific time. As data chunks arrive, they are inserted into the relevant
+    buffer. As needed, the oldest buffers are sent and cleared to make way for data with new times.
+    If a data chunk arrives from a buffer that has already been sent, it is discarded.
 
-    If a data chunk arrives from a buffer that has already been sent, it is discarded. Initial data from the filterbank
-    which is zero is also discarded.
+    This code performs the following major tasks:
+    1- re-order the data into ascending time
+    2- subtract the average power and Tcal signal from each stream so that the output stream is zero mean.
+    3- re-grid irregularly sampled (in time) data onto a regularly sampled time index.
+
+    Generally, each incoming packet can have some fraction of the Tcal signal on and can straddle 1 or 2 of the
+    output time indices. When a new packet arrives, we therefore have to calculate:
+        - what fraction of the Tcal signal is present (different for each antenna)
+        - which output cells this packet gets regridded into
+    Since data can be lost, or simply not present (due to the end of a subint, for instance), we must track the contribution
+    of data and Tcal into each output bin.
+
+    Simultaneously, while data are incoming, if they are determined to have the Tcal signal either completely on or
+    completely off, they are inserted into a running buffer so that the median (or mean) value of the signal, per channel,
+    per band, per datastream, can be determined. When data are sent from buffers, a weighted sum of the Tcal on and Tcal off
+    median value is subtracted from each channel to make it a zero mean time series.
 
     The ordering of the output data is:
     - channels within a band, for a time instant.
     - band within a stream
     - stream
-    - time (actually, DiFX thread index, which is like time)
+    - time
 
 */
 #define _FILE_OFFSET_BITS 64 // support big files. makes sizeof(off_t)=8.
@@ -356,6 +370,11 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
 
 
 /*****************************
+This is the main worker function. It reads a packet, then:
+- determines where in the ring buffer the data goes and makes space if necessary by sending the oldest buffer(s)
+- calculates the fraction of Tcal present in the data for this packet
+- apportions the data into output buffers and accumulates weights
+- if the Tcal is either 100% on or 100% off, insert data vals into the running median buffer
 ******************************/
 int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     uint64_t n_bytes_total = 0;
@@ -489,6 +508,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             }
         }
 
+        // not all packets will be the nominal integration time
         pkt_weight = (float)header.int_time_ns/(float)options.int_time_ns;
 
         // loop over all the time slots that this packet overlaps
@@ -525,7 +545,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             // add the fractional tcal to the tcal_weight for this set of chans
             bufinfo->buffers[buf_ind].tcal_weights[header.band_id + header.stream_id*fb_config->n_bands] +=
                                                                 timeslot_frac[ts] * pkt_weight * tcal_frac;
-/**/
+/*
             if (debug && buf_ind==buf_debug && header.stream_id==0) {
                 fprintf(fpd,"bufind: %d. added: %.2f. This frac: %.2f. Weight: %f, tcal_weight: %f\n",
                     buf_ind,bufinfo->buffers[buf_ind].n_added,timeslot_frac[ts],
@@ -536,7 +556,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                 fprintf(fpd,"starttime: %lld, endtime: %lld, startindex: %d\n",
                     (long long)bufinfo->starttime,(long long) bufinfo->endtime,bufinfo->startindex);
             }
-/**/
+*/
 
             // if the data is non-zero, set flags and use it for running medians
             if(chanvals[0] != 0.0) {
@@ -561,6 +581,8 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
 
 /*****************************
+Insert a set of channels for a stream/band into the running median buffer.
+Two separate sets of medians are kept, one for Tcal 100% on, one for Tcal 100% off.
 ******************************/
 int InsertMedianBuffer(ChunkHeader *header, BufInfo *bufinfo, FB_Config *fb_config, float *data, float tcal_frac) {
     int curr_index;
@@ -599,10 +621,8 @@ int compare_float(const void *p1, const void *p2) {
 }
 
 
-void local_qsort(float *dat, int size) {
-}
-
 /*****************************
+debugging tool
 ******************************/
 void printMedians(FB_Config *fb_config, BufInfo *bufinfo) {
     int tcal_state_index,stream,band,chan;
@@ -634,6 +654,9 @@ void printMedians(FB_Config *fb_config, BufInfo *bufinfo) {
 
 
 /*****************************
+Form the median for each channel, in each band, in each stream using the data currently
+in the running median buffers.
+Also estimate the variance of the power in each band, which can aid automatic RFI detection.
 ******************************/
 void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
     int stream, band, chan, samp, offset_bulk, offset, med_index=0,tcal_state_index;
@@ -723,6 +746,9 @@ void FormMedians(FB_Config *fb_config, BufInfo *bufinfo) {
 
 
 /*****************************
+Send the earliest buffer in the ring buffer and clear it to make ready for new data.
+This is where the weighted median of the Tcal signal is subtracted.
+Also apply some simple auto-flagging rules if required.
 ******************************/
 int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
     static int have_non_zero =0;
@@ -798,18 +824,18 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                 // handle the special case where an output time slot only has a fraction of a input slot contributing
                 // to it. This might happen at the end of a subint, or for dropped packets
                 if (wgt > 1.0) tcal_frac *= wgt;
-
+/*
                 if (debug && buf_ind==buf_debug && header.stream_id==0) {
                     fprintf(fpd,"Bufdebug: Weight: %f, tcal_weight: %f\n",wgt,tcal_frac);
                     printChunkContents(&header,dat,fpd);
                 }
-
+*/
                 // normalise the data. must do this before subtracting medians
                 for (chan=0; chan<header.n_channels; chan++) {
                     dat[chan] *= wgt;
                 }            
 
-                if (debug && buf_ind==buf_debug && header.stream_id==0 ) printChunkContents(&header,dat,fpd);
+                //if (debug && buf_ind==buf_debug && header.stream_id==0 ) printChunkContents(&header,dat,fpd);
 
                 // subtract weighted medians for tcal off or partially off
                 if (tcal_frac != 1.0) {
@@ -1043,6 +1069,8 @@ void free_FB_Config(FB_Config *fb_config) {
 
 
 /*****************************
+Set the configuration (number of streams, bands, chans, integration time etc) from
+DiFX config object and command-line args. 
 ******************************/
 int set_FB_Config(FB_Config *fb_config) {
     int s,b;
