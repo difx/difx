@@ -125,7 +125,7 @@ void parse_cmdline(const int argc, char * const argv[], GlobalOptions *options);
 void print_usage();
 
 // globals
-static int debug=0;
+static int debug=0,buf_debug=3437;
 static int64_t scan_start_time_ns=0;
 static FILE *fpd;
 
@@ -526,7 +526,7 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
             bufinfo->buffers[buf_ind].tcal_weights[header.band_id + header.stream_id*fb_config->n_bands] +=
                                                                 timeslot_frac[ts] * pkt_weight * tcal_frac;
 /**/
-            if (debug && buf_ind==246 && header.stream_id==0) {
+            if (debug && buf_ind==buf_debug && header.stream_id==0) {
                 fprintf(fpd,"bufind: %d. added: %.2f. This frac: %.2f. Weight: %f, tcal_weight: %f\n",
                     buf_ind,bufinfo->buffers[buf_ind].n_added,timeslot_frac[ts],
                     bufinfo->buffers[buf_ind].weights[header.band_id + header.stream_id*fb_config->n_bands],
@@ -795,8 +795,12 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                 float wgt = 1.0/(bufinfo->buffers[buf_ind].weights[chunk_index]);
                 tcal_frac = bufinfo->buffers[buf_ind].tcal_weights[chunk_index];
 
-                if (debug && header.stream_id==0 && buf_ind==246) {
-                    fprintf(fpd,"Weight: %f, tcal_weight: %f\n",wgt,tcal_frac);
+                // handle the special case where an output time slot only has a fraction of a input slot contributing
+                // to it. This might happen at the end of a subint, or for dropped packets
+                if (wgt > 1.0) tcal_frac *= wgt;
+
+                if (debug && buf_ind==buf_debug && header.stream_id==0) {
+                    fprintf(fpd,"Bufdebug: Weight: %f, tcal_weight: %f\n",wgt,tcal_frac);
                     printChunkContents(&header,dat,fpd);
                 }
 
@@ -805,7 +809,7 @@ int sendEarliestBuffer(FB_Config *fb_config, BufInfo *bufinfo, FILE *fout) {
                     dat[chan] *= wgt;
                 }            
 
-                if (debug && header.stream_id==0 && buf_ind==246) printChunkContents(&header,dat,fpd);
+                if (debug && buf_ind==buf_debug && header.stream_id==0 ) printChunkContents(&header,dat,fpd);
 
                 // subtract weighted medians for tcal off or partially off
                 if (tcal_frac != 1.0) {
