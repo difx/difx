@@ -82,7 +82,7 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
     //cout << "bandwidth_hz = " << bandwidth_hz << ", pcal_spacing_hz = " << pcal_spacing_hz << ", pcal_offset_hz = " << pcal_offset_hz << ", sampleoffset = " << sampleoffset << endl;
 
     if (pcal_offset_hz == 0.0f) {
-        cwarn << startl << "Warning: non-standard pcal mode (0 offset)" << endl;
+        //cwarn << startl << "Warning: non-standard pcal mode (0 offset)" << endl;
         return new PCalExtractorTrivial(bandwidth_hz, (int)pcal_spacing_hz, sampleoffset);
     }
     // if ( __unlikely ((2*bandwidth_hz / gcd(2*bandwidth_hz,pcal_spacing_hz)) > someLengthLimit) ) {
@@ -94,7 +94,7 @@ PCal* PCal::getNew(double bandwidth_hz, double pcal_spacing_hz, int pcal_offset_
     if ((No % Np) == 0 /* && (!want_timedomain_delay) */) {
         return new PCalExtractorImplicitShift(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
     }
-    cwarn << startl << "Warning: non-standard pcal mode.  Bandwidth = " << bandwidth_hz << "Hz; offset = " << pcal_offset_hz << "Hz; pcal spacing = " << pcal_spacing_hz << "Hz" <<endl;
+    //cwarn << startl << "Warning: non-standard pcal mode.  Bandwidth = " << bandwidth_hz << "Hz; offset = " << pcal_offset_hz << "Hz; pcal spacing = " << pcal_spacing_hz << "Hz" <<endl;
     return new PCalExtractorShifting(bandwidth_hz, pcal_spacing_hz, pcal_offset_hz, sampleoffset);
 }
 

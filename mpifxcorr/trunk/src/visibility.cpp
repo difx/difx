@@ -627,12 +627,14 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   char filename[256];
   char pcalfilename[256];
   char pcalstr[256];
+  string pcalline;
   int binloop, freqindex, numpolproducts, resultindex, freqchannels, maxpol;
   int year, month, day, startyearmjd, dummyseconds;
   int ant1index, ant2index, sourceindex, baselinenumber, numfiles, filecount, tonefreq;
   float currentweight;
   double scanoffsetsecs, pcaldoy, cablecaldelay;
   bool modelok;
+  bool nonzero;
   double buvw[3]; //the u,v and w for this baseline at this time
   char polpair[3]; //the polarisation eg RR, LL
 
@@ -804,8 +806,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
   {
     if(config->getDPhaseCalIntervalMHz(currentconfigindex, i) > 0)
     {
-      sprintf(pcalfilename, "%s/PCAL_%s", config->getOutputFilename().c_str(), config->getTelescopeName(i).c_str());
-      pcaloutput.open(pcalfilename, ios::app);
+      nonzero = false;
       //write the header string - note state counts are not written, and cablecal is dummy
       sprintf(pcalstr, "%s %10.7f %9.7f %.2f %d %d %d %d %d",
               config->getTelescopeName(i).c_str(), pcaldoy,
@@ -813,7 +814,7 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
               maxpol, config->getDNumRecordedFreqs(currentconfigindex, i),
               config->getDMaxRecordedPCalTones(currentconfigindex, i), 
               0/*no state counts*/, config->getDNumRecordedBands(currentconfigindex, i));
-      pcaloutput.write(pcalstr, strlen(pcalstr));
+      pcalline = pcalstr;
       for(int p=0;p<maxpol;p++)
       {
         resultindex = config->getCoreResultPCalOffset(currentconfigindex, i);
@@ -833,21 +834,30 @@ void Visibility::writedifx(int dumpmjd, double dumpseconds)
 	      
             //write out empty tone and continue for any tones outside the bandwidth of the channel.
 	    if(t >= config->getDRecordedFreqNumPCalTones(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j))) {
-		pcaloutput.write(pcalstr, strlen(pcalstr));
+                pcalline += pcalstr;
 		continue; //move on
 	    }
 	    tonefreq = config->getDRecordedFreqPCalToneFreq(currentconfigindex, i, config->getDLocalRecordedFreqIndex(currentconfigindex, i, j), t);
             sprintf(pcalstr, " %3d %d %12.5e %12.5e", p, tonefreq, 
-	    results[resultindex].re,
-	    -results[resultindex].im);
-            pcaloutput.write(pcalstr, strlen(pcalstr));
-          resultindex++;
+	            results[resultindex].re,
+	            -results[resultindex].im);
+            if(results[resultindex].re != 0.0 && -results[resultindex].im != 0.0)
+            {
+              nonzero = true;
+            }
+            pcalline += pcalstr;
+            resultindex++;
           }
         }
       }
-      pcaloutput.write("\n", 1);
+      if(nonzero) // If at least one tone had non-zero amplitude, write the line to the file
+      {
+        sprintf(pcalfilename, "%s/PCAL_%s", config->getOutputFilename().c_str(), config->getTelescopeName(i).c_str());
+        pcaloutput.open(pcalfilename, ios::app);
+        pcaloutput << pcalline << endl;
+        pcaloutput.close();
+      }
     }
-    pcaloutput.close();
   }
 }
 
