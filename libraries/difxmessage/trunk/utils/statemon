@@ -37,6 +37,8 @@ class Parser:
 	self.mjd = 0.0
 	self.state = ''
 	self.tmp = ''
+	self.weight = {}
+	self.maxant = 0
 	self.ok = False
 	self.unit = ''
 	self.mpiid = -1
@@ -55,6 +57,14 @@ class Parser:
         self.tmp = ''
         if tag == 'difxStatus':
                 self.ok = True
+		self.weight = {}
+		self.maxant = 0
+	elif tag == 'weight':
+		ant = int(attrs['ant'])
+		self.weight[ant] = float(attrs['wt'])
+		if ant > self.maxant:
+			self.maxant = ant
+
 
     def end(self, tag):
         if tag == 'message' and self.ok:
@@ -78,7 +88,13 @@ class Parser:
 
     def getinfo(self):
 	if self.ok:
-        	return 'MPI[%2d] %-9s %-12s %-7s %s' % (self.mpiid, self.unit, self.id, self.state, self.message)
+		wtstr = ''
+		for i in range(1, self.maxant+1):
+			if not self.weight.has_key(i) or self.weight[i] <= 0.0001:
+				wtstr = " %d:0    " % i
+			else:
+				wtstr = wtstr + " %d:%5.3f" % (i, self.weight[i])
+        	return 'MPI[%2d] %-9s %-12s %-7s %s%s' % (self.mpiid, self.unit, self.id, self.state, self.message, wtstr)
 	else:
 		return ''
 
