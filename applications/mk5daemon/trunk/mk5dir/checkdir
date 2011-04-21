@@ -32,15 +32,16 @@
 
 
 program = 'checkdir'
-version = '0.4'
+version = '0.5'
 author  = 'Walter Brisken'
-verdate = '20100315'
+verdate = '20110421'
 
 from sys import exit, argv
 from os.path import isfile, isdir
 from os import getenv, system
 from string import split, strip, upper
 from glob import glob
+from time import time
 import datetime
 
 dirPath = getenv("MARK5_DIR_PATH")
@@ -167,6 +168,10 @@ class Scan:
 
 		self.startMJD = self.startDay + (self.startSec + float(self.startFrame)/float(self.framesPerSec))/86400.0
 		self.stopMJD = self.startMJD + self.duration/86400.0
+
+		today = 40586.5 + time()/86400.0
+		if self.startMJD > today+1.0 or self.stopMJD > today+1.0:
+			return "Recording is from %4.2f days in the future!" % (self.stopMJD-today)
 
 		return None
 
