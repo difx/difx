@@ -300,7 +300,7 @@ def checkFile(module, histogram, verbose=1):
 		print "MODULE: " + module
 	for s in range(len(scans)):
 		if verbose > 3:
-			print "Scan %i runs from %s to %s" % (s, mjd2vex(scans[s].startMJD), mjd2vex(scans[s].stopMJD))
+			print "Scan %i runs from %s to %s" % (s+1, mjd2vex(scans[s].startMJD), mjd2vex(scans[s].stopMJD))
 		if scans[s].error != None:
 			errors.append('Scan %d : %s' % (s+1, scans[s].error))
 	
