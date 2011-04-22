@@ -23,8 +23,8 @@ from time import asctime
 
 program = 'statemon'
 author  = 'Walter Brisken'
-version = '0.1'
-verdate = '20110204'
+version = '0.2'
+verdate = '20110422'
 
 class Parser:
 
@@ -35,6 +35,8 @@ class Parser:
         self._parser.CharacterDataHandler = self.data
 	self.message = ''
 	self.mjd = 0.0
+	self.mjdStart = 0.0
+	self.mjdStop = 0.0
 	self.state = ''
 	self.tmp = ''
 	self.weight = {}
@@ -59,6 +61,8 @@ class Parser:
                 self.ok = True
 		self.weight = {}
 		self.maxant = 0
+		self.mjdStart = 0.0
+		self.mjdStop = 0.0
 	elif tag == 'weight':
 		ant = int(attrs['ant'])
 		self.weight[ant] = float(attrs['wt'])
@@ -73,6 +77,10 @@ class Parser:
 		self.state = self.tmp
 	elif tag == 'visibilityMJD':
 		self.mjd = float(self.tmp)
+	elif tag == 'jobstartMJD':
+		self.mjdStart = float(self.tmp)
+	elif tag == 'jobstopMJD':
+		self.mjdStop = float(self.tmp)
 	elif tag == 'from':
 		self.unit = lower(self.tmp)
 	elif tag == 'identifier':
@@ -89,12 +97,16 @@ class Parser:
     def getinfo(self):
 	if self.ok:
 		wtstr = ''
-		for i in range(1, self.maxant+1):
+		for i in range(0, self.maxant+1):
 			if not self.weight.has_key(i) or self.weight[i] <= 0.0001:
-				wtstr = " %d:0    " % i
+				wtstr = wtstr + " %d:0    " % i
 			else:
 				wtstr = wtstr + " %d:%5.3f" % (i, self.weight[i])
-        	return 'MPI[%2d] %-9s %-12s %-7s %s%s' % (self.mpiid, self.unit, self.id, self.state, self.message, wtstr)
+		if self.state == 'Running' and self.mjdStart > 50000.0 and self.mjdStop > self.mjdStart:
+			statestr = '%5.2f%%' % ( 100.0*(self.mjd - self.mjdStart)/(self.mjdStop - self.mjdStart) )
+		else:
+			statestr = self.state
+        	return 'MPI[%2d] %-9s %-12s %-7s %s%s' % (self.mpiid, self.unit, self.id, statestr, self.message, wtstr)
 	else:
 		return ''
 

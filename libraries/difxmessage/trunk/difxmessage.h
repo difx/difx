@@ -224,9 +224,10 @@ typedef struct
 {
 	enum DifxState state;
 	char message[DIFX_MESSAGE_LENGTH];
-	double mjd;
+	double mjd;	/* current observe time MJD */
 	float weight[DIFX_MESSAGE_MAX_DATASTREAMS];
 	int maxDS;
+	double jobStartMJD, jobStopMJD;	/* MJD range of job; these are optional */
 } DifxMessageStatus;
 
 typedef struct
@@ -390,6 +391,8 @@ int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
 	double visMJD, int numdatastreams, float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 
 	const char *stateMessage);
+int difxMessageSendDifxStatus3(enum DifxState state, const char *stateMessage,
+	double visMJD, int numdatastreams, float *weight, double mjdStart, double mjdStop);
 int difxMessageSendLoad(const DifxMessageLoad *load);
 int difxMessageSendDifxAlert(const char *errorMessage, int severity);
 int difxMessageSendDifxInfo(const char *infoMessage);

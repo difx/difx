@@ -450,6 +450,18 @@ static void XMLCALL endElement(void *userData, const char *name)
 							}
 						}
 					}
+					else if(strcmp(elem, "visibilityMJD") == 0)
+					{
+						G->body.status.mjd = atof(s);
+					}
+					else if(strcmp(elem, "jobstartMJD") == 0)
+					{
+						G->body.status.jobStartMJD = atof(s);
+					}
+					else if(strcmp(elem, "jobstopMJD") == 0)
+					{
+						G->body.status.jobStopMJD = atof(s);
+					}
 					break;
 				case DIFX_MESSAGE_INFO:
 					if(strcmp(elem, "message") == 0)
