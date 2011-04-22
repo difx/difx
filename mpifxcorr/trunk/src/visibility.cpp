@@ -901,7 +901,7 @@ void Visibility::multicastweights()
 
   mjd = dumpmjd + dumpseconds/86400.0;
 
-  difxMessageSendDifxStatus(DIFX_STATE_RUNNING, "", mjd, numdatastreams, weight);
+  difxMessageSendDifxStatus3(DIFX_STATE_RUNNING, "", mjd, numdatastreams, weight, expermjd + experseconds/86400.0, expermjd + (experseconds + executeseconds)/86400.0);
 
   delete [] weight;
 } 
