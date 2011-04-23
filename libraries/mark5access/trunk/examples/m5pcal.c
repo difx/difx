@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2011 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -39,8 +39,8 @@
 
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "2010 Jul 17";
+const char version[] = "0.3";
+const char verdate[] = "20110422";
 
 const int ChunkSize = 6400;
 const int MaxTones = 64;
@@ -82,6 +82,7 @@ int usage(const char *pgm)
 	printf("  --quiet\n");
 	printf("  -q           Be quieter\n\n");
 	printf("  -n <number>  Integrate over <number> chunks of data [1000]\n\n");
+	printf("  -N <number>  Number of outer loops to perform\n\n");
 	printf("  --offset <number>\n");
 	printf("  -o <number>  Jump <number> bytes into the file [0]\n\n");
 	printf("  --interval <number>\n");
@@ -230,7 +231,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 	return nTone;
 }
 
-int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose)
+int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose, int nDelay)
 {
 	struct mark5_stream *ms;
 	double bw_MHz;
@@ -238,13 +239,14 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	double complex **bins;
 	long long total, unpacked;
 	FILE *out;
-	int i, j, k, status;
+	int i, j, k, status, N;
 	int nTone;
 	double toneAmp[MaxTones];
 	double tonePhase[MaxTones];
 	int toneFreq[MaxTones];
 	fftw_plan plan;
 	int ns;
+	double startSec, stopSec;
 
 	ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(inFile, offset),
@@ -291,44 +293,159 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	bins = (double complex **)malloc(nFreq*sizeof(double *));
 	for(i = 0; i < nFreq; i++)
 	{
-		bins[i] = (double complex *)calloc(ChunkSize, sizeof(double complex));
+		bins[i] = (double complex *)malloc(ChunkSize*sizeof(double complex));
 	}
 
-	for(k = 0; k < nInt; k++)
+	stopSec = ms->sec + ms->ns*1.0e-9;
+
+	for(N = 0; N < nDelay; N++)
 	{
+		startSec = stopSec;
+
+		for(i = 0; i < nFreq; i++)
+		{
+			memset(bins[i], 0, ChunkSize*sizeof(double complex));
+		}
+
+		for(k = 0; k < nInt; k++)
+		{
+			if(die)
+			{
+				break;
+			}
+			status = mark5_stream_decode_double(ms, ChunkSize, data);
+			
+			if(status < 0)
+			{
+				break;
+			}
+			else
+			{
+				total += ChunkSize;
+				unpacked += status;
+			}
+
+			if(ms->consecutivefails > 5)
+			{
+				printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+				break;
+			}
+			
+			for(i = 0; i < nFreq; i++)
+			{
+				for(j = 0; j < ChunkSize; j++)
+				{
+					bins[i][j] += data[i][j];
+				}
+			}
+		}
+		nInt = k;
+
 		if(die)
 		{
 			break;
 		}
-		status = mark5_stream_decode_double(ms, ChunkSize, data);
-		
-		if(status < 0)
+
+		stopSec = ms->sec + ms->ns*1.0e-9 + total/(double)(ms->samprate);
+
+		if(nInt < 1)
 		{
-			break;
+			fclose(out);
+			fprintf(stderr, "Error: no samples unpacked\n");
 		}
 		else
 		{
-			total += ChunkSize;
-			unpacked += status;
-		}
-
-		if(ms->consecutivefails > 5)
-		{
-			printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
-			break;
-		}
-		
-		for(i = 0; i < nFreq; i++)
-		{
-			for(j = 0; j < ChunkSize; j++)
+			if(verbose >= -1)
 			{
-				bins[i][j] += data[i][j];
+				printf("%Ld / %Ld samples unpacked\n", unpacked, total);
+			}
+
+			/* normalize */
+			for(i = 0; i < nFreq; i++)
+			{
+				for(j = 0; j < ChunkSize; j++)
+				{
+					bins[i][j] /= nInt;	/* FIXME: correct for FFT size? */
+				}
+			}
+
+			/* FFT */
+			for(i = 0; i < nFreq; i++)
+			{
+				double sum = 0.0;
+				double factor;
+
+				plan = fftw_plan_dft_1d(ChunkSize, bins[i], bins[i], FFTW_FORWARD, FFTW_ESTIMATE);
+				fftw_execute(plan);
+				fftw_destroy_plan(plan);
+
+				for(j = 0; j < ChunkSize/2; j++)
+				{
+					sum += bins[i][j]*~bins[i][j];
+				}
+				factor = 1.0/sqrt(sum);
+				for(j = 0; j < ChunkSize; j++)
+				{
+					bins[i][j] *= factor;
+				}
+			}
+
+			/* write data out */
+
+			for(i = 0; i < nFreq; i++)
+			{
+				double bandCenter, bandValid;
+				double f0, f1, delay;
+
+				f0 = fabs(freq_kHz[i]/1000.0);
+				f1 = fabs(freq_kHz[i]/1000.0 + bw_MHz);
+
+				bandCenter = 0.5*(f0+f1);
+				bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
+
+				nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns,
+					toneFreq, toneAmp, tonePhase);
+
+				delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
+
+				if(verbose >= -1)
+				{
+					printf("Sub-band %d = %f-%f MHz\n\n", i, f0, f1);
+				}
+
+				if(nTone < 1)
+				{
+					printf("  No tones in this band\n\n");
+				}
+				else
+				{
+					for(j = 0; j < nTone; j++)
+					{
+						if(verbose >= 0)
+						{
+							printf("  Sample %3d  Tone %2d  Freq=%d MHz  Amp=%6.4f  Phase=%6.2f deg\n",
+								N, j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI);
+						}
+						fprintf(out, "%d %f %d %d %6.4f %6.2f %f\n",
+							N, 0.5*(startSec+stopSec), j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
+					}
+					if(nTone > 1)
+					{
+						printf("  t1=%7.5f s  t2=%7.5f s  Freq=%5.3f MHz  Delay=%f ns\n", startSec, stopSec, bandCenter, delay);
+					}
+					if(verbose >= -1)
+					{
+						printf("\n");
+					}
+				}
 			}
 		}
+		fflush(stdout);
 	}
-	nInt = k;
 
-	/* read stage cleanup */
+	/* Clean up */
+	fclose(out);
+
 	delete_mark5_stream(ms);
 	for(i = 0; i < ms->nchan; i++)
 	{
@@ -337,94 +454,6 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	free(data);
 	data = 0;
 
-
-	if(nInt < 1)
-	{
-		fclose(out);
-		fprintf(stderr, "Error: no samples unpacked\n");
-	}
-	else
-	{
-		printf("%Ld / %Ld samples unpacked\n", unpacked, total);
-
-		/* normalize */
-		for(i = 0; i < nFreq; i++)
-		{
-			for(j = 0; j < ChunkSize; j++)
-			{
-				bins[i][j] /= nInt;	/* FIXME: correct for FFT size? */
-			}
-		}
-
-		/* FFT */
-		for(i = 0; i < nFreq; i++)
-		{
-			double sum = 0.0;
-			double factor;
-
-			plan = fftw_plan_dft_1d(ChunkSize, bins[i], bins[i], FFTW_FORWARD, FFTW_ESTIMATE);
-			fftw_execute(plan);
-			fftw_destroy_plan(plan);
-
-			for(j = 0; j < ChunkSize/2; j++)
-			{
-				sum += bins[i][j]*~bins[i][j];
-			}
-			factor = 1.0/sqrt(sum);
-			for(j = 0; j < ChunkSize; j++)
-			{
-				bins[i][j] *= factor;
-			}
-		}
-
-		/* write data out */
-
-		for(i = 0; i < nFreq; i++)
-		{
-			double bandCenter, bandValid;
-			double f0, f1, delay;
-
-			f0 = fabs(freq_kHz[i]/1000.0);
-			f1 = fabs(freq_kHz[i]/1000.0 + bw_MHz);
-
-			bandCenter = 0.5*(f0+f1);
-			bandValid = 0.5*fabs(bw_MHz) - edge_MHz;
-
-			nTone = getTones(freq_kHz[i], bins[i], ChunkSize/2, bw_MHz, interval_MHz, ns,
-				toneFreq, toneAmp, tonePhase);
-
-			delay = calcDelay(nTone, toneFreq, toneAmp, tonePhase, bandCenter, bandValid);
-
-			printf("Sub-band %d = %f-%f MHz\n\n", i, f0, f1);
-
-			if(nTone < 1)
-			{
-				printf("  No tones in this band\n\n");
-			}
-			else
-			{
-				for(j = 0; j < nTone; j++)
-				{
-					if(verbose >= 0)
-					{
-						printf("  Tone %2d  Freq=%d MHz  Amp=%6.4f  Phase=%+6.2f deg\n",
-							j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI);
-					}
-					fprintf(out, "%d %d %6.4f %+6.2f %f\n",
-						j, toneFreq[j], toneAmp[j], tonePhase[j]*180.0/M_PI, delay);
-				}
-				if(nTone > 1)
-				{
-					printf("  Delay = %f ns\n", delay);
-				}
-				printf("\n");
-			}
-		}
-
-		fclose(out);
-	}
-
-	/* Clean up */
 	for(i = 0; i < nFreq; i++)
 	{
 		free(bins[i]);
@@ -483,6 +512,7 @@ int main(int argc, char **argv)
 	const char *format = 0;
 	long long offset = 0LL;
 	int nInt = 1000;
+	int nDelay = 1;
 	double edge_MHz = -1;
 	double v;
 
@@ -518,7 +548,7 @@ int main(int argc, char **argv)
 			{
 				verbose++;
 			}
-			if(strcmp(argv[i], "--quiet") == 0 ||
+			else if(strcmp(argv[i], "--quiet") == 0 ||
 				strcmp(argv[i], "-q") == 0)
 			{
 				verbose--;
@@ -534,6 +564,11 @@ int main(int argc, char **argv)
 				{
 					i++;
 					nInt = atol(argv[i]);
+				}
+				else if(strcmp(argv[i], "-N") == 0)
+				{
+					i++;
+					nDelay = atol(argv[i]);
 				}
 				else if(strcmp(argv[i], "--offset") == 0 ||
 					strcmp(argv[i], "-o") == 0)
@@ -598,7 +633,7 @@ int main(int argc, char **argv)
 		return usage(argv[0]);
 	}
 
-	pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose);
+	pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose, nDelay);
 
 	return 0;
 }
