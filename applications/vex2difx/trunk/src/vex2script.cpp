@@ -43,7 +43,9 @@ int usage(int argc, char **argv)
 	cout << endl;
 	cout << program << " version " << version << "  " << author << " " << verdate << endl;
 	cout << "You must provide a vex file name as the first argument" << endl;
-	cout << "The optional second argument is --phasingsources=source1,source2... (for EVLA)" << endl;
+	cout << "The optional arguments are" << endl;
+        cout << "  --phasingsources=source1,source2... (for EVLA)" << endl;
+        cout << "  --dbepersonality=[path/]filename (for VLBA)" << endl;
 	cout << endl;
 
 	return 0;
