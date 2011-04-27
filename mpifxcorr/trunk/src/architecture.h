@@ -143,6 +143,7 @@
 #define vectorConvert_f64f32(src, dest, length)                             ippsConvert_64f32f(src, dest, length)
 
 #define vectorDivide_f32(src1, src2, dest, length)                          ippsDiv_32f(src1, src2, dest, length)
+#define vectorDivide_f32_I(src, srcdest, length)                            ippsDiv_32f_I(src, srcdest, length)
 
 #define vectorDotProduct_f64(src1, src2, length, output)                    ippsDotProd_64f(src1, src2, length, output)
 

@@ -1323,6 +1323,11 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 		{
 			error << "Saving directory file " << filename << "failed.  Error code=" << v;
 		}
+
+		if(cacheOnly)
+		{
+			v = 0;	// Don't cause catastrophic failure
+		}
 	}
 	else if(v == DIRECTORY_NOT_CACHED)
 	{

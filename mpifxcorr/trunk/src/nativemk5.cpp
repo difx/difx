@@ -377,7 +377,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 	if(module.nScans() == 0)
 	{
 		doUpdate = 1;
-		cinfo << startl << "Getting module " << datafilenames[configindex][fileindex] << "info." << endl;
+		cinfo << startl << "Getting module " << datafilenames[configindex][fileindex] << " directory info." << endl;
 		v = module.getCachedDirectory(xlrDevice, corrstartday, 
 			datafilenames[configindex][fileindex].c_str(), 
 			mk5dirpath, &dirCallback, &mk5status, 0, 0, 0, 1, -1, -1);
