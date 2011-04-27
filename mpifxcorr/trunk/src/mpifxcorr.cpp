@@ -43,6 +43,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <difxmessage.h>
+#include <unistd.h>
 #include "alert.h"
 
 //act on an XML command message which was received
@@ -250,7 +251,9 @@ int main(int argc, char *argv[])
   char processor_name[MPI_MAX_PROCESSOR_NAME];
   char difxMessageID[DIFX_MESSAGE_PARAM_LENGTH];
 
-  cout << "About to run MPIInit" << endl;
+  char myhostname[200];
+  gethostname(myhostname, sizeof(myhostname)-1);
+  cout << "About to run MPIInit on node " << myhostname << endl;
 
   MPI_Init(&argc, &argv);
   world = MPI_COMM_WORLD;
