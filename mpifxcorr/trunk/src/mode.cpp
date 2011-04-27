@@ -1067,7 +1067,7 @@ void Mode::setData(u8 * d, int dbytes, int dscan, int dsec, int dns)
   datasec = dsec;
   datans = dns;
   unpackstartsamples = -999999999;
-  datasamples = static_cast<int>(datans/(sampletime*1e3));
+  datasamples = static_cast<int>(datans/(sampletime*1e3) + 0.5);
 }
 
 void Mode::resetpcal()
