@@ -203,27 +203,6 @@ int DifxInputGetIFsByRecFreq(int *IFs, const DifxInput *D, int dsId, int configI
 	return n;
 }
 
-int pulsecalIsZero(float pulseCal[2][array_MAX_TONES], int nBand, int nTone, int nPol)
-{
-	int p, b, t;
-	
-	for(p = 0; p < nPol; p++)
-	{
-		for(b = 0; b < nBand; b++)
-		{
-			for(t = 0; t < nBand; t++)
-			{
-				if(pulseCal[p][b*nTone +t] > pcaltiny || pulseCal[p][b*nTone +t] < -pcaltiny)
-				{
-					return 0;
-				}
-			}
-		}
-	}
-	
-	return 1;
-}
-
 int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 {
 	char filename[DIFXIO_FILENAME_LENGTH];
@@ -1010,11 +989,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
 								      refDay, D, &configId, phasecentre);
 						if(v < 0)
-						{
-							continue;/*to next line in file*/
-						}
-						if(pulsecalIsZero(pulseCalRe, nBand, nTone, nPol) &&
-						   pulsecalIsZero(pulseCalIm, nBand, nTone, nPol))
 						{
 							continue;/*to next line in file*/
 						}
