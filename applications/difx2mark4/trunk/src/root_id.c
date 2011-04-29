@@ -29,7 +29,7 @@ int year, day, hour, min, sec;
         if(day == 366 && (year_79 + 3) % 4 != 0) return(NULL);  /* Leap year? */
         if(hour < 0 || hour > 23) return(NULL);
         if(min < 0 || min > 59) return(NULL);
-        if(sec < 0 || sec > 59) return(NULL);
+        if(sec < 0) return(NULL);  // allow secs beyond 59 for sequential rcode gen
 
                                 /* 4-sec periods elapsed since 00:00 Jan 1 1979 */
         elapsed = year_79*7884000 + (day+nleaps-1)*21600 + hour*900 + min*15 + (sec/4);

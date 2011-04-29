@@ -209,10 +209,11 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                 printf ("      No input phase cal file %s for antenna %s\n",
                         pcal_filnam, t300.name);
             else
-                {
-                                        // input data is present - loop over records
-                                        // read next input record
-                while (TRUE)
+                {                       // input data is present - loop over records
+                if (opts->verbose > 1)  // debug print
+                    printf ("      getting pcal data from file %s\n", pcal_filnam); 
+
+                while (TRUE)            // read loop over all input records
                     {
                     i = getline(&line, &linemax, fin);
                     if (i < 0)          //EOF

@@ -355,6 +355,8 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
         nextScanId,
         i,
         err;
+    static int first = TRUE, 
+               year, day, hour, min, sec;
     time_t now;
     struct tm *t;
     struct stat stat_s;
@@ -364,6 +366,23 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
 
     struct stations stns[D->nAntenna];
 
+    if (first)                  // on first time through get and save time
+        {
+        now = time ((time_t *) NULL);
+        t = localtime (&now);
+        year = t->tm_year;
+        day = t->tm_yday+1;
+        hour = t->tm_hour;
+        min = t->tm_min;
+        sec = t->tm_sec;
+        first = FALSE;
+        }
+    else
+        sec += 4;               // avoid collisions by moving to next code (4s later)
+
+                                // generate 6-char rootcode timestamp
+    rcode = root_id (year, day, hour, min, sec);
+                 
                                 // make scan directory
     snprintf(path, DIFXIO_NAME_LENGTH, "%s/%s", node, D->scan[scanId].identifier);
     //strncat(node, "/", DIFXIO_NAME_LENGTH);
@@ -390,11 +409,6 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
             }
         }
     
-                                // generate 6-char rootcode timestamp
-    now = time((time_t *)NULL);
-    t = localtime(&now);
-    rcode = root_id (t->tm_year, t->tm_yday+1,
-                     t->tm_hour, t->tm_min, t->tm_sec);
                                 // initialise stns with all DiFX antennas
     for (i = 0; i < D->nAntenna; i++)
         {
