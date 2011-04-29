@@ -198,7 +198,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
                                     // construct type 309 pcal records and write them
                                     // check to see if there is a input pcal file for this antenna
-        for (j = startJob; j < endJob; j++)
+        for (j = startJob; j <= endJob; j++)
             {
             strncpy (pcal_filnam, D->job[j].outputFile, 242);
             strcat (pcal_filnam, "/PCAL_"); 
