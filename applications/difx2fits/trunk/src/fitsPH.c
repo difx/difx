@@ -537,7 +537,7 @@ static int parsePulseCalCableCal(const char *line,
  * The DiFX-extracted pulse cals */
 static int parseDifxPulseCal(const char *line, 
 	int dsId, int nBand, int nTone,
-	int *sourceId, double *time, int jobId,
+	int *sourceId, int *scanId, double *time, int jobId,
 	double freqs[2][array_MAX_TONES], 
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
@@ -559,7 +559,7 @@ static int parseDifxPulseCal(const char *line,
 	int tone;
 	int toneIndex;
 	int pol, recFreq;
-	int scanId, freqId;
+	int freqId;
 	double A;
 	float B, C;
 	double mjd;
@@ -625,26 +625,26 @@ static int parseDifxPulseCal(const char *line,
 
 	dd = D->datastream + dsId;
 
-	scanId = DifxInputGetScanIdByAntennaId(D, mjd, dd->antennaId);
-	if(scanId < 0)
+	*scanId = DifxInputGetScanIdByAntennaId(D, mjd, dd->antennaId);
+	if(*scanId < 0)
 	{	
 		return -3;
 	}
 
-        if(phasecentre >= D->scan[scanId].nPhaseCentres)
+        if(phasecentre >= D->scan[*scanId].nPhaseCentres)
         {
 		return -4;
         }
 
-	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
-	*configId = D->scan[scanId].configId;
+	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
+	*configId = D->scan[*scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
 		return -5;
 	}
 
 	dt = D->config[*configId].tInt/(86400.0*2.001);  
-	if(D->scan[scanId].mjdStart > mjd-dt || D->scan[scanId].mjdEnd < mjd+dt)
+	if(D->scan[*scanId].mjdStart > mjd-dt || D->scan[*scanId].mjdEnd < mjd+dt)
 	{
 		return -6;
 	}
@@ -741,7 +741,7 @@ static int parseDifxPulseCal(const char *line,
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre)
+	int phasecentre, double avgSeconds)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -786,11 +786,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalIm[2][array_MAX_TONES];
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId;
-	int antId, sourceId;
+	int configId, antId, sourceId, currentScanId;
+	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, n, v;
+	int doDump = 0;
+	int nWindow;
 	double start, stop;
+	double windowDuration, dumpWindow;
 	FILE *in=0;
 	FILE *in2=0;
 	char *rv;
@@ -817,6 +820,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	printf("\n");
 	nBand = D->nIF;
 	nPol = D->nPol;
+	scanId = -1;
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
 
@@ -908,6 +912,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
+		currentScanId = -1;
 		printf(" %s", D->antenna[a].name);
 		fflush(stdout);
 
@@ -991,7 +996,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 					else 
 					{
-						v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &time, j,
+						v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &scanId, &time, j,
 								      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
 								      refDay, D, &configId, phasecentre);
 						if(v < 0)
@@ -1000,7 +1005,41 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						timeInt = D->config[configId].tInt/86400;
 					}
+					if(scanId != currentScanId)
+					{
+						/* Get ready to dump last scan (if it's not the first run through)
+						 * Work out time average windows so that there is an integer number within the scan
+						 * Get all of the relevant cable cal values for this antenna
+						 * n.b. we can safely assume that we are at a valid pcal entry since v > 0 */
+						if(currentScanId != -1)
+						{
+							doDump = 1;
+						}
+						double s, e;
+						int nWindow;
+						DifxScan *scan;
+
+						scan = D->scan + scanId;
+						configId = scan->configId;
+						s = time + (int)(D->mjdStart);	/* time of first pcal record */
+						e = scan->mjdEnd;
+
+						nWindow = (int)((e - s)/(avgSeconds/86400.0) + 0.5);
+
+						if(nWindow < 1)
+						{
+							nWindow = 1;
+						}
+						windowDuration = (e - s)/nWindow;
+						dumpWindow = s + windowDuration;
+						currentScanId = scanId;
+					}
+
+					//FIXME only do the rest (down to end while) if it's time to dump
+					
 					/*get cable cal from pcal file */
+					//FIXME do this only once per scan and load all cable cals for a single scan
+					//Make a class to handle this and return the nearest cable cal for a given time?
 					if(in)
 					{
 						while(cableTimeInt < 0 || cableTime + cableTimeInt / 2 < time)

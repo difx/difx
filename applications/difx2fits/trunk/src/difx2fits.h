@@ -63,6 +63,7 @@ struct CommandLineOptions
 	int pulsarBin;
 	int phaseCentre;
 	double DifxTsysAvgSeconds;
+	double DifxPcalAvgSeconds;
 	double jobMatrixDeltaT; /* seconds */
 };
 
@@ -101,7 +102,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

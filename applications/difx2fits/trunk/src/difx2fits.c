@@ -41,6 +41,7 @@ const char version[] = VERSION;
 const double DefaultSniffInterval = 30.0;	/* sec */
 const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 60.0;	/* sec */
+const double DefaultDifxPCalInterval = 30.0;	/* sec */
 
 static int usage(const char *pgm)
 {
@@ -93,6 +94,9 @@ static int usage(const char *pgm)
 	fprintf(stderr, "  --difx-tsys-interval\n");
 	fprintf(stderr, "  -i       <interval> Set the Difx-derived tsys interval (sec) (default %3.1f)\n", DefaultDifxTsysInterval);
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --difx-pcal-interval\n");
+	fprintf(stderr, "           <interval> Set the Difx-derived pcal interval (sec) (default %3.1f)\n", DefaultDifxPCalInterval);
+	fprintf(stderr, "\n");
 	fprintf(stderr, "  --phasecentre <p>\n");
 	fprintf(stderr, "  --phasecenter <p>   Create a fits file for all the " "<p>th phase centres (default 0)\n");
 	fprintf(stderr, "\n");
@@ -134,6 +138,7 @@ struct CommandLineOptions *newCommandLineOptions()
 	opts->jobMatrixDeltaT = DefaultJobMatrixInterval;
 	opts->phaseCentre = 0;
 	opts->DifxTsysAvgSeconds = DefaultDifxTsysInterval;
+	opts->DifxPcalAvgSeconds = DefaultDifxPCalInterval;
 
 	return opts;
 }
@@ -255,6 +260,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 				{
 					i++;
 					opts->DifxTsysAvgSeconds = atof(argv[i]);
+				}
+				else if(strcmp(argv[i], "--difx-pcal-interval") == 0)
+				{
+					i++;
+					opts->DifxPcalAvgSeconds = atof(argv[i]);
 				}
 				else if(strcmp(argv[i], "--sniff-time") == 0 ||
 					strcmp(argv[i], "-T") == 0)
@@ -567,7 +577,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  PH -- phase cal           ");
 	fflush(stdout);
-	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre);
+	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre, opts->DifxPcalAvgSeconds);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
