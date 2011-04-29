@@ -158,14 +158,16 @@ public:
 	string corrSetupName;
 
 	bool explicitXmacLength;// Whether the xmacLength parameter was explicitly set
+	bool explicitnFFTChan;	// Whether the nFFTChan parameter was explicitly set
 	double tInt;		// integration time
 	bool doPolar;		// false for no cross pol, true for full pol
 	bool doAuto;		// write autocorrelations
 	int subintNS;		// Duration of a subintegration in nanoseconds
 	int guardNS;		// Number of "guard" ns tacked on to end of a send
+	int nFFTChan;		// Pre-averaged number of channels for the narrowest band
 	int nOutputChan;	// Post-averaged number of channels for the narrowest band 
 				// (all others will have same spectral resolution)
-	int specAvg;
+	int specAvgDontUse;	// This parameter is depricated now.  Use nChan and nFFTChan instead
 	int maxNSBetweenUVShifts; //Mostly for multi-phase centres
 	int maxNSBetweenACAvg;	// Mostly for sending STA dumps
 	int fringeRotOrder;	// 0, 1, or 2

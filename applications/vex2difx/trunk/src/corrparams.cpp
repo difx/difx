@@ -292,7 +292,8 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 {
 	tInt = 2.0;
-	specAvg = 0;
+	specAvgDontUse = 0;		// If set, this will trigger a bail out condition
+	nFFTChan = 128;
 	nOutputChan = 16;
 	doPolar = true;
 	doAuto = true;
@@ -300,6 +301,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	strideLength = 0;
 	xmacLength = 0;
 	explicitXmacLength = false;
+	explicitnFFTChan = false;
 	numBufferedFFTs = 1;
 	subintNS = 0;
 	guardNS = 1000;
@@ -309,12 +311,12 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 
 int CorrSetup::fftSize() const
 {
-	return nOutputChan*specAvg*2;
+	return nFFTChan*2;
 }
 
 int CorrSetup::nInputChan() const
 {
-	return nOutputChan*specAvg;
+	return nFFTChan;
 }
 
 int CorrSetup::setkv(const string &key, const string &value)
@@ -339,6 +341,11 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "nChan")
 	{
 		ss >> nOutputChan;
+	}
+	else if(key == "nFFTChan")
+	{
+		ss >> nFFTChan;
+		explicitnFFTChan = true;
 	}
 	else if(key == "doPolar")
 	{
@@ -366,7 +373,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	}
 	else if(key == "specAvg")
 	{
-		ss >> specAvg;
+		ss >> specAvgDontUse;
 	}
 	else if(key == "fringeRotOrder")
 	{
@@ -472,7 +479,7 @@ int CorrSetup::checkValidity() const
 		nwarn++;
 	}
 
-	if(nInputChan() % strideLength != 0)
+	if(strideLength > 0 && nInputChan() % strideLength != 0)
 	{
 		cerr << "Array stride length " << strideLength << " does not divide evenly into input number of channels " << nInputChan() << endl;
 		cerr << "Probably you need to reduce the strideLength parameter" << endl;
@@ -484,6 +491,21 @@ int CorrSetup::checkValidity() const
 		cerr << "XMAC stride length " << xmacLength << " is greater than the input number of channels " << nInputChan() << endl;
 		cerr << "Probably you need to reduce the xmacLength parameter" << endl;
 		nwarn++;
+	}
+
+	if(specAvgDontUse != 0)
+	{
+		cerr << "Paramaeter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of nChan and nFFTChan to achieve your goals." << endl;
+		cerr << "If you meant nChan to be the number of output channels (after spectral averaging), then you should set nFFTChan=" << nOutputChan*specAvgDontUse << " and nChan=" << nOutputChan << "; if you meant for nChan to be the number of input channels (before spectral averaging), then you should set nFFTChan=" << nOutputChan << " and nChan=" << nOutputChan/specAvgDontUse << endl;
+		exit(0);
+
+	}
+
+	if(nInputChan() % nOutputChan != 0)
+	{
+		cerr << "Error: nFFTChan must be an integer multiple of nChan.  Values found were nFFTChan=" << nFFTChan << " nChan=" << nOutputChan << endl;
+
+		exit(0);
 	}
 
 	if(xmacLength > 0)
@@ -1684,18 +1706,19 @@ int CorrParams::load(const string &fileName)
 		addBaseline("*-*");
 	}
 
-	// set specAvg if not set
+	// update nFFTChan if needed
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
 	{
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
 
-		if(c->specAvg == 0)
+		if(c->nFFTChan < c->nOutputChan)
 		{
-			c->specAvg = 128/c->nOutputChan;
-			if(c->specAvg == 0)
+			if(c->explicitnFFTChan)
 			{
-				c->specAvg = 1;
+				cerr << "You have explicitly requested " << c->nFFTChan << " channels in the FFT, but the number of output channels is set to " << c->nOutputChan << ".  This cannot be accommodated! If --force used, nFFTChan will be set to " << c->nOutputChan << endl;
+				nWarn++;
 			}
+			c->nFFTChan = c->nOutputChan;
 		}
 
 		if(corrSetup->xmacLength == 0)
@@ -1757,7 +1780,7 @@ void CorrParams::example()
 	corrSetups.push_back(CorrSetup("1413+15"));
 	corrSetups.back().tInt = 1.0;
 	corrSetups.back().nOutputChan = 16;
-	corrSetups.back().specAvg = 4;
+	corrSetups.back().nFFTChan = 128;
 	corrSetups.push_back(CorrSetup("default"));
 	rules.push_back(CorrRule("1413+15"));
 	rules.back().sourceName.push_back(string("1413+15"));
@@ -2054,10 +2077,10 @@ ostream& operator << (ostream &os, const CorrSetup &x)
 	os << "{" << endl;
 	os << "  tInt=" << x.tInt << endl;
 	os << "  nChan=" << x.nOutputChan << endl;
+	os << "  nFFTChan=" << x.nFFTChan << endl;
 	os << "  doPolar=" << x.doPolar << endl;
 	os << "  doAuto=" << x.doAuto << endl;
 	os << "  subintNS=" << x.subintNS << endl;
-	os << "  specAvg=" << x.specAvg << endl;
 	os << "  fringeRotOrder=" << x.fringeRotOrder << endl;
 	if(x.binConfigFile.size() > 0)
 	{

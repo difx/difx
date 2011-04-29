@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009, 2010 by Walter Brisken                            *
+#   Copyright (C) 2009-2011 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -37,7 +37,7 @@ from os import umask
 
 program = 'oms2v2d'
 version = '0.7'
-verdate = '20101006'
+verdate = '20110419'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -164,8 +164,8 @@ def writev2d(oms, v2dFile):
 		out.write('  tInt = %s\n' % corr['TIME_AVERAGE'][0])
 
 	if specAvg != -1 and nFFT !=-1:
-		out.write('  nChan = %d\n' % (nFFT/2))
-                out.write('  specAvg = %d\n' % (specAvg))
+		out.write('  nChan = %d\n' % (nFFT/(2*specAvg)))
+                out.write('  nFFTChan = %d\n' % (nFFT/2))
 	if 'POLARIZATION' in corr:
 		out.write('  doPolar = %s\n' % doPolar)
 	if nFFT > 256:

@@ -692,31 +692,31 @@ int next2(int x)
 class freq
 {
 public:
-	freq(double f=0.0, double b=0.0, char s=' ', int n=0, int sA=0, int os=0, int d=0, int iz=0, unsigned int t=0) 
-		: fq(f), bw(b), sideBand(s), nInputChan(n), specAvg(sA), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t) {};
+	freq(double f=0.0, double b=0.0, char s=' ', int nI=0, int nO=0, int os=0, int d=0, int iz=0, unsigned int t=0) 
+		: fq(f), bw(b), sideBand(s), nInputChan(nI), nOutputChan(nO), overSamp(os), decimation(d), isZoomFreq(iz), toneSetId(t) {};
 	double fq;
 	double bw;
 	char sideBand;
-	int nInputChan;	// number of input channels
-	int specAvg;
+	int nInputChan;	// number of input channels (channels in FFT)
+	int nOutputChan; // number of channels to give the astronomer
 	int overSamp;
 	int decimation;
 	int isZoomFreq;
 	unsigned int toneSetId;
 
-	int nOutputChan() const { return nInputChan/specAvg; }
+	int specAvg() const { return nInputChan/nOutputChan; }
 };
 
-static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
-		int sA, int os, int d, int iz, unsigned int t)
+static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nI,
+		int nO, int os, int d, int iz, unsigned int t)
 {
 	for(unsigned int i = 0; i < freqs.size(); i++)
 	{
 		if(fq == freqs[i].fq &&
 		   bw == freqs[i].bw &&
 		   sb == freqs[i].sideBand &&
-		   nC == freqs[i].nInputChan &&
-		   sA == freqs[i].specAvg &&
+		   nI == freqs[i].nInputChan &&
+		   nO == freqs[i].nOutputChan &&
 		   os == freqs[i].overSamp &&
 		   d  == freqs[i].decimation &&
 		   iz == freqs[i].isZoomFreq &&
@@ -726,7 +726,7 @@ static int getFreqId(vector<freq>& freqs, double fq, double bw, char sb, int nC,
 		}
 	}
 
-	freqs.push_back(freq(fq, bw, sb, nC, sA, os, d, iz, t));
+	freqs.push_back(freq(fq, bw, sb, nI, nO, os, d, iz, t));
 
 	return freqs.size() - 1;
 }
@@ -915,7 +915,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		}
 		
 		fqId = getFreqId(freqs, subband.freq, subband.bandwidth, subband.sideBand,
-				corrSetup->nInputChan(), corrSetup->specAvg, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
+				corrSetup->nInputChan(), corrSetup->nOutputChan, overSamp, decimation, 0, toneSetId);	// 0 means not zoom band
 		
 		if(r < 0 || r >= D->datastream[dsId].nRecBand)
 		{
@@ -1003,7 +1003,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->bw   = freqs[f].bw/1.0e6;
 		df->sideband = freqs[f].sideBand;
 		df->nChan = freqs[f].nInputChan;	// df->nChan is the number of pre-averaged channels
-		df->specAvg = freqs[f].specAvg;
+		df->specAvg = freqs[f].specAvg();
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;
 
@@ -1495,7 +1495,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 		{
 			return false;
 		}
-		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg) //0 means default to parent
+		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
 		{
 			return false;
 		}
@@ -1517,7 +1517,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 		{
 			return false;
 		}
-		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg) //0 means default to parent
+		if(zoomfreq.spectralaverage > 0 && zoomfreq.spectralaverage != f.specAvg()) //0 means default to parent
 		{
 			return false;
 		}
@@ -1946,7 +1946,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							zoomChans = static_cast<int>(corrSetup->nInputChan()*zf.bandwidth/freqs[dd->recFreqId[parentFreqIndices[i]]].bw);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
 									freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
-									zoomChans, corrSetup->specAvg, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
+									zoomChans, zoomChans*corrSetup->nFFTChan/corrSetup->nOutputChan, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 							if(zoomChans < minChans)
 							{
 								minChans = zoomChans;
