@@ -20,6 +20,8 @@ parser.add_option("-i", "--inputfile", dest="inputfile", default="",
                   help="An input file to use as guide for number of channels for each freq")
 parser.add_option("--toscreen", dest="toscreen", default=False, action="store_true",
                   help="Plot to the screen, otherwise to png files")
+parser.add_option("--singlevis", dest="singlevis", default=False, action="store_true",
+                  help="Stop plotting as soon as there is a time change")
 (options, args) = parser.parse_args()
 
 if len(args) < 1:
@@ -33,6 +35,7 @@ maxchannels    = int(options.maxchannels)
 verbose        = options.verbose
 inputfile      = options.inputfile
 toscreen       = options.toscreen
+singlevis      = options.singlevis
 
 if inputfile == "":
     parser.error("You must supply an input file!")
@@ -91,6 +94,8 @@ for filename in args:
 for i in range(numfiles):
     nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
 
+if not len(nextheader[0]) == 0:
+    startseconds = nextheader[0][2]
 while not len(nextheader[0]) == 0:
     print "Looping..."
     for i in range(numfiles):
@@ -102,6 +107,9 @@ while not len(nextheader[0]) == 0:
         baseline[i] = nextheader[i][0]
         mjd[i] = nextheader[i][1]
         seconds[i] = nextheader[i][2]
+        if singlevis and seconds[i] > startseconds:
+            print "Exiting since singlevis was specified"
+            sys.exit()
         freqindex[i] = nextheader[i][5]
         polpair[i] = nextheader[i][6]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
@@ -182,6 +190,7 @@ while not len(nextheader[0]) == 0:
             pylab.show()
         else:
             pylab.savefig("%s_baseline%03d_freq_%02d_pol_%s.png" % (inputfile, baseline[i], freqindex[i], polpair[i]))
+        pylab.clf()
     for i in range(numfiles):
         nextheader[i] = parseDiFX.parse_output_header(difxinputs[i])
     
