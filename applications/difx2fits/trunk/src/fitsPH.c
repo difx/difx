@@ -34,9 +34,6 @@
 #include "difx2fits.h"
 #include "other.h"
 
-//phase values from mpifxcorr currently have to be inverted to match FITS conversion
-
-#warning "FIXME: review once we've got pcal amplitudes sorted"
 const float pcaltiny = 1e-10;
 
 #warning "FIXME: even this could be too small!"
@@ -540,7 +537,7 @@ static int parsePulseCalCableCal(const char *line,
  * The DiFX-extracted pulse cals */
 static int parseDifxPulseCal(const char *line, 
 	int dsId, int nBand, int nTone,
-	int *sourceId, double *time,
+	int *sourceId, double *time, int jobId,
 	double freqs[2][array_MAX_TONES], 
 	float pulseCalRe[2][array_MAX_TONES], 
 	float pulseCalIm[2][array_MAX_TONES], 
@@ -568,7 +565,7 @@ static int parseDifxPulseCal(const char *line,
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
 	double cableCal;
-	float timeInt;
+	float timeInt, dt;
 
 	/* Note: This is a particular NaN variant the FITS-IDI format/convention 
 	 * wants, namely 0xFFFFFFFF */
@@ -646,11 +643,20 @@ static int parseDifxPulseCal(const char *line,
 		return -5;
 	}
 
+	dt = D->config[*configId].tInt/(86400.0*2.001);  
+	if(D->scan[scanId].mjdStart > mjd-dt || D->scan[scanId].mjdEnd < mjd+dt)
+	{
+		return -6;
+	}
 	/* Read in pulse cal information */
+        if(isAntennaFlagged(D->job + jobId, mjd, dd->antennaId))
+	{
+		return -7;
+	}
 	for(pol = 0; pol < D->nPol; pol++)
 	{
+	//pol 0 is the polarisation of first recorded band of the first recorded datastream of the first config
 #warning "FIXME: double-check there's no possibility of pols getting swapped"
-		
 		/* Here we procede with confidence that there are the correct number of recFreqs and tones within each */
 		for(recFreq = 0; recFreq < dd->nRecFreq; recFreq++)
 		{
@@ -985,7 +991,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 					else 
 					{
-						v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &time,
+						v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &time, j,
 								      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
 								      refDay, D, &configId, phasecentre);
 						if(v < 0)
@@ -994,7 +1000,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						timeInt = D->config[configId].tInt/86400;
 					}
-
 					/*get cable cal from pcal file */
 					if(in)
 					{
@@ -1003,7 +1008,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							rv = fgets(line, MaxLineLength, in);
 							if(!rv)
 							{
-								break;/*to out of pcal search*/
+								break;/*to out of cablecal search*/
 							}
 								
 							/* ignore possible comment lines */
@@ -1039,7 +1044,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					{
 						cableCal = 0.0;
 					}
-
 				}
 
 				freqId1 = D->config[configId].fitsFreqId + 1;
@@ -1074,7 +1078,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 				fitsWriteBinRow(out, fitsbuf);
-			}/*end while*/
+			}/*end while (line-by-line)*/
 			if(!nDifxTone)
 			{
 				break;/*to next antenna*/
