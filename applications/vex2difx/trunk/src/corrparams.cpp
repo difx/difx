@@ -1721,24 +1721,24 @@ int CorrParams::load(const string &fileName)
 			c->nFFTChan = c->nOutputChan;
 		}
 
-		if(corrSetup->xmacLength == 0)
+		if(c->xmacLength == 0)
 		{
-			if(corrSetup->nInputChan() > 128)
+			if(c->nInputChan() > 128)
 			{
-				corrSetup->xmacLength = 128;
+				c->xmacLength = 128;
 			}
 			else
 			{
-				corrSetup->xmacLength = corrSetup->nInputChan();
+				c->xmacLength = c->nInputChan();
 			}
 		}
-		if(corrSetup->strideLength == 0)
+		if(c->strideLength == 0)
 		{
-			corrSetup->strideLength = 1;
-			int tempcount = corrSetup->nInputChan();
-			while(corrSetup->strideLength < tempcount)
+			c->strideLength = 1;
+			int tempcount = c->nInputChan();
+			while(c->strideLength < tempcount)
 			{
-				corrSetup->strideLength *= 2;
+				c->strideLength *= 2;
 				tempcount /= 2;
 			}
 		}
