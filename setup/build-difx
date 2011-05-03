@@ -15,7 +15,7 @@ Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
         [--noinstall] [--reconf] [--noconf] [--clean] \\
-        [--g77] [--noipp] [--ipp] \\
+        [--g77] [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine]
 
 Builds and installs mpifxcorr and associated tools.  If invoked from the
@@ -60,6 +60,8 @@ Options:
 
    --ipp           Force installation of ipp package config file
                    (default doesn't overwrite existing)
+
+   --nodoc         Don't build the documentation
 
    --cache='name'  Speeds up the configuration using cache files
                    'name' and 'name-CXX' in the build directory
@@ -111,7 +113,9 @@ errors = []
 noconf = False
 pristine = False
 dofb = False
+dodoc = True
 doipp = 0
+orgcwd = os.getcwd()
 
 # read options
 if len(opts) > 0:
@@ -142,6 +146,8 @@ if len(opts) > 0:
             reconf = True
         if o == "--clean":
             doclean = True
+        if o == "--nodoc":
+            dodoc = "False"
         if o == "--g77":
             gfortran = False
         if o == "--ipp":
@@ -279,7 +285,7 @@ if verb:
     print " PkgCfg path:  " + os.environ.get('PKG_CONFIG_PATH')
     print ""
 
-###### Subroutine to run a command and raise error if  
+###### Subroutine to run a command and raise error on non-zero return
 def run(cmd):
     if verb:
         print "Run(" + cmd + ") in " + os.getcwd()
@@ -333,6 +339,19 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if not noinstall:
         run("make install")
     os_chdir(thisdir)
+
+###### Subroutine to set up documentation area ##########
+def make_doc_area(basedocdir):
+    if not os.path.exists(basedocdir):
+        os.mkdir(basedocdir)
+    orgpath = sys.argv[0]
+    if orgpath[0:2] == "./":
+        orgpath = orgpath[2:]
+    orgpath = orgcwd + orgpath
+    print os.path.abspath(orgpath)
+    setupdir = os.path.abspath(orgpath)[:-12]
+    os.system("cp -f %s/doco-index.html %s/index.html" % (setupdir, basedocdir))
+
 
 ###### Work ##########################################
 
@@ -625,6 +644,16 @@ for utiltarget in utiltargets:
     os_chdir(thisdir)
 os_chdir(topdir)
 
+##### Make documentation #################################
+basedocdir = difxroot + '/doc/'
+make_doc_area(basedocdir)
+os.chdir("mpifxcorr/" + difx_version)
+if os.system("which doxygen") != 0:
+    print "No doxygen installed - skipping mpifxcorr documentation"
+else:
+    os.system("doxygen Doxyfile")
+
+##### Check for errors and list if present ###############
 if (force and not errors == []):
     print
     print
