@@ -243,7 +243,8 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
         {
         if(strncmp(difxVersion, D->job->difxVersion, 63))
             {
-            fprintf (stderr, "Attempting to run difx2mark4 from version %s on a job make for version %s\n", difxVersion, D->job->difxVersion);
+            fprintf (stderr, "Attempting to run difx2mark4 from version %s on a job make for version %s\n", 
+                     difxVersion, D->job->difxVersion);
             if(opts->overrideVersion)
                 {
                 fprintf (stderr, "Continuing because of --override-version but not setting a version\n");
@@ -428,7 +429,6 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                                 // create type1 files for each baseline
     printf ("    Generating Type 1s\n");
     nextScanId = createType1s (D, jobId, scanId, path, rcode, stns, opts, rootname, vis_file, corrdate);
-    //printf ("newScan file pointer %x\n", *vis_file);
     if (nextScanId < 0)
         {
         fprintf (stderr, "Could not create type 1 files\n");

@@ -304,16 +304,16 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             else if (base_index[n] < 0)
                 {                   
                                     // compute antenna indices
-                a1 = rec.baseline / 256 - 1;
-                a2 = rec.baseline % 256 - 1;
+                a1 = *((D->job+*jobId)->antennaIdRemap + rec.baseline / 256 - 1); 
+                a2 = *((D->job+*jobId)->antennaIdRemap + rec.baseline % 256 - 1); 
                                     // first check that both antennas are in the
                                     // rootfile
                 if((stns + a1)->inscan != TRUE || (stns + a2)->inscan != TRUE)
                     {
-                    fprintf (stderr, 
-                      "WARNING Visibility found for baseline %c%c-%c%c which isn't in scan!\n",
-                            (stns + a1)->intl_name[0], (stns + a1)->intl_name[1],
-                            (stns + a2)->intl_name[0], (stns + a2)->intl_name[1]);
+                    printf (
+                    "WARNING Visibility found for baseline %x %c%c-%c%c which isn't in scan!\n",
+                     rec.baseline, (stns + a1)->intl_name[0], (stns + a1)->intl_name[1],
+                                   (stns + a2)->intl_name[0], (stns + a2)->intl_name[1]);
                     break;
                     }
                                     // determine which baseline array to use
@@ -466,7 +466,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                 // print summary information
     printf ("      DiFX visibility records read       %8d\n", nread);
     printf ("      DiFX visibility records discarded  %8d\n", nflagged);
-   // printf ("      file pointer %x\n", *vis_file);
     return (currentScan);
     }
 

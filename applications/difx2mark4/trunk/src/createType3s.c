@@ -79,7 +79,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
     struct type_301 t301;
     struct type_302 t302;
     struct type_309 t309;
-
                                     // initialize memory
     memset (&t000, 0, sizeof (t000));
     memset (&t300, 0, sizeof (t300));
@@ -153,10 +152,10 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             free(line);
             return (-1);
             }
-        t = (***(D->scan[scanId].im)).mjd + (***(D->scan[scanId].im)).sec / 86400.0;
+        t = (**(D->scan[scanId].im+n))->mjd + (**(D->scan[scanId].im+n))->sec / 86400.0;
         conv2date (t, &t300.model_start);
 
-        t300.model_interval = (float)(***(D->scan[scanId].im)).validDuration;
+        t300.model_interval = (float)(**(D->scan[scanId].im+n))->validDuration;
         t300.nsplines = (short int) D->scan[scanId].nPoly;
         write_t300 (&t300, fout);
 
