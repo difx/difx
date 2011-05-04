@@ -306,7 +306,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	subintNS = 0;
 	guardNS = 1000;
 	maxNSBetweenUVShifts = 2000000000;
-	maxNSBetweenACAvg = 2000000000;
+	maxNSBetweenACAvg = 0;		// zero means set to default in vex2difx.cpp
 }
 
 int CorrSetup::fftSize() const

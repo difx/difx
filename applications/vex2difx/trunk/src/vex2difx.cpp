@@ -49,6 +49,7 @@ const string program("vex2difx");
 const string verdate("20101209");
 const string author("Walter Brisken/Adam Deller");
 
+const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
 
 static double current_mjd()
 {
@@ -1324,6 +1325,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	const VexMode *mode;
 	string configName;
 	double minBW;		// [Hz]
+	double readTimeNS;
+	int f;
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
 	if(corrSetup == 0)
@@ -1371,7 +1374,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		config->subintNS = corrSetup->subintNS;
 		if(config->subintNS % fftDurNS != 0)
 		{
-			cerr << "The provided subintNS (" << config->subintNS << ") is not an integer multiple of the FFT duration (" << fftDurNS << ")! Aborting." << endl;
+			cerr << "Error: The provided subintNS (" << config->subintNS << ") is not an integer multiple of the FFT duration (" << fftDurNS << ")" << endl;
 
 			exit(0);
 		}
@@ -1385,16 +1388,16 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			double msgSize, dataRate, readSize;
 
-			if(corrSetup->tInt/divisors[d] > 2.048)
+			if(corrSetup->tInt/divisors[d] > 2.14)
 			{
-				/* This would make a subint > 2^31 seconds */
+				// This would make a subint > 2^31 seconds for any value of dataBufferSize
 				continue;
 			}
 
 			config->subintNS = static_cast<int>((corrSetup->tInt/divisors[d])*1000000000.0 + 0.5);
 			dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
 			msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
-			readSize = msgSize*P->dataBufferFactor/P->nDataSegments;
+			readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 
 			ok = true;
 
@@ -1414,9 +1417,29 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 		if(config->subintNS % fftDurNS != 0)
 		{
-			cout << "Adjusting subintNS(" << config->subintNS << ") by " << config->subintNS % fftDurNS << " since it was a non-integer multiple of fftDurNS (" << fftDurNS << ")" << endl;
+			int origSubintNS = config->subintNS;
 			config->subintNS -= (config->subintNS % fftDurNS);
+			if(config->subintNS <= 0)
+			{
+				config->subintNS = fftDurNS;
+			}
+			cout << "Adjusting subintNS(" << origSubintNS << ") to " << config->subintNS << " since it was a non-integer multiple of fftDurNS (" << fftDurNS << ")" << endl;
 		}
+	}
+
+	// change dataBufferFactor if needed to get send sizes under 2^31 nanoseconds
+	readTimeNS = static_cast<double>(config->subintNS)*D->dataBufferFactor/D->nDataSegments;
+	if(readTimeNS > 2140000000.0)
+	{
+		f = static_cast<int>(2140000000.0/config->subintNS);
+		if(f < 1)
+		{
+			cerr << "Error: There is no way to change dataBufferFactor to keep send sizes below 2^31 seconds" << endl;
+
+			exit(0);
+		}
+		cout << "Changing dataBufferFactor from " << D->dataBufferFactor << " to " << (f*D->nDataSegments) << " in order to keep data send sizes below 2.14 seconds" << endl;
+		D->dataBufferFactor = f*D->nDataSegments;
 	}
 		
 	config->guardNS = corrSetup->guardNS;
@@ -1785,15 +1808,25 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		}
 		scan->configId = getConfigIndex(configs, D, V, P, S);
 		scan->maxNSBetweenUVShifts = corrSetup->maxNSBetweenUVShifts;
-		scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
 		mode = V->getModeByDefName(configs[scan->configId].first);
 		fftDurNS = static_cast<int>(corrSetup->fftSize()*1000000000.0/mode->sampRate + 0.5);
-		if(corrSetup->numBufferedFFTs*fftDurNS > corrSetup->maxNSBetweenACAvg)
+		if(corrSetup->maxNSBetweenACAvg > 0)
 		{
-			cout << "Adjusting maxNSBetweenACAvg since the number of buffered FFTs (";
-			cout << corrSetup->numBufferedFFTs << ") gives a duration of ";
-			cout << corrSetup->numBufferedFFTs*fftDurNS << ", longer that that specified (";
-			cout << corrSetup->maxNSBetweenACAvg << ")" << endl;
+			scan->maxNSBetweenACAvg = corrSetup->maxNSBetweenACAvg;
+		}
+		else
+		{
+			scan->maxNSBetweenACAvg = defaultMaxNSBetweenACAvg;
+		}
+		if(corrSetup->numBufferedFFTs*fftDurNS > scan->maxNSBetweenACAvg)
+		{
+			if(corrSetup->maxNSBetweenACAvg != 0)	// Only print warning if explicitly overriding user value
+			{
+				cout << "Adjusting maxNSBetweenACAvg since the number of buffered FFTs (";
+				cout << corrSetup->numBufferedFFTs << ") gives a duration of ";
+				cout << corrSetup->numBufferedFFTs*fftDurNS << ", longer that that specified (";
+				cout << corrSetup->maxNSBetweenACAvg << ")" << endl;
+			}
 			scan->maxNSBetweenACAvg = corrSetup->numBufferedFFTs*fftDurNS;
 		}
 		if(corrSetup->numBufferedFFTs*fftDurNS > corrSetup->maxNSBetweenUVShifts)
