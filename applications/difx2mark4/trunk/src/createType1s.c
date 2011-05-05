@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <difxio/difx_input.h>
+#include <errno.h>
 #include "difx2mark4.h"
 
 #define XS_CONVENTION
@@ -178,9 +179,16 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             do
                 dent = readdir (pdir);
             while                       // ignore ".", "..", and pcal file names
-                (strcmp (dent->d_name, ".") == 0 
-              || strcmp (dent->d_name, "..") == 0
-              || strncmp (dent->d_name, "PCAL", 4) == 0);
+                ((dent != NULL) && (strcmp (dent->d_name, ".") == 0 
+                                || strcmp (dent->d_name, "..") == 0
+                                || strncmp (dent->d_name, "PCAL", 4) == 0));
+            if (dent == NULL)
+                {
+                if (errno)
+                    perror ("difx2mark4");
+                fprintf (stderr, "problem finding data in %s\n", dirname);
+                return (-1);
+                }
             free(pdir);
 
             strcpy (inname, dirname);

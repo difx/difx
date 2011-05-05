@@ -337,11 +337,11 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                                                 // by newScan
             newScanId = newScan(D, opts, node, scanId, &jobId, &vis_file, corrdate);
             //printf ("newScan file pointer %x\n", vis_file);
+            *nScan += 1;
             if(newScanId < 0)
                 break;
             else
                 scanId = newScanId;
-            *nScan += 1;
             }
         printf("%d of %d scans converted!\n", *nScan, D->nScan);
         deleteDifxInput(D);
