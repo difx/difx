@@ -38,6 +38,9 @@ const float pcaltiny = 1e-10;
 
 #warning "FIXME: even this could be too small!"
 const int MaxLineLength = 10000;
+const double DefaultDifxCableCalExtrapolate = 2.0; /* The timerange a cable cal measurement 
+						    * is valid over is the integration window
+						    * multiplied by this factor */
 
 
 #warning "FIXME: the generation of this FITS table is quite broken with regard to multiple datastreams per antenna."
@@ -466,16 +469,16 @@ static int parsePulseCal(const char *line,
 
 /* The following function is for parsing a line of the 
  * station-extracted `pcal' file and extracting only the cable cal
- * value */
+ * value. Any values with their time centroid outside of a scan
+ * will be discarded */
 static int parsePulseCalCableCal(const char *line, 
 	int antId,
-	int *sourceId,
+	int *sourceId, int *scanId,
 	double *time, float *timeInt, double *cableCal,
 	int refDay, const DifxInput *D, int *configId, 
 	int phasecentre)
 {
 	int n, p;
-	int scanId;
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
 
@@ -502,19 +505,19 @@ static int parsePulseCalCableCal(const char *line,
 		return -1;
 	}
 
-	scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
-	if(scanId < 0)
+	*scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
+	if(*scanId < 0)
 	{	
 		return -3;
 	}
 
-        if(phasecentre >= D->scan[scanId].nPhaseCentres)
+        if(phasecentre >= D->scan[*scanId].nPhaseCentres)
         {
 		return -3;
         }
 
-	*sourceId = D->scan[scanId].phsCentreSrcs[phasecentre];
-	*configId = D->scan[scanId].configId;
+	*sourceId = D->scan[*scanId].phsCentreSrcs[phasecentre];
+	*configId = D->scan[*scanId].configId;
 	if(*sourceId < 0 || *configId < 0)	/* not in scan */
 	{
 		return -3;
@@ -778,9 +781,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int nDifxTone;
 	double time;
 	float timeInt;
-	double cableCal, cableCalOut;
-	double cableTime;
-	float cableTimeInt;
+	int cableScanId, nextCableScanId;
+	double cableCal, nextCableCal, cableCalOut;
+	double cableTime, nextCableTime;
+	float cablePeriod, nextCablePeriod;
+	double cableSigma, nextCableSigma;
 	double freqs[2][array_MAX_TONES];
 	float pulseCalRe[2][array_MAX_TONES];
 	float pulseCalIm[2][array_MAX_TONES];
@@ -945,9 +950,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 
 			/* set defaults */
+			cableScanId = -1;
 			cableCal = 0.0;
 			cableTime = 0.0;
-			cableTimeInt = -1.0;
+			cablePeriod= -1.0;
+			nextCableScanId = -1;
+			nextCableCal = 0.0;
+			nextCableTime = 0.0;
+			nextCablePeriod = -1.0;
+
 
 			/*rewind(in) below this loop*/
 			while(1)
@@ -1042,8 +1053,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					//Make a class to handle this and return the nearest cable cal for a given time?
 					if(in)
 					{
-						while(cableTimeInt < 0 || cableTime + cableTimeInt / 2 < time)
+						while(nextCablePeriod < 0 || nextCableTime < time)
 						{
+							//fprintf(stderr, "\n%g %g\n", nextCableTime, time);
+							cableScanId = nextCableScanId;
+							cableTime = nextCableTime;
+							cablePeriod = nextCablePeriod;
+							cableCal = nextCableCal;
+
 							rv = fgets(line, MaxLineLength, in);
 							if(!rv)
 							{
@@ -1062,26 +1079,49 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								{
 									continue;/*to next line in file*/	
 								}
-								v = parsePulseCalCableCal(line, a, &sourceId, &cableTime, &cableTimeInt, 
-									&cableCalOut, refDay, D, &configId, phasecentre);
+								v = parsePulseCalCableCal(line, a, &sourceId, &nextCableScanId, &nextCableTime, &nextCablePeriod, 
+									&nextCableCal, refDay, D, &configId, phasecentre);
 								if(v < 0)
 								{
 									continue;/*to next line in file*/
 								}
 							}
 						}
-						if(cableTimeInt > 0 && cableTime - cableTimeInt/2 < time && cableTime + cableTimeInt/2 > time)
+						//fprintf(stderr, ".");
+						/*next choose which cable cal value to use (if any)*/
+					   	nextCableSigma = 2*abs(time - nextCableTime)/(nextCablePeriod);
+					   	cableSigma = 2*abs(time - cableTime)/(cablePeriod);
+						if (cableSigma > DefaultDifxCableCalExtrapolate &&
+						    nextCableSigma > DefaultDifxCableCalExtrapolate)
 						{
-							cableCal = cableCalOut;
+							cableCalOut = nan.f;
+						}
+						else if (cableScanId != scanId && nextCableScanId != scanId)
+						{
+							cableCalOut = nan.f;
+						}
+						else if (cableScanId == scanId && nextCableScanId != scanId)
+						{
+							cableCalOut = cableCal;
+						}
+						else if (cableScanId != scanId && nextCableScanId == scanId)
+						{
+							cableCalOut = nextCableCal;
+						}
+						else if (abs(cableTime-time) > 
+							 abs(nextCableTime-time))
+						{
+							cableCalOut = nextCableCal;
 						}
 						else
 						{
-							cableCal = nan.d;
+							cableCalOut = cableCal;
 						}
+					//FIXME check this works in the case of a one line only file
 					}
 					else
 					{
-						cableCal = 0.0;
+						cableCalOut = 0.0;
 					}
 				}
 
@@ -1097,7 +1137,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				FITS_WRITE_ITEM(antId1, p_fitsbuf);
 				FITS_WRITE_ITEM(arrayId1, p_fitsbuf);
 				FITS_WRITE_ITEM(freqId1, p_fitsbuf);
-				FITS_WRITE_ITEM(cableCal, p_fitsbuf);
+				FITS_WRITE_ITEM(cableCalOut, p_fitsbuf);
 
 				for(k = 0; k < nPol; k++)
 				{
