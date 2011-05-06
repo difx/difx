@@ -40,9 +40,10 @@
 
 const char program[] = "directory2filelist";
 const char author[]  = "Helge Rottmann";
-const char version[] = "1.1";
-const char verdate[] = "2011 Apr 04";
+const char version[] = "1.2";
+const char verdate[] = "2011 Apr 06";
 
+const int DEFAULT_MJD = 57000;
 
 int die = 0;
 
@@ -65,13 +66,14 @@ int usage(const char *pgm)
 	printf("%s ver. %s   %s  %s\n\n", program, version, author, verdate);
 	printf("Creates a filelist to be used by vex2difx using all the files present in the given directory\n");
 	printf("Can handle VLBA, Mark3/4, and Mark5B formats using the\nmark5access library.\n\n");
-	printf("Usage : %s <directory> <dataformat> \n\n", pgm);
+	printf("Usage : %s <directory> <dataformat> [<refMJD>]\n\n", pgm);
 	printf("  <directory> is the name of the input directory\n\n");
 	printf("  <dataformat> should be of the form: "
 		"<FORMAT>-<Mbps>-<nchan>-<nbit>, e.g.:\n");
 	printf("    VLBA1_2-256-8-2\n");
 	printf("    MKIV1_4-128-2-1\n");
 	printf("    Mark5B-512-16-2\n\n");
+	printf("  [<refMJD>]  changes the reference MJD (default is %u)\n\n", DEFAULT_MJD);
 
 	return 0;
 }
@@ -165,25 +167,30 @@ int main(int argc, char **argv)
 	struct dirent *ep;
 	char filename[2048];
 	int refMJD = 57000;
-	
+	char *dir;
+	char *fmt;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
-	if(argc != 3)
+	if(argc != 3 && argc != 4)
 	{
 		return usage(argv[0]);
 	}
 
-	DIR *dp = opendir(argv[1]);
+	dir = argv[1];
+	fmt = argv[2];
+	refMJD = (argc==4) ? atoi(argv[3]) : DEFAULT_MJD;
+
+	DIR *dp = opendir(dir);
 	if (dp != NULL)
 	{
 		while ( (ep = readdir (dp)) )
 		{
 			if ((strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
 			{
-				strcat(filename, argv[1]);
+				strcat(filename, dir);
 				strcat(filename, ep->d_name);	
-				verify(filename, argv[2], refMJD);
+				verify(filename, fmt, refMJD);
 				strcpy(filename, "");
 			}
 		}
