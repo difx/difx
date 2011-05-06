@@ -188,16 +188,15 @@ int main(int argc, char **argv)
 		{
 			if ((strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
 			{
-				strcat(filename, dir);
+				strcpy(filename, dir);
 				strcat(filename, ep->d_name);	
 				verify(filename, fmt, refMJD);
-				strcpy(filename, "");
 			}
 		}
 	}
 	else
 	{
-		fprintf (stderr,"ERROR: Directory %s does not exist\n", argv[1]);
+		fprintf (stderr,"ERROR: Directory %s does not exist\n", dir);
 		exit(1);
 	}
 	(void) closedir (dp);
