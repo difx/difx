@@ -312,8 +312,16 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
             else if (base_index[n] < 0)
                 {                   
                                     // compute antenna indices
-                a1 = *((D->job+*jobId)->antennaIdRemap + rec.baseline / 256 - 1); 
-                a2 = *((D->job+*jobId)->antennaIdRemap + rec.baseline % 256 - 1); 
+                if (D->job->antennaIdRemap)
+                    {
+                    a1 = *((D->job+*jobId)->antennaIdRemap + rec.baseline / 256 - 1); 
+                    a2 = *((D->job+*jobId)->antennaIdRemap + rec.baseline % 256 - 1); 
+                    }
+                else                // no remapping, just use indices from file
+                    {
+                    a1 = rec.baseline / 256 - 1; 
+                    a2 = rec.baseline % 256 - 1; 
+                    }
                                     // first check that both antennas are in the
                                     // rootfile
                 if((stns + a1)->inscan != TRUE || (stns + a2)->inscan != TRUE)
