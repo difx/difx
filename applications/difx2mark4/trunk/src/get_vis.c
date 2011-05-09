@@ -8,8 +8,6 @@
 #include "difx2mark4.h"
 #include "difxio/parsevis.h"
 
-#define NUMFILS 30                  // max number of type 1 output files
-
 // there is one type 1 output file for each baseline in the difx scan
 //     get_vis (FILE *, vis_record *);
 

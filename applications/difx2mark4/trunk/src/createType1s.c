@@ -16,7 +16,7 @@
 
 #define XS_CONVENTION
 
-#define NUMFILS 80                  // max number of type 1 output files
+#define NUMFILS 500                 // max number of type 1 output files
 #define SCALE 10000.0               // amplitude factor to normalize for fourfit
 
 
@@ -422,6 +422,12 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 }                   // end of block to append new baseline
             }                       // either found baseline file or created new one
                                     // unless record was invalid:
+        if (n == NUMFILS)
+            {                       // fell out of loop -- shouldn't happen!
+            printf ("Error! More files (>%d) than program is compiled to handle.\n", n);
+            return (-1);
+            }
+
         if (base_index[n] < 0)
             continue;               // to next record 
 
