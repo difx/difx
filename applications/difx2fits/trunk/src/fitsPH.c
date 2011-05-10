@@ -781,10 +781,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int nDifxTone;
 	double time;
 	float timeInt;
-	int cableScanId, nextCableScanId;
-	double cableCal, nextCableCal, cableCalOut;
-	double cableTime, nextCableTime;
-	float cablePeriod, nextCablePeriod;
+	int cableScanId, nextCableScanId, lineCableScanId;
+	double cableCal, nextCableCal, cableCalOut, lineCableCal;
+	double cableTime, nextCableTime, lineCableTime;
+	float cablePeriod, nextCablePeriod, lineCablePeriod;
 	double cableSigma, nextCableSigma;
 	double freqs[2][array_MAX_TONES];
 	float pulseCalRe[2][array_MAX_TONES];
@@ -958,6 +958,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			nextCableCal = 0.0;
 			nextCableTime = 0.0;
 			nextCablePeriod = -1.0;
+			lineCableScanId = -1;
 
 
 			/*rewind(in) below this loop*/
@@ -1053,13 +1054,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					//Make a class to handle this and return the nearest cable cal for a given time?
 					if(in)
 					{
-						while(nextCablePeriod < 0 || nextCableTime < time)
+						while(nextCableTime < time || lineCableScanId < 0)
 						{
 							//fprintf(stderr, "\n%g %g\n", nextCableTime, time);
-							cableScanId = nextCableScanId;
-							cableTime = nextCableTime;
-							cablePeriod = nextCablePeriod;
-							cableCal = nextCableCal;
 
 							rv = fgets(line, MaxLineLength, in);
 							if(!rv)
@@ -1079,18 +1076,26 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 								{
 									continue;/*to next line in file*/	
 								}
-								v = parsePulseCalCableCal(line, a, &sourceId, &nextCableScanId, &nextCableTime, &nextCablePeriod, 
-									&nextCableCal, refDay, D, &configId, phasecentre);
+								v = parsePulseCalCableCal(line, a, &sourceId, &lineCableScanId, &lineCableTime, &lineCablePeriod, 
+									&lineCableCal, refDay, D, &configId, phasecentre);
 								if(v < 0)
 								{
 									continue;/*to next line in file*/
 								}
+								cableScanId = nextCableScanId;
+								cableTime = nextCableTime;
+								cablePeriod = nextCablePeriod;
+								cableCal = nextCableCal;
+								nextCableScanId = lineCableScanId;
+								nextCableTime = lineCableTime;
+								nextCablePeriod = lineCablePeriod;
+								nextCableCal = lineCableCal;
 							}
 						}
 						//fprintf(stderr, ".");
 						/*next choose which cable cal value to use (if any)*/
-					   	nextCableSigma = 2*abs(time - nextCableTime)/(nextCablePeriod);
-					   	cableSigma = 2*abs(time - cableTime)/(cablePeriod);
+					   	nextCableSigma = 2*fabs(time - nextCableTime)/(nextCablePeriod);
+					   	cableSigma = 2*fabs(time - cableTime)/(cablePeriod);
 						if (cableSigma > DefaultDifxCableCalExtrapolate &&
 						    nextCableSigma > DefaultDifxCableCalExtrapolate)
 						{
@@ -1103,21 +1108,24 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						else if (cableScanId == scanId && nextCableScanId != scanId)
 						{
 							cableCalOut = cableCal;
+							printf("0 ");
 						}
 						else if (cableScanId != scanId && nextCableScanId == scanId)
 						{
 							cableCalOut = nextCableCal;
+							printf("1 ");
 						}
-						else if (abs(cableTime-time) > 
-							 abs(nextCableTime-time))
+						else if (fabs(cableTime-time) > 
+							 fabs(nextCableTime-time))
 						{
 							cableCalOut = nextCableCal;
+							printf("1 ");
 						}
 						else
 						{
 							cableCalOut = cableCal;
+							printf("0 ");
 						}
-					//FIXME check this works in the case of a one line only file
 					}
 					else
 					{
