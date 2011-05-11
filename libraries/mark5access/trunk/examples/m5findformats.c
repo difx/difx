@@ -36,10 +36,9 @@ int main(int argc, char* argv[])
     if (argc <= 1) {
         fprintf(stderr, 
                "\n  Usage: determine_tape_format <filename>\n\n"
-               "  Tries to open the file using MkIV and VLBA formats with a\n"
-               "  all of possible fan-out, data rate, channel count and\n"
-               "  bit resolution combinations. Successful combinations\n"
-               "  are reported.\n\n");
+               "  Tries to open the file using MKIV/VLBA/Mark5B formats with\n"
+               "  all combinations of fan-out, data rate, channel count and\n"
+               "  Successful combinations are reported.\n\n");
         return -1;
     }
 
@@ -55,11 +54,12 @@ int main(int argc, char* argv[])
     }
 
     fclose(stderr);
-    for (format = 0; format <= 1; format++) {
+    for (format = 0; format <= 2; format++) {
         for (fanout = 1; fanout <= 8; fanout *= 2) {
             for (rate = 0; rate < sizeof(rates)/sizeof(int); rate++) {
                 for (channels = 1; channels <= 64; channels *= 2) {
                     for (bitreso = 1; bitreso <= 4; bitreso *= 2) {
+                         int decode_rc = -1;
                          char formatstring[256]; // <FORMAT>-<Mbps>-<nchan>-<nbit>
                          switch (format) {
                              case 0:
@@ -67,6 +67,9 @@ int main(int argc, char* argv[])
                                  break;
                              case 1:
                                  snprintf(formatstring, 256, "VLBA1_%d-%d-%d-%d", fanout, rates[rate], channels, bitreso);
+                             case 2:
+                                 snprintf(formatstring, 256, "Mark5B-%d-%d-%d", rates[rate], channels, bitreso);
+                                 if (fanout != 1) continue;
                                  break;
                              default:
                                  snprintf(formatstring, 256, "unknown format=%d", format);
@@ -77,13 +80,15 @@ int main(int argc, char* argv[])
                             new_mark5_format_generic_from_string(formatstring)
                          );
                          if (ms) {
-                             int status = mark5_stream_decode(ms, 1024LL, unpacked);
-	                     if (status >= 0) {
-                                 fprintf(stdout, "OK: fmt = %s , decoded = %d/1024\n", formatstring, status); 
-                                 longlist = strcat(longlist, formatstring);
-                                 longlist = strcat(longlist, "  ");
-                                 //mark5_stream_print(ms);
-                             }
+                             decode_rc = mark5_stream_decode(ms, 1024LL, unpacked);
+                         }
+	                 if (ms && (decode_rc >= 0)) {
+                             fprintf(stdout, "OK: fmt = %s , decoded = %d/1024\n", formatstring, decode_rc); 
+                             longlist = strcat(longlist, formatstring);
+                             longlist = strcat(longlist, "  ");
+                             //mark5_stream_print(ms);
+                         } else {
+                             //fprintf(stdout, "FAIL: fmt = %s , rc = %d\n", formatstring, decode_rc);
                          }
                      }                    
                 }
