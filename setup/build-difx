@@ -309,7 +309,7 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             run("autoconf")
             if doautoheader:
                 run("autoheader")
-            run("automake -a")
+            run("automake -acf")
 
     if inbdir:
         cfp = thisdir
@@ -570,7 +570,7 @@ else:
     run("aclocal")
     run("autoconf")
     run("autoheader")
-    run("automake -a")
+    run("automake -acf")
     # the files added are all present, but that need not always be true....
 
 if inbdir:
