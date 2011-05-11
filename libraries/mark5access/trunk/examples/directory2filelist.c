@@ -184,7 +184,7 @@ int main(int argc, char **argv)
 	DIR *dp = opendir(dir);
 	if (dp != NULL)
 	{
-		while ( (ep = readdir (dp)) )
+		while ( (ep = readdir (dp)) && !die )
 		{
 			if ((strcmp(ep->d_name, ".") != 0) && (strcmp(ep->d_name, "..") != 0))
 			{
