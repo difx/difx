@@ -308,6 +308,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	xmacLength = 0;
 	explicitXmacLength = false;
 	explicitnFFTChan = false;
+	explicitGuardNS = false;
 	numBufferedFFTs = 1;
 	subintNS = 0;
 	guardNS = 1000;
@@ -368,6 +369,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 	else if(key == "guardNS")
 	{
 		ss >> guardNS;
+		explicitGuardNS = true;
 	}
 	else if(key == "maxNSBetweenUVShifts")
 	{

@@ -73,6 +73,18 @@ int calcDecimation(int overSamp)
 	}
 }
 
+int calculateWorstcaseGuardNS(double samplerate, int subintNS)
+{
+	double sampleTimeNS = 1000000000.0/samplerate;
+	double nsaccumulate = sampleTimeNS;
+	while(fabs(nsaccumulate - static_cast<int>(nsaccumulate)) > 0.000000000001)
+	{
+		nsaccumulate += sampleTimeNS;
+	}
+
+	return static_cast<int>(nsaccumulate + 1600.0*subintNS/1000000000.0);
+}
+
 // A is assumed to be the first scan in time order
 static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
@@ -1455,6 +1467,13 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->nAntenna = D->nAntenna;
 	config->nDatastream = D->nAntenna;
 	config->nBaseline = D->nAntenna*(D->nAntenna-1)/2;
+
+	//if guardNS was not set explicitly, change it to the right amount to allow for
+	//adjustment to get to an integer NS + geometric rate slippage (assumes Earth-based antenna)
+	if(!corrSetup->explicitGuardNS)
+	{
+		config->guardNS = calculateWorstcaseGuardNS(mode->sampRate, config->subintNS);
+	}
 	//config->overSamp = static_cast<int>(mode->sampRate/(2.0*mode->subbands[0].bandwidth) + 0.001);
 	//if(config->overSamp <= 0)
 	//{
@@ -1556,7 +1575,7 @@ static bool matchingFreq(const ZoomFreq &zoomfreq, const DifxDatastream *dd, int
 	return false;
 }
 
-int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int verbose, ofstream *of, int nDigit, char ext)
+int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int verbose, ofstream *of, int nDigit, char ext, int strict)
 {
 	DifxInput *D;
 	DifxScan *scan;
@@ -1580,7 +1599,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	double srcra, srcdec;
 	int pointingSrcIndex, foundSrcIndex, atSource;
 	int nZoomBands, fqId, zoomsrc, polcount, zoomChans, minChans;
-	int overSamp, decimation;
+	int overSamp, decimation, worstcaseguardns;
 	DifxDatastream *dd;
 	vector<set <int> > blockedfreqids;
 
@@ -2081,6 +2100,20 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			else
 			{
 				D->config[c].xmacLength = minChans;
+			}
+		}
+		worstcaseguardns = calculateWorstcaseGuardNS(mode->sampRate, D->config[c].subintNS);
+		if(corrSetup->guardNS < worstcaseguardns)
+		{
+			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << corrSetup->guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
+			if(strict)
+			{
+				cerr << "\nExiting since strict mode was enabled" << endl;
+				exit(1);
+			}
+			else
+			{
+				cerr << "\nContinuing since --force was specified" << endl;
 			}
 		}
 	}
@@ -2726,7 +2759,7 @@ int main(int argc, char **argv)
 		//{
 		//	nMulti++;
 		//}
-		nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0);
+		nJob += writeJob(*j, V, P, -1, verbose, &of, nDigit, 0, strict);
 	}
 	of.close();
 
