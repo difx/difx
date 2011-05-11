@@ -1,4 +1,3 @@
-
 INCLUDES = -I$(top_srcdir)/mark5access
 LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
 
@@ -23,6 +22,7 @@ bin_PROGRAMS = \
 	m5fold \
 	m5tsys \
 	m5test \
+	m5findformats \
 	test5b \
 	test_mark5_stream \
 	test_unpacker \
@@ -48,6 +48,9 @@ m5spec_SOURCES = \
 
 m5test_SOURCES = \
 	m5test.c
+
+m5findformats_SOURCES = \
+	m5findformats.c
 
 test_mark5_stream_SOURCES = \
 	test_mark5_stream.c
