@@ -1046,6 +1046,7 @@ bool Configuration::processDatastreamTable(ifstream * input)
   {
     dsdata = &(datastreamtable[i]);
     configindex=-1;
+    dsdata->maxnsslip = 0;
     datastreamtable[i].numdatafiles = 0; //default in case its a network datastream
     datastreamtable[i].tcpwindowsizekb = 0; //default in case its a file datastream
     datastreamtable[i].portnumber = -1; //default in case its a file datastream
@@ -1922,6 +1923,7 @@ bool Configuration::consistencyCheck()
   bool ismuxed;
   datastreamdata ds1, ds2;
   baselinedata bl;
+  datastreamdata * dsdata;
 
   //check entries in the datastream table
   for(int i=0;i<datastreamtablelength;i++)
@@ -2110,10 +2112,26 @@ bool Configuration::consistencyCheck()
         cfatal << startl << "Fringe rotation order must be 0, 1 or 2 for all configurations - aborting!!!" << endl;
       return false;
     }
+
+    //fill in the maxnsslip for each datastream
+    for(int j=0;j<numdatastreams;j++) {
+      dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
+      samplens = 1000.0/freqtable[dsdata->recordedfreqtableindices[0]].bandwidth;
+      double nsaccumulate = 0.0;
+      do {
+        nsaccumulate += dsdata->bytespersampledenom*samplens;
+      } while (!(fabs(nsaccumulate - int(nsaccumulate)) < Mode::TINY));
+      //cout << "NS accumulate is " << nsaccumulate << " and max geom slip is " << model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001 << endl;
+      nsaccumulate += model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001;
+      if(nsaccumulate > dsdata->maxnsslip)
+        dsdata->maxnsslip = int(nsaccumulate + 0.99);
+    }
+
     //check that arraystridelen is ok, and guardns is ok
     for(int j=0;j<numdatastreams;j++) {
-      for(int k=0;k<datastreamtable[configs[i].datastreamindices[j]].numrecordedfreqs;k++) {
-        nchan = freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[k]].numchannels;
+      dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
+      for(int k=0;k<dsdata->numrecordedfreqs;k++) {
+        nchan = freqtable[dsdata->recordedfreqtableindices[k]].numchannels;
         if(nchan % configs[i].arraystridelen != 0) {
     //for(int j=0;j<freqtablelength;j++) {
       //if(freqtable[j].numchannels % configs[i].arraystridelen != 0) {
@@ -2122,10 +2140,9 @@ bool Configuration::consistencyCheck()
           return false;
         }
       }
-      samplens = 1000.0/freqtable[datastreamtable[configs[i].datastreamindices[j]].recordedfreqtableindices[0]].bandwidth;
-      if(configs[i].guardns < 4.0*samplens*datastreamtable[configs[i].datastreamindices[j]].bytespersampledenom) {
+      if(configs[i].guardns < dsdata->maxnsslip) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against backwards shuffling of the start of a Datastream send) guardns should be at least " << 4.0*samplens*datastreamtable[configs[i].datastreamindices[j]].bytespersampledenom << " - aborting!!!" << endl;
+          cfatal << startl << "Config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against geometric rate slip and backwards shuffling of the start of a Datastream send to an integer nanosecond) guardns should be at least " << dsdata->maxnsslip << " - aborting!!!" << endl;
         return false;
       }
     }

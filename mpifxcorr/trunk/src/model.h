@@ -113,6 +113,13 @@ class Model{
      */
     inline int getEstimatedBytes() { return estimatedbytes; }
 
+    /**
+     * Returns the maximum geometric rate for the given antenna, in us/sec
+     * @param antnum The antenna to look at
+     * @return Maximum geometric rate for the given antenna, in us/sec
+     */
+    inline double getMaxRate(int antnum) { return maxrate[antnum]; }
+
     ///accessor methods for number of scans, scan durations etc
     inline int getNumScans() { return numscans; }
     inline int getScanStartSec(int scan, int jobmjd, int jobsec) { return (modelmjd-jobmjd)*86400 + (modelstartseconds-jobsec) + scantable[scan].offsetseconds; }
@@ -232,6 +239,7 @@ class Model{
     Configuration * config;
     string calcfilename, imfilename;
     double ** binomialcoeffs;
+    double * maxrate;
     station * stationtable;
     source * sourcetable;
     eop * eoptable;

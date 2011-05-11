@@ -45,6 +45,7 @@ Model::Model(Configuration * conf, string cfilename)
   spacecrafttable = 0;
   scantable = 0;
   binomialcoeffs = 0;
+  maxrate = 0;
 
   //read the files
   if(opensuccess) 
@@ -153,6 +154,8 @@ Model::~Model()
     }
     delete [] scantable;
   }
+  if(maxrate)
+    delete maxrate;
 }
 
 void Model::updateClock(int antennaindex, int order, double * deltaclock)
@@ -422,6 +425,7 @@ bool Model::readStationData(ifstream * input)
     stationtable[i].z = atoi(line.c_str());
     config->getinputline(input, &line, "TELESCOPE ", i); //ignore this, its the shelf
   }
+  maxrate = new double[numstations];
   return true;
 }
 bool Model::readSourceData(ifstream * input)
@@ -680,6 +684,8 @@ bool Model::readPolynomialSamples(ifstream * input)
           scantable[i].adj[j][k][l] = vectorAlloc_f64(polyorder+1);
           config->getinputline(input, &line, "SRC ", k);
           polyok = polyok && fillPolyRow(scantable[i].delay[j][k][l], line, polyorder+1);
+          if(fabs(scantable[i].delay[j][k][l][1]) > fabs(maxrate[l]))
+            maxrate[l] = fabs(scantable[i].delay[j][k][l][1]);
           config->getinputkeyval(input, &key, &line);
           if(key.find("DRY") != string::npos) { //look for optional "DRY" delay subcomponent
             polyok = polyok && fillPolyRow(scantable[i].dry[j][k][l], line, polyorder+1);
