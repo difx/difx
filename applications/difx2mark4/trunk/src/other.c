@@ -149,6 +149,17 @@ int mjd2date		/* convert MJD to date */
     return 0;
 }
 
+void fix_dhms(int dorh, int *dorhp, int *minsp, double *secsp)
+{
+    *secsp = 0;
+    *minsp += 1;
+    if (*minsp < 59) return;
+    *minsp = 0;
+    *dorhp += (*dorhp >= 0) ? 1 : -1;
+    if (*dorhp < dorh) return;
+    *dorhp = 0;
+}
+
 int rad2dms	/* convert radians to degrees, minutes and seconds (vex format)*/
     (
     double r,		/* input radians */
@@ -170,6 +181,7 @@ int rad2dms	/* convert radians to degrees, minutes and seconds (vex format)*/
     r *= 60;
     seconds = r;
     seconds += 0.5e-6;
+    if (seconds >= 60) fix_dhms(360, &degrees, &minutes, &seconds);
     sprintf (pstring, "%02dd%02d'%09.6f\"", degrees, minutes, seconds);
 
     return 0;
@@ -194,7 +206,9 @@ int rad2hms	/* convert radians to hours, minutes and seconds (vex format)*/
     r *= 60;
     seconds = r;
     seconds += 0.5e-7;
+    if (seconds >= 60) fix_dhms(24, &hours, &minutes, &seconds);
     sprintf (pstring, "%02dh%02dm%010.7fs", hours, minutes, seconds);
 
     return 0;
+
 }
