@@ -1,4 +1,4 @@
-INCLUDES = -I$(top_srcdir)/mark5access
+INCLUDES = -I$(top_srcdir)/mark5access -I$(srcdir)/..
 LDADD =    $(top_builddir)/mark5access/libmark5access.la -lm
 
 if WITH_FFTW
