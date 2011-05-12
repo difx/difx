@@ -2802,7 +2802,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 
 	if(!ms)
 	{
-		fprintf(stderr, "mark5_format_mark5b_init: ms = 0\n");
+		fprintf(m5stderr, "mark5_format_mark5b_init: ms = 0\n");
 		return -1;
 	}
 
@@ -2888,7 +2888,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				{
 					if(ms->Mbps > 0)
 					{
-						fprintf(stderr, "Warning -- data rate "
+						fprintf(m5stderr, "Warning -- data rate "
 							"disagrees : %d != %d\n",
 							datarate, ms->Mbps);
 					}
@@ -2897,7 +2897,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 			}
 			else
 			{
-				fprintf(stderr, "Warning: mark5_format_mark5b_init: assuming 2048-16-2\n");
+				fprintf(m5stderr, "Warning: mark5_format_mark5b_init: assuming 2048-16-2\n");
 
 				ms->framens = 39062.5;
 				ms->Mbps = 2048;
@@ -2994,7 +2994,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "decimation must be 1, 2 or a mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or a mult of 4\n");
 	}
 
 	if(nbit == 1)
@@ -3007,7 +3007,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "new_mark5_format_mark5b : "
+		fprintf(m5stderr, "new_mark5_format_mark5b : "
 			"nbit needs to be 1 or 2\n");
 		return 0;
 	}
@@ -3038,14 +3038,14 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "new_mark5_format_mark5b : "
+		fprintf(m5stderr, "new_mark5_format_mark5b : "
 			"nbitstream needs to be 1, 2, 4, 8, 16 or 32\n");
 		return 0;
 	}
 
 	if(decoderindex == 6)
 	{
-		fprintf(stderr, "Illegal format\n");
+		fprintf(m5stderr, "Illegal format\n");
 		return 0;
 	}
 
@@ -3198,7 +3198,7 @@ struct mark5_format_generic *new_mark5_format_mark5b(int Mbps,
 
 	if(f->decode == 0)
 	{
-		fprintf(stderr, "Illegal combination of decimation, bitstreams and bits\n");
+		fprintf(m5stderr, "Illegal combination of decimation, bitstreams and bits\n");
 		free(f);
 		free(m);
 

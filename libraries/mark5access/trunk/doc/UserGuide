@@ -171,6 +171,19 @@ The use of pkg-config is encouraged as it will continue to work even if
 additional dependencies are added to mark5access in the future.
 
 
+1.3 Run-time library configuration
+
+The user can modify some global settings of the library at run-time.
+The settings are accessible via:
+
+  int mark5_library_getoption(const int mk5option, void* result)
+  int mark5_library_setoption(const int mk5option, void* value)
+
+See mark5_stream.h for M5A_OPT_* definitions for parameter mk5option.
+Internal defaults may be re-applied by calling mark5_library_init().
+
+
+
 2 General structure of the library
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

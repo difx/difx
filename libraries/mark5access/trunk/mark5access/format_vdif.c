@@ -1896,7 +1896,7 @@ static int mark5_format_vdif_make_formatname(struct mark5_stream *ms)
 	else
 	{
 		sprintf(ms->formatname, "VDIF?");
-		fprintf(stderr, "Warning: mark5_format_vdif_make_formatname: format not set\n");
+		fprintf(m5stderr, "Warning: mark5_format_vdif_make_formatname: format not set\n");
 		return -1;
 	}
 
@@ -1913,7 +1913,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 
 	if(!ms)
 	{
-		fprintf(stderr, "mark5_format_vdif_init: ms = 0\n");
+		fprintf(m5stderr, "mark5_format_vdif_init: ms = 0\n");
 		return -1;
 	}
 
@@ -1955,7 +1955,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 
                 if(ms->framegranularity >= 128)
                 {
-                        fprintf(stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
+                        fprintf(m5stderr, "VDIF Warning: cannot calculate gframens %d/%d\n",
                                 framensNum, framensDen);
                         ms->framegranularity = 1;
                 }
@@ -1963,7 +1963,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
         }
         else
         {
-                fprintf(stderr, "Error - you must specify the Mbps for a VDIF mode (was set to %d)!", ms->Mbps);
+                fprintf(m5stderr, "Error - you must specify the Mbps for a VDIF mode (was set to %d)!", ms->Mbps);
 		return -1;
         }
 
@@ -1993,7 +1993,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 			}
 			else if(f->frameheadersize != 16)
 			{
-				fprintf(stderr, "VDIF Warning: Changing frameheadersize from %d to 16\n",
+				fprintf(m5stderr, "VDIF Warning: Changing frameheadersize from %d to 16\n",
 					f->frameheadersize);
 				f->frameheadersize = 16;
 			}
@@ -2006,7 +2006,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 			}
 			else if(f->frameheadersize != 32)
 			{
-				fprintf(stderr, "VDIF Warning: Changing frameheadersize from %d to 32\n",
+				fprintf(m5stderr, "VDIF Warning: Changing frameheadersize from %d to 32\n",
 					f->frameheadersize);
 				f->frameheadersize = 32;
 			}
@@ -2020,7 +2020,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		}
 		else if(f->databytesperpacket != dataframelength - f->frameheadersize)
 		{
-			fprintf(stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
+			fprintf(m5stderr, "VDIF Warning: Changing databytesperpacket from %d to %d\n",
 				f->databytesperpacket, dataframelength - f->frameheadersize);
 			f->databytesperpacket = dataframelength - f->frameheadersize;
 		}
@@ -2049,7 +2049,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	}
 	else
 	{
-		fprintf(stderr, "Error: mark5_format_vdif_init: unsupported frameheadersize=%d\n",
+		fprintf(m5stderr, "Error: mark5_format_vdif_init: unsupported frameheadersize=%d\n",
 			f->frameheadersize);
 		return -1;
 	}
@@ -2096,7 +2096,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || fabs((double)ns_t - ns_d) > 0.000001)
 		{
-			printf("VDIF validate[%lld]: %d %d %f : %d %d %lld\n",
+			fprintf(m5stdout, "VDIF validate[%lld]: %d %d %f : %d %d %lld\n",
 				ms->framenum,
 				mjd_d, sec_d, ns_d,
 				mjd_t, sec_t, ns_t);
@@ -2108,7 +2108,7 @@ static int mark5_format_vdif_validate(const struct mark5_stream *ms)
 	header = (unsigned int *)ms->frame;
 	if((header[0] >> 31) & 0x01)
 	{
-		//fprintf(stderr, "Skipping invalid frame\n");
+		//fprintf(m5stderr, "Skipping invalid frame\n");
 		return 0;
 	}
 
@@ -2149,7 +2149,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "VDIF decimation must be 1 for now\n");
+		fprintf(m5stderr, "VDIF decimation must be 1 for now\n");
 		return 0;
 	}
 
@@ -2171,7 +2171,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "VDIF nbit must be 1, 2, 4 or 8 for now\n");
+		fprintf(m5stderr, "VDIF nbit must be 1, 2, 4 or 8 for now\n");
 		return 0;
 	}
 
@@ -2201,7 +2201,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 	}
 	else
 	{
-		fprintf(stderr, "VDIF nchan must be 1, 2, 4, 8, 16 or 32 for now\n");
+		fprintf(m5stderr, "VDIF nchan must be 1, 2, 4, 8, 16 or 32 for now\n");
 		return 0;
 	}
 
@@ -2258,7 +2258,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 	    if(f->decode == 0)
 	    {
-		fprintf(stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
 		return 0;
@@ -2293,7 +2293,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 	    if(f->complex_decode == 0)
 	    {
-		fprintf(stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
+		fprintf(m5stderr, "VDIF: Illegal combination of decimation, channels and bits\n");
 		free(v);
 		free(f);
 		return 0;

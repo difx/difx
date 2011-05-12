@@ -349,6 +349,14 @@ double high_state_fraction_to_power(double x);
  * future versions of this library.
  */
 
+void mark5_library_init(void);
+int mark5_library_getoption(const int mk5option, void* result);
+int mark5_library_setoption(const int mk5option, void* value);
+
+#define M5A_OPT_STDOUTFD 1
+#define M5A_OPT_STDERRFD 2
+extern FILE* m5stderr;
+extern FILE* m5stdout;
 
 /* private functions, not intended for external use */
 

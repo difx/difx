@@ -91,7 +91,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		F->in = open64(F->files[F->curfile], O_RDONLY);
 		if(F->in < 0)
 		{
-			fprintf(stderr, "File cannot be opened (2) : <%s> : "
+			fprintf(m5stderr, "File cannot be opened (2) : <%s> : "
 				"in = %d\n", F->files[F->curfile], F->in);
 			perror(0);
 
@@ -100,7 +100,7 @@ static int mark5_stream_file_fill(struct mark5_stream *ms)
 		err = fstat64(F->in, &fileStatus);
 		if(err < 0)
 		{
-			fprintf(stderr, "Error looking at file (2) : "
+			fprintf(m5stderr, "Error looking at file (2) : "
 				"<%s> : err = %d\n", F->files[F->curfile], err);
 			perror(0);
 
@@ -154,7 +154,7 @@ static int mark5_stream_file_init(struct mark5_stream *ms)
 	r = read(F->in, F->buffer, F->buffersize);
 	if(r < F->buffersize)
 	{
-		fprintf(stderr, "mark5_stream_file_init: Initial read of %d was short (%d bytes actually read).  Shortening datawindowsize\n", F->buffersize, r);
+		fprintf(m5stderr, "mark5_stream_file_init: Initial read of %d was short (%d bytes actually read).  Shortening datawindowsize\n", F->buffersize, r);
 		ms->datawindowsize = F->buffersize = r;
 	}
 
@@ -282,7 +282,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 
 	if(in < 0)
 	{
-		fprintf(stderr, "File cannot be opened (1) : <%s> : in = %d\n", filename, in);
+		fprintf(m5stderr, "File cannot be opened (1) : <%s> : in = %d\n", filename, in);
 		perror(0);
 
 		return 0;
@@ -290,7 +290,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 	err = fstat64(in, &fileStatus);
 	if(err < 0)
 	{
-		fprintf(stderr, "Error looking at file (1) : <%s> : " "err = %d\n", filename, err);
+		fprintf(m5stderr, "Error looking at file (1) : <%s> : " "err = %d\n", filename, err);
 		perror(0);
 		close(in);
 
@@ -332,7 +332,7 @@ int mark5_stream_file_add_infile(struct mark5_stream *ms, const char *filename)
 
 	if(ms->init_stream != mark5_stream_file_init)
 	{
-		fprintf(stderr, "mark5_stream_add_infile: " "Wrong stream type!\n");
+		fprintf(m5stderr, "mark5_stream_add_infile: " "Wrong stream type!\n");
 
 		return -1;
 	}

@@ -39,6 +39,98 @@
 #include <errno.h>
 #include "mark5access/mark5_stream.h"
 
+FILE* m5stderr = (FILE*)NULL;
+FILE* m5stdout = (FILE*)NULL;
+
+#ifdef __GNUC__
+void __attribute__ ((constructor)) autocall_mark5_library_init(void)
+{
+		mark5_library_init();
+}
+#endif
+
+void mark5_library_init(void)
+{
+	// Apply all defaults
+	// Note: Apple OS X: during auto-((constructor)) the C-lib stdout, stderr may still be uninitialized/null
+	if (stdout != NULL)
+	{
+		m5stdout = stdout;
+	}
+	if (stderr != NULL)
+	{
+		m5stderr = stderr;
+	}
+}
+
+static void mark5_library_consistent(void)
+{
+	// Re-apply individual defaults if necessary
+	if (m5stdout == NULL)
+	{
+		m5stdout = stdout;
+	}
+	if (m5stderr == NULL)
+	{
+		m5stderr = stderr;
+	}
+}
+
+int mark5_library_getoption(const int mk5option, void *result)
+{
+	if (!result)
+	{
+		return -1;
+	}
+
+	mark5_library_consistent();
+
+	switch (mk5option)
+	{
+		case M5A_OPT_STDOUTFD:
+			*((FILE**)result) = m5stdout;
+			return sizeof(FILE*);
+		case M5A_OPT_STDERRFD:
+			*((FILE**)result) = m5stderr;
+			return sizeof(FILE*);
+		default:
+			break;
+	}
+
+	return -1;
+}
+
+int mark5_library_setoption(const int mk5option, void *value)
+{
+	int rc = -1;
+
+	mark5_library_consistent();
+
+	if (!value)
+	{
+		return rc;
+	}
+
+	switch (mk5option)
+	{
+		case M5A_OPT_STDOUTFD:
+			m5stdout = (FILE*)value;
+			rc = sizeof(FILE*);
+			break;
+		case M5A_OPT_STDERRFD:
+			m5stderr = (FILE*)value;
+			rc = sizeof(FILE*);
+			break;
+		default:
+			rc = -1;
+			break;		
+	}
+
+	mark5_library_consistent();
+
+	return rc;
+}
+
 static void mark5_stream_blank_frame(struct mark5_stream *ms)
 {
 	int z;
@@ -213,7 +305,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	if(set_stream(ms, s) < 0)
 	{
 		delete_mark5_stream(ms);
-		fprintf(stderr, "mark5_stream_open: Incomplete stream.\n");
+		fprintf(m5stderr, "mark5_stream_open: Incomplete stream.\n");
 		
 		return 0;
 	}
@@ -222,7 +314,7 @@ struct mark5_stream *mark5_stream_open(const char *filename,
 	if(status < 0)
 	{
 		delete_mark5_stream(ms);
-		fprintf(stderr, "mark5_open_stream: init_stream() failed\n");
+		fprintf(m5stderr, "mark5_open_stream: init_stream() failed\n");
 		
 		return 0;
 	}
@@ -283,6 +375,8 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 	const char *formatname)
 {
 	int a, b, c, d, e, r;
+
+	mark5_library_consistent();
 
 	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
 	{
@@ -400,7 +494,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 	}
 	else
 	{
-		fprintf(stderr, "Unknown format : %s\n", formatname);
+		fprintf(m5stderr, "Unknown format : %s\n", formatname);
 
 		return 0;
 	}
@@ -422,6 +516,8 @@ struct mark5_format *new_mark5_format_from_name(const char *formatname)
 	int decimation = 1;
 	int r;
 	int fanout = 1;
+
+	mark5_library_consistent();
 
 	if(strncasecmp(formatname, "VLBA1_", 6) == 0)
 	{
@@ -621,6 +717,8 @@ struct mark5_format *new_mark5_format_from_stream(
 	struct mark5_format_generic *f;
 	struct mark5_format *mf;
 	int status, ntrack;
+
+	mark5_library_consistent();
 	
 	if(!s)
 	{
@@ -636,7 +734,7 @@ struct mark5_format *new_mark5_format_from_stream(
 		free(mf);
 		free(ms);
 
-		fprintf(stderr, "new_mark5_format_from_stream: "
+		fprintf(m5stderr, "new_mark5_format_from_stream: "
 				"Incomplete stream.\n");
 		
 		return 0;
@@ -647,7 +745,7 @@ struct mark5_format *new_mark5_format_from_stream(
 	{
 		free(mf);
 		delete_mark5_stream(ms);
-		fprintf(stderr, "new_mark5_format_from_stream: "
+		fprintf(m5stderr, "new_mark5_format_from_stream: "
 				"init_stream() failed\n");
 		
 		return 0;
@@ -762,21 +860,21 @@ struct mark5_format *new_mark5_format_from_stream(
 
 void print_mark5_format(const struct mark5_format *mf)
 {
-	printf("mark5_format : %p\n", mf);
+	fprintf(m5stdout, "mark5_format : %p\n", mf);
 	if(!mf)
 	{
 		return;
 	}
-	printf("  Mbps = %d\n", mf->Mbps);
-	printf("  nchan = %d\n", mf->nchan);
-	printf("  nbit = %d\n", mf->nbit);
-	printf("  frameoffset = %d\n", mf->frameoffset);
-	printf("  framebytes = %d\n", mf->framebytes);
-	printf("  framens = %f\n", mf->framens);
-	printf("  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
-	printf("  ntrack = %d\n", mf->ntrack);
-	printf("  fanout = %d\n", mf->fanout);
-	printf("  decimation = %d\n", mf->decimation);
+	fprintf(m5stdout, "  Mbps = %d\n", mf->Mbps);
+	fprintf(m5stdout, "  nchan = %d\n", mf->nchan);
+	fprintf(m5stdout, "  nbit = %d\n", mf->nbit);
+	fprintf(m5stdout, "  frameoffset = %d\n", mf->frameoffset);
+	fprintf(m5stdout, "  framebytes = %d\n", mf->framebytes);
+	fprintf(m5stdout, "  framens = %f\n", mf->framens);
+	fprintf(m5stdout, "  mjd = %d sec = %d ns = %d\n", mf->mjd, mf->sec, mf->ns);
+	fprintf(m5stdout, "  ntrack = %d\n", mf->ntrack);
+	fprintf(m5stdout, "  fanout = %d\n", mf->fanout);
+	fprintf(m5stdout, "  decimation = %d\n", mf->decimation);
 }
 
 void delete_mark5_format(struct mark5_format *mf)
@@ -793,10 +891,12 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	struct mark5_stream *ms;
 	int status;
 
+	mark5_library_consistent();
+
 	ms = (struct mark5_stream *)calloc(1, sizeof(struct mark5_stream));
        	if(!ms)
 	{
-		fprintf(stderr, "Error allocating memory for mark5_stream\n");
+		fprintf(m5stderr, "Error allocating memory for mark5_stream\n");
 		
 		return 0;
 	}
@@ -805,14 +905,14 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	
 	if(set_stream(ms, s) < 0)
 	{
-		fprintf(stderr, "new_mark5_stream: Incomplete stream.\n");
+		fprintf(m5stderr, "new_mark5_stream: Incomplete stream.\n");
 		free(ms);
 		
 		return 0;
 	}
 	if(set_format(ms, f) < 0)
 	{
-		fprintf(stderr, "new_mark5_stream: Incomplete format.\n");
+		fprintf(m5stderr, "new_mark5_stream: Incomplete format.\n");
 		free(ms);
 		
 		return 0;
@@ -825,7 +925,7 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	if(status < 0)
 	{
 		delete_mark5_stream(ms);
-		fprintf(stderr, "new_mark5_format: init_stream(%s) failed\n", ms->formatname);
+		fprintf(m5stderr, "new_mark5_format: init_stream(%s) failed\n", ms->formatname);
 		
 		return 0;
 	}
@@ -833,7 +933,7 @@ struct mark5_stream *new_mark5_stream(const struct mark5_stream_generic *s,
 	status = mark5_format_init(ms);
 	if(status < 0)
 	{
-		fprintf(stderr, "new_mark5_stream: init_format(%s) failed\n", ms->formatname);
+		fprintf(m5stderr, "new_mark5_stream: init_format(%s) failed\n", ms->formatname);
 		delete_mark5_stream(ms);
 		
 		return 0;
@@ -849,6 +949,8 @@ struct mark5_stream *new_mark5_stream_absorb(struct mark5_stream_generic *s,
 {
 	struct mark5_stream *ms;
 	int failed = 0;
+
+	mark5_library_consistent();
 
 	if(!s)
 	{
@@ -884,7 +986,7 @@ void delete_mark5_stream(struct mark5_stream *ms)
 	{
 		if(ms->nvalidatefail > 0)
 		{
-			fprintf(stderr, "Warning: %d validation failures on %s framenum=%Ld -> bytepos=%Ld\n",
+			fprintf(m5stderr, "Warning: %d validation failures on %s framenum=%Ld -> bytepos=%Ld\n",
 				ms->nvalidatefail, ms->streamname, ms->framenum, ms->framenum*ms->framebytes);
 		}
 		if(ms->final_stream)
@@ -936,35 +1038,35 @@ int mark5_stream_get_sample_time(struct mark5_stream *ms,
 
 int mark5_stream_print(const struct mark5_stream *ms)
 {
-	printf("Mark5 stream: %p\n", ms);
+	fprintf(m5stdout, "Mark5 stream: %p\n", ms);
 	if(!ms)
 	{
 		return -1;
 	}
-	printf("  stream = %s\n", ms->streamname);
-	printf("  format = %s = %d\n", ms->formatname, ms->format);
+	fprintf(m5stdout, "  stream = %s\n", ms->streamname);
+	fprintf(m5stdout, "  format = %s = %d\n", ms->formatname, ms->format);
 	if(ms->mjd >= 0)
 	{
-		printf("  start mjd/sec = %d %05d.%09d\n", 
+		fprintf(m5stdout, "  start mjd/sec = %d %05d.%09d\n", 
 			ms->mjd, ms->sec, ms->ns);
-		printf("  frame duration = %8.2f ns\n", ms->framens);
-		printf("  framenum = %Ld\n", ms->framenum);
+		fprintf(m5stdout, "  frame duration = %8.2f ns\n", ms->framens);
+		fprintf(m5stdout, "  framenum = %Ld\n", ms->framenum);
 	}
 	if(ms->samprate > 0)
 	{
-		printf("  sample rate = %d Hz\n", ms->samprate);
+		fprintf(m5stdout, "  sample rate = %d Hz\n", ms->samprate);
 	}
-	printf("  offset = %d\n", ms->frameoffset);
-	printf("  framebytes = %d bytes\n", ms->framebytes);
-	printf("  datasize = %d bytes\n", ms->databytes);
-	printf("  sample granularity = %d\n", ms->samplegranularity);
-	printf("  frame granularity = %d\n", ms->framegranularity);
-	printf("  gframens = %d\n", ms->gframens);
-	printf("  payload offset = %d\n", ms->payloadoffset);
-	printf("  read position = %d\n", ms->readposition);
+	fprintf(m5stdout, "  offset = %d\n", ms->frameoffset);
+	fprintf(m5stdout, "  framebytes = %d bytes\n", ms->framebytes);
+	fprintf(m5stdout, "  datasize = %d bytes\n", ms->databytes);
+	fprintf(m5stdout, "  sample granularity = %d\n", ms->samplegranularity);
+	fprintf(m5stdout, "  frame granularity = %d\n", ms->framegranularity);
+	fprintf(m5stdout, "  gframens = %d\n", ms->gframens);
+	fprintf(m5stdout, "  payload offset = %d\n", ms->payloadoffset);
+	fprintf(m5stdout, "  read position = %d\n", ms->readposition);
 	if(ms->datawindow)
 	{
-		printf("  data window size = %Ld bytes\n", ms->datawindowsize);
+		fprintf(m5stdout, "  data window size = %Ld bytes\n", ms->datawindowsize);
 	}
 
 	return 0;

@@ -310,7 +310,7 @@ int blanker_vdif(struct mark5_stream *ms)
 	}
 	else
 	{
-		//fprintf(stderr, "Frame is good\n");
+		//fprintf(m5stderr, "Frame is good\n");
 		ms->blankzoneendvalid[0] = 1<<30;
 		return nword;
 	}

@@ -268,7 +268,7 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 	if(!ms)
 	{
-		printf("mark5_format_mark4_validate: ms=0\n");
+		fprintf(m5stdout, "mark5_format_mark4_validate: ms=0\n");
 		return 0;
 	}
 
@@ -285,7 +285,7 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 	if(e > 0)
 	{
-		//printf("mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
+		//fprintf(m5stdout, "mark5_format_mark4_validate[%s]: e=%d\n", ms->streamname, e);
 		return 0;
 	}
 
@@ -303,7 +303,7 @@ static int mark5_format_mark4_validate(const struct mark5_stream *ms)
 
 		if(mjd_t != mjd_d || sec_t != sec_d || ns_t != ns_d)
 		{
-//			printf("Mark4 validate[%lld]: %d %d %d : %d %d %lld\n",
+//			fprintf(m5stdout, "Mark4 validate[%lld]: %d %d %d : %d %d %lld\n",
 //				ms->framenum,
 //				mjd_d, sec_d, ns_d,
 //				mjd_t, sec_t, ns_t);
@@ -6767,7 +6767,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 
 	if(!ms)
 	{
-		fprintf(stderr, "mark5_format_mark4_init: ms = 0\n");
+		fprintf(m5stderr, "mark5_format_mark4_init: ms = 0\n");
 		return -1;
 	}
 
@@ -6836,7 +6836,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(stderr, "Warning -- data rate "
+					fprintf(m5stderr, "Warning -- data rate "
 						"disagrees : %d != %d\n",
 						datarate, ms->Mbps);
 				}
@@ -6845,7 +6845,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 		}
 		else
 		{
-			fprintf(stderr, "Warning -- rate calc. suspect\n");
+			fprintf(m5stderr, "Warning -- rate calc. suspect\n");
 		}
 	}
 
@@ -6904,7 +6904,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(stderr, "decimation must be 1, 2 or mult of 4\n");
+		fprintf(m5stderr, "decimation must be 1, 2 or mult of 4\n");
 	}
 
 	if(nbit == 1)
@@ -6917,7 +6917,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(stderr, "nbit must be 1 or 2\n");
+		fprintf(m5stderr, "nbit must be 1 or 2\n");
 		return 0;
 	}
 
@@ -6951,7 +6951,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(stderr, "ntrack must be 2^n : n = 0..6\n");
+		fprintf(m5stderr, "ntrack must be 2^n : n = 0..6\n");
 		return 0;
 	}
 
@@ -6969,7 +6969,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 	}
 	else
 	{
-		fprintf(stderr, "fanout must be 1, 2 or 4\n");
+		fprintf(m5stderr, "fanout must be 1, 2 or 4\n");
 		return 0;
 	}
 
@@ -7102,7 +7102,7 @@ struct mark5_format_generic *new_mark5_format_mark4(int Mbps, int nchan,
 
 	if(f->decode == 0)
 	{
-		fprintf(stderr, "Illegal combination of fanout, tracks and bits\n");
+		fprintf(m5stderr, "Illegal combination of fanout, tracks and bits\n");
 		free(v);
 		free(f);
 		return 0;

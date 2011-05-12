@@ -219,7 +219,7 @@ static int format_k5_init(struct mark5_stream *ms)
 
 	if(!ms)
 	{
-		fprintf(stderr, "format_k5_init: ms = 0\n");
+		fprintf(m5stderr, "format_k5_init: ms = 0\n");
 		return -1;
 	}
 
@@ -240,7 +240,7 @@ static int format_k5_init(struct mark5_stream *ms)
 		{
 			if(k->submode != submode)
 			{
-				fprintf(stderr, "Warning -- submode disagrees"
+				fprintf(m5stderr, "Warning -- submode disagrees"
 					" : %d != %d\n", submode, k->submode);
 				return -1;
 			}
@@ -287,19 +287,19 @@ static int format_k5_init(struct mark5_stream *ms)
 
 		if(nbit != ms->nbit)
 		{
-			fprintf(stderr, "Warning -- nbit disagrees : "
+			fprintf(m5stderr, "Warning -- nbit disagrees : "
 					"%d != %d\n", nbit, ms->nbit);
 			return -1;
 		}
 		if(nchan != ms->nchan)
 		{
-			fprintf(stderr, "Warning -- nchan disagrees : "
+			fprintf(m5stderr, "Warning -- nchan disagrees : "
 					"%d != %d\n", nchan, ms->nchan);
 			return -1;
 		}
 		if(Mbps != ms->Mbps)
 		{
-			fprintf(stderr, "Warning -- Mbps disagrees : "
+			fprintf(m5stderr, "Warning -- Mbps disagrees : "
 					"%d != %d\n", Mbps, ms->Mbps);
 			return -1;
 		}
@@ -340,7 +340,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	}
 	else
 	{
-		fprintf(stderr, "format_k5_init : "
+		fprintf(m5stderr, "format_k5_init : "
 			"nbit needs to be 1, 2, 4, or 8\n");
 		return 0;
 	}
@@ -355,7 +355,7 @@ static int format_k5_init(struct mark5_stream *ms)
 	}
 	else
 	{
-		fprintf(stderr, "new_mark5_format_k5 : "
+		fprintf(m5stderr, "new_mark5_format_k5 : "
 			"nchan needs to be 1 or 4\n");
 		return 0;
 	}
