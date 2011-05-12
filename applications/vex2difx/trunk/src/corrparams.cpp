@@ -504,7 +504,15 @@ int CorrSetup::checkValidity() const
 	if(specAvgDontUse != 0)
 	{
 		cerr << "Paramaeter specAvg is no longer supported starting with DiFX 2.0.1.  Instead use combinations of nChan and nFFTChan to achieve your goals." << endl;
-		cerr << "If you meant nChan to be the number of output channels (after spectral averaging), then you should set nFFTChan=" << nOutputChan*specAvgDontUse << " and nChan=" << nOutputChan << "; if you meant for nChan to be the number of input channels (before spectral averaging), then you should set nFFTChan=" << nOutputChan << " and nChan=" << nOutputChan/specAvgDontUse << endl;
+		if(specAvgDontUse == 1)
+		{
+			cerr << "For cases like this where the desired specAvg parameter is 1, please instead set nFFTChan to be the same as nChan (which is " << nOutputChan << " in this case" << endl;
+		}
+		else
+		{
+			cerr << "If you meant nChan to be the number of output channels (after spectral averaging), then you should set nFFTChan=" << nOutputChan*specAvgDontUse << " and nChan=" << nOutputChan << "; if you meant for nChan to be the number of input channels (before spectral averaging), then you should set nFFTChan=" << nOutputChan << " and nChan=" << nOutputChan/specAvgDontUse << endl;
+		}
+		
 		exit(0);
 
 	}
