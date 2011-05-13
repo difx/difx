@@ -377,6 +377,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
 
                                     // construct and write type 100 record
                 memcpy (t100.baseline, &blines[n][0], 2);
+                t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
                 write_t100 (&t100, fout[n]);
 
                                     // construct and write type 101 records
@@ -456,7 +457,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 if (strncmp (poltab[i], rec.pols, 2) == 0)
                     u.t120.index += i;
 
-        t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
         u.t120.ap = n120[n] / t100.nindex;
                                     // write a type 120 record to the appropriate file
         write_t120 (&u.t120, fout[n]);
