@@ -913,7 +913,7 @@ int feedSnifferFITS(Sniffer *S, const struct UVrow *data)
 
 	if(index < 0 || index >= A->nTime)
 	{
-		fprintf(stderr, "Developer Error: Sniffer: bad time index = %d\n", index);
+		fprintf(stderr, "Developer Error: Sniffer: bad time slot for mjd=%14.6f index=%d (max index expected=%d).  Don't worry!  This is not a critical problem and should not have any impact on correctness or completeness of data, but should be reported.\n", mjd, index, A->nTime-1);
 
 		return -1;
 	}
