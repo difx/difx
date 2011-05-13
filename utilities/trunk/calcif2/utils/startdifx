@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 PROGRAM = 'startdifx'
-VERSION = '0.5'
-VERDATE = '20110207'
+VERSION = '0.6'
+VERDATE = '20110512'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -424,7 +424,8 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, mach
 			sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
 			system('rm -rf %s.difx' % fileBase)
 		else:
-			return 'Error: output file %s.difx exists' % fileBase
+			print 'Warning: output file %s.difx exists' % fileBase
+			return 
 	
 	np = doMachines(fileBase, machinesPolicy, machinesCache)
 	if np <= 0:
@@ -462,7 +463,8 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, machi
 			sendMessage(fileBase, 'Info', 'Deleting %s.difx' % fileBase)
 			system('rm -rf %s.difx' % fileBase)
 		else:
-			return 'Error: output file %s.difx exists' % fileBase
+			print 'Warning: output file %s.difx exists' % fileBase
+                        return
 	
 	np = doMachines(fileBase, machinesPolicy, machinesCache)
 	if np <= 0:
