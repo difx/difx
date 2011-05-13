@@ -107,6 +107,16 @@ void Mk5DataStream::initialise()
     packet_duplicate = 0;
     npacket = 0;
     packet_sum = 0;
+    lasttime = 0.0;
+    
+    udpstats_update = 0.0;
+    char *udp_update_str= getenv("DIFX_UDP_UPDATE");
+    if (udp_update_str!=0) {
+      udpstats_update = atof(udp_update_str);
+      if (udpstats_update=0.0) udpstats_update = 2.0;
+    } else {
+      udpstats_update = 2.0;
+    }
   }
 
   if(config->isDMuxed(0, streamnum)) {
@@ -456,14 +466,22 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   return offset;
 }
 
+double tim(void) {
+  struct timeval tv;
+  double t;
+
+  gettimeofday(&tv, NULL);
+  t = (double)tv.tv_sec + (double)tv.tv_usec/1000000.0;
+
+  return t;
+}
+
 void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesremaining)
 {
   int nbits, nrecordedbands, fanout, framebytes;
   Configuration::dataformat format;
   Configuration::datasampling sampling;
   double bw;
-
-  //cout << "Datastream " << mpiid << " about to read " << readbytes << " into buffer segment " << buffersegment << "; framebytesremaining is " << framebytesremaining << endl;
 
   if (udp_offset>readbytes) {
     cinfo << startl << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << endl;
@@ -491,7 +509,43 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 
   DataStream::networkToMemory(buffersegment, framebytesremaining);
   framebytesremaining = 2*readbytes;
-  //cout << "Datastream " << mpiid << " finished reading; framebytesremaining is now " << framebytesremaining << ", buffersegment is " << buffersegment << ", keepreading is " << keepreading << endl;
+
+  // Print UDP packet statistics
+
+  if (!tcp && lasttime!=0.0) {
+    // Print statistics. 
+    double delta, thistime;
+    float dropped, oo, dup, rate;
+
+    thistime = tim();
+    delta = thistime-lasttime;
+    if (delta>1) {
+
+      lasttime = thistime;
+
+      if (npacket==0) {
+	dropped = 0;
+	oo = 0;
+	dup = 0;
+      } else {
+	dropped = (float)packet_drop*100.0/(float)npacket;
+	oo = (float)packet_oo*100.0/(float)npacket;
+	dup = (float)packet_duplicate*100.0/(float)npacket;
+      }
+      rate = packet_sum/delta*8/1e6;
+    
+      cinfo << fixed << setprecision(2);
+      cinfo << startl << "Datastream " << mpiid << ": Packets=" << npacket << "  Dropped=" << dropped
+	    << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
+      // Should reset precision
+
+      packet_drop = 0;
+      packet_oo = 0;
+      packet_duplicate = 0;
+      npacket = 0;
+      packet_sum = 0;
+    }
+  }
 }
 
 
@@ -751,54 +805,11 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
   return(1);
 }
 
-double tim(void) {
-  struct timeval tv;
-  double t;
-
-  gettimeofday(&tv, NULL);
-  t = (double)tv.tv_sec + (double)tv.tv_usec/1000000.0;
-
-  return t;
-}
-
 uint64_t Mk5DataStream::openframe()
 {
   // The number of segments per "frame" is arbitrary. Just set it to ~ 5sec 
   int nsegment;
   nsegment = (int)(2.0e9/bufferinfo[0].nsinc+0.1);
-  
-  if (!tcp) {
-    // Print statistics. 
-    double delta, thistime;
-    float dropped, oo, dup, rate;
-
-    thistime = tim();
-    delta = thistime-lasttime;
-    lasttime = thistime;
-
-    if (npacket==0) {
-      dropped = 0;
-      oo = 0;
-      dup = 0;
-    } else {
-      dropped = (float)packet_drop*100.0/(float)npacket;
-      oo = (float)packet_oo*100.0/(float)npacket;
-      dup = (float)packet_duplicate*100.0/(float)npacket;
-    }
-    rate = packet_sum/delta*8/1e6;
-    
-    if (packet_head!=0) {
-      cinfo << fixed << setprecision(2);
-      cinfo << startl << "Datastream " << mpiid << ": Packets=" << npacket << "  Dropped=" << dropped
-	    << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
-      // Should reset precision
-    }
-    packet_drop = 0;
-    packet_oo = 0;
-    packet_duplicate = 0;
-    npacket = 0;
-    packet_sum = 0;
-  }
 
   return readbytes*nsegment;
 }

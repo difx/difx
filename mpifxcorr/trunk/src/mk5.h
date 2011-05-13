@@ -93,7 +93,7 @@ protected:
   unsigned long packet_drop, packet_oo, packet_duplicate, npacket;
   long udp_offset;
   unsigned long long packet_sum, packet_head, packet_segmentstart;
-  double lasttime;
+  double lasttime, udpstats_update;
   char *udp_buf, *invalid_buf;
   vector<bool> packets_arrived;
   char formatname[64];
