@@ -80,7 +80,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         } u;
 
                                     // function prototypes
-    int recordIsFlagged (vis_record *, const DifxJob *);
+    int recordIsFlagged (double, int, int, const DifxJob *);
     int getBaselineIndex (DifxInput *, int, int);
 
                                     // initialize memory as necessary
@@ -293,9 +293,21 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         if (opts->verbose > 2)
             printf ("        read %d complex visibilities\n", nvis);
         nread++;
+                                    // compute antenna indices
+        if (D->job->antennaIdRemap)
+            {
+            a1 = *((D->job+*jobId)->antennaIdRemap + rec.baseline / 256 - 1); 
+            a2 = *((D->job+*jobId)->antennaIdRemap + rec.baseline % 256 - 1); 
+            }
+        else                // no remapping, just use indices from file
+            {
+            a1 = rec.baseline / 256 - 1; 
+            a2 = rec.baseline % 256 - 1; 
+            }
                                     // check if either antenna is flagged a priori
                                     // for this baseline. If so, disregard and move on
-        if (noscan || recordIsFlagged(&rec, &D->job[*jobId]))
+
+        if (noscan || recordIsFlagged(rec.mjd + rec.iat/86400., a1, a2, &D->job[*jobId]))
             {
             if (opts->verbose > 1)
                 printf ("          flagged: antenna off source\n");
@@ -311,17 +323,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 break;              // found baseline, exit loop
             else if (base_index[n] < 0)
                 {                   
-                                    // compute antenna indices
-                if (D->job->antennaIdRemap)
-                    {
-                    a1 = *((D->job+*jobId)->antennaIdRemap + rec.baseline / 256 - 1); 
-                    a2 = *((D->job+*jobId)->antennaIdRemap + rec.baseline % 256 - 1); 
-                    }
-                else                // no remapping, just use indices from file
-                    {
-                    a1 = rec.baseline / 256 - 1; 
-                    a2 = rec.baseline % 256 - 1; 
-                    }
                                     // first check that both antennas are in the
                                     // rootfile
                 if((stns + a1)->inscan != TRUE || (stns + a2)->inscan != TRUE)
@@ -510,29 +511,22 @@ int getBaselineIndex (DifxInput *D, int a1, int a2)
 
 //FIXME add other sanity checks from difx2fits fitsUV.c
 
-int recordIsFlagged (vis_record *vr, const DifxJob *job)
+int recordIsFlagged (double t, int a1, int a2, const DifxJob *job)
     {
-    double mjd;
-    int a1, a2;
     int i;
-
 
     if(job->nFlag <= 0)
         return 0;
 
-    mjd = vr->mjd + vr->iat/86400.;
-    a1  = (vr->baseline/256) - 1;
-    a2  = (vr->baseline%256) - 1;
-
     for(i = 0; i < job->nFlag; i++)
         {
-        if(job->flag[i].mjd1 <= mjd &&
-           job->flag[i].mjd2 >= mjd)
+        if(job->flag[i].mjd1 <= t &&
+           job->flag[i].mjd2 >= t)
             {
             if(job->flag[i].antennaId == a1 ||
                job->flag[i].antennaId == a2)
                 {
-                                //fprintf (stderr, "flagged visibility baseline %d-%d mjd %f\n", a1+1, a2+1, mjd);
+                //fprintf (stderr, "flagged visibility baseline %d-%d mjd %f\n", a1+1, a2+1, t);
                 return 1;
                 }
             }
