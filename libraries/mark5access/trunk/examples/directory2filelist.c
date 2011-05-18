@@ -204,7 +204,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	// check that start and stop time are quite valid
 	if (!is_reasonable_timediff(startmjd, stopmjd))
 	{
-		fprintf (stderr, "Error: timestamps suspicios (either stop(%f)<=start(%f) or stop>>start)\n", stopmjd, startmjd, filename);
+		fprintf (stderr, "Error: timestamps suspicious (either stop(%lf)<=start(%lf) or stop>>start)\n", stopmjd, startmjd, filename);
 	}
 	if ((int)eofmjd != (int)stopmjd)
 	{
@@ -225,7 +225,18 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	}
 	else
 	{
-		fprintf (stdout, "%s %lf\n", filename, startmjd);
+		if (eofmjd>startmjd)
+		{
+			fprintf (stdout, "%s %lf %lf\n", filename, startmjd, eofmjd);
+		}
+		else if(stopmjd>startmjd)
+		{
+			fprintf (stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
+		}
+		else
+		{
+			fprintf (stdout, "%s\n", filename);
+		}
 	}
 
 	return 0;
