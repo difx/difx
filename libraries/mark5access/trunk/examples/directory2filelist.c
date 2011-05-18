@@ -43,7 +43,8 @@ const char author[]  = "Helge Rottmann";
 const char version[] = "1.2";
 const char verdate[] = "2011 Apr 06";
 
-const int DEFAULT_MJD = 57000;
+const static int DEFAULT_MJD = 57000;
+static long DEFAULT_EOF_READLEN = (80000+40000);
 
 int die = 0;
 
@@ -78,18 +79,48 @@ int usage(const char *pgm)
 	return 0;
 }
 
+int is_reasonable_timediff(double startmjd, double stopmjd)
+{
+	int startday = (int)startmjd;
+	int stopday = (int)stopmjd;
+	return ( (startmjd <= stopmjd) && ((stopday == startday) || (stopday == (startday+1))) );
+}
+
+struct mark5_stream *openmk5(const char *filename, const char *formatname, long *offset)
+{
+	struct mark5_stream *ms;
+	while (1) {
+                ms = new_mark5_stream_absorb(
+                        new_mark5_stream_file(filename, *offset),
+                        new_mark5_format_generic_from_string(formatname) );
+
+                if(!ms)
+                {
+                        fprintf(stderr, "problem opening %s\n", filename);
+                        break;
+                }
+                if (0 == (ms->samprate % 1000) && ms->samprate>0)
+                {
+                        break;
+                }
+                fprintf(stderr, "File offset %ld: decoded suspect sample rate %d, trying new offset\n", *offset, ms->samprate);
+                delete_mark5_stream(ms);
+                (*offset) += 43500;
+	}
+	return ms;
+}
+
 int verify(const char *filename, const char *formatname, int refMJD)
 {
 	struct mark5_stream *ms;
 	int i;
 	int  status = 0;
 	int mjd, sec;
-        double ns, startmjd, stopmjd=0.0;
+        double ns, startmjd, stopmjd=0.0, eofmjd=0.0;
+	long validoffset = 0;
 
-	ms = new_mark5_stream_absorb(
-		new_mark5_stream_file(filename, 0),
-		new_mark5_format_generic_from_string(formatname) );
-
+	// open with seeking to first valid-looking frame pair
+	ms = openmk5(filename, formatname, &validoffset);
 	if(!ms)
 	{
 		fprintf(stderr, "problem opening %s\n", filename);
@@ -102,8 +133,8 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	//mark5_stream_print(ms);
 
 	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
-	startmjd = mjd + (sec + ns/1e9) / 86400;
-	
+	startmjd = mjd + (sec + ns/1e9) / 86400.0;
+	DEFAULT_EOF_READLEN = ms->datawindowsize;
 
 	FILE *fp = fopen(filename, "rb");
 
@@ -150,14 +181,52 @@ int verify(const char *filename, const char *formatname, int refMJD)
 		}
 	}
 
-	if ((int)stopmjd != (int)startmjd)
+	delete_mark5_stream(ms);
+
+	// open short before EOF, with seeking to first valid-looking frame pair
+        // note: this may generate many "Shortening datawindowsize" warnings
+	validoffset = length - DEFAULT_EOF_READLEN;
+	ms = openmk5(filename, formatname, &validoffset);
+	if(!ms)
 	{
-		fprintf (stderr, "Error: startMJD (%d) != stopMJD (%d) on file %s\n", (int)startmjd, (int)stopmjd, filename);
+		fprintf(stderr, "problem opening at tail of %s\n", filename);
+		return 0;
 	}
-	
-	printf ("%s %lf %lf\n", filename, startmjd, stopmjd);
+
+	// resolve any day ambiguities
+        mark5_stream_fix_mjd(ms, refMJD);
+
+	mark5_stream_get_frame_time(ms, &mjd, &sec, &ns);
+	eofmjd = mjd + (sec + ns/1e9) / 86400.0;
 
 	delete_mark5_stream(ms);
+
+	// check that start and stop time are quite valid
+	if (!is_reasonable_timediff(startmjd, stopmjd))
+	{
+		fprintf (stderr, "Error: timestamps suspicios (either stop(%f)<=start(%f) or stop>>start)\n", stopmjd, startmjd, filename);
+	}
+	if ((int)eofmjd != (int)stopmjd)
+	{
+		fprintf (stderr, "Error: eof day (%d) != stop day (%d) on file %s\n", (int)eofmjd, (int)stopmjd, filename);
+	}
+
+	// output for debug/verbose
+	//fprintf (stderr, "%s %lf %lf %lf\n", filename, startmjd, stopmjd, eofmjd);
+
+	// choose most plausible ending time
+	if (is_reasonable_timediff(startmjd, stopmjd))
+	{
+		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, stopmjd);
+	}
+	else if (is_reasonable_timediff(startmjd, eofmjd))
+	{
+		fprintf (stdout, "%s %lf %lf\n", filename, startmjd, eofmjd);
+	}
+	else
+	{
+		fprintf (stdout, "%s %lf\n", filename, startmjd);
+	}
 
 	return 0;
 }
@@ -171,6 +240,10 @@ int main(int argc, char **argv)
 	char *fmt;
 
 	oldsiginthand = signal(SIGINT, siginthand);
+
+	#if 0 // redirect mark5access STDOUT->STDERR; default disabled, function does not exist in older libraries
+	mark5_library_setoption(M5A_OPT_STDOUTFD, (void*)stderr);
+	#endif
 
 	if(argc != 3 && argc != 4)
 	{
