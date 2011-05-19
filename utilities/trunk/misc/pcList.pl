@@ -321,6 +321,7 @@ sub compare
 
 		# loop over all stations
 		my $missing = "";
+		my $missingCount = 0;
 		foreach $station (@Stations)
 		{
 			#check if this station takes part in this vex scan
@@ -338,6 +339,7 @@ sub compare
 					    print FILOUT "$percentage ";
 					    print color("red"), "$percentage ";
 					    $missing .= "$station ";
+					    $missingCount +=1;
 					}
 					else
 					{
@@ -351,6 +353,7 @@ sub compare
 					print color("red"), "x  ";
 
                                         $missing .= "$station ";
+					$missingCount +=1;
 
 				}
 
@@ -365,7 +368,7 @@ sub compare
 		print FILOUT "\n";
 		print color("black"), "\n";
 
-		if (($missing ne "") and ($vexScans[$i]{"DIFXFILE"} ne ""))
+		if (($missingCount > 1) and ($vexScans[$i]{"DIFXFILE"} ne ""))
 		{
 			print RECOROUT $vexScans[$i]{"DIFXFILE"} . " # $missing\n";
 		}
