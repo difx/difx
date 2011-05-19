@@ -642,7 +642,7 @@ int isValidAntenna(const DifxInput *D, char *antName, int scanId)
         return(-1);
 
                                     //antenna in scan?
-    if (D->scan[scanId].im[antId] == 0)
+    if (D->scan[scanId].im != NULL && D->scan[scanId].im[antId] == 0)
         return(-1);
 
     return(antId);
