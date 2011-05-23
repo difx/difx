@@ -368,7 +368,7 @@ sub compare
 		print FILOUT "\n";
 		print color("black"), "\n";
 
-		if (($missingCount > 1) and ($vexScans[$i]{"DIFXFILE"} ne ""))
+		if (($missingCount > 0) and ($vexScans[$i]{"DIFXFILE"} ne ""))
 		{
 			print RECOROUT $vexScans[$i]{"DIFXFILE"} . " # $missing\n";
 		}
