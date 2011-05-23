@@ -1,14 +1,4 @@
 #!/usr/bin/perl
-#===========================================================================
-# SVN properties (DO NOT CHANGE)
-#
-# $Id$
-# $HeadURL: $
-# $LastChangedRevision$
-# $Author$
-# $LastChangedDate$
-#
-#============================================================================
 ############################################################################
 # Purpose:
 # Script parses field system log files to extract information needed
@@ -26,14 +16,17 @@
 ############################################################################
 # Authors:
 # Helge Rottmann (Max-Planck-Institut für Radioastronomie, Bonn)
+# based on work done by Dave Graham
 ############################################################################
+
+
 
 use Getopt::Long;
 use Term::ANSIColor;
 use Time::Local;
 
 # globals
-$PROGNAME = "fslog2difx.pl";
+my $PROGNAME = "fslog2difx.pl";
 
 
 # command line options
@@ -75,12 +68,11 @@ if ($processAll)
 # loop over logfiles
 foreach $logfile (@logFiles)
 {
+	@modules = ();
+	$moduleCount = 0;
 	@outLines = ();
 	$stn = ""; 
 	$lastVSN = "";
-	$vsnCount = 0;
-	$vsnStart = "";
-	$vsnStop = "";
 	$hdr_done = 0;
 	$beginDef = 0;
 	$recordOn = 0;
@@ -99,19 +91,24 @@ foreach $logfile (@logFiles)
 		s/disc_end/disk_record=off/;
 		s/disc/disk/g; 
 
-		#extract day / year from the timestamp
-		$year = substr($_,0,4);
-		$day = substr($_,5,3);
-		$hms=substr($_,9,8);
+		#$year = substr($_,0,4);
+		#$day = substr($_,5,3);
+		#$hms=substr($_,9,8);
+		#$timestamp = $year . $day . $hms;
+		#print "$timestamp\n";
 
 	
 		if ($_ =~ /^(\d{4})\.(\d{3})\.(\d{2}):(\d{2}):(\d{2}\.\d{2})/)
 		{
+			#extract day / year from the timestamp
 			$year = $1;
 			$day = $2;
 			$hour = $3;
 			$minute = $4;
 			$second = $5;
+			$hms=$hour . ":" . $minute . ":" . $second;
+			$timestamp = $year . $day . $hour . $minute . $second;
+			$formatTime = $year . "y" . $day . "d" . $hour . "h" . $minute . "m" . $second;
 		}
 		else
 		{
@@ -146,11 +143,6 @@ foreach $logfile (@logFiles)
 						print (color("black"), "processing: ",$stationName,"\n");
 					}
 					$hdr_done=1;
-
-					# open the output file list file for this station
-					#$fileListName = "filelist.$stationTwoLetterCode";
-					#open (OUTFILELIST, ">$fileListName") || die "Cant open output file : $fileListName";
-					#print (color("black"), "Writing filelist output to: $fileListName\n");
 
 					if ((! $processAll) && ($beginDef == 0))
 					{
@@ -207,6 +199,11 @@ foreach $logfile (@logFiles)
 
 			$recordOn = 1;
 			$time1 = $hms; 
+			#print "time1: $time1 " . $modules[$moduleCount]{"startTime"} . "\n";
+			if ($modules[$moduleCount-1]{"startTime"} == 0)
+			{
+				$modules[$moduleCount-1]{"startTime"} = $timestamp;
+			}
 		}
 		# find disc_end (= disk_record=off in new notation) lines
 		if(substr($_,20,16) eq ":disk_record=off")
@@ -236,6 +233,12 @@ foreach $logfile (@logFiles)
 			$time2 = $hms; 
 			$get_byte=1;
 			$recordOn = 0;
+
+			if ($modules[$moduleCount-1]{"stopTime"} < $timestamp)
+                        {
+			#	print "Setting stop for " . $modules[$moduleCount]{"VSN"} . "\n";
+                                $modules[$moduleCount-1]{"stopTime"} = $timestamp;
+                        }
 
 			next;
 		}
@@ -307,8 +310,18 @@ foreach $logfile (@logFiles)
 					$set_id=$vv[0]."/".$ndiscs." : ".$ndiscs ;
 				}
 				$set_id = uc($set_id);
-				$vsn_id = uc($vv[0]);
+				# remember last vsn
+				$lastVSN = $vsn_id;
 
+				$vsn_id = uc($vv[0]);
+				if ($lastVSN ne $vsn_id)
+				{
+					$modules[$moduleCount]{"VSN"} = $vsn_id;
+					$modules[$moduleCount]{"startTime"} = 0;
+					$modules[$moduleCount]{"stopTime"} = 0;
+				#print "Setting vsn for " . $modules[$moduleCount]{"VSN"} . "\n";
+					$moduleCount++;
+				}
 			}
 		}
 
@@ -328,45 +341,9 @@ foreach $logfile (@logFiles)
 			$startTimestamp = $year . "y" . $day . "d" . substr($time1,0,2) . "h" . substr($time1,3,2) . "m" . substr($time1,6,2) . "s";
 			$stopTimestamp = $year . "y" . $day . "d" . substr($time2,0,2) . "h" . substr($time2,3,2) . "m" . substr($time2,6,2) . "s";
 
-			#print "$startTimestamp $stopTimestamp\n";
-
-			# if this is a new VSN make entry for TAPELOG_OBS
-			if ($vsn_id ne $lastVSN)
-			{
-
-				# if module contains only 1 scan, use $stopTimestamp
-				if ($vsnStop eq "")
-				{
-					$vsnStop = $stopTimestamp;
-				}
-				if ($lastVSN ne "")
-				{
-					#print  "VSN=$vsnCount :  $lastVSN :   $vsnStart :$vsnStop ;\n";
-					print OUT "  VSN=$vsnCount :  $lastVSN :   $vsnStart :$vsnStop ;\n";
-
-					if ($vsnStart eq "")
-					{
-						print (color("red"), "WARNING: empty start time for module: $lastVSN\n");
-					}
-					if ($vsnStop eq "")
-					{
-						print (color("red"), "WARNING: empty stop time for module: $lastVSN\n");
-					}
-				}
-				$vsnStart = $startTimestamp;
-				$lastVSN = $vsn_id;
-				$vsnCount++;
-			}
-			else
-			{
-				$vsnStop = $stopTimestamp;
-			}
-			
 		}
 	}
 
-	print OUT "  VSN=$vsnCount :  $vsn_id :   $vsnStart :$vsnStop ;\n";
-	print OUT " enddef ;\n";
 
 	if ($beginDef == 0)
 	{
@@ -374,13 +351,27 @@ foreach $logfile (@logFiles)
 	}
 
 	close (IN);
+
+	for ($i = 0; $i < $moduleCount; $i++)
+	{
+		
+		$start = &formatTimestamp($modules[$i]{"startTime"});
+		$stop = &formatTimestamp($modules[$i]{"stopTime"});
+
+		if (($start == 0) or ($stop == 0))
+		{
+			print ("WARNING: found VSN: " . $modules[$i]{"VSN"}. " with empty start and/or stop time\n");
+			next;
+		}
+		print OUT "  VSN=$i :  " . $modules[$i]{"VSN"}.  " :   $start :$stop ;\n";
+	}
+	print OUT " enddef ;\n";
 	if (!$processAll)
 	{
 		print (color("green"), "Module list written to: $outfileName\n");
 		close (OUT);
 	}
 
-	#close (OUTFILELIST);
 
 	#open the output file list file for this station
 	$fileListName = "filelist.$stationTwoLetterCode";
@@ -407,6 +398,20 @@ exit;
 
 # end of main program
 
+sub formatTimestamp 
+{
+	my $timestamp = "";
+
+	$year = substr($_[0],0,4);
+	$doy = substr($_[0],4,3);
+	$hour = substr($_[0],7,2);
+	$minute = substr($_[0],9,2);
+	$second = substr($_[0],11,2);
+
+	$timestamp = $year . "y". $doy . "d" . $hour . "h" . $minute . "m" . $second . "s" ;
+
+	return($timestamp);	
+}
 # calculates MJD from dates given by year / day-of-year / hour /minute /second
 sub calcMJD 
 {
@@ -433,21 +438,17 @@ sub calcMJD
 
 sub printUsage
 {
-	print "----------------------------------------------------------------------------------\n";
-	print "$PROGNAME parses field system log files to extract information needed by \n";
-	print "the DiFX correlator.\n";
+	print (color("blue"), "\n");
+	print "PURPOSE\n";
+	print "$PROGNAME parses field system log files to extract information needed for the DiFX correlator.\n";
 	print "1) extract the modules used by the station and write them out in a format\n";
 	print "required for the vex $TAPELOG_OBS section.\n";
 	print "2) extract the filenames written on the module with their start/stop times\n";
 	print "in MJD. These filelists can be used by vex2difx (see files parameter in the vex2difs documentation)\n\n";
-	print "----------------------------------------------------------------------------------\n";
-	print "usage: \n  $PROGNAME logfile (process one logfile)\n";
+	print "\n\n";
+	print "USAGE: \n  $PROGNAME logfile (process one logfile)\n";
 	print "or \n";
-	print "  $PROGNAME -a (process all logfiles in this directory)\n\n";
-	print "Output will be written to:\n";
-	print " TAPELOG_OBS.all or TAPELOG_OBS.Station2LetterCode\n";
-	print " filelist.Station2LetterCode\n";
-	print "----------------------------------------------------------------------------------\n";
+	print "  $PROGNAME -a (process all logfiles in this directory)\n";
 	print (color("black"), "\n");
 	exit;
 }
