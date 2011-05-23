@@ -31,9 +31,9 @@ using namespace std;
 
 int main(int argc, char *argv[])
 {
-  bool readok;
+  bool readok = true;
   double doublesec;
-  int numpolycos, numffts, configindex, sourceindex;
+  int configindex, sourceindex;
   char polpair[3];
   double uvw[3];
 
@@ -117,7 +117,6 @@ int main(int argc, char *argv[])
     double maxvisibility = 0.0;
     int viscount = 0;
     double vissum = 0.0;
-    int lastatsec = 0;
     while(readok && !(input->eof() || input->fail())) {
       readok = config->fillHeaderData(input, baseline, atmjd, doublesec, configindex, sourceindex, freqindex, polpair, bin, weight, uvw);
       atsec = int(doublesec);
