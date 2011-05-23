@@ -162,7 +162,7 @@ int getDMGenCommand(const char *inputFile, char *command)
 	v = snprintf(command, CommandLength, "`%s %f`", DMGeneratorProgram, minFreq);
 	if(v >= CommandLength)
 	{
-		fprintf(stderr, "Error: CommandLength=%d is too small.  Needs to be > %d.\n",
+		fprintf(stderr, "Developer error: CommandLength=%d is too small.  Needs to be > %d.\n",
 			CommandLength, v);
 		
 		return -3;
@@ -420,6 +420,9 @@ int main(int argc, char **argv)
 {
 	int a;
 	TransientDaemonState *state;
+
+	/* Don't let children become zombies */
+	signal(SIGCHLD, SIG_IGN);
 
 	state = new TransientDaemonState;
 
