@@ -185,7 +185,8 @@ PCalExtractorTrivial::PCalExtractorTrivial(double bandwidth_hz, int pcal_spacing
     _pcaloffset_hz  = 0;
     _pcalspacing_hz = pcal_spacing_hz;
     _N_bins  = (int)(_fs_hz / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
-    _N_tones = (int)(std::floor(bandwidth_hz / pcal_spacing_hz));
+    _N_tones = (int)(std::ceil(bandwidth_hz / pcal_spacing_hz)) - 1;    // -1 is to avoid tonefreq == lofreq
+    tonestep = (int)(std::abs((double)pcal_spacing_hz) / gcd((long int)(std::abs((double)pcal_spacing_hz)),(long int)( _fs_hz)));
 
     /* Prep for FFT/DFT */
     int wbufsize = 0;
@@ -316,6 +317,12 @@ uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
     s = vectorCopy_cf32(_cfg->dft_out, (cf32*)out, _N_tones);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFwd PCalExtractorTrivial::getFinalPCal " << vectorGetStatusString(s) << endl;
+
+    for (int i = 0; i < _N_tones; i++)
+    {
+        out[i] = _cfg->dft_out[(i+1)*tonestep];     // don't copy the zero freq tone.  start at the next one.
+    }
+
     return _samplecount;
 }
 

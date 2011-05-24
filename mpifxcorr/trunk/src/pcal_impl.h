@@ -49,6 +49,7 @@ class PCalExtractorTrivial : public PCal {
    private:
      PCalExtractorTrivial& operator= (const PCalExtractorTrivial& o); /* no copy */
      PCalExtractorTrivial(const PCalExtractorTrivial& o); /* no copy */
+     int tonestep;
 
    public:
       /**
