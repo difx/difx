@@ -224,7 +224,7 @@ void split(const string &str, vector<string> &tokens, const string &delimiters =
 
 static bool sortStartMjdDescendingFunc(VexBasebandFile a, VexBasebandFile b)
 {
-	return (a.mjdStart>=b.mjdStart);
+	return (a.mjdStart<b.mjdStart);
 }
 
 int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &basebandFiles)
