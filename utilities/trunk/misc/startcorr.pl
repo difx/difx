@@ -27,7 +27,7 @@ my $machinefile;
 my $numproc;
 my $evlbi = 0;
 my $monitor = undef;
-my $offset = 10; # Offset in seconds for start time
+my $offset = 20; # Offset in seconds for start time
 my $debug = 0;
 my $mk5debug = 1;
 
@@ -340,13 +340,18 @@ sub launch_lbadr($$$$$$$$$$$) {
 
   # UDP
   if ($udp) {
-
     $ipd = 0 if (!defined $ipd);
     $status = send_data("modify_host=evlbi_$ant,$udp,$ipd", $recorder);
     die "Failed to enable udp on $recorder\n" if (!defined $status);
   }
 
   $status = send_data("recordingdisk=evlbi_$ant:",$recorder);
+  die "Failed to set recording disk to evlbi_$ant on $recorder\n" 
+      if (!defined $status);
+
+  #$status = send_data("diskselection=off",$recorder);
+  #die "Failed to turn off auto disk selection on $recorder\n" 
+  #    if (!defined $status);
 
   $duration+=5;
   $status = send_data("record_time=${duration}s", $recorder);
