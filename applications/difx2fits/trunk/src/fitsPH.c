@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2011 by Walter Brisken @ John Morgan               *
+ *   Copyright (C) 2008-2011 by Walter Brisken & John Morgan               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -37,7 +37,7 @@
 const float pcaltiny = 1e-10;
 
 #warning "FIXME: even this could be too small!"
-const int MaxLineLength = 10000;
+const int MaxLineLength = 40000;
 const double DefaultDifxCableCalExtrapolate = 2.0; /* The timerange a cable cal measurement 
 						    * is valid over is the integration window
 						    * multiplied by this factor */
@@ -613,6 +613,7 @@ static int parseDifxPulseCal(const char *line,
 	if(n != 9)
 	{
 		fprintf(stderr, "Error: parseDifxPulseCal: header information not parsable (n=%d)\n", n);
+		fprintf(stderr, "Line: %s\n", line);
 
 		return -1;
 	}
@@ -679,7 +680,7 @@ static int parseDifxPulseCal(const char *line,
 			if(nRecTone > 0)
 			{
 				k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
-				for(tone = 0; tone < nRecTone; tone++)
+				for(tone = 0; tone < nt; tone++)
 				{
 					n = sscanf(line, "%d%lf%f%f%n", &recBand, &A, &B, &C, &p);
 					if(n < 4)
@@ -714,7 +715,7 @@ static int parseDifxPulseCal(const char *line,
 						for(i = 0; i < nIF; i++)
 						{
 							toneIndex = IFs[i]*nTone + k;
-							
+
 							if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 							{
 								freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
