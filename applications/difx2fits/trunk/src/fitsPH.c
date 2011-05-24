@@ -920,6 +920,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	for(a = 0; a < D->nAntenna; a++)
 	{
+		for(k = 0; k < 2; k++)
+		{
+			for(t = 0; t < array_MAX_TONES; t++)
+			{
+				pulseCalReAcc[k][t] = 0.0;
+				pulseCalImAcc[k][t] = 0.0;
+			}
+		}
+
 		currentScanId = -1;
 		printf(" %s", D->antenna[a].name);
 		fflush(stdout);
@@ -970,29 +979,27 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				if(in && !nDifxTone)/*try reading pcal file*/
 				{
 					rv = fgets(line, MaxLineLength, in);
-					if(!rv)
+					if(rv)
 					{
-						break;/*to next job*/
-					}
-						
-					/* ignore possible comment lines */
-					if(line[0] == '#')
-					{
-						continue;/*to next line in file*/
-					}
-					else 
-					{
-						n = sscanf(line, "%s", antName);
-						if(n != 1 || strcmp(antName, D->antenna[a].name))
-						{
-							continue;/*to next line in file*/	
-						}
-						v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
-							&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-							stateCount, pulseCalRate, refDay, D, &configId, phasecentre);
-						if(v < 0)
+						/* ignore possible comment lines */
+						if(line[0] == '#')
 						{
 							continue;/*to next line in file*/
+						}
+						else 
+						{
+							n = sscanf(line, "%s", antName);
+							if(n != 1 || strcmp(antName, D->antenna[a].name))
+							{
+								continue;/*to next line in file*/	
+							}
+							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
+								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
+								stateCount, pulseCalRate, refDay, D, &configId, phasecentre);
+							if(v < 0)
+							{
+								continue;/*to next line in file*/
+							}
 						}
 					}
 					doDump = 1;//write out every line for pcal file
@@ -1000,64 +1007,67 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				else/*reading difx-extracted pcals*/
 				{	
 					rv = fgets(line, MaxLineLength, in2);
-					if(!rv)
+					if(rv)
 					{
-						break;/*to next job*/
-					}
-						
-					/* ignore possible comment lines */
-					if(line[0] == '#')
-					{
-						continue;/*to next line in file*/
-					}
-					else 
-					{
-						v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &scanId, &time, j,
-								      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
-								      refDay, D, &configId, phasecentre);
-						if(v < 0)
+						/* ignore possible comment lines */
+						if(line[0] == '#')
 						{
 							continue;/*to next line in file*/
 						}
+						else 
+						{
+							v = parseDifxPulseCal(line, dsId, nBand, nTone, &sourceId, &scanId, &time, j,
+									      freqs, pulseCalRe, pulseCalIm, stateCount, pulseCalRate,
+									      refDay, D, &configId, phasecentre);
+							if(v < 0)
+							{
+								continue;/*to next line in file*/
+							}
 
-					}
-					if(scanId != currentScanId)
-					{
-						/* Get ready to dump last scan (if it's not the first run through)
-						 * Work out time average windows so that there is an integer number within the scan
-						 * Get all of the relevant cable cal values for this antenna
-						 * n.b. we can safely assume that we are at a valid pcal entry since v > 0 */
-						if(currentScanId != -1)
+						}
+						if(scanId != currentScanId)
+						{
+							/* Get ready to dump last scan (if it's not the first run through)
+							 * Work out time average windows so that there is an integer number within the scan
+							 * Get all of the relevant cable cal values for this antenna
+							 * n.b. we can safely assume that we are at a valid pcal entry since v > 0 */
+							if(currentScanId != -1)
+							{
+								doDump = 1;
+							}
+							double s, e;
+							int nWindow;
+							DifxScan *scan;
+
+							scan = D->scan + scanId;
+							configId = scan->configId;
+							s = time;	/* time of first pcal record */
+							e = scan->mjdEnd - (int)(D->mjdStart);
+
+							nWindow = (int)((e - s)/(avgSeconds/86400.0) + 0.5);
+
+							if(nWindow < 1)
+							{
+								nWindow = 1;
+							}
+							windowDuration = (e - s)/nWindow;
+							dumpWindow = s + windowDuration;
+							currentScanId = scanId;
+						}
+						else if(time > dumpWindow && dumpWindow > 0.0)
 						{
 							doDump = 1;
+
+							while(time > dumpWindow)
+							{
+								dumpWindow += windowDuration;
+							}
 						}
-						double s, e;
-						int nWindow;
-						DifxScan *scan;
-
-						scan = D->scan + scanId;
-						configId = scan->configId;
-						s = time;	/* time of first pcal record */
-						e = scan->mjdEnd - (int)(D->mjdStart);
-
-						nWindow = (int)((e - s)/(avgSeconds/86400.0) + 0.5);
-
-						if(nWindow < 1)
-						{
-							nWindow = 1;
-						}
-						windowDuration = (e - s)/nWindow;
-						dumpWindow = s + windowDuration;
-						currentScanId = scanId;
 					}
-					else if(time > dumpWindow && dumpWindow > 0.0)
+					else if(j == D->nJob -1)
 					{
+						/* end of last job reached */
 						doDump = 1;
-
-						while(time > dumpWindow)
-						{
-							dumpWindow += windowDuration;
-						}
 					}
 				}
 				if(doDump)
@@ -1192,6 +1202,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 					}
 				}//end if doDump
+				if(!rv)
+				{
+					/* after dumping, if needed, we go to the next job */
+					break;
+				}
 				for(k = 0; k < nPol; k++)
 				{
 					for(t = 0; t < nTone*D->datastream[dsId].nRecFreq; t++)
@@ -1216,6 +1231,9 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		{
 			rewind(in);
 		}
+
+		/* Dump any accumulations that have not been completed */
+
 	}/*end antenna loop*/
 	if(in)
 	{
