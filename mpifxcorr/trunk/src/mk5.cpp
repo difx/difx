@@ -132,6 +132,7 @@ void Mk5DataStream::initialise()
 int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
   int bufferindex, framesin, vlbaoffset, looksegment, payloadbytes, framespersecond, framebytes;
+  float datarate;
 
   bufferindex = DataStream::calculateControlParams(scan, offsetsec, offsetns);
 
@@ -179,6 +180,18 @@ int Mk5DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     payloadbytes *= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
     framebytes = (framebytes-VDIF_HEADER_BYTES)*config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum) + VDIF_HEADER_BYTES;
     framespersecond /= config->getDNumMuxThreads(bufferinfo[looksegment].configindex, streamnum);
+  }
+
+  //set the fraction of data to use to determine system temperature based on data rate
+  //the values set here work well for the today's computers and clusters...
+  datarate = static_cast<float>(framebytes)*static_cast<float>(framespersecond)*8.0/1.0e6;  // in Mbps
+  if(datarate < 512)
+  {
+    switchedpowerincrement = 1;
+  }
+  else
+  {
+    switchedpowerincrement = static_cast<int>(datarate/512 + 0.1);
   }
 
   //do the necessary correction to start from a frame boundary - work out the offset from the start of this segment
@@ -453,8 +466,10 @@ int Mk5DataStream::testForSync(int configindex, int buffersegment)
   }
   else
   {
+    static int nt = 0;
+
     // Switched power detection
-    if(switchedpower)
+    if(switchedpower && (nt % switchedpowerincrement == 0))
     {
       switchedpower->feed(syncteststream);
     }

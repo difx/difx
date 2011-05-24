@@ -163,6 +163,7 @@ protected:
   string ** datafilenames;
   ifstream input;
   SwitchedPower *switchedpower;
+  int switchedpowerincrement;
   DataMuxer * datamuxer;
 
   static const int LBA_HEADER_LENGTH = 4096;

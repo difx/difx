@@ -45,6 +45,7 @@ DataStream::DataStream(Configuration * conf, int snum, int id, int ncores, int *
   activesec = 0;
   activens = 0;
   switchedpower = 0;
+  switchedpowerincrement = 4;  // by default look at 1/4 of the samples
   datamuxer = 0;
 }
 
@@ -284,7 +285,7 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   foundok = model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus1);
   delayus1 -= intclockseconds*1000000;
   firstoffsetns = offsetns - static_cast<int>(delayus1*1000);
-  int64_t dataspanns = bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens;
+  int64_t dataspanns = static_cast<int64_t>(bufferinfo[atsegment].numchannels*bufferinfo[atsegment].blockspersend*2*bufferinfo[atsegment].sampletimens + 0.5);
   if (bufferinfo[atsegment].sampling== Configuration::COMPLEX) dataspanns /=2;
   
   foundok = foundok && model->calculateDelayInterpolator(scan, (double)offsetsec + ((double)offsetns + dataspanns)/1000000000.0, 0.0, 0, config->getDModelFileIndex(bufferinfo[atsegment].configindex, streamnum), srcindex, 0, &delayus2);
