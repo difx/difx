@@ -780,6 +780,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int nBand, nPol;
 	int nTone=-2;
 	int nDifxTone, nAccum;
+	int lastnWindow;
 	double time, dumpTime, accumStart, accumEnd;
 	float timeInt, dumpTimeInt;
 	int cableScanId, nextCableScanId, lineCableScanId;
@@ -928,6 +929,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				pulseCalImAcc[k][t] = 0.0;
 			}
 		}
+		nWindow = 0;
 
 		currentScanId = -1;
 		printf(" %s", D->antenna[a].name);
@@ -971,6 +973,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			nextCableTime = 0.0;
 			nextCablePeriod = -1.0;
 			lineCableScanId = -1;
+			lastnWindow = nWindow;
 
 
 			/*rewind(in) below this loop*/
@@ -1164,32 +1167,35 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 					p_fitsbuf = fitsbuf;
 				
-					FITS_WRITE_ITEM(dumpTime, p_fitsbuf);
-					FITS_WRITE_ITEM(dumpTimeInt, p_fitsbuf);
-					FITS_WRITE_ITEM(sourceId1, p_fitsbuf);
-					FITS_WRITE_ITEM(antId1, p_fitsbuf);
-					FITS_WRITE_ITEM(arrayId1, p_fitsbuf);
-					FITS_WRITE_ITEM(freqId1, p_fitsbuf);
-					FITS_WRITE_ITEM(cableCalOut, p_fitsbuf);
-
-					for(k = 0; k < nPol; k++)
+					if(!nDifxTone || nAccum*D->config[configId].tInt > 0.25*avgSeconds || lastnWindow == 1)	/* only write a row if a reasonable amount of data were averaged */
 					{
-						FITS_WRITE_ARRAY(stateCount[k], p_fitsbuf, 4*nBand);
-						if(nTone > 0)
-						{
-							FITS_WRITE_ARRAY(freqs[k], p_fitsbuf, nTone*nBand);
-							FITS_WRITE_ARRAY(pulseCalReAcc[k], p_fitsbuf, nTone*nBand);
-							FITS_WRITE_ARRAY(pulseCalImAcc[k], p_fitsbuf, nTone*nBand);
-							FITS_WRITE_ARRAY(pulseCalRate[k], p_fitsbuf, nTone*nBand);
-						}
-					}
+						FITS_WRITE_ITEM(dumpTime, p_fitsbuf);
+						FITS_WRITE_ITEM(dumpTimeInt, p_fitsbuf);
+						FITS_WRITE_ITEM(sourceId1, p_fitsbuf);
+						FITS_WRITE_ITEM(antId1, p_fitsbuf);
+						FITS_WRITE_ITEM(arrayId1, p_fitsbuf);
+						FITS_WRITE_ITEM(freqId1, p_fitsbuf);
+						FITS_WRITE_ITEM(cableCalOut, p_fitsbuf);
 
-					testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "PH");
-					
+						for(k = 0; k < nPol; k++)
+						{
+							FITS_WRITE_ARRAY(stateCount[k], p_fitsbuf, 4*nBand);
+							if(nTone > 0)
+							{
+								FITS_WRITE_ARRAY(freqs[k], p_fitsbuf, nTone*nBand);
+								FITS_WRITE_ARRAY(pulseCalReAcc[k], p_fitsbuf, nTone*nBand);
+								FITS_WRITE_ARRAY(pulseCalImAcc[k], p_fitsbuf, nTone*nBand);
+								FITS_WRITE_ARRAY(pulseCalRate[k], p_fitsbuf, nTone*nBand);
+							}
+						}
+
+						testFitsBufBytes(p_fitsbuf - fitsbuf, nRowBytes, "PH");
+						
 #ifndef WORDS_BIGENDIAN
-					FitsBinRowByteSwap(columns, nColumn, fitsbuf);
+						FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
-					fitsWriteBinRow(out, fitsbuf);
+						fitsWriteBinRow(out, fitsbuf);
+					}
 
 					nAccum = 0;
 					doDump = 0;
