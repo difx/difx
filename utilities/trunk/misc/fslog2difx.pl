@@ -199,10 +199,13 @@ foreach $logfile (@logFiles)
 
 			$recordOn = 1;
 			$time1 = $hms; 
-			#print "time1: $time1 " . $modules[$moduleCount]{"startTime"} . "\n";
-			if ($modules[$moduleCount-1]{"startTime"} == 0)
+
+			if ($moduleCount > 0)
 			{
-				$modules[$moduleCount-1]{"startTime"} = $timestamp;
+				if ($modules[$moduleCount-1]{"startTime"} == 0)
+				{
+					$modules[$moduleCount-1]{"startTime"} = $timestamp;
+				}
 			}
 		}
 		# find disc_end (= disk_record=off in new notation) lines
@@ -234,11 +237,13 @@ foreach $logfile (@logFiles)
 			$get_byte=1;
 			$recordOn = 0;
 
-			if ($modules[$moduleCount-1]{"stopTime"} < $timestamp)
-                        {
-			#	print "Setting stop for " . $modules[$moduleCount]{"VSN"} . "\n";
-                                $modules[$moduleCount-1]{"stopTime"} = $timestamp;
-                        }
+			if ($moduleCount > 0)
+			{
+				if ($modules[$moduleCount-1]{"stopTime"} < $timestamp)
+				{
+					$modules[$moduleCount-1]{"stopTime"} = $timestamp;
+				}
+			}
 
 			next;
 		}
