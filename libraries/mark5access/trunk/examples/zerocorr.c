@@ -143,6 +143,19 @@ DataStream *newDataStream(FILE *in)
 	ds->fftSize = atoi(buffer[4]);
 	ds->startChan = atoi(buffer[5]);
 	ds->nChan = atoi(buffer[6]);
+	if(ds->startChan < 0 || ds->startChan > ds->fftSize/2 ||
+	   (ds->nChan > 0 && (ds->startChan + ds->nChan) > ds->fftSize/2) ||
+	   (ds->nChan < 0 && (ds->startChan + ds->nChan) < -1))
+	{
+		printf("The start channel must be in 0 .. %d, inclusive, and\n"
+		       "the number of channels to keep must be as well:\n"
+		       "For file %s\n"
+		       "you have %d < 0 or %d > %d with %d channels to keep\n",
+			ds->fftSize/2, ds->inputFile, ds->startChan,
+			ds->startChan, ds->fftSize/2, ds->nChan);
+		return 0;
+	}
+
 	ds->ms = new_mark5_stream_absorb(
 		new_mark5_stream_file(ds->inputFile, ds->offset),
 		new_mark5_format_generic_from_string(ds->dataFormat) );
@@ -229,7 +242,7 @@ int feedDataStream(DataStream *ds)
 	int i, status;
 	double scale;
 
-	status = mark5_stream_decode_double(ds->ms, ds->fftSize/2, ds->data);
+	status = mark5_stream_decode_double(ds->ms, ds->fftSize, ds->data);
 
 	if(status < 0)
 	{
@@ -238,7 +251,7 @@ int feedDataStream(DataStream *ds)
 
 	fftw_execute(ds->plan);
 
-	scale = 2.0/(ds->fftSize);
+	scale = 1.0/(ds->fftSize);
 
 	if(ds->nChan > 0)
 	{
@@ -511,6 +524,26 @@ int usage(const char *pgm)
 	return 0;
 }
 
+void report_datastream(DataStream *ds, int xf)
+{
+	int ll;
+	printf("Stream %s\n", ds->ms->streamname);
+	for(ll=0; ll < ds->nChan; ll++) printf( "%+4.1f%c",
+		ds->data[ds->subBand][ll], ll%16==15 ? '\n' : ' ');
+	if (!xf) return;
+	printf("RealXF %s\n", ds->ms->streamname);
+	for(ll=0; ll < ds->fftSize/2 + 1; ll++) printf( "%+4.1f%c",
+		creal(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+	printf("ImagXF %s\n", ds->ms->streamname);
+	for(ll=0; ll < ds->fftSize/2 + 1; ll++) printf( "%+4.1f%c",
+		cimag(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+}
+void report_baseline_data(Baseline *B, int xf)
+{
+	report_datastream(B->ds1, xf);
+	report_datastream(B->ds2, xf);
+}
+
 int zerocorr(const char *confFile, int verbose)
 {
 	Baseline *B;
@@ -548,6 +581,8 @@ int zerocorr(const char *confFile, int verbose)
 		{
 			break;
 		}
+		if(verbose > 2 && n % 1000 == 0)
+			report_baseline_data(B, verbose > 3);
 
 		for(j = 0; j < B->nChan; j++)
 		{
