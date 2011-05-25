@@ -10,8 +10,8 @@
 #include "difx2mark4.h"
 
 int createRoot (DifxInput *D,       // difx input structure pointer
-		int *jobId,
-		int scanId,
+                int jobId,
+                int scanId,
                 char *node,         // directory for output fileset
                 char *rcode,        // 6 letter root suffix
                 struct stations *stns, // station-relevant information
@@ -131,12 +131,12 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     // FIXME inname for vexfile and antlist for job antennas
     
                                     // open input vex file
-    printf("      Opening vex file <%s>\n", D->job[*jobId].vexFile);
-    fin = fopen (D->job[*jobId].vexFile, "r");
+    printf("      Opening vex file <%s>\n", D->job[jobId].vexFile);
+    fin = fopen (D->job[jobId].vexFile, "r");
     if (fin == NULL)
         {
         perror ("difx2mark4");
-        fprintf (stderr, "fatal error opening input vex file %s for job %d\n", D->job[*jobId].vexFile, *jobId);
+        fprintf (stderr, "fatal error opening input vex file %s for job %d\n", D->job[jobId].vexFile, jobId);
         return (-1);
         }
 
@@ -618,10 +618,10 @@ void fake_bocf_period(char buff[256], DifxInput *D)
     ap_in_sysclks = rint((double)D->config->tInt * 32e6 / 1.0);
     bocf_period = (D->config->subintNS * 32) / 1000;
     if (ap_in_sysclks % bocf_period != 0)
-	bocf_period = ap_in_sysclks / 4;
+    bocf_period = ap_in_sysclks / 4;
 
     sprintf (buff, " bocf_period = %lu;\n*subintNS = %d;\n",
-	bocf_period, D->config->subintNS);
+    bocf_period, D->config->subintNS);
     }
 
 int isValidAntenna(const DifxInput *D, char *antName, int scanId)

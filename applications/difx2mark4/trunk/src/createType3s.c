@@ -134,7 +134,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
             free(line);
             return (-1);
             }
-        printf ("    created type 3 output file %s\n", outname);
+        printf ("      created type 3 output file %s\n", outname);
                                     // all files need a type 000 record
         strcpy (t000.date, "2001001-123456");
         strcpy (t000.name, outname);
@@ -221,18 +221,31 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                      &npol, &nchan, &ntones, &nstates, &nrc, &nchars);
                     mjd = t - refDay + (int)(D->mjdStart);
 
-                    if(mjd < D->scan[scanId].mjdStart)
+                    if (mjd < D->scan[scanId].mjdStart)
                                         // skip to next line
                         {
                         if (opts->verbose > 1)
                             printf("      pcal early %13.6f<%13.6f\n", mjd, D->scan[scanId].mjdStart);
                         continue;
                         }
-                    if(mjd > D->scan[scanId].mjdEnd)
+                    if (mjd > D->scan[scanId].mjdEnd)
                         {
                         if (opts->verbose > 1)
                             printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdStart);
                         break;
+                        }
+                                        // reject any pcal data for times in flag file
+                    for (i=0; i < D->job[j].nFlag; i++)
+                        {
+                        if ((D->job+j)->flag[i].antennaId == n
+                        && mjd > (D->job+j)->flag[i].mjd1 
+                        && mjd < (D->job+j)->flag[i].mjd2)
+                            {
+                            if (opts->verbose > 1)
+                                printf("      pcal flagged at %13.6f for ant %d named %s\n",
+                                       mjd, n, t300.name);
+                            continue;
+                            }
                         }
 
                                         // calculate and insert rot start time of record

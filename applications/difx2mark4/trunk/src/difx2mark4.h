@@ -52,6 +52,7 @@ struct CommandLineOptions
     int pulsarBin;
     int phaseCentre;
     double jobMatrixDeltaT; /* seconds */
+    int raw;
     };
 
 typedef struct 
@@ -104,17 +105,19 @@ struct fbands
                                     // conv2date.c
 void conv2date (double, struct date *);
                                     // createRoot.c
-int createRoot (DifxInput *, int *, int, char *, char *, struct stations *,
+int createRoot (DifxInput *, int, int, char *, char *, struct stations *,
                 struct CommandLineOptions *, char *);
 char getband (double);
                                     // createType1s.c
 int createType1s (DifxInput *, int *, int, char *, char *, struct stations *,
-                  struct CommandLineOptions *, char *, FILE **, char *);
+                  struct CommandLineOptions *, char *);
                                     // createType3s.c
 int createType3s (DifxInput *, int, int, int, char *, char *, struct stations *,
                   struct CommandLineOptions *);
                                     // get_vis.c
-int get_vis_header (FILE *, vis_record *);
+int get_vis (char *, struct CommandLineOptions *, int, int, vis_record **, int *, char *);
+                                    // normalize.c
+void normalize (struct CommandLineOptions *, vis_record *, int, int, int);
                                     // root_id.c
 char *root_id(int, int, int, int, int);
                                     // single_code.c

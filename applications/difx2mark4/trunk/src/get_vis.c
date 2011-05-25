@@ -1,62 +1,147 @@
-// get_vis reads one visibility record from the indicated SWIN file
+// get_vis opens and read one complete visibility file in Swinburne format 
 //
-//  first created                          rjc  2010.3.11
+//
+//  first created                                       rjc  2010.3.11
+//  modified to open and read whole Swinburne file      rjc  2011.5.18
 
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <time.h>
+#include <difxio/difx_input.h>
+#include <errno.h>
 #include "difx2mark4.h"
 #include "difxio/parsevis.h"
+                                    // visibility allocation chunk size
+#define CHUNK 1000
 
-// there is one type 1 output file for each baseline in the difx scan
-//     get_vis (FILE *, vis_record *);
-
-
-int get_vis_header (FILE *fin,             // SWIN format file with visibilities
-                    vis_record *pr) // pointer to data structure to be output 
+int get_vis (char *vf_name,                   // name of input file
+             struct CommandLineOptions *opts, // ptr to input options
+             int nvis,                        // number of vis per record
+             int vrsize,                      // size of actual vis records in bytes
+             vis_record **vrec,               // ptr to malloced array of vis. recs as read
+             int *nvrec,                      // number of vis. records read
+             char *corrdate)                  // modification date of input file
     {
-    int v;
-                                    // test first and last reads for error or EOF
-    //first of all, figure out what kind of header we are dealing with
-    v = fread(&pr->sync, sizeof(int), 1, fin);
-    if(v <= 0) //EOF
+    int err,
+        vfile_status;
+
+    FILE *vfile;
+    struct tm *mod_time;
+    struct stat attrib;
+    vis_record *pv;                 // convenience pointers
+    char *pch;
+
+    vfile = fopen (vf_name, "r");
+    if (vfile == NULL)
+        {
+        perror ("difx2mark4");
+        fprintf (stderr, "fatal error opening input data file %s\n", vf_name);
         return (-1);
-
-    if(pr->sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
-        {
-        fprintf(stderr, "Error: difx2mark4 will not work with DiFX 1.x data\n");
-        return -2;
         }
-    else if(pr->sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
+
+    printf ("      opened input file %s\n", vf_name);
+    err = stat (vf_name, &attrib);
+    if (err)
         {
-        fread (&pr->version, sizeof (int), 1, fin);
-        if(pr->version == 1) //new style binary header
+        fprintf (stderr, "Warning: error stating file %s\n", vf_name);
+        fprintf (stderr, "         t000.date will be set to 2000001-000000\n");
+        sprintf (corrdate, "2000001-000000");
+        }
+    else
+        {
+        mod_time = gmtime (&(attrib.st_mtime));
+        snprintf (corrdate, 16, "%4d%03d-%02d%02d%02d", 
+                 mod_time->tm_year+1900,
+                 mod_time->tm_yday, mod_time->tm_hour,
+                 mod_time->tm_min,  mod_time->tm_sec);
+        }
+
+    *vrec = malloc (CHUNK * vrsize);
+    pv = *vrec;
+    pch = (char *) pv;
+    *nvrec = 0;
+                                    // loop over all records in file
+    while (TRUE)
+        {
+                                    // read a header from the input file
+                                    // first read sync word to identify header version
+        vfile_status = fread (&pv->sync, sizeof (int), 1, vfile);
+        if (vfile_status != 1)
             {
-            fread (&pr->baseline, sizeof (int), 1, fin);
-            fread (&pr->mjd, sizeof (int), 1, fin);
-            fread (&pr->iat, sizeof (double), 1, fin);
-            fread (&pr->config_index, sizeof (int), 1, fin);
-            fread (&pr->source_index, sizeof (int), 1, fin);
-            fread (&pr->freq_index, sizeof (int), 1, fin);
-            fread (pr->pols, sizeof (char), 2, fin);
-            fread (&pr->pulsar_bin, sizeof (int), 1, fin);
-            fread (&pr->weight, sizeof (double), 1, fin);
-            fread (pr->uvw, sizeof (double), 3, fin);
+            if (feof (vfile))
+                {
+                                    //EOF in .difx file
+                if (opts->verbose > 0)
+                    printf ("        EOF in input file\n");
+                fclose (vfile);
+                return -1;
+                }
+            else 
+                {
+                fprintf (stderr, "unreadable input file %s status %d\n",
+                         vf_name, vfile_status);
+                                    //unreadable .difx file
+                fclose (vfile);
+                return -2;
+                }
+            }
+
+        if(pv->sync == VISRECORD_SYNC_WORD_DIFX1) //old style ascii header
+            {
+            fprintf(stderr, "Error: difx2mark4 will not work with DiFX 1.x data\n");
+            return -3;
+            }
+        else if(pv->sync == VISRECORD_SYNC_WORD_DIFX2) //new style binary header
+            {
+            fread (&pv->version, sizeof (int), 1, vfile);
+            if(pv->version == 1) //new style binary header
+                {
+                fread (&pv->baseline,     sizeof (int),    1, vfile);
+                fread (&pv->mjd,          sizeof (int),    1, vfile);
+                fread (&pv->iat,          sizeof (double), 1, vfile);
+                fread (&pv->config_index, sizeof (int),    1, vfile);
+                fread (&pv->source_index, sizeof (int),    1, vfile);
+                fread (&pv->freq_index,   sizeof (int),    1, vfile);
+                fread (pv->pols,          sizeof (char),   2, vfile);
+                fread (&pv->pulsar_bin,   sizeof (int),    1, vfile);
+                fread (&pv->weight,       sizeof (double), 1, vfile);
+                fread (pv->uvw,           sizeof (double), 3, vfile);
+                fread (pv->comp,          sizeof (float),  2*nvis, vfile);
+
+                if (opts->verbose > 2)
+                    {
+                    printf ("valid read bl %x time %d %13.6f config %d source %d freq %d, pol %s pb %d\n",
+                    pv->baseline, pv->mjd, pv->iat, pv->config_index, pv->source_index, 
+                    pv->freq_index, pv->pols, pv->pulsar_bin);
+                    }
+
+                }
+            else
+                {
+                fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n",
+                pv->sync, pv->version);
+                return -4;
+                }
             }
         else
             {
-            fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n",
-            pr->sync, pr->version);
-
-            return -2;
+            fprintf (stderr, "Error parsing header: got an unrecognized sync of %xd\n", 
+                     pv->sync);
+            return -5;
+            }
+                                    // allocate more memory and copy record in
+        *nvrec += 1;                // bump the record counter
+        pch += vrsize;
+        pv = (vis_record *) pch;    // point to next record
+                                    // if necessary, get another chunk's worth of ram
+        if (*nvrec % CHUNK == 0)
+            {
+            *vrec = realloc (*vrec, (*nvrec + CHUNK) * vrsize);
+            pch = (char *) *vrec + *nvrec * vrsize;
+            pv = (vis_record *) pch;
             }
         }
-        else
-            {
-            fprintf(stderr, "Error parsing header: got an unrecognized sync of %xd\n", pr->sync);
-
-            return -2;
-            }
-        return (0);
-    }
-// vim: shiftwidth=4:softtabstop=4:expandtab:cindent:cinoptions={1sf1s^-1s
+    }                               // return path is always through EOF

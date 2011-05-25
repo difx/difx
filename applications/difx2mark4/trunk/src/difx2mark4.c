@@ -51,25 +51,16 @@ static int usage (const char *pgm)
     fprintf (stderr, "\nThe output fileset <outfile> will be written in "
         "mark4 format similar\n");
     fprintf (stderr, "to that created by mark4 HW correlators.\n");
-    fprintf (stderr, "\noptions can include:\n");
-    fprintf (stderr, "  --help\n");
-    fprintf (stderr, "  -h                  Print this help message\n"); 
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --verbose\n");
-    fprintf (stderr, "  -v                  Be verbose.  -v -v for more!\n");
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --difx\n");
-    fprintf (stderr, "  -d                  Run on all .difx files in directory\n");
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --override-version  Ignore difx versions\n");
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --experiment-number\n");
-    fprintf (stderr, "  -e                  Set the experiment number (default 1234)\n");
-    fprintf (stderr, "                      Must be a four-digit number\n");
-    fprintf (stderr, "\n");
-    fprintf (stderr, "  --pretend\n");
-    fprintf (stderr, "  -p                  dry run\n");
-    fprintf (stderr, "\n");
+    fprintf (stderr, "\nAvailable options are:\n");
+    fprintf (stderr, "  -h or --help              Print this help message\n\n"); 
+    fprintf (stderr, "  -v or --verbose           Be verbose.  -v -v for more!\n\n");
+    fprintf (stderr, "  -d or --difx              Run on all .difx files in directory\n\n");
+    fprintf (stderr, "  --override-version        Ignore difx versions\n\n");
+    fprintf (stderr, "  -e or --experiment-number Set the experiment number (default 1234)\n");
+    fprintf (stderr, "                            Must be a four-digit number\n\n");
+    fprintf (stderr, "  -k or --keep-order        don't sort antenna order\n\n");
+    fprintf (stderr, "  -r or --raw               use raw mode - suppresses normalization\n\n");
+    fprintf (stderr, "  -p or --pretend           dry run\n\n");
 
     return 0;
     }
@@ -91,7 +82,7 @@ struct fbands fband[MAX_FBANDS] = {{'B',      0.0, 999999.9},  // default to ban
                                    {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
                                    
   
-int newScan(DifxInput *,  struct CommandLineOptions*, char *, int, int *, FILE **, char *);
+int newScan(DifxInput *,  struct CommandLineOptions*, char *, int, int *);
 
 int main(int argc, char **argv)
     {
@@ -148,8 +139,6 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
     int jobId = 0;
     int nConverted = 0;
     const char *difxVersion;
-    char corrdate[16];
-    FILE *vis_file = 0;
     struct stat stat_s;
 
     difxVersion = getenv ("DIFX_VERSION");
@@ -333,10 +322,9 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
                 }
             printf("  Processing scan %d/%d: %s\n", scanId, D->nScan, D->scan[scanId].identifier);
                                                 // convert scan
-                                                // scanId and j can be incremented
+                                                // scanId and jobId can be incremented
                                                 // by newScan
-            newScanId = newScan(D, opts, node, scanId, &jobId, &vis_file, corrdate);
-            //printf ("newScan file pointer %x\n", vis_file);
+            newScanId = newScan(D, opts, node, scanId, &jobId);
             *nScan += 1;
             if(newScanId < 0)
                 break;
@@ -350,9 +338,10 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
     return 0;
     }
     
-int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanId, int *jobId, FILE **vis_file, char *corrdate)
+int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanId, int *jobId)
 {
     int startJobId,
+        endJobId,
         nextScanId,
         i,
         err;
@@ -421,14 +410,14 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
                                 // create root from vex file
     startJobId = *jobId;
     printf ("    Generating root file\n");
-    if (createRoot (D, jobId, scanId, path, rcode, stns, opts, rootname) < 0)
+    if (createRoot (D, startJobId, scanId, path, rcode, stns, opts, rootname) < 0)
         {
         fprintf (stderr, "Could not create root file\n");
         return -1;
         }
                                 // create type1 files for each baseline
     printf ("    Generating Type 1s\n");
-    nextScanId = createType1s (D, jobId, scanId, path, rcode, stns, opts, rootname, vis_file, corrdate);
+    nextScanId = createType1s (D, jobId, scanId, path, rcode, stns, opts, rootname);
     if (nextScanId < 0)
         {
         fprintf (stderr, "Could not create type 1 files\n");
@@ -437,7 +426,8 @@ int newScan(DifxInput *D, struct CommandLineOptions *opts, char *node, int scanI
 
                                 // create type3 files for each station
     printf ("    Generating Type 3s\n");
-    if (createType3s (D, startJobId, *jobId, scanId, path, rcode, stns, opts) < 0)
+    endJobId = (*jobId >= D->nJob) ? D->nJob - 1 : *jobId;
+    if (createType3s (D, startJobId, endJobId, scanId, path, rcode, stns, opts) < 0)
         {
         fprintf (stderr, "Could not create type 3 files\n");
         return -1;
@@ -452,10 +442,10 @@ struct CommandLineOptions *newCommandLineOptions()
     opts = (struct CommandLineOptions *)calloc(1, 
         sizeof(struct CommandLineOptions));
     
-    opts->writemodel = 1;
     opts->sniffTime = 30.0;
     opts->jobMatrixDeltaT = 20.0;
     opts->phaseCentre = 0;
+    opts->raw = 0;
 
     return opts;
     }
@@ -492,12 +482,7 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
         {
         if(argv[i][0] == '-')
             {
-            if(strcmp (argv[i], "--no-model") == 0 ||
-               strcmp (argv[i], "-n") == 0)
-                {
-                opts->writemodel = 0;
-                }
-            else if(strcmp (argv[i], "--quiet") == 0 ||
+            if(strcmp (argv[i], "--quiet") == 0 ||
                     strcmp (argv[i], "-q") == 0)
                 {
                 opts->verbose--;
@@ -512,15 +497,10 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
                 {
                 opts->verbose++;
                 }
-            else if(strcmp (argv[i], "--dont-sniff") == 0 ||
-                strcmp (argv[i], "-x") == 0)
+            else if(strcmp (argv[i], "--raw") == 0 ||
+                strcmp (argv[i], "-r") == 0)
                 {
-                opts->sniffTime = -1.0;
-                }
-            else if(strcmp (argv[i], "--dont-combine") == 0 ||
-                    strcmp (argv[i], "-1") == 0)
-                {
-                opts->dontCombine = 1;
+                opts->raw = 1;
                 }
             else if(strcmp (argv[i], "--pretend") == 0 ||
                     strcmp (argv[i], "-p") == 0)
