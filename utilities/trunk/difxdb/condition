@@ -196,7 +196,7 @@ def parseFile(filename):
 				report = Report(module, s[0])
 				reports.append(report)
 			else:
-				print 'date error in %s' % filename
+				print 'Date error in %s' % filename
 				exit(0)
 		else:
 			report.addline(strip(d))
@@ -226,7 +226,7 @@ def inter(database, files, verbose):
 	for a in files:
 		reports = parseFile(a)
 		if len(reports) == 0:
-			print 'error -- no reports found in %s' % a
+			print 'Error: no reports found in %s' % a
 			exit(0)
 		for r in reports:
 			r.show()

@@ -269,7 +269,7 @@ class DatabaseJob:
 	def runtime(self):
 		return int(86400.0*(self.jobStop-self.jobStart)/self.speedUp)
 
-	def printHeader(self, printTotal, verbose=0):	# note -- this is a static function
+	def printHeader(self, printTotal, verbose=0):	# note: this is a static function
 		if verbose > 0:
 			extra = "Start                Stop                 "
 		else:
@@ -380,7 +380,7 @@ class DatabaseLog:
 		else:
 			self.status = "Unknown"
 
-	def printHeader(self, verbose=0):	# note -- this is a static function
+	def printHeader(self, verbose=0):	# note: this is a static function
 		if verbose > 0:
 			extra = "Start                Stop                 "
 		else:
@@ -723,7 +723,7 @@ class JobList:
 			j.show(indent+2)
 
 # Container object for all information about a full correlator pass, i.e., 1 or
-# more jobs -- used for most modes of this program
+# more jobs: used for most modes of this program
 	
 class Pass:
 	def __init__(self, jobListFile, database, verbose=0):
@@ -846,7 +846,7 @@ class Pass:
 				if not dbOnly:				
 					if strip(a) in ['y', 'Y']:
 						if not dontAsk:
-							print 'OK -- proceeding\n'
+							print 'OK, proceeding\n'
 						else:
 							print 'Continuing anyway\n'
 
@@ -933,7 +933,7 @@ class Pass:
 					print 'Executing: %s' % cmd
 				system(cmd)
 			elif verbose > 1:
-				print 'Not copying -- using local directory'
+				print 'Not copying, using local directory'
 			cmd = 'calcif2 %s -f %s/%s' % \
 				(options, queueDir, j.name)
 			if verbose > 1:
@@ -975,7 +975,7 @@ def verify(action):
 	print '\nAre you sure you want to proceed? [y/N]'
 	a = stdin.readline()
 	if strip(a) in ['y', 'Y']:
-		print 'OK -- proceeding\n'
+		print 'OK, proceeding\n'
 	else:
 		print 'Not continuing.\n'
 		exit(0)

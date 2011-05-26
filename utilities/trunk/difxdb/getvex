@@ -36,7 +36,7 @@ def getdir(project):
 		return g[0]
 	elif len(g) == 0:
 		print 'Sorry, project %s not in %s.' % (project, projectdir)
-		print '\nNote -- project names are case sensitive.\n'
+		print '\nNote: project names are case sensitive.\n'
 		exit(0)
 	else:
 		print 'How unusual: project %s is in multiple directories:' % project
@@ -120,7 +120,7 @@ run(cmd, verbose)
 
 calfiles = glob('%s/%scal.vlba*' % (prjdir, project))
 if len(calfiles) == 0:
-	print 'Warning -- no cal.vlba file found in %s' % prjdir
+	print 'Warning: %scal.vlba not found in %s' % (project, prjdir)
 	print '  continuing anyway'
 else:
 	calfile = calfiles[0]

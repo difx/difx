@@ -99,7 +99,7 @@ if not isdir(prjDir):
 	exit(0)
 
 if pretend:
-	print '\nPRETEND MODE IS ON -- NO DATA WILL BE DELETED\n'
+	print '\nPRETEND MODE IS ON; NO DATA WILL BE DELETED\n'
 
 print 'The queue directory for project %s is %s' % (project, prjDir)
 print '\nContinuing will delete this directory, including any unarchived\ncorrelator output.'
@@ -108,7 +108,7 @@ print '\nAre you sure you ant to continue? [y/N]'
 a = stdin.readline()
 
 if strip(a) in ['y', 'Y']:
-	print 'OK -- proceeding\n'
+	print 'OK, proceeding\n'
 else:
 	print 'Not continuing.\n'
 	exit(0)

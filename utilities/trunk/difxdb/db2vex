@@ -313,7 +313,7 @@ def getEarthFromDBold(db, centerMJD, verbose):
 		cursor.execute(query)
 		E = cursor.fetchall()
 		if len(E) < 1:
-			print 'Error -- no EOPs for day %s' % d
+			print 'Error: no EOPs for day %s' % d
 		else:
 			e = E[-1]	# select most recent
 			if m == startMJD:
@@ -371,7 +371,7 @@ def getEarthFromDB(db, centerMJD, verbose):
 		cursor.execute(query)
 		E = cursor.fetchall()
 		if len(E) < 1:
-			print 'Error -- no EOPs for day %s' % d
+			print 'Error: no EOPs for day %s' % d
 		else:
 			e = E[-1]	# select most recent EOP entry for this day
 			origin = upper(strip(e[2]))
@@ -431,7 +431,7 @@ def genBlocks(scans, experTimes):
 			if s[2] > curBlock[1]:
 				curBlock[1] = s[2]
 			else:
-				print 'Warning -- not time ordered!', s[3], curBlock[1], s[2]
+				print 'Warning: not time ordered!', s[3], curBlock[1], s[2]
 		else:
 			curBlock = [s[1], s[2], s[3], s[0]]
 			blocks.append(curBlock);
@@ -510,7 +510,7 @@ def appendFSStations(stations, fsVSNs):
 
 def processVexFile(vexFile, force, verbose, vsnProjectCode, fsVSNs=[]):
 	if not isfile(vexFile):
-		print 'Error -- cannot open file %s' % vexFile
+		print 'Error: cannot open file %s' % vexFile
 		exit(0)
 
 	outFile = vexFile + '.obs'
@@ -523,7 +523,7 @@ def processVexFile(vexFile, force, verbose, vsnProjectCode, fsVSNs=[]):
 
 	obsCode, obsSeg, stationTimes = vexPeek(vexFile, verbose)
 	if obsCode == 'Error':
-		print 'Not processing file %s -- not present or valid.' % vexFile
+		print 'Not processing file %s; it is not present or valid.' % vexFile
 		exit(0)
 
 	experTimes = calcExperTimes(stationTimes)

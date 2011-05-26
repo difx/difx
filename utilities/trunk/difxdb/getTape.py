@@ -142,7 +142,7 @@ def genBlocks(scans):
 			if s[2] > curBlock[1]:
 				curBlock[1] = s[2]
 			else:
-				print 'Warning -- not time ordered!', s[3], curBlock[1], s[2]
+				print 'Warning: not time ordered!', s[3], curBlock[1], s[2]
 		else:
 			curBlock = [s[1], s[2], s[3], s[0]]
 			blocks.append(curBlock);

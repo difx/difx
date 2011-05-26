@@ -23,7 +23,7 @@ def usage(prog):
 	print '  --override-version'
 	print '             To force operation with mixed DiFX versions\n'
 	print '  --pretend'
-	print '  -p         Pretend mode -- don\'t actually do anything\n'
+	print '  -p         Pretend mode: don\'t actually do anything\n'
 	exit(0)
 
 def teste2ecopy(pretend):
@@ -172,9 +172,9 @@ class FitsList:
 			print 'Executing: %s' % cmd
 
 		if pretend:
-			print '\n****************************************************\n'
-			print 'Pretend mode actived -- not actually doing anything!'
-			print '\n****************************************************\n'
+			print '\n**************************************************\n'
+			print 'Pretend mode actived; not actually doing anything!'
+			print '\n**************************************************\n'
 			return
 
 		system(cmd)
