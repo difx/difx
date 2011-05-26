@@ -54,6 +54,7 @@ static int addUse(Uses *U, const char *hostname)
 		if(strcmp(hostname, U[i].hostname) == 0)
 		{
 			U[i].n++;
+			
 			return i;
 		}
 	}
@@ -112,6 +113,7 @@ static int checkDiskFree(const char *path, long long minFree)
 	if(message[0])
 	{
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		
 		return -1;
 	}
 
@@ -168,6 +170,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		difxMessageSendDifxAlert(
 			"Developer error: Mk5Daemon_startMpifxcorr received null DifxMessageGeneric",
 			DIFX_ALERT_LEVEL_ERROR);
+		
 		return;
 	}
 
@@ -177,6 +180,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		difxMessageSendDifxAlert("Malformed DifxStart message received", DIFX_ALERT_LEVEL_ERROR);
 		Logger_logData(D->log, "Mk5Daemon_startMpifxcorr: degenerate request\n");
+		
 		return;
 	}
 
@@ -207,6 +211,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		difxMessageSendDifxAlert("Since /tmp is full, mpifxcorr will not be started.",
 			DIFX_ALERT_LEVEL_ERROR);
+		
 		return;
 	}
 
@@ -214,14 +219,14 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(access(S->inputFilename, R_OK) != 0)
 	{
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Input file %s not found -- cannot correlate it!",
+			"Input file %s not found; cannot correlate it!",
 			S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		
 		return;
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH,
-		"DiFX version %s to be started", S->difxVersion);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "DiFX version %s to be started", S->difxVersion);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
 	/* Check to make sure the destination directory has some free space */
@@ -242,6 +247,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			"The output directory %s is full, mpifxcorr will not be started.", 
 			destdir);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		
 		return;
 	}
 
@@ -250,6 +256,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	{
 		difxMessageSendDifxAlert("Attempt to start job from non head node", DIFX_ALERT_LEVEL_ERROR);
 		Logger_logData(D->log, "Mk5Daemon_startMpifxcorr: I am not a head node\n");
+
 		return;
 	}
 
@@ -421,12 +428,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	fclose(out);
 	/* change ownership and permissions to match the input file */
-	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", 
-		S->inputFilename, filename);
+	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
-	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", 
-		S->inputFilename, filename);
+	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
 

@@ -325,6 +325,9 @@ int main(int argc, char **argv)
 	int justStarted = 1;
 #endif
 
+	// Prevent any zombies
+	signal(SIGCHLD, SIG_IGN);
+
 	p = getenv("DIFX_LOG_PATH");
 	if(p)
 	{

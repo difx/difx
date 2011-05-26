@@ -153,14 +153,12 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 		l = strlen(rv);
 		rv[l-1] = 0;
 
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mount %s attempt : %s", dev, rv);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : %s", dev, rv);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mount %s attempt : Success", dev);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : Success", dev);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
@@ -189,14 +187,12 @@ static void umountdisk(Mk5Daemon *D)
 		l = strlen(rv);
 		rv[l-1] = 0;
 
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Unmount /mnt/usb attempt : %s", rv);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Unmount /mnt/usb attempt : %s", rv);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Unmount /mnt/usb attempt : Success");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Unmount /mnt/usb attempt : Success");
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
 }
@@ -402,8 +398,7 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 	else
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Command=%s not recognized!\n", cmd);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Command=%s not recognized!\n", cmd);
 		Logger_logData(D->log, message);
 	}
 }
