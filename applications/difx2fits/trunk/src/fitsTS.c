@@ -398,6 +398,8 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 
 	v = snprintf(filename, MaxFilenameLength, "%s/SWITCHEDPOWER_%d", D->job[jobId].outputFile, origDsId);
 
+	clearSwitchedPower(average, array_MAX_BANDS*2);
+
 	if(v >= MaxFilenameLength)
 	{
 		fprintf(stderr, "Developer error: getDifxTsys jobId=%d antId=%d origDsId=%d filename length wanted to be %d bytes long, not %d\n",
