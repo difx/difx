@@ -157,6 +157,7 @@ void pystream::close()
 		{
 			double deltat = floor((lastValid-mjd0 + 1.0/86400.0)*86400.0 + 0.5);
 			*this << "array.wait(mjdStart + " << deltat << "*second)" << endl;
+			*this << "dbe0.shutdownPoller()" << endl;
 		}
 		else
 		{
@@ -248,6 +249,7 @@ int pystream::writeDbeInit(const VexData *V)
 {
 	if(currenttype == VLBA || currenttype == GBT)
 	{
+#warning "FIXME For now, set up single RDBE"
                 int m = 0;
 		const VexMode *mode = V->getMode(m);
 		const VexSetup *setup = mode->getSetup(ant);
@@ -625,9 +627,10 @@ int pystream::writeScans(const VexData *V)
 			double deltat3 = floor((lastValid-mjd0)*86400.0 + 0.5-5);
                         // just in case our setup scan caused the auto leveling to lock onto a bad value make
                         // it forget
+                        // TODO this only works for one RDBE now
                         if( s == 0 ) {
-                            *this << "loif" << modeId << ".setDBEForget(0)" << endl;
-                            *this << "loif" << modeId << ".setDBEForget(1)" << endl;
+                            *this << "dbe0.setDBEForget(0)" << endl;
+                            *this << "dbe0.setDBEForget(1)" << endl;
                         }
                         *this << "recorder0.setPacket(0, 0, 40, 5008)" << endl;
 			if( s != -1 ) {
