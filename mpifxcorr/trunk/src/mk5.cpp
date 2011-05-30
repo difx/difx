@@ -560,6 +560,8 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
       npacket = 0;
       packet_sum = 0;
     }
+  } else {
+    lasttime = tim();
   }
 }
 
@@ -826,6 +828,7 @@ uint64_t Mk5DataStream::openframe()
   int nsegment;
   nsegment = (int)(2.0e9/bufferinfo[0].nsinc+0.1);
 
+  isnewfile = true;
   return readbytes*nsegment;
 }
 // vim: shiftwidth=2:softtabstop=2:expandtab
