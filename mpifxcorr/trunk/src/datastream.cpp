@@ -1513,7 +1513,7 @@ void DataStream::waitForBuffer(int buffersegment)
 void DataStream::waitForSendComplete()
 {
   int perr, dfinished, cfinished;
-  bool testonly = (atsegment != (waitsegment - 3 + numdatasegments)%numdatasegments);
+  bool testonly = (atsegment != (waitsegment - 3 + numdatasegments)%numdatasegments && atsegment != (waitsegment - 2 + numdatasegments)%numdatasegments);
 
   if((atsegment - waitsegment + numdatasegments)%numdatasegments <= 2) //we are very close so don't bother
     return;

@@ -1920,6 +1920,14 @@ bool Configuration::consistencyCheck()
   baselinedata bl;
   datastreamdata * dsdata;
 
+  //check length of the datastream table
+  if(numdatasegments < 6)
+  {
+    if(mpiid == 0) //only write one copy of this error message
+      cfatal << startl << "Databuffer must have a minimum of 6 segments - " << numdatasegments << " specified" << endl;
+    return false;
+  }
+
   //check entries in the datastream table
   for(int i=0;i<datastreamtablelength;i++)
   {
