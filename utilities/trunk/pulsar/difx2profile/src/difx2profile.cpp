@@ -35,6 +35,7 @@ int main(int argc, char *argv[])
   double doublesec;
   int configindex, sourceindex;
   char polpair[3];
+  char buffer[100];
   double uvw[3];
 
   njobs = argc-1;
@@ -55,13 +56,13 @@ int main(int argc, char *argv[])
 
     if(i==1) {
       nbins = config->getNumPulsarBins(0);
-      nchannels = config->getFNumChannels(0);
+      nchannels = config->getFNumChannels(0)/config->getFChannelsToAverage(0);
       if(nbins <= 0) {
         cerr << "Error - the first .input file had no pulsar bins - aborting!" << endl;
         return EXIT_FAILURE;
       }
       for(int j=1;j<config->getFreqTableLength();j++) {
-        if(config->getFNumChannels(j) != nchannels) {
+        if(config->getFNumChannels(j)/config->getFChannelsToAverage(j) != nchannels) {
           cerr << "Error - input file " << i << " has different numbers of channels - aborting!!!" << endl;
           return EXIT_FAILURE;
         }
@@ -89,59 +90,46 @@ int main(int argc, char *argv[])
     nextsec = runsec/10;
     runcount = 0;
 
-    DIR *dp;
-    struct dirent *dirp;
-    if((dp  = opendir(config->getOutputFilename().c_str())) == NULL) {
-      cout << "Error(" << errno << ") opening " << config->getOutputFilename() << endl;
-      return errno;
-    }
-    dirp = readdir(dp);
-    while(dirp != NULL && dirp->d_name[0] == '.')
-      dirp = readdir(dp);
-    if(dirp == NULL) {
-      cerr << "Couldn't find a difx file in directory " << config->getOutputFilename() << " - aborting!!" << endl;
-      closedir(dp);
-      return EXIT_FAILURE;
-    }
-    difxfile = config->getOutputFilename() + "/" + string(dirp->d_name);
-    cout << "About to open file " << difxfile << endl;
-    if(readdir(dp) != NULL) 
-      cerr << "Warning - there was more than one file in the directory " + config->getOutputFilename() << endl;
-
-    input = new ifstream(difxfile.c_str(), ios::in);
-    if(!input->is_open()) {
-      cout << "Could not open file " << difxfile << " - aborting!" << endl;
-      closedir(dp);
-      return EXIT_FAILURE;
-    }
     double maxvisibility = 0.0;
     int viscount = 0;
     double vissum = 0.0;
-    while(readok && !(input->eof() || input->fail())) {
-      readok = config->fillHeaderData(input, baseline, atmjd, doublesec, configindex, sourceindex, freqindex, polpair, bin, weight, uvw);
-      atsec = int(doublesec);
-      if((atmjd-startmjd)*86400 + atsec-startsec > nextsec) {
-        cout << ++runcount << "0% done" << endl;
-	nextsec += runsec/10;
+    for(int b=0;b<nbins;b++)
+    {
+      sprintf(buffer, "/DIFX_%05d_%06d.s0000.b%04d", config->getStartMJD(), config->getStartSeconds(), b);
+      difxfile = config->getOutputFilename() + string(buffer);
+      cout << "About to open file " << difxfile << endl;
+
+      input = new ifstream(difxfile.c_str(), ios::in);
+      if(!input->is_open()) {
+        cout << "Could not open file " << difxfile << " - aborting!" << endl;
+        return EXIT_FAILURE;
       }
-      input->read((char*)visibilities, nchannels*8);
-      for(int j=1;j<nchannels-1;j++) {
-        if(visibilities[2*j] > maxvisibility)
-          maxvisibility = visibilities[2*j];
-        profile[bin] += visibilities[2*j];
-        vissum += visibilities[2*j];
+      readok = true;
+      while(readok && !(input->eof() || input->fail())) {
+        readok = config->fillHeaderData(input, baseline, atmjd, doublesec, configindex, sourceindex, freqindex, polpair, bin, weight, uvw);
+        atsec = int(doublesec);
+        if((atmjd-startmjd)*86400 + atsec-startsec > nextsec) {
+          cout << ++runcount << "0% done" << endl;
+	  nextsec += runsec/10;
+        }
+        input->read((char*)visibilities, nchannels*8);
+        for(int j=1;j<nchannels-1;j++) {
+          if(visibilities[2*j] > maxvisibility)
+            maxvisibility = visibilities[2*j];
+          profile[bin] += visibilities[2*j];
+          vissum += visibilities[2*j];
+        }
+        viscount++;
+        input->peek();
       }
-      viscount++;
-      input->peek();
+      input->clear();
+      input->close();
+      delete input;
     }
-    cout << "Finished file " << i << "/" << njobs << endl;
+    cout << "Finished job " << i+1 << "/" << njobs << endl;
     cout << "Max visibility was " << maxvisibility << endl;
     cout << "Number of visibilities (not individual channels) was " << viscount << endl;
     cout << "Mean visibility was " << vissum/(viscount*(nchannels-2)) << endl;
-    input->clear();
-    input->close();
-    delete input;
-    closedir(dp);
     //delete config;
   }
 
