@@ -44,8 +44,8 @@
 
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20100912";
+const char version[] = "0.3";
+const char verdate[] = "20110531";
 
 enum WriteProtectAction
 {
@@ -62,6 +62,8 @@ int usage(const char *pgm)
 	printf("<options> can include:\n\n");
 	printf("  --help\n");
 	printf("  -h         Print help info and quit\n\n");
+	printf("  --quiet\n");
+	printf("  -q         Just print the VSN and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Be more verbose in execution\n\n");
 	printf("  --force\n");
@@ -120,7 +122,14 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStat) );
 	if(bankStat.State != STATE_READY)
 	{
-		fprintf(stderr, "Bank %c not ready\n", 'A'+bank);
+		if(verbose < 0)
+		{
+			printf("-\n");
+		}
+		else
+		{
+			fprintf(stderr, "Bank %c not ready\n", 'A'+bank);
+		}
 		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
@@ -139,7 +148,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	label[XLR_LABEL_LENGTH] = 0;
 	strcpy(oldLabel, label);
 
-	if(verbose)
+	if(verbose > 0)
 	{
 		printf("Raw label = %s\n", label);
 	}
@@ -187,16 +196,37 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 
 		parseModuleLabel(label, vsn, &capacity, &rate, 0);
 
-		printf("\nCurrent extended VSN is %s/%d/%d\n", vsn, capacity, rate);
-		printf("Current disk module status is %s\n", moduleStatusName(moduleStatus) );
-		printf("\nModule directory version is %d\n", dirVersion);
-		printf("This module contains %lld bytes of recorded data and is %4.2f%% full.\n", dir.Length,
-			100.0*roundModuleSize(dir.Length)/capacity);
-		printf("Write protection is %s.", bankStat.WriteProtected ? "ON" : "OFF");
+		if(verbose < 0)
+		{
+			printf("%s\n", vsn);
+		}
+		else
+		{
+			printf("\nCurrent extended VSN is %s/%d/%d\n", vsn, capacity, rate);
+			printf("Current disk module status is %s\n", moduleStatusName(moduleStatus) );
+			printf("\nModule directory version is %d\n", dirVersion);
+			printf("This module contains %lld bytes of recorded data and is %4.2f%% full.\n", dir.Length,
+				100.0*roundModuleSize(dir.Length)/capacity);
+			printf("Write protection is %s.", bankStat.WriteProtected ? "ON" : "OFF");
+		}
 	}
 	else
 	{
-		printf("\nNo VSN currently set on module\n");
+		if(verbose < 0)
+		{
+			printf("-\n");
+		}
+		else
+		{
+			printf("\nNo VSN currently set on module\n");
+		}
+	}
+
+	if(verbose < 0)
+	{
+		WATCHDOG( XLRClose(xlrDevice) );
+
+		return 0;
 	}
 
 	printf("\n");
@@ -369,6 +399,11 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--verbose") == 0)
 			{
 				verbose++;
+			}
+			else if(strcmp(argv[a], "-q") == 0 ||
+			        strcmp(argv[a], "--quiet") == 0)
+			{
+				verbose--;
 			}
 			else if(strcmp(argv[a], "-f") == 0 ||
 			   strcmp(argv[a], "--force") == 0)

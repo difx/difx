@@ -6,6 +6,7 @@ Version 1.4.1
 * Add Write-only option to testmod
 * Fix parsing of mark5 directory files: stepping through extra parameters had a bug.
 * No more 1024 scan limit on Mark5 modules
+* Quiet version for vsn
 
 Version 1.4
 ~~~~~~~~~~~
