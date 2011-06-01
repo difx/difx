@@ -97,6 +97,9 @@ $Astro::Time::StrSep = ':';
 printf("mjd2dayno:  MJD %.2f ==> %03d/$year (%s)\n", $mjd, $dayno,
        turn2str($ut,'H',0));
 
+printf("mjd2time:   MJD %.2f ==> %s\n", $mjd, mjd2time($mjd));
+printf("mjd2vextime:MJD %.2f ==> %s\n", $mjd, mjd2vextime($mjd));
+
 $mjd = dayno2mjd($dayno, $year, $ut);
 printf("dayno2mjd:  %03d/$year (%s) ==> MJD %.2f\n", $dayno,
        turn2str($ut,'H',0), $mjd);
