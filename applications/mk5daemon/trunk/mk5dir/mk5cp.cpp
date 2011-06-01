@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.7";
-const char verdate[] = "20110408";
+const char verdate[] = "20110601";
 
 int verbose = 0;
 int die = 0;
@@ -91,6 +91,7 @@ int usage(const char *pgm)
 	fprintf(stderr, "The <scans> string can also be an MJD range to copy.\n  Example: 54321.112_54321_113\n");
 	fprintf(stderr, "The <scans> string can also be a byte range to copy.\n  Example: 38612201536_38619201536\n");
 	fprintf(stderr, "The byte range can be expressed as a start and length.\n  Example: 38612201536+7000000\n");
+	fprintf(stderr, "The <scans> string can also take the special values 'last' and 'all'\n");
 	if(!cat)
 	{
 		fprintf(stderr, "<output path> is a directory where files will be dumped\n");
@@ -582,6 +583,7 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 	int scanIndex;
 	Mark5Scan *scan;
 	char outname[DIFX_MESSAGE_FILENAME_LENGTH];
+	char scanrangestr[DIFX_MESSAGE_PARAM_LENGTH];
 
 	char message[DIFX_MESSAGE_LENGTH];
 	Mark5Module module;
@@ -753,6 +755,20 @@ static int mk5cp(char *vsn, const char *scanlist, const char *outpath, int force
 
 	nGood = 0;
 	nBad = 0;
+
+	/* If "all" is provided as the list of scans, then change scan list to be all scans */
+	if(strcasecmp(scanlist, "all") == 0)
+	{
+		snprintf(scanrangestr, DIFX_MESSAGE_PARAM_LENGTH, "1-%d", module.nScans());
+		scanlist = scanrangestr;
+	}
+	/* if "last" is provided, then change the scan list to be just that scan */
+	else if(strcasecmp(scanlist, "last") == 0)
+	{
+		snprintf(scanrangestr, DIFX_MESSAGE_PARAM_LENGTH, "%d", module.nScans());
+		scanlist = scanrangestr;
+	}
+
 	if(mk5status.activeBank > ' ' && bail < 1) 
 	{
 		/* first look for mjd range */
