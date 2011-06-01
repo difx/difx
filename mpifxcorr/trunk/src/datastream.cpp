@@ -47,6 +47,7 @@ DataStream::DataStream(Configuration * conf, int snum, int id, int ncores, int *
   switchedpower = 0;
   switchedpowerincrement = 4;  // by default look at 1/4 of the samples
   datamuxer = 0;
+  isnewfile = false;
 }
 
 
