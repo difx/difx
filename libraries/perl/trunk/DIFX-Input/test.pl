@@ -18,7 +18,7 @@ my $common = $input->common;
 print "# COMMON SETTINGS ##!\n";
 printf "CALC FILENAME:      %s\n", $common->calcfilename;
 printf "CORE CONF FILENAME: %s\n", $common->coreconffilename;
-printf "EXECUTE TIME (SEC): %.3f\n", $common->executetime;
+printf "EXECUTE TIME (SEC): %s\n", $common->executetime;
 printf "START MJD:          %d\n", $common->startmjd;
 printf "START SECONDS:      %d\n", $common->startseconds;
 printf "ACTIVE DATASTREAMS: %d\n", $common->activedatastreams;
