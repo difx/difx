@@ -413,6 +413,7 @@ use overload
   '*'  => \&multiply,
   '/'  => \&divide,
   '==' => \&equals,
+  'eq' => \&equals,
   '!=' => \&notequals,
   '<'  => \&lessthan,
   '<=' => \&lessthanequal,
