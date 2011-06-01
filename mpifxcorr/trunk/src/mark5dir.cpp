@@ -523,7 +523,7 @@ int Mark5Module::load(const char *filename)
 	in = fopen(filename, "r");
 	if(!in)
 	{
-		error << "Cannot load file: " << filename;
+		error << "Cannot load file: " << filename << "\n";
 
 		return -1;
 	}
@@ -531,7 +531,7 @@ int Mark5Module::load(const char *filename)
 	v = fgets(line, MaxLineLength, in);
 	if(!v)
 	{
-		error << "Directory file: " << filename << " is corrupt.";
+		error << "Directory file: " << filename << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -541,7 +541,7 @@ int Mark5Module::load(const char *filename)
 		dirLabel, &nscans, &bankName, &signature, extra[0], extra[1], extra[2]);
 	if(n < 3)
 	{
-		error << "Directory file: " << filename << " is corrupt.";
+		error << "Directory file: " << filename << " is corrupt.\n";
 		fclose(in);
 
 		return -1;
@@ -569,7 +569,7 @@ int Mark5Module::load(const char *filename)
 
 	if(nscans < 0)
 	{
-		error << "Directory file: " << filename << " is corrupt (nscans < 0).";
+		error << "Directory file: " << filename << " is corrupt (nscans < 0).\n";
 		fclose(in);
 
 		return -1;
@@ -584,7 +584,7 @@ int Mark5Module::load(const char *filename)
 		v = fgets(line, MaxLineLength, in);
 		if(!v)
 		{
-			error << "Directory file: " << filename << " is corrupt (file too short).";
+			error << "Directory file: " << filename << " is corrupt (file too short).\n";
 			fclose(in);
 
 			return -1;
@@ -605,7 +605,7 @@ int Mark5Module::save(const char *filename)
 	out = fopen(filename, "w");
 	if(!out)
 	{
-		error << "Cannot write to file: " << filename;
+		error << "Cannot write to file: " << filename << "\n";
 
 		return -1;
 	}
@@ -1296,7 +1296,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	curbank = Mark5BankSetByVSN(xlrDevice, vsn);
 	if(curbank < 0)
 	{
-		error << "Setting bank for module " << vsn << " failed.  Error code=" << curbank;
+		error << "Setting bank for module " << vsn << " failed.  Error code=" << curbank << "\n";
 
 		return -1;
 	}
@@ -1310,7 +1310,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	}
 	if(v < 0)
 	{
-		error << "Loading directory file " << filename << "failed.  Error code=" << v;
+		error << "Loading directory file " << filename << "failed.  Error code=" << v << "\n";
 	}
 
 	fast = optionFast;
@@ -1318,24 +1318,21 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 
 	if(v >= 0)
 	{
+		error.ignore(error.str().size());
+
 		v = save(filename);
 		if(v < 0)
 		{
-			error << "Saving directory file " << filename << "failed.  Error code=" << v;
-		}
-
-		if(cacheOnly)
-		{
-			v = 0;	// Don't cause catastrophic failure
+			error << "Saving directory file " << filename << "failed.  Error code=" << v << "\n";
 		}
 	}
 	else if(v == DIRECTORY_NOT_CACHED)
 	{
-		error << "Directory file (" << filename << " ) for module " << vsn << " is not up to date.";
+		error << "Directory file (" << filename << " ) for module " << vsn << " is not up to date.\n";
 	}
 	else
 	{
-		error << "Directory read error for module " << vsn << " .  Error code=" << v;
+		error << "Directory read error for module " << vsn << " .  Error code=" << v << "\n";
 	}
 
 	return v;
