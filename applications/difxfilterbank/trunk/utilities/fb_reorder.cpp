@@ -346,7 +346,10 @@ int calcTimeSlotOverlap(int64_t this_time, int32_t packet_int_time_ns, int64_t t
     }
     else if ( max_slot == min_slot+2) {
         if (frac_max == 0.0) *n_time_slots =2;  // case 5
-        else *n_time_slots = 3;                 // case 1
+        else {
+            *n_time_slots = 3;                  // case 1. The middle slot is just the output slot time/packet time.
+            timeslot_frac[1] = (float)options.int_time_ns/(float)packet_int_time_ns;
+        }
     }
     else if ( max_slot == min_slot) {
         *n_time_slots = 1;                      // case 3
