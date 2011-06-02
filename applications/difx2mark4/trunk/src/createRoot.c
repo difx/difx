@@ -8,6 +8,7 @@
 #include <math.h>
 #include <ctype.h>
 #include "difx2mark4.h"
+#include "other.h"
 
 int createRoot (DifxInput *D,       // difx input structure pointer
                 int jobId,
@@ -22,7 +23,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         n,
         match,
         current_block,
-        numchan,
+        numchan = 0,
         nsite = 0,
         nant = 0,
         eop_found = FALSE,
@@ -593,7 +594,7 @@ char getband (double freq)
     {
     extern struct fbands fband[MAX_FBANDS];
     int i;
-    char c;
+    char c = 'B';
 
     for (i=0; i<MAX_FBANDS; i++)
         if (fband[i].flo <= freq && freq <= fband[i].fhi)

@@ -40,7 +40,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         vrsize,                     // size of vis. records in bytes
         pol,
         a1, a2,                     // antenna indices for current baseline, 0-relative
-        blind,                      // baseline index into the baseline array structure
+        blind = 0,                  // baseline index into the baseline array structure
         nread = 0,                  // number of vis records read for current scan
         nflagged = 0,               // number of visibility records flagged
         noscan = 0,                 // number vis recs with no corresponding scan
@@ -57,8 +57,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
          blines[NUMFILS][3],        // null-terminated baselines list
          poltab [4][3] = {"LL", "RR", "LR", "RL"},
          lchan_id[5],
-         rchan_id[5],
-         buff[20];;
+         rchan_id[5];
                                     // variables that need persistence due to exit
                                     // up into caller over scan boundaries
     static char corrdate[16];
@@ -75,8 +74,6 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     FILE *fout[NUMFILS];
     DIR *pdir;
     struct dirent *dent;
-    struct tm *mod_time;
-    struct stat attrib;
 
     struct type_000 t000;
     struct type_100 t100;
@@ -481,9 +478,9 @@ int getBaselineIndex (DifxInput *D, int a1, int a2)
     for (i=0; i<D->nBaseline; i++)
         if ((D->datastream[D->baseline[i].dsA].antennaId == a1
          && D->datastream[D->baseline[i].dsB].antennaId == a2)
-        || a1 == a2 &&              // for autocorrelations, only one end needs to match
+        || (a1 == a2 &&              // for autocorrelations, only one end needs to match
            (D->datastream[D->baseline[i].dsA].antennaId == a1
-         || D->datastream[D->baseline[i].dsB].antennaId == a2))
+         || D->datastream[D->baseline[i].dsB].antennaId == a2)))
             return i;
          
     return -1;
