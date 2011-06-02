@@ -190,7 +190,7 @@ foreach $a (@ants)
       print "Warning - unknown axis type ", $a->axis_type, ", assuming azel!\n";
       print(STATION ", 3, ");
     }
-    print(STATION $a->axis_offset, "  \$", $antid, "\n");
+    print(STATION $a->axis_offset, "  \$", uc($antid), "\n");
   }
 }
 
