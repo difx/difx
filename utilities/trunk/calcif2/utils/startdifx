@@ -54,6 +54,8 @@ def usage():
 	print '          start difx via DifxStartMessage\n'
 	print '  -F or --fits'
 	print '          generate 1 fits file per job at end of each\n'
+	print '  -l or --localhead'
+	print '          use the current host as the head node\n'
 	print '  --override-version'
 	print '          ignore difx version differences\n'
 	print '<inputN> is the file prefix for a DiFX input file (possibly including .input)\n'
@@ -287,7 +289,7 @@ def getNodes(fileBase):
 	return datastreams, processors
 
 
-def sendStartMessage(fileBase, difxVersion):
+def sendStartMessage(fileBase, difxVersion, localHeadNode):
 	inputFile = fileBase + '.input'
 
 	group = getenv('DIFX_MESSAGE_GROUP')
@@ -301,13 +303,18 @@ def sendStartMessage(fileBase, difxVersion):
 		port = int(port)
 		
 	headNode = getenv('DIFX_HEAD_NODE')
-	
+	corrHeadNode = headNode
+	if localHeadNode:
+		corrHeadNode = socket.gethostname()
+
 	identifier = split(fileBase, '/')[-1]
 	
 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
 	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
 
 	dsList, pList = getNodes(fileBase)
+	system("rm -f %s.machines" % fileBase)
+	system("rm -f %s.threads" % fileBase)
 
 	dataStreams = ""
 	for d in dsList:
@@ -341,7 +348,7 @@ def sendStartMessage(fileBase, difxVersion):
 		    "</difxStart>" \
 		  "</body>" \
 		"</difxMessage>\n" % \
-		(headNode, identifier, inputFile, headNode, dataStreams, processors, difxVersion)
+		(headNode, identifier, inputFile, corrHeadNode, dataStreams, processors, difxVersion)
 
 	if verbose > 0:
 		print "Sending: ", message
@@ -384,6 +391,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 
 		if not isfile(machinesFile):
 			if machinesPolicy > 0:
+				localHeadString = ""
 				cmd = '%s %s.input' % (genmachines, fileBase)
 				if verbose > 1:
 					print 'Executing: %s' % cmd
@@ -402,7 +410,7 @@ def doMachines(fileBase, machinesPolicy, cache):
 	return len(open(machinesFile).readlines())
 
 # Start difx with DifxStartMessage
-def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, machinesCache):
+def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache):
 
 	difxVersion = testDifxVersion(fileBase, override)
 
@@ -431,12 +439,12 @@ def runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, mach
 	if np <= 0:
 		return 'Error: %s.machines not found' % fileBase
 
-	sendStartMessage(fileBase, difxVersion)
+	sendStartMessage(fileBase, difxVersion, useLocalHead)
 
 	return None
 
 # Start difx directly with mpirun
-def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, machinesCache):
+def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache):
 
 	difxVersion = testDifxVersion(fileBase, override)
 
@@ -507,13 +515,13 @@ def runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, machi
 	return None
 
 
-def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, machinesCache):
+def run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, useLocalHead, machinesCache):
 	
 	savedEnvironment = updateEnvironment(fileBase+'.input.env')
 	if useStartMessage:
-		rv = runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, machinesCache)
+		rv = runMessage(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache)
 	else:
-		rv = runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, machinesCache)
+		rv = runDirect(fileBase, machinesPolicy, deletePolicy, makeModel, override, useLocalHead, machinesCache)
 	restoreEnvironment(savedEnvironment)
 
 	return rv
@@ -526,6 +534,7 @@ machinesPolicy = 2
 deletePolicy = 0
 makeModel = True
 makeFits = False
+useLocalHead = False
 fileBaseList = []
 cwd = getcwd()
 override = False
@@ -554,6 +563,8 @@ for a in argv[1:]:
 			verbose += 1
 		elif a == '-q' or a == '--quiet':
 			verbose -= 1
+		elif a == '-l' or a == '--localhead':
+			useLocalHead = True
 		elif a == '--override-version':
 			override = True
 	else:
@@ -578,7 +589,8 @@ for fileBase in fileBaseList:
 		print "Job name %s is too long and will be skipped!" % fileBase
 		exit(1)
 
-	v = run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, machinesCache)
+	v = run(fileBase, machinesPolicy, deletePolicy, makeModel, override, useStartMessage, 
+		useLocalHead, machinesCache)
 
 	if v != None:
 		sendMessage(fileBase, 'ABORTED', v)

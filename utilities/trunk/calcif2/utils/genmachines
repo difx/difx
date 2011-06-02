@@ -257,8 +257,10 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 	quit = False
 
 	moduleCount = 0
+	headCount = 0
 	for ds in dssources:
 		if ds == "FILE":
+			foundsuitable = False
 			for m in machines:
 				# don't use the head node
 				if m == hostname:
@@ -269,9 +271,14 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 				# don't use mark5 machines
 				if ismk5[m] == 1:
 					continue
+				foundsuitable = True
 				dsnodes.append(m)		
 				break
-
+			if not foundsuitable:
+				print "Could not find a machine not already used"
+				print "Will allocate a FILE datastream to %s" % (hostname)
+				dsnodes.append(hostname)
+				headCount += 1
 		elif ds == "MODULE":
 			for r in results:
 				if  r[1] == vsns[moduleCount] or r[2] == vsns[moduleCount]:
@@ -285,6 +292,17 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 
 	if quit:
 		return []
+	# Check if we must add the head node as a correlation node, too
+	foundsuitable = False
+	for m in range(len(machines)):
+		if machines[m] in dsnodes:
+			continue
+		if cores[m] < 1:
+			continue
+		foundsuitable = True
+		break
+	if not foundsuitable:
+		headCount += 1
 
 	# write file
 	o = open(basename+'machines', 'w')
@@ -292,7 +310,9 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 	maxslots = 1
 	if hostname in machines:
 		m = machines.index(hostname)
-		if cores[m] > overheadcores+1:
+		if headCount > 0:
+			maxSlots = headCount + 1
+		elif cores[m] > overheadcores+1:
 			maxslots = 2
 			extrathreads.append(cores[m] - (overheadcores+1))
 	o.write('%s slots=1 max-slots=%d\n' % \
@@ -300,7 +320,9 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 	# datastream nodes
 	for d in dsnodes:
 		m = machines.index(d)
-		if cores[m] > overheadcores+1:
+		if headCount > 0:
+			maxSlots = headCount + 1
+		elif cores[m] > overheadcores+1:
 			maxslots = 2
 			extrathreads.append(cores[m] - (overheadcores+1))
 		else:
@@ -308,13 +330,27 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 		o.write('%s slots=1 max-slots=%d\n' % \
 			(d, maxslots))
 	# core nodes
+	foundsuitable = False
 	for m in range(len(machines)):
 		if machines[m] in dsnodes:
 			continue
 		if cores[m] < 1:
 			continue
 		threads.append(cores[m])
+		foundsuitable = True
 		o.write('%s slots=1 max-slots=1\n' % machines[m])
+	if not foundsuitable:
+		print "Could not find a core machine not already used"
+		print "Will allocate %s as a core, too" % (hostname)
+		if hostname in machines:
+			m = machines.index(hostname)
+			nthreads = cores[m] - 2
+			if nthreads < 1:
+				nthreads = 1
+		else:
+			nthreads = 1
+		threads.append(nthreads)
+		o.write('%s slots=1 max-slots=%s\n' % (machines[m], headCount+1))
 	o.close()
 	for e in extrathreads:
 		threads.append(e)
