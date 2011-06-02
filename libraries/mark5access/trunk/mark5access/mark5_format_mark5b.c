@@ -48,7 +48,7 @@ static const float HiMag = OPTIMAL_2BIT_HIGH;
 struct mark5_format_mark5b
 {
 	int nbitstream;
-	int kday;	/* kilo-mjd -- ie 51000, 52000, ... */
+	int kday;	/* kilo-mjd: ie 51000, 52000, ... */
 };
 
 static float lut1bit[256][8];
@@ -2888,7 +2888,7 @@ static int mark5_format_mark5b_init(struct mark5_stream *ms)
 				{
 					if(ms->Mbps > 0)
 					{
-						fprintf(m5stderr, "Warning -- data rate "
+						fprintf(m5stderr, "Warning: data rate "
 							"disagrees : %d != %d\n",
 							datarate, ms->Mbps);
 					}

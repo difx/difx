@@ -340,7 +340,7 @@ static int mark5_format_vlba_nomod_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /*********************** data unpack routines **********************/
 
-/* NOTE -- all decimation4 decoders work for decimation = 2^k for k >= 2 */
+/* NOTE: all decimation4 decoders work for decimation = 2^k for k >= 2 */
 
 static int vlba_nomod_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
@@ -6849,7 +6849,7 @@ static int mark5_format_vlba_nomod_init(struct mark5_stream *ms)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning -- data rate "
+					fprintf(m5stderr, "Warning: data rate "
 						"disagrees : %d != %d\n",
 						datarate, ms->Mbps);
 				}
@@ -6858,7 +6858,7 @@ static int mark5_format_vlba_nomod_init(struct mark5_stream *ms)
 		}
 		else
 		{
-			fprintf(m5stderr, "Warning -- rate calc. suspect\n");
+			fprintf(m5stderr, "Warning: rate calc. suspect\n");
 		}
 	}
 

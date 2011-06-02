@@ -452,7 +452,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 #endif
 	else if(strncasecmp(formatname, "VDIF_", 5) == 0)
 	{
-	  r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		r = sscanf(formatname+5, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
 		if(r < 4)
 		{
 			return 0;
@@ -466,7 +466,7 @@ struct mark5_format_generic *new_mark5_format_generic_from_string(
 	}
 	else if(strncasecmp(formatname, "VDIFC_", 6) == 0)
 	{
-	  r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
+		r = sscanf(formatname+6, "%d-%d-%d-%d/%d", &e, &a, &b, &c, &d);
 		if(r < 4)
 		{
 			return 0;
@@ -1105,7 +1105,7 @@ int mark5_stream_seek(struct mark5_stream *ms, int mjd, int sec, double ns)
 
 		mark5_stream_next_frame(ms);
 
-		/* FIXME -- validate here? */
+		/* FIXME: validate here? */
 
 		return 0;
 	}

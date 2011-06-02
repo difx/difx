@@ -1927,7 +1927,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 	ms->framebytes = f->databytesperpacket + f->frameheadersize;
 	ms->blanker = blanker_vdif;
 
-	/* FIXME -- if nbit is not a power of 2, this formula breaks down! */
+	/* FIXME: if nbit is not a power of 2, this formula breaks down! */
 	ms->samplegranularity = 8/(ms->nchan*bitspersample*ms->decimation);
 	if(ms->samplegranularity <= 0)
 	{
@@ -1967,7 +1967,7 @@ static int mark5_format_vdif_init(struct mark5_stream *ms)
 		return -1;
         }
 
-	/* Aha -- we have some data to look at to further refine the format... */
+	/* Aha: we have some data to look at to further refine the format... */
 	if(ms->datawindow)
 	{
 		ms->frame = ms->datawindow;

@@ -423,7 +423,7 @@ static int mark5_format_vlba_fixmjd(struct mark5_stream *ms, int refmjd)
 
 /*********************** data unpack routines **********************/
 
-/* NOTE -- all decimation4 decoders work for decimation = 2^k for k >= 2 */
+/* NOTE: all decimation4 decoders work for decimation = 2^k for k >= 2 */
 
 static int vlba_decode_1bit_1track_fanout1_decimation1(struct mark5_stream *ms,
 	int nsamp, float **data)
@@ -6869,7 +6869,7 @@ static int vlba_decode_2bit_64track_fanout4_decimation4(struct mark5_stream *ms,
 }
 
 /************************ 2-bit state counters *********************/
-/* Note -- these only count high vs. low states, not full state counts */
+/* Note: these only count high vs. low states, not full state counts */
 
 static int vlba_count_2bit_2track_fanout1_decimation1(struct mark5_stream *ms, 
 	int nsamp, unsigned int *highstates)
@@ -9624,7 +9624,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning -- data rate "
+					fprintf(m5stderr, "Warning: data rate "
 						"disagrees : %d != %d\n",
 						datarate, ms->Mbps);
 				}
@@ -9633,7 +9633,7 @@ static int mark5_format_vlba_init(struct mark5_stream *ms)
 		}
 		else
 		{
-			fprintf(m5stderr, "Warning -- rate calc. suspect\n");
+			fprintf(m5stderr, "Warning: rate calc. suspect\n");
 		}
 	}
 

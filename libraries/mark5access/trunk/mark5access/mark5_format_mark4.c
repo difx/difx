@@ -6781,7 +6781,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 	ms->framebytes = 20000*f->ntrack/8;
 	ms->databytes = 20000*f->ntrack/8;
 	
-	/* YES -- the following is a negative number *
+	/* YES: the following is a negative number *
 	 * This is OK because the mark4 blanker will prevent access before
 	 * element 0
 	 */
@@ -6836,7 +6836,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 			{
 				if(ms->Mbps > 0)
 				{
-					fprintf(m5stderr, "Warning -- data rate "
+					fprintf(m5stderr, "Warning: data rate "
 						"disagrees : %d != %d\n",
 						datarate, ms->Mbps);
 				}
@@ -6845,7 +6845,7 @@ static int mark5_format_mark4_init(struct mark5_stream *ms)
 		}
 		else
 		{
-			fprintf(m5stderr, "Warning -- rate calc. suspect\n");
+			fprintf(m5stderr, "Warning: rate calc. suspect\n");
 		}
 	}
 

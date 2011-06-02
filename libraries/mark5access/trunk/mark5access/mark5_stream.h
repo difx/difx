@@ -83,7 +83,7 @@ enum Mark5Blanker
 
 struct mark5_stream
 {
-	/* globally readable values -- should not be changed */
+	/* globally readable values: should not be changed */
 	char streamname[MARK5_STREAM_ID_LENGTH]; /* name of stream */
 	char formatname[MARK5_STREAM_ID_LENGTH]; /* name of format */
 	enum Mark5Format format;/* format id */
@@ -109,7 +109,7 @@ struct mark5_stream
 	int nvalidatepass;	/* number of times frame validation passed */
 	int consecutivefails;	/* number of validations failed in a row */
 
-	/* internal state parameters -- not to be used by users */
+	/* internal state parameters: not to be used by users */
 	unsigned char *frame;
 	unsigned char *payload;
 	int payloadoffset;	    /* == payload - frame */
@@ -234,7 +234,7 @@ struct mark5_stream_generic *new_mark5_stream_file(const char *filename,
 int mark5_stream_file_add_infile(struct mark5_stream *ms, 
 	const char *filename);
 
-/*   Just an unpacker -- for repeated unpacking of a particular format from
+/*   Just an unpacker: for repeated unpacking of a particular format from
  *	arbitrary memory locations 
  */
 
@@ -281,7 +281,7 @@ struct mark5_format_generic *new_mark5_format_vdif(int Mbps,
 
 void mark5_format_vdif_set_leapsecs(struct mark5_stream *ms, int leapsecs);
 
-/*   K5 format -- not yet complete */
+/*   K5 format: not yet complete */
 
 struct mark5_format_generic *new_mark5_format_k5(int Mbps, int nchan, int nbit,
 	int submode);
@@ -344,7 +344,7 @@ double correct_2bit_power(double x);
 double high_state_fraction_to_power(double x);
 
 
-/* BELOW HERE USER BEWARE -- If you are using any functionality defined
+/* BELOW HERE USER BEWARE: If you are using any functionality defined
  * below this comment then your code may not function properly with
  * future versions of this library.
  */
