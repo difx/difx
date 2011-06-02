@@ -426,6 +426,8 @@ bool Model::readStationData(ifstream * input)
     config->getinputline(input, &line, "TELESCOPE ", i); //ignore this, its the shelf
   }
   maxrate = new double[numstations];
+  for(int i=0;i<numstations;i++)
+    maxrate[i] = 0;
   return true;
 }
 bool Model::readSourceData(ifstream * input)
