@@ -474,7 +474,7 @@ Mark5Module::~Mark5Module()
 void Mark5Module::clear()
 {
 	label.clear();
-	error.ignore(error.str().size());
+	error.str("");
 	bank = -1;
 	scans.clear();
 	signature = 0;
@@ -1310,7 +1310,7 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 	}
 	if(v < 0)
 	{
-		error << "Loading directory file " << filename << "failed.  Error code=" << v << "\n";
+		error << "Loading directory file " << filename << " failed.  Error code=" << v << "\n";
 	}
 
 	fast = optionFast;
@@ -1318,17 +1318,17 @@ int Mark5Module::getCachedDirectory(SSHANDLE xlrDevice,
 
 	if(v >= 0)
 	{
-		error.ignore(error.str().size());
+		error.str("");
 
 		v = save(filename);
 		if(v < 0)
 		{
-			error << "Saving directory file " << filename << "failed.  Error code=" << v << "\n";
+			error << "Saving directory file " << filename << " failed.  Error code=" << v << "\n";
 		}
 	}
 	else if(v == DIRECTORY_NOT_CACHED)
 	{
-		error << "Directory file (" << filename << " ) for module " << vsn << " is not up to date.\n";
+		error << "Directory file ( " << filename << " ) for module " << vsn << " is not up to date.\n";
 	}
 	else
 	{
