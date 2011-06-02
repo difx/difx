@@ -111,7 +111,8 @@ int main(int argc, char **argv)
 	char timestr[TimeLength];
 	char tag[TagLength];
 
-	time(&lastt);
+	time(&t);
+	lastt = t;
 
 	if(argc < 3)
 	{
@@ -148,11 +149,21 @@ int main(int argc, char **argv)
 
 	for(;;)
 	{
+		if(t - lastt > 2 && pidWatch > 0)
+		{
+			lastt = t;
+			
+			if(!checkPid(pidWatch))
+			{
+				break;
+			}
+		}
+
 		from[0] = 0;
 		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-		if(l < 0)
+		if(l <= 0)
 		{
-			usleep(10000);
+			usleep(100000);
 			continue;
 		}
 		message[l] = 0;
@@ -214,14 +225,6 @@ int main(int argc, char **argv)
 				fflush(out);
 			}
 		}
-
-		if(t - lastt > 2 && pidWatch > 0)
-		{
-			if(!checkPid(pidWatch))
-			break;
-		}
-
-		lastt = t;
 	}
 
 	fclose(out);

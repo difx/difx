@@ -123,7 +123,7 @@ int MultiCastReceive(int sock, char *message, int maxlen, char *from)
 	nbytes = recvfrom(sock, message, maxlen, 0,
 		(struct sockaddr *) &addr, &addrlen);
 
-	if(addrlen > 0 && from != 0)
+	if(nbytes > 0 && addrlen > 0 && from != 0)
 	{
 		strncpy(from, inet_ntoa(addr.sin_addr), 16);
 	}
