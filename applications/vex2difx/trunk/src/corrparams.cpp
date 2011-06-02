@@ -1180,7 +1180,7 @@ void CorrParams::defaults()
 	nDataSegments = 8;
 	readSize = 25000000;		// Bytes
 	invalidMask = ~0;		// write flags for all types of invalidity
-	visBufferLength = 32;
+	visBufferLength = 80;
 	v2dMode = V2D_MODE_NORMAL;
 	overSamp = 0;
 	outputFormat = OutputFormatDIFX;
@@ -1726,7 +1726,6 @@ int CorrParams::load(const string &fileName)
 	for(vector<CorrSetup>::iterator c = corrSetups.begin(); c != corrSetups.end(); c++)
 	{
 #warning "FIXME: This logic should consider number of antennas and possibly number of sub-bands"
-
 		if(c->nFFTChan < c->nOutputChan)
 		{
 			if(c->explicitnFFTChan)
