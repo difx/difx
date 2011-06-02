@@ -525,7 +525,7 @@ typedef struct
 
 /* DifxJob functions */
 DifxJob *newDifxJobArray(int nJob);
-void deleteDifxJobArray(DifxJob *dj);
+void deleteDifxJobArray(DifxJob *dj, int nJob);
 void printDifxJob(const DifxJob *dj);
 void fprintDifxJob(FILE *fp, const DifxJob *dj);
 void copyDifxJob(DifxJob *dest, const DifxJob *src, int *antennaIdRemap);

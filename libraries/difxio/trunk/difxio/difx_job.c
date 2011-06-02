@@ -58,10 +58,19 @@ DifxJob *newDifxJobArray(int nJob)
 	return dj;
 }
 
-void deleteDifxJobArray(DifxJob *dj)
+void deleteDifxJobArray(DifxJob *djarray, int nJob)
 {
-	if(dj)
+	int j;
+	DifxJob *dj;
+
+	if(!djarray)
 	{
+		return;
+	}
+	for(j = 0; j < nJob; j++)
+	{
+		dj = djarray + j;
+
 		if(dj->flag)
 		{
 			deleteDifxAntennaFlagArray(dj->flag);
@@ -69,8 +78,8 @@ void deleteDifxJobArray(DifxJob *dj)
 		}
 		if(dj->jobIdRemap)
 		{
-			deleteRemap(dj->freqIdRemap);
-			dj->freqIdRemap = 0;
+			deleteRemap(dj->jobIdRemap);
+			dj->jobIdRemap = 0;
 		}
 		if(dj->freqIdRemap)
 		{
@@ -112,9 +121,8 @@ void deleteDifxJobArray(DifxJob *dj)
 			deleteRemap(dj->spacecraftIdRemap);
 			dj->spacecraftIdRemap = 0;
 		}
-
-		free(dj);
 	}
+	free(djarray);
 }
 
 void fprintDifxJob(FILE *fp, const DifxJob *dj)

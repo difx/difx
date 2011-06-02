@@ -114,7 +114,7 @@ void deleteDifxInput(DifxInput *D)
 		}
 		if(D->job)
 		{
-			deleteDifxJobArray(D->job);
+			deleteDifxJobArray(D->job, D->nJob);
 		}
 		if(D->rule)
 		{
