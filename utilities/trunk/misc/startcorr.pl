@@ -309,7 +309,7 @@ sub server_comm {
     } elsif ($ret =~ /<status>.*<\/status>/s) {
       return $1;
     } else {
-      warn "Did not understand server reponse ($ret): $!\n";
+      warn "Did not understand server $recorder reponse ($ret): $!\n";
       return undef;
     }
   }
@@ -349,9 +349,9 @@ sub launch_lbadr($$$$$$$$$$$) {
   die "Failed to set recording disk to evlbi_$ant on $recorder\n" 
       if (!defined $status);
 
-  #$status = send_data("diskselection=off",$recorder);
-  #die "Failed to turn off auto disk selection on $recorder\n" 
-  #    if (!defined $status);
+  $status = send_data("diskselection=off",$recorder);
+  die "Failed to turn off auto disk selection on $recorder\n" 
+      if (!defined $status);
 
   $duration+=5;
   $status = send_data("record_time=${duration}s", $recorder);
