@@ -220,7 +220,7 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
 	*file = fopen(filename, "r");
 	if(!*file)
 	{
-		fprintf(stderr, "\nError opening file: %s\n", filename);
+		fprintf(stderr, "\nFile %s does not exist.\n", filename);
 
 		return -1;
 	}
@@ -779,7 +779,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	char line[MaxLineLength+1];
 	int nBand, nPol;
 	int nTone=-2;
-	int nDifxTone, nAccum;
+	int nDifxTone;
+	int nAccum = 0;
 	int lastnWindow;
 	double time, dumpTime, accumStart, accumEnd;
 	float timeInt, dumpTimeInt;
