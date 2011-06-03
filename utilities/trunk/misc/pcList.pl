@@ -23,9 +23,10 @@ my @vexScans = ();
 my  $VEXFILE	=   "";                   #   VEX File 
 my  $MATRIXFILE	=   "";			#   Jobmatrixfile 
 
-my  $help           =   0;
-my  $mode           =   "";
+my  $help           = 0;
+my  $mode           = "";
 my  $exclude	    = "";
+my  $skipEmpty	    = 0;
 my  $calcSummary    = "";
 my  @excludeStations    = ();
 my  $i		    =   0;
@@ -35,6 +36,7 @@ my  @SplitAnzahl 	=   ();
 my  $st_text  		=   "";
 my  @MatrixStationen	=   ();
 my  @joblist	=   ();  
+my  $baseName = "";
 my  %vexStationSum = ();
 my  %stationSum = ();
 my  $maxScanName = 0;
@@ -44,7 +46,8 @@ my  $maxModeName = 0;
 my  $vexScanCount = 0;
 #----------------------------------------------------------------------
 
-&GetOptions("help" => \$help, "mode=s" => \$mode,  "exclude=s" => \$exclude, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &printUsage(); 
+
+&GetOptions("help" => \$help, "mode=s" => \$mode,  "skip_empty" => \$skipEmpty, "exclude=s" => \$exclude, "vexfile=s" => \$VEXFILE, "jobmatrix=s" => \$MATRIXFILE) or &pirintUsage(); 
 
 if ($help || $VEXFILE eq "" || $MATRIXFILE eq "")
 {
@@ -82,9 +85,11 @@ sub main
 	open(FILOUT,">$VEXFILE.pclist")  || die "cannot create \"$VEXFILE.pclist\" \n";
 	open(RECOROUT,">recor.joblist")  || die "cannot create \"recor.joblist\" \n";
 
-	$calcSummary = `grep IDENTIFIER: *.calc`;
 
 	@excludeStations = split (/,/, uc($exclude));
+
+	$baseName = &getBaseName();
+	$calcSummary = `grep IDENTIFIER: $baseName*.calc`;
 
 	&getStationsFromVex();
 	&parseVex();
@@ -315,6 +320,10 @@ sub compare
 		%stationSums = &parseJobmatrix ( $vexStart, $vexStop);
 
 		# matrix output
+		if (($skipEmpty) && ($vexScans[$i]{"DIFXFILE"} eq ""))
+		{
+			next;
+		}
 		my $format = "%" . $maxDifxName . "s %" . $maxScanName . "s %" . $maxSourceName . "s %" . $maxModeName . "s " ;
 		printf FILOUT  $format, $vexScans[$i]{"DIFXFILE"} , $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
 		printf $format, $vexScans[$i]{"DIFXFILE"}, $vexScans[$i]{'NAME'}, $vexScans[$i]{'SOURCE'}, $vexScans[$i]{'MODE'} ;
@@ -435,6 +444,25 @@ sub jobmatrixTime2Seconds
 	return($seconds);
 }
 
+######################
+#
+# getBaseName
+#
+######################
+sub getBaseName
+{
+	my $line = "";
+
+    	foreach $line (@joblist)                       
+        {
+        	chomp($line);                                
+		if  ($line  =~  /\d{1,2}h\d{1,2}m\d{1,2}\.\d{2}s\s+[A-Z]\s+=\s+(.+)_.+/)
+                {
+                        return($1);
+                }
+
+	}
+}
 
 ######################
 #
@@ -571,6 +599,7 @@ sub printUsage
     print "\n";    
     print "-m {mode}:	 		 process only scans having the selected mode\n";    
     print "-e station1 [,stationN]]:	 exclude listed antennas from processing\n";    
+    print "-s :	 			 exclude vex scans from the output list that have no associated job \n";    
     print "\n";    
     print "\n";    
     print "---------------------------------------------------------------------------- \n";    
