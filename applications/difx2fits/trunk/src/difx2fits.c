@@ -765,7 +765,17 @@ int convertFits(struct CommandLineOptions *opts, int passNum)
 
 	if(opts->fitsFile)
 	{
-		strcpy(outFitsName, opts->fitsFile);
+		if (passNum == 0)
+		{
+			strcpy(outFitsName, opts->fitsFile);
+		}
+		else
+		{
+#warning "FIXME: multi-setup input would overwrite previously generated FITS, make tidier fix than a rename"
+			sprintf(outFitsName, "%s_setup%d", opts->fitsFile, passNum+1);
+			fprintf(stderr, "Warning: input file list contains difx with different setup(s). Writing setup %d to '%s'\n",
+				passNum+1, outFitsName);
+		}
 	}
 	else
 	{
