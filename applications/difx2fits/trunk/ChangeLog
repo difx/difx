@@ -9,6 +9,7 @@ Version 3.0.1
 * valgrind used to track down some memory leaks
 * print fits keywords for each fits file when -v is supplied
 * don't invoke sniffer in cases where it would use too much memory
+* don't overwrite FITS when parse-all input difx are from different vex setups (thanks Jan Wagner)
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:

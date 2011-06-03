@@ -53,7 +53,7 @@ int getGateWindow(const DifxPulsar *dp, int bin,
         }
         else if(bin == 0)
         {
-		/* More complicated -- include all phases with weight > 0 */
+		/* More complicated: include all phases with weight > 0 */
                 /* Note: this will get confused for pulsars with interpulses */
                 int b;
                 int lastBin = dp->nBin-1;

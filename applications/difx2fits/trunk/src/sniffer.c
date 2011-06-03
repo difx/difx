@@ -718,8 +718,7 @@ static int dump(Sniffer *S, Accumulator *A, double mjd)
                         specRate = peakup(peak, bestj,
                                 S->fft_ny, S->solInt*S->fftOversample);
 
-                        /* Now do second axis of FFT -- in frequency to look for
-                         * a peak in rate/delay space */
+                        /* Now do second axis of FFT (frequency) to look for a peak in rate/delay space */
 			fftw_execute(S->plan2);
 
 			max2 = 0.0;
