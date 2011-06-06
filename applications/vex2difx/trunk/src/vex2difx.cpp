@@ -1004,7 +1004,6 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vector<vector<int> > &toneSets)
 {
 	DifxFreq *df;
-	int bw;
 
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
@@ -1039,8 +1038,6 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 			cerr << "Developer error: populateFreqTable: toneSetId=" << freqs[f].toneSetId << " nToneSet=" << toneSets.size() << endl;
 		}
 		const vector<int> &tones = toneSets[freqs[f].toneSetId];
-
-		bw = static_cast<int>(df->bw+0.1);
 
 		if(tones.size() > 0)
 		{

@@ -1304,7 +1304,6 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 
 static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 {
-	int r;
 	int nWarn = 0;
 
 	for(char *stn = get_station_def(v); stn; stn=get_station_def_next())
@@ -1321,6 +1320,7 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 		if(params.useAntenna(ant))
 		{
 			const AntennaSetup *antennaSetup = params.getAntennaSetup(ant);
+
 			if(antennaSetup)
 			{
 				// If media is provided via v2d file, don't bother
@@ -1329,7 +1329,7 @@ static int getVSNs(VexData *V, Vex *v, const CorrParams &params)
 					continue;
 				}
 			}
-			r = getVSN(V, v, stn);
+			getVSN(V, v, stn);
 		}
 	}
 
