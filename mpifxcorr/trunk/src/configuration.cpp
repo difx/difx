@@ -938,7 +938,6 @@ void Configuration::processCommon(ifstream * input)
 bool Configuration::processConfig(ifstream * input)
 {
   string line;
-  bool found;
 
   maxnumpulsarbins = 0;
   maxnumbufferedffts = 0;
@@ -949,7 +948,6 @@ bool Configuration::processConfig(ifstream * input)
   estimatedbytes += numconfigs*sizeof(configdata);
   for(int i=0;i<numconfigs;i++)
   {
-    found = false;
     configs[i].datastreamindices = new int[numdatastreams];
     configs[i].baselineindices = new int [numbaselines];
     getinputline(input, &(configs[i].name), "CONFIG NAME");
@@ -1016,7 +1014,7 @@ bool Configuration::processConfig(ifstream * input)
 bool Configuration::processDatastreamTable(ifstream * input)
 {
   datastreamdata * dsdata;
-  int configindex, freqindex, decimationfactor, tonefreq, bytespersecond;
+  int configindex, freqindex, decimationfactor, tonefreq;
   double lofreq, parentlowbandedge, parenthighbandedge, lowbandedge, highbandedge, recbandwidth;
   string line = "";;
   string key = "";
@@ -2620,7 +2618,7 @@ bool Configuration::processPulsarConfig(string filename, int configindex)
 bool Configuration::setPolycoFreqInfo(int configindex)
 {
   bool ok = true;
-  datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];
+  datastreamdata d = datastreamtable[getMaxNumFreqDatastreamIndex(configindex)];	/* FIXME: This value is never used */
   double * frequencies = new double[freqtablelength];
   double * bandwidths = new double[freqtablelength];
   int * numchannels = new int[freqtablelength];

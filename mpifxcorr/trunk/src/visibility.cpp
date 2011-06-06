@@ -989,8 +989,6 @@ void Visibility::writeDiFXHeader(ofstream * output, int baselinenum, int dumpmjd
 
 void Visibility::changeConfig(int configindex)
 {
-  char polpair[3];
-  polpair[2] = 0;
   int pulsarwidth;
 
   if(first) 

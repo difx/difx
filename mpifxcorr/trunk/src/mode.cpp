@@ -497,7 +497,7 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
 {
   double phaserotation, averagedelay, nearestsampletime, starttime, lofreq, walltimesecs, fftcentre, d0, d1, d2;
   f32 phaserotationfloat, fracsampleerror;
-  int status, count, nearestsample, integerdelay, dcchannel, acoffset;
+  int status, count, nearestsample, integerdelay, acoffset;
   cf32* fftptr;
   cf32* fracsampptr1;
   cf32* fracsampptr2;
@@ -625,14 +625,12 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     //updated so that Nyquist channel is not accumulated for either USB or LSB data
     //and is excised entirely, so both USB and LSB data start at the same place (no sidebandoffset)
     currentstepchannelfreqs = stepchannelfreqs;
-    dcchannel = 0;
     acoffset = 0;
     fracsampptr1 = &(fracsamprotator[0]);
     fracsampptr2 = &(fracsamprotator[arraystridelength]);
     if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
     {
       currentstepchannelfreqs = lsbstepchannelfreqs;
-      dcchannel = recordedbandchannels-1;
       if(config->anyUsbXLsb(configindex))
       {
         acoffset++;

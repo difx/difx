@@ -78,11 +78,10 @@ Mk5Mode::~Mk5Mode()
 
 float Mk5Mode::unpack(int sampleoffset)
 {
-  int framesin, goodsamples;
+  int goodsamples;
   int mungedoffset;
 
   //work out where to start from
-  framesin = (sampleoffset/framesamples);  // This is never used?? 
   unpackstartsamples = sampleoffset - (sampleoffset % mark5stream->samplegranularity);
 
   //unpack one frame plus one FFT size worth of samples
