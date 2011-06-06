@@ -150,7 +150,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 
 	long endSec = skipNs / 1e9;
-	double endNs = skipNs - endSec*1e9;
+	double endNs = skipNs - endSec*1e9;	/* FIXME: variable set but not used */
 
 	status = mark5_stream_seek(ms, mjd, sec+endSec-1, ns);
 
@@ -204,11 +204,11 @@ int verify(const char *filename, const char *formatname, int refMJD)
 	// check that start and stop time are quite valid
 	if (!is_reasonable_timediff(startmjd, stopmjd))
 	{
-		fprintf (stderr, "Error: timestamps suspicious (either stop(%lf)<=start(%lf) or stop>>start)\n", stopmjd, startmjd, filename);
+		fprintf (stderr, "Error: timestamps suspicious (either stop(%lf)<=start(%lf) or stop>>start) in file %s\n", stopmjd, startmjd, filename);
 	}
 	if ((int)eofmjd != (int)stopmjd)
 	{
-		fprintf (stderr, "Error: eof day (%d) != stop day (%d) on file %s\n", (int)eofmjd, (int)stopmjd, filename);
+		fprintf (stderr, "Error: eof day (%d) != stop day (%d) in file %s\n", (int)eofmjd, (int)stopmjd, filename);
 	}
 
 	// output for debug/verbose

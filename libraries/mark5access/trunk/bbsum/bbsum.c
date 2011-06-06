@@ -83,16 +83,24 @@ int summarize(const char *filename, int refmjd)
 	struct stat fileStatus;
 	int in;
 	double size, dur;
-	double start, stop;
+	double start;
 	
 	in = open(filename, O_RDONLY);
 	if(!in)
 	{
-		printf("%s notfound\n", filename);
+		printf("%s cannot be opened.\n", filename);
+		
 		return 0;
 	}
 	
 	err = fstat(in, &fileStatus);
+	if(err < 0)
+	{
+		fprintf(stderr, "fstat() failed.\n");
+		close(in);
+		
+		return 0;
+	}
 	close(in);
 
 	size = fileStatus.st_size;
@@ -103,6 +111,7 @@ int summarize(const char *filename, int refmjd)
 	if(!mf)
 	{
 		printf("%s unknown\n", filename);
+
 		return 0;
 	}
 
@@ -139,7 +148,6 @@ int summarize(const char *filename, int refmjd)
 	dur = size*mf->framens/(mf->framebytes*1.0e9);
 
 	start = mf->mjd + (mf->sec + mf->ns*1.0e-9)/86400.0;
-	stop  = start + dur/86400.0;
 
 	delete_mark5_format(mf);
 

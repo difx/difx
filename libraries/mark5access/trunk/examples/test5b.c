@@ -8,7 +8,6 @@ int main(int argc, char **argv)
 	unsigned char frame[FRAMESIZE];
 	FILE *in;
 	int i, v;
-	long long offset;
 
 	if(argc > 1)
 	{
@@ -26,7 +25,17 @@ int main(int argc, char **argv)
 	}
 	if(argc > 2)
 	{
-		offset = atoi(argv[2]);
+		long offset;
+		
+		offset = atol(argv[2]);
+		v = fseek(in, offset, SEEK_SET);
+		if(v < 0)
+		{
+			fprintf(stderr, "Error seeking %ld bytes into %s\n", offset, argv[1]);
+			fclose(in);
+
+			exit(0);
+		}
 	}
 
 	for(i = 0; ; i++)
@@ -37,7 +46,7 @@ int main(int argc, char **argv)
 			break;
 		}
 
-		printf("%02X%02X%02X%02X %5d  ", frame[3], frame[2], frame[1], frame[0], frame[4]+256L*frame[5]);
+		printf("%02X%02X%02X%02X %5ld  ", frame[3], frame[2], frame[1], frame[0], frame[4]+256L*frame[5]);
 		printf("%02X%02X%02X%02X %02X%02X%02X%02X\n", frame[11], frame[10], frame[9], frame[8], frame[15], frame[14], frame[13], frame[12]);
 	}
 	fclose(in);
