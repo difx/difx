@@ -113,7 +113,7 @@ void Mk5DataStream::initialise()
     char *udp_update_str= getenv("DIFX_UDP_UPDATE");
     if (udp_update_str!=0) {
       udpstats_update = atof(udp_update_str);
-      if (udpstats_update=0.0) udpstats_update = 2.0;
+      if (udpstats_update==0.0) udpstats_update = 2.0;
     } else {
       udpstats_update = 2.0;
     }
