@@ -255,8 +255,7 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 		v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
 		if(v >= CommandLength)
 		{
-			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n",
-				CommandLength, v);
+			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n", CommandLength, v);
 
 			return -2;
 		}
@@ -267,6 +266,10 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 		{
 			pid = runCommand(command, state->verbose);
 			state->nLaunch++;
+			if(state->verbose > 1)
+			{
+				printf("Executing: %s  pid=%d\n", command, pid);
+			}
 		}
 		else
 		{
@@ -355,10 +358,9 @@ int transientdaemon(TransientDaemonState *state)
 	char message[DIFX_MESSAGE_LENGTH];
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
 	typedef void (*sighandler_t)(int);
-	sighandler_t oldsiginthand;
 	int l, v, sock;
 
-	oldsiginthand = signal(SIGINT, siginthand);
+	signal(SIGINT, siginthand);
 
 	difxMessageInit(-1, program);
 

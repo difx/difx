@@ -8,7 +8,7 @@
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "2011 Mar 1";
+const char verdate[] = "2011 Jun 6";
 
 const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
 const int minFreeMB = 1000000;	/* don't copy unless there are this many MB free in the above path */
@@ -16,6 +16,7 @@ const int minFreeMB = 1000000;	/* don't copy unless there are this many MB free 
 static int usage(const char *pgm)
 {
 	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
+	printf("Usage: %s [<options>] <program> <inputFile>\n\n", pgm);
 
 	return 0;
 }
@@ -60,6 +61,10 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 
 	t1 = time(0);
 	rv = system(command);
+	if(rv < 0)
+	{
+		fprintf(stderr, "Error executing %s\n", command);
+	}
 	t2 = time(0);
 
 	return t2 - t1;
@@ -129,7 +134,7 @@ static int parsecommandline(int argc, char **argv, TransientWrapperData *T)
 				T->verbose++;
 			}
 			else if(strcmp(argv[a], "-q") == 0 ||
-			   strcmp(argv[a], "--quite") == 0)
+			   strcmp(argv[a], "--quiet") == 0)
 			{
 				T->verbose--;
 			}
@@ -273,7 +278,7 @@ TransientWrapperData *initialize(int argc, char **argv)
 		return 0;
 	}
 
-	printf("Verbose = %d  pgm = %s  inputFile = %s\n", T->verbose, program, inputFile);
+	printf("Verbose = %d  pgm = %s  inputFile = %s\n", T->verbose, pgm, inputFile);
 
 	T->filePrefix = stripInputFile(inputFile);
 	if(!T->filePrefix)
