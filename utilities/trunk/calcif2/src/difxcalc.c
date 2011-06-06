@@ -306,28 +306,22 @@ static int antennaCalc(int scanId, int antId, const DifxInput *D, CalcParams *p,
 	struct getCALC_arg *request;
 	struct CalcResults results;
 	int i, j, v;
-	int mjd;
-	int jobStart;
 	double sec, subInc;
 	double lastsec = -1000;
 	DifxPolyModel **im;
 	DifxScan *scan;
 	DifxSource *source;
 	DifxAntenna *antenna;
-	DifxJob *job;
 	int nInt;
 	int spacecraftId = -1;
 	int sourceId;
 	int nError = 0;
 	char mount[MAX_ANTENNA_MOUNT_NAME_LENGTH];
 
-	job = D->job;
 	antenna = D->antenna + antId;
 	scan = D->scan + scanId;
 	im = scan->im[antId];
 	nInt = scan->nPoly;
-	mjd = (int)(job->mjdStart);
-	jobStart = (int)(86400.0*(job->mjdStart - mjd) + 0.5);
         if(phasecentre == 0) // this is the pointing centre
 	{
 		sourceId = scan->pointingCentreSrc;
@@ -424,11 +418,9 @@ static int scanCalc(int scanId, const DifxInput *D, CalcParams *p, int isLast)
 	int nInt;
 	int i, v, k;
 	DifxJob *job;
-	DifxAntenna *antenna;
 	DifxScan *scan;
 
 	job = D->job;
-	antenna = D->antenna;
 	scan = D->scan + scanId;
 
 	scan->nAntenna = D->nAntenna;
