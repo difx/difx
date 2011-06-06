@@ -324,5 +324,7 @@ int main(int argc, char **argv)
     if(wrotebytes != outputframecount*outputframebytes)
       fprintf(stderr, "Write failed!\n");
   }
+
+  return 0;
 }
 
