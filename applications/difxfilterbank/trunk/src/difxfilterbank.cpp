@@ -228,6 +228,7 @@ void * launchWriteThread(void * nothing) {
     writesegment = nextsegment;
     nextsegment = (writesegment+1)%BUFFER_LENGTH;
     activeoutput = 0;
+    starecord = (DifxMessageSTARecord *)(starecords[writesegment]);
     if(dofilterbank && starecord->messageType == STA_AUTOCORRELATION)
       activeoutput = &fboutput;
     if(dokurtosis && starecord->messageType == STA_KURTOSIS)
