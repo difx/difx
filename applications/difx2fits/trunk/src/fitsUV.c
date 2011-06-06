@@ -355,7 +355,7 @@ static double evalPoly(const double *p, int n, double x)
 	
 int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 {
-	int i, i1, v, index;
+	int i, i1, v;
 	int antId1, antId2;	/* These reference the DifxInput Antenna */
 	int bl;			/* bl number computed from antId1 and antId2 */
 	int dsId1, dsId2;	/* This refers to DifxInput Datastream table */
@@ -574,8 +574,6 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 		dv->baseline = bl;
 		dv->mjd = mjd;
 		dv->iat = iat;
-
-		index = dv->freqId + dv->nFreq*dv->polId;
 
 		/* swap phase/uvw for FITS-IDI conformance */
 		dv->U = -uvw[0];

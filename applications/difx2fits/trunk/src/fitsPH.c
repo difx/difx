@@ -796,7 +796,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalImAcc[2][array_MAX_TONES]; 
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId, antId, sourceId, currentScanId;
+	int configId, sourceId, currentScanId;
 	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
@@ -917,7 +917,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	fitsWriteInteger(out, "TABREV", 2, "");
 	fitsWriteEnd(out);
 
-	antId = 0;
 	arrayId1 = 1;
 
 	for(a = 0; a < D->nAntenna; a++)
@@ -980,6 +979,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			/*rewind(in) below this loop*/
 			while(1)
 			{
+				sourceId = -1;
+
 				if(in && !nDifxTone)/*try reading pcal file*/
 				{
 					rv = fgets(line, MaxLineLength, in);
@@ -1031,6 +1032,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						}
 						if(scanId != currentScanId)
 						{
+							double s, e;
+							int nWindow;
+							DifxScan *scan;
+
 							/* Get ready to dump last scan (if it's not the first run through)
 							 * Work out time average windows so that there is an integer number within the scan
 							 * Get all of the relevant cable cal values for this antenna
@@ -1039,9 +1044,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							{
 								doDump = 1;
 							}
-							double s, e;
-							int nWindow;
-							DifxScan *scan;
 
 							scan = D->scan + scanId;
 							configId = scan->configId;
@@ -1163,7 +1165,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 
 					freqId1 = D->config[configId].fitsFreqId + 1;
-					sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
+					if(sourceId > 0)
+					{
+						sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
+					}
+					else
+					{
+						sourceId1 = 0;
+					}
 					antId1 = a + 1;
 
 					p_fitsbuf = fitsbuf;

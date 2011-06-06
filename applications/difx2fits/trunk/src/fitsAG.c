@@ -41,7 +41,7 @@ static double arrayGMST(int mjd)
     double cent;
     double daysj;
     double gmstc[4];
-    double sidvel[3];
+    /* double sidvel[3]; */
     int igstmn;
   
     gmstc[0] = 24110.548410;
@@ -49,10 +49,12 @@ static double arrayGMST(int mjd)
     gmstc[2] = 0.0931040;
     gmstc[3] = -6.2e-6;
 
+/*
     sidvel[0] = 1.0027379093507950;
     sidvel[1] = 5.9006e-11;
     sidvel[2] = -5.9e-15;
-  
+*/
+
     daysj = mjd - mjd2000 + 0.5;
   
     cent = daysj / 36525;
