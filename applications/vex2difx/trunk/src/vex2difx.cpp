@@ -82,7 +82,7 @@ int calculateWorstcaseGuardNS(double samplerate, int subintNS)
 		nsaccumulate += sampleTimeNS;
 	}
 
-	return static_cast<int>(nsaccumulate + 1600.0*subintNS/1000000000.0);
+	return static_cast<int>(nsaccumulate + 1600.0*subintNS/1000000000.0 + 0.99);
 }
 
 // A is assumed to be the first scan in time order
