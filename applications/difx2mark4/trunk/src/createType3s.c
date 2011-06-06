@@ -46,7 +46,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         record_chan,
         once = FALSE,
         refDay,
-        start,
         nclock;
 
         size_t linemax = 10000;

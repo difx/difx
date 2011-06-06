@@ -26,7 +26,6 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         numchan = 0,
         nsite = 0,
         nant = 0,
-        eop_found = FALSE,
         scan_found = FALSE,
         tarco = FALSE,              // true iff target_correlator = has been done
         sourceId;
