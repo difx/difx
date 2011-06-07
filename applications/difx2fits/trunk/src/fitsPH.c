@@ -782,7 +782,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int nDifxTone;
 	int nAccum = 0;
 	int lastnWindow;
-	double time, dumpTime, accumStart, accumEnd;
+	double time, dumpTime, accumStart=0.0, accumEnd=0.0;
 	float timeInt, dumpTimeInt;
 	int cableScanId, nextCableScanId, lineCableScanId;
 	double cableCal, nextCableCal, cableCalOut, lineCableCal;
@@ -796,14 +796,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	float pulseCalImAcc[2][array_MAX_TONES]; 
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS];
 	float pulseCalRate[2][array_MAX_TONES];
-	int configId, sourceId, currentScanId;
+	int configId=0, sourceId, currentScanId;
 	int scanId;
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
 	int doDump = 0;
 	int nWindow;
 	double start, stop;
-	double windowDuration, dumpWindow;
+	double windowDuration=0.0, dumpWindow=0.0;
 	FILE *in=0;
 	FILE *in2=0;
 	char *rv;
@@ -1165,7 +1165,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					}
 
 					freqId1 = D->config[configId].fitsFreqId + 1;
-					if(sourceId > 0)
+					if(sourceId >= 0)
 					{
 						sourceId1 = D->source[sourceId].fitsSourceIds[configId] + 1;
 					}
