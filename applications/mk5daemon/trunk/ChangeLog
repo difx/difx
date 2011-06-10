@@ -7,6 +7,7 @@ Version 1.4.1
 * Fix parsing of mark5 directory files: stepping through extra parameters had a bug.
 * No more 1024 scan limit on Mark5 modules
 * Quiet version for vsn
+* Version for DiFX-2.0.1
 
 Version 1.4
 ~~~~~~~~~~~
