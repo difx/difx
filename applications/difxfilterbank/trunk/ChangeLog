@@ -1,3 +1,7 @@
+Version 0.3
+~~~~~~~~~~~
+* Many bug fixes in difxfilterbank, transient daemon and reorderer/regridder
+
 Version 0.2
 ~~~~~~~~~~~
 * Updated to allow capture/dumping of kurtosis data in addition to autocorrelation filterbank
