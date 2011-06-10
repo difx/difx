@@ -290,7 +290,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 		}
 	}
 
-	sort(basebandFiles.begin(), basebandFiles.end(), sortStartMjdDescendingFunc);
+	//sort(basebandFiles.begin(), basebandFiles.end(), sortStartMjdDescendingFunc);
 
 	return n;
 }
