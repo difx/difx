@@ -1,3 +1,8 @@
+Version for DiFX-2.0.1, June 10, 2011
+* New utilities snipDiFX.py, plotDynamicSpectrum.py, fringeFindDiFX.py
+* Fixed some plotting bugs in plotDiFX.py
+* printDiFX version bumped to 0.2
+
 Utilities are generally unversioned: first entry 06 Sep 2010, ATD
 * Changed makefile to use IPPLINKLIBS and got rid of RPFITSReader
 * printDiFX: check for infinite visibilities/weights
