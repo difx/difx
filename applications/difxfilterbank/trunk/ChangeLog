@@ -1,6 +1,11 @@
+Version 0.4
+~~~~~~~~~~~
+
+
 Version 0.3
 ~~~~~~~~~~~
 * Many bug fixes in difxfilterbank, transient daemon and reorderer/regridder
+* Version for DiFX-2.0.1, June 10, 2011
 
 Version 0.2
 ~~~~~~~~~~~
