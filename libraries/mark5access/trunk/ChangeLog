@@ -5,6 +5,7 @@ Version 1.4.2
 * Can now make RedHat RPM
 * Fix some memory leaks identified by valgrind.
 * Introduce new_mark5_stream_absorb.  like new_mark5_stream, but it cleanly and immediately deallocates space for the temporary mark5_stream_generic and mark5_format_generic structures
+* Version for DiFX-2.0.1, June 10, 2011
 
 Version 1.4.1
 * revert to standard "c" types (long long, unsigned char, ...) over int64_t, uint8_t
