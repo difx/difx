@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -36,8 +36,8 @@
 
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
-const char version[] = "1.2";
-const char verdate[] = "2010 Dec 12";
+const char version[] = "1.3";
+const char verdate[] = "2011 Jun 09";
 
 const int ChunkSize = 10000;
 
@@ -133,7 +133,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 	mark5_stream_print(ms);
 
-	sampnum = (int)((double)ms->ns*(double)ms->samprate*1.0e-9 + 0.5);
+	sampnum = (long long)((double)ms->ns*(double)ms->samprate*1.0e-9 + 0.5);
 
 	out = fopen(outfile, "w");
 	if(!out)
@@ -156,6 +156,14 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 		data[i] = (double *)malloc(ChunkSize*sizeof(double));
 		bins[i] = (double *)calloc(nbin, sizeof(double));
 		weight[i] = (int *)calloc(nbin, sizeof(int));
+	}
+
+	if(ms->ns < 0 || ms->ns > 1000000000)
+	{
+		fflush(stdout);
+		fprintf(stderr, "\n***Warning*** The nano-seconds portion of the timestamp is nonsensable: %d; continuing anyway, but don't expect the time alignment to be meaningful.\n\n", ms->ns);
+
+		sampnum = 0;
 	}
 
 	for(j = 0; j < nint; j++)
@@ -187,7 +195,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 		{
 			if(data[0][k] != 0.0)
 			{
-				bin = (int)(sampnum*R) % nbin;
+				bin = ((long long)(sampnum*R)) % nbin;
 				for(i = 0; i < nif; i++)
 				{
 					bins[i][bin] += data[i][k]*data[i][k];
