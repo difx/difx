@@ -1,5 +1,8 @@
 calcif2
 ~~~~~~~
+Version 2.0.2
+
+
 Version 2.0.1
 * Post version 2.0
 * Some cleanup, valgrind compliance, improved error messages, improved use of difxio constants
