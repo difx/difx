@@ -1225,6 +1225,24 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 									n2 = DifxDatastreamGetRecBands(D->datastream+a2, altFreqId, a2p, a2c);
 								}
 							}
+
+							if(n2 == 0)
+							{
+								//still no dice? Try the zoom bands of datastream 2
+								for(int f2 = 0; f2 < D->datastream[a2].nZoomFreq; f2++)
+								{
+									altFreqId = D->datastream[a2].zoomFreqId[f2];
+									altlowedgefreq = D->freq[altFreqId].freq;
+									if(D->freq[altFreqId].sideband == 'L')
+									{
+										altlowedgefreq -= D->freq[altFreqId].bw;
+									}
+									if(altlowedgefreq == lowedgefreq)
+									{
+										n2 = DifxDatastreamGetZoomBands(D->datastream+a2, altFreqId, a2p, a2c);
+									}
+								}
+							}
 						}
 
 						npol = 0;
@@ -1263,6 +1281,46 @@ void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrSetup *c
 
 						n1 = DifxDatastreamGetZoomBands(D->datastream+a1, freqId, a1p, a1c);
 						n2 = DifxDatastreamGetZoomBands(D->datastream+a2, freqId, a2p, a2c);
+						if(n2 == 0)
+						{
+							//look for another freqId which matches band but is opposite sideband
+							lowedgefreq = D->freq[freqId].freq;
+							if(D->freq[freqId].sideband == 'L')
+							{
+								lowedgefreq -= D->freq[freqId].bw;
+							}
+							for(int f2 = 0; f2 < D->datastream[a2].nZoomFreq; f2++)
+							{
+								altFreqId = D->datastream[a2].zoomFreqId[f2];
+								altlowedgefreq = D->freq[altFreqId].freq;
+								if(D->freq[altFreqId].sideband == 'L')
+								{
+									altlowedgefreq -= D->freq[altFreqId].bw;
+								}
+								if(altlowedgefreq == lowedgefreq)
+								{
+									n2 = DifxDatastreamGetZoomBands(D->datastream+a2, altFreqId, a2p, a2c);
+								}
+							}
+
+							if(n2 == 0)
+							{
+								//still no dice? Try recorded bands from datastream 1
+								for(int f2 = 0; f2 < D->datastream[a2].nRecFreq; f2++)
+								{
+									altFreqId = D->datastream[a2].recFreqId[f2];
+									altlowedgefreq = D->freq[altFreqId].freq;
+									if(D->freq[altFreqId].sideband == 'L')
+									{
+										altlowedgefreq -= D->freq[altFreqId].bw;
+									}
+									if(altlowedgefreq == lowedgefreq)
+									{
+										n2 = DifxDatastreamGetRecBands(D->datastream+a2, altFreqId, a2p, a2c);
+									}
+								}
+							}
+						}
 
 						npol = 0;
 						for(int u = 0; u < n1; u++)
