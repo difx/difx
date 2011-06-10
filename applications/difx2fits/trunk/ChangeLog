@@ -1,3 +1,6 @@
+Version 3.0.2
+* Post DiFX-2.0.1
+
 Version 3.0.1
 * Post 2.0.0
 * Make use of clock shifting function in difxio
@@ -10,6 +13,7 @@ Version 3.0.1
 * print fits keywords for each fits file when -v is supplied
 * don't invoke sniffer in cases where it would use too much memory
 * don't overwrite FITS when parse-all input difx are from different vex setups (thanks Jan Wagner)
+* Version for DiFX-2.0.1, 10 June 2011
 
 Version 3.0
 * Includes the following merged changes from DiFX-1.5:
