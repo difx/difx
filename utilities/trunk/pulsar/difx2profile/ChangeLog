@@ -1,4 +1,6 @@
-Version for DiFX-2.0.1, June 10, 2011
+0.3: post DiFX-2.0.1
+
+0.2: Version for DiFX-2.0.1, June 10, 2011
 * Updated to read from files correctly (take into account spectral averaging)
 
 Utilities are generally unversioned - first entry 06 Sep 2010, ATD
