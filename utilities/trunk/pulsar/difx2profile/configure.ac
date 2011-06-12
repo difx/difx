@@ -25,11 +25,7 @@ dnl **********************************************************
 # Checks for libraries.
 PKG_CHECK_MODULES(DIFXIO, difxio >= 3.0.2)
 PKG_CHECK_MODULES(FXCORR, fxcorr >= 2.0.2)
-dm_enabled=true
-PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.0.2,
-                  [AC_DEFINE([HAVE_DIFXMESSAGE], 1, [1=has DIFXMESSAGE])],
-                  dm_enabled=false)
-AM_CONDITIONAL(WITH_DIFXMESSAGE, $dm_enabled)
+PKG_CHECK_MODULES(DIFXMESSAGE, difxmessage >= 2.0.2)
 
 # Checks for header files.
 
