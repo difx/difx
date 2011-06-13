@@ -97,5 +97,7 @@ else
   PrependPath LD_LIBRARY_PATH  ${IPPROOT}/sharedlib
 fi
 PrependPath PKG_CONFIG_PATH  ${DIFXROOT}/lib/pkgconfig
-
-echo " DiFX version $DIFX_VERSION is selected"
+if test "$PS1" != ""; then
+  echo " DiFX version $DIFX_VERSION is selected"
+  export PS1="\u@\h $DIFX_VERSION \W> "
+fi
