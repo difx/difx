@@ -1,0 +1,52 @@
+Documentation for the program "fplot"
+-------------------------------------
+
+COMMAND NAME:   fplot
+
+SYNOPSIS:  Displays fringe plots attached to type 2 files
+
+SYNTAX:    fplot [-x -h] [data file list]
+		All option flags must appear before the data file list.
+		The -x and -h flags are mutually exclusive, and enable
+		xwindow display and hardcopy respectively, no default.
+
+OPTION FLAGS:	-x
+			Display the fringe plot(s) on the X-window display
+			pointed to by the DISPLAY environment variable.
+		-h
+			Print a hardcopy of the fringe plot(s),
+
+ARGUMENTS:	data file list
+			A list of type-2 files, the fringe plots of which
+			to display or print.  Fplot follows the standard 
+			MkIV data file specification format.
+			You may specify individual type-2 filenames,
+			scan directories which contain data files,
+			experiment directories, or any combination of
+			these three.  In the latter two cases,
+			fplot will descend the directory tree looking for
+			data files to add to its internal list of files to
+			process.  Beware of trying to specify too many
+			files or scan directories, as it is possible to
+			overflow the Unix argument list buffer on large
+			experiments.  In such cases, specify the experiment
+			directory instead.
+
+ENVIRONMENT:	MK4_PRINTER, PRINTER
+
+DESCRIPTION:
+
+This program is designed to allow easy access to the fringe plots attached
+to the type-2 files on disk, by FRNGE or fourfit.  Using the standard data
+file specification format for MkIV programs, one can generate a selective
+list of files to display or print.  The -x option displays the plots on
+an Xwindow screen, and has the virtue of great speed.  One can flip through
+many fringe plots very rapidly, and move both backwards and forwards in the
+list of files to be displayed.  This capability is intended to save trees.
+
+For those who need hardcopy printout, the -h option is provided.  The
+plot is spooled using the "lpr" print spooler to an appropriate printer
+identified by the support script "pplot_print".  (PRINTER takes precedence
+over MK4_PRINTER unless you've redefined MK4_PRINTER.  And in any case you
+can put your own pplot_print earlier in your PATH.)
+

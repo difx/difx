@@ -1,0 +1,13 @@
+COMMAND NAME:	sources
+
+TYPE:		Data selection
+
+SYNTAX:		"sources 3C345, 3C273, OJ287"
+
+DESCRIPTION:
+
+Specifies a list of sources which will pass the filters in
+edit inputs, read, and plot.  The source names must match
+those in the data files exactly (including case), with the
+exception of leading or trailing blanks.  Typing "sources"
+with no arguments removes any restriction on sources.

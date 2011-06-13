@@ -1,0 +1,1062 @@
+GENERAL DESCRIPTION OF AEDIT
+----------------------------
+
+The program "aedit" is a general purpose A-file manipulation
+program.  The information present in one or more A-files may
+be plotted, filtered, sorted and edited in a variety of ways, 
+before being written out in the form of a new A-file.  The user
+interface to the program is presently implemented only for
+ASCII terminals, but a full X-windows interface will follow.
+
+
+1. General "aedit" characteristics
+
+Commands are given to aedit by keyboard, and a full minimum
+match capability is supported for all aedit names.  Multiple
+commands are allowed on one input line, the only requirement
+being that commands are separated by the semicolon ";" 
+character.  Commands typically consist of the command name
+followed by 0 or more arguments.  The arguments are separated
+from the command name and each other by either spaces or
+commas.  Aedit can handle long lines, but it is of course bad
+practice to wrap lines on terminals in general.  Upwards of
+about 250 characters may start to cause problems even for aedit.
+In general, aedit is not case sensitive.  Case sensitivity
+is needed for UNIX filenames and for certain quantities from 
+A-files (station codes, frequency codes, source names).
+
+Aedit uses the concept of inputs.  That is, you set up
+certain variables in the program that determine how the "action"
+commands will behave.  Most of the commands that aedit
+understands are of the input-setting variety.  Many are quite
+particular about syntax, and will complain if the user types
+nonsense (e.g. timerange).  At any time, the current state of
+the input parameters can be listed on the screen with the
+command "inputs".
+
+When aedit reads data from an A-file, it parses the ascii
+information and stores it as binary data in memory.  This allows
+very rapid manipulation of the data once read in, with
+seemingly complex tasks appearing to be instantaneous.  There
+is a flag field associated with each A-file line in memory,
+and these flags are manipulated by the edit and unflag commands.
+A full description of the data currently in memory can be
+obtained with the "summary" command.  This is essential when
+deciding on plotting and editing options.  The "write" command
+ignores flagged data, permitting aedit to be used as a simple
+and efficient filtering program.
+
+A new command "run" has been added, which provides a flexible and 
+general command file capability.  Nesting of command files to a 
+depth of 10 is allowed.  The "run" command executes in batch mode, 
+and cursor operations are therefore disabled.  If IO redirection 
+is used to implement command files (no longer recommended), remember 
+to use the "batch" command to disable operations requiring 
+interactive user input.
+
+Aedit features a shell escape.  By starting an input line with the
+character "!", you can access standard UNIX commands outside of
+aedit.  You can escape to a complete new shell by typing "!csh" or
+"!sh", and when you have finished, return to aedit where you left
+off by typing cntl-D.  This feature is useful for spooling plot
+files to a printer, preparing run files, running "efind" to prepare
+new data for aedit, and any other tasks that you wish to perform
+without terminating the aedit session.
+
+Plotting is implemented by using the PGPLOT package from CalTech.
+The output device may be specified with the "device" command, or
+you may leave "device" at the default value ("?"), which will
+cause PGPLOT to query you for a device at the time of plotting.
+Your response will then be automatically entered into the "device"
+input.  A list of available device types can be obtained by responding
+with a query.  The general form of device specifications in PGPLOT
+is "filename/devicetype", where "filename" specifies an output file,
+and "devicetype" specifies the format of the graphics commands (made
+to be appropriate to the device requested).  For some devices, such
+as a laser printer, the filename is a genuine disk file, which then
+must be spooled to the printer manually (you can use the shell escape
+from within aedit: !command).  For interactive devices, the filename
+is typically a device-special file such as "/dev/ttyp2".  When the
+filename contains slashes (common in UNIX!), be sure to enclose the
+filename part of the device specification in double quotes, otherwise
+PGPLOT will interpret everything after the first slash as the device
+type.  A valid device value would be: "/dev/ttyp2"/TEK4010.
+
+Aedit comes with full on-line help.  In general, the syntax is
+"help command", but just "help" will work.
+
+The command line for aedit is "aedit [-x] [-r filename] [-f filename]",
+where "-x","-r", and "-f" are optional.  The "-x" option means start
+up the xwindow interface (not yet supported).  The "-r" option means
+execute the specified run file on startup, and must be immediately
+followed by the name of a file containing valid aedit commands.  The "-f" 
+option means "read this(ese) data file(s) on startup", and must be 
+immediately followed by a standard, wildcardable UNIX filename specifier 
+or specifiers.  In this way, you can read many files at once into aedit
+without going through a laborious one-at-a-time "read" cycle within
+the program. If specified, the "-f" flag must be the last flag.
+
+Below is a list of all current aedit commands:
+
+Action commands:
+----------------
+exit	inputs	plot	clear	edit
+zoom	read	write	help	unflag
+summary setyear	sort	unsort	run
+batch	nobatch
+
+
+Plot control commands:
+----------------------
+grid	scale	axis	mode
+
+
+Data selection commands:
+------------------------
+timerange	stations	baselines	frequencies
+experiment	qcodes		type		snrmin
+sources		length		fraction	nfreq
+
+
+IO control commands:
+--------------------
+device
+
+
+For further information, see the individual help files for the
+above commands.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	help
+
+TYPE:		Action
+
+SYNTAX:		"help 'subject'"
+
+DESCRIPTION:
+
+Writes the help file pertaining to "subject" on the 
+terminal, under pagination control.  "Subject" is
+presently any command name, plus "general".
+
+
+Action commands:
+
+	Name	argument(s)	Description
+	----	-----------     -----------
+	clear	data		Erase all data from memory
+		inputs		Reset input settings to default
+		plot		Clear screen or eject page
+		all		All three clear functions
+	edit	cursor		Zap points on screen with cursor
+		inputs		Remove points that don't fit inputs
+		duplicates	Remove duplicate points with various priorities
+	exit			End aedit session
+	inputs	plot/filter	Print current input settings on screen
+	plot			Plot current data according to inputs
+	read	filename	Read in data from filename
+	run	filename	Execute commands in filename
+	setyear	number		Manually reset year of scan throughout data
+	sort	key		Sort data according to various keys
+	summary			Display a summary of all unflagged data
+	unflag	string		Removes flags applied for various reasons
+	unsort			Restore original sort order (as read in)
+	write	filename	Write (edited, sorted) data to filename
+	zoom			Display details of cursor-selected points
+
+
+Plot control parameters:
+
+	Name	argument(s)	Description
+	----	-----------     -----------
+	axis	string		Set variable to plot on Y axis
+	grid	a,b		Divide screen/page a times b subplots
+	scale	min,max		Set Y-axis scale
+
+
+Data selection parameters:
+
+	Name		argument(s)	Description
+	----		-----------     -----------
+	baselines	AB,BC,AC ....	Use only these baselines
+	experiment	expt #		Use only data from this experiment
+	frequencies	S,X,K, ....	Use only data at these frequencies
+	fraction	nn% ....	Use only scans with >nn% good data
+	length		number		Use only scans > number secs or blocks
+	nfreq		<>= nn		Use only scans with <>= nn frequencies
+	qcodes		5-9,D ...	Use only data with these quality codes
+	snrmin		number		Use only data with snr > number
+	sources		name1,name2...  Use only data on these sources
+	stations	A,B,C,D ....	Use only data from these stations
+	timerange	d-hhmm, d-hhmm	Use only data in time range
+	type		0 1 2		Use only data of these types
+
+
+I/O control parameters:
+
+	Name	argument(s)	Description
+	----	-----------     -----------
+	device	string		Plotting device for PGPLOT
+
+
+Miscellaneous:
+
+	Name	argument(s)	Description
+	----	-----------	-----------
+	batch	none		Disables interactive confirmation querys
+	nobatch	none		Enables interactive confirmation querys
+
+
+**********************************************************************
+
+
+COMMAND NAME:	axis
+
+TYPE:		Plot control
+
+SYNTAX:		"axis snr"
+		"axis amplitude"
+		"axis phase"
+		"axis sbdelay"
+		"axis mbdelay <modulo>"
+		"axis drate"
+		"axis refdpcal"    (reference station phasecal difference)
+		"axis remdpcal"    (remote ...)
+		"axis refpcal1"    (reference station channel 1 phasecal)
+		"axis rempcal1"    (remote ...)
+
+DESCRIPTION:
+
+Determines what will be plotted on the Y-axis.  The default
+is "amplitude".  The "modulo" argument for multiband delay sets
+the number of nanoseconds assumed between ambiguities.  The
+plot is automatically scaled to +/- half this value.  If omitted,
+"modulo" is assigned the value 500.
+ 
+
+
+**********************************************************************
+
+
+COMMAND NAME:	baselines
+
+TYPE:		Data selection
+
+SYNTAX:		"baselines AB BC CD AC"
+
+DESCRIPTION:
+
+Sets the baseline data selection parameter in the inputs.  Only
+those baselines specified will pass the filter-applying operations
+of edit inputs, read, and plot.  Typing "baselines" without
+arguments removes any restrictions on allowed baselines.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	batch
+
+TYPE:		Miscellaneous
+
+SYNTAX:		"batch"
+
+DESCRIPTION:
+
+Disables confirmation mechanism, for running in batch mode.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	clear
+
+TYPE:		Action
+
+SYNTAX:		"clear data"
+		"clear inputs"
+		"clear plot"
+		"clear all"
+
+DESCRIPTION:
+
+"Clear data" removes all the data from memory, and returns
+array space to the system.  Since any active plot no longer
+refers to data in memory after this operation, the plot is
+rendered inactive.
+
+"Clear inputs" changes all the values listed by the "inputs"
+command to their default values.  Typically, this means
+data selection parameters are set to pass all data, and plots
+revert to self-scaling.
+
+"Clear plot" flushes the current plot, and renders a plot on
+an interactive device inactive.
+
+"Clear all" simultaneously performs all the above operations.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	device
+
+TYPE:		IO control
+
+SYNTAX:		"device name/device"
+
+DESCRIPTION:
+
+Sets the device type used for plotting.  The available devices
+are those accessible to the PGPLOT library, which as of April
+1990 consisted of tektronix emulators, a SunView graphics window,
+and Hewlett-Packard Laserjet printers, 150 and 300 dots-per-inch.
+
+The construction of the argument is in two parts.  The first
+part is the specific name of the output file or device,  The
+second part specifies the type of device.  The former can
+be a standard UNIX filename, such as "plot01.3C345", but 
+subdirectory specifiers (i.e. filenames with "/" in them) are
+special because PGPLOT is looking for a "/" to separate
+the two parts of the device specifier.  You must "hide" the
+UNIX "/" characters from PGPLOT by enclosing the filename in
+double quotes, so that a valid specification for a workstation
+tektronix emulator might be '"/dev/ttyp2"/te'.
+
+The default filename for interactive devices is the users
+terminal, whilst for the hardcopy devices, it is "PGPLOT.device".
+PGPLOT translates filenames to upper case on output.
+
+The second part, the device type, follows a "/", and presently
+may be "null" (bit bucket), "tek4010", "sun" (on Sun workstations), 
+"ljlowres", or "ljhighres". These names are minimum matchable 
+(e.g. "/te" will work).  
+
+The initial state of the "device" input parameter is "?", which
+switches on an interactive device-setting mode inside PGPLOT.  The
+response to the PGPLOT query is then automatically inserted into
+the aedit device parameter.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	edit
+
+TYPE:		Action
+
+SYNTAX:		"edit inputs"
+		"edit cursor"
+		"edit duplicates procdate"
+		"edit duplicates qcode"
+		"edit duplicates snr"
+
+DESCRIPTION:
+
+Sets flags in the data records according to a variety of
+circumstances.  These flags can be selectively unset with
+the "unflag" command.
+
+"Edit inputs" sets a flag bit in each data record for each
+data selection input parameter which excludes that data point.
+Thus, a scan may pass the input filter for stations, but fail
+that for baselines.  The baseline bit would be set, but the
+station bit would not.  Any set bit in the flag field causes
+the scan to be flagged (i.e. it will not be plotted or written
+to an output file).
+
+"Edit cursor" enables the cursor on an interactive graphics device
+upon which data has been displayed using "plot".  The user may
+type any character (except 'x', 'X', 'a', 'A', 'b' or 'B' ..  see 
+below) on the keyboard to edit out the point nearest the cursor.
+The cursor must be inside the border of a plot, and must be twice 
+as close to the target point than any other point for success.  
+Failure to meet these conditions results in an appropriate error 
+message.    
+
+Alternatively, the user may define an area on the plot within which
+all points are to be edited out.  This is accomplished by typing
+'a' or 'A' to locate the bottom left corner of a rectangle, and
+'b' or 'B' to locate the top right corner. 
+
+On devices which are not capable of erasing points from the screen
+(e.g. tektronix emulators), the edited points are marked by being
+overwritten by a solid square.
+
+Do not use the mouse buttons on workstation tektronix emulators - 
+these return multiple characters which may confuse the program.
+The cursor editing mode is terminated by typing the character 'x' 
+or 'X' on the keyboard.
+
+"Edit duplicates" removes duplicate scans from the database, 
+ignoring flagged scans.  The term "duplicate" refers to identical
+baseline, scan time, frequency code, experiment number and source.
+The second argument determines which scan aedit will retain.  If
+"procdate" is specified, it will keep the most recent processing.
+If "qcode" is specified, the "best" quality code scan is kept. If
+"snr" is specified, the highest snr scan is kept.  Because of the
+nature of identifying duplicates, involving the testing of several
+data values, and the fact that the data in memory is unsorted
+(causing a quadratic dependence of the work load on the number of
+unflagged scans), large duplicate removal jobs on slow computers
+(such as a Sun 3/50) may take a significant amount of time.
+
+WARNING: Since "edit duplicates" ignores flagged scans, unflagging
+data may generate more duplicates.  Similarly, reading in more
+data may do the same.  In such circumstances, the recommended
+course is to "unflag duplicates" and rerun "edit duplicates".
+
+
+**********************************************************************
+
+
+COMMAND NAME:	exit
+
+TYPE:		Action
+
+SYNTAX:		"exit" (no arguments)
+
+DESCRIPTION:
+
+Terminates the current aedit session.  All data currently in memory
+is lost.  The plot device, if open, is closed and the plot flushed.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	experiment
+
+TYPE:		Data selection
+
+SYNTAX:		"experiment 1953"
+
+DESCRIPTION:
+
+Sets the experiment input data selection parameter.  Only one
+experiment number may be specified at one time.  Scans which do
+not belong to the specified experiment number will not pass the
+filters applied by edit inputs, read, and plot.  Typing "experiment"
+without arguments removes any restriction on experiment number.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	fraction
+
+TYPE:		Data selection
+
+SYNTAX:	  e.g.	"fraction > 8"
+	    or	"fraction <= 60%"
+
+DESCRIPTION:
+
+Sets the fraction of the data processed for this scan which
+will pass the filtering functions applied in read, edit, and
+plot.  The syntax is quite forgiving.  The requirements are
+that there be an inequality operator, possibly followed by
+an equals sign, followed by a sensible number, possibly followed
+by a percent sign.  If the percent sign is missing, the number
+is interpreted as tenths of the scheduled data, instead of a 
+percentage.  Spaces are irrelevant.
+
+If "fraction" is typed with no arguments, or with
+just "0" as an argument, all restrictions on the fraction of
+data processed are removed.
+
+Note that this filter option operates on the value of the last
+digit in the ESDESP field of the A-file format, which is placed
+there by FRNGE.  Before the implementation of baseline-dependent
+scan lengths in the schedule files, this number was unreliable.
+Also, being only a single digit, this quantity is only accurate
+to the nearest 10%, so more precise values entered with the 
+fraction command are rounded off.
+
+
+
+**********************************************************************
+
+
+COMMAND NAME:	frequencies
+
+TYPE:		Data selection
+
+SYNTAX:		"frequencies XS, C"
+
+DESCRIPTION:
+
+Enters a list of allowed frequencies into the inputs.  All alphabetic
+characters are accepted, in any order, lower or upper case, with or
+without spaces or commas.  Duplicate characters are ignored.  Scans
+which involve frequencies not in this list will fail the filter tests
+applied by edit inputs, read, and plot.  Typing "frequencies" without
+arguments removes any limitations on frequencies.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	grid
+
+TYPE:		Plot control
+
+SYNTAX:		"grid n1 n2" (n1, n2 are integers - n1 <= 3, n2 <= 10)
+
+DESCRIPTION:
+
+This sets the parameter which determines how many subplots
+appear horizontally and vertically on the plotting surface.
+The default is one in each direction, the maximum is 3
+horizontally and 10 vertically.  The character size scales
+with the number of vertical plots to keep things readable.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	inputs
+
+TYPE:		Action
+
+SYNTAX:		"inputs plot"
+	    or  "inputs filter"
+	or just "inputs"
+
+DESCRIPTION:
+
+For use in ascii-terminal interface mode only.  Places a
+summary of the current aedit input settings on the screen.
+The plot and filter options result in a display of only 
+those inputs pertaining to plotting and data filtering
+respectively, while the default produces a display of all
+input parameters.
+
+An example is shown below.
+
+
+	****************
+	| AEDIT INPUTS |
+	****************
+
+
+DATA SELECTION PARAMETERS
+-------------------------
+Timerange:   88124-1257 to  88126-0715
+Stations:    ABNT
+Baselines:   AB BN TN 
+Frequencies: XS
+Experiment:  1996
+Qcodes:      56789AD
+Type:        2
+Snrmin:      10
+Sources:     3C345 3C273 OJ287
+Length:      30 
+Fraction:    No restriction specified
+
+PLOTTING PARAMETERS
+-------------------
+Axis:        Plot mbdelay against time (Modulo 40 nanoseconds)
+Grid:        divide plot into 2 horizontal and 5 vertical subplots
+Scale:       Plot between mbdelay = -20.000000 and 20.000000
+Mode:        Nosplit (multiple sources per plot)
+Device:      Device for graphics output = "/dev/ttyp2"/te
+
+
+
+**********************************************************************
+
+
+COMMAND NAME:	length
+
+TYPE:		Data selection
+
+SYNTAX:		"length 20"
+
+DESCRIPTION:
+
+Sets the minimum scan length in seconds (type 2 data),
+or HP-1000 256-byte blocks (type 0 and 1 data), 
+which will pass the filters applied in edit inputs, 
+read, and plot.  Typing "length" without arguments 
+removes any limitation on scan length.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	mode
+
+TYPE:		plot control
+
+SYNTAX:		"mode split"
+	    or  "mode nosplit"
+
+DESCRIPTION:
+
+Toggles the setting of the mode parameter, which determines
+whether or not the data will be split into one plot per
+source.  The default on startup is "nosplit".
+
+
+**********************************************************************
+
+
+COMMAND NAME:	nfreq
+
+TYPE:		Data selection
+
+SYNTAX:	  e.g.	"nfreq >= 8"
+	    or	"nfreq < 2"
+
+DESCRIPTION:
+
+Sets the number of frequencies processed for this scan which
+will pass the filtering functions applied in read, edit, and
+plot.  The syntax is quite forgiving.  The requirements are
+that there be an optional inequality operator, possibly followed 
+by an equals sign, followed by a sensible number.  Spaces are 
+irrelevant.  If the inequality is omitted, exactly the specified
+number of frequencies must be present to pass the filters.
+
+If "nfreq" is typed with no arguments, or with just "0" as an 
+argument, all restrictions on the number of frequencies 
+processed are removed.
+
+
+
+
+**********************************************************************
+
+
+COMMAND NAME:	nobatch
+
+TYPE:		Miscellaneous
+
+SYNTAX:		"nobatch"
+
+DESCRIPTION:
+
+Enables confirmation mechanism, for running interactively
+(reverses the action of "batch").
+
+
+**********************************************************************
+
+
+COMMAND NAME:	plot
+
+TYPE:		Action
+
+SYNTAX:		"plot" (no arguments)
+
+DESCRIPTION:
+
+Initiates plotting of data in memory on a device of the
+users choice.  The data is plotted one baseline and one
+frequency at a time, and is filtered by input settings.
+If the "mode" input parameter is set to "split", the data
+is further divided into one source per plot.
+
+The x-axis is always time, but the y-axis type is specified
+by the "axis" command to be one of several options.  The
+y-axis extrema of the plot can be set with the "scale"
+command, and the layout of one or more plots on a page is
+controlled with the "grid" command.  You must call "plot"
+before using the cursor ("zoom" or "edit cursor").
+
+
+**********************************************************************
+
+
+COMMAND NAME:	qcodes
+
+TYPE:		Data selection
+
+SYNTAX:		"qcodes 5,6,789,DEF"
+	    or  "qcodes 5-9 D-F"
+	    or  "qcodes not 0-4 A-C"
+
+DESCRIPTION:
+
+Sets the quality code data selection input parameter.  Shown
+in the example are three ways of establishing the quality code
+filter "56789DEF".  You can specify codes directly, in any order,
+separated by spaces, commas, or nothing at all.  You can also
+specify ranges of quality codes from the sequence "ABCDEF0123456789"
+by using the construction "2-8".  Preceding a specification by the
+exact string "not" means take all except the specified codes.  This
+information is applied as a filter by edit inputs, read, and plot.
+Typing "qcodes" with no argument removes any limitation on quality
+codes.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	read
+
+TYPE:		Action
+
+SYNTAX:		"read filename"
+
+DESCRIPTION:
+
+Reads data in from the filename specified in the argument.
+At present, only type 2 lines are decoded and stored in 
+memory.  If all fields on the line are successfully decoded, 
+the data enters memory with a zero flag field.  If some data 
+could not be decoded, but enough is available to identify 
+the parent data file, a flagged data entry is made in memory.  
+If not even enough could be decoded to id the file, the line 
+is skipped.  You can read as many files into aedit, one after 
+the other, as you like.  "Read" filters the incoming data 
+according to the data selection input parameters.
+
+The unlimited data capacity of aedit is achieved by using
+dynamic memory allocation inside the "read" function.  As
+more memory is needed, the program obtains it from the system.
+This memory is released by the command "clear data", or
+by "exit".  The user is informed of memory usage during the
+reading operation.
+
+WARNING: The plot package PGPLOT also uses dynamic memory
+allocation, which is inconsistent with subsequent memory
+allocation by "read".  If "plot" has been executed, "read"
+will refuse to read in more data until a "clear data" has
+been issued.  This limitation may be removed in future
+releases.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	run
+
+TYPE:		action
+
+SYNTAX:		"run filename"
+
+DESCRIPTION:
+
+Causes the aedit commands in "filename" to be executed, just
+as if they were typed at the terminal.  For obvious reasons,
+there are a couple of exceptions.  Confirmation is no longer
+requested when using run files, and certain interactive
+operations (edit cursor, zoom) are disabled.  Aedit command
+files can be nested up to a depth of 10.  Any error within
+a run file causes the execution to abort, and control returns
+to the terminal, regardless of how deeply the runfiles are
+nested.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	scale
+
+TYPE:		Plot control
+
+SYNTAX:		"scale ymin ymax" (ymin, ymax floating point)
+
+DESCRIPTION:
+
+Sets the minimum and maximum Y-axis values, overriding the
+default, which is 0 to 360 degrees for phase quantities, or
+the data range plus 10% at each end for other quantities.
+Scale with no arguments restores the default.  When
+the Y-axis is multiband delay, the scale is automatically set
+to +/- half the multiband delay ambiguity (user specified).
+This can be overridden by an explicit "scale" command.
+
+Points which fall outside the scale limits are not plotted, and
+a warning message is issued to alert the user as to how many
+points were omitted.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	setyear
+
+TYPE:		Action
+
+SYNTAX:		"setyear 1989"
+
+DESCRIPTION:
+
+This command is present only to allow the user to circumvent an
+unfortunate problem with the A-file format.  Some A-files have
+the year of the scan in field 7, but in others this information
+is replaced by the number of the parent type-51 HP-1000 extent.
+Generally, aedit will recognize the latter type of A-file on
+read, and notify the user that the scan year information is
+missing from some of the data.  In such cases, the year is set
+to 1980.  The recommended course of action is for the user to
+set the timerange to the offending span in 1980 with all other
+filters wide open, run "edit inputs" to flag all good data,
+force the year to the correct value with "setyear", and unflag
+the good data again.  If all data is actually from the same
+calendar year, the edit and unflag steps are unnecessary - you
+can run setyear on the whole dataset.
+
+Confusing things could happen if the parent extent number exceeds
+80, but this should be almost never.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	snrmin
+
+TYPE:		Data selection
+
+SYNTAX:		"snrmin 20"
+
+DESCRIPTION:
+
+Sets the minimum snr which will pass the filters applied
+in edit inputs, read, and plot.  Typing "snrmin" without
+arguments removes any limitation on snr.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	sort
+
+TYPE:		Action
+
+SYNTAX:		"sort scantime"
+		"sort procdate"
+		"sort snr"
+		"sort length"
+		"sort baseline"
+		"sort frequency"
+		"sort sourcename"
+		"sort qcode"
+
+DESCRIPTION:
+
+Sorts the data in memory according the the value of the
+field specified in the command.  The sort is stable, in that
+entries in the database which compare equal will retain
+their original sort order.  Thus any combination of sort
+key priorities can be applied by repeated execution of "sort".
+
+The only consequence of sorting the data is that the output
+of the "write" command will be sorted.  The various "aedit"
+commands do not care whether the data is sorted or not, and in
+fact operate on unsorted data whether sort has been executed or
+not.  Flagging and unflagging data does not affect the sort
+order ... sorting is done on all the data.
+
+Note that reading in additional data destroys any sort order.  The
+effect is the same as issuing the "unsort" command, in that
+the sort order information for the original dataset is explicitly
+discarded, and the original sort order restored.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	sources
+
+TYPE:		Data selection
+
+SYNTAX:		"sources 3C345, 3C273, OJ287"
+
+DESCRIPTION:
+
+Specifies a list of sources which will pass the filters in
+edit inputs, read, and plot.  The source names must match
+those in the data files exactly (including case), with the
+exception of leading or trailing blanks.  Typing "sources"
+with no arguments removes any restriction on sources.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	stations
+
+TYPE:		Data selection
+
+SYNTAX:		"stations ABC D EF"
+
+DESCRIPTION:
+
+Enters a list of allowed stations into the inputs.  All alphabetic
+characters are accepted, in any order, lower or upper case, with or
+without spaces or commas.  Duplicate characters are ignored.  Baselines
+which involve stations not in this list will fail the filter tests
+applied by edit inputs, read, and plot.  Typing "stations" without
+arguments removes any limitations on stations.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	summary
+
+TYPE:		Action
+
+SYNTAX:		"summary" (no arguments)
+
+DESCRIPTION:
+
+Displays a summary of all unflagged data in memory on
+the terminal.  An example is shown below:
+
+
+		SUMMARY OF UNFLAGGED DATA IN MEMORY
+		-----------------------------------
+
+Total number of unflagged records = 556
+
+Earliest scan:       88-273-0931
+Latest scan:         89-025-0905
+Stations present:    KTYMHX
+Baselines present:   KT TY MT MH MY YH MX YX XH 
+Frequencies present: XS
+SNR extrema:         0    393
+Experiments present: 1963 1995
+Sources present:     
+	3C66A SN1986J 0224+67 NRAO150 3C66B 3C345 3C279 
+	1921-293 2134+00 NRAO530 3C454.3 0106+013 0420-014 0528+134 
+	0552+398 4C39.25 OJ287 0727-115 
+Quality code summary:
+	   A   B   C   D   E   F   0   1   2   3   4   5   6   7   8   9   ?
+	   0   0   0  47   0   4  27   0   1   0   0   5   2  16  58 396   0
+
+There are 0 flagged records present
+
+
+
+**********************************************************************
+
+
+COMMAND NAME:	timerange
+
+TYPE:		Data selection
+
+SYNTAX:		"timerange yyddd-hhmm yyddd-hhmm"
+
+DESCRIPTION:
+
+Sets the range of times outside which data will be rejected by
+various filter-applying action commands (edit inputs, read).
+Overrides self-scaling of the time axis on plots.  Typing
+"timerange" without arguments removes any restriction on the
+timerange.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	type
+
+TYPE:		Data selection
+
+SYNTAX:		"type 0 1 2"
+
+DESCRIPTION:
+
+Sets the type data selection parameter.  In this version of
+aedit, does nothing since only type 2 records can be read in.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	unflag
+
+TYPE:		Action
+
+SYNTAX:		"unflag all"
+		"unflag duplicates"
+		"unflag cursor"
+		"unflag qcodes"
+		"unflag snrmin"
+		"unflag timerange"
+		"unflag stations"
+		"unflag baselines"
+		"unflag experiment"
+		"unflag frequencies"
+		"unflag type"
+		"unflag sources"
+		"unflag length"
+
+DESCRIPTION:
+
+Unsets flag bits for all scans in memory, according to the
+argument.  For example, "unflag snrmin" unsets all flag bits
+thoughout memory which were set with an "edit inp" with
+"snrmin" set higher than the scan snr value.  The combination
+of "edit" and "unflag" allows great control over the flagging
+status of the data in memory.  "Unflag all" removes all flags
+from the data simultaneously.
+
+
+**********************************************************************
+
+
+COMMAND NAME:	unsort
+
+TYPE:		Action
+
+SYNTAX:		"unsort"
+
+DESCRIPTION:
+
+Restores the original sort order of the data (i.e. the
+order in which the data was read in).
+
+
+**********************************************************************
+
+
+COMMAND NAME:	write
+
+TYPE:		Action
+
+SYNTAX:		"write filename"
+
+DESCRIPTION:
+
+Writes all unflagged data in memory out to the filename
+specified in the argument.  The data are written out
+according to the current sort order (as determined by
+execution of the "sort" command).  If the data is not
+sorted, the output order is the same as the order in
+which the data was read.
+
+The input filters are ignored on "write".
+The way to write out selected data is to set the input
+filters and then run "edit inputs", before using "write".
+
+
+**********************************************************************
+
+
+COMMAND NAME:	zoom
+
+TYPE:		Action
+
+SYNTAX:		"zoom" (no arguments)
+
+DESCRIPTION:
+
+Enables the cursor on an active plot on an interactive
+graphics device.  The user selects a point by positioning
+the cursor and typing any character except 'x' or 'X', and 
+the program displays detailed information about that point 
+on the terminal.  At present, the only information displayed 
+is that resident in memory (i.e. A-file information), but in 
+the future, the program will have the option of constructing
+a data file name and displaying the FRNGE plot on screen.
+
+"Zoom" is terminated by typing an 'x' or 'X'.

@@ -1,0 +1,37 @@
+COMMAND NAME:	unflag
+
+TYPE:		Action
+
+SYNTAX:		"unflag all"
+		"unflag duplicates"
+		"unflag cursor"
+		"unflag qcodes"
+		"unflag snr"
+		"unflag bsnr"
+		"unflag timerange"
+		"unflag procrange"
+		"unflag stations"
+		"unflag baselines"
+		"unflag triangles"
+		"unflag experiment"
+		"unflag frequencies"
+		"unflag type"
+		"unflag sources"
+		"unflag length"
+		"unflag fraction"
+		"unflag nfreq"
+		"unflag parameter"
+		"unflag parents"
+		"unflag children"
+		"unflag nobaselines"
+		"unflag notriangles"
+
+DESCRIPTION:
+
+Unsets flag bits for all scans in memory, according to the
+argument.  For example, "unflag snrmin" unsets all flag bits
+thoughout memory which were set with an "edit inp" with
+"snrmin" set higher than the scan snr value.  The combination
+of "edit" and "unflag" allows great control over the flagging
+status of the data in memory.  "Unflag all" removes all flags
+from the data simultaneously.

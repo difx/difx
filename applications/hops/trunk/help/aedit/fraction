@@ -1,0 +1,30 @@
+COMMAND NAME:	fraction
+
+TYPE:		Data selection
+
+SYNTAX:	  e.g.	"fraction > 8"
+	    or	"fraction <= 60%"
+
+DESCRIPTION:
+
+Sets the fraction of the data processed for this scan which
+will pass the filtering functions applied in read, edit, and
+plot.  The syntax is quite forgiving.  The requirements are
+that there be an inequality operator, possibly followed by
+an equals sign, followed by a sensible number, possibly followed
+by a percent sign.  If the percent sign is missing, the number
+is interpreted as tenths of the scheduled data, instead of a 
+percentage.  Spaces are irrelevant.
+
+If "fraction" is typed with no arguments, or with
+just "0" as an argument, all restrictions on the fraction of
+data processed are removed.
+
+Note that this filter option operates on the value of the last
+digit in the ESDESP field of the A-file format, which is placed
+there by FRNGE or fourfit.  Before the implementation of baseline-
+dependent scan lengths in the schedule files, this number was 
+unreliable.  Also, being only a single digit, this quantity is 
+only accurate to the nearest 10%, so more precise values entered 
+with the fraction command are rounded off.
+

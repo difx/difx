@@ -1,0 +1,12 @@
+COMMAND NAME:	ccread
+
+TYPE:		Experiment overview
+
+SYNTAX:		"ccread filename"
+
+DESCRIPTION:
+
+This command reads a correlator control file into memory, thus
+allowing aedit to compare what "should" be present to what is
+actually present.  Execution of this command is a prerequisite
+for "psplot" and "psfile".

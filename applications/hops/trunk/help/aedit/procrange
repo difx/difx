@@ -1,0 +1,12 @@
+COMMAND NAME:	procrange
+
+TYPE:		Data selection
+
+SYNTAX:		"procrange yyddd-hhmm yyddd-hhmm"
+
+DESCRIPTION:
+
+Sets the range of procdates outside which data will be rejected by
+various filter-applying action commands (edit inputs, read).
+Typing "procrange" without arguments removes any restriction on the
+procdate range.

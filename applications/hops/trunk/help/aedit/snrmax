@@ -1,0 +1,11 @@
+COMMAND NAME:	snrmax
+
+TYPE:		Data selection
+
+SYNTAX:		"snrmax 20"
+
+DESCRIPTION:
+
+Sets the maximum snr which will pass the filters applied
+in edit inputs, read, and plot.  Typing "snrmax" without
+arguments removes any upper bound on snr.

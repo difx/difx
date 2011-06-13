@@ -1,0 +1,1 @@
+exec vhelper.sh "$@" | /usr/bin/less

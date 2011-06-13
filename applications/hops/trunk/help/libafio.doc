@@ -1,0 +1,123 @@
+Documentation for the AFIO (A-File IO) library
+----------------------------------------------
+
+Documentor:  CJL 23 October 1992
+	     Revised 29 March 1995
+
+This library contains all the routines needed for dealing with data
+in the A-file format, either in the disk-based ascii form, or in the
+memory-based binary form described by the header file $INC/adata.h.
+The library provides an interface between the A-files on disk and a
+memory-resident structure, ready for manipulation by the programmer.
+The fields in this memory structure are guaranteed to be present in
+all future releases (i.e. only new fields will be added, none will be
+removed).  The programmer may therefore regard this structure, defined
+in adata.h, as a stable format.
+
+The IO performed by this library is done line-by-line.  The programmer
+reads a line from the file and feeds that line to a library routine,
+getting back a filled-in structure.  Alternatively, the programmer
+feeds a filled-in structure to a library routine, along with an open
+file descriptor, and the library writes a line of A-file data to disk.
+This asymmetry between the writing and reading routines is necessary
+because sometimes one wishes to avoid the bother of parsing data of
+an inappropriate type or version;  you have to read the line before you
+know what type it is.  One also wishes to recognize and skip comment
+lines.  The routine aline_id() is provided to assist programmers in
+dealing with unparsed A-file lines, and feeding them to the correct
+parser.
+
+To time-stamp output A-files, and generate column heading appropriate
+to the data type and format version, the routine afile_header() is
+provided.
+
+Below is a K&R-style calling sequence and description of each routine 
+in the library (in logical, not alphabetic order).  In all cases, the
+source code file contains the most detailed documentation for a 
+routine, and can be found in the $AFIO directory.  The source code
+filename is the routine name with .c appended.
+
+
+#include "adata.h"		Do this for all routines
+
+void
+clear_rsumm (rsumm)		Initializes a rootsum structure
+rootsum *rsumm;
+
+void
+clear_csumm (csumm)		Initializes a corelsum structure
+corelsum *csumm;
+
+void
+clear_fsumm (fsumm)		Initializes a fringesum structure
+fringesum *fsumm;
+
+void
+clear_tsumm (tsumm)		Initializes a trianglesum structure
+trianglesum *tsumm;
+
+void				Identifies ascii line as an A-file
+aline_id (line, version, type)  line of specific type and format
+char *line;			version number.  If type=-1, this
+int *version, *type;		is not A-file data.
+
+int
+parse_rsumm (line, rsumm)	Parses the ascii string "line" into
+char *line;			the rsumm structure.
+rootsum *rsumm;			Return: 0=good, -1=bad, +1=bad year
+					+2=incomplete parse
+
+int
+parse_csumm (line, csumm)	Parses the ascii string "line" into
+char *line;			the csumm structure.
+corelsum *csumm;		Return: 0=good, -1=bad, +1=bad year
+					+2=incomplete parse
+
+int
+parse_fsumm (line, fsumm)	Parses the ascii string "line" into
+char *line;			the fsumm structure.
+fringesum *fsumm;		Return: 0=good, -1=bad, +1=bad year
+					+2=incomplete parse
+
+int
+parse_tsumm (line, tsumm)	Parses the ascii string "line" into
+char *line;			the tsumm structure.
+trianglesum *tsumm;		Return: 0=good, -1=bad,
+					+2=incomplete parse
+
+int
+write_rsumm (rsumm, fp)		Writes A-file line corresponding to 
+rootsum *rsumm;			contents of rsumm to fp
+FILE *fp;			Return: 0=good, otherwise error
+
+int
+write_csumm (csumm, fp)		Writes A-file line corresponding to 
+corelsum *csumm;		contents of csumm to fp
+FILE *fp;			Return: 0=good, otherwise error
+
+int
+write_fsumm (fsumm, fp)		Writes A-file line corresponding to 
+fringesum *fsumm;		contents of fsumm to fp
+FILE *fp;			Return: 0=good, otherwise error
+
+int
+write_tsumm (tsumm, fp)		Writes A-file line corresponding to 
+trianglesum *tsumm;		contents of tsumm to fp
+FILE *fp;			Return: 0=good, otherwise error
+
+int
+afile_header (ver, type, fp)	Writes a time stamp and program name
+int ver, type;			followed by field name headers to fp
+FILE *fp;			Return: 0=good, otherwise error
+
+char *				Returns filename, relative to main 
+rootname (rsumm)		data directory, corresponding to
+rootsum *rsumm;			contents of rsumm
+
+char *				Returns filename, relative to main 
+corelname (csumm)		data directory, corresponding to
+corelsum *csumm;		contents of csumm
+
+char *				Returns filename, relative to main 
+fringename (fsumm)		data directory, corresponding to
+fringesum *fsumm;		contents of fsumm

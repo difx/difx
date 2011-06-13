@@ -1,0 +1,45 @@
+COMMAND NAME:   summary
+
+TYPE:           Action
+
+SYNTAX:         "summary"
+                "summary 0" or "summary root"
+                "summary 1" or "summary corel"
+                "summary 2" or "summary fringe"
+                "summary 3" or "summary triangle"
+
+DESCRIPTION:
+
+Displays a summary of all unflagged data in memory on
+the terminal.  Without arguments, a terse summary of all data of
+all types is given.  If a record type is specified, much more
+detailed information is provided.  An example is given below.
+
+
+\begin{verbatim}
+                SUMMARY OF UNFLAGGED DATA IN MEMORY
+                -----------------------------------
+
+Total number of unflagged fringe records = 6754
+
+Earliest scan:       94-015-183000
+Latest scan:         94-016-181505
+Earliest procdate:   94-050-1648
+Latest procdate:     94-055-1044
+Stations present:    DAKLETV
+Baselines present:   DA DK DL DE AK AL AE KL KE LE TE AT AV TV EV KT KV DV LV DT LT
+Frequencies present: XS
+SNR extrema:         0.000  1069.
+Experiments present: 2498
+Sources present:     0048-097 0059+581 0119+041 0229+131 0454-234 0458-020
+        0528+134 0537-441 0552+398 0727-115 0735+178 0804+499 0820+560
+        0823+033 0919-260 0954+658 0955+476 1034-293 1044+719 1053+815
+        1104-445 1128+385 1219+044 1308+326 1334-127 1357+769 1424-418
+        1606+106 1622-253 1726+455 1739+522 1741-038 1749+096 1921-293
+        2145+067 2234+282 2255-282 4C39.25 NRAO512 OJ287 OK290
+Quality code summary:
+        A B C D   E F  0  1 2  3 4  5  6   7   8   9    ?
+        0 2 0 137 3 93 88 0 46 5 18 60 144 211 851 5096 0
+
+There are 0 flagged records present
+\end{verbatim}

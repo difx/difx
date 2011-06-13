@@ -1,0 +1,39 @@
+Documentation for the program "fourmer"
+---------------------------------------
+
+COMMAND NAME:   fourmer
+
+SYNOPSIS:  a program to join two scans into one
+
+SYNTAX:  fourmer root-A root-B [msglev]
+
+OPTION FLAGS:	none
+
+ARGUMENTS:	root-A
+			path to the root of one scan
+		root-B
+			path to the root of the second scan
+		msglev
+			an integer -3 .. 3, inclusive controlling the
+			amount of commentary (less is more).
+
+ENVIRONMENT:	HOPS_FOURMER_FG, HOPS_FOURMER_JOIN
+
+DESCRIPTION:
+
+Fourmer makes a best-effort attempt to join two scans into a single
+scan.  This only makes sense if the data was captured at the same time
+and if the channels are disjoint.  The channel names are renamed with
+'A' or 'B' inserted following the frequency group identifier.
+
+In theory the resulting scan data should be used by fourfit, but this
+has not been extensively tested.  The results of fourmer may be again
+combined by fourmer; however, note that various internal size limits
+may be thereby exceeded.
+
+The environment variable HOPS_FOURMER_FG may be used to override the
+frequency group identifier with a new value.  The new scan name is
+based on the common start from the two scans with 'JOIN' appended.
+The environment variable HOPS_FOURMER_JOIN allows you to specify
+something other than 'JOIN'.
+

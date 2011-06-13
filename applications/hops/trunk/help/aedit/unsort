@@ -1,0 +1,10 @@
+COMMAND NAME:	unsort
+
+TYPE:		Action
+
+SYNTAX:		"unsort"
+
+DESCRIPTION:
+
+Restores the original sort order of the data (i.e. the
+order in which the data was read in).

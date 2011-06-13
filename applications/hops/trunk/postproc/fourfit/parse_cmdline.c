@@ -1,0 +1,246 @@
+/*******************************************************************************/
+/*                                                                             */
+/* This handles everything to do with the command line.  It identifies and     */
+/* acts upon UNIX-style flags of various descriptions, then attempts to fill   */
+/* in the list of type corel filenames.  The user can specify either explicit  */
+/* (possibly wildcarded) corel files directly, or specify 1 or more directories*/
+/* which will be recursively searched, one by one, for corel files.  The end   */
+/* result is a master list of corel files in the files structure array.        */
+/*                                                                             */
+/* Original version 9 April 1992 CJL, broken out from fourfit main routine     */
+/* Modified February 2 1993 by CJL to use UTIL library routine get_filelist()  */
+/* Modified January 1994 by CJL to support various new option flags.           */
+/*    "     2006.4.27    by rjc to accommodate differing getopt's in linux/hppa*/
+/*                                                                             */
+/*******************************************************************************/
+
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
+#include <string.h>
+#include "mk4_data.h"
+#include "fstruct.h"
+#include "control.h"
+#include "refringe.h"
+#include "param_struct.h"
+#include "pass_struct.h"
+
+#define FALSE 0
+#define TRUE 1
+
+char display_name[50];
+char control_filename[100];
+char *control_string;
+char afile_name[100];
+int displayopt = FALSE;
+
+parse_cmdline (/* argc, argv, files, base_sgrp, param) */
+int argc,
+char **argv,
+fstruct **files,
+bsgstruct **base_sgrp,
+struct type_param *param)
+    {
+    char c, base_freq[21], *bf_string();
+    int i, set, cslen, filenum;
+    struct stat file_status;
+    extern char *optarg;
+    extern int optind, do_only_new, test_mode, plot_xpower,
+    		   do_accounting;
+    extern int write_xpower;
+    extern int refringe, msglev, ap_per_seg, reftime_offset;
+    int do_parse = FALSE, bf_override = FALSE, cs_too_big = FALSE;
+    char *get_bfstring (char *);
+
+    strcpy (control_filename, "default");
+                                        /* Default polarization */
+    param->pol = POL_UNDEF;
+    param-> first_plot = 0;
+    param-> nplot_chans = 0;
+                                        /* Interpret command line flags */
+    while((c=getopt(argc,argv,"+ab:c:d:f:m:n:pr:s:tuxP:T:X")) != -1) 
+        {
+        switch(c) 
+            {
+            case 'a':
+                do_accounting = TRUE;
+                break;
+
+            case 'b':
+                bf_override = TRUE;
+                strncpy (base_freq, optarg, 20);
+                break;
+
+            case 'c':
+                do_parse = TRUE;
+                strncpy (control_filename,optarg,100);
+                break;
+
+            case 'd':
+                displayopt = TRUE;
+                strncpy (display_name,optarg,50);
+                break;
+            
+            case 'f':
+                param->first_plot = atoi(optarg);
+                break;
+
+            case 'm':
+                if (sscanf (optarg, "%d", &msglev) != 1)
+                    {
+                    msg ("Invalid -m flag argument '%s'", 2, optarg);
+                    msg ("Message level remains at %d", 2, msglev);
+                    }
+                if (msglev > 3) msglev = 3;
+                if (msglev < -3) msglev = -3;
+                break;
+
+            case 'n':
+                param->nplot_chans = atoi(optarg);
+                break;
+
+            case 'p':
+                displayopt = TRUE;
+                strcpy (display_name, "psscreen");
+                break;
+
+            case 'r':
+                refringe = TRUE;
+                strncpy (afile_name, optarg, 100);
+                break;
+
+            case 's':
+                if (sscanf (optarg, "%d", &ap_per_seg) != 1)
+                    msg ("Invalid -s flag argument '%s'", 2, optarg);
+                else if (ap_per_seg < 0)
+                    {
+                    msg ("Invalid -s flag argument '%s', ignoring", 2, optarg);
+                    ap_per_seg = 0;
+                    }
+                break;
+
+            case 't':
+                test_mode = TRUE;
+                break;
+
+            case 'u':
+                do_only_new = TRUE;
+                break;
+
+            case 'x':
+                displayopt = TRUE;
+                strcpy (display_name, "xwindow");
+                break;
+
+            case 'P':
+                if (strcmp (optarg, "LL") == 0) param->pol = POL_LL;
+                else if (strcmp (optarg, "RR") == 0) param->pol = POL_RR;
+                else if (strcmp (optarg, "LR") == 0) param->pol = POL_LR;
+                else if (strcmp (optarg, "RL") == 0) param->pol = POL_RL;
+                else msg ("Bad -P argument (LL,RR,LR,RL are valid)", 2);
+                break;
+
+            case 'T':
+                if (sscanf (optarg, "%d", &reftime_offset) != 1) reftime_offset = 0;
+                if (reftime_offset <= 0)
+                    {
+                    msg ("Invalid -T flag argument '%s'", 2, optarg);
+                    msg ("Using default reference time algorithm", 2);
+                    }
+                break;
+
+            case 'X':
+                write_xpower = TRUE;
+                break;
+
+            case '?':
+            default:
+                syntax();
+                return (1);
+            }
+        }
+                                        /* Check for silly states */
+    if (refringe && do_only_new)
+        {
+        msg ("The -r and -u flags are mutually exclusive.", 2);
+        return (1);
+        }
+                                        /* Read main user control file */
+    if (do_parse)
+        {
+        if(parse_control_file (control_filename) != 0)
+            {
+            msg ("Fatal error parsing control file '%s'", 3, control_filename);
+            return (1);
+            }
+        }
+                                        /* Look for "set" argument and get the */
+                                        /* control file text which follows it */
+    for (set=optind; set<argc; set++) 
+        if (strcasecmp (argv[set], "set") == 0) break;
+                                        /* Make space, start with enough for -b option */
+    cslen = 65;
+    for (i=set+1; i<argc; i++) cslen += strlen (argv[i]) + 1;
+    if ((control_string = malloc (cslen)) == NULL)
+        {
+        msg ("Could not allocate memory for -b and/or set override options", 3);
+        return (1);
+        }
+                                        /* To be appended to control file, apply */
+                                        /* to all if block.  parse_control_file()  */
+                                        /* keys on this string */
+    strcpy (control_string, "if ");
+                                        /* Construct control string from command line */
+    if (set < argc)
+        {
+        for (i=set+1; i<argc; i++)
+            {
+            strcat (control_string, argv[i]);
+            strcat (control_string, " ");
+            }
+        }
+                                        /* Decode -b option argument and append */
+                                        /* corresponding control file syntax */
+    if (bf_override) 
+        strcat (control_string, get_bfstring (base_freq));
+                                        /* Parse command line override information */
+    if (strlen (control_string) > 3)
+        {
+        if(parse_control_file (control_string) != 0)
+            {
+            msg ("Fatal error parsing -b option and/or 'set' parameters", 3);
+            msg ("Constructed string was '%s'", 3, control_string);
+            return (1);
+            }
+        }
+                                        /* Make list of roots to process */
+                                        /* If refringe mode, also attach list */
+                                        /* of baselines/subgroups to each root */
+    if (refringe)
+        {
+        if (refringe_list (afile_name, files, base_sgrp) != 0) 
+            {
+            msg ("Error figuring out data to refringe", 3);
+            return (1);
+            }
+        }
+                                        /* Otherwise retrieve all specified files of */
+                                        /* type root (from UTIL library) */
+    else if (get_filelist (set-optind, argv+optind, 0, files) != 0)
+        {
+        msg ("Error extracting list of files to process from command line args", 2);
+        syntax();
+        return (1);
+        }
+                                        /* Check to see if any data files */
+                                        /* were specified */
+    if ((*files)[0].order < 0)
+        {
+        msg ("No valid root files specified", 2);
+        syntax();
+        return (1);
+        }
+
+    return (0);
+    }

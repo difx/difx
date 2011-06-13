@@ -1,0 +1,4 @@
+[ -n "${HOPS_QUIET}" ] &&
+echo ${1-"env_check"}: Checking on your HOPS environment
+${HOPS_SETUP-false} ||
+echo ${1-"env_check"}: You must set up your HOPS environment

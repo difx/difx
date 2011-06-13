@@ -1,0 +1,13 @@
+COMMAND NAME:	length
+
+TYPE:		Data selection
+
+SYNTAX:		"length 20"
+
+DESCRIPTION:
+
+Sets the minimum scan length in seconds
+which will pass the filters applied in edit inputs, 
+read, and plot.  Typing "length" without arguments 
+removes any limitation on scan length.  This data
+selection parameter applies only to type-2 data.

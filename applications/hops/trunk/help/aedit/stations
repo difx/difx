@@ -1,0 +1,14 @@
+COMMAND NAME:	stations
+
+TYPE:		Data selection
+
+SYNTAX:		"stations ABC D EF"
+
+DESCRIPTION:
+
+Enters a list of allowed stations into the inputs.  All alphabetic
+characters are accepted, in any order, lower or upper case, with or
+without spaces or commas.  Duplicate characters are ignored.  Baselines
+which involve stations not in this list will fail the filter tests
+applied by edit inputs, read, and plot.  Typing "stations" without
+arguments removes any limitations on stations.

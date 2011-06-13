@@ -1,0 +1,29 @@
+COMMAND NAME:	psplot
+
+TYPE:		Experiment summary
+
+SYNTAX:		"psplot"
+
+DESCRIPTION:
+
+This command takes the data in memory plus the image of a cc file in memory
+and constructs a 2-D array of quality codes.  This is then displayed
+in an Xwindow PGPLOT window as a (possibly multi-page) colour-coded
+matrix.  Interactive cursor operations are then invoked for data
+perusal, editing, and fringe plot popups.
+
+The on-screen buttons are self-explanatory.  In general, the left mouse
+button either tags or pops up fringe plots (depending on the setting
+of the on-screen buttons), while the middle button prints cell identification
+information in the lower left corner of the window.  The right button
+immediately zaps the data point from the database.  Tagged cells are
+indicated by a small white triangle in the center of the cell.  The
+keystrokes 'a', 'f' and 'x' cause tagging, fringe plot popup, and
+immediate zapping respectively, regardless of the setting of the on-screen
+buttons.  You can tag many cells at once.  To tag an entire baseline,
+click on the baseline label.  To tag an entire scan, click on the scan
+label.  To tag all cells with a particular quality code, click on the
+quality code key at the bottom of the window.  All tagging is done on
+a toggle basis (i.e. do it again and the tag disappears).  Upon exit of
+psplot, you can zap, write out to disk, or ignore the list of tagged
+records.

@@ -1,0 +1,1221 @@
+$OVEX_REV; 
+rev = 1.5;
+$GLOBAL;
+   ref $EXPER = EXPmm098;
+   ref $EOP= EOPmm098;
+$EXPER;
+ def  EXPmm098;
+     exper_name = mm093;
+     exper_num =  3365;
+     exper_description  =  "230GHz VLBI of SgrA* and Calibrators Day 093";
+enddef;
+$MODE;
+def UVLBI_LOW;
+     ref $FREQ  =  UVLBI_LOW:Sm:Sn:Ap:Pv;
+     ref $FREQ  =  UVLBI_LOW_Sp:Sp;
+     ref $FREQ  =  UVLBI_LOW_Cp:Cp;
+     ref $FREQ  =  UVLBI_LOW_Cz:Cz;
+     ref $FREQ  =  UVLBI_LOW_Jc:Jc;
+     ref $FREQ  =  UVLBI_LOW_Jc4:Cs;
+     ref $FREQ  =  UVLBI_LOW_Sz:Sz;
+     ref $IF  =  LO@229875MHzLPolTone/1_L:Sm:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $IF  =  LO@229875MHzLPolTone/1_R:Sn;
+     ref $BBC  =  16BBCs:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $TRACKS  =  Mk34112-XX01_full:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $ROLL  =  NoRoll:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $PHASE_CAL_DETECT = LsbDetect_DBE:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $HEAD_POS = Mk34121-SX01:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+     ref $PASS_ORDER = Mk34121-SX01:Sm:Sn:Jc:Cs:Sp:Sz:Cp:Cz:Ap:Pv;
+enddef;
+$STATION;
+def Sm;
+     ref $SITE  =  SMTOL;
+     ref $ANTENNA  =  SMTO;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Sm_ID ;
+     ref $CLOCK = Sm;
+     ref $TAPELOG_OBS = Sm;
+enddef;
+def Sn;
+     ref $SITE  =  SMTOR;
+     ref $ANTENNA  =  SMTO;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Sm_ID ;
+     ref $CLOCK = Sm;
+     ref $TAPELOG_OBS = Sm;
+enddef;
+def Cs;
+     ref $SITE  =  CSO;
+     ref $ANTENNA  =  CSO;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Cs_ID ;
+     ref $CLOCK = Cs;
+     ref $TAPELOG_OBS = Cs;
+enddef;
+def Sp;
+     ref $SITE  =  SMAP;
+     ref $ANTENNA  =  SMA;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Sp_ID ;
+     ref $CLOCK = Sp;
+     ref $TAPELOG_OBS = Sp;
+enddef;
+def Cp;
+     ref $SITE  =  CARMAP;
+     ref $ANTENNA  =  CARMA;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Cp_ID ;
+     ref $CLOCK = Cp;
+     ref $TAPELOG_OBS = Cp;
+enddef;
+def Cz;
+     ref $SITE  =  CARMAR;
+     ref $ANTENNA  =  CARMA;
+     ref $DAS  =  1VLBA4<Mark5A;
+     ref $DAS = Cz_ID ;
+     ref $CLOCK = Cz;
+     ref $TAPELOG_OBS = Cz;
+enddef;
+$SITE;
+def SMTOL;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 5.4 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  SMTOL;
+     site_ID  =  Sm;
+     mk4_site_ID = S;  * Inserted by stcodes program
+     site_position  = -1828796.200 m:-5054406.800 m: 3427865.200 m;
+enddef;
+def SMTOR;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 5.4 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  SMTOR;
+     site_ID  =  Sn;
+     mk4_site_ID = T;  * Inserted by stcodes program
+     site_position  = -1828796.200 m:-5054406.800 m: 3427865.200 m;
+enddef;
+def CSO;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 7.9 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  CSO;
+     site_ID  =  Cs;
+     mk4_site_ID = O;  * Inserted by stcodes program
+*    site_position  = -5464074.960 m:-2495249.116 m: 2148296.845 m;
+*    site_position  = -5464520.000 m:-2493148.000 m: 2150615.000 m;
+*    site_position  = -5464509.800 m:-2493139.600 m: 2150606.800 m;
+*Try Brian Corey's new position per email "Subject: CSO position revisited" 30 June
+*    site_position  = -5464520.000 m:-2493148.000 m: 2150615.000 m;
+*Try Shep's new position per email "Subject: Re: GPS on Mauna Kea" 27 Mar 2007
+*    site_position  = -5464523.400 m:-2493147.080 m: 2150611.750 m;
+*New position provided by Jonathan/Rurik per email 08 Apr 2011 "Subject: Re: CSO improved position"
+     site_position  = -5464520.893 m:-2493145.643 m: 2150610.600 m;
+enddef;
+def SMAP;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 5.0 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  SMAP;
+     site_ID  =  Sp;
+     mk4_site_ID = P;  * Inserted by stcodes program
+     * New pad one phased array position
+     * site_position  = -5464528.573 m:-2493056.483 m: 2150797.176 m;
+     * New position from AEER email 7 April 2009
+     site_position  = -5464555.493 m:-2492927.989 m: 2150797.176 m;
+enddef;
+def CARMAP;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 7.9 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  CARMAP;
+     site_ID  =  Cp;
+     mk4_site_ID = C;  * Inserted by stcodes program
+     * antenna C3 - revised again by Shep 060107
+     * site_position  = -2397431.300 m:-4482018.900 m: 3843524.500 m;
+     * antenna C5 - given in aeer email 040109
+     * site_position  = -2397433.121 m:-4482056.240 m: 3843478.717 m;
+     * antenna C4 - given in aeer email 040109
+     site_position  = -2397409.153 m:-4482008.818 m: 3843550.645 m;
+     * phased C4 position - given in aeer email 033011
+     *site_position  = -2397381.517 m:-4482053.094 m: 3843514.382 m;
+enddef;
+def CARMAR;
+     site_type  =  fixed;
+     site_position_epoch=  1993y1d;
+     site_position_ref=  UNKNOWN;
+     site_velocity= 0.0 cm/yr  : 0.0 cm/yr  : 0.0 cm/yr  ;
+     zen_atmos  = 7.9 nsec;
+     ocean_load_vert  = 0 cm : 90  ;
+     ocean_load_horiz = 0 cm : 50  ;
+     occupation_code = here  ;
+     site_name  =  CARMAR;
+     site_ID  =  Cz;
+     mk4_site_ID = D;  * Inserted by stcodes program
+     * antenna C3 - revised again by Shep 060107
+     * site_position  = -2397431.300 m:-4482018.900 m: 3843524.500 m;
+     * antenna C1 - from aeer email 032911
+     site_position  = -2397435.617 m:-4482082.152 m: 3843446.240 m;
+enddef;
+$ANTENNA;
+def SMTO;
+     antenna_diam =  12 m;
+     axis_type  =  az : el;
+     antenna_motion  =  el :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     antenna_motion  =  az :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     axis_offset  = az: 0.000 m; 
+enddef;
+def CSO;
+     antenna_diam =  12 m;
+     axis_type  =  az : el;
+     antenna_motion  =  el :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     antenna_motion  =  az :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     axis_offset  = az: 0.000 m;
+enddef;
+def SMA;
+     antenna_diam =  12 m;
+     axis_type  =  az : el;
+     antenna_motion  =  el :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     antenna_motion  =  az :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     axis_offset  = az: 0.000 m; 
+enddef;
+def CARMA;
+     antenna_diam =  12 m;
+     axis_type  =  az : el;
+     antenna_motion  =  el :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     antenna_motion  =  az :1000.0 deg/min :  0 sec;  * 1000.000 deg/sec/sec
+     axis_offset  = az: 0.000 m; 
+enddef;
+$DAS;
+def Sm_ID; recording_system_ID = 0; enddef;
+def Cs_ID; recording_system_ID = 0; enddef;
+def Sp_ID; recording_system_ID = 0; enddef;
+def Cp_ID; recording_system_ID = 0; enddef;
+def Cz_ID; recording_system_ID = 0; enddef;
+def 1VLBA4<Mark5A;
+     record_transport_type  =  Mark5A;
+     electronics_rack_type  =  VLBA;
+     number_drives  =  1;
+     headstack = 1 : write : 0 ;
+     headstack = 1 : read  : 0 ;
+     headstack = 1 : write : 0 ;
+     headstack = 1 : read  : 0 ;
+     tape_motion   = start_stop; * no early start
+enddef;
+$SOURCE;
+def 3C273;
+     source_name  =  3C273;
+     IAU_name = 1229+020;
+     ra  =  12h29m06.6997310s; dec =  02d03'08.598270"; ref_coord_frame = J2000;
+enddef;
+$FREQ;
+def UVLBI_LOW;
+     sample_rate  =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = U1LL : &C : 229345.0 MHz : L : 32.000 MHz : &Ch01 : &BBCa : &LSB_CAL;
+     chan_def = U2LL : &C : 229329.0 MHz : L : 32.000 MHz : &Ch02 : &BBCb : &LSB_CAL;
+     chan_def = U3LL : &C : 229297.0 MHz : L : 32.000 MHz : &Ch03 : &BBCc : &LSB_CAL;
+     chan_def = U4LL : &C : 229265.0 MHz : L : 32.000 MHz : &Ch04 : &BBCd : &LSB_CAL;
+     chan_def = U5LL : &C : 229233.0 MHz : L : 32.000 MHz : &Ch05 : &BBCe : &LSB_CAL;
+     chan_def = U6LL : &C : 229201.0 MHz : L : 32.000 MHz : &Ch06 : &BBCf : &LSB_CAL;
+     chan_def = U7LL : &C : 229169.0 MHz : L : 32.000 MHz : &Ch07 : &BBCg : &LSB_CAL;
+     chan_def = U8LL : &C : 229137.0 MHz : L : 32.000 MHz : &Ch08 : &BBCh : &LSB_CAL;
+     chan_def = U9LL : &C : 229105.0 MHz : L : 32.000 MHz : &Ch09 : &BBCi : &LSB_CAL;
+     chan_def = UALL : &C : 229073.0 MHz : L : 32.000 MHz : &Ch10 : &BBCj : &LSB_CAL;
+     chan_def = UBLL : &C : 229041.0 MHz : L : 32.000 MHz : &Ch11 : &BBCk : &LSB_CAL;
+     chan_def = UCLL : &C : 229009.0 MHz : L : 32.000 MHz : &Ch12 : &BBCl : &LSB_CAL;
+     chan_def = UDLL : &C : 228977.0 MHz : L : 32.000 MHz : &Ch13 : &BBCm : &LSB_CAL;
+     chan_def = UELL : &C : 228945.0 MHz : L : 32.000 MHz : &Ch14 : &BBCn : &LSB_CAL;
+     chan_def = UFLL : &C : 228913.0 MHz : L : 32.000 MHz : &Ch15 : &BBCo : &LSB_CAL;
+     chan_def = UGLL : &C : 228881.0 MHz : L : 32.000 MHz : &Ch16 : &BBCp : &LSB_CAL;
+enddef;
+def UVLBI_LOW_Cp;
+     sample_rate  =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = U1LL : &C : 229345.000083 MHz : L : 32.000 MHz : &Ch01 : &BBCa : &LSB_CAL;
+     chan_def = U2LL : &C : 229329.000083 MHz : L : 32.000 MHz : &Ch02 : &BBCb : &LSB_CAL;
+     chan_def = U3LL : &C : 229297.000083 MHz : L : 32.000 MHz : &Ch03 : &BBCc : &LSB_CAL;
+     chan_def = U4LL : &C : 229265.000083 MHz : L : 32.000 MHz : &Ch04 : &BBCd : &LSB_CAL;
+     chan_def = U5LL : &C : 229233.000083 MHz : L : 32.000 MHz : &Ch05 : &BBCe : &LSB_CAL;
+     chan_def = U6LL : &C : 229201.000083 MHz : L : 32.000 MHz : &Ch06 : &BBCf : &LSB_CAL;
+     chan_def = U7LL : &C : 229169.000083 MHz : L : 32.000 MHz : &Ch07 : &BBCg : &LSB_CAL;
+     chan_def = U8LL : &C : 229137.000083 MHz : L : 32.000 MHz : &Ch08 : &BBCh : &LSB_CAL;
+     chan_def = U9LL : &C : 229105.000083 MHz : L : 32.000 MHz : &Ch09 : &BBCi : &LSB_CAL;
+     chan_def = UALL : &C : 229073.000083 MHz : L : 32.000 MHz : &Ch10 : &BBCj : &LSB_CAL;
+     chan_def = UBLL : &C : 229041.000083 MHz : L : 32.000 MHz : &Ch11 : &BBCk : &LSB_CAL;
+     chan_def = UCLL : &C : 229009.000083 MHz : L : 32.000 MHz : &Ch12 : &BBCl : &LSB_CAL;
+     chan_def = UDLL : &C : 228977.000083 MHz : L : 32.000 MHz : &Ch13 : &BBCm : &LSB_CAL;
+     chan_def = UELL : &C : 228945.000083 MHz : L : 32.000 MHz : &Ch14 : &BBCn : &LSB_CAL;
+     chan_def = UFLL : &C : 228913.000083 MHz : L : 32.000 MHz : &Ch15 : &BBCo : &LSB_CAL;
+     chan_def = UGLL : &C : 228881.000083 MHz : L : 32.000 MHz : &Ch16 : &BBCp : &LSB_CAL;
+enddef;
+def UVLBI_LOW_Cz;
+     sample_rate  =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = U1LL : &C : 229345.000197 MHz : L : 32.000 MHz : &Ch01 : &BBCa : &LSB_CAL;
+     chan_def = U2LL : &C : 229329.000197 MHz : L : 32.000 MHz : &Ch02 : &BBCb : &LSB_CAL;
+     chan_def = U3LL : &C : 229297.000197 MHz : L : 32.000 MHz : &Ch03 : &BBCc : &LSB_CAL;
+     chan_def = U4LL : &C : 229265.000197 MHz : L : 32.000 MHz : &Ch04 : &BBCd : &LSB_CAL;
+     chan_def = U5LL : &C : 229233.000197 MHz : L : 32.000 MHz : &Ch05 : &BBCe : &LSB_CAL;
+     chan_def = U6LL : &C : 229201.000197 MHz : L : 32.000 MHz : &Ch06 : &BBCf : &LSB_CAL;
+     chan_def = U7LL : &C : 229169.000197 MHz : L : 32.000 MHz : &Ch07 : &BBCg : &LSB_CAL;
+     chan_def = U8LL : &C : 229137.000197 MHz : L : 32.000 MHz : &Ch08 : &BBCh : &LSB_CAL;
+     chan_def = U9LL : &C : 229105.000197 MHz : L : 32.000 MHz : &Ch09 : &BBCi : &LSB_CAL;
+     chan_def = UALL : &C : 229073.000197 MHz : L : 32.000 MHz : &Ch10 : &BBCj : &LSB_CAL;
+     chan_def = UBLL : &C : 229041.000197 MHz : L : 32.000 MHz : &Ch11 : &BBCk : &LSB_CAL;
+     chan_def = UCLL : &C : 229009.000197 MHz : L : 32.000 MHz : &Ch12 : &BBCl : &LSB_CAL;
+     chan_def = UDLL : &C : 228977.000197 MHz : L : 32.000 MHz : &Ch13 : &BBCm : &LSB_CAL;
+     chan_def = UELL : &C : 228945.000197 MHz : L : 32.000 MHz : &Ch14 : &BBCn : &LSB_CAL;
+     chan_def = UFLL : &C : 228913.000197 MHz : L : 32.000 MHz : &Ch15 : &BBCo : &LSB_CAL;
+     chan_def = UGLL : &C : 228881.000197 MHz : L : 32.000 MHz : &Ch16 : &BBCp : &LSB_CAL;
+enddef;
+def UVLBI_LOW_Sp;
+     sample_rate  =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = U1LL : &C : 229344.999996 MHz : L : 32.000 MHz : &Ch01 : &BBCa : &LSB_CAL;
+     chan_def = U2LL : &C : 229328.999996 MHz : L : 32.000 MHz : &Ch02 : &BBCb : &LSB_CAL;
+     chan_def = U3LL : &C : 229296.999996 MHz : L : 32.000 MHz : &Ch03 : &BBCc : &LSB_CAL;
+     chan_def = U4LL : &C : 229264.999996 MHz : L : 32.000 MHz : &Ch04 : &BBCd : &LSB_CAL;
+     chan_def = U5LL : &C : 229232.999996 MHz : L : 32.000 MHz : &Ch05 : &BBCe : &LSB_CAL;
+     chan_def = U6LL : &C : 229200.999996 MHz : L : 32.000 MHz : &Ch06 : &BBCf : &LSB_CAL;
+     chan_def = U7LL : &C : 229168.999996 MHz : L : 32.000 MHz : &Ch07 : &BBCg : &LSB_CAL;
+     chan_def = U8LL : &C : 229136.999996 MHz : L : 32.000 MHz : &Ch08 : &BBCh : &LSB_CAL;
+     chan_def = U9LL : &C : 229104.999996 MHz : L : 32.000 MHz : &Ch09 : &BBCi : &LSB_CAL;
+     chan_def = UALL : &C : 229072.999996 MHz : L : 32.000 MHz : &Ch10 : &BBCj : &LSB_CAL;
+     chan_def = UBLL : &C : 229040.999996 MHz : L : 32.000 MHz : &Ch11 : &BBCk : &LSB_CAL;
+     chan_def = UCLL : &C : 229008.999996 MHz : L : 32.000 MHz : &Ch12 : &BBCl : &LSB_CAL;
+     chan_def = UDLL : &C : 228976.999996 MHz : L : 32.000 MHz : &Ch13 : &BBCm : &LSB_CAL;
+     chan_def = UELL : &C : 228944.999996 MHz : L : 32.000 MHz : &Ch14 : &BBCn : &LSB_CAL;
+     chan_def = UFLL : &C : 228912.999996 MHz : L : 32.000 MHz : &Ch15 : &BBCo : &LSB_CAL;
+     chan_def = UGLL : &C : 228880.999996 MHz : L : 32.000 MHz : &Ch16 : &BBCp : &LSB_CAL;
+enddef;
+def UVLBI_LOW_Jc4;
+     sample_rate  =  64.000 Ms/sec;  * (2bits/sample)
+     chan_def = U1LL : &C : 229345.000113 MHz : L : 32.000 MHz : &Ch01 : &BBCa : &LSB_CAL;
+     chan_def = U2LL : &C : 229329.000113 MHz : L : 32.000 MHz : &Ch02 : &BBCb : &LSB_CAL;
+     chan_def = U3LL : &C : 229297.000113 MHz : L : 32.000 MHz : &Ch03 : &BBCc : &LSB_CAL;
+     chan_def = U4LL : &C : 229265.000113 MHz : L : 32.000 MHz : &Ch04 : &BBCd : &LSB_CAL;
+     chan_def = U5LL : &C : 229233.000113 MHz : L : 32.000 MHz : &Ch05 : &BBCe : &LSB_CAL;
+     chan_def = U6LL : &C : 229201.000113 MHz : L : 32.000 MHz : &Ch06 : &BBCf : &LSB_CAL;
+     chan_def = U7LL : &C : 229169.000113 MHz : L : 32.000 MHz : &Ch07 : &BBCg : &LSB_CAL;
+     chan_def = U8LL : &C : 229137.000113 MHz : L : 32.000 MHz : &Ch08 : &BBCh : &LSB_CAL;
+     chan_def = U9LL : &C : 229105.000113 MHz : L : 32.000 MHz : &Ch09 : &BBCi : &LSB_CAL;
+     chan_def = UALL : &C : 229073.000113 MHz : L : 32.000 MHz : &Ch10 : &BBCj : &LSB_CAL;
+     chan_def = UBLL : &C : 229041.000113 MHz : L : 32.000 MHz : &Ch11 : &BBCk : &LSB_CAL;
+     chan_def = UCLL : &C : 229009.000113 MHz : L : 32.000 MHz : &Ch12 : &BBCl : &LSB_CAL;
+     chan_def = UDLL : &C : 228977.000113 MHz : L : 32.000 MHz : &Ch13 : &BBCm : &LSB_CAL;
+     chan_def = UELL : &C : 228945.000113 MHz : L : 32.000 MHz : &Ch14 : &BBCn : &LSB_CAL;
+     chan_def = UFLL : &C : 228913.000113 MHz : L : 32.000 MHz : &Ch15 : &BBCo : &LSB_CAL;
+     chan_def = UGLL : &C : 228881.000113 MHz : L : 32.000 MHz : &Ch16 : &BBCp : &LSB_CAL;
+enddef;
+$IF;
+def LO@229875MHzLPolTone/1_L;
+     if_def  =  &IF_A : A : L :229875.0 MHz : U : 1 MHz ;
+     if_def  =  &IF_B : B : L :229875.0 MHz : U : 1 MHz ;
+enddef;
+def LO@229875MHzLPolTone/1_R;
+     if_def  =  &IF_A : A : R :229875.0 MHz : U : 1 MHz ;
+     if_def  =  &IF_B : B : R :229875.0 MHz : U : 1 MHz ;
+enddef;
+$BBC;
+def 16BBCs;
+     BBC_assign  =  &BBCa : 1 : &IF_A;
+     BBC_assign  =  &BBCb : 2 : &IF_A;
+     BBC_assign  =  &BBCc : 3 : &IF_A;
+     BBC_assign  =  &BBCd : 4 : &IF_A;
+     BBC_assign  =  &BBCe : 5 : &IF_A;
+     BBC_assign  =  &BBCf : 6 : &IF_A;
+     BBC_assign  =  &BBCg : 7 : &IF_A;
+     BBC_assign  =  &BBCh : 8 : &IF_A;
+     BBC_assign  =  &BBCi : 9 : &IF_B;
+     BBC_assign  =  &BBCj : 10 : &IF_B;
+     BBC_assign  =  &BBCk : 11 : &IF_B;
+     BBC_assign  =  &BBCl : 12 : &IF_B;
+     BBC_assign  =  &BBCm : 13 : &IF_B;
+     BBC_assign  =  &BBCn : 14 : &IF_B;
+     BBC_assign  =  &BBCo : 15 : &IF_B;
+     BBC_assign  =  &BBCp : 16 : &IF_B;
+enddef;
+$PHASE_CAL_DETECT;
+def LsbDetect_DBE;
+     phase_cal_detect = &LSB_CAL : -2 : -4 : -6 : -8 : -10 : -12 : -14 : -16;
+enddef;
+$TRACKS;
+def Mk34112-XX01_full;
+    bits/sample = 2;
+    multiplex_ratio = 1;
+*
+    fanout_def = A : &Ch01 : sign : 1 : 02;
+    fanout_def = A : &Ch01 : mag  : 1 : 03;
+    fanout_def = A : &Ch02 : sign : 1 : 04;
+    fanout_def = A : &Ch02 : mag  : 1 : 05;
+    fanout_def = A : &Ch03 : sign : 1 : 06;
+    fanout_def = A : &Ch03 : mag  : 1 : 07;
+    fanout_def = A : &Ch04 : sign : 1 : 08;
+    fanout_def = A : &Ch04 : mag  : 1 : 09;
+    fanout_def = A : &Ch05 : sign : 1 : 10;
+    fanout_def = A : &Ch05 : mag  : 1 : 11;
+    fanout_def = A : &Ch06 : sign : 1 : 12;
+    fanout_def = A : &Ch06 : mag  : 1 : 13;
+    fanout_def = A : &Ch07 : sign : 1 : 14;
+    fanout_def = A : &Ch07 : mag  : 1 : 15;
+    fanout_def = A : &Ch08 : sign : 1 : 16;
+    fanout_def = A : &Ch08 : mag  : 1 : 17;
+    fanout_def = A : &Ch09 : sign : 1 : 18;
+    fanout_def = A : &Ch09 : mag  : 1 : 19;
+    fanout_def = A : &Ch10 : sign : 1 : 20;
+    fanout_def = A : &Ch10 : mag  : 1 : 21;
+    fanout_def = A : &Ch11 : sign : 1 : 22;
+    fanout_def = A : &Ch11 : mag  : 1 : 23;
+    fanout_def = A : &Ch12 : sign : 1 : 24;
+    fanout_def = A : &Ch12 : mag  : 1 : 25;
+    fanout_def = A : &Ch13 : sign : 1 : 26;
+    fanout_def = A : &Ch13 : mag  : 1 : 27;
+    fanout_def = A : &Ch14 : sign : 1 : 28;
+    fanout_def = A : &Ch14 : mag  : 1 : 29;
+    fanout_def = A : &Ch15 : sign : 1 : 30;
+    fanout_def = A : &Ch15 : mag  : 1 : 31;
+    fanout_def = A : &Ch16 : sign : 1 : 32;
+    fanout_def = A : &Ch16 : mag  : 1 : 33;
+enddef;
+$HEAD_POS;
+  def Mk34121-SX01;
+    headstack_pos =  1 :  -319 um;
+  enddef;
+$PASS_ORDER;
+  def Mk34121-SX01;
+    pass_order =   1A ;
+  enddef;
+$ROLL;
+def NoRoll;
+     roll  =  off;
+enddef;
+$SCHED;
+scan 094-0644_LOW;
+     start = 2011y094d06h44m00s; mode=UVLBI_LOW; source=3C273;
+      station = Sm:    0 sec:  180 sec:  928.973 ft : 1A : &n : 1;
+      station = Sn:    0 sec:  180 sec:  928.973 ft : 1A : &n : 1;
+      station = Cp:    0 sec:  180 sec:  928.973 ft : 1A : &n : 1;
+      station = Cz:    0 sec:  180 sec:  928.973 ft : 1A : &n : 1;
+      station = Cs:    0 sec:  180 sec:  928.973 ft : 1A : &n : 1;
+      station = Sp:    0 sec:  180 sec:  882.524 ft : 1A : &n : 1;
+    fourfit_reftime = 2011y094d06h45m30s;   * Inserted by stcodes program
+endscan;
+$TAPELOG_OBS;
+  def Sm; VSN = 1 : XXXXXXXX :2011y083d00h00m : 2011y083d19h00m ; enddef;
+  def Cs; VSN = 1 : XXXXXXXX :2011y083d00h00m : 2011y083d19h00m ; enddef;
+  def Sp; VSN = 1 : XXXXXXXX :2011y083d00h00m : 2011y083d19h00m ; enddef;
+  def Cp; VSN = 1 : XXXXXXXX :2011y083d00h40m : 2011y083d19h00m ; enddef;
+  def Cz; VSN = 1 : XXXXXXXX :2011y083d00h40m : 2011y083d19h00m ; enddef;
+$CLOCK;
+  def Sm; clock_early=2011y090d03h00m :  14.523 usec :2011y094d08h00m0s :  3.22e-12 ; enddef;
+  def Cs; clock_early=2011y090d03h00m :   0.530 usec :2011y094d08h00m0s : -0.71e-12 ; enddef;
+  def Sp; clock_early=2011y090d03h00m :   2.085 usec :2011y094d08h00m0s : -0.71e-12 ; enddef;
+  def Cp; clock_early=2011y090d03h00m :  -0.219 usec :2011y094d08h00m0s :  0.00e-12 ; enddef;
+  def Cz; clock_early=2011y090d03h00m :   0.008 usec :2011y094d08h00m0s :  0.00e-12 ; enddef;
+$EOP;
+  def EOPmm098;
+  TAI-UTC= 34 sec;
+  A1-TAI = 0.03439 sec;
+  eop_ref_epoch =2011y093d;
+  num_eop_points=3;
+  eop_interval= 24 hr;
+* I E R S Rapid Service from 7 April ser7
+  ut1-utc  =   -0.214690 sec : -0.216061 sec : -0.217264 sec ;
+  x_wobble =   -0.03611 asec : -0.03743 asec : -0.03928 asec ;
+  y_wobble =    0.28198 asec :  0.28360 asec :  0.28538 asec ;
+enddef;
+* 1999-02-03
+*-------------------------
+$EVEX_REV;
+*-------------------------
+rev = 1.0;
+$EVEX;
+
+
+ def 3365_std;
+  corr_exp#   = 3365;
+*
+  ovex_file   = /correlator/data/3365/3365.ovex;
+  lvex_file   = /correlator/data/3365/3365.lvex;
+  cvex_file   = /correlator/sysvex/global.cvex;
+  svex_file   = /correlator/sysvex/global.svex;
+*
+* AP_length   = 0.25 sec;
+  AP_length   = 1.0 sec;
+* AP_length   = 0.5 sec;
+* speedup_factor = 1.0;
+  speedup_factor = 0.5;
+ref $CORR_CONFIG = C32-16NA;  * Override value
+* ref $SU_CONFIG  = std_test;
+  ref $SU_CONFIG  = std_test41;
+*
+  tape_mode   = random;
+  mirror    = allocate : compare : no_save;
+ enddef;
+* System cvex file
+*
+*Example of VEX task-specific correlator configuation file (.cvex).
+*The appropriate $CORR_CONFIG key will be specified for every task in order to
+*properly set up the correlator.
+*
+*Notes:
+*  1. Parameters beginning with '~' are pseudo-parameters to replaced by integers at setup.
+*
+*ARW 991208
+*
+*Revision log:
+*  When   Who     What
+* 991208  ARW     Original
+* 000719  KAD/JAB
+* 001029  JAB     Define S32-6C section configuration
+* 001130  ARW     Add summaries, delete obsolete/non-working modes
+*                 Define H3A; rework S32-11 to be cross-pol friendly
+* 001130  JAB     Modify D32-4CP to support 6 stations, 14 baselines
+* 001208  ARW     Restore mode D32-16A-ZP
+*
+*-----------------------------------------------------------------------------------------------
+$CVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CONFIG;
+*
+  def C32-16NA;                  *1 slice, 32 complex lags, 16 chans/stn, 8 stns max
+    ref $CORR_MODE = C32-16;
+    ignore_chan_names = off ;    *if 'on', assign virtual chan by SU output position
+                                 *instead of by chan name   
+    auto_corr = off;             * Suppress autocorrelations
+  enddef;
+* 
+*-----------------------------------------------------------------------------------------------
+$CORR_MODE;
+*
+  def C32-16;               *8 stations max, 32 lags, 16 chans/stn
+  *        ------board-----    bd    sect    strt   SU       SU      sect    strt   SU       SU
+  *        segment   slice   parms   mode    chip  chan     chan     mode    chip  chan     chan
+  *                                                (ref)    (rem)                  (ref)    (rem)
+    board = ~seg0 : ~slice0 : std1 : S32-8  :  0 : ~chn0  : ~chn0  : S32-8  :  8 : ~chn1  : ~chn1  :
+                                     S32-8  : 16 : ~chn2  : ~chn2  : S32-8  : 24 : ~chn3  : ~chn3  ;
+    board = ~seg1 : ~slice0 : std1 : S32-8  :  0 : ~chn4  : ~chn4  : S32-8  :  8 : ~chn5  : ~chn5  :
+                                     S32-8  : 16 : ~chn6  : ~chn6  : S32-8  : 24 : ~chn7  : ~chn7  ;
+    board = ~seg2 : ~slice0 : std1 : S32-8  :  0 : ~chn8  : ~chn8  : S32-8  :  8 : ~chn9  : ~chn9  :
+                                     S32-8  : 16 : ~chn10 : ~chn10 : S32-8  : 24 : ~chn11 : ~chn11 ;
+    board = ~seg3 : ~slice0 : std1 : S32-8  :  0 : ~chn12 : ~chn12 : S32-8  :  8 : ~chn13 : ~chn13 : 
+                                     S32-8  : 16 : ~chn14 : ~chn14 : S32-8  : 24 : ~chn15 : ~chn15 ; 
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BD_PARMS;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies board-wide correlation parameters
+*
+  def std1;
+  *
+    accum_divide_ratio =   1   ;            *wrt SU data rate
+  *
+  *                       Over   Over
+  *                       BOCF   Data
+    shsmp_divide_ratio =   1   :  1  ;      *wrt SU data rate
+  *
+    sample_count_per_lag_enable = on  ;
+  *
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_SECTION_MODE;
+*
+  def S32-8;
+*                rel   -----------chip inputs-----------
+*               chip#  --X0--   --X1--   --X2--   --X3--
+*   Chip mode B7: X0/X2, X0/X3, X1/X2, X1/X3 cross        *      rem 
+    chip = B7  :  0  : ~stn0  : ~stn1  : ~stn2  : ~stn3  ;*       0  1  2  3  4  5  6  7
+    chip = B7  :  1  : ~stn0  : ~stn1  : ~stn4  : ~stn5  ;*    |------------------------
+    chip = B7  :  2  : ~stn0  : ~stn1  : ~stn6  : ~stn7  ;* r 0| +6  6  0  0  1  1  2  2
+    chip = B7  :  3  : ~stn2  : ~stn3  : ~stn4  : ~stn5  ;* e 1|    -6  0  0  1  1  2  2
+    chip = B7  :  4  : ~stn2  : ~stn3  : ~stn6  : ~stn7  ;* f 2|       +6  6  3  3  4  4
+    chip = B7  :  5  : ~stn4  : ~stn5  : ~stn6  : ~stn7  ;*   3|          -6  3  3  4  4
+*   Chip mode B13: X0/X3, X1/X2 cross; X0,X1,X2,X3 auto   *   4|             +7  7  5  5
+    chip = B13 :  6  : ~stn0  : ~stn2  : ~stn3  : ~stn1  ;*   5|                -7  5  5
+    chip = B13 :  7  : ~stn4  : ~stn6  : ~stn7  : ~stn5  ;*   6|                   +7  7
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_CHIP_MODE;
+*-----------------------------------------------------------------------------------------------
+*
+*For each block within a chip, specifies all internal chip signal-multiplexor settings
+*(except for the selection of the inputs X0, X1, X2, X3) and the block 'type' as a keyword
+*reference to the $CORR_BLOCK_MODE section.  Also specifies all correlation 'snakes' within
+*the chip.
+*
+*Test for determining whether a chip configuration is compatible with cross-pol processing:
+*  In the 'snake = complex : ...' statements, a signal name which appears in any 'ref'
+*  field may not appear also appear in the 'rem' field.
+*Examples:
+*  1. In configuration B7, X0 and X1 appear as 'ref' signals, and X2 and X3 appear as
+*     'rem' signals (count 2).  There is no overlap, so B7 is cross-pol friendly.
+*  2  In configuration H1, X0 and X1 appear as 'ref' signals, and X1, X2 and X3 appear as
+*     appear as 'rem' signals.  X1 appears in both, so H1 is cross-pol unfriendly.
+*
+*Note: The first field in the 'block=' statement is a reference to the relevant 
+*      $CORR_BLOCK_MODE keyword.
+*
+  def B7;
+  *                     -mux settings- 
+  *                 blk  M0  M1  M2  M3     
+    block = CHEAD  : A0 : 0 : 3 : 0 : 3 ; *            rem 
+    block = CHEAD  : A1 : 0 : 3 : 0 : 4 ; *             X0   X1   X2   X3 
+    block = CHEAD  : A2 : 0 : 3 : 0 : 3 ; *          |-------------------
+    block = CHEAD  : A3 : 0 : 3 : 0 : 4 ; *   ref  X0|           32C  32C
+    block = CDTAIL : B0 : 0 : 3 : 0 : 3 ; *        X1|           32C  32C
+    block = CDTAIL : B1 : 0 : 5 : 0 : 4 ; *        X2|
+    block = CDTAIL : B2 : 0 : 3 : 0 : 3 ; *        X3|
+    block = CDTAIL : B3 : 0 : 5 : 0 : 4 ;
+  *
+  *          type     ref  rem ----snake----------------
+    snake = complex : X0 : X3 : A0l-: B2l;
+    snake = complex : X0 : X2 : A1l-: B3l;
+    snake = complex : X1 : X2 : A2l-: B0l;
+    snake = complex : X1 : X3 : A3l-: B1l;
+  enddef;
+*
+  def B13;
+  *                     -mux settings-
+  *                 blk  M0  M1  M2  M3
+    block = CHEAD  : A0 : 0 : 3 : 0 : 3 ; *            rem 
+    block = AUTO   : A1 : 0 : 2 : 1 : 1 ; *             X0   X1   X2   X3
+    block = CHEAD  : A2 : 0 : 3 : 0 : 3 ; *          |-------------------
+    block = AUTO   : A3 : 0 : 2 : 1 : 1 ; *   ref  X0| 32A            32C
+    block = CDTAIL : B0 : 0 : 3 : 0 : 3 ; *        X1|      32A  32C
+    block = AUTO   : B1 : 0 : 2 : 1 : 1 ; *        X2|           32A
+    block = CDTAIL : B2 : 0 : 3 : 0 : 3 ; *        X3|                32A
+    block = AUTO   : B3 : 0 : 2 : 1 : 1 ;
+  *
+  *          type     ref  rem  ----snake----------------
+    snake = complex : X0 : X3 : A0l-: B2l;
+    snake = complex : X1 : X2 : A2l-: B0l;
+    snake = auto    : X0 :    : A1l : A1r;
+    snake = auto    : X1 :    : A3l : A3r;
+    snake = auto    : X2 :    : B3l : B3r;
+    snake = auto    : X3 :    : B1l : B1r;
+   enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$CORR_BLOCK_MODE;
+*-----------------------------------------------------------------------------------------------
+*
+  def CHEAD; * Complex head 
+  *                l_cell r_cell
+    rotator_mode =    3  :  3  ;        *multiply data by sinusoid
+    xdelay =          0  :  0  ;        *xdelay=0
+    ydelay =          0  :  0  ;        *ydelay=0
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def CDTAIL; * Complex tail with delay 
+  *               l_cell r_cell
+    rotator_mode =   0  :   0  ;        *pass data samples thru unchanged
+    xdelay =         0  :   0  ;        *xdelay=0
+    ydelay =         1  :   1  ;        *ydelay=1
+    tap_motion_enable =     1  ;        *enable tap motion
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 1  ;        *invalidate data on tap motion
+  enddef;
+*
+  def AUTO; * Autocorrelation head 
+  *                l_cell r_cell
+    rotator_mode =   0   :  0  ;        *pass data samples thru unchanged
+    xdelay =         0   :  0  ;        *xdelay=0
+    ydelay =         0   :  0  ;        *ydelay=0 on left; ydelay=0 on right
+    tap_motion_enable =     0  ;        *disable tap motion; lock to zero delay
+    header_mode =           1  ;        *force sample data invalid during header
+    invalid_on_tap_motion = 0  ;        *irrelevant (no tap motion)
+  enddef;
+*Sample svex file
+*
+*Example of VEX task-specific SU configuation file (.svex).
+*The appropriate $SU_CONFIG key will be specified for every task in order to
+*properly set up each station unit.
+*
+*Notes:
+*  1. Parameters beginning with '~' are to be determined at setup time.
+*
+*ARW 981116
+* 
+*-----------------------------------------------------------------------------------------------
+$SVEX_REV;
+*-----------------------------------------------------------------------------------------------
+*
+rev = 1.0;
+*
+*-----------------------------------------------------------------------------------------------
+$SU_CONFIG;
+*
+    def std_test41; * same as above for std_41 case mat 2001.10.26
+	  ref $SU_CHAN_OUT = std_test41;
+	  ref $PCM_CONFIG = 4x4;
+	enddef;
+*
+
+*-----------------------------------------------------------------------------------------------
+$SU_CHAN_OUT;
+*
+  def std_test41;
+  * JAB was here 2000 May 18 
+  *                         SU-out  recorded      pcal        pcal
+  *                         Chan#   chan ID      freq_a      freq_b
+    channel_out_assignment =  0   : &Ch01    ;  *phase-cal freqs
+                                                *defined in ovex
+    channel_out_assignment =  2   : &Ch02    ;
+    channel_out_assignment =  4   : &Ch03    ;
+    channel_out_assignment =  6   : &Ch04    ;
+    channel_out_assignment =  8   : &Ch05    ;
+    channel_out_assignment = 10   : &Ch06    ;
+    channel_out_assignment = 12   : &Ch07    ;
+    channel_out_assignment = 14   : &Ch08    ;
+
+    channel_out_assignment =  1   : &Ch09    ;
+    channel_out_assignment =  3   : &Ch10    ;
+    channel_out_assignment =  5   : &Ch11    ;
+    channel_out_assignment =  7   : &Ch12    ;
+    channel_out_assignment =  9   : &Ch13    ;
+    channel_out_assignment = 11   : &Ch14    ;
+    channel_out_assignment = 13   : &Ch15    ;
+    channel_out_assignment = 15   : &Ch16    ;
+  enddef;
+
+*-----------------------------------------------------------------------------------------------
+$PCM_CONFIG;            *key specified in evex file
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies algorithm for digital tone extraction by PCM for one channel.
+*'~freq_x' are replaced by tone numbers specified in 'channel_out_assignment=' statement of
+*$CRM_CONFIG (or corresponding defaults).
+*The normalized correlation coefficients are computed as the (dot product of the specified
+*counter values and the corresponding coefficient vector) divided by the Vldty count.
+*The validity count is always in counter 8.
+*See Mark IV memo #133 for explanation of normalization coeficients.
+*
+  def 4x4;   *4-level data, 4-level rotator; 2 tones/channel
+  *       $PCM_TABLES                 MSB        LSB        Vldty
+  *             ref    freq           ctr# coef  ctr# coef   ctr    coef
+    phase_cal = 4x4 : ~freq_a :  sin : 1 : 1.96 : 0 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_a :  cos : 3 : 1.96 : 2 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  sin : 5 : 1.96 : 4 : 0.98 :  8  : -1.47 ;
+    phase_cal = 4x4 : ~freq_b :  cos : 7 : 1.96 : 6 : 0.98 :  8  : -1.47 ;
+  enddef;
+*
+*-----------------------------------------------------------------------------------------------
+$PCM_TABLES;
+*-----------------------------------------------------------------------------------------------
+*
+*Specifies contents of tables to be downloaded to PCM (see Mark IV memo 133).
+*One full period of must be specified in tabular form.
+*
+  def 4x4;
+*                sample
+*                 value        0   30  60 90  120 150 180 210 240 270 300 330 deg
+    table_values=   3 :  sin : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 ;  *>200mv
+    table_values=   2 :  sin : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 ;  *0 to 200mv
+    table_values=   1 :  sin : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 ;  *0 to -200 mv
+    table_values=   0 :  sin : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 ;  *<-200mv
+    table_values=   3 :  cos : 3 : 3 : 2 : 1 : 0 : 0 : 0 : 0 : 1 : 2 : 3 : 3 ;  *>200mv
+    table_values=   2 :  cos : 2 : 2 : 2 : 1 : 1 : 1 : 1 : 1 : 1 : 2 : 2 : 2 ;  *0 to 200mv
+    table_values=   1 :  cos : 1 : 1 : 1 : 2 : 2 : 2 : 2 : 2 : 2 : 1 : 1 : 1 ;  *0 to -200 mv
+    table_values=   0 :  cos : 0 : 0 : 1 : 2 : 3 : 3 : 3 : 3 : 2 : 1 : 0 : 0 ;  *<-200mv
+    tabular_delta_phase = 30 deg;
+  enddef;
+$LVEX_REV;
+rev = 1.0;
+*----------------------
+$LOG;
+*
+  def S; 
+    scan 094-0644_LOW; 
+      VSN = UVLBI+B9/8000/1024; 
+      disc_set_ID = scan_override : 8 ; 
+    endscan; 
+  enddef;
+  def T; 
+    scan 094-0644_LOW; 
+      VSN = HAY-0045/6000/1024; 
+      disc_set_ID = scan_override : 8 ; 
+    endscan; 
+  enddef;
+  def O; 
+    scan 094-0644_LOW; 
+      VSN = UVLBI+A5/8000/1024; 
+      disc_set_ID = scan_override : 9 ; 
+    endscan; 
+  enddef;
+  def P; 
+    scan 094-0644_LOW; 
+      VSN = UVLBI+A7/8000/1024; 
+      disc_set_ID = scan_override : 7 ; 
+    endscan; 
+  enddef;
+  def C; 
+    scan 094-0644_LOW; 
+      VSN = UVLBI+B6/8000/1024; 
+      disc_set_ID = scan_override : 10 ; 
+    endscan; 
+  enddef;
+  def D; 
+    scan 094-0644_LOW; 
+      VSN = UVLBI+88/8000/1024; 
+      disc_set_ID = scan_override : 10 ; 
+    endscan; 
+  enddef;
+* Revised:  2000 February 25, SRS 
+* Revised:  2000 February  7, JAB 
+* Revised:  2005 March  2, MAT
+*-------------------------
+$IVEX_REV;
+*-------------------------
+rev = 1.0;
+
+*-------------------------
+$CORR_INIT;
+ 
+ def INIT_DOM_4cfps;
+  system_tempo = 1.00;
+  bocf_period =  8000000; *  4 cfs per second
+  header_duration = 1920;
+  *
+  ref $PBS_INIT = PBS_0_Mk5;
+  ref $PBS_INIT = PBS_1_Mk5;
+  ref $PBS_INIT = PBS_2_Mk5;
+  ref $PBS_INIT = PBS_3_Mk5;
+  ref $PBS_INIT = PBS_4_Mk5;
+  ref $PBS_INIT = PBS_5_Mk5; 
+  ref $PBS_INIT = PBS_6_Mk5; 
+  ref $PBS_INIT = PBS_7_DOM; 
+  ref $PBS_INIT = PBS_8_DOM;
+  ref $PBS_INIT = PBS_9_DOM;
+  ref $PBS_INIT = PBS_A_DOM;
+  ref $PBS_INIT = PBS_B_DOM;
+  ref $PBS_INIT = PBS_C_DOM;
+  ref $PBS_INIT = PBS_D_DOM;
+* ref $PBS_INIT = PBS_E_DOM;
+  * 
+  *                 corr   trmserve   CUCC    CUCC 
+  *                 crate  env_name  port A  port B 
+  CUCC_serial_ports = 0 :  TSERV0  :   9  :   10  ; 
+  CUCC_serial_ports = 1 :  TSERV0  :  11  :   12  ; 
+  *                                  port 
+  analog_switch =          TSERV0  :  13  ; 
+  start_stop_counter =     TSERV0  :  14  ; 
+  CF_edit_mask = 0x0000 ; * correlator frame edit mask 
+  *             measuremnt  swtch    OK range        fail 
+  *                  name    pos   frm      to      action 
+  timing_monitor =   CNTL0 :  9 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  timing_monitor =   CNTL1 : 10 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  timing_monitor =   TSPM  :  8 : 0.5e-6 : 2.0e-6 :  0x0  ;
+  * 
+ enddef;
+*-------------------------
+$PBS_INIT;
+
+ def PBS_0_Mk5;
+  SU_ID                =  0 : SU0; 
+  SUCC_serial_ports = TSERV0 :   1    :  2  ; 
+  * 
+  ref $DRIVE_INIT      =  DRIVE_A_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD0;
+  timing_monitor = Playback_0 :  0 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_1_Mk5;
+  SU_ID                =  1 : SU1;
+  SUCC_serial_ports = TSERV0 :   3    :  4  ; 
+  ref $DRIVE_INIT      =  DRIVE_B_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD1;
+  timing_monitor = Playback_1 :  1 : 0.5e-6 : 2.0e-6 :  0x0 ; 
+ enddef;
+
+ def PBS_2_Mk5;
+  SU_ID                =  2 : SU2; 
+  SUCC_serial_ports = TSERV0 :   5    :  6  ; 
+  ref $DRIVE_INIT      =  DRIVE_C_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD2;
+  timing_monitor = Playback_2 :  2 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_3_Mk5;
+  SU_ID                =  3 : SU3;
+  SUCC_serial_ports = TSERV0 :   7    :  8  ; 
+  ref $DRIVE_INIT      =  DRIVE_D_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD3;
+  timing_monitor = Playback_3 :  3 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_4_Mk5;
+  SU_ID                =  4 : SU4;
+  SUCC_serial_ports = TSERV1 :   1    : 02  ; 
+  ref $DRIVE_INIT      =  DRIVE_E_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD4;
+  timing_monitor = Playback_4 :  4 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_5_Mk5;
+  SU_ID                =  5 : SU5;
+  SUCC_serial_ports = TSERV1 :   3    :  4  ; 
+  ref $DRIVE_INIT      =  DRIVE_F_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD5;
+  timing_monitor = Playback_5 :  5 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_6_Mk5;
+  SU_ID                =  6 : SU6;
+  SUCC_serial_ports = TSERV1 :   5    :  6  ; 
+  ref $DRIVE_INIT      =  DRIVE_G_MARK5;
+  ref $TRM_CONFIG      =  TRM5;
+  ref $SU/CORR_CONNECT =  STD6;
+  timing_monitor = Playback_6 :  6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_7_DOM;
+  SU_ID                =  7 : SU7;
+  SUCC_serial_ports = TSERV1 :   8    :  8  ; 
+  ref $DRIVE_INIT      =  DRIVE_H_DOM;
+  ref $SU/CORR_CONNECT =  STD7;
+  timing_monitor = Playback_6 :  6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_8_DOM;
+  SU_ID                =  8 : SU8;
+  SUCC_serial_ports = TSERV0 :   9    :  9  ; 
+  ref $DRIVE_INIT      =  DRIVE_I_DOM;
+  ref $SU/CORR_CONNECT =  STD8;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_9_DOM;
+  SU_ID                =  9 : SU9;
+  SUCC_serial_ports = TSERV0 :  10    : 10  ; 
+  ref $DRIVE_INIT      =  DRIVE_J_DOM;
+  ref $SU/CORR_CONNECT =  STD9;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_A_DOM;
+  SU_ID                =  10 : SU10;
+  SUCC_serial_ports = TSERV0 :  11    : 11  ; 
+  ref $DRIVE_INIT      =  DRIVE_K_DOM;
+  ref $SU/CORR_CONNECT =  STD10;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_B_DOM;
+  SU_ID                =  11 : SU11;
+  SUCC_serial_ports = TSERV0 :  12    : 12  ; 
+  ref $DRIVE_INIT      =  DRIVE_L_DOM;
+  ref $SU/CORR_CONNECT =  STD11;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_C_DOM;
+  SU_ID                =  12 : SU12;
+  SUCC_serial_ports = TSERV0 :  13    : 13  ; 
+  ref $DRIVE_INIT      =  DRIVE_M_DOM;
+  ref $SU/CORR_CONNECT =  STD12;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+ def PBS_D_DOM;
+  SU_ID                =  13 : SU13;
+  SUCC_serial_ports = TSERV0 :  14    : 14  ; 
+  ref $DRIVE_INIT      =  DRIVE_N_DOM;
+  ref $SU/CORR_CONNECT =  STD13;
+  timing_monitor = Playback_6 : 6 : 0.5e-6 : 2.0e-6 :  0x0  ; 
+ enddef;
+
+*-------------------------
+$DRIVE_INIT;
+
+ def DRIVE_A_MARK5;
+  drive_type     = Mark5A : muc00;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_B_MARK5;
+  drive_type     = Mark5A : muc01;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_C_MARK5;
+  drive_type     = Mark5A : muc02;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+* temporary for IYA - fix discarded data in last trm
+* headstack/DIM_connect  =   1   : even  :   0   :   0;
+* headstack/DIM_connect  =   1   :  odd  :   1   :   0;
+* headstack/DIM_connect  =   2   : even  :   2   :   0;
+* headstack/DIM_connect  =   2   :  odd  :   3   :   0;
+ enddef;
+
+ def DRIVE_D_MARK5;
+  drive_type     = Mark5A : muc03;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_E_MARK5;
+  drive_type     = Mark5A : muc04 ;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+* headstack/DIM_connect  =   1   : even  :   2   :   0;
+* headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+* headstack/DIM_connect  =   2   : even  :   0   :   0;
+* headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+* temporary for IYA - fix low amp in S4U (last trm) - permanent (generic problem)
+  headstack/DIM_connect  =   1   : even  :   0   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   1   :   0;
+  headstack/DIM_connect  =   2   : even  :   2   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   3   :   0;
+ enddef;
+
+ def DRIVE_F_MARK5;
+  drive_type     = Mark5A : muc05 ;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+ enddef;
+
+ def DRIVE_G_MARK5;
+  drive_type     = Mark5A : muc06 ;
+  *                        hdstk   trks    DIMin   Eqlzr(Mbps)
+  headstack/DIM_connect  =   1   : even  :   2   :   0;
+  headstack/DIM_connect  =   1   :  odd  :   3   :   0;
+  headstack/DIM_connect  =   2   : even  :   0   :   0;
+  headstack/DIM_connect  =   2   :  odd  :   1   :   0;
+
+ enddef;
+
+ def DRIVE_H_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_I_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_J_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_K_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_L_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_M_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+ def DRIVE_N_DOM;
+  drive_type     = Mark5B;
+ enddef;
+
+*-------------------------
+$TRM_CONFIG;
+
+ def TRM5;
+  *                          M  b/s
+  TRM_order_within_channel = 4 : 2 : sign0 :  mag0  :  sign1 :  mag1 : sign2 :  mag2 : sign3 : mag3;
+  TRM_order_within_channel = 2 : 2 : sign0 :  mag0  :  sign1 :  mag1;
+  TRM_order_within_channel = 1 : 2 : sign0 :  mag0;
+  TRM_order_within_channel = 4 : 1 : sign0 :  sign1 :  sign2 :  sign3;
+  TRM_order_within_channel = 2 : 1 : sign0 :  sign1;
+  TRM_order_within_channel = 1 : 1 : sign0;
+  *
+  parity_error_limit          =   0.10;  * 10% (for frame editting purposes only)
+
+  *                               CRC    PErr   nosync  resync
+  invalid_frame_control       =   off :  off :  off  :  on;
+ enddef;
+
+*-------------------------
+$SU/CORR_CONNECT;
+*-------------------------
+ def STD0;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    0;     * input board 0 / link 0A
+  SU_connect =  1 :  1  :    0;     * input board 1 / link 0A
+  SU_connect =  2 :  2  :    0;     * input board 2 / link 0A
+  SU_connect =  3 :  3  :    0;     * input board 3 / link 0A
+ enddef;
+
+ def STD1;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    1;     * input board 0 / link 0B
+  SU_connect =  1 :  1  :    1;     * input board 1 / link 0B
+  SU_connect =  2 :  2  :    1;     * input board 2 / link 0B
+  SU_connect =  3 :  3  :    1;     * input board 3 / link 0B
+* temporary test
+* SU_connect =  3 :  3  :    9;     * input board 3 / link 4B
+ enddef;
+
+ def STD2;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    2;     * input board 0 / link 1A
+  SU_connect =  1 :  1  :    2;     * input board 1 / link 1A
+  SU_connect =  2 :  2  :    2;     * input board 2 / link 1A
+  SU_connect =  3 :  3  :    2;     * input board 3 / link 1A
+* Temporary to test for link problem
+* SU_connect =  2 :  3  :    2;     * input board 3 / link 1A
+* SU_connect =  3 :  2  :    2;     * input board 2 / link 1A
+ enddef;
+
+ def STD3;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    3;     * input board 0 / link 1B
+  SU_connect =  1 :  1  :    3;     * input board 1 / link 1B
+  SU_connect =  2 :  2  :    3;     * input board 2 / link 1B
+  SU_connect =  3 :  3  :    3;     * input board 3 / link 1B
+ enddef;
+
+ def STD4;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    4;     * input board 0 / link 2A
+  SU_connect =  1 :  1  :    4;     * input board 1 / link 2A
+  SU_connect =  2 :  2  :    4;     * input board 2 / link 2A
+  SU_connect =  3 :  3  :    4;     * input board 3 / link 2A
+ enddef;
+
+ def STD5;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    5;     * input board 0 / link 2B
+  SU_connect =  1 :  1  :    5;     * input board 1 / link 2B
+  SU_connect =  2 :  2  :    5;     * input board 2 / link 2B
+  SU_connect =  3 :  3  :    5;     * input board 3 / link 2B
+ enddef;
+
+ def STD6;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    6;     * input board 0 / link 3A
+  SU_connect =  1 :  1  :    6;     * input board 1 / link 3A
+  SU_connect =  2 :  2  :    6;     * input board 2 / link 3A
+  SU_connect =  3 :  3  :    6;     * input board 3 / link 3A
+ enddef;
+
+ def STD7;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    7;     * input board 0 / link 3B
+  SU_connect =  1 :  1  :    7;     * input board 1 / link 3B
+  SU_connect =  2 :  2  :    7;     * input board 2 / link 3B
+  SU_connect =  3 :  3  :    7;     * input board 3 / link 3B
+ enddef;
+ 
+ def STD8;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    8;     * input board 0 / link 4A
+  SU_connect =  1 :  1  :    8;     * input board 1 / link 4A
+  SU_connect =  2 :  2  :    8;     * input board 2 / link 4A
+  SU_connect =  3 :  3  :    8;     * input board 3 / link 4A
+ enddef;
+
+ def STD9;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :    9;     * input board 0 / link 4B
+  SU_connect =  1 :  1  :    9;     * input board 1 / link 4B
+  SU_connect =  2 :  2  :    9;     * input board 2 / link 4B
+  SU_connect =  3 :  3  :    9;     * input board 3 / link 4B
+ enddef;
+
+ def STD10;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :   10;     * input board 0 / link 5A
+  SU_connect =  1 :  1  :   10;     * input board 1 / link 5A
+  SU_connect =  2 :  2  :   10;     * input board 2 / link 5A
+  SU_connect =  3 :  3  :   10;     * input board 3 / link 5A
+ enddef;
+
+ def STD11;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :   11;     * input board 0 / link 5B
+  SU_connect =  1 :  1  :   11;     * input board 1 / link 5B
+  SU_connect =  2 :  2  :   11;     * input board 2 / link 5B
+  SU_connect =  3 :  3  :   11;     * input board 3 / link 5B
+ enddef;
+
+ def STD12;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :   12;     * input board 0 / link 6A
+  SU_connect =  1 :  1  :   12;     * input board 1 / link 6A
+  SU_connect =  2 :  2  :   12;     * input board 2 / link 6A
+  SU_connect =  3 :  3  :   12;     * input board 3 / link 6A
+ enddef;
+
+ def STD13;
+  *             SU   Corr   InputBd
+  *           ChnGrp Segmt  ChnGrp
+  SU_connect =  0 :  0  :   13;     * input board 0 / link 6B
+  SU_connect =  1 :  1  :   13;     * input board 1 / link 6B
+  SU_connect =  2 :  2  :   13;     * input board 2 / link 6B
+  SU_connect =  3 :  3  :   13;     * input board 3 / link 6B
+ enddef;

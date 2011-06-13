@@ -1,0 +1,13 @@
+vhelp:
+vhelp:  To obtain more information on any program, type "vhelp programname"
+vhelp:  where "programname" is a minimum-matchable name as listed above.
+vhelp:  To get information about various aspects of a program, type
+vhelp:  "vhelp programname aspect", where "aspect" is any of "syntax",
+vhelp:  "options", "arguments", "environment" or "description".
+vhelp:
+vhelp:  Various additional shell scripts may found in your $PATH.
+vhelp:  To get information on these scripts, type "vhelp scripts"
+vhelp:
+vhelp:  Some additional background material is available with
+vhelp:  "vhelp general" (an overview of the software) and with
+vhelp:  "vhelp libraries" (on the correlator libraries).

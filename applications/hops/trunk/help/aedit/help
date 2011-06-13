@@ -1,0 +1,115 @@
+COMMAND NAME:   help
+
+TYPE:           Action
+
+SYNTAX:         "help 'subject'"
+
+DESCRIPTION:
+
+Writes the help file pertaining to "subject" on the 
+terminal, under pagination control.  "Subject" is
+presently any command name, plus "general".
+
+
+Action commands:
+
+\begin{verbatim}
+        Name    argument(s)     Description
+        ----    -----------     -----------
+        clear   data            Erase all data from memory
+                close		Erase all triangle data from memory
+                inputs          Reset input settings to default
+                plot            Clear screen or eject page
+                all             All three clear functions
+        close                   Generate triangle data from type-2 data
+        edit    cursor          Zap points on screen with cursor
+                inputs          Remove points that don't fit inputs
+                duplicates      Remove duplicate points with various priorities
+                parents         Remove childless parent records
+                children        Remove orphan child records
+                close triangles Remove triangle record without baselines
+                close baselines Remove baseline record without triangles
+                close           Perform both of the above commands
+        exit                    End aedit session
+        fplot                   Pop up Xwindow fringe plots
+        inputs  plot/filter     Print current input settings on screen
+        parameter number(s)     Extract parameters from type-2 files on disk
+        plist                   List extracted parameters in memory
+        plot                    Plot current data according to inputs
+        pwrite  file,precision  Write extracted parameters to filename
+        read    filename        Read in data from filename
+        run     filename        Execute commands in filename
+        setyear number          Manually reset year of scan throughout data
+        sort    key             Sort data according to various keys
+        summary                 Display a summary of all unflagged data
+        twrite  filename        Write (edited, sorted) type 3 data to filename
+        unflag  string          Removes flags applied for various reasons
+        unsort                  Restore original sort order (as read in)
+        write   filename        Write (edited, sorted) type 0,1,2 data to filename
+        zoom                    Display details of cursor-selected points
+
+
+Plot control parameters:
+
+        Name    argument(s)     Description
+        ----    -----------     -----------
+        axis    string          Set variable to plot on Y axis
+        grid    a,b             Divide screen/page a times b subplots
+        xscale  min,max         Set X-axis scale
+        yscale  min,max         Set Y-axis scale
+        mode    split/nosplit   Do/don't do 1 plot per source
+        reference               Use reference antenna in baseline plots
+        remote                  Use remote antenna in baseline plots
+
+
+Data selection parameters:
+
+        Name            argument(s)     Description
+        ----            -----------     -----------
+        baselines       AB,BC,AC ....   Use only these type 2 baselines
+        triangles       ABC,DEF,ADE ..  Use only these type 3 triangles
+        experiment      expt #          Use only data from this experiment
+        frequencies     S,X,K, ....     Use only data at these frequencies
+        polarizations   RR, LR ....     Use only data with these polarizations
+        fraction        nn% ....        Use only scans with >nn% good data
+        length          number          Use only scans > number secs or blocks
+        nfreq           <>= nn          Use only scans with <>= nn frequencies
+        qcodes          5-9,D ...       Use only data with these quality codes
+        snrmax          number          Use only type 2 data with snr < number
+        snrmin          number          Use only type 2 data with snr > number
+        bsnrmax         number          Use only type 3 data with bsnr < number
+        bsnrmin         number          Use only type 3 data with bsnr > number
+        sources         name1,name2...  Use only data on these sources
+        stations        A,B,C,D ....    Use only data from these stations
+        timerange       yyddd-hhmmss, yyddd-hhmmss      
+                                        Use only data in time range
+        prange          n, min, max     Use only data with parameter n in range
+        procrange       yyddd-hhmm, yyddd-hhmm  
+                                        Use only data in procdate range
+        type            0 1 2 3         Use only data of these types
+
+
+Experiment overview commands/parameters:
+
+        Name            argument(s)     Description
+        ----            -----------     -----------
+        ccread          filename        Read specified CC file into memory
+        psplot                          Display active plot of experiment
+        psfile          filename        Write experiment summary to filename
+        reproc          filename        Write skeleton reproc afile to filename
+
+I/O control parameters:
+
+        Name            argument(s)     Description
+        ----            -----------     -----------
+        device          string          Plotting device for PGPLOT
+        outversion      number          Determines output A-file format version
+
+
+Miscellaneous:
+
+        Name    argument(s)     Description
+        ----    -----------     -----------
+        batch   none            Disables interactive confirmation querys
+        nobatch none            Enables interactive confirmation querys
+\end{verbatim}

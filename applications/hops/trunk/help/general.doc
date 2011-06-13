@@ -1,0 +1,508 @@
+GENERAL DESCRIPTION OF THE UNIX CORRELATOR SUPPORT SOFTWARE
+-----------------------------------------------------------
+
+Documentor  CJL 23 October 1992
+
+This document is intended to provide an overview of the basic design
+philosophies in the correlator software, and to declare certain
+conventions characterizing existing code, which should be adhered
+to in new code.
+
+Underlying principles of the MkIV UNIX correlator software
+----------------------------------------------------------
+                        OR
+A history of Haystack VLBI software, and why it is the way it is
+----------------------------------------------------------------
+
+Two essential facts have driven the development of this software.  The
+first is that the existing HP-1000 correlator support software system
+represents an extremely large and valuable investment of manpower
+resources.  The second is that the inherent capabilities of modern UNIX
+machines dramatically outstrip those of the original HP-1000 machines, 
+both in software and hardware.  The goal has been to simultaneously take
+advantage of both previous experience and new technology, with a minimum
+of effort yet maximum impact and prospects for future growth.
+
+We have attempted to meet this goal by retaining most aspects of the 
+HP-1000 based file structures.  In the software developed to date, two
+key ascii file formats have been preserved unchanged, namely the format
+of the #S file (referred to simply as the schedule file in the UNIX
+world), and the A-file format (which has been standardized under UNIX).
+A number of other ascii files, integral to the old HP-1000 based system,
+have been rendered obsolete under UNIX (e.g. #E files, #P files, etc.).
+The binary data files have the same internal format as on the old system
+(except for the floating point format, which has been translated to IEEE),
+but there are important organizational differences.
+  
+At this point, a brief history of the data format development is 
+appropriate, in order to gain insight into the current formats.  HP-1000
+correlator data files consist of multiple "extents" of different types,
+all bundled together under a single filename.  Thus, the filesystem (which
+had to be modified to accommodate the extreme demands of correlator data
+files) has the capacity to bind together separate but related pieces of
+information.  Using this capability, the original system was designed
+using three different extent "types", namely type 50, 51 and 52 extents.
+The type 50, or "root" extent was in effect a header block, containing
+all the information with which to make sense of the other extents.  There
+was only one type 50 extent per filename.  The type 51 extents contained
+the raw correlation bit counts from the correlator, along with information
+on phasecals, correlator status information, and other items.  However,
+since the root was tightly bound to the type 51 extents by the filesystem,
+it was deemed unnecessary to include much in the way of identifying 
+information in the type 51 extents.  The type 52 extents were added to the
+file by the FRNGE program.  Sufficient information exists in these extents
+to identify the particular correlation which produced the data, but frequent
+reference is nevertheless made to information which exists only in the root
+extent.
+
+A characteristic of these file formats is that they are to some extent
+tailored to the needs of the original host computer system.  Small memory address
+spaces and very large data files dictated that only a small part of the file
+be read in at a time, and raised the importance of efficient random-access
+IO on the file.  This led to indexing information being embedded in the root,
+and more fundamentally, to the organization of all information into 256-byte
+records of various types.  This fixed record length permitted the use of
+FORTRAN direct access IO, mandatory for acceptable performance.  Some of these
+256-byte record types are overflowing with information, which encourages 
+compact but obscure formats (bits 12 to 15 equals number of seconds divided 
+by 4 in the 30th 16-bit word of the type 1000 record is a good example).
+
+Clearly, given radically different constraints by the host computer, a
+redefinition of the file formats would arrive at a radically different solution.
+However, in the interests of capitalizing on all the good aspects of the
+existing format, and retaining vital backward compatibility with the vast
+library of MkIII correlator data files dating back to 1979, it was decided
+to retain the original internal file formats with little or no modification.
+This decision led to a key obstacle for UNIX-based software designed to
+handle such data, concerning the binding between the various extent types
+provided by the HP-1000 filesystem.  Under UNIX, each extent necessarily
+translates to a separate file, and a method had to be devised through a file
+naming convention which served this binding function.  Recall from above that 
+a type 51 extent cannot be uniquely identified on the basis of its contents 
+alone; vital information implicit in the HP-1000 filesystem must be contained 
+in the UNIX filename.  The adopted solution was to encode the root creation 
+date in a six-character lower case ascii string, and append that string to the 
+name of every file "belonging" to that root.  In addition to information about 
+which root a file belongs to, the type 51 files in particular require indexing 
+into the tables in the root for proper identification.  This information is the 
+extent number, and it too must be embedded in the filename of at least the type 
+51 files.  Finally, to enhance human readability and permit useful filtering 
+operations using standard UNIX utilities operating on the filenames, it was decided 
+to embed the baseline, and in the case of type 52 files, the frequency subgroup 
+in the name.
+
+On the HP-1000 system, the lack of a directory structure on the filesystem dictates 
+that all correlator data files on a given physical cartridge are placed together.  
+This rarely leads to excessive numbers of files in one place, because each family 
+of extents lives under a single HP-1000 filename, and because cartridge sizes on 
+these systems are rather small by modern standards.  Neither of these ameliorating 
+circumstances obtain on the UNIX machines;  each extent has its own filename, while 
+filesystems can have sizes measured in gigabytes.  It was therefore necessary to 
+split the data areas into directory trees.  This was done in a manner designed to 
+facilitate valuable new functionality and ease of programmatic data manipulation,
+as described below.
+
+A second, and much more subtle, challenge for the UNIX software design was raised 
+by the adoption of the original MkIII file formats.  Much of the original 
+complexity and overall design of the HP-1000 software can be attributed to the 
+constraints of the host computer system.  Some of these constraints, as already
+pointed out, are manifested through the file format limitations.  However, many other
+constraints were present, and the challenge is to recognize those areas in which the
+new UNIX environment allows a better solution to a problem.  This can be far from
+easy when the problem has already been solved in an apparently satisfactory way.  In
+particular, given the fact that a central element of the old MkIII system was adopted
+(in the form of the file formats), there is a powerful tendency to simply replicate
+operations on the data that are done on the HP-1000 systems, to the possible exclusion
+of elegant new approaches.  It is not yet clear how successfully this challenge is
+being met.
+
+Summaries and archives -- a new approach
+----------------------------------------
+
+The HP-1000 software system is multi-layered.  At the most basic level, the binary
+data files exist on disks and tapes, generated at rates of up to 200 megabytes per
+day.  Manipulating these data files directly is extremely cumbersome for a wide
+variety of common tasks involving data inspection, filtering, editing and the like.
+A summary format was therefore devised, namely the A-file format, which consists
+of one ascii line of roughly 200 characters, column oriented, for each data file
+extent.  Among the more than 30 fields on an A-file line are most of the quantities
+of common interest in the abovementioned operations.  Nevertheless, circumstances
+arose in which the desired information was not present, so several "modified" A-file
+formats arose.
+
+The compactness of this format, and the fact that it can be readily manipulated using 
+the HP-1000 line editor (which has strong column-editing capabilities), allows condensed 
+versions of data spanning many months of correlation to be maintained and manipulated 
+on-line, despite very limited disk space.  Unfortunately, even this format proved 
+unwieldy, with a typical experiment consisting of many thousands of extents, and a 
+second layer of summarization was provided intended not just for human consumption,
+but also for machine consumption.  This layer was characterized by ascii 
+files containing one line for some logical grouping of data files.  A great deal of 
+complicated software, embedded in script files (known as "transfer files") and fed by 
+invocations of the editor on an army of intermediate scratch files, was developed to 
+translate information from one format to another, and to operate on the summarized 
+information in one form or another.  The variety of A-file formats mentioned above
+proved a significant encumbrance to this whole scheme.  All of these difficulties and
+complications can be traced, more or less directly, to the limitations of the original
+computer systems, independent of the details of the binary data file formats. 
+
+Of particular note were the routines and summary files dedicated to archiving and 
+retrieval from tape of data files.  Due to the limited disk space and high data rates,
+it was necessary to archive data to tape every several hours.  Efficient scheduling
+of the correlator precluded a practise of processing experiments strictly
+sequentially, so each archive tape typically contained data from multiple experiments,
+and each experiment typically spanned many archive tapes.  In order to allow an
+investigator to deal with his/her experiment as a logical entity, the software was
+obliged to fight the natural organization of the data on the mass storage media, which
+resulted in a high degree of architectural complexity, and a frequently bewildering
+user interface.
+
+This is an area in which a more satisfactory and elegant solution can now be devised.
+By utilizing very large disks, it is possible to hold correlator data files on-line
+for many weeks, long enough for a typical experiment to be correlated to completion.
+Furthermore, new high-capacity tape formats such as Exabyte and DAT permit the 
+archiving of entire experiments on a single tape.  By organizing the data on disk by
+experiment (using the UNIX directory tree structure) and archiving to tape the entire
+directory tree for that experiment, the whole problem of locating data on the
+archive tapes is eliminated, as is an impressive volume of software written just to
+keep track of the archival data.  Experiments become physical as well as logical
+entities.  This change is a key element of the MkIV postprocessing software strategy.
+
+As will be appreciated, the proper location of binary data files in the UNIX 
+directory structure is a prerequisite to the success of the archiving approach
+described above.  In fact, the directory structure is implicit in many aspects
+of the UNIX software.  The precise definition of the data file naming conventions,
+including directory organization, is described in a later section.  Clearly,
+the integrity of the entire system depends on the existence of a mechanism
+for enforcing proper file location.  The mechanism decided upon, but not yet 
+implemented as of October 1992, utilizes the UNIX ownership and permissions
+capabilities.  All data files will be owned by a special user, called "operator",
+who has special privileges.  Data files and directories will be writable only by 
+"operator", though readable by all.  This will prevent the casual user from
+deliberately or accidentally moving data files to incorrect locations, or from
+deleting them (deletion of a root file will "orphan" corel and fringe files,
+for example).  To allow users to manipulate data files in an acceptable manner,
+all programs will be owned by "operator", and will be setuid programs.  In this
+way, no data files will be written, moved or deleted except by programs which
+enforce proper naming conventions internally, preserving the integrity of the
+entire system.
+
+A second area in which major simplifications are possible concerns those procedures
+devised on the HP-1000 systems solely to avoid excessive execution times to accomplish
+tasks.  The newest UNIX machines outpace the original HP-1000 computers for which such
+software was developed by more than two orders of magnitude, and much of the 
+summarization (and attendant software complexity) is now unwarranted.  There is now
+no need for a level of summarization more compact than the A-file.  Furthermore, the
+occasional need for information not available in an A-file can usually be met by direct
+manipulation of the binary data themselves with acceptable performance, so it becomes
+practical to eliminate all "modified" A-file formats.  Thus we are reduced to only two
+data file formats, enormously simplifying software designed to manipulate those data.
+
+Programmatic interface to data files
+------------------------------------
+
+In the interests of programmatic simplicity, it was decided at an early stage to
+keep the binary data files in memory as record-by-record images of the disk
+files.  Order is imposed upon these memory images by C structures, defined in
+$INC (see section on directory organization and environment variables later in this
+document) by the header files "type_nn00.h".  There is thus no detailed rearrangement
+of data elements upon reading or writing with the routines $BFIO/read_root.c,
+$BFIO/write_fringe.c, etc.  Instead, 256-byte blocks are moved as a unit to the
+structure appropriate to the type of record, and all the elements of that record
+are then available as structure elements.  It is important to note, however,
+that the binary data file format definitions allow record types to be mixed in
+unpredictable fashion in some instances, notably in the root.  In order to 
+arrive at a convenient organization of data in memory, the data reading routines
+need to rearrange records, which they do via the simple routine $BFIO/copybuf.c.
+This organization of data in memory is peculiar to the UNIX software, because
+with the essentially unlimited memory address spaces, it is possible to hold
+multiple baselines of the root in memory, for example.  This leads us to the 
+overriding principle of binary data file IO under UNIX.  It is no longer
+necessary or desirable to read the files a record at a time, seeking to the area
+of current interest and then discarding the data and moving on to the next area.
+Instead, the entire binary data file is read into memory at once, quickly and
+efficiently, with memory allocated dynamically as needed.  Structures have been 
+defined in $INC/data.h which allow a well organized complete image of the file 
+to be manipulated, and it is this rearrangement of the data as found on disk to 
+this memory-resident representation of the file that is referred to above.
+
+The product of this approach is relative simplicity for the developer of
+applications.  With the use of only 6 routines for binary file IO, it is possible
+to completely insulate the programmer from details of the file structure on
+disk.  All the programmer needs to worry about is manipulating the data inside
+the well-organized memory structure, which is fast, efficient and comparatively
+simple.  There is no longer any need to constantly check the record type and 
+baseline ID of every record as it is read in, for example.  Instead, the 
+programmer simply refers directly to the record type and baseline ID of interest,
+and the data are already there.  The simultaneous presence of all parts of the data 
+file in memory also ought to open up possibilities for new methods of data 
+manipulation, though none have yet been devised.
+
+The interface to the other type of data files, the A-files, follows a similar
+philosophy, with one important difference.  Since the files consist of ascii lines,
+simple memory images are unwieldy and would require constant parsing in programs
+to extract the typically numerical information present.  Therefore, all the
+necessary parsing is performed as the file is read in, and the information is
+represented in memory as a binary structure (defined in $INC/extent_summ.h).  Again,
+the entire A-file is read in at one time, and the data manipulated at high
+speed in memory.  At present there is only one program which manipulates A-files,
+namely "aedit", and one other which generates A-files from binary files, namely
+"alist".  Given the overall simplification of the data file formats and 
+interconnections under UNIX, it is doubtful that any other programs will be
+required which deal with A-files, though some may accept them as input for selection
+of binary data files.  The interfaces for A-file data can be found in $AFIO,
+and are line-oriented (one needs to read and write each line manually, the provided
+routines handle the contents of each line for the programmer).
+
+Environment variables and source code directory structure
+---------------------------------------------------------
+
+The file $HOPS/setup.csh contains definitions of many environment
+variables which are essential to the programmer.  One's .cshrc file
+should contain a line setting the HOPS environment variable, another
+line setting the ARCH environment variable, and then a line reading
+"source $HOPS/setup.csh".  In the discussion below, the resulting
+environment variable definitions will be frequently referred to.
+
+All the source code is found in the directory branch $HOPS/src = $SRC.
+This directory is separated into several major branches, one for each
+aspect of correlator-related operations.  Experiment preparation and
+scheduling in handled under branch "schedule".  Online correlator control
+software will reside in "correlator".  Postprocessing of correlator output
+data is handled under branch "postproc" (=$POST), and analysis software
+is under branch "analysis".  There are two other branches, namely
+"include" ($INC) and "sub" ($SRCSUB).  The former contains all include
+files which are or may be needed by more than one program.  The latter
+contains the code for all subroutine libraries which are or may be needed
+for programs in more than one of the schedule, correlator, postproc or
+analysis branches.
+
+The $SRCSUB directory presently contains several subdirectories, which
+house the source code for generally useful libraries.  These libraries
+are documented in the $DOC/unix_software directory (where this file
+resides).  As of this writing, functional libraries exist in $AFIO, $BFIO,
+and $UTIL.
+
+Each of the four major program areas has a similar structure.  There is one
+subdirectory for each standalone program.  These subdirectories contain
+all the source code specific to that program.  In addition, there is a "sub"
+subdirectory, analogous to the "sub" directory under $SRC, which contains
+subdirectories for subroutine libraries.  These libraries are, however,
+specific to the major program area they reside in (e.g. postproc).  There is
+one other subdirectory called "scripts", which contains shell scripts pertinent
+to the major program branch (e.g. the $POST/scripts directory contains the
+script "efind", which sifts though A-files).
+
+As presently set up, each source code directory, either program or library
+files, contains subdirectories for object files, one directory per
+architecture.  The executable or library also resides in the architecture
+directory.  The makefile, which must be architecture independent, sits in
+the source code directory.  Inadequacies in the HP-UX make program 
+require the use of a short shell script "cmake" to initiate a build of
+the program/library.  A future adoption of the Gnu make program may eliminate
+the need for this workaround.
+
+In general, the directory structure has been set up to try and encourage
+modularity in the code development.  Lots of key files live in the $INC
+and $SRCSUB directories, and must be as generic as possible.  Any file that
+can be placed there (under the above rules) is a plus for overall code
+volume and maintainability.
+
+Below is a list of relevant environment variables as of October 1992, with a
+brief description of what they point to.
+
+ARCH ........ host architecture (hppa or sun4 at present)
+HOPS ........ main correlator software directory
+SRC ......... home of all the source code, object files, libraries and executables
+DOC ......... documentation directory (contains this file in a subdirectory)
+LIB ......... resting place for finished libraries
+BIN ......... resting place for finished executables
+HELP ........ home for online help files
+INC ......... include files which are used in more than 1 program/library
+CORDATA ..... root directory for ALL binary correlator data
+DATA1 ....... path to 1st overflow data directory
+SRCSUB ...... contains subdirectories for libraries of general use
+AFIO ........ A-file IO library directory
+BFIO ........ binary file IO library directory
+UTIL ........ utility library directory
+POST ........ postprocessing source code area
+POSTSUB ..... directory for postprocessing-specific libraries
+X_FPLOT ..... X-window fringe plot popup library directory
+FF .......... fourfit directory
+AEDIT ....... aedit source directory
+ALIST ....... alist source directory
+RENAME ...... rename source directory
+
+This is not a complete list of existing environment variables, nor is every
+relevant directory yet assigned an environment variable.  The situation will
+remain very fluid for some time to come in this regard.
+
+Below is an illustrative sketch of the directories under the $HOPS branch
+
+
+                          $HOPS
+                              |
+      ---------------------------------------------------
+      |            |           |           |            |
+     doc          bin         lib         src         help
+     /|\          /|\         /|\          |           /|\
+ (files like  (executables) (libraries)    |     (online help)
+  this one)                                |
+                                           |
+                                           |
+                                           |
+     -------------------------------------------------------
+     |          |          |         |          |          |
+  schedule  correlator  postproc  analysis     sub      include
+     |          |          |         |          |         /|\
+  -------    -------       |      -------    -------  (include files)
+  |  |  |    |  |  |       |      |  |  |    |  |  |
+                           |               (same as "sub" below)
+                           |
+    ---------------------------------------------------------
+    |          |          |           |           |         |
+ aedit      alist     fourfit     rename       script      sub
+    |          |          |           |          /\         |
+  (source code and architecture subdirs)   (script files)   |
+                                                            |
+                                          ---------------------
+                                          |                   |
+                                       package1            package2
+                                          |                   |
+                                 (source code and architecture subdirs)
+
+
+Binary data file directories and filename definitions
+-----------------------------------------------------
+
+All binary data files reside in the directory $CORDATA.  This directory
+contains one subdirectory for each experiment, whose name is the experiment
+number.  Each experiment subdirectory contains one subdirectory for each
+scan start time, as defined in the schedule file.  The format of the scan
+directory name is "yyddd-hhmmss".  The binary data files themselves are to be
+found in the scan directories.  They are of three different types, analogous
+to type 50, 51 and 52 extents on the HP-1000 system.  Under UNIX, they are
+typically referred to as type root, corel and fringe files, though may also
+be called types 0, 1 and 2 files.  All binary data files have a 6-character
+lower-case alphabetic suffix, which is the number of 4-second periods elapsed
+since 00:00 UT, Jan 1 1979 when the root file with which the file is associated
+was created, base 26.  The other parts of the filenames are as follows:
+
+root files:    source.abcdef
+                  |      |
+                  |      ------- root code
+                  ------ source name (up to 8 characters)
+
+corel files:   AB.n.abcdef
+               |  |    |
+               |  |    ---------root code
+               |  -----extent number (= index into root tables)
+               ------ baseline (2 characters)
+
+fringe files:  AB.X.n.abcdef
+               |  | |    |
+               |  | |    ------root code
+               |  | ------extent number
+               |  ------ frequency subgroup (1 character)
+               ------ baseline (2 characters)
+
+In general, correlator support computer systems will possess more than one large
+filesystem for the on-line storage of data files.  When it becomes necessary to
+place data on a physical volume other than that pointed to by $CORDATA, the data
+are redirected to $DATAn, where n is a small positive integer.  The directory
+structure on $DATAn is identical to that on $CORDATA with one key difference.  
+All directories on $DATAn are real, physical directories.  By contrast, some
+scan directories on $CORDATA are in fact symbolic links to the corresponding
+directories on $DATAn, where the real data resides.  Thus, the contents of
+$DATAn are, and appear to be, in general incomplete, whereas the contents of
+$CORDATA are also physically incomplete but appear to be complete.  In this way, the
+user and programmer need know only about $CORDATA in which all the on-line data
+appears to reside, and the physical organization of the data, divided between
+$CORDATA and the various $DATAn directories, is handled behind the scenes by
+special utilities.  As of this writing, these utilities exist only in the CI to
+UNIX file renaming program "rename", but will be made generally available in
+a library at a later date.
+
+
+Coding conventions
+------------------
+
+1. All code should conform to the definitions of ANSI C.  In most cases,
+   existing code conforms to conventions in the first edition of K&R.
+
+2. Where practical, there should be exactly one subroutine per source
+   file.  This rule should be violated only in cases of large numbers
+   of trivial routines.  The source file name should be identical to the
+   function name (plus the .c).
+
+3. Each source file should begin with a comment describing the function
+   being performed, a description of the argument list, the author and
+   creation date, and a modification history.  A template comment box
+   for this purpose may be found in $INC/cbox.
+
+4. Duplication of functionality in routines for different programs
+   should be strenuously avoided.  Such routines belong in a library.
+   If necessary, a new library should be created to hold such routines.
+
+5. The "goto" statement is banned!
+
+6. Machine and OS dependencies are to be avoided at all costs.  It is not
+   acceptable to handle differences between systems with conditional
+   compilation using the C preprocessor.  In the long run, this policy
+   will lead to more maintainable code.
+
+7. Code should be adequately commented.  Comments should appear generally
+   on separate lines above the code they refer to, and begin on the
+   5th tab stop for visual separation from the code.
+
+8. Function and variable names should be as mnemonic as possible.
+   Descriptiveness is to be preferred over terseness.  In cases where structure
+   dereferencing of long mnemonic names leads to excessively cumbersome
+   labels, concise local variables should be assigned to the relevant
+   structure addresses for code readability.  Function and variable names
+   should be all lower case.  Constants in #define statements should be
+   all upper case.  Use the convention long_variable_name, not
+   LongVariableName.
+
+9. The example below illustrates the preferred conventions for indentation
+   and line breaking in the code.  These conventions are encouraged, but are
+   not mandatory.  Explanatory comments appear to the right of the | characters,
+   and obviously are not part of the example.
+
+COMMENT BOX HERE
+#include <xyz.h>					| system includes
+#include "data.h"					| $INC includes
+#include "local.h"					| local dir. includes
+							| blank line
+#define ABC 1						| all #define lines here
+							| blank line
+int							| function type
+functionx (arg1, arg2, arg3, arg4)			| old-style arg lists
+type arg1;
+type arg2;
+type arg3, arg4;
+    {							| indent increment 1/2 tab
+    int i, j, k;
+    char a, b, c;
+    struct zzz temp[5];					| structs after simple vars
+    extern int msglev;					| externs come last
+							| blank line
+    i = 0;						| space around operators
+    for (j=0; j<10; j++)				| Use whitespace, but can
+							| omit around =, < here
+	{						| Braces on own lines
+					/* Comment */	| on its own line
+	code;
+	if (a) b = c;
+	if (a = some long compound expression)
+	    one line statement which doesn't fit on above line;
+	if (a)
+	    {
+	    statement 1;
+	    statement 2;
+	    }
+	code;
+	code;
+	}
+
+    }

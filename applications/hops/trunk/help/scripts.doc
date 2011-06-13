@@ -1,0 +1,12 @@
+HOPS Support Scripts (in your $PATH)
+------------------------------------
+
+env_check          - provides a quick check that your environment is set up
+hops.bash          - can be invoked with --help or --version in addition
+                     to being sourced directly to set up your environment
+pplot_print        - spools a postscript file to a suitable printer (via lpr)
+vhelp              - how you got this help (passed through your pager)
+vhelper.sh         - just prints this help to the screen
+hops_data_links.pl - creates a data link hierarchy
+
+

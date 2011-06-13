@@ -1,0 +1,158 @@
+#!/bin/sh
+#
+# (Ba)sh startup
+#
+# $Id$
+#
+# Version @VERSION@
+#
+
+#
+# Help for the befuddled user.  The name is probably hops.bash.
+#
+zero=hops.bash
+Help="Usage: . $HOPS_ROOT/$HOPS_ARCH/bin/$zero
+
+will set up your HOPS environment by modifying the following variables:
+
+    PATH            executable search path
+    INFOPATH        info file search path
+    LD_LIBRARY_PATH adds dynamic linkage to PGPLOT_DIR
+
+    HOPS_ROOT       root of the HOPS package
+    HOPS_VERS       version number of this package
+    HOPS_ARCH       installation architecture
+    HOPS_DOCS       program documentation support
+    HOPS_SETUP      is set true after invocation
+    HOPS_QUIET      controls setup diagnostics
+
+    PGPLOT_DIR      sets this appropriately if not otherwise defined
+    PGPLOT_TYPE     sets this to /xw if not defined
+    PGPLOT_DEV      sets this to /xw if not defined
+    PROGDOC         used by HOPS vhelp to find help texts
+    TEXT            used by HOPS for text configuration files
+    AHELP           used by aedit for help texts
+    DEF_CONTROL     used by fourfit
+    GS_DEVICE       used by ghostscript
+    DATADIR         parent of experiment data directory
+
+    SCHEDDIR, AFILEDIR, SYSVEX, TASK, BIN, TMP
+		    heritage variables that are
+		    assigned but perhaps not used
+
+    MK4_PRINTER	    can be pointed to your preferred printer
+
+Set HOPS_QUIET (to anything) if you do not want the chatter.
+Once setup, HOPS_SETUP is defined to be true.  You can set this
+false to reinitialize with a different version of the software,
+e.g. something like one of these (depending on which $zero)
+
+    HOPS_SETUP=false . ~/bin/$zero
+    HOPS_SETUP=false . ${HOPS_ROOT-"."}/bld/$zero
+    HOPS_SETUP=false . ${HOPS_ROOT-"."}/bld-@VERSION@/$zero
+
+Otherwise, reinvocation will merely tell you what you are using.
+Set HOPS_SETUP otherwise to purge HOPS from your environment.
+"
+Version="@srcdir@/$zero  [ @BUILD_DATE@ ]"
+case "nada$1" in
+nada--help)     echo "$Help"    ; exit 0 ;;
+nada--version)  echo "$Version" ; exit 0 ;;
+nada)                                    ;;
+nada*)          echo "$Help"    ; exit 1 ;;
+esac
+
+#
+# remove old version from PATH
+#
+[ -n "$HOPS_SETUP" -a -n "$HOPS_ROOT" ] && {
+  [ "$HOPS_SETUP" = true ] || {
+    [ -z "$HOPS_QUIET" ] && echo Revising HOPS version.
+    Path=`echo $PATH | sed -e "s+${HOPS_ROOT}/[^/:]*/bin[:]*++"`
+    Info=`echo $INFOPATH | sed -e "s+${HOPS_ROOT}/[^/:]*/info[:]*++"`
+    export PATH=$Path
+    export INFOPATH=$Info
+    # LD_LIBRARY_PATH left alone
+    [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
+    unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS
+    unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR
+    unset SCHEDDIR AFILEDIR SYSVEX TASK BIN TMP
+  }
+}
+
+[ -z "$HOPS_SETUP" ] && {
+    #
+    # basic stuff
+    #
+    Setup=Setup
+    # umask 0002
+    # umask 0007
+    export HOPS_ROOT=@HOPS_ROOT@
+    export HOPS_ARCH=@HOPS_ARCH@
+    export HOPS_VERS=@VERSION@
+    export HOPS_SETUP=true
+
+    Path=${HOPS_ROOT}/${HOPS_ARCH}/bin
+    [ -z "$PATH" ] && PATH=${Path} || PATH=${Path}:$PATH
+
+    Info=${HOPS_ROOT}/${HOPS_ARCH}/info
+    [ -z "$INFOPATH" ] && INFOPATH=${Info} || INFOPATH=${Info}:$INFOPATH
+    export INFOPATH
+
+    [ -z "$PGPLOT_DIR" ] && Libp=@PGPLOT_DIR@ || Libp=$PGPLOT_DIR
+    export PGPLOT_DIR=$Libp
+
+    [ -z "$PGPLOT_TYPE" ] && PGPLOT_TYPE=/xw
+    [ -z "$PGPLOT_DEV" ] && PGPLOT_DEV=/xw
+    export PGPLOT_TYPE PGPLOT_DEV
+
+    [ -z "$LD_LIBRARY_PATH" ] && LD_LIBRARY_PATH=$Libp ||
+	LD_LIBRARY_PATH=${Libp}:$LD_LIBRARY_PATH
+    [ -d "@DIFXLIBS@" ] &&
+	LD_LIBRARY_PATH=@DIFXLIBS@:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH
+
+    # program documentation
+    export HOPS_DOCS=${HOPS_ROOT}/${HOPS_ARCH}/share/hops
+    export PROGDOC=$HOPS_DOCS/vhelp
+    export AHELP=$HOPS_DOCS/vhelp/aedit
+    export TEXT=$HOPS_DOCS/text
+
+    # miscellany
+    [ -z "$DEF_CONTROL" ] && export DEF_CONTROL=/dev/null
+    [ -z "$GS_DEVICE" ] && export GS_DEVICE=x11
+    [ -z "$PGPLOT_TYPE" ] && export PGPLOT_TYPE=/xw
+
+    # /correlator/data is the current working equivalent
+    [ -z "$DATADIR" ] && export DATADIR=$HOPS_ROOT/data
+
+    # printing via autoconfig
+    [ -n "@PRINTER@" -a -z "$MK4_PRINTER" ] && export MK4_PRINTER=@PRINTER@
+
+    # heritage variables that are repointed away from /correlator
+    export SCHEDDIR=HOPS-no-such-dir-sched
+    export AFILEDIR=HOPS-no-such-dir-afile
+    export SYSVEX=HOPS-no-such-dir-sysvex
+    export TASK=HOPS-no-such-dir-task
+    export BIN=${HOPS_ROOT}/${HOPS_ARCH}/bin
+    export TMP=/tmp
+
+    true
+} || {
+    #
+    # basic stuff
+    #
+    Setup=Using
+}
+
+[ -z "$HOPS_QUIET" ] &&
+    echo $Setup HOPS v$HOPS_VERS with HOPS_ROOT=$HOPS_ROOT for $HOPS_ARCH
+
+#
+# all done
+#
+unset Path Info Libp Setup Help Version
+
+#
+# eof
+#

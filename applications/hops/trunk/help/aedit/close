@@ -1,0 +1,21 @@
+COMMAND NAME:	close
+
+TYPE:		Action
+
+SYNTAX:		close [force]
+
+DESCRIPTION:
+
+Causes all type 2 baseline data in memory to be examined, and 
+closure triangles to be formed.  The result is a set of type-3 
+records in memory, which can then be plotted, edited, filtered 
+and written out to disk just like other data.  The close command 
+will refuse to generate closure data unless there are currently 
+no triangle records present.
+
+Normally, mismatching epochs and reference frequencies will cause
+aedit to refuse to compute a triangle record.  Under some
+circumstances, all that is needed is a list of triangles, not
+valid closure quantities.  The optional "force" argument overrides
+the epoch and frequency checking to permit such list generation.
+This option should be used only with knowledge and caution.

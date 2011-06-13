@@ -1,0 +1,29 @@
+COMMAND NAME:	clear
+
+TYPE:		Action
+
+SYNTAX:		"clear data"
+		"clear close"
+		"clear inputs"
+		"clear plot"
+		"clear all"
+
+DESCRIPTION:
+
+"Clear data" removes all the data from memory, and returns
+array space to the system.  Since any active plot no longer
+refers to data in memory after this operation, the plot is
+rendered inactive.
+
+"Clear close" is analogous to "clear data", but removes only
+closure data.
+
+"Clear inputs" changes all the values listed by the "inputs"
+command to their default values.  Typically, this means
+data selection parameters are set to pass all data, and plots
+revert to self-scaling.
+
+"Clear plot" flushes the current plot, and renders a plot on
+an interactive device inactive.
+
+"Clear all" simultaneously performs all the above operations.

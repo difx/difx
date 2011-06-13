@@ -1,0 +1,235 @@
+/*********************************************************************
+*                                                                    *
+*  This routine does two things:                                     *
+*     1) loads parameters necessary for the fringe search into param *
+*     2) makes any necessary precorrections to the data, or the      *
+*        derived information (such as phase cal)                     *
+*                                                                    *
+*  92.8.26   rjc First written                                       *
+*  94.11.21  rjc Put ph. cal phases into offset array for all 3 modes*
+*  2009.8.27 rjc Allow pcal freqs to be entered as tone #'s          *  
+*  2010.2.3  rjc consolidate remote and reference code into 1 loop   *
+*********************************************************************/
+#include "mk4_data.h"
+#include "ovex.h"
+#include "pass_struct.h"
+#include "param_struct.h"
+#include "control.h"
+#include <math.h>
+#include <stdio.h>
+
+int
+precorrect (ovex, param, pass)
+struct scan_struct *ovex;
+struct type_param *param;
+struct type_pass *pass;
+    {
+    int i, j, k, stn, n, fr, ntones, nin, mask;
+    double delay_offset, rate_offset, pcfreq_hz,
+           pcphas[2], pcfreq[2];
+    extern struct type_status status;
+    static double conrad = 0.01745329252;
+
+                                    /* copy over ref. frequency */
+    param->ref_freq = (pass->control.ref_freq == NULLFLOAT)?
+                     pass->pass_data[0].frequency :
+                     pass->control.ref_freq;
+                                         
+    param->cor_limit = 16000.0;     /* Initialize large number threshold */
+    param->use_sample_cnts = pass->control.use_samples;
+
+
+                                    // calculate offsets of windows due to position offsets
+                            
+    // delay_offset = (pass->control.ra_offset  * rbase->t2600.u_obsfreq
+    //               + pass->control.dec_offset * rbase->t2600.v_obsfreq) * 1e-3;
+    //
+    // rate_offset =  (pass->control.ra_offset  * rbase->t2600.u_obsfreq_rate
+    //               + pass->control.dec_offset * rbase->t2600.v_obsfreq_rate) * 1e-6;
+    
+    delay_offset = 0.0;             // for now, just force 0 offset  rjc 99.8.13
+    rate_offset = 0.0;
+    
+    for (i=0; i<2; i++)             // Copy windows into working area
+        {
+        param->win_sb[i] = pass->control.sb_window[i] + delay_offset;
+        param->win_mb[i] = pass->control.mb_window[i] + delay_offset;
+        param->win_dr[i] = pass->control.dr_window[i] + rate_offset;
+        param->passband[i] = pass->control.passband[i];
+        }
+
+    param->pc_mode[0] = pass->control.pc_mode.ref;
+    param->pc_mode[1] = pass->control.pc_mode.rem;
+    param->pc_period[0] = pass->control.pc_period.ref;
+    param->pc_period[1] = pass->control.pc_period.rem;
+   
+    status.lsb_phoff[0] = pass->control.lsb_offset.ref * conrad;
+    status.lsb_phoff[1] = pass->control.lsb_offset.rem * conrad;
+                                    // copy in ionosphere iff it is non-null
+    param->ionosphere[0] = (pass->control.ionosphere.ref == NULLFLOAT) ? 
+                           0.0 : pass->control.ionosphere.ref;
+
+    param->ionosphere[1] = (pass->control.ionosphere.rem == NULLFLOAT) ? 
+                           0.0 : pass->control.ionosphere.rem;
+
+                                    // Copy phase cal offsets; identify desired pcal tone freqs
+    for (stn=0; stn<2; stn++)
+        {
+        for (n=0; n<ovex->nst; n++)
+            if (ovex->st[n].mk4_site_id == param->baseline[stn])
+                break;
+
+        if (n == ovex->nst)
+            {
+            msg ("Couldn't find station %c in ovex in precorrect.c", 2, param->baseline[stn]);
+            return (-1);
+            }
+        param->pcal_spacing[stn] = ovex->st[n].channels[0].pcal_spacing;
+        
+        for (fr = 0; fr < pass->nfreq; fr++)  
+            {
+            j = fcode(pass->pass_data[fr].freq_code);
+            if (param->pc_mode[stn] != MULTITONE)
+                {                   // single tone used in this frequency band, process it
+                                    // find corresponding freq index in control structure
+                if (stn == 0)
+                    {
+                    pcphas[stn] = pass->control.pc_phase[j].ref;
+                    pcfreq[stn] = pass->control.pc_freq[j].ref;
+                    }
+                else
+                    {
+                    pcphas[stn] = pass->control.pc_phase[j].rem;
+                    pcfreq[stn] = pass->control.pc_freq[j].rem;
+                    }
+                   
+                status.pc_offset[fr][stn] = (pcphas[stn] != NULLFLOAT) ? pcphas[stn] : 0.0;
+
+                                    // expand tone #'s into frequencies, if necessary
+                if (fabs (pcfreq[stn]) > 64)
+                    pcfreq_hz = 1e3 * pcfreq[stn];
+                    
+                else                // specified as tone #, rather than freq
+                    {               // must compute frequency for this tone
+                                    // assume for now that all ovex channels the same spacing
+                    pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
+                                    - ovex->st[n].channels[0].pcal_base_freq,
+                                      ovex->st[n].channels[0].pcal_spacing);
+
+                                    // pcfreq_hz is positive distance from next lower line
+                    if (pcfreq_hz < 0.0)
+                        pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+
+                                    // nearest freq rail depends on sideband
+                    if (ovex->st[n].channels[0].net_sideband == 'U')
+                        {               // distance to next line is complement
+                        pcfreq_hz = ovex->st[n].channels[0].pcal_spacing - pcfreq_hz;
+                                    // now set freq to tone # within band (1 relative)
+                        pcfreq_hz += (pcfreq[stn] - 1) * ovex->st[n].channels[0].pcal_spacing;
+                        }
+                    else            // set up tone frequency for net LSB
+                        {           // lsb implemented using negative frequencies
+                                    // now set freq to tone # within band (1 relative)
+                        pcfreq_hz = - pcfreq_hz 
+                                    + (pcfreq[stn] + 1) * ovex->st[n].channels[0].pcal_spacing;
+                        }
+                    msg ("fcode %c freq %lf tone request %lf pc_freqhz %lf", 0,
+                          pass->pass_data[fr].freq_code, pass->pass_data[fr].frequency, 
+                          pcfreq[stn], pcfreq_hz);
+                    }
+
+
+
+                        
+                for (k=0; k<MAX_PCF; k++)
+                    if (fabs (pcfreq_hz - pass->pass_data[fr].pc_freqs[stn][k]) < 1e-6)
+                        break;
+                    else
+                        msg ("pcal freq %lf didn't match", -2, 
+                             pass->pass_data[fr].pc_freqs[stn][k]);
+                                    // if requested frequency not available,
+                                    // complain about it and use the 1st tone
+                if (k == MAX_PCF)
+                    {
+                    k = 0;
+                    pcfreq_hz = pass->pass_data[fr].pc_freqs[stn][k];
+                    if (param->pc_mode[stn] != MANUAL)
+                        msg ("stn %d pcal tone of %g Hz unavailable for channel %c",
+                         1, stn, pcfreq_hz, pass->pass_data[fr].freq_code);
+                    }
+                pass->pci[stn][fr] = k;
+                pass->pcinband[stn][fr][k] = k;
+                msg ("stn %d using pcal tone #%d of %lf Hz for freq %d code %c",
+                     0, stn, k, pcfreq_hz, fr, pass->pass_data[fr].freq_code);
+                }                   // end of fr loop
+            else
+                {                   // process all tones in multitone mode
+                pcphas[stn] = (stn == 0) ? pass->control.pc_phase[j].ref
+                                         : pass->control.pc_phase[j].rem;
+                status.pc_offset[fr][stn] = (pcphas[stn] != NULLFLOAT) ? pcphas[stn] : 0.0;
+                                    // assume for now that all ovex channels the same spacing
+                pcfreq_hz = fmod (pass->pass_data[fr].frequency * 1e6
+                                - ovex->st[n].channels[0].pcal_base_freq,
+                                  ovex->st[n].channels[0].pcal_spacing);
+
+                                    // pcfreq_hz is positive distance from next lower line
+                if (pcfreq_hz < 0.0)
+                    pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+                                    // nearest freq rail depends on sideband
+                if (ovex->st[n].channels[0].net_sideband == 'U')
+                                    // for USB, distance to next line is complement
+                    pcfreq_hz = ovex->st[n].channels[0].pcal_spacing - pcfreq_hz;
+                                    // set up tone frequency for net LSB
+                else                // lsb implemented using negative frequencies
+                    pcfreq_hz = - pcfreq_hz;
+                                    // calculate the number of tones in the band
+                ntones = ((ovex->st[n].channels[0].bandwidth - fabs (pcfreq_hz))
+                        / (ovex->st[n].channels[0].pcal_spacing)) + 1;
+                                    // condition result
+                ntones = (ntones > MAX_PCF) ? MAX_PCF : ntones;
+                                    // go through list of all tones that are inband,
+                                    // and see which ones we actually have pcal data for
+                nin = 0;
+                                    // preload mask for excluding particular tones
+                mask = (stn == 0) ? pass->control.pc_tonemask[j].ref
+                                  : pass->control.pc_tonemask[j].rem;
+                for (i=0; i<ntones; i++)
+                    {
+                    for (k=0; k<MAX_PCF; k++)
+                        if (fabs (pcfreq_hz - pass->pass_data[fr].pc_freqs[stn][k]) < 1e-6)
+                            break;
+                    
+                    if (k<MAX_PCF && (mask & 1) == 0)
+                        {
+                        pass->pcinband[stn][fr][nin] = k;
+                        msg ("pcinband[%d][%d][%d] %d", 
+                              0,stn, fr, nin, pass->pcinband[stn][fr][nin]);
+                        nin++;
+                        }
+                                    // move on to next tone in the band
+                    if (ovex->st[n].channels[0].net_sideband == 'U')
+                        pcfreq_hz += ovex->st[n].channels[0].pcal_spacing;
+                    else
+                        pcfreq_hz -= ovex->st[n].channels[0].pcal_spacing;
+                    mask >>= 1;     // access next bit (i.e. tone) in mask
+                    }
+                                    // set rest of indices to -1 (unused)
+                for (i=nin; i<MAX_PCF; i++)
+                    pass->pcinband[stn][fr][i] = -1;
+                                    // save maximum number of tones in any channel
+                if (nin > pass->npctones)
+                    pass->npctones = nin;
+                }
+            }
+        }                           // end of stn loop
+
+                                    // copy in ad hoc phase model
+    param->ah_phase  = pass->control.adhoc_phase;
+    param->ah_tref   = pass->control.adhoc_tref;
+    param->ah_period = pass->control.adhoc_period;
+    param->ah_amp    = pass->control.adhoc_amp * conrad;
+    for (i=0; i<6; i++)
+        param->ah_poly[i] = pass->control.adhoc_poly[i] * conrad;
+
+    return (0);
+    }

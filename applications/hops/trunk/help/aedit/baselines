@@ -1,0 +1,12 @@
+COMMAND NAME:	baselines
+
+TYPE:		Data selection
+
+SYNTAX:		"baselines AB BC CD AC"
+
+DESCRIPTION:
+
+Sets the baseline data selection parameter in the inputs.  Only
+those baselines specified will pass the filter-applying operations
+of edit inputs, read, and plot.  Typing "baselines" without
+arguments removes any restrictions on allowed baselines.

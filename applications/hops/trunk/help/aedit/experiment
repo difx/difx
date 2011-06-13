@@ -1,0 +1,13 @@
+COMMAND NAME:	experiment
+
+TYPE:		Data selection
+
+SYNTAX:		"experiment 1953"
+
+DESCRIPTION:
+
+Sets the experiment input data selection parameter.  Only one
+experiment number may be specified at one time.  Scans which do
+not belong to the specified experiment number will not pass the
+filters applied by edit inputs, read, and plot.  Typing "experiment"
+without arguments removes any restriction on experiment number.

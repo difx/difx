@@ -1,0 +1,145 @@
+Getting HOPS running via MacPorts.
+
+0) get Macports.  I used the SnowLeopard dmg (1.9.2) downloaded from
+
+    http://www.macports.org/install.php
+
+    but there are Leopard and Tiger versions as well.  It also installs
+    via a source tarball, but I haven't tried that.
+
+    From the dmg, it installs the same way as other *.dmg packages do--and
+    by default it goes into /opt/local (which is ok with me:  /opt has
+    nothing in it on my mac).
+
+1) The install process will modify ~/.bash_profile (if you already
+    have one, macports saves it but you may wish to review the mods)
+    by adding /opt/local/bin and /opt/local/sbin to your PATH.
+
+    The main commands are similar to debian/rh/fink packaging commands
+    via a command named "port":
+
+    sudo port selfupdate	    # brings macports itself up-to-date
+				    # apparently 1.9.2 is the latest
+    port search <portname>	    # look for packages (or see their site)
+    sudo port install <portname>    # to actually install something
+
+2) MacOS doesn't have wget which I like for grabbing things from
+    anonymous ftp.  (curl should be able to do it, but I don't know
+    the proper incantation):
+
+    port search wget
+    sudo port install wget
+    # required dependencies:
+    # gettext expat libiconv gperf ncurses ncursesw libidn openssl zlib
+
+3) You'll need an explicit reference to ghostscript as /usr/bin/gs
+
+    sudo port install ghostscript
+    # required dependencies
+    autoconf help2man p5-locale-gettext perl5 perl5.8 m4 automake
+    fontconfig freetype jpeg libpaper libpng libtool pkgconfig tiff
+    xorg-libXext xorg-libX11 xorg-bigreqsproto xorg-inputproto
+    xorg-kbproto xorg-libXau xorg-xproto xorg-libXdmcp xorg-libxcb
+    python27 bzip2 db46 gdbm readline sqlite3 xorg-libpthread-stubs
+    xorg-xcb-proto libxml2 xorg-util-macros xorg-xcmiscproto
+    xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt
+    xorg-libsm xorg-libice
+
+oops:
+
+    --->  Configuring db46
+    Error: db46 requires the Java for Mac OS X development headers.
+    Error: Download the Java Developer Package from: <https://connect.apple.com/cgi-bin/WebObjects/MemberSite.woa/wa/getSoftware?bundleID=20719>
+    Error: Target org.macports.configure returned: missing Java headers
+    Error: Failed to install db46
+    Log for db46 is at: /opt/local/var/macports/logs/_opt_local_var_macports_sources_rsync.macports.org_release_ports_databases_db46/main.log
+    Error: The following dependencies were not installed: xorg-libXext xorg-libX11 xorg-libxcb python27 db46 gdbm readline sqlite3 xorg-libpthread-stubs xorg-xcb-proto libxml2 xorg-util-macros xorg-xcmiscproto xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt xorg-libsm xorg-libice
+    Error: Status 1 encountered during processing.
+    To report a bug, see <http://guide.macports.org/#project.tickets>
+
+so:
+    https://connect.apple.com/cgi-bin/WebObjects/MemberSite.woa/wa/getSoftware?bundleID=20719
+
+
+Ok, download the java developer package, install it, and try again
+
+sudo port install ghostscript
+Password:
+--->  Computing dependencies for ghostscript
+--->  Dependencies to be installed: xorg-libXext xorg-libX11 xorg-libxcb python27 db46 gdbm readline sqlite3 xorg-libpthread-stubs xorg-xcb-proto libxml2 xorg-util-macros xorg-xcmiscproto xorg-xextproto xorg-xf86bigfontproto xorg-xtrans xorg-libXt xorg-libsm xorg-libice
+--->  Configuring db46
+
+
+    sudo ln -s /opt/local/bin/gs /usr/bin/gs
+
+4) pgplot
+
+    sudo port install pgplot
+
+--->  Dependencies to be installed: gcc44 gmp mpfr
+
+    Unfortunately this port sprays the various pgplot pieces into
+    quasilogical places that HOPS doesn't know about, so, as root:
+
+    cd /opt/local
+    mkdir /opt/local/pgplot
+    cd /opt/local/pgplot
+    for l in ../lib/*pgplot* ; do ln -s $l . ; done
+    ln -s ../bin/*pgxwin* .
+    ln -s ../share/pgplot/* .
+
+N) Grab Hops (3.3 is the current release via ftp--similar instructions
+    most likely to apply to later HOPS releases).
+
+    mkdir ~/HOPS
+    cd ~/HOPS
+
+    wget ftp://gemini.haystack.mit.edu/pub/hops/README-3.3.txt
+    wget ftp://gemini.haystack.mit.edu/pub/hops/hops-3.3.tar.gz
+
+N+2) Configure it...
+
+    Follow the instructions as in the README; however a few configure
+    arguments are needed:
+
+    ../hops-3.3/configure LDFLAGS=-L/usr/X11/lib \
+	PGPLOT_DIR=/opt/local/pgplot
+
+    (The PGPLOT_DIR assignment is unnecessary if you've installed
+    MacPorts in the default hierarchy under /opt/local.)
+    
+    Due to the way Apple hacked the gnu gcc compiler, the configure
+    script will probably generate a number of annoying error messages:
+
+	rm: conftest.dSYM: is a directory
+
+    which you can safely ignore.  You should be in good shape if you
+    then see:
+
+      Configure passes sanity checks.
+
+	 have_hops is true (required)
+	 have_devel is false (optional)
+	 have_gs is true (required)
+	 have_x11 is true (required)
+	 have_pgplot is true (required)
+	 have_png is true (required)
+	 have_difx is false (optional)
+	 have_mark5 is false (optional)
+
+    followed by messages about Makefiles created, and so forth.
+    You can then proceed with
+
+	make
+	make install
+	make check
+
+    and the checks as described in the README.  Note that the
+    install with put a source-able script hops.bash into your
+    ~/bin directory should you have one.
+
+    The 3.2 release requires <stdint.h> being included in the #else
+    case of T1.h.  That was fixed in 3.3.  However other less
+    obvious errors might still be present, so be ware....
+
+eof

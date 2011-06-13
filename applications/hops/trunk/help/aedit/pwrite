@@ -1,0 +1,26 @@
+COMMAND NAME:	pwrite
+
+TYPE:		Action
+
+SYNTAX:		"pwrite filename precision"
+
+DESCRIPTION:
+
+Writes all unflagged user-extracted parameter data in memory out 
+to the filename specified in the argument.  The data are written out
+according to the current sort order (as determined by
+execution of the "sort" command).  If the data are not
+sorted, the output order is the same as the order in
+which the data were read.  You must execute the parameter command
+before using pwrite.  Unflagged data lines which for any reason
+do not have associated extracted parameters are ignored by pwrite.
+
+The list of user-extracted parameters is preceded by information
+identifying the baseline, scan and extent number, together with
+a few other generally useful items (but far less than is present
+in the A-file format).
+
+The optional precision argument specifies the number of significant
+digits which will be printed for the parameters, in the range 1-15.
+The default is 6.  All parameters are stored as double precision
+floating point numbers.

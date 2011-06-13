@@ -1,0 +1,70 @@
+COMMAND NAME:	parameter
+
+TYPE:		Action
+
+SYNTAX:		"parameter 1 2 3 ..."	(non-interactive form)
+		"parameter"		(interactive form)
+
+DESCRIPTION:
+
+This command causes all unedited type 2 data in memory to be treated as the
+basis for a parameter extraction operation from disk-resident type-2 files.
+Specified parameters are placed in a special array attached to each type-2 line
+in memory.  The parameter specification is via key numbers.  These numbers
+may be specified either directly on the input line of the parameter command,
+or in response to a query from the program if no parameter keys are given.
+In batch mode, aedit assumes that the former mechanism is being used, and
+the absence of any keys is treated as an error.  Once extracted, the parameters
+may be written to a file of the user's choice, using the pwrite command.
+
+Obviously, aedit cannot extract parameters unless the relevant type-2 files are
+on the disk.  Make sure the DATADIR environment variable is pointing to the 
+correct data area.
+
+Each invocation of the parameter command obliterates all previous parameters
+extracted for a previous subset of unflagged data lines.
+
+Below is a list of the available parameters, and their index numbers which
+must be supplied in a space-delimited list.  The total number of parameters 
+allowed is currently 32, and each array of parameters (denoted by the parentheses 
+below) counts one for each array element An index number in parentheses indicates 
+that the parameter is already in memory, but can be selected as a parameter 
+for manipulation and output like the others
+
+\begin{verbatim}
+INDEX  PARAMETER NAME                   INDEX  PARAMETER NAME
+-----  --------------                   -----  --------------
+ 1:    ref_pcal_amp (14)                34:    lo_frequency (14)
+ 2:    ref_pcal_phase (14)              35:    xperror
+ 3:    ref_pcal_diff (14)               36:    yperror
+ 4:    ref_pcal_freq (14)               37:    suppress
+ 5:    ref_pcal_rate                    38:    ppupdate
+ 6:    rem_pcal_amp (14)                39:    xslip
+ 7:    rem_pcal_phase (14)              40:    yslip
+ 8:    rem_pcal_diff (14)               41:    badsync
+ 9:    rem_pcal_freq (14)               42:    ref_drive
+10:    rem_pcal_rate                    43:    rem_drive
+11:    trkno_ref_usb (14)               44:    utc_central
+12:    trkno_ref_lsb (14)               45:    utc_epoch
+13:    trkno_rem_usb (14)               46:    clock_delay
+14:    trkno_rem_lsb (14)               (51):  length
+15:    errate_ref_usb (14)              (52):  timetag
+16:    errate_ref_lsb (14)              (53):  amplitude
+17:    errate_rem_usb (14)              (54):  snr
+18:    errate_rem_lsb (14)              (55):  phase
+19:    nap_usb (14)                     (56):  resid_sbd
+20:    nap_lsb (14)                     (57):  resid_mbd
+21:    corel_amp (14)                   (58):  ambiguity
+22:    corel_phase (14)                 (59):  resid_rate
+23:    rate_error                       (60):  ref_elevation
+24:    mbdelay_error                    (61):  rem_elevation
+25:    sbdelay_error                    (62):  ref_azimuth
+26:    total_phase                      (63):  rem_azimuth
+27:    tot_phase_mid                    (64):  u
+28:    incoh_amp_seg                    (65):  v
+29:    incoh_amp_freq                   (66):  ref_frequency
+30:    mhz_arcsec_ns                    (67):  total_ec_phase
+31:    mhz_arcsec_ew                    (68):  total_rate
+32:    pcnt_discard                     (69):  total_mbd
+33:    min_max_ratio                    (70):  total_sbd-mbd
+\end{verbatim}

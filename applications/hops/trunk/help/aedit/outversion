@@ -1,0 +1,18 @@
+COMMAND NAME:	outversion
+
+TYPE:		IO control
+
+SYNTAX:		"outversion n", where n is an integer
+
+DESCRIPTION:
+
+This allows the user to override the output format of the A-file when
+the write command is used.  Currently, only versions 1 and 2 are
+supported.  If you specify version 0 (the default), each line will
+be written individually with the same format as that in which it
+originated.
+
+Note that writing data out in a different format version number from
+the one it originated in will generate fields with undefined values
+in the output.  Generally speaking, undefined strings are set to "???",
+and undefined numerical quantities are set to zero.

@@ -1,0 +1,22 @@
+COMMAND NAME:	nfreq
+
+TYPE:		Data selection
+
+SYNTAX:	  e.g.	"nfreq >= 8"
+	    or	"nfreq < 2"
+
+DESCRIPTION:
+
+Sets the number of frequencies processed for this scan which
+will pass the filtering functions applied in read, edit, and
+plot.  The syntax is quite forgiving.  The requirements are
+that there be an optional inequality operator, possibly followed 
+by an equals sign, followed by a sensible number.  Spaces are 
+irrelevant.  If the inequality is omitted, exactly the specified
+number of frequencies must be present to pass the filters.
+
+If "nfreq" is typed with no arguments, or with just "0" as an 
+argument, all restrictions on the number of frequencies 
+processed are removed.
+
+

@@ -1,0 +1,60 @@
+COMMAND NAME:   inputs
+
+TYPE:           Action
+
+SYNTAX:         "inputs plot"
+            or  "inputs filter"
+        or just "inputs"
+
+DESCRIPTION:
+
+For use in ascii-terminal interface mode only.  Places a
+summary of the current aedit input settings on the screen.
+The plot and filter options result in a display of only 
+those inputs pertaining to plotting and data filtering
+respectively, while the default produces a display of all
+input parameters.
+
+An example is shown below.
+
+
+\begin{verbatim}
+        ****************
+        | AEDIT INPUTS |
+        ****************
+
+
+DATA FILTER PARAMETERS
+----------------------
+Timerange:   88124-125700 to  88126-071500
+Procrange:   89119-0223 to  89119-1256
+Stations:    ABNT
+Baselines:   AB BN TN 
+Triangles:   No restriction specified
+Frequencies: XS
+Experiment:  1996
+Qcodes:      56789AD
+Type:        2
+Snrmin:      10
+Snrmax:      40
+Bis_snrmin:  None specified
+Bis_snrmax:  None specified
+Sources:     3C345 3C273 OJ287
+Length:      30 
+Fraction:    No restriction specified
+Nfreq:       No restriction specified
+Outversion:  0 (i.e. same as that read in)
+
+
+PLOTTING PARAMETERS
+-------------------
+Axis:        Plot amplitude against scan_time
+              (station-based quantities use reference antenna)
+Grid:        plot with 2 horizontal and 5 vertical subplots
+Y-scale:     Plot between extrema of data
+X-scale:     Plot between extrema of data
+Scale:       Plot between mbdelay = -20.000000 and 20.000000
+Mode:        Nosplit (multiple sources per plot)
+Device:      Device for graphics output = xwindow
+\end{verbatim}
+

@@ -1,0 +1,22 @@
+COMMAND NAME:	psfile
+
+TYPE:		Experiment summary
+
+SYNTAX:		"psfile filename"
+
+DESCRIPTION:
+
+Writes a summary of the type-2 quality codes to the specified filename.
+The output format is similar to the main sections of the HP1000 PS file
+format.  However, the unix version displays only type-2 quality codes,
+not type-1 codes.  It also lacks information about correlator hours and
+processing factors.  The appropriate correlator control file must be 
+present in memory before this command will work (see the ccread command).  
+If the cc file is not present, "psfile" will look for the file in the
+experiment directory and read it if possible.
+
+Unlike the HP-1000 PS file, the output of this command is intended for
+visual inspection only, and is not intended to be machine-readable.  It
+provides some useful quality code statistics for diagnosing experiment
+problems.  It should be used in conjunction with psplot for the most
+comprehensive experiment assessment options.

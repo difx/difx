@@ -1,0 +1,91 @@
+COMMAND NAME:	edit
+
+TYPE:		Action
+
+SYNTAX:		"edit inputs unflagged"
+		"edit inputs all"
+		"edit inputs"
+		"edit cursor"
+		"edit duplicates procdate"
+		"edit duplicates qcode"
+		"edit duplicates snr"
+		"edit parents"
+		"edit children"
+		"edit close baselines"
+		"edit close triangles"
+		"edit close"
+
+DESCRIPTION:
+
+Sets flags in the data records according to a variety of
+circumstances.  These flags can be selectively unset with
+the "unflag" command.
+
+"Edit inputs" sets a flag bit in each data record for each
+data selection input parameter which excludes that data point.
+Thus, a scan may pass the input filter for stations, but fail
+that for baselines.  The baseline bit would be set, but the
+station bit would not.  Any set bit in the flag field causes
+the scan to be flagged (i.e. it will not be plotted or written
+to an output file).  The "unflagged" qualifier applies the filter
+only to currently unflagged data.  The default "all" qualifier
+sets flag bits if appropriate even in currently flagged data.
+
+"Edit cursor" enables the cursor on an interactive graphics device
+upon which data has been displayed using "plot".  The user may
+type any character (except 'x', 'X', 'a', 'A', 'b' or 'B' ..  see 
+below) on the keyboard to edit out the point nearest the cursor.
+The cursor must be inside the border of a plot, and must be twice 
+as close to the target point than any other point for success.  
+Failure to meet these conditions results in an appropriate error 
+message.    
+
+Alternatively, the user may define an area on the plot within which
+all points are to be edited out.  This is accomplished by typing
+'a' or 'A' to locate the bottom left corner of a rectangle, and
+'b' or 'B' to locate the top right corner.  Unfortunately, as yet
+there is no visual indication of the current location of the 
+rectangle.  This may be changed in future releases.
+
+On devices which are not capable of erasing points from the screen
+(e.g. tektronix emulators), the edited points are marked by being
+overwritten by a solid square.
+
+Do not use the mouse buttons on workstation tektronix emulators - 
+these return multiple characters which may confuse the program.
+The cursor editing mode is terminated by typing the character 'x' 
+or 'X' on the keyboard.  The same may also be true of Xwindow
+screens.
+
+"Edit duplicates" removes duplicate scans from the database, 
+ignoring flagged scans.  The term "duplicate" refers to identical
+baseline, scan time, frequency code, experiment number and source.
+The second argument determines which scan aedit will retain.  If
+"procdate" is specified, it will keep the most recent processing.
+If "qcode" is specified, the "best" quality code scan is kept. If
+"snr" is specified, the highest snr scan is kept.
+
+WARNING: Since "edit duplicates" ignores flagged scans, unflagging
+data may generate more duplicates.  Similarly, reading in more
+data may do the same.  In such circumstances, the recommended
+course is to "unflag duplicates" and rerun "edit duplicates".
+
+"Edit duplicates" and "edit cursor" operate only on type 2 data.
+
+"Edit parents" and "edit children" allow you to construct a consistent
+set of type-0, type-1 and type-2 data, such as may be needed for data
+export, archiving, and so on.  "Edit parents" flags all type-0 and
+type-1 data records which have no corresponding children (i.e. types
+1 or 2 for root records, and type 2 for corel records).  "Edit children"
+removes all "orphan" type 1 and 2 records (i.e. those type-2 records
+with neither parent root nor corel records, and type-1 records without
+parent root records).
+
+"Edit close" flags type 2 baseline and type 3 triangle records according
+to whether or not the two types of data are consistent with each other.
+The baseline form of the command flags all baseline records which do
+not appear in any unflagged triangle records.  The triangle form of the
+command flags all triangle records for which all three constituent
+baseline records are not present and unflagged.  Applying both forms
+(as happens if the second argument is omitted) results in a fully
+consistent set of baseline and triangle records in memory.

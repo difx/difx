@@ -1,0 +1,11 @@
+COMMAND NAME:	snrmin
+
+TYPE:		Data selection
+
+SYNTAX:		"snrmin 20"
+
+DESCRIPTION:
+
+Sets the minimum snr which will pass the filters applied
+in edit inputs, read, and plot.  Typing "snrmin" without
+arguments removes any lower bound on snr.

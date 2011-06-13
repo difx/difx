@@ -1,0 +1,10 @@
+COMMAND NAME:	nobatch
+
+TYPE:		Miscellaneous
+
+SYNTAX:		"nobatch"
+
+DESCRIPTION:
+
+Enables confirmation mechanism, for running interactively
+(reverses the action of "batch").

@@ -1,0 +1,20 @@
+COMMAND NAME:	zoom
+
+TYPE:		Action
+
+SYNTAX:		"zoom" (no arguments)
+
+DESCRIPTION:
+
+Enables the cursor on an active plot on an interactive
+graphics device.  The user selects a point by positioning
+the cursor and typing any character except 'x' or 'X', and 
+the program displays detailed information about that point 
+on the terminal.  The only information displayed 
+is that resident in memory (i.e. A-file information). If you
+want more detail, make sure the binary data files are on
+disk, set the DATADIR variable appropriately, and use the
+"fplot" command to pop up a fringe plot on your Xwindow
+screen.
+
+"Zoom" is terminated by typing an 'x' or 'X'.

@@ -1,0 +1,12 @@
+COMMAND NAME:	type
+
+TYPE:		Data selection
+
+SYNTAX:		"type 0 1 2 3"
+
+DESCRIPTION:
+
+Sets the type data selection parameter.  Only records of the
+specified type(s) will pass the data editing functions in "read",
+"edit" and "plot".  The digits 0, 1, 2 and 3 can occur anywhere in the 
+argument.  Omission of the arguments implies "type 0123".

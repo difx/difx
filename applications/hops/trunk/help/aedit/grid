@@ -1,0 +1,13 @@
+COMMAND NAME:	grid
+
+TYPE:		Plot control
+
+SYNTAX:		"grid n1 n2" (n1, n2 are integers - n1 <= 2, n2 <= 10)
+
+DESCRIPTION:
+
+This sets the parameter which determines how many subplots
+appear horizontally and vertically on the plotting surface.
+The default is one in each direction, the maximum is 2
+horizontally and 10 vertically.  The character size scales
+with the number of vertical plots to keep things readable.

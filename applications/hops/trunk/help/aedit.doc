@@ -1,0 +1,186 @@
+Documentation for the program "aedit"
+-------------------------------------
+
+COMMAND NAME:   aedit
+
+SYNOPSIS:  Performs a variety of operations on A-file format data
+
+SYNTAX:  aedit [-b "command string"] [-r runfile] [-x] [-f data file list]
+		Where all arguments are optional
+		Note: if the -f flag appears, it must appear LAST
+		      if the -b flag appears, it must be the ONLY flag
+
+OPTION FLAGS:   -b "command string"
+			This flag is intended to facilitate the use of
+			aedit in shell scripts.  The command string is
+			a series of up to 10 valid aedit commands
+			separated by semicolons, and the whole thing
+			enclosed in quotes to protect it from the shell.
+			The commands are executed by aedit, and then the
+			program exits immediately.  Aedit can thus be
+			very simply used as a filter.  For more complex
+			operations in "batch" mode, use runfiles and the
+			-r option.
+
+		-r runfile
+			Aedit supports runfiles (consisting of aedit
+			commands as if typed at the terminal), which
+			may be nested.  If this flag is present, the 
+			specified runfile is executed immediately when
+			the program starts up, thus allowing invocation
+			of aedit in a script file for unattended
+			processing.  Runfiles can also be executed after
+			the program has started, using the "run" command.
+
+		-x
+			By default, aedit uses a command-line interface.
+			This option, currently unsupported, is for a
+			planned GUI front-end to aedit based on X-windows
+
+		-f list of data files
+			This flag, if present, must be the last flag on
+			the command line.  It is followed by any number
+			of input A-format data files, which are read
+			sequentially as soon as the program starts.
+			Data can also be read in after the program has
+			started, using the "read" command.
+
+ARGUMENTS:	None
+
+ENVIRONMENT:	AHELP, DISPLAY, DATADIR, SCHEDDIR, AFILEDIR, CORDATA
+
+
+DESCRIPTION:
+
+GENERAL DESCRIPTION OF AEDIT
+----------------------------
+
+The program "aedit" is a general purpose A-file manipulation
+program.  The information present in one or more A-files may
+be plotted, filtered, sorted and edited in a variety of ways, 
+before being written out in the form of a new A-file.  The user
+interface to the program is presently implemented only for
+ASCII terminals, but many functions of the program interact
+with the user via a graphical interface.
+
+
+1. General "aedit" characteristics
+
+Commands are given to aedit by keyboard, and a full minimum
+match capability is supported for all aedit names.  Multiple
+commands are allowed on one input line, the only requirement
+being that commands are separated by the semicolon ";" 
+character.  Commands typically consist of the command name
+followed by 0 or more arguments.  The arguments are separated
+from the command name and each other by either spaces or
+commas.  Aedit can handle long lines, but it is of course bad
+practice to wrap lines on terminals in general.  Upwards of
+about 250 characters may start to cause problems even for aedit.
+In general, aedit is not case sensitive.  Case sensitivity
+is needed for UNIX filenames and for certain quantities from 
+A-files (station codes, frequency codes, source names).
+
+Aedit uses the concept of inputs.  That is, you set up
+certain variables in the program that determine how the "action"
+commands will behave.  Most of the commands that aedit
+understands are of the input-setting variety.  Many are quite
+particular about syntax, and will complain if the user types
+nonsense (e.g. timerange).  At any time, the current state of
+the input parameters can be listed on the screen with the
+command "inputs".
+
+When aedit reads data from an A-file, it parses the ascii
+information and stores it as binary data in memory.  This allows
+very rapid manipulation of the data once read in, with
+seemingly complex tasks appearing to be instantaneous.  There
+is a flag field associated with each A-file line in memory,
+and these flags are manipulated by the edit and unflag commands.
+A full description of the data currently in memory can be
+obtained with the "summary" command.  This is essential when
+deciding on plotting and editing options.  The "write" command
+ignores flagged data, permitting aedit to be used as a simple
+and efficient filtering program.
+
+A command "run" is available, which provides a flexible and 
+general command file capability.  Nesting of command files to a 
+depth of 10 is allowed.  The "run" command executes in batch mode, 
+and cursor operations are therefore disabled.
+
+Aedit features a shell escape.  By starting an input line with the
+character "!", you can access standard UNIX commands outside of
+aedit.  You can escape to a complete new shell by typing "!csh" or
+"!sh", and when you have finished, return to aedit where you left
+off by typing cntl-D.  This feature is useful for spooling plot
+files to a printer, preparing run files, running "alist" to prepare
+new data for aedit, and any other tasks that you wish to perform
+without terminating the aedit session.
+
+Plotting is implemented by using the PGPLOT package from CalTech.
+The output device may be specified with the "device" command, or
+you may leave "device" at the default value ("?"), which will
+cause PGPLOT to query you for a device at the time of plotting.
+Your response will then be automatically entered into the "device"
+input.  A list of available device types can be obtained by responding
+with a query.  For more information of devices, see "help device"
+
+Aedit comes with full on-line help.  In general, the syntax is
+"help command", but just "help" will work.
+
+The command line for aedit is:
+
+aedit [-b "command string"] [-r filename] [-x] [-f filename]",
+
+where all flags are optional.  The -b flag allows you to specify a
+few quick commands to be executed, after which the program exits.  It
+facilitates the use of aedit as a filter in shell scripts.  An example
+that removes low SNR scans from a file might be:
+
+aedit -b "snrmin 7; read afile.in; write afile.out"
+
+The "-x" option means start up the xwindow interface (not yet supported).  
+The "-r" option means execute the specified run file on startup, and 
+must be immediately followed by the name of a file containing valid 
+aedit commands.  The "-f" option means "read this(ese) data file(s) on 
+startup", and must be immediately followed by a standard, wildcardable 
+UNIX filename specifier or specifiers.  In this way, you can read many 
+files at once into aedit without going through a laborious one-at-a-time 
+"read" cycle within the program. If specified, the "-f" flag must be the 
+last flag.
+
+Below is a list of all current aedit commands:
+
+Action commands:
+----------------
+batch        clear       edit        exit         fplot
+help         inputs      nobatch     parameter    plist
+plot         pwrite      read        run          setyear
+sort         summary     unflag      unsort       write
+zoom
+
+
+Plot control commands:
+----------------------
+grid         xscale      yscale      axis         mode
+reference    remote
+
+
+Data selection commands:
+------------------------
+baselines    experiment  fraction    frequencies  length
+nfreq        prange      procrange   qcodes      snrmax       
+snrmin       sources     stations    timerange   type
+
+
+Experiment overview commands/parameters
+---------------------------------------
+schedread    psplot      psfile
+
+
+IO control commands:
+--------------------
+device       outversion
+
+
+For further information, see the individual help for these commands
+using the aedit help facility--type "help" at the aedit prompt.
+

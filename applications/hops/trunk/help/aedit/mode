@@ -1,0 +1,12 @@
+COMMAND NAME:	mode
+
+TYPE:		plot control
+
+SYNTAX:		"mode split"
+	    or  "mode nosplit"
+
+DESCRIPTION:
+
+Toggles the setting of the mode parameter, which determines
+whether or not the data will be split into one plot per
+source.  The default on startup is "nosplit".

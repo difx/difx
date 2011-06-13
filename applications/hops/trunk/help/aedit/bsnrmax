@@ -1,0 +1,11 @@
+COMMAND NAME:	bsnrmax
+
+TYPE:		Data selection
+
+SYNTAX:		"bsnrmax 20"
+
+DESCRIPTION:
+
+Sets the maximum bispectral snr in triangle records which will pass 
+the filters applied in edit inputs, read, and plot.  Typing 
+"bsnrmax" without arguments removes any upper bound on bsnr.

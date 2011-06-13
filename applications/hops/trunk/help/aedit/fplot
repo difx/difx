@@ -1,0 +1,33 @@
+COMMAND NAME:	fplot
+
+TYPE:		Action
+
+SYNTAX:		"fplot" (no arguments)
+
+DESCRIPTION:
+
+Enables the cursor on an active plot on an interactive
+graphics device.  The user selects a point by positioning
+the cursor and typing any character except 'x' or 'X', and 
+the program pops up a fringe plot on the screen.  
+
+For Mk3: This fringe plot can be dismissed with the 'q' key, 
+and the cursor is then ready for the next point.
+
+For Mk4: By default, the fringe plot pops into a passive
+ghostscript window, which is persistent, and the pgplot
+cursor is ready for the next point.  The plot cannot be
+printed or saved.  If the character 'b' or 'B' is typed,
+however, control passes to the terminal window in which aedit
+is being run, and hardcopy or file save can be selected
+with 'h' or 's'.  Control returns to the pgplot window upon
+receipt of any other keystroke in the terminal window.
+
+Note that the "fplot" command works only in an X-windows
+environment.  Also, to display a fringe plot, aedit must be
+able to locate the type-2 (fringe) file on disk from which the
+A-file data were generated.  By default, it looks in the
+CORDATA area, but if the DATADIR environment variable is set,
+it looks there instead.
+
+"Fplot" is terminated by typing an 'x' or 'X'.

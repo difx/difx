@@ -1,0 +1,73 @@
+#
+# $Id: Makefile.am 298 2011-06-02 20:34:12Z gbc $
+#
+
+SUBDIRS = .
+
+AM_CPPFLAGS = @HOPS_INC@
+
+noinst_HEADERS = control.h filter.h freqlist.h param_struct.h \
+		 parser.h pass_struct.h plot_struct.h refringe.h \
+		 statistics.h
+
+bin_PROGRAMS = fourfit
+
+if HAVE_PGPLOT
+if HAVE_X11
+if HAVE_PNG
+
+fourfit_SOURCES = fourfit.c set_defaults.c parse_cmdline.c \
+		  check_rflist.c organize_data.c make_passes.c \
+		  fringe_search.c get_corel_data.c \
+		  parse_control_file.c refringe_list.c time_range.c \
+		  set_pointers.c pcal_interp.c fill_param.c \
+		  skip_data.c clear_pass.c generate_cblock.c \
+		  apply_filter.c precorrect.c search.c \
+		  postcorrect.c output.c read_control_file.c \
+		  init_tokens.c lex.c create_fsm.c parser.c \
+		  make_flist.c nullify_cblock.c clear_freq_corel.c \
+		  default_cblock.c criteria_match.c \
+		  copy_cblock_parts.c gate_off.c norm.c \
+		  freq_spacing.c search_windows.c read_sdata.c \
+		  delay_rate.c fft1.c update.c interp.c \
+		  create_fname.c comp_func.c parabola.c vrot.c \
+		  get_bfstring.c skip_index.c make_plotdata.c \
+		  clear_plotdata.c calc_rms.c fill_fringe_info.c \
+		  display_fplot.c plot_complex.c \
+		  plot_graph.c grid.c put_char_at.c \
+		  sprint_char_arr.c fill_200.c fill_201.c \
+		  fill_202.c fill_203.c fill_204.c fill_205.c \
+		  fill_206.c fill_207.c fill_208.c fill_210.c \
+		  compute_qf.c compute_model.c make_postplot.c \
+		  tpstat_interp.c ap_mean.c linterp.c rotate_pcal.c \
+		  fill_212.c fill_230.c stcount_interp.c \
+		  calc_normalization.c apply_passband.c max555.c \
+		  interp555.c pcalibrate.c 
+# print_at.c print_left.c
+
+# original order:
+#fourfit_LDADD = @PGP_LIB@ @PNG_LIB@ @DFIO_LIB@ @VEX_LIB@ \
+#		@X_FPLOT_LIB@ @AFIO_LIB@ @UTIL_LIB@ @X11_LIB@
+# more logical order:
+fourfit_LDADD = @DFIO_LIB@ @VEX_LIB@ @AFIO_LIB@ @UTIL_LIB@ \
+		@PGP_LIB@ @PNG_LIB@ @X_FPLOT_LIB@ @X11_LIB@
+fourfit_DEPENDENCIES = @DFIO_DEP@ @VEX_DEP@ @AFIO_DEP@ @UTIL_DEP@
+
+else !HAVE_PNG
+fourfit_SOURCES = you_lose.c
+endif !HAVE_PNG
+else !HAVE_X11
+fourfit_SOURCES = you_lose.c
+endif !HAVE_X11
+else !HAVE_PGPLOT
+fourfit_SOURCES = you_lose.c
+endif !HAVE_PGPLOT
+
+you_lose.c: Makefile.am
+	echo 'main(){return(puts("Missing PNG, X11 or PGPLOT\n"));}' > $@
+
+CLEANFILES = you_lose.c
+
+#
+# eof
+#

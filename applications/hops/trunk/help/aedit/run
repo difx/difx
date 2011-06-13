@@ -1,0 +1,20 @@
+COMMAND NAME:	run
+
+TYPE:		action
+
+SYNTAX:		"run filename"
+
+DESCRIPTION:
+
+Causes the aedit commands in "filename" to be executed, just
+as if they were typed at the terminal.  For obvious reasons,
+there are a couple of exceptions.  Confirmation is no longer
+requested when using run files, and certain interactive
+operations (edit cursor, zoom) are disabled.  Aedit command
+files can be nested up to a depth of 10.  Any error within
+a run file causes the execution to abort, and control returns
+to the terminal, regardless of how deeply the runfiles are
+nested.
+
+Comments can be inserted in aedit runfiles by placing an
+asterisk character in the first column of the comment line.

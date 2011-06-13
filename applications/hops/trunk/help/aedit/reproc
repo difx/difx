@@ -1,0 +1,44 @@
+COMMAND NAME:	reproc
+
+TYPE:		Experiment summary
+
+SYNTAX:		"reproc filename"
+
+DESCRIPTION:
+
+Generates a skeleton A-file representing scans and baselines that need
+reprocessing, according to some set of criteria.  The A-file is written to the
+specified filename, and can be interpreted by the "a2t" program, to produce a
+Mk4 task file for correlation.  The output A-file is not suitable for any other
+purpose, and cannot be read by other HOPS programs.
+
+The reproc command works by comparing the unflagged A-file data in memory with
+the master OVEX file specification of what was observed, and generating a
+skeleton A-file of the scans and baselines which are either flagged or absent in
+aedit memory.  The normal mode of use will therefore be to summarize and read in
+all correlated and fourfitted data for an experiment, filter out all those data
+points deemed to exhibit problems meriting reprocessing (probably using a
+combination of aedit script and manual editing), and to invoke the
+reproc command.
+
+The reproc command is Mk4-specific.  It will not work until a duplicate removal
+operation has been performed.  It will complain if data from more than one
+experiment are present.  It looks for the master ovex file named "nnnn.ovex", in
+the directory $DATADIR/nnnn, where nnnn is the experiment number.  If this file
+cannot be found, the user is prompted for the full pathname of an ovex file to
+use.
+
+
+Note:
+
+Frequently, the ovex file lists stations and scans which are known to be absent
+or useless for some reason, based on external information.  In Mk3, such data
+were manually flagged with a minus sign in the pass field of the correlator
+control file (such scans were said to be "minused out", and are treated as a
+separate category by the aedit commands psfile and psplot).  In Mk4, the
+equivalent functionality is provided by placing a minus sign in front of the last
+field of the "station=" line of an ovex scan construct in the $SCHED section.
+This is the record-time drive number, normally 1, but occasionally 2 and never
+negative.  Some automation to assist users in insertion of these minus signs in
+large ovex files may be provided at a later date.
+

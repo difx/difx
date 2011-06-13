@@ -1,0 +1,263 @@
+Unfortunately I don't (at the moment) have a clean MacOS system on
+which to construct detailed notes for the installation of HOPS with
+Fink, but the steps are very similar to those in the MacPorts.txt:
+
+    0) install Fink
+    1) bring in all the packages you need
+    2) install HOPS with some extra things on the configure line
+
+As far as the packages you need, you need X11, ghostscript and pgplot.
+The X11 you get from Apple, and bringing in ghostscript and pgplot will
+probably bring in everything else you need.  HOPS currently requires
+ghostcript to be found at /usr/bin/gs, so you'll need to manually link
+that:
+
+    ln -s /sw/bin/gs /usr/bin/gs
+
+(or similar if you've relocated Fink to a place of your own devising).
+
+After I was done fink-installing packages, I had installed the following
+packages (this list was generated with:  fink list -i | grep -v virtual
+so it's a bit shorter than the full list--and I've no idea why some packages
+are listed as 'i' and others as '(i)'):
+
+ i  app-defaults 20010814-12 Creates an app defaults directory for fink
+ i  apt 0.5.4-1058 Advanced front-end for dpkg
+ i  apt-dev 0.5.4-1058 Advanced front-end for dpkg
+ i  apt-shlibs 0.5.4-1058 Advanced front-end for dpkg
+ i  aquaterm 1.0.1-5 Displays vector graphics in Aqua
+ i  aquaterm-dev 1.0.1-5 Displays vector graphics in Aqua
+ i  aquaterm-shlibs 1.0.1-5 Displays vector graphics in Aqua
+(i) atk1 1.28.0-2 Accessibility Toolkit
+(i) atk1-shlibs 1.28.0-2 Accessibility Toolkit
+ i  autoconf 1:2.63-4 System for generating configure scripts
+ i  automake1.11 1.11.1-3 GNU Standards-compliant Makefile generator
+(i) avahi 0.6.25-3 Service discovery system
+(i) avahi-dev 0.6.25-3 Service discovery system
+ i  base-files 1.9.11-1 Directory infrastructure
+(i) bison 2.3-1003 Parser generator
+ i  blt-dev 2.4z-15 Toolkit for tcl/tk
+ i  blt-shlibs 2.4z-15 Toolkit for tcl/tk
+ i  bzip2 1.0.6-1 Block-sorting file compressor
+ i  bzip2-dev 1.0.6-1 Developer files for bzip2 package
+ i  bzip2-shlibs 1.0.6-1 Shared libraries for bzip2 package
+(i) cairo 1.8.10-3 Vector graphics library
+(i) cairo-shlibs 1.8.10-3 Vector graphics library
+ i  cloog 0.15.9-1 The Chunky Loop Generator
+ i  cloog-shlibs 0.15.9-1 The Chunky Loop Generator
+ i  crypt-ssleay-pm5100 0.57-2 Perl module, allows perl to use OpenSSL
+(i) cyrus-sasl2-dev 2.1.23-3 Cyrus Simple Auth. and Security Layer Library
+(i) cyrus-sasl2-shlibs 2.1.23-3 Cyrus Simple Auth. and Security Layer Library
+ i  daemonic 20010902-4 Interface to daemon init scripts
+(i) db44-aes-shlibs 4.4.20-1008 Shared Libraries for db44-aes
+(i) db47-aes 4.7.25-7 Berkeley DB embedded database - crypto
+(i) db47-aes-shlibs 4.7.25-7 Shared Libraries for db47-aes
+(i) db48-aes-shlibs 4.8.30-2 Shared Libraries for db48-aes
+(i) dbus 1.2.24-1 Message bus system for applications
+(i) dbus-dev 1.2.16-101 Message bus system for applications
+(i) dbus-shlibs 1.2.16-101 Message bus system for applications
+ i  debianutils 1.23-11 Misc. utilities specific to Debian (and Fink)
+(i) default-icon-theme 0.11-1 Hicolor icon theme
+ i  docbook-dsssl-nwalsh 1.79-4 Norman Walsh's DSSSL DocBook stylesheets
+ i  docbook-dtd 4.5.0-1 DocBook SGML/XML DTDs official releases
+(i) docbook-xsl 1.76.0-1 Norman Walsh's XSL DocBook stylesheets
+ i  doxygen 1.5.6-5 Documentation system for C++, Java, IDL and C
+ i  dpkg 1.10.21-1229 The Debian package manager
+ i  dpkg-base-files 0.3-1 Support scripts for dpkg
+ i  expat1 2.0.1-1 C library for parsing XML
+ i  expat1-shlibs 2.0.1-1 C library for parsing XML
+(i) f2c 20090414-2 Convert Fortran 77 source code to C
+ i  fink 0.29.17-51 Open-source software package manager
+ i  fink-mirrors 0.29.14.1-1 Mirror infrastructure
+ i  fink-obsolete-packages 0.1-1 Base package for obsolete packages
+(i) fltk-x11 1.1.7-1003 GUI toolkit
+(i) fltk-x11-shlibs 1.1.7-1003 Runtime code for fltk-x11
+(i) fontconfig2-dev 2.8.0-4 Font configuration library
+(i) fontconfig2-shlibs 2.8.0-4 Fontconfig 2, shared libs
+ i  fort77 1.18-19 Wrapper for the f2c Fortran to C converter
+(i) freeglut 2.6.0-1 Opengl utility toolkit
+(i) freeglut-shlibs 2.6.0-1 Opengl utility toolkit
+(i) freetype219 2.3.12-1 TrueType font rendering library, headers
+(i) freetype219-shlibs 2.3.12-1 TrueType font rendering library, shared libs
+ i  gawk 3.1.7-1 The Awk processing language, GNU edition
+ i  gcc44 4.4.4-1000 GNU Compiler Collection Version 4.4
+ i  gcc44-compiler 4.4.4-1000 Compiler Binaries for gcc44.
+ i  gcc44-shlibs 4.4.4-1000 Shared libraries for gcc4
+(i) gconf2 2.28.0-5 Gnome configuration database system
+(i) gconf2-dev 2.28.0-5 Gnome configuration database system
+(i) gconf2-shlibs 2.28.0-5 Gnome configuration database system
+(i) gd2 2.0.35-7 Graphics generation library
+(i) gd2-shlibs 2.0.35-7 Shared libraries for gd2 package
+(i) gdbm3 1.8.3-3 GNU dbm library
+(i) gdbm3-shlibs 1.8.3-3 Shared libraries for gdbm3 package
+ i  gettext-bin 0.17-19 GNU Internationalization utils
+ i  gettext-tools 0.17-17 GNU Internationalization utils (shared libs)
+(i) ghostscript 8.71-3 Interpreter for PostScript and PDF
+ i  ghostscript-fonts 8.11-3 Standard fonts for Ghostscript
+(i) glib2-dev 2.22.4-4 Handy library of utility functions
+(i) glib2-shlibs 2.22.4-4 Handy library of utility functions
+ i  glitz 0.5.6-3 OpenGL compositing library
+ i  glitz-shlibs 0.5.6-3 OpenGL compositing library
+ i  gmp 4.3.2-5 GNU multiple precision arithmetic library
+ i  gmp-shlibs 4.3.2-5 Shared library for gmp package
+ i  gnome-base 2.4.1-1 GNOME Removal convenience package
+(i) gnome-common 2.28.0-3 Useful things for building GNOME packages
+(i) gnome-doc-utils 0.18.1-2 Tools and templates for Gnome documentation
+ i  gnome-mime-data 2.18.0-3 The GNOME MIME database
+(i) gnuplot-nogtk 4.4.0-3 Command-driven interactive plotting program
+(i) gtk+2 2.18.9-5 The Gimp Toolkit
+(i) gtk+2-dev 2.18.9-5 The Gimp Toolkit
+(i) gtk+2-shlibs 2.18.9-5 The Gimp Toolkit
+(i) gtk-doc 1.13-6 GTK+ - API documentation generator
+ i  gzip 1.4-2 File-compression program
+(i) html-parser-pm5100 3.68-1 Perl modules that parse and extract info
+ i  html-tagset-pm 3.20-1 Perl module, data tables useful in HTML
+ i  imagemagick 6.5.8.2-4 Image manipulation tools
+ i  imagemagick2-shlibs 6.5.8.2-4 Image manipulation tools
+(i) intltool40 0.41.1-201 Internationalize various kinds of data files
+ i  lcms 1.18-2 Free color management engine in 100K
+ i  lcms-shlibs 1.18-2 Free color management engine in 100K
+(i) libart2 2.3.21-1 Library for high-performance 2D graphics
+(i) libart2-shlibs 2.3.21-1 Library for high-performance 2D graphics
+(i) libavahi-client3-shlibs 0.6.25-3 Service discovery system
+(i) libavahi-common3-shlibs 0.6.25-3 Service discovery system
+(i) libavahi-core6-shlibs 0.6.25-3 Service discovery system
+(i) libavahi-glib1-dev 0.6.25-2 Service discovery system (Glib)
+(i) libavahi-glib1-shlibs 0.6.25-2 Service discovery system (Glib)
+(i) libbonobo2 2.24.2-2 GNOME component and compound document system
+(i) libbonobo2-dev 2.24.2-2 GNOME component and compound document system
+(i) libbonobo2-shlibs 2.24.2-2 GNOME component and compound document system
+ i  libcdparanoia0-dev 3a9.8-14 Development files needed to compile programs that use libcdparanoia.
+ i  libcdparanoia0-shlibs 3a9.8-14 Shared libraries for cdparanoia (runtime lib)
+(i) libcroco3 0.6.2-2 CSS parsing and manipulation library
+(i) libcroco3-shlibs 0.6.2-2 CSS parsing and manipulation library
+ i  libdaemon 0.12-1 Easy way to write UNIX daemons
+ i  libdaemon-shlibs 0.12-1 Shared libs for libdaemon
+(i) libdatrie 0.1.3-3 Double-array trie
+(i) libdatrie-shlibs 0.1.3-3 Shared libraries for libdatrie
+(i) libdjvulibre15-dev 3.5.20-1003 Free viewer for DjVu files
+(i) libdjvulibre15-shlibs 3.5.20-1003 Free viewer for DjVu files
+ i  libgettext3-shlibs 0.14.5-4 GNU Internationalization utils (shared libs)
+ i  libgettext8-dev 0.17-19 GNU Internationalization utils (Development Files)
+ i  libgettext8-shlibs 0.17-19 GNU Internationalization utils (shared libs)
+ i  libgmpxx-shlibs 4.3.2-5 Shared C++ library for gmp package
+(i) libgsf1.114-dev 1.14.18-1 GNOME Structured File library
+(i) libgsf1.114-shlibs 1.14.18-1 GNOME Structured File library
+ i  libiconv 1.12-4 Character set conversion library
+ i  libiconv-bin 1.12-4 Executables for libiconv package
+ i  libiconv-dev 1.12-4 Developer files for libiconv package
+(i) libidl2 0.8.13-2 IDL parsing library
+(i) libidl2-shlibs 0.8.13-2 IDL parsing library
+(i) libjasper.1 1.900.1-3 Library for manipulating JPEG-2000 images
+(i) libjasper.1-shlibs 1.900.1-3 Library for manipulating JPEG-2000 images
+ i  libjpeg 6b-18 JPEG image format handling library
+(i) libjpeg-bin 8b-2 Executables for libjpeg package
+ i  libjpeg-shlibs 6b-18 Shared libraries for libjpeg package
+(i) libjpeg8-shlibs 8b-2 Shared libraries for libjpeg package
+(i) libmpc2 0.8.2-1 Multi-precision complex lib
+(i) libmpc2-shlibs 0.8.2-1 Multi-precision complex lib
+ i  libmpfr1 2.4.2-3 C floating-point math lib
+ i  libmpfr1-shlibs 2.4.2-3 Shared libraries for mpfr package
+ i  libncurses5 5.7-20100227-2 Full-screen ascii drawing library
+ i  libncurses5-shlibs 5.7-20100227-2 Shared libraries for libncurses5 package
+(i) libncursesw5 5.7-20100227-1 Full-screen ascii drawing (wchar version)
+(i) libncursesw5-shlibs 5.7-20100227-1 Shared libraries for libncursesw5 package
+(i) libogg 1.2.1-1 Ogg bitstream headers and libs for devs
+(i) libogg-shlibs 1.2.1-1 Ogg bitstream shared libraries
+(i) libpng3 1:1.2.44-1 PNG image format handling library
+(i) libpng3-shlibs 1:1.2.44-1 Shared libraries for libpng3 package
+(i) librarian.08-shlibs 0.8.1-8 Helpfile/documentation system
+(i) librsvg2 2.26.0-3 SAX-based render library for SVG files
+(i) librsvg2-shlibs 2.26.0-3 SAX-based render library for SVG files
+(i) libthai 0.1.13-1 Thai language support library
+(i) libthai-dev 0.1.13-1 Development headers and libraries for libthai
+(i) libthai-shlibs 0.1.13-1 Shared libraries for libthai
+ i  libtheora0-shlibs 1.1.1-1 libtheora shared library
+(i) libtiff 3.9.4-1 TIFF image format library and tools
+(i) libtiff-bin 3.9.4-1 Executables for libtiff package
+(i) libtiff-shlibs 3.9.4-1 Shared libraries for libtiff package
+ i  libtool14 1.5.26-3 Shared library build helper, v1.5
+ i  libtool14-shlibs 1.5.26-3 Shared libraries for libtool, v1.5
+(i) libtool2-shlibs 2.4-1 Shared libraries for libtool, v2.2
+(i) libvorbis0-shlibs 1.3.2-1 Vorbis audio codec shared libraries
+ i  libwmf 0.2.8.2-9 Windows Metafile library
+ i  libwmf-shlibs 0.2.8.2-9 Windows Metafile library
+(i) libwww-pm5100 5.837-3 Perl modules, programming interface to WWW
+ i  libxml2 2.6.32-1 XML parsing library, version 2
+ i  libxml2-bin 2.6.32-1 XML parsing library, version 2
+ i  libxml2-py26 2.6.32-1 Python bindings for libxml2 library
+ i  libxml2-shlibs 2.6.32-1 XML parsing library, version 2
+ i  libxslt 1.1.24-1 XML stylesheet transformation library
+ i  libxslt-bin 1.1.24-1 XML stylsheet transformation utility (xsltproc)
+ i  libxslt-shlibs 1.1.24-1 XML stylsheet transformation shared libraries
+(i) m4 1.4.15-1 Advanced macro processing language
+ i  ncurses 5.7-20100227-2 Executable files for libncurses5
+ i  openexr 1.4.0-1023 Dynamic-range image file tools
+ i  openexr-dev 1.4.0-1023 headers and libraries for OpenEXR development
+(i) openjade 1.3.2-1035 Implementation of DSSSL
+(i) openldap24-dev 2.4.23-2 Libraries and headers for LDAP development
+(i) openldap24-shlibs 2.4.23-2 Shared libraries for LDAP
+(i) opensp4 1:1.5.1-1010 SGML parser
+(i) opensp4-dev 1:1.5.1-1010 Development package for opensp4
+(i) opensp4-shlibs 1:1.5.1-1010 Shared Libraries for opensp4
+(i) orbit2 2.14.17-2 High-performance CORBA Object Request Broker
+(i) orbit2-dev 2.14.17-2 High-performance CORBA Object Request Broker
+(i) orbit2-shlibs 2.14.17-2 High-performance CORBA Object Request Broker
+(i) pango1-xft2-ft219 1.24.5-7 GTK+ - i18n libs (for freetype >= 2.1.9)
+(i) pango1-xft2-ft219-dev 1.24.5-7 GTK+ - i18n text development headers and libraries (for freetype >= 2.1.9)
+(i) pango1-xft2-ft219-shlibs 1.24.5-7 GTK+ - i18n text shared libraries (for freetype >= 2.1.9)
+(i) passwd 20100706-1 User and group entries for daemons
+(i) pdflib6 7.0.4-1 Library for generating PDF (lite version)
+(i) pdflib6-shlibs 7.0.4-1 Library for generating PDF (lite version)
+(i) perl588-core 5.8.8-9 Core files for perl, v. 5.8.8
+(i) pgplot 5.2.2-1 Fortran- or C-callable scientific graphics
+(i) pixman 0.18.2-1 Pixel manipulation library
+(i) pixman-shlibs 0.18.2-1 Pixel manipulation library
+(i) pkgconfig 0.25-1 Manager for library compile/link flags
+ i  plotutils 2.4.1-1010 Functions for exporting 2-D vector graphics
+ i  plotutils-dev 2.4.1-1010 Functions for exporting 2-D vector graphics
+ i  plotutils-shlibs 2.4.1-1010 Functions for exporting 2-D vector graphics
+(i) popt 1.16-1 Library for parsing command line options
+(i) popt-shlibs 1.16-1 Library for parsing command line options
+(i) ppl-shlibs 1:0.10.2-3 Parma Polyhedra Library
+(i) python26 1:2.6.6-1 Interpreted, object-oriented language
+(i) python26-shlibs 1:2.6.6-1 Interpreted, object-oriented language
+(i) qt3 3.3.8-2000 Cross-Platform GUI application framework
+(i) qt3-designer 3.3.8-2000 Cross-Platform GUI application framework
+(i) qt3-designer-shlibs 3.3.8-2000 Cross-Platform GUI application framework
+(i) qt3-doc 3.3.8-2000 Cross-Platform GUI application framework
+(i) qt3-linguist 3.3.8-2000 Cross-Platform GUI application framework
+(i) qt3-shlibs 3.3.8-2000 Cross-Platform GUI application framework
+(i) rarian 0.8.1-8 Helpfile/documentation system
+(i) rarian-compat 0.8.1-8 Helpfile/documentation system
+(i) readline5 5.0-1006 Comfortable terminal input library
+(i) readline5-shlibs 5.0-1006 Comfortable terminal input library
+(i) rsync 3.0.7-4 Synchronize filesystems between hosts
+(i) sdl 1.2.14-6 Cross-platform multimedia library
+(i) sdl-shlibs 1.2.14-6 Cross-platform multimedia library
+(i) sgml-entities-iso8879 1986-4 SGML standard (ISO 8879) entity sets for special characters
+(i) shared-mime-info 0.70-1 Shared MIME System
+(i) sqlite3-dev 3.7.3-2 Embedded SQL database (include files and linkable libraries)
+(i) sqlite3-shlibs 3.7.3-2 Embedded SQL database (shared libraries)
+ i  system-openssl-dev 0.9.8-1 Placeholder to force use of the system SSL
+ i  system-xfree86 2:7.2-2 [placeholder for user installed x11]
+ i  system-xfree86-dev 2:7.2-2 [placeholder for user installed x11 development tools]
+ i  system-xfree86-manual-install 2:7.2-2 Manually installed X11 components
+ i  system-xfree86-shlibs 2:7.2-2 [placeholder for user installed x11 shared libraries]
+ i  tar 1.23-1 Archiving program for files and tape
+(i) tcltk 8.4.19-3 Tool Command Language and the Tk toolkit
+(i) tcltk-dev 8.4.19-3 Tool Command Language and the Tk toolkit
+(i) tcltk-shlibs 8.4.19-3 Tool Command Language and the Tk toolkit
+ i  texi2html 1.64-16 Converts texinfo documents to HTML
+(i) texinfo 4.13-1001 GNU documentation system
+ i  unzip 6.0-1 Decompression compatible with pkunzip
+(i) uri-pm5100 1.56-1 Perl module that implements the URI class
+ i  xdg-base 0.6-2 Env vars for the Freedesktop basedir spec
+(i) xft2-dev 2.1.14-3 FreeType font support for X11 apps
+ i  xinitrc 1.5-1 Alternative X11 initialization script
+ i  xmkmf 1.0.2-1002 X11 legacy build tools
+(i) xml-namespacesupport-pm 1.11-1 Perlmods for supporting generic namespaces
+ i  xml-parser-pm5100 2.36-2 Perl ext interface to XML parser/expat
+ i  xml-sax-pm5100 0.96-2 Perl Simple API for XML
+
+

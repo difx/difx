@@ -1,0 +1,22 @@
+COMMAND NAME:	read
+
+TYPE:		Action
+
+SYNTAX:		"read filename"
+
+DESCRIPTION:
+
+Reads data in from the filename specified in the argument.
+If enough fields on the line are successfully decoded to 
+identify the parent data file, a data entry is made in memory.  
+If not even enough could be decoded to id the file, the line 
+is skipped.  You can read as many files into aedit, one after 
+the other, as you like.  "Read" filters the incoming data 
+according to the data selection input parameters.
+
+The unlimited data capacity of aedit is achieved by using
+dynamic memory allocation inside the "read" function.  As
+more memory is needed, the program obtains it from the system.
+This memory is released by the command "clear data", or
+by "exit".  The user is informed of memory usage during the
+reading operation.

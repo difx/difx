@@ -1,0 +1,59 @@
+COMMAND NAME:   axis
+
+TYPE:           Plot control
+
+SYNTAX:         "axis y-axis <x-axis>"
+
+DESCRIPTION:
+
+This command specifies what the X and Y axes of the next "plot" command
+will be.  The y-axis specifier is mandatory, the x-axis one optional.  If
+the x-axis specifier is omitted, it is assumed to be "time".  After
+the "axis" command, the "plot" command with no arguments causes the specified
+axes to be plotted on the current output device (see "help device").  If
+the "plot" command is issued with arguments, those arguments override the
+axis settings made by the "axis" command, and reset the plot inputs.  The
+arguments to the "plot" command are identical to those described below.
+Axis specifiers are case-insensitive.
+
+Valid axis specifiers, with notes, are listed below:
+
+\begin{verbatim}
+Minmatch string         Quantity                        Notes
+---------------         --------                        -----
+time                    data time tag                   default X-axis
+pcal_phase(n)           Ref/remote pcal phase           Must extract first
+                                                        (see help param)
+                                                        n is integer array
+                                                        element index.
+pcal_diff(n)            Ref/remote pcal phase diff      Must extract first
+                                                        Relative to channel 1
+pcal_amp(n)             Ref/remote pcal amplitude       Must extract first
+                                                        Sign encodes pcal mode
+error_rate              Ref/remote error rate           Must extract first
+elevation               Elevation of telescope          If baseline plot, 
+                                                        ref/remote controlled
+                                                        by "reference", "remote"
+                                                        commands
+azimuth                 Azimuth of telescope            Same as elevation
+snr                     SNR
+amplitude               Correlation amplitude
+phase                   Residual scan phase
+sbdelay                 Singleband delay
+mbdelay                 Multiband delay                 Ambiguities removed
+drate                   Delay rate
+ncotime                 Noloss coherence time
+scotime                 Search coherence time
+cphase                  Closure phase                   Uses totals
+crate                   Closure rate
+csbdelay                Closure singleband delay
+cmbdelay                Closure multiband delay         Ambiguities removed
+campl                   Closure amplitude               NYI
+u                       U in megalambda 
+v                       V in megalambda 
+uvdist                  UV distance in megalambda
+param?                  extracted parameter value       The '?' is an integer
+                                                        which specifies which
+                                                        parameter to use.  To
+                                                        get a list, use "plist".
+\end{verbatim}

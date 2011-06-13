@@ -1,0 +1,22 @@
+COMMAND NAME:	write
+
+TYPE:		Action
+
+SYNTAX:		"write filename"
+
+DESCRIPTION:
+
+Writes all unflagged type 0,1,2 data in memory out to the filename
+specified in the argument.  The data are written out
+according to the current sort order (as determined by
+execution of the "sort" command).  If the data are not
+sorted, the output order is the same as the order in
+which the data were read.  The output A-file format version
+is controlled by the "outversion" command, and defualts to 
+the same as that read in.
+
+The input filters are ignored on "write".
+The way to write out selected data is to set the input
+filters and then run "edit inputs", before using "write".
+
+To write out triangle data, use the "twrite" command.

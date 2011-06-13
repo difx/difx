@@ -1,0 +1,13 @@
+COMMAND NAME:	remote
+
+TYPE:		Plot control
+
+SYNTAX:		"remote"
+
+DESCRIPTION:
+
+When a station-based quantity, like elevation, is plotted against a
+baseline-based quantity, like SNR, iether the reference or remote
+elevation must be used.  This command specifies that it should be
+the remote quantity which gets plotted.  There is a corresponding
+"reference" command, the results of which are the startup default.

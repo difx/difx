@@ -1,0 +1,152 @@
+The Mk4 data file IO library (DFIO library) handles all disk IO for
+the Mk4 data files.  This includes file types 0 to 4.  The goal of
+the library is to provide an interface between the disk files and
+C structures in memory.  The format of the C structures is kept as
+stable as possible, with modifications taking the form of additional
+fields, not replacement or deletion of fields.  In this way, application
+code remains largely unaffected by data format changes, rendering
+a data format version control system feasible.
+
+Overview
+--------
+
+The Mk4 system will not see production data handling until 1996 at
+the earliest.  For this reason, the design assumes the availability
+of fast CPUs and large amounts of physical memory in the host 
+computers.  Execution times will be increasingly dominated by the
+overhead of disk IO, so the library must be efficient in this area.
+The model for the library is that all data files will be read in
+their entirety, in one go, maximizing the throughput for files 
+stored contiguously on disk.  The data are stored in memory, and
+C-structures (which we will refer to as overlay structures) are 
+overlaid on the data by the library.  The overlay structures will
+be an image of the disk format, and different structures will be
+defined for different version numbers of the records in the file.
+The library is responsible for selecting the correct overlay structure,
+and using its contents correctly.  Initially, the overlay structures 
+will be the same ones used by application programs (application
+structures).  As the software and the data formats evolve, however, 
+the overlay structures will diverge from the application structures, and
+a translation step will be necessary.  
+
+The architecture could be simplified by keeping separate overlay
+structures and application structures from the start, and performing
+a translation step from the start.  This, however, is wasteful of
+memory, since space for two copies of each file would be required.
+Instead, overlay structures and application structures will start
+life as one and the same, and will diverge only when evolutionary
+requirements dictate.  The hope is that for the most part, they will
+not diverge.  Thus in most cases, the filling of an application
+structure (the goal of the library) is a simple matter of setting
+a structure pointer to the correct address.  All application structure
+declarations in mk4_data.h are done in terms of pointers for this
+reason.
+
+The philosophy of reading the entire file in one go has the advantage
+of simplifying the use of variable-length records, because one would
+not have to determine the record length before reading it.  Since 
+variable length records will be common in the Mk4 system, this is an 
+useful attribute.
+
+Two disadvantages of the approach are apparent.  First, some type-1 
+files could grow very large.  This might strain even modern systems, 
+and at the very least force the use of inefficient virtual memory.  
+Second, some applications may need only a small fraction of the 
+information in a file, and it would be very inefficient to read the 
+whole file in such a situation.  The library therefore probably needs 
+a mechanism for reading only a subset of certain types of files.  Such 
+cases could be handled on an individual basis (this is done for type-2 
+files in the Mk3 BFIO library, via the routine read_fringe_quick.c).
+In the initial implementation, type-1 files will be read in one go.
+If and when the processing of large spectral line files begins, a
+modification to fourfit may be required to read the file in pieces.
+
+The reading of the file is to be handled by two generic routines,
+open_datafile() and read_mk4file().  The first opens the file, reads the
+type_000 record which should occupy the first 64 bytes, and does as
+thorough a job of checking things out as possible before either
+reporting a problem, or returning a valid stream pointer (or file
+descriptor, depending on how the disk read is handled).  The second
+routine simply dumps the file into a memory-allocated array as fast
+and efficiently as possible.  The exact technique to be used for this
+purpose is under investigation.  All Mk4 data files, from type 0 to 4,
+will be read in by these two routines.  They will be called by routines
+such as read_mk4root(), which take the memory image of the file
+returned by read_mk4file() and use it to assign pointers in the
+appropriate structure (defined in mk4_data.h).  The application
+program will then simply call read_mk4root() and receive a complete
+root file structure ready for processing.
+
+Version Control Implementation
+------------------------------
+
+To implement the version control system, there are three source files
+corresponding to each record type.  The first is $INC/type_xxx.h, 
+where "xxx" refers to the record type.  This file defines both the
+application structure and the (possibly multiple) overlay structures.
+The file also contains defines the symbolic constant Txxx_VERSION,
+which indicates which, if any, of the overlay structures is identical
+to the application structure.  If none are, the constant is set to
+a value of -1.
+
+The second file is $DFIO/addr_xxx.c, which takes the address of the
+raw memory image of a disk file record, and a record version number.
+It checks to see if the application structure matches the raw memory
+image, and if so it simply returns the address of that image.  This is
+the direct memory overlay technique used in Mk3 software.  If the
+structures do not match, the routine uses the appropriate
+overlay structure instead, based on the version number, and copies
+structure elements into a memory-allocated application structure.
+It then returns the address of the memory-allocated application
+structure.  The calling program cannot tell the difference between
+the two methods, but instead simply receives a filled-in application
+structure address.
+
+The third file is $DFIO/write_xxx.c, which takes an application
+structure and an open file descriptor.  It copies the data, if
+necessary, into a statically declared overlay structure of the
+latest version number, and writes the filled structure directly
+to disk.  It skips the copying step if the application structure
+is the same as the latest overlay structure, and instead writes
+the application structure to disk directly.
+
+In order to modify the disk-based format, these three files must
+be modified.  The new format must be defined in a new overlay
+structure in $INC/type_xxx.h, probably accompanied by additions to
+the application structure and adjustment of Txxx_VERSION.  New
+code to copy the structure elements to and from the new overlay
+structure must be written in the addr_xxx.c and write_xxx.c source
+files.  Most of this coding will be largely replication
+of existing structure definitions and structure element copying
+code, and will thus be quick and easy.  Any new or altered fields in
+the application structure must be used appropriately in the application.  
+
+There is an important exception to the use of this mechanism.  Because
+of its central function in file identification and verification,
+the format of the type_000 record is frozen, and the routine
+addr_000.c does not exist.  The files write_000.c and type_000.h
+are simple, and do not allow for different versions.
+
+Other considerations
+--------------------
+
+In the August 24 meeting, the idea of translating Mk3 files into Mk4
+memory structures was discussed.  This has the benefit of allowing
+applications like fourfit to be largely independent of the origin
+of the data, Mk3 versus Mk4.  The tradeoff is between the effort
+required to develop the translation routines and the effort required
+to maintain working Mk3 versions of fourfit and other programs.  The
+former is a known quantity.  The volume of code required is high, but
+most of it is fairly simple, consisting of simple copying of structure
+elements.  However, there are some fundamental differences between
+Mk3 and Mk4 which may not translate easily if at all.  This is a
+significant task whose priority would have to be assessed.  The cost
+of maintaining Mk3 versions of programs is largely a policy matter.
+It would be a simple, if perhaps unpopular, measure to declare that
+maintenance of Mk3 software would be limited to fixing bugs, and
+that no new functionality would be developed.  Fourfit is the main
+problem ... other programs make relatively trivial use of the 
+affected code.  In my view, the decision between maintaining Mk3 code
+and developing a Mk3-Mk4 translator is not a pressing one.  Nothing
+we contemplate doing in the next several months forecloses our
+options.  When in doubt, procrastinate.

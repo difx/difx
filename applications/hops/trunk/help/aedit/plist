@@ -1,0 +1,22 @@
+COMMAND NAME:	plist
+
+TYPE:		action
+
+SYNTAX:		"plist"
+
+DESCRIPTION:
+
+This command summarizes the state of extracted parameters in memory.  Various
+states can exist, with varying degrees of overlap between flagged and unflagged
+records, with and without attached extracted parameters.  This command is
+provided to remind the user of the degree to which he/she has confused
+him/herself.
+
+A more important function is to attach a numerical identifying tag to each
+extracted parameter present.  This tag is then used to identify the parameter
+to be examined in filtering operations, using the "prange" command, or the
+parameter to plot, in the "axis" command.  You can see whether you got the 
+specification correct by using the "inputs" command after attempting to use 
+"prange", or by looking at the axis labels on the plot.
+
+The id tag is the first field in the output of "plist".

@@ -1,0 +1,11 @@
+COMMAND NAME:	bsnrmin
+
+TYPE:		Data selection
+
+SYNTAX:		"bsnrmin 20"
+
+DESCRIPTION:
+
+Sets the minimum bispectral snr in triangle records which will pass 
+the filters applied in edit inputs, read, and plot.  Typing 
+"bsnrmin" without arguments removes any lower bound on bsnr.

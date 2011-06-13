@@ -1,0 +1,46 @@
+COMMAND NAME:	sort
+
+TYPE:		Action
+
+SYNTAX:		"sort time"
+		"sort procdate"
+		"sort snr"
+		"sort length"
+		"sort baseline"
+		"sort triangle"
+		"sort frequency"
+		"sort sourcename"
+		"sort qcode"
+		"sort experiment"
+		"sort rootcode"
+		"sort family"
+
+DESCRIPTION:
+
+Sorts the data in memory according the the value of the
+field specified in the command.  The sort is stable, in that
+entries in the database which compare equal will retain
+their original sort order.  Thus any combination of sort
+key priorities can be applied by repeated execution of "sort".
+
+The only consequence of sorting the data is that the output
+of the "write" command will be sorted.  The various "aedit"
+commands do not care whether the data are sorted or not, and in
+fact operate on unsorted data whether sort has been executed or
+not.  Flagging and unflagging data does not affect the sort
+order ... sorting is done on all the data.
+
+The sort keys "snr", "length" and "frequency" have no effect on
+root or corel data.  In addition, the sort keys "baseline" and
+"qcode" have no effect on root data.  The "snr" sort key uses
+the bispectral snr for triangle records.
+
+Note that reading in additional data destroys any sort order.  The
+effect is the same as issuing the "unsort" command, in that
+the sort order information for the original dataset is explicitly
+discarded, and the original sort order restored.
+
+The special key "family" causes the "write" command to write data
+to disk grouped by root family.  Each family has the root record
+(if present), followed by the corel records (if present), followed
+by the fringe records (if present).

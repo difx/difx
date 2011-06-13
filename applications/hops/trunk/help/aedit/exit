@@ -1,0 +1,10 @@
+COMMAND NAME:	exit
+
+TYPE:		Action
+
+SYNTAX:		"exit" (no arguments)
+
+DESCRIPTION:
+
+Terminates the current aedit session.  All data currently in memory
+is lost.  The plot device, if open, is closed and the plot flushed.

@@ -1,0 +1,27 @@
+COMMAND NAME:	setyear
+
+TYPE:		Action
+
+SYNTAX:		"setyear 1989"
+
+DESCRIPTION:
+
+This command is present only to allow the user to circumvent an
+unfortunate problem with the A-file format.  Some A-files have
+the year of the scan in field 7, but in others this information
+is replaced by the number of the parent type-51 HP-1000 extent.
+Generally, aedit will recognize the latter type of A-file on
+read, and notify the user that the scan year information is
+missing from some of the data.  In such cases, the year is set
+to 1980.  The recommended course of action is for the user to
+set the timerange to the offending span in 1980 with all other
+filters wide open, run "edit inputs" to flag all good data,
+force the year to the correct value with "setyear", and unflag
+the good data again.  If all data is actually from the same
+calendar year, the edit and unflag steps are unnecessary - you
+can run setyear on the whole dataset.
+
+Confusing things could happen if the parent extent number exceeds
+80, but this should be almost never.
+
+This command should become obsolete as the move to UNIX proceeds.

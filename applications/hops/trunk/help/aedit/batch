@@ -1,0 +1,12 @@
+COMMAND NAME:	batch
+
+TYPE:		Miscellaneous
+
+SYNTAX:		"batch"
+
+DESCRIPTION:
+
+Disables confirmation mechanism, for running in batch mode.
+If you intend to plot data in batch mode, remember to set
+the plot device in your runfile, as the default PGPLOT query
+mechanism is disabled in this mode.

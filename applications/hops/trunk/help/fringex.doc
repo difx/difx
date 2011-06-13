@@ -1,0 +1,182 @@
+Documentation for the program "fringex"
+---------------------------------------
+
+COMMAND NAME:  fringex
+
+SYNOPSIS:  Segments and rotates output of fourfit
+
+SYNTAX: fringex [-abcoq] [-i iarg] [-f freq] [-d rdarg]
+		[-p ra,dec] [r afile] data file list
+	where all option flags are optional, and the data file
+	list is mandatory in the absence of the -r flag
+
+	-a switches on execution time accounting
+	-b specifies binary output mode (use only with "average -b")
+	-c mode makes rate,delay,ra,dec offsets relative
+	   to corel - rather than relative to the fourfit peak 
+	-o includes segments shifted by half segment duration
+	-q nsecs is in millisecs (special mode - times are fictitious)
+	-i specifies segmentation time(s) (see detailed description)
+	-f freq (MHz) redefines the frequency 
+	   freq=-1 for reference frequency equal to channel nearest mean
+	   freq=-2 for reference frequency equal to mean 
+	-p ra,dec in arcsec are position offsets in all modes
+	-d specifies rate/delay value(s) to be used (see detailed
+	   description
+	-r afile specifies a data list in A-file format
+        
+OPTION FLAGS: 	-a
+			Switches on the standard HOPS execution time
+			accounting package (a crude form of profiling)
+
+		-b
+			Normally, fringex generates A-format data in ascii
+			form.  This data can then be read by any HOPS program
+			that knows the A-file format.  The -b flag is a
+			performance option which tells fringex to write the
+			data out in the binary memory A-file format, skipping
+			the ascii formatting step.  Only the "average" program
+			knows how to deal with such data, and when invoked
+			with its own -b flag can read the data without having
+			to parse all the ascii fields.  The data flow between
+			fringex and average can be very voluminous, and the
+			formatting and parsing can be very time-consuming.  Use
+			of matched -b flags and a unix pipe between these
+			two programs cuts total execution time by roughly a
+			factor of 6.
+		-c
+			If specified, any rate or delay offsets
+			given by the -d flag are relative to corel,
+			not the fourfit peak.  This is useful for
+			steering the delay/rate window and generating
+			arrays of delay vs. rate for searching.
+
+		-o
+			If specified, the output segments will overlap
+			by 0.5 segments instead of being simply contiguous.
+			This allows a modest SNR improvement to be
+			realized when incoherently averaging the data.
+
+		-q
+			For some special situations, 1-second resolution
+			is inadequate.  Fringex can segment finer than
+			this, but the output format does not have
+			enough resolution.  The -q mode allows the
+			segment length to be specified in milliseconds.
+			The segment time tags in this mode are
+			fictitious, incrementing by 1 second each
+			segment.
+
+		-i iarg
+			This flag and its argument specifies the
+			requested segment length in seconds.  It is
+			recommended that this be a multiple of the
+			accumulation period of the data.  The default
+			value is 9999 seconds, which the program
+			interprets as the entire scan.  Instead of a
+			single number, iarg can be a list of up to 15
+			numbers, comma separated with no embedded
+			spaces.  Fringex will perform one segmenting
+			pass at each specified integration time,
+			separating the output of each pass with the
+			comment string "*endofscan".  The special
+			string "all" tells fringex to use segment
+			times of 1,2,4,8,... accumulation periods, and
+			is a shorthand way of getting a well-sampled
+			set of segmentation times for purposes of
+			coherence time determination.
+			The special forms "-i noloss" and "-i search"
+			cause fringex to pick up the noloss and
+			search coherence times repectively from the
+			input A-file, and use the time found there
+			for segmenting.  These options require the
+			-r option.
+
+		-f freq
+			This flag overrides the determination of a
+			suitable reference frequency for the segmenting.
+			This must be within a factor of 2 of the scan
+			reference frequency.  The default is to use the 
+			scan reference frequency.
+			A value of -1 uses the channel nearest to the 
+			channel mean, while -2 uses the channel mean itself.
+
+		-p ra,dec
+			This flag specifies position offsets in arcseconds.
+			These numbers must be separated by a comma, with
+			no spaces.  The output data are rotated in 
+			accordance with the position offsets.
+
+		-d rate,delay
+			This flag specifies rate and delay offsets.  The
+			format has several forms:
+			(i) rate,delay  This form specifies a single
+					rate and delay offset in ps/s
+					and ns respectively
+			(ii) lowr,highr,rstep,lowd,highd,dstep
+					This form specifies a grid in ps/s
+					and ns.
+			(iii) rxd       This form specifies an r times d
+					grid in rate and delay centered on
+					zero, with the grid spacing equal to 
+					the Nyquist intervals.
+			(iv)  all	This form is the same as rxd, except
+					that the entire Nyquist range in
+					each dimension is used
+			(v)   srchpos	This is the same as form (i), except
+					that the rate and delay offsets are
+					taken from the input A-file
+					specified in the -r option.  Use of
+					this mode forces the -c flag.
+			The multi-pass options are designed to be used in
+			fringe-searching.  Segmentation is performed for
+			all grid points, one pass per grid point.  Passes
+			are separated on output by "*endofscan".
+
+			The output data are rotated from the fourfit values of
+			rate and multiband delay in accordance with the
+			offsets, except in -c mode, when these offsets
+			are relative to corel.
+
+		-r afile
+			The A-file format can be used to specify a dataset.
+			The type-2 contents of the named afile must be scan
+			based, and fringex will process each file pointed to
+			by each A-file line.  No attempt is made to sort the
+			afile before reading it, and if the contents are
+			randomly ordered, some inefficiency may result due to
+			the need to read root files multiple times.  Sorting
+			of the afile by rootcode can be easily accomplished
+			with aedit before invoking fringex -r
+
+
+
+ARGUMENTS:	data file list
+			This argument specifies the type-2 files
+			to be segmented.  The format of the data
+                        file specification is the standard one for all MkIV
+                        software.  You may specify individual filenames,
+                        scan directories which contain data files,
+                        experiment directories, or any combination of
+                        these three.  In the latter two cases, fringex
+			will descend the directory tree looking for
+                        data files to add to its internal list of files to
+                        process.  Each file is processed sequentially,
+			and the output is concatenated.  All option flags
+			must precede the data file list.  If the -r flag is
+			used, the data file list is ignored.
+
+ENVIRONMENT:	None
+
+
+DESCRIPTION:
+
+Fringex is the program responsible for chopping the output data from 
+fourfit into short, coherently averaged segments.  Its most important
+job is to do this segmenting incorporating rate, delay and position
+offsets supplied by the user, thereby discarding the full-scan
+coherent fringe search solution found by fourfit, and permitting
+the implementation of different fringe search algorithms based on
+A-file data.  It is the starting point for the HOPS millimeter VLBI
+suite of analysis programs.
+

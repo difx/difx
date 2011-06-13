@@ -1,0 +1,21 @@
+COMMAND NAME:	xscale
+
+TYPE:		Plot control
+
+SYNTAX:		"xscale xmin xmax" (xmin, xmax floating point)
+
+DESCRIPTION:
+
+Sets the minimum and maximum X-axis values, overriding the
+default, which is 0 to 360 degrees for phase quantities, or
+the data range plus 10% at each end for other quantities.
+Scale with no arguments restores the default.  When
+the X-axis is multiband delay, the scale is automatically set
+to +/- half the multiband delay ambiguity.
+This can be overridden by an explicit "xscale" command.
+If the axis is scantime, the "timerange" settings determine
+the axis extrema.
+
+Points which fall outside the scale limits are not plotted, and
+a warning message is issued to alert the user as to how many
+points were omitted.

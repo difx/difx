@@ -1,0 +1,13 @@
+COMMAND NAME:	timerange
+
+TYPE:		Data selection
+
+SYNTAX:		"timerange yyddd-hhmmss yyddd-hhmmss"
+
+DESCRIPTION:
+
+Sets the range of times outside which data will be rejected by
+various filter-applying action commands (edit inputs, read).
+Overrides self-scaling of the time axis on plots.  Typing
+"timerange" without arguments removes any restriction on the
+timerange.

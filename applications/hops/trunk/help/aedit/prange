@@ -1,0 +1,34 @@
+COMMAND NAME:	prange
+
+TYPE:		Data selection
+
+SYNTAX:		e.g. "prange 2 >4.6"
+		or "prange 17 <1.5e-12"
+		or "prange 1 -25 74"
+
+DESCRIPTION:
+
+This command sets the input filter for a selected extracted parameter.  The
+parameter is identified by the first argument, which is the identification tag
+of the parameter reported by the "plist" command.  It is thus not easy to run
+"prange" without first executing "plist".  Neither of these commands work,
+obviously, unless you have already extracted some parameters with the
+"parameter" command.
+
+The parameter data range of this filter can be specified either with an inequality
+(no >= or <= because all parameters are floating point quantities internally),
+or two numerical values, a lower and then an upper limit.  To exclude a finite
+range of values, you must merge two input files, each of which has had one of
+the inequality limits applied.  This limitation will be removed in due course.
+Thus, the above examples will pass, respectively:
+
+All scans with values of extracted parameter 2 greater than 4.6
+
+All scans with values of extracted parameter 17 less than 1.5e-12
+
+All scans with values of extracted parameter 1 between -25.0 and +74.0
+
+In the same manner as all filter settings in aedit, the data flagging occurs only
+upon invocation of the "edit inputs" command.  In the case of extracted
+parameters, the filtering during a read operation which normally occurs is
+suppressed.

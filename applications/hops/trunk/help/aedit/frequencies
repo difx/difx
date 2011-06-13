@@ -1,0 +1,14 @@
+COMMAND NAME:	frequencies
+
+TYPE:		Data selection
+
+SYNTAX:		"frequencies XS, C"
+
+DESCRIPTION:
+
+Enters a list of allowed frequencies into the inputs.  All alphabetic
+characters are accepted, in any order, lower or upper case, with or
+without spaces or commas.  Duplicate characters are ignored.  Scans
+which involve frequencies not in this list will fail the filter tests
+applied by edit inputs, read, and plot.  Typing "frequencies" without
+arguments removes any limitations on frequencies.

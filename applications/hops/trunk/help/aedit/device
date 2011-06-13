@@ -1,0 +1,50 @@
+COMMAND NAME:	device
+
+TYPE:		IO control
+
+SYNTAX:		"device postscript"
+		"device hpgl"
+		"device xwindow"
+		"device name/device"
+
+DESCRIPTION:
+
+Sets the device type used for plotting.  The available devices
+are those accessible to the PGPLOT library, which as of February
+1994 consisted of tektronix emulators, an Xwindow graphics window,
+Hewlett-Packard Laserjet printers, and postscript printers.
+
+The "device" command can be invoked in 2 ways.  First, there
+are 4 keywords that are recognized, namely "ppostscript", 
+"lpostscript", "hpgl" and "xwindow".  If one of these keywords is 
+specified, aedit will use the corresponding device in a transparent,
+automatic way.  The hardcopy options, "ppostscript", "lpostscript"
+and "hpgl", send the plot output to whatever printer is specified
+by the shell script "aedit_plot".  The "hpgl" output is portrait,
+while the postscript output can be either landscape (lpostscript)
+or portrait (ppostscript).  The printing is done immediately, 
+without the need for a "clear plot" command or separate invocation 
+of a printer job.
+
+The second method involves direct access to the PGPLOT device
+specification mechanism, as described in detail below.
+
+The construction of the argument is in two parts.  The first
+part is the specific name of the output file or device,  The
+second part specifies the type of device.  The former can
+be a standard UNIX filename, such as "plot01.3C345", but 
+subdirectory specifiers (i.e. filenames with "/" in them) are
+special because PGPLOT is looking for a "/" to separate
+the two parts of the device specifier.  You must "hide" the
+UNIX "/" characters from PGPLOT by enclosing the filename in
+double quotes, so that a valid specification for a workstation
+tektronix emulator might be '"/dev/ttyp2"/te'.
+
+The default filename for interactive devices is the users
+terminal, whilst for the hardcopy devices, it is "PGPLOT.device".
+PGPLOT translates filenames to upper case on output.
+
+The second part, the device type, follows a "/", and a complete
+list of possibilities can be viewed by setting the device equal
+to "?", the default setting.  The names are minimum matchable 
+(e.g. "/te" will work).  

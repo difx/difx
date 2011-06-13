@@ -1,0 +1,20 @@
+COMMAND NAME:	qcodes
+
+TYPE:		Data selection
+
+SYNTAX:		"qcodes 5,6,789,DEF"
+	    or  "qcodes 5-9 D-F"
+	    or  "qcodes not 0-4 A-C"
+
+DESCRIPTION:
+
+Sets the quality code data selection input parameter.  Shown
+in the example are three ways of establishing the quality code
+filter "56789DEF".  You can specify codes directly, in any order,
+separated by spaces, commas, or nothing at all.  You can also
+specify ranges of quality codes from the sequence "ABCDEF0123456789"
+by using the construction "2-8".  Preceding a specification by the
+exact string "not" means take all except the specified codes.  This
+information is applied as a filter by edit inputs, read, and plot.
+Typing "qcodes" with no argument removes any limitation on quality
+codes.
