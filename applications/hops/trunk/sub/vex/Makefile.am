@@ -1,10 +1,12 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 338 2011-06-13 17:40:35Z gbc $
 #
 
 SUBDIRS = .
 
 AM_CPPFLAGS = -I$(top_srcdir)/include
+
+nobase_dist_pkgdata_DATA = text/blk_stmt.txt text/pformat.txt
 
 pkginclude_HEADERS =
 
@@ -35,7 +37,6 @@ libvex_a_SOURCES =  block_params.c do_source.c locate_cq.c \
 		    ivex_info.c get_pcm_config.c get_pcm_tables.c \
 		    get_su_chan_out.c svex_info.c lvex_info.c \
 		    get_logscan.c 
-
 
 #
 # eof
