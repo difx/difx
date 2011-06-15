@@ -311,7 +311,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 	if hostname in machines:
 		m = machines.index(hostname)
 		if headCount > 0:
-			maxSlots = headCount + 1
+			maxslots = headCount + 1
 		elif cores[m] > overheadcores+1:
 			maxslots = 2
 			extrathreads.append(cores[m] - (overheadcores+1))
@@ -321,7 +321,7 @@ def writemachines(basename, hostname, machines, cores, results, vsns, dssources,
 	for d in dsnodes:
 		m = machines.index(d)
 		if headCount > 0:
-			maxSlots = headCount + 1
+			maxslots = headCount + 1
 		elif cores[m] > overheadcores+1:
 			maxslots = 2
 			extrathreads.append(cores[m] - (overheadcores+1))
