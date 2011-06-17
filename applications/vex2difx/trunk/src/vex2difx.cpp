@@ -1999,6 +1999,13 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 
 		int d = 0;
 
+		//first iterate over all antennas, making sure all recorded bands are allocated
+		for(int a = 0; a < D->nAntenna; a++)
+		{
+			string antName = antList[a];
+			setFormat(D, D->nDatastream, freqs, toneSets, mode, antName, corrSetup, P->v2dMode);
+		}
+
 		minChans = corrSetup->nInputChan();
 		for(int a = 0; a < D->nAntenna; a++)
 		{
