@@ -141,7 +141,7 @@ int computeDifxSpacecraftEphemeris(DifxSpacecraft *ds, double mjd0, double delta
 		jd = mjd + 2400000.5;
 		sprintf(jdstr, "JD %18.12Lf", jd);
 		str2et_c(jdstr, &et);
-		spkezr_c(objectName, et, "J2000", "LT", "EARTH BARYCENTER", state, &range);
+		spkezr_c(objectName, et, "J2000", "LT", "399", state, &range);	/* 399 is the earth geocenter */
 
 		ds->pos[p].mjd = mjd;
 		ds->pos[p].fracDay = mjd - ds->pos[p].mjd;
