@@ -1363,7 +1363,7 @@ void Core::averageAndSendKurtosis(int index, int threadid, double nsoffset, doub
         }
         starecord->nswidth = int(nswidth);
         freqindex = config->getDRecordedFreqIndex(procslots[index].configindex, i, j);
-        freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
+        freqchannels = config->getFNumChannels(freqindex);
         if (freqchannels < starecord->nChan)
           starecord->nChan = freqchannels;
         starecord->bandindex = j;
