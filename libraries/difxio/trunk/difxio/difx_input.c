@@ -2559,7 +2559,7 @@ DifxInput *allocateSourceTable(DifxInput *D, int length)
 
 static DifxInput *deriveFitsSourceIds(DifxInput *D)
 {
-	int a, i, j, match, n=0, k, l;
+	int a, i, j, match, n=0, k, l, sc;
 	int *fs;
 	int *fc;
 
@@ -2611,6 +2611,18 @@ static DifxInput *deriveFitsSourceIds(DifxInput *D)
 			else
 			{
 				D->source[i].fitsSourceIds[k] = match;
+			}
+		}
+		if(D->nSpacecraft > 0)
+		{
+			for(sc = 0; sc < D->nSpacecraft; sc++)
+			{
+				if(strcmp(D->spacecraft[sc].name,
+					  D->source[i].name) == 0)
+				{
+					D->source[i].spacecraftId = sc;
+					break;
+				}
 			}
 		}
 	}
