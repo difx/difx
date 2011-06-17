@@ -29,7 +29,8 @@ Version 2.0.1
 * Default pulse cal tone extraction mode is smart: that is take the two most extreme tones per band that are not within the outer 1/8 of the band if possible.
 * Allow source names with underscores
 * Fix bug calculating spectral averaging for zoom bands
-* Version for DiFX 2.0.1.  Tagged June 12, 2011
+* Ephemeris driven objects: use linear interpolation with a default interval of 15 seconds.  Results are much smoother.
+* Version for DiFX 2.0.1.  Tagged June 12, 2011 / updated June 16
 
 Version 2.0
 ~~~~~~~~~~~

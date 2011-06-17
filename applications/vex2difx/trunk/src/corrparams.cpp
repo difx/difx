@@ -645,7 +645,7 @@ void PhaseCentre::initialise(double r, double d, string name)
 	dec = d;
 	difxName = name;
 	calCode = ' ';
-	ephemDeltaT = 60.0; //seconds
+	ephemDeltaT = 15.0; //seconds
 	qualifier = 0;
 	string ephemObject = "";
 	string ephemFile = "";

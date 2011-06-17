@@ -46,7 +46,7 @@
 
 const string version(VERSION);
 const string program("vex2difx");
-const string verdate("20110612");
+const string verdate("20110616");
 const string author("Walter Brisken/Adam Deller");
 
 const int defaultMaxNSBetweenACAvg = 2000000;	// 2ms, good default for use with transient detection
@@ -2047,6 +2047,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							if(parentFreqIndices[i] < 0)
 							{
 								cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << a << endl;
+								cerr << "Note: This might be caused by a frequency offset that is not a multiple of the spectral resolution" << endl;
 							
 								exit(0);
 							}
@@ -2205,9 +2206,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			mjdint = static_cast<int>(J.mjdStart);
 			fracday0 = J.mjdStart-mjdint;
 			deltat = phaseCentre->ephemDeltaT/86400.0;	// convert from seconds to days
-			n0 = static_cast<int>(fracday0/deltat - 2);	// start ephmemeris at least 2 points early
+			n0 = static_cast<int>(fracday0/deltat - 8);	// start ephmemeris at least 2 points early
 			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
-			nPoint = static_cast<int>(J.duration()/deltat) + 6; // make sure to extend beyond the end of the job
+			nPoint = static_cast<int>(J.duration()/deltat) + 20; // make sure to extend beyond the end of the job
 			if(verbose > 0)
 			{
 				cout << "Computing ephemeris:" << endl;
