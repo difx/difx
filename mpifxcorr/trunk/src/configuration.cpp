@@ -2104,6 +2104,7 @@ bool Configuration::consistencyCheck()
   //check entries in the config table, check that number of channels * sample time yields a whole number of nanoseconds and that the nanosecond increment is not too large for an int, and generate the ordered datastream indices array
   //also check that guardns is large enough
   int nchan, chantoav;
+  int globalmaxnsslip = 0;
   double samplens;
   for(int i=0;i<numconfigs;i++)
   {
@@ -2114,7 +2115,7 @@ bool Configuration::consistencyCheck()
       return false;
     }
 
-    //fill in the maxnsslip for each datastream
+    //fill in the maxnsslip for each datastream and calculate the maximum of these across all datastreams
     for(int j=0;j<numdatastreams;j++) {
       dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
       samplens = 1000.0/freqtable[dsdata->recordedfreqtableindices[0]].bandwidth;
@@ -2126,6 +2127,8 @@ bool Configuration::consistencyCheck()
       nsaccumulate += model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001;
       if(nsaccumulate > dsdata->maxnsslip)
         dsdata->maxnsslip = int(nsaccumulate + 0.99);
+      if(dsdata->maxnsslip > globalmaxnsslip)
+        globalmaxnsslip = dsdata->maxnsslip;
     }
 
     //check that arraystridelen is ok, and guardns is ok
@@ -2141,9 +2144,9 @@ bool Configuration::consistencyCheck()
           return false;
         }
       }
-      if(configs[i].guardns < dsdata->maxnsslip) {
+      if(configs[i].guardns < globalmaxnsslip) {
         if(mpiid == 0) //only write one copy of this error message
-          cfatal << startl << "Config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against geometric rate slip and backwards shuffling of the start of a Datastream send to an integer nanosecond) guardns should be at least " << dsdata->maxnsslip << " - aborting!!!" << endl;
+          cfatal << startl << "Config[" << i << "] has a guard ns which is potentially too short (" << configs[i].guardns << ").  To be safe (against geometric rate slip and backwards shuffling of the start of a Datastream send to an integer nanosecond) guardns should be at least " << globalmaxnsslip << " - aborting!!!" << endl;
         return false;
       }
     }
