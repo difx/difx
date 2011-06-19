@@ -556,13 +556,13 @@ int Configuration::getOppositeSidebandFreqIndex(int freqindex)
 int Configuration::getDataBytes(int configindex, int datastreamindex)
 {
   int validlength, payloadbytes, framebytes;
-  datastreamdata currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
-  freqdata arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
+  const datastreamdata &currentds = datastreamtable[configs[configindex].datastreamindices[datastreamindex]];
+  const freqdata &arecordedfreq = freqtable[currentds.recordedfreqtableindices[0]]; 
   validlength = (arecordedfreq.decimationfactor*configs[configindex].blockspersend*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
   if(currentds.format == MKIV || currentds.format == VLBA || currentds.format == VLBN || currentds.format == MARK5B || currentds.format == VDIF || currentds.format == INTERLACEDVDIF)
   {
     //must be an integer number of frames, with enough margin for overlap on either side
-    validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+0.5)*currentds.numrecordedbands*2*currentds.numbits*arecordedfreq.numchannels)/8;
+    validlength += (arecordedfreq.decimationfactor*(int)(configs[configindex].guardns/(1000.0/(freqtable[currentds.recordedfreqtableindices[0]].bandwidth*2.0))+1.0)*currentds.numrecordedbands*currentds.numbits)/8;
     payloadbytes = getFramePayloadBytes(configindex, datastreamindex);
     framebytes = currentds.framebytes;
     if(currentds.format == INTERLACEDVDIF) //account for change to larger packets after muxing
@@ -1919,10 +1919,10 @@ bool Configuration::consistencyCheck()
   datastreamdata * dsdata;
 
   //check length of the datastream table
-  if(numdatasegments < 6)
+  if(numdatasegments < 5)
   {
     if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Databuffer must have a minimum of 6 segments - " << numdatasegments << " specified" << endl;
+      cfatal << startl << "Databuffer must have a minimum of 5 segments; " << numdatasegments << " specified" << endl;
     return false;
   }
 
@@ -2122,7 +2122,7 @@ bool Configuration::consistencyCheck()
       do {
         nsaccumulate += dsdata->bytespersampledenom*samplens;
       } while (!(fabs(nsaccumulate - int(nsaccumulate)) < Mode::TINY));
-      //cout << "NS accumulate is " << nsaccumulate << " and max geom slip is " << model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001 << endl;
+      cdebug << startl << "NS accumulate is " << nsaccumulate << " and max geom slip is " << model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001 << ", maxnsslip is " << dsdata->maxnsslip << endl;
       nsaccumulate += model->getMaxRate(dsdata->modelfileindex)*configs[i].subintns*0.000001;
       if(nsaccumulate > dsdata->maxnsslip)
         dsdata->maxnsslip = int(nsaccumulate + 0.99);

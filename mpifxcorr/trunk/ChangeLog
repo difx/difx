@@ -11,6 +11,7 @@ Version 2.0.1, 2011 June 12
 * Native Mark5: Swap order of fill pattern setting and bank mode setting to better work around certain module problems
 * Fix zoom-bands for all but special cases that just worked despite the logic in the code. (WFB paraphrasing for ATD)
 * Allow number of scans on a Mark5 module to exceed 1024
+* Fix calculation of bytes from guardns
 
 Version 2.0.0, 2010 July 14
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~

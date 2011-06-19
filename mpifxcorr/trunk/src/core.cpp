@@ -1152,7 +1152,6 @@ void Core::averageAndSendAutocorrs(int index, int threadid, double nsoffset, dou
         starecord->messageType = STA_AUTOCORRELATION;
         starecord->dsindex = i;
         starecord->coreindex = mpiid - (config->getNumDataStreams()+1);
-    starecord->coreindex=999;  // WFB: remove this!
         starecord->threadindex = threadid;
         sprintf(starecord->identifier, "%s", config->getJobName().substr(0,DIFX_MESSAGE_PARAM_LENGTH-1).c_str());
         starecord->nChan = config->getSTADumpChannels();
