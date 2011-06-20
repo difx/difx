@@ -290,7 +290,10 @@ if doclean:
     os.chdir("utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
-        targetdir = utiltarget[1] + '/' + utiltarget[0]
+        if (utiltarget[1] == ''):
+            targetdir = utiltarget[0]
+        else:
+            targetdir= utiltarget[1]  + '/' + utiltarget[0]
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
