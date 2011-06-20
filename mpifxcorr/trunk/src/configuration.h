@@ -69,6 +69,7 @@ public:
  /**
   * Constructor: Reads and stores the information in the input file
   * @param configfile The filename of the input file containing configuration information to be read
+  * @param id The MPI id of the process (0 = manager, then 1 - N datastreams, N+1 onwards cores
   */
   Configuration(const char * configfile, int id);
 
@@ -326,7 +327,7 @@ public:
 
  /**
   * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param datastreamindex The index of the datastream (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
   * @param &sec The output value, seconds portion, returned by reference
   * @param &ns The output value, nanosec portion, returned by reference
   */
@@ -335,14 +336,14 @@ public:
  /**
   * @return The number of data frames per second, always an integer for Mark5 formats
   * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param datastreamindex The index of the datastream (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
   int getFramesPerSecond(int configindex, int configdatastreamindex);
 
  /**
   * @return The number of payload bytes in a data frame
   * @param configindex The index of the configuration being used (from the table in the input file)
-  * @param datastreamindex The index of the datastream (from the table in the input file)
+  * @param configdatastreamindex The index of the datastream (from the table in the input file)
   */
   int getFramePayloadBytes(int configindex, int configdatastreamindex);
 
@@ -352,6 +353,7 @@ public:
   * @param nchan The number of channels
   * @param bw The bandwidth (MHz)
   * @param nbits The number of bits per sample
+  * @param sampling The type of data sampling (real or complex)
   * @param framebytes The number of bytes in a frame
   * @param decimationfactor The number of samples to throw away during unpacking
   * @param numthreads The number of (interlaced) threads
@@ -476,7 +478,7 @@ public:
   * @param line Existing string to store value in
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   */
-  void getinputline(ifstream * input, string * line, string startofheader);
+  void getinputline(ifstream * input, std::string * line, std::string startofheader);
 
  /**
   * Utility method which reads a line from a file, extracts a value and checks the keyword matches that expected
@@ -485,7 +487,7 @@ public:
   * @param startofheader The start of the expected keyword, to compare to the actual keyword which will be read
   * @param intval An integer value which should follow startofheader
   */
-  void getinputline(ifstream * input, string * line, string startofheader, int intval);
+  void getinputline(ifstream * input, std::string * line, std::string startofheader, int intval);
 
  /**
   * Utility method which reads a line from a file, splitting it into a key and a value and storing both
@@ -791,7 +793,7 @@ private:
 
  /**
   * Parses the thread mapping string for a muxed VDIF datastream and sets up the configuration
-  * @param configindex The index of the datastream to be set up (from the table in the input file)
+  * @param datastreamindex The index of the datastream to be set up (from the table in the input file)
   * @param muxinfo The string containing comma-separated thread list to be muxed together
   */
   void setDatastreamMuxInfo(int datastreamindex, string muxinfo);

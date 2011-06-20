@@ -29,7 +29,7 @@ SwitchedPower::SwitchedPower()
 	init();
 }
 
-SwitchedPower::SwitchedPower(const string &path, int mpiid)
+SwitchedPower::SwitchedPower(const std::string &path, int mpiid)
 {
 	init();
 

@@ -83,7 +83,6 @@ class PCal {
        * Typically 0 for the first segment, len(segment) for the second
        * segment, and so on, until offset of the last segment
        * which is len(subintegration_subslice)-len(segment).
-       * @param sampleoffset referenced back to start of subintegration interval
        */
       virtual void clear() = 0;
       //TODO remove sampleoffset arg again since we have adjustSampleOffset()
@@ -138,7 +137,7 @@ class PCal {
        * and then copies these PCal results into the specified output array.
        * Data in the output array is overwritten with PCal results.
        *
-       * @param pointer to user PCal array with getLength() values
+       * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
        */
       virtual uint64_t getFinalPCal(cf32* out) = 0;

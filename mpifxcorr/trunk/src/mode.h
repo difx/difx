@@ -71,8 +71,8 @@ public:
   Mode(Configuration * conf, int confindex, int dsindex, int recordedbandchan, int chanstoavg, int bpersend, int gsamples, int nrecordedfreqs, double recordedbw, double * recordedfreqclkoffs, double * recordedfreqlooffs, int nrecordedbands, int nzoombands, int nbits, Configuration::datasampling sampling, int unpacksamp, bool fbank, int fringerotorder, int arraystridelen, bool cacorrs, double bclock);
 
  /**
-  * Stores the delay information for the current block series
-  * @param d The array of delays at the start of each FFT chunk
+  * Stores the FFT valid flags for this block of data
+  * @param v The array of valid flags for each FFT
   */
   void setValidFlags(s32 * v);
 
@@ -203,7 +203,7 @@ public:
 
   /**
    * Returns a single pcal result.
-   * @param outpubband The band to get
+   * @param outputband The band to get
    * @param tone The number of the tone to get
    * @return pcal result
    */

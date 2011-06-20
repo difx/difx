@@ -61,7 +61,6 @@ class PCalExtractorTrivial : public PCal {
        * Typically 0 for the first segment, len(segment) for the second
        * segment, and so on, until offset of the last segment
        * which is len(subintegration_subslice)-len(segment).
-       * @param sampleoffset referenced back to start of subintegration interval
        */
       void clear();
 
@@ -85,7 +84,7 @@ class PCalExtractorTrivial : public PCal {
        * If extraction has been finalized by calling getFinalPCal() this function
        * returns False. You need to call clear() to reset.
        *
-       * @paran samples Chunk of the input signal consisting of 'float' samples
+       * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
        * @return true on success
        */
@@ -96,7 +95,7 @@ class PCalExtractorTrivial : public PCal {
        * and then copies these PCal results into the specified output array.
        * Data in the output array is overwritten with PCal results.
        *
-       * @param pointer to user PCal array with getLength() values
+       * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
        */
       uint64_t getFinalPCal(cf32* out);
@@ -126,7 +125,6 @@ class PCalExtractorShifting : public PCal {
        * Typically 0 for the first segment, len(segment) for the second
        * segment, and so on, until offset of the last segment
        * which is len(subintegration_subslice)-len(segment).
-       * @param sampleoffset referenced back to start of subintegration interval
        */
       void clear();
 
@@ -150,7 +148,7 @@ class PCalExtractorShifting : public PCal {
        * If extraction has been finalized by calling getFinalPCal() this function
        * returns False. You need to call clear() to reset.
        *
-       * @paran samples Chunk of the input signal consisting of 'float' samples
+       * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
        * @return true on success
        */
@@ -161,7 +159,7 @@ class PCalExtractorShifting : public PCal {
        * and then copies these PCal results into the specified output array.
        * Data in the output array is overwritten with PCal results.
        *
-       * @param pointer to user PCal array with getLength() values
+       * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
        */
       uint64_t getFinalPCal(cf32* out);
@@ -190,7 +188,6 @@ class PCalExtractorImplicitShift : public PCal {
        * Typically 0 for the first segment, len(segment) for the second
        * segment, and so on, until offset of the last segment
        * which is len(subintegration_subslice)-len(segment).
-       * @param sampleoffset referenced back to start of subintegration interval
        */
       void clear();
 
@@ -214,7 +211,7 @@ class PCalExtractorImplicitShift : public PCal {
        * If extraction has been finalized by calling getFinalPCal() this function
        * returns False. You need to call clear() to reset.
        *
-       * @paran samples Chunk of the input signal consisting of 'float' samples
+       * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
        * @return true on success
        */
@@ -225,7 +222,7 @@ class PCalExtractorImplicitShift : public PCal {
        * and then copies these PCal results into the specified output array.
        * Data in the output array is overwritten with PCal results.
        *
-       * @param pointer to user PCal array with getLength() values
+       * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
        */
       uint64_t getFinalPCal(cf32* out);
@@ -249,7 +246,6 @@ class PCalExtractorDummy : public PCal {
      * Typically 0 for the first segment, len(segment) for the second
      * segment, and so on, until offset of the last segment
      * which is len(subintegration_subslice)-len(segment).
-     * @param sampleoffset referenced back to start of subintegration interval
      */
     void clear();
 
@@ -273,7 +269,7 @@ class PCalExtractorDummy : public PCal {
      * If extraction has been finalized by calling getFinalPCal() this function
      * returns False. You need to call clear() to reset.
      *
-     * @paran samples Chunk of the input signal consisting of 'float' samples
+     * @param samples Chunk of the input signal consisting of 'float' samples
      * @param len     Length of the input signal chunk
      * @return true on success
      */
@@ -284,7 +280,7 @@ class PCalExtractorDummy : public PCal {
      * and then copies these PCal results into the specified output array.
      * Data in the output array is overwritten with PCal results.
      *
-     * @param pointer to user PCal array with getLength() values
+     * @param out Pointer to user PCal array with getLength() values
      * @return number of samples that were integrated for the result
      */
     uint64_t getFinalPCal(cf32* out);

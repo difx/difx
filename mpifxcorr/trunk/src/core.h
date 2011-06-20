@@ -201,7 +201,6 @@ private:
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param modes The Mode objects which have the pcal results
-  * @param scratchspace Space for all of the intermediate results for this thread
   */
   void copyPCalTones(int index, int threadid, Mode ** modes);
 
@@ -221,7 +220,7 @@ private:
   * @param index The index in the circular send/receive buffer to be processed
   * @param threadid The id of the thread which is doing the processing
   * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
-  * @param nsoffset The offset from start of subintegration (for calculating UV shifts)
+  * @param nswidth  The width of the chunk of data in nanoseconds (for calculating UV shifts)
   * @param scratchspace Space for all of the intermediate results for this thread
   * @param freqindex The frequency (from the frequency table) to process
   * @param baseline The baseline to process

@@ -47,7 +47,7 @@ class Model{
   public:
     /**
      * Constructor: Loads the model information from the supplied file into memory
-     * @param config The configuration object, containing all information about correlation setup
+     * @param conf The configuration object, containing all information about correlation setup
      * @param cfilename The calc file to load from (which contains pointer to IM file with actual polynomials)
      */
     Model(Configuration * conf, string cfilename);
@@ -170,7 +170,7 @@ class Model{
      * @param scanindex The scan
      * @param offsettime Offset in seconds from the start of the scan, to start of timespan
      * @param timespan Timespan the interpolation should attempt to match, in seconds
-     * @param numincrement The number of increments across timespan (ie the x value range, 0->numincrements)
+     * @param increments The number of increments across timespan (ie the x value range, 0->numincrements)
      * @param antennaindex The antenna
      * @param scansourceindex The source index within the scan
      * @param order The order of the interpolator (0, 1, or 2)
