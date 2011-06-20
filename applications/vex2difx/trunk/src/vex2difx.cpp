@@ -2213,9 +2213,9 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			mjdint = static_cast<int>(J.mjdStart);
 			fracday0 = J.mjdStart-mjdint;
 			deltat = phaseCentre->ephemDeltaT/86400.0;	// convert from seconds to days
-			n0 = static_cast<int>(fracday0/deltat - 8);	// start ephmemeris at least 2 points early
+			n0 = static_cast<int>(fracday0/deltat - 12);	// start ephmemeris at least 2 points early
 			mjd0 = mjdint + n0*deltat;			// always start an integer number of increments into day
-			nPoint = static_cast<int>(J.duration()/deltat) + 20; // make sure to extend beyond the end of the job
+			nPoint = static_cast<int>(J.duration()/deltat) + 28; // make sure to extend beyond the end of the job
 			if(verbose > 0)
 			{
 				cout << "Computing ephemeris:" << endl;
