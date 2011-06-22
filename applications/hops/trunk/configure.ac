@@ -69,20 +69,7 @@ AC_ARG_ENABLE(hops,
     AS_HELP_STRING([--disable-hops], [disables the post-processing tools]),
     [], [enable_hops=yes])
 AC_GBC_NOTICE([enable_hops is --$enable_hops--])
-###HEAD-extra-features
-AC_ARG_ENABLE(difx,
-    AS_HELP_STRING([--enable-difx], [enable some difx-related tools]),
-    [], [enable_difx=no])
-AC_GBC_NOTICE([enable_difx is --$enable_difx--])
-AC_ARG_ENABLE(devel,
-    AS_HELP_STRING([--enable-devel], [enable developmental tools]),
-    [], [enable_devel=no])
-AC_GBC_NOTICE([enable_devel is --$enable_devel--])
-AC_ARG_ENABLE(mark5,
-    AS_HELP_STRING([--enable-mark5], [enable mark5 support utilities]),
-    [], [enable_mark5=no])
-AC_GBC_NOTICE([enable_mark5 is --$enable_mark5--])
-###TAIL-extra-features
+### option disabled
 AC_ARG_ENABLE(pathx,
     AS_HELP_STRING([--enable-pathx], [try normal autoconf x11 path checks]))
 AC_GBC_NOTICE([enable_pathx is --$enable_pathx--])
@@ -113,22 +100,10 @@ AC_GBC_NOTICE([%%% have_hops is $have_hops (required)])
 AM_CONDITIONAL(HAVE_HOPS, $have_hops)
 
 have_devel=false
-###HEAD-devel-support
-#
-# Not all the tools work properly or are useful away from Haystack
-#
-if [test x$enable_devel = xyes] ; then
-    AC_MSG_CHECKING([for development directories])
-    if [test -d $srcdir/misc ] ; then
-	have_devel=true
-	AC_MSG_RESULT([yes])
-    else
-	have_devel=false
-	AC_MSG_RESULT([no])
-    fi
-fi
-AC_GBC_NOTICE([%%% have_devel is $have_devel (optional)])
-###TAIL-devel-support
+### option disabled
+AC_SUBST(DEVLDIR)
+AC_SUBST(PROGDIR)
+AC_SUBST(IFFYDIR)
 AM_CONDITIONAL(HAVE_DEVEL, $have_devel)
 
 # autoscan suggested list of checks follows
@@ -222,23 +197,7 @@ AC_CHECK_FUNCS([strspn strstr])
 fi
 
 have_gsl=false
-###HEAD-misc-support
-#
-# additional optional checks
-#
-if [$have_devel] ; then
-    AC_CHECK_HEADERS([gsl/gsl_randist.h])
-    AC_CHECK_LIB(gsl, gsl_ran_gaussian,
-	[AC_DEFINE(HAVE_LIBGSL,1,[Define to 1 with -lgsl (noise testing)])
-	 GSL_LIBS='-lgsl -lgslcblas'
-	 have_gsl=true], [have_gsl=false], [-lgslcblas])
-    AC_CHECK_LIB(rt, clock_gettime,
-	[AC_DEFINE(HAVE_LIBRT,1,[Define to 1 with -lrt (noise testing)])
-	 RT_LIBS='-lrt'])
-fi
-AC_SUBST(GSL_LIBS)
-AC_SUBST(RT_LIBS)
-###TAIL-misc-support
+### option disabled
 AM_CONDITIONAL(HAVE_GSL, $have_gsl)
 
 AC_ARG_VAR(X_INSANE, [Anything you need to append to the X11 link chain])
@@ -398,90 +357,13 @@ if [ test x$build_vendor = xapple ] ; then
 fi
 
 have_difx=false
-###HEAD-difx-support
-#
-# DiFX support, coercible via PKG_CONFIG_PATH
-#
-AC_ARG_VAR(PKG_CONFIG_PATH, [Package configuration path])
-if [test x$enable_difx = xyes] ; then
-    if [test -n "$DIFXROOT"] ; then
-	MK5_STUB=$srcdir/mark5/stubs
-	PKG_CONFIG_PATH=$DIFXROOT/lib/pkgconfig:${PKG_CONFIG_PATH}:${MK5_STUB}
-	export PKG_CONFIG_PATH
-	DIFXLIBS=$DIFXROOT/lib
-    fi
-    PKG_CHECK_MODULES([DIFX],[difxio >= 3.0 vex >= 2.0],
-	[have_difx=true],[have_difx=false])
-    if [test -z "$DIFXLIBS" -a -n "$DIFX_LIBS"] ; then
-	DIFXLIBS=`echo $DIFX_LIBS | cut -d' ' -f1 | sed s/-L//`
-    fi
-else
-    have_difx=false
-    DIFXLIBS=''
-fi
-if [test $have_difx$enable_difx = falseyes] ; then
-    AC_GBC_NOTICE([$DIFX_PKG_ERRORS])
-    AC_GBC_NOTICE([Try defining DIFXROOT or PKG_CONFIG_PATH])
-fi
-AC_SUBST(DIFXLIBS)
-AC_GBC_NOTICE([%%% have_difx is $have_difx (optional)])
-###TAIL-difx-support
+### option disabled
+AC_SUBST(DIFXDIR)
 AM_CONDITIONAL(HAVE_DIFX, [test $have_difx = true])
 
 have_mark5=false
-###HEAD-mark5-support
-#
-# Streamstor variables are needed for Mark5 operation.
-# The stubs entry points to something that compiles (only).
-#
-if [test x$enable_mark5 = xyes] ; then
-  AC_MSG_CHECKING([for mark5 utility directory])
-  if [test -d $srcdir/mark5] ; then
-    AC_MSG_RESULT([yes])
-    MK5_STUB=$srcdir/mark5/stubs
-    if [test -n "$PKG_CONFIG_PATH" ] ; then
-	export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:${MK5_STUB}
-    else
-	export PKG_CONFIG_PATH=${MK5_STUB}
-    fi
-    if [test -n "$DIFXROOT" -a x$enable_difx = xno] ; then
-	PKG_CONFIG_PATH=$DIFXROOT/lib/pkgconfig:${PKG_CONFIG_PATH}
-	export PKG_CONFIG_PATH
-    fi
-    PKG_CHECK_EXISTS(streamstor,
-	[ PKG_CHECK_MODULES(STREAMSTOR, streamstor) ],
-	[ AC_GBC_NOTICE([Did not find STREAMSTOR in $PKG_CONFIG_PATH]) ])
-    # should define STREAMSTOR_LIBS and STREAMSTOR_CFLAGS
-    if [test -n "$STREAMSTOR_LIBS" -a -n "$STREAMSTOR_CFLAGS" ] ; then
-	AC_GBC_NOTICE([Found STREAMSTOR_LIBS = $STREAMSTOR_LIBS])
-	AC_GBC_NOTICE([Found STREAMSTOR_CFLAGS = $STREAMSTOR_CFLAGS])
-	have_mark5=true
-    fi
-  else
-    AC_MSG_RESULT([no])
-  fi
-fi
-AC_GBC_NOTICE([%%% have_mark5 is $have_mark5 (optional)])
-
-# older streamstor has fewer diagnostics
-# AC_GBC_NOTICE([srcdir is $srcdir])
-# the stubs thing is to allow a compilation check on hosts w/o streamstor
-drivetemp=0
-if [$have_mark5] ; then
-    gbc_stubs="-I$srcdir/mark5/stubs"
-    gbc_save_CXXFLAGS="$CXXFLAGS" ; CXXFLAGS="$STREAMSTOR_CFLAGS $gbc_stubs"
-    gbc_save_LIBS="$LIBS"         ; LIBS="$STREAMSTOR_LIBS"
-    AC_LANG_PUSH(C++)
-    AC_LINK_IFELSE([AC_LANG_PROGRAM(
-	[[#include "xlrapi.h"]],
-	[[XLRGetDriveTemp(0,0,0,0);]])],
-	drivetemp=1, drivetemp=0)
-    AC_LANG_POP(C++)
-    CXXFLAGS="$gbc_save_CXXFLAGS" ; LIBS="$gbc_save_LIBS"
-fi
-AC_DEFINE_UNQUOTED(HAVE_XLRGetDriveTemp,  $drivetemp,
-    [set nonzero when streamstor supports XLRGetDriveTemp()])
-###TAIL-mark5-support
+### option disabled
+AC_SUBST(MARK5DIR)
 AM_CONDITIONAL(HAVE_MARK5, $have_mark5)
 
 #
@@ -546,51 +428,7 @@ if [ $have_hops = "true" ] ; then
     )
 fi
 
-###HEAD-extra-files
-#
-# Also make the DiFX toyz.
-#
-if [ $have_difx = "true" ] ; then
-    AC_CONFIG_FILES([
-	difx/Makefile
-    ])
-fi
-
-#
-# Also make the development hierarchy
-#
-if [ $have_devel = "true" ] ; then
-    if [ $have_hops = "true" ] ; then
-	AC_CONFIG_FILES([
-	    correlator/prog/Makefile
-	    postproc/average/Makefile
-	    postproc/bispec/Makefile
-	    postproc/calamp/Makefile
-	    postproc/cofit/Makefile
-	    postproc/coterp/Makefile
-	    postproc/fold/Makefile
-	    postproc/pratio/Makefile
-	    postproc/search/Makefile
-	])
-    fi
-    AC_CONFIG_FILES([
-	misc/Makefile
-	misc/time/Makefile
-	misc/bits/Makefile
-	misc/vlbi2/Makefile
-	misc/smto/Makefile
-    ])
-fi
-
-#
-# Also make the Mark5 toyz.
-#
-if [ $have_mark5 = "true" ] ; then
-    AC_CONFIG_FILES([
-	mark5/Makefile
-    ])
-fi
-###TAIL-extra-files
+### option disabled
 
 #
 # Shell setup convenience

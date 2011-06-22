@@ -2,7 +2,7 @@
 #
 # (Ba)sh startup
 #
-# $Id$
+# $Id: hops.bash.in 365 2011-06-22 15:47:37Z gbc $
 #
 # Version @VERSION@
 #
@@ -11,7 +11,7 @@
 # Help for the befuddled user.  The name is probably hops.bash.
 #
 zero=hops.bash
-Help="Usage: . $HOPS_ROOT/$HOPS_ARCH/bin/$zero
+Help='Usage: . @prefix@/bin/'$zero'
 
 will set up your HOPS environment by modifying the following variables:
 
@@ -43,17 +43,16 @@ will set up your HOPS environment by modifying the following variables:
     MK4_PRINTER	    can be pointed to your preferred printer
 
 Set HOPS_QUIET (to anything) if you do not want the chatter.
-Once setup, HOPS_SETUP is defined to be true.  You can set this
-false to reinitialize with a different version of the software,
-e.g. something like one of these (depending on which $zero)
+Once setup, HOPS_SETUP is defined to be "true".  You can set this
+to "false" to reinitialize with a different version of the software,
+e.g. something like one of these (depending on which '$zero')
 
-    HOPS_SETUP=false . ~/bin/$zero
-    HOPS_SETUP=false . ${HOPS_ROOT-"."}/bld/$zero
-    HOPS_SETUP=false . ${HOPS_ROOT-"."}/bld-@VERSION@/$zero
+    HOPS_SETUP=false . ~/bin/'$zero'
+    HOPS_SETUP=false . @prefix@/'$zero'
 
 Otherwise, reinvocation will merely tell you what you are using.
-Set HOPS_SETUP otherwise to purge HOPS from your environment.
-"
+To purge HOPS from your environment, set HOPS_SETUP to "purge".
+'
 Version="@srcdir@/$zero  [ @BUILD_DATE@ ]"
 case "nada$1" in
 nada--help)     echo "$Help"    ; exit 0 ;;
@@ -62,17 +61,22 @@ nada)                                    ;;
 nada*)          echo "$Help"    ; exit 1 ;;
 esac
 
+# using variables as defined by config.status where possible
+[ -z "$prefix" ] && prefix=@prefix@
+[ -z "$exec_prefix" ] && exec_prefix=@exec_prefix@
+
 #
 # remove old version from PATH
 #
 [ -n "$HOPS_SETUP" -a -n "$HOPS_ROOT" ] && {
   [ "$HOPS_SETUP" = true ] || {
     [ -z "$HOPS_QUIET" ] && echo Revising HOPS version.
-    Path=`echo $PATH | sed -e "s+${HOPS_ROOT}/[^/:]*/bin[:]*++"`
-    Info=`echo $INFOPATH | sed -e "s+${HOPS_ROOT}/[^/:]*/info[:]*++"`
+    Path=`echo $PATH | sed -e "s+@bindir@[:]*++g"`
+    Info=`echo $INFOPATH | sed -e "s+@infodir@[:]*++g"`
+    Libp=`echo $LD_LIBRARY_PATH | sed -e "s+@libdir@/hops[:]*++g"`
     export PATH=$Path
     export INFOPATH=$Info
-    # LD_LIBRARY_PATH left alone
+    export LD_LIBRARY_PATH=Libp
     [ "$HOPS_SETUP" = false ] && HOPS_SETUP=''
     unset HOPS_ROOT HOPS_VERS HOPS_ARCH HOPS_DOCS
     unset PROGDOC TEXT AHELP DEF_CONTROL DATADIR
@@ -85,17 +89,15 @@ esac
     # basic stuff
     #
     Setup=Setup
-    # umask 0002
-    # umask 0007
     export HOPS_ROOT=@HOPS_ROOT@
     export HOPS_ARCH=@HOPS_ARCH@
     export HOPS_VERS=@VERSION@
     export HOPS_SETUP=true
 
-    Path=${HOPS_ROOT}/${HOPS_ARCH}/bin
+    Path=@bindir@
     [ -z "$PATH" ] && PATH=${Path} || PATH=${Path}:$PATH
 
-    Info=${HOPS_ROOT}/${HOPS_ARCH}/info
+    Info=@infodir@
     [ -z "$INFOPATH" ] && INFOPATH=${Info} || INFOPATH=${Info}:$INFOPATH
     export INFOPATH
 
@@ -110,10 +112,11 @@ esac
 	LD_LIBRARY_PATH=${Libp}:$LD_LIBRARY_PATH
     [ -d "@DIFXLIBS@" ] &&
 	LD_LIBRARY_PATH=@DIFXLIBS@:$LD_LIBRARY_PATH
+    LD_LIBRARY_PATH=@libdir@/hops:$LD_LIBRARY_PATH
     export LD_LIBRARY_PATH
 
     # program documentation
-    export HOPS_DOCS=${HOPS_ROOT}/${HOPS_ARCH}/share/hops
+    export HOPS_DOCS=@datadir@/hops
     export PROGDOC=$HOPS_DOCS/vhelp
     export AHELP=$HOPS_DOCS/vhelp/aedit
     export TEXT=$HOPS_DOCS/text
@@ -134,7 +137,7 @@ esac
     export AFILEDIR=HOPS-no-such-dir-afile
     export SYSVEX=HOPS-no-such-dir-sysvex
     export TASK=HOPS-no-such-dir-task
-    export BIN=${HOPS_ROOT}/${HOPS_ARCH}/bin
+    export BIN=@bindir@
     export TMP=/tmp
 
     true
@@ -151,7 +154,7 @@ esac
 #
 # all done
 #
-unset Path Info Libp Setup Help Version
+unset Path Info Libp Setup Help Version exec_prefix prefix
 
 #
 # eof

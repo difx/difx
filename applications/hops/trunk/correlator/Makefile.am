@@ -1,9 +1,9 @@
 #
-# $Id: Makefile.am 265 2011-05-20 15:39:47Z gbc $
+# $Id: Makefile.am 364 2011-06-21 20:16:04Z gbc $
 #
 
 if HAVE_DEVEL
-SUBDIRS = CorAsc2 prog
+SUBDIRS = CorAsc2 @PROGDIR@
 else
 SUBDIRS = CorAsc2
 endif

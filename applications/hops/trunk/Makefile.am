@@ -1,5 +1,5 @@
 #
-# $Id: Makefile.am 321 2011-06-08 15:03:58Z gbc $
+# $Id: Makefile.am 364 2011-06-21 20:16:04Z gbc $
 #
 
 #
@@ -13,7 +13,7 @@
 
 # turn on Mark5 utilities
 if HAVE_MARK5
-MARK5DIRS = mark5
+MARK5DIRS = @MARK5DIR@
 # CONFIGURE_DEPENDENCIES = mark5/stubs/streamstor.pc
 TAR_MARK5 = -mk5
 DCF_MARK5 = --enable-mark5
@@ -26,7 +26,7 @@ endif
 
 # turn on DiFX utilities
 if HAVE_DIFX
-DIFXDIRS = difx
+DIFXDIRS = @DIFXDIR@
 TAR_DIFX = -difx
 DCF_DIFX = --enable-difx
 else
@@ -37,7 +37,7 @@ endif
 
 # turn on code that doesn't work, yet and a few other things
 if HAVE_DEVEL
-DEVLDIRS = misc
+DEVLDIRS = @DEVLDIR@
 TAR_DEVL = -dv
 DCF_DEVL = --enable-devel
 else
@@ -76,7 +76,7 @@ SUBDIRS = . $(HOPSDIRS) \
 	  $(MARK5DIRS) \
 	  $(HOPSDATA)
 
-EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright
+EXTRA_DIST = README.txt Fink.txt MacPorts.txt svnrev.txt Copyright configure_ac
 DIST_SUBDIRS = $(SUBDIRS)
 
 # m4/*.m4 macros scanned by aclocal
@@ -85,6 +85,10 @@ ACLOCAL_AMFLAGS = -I m4
 pkginclude_HEADERS = hops_config.h
 
 bin_SCRIPTS = hops.bash
+
+configure_ac:	$(srcdir)/configure.ac
+	sed '/^###HEAD/,/^###TAIL/c ### option disabled' \
+	    $(srcdir)/configure.ac > $@
 
 install-exec-hook:
 	-@[ -d ${HOME}/bin -a ! -h ${HOME}/bin/hops.bash ] && \
