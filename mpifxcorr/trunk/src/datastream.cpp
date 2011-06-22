@@ -476,6 +476,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
   segoffns = int(double(segoffbytes*bufferinfo[atsegment].bytespersampledenom/bufferinfo[atsegment].bytespersamplenum)* bufferinfo[atsegment].sampletimens + 0.5);
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] += segoffns/1000000000;
   bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] = bufferinfo[atsegment].scanns + segoffns%1000000000;
+  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] += bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2]/1000000000;
+  bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][2] %= 1000000000;
 
   if((bufferinfo[atsegment].validbytes - segoffbytes >= bufferinfo[atsegment].sendbytes) || (bufferinfo[atsegment].validbytes == readbytes && ((bufferinfo[(atsegment+1)%numdatasegments].scanseconds - bufferinfo[atsegment].scanseconds)*1000000000 + bufferinfo[(atsegment+1)%numdatasegments].scanns - bufferinfo[atsegment].scanns) == bufferinfo[atsegment].nsinc && (bufferinfo[atsegment].validbytes-segoffbytes+bufferinfo[(atsegment+1)%numdatasegments].validbytes) > bufferinfo[atsegment].sendbytes)) //they're all ok
   {
