@@ -137,12 +137,6 @@ def writev2d(oms, v2dFile):
 	out.write('vex = %s\n\n' % vexFile)
 	out.write('antennas =%s\n\n' % stnString)
 
-	if corr.has_key('TWEAK_INT_TIME'):
-		if corr['TWEAK_INT_TIME'][0] in ['YES', 'yes']:
-			out.write('tweakIntTime = True\n\n')
-		else:
-			out.write('tweakIntTime = False\n\n')
-
 	for s in oms['SOURCE_INFO']:
 		srcParams = ''
 		if s.has_key('CAL_CODE'):
