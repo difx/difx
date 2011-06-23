@@ -1,0 +1,136 @@
+#
+# Building a standalone DiFX/Mark4 installation
+#
+
+These instructions assume you've downloaded certain DiFX sources
+from the DiFX SVN repository into a directory here named difx-svn
+(you can name it anything you like).
+
+The difx2mark4 application trunk includes this file, and also
+build-mark4 which is a modified version of build-difx which is
+normally found in difx-svn/setup.  You'll need to copy build-mark4
+to difx-svn/setup in order to proceed (it expects to be found in
+that directory).
+
+The installation is into DIFXROOT, which can be anywhere--it is
+the parent of the difx-svn directory in this example.
+
+.
+│ # required sources, checked out where you like--I called it difx-svn
+│
+├── difx-svn
+│   ├── setup
+│   │   ├── build-difx
+│   │   ├── build-mark4                  # copy of install script
+│   │   └── setup.bash                   # you need to tweak this
+│   ├── applications
+│   │   ├── difx2mark4
+│   │   │   └── trunk
+│   │   │       ├── autom4te.cache
+│   │   │       ├── build-mark4          # (install script)
+│   │   │       ├── standalone-mark4.txt # (this file)
+│   │   │       └── src
+│   │   └── hops
+│   │       └── trunk
+│   │           ├── autom4te.cache
+│   │           ├── correlator
+│   │           │   └── CorAsc2
+│   │           ├── data
+│   │           │   └── ff_testdata
+│   │           │       └── testdata
+│   │           │           ├── 2843
+│   │           │           │   └── 321-1701_0552+398
+│   │           │           └── 3365
+│   │           │               ├── 094-0644_HIGH
+│   │           │               └── 094-0644_LOW
+│   │           ├── help
+│   │           │   └── aedit
+│   │           ├── include
+│   │           ├── m4
+│   │           ├── postproc
+│   │           │   ├── adump
+│   │           │   ├── aedit
+│   │           │   ├── alist
+│   │           │   ├── fourfit
+│   │           │   ├── fourmer
+│   │           │   ├── fplot
+│   │           │   └── fringex
+│   │           ├── scripts
+│   │           └── sub
+│   │               ├── afio
+│   │               ├── dfio
+│   │               ├── util
+│   │               └── vex
+│   │                   └── text
+│   ├── libraries
+│   │   └── difxio
+│   │       └── trunk
+│   │           ├── autom4te.cache
+│   │           ├── difxio
+│   │           ├── m4
+│   │           ├── tests
+│   │           └── utils
+│   └── utilities
+│
+│ # note the *empty* utilities directory
+│ # create/modify setup/setup.bash and source it
+│ # you will need to install pgplot (including cpgplot) and set PGPLOT_DIR
+│ #
+│ # can build in a separate build directory (and remove it later), e.g.
+│ # mkdir build
+│ # cd build
+│ # ../difx-svn/setup/build-mark4 --reconf --force -v --noipp --mark4 2>&1 |\
+│ # tee mark4.output
+│
+├── build
+│   ├── applications
+│   │   ├── difx2mark4
+│   │   │   └── trunk
+│   │   │       └── src
+│   │   └── hops
+│   │       └── trunk
+│   │           ├── correlator
+│   │           │   └── CorAsc2
+│   │           ├── data
+│   │           │   └── ff_testdata
+│   │           ├── help
+│   │           ├── include
+│   │           ├── postproc
+│   │           │   ├── adump
+│   │           │   ├── aedit
+│   │           │   ├── alist
+│   │           │   ├── fourfit
+│   │           │   ├── fourmer
+│   │           │   ├── fplot
+│   │           │   └── fringex
+│   │           ├── scripts
+│   │           └── sub
+│   │               ├── afio
+│   │               ├── dfio
+│   │               ├── util
+│   │               └── vex
+│   └── libraries
+│       └── difxio
+│           └── trunk
+│               ├── difxio
+│               ├── tests
+│               └── utils
+│
+│ # after the build completes, you should have these
+│ # installed subdirectories of DIFXROOT
+│
+├── bin
+├── include
+│   ├── difxio
+│   └── hops
+├── lib
+│   ├── hops
+│   └── pkgconfig
+└── share
+    └── hops
+        ├── text
+        └── vhelp
+            └── aedit
+
+This was tested on a machine that never had DiFX and seems to work fine.
+
