@@ -11,7 +11,7 @@ def main():
 Install DiFX
 
 Usage:
-    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--withfb] [--noipp] [--ipp] [--nodoc]
+    install-difx [-fh] [--force] [--help] [--noinstall] [--reconf] [--g77] [--clean] [--rpfits] [--perl] [--withmonitor] [--withfb] [--withhops] [--noipp] [--ipp] [--nodoc]
 
 Builds and installs mpifxcorr and associated tools.
 
@@ -43,6 +43,8 @@ Options:
 
    --withfb        Build filterbank (which requires pgplot)
 
+   --withhops      Build HOPS (which requires pgplot)
+
    --clean         Run make clean for all components
 
    --noipp         Don't try and install ipp package config file
@@ -61,7 +63,7 @@ Options:
 #  * Make sure it is documented in main.__doc__
 ###############################################################################
 try:
-    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "withfb", "noipp", "ipp"])
+    opts, args = getopt.gnu_getopt(sys.argv[1:], "fh", ["help", "force", "reconf", "noinstall", "mk5daemon", "g77", "clean", "rpfits", "perl", "withmonitor", "withfb", "withhops", "noipp", "ipp"])
 except getopt.GetoptError, err:
     print err
     print main.__doc__
@@ -83,6 +85,7 @@ perl = False
 doclean = False
 domonitor = False
 dofb = False
+dohops = False
 dodoc = True
 doipp = 0
 orgcwd = os.getcwd()
@@ -113,6 +116,8 @@ if len(opts) > 0:
             domonitor = True
         if o == "--withfb":
             dofb = True
+        if o == "--withhops":
+            dohops = True
         if o == "--ipp":
             doipp = 1
         if o == "--noipp":
@@ -138,7 +143,10 @@ def run(cmd):
 def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if (doreconf and (reconf or os.system("autoreconf"))):
         print "reconfiguring"
-        run("aclocal")
+	if os.path.exists('m4'):
+	    run("aclocal -I m4")
+	else:
+	    run("aclocal")
         if dolibtoolize:
             run(LIBTOOLIZE+" --copy --force")
         run("autoconf")
@@ -227,6 +235,8 @@ apptargets = [["calcserver", difx_version, True,True,False,False],
 
 if dofb:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
+if dohops:
+    apptargets.append(["hops", difx_version, True,False,True,False])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:

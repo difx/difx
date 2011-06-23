@@ -14,7 +14,7 @@ Build and Install DiFX
 Usage:
     install-difx [-fhv] [--force] [--help] [--verb] \\
         [--mk5daemon] [--withmonitor] [--rpfits] [--perl] [--withfb] \\
-        [--noinstall] [--reconf] [--noconf] [--clean] \\
+        [--withhops] [--noinstall] [--reconf] [--noconf] [--clean] \\
         [--g77] [--noipp] [--ipp] [--nodoc] \\
         [--cache='name'] [--targ='...'] [--pristine]
 
@@ -45,6 +45,8 @@ Options:
    --perl          Install some non-standard perl utilities (deprecated)
 
    --withfb        Build filterbank (which requires pgplot)
+
+   --withhops      Build HOPS (which requires pgplot)
 
    --noinstall     Don't install, only build.
 
@@ -84,7 +86,7 @@ try:
     opts, args = getopt.gnu_getopt(sys.argv[1:], "fhv",
         ["force", "help", "verb",
         "mk5daemon", "withmonitor", "rpfits", "perl", "withfb",
-        "noinstall", "reconf", "noconf", "clean",
+        "withhops", "noinstall", "reconf", "noconf", "clean",
         "g77", "noipp", "ipp", "cache=", "targ=", "pristine" ])
 except getopt.GetoptError, err:
     print err
@@ -113,6 +115,7 @@ errors = []
 noconf = False
 pristine = False
 dofb = False
+dohops = False
 dodoc = True
 doipp = 0
 orgcwd = os.getcwd()
@@ -137,6 +140,8 @@ if len(opts) > 0:
             perl = True
         if o == "--withfb":
             dofb = True
+        if o == "--withhops":
+            dohops = True
         if o == "--noinstall":
             noinstall = True
         if o == "--reconf":
@@ -211,7 +216,8 @@ if gfortran:
     os.environ['USEGFORTRAN'] = 'yes'
 
 
-###### Targets ##########################################
+###### Targets ####################################################
+# auto_compile(doreconf, dolibtoolize, doautoheader, ..., dompicxx)
 
 libtargets = [["difxio",     difx_version, True,True,True,False],
               ["difxmessage",difx_version, True,True,True,False],
@@ -229,6 +235,8 @@ apptargets = [["calcserver", difx_version, True,True,False,False],
 
 if dofb:
     apptargets.append(["difxfilterbank", difx_version, True,False,False,True])
+if dohops:
+    apptargets.append(["hops", difx_version, True,False,True,False])
 if mk5d:
     apptargets.append(["mk5daemon", difx_version, True,False,True,False])
 if domonitor:
@@ -303,7 +311,10 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             print "Re-using existing configuration"
         else:
             print "Reconfiguring step by step"
-            run("aclocal")
+	    if os.path.exists('m4'):
+		run("aclocal -I m4")
+	    else:
+		run("aclocal")
             if dolibtoolize:
                 run(LIBTOOLIZE+" --copy --force")
             run("autoconf")
@@ -418,7 +429,10 @@ if doclean:
     os_chdir("utilities")
     thisdir = os.getcwd()
     for utiltarget in utiltargets:
-        targetdir = utiltarget[1] + '/' + utiltarget[0]
+	if (utiltarget[1] == ''):
+	    targetdir = utiltarget[0]
+	else:
+	    targetdir= utiltarget[1]  + '/' + utiltarget[0]
         if os.path.exists(targetdir):
             print
             print "**** Cleaning "+targetdir
