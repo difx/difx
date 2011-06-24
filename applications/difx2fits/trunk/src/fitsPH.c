@@ -743,6 +743,22 @@ static int parseDifxPulseCal(const char *line,
 	return 0;
 }
 
+int countTones(const DifxDatastream *dd)
+{
+	int t;
+	int n = 0;
+
+	for(t = 0; t < dd->nRecTone; t++)
+	{
+		if(dd->recToneOut[t])
+		{
+			n++;
+		}
+	}
+
+	return n;
+}
+
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
 	int phasecentre, double avgSeconds)
@@ -944,7 +960,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				continue;/*to next job*/
 			}
 
-			if(D->datastream[dsId].phaseCalIntervalMHz > 0)
+			if(D->datastream[dsId].phaseCalIntervalMHz > 0 && countTones(&(D->datastream[dsId])) > 0)
 			{
 				v = getDifxPcalFile(D, a, j, &in2);
 				if(v != 0)
@@ -958,7 +974,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 				/*Don't mix DiFX and station pcals*/
 				if(nDifxTone)
 				{
-					printf("Warning: no pcals for Antenna %s in JobId %d\n", D->antenna[a].name, j);
+					if(countTones(&(D->datastream[dsId])) > 0)
+					{
+						printf("Warning: no pcals for Antenna %s in JobId %d\n", D->antenna[a].name, j);
+					}
+
 					continue;/*to next job*/
 				}
 			}
