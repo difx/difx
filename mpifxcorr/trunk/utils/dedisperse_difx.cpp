@@ -48,7 +48,7 @@ int main(int argc, char *argv[])
   ifstream input;
   ofstream output;
   string savedir, reldifxfile, savedifxfile;
-  unsigned int lastslash;
+  int lastslash;
   int fchan, lastconfigindex, maxnumintegrations;
   int mindelayoffset, maxdelayoffset, poloffset;
   int startmjd, currentmjd, currentfreq, baseline, offset=0;
