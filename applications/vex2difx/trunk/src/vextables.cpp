@@ -372,7 +372,7 @@ int VexMode::getBits() const
 	{
 		if(it->second.format.nBit != nBit)
 		{
-			if(nBit != 0 && firstTime)
+			if(nBit != 0 && it->second.format.nBit != 0 && firstTime)
 			{
 				cerr << "Warning: getBits: differing number of bits: " << nBit << "," << it->second.format.nBit << endl;
 				cerr << "  Will proceed, but note that some metadata may be incorrect." << endl;
