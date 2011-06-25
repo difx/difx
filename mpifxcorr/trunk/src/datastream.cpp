@@ -823,9 +823,7 @@ void DataStream::loopnetworkread()
         perr = pthread_mutex_unlock(&(bufferlock[(lastvalidsegment-1+numdatasegments)% numdatasegments]));
         if(perr != 0)
           csevere << startl << "Error (" << perr << ") in telescope readthread unlock of buffer section!!!" << (lastvalidsegment-1+numdatasegments)%numdatasegments << endl;
-      } else {
-	cwarn << startl << "Skipping unlock on buffer " << (lastvalidsegment-1+numdatasegments)%numdatasegments << " because of new file " << endl;
-      }
+      } 
 
       //do the read
       networkToMemory(lastvalidsegment, framebytesremaining);
