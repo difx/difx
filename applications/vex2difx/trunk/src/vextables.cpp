@@ -60,11 +60,11 @@ const char VexEvent::eventName[][20] =
 
 bool operator<(const VexEvent &a, const VexEvent &b)
 {
-	if(a.mjd < b.mjd)
+	if(a.mjd < b.mjd - 0.000001)
 	{
 		return true;
 	}
-	else if(a.mjd > b.mjd)
+	else if(a.mjd > b.mjd + 0.000001)
 	{
 		return false;
 	}
@@ -987,6 +987,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 				if(!scan)
 				{
 					cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
+
 					exit(0);
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
@@ -1008,6 +1009,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 				if(!scan)
 				{
 					cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
+
 					exit(0);
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
@@ -1137,6 +1139,7 @@ void VexJobGroup::createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, co
 			{
 				cerr << "Programming error: createJobs: id != e->name  (" << id << " != " << e->name << ")" << endl;
 				cerr << "Contact developer" << endl;
+
 				exit(0);
 			}
 			VexInterval scanTimeRange(s->mjd, e->mjd);

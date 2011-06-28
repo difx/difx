@@ -77,12 +77,13 @@ int calculateWorstcaseGuardNS(double samplerate, int subintNS)
 {
 	double sampleTimeNS = 1000000000.0/samplerate;
 	double nsaccumulate = sampleTimeNS;
+	
 	while(fabs(nsaccumulate - static_cast<int>(nsaccumulate)) > 0.000000000001)
 	{
 		nsaccumulate += sampleTimeNS;
 	}
 
-	return static_cast<int>(nsaccumulate + 1600.0*subintNS/1000000000.0 + 0.99);
+	return static_cast<int>(nsaccumulate + 2400.0*subintNS/1000000000.0 + 5);
 }
 
 // A is assumed to be the first scan in time order
@@ -1003,7 +1004,9 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 
 static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vector<vector<int> > &toneSets)
 {
+	static int firstChanBWWarning=1;
 	DifxFreq *df;
+	double chanBW;
 
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
@@ -1018,6 +1021,13 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 		df->specAvg = freqs[f].specAvg();
 		df->overSamp = freqs[f].overSamp;
 		df->decimation = freqs[f].decimation;
+
+		chanBW = df->bw*df->specAvg/df->nChan;
+		if(chanBW > 0.51 && firstChanBWWarning)
+		{
+			firstChanBWWarning = 0;
+			cout << "Warning: channel bandwidth is " << chanBW << " MHZ, which is larger than the minimum recommended 0.5 MHz.  Consider increasing the number of output channels." << endl;
+		}
 
 		// This is to correct for the fact that mpifxcorr does not know about oversampling
 		if(df->overSamp > df->decimation)
