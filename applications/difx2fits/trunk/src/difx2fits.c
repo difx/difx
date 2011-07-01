@@ -378,6 +378,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 {
 	int i, j;
 	int fqindex=-1;
+	double d_tmp;
 
 	strcpy(keys->obscode, D->job->obsCode);
 	keys->no_stkd = D->nPolar;
@@ -432,21 +433,27 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 
 				exit(0);
 			}
+
+			/*extra precision to deal with non ^2 rounding errors*/
+			d_tmp = 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan;
 			if(keys->chan_bw == -1)
 			{
-				keys->chan_bw = 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan;
+				keys->chan_bw = (float) d_tmp;
 			}
-			else if(keys->chan_bw != 1.0e6*D->freq[fqindex].bw*D->freq[fqindex].specAvg/D->freq[fqindex].nChan)
+			else if(keys->chan_bw != (float) d_tmp)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same final channel bandwidth\n");
 
 				exit(0);
 			}
+
+			/*extra precision to deal with non ^2 rounding errors*/
+			d_tmp = 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg);
 			if(keys->ref_pixel == -1)
 			{
-				keys->ref_pixel = 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg);
+				keys->ref_pixel = (float) d_tmp;
 			}
-			else if(keys->ref_pixel != 0.5 + 1.0/(2.0*D->freq[fqindex].specAvg*D->specAvg))
+			else if(keys->ref_pixel != (float) d_tmp)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same reference pixel\n");
 
