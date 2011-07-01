@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mpifxcorr</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>job3322.000</identifier>
+	<type>DifxWeightMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxWeight>
+		<antenna>GetLoad</antenna>
+		<weight>GetLoad</weight>
+	</difxWeight>
+    </body>
+</difxMessage>

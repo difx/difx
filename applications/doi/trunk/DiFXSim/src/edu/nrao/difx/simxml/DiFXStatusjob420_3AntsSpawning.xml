@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mpifxcorr</from>
+	<to>swc000</to>
+	<mpiProcessId>0</mpiProcessId>
+	<identifier>job420.000</identifier>
+	<type>DifxStatusMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxStatus>
+		<state>Spawning</state>
+		<message>The job is running with no errors</message>
+		<visibilityMJD>54643.4532870</visibilityMJD>
+		<weight ant = "1" wt = "0.1"/>
+		<weight ant = "2" wt = "0.2"/>
+		<weight ant = "3" wt = "0.3"/>
+	</difxStatus>
+    </body>
+</difxMessage>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mpifxcorr</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>job421.000</identifier>
+	<type>DifxStatusMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxStatus>
+		<state>Done</state>
+		<message>The job is complete with no errors</message>
+		<visibilityMJD>54643.4532870</visibilityMJD>
+		<weight antId = "1" weight = "0.8"/>
+	</difxStatus>
+    </body>
+</difxMessage>

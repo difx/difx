@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>swc008</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>loadmon</identifier>
+	<type>DifxLoadMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxLoad>
+		<cpuLoad>0.50</cpuLoad>
+		<totalMemory>1000</totalMemory>
+		<usedMemory>1000</usedMemory>
+		<netRXRate>1940</netRXRate>
+		<netTXRate>424</netTXRate>
+	</difxLoad>
+    </body>
+</difxMessage>

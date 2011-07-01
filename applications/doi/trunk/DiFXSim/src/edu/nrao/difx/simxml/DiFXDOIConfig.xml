@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<difxDoiConfig>
+      <difxHome>/home/swc/difx</difxHome>
+      <resourcesFile>/home/swc/difx/resources.difx</resourcesFile>
+      <dbHost>c3po.aoc.nrao.edu</dbHost>
+      <dbSID>vlbatest</dbSID>
+      <dbPassword>vlba</dbPassword>
+      <dbJdbcDriver>oracle.jdbc.driver.OracleDriver</dbJdbcDriver>
+      <dbJdbcPort>1521</dbJdbcPort>
+      <dbUrlComposer>jdbc:oracle:thin:@</dbUrlComposer>
+      <dbUrl>jdbc:oracle:thin:@c3po.aoc.nrao.edu:1521:vlbatest</dbUrl>
+      <ipAddress>224.2.2.1</ipAddress>
+      <port>50200</port>
+      <bufferSize>1500</bufferSize>
+      <statusValidDuration>20000</statusValidDuration>
+</difxDoiConfig>

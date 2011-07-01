@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<difxConfig>
+	<mark5Units>24</mark5Units>
+	<processors>9</processors>
+	<headnodes>1</headnodes>
+	<logging>true</logging>
+</difxConfig>

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>swc000</from>
+	<mpiProcessId>0</mpiProcessId>
+	<identifier>job420.000</identifier>
+	<type>DifxStatusMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxStatus>
+		<state>Running</state>
+		<message></message>
+		<visibilityMJD>54643.4532870</visibilityMJD>
+	        <weight ant="0" wt="0.000"/>
+		<weight ant="1" wt="0.000"/>
+		<weight ant="2" wt="0.000"/>
+	</difxStatus>
+    </body>
+</difxMessage>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>swc000</from>
+	<mpiProcessId>0</mpiProcessId>
+	<identifier>mt917_01</identifier>
+	<type>DifxAlertMessage</type>
+    </header>
+    <body>
+	<seqNumber>2002</seqNumber>
+	<difxAlert>
+		<alertMessage>Bogus Alert MessageXXXX</alertMessage>
+		<severity>4</severity>
+	</difxAlert>
+    </body>
+</difxMessage>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>DOIView</from>
+	<to>DOIModel</to>
+	<mpiProcessId>0</mpiProcessId>
+	<identifier>doi</identifier>
+	<type>DOIMessage</type>
+    </header>
+    <body>
+	<seqNumber>0</seqNumber>
+	<jobsQueueJob>
+                <project>bb222</project>
+		<job>Job321.00.1</job>
+	</jobsQueueJob>
+    </body>
+</difxMessage>

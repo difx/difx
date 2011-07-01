@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+            *** GENERATED FROM xml_binding_cfg.xml - DO NOT EDIT  ***
+            *** Configure thru JAXB Wizard.                       ***
+        -->
+<project name="XmlLib_jaxb" default="default" basedir=".">
+    <target name="xjc-typedef-target" depends="-init-project">
+        <typedef classname="com.sun.tools.xjc.XJCTask" name="xjc" xmlns:s="http://xml.netbeans.org/schema/JAXBWizConfig">
+            <classpath path="${jaxbwiz.xjcdef.classpath}"/>
+        </typedef>
+    </target>
+    <target name="jaxb-clean-code-generation" depends="clean,jaxb-code-generation"/>
+    <target name="jaxb-code-generation" depends="xjc-typedef-target,-do-init,-init-macrodef-javac">
+        <mkdir dir="${build.generated.sources.dir}/jaxb" xmlns:s="http://xml.netbeans.org/schema/JAXBWizConfig"/>
+        <mkdir dir="build/generated/jaxbCache" xmlns:s="http://xml.netbeans.org/schema/JAXBWizConfig"/>
+        <mkdir dir="build/generated/jaxbCache/DiFXMessage"/>
+        <xjc package="edu.nrao.difx.xmllib.difxmessage" destdir="build/generated/jaxbCache/DiFXMessage" catalog="catalog.xml">
+            <classpath>
+                <pathelement location="${src.dir}"/>
+                <pathelement path="${jaxbwiz.xjcrun.classpath}"/>
+            </classpath>
+            <arg value="-xmlschema"/>
+            <arg value="-npa"/>
+            <arg value="-readOnly"/>
+            <arg value="-verbose"/>
+            <arg value="-nv"/>
+            <schema file="xml-resources/jaxb/DiFXMessage/DiFXMessageXmlSchema.xsd"/>
+            <depends file="xml-resources/jaxb/DiFXMessage/DiFXMessageXmlSchema.xsd"/>
+            <produces dir="build/generated/jaxbCache/DiFXMessage"/>
+        </xjc>
+        <copy todir="${build.generated.sources.dir}/jaxb">
+            <fileset dir="build/generated/jaxbCache/DiFXMessage"/>
+        </copy>
+    </target>
+</project>

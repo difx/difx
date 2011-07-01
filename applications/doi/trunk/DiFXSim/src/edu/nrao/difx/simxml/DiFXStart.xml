@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>doi</from>
+	<to>swc000</to>
+	<mpiProcessId>-1</mpiProcessId>
+	<identifier>job420.000</identifier>
+	<type>DifxStartMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxStart>
+		<input>/fullpath/job420.000.input</input>
+		<manager node = "swc000"/>
+		<datastream nodes = "mark5fx12 mark5fx21"/>
+		<process nodes = "swc000 swc001" threads="7"/>
+	</difxStart>
+    </body>
+</difxMessage>

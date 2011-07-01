@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8' ?>
+<schemas xmlns='http://xml.netbeans.org/schema/JAXBWizConfig' destdir='build/generated/addons/jaxb' projectName='XmlLib' version='1.0'>
+	<schema type='-xmlschema' package='edu.nrao.difx.xmllib.difxmessage' name='DiFXMessage'>
+		<xjc-options>
+			<xjc-option name='-npa' value='true'/>
+			<xjc-option name='-readOnly' value='true'/>
+			<xjc-option name='-verbose' value='true'/>
+			<xjc-option name='-nv' value='true'/>
+		</xjc-options>
+		<schema-sources>
+			<schema-source location='xml-resources/jaxb/DiFXMessage/DiFXMessageXmlSchema.xsd' origLocation='src/edu/nrao/difx/xmllib/DiFXMessageXmlSchema.xsd'/>
+		</schema-sources>
+		<bindings>
+		</bindings>
+		<catalog/>
+	</schema>
+</schemas>

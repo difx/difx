@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mpifxcorr</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>job3322.000</identifier>
+	<type>DifxErrorMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxError>
+		<errorMessage>No Error</errorMessage>
+		<severity>4</severity>
+	</difxError>
+    </body>
+</difxMessage>

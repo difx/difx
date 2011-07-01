@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<difxMessage>
+   <header>
+      <from>mark5fx18</from>
+      <to>swc000</to>
+      <mpiProcessId>-1</mpiProcessId>
+      <identifier>mk5daemon</identifier>
+      <type>Mark5StatusMessage</type>
+   </header>
+   <body>
+      <seqNumber>62962</seqNumber>
+      <mark5Status>
+         <bankAVSN>NRAO+244</bankAVSN>
+         <bankBVSN>NRAO+234</bankBVSN>
+         <statusWord>0x00000000</statusWord>
+         <activeBank>A</activeBank>
+         <state>Busy</state>
+         <scanNumber>0</scanNumber>
+         <scanName></scanName>
+         <position>0</position>
+         <playRate>  0.000</playRate>
+         <dataMJD>    0.0000000</dataMJD>
+      </mark5Status>
+   </body>
+</difxMessage>

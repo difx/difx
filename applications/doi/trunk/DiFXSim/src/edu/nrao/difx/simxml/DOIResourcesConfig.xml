@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+        <from>DOIController</from>
+        <to>DOIModel</to>
+        <mpiProcessId>0</mpiProcessId>
+        <identifier>resources.difx</identifier>
+        <type>DOIMessage</type>
+    </header>
+    <body>
+        <seqNumber>0</seqNumber>
+        <doiResourcesConfig>
+            <name>mark5fx01</name>
+            <numCPUs>1</numCPUs>
+            <numCores>2</numCores>
+            <bogusGHz>2.0</bogusGHz>
+            <type>1</type>
+            <enabled>true</enabled>
+        </doiResourcesConfig>
+    </body>
+</difxMessage>

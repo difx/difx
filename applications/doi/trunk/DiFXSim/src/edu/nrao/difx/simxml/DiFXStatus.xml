@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mpifxcorr</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>job3322.000</identifier>
+	<type>DifxStatusMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxStatus>
+		<state>Running</state>
+		<message>The job is running with no errors</message>
+		<visibilityMJD>00::00::00::00</visibilityMJD>
+	</difxStatus>
+    </body>
+</difxMessage>

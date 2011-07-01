@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+<difxMessage>
+    <header>
+	<from>mark5fx24</from>
+	<to>swc000</to>
+	<mpiProcessId>1</mpiProcessId>
+	<identifier>loadmon</identifier>
+	<type>DifxLoadMessage</type>
+    </header>
+    <body>
+	<seqNumber>8140</seqNumber>
+	<difxLoad>
+		<cpuLoad>0.00</cpuLoad>
+		<totalMemory>1000</totalMemory>
+		<usedMemory>500</usedMemory>
+		<netRXRate>970</netRXRate>
+		<netTXRate>212</netTXRate>
+	</difxLoad>
+    </body>
+</difxMessage>
