@@ -70,6 +70,16 @@ bool isTrue(const string &str)
 	}
 }
 
+/* check if an integer is a power of 2 */
+bool isPower2(int n)
+{
+	if(!(n & (n - 1))) 
+	{
+		return true;
+	}
+	return false; // also true for zero but this shouldn't concern us
+}
+
 // Turns a string into MJD 
 // The following formats are allowd:
 // 1. decimal mjd:                 
@@ -480,6 +490,11 @@ int CorrSetup::checkValidity() const
 {
 	int nwarn = 0;
 
+	if(!isPower2(nFFTChan))
+	{
+		cerr << "nFFTChan=" << nFFTChan << ". Non power of 2 FFTs are an experimental feature. Caution is advised." << endl;
+		cerr << "   Setting xmaclength and stridelength manually is also recommended" << endl;
+	}
 	if(nInputChan() < strideLength)
 	{
 		cerr << "Array stride length " << strideLength << " is greater than the input number of channels " << nInputChan() << endl;
