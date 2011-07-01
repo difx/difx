@@ -1472,9 +1472,9 @@ bool Configuration::processFreqTable(ifstream * input)
       maxnumchannels = freqtable[i].numchannels;
     getinputline(input, &line, "CHANS TO AVG ");
     freqtable[i].channelstoaverage = atoi(line.c_str());
-    if(freqtable[i].channelstoaverage <= 0 || (freqtable[i].channelstoaverage > 1 && freqtable[i].channelstoaverage%2 != 0)) {
+    if (freqtable[i].channelstoaverage <= 0 || (freqtable[i].channelstoaverage > 1 && freqtable[i].numchannels % freqtable[i].channelstoaverage != 0)) {
       if(mpiid == 0) //only write one copy of this error message
-        cerror << startl << "Channels to average must be positive and a power of two - not the case for frequency entry " << i << "(" << freqtable[i].channelstoaverage << ") - aborting!!!" << endl;
+        cerror << startl << "Channels to average must be positive and the number of channels must be divisible by channels to average - not the case for frequency entry " << i << "(" << freqtable[i].channelstoaverage << ","<<freqtable[i].numchannels<<") - aborting!!!" << endl;
       return false;
     }
     getinputline(input, &line, "OVERSAMPLE FAC. ");

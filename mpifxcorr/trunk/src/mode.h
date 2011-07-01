@@ -235,7 +235,7 @@ protected:
   f32 dataweight;
   int samplesperblock, samplesperlookup, numlookups, flaglength, autocorrwidth;
   int datascan, datasec, datans, datalengthbytes, usecomplex;
-  bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok;
+  bool filterbank, calccrosspolautocorrs, fractionalLoFreq, initok, isfft;
   double * recordedfreqclockoffsets;
   double * recordedfreqlooffsets;
   u8  *   data;
@@ -250,6 +250,8 @@ protected:
   cf32*** autocorrelations;
   vecFFTSpecR_f32 * pFFTSpecR;
   vecFFTSpecC_cf32 * pFFTSpecC;
+  vecDFTSpecR_f32 * pDFTSpecR;
+  vecDFTSpecC_cf32 * pDFTSpecC;
   u8 * fftbuffer;
   vecHintAlg hint;
   Model * model;

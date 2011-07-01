@@ -42,6 +42,19 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
     usecomplex=1;
   else
     usecomplex=0;
+  //Uses bitwise test to check if numchannels is power of 2
+  if(!(fftchannels & (fftchannels - 1)))
+  {
+    isfft = true;
+    cdebug << startl << "fftchannels ="<< fftchannels << " is a power of 2 so isfft is set to true." << endl;
+  }
+  else
+  {
+    isfft = false;
+    cdebug << startl << "fftchannels ="<< fftchannels << " isn't a power of 2 so isfft is set to false." << endl;
+  }
+
+  cdebug << startl << "fftchannels ="<< fftchannels << " isfft ="<< isfft << endl;
 
   model = config->getModel();
   initok = true;
@@ -168,7 +181,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         estimatedbytes += (8+8+4+4+4)*arraystridelength;
 
         stepxoffsquared = vectorAlloc_f64(numfrstrides);
-        tempstepxval    = vectorAlloc_f64(numfrstrides);
+        tempstepxval = vectorAlloc_f64(numfrstrides);
         estimatedbytes += 16*numfrstrides;
       case 1:
         subxoff  = vectorAlloc_f64(arraystridelength);
@@ -188,10 +201,10 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         stepcplx  = vectorAlloc_cf32(numfrstrides);
         estimatedbytes += (3*8+3*4+8)*numfrstrides;
 
-	complexunpacked = vectorAlloc_cf32(fftchannels);
-	complexrotator = vectorAlloc_cf32(fftchannels);
-	fftd = vectorAlloc_cf32(fftchannels);
-	estimatedbytes += 3*sizeof(cf32)*fftchannels;
+        complexunpacked = vectorAlloc_cf32(fftchannels);
+        complexrotator = vectorAlloc_cf32(fftchannels);
+        fftd = vectorAlloc_cf32(fftchannels);
+        estimatedbytes += 3*sizeof(cf32)*fftchannels;
 
         for(int i=0;i<arraystridelength;i++)
           subxoff[i] = (double(i)/double(fftchannels));
@@ -202,20 +215,40 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
             stepxoffsquared[i] = stepxoff[i]*stepxoff[i];
         }
 
-        status = vectorInitFFTC_cf32(&pFFTSpecC, order, flag, hint);
-        if(status != vecNoErr)
-          csevere << startl << "Error in FFT initialisation!!!" << status << endl;
-        status = vectorGetFFTBufSizeC_cf32(pFFTSpecC, &fftbuffersize);
-        if(status != vecNoErr)
-          csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+        if (isfft) {
+          status = vectorInitFFTC_cf32(&pFFTSpecC, order, flag, hint);
+          if (status != vecNoErr)
+            csevere << startl << "Error in FFT initialisation!!!" << status << endl;
+          status = vectorGetFFTBufSizeC_cf32(pFFTSpecC, &fftbuffersize);
+          if (status != vecNoErr)
+            csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+        }
+        else {
+          status = vectorInitDFTC_cf32(&pDFTSpecC, fftchannels, flag, hint);
+          if(status != vecNoErr)
+            csevere << startl << "Error in DFT initialisation!!!" << status << endl;
+          status = vectorGetDFTBufSizeC_cf32(pDFTSpecC, &fftbuffersize);
+          if (status != vecNoErr)
+            csevere << startl << "Error in DFT buffer size calculation!!!" << status << endl;
+        }
         break;
       case 0: //zeroth order interpolation, can do "post-F"
-        status = vectorInitFFTR_f32(&pFFTSpecR, order, flag, hint);
-        if(status != vecNoErr)
-          csevere << startl << "Error in FFT initialisation!!!" << status << endl;
-        status = vectorGetFFTBufSizeR_f32(pFFTSpecR, &fftbuffersize);
-        if(status != vecNoErr)
-          csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+        if (isfft) {
+          status = vectorInitFFTR_f32(&pFFTSpecR, order, flag, hint);
+          if (status != vecNoErr)
+            csevere << startl << "Error in FFT initialisation!!!" << status << endl;
+          status = vectorGetFFTBufSizeR_f32(pFFTSpecR, &fftbuffersize);
+          if (status != vecNoErr)
+            csevere << startl << "Error in FFT buffer size calculation!!!" << status << endl;
+        }
+        else {
+          status = vectorInitDFTR_f32(&pDFTSpecR, fftchannels, flag, hint);
+          if (status != vecNoErr)
+            csevere << startl << "Error in DFT initialisation!!!" << status << endl;
+          status = vectorGetDFTBufSizeR_f32(pDFTSpecR, &fftbuffersize);
+          if (status != vecNoErr)
+            csevere << startl << "Error in DFT buffer size calculation!!!" << status << endl;
+        }
         break;
     }
 
@@ -389,14 +422,28 @@ Mode::~Mode()
       vectorFree(complexrotator);
       vectorFree(fftd);
 
-      status = vectorFreeFFTC_cf32(pFFTSpecC);
-      if(status != vecNoErr)
-        csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
+      if(isfft) {
+        status = vectorFreeFFTC_cf32(pFFTSpecC);
+        if (status != vecNoErr)
+          csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
+      }
+      else{
+        status = vectorFreeDFTC_cf32(pDFTSpecC);
+        if (status != vecNoErr)
+          csevere << startl << "Error in freeing DFT spec!!!" << status << endl;
+      }
       break;
     case 0: //zeroth order interpolation, "post-F"
-      status = vectorFreeFFTR_f32(pFFTSpecR);
-      if(status != vecNoErr)
-        csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
+      if(isfft) {
+        status = vectorFreeFFTR_f32(pFFTSpecR);
+        if (status != vecNoErr)
+          csevere << startl << "Error in freeing FFT spec!!!" << status << endl;
+      }
+      else{
+        status = vectorFreeDFTR_f32(pDFTSpecR);
+        if (status != vecNoErr)
+          csevere << startl << "Error in freeing DFT spec!!!" << status << endl;
+      }
       break;
   }
 
@@ -791,11 +838,18 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
             fftptr = (config->getDRecordedLowerSideband(configindex, datastreamindex, i))?conjfftoutputs[j][subloopindex]:fftoutputs[j][subloopindex];
 
             //do the fft
-	    // Chris add C2C fft for complex data
-            status = vectorFFT_RtoC_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), (f32*)fftptr, pFFTSpecR, fftbuffer);
-            if(status != vecNoErr)
-              csevere << startl << "Error in FFT!!!" << status << endl;
+            // Chris add C2C fft for complex data
+            if(isfft) {
+              status = vectorFFT_RtoC_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), (f32*) fftptr, pFFTSpecR, fftbuffer);
+              if (status != vecNoErr)
+                csevere << startl << "Error in FFT!!!" << status << endl;
             //fix the lower sideband if required
+            }
+            else{
+              status = vectorDFT_RtoC_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), (f32*) fftptr, pDFTSpecR, fftbuffer);
+              if (status != vecNoErr)
+                csevere << startl << "Error in DFT!!!" << status << endl;  
+            }
             if(config->getDRecordedLowerSideband(configindex, datastreamindex, i))
             {
               status = vectorConjFlip_cf32(fftptr, fftoutputs[j][subloopindex], recordedbandchannels);
@@ -803,27 +857,34 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
                 csevere << startl << "Error in conjugate!!!" << status << endl;
             }
             break;
-  	  case 1: // Linear
-  	  case 2: // Quadratic
-	    if (usecomplex) {
-	      status = vectorMul_cf32(complexrotator, &unpackedcomplexarrays[j][nearestsample - unpackstartsamples], complexunpacked, fftchannels);
+          case 1: // Linear
+          case 2: // Quadratic
+            if (usecomplex) {
+              status = vectorMul_cf32(complexrotator, &unpackedcomplexarrays[j][nearestsample - unpackstartsamples], complexunpacked, fftchannels);
               //CJP// status = vectorCopy_cf32(&unpackedcomplexarrays[j][nearestsample - unpackstartsamples], complexunpacked, recordedbandchannels);
-	      if(status != vecNoErr)
-		csevere << startl << "Error in real->complex conversion" << endl;
-	    } else {
-	      status = vectorRealToComplex_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), NULL, complexunpacked, fftchannels);
-	      if(status != vecNoErr)
-		csevere << startl << "Error in real->complex conversion" << endl;
-	      status = vectorMul_cf32_I(complexrotator, complexunpacked, fftchannels);
-	      //if(status != vecNoErr)
-	      //	csevere << startl << "Error in fringe rotation!!!" << status << endl;
-	    }
-	    status = vectorFFT_CtoC_cf32(complexunpacked, fftd, pFFTSpecC, fftbuffer);
-            if(status != vecNoErr)
-              csevere << startl << "Error doing the FFT!!!" << endl;
+              if (status != vecNoErr)
+                csevere << startl << "Error in real->complex conversion" << endl;
+            } else {
+              status = vectorRealToComplex_f32(&(unpackedarrays[j][nearestsample - unpackstartsamples]), NULL, complexunpacked, fftchannels);
+              if (status != vecNoErr)
+                csevere << startl << "Error in real->complex conversion" << endl;
+              status = vectorMul_cf32_I(complexrotator, complexunpacked, fftchannels);
+              //if(status != vecNoErr)
+              //	csevere << startl << "Error in fringe rotation!!!" << status << endl;
+            }
+            if(isfft) {
+              status = vectorFFT_CtoC_cf32(complexunpacked, fftd, pFFTSpecC, fftbuffer);
+              if(status != vecNoErr)
+                csevere << startl << "Error doing the FFT!!!" << endl;
+            }
+            else{
+              status = vectorDFT_CtoC_cf32(complexunpacked, fftd, pDFTSpecC, fftbuffer);
+              if(status != vecNoErr)
+                csevere << startl << "Error doing the DFT!!!" << endl;
+            }
             if(!usecomplex && config->getDRecordedLowerSideband(configindex, datastreamindex, i)) {
-              status = vectorCopy_cf32(&(fftd[recordedbandchannels+1]), fftoutputs[j][subloopindex], recordedbandchannels-1);
-              fftoutputs[j][subloopindex][recordedbandchannels-1] = fftd[0];
+              status = vectorCopy_cf32(&(fftd[recordedbandchannels + 1]), fftoutputs[j][subloopindex], recordedbandchannels - 1);
+              fftoutputs[j][subloopindex][recordedbandchannels - 1] = fftd[0];
             }
             else {
               status = vectorCopy_cf32(fftd, fftoutputs[j][subloopindex], recordedbandchannels);

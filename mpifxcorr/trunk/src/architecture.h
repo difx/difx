@@ -80,8 +80,11 @@
 #define vecFFTSpecR_f32          IppsFFTSpec_R_32f
 #define vecFFTSpecC_f32          IppsFFTSpec_C_32f
 #define vecFFTSpecC_cf32         IppsFFTSpec_C_32fc
-#define vecDFTSpecC_cf32         IppsDFTSpec_C_32fc
 #define vecFFTSpec_s16           IppsFFTSpec_R_16s
+#define vecDFTSpecR_f32          IppsDFTSpec_R_32f
+#define vecDFTSpecC_f32          IppsDFTSpec_C_32f
+#define vecDFTSpecC_cf32         IppsDFTSpec_C_32fc
+#define vecDFTSpec_s16           IppsDFTSpec_R_16s
 #define vecHintAlg               IppHintAlgorithm
 #define vecRndZero               ippRndZero
 #define vecRndNear               ippRndNear
@@ -150,25 +153,49 @@
 #define vectorInitFFTR_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_R_32f(fftspec, order, flag, hint)
 #define vectorInitFFTC_f32(fftspec, order, flag, hint)                      ippsFFTInitAlloc_C_32f(fftspec, order, flag, hint)
 #define vectorInitFFTC_cf32(fftspec, order, flag, hint)                     ippsFFTInitAlloc_C_32fc(fftspec, order, flag, hint)
+
+#define vectorInitDFTR_f32(fftspec, nchan, flag, hint)                      ippsDFTInitAlloc_R_32f(fftspec, nchan, flag, hint)
+#define vectorInitDFTC_f32(fftspec, nchan, flag, hint)                      ippsDFTInitAlloc_C_32f(fftspec, nchan, flag, hint)
+
 //#define vectorInitFFT_f32(fftspec, order, flag, hint)                       ippsDFTInitAlloc_R_32f(fftspec, order, flag, hint)
-#define vectorInitDFTC_cf32(fftspec, order, flag, hint)                     ippsDFTInitAlloc_C_32fc(fftspec, order, flag, hint)
+#define vectorInitDFTC_cf32(fftspec, npoints, flag, hint)                     ippsDFTInitAlloc_C_32fc(fftspec, npoints, flag, hint)
 #define vectorInitFFT_s16(fftspec, order, flag, hint)                       ippsFFTInitAlloc_R_16s(fftspec, order, flag, hint)
+
+#define vectorInitDFT_s16(fftspec, nchan, flag, hint)                       ippsDFTInitAlloc_R_16s(fftspec, nchan, flag, hint)
+
 #define vectorGetFFTBufSizeR_f32(fftspec, buffersize)                       ippsFFTGetBufSize_R_32f(fftspec, buffersize)
 #define vectorGetFFTBufSizeC_f32(fftspec, buffersize)                       ippsFFTGetBufSize_C_32f(fftspec, buffersize)
+
+#define vectorGetDFTBufSizeR_f32(fftspec, buffersize)                       ippsDFTGetBufSize_R_32f(fftspec, buffersize)
+#define vectorGetDFTBufSizeC_f32(fftspec, buffersize)                       ippsDFTGetBufSize_C_32f(fftspec, buffersize)
+
 #define vectorGetFFTBufSizeC_cf32(fftspec, buffersize)                      ippsFFTGetBufSize_C_32fc(fftspec, buffersize)
 //#define vectorGetFFTBufSize_f32(fftspec, buffersize)                        ippsDFTGetBufSize_R_32f(fftspec, buffersize)
 #define vectorGetDFTBufSizeC_cf32(fftspec, buffersize)                      ippsDFTGetBufSize_C_32fc(fftspec, buffersize)
 #define vectorGetFFTBufSize_s16(fftspec, buffersize)                        ippsFFTGetBufSize_R_16s(fftspec, buffersize)
+
+#define vectorGetDFTBufSize_s16(fftspec, buffersize)                        ippsDFTGetBufSize_R_16s(fftspec, buffersize)
+
 #define vectorFreeFFTR_f32(fftspec)                                         ippsFFTFree_R_32f(fftspec)
 #define vectorFreeFFTC_f32(fftspec)                                         ippsFFTFree_C_32f(fftspec)
 #define vectorFreeFFTC_cf32(fftspec)                                        ippsFFTFree_C_32fc(fftspec)
+
+#define vectorFreeDFTR_f32(fftspec)                                         ippsDFTFree_R_32f(fftspec)
+#define vectorFreeDFTC_f32(fftspec)                                         ippsDFTFree_C_32f(fftspec)
+
 #define vectorFreeDFTC_cf32(fftspec)                                        ippsDFTFree_C_32fc(fftspec)
 #define vectorFFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsFFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
 #define vectorFFT_CtoC_f32(srcre, srcim, destre, destim, fftspec, fftbuff)  ippsFFTFwd_CToC_32f(srcre, srcim, destre, destim, fftspec, fftbuff)
+
+#define vectorDFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsDFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
+#define vectorDFT_CtoC_f32(srcre, srcim, destre, destim, fftspec, fftbuff)  ippsDFTFwd_CToC_32f(srcre, srcim, destre, destim, fftspec, fftbuff)
+
 #define vectorFFT_CtoC_cf32(src, dest, fftspec, fftbuff)                    ippsFFTFwd_CToC_32fc(src, dest, fftspec, fftbuff)
 #define vectorDFT_CtoC_cf32(src, dest, fftspec, fftbuff)                    ippsDFTFwd_CToC_32fc(src, dest, fftspec, fftbuff)
 //#define vectorFFT_RtoC_f32(src, dest, fftspec, fftbuffer)                   ippsDFTFwd_RToCCS_32f(src, dest, fftspec, fftbuffer)
 #define vectorScaledFFT_RtoC_s16(src, dest, fftspec, fftbuffer, scale)      ippsFFTFwd_RToCCS_16s_Sfs(src, dest, fftspec, fftbuffer, scale)
+
+#define vectorScaledDFT_RtoC_s16(src, dest, fftspec, fftbuffer, scale)      ippsDFTFwd_RToCCS_16s_Sfs(src, dest, fftspec, fftbuffer, scale)
 
 #define vectorFlip_f64_I(srcdest, length)                                   ippsFlip_64f_I(srcdest, length)
 
