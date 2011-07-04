@@ -3,11 +3,16 @@ export DIFX_VERSION=trunk
 
 ####### ROOT PATHS ##########################
 export DIFXROOT=/usr/local/difx
+export DIFX_PREFIX=$DIFXROOT
 export PGPLOTDIR=/usr/local/pgplot
 export IPPROOT=/opt/intel/ipp/5.2/ia32
 
 ####### COMPILER ############################
 export MPICXX=/usr/bin/mpicxx
+
+####### USE GFORTRAN IN PREFERENCE TO G77? ##
+####### Comment out if not desired ##########
+export USEGFORTRAN="yes"
 
 ####### IPP libraries needed for linking #############
 ## Alternate lines may be needed for old versions ####
