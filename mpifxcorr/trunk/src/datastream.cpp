@@ -527,6 +527,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 void DataStream::initialiseMemoryBuffer()
 {
   int perr;
+  struct timespec abstime;
+
   readthreadstarted = false;
   cverbose << startl << "Datastream " << mpiid << " started initialising memory buffer" << endl;
 
@@ -562,9 +564,10 @@ void DataStream::initialiseMemoryBuffer()
   
   while(!readthreadstarted) //wait to ensure the thread got started ok
   {
-    //cdebug << startl << "MAIN: initialiseMemoryBuffer: cond_wait initcond" << endl;
-    perr = pthread_cond_wait(&initcond, &(bufferlock[1]));
-    if (perr != 0)
+    abstime.tv_sec = 0;
+    abstime.tv_nsec = 500000000;  // 0.5 sec
+    perr = pthread_cond_timedwait(&initcond, &(bufferlock[1]), &abstime);
+    if (perr != 0 && perr != ETIMEDOUT)
       csevere << startl << "Error waiting on readthreadstarted condition!!!!" << endl;
   }
 
