@@ -498,9 +498,16 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
   Configuration::datasampling sampling;
   double bw;
 
-  if (udp_offset>readbytes) {
-    cinfo << startl << "DataStream " << mpiid << ": Skipping over " << udp_offset-(udp_offset%readbytes) << " bytes" << endl;
+
+  
+  if (!tcp && udp_offset>readbytes) { // What does this do to networkToMempory - does packet head need updating
+    int skip = udp_offset-(udp_offset%readbytes);
+    cinfo << startl << "DataStream " << mpiid << ": Skipping over " << skip/1024/1024 << " Mbytes" << endl;
+    if (skip > readbytes) 
+      cinfo << startl << "     " << skip/readbytes << " segments" << endl;
+    packet_segmentstart += (skip-(udp_offset%udpsize))/udpsize;
     udp_offset %= readbytes;
+    packet_drop += skip/udpsize;
   }
   if(bufferinfo[buffersegment].configindex != lastconfig)
   {
@@ -543,14 +550,14 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
 	oo = 0;
 	dup = 0;
       } else {
-	dropped = (float)packet_drop*100.0/(float)npacket;
+	dropped = (float)packet_drop*100.0/(float)(npacket+packet_drop);
 	oo = (float)packet_oo*100.0/(float)npacket;
 	dup = (float)packet_duplicate*100.0/(float)npacket;
       }
       rate = packet_sum/delta*8/1e6;
     
       cinfo << fixed << setprecision(2);
-      cinfo << startl << "Datastream " << mpiid << ": Packets=" << npacket << "  Dropped=" << dropped
+      cinfo << startl << "Packets=" << npacket << "  Dropped=" << dropped
 	    << "  Out-of-order=" << oo << "  Rate=" << rate << " Mbps" << endl;
       // Should reset precision
 
@@ -570,10 +577,10 @@ void Mk5DataStream::networkToMemory(int buffersegment, uint64_t & framebytesrema
  ASSUMPTIONS
 
  udp_offset is left containing number of bytes still to be consumed
- from last UDP packet. If first packet from next frame is missing then
- udp_offset points to END of initial data. It is assumed only udpsize
- bytes are available though. udp_buf actually contains the left over
- bytes so that must be dealt with before any more data is read.
+ from last UDP packet. If one of more packet from next frame are
+ missing then udp_offset points to END of missing data, with udpsize
+ bytes are available.  udp_buf actually contains the left over bytes
+ which must be dealt with before any more data is read.
 
 *****/
 
@@ -591,6 +598,7 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     unsigned long long sequence;
     struct msghdr msg;
     struct iovec iov[2];
+    int headerpackets;
 
     memset(&msg, 0, sizeof(msg));
     msg.msg_iov        = &iov[0];
@@ -599,6 +607,8 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
     iov[0].iov_len = sizeof(sequence);
     iov[1].iov_base = udp_buf;
     iov[1].iov_len = MAXPACKETSIZE;
+
+    headerpackets = (10016*2-1)/udpsize+2;
 
     packet_segmentend = packet_segmentstart+(bytestoread-(udp_offset%udpsize)-1)/udpsize;
     if (udp_offset>0 && udp_offset<bytestoread) packet_segmentend++; 
@@ -653,10 +663,10 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  if (udp_offset>0) {
 	    memmove(udp_buf, udp_buf+bytestoread, udp_offset);
 	    next_segmentstart = packet_segmentend;
-	} else {
-	  next_segmentstart = packet_segmentend+1;
-        }
-	next_udpoffset = udp_offset;
+	  } else {
+	    next_segmentstart = packet_segmentend+1;
+	  }
+	  next_udpoffset = udp_offset;
 
 	} else {
 	  int bytes = (bytestoread-udp_offset)%udpsize;
@@ -774,32 +784,20 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	  // Do packet statistics
 	  if (sequence<packet_head) { // Got a packet earlier than the head
 	    packet_oo++;
-	    } else {
+	  } else {
 	    packet_head = sequence;
-	    }
+	  }
 	  npacket++;
 	}
       }
     }
 
     // Replace missing packets with fill data
-    int nmiss = 0;
-    /*
-    for (unsigned int i=0; i<segmentsize; i++) {
-      if (!packets_arrived[i]) {
-	nmiss++;
-      }
-    }
-    if (nmiss) {
-      cinfo << startl << "Missing " << nmiss << endl;
-    }
-    nmiss = 0;
-    */
+    bool headermissed = false;
     for (unsigned int i=0; i<segmentsize; i++) {
       if (!packets_arrived[i]) {
 	//cinfo << startl << "***** Dropped " << packet_segmentstart+i << "(" << i << ")" << endl;
 	packet_drop++; // Will generally count dropped first packet twice
-	nmiss++;
 	if (i==0) {
 	  memcpy(ptr, invalid_buf, udp_offset); // CHECK INITIAL FULL OR EMPTY BUFFER
 	} else if (i==packet_segmentend-packet_segmentstart) {
@@ -810,15 +808,21 @@ int Mk5DataStream::readnetwork(int sock, char* ptr, int bytestoread, int* nread)
 	} else {
 	  memcpy(ptr+udp_offset+(i-1)*udpsize,invalid_buf,udpsize);	  
 	}
+	if (i<headerpackets) headermissed = true;
       }
     }
-
+    /*    if (headermissed) {
+	  int i;
+	  for (i=1; i<segmentsize; i++) {
+	  if (packets_arrived[i]) break;
+	  }
+	  cverbose << startl << "Dropped  packets " << packet_segmentstart << " -- "  << packet_segmentstart+i-1 << endl;
+	  }
+    */
     packet_segmentstart = next_segmentstart;
     udp_offset = next_udpoffset;
-
   }
 
-  // UPDATE NUMBER OF BYTES READ TO UDP PACKET STATISTICS
   return(1);
 }
 
