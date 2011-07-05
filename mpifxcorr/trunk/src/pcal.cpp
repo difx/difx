@@ -4,19 +4,47 @@
  *
  * @brief Extracts and integrates multi-tone phase calibration signal information from an input signal.
  *
- * The principle relies on the fact that with a comb spacing of say 1 MHz and a sampling rate of say
- * 32 MHz the single 1 MHz and also all of its multiples (1, 2, .. 16 MHz in the band) have at least
- * one full sine period in 32MHz/1MHz = 32 samples. For extraction and time integration, we simply
- * have to segment the input signal into 32-sample pieces (in the above example) and integrate these
- * pieces.
+ * The extractor factory chooses one out of three currently available methods for signal extraction.
+ * The choice depends on the parameters which are:
+ *   spacing: frequency step between one tone and the next
+ *   offset:  frequency offset between the first tone and the band start at 0 Hz
+ *            note that the first tone can be at DC; processing will discard it
  *
- * A tiny FFT performed on the integrated 32-bin result gives you the amplitude and phase
- * of every tone. As the PCal amplitude is in practice constant over a short frequency band,
- * the amplitude and phase info after the FFT directly gives you the equipment filter response.
+ * Spacing is assumed to be constant throughout the band.
+ * A tone spacing is "integer" if it divides the sampling rate evenly
+ * with a "small" value for the quotient.
  *
- * The extracted PCal can also be analyzed in the time domain (no FFT). The relative, average instrumental
- * delay time can be found directly by estimating the position of the peak in the time-domain data.
- * 
+ * Basic extractor:
+ *   When tone spacing is "integer" and offset is zero, i.e. tones start
+ *   from DC and are at multiples of the spacing, then the extraction of
+ *   amplitude and phase information is quite easy.
+ *
+ *   The input sample sequence can be segmented into N-length pieces according to
+ *   the period (in N samples) of the lowest tone frequency. A r2c FFT of the time
+ *   integrated segments gives the amplitude and phase of every tone. The 0th bin
+ *   contains a tone but carries no phase information and is discarded.
+ *
+ * Shifting extractor:
+ *   When the offset is non-zero, the signal can be counter-rotated with a
+ *   precomputed complex sine to restore the offset back to zero. The basic
+ *   extractor is then applied.
+ *   After time integration a c2c FFT gives the amplitude and phase of every tone.
+ *   In this case the 0th bin contains meaningful phase info of the first shifted tone.
+ *
+ * Implicit shifting extractor:
+ *   Another method when the offset frequency is non-zero can be used.
+ *   The offset frequency should have a period M=gcd(fs,foffset) which is "small"
+ *   and which divides the sampling rate evenly. The signal is then split into M-sized
+ *   segments for time integration. A final r2c FFT returns an extended spectrum.
+ *   Only certain bins of this spectrum contain the tones.
+ *   These bins are gathered together for the final output values.
+ *
+ * All extractors return amplitude and phase of the tones.
+ *
+ * The output data could also be analyzed in the time domain where the relative,
+ * average instrumental delay can be found directly by estimating the position
+ * of the peak in the time-domain data.
+ *
  * @author   Jan Wagner
  * @author   Sergei Pogrebenko
  * @author   Walter Brisken
@@ -32,6 +60,9 @@
  ********************************************************************************************************/
 
 #include "architecture.h"
+#ifndef UNIT_TEST
+#include "alert.h"
+#endif
 #include "pcal.h"
 #include "pcal_impl.h"
 #include <iostream>
@@ -40,6 +71,15 @@ using std::cerr;
 using std::endl;
 
 using namespace std;
+
+#ifdef UNIT_TEST
+    // remove dependency on Alert.cpp
+    #define csevere std::cout
+    #define cerror  std::cout
+    #define cwarn   std::cout
+    #define cdebug  std::cout
+    const char startl[] = "";
+#endif
 
 class pcal_config_pimpl {
   public:
@@ -220,15 +260,7 @@ PCalExtractorTrivial::~PCalExtractorTrivial()
 }
 
 /**
- * Set the extracted and accumulated PCal data back to zero.
- * When several PCal are run in parallel in segments of a 
- * time slice of data, and the PCal results from each segment
- * should be combined later, care must be taken to tell the PCal
- * extraction the number/offset of the first sample in the segment
- * Typically 0 for the first segment, len(segment) for the second
- * segment, and so on, until offset of the last segment
- * which is len(subintegration_subslice)-len(segment).
- * @param sampleoffset referenced back to start of subintegration interval
+ * Clear the extracted and accumulated PCal data by setting it to zero.
  */
 void PCalExtractorTrivial::clear()
 {
@@ -239,10 +271,19 @@ void PCalExtractorTrivial::clear()
 }
 
 /**
- * Adjust the sample offset. Should be called before extractAndIntegrate()
- * every time there is a gap or backwards shift in the otherwise contiguous
- * sample stream.
- * @param sampleoffset referenced back to start of subintegration interval
+ * Adjust the sample offset.
+ *
+ * The extractor needs a time-continuous input sample stream. Samples
+ * are numbered 0...N according to their offset from the start of the 
+ * stream. The stream can be split into smaller chunks that
+ * are added individually through several extractAndIntegrate() calls.
+ *
+ * If for some reason two chunks are not continuous in time,
+ * some internal indices need to be corrected by calling this
+ * function and specifying at what sample number the next
+ * chunk passed to extractAndIntegrate() starts.
+ *
+ * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
  */
 void PCalExtractorTrivial::adjustSampleOffset(const size_t sampleoffset)
 {
@@ -251,20 +292,16 @@ void PCalExtractorTrivial::adjustSampleOffset(const size_t sampleoffset)
 }
 
 /**
- * Extracts multi-tone PCal information from a single-channel signal segment
- * and integrates it to the class-internal PCal extraction result buffer.
- * There are no restrictions to the segment length.
+ * Process a new chunk of time-continuous single channel data.
+ * Time-integrates the data into the internal result buffer.
  *
- * If you integrate over a longer time and several segments, i.e. perform
- * multiple calls to this function, take care to keep the input
- * continuous (i.e. don't leave out samples).
+ * If this function is called several times to integrate additional data
+ * and these multiple pieces of data are not continuous in time,
+ * please see adjustSampleOffset().
  *
- * If extraction has been finalized by calling getFinalPCal() this function
- * returns False. You need to call clear() to reset.
- *
- * @paran samples Chunk of the input signal consisting of 'float' samples
+ * @param samples Chunk of the input signal consisting of 'float' samples
  * @param len     Length of the input signal chunk
- * @return true on success
+ * @return true on success, false if results were frozen by calling getFinalPCal()
  */
 bool PCalExtractorTrivial::extractAndIntegrate(f32 const* samples, const size_t len)
 {
@@ -292,11 +329,10 @@ bool PCalExtractorTrivial::extractAndIntegrate(f32 const* samples, const size_t 
 }
 
 /**
- * Performs finalization steps on the internal PCal results if necessary
- * and then copies these PCal results into the specified output array.
- * Data in the output array is overwritten with PCal results.
+ * Computes the final extraction result. No more sample data can be added.
+ * The PCal extraction results are copied into the specified output array.
  *
- * @param pointer to user PCal array with getLength() values
+ * @param out Pointer to user PCal array with getLength() values
  * @return number of samples that were integrated for the result
  */
 uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
@@ -312,8 +348,7 @@ uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
             csevere << startl << "Error in DFTFwd PCalExtractorTrivial::getFinalPCal " << vectorGetStatusString(s) << endl;
     }
 
-    // Copy only the tone bins: in PCalExtractorTrivial case
-    // this should be all bins... _N_tones==_N_bins/2
+    // Copy only the tone bins; also discard the DC bin that has zero phase.
     s = vectorCopy_cf32(_cfg->dft_out, (cf32*)out, _N_tones);
     if (s != vecNoErr)
         csevere << startl << "Error in DFTFwd PCalExtractorTrivial::getFinalPCal " << vectorGetStatusString(s) << endl;
@@ -391,15 +426,7 @@ PCalExtractorShifting::~PCalExtractorShifting()
 }
 
 /**
- * Set the extracted and accumulated PCal data back to zero.
- * When several PCal are run in parallel in segments of a 
- * time slice of data, and the PCal results from each segment
- * should be combined later, care must be taken to tell the PCal
- * extraction the number/offset of the first sample in the segment
- * Typically 0 for the first segment, len(segment) for the second
- * segment, and so on, until offset of the last segment
- * which is len(subintegration_subslice)-len(segment).
- * @param sampleoffset referenced back to start of subintegration interval
+ * Clear the extracted and accumulated PCal data by setting it to zero.
  */
 void PCalExtractorShifting::clear()
 {
@@ -411,10 +438,19 @@ void PCalExtractorShifting::clear()
 }
 
 /**
- * Adjust the sample offset. Should be called before extractAndIntegrate()
- * every time there is a gap or backwards shift in the otherwise contiguous
- * sample stream.
- * @param sampleoffset referenced back to start of subintegration interval
+ * Adjust the sample offset.
+ *
+ * The extractor needs a time-continuous input sample stream. Samples
+ * are numbered 0...N according to their offset from the start of the 
+ * stream. The stream can be split into smaller chunks that
+ * are added individually through several extractAndIntegrate() calls.
+ *
+ * If for some reason two chunks are not continuous in time,
+ * some internal indices need to be corrected by calling this
+ * function and specifying at what sample number the next
+ * chunk passed to extractAndIntegrate() starts.
+ *
+ * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
  */
 void PCalExtractorShifting::adjustSampleOffset(const size_t sampleoffset)
 {
@@ -423,20 +459,16 @@ void PCalExtractorShifting::adjustSampleOffset(const size_t sampleoffset)
 }
 
 /**
- * Extracts multi-tone PCal information from a single-channel signal segment
- * and integrates it to the class-internal PCal extraction result buffer.
- * There are no restrictions to the segment length.
+ * Process a new chunk of time-continuous single channel data.
+ * Time-integrates the data into the internal result buffer.
  *
- * If you integrate over a longer time and several segments, i.e. perform
- * multiple calls to this function, take care to keep the input
- * continuous (i.e. don't leave out samples).
+ * If this function is called several times to integrate additional data
+ * and these multiple pieces of data are not continuous in time,
+ * please see adjustSampleOffset().
  *
- * If extraction has been finalized by calling getFinalPCal() this function
- * returns False. You need to call clear() to reset.
- *
- * @paran samples Chunk of the input signal consisting of 'float' samples
+ * @param samples Chunk of the input signal consisting of 'float' samples
  * @param len     Length of the input signal chunk
- * @return true on success
+ * @return true on success, false if results were frozen by calling getFinalPCal()
  */
 bool PCalExtractorShifting::extractAndIntegrate(f32 const* samples, const size_t len)
 {
@@ -496,11 +528,10 @@ bool PCalExtractorShifting::extractAndIntegrate(f32 const* samples, const size_t
 }
 
 /**
- * Performs finalization steps on the internal PCal results if necessary
- * and then copies these PCal results into the specified output array.
- * Data in the output array is overwritten with PCal results.
+ * Computes the final extraction result. No more sample data can be added.
+ * The PCal extraction results are copied into the specified output array.
  *
- * @param pointer to user PCal array with getLength() values
+ * @param out Pointer to user PCal array with getLength() values
  * @return number of samples that were integrated for the result
  */
 uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
@@ -515,14 +546,13 @@ uint64_t PCalExtractorShifting::getFinalPCal(cf32* out)
         
     }
 
+    // Copy only the interesting bins. 
+    // Note the "DC" bin has phase info in 1st shifted tone, do not discard.
     if (false && _pcalspacing_hz == 1e6) {
-        // Copy only the tone bins: in PCalExtractorTrivial case
-        // this should be all bins... _N_tones==_N_bins/2
         s = vectorCopy_cf32(_cfg->dft_out, (cf32*)out, _N_tones);
         if (s != vecNoErr)
             csevere << startl << "Error in Copy in PCalExtractorShifting::getFinalPCal " << vectorGetStatusString(s) << endl;
     } else {
-        // Copy only the interesting bins
         size_t step = (size_t)(std::floor(_N_bins*(_pcalspacing_hz/_fs_hz)));
         for (size_t n=0; n<(size_t)_N_tones; n++) {
             size_t idx = n*step;
@@ -584,15 +614,7 @@ PCalExtractorImplicitShift::~PCalExtractorImplicitShift()
 }
 
 /**
- * Set the extracted and accumulated PCal data back to zero.
- * When several PCal are run in parallel in segments of a 
- * time slice of data, and the PCal results from each segment
- * should be combined later, care must be taken to tell the PCal
- * extraction the number/offset of the first sample in the segment
- * Typically 0 for the first segment, len(segment) for the second
- * segment, and so on, until offset of the last segment
- * which is len(subintegration_subslice)-len(segment).
- * @param sampleoffset referenced back to start of subintegration interval
+ * Clear the extracted and accumulated PCal data by setting it to zero.
  */
 void PCalExtractorImplicitShift::clear()
 {
@@ -603,10 +625,19 @@ void PCalExtractorImplicitShift::clear()
 }
 
 /**
- * Adjust the sample offset. Should be called before extractAndIntegrate()
- * every time there is a gap or backwards shift in the otherwise contiguous
- * sample stream.
- * @param sampleoffset referenced back to start of subintegration interval
+ * Adjust the sample offset.
+ *
+ * The extractor needs a time-continuous input sample stream. Samples
+ * are numbered 0...N according to their offset from the start of the 
+ * stream. The stream can be split into smaller chunks that
+ * are added individually through several extractAndIntegrate() calls.
+ *
+ * If for some reason two chunks are not continuous in time,
+ * some internal indices need to be corrected by calling this
+ * function and specifying at what sample number the next
+ * chunk passed to extractAndIntegrate() starts.
+ *
+ * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
  */
 void PCalExtractorImplicitShift::adjustSampleOffset(const size_t sampleoffset)
 {
@@ -614,20 +645,16 @@ void PCalExtractorImplicitShift::adjustSampleOffset(const size_t sampleoffset)
 }
 
 /**
- * Extracts multi-tone PCal information from a single-channel signal segment
- * and integrates it to the class-internal PCal extraction result buffer.
- * There are no restrictions to the segment length.
+ * Process a new chunk of time-continuous single channel data.
+ * Time-integrates the data into the internal result buffer.
  *
- * If you integrate over a longer time and several segments, i.e. perform
- * multiple calls to this function, take care to keep the input
- * continuous (i.e. don't leave out samples).
+ * If this function is called several times to integrate additional data
+ * and these multiple pieces of data are not continuous in time,
+ * please see adjustSampleOffset().
  *
- * If extraction has been finalized by calling getFinalPCal() this function
- * returns False. You need to call clear() to reset.
- *
- * @paran samples Chunk of the input signal consisting of 'float' samples
+ * @param samples Chunk of the input signal consisting of 'float' samples
  * @param len     Length of the input signal chunk
- * @return true on success
+ * @return true on success, false if results were frozen by calling getFinalPCal()
  */
 bool PCalExtractorImplicitShift::extractAndIntegrate(f32 const* samples, const size_t len)
 {
@@ -666,11 +693,10 @@ bool PCalExtractorImplicitShift::extractAndIntegrate(f32 const* samples, const s
 }
 
 /**
- * Performs finalization steps on the internal PCal results if necessary
- * and then copies these PCal results into the specified output array.
- * Data in the output array is overwritten with PCal results.
+ * Computes the final extraction result. No more sample data can be added.
+ * The PCal extraction results are copied into the specified output array.
  *
- * @param pointer to user PCal array with getLength() values
+ * @param out Pointer to user PCal array with getLength() values
  * @return number of samples that were integrated for the result
  */
 uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
@@ -802,15 +828,7 @@ PCalExtractorDummy::~PCalExtractorDummy()
 }
 
 /**
- * Set the extracted and accumulated PCal data back to zero.
- * When several PCal are run in parallel in segments of a 
- * time slice of data, and the PCal results from each segment
- * should be combined later, care must be taken to tell the PCal
- * extraction the number/offset of the first sample in the segment
- * Typically 0 for the first segment, len(segment) for the second
- * segment, and so on, until offset of the last segment
- * which is len(subintegration_subslice)-len(segment).
- * @param sampleoffset referenced back to start of subintegration interval
+ * Dummy.
  */
 void PCalExtractorDummy::clear()
 {
@@ -819,9 +837,7 @@ void PCalExtractorDummy::clear()
 }
 
 /**
- * Adjust the sample offset. Should be called before extractAndIntegrate()
- * every time there is a gap or backwards shift in the otherwise contiguous
- * sample stream.
+ * Adjust the sample offset. Dummy.
  * @param sampleoffset referenced back to start of subintegration interval
  */
 void PCalExtractorDummy::adjustSampleOffset(const size_t sampleoffset)
@@ -853,10 +869,7 @@ bool PCalExtractorDummy::extractAndIntegrate(f32 const* samples, const size_t le
 }
 
 /**
- * Performs finalization steps on the internal PCal results if necessary
- * and then copies these PCal results into the specified output array.
- * Data in the output array is overwritten with PCal results.
- *
+ * Dummy.
  * @param pointer to user PCal array with getLength() values
  * @return number of samples that were integrated for the result
  */
@@ -893,6 +906,7 @@ g++ -m64 -DUNIT_TEST -Wall -O3 -I$(IPPROOT)/include/ -pthread -I.. pcal.cpp -o t
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+
 void print_32f(const f32* v, const size_t len);
 void print_32fc(const cf32* v, const size_t len);
 void print_32fc_phase(const cf32* v, const size_t len);
@@ -915,12 +929,12 @@ int main(int argc, char** argv)
    long spacing = atof(argv[3]);
    long offset = atof(argv[4]);
    long sampleoffset = atof(argv[5]);
-   cerr << "BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset;
+   cerr << "BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
 
    /* Get an extractor */
    PCal* extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
    int numtones = extractor->getLength();
-   cerr << "extractor->getLength() tone count is " << numtones;
+   cerr << "extractor->getLength() tone count is " << numtones << "\n";
    cf32* out = vectorAlloc_cf32(numtones);
    cf32* ref = vectorAlloc_cf32(numtones);
 
@@ -948,9 +962,9 @@ int main(int argc, char** argv)
 
    /* Check result */
    if (sloping_reference_data) {
-       cerr << "Expected result: tones are sloping by -5deg each";
+       cerr << "Expected result: tones are sloping by -5deg each\n";
    } else {
-       cerr << "Expected result: each tone has a fixed -90deg phase";
+       cerr << "Expected result: each tone has a fixed -90deg phase\n";
    }
    // cerr << "final PCal reim: ";
    // print_32fc(out, numtones);
@@ -986,7 +1000,7 @@ void print_32fc_phase(const cf32* v, const size_t len) {
       float phi = (180/M_PI)*std::atan2(v[i].im, v[i].re);
       cerr << std::scientific << phi << " ";
    }
-   cerr << "deg";
+   cerr << "deg\n";
 }
 
 void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
@@ -994,12 +1008,12 @@ void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
    for (size_t i=0; i<len; i++) { 
       float phi = (180/M_PI)*std::atan2(v[i].im, v[i].re);
       if (std::abs(phi - angle) > 1e-1) { // degrees
-          cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi;
+          cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi << "\n";
           pass = false;
       }
       angle += step;
    }
-   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "NO PASS (or PASS but missed phase ambiguity)\n");
+   cerr << "Extracted versus expected:\n" << ((pass) ? "PASS\n" : "NO PASS (or PASS but missed phase ambiguity)\n") << "\n";
 }
 
 #endif
