@@ -54,7 +54,7 @@
  * Changelog:
  *   05Oct2009 - added support for arbitrary input segment lengths
  *   08Oct2009 - added Briskens rotationless method
- *   02Nov2009 - added sub-subintegration sample offset, DFT for f-d results, tone bin coping to user buf
+ *   02Nov2009 - added sub-subintegration sample offset, DFT for f-d results, tone bin copying to user buf
  *   03Nov2009 - added unit test, included DFT in extractAndIntegrate_reference(), fix rotation direction
  *
  ********************************************************************************************************/
@@ -97,7 +97,7 @@ class pcal_config_pimpl {
   public:
     vecDFTSpecC_cf32* dftspec;
     u8* dftworkbuf;
-    cf32*  dft_out; // unnecessary onces Intel implements inplace DFTFwd_CtoC_32fc_I (counterpart of inplace DFTFwd_RtoC)
+    cf32*  dft_out; // unnecessary once Intel implements inplace DFTFwd_CtoC_32fc_I (counterpart of inplace DFTFwd_RtoC)
 };
 
 
@@ -161,7 +161,7 @@ long long PCal::gcd(long a, long b)
  * intended for testing and comparison only!
  * @param  data          pointer to input sample vector
  * @param  len           length of input vector
- * @param  pcalout       output array of sufficient size to store extracted PCal
+ * @param  out           output array of sufficient size to store extracted PCal
  */
 bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32* out, const uint64_t sampleoffset)
 {
@@ -199,9 +199,18 @@ bool PCal::extractAndIntegrate_reference(f32 const* data, const size_t len, cf32
     s = vectorDFT_CtoC_cf32(pcalout, dftout, dftspec, dftworkbuf);
     if (s != vecNoErr) 
         csevere << startl << "Error in DFTFwd in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl; 
-    s = vectorCopy_cf32(dftout, out, _N_tones);
-    if (s != vecNoErr) 
-        csevere << startl << "Error in Copy in PCal::extractAndIntegrate_reference " << vectorGetStatusString(s) << endl; 
+
+    if (_pcaloffset_hz == 0) {
+        // The "DC" bin has no phase information, discard
+        for (int i=0; i<_N_tones; i++) {
+            out[i] = dftout[i+1];
+        }
+    } else {
+        // Spectrum was shifted, DC bin has phase information, keep
+        for (int i=0; i<_N_tones; i++) {
+            out[i] = dftout[i+0];
+        }
+    }
 
     s = vectorFreeDFTC_cf32(dftspec);
     if (s != vecNoErr) 
@@ -718,9 +727,13 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
     // cout << "step=" << step << " offset=" << offset << endl;
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
-        if (idx >= (size_t)_N_bins) { break; }
-        out[n].re = _cfg->dft_out[idx].re;
-        out[n].im = _cfg->dft_out[idx].im;
+        if (idx >= (size_t)_N_bins) { 
+            out[n].re = 0;
+            out[n].im = 0;
+        } else {
+            out[n].re = _cfg->dft_out[idx].re;
+            out[n].im = _cfg->dft_out[idx].im;
+        }
     }
     return _samplecount;
 }
@@ -919,6 +932,9 @@ int main(int argc, char** argv)
    const long some_prime = 3;
    uint64_t usedsamplecount;
 
+   const float tone_phase_start = -90.0f;
+   const float tone_phase_slope = 5.0f;
+
    if (argc < 6) {
       cerr << "Usage: " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset>\n";
       cerr << "e.g.   " << argv[0] << " 32000 16e6 1e6 510e3 0\n";
@@ -938,16 +954,15 @@ int main(int argc, char** argv)
    cf32* out = vectorAlloc_cf32(numtones);
    cf32* ref = vectorAlloc_cf32(numtones);
 
-   /* Make test data for fixed -90deg or sloping -90deg+5deg*ToneNr phase */
+   /* Make test data for fixed or sloping phase */
    float* data = vectorAlloc_f32(samplecount);
    for (long n=0; n<samplecount; n++) {
       data[n] = 0; //rand()*1e-9;
       for (int t=0; t<numtones; t++) {
-          if (sloping_reference_data) {
-              data[n] += sin(M_PI*(n+sampleoffset)*(offset + t*spacing)/bandwidth + t*M_PI*5/180);
-          } else {
-              data[n] += sin(M_PI*(n+sampleoffset)*(offset + t*spacing)/bandwidth);
-          }
+          double phi = M_PI*(n+sampleoffset)*(offset + t*spacing)/bandwidth;
+          if (sloping_reference_data)
+              phi += t*tone_phase_slope*(M_PI/180);
+          data[n] += sin(phi);
       }
    }
 
@@ -960,29 +975,40 @@ int main(int argc, char** argv)
    }
    usedsamplecount = extractor->getFinalPCal(out);
 
-   /* Check result */
+
+   /* Compare result to expectation */
+   float expected_start = tone_phase_start;
+   float expected_slope = (sloping_reference_data) ? tone_phase_slope : 0.0f;
+   if (offset == 0.0f) {
+       // exclude phaseless tone at DC if offset=0Hz
+       expected_start += expected_slope;
+   }
+
    if (sloping_reference_data) {
-       cerr << "Expected result: tones are sloping by -5deg each\n";
+       cerr << "Expected result: tones are sloping by " << expected_slope << " deg each\n";
    } else {
        cerr << "Expected result: each tone has a fixed -90deg phase\n";
    }
-   // cerr << "final PCal reim: ";
+
+   cerr << "final PCal data:\n";
    // print_32fc(out, numtones);
-   cerr << "final PCal phase: ";
-   print_32fc_phase(out, numtones);
-   compare_32fc_phase(out, numtones, -90.0f, (sloping_reference_data) ? 5.0f : 0.0f);
+   // print_32fc_phase(out, numtones);
+   compare_32fc_phase(out, numtones, expected_start, expected_slope);
 
    /* Comparison with the (poorer) "reference" extracted result */
-   extractor->clear();
-   if (skip_some_data) {
-       vectorAdd_f32_I(data+some_prime, data+some_prime, samplecount-some_prime);
+   if (0) {
+       extractor->clear();
+       if (skip_some_data) {
+           vectorAdd_f32_I(data+some_prime, data+some_prime, samplecount-some_prime);
+       }
+       extractor->extractAndIntegrate_reference(data, samplecount, ref, sampleoffset);
+
+       cerr << "reference PCal data:\n";
+       // print_32fc(ref, numtones);
+       // print_32fc_phase(ref, numtones);
+
+       compare_32fc_phase(ref, numtones, expected_start, expected_slope);
    }
-   extractor->extractAndIntegrate_reference(data, samplecount, ref, sampleoffset);
-   //cerr << "reference PCal reim: ";
-   //print_32fc(ref, numtones);
-   cerr << "quasi-reference PCal phase: ";
-   print_32fc_phase(ref, numtones); // should be ~ -90deg
-   compare_32fc_phase(ref, numtones, -90.0f, (sloping_reference_data) ? +5.0f : +0.0f);
 
    return 0;
 }
@@ -1005,11 +1031,16 @@ void print_32fc_phase(const cf32* v, const size_t len) {
 
 void compare_32fc_phase(const cf32* v, const size_t len, f32 angle, f32 step) {
    bool pass = true;
+   const float merr = 0.1;
    for (size_t i=0; i<len; i++) { 
-      float phi = (180/M_PI)*std::atan2(v[i].im, v[i].re);
-      if (std::abs(phi - angle) > 1e-1) { // degrees
-          cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi << "\n";
+      f32 phi = (180/M_PI)*std::atan2(v[i].im, v[i].re);
+      //f32 mag = sqrt(v[i].im*v[i].im + v[i].re*v[i].re);
+      cerr << "tone #" << (i+1) << ": expect " << angle << ", got " << phi;
+      if (std::abs(phi - angle) > merr) { 
+          cerr << " : error>" << merr << "deg\n";
           pass = false;
+      } else {
+          cerr << " : ok\n";
       }
       angle += step;
    }
