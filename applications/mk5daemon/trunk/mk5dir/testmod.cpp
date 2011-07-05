@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110315";
+const char verdate[] = "20110703";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -54,6 +54,7 @@ const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800
 
 #define MODE_READ	0x01
 #define MODE_WRITE	0x02
+#define MODE_REOPEN	0x04
 
 int die = 0;
 typedef void (*sighandler_t)(int);
@@ -82,6 +83,8 @@ int usage(const char *pgm)
 	printf("  -r         Perform read-only test\n\n");
 	printf("  --writeonly\n");
 	printf("  -w         Perform write-only test\n\n");
+	printf("  --reopen\n");
+	printf("             Reopen device after each major cycle\n\n");
 	printf("  --realtime\n");
 	printf("  -R         Enable real-time mode (sometimes needed for bad packs)\n\n");
 	printf("  --skipdircheck\n");
@@ -325,7 +328,7 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 		WATCHDOGTEST( xlrRC = XLRSelectBank(xlrDevice, bank) );
 	}
 
-	/* the following line is essential to work around an apparent streamstor bug */
+	/* the following line is essential to work around an apparent StreamStor bug */
 	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
 
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
@@ -505,6 +508,20 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				mk5status.state = MARK5_STATE_TESTREAD;
 				difxMessageSendMark5Status(&mk5status);
 
+				if(mode & MODE_REOPEN)
+				{
+					WATCHDOG (XLRClose(xlrDevice));
+
+					printf("Closed streamtor ... sleeping 5 seconds\n");
+					sleep(5);
+
+					WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+					WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+					WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+
+					printf("Reopened StreamStor\n");
+				}
+
 				if(mode & MODE_READ)
 				{
 					L = readblock(xlrDevice, n, buffer1, buffer2, bufferSize, nRep, 0, &readTime, fast);
@@ -524,6 +541,20 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				if(die)
 				{
 					break;
+				}
+
+				if(mode & MODE_REOPEN)
+				{
+					WATCHDOG (XLRClose(xlrDevice));
+
+					printf("Closed streamtor ... sleeping 5 seconds\n");
+					sleep(5);
+
+					WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+					WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+					WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+
+					printf("Reopened StreamStor\n");
 				}
 			}
 
@@ -665,6 +696,20 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			{
 				break;
 			}
+
+			if(mode & MODE_REOPEN)
+			{
+				WATCHDOG (XLRClose(xlrDevice));
+
+				printf("Closed streamtor ... sleeping 5 seconds\n");
+				sleep(5);
+
+				WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+				WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+				WATCHDOGTEST( XLRSetOption(xlrDevice, options) );
+
+				printf("Reopened StreamStor\n");
+			}
 		}
 
 		printf("\n");
@@ -765,12 +810,18 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-r") == 0 ||
 			        strcmp(argv[a], "--readonly") == 0)
 			{
-				mode = MODE_READ;
+				mode |= MODE_READ;
+				mode &= ~MODE_WRITE;
 			}
 			else if(strcmp(argv[a], "-w") == 0 ||
 			        strcmp(argv[a], "--writeonly") == 0)
 			{
-				mode = MODE_WRITE;
+				mode |= MODE_WRITE;
+				mode &= ~MODE_READ;
+			}
+			else if(strcmp(argv[a], "--reopen") == 0)
+			{
+				mode |= MODE_REOPEN;
 			}
 			else if(strcmp(argv[a], "-R") == 0 ||
 			        strcmp(argv[a], "--realtime") == 0)
@@ -873,7 +924,7 @@ int main(int argc, char **argv)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
 				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"Streamstor error executing: %s : %s",
+					"StreamStor error executing: %s : %s",
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}

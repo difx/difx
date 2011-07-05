@@ -167,8 +167,9 @@ int Mark5GetActiveBankWriteProtect(SSHANDLE xlrDevice);
 /* returns 0 or 1 for bank A or B, or < 0 if module not found */
 int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
 
-void countReplaced(const streamstordatatype *data, int len,
-	long long *wGood, long long *wBad);
+void countReplaced(const streamstordatatype *data, int len, long long *wGood, long long *wBad);
+
+int addDecades(int mjd, int nDecade);
 
 int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop);
 

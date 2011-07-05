@@ -5,6 +5,7 @@ bin_PROGRAMS = \
 	mk5dir \
 	mk5erase \
 	mk5lock \
+	mk5map \
 	recover \
 	testmod \
 	vsn
@@ -27,6 +28,9 @@ mk5dir_LDADD = \
 	${M5ACCESS_LIBS}
 
 mk5erase_LDADD = \
+	${M5ACCESS_LIBS}
+
+mk5map_LDADD = \
 	${M5ACCESS_LIBS}
 
 recover_LDADD = \
@@ -69,6 +73,13 @@ mk5erase_SOURCES = \
 
 mk5lock_SOURCES = \
 	mk5lock.cpp
+
+mk5map_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mk5map.cpp
 
 recover_SOURCES = \
 	watchdog.cpp \
