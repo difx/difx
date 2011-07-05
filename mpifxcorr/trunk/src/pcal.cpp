@@ -358,13 +358,9 @@ uint64_t PCalExtractorTrivial::getFinalPCal(cf32* out)
     }
 
     // Copy only the tone bins; also discard the DC bin that has zero phase.
-    s = vectorCopy_cf32(_cfg->dft_out, (cf32*)out, _N_tones);
-    if (s != vecNoErr)
-        csevere << startl << "Error in DFTFwd PCalExtractorTrivial::getFinalPCal " << vectorGetStatusString(s) << endl;
-
     for (int i = 0; i < _N_tones; i++)
     {
-        out[i] = _cfg->dft_out[(i+1)*tonestep];     // don't copy the zero freq tone.  start at the next one.
+        out[i] = _cfg->dft_out[(i+1)*tonestep];
     }
 
     return _samplecount;
@@ -919,6 +915,7 @@ g++ -m64 -DUNIT_TEST -Wall -O3 -I$(IPPROOT)/include/ -pthread -I.. pcal.cpp -o t
 #include <iostream>
 #include <iomanip>
 #include <stdlib.h>
+#include <cstring>
 
 void print_32f(const f32* v, const size_t len);
 void print_32fc(const cf32* v, const size_t len);
@@ -936,8 +933,15 @@ int main(int argc, char** argv)
    const float tone_phase_slope = 5.0f;
 
    if (argc < 6) {
-      cerr << "Usage: " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset>\n";
-      cerr << "e.g.   " << argv[0] << " 32000 16e6 1e6 510e3 0\n";
+      cerr << "\nUsage:   " << argv[0] << " <samplecount> <bandwidthHz> <spacingHz> <offsetHz> <sampleoffset> [<class>]\n"
+           << "Example: " << argv[0] << " 32000 16e6 1e6 510e3 0 triv\n\n"
+           << "Options:\n"
+           << "           samplecount  : number of test samples to generate\n"
+           << "           bandwidthHz  : bandwidth of test signal (half the sampling rate)\n"
+           << "           spacingHz    : spacing of PCal tones in Hz\n"
+           << "           offsetHz     : distance of first tone from 0 Hz\n"
+           << "           sampleoffset : non-zero to test sample adjuster, 0 otherwise\n"
+           << "           class        : specify extractor explicitly ('trivial', 'shift' or 'implicit')\n\n";
       return -1;
    }
    long samplecount = atof(argv[1]);
@@ -948,7 +952,22 @@ int main(int argc, char** argv)
    cerr << "BWHz=" << bandwidth << " spcHz=" << spacing << ", offHz=" << offset << ", sampOff=" << sampleoffset << "\n";
 
    /* Get an extractor */
-   PCal* extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
+   PCal* extractor;
+   if (argc > 6) {
+       if (!strcasecmp(argv[6], "trivial")) {
+           extractor = new PCalExtractorTrivial(bandwidth, spacing, sampleoffset);
+       } else if (!strcasecmp(argv[6], "shift")) {
+           extractor = new PCalExtractorShifting(bandwidth, spacing, offset, sampleoffset);
+       } else if (!strcasecmp(argv[6], "implicit")) {
+           extractor = new PCalExtractorImplicitShift(bandwidth, spacing, offset, sampleoffset);
+       } else {
+           cerr << "Unknown extractor <class> " << argv[6] << ", reverting to factory chooser\n";
+           extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
+       }
+   } else {
+       extractor = PCal::getNew(bandwidth, spacing, offset, sampleoffset);
+   }
+
    int numtones = extractor->getLength();
    cerr << "extractor->getLength() tone count is " << numtones << "\n";
    cf32* out = vectorAlloc_cf32(numtones);
