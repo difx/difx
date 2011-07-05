@@ -926,7 +926,6 @@ int main(int argc, char** argv)
 {
    bool sloping_reference_data = true;
    bool skip_some_data = true;
-   const long some_prime = 3;
    uint64_t usedsamplecount;
 
    const float tone_phase_start = -90.0f;
@@ -975,25 +974,36 @@ int main(int argc, char** argv)
 
    /* Make test data for fixed or sloping phase */
    float* data = vectorAlloc_f32(samplecount);
+   double wtone[numtones];
+   for (int tone=0; tone<numtones; tone++) {
+       wtone[tone] = 2*M_PI * (offset + tone*spacing) / (2*bandwidth);
+   }
    for (long n=0; n<samplecount; n++) {
       data[n] = 0; //rand()*1e-9;
-      for (int t=0; t<numtones; t++) {
-          double phi = M_PI*(n+sampleoffset)*(offset + t*spacing)/bandwidth;
+      for (int tone=0; tone<numtones; tone++) {
+          double phi = wtone[tone] * (n+sampleoffset);
           if (sloping_reference_data)
-              phi += t*tone_phase_slope*(M_PI/180);
-          data[n] += sin(phi);
+              phi += tone*tone_phase_slope*(M_PI/180);
+          data[n] = data[n] + sin(phi);
       }
    }
 
-   /* Extract with the autoselected fast method */
+   /* Extract with the chosen method */
+   extractor->adjustSampleOffset(sampleoffset);
    extractor->extractAndIntegrate(data, samplecount);
-   if (skip_some_data && (samplecount > some_prime)) {
-       long offset = sampleoffset + samplecount + some_prime;
-       extractor->adjustSampleOffset(offset);
-       extractor->extractAndIntegrate(data + some_prime, samplecount - some_prime);
-   }
-   usedsamplecount = extractor->getFinalPCal(out);
 
+   /* Add more data with a skip? */
+   if (skip_some_data) {
+       long noffset = 11;
+       if (samplecount > noffset) {
+           cerr << "Adding same data but skipping first +" << noffset << " samples\n";
+           extractor->adjustSampleOffset(sampleoffset + noffset);
+           extractor->extractAndIntegrate(data + noffset, samplecount - noffset);
+       }
+   }
+
+   /* Freeze the result */
+   usedsamplecount = extractor->getFinalPCal(out);
 
    /* Compare result to expectation */
    float expected_start = tone_phase_start;
@@ -1017,9 +1027,6 @@ int main(int argc, char** argv)
    /* Comparison with the (poorer) "reference" extracted result */
    if (0) {
        extractor->clear();
-       if (skip_some_data) {
-           vectorAdd_f32_I(data+some_prime, data+some_prime, samplecount-some_prime);
-       }
        extractor->extractAndIntegrate_reference(data, samplecount, ref, sampleoffset);
 
        cerr << "reference PCal data:\n";
