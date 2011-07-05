@@ -1,23 +1,51 @@
 #ifndef _PCAL_IMPL_H
 #define _PCAL_IMPL_H
 /********************************************************************************************************
- * @file PCal.h
+ * @file PCal_impl.h
  * Multi-tone Phase Cal Extraction
  *
  * @brief Extracts and integrates multi-tone phase calibration signal information from an input signal.
  *
- * The principle relies on the fact that with a comb spacing of say 1 MHz and a sampling rate of say
- * 32 MHz the single 1 MHz and also all of its multiples (1, 2, .. 16 MHz in the band) have at least
- * one full sine period in 32MHz/1MHz = 32 samples. For extraction and time integration, we simply
- * have to segment the input signal into 32-sample pieces (in the above example) and integrate these
- * pieces.
+ * The extractor factory chooses one out of three currently available methods for signal extraction.
+ * The choice depends on the parameters which are:
+ *   spacing: frequency step between one tone and the next
+ *   offset:  frequency offset between the first tone and the band start at 0 Hz
+ *            note that the first tone can be at DC; processing will discard it
  *
- * A tiny FFT performed on the integrated 32-bin result gives you the amplitude and phase
- * of every tone. As the PCal amplitude is in practice constant over a short frequency band,
- * the amplitude and phase info after the FFT directly gives you the equipment filter response.
+ * Spacing is assumed to be constant throughout the band.
+ * A tone spacing is "integer" if it divides the sampling rate evenly
+ * with a "small" value for the quotient.
  *
- * The extracted PCal can also be analyzed in the time domain (no FFT). The relative, average instrumental
- * delay time can be found directly by estimating the position of the peak in the time-domain data.
+ * Basic extractor:
+ *   When tone spacing is "integer" and offset is zero, i.e. tones start
+ *   from DC and are at multiples of the spacing, then the extraction of
+ *   amplitude and phase information is quite easy.
+ *
+ *   The input sample sequence can be segmented into N-length pieces according to
+ *   the period (in N samples) of the lowest tone frequency. A r2c FFT of the time
+ *   integrated segments gives the amplitude and phase of every tone. The 0th bin
+ *   contains a tone but carries no phase information and is discarded.
+ *
+ * Shifting extractor:
+ *   When the offset is non-zero, the signal can be counter-rotated with a
+ *   precomputed complex sine to restore the offset back to zero. The basic
+ *   extractor is then applied.
+ *   After time integration a c2c FFT gives the amplitude and phase of every tone.
+ *   In this case the 0th bin contains meaningful phase info of the first shifted tone.
+ *
+ * Implicit shifting extractor:
+ *   Another method when the offset frequency is non-zero can be used.
+ *   The offset frequency should have a period M=gcd(fs,foffset) which is "small"
+ *   and which divides the sampling rate evenly. The signal is then split into M-sized
+ *   segments for time integration. A final r2c FFT returns an extended spectrum.
+ *   Only certain bins of this spectrum contain the tones.
+ *   These bins are gathered together for the final output values.
+ *
+ * All extractors return amplitude and phase of the tones.
+ *
+ * The output data could also be analyzed in the time domain where the relative,
+ * average instrumental delay can be found directly by estimating the position
+ * of the peak in the time-domain data.
  *
  * @author   Jan Wagner
  * @author   Sergei Pogrebenko
@@ -27,7 +55,7 @@
  *
  * Changelog:
  *   05Oct2009 - added support for arbitrary input segment lengths
- *   08oct2009 - added Briskens rotationless method 
+ *   08oct2009 - added Briskens rotationless method
  *
  ********************************************************************************************************/
 
@@ -53,47 +81,44 @@ class PCalExtractorTrivial : public PCal {
 
    public:
       /**
-       * Set the extracted and accumulated PCal data back to zero.
-       * When several PCal are run in parallel in segments of a 
-       * time slice of data, and the PCal results from each segment
-       * should be combined later, care must be taken to tell the PCal
-       * extraction the number/offset of the first sample in the segment
-       * Typically 0 for the first segment, len(segment) for the second
-       * segment, and so on, until offset of the last segment
-       * which is len(subintegration_subslice)-len(segment).
+       * Clear the extracted and accumulated PCal data by setting it to zero.
        */
       void clear();
 
       /**
-       * Adjust the sample offset. Should be called before extractAndIntegrate()
-       * every time there is a gap or backwards shift in the otherwise contiguous
-       * sample stream.
-       * @param sampleoffset referenced back to start of subintegration interval
+       * Adjust the sample offset.
+       *
+       * The extractor needs a time-continuous input sample stream. Samples
+       * are numbered 0...N according to their offset from the start of the 
+       * stream. The stream can be split into smaller chunks that
+       * are added individually through several extractAndIntegrate() calls.
+       *
+       * If for some reason two chunks are not continuous in time,
+       * some internal indices need to be corrected by calling this
+       * function and specifying at what sample number the next
+       * chunk passed to extractAndIntegrate() starts.
+       *
+       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
        */
       void adjustSampleOffset(const size_t sampleoffset);
 
       /**
-       * Extracts multi-tone PCal information from a single-channel signal segment
-       * and integrates it to the class-internal PCal extraction result buffer.
-       * There are no restrictions to the segment length.
+       * Process a new chunk of time-continuous single channel data.
+       * Time-integrates the data into the internal result buffer.
        *
-       * If you integrate over a longer time and several segments, i.e. perform
-       * multiple calls to this function, take care to keep the input
-       * continuous (i.e. don't leave out samples).
-       *
-       * If extraction has been finalized by calling getFinalPCal() this function
-       * returns False. You need to call clear() to reset.
+       * If this function is called several times to integrate additional data
+       * and these multiple pieces of data are not continuous in time,
+       * please see adjustSampleOffset().
        *
        * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
-       * @return true on success
+       * @return true on success, false if results were frozen by calling getFinalPCal()
        */
       bool extractAndIntegrate(f32 const* samples, const size_t len);
 
       /**
-       * Performs finalization steps on the internal PCal results if necessary
-       * and then copies these PCal results into the specified output array.
-       * Data in the output array is overwritten with PCal results.
+       * Computes the final extraction result. No more sample data can be added.
+       * The PCal extraction results are copied into the specified output array.
        *
        * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
@@ -117,47 +142,44 @@ class PCalExtractorShifting : public PCal {
 
    public:
       /**
-       * Set the extracted and accumulated PCal data back to zero.
-       * When several PCal are run in parallel in segments of a 
-       * time slice of data, and the PCal results from each segment
-       * should be combined later, care must be taken to tell the PCal
-       * extraction the number/offset of the first sample in the segment
-       * Typically 0 for the first segment, len(segment) for the second
-       * segment, and so on, until offset of the last segment
-       * which is len(subintegration_subslice)-len(segment).
+       * Clear the extracted and accumulated PCal data by setting it to zero.
        */
       void clear();
 
       /**
-       * Adjust the sample offset. Should be called before extractAndIntegrate()
-       * every time there is a gap or backwards shift in the otherwise contiguous
-       * sample stream.
-       * @param sampleoffset referenced back to start of subintegration interval
+       * Adjust the sample offset.
+       *
+       * The extractor needs a time-continuous input sample stream. Samples
+       * are numbered 0...N according to their offset from the start of the 
+       * stream. The stream can be split into smaller chunks that
+       * are added individually through several extractAndIntegrate() calls.
+       *
+       * If for some reason two chunks are not continuous in time,
+       * some internal indices need to be corrected by calling this
+       * function and specifying at what sample number the next
+       * chunk passed to extractAndIntegrate() starts.
+       *
+       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
        */
       void adjustSampleOffset(const size_t sampleoffset);
 
       /**
-       * Extracts multi-tone PCal information from a single-channel signal segment
-       * and integrates it to the class-internal PCal extraction result buffer.
-       * There are no restrictions to the segment length.
+       * Process a new chunk of time-continuous single channel data.
+       * Time-integrates the data into the internal result buffer.
        *
-       * If you integrate over a longer time and several segments, i.e. perform
-       * multiple calls to this function, take care to keep the input
-       * continuous (i.e. don't leave out samples).
-       *
-       * If extraction has been finalized by calling getFinalPCal() this function
-       * returns False. You need to call clear() to reset.
+       * If this function is called several times to integrate additional data
+       * and these multiple pieces of data are not continuous in time,
+       * please see adjustSampleOffset().
        *
        * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
-       * @return true on success
+       * @return true on success, false if results were frozen by calling getFinalPCal()
        */
       bool extractAndIntegrate(f32 const* samples, const size_t len);
 
       /**
-       * Performs finalization steps on the internal PCal results if necessary
-       * and then copies these PCal results into the specified output array.
-       * Data in the output array is overwritten with PCal results.
+       * Computes the final extraction result. No more sample data can be added.
+       * The PCal extraction results are copied into the specified output array.
        *
        * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
@@ -180,47 +202,44 @@ class PCalExtractorImplicitShift : public PCal {
 
    public:
       /**
-       * Set the extracted and accumulated PCal data back to zero.
-       * When several PCal are run in parallel in segments of a 
-       * time slice of data, and the PCal results from each segment
-       * should be combined later, care must be taken to tell the PCal
-       * extraction the number/offset of the first sample in the segment
-       * Typically 0 for the first segment, len(segment) for the second
-       * segment, and so on, until offset of the last segment
-       * which is len(subintegration_subslice)-len(segment).
+       * Clear the extracted and accumulated PCal data by setting it to zero.
        */
       void clear();
 
       /**
-       * Adjust the sample offset. Should be called before extractAndIntegrate()
-       * every time there is a gap or backwards shift in the otherwise contiguous
-       * sample stream.
-       * @param sampleoffset referenced back to start of subintegration interval
+       * Adjust the sample offset.
+       *
+       * The extractor needs a time-continuous input sample stream. Samples
+       * are numbered 0...N according to their offset from the start of the 
+       * stream. The stream can be split into smaller chunks that
+       * are added individually through several extractAndIntegrate() calls.
+       *
+       * If for some reason two chunks are not continuous in time,
+       * some internal indices need to be corrected by calling this
+       * function and specifying at what sample number the next
+       * chunk passed to extractAndIntegrate() starts.
+       *
+       * @param sampleoffset sample offset of chunk passed to next extractAndIntegrate() call
        */
       void adjustSampleOffset(const size_t sampleoffset);
 
       /**
-       * Extracts multi-tone PCal information from a single-channel signal segment
-       * and integrates it to the class-internal PCal extraction result buffer.
-       * There are no restrictions to the segment length.
+       * Process a new chunk of time-continuous single channel data.
+       * Time-integrates the data into the internal result buffer.
        *
-       * If you integrate over a longer time and several segments, i.e. perform
-       * multiple calls to this function, take care to keep the input
-       * continuous (i.e. don't leave out samples).
-       *
-       * If extraction has been finalized by calling getFinalPCal() this function
-       * returns False. You need to call clear() to reset.
+       * If this function is called several times to integrate additional data
+       * and these multiple pieces of data are not continuous in time,
+       * please see adjustSampleOffset().
        *
        * @param samples Chunk of the input signal consisting of 'float' samples
        * @param len     Length of the input signal chunk
-       * @return true on success
+       * @return true on success, false if results were frozen by calling getFinalPCal()
        */
       bool extractAndIntegrate(f32 const* samples, const size_t len);
 
       /**
-       * Performs finalization steps on the internal PCal results if necessary
-       * and then copies these PCal results into the specified output array.
-       * Data in the output array is overwritten with PCal results.
+       * Computes the final extraction result. No more sample data can be added.
+       * The PCal extraction results are copied into the specified output array.
        *
        * @param out Pointer to user PCal array with getLength() values
        * @return number of samples that were integrated for the result
@@ -238,37 +257,18 @@ class PCalExtractorDummy : public PCal {
 
   public:
     /**
-     * Set the extracted and accumulated PCal data back to zero.
-     * When several PCal are run in parallel in segments of a 
-     * time slice of data, and the PCal results from each segment
-     * should be combined later, care must be taken to tell the PCal
-     * extraction the number/offset of the first sample in the segment
-     * Typically 0 for the first segment, len(segment) for the second
-     * segment, and so on, until offset of the last segment
-     * which is len(subintegration_subslice)-len(segment).
+     * Clear the extracted and accumulated PCal data by setting it to zero.
      */
     void clear();
 
     /**
-     * Adjust the sample offset. Should be called before extractAndIntegrate()
-     * every time there is a gap or backwards shift in the otherwise contiguous
-     * sample stream.
+     * Dummy.
      * @param sampleoffset referenced back to start of subintegration interval
      */
     void adjustSampleOffset(const size_t sampleoffset);
 
     /**
-     * Extracts multi-tone PCal information from a single-channel signal segment
-     * and integrates it to the class-internal PCal extraction result buffer.
-     * There are no restrictions to the segment length.
-     *
-     * If you integrate over a longer time and several segments, i.e. perform
-     * multiple calls to this function, take care to keep the input
-     * continuous (i.e. don't leave out samples).
-     *
-     * If extraction has been finalized by calling getFinalPCal() this function
-     * returns False. You need to call clear() to reset.
-     *
+     * Dummy.
      * @param samples Chunk of the input signal consisting of 'float' samples
      * @param len     Length of the input signal chunk
      * @return true on success
@@ -276,12 +276,9 @@ class PCalExtractorDummy : public PCal {
     bool extractAndIntegrate(f32 const* samples, const size_t len);
 
     /**
-     * Performs finalization steps on the internal PCal results if necessary
-     * and then copies these PCal results into the specified output array.
-     * Data in the output array is overwritten with PCal results.
-     *
-     * @param out Pointer to user PCal array with getLength() values
-     * @return number of samples that were integrated for the result
+       * Dummy. Returns fixed results.
+       * @param out Pointer to user PCal array with getLength() values
+       * @return number of samples that were integrated for the result
      */
     uint64_t getFinalPCal(cf32* out);
 };
