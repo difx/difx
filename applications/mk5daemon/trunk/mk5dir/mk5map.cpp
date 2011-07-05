@@ -47,9 +47,10 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110704";
+const char verdate[] = "20110705";
 
-
+const int defaultGrid = 20;
+const int defaultPrecision = 1<<25;
 const int BufferLength = 1<<20;	// 1 MiB
 
 enum DMS_Mode
@@ -61,12 +62,41 @@ enum DMS_Mode
 };
 
 
-int verbose = 0;
+int verbose = 1;
 int die = 0;
 
 typedef void (*sighandler_t)(int);
 
 sighandler_t oldsiginthand;
+
+int usage(const char *pgm)
+{
+	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
+	printf("A program to extract Mark5 module directory information via XLR calls\n");
+	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
+	printf("options can include:\n");
+	printf("  --help\n");
+	printf("  -h             Print this help message\n\n");
+	printf("  --verbose\n");
+	printf("  -v             Be more verbose\n\n");
+	printf("  --quiet\n");
+	printf("  -q             Be more verbose\n\n");
+	printf("  --force\n");
+	printf("  -f             Reread directory even if not needed\n\n");
+	printf("  --rate <R>\n");
+	printf("  -r <R>         Try to match a fixed rate of <R> bytes per second\n\n");
+	printf("  --precision <P>\n");
+	printf("  -p <P>         Determine the scan boundaries to <P> bytes or better [%d]\n\n", defaultPrecision);
+	printf("  --grid <G>\n");
+	printf("  -g <G>         Initially sample the module at <G> equally spaced spots [%d]\n\n", defaultGrid);
+	printf("  --begin <B>\n");
+	printf("  -b <B>         Begin search at byte position <B> [0]\n\n");
+	printf("  --end <E>\n");
+	printf("  -e <E>         End search at byte position <E> [full data length]\n\n");
+
+
+	return 0;
+}
 
 void siginthand(int j)
 {
@@ -165,7 +195,10 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 
 	frame = ptr[4] + 256*ptr[5];
 
-	print();
+	if(verbose > 0)
+	{
+		print();
+	}
 
 	return 0;
 }
@@ -207,22 +240,6 @@ double duration(const Datum &d1, const Datum &d2)
 	return fabs(dt);
 }
 
-int usage(const char *pgm)
-{
-	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
-	printf("A program to extract Mark5 module directory information via XLR calls\n");
-	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
-	printf("options can include:\n");
-	printf("  --help\n");
-	printf("  -h             Print this help message\n\n");
-	printf("  --verbose\n");
-	printf("  -v             Be more verbose\n\n");
-	printf("  --force\n");
-	printf("  -f             Reread directory even if not needed\n\n");
-
-	return 0;
-}
-
 static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
 {
 	S_BANKSTATUS bank_stat;
@@ -257,45 +274,7 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-#if 0
-int dirCallback(int scan, int nscan, int status, void *data)
-{
-	static int64_t seconds=0;
-	struct timeval t;
-	DifxMessageMk5Status *mk5status;
-	int v;
-
-	mk5status = (DifxMessageMk5Status *)data;
-	mk5status->scanNumber = scan;
-	mk5status->position = nscan;
-	snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", Mark5DirDescription[status]);
-	difxMessageSendMark5Status(mk5status);
-
-	if(verbose)
-	{
-		printf("%d/%d %d\n", scan, nscan, status);
-	}
-
-	gettimeofday(&t, 0);
-	if(seconds == 0)
-	{
-		seconds = t.tv_sec;
-	}
-	if(t.tv_sec - seconds > 10)
-	{
-		seconds = t.tv_sec;
-		v = getBankInfo(xlrDevice, mk5status, mk5status->activeBank == 'B' ? 'A' : 'B');
-		if(v < 0)
-		{
-			die = 1;
-		}
-	}
-
-	return die;
-}
-#endif
-
-static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_t begin, int64_t end)
+static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t begin, int64_t end)
 {
 	SSHANDLE xlrDevice;
 	S_DIR dir;
@@ -309,8 +288,13 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 	int64_t done = 0LL;
 	int npeek = 0;
 	int bank;
-	int signature, len;
+	unsigned int signature;
+	int len;
 	char *dirData;
+	int n=0;
+	char outfile[32];
+	FILE *out;
+	int64_t lastnewpos;
 
 	dRate = rate * 1.0e-6;	
 
@@ -387,14 +371,26 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 
 	// The action starts here
 
-	// First sample the recorded length with nGrid points
+	// First sample the recorded length with grid points
 
-	for(int i = 0; i < nGrid; i++)
+	for(int i = 0; i < grid; i++)
 	{
-		int64_t byte = begin + (end - begin - BufferLength - 128)*i/(nGrid-1);
+		double complete = double(i+1)*100.0/(double)grid;
+		int64_t byte = begin + (end - begin - BufferLength - 128)*i/(grid-1);
+
 		byte -= (byte % 8);
+
+		if(verbose > 0)
+		{
+			printf("[%6.3f%%] ", complete);
+		}
 		data.push_back(Datum(&xlrDevice, byte));
 		npeek++;
+		mk5status.scanNumber = npeek;
+		mk5status.position = byte;
+		snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "Pass 1: %6.3f%%", complete);
+		difxMessageSendMark5Status(&mk5status);
+
 		if(die)
 		{
 			break;
@@ -405,6 +401,7 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 
 	printf("\nAllowed rate range = %10.0f to %10.0f\n\n", rate - dRate, rate + dRate);
 
+	lastnewpos = 0LL;
 	for(std::list<Datum>::iterator d1 = data.begin(); ; d1++)
 	{
 		std::list<Datum>::iterator d2 = d1;
@@ -419,17 +416,32 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 			printf("  "); d1->print();
 			printf("  "); d2->print();
 		}
-		else while( (fabs(bytespersecond(*d1, *d2) - rate) > dRate) && (d2->byte-d1->byte > granularity) )
+		else while( (fabs(bytespersecond(*d1, *d2) - rate) > dRate) && (d2->byte-d1->byte > precision) )
 		{
-			printf("[%6.3f%%]  %14Ld %14Ld  %10.0f != %10.0f -> ", (double)done/(double)(end-begin)*100.0, d1->byte, d2->byte, bytespersecond(*d1, *d2), rate);
+			double complete = (double)done/(double)(end-begin)*100.0;
+			int64_t newpos = (d1->byte + d2->byte)/2LL;
+
 			if(die)
 			{
 				break;
 			}
-			int64_t newpos = (d1->byte + d2->byte)/2LL;
+
+			if(verbose > 0)
+			{
+				printf("[%6.3f%%] ", complete);
+			}
 			newpos = newpos - (newpos % 8);
+			if(newpos == lastnewpos)
+			{
+				break;
+			}
+			lastnewpos = newpos;
 			data.insert(d2, Datum(&xlrDevice, newpos));
 			npeek++;
+			mk5status.scanNumber = npeek;
+			mk5status.position = newpos;
+			snprintf(mk5status.scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "Pass 2: %6.3f%%", complete);
+			difxMessageSendMark5Status(&mk5status);
 			d2--;	// back off to point to the newly added member
 		}
 		done += d2->byte-d1->byte;
@@ -440,12 +452,15 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 	}
 
 	// Finally, go through and remove redundant points
-	printf("---\n");
-	for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+	if(verbose > 2)
 	{
-		d->print();
+		printf("---\n");
+		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+		{
+			d->print();
+		}
+		printf("---\n");
 	}
-	printf("---\n");
 
 	for(std::list<Datum>::iterator d1 = data.begin(); ; d1++)
 	{
@@ -485,17 +500,50 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 		}
 	}
 
+	// Make sure ends are OK 
+	{
+		std::list<Datum>::iterator d1 = data.begin();
+		std::list<Datum>::iterator d2 = d1;
+		d2++;
+		if(fabs(bytespersecond(*d1, *d2) - rate) > dRate)
+		{
+			data.erase(d1);
+		}
+
+		d2 = data.end();
+		d2--;
+		d1 = d2;
+		d1--;
+		if(fabs(bytespersecond(*d1, *d2) - rate) > dRate)
+		{
+			data.erase(d2);
+		}
+	}
 	// And ends here
 
-	printf("---\n");
-	for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+	if(verbose > 1)
 	{
-		d->print();
+		printf("---\n");
+		for(std::list<Datum>::const_iterator d = data.begin(); d != data.end(); d++)
+		{
+			d->print();
+		}
+		printf("---\n");
 	}
-	printf("---\n");
+	
+	printf("\n");
 
-	int n=0;
-	printf("%s %d %c %d 1 NORMAL\n", vsn, data.size()/2, 'A' + bank, signature);
+	snprintf(outfile, 31, "%s.mk5map.dir", vsn);
+	out = fopen(outfile, "w");
+	
+	if(out)
+	{
+		fprintf(out, "%s %d %c %u 1 NORMAL\n", vsn, data.size()/2, 'A' + bank, signature);
+	}
+	if(verbose > -1 || !out)
+	{
+		printf("%s %d %c %u 1 NORMAL\n", vsn, data.size()/2, 'A' + bank, signature);
+	}
 	for(std::list<Datum>::const_iterator d1 = data.begin(); d1 != data.end(); d1++)
 	{
 		n++;
@@ -508,15 +556,37 @@ static int mk5map(char *vsn, double rate, int64_t granularity, int nGrid, int64_
 			break;
 		}
 		double dur = duration(*d1, *d2);
-		printf("%14Ld %14Ld %5d %5d %5d %5d %f %d  %d %d %d No%04d\n",
-			d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
+		if(out)
+		{
+			fprintf(out, "%14Ld %14Ld %5d %5d %5d %5d %f %d  %d %d %d No%04d\n",
+				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
+		}
+		if(verbose > -1 || !out)
+		{
+			printf("%14Ld %14Ld %5d %5d %5d %5d %f %d  %d %d %d No%04d\n",
+				d1->byte, d2->byte-d1->byte, d1->mjd, d1->sec, d1->frame, d1->framespersecond, dur, d1->framebytes, 0, d1->tracks, d1->format, n);
+		}
 
 		d1++;
 	}
 	
-	printf("---\n");
 
-	printf("\nDirectory solved with %d peeks\n", npeek);
+	if(verbose > 0)
+	{
+		printf("\nDirectory solved with %d peeks\n", npeek);
+	}
+
+	printf("\n");
+
+	if(out)
+	{
+		printf("--> Directory saved as %s\n\n", outfile);
+		fclose(out);
+	}
+	else
+	{
+		printf("*** Warning: could not open output file %s.  You can cut and paste the above! ***\n\n");
+	}
 
 	if(die)
 	{
@@ -547,13 +617,13 @@ int main(int argc, char **argv)
 	int fast=0;
 	enum DMS_Mode dmsMode = DMS_MODE_FAIL_UNLESS_SAFE;
 	int v;
-	int nGrid = 10;
+	int grid = defaultGrid;
 	const char *dmsMaskStr;
 	int dmsMask = 7;
 	int startScan = -1;
 	int stopScan = -1;
 	double rate = 25600*10016;	// now hardcoded for Mark5B
-	int64_t granularity = 1LL<<26;
+	int64_t precision = defaultPrecision;
 	int64_t begin = 0LL;
 	int64_t end = 0LL;
 
@@ -586,6 +656,11 @@ int main(int argc, char **argv)
 		{
 			verbose++;
 		}
+		else if(strcmp(argv[a], "-q") == 0 ||
+		        strcmp(argv[a], "--quiet") == 0)
+		{
+			verbose--;
+		}
 		else if(strcmp(argv[a], "-n") == 0 ||
 			strcmp(argv[a], "--nodms") == 0)
 		{
@@ -609,16 +684,17 @@ int main(int argc, char **argv)
 				a++;
 				rate = atof(argv[a]) - 1;
 			}
-			else if(strcmp(argv[a], "-g") == 0 ||
-			   strcmp(argv[a], "--granularity") == 0)
+			else if(strcmp(argv[a], "-p") == 0 ||
+			        strcmp(argv[a], "--precision") == 0)
 			{
 				a++;
-				granularity = atoi(argv[a]);
+				precision = atoi(argv[a]);
 			}
-			else if(strcmp(argv[a], "--grid") == 0)
+			else if(strcmp(argv[a], "-g") == 0 ||
+			        strcmp(argv[a], "--grid") == 0)
 			{
 				a++;
-				nGrid = atoi(argv[a]);
+				grid = atoi(argv[a]);
 			}
 			else if(strcmp(argv[a], "-b") == 0 ||
 			        strcmp(argv[a], "--begin") == 0)
@@ -676,7 +752,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5map(vsn, rate, granularity, nGrid, begin, end);
+		v = mk5map(vsn, rate, precision, grid, begin, end);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

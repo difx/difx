@@ -3,8 +3,6 @@ mk5daemon
 * Integrate mk5cp?
 ? Fix reboot->busy or condition->busy state changes
 * ssopen bug?
-* Fix bug: no more load messages after failed correlation
-* run difxlog when running mpifxcorr
 * Add IPMI support
 
 mk5cp
@@ -18,3 +16,12 @@ mk5dir
 ~~~~~~
 x Watch for disk changes in other bank
 * Look for improperly decoded scans and warn user
+
+mk5map
+~~~~~~
+* time to complete
+* understand why mf.frame is often wrong (= 0)
+* support non Mark5B_2048-16-2
+* add to docs
+* option to pass station code
+* put DMS back in
