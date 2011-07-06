@@ -719,7 +719,7 @@ uint64_t PCalExtractorImplicitShift::getFinalPCal(cf32* out)
  
     /* Copy only the interesting bins */
     size_t step = (size_t)(std::floor(double(_N_bins)*(_pcalspacing_hz/_fs_hz)));
-    size_t offset = (size_t)(std::floor(double(_N_bins*_pcaloffset_hz)/_fs_hz));
+    size_t offset = (size_t)(std::floor(double(_N_bins)*(_pcaloffset_hz/_fs_hz)));
     // cout << "step=" << step << " offset=" << offset << endl;
     for (size_t n=0; n<(size_t)_N_tones; n++) {
         size_t idx = offset + n*step;
