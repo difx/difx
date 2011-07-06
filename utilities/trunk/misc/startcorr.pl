@@ -19,23 +19,30 @@ sub send_data($$);
 sub send_cmd($$);
 sub launch_lbadr($$$$$$$$$$$);
 sub stop_lbadr ($$);
+sub stop_lbadr ($$);
 sub launch_mark5($$$$$$$$$);
 sub stop_mark5 ($);
+sub launch_curtindas($$$);
+sub stop_curtindas ($);
 sub lbastation($);
+sub curtindas($);
 
 my $machinefile;
 my $numproc;
 my $evlbi = 0;
 my $monitor = undef;
-my $offset = 20; # Offset in seconds for start time
+my $offset = 30; # Offset in seconds for start time
 my $debug = 0;
 my $mk5debug = 1;
 
 # Machines which are not really Mark5
-my @LBADR = ('hovsi.phys.utas.edu.au', 'cavsi1-ext', 'cavsi2-ext',
-	     'mpvsi1-ext', 'mpvsi2-ext', 'pkvsi1-ext', 'pkvsi2-ext');
+my @LBADR = ('hovsi', 'cavsi1-ext', 'cavsi2-ext',
+	     'mpvsi1-ext', 'mpvsi2-ext', 'pkvsi1-ext', 'pkvsi2-ext',
+	     '202.158.222.114', '202.158.222.116', '202.158.222.118',
+	     '202.158.222.115', '202.158.222.119');
 
-
+#my @CURTINDAS = ('202.9.14.20');
+my @CURTINDAS = ('');
 GetOptions('-machinefile=s'=>\$machinefile, 
            'np=i'=>\$numproc, 'evlbi'=>\$evlbi, 'offset=i'=>\$offset,
 	   'monitor=s'=>\$monitor, 'debug'=>\$debug, 'hosts=s'=>\$recorder_hosts);
@@ -152,7 +159,7 @@ if ($evlbi) {
   $finput = $output;
 }
 
-die "Rpfits file $outfile already exists!\n" if (-e $outfile);
+die "Output file $outfile already exists!\n" if (-e $outfile);
 
 ##########
 # Launch clients
@@ -185,7 +192,7 @@ if (defined $recorder_hosts && $evlbi) {
     if (!$debug) {
       print "Waiting for DiFX to start\n";
       #sleep($offset*0.5);
-      sleep(3);
+      sleep(5);
     }
 
     warn "Need to check active datastream\n";
@@ -208,10 +215,12 @@ if (defined $recorder_hosts && $evlbi) {
 
 	my $format = $datastream[$i]->dataformat;
 	my ($recorder, $playback, $compression, $vsib_mode, $ipd) = @{$rec_hosts{$ant}};
-	# $commpression => mask for Mark5b
+	# $compression => mask for Mark5b
 	# $compression => trackrate for Mark5A, $vsib_mode => ntrack
 
-	if ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
+	if (curtindas($recorder)) {
+	  launch_curtindas($ant, $recorder, $playback);
+	} elsif ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
 	  launch_lbadr($ant, $recorder, $playback, $compression, $vsib_mode, $ipd,
 		       $format, $datastream[$i]->bits, $bandwidth,
 		       $network[$i]->tcpwin, $network[$i]->port);
@@ -253,7 +262,9 @@ if (%rec_hosts) {
     my $format = $datastream[$i]->dataformat;
 
     if ($recorder) {
-      if ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
+      if (curtindas($recorder)) {
+	stop_curtindas($recorder);
+      } elsif ($format eq 'LBAVSOP' || $format eq 'LBASTD' || lbastation($recorder)) {
 	stop_lbadr($recorder, $ant);
       } elsif ($format eq 'MARK5B' || $format eq 'MKIV') {
 	stop_mark5($recorder);
@@ -270,7 +281,6 @@ sub checkfile ($$) {
   die "$type $file is not a plain file\n" if (!-f $file);
   die "$type $file is not readable\n" if (!-r $file);
   die "$type $file is a directory\n" if (-d $file);
-
 }
 
 sub server_comm {
@@ -280,38 +290,33 @@ sub server_comm {
     print "SEND: <$type>$message</$type> to $recorder\n";
   }
 
-  {
+  # Connect to the recorder server
+  my $socket = IO::Socket::INET->new(PeerAddr => $recorder,
+				     PeerPort => RECORDER_SERVER);
+  if (!$socket) {
+    warn "Could not connect to $recorder\n";
+    return;
+  }
 
-    # Connect to the recorder server
-    my $socket = IO::Socket::INET->new(PeerAddr => $recorder,
-				       PeerPort => RECORDER_SERVER,
-				      );
-
-    if (!$socket) {
-      warn "Could not connect to $recorder\n";
-      return;
-    }
-
-    print $socket "<$type>$message</$type>";
-
-    # Get response
-    my $ret = "";
-    while(<$socket>){
-      $ret .= $_;
-    }
-    close($socket);
+  print $socket "<$type>$message</$type>";
+  
+  # Get response
+  my $ret = "";
+  while(<$socket>){
+    $ret .= $_;
+  }
+  close($socket);
     
-    if ($ret =~ /<fail>(.*)<\/fail>/s) {
-      carp "$1";
-      return undef;
-    } elsif ($ret =~ /<succ \/>/s) {
-      return "";
-    } elsif ($ret =~ /<status>.*<\/status>/s) {
-      return $1;
-    } else {
-      warn "Did not understand server $recorder reponse ($ret): $!\n";
-      return undef;
-    }
+  if ($ret =~ /<fail>(.*)<\/fail>/s) {
+    carp "$1";
+    return undef;
+  } elsif ($ret =~ /<succ \/>/s) {
+    return "";
+  } elsif ($ret =~ /<status>.*<\/status>/s) {
+    return $1;
+  } else {
+    warn "Did not understand server $recorder reponse ($ret): $!\n";
+    return undef;
   }
 }
 
@@ -332,6 +337,12 @@ sub launch_lbadr($$$$$$$$$$$) {
   if ($tcpwin<0) {
     $udp = -$tcpwin;
     $tcpwin = 0;
+  }
+
+  my $invert = 0;
+  if ($vsib_mode<0) {
+    $vsib_mode = abs($vsib_mode);
+    $invert = 1;
   }
   
   $status = send_data("add_host=evlbi_$ant,$playback,$port,$tcpwin,1", $recorder);
@@ -391,11 +402,16 @@ sub launch_lbadr($$$$$$$$$$$) {
     $status = send_data("onebit=off", $recorder);
     die "Failed to set mark5b on $recorder\n" if (!defined $status);
   }
+  if ($invert) {
+    $status = send_data("invert=on", $recorder);
+    die "Failed to turn on invert on $recorder\n" if (!defined $status);
+  } else {
+    $status = send_data("invert=off", $recorder);
+    die "Failed to turn off invert on $recorder\n" if (!defined $status);
+  }
 
   $status = send_cmd("record-start", $recorder);
   die "Failed to launch recorder on $recorder\n" if (!defined $status);
-
-
 
   # Turn off evlbi
   $status = send_data("filesize=10s", $recorder);
@@ -544,9 +560,34 @@ sub stop_mark5 ($) {
   }
 }
 
+sub launch_curtindas($$$) {
+  my ($ant, $recorder, $playback) = @_;
+  return server_comm('start', "playback:${duration}", $recorder);
+}
+
+sub stop_curtindas($) {
+  my $recorder = shift;
+}
+
+
 sub lbastation($) {
   my $recorder = shift;
   foreach (@LBADR) {
+    return(1) if ($recorder eq $_);
+  }
+  # No joy - try just the hostname
+  if ($recorder =~ /^([^\.]+)\./) {
+    $recorder = $1;
+  }
+  foreach (@LBADR) {
+    return(1) if ($recorder eq $_);
+  }
+  return 0;
+}
+
+sub curtindas($) {
+  my $recorder = shift;
+  foreach (@CURTINDAS) {
     return(1) if ($recorder eq $_);
   }
   return 0;
