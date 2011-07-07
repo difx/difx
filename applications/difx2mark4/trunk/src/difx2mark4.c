@@ -232,16 +232,19 @@ int convertMark4 (struct CommandLineOptions *opts, int *nScan)
         {
         if(strncmp(difxVersion, D->job->difxVersion, 63))
             {
-            fprintf (stderr, "Attempting to run difx2mark4 from version %s on a job make for version %s\n", 
+            fprintf (stderr, "Attempting to run difx2mark4, version %s,\n"
+                             " on a job processed with version %s\n", 
                      difxVersion, D->job->difxVersion);
             if(opts->overrideVersion)
                 {
-                fprintf (stderr, "Continuing because of --override-version but not setting a version\n");
+                fprintf (stderr, " Continuing because of --override-version\n"
+                                 "  but not setting a version.\n");
                 D->job->difxVersion[0] = 0;
                 }
             else
                 {
-                fprintf (stderr, "Not converting.\n");
+                fprintf (stderr, " Not converting:  use --override-version\n"
+                                 "  if you are sure it is safe to proceed.\n");
                 deleteDifxInput(D);
                 return 0;
                 }
