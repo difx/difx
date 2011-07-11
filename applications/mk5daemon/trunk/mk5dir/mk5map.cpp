@@ -47,7 +47,7 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110705";
+const char verdate[] = "20110710";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -279,7 +279,6 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	SSHANDLE xlrDevice;
 	S_DIR dir;
 	char label[XLR_LABEL_LENGTH+1];
-	Mark5Module module;
 	DifxMessageMk5Status mk5status;
 	char message[DIFX_MESSAGE_LENGTH];
 	int v;
@@ -538,11 +537,11 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	
 	if(out)
 	{
-		fprintf(out, "%s %d %c %u 1 NORMAL\n", vsn, data.size()/2, 'A' + bank, signature);
+		fprintf(out, "%s %d %c %u 1 NORMAL Synth\n", vsn, data.size()/2, 'A' + bank, signature);
 	}
 	if(verbose > -1 || !out)
 	{
-		printf("%s %d %c %u 1 NORMAL\n", vsn, data.size()/2, 'A' + bank, signature);
+		printf("%s %d %c %u 1 NORMAL Synth\n", vsn, data.size()/2, 'A' + bank, signature);
 	}
 	for(std::list<Datum>::const_iterator d1 = data.begin(); d1 != data.end(); d1++)
 	{
@@ -601,7 +600,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	WATCHDOG( XLRClose(xlrDevice) );
 
 	mk5status.state = MARK5_STATE_IDLE;
-	mk5status.scanNumber = module.nScans();
+	mk5status.scanNumber = 0;
 	mk5status.scanName[0] = 0;
 	mk5status.position = 0;
 	mk5status.activeBank = ' ';

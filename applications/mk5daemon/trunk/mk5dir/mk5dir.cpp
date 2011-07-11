@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.8";
-const char verdate[] = "20110408";
+const char version[] = "0.9";
+const char verdate[] = "20110710";
 
 enum DMS_Mode
 {
@@ -153,7 +153,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 
 	if(verbose)
 	{
-		printf("%d/%d %d\n", scan, nscan, status);
+		printf("%d/%d %d -> %s\n", scan, nscan, status);
 	}
 
 	gettimeofday(&t, 0);

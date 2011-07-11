@@ -1,6 +1,9 @@
 Version 1.4.2
 ~~~~~~~~~~~~~
-
+* Post DiFX-2.0.1
+* Add SMART dump option to vsn
+* Add mk5map utility to recover a directory where one doesn't exist (experimental, Mark5B @ 2 Gbps only now)
+* Some additional diagnostics in directory reading
 
 Version 1.4.1
 ~~~~~~~~~~~~

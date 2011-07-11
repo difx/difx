@@ -111,7 +111,7 @@ public:
 	enum Mark5ReadMode mode;
 	int dirVersion;		/* directory version = 0 for pre memo 81 */
 	int fast;		/* if true, the directory came from the ModuleUserDirectory only */
-	
+	int synthetic;		/* directory was synthesized */	
 
 	Mark5Module();
 	~Mark5Module();
@@ -140,7 +140,19 @@ enum Mark5DirStatus
 	MARK5_DIR_DECODE_SUCCESS,
 	MARK5_DIR_DECODE_WITH_REPLACEMENTS,
 	MARK5_COPY_ERROR,
-	MARK5_COPY_SUCCESS
+	MARK5_COPY_SUCCESS,
+	MARK5_DIR_ZEROS
+};
+
+enum ScanFormatError
+{
+	SCAN_FORMAT_ERROR_DECODE	= 1,
+	SCAN_FORMAT_ERROR_READERROR	= 2,
+	SCAN_FORMAT_ERROR_ZEROS		= 3,
+	SCAN_FORMAT_ERROR_TOOSHORT	= 4,
+	SCAN_FORMAT_ERROR_UNSUPPORTED	= 5,
+	SCAN_FORMAT_ERROR_SCANNUMRANGE	= 8,
+	NUM_SCAN_FORMAT_ERRORS
 };
 
 struct DriveInformation
@@ -149,12 +161,14 @@ struct DriveInformation
 	char serial[XLR_MAX_DRIVESERIAL+1];
 	char rev[XLR_MAX_DRIVEREV+1];
 	int failed;
+	int smartCapable;
 	long long capacity;	/* in bytes */
 };
 
 
 extern char Mark5DirDescription[][20];
 extern char Mark5ReadModeName[][10];
+extern char ScanFormatErrorName[][40];
 
 const char *moduleStatusName(int status);
 
