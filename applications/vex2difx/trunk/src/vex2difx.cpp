@@ -2071,7 +2071,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							zoomChans = static_cast<int>(corrSetup->nInputChan()*zf.bandwidth/freqs[dd->recFreqId[parentFreqIndices[i]]].bw);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
 									freqs[dd->recFreqId[parentFreqIndices[i]]].sideBand,
-									zoomChans, zoomChans*corrSetup->nOutputChan/corrSetup->nFFTChan, overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
+									zoomChans, zoomChans*(corrSetup->nOutputChan/corrSetup->nFFTChan), overSamp, decimation, 1, 0);	// final zero points to the noTone pulse cal setup.
 							if(zoomChans < minChans)
 							{
 								minChans = zoomChans;
