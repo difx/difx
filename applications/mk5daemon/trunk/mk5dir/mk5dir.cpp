@@ -318,7 +318,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
 	{
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
 	}

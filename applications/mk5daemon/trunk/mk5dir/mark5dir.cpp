@@ -134,7 +134,7 @@ char Mark5DirDescription[][20] =
 	"Data is zeros"
 };
 
-extern char ScanFormatErrorName[][40] =
+char ScanFormatErrorName[][40] =
 {
 	"not an error",
 	"cannot decode scan",
@@ -760,7 +760,7 @@ int Mark5BankGet(SSHANDLE xlrDevice)
 	XLR_RETURN_CODE xlrRC;
 	int b = -1;
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat) );
 	if(xlrRC == XLR_SUCCESS)
 	{
 		if(bank_stat.Selected)
@@ -774,7 +774,7 @@ int Mark5BankGet(SSHANDLE xlrDevice)
 	}
 	if(b == -1)
 	{
-		xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
+		WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat) );
 		if(xlrRC == XLR_SUCCESS)
 		{
 			if(bank_stat.Selected)
@@ -797,7 +797,7 @@ int Mark5GetActiveBankWriteProtect(SSHANDLE xlrDevice)
 	XLR_RETURN_CODE xlrRC;
 	int b = -1;
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat) );
 	if(xlrRC == XLR_SUCCESS)
 	{
 		if(bank_stat.Selected)
@@ -811,7 +811,7 @@ int Mark5GetActiveBankWriteProtect(SSHANDLE xlrDevice)
 	}
 	if(b == -1)
 	{
-		xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
+		WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat) );
 		if(xlrRC == XLR_SUCCESS)
 		{
 			if(bank_stat.Selected)
@@ -837,7 +837,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	int b = -1;
 	int bank=-1;
 
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat) );
 	if(xlrRC == XLR_SUCCESS)
 	{
 		if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
@@ -853,7 +853,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 
 	if(b == -1)
 	{
-		xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
+		WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat) );
 		if(xlrRC == XLR_SUCCESS)
 		{
 			if(strncasecmp(bank_stat.Label, vsn, 8) == 0)
@@ -873,13 +873,13 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 		return -1;
 	}
 
-	xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat);
+	WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		return -4;
 	}
 
-	xlrRC = XLRSelectBank(xlrDevice, bank);
+	WATCHDOG( xlrRC = XLRSelectBank(xlrDevice, bank) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		b = -5 - b;
@@ -888,7 +888,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	{
 		for(int i = 0; i < 100; i++)
 		{
-			xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat);
+			WATCHDOG( xlrRC = XLRGetBankStatus(xlrDevice, bank, &bank_stat) );
 			if(xlrRC != XLR_SUCCESS)
 			{
 				return -7;
@@ -907,7 +907,7 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	}
 
 	/* the following line is essential to work around an apparent streamstor bug */
-	xlrRC = XLRGetDirectory(xlrDevice, &dir);
+	WATCHDOG( xlrRC = XLRGetDirectory(xlrDevice, &dir) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		return -9;
@@ -959,14 +959,14 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 		return -1;
 	}
 
-	xlrRC = XLRGetLabel(xlrDevice, newLabel);
+	WATCHDOG( xlrRC = XLRGetLabel(xlrDevice, newLabel) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		return -2;
 	}
 	newLabel[8] = 0;
 
-	len = XLRGetUserDirLength(xlrDevice);
+	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 	/* The historic directories written by Mark5A could come in three sizes.
 	 * See readdir() in Mark5A.c.  If one of these matches the actual dir size,
 	 * then assume it is old style, which we declare to be directory version
@@ -998,7 +998,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 	m5dir = (struct Mark5LegacyDirectory *)dirData;
 
-	xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData);
+	WATCHDOG( xlrRC = XLRGetUserDir(xlrDevice, len, 0, dirData) );
 	if(xlrRC != XLR_SUCCESS)
 	{
 		free(dirData);
@@ -1233,7 +1233,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 			a = scan.start>>32;
 			b = scan.start % (1LL<<32);
-			xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen);
+			WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, a, b, bufferlen) );
 
 			if(xlrRC == XLR_FAIL)
 			{
@@ -1621,7 +1621,8 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 		}
 
 		nScan = len/128 - 1;
-#if 0
+
+#ifdef DEBUG
 		printf("Directory information:");
 		printf("  Ver = %d  VSN = %s\n", ver, dirHeader->vsn);
 		for(int s = 0; s < nScan; s++)
@@ -1654,6 +1655,7 @@ int getModuleDirectoryVersion(SSHANDLE xlrDevice, int *dirVersion, int *dirLengt
 			}
 		}
 #endif
+		
 		free(dirData);
 	}
 

@@ -75,11 +75,11 @@ extern char watchdogXLRError[XLR_ERROR_LENGTH+1];
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
 	strcpy(watchdogStatement, #statement); \
-	if(watchdogVerbose > 1) printf("Executing (at time %d): %s\n", (int)(watchdogTime), watchdogStatement); \
+	if(watchdogVerbose > 1) printf("Executing (at time %d): xlrRC = %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	watchdogRC = (statement); \
 	pthread_mutex_lock(&watchdogLock); \
-	if(watchdogVerbose > 2) printf("Executed (in %d seconds): %s\n", (int)(time(0)-watchdogTime), watchdogStatement); \
+	if(watchdogVerbose > 2) printf("Executed (in %d seconds): xlrRC = %s\n", (int)(time(0)-watchdogTime), watchdogStatement); \
 	watchdogTime = 0; \
 	if(watchdogRC == XLR_SUCCESS) \
 	{ \

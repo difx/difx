@@ -47,7 +47,7 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110710";
+const char verdate[] = "20110715";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -83,6 +83,7 @@ int usage(const char *pgm)
 	printf("  -q             Be more verbose\n\n");
 	printf("  --force\n");
 	printf("  -f             Reread directory even if not needed\n\n");
+	printf("  --rt           Use real-time mode when reading\n\n");
 	printf("  --rate <R>\n");
 	printf("  -r <R>         Try to match a fixed rate of <R> bytes per second\n\n");
 	printf("  --precision <P>\n");
@@ -112,7 +113,6 @@ class Datum
 public:
 	Datum() : byte(-1) {}
 	Datum(SSHANDLE *xlrDev, int64_t byte) { populate(xlrDev, byte); }
-//	~Datum() {printf("."); fflush(stdout);}
 	int populate(SSHANDLE *xlrDev, int64_t byte);
 	void print() const;
 
@@ -152,11 +152,7 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 
 	a = pos >> 32;
 	b = pos % (1LL << 32);
-	xlrRC = XLRReadData(*xlrDev, buffer, a, b, BufferLength);
-	if(xlrRC == XLR_FAIL)
-	{
-		return -1;
-	}
+	WATCHDOGTEST( XLRReadData(*xlrDev, buffer, a, b, BufferLength));
 
 	mf = new_mark5_format_from_stream(new_mark5_stream_memory(buffer, BufferLength));
 	if(!mf)
@@ -274,7 +270,7 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t begin, int64_t end)
+static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t begin, int64_t end, enum Mark5ReadMode readMode)
 {
 	SSHANDLE xlrDevice;
 	S_DIR dir;
@@ -301,13 +297,16 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
-	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	if(readMode = MARK5_READ_MODE_RT)
+	{
+		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+	}
 
 	v = getBankInfo(xlrDevice, &mk5status, ' ');
 	if(v < 0)
 	{
-		XLRClose(xlrDevice);
+		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
 	}
@@ -333,7 +332,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	label[XLR_LABEL_LENGTH] = 0;
 
 	signature = 1;
-	len = XLRGetUserDirLength(xlrDevice);
+	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 	printf("User Dir Length = %d\n", len);
 	if(len > 128)
 	{
@@ -611,6 +610,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 
 int main(int argc, char **argv)
 {
+	enum Mark5ReadMode readMode = MARK5_READ_MODE_NORMAL;
 	char vsn[16] = "";
 	int force=0;
 	int fast=0;
@@ -674,6 +674,10 @@ int main(int argc, char **argv)
 			strcmp(argv[a], "--dmsforce") == 0)
 		{
 			dmsMode = DMS_MODE_UPDATE;
+		}
+		else if(strcmp(argv[a], "--rt") == 0)
+		{
+			readMode = MARK5_READ_MODE_RT;
 		}
 		else if(argv[a][0] == '-' && a+1 < argc)
 		{
@@ -751,7 +755,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5map(vsn, rate, precision, grid, begin, end);
+		v = mk5map(vsn, rate, precision, grid, begin, end, readMode);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

@@ -47,8 +47,6 @@ const char author[]  = "Walter Brisken";
 const char version[] = "0.4";
 const char verdate[] = "20110711";
 
-const char SMARTfile[] = "smart.out";
-
 enum WriteProtectAction
 {
 	WPA_NONE	= 0,
@@ -101,7 +99,8 @@ int roundsize(int s)
 	return a*5;
 }
 
-void interpretSMART(char *smartDescription, int maxLength, const S_SMARTVALUES *smart)
+/* isCritical is set to 1 if a non-zero value indicates a critical issue */
+long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVALUES *smart, int *isCritical)
 {
 	long long V=0;
 	int i;
@@ -111,63 +110,73 @@ void interpretSMART(char *smartDescription, int maxLength, const S_SMARTVALUES *
 		V = (V << 8) + smart->raw[i];
 	}
 
+	*isCritical = 0;
+
 	switch(smart->ID)
 	{
 	case 1:
-		snprintf(smartDescription, maxLength, "**  Read error rate = %lld", V);
+		snprintf(smartDescription, maxLength, "Read error rate = %lld", V);
+		*isCritical = 1;
 		break;
 	case 3:
-		snprintf(smartDescription, maxLength, "    Spin up time = %Ld ms", V);
+		snprintf(smartDescription, maxLength, "Spin up time = %Ld ms", V);
 		break;
 	case 4:
-		snprintf(smartDescription, maxLength, "    Start/stop count = %Ld", V);
+		snprintf(smartDescription, maxLength, "Start/stop count = %Ld", V);
 		break;
 	case 5:
-		snprintf(smartDescription, maxLength, "**  # reallocated sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "# reallocated sectors = %Ld", V);
+		*isCritical = 1;
 		break;
 	case 7:
-		snprintf(smartDescription, maxLength, "    Seek error rate = %Ld", V);
+		snprintf(smartDescription, maxLength, "Seek error rate = %Ld", V);
 		break;
 	case 9:
-		snprintf(smartDescription, maxLength, "    Power on time = %Ld hours", V);
+		snprintf(smartDescription, maxLength, "Power on time = %Ld hours", V);
 		break;
 	case 10:
-		snprintf(smartDescription, maxLength, "**  Spin retry count = %Ld", V);
+		snprintf(smartDescription, maxLength, "Spin retry count = %Ld", V);
+		*isCritical = 1;
 		break;
 	case 11:
-		snprintf(smartDescription, maxLength, "    # recalibration retries = %Ld", V);
+		snprintf(smartDescription, maxLength, "# recalibration retries = %Ld", V);
 		break;
 	case 12:
-		snprintf(smartDescription, maxLength, "    # power cycles = %Ld", V);
+		snprintf(smartDescription, maxLength, "# power cycles = %Ld", V);
 		break;
 	case 192:
-		snprintf(smartDescription, maxLength, "    # retract cycles = %Ld", V);
+		snprintf(smartDescription, maxLength, "# retract cycles = %Ld", V);
 		break;
 	case 193:
-		snprintf(smartDescription, maxLength, "    # landing zone loads = %Ld", V);
+		snprintf(smartDescription, maxLength, "# landing zone loads = %Ld", V);
 		break;
 	case 194:
-		snprintf(smartDescription, maxLength, "    Temperature = %lld C", V);
+		snprintf(smartDescription, maxLength, "Temperature = %lld C", V);
 		break;
 	case 196:
-		snprintf(smartDescription, maxLength, "**  # relocation events = %Ld", V);
+		snprintf(smartDescription, maxLength, "# relocation events = %Ld", V);
+		*isCritical = 1;
 		break;
 	case 197:
-		snprintf(smartDescription, maxLength, "**  # questionable sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "# questionable sectors = %Ld", V);
+		*isCritical = 1;
 		break;
 	case 198:
-		snprintf(smartDescription, maxLength, "**  # uncorrectable sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "# uncorrectable sectors = %Ld", V);
+		*isCritical = 1;
 		break;
 	case 199:
-		snprintf(smartDescription, maxLength, "    # DMA CRC errors = %Ld", V);
+		snprintf(smartDescription, maxLength, "# DMA CRC errors = %Ld", V);
 		break;
 	case 200:
-		snprintf(smartDescription, maxLength, "    Multi-zone error rate = %Ld", V);
+		snprintf(smartDescription, maxLength, "Multi-zone error rate = %Ld", V);
 		break;
 	default:
-		snprintf(smartDescription, maxLength, "    Unknown SMART value = %Ld", V);
+		snprintf(smartDescription, maxLength, "Unknown SMART value = %Ld", V);
 		break;
 	}
+
+	return V;
 }
 
 int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, int force, int verbose, int getSMART)
@@ -189,25 +198,13 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	char resp[12]="";
 	char *rv;
 	int v;
+	long long V;
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int dirLength;
 	struct DriveInformation drive[8];
 	bool needsNewDir = false;
 	FILE *out = 0;
-
-	if(getSMART)
-	{
-		out = fopen(SMARTfile, "w");
-		if(!out)
-		{
-			fprintf(stderr, "\nCannot open %s for write.  Aborting task!\n\n", SMARTfile);
-			return -1;
-		}
-		else
-		{
-			printf("\nWriting S.M.A.R.T. data to file %s\n\n", SMARTfile);
-		}
-	}
+	int isCritical;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -239,6 +236,33 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 	label[XLR_LABEL_LENGTH] = 0;
 	strcpy(oldLabel, label);
+
+	if(getSMART)
+	{
+		char SMARTfile[20];
+
+		if(strlen(newVSN) == 8)
+		{
+			sprintf(SMARTfile, "%s.smart", newVSN);
+		}
+		else
+		{
+			char tmp[10];
+			strncpy(tmp, label, 8);
+			tmp[8] = 0;
+			sprintf(SMARTfile, "%s.smart", tmp);
+		}
+		out = fopen(SMARTfile, "w");
+		if(!out)
+		{
+			fprintf(stderr, "\nCannot open %s for write.\n\n", SMARTfile);
+			fprintf(stderr, "SMART data not being written to file!\n\n");
+		}
+		else
+		{
+			printf("\nWriting S.M.A.R.T. data to file %s\n\n", SMARTfile);
+		}
+	}
 
 	if(verbose > 0)
 	{
@@ -303,7 +327,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		}
 		if(out)
 		{
-			fprintf(out, "VSN=%s/%d/%d\n\n", vsn, capacity, rate);
+			fprintf(out, "VSN: %s/%d/%d\n\n", vsn, capacity, rate);
 		}
 	}
 	else
@@ -318,7 +342,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		}
 		if(out)
 		{
-			fprintf(out, "VSN=<unset>\n\n");
+			fprintf(out, "VSN: <unset>\n\n");
 		}
 	}
 
@@ -354,23 +378,36 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 				d, drive[d].model, drive[d].serial, drive[d].rev,
 				roundModuleSize(drive[d].capacity),
 				drive[d].failed ? "FAILED" : "OK");
+		}
 
-			if(drive[d].smartCapable)
+		if(drive[d].smartCapable)
+		{
+			WATCHDOG( xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smartValues, d/2, d%2) );
+			if(xlrRC != XLR_SUCCESS)
 			{
-				WATCHDOG( xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smartValues, d/2, d%2) );
-				if(xlrRC != XLR_SUCCESS)
+				if(out)
 				{
-					fprintf(out, "Smart values not available for disk %d\n\n", d);
+					fprintf(out, "SMART values not available for disk %d\n\n", d);
 				}
-				else
+			}
+			else
+			{
+				if(out)
 				{
 					fprintf(out, "SMART values version %d\n", smartVersion);
-					for(v = 0; v < XLR_MAX_SMARTVALUES; v++)
+				}
+				for(v = 0; v < XLR_MAX_SMARTVALUES; v++)
+				{
+					if(smartValues[v].ID > 0)
 					{
-						if(smartValues[v].ID > 0)
+						V = interpretSMART(smartDescription, MaxSmartDescriptionLen, smartValues+v, &isCritical);
+						if((isCritical && V > 0LL) || smartValues[v].ID == 194)
 						{
-							interpretSMART(smartDescription, MaxSmartDescriptionLen, smartValues+v);
-							fprintf(out, "%3d %5d %3d %3d [%3d %3d %3d %3d %3d %3d]  %s\n", 
+							printf("  * %s\n", smartDescription);
+						}
+						if(out)
+						{
+							fprintf(out, "%3d %5d %3d %3d [%3d %3d %3d %3d %3d %3d]  %s  %s\n", 
 								smartValues[v].ID,
 								smartValues[v].Status,
 								smartValues[v].Current,
@@ -381,19 +418,22 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 								smartValues[v].raw[3],
 								smartValues[v].raw[4],
 								smartValues[v].raw[5],
+								isCritical ? "**" : "  ",
 								smartDescription);
 						}
 					}
 				}
 			}
-			else
-			{
-				fprintf(out, "Drive not SMART capable\n");
-			}
-
-			fprintf(out, "\n\n");
+		}
+		else if(out)
+		{
+			fprintf(out, "Drive not SMART capable\n");
 		}
 
+		if(out)
+		{
+			fprintf(out, "\n\n");
+		}
 	}
 
 	if(out)
@@ -538,7 +578,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 
 	WATCHDOG( XLRClose(xlrDevice) );
 
-	if(getSMART)
+	if(out)
 	{
 		fclose(out);
 	}
