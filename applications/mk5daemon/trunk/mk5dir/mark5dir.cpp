@@ -1792,7 +1792,7 @@ int getDriveInformation(SSHANDLE xlrDevice, struct DriveInformation drive[8], in
 		if(xlrRC != XLR_SUCCESS)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"XLRGetDriveInfo failed for disk %d (perhaps the disk is not present)", d);
+				"XLRGetDriveInfo failed for disk %d (perhaps the disk isn't present)", d);
 			printf("%s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 
