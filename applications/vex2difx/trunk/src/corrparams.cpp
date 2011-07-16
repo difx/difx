@@ -660,7 +660,7 @@ void PhaseCentre::initialise(double r, double d, string name)
 	dec = d;
 	difxName = name;
 	calCode = ' ';
-	ephemDeltaT = 20.0; //seconds; 20 seconds is perfectly matched to the default behavior of calcif2
+	ephemDeltaT = 24.0; //seconds; 24 seconds is perfectly matched to the default behavior of calcif2
 	qualifier = 0;
 	string ephemObject = "";
 	string ephemFile = "";
