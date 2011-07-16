@@ -351,8 +351,102 @@ static int skipFile(const char *f1, const char *f2)
 	return 0;
 }
 
-int runfile(const char *prefix, const CommandLineOptions *opts,
-	CalcParams *p)
+void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
+{
+	const int MaxLineSize=100;
+	FILE *in;
+	char line[MaxLineSize];
+	int s, a, i, j;
+	double mjd, A, B, C;
+	DifxPolyModel ***im, *model;
+	int nModified = 0;
+	int nModel = 0;
+	int nLine;
+
+	in = fopen(tweakFile, "r");
+	if(!in)
+	{
+		/* The usual case. */
+
+		return;
+	}
+
+	printf("Delay tweaking file %s found!\n", tweakFile);
+
+	for(nLine = 0; ; nLine++)
+	{
+		fgets(line, MaxLineSize-1, in);
+		if(feof(in))
+		{
+			break;
+		}
+		if(sscanf(line, "%lf %lf %lf %lf", &mjd, &A, &B, &C) != 4)
+		{
+			continue;
+		}
+
+		for(s = 0; s < D->nScan; s++)
+		{
+			im = D->scan[s].im;
+			if(!im)
+			{
+				continue;
+			}
+			for(a = 0; a < D->nAntenna; a++)
+			{
+				if(!im[a])
+				{
+					continue;
+				}
+				for(i = 0; i <= D->scan[s].nPhaseCentres; i++)
+				{
+					if(!im[a][i])
+					{
+						continue;
+					}
+					for(j = 0; j < D->scan[s].nPoly; j++)
+					{
+						model = im[a][i] + j;
+						if(fabs(model->mjd + model->sec/86400.0 - mjd) < 0.5/86400.0)	/* a match! */
+						{
+							nModified++;
+							if(verbose > 1)
+							{
+								printf("Match found: ant=%d mjd=%d sec=%d = %15.9f\n", a, model->mjd, model->sec, mjd);
+							}
+							model->delay[0] += A;
+							if(model->order > 0)
+							{
+								model->delay[1] += B;
+							}
+							if(model->order > 1)
+							{
+								model->delay[2] += C;
+							}
+						}
+						if(nLine == 0)
+						{
+							nModel++;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if(nModified != nModel)
+	{
+		printf("WARNING: only %d of %d models modified!\n", nModified, nModel);
+	}
+	else
+	{
+		printf("All %d models modified.\n", nModel);
+	}
+
+	fclose(in);
+}
+
+int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams *p)
 {
 	DifxInput *D;
 	FILE *in;
@@ -389,8 +483,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		return -1;
 	}
 
-	if(opts->force == 0 &&
-	   skipFile(D->job->calcFile, D->job->imFile))
+	if(opts->force == 0 && skipFile(D->job->calcFile, D->job->imFile))
 	{
 		printf("Skipping %s due to file ages.\n", prefix);
 		deleteDifxInput(D);
@@ -455,6 +548,7 @@ int runfile(const char *prefix, const CommandLineOptions *opts,
 		{
 			printf("About to write IM file\n");
 		}
+		tweakDelays(D, "calcif2.delay", opts->verbose);
 		writeDifxIM(D);
 		if(opts->verbose > 0)
 		{

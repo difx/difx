@@ -2,7 +2,7 @@
 
 PROGRAM = 'startdifx'
 VERSION = '0.6'
-VERDATE = '20110512'
+VERDATE = '20110710'
 AUTHOR  = 'Walter Brisken'
 
 defaultgroup = "224.2.2.1"
@@ -24,7 +24,6 @@ from copy import deepcopy
 from xml.parsers import expat
 import socket
 import struct
-import socket
 
 verbose = 1
 

@@ -1,7 +1,8 @@
 calcif2
 ~~~~~~~
 Version 2.0.2
-
+* Post DiFX-2.0.1
+* Feature to augment output model with additional tabulated delays
 
 Version 2.0.1
 * Post version 2.0
