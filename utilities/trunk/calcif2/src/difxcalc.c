@@ -108,7 +108,6 @@ static int calcSpacecraftPosition(const DifxInput *D, struct getCALC_arg *reques
 	sixVector pos;
 	int r;
 	long double r2, d;
-	double muRA, muDec;
 	
 	sc = D->spacecraft + spacecraftId;
 
@@ -121,20 +120,10 @@ static int calcSpacecraftPosition(const DifxInput *D, struct getCALC_arg *reques
 	r2 = pos.X*pos.X + pos.Y*pos.Y;
 	d = sqrtl(r2 + pos.Z*pos.Z);
 
-	/* proper motion in radians/day */
-	muRA = (pos.X*pos.dY - pos.Y*pos.dX)/r2;
-	muDec = (r2*pos.dZ - pos.X*pos.Z*pos.dX - pos.Y*pos.Z*pos.dY)/
-		(d*d*sqrtl(r2));
-	
-	/* convert to arcsec/yr */
-	/* FIXME -- use formal definition of year here! */
-	muRA *= (180.0*3600.0/M_PI)*365.24;
-	muDec *= (180.0*3600.0/M_PI)*365.24;
-
+	request->dra = 0.0;
+	request->ddec = 0.0;
 	request->ra  =  atan2(pos.Y, pos.X);
 	request->dec =  atan2(pos.Z, sqrtl(r2));
-	request->dra  = muRA;
-	request->ddec = muDec;
 	request->parallax = 3.08568025e16/d;
         request->depoch = pos.mjd + pos.fracDay;
 
