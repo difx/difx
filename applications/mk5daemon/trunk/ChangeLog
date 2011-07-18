@@ -9,6 +9,7 @@ Version 1.4.2
 * mk5cp: treat "real time" mode the same way as it is treated in mpifxcorr
 * complete wrapping of XLR calls into WATCHDOG macro statements
 * vsn: show disk temperatures by default
+* mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
 
 Version 1.4.1
 ~~~~~~~~~~~~

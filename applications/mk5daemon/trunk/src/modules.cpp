@@ -36,6 +36,7 @@
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include "mk5daemon.h"
+#include "smart.h"
 
 
 /* see if vsn matches <chars> {+|-} <digits> */
@@ -163,15 +164,18 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
+		clearMk5Smart(D, BANK_B);
 	}
 	else if(bank_stat.Label[8] == '/')
 	{
 		strncpy(vsnb, bank_stat.Label, 16);
 		vsnb[8] = 0;
+		getMk5Smart(xlrDevice, D, BANK_B);
 	}
 	else
 	{
 		vsnb[0] = 0;
+		clearMk5Smart(D, BANK_B);
 	}
 
 	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
@@ -189,15 +193,18 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 			xlrError,
 			xlrErrorStr);
 		Logger_logData(D->log, message);
+		clearMk5Smart(D, BANK_A);
 	}
 	else if(bank_stat.Label[8] == '/')
 	{
 		strncpy(vsna, bank_stat.Label, 16);
 		vsna[8] = 0;
+		getMk5Smart(xlrDevice, D, BANK_A);
 	}
 	else
 	{
 		vsna[0] = 0;
+		clearMk5Smart(D, BANK_A);
 	}
 
 	XLRClose(xlrDevice);
@@ -278,6 +285,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
 			strncpy(D->vsnA, vsnA, 8);
+			logMk5Smart(D, BANK_A);
 		}
 		else if(strcmp(D->vsnA, "illegalA") != 0)
 		{
@@ -308,6 +316,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
 			strncpy(D->vsnB, vsnB, 8);
+			logMk5Smart(D, BANK_B);
 		}
 		else if(strcmp(D->vsnB, "illegalB") != 0)
 		{

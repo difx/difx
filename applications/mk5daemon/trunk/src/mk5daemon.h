@@ -34,6 +34,9 @@
 #include <difxmessage.h>
 #include "config.h"
 #include "logger.h"
+#ifdef HAVE_XLRAPI_H
+#include "smart.h"
+#endif
 
 extern const char difxUser[];
 
@@ -77,6 +80,9 @@ typedef struct
 	int skipGetModule;
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	char userID[256];
+#ifdef HAVE_XLRAPI_H
+	Mk5Smart smartData[2];
+#endif
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
@@ -103,6 +109,12 @@ void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
 void Mk5Daemon_stopCondition(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
+void Mk5Daemon_getSmart(Mk5Daemon *D);
+
+void clearMk5Smart(Mk5Daemon *D, int bank);
+int logMk5Smart(const Mk5Daemon *D, int bank);
+int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
+
 #endif
 
 #endif

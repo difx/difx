@@ -2,6 +2,8 @@ if WITH_STREAMSTOR
 streamstor_sources = \
 	modules.cpp \
 	mark5a.cpp \
+	smart.cpp \
+	smart.h \
 	ssversions.cpp
 else
 streamstor_sources = 
