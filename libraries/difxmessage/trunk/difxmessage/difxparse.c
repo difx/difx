@@ -148,6 +148,30 @@ static void XMLCALL startElement(void *userData, const char *name,
 			}
 		}
 	}
+	else if(G->type == DIFX_MESSAGE_SMART)
+	{
+		DifxMessageSmart *S;
+
+		S = &G->body.smart;
+		if(strcmp(name, "smart") == 0)
+		{
+			if(S->nValue < DIFX_MESSAGE_MAX_SMART_IDS)
+			{
+				for(i = 0; atts[i]; i+=2)
+				{
+					if(strcmp(atts[i], "id") == 0)
+					{
+						S->id[S->nValue] = atoi(atts[i+1]);
+					}
+					if(strcmp(atts[i], "value") == 0)
+					{
+						S->id[S->nValue] = atoll(atts[i+1]);
+					}
+				}
+				S->nValue++;
+			}
+		}
+	}
 
 	G->_xml_level++;
 	strcpy(G->_xml_element[G->_xml_level], name);
@@ -208,6 +232,15 @@ static void XMLCALL endElement(void *userData, const char *name)
 									G->body.status.weight[i] = -1;
 								}
 								G->body.status.maxDS = -1;
+							}
+							else if(G->type == DIFX_MESSAGE_SMART)
+							{
+								for(i = 0; i < DIFX_MESSAGE_MAX_SMART_IDS; i++)
+								{
+									G->body.smart.id[i] = 0;
+									G->body.smart.value[i] = 0LL;
+								}
+								G->body.smart.nValue = 0;
 							}
 						}
 					}
@@ -577,6 +610,20 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.transient.comment, s, DIFX_MESSAGE_COMMENT_LENGTH-1);
 					}
+				case DIFX_MESSAGE_SMART:
+					if(strcmp(elem, "mjd") == 0)
+					{
+						G->body.smart.mjdData = atof(s);
+					}
+					else if(strcmp(elem, "vsn") == 0)
+					{
+						strncpy(G->body.smart.moduleVSN, s, DIFX_MESSAGE_MARK5_VSN_LENGTH);
+						G->body.smart.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+					}
+					else if(strcmp(elem, "slot") == 0)
+					{
+						G->body.smart.moduleSlot = atoi(s);
+					}
 				default:
 					break;
 				}
@@ -776,6 +823,15 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    priority = %f\n", G->body.transient.priority);
 		printf("    destDir = %s\n", G->body.transient.destDir);
 		printf("    comment = %s\n", G->body.transient.comment);
+		break;
+	case DIFX_MESSAGE_SMART:
+		printf("    data MJD = %12.6f", G->body.smart.mjdData);
+		printf("    module VSN = %s\n", G->body.smart.moduleVSN);
+		printf("    module slot = %d\n", G->body.smart.moduleSlot);
+		for(i = 0; i < G->body.smart.nValue; i++)
+		{
+			printf("      SMART id = %d  value = %Ld\n", G->body.smart.id[i], G->body.smart.value[i]);
+		}
 		break;
 	default:
 		break;

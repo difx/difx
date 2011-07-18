@@ -55,6 +55,7 @@ extern "C" {
 #define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
 #define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
 #define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
+#define DIFX_MESSAGE_MAX_SMART_IDS	32
 
 /**** LOW LEVEL MULTICAST FUNCTIONS ****/
 
@@ -107,6 +108,7 @@ enum Mk5State
 	MARK5_STATE_TEST,
 	MARK5_STATE_TESTWRITE,
 	MARK5_STATE_TESTREAD,
+	MARK5_STATE_BOOTING,
 	NUM_MARK5_STATES	/* this needs to be the last line of enum */
 };
 
@@ -161,6 +163,7 @@ enum DifxMessageType
 	DIFX_MESSAGE_MARK5VERSION,
 	DIFX_MESSAGE_CONDITION,
 	DIFX_MESSAGE_TRANSIENT,
+	DIFX_MESSAGE_SMART,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
@@ -285,6 +288,20 @@ typedef struct
 	int bin[DIFX_MESSAGE_N_CONDITION_BINS];
 } DifxMessageCondition;
 
+/* This message type contains S.M.A.R.T. information for one disk in
+ * a Mark5 module. Typically 8 such messages will be needed to 
+ * convey results from the conditioning of one module.
+ */
+typedef struct
+{
+	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	int moduleSlot;
+	double mjdData;	/* MJD when data was taken */
+	int nValue;
+	int id[DIFX_MESSAGE_MAX_SMART_IDS];
+	long long value[DIFX_MESSAGE_MAX_SMART_IDS];
+} DifxMessageSmart;
+
 /* This is used to tell Mk5daemon to copy some data at the end of the
  * correlation to a disk file */
 typedef struct
@@ -321,6 +338,7 @@ typedef struct
 		DifxMessageStop		stop;
 		DifxMessageCondition	condition;
 		DifxMessageTransient	transient;
+		DifxMessageSmart	smart;
 	} body;
 	int _xml_level;			/* internal use only here and below */
 	char _xml_element[5][32];
@@ -407,6 +425,7 @@ int difxMessageSendDifxParameter2(const char *name, int index1, int index2,
 int difxMessageSendDifxParameterGeneral(const char *name, int nIndex, const int *index,
 	const char *value, int mpiDestination);
 int difxMessageSendDifxTransient(const DifxMessageTransient *transient);
+int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nValue, const int *ids, const long long *values);
 int difxMessageSendBinary(const char *data, int destination, int size);
 
 int difxMessageReceiveOpen();

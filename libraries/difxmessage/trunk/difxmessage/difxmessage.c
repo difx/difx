@@ -56,7 +56,8 @@ const char Mk5StateStrings[][24] =
 	"CondError",
 	"Test",
 	"TestWrite",
-	"TestRead"
+	"TestRead",
+	"Booting"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */

@@ -516,8 +516,7 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 	return difxMessageSend(message);
 }
 
-int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage,
-	double visMJD, int numdatastreams, float *weight)
+int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, double visMJD, int numdatastreams, float *weight)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	char weightstr[DIFX_MESSAGE_LENGTH];
@@ -1088,3 +1087,63 @@ int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 
 	return difxMessageSend(message);
 }
+
+int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nValue, const int *ids, const long long *values)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char smartstr[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	int i, n, v;
+
+	smartstr[0] = 0;
+	n = 0;
+
+	for(i = 0; i < nValue; i++)
+	{
+		n += snprintf(smartstr+n, DIFX_MESSAGE_LENGTH-n,
+			"<smart id=\"%d\" value=\"%Ld\"/>",
+			ids[i], values[i]);
+		if(n >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendDifxSmart: message weightstr overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+		
+			return -1;
+		}
+	}
+
+	v = snprintf(body, DIFX_MESSAGE_LENGTH,
+
+		"<difxSmart>"
+		  "<mjd>%12.6f</mjd>"
+		  "<vsn>%s</vsn>"
+		  "<slot>%s</slot>"
+		  "%s"
+		"</difxSmart>",
+
+		mjdData,
+		vsn,
+		slot,
+		smartstr);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxSmart: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	v = snprintf(message, DIFX_MESSAGE_LENGTH,
+		difxMessageXMLFormat,
+		DifxMessageTypeStrings[DIFX_MESSAGE_SMART],
+		difxMessageSequenceNumber++, body);
+
+	if(v >= DIFX_MESSAGE_LENGTH)
+	{
+		fprintf(stderr, "difxMessageSendDifxSmart: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+
+		return -1;
+	}
+
+	return difxMessageSend(message);
+}
+
