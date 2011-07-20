@@ -66,8 +66,8 @@ Configuration::Configuration(const char * configfile, int id)
   ifstream * input = new ifstream(configfile);
   if(input->fail() || !input->is_open())
   {
-    if(mpiid == 0) //only write one copy of this error message
-      cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
+    //need to write this message from all processes - sometimes it is visible to head node but no-one else...
+    cfatal << startl << "Cannot open file " << configfile << " - aborting!!!" << endl;
     consistencyok = false;
   }
   else

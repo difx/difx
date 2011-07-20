@@ -323,7 +323,7 @@ Mode::Mode(Configuration * conf, int confindex, int dsindex, int recordedbandcha
         parentfreqindex = config->getDZoomFreqParentFreqIndex(confindex, dsindex, localfreqindex);
         autocorrelations[i][j+numrecordedbands] = 0;
         for(int l=0;l<numrecordedbands;l++) {
-          if(config->getDRecordedFreqIndex(confindex, dsindex, l) == parentfreqindex && config->getDRecordedBandPol(confindex, dsindex, l) == config->getDZoomBandPol(confindex, dsindex, j)) {
+          if(config->getDLocalRecordedFreqIndex(confindex, dsindex, l) == parentfreqindex && config->getDRecordedBandPol(confindex, dsindex, l) == config->getDZoomBandPol(confindex, dsindex, j)) {
             autocorrelations[i][j+numrecordedbands] = &(autocorrelations[i][l][config->getDZoomFreqChannelOffset(confindex, dsindex, localfreqindex)/channelstoaverage]);
           }
         }
