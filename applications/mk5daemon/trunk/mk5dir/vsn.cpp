@@ -115,7 +115,7 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 	switch(smart->ID)
 	{
 	case 1:
-		snprintf(smartDescription, maxLength, "Read error rate = %lld", V);
+		snprintf(smartDescription, maxLength, "Read error count = %Ld", V);
 		*isCritical = 1;
 		break;
 	case 3:
@@ -125,7 +125,7 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 		snprintf(smartDescription, maxLength, "Start/stop count = %Ld", V);
 		break;
 	case 5:
-		snprintf(smartDescription, maxLength, "# reallocated sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "Reallocated sector count = %Ld", V);
 		*isCritical = 1;
 		break;
 	case 7:
@@ -139,37 +139,44 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 		*isCritical = 1;
 		break;
 	case 11:
-		snprintf(smartDescription, maxLength, "# recalibration retries = %Ld", V);
+		snprintf(smartDescription, maxLength, "Recalibration retry count = %Ld", V);
 		break;
 	case 12:
-		snprintf(smartDescription, maxLength, "# power cycles = %Ld", V);
+		snprintf(smartDescription, maxLength, "Power cycle count = %Ld", V);
 		break;
 	case 192:
-		snprintf(smartDescription, maxLength, "# retract cycles = %Ld", V);
+		snprintf(smartDescription, maxLength, "Retract cycle count = %Ld", V);
 		break;
 	case 193:
-		snprintf(smartDescription, maxLength, "# landing zone loads = %Ld", V);
+		snprintf(smartDescription, maxLength, "Landing zone load count = %Ld", V);
 		break;
 	case 194:
-		snprintf(smartDescription, maxLength, "Temperature = %lld C", V);
+		snprintf(smartDescription, maxLength, "Temperature = %Ld C", V);
 		break;
 	case 196:
-		snprintf(smartDescription, maxLength, "# relocation events = %Ld", V);
+		snprintf(smartDescription, maxLength, "Relocation event count = %Ld", V);
 		*isCritical = 1;
 		break;
 	case 197:
-		snprintf(smartDescription, maxLength, "# questionable sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "Questionable sector count = %Ld", V);
 		*isCritical = 1;
 		break;
 	case 198:
-		snprintf(smartDescription, maxLength, "# uncorrectable sectors = %Ld", V);
+		snprintf(smartDescription, maxLength, "Uncorrectable sector count = %Ld", V);
 		*isCritical = 1;
 		break;
 	case 199:
-		snprintf(smartDescription, maxLength, "# DMA CRC errors = %Ld", V);
+		snprintf(smartDescription, maxLength, "DMA CRC error count = %Ld", V);
 		break;
 	case 200:
-		snprintf(smartDescription, maxLength, "Multi-zone error rate = %Ld", V);
+		snprintf(smartDescription, maxLength, "Multi-zone error count = %Ld", V);
+		break;
+	case 201:
+		snprintf(smartDescription, maxLength, "Off-track error count = %Ld", V);
+		*isCritical = 1;
+		break;
+	case 202:
+		snprintf(smartDescription, maxLength, "Data Address Mark error count = %Ld", V);
 		break;
 	default:
 		snprintf(smartDescription, maxLength, "Unknown SMART value = %Ld", V);
@@ -260,7 +267,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		}
 		else
 		{
-			printf("\nWriting S.M.A.R.T. data to file %s\n\n", SMARTfile);
+			printf("Writing S.M.A.R.T. data to file %s\n\n", SMARTfile);
 		}
 	}
 

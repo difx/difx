@@ -22,6 +22,8 @@ const SmartDescription smartDescriptions[] =
 	{ 198, 1, "Uncorrectable sector count"},
 	{ 199, 0, "DMA CRC error count"},
 	{ 200, 0, "Multi-zone error count"},
+	{ 201, 1, "Off-track error count"},
+	{ 202, 0, "Data Address Mark error count"},
 	{ -1,  -1, "Unknown SMART id"}
 };
 
