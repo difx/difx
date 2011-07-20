@@ -31,7 +31,9 @@ make
 /usr/lib/libmark5access.a
 /usr/lib/pkgconfig/mark5access.pc
 /usr/bin/bbsum
+/usr/bin/directory2filelist
 /usr/bin/m5d
+/usr/bin/m5findformats
 /usr/bin/m5fold
 /usr/bin/m5pcal
 /usr/bin/m5spec
@@ -45,5 +47,8 @@ make
 /usr/include/mark5access/mark5_stream.h
 
 %changelog
+* Tue Jul 19 2011 Walter Brisken <wbrisken@nrao.edu>
+- Add some new utilities
+
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
 - First rpm version
