@@ -27,6 +27,7 @@
 #include <dirent.h>
 #include <cmath>
 #include <string>
+#include <sstream>
 #include <string.h>
 #include <stdio.h>
 #include <iomanip>
@@ -544,7 +545,7 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
 {
   ofstream output;
   int binloop, freqchannels, freqindex;
-  char datetimestring[26];
+  char datetimestring[26], sbuf[10];
 
   int resultindex, atindex;
   int mjd = dumpmjd;
@@ -579,8 +580,13 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
         {
           for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++)
           {
+	    stringstream fname;
             //write out to a naive filename
-            output.open(string(string("baseline_")+char('0' + i)+"_freq_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_source_"+char('0'+s)+"_bin_"+char('0'+b)+".output").c_str(), ios::out|ios::trunc);
+
+	    fname << "baseline_" << i << "_freq_" << j << "_product_" << k << "_" << datetimestring << "_source_" << s << "_bin_" << b << ".output";
+
+            //output.open(string(string("baseline_")+itoa(i,sbuf,10)+"_freq_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_source_"+char('0'+s)+"_bin_"+char('0'+b)+".output").c_str(), ios::out|ios::trunc);
+            output.open(fname.str().c_str(), ios::out|ios::trunc);
             for(int l=0;l<freqchannels;l++) {
               atindex = resultindex+l;
               output << l << " " << sqrt(results[atindex].re*results[atindex].re + results[atindex].im*results[atindex].im) << " " << atan2(results[atindex].im, results[atindex].re) << endl;
@@ -604,9 +610,12 @@ void Visibility::writeascii(int dumpmjd, double dumpseconds)
         {
           freqindex = config->getDTotalFreqIndex(currentconfigindex, i, k);
           if(config->isFrequencyUsed(currentconfigindex, freqindex)) {
+	    stringstream fname;
             freqchannels = config->getFNumChannels(freqindex)/config->getFChannelsToAverage(freqindex);
             //write out to naive filename
-            output.open(string(string("datastream_")+char('0' + i)+"_crosspolar_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_bin_"+char('0'+0)+".output").c_str(), ios::out|ios::trunc);
+            fname << "datastream_" << i << "_crosspolar_" << j << "_product_" << k << "_" << datetimestring << "_bin_" << 0 << ".output";
+            output.open(fname.str().c_str(), ios::out|ios::trunc);
+	    //            output.open(string(string("datastream_")+char('0' + i)+"_crosspolar_"+char('0' + j)+"_product_"+char('0'+k)+"_"+datetimestring+"_bin_"+char('0'+0)+".output").c_str(), ios::out|ios::trunc);
             for(int l=0;l<freqchannels;l++) {
               atindex = resultindex + l;
               output << l << " " << sqrt(results[atindex].re*results[atindex].re + results[atindex].im*results[atindex].im) << " " << atan2(results[atindex].im, results[atindex].re) << endl;
