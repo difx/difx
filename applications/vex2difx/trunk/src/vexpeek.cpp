@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 	{
 		usage(argv[0]);
 
-		return 0;
+		return 1;
 	}
 
 	v = testVex(argv[1]);
@@ -159,7 +159,7 @@ int main(int argc, char **argv)
 	{
 		cout << "Error code " << v << endl;
 
-		return 0;
+		return 1;
 	}
 
 	P = new CorrParams();

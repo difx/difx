@@ -333,7 +333,7 @@ static void genJobs(vector<VexJob> &Js, const VexJobGroup &JG, VexData *V, const
 				cerr << "   " << *it << endl;
 			}
 
-			exit(0);
+			exit(1);
 		}
 
 		// look for break with highest score
@@ -476,7 +476,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 		{
 			cerr << "Developer error: makeDifxJob: format being truncated.  Needed " << v << " bytes." << endl;
 
-			exit(0);
+			exit(1);
 		}
 		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, format, directory.c_str(), J.jobSeries.c_str(), J.jobId, ext);
 	}
@@ -486,7 +486,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 		{
 			cerr << "Warning: makeDifxJob: ext!=0 and making job names without extensions!" << endl;
 
-			exit(0);
+			exit(1);
 		}
 		v = snprintf(fileBase, DIFXIO_FILENAME_LENGTH, "%s/%s", directory.c_str(), J.jobSeries.c_str());
 	}
@@ -494,7 +494,7 @@ static DifxJob *makeDifxJob(string directory, const VexJob& J, int nAntenna, con
 	{
 		cerr << "Developer error: makeDifxJob: fileBase needed " << v << " bytes." << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	snprintf(job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", fileBase);
@@ -791,7 +791,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	{
 		cerr << "Error: setFormat: antId=" << antId << " while nAntenna=" << D->nAntenna << endl;
 		
-		exit(0);
+		exit(1);
 	}
 	const VexFormat* format = mode->getFormat(antName);
 	const VexSetup* setup = mode->getSetup(antName);
@@ -801,14 +801,14 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 	{
 		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> format=0" << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	if(setup == 0)
 	{
 		cerr << "Developer error: setFormat(ant=" << antName << ", mode=" << mode->defName << ") -> setup=0" << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	overSamp = mode->getOversampleFactor();
@@ -911,7 +911,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			cerr << "Error: setFormat: index to subband=" << i->subbandId << " is out of range" << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		int r = i->recordChan;
@@ -935,7 +935,7 @@ static int setFormat(DifxInput *D, int dsId, vector<freq>& freqs, vector<vector<
 		{
 			cerr << "Error: setFormat: index to record channel = " << r << " is out of range" << endl;
 
-			exit(0);
+			exit(1);
 		}
 		D->datastream[dsId].recBandFreqId[r] = getBand(bandMap, fqId);
 		D->datastream[dsId].recBandPolName[r] = subband.pol;
@@ -983,7 +983,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 			{
 				cerr << "Cannot handle rules for more than one calCode simultaneously." << endl;
 
-				exit(0);
+				exit(1);
 			}
 			D->rule[i].calCode[0] = P->rules[i].calCode.front();
 			D->rule[i].calCode[1] = 0;
@@ -994,7 +994,7 @@ void populateRuleTable(DifxInput *D, const CorrParams *P)
 			{
 				cerr << "Cannot handle rules for more than one qualifier simultaneously." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			D->rule[i].qual = P->rules[i].qualifier.front();
 		}
@@ -1410,7 +1410,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		cerr << "Error: correlator setup[" << S->corrSetupName << "] == 0" << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	mode = V->getModeByDefName(S->modeDefName);
@@ -1418,7 +1418,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	{
 		cerr << "Error: mode[" << S->modeDefName << "] == 0" << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	for(unsigned int i = 0; i < configs.size(); i++)
@@ -1453,7 +1453,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			cerr << "Error: The provided subintNS (" << config->subintNS << ") is not an integer multiple of the FFT duration (" << fftDurNS << ")" << endl;
 
-			exit(0);
+			exit(1);
 		}
 	}
 	else
@@ -1489,7 +1489,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			cerr << "Error: Integration time (" << corrSetup->tInt << " s) is too long for automatic subintNS determination.  You must manually set it in the .v2d file." << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		if(config->subintNS % fftDurNS != 0)
@@ -1513,7 +1513,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			cerr << "Error: There is no way to change dataBufferFactor to keep send sizes below 2^31 seconds" << endl;
 
-			exit(0);
+			exit(1);
 		}
 		cout << "Changing dataBufferFactor from " << D->dataBufferFactor << " to " << (f*D->nDataSegments) << " in order to keep data send sizes below 2.14 seconds" << endl;
 		D->dataBufferFactor = f*D->nDataSegments;
@@ -1545,7 +1545,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	//	cerr << "Error: configName=" << configName << " overSamp=" << config->overSamp << endl;
 	//	cerr << "samprate=" << mode->sampRate << " bw=" << 
 	//		mode->subbands[0].bandwidth << endl;
-	//	exit(0);
+	//	exit(1);
 	//}
 	// try to get a good balance of oversampling and decim
 	//while(config->overSamp % 4 == 0)
@@ -1561,7 +1561,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		cerr << "Error: configName=" << configName << " overSamp=" << config->overSamp << endl;
 		cerr << "samprate=" << mode->sampRate << " bw=" << mode->subbands[0].bandwidth << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	if(config->overSamp > 2)
@@ -1677,7 +1677,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	{
 		cerr << "Developer error: writeJob(): J.scans.size() = 0" << endl;
 
-		exit(0);
+		exit(1);
 	}
 	
 	S = V->getScanByDefName(J.scans.front());
@@ -1685,7 +1685,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	{
 		cerr << "Developer error: writeJob() top: scan[" << J.scans.front() << "] = 0" << endl;
 
-		exit(0);
+		exit(1);
 	}
 	corrSetupName = S->corrSetupName;
 	corrSetup = P->getCorrSetup(corrSetupName);
@@ -1693,7 +1693,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	{
 		cerr << "Error: writeJob(): correlator setup " << corrSetupName << ": Not found!" << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	// make set of unique config names
@@ -1706,7 +1706,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			cerr << "Developer error: writeJob() loop: scan[" << *si << "] = 0" << endl;
 
-			exit(0);
+			exit(1);
 		}
 		configName = S->modeDefName + string("_") + S->corrSetupName;
 		configSet.insert(configName);
@@ -1760,7 +1760,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			cerr << "Developer error: source[" << *si << "] not found!  This cannot be!" << endl;
 			
-			exit(0);
+			exit(1);
 		}
 
 		const VexSource *src = V->getSourceByDefName(S->sourceDefName);
@@ -1775,7 +1775,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			cerr << "Error: no source setup for " << S->sourceDefName << ".  Aborting!" << endl;
 
-			exit(0);
+			exit(1);
 		}
 		pointingCentre = &(sourceSetup->pointingCentre);
 		scan->nPhaseCentres = sourceSetup->phaseCentres.size();
@@ -1921,7 +1921,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			cout << corrSetup->maxNSBetweenUVShifts;
 			cout << "). Reduce FFT buffering or increase allowed interval!" << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		snprintf(scan->identifier, DIFXIO_NAME_LENGTH, "%s", S->defName.c_str());
@@ -1963,7 +1963,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			cerr << "Developer error: writeJob: mode[" << configs[c].first << "] is null" << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		if(os < 0)
@@ -1981,7 +1981,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 		{
 			cerr << "Developer error: writeJob: correlator setup[" << configs[c].second << "] is null" << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		if(corrSetup->binConfigFile.size() > 0)
@@ -2066,7 +2066,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 								cerr << "Error: Cannot find a parent freq for zoom band " << i << " of datastream " << a << endl;
 								cerr << "Note: This might be caused by a frequency offset that is not a multiple of the spectral resolution" << endl;
 							
-								exit(0);
+								exit(1);
 							}
 							zoomChans = static_cast<int>(corrSetup->nInputChan()*zf.bandwidth/freqs[dd->recFreqId[parentFreqIndices[i]]].bw);
 							fqId = getFreqId(freqs, zf.frequency, zf.bandwidth,
@@ -2111,7 +2111,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							{
 								cout << "Developer error: didn't find all zoom pols (was looking for " << dd->nZoomPol[i] << ", only found " << polcount << ")!!" << endl;
 								
-								exit(0);
+								exit(1);
 							}
 						}
 						delete [] parentFreqIndices;
@@ -2125,14 +2125,14 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							cerr << "Error: AntennaSetup for " << antName << " has only " << nFreqClockOffsets << 
 								" freqClockOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
-							exit(0);
+							exit(1);
 						}
 						if(antennaSetup->freqClockOffs.front() != 0.0)
 						{
 							cerr << "Error: AntennaSetup for " << antName << " has a non-zero clock offset for the first" << 
 								" frequency offset. This is not allowed for model " << "accountability reasons." << endl;
 							
-							exit(0);
+							exit(1);
 						}
 						for(int i = 0; i < nFreqClockOffsets; i++)
 						{
@@ -2149,7 +2149,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 							cerr << "Error: AntennaSetup for " << antName << " has only " << nLoOffsets <<
 								" loOffsets specified but " << dd->nRecFreq << " recorded frequencies" << endl;
 
-							exit(0);
+							exit(1);
 						}
 						for(int i = 0; i < nLoOffsets; i++)
 						{
@@ -2195,7 +2195,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 	{
 		cerr << "Error: nPulsar=" << nPulsar << " != D->nPulsar=" << D->nPulsar << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	// Populate spacecraft table
@@ -2218,7 +2218,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			{
 				cerr << "Developer error: couldn't find " << *s << " in the spacecraft table, aborting!)" << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			mjdint = static_cast<int>(J.mjdStart);
 			fracday0 = J.mjdStart-mjdint;
@@ -2244,7 +2244,7 @@ int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int os, int
 			{
 				cerr << "Error: ephemeris calculation failed.  Must stop." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 
 			// give the spacecraft table the right name so it can be linked to the source
@@ -2563,7 +2563,7 @@ void runCommand(const char *cmd, int verbose)
 	{
 		cerr << "Error executing: " << cmd << endl;
 
-		exit(0);
+		exit(1);
 	}
 }
 
@@ -2635,7 +2635,7 @@ int main(int argc, char **argv)
 				cerr << "Error: unknown option " << argv[a] << endl;
 				cerr << "Run with -h for help information." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 		}
 		else
@@ -2645,7 +2645,7 @@ int main(int argc, char **argv)
 				cerr << "Error: multiple configuration files provided, only one expected." << endl;
 				cerr << "Run with -h for help information." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			v2dFile = argv[a];
 		}
@@ -2663,7 +2663,7 @@ int main(int argc, char **argv)
 		cerr << "Error: configuration (.v2d) file expected." << endl;
 		cerr << "Run with -h for help information." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	if(v2dFile.find("_") != string::npos)
@@ -2671,7 +2671,7 @@ int main(int argc, char **argv)
 		cerr << "Error: you cannot have an underscore (_) in the filename!" << endl;
 		cerr << "Please rename it and run again." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	if(!isalpha(v2dFile[0]))
@@ -2679,7 +2679,7 @@ int main(int argc, char **argv)
 		cerr << "Error: pass name (.v2d file name) must start with a letter!" << endl;
 		cerr << "Please rename it and run again." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	P = new CorrParams(v2dFile);
@@ -2687,7 +2687,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Error: vex file parameter (vex) not found in file." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	nWarn = P->parseWarnings;
@@ -2704,7 +2704,7 @@ int main(int argc, char **argv)
 	{
 		cerr << "Error: cannot load vex file: " << P->vexFile << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	nWarn += P->sanityCheck();
@@ -2715,7 +2715,7 @@ int main(int argc, char **argv)
 		cerr << "Quitting since " << nWarn <<
 			" warnings were found and strict mode was enabled." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 	else if(nWarn > 0)
 	{

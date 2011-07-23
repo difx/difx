@@ -137,7 +137,7 @@ double parseTime(const string &timeStr)
 	cerr << "4. ISO 8601 format     2009-09-02T08:12:24" << endl;
 	cerr << endl;
 
-	exit(0);
+	exit(1);
 }
 
 double parseCoord(const char *str, char type)
@@ -150,7 +150,7 @@ double parseCoord(const char *str, char type)
 	{
 		cerr << "Programmer error: parseCoord: parameter 'type' has illegal value = " << type << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	if(str[0] == '-')
@@ -205,7 +205,7 @@ double parseCoord(const char *str, char type)
 		{
 			cerr << "Error parsing coordinate value " << str << endl;
 
-			exit(0);
+			exit(1);
 		}
 		v *= sign;
 	}
@@ -251,7 +251,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 	{
 		cerr << "Error: cannot open " << fileName << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	for(int line=1; ; line++)
@@ -296,7 +296,7 @@ int loadBasebandFilelist(const string &fileName, vector<VexBasebandFile> &baseba
 		{
 			cerr << "Error: line " << line << " of file " << fileName << " is badly formatted" << endl;
 
-			exit(0);
+			exit(1);
 		}
 	}
 
@@ -349,7 +349,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 		cerr << "Error: You are running vex2difx on a vex file." << endl;
 		cerr << "Please run on a vex2difx input file (.v2d) instead." << endl;
 
-		exit(0);
+		exit(1);
 	}
 	else if(key == "tInt")
 	{
@@ -424,7 +424,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 			{
 				cerr << "Cannot getcwd()" << endl;
 
-				exit(0);
+				exit(1);
 			}
 			inFile = string(cwd);
 			inFile += string("/");
@@ -446,7 +446,7 @@ int CorrSetup::setkv(const string &key, const string &value)
 			{
 				cerr << "Cannot getcwd()" << endl;
 
-				exit(0);
+				exit(1);
 			}
 			inFile = string(cwd);
 			inFile += string("/");
@@ -528,7 +528,7 @@ int CorrSetup::checkValidity() const
 			cerr << "If you meant nChan to be the number of output channels (after spectral averaging), then you should set nFFTChan=" << nOutputChan*specAvgDontUse << " and nChan=" << nOutputChan << "; if you meant for nChan to be the number of input channels (before spectral averaging), then you should set nFFTChan=" << nOutputChan << " and nChan=" << nOutputChan/specAvgDontUse << endl;
 		}
 		
-		exit(0);
+		exit(1);
 
 	}
 
@@ -536,7 +536,7 @@ int CorrSetup::checkValidity() const
 	{
 		cerr << "Error: nFFTChan must be an integer multiple of nChan.  Values found were nFFTChan=" << nFFTChan << " nChan=" << nOutputChan << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	if(xmacLength > 0)
@@ -846,7 +846,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		{
 			cerr << "Error: renaming the DEFAULT antenna setup is not allowed" << endl;
 			
-			exit(0);
+			exit(1);
 		}
 		ss >> difxName;
 	}
@@ -872,7 +872,7 @@ int AntennaSetup::setkv(const string &key, const string &value)
 		{
 			cerr << "Error: antenna " << vexName << " has illegal samping type set: " << value << endl;
 
-			exit(0);
+			exit(1);
 		}
 	}
 	else if(key == "clockRate" || key == "clock1")
@@ -1217,7 +1217,7 @@ void pathify(string &filename)
 	{
 		cerr << "Cannot getcwd()" << endl;
 
-		exit(0);
+		exit(1);
 	}
 	fn = string(cwd) + string("/") + filename;
 
@@ -1314,7 +1314,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		{
 			cerr << "Error: jobSeries must be purely alphanumeric" << endl;
 
-			exit(0);	
+			exit(1);	
 		}
 		ss >> jobSeries;
 	}
@@ -1325,7 +1325,7 @@ int CorrParams::setkv(const string &key, const string &value)
 		{
 			cerr << "Error: startSeries cannot be < 0" << endl;
 			
-			exit(0);
+			exit(1);
 		}
 	}
 	else if(key == "dataBufferFactor")
@@ -1437,14 +1437,14 @@ void CorrParams::addBaseline(const string &baselineName)
 	{
 		cerr << "Error in baseline designation: " << baselineName << " -- a hyphen is required." << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	if(pos == 0 || pos == baselineName.length()-1)
 	{
 		cerr << "Error in baseline designation: " << baselineName << " -- need characters before and after the hyphen." << endl;
 		
-		exit(0);
+		exit(1);
 	}
 
 	baselineList.push_back(pair<string,string>(
@@ -1483,7 +1483,7 @@ int CorrParams::load(const string &fileName)
 	{
 		cerr << "Error: cannot open " << fileName << endl;
 
-		exit(0);
+		exit(1);
 	}
 
 	for(;;)
@@ -1540,7 +1540,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: SETUP out of place." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			i++;
 			corrSetups.push_back(CorrSetup(*i));
@@ -1550,7 +1550,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: '{' expected." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			key = "";
 			parseMode = PARSE_MODE_SETUP;
@@ -1561,7 +1561,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: RULE out of place." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			i++;
 			rules.push_back(CorrRule(*i));
@@ -1571,7 +1571,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: '{' expected." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			key = "";
 			parseMode = PARSE_MODE_RULE;
@@ -1582,7 +1582,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: SOURCE out of place." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			i++;
 			for(unsigned int j=0;j<sourceSetups.size();j++)
@@ -1591,7 +1591,7 @@ int CorrParams::load(const string &fileName)
 				{
 					cerr << "Error: Trying to add a setup for source " << *i << " which already has one!" << endl;
 					
-					exit(0);
+					exit(1);
 				}
 			}
 			sourceSetups.push_back(SourceSetup(*i));
@@ -1601,7 +1601,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: '{' expected." << endl;
 
-				exit(0);
+				exit(1);
 			}
 			key = "";
 			parseMode = PARSE_MODE_SOURCE;
@@ -1612,7 +1612,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: ANTENNA out of place." << endl;
 				
-				exit(0);
+				exit(1);
 			}
 			i++;
 			string antName(*i);
@@ -1624,7 +1624,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: '{' expected." << endl;
 
-				exit(0);
+				exit(1);
 			}
 			key = "";
 			parseMode = PARSE_MODE_ANTENNA;
@@ -1635,7 +1635,7 @@ int CorrParams::load(const string &fileName)
                         {
                                 cerr << "Error: ANTENNA out of place." << endl;
 
-                                exit(0);
+                                exit(1);
                         }
                         i++;
                         string eopDate(*i);
@@ -1647,7 +1647,7 @@ int CorrParams::load(const string &fileName)
                         {
                                 cerr << "Error: '{' expected." << endl;
 
-                                exit(0);
+                                exit(1);
                         }
                         key = "";
                         parseMode = PARSE_MODE_EOP;
@@ -1672,7 +1672,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Error: legal parameter name expected before " << *i << endl;
 
-				exit(0);
+				exit(1);
 			}
 			value = *i;
 			switch(parseMode)
@@ -1703,7 +1703,7 @@ int CorrParams::load(const string &fileName)
 			{
 				cerr << "Parse error in file " << fileName << " : Unused token: " << last << " before token: " << *i << endl;
 
-				exit(0);
+				exit(1);
 			}
 			keyWaitingTemp = true;
 		}
@@ -1999,7 +1999,7 @@ void CorrParams::addSourceSetup(SourceSetup toadd)
 		{
 			cerr << "Error: Trying to add a setup for source " << toadd.vexName << " which already has one!" << endl;
 
-			exit(0);
+			exit(1);
 		}
 	}
 	sourceSetups.push_back(toadd);
@@ -2470,7 +2470,7 @@ int CorrParams::loadShelves(const string &fileName)
 		{
 			cerr << "Error: line " << lineNum << " of " << fileName << " not parsable." << endl;
 
-			exit(0);
+			exit(1);
 		}
 
 		string antName(a);
