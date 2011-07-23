@@ -657,13 +657,17 @@ int run(const CommandLineOptions *opts)
 
 int main(int argc, char **argv)
 {
+        int status;
 	CommandLineOptions *opts;
 
 	opts = newCommandLineOptions(argc, argv);
 
-	run(opts);
+	status = run(opts);
 
 	deleteCommandLineOptions(opts);
 
-	return 0;
+	if (status==-1) 
+	  return(1);
+	else 
+	  return(0);
 }
