@@ -19,11 +19,11 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id: watchdog.h 2412 2010-08-20 23:21:35Z WalterBrisken $
-// $HeadURL: https://svn.atnf.csiro.au/difx/mpifxcorr/branches/difx-1.5/src/watchdog.h $
-// $LastChangedRevision: 2412 $
+// $Id: watchdog.h 2471 2010-08-31 16:46:35Z WalterBrisken $
+// $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/mk5dir/watchdog.h $
+// $LastChangedRevision: 2471 $
 // $Author: WalterBrisken $
-// $LastChangedDate: 2010-08-20 17:21:35 -0600 (Fri, 20 Aug 2010) $
+// $LastChangedDate: 2010-08-31 10:46:35 -0600 (Tue, 31 Aug 2010) $
 //
 //============================================================================
 
@@ -49,9 +49,6 @@ extern int watchdogVerbose;
 extern char watchdogStatement[256];
 extern pthread_mutex_t watchdogLock;
 extern char watchdogXLRError[XLR_ERROR_LENGTH+1];
-extern int watchdogTimeout;
-extern pthread_t watchdogThread;
-
 
 /* Macro to run "statement" but set a thread to watch to make sure it doesn't take too long */
 #define WATCHDOG(statement) \
@@ -78,11 +75,11 @@ extern pthread_t watchdogThread;
 	pthread_mutex_lock(&watchdogLock); \
 	watchdogTime = time(0); \
 	strcpy(watchdogStatement, #statement); \
-	if(watchdogVerbose > 1) printf("Executing (at time %d): %s\n", (int)(watchdogTime), watchdogStatement); \
+	if(watchdogVerbose > 1) printf("Executing (at time %d): xlrRC = %s\n", (int)(watchdogTime), watchdogStatement); \
 	pthread_mutex_unlock(&watchdogLock); \
 	watchdogRC = (statement); \
 	pthread_mutex_lock(&watchdogLock); \
-	if(watchdogVerbose > 2) printf("Executed (in %d seconds): %s\n", (int)(time(0)-watchdogTime), watchdogStatement); \
+	if(watchdogVerbose > 2) printf("Executed (in %d seconds): xlrRC = %s\n", (int)(time(0)-watchdogTime), watchdogStatement); \
 	watchdogTime = 0; \
 	if(watchdogRC == XLR_SUCCESS) \
 	{ \

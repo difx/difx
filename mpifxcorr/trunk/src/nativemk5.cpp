@@ -422,11 +422,7 @@ void NativeMk5DataStream::initialiseFile(int configindex, int fileindex)
 			{
 				cerror << startl << "Cannot set Mark5 data replacement mode / fill pattern" << endl;
 			}
-			WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-			if(xlrRC != XLR_SUCCESS)
-			{
-				cerror << startl << "Cannot put Mark5 unit in bank mode" << endl;
-			}
+			// NOTE: removed WATCHDOG( xlrRC = XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
 			cwarn << startl << "Enabled realtime playback mode" << endl;
 		}
 	}

@@ -91,6 +91,7 @@ float Mk5Mode::unpack(int sampleoffset)
     goodsamples = mark5_unpack_with_offset(mark5stream, data, unpackstartsamples, unpackedarrays, samplestounpack);
   if(mark5stream->samplegranularity > 1)
     { // CHRIS not sure what this is mean to do
+      // WALTER: unpacking of some mark5 modes (those with granularity > 1) must be unpacked not as individual samples but in groups of sample granularity
     mungedoffset = sampleoffset % mark5stream->samplegranularity;
     for(int i = 0; i < mungedoffset; i++) {
       if(unpackedarrays[0][i] != 0.0) {
