@@ -63,8 +63,8 @@
 
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2";
-const char verdate[] = "20100712";
+const char version[] = "0.3";
+const char verdate[] = "20110723";
 
 
 #define MJD_UNIX0       40587.0
@@ -180,7 +180,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 	double averageRate = 0.0;
 	int nRate = 0;
 	char message[DIFX_MESSAGE_LENGTH];
-	DifxMessageCondition condMessage;
+	DifxMessageDriveStats driveStatsMessage;
 	const int printInterval = 10;
 
 	mk5status->state = MARK5_STATE_CONDITION;
@@ -350,28 +350,41 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 
 		*rate = 128*(int)(lowestRate/128.0);
 
-		condMessage.startMJD = MJD_UNIX0 + time1.time/SEC_DAY + time1.millitm/MSEC_DAY;
-		condMessage.stopMJD = MJD_UNIX0 + time2.time/SEC_DAY + time2.millitm/MSEC_DAY;
-		strncpy(condMessage.moduleVSN, vsn, DIFX_MESSAGE_MARK5_VSN_LENGTH);
-		condMessage.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+		driveStatsMessage.startMJD = MJD_UNIX0 + time1.time/SEC_DAY + time1.millitm/MSEC_DAY;
+		driveStatsMessage.stopMJD = MJD_UNIX0 + time2.time/SEC_DAY + time2.millitm/MSEC_DAY;
+		strncpy(driveStatsMessage.moduleVSN, vsn, DIFX_MESSAGE_MARK5_VSN_LENGTH);
+		driveStatsMessage.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+		driveStatsMessage.startByte = 0LL;
+		switch(mode)
+		{
+		case CONDITION_WRITE_ONLY:
+			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION_W;
+			break;
+		case CONDITION_READ_ONLY:
+			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION_R;
+			break;
+		default:
+			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION;
+			break;
+		}
 
 		for(int d = 0; d < 8; d++)
 		{
 			WATCHDOG( xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo) );
 			if(xlrRC == XLR_SUCCESS)
 			{
-				condMessage.moduleSlot = d;
-				strncpy(condMessage.serialNumber, 
+				driveStatsMessage.moduleSlot = d;
+				strncpy(driveStatsMessage.serialNumber, 
 					drive[d].serial, 
 					DIFX_MESSAGE_DISC_SERIAL_LENGTH);
-				strncpy(condMessage.modelNumber,
+				strncpy(driveStatsMessage.modelNumber,
 					drive[d].model,
 					DIFX_MESSAGE_DISC_MODEL_LENGTH);
-				condMessage.diskSize = drive[d].capacity/1000000000LL;
+				driveStatsMessage.diskSize = drive[d].capacity/1000000000LL;
 				printf("> Disk %d stats : %s", d, drive[d].serial);
 				for(int i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 				{
-					condMessage.bin[i] = -1;
+					driveStatsMessage.bin[i] = -1;
 				}
 				WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 				if(xlrRC == XLR_SUCCESS)
@@ -380,8 +393,8 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 					{
 						if(i < DIFX_MESSAGE_N_CONDITION_BINS)
 						{
-							condMessage.bin[i] = driveStats[i].count;
-							printf(" : %d", condMessage.bin[i]);
+							driveStatsMessage.bin[i] = driveStats[i].count;
+							printf(" : %d", driveStatsMessage.bin[i]);
 						}
 					}
 				}
@@ -391,7 +404,7 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 					printf(" : %s", message);
 				}
 				printf("\n");
-				difxMessageSendCondition(&condMessage);
+				difxMessageSendDriveStats(&driveStatsMessage);
 			}
 			else
 			{

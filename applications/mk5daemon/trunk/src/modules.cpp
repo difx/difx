@@ -89,6 +89,8 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 	unsigned int xlrError;
 	char message[DIFX_MESSAGE_LENGTH];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
+	char tempA[SMART_TEMP_STRING_LENGTH]; 
+	char tempB[SMART_TEMP_STRING_LENGTH];
 	const char id[] = "GetModules";
 	int v;
 
@@ -211,8 +213,11 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 
 	unlockStreamstor(D, id);
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> <%s> N=%d\n",
-		vsna, vsnb, D->nXLROpen);
+	extractSmartTemps(tempA, D, BANK_A);
+	extractSmartTemps(tempB, D, BANK_B);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n",
+		vsna, tempA, vsnb, tempB, D->nXLROpen);
 	Logger_logData(D->log, message);
 
 	return 0;

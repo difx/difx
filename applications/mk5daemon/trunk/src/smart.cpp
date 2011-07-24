@@ -92,6 +92,21 @@ const char *getSmartDescription(int smartId)
 	return smartDescriptions[i].desc;
 }
 
+int isSmartCritical(int smartId)
+{
+	int i;
+
+	for(i = 0; smartDescriptions[i].id >= 0; i++)
+	{
+		if(smartDescriptions[i].id == smartId)
+		{
+			break;
+		}
+	}
+
+	return smartDescriptions[i].critical;
+}
+
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -216,17 +231,37 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 		}
 		for(int v = 0; v < smart->nValue[d]; v++)
 		{
-			int id = smart->smartXLR[d][v].ID;
+			int id = smart->id[d][v];
+			const char *desc = getSmartDescription(id);
 			snprintf(message, DIFX_MESSAGE_LENGTH, "  SMART ID %3d : %s = %Ld\n",
-				id, getSmartDescription(id), smart->value[d][v]);
+				id, desc, smart->value[d][v]);
 			Logger_logData(D->log, message);
+			if(isSmartCritical(id) && smart->value[d][v] > 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "vsn=%s disk=%d : SMART value (%d) %s = %Ld indicates a potential disk problem", vsn, d, id, desc, smart->value[d][v]);
+
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
+			}
 		}
 	}
 	Logger_logData(D->log, "\n");
 }
 
-int XLR_get_smart(Mk5Daemon *D)
+int Mk5Daemon_sendSmartData(Mk5Daemon *D)
 {
+	for(int bank = 0; bank < 2; bank++)
+	{
+		const Mk5Smart *mk5smart = &(D->smartData[bank]);
+		const char *vsn = (bank == 0 ? D->vsna : D->vsnb);
+
+		for(int d = 0; d < N_SMART_DRIVES; d++)
+		{
+			if(mk5smart->nValue[d] > 0)
+			{
+				difxMessageSendDifxSmart(mk5smart->mjd, vsn, d, mk5smart->nValue[d], mk5smart->id[d], mk5smart->value[d]);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -264,7 +299,7 @@ void Mk5Daemon_getSmart(Mk5Daemon *D)
 			dm.state = MARK5_STATE_IDLE;
 		}
 		else
-		{
+{
 			dm.state = MARK5_STATE_ERROR;
 		}
 		break;
@@ -272,4 +307,36 @@ void Mk5Daemon_getSmart(Mk5Daemon *D)
 		pthread_mutex_unlock(&D->processLock);
 		return;
 	}
+}
+
+int extractSmartTemps(char *tempstr, const Mk5Daemon *D)
+{
+	int i, j, t;
+	int n = 0;
+
+	if(bank < 0 || bank > 1)
+	{
+		return -1;
+	}
+
+	const Mk5Smart *mk5smart = &(D->smartData[bank]);
+
+	tempstr[0] = 0;
+
+	for(i = 0; i < N_SMART_DRIVES; i++)
+	{
+		t = -1;
+		for(j = 0; j < mk5smart->nValue[i]; j++)
+		{
+			if(mk5smart->id[i][j] == 194)
+			{
+				t = (int)(mk5smart->value[i][j]);
+				break;
+			}
+		}
+	
+		v = snprintf(tempstr, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
+	}
+
+	return 0;
 }

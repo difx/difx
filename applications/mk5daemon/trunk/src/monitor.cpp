@@ -383,6 +383,13 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 			Mk5Daemon_sendStreamstorVersions(D);
 		}
 	}
+	else if(strcmp(cmd, "getsmart") == 0)
+	{
+		if(D->isMk5)
+		{
+			Mk5Daemon_sendSmartData(D);
+		}
+	}
 #endif
 	else if(strncmp(cmd, "mount", 5) == 0 && strlen(cmd) > 5)
 	{

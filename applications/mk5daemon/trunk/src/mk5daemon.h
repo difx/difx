@@ -109,11 +109,12 @@ void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
 void Mk5Daemon_stopCondition(Mk5Daemon *D);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
-void Mk5Daemon_getSmart(Mk5Daemon *D);
+void Mk5Daemon_sendSmartData(Mk5Daemon *D);
 
 void clearMk5Smart(Mk5Daemon *D, int bank);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
+int extractSmartTemps(char *tempstr, Mk5Daemon *D, int bank);
 
 #endif
 

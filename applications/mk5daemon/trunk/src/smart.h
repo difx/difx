@@ -3,7 +3,8 @@
 
 #include <xlrapi.h>
 
-#define N_SMART_DRIVES	8
+#define N_SMART_DRIVES			8
+#define SMART_TEMP_STRING_LENGTH	32
 
 
 typedef struct
@@ -38,6 +39,9 @@ extern const SmartDescription smartDescriptions[];
 
 const char *getSmartDescription(int smartId);
 
+int isSmartCritical(int smartId);
+
+int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
 
 
 #endif
