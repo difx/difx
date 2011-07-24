@@ -139,7 +139,7 @@ class Parser:
 			crit, desc = getSmartDesc(v[0])
 			vstr = '  %-3d : %s = %d%s\n' % (v[0], desc, v[1], ['', '  **'][crit])
 			smartstr = smartstr + vstr
-		smartstr = smartstr + '\n'
+		smartstr = smartstr
 		return smartstr
 
 	else:

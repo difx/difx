@@ -61,9 +61,9 @@ int main(int argc, char **argv)
 
 	for(i = 0; i < nSmart; i++)
 	{
-		if(i > 16)
+		if(i >= 16)
 		{
-			ids[i] = 190+i;
+			ids[i] = 174+i;
 		}
 		else
 		{

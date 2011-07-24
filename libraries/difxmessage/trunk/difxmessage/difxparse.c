@@ -165,7 +165,7 @@ static void XMLCALL startElement(void *userData, const char *name,
 					}
 					if(strcmp(atts[i], "value") == 0)
 					{
-						S->id[S->nValue] = atoll(atts[i+1]);
+						S->value[S->nValue] = atoll(atts[i+1]);
 					}
 				}
 				S->nValue++;
