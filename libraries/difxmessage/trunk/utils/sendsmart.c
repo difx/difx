@@ -33,11 +33,25 @@
 
 int main(int argc, char **argv)
 {
-	DifxMessageTransient transient;
-	
-	if(argc < 5)
+	int nSmart;
+	char vsn[] = "VSN+1234";
+	double mjdData = 56789.345;
+	int slot = 3;
+	int ids[DIFX_MESSAGE_MAX_SMART_IDS];
+	long long values[DIFX_MESSAGE_MAX_SMART_IDS];
+	int i;
+
+	if(argc != 2)
 	{
-		printf("\nUsage: %s startMJD stopMJD priority identifier\n\n", argv[0]);
+		printf("\nUsage: %s <nSmart>\n\n", argv[0]);
+
+		return 0;
+	}
+
+	nSmart = atoi(argv[1]);
+	if(nSmart < 1 || nSmart > DIFX_MESSAGE_MAX_SMART_IDS)
+	{
+		fprintf(stderr, "nSmart must be in [1..%d] inclusive.\n", DIFX_MESSAGE_MAX_SMART_IDS);
 
 		return 0;
 	}
@@ -45,17 +59,22 @@ int main(int argc, char **argv)
 	difxMessageInit(-1, argv[0]);
 	difxMessagePrint();
 
-	transient.startMJD = atof(argv[1]);
-	transient.stopMJD = atof(argv[2]);
-	transient.priority = atof(argv[3]);
-	snprintf(transient.jobId, DIFX_MESSAGE_IDENTIFIER_LENGTH,
-		"%s", argv[4]);
-	snprintf(transient.destDir, DIFX_MESSAGE_FILENAME_LENGTH,
-		"%s", "/tmp/");
-	snprintf(transient.comment, DIFX_MESSAGE_COMMENT_LENGTH,
-		"%s", "from sendtransient");
+	for(i = 0; i < nSmart; i++)
+	{
+		if(i > 16)
+		{
+			ids[i] = 190+i;
+		}
+		else
+		{
+			ids[i] = 1+i;
+		}
 
-	difxMessageSendDifxTransient(&transient);
+		values[i] = ids[i] + 2;
+	}
+
+
+	difxMessageSendDifxSmart(mjdData, vsn, slot, nSmart, ids, values);
 
 	return 0;
 }

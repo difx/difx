@@ -248,17 +248,19 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 	char body[DIFX_MESSAGE_LENGTH];
 	char bins[DIFX_MESSAGE_LENGTH];
 	int i;
-	int b=0;
+	int b = 0;
 	int v;
 
 	bins[0] = 0;
+
+	fprintf(stderr, "Warning: sending deprecated message type `condition'.\n");
+	fprintf(stderr, "Please upgrade the sending code to use the `disk stat' type.\n");
 
 	if(difxMessagePort < 0)
 	{
 		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
 		{
-			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b,
-				" %d", cond->bin[i]);
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b, " %d", cond->bin[i]);
 			
 			if(b >= DIFX_MESSAGE_LENGTH)
 			{
@@ -297,6 +299,7 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			  "<moduleSlot>%d</moduleSlot>"
 			  "<startMJD>%7.5f</startMJD>"
 			  "<stopMJD>%7.5f</stopMJD>"
+			  "<type>%s</type>"
 			  "%s"
 			"</difxCondition>",
 
@@ -307,6 +310,112 @@ int difxMessageSendCondition(const DifxMessageCondition *cond)
 			cond->moduleSlot,
 			cond->startMJD,
 			cond->stopMJD,
+			DriveStatsTypeStrings[DRIVE_STATS_TYPE_CONDITION],
+			bins);
+
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendCondition: message body overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+
+			return -1;
+		}
+
+		v = snprintf(message, DIFX_MESSAGE_LENGTH,
+			difxMessageXMLFormat, 
+			DifxMessageTypeStrings[DIFX_MESSAGE_CONDITION],
+			difxMessageSequenceNumber++, body);
+		
+		if(v >= DIFX_MESSAGE_LENGTH)
+		{
+			fprintf(stderr, "difxMessageSendCondition: message overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+
+			return -1;
+		}
+
+		difxMessageSend(message);
+	}
+
+	return 0;
+}
+
+int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	char body[DIFX_MESSAGE_LENGTH];
+	char bins[DIFX_MESSAGE_LENGTH];
+	char startByteString[48];
+	int i;
+	int b = 0;
+	int v;
+
+	bins[0] = 0;
+
+	if(difxMessagePort < 0)
+	{
+		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		{
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b, " %d", driveStats->bin[i]);
+			
+			if(b >= DIFX_MESSAGE_LENGTH)
+			{
+				fprintf(stderr, "difxMessageSendDriveStats: message overflow (%d >= %d)\n", b, DIFX_MESSAGE_LENGTH);
+
+				return -1;
+			}
+		}
+		printf("%s[%d] = %s %s\n", 
+			driveStats->moduleVSN, 
+			driveStats->moduleSlot,
+			driveStats->serialNumber,
+			bins);
+	}
+	else
+	{
+		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		{
+			b += snprintf(bins+b, DIFX_MESSAGE_LENGTH-b,
+				"<bin%d>%d</bin%d>", i, driveStats->bin[i], i);
+			if(b >= DIFX_MESSAGE_LENGTH)
+			{
+				fprintf(stderr, "difxMessageSendDriveStats: message overflow (%d >= %d)\n", b, DIFX_MESSAGE_LENGTH);
+
+				return -1;
+			}
+		}
+
+		if(driveStats->startByte != 0LL)
+		{
+			sprintf(startByteString, "<startByte>%Ld</startByte>", driveStats->startByte);
+		}
+		else
+		{
+			startByteString[0] = 0;
+		}
+
+		v = snprintf(body, DIFX_MESSAGE_LENGTH,
+			
+			"<difxCondition>"
+			  "<serialNumber>%s</serialNumber>"
+			  "<modelNumber>%s</modelNumber>"
+			  "<size>%d</size>"
+			  "<moduleVSN>%s</moduleVSN>"
+			  "<moduleSlot>%d</moduleSlot>"
+			  "<startMJD>%7.5f</startMJD>"
+			  "<stopMJD>%7.5f</stopMJD>"
+			  "<type>%s</type>"
+			  "%s"
+			  "%s"
+			"</difxCondition>",
+
+			driveStats->serialNumber,
+			driveStats->modelNumber,
+			driveStats->diskSize,
+			driveStats->moduleVSN, 
+			driveStats->moduleSlot,
+			driveStats->startMJD,
+			driveStats->stopMJD,
+			startByteString,
+			DriveStatsTypeStrings[driveStats->type],
 			bins);
 
 		if(v >= DIFX_MESSAGE_LENGTH)
@@ -1116,7 +1225,7 @@ int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nVal
 		"<difxSmart>"
 		  "<mjd>%12.6f</mjd>"
 		  "<vsn>%s</vsn>"
-		  "<slot>%s</slot>"
+		  "<slot>%d</slot>"
 		  "%s"
 		"</difxSmart>",
 

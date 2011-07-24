@@ -13,14 +13,17 @@ bin_PROGRAMS = \
 	testseqnumbers \
 	testm5lock \
 	sendtransient \
+	sendsmart \
 	updatedifxclock \
 	difxlog
 
 dist_bin_SCRIPTS = \
-	mk5mon \
 	cpumon \
+	getsmart \
 	errormon \
 	errormon2 \
+	mk5mon \
+	smartmon \
 	statemon \
 	mk5display
 
@@ -41,6 +44,9 @@ testdifxmessagereceivecond_SOURCES = \
 
 sendtransient_SOURCES = \
 	sendtransient.c
+
+sendsmart_SOURCES = \
+	sendsmart.c
 
 updatedifxclock_SOURCES = \
 	updatedifxclock.c

@@ -90,8 +90,10 @@ const char DifxMessageTypeStrings[][24] =
 	"DifxStart",
 	"DifxStop",
 	"Mark5VersionMessage",
-	"Mark5ConditionMessage",
-	"DifxTransientMessage"
+	"Mark5ConditionMessage", /* this is deprecated; use Mark5DriveStatsMessage instead */
+	"DifxTransientMessage",
+	"DifxSmartMessage",
+	"Mark5DriveStatsMessage"
 };
 
 /* Note! Keep this in sync with enum DifxAlertLevel in difxmessage.h */
@@ -106,9 +108,36 @@ const char difxMessageAlertString[][16] =
 	"DEBUG"
 };
 
+/* Note! Keep this in sync with enum DriveStatsType in difxmessage.h */
+const char DriveStatsTypeStrings[][24] =
+{
+	"condition",
+	"condition_read",
+	"condition_write",
+	"read",
+	"write",
+	"unknown"	/* Really, this should never be used! */
+};
+
 int isDifxMessageInUse()
 {
 	return difxMessageInUse;
+}
+
+/* does case insensitive comparison */
+enum DriveStatsType stringToDriveStatsType(const char *str)
+{
+	enum DriveStatsType t;
+
+	for(t = 0; t < NUM_DRIVE_STATS_TYPES; t++)
+	{
+		if(strcasecmp(str, DriveStatsTypeStrings[t]) == 0)
+		{
+			return t;
+		}
+	}
+
+	return DRIVE_STATS_TYPE_UNKNOWN;
 }
 
 const char *difxMessageGetVersion()

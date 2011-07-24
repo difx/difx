@@ -51,7 +51,8 @@ extern "C" {
 #define DIFX_MESSAGE_ALLMPIFXCORR	-1
 #define DIFX_MESSAGE_ALLCORES		-2
 #define DIFX_MESSAGE_ALLDATASTREAMS	-3
-#define DIFX_MESSAGE_N_CONDITION_BINS	8
+#define DIFX_MESSAGE_N_DRIVE_STATS_BINS	8
+#define DIFX_MESSAGE_N_CONDITION_BINS	DIFX_MESSAGE_N_DRIVE_STATS_BINS	/* deprecated */
 #define DIFX_MESSAGE_MARK5_VSN_LENGTH	8
 #define DIFX_MESSAGE_DISC_SERIAL_LENGTH	31
 #define DIFX_MESSAGE_DISC_MODEL_LENGTH	31
@@ -161,13 +162,27 @@ enum DifxMessageType
 	DIFX_MESSAGE_START,
 	DIFX_MESSAGE_STOP,
 	DIFX_MESSAGE_MARK5VERSION,
-	DIFX_MESSAGE_CONDITION,
+	DIFX_MESSAGE_CONDITION,	/* this is deprecated.  Use DIFX_MESSAGE_DISKSTAT instead */
 	DIFX_MESSAGE_TRANSIENT,
 	DIFX_MESSAGE_SMART,
+	DIFX_MESSAGE_DRIVE_STATS,
 	NUM_DIFX_MESSAGE_TYPES	/* this needs to be the last line of enum */
 };
 
 extern const char DifxMessageTypeStrings[][24];
+
+enum DriveStatsType
+{
+	DRIVE_STATS_TYPE_CONDITION = 0,
+	DRIVE_STATS_TYPE_CONDITION_R,
+	DRIVE_STATS_TYPE_CONDITION_W,
+	DRIVE_STATS_TYPE_READ,
+	DRIVE_STATS_TYPE_WRITE,
+	DRIVE_STATS_TYPE_UNKNOWN,
+	NUM_DRIVE_STATS_TYPES	/* this needs to be the last line of enum */
+};
+
+extern const char DriveStatsTypeStrings[][24];
 
 typedef struct
 {
@@ -277,6 +292,17 @@ typedef struct
  * of a Mark5 module.  Typically 8 such messages will be needed to 
  * convey results from the conditioning of one module.
  */
+typedef struct	/* Note: this is being deprecated */
+{
+	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
+	char modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH+1];
+	int diskSize;	/* GB */
+	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
+	int moduleSlot;
+	double startMJD, stopMJD;
+	int bin[DIFX_MESSAGE_N_DRIVE_STATS_BINS];
+} DifxMessageCondition;
+
 typedef struct
 {
 	char serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH+1];
@@ -285,8 +311,10 @@ typedef struct
 	char moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH+2];
 	int moduleSlot;
 	double startMJD, stopMJD;
-	int bin[DIFX_MESSAGE_N_CONDITION_BINS];
-} DifxMessageCondition;
+	int bin[DIFX_MESSAGE_N_DRIVE_STATS_BINS];
+	enum DriveStatsType type;
+	long long startByte;
+} DifxMessageDriveStats;
 
 /* This message type contains S.M.A.R.T. information for one disk in
  * a Mark5 module. Typically 8 such messages will be needed to 
@@ -336,7 +364,8 @@ typedef struct
 		DifxMessageParameter	param;
 		DifxMessageStart	start;
 		DifxMessageStop		stop;
-		DifxMessageCondition	condition;
+		DifxMessageDriveStats	driveStats;
+		DifxMessageCondition	condition;  /* same as above but here for backward compatibility */
 		DifxMessageTransient	transient;
 		DifxMessageSmart	smart;
 	} body;
@@ -405,6 +434,7 @@ int difxMessageSendProcessState(const char *state);
 int difxMessageSendMark5Status(const DifxMessageMk5Status *mk5status);
 int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version);
 int difxMessageSendCondition(const DifxMessageCondition *cond);
+int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats);
 int difxMessageSendDifxStatus(enum DifxState state, const char *stateMessage, 
 	double visMJD, int numdatastreams, float *weight);
 int difxMessageSendDifxStatus2(const char *jobName, enum DifxState state, 
@@ -441,6 +471,8 @@ void printDifxMessageSTARecord(const DifxMessageSTARecord *record, int printData
 
 int difxMessageParse(DifxMessageGeneric *G, const char *message);
 void difxMessageGenericPrint(const DifxMessageGeneric *G);
+
+enum DriveStatsType stringToDriveStatsType(const char *str);
 
 #ifdef __cplusplus
 }

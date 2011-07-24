@@ -1,0 +1,214 @@
+#!/usr/bin/env python
+
+PROGRAM = 'getsmart'
+VERSION = '0.1'
+VERDATE = '20110723'
+AUTHOR  = 'Walter Brisken'
+
+defaultgroup = "224.2.2.1"
+defaultport  = 50200
+defaultttl   = 3
+
+from sys import argv, exit, stdout
+from os import popen, getcwd, system, getenv, getpid, environ
+from os.path import isfile, isdir
+from string import split, strip, find, rfind, upper, lower
+from time import time, asctime
+from glob import glob
+from xml.parsers import expat
+import socket
+import struct
+
+verbose = 1
+
+def usage():
+	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
+	print 'A program to request mk5daemon to send smart data from a Mark5 unit.\n'
+	print 'Usage: getsmart [options] <unit>\n'
+	print 'options can include:\n'
+	print '  -h or --help'
+	print '          print this usage info and exit\n'
+	print '  -v or --verbose'
+	print '          be more verbose\n'
+	print '  -q or --quiet'
+	print '          be quieter\n'
+	print '<unit> is the name or number of the mark5 unit to probe\n'
+	print 'Environment variables DIFX_MESSAGE_GROUP and DIFX_MESSAGE_PORT'
+	print 'can be used to override the default group/port of %s/%d\n' % \
+		(defaultgroup, defaultport)
+	exit(0)
+
+
+class Parser:
+
+    def __init__(self):
+        self._parser = expat.ParserCreate()
+        self._parser.StartElementHandler = self.start
+        self._parser.EndElementHandler = self.end
+        self._parser.CharacterDataHandler = self.data
+	self.vsn = ''
+	self.slot = -1
+	self.mjd = 0.0
+	self.values = []
+	self.ok = False
+	self.unit = ''
+	self.mpiId = -1
+	self.id = ''
+	self.tag = ''
+
+    def feed(self, data):
+        self._parser.Parse(data, 0)
+
+    def close(self):
+        self._parser.Parse("", 1) # end of data
+        del self._parser # get rid of circular references
+
+    def start(self, tag, attrs):
+        self.tag = tag
+        self.tmp = ''
+        if tag == 'difxSmart':
+                self.ok = True
+		self.vsn = ''
+		self.mjd = 0.0
+		self.values = []
+		self.slot = -1
+	elif tag == 'smart':
+		self.values.append( (int(attrs['id']), int(attrs['value'])) )
+
+    def end(self, tag):
+        if tag == 'vsn' and self.ok:
+		self.vsn = self.tmp
+	elif tag == 'slot':
+		self.slot = self.slot
+	elif tag == 'mjd':
+		self.mjd = float(self.tmp)
+	elif tag == 'from':
+		self.unit = lower(self.tmp)
+	elif tag == 'identifier':
+		self.id = self.tmp
+	elif tag == 'mpiProcessId':
+		self.mpiId = int(self.tmp)
+
+    def data(self, data):
+            self.tmp = data
+
+    def getinfo(self):
+	if self.ok:
+		smartstr = 'VSN=%s disk=%d mjd=%12.6f:\n' % (self.vsn, self.slot, self.mjd)
+		for v in self.values:
+			crit, desc = getSmartDesc(v[0])
+			vstr = '  %-3d : %s = %d%s\n' % (v[0], desc, v[1], ['', '  **'][crit])
+			smartstr = smartstr + vstr
+		smartstr = smartstr + '\n'
+		return smartstr
+
+	else:
+		return ''
+
+
+def run():
+	maxlevel = 8
+	
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		print 'DIFX_MESSAGE_PORT needs to be defined'
+		exit(0)
+	else:
+		port = int(port)
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		print 'DIFX_MESSAGE_GROUP needs to be defined'
+		exit(0)
+
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	s.bind(('', port))
+	mreq = struct.pack("4sl", socket.inet_aton(group), socket.INADDR_ANY)
+	s.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, mreq)
+	s.settimeout(1)
+
+	try:
+		while 1:
+			try:
+			    message = s.recv(1500)
+			    if len(message) > 0 and message[0] == '<':
+				p = Parser()
+				p.feed(message)
+				info = p.getinfo()
+				p.close()
+				if p.ok:
+					print asctime(), info
+			except socket.timeout:
+				pass
+	except KeyboardInterrupt:
+		pass
+
+
+def getSmart(unit):
+	group = getenv('DIFX_MESSAGE_GROUP')
+	if group == None:
+		group = defaultgroup
+	
+	port = getenv('DIFX_MESSAGE_PORT')
+	if port == None:
+		port = defaultport
+	else:
+		port = int(port)
+		
+	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
+	sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, defaultttl)
+
+	message = \
+		"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" \
+		"<difxMessage>" \
+		  "<header>" \
+		    "<from>startdifx</from>" \
+		    "<to>%s</to>" \
+		    "<mpiProcessId>-1</mpiProcessId>" \
+		    "<identifier>%s</identifier>" \
+		    "<type>DifxCommand</type>" \
+		  "</header>" \
+		  "<body>" \
+		    "<difxCommand>" \
+		      "<command>getsmart</command>" \
+		    "</difxCommand>" \
+		  "</body>" \
+		"</difxMessage>\n" % \
+		(unit, program)
+
+	if verbose > 0:
+		print "Sending: ", message
+
+	sock.sendto(message, (group, port) )
+
+	run()
+
+	print "\n"
+
+
+
+
+if len(argv) < 2:
+	usage()
+
+unit = ''
+
+for a in argv[1:]:
+	if a[0] == '-':
+		if a == '-h' or a == '--help':
+			usage()
+		elif a == '-v' or a == '--verbose':
+			verbose += 1
+		elif a == '-q' or a == '--quiet':
+			verbose -= 1
+	else:
+		if unit == '':
+			unit = a
+		else:
+			usage()
+
+if len(fileBaseList) < 1:
+	usage()
+
+getSmart(unit):
+	

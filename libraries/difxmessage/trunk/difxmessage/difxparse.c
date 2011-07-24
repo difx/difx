@@ -343,47 +343,56 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_CONDITION:
+				case DIFX_MESSAGE_DRIVE_STATS:
 					if(strncmp(elem, "bin", 3) == 0)
 					{
 						i = atoi(elem+3);
-						if(i >= 0 && i < DIFX_MESSAGE_N_CONDITION_BINS)
+						if(i >= 0 && i < DIFX_MESSAGE_N_DRIVE_STATS_BINS)
 						{
-							G->body.condition.bin[i] = atoi(s);
+							G->body.driveStats.bin[i] = atoi(s);
 						}
 					}
 					else if(strcmp(elem, "serialNumber") == 0)
 					{
-						strncpy(G->body.condition.serialNumber, s,
+						strncpy(G->body.driveStats.serialNumber, s,
 							DIFX_MESSAGE_DISC_SERIAL_LENGTH);
-						G->body.condition.serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH] = 0;
+						G->body.driveStats.serialNumber[DIFX_MESSAGE_DISC_SERIAL_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "modelNumber") == 0)
 					{
-						strncpy(G->body.condition.modelNumber, s,
+						strncpy(G->body.driveStats.modelNumber, s,
 							DIFX_MESSAGE_DISC_MODEL_LENGTH);
-						G->body.condition.modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH] = 0;
+						G->body.driveStats.modelNumber[DIFX_MESSAGE_DISC_MODEL_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "size") == 0)
 					{
-						G->body.condition.diskSize = atoi(s);
+						G->body.driveStats.diskSize = atoi(s);
 					}
 					else if(strcmp(elem, "moduleVSN") == 0)
 					{
-						strncpy(G->body.condition.moduleVSN, s,
+						strncpy(G->body.driveStats.moduleVSN, s,
 							DIFX_MESSAGE_MARK5_VSN_LENGTH);
-						G->body.condition.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
+						G->body.driveStats.moduleVSN[DIFX_MESSAGE_MARK5_VSN_LENGTH] = 0;
 					}
 					else if(strcmp(elem, "moduleSlot") == 0)
 					{
-						G->body.condition.moduleSlot = atoi(s);
+						G->body.driveStats.moduleSlot = atoi(s);
 					}
 					else if(strcmp(elem, "startMJD") == 0)
 					{
-						G->body.condition.startMJD = atof(s);
+						G->body.driveStats.startMJD = atof(s);
 					}
 					else if(strcmp(elem, "stopMJD") == 0)
 					{
-						G->body.condition.stopMJD = atof(s);
+						G->body.driveStats.stopMJD = atof(s);
+					}
+					else if(strcmp(elem, "type") == 0)
+					{
+						G->body.driveStats.type = stringToDriveStatsType(s);
+					}
+					else if(strcmp(elem, "startByte") == 0)
+					{
+						G->body.driveStats.startByte = atoll(s);
 					}
 					break;
 				case DIFX_MESSAGE_MARK5VERSION:
@@ -670,6 +679,13 @@ int difxMessageParse(DifxMessageGeneric *G, const char *message)
 	XML_Parse(parser, message, strlen(message), 0);
 	XML_ParserFree(parser);
 
+	/* promote condition type ti disk stat type */
+	if(G->type == DIFX_MESSAGE_CONDITION)
+	{
+		fprintf(stderr, "Note: condition message received.  This is being replaced with a disk stat ,essage.  The sender should be upgraded to use the new type when convenient.\n");
+		G->type = DIFX_MESSAGE_DRIVE_STATS;
+	}
+
 	return G->_xml_error_count;
 }
 
@@ -694,10 +710,8 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    cpu load = %f\n", G->body.load.cpuLoad);
 		printf("    total memory = %d kiB\n", G->body.load.totalMemory);
 		printf("    used memory = %d kiB\n", G->body.load.usedMemory);
-		printf("    network Receive Rate = %d B/s\n", 
-			G->body.load.netRXRate);
-		printf("    network Transmit Rate = %d B/s\n", 
-			G->body.load.netTXRate);
+		printf("    network Receive Rate = %d B/s\n", G->body.load.netRXRate);
+		printf("    network Transmit Rate = %d B/s\n", G->body.load.netTXRate);
 		break;
 	case DIFX_MESSAGE_ALERT:
 		printf("    severity = %d\n", G->body.alert.severity);
@@ -748,23 +762,26 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 				G->body.mk5version.DB_FPGAConfigVersion);
 		}
 		break;
-	case DIFX_MESSAGE_CONDITION:
+	case DIFX_MESSAGE_CONDITION:	/* Should not be exercised; falls through to disk_stat */
+	case DIFX_MESSAGE_DRIVE_STATS:
 		printf("    serial number = %s\n", 
-			G->body.condition.serialNumber);
+			G->body.driveStats.serialNumber);
 		printf("    model number = %s\n",
-			G->body.condition.modelNumber);
+			G->body.driveStats.modelNumber);
 		printf("    disk size = %d GB\n",
-			G->body.condition.diskSize);
+			G->body.driveStats.diskSize);
+		printf("    disk stat type = %s\n", DriveStatsTypeStrings[G->body.driveStats.type]);
+		printf("    startbyte = %Ld\n", G->body.driveStats.startByte);
 		printf("    module VSN / slot = %s / %d\n", 
-			G->body.condition.moduleVSN,
-			G->body.condition.moduleSlot);
+			G->body.driveStats.moduleVSN,
+			G->body.driveStats.moduleSlot);
 		printf("    MJD = %7.5f to %7.5f\n",
-			G->body.condition.startMJD,
-			G->body.condition.stopMJD);
+			G->body.driveStats.startMJD,
+			G->body.driveStats.stopMJD);
 		printf("    stats =");
-		for(i = 0; i < DIFX_MESSAGE_N_CONDITION_BINS; i++)
+		for(i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
 		{
-			printf(" %d", G->body.condition.bin[i]);
+			printf(" %d", G->body.driveStats.bin[i]);
 		}
 		printf("\n");
 		break;

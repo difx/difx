@@ -4,6 +4,8 @@ Post 2.0.1
 Add new Mark5 state "booting"
 Add SMART monitor message type for disk diagnostics
   one document per disk (i.e., 8 per module)
+Change Condition message type to DriveStats.
+  attempts made to retain backward comatibility
 
 Version 2.0.1
 ~~~~~~~~~~~~~
@@ -13,7 +15,7 @@ Able to make RedHat RPM
 Version for DiFX-2.0.1, June 10, 2011
 
 Version 2.0.0
-~~~~~~~~~~~
+~~~~~~~~~~~~~
 Re-numbered version from 7.4 (the jump from 0.7 to 7.1 some time ago was a mistake)
 Added different types of binary message (STA/ autocorrelation, cross-correlation, kurtosis)
 Some fixes for array lengths
