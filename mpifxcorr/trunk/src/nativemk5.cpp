@@ -160,7 +160,6 @@ static int dirCallback(int scan, int nscan, int status, void *data)
 
 int NativeMk5DataStream::resetDriveStats()
 {
-	XLR_RETURN_CODE xlrRC;
 	S_DRIVESTATS driveStats[XLR_MAXBINS];
 	const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
@@ -179,14 +178,14 @@ int NativeMk5DataStream::reportDriveStats()
 {
 	XLR_RETURN_CODE xlrRC;
 	S_DRIVESTATS driveStats[XLR_MAXBINS];
-	DifxMessageDiskStat driveStatsMessage;
+	DifxMessageDriveStats driveStatsMessage;
 
-	snprintf(driveStatsMessage.moduleVSN, DIFX_MESSAGE_MARK5_VSN_LENGTH, "%s", vsn);
+	snprintf(driveStatsMessage.moduleVSN, DIFX_MESSAGE_MARK5_VSN_LENGTH, "%s",  datafilenames[0][0].c_str());
 	driveStatsMessage.type = DRIVE_STATS_TYPE_READ;
 
 	/* FIXME: for now don't include complete information on drives */
 	strcpy(driveStatsMessage.serialNumber, "X");
-	strcpy(driveStatsMessage,modelNumber, "Y");
+	strcpy(driveStatsMessage.modelNumber, "Y");
 	driveStatsMessage.diskSize = 0;
 
 	for(int d = 0; d < 8; d++)
