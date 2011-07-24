@@ -47,6 +47,8 @@ public:
 	virtual void loopfileread();
 	virtual int calculateControlParams(int scan, int offsetsec, int offsetns);
 	int sendMark5Status(enum Mk5State state, long long position, double dataMJD, float rate);
+	int resetDriveStats();
+	int reportDriveStats();
 
 protected:
 	void moduleToMemory(int buffersegment);
