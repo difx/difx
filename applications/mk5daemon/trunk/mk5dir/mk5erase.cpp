@@ -358,13 +358,13 @@ int condition(SSHANDLE xlrDevice, const char *vsn, enum ConditionMode mode, Difx
 		switch(mode)
 		{
 		case CONDITION_WRITE_ONLY:
-			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION_W;
+			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_W;
 			break;
 		case CONDITION_READ_ONLY:
-			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION_R;
+			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION_R;
 			break;
 		default:
-			driveStateMessage.type = DRIVE_STATS_TYPE_CONDITION;
+			driveStatsMessage.type = DRIVE_STATS_TYPE_CONDITION;
 			break;
 		}
 

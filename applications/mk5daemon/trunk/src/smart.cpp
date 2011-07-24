@@ -247,12 +247,12 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 	Logger_logData(D->log, "\n");
 }
 
-int Mk5Daemon_sendSmartData(Mk5Daemon *D)
+void Mk5Daemon_sendSmartData(Mk5Daemon *D)
 {
 	for(int bank = 0; bank < 2; bank++)
 	{
 		const Mk5Smart *mk5smart = &(D->smartData[bank]);
-		const char *vsn = (bank == 0 ? D->vsna : D->vsnb);
+		const char *vsn = (bank == 0 ? D->vsnA : D->vsnB);
 
 		for(int d = 0; d < N_SMART_DRIVES; d++)
 		{
@@ -262,10 +262,9 @@ int Mk5Daemon_sendSmartData(Mk5Daemon *D)
 			}
 		}
 	}
-
-	return 0;
 }
 
+#if 0
 void Mk5Daemon_getSmart(Mk5Daemon *D)
 {
 	int n;
@@ -308,8 +307,9 @@ void Mk5Daemon_getSmart(Mk5Daemon *D)
 		return;
 	}
 }
+#endif
 
-int extractSmartTemps(char *tempstr, const Mk5Daemon *D)
+int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank)
 {
 	int i, j, t;
 	int n = 0;
@@ -335,7 +335,7 @@ int extractSmartTemps(char *tempstr, const Mk5Daemon *D)
 			}
 		}
 	
-		v = snprintf(tempstr, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
+		n = snprintf(tempstr+n, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
 	}
 
 	return 0;

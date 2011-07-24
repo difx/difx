@@ -114,7 +114,7 @@ void Mk5Daemon_sendSmartData(Mk5Daemon *D);
 void clearMk5Smart(Mk5Daemon *D, int bank);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
-int extractSmartTemps(char *tempstr, Mk5Daemon *D, int bank);
+int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
 
 #endif
 

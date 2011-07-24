@@ -41,7 +41,5 @@ const char *getSmartDescription(int smartId);
 
 int isSmartCritical(int smartId);
 
-int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
-
 
 #endif
