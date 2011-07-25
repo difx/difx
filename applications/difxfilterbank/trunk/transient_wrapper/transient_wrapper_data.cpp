@@ -398,7 +398,7 @@ TransientWrapperConf *newTransientWrapperConf()
 
 	if(!conf)
 	{
-		fprintf(stderr, "Error: cannot allocate a Transient Configuration Object\n");
+		fprintf(stderr, "Error: cannot allocate a Transient Wrapper Configuration Object\n");
 
 		exit(1);
 	}

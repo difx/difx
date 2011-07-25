@@ -6,17 +6,24 @@
 #include <unistd.h>
 #include <difxmessage.h>
 #include <difxio/parsedifx.h>
+#include <sys/inotify.h>
+#include <sys/select.h>
 
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2011 Feb 03";
+const char version[] = "0.2";
+const char verdate[] = "2011 Jul 24";
+
+const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";
 
 const char dispatcherProgram[] = "transient_dispatcher";
 /* Command line params are: configfile jobid dmfile */
 
 const char DMGeneratorProgram[] = "dmgen";
 /* Command line params are: freq(MHz) [ chanBW(MHz) [ intTime ] ] */
+
+/* default parameters to use if no config file is found */
+const int defaultEnable = 1;
 
 int die = 0;
 
@@ -38,6 +45,11 @@ public:
 	TransientDaemonState();
 	void print() const;
 };
+
+typedef struct
+{
+	int enable;
+} TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
 {
@@ -76,8 +88,92 @@ int usage(const char *cmd)
 	printf("  --disable\n");
 	printf("  -d           Don't actually spawn any processes.\n\n");
 	printf("To quite: Ctrl-c or send a sigint\n\n");
+	printf("Env. var VFASTR_CONFIG_FILE can point to a configuration file\n");
+	printf("If this variable is not set, the default (%s) will be used\n\n", defaultConfigFile);
 
 	return 0;
+}
+
+TransientDaemonConf *newTransientDaemonConf()
+{
+	TransientDaemonConf *conf;
+
+	conf = (TransientDaemonConf *)calloc(1, sizeof(TransientDaemonConf));
+
+	if(!conf)
+	{
+		fprintf(stderr, "Error: cannot allocate a Transient Daemon Configuration Object\n");
+
+		exit(1);
+	}
+	conf->enable = defaultEnable;
+	
+	return conf;
+}
+
+void deleteTransientDaemonConf(TransientDaemonConf *conf)
+{
+	free(conf);
+}
+
+int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
+{
+	FILE *in;
+	int n;
+	char line[DIFX_MESSAGE_COMMENT_LENGTH];
+	char A[DIFX_MESSAGE_COMMENT_LENGTH];
+	char B[DIFX_MESSAGE_COMMENT_LENGTH];
+	char C[DIFX_MESSAGE_COMMENT_LENGTH];
+
+	in = fopen(filename, "r");
+	if(!in)
+	{
+		return -1;
+	}
+
+	for(int l = 1;; l++)
+	{
+		fgets(line, DIFX_MESSAGE_COMMENT_LENGTH-1, in);
+		if(feof(in))
+		{
+			break;
+		}
+		for(int i = 0; line[i]; i++)
+		{
+			if(line[i] == '#')	/* break at a comment charcter */
+			{
+				line[i] = 0;
+				break;
+			}
+			if(line[i] == '=')	/* turn equal signs into spaces */
+			{
+				line[i] = ' ';
+			}
+		}
+		n = sscanf(line, "%s %s %s", A, B, C);
+		if(n <= 0)
+		{
+			continue;
+		}
+		if(n != 2)
+		{
+			fprintf(stderr, "Config file %s : parse error line %d n=%d\n", filename, l, n);
+		}
+
+		/* transient_wrapper specific code here */
+		if(strcmp(A, "vfastr_enable") == 0)
+		{
+			conf->enable = atoi(B);
+		}
+	}
+
+	return 0;
+}
+
+void printTransientDaemonConf(const TransientDaemonConf *conf)
+{
+	printf("TransientDaemonConf [%p]\n", conf);
+	printf("  enable = %d\n", conf->enable);
 }
 
 void siginthand(int j)
@@ -217,7 +313,7 @@ static int isTrue(const char *str)
 	}
 }
 
-static int handleMessage(const char *message, TransientDaemonState *state)
+static int handleMessage(const char *message, TransientDaemonState *state, const TransientDaemonConf *conf)
 {
 	DifxMessageGeneric G;
 	char command[CommandLength];
@@ -237,45 +333,55 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 		}
 		break;
 	case DIFX_MESSAGE_START:
-		state->lastCommand[0] = 0;
-		if(state->verbose > 1)
+		if(conf->enable)
 		{
-			printf("%s: START %s %s\n", G.identifier, G.body.start.inputFilename, G.body.start.difxVersion);
-		}
-
-		generateIdentifier(G.body.start.inputFilename, 0, identifier);
-		v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
-		if(v != 0)
-		{
-			fprintf(stderr, "Error %d generating the DM command.\n", v);
-
-			return -1;
-		}
-
-		v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
-		if(v >= CommandLength)
-		{
-			fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n", CommandLength, v);
-
-			return -2;
-		}
-
-		strcpy(state->lastCommand, command);
-
-		if(state->startEnable)
-		{
-			pid = runCommand(command, state->verbose);
-			state->nLaunch++;
+			state->lastCommand[0] = 0;
 			if(state->verbose > 1)
 			{
-				printf("Executing: %s  pid=%d\n", command, pid);
+				printf("%s: START %s %s\n", G.identifier, G.body.start.inputFilename, G.body.start.difxVersion);
+			}
+
+			generateIdentifier(G.body.start.inputFilename, 0, identifier);
+			v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
+			if(v != 0)
+			{
+				fprintf(stderr, "Error %d generating the DM command.\n", v);
+
+				return -1;
+			}
+
+			v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
+			if(v >= CommandLength)
+			{
+				fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n", CommandLength, v);
+
+				return -2;
+			}
+
+			strcpy(state->lastCommand, command);
+
+			if(state->startEnable)
+			{
+				pid = runCommand(command, state->verbose);
+				state->nLaunch++;
+				if(state->verbose > 1)
+				{
+					printf("Executing: %s  pid=%d\n", command, pid);
+				}
+			}
+			else
+			{
+				if(state->verbose > 0)
+				{
+					printf("Start message received, but starting of processes is not enabled.  Doing nothing.\n");
+				}
 			}
 		}
 		else
 		{
-			if(state->verbose > 0)
+			if(state->verbose > 1)
 			{
-				printf("Start message received, but starting of processes is not enabled.  Doing nothing.\n");
+				printf("%s: Not starting: %s %s\n", G.identifier, G.body.start.inputFilename, G.body.start.difxVersion);
 			}
 		}
 		break;
@@ -355,10 +461,17 @@ static int handleMessage(const char *message, TransientDaemonState *state)
 
 int transientdaemon(TransientDaemonState *state)
 {
+	TransientDaemonConf *conf;
+	const int MaxLineLength = 512;
 	char message[DIFX_MESSAGE_LENGTH];
 	char from[DIFX_MESSAGE_PARAM_LENGTH];
+	char str[MaxLineLength+1];
 	typedef void (*sighandler_t)(int);
-	int l, v, sock;
+	int l, v, sock, inotify_fd, wd;
+	struct timeval tv;
+	fd_set readset;
+	int maxfd;
+	const char *vfastrConfigFile;
 
 	signal(SIGINT, siginthand);
 
@@ -369,31 +482,61 @@ int transientdaemon(TransientDaemonState *state)
 		difxMessagePrint();
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Transient Daemon starting.");
+	vfastrConfigFile = getenv("VFASTR_CONFIG_FILE");
+	if(!vfastrConfigFile)
+	{
+		vfastrConfigFile = defaultConfigFile;
+	}
+	conf = newTransientDaemonConf();
+	loadTransientDaemonConf(conf, vfastrConfigFile);
+	if(state->verbose > 0)
+	{
+		printTransientDaemonConf(conf);
+	}
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "%s starting.", program);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 
 	sock = difxMessageReceiveOpen();
 
+	inotify_fd = inotify_init();
+	wd = inotify_add_watch(inotify_fd, vfastrConfigFile, IN_CLOSE_WRITE | IN_DELETE_SELF);
+	
+	maxfd = (sock > inotify_fd ? sock : inotify_fd) + 1;
+	
+	if(state->verbose > 0)
+	{
+		printf("inotify watch descriptor for %s is %d\n", vfastrConfigFile, wd);
+	}
+
 	/* Program event loop */
 	for(;;)
 	{
+		FD_ZERO(&readset);
+		FD_SET(sock, &readset);
+		FD_SET(inotify_fd, &readset);
+		tv.tv_sec = 1;
+		tv.tv_usec = 0;
+		
 		if(state->selfTest > 0)
 		{
 			state->selfTest--;
-			v = handleMessage(testMessage, state);
+			v = handleMessage(testMessage, state, conf);
 			if(v)
 			{
 				fprintf(stderr, "Error=%d handling command '%s'.\n", v, testMessage);
 			}
 		}
-			
-		from[0] = 0;
-		l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-		if(l < 0)
-		{
-			usleep(100000);
 
-			continue;
+		v = select(maxfd, &readset, 0, 0, &tv);
+		if(v < 0)
+		{
+			if(!die)
+			{
+				fprintf(stderr, "Error: select failed\n");
+			}
+
+			break;
 		}
 		if(die)
 		{
@@ -402,17 +545,54 @@ int transientdaemon(TransientDaemonState *state)
 				printf("Caught sigint.  Will die now.\n");
 			}
 
+			FD_ZERO(&readset);
+
 			break;
 		}
-
-		v = handleMessage(message, state);
-		if(v)
+		if(v == 0)
 		{
-			fprintf(stderr, "Error=%d handling command '%s'.\n", v, message);
+			usleep(100000);
+
+			continue;
+		}
+			
+		if(FD_ISSET(sock, &readset))
+		{
+			from[0] = 0;
+			l = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
+			if(l > 0)
+			{
+				v = handleMessage(message, state, conf);
+				if(v)
+				{
+					fprintf(stderr, "Error=%d handling command '%s'.\n", v, message);
+				}
+			}
+		}
+		if(FD_ISSET(inotify_fd, &readset))
+		{
+			const struct inotify_event *ie;
+			l = read(inotify_fd, str, MaxLineLength);
+			if(l > 0)
+			{
+				str[l] = 0;
+				ie = (const struct inotify_event *)str;
+				if(state->verbose > 0)
+				{
+					printf("inotify_event: %d %u\n", ie->wd, ie->mask);
+				}
+				loadTransientDaemonConf(conf, vfastrConfigFile);
+				if(state->verbose > 0)
+				{
+					printTransientDaemonConf(conf);
+				}
+			}
 		}
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Transient Daemon stopping");
+	inotify_rm_watch(inotify_fd, wd);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "%s stopping", program);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 
 	return 0;

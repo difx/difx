@@ -1,6 +1,6 @@
 Version 0.4
 ~~~~~~~~~~~
-
+* transient_daemon and transient_wrapper now look at the VFASTR_CONFIG_FILE
 
 Version 0.3
 ~~~~~~~~~~~
