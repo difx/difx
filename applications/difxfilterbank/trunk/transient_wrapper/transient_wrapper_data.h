@@ -10,6 +10,14 @@
 
 typedef struct
 {
+	int enable;
+	double maxCopyOverhead;
+	double minFreeDiskMB;
+	char path[DIFX_MESSAGE_FILENAME_LENGTH];
+} TransientWrapperConf;
+
+typedef struct
+{
 	double startMJD, stopMJD;
 	double priority;
 } TransientEvent;
@@ -26,16 +34,16 @@ typedef struct
 	int monitorThreadDie;
 	int rank;
 	int doCopy;
-	double maxCopyOverhead;
 	int executeTime;
 	int nMerged;
 	int nTransient;		/* count of total number of transient messages received */
 	int nEvent;		/* count of number of events in memory (<= nTransient) */
 	TransientEvent event[MAX_EVENTS+EXTRA_EVENTS];
+	const TransientWrapperConf *conf;
 
 } TransientWrapperData;
 
-TransientWrapperData *newTransientWrapperData();
+TransientWrapperData *newTransientWrapperData(const TransientWrapperConf *conf);
 
 void deleteTransientWrapperData(TransientWrapperData *T);
 
@@ -50,5 +58,13 @@ void sortEvents(TransientWrapperData *T);
 void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient);
 
 int copyBasebandData(const TransientWrapperData *T);
+
+TransientWrapperConf *newTransientWrapperConf();
+
+void deleteTransientWrapperConf(TransientWrapperConf *conf);
+
+int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename);
+
+void printTransientWrapperConf(const TransientWrapperConf *conf);
 
 #endif

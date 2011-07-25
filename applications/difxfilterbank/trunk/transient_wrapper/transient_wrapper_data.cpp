@@ -7,7 +7,13 @@
 #define min(x,y) (((x) < (y)) ? (x) : (y))
 #define max(x,y) (((x) > (y)) ? (x) : (y))
 
-TransientWrapperData *newTransientWrapperData()
+/* default parameters to use if no config file is found */
+const int defaultEnable = 1;
+const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
+const double minFreeMB = 1000000.0;	/* don't copy unless there are this many MB free in the above path */
+const double defaultMaxCopyOverhead = 0.04;	/* 4% */
+
+TransientWrapperData *newTransientWrapperData(const TransientWrapperConf *conf)
 {
 	TransientWrapperData *T;
 	const char *rankStr;
@@ -15,7 +21,7 @@ TransientWrapperData *newTransientWrapperData()
 	T = (TransientWrapperData *)calloc(1, sizeof(TransientWrapperData));
 
 	T->difxState = DIFX_STATE_SPAWNING;
-	T->maxCopyOverhead = 0.04;
+	T->conf = conf;
 
 	rankStr = getenv("OMPI_COMM_WORLD_RANK");
 	if(rankStr)
@@ -56,13 +62,11 @@ void printTransientWrapperData(const TransientWrapperData *T)
 		printf("  identifier = %s\n", T->identifier);
 		printf("  rank = %d\n", T->rank);
 		printf("  DifxState = %s [%d]\n", DifxStateStrings[T->difxState], T->difxState);
-		printf("  outputPath = %s\n", T->outputPath);
 		printf("  filePrefix = %s\n", T->filePrefix);
 		printf("  monitorThreadDie = %d\n", T->monitorThreadDie);
 		printf("  verbose = %d\n", T->verbose);
 		printf("  doCopy = %d\n", T->doCopy);
 		printf("  executeTime = %d\n", T->executeTime);
-		printf("  maxCopyOverhead = %f\n", T->maxCopyOverhead);
 		printf("  nTransient = %d\n", T->nTransient);
 		printf("  nMerged = %d\n", T->nMerged);
 		printf("  nEvent = %d\n", T->nEvent);
@@ -201,7 +205,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, 
 		"%s/%s%s/%s",
-		T->outputPath, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
+		T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
 
 	snprintf(baseName, DIFXIO_FILENAME_LENGTH,
 		"%s/transient_%03d", outDir, eventId+1);
@@ -304,11 +308,12 @@ fclose(out);
 			MaxCommandLength, v);
 	}
 
-
+#if 0
 snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.new", baseName);
 out = fopen(fileName, "w");
 fprintDifxInput(out, newD);
 fclose(out);
+#endif
 
 	deleteDifxInput(newD);
 }
@@ -324,23 +329,20 @@ int copyBasebandData(const TransientWrapperData *T)
 
 	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, 
 		"%s/%s%s/%s/%d",
-		T->outputPath, T->D->job->obsCode, T->D->job->obsSession, T->identifier, T->rank);
+		T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier, T->rank);
 	
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
-		fprintf(stderr, "Error: pathname is too long (%d vs. %d)\n",
-			v, DIFXIO_FILENAME_LENGTH);
+		fprintf(stderr, "Error: pathname is too long (%d > %d)\n", v, DIFXIO_FILENAME_LENGTH-1);
 		
 		return 0;
 	}
 
-	snprintf(command, MaxCommandLength, 
-		"mkdir -p %s", outDir);
+	snprintf(command, MaxCommandLength, "mkdir -p %s", outDir);
 	v = system(command);
 	if(v == -1)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Error: cannot execute %s\n", command);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Error: cannot execute %s\n", command);
 		fprintf(stderr, "%s\n", message);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
@@ -350,7 +352,7 @@ int copyBasebandData(const TransientWrapperData *T)
 	t1 = t2 = time(0);
 	for(e = 0; e < T->nEvent; e++)
 	{
-		if(t2-t1 > T->executeTime*T->maxCopyOverhead)
+		if(t2-t1 > T->executeTime*T->conf->maxCopyOverhead)
 		{
 			break;
 		}
@@ -375,8 +377,7 @@ int copyBasebandData(const TransientWrapperData *T)
 		
 		if(v == -1)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Error: cannot execute %s\n", command);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Error: cannot execute %s\n", command);
 			fprintf(stderr, "%s\n", message);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
@@ -387,4 +388,104 @@ int copyBasebandData(const TransientWrapperData *T)
 	}
 
 	return e;
+}
+
+TransientWrapperConf *newTransientWrapperConf()
+{
+	TransientWrapperConf *conf;
+
+	conf = (TransientWrapperConf *)calloc(1, sizeof(TransientWrapperConf));
+
+	if(!conf)
+	{
+		fprintf(stderr, "Error: cannot allocate a Transient Configuration Object\n");
+
+		exit(1);
+	}
+	conf->enable = defaultEnable;
+	conf->minFreeDiskMB = minFreeMB;
+	conf->maxCopyOverhead = defaultMaxCopyOverhead;
+	strncpy(conf->path, defaultOutputPath, DIFX_MESSAGE_FILENAME_LENGTH-1);
+	
+	return conf;
+}
+
+void deleteTransientWrapperConf(TransientWrapperConf *conf)
+{
+	free(conf);
+}
+
+int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
+{
+	FILE *in;
+	int n;
+	char line[DIFX_MESSAGE_COMMENT_LENGTH];
+	char A[DIFX_MESSAGE_COMMENT_LENGTH];
+	char B[DIFX_MESSAGE_COMMENT_LENGTH];
+	char C[DIFX_MESSAGE_COMMENT_LENGTH];
+
+	in = fopen(filename, "r");
+	if(!in)
+	{
+		return -1;
+	}
+
+	for(int l = 1;; l++)
+	{
+		fgets(line, DIFX_MESSAGE_COMMENT_LENGTH-1, in);
+		if(feof(in))
+		{
+			break;
+		}
+		for(int i = 0; line[i]; i++)
+		{
+			if(line[i] == '#')	/* break at a comment charcter */
+			{
+				line[i] = 0;
+				break;
+			}
+			if(line[i] == '=')	/* turn equal signs into spaces */
+			{
+				line[i] = ' ';
+			}
+		}
+		n = sscanf(line, "%s %s %s", A, B, C);
+		if(n <= 0)
+		{
+			continue;
+		}
+		if(n != 2)
+		{
+			fprintf(stderr, "Config file %s : parse error line %d n=%d\n", filename, l, n);
+		}
+
+		/* transient_wrapper specific code here */
+		if(strcmp(A, "vfastr_enable") == 0)
+		{
+			conf->enable = atoi(B);
+		}
+		else if(strcmp(A, "baseband_copy_overhead") == 0)
+		{
+			conf->maxCopyOverhead = atof(B);
+		}
+		else if(strcmp(A, "baseband_copy_min_space") == 0)
+		{
+			conf->minFreeDiskMB = atof(B);
+		}
+		else if(strcmp(A, "baseband_copy_path") == 0)
+		{
+			strncpy(conf->path, B, DIFX_MESSAGE_FILENAME_LENGTH-1);
+		}
+	}
+
+	return 0;
+}
+
+void printTransientWrapperConf(const TransientWrapperConf *conf)
+{
+	printf("TransientWrapperConf [%p]\n", conf);
+	printf("  enable = %d\n", conf->enable);
+	printf("  maxCopyOverhead = %f\n", conf->maxCopyOverhead);
+	printf("  minFreeDiskMB = %f\n", conf->minFreeDiskMB);
+	printf("  path = %s\n", conf->path);
 }

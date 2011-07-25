@@ -7,16 +7,18 @@
 
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "2011 Jun 6";
+const char version[] = "0.2";
+const char verdate[] = "2011 Jul 24";
 
-const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
-const int minFreeMB = 1000000;	/* don't copy unless there are this many MB free in the above path */
+const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";
 
 static int usage(const char *pgm)
 {
 	printf("\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
-	printf("Usage: %s [<options>] <program> <inputFile>\n\n", pgm);
+	printf("Usage: %s [<options> --] <program> <inputFile>\n\n", pgm);
+	printf("Note that if options are provided, two hyphens (--) must be used to separate the command line\n\n");
+	printf("Env. var VFASTR_CONFIG_FILE can point to a configuration file\n");
+	printf("If this variable is not set, the default (%s) will be used\n\n", defaultConfigFile);
 
 	return 0;
 }
@@ -56,7 +58,7 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 
 	if(T->verbose)
 	{
-		printf("Executing: %s\n", command);
+		printf("Executing %s\n", command);
 	}
 
 	t1 = time(0);
@@ -72,7 +74,7 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 
 static void updateenvironment(const char *inputFile)
 {
-	const int MaxLineLength=1024;
+	const int MaxLineLength = 1024;
 	char line[MaxLineLength], key[MaxLineLength], value[MaxLineLength];
 	char envFile[DIFXIO_FILENAME_LENGTH];
 	int v;
@@ -111,7 +113,7 @@ static void updateenvironment(const char *inputFile)
 	}
 }
 
-static int parsecommandline(int argc, char **argv, TransientWrapperData *T)
+static int parseCommandLine(int argc, char **argv, TransientWrapperData *T)
 {
 	int a;
 	int stop = 0;
@@ -179,14 +181,14 @@ char *stripInputFile(const char *inputFile)
 	l = strlen(filePrefix);
 	if(l < 7)
 	{
-		printf("Input file expected");
+		printf("Input file expected (%s not legit)\n", inputFile);
 		free(filePrefix);
 
 		return 0;
 	}
 	if(strcmp(filePrefix+l-6, ".input") != 0)
 	{
-		printf("Input file expected");
+		printf("Input file expected (%s not legit)\n", inputFile);
 		free(filePrefix);
 
 		return 0;
@@ -199,8 +201,8 @@ char *stripInputFile(const char *inputFile)
 
 static int getFreeMB(const char *path)
 {
-	const int MaxCommandLength=256;
-	const int MaxLineLength=256;
+	const int MaxCommandLength = 256;
+	const int MaxLineLength = 256;
 	char cmd[MaxCommandLength];
 	char line[MaxLineLength];
 	FILE *pin;
@@ -243,18 +245,16 @@ static int getFreeMB(const char *path)
 	return size;
 }
 
-TransientWrapperData *initialize(int argc, char **argv)
+TransientWrapperData *initialize(int argc, char **argv, const TransientWrapperConf *conf)
 {
 	TransientWrapperData *T;
 	const char *inputFile, *pgm;
 	char message[DIFX_MESSAGE_LENGTH];
 	int df, i, index;
 
-	T = newTransientWrapperData();
+	T = newTransientWrapperData(conf);
 
-	T->outputPath = defaultOutputPath;
-
-	index = parsecommandline(argc, argv, T);
+	index = parseCommandLine(argc, argv, T);
 
 	if(T->rank > 0)
 	{
@@ -269,7 +269,7 @@ TransientWrapperData *initialize(int argc, char **argv)
 
 	if(index < 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "%s", "Malformed command line");
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%s", "Malformed command line (run with -h for usage)");
 		difxMessageSendDifxAlert("Malformed command line", DIFX_ALERT_LEVEL_ERROR);
 		printf("Error: %s\n", message);
 
@@ -313,7 +313,7 @@ TransientWrapperData *initialize(int argc, char **argv)
 		}
 	}
 
-	if(T->rank > 0 && T->rank <= T->D->nDatastream)
+	if(T->rank > 0 && T->rank <= T->D->nDatastream && T->conf->enable && T->conf->maxCopyOverhead > 0.0)
 	{
 		if( (T->D->datastream[T->rank-1].dataSource == DataSourceModule ||
 		     T->D->datastream[T->rank-1].dataSource == DataSourceFile) &&
@@ -325,13 +325,13 @@ TransientWrapperData *initialize(int argc, char **argv)
 
 	if(T->doCopy > 0)
 	{
-		/* Make sure there is > 1TB free on disks */
-		df = getFreeMB(defaultOutputPath);
+		/* Make sure there is enough free on disks */
+		df = getFreeMB(T->conf->path);
 		if(T->verbose)
 		{
-			printf("Free space on %s = %d MB\n", defaultOutputPath, df);
+			printf("Free space on %s = %d MB\n", T->conf->path, df);
 		}
-		if(df < minFreeMB)
+		if(df < T->conf->minFreeDiskMB)
 		{
 			T->doCopy = 0;
 		}
@@ -342,11 +342,22 @@ TransientWrapperData *initialize(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+	TransientWrapperConf *conf;
 	TransientWrapperData *T;
+	const char *configFile;
 
 	difxMessageInit(-1, program);
 	
-	T = initialize(argc, argv);
+	configFile = getenv("VFASTR_CONFIG_FILE");
+	if(!configFile)
+	{
+		configFile = defaultConfigFile;
+	}
+
+	conf = newTransientWrapperConf();
+	loadTransientWrapperConf(conf, configFile);
+
+	T = initialize(argc, argv, conf);
 	if(T == 0)
 	{
 		return 0;
@@ -354,6 +365,8 @@ int main(int argc, char **argv)
 
 	if(T->verbose > 0)
 	{
+		printTransientWrapperConf(T->conf);
+
 		printTransientWrapperData(T);
 	}
 
@@ -385,6 +398,7 @@ int main(int argc, char **argv)
 	}
 
 	deleteTransientWrapperData(T);
+	deleteTransientWrapperConf(conf);
 
 	return 0;
 }
