@@ -22,11 +22,22 @@ const char dispatcherProgram[] = "transient_dispatcher";
 const char DMGeneratorProgram[] = "dmgen";
 /* Command line params are: freq(MHz) [ chanBW(MHz) [ intTime ] ] */
 
+enum archive_mode {NONE, ALL, RAW};
+const char archiveModeName[][8] = {"none", "all", "raw"};
+
 /* default parameters to use if no config file is found */
 const int defaultVfastrEnable = 1;
 const double defaultDetectionThreshold = 5.0;
 const char defaultOutputPath[] = "/home/boom/data/products";
 const int defaultDifxStaChannels = 32;
+const int defaultOnlineTrainingEnable = 1;
+const int defaultArchiveDedispersed = 0;
+const int defaultArchivePulses = 0;
+const int defaultArchiveMerged = 0;
+const int defaultArchiveScores = 0;
+const enum archive_mode defaultArchiveFilterbank = NONE;
+const int defaultConcurrentPipeline = 0;
+const int defaultStubPipeline = 0;
 
 
 int die = 0;
@@ -56,6 +67,14 @@ typedef struct
 	double detectionThreshold;
 	char outputPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	int difxStaChannels;
+	int onlineTrainingEnable;
+	int archiveDedispersed;
+	int archivePulses;
+	int archiveMerged;
+	int archiveScores;
+	enum archive_mode archiveFilterbank;
+	int concurrentPipeline;
+	int stubPipeline;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -104,11 +123,33 @@ int usage(const char *cmd)
 int setTransientDispatcherOptions(char *options, int maxLength, const TransientDaemonConf *conf)
 {
 	int v;
+	const char *fbArchiveMode = "";
 
-	v = snprintf(options, maxLength, "-o %s -c %d -t %f",
+	switch(conf->archiveFilterbank)
+	{
+	case NONE:
+		fbArchiveMode = ""; 
+		break;
+	case ALL:
+		fbArchiveMode = " -a"; 
+		break;
+	case RAW:
+		fbArchiveMode = " -r"; 
+		break;
+	}
+
+	v = snprintf(options, maxLength, "-o %s -c %d -t %f%s%s%s%s%s%s%s %s",
 		conf->outputPath,
 		conf->difxStaChannels,
-		conf->detectionThreshold);
+		conf->detectionThreshold,
+		conf->onlineTrainingEnable ? ""    : " -F",
+		conf->archiveDedispersed   ? " -d" : "",
+		conf->archivePulses        ? " -p" : "",
+		conf->archiveMerged        ? " -m" : "",
+		conf->archiveScores        ? " -s" : "",
+		conf->concurrentPipeline   ? " -C" : "",
+		conf->stubPipeline         ? " -S" : "",
+		fbArchiveMode);
 
 	if(v >= maxLength)
 	{
@@ -136,7 +177,15 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->detectionThreshold = defaultDetectionThreshold;
 	snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultOutputPath);
 	conf->difxStaChannels = defaultDifxStaChannels;
-	
+	conf->onlineTrainingEnable = defaultOnlineTrainingEnable;
+	conf->archiveDedispersed = defaultArchiveDedispersed;
+	conf->archivePulses = defaultArchivePulses;
+	conf->archiveMerged = defaultArchiveMerged;
+	conf->archiveScores = defaultArchiveScores;
+	conf->archiveFilterbank = defaultArchiveFilterbank;
+	conf->concurrentPipeline = defaultConcurrentPipeline;
+	conf->stubPipeline = defaultStubPipeline;
+
 	return conf;
 }
 
@@ -206,6 +255,49 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			conf->difxStaChannels = atoi(B);
 		}
+		else if(strcmp(A, "online_training_enable") == 0)
+		{
+			conf->onlineTrainingEnable = atoi(B);
+		}
+		else if(strcmp(A, "archive_dedispersed") == 0)
+		{
+			conf->archiveDedispersed = atoi(B);
+		}
+		else if(strcmp(A, "archive_pulses") == 0)
+		{
+			conf->archivePulses = atoi(B);
+		}
+		else if(strcmp(A, "archive_merged") == 0)
+		{
+			conf->archiveMerged = atoi(B);
+		}
+		else if(strcmp(A, "archive_detectorscores") == 0)
+		{
+			conf->archiveScores = atoi(B);
+		}
+		else if(strcmp(A, "archive_filterbank") == 0)
+		{
+			if(strcasecmp(B, "none") == 0)
+			{
+				conf->archiveFilterbank = NONE;
+			}
+			else if(strcasecmp(B, "all") == 0)
+			{
+				conf->archiveFilterbank = ALL;
+			}
+			else if(strcasecmp(B, "raw") == 0)
+			{
+				conf->archiveFilterbank = RAW;
+			}
+		}
+		else if(strcmp(A, "concurrent_pipeline") == 0)
+		{
+			conf->concurrentPipeline = atoi(B);
+		}
+		else if(strcmp(A, "stub_pipeline") == 0)
+		{
+			conf->stubPipeline = atoi(B);
+		}
 		/* else ignore the parameter */
 	}
 
@@ -219,6 +311,13 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  detectionThreshold = %f\n", conf->detectionThreshold);
 	printf("  outputPath = %s\n", conf->outputPath);
 	printf("  difxStaChannels = %d\n", conf->difxStaChannels);
+	printf("  onlineTrainingEnable = %d\n", conf->onlineTrainingEnable);
+	printf("  archiveDedispersed = %d\n", conf->archiveDedispersed);
+	printf("  archivePulses = %d\n", conf->archivePulses);
+	printf("  archiveMerged = %d\n", conf->archiveMerged);
+	printf("  archiveScores = %d\n", conf->archiveScores);
+	printf("  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
+	printf("  stubPipeline = %d\n", conf->stubPipeline);
 }
 
 void siginthand(int j)
