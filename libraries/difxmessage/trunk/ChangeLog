@@ -4,8 +4,9 @@ Post 2.0.1
 Add new Mark5 state "booting"
 Add SMART monitor message type for disk diagnostics
   one document per disk (i.e., 8 per module)
-Change Condition message type to DriveStats.
+Change Condition message type to DriveStats
   attempts made to retain backward comatibility
+Add dispersion measure to transient message
 
 Version 2.0.1
 ~~~~~~~~~~~~~

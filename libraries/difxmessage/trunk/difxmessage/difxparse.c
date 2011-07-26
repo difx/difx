@@ -619,6 +619,10 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						strncpy(G->body.transient.comment, s, DIFX_MESSAGE_COMMENT_LENGTH-1);
 					}
+					else if(strcmp(elem, "dm") == 0)
+					{
+						G->body.transient.dm = atof(s);
+					}
 				case DIFX_MESSAGE_SMART:
 					if(strcmp(elem, "mjd") == 0)
 					{
@@ -840,6 +844,7 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 		printf("    priority = %f\n", G->body.transient.priority);
 		printf("    destDir = %s\n", G->body.transient.destDir);
 		printf("    comment = %s\n", G->body.transient.comment);
+		printf("    DM = %8.6f\n", G->body.transient.dm);
 		break;
 	case DIFX_MESSAGE_SMART:
 		printf("    data MJD = %12.6f", G->body.smart.mjdData);

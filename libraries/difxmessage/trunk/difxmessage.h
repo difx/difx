@@ -340,6 +340,7 @@ typedef struct
 	double priority;
 	char destDir[DIFX_MESSAGE_FILENAME_LENGTH];
 	char comment[DIFX_MESSAGE_COMMENT_LENGTH];
+	double dm;	/* dispersion measure */
 } DifxMessageTransient;
 
 typedef struct

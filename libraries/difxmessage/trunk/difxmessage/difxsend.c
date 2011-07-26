@@ -1166,6 +1166,7 @@ int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 		  "<priority>%f</priority>"
 		  "<destDir>%s</destDir>"
 		  "<comment>%s</comment>"
+		  "<dm>%8.6f</dm>"
 		"</difxTransient>",
 
 		transient->jobId,
@@ -1173,7 +1174,8 @@ int difxMessageSendDifxTransient(const DifxMessageTransient *transient)
 		transient->stopMJD,
 		transient->priority,
 		transient->destDir,
-		transient->comment);
+		transient->comment,
+		transient->dm);
 
 	if(v >= DIFX_MESSAGE_LENGTH)
 	{
