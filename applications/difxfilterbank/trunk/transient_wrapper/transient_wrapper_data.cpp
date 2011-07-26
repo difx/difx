@@ -172,12 +172,13 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 {
 	const int MaxCommandLength = 512;
 	DifxInput *newD;
-	int i, v;
+	int i, l, v;
 	FILE *out;
 	double mjd;
 	double mjd1, mjd2;
 	char command[MaxCommandLength];
 	char outDir[DIFXIO_FILENAME_LENGTH];
+	char origDir[DIFXIO_FILENAME_LENGTH];
 	char baseName[DIFXIO_FILENAME_LENGTH];
 	char fileName[DIFXIO_FILENAME_LENGTH];
 	DifxScan *S;
@@ -207,14 +208,23 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		return;
 	}
 
-	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, 
-		"%s/%s%s/%s",
+	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, "%s/%s%s/%s",
 		T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
 
-	snprintf(baseName, DIFXIO_FILENAME_LENGTH,
-		"%s/transient_%03d", outDir, eventId+1);
+	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transient_%03d", outDir, eventId+1);
 
 	newD = loadDifxInput(T->filePrefix);
+
+	strcpy(origDir, T->filePrefix);
+	l = strlen(origDir);
+	for(i = l-1; i > 0; i++)
+	{
+		if(origDir[i] == '/')
+		{
+			origDir[i+1] = 0;
+			break;
+		}
+	}
 
 	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
 
@@ -317,8 +327,21 @@ fclose(out);
 
 	deleteDifxInput(newD);
 
+	/* copy calibration data as well */
+	snprintf(command, MaxCommandLength, "cp %s/{flag,tsys,weather,pcal} %s", origDir, outDir);
+	if(T->verbose)
+	{
+		printf("Executing: %s\n", command);
+	}
+	system(command);
+
 	/* finally, chgrp the output directory, indirectly */
 	snprintf(command, MaxCommandLength, "mk5control reown_vfastr%s %s", outDir, T->conf->vfastrHost);
+	if(T->verbose)
+	{
+		printf("Executing: %s\n", command);
+	}
+	system(command);
 }
 
 int copyBasebandData(const TransientWrapperData *T)
