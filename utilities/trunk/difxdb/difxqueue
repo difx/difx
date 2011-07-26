@@ -892,12 +892,19 @@ class Pass:
 			if verbose > 1:
 				print 'Executing: %s' % cmd
 			system(cmd)
+			cmd = 'cp tsys weather flag pcal %s' % queueDir
+			if verbose > 1:
+				print 'Executing: %s' % cmd
+			system(cmd)
 			if groupId != None:
 				cmd = 'chown :%s %s' % (groupId, queueDir)
 				if verbose > 1:
 					print 'Executing: %s' % cmd
 				system(cmd)
-
+				cmd = 'chown :%s %s/{flag,tsys,weather,pcal}' % (groupId, queueDir)
+				if verbose > 1:
+					print 'Executing: %s' % cmd
+				system(cmd)
 
 		jobs = self.getJoblistJobsByNumbers(numbers)
 		if len(jobs) == 0:
