@@ -8,10 +8,14 @@
 #define max(x,y) (((x) > (y)) ? (x) : (y))
 
 /* default parameters to use if no config file is found */
-const int defaultEnable = 1;
-const char defaultOutputPath[] = "/home/boom/TESTDATA/CAPTURES";
-const double minFreeMB = 1000000.0;	/* don't copy unless there are this many MB free in the above path */
-const double defaultMaxCopyOverhead = 0.04;	/* 4% */
+const int default_enable = 1;
+const char default_vfastrHost[] = "boom";
+const char default_outputPath[] = "/home/boom/TESTDATA/CAPTURES";
+const double default_minFreeMB = 1000000.0;	/* don't copy unless there are this many MB free in the above path */
+const double default_maxCopyOverhead = 0.04;	/* 4% */
+const double default_recorr_tInt = 0.000256;
+const int default_recorr_nChan = 256;
+const int default_recorr_specAvg = 2;
 
 TransientWrapperData *newTransientWrapperData(const TransientWrapperConf *conf)
 {
@@ -240,10 +244,9 @@ fclose(out);
 	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
 	newD->scan->startSeconds = 0;
 	newD->scan->durSeconds = (int)ceil(newD->job->duration);
-#if 0
 
 	/* Then change all data sources to FILE and point to those files */
-	for(dsId = 0; dsId < newD->nDatastream; dsId++)
+	for(int dsId = 0; dsId < newD->nDatastream; dsId++)
 	{
 		if(newD->datastream[dsId].dataSource == DataSourceModule)
 		{
@@ -262,17 +265,15 @@ fclose(out);
 	}
 
 	/* Finally change correlation parameters */
-	newD->config[configId].tInt = 0.000256;
-	newD->config[configId].subintNS = 256000;
-	for(freqId = 0; freqId <= newD->nFreq; freqId++)
+	newD->config[configId].tInt = T->conf->recorr_tInt;
+	newD->config[configId].subintNS = (int)(T->conf->recorr_tInt*1.0e9 + 0.5);
+	for(int freqId = 0; freqId <= newD->nFreq; freqId++)
 	{
-		newD->freq[freqId].nChan = 128;
-		newD->freq[freqId].specAvg = 2;
+		newD->freq[freqId].nChan = T->conf->recorr_nChan;
+		newD->freq[freqId].specAvg = T->conf->recorr_specAvg;
 	}
 	DifxInputAllocThreads(newD, 2);
 	DifxInputSetThreads(newD, 1);
-
-#endif
 
 	/* And write it! */
 	writeDifxInput(newD);
@@ -284,7 +285,7 @@ fclose(out);
 	out = fopen(fileName, "w");
 	for(i = 0; i < newD->nDatastream+3; i++)
 	{
-		fprintf(out, "boom\n");
+		fprintf(out, "%s\n", T->conf->vfastrHost);
 	}
 	fclose(out);
 
@@ -304,8 +305,7 @@ fclose(out);
 	}
 	else
 	{
-		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n",
-			MaxCommandLength, v);
+		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n", MaxCommandLength, v);
 	}
 
 #if 0
@@ -316,6 +316,9 @@ fclose(out);
 #endif
 
 	deleteDifxInput(newD);
+
+	/* finally, chgrp the output directory, indirectly */
+	snprintf(command, MaxCommandLength, "mk5control reown_vfastr%s %s", outDir, T->conf->vfastrHost);
 }
 
 int copyBasebandData(const TransientWrapperData *T)
@@ -402,10 +405,16 @@ TransientWrapperConf *newTransientWrapperConf()
 
 		exit(1);
 	}
-	conf->enable = defaultEnable;
-	conf->minFreeDiskMB = minFreeMB;
-	conf->maxCopyOverhead = defaultMaxCopyOverhead;
-	strncpy(conf->path, defaultOutputPath, DIFX_MESSAGE_FILENAME_LENGTH-1);
+	conf->enable = default_enable;
+	snprintf(conf->vfastrHost, DIFX_MESSAGE_PARAM_LENGTH, "%s", default_vfastrHost);
+
+	conf->minFreeDiskMB = default_minFreeMB;
+	conf->maxCopyOverhead = default_maxCopyOverhead;
+	snprintf(conf->path, DIFX_MESSAGE_FILENAME_LENGTH, "%s", default_outputPath);
+
+	conf->recorr_tInt = default_recorr_tInt;
+	conf->recorr_nChan = default_recorr_nChan;
+	conf->recorr_specAvg = default_recorr_specAvg;
 	
 	return conf;
 }
@@ -464,6 +473,10 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
 		{
 			conf->enable = atoi(B);
 		}
+		else if(strcmp(A, "vfastr_host") == 0)
+		{
+			strncpy(conf->vfastrHost, B, DIFX_MESSAGE_FILENAME_LENGTH-1);
+		}
 		else if(strcmp(A, "baseband_copy_overhead") == 0)
 		{
 			conf->maxCopyOverhead = atof(B);
@@ -475,6 +488,18 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
 		else if(strcmp(A, "baseband_copy_path") == 0)
 		{
 			strncpy(conf->path, B, DIFX_MESSAGE_FILENAME_LENGTH-1);
+		}
+		else if(strcmp(A, "recorr_int_time") == 0)
+		{
+			conf->recorr_tInt = atof(B);
+		}
+		else if(strcmp(A, "recorr_n_chan") == 0)
+		{
+			conf->recorr_nChan = atoi(B);
+		}
+		else if(strcmp(A, "recorr_chan_avg") == 0)
+		{
+			conf->recorr_specAvg = atoi(B);
 		}
 	}
 
@@ -488,4 +513,7 @@ void printTransientWrapperConf(const TransientWrapperConf *conf)
 	printf("  maxCopyOverhead = %f\n", conf->maxCopyOverhead);
 	printf("  minFreeDiskMB = %f\n", conf->minFreeDiskMB);
 	printf("  path = %s\n", conf->path);
+	printf("  recorrelation int time (s) = %f\n", conf->recorr_tInt);
+	printf("  recorrelation num chans = %d\n", conf->recorr_nChan);
+	printf("  recorrelation specAvg = %d\n", conf->recorr_specAvg);
 }

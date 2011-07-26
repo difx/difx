@@ -12,9 +12,9 @@
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "2011 Jul 24";
+const char verdate[] = "2011 Jul 26";
 
-const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";
+const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";	/* overridden by env var VFASTR_CONFIG_FILE */
 
 const char dispatcherProgram[] = "transient_dispatcher";
 /* Command line params are: configfile jobid dmfile */
@@ -23,14 +23,18 @@ const char DMGeneratorProgram[] = "dmgen";
 /* Command line params are: freq(MHz) [ chanBW(MHz) [ intTime ] ] */
 
 /* default parameters to use if no config file is found */
-const int defaultEnable = 1;
+const int defaultVfastrEnable = 1;
+const double defaultDetectionThreshold = 5.0;
+const char defaultOutputPath[] = "/home/boom/data/products";
+const int defaultDifxStaChannels = 32;
+
 
 int die = 0;
 
 const int CommandLength = 256;
 
 const char testMessage[] = 
-"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><difxMessage><header><from>gui</from><to>boom</to><mpiProcessId>-1</mpiProcessId><identifier>boom_x</identifier><type>DifxStart</type></header><body><difxStart><input>/home/swc/difx/queue/BY129/by129-pos1_06.input</input><manager node=\"boom\"/><datastream nodes=\"boom1 boom2\"/><process threads=\"7\" nodes=\"boom3 boom4 boom4\"/><force>1</force><difxVersion>DIFX-1.5.3</difxVersion></difxStart></body></difxMessage>";
+"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><difxMessage><header><from>gui</from><to>boom</to><mpiProcessId>-1</mpiProcessId><identifier>boom_x</identifier><type>DifxStart</type></header><body><difxStart><input>/home/swc/difx/queue/BY129/by129-pos1_06.input</input><manager node=\"boom\"/><datastream nodes=\"boom1 boom2\"/><process threads=\"7\" nodes=\"boom3 boom4 boom4\"/><force>1</force><difxVersion>DIFX-trunk</difxVersion></difxStart></body></difxMessage>";
 
 class TransientDaemonState
 {
@@ -48,7 +52,10 @@ public:
 
 typedef struct
 {
-	int enable;
+	int vfastrEnable;
+	double detectionThreshold;
+	char outputPath[DIFX_MESSAGE_FILENAME_LENGTH];
+	int difxStaChannels;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -94,6 +101,25 @@ int usage(const char *cmd)
 	return 0;
 }
 
+int setTransientDispatcherOptions(char *options, int maxLength, const TransientDaemonConf *conf)
+{
+	int v;
+
+	v = snprintf(options, maxLength, "-o %s -c %d -t %f",
+		conf->outputPath,
+		conf->difxStaChannels,
+		conf->detectionThreshold);
+
+	if(v >= maxLength)
+	{
+		fprintf(stderr, "setTransientDispatcherOptions: too little space allocated for options: %d < %d\n", maxLength, v);
+
+		return -1;
+	}
+
+	return 0;
+}
+
 TransientDaemonConf *newTransientDaemonConf()
 {
 	TransientDaemonConf *conf;
@@ -106,7 +132,10 @@ TransientDaemonConf *newTransientDaemonConf()
 
 		exit(1);
 	}
-	conf->enable = defaultEnable;
+	conf->vfastrEnable = defaultVfastrEnable;
+	conf->detectionThreshold = defaultDetectionThreshold;
+	snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultOutputPath);
+	conf->difxStaChannels = defaultDifxStaChannels;
 	
 	return conf;
 }
@@ -163,8 +192,21 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		/* transient_wrapper specific code here */
 		if(strcmp(A, "vfastr_enable") == 0)
 		{
-			conf->enable = atoi(B);
+			conf->vfastrEnable = atoi(B);
 		}
+		else if(strcmp(A, "detection_threshold") == 0)
+		{
+			conf->detectionThreshold = atof(B);
+		}
+		else if(strcmp(A, "output_path") == 0)
+		{
+			snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+		}
+		else if(strcmp(A, "difx_sta_channels") == 0)
+		{
+			conf->difxStaChannels = atoi(B);
+		}
+		/* else ignore the parameter */
 	}
 
 	return 0;
@@ -173,7 +215,10 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 void printTransientDaemonConf(const TransientDaemonConf *conf)
 {
 	printf("TransientDaemonConf [%p]\n", conf);
-	printf("  enable = %d\n", conf->enable);
+	printf("  vfastrEnable = %d\n", conf->vfastrEnable);
+	printf("  detectionThreshold = %f\n", conf->detectionThreshold);
+	printf("  outputPath = %s\n", conf->outputPath);
+	printf("  difxStaChannels = %d\n", conf->difxStaChannels);
 }
 
 void siginthand(int j)
@@ -317,6 +362,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 {
 	DifxMessageGeneric G;
 	char command[CommandLength];
+	char options[CommandLength];
 	int v, pid;
 	char identifier[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	char alertMessage[DIFX_MESSAGE_LENGTH];
@@ -333,7 +379,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 		}
 		break;
 	case DIFX_MESSAGE_START:
-		if(conf->enable)
+		if(conf->vfastrEnable)
 		{
 			state->lastCommand[0] = 0;
 			if(state->verbose > 1)
@@ -350,7 +396,15 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				return -1;
 			}
 
-			v = snprintf(command, CommandLength, "%s.%s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, G.body.start.inputFilename, identifier, dmGenCmd);
+			v = setTransientDispatcherOptions(options, CommandLength, conf);
+			if(v != 0)
+			{
+				fprintf(stderr, "Error %d generating dispatcher options.\n", v);
+
+				return -1;
+			}
+
+			v = snprintf(command, CommandLength, "%s.%s %s %s %s %s\n", dispatcherProgram, G.body.start.difxVersion, options, G.body.start.inputFilename, identifier, dmGenCmd);
 			if(v >= CommandLength)
 			{
 				fprintf(stderr, "Error: CommandLength=%d is too small (needs to be > %d).\n", CommandLength, v);

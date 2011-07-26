@@ -11,9 +11,15 @@
 typedef struct
 {
 	int enable;
+	char vfastrHost[DIFX_MESSAGE_PARAM_LENGTH];
+
 	double maxCopyOverhead;
 	double minFreeDiskMB;
 	char path[DIFX_MESSAGE_FILENAME_LENGTH];
+
+	double recorr_tInt;
+	int recorr_nChan;
+	int recorr_specAvg;
 } TransientWrapperConf;
 
 typedef struct
