@@ -58,6 +58,7 @@ void getMinMax(float * data, int length, float * min, float * max)
     if(data[i] < *min)
       *min = data[i];
   }
+  printf("Data min was %f, max was %f\n", *min, *max);
 }
 
 bool getData(ifstream * input)
@@ -90,7 +91,7 @@ bool getData(ifstream * input)
   pol = config->getDRecordedBandPol(configindex, dsindex, bandindex);
   antennaname = config->getDStationName(configindex, dsindex);
 
-  printf("Read data from %s, scan %d, sec %04d, ns %09d, nswidth %09d, coreindex %d, threadindex %d\n", antennaname.c_str(), scan, sec, ns, nswidth, coreindex, threadindex);
+  printf("Read %d channels of data from %s, scan %d, sec %04d, ns %09d, nswidth %09d, coreindex %d, threadindex %d\n", nchan, antennaname.c_str(), scan, sec, ns, nswidth, coreindex, threadindex);
   //cout << "Read data from " << antennaname << ", scan " << scan << ", sec " << sec << ", ns " << ns << ", nswidth is " << nswidth << ", coreindex is " << coreindex << ", threadindex is " << threadindex << endl;
 
   if(nchan > MAX_CHANNELS) {

@@ -62,7 +62,7 @@ int main(int argc, char *argv[])
   //print out the results
   for(int i=0;i<config->getNumDataStreams();i++) {
     for(int j=0;j<config->getDNumRecordedBands(0, i);j++) {
-      cout << "Completeness for dsindex " << i << ", bandindex " << j << " was " << timecount[i][j]/config->getExecuteSeconds() << "%" << endl;
+      cout << "Completeness for dsindex " << i << ", bandindex " << j << " was " << 100*timecount[i][j]/config->getExecuteSeconds() << "%" << endl;
     }
   }
 }

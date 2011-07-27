@@ -411,8 +411,10 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
 
         // sanity checks:
         if (header.marker != -1) {
-            fprintf(stderr,"ERROR: expected marker, got (%d)\n", header.marker);
-            exit(1);
+            fprintf(stderr,"ERROR: expected marker, got (%d). Stopping here after %lld bytes.\n",
+                            header.marker, (long long)n_bytes_total);
+            done=1;
+            continue;
         }
 
         if (header.n_channels != fb_config->n_chans) {
