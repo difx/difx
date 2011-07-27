@@ -62,19 +62,7 @@ static void trim(char *out, const char *in)
 
 void clearMk5Smart(Mk5Daemon *D, int bank)
 {
-	D->smartData[bank].mjd = 0.0;
-	D->smartData[bank].vsn[0] = 0;
-	
-	for(int d = 0; d < N_SMART_DRIVES; d++)
-	{
-		D->smartData[bank].nValue[d] = 0;
-		for(int v = 0; v < XLR_MAX_SMARTVALUES; v++)
-		{
-			D->smartData[bank].value[d][v] = 0LL;
-		}
-		
-		memset(D->smartData[bank].drive + d, 0, sizeof(DriveInformation));
-	}
+	memset(&D->smartData[bank], 0, sizeof(Mk5Smart));
 }
 
 const char *getSmartDescription(int smartId)
@@ -205,7 +193,7 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 
 	vsn = (bank == BANK_A ? D->vsnA : D->vsnB);
 
-	if(D->smartData[bank].mjd < 50000.0 || vsn[0] == 0)
+	if(smart->mjd < 50000.0 || vsn[0] == 0)
 	{
 		return 0;
 	}
@@ -335,7 +323,7 @@ int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank)
 			}
 		}
 	
-		n = snprintf(tempstr+n, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
+		n += snprintf(tempstr+n, SMART_TEMP_STRING_LENGTH-n, "%s%d", (i == 0 ? "" : " "), t);
 	}
 
 	return 0;
