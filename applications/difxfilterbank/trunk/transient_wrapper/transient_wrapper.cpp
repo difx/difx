@@ -8,7 +8,7 @@
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "2011 Jul 24";
+const char verdate[] = "2011 Jul 26";
 
 const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";
 
@@ -345,6 +345,8 @@ int main(int argc, char **argv)
 	TransientWrapperConf *conf;
 	TransientWrapperData *T;
 	const char *configFile;
+
+	printf("%s version %s date %s starting\n", program, version, verdate);
 
 	difxMessageInit(-1, program);
 	

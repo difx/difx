@@ -392,6 +392,10 @@ fclose(out);
 
 	/* now that the jobs are ready to run, send a message to transient_daemon */
 	difxMessageSendDifxParameterTo("queuerecorr", baseName, T->conf->vfastrHost);
+	if(T->verbose)
+	{
+		printf("Sent queuerecorr to %s for %s\n", T->conf->vfastrHost, baseName);
+	}
 }
 
 int copyBasebandData(const TransientWrapperData *T)
