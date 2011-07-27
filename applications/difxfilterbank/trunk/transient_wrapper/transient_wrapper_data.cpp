@@ -16,6 +16,9 @@ const double default_maxCopyOverhead = 0.04;	/* 4% */
 const double default_recorr_tInt = 0.000256;
 const int default_recorr_nChan = 256;
 const int default_recorr_specAvg = 2;
+const double default_recorr2_tInt = 0.000256;
+const int default_recorr2_nChan = 2048;
+const int default_recorr2_specAvg = 1;
 
 TransientWrapperData *newTransientWrapperData(const TransientWrapperConf *conf)
 {
@@ -214,7 +217,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, "%s/%s%s/%s",
 		T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
 
-	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transient_%03d", outDir, eventId+1);
+	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transientfb_%03d", outDir, eventId+1);
 
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.event", baseName);
 	out = fopen(fileName, "w");
@@ -312,6 +315,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	}
 	fclose(out);
 
+#if 0
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.input.env", baseName);
 	out = fopen(fileName, "w");
 	fprintf(out, "DIFX_MESSAGE_PORT 50201\n");
@@ -330,6 +334,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	{
 		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n", MaxCommandLength, v);
 	}
+#endif
 
 #if 0
 snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.new", baseName);
@@ -337,6 +342,35 @@ out = fopen(fileName, "w");
 fprintDifxInput(out, newD);
 fclose(out);
 #endif
+
+	/* AGAIN MODIFY THE CONTENTS TO MAKE A NEW JOB; this one for imaging */
+
+	/* First change the name of the job and all of the paths */
+	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transientim_%03d", outDir, eventId+1);
+	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
+	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseName);
+	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseName);
+	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseName);
+	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseName);
+	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseName);
+	newD->config[configId].tInt = T->conf->recorr2_tInt;
+	newD->config[configId].subintNS = (int)(T->conf->recorr2_tInt*1.0e9 + 0.5);
+	for(int freqId = 0; freqId <= newD->nFreq; freqId++)
+	{
+		newD->freq[freqId].nChan = T->conf->recorr2_nChan;
+		newD->freq[freqId].specAvg = T->conf->recorr2_specAvg;
+	}
+	writeDifxInput(newD);
+	writeDifxCalc(newD);
+	writeDifxIM(newD);
+	DifxInputWriteThreads(newD);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseName);
+	out = fopen(fileName, "w");
+	for(i = 0; i < newD->nDatastream+3; i++)
+	{
+		fprintf(out, "%s\n", T->conf->vfastrHost);
+	}
+	fclose(out);
 
 	deleteDifxInput(newD);
 
@@ -454,6 +488,10 @@ TransientWrapperConf *newTransientWrapperConf()
 	conf->recorr_tInt = default_recorr_tInt;
 	conf->recorr_nChan = default_recorr_nChan;
 	conf->recorr_specAvg = default_recorr_specAvg;
+
+	conf->recorr2_tInt = default_recorr2_tInt;
+	conf->recorr2_nChan = default_recorr2_nChan;
+	conf->recorr2_specAvg = default_recorr2_specAvg;
 	
 	return conf;
 }
@@ -540,6 +578,18 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename)
 		{
 			conf->recorr_specAvg = atoi(B);
 		}
+		else if(strcmp(A, "image_recorr_int_time") == 0)
+		{
+			conf->recorr2_tInt = atof(B);
+		}
+		else if(strcmp(A, "image_recorr_n_chan") == 0)
+		{
+			conf->recorr2_nChan = atoi(B);
+		}
+		else if(strcmp(A, "image_recorr_chan_avg") == 0)
+		{
+			conf->recorr2_specAvg = atoi(B);
+		}
 	}
 
 	return 0;
@@ -552,7 +602,10 @@ void printTransientWrapperConf(const TransientWrapperConf *conf)
 	printf("  maxCopyOverhead = %f\n", conf->maxCopyOverhead);
 	printf("  minFreeDiskMB = %f\n", conf->minFreeDiskMB);
 	printf("  path = %s\n", conf->path);
-	printf("  recorrelation int time (s) = %f\n", conf->recorr_tInt);
-	printf("  recorrelation num chans = %d\n", conf->recorr_nChan);
-	printf("  recorrelation specAvg = %d\n", conf->recorr_specAvg);
+	printf("  hires recorrelation int time (s) = %f\n", conf->recorr_tInt);
+	printf("  hires recorrelation num chans = %d\n", conf->recorr_nChan);
+	printf("  hires recorrelation specAvg = %d\n", conf->recorr_specAvg);
+	printf("  image recorrelation int time (s) = %f\n", conf->recorr2_tInt);
+	printf("  image recorrelation num chans = %d\n", conf->recorr2_nChan);
+	printf("  image recorrelation specAvg = %d\n", conf->recorr2_specAvg);
 }

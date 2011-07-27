@@ -20,6 +20,10 @@ typedef struct
 	double recorr_tInt;
 	int recorr_nChan;
 	int recorr_specAvg;
+
+	double recorr2_tInt;
+	int recorr2_nChan;
+	int recorr2_specAvg;
 } TransientWrapperConf;
 
 typedef struct

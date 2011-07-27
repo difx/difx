@@ -4,6 +4,7 @@
 #include <vector>
 #include <algorithm>
 #include <string>
+#include <pthread.h>
 #include <difxmessage.h>
 
 class RecorrJob
@@ -23,6 +24,7 @@ public:
 	std::vector<RecorrJob> jobs;
 	std::string queueFile;
 
+	pthread_mutex_t lock;
 	RecorrQueue(const std::string file);
 	~RecorrQueue();
 	int add(std::string file, double threshold);	// add job to queue
