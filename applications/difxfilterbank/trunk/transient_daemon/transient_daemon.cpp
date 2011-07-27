@@ -29,6 +29,7 @@ const char archiveModeName[][8] = {"none", "all", "raw"};
 /* default parameters to use if no config file is found */
 const int defaultVfastrEnable = 1;
 const double defaultDetectionThreshold = 5.0;
+const double defaultRecorrThreshold = 5.0;
 const char defaultOutputPath[] = "/home/boom/data/products";
 const int defaultDifxStaChannels = 32;
 const int defaultOnlineTrainingEnable = 1;
@@ -69,6 +70,7 @@ typedef struct
 {
 	int vfastrEnable;
 	double detectionThreshold;
+	double recorrThreshold;
 	char outputPath[DIFX_MESSAGE_FILENAME_LENGTH];
 	int difxStaChannels;
 	int onlineTrainingEnable;
@@ -90,12 +92,17 @@ TransientDaemonState::TransientDaemonState()
 	nLaunch = 0;
 	lastCommand[0] = 0;
 	gethostname(hostname, DIFX_MESSAGE_PARAM_LENGTH);
-	recorrQueue = new RecorrQueue;
+	recorrQueue = 0;
 }
 
 TransientDaemonState::~TransientDaemonState()
 {
-	delete recorrQueue;
+	if(recorrQueue)
+	{
+		delete recorrQueue;
+
+		recorrQueue = 0;
+	}
 }
 
 void TransientDaemonState::print() const
@@ -259,6 +266,10 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			conf->detectionThreshold = atof(B);
 		}
+		else if(strcmp(A, "recorr_threshold") == 0)
+		{
+			conf->recorrThreshold = atof(B);
+		}
 		else if(strcmp(A, "output_path") == 0)
 		{
 			snprintf(conf->outputPath, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
@@ -335,6 +346,7 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
 	printf("  stubPipeline = %d\n", conf->stubPipeline);
 	printf("  recorrQueueFile = %s\n", conf->recorrQueueFile);
+	printf("  recorrThreshold = %f\n", conf->recorrThreshold);
 }
 
 void siginthand(int j)
@@ -577,7 +589,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				{
 					printf("Received recorrelation request: %s\n", G.body.param.paramValue);
 				}
-				state->recorrQueue->add(G.body.param.paramValue);
+				state->recorrQueue->add(G.body.param.paramValue, conf->recorrThreshold);
 			}
 			else if(strcmp(G.body.param.paramName, "test") == 0)
 			{
@@ -672,7 +684,8 @@ int transientdaemon(TransientDaemonState *state)
 		printTransientDaemonConf(conf);
 	}
 
-	state->recorrQueue->load(conf->recorrQueueFile);
+	state->recorrQueue = new RecorrQueue(conf->recorrQueueFile);
+	state->recorrQueue->load();
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "%s starting.", program);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
@@ -688,6 +701,8 @@ int transientdaemon(TransientDaemonState *state)
 	{
 		printf("inotify watch descriptor for %s is %d\n", vfastrConfigFile, wd);
 	}
+
+	fflush(stdout);
 
 	/* Program event loop */
 	for(;;)
@@ -722,7 +737,7 @@ int transientdaemon(TransientDaemonState *state)
 		{
 			if(state->verbose > 0)
 			{
-				printf("Caught sigint.  Will die now.\n");
+				fprintf(stderr, "%s caught sigint.  Will die now.\n", program);
 			}
 
 			FD_ZERO(&readset);

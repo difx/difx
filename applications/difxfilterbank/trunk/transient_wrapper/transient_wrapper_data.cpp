@@ -218,6 +218,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.event", baseName);
 	out = fopen(fileName, "w");
+	fprintf(out, "job %s.input\n", baseName);
 	fprintf(out, "mjdStart %14.8f\n", T->event[eventId].startMJD);
 	fprintf(out, "mjdEnd %14.8f\n", T->event[eventId].stopMJD);
 	fprintf(out, "priority %8.6f\n", T->event[eventId].priority);

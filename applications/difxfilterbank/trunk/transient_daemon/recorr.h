@@ -1,14 +1,18 @@
 #ifndef __RECORR_H__
 #define __RECORR_H__
 
-#include <queue>
+#include <vector>
+#include <algorithm>
 #include <string>
+#include <difxmessage.h>
 
 class RecorrJob
 {
 public:
 	double priority;
-	std::string inputFile;
+	char inputFile[DIFX_MESSAGE_FILENAME_LENGTH];
+
+	RecorrJob() { priority = 0; inputFile[0] = 0; }
 
 	const bool operator <(const RecorrJob& rj) const;
 };
@@ -16,12 +20,14 @@ public:
 class RecorrQueue
 {
 public:
-	std::priority_queue<RecorrJob> jobs;
+	std::vector<RecorrJob> jobs;
+	std::string queueFile;
 
-	RecorrQueue();
+	RecorrQueue(const std::string file);
 	~RecorrQueue();
-	int add(std::string file);	// add job to queue
-	int load(std::string file);	// load queue from file
+	int add(std::string file, double threshold);	// add job to queue
+	int load();	// load queue from file
+	int save();
 };
 
 
