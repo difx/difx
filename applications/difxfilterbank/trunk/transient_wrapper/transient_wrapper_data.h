@@ -26,6 +26,7 @@ typedef struct
 {
 	double startMJD, stopMJD;
 	double priority;
+	double dm;
 } TransientEvent;
 
 typedef struct

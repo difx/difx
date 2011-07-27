@@ -76,9 +76,9 @@ void printTransientWrapperData(const TransientWrapperData *T)
 		printf("  nEvent = %d\n", T->nEvent);
 		for(e = 0; e < T->nEvent; e++)
 		{
-			printf("    event[%d] = [%12.6f,%12.6f], %f\n", e, 
+			printf("    event[%d] = [%12.6f,%12.6f] P=%f DM=%f\n", e, 
 				T->event[e].startMJD, T->event[e].stopMJD,
-				T->event[e].priority);
+				T->event[e].priority, T->event[e].dm);
 		}
 	}
 }
@@ -137,6 +137,8 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 	else
 	{
 #if 0
+		/* not really sensible to do this as DMs may not match */
+
 		if(T->nEvent > 0)
 		{
 			printf("Cool.  Merging two events!\n");
@@ -161,6 +163,7 @@ void addEvent(TransientWrapperData *T, const DifxMessageTransient *transient)
 			T->event[T->nEvent].startMJD = transient->startMJD;
 			T->event[T->nEvent].stopMJD  = transient->stopMJD;
 			T->event[T->nEvent].priority = transient->priority;
+			T->event[T->nEvent].dm       = transient->dm;
 			T->nEvent++;
 		}
 	}
@@ -213,6 +216,14 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transient_%03d", outDir, eventId+1);
 
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.event", baseName);
+	out = fopen(fileName, "w");
+	fprintf(out, "mjdStart %14.8f\n", T->event[eventId].startMJD);
+	fprintf(out, "mjdEnd %14.8f\n", T->event[eventId].stopMJD);
+	fprintf(out, "priority %8.6f\n", T->event[eventId].priority);
+	fprintf(out, "DM %8.6f\n", T->event[eventId].dm);
+	fclose(out);
+
 	newD = loadDifxInput(T->filePrefix);
 
 	strcpy(origDir, T->filePrefix);
@@ -228,10 +239,11 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
 
-snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.orig", baseName);
-out = fopen(fileName, "w");
-fprintDifxInput(out, newD);
-fclose(out);
+	/* summarize the original job for record */
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.orig", baseName);
+	out = fopen(fileName, "w");
+	fprintDifxInput(out, newD);
+	fclose(out);
 
 	/* First change the name of the job and all of the paths */
 	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
@@ -342,6 +354,9 @@ fclose(out);
 		printf("Executing: %s\n", command);
 	}
 	system(command);
+
+	/* now that the jobs are ready to run, send a message to transient_daemon */
+	difxMessageSendDifxParameterTo("queuerecorr", baseName, T->conf->vfastrHost);
 }
 
 int copyBasebandData(const TransientWrapperData *T)

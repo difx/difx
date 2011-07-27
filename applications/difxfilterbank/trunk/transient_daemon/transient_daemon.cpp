@@ -8,6 +8,7 @@
 #include <difxio/parsedifx.h>
 #include <sys/inotify.h>
 #include <sys/select.h>
+#include "recorr.h"
 
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
@@ -38,6 +39,7 @@ const int defaultArchiveScores = 0;
 const enum archive_mode defaultArchiveFilterbank = NONE;
 const int defaultConcurrentPipeline = 0;
 const int defaultStubPipeline = 0;
+const char defaultRecorrQueueFile[] = "";
 
 
 int die = 0;
@@ -56,8 +58,10 @@ public:
 	int nLaunch;
 	char lastCommand[CommandLength];
 	char hostname[DIFX_MESSAGE_PARAM_LENGTH];
+	RecorrQueue *recorrQueue;
 
 	TransientDaemonState();
+	~TransientDaemonState();
 	void print() const;
 };
 
@@ -75,6 +79,7 @@ typedef struct
 	enum archive_mode archiveFilterbank;
 	int concurrentPipeline;
 	int stubPipeline;
+	char recorrQueueFile[DIFX_MESSAGE_FILENAME_LENGTH];
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -85,6 +90,12 @@ TransientDaemonState::TransientDaemonState()
 	nLaunch = 0;
 	lastCommand[0] = 0;
 	gethostname(hostname, DIFX_MESSAGE_PARAM_LENGTH);
+	recorrQueue = new RecorrQueue;
+}
+
+TransientDaemonState::~TransientDaemonState()
+{
+	delete recorrQueue;
 }
 
 void TransientDaemonState::print() const
@@ -185,6 +196,7 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->archiveFilterbank = defaultArchiveFilterbank;
 	conf->concurrentPipeline = defaultConcurrentPipeline;
 	conf->stubPipeline = defaultStubPipeline;
+	snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultRecorrQueueFile);
 
 	return conf;
 }
@@ -298,6 +310,10 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			conf->stubPipeline = atoi(B);
 		}
+		else if(strcmp(A, "recorr_queue") == 0)
+		{
+			snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+		}
 		/* else ignore the parameter */
 	}
 
@@ -318,6 +334,7 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  archiveScores = %d\n", conf->archiveScores);
 	printf("  archiveFilterbank = %d -> %s\n", conf->archiveFilterbank, archiveModeName[conf->archiveFilterbank]);
 	printf("  stubPipeline = %d\n", conf->stubPipeline);
+	printf("  recorrQueueFile = %s\n", conf->recorrQueueFile);
 }
 
 void siginthand(int j)
@@ -554,6 +571,14 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				runCommand(state->lastCommand, state->verbose);
 				state->nLaunch++;
 			}
+			else if(strcmp(G.body.param.paramName, "queuerecorr") == 0)
+			{
+				if(state->verbose > 0)
+				{
+					printf("Received recorrelation request: %s\n", G.body.param.paramValue);
+				}
+				state->recorrQueue->add(G.body.param.paramValue);
+			}
 			else if(strcmp(G.body.param.paramName, "test") == 0)
 			{
 				state->selfTest = atoi(G.body.param.paramValue);
@@ -646,6 +671,8 @@ int transientdaemon(TransientDaemonState *state)
 	{
 		printTransientDaemonConf(conf);
 	}
+
+	state->recorrQueue->load(conf->recorrQueueFile);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "%s starting.", program);
 	difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
