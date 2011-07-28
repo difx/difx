@@ -13,15 +13,12 @@
 const char program[] = "transient_daemon";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "2011 Jul 26";
+const char verdate[] = "2011 Jul 27";
 
 const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";	/* overridden by env var VFASTR_CONFIG_FILE */
 
 const char dispatcherProgram[] = "transient_dispatcher";
 /* Command line params are: configfile jobid dmfile */
-
-const char DMGeneratorProgram[] = "dmgen";
-/* Command line params are: freq(MHz) [ chanBW(MHz) [ intTime ] ] */
 
 enum archive_mode {NONE, ALL, RAW};
 const char archiveModeName[][8] = {"none", "all", "raw"};
@@ -41,6 +38,12 @@ const enum archive_mode defaultArchiveFilterbank = NONE;
 const int defaultConcurrentPipeline = 0;
 const int defaultStubPipeline = 0;
 const char defaultRecorrQueueFile[] = "";
+const char defaultDmgenProgram[] = "makedmlist";
+const double defaultMinDM = 0.0;
+const double defaultMaxDM = 1000.0;
+const int defaultNegDM = 0;
+const int defaultNDM = 200;
+const double defaultTDM = 2;	/* ms */
 
 
 int die = 0;
@@ -82,6 +85,13 @@ typedef struct
 	int concurrentPipeline;
 	int stubPipeline;
 	char recorrQueueFile[DIFX_MESSAGE_FILENAME_LENGTH];
+
+	char dmgenProgram[DIFX_MESSAGE_FILENAME_LENGTH];
+	double minDM;
+	double maxDM;
+	int negDM;
+	int nDM;
+	double tDM;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -205,6 +215,13 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->stubPipeline = defaultStubPipeline;
 	snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultRecorrQueueFile);
 
+	snprintf(conf->dmgenProgram, DIFX_MESSAGE_FILENAME_LENGTH, "%s", defaultDmgenProgram);
+	conf->minDM = defaultMinDM;
+	conf->maxDM = defaultMaxDM;
+	conf->negDM = defaultNegDM;
+	conf->nDM = defaultNDM;
+	conf->tDM = defaultTDM;
+
 	return conf;
 }
 
@@ -325,6 +342,30 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			snprintf(conf->recorrQueueFile, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
 		}
+		else if(strcmp(A, "dm_generator_program") == 0)
+		{
+			snprintf(conf->dmgenProgram, DIFX_MESSAGE_FILENAME_LENGTH, "%s", B);
+		}
+		else if(strcmp(A, "min_search_dm") == 0)
+		{
+			conf->minDM = atof(B);
+		}
+		else if(strcmp(A, "max_search_dm") == 0)
+		{
+			conf->maxDM = atof(B);
+		}
+		else if(strcmp(A, "negative_dm_sparsity") == 0)
+		{
+			conf->negDM = atoi(B);
+		}
+		else if(strcmp(A, "max_dm_values") == 0)
+		{
+			conf->nDM = atoi(B);
+		}
+		else if(strcmp(A, "dm_delta_t") == 0)
+		{
+			conf->tDM = atof(B);
+		}
 		/* else ignore the parameter */
 	}
 
@@ -347,6 +388,12 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  stubPipeline = %d\n", conf->stubPipeline);
 	printf("  recorrQueueFile = %s\n", conf->recorrQueueFile);
 	printf("  recorrThreshold = %f\n", conf->recorrThreshold);
+	printf("  dmgenProgram = %s\n", conf->dmgenProgram);
+	printf("  minDM = %f\n", conf->minDM);
+	printf("  maxDM = %f\n", conf->maxDM);
+	printf("  negative DM sparsity factor = %d\n", conf->negDM);
+	printf("  max number of DM trials (including negative) = %d\n", conf->nDM);
+	printf("  time interval to consider in DM setting = %f ms\n", conf->tDM);
 }
 
 void siginthand(int j)
@@ -390,11 +437,12 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
 /* This function needs to look through a .input file and extract some information.  Care
  * needs to be made to allow access to both DiFX 1.5 and 2.0 files.
  */
-int getDMGenCommand(const char *inputFile, char *command)
+static int getDMGenCommand(const char *inputFile, char *command, const TransientDaemonConf *conf)
 {
 	int r, v, nFreq, i;
 	DifxParameters *dp;
 	double freq, minFreq = 1.0e9;	/* MHz */
+	double maxFreq = 1.0e12;
 
 	dp = newDifxParametersfromfile(inputFile);
 	if(!dp)
@@ -426,9 +474,21 @@ int getDMGenCommand(const char *inputFile, char *command)
 		{
 			minFreq = freq;
 		}
+		if(freq > maxFreq)
+		{
+			maxFreq = freq;
+		}
 	}
 
-	v = snprintf(command, CommandLength, "`%s %f`", DMGeneratorProgram, minFreq);
+	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d`", 
+		conf->dmgenProgram, 
+		conf->minDM,
+		conf->maxDM,
+		conf->negDM,
+		minFreq*0.001, 	/* MHz to GHz */
+		maxFreq*0.001,	/* MHz to GHz */
+		conf->tDM,
+		conf->nDM);
 	if(v >= CommandLength)
 	{
 		fprintf(stderr, "Developer error: CommandLength=%d is too small.  Needs to be > %d.\n",
@@ -516,7 +576,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 			}
 
 			generateIdentifier(G.body.start.inputFilename, 0, identifier);
-			v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd);
+			v = getDMGenCommand(G.body.start.inputFilename, dmGenCmd, conf);
 			if(v != 0)
 			{
 				fprintf(stderr, "Error %d generating the DM command.\n", v);
@@ -797,6 +857,8 @@ int main(int argc, char **argv)
 {
 	int a;
 	TransientDaemonState *state;
+
+	printf("Starting %s version %s verdate %s\n\n", program, version, verdate);
 
 	/* Don't let children become zombies */
 	signal(SIGCHLD, SIG_IGN);
