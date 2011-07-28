@@ -37,7 +37,7 @@ from os import umask
 
 program = 'oms2v2d'
 version = '1.0'
-verdate = '20110603'
+verdate = '20110714'
 author = 'Walter Brisken'
 
 def usage(pgm):
@@ -213,6 +213,10 @@ omsFile = prefix + '.oms'
 v2dFile = prefix + '.v2d'
 
 
+if not isfile(omsFile):
+	print 'oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile
+	exit(0)
+
 if isfile(prefix + '.skd') and isfile(prefix + '.vex'):
 	print 'Warning: Found both %s.skd and %s.vex .' % (prefix, prefix)
 	print 'Assuming %s.vex is the correct one!\n' % prefix
@@ -229,10 +233,6 @@ else:
 	else:
 		print 'Run with --force to continue anyway.\n'
 		exit(0)
-
-if not isfile(omsFile):
-	print 'oms2v2d: Input oms file %s not found.  Quitting.\n' % omsFile
-	exit(0)
 
 if isfile(v2dFile):
 	if force:

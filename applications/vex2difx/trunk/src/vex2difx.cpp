@@ -2574,7 +2574,6 @@ int main(int argc, char **argv)
 	CorrParams *P;
 	const SourceSetup * sourceSetup;
 	vector<VexJob> J;
-	ifstream is;
 	string shelfFile;
 	int verbose = 0;
 	string v2dFile;
