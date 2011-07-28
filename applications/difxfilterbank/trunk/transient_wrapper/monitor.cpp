@@ -30,19 +30,19 @@ static void handleTransient(TransientWrapperData *T, const DifxMessageGeneric *G
 
 	if(strncmp(transient->jobId, T->identifier, DIFX_MESSAGE_IDENTIFIER_LENGTH) == 0)
 	{
-		if(T->verbose > 0)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"Adding transient [%12.6f,%12.6f] with prioritiy %f",
-				transient->startMJD, transient->stopMJD,
-				transient->priority);
-			printf("%s\n", message);
-		}
+		snprintf(message, DIFX_MESSAGE_LENGTH, 
+			"Adding transient [%12.6f,%12.6f] with prioritiy %f",
+			transient->startMJD, transient->stopMJD,
+			transient->priority);
+		printf("%s\n", message);
+		fflush(stdout);
+
 		addEvent(T, transient);
 	}
 	else
 	{
 		printf("transient for jobId <%s> ignored (looking for <%s>)\n", transient->jobId, T->identifier);
+		fflush(stdout);
 	}
 }
 

@@ -40,6 +40,9 @@ TransientWrapperData *newTransientWrapperData(const TransientWrapperConf *conf)
 		T->rank = -1;
 	}
 
+	printf("This is MPI rank %d\n", T->rank);
+	fflush(stdout);
+
 	return T;
 }
 
@@ -190,6 +193,9 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	DifxScan *S;
 	int scanId, configId;
 
+	printf("Generating DiFX files for eventId=%d\n", eventId);
+	fflush(stdout);
+
 	/* use center of range for scan id */
 	mjd = (T->event[eventId].startMJD + T->event[eventId].stopMJD)/2.0;
 
@@ -315,33 +321,6 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	}
 	fclose(out);
 
-#if 0
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.input.env", baseName);
-	out = fopen(fileName, "w");
-	fprintf(out, "DIFX_MESSAGE_PORT 50201\n");
-	fprintf(out, "DIFX_MESSAGE_GROUP 224.2.2.4\n");
-	fclose(out);
-	v = snprintf(command, MaxCommandLength, "chmod +x %s", fileName);
-	if(v < MaxCommandLength)
-	{
-		if(T->verbose)
-		{
-			printf("Executing: %s\n", command);
-		}
-		v = system(command);
-	}
-	else
-	{
-		fprintf(stderr, "Error: genDifxFiles(): Cannot construct command: MaxCommandLength=%d v=%d\n", MaxCommandLength, v);
-	}
-#endif
-
-#if 0
-snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.new", baseName);
-out = fopen(fileName, "w");
-fprintDifxInput(out, newD);
-fclose(out);
-#endif
 
 	/* AGAIN MODIFY THE CONTENTS TO MAKE A NEW JOB; this one for imaging */
 
@@ -372,21 +351,15 @@ fclose(out);
 	}
 	fclose(out);
 
-	deleteDifxInput(newD);
+	// FIXME: this causes a crash
+	//deleteDifxInput(newD);
 
 	/* copy calibration data as well */
 	snprintf(command, MaxCommandLength, "cp %s/{flag,tsys,weather,pcal} %s", origDir, outDir);
 	if(T->verbose)
 	{
 		printf("Executing: %s\n", command);
-	}
-	system(command);
-
-	/* finally, chgrp the output directory, indirectly */
-	snprintf(command, MaxCommandLength, "mk5control reown_vfastr%s %s", outDir, T->conf->vfastrHost);
-	if(T->verbose)
-	{
-		printf("Executing: %s\n", command);
+		fflush(stdout);
 	}
 	system(command);
 
@@ -395,6 +368,7 @@ fclose(out);
 	if(T->verbose)
 	{
 		printf("Sent queuerecorr to %s for %s\n", T->conf->vfastrHost, baseName);
+		fflush(stdout);
 	}
 }
 
@@ -466,6 +440,21 @@ int copyBasebandData(const TransientWrapperData *T)
 
 		t2 = time(0);
 	}
+	
+	if(T->rank == 1) /* only set perms once */
+	{
+		printf("Sleeping 10 seconds\n");
+		fflush(stdout);
+		sleep(10);
+
+		/* finally, chgrp the output directory, indirectly */
+		snprintf(command, MaxCommandLength, "mk5control reown_vfastr%s/%s%s/%s %s", 
+			T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier, 
+			T->conf->vfastrHost);
+		printf("Executing: %s\n", command);
+		system(command);
+	}
+
 
 	return e;
 }

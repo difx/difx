@@ -8,7 +8,7 @@
 const char program[] = "transient_wrapper";
 const char author[] = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "2011 Jul 26";
+const char verdate[] = "2011 Jul 27";
 
 const char defaultConfigFile[] = "/home/boom/difx/vfastr.conf";
 
