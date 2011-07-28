@@ -38,6 +38,33 @@ def usage():
 		(defaultgroup, defaultport)
 	exit(0)
 
+smartDescriptions = { \
+	1:   (1, "Read error count"), \
+	3:   (0, "Spin up time (ms)"), \
+	4:   (0, "Start/stop count"), \
+	5:   (1, "Reallocated sector count"), \
+	7:   (0, "Seek error count"), \
+	9:   (0, "Power on time (hr)"), \
+	10:  (1, "Spin retry count"), \
+	11:  (0, "Recalibration retry count"), \
+	12:  (0, "Power cycle count"), \
+	192: (0, "Retract cycle count"), \
+	193: (0, "Landing zone load count"), \
+	194: (0, "Temperature (C)"), \
+	196: (1, "Relocation event count"), \
+	197: (1, "Questionable sector count"), \
+	198: (1, "Uncorrectable sector count"), \
+	199: (0, "DMA CRC error count"), \
+	200: (0, "Multi-zone error count"), \
+	201: (1, "Off-track error count"), \
+	202: (0, "Data Address Mark error count") \
+}
+
+def getSmartDesc(id):
+	if smartDescriptions.has_key(id):
+		return smartDescriptions[id]
+	else:
+		return (0, "Unknown smart id")
 
 class Parser:
 
@@ -139,7 +166,7 @@ def run():
 				if p.ok:
 					print asctime(), info
 			except socket.timeout:
-				pass
+				return
 	except KeyboardInterrupt:
 		pass
 
@@ -174,7 +201,7 @@ def getSmart(unit):
 		    "</difxCommand>" \
 		  "</body>" \
 		"</difxMessage>\n" % \
-		(unit, program)
+		(unit, PROGRAM)
 
 	if verbose > 0:
 		print "Sending: ", message
@@ -207,8 +234,6 @@ for a in argv[1:]:
 		else:
 			usage()
 
-if len(fileBaseList) < 1:
-	usage()
-
-getSmart(unit):
+if unit != '':
+	getSmart(unit)
 	

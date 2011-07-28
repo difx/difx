@@ -77,32 +77,44 @@ int main(int argc, char **argv)
 	char timestr[TimeLength];
 	DifxMessageGeneric G;
 	enum DifxMessageType;
+	int onlyDots = 1;
+	int headers = 0;
+	int a;
 
-	if(argc > 1)
+	for(a = 1; a < argc; a++)
 	{
-		if(strcmp(argv[1], "-h") == 0 ||
-		   strcmp(argv[1], "--help") == 0)
+		if(strcmp(argv[a], "-h") == 0 ||
+		   strcmp(argv[a], "--help") == 0)
 		{
 			return usage(argv[0]);
 		}
-		else if(strcmp(argv[1], "-v") == 0 ||
-		   strcmp(argv[1], "--verbose") == 0)
+		else if(strcmp(argv[a], "-v") == 0 ||
+		   strcmp(argv[a], "--verbose") == 0)
 		{
 			verbose++;
 		}
-		else if(strcmp(argv[1], "-B") == 0 ||
-		   strcmp(argv[1], "--Binary") == 0)
+		else if(strcmp(argv[a], "-B") == 0 ||
+		   strcmp(argv[a], "--Binary") == 0)
 		{
 			binary+=2;
 		}
-		else if(strcmp(argv[1], "-b") == 0 ||
-		   strcmp(argv[1], "--binary") == 0)
+		else if(strcmp(argv[a], "-l") == 0)
+		{
+			onlyDots = 0;
+			printf("Printing lengths, not dots\n");
+		}
+		else if(strcmp(argv[a], "-H") == 0)
+		{
+			headers = 1;
+		}
+		else if(strcmp(argv[a], "-b") == 0 ||
+		   strcmp(argv[a], "--binary") == 0)
 		{
 			binary++;
 		}
 		else
 		{
-			type = atoi(argv[1]);
+			type = atoi(argv[a]);
 			if(type <= 0 || type >= NUM_DIFX_MESSAGE_TYPES)
 			{
 				fprintf(stderr, "Illegal message type requested.  Run with -h for help\n");
@@ -162,7 +174,21 @@ int main(int argc, char **argv)
 						break;
 					}
 				}
-				printf(".");
+				if(headers)
+				{
+					const int *data = (int *)message;
+					printf("[%d %d %d %d %d %d %d %d %d %d l = %d]\n",
+						data[0], data[1], data[2], data[3], data[4], 
+						data[5], data[6], data[7], data[8], data[9], l);
+				}
+				else if(onlyDots)
+				{
+					printf(".");
+				}
+				else
+				{
+					printf("{%d}", l);
+				}
 				fflush(stdout);
 			}
 		}

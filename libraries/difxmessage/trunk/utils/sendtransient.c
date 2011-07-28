@@ -37,7 +37,7 @@ int main(int argc, char **argv)
 	
 	if(argc < 5)
 	{
-		printf("\nUsage: %s startMJD stopMJD priority identifier\n\n", argv[0]);
+		printf("\nUsage: %s startMJD stopMJD priority identifier [outputDir]\n\n", argv[0]);
 
 		return 0;
 	}
@@ -48,12 +48,17 @@ int main(int argc, char **argv)
 	transient.startMJD = atof(argv[1]);
 	transient.stopMJD = atof(argv[2]);
 	transient.priority = atof(argv[3]);
-	snprintf(transient.jobId, DIFX_MESSAGE_IDENTIFIER_LENGTH,
-		"%s", argv[4]);
-	snprintf(transient.destDir, DIFX_MESSAGE_FILENAME_LENGTH,
-		"%s", "/tmp/");
-	snprintf(transient.comment, DIFX_MESSAGE_COMMENT_LENGTH,
-		"%s", "from sendtransient");
+	transient.dm = -1.5;
+	snprintf(transient.jobId, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", argv[4]);
+	if(argc > 4)
+	{
+		snprintf(transient.destDir, DIFX_MESSAGE_FILENAME_LENGTH, "%s", argv[5]);
+	}
+	else
+	{
+		snprintf(transient.destDir, DIFX_MESSAGE_FILENAME_LENGTH, "%s", "/tmp/");
+	}
+	snprintf(transient.comment, DIFX_MESSAGE_COMMENT_LENGTH, "%s", "from sendtransient");
 
 	difxMessageSendDifxTransient(&transient);
 
