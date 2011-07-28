@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -137,8 +137,7 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 	
 	sprintf(dev, "/dev/sd%s", diskdev);
 	
-	snprintf(command, MAX_COMMAND_SIZE,
-		"/bin/mount -t auto %s /mnt/usb 2>&1", dev);
+	snprintf(command, MAX_COMMAND_SIZE, "/bin/mount -t auto %s /mnt/usb 2>&1", dev);
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
@@ -161,6 +160,46 @@ static void mountdisk(Mk5Daemon *D, const char *diskdev)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Mount %s attempt : Success", dev);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 	}
+}
+
+static void reown_vfastr(Mk5Daemon *D, const char *path)
+{
+	char command[MAX_COMMAND_SIZE];
+	char message[DIFX_MESSAGE_LENGTH];
+
+	if(strcmp(D->hostName, "boom") != 0)
+	{
+		return;
+	}
+
+	while(path[0] <= ' ')
+	{
+		if(path[0] == 0)
+		{
+			Logger_logData(D->log, "Null path given to reown_vfastr\n");
+
+			return;
+		}
+		path++;
+	}
+
+	if(strncmp(path, "/home/boom/", 11) != 0)
+	{
+		snprintf(message, DIFX_MESSAGE_LENGTH, "reown_vfastr: path=%s does not start with /home/boom/\n", path);
+		Logger_logData(D->log, message);
+
+		return;
+	}
+
+	snprintf(command, MAX_COMMAND_SIZE, "/bin/chgrp --recursive vlba_transient %s", path);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
+	Logger_logData(D->log, message);
+	system(command);
+
+	snprintf(command, MAX_COMMAND_SIZE, "/bin/chmod --recursive g+rw %s", path);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
+	Logger_logData(D->log, message);
+	system(command);
 }
 
 static void umountdisk(Mk5Daemon *D)
@@ -398,6 +437,10 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	else if(strcmp(cmd, "umount") == 0)
 	{
 		umountdisk(D);
+	}
+	else if(strncmp(cmd, "reown_vfastr", 12) == 0)
+	{
+		reown_vfastr(D, cmd+12);
 	}
 	else if(strncasecmp(cmd, "Test", 4) == 0)
 	{

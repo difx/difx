@@ -1,3 +1,32 @@
+/***************************************************************************
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 3 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+/*===========================================================================
+ * SVN properties (DO NOT CHANGE)
+ *
+ * $Id: mk5daemon.h 3555 2011-07-24 00:36:06Z WalterBrisken $
+ * $HeadURL: https://svn.atnf.csiro.au/difx/applications/mk5daemon/trunk/src/mk5daemon.h $
+ * $LastChangedRevision: 3555 $
+ * $Author: WalterBrisken $
+ * $LastChangedDate: 2011-07-23 18:36:06 -0600 (Sat, 23 Jul 2011) $
+ *
+ *==========================================================================*/
+
 #include <string.h>
 #include <stdio.h>
 #include "mk5daemon.h"

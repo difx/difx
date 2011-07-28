@@ -135,6 +135,61 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
+
+int resetDriveStats(SSHANDLE xlrDevice)
+{
+	S_DRIVESTATS driveStats[XLR_MAXBINS];
+	const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
+
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
+	for(int b = 0; b < XLR_MAXBINS; b++)
+	{
+		driveStats[b].range = defaultStatsRange[b];
+		driveStats[b].count = 0;
+	}
+	WATCHDOGTEST( XLRSetDriveStats(xlrDevice, driveStats) );
+
+	return 0;
+}
+
+int reportDriveStats(SSHANDLE xlrDevice, const char *vsn)
+{
+	XLR_RETURN_CODE xlrRC;
+	S_DRIVESTATS driveStats[XLR_MAXBINS];
+	DifxMessageDriveStats driveStatsMessage;
+
+	snprintf(driveStatsMessage.moduleVSN, DIFX_MESSAGE_MARK5_VSN_LENGTH, "%s", vsn);
+	driveStatsMessage.type = DRIVE_STATS_TYPE_READ;
+
+	/* FIXME: for now don't include complete information on drives */
+	strcpy(driveStatsMessage.serialNumber, "X");
+	strcpy(driveStatsMessage.modelNumber, "Y");
+	driveStatsMessage.diskSize = 0;
+
+	for(int d = 0; d < 8; d++)
+	{
+		for(int i = 0; i < DIFX_MESSAGE_N_DRIVE_STATS_BINS; i++)
+		{
+			driveStatsMessage.bin[i] = -1;
+		}
+		driveStatsMessage.moduleSlot = d;
+		WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
+		if(xlrRC == XLR_SUCCESS)
+		{
+			for(int i = 0; i < XLR_MAXBINS; i++)
+			{
+				if(i < DIFX_MESSAGE_N_DRIVE_STATS_BINS)
+				{
+					driveStatsMessage.bin[i] = driveStats[i].count;
+				}
+			}
+		}
+		difxMessageSendDriveStats(&driveStatsMessage);
+	}
+
+	resetDriveStats(xlrDevice);
+}
+
 static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
 {
 	S_BANKSTATUS bank_stat;
@@ -769,6 +824,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 		scanList = scanrangestr;
 	}
 
+	resetDriveStats(xlrDevice);
+
 	if(mk5status.activeBank > ' ' && bail < 1) 
 	{
 		/* first look for mjd range */
@@ -955,6 +1012,8 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
 		}
+
+		reportDriveStats(xlrDevice, vsn);
 	}
 	else
 	{
@@ -1065,6 +1124,8 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 	nGood = 0;
 	nBad = 0;
 
+	resetDriveStats(xlrDevice);
+
 	if(mk5status.activeBank > ' ' && bail < 1) 
 	{
 		if(parseByteRange(&byteStart, &byteStop, scanList))
@@ -1110,6 +1171,8 @@ static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_WARNING);
 			fprintf(stderr, "%s\n", message);
 		}
+
+		reportDriveStats(xlrDevice, vsn);
 	}
 	else
 	{
