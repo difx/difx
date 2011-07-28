@@ -232,7 +232,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 
 	strcpy(origDir, T->filePrefix);
 	l = strlen(origDir);
-	for(i = l-1; i > 0; i++)
+	for(i = l-1; i > 0; i--)
 	{
 		if(origDir[i] == '/')
 		{

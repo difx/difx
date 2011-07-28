@@ -51,7 +51,7 @@ int die = 0;
 const int CommandLength = 256;
 
 const char testMessage[] = 
-"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><difxMessage><header><from>gui</from><to>boom</to><mpiProcessId>-1</mpiProcessId><identifier>boom_x</identifier><type>DifxStart</type></header><body><difxStart><input>/home/swc/difx/queue/BY129/by129-pos1_06.input</input><manager node=\"boom\"/><datastream nodes=\"boom1 boom2\"/><process threads=\"7\" nodes=\"boom3 boom4 boom4\"/><force>1</force><difxVersion>DIFX-trunk</difxVersion></difxStart></body></difxMessage>";
+"<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><difxMessage><header><from>gui</from><to>boom</to><mpiProcessId>-1</mpiProcessId><identifier>boom_x</identifier><type>DifxStart</type></header><body><difxStart><input>/home/swc/difx/projects/td019/td019_15.input</input><manager node=\"boom\"/><datastream nodes=\"boom1 boom2\"/><process threads=\"7\" nodes=\"boom3 boom4 boom4\"/><force>1</force><difxVersion>DIFX-trunk</difxVersion></difxStart></body></difxMessage>";
 
 class TransientDaemonState
 {
@@ -166,7 +166,7 @@ int setTransientDispatcherOptions(char *options, int maxLength, const TransientD
 		break;
 	}
 
-	v = snprintf(options, maxLength, "-o %s -c %d -t %f%s%s%s%s%s%s%s %s",
+	v = snprintf(options, maxLength, "-o %s -c %d -T %f%s%s%s%s%s%s%s %s",
 		conf->outputPath,
 		conf->difxStaChannels,
 		conf->detectionThreshold,
