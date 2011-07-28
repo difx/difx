@@ -81,6 +81,8 @@ public:
 //@{
   inline int getMPIId() { return mpiid; }
   inline string getJobName() { return jobname; }
+  inline string getObsCode() { return obscode; }
+  inline void setObsCode(string ocode) { obscode = ocode; }
   inline int getEstimatedBytes() { return estimatedbytes; }
   inline int getVisBufferLength() { return visbufferlength; }
   inline bool consistencyOK() {return consistencyok; }
@@ -818,7 +820,7 @@ private:
   int maxnumchannels, maxnumpulsarbins, maxthreadresultlength, maxcoreresultlength, maxnumbufferedffts, mtu;
   int stadumpchannels, ltadumpchannels;
   int numconfigs, numrules, baselinetablelength, telescopetablelength, datastreamtablelength, freqtablelength, estimatedbytes;
-  string calcfilename, modelfilename, coreconffilename, outputfilename, jobname;
+  string calcfilename, modelfilename, coreconffilename, outputfilename, jobname, obscode;
   int * numprocessthreads;
   int * scanconfigindices;
   configdata * configs;

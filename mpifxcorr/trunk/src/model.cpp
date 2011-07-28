@@ -355,6 +355,7 @@ bool Model::readInfoData(ifstream * input)
   config->getinputline(input, &line, "JOB STOP TIME");
   config->getinputline(input, &line, "DUTY CYCLE");
   config->getinputline(input, &line, "OBSCODE");
+  config->setObsCode(line);
   config->getinputline(input, &line, "DIFX VERSION");
   config->getinputline(input, &line, "SUBJOB ID");
   config->getinputline(input, &line, "SUBARRAY ID");
