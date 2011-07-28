@@ -394,6 +394,8 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  negative DM sparsity factor = %d\n", conf->negDM);
 	printf("  max number of DM trials (including negative) = %d\n", conf->nDM);
 	printf("  time interval to consider in DM setting = %f ms\n", conf->tDM);
+
+	fflush(stdout);
 }
 
 void siginthand(int j)
@@ -648,6 +650,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				if(state->verbose > 0)
 				{
 					printf("Received recorrelation request: %s\n", G.body.param.paramValue);
+					fflush(stdout);
 				}
 				state->recorrQueue->add(G.body.param.paramValue, conf->recorrThreshold);
 			}
@@ -662,17 +665,20 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				{
 					printf("Error: CommandLength=%d is too short (needs to be > %d)\n", 
 						CommandLength, v);
+					fflush(stdout);
 				}
 				else
 				{
 					if(state->verbose > 0)
 					{
 						printf("Executing: %s\n", command);
+						fflush(stdout);
 					}
 					v = system(command);
 					if(v == -1)
 					{
 						printf("Error executing %s\n", command);
+						fflush(stdout);
 					}
 				}
 			}
@@ -681,7 +687,7 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				v = snprintf(alertMessage, DIFX_MESSAGE_LENGTH, "%s state: verbose=%d selfTest=%d enable=%d nLaunch=%d", program, state->verbose, state->selfTest, state->startEnable, state->nLaunch);
 				if(v >= DIFX_MESSAGE_LENGTH)
 				{
-					printf("Error: alertMessage truncated due to length\n");
+					fprintf(stderr, "Error: alertMessage truncated due to length\n");
 				}
 				difxMessageSendDifxAlert(alertMessage, DIFX_ALERT_LEVEL_INFO);
 			}
@@ -692,9 +698,11 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 			else
 			{
 				printf("Unknown Parameter %s received\n", G.body.param.paramName);
+				fflush(stdout);
 			}
 
 			printf("DiFX Parameter Received: %s = %s\n", G.body.param.paramName, G.body.param.paramValue);
+			fflush(stdout);
 			state->print();
 		}
 		/* else ignore */
@@ -832,7 +840,7 @@ int transientdaemon(TransientDaemonState *state)
 			{
 				str[l] = 0;
 				ie = (const struct inotify_event *)str;
-				if(state->verbose > 0)
+				if(state->verbose > 1)
 				{
 					printf("inotify_event: %d %u\n", ie->wd, ie->mask);
 				}
@@ -857,8 +865,6 @@ int main(int argc, char **argv)
 {
 	int a;
 	TransientDaemonState *state;
-
-	printf("Starting %s version %s verdate %s\n\n", program, version, verdate);
 
 	/* Don't let children become zombies */
 	signal(SIGCHLD, SIG_IGN);
@@ -903,6 +909,8 @@ int main(int argc, char **argv)
 			}
 		}
 	}
+
+	printf("Starting %s version %s verdate %s\n\n", program, version, verdate);
 
 	state->print();
 
