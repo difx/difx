@@ -78,4 +78,6 @@ int loadTransientWrapperConf(TransientWrapperConf *conf, const char *filename);
 
 void printTransientWrapperConf(const TransientWrapperConf *conf);
 
+void logExecute(const char *str);
+
 #endif

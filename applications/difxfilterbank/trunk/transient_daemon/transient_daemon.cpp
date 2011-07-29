@@ -148,6 +148,27 @@ int usage(const char *cmd)
 	return 0;
 }
 
+void logExecute(const char *str)
+{
+	char timeStr[100];
+	time_t rawtime;
+	struct tm timeinfo;
+	int l;
+
+	time(&rawtime);
+	localtime_r(&rawtime, &timeinfo);
+
+	asctime_r(&timeinfo, timeStr);
+	l = strlen(timeStr);
+	if(l > 0)
+	{
+		timeStr[l-1] = 0;
+	}
+
+	printf("[%s] Executing: %s\n", timeStr, str);
+	fflush(stdout);
+}
+
 int setTransientDispatcherOptions(char *options, int maxLength, const TransientDaemonConf *conf)
 {
 	int v;
@@ -509,7 +530,7 @@ int runCommand(const char *command, int verbose)
 
 	if(verbose > 0)
 	{
-		printf("About to execute '%s'.\n", command);
+		logExecute(command);
 	}
 	pid = fork();
 	if(pid)
@@ -610,7 +631,9 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				state->nLaunch++;
 				if(state->verbose > 1)
 				{
-					printf("Executing: %s  pid=%d\n", command, pid);
+					logExecute(command);
+					printf("  pid = %d\n", pid);
+					fflush(stdout);
 				}
 			}
 			else
@@ -671,15 +694,9 @@ static int handleMessage(const char *message, TransientDaemonState *state, const
 				{
 					if(state->verbose > 0)
 					{
-						printf("Executing: %s\n", command);
-						fflush(stdout);
+						logExecute(command);
 					}
 					v = system(command);
-					if(v == -1)
-					{
-						printf("Error executing %s\n", command);
-						fflush(stdout);
-					}
 				}
 			}
 			else if(strcmp(G.body.param.paramName, "getstate") == 0)

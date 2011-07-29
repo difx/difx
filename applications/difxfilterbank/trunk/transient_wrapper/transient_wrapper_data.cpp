@@ -365,8 +365,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	snprintf(command, MaxCommandLength, "cp %s/{flag,tsys,weather,pcal} %s", origDir, outDir);
 	if(T->verbose)
 	{
-		printf("Executing: %s\n", command);
-		fflush(stdout);
+		logExecute(command);
 	}
 	system(command);
 
@@ -400,6 +399,10 @@ int copyBasebandData(const TransientWrapperData *T)
 	}
 
 	snprintf(command, MaxCommandLength, "mkdir -p %s", outDir);
+	if(T->verbose)
+	{
+		logExecute(command);
+	}
 	v = system(command);
 	if(v == -1)
 	{
@@ -427,7 +430,10 @@ int copyBasebandData(const TransientWrapperData *T)
 
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
-			
+			if(T->verbose)
+			{
+				logExecute(command);
+			}
 			v = system(command);
 		}
 
@@ -456,7 +462,7 @@ int copyBasebandData(const TransientWrapperData *T)
 			T->conf->vfastrHost);
 		if(T->verbose)
 		{
-			printf("Executing: %s\n", command);
+			logExecute(command);
 		}
 		system(command);
 	}

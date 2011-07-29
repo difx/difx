@@ -23,6 +23,26 @@ static int usage(const char *pgm)
 	return 0;
 }
 
+void logExecute(const char *str)
+{
+	char timeStr[100];
+	time_t rawtime;
+	struct tm timeinfo;
+	int l;
+
+	time(&rawtime);
+	localtime_r(&rawtime, &timeinfo);
+
+	asctime_r(&timeinfo, timeStr);
+	l = strlen(timeStr);
+	if(l > 0)
+	{
+		timeStr[l-1] = 0;
+	}
+	printf("[%s] Executing: %s\n", timeStr, str);
+	fflush(stdout);
+}
+
 static int execute(int argc, char **argv, TransientWrapperData *T)
 {
 	const unsigned int MaxCommandLength = 1023;
@@ -58,7 +78,7 @@ static int execute(int argc, char **argv, TransientWrapperData *T)
 
 	if(T->verbose)
 	{
-		printf("Executing %s\n", command);
+		logExecute(command);
 	}
 
 	t1 = time(0);
