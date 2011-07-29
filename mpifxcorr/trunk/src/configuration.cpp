@@ -2118,7 +2118,9 @@ bool Configuration::consistencyCheck()
     //fill in the maxnsslip for each datastream and calculate the maximum of these across all datastreams
     for(int j=0;j<numdatastreams;j++) {
       dsdata = &(datastreamtable[configs[i].datastreamindices[j]]);
-      samplens = 1000.0/freqtable[dsdata->recordedfreqtableindices[0]].bandwidth;
+      samplens = 500.0/freqtable[dsdata->recordedfreqtableindices[0]].bandwidth;
+      if(dsdata->sampling == COMPLEX)
+        samplens *= 2;
       double nsaccumulate = 0.0;
       do {
         nsaccumulate += dsdata->bytespersampledenom*samplens;
