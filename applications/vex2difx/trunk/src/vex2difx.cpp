@@ -75,21 +75,22 @@ int calcDecimation(int overSamp)
 
 int calculateWorstcaseGuardNS(double samplerate, int subintNS)
 {
-	double sampleTimeNS = 1000000000.0/samplerate;
+	double sampleTimeNS = 1.0e9/samplerate;
 	double nsaccumulate = sampleTimeNS;
+	const double MaxEarthGeomSlitRate = 1600.0;	// ns/sec
 	
-	while(fabs(nsaccumulate - static_cast<int>(nsaccumulate)) > 0.000000000001)
+	while(fabs(nsaccumulate - static_cast<int>(nsaccumulate)) > 1.0e-12)
 	{
 		nsaccumulate += sampleTimeNS;
 	}
 
-	return static_cast<int>(nsaccumulate + 2400.0*subintNS/1000000000.0 + 5);
+	return static_cast<int>(nsaccumulate + MaxEarthGeomSlitRate*subintNS*1.0e-9 + 1.0);
 }
 
 // A is assumed to be the first scan in time order
 static bool areScansCompatible(const VexScan *A, const VexScan *B, const CorrParams *P)
 {
-	if(((B->mjdStart < A->mjdStop) && (fabs(B->mjdStart-A->mjdStop)>0.00000001)) ||
+	if(((B->mjdStart < A->mjdStop) && (fabs(B->mjdStart-A->mjdStop) > 1.0e-8)) ||
 	   (B->mjdStart > A->mjdStop + P->maxGap))
 	{
 		return false;
