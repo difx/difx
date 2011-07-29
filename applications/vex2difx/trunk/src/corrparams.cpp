@@ -319,7 +319,7 @@ CorrSetup::CorrSetup(const string &name) : corrSetupName(name)
 	explicitXmacLength = false;
 	explicitnFFTChan = false;
 	explicitGuardNS = false;
-	numBufferedFFTs = 1;
+	numBufferedFFTs = 10;
 	subintNS = 0;
 	guardNS = 1000;
 	maxNSBetweenUVShifts = 2000000000;
@@ -1193,7 +1193,7 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	readSize = 25000000;		// Bytes
+	readSize = 50000000;		// Bytes
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 80;
 	v2dMode = V2D_MODE_NORMAL;

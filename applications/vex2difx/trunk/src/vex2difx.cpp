@@ -1478,7 +1478,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 			ok = true;
 
-			// stop when readSize falls below specifed maximum (default to 25MB)
+			// stop when readSize falls below specifed maximum (default to 50MB)
 			if(readSize < P->readSize)
 			{
 				break;
