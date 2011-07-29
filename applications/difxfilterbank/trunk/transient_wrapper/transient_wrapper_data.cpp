@@ -188,13 +188,17 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	char command[MaxCommandLength];
 	char outDir[DIFXIO_FILENAME_LENGTH];
 	char origDir[DIFXIO_FILENAME_LENGTH];
-	char baseName[DIFXIO_FILENAME_LENGTH];
+	char baseNameFB[DIFXIO_FILENAME_LENGTH];
+	char baseNameIm[DIFXIO_FILENAME_LENGTH];
 	char fileName[DIFXIO_FILENAME_LENGTH];
 	DifxScan *S;
 	int scanId, configId;
 
-	printf("Generating DiFX files for eventId=%d\n", eventId);
-	fflush(stdout);
+	if(T->verbose > 0)
+	{
+		printf("Generating DiFX files for eventId=%d\n", eventId);
+		fflush(stdout);
+	}
 
 	/* use center of range for scan id */
 	mjd = (T->event[eventId].startMJD + T->event[eventId].stopMJD)/2.0;
@@ -223,11 +227,13 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	v = snprintf(outDir, DIFXIO_FILENAME_LENGTH, "%s/%s%s/%s",
 		T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier);
 
-	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transientfb_%03d", outDir, eventId+1);
+	snprintf(baseNameFB, DIFXIO_FILENAME_LENGTH, "%s/transientfb_%03d", outDir, eventId+1);
+	snprintf(baseNameIm, DIFXIO_FILENAME_LENGTH, "%s/transientim_%03d", outDir, eventId+1);
 
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.event", baseName);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.event", baseNameFB);
 	out = fopen(fileName, "w");
-	fprintf(out, "job %s.input\n", baseName);
+	fprintf(out, "job %s.input\n", baseNameFB);
+	fprintf(out, "imagejob %s.input\n", baseNameIm);
 	fprintf(out, "mjdStart %14.8f\n", T->event[eventId].startMJD);
 	fprintf(out, "mjdEnd %14.8f\n", T->event[eventId].stopMJD);
 	fprintf(out, "priority %8.6f\n", T->event[eventId].priority);
@@ -247,24 +253,22 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		}
 	}
 
-	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
-
 	/* summarize the original job for record */
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.orig", baseName);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.difxio.orig", baseNameFB);
 	out = fopen(fileName, "w");
 	fprintDifxInput(out, newD);
 	fclose(out);
 
-	/* First change the name of the job and all of the paths */
-	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
-	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseName);
-	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseName);
-	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseName);
-	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseName);
-	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseName);
+	/* MODIFY THE CONTENTS TO MAKE A NEW JOB */
 
-/*  */
-	
+	/* First change the name of the job and all of the paths */
+	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseNameFB);
+	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseNameFB);
+	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseNameFB);
+	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseNameFB);
+	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseNameFB);
+	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseNameFB);
+
 	/* Then select the appropriate scan and reduce its timerange */
 	S = newDifxScanArray(1);
 	copyDifxScan(S, newD->scan+scanId, 0, 0, 0, 0);
@@ -276,6 +280,10 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->job->duration = (int)(86400.0*(mjd2-mjd1) + 0.00001);
 	newD->scan->startSeconds = 0;
 	newD->scan->durSeconds = (int)ceil(newD->job->duration);
+
+	/* FIXME: remove any existing pulsar gate here */
+
+	/* FIXME: should we use pulsar gate to home in on interresting portion? */
 
 	/* Then change all data sources to FILE and point to those files */
 	for(int dsId = 0; dsId < newD->nDatastream; dsId++)
@@ -313,7 +321,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	writeDifxIM(newD);
 	DifxInputWriteThreads(newD);
 
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseName);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseNameFB);
 	out = fopen(fileName, "w");
 	for(i = 0; i < newD->nDatastream+3; i++)
 	{
@@ -325,13 +333,12 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	/* AGAIN MODIFY THE CONTENTS TO MAKE A NEW JOB; this one for imaging */
 
 	/* First change the name of the job and all of the paths */
-	snprintf(baseName, DIFXIO_FILENAME_LENGTH, "%s/transientim_%03d", outDir, eventId+1);
-	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseName);
-	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseName);
-	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseName);
-	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseName);
-	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseName);
-	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseName);
+	snprintf(newD->job->inputFile,   DIFXIO_FILENAME_LENGTH, "%s.input", baseNameIm);
+	snprintf(newD->job->calcFile,    DIFXIO_FILENAME_LENGTH, "%s.calc", baseNameIm);
+	snprintf(newD->job->imFile,      DIFXIO_FILENAME_LENGTH, "%s.im", baseNameIm);
+	snprintf(newD->job->flagFile,    DIFXIO_FILENAME_LENGTH, "%s.flag", baseNameIm);
+	snprintf(newD->job->threadsFile, DIFXIO_FILENAME_LENGTH, "%s.threads", baseNameIm);
+	snprintf(newD->job->outputFile,  DIFXIO_FILENAME_LENGTH, "%s.difx", baseNameIm);
 	newD->config[configId].tInt = T->conf->recorr2_tInt;
 	newD->config[configId].subintNS = (int)(T->conf->recorr2_tInt*1.0e9 + 0.5);
 	for(int freqId = 0; freqId <= newD->nFreq; freqId++)
@@ -343,7 +350,7 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	writeDifxCalc(newD);
 	writeDifxIM(newD);
 	DifxInputWriteThreads(newD);
-	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseName);
+	snprintf(fileName, DIFXIO_FILENAME_LENGTH, "%s.machines", baseNameIm);
 	out = fopen(fileName, "w");
 	for(i = 0; i < newD->nDatastream+3; i++)
 	{
@@ -364,10 +371,10 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	system(command);
 
 	/* now that the jobs are ready to run, send a message to transient_daemon */
-	difxMessageSendDifxParameterTo("queuerecorr", baseName, T->conf->vfastrHost);
+	difxMessageSendDifxParameterTo("queuerecorr", baseNameFB, T->conf->vfastrHost);
 	if(T->verbose)
 	{
-		printf("Sent queuerecorr to %s for %s\n", T->conf->vfastrHost, baseName);
+		printf("Sent queuerecorr to %s for %s\n", T->conf->vfastrHost, baseNameFB);
 		fflush(stdout);
 	}
 }
@@ -443,15 +450,14 @@ int copyBasebandData(const TransientWrapperData *T)
 	
 	if(T->rank == 1) /* only set perms once */
 	{
-		printf("Sleeping 10 seconds\n");
-		fflush(stdout);
-		sleep(10);
-
 		/* finally, chgrp the output directory, indirectly */
 		snprintf(command, MaxCommandLength, "mk5control reown_vfastr%s/%s%s/%s %s", 
 			T->conf->path, T->D->job->obsCode, T->D->job->obsSession, T->identifier, 
 			T->conf->vfastrHost);
-		printf("Executing: %s\n", command);
+		if(T->verbose)
+		{
+			printf("Executing: %s\n", command);
+		}
 		system(command);
 	}
 

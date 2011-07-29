@@ -23,6 +23,8 @@ class RecorrQueue
 public:
 	std::vector<RecorrJob> jobs;
 	std::string queueFile;
+	int die;	// -1 for idle, 0 for running, 1 for request to die
+	pthread_t thread;
 
 	pthread_mutex_t lock;
 	RecorrQueue(const std::string file);
@@ -30,6 +32,8 @@ public:
 	int add(std::string file, double threshold);	// add job to queue
 	int load();	// load queue from file
 	int save();
+	int start();	// start the background procesing
+	int stop();	// stop the backgroun processing
 };
 
 

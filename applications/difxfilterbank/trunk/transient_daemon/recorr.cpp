@@ -13,6 +13,7 @@ RecorrQueue::RecorrQueue(const std::string file)
 {
 	queueFile = file;
 	pthread_mutex_init(&lock, NULL);
+	die = -1;
 }
 
 RecorrQueue::~RecorrQueue()
@@ -33,6 +34,7 @@ int RecorrQueue::add(std::string file, double threshold)
 	if(!ifs.good())
 	{
 		printf("Cannot open event file %s\n", file.c_str());
+		fflush(stdout);
 
 		return -1;
 	}
@@ -58,8 +60,15 @@ int RecorrQueue::add(std::string file, double threshold)
 	{
 		pthread_mutex_lock(&lock);
 		jobs.push_back(job);
-		printf("Added %f %s\n", job.priority, job.inputFile);
 		pthread_mutex_unlock(&lock);
+
+		printf("Added %f %s\n", job.priority, job.inputFile);
+		fflush(stdout);
+	}
+	else
+	{
+		printf("Did not add job in %s.  Threshold was %f\n", file.c_str(), threshold);
+		fflush(stdout);
 	}
 
 	save();
@@ -92,6 +101,7 @@ int RecorrQueue::load()
 		{
 			jobs.push_back(job);
 			printf("Loaded %f %s\n", job.priority, job.inputFile);
+			fflush(stdout);
 		}
 	}
 	pthread_mutex_unlock(&lock);
@@ -115,6 +125,48 @@ int RecorrQueue::save()
 	pthread_mutex_unlock(&lock);
 
 	printf("Saved recorr queue : %s\n", queueFile.c_str());
+	fflush(stdout);
 
 	return jobs.size();
+}
+
+static void *runRecorrQueue(void *data)
+{
+	RecorrQueue *queue;
+
+	queue = (RecorrQueue *)data;
+
+	while(!queue->die)
+	{
+	}
+
+	return 0;
+}
+
+int RecorrQueue::start()
+{
+	if(die >= 0)
+	{
+		// already running?
+
+		return -1;
+	}
+
+	die = 0;
+
+	pthread_create(&thread, NULL, runRecorrQueue, this);
+
+	return 0;
+}
+
+int RecorrQueue::stop()
+{
+	if(die == 0)
+	{
+		die = 1;
+	}
+
+	pthread_join(thread, 0);
+
+	return 0;
 }
