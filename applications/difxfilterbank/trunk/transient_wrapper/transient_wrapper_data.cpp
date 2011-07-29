@@ -281,9 +281,16 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 	newD->scan->startSeconds = 0;
 	newD->scan->durSeconds = (int)ceil(newD->job->duration);
 
-	/* FIXME: remove any existing pulsar gate here */
-
-	/* FIXME: should we use pulsar gate to home in on interresting portion? */
+	if(newD->nPulsar > 0)
+	{
+		deleteDifxPulsarArray(newD->pulsar, newD->nPulsar);
+		newD->nPulsar = 0;
+		newD->pulsar = 0;
+	}
+	for(int c = 0; c < newD->nConfig; c++)
+	{
+		newD->config[c].pulsarId = -1;
+	}
 
 	/* Then change all data sources to FILE and point to those files */
 	for(int dsId = 0; dsId < newD->nDatastream; dsId++)
@@ -346,6 +353,21 @@ static void genDifxFiles(const TransientWrapperData *T, int eventId)
 		newD->freq[freqId].nChan = T->conf->recorr2_nChan;
 		newD->freq[freqId].specAvg = T->conf->recorr2_specAvg;
 	}
+
+	/* use pulsar gate to selectively correlate */
+	newD->pulsar = newDifxPulsarArray(1);
+	newD->pulsar[0].nPolyco = 0;
+	newD->pulsar[0].polyco = 0;
+	newD->pulsar[0].nBin = 2;
+	newD->pulsar[0].binEnd = (double *)calloc(newD->pulsar[0].nBin, sizeof(double));
+	newD->pulsar[0].binWeight = (double *)calloc(newD->pulsar[0].nBin, sizeof(double));
+	newD->pulsar[0].scrunch = 1;
+	snprintf(newD->pulsar[0].fileName, DIFXIO_FILENAME_LENGTH, "%s.binconfig", baseNameIm);
+	for(int c = 0; c < newD->nConfig; c++)
+	{
+		newD->config[c].pulsarId = 0;
+	}
+		
 	writeDifxInput(newD);
 	writeDifxCalc(newD);
 	writeDifxIM(newD);
