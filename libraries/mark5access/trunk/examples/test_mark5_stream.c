@@ -321,7 +321,7 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 	{
 		printf("Problem opening %s\n", filename);
 		
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	data = (float **)malloc(ms->nchan*sizeof(float *));
@@ -364,18 +364,19 @@ int test5(const char *filename, const char *formatname, int offset,  int n)
 
 	delete_mark5_stream(ms);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
 {
 	long long offset = 0;
+	int retval;
 
 	if(argc < 3)
 	{
-		printf("Usage : %s <infile> <formatname> [<offset>]\n", 
-			argv[0]);
-		return 0;
+		printf("Usage : %s <infile> <formatname> [<offset>]\n", argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	if(argc > 3)
@@ -390,8 +391,8 @@ int main(int argc, char **argv)
 	test3(argv[1], nbit, ntrack, fanout, offset, 100);
 	test4(argv[1], nbit, ntrack, fanout, offset, 100);
 #endif
-	test5(argv[1], argv[2], offset, 1000);
+	retval = test5(argv[1], argv[2], offset, 1000);
 
-	return 0;
+	return retval;
 }
 

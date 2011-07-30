@@ -15,13 +15,15 @@ int main(int argc, char **argv)
 		if(!in)
 		{
 			printf("Cannot open %s\n", argv[1]);
+
+			return EXIT_FAILURE;
 		}
 	}
 	else
 	{
 		printf("Usage: %s <filename> [<offset>]\n", argv[0]);
 
-		exit(0);
+		return EXIT_FAILURE;
 	}
 	if(argc > 2)
 	{
@@ -34,7 +36,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error seeking %ld bytes into %s\n", offset, argv[1]);
 			fclose(in);
 
-			exit(0);
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -51,5 +53,5 @@ int main(int argc, char **argv)
 	}
 	fclose(in);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

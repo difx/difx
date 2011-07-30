@@ -39,7 +39,7 @@
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "2011 Mar 15";
+const char verdate[] = "20110730";
 
 const int MaxLineLen = 256;
 
@@ -469,7 +469,7 @@ void printBaseline(const Baseline *B)
 	printf("  deltaT = %e s\n", B->deltaT);
 }
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n");
 
@@ -521,30 +521,39 @@ int usage(const char *pgm)
 "   7  Window function\n\n");
 	printf("Control-C will stop this program after the next FFT is completed and\n"
 "will write the partial results to the output files.\n\n");
-	return 0;
 }
 
-void report_datastream(DataStream *ds, int xf)
+static void report_datastream(DataStream *ds, int xf)
 {
 	int ll;
+
 	printf("Stream %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->nChan; ll++) printf( "%+4.1f%c",
-		ds->data[ds->subBand][ll], ll%16==15 ? '\n' : ' ');
-	if (!xf) return;
+	for(ll=0; ll < ds->nChan; ll++)
+	{
+		printf("%+4.1f%c", ds->data[ds->subBand][ll], ll%16==15 ? '\n' : ' ');
+	}
+	if(!xf)
+	{
+		return;
+	}
 	printf("RealXF %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->fftSize/2 + 1; ll++) printf( "%+4.1f%c",
-		creal(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+	for(ll=0; ll < ds->fftSize/2 + 1; ll++)
+	{
+		printf( "%+4.1f%c", creal(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+	}
 	printf("ImagXF %s\n", ds->ms->streamname);
-	for(ll=0; ll < ds->fftSize/2 + 1; ll++) printf( "%+4.1f%c",
-		cimag(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+	for(ll=0; ll < ds->fftSize/2 + 1; ll++)
+	{
+		printf( "%+4.1f%c", cimag(ds->zdata[ll]), ll%8==7 ? '\n' : ' ');
+	}
 }
-void report_baseline_data(Baseline *B, int xf)
+static void report_baseline_data(Baseline *B, int xf)
 {
 	report_datastream(B->ds1, xf);
 	report_datastream(B->ds2, xf);
 }
 
-int zerocorr(const char *confFile, int verbose)
+static int zerocorr(const char *confFile, int verbose)
 {
 	Baseline *B;
 	int n, j, v, index;
@@ -556,7 +565,7 @@ int zerocorr(const char *confFile, int verbose)
 	B = newBaseline(confFile);
 	if(!B)
 	{
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	if(verbose > 0)
@@ -594,6 +603,7 @@ int zerocorr(const char *confFile, int verbose)
 		if(die)
 		{
 			fprintf(stderr, "\nStopping early at %d / %d\n", n+1, B->nFFT);
+			
 			break;
 		}
 	}
@@ -631,7 +641,7 @@ int zerocorr(const char *confFile, int verbose)
 
 	deleteBaseline(B);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
@@ -639,10 +649,13 @@ int main(int argc, char **argv)
 	int a;
 	int verbose = 0;
 	const char *confFile = 0;
+	int retval;
 
 	if(argc <= 1)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	for(a = 1; a < argc; a++)
@@ -650,7 +663,9 @@ int main(int argc, char **argv)
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		   strcmp(argv[a], "--verbose") == 0)
@@ -666,19 +681,21 @@ int main(int argc, char **argv)
 			fprintf(stderr, "\nSorry, I don't know what to do with `%s'\n", argv[a]);
 			fprintf(stderr, "Run with -h for usage instructions\n\n");
 
-			return 0;
+			return EXIT_FAILURE;
 		}
 	}
 
 	if(confFile == 0)
 	{
 		fprintf(stderr, "\nError: no conf file provided on the command line.  Quitting.\n\n");
+
+		retval = EXIT_FAILURE;
 	}
 	else
 	{
-		zerocorr(confFile, verbose);
+		retval = zerocorr(confFile, verbose);
 	}
 
-	return 0;
+	return retval;
 }
 

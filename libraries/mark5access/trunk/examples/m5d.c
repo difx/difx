@@ -35,9 +35,9 @@
 const char program[] = "m5d";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.1";
-const char verdate[] = "2010 Dec 12";
+const char verdate[] = "20110730";
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n");
 
@@ -54,11 +54,9 @@ int usage(const char *pgm)
 	printf("    VDIF_1000-64-1-2 (here 1000 is payload size in bytes)\n\n");
 	printf("  <n> is the number of samples per channel to decode\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
-
-	return 0;
 }
 
-int decode(const char *filename, const char *formatname, const char *f,
+static int decode(const char *filename, const char *formatname, const char *f,
 	long long offset, long long n)
 {
 	struct mark5_stream *ms;
@@ -76,7 +74,7 @@ int decode(const char *filename, const char *formatname, const char *f,
 	{
 		fprintf(stderr, "Error: problem opening or decoding %s\n", filename);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	data = (float **)malloc(ms->nchan*sizeof(float *));
@@ -105,6 +103,7 @@ int decode(const char *filename, const char *formatname, const char *f,
 		if(status < 0)
 		{
 			printf("<EOF> status=%d\n", status);
+			
 			break;
 		}
 		else
@@ -133,7 +132,7 @@ int decode(const char *filename, const char *formatname, const char *f,
 
 	delete_mark5_stream(ms);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
@@ -141,6 +140,7 @@ int main(int argc, char **argv)
 	long long offset = 0;
 	long long n;
 	int r;
+	int retval;
 
 	if(argc == 2)
 	{
@@ -152,7 +152,9 @@ int main(int argc, char **argv)
 		if(strcmp(argv[1], "-h") == 0 ||
 		   strcmp(argv[1], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 
 		in = fopen(argv[1], "r");
@@ -160,7 +162,7 @@ int main(int argc, char **argv)
 		{
 			fprintf(stderr, "Error: cannot open file '%s'\n", argv[1]);
 
-			return 0;
+			return EXIT_FAILURE;
 		}
 
 		buffer = malloc(bufferlen);
@@ -169,6 +171,11 @@ int main(int argc, char **argv)
 		if(r < 1)
 		{
 			fprintf(stderr, "Error: cannot read %d bytes from file\n", bufferlen);
+
+			fclose(in);
+			free(buffer);
+
+			return EXIT_FAILURE;
 		}
 		else
 		{
@@ -188,12 +195,14 @@ int main(int argc, char **argv)
 		fclose(in);
 		free(buffer);
 
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	else if(argc < 4)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	n = atoll(argv[3]);
@@ -203,8 +212,8 @@ int main(int argc, char **argv)
 		offset=atoll(argv[4]);
 	}
 
-	decode(argv[1], argv[2], "%2.0f ", offset, n);
+	retval = decode(argv[1], argv[2], "%2.0f ", offset, n);
 
-	return 0;
+	return retval;
 }
 

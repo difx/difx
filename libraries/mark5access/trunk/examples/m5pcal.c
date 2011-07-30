@@ -40,7 +40,7 @@
 const char program[] = "m5pcal";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.3";
-const char verdate[] = "20110422";
+const char verdate[] = "20110730";
 
 const int ChunkSize = 6400;
 const int MaxTones = 64;
@@ -60,7 +60,7 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n");
 
@@ -89,8 +89,6 @@ int usage(const char *pgm)
 	printf("  -i <number>  Assume a pulse cal comb interval of <number> MHz [1]\n\n");
 	printf("  --edge <number>\n");
 	printf("  -e <number>  Don't use channels closer than <number> MHz to the edge in delay calc.\n\n");
-
-	return 0;
 }
 
 static double calcDelay(int nTone, int *toneFreq_MHz, double *toneAmp, double *tonePhase, double bandCenter, double bandValid)
@@ -231,7 +229,7 @@ static int getTones(int freq_kHz, double complex *spectrum, int nChan, double bw
 	return nTone;
 }
 
-int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose, int nDelay)
+static int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int *freq_kHz, int interval_MHz, const char *outFile, long long offset, double edge_MHz, int verbose, int nDelay)
 {
 	struct mark5_stream *ms;
 	double bw_MHz;
@@ -256,7 +254,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	{
 		fprintf(stderr, "Error: problem opening %s\n", inFile);
 		
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	bw_MHz = ms->samprate/2.0e6;
@@ -281,7 +279,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 		fprintf(stderr, "Error: cannot open %s for write\n", outFile);
 		delete_mark5_stream(ms);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	data = (double **)malloc(ms->nchan*sizeof(double *));
@@ -461,7 +459,7 @@ int pcal(const char *inFile, const char *format, int nInt, int nFreq, const int 
 	free(bins);
 	bins = 0;
 
-	return nInt;
+	return 0;
 }
 
 int isNumber(const char *str)
@@ -515,6 +513,7 @@ int main(int argc, char **argv)
 	int nDelay = 1;
 	double edge_MHz = -1;
 	double v;
+	int retval;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
@@ -556,7 +555,9 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[i], "--help") == 0 ||
 				strcmp(argv[i], "-h") == 0)
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_SUCCESS;
 			}
 			else if(i+1 < argc)
 			{
@@ -593,7 +594,7 @@ int main(int argc, char **argv)
 					fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
 						argv[i]);
 
-					return 0;
+					return EXIT_FAILURE;
 				}
 			}
 			else
@@ -601,7 +602,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "I'm not sure what to do with command line argument '%s'\n",
 					argv[i]);
 
-				return 0;
+				return EXIT_FAILURE;
 			}
 
 		}
@@ -623,18 +624,20 @@ int main(int argc, char **argv)
 				argv[i]);
 
 
-			return 0;
+			return EXIT_FAILURE;
 		}
 
 	}
 
 	if(!outFile || nFreq == 0)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
-	pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose, nDelay);
+	retval = pcal(inFile, format, nInt, nFreq, freq_kHz, interval_MHz, outFile, offset, edge_MHz, verbose, nDelay);
 
-	return 0;
+	return retval;
 }
 

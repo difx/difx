@@ -16,6 +16,7 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -39,7 +40,7 @@ int main(int argc, char* argv[])
                "  Tries to open the file using MKIV/VLBA/Mark5B formats with\n"
                "  all combinations of fan-out, data rate, channel count and\n"
                "  Successful combinations are reported.\n\n");
-        return -1;
+        return EXIT_FAILURE;
     }
 
     filename = argv[1];
@@ -99,9 +100,9 @@ int main(int argc, char* argv[])
    fprintf(stdout, "Tested %d combinations.\n", combinations_tested);
    if (strlen(longlist) > 0) {
        fprintf(stdout, "Potentially correct format strings:\n%s\n\n", longlist);
-       return 0;
+       return EXIT_SUCCESS;
    } else {
        fprintf(stdout, "None of the tested format strings worked on file %s!\n\n", filename);
+       return EXIT_FAILURE;
    }
-   return -1;
 }

@@ -39,7 +39,7 @@
 const char program[] = "m5spec";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.1";
-const char verdate[] = "2010 Aug 08";
+const char verdate[] = "20100730";
 
 int die = 0;
 
@@ -55,7 +55,7 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n");
 
@@ -74,8 +74,6 @@ int usage(const char *pgm)
 	printf("  <nint> is the number of FFT frames to spectrometize\n\n");
 	printf("  <outfile> is the name of the output file\n\n");
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
-
-	return 0;
 }
 
 int spec(const char *filename, const char *formatname, int nchan, int nint,
@@ -105,7 +103,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 	{
 		printf("Error: problem opening %s\n", filename);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	mark5_stream_print(ms);
@@ -116,7 +114,7 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
 		delete_mark5_stream(ms);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	nif = ms->nchan;
@@ -239,13 +237,14 @@ int spec(const char *filename, const char *formatname, int nchan, int nint,
 
 	delete_mark5_stream(ms);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
 {
 	long long offset = 0;
 	int nchan, nint;
+	int retval;
 
 	oldsiginthand = signal(SIGINT, siginthand);
 
@@ -260,14 +259,17 @@ int main(int argc, char **argv)
 		if(strcmp(argv[1], "-h") == 0 ||
 		   strcmp(argv[1], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 
 		in = fopen(argv[1], "r");
 		if(!in)
 		{
 			fprintf(stderr, "Error: cannot open file '%s'\n", argv[1]);
-			return 0;
+			
+			return EXIT_FAILURE;
 		}
 
 		buffer = malloc(bufferlen);
@@ -276,8 +278,12 @@ int main(int argc, char **argv)
 		if(r < 1)
 		{
 			fprintf(stderr, "Error, buffer read failed.\n");
+
+			fclose(in);
+			free(buffer);
+
+			return EXIT_FAILURE;
 		}
-		
 		else
 		{
 			mf = new_mark5_format_from_stream(
@@ -296,12 +302,14 @@ int main(int argc, char **argv)
 		fclose(in);
 		free(buffer);
 
-		return 0;
+		return EXIT_SUCCESS;
 	}
 
 	else if(argc < 6)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	nchan = atol(argv[3]);
@@ -316,8 +324,8 @@ int main(int argc, char **argv)
 		offset=atoll(argv[6]);
 	}
 
-	spec(argv[1], argv[2], nchan, nint, argv[5], offset);
+	retval = spec(argv[1], argv[2], nchan, nint, argv[5], offset);
 
-	return 0;
+	return retval;
 }
 

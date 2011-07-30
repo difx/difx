@@ -37,7 +37,7 @@
 const char program[] = "m5fold";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.3";
-const char verdate[] = "2011 Jun 09";
+const char verdate[] = "20110730";
 
 const int ChunkSize = 10000;
 
@@ -55,7 +55,7 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n");
 
@@ -83,10 +83,9 @@ int usage(const char *pgm)
 	printf("  If nbin is positive, the scaling is such that <v^2> = 1 yields a\n");
 	printf("  power reading of 1.0.  Optimal S/N occurs for power ~= 1.03\n\n");
 	printf("Note: This program is useless on 1-bit quantized data\n\n");
-	return 0;
 }
 
-int fold(const char *filename, const char *formatname, int nbin, int nint,
+static int fold(const char *filename, const char *formatname, int nbin, int nint,
 	double freq, const char *outfile, long long offset)
 {
 	struct mark5_stream *ms;
@@ -116,7 +115,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 	{
 		printf("Error: problem opening %s\n", filename);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	if(ms->nbit < 2)
@@ -141,7 +140,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 		fprintf(stderr, "Error: cannot open %s for write\n", outfile);
 		delete_mark5_stream(ms);
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	R = nbin*freq/ms->samprate;
@@ -188,6 +187,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 		if(ms->consecutivefails > 5)
 		{
 			printf("Too many failures.  consecutive, total fails = %d %d\n", ms->consecutivefails, ms->nvalidatefail);
+			
 			break;
 		}
 
@@ -256,7 +256,7 @@ int fold(const char *filename, const char *formatname, int nbin, int nint,
 
 	delete_mark5_stream(ms);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
@@ -264,10 +264,13 @@ int main(int argc, char **argv)
 	long long offset = 0;
 	int nbin, nint;
 	double freq;
+	int retval;
 
 	if(argc < 6)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	oldsiginthand = signal(SIGINT, siginthand);
@@ -287,8 +290,8 @@ int main(int argc, char **argv)
 		offset = atoll(argv[7]);
 	}
 
-	fold(argv[1], argv[2], nbin, nint, freq, argv[6], offset);
+	retval = fold(argv[1], argv[2], nbin, nint, freq, argv[6], offset);
 
-	return 0;
+	return retval;
 }
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@
 #include <string.h>
 #include "../mark5access/mark5_stream.h"
 
-int usage(const char *pgm)
+static int usage(const char *pgm)
 {
 	printf("Usage : %s <format> [<n> [<offset>] ]\n", pgm);
 	printf("\n  <format> is something like VLBA1_4-128-8-2\n");
@@ -40,11 +40,9 @@ int usage(const char *pgm)
 	printf("             (where 1000 is payload size in bytes)\n");
 	printf("\n  <n>      is samples to look at [default 32]\n");
 	printf("\n  <offset> is samples to slip [default 0]\n\n");
-
-	return 0;
 }
 
-int conf(float ***data, struct mark5_stream **ms, const char *format, int samples, int os)
+static int conf(float ***data, struct mark5_stream **ms, const char *format, int samples, int os)
 {
 	char fmt[MARK5_STREAM_ID_LENGTH];
 	int i, j;
@@ -96,7 +94,9 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	if(argc > 2)
@@ -172,5 +172,5 @@ int main(int argc, char **argv)
 		printf("%s\n", line);
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }
