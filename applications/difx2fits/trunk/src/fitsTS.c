@@ -325,7 +325,7 @@ static int populateDifxTSys(float tSys[][array_MAX_BANDS], const DifxInput *D, i
 					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
 						freqId, polId, r);
 
-					exit(0);
+					exit(EXIT_FAILURE);
 				}
 
 				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))
@@ -483,7 +483,7 @@ static int getDifxTsys(const DifxInput *D, int jobId, int antId, int origDsId,
 			fprintf(stderr, "Developer error: getDifxTsys: antId=%d origDsId=%d scanId=%d n=%d nRecBand=%d mjd1=%12.6f mjd2=%12.6f\n",
 				antId, origDsId, scanId, n, nRecBand, mjd1, mjd2);
 
-			exit(0);
+			exit(EXIT_FAILURE);
 		}
 
 		if(doDump)
@@ -591,7 +591,7 @@ static int populateTSys(float tSys[][array_MAX_BANDS],
 					fprintf(stderr, "Developer error: derived freqId and polId (%d,%d) are not legit.  From recBand=%d.\n", 
 						freqId, polId, r);
 
-					exit(0);
+					exit(EXIT_FAILURE);
 				}
 
 				if(polId == p && isDifxIFInsideDifxFreq(dc->IF + i, D->freq + freqId))

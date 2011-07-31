@@ -534,7 +534,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate G (%lu bytes)\n", 
 			MAXENTRIES*sizeof(GainRow));
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	
 	nPol = D->nPol;
@@ -568,7 +568,7 @@ const DifxInput *DifxInput2FitsGN(const DifxInput *D,
 		fprintf(stderr, "Error: DifxInput2FitsGN: could not allocate fitsbuf (%d bytes)\n", nRowBytes);
 		free(G);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	/* spew out the table header */

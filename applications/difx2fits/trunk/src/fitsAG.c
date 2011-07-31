@@ -114,11 +114,10 @@ const DifxInput *DifxInput2FitsAG(const DifxInput *D,
 		fprintf(stderr, "AG table : nRowBytes != sizeof(row) : "
 			"%d != %u\n", nRowBytes, (unsigned int)(sizeof(row)));
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
-	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes,
-		"ARRAY_GEOMETRY");
+	fitsWriteBinTable(out, NELEMENTS(columns), columns, nRowBytes, "ARRAY_GEOMETRY");
 
 	mjd = (int)(D->mjdStart);
 	mjd2fits(mjd, ref_date);

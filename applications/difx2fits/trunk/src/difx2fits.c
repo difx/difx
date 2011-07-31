@@ -43,7 +43,7 @@ const double DefaultJobMatrixInterval = 20.0;	/* sec */
 const double DefaultDifxTsysInterval = 60.0;	/* sec */
 const double DefaultDifxPCalInterval = 30.0;	/* sec */
 
-static int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s\n\n", program, version, author);
 	fprintf(stderr, "A program to convert DiFX format data to FITS-IDI\n\n");
@@ -123,8 +123,6 @@ static int usage(const char *pgm)
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
 	fprintf(stderr, "\n");
-
-	return 0;
 }
 
 struct CommandLineOptions *newCommandLineOptions()
@@ -399,14 +397,14 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 		default:
 			fprintf(stderr, "Error: unknown polarization (%c)\n", D->polPair[0]);
 
-			exit(0);
+			exit(EXIT_FAILURE);
 	}
 	keys->no_band = D->nIF;
 	if(D->nIF > array_MAX_BANDS)
 	{
 		fprintf(stderr, "Error: too many (%d) IFs in this data.  This program is compiled for only %d.\n", D->nIF, array_MAX_BANDS);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	keys->no_chan = -1;
 	keys->chan_bw = -1;
@@ -420,7 +418,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: fqindex=%d for baseline=%d freq=%d\n", fqindex, i, j);
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 
 			if(keys->no_chan == -1)
@@ -431,7 +429,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same number of output channels\n");
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 
 			/*extra precision to deal with non ^2 rounding errors*/
@@ -444,7 +442,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same final channel bandwidth\n");
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 
 			/*extra precision to deal with non ^2 rounding errors*/
@@ -457,7 +455,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 			{
 				fprintf(stderr, "Error: populateFitsKeywords: not all used frequencies have the same reference pixel\n");
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 		}
 	}
@@ -465,7 +463,7 @@ static int populateFitsKeywords(const DifxInput *D, struct fits_keywords *keys)
 	{
 		fprintf(stderr, "Error: populateFitsKeywords: Didn't find any used frequencies\n");
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	keys->ref_freq = D->refFreq*1.0e6;
 	keys->ref_date = D->mjdStart;
@@ -835,7 +833,9 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	if(getenv("DIFX_GROUP_ID"))
@@ -846,7 +846,7 @@ int main(int argc, char **argv)
 	opts = parseCommandLine(argc, argv);
 	if(opts == 0)
 	{
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	for(;;)
@@ -871,5 +871,5 @@ int main(int argc, char **argv)
 	
 	deleteCommandLineOptions(opts);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

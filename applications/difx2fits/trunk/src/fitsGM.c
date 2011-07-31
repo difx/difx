@@ -155,7 +155,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 	{
 		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate onPhase (%d)\n", nBand);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	offPhase = (float *)calloc(nBand, sizeof(float));
 	if(offPhase == 0)
@@ -163,7 +163,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		fprintf(stderr, "Error: DifxInput2FitsGM: cannot allocate offPhase (%d)\n", nBand);
 		free(onPhase);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	poly = (double *)calloc(nPoly, sizeof(double));
 	if(poly == 0)
@@ -172,7 +172,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		free(onPhase);
 		free(offPhase);
 		
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	sprintf(bandFormFloat,  "%1dE", nBand);  
@@ -202,7 +202,7 @@ const DifxInput *DifxInput2FitsGM(const DifxInput *D,
 		free(offPhase);
 		free(poly);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	gateId1 = 0;
 

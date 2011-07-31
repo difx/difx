@@ -148,7 +148,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	{
 		fprintf(stderr, "Error: DifxInput2FitsML: could not allocate fitsbuf (%d bytes)\n", nRowBytes);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
   
 	/* write standard FITS header keywords and values to output file */

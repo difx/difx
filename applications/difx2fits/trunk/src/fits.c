@@ -731,6 +731,6 @@ void testFitsBufBytes(int dPointer, int nRowBytes, const char *tableName)
 			"nRowBytes : %d %d\n", tableName,
 			dPointer, nRowBytes);
 		fprintf(stderr, "This program has a bug!\n");
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 }

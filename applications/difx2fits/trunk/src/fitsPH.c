@@ -346,7 +346,7 @@ static int parsePulseCal(const char *line,
 		fprintf(stderr, "Developer error: parsePulseCal: array_MAX_STATES=%d is to small (needs to be %d)\n",
 			array_MAX_STATES, ns);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	/* A VLBA specialty! */
@@ -923,7 +923,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	        fclose(in);
 		fprintf(stderr, "Error: DifxInput2FitsPH: Memory allocation failure\n");
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "PHASE-CAL");

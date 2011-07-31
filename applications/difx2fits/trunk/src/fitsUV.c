@@ -75,7 +75,7 @@ static int DifxVisInitData(DifxVis *dv)
 	{
 		assert(dv->record);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	dv->weight = dv->record->data;
 	dv->data = dv->weight + (dv->nFreq*dv->D->nPolar);
@@ -96,7 +96,7 @@ static void DifxVisStartGlob(DifxVis *dv)
 	{
 		assert(globstr);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	sprintf(globstr, "%s%s", dv->D->job[dv->jobId].outputFile, suffix);
@@ -109,7 +109,7 @@ static void DifxVisStartGlob(DifxVis *dv)
 		fprintf(stderr, "Error: no data files in %s\n",
 			dv->D->job[dv->jobId].outputFile);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}	
 
 	dv->globbuf.gl_offs = 0;
@@ -178,7 +178,7 @@ DifxVis *newDifxVis(const DifxInput *D, int jobId, int pulsarBin, int phasecentr
 			(int)(sizeof(DifxVis)));
 		assert(dv);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	if(jobId < 0 || jobId >= D->nJob)
@@ -473,7 +473,7 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	{
 		fprintf(stderr, "Developer error: DifxVisNewUVData: configId=%d  nConfig=%d  scanId=%d", configId, dv->D->nConfig, scanId);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 	if(configId < 0)
 	{
