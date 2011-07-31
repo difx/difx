@@ -267,7 +267,7 @@ void VexChannel::selectTones(int toneIntervalMHz, enum ToneSelection selection, 
 	default:
 		cerr << "Error: selectTones: unexpected value of selection: " << selection << endl;
 		
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -324,7 +324,7 @@ int VexMode::getPols(char *pols) const
 		{
 			cerr << "Error: VexMode::getPols: subband with illegal polarization (" << it->pol << ") encountered." << endl;
 			
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 
@@ -400,7 +400,7 @@ const VexSetup* VexMode::getSetup(const string &antName) const
 	{
 		cerr << "Error: VexMode::getSetup: antName=" << antName << " not found." << endl;
 		
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	return &it->second;
@@ -415,7 +415,7 @@ const VexFormat* VexMode::getFormat(const string &antName) const
 	{
 		cerr << "Error: VexMode::getFormat: antName=" << antName << " not found." << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 
@@ -951,7 +951,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 		{
 			cerr << "Developer error: generateFlagFile: antenna " <<
 				a->first << " not found in antenna table." << endl;
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		if(ant->basebandFiles.size() > 0)
@@ -988,7 +988,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 				{
 					cerr << "Developer error: generateFlagFile: SCAN_START, scan=0" << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
 				{
@@ -1010,7 +1010,7 @@ int VexJob::generateFlagFile(const VexData &V, const char *fileName, unsigned in
 				{
 					cerr << "Developer error! generateFlagFile: SCAN_STOP, scan=0" << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 				for(sa = scan->stations.begin(); sa != scan->stations.end(); sa++)
 				{
@@ -1140,7 +1140,7 @@ void VexJobGroup::createJobs(vector<VexJob> &jobs, VexInterval &jobTimeRange, co
 				cerr << "Programming error: createJobs: id != e->name  (" << id << " != " << e->name << ")" << endl;
 				cerr << "Contact developer" << endl;
 
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			VexInterval scanTimeRange(s->mjd, e->mjd);
 			scanTimeRange.logicalAnd(jobTimeRange);

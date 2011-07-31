@@ -270,7 +270,7 @@ int pystream::writeDbeInit(const VexData *V)
                     else {
                         cerr << "Incorrect number of channels: " << F.channels.size() << endl;
 
-                        exit(1);
+                        exit(EXIT_FAILURE);
                     }
 		}
                 // use PFB as default for now
@@ -323,7 +323,7 @@ int pystream::writeLoifTable(const VexData *V)
                             cerr << "number of channels deviates from init" << init_channels
                                  << " vs " << F.channels.size() << endl;
 
-                            exit(1);
+                            exit(EXIT_FAILURE);
                         }
 
 			if(setup->ifs.size() > 2)
@@ -360,7 +360,7 @@ int pystream::writeLoifTable(const VexData *V)
 				{
 					cerr << "Developer error: setup->getIF(" << F.channels[i].ifname << ") returned NULL" << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 				double freq = F.channels[i].bbcFreq;
 				double tune = freq - vif->ifSSLO;
@@ -409,7 +409,7 @@ int pystream::writeLoifTable(const VexData *V)
                         {
 				cerr << "Error: mode " << mode->defName << " wants " << setup->ifs.size() << " IFs, and we can currently only use 4" << endl;
 
-				exit(1);
+				exit(EXIT_FAILURE);
 			}
 			//better be two dual pol, otherwise abort
 			for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
@@ -437,7 +437,7 @@ int pystream::writeLoifTable(const VexData *V)
 							{
 								cerr << "Error: More than 2 IF frequencies" << endl;
 
-								exit(1);
+								exit(EXIT_FAILURE);
 							}
 						}
 					}
@@ -677,7 +677,7 @@ void pystream::writeVCI(const VexData *V, int modeindex, string filename)
 	{
 		cout << "Could not open VCI file " << filename << " - aborting!" << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	subarrayid = 1;

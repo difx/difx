@@ -60,7 +60,7 @@ static char swapPolarization(char pol)
 	default:
 		cerr << "Error: unknown polarization: " << pol << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -152,7 +152,7 @@ static int getRecordChannel(const string &antName, const string &chanName, const
 		cerr << "Error: Antenna=" << antName << " format \"" << F.format << "\" is not yet supported" << endl;
 		cerr << "Contact developer." << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	return -1;
@@ -184,7 +184,7 @@ double vexDate(char *value)
 		{
 			cerr << "Error: vex date is not in usable format: " << value << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 	}
 	else
@@ -206,7 +206,7 @@ double vexDate(char *value)
 				{
 					cerr << "Error: vex date is not in usable format: " << value << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 				switch(value[i])
 				{
@@ -228,7 +228,7 @@ double vexDate(char *value)
 				default:
 					cerr << "Error: vex date is not in usable format: " << value << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 
 				start = i+1;
@@ -239,7 +239,7 @@ double vexDate(char *value)
 		{
 			cerr << "Error: trailing characters in vex date: " << value << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		mjd = DOYtoMJD( static_cast<int>(floor(years+0.1)), static_cast<int>(floor(days+0.1)) ) + hours/24.0 + minutes/1440.0 + seconds/86400.0;
@@ -283,7 +283,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: cannot find site position for antenna " << antName << " in the vex file." << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		fvex_double(&(p->x->value), &(p->x->units), &A->x);
 		fvex_double(&(p->y->value), &(p->y->units), &A->y);
@@ -306,7 +306,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: cannot find axis type for antenna " << antName << " in the vex file." << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		A->axisType = string(q->axis1) + string(q->axis2);
 		if(A->axisType.compare("hadec") == 0)
@@ -335,7 +335,7 @@ static int getAntennas(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: cannot find axis offset for antenna " << antName << " in the vex file." << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		fvex_double(&(r->value), &(r->units), &A->axisOffset);
 
@@ -557,7 +557,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: Cannot find right ascension for source " << src << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		fvex_ra(&p, &S->ra);
 
@@ -566,7 +566,7 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: Cannot find declination for source " << src << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		fvex_dec(&p, &S->dec);
 
@@ -575,13 +575,13 @@ static int getSources(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: Cannot find ref coord frame for source " << src << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 		if(strcmp(p, "J2000") != 0)
 		{
 			cerr << "Error: only J2000 ref frame is supported." << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		const SourceSetup *setup = params.getSourceSetup(S->defName);
@@ -608,14 +608,14 @@ static VexInterval adjustTimeRange(map<string, double> &antStart, map<string, do
 	{
 		cerr << "Developer error: adjustTimeRange: minSubarraySize = " << minSubarraySize << " is < 1" << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if(antStart.size() != antStop.size())
 	{
 		cerr << "Developer error: adjustTimeRange: size mismatch" << endl;
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	if(antStart.size() < minSubarraySize)
@@ -763,7 +763,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Vex error! Scan " << scanDefName << " references source " << sourceDefName << " which is not in the source table." << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		string corrSetupName = params.findSetup(scanDefName, sourceDefName, modeDefName, src->calCode, 0);
@@ -777,7 +777,7 @@ static int getScans(VexData *V, Vex *v, const CorrParams &params)
 		{
 			cerr << "Error: Scan=" << scanDefName << " correlator setup " << corrSetupName << " not defined!" << endl;
 
-			exit(1);
+			exit(EXIT_FAILURE);
 		}
 
 		if(params.mjdStart > stopScan || params.mjdStop < startScan)
@@ -989,7 +989,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 				{
 					cerr << "Unable to determine data format for antenna " << antName << endl;
 
-					exit(1);
+					exit(EXIT_FAILURE);
 				}
 			}
 
@@ -1043,7 +1043,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 						default: 
 							cerr << "Error: Antenna=" << antName << " fanout=" << fanout << " not legal for format " << F.format << ".  This could be a subtle problem in the vex file." << endl;
 
-							exit(1);
+							exit(EXIT_FAILURE);
 					}
 				}
 				F.nRecordChan = ch2tracks.size();
@@ -1083,7 +1083,7 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 					{
 						cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
 					
-						exit(1);
+						exit(EXIT_FAILURE);
 					}
 
 					string tracks = s2mode.substr(f+1, g-f-1);
@@ -1296,7 +1296,7 @@ static int getVSN(VexData *V, Vex *v, const char *station)
 
 	if(quit)
 	{
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 
 	return 0;
