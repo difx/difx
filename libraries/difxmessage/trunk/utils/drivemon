@@ -12,7 +12,7 @@
 #===========================================================================
 
 
-PROGRAM = 'smartmon'
+PROGRAM = 'drivemon'
 VERSION = '0.1'
 VERDATE = '20110723'
 AUTHOR  = 'Walter Brisken'
@@ -34,38 +34,11 @@ import struct
 
 verbose = 1
 
-smartDescriptions = { \
-	1:   (1, "Read error count"), \
-	3:   (0, "Spin up time (ms)"), \
-	4:   (0, "Start/stop count"), \
-	5:   (1, "Reallocated sector count"), \
-	7:   (0, "Seek error count"), \
-	9:   (0, "Power on time (hr)"), \
-	10:  (1, "Spin retry count"), \
-	11:  (0, "Recalibration retry count"), \
-	12:  (0, "Power cycle count"), \
-	192: (0, "Retract cycle count"), \
-	193: (0, "Landing zone load count"), \
-	194: (0, "Temperature (C)"), \
-	196: (1, "Relocation event count"), \
-	197: (1, "Questionable sector count"), \
-	198: (1, "Uncorrectable sector count"), \
-	199: (0, "DMA CRC error count"), \
-	200: (0, "Multi-zone error count"), \
-	201: (1, "Off-track error count"), \
-	202: (0, "Data Address Mark error count") \
-}
-
-def getSmartDesc(id):
-	if smartDescriptions.has_key(id):
-		return smartDescriptions[id]
-	else:
-		return (0, "Unknown smart id")
 
 def usage():
 	print '\n%s ver. %s  %s  %s\n' % (PROGRAM, VERSION, VERDATE, AUTHOR)
-	print 'A program to request mk5daemon to send smart data from a Mark5 unit.\n'
-	print 'Usage: smartmon [options] <unit>\n'
+	print 'A program to request mk5daemon to send stats data from a Mark5 unit.\n'
+	print 'Usage: drivemon [options] <unit>\n'
 	print 'options can include:\n'
 	print '  -h or --help'
 	print '          print this usage info and exit\n'
@@ -87,9 +60,11 @@ class Parser:
         self._parser.EndElementHandler = self.end
         self._parser.CharacterDataHandler = self.data
 	self.vsn = ''
+	self.type = ''
 	self.slot = -1
-	self.mjd = 0.0
-	self.values = []
+	self.mjdStart = 0.0;
+	self.mjdStop = 0.0
+	self.bins = [0]*10
 	self.ok = False
 	self.unit = ''
 	self.mpiId = -1
@@ -106,22 +81,27 @@ class Parser:
     def start(self, tag, attrs):
         self.tag = tag
         self.tmp = ''
-        if tag == 'difxSmart':
+        if tag == 'difxDriveStats' or tag == 'difxCondition':
                 self.ok = True
 		self.vsn = ''
-		self.mjd = 0.0
-		self.values = []
+		self.mjdStart = 0.0
+		self.mjdStop = 0.0
+		self.type = ''
+		self.bins = []*10
 		self.slot = -1
-	elif tag == 'smart':
-		self.values.append( (int(attrs['id']), int(attrs['value'])) )
 
     def end(self, tag):
-        if tag == 'vsn' and self.ok:
+    	if tag[0:3] == 'bin':
+		b = int(tag[3:])
+		self.bins[b] = int(self.tmp)
+        elif tag == 'vsn' and self.ok:
 		self.vsn = self.tmp
 	elif tag == 'slot':
 		self.slot = self.slot
-	elif tag == 'mjd':
-		self.mjd = float(self.tmp)
+	elif tag == 'startMJD':
+		self.mjdStart = float(self.tmp)
+	elif tag == 'stopMJD':
+		self.mjdStop = float(self.tmp)
 	elif tag == 'from':
 		self.unit = lower(self.tmp)
 	elif tag == 'identifier':
@@ -134,13 +114,10 @@ class Parser:
 
     def getinfo(self):
 	if self.ok:
-		smartstr = 'VSN=%s disk=%d mjd=%12.6f:\n' % (self.vsn, self.slot, self.mjd)
-		for v in self.values:
-			crit, desc = getSmartDesc(v[0])
-			vstr = '  %-3d : %s = %d%s\n' % (v[0], desc, v[1], ['', '  **'][crit])
-			smartstr = smartstr + vstr
-		smartstr = smartstr
-		return smartstr
+		statsstr = 'VSN=%s disk=%d mjd=%12.6f-%12.6f:' % (self.vsn, self.slot, self.mjdStart, self.mjdStop)
+		for v in self.bins:
+			statsstr = statsstr + (' %d' % v)
+		return statsstr
 
 	else:
 		return ''

@@ -394,7 +394,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 
 		v = snprintf(body, DIFX_MESSAGE_LENGTH,
 			
-			"<difxCondition>"
+			"<difxDriveStats>"
 			  "<serialNumber>%s</serialNumber>"
 			  "<modelNumber>%s</modelNumber>"
 			  "<size>%d</size>"
@@ -405,7 +405,7 @@ int difxMessageSendDriveStats(const DifxMessageDriveStats *driveStats)
 			  "<type>%s</type>"
 			  "%s"
 			  "%s"
-			"</difxCondition>",
+			"</difxDriveStats>",
 
 			driveStats->serialNumber,
 			driveStats->modelNumber,
