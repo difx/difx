@@ -1216,7 +1216,7 @@ int difxMessageSendDifxSmart(double mjdData, const char *vsn, int slot, int nVal
 			ids[i], values[i]);
 		if(n >= DIFX_MESSAGE_LENGTH)
 		{
-			fprintf(stderr, "difxMessageSendDifxSmart: message weightstr overflow (%d >= %d)\n", v, DIFX_MESSAGE_LENGTH);
+			fprintf(stderr, "difxMessageSendDifxSmart: message weightstr overflow (%d >= %d)\n", n, DIFX_MESSAGE_LENGTH);
 		
 			return -1;
 		}
