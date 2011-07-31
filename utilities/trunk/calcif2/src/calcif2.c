@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20110409";
+const char verdate[] = "20110730";
 
 typedef struct
 {
@@ -66,7 +66,7 @@ typedef struct
 	int overrideVersion;
 } CommandLineOptions;
 
-int usage()
+static void usage()
 {
 	fprintf(stderr, "%s ver. %s  %s  %s\n\n", program, version, 
 		author, verdate);
@@ -114,11 +114,9 @@ int usage()
 		"command line\n");
 	fprintf(stderr, "      overrides all.\n");
 	fprintf(stderr, "\n");
-
-	return 0;
 }
 
-void deleteCommandLineOptions(CommandLineOptions *opts)
+static void deleteCommandLineOptions(CommandLineOptions *opts)
 {
 	int i;
 
@@ -135,7 +133,7 @@ void deleteCommandLineOptions(CommandLineOptions *opts)
 	free(opts);
 }
 
-CommandLineOptions *newCommandLineOptions(int argc, char **argv)
+static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 {
 	CommandLineOptions *opts;
 	glob_t globbuf;
@@ -351,7 +349,7 @@ static int skipFile(const char *f1, const char *f2)
 	return 0;
 }
 
-void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
+static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 {
 	const int MaxLineSize=100;
 	FILE *in;
@@ -446,7 +444,7 @@ void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 	fclose(in);
 }
 
-int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams *p)
+static int runfile(const char *prefix, const CommandLineOptions *opts, CalcParams *p)
 {
 	DifxInput *D;
 	FILE *in;
@@ -618,7 +616,7 @@ int run(const CommandLineOptions *opts)
 
 	if(opts == 0)
 	{
-		return -1;
+		return EXIT_FAILURE;
 	}
 		
 	p = newCalcParams(opts);
@@ -626,7 +624,7 @@ int run(const CommandLineOptions *opts)
 	{
 		fprintf(stderr, "Error: Cannot initialize CalcParams\n");
 
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	for(i = 0; i < opts->nFile; i++)
@@ -645,14 +643,13 @@ int run(const CommandLineOptions *opts)
 		}
 		if(opts->verbose >= 0)
 		{
-			printf("Processing file %d/%d = %s\n",
-				i+1, opts->nFile, opts->files[i]);
+			printf("Processing file %d/%d = %s\n", i+1, opts->nFile, opts->files[i]);
 		}
 		runfile(opts->files[i], opts, p);
 	}
 	deleteCalcParams(p);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 int main(int argc, char **argv)
@@ -665,9 +662,6 @@ int main(int argc, char **argv)
 	status = run(opts);
 
 	deleteCommandLineOptions(opts);
-
-	if (status==-1) 
-	  return(1);
-	else 
-	  return(0);
+	
+	return status;
 }
