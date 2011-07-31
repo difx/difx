@@ -58,7 +58,7 @@ int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s\n\n",
 		program, version, author);
@@ -97,8 +97,6 @@ int usage(const char *pgm)
 		"path from default\n");
 	fprintf(stderr, "  DIFX_USER_ID : change user account for executing remote commands from default [%s]\n", difxUser);
 	fprintf(stderr, "\n");
-
-	return 0;
 }
 
 Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
@@ -348,7 +346,6 @@ int main(int argc, char **argv)
                 strcpy(userID, difxUser);
 
 	}
-	
 
 	sprintf(str, "%d", DefaultDifxMonitorPort);
 	setenv("DIFX_MESSAGE_PORT", str, 0);
@@ -365,7 +362,9 @@ int main(int argc, char **argv)
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[i], "-q") == 0 ||
 		   strcmp(argv[i], "--quiet") == 0)
@@ -392,25 +391,30 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_FAILURE;
 			}
 		}
 		else
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_FAILURE;
 		}
 	}
 
 	if(setuid(0) != 0)
 	{
 		fprintf(stderr, "Needs to run with root permission.  Bailing.\n");
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	if(fork())
 	{
 		printf("*** %s ver. %s spawned ***\n", program, version);
-		return 0;
+
+		return EXIT_SUCCESS;
 	}
 
 	/* the next line is so that later calls to fork() don't end up with defunct
@@ -492,5 +496,5 @@ int main(int argc, char **argv)
 
 	deleteMk5Daemon(D);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

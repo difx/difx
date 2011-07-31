@@ -45,7 +45,7 @@
 const char program[] = "vsn";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.4";
-const char verdate[] = "20110711";
+const char verdate[] = "20110730";
 
 enum WriteProtectAction
 {
@@ -54,7 +54,7 @@ enum WriteProtectAction
 	WPA_CLEAR
 };
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to set/get a Mark5 module Volume Serial Number (VSN)\n\n");
@@ -84,8 +84,6 @@ int usage(const char *pgm)
 	printf("<vsn> is the new module VSN (must be 8 characters long).\n");
 	printf("  If not provided, the existing VSN will be returned.\n\n");
 	printf("This program appears to be compiled for SDK version %d\n\n", SDKVERSION);
-
-	return 0;
 }
 
 int roundsize(int s)
@@ -604,6 +602,7 @@ int main(int argc, char **argv)
 	int getSMART = 0;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
 	enum WriteProtectAction wpa = WPA_NONE;
+	int retval = EXIT_SUCCESS;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -627,7 +626,9 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_SUCCESS;
 			}
 			else if(strcmp(argv[a], "--wait-forever") == 0)
 			{
@@ -640,7 +641,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				newStatus = MODULE_STATUS_ERASED;
 			}
@@ -651,7 +652,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				newStatus = MODULE_STATUS_PLAYED;
 			}
@@ -662,7 +663,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Multiple new states provided!\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				newStatus = MODULE_STATUS_RECORDED;
 			}
@@ -673,7 +674,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				wpa = WPA_SET;
 			}
@@ -684,7 +685,7 @@ int main(int argc, char **argv)
 				{
 					fprintf(stderr, "Conflicting requests for write protect and unprotect!\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				wpa = WPA_CLEAR;
 			}
@@ -698,7 +699,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Unknown option: %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 
-				return -1;
+				return EXIT_FAILURE;
 			}
 		}
 		else if(bank < 0)
@@ -708,7 +709,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 
-				return -1;
+				return EXIT_FAILURE;
 			}
 			else if(argv[a][0] == 'A' || argv[a][0] == 'a')
 			{
@@ -723,7 +724,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 
-				return -1;
+				return EXIT_FAILURE;
 			}
 		}
 		else
@@ -733,7 +734,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: VSN length must be 8 characters\n");
 				fprintf(stderr, "Run with -h for help info\n");
 
-				return 0;
+				return EXIT_FAILURE;
 			}
 			strcpy(newVSN, argv[a]);
 			newVSN[8] = 0;
@@ -749,13 +750,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: no bank specified\n");
 		fprintf(stderr, "Run with -h for help info\n");
 
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	v = initWatchdog();
 	if(v < 0)
 	{
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	/* 60 seconds should be enough to complete any XLR command */
@@ -784,6 +785,8 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+
+			retval = EXIT_FAILURE;
 		}
 	}
 	
@@ -793,5 +796,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

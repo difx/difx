@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110703";
+const char verdate[] = "20110730";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -67,7 +67,7 @@ void siginthand(int j)
 	signal(SIGHUP, oldsiginthand);
 }
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to test Mark5 modules\n\n");
@@ -103,8 +103,6 @@ int usage(const char *pgm)
 	printf("  -p <p>     Start read tests from pointer position <p>\n\n");
 	printf("and <bank> should be either A or B\n\n");
 	printf("This program appears to be compiled for SDK version %d\n\n", SDKVERSION);
-
-	return 0;
 }
 
 void setbuffer(int num, char *buffer, int size)
@@ -779,6 +777,7 @@ int main(int argc, char **argv)
 	int options = SS_OPT_DRVSTATS;
 	char *dirFile = 0;
 	long long ptr = 0;
+	int retval = EXIT_SUCCESS;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -805,7 +804,9 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_SUCCESS;
 			}
 			else if(strcmp(argv[a], "-r") == 0 ||
 			        strcmp(argv[a], "--readonly") == 0)
@@ -870,7 +871,7 @@ int main(int argc, char **argv)
 					fprintf(stderr, "Unknown option %s\n", argv[a]);
 					fprintf(stderr, "Run with -h for help info\n");
 
-					return -1;
+					return EXIT_FAILURE;
 				}
 				a++;
 			}
@@ -880,7 +881,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Unexpected parameter: %s\n", argv[a]);
 			fprintf(stderr, "Run with -h for help info\n");
 
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -889,7 +890,7 @@ int main(int argc, char **argv)
 		fprintf(stderr, "No bank specified\n");
 		fprintf(stderr, "Run with -h for help info\n");
 
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	oldsiginthand = signal(SIGINT, siginthand);
@@ -928,6 +929,8 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+
+			retval = EXIT_FAILURE;
 		}
 	}
 
@@ -937,5 +940,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

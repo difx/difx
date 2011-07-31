@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -26,7 +26,6 @@
 // $LastChangedDate$
 //
 //============================================================================
-
 
 #include <stdio.h> 
 #include <stdlib.h>
@@ -64,7 +63,7 @@
 const char program[] = "mk5erase";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.3";
-const char verdate[] = "20110723";
+const char verdate[] = "20110730";
 
 
 #define MJD_UNIX0       40587.0
@@ -84,7 +83,7 @@ enum ConditionMode
 	CONDITION_WRITE_ONLY
 };
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to erase or condition a Mark5 module.\n");
@@ -117,8 +116,6 @@ int usage(const char *pgm)
 	printf("Ctrl-C can be used to safely abort.  The module will be left in\n");
 	printf("the Error state afterwards.\n\n");
 	printf("This program appears to be compiled for SDK version %d\n\n", SDKVERSION);
-
-	return 0;
 }
 
 void siginthand(int j)
@@ -516,8 +513,7 @@ int mk5erase(const char *vsn, enum ConditionMode mode, int verbose, int dirVersi
 	/* Get drive info */
 	nDrive = getDriveInformation(xlrDevice, drive, &totalCapacity);
 
-	printf("> Module %s consists of %d drives totalling about %d GB:\n",
-		vsn, nDrive, totalCapacity);
+	printf("> Module %s consists of %d drives totalling about %d GB:\n", vsn, nDrive, totalCapacity);
 	for(int d = 0; d < 8; d++)
 	{
 		if(drive[d].model[0] == 0)
@@ -597,11 +593,13 @@ int main(int argc, char **argv)
 	int v;
 	int dirVersion = -1;
 	int lockWait = MARK5_LOCK_DONT_WAIT;
+	int retval = EXIT_SUCCESS;
 
 	if(argc < 2)
 	{
 		printf("Please run with -h for help\n");
-		return 0;
+		
+		return EXIT_FAILURE;
 	}
 
 	for(int a = 1; a < argc; a++)
@@ -609,7 +607,9 @@ int main(int argc, char **argv)
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
@@ -663,7 +663,8 @@ int main(int argc, char **argv)
 		else if(argv[a][0] == '-')
 		{
 			fprintf(stderr, "Unknown option %s provided\n", argv[a]);
-			return 0;
+			
+			return EXIT_FAILURE;
 		}
 		else
 		{
@@ -671,14 +672,16 @@ int main(int argc, char **argv)
 			{
 				fprintf(stderr, "Error: two VSNs provided : %s and %s\n",
 					vsn, argv[a]);
-				return 0;
+				
+				return EXIT_FAILURE;
 			}
 			strncpy(vsn, argv[a], 10);
 			vsn[9] = 0;
 			if(strlen(vsn) != 8)
 			{
 				fprintf(stderr, "Error: VSN %s not 8 chars long!\n", argv[a]);
-				return 0;
+				
+				return EXIT_FAILURE;
 			}
 			for(int i = 0; i < 8; i++)
 			{
@@ -690,11 +693,11 @@ int main(int argc, char **argv)
 	if(vsn[0] == 0)
 	{
 		printf("Error: no VSN provided!\n");
-		return 0;
+		
+		return EXIT_FAILURE;
 	}
 
-	printf("About to proceed.  verbose=%d mode=%d force=%d vsn=%s\n",
-		verbose, mode, force, vsn);
+	printf("About to proceed.  verbose=%d mode=%d force=%d vsn=%s\n", verbose, mode, force, vsn);
 
 	if(!force)
 	{
@@ -724,7 +727,8 @@ int main(int argc, char **argv)
 			else if(strcmp(resp, "N\n") == 0 || strcmp(resp, "n\n") == 0)
 			{
 				printf("Module erasure cancelled.\n\n");
-				return 0;
+				
+				return EXIT_FAILURE;
 			}
 			else
 			{
@@ -738,7 +742,8 @@ int main(int argc, char **argv)
 	if(v < 0)
 	{
 		fprintf(stderr, "Error: Cannot start watchdog!\n");
-		return -1;
+		
+		return EXIT_FAILURE;
 	}
 
 	oldsiginthand = signal(SIGINT, siginthand);
@@ -769,6 +774,7 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+			retval = EXIT_FAILURE;
 		}
 	}
 
@@ -778,5 +784,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

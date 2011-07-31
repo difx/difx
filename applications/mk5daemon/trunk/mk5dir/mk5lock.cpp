@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -32,7 +32,7 @@
 #include <string.h>
 #include <mark5ipc.h>
 
-int usage(const char *cmd)
+static void usage(const char *cmd)
 {
 	printf("mk5lock\n\n");
 	printf("A utility to manage the IPC semaphore locking access to Mark5\n\n");
@@ -42,8 +42,6 @@ int usage(const char *cmd)
 	printf("  -u   Unlock the unit\n\n");
 	printf("  -5   Lock the unit for 5 seconds\n\n");
 	printf("  -h   Print this useful help information\n\n");
-
-	return 0;
 }
 
 int main(int argc, char **argv)
@@ -53,7 +51,9 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 	action = argv[1];
 
@@ -83,8 +83,17 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		if(strcmp(action, "-h") == 0)
+		{
+			return EXIT_SUCCESS;
+		}
+		else
+		{
+			return EXIT_FAILURE;
+		}
 	}
 
-	return 0;
+	return EXIT_SUCCESS;
 }

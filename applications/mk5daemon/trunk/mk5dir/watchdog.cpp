@@ -72,7 +72,7 @@ void *watchdogFunction(void *data)
 			if(deltat > watchdogTimeout)
 			{
 				fprintf(stderr, "Watchdog caught a hang-up executing: %s\n", watchdogStatement);
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 			else if(deltat != lastdeltat)
 			{

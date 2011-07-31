@@ -45,9 +45,9 @@
 const char program[] = "recover";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110315";
+const char verdate[] = "20110730";
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program that attempts to recover a Mark5 module\n\n");
@@ -66,11 +66,9 @@ int usage(const char *pgm)
 	printf("  1. Allow access to data that might have been overwritten.\n");
 	printf("  2. Unerase module.\n\n");
 	printf("This program appears to be compiled for SDK version %d\n\n", SDKVERSION);
-
-	return 0;
 }
 
-int recoverModule(int type, int bank, int force)
+static int recoverModule(int type, int bank, int force)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -188,6 +186,7 @@ int main(int argc, char **argv)
 	int bank = -1;
 	int verbose = 0;
 	int force = 0;
+	int retval = EXIT_SUCCESS;
 
 	for(a = 1; a < argc; a++)
 	{
@@ -206,14 +205,16 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-h") == 0 ||
 			   strcmp(argv[a], "--help") == 0)
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_SUCCESS;
 			}
 			else
 			{
 				fprintf(stderr, "Unknown option: %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 				
-				return -1;
+				return EXIT_FAILURE;
 			}
 		}
 		else if(type < 0)
@@ -225,7 +226,7 @@ int main(int argc, char **argv)
 					argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 				
-				return -1;
+				return EXIT_FAILURE;
 			}
 		}
 		else if(bank < 0)
@@ -235,7 +236,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 				
-				return -1;
+				return EXIT_FAILURE;
 			}
 			else if(argv[a][0] == 'A' || argv[a][0] == 'a')
 			{
@@ -250,7 +251,7 @@ int main(int argc, char **argv)
 				fprintf(stderr, "Error: expecting bank name, got %s\n", argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 				
-				return -1;
+				return EXIT_FAILURE;
 			}
 		}
 		else
@@ -258,7 +259,7 @@ int main(int argc, char **argv)
 			fprintf(stderr, "Error: too many arguments given.\n");
 			fprintf(stderr, "Run with -h for help info\n");
 
-			return -1;
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -267,13 +268,13 @@ int main(int argc, char **argv)
 		fprintf(stderr, "Error: incomplete command line\n");
 		fprintf(stderr, "Run with -h for help info\n");
 		
-		return -1;
+		return EXIT_FAILURE;
 	}
 
 	v = initWatchdog();
 	if(v < 0)
 	{
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	/* 60 seconds should be enough to complete any XLR command */
@@ -302,6 +303,8 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+
+			retval = EXIT_FAILURE;
 		}
 	}
 
@@ -311,5 +314,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

@@ -69,7 +69,7 @@ typedef void (*sighandler_t)(int);
 
 sighandler_t oldsiginthand;
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
@@ -94,9 +94,6 @@ int usage(const char *pgm)
 	printf("  -b <B>         Begin search at byte position <B> [0]\n\n");
 	printf("  --end <E>\n");
 	printf("  -e <E>         End search at byte position <E> [full data length]\n\n");
-
-
-	return 0;
 }
 
 void siginthand(int j)
@@ -625,6 +622,7 @@ int main(int argc, char **argv)
 	int64_t precision = defaultPrecision;
 	int64_t begin = 0LL;
 	int64_t end = 0LL;
+	int retval = EXIT_SUCCESS;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
 	if(dmsMaskStr)
@@ -640,7 +638,9 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	for(int a = 1; a < argc; a++)
@@ -648,7 +648,9 @@ int main(int argc, char **argv)
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
@@ -713,7 +715,9 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_FAILURE;
 			}
 		}
 		else if(vsn[0] == 0)
@@ -723,7 +727,9 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_FAILURE;
 		}
 	}
 
@@ -731,13 +737,13 @@ int main(int argc, char **argv)
 	{
 		printf("Error: no module or bank specified\n");
 
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	v = initWatchdog();
 	if(v < 0)
 	{
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	/* 60 seconds should be enough to complete any XLR command */
@@ -766,6 +772,8 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+
+			retval = EXIT_FAILURE;
 		}
 	}
 
@@ -775,5 +783,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

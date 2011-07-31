@@ -43,7 +43,7 @@
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.9";
-const char verdate[] = "20110710";
+const char verdate[] = "20110730";
 
 enum DMS_Mode
 {
@@ -71,7 +71,7 @@ void siginthand(int j)
 }
 
 
-int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
@@ -100,8 +100,6 @@ int usage(const char *pgm)
 	printf("Environment variable MARK5_DIR_PATH should point to the location of\n");
 	printf("the directory to be written.  The output filename will be:\n");
 	printf("  $MARK5_DIR_PATH/<vsn>.dir\n\n");
-
-	return 0;
 }
 
 static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
@@ -401,8 +399,7 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	}
 	else if(modules[0])
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Successful directory read for %s", modules);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Successful directory read for %s", modules);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 	}
 
@@ -429,6 +426,7 @@ int main(int argc, char **argv)
 	int dmsMask = 7;
 	int startScan = -1;
 	int stopScan = -1;
+	int retval = EXIT_SUCCESS;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
 	if(dmsMaskStr)
@@ -444,7 +442,9 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage(argv[0]);
+		usage(argv[0]);
+
+		return EXIT_FAILURE;
 	}
 
 	for(int a = 1; a < argc; a++)
@@ -452,7 +452,9 @@ int main(int argc, char **argv)
 		if(strcmp(argv[a], "-h") == 0 ||
 		   strcmp(argv[a], "--help") == 0)
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_SUCCESS;
 		}
 		else if(strcmp(argv[a], "-v") == 0 ||
 		        strcmp(argv[a], "--verbose") == 0)
@@ -500,7 +502,9 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				return usage(argv[0]);
+				usage(argv[0]);
+
+				return EXIT_FAILURE;
 			}
 		}
 		else if(vsn[0] == 0)
@@ -510,14 +514,16 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			return usage(argv[0]);
+			usage(argv[0]);
+
+			return EXIT_FAILURE;
 		}
 	}
 
 	v = initWatchdog();
 	if(v < 0)
 	{
-		return 0;
+		return EXIT_FAILURE;
 	}
 
 	/* 60 seconds should be enough to complete any XLR command */
@@ -546,6 +552,8 @@ int main(int argc, char **argv)
 					watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
+
+			retval = EXIT_FAILURE;
 		}
 	}
 
@@ -555,5 +563,5 @@ int main(int argc, char **argv)
 
 	stopWatchdog();
 
-	return 0;
+	return retval;
 }

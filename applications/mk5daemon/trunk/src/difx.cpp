@@ -546,7 +546,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			S->inputFilename, filebase);
 		Mk5Daemon_system(D, command, 1);
 
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 
 	/* if we got here, we are the parent process */
@@ -569,6 +569,6 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 			S->inputFilename, filebase);
 		Mk5Daemon_system(D, command, 1);
 
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 }
