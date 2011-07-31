@@ -220,7 +220,7 @@ TransientDaemonConf *newTransientDaemonConf()
 	{
 		fprintf(stderr, "Error: cannot allocate a Transient Daemon Configuration Object\n");
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	conf->vfastrEnable = defaultVfastrEnable;
 	conf->detectionThreshold = defaultDetectionThreshold;
@@ -539,19 +539,9 @@ int runCommand(const char *command, int verbose)
 	}
 	else
 	{
-		if(verbose > 1)
-		{
-			printf("<Forked and now executing.>\n");
-		}
-
 		v = system(command);
-
-		if(verbose > 1)
-		{
-			printf("<Execution completed.  Return value was %d.>\n", v);
-		}
 		
-		exit(0);
+		exit(EXIT_SUCCESS);
 	}
 }
 
@@ -935,5 +925,5 @@ int main(int argc, char **argv)
 
 	delete state;
 
-	return 0;
+	return EXIT_SUCCESS;
 }

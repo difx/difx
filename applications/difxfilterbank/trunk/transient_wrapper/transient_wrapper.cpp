@@ -165,7 +165,7 @@ static int parseCommandLine(int argc, char **argv, TransientWrapperData *T)
 			{
 				usage(argv[0]);
 
-				exit(0);
+				exit(EXIT_FAILURE);
 			}
 			else if(strcmp(argv[a], "-n") == 0 ||
 			   strcmp(argv[a], "--nocopy") == 0)
@@ -181,7 +181,7 @@ static int parseCommandLine(int argc, char **argv, TransientWrapperData *T)
 	{
 		usage(argv[0]);
 
-		exit(0);
+		exit(EXIT_FAILURE);
 	}
 
 	if(stop + 3 > argc)
@@ -422,5 +422,5 @@ int main(int argc, char **argv)
 	deleteTransientWrapperData(T);
 	deleteTransientWrapperConf(conf);
 
-	return 0;
+	return EXIT_SUCCESS;
 }

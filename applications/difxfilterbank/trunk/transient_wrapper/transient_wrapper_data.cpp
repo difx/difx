@@ -503,7 +503,7 @@ TransientWrapperConf *newTransientWrapperConf()
 	{
 		fprintf(stderr, "Error: cannot allocate a Transient Wrapper Configuration Object\n");
 
-		exit(1);
+		exit(EXIT_FAILURE);
 	}
 	conf->enable = default_enable;
 	snprintf(conf->vfastrHost, DIFX_MESSAGE_PARAM_LENGTH, "%s", default_vfastrHost);
