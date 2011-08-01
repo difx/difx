@@ -40,10 +40,11 @@ const int defaultStubPipeline = 0;
 const char defaultRecorrQueueFile[] = "";
 const char defaultDmgenProgram[] = "makedmlist";
 const double defaultMinDM = 0.0;
-const double defaultMaxDM = 1000.0;
+const double defaultMaxDM = 5000.0;
 const int defaultNegDM = 0;
 const int defaultNDM = 200;
 const double defaultTDM = 2;	/* ms */
+const double defaultMaxDispersionDelay = 2;	/* seconds */
 
 
 int die = 0;
@@ -92,6 +93,7 @@ typedef struct
 	int negDM;
 	int nDM;
 	double tDM;
+	double maxDispersionDelay;
 } TransientDaemonConf;
 
 TransientDaemonState::TransientDaemonState()
@@ -242,6 +244,7 @@ TransientDaemonConf *newTransientDaemonConf()
 	conf->negDM = defaultNegDM;
 	conf->nDM = defaultNDM;
 	conf->tDM = defaultTDM;
+	conf->maxDispersionDelay = defaultMaxDispersionDelay;
 
 	return conf;
 }
@@ -387,6 +390,10 @@ int loadTransientDaemonConf(TransientDaemonConf *conf, const char *filename)
 		{
 			conf->tDM = atof(B);
 		}
+		else if(strcmp(A, "max_dispersion_delay") == 0)
+		{
+			conf->maxDispersionDelay = atof(B);
+		}
 		/* else ignore the parameter */
 	}
 
@@ -415,6 +422,7 @@ void printTransientDaemonConf(const TransientDaemonConf *conf)
 	printf("  negative DM sparsity factor = %d\n", conf->negDM);
 	printf("  max number of DM trials (including negative) = %d\n", conf->nDM);
 	printf("  time interval to consider in DM setting = %f ms\n", conf->tDM);
+	printf("  max dispersion delay = %f sec\n", conf->maxDispersionDelay);
 
 	fflush(stdout);
 }
@@ -503,7 +511,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		}
 	}
 
-	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d`", 
+	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d -D %f`", 
 		conf->dmgenProgram, 
 		conf->minDM,
 		conf->maxDM,
@@ -511,7 +519,8 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		minFreq*0.001, 	/* MHz to GHz */
 		maxFreq*0.001,	/* MHz to GHz */
 		conf->tDM,
-		conf->nDM);
+		conf->nDM,
+		conf->maxDispersionDelay);
 	if(v >= CommandLength)
 	{
 		fprintf(stderr, "Developer error: CommandLength=%d is too small.  Needs to be > %d.\n",
