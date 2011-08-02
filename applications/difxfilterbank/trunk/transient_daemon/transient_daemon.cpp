@@ -49,7 +49,7 @@ const double defaultMaxDispersionDelay = 2;	/* seconds */
 
 int die = 0;
 
-const int CommandLength = 256;
+const int CommandLength = 1024;
 
 const char testMessage[] = 
 "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?><difxMessage><header><from>gui</from><to>boom</to><mpiProcessId>-1</mpiProcessId><identifier>boom_x</identifier><type>DifxStart</type></header><body><difxStart><input>/home/swc/difx/projects/td019/td019_15.input</input><manager node=\"boom\"/><datastream nodes=\"boom1 boom2\"/><process threads=\"7\" nodes=\"boom3 boom4 boom4\"/><force>1</force><difxVersion>DIFX-trunk</difxVersion></difxStart></body></difxMessage>";
