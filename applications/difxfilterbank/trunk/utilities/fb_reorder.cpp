@@ -1024,24 +1024,16 @@ int initBuffers(FB_Config *fb_config, BufInfo *bufinfo) {
 
 
 /*****************************
+Open the input and output streams. This program is designed to be used in a pipeline
+hence programs downstream will hang if this program does not at the very minimum open
+and close its output file. If there is a problem with the input, the output open/close
+still needs to happen, so we open the output here first.
 ******************************/
 int openFiles(FILE **fp_in, FILE **fp_out) {
 
     // defaults: read from stdin, write to stdout
     *fp_in = stdin;
     *fp_out= stdout;
-
-    // open the input file, if necessary
-    if (options.infilename ==NULL || options.infilename[0]=='\0' || !strcmp(options.infilename,"-") ) {
-        if (debug) fprintf(fpd,"Infile: stdin\n");
-    }
-    else {
-        if ( (*fp_in =fopen(options.infilename,"r")) == NULL) {
-            fprintf(stderr,"ERROR: failed to open %s for input\n",options.infilename);
-            return 1;
-        }
-        if (debug) fprintf(fpd,"Infile: %s\n",options.infilename);
-    }
 
     // open the output file, if necessary
     if (options.outfilename ==NULL || options.outfilename[0]=='\0' || !strcmp(options.outfilename,"-") ) {
@@ -1055,6 +1047,18 @@ int openFiles(FILE **fp_in, FILE **fp_out) {
         if (debug) fprintf(fpd,"Outfile: %s\n",options.outfilename);
     }
    
+    // open the input file, if necessary
+    if (options.infilename ==NULL || options.infilename[0]=='\0' || !strcmp(options.infilename,"-") ) {
+        if (debug) fprintf(fpd,"Infile: stdin\n");
+    }
+    else {
+        if ( (*fp_in =fopen(options.infilename,"r")) == NULL) {
+            fprintf(stderr,"ERROR: failed to open %s for input\n",options.infilename);
+            return 1;
+        }
+        if (debug) fprintf(fpd,"Infile: %s\n",options.infilename);
+    }
+
     return 0;
 }
 
@@ -1100,8 +1104,7 @@ int set_FB_Config(FB_Config *fb_config) {
         }
     }
 
-    // sanity check: calculate the approximate duration of STA dumps and compare to the desired output
-    // time resolution
+    // sanity check: calculate the approximate duration of STA dumps and compare to the desired output time resolution
     subint_ns = difxconfig->getSubintNS(difxconfig->getScanConfigIndex(options.scan_index))/difxconfig->getCNumProcessThreads(0);
     max_ac_ns = (difxconfig->getModel())->getMaxNSBetweenACAvg(options.scan_index);
     subint_ns = (subint_ns < max_ac_ns ? subint_ns: max_ac_ns);
