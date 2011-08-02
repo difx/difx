@@ -473,7 +473,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 	int r, v, nFreq, i;
 	DifxParameters *dp;
 	double freq, minFreq = 1.0e9;	/* MHz */
-	double maxFreq = 1.0e12;
+	double maxFreq = 1.0e2;
 
 	dp = newDifxParametersfromfile(inputFile);
 	if(!dp)
