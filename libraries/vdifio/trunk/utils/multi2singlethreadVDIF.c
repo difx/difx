@@ -37,7 +37,7 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20110111";
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -52,8 +52,6 @@ int usage()
   fprintf(stderr, "\n<threadIdN> is the threadId to put in the Nth output channel\n");
   fprintf(stderr, "\n[-v] verbose mode on\n");
   fprintf(stderr, "The input file must at least start with one valid packet\n");
-
-  return 0;
 }
 
 // functions
@@ -74,7 +72,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
 {
   int i, j;
   int inputframecount, readbytes, frameoffset, frameindex;
-  int framebytes, framemjd, framesecond, framenumber, framethread, frameinvalid, threadindex;
+  int framebytes, framemjd, framesecond, framenumber, framethread, threadindex;
   long long currentframenumber;
 
   //read from the file
@@ -94,7 +92,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
     framenumber = getVDIFFrameNumber(inputbuffer+i*inputframebytes);
     if(framebytes != inputframebytes) {
       fprintf(stderr, "Framebytes has changed, from %d to %d - aborting!\n", inputframebytes, framebytes);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     //check that this thread is wanted
     threadindex = -1;
@@ -125,7 +123,7 @@ void readdata(int inputframebytes, char * inputbuffer, FILE * input, int numbuff
     frameindex = (int)(currentframenumber % numthreadbufframes);
     if (bufferframefull[threadindex][frameindex]) {
       fprintf(stderr, "Frame at index %d, which was count %lld was already full - aborting!\n", frameindex, currentframenumber);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     if(verbose) {
       fprintf(stdout, "Putting a frame from thread %d into slot %d, the frame count is %d\n", threadindex, frameindex, i);
@@ -145,13 +143,12 @@ int main(int argc, char **argv)
   int inputthreadmbps, numthreads, readbytes, wrotebytes, numbufferframes, threadbufmultiplier, numthreadbufframes;
   int bitspersample, samplesperframe, framespersecond;
   int inputframebytes, outputframebytes, refframemjd, refframesecond, refframenumber;
-  int outputframecount, inputframecount, frameoffset, threadindex, minthreadbuffer;
+  int outputframecount, minthreadbuffer;
   char * inputbuffer; // [framebytes * numbufferframes]
   char * outputbuffer; // [framebytes * numbufferframes]
   char ** threadbuffers; // [numthreads][framebytes * numbufferframes]
   unsigned int * threadwords; // [numthreads]
   unsigned int * outputword;
-  long long * bufferframenumber; //[numbufferframes]
   int ** bufferframefull; //[numthreads][numbufferframes]
   //long long ** bufferframenumber; //[numthreads][numbufferframes]
   //long long * currentthreadwriteframe; //[numthreads]
@@ -161,18 +158,25 @@ int main(int argc, char **argv)
   int f, i, j, k, l, count, verbose, inputatbit, outputatbit, processindex;
   unsigned int copyword, activemask;
   int wordsperinputframe, wordsperoutputframe, samplesperinputword, samplesperoutputword;
-  long long currentframenumber, processframenumber, invalidpackets, invalidbytes;
+  long long processframenumber;
 
   //check the command line arguments, store thread mapping etc
   if(argc < 7)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
   numthreads = atoi(argv[3]);
   if(argc != 5+numthreads && argc != 6+numthreads)
-    return usage();
+  {
+    usage();
 
+    return EXIT_FAILURE;
+  }
   if(numthreads < 2) {
     fprintf(stderr, "This is multi2single - you must have a minimum of 2 threads!\n");
-    return 1;
+    return EXIT_FAILURE;
   }
 
   if(argc == 6+numthreads)
@@ -189,13 +193,13 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   output = fopen(argv[2], "w");
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   //peek at the start of the file, work out framebytes and reference time
@@ -204,7 +208,7 @@ int main(int argc, char **argv)
   inputframebytes = getVDIFFrameBytes(tempbuffer);
   if(inputframebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", inputframebytes, MAX_VDIF_FRAME_BYTES);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   outputframebytes = (inputframebytes-VDIF_HEADER_BYTES)*numthreads + VDIF_HEADER_BYTES;
   bitspersample = getVDIFBitsPerSample(tempbuffer);
@@ -222,7 +226,7 @@ int main(int argc, char **argv)
   fseek(input, 0, SEEK_SET); //go back to the start
   if(samplesperoutputword == 0) {
     fprintf(stderr, "Too many threads/too high bit resolution - can't fit one complete timestep in a 32 bit word! Aborting\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   //set up the buffers
@@ -325,6 +329,6 @@ int main(int argc, char **argv)
       fprintf(stderr, "Write failed!\n");
   }
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 

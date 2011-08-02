@@ -56,7 +56,7 @@ typedef struct {
   pthread_mutex_t locks[NUMSEGMENTS];
 } writethreaddata;
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -68,8 +68,6 @@ int usage()
   fprintf(stderr, "\n[skipbytesfront=0] is the number of bytes to skip over before each frame\n");
   fprintf(stderr, "\n[skipbytesback=0] is the number of bytes to skip over after each frame\n");
   fprintf(stderr, "\nNot sure if by default the skipbytesfront/back should be zeroed?\n");
-
-  return 0;
 }
 
 void * launchNewWriteThread(void * w)
@@ -83,14 +81,14 @@ void * launchNewWriteThread(void * w)
   if(output == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", wtd->filename);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   //lock what we need
   perr = pthread_mutex_lock(&(wtd->locks[NUMSEGMENTS-1]));
   if(perr != 0) {
     fprintf(stderr, "Error doing initial mutex locking - aborting!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   wtd->ready = 1;
   perr = pthread_cond_signal(&(wtd->writeinitcond));
@@ -104,13 +102,13 @@ void * launchNewWriteThread(void * w)
     perr = pthread_mutex_lock(&(wtd->locks[writesegment]));
     if(perr != 0) {
       fprintf(stderr, "Write thread error locking segment %d - aborting!\n", writesegment);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     perr = pthread_mutex_unlock(&(wtd->locks[(writesegment+NUMSEGMENTS-1)%NUMSEGMENTS]));
     if(perr != 0) {
       fprintf(stderr, "Write thread error unlocking segment %d - aborting!\n", 
               (writesegment+NUMSEGMENTS-1)%NUMSEGMENTS);
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     wrotebytes = fwrite(wtd->receivebuffers[writesegment], 1, wtd->udpframesize*wtd->framespersegment, output);
     if(wrotebytes < wtd->udpframesize*wtd->framespersegment) {
@@ -145,7 +143,11 @@ int main(int argc, char **argv)
 
   //check the command line arguments
   if(argc < 3 || argc > 5)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
 
   //store some variables, allocate some arrays
   skipbytesfront   = 0;
@@ -167,12 +169,12 @@ int main(int argc, char **argv)
   perr = pthread_mutex_lock(&(wtd.locks[0]));
   if(perr != 0) {
     fprintf(stderr, "Error doing initial mutex locking - aborting!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   perr = pthread_mutex_lock(&(wtd.locks[1]));
   if(perr != 0) {
     fprintf(stderr, "Error doing initial mutex locking - aborting!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   wtd.keepwriting = 1;
   wtd.ready       = 0;
@@ -181,7 +183,7 @@ int main(int argc, char **argv)
   perr = pthread_create(&writethread, NULL, launchNewWriteThread, (void *)(&wtd));
   if(perr != 0) {
     fprintf(stderr, "Error in launching writethread!!!");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   while(!wtd.ready) {
     perr = pthread_cond_wait(&(wtd.writeinitcond), &(wtd.locks[1]));
@@ -191,7 +193,7 @@ int main(int argc, char **argv)
   perr = pthread_mutex_unlock(&(wtd.locks[1]));
   if(perr != 0) {
     fprintf(stderr, "Error doing initial mutex unlocking - aborting!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   //open the UDP socket
@@ -202,7 +204,7 @@ int main(int argc, char **argv)
   serversock = socket(AF_INET,SOCK_DGRAM, IPPROTO_UDP); 
   if (serversock==-1) {
     fprintf(stderr, "Cannot create UDP socket to read VDIF packets!\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   status = setsockopt(serversock, SOL_SOCKET, SO_RCVBUF,
                       (char *) &udpbufbytes, sizeof(udpbufbytes));
@@ -210,7 +212,7 @@ int main(int argc, char **argv)
   if (status!=0) {
     fprintf(stderr, "Cannot bind UDP socket\n");
     close(serversock);
-    exit(1);
+    exit(EXIT_FAILURE);
   } 
   socketnumber = serversock;
   done = 0;
@@ -294,5 +296,5 @@ int main(int argc, char **argv)
   if(perr != 0)
     fprintf(stderr, "Error in joining writethread!!!");
 
-    return 0;
+    return EXIT_SUCCESS;
 }

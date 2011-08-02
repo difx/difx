@@ -36,7 +36,7 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20100217";
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -46,8 +46,6 @@ int usage()
   fprintf(stderr, "\n<VDIF output file> is the name of the VDIF file to write\n");
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
   fprintf(stderr, "\n[new start MJD] is the MJD (with fractional component) to overwrite the times with\n");
-
-  return 0;
 }
 
 int main(int argc, char **argv)
@@ -65,7 +63,11 @@ int main(int argc, char **argv)
   long long framesread, frameswrote;
 
   if(argc != 4 && argc != 5)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
 
   overwritemjd = 0;
   overwritesecond = 0;
@@ -79,14 +81,14 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   output = fopen(argv[2], "w");
   if(output == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   if(FORCE_VALID) {
@@ -97,7 +99,7 @@ int main(int argc, char **argv)
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   nextmjd = getVDIFFrameMJD(buffer);
   nextsecond = getVDIFFrameSecond(buffer);
@@ -221,5 +223,5 @@ int main(int argc, char **argv)
   fclose(input);
   fclose(output);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

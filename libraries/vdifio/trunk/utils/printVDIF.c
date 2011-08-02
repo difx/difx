@@ -36,7 +36,7 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20100217";
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -44,8 +44,6 @@ int usage()
   fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps>\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
-
-  return 0;
 }
 
 int main(int argc, char **argv)
@@ -57,13 +55,17 @@ int main(int argc, char **argv)
   long long framesread;
 
   if(argc != 3)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
   
   input = fopen(argv[1], "r");
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   datambps = atoi(argv[2]);
@@ -71,7 +73,7 @@ int main(int argc, char **argv)
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   framemjd = getVDIFFrameMJD(buffer);
   framesecond = getVDIFFrameSecond(buffer);
@@ -106,5 +108,5 @@ int main(int argc, char **argv)
   printf("Read %lld frames\n", framesread);
   fclose(input);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

@@ -36,7 +36,7 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20100217";
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -48,8 +48,6 @@ int usage()
   fprintf(stderr, "\n[skipbytesfront=54] is the number of bytes to skip over before each frame\n");
   fprintf(stderr, "\n[skipbytesback=4] is the number of bytes to skip over after each frame\n");
   fprintf(stderr, "\n[skipbytesinitial=28] is the number of bytes to skip over only once after opening the file\n");
-
-  return 0;
 }
 
 int main(int argc, char **argv)
@@ -62,7 +60,11 @@ int main(int argc, char **argv)
   long long framesread;
 
   if(argc < 3 || argc > 6)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
 
   skipbytesfront   = 54;
   skipbytesback    = 4;
@@ -78,14 +80,14 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   output = fopen(argv[2], "w");
   if(output == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   framesread = 0;
@@ -130,5 +132,5 @@ int main(int argc, char **argv)
   fclose(input);
   fclose(output);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

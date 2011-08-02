@@ -36,17 +36,14 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20100217";
 
-int usage()
+static void usage()
 {
-  fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
-          author, verdate);
+  fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
   fprintf(stderr, "A program to count the number of missing packets for a given thread\n");
   fprintf(stderr, "\nUsage: %s <VDIF input file> <Mbps> <theadId>\n", program);
   fprintf(stderr, "\n<VDIF input file> is the name of the VDIF file to read\n");
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
   fprintf(stderr, "\n<threadId> is the threadId to check for\n");
-
-  return 0;
 }
 
 int main(int argc, char **argv)
@@ -54,13 +51,16 @@ int main(int argc, char **argv)
   int VERBOSE = 0;
   char buffer[MAX_VDIF_FRAME_BYTES];
   FILE * input;
-  FILE * output;
-  int readbytes, framebytes, framemjd, framesecond, framenumber, frameinvalid, datambps, framespersecond, targetThreadId;
+  int readbytes, framebytes, framemjd, framesecond, framenumber, datambps, framespersecond, targetThreadId;
   int nextmjd, nextsecond, nextnumber, refmjd, refsecond, refnumber;
   long long framesread, framesmissed;
 
   if(argc != 4)
-    return usage();
+  {
+    usage();
+
+    return EXIT_FAILURE;
+  }
 
   datambps = atoi(argv[2]);
   targetThreadId = atoi(argv[3]);
@@ -69,14 +69,14 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   readbytes = fread(buffer, 1, VDIF_HEADER_BYTES, input); //read the VDIF header
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   framespersecond = (int)((((long long)datambps)*1000000)/(8*(framebytes-VDIF_HEADER_BYTES)));
   printf("Frames per second is %d\n", framespersecond);
@@ -148,5 +148,5 @@ int main(int argc, char **argv)
   printf("For thread %d, read %lld frames, spotted %lld missing frames\n", targetThreadId, framesread, framesmissed);
   fclose(input);
 
-  return 0;
+  return EXIT_SUCCESS;
 }

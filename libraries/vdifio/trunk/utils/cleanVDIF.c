@@ -36,7 +36,7 @@ const char author[]  = "Adam Deller <adeller@nrao.edu>";
 const char version[] = "0.1";
 const char verdate[] = "20100217";
 
-int usage()
+static void usage()
 {
   fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
           author, verdate);
@@ -47,8 +47,6 @@ int usage()
   fprintf(stderr, "\n<Mbps> is the data rate in Mbps expected for this file\n");
   fprintf(stderr, "\n[-v] verbose mode on\n");
   fprintf(stderr, "The input file must at least start with one valid packet\n");
-
-  return 0;
 }
 
 int main(int argc, char **argv)
@@ -62,7 +60,10 @@ int main(int argc, char **argv)
   long long framesread, invalidpackets, invalidbytes;
 
   if(argc != 4 && argc != 5)
-    return usage();
+  {
+    usage();
+    return EXIT_FAILURE;
+  }
 
   if(argc == 5)
     verbose = 1;
@@ -73,13 +74,13 @@ int main(int argc, char **argv)
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open input file %s\n", argv[1]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   output = fopen(argv[2], "w");
   if(input == NULL)
   {
     fprintf(stderr, "Cannot open output file %s\n", argv[2]);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   datambps = atoi(argv[3]);
@@ -89,7 +90,7 @@ int main(int argc, char **argv)
   framebytes = getVDIFFrameBytes(buffer);
   if(framebytes > MAX_VDIF_FRAME_BYTES) {
     fprintf(stderr, "Cannot read frame with %d bytes > max (%d)\n", framebytes, MAX_VDIF_FRAME_BYTES);
-    exit(1);
+    exit(EXIT_FAILURE);
   }
   framemjd = getVDIFFrameMJD(buffer);
   framesecond = getVDIFFrameSecond(buffer);
@@ -164,6 +165,6 @@ int main(int argc, char **argv)
   printf("Read %lld frames, skipped over %lld dodgy packets containing %lld dodgy bytes\n", framesread, invalidpackets, invalidbytes);
   fclose(input);
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
