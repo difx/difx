@@ -1575,6 +1575,8 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
   if(procslots[index].pulsarbin && !procslots[index].scrunchoutput)
     corebinloop = procslots[index].numpulsarbins;
 
+  if (localfreqindex<0) return;
+
   //allocate space for the phase centre delays if necessary, and calculate pointing centre delays
   if(model->getNumPhaseCentres(procslots[index].offsets[0]) > 1)
   {
@@ -1698,6 +1700,7 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
           csevere << startl << "Error in phase shift, real to complex!!!" << status << endl;
       }
     }
+
     threadstart = config->getThreadResultFreqOffset(procslots[index].configindex, freqindex) + config->getThreadResultBaselineOffset(procslots[index].configindex, freqindex, baseline);
     //cout << "Threadstart is " << threadstart << " since threadresultfreqoffset is " << config->getThreadResultFreqOffset(procslots[index].configindex, freqindex) << endl;
     for(int x=0;x<config->getNumXmacStrides(procslots[index].configindex, freqindex);x++)
