@@ -16,6 +16,7 @@ AC_CHECK_LIB(expat, XML_Parse,,[AC_MSG_ERROR("need expat")])
 
 PKG_CHECK_MODULES(DIFXMESSAGE, [difxmessage >= 2.0.2 difxmessage < 7])
 PKG_CHECK_MODULES(MARK5IPC, [mark5ipc >= 2.0.2 mark5ipc < 7])
+PKG_CHECK_MODULES(M5ACCESS, [mark5access >= 1.4.3])
 
 streamstor_enabled=true
 PKG_CHECK_EXISTS([streamstor >= 8.0],
@@ -35,8 +36,7 @@ else
 fi
 AM_CONDITIONAL(WITH_STREAMSTOR, $streamstor_enabled)
 
-PKG_CHECK_MODULES(M5ACCESS, mark5access >= 1.4.3)
-LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a ${prefix}/lib/libmark5ipc.a"
+LIBS="${LIBS} ${STREAMSTOR_LIBS} ${prefix}/lib/libdifxmessage.a ${prefix}/lib/libmark5ipc.a ${prefix}/lib/libmark5access.a"
 CPPFLAGS="-D_LARGE_FILE_SOURCE -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 ${M5ACCESS_CFLAGS} ${DIFXMESSAGE_CFLAGS} ${MARK5IPC_CFLAGS} ${STREAMSTOR_CFLAGS}"
 CXXFLAGS="${CPPFLAGS}"
 

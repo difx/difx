@@ -183,6 +183,11 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn);
 
 void countReplaced(const streamstordatatype *data, int len, long long *wGood, long long *wBad);
 
+int countbits(unsigned long int v);
+int upround2(int value);
+int mjd2ymd(long mjd, int *pYear, int *pMonth, int *pDay);
+int ymd2doy(int yr, int mo, int day);
+
 int addDecades(int mjd, int nDecade);
 
 int getByteRange(const struct Mark5Scan *scan, long long *byteStart, long long *byteStop, double mjdStart, double mjdStop);

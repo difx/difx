@@ -3,7 +3,6 @@ streamstor_sources = \
 	modules.cpp \
 	mark5a.cpp \
 	smart.cpp \
-	record.cpp \
 	smart.h \
 	ssversions.cpp
 else
