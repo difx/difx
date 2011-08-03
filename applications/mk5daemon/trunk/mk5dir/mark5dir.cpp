@@ -1649,6 +1649,7 @@ int resetModuleDirectory(SSHANDLE xlrDevice, const char *vsn, int newStatus, int
 			snprintf(dirHeader->vsn, MODULE_EXTENDED_VSN_LENGTH,
 				"%s/%d/%d", vsn, totalCapacity, rate);
 			dirHeader->status = newStatus;
+			dirHeader->version = dirVersion;
 		}
 		else
 		{

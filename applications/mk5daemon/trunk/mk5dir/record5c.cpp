@@ -54,7 +54,7 @@ const int defaultPayloadOffset = 40;
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
-const int defaultMACFilterControl = 0;
+const int defaultMACFilterControl = 1;
 const unsigned int defaultStreamstorChannel = 28;
 
 const int MaxLabelLength = 40;
@@ -130,6 +130,8 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 	readdesc.XferLength = bufferSize;
 	readdesc.BufferAddr = buffer;
 
+	printf("Read %Ld %d\n", pointer, bufferSize);
+
 	WATCHDOGTEST( XLRRead(xlrDevice, &readdesc) );
 
 	// Mark5B search
@@ -142,11 +144,11 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 		{
 			if(buffer[i] == Mark5BSyncWord)
 			{
-				printf("Sync 1 %d\n", i);
+				printf("Sync 1 1 %d\n", i);
 			}
 			if((buffer[i] == Mark5BSyncWord) && (buffer[Mark5BFrameSize/4 + i] == Mark5BSyncWord))
 			{
-				printf("Sync 2 %d\n", Mark5BFrameSize/4 + i);
+				printf("Sync 1 2 %d\n", Mark5BFrameSize/4 + i);
 				
 				break;
 			}
@@ -163,11 +165,11 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 		{
 			if(buffer[i] == Mark5BSyncWord)
 			{
-				printf("Sync 1 %d\n", i);
+				printf("Sync 2 1 %d\n", i);
 			}
 			if(buffer[i] == Mark5BSyncWord && buffer[Mark5BFrameSize/4 + i] == Mark5BSyncWord)
 			{
-				printf("Sync 2 %d\n", Mark5BFrameSize/4 + i);
+				printf("Sync 2 2 %d\n", Mark5BFrameSize/4 + i);
 
 				break;
 			}
@@ -332,12 +334,17 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	printf("Used %Ld %Ld\n", startByte, 0LL);	/* FIXME: 0-> disk size */
 
 	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
-	if(len < 128 || len % 128 != 0)
+	if((len < 128 && len != 0) || len % 128 != 0)
 	{
 		printf("Error 8 directory format problem\n");
 		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
+	}
+
+	if(len == 0)
+	{
+		len = 128;
 	}
 
 	buffer = (UINT32 *)malloc(BufferSize);
@@ -359,13 +366,27 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	/* configure 10G input daughter board */
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
+	printf("WR_DB %d %d\n", DATA_PAYLD_OFFSET, payloadOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
+	printf("WR_DB %d %d\n", DATA_FRAME_OFFSET, dataFrameOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
+	printf("WR_DB %d %d\n", BYTE_LENGTH, packetSize);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
+	printf("WR_DB %d %d\n", PSN_OFFSET, psnOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
+	printf("WR_DB %d %d\n", MAC_FLTR_CTRL, macFilterControl);
+
+	WATCHDOG( ptr = XLRGetLength(xlrDevice) );
 
 	printf("Record %s %Ld\n", label, ptr);
-	WATCHDOGTEST( XLRRecord(xlrDevice, 0, 1) );
+	if(startByte == 0LL)
+	{
+		WATCHDOGTEST( XLRRecord(xlrDevice, 0, 1) );
+	}
+	else
+	{
+		WATCHDOGTEST( XLRAppend(xlrDevice) );
+	}
 
 	for(int n = 1; !die; n++)
 	{
@@ -437,7 +458,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		q->firstFrame = frame;
 		q->byteOffset = byteOffset;
 		q->nTrack = 0xFFFFFFFF;	/* FIXME */
-		v = decode5B(xlrDevice, startByte, -10, 0, &frame, 0, &mjd2, &sec2);
+		v = decode5B(xlrDevice, p->stopByte, -10, 0, &frame, 0, &mjd2, &sec2);
 		if(v == 0)
 		{
 
@@ -454,6 +475,14 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			}
 
 		}
+		else
+		{
+			printf("Decode failure 2\n");
+		}
+	}
+	else
+	{
+		printf("Decode failure 1\n");
 	}
 
 	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
@@ -553,7 +582,7 @@ int main(int argc, char **argv)
 
 	if(bank < 0)
 	{
-		printf("Error3 incomplete command line\n");
+		printf("Error 3 incomplete command line\n");
 		
 		return EXIT_FAILURE;
 	}
@@ -561,7 +590,7 @@ int main(int argc, char **argv)
 	v = initWatchdog();
 	if(v < 0)
 	{
-		printf("Error4 initWatchdog() failed.\n");
+		printf("Error 4 initWatchdog() failed.\n");
 
 		return EXIT_FAILURE;
 	}
