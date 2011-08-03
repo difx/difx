@@ -47,16 +47,16 @@ static void *conditionRun(void *ptr)
 	FILE *pin;
 	char *rv;
 
-	if(activeBank < 0)
+	params = (struct conditionParams *)ptr;
+
+	if(params->D->activeBank < 0)
 	{
 		return 0;
 	}
 
-	params = (struct conditionParams *)ptr;
-
 	Logger_logData(params->D->log, "mk5erase starting\n");
 
-	snprintf(command, MAX_COMMAND_SIZE, "mk5erase --force %s %s", params->options, params->D->vsns[D->activeBank]);
+	snprintf(command, MAX_COMMAND_SIZE, "mk5erase --force %s %s", params->options, params->D->vsns[params->D->activeBank]);
 
 	pin = popen(command, "r");
 	for(;;)

@@ -329,24 +329,26 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 
 	if(D->activeBank >= 0)
 	{
+		int nextBank;
+
 		if(D->vsns[D->activeBank][0] == 0)
 		{
-			for(i = 1; i < N_BANK; i++)
+			for(int i = 1; i < N_BANK; i++)
 			{
-				int nextBank = (D->activeBank + i) % N_BANK;
+				nextBank = (D->activeBank + i) % N_BANK;
 				if(D->vsns[nextBank][0] != 0)
 				{
-					activeBank = nextBank;
+					D->activeBank = nextBank;
+
 					break;
 				}
 			}
 		}
 
-		if(D->vsns[lastBank] == 0)	/* no new bank found */
+		if(D->vsns[D->activeBank][0] == 0)	/* no new bank found */
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "No bank is active now.  Active bank was previously %c", D->activeBank + 'A');
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-			
 
 			D->activeBank = -1;
 		}
@@ -355,7 +357,6 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Bank %c is active now.  Active bank was previously %c", nextBank + 'A', D->activeBank + 'A');
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 			
-
 			D->activeBank = nextBank;
 		}
 	}

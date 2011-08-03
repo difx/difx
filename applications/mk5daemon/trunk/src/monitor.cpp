@@ -86,10 +86,10 @@ static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 		return;
 	}
 
-	strncpy(D->vsnA, G->body.mk5status.vsnA, 8);
-	D->vsnA[8] = 0;
-	strncpy(D->vsnB, G->body.mk5status.vsnB, 8);
-	D->vsnB[8] = 0;
+	strncpy(D->vsns[0], G->body.mk5status.vsnA, 8);
+	D->vsns[0][8] = 0;
+	strncpy(D->vsns[1], G->body.mk5status.vsnB, 8);
+	D->vsns[1][8] = 0;
 
 	if(G->body.mk5status.state == MARK5_STATE_OPENING ||
 	   G->body.mk5status.state == MARK5_STATE_OPEN ||
@@ -548,8 +548,8 @@ void Mk5Daemon_reboot(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
+	strncpy(dm.vsnA, D->vsns[0], 8);
+	strncpy(dm.vsnB, D->vsns[1], 8);
 	dm.state = MARK5_STATE_REBOOTING;
 	difxMessageSendMark5Status(&dm);
 
@@ -564,8 +564,8 @@ void Mk5Daemon_poweroff(Mk5Daemon *D)
 	DifxMessageMk5Status dm;
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
+	strncpy(dm.vsnA, D->vsns[0], 8);
+	strncpy(dm.vsnB, D->vsns[1], 8);
 	dm.state = MARK5_STATE_POWEROFF;
 	difxMessageSendMark5Status(&dm);
 

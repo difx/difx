@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <sys/time.h>
 #include <difxmessage.h>
+#include <signal.h>
 #include <mark5ipc.h>
 #include <xlrapi.h>
 #include "config.h"
@@ -54,6 +55,8 @@ const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 0;
 const unsigned int defaultStreamstorChannel = 28;
+
+const int MaxLabelLength = 40;
 
 typedef void (*sighandler_t)(int);
 sighandler_t oldsiginthand;
@@ -91,7 +94,7 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, macFilterControl, int verbose)
+static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, int verbose)
 {
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
@@ -99,9 +102,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	S_BANKSTATUS bankStat;
 	S_DIR dir;
 	int go = 1;
-	char label[XLR_LABEL_LENGTH+1];
 	char str[10];
 	char *rv;
+	char vsn[XLR_LABEL_LENGTH+1];
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
 	long long ptr;	/* record pointer */
@@ -124,13 +127,13 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	/* the following line is essential to work around an apparent streamstor bug */
 	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
 
-	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
-	label[XLR_LABEL_LENGTH] = 0;
+	WATCHDOGTEST( XLRGetLabel(xlrDevice, vsn) );
+	vsn[XLR_LABEL_LENGTH] = 0;
 
-	v = parseModuleLabel(label, 0, 0, 0, &moduleStatus);
+	v = parseModuleLabel(vsn, 0, 0, 0, &moduleStatus);
 	if(v >= 0)
 	{
-		printf("VSN %c %s\n", bank+'A', label);
+		printf("VSN %c %s\n", bank+'A', vsn);
 		if(moduleStatus > 0)
 		{
 			printf("Current disk module status is %s\n", moduleStatusName(moduleStatus));
@@ -152,11 +155,11 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	WATCHDOGTEST( XLRSelectChannel(xlrDevice, channel) );
 
 	/* configure 10G input daughter board */
-	WATCHDOGTEST( XLRWriteDB(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
-	WATCHDOGTEST( XLRWriteDB(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
-	WATCHDOGTEST( XLRWriteDB(xlrDevice, BYTE_LENGTH, packetLength) );
-	WATCHDOGTEST( XLRWriteDB(xlrDevice, PSN_OFFSET, psnOffset) );
-	WATCHDOGTEST( XLRWriteDB(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
 
 	printf("Record %s %Ld\n", label, ptr);
 	WATCHDOGTEST( XLRRecord(xlrDevice, 0, 1) );
@@ -175,7 +178,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	printf("Stop %s %Ld\n", label, ptr);
 	WATCHDOGTEST( XLRStop(xlrDevice) );
 
-	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL)
+	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
 	WATCHDOGTEST( XLRClearChannels(xlrDevice) );
 	WATCHDOGTEST( XLRSelectChannel(xlrDevice, 0) );
 	WATCHDOGTEST( XLRBindOutputChannel(xlrDevice, 0) );
@@ -298,7 +301,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = record(bank, label, packetLength, payloadOffset, dtaFrameOffset, psnOffset, psnMode, macFilterControl, verbose);
+		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
