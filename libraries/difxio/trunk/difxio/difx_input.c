@@ -791,8 +791,7 @@ int loadPulsarConfigFile(DifxInput *D, const char *fileName)
 
 			return -1;
 		}
-		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco,
-			DifxParametersvalue(pp, r));
+		r = loadPulsarPolycoFile(&dp->polyco, &dp->nPolyco, DifxParametersvalue(pp, r));
 		if(r < 0)
 		{
 			deleteDifxParameters(pp);

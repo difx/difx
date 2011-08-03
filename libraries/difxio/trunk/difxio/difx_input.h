@@ -329,7 +329,7 @@ typedef struct
 	double X, Y, Z;		/* telescope position, (m) */
 	double dX, dY, dZ;	/* telescope position derivative, (m/s) */
 	int spacecraftId;	/* -1 if not a spacecraft */
-	char shelf[DIFXIO_SHELF_LENGTH];  /* shelf location of module -- really this should not be here! */
+	char shelf[DIFXIO_SHELF_LENGTH];  /* shelf location of module; really this should not be here! */
 } DifxAntenna;
 
 typedef struct
@@ -341,7 +341,7 @@ typedef struct
 	int spacecraftId;	/* -1 if not spacecraft */
 	int numFitsSourceIds;	/* Should be equal to the number of configs */
 				/* FITS source IDs are filled in in deriveFitsSourceIds */
-	int * fitsSourceIds;	/* 0-based FITS source id */
+	int *fitsSourceIds;	/* 0-based FITS source id */
 	double pmRA;		/* arcsec/year */
 	double pmDec; 		/* arcsec/year */
 	double parallax;	/* arcsec */

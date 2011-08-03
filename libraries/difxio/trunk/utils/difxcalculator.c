@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2010 by Walter Brisken                             *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -35,15 +35,14 @@
 const char program[] = "difxcalculator";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = "0.2";
-const char verdate[] = "20101119";
+const char verdate[] = "20110730";
 
 const int nNode = 10;
 const int nCore = 7;
 
-int usage()
+static void usage()
 {
-	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version,
-		author, verdate);
+	fprintf(stderr, "\n%s ver. %s  %s  %s\n\n", program, version, author, verdate);
 	fprintf(stderr, "A program to calculate software correlator resource usage.\n");
 	fprintf(stderr, "This is based on Adam Deller's difx_calculator.xls .\n");
 	fprintf(stderr, "\nUsage: %s <input file base name> [<speedUp factor>]\n", program);
@@ -51,8 +50,6 @@ int usage()
 	fprintf(stderr, "        to study.  Files ending in .input and .calc are needed.\n");
 	fprintf(stderr, "\n<speedUp factor> is a floating point number which is the ratio\n");
 	fprintf(stderr, "        of correlation speed to observation speed.\n\n");
-
-	return 0;
 }
 
 int main(int argc, char **argv)
@@ -62,21 +59,25 @@ int main(int argc, char **argv)
 
 	if(argc < 2)
 	{
-		return usage();
+		usage();
+
+		return EXIT_FAILURE;
 	}
 	
 	D = loadDifxCalc(argv[1]);
 	if(!D)
 	{
 		fprintf(stderr, "D == 0.  quitting\n");
-		return 0;
+		
+		return EXIT_FAILURE;
 	}
 
 	D = updateDifxInput(D);
 	if(!D)
 	{
 		fprintf(stderr, "update failed: D == 0.  quitting\n");
-		return 0;
+		
+		return EXIT_FAILURE;
 	}
 
 	C = newDifxCalculator();
@@ -94,5 +95,5 @@ int main(int argc, char **argv)
 
 	deleteDifxInput(D);
 
-	return 0;
+	return EXIT_SUCCESS;
 }
