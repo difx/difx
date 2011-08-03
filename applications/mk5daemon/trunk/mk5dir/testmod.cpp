@@ -64,7 +64,7 @@ void siginthand(int j)
 {
 	fprintf(stderr, "<Being killed>");
 	die = 1;
-	signal(SIGHUP, oldsiginthand);
+	signal(SIGINT, oldsiginthand);
 }
 
 static void usage(const char *pgm)

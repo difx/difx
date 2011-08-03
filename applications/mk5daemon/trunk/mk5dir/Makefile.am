@@ -6,6 +6,7 @@ bin_PROGRAMS = \
 	mk5erase \
 	mk5lock \
 	mk5map \
+	record5c \
 	recover \
 	testmod \
 	vsn
@@ -80,6 +81,13 @@ mk5map_SOURCES = \
 	mark5dir.cpp \
 	mark5dir.h \
 	mk5map.cpp
+
+record5c_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	record5c.cpp
 
 recover_SOURCES = \
 	watchdog.cpp \

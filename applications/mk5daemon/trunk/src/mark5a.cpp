@@ -109,8 +109,8 @@ void Mk5Daemon_resetStreamstor(Mk5Daemon *D)
 	}
 
 	memset(&dm, 0, sizeof(DifxMessageMk5Status));
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
+	strncpy(dm.vsnA, D->vsns[0], 8);
+	strncpy(dm.vsnB, D->vsns[1], 8);
 	dm.state = MARK5_STATE_RESETTING;
 	difxMessageSendMark5Status(&dm);
 

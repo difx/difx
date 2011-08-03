@@ -120,6 +120,9 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	Mk5Daemon_startMonitor(D);
 	pthread_mutex_init(&D->processLock, 0);
 	difxMessageSendDifxInfo("mk5daemon starting");
+	D->vsnA = vsns + 0;
+	D->vsnB = vsns + 1;
+	D->activeBank = -1;
 
 	return D;
 }

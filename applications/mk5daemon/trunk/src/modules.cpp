@@ -270,49 +270,43 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		return;
 	}
 
-	if(strncmp(D->vsnA, vsnA, 8) != 0)
+	if(strncmp(D->vsns[0], vsnA, 8) != 0)
 	{
-		if(legalVSN(D->vsnA))
+		if(legalVSN(D->vsns[0]))
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module %s removed from bank A", D->vsnA);
+				"Module %s removed from bank A", D->vsns[0]);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
 		}
 		if(vsnA[0] == 0)
 		{
-			D->vsnA[0] = 0;
+			D->vsns[0][0] = 0;
 		}
 		else if(legalVSN(vsnA))
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module %s inserted into bank A", vsnA);
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_VERBOSE);
-			strncpy(D->vsnA, vsnA, 8);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank A", vsnA);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			strncpy(D->vsns[0], vsnA, 8);
 			logMk5Smart(D, BANK_A);
 		}
-		else if(strcmp(D->vsnA, "illegalA") != 0)
+		else if(strcmp(D->vsns[0], "illegalA") != 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module with illegal VSN inserted into bank A");
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_ERROR);
-			strcpy(D->vsnA, "illegalA");
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank A");
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			strcpy(D->vsns[0], "illegalA");
 		}
 	}
-	if(strncmp(D->vsnB, vsnB, 8) != 0)
+	if(strncmp(D->vsns[1], vsnB, 8) != 0)
 	{
-		if(legalVSN(D->vsnB))
+		if(legalVSN(D->vsns[1]))
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module %s removed from bank B", D->vsnB);
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_VERBOSE);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank B", D->vsns[1]);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 		}
 		if(vsnB[0] == 0)
 		{
-			D->vsnB[0] = 0;
+			D->vsns[1][0] = 0;
 		}
 		else if(legalVSN(vsnB))
 		{
@@ -320,20 +314,54 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 				"Module %s inserted into bank B", vsnB);
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_VERBOSE);
-			strncpy(D->vsnB, vsnB, 8);
+			strncpy(D->vsns[1], vsnB, 8);
 			logMk5Smart(D, BANK_B);
 		}
-		else if(strcmp(D->vsnB, "illegalB") != 0)
+		else if(strcmp(D->vsns[1], "illegalB") != 0)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"Module with illegal VSN inserted into bank B");
 			difxMessageSendDifxAlert(message, 
 				DIFX_ALERT_LEVEL_ERROR);
-			strcpy(D->vsnB, "illegalB");
+			strcpy(D->vsns[1], "illegalB");
 		}
 	}
-	strncpy(dm.vsnA, D->vsnA, 8);
-	strncpy(dm.vsnB, D->vsnB, 8);
+
+	if(D->activeBank >= 0)
+	{
+		if(D->vsns[D->activeBank][0] == 0)
+		{
+			for(i = 1; i < N_BANK; i++)
+			{
+				int nextBank = (D->activeBank + i) % N_BANK;
+				if(D->vsns[nextBank][0] != 0)
+				{
+					activeBank = nextBank;
+					break;
+				}
+			}
+		}
+
+		if(D->vsns[lastBank] == 0)	/* no new bank found */
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "No bank is active now.  Active bank was previously %c", D->activeBank + 'A');
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			
+
+			D->activeBank = -1;
+		}
+		else
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Bank %c is active now.  Active bank was previously %c", nextBank + 'A', D->activeBank + 'A');
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			
+
+			D->activeBank = nextBank;
+		}
+	}
+
+	strncpy(dm.vsnA, D->vsns[0], 8);
+	strncpy(dm.vsnB, D->vsns[1], 8);
 	
 	pthread_mutex_unlock(&D->processLock);
 

@@ -132,19 +132,13 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	Mk5Smart *smart;
 	int d;
 
-	switch(bank)
+	if(bank < 0 ||  bank >= N_BANK)
 	{
-	case BANK_A:
-		strncpy(D->smartData[bank].vsn, D->vsnA, 8);
-		D->smartData[bank].vsn[8] = 0;
-		break;
-	case BANK_B:
-		strncpy(D->smartData[bank].vsn, D->vsnB, 8);
-		D->smartData[bank].vsn[8] = 0;
-		break;
-	default:
 		return -1;
 	}
+
+	strncpy(D->smartData[bank].vsn, D->vsns[bank], 8);
+	D->smartData[bank].vsn[8] = 0;
 
 	xlrRC = XLRSelectBank(xlrDevice, bank);
 	if(xlrRC != XLR_SUCCESS)
@@ -220,7 +214,12 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 	const char *vsn;
 	const Mk5Smart *smart = D->smartData + bank;
 
-	vsn = (bank == BANK_A ? D->vsnA : D->vsnB);
+	if(bank < 0 || bank >= N_BANK)
+	{
+		return 0;
+	}
+	
+	vsn = D->vsns[bank];
 
 	if(smart->mjd < 50000.0 || vsn[0] == 0)
 	{
@@ -266,10 +265,10 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 
 void Mk5Daemon_sendSmartData(Mk5Daemon *D)
 {
-	for(int bank = 0; bank < 2; bank++)
+	for(int bank = 0; bank < N_BANK; bank++)
 	{
 		const Mk5Smart *mk5smart = &(D->smartData[bank]);
-		const char *vsn = (bank == 0 ? D->vsnA : D->vsnB);
+		const char *vsn = D->vsns[bank];
 
 		for(int d = 0; d < N_SMART_DRIVES; d++)
 		{

@@ -41,6 +41,7 @@
 extern const char difxUser[];
 
 #define MAX_COMMAND_SIZE	768
+#define N_BANK			2
 
 enum ProcessType
 {
@@ -55,6 +56,12 @@ enum ProcessType
 	PROCESS_UNKNOWN
 };
 
+enum WriteProtectState
+{
+	PROTECT_OFF = 0,
+	PROTECT_ON
+};
+
 typedef struct
 {
 	Logger *log;
@@ -67,7 +74,9 @@ typedef struct
 	int processDone;
 	int loadMonInterval;		/* seconds */
 	int dieNow;
-	char vsnA[10], vsnB[10];
+	int activeBank;
+	char vsns[N_BANK][10];
+	enum WriteProtectState wp[N_BANK];
 	char hostName[32];
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
@@ -107,6 +116,10 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
 void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
 void Mk5Daemon_stopCondition(Mk5Daemon *D);
+void Mk5Daemon_startRecord(Mk5Daemon *D);
+void Mk5Daemon_stopRecord(Mk5Daemon *D);
+void Mk5Daemon_setBank(Mk5Daemon *D, int bank);
+void Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_sendSmartData(Mk5Daemon *D);
