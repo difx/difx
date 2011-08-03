@@ -473,7 +473,8 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 	int r, v, nFreq, i;
 	DifxParameters *dp;
 	double freq, minFreq = 1.0e9;	/* MHz */
-	double maxFreq = 1.0e2;
+	double maxFreq = 1.0;           /* MHz */
+    double bw = 16.0;               /* MHz, guess a default here */
 
 	dp = newDifxParametersfromfile(inputFile);
 	if(!dp)
@@ -509,6 +510,16 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		{
 			maxFreq = freq;
 		}
+        /* need to add the bandwdith of the last IF to calc the highest freq */
+        /* try to retrieve the BW from the config file, but guess a default if not */
+        r = DifxParametersfind1(dp, r, "BW (MHZ) %d", nFreq-1);
+        if (r < 0) {
+            fprintf(stderr,"Warning: failed to find BW of freq index %d. Assuming %g MHz\n",nFreq-1,bw);
+        }
+        else {
+            bw = atof(DifxParametersvalue(dp, r));
+        }
+        maxFreq += bw;
 	}
 
 	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d -D %f`", 
