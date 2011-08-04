@@ -47,7 +47,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110802";
+const char verdate[] = "20110804";
 
 const int defaultPacketSize = 5008;
 const int defaultPayloadOffset = 40;
@@ -75,34 +75,51 @@ int die = 0;
 #define ETH_FILTER		0x0C
 #define ETH_REJECT_PACKETS	0x11
 
+#define N_BANK			2
+
 /* Note that the text going to stdout is interpreted by other code, so change with caution */
 
 static void usage(const char *pgm)
 {
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
-	printf("A program that attempts to recover a Mark5 module\n\n");
+	printf("A program that records data on a Mark5C unit from the 10G daughter board\n\n");
 	printf("Usage: %s [<options>] <bank> <scanname>\n\n", pgm);
 	printf("<options> can include:\n\n");
 	printf("  --help\n");
 	printf("  -h         Print help info and quit\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Be more verbose in execution\n\n");
+	printf("  --packetsize <s>\n");
+	printf("  -s <s>     Set packet size to <s> [default %d]\n\n", defaultPacketSize);
+	printf("  --dataframeoffset <o>\n");
+	printf("  -d <o>     Set data frame offset to <o> [default %d]\n\n", defaultDataFrameOffset);
+	printf("  --payloadoffset <o>\n");
+	printf("  -p <o>     Set payload offset to <o> [default %d]\n\n", defaultPayloadOffset);
+	printf("  --psnoffset <o>\n");
+	printf("  -o <o>     Set PSN offset to <o> [default %d]\n\n", defaultPSNOffset);
+	printf("  --filtercontrol <f>\n");
+	printf("  -f <f>     Set MAC filter control to <f> [default %d]\n\n", defaultMACFilterControl);
+	printf("  --bytes <b>\n");
+	printf("  -b <b>     Stop recording after <b> bytes written\n\n");
+	printf("  --seconds <s>\n");
+	printf("  -t <s>     Stop recording after <s> seconds passed\n\n");
 
-	/* FIXME: options for packet */
 }
 
 
 void siginthand(int j)
 {
-	die = 1;
+	die = 2;
 	signal(SIGINT, oldsiginthand);
 }
 
+/* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
 static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64 *timeBCD, int *firstFrame, int *byteOffset, int *headerMJD, int *headerSeconds)
 {
 	int bufferSize;
 	UINT32 *buffer;
 	S_READDESC readdesc;
+	int i;
 	int rem;
 	int returnValue = 0;
 
@@ -136,7 +153,6 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 
 	// Mark5B search
 	// Look for first sync word and require that at least the next frame also has this
-	int i;
 	if(framesToRead > 1)
 	{
 		const int searchRange=(bufferSize-Mark5BFrameSize)/4 - 8;
@@ -262,16 +278,54 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 	return returnValue;
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, int verbose)
+static void printBankStat(const S_BANKSTATUS *bankStat)
+{
+	const char *vsn = bankStat->Label;
+	const char noVSN[] = "none";
+	int nSlash = 0;
+
+	for(int i = 0; vsn[i]; i++)
+	{
+		if(vsn[i] == ' ')
+		{
+			vsn = noVSN;
+			break;
+		}
+		if(vsn[i] == '/')
+		{
+			nSlash++;
+		}
+	}
+	if(nSlash != 2)
+	{
+		vsn = noVSN;
+	}
+
+	printf("Bank %s %d %d %d %d %d %d %d %d %Ld %Ld\n",
+		vsn,
+		bankStat->State,
+		bankStat->Selected,
+		bankStat->PowerRequested,
+		bankStat->PowerEnabled,
+		bankStat->MediaStatus,
+		bankStat->WriteProtected,
+		bankStat->ErrorCode,
+		bankStat->ErrorData,
+		bankStat->Length,
+		bankStat->TotalCapacityBytes);
+}
+
+static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, int verbose)
 {
 	const int BufferSize = 1<<18;
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
-	S_BANKSTATUS bankStat;
+	S_BANKSTATUS bankStat, stat[N_BANK];
 	S_READDESC readdesc;
 	S_DIR dir;
 	UINT32 *buffer = 0;
+	S_DEVSTATUS devStatus;
 	int go = 1;
 	int len;
 	char str[10];
@@ -291,6 +345,10 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	char labelCopy[100];
 	char *parts[3];
 	int nPart = 0;
+	struct timeval tv;
+	struct timezone tz;
+	double t0, t, t_ref, t_next_ref, rate;
+	long long p_ref, p_next_ref;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -328,6 +386,12 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
+	}
+
+	for(int b = 0; b < N_BANK; b++)
+	{
+		WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, stat+b) );
+		printBankStat(stat+b);
 	}
 
 	startByte = dir.Length;
@@ -388,16 +452,90 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		WATCHDOGTEST( XLRAppend(xlrDevice) );
 	}
 
+	gettimeofday(&tv, &tz);
+	t_ref = t_next_ref = t0 = tv.tv_sec + tv.tv_usec*1.0e-6;
+	p_ref = p_next_ref = ptr;
 	for(int n = 1; !die; n++)
 	{
 		usleep(1000);
 		
+		if(n % 20 == 0)
+		{
+			gettimeofday(&tv, &tz);
+			t = tv.tv_sec + tv.tv_usec*1.0e-6;
+
+			if(t - t0 > maxSeconds)
+			{
+				printf("Ending time\n");
+				die = 1;
+			}
+		}
+
 		if(n % 1000 == 0)
 		{
 			WATCHDOG( ptr = XLRGetLength(xlrDevice) );
-			/* query position and print */
-			printf("Pointer %Ld\n", ptr);
+			if(ptr - startByte >= maxBytes)
+			{
+				printf("Ending bytes\n");
+				die = 1;
+			}
+
+
+			WATCHDOG( xlrRC = XLRGetDeviceStatus(xlrDevice, &devStatus) );
+
+			rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
+
+			printf("Pointer %Ld %4.2f\n", ptr, rate);
+
+			if(!devStatus.Recording)
+			{
+				printf("Halted\n");
+				die = 1;
+			}
+			if(devStatus.DriveFail)
+			{
+				printf("Drive %d failed\n", devStatus.DriveFailNumber);
+				die = 1;
+			}
+			if(devStatus.SysError)
+			{
+				printf("SystemError %d\n", devStatus.SysErrorCode);
+				die = 1;
+			}
+			if(devStatus.Overflow[0])
+			{
+				printf("Overflow\n");
+				die = 1;
+			}
+
+			if(n % 10000 == 0)
+			{
+				p_ref = p_next_ref;
+				t_ref = t_next_ref;
+
+				p_next_ref = ptr;
+				t_next_ref = t;
+			}
+
+			/* If there is a change in any other bank, report it */
+			for(int b = 0; b < N_BANK; b++)
+			{
+				if(b == bank)
+				{
+					continue;
+				}
+				WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, &bankStat) );
+				if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
+				{
+					memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
+					printBankStat(&bankStat);
+				}
+			}
 		}
+	}
+	if(die == 2)
+	{
+		printf("Ending interrupt\n");
 	}
 
 	printf("Stop %s %Ld\n", label, ptr);
@@ -448,7 +586,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	v = decode5B(xlrDevice, startByte, 10, &timeBCD, &frame, &byteOffset, &mjd1, &sec1);
 	if(v == 0)
 	{
-		int deltat, words, samplesPerWord;
+		long long words;
+		int samplesPerWord;
+		double deltat;
 		UINT64 length = p->stopByte - p->startByte;
 
 		for(int i = 0; i < 8; i++)
@@ -465,6 +605,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			deltat = sec2 - sec1 + 86400*(mjd2 - mjd1) + 1;
 			samplesPerWord = 32/upround2(countbits(q->nTrack));
 			words = (length/Mark5BFrameSize)*2500;
+	printf("Mid %f %d %Ld %d\n", deltat, samplesPerWord, words, countbits(q->nTrack));
 			/* The Mark5A/B sample rate must be 2^n.  Round up to the nearest */
 			for(q->trackRate = 1; q->trackRate < 8192; q->trackRate *= 2)
 			{
@@ -473,7 +614,8 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 					break;
 				}
 			}
-
+	printf("Time %d %d %d  %d %d %d\n", mjd1, sec1, q->firstFrame, mjd2, sec2, frame);
+	printf("TrackRate %d\n", q->trackRate);
 		}
 		else
 		{
@@ -514,6 +656,8 @@ int main(int argc, char **argv)
 	int psnMode = defaultPSNMode;
 	int macFilterControl = defaultMACFilterControl;
 	int retval = EXIT_SUCCESS;
+	long long maxBytes = 1LL<<60;
+	double maxSeconds = 1.0e12;
 	char label[MaxLabelLength] = "";
 
 	for(a = 1; a < argc; a++)
@@ -531,6 +675,56 @@ int main(int argc, char **argv)
 				usage(argv[0]);
 
 				return EXIT_SUCCESS;
+			}
+			else if(a+1 < argc)
+			{
+				if(strcmp(argv[a], "-s") == 0 ||
+				   strcmp(argv[a], "--packetsize") == 0)
+				{
+					packetSize = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-d") == 0 ||
+				   strcmp(argv[a], "--dataframeoffset") == 0)
+				{
+					dataFrameOffset = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-p") == 0 ||
+				   strcmp(argv[a], "--payloadoffset") == 0)
+				{
+					payloadOffset = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-o") == 0 ||
+				   strcmp(argv[a], "--psnoffset") == 0)
+				{
+					psnOffset = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-m") == 0 ||
+				   strcmp(argv[a], "--psnmode") == 0)
+				{
+					psnMode = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-f") == 0 ||
+				   strcmp(argv[a], "--filtercontrol") == 0)
+				{
+					macFilterControl = atoi(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-b") == 0 ||
+				   strcmp(argv[a], "--bytes") == 0)
+				{
+					maxBytes = atoll(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-t") == 0 ||
+				   strcmp(argv[a], "--seconds") == 0)
+				{
+					maxSeconds = atof(argv[a+1]);
+				}
+				else
+				{
+					printf("Unknown option: %s\n", argv[a]);
+
+					return EXIT_FAILURE;
+				}
+				a++;
 			}
 			else
 			{
@@ -612,7 +806,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, verbose);
+		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

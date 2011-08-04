@@ -10,7 +10,7 @@ Version 1.4.2
 * complete wrapping of XLR calls into WATCHDOG macro statements
 * vsn: show disk temperatures by default
 * mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
-* add stand alone Mark5C data recording program
+* add stand alone Mark5C data recording program "record5c"
 
 Version 1.4.1
 ~~~~~~~~~~~~
