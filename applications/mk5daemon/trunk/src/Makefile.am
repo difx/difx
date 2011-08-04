@@ -19,6 +19,8 @@ mk5daemon_SOURCES = \
 	logger.h \
 	monitor.cpp \
 	vsis.cpp \
+	vsis_commands.h \
+	vsis_commands.cpp \
 	getdir.cpp \
 	datacopy.cpp \
 	condition.cpp \

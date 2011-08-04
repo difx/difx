@@ -37,24 +37,66 @@
 #include <sys/time.h>
 #include <fcntl.h>
 #include <arpa/inet.h>
+#include "vsis_commands.h"
 #include "config.h"
 #include "mk5daemon.h"
 
 const int MaxConnections = 8;
+const int MaxFields = 24;
 const unsigned short VSIS_PORT = 2650;
 
-static int setnonblocking(int sock)
+typedef struct
+{
+	const char *name;
+	int(*query)(Mk5Daemon *, int, char **, char *, int);
+	int(*command)(Mk5Daemon *, int, char **, char *, int);
+} Command;
+
+int defaultCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	return snprintf(response, maxResponseLength, "!%s = 7 : Command not yet implemented;", fields[0]);
+}
+
+int noCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+        return snprintf(response, maxResponseLength, "!%s = 7 : This query has no corresponding command;", fields[0]);
+}
+
+int defaultQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	return snprintf(response, maxResponseLength, "!%s ? 7 : Query not yet implemented;", fields[0]);
+}
+
+int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	return snprintf(response, maxResponseLength, "!%s ? 7 : This command has no corresponding query;", fields[0]);
+}
+
+const Command commandSet[] =
+{
+	/* General commands */
+	{ "DTS_id", 	DTS_id_Query, 	noCommand	},
+	{ "OS_rev",	defaultQuery,	noCommand	},
+	{ "protect",	defaultQuery,	defaultCommand	},
+	{ "recover",	defaultQuery,	defaultCommand	},
+	{ "reset",	noQuery,	defaultCommand	},
+	{ "SS_rev",	defaultQuery,	noCommand	},
+
+	{ "",		0,		0		}	/* list terminator */
+};
+
+static int setNonBlocking(int sock)
 {
 	int opts;
 
-	opts = fcntl(sock,F_GETFL);
+	opts = fcntl(sock, F_GETFL);
 	if(opts < 0)
 	{
 		return -1;
 	}
 
 	opts = (opts | O_NONBLOCK);
-	if(fcntl(sock,F_SETFL,opts) < 0)
+	if(fcntl(sock, F_SETFL, opts) < 0)
 	{
 		return -1;
 	}
@@ -62,8 +104,189 @@ static int setnonblocking(int sock)
 	return 0;
 }
 
+static int parseVSIS(char *message, char **fields, int *nField, int *isQuery)
+{
+	int startgood = -1;
+	int stopgood = -1;
+	int done = 0;
+
+	*nField = 0;
+	*isQuery = 0;
+
+	for(int i = 0; !done; i++)
+	{
+		if(message[i] == 0)
+		{
+			done = 1;
+		}
+		else if(message[i] <= ' ')	/* ignore all white space */
+		{
+			continue;
+		}
+		if(*isQuery && !done)
+		{
+			return -4;	/* only whitespace can follow ? */
+		}
+		if(message[i] == '?')
+		{
+			*isQuery = 1;
+		}
+		else if(message[i] == ':' || message[i] == '=' || message[i] == 0)
+		{
+			if(*nField >= MaxFields)
+			{
+				return -1;
+			}
+			if(message[i] == '=' && *nField > 0)
+			{
+				return -2;
+			}
+			if(message[i] == ':' && *nField == 0)
+			{
+				return -3;
+			}
+			if(startgood >= 0)
+			{
+				message[stopgood + 1] = 0;
+				fields[*nField] = message+startgood;
+			}
+			else
+			{
+				message[i] = 0;
+				fields[*nField] = message+i;
+			}
+
+			startgood = stopgood = -1;
+			(*nField)++;
+		}
+		else
+		{
+			if(startgood < 0)
+			{
+				startgood = i;
+			}
+			stopgood = i;
+		}
+
+	}
+
+	return 0;
+}
+
+/* This function can mangle the original string */
+static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxResponseLength)
+{
+	char *fields[MaxFields];
+	int nField;
+	int isQuery;
+	int v;
+
+	const char ParseError[][32] =
+	{
+		"No error",
+		"Too many fields (:'s)",
+		"Unexpected equal sign",
+		"Unexpected colon",
+		"Text after question mark"
+	};
+
+	if(maxResponseLength < 2)
+	{
+		response[0] = 0;
+
+		return -1;
+	}
+
+	if(strlen(message) == 0)
+	{
+		return snprintf(response, maxResponseLength, ";");
+	}
+
+	v = parseVSIS(message, fields, &nField, &isQuery);
+
+	if(v < 0)
+	{
+		return snprintf(response, maxResponseLength, "!%s : Parse error: %s;", (nField > 0 ? fields[0] : "?"), ParseError[-v]);
+	}
+	
+	for(int i = 0; commandSet[i].name[0] != 0; i++)
+	{
+		if(strcmp(commandSet[i].name, fields[0]) == 0)
+		{
+			if(isQuery)
+			{
+				return commandSet[i].query(D, nField, fields, response, maxResponseLength);
+			}
+			else
+			{
+				return commandSet[i].command(D, nField, fields, response, maxResponseLength);
+			}
+		}
+	}
+
+	/* not in command set... */
+	if(isQuery)
+	{
+		return noQuery(D, nField, fields, response, maxResponseLength);
+	}
+	else
+	{
+		return noCommand(D, nField, fields, response, maxResponseLength);
+	}
+}
+
 static int handleVSIS(Mk5Daemon *D, int sock)
 {
+	int v;
+	char message[DIFX_MESSAGE_LENGTH];
+	char response[DIFX_MESSAGE_LENGTH];
+	int r = 0;
+	int start = 0;
+
+	v = recv(sock, message, DIFX_MESSAGE_LENGTH-1, 0);
+	if(v <= 0)
+	{
+		return -1;
+	}
+	message[v] = 0;
+
+	Logger_logData(D->log, message);
+
+	for(int i = 0; message[i]; i++)
+	{
+		if(message[i] == ';' || message[i] == 0)
+		{
+			message[i] = 0;
+
+			printf("Parsed command='%s'\n", message);
+
+			v = processVSIS(D, message+start, response+r, DIFX_MESSAGE_LENGTH-2-r);	/* leave room for \n */
+			start = i+1;
+
+			printf("Response='%s'\n", response+r);
+
+			if(v < 0)
+			{
+				strcpy(response, "Response too long.;");
+
+				return 0;
+			}
+			else
+			{
+				r += v;
+			}
+		}
+	}
+
+	r += snprintf(response+r, DIFX_MESSAGE_LENGTH-r, "\n");
+
+	v = send(sock, response, r, 0);
+	if(v < 1)
+	{
+		return -1;
+	}
+
+	return 0;
 }
 
 static void *serveVSIS(void *ptr)
@@ -98,7 +321,7 @@ static void *serveVSIS(void *ptr)
 
 	setsockopt(acceptSock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 
-	if(setnonblocking(acceptSock) < 0)
+	if(setNonBlocking(acceptSock) < 0)
 	{
 		Logger_logData(D->log, "Cannot non-block accept socket for VSI-S\n");
 
