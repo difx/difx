@@ -104,6 +104,7 @@ static void usage(const char *pgm)
 	printf("  --seconds <s>\n");
 	printf("  -t <s>     Stop recording after <s> seconds passed\n\n");
 
+	printf("Ctrl-C (SIGINT) can be used to cleanly stop recording\n\n");
 }
 
 
@@ -141,7 +142,6 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 		pointer += (4 - rem);
 	}
 
-	/* First read at start of byte range */
 	readdesc.AddrLo = pointer & 0xFFFFFFFF;
 	readdesc.AddrHi = pointer >> 32;
 	readdesc.XferLength = bufferSize;
@@ -278,7 +278,7 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 	return returnValue;
 }
 
-static void printBankStat(const S_BANKSTATUS *bankStat)
+static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 {
 	const char *vsn = bankStat->Label;
 	const char noVSN[] = "none";
@@ -301,7 +301,8 @@ static void printBankStat(const S_BANKSTATUS *bankStat)
 		vsn = noVSN;
 	}
 
-	printf("Bank %s %d %d %d %d %d %d %d %d %Ld %Ld\n",
+	printf("Bank %c %s %d %d %d %d %d %d %d %d %Ld %Ld\n",
+		'A' + bank,
 		vsn,
 		bankStat->State,
 		bankStat->Selected,
@@ -391,7 +392,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	for(int b = 0; b < N_BANK; b++)
 	{
 		WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, stat+b) );
-		printBankStat(stat+b);
+		printBankStat(b, stat+b);
 	}
 
 	startByte = dir.Length;
@@ -528,7 +529,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 				if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
 				{
 					memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
-					printBankStat(&bankStat);
+					printBankStat(b, &bankStat);
 				}
 			}
 		}

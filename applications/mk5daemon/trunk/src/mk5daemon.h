@@ -70,6 +70,7 @@ typedef struct
 	enum ProcessType process;
 	pthread_t processThread;
 	pthread_t monitorThread;
+	pthread_t vsisThread;
 	pthread_mutex_t processLock;
 	int processDone;
 	int loadMonInterval;		/* seconds */
@@ -98,6 +99,8 @@ int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
 int logStreamstorVersions(Mk5Daemon *D);
 void Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
+void Mk5Daemon_startVSIS(Mk5Daemon *D);
+void Mk5Daemon_stopVSIS(Mk5Daemon *D);
 void Mk5Daemon_resetStreamstor(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
 int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);

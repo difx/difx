@@ -118,6 +118,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	printf("isMk5 = %d hostname = %s\n", D->isMk5, D->hostName);
 	signalDie = &D->dieNow;
 	Mk5Daemon_startMonitor(D);
+	Mk5Daemon_startVSIS(D);
 	pthread_mutex_init(&D->processLock, 0);
 	difxMessageSendDifxInfo("mk5daemon starting");
 	D->activeBank = -1;
@@ -162,6 +163,7 @@ void deleteMk5Daemon(Mk5Daemon *D)
 	{
 		D->dieNow = 1;
 		Mk5Daemon_stopMonitor(D);
+		Mk5Daemon_stopVSIS(D);
 		deleteLogger(D->log);
 		free(D);
 	}
