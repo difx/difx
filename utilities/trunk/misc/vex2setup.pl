@@ -27,6 +27,7 @@ my $starttime = undef;
 my $v2dfile = undef;
 my $nCore = 10;
 my $nThread = 7;
+my $scan = undef;
 
 my $cluster = 'cave%02d-ext';
 my $nNode = 14;
@@ -39,7 +40,8 @@ GetOptions('nchannel=i'=>\$nchannel, 'integration=f'=>\$tint,
 	   'crosspol'=>\$crosspol, 'evlbi'=>\$evlbi, 'debug'=>\$debug,
 	   'start=s'=>\$starttime, 'v2d=s'=>\$v2dfile,
 	   'ant=s'=>\@activestations, 'cluster=s'=>\$cluster,
-	   'nodes=i'=>\$nNode, 'duration=i'=>\$requested_duration);
+	   'nodes=i'=>\$nNode, 'duration=i'=>\$requested_duration,
+	   'scan=s'=>\$scan);
 
 if (@ARGV!=1 && @ARGV!=2) {
   Usage();
@@ -83,6 +85,20 @@ foreach (@scans) {
     $modes{$_->mode} = 1;
     push @modenames, $_->mode;
   }
+}
+
+if ($scan) {
+  my $found = 0;
+  foreach (@scans) {
+    if (uc($_->scanid) eq uc($scan)) {
+      print "Matched ", $_->scanid, "\n";
+      $sched_start = $_->start;
+      $sched_stop = $_->stop;
+      $found = 1;
+      last;
+    }
+  }
+  die "No match to $scan\n" if (!$found);
 }
 
 my @stations = sort ($vex->stationlist);
@@ -179,10 +195,10 @@ startSeries = 0
 
 EOF
 
-if (defined $starttime) {
+if (defined $starttime || $scan) {
   printf V2D "mjdStart = %s\n", mjd2vextime($sched_start);
 }
-if (defined $requested_duration) {
+if (defined $requested_duration || $scan) {
   printf V2D "mjdStop = %s\n", mjd2vextime($sched_start+$duration/60/60/24);
 }
 

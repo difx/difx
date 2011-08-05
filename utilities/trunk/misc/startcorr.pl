@@ -308,7 +308,7 @@ sub server_comm {
   close($socket);
     
   if ($ret =~ /<fail>(.*)<\/fail>/s) {
-    carp "$1";
+    carp "$1\n";
     return undef;
   } elsif ($ret =~ /<succ \/>/s) {
     return "";

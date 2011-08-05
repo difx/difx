@@ -1,0 +1,5 @@
+#!/bin/csh
+
+wget -N ftp://hpiers.obspm.fr/iers/bul/bulc/UTC-TAI.history -O .UTC-TAI
+wget http://gemini.gsfc.nasa.gov/500/oper/solve_apriori_files/usno_finals.erp -O .eops
+
