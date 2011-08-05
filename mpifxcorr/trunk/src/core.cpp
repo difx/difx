@@ -1787,6 +1787,10 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
       {
         maxphasechange  = TWO_PI*differentialdelay[s][0]*(nswidth/1000.0)*config->getFreqTableFreq(freqindex);
         timesmeardecorr = sin(maxphasechange/2.0) / (maxphasechange/2.0);
+        if(timesmeardecorr < 0.0) {
+          cerror << startl << "UV shift integration time far too long for baseline " << baseline << ", source " << s << "; no correlation!" << endl;
+          timesmeardecorr = 0;
+        }
       }
       if(fabs(differentialdelay[s][1]) > 1e-18)
       {
@@ -1794,6 +1798,10 @@ void Core::uvshiftAndAverageBaselineFreq(int index, int threadid, double nsoffse
         //cout << "BW smearing: max phase change is " << maxphasechange << endl;
         //bwsmeardecorr   = sin(maxphasechange/2.0) / (maxphasechange/2.0);
         delaydecorr     = 1.0 - fabs(differentialdelay[s][1] / delaywindow);
+        if(delaydecorr < 0.0) {
+          cerror << startl << "FFT window is not wide enough for baseline " << baseline << ", source " << s << "; no correlation!" << endl;
+          delaydecorr = 0;
+        }
         //cout << "1.0 - Time smear decorr is " << 1.0-timesmeardecorr << ", 1.0 - bw smear decorr is " << 1.0-bwsmeardecorr << ", 1.0 - delaydecorr is " << 1.0-delaydecorr << "(diff. delay is " << differentialdelay[s][1] << ", delay window is " << delaywindow << ")" << endl;
       }
       //scratchspace->baselineshiftdecorr[freqindex][baseline][s] += nswidth*timesmeardecorr*bwsmeardecorr*delaydecorr;
