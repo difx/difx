@@ -5,4 +5,12 @@
 
 int DTS_id_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int packet_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int packet_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int bank_set_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

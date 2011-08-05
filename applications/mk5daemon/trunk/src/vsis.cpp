@@ -76,11 +76,14 @@ const Command commandSet[] =
 {
 	/* General commands */
 	{ "DTS_id", 	DTS_id_Query, 	noCommand	},
-	{ "OS_rev",	defaultQuery,	noCommand	},
+	{ "packet",	packet_Query,	packet_Command	},
+	{ "bank_set",	bank_set_Query,	bank_set_Command},
+	{ "SS_rev",	SS_rev_Query,	noCommand	},
+
+	{ "OS_rev",	defaultQuery,	noCommand	},	// uname -nrms
 	{ "protect",	defaultQuery,	defaultCommand	},
 	{ "recover",	defaultQuery,	defaultCommand	},
 	{ "reset",	noQuery,	defaultCommand	},
-	{ "SS_rev",	defaultQuery,	noCommand	},
 
 	{ "",		0,		0		}	/* list terminator */
 };
@@ -250,20 +253,14 @@ static int handleVSIS(Mk5Daemon *D, int sock)
 	}
 	message[v] = 0;
 
-	Logger_logData(D->log, message);
-
 	for(int i = 0; message[i]; i++)
 	{
 		if(message[i] == ';' || message[i] == 0)
 		{
 			message[i] = 0;
 
-			printf("Parsed command='%s'\n", message);
-
 			v = processVSIS(D, message+start, response+r, DIFX_MESSAGE_LENGTH-2-r);	/* leave room for \n */
 			start = i+1;
-
-			printf("Response='%s'\n", response+r);
 
 			if(v < 0)
 			{

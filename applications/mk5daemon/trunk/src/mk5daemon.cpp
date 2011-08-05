@@ -54,6 +54,14 @@ const char difxUser[] = "difx";
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
 
+const int defaultPacketSize = 5008;
+const int defaultPayloadOffset = 40;
+const int defaultDataFrameOffset = 0;
+const int defaultPSNMode = 0;
+const int defaultPSNOffset = 0;
+const int defaultMACFilterControl = 1;
+
+
 int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
@@ -122,6 +130,13 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	pthread_mutex_init(&D->processLock, 0);
 	difxMessageSendDifxInfo("mk5daemon starting");
 	D->activeBank = -1;
+
+	D->packetSize = defaultPacketSize;
+	D->dataFrameOffset = defaultDataFrameOffset;
+	D->payloadOffset = defaultPayloadOffset;
+	D->psnOffset = defaultPSNOffset;
+	D->psnMode = defaultPSNMode;
+	D->macFilterControl = defaultMACFilterControl;
 
 	return D;
 }

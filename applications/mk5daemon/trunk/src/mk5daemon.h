@@ -93,6 +93,13 @@ typedef struct
 #ifdef HAVE_XLRAPI_H
 	Mk5Smart smartData[2];
 #endif
+
+	int payloadOffset;
+	int dataFrameOffset;
+	int packetSize;
+	int psnMode;
+	int psnOffset;
+	int macFilterControl;
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
