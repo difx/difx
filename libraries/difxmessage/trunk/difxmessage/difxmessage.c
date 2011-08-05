@@ -26,7 +26,9 @@
 // $LastChangedDate$
 //
 //============================================================================
+
 #include <stdio.h>
+#include <strings.h>
 #include "../difxmessage.h"
 #include "../config.h"
 #include "difxmessageinternal.h"
