@@ -38,10 +38,18 @@
 #include "smart.h"
 #endif
 
+#ifdef WORDS_BIGENDIAN
+#define MARK5_FILL_PATTERN 0x44332211UL
+#else
+#define MARK5_FILL_PATTERN 0x11223344UL
+#endif
+
+
 extern const char difxUser[];
 
 #define MAX_COMMAND_SIZE	768
 #define N_BANK			2
+#define N_DRIVE			8
 
 enum ProcessType
 {
@@ -62,6 +70,16 @@ enum WriteProtectState
 	PROTECT_ON
 };
 
+enum NetProtocolType
+{
+	NET_PROTOCOL_UDP = 0,
+	NET_PROTOCOL_L2,
+
+	NUM_NET_PROTOCOLS	/* must be last entry in this enum */
+};
+
+extern const char netProtocolStrings[][10];
+
 typedef struct
 {
 	Logger *log;
@@ -77,7 +95,6 @@ typedef struct
 	int dieNow;
 	int activeBank;
 	char vsns[N_BANK][10];
-	enum WriteProtectState wp[N_BANK];
 	char hostName[32];
 	time_t lastMpifxcorrUpdate;
 	time_t lastMark5AUpdate;
@@ -90,8 +107,20 @@ typedef struct
 	int skipGetModule;
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	char userID[256];
+	unsigned int fillPattern;
 #ifdef HAVE_XLRAPI_H
-	Mk5Smart smartData[2];
+	/* FIXME: make bank structure??? */
+	Mk5Smart smartData[N_BANK];
+	S_BANKSTATUS bank_stat[N_BANK];
+	S_DIR dir_info[N_BANK];
+	long long bytesUsed[N_BANK];	/* same as record pointer */
+	long long bytesTotal[N_BANK];
+	long long startPointer[N_BANK];
+	long long stopPointer[N_BANK];
+	int diskModuleState[N_BANK];
+	int nScan[N_BANK];
+	int dirLength[N_BANK];
+	char *dirData[N_BANK];
 #endif
 
 	int payloadOffset;
@@ -100,6 +129,8 @@ typedef struct
 	int psnMode;
 	int psnOffset;
 	int macFilterControl;
+	enum NetProtocolType netProtocol;
+	int diskStateMask;
 } Mk5Daemon;
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
@@ -129,12 +160,14 @@ void Mk5Daemon_stopCondition(Mk5Daemon *D);
 void Mk5Daemon_startRecord(Mk5Daemon *D);
 void Mk5Daemon_stopRecord(Mk5Daemon *D);
 void Mk5Daemon_setBank(Mk5Daemon *D, int bank);
-void Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state);
+int Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg);
+int Mk5Daemon_error(Mk5Daemon *D, unsigned int *xlrError , char *msg);
 void Mk5Daemon_diskOn(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks);
 void Mk5Daemon_sendSmartData(Mk5Daemon *D);
 
 void clearMk5Smart(Mk5Daemon *D, int bank);
+void clearMk5DirInfo(Mk5Daemon *D, int bank);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);

@@ -66,6 +66,16 @@ int *signalDie = 0;
 typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
 
+
+const char netProtocolStrings[][10] =
+{
+	"UDP",
+	"L2",
+
+	"Error"	/* last entry */
+};
+
+
 static void usage(const char *pgm)
 {
 	fprintf(stderr, "\n%s ver. %s   %s\n\n",
@@ -137,6 +147,14 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->psnOffset = defaultPSNOffset;
 	D->psnMode = defaultPSNMode;
 	D->macFilterControl = defaultMACFilterControl;
+	D->fillPattern = MARK5_FILL_PATTERN;
+	D->netProtocol = NET_PROTOCOL_UDP;
+
+	const char *dmsMask = getenv("DEFAULT_DMS_MASK");
+	if(dmsMask)
+	{
+		D->diskStateMask = atoi(dmsMask);
+	}
 
 	return D;
 }

@@ -15,4 +15,32 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 
 int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int fill_pattern_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int fill_pattern_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int protect_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int error_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int disk_model_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int disk_model_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int disk_serial_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int disk_size_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int pointers_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int personality_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int net_protocol_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int net_protocol_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int disk_state_mask_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

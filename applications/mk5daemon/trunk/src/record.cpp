@@ -1,5 +1,6 @@
 #include "mk5daemon.h"
-
+#include "config.h"
+#include "watchdog.h"
 
 void Mk5Daemon_startRecord(Mk5Daemon *D)
 {
@@ -45,8 +46,4 @@ void Mk5Daemon_setBank(Mk5Daemon *D, int bank)
 	}
 
 	D->activeBank = bank;
-}
-
-void Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state)
-{
 }

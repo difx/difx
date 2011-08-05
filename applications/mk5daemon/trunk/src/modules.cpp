@@ -38,6 +38,27 @@
 #include "mk5daemon.h"
 #include "smart.h"
 
+#define LOCAL_VSN_LENGTH	16
+
+void getModuleInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
+{
+	getMk5Smart(xlrDevice, D, bank);
+}
+
+void clearModuleInfo(Mk5Daemon *D, int bank)
+{
+	clearMk5Smart(D, bank);
+	clearMk5DirInfo(D, bank);
+
+	D->dirLength[bank] = 0;
+	if(D->dirData[bank])
+	{
+		free(D->dirData[bank]);
+		D->dirData[bank] = 0;
+	}
+}
+
+
 
 /* see if vsn matches <chars> {+|-} <digits> */
 int legalVSN(const char *vsn)
@@ -81,16 +102,14 @@ int legalVSN(const char *vsn)
 	return 1;
 }
 
-static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
+static int XLR_get_modules(char vsns[][LOCAL_VSN_LENGTH], Mk5Daemon *D)
 {
 	SSHANDLE xlrDevice;
-	S_BANKSTATUS bank_stat;
 	XLR_RETURN_CODE xlrRC;
 	unsigned int xlrError;
 	char message[DIFX_MESSAGE_LENGTH];
 	char xlrErrorStr[XLR_ERROR_LENGTH];
-	char tempA[SMART_TEMP_STRING_LENGTH]; 
-	char tempB[SMART_TEMP_STRING_LENGTH];
+	char temp[N_BANK][SMART_TEMP_STRING_LENGTH]; 
 	const char id[] = "GetModules";
 	int v;
 
@@ -107,12 +126,8 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"ERROR: XLR_get_modules: "
-			"Cannot open streamstor card.  N=%d "
-			"Error=%u (%s)\n",
-			D->nXLROpen,
-			xlrError,
-			xlrErrorStr);
+			"ERROR: XLR_get_modules: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
+			D->nXLROpen, xlrError, xlrErrorStr);
 		Logger_logData(D->log, message);
 
 		unlockStreamstor(D, id);
@@ -127,21 +142,20 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		if(xlrError == 148) /* XLR_ERR_DRIVEMODULE_NOTREADY */
 		{
 			/* this means no modules loaded */
-			vsna[0] = vsnb[0] = 0;
+			for(int bank = 0; bank < N_BANK; bank++)
+			{
+				vsns[bank][0] = 0;
+			}
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"XLR VSNs: <%s> <%s> N=%d\n",
-				vsna, vsnb, D->nXLROpen);
+				vsns[0], vsns[1], D->nXLROpen);
 		}
 		else
 		{
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"ERROR: XLR_get_modules: "
-				"Cannot set SkipCheckDir.  N=%d "
-				"Error=%u (%s)\n",
-				D->nXLROpen,
-				xlrError,
-				xlrErrorStr);
+				"ERROR: XLR_get_modules: Cannot set SkipCheckDir.  N=%d Error=%u (%s)\n",
+				D->nXLROpen, xlrError, xlrErrorStr);
 		}
 		Logger_logData(D->log, message);
 		XLRClose(xlrDevice);
@@ -151,73 +165,45 @@ static int XLR_get_modules(char *vsna, char *vsnb, Mk5Daemon *D)
 		return 0;
 	}
 	
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_B, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
+	for(int bank = N_BANK-1; bank >= 0; bank--)
 	{
-		vsnb[0] = 0;
+		xlrRC = XLRGetBankStatus(xlrDevice, bank, &(D->bank_stat[bank]));
+		if(xlrRC != XLR_SUCCESS)
+		{
+			vsns[bank][0] = 0;
 
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"ERROR: XLR_get_modules: "
-			"BANK_B XLRGetBankStatus failed.  N=%d "
-			"Error=%u (%s)\n",
-			D->nXLROpen,
-			xlrError,
-			xlrErrorStr);
-		Logger_logData(D->log, message);
-		clearMk5Smart(D, BANK_B);
-	}
-	else if(bank_stat.Label[8] == '/')
-	{
-		strncpy(vsnb, bank_stat.Label, 16);
-		vsnb[8] = 0;
-		getMk5Smart(xlrDevice, D, BANK_B);
-	}
-	else
-	{
-		vsnb[0] = 0;
-		clearMk5Smart(D, BANK_B);
-	}
-
-	xlrRC = XLRGetBankStatus(xlrDevice, BANK_A, &bank_stat);
-	if(xlrRC != XLR_SUCCESS)
-	{
-		vsna[0] = 0;
-
-		xlrError = XLRGetLastError();
-		XLRGetErrorMessage(xlrErrorStr, xlrError);
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"ERROR: XLR_get_modules: "
-			"BANK_A XLRGetBankStatus failed.  N=%d "
-			"Error=%u (%s)\n",
-			D->nXLROpen,
-			xlrError,
-			xlrErrorStr);
-		Logger_logData(D->log, message);
-		clearMk5Smart(D, BANK_A);
-	}
-	else if(bank_stat.Label[8] == '/')
-	{
-		strncpy(vsna, bank_stat.Label, 16);
-		vsna[8] = 0;
-		getMk5Smart(xlrDevice, D, BANK_A);
-	}
-	else
-	{
-		vsna[0] = 0;
-		clearMk5Smart(D, BANK_A);
+			xlrError = XLRGetLastError();
+			XLRGetErrorMessage(xlrErrorStr, xlrError);
+			snprintf(message, DIFX_MESSAGE_LENGTH,
+				"ERROR: XLR_get_modules: BANK_%c XLRGetBankStatus failed.  N=%d Error=%u (%s)\n",
+				'A' + bank, D->nXLROpen, xlrError, xlrErrorStr);
+			Logger_logData(D->log, message);
+			clearModuleInfo(D, bank);
+		}
+		else if(D->bank_stat[bank].Label[8] == '/')
+		{
+			strncpy(vsns[bank], D->bank_stat[bank].Label, 16);
+			vsns[bank][8] = 0;
+			getModuleInfo(xlrDevice, D, bank);
+		}
+		else
+		{
+			vsns[bank][0] = 0;
+			clearModuleInfo(D, bank);
+		}
 	}
 
 	XLRClose(xlrDevice);
 
 	unlockStreamstor(D, id);
 
-	extractSmartTemps(tempA, D, BANK_A);
-	extractSmartTemps(tempB, D, BANK_B);
+	for(int bank = 0; bank < N_BANK; bank++)
+	{
+		extractSmartTemps(temp[bank], D, bank);
+	}
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n",
-		vsna, tempA, vsnb, tempB, D->nXLROpen);
+		vsns[0], temp[0], vsns[1], temp[1], D->nXLROpen);
 	Logger_logData(D->log, message);
 
 	return 0;
@@ -227,7 +213,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 {
 	DifxMessageMk5Status dm;
 	int n, v;
-	char vsnA[16], vsnB[16];
+	char vsns[N_BANK][LOCAL_VSN_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
 
 	if(!D->isMk5)
@@ -240,7 +226,10 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	/* don't let the process type change while getting vsns */
 	pthread_mutex_lock(&D->processLock);
 
-	vsnA[0] = vsnB[0] = 0;
+	for(int bank = 0; bank < N_BANK; bank++)
+	{
+		vsns[bank][0] = 0;
+	}
 
 	if(D->process != PROCESS_NONE)
 	{
@@ -255,7 +244,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	switch(D->process)
 	{
 	case PROCESS_NONE:
-		n = XLR_get_modules(vsnA, vsnB, D);
+		n = XLR_get_modules(vsns, D);
 		if(n == 0)
 		{
 			dm.state = MARK5_STATE_IDLE;
@@ -270,60 +259,32 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		return;
 	}
 
-	if(strncmp(D->vsns[0], vsnA, 8) != 0)
+	for(int bank = 0; bank < N_BANK; bank++)
 	{
-		if(legalVSN(D->vsns[0]))
+		if(strncmp(D->vsns[bank], vsns[bank], 8) != 0)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module %s removed from bank A", D->vsns[0]);
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_VERBOSE);
-		}
-		if(vsnA[0] == 0)
-		{
-			D->vsns[0][0] = 0;
-		}
-		else if(legalVSN(vsnA))
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank A", vsnA);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-			strncpy(D->vsns[0], vsnA, 8);
-			logMk5Smart(D, BANK_A);
-		}
-		else if(strcmp(D->vsns[0], "illegalA") != 0)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank A");
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-			strcpy(D->vsns[0], "illegalA");
-		}
-	}
-	if(strncmp(D->vsns[1], vsnB, 8) != 0)
-	{
-		if(legalVSN(D->vsns[1]))
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank B", D->vsns[1]);
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-		}
-		if(vsnB[0] == 0)
-		{
-			D->vsns[1][0] = 0;
-		}
-		else if(legalVSN(vsnB))
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module %s inserted into bank B", vsnB);
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_VERBOSE);
-			strncpy(D->vsns[1], vsnB, 8);
-			logMk5Smart(D, BANK_B);
-		}
-		else if(strcmp(D->vsns[1], "illegalB") != 0)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"Module with illegal VSN inserted into bank B");
-			difxMessageSendDifxAlert(message, 
-				DIFX_ALERT_LEVEL_ERROR);
-			strcpy(D->vsns[1], "illegalB");
+			if(legalVSN(D->vsns[bank]))
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank %c", D->vsns[0], 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			}
+			if(vsns[bank][0] == 0)
+			{
+				D->vsns[bank][0] = 0;
+			}
+			else if(legalVSN(vsns[bank]))
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", vsns[bank], 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+				strncpy(D->vsns[bank], vsns[bank], 8);
+				logMk5Smart(D, BANK_A);
+			}
+			else if(strncmp(D->vsns[bank], "illegal", 7) != 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank %c", 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				sprintf(D->vsns[bank], "illegal%c", 'A'+bank);
+			}
 		}
 	}
 
@@ -394,12 +355,8 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(xlrErrorStr, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"ERROR: XLR_disc_power: "
-			"Cannot open streamstor card.  N=%d "
-			"Error=%u (%s)\n",
-			D->nXLROpen,
-			xlrError,
-			xlrErrorStr);
+			"ERROR: XLR_disc_power: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
+			D->nXLROpen, xlrError, xlrErrorStr);
 		Logger_logData(D->log, message);
 
 		unlockStreamstor(D, id);
@@ -420,8 +377,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 		else
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"XLR_disc_power: illegal args: "
-				"bank=%c, on=%d\n", banks[i], on);
+				"XLR_disc_power: illegal args: bank=%c, on=%d\n", banks[i], on);
 			Logger_logData(D->log, message);
 			continue;
 		}
@@ -438,8 +394,7 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH, 
-				"XLR_disc_power: error for "
-				"bank=%c on=%d Error=%u (%s)\n",
+				"XLR_disc_power: error for bank=%c on=%d Error=%u (%s)\n",
 				banks[i], on, xlrError, xlrErrorStr);
 			Logger_logData(D->log, message);
 		}
@@ -478,3 +433,166 @@ void Mk5Daemon_diskOff(Mk5Daemon *D, const char *banks)
 	pthread_mutex_unlock(&D->processLock);
 }
 
+static int XLR_error(Mk5Daemon *D, unsigned int *xlrError , char *msg)
+{
+	SSHANDLE xlrDevice;
+	XLR_RETURN_CODE xlrRC;
+	char message[DIFX_MESSAGE_LENGTH];
+	const char id[] = "Error";
+	int v;
+
+	*xlrError = 0;
+
+	v = lockStreamstor(D, id, MARK5_LOCK_DONT_WAIT);
+	if(v != 0)
+	{
+		strcpy(message, "Streamstor card in use");
+
+		return 5;	/* too busy */
+	}
+
+	xlrRC = XLROpen(1, &xlrDevice);
+	D->nXLROpen++;
+	if(xlrRC != XLR_SUCCESS)
+	{
+		*xlrError = XLRGetLastError();
+		XLRGetErrorMessage(msg, *xlrError);
+	}
+	else
+	{
+		XLRClose(xlrDevice);
+	}
+
+	unlockStreamstor(D, id);
+
+	return 0;
+}
+
+static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
+{
+	SSHANDLE xlrDevice;
+	XLR_RETURN_CODE xlrRC;
+	unsigned int xlrError;
+	char message[DIFX_MESSAGE_LENGTH];
+	const char id[] = "SetProtect";
+	int v;
+
+	v = lockStreamstor(D, id, MARK5_LOCK_DONT_WAIT);
+	if(v != 0)
+	{
+		strcpy(message, "Streamstor card in use");
+
+		return 5;	/* too busy */
+	}
+
+	xlrRC = XLROpen(1, &xlrDevice);
+	D->nXLROpen++;
+	if(xlrRC != XLR_SUCCESS)
+	{
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(msg, xlrError);
+		snprintf(message, DIFX_MESSAGE_LENGTH,
+			"ERROR: Mk5Daemon_setProtect: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
+			D->nXLROpen, xlrError, msg);
+		Logger_logData(D->log, message);
+
+		unlockStreamstor(D, id);
+
+		return 4;	/* error */
+	}
+
+	xlrRC = XLRSelectBank(xlrDevice, D->activeBank);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(msg, xlrError);
+		snprintf(message, DIFX_MESSAGE_LENGTH,
+			"ERROR: Mk5Daemon_setProtect: cannot select bank %d Error=%u (%s)\n",
+			D->activeBank, xlrError, msg);
+		Logger_logData(D->log, message);
+
+		XLRClose(xlrDevice);
+		unlockStreamstor(D, id);
+
+		return 4;	/* error */
+	}
+
+	XLRGetDirectory(xlrDevice, &(D->dir_info[D->activeBank]));
+
+	switch(state)
+	{
+	case PROTECT_ON:
+		xlrRC = XLRSetWriteProtect(xlrDevice);
+		break;
+	case PROTECT_OFF:
+		xlrRC = XLRClearWriteProtect(xlrDevice);
+		break;
+	}
+
+	xlrRC = XLRSelectBank(xlrDevice, D->activeBank);
+	if(xlrRC != XLR_SUCCESS)
+	{
+		xlrError = XLRGetLastError();
+		XLRGetErrorMessage(msg, xlrError);
+		snprintf(message, DIFX_MESSAGE_LENGTH,
+			"ERROR: Mk5Daemon_setProtect: cannot set protect to %d Error=%u (%s)\n",
+			state, xlrError, msg);
+		Logger_logData(D->log, message);
+
+		XLRClose(xlrDevice);
+		unlockStreamstor(D, id);
+
+		return 4;	/* error */
+	}
+
+	XLRClose(xlrDevice);
+	unlockStreamstor(D, id);
+
+	return 0;
+}
+
+int Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
+{
+	int v;
+
+	msg[0] = 0;
+
+	/* don't let the process type change while getting vsns */
+	pthread_mutex_lock(&D->processLock);
+
+	if(D->process == PROCESS_NONE)
+	{
+		v = XLR_setProtect(D, state, msg);
+	}
+	else
+	{
+		v = 5;	/* too busy */
+	}
+
+	pthread_mutex_unlock(&D->processLock);
+
+	return v;
+}
+
+int Mk5Daemon_error(Mk5Daemon *D, unsigned int *xlrError , char *msg)
+{
+	int v;
+
+	msg[0] = 0;
+
+	/* don't let the process type change while getting vsns */
+	pthread_mutex_lock(&D->processLock);
+
+	if(D->process == PROCESS_NONE)
+	{
+		v = XLR_error(D, xlrError, msg);
+	}
+	else
+	{
+		v = 5;	/* too busy */
+	}
+
+	pthread_mutex_unlock(&D->processLock);
+
+	return v;
+}

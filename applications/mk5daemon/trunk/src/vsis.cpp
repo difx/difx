@@ -54,7 +54,7 @@ typedef struct
 
 int defaultCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	return snprintf(response, maxResponseLength, "!%s = 7 : Command not yet implemented;", fields[0]);
+	return snprintf(response, maxResponseLength, "!%s = 7 : No such keyword;", fields[0]);
 }
 
 int noCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -64,7 +64,7 @@ int noCommand(Mk5Daemon *D, int nField, char **fields, char *response, int maxRe
 
 int defaultQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	return snprintf(response, maxResponseLength, "!%s ? 7 : Query not yet implemented;", fields[0]);
+	return snprintf(response, maxResponseLength, "!%s ? 7 : No such keyword;", fields[0]);
 }
 
 int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -75,17 +75,29 @@ int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResp
 const Command commandSet[] =
 {
 	/* General commands */
-	{ "DTS_id", 	DTS_id_Query, 	noCommand	},
-	{ "packet",	packet_Query,	packet_Command	},
-	{ "bank_set",	bank_set_Query,	bank_set_Command},
-	{ "SS_rev",	SS_rev_Query,	noCommand	},
-	{ "OS_rev",	OS_rev_Query,	noCommand	},	// uname -nrms
+	{ "DTS_id", 		DTS_id_Query, 		noCommand		},
+	{ "packet",		packet_Query,		packet_Command		},
+	{ "bank_set",		bank_set_Query,		bank_set_Command	},
+	{ "SS_rev",		SS_rev_Query,		noCommand		},
+	{ "OS_rev",		OS_rev_Query,		noCommand		},
+	{ "fill_pattern",	fill_pattern_Query,	fill_pattern_Command	},
+	{ "protect",		protect_Query,		protect_Command		},
+	{ "error",		error_Query,		noCommand		},
+	{ "disk_model",		disk_model_Query,	noCommand		},
+	{ "disk_model_rev",	disk_model_rev_Query,	noCommand		},
+	{ "disk_serial",	disk_serial_Query,	noCommand		},
+	{ "disk_size",		disk_size_Query,	noCommand		},
+	{ "dir_info",		dir_info_Query,		noCommand		},
+	{ "pointers",		pointers_Query,		noCommand		},
+	{ "personality",	personality_Query,	personality_Command	},
+	{ "bank_info",		bank_info_Query,	noCommand		},
+	{ "net_protocol",	net_protocol_Query,	net_protocol_Command	},
+	{ "disk_state_mask",	disk_state_mask_Query,	disk_state_mask_Command	},
 
-	{ "protect",	defaultQuery,	defaultCommand	},
-	{ "recover",	defaultQuery,	defaultCommand	},
-	{ "reset",	noQuery,	defaultCommand	},
+	{ "recover",		defaultQuery,		defaultCommand		},
+	{ "reset",		noQuery,		defaultCommand		},
 
-	{ "",		0,		0		}	/* list terminator */
+	{ "",			0,			0			}	/* list terminator */
 };
 
 static int setNonBlocking(int sock)

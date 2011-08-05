@@ -27,10 +27,12 @@
  *
  *==========================================================================*/
 
-#include <string.h>
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include "mk5daemon.h"
 #include "smart.h"
+#include "../mk5dir/mark5directorystructs.h"
 
 const SmartDescription smartDescriptions[] =
 {
@@ -94,6 +96,16 @@ void clearMk5Smart(Mk5Daemon *D, int bank)
 	memset(&D->smartData[bank], 0, sizeof(Mk5Smart));
 }
 
+void clearMk5DirInfo(Mk5Daemon *D, int bank)
+{
+	D->nScan[bank] = 0;
+	D->bytesUsed[bank] = 0LL;
+	D->bytesTotal[bank] = 0LL;
+	D->startPointer[bank] = 0LL;
+	D->stopPointer[bank] = 0LL;
+	memset(&D->dir_info[bank], 0, sizeof(S_DIR));
+}
+
 const char *getSmartDescription(int smartId)
 {
 	int i;
@@ -124,6 +136,7 @@ int isSmartCritical(int smartId)
 	return smartDescriptions[i].critical;
 }
 
+/* this is really a lot more than just smart data now! */
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -131,6 +144,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	USHORT smartVersion;
 	Mk5Smart *smart;
 	int d;
+	int len;
 
 	if(bank < 0 ||  bank >= N_BANK)
 	{
@@ -147,6 +161,53 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		
 		return -2;
 	}
+
+	XLRGetDirectory(xlrDevice, &(D->dir_info[bank]));
+	len = XLRGetUserDirLength(xlrDevice);
+	if(len % 128 == 0 && len >= 128)
+	{
+		if(len != D->dirLength[bank])
+		{
+			if(D->dirData[bank])
+			{
+				free(D->dirData[bank]);
+			}
+			if(len > 0)
+			{
+				D->dirData[bank] = (char *)malloc(len);
+				xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
+				if(xlrRC != XLR_SUCCESS)
+				{
+					clearMk5Smart(D, bank);
+
+					return -3;
+				}
+
+				const struct Mark5DirectoryHeaderVer1 *dirHeader = (struct Mark5DirectoryHeaderVer1 *)(D->dirData[bank]);
+				const struct Mark5DirectoryScanHeaderVer1 *lastScan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + len - 128);
+				D->startPointer[bank] = lastScan->startByte;
+				D->stopPointer[bank] = lastScan->stopByte;
+				D->diskModuleState[bank] = dirHeader->status & 0xFF;	/* don't include scan count here */
+			}
+			else
+			{
+				D->dirData[bank] = 0;
+			}
+			D->dirLength[bank] = len;
+		}
+	}
+	else	/* not a valid version 1 directory structure! */
+	{
+		if(D->dirData[bank])
+		{
+			free(D->dirData[bank]);
+			D->dirData[bank] = 0;
+		}
+		D->dirLength[bank] = 0;
+	}
+	D->nScan[bank] = len/128 - 1;
+	D->bytesUsed[bank] = XLRGetLength(xlrDevice);
+	D->bytesTotal[bank] = 0LL;
 
 	smart = &(D->smartData[bank]);
 	smart->mjd = 51234;		// FIXME
@@ -169,6 +230,8 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		trim(drive->rev, driveInfo.Revision);
 		drive->capacity = driveInfo.Capacity * 512LL;
 		drive->smartCapable = driveInfo.SMARTCapable;
+
+		D->bytesTotal[bank] += drive->capacity;
 
 		if(!drive->smartCapable)
 		{
