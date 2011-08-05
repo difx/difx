@@ -13,4 +13,6 @@ int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 
 int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

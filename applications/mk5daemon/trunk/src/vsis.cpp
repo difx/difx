@@ -79,8 +79,8 @@ const Command commandSet[] =
 	{ "packet",	packet_Query,	packet_Command	},
 	{ "bank_set",	bank_set_Query,	bank_set_Command},
 	{ "SS_rev",	SS_rev_Query,	noCommand	},
+	{ "OS_rev",	OS_rev_Query,	noCommand	},	// uname -nrms
 
-	{ "OS_rev",	defaultQuery,	noCommand	},	// uname -nrms
 	{ "protect",	defaultQuery,	defaultCommand	},
 	{ "recover",	defaultQuery,	defaultCommand	},
 	{ "reset",	noQuery,	defaultCommand	},

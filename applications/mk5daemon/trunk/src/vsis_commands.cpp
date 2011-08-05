@@ -129,8 +129,7 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 		dbInfo[0] = 0;
 	}
 
-	v = snprintf(response, maxResponseLength, "!%s? 0 : BoardType %s : SerialNum %d : APIVersion %s : APIDateCode %s : FirmwareVersion %s : FirmDateCode %s : MonitorVersion %s : XBarVersion %s : ATAVersion %s : UATAVersion %s : DriverVersion %s%s", fields[0],
-
+	v = snprintf(response, maxResponseLength, "!%s? 0 : BoardType %s : SerialNum %d : APIVersion %s : APIDateCode %s : FirmwareVersion %s : FirmDateCode %s : MonitorVersion %s : XBarVersion %s : ATAVersion %s : UATAVersion %s : DriverVersion %s%s;", fields[0],
 		D->mk5ver.BoardType,
 		D->mk5ver.SerialNum,
 		D->mk5ver.ApiVersion,
@@ -143,6 +142,31 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 		D->mk5ver.UAtaVersion,
 		D->mk5ver.DriverVersion,
 		dbInfo);
+
+	return v;
+}
+
+int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	FILE *pin;
+	int v;
+	const char command[] = "uname -rms";
+	char A[3][32];
+
+	A[0][0] = A[1][0] = A[2][0] = 0;
+
+	pin = popen(command, "r");
+	if(!pin)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 1 : Unable to execute : %s;", fields[0], command);
+	}
+	else
+	{
+		fscanf(pin, "%s%s%s", A[0], A[1], A[2]);
+		fclose(pin);
+
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s : %s : %s;", fields[0], D->hostName, A[0], A[1], A[2]);
+	}
 
 	return v;
 }

@@ -47,7 +47,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110804";
+const char verdate[] = "20110805";
 
 const int defaultPacketSize = 5008;
 const int defaultPayloadOffset = 40;
@@ -56,10 +56,11 @@ const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 1;
 const unsigned int defaultStreamstorChannel = 28;
+const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
 const int MaxLabelLength = 40;
 const int Mark5BFrameSize = 10016;
-const UINT32 Mark5BSyncWord=0xABADDEED;
+const UINT32 Mark5BSyncWord = 0xABADDEED;
 
 typedef void (*sighandler_t)(int);
 sighandler_t oldsiginthand;
@@ -316,16 +317,70 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 		bankStat->TotalCapacityBytes);
 }
 
+static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
+	struct Mark5DirectoryScanHeaderVer1 *p, struct Mark5DirectoryLegacyBodyVer1 *q)
+{
+	int frame, byteOffset;
+	int mjd1=0, mjd2=0, sec1=0, sec2=0;
+	int v;
+
+	p->startByte = startByte;
+	p->stopByte = stopByte;
+	v = decode5B(xlrDevice, startByte, 10, &timeBCD, &frame, &byteOffset, &mjd1, &sec1);
+	if(v == 0)
+	{
+		long long words;
+		int samplesPerWord;
+		double deltat;
+		UINT64 length = p->stopByte - p->startByte;
+
+		for(int i = 0; i < 8; i++)
+		{
+			q->timeBCD[i] = ((unsigned char *)(&timeBCD))[i];
+		}
+		q->firstFrame = frame;
+		q->byteOffset = byteOffset;
+		q->nTrack = 0xFFFFFFFF;	/* FIXME */
+		v = decode5B(xlrDevice, p->stopByte, -10, 0, &frame, 0, &mjd2, &sec2);
+		if(v == 0)
+		{
+
+			deltat = sec2 - sec1 + 86400*(mjd2 - mjd1) + 1;
+			samplesPerWord = 32/upround2(countbits(q->nTrack));
+			words = (length/Mark5BFrameSize)*2500;
+			/* The Mark5A/B sample rate must be 2^n.  Round up to the nearest */
+			for(q->trackRate = 1; q->trackRate < 8192; q->trackRate *= 2)
+			{
+				if(deltat*q->trackRate*1000000ULL >= words*samplesPerWord)
+				{
+					break;
+				}
+			}
+			printf("Time %d %d %d  %d %d %d\n", mjd1, sec1, q->firstFrame, mjd2, sec2, frame);
+			printf("TrackRate %d\n", q->trackRate);
+		}
+		else
+		{
+			printf("Decode failure 2\n");
+		}
+	}
+	else
+	{
+		printf("Decode failure 1\n");
+	}
+
+	return 0;
+}
+
 static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, int verbose)
 {
-	const int BufferSize = 1<<18;
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	S_BANKSTATUS bankStat, stat[N_BANK];
+	S_DRIVESTATS driveStats[XLR_MAXBINS];
 	S_READDESC readdesc;
 	S_DIR dir;
-	UINT32 *buffer = 0;
 	S_DEVSTATUS devStatus;
 	int go = 1;
 	int len;
@@ -341,8 +396,6 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
 	UINT64 timeBCD;
-	int frame, byteOffset;
-	int mjd1=0, mjd2=0, sec1=0, sec2=0;
 	char labelCopy[100];
 	char *parts[3];
 	int nPart = 0;
@@ -412,10 +465,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		len = 128;
 	}
 
-	buffer = (UINT32 *)malloc(BufferSize);
-	dirData = (char *)calloc(len+128, 1);
+	dirData = (char *)calloc(len+256, 1);	/* make large enough for 2 extra entries */
 	WATCHDOGTEST( XLRGetUserDir(xlrDevice, len, 0, dirData) );
-	for(int i = 0; i < 128; i++)
+	for(int i = 0; i < 256; i++)
 	{
 		dirData[len+i] = 0;
 	}
@@ -423,6 +475,35 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	printf("Directory %d %d\n", dirHeader->version, len/128-1);
 	p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
 	q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
+
+	WATCHDOG( ptr = XLRGetLength(xlrDevice) );
+
+	if(len >= 256)
+	{
+		long long lastEndByte = ((struct Mark5DirectoryScanHeaderVer1 *)(dirData + len - 128))->stopByte;
+		if(ptr - lastEndByte > 1LL<<23)
+		{
+			/* Here there must have been a problem where the previous scan was not recorded in the dir table. */
+			strcpy(p->expName, "UKNOWN");
+			strncpy(p->station, ((struct Mark5DirectoryScanHeaderVer1 *)(dirData + len - 128))->station, 2);
+			sprintf(p->scanName, "%d", (len/128));
+			p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
+			p->frameLength = 10016;	/* FIXME */
+			decodeScan(xlrDevice, lastEndByte, ptr, p, q);
+
+			len += 128;
+			p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
+			q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
+		}
+	}
+
+	for(int b = 0; b < XLR_MAXBINS; b++)
+	{
+		driveStats[b].range = statsRange[b];
+		driveStats[b].count = 0;
+	}
+	WATCHDOGTEST( XLRSetDriveStats(xlrDevice, driveStats) );
+
 
 	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
 	WATCHDOGTEST( XLRClearChannels(xlrDevice) );
@@ -440,8 +521,6 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	printf("WR_DB %d %d\n", PSN_OFFSET, psnOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
 	printf("WR_DB %d %d\n", MAC_FLTR_CTRL, macFilterControl);
-
-	WATCHDOG( ptr = XLRGetLength(xlrDevice) );
 
 	printf("Record %s %Ld\n", label, ptr);
 	if(startByte == 0LL)
@@ -579,66 +658,35 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			strncpy(p->scanName, parts[2], MODULE_SCAN_NAME_LENGTH);
 			break;
 	}
-	p->startByte = startByte;
-	p->stopByte = dir.Length;
+
+	decodeScan(xlrDevice, startByte, dir.Length, p, q);
 
 	dirHeader->status = MODULE_STATUS_RECORDED;
 
-	v = decode5B(xlrDevice, startByte, 10, &timeBCD, &frame, &byteOffset, &mjd1, &sec1);
-	if(v == 0)
-	{
-		long long words;
-		int samplesPerWord;
-		double deltat;
-		UINT64 length = p->stopByte - p->startByte;
-
-		for(int i = 0; i < 8; i++)
-		{
-			q->timeBCD[i] = ((unsigned char *)(&timeBCD))[i];
-		}
-		q->firstFrame = frame;
-		q->byteOffset = byteOffset;
-		q->nTrack = 0xFFFFFFFF;	/* FIXME */
-		v = decode5B(xlrDevice, p->stopByte, -10, 0, &frame, 0, &mjd2, &sec2);
-		if(v == 0)
-		{
-
-			deltat = sec2 - sec1 + 86400*(mjd2 - mjd1) + 1;
-			samplesPerWord = 32/upround2(countbits(q->nTrack));
-			words = (length/Mark5BFrameSize)*2500;
-	printf("Mid %f %d %Ld %d\n", deltat, samplesPerWord, words, countbits(q->nTrack));
-			/* The Mark5A/B sample rate must be 2^n.  Round up to the nearest */
-			for(q->trackRate = 1; q->trackRate < 8192; q->trackRate *= 2)
-			{
-				if(deltat*q->trackRate*1000000ULL >= words*samplesPerWord)
-				{
-					break;
-				}
-			}
-	printf("Time %d %d %d  %d %d %d\n", mjd1, sec1, q->firstFrame, mjd2, sec2, frame);
-	printf("TrackRate %d\n", q->trackRate);
-		}
-		else
-		{
-			printf("Decode failure 2\n");
-		}
-	}
-	else
-	{
-		printf("Decode failure 1\n");
-	}
-
 	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
+
+	for(int d = 0; d < 8; d++)
+	{
+		WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
+		if(xlrRC == XLR_SUCCESS)
+		{
+			printf("Stats %d %u %u %u %u %u %u %u %u\n", d,
+				(unsigned int)(driveStats[0].count),
+				(unsigned int)(driveStats[1].count),
+				(unsigned int)(driveStats[2].count),
+				(unsigned int)(driveStats[3].count),
+				(unsigned int)(driveStats[4].count),
+				(unsigned int)(driveStats[5].count),
+				(unsigned int)(driveStats[6].count),
+				(unsigned int)(driveStats[7].count));
+		}
+	}
 
 	WATCHDOG( XLRClose(xlrDevice) );
 
 	if(dirData)
 	{
 		free(dirData);
-	}
-	if(buffer)
-	{
-		free(buffer);
 	}
 
 	return 0;
@@ -813,9 +861,7 @@ int main(int argc, char **argv)
 			if(watchdogXLRError[0] != 0)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
-				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"Streamstor error executing: %s : %s",
-					watchdogStatement, watchdogXLRError);
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Streamstor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 
