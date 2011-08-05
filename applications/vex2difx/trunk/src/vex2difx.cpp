@@ -2858,5 +2858,8 @@ int main(int argc, char **argv)
 
 	cout << endl;
 
-	return EXIT_SUCCESS;
+	if (nJob>0)
+	  return EXIT_SUCCESS;
+	else
+	  return EXIT_FAILURE;
 }
