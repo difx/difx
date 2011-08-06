@@ -24,7 +24,7 @@ void Mk5Daemon_startRecord(Mk5Daemon *D)
 		while(!feof(pin))
 		{
 		}
-		fclose(pin);
+		pclose(pin);
 	}
 }
 

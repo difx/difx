@@ -6,6 +6,8 @@
 #include "vsis_commands.h"
 #include "../mk5dir/mark5directorystructs.h"
 
+const long long minFreeSpace = 10000000;
+
 int DTS_id_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v;
@@ -27,28 +29,39 @@ int packet_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 
 int packet_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	if(nField > 1 && fields[1][0])
+	int v;
+
+	if(D->recordState != RECORD_OFF)
 	{
-		D->payloadOffset = atoi(fields[1]);
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
 	}
-	if(nField > 2 && fields[2][0])
+	else
 	{
-		D->dataFrameOffset = atoi(fields[2]);
-	}
-	if(nField > 3 && fields[3][0])
-	{
-		D->packetSize = atoi(fields[3]);
-	}
-	if(nField > 4 && fields[4][0])
-	{
-		D->psnMode = atoi(fields[4]);
-	}
-	if(nField > 5 && fields[5][0])
-	{
-		D->psnOffset = atoi(fields[5]);
+		if(nField > 1 && fields[1][0])
+		{
+			D->payloadOffset = atoi(fields[1]);
+		}
+		if(nField > 2 && fields[2][0])
+		{
+			D->dataFrameOffset = atoi(fields[2]);
+		}
+		if(nField > 3 && fields[3][0])
+		{
+			D->packetSize = atoi(fields[3]);
+		}
+		if(nField > 4 && fields[4][0])
+		{
+			D->psnMode = atoi(fields[4]);
+		}
+		if(nField > 5 && fields[5][0])
+		{
+			D->psnOffset = atoi(fields[5]);
+		}
+
+		v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
 	}
 
-	return snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+	return v;
 }
 
 int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -63,6 +76,10 @@ int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 	else if(nField > 2)
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : Only one parameter allowed;", fields[0]);
+	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
 	}
 	else if(strlen(fields[1]) == 1)
 	{
@@ -201,6 +218,10 @@ int fill_pattern_Command(Mk5Daemon *D, int nField, char **fields, char *response
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : One parameter must be supplied;", fields[0]);
 	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
 	else
 	{
 		if(strlen(fields[1]) < 3 || fields[1][0] != '0' || fields[1][1] != 'x')
@@ -240,6 +261,10 @@ int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 	if(nField != 1 || (strcmp(fields[1], "on") != 0 && strcmp(fields[1], "off") != 0))
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : on or off expected;", fields[0]);
+	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
 	}
 	else if(D->activeBank < 0)
 	{
@@ -544,6 +569,10 @@ int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 	{
 		 v = snprintf(response, maxResponseLength, "!%s = 6 : Two parameters must be supplied;", fields[0]);
 	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
 	else
 	{
 		if(strcasecmp(fields[1], "mark5C") != 0)
@@ -625,6 +654,10 @@ int net_protocol_Command(Mk5Daemon *D, int nField, char **fields, char *response
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : One parameter must be supplied;", fields[0]);
 	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
 	else
 	{
 		for(int n = 0; n < NUM_NET_PROTOCOLS; n++)
@@ -664,6 +697,10 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 	if(nField > 4)
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : Up to three parameters allowed;", fields[0]);
+	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
 	}
 	else
 	{
@@ -779,6 +816,10 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : Up to %d parameters can be supplied;", fields[0], XLR_MAXBINS-1);
 	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
 	else
 	{
 		int t[XLR_MAXBINS];
@@ -831,7 +872,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 			}
 			else
 			{
-				v = snprintf(response, maxResponseLength, "!%s = 6 : Parameters must be monotne increasing;", fields[0]);
+				v = snprintf(response, maxResponseLength, "!%s = 6 : Parameters must be monotone increasing;", fields[0]);
 			}
 		}
 		else
@@ -914,7 +955,14 @@ int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, 
 {
 	int v;
 
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+	if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
+	else
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+	}
 
 	return v;
 }
@@ -1040,8 +1088,16 @@ int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	}
 	else
 	{
-		v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %d : %s;", fields[0],
-			recordStateStrings[D->recordState], D->nScan[D->activeBank], D->scanLabel[D->activeBank]);
+		if(D->recordState == RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %d : %s;", fields[0],
+				recordStateStrings[D->recordState], D->nScan[D->activeBank], D->scanLabel[D->activeBank]);
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %d : %s : %Ld : %4.2f;", fields[0],
+				recordStateStrings[D->recordState], D->nScan[D->activeBank], D->scanLabel[D->activeBank], D->bytesUsed[D->activeBank], D->recordRate);
+		}
 	}
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
@@ -1053,8 +1109,101 @@ int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v;
+	char command[1000];
 
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+#ifdef HAVE_XLRAPI_H
+	if(nField < 2)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : One to four parameters needed;", fields[0]);
+	}
+	else if(strcmp(fields[1], "on") == 0)
+	{
+		char scanLabel[MODULE_LEGACY_SCAN_LENGTH];
+
+		if(D->recordState != RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Already recording;", fields[0]);
+		}
+		else if(nField < 3)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : Scan name rquired;", fields[0]);
+		}
+		else if(D->activeBank < 0)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : No module mounted;", fields[0]);
+		}
+		else if(D->bank_stat[D->activeBank].WriteProtected)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Disk is write protected;", fields[0]);
+		}
+		else if(D->dirVersion[D->activeBank] < 1)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Module directory version %d not supported;", fields[0],
+				D->dirVersion[D->activeBank]);
+		}
+		else if(D->bytesTotal[D->activeBank] - D->bytesUsed[D->activeBank] < minFreeSpace)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Insufficient disk free;", fields[0]);
+		}
+		else
+		{
+			switch(nField)
+			{
+				case 3:
+					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s", fields[2]);
+					break;
+				case 4:
+					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s", fields[2], fields[3]);
+					break;
+				default:
+					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", fields[2], fields[3], fields[4]);
+					break;
+			}
+
+			snprintf(command, 1000, "record5c %c %s", 'A'+D->activeBank, scanLabel);
+			printf("Executing %s\n", command);  fflush(stdout);
+			D->recordPipe = popen(command, "r");
+			if(!D->recordPipe)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 4 : Execution of record5c failed;", fields[0]);
+			}
+			else
+			{
+				setlinebuf(D->recordPipe);
+				D->recordState = RECORD_ON;
+				D->nScan[D->activeBank]++;
+				strcpy(D->scanLabel[D->activeBank], scanLabel);
+				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+			}
+		}
+	}
+	else if(strcmp(fields[1], "off") == 0)
+	{
+		if(D->recordState == RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Not recording;", fields[0]);
+		}
+		else
+		{
+			system("killall -INT record5c");
+			v = snprintf(response, maxResponseLength, "!%s = 1;", fields[0]);
+		}
+	}
+	else if(strcmp(fields[1], "kill") == 0)
+	{
+		if(D->recordState == RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Not recording;", fields[0]);
+		}
+		else
+		{
+			system("killall -9 record5c");
+			v = snprintf(response, maxResponseLength, "!%s = 1;", fields[0]);
+		}
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }

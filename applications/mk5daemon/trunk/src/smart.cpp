@@ -152,10 +152,20 @@ int setScan(Mk5Daemon *D, int bank, int scanNum)
 	if(D->dirVersion[bank] >= 1)
 	{
 		const struct Mark5DirectoryScanHeaderVer1 *scan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + 128*scanNum);
+		char station[4];
+		char expName[10];
+		char scanName[34];
+
+		strncpy(station, scan->station, 2);
+		station[2] = 0;
+		strncpy(expName, scan->expName, 8);
+		expName[8] = 0;
+		strncpy(scanName, scan->scanName, 32);
+		scanName[32] = 0;
 
 		D->startPointer[bank] = scan->startByte;
 		D->stopPointer[bank] = scan->stopByte;
-		snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", scan->expName, scan->station, scan->scanName);
+		snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", expName, station, scanName);
 	}
 	else if(D->dirVersion[bank] = 0)
 	{
@@ -203,9 +213,7 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			D->dirVersion[bank] = dirHeader->version;
 			D->dirLength[bank] = len;
 			D->nScan[bank] = len/128 - 1;
-			D->startPointer[bank] = lastScan->startByte;
-			D->stopPointer[bank] = lastScan->stopByte;
-			snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", lastScan->expName, lastScan->station, lastScan->scanName);
+			setScan(D, bank, D->nScan[bank]);
 		}
 	}
 	else if(len > 80000)	/* probably dir ver 0 */
@@ -227,9 +235,7 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			}
 			if(D->nScan[bank] > 0)
 			{
-				D->startPointer[bank] = legacyDir->start[D->nScan[bank]-1];
-				D->stopPointer[bank] = D->startPointer[bank] + legacyDir->length[D->nScan[bank]-1];
-				snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s", legacyDir->scanName[D->nScan[bank]-1]);
+				setScan(D, bank, D->nScan[bank]);
 			}
 			D->dirLength[bank] = len;
 		}
@@ -297,7 +303,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		xlrRC = XLRGetDriveInfo(xlrDevice, d/2, d%2, &driveInfo);
 		if(xlrRC != XLR_SUCCESS)
 		{
-			break;
+			continue;
 		}
 
 		trim(drive->model, driveInfo.Model);
@@ -316,7 +322,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smart->smartXLR[d], d/2, d%2);
 		if(xlrRC != XLR_SUCCESS)
 		{
-			break;
+			continue;
 		}
 
 		for(v = 0; v < XLR_MAX_SMARTVALUES; v++)
@@ -336,12 +342,12 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		smart->nValue[d] = v;
 	}
 
-	if(d != N_SMART_DRIVES)
-	{
-		clearModuleInfo(D, bank);
-
-		return -5;
-	}
+//	if(d != N_SMART_DRIVES)
+//	{
+//		clearModuleInfo(D, bank);
+//
+//		return -5;
+//	}
 
 	return 0;
 }

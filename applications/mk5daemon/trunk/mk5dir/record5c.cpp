@@ -150,6 +150,7 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 	readdesc.BufferAddr = buffer;
 
 	printf("Read %Ld %d\n", pointer, bufferSize);
+	fflush(stdout);
 
 	WATCHDOGTEST( XLRRead(xlrDevice, &readdesc) );
 
@@ -163,10 +164,12 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 			if(buffer[i] == Mark5BSyncWord)
 			{
 				printf("Sync 1 1 %d\n", i);
+				fflush(stdout);
 			}
 			if((buffer[i] == Mark5BSyncWord) && (buffer[Mark5BFrameSize/4 + i] == Mark5BSyncWord))
 			{
 				printf("Sync 1 2 %d\n", Mark5BFrameSize/4 + i);
+				fflush(stdout);
 				
 				break;
 			}
@@ -184,10 +187,12 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 			if(buffer[i] == Mark5BSyncWord)
 			{
 				printf("Sync 2 1 %d\n", i);
+				fflush(stdout);
 			}
 			if(buffer[i] == Mark5BSyncWord && buffer[Mark5BFrameSize/4 + i] == Mark5BSyncWord)
 			{
 				printf("Sync 2 2 %d\n", Mark5BFrameSize/4 + i);
+				fflush(stdout);
 
 				break;
 			}
@@ -321,6 +326,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 		bankStat->TotalCapacity*512LL
 #endif
 		);
+	fflush(stdout);
 }
 
 static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
@@ -364,17 +370,24 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 				}
 			}
 			printf("Time %d %d %d  %d %d %d\n", mjd1, sec1, q->firstFrame, mjd2, sec2, frame);
+			fflush(stdout);
 			printf("TrackRate %d\n", q->trackRate);
+			fflush(stdout);
 		}
 		else
 		{
 			printf("Decode failure 2\n");
+			fflush(stdout);
 		}
 	}
 	else
 	{
 		printf("Decode failure 1\n");
+		fflush(stdout);
 	}
+
+	printf("Decode success\n");
+	fflush(stdout);
 
 	return 0;
 }
@@ -412,10 +425,12 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_DRVSTATS) );
 	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStat) );
 	if(bankStat.State != STATE_READY)
 	{
 		printf("Error 6 Bank %c not ready\n", 'A'+bank);
+		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 		
 		return -1;
@@ -435,14 +450,17 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	if(v >= 0)
 	{
 		printf("VSN %c %s\n", bank+'A', vsn);
+		fflush(stdout);
 		if(moduleStatus > 0)
 		{
 			printf("DMS is %s\n", moduleStatusName(moduleStatus));
+			fflush(stdout);
 		}
 	}
 	else
 	{
 		printf("Error 7 No VSN set\n");
+		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
@@ -456,11 +474,13 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	startByte = dir.Length;
 	printf("Used %Ld %Ld\n", startByte, 0LL);	/* FIXME: 0-> disk size */
+	fflush(stdout);
 
 	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 	if((len < 128 && len != 0) || len % 128 != 0)
 	{
 		printf("Error 8 directory format problem\n");
+		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 
 		return -1;
@@ -479,6 +499,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	}
 	dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
 	printf("Directory %d %d\n", dirHeader->version, len/128-1);
+	fflush(stdout);
 	p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
 	q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
 
@@ -518,17 +539,13 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	/* configure 10G input daughter board */
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
-	printf("WR_DB %d %d\n", DATA_PAYLD_OFFSET, payloadOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
-	printf("WR_DB %d %d\n", DATA_FRAME_OFFSET, dataFrameOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
-	printf("WR_DB %d %d\n", BYTE_LENGTH, packetSize);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
-	printf("WR_DB %d %d\n", PSN_OFFSET, psnOffset);
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
-	printf("WR_DB %d %d\n", MAC_FLTR_CTRL, macFilterControl);
 
 	printf("Record %s %Ld\n", label, ptr);
+	fflush(stdout);
 	if(startByte == 0LL)
 	{
 		WATCHDOGTEST( XLRRecord(xlrDevice, 0, 1) );
@@ -553,6 +570,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			if(t - t0 > maxSeconds)
 			{
 				printf("Ending time\n");
+				fflush(stdout);
 				die = 1;
 			}
 		}
@@ -563,6 +581,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			if(ptr - startByte >= maxBytes)
 			{
 				printf("Ending bytes\n");
+				fflush(stdout);
 				die = 1;
 			}
 
@@ -572,25 +591,30 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
 
 			printf("Pointer %Ld %4.2f\n", ptr, rate);
+			fflush(stdout);
 
 			if(!devStatus.Recording)
 			{
 				printf("Halted\n");
+				fflush(stdout);
 				die = 1;
 			}
 			if(devStatus.DriveFail)
 			{
 				printf("Drive %d failed\n", devStatus.DriveFailNumber);
+				fflush(stdout);
 				die = 1;
 			}
 			if(devStatus.SysError)
 			{
 				printf("SystemError %d\n", devStatus.SysErrorCode);
+				fflush(stdout);
 				die = 1;
 			}
 			if(devStatus.Overflow[0])
 			{
 				printf("Overflow\n");
+				fflush(stdout);
 				die = 1;
 			}
 
@@ -622,9 +646,11 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	if(die == 2)
 	{
 		printf("Ending interrupt\n");
+		fflush(stdout);
 	}
 
 	printf("Stop %s %Ld\n", label, ptr);
+	fflush(stdout);
 	WATCHDOGTEST( XLRStop(xlrDevice) );
 
 	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
@@ -685,6 +711,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 				(unsigned int)(driveStats[5].count),
 				(unsigned int)(driveStats[6].count),
 				(unsigned int)(driveStats[7].count));
+			fflush(stdout);
 		}
 	}
 
@@ -816,7 +843,7 @@ int main(int argc, char **argv)
 			i = snprintf(label, MaxLabelLength, "%s", argv[a]);
 			if(i >= MaxLabelLength)
 			{
-				printf("Error: scan name too long (%d > %d)\n", i, MaxLabelLength-1);
+				printf("Error scan name too long (%d > %d)\n", i, MaxLabelLength-1);
 
 				return EXIT_FAILURE;
 			}

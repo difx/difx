@@ -43,7 +43,7 @@
 
 const int MaxConnections = 8;
 const int MaxFields = 24;
-const unsigned short VSIS_PORT = 2650;
+const unsigned short VSIS_PORT = 2620;
 
 typedef struct
 {
@@ -318,6 +318,7 @@ static void *serveVSIS(void *ptr)
 	const int reuse_addr = 1;
 	char message[DIFX_MESSAGE_LENGTH];
 	fd_set socks;
+	int recordFD;
 
 	D = (Mk5Daemon *)ptr;
 
@@ -374,6 +375,19 @@ static void *serveVSIS(void *ptr)
 					highSock = clientSocks[c];
 				}
 			}
+		}
+		if(D->recordPipe)
+		{
+			recordFD = fileno(D->recordPipe);
+			FD_SET(recordFD, &socks);
+			if(recordFD > highSock)
+			{
+				highSock = recordFD;
+			}
+		}
+		else
+		{
+			recordFD = -2;
 		}
 
 		readSocks = select(highSock+1, &socks, 0, 0, &timeout);
@@ -438,6 +452,46 @@ static void *serveVSIS(void *ptr)
 				}
 			}
 		}
+
+		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
+		{
+			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
+			if(r)
+			{
+				char A[12][40];
+				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s", 
+					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11]);
+				if(strcmp(A[0], "Pointer") == 0 && n > 2)
+				{
+					D->bytesUsed[D->activeBank] = atoll(A[1]);
+					D->recordRate = atof(A[2]);
+				}
+				else if(strcmp(A[0], "Stats") == 0 && n >= 10)
+				{
+					int drive = atoi(A[1]);
+					for(int b = 0; b < 8; b++)
+					{
+						D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
+					}
+				}
+			}
+			if(feof(D->recordPipe))
+			{
+				pclose(D->recordPipe);
+				D->recordPipe = 0;
+				D->recordState = RECORD_OFF;
+
+				clearModuleInfo(D, D->activeBank);
+				Mk5Daemon_getModules(D);
+			}
+		}
+	}
+
+	if(D->recordPipe > 0)
+	{
+		pclose(D->recordPipe);
+		D->recordPipe = 0;
+		D->recordState = RECORD_OFF;
 	}
 
 	if(acceptSock > 0)

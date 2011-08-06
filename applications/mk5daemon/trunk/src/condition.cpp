@@ -72,7 +72,7 @@ static void *conditionRun(void *ptr)
 			Logger_logData(params->D->log, message);
 		}
 	}
-	fclose(pin);
+	pclose(pin);
 
 	Logger_logData(params->D->log, "mk5erase done\n");
 

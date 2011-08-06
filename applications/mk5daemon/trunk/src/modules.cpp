@@ -47,7 +47,7 @@ void clearModuleInfo(Mk5Daemon *D, int bank)
 {
 	clearMk5Smart(D, bank);
 	clearMk5DirInfo(D, bank);
-	clearMk5Stats(D, bank);
+	D->driveStatsIndex[bank] = 0;
 
 	D->dirLength[bank] = 0;
 	if(D->dirData[bank])
@@ -147,9 +147,10 @@ static int XLR_get_modules(Mk5Daemon *D)
 			XLRClose(xlrDevice);
 
 			unlockStreamstor(D, id);
-		
-			return 0;
+
 			Logger_logData(D->log, message);
+		
+			return 1;
 		}
 	}
 	
@@ -167,6 +168,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 				'A' + bank, D->nXLROpen, xlrError, xlrErrorStr);
 			Logger_logData(D->log, message);
 			clearModuleInfo(D, bank);
+			clearMk5Stats(D, bank);
 		}
 		else if(strncmp(D->vsns[bank], D->bank_stat[bank].Label, 8) != 0)
 		{
@@ -189,6 +191,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 			{
 				D->vsns[bank][0] = 0;
 				clearModuleInfo(D, bank);
+				clearMk5Stats(D, bank);
 			}
 /*	FIXME: detect illegal VSNs
 			else if(strncmp(D->vsns[bank], "illegal", 7) != 0)
@@ -198,6 +201,10 @@ static int XLR_get_modules(Mk5Daemon *D)
 				sprintf(D->vsns[bank], "illegal%c", 'A'+bank);
 			}
 */
+		}
+		if(D->vsns[bank][0] && D->smartData[bank].mjd < 50000)
+		{
+			getModuleInfo(xlrDevice, D, bank);
 		}
 	}
 
@@ -258,6 +265,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		break;
 	default:
 		pthread_mutex_unlock(&D->processLock);
+
 		return;
 	}
 
