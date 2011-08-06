@@ -36,6 +36,7 @@
 #include "logger.h"
 #ifdef HAVE_XLRAPI_H
 #include "smart.h"
+#include "../mk5dir/mark5directorystructs.h"
 #endif
 
 #ifdef WORDS_BIGENDIAN
@@ -50,6 +51,20 @@ extern const char difxUser[];
 #define MAX_COMMAND_SIZE	768
 #define N_BANK			2
 #define N_DRIVE			8
+
+enum RecordState
+{
+	RECORD_OFF = 0,
+	RECORD_ON,
+	RECORD_HALTED,
+	RECORD_THROTTLED,
+	RECORD_OVERFLOW,
+	RECORD_WAITING,
+
+	NUM_RECORD_STATES	/* must terminate list */
+};
+
+extern const char recordStateStrings[][10];
 
 enum ProcessType
 {
@@ -119,11 +134,13 @@ typedef struct
 	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
 	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
 #endif
+	enum RecordState recordState;
 	int errorFlag[N_BANK];
 	long long bytesUsed[N_BANK];	/* same as record pointer */
 	long long bytesTotal[N_BANK];
 	long long startPointer[N_BANK];
 	long long stopPointer[N_BANK];
+	char scanLabel[N_BANK][MODULE_LEGACY_SCAN_LENGTH];
 	int diskModuleState[N_BANK];
 	int nScan[N_BANK];
 	int dirLength[N_BANK];
@@ -183,6 +200,7 @@ void clearMk5DirInfo(Mk5Daemon *D, int bank);
 void clearMk5Stats(Mk5Daemon *D, int bank);
 void clearModuleInfo(Mk5Daemon *D, int bank);
 int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
+int setScan(Mk5Daemon *D, int bank, int scanNum);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);

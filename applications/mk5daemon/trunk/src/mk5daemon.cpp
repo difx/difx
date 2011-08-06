@@ -68,6 +68,18 @@ typedef void (*sighandler_t)(int);
 sighandler_t oldsigintHandler;
 
 
+const char recordStateStrings[][10] =
+{
+	"off",
+	"on",
+	"halted",
+	"throttled",
+	"overflow",
+	"waiting",
+
+	"error"	/* last entry */
+};
+
 const char netProtocolStrings[][10] =
 {
 	"UDP",

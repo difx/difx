@@ -24,8 +24,11 @@ int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 int error_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
 int disk_model_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 int disk_model_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 int disk_serial_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 int disk_size_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
 int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
@@ -55,5 +58,10 @@ int rtime_Query(Mk5Daemon *D, int nField, char **fields, char *response, int max
 int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int scan_set_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int scan_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
 #endif

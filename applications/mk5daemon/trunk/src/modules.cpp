@@ -165,7 +165,6 @@ static int XLR_get_modules(Mk5Daemon *D)
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: BANK_%c XLRGetBankStatus failed.  N=%d Error=%u (%s)\n",
 				'A' + bank, D->nXLROpen, xlrError, xlrErrorStr);
-printf("%s", message);
 			Logger_logData(D->log, message);
 			clearModuleInfo(D, bank);
 		}
@@ -175,7 +174,6 @@ printf("%s", message);
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank %c", D->vsns[bank], 'A'+bank);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-printf("%s\n", message);
 			}
 
 			if(legalVSN(D->bank_stat[bank].Label))
@@ -186,14 +184,13 @@ printf("%s\n", message);
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", D->vsns[bank], 'A'+bank);
 				getModuleInfo(xlrDevice, D, bank);
 				logMk5Smart(D, BANK_A);
-printf("%s\n", message);
 			}
 			else
 			{
 				D->vsns[bank][0] = 0;
 				clearModuleInfo(D, bank);
 			}
-/*
+/*	FIXME: detect illegal VSNs
 			else if(strncmp(D->vsns[bank], "illegal", 7) != 0)
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank %c", 'A'+bank);

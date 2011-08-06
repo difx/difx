@@ -885,7 +885,7 @@ int rtime_Query(Mk5Daemon *D, int nField, char **fields, char *response, int max
 	{
 		const Mk5Smart *smart = D->smartData + D->activeBank;
 
-		if(D->vsns[D->activeBank][0] && smart->mjd >= 50000.0)
+		if(smart->mjd >= 50000.0)
 		{
 			double left = D->bytesTotal[D->activeBank] - D->bytesUsed[D->activeBank];
 			if(left < 0.0)
@@ -985,6 +985,76 @@ int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
+
+	return v;
+}
+
+int scan_set_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
+	}
+	else
+	{
+		const Mk5Smart *smart = D->smartData + D->activeBank;
+
+		if(smart->mjd >= 50000.0)
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %Ld : %Ld;", fields[0],
+				D->scanLabel[D->activeBank], D->startPointer[D->activeBank], D->stopPointer[D->activeBank]);
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 5;", fields[0]);
+		}
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int scan_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+
+	return v;
+}
+
+
+int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 0 : off : 0 : ;", fields[0]);
+	}
+	else
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %d : %s;", fields[0],
+			recordStateStrings[D->recordState], D->nScan[D->activeBank], D->scanLabel[D->activeBank]);
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
 
 	return v;
 }

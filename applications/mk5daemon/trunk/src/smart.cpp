@@ -103,6 +103,7 @@ void clearMk5DirInfo(Mk5Daemon *D, int bank)
 	D->bytesTotal[bank] = 0LL;
 	D->startPointer[bank] = 0LL;
 	D->stopPointer[bank] = 0LL;
+	D->scanLabel[bank][0] = 0;
 	memset(&D->dir_info[bank], 0, sizeof(S_DIR));
 }
 
@@ -142,6 +143,36 @@ int isSmartCritical(int smartId)
 	return smartDescriptions[i].critical;
 }
 
+int setScan(Mk5Daemon *D, int bank, int scanNum)
+{
+	if(scanNum < 1 || scanNum > D->nScan[bank])
+	{
+		return -1;
+	}
+	if(D->dirVersion[bank] >= 1)
+	{
+		const struct Mark5DirectoryScanHeaderVer1 *scan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + 128*scanNum);
+
+		D->startPointer[bank] = scan->startByte;
+		D->stopPointer[bank] = scan->stopByte;
+		snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", scan->expName, scan->station, scan->scanName);
+	}
+	else if(D->dirVersion[bank] = 0)
+	{
+		const struct Mark5LegacyDirectory *legacyDir = (struct Mark5LegacyDirectory *)(D->dirData[bank]);
+
+		D->startPointer[bank] = legacyDir->start[scanNum-1];
+		D->stopPointer[bank] = D->startPointer[bank] + legacyDir->length[scanNum-1];
+		snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s", legacyDir->scanName[scanNum-1]);
+	}
+	else
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
 int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
 	XLR_RETURN_CODE xlrRC;
@@ -168,12 +199,13 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 
 			const struct Mark5DirectoryHeaderVer1 *dirHeader = (struct Mark5DirectoryHeaderVer1 *)(D->dirData[bank]);
 			const struct Mark5DirectoryScanHeaderVer1 *lastScan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + len - 128);
-			D->startPointer[bank] = lastScan->startByte;
-			D->stopPointer[bank] = lastScan->stopByte;
 			D->diskModuleState[bank] = dirHeader->status & 0xFF;	/* don't include scan count here */
 			D->dirVersion[bank] = dirHeader->version;
 			D->dirLength[bank] = len;
 			D->nScan[bank] = len/128 - 1;
+			D->startPointer[bank] = lastScan->startByte;
+			D->stopPointer[bank] = lastScan->stopByte;
+			snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", lastScan->expName, lastScan->station, lastScan->scanName);
 		}
 	}
 	else if(len > 80000)	/* probably dir ver 0 */
@@ -197,6 +229,7 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			{
 				D->startPointer[bank] = legacyDir->start[D->nScan[bank]-1];
 				D->stopPointer[bank] = D->startPointer[bank] + legacyDir->length[D->nScan[bank]-1];
+				snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s", legacyDir->scanName[D->nScan[bank]-1]);
 			}
 			D->dirLength[bank] = len;
 		}

@@ -98,6 +98,8 @@ const Command commandSet[] =
 	{ "mode",		mode_Query,		mode_Command		},
 	{ "rtime",		rtime_Query,		noCommand		},
 	{ "disk_state",		disk_state_Query,	disk_state_Command	},
+	{ "scan_set",		scan_set_Query,		scan_set_Command	},
+	{ "record",		record_Query,		record_Command		},
 
 	{ "recover",		defaultQuery,		defaultCommand		},
 	{ "reset",		noQuery,		defaultCommand		},
