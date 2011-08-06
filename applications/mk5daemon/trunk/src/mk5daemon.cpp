@@ -61,6 +61,7 @@ const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 1;
 
+const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
 int *signalDie = 0;
 typedef void (*sighandler_t)(int);
@@ -149,6 +150,17 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->macFilterControl = defaultMACFilterControl;
 	D->fillPattern = MARK5_FILL_PATTERN;
 	D->netProtocol = NET_PROTOCOL_UDP;
+	strcpy(D->dataSource, "ext");
+	//strcpy(D->format, "mark5b");
+	D->bitstreamMask = 0xFFFFFFFF;
+	D->decimationRatio = 1;
+
+	D->recordRate = 2048;	/* just a reference value to start with */
+
+	for(int b = 0; b < XLR_MAXBINS; b++)
+	{
+		D->driveStatsConfig[b].range = defaultStatsRange[b];
+	}
 
 	const char *dmsMask = getenv("DEFAULT_DMS_MASK");
 	if(dmsMask)

@@ -93,6 +93,9 @@ const Command commandSet[] =
 	{ "bank_info",		bank_info_Query,	noCommand		},
 	{ "net_protocol",	net_protocol_Query,	net_protocol_Command	},
 	{ "disk_state_mask",	disk_state_mask_Query,	disk_state_mask_Command	},
+	{ "get_stats",	 	get_stats_Query,	noCommand		},
+	{ "start_stats",	start_stats_Query,	start_stats_Command	},
+	{ "mode",		mode_Query,		mode_Command		},
 
 	{ "recover",		defaultQuery,		defaultCommand		},
 	{ "reset",		noQuery,		defaultCommand		},

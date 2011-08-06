@@ -38,8 +38,6 @@
 #include "mk5daemon.h"
 #include "smart.h"
 
-#define LOCAL_VSN_LENGTH	16
-
 void getModuleInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
 	getMk5Smart(xlrDevice, D, bank);
@@ -49,6 +47,7 @@ void clearModuleInfo(Mk5Daemon *D, int bank)
 {
 	clearMk5Smart(D, bank);
 	clearMk5DirInfo(D, bank);
+	clearMk5Stats(D, bank);
 
 	D->dirLength[bank] = 0;
 	if(D->dirData[bank])
@@ -102,7 +101,7 @@ int legalVSN(const char *vsn)
 	return 1;
 }
 
-static int XLR_get_modules(char vsns[][LOCAL_VSN_LENGTH], Mk5Daemon *D)
+static int XLR_get_modules(Mk5Daemon *D)
 {
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
@@ -139,30 +138,19 @@ static int XLR_get_modules(char vsns[][LOCAL_VSN_LENGTH], Mk5Daemon *D)
 	if(xlrRC != XLR_SUCCESS)
 	{
 		xlrError = XLRGetLastError();
-		if(xlrError == 148) /* XLR_ERR_DRIVEMODULE_NOTREADY */
-		{
-			/* this means no modules loaded */
-			for(int bank = 0; bank < N_BANK; bank++)
-			{
-				vsns[bank][0] = 0;
-			}
-			snprintf(message, DIFX_MESSAGE_LENGTH,
-				"XLR VSNs: <%s> <%s> N=%d\n",
-				vsns[0], vsns[1], D->nXLROpen);
-		}
-		else
+		if(xlrError != 148) /* XLR_ERR_DRIVEMODULE_NOTREADY */
 		{
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: Cannot set SkipCheckDir.  N=%d Error=%u (%s)\n",
 				D->nXLROpen, xlrError, xlrErrorStr);
-		}
-		Logger_logData(D->log, message);
-		XLRClose(xlrDevice);
+			XLRClose(xlrDevice);
 
-		unlockStreamstor(D, id);
+			unlockStreamstor(D, id);
 		
-		return 0;
+			return 0;
+			Logger_logData(D->log, message);
+		}
 	}
 	
 	for(int bank = N_BANK-1; bank >= 0; bank--)
@@ -170,26 +158,49 @@ static int XLR_get_modules(char vsns[][LOCAL_VSN_LENGTH], Mk5Daemon *D)
 		xlrRC = XLRGetBankStatus(xlrDevice, bank, &(D->bank_stat[bank]));
 		if(xlrRC != XLR_SUCCESS)
 		{
-			vsns[bank][0] = 0;
+			D->vsns[bank][0] = 0;
 
 			xlrError = XLRGetLastError();
 			XLRGetErrorMessage(xlrErrorStr, xlrError);
 			snprintf(message, DIFX_MESSAGE_LENGTH,
 				"ERROR: XLR_get_modules: BANK_%c XLRGetBankStatus failed.  N=%d Error=%u (%s)\n",
 				'A' + bank, D->nXLROpen, xlrError, xlrErrorStr);
+printf("%s", message);
 			Logger_logData(D->log, message);
 			clearModuleInfo(D, bank);
 		}
-		else if(D->bank_stat[bank].Label[8] == '/')
+		else if(strncmp(D->vsns[bank], D->bank_stat[bank].Label, 8) != 0)
 		{
-			strncpy(vsns[bank], D->bank_stat[bank].Label, 16);
-			vsns[bank][8] = 0;
-			getModuleInfo(xlrDevice, D, bank);
-		}
-		else
-		{
-			vsns[bank][0] = 0;
-			clearModuleInfo(D, bank);
+			if(legalVSN(D->vsns[bank]))
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank %c", D->vsns[bank], 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+printf("%s\n", message);
+			}
+
+			if(legalVSN(D->bank_stat[bank].Label))
+			{
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+				strncpy(D->vsns[bank], D->bank_stat[bank].Label, 8);
+				D->vsns[bank][8] = 0;
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", D->vsns[bank], 'A'+bank);
+				getModuleInfo(xlrDevice, D, bank);
+				logMk5Smart(D, BANK_A);
+printf("%s\n", message);
+			}
+			else
+			{
+				D->vsns[bank][0] = 0;
+				clearModuleInfo(D, bank);
+			}
+/*
+			else if(strncmp(D->vsns[bank], "illegal", 7) != 0)
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank %c", 'A'+bank);
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				sprintf(D->vsns[bank], "illegal%c", 'A'+bank);
+			}
+*/
 		}
 	}
 
@@ -203,7 +214,7 @@ static int XLR_get_modules(char vsns[][LOCAL_VSN_LENGTH], Mk5Daemon *D)
 	}
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n",
-		vsns[0], temp[0], vsns[1], temp[1], D->nXLROpen);
+		D->vsns[0], temp[0], D->vsns[1], temp[1], D->nXLROpen);
 	Logger_logData(D->log, message);
 
 	return 0;
@@ -213,7 +224,6 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 {
 	DifxMessageMk5Status dm;
 	int n, v;
-	char vsns[N_BANK][LOCAL_VSN_LENGTH];
 	char message[DIFX_MESSAGE_LENGTH];
 
 	if(!D->isMk5)
@@ -225,11 +235,6 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 
 	/* don't let the process type change while getting vsns */
 	pthread_mutex_lock(&D->processLock);
-
-	for(int bank = 0; bank < N_BANK; bank++)
-	{
-		vsns[bank][0] = 0;
-	}
 
 	if(D->process != PROCESS_NONE)
 	{
@@ -244,7 +249,7 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 	switch(D->process)
 	{
 	case PROCESS_NONE:
-		n = XLR_get_modules(vsns, D);
+		n = XLR_get_modules(D);
 		if(n == 0)
 		{
 			dm.state = MARK5_STATE_IDLE;
@@ -259,41 +264,12 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 		return;
 	}
 
-	for(int bank = 0; bank < N_BANK; bank++)
+	if(D->activeBank >= 0 && D->activeBank < N_BANK)
 	{
-		if(strncmp(D->vsns[bank], vsns[bank], 8) != 0)
-		{
-			if(legalVSN(D->vsns[bank]))
-			{
-				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s removed from bank %c", D->vsns[0], 'A'+bank);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-			}
-			if(vsns[bank][0] == 0)
-			{
-				D->vsns[bank][0] = 0;
-			}
-			else if(legalVSN(vsns[bank]))
-			{
-				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", vsns[bank], 'A'+bank);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-				strncpy(D->vsns[bank], vsns[bank], 8);
-				logMk5Smart(D, BANK_A);
-			}
-			else if(strncmp(D->vsns[bank], "illegal", 7) != 0)
-			{
-				snprintf(message, DIFX_MESSAGE_LENGTH, "Module with illegal VSN inserted into bank %c", 'A'+bank);
-				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
-				sprintf(D->vsns[bank], "illegal%c", 'A'+bank);
-			}
-		}
-	}
-
-	if(D->activeBank >= 0)
-	{
-		int nextBank;
-
 		if(D->vsns[D->activeBank][0] == 0)
 		{
+			int nextBank;
+			
 			for(int i = 1; i < N_BANK; i++)
 			{
 				nextBank = (D->activeBank + i) % N_BANK;
@@ -304,21 +280,35 @@ void Mk5Daemon_getModules(Mk5Daemon *D)
 					break;
 				}
 			}
-		}
 
-		if(D->vsns[D->activeBank][0] == 0)	/* no new bank found */
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "No bank is active now.  Active bank was previously %c", D->activeBank + 'A');
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+			if(D->vsns[D->activeBank][0] == 0)	/* no new bank found */
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "No bank is active now.  Active bank was previously %c", D->activeBank + 'A');
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
 
-			D->activeBank = -1;
+				D->activeBank = -1;
+			}
+			else
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Bank %c is active now.  Active bank was previously %c", nextBank + 'A', D->activeBank + 'A');
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+
+				D->activeBank = nextBank;
+			}
 		}
-		else
+	}
+	else
+	{
+		for(int i = 0; i < N_BANK; i++)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Bank %c is active now.  Active bank was previously %c", nextBank + 'A', D->activeBank + 'A');
-			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
-			
-			D->activeBank = nextBank;
+			if(D->vsns[i][0] != 0)
+			{
+				D->activeBank = i;
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Bank %c is active now.", D->activeBank + 'A');
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_VERBOSE);
+
+				break;
+			}
 		}
 	}
 

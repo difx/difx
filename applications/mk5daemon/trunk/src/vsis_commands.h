@@ -43,4 +43,13 @@ int net_protocol_Command(Mk5Daemon *D, int nField, char **fields, char *response
 int disk_state_mask_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int start_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int mode_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int mode_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+
+
 #endif

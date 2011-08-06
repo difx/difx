@@ -37,6 +37,7 @@
 #include <difxmessage.h>
 #include <signal.h>
 #include <mark5ipc.h>
+#include <xlrtypes.h>
 #include <xlrapi.h>
 #include "config.h"
 #include "mark5dir.h"
@@ -56,7 +57,7 @@ const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 1;
 const unsigned int defaultStreamstorChannel = 28;
-const int statsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
+const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 
 const int MaxLabelLength = 40;
 const int Mark5BFrameSize = 10016;
@@ -116,17 +117,17 @@ void siginthand(int j)
 }
 
 /* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
-static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64 *timeBCD, int *firstFrame, int *byteOffset, int *headerMJD, int *headerSeconds)
+static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesToRead, unsigned long long *timeBCD, int *firstFrame, int *byteOffset, int *headerMJD, int *headerSeconds)
 {
 	int bufferSize;
-	UINT32 *buffer;
+	PUINT32 buffer;
 	S_READDESC readdesc;
 	int i;
 	int rem;
 	int returnValue = 0;
 
 	bufferSize = abs(framesToRead)*Mark5BFrameSize;
-	buffer = (UINT32 *)malloc(bufferSize);
+	buffer = (PUINT32)malloc(bufferSize);
 
 	if(framesToRead < 0)
 	{
@@ -244,12 +245,12 @@ static int decode5B(SSHANDLE xlrDevice, UINT64 pointer, int framesToRead, UINT64
 				((h/10) << 20);
 			for(int k = 0; k < 3; k++)
 			{
-				*timeBCD += (UINT64)(doy % 10) << (24+4*k);
+				*timeBCD += (unsigned long long)(doy % 10) << (24+4*k);
 				doy /= 10;
 			}
 			for(int k = 0; k < 4; k++)
 			{
-				*timeBCD += (UINT64)(yr % 10) << (36+4*k);
+				*timeBCD += (unsigned long long)(yr % 10) << (36+4*k);
 				yr /= 10;
 			}
 		}
@@ -314,7 +315,12 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 		bankStat->ErrorCode,
 		bankStat->ErrorData,
 		bankStat->Length,
-		bankStat->TotalCapacityBytes);
+#if SDKVERSION >= 9
+		bankStat->TotalCapacityBytes
+#else
+		bankStat->TotalCapacity*512LL
+#endif
+		);
 }
 
 static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
@@ -322,6 +328,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 {
 	int frame, byteOffset;
 	int mjd1=0, mjd2=0, sec1=0, sec2=0;
+	unsigned long long timeBCD;
 	int v;
 
 	p->startByte = startByte;
@@ -332,7 +339,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 		long long words;
 		int samplesPerWord;
 		double deltat;
-		UINT64 length = p->stopByte - p->startByte;
+		unsigned long long length = p->stopByte - p->startByte;
 
 		for(int i = 0; i < 8; i++)
 		{
@@ -395,7 +402,6 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
-	UINT64 timeBCD;
 	char labelCopy[100];
 	char *parts[3];
 	int nPart = 0;
@@ -499,7 +505,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
-		driveStats[b].range = statsRange[b];
+		driveStats[b].range = defaultStatsRange[b];
 		driveStats[b].count = 0;
 	}
 	WATCHDOGTEST( XLRSetDriveStats(xlrDevice, driveStats) );

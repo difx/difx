@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <time.h>
 #include "mk5daemon.h"
 #include "smart.h"
 #include "../mk5dir/mark5directorystructs.h"
@@ -57,8 +58,6 @@ const SmartDescription smartDescriptions[] =
 	{ 202, 0, "Data Address Mark error count"},
 	{ -1,  -1, "Unknown SMART id"}
 };
-
-
 
 static void trim(char *out, const char *in)
 {
@@ -94,6 +93,7 @@ static void trim(char *out, const char *in)
 void clearMk5Smart(Mk5Daemon *D, int bank)
 {
 	memset(&D->smartData[bank], 0, sizeof(Mk5Smart));
+	D->smartData[bank].mjd = 100;
 }
 
 void clearMk5DirInfo(Mk5Daemon *D, int bank)
@@ -104,6 +104,12 @@ void clearMk5DirInfo(Mk5Daemon *D, int bank)
 	D->startPointer[bank] = 0LL;
 	D->stopPointer[bank] = 0LL;
 	memset(&D->dir_info[bank], 0, sizeof(S_DIR));
+}
+
+void clearMk5Stats(Mk5Daemon *D, int bank)
+{
+	memset(&(D->driveStats[bank]), 0, N_DRIVE*XLR_MAXBINS*sizeof(S_DRIVESTATS));
+	D->driveStatsIndex[bank] = 0;
 }
 
 const char *getSmartDescription(int smartId)
@@ -146,7 +152,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	int d;
 	int len;
 
-	if(bank < 0 ||  bank >= N_BANK)
+	if(bank < 0 || bank >= N_BANK)
 	{
 		return -1;
 	}
@@ -157,7 +163,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	xlrRC = XLRSelectBank(xlrDevice, bank);
 	if(xlrRC != XLR_SUCCESS)
 	{
-		clearMk5Smart(D, bank);
+		clearModuleInfo(D, bank);
 		
 		return -2;
 	}
@@ -178,7 +184,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 				xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
 				if(xlrRC != XLR_SUCCESS)
 				{
-					clearMk5Smart(D, bank);
+					clearModuleInfo(D, bank);
 
 					return -3;
 				}
@@ -210,7 +216,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	D->bytesTotal[bank] = 0LL;
 
 	smart = &(D->smartData[bank]);
-	smart->mjd = 51234;		// FIXME
+	smart->mjd = 40587.0 + time(0)/86400.0;
 
 	for(d = 0; d < N_SMART_DRIVES; d++)
 	{
@@ -263,7 +269,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 
 	if(d != N_SMART_DRIVES)
 	{
-		clearMk5Smart(D, bank);
+		clearModuleInfo(D, bank);
 
 		return -3;
 	}

@@ -1,4 +1,8 @@
-#define MODULE_LEGACY_MAX_SCANS	1024
+#define MODULE_LEGACY_MAX_SCANS		1024
+#define MODULE_EXTENDED_VSN_LENGTH      32
+#define MODULE_SCAN_NAME_LENGTH         32
+#define MODULE_LEGACY_SCAN_LENGTH       64
+
 
 /* as implemented in Mark5A */
 struct Mark5LegacyDirectory

@@ -304,6 +304,7 @@ int disk_model_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -331,6 +332,9 @@ int disk_model_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 			v += snprintf(response+v, maxResponseLength-v, ";");
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 	
 	return v;
 }
@@ -339,6 +343,7 @@ int disk_model_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -366,6 +371,9 @@ int disk_model_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response
 			v += snprintf(response+v, maxResponseLength-v, ";");
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 	
 	return v;
 }
@@ -374,6 +382,7 @@ int disk_serial_Query(Mk5Daemon *D, int nField, char **fields, char *response, i
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -401,6 +410,9 @@ int disk_serial_Query(Mk5Daemon *D, int nField, char **fields, char *response, i
 			v += snprintf(response+v, maxResponseLength-v, ";");
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 	
 	return v;
 }
@@ -409,6 +421,7 @@ int disk_size_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -442,6 +455,9 @@ int disk_size_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 			v += snprintf(response+v, maxResponseLength-v, ";");
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 	
 	return v;
 }
@@ -450,6 +466,7 @@ int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -460,7 +477,7 @@ int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 		
 		if(smart->mjd < 50000.0)	/* information not populated */
 		{
-			v = snprintf(response, maxResponseLength, "!%s? 5;", fields[0]);
+			v = snprintf(response, maxResponseLength, "!%s? 5 : %f : %d;", fields[0], smart->mjd, D->activeBank);
 		}
 		else
 		{
@@ -468,6 +485,9 @@ int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 				D->nScan[D->activeBank], D->bytesUsed[D->activeBank], D->bytesTotal[D->activeBank]);
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }
@@ -476,6 +496,7 @@ int pointers_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 {
 	int v;
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank < 0)
 	{
 		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
@@ -494,6 +515,9 @@ int pointers_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 				D->bytesUsed[D->activeBank], D->startPointer[D->activeBank], D->stopPointer[D->activeBank]);
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }
@@ -532,6 +556,7 @@ int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 	int v;
 	char bankStr[N_BANK][60];
 
+#ifdef HAVE_XLRAPI_H
 	if(D->activeBank >= 0)
 	{
 		bank = D->activeBank;
@@ -570,6 +595,9 @@ int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 	}
 
 	v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s;", fields[0], bankStr[0], bankStr[1]);
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }
@@ -678,9 +706,155 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 		}
 		else
 		{
-			v = v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+			v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
 		}
 	}
+
+	return v;
+}
+
+int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
+	}
+	else
+	{
+		const S_DRIVESTATS *stats = D->driveStats[D->activeBank][D->driveStatsIndex[D->activeBank]];
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d : %d;", fields[0],
+			stats[0].count, stats[1].count, stats[2].count, stats[3].count,
+			stats[4].count, stats[5].count, stats[6].count, stats[7].count);
+		
+
+		D->driveStatsIndex[D->activeBank] = (D->driveStatsIndex[D->activeBank] + 1) % N_DRIVE;
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+
+int start_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+#ifdef HAVE_XLRAPI_H
+	const S_DRIVESTATS *stats = D->driveStatsConfig;
+
+	v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d;", fields[0],
+		stats[0].range, stats[1].range, stats[2].range, stats[3].range,
+		stats[4].range, stats[5].range, stats[6].range);
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(nField > XLR_MAXBINS)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : Up to %d parameters can be supplied;", fields[0], XLR_MAXBINS-1);
+	}
+	else
+	{
+		int t[XLR_MAXBINS];
+		S_DRIVESTATS *stats = D->driveStatsConfig;
+
+		t[XLR_MAXBINS-1] = -1;
+
+		for(int b = 0; b < XLR_MAXBINS-1; b++)
+		{
+			t[b] = -1;
+		}
+
+		for(int f = 1; f < XLR_MAXBINS; f++)
+		{
+			t[f-1] = stats[f-1].range;
+			if(f >= nField)
+			{
+				break;
+			}
+			if(strlen(fields[f]) < 1)
+			{
+				continue;
+			}
+			t[f-1] = atoi(fields[f]);
+			if(t[f-1] <= 0)
+			{
+				v = -1;
+			}
+		}
+		if(v == 0)
+		{
+			for(int b = 1; b < XLR_MAXBINS; b++)
+			{
+				if(t[b] <= t[b-1])
+				{
+					v = -1;
+				}
+			}
+			if(v == 0)
+			{
+				for(int b = 0; b < XLR_MAXBINS-1; b++)
+				{
+					stats[b].range = t[b];
+				}
+				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+				if(D->activeBank >= 0)
+				{
+					clearMk5Stats(D, D->activeBank);
+				}
+			}
+			else
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 6 : Parameters must be monotne increasing;", fields[0]);
+			}
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : Parameters must be positive integers;", fields[0]);
+		}
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int mode_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+	//if(D->format = FORMAT_MARK5C
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 0 : mark5b : 0x%08x : %d;", fields[0],
+			D->bitstreamMask, D->decimationRatio);
+	}
+	//else
+	//{
+	//}
+
+	return v;
+}
+
+int mode_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+	/* FIXME: actually do something! */
+	v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
 
 	return v;
 }

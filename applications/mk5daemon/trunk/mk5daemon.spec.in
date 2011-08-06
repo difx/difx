@@ -34,6 +34,7 @@ make
 /usr/bin/mk5erase
 /usr/bin/mk5lock
 /usr/bin/mk5map
+/usr/bin/record5c
 /usr/bin/recover
 /usr/bin/testmod
 /usr/bin/vsn

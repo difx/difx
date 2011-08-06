@@ -108,11 +108,17 @@ typedef struct
 	char streamstorLockIdentifer[DIFX_MESSAGE_IDENTIFIER_LENGTH];
 	char userID[256];
 	unsigned int fillPattern;
+
+	
+
 #ifdef HAVE_XLRAPI_H
 	/* FIXME: make bank structure??? */
 	Mk5Smart smartData[N_BANK];
 	S_BANKSTATUS bank_stat[N_BANK];
 	S_DIR dir_info[N_BANK];
+	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
+	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
+#endif
 	long long bytesUsed[N_BANK];	/* same as record pointer */
 	long long bytesTotal[N_BANK];
 	long long startPointer[N_BANK];
@@ -121,7 +127,11 @@ typedef struct
 	int nScan[N_BANK];
 	int dirLength[N_BANK];
 	char *dirData[N_BANK];
-#endif
+	int driveStatsIndex[N_BANK];
+	double recordRate;	/* Mbps */
+	char dataSource[8];
+	unsigned long bitstreamMask;
+	int decimationRatio;
 
 	int payloadOffset;
 	int dataFrameOffset;
@@ -168,6 +178,8 @@ void Mk5Daemon_sendSmartData(Mk5Daemon *D);
 
 void clearMk5Smart(Mk5Daemon *D, int bank);
 void clearMk5DirInfo(Mk5Daemon *D, int bank);
+void clearMk5Stats(Mk5Daemon *D, int bank);
+void clearModuleInfo(Mk5Daemon *D, int bank);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
