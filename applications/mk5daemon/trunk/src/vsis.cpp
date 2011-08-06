@@ -474,6 +474,10 @@ static void *serveVSIS(void *ptr)
 						D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
 					}
 				}
+				else if(strcmp(A[0], "Error") == 0)
+				{
+					D->errorFlag[D->activeBank] = 1;
+				}
 			}
 			if(feof(D->recordPipe))
 			{
