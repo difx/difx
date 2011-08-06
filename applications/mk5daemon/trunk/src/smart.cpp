@@ -142,6 +142,79 @@ int isSmartCritical(int smartId)
 	return smartDescriptions[i].critical;
 }
 
+int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
+{
+	XLR_RETURN_CODE xlrRC;
+	int len;
+
+	XLRGetDirectory(xlrDevice, &(D->dir_info[bank]));
+	
+	len = XLRGetUserDirLength(xlrDevice);
+
+	if(len % 128 == 0 && len >= 128)
+	{
+		if(len != D->dirLength[bank])
+		{
+			if(D->dirData[bank])
+			{
+				free(D->dirData[bank]);
+			}
+			D->dirData[bank] = (char *)malloc(len);
+			xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
+			if(xlrRC != XLR_SUCCESS)
+			{
+				return -3;
+			}
+
+			const struct Mark5DirectoryHeaderVer1 *dirHeader = (struct Mark5DirectoryHeaderVer1 *)(D->dirData[bank]);
+			const struct Mark5DirectoryScanHeaderVer1 *lastScan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + len - 128);
+			D->startPointer[bank] = lastScan->startByte;
+			D->stopPointer[bank] = lastScan->stopByte;
+			D->diskModuleState[bank] = dirHeader->status & 0xFF;	/* don't include scan count here */
+			D->dirVersion[bank] = dirHeader->version;
+			D->dirLength[bank] = len;
+			D->nScan[bank] = len/128 - 1;
+		}
+	}
+	else if(len > 80000)	/* probably dir ver 0 */
+	{
+		if(len != D->dirLength[bank])
+		{
+			D->dirData[bank] = (char *)malloc(len);
+			xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
+			if(xlrRC != XLR_SUCCESS)
+			{
+				return -4;
+			}
+			D->dirVersion[bank] = 0;
+			const struct Mark5LegacyDirectory *legacyDir = (struct Mark5LegacyDirectory *)(D->dirData[bank]);
+			D->nScan[bank] = legacyDir->nscans;
+			if(D->nScan[bank] < 0 || D->nScan[bank] > MODULE_LEGACY_MAX_SCANS)
+			{
+				D->nScan[bank] = 0;
+			}
+			if(D->nScan[bank] > 0)
+			{
+				D->startPointer[bank] = legacyDir->start[D->nScan[bank]-1];
+				D->stopPointer[bank] = D->startPointer[bank] + legacyDir->length[D->nScan[bank]-1];
+			}
+			D->dirLength[bank] = len;
+		}
+	}
+	else	/* not recognized dir ver */
+	{
+		D->dirVersion[bank] = -1;
+		D->nScan[bank] = 0;
+		if(D->dirData)
+		{
+			free(D->dirData[bank]);
+			D->dirData[bank] = 0;
+		}
+	}
+
+	return 0;
+}
+
 /* this is really a lot more than just smart data now! */
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 {
@@ -149,8 +222,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	S_DRIVEINFO driveInfo;
 	USHORT smartVersion;
 	Mk5Smart *smart;
-	int d;
-	int len;
+	int d, v;
 
 	if(bank < 0 || bank >= N_BANK)
 	{
@@ -168,50 +240,14 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 		return -2;
 	}
 
-	XLRGetDirectory(xlrDevice, &(D->dir_info[bank]));
-	len = XLRGetUserDirLength(xlrDevice);
-	if(len % 128 == 0 && len >= 128)
+	v = getDirectoryInfo(xlrDevice, D, bank);
+	if(v < 0)
 	{
-		if(len != D->dirLength[bank])
-		{
-			if(D->dirData[bank])
-			{
-				free(D->dirData[bank]);
-			}
-			if(len > 0)
-			{
-				D->dirData[bank] = (char *)malloc(len);
-				xlrRC = XLRGetUserDir(xlrDevice, len, 0, D->dirData[bank]);
-				if(xlrRC != XLR_SUCCESS)
-				{
-					clearModuleInfo(D, bank);
+		clearModuleInfo(D, bank);
 
-					return -3;
-				}
+		return v;
+	}
 
-				const struct Mark5DirectoryHeaderVer1 *dirHeader = (struct Mark5DirectoryHeaderVer1 *)(D->dirData[bank]);
-				const struct Mark5DirectoryScanHeaderVer1 *lastScan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + len - 128);
-				D->startPointer[bank] = lastScan->startByte;
-				D->stopPointer[bank] = lastScan->stopByte;
-				D->diskModuleState[bank] = dirHeader->status & 0xFF;	/* don't include scan count here */
-			}
-			else
-			{
-				D->dirData[bank] = 0;
-			}
-			D->dirLength[bank] = len;
-		}
-	}
-	else	/* not a valid version 1 directory structure! */
-	{
-		if(D->dirData[bank])
-		{
-			free(D->dirData[bank]);
-			D->dirData[bank] = 0;
-		}
-		D->dirLength[bank] = 0;
-	}
-	D->nScan[bank] = len/128 - 1;
 	D->bytesUsed[bank] = XLRGetLength(xlrDevice);
 	D->bytesTotal[bank] = 0LL;
 
@@ -271,7 +307,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 	{
 		clearModuleInfo(D, bank);
 
-		return -3;
+		return -5;
 	}
 
 	return 0;

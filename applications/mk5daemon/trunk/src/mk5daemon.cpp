@@ -157,10 +157,12 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 
 	D->recordRate = 2048;	/* just a reference value to start with */
 
+#ifdef HAVE_XLRAPI_H
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
 		D->driveStatsConfig[b].range = defaultStatsRange[b];
 	}
+#endif
 
 	const char *dmsMask = getenv("DEFAULT_DMS_MASK");
 	if(dmsMask)

@@ -34,6 +34,7 @@
 #include <string>
 #include <sstream>
 #include <xlrapi.h>
+#include "mark5directorystructs.h"
 
 #ifndef MARK5_FILL_PATTERN
 #ifdef WORDS_BIGENDIAN
@@ -45,11 +46,6 @@
 
 
 #define DIRECTORY_NOT_CACHED		-7
-#define MODULE_STATUS_UNKNOWN		0x00
-#define MODULE_STATUS_ERASED		0x01
-#define MODULE_STATUS_PLAYED		0x02
-#define MODULE_STATUS_RECORDED		0x04
-#define MODULE_STATUS_BANK_MODE		0x08
 
 enum Mark5ReadMode
 {

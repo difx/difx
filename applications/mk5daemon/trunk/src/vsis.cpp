@@ -96,6 +96,8 @@ const Command commandSet[] =
 	{ "get_stats",	 	get_stats_Query,	noCommand		},
 	{ "start_stats",	start_stats_Query,	start_stats_Command	},
 	{ "mode",		mode_Query,		mode_Command		},
+	{ "rtime",		rtime_Query,		noCommand		},
+	{ "disk_state",		disk_state_Query,	disk_state_Command	},
 
 	{ "recover",		defaultQuery,		defaultCommand		},
 	{ "reset",		noQuery,		defaultCommand		},
@@ -245,11 +247,11 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 	/* not in command set... */
 	if(isQuery)
 	{
-		return noQuery(D, nField, fields, response, maxResponseLength);
+		return defaultQuery(D, nField, fields, response, maxResponseLength);
 	}
 	else
 	{
-		return noCommand(D, nField, fields, response, maxResponseLength);
+		return defaultCommand(D, nField, fields, response, maxResponseLength);
 	}
 }
 

@@ -4,10 +4,19 @@
 #include <ctype.h>
 #include "config.h"
 #include "vsis_commands.h"
+#include "../mk5dir/mark5directorystructs.h"
 
 int DTS_id_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	return snprintf(response, maxResponseLength, "!%s? 0 : mk5daemon : %s : %s : 1;", fields[0], VERSION, D->hostName);
+	int v;
+
+#ifdef HAVE_XLRAPI_H
+	v = snprintf(response, maxResponseLength, "!%s? 0 : mk5daemon : %s : %s : 1;", fields[0], VERSION, D->hostName);
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 0 : mk5daemon-noSS : %s : %s : 1;", fields[0], VERSION, D->hostName);
+#endif
+
+	return v;
 }
 
 int packet_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -186,7 +195,7 @@ int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 int fill_pattern_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v = -1;
-	UINT32 p;
+	unsigned int p;
 
 	if(nField != 2)
 	{
@@ -481,8 +490,8 @@ int dir_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 		}
 		else
 		{
-			v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %Ld : %Ld;", fields[0],
-				D->nScan[D->activeBank], D->bytesUsed[D->activeBank], D->bytesTotal[D->activeBank]);
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %Ld : %Ld : %d;", fields[0],
+				D->nScan[D->activeBank], D->bytesUsed[D->activeBank], D->bytesTotal[D->activeBank], D->dirVersion[D->activeBank]);
 		}
 	}
 #else
@@ -552,11 +561,12 @@ int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 
 int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	int bank;
 	int v;
-	char bankStr[N_BANK][60];
 
 #ifdef HAVE_XLRAPI_H
+	int bank;
+	char bankStr[N_BANK][60];
+
 	if(D->activeBank >= 0)
 	{
 		bank = D->activeBank;
@@ -568,7 +578,7 @@ int bank_info_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 
 	for(int b = 0; b < N_BANK; b++)
 	{
-		const Mk5Smart *smart = D->smartData + D->activeBank;
+		const Mk5Smart *smart = D->smartData + b;
 
 		if(D->vsns[bank][0])
 		{
@@ -640,7 +650,9 @@ int net_protocol_Command(Mk5Daemon *D, int nField, char **fields, char *response
 int disk_state_mask_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	return snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d;", fields[0], 
-		(D->diskStateMask & 1 ? 1 : 0), (D->diskStateMask & 2 ? 1 : 0), (D->diskStateMask & 4 ? 1 : 0));
+		(D->diskStateMask & MODULE_STATUS_ERASED ? 1 : 0), 
+		(D->diskStateMask & MODULE_STATUS_PLAYED ? 1 : 0), 
+		(D->diskStateMask & MODULE_STATUS_RECORDED ? 1 : 0));
 }
 
 int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
@@ -659,11 +671,11 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 		{
 			if(strcmp(fields[1], "1") == 0)
 			{
-				d = d | 1;
+				d = d | MODULE_STATUS_ERASED;
 			}
 			else if(strcmp(fields[1], "0") == 0)
 			{
-				d = d & ~1;
+				d = d & ~MODULE_STATUS_ERASED;
 			}
 			else
 			{
@@ -674,11 +686,11 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 		{
 			if(strcmp(fields[2], "1") == 0)
 			{
-				d = d | 2;
+				d = d | MODULE_STATUS_PLAYED;
 			}
 			else if(strcmp(fields[2], "0") == 0)
 			{
-				d = d & ~2;
+				d = d & ~MODULE_STATUS_PLAYED;
 			}
 			else
 			{
@@ -689,11 +701,11 @@ int disk_state_mask_Command(Mk5Daemon *D, int nField, char **fields, char *respo
 		{
 			if(strcmp(fields[3], "1") == 0)
 			{
-				d = d | 4;
+				d = d | MODULE_STATUS_RECORDED;
 			}
 			else if(strcmp(fields[3], "0") == 0)
 			{
-				d = d & ~4;
+				d = d & ~MODULE_STATUS_RECORDED;
 			}
 			else
 			{
@@ -725,7 +737,8 @@ int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 	else
 	{
 		const S_DRIVESTATS *stats = D->driveStats[D->activeBank][D->driveStatsIndex[D->activeBank]];
-		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d : %d;", fields[0],
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d : %d : %d;", fields[0],
+			D->driveStatsIndex[D->activeBank],
 			stats[0].count, stats[1].count, stats[2].count, stats[3].count,
 			stats[4].count, stats[5].count, stats[6].count, stats[7].count);
 		
@@ -775,7 +788,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 
 		for(int b = 0; b < XLR_MAXBINS-1; b++)
 		{
-			t[b] = -1;
+			t[b] = stats[b].range;
 		}
 
 		for(int f = 1; f < XLR_MAXBINS; f++)
@@ -797,7 +810,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 		}
 		if(v == 0)
 		{
-			for(int b = 1; b < XLR_MAXBINS; b++)
+			for(int b = 1; b < XLR_MAXBINS-1; b++)
 			{
 				if(t[b] <= t[b-1])
 				{
@@ -855,6 +868,123 @@ int mode_Command(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 
 	/* FIXME: actually do something! */
 	v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+
+	return v;
+}
+
+int rtime_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
+	}
+	else
+	{
+		const Mk5Smart *smart = D->smartData + D->activeBank;
+
+		if(D->vsns[D->activeBank][0] && smart->mjd >= 50000.0)
+		{
+			double left = D->bytesTotal[D->activeBank] - D->bytesUsed[D->activeBank];
+			if(left < 0.0)
+			{
+				left = 0.0;
+			}
+			double percent = 100.0*left/D->bytesTotal[D->activeBank];
+			double rtime = (left/1.0e6)/(D->recordRate/8.0);
+		
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %3.1f : %4.2f : %5.3f : %s : 0x%08x : %d : %3.1f;", fields[0],
+				rtime, left*1.0e-9, percent, D->dataSource, D->bitstreamMask, D->decimationRatio, D->recordRate);
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 5;", fields[0]);
+		}
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+
+	return v;
+}
+
+const char *moduleStatusName(int status)
+{
+	if(status & MODULE_STATUS_RECORDED)
+	{
+		return "recorded";
+	}
+	else if(status & MODULE_STATUS_PLAYED)
+	{
+		return "played";
+	}
+	else if(status & MODULE_STATUS_ERASED)
+	{
+		return "erased";
+	}
+
+	return "unknown";
+}
+
+int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v;
+
+#ifdef HAVE_XLRAPI_H
+	int bank;
+	char bankStr[N_BANK][60];
+
+	if(D->activeBank >= 0)
+	{
+		bank = D->activeBank;
+	}
+	else
+	{
+		bank = 0;
+	}
+
+	for(int b = 0; b < N_BANK; b++)
+	{
+		const Mk5Smart *smart = D->smartData + b;
+
+		if(D->vsns[bank][0])
+		{
+			if(D->errorFlag[bank])
+			{
+				sprintf(bankStr[b], "%c : error", 'A'+bank);
+			}
+			else if(smart->mjd >= 50000.0)
+			{
+				sprintf(bankStr[b], "%c : %s", 'A'+bank, moduleStatusName(D->diskModuleState[bank]));
+			}
+			else
+			{
+				sprintf(bankStr[b], "%c : unknown", 'A'+bank);
+			}
+		}
+		else
+		{
+			sprintf(bankStr[b], "- : 0");
+		}
+	
+		bank = (bank + 1) % N_BANK;
+	}
+
+	v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s;", fields[0], bankStr[0], bankStr[1]);
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }

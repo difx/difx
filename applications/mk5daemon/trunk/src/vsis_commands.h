@@ -50,6 +50,10 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 int mode_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int mode_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int rtime_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
 
 #endif

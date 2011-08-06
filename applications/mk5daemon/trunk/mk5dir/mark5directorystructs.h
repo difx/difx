@@ -1,7 +1,17 @@
+#ifndef __MARK5_DIRECTORY_STRUCTS__
+#define __MARK5_DIRECTORY_STRUCTS__
+
 #define MODULE_LEGACY_MAX_SCANS		1024
 #define MODULE_EXTENDED_VSN_LENGTH      32
 #define MODULE_SCAN_NAME_LENGTH         32
 #define MODULE_LEGACY_SCAN_LENGTH       64
+
+#define MODULE_STATUS_UNKNOWN           0x00
+#define MODULE_STATUS_ERASED            0x01
+#define MODULE_STATUS_PLAYED            0x02
+#define MODULE_STATUS_RECORDED          0x04
+#define MODULE_STATUS_BANK_MODE         0x08
+
 
 
 /* as implemented in Mark5A */
@@ -53,3 +63,5 @@ struct Mark5DirectoryVDIFBodyVer1
 {
 	unsigned short data[8][4];	/* packed bit fields for up to 8 thread groups */
 };
+
+#endif

@@ -119,6 +119,7 @@ typedef struct
 	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
 	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
 #endif
+	int errorFlag[N_BANK];
 	long long bytesUsed[N_BANK];	/* same as record pointer */
 	long long bytesTotal[N_BANK];
 	long long startPointer[N_BANK];
@@ -127,6 +128,7 @@ typedef struct
 	int nScan[N_BANK];
 	int dirLength[N_BANK];
 	char *dirData[N_BANK];
+	int dirVersion[N_BANK];
 	int driveStatsIndex[N_BANK];
 	double recordRate;	/* Mbps */
 	char dataSource[8];
@@ -180,6 +182,7 @@ void clearMk5Smart(Mk5Daemon *D, int bank);
 void clearMk5DirInfo(Mk5Daemon *D, int bank);
 void clearMk5Stats(Mk5Daemon *D, int bank);
 void clearModuleInfo(Mk5Daemon *D, int bank);
+int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
