@@ -34,9 +34,9 @@
 #include <difxmessage.h>
 #include "config.h"
 #include "logger.h"
+#include "../mk5dir/mark5directorystructs.h"
 #ifdef HAVE_XLRAPI_H
 #include "smart.h"
-#include "../mk5dir/mark5directorystructs.h"
 #endif
 
 #ifdef WORDS_BIGENDIAN
@@ -137,6 +137,7 @@ typedef struct
 	FILE *recordPipe;
 	enum RecordState recordState;
 	int errorFlag[N_BANK];
+	int driveFail[N_BANK];
 	long long bytesUsed[N_BANK];	/* same as record pointer */
 	long long bytesTotal[N_BANK];
 	long long startPointer[N_BANK];
@@ -152,6 +153,7 @@ typedef struct
 	char dataSource[8];
 	unsigned long bitstreamMask;
 	int decimationRatio;
+	int unprotected;	/* set after protect=off */
 
 	int payloadOffset;
 	int dataFrameOffset;

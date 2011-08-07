@@ -175,6 +175,10 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 		D->driveStatsConfig[b].range = defaultStatsRange[b];
 	}
 #endif
+	for(int b = 0; b < N_BANK; b++)
+	{
+		D->driveFail[b] = -1;	/* no failure */
+	}
 
 	const char *dmsMask = getenv("DEFAULT_DMS_MASK");
 	if(dmsMask)

@@ -100,9 +100,9 @@ const Command commandSet[] =
 	{ "disk_state",		disk_state_Query,	disk_state_Command	},
 	{ "scan_set",		scan_set_Query,		scan_set_Command	},
 	{ "record",		record_Query,		record_Command		},
+	{ "reset",		noQuery,		reset_Command		},
 
 	{ "recover",		defaultQuery,		defaultCommand		},
-	{ "reset",		noQuery,		defaultCommand		},
 
 	{ "",			0,			0			}	/* list terminator */
 };
@@ -199,9 +199,9 @@ static int parseVSIS(char *message, char **fields, int *nField, int *isQuery)
 static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxResponseLength)
 {
 	char *fields[MaxFields];
-	int nField;
+	int nField=0;
 	int isQuery;
-	int v;
+	int v = 0;
 
 	const char ParseError[][32] =
 	{
@@ -228,39 +228,60 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 
 	if(v < 0)
 	{
-		return snprintf(response, maxResponseLength, "!%s : Parse error: %s;", (nField > 0 ? fields[0] : "?"), ParseError[-v]);
+		v = snprintf(response, maxResponseLength, "!%s : Parse error: %s;", (nField > 0 ? fields[0] : "?"), ParseError[-v]);
 	}
-	
-	for(int i = 0; commandSet[i].name[0] != 0; i++)
+	else
 	{
-		if(strcmp(commandSet[i].name, fields[0]) == 0)
+		for(int i = 0; commandSet[i].name[0] != 0; i++)
+		{
+			if(strcmp(commandSet[i].name, fields[0]) == 0)
+			{
+				if(isQuery)
+				{
+					v = commandSet[i].query(D, nField, fields, response, maxResponseLength);
+				}
+				else
+				{
+					v = commandSet[i].command(D, nField, fields, response, maxResponseLength);
+				}
+			}
+			if(v != 0)
+			{
+				break;
+			}
+		}
+
+		/* not in command set... */
+		if(v == 0)
 		{
 			if(isQuery)
 			{
-				return commandSet[i].query(D, nField, fields, response, maxResponseLength);
+				v = defaultQuery(D, nField, fields, response, maxResponseLength);
 			}
 			else
 			{
-				return commandSet[i].command(D, nField, fields, response, maxResponseLength);
+				v = defaultCommand(D, nField, fields, response, maxResponseLength);
 			}
 		}
 	}
 
-	/* not in command set... */
-	if(isQuery)
+	if(nField >= 2 && strcmp(fields[0], "protect") == 0 && strcmp(fields[1], "off") == 0)
 	{
-		return defaultQuery(D, nField, fields, response, maxResponseLength);
+		D->unprotected = 1;
 	}
 	else
 	{
-		return defaultCommand(D, nField, fields, response, maxResponseLength);
+		D->unprotected = 0;
 	}
+
+	return v;
 }
 
 static int handleVSIS(Mk5Daemon *D, int sock)
 {
 	int v;
 	char message[DIFX_MESSAGE_LENGTH];
+	char logMessage[DIFX_MESSAGE_LENGTH];
 	char response[DIFX_MESSAGE_LENGTH];
 	int r = 0;
 	int start = 0;
@@ -271,6 +292,9 @@ static int handleVSIS(Mk5Daemon *D, int sock)
 		return -1;
 	}
 	message[v] = 0;
+
+	snprintf(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S received: %s\n", message);
+	Logger_logData(D->log, logMessage);
 
 	for(int i = 0; message[i]; i++)
 	{
@@ -293,6 +317,9 @@ static int handleVSIS(Mk5Daemon *D, int sock)
 			}
 		}
 	}
+
+	snprintf(logMessage, DIFX_MESSAGE_LENGTH, "VSI-S responding: %s\n", response);
+	Logger_logData(D->log, logMessage);
 
 	r += snprintf(response+r, DIFX_MESSAGE_LENGTH-r, "\n");
 
@@ -318,7 +345,9 @@ static void *serveVSIS(void *ptr)
 	const int reuse_addr = 1;
 	char message[DIFX_MESSAGE_LENGTH];
 	fd_set socks;
+#ifdef HAVE_XLRAPI_H
 	int recordFD;
+#endif
 
 	D = (Mk5Daemon *)ptr;
 
@@ -376,6 +405,7 @@ static void *serveVSIS(void *ptr)
 				}
 			}
 		}
+#ifdef HAVE_XLRAPI_H
 		if(D->recordPipe)
 		{
 			recordFD = fileno(D->recordPipe);
@@ -389,7 +419,7 @@ static void *serveVSIS(void *ptr)
 		{
 			recordFD = -2;
 		}
-
+#endif
 		readSocks = select(highSock+1, &socks, 0, 0, &timeout);
 
 		if(readSocks < 0)
@@ -452,31 +482,72 @@ static void *serveVSIS(void *ptr)
 				}
 			}
 		}
-
+#ifdef HAVE_XLRAPI_H
 		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
 		{
 			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
 			if(r)
 			{
-				char A[12][40];
-				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s", 
-					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11]);
-				if(strcmp(A[0], "Pointer") == 0 && n > 2)
+				char A[15][40];
+				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
+					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11], A[12], A[13], A[14]);
+				if(n > 0)
 				{
-					D->bytesUsed[D->activeBank] = atoll(A[1]);
-					D->recordRate = atof(A[2]);
-				}
-				else if(strcmp(A[0], "Stats") == 0 && n >= 10)
-				{
-					int drive = atoi(A[1]);
-					for(int b = 0; b < 8; b++)
+					if(strcmp(A[0], "Pointer") == 0 && n > 2)
 					{
-						D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
+						D->bytesUsed[D->activeBank] = atoll(A[1]);
+						D->recordRate = atof(A[2]);
 					}
-				}
-				else if(strcmp(A[0], "Error") == 0)
-				{
-					D->errorFlag[D->activeBank] = 1;
+					else if(strcmp(A[0], "Stats") == 0 && n >= 10)
+					{
+						int drive = atoi(A[1]);
+						for(int b = 0; b < 8; b++)
+						{
+							D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
+						}
+					}
+					else if(strcmp(A[0], "Error") == 0)
+					{
+						D->errorFlag[D->activeBank] = 1;
+					}
+					else if(strcmp(A[0], "SystemError") == 0)
+					{
+						D->errorFlag[D->activeBank] = 1;
+					}
+					else if(strcmp(A[0], "Halted") == 0)
+					{
+						D->recordState = RECORD_HALTED;
+					}
+					else if(strcmp(A[0], "Overflow") == 0)
+					{
+						D->recordState = RECORD_OVERFLOW;
+					}
+					else if(strcmp(A[0], "Drive") == 0 && n == 3)
+					{
+						if(strcmp(A[2], "failed") == 0)
+						{
+							D->driveFail[D->activeBank] = atoi(A[1]);
+						}
+					}
+					else if(strcmp(A[0], "Bank") == 0 && n == 13)
+					{
+						/* new module inserted */
+						int bank = A[1][0]-'A';
+						if(bank >= 0 && bank < N_BANK && bank != D->activeBank)
+						{
+							clearModuleInfo(D, bank);
+							clearMk5Stats(D, bank);
+							if(strcmp(A[2], "none") == 0)
+							{
+								D->vsns[bank][0] = 0;
+							}
+							else
+							{
+								strncpy(D->vsns[bank], A[2], 8);
+								D->vsns[bank][8] = 0;
+							}
+						}
+					}
 				}
 			}
 			if(feof(D->recordPipe))
@@ -489,14 +560,17 @@ static void *serveVSIS(void *ptr)
 				Mk5Daemon_getModules(D);
 			}
 		}
+#endif
 	}
 
+#ifdef HAVE_XLRAPI_H
 	if(D->recordPipe > 0)
 	{
 		pclose(D->recordPipe);
 		D->recordPipe = 0;
 		D->recordState = RECORD_OFF;
 	}
+#endif
 
 	if(acceptSock > 0)
 	{

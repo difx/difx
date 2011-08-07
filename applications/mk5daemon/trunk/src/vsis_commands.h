@@ -64,4 +64,6 @@ int scan_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

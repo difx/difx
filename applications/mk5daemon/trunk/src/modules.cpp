@@ -48,6 +48,7 @@ void clearModuleInfo(Mk5Daemon *D, int bank)
 	clearMk5Smart(D, bank);
 	clearMk5DirInfo(D, bank);
 	D->driveStatsIndex[bank] = 0;
+	D->driveFail[bank] = -1;
 
 	D->dirLength[bank] = 0;
 	if(D->dirData[bank])

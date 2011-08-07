@@ -893,7 +893,7 @@ int mode_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxR
 
 	//if(D->format = FORMAT_MARK5C
 	{
-		v = snprintf(response, maxResponseLength, "!%s? 0 : mark5b : 0x%08x : %d;", fields[0],
+		v = snprintf(response, maxResponseLength, "!%s? 0 : mark5b : 0x%08lx : %d;", fields[0],
 			D->bitstreamMask, D->decimationRatio);
 	}
 	//else
@@ -955,14 +955,45 @@ int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, 
 {
 	int v;
 
-	if(D->recordState != RECORD_OFF)
+#ifdef HAVE_XLRAPI_H
+	if(nField != 2)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : One parameter expected;", fields[0]);
+	}
+	else if(D->recordState != RECORD_OFF)
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
 	}
+	else if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : No module is active;", fields[0]);
+	}
+	else if(!D->unprotected)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Previous protect off required;", fields[0]);
+	}
+	else if(strcmp(fields[1], "recorded") == 0 || strcmp(fields[1], "erased") == 0 || strcmp(fields[1], "played") == 0)
+	{
+		char command[256];
+		char message[512];
+
+		snprintf(command, 256, "vsn --%s %c", fields[1], 'A'+D->activeBank);
+		snprintf(message, 512, "Executing: %s\n", command);
+		Logger_logData(D->log, message);
+
+		system(command);
+		clearModuleInfo(D, D->activeBank);
+		Mk5Daemon_getModules(D);
+
+		v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+	}
 	else
 	{
-		v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+		v = snprintf(response, maxResponseLength, "!%s = 6 : Unsupported disk state;", fields[0]);
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }
@@ -1109,9 +1140,10 @@ int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v;
-	char command[1000];
 
 #ifdef HAVE_XLRAPI_H
+	char command[1000];
+
 	if(nField < 2)
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : One to four parameters needed;", fields[0]);
@@ -1201,6 +1233,97 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			v = snprintf(response, maxResponseLength, "!%s = 1;", fields[0]);
 		}
 	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	if(nField < 2 || nField > 3)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : One to two parameters needed;", fields[0]);
+	}
+	if(strcmp(fields[1], "mount") == 0 || strcmp(fields[1], "dismount") == 0)
+	{
+		if(nField != 3)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : Two parameters needed for %s;", fields[0], fields[1]);
+		}
+		else if(strlen(fields[2]) != 1)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : Second parameter must be A or B;", fields[0]);
+		}
+		else
+		{
+			int bank = toupper(fields[2][0]) - 'A';
+			
+			if(bank < 0 || bank >= N_BANK)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 6 : Second parameter must be A or B;", fields[0]);
+			}
+			else if(bank == D->activeBank && D->recordState != RECORD_OFF)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+			}
+			else
+			{
+				if(strcmp(fields[1], "mount") == 0)
+				{
+					Mk5Daemon_diskOn(D, fields[2]);
+				}
+				else
+				{
+					Mk5Daemon_diskOff(D, fields[2]);
+				}
+				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+			}
+		}
+	}
+	else if(strcmp(fields[1], "erase") == 0)
+	{
+		if(nField != 2)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : One parameter expected for %s;", fields[0], fields[1]);
+		}
+		else if(D->recordState != RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+		}
+		else if(!D->unprotected)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Previous protect off required;", fields[0]);
+		}
+		else if(D->activeBank < 0)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : No module is active;", fields[0]);
+		}
+		else
+		{
+			char command[256];
+			char message[512];
+
+			snprintf(command, 256, "mk5erase --force --newdir %s", D->vsns[D->activeBank]);
+			snprintf(message, 512, "Executing: %s\n", command);
+			Logger_logData(D->log, message);
+
+			system(command);
+			clearModuleInfo(D, D->activeBank);
+			Mk5Daemon_getModules(D);
+
+			v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+		}
+	}
+	else
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : This reset mode not supported;", fields[0]);
+	}
+
 #else
 	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
 #endif
