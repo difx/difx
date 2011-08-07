@@ -48,7 +48,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110805";
+const char verdate[] = "20110806";
 
 const int defaultPacketSize = 5008;
 const int defaultPayloadOffset = 40;
@@ -105,6 +105,10 @@ static void usage(const char *pgm)
 	printf("  -b <b>     Stop recording after <b> bytes written\n\n");
 	printf("  --seconds <s>\n");
 	printf("  -t <s>     Stop recording after <s> seconds passed\n\n");
+	printf("  --statsrange <list>\n");
+	printf("  -r <list>  Set Mark5 statistics histogram [default %d,%d,%d,%d,%d,%d,%d]\n\n",
+		defaultStatsRange[0], defaultStatsRange[1], defaultStatsRange[2], defaultStatsRange[3],
+		defaultStatsRange[4], defaultStatsRange[5], defaultStatsRange[6]);
 
 	printf("Ctrl-C (SIGINT) can be used to cleanly stop recording\n\n");
 }
@@ -392,7 +396,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	return 0;
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, int verbose)
+static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, const int *statsRange, int verbose)
 {
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
@@ -526,7 +530,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
-		driveStats[b].range = defaultStatsRange[b];
+		driveStats[b].range = statsRange[b];
 		driveStats[b].count = 0;
 	}
 	WATCHDOGTEST( XLRSetDriveStats(xlrDevice, driveStats) );
@@ -741,6 +745,12 @@ int main(int argc, char **argv)
 	long long maxBytes = 1LL<<60;
 	double maxSeconds = 1.0e12;
 	char label[MaxLabelLength] = "";
+	int statsRange[XLR_MAXBINS];
+
+	for(int b = 0; b < XLR_MAXBINS; b++)
+	{
+		statsRange[b] = defaultStatsRange[b];
+	}
 
 	for(a = 1; a < argc; a++)
 	{
@@ -799,6 +809,21 @@ int main(int argc, char **argv)
 				   strcmp(argv[a], "--seconds") == 0)
 				{
 					maxSeconds = atof(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-r") == 0 ||
+				   strcmp(argv[a], "--statsrange") == 0)
+				{
+					int n = sscanf(argv[a+1], "%d,%d,%d,%d,%d,%d,%d",
+						statsRange+0, statsRange+1,
+						statsRange+2, statsRange+3,
+						statsRange+4, statsRange+5,
+						statsRange+6);
+					if(n != 7)
+					{
+						printf("The stats range option requires exactly 7 comma separated values\n");
+
+						return EXIT_FAILURE;
+					}
 				}
 				else
 				{
@@ -888,7 +913,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, verbose);
+		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, statsRange, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
