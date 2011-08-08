@@ -19,25 +19,40 @@
 //===========================================================================
 // SVN properties (DO NOT CHANGE)
 //
-// $Id$
-// $HeadURL$
-// $LastChangedRevision$
-// $Author$
-// $LastChangedDate$
+// $Id: $
+// $HeadURL: $
+// $LastChangedRevision: $
+// $Author: $
+// $LastChangedDate: $
 //
 //============================================================================
 
-#ifndef _BEAMFORMER_H
-#define _BEAMFORMER_H
+#ifndef _DECOMPOSITIONANALYZER_H
+#define _DECOMPOSITIONANALYZER_H
 
-#include <armadillo>
-
-#include "ArrayElements.h"
-#include "BeamformerData.h"
-#include "Covariance.h"
-#include "Decomposition.h"
 #include "Decompositions.h"
-#include "DecompositionAnalyzer.h"
 
-#endif
+/**
+ * Helper class to pull information out of a covariance matrix decomposition.
+ */
+class DecompositionAnalyzer {
 
+   private:
+      DecompositionAnalyzer();
+
+   public:
+      DecompositionAnalyzer(SVDecomposition const& deco);
+      DecompositionAnalyzer(EVDecomposition const& deco);
+      ~DecompositionAnalyzer() { }
+
+   public:
+      double getMDL(int, int&) const;
+      double getAIC(int, int&) const;
+      double getBIC(int, int&) const;
+
+   private:
+      Decomposition const& _deco;
+      int _deco_type;
+};
+
+#endif // _DECOMPOSITIONANALYZER_H

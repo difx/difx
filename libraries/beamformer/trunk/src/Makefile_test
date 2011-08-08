@@ -13,13 +13,15 @@ Decomposition.o: Decomposition.cpp
 
 Decompositions.o: Decompositions.cpp
 
+DecompositionAnalyzer.o: DecompositionAnalyzer.cpp
+
 ArrayElements.o: ArrayElements.cpp
 
 Covariance.o: Covariance.cpp
 
 analysis.o: analysis.cpp
 
-analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o
+analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o
 
 clean:
 	rm -f *.o analysis

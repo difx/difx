@@ -39,6 +39,8 @@
  */
 class Decomposition {
 
+   friend class DecompositionAnalyzer;
+
    private:
       Decomposition();
 
@@ -51,7 +53,9 @@ class Decomposition {
        *
        * @param[in] Rxx Reference to covariance class
        */
-      Decomposition(Covariance& Rxx) { /*derived should call: cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec);*/ }
+      Decomposition(Covariance& Rxx) : N_ant(Rxx.N_ant), N_chan(Rxx.N_chan) { 
+         /*derived should call: cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec);*/ 
+      }
 
       /**
        * C'stor for decomposition. Allocates sufficient internal space
@@ -60,7 +64,9 @@ class Decomposition {
        *
        * @param[in] Rxx Reference to covariance class
        */
-      Decomposition(arma::Mat<arma::cx_double>& Rxx) { /*derived should call: cstor_alloc(Rxx.n_cols, 1, numMat, numVec);*/ }
+      Decomposition(arma::Mat<arma::cx_double>& Rxx) : N_ant(Rxx.n_cols), N_chan(1) { 
+         /*derived should call: cstor_alloc(Rxx.n_cols, 1, numMat, numVec);*/ 
+      }
 
       /**
        * D'stor to free internal allocations.
@@ -70,15 +76,13 @@ class Decomposition {
   protected:
        /**
         * Allocate output matrices or output cubes.
-        * @param[in]  Nant   Dimension of 2D square matrix.
-        * @param[in]  Nchan  Number of 2D slices in 3D cube.
         * @param[in]  NdecoM  Number of matrices to store decomposition (1 for Eig, 2 for QR, 2 for SVD, etc)
         * @param[in]  NdecoV  Number of vectors to store decomposition (1 for Eig, 0 for QR, 1 for SVD, etc)
         *
-        * If Nchan<=1, only the _single_out_matrices[] is allocated.
-        * Otherwise, only the _batch_out_cubes[] is allocated.
+        * If class-const N_chan<=1, only the _single_out_matrices[] N_ant x N_ant are allocated.
+        * Otherwise, the data cubes in _batch_out_cubes[] are allocated.
         */
-       void cstor_alloc(const int Nant, const int Nchan, const int NdecoM, const int NdecoV);
+       void cstor_alloc(const int NdecoM, const int NdecoV);
 
    public:
 
@@ -148,6 +152,11 @@ class Decomposition {
       // Storage when processing only one decomposition
       arma::Col<double>           _single_out_vector;       // Nant x 1
       arma::Mat<arma::cx_double>  _single_out_matrices[3]; // Nant x Nant x 1
+
+   public:
+
+      const int N_ant;
+      const int N_chan;
 
 };
 

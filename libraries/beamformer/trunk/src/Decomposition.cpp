@@ -33,31 +33,31 @@
 
 /**
  * Allocate output matrices or output cubes.
- * @param[in]  Nant    Dimension of 2D square matrix.
- * @param[in]  Nchan   Number of 2D slices in 3D cube.
  * @param[in]  NdecoM  Number of matrices to store decomposition (1 for Eig, 2 for QR, 2 for SVD, etc)
  * @param[in]  NdecoV  Number of vectors to store decomposition (1 for Eig, 0 for QR, 1 for SVD, etc)
  * If Nchan<=1, only the _single_out_matrices[] is allocated.
  * Otherwise, only the _batch_out_cubes[] is allocated.
  */
-void Decomposition::cstor_alloc(const int Nant, const int Nchan, const int NdecoM, const int NdecoV)
+void Decomposition::cstor_alloc(const int NdecoM, const int NdecoV)
 {
+
+   // Note: class-const N_ant, N_chan are already set before c'stor base code is invoked
 
    // Matrice(s) with eigenvectors from decomposition
    for (int decoMat=0; (decoMat<NdecoM) && (decoMat<3); decoMat++) {
-      if (Nchan <= 1) {
-         _single_out_matrices[decoMat] = arma::zeros<arma::Mat<arma::cx_double> >(Nant,Nant);
+      if (N_chan <= 1) {
+         _single_out_matrices[decoMat] = arma::zeros<arma::Mat<arma::cx_double> >(N_ant,N_ant);
       } else {   
-         _batch_out_matrices[decoMat] = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchan);
+         _batch_out_matrices[decoMat] = arma::zeros<arma::Cube<arma::cx_double> >(N_ant,N_ant, N_chan);
       }
    }
 
    // Vector(s) with the eigenvalues from diagonal of decomposition
    if (NdecoV >= 1) {
-      if (Nchan <= 1) {
-         _single_out_vector = arma::zeros<arma::Col<double> >(Nant);
+      if (N_chan <= 1) {
+         _single_out_vector = arma::zeros<arma::Col<double> >(N_ant);
       } else {
-         _batch_out_vectors = arma::zeros<arma::Mat<double> >(Nant, Nchan);
+         _batch_out_vectors = arma::zeros<arma::Mat<double> >(N_ant, N_chan);
       }
    }
 }

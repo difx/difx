@@ -88,6 +88,13 @@ int main(int argc, char** argv)
         edc3.recompose(outDataBlock);
         cout << "--------------------------------------------------------------------\n";
 
+        SVDecomposition info(rxxDataBlock);
+        info.decompose(rxxDataBlock);
+        DecompositionAnalyzer da(info);
+        int rank;
+        double mdl = da.getMDL(0, rank);
+        cout << "DecompositionAnalyzer returned MDL=" << mdl << " and rank=" << rank << " for channel 0\n";
+
         //////////////////////////////////////////
         // Reference
         /////////////////////////////////////////

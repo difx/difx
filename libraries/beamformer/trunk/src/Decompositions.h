@@ -45,13 +45,13 @@ class QRDecomposition : public Decomposition {
       /** C'stor. See parent class for documentation. */
       QRDecomposition(Covariance& Rxx) : Decomposition(Rxx) { 
          const int numMat=2, numVec=0; // X=Q_mat*R_mat
-         cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       /** C'stor. See parent class for documentation. */
       QRDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
          const int numMat=2, numVec=0; // X=Q_mat*R_mat
-         cstor_alloc(Rxx.n_cols, 1, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       ~QRDecomposition() { }
@@ -90,13 +90,13 @@ class EVDecomposition : public Decomposition {
       /** C'stor. See parent class for documentation. */
       EVDecomposition(Covariance& Rxx) : Decomposition(Rxx) { 
          const int numMat=1, numVec=1; // X=E_mat*e_vec*inv(E_mat)
-         cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       /** C'stor. See parent class for documentation. */
       EVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
          const int numMat=1, numVec=1; // X=E_mat*e_vec*inv(E_mat)
-         cstor_alloc(Rxx.n_cols, 1, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       ~EVDecomposition() { }
@@ -133,15 +133,15 @@ class SVDecomposition : public Decomposition {
    public:
 
       /** C'stor. See parent class for documentation. */
-      SVDecomposition(Covariance& Rxx) : Decomposition(Rxx) { 
+      SVDecomposition(Covariance& Rxx) : Decomposition(Rxx) {
          const int numMat=2, numVec=1; // X=U_mat*s_vec*V_mat
-         cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       /** C'stor. See parent class for documentation. */
       SVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
          const int numMat=2, numVec=1; // X=U_mat*s_vec*V_mat
-         cstor_alloc(Rxx.n_cols, 1, numMat, numVec); 
+         cstor_alloc(numMat, numVec); 
       }
 
       ~SVDecomposition() { }
