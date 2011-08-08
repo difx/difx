@@ -134,6 +134,7 @@ typedef struct
 	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
 	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
 #endif
+	int systemReady;
 	FILE *recordPipe;
 	enum RecordState recordState;
 	int errorFlag[N_BANK];

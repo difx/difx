@@ -1391,6 +1391,77 @@ int recover_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v = 0;
+	unsigned int status = 0;
+
+	/* FIXME: use #defines for these bits */
+	if(D->systemReady)
+	{
+		status |= 0x0001;
+	}
+	if(D->errorFlag)
+	{
+		status |= 0x0002;
+	}
+#ifdef HAVE_XLRAPI_H
+	if(getMark5LockValue())
+	{
+		status |= 0x0004;
+	}
+#endif
+
+	if(D->recordState != RECORD_OFF)
+	{
+		status |= 0x0040;
+	}
+	if(D->recordState == RECORD_HALTED)
+	{
+		status |= 0x0080;
+	}
+
+#ifdef HAVE_XLRAPI_H
+	if(D->activeBank >= 0 && D->recordState == RECORD_OFF && D->errorFlag == 0)
+	{
+		if(D->smartData[D->activeBank].mjd > 50000 && D->bank_stat[D->activeBank].WriteProtected == 0)
+		{
+			status |= 0x4000000;
+		}
+	}
+
+	if(D->activeBank == 0)
+	{
+		status |= 0x100000;
+	}
+	if(D->smartData[0].mjd > 50000)
+	{
+		status |= 0x200000;
+		if(D->bank_stat[0].MediaStatus == MEDIASTATUS_FULL || D->bank_stat[0].MediaStatus == MEDIASTATUS_FAULTED)
+		{
+			status |= 0x400000;
+		}
+		if(D->bank_stat[0].WriteProtected)
+		{
+			status |= 0x800000;
+		}
+	}
+
+	if(D->activeBank == 1)
+	{
+		status |= 0x1000000;
+	}
+	if(D->smartData[1].mjd > 50000)
+	{
+		status |= 0x2000000;
+		if(D->bank_stat[1].MediaStatus == MEDIASTATUS_FULL || D->bank_stat[1].MediaStatus == MEDIASTATUS_FAULTED)
+		{
+			status |= 0x4000000;
+		}
+		if(D->bank_stat[1].WriteProtected)
+		{
+			status |= 0x8000000;
+		}
+	}
+#endif
+	v = snprintf(response, maxResponseLength, "!%s? 0 : 0x%08x;", fields[0], status);
 
 	return v;
 }
@@ -1400,7 +1471,37 @@ int VSN_Command(Mk5Daemon *D, int nField, char **fields, char *response, int max
 	int v = 0;
 
 #ifdef HAVE_XLRAPI_H
+	if(nField != 2)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : One parameter expected for %s;", fields[0], fields[1]);
+	}
+	else if(D->recordState != RECORD_OFF)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+	}
+	else if(!D->unprotected)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : Previous protect off required;", fields[0]);
+	}
+	else if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 4 : No module is active;", fields[0]);
+	}
+	else
+	{
+		char command[256];
+		char message[512];
 
+		snprintf(command, 256, "vsn --force %c %s", 'A'+D->activeBank, fields[1]);
+		snprintf(message, 512, "Executing: %s\n", command);
+		Logger_logData(D->log, message);
+
+		system(command);
+		clearModuleInfo(D, D->activeBank);
+		Mk5Daemon_getModules(D);
+
+		v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+	}
 #else
 	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
 #endif
@@ -1413,7 +1514,25 @@ int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxRe
 	int v = 0;
 
 #ifdef HAVE_XLRAPI_H
+	if(D->activeBank < 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 4 : No module is active;", fields[0]);
+	}
+	else
+	{
+		char label[XLR_LABEL_LENGTH+1];
 
+		strncpy(label, XLR_LABEL_LENGTH+1, "%s" D->bank_stat[D->activeBank].Label);
+		if(D->bank_stat[D->activeBank].ErrorCode)
+		{
+			/* FIXME: add additional disk info in case of failure */
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : Fail;", fields[0], label);
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : OK;", fields[0], label);
+		}
+	}
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif

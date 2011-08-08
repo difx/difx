@@ -547,6 +547,7 @@ int main(int argc, char **argv)
 					Mk5Daemon_getModules(D);
 					logMk5Smart(D, BANK_A);
 					logMk5Smart(D, BANK_B);
+					D->systemReady = 1;	/* initial check-out done */
 				}
 				justStarted = 0;
 			}
