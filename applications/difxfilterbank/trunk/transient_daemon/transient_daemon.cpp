@@ -470,7 +470,7 @@ static void generateIdentifier(const char *inputfile, int myID, char *identifier
  */
 static int getDMGenCommand(const char *inputFile, char *command, const TransientDaemonConf *conf)
 {
-	int r, v, nFreq, i;
+	int r, v, nFreq, i, maxfreq_ind;
 	DifxParameters *dp;
 	double freq, minFreq = 1.0e9;	/* MHz */
 	double maxFreq = 1.0;           /* MHz */
@@ -492,6 +492,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		return -2;
 	}
 	nFreq = atoi(DifxParametersvalue(dp, r));
+    maxfreq_ind = nFreq-1;
 	for(i = 0; i < nFreq; i++)
 	{
 		r = DifxParametersfind1(dp, r, "FREQ (MHZ) %d", i);
@@ -509,18 +510,19 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 		if(freq > maxFreq)
 		{
 			maxFreq = freq;
+            maxfreq_ind = i;    /* track the index of the highest freq, so that we can add its BW below */
 		}
-        /* need to add the bandwdith of the last IF to calc the highest freq */
-        /* try to retrieve the BW from the config file, but guess a default if not */
-        r = DifxParametersfind1(dp, r, "BW (MHZ) %d", nFreq-1);
-        if (r < 0) {
-            fprintf(stderr,"Warning: failed to find BW of freq index %d. Assuming %g MHz\n",nFreq-1,bw);
-        }
-        else {
-            bw = atof(DifxParametersvalue(dp, r));
-        }
-        maxFreq += bw;
 	}
+    /* need to add the bandwdith of the highest freq to overall freq span calculation*/
+    /* try to retrieve the BW from the config file, but guess a default if not */
+    r = DifxParametersfind1(dp, r, "BW (MHZ) %d", maxfreq_ind);
+    if (r < 0) {
+        fprintf(stderr,"Warning: failed to find BW of freq index %d. Assuming %g MHz\n",nFreq-1,bw);
+    }
+    else {
+        bw = atof(DifxParametersvalue(dp, r));
+    }
+    maxFreq += bw;
 
 	v = snprintf(command, CommandLength, "`%s -f %f -l %f -n %d -L %f -H %f -T %f -M %d -D %f`", 
 		conf->dmgenProgram, 
