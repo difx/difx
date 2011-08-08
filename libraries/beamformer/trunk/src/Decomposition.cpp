@@ -27,7 +27,7 @@
 //
 //============================================================================
 
-#include "Analyzer.h"
+#include "Decomposition.h"
 
 #include <armadillo>
 

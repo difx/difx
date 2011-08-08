@@ -27,8 +27,8 @@
 //
 //============================================================================
 
-#ifndef _ANALYZER_H
-#define _ANALYZER_H
+#ifndef _DECOMPOSITION_H
+#define _DECOMPOSITION_H
 
 #include "Covariance.h"
 
@@ -151,4 +151,4 @@ class Decomposition {
 
 };
 
-#endif // _ANALYZER_H
+#endif // _DECOMPOSITION_H

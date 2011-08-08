@@ -27,10 +27,10 @@
 //
 //============================================================================
 
-#ifndef _ANALYZERS_H
-#define _ANALYZERS_H
+#ifndef _DECOMPOSITIONS_H
+#define _DECOMPOSITIONS_H
 
-#include "Analyzer.h"
+#include "Decomposition.h"
 
 /**
  * Derived class for computing QR matrix decompositions of a 3D data cube or single 2D matrix.
@@ -167,4 +167,4 @@ class SVDecomposition : public Decomposition {
 
 };
 
-#endif // _ANALYZERS_H
+#endif // _DECOMPOSITIONS_H

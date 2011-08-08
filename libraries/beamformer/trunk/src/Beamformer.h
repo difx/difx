@@ -35,8 +35,8 @@
 #include "ArrayElements.h"
 #include "BeamformerData.h"
 #include "Covariance.h"
-#include "Analyzer.h"
-#include "Analyzers.h"
+#include "Decomposition.h"
+#include "Decompositions.h"
 
 #endif
 
