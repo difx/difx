@@ -30,19 +30,16 @@
 #include <iostream>
 #include <armadillo>
 
-#include "ArrayElements.h"
-#include "BeamformerData.h"
-#include "Covariance.h"
-#include "Analyzer.h"
+#include "Beamformer.h"
 
 using namespace std;
 using namespace arma;
 
 int main(int argc, char** argv)
 {
-        const int    DIGESTIF_Nant = 64;       // 64 elements, 60 in use
+        const int    DIGESTIF_Nant = 4;       // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
-        const int    DIGESTIF_Nch = 71;        // 71 channels
+        const int    DIGESTIF_Nch = 2;        // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
 
         ArrayElements ae;
@@ -50,37 +47,36 @@ int main(int argc, char** argv)
 
         const ElementXYZ_t xyz = ae.getPositionSet();
         cout << "Number of antennas = " << xyz.Nant << "\n";
-        #if 0
-        cout << xyz.x << "\n";
-        cout << xyz.y << "\n";
-        cout << xyz.z << "\n";
-        #endif
+        if (0) {
+           cout << "Antenna layout:\n";
+           int antcount = 0;
+           for (int yy=0; yy<xyz.Ldim[1]; yy++) {
+              for (int xx=0; xx<xyz.Ldim[0]; xx++) {
+                 cout << antcount << "=(" << xyz.x(antcount) << "," << xyz.y(antcount) << "," << xyz.z(antcount) << ")\t\t";
+                 antcount++;
+              }
+              cout << "\n";
+           }
+        }
 
         Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
+        rxxDataBlock.load(NULL, 0);
 
-	mat A = randu<mat>(10,10);
-	mat B = trans(A)*A;
-
-	vec eigvals;
-	mat eigvecs;
-	eig_sym(eigvals, eigvecs, B);
+        EVDecomposition evd(rxxDataBlock);
+        evd.decompose(rxxDataBlock);
 
 #if 0
-	cout << eigvals << endl;
-	cout << eigvecs << endl;
+	cx_mat A = randu<cx_mat>(10,10);
+	cx_mat B = trans(A)*A;
+	vec eigvals;
+	cx_mat eigvecs;
+	eig_sym(eigvals, eigvecs, B);
 
-	mat U;
-	vec s;
-	mat V;
-	svd(U,s,V, B);
-	cout << U << endl;
-	cout << s << endl;
-	cout << V << endl;
-#endif
-
+        // nulling
         eigvals.set_size(eigvals.n_elem + 1);
-        eigvals(eigvals.n_elem-1) = -1;
-//	cout << eigvals << endl;
+        eigvals(eigvals.n_elem-1) = 0;
+	cout << eigvals << endl;
+#endif
     
 	return 0;
 }

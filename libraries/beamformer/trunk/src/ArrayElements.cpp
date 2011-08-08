@@ -32,24 +32,20 @@
 
 #include "ArrayElements.h"
 
-ArrayElements::ArrayElements()
-{
-   elems.Nant = 0;
-}
-
-ArrayElements::~ArrayElements()
-{
-}
-
 /**
- * Make a linear array on x-axis, other coordinates zero.
- * The array elements are centered around zero.
+ * Generate a 1D equispaced linear antenna array centered around origo
+ * with antennas placed along the first dimension (x axis).
+ * @param[in]  Nant     Total number of antennas
+ * @param[in]  spacing  Antenna spacing in meters
  */
 void ArrayElements::generateLinear(int Nant, double spacing)
 {
 
    // Init
    elems.Nant = Nant;
+   elems.Ldim[0] = Nant;
+   elems.Ldim[1] = 0;
+   elems.Ldim[2] = 0;
    elems.x.set_size(Nant);
    elems.y.set_size(Nant);
    elems.z.set_size(Nant);
@@ -74,8 +70,10 @@ void ArrayElements::generateLinear(int Nant, double spacing)
 }
 
 /**
- * Make a square array on the x/y-plane, z coordinate zero.
- * The array elements are centered around origo.
+ * Generate a 2D equispaced square grid antenna array centered around origo 
+ * with antennas placed onto first 2 dimensions (x,y plane)
+ * @param[in]  Nant     Total number of antennas 
+ * @param[in]  spacing  Antenna spacing in meters
  */
 void ArrayElements::generateGrid(int Nant, double spacing)
 {
@@ -88,6 +86,9 @@ void ArrayElements::generateGrid(int Nant, double spacing)
 
    // Init
    elems.Nant = Nant;
+   elems.Ldim[0] = Lbox;
+   elems.Ldim[1] = Lbox;
+   elems.Ldim[2] = 0;
    elems.x.set_size(Nant);
    elems.y.set_size(Nant);
    elems.z.set_size(Nant);

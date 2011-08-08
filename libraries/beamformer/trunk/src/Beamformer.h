@@ -36,6 +36,7 @@
 #include "BeamformerData.h"
 #include "Covariance.h"
 #include "Analyzer.h"
+#include "Analyzers.h"
 
 #endif
 

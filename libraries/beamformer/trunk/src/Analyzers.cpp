@@ -28,67 +28,71 @@
 //============================================================================
 
 #include "Analyzer.h"
+#include "Analyzers.h"
 
 #include <armadillo>
 
 /**
- * Allocate output matrices or output cubes.
- * @param[in]  Nant    Dimension of 2D square matrix.
- * @param[in]  Nchan   Number of 2D slices in 3D cube.
- * @param[in]  NdecoM  Number of matrices to store decomposition (1 for Eig, 2 for QR, 2 for SVD, etc)
- * @param[in]  NdecoV  Number of vectors to store decomposition (1 for Eig, 0 for QR, 1 for SVD, etc)
- * If Nchan<=1, only the _single_out_matrices[] is allocated.
- * Otherwise, only the _batch_out_cubes[] is allocated.
- */
-void Decomposition::cstor_alloc(const int Nant, const int Nchan, const int NdecoM, const int NdecoV)
-{
-
-   // Matrice(s) with eigenvectors from decomposition
-   for (int decoMat=0; (decoMat<NdecoM) && (decoMat<3); decoMat++) {
-      if (Nchan <= 1) {
-         _single_out_matrices[decoMat] = arma::zeros<arma::Mat<arma::cx_double> >(Nant,Nant);
-      } else {   
-         _batch_out_matrices[decoMat] = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchan);
-      }
-   }
-
-   // Vector(s) with the eigenvalues from diagonal of decomposition
-   if (NdecoV >= 1) {
-      if (Nchan <= 1) {
-         _single_out_vector = arma::zeros<arma::Col<double> >(Nant);
-      } else {
-         _batch_out_vectors = arma::zeros<arma::Mat<double> >(Nant, Nchan);
-      }
-   }
-}
-
-/**
- * Perform batch decomposition of all covariances in the argument class.
- * @param[in]  allRxx  The covariance class containing one or more matrices.
- * @return             Zero on success.
- */
-int Decomposition::decompose(Covariance& cov) {
-   const arma::Cube<arma::cx_double>& allRxx = cov.get();
-   arma::Mat<arma::cx_double> Rxx;
-
-   for (unsigned int chan=0; chan<allRxx.n_slices; chan++) {
-      Rxx = allRxx.slice(chan);
-      this->do_decomposition(chan, Rxx);
-   }
-
-   return 0;
-}
-
-
-/**
- * Decompose covariance matrix and store results into output array
+ * Make QR decomposition of covariance matrix and store results into output array
  * specified by index 'sliceNr'.
- * Dummy template function only.
  * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
-int Decomposition::do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+int QRDecomposition::do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx)
 {
+   return -1;
+}
+
+/**
+ * Make Eigenvalue decomposition of covariance matrix and store results into output array
+ * specified by index 'sliceNr'.
+ * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
+ * @param[in]  Rxx       Matrix to decompose
+ * @return 0 on success
+ */
+int EVDecomposition::do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+{
+   arma::Mat<arma::cx_double> eigvecs;
+   arma::Col<double> eigvals;
+   if (sliceNr==0) {
+      eigvecs = _single_out_matrices[0];
+      eigvals = _single_out_vector;
+   } else {
+      eigvals = _batch_out_vectors.col(sliceNr-1);
+      eigvecs = _batch_out_matrices[0].slice(sliceNr-1);
+   }
+   arma::eig_sym(eigvals, eigvecs, Rxx);
+   std::cout << eigvecs << std::endl;
+   std::cout << eigvals << std::endl;
+   return 0;
+}
+
+/**
+ * Make Singular Value Decomposition of covariance matrix and store results into output array
+ * specified by index 'sliceNr'.
+ * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
+ * @param[in]  Rxx       Matrix to decompose
+ * @return 0 on success
+ */
+int SVDecomposition::do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+{
+   arma::Mat<arma::cx_double> U;
+   arma::Col<double> s;
+   arma::Mat<arma::cx_double> V;
+
+   if (sliceNr==0) {
+      U = _single_out_matrices[0]; 
+      s = _single_out_vector;
+      V = _single_out_matrices[1]; 
+   } else {
+      U = _batch_out_matrices[0].slice(sliceNr-1);
+      s = _batch_out_vectors.col(sliceNr-1);
+      V = _batch_out_matrices[1].slice(sliceNr-1);
+   }
+   arma::svd(U, s, V, (const arma::Mat<arma::cx_double>)Rxx);
+   std::cout << U << std::endl;
+   std::cout << s << std::endl;
+   std::cout << V << std::endl;
    return 0;
 }

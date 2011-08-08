@@ -35,21 +35,52 @@
 /** Phased array element positions */
 typedef struct ElementXYZ_tt {
    int Nant;
+   int Ldim[3];
    arma::Col<double> x;
    arma::Col<double> y;
    arma::Col<double> z;
 } ElementXYZ_t;
 
+
+/**
+ * Class for creating and storing the (x,y,z) coordinates of all
+ * elements in a phased array.
+ */
 class ArrayElements {
-   public:
-      ArrayElements();
-      ~ArrayElements();
 
    public:
+      /**
+       * C'stor for initialization.
+       */
+      ArrayElements() { elems.Nant = 0; }
+
+      /**
+       * D'stor
+       */
+      ~ArrayElements() { }
+
+   public:
+      /**
+       * Accessor function.
+       * @return ref to struct that contains antenna element coordinates
+       */
       const ElementXYZ_t& getPositionSet() const { return elems; }
 
    public:
+      /**
+       * Generate a 1D equispaced linear antenna array centered around origo
+       * with antennas placed along the first dimension (x axis).
+       * @param[in]  Nant     Total number of antennas
+       * @param[in]  spacing  Antenna spacing in meters
+       */
       void generateLinear(int Nant, double spacing);
+
+      /**
+       * Generate a 2D equispaced square grid antenna array centered around origo
+       * with antennas placed onto first 2 dimensions (x,y plane)
+       * @param[in]  Nant     Total number of antennas
+       * @param[in]  spacing  Antenna spacing in meters
+       */
       void generateGrid(int Nant, double spacing);
 
    private:

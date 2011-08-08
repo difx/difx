@@ -29,7 +29,14 @@
 
 #include "Covariance.h"
 
-void Covariance::load(double* raw_data)
+/**
+ * Load data cube contents from a memory location and
+ * reorganize the memory layout if necessary.
+ * @param[in]  raw_data  Pointer to data to load
+ * @param[in]  format    Data format (0..N, to be defined)
+ */
+
+void Covariance::load(double* raw_data, int format)
 {
 
 }

@@ -1,0 +1,27 @@
+CXX=g++
+LD=g++
+CXXFLAGS=-O1 -g -Wall
+LDFLAGS=-larmadillo -lblas -llapack
+
+all: analysis
+
+test: test.o
+	g++ test.cpp $(CXXFLAGS) -o test $(LDFLAGS)
+
+Analyzer.o: Analyzer.cpp
+
+Analyzers.o: Analyzers.cpp
+
+ArrayElements.o: ArrayElements.cpp
+
+Covariance.o: Covariance.cpp
+
+analysis.o: analysis.cpp
+
+analysis: analysis.o Covariance.o ArrayElements.o Analyzer.o Analyzers.o
+
+#analysis: analysis.cpp Covariance.o ArrayElements.o Analyzer.o Analyzers.o
+#1	g++ analysis.cpp Analyzer.cpp ArrayElements.cpp Covariance.cpp $(CXXFLAGS) -o analysis $(LDFLAGS) Covariance.o ArrayElements.o Analyzer.o
+
+clean:
+	rm -f *.o analysis

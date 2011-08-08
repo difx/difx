@@ -32,29 +32,74 @@
 
 #include <armadillo>
 
-/** Time-integrated covariance matrix */
+/** 
+ * Storage for time-integrated covariance data in the
+ * form of a 3D data cube (Nantennas x Nantennas x Nchannels).
+ */
 class Covariance {
 
    private:
       Covariance();
+
    public:
-      Covariance(int Nant, int Nchannels, double timestamp, double Tint) { 
-         _Rxx = arma::zeros<arma::Cube<arma::cx_double> >(Nchannels, Nant,Nant);
+      /**
+       * C'stor, allocate space for covariances and set their starting timestamp
+       * as well as integration time.
+       * @param[in]   Nant       Number of elements or antennas.
+       * @param[in]   Nchannels  Number of frequency channels.
+       * @param[in]   timestamp  Starting time of the data cube.
+       * @param[in]   Tint       Integration time used for the data cube.
+       */
+      Covariance(int Nant, int Nchannels, double timestamp, double Tint) : N_ant(Nant), N_chan(Nchannels) { 
+         _Rxx = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchannels);
          _timestamp = timestamp;
          _Tint = Tint;
       }
+
+      /**
+       * D'stor
+       */
       ~Covariance() { }
 
    public:
+
+      /**
+       * Const accessor to data cube.
+       * @return  Const reference to covariance data cube.
+       */
       const arma::Cube<arma::cx_double>& get() const { return _Rxx; }
-      void load(double* raw_data);
+
+      /**
+       * Writeable reference to data cube.
+       * @return Reference to covariance data cube.
+       */
+      arma::Cube<arma::cx_double>& getWriteable() { return _Rxx; }
+ 
+   public:
+
+      /**
+       * Load data cube contents from a memory location and
+       * reorganize the memory layout if necessary.
+       * @param[in]  raw_data  Pointer to data to load
+       * @param[in]  format    Data format (0..N, to be defined)
+       */
+      void load(double* raw_data, const int format);
 
    public:
+
+      /**
+       * Operator += for summing the data from another covariance
+       * object into the data cube contained in this object.
+       */
       Covariance& operator+= (const Covariance &rhs) {
          _Rxx += rhs._Rxx;
          _Tint += rhs._Tint;
          return *this;
       }
+
+   public:
+      const int N_ant;
+      const int N_chan;
 
    private:
       arma::Cube<arma::cx_double> _Rxx;
