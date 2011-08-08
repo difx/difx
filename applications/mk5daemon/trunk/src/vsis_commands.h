@@ -66,4 +66,13 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int recover_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int recover_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
+int VSN_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

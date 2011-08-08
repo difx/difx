@@ -308,7 +308,7 @@ int protect_Query(Mk5Daemon *D, int nField, char **fields, char *response, int m
 		v = snprintf(response, maxResponseLength, "!%s? 0 : %s;", fields[0], (p ? "on" : "off") );
 	}
 #else
-	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
 
 	return v;
@@ -881,7 +881,7 @@ int start_stats_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 		}
 	}
 #else
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
 #endif
 
 	return v;
@@ -992,7 +992,7 @@ int disk_state_Command(Mk5Daemon *D, int nField, char **fields, char *response, 
 		v = snprintf(response, maxResponseLength, "!%s = 6 : Unsupported disk state;", fields[0]);
 	}
 #else
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
 #endif
 
 	return v;
@@ -1102,11 +1102,10 @@ int scan_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 {
 	int v;
 
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented yet;", fields[0]);
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented yet;", fields[0]);
 
 	return v;
 }
-
 
 int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
@@ -1143,6 +1142,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 #ifdef HAVE_XLRAPI_H
 	char command[1000];
+	char message[1200];
 
 	if(nField < 2)
 	{
@@ -1193,7 +1193,8 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			}
 
 			snprintf(command, 1000, "record5c %c %s", 'A'+D->activeBank, scanLabel);
-			printf("Executing %s\n", command);  fflush(stdout);
+			snprintf(message, 1200, "Executing into pipe: %s\n", command);
+			Logger_logData(D->log, message);
 			D->recordPipe = popen(command, "r");
 			if(!D->recordPipe)
 			{
@@ -1326,6 +1327,95 @@ int reset_Command(Mk5Daemon *D, int nField, char **fields, char *response, int m
 
 #else
 	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int recover_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+	int mode = 1;
+
+	if(nField > 2)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : Zero or one parameters needed;", fields[0]);
+	}
+	else 
+	{
+		if(nField == 2)
+		{
+			mode = atoi(fields[1]);
+		}
+		if(mode < 0 || mode > 3)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 6 : Recover mode must be 0, 1, or 2;", fields[0]);
+		}
+		else if(D->recordState != RECORD_OFF)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Not while recording;", fields[0]);
+		}
+		else if(!D->unprotected)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : Previous protect off required;", fields[0]);
+		}
+		else if(D->activeBank < 0)
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 4 : No module is active;", fields[0]);
+		}
+		else
+		{
+			char command[256];
+			char message[512];
+
+			snprintf(command, 256, "recover --force %d %c", mode, 'A'+D->activeBank);
+			snprintf(message, 512, "Executing: %s\n", command);
+			Logger_logData(D->log, message);
+
+			system(command);
+			clearModuleInfo(D, D->activeBank);
+			Mk5Daemon_getModules(D);
+
+			v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+		}
+	}
+#else
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+	return v;
+}
+
+int VSN_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+
+#else
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
+
+	return v;
+}
+
+int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+
+#ifdef HAVE_XLRAPI_H
+
+#else
+	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
 
 	return v;

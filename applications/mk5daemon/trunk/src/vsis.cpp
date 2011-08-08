@@ -74,35 +74,48 @@ int noQuery(Mk5Daemon *D, int nField, char **fields, char *response, int maxResp
 
 const Command commandSet[] =
 {
+	/* Categorization based on 3 March 2011 Mark5C Command Set */
+
 	/* General commands */
 	{ "DTS_id", 		DTS_id_Query, 		noCommand		},
-	{ "packet",		packet_Query,		packet_Command		},
-	{ "bank_set",		bank_set_Query,		bank_set_Command	},
-	{ "SS_rev",		SS_rev_Query,		noCommand		},
 	{ "OS_rev",		OS_rev_Query,		noCommand		},
-	{ "fill_pattern",	fill_pattern_Query,	fill_pattern_Command	},
 	{ "protect",		protect_Query,		protect_Command		},
+	{ "recover",		noQuery,		recover_Command		},
+	{ "reset",		noQuery,		reset_Command		},
+	{ "SS_rev",		SS_rev_Query,		noCommand		},
+
+	/* System setup and monitoring */
 	{ "error",		error_Query,		noCommand		},
+	{ "mode",		mode_Query,		mode_Command		},
+	{ "status",		status_Query,		noCommand		},
+	{ "personality",	personality_Query,	personality_Command	},
+
+	/* Data checking */
+	{ "scan_set",		scan_set_Query,		scan_set_Command	},
+
+	/* Data transfer */
+	{ "net_protocol",	net_protocol_Query,	net_protocol_Command	},
+	{ "record",		record_Query,		record_Command		},
+	{ "fill_pattern",	fill_pattern_Query,	fill_pattern_Command	},
+	{ "packet",		packet_Query,		packet_Command		},
+
+	/* Bank management */
+	{ "bank_info",		bank_info_Query,	noCommand		},
+	{ "bank_set",		bank_set_Query,		bank_set_Command	},
+
+	/* Disk info */
+	{ "dir_info",		dir_info_Query,		noCommand		},
 	{ "disk_model",		disk_model_Query,	noCommand		},
 	{ "disk_model_rev",	disk_model_rev_Query,	noCommand		},
 	{ "disk_serial",	disk_serial_Query,	noCommand		},
 	{ "disk_size",		disk_size_Query,	noCommand		},
-	{ "dir_info",		dir_info_Query,		noCommand		},
-	{ "pointers",		pointers_Query,		noCommand		},
-	{ "personality",	personality_Query,	personality_Command	},
-	{ "bank_info",		bank_info_Query,	noCommand		},
-	{ "net_protocol",	net_protocol_Query,	net_protocol_Command	},
+	{ "disk_state",		disk_state_Query,	disk_state_Command	},
 	{ "disk_state_mask",	disk_state_mask_Query,	disk_state_mask_Command	},
 	{ "get_stats",	 	get_stats_Query,	noCommand		},
-	{ "start_stats",	start_stats_Query,	start_stats_Command	},
-	{ "mode",		mode_Query,		mode_Command		},
+	{ "pointers",		pointers_Query,		noCommand		},
 	{ "rtime",		rtime_Query,		noCommand		},
-	{ "disk_state",		disk_state_Query,	disk_state_Command	},
-	{ "scan_set",		scan_set_Query,		scan_set_Command	},
-	{ "record",		record_Query,		record_Command		},
-	{ "reset",		noQuery,		reset_Command		},
-
-	{ "recover",		defaultQuery,		defaultCommand		},
+	{ "start_stats",	start_stats_Query,	start_stats_Command	},
+	{ "VSN",		VSN_Query,		VSN_Command		},
 
 	{ "",			0,			0			}	/* list terminator */
 };
