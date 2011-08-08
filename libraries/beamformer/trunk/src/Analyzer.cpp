@@ -62,18 +62,57 @@ void Decomposition::cstor_alloc(const int Nant, const int Nchan, const int Ndeco
    }
 }
 
+
 /**
  * Perform batch decomposition of all covariances in the argument class.
- * @param[in]  allRxx  The covariance class containing one or more matrices.
- * @return             Zero on success.
+ * @param[in]  cov  The covariance class with one or more matrices.
+ * @return 0 on success
  */
-int Decomposition::decompose(Covariance& cov) {
-   const arma::Cube<arma::cx_double>& allRxx = cov.get();
+int Decomposition::decompose(Covariance const& cov)
+{
+   arma::Cube<arma::cx_double> const& allRxx = cov.get();
    arma::Mat<arma::cx_double> Rxx;
 
+   if (allRxx.n_slices == 1) {
+      return this->do_decomposition(0, allRxx.slice(0));
+   }
+
    for (unsigned int chan=0; chan<allRxx.n_slices; chan++) {
+      int sliceNr = chan + 1;
       Rxx = allRxx.slice(chan);
-      this->do_decomposition(chan, Rxx);
+      int rc = this->do_decomposition(sliceNr, Rxx);
+      if (rc != 0) {
+         return rc;
+      }
+   }
+
+   return 0;
+}
+
+
+/**
+ * Batch recompute the main covariance matrice(s) based on the
+ * decomposition data stored internally in this object.
+ * Internal and output object data cube sizes must be identical.
+ * @param[inout] cov  Output covariance class for the resulting matrices.
+ * @return 0 on success
+ */
+int Decomposition::recompose(Covariance& cov)
+{
+   arma::Cube<arma::cx_double>& allRxx = cov.getWriteable();
+   arma::Mat<arma::cx_double> Rxx;
+
+   if (allRxx.n_slices == 1) {
+      return this->do_recomposition(0, allRxx.slice(0));
+   }
+
+   for (unsigned int chan=0; chan<allRxx.n_slices; chan++) {
+      int sliceNr = chan + 1;
+      Rxx = allRxx.slice(chan);
+      int rc = this->do_recomposition(sliceNr, Rxx);
+      if (rc != 0) {
+         return rc;
+      }
    }
 
    return 0;
@@ -88,7 +127,21 @@ int Decomposition::decompose(Covariance& cov) {
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
-int Decomposition::do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+int Decomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
 {
    return 0;
 }
+
+
+/**
+ * Recompose covariance matrix and store results into output covariance, in the
+ * subresult location specified by index 'sliceNr'. Dummy template function only.
+ * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
+ * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+ * @return 0 on success
+ */
+int Decomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+{
+   return 0;
+}
+

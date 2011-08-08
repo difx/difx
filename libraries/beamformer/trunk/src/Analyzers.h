@@ -56,7 +56,7 @@ class QRDecomposition : public Decomposition {
 
       ~QRDecomposition() { }
 
-   public:
+   private:
 
       /**
        * Make QR decomposition of covariance matrix and store results into output array
@@ -65,7 +65,16 @@ class QRDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+
+      /**
+       * Revert QR decomposition and store results into input array specified by index 'slicenr'.
+       * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
+       * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+       * @return 0 on success
+       */
+      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+
 };
 
 /**
@@ -92,7 +101,8 @@ class EVDecomposition : public Decomposition {
 
       ~EVDecomposition() { }
 
-   public:
+   private:
+
       /**
        * Make Eigenvalue decomposition of covariance matrix and store results into output array
        * specified by index 'sliceNr'.
@@ -100,7 +110,16 @@ class EVDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+
+      /**
+       * Revert Eigenvalue decomposition and store results into input array specified by index 'slicenr'.
+       * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
+       * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+       * @return 0 on success
+       */
+      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+
 };
 
 /**
@@ -127,7 +146,8 @@ class SVDecomposition : public Decomposition {
 
       ~SVDecomposition() { }
 
-   public:
+   private:
+
       /**
        * Make Singular Value Decomposition of covariance matrix and store results into output array
        * specified by index 'sliceNr'.
@@ -135,7 +155,16 @@ class SVDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+
+      /**
+       * Revert SVD decomposition and store results into input array specified by index 'slicenr'.
+       * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
+       * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+       * @return 0 on success
+       */
+      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+
 };
 
 #endif // _ANALYZERS_H

@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 {
         const int    DIGESTIF_Nant = 4;       // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
-        const int    DIGESTIF_Nch = 2;        // 71 channels
+        const int    DIGESTIF_Nch = 1;        // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
 
         ArrayElements ae;
@@ -59,23 +59,67 @@ int main(int argc, char** argv)
            }
         }
 
+        // Load/generate covariance matrices. 
+        // Note: all covariance matrices must be Hermitian!
+
         Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
         rxxDataBlock.load(NULL, 0);
 
-        EVDecomposition evd(rxxDataBlock);
-        evd.decompose(rxxDataBlock);
+        Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
+
+        // -- PASS --
+        cout << "--------------------------------------------------------------------\n";
+        SVDecomposition edc(rxxDataBlock);
+        edc.decompose(rxxDataBlock);
+        edc.recompose(outDataBlock);
+        cout << "--------------------------------------------------------------------\n";
+
+        // -- PASS --
+        cout << "--------------------------------------------------------------------\n";
+        EVDecomposition edc2(rxxDataBlock);
+        edc2.decompose(rxxDataBlock);
+        edc2.recompose(outDataBlock);
+        cout << "--------------------------------------------------------------------\n";
+
+        // -- PASS --
+        cout << "--------------------------------------------------------------------\n";
+        QRDecomposition edc3(rxxDataBlock);
+        edc3.decompose(rxxDataBlock);
+        edc3.recompose(outDataBlock);
+        cout << "--------------------------------------------------------------------\n";
+
+        //////////////////////////////////////////
+        // Reference
+        /////////////////////////////////////////
+
+	cx_mat A = randu<cx_mat>(DIGESTIF_Nant, DIGESTIF_Nant);
 
 #if 0
-	cx_mat A = randu<cx_mat>(10,10);
-	cx_mat B = trans(A)*A;
-	vec eigvals;
+        A = A * trans(A);
+
 	cx_mat eigvecs;
-	eig_sym(eigvals, eigvecs, B);
+	vec eigvals;
+	if (!eig_sym(eigvals, eigvecs, A)) cout << "-- EIG FAILED --\n";
+
+        cx_mat C = eigvecs * diagmat(eigvals) * inv(eigvecs);
+        cout << "Before EIG:\n" << A << "\n";
+        cout << "After EIG:\n"  << C << "\n";
+
+#endif
+
+#if 0
+	cx_mat U;
+	cx_mat V;
+	vec s;
+        if (!svd(U, s, V, A)) cout << "-- SVD FAILED --\n"; else cout << "SVD OK!\n";
 
         // nulling
-        eigvals.set_size(eigvals.n_elem + 1);
-        eigvals(eigvals.n_elem-1) = 0;
-	cout << eigvals << endl;
+        // s.set_size(s.n_elem + 1);
+        // s(s.n_elem-1) = 0;
+
+        cx_mat C = U * diagmat(s) * trans(V);
+        cout << "Before SVD:\n" << A << "\n";
+        cout << "After SVD:\n"  << C << "\n";
 #endif
     
 	return 0;

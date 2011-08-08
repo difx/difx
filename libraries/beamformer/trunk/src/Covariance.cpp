@@ -39,5 +39,13 @@
 void Covariance::load(double* raw_data, int format)
 {
 
+#if 1
+   arma::cx_mat tmp = arma::randu<arma::cx_mat>(N_ant,N_ant);
+   tmp = trans(tmp) * tmp; // make symmetric
+   for (unsigned int cc=0; cc<_Rxx.n_slices; cc++) {
+      _Rxx.slice(cc) = tmp;
+   }
+#endif
+
 }
 
