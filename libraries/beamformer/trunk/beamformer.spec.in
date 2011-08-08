@@ -1,0 +1,33 @@
+Summary: Library and utilities for beamforming approaches including RFI mitigation
+Name: beamformer
+Version: @version@
+Release: 1
+License: GPL3
+Group: VLBI
+BuildRoot: /var/tmp/beamformer-@version@-buildroot
+Requires: gcc >= 4.1.0
+Prefix: /usr
+Source: beamformer-@version@.tar.gz
+
+%description
+Library and utilities for beamforming approaches including RFI mitigation
+
+%prep
+%setup -q -n beamformer-@version@
+
+%build
+%configure
+make
+
+%install
+%makeinstall
+
+%files
+/usr/lib/libbeamformer.a
+/usr/lib/pkgconfig/beamformer.pc
+/usr/include/Beamformer.h
+/usr/bin/testBeamformer
+
+%changelog
+* Fri Jul 08 2011 Jan Wagner <jwagner@mpifr.de>
+- First rpm version
