@@ -41,16 +41,63 @@ class DecompositionAnalyzer {
       DecompositionAnalyzer();
 
    public:
+
+      /** 
+       * C'stor
+       * @param[in] deco Reference to decomposition results to analyze
+       */
       DecompositionAnalyzer(SVDecomposition const& deco);
+
+      /**
+       * C'stor
+       * @param[in] deco Reference to decomposition results to analyze
+       */
       DecompositionAnalyzer(EVDecomposition const& deco);
+
+      /** D'stor */
       ~DecompositionAnalyzer() { }
 
    public:
+
+      /** 
+       * An MDL detector that makes a guess on the number of eigenvalues
+       * that are above an unknown noise power threshold. This can work 
+       * reasonably but requires more than N/2 of eigenvalues are indeed 
+       * from noise space.
+       * @param[in]    channel   Which channel of multi-channel data to analyse
+       * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
+       * @return Returns the minimum detected MDL value.
+       */
       double getMDL(int, int&) const;
+
+      /** 
+       * An AIC detector that makes a guess on the number of eigenvalues
+       * that are above an unknown noise power threshold. This can work 
+       * reasonably but requires more than N/2 of eigenvalues are indeed 
+       * from noise space.
+       * @param[in]    channel   Which channel of multi-channel data to analyse
+       * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
+       * @return Returns the minimum detected MDL value.
+       */
       double getAIC(int, int&) const;
+
       double getBIC(int, int&) const;
 
+
    private:
+
+      /**
+       * Compute AIC and MDL information criterion for subset of eigenvalues.              
+       * @param[in]    k     Criterion parameter, must be 0 <= k < (N=len(eigs))
+       * @param[in]    eigs  Vector containing eigenvalues, pre-sorted descendingly, eigs(0)>=eigs(1)>=...>=eigs(N-1)
+       * @param[inout] AIC   Result of computing AIC(k)
+       * @param[inout] MDL   Result of computing MDL(k)
+       * @return Criterion values by reference
+       */
+      void compute_IC_k(const unsigned int k, arma::Col<double> const& eigs, double& AIC, double& MDL) const;
+
+   private:
+
       Decomposition const& _deco;
       int _deco_type;
 };

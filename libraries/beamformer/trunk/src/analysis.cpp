@@ -62,10 +62,15 @@ int main(int argc, char** argv)
         // Load/generate covariance matrices. 
         // Note: all covariance matrices must be Hermitian!
 
+        srand(time(NULL));
         Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
         rxxDataBlock.load(NULL, 0);
 
         Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
+
+        //////////////////////////////////////////
+        // DECOMPOSITIONS
+        /////////////////////////////////////////
 
         // -- PASS --
         cout << "--------------------------------------------------------------------\n";
@@ -88,12 +93,22 @@ int main(int argc, char** argv)
         edc3.recompose(outDataBlock);
         cout << "--------------------------------------------------------------------\n";
 
+        //////////////////////////////////////////
+        // ANALYZE SVD DECOMPOSITION
+        /////////////////////////////////////////
+
         SVDecomposition info(rxxDataBlock);
         info.decompose(rxxDataBlock);
+
         DecompositionAnalyzer da(info);
-        int rank;
-        double mdl = da.getMDL(0, rank);
-        cout << "DecompositionAnalyzer returned MDL=" << mdl << " and rank=" << rank << " for channel 0\n";
+
+        int mdl_rank, aic_rank;
+        double mdl, aic;
+        mdl = da.getMDL(0, mdl_rank);
+        aic = da.getAIC(0, aic_rank);
+        cout << "DecompositionAnalyzer returned channel 0 "
+             << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
+             << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
 
         //////////////////////////////////////////
         // Reference
