@@ -106,8 +106,7 @@ static void DifxVisStartGlob(DifxVis *dv)
 
 	if(dv->nFile == 0)
 	{
-		fprintf(stderr, "Error: no data files in %s\n",
-			dv->D->job[dv->jobId].outputFile);
+		fprintf(stderr, "Error: no data files in %s\n", dv->D->job[dv->jobId].outputFile);
 
 		exit(EXIT_FAILURE);
 	}	
@@ -420,11 +419,14 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 				return HEADER_READ_ERROR;
                         }
+			if(verbose > 3)
+			{
+				fprintf(stdout, "Read a vis from baseline %d\n", configBaselineId);
+			}
                 }
                 else //dunno what to do
                 {
-                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n",
-                                sync, binhdrversion);
+                        fprintf(stderr, "Error parsing header: got a sync of %x and version of %d\n", sync, binhdrversion);
                         
 			return HEADER_READ_ERROR;
                 }
@@ -464,6 +466,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	scanId = DifxInputGetScanIdByJobId(dv->D, mjd+iat, dv->jobId);
 	if(scanId < 0)
 	{
+		if(verbose > 2)
+		{
+			printf("ScanID < 0 (= %d); skipping record\n", scanId);
+		}
+
 		return SKIPPED_RECORD;
 	}
 
@@ -498,7 +505,10 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	//printf("Sourceindex is %d, scanId is %d, baseline is %d\n", srcindex, scanId, configBaselineId);
 	if(srcindex != scan->orgjobPhsCentreSrcs[phasecentre] && (configBaselineId % 257 != 0) ) //don't skip autocorrelations
 	{
-		//printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
+		if(verbose > 2)
+		{
+			printf("Skipping record with srcindex %d because orgjobphasecentresrc[%d] is %d\n", srcindex, phasecentre,  scan->orgjobPhsCentreSrcs[phasecentre]);
+		}
 
 		return SKIPPED_RECORD;
 	}
@@ -506,11 +516,15 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 	config = dv->D->config + configId;
 
 	/* see if it is still the same scan at the edges of integration */
-	dt2 = config->tInt/(86400.0*2.001);  
+	dt2 = config->tInt/(86400.0*2.0001);  
 	if(scan->mjdStart > mjd+iat-dt2 || scan->mjdEnd < mjd+iat+dt2)
 	{
 		/* Nope! */
 		dv->flagTransition = 1;
+		if(verbose > 2)
+		{
+			printf("Flag transition: mjd range=%12.6f to %12.6f\n", mjd+iat-dt2, mjd+iat+dt2);
+		}
 
 		return SKIPPED_RECORD;
 	}
@@ -521,6 +535,11 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	if(config->freqIdUsed[freqId] <= 0)
 	{
+		if(verbose > 2)
+		{
+			printf("Freq not used: freqId = %d.  Skipping record.\n", freqId);
+		}
+
 		return SKIPPED_RECORD;
 	}
 
@@ -658,16 +677,14 @@ int DifxVisNewUVData(DifxVis *dv, int verbose, int pulsarBin, int phasecentre)
 
 	if(dv->bandId <  0 || dv->bandId >= dv->nFreq)
 	{
-		fprintf(stderr, "Parameter problem: bandId should be in [0, %d), was %d\n", 
-				dv->nFreq, dv->bandId);
+		fprintf(stderr, "Parameter problem: bandId should be in [0, %d), was %d\n", dv->nFreq, dv->bandId);
 		
 		return BAND_ID_ERROR;
 	}
 	
 	if(dv->polId  <  0 || dv->polId  >= dv->D->nPolar)
 	{
-		fprintf(stderr, "Parameter problem: polId should be in [0, %d), was %d\n",
-				dv->D->nPolar, dv->polId);
+		fprintf(stderr, "Parameter problem: polId should be in [0, %d), was %d\n", dv->D->nPolar, dv->polId);
 
 		return POL_ID_ERROR;
 	}
@@ -784,6 +801,11 @@ static int RecordIsZero(const DifxVis *dv)
 	return 1;
 }
 
+static int RecordHasNegativeWeight(const DifxVis *dv)
+{
+	return (dv->recweight < 0.0);
+}
+
 static int RecordIsTransitioning(const DifxVis *dv)
 {
 	return dv->flagTransition;
@@ -839,8 +861,7 @@ static double getDifxScaleFactor(const DifxInput *D, double s, int verbose)
 	{
 		if(verbose > 0)
 		{
-			printf("      Overriding scale factor %e with %e\n",
-				scale, s);
+			printf("      Overriding scale factor %e with %e\n", scale, s);
 		}
 		scale = s;
 	}
@@ -917,6 +938,10 @@ static int readvisrecord(DifxVis *dv, int verbose, int pulsarBin, int phasecentr
 			storevis(dv);
 		}
 		dv->changed = DifxVisNewUVData(dv, verbose, pulsarBin, phasecentre);
+		if(verbose > 3)
+		{
+			printf("readvisrecord: changed is %d\n", dv->changed);
+		}
 	}
 
 	return 0;
@@ -940,6 +965,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	int nInvalid = 0;
 	int nFlagged = 0;
 	int nZero = 0;
+	int nNegWeight = 0;
 	int nTrans = 0;
 	int nWritten = 0;
 	double mjd, bestmjd;
@@ -987,8 +1013,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		assert(dvs[j]);
 		if(!dvs[j])
 		{
-			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n",
-				j, D->nJob);
+			fprintf(stderr, "Error allocating DifxVis[%d/%d]\n", j, D->nJob);
 
 			return 0;
 		}
@@ -1104,7 +1129,15 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	/* First prime each structure with some data */
 	for(j = 0; j < nJob; j++)
 	{
+		if(opts->verbose > 3)
+		{
+			fprintf(stdout, "Priming, j=%d/%d\n", j, nJob);
+		}
 		readvisrecord(dvs[j], opts->verbose, opts->pulsarBin, opts->phaseCentre);
+		if(opts->verbose > 3)
+		{
+			fprintf(stdout, "Done priming\n");
+		}
 	}
 
 	/* Now loop until done, looking at */
@@ -1115,8 +1148,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		for(j = 0; j < nJob; j++)
 		{
 			dv = dvs[j];
-			mjd = (int)(dv->record->jd - 2400000.0) + 
-				dv->record->iat;
+			mjd = (int)(dv->record->jd - 2400000.0) + dv->record->iat;
 			if(mjd < bestmjd)
 			{
 				bestmjd = mjd;
@@ -1137,7 +1169,21 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		}
 		else if(RecordIsZero(dv))
 		{
+			if(opts->verbose > 0)
+			{
+				fprintf(stdout, "Found a zero record at mjd=%12.6f baseline=%d sourceId=%d\n", 
+					dv->mjd+dv->iat, dv->baseline, dv->sourceId);
+			}
 			nZero++;
+		}
+		else if(RecordHasNegativeWeight(dv))
+		{
+			if(opts->verbose > 0)
+			{
+				fprintf(stdout, "Found a negative weight recorrd at mjd=%12.6f baseline=%d sourceId=%d\n", 
+					dv->mjd+dv->iat, dv->baseline, dv->sourceId);
+			}
+			nNegWeight++;
 		}
 		else if(RecordIsTransitioning(dv))
 		{
@@ -1145,6 +1191,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		}
 		else
 		{
+			fprintf(stdout, "Found an ok record\n");
 #ifdef HAVE_FFTW
 			if(S)
 			{
@@ -1192,6 +1239,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	printf("      %d invalid records dropped\n", nInvalid);
 	printf("      %d flagged records dropped\n", nFlagged);
 	printf("      %d all zero records dropped\n", nZero);
+	printf("      %d negative weight records\n", nNegWeight);
 	printf("      %d scan boundary records dropped\n", nTrans);
 	printf("      %d records written\n", nWritten);
 	if(opts->verbose > 1)
@@ -1212,6 +1260,11 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	{
 		writeJobMatrix(jobMatrix);
 		deleteJobMatrix(jobMatrix);
+	}
+
+	if(nNegWeight > 0)
+	{
+		printf("\n\n*** The presence of negative weight scans indicates a real problem with the correlator and should be reported immediately! ***\n\n");
 	}
 
 	printf("                            ");

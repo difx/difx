@@ -59,6 +59,7 @@ struct CommandLineOptions
 	int keepOrder;
 	int dontCombine;
 	int overrideVersion;
+	int dontIncludeVisibilities;
 	double sniffTime;
 	int pulsarBin;
 	int phaseCentre;

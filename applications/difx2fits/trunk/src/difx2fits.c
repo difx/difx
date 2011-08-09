@@ -119,6 +119,9 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --override-version  Ignore difx versions\n");
 	fprintf(stderr, "\n");
+	fprintf(stderr, "  --zero\n");
+	fprintf(stderr, "  -0                  Don't put visibility data in FITS file\n");
+	fprintf(stderr, "\n");
 	fprintf(stderr, "PLEASE file all bug reports at http://svn.atnf.csiro.au/trac/difx .\n");
 	fprintf(stderr, "Include at a minimum the output of difx2fits with extra verbosity\n");
 	fprintf(stderr, "(that is with -v -v).  The .input, .im & .calc files may help too.\n");
@@ -198,6 +201,11 @@ struct CommandLineOptions *parseCommandLine(int argc, char **argv)
 			        strcmp(argv[i], "-v") == 0)
 			{
 				opts->verbose++;
+			}
+			else if(strcmp(argv[i], "--zero") == 0 ||
+				strcmp(argv[i], "-0") == 0)
+			{
+				opts->dontIncludeVisibilities = 1;
 			}
 #ifdef HAVE_FFTW
 			else if(strcmp(argv[i], "--dont-sniff") == 0 ||
@@ -562,11 +570,18 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;
 
-	printf("  UV -- visibility          \n");
-	fflush(stdout);
-	D = DifxInput2FitsUV(D, &keys, out, opts);
-	printf("%lld bytes\n", out->bytes_written - last_bytes);
-	last_bytes = out->bytes_written;
+	if(!opts->dontIncludeVisibilities)
+	{
+		printf("  UV -- visibility          \n");
+		fflush(stdout);
+		D = DifxInput2FitsUV(D, &keys, out, opts);
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
+	}
+	else
+	{
+		printf("  *** No visibility data being written to file ***\n");
+	}
 
 	printf("  FL -- flag                ");
 	fflush(stdout);
