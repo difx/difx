@@ -114,13 +114,24 @@ class Decomposition {
    public:
 
       /**
-       * Batch recompute the main covariance matrice(s) based on the
+       * Perform batch recomposition of all covariance matrices based on the
        * decomposition data stored internally in this object.
        * Internal and output object data cube sizes must be identical.
        * @param[inout] cov  Output covariance class for the resulting matrices.
        * @return 0 on success
        */
       int recompose(Covariance& cov);
+
+      /**
+       * Perform batch recomposition of a range of main covariance matrice(s) based on the
+       * decomposition data stored internally in this object.
+       * Internal and output object data cube sizes must be identical.
+       * @param[inout] cov    Output covariance class for the resulting matrices.
+       * @param[in]  startch  Channel at which to start recomposition, 0 is first
+       * @param[in]  endch    Last channel (inclusive) to recompose
+       * @return 0 on success
+       */
+      int recompose(Covariance& cov, const int startch, const int endch);
 
       /**
        * Recompute one covariance matrix based on the

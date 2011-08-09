@@ -110,22 +110,42 @@ int Decomposition::decompose(Covariance const& cov, const int startch, const int
 
 
 /**
- * Batch recompute the main covariance matrice(s) based on the
+ * Perform batch recomposition of all covariance matrices based on the
  * decomposition data stored internally in this object.
  * Internal and output object data cube sizes must be identical.
- * @param[inout] cov  Output covariance class for the resulting matrices.
+ * @param[inout]  cov  Output covariance class for the resulting matrices.
  * @return 0 on success
  */
 int Decomposition::recompose(Covariance& cov)
 {
+   arma::Cube<arma::cx_double> const& allRxx = cov.get();       
+   return recompose(cov, 0, (allRxx.n_slices-1));
+}
+
+
+/**
+ * Batch recompute a range of main covariance matrice(s) based on the
+ * decomposition data stored internally in this object.
+ * Internal and output object data cube sizes must be identical.
+ * @param[inout] cov    Output covariance class for the resulting matrices.
+ * @param[in]  startch  Channel at which to start recomposition, 0 is first
+ * @param[in]  endch    Last channel (inclusive) to recompose   
+ * @return 0 on success
+ */
+int Decomposition::recompose(Covariance& cov, const int startch, const int endch)
+{
    arma::Cube<arma::cx_double>& allRxx = cov.getWriteable();
    arma::Mat<arma::cx_double> Rxx;
+
+   if (unsigned(startch) >= allRxx.n_slices) {
+      return -1;
+   }
 
    if (allRxx.n_slices == 1) {
       return this->do_recomposition(0, allRxx.slice(0));
    }
 
-   for (unsigned int chan=0; chan<allRxx.n_slices; chan++) {
+   for (unsigned int chan=startch; (chan<allRxx.n_slices) && (chan<=unsigned(endch)); chan++) {
       int sliceNr = chan + 1;
       Rxx = allRxx.slice(chan);
       int rc = this->do_recomposition(sliceNr, Rxx);
@@ -140,14 +160,14 @@ int Decomposition::recompose(Covariance& cov)
 
 /**
  * Decompose covariance matrix and store results into output array
- * specified by index 'sliceNr'.
- * Dummy template function only.
+ * specified by index 'sliceNr'. Dummy template function only.
  * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
 int Decomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
 {
+   // DERIVED CLASS MUST IMPLEMENT THIS
    return 0;
 }
 
@@ -161,6 +181,7 @@ int Decomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double
  */
 int Decomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
 {
+   // DERIVED CLASS MUST IMPLEMENT THIS
    return 0;
 }
 
