@@ -201,10 +201,16 @@ void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, 
    // Note1: geometric tends to overflow easily for large n_elem and RFI presence
    // Note2: eigenvalues must be sorted descendingly, e(0) >= e(1) >= ... >= e(n_elem-1)
    // Note2: k=0 to use all (N-k)=N smallest eigenvalues e(0..n_elem-1), k=1 to use eigs e(1..n_elem-1) and so on
+   #if 0
    for (unsigned int i=k; i<eigs.n_elem; i++) {
       arith += eigs(i);
       geo *= eigs(i);
    }
+   #else
+   arith = arma::sum(eigs.rows(k, eigs.n_elem-1));
+   geo = arma::prod(eigs.rows(k, eigs.n_elem-1));
+   #endif
+
    arith /= Q;
    geo = std::pow(geo, 1/Q);
 
