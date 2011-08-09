@@ -35,6 +35,9 @@
 /** 
  * Storage for time-integrated covariance data in the
  * form of a 3D data cube (Nantennas x Nantennas x Nchannels).
+ *
+ * In case of Fourier domain data, the stored data would be
+ * called spectral density matrices instead of covariances.
  */
 class Covariance {
 
