@@ -71,13 +71,32 @@ void Decomposition::cstor_alloc(const int NdecoM, const int NdecoV)
 int Decomposition::decompose(Covariance const& cov)
 {
    arma::Cube<arma::cx_double> const& allRxx = cov.get();
+
+   return decompose(cov, 0, (allRxx.n_slices-1));
+}
+
+
+/**
+ * Perform batch decomposition of a range of covariances in the argument class.
+ * @param[in]  cov      The covariance class with one or more matrices.
+ * @param[in]  startch  Channel at which to start decomposition, 0 is first
+ * @param[in]  endch    Last channel (inclusive) to decompose
+ * @return 0 on success.
+ */
+int Decomposition::decompose(Covariance const& cov, const int startch, const int endch)
+{
+   arma::Cube<arma::cx_double> const& allRxx = cov.get();
    arma::Mat<arma::cx_double> Rxx;
+ 
+   if (unsigned(startch) >= allRxx.n_slices) {
+      return -1;
+   }
 
    if (allRxx.n_slices == 1) {
       return this->do_decomposition(0, allRxx.slice(0));
    }
-
-   for (unsigned int chan=0; chan<allRxx.n_slices; chan++) {
+   
+   for (unsigned int chan=startch; (chan<allRxx.n_slices) && (chan<=unsigned(endch)); chan++) {
       int sliceNr = chan + 1;
       Rxx = allRxx.slice(chan);
       int rc = this->do_decomposition(sliceNr, Rxx);
@@ -85,7 +104,7 @@ int Decomposition::decompose(Covariance const& cov)
          return rc;
       }
    }
-
+ 
    return 0;
 }
 

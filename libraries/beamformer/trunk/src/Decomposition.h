@@ -94,6 +94,15 @@ class Decomposition {
       int decompose(Covariance const& cov);
 
       /**
+       * Perform batch decomposition of a range of covariances in the argument class.
+       * @param[in]  cov      The covariance class with one or more matrices.
+       * @param[in]  startch  Channel at which to start decomposition, 0 is first
+       * @param[in]  endch    Last channel (inclusive) to decompose
+       * @return 0 on success.
+       */
+      int decompose(Covariance const& cov, const int startch, const int endch);
+
+      /**
        * Perform single decomposition of given covariance matrix class.
        * @param[in]  Rxx  The covariance matrix to decompose.
        * @return 0 on success.
