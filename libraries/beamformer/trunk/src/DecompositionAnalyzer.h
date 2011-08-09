@@ -65,10 +65,11 @@ class DecompositionAnalyzer {
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.
        * @param[in]    channel   Which channel of multi-channel data to analyse
+       * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
        * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
        * @return Returns the minimum detected MDL value.
        */
-      double getMDL(int, int&) const;
+      double getMDL(int, const int, int&) const;
 
       /** 
        * An AIC detector that makes a guess on the number of eigenvalues
@@ -76,25 +77,35 @@ class DecompositionAnalyzer {
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.
        * @param[in]    channel   Which channel of multi-channel data to analyse
+       * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
        * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
        * @return Returns the minimum detected MDL value.
        */
-      double getAIC(int, int&) const;
+      double getAIC(int, const int, int&) const;
 
-      double getBIC(int, int&) const;
+      /** Wraps getMDL() call with default value of M=100 samples */
+      double getMDL(int c, int& ref) const { return getMDL(c, 100, ref); }
 
+      /** Wraps getAIC() call with default value of M=100 samples */
+      double getAIC(int c, int& ref) const { return getAIC(c, 100, ref); }
+
+   public:
+
+      /** Unit test */
+      bool utest();
 
    private:
 
       /**
        * Compute AIC and MDL information criterion for subset of eigenvalues.              
        * @param[in]    k     Criterion parameter, must be 0 <= k < (N=len(eigs))
+       * @param[in]    M_smp Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
        * @param[in]    eigs  Vector containing eigenvalues, pre-sorted descendingly, eigs(0)>=eigs(1)>=...>=eigs(N-1)
        * @param[inout] AIC   Result of computing AIC(k)
        * @param[inout] MDL   Result of computing MDL(k)
        * @return Criterion values by reference
        */
-      void compute_IC_k(const unsigned int k, arma::Col<double> const& eigs, double& AIC, double& MDL) const;
+      void compute_IC_k(const unsigned int k, const int M_smp, arma::Col<double> const& eigs, double& AIC, double& MDL) const;
 
    private:
 

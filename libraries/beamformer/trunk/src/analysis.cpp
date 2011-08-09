@@ -101,6 +101,7 @@ int main(int argc, char** argv)
         info.decompose(rxxDataBlock);
 
         DecompositionAnalyzer da(info);
+        da.utest();
 
         int mdl_rank, aic_rank;
         double mdl, aic;
