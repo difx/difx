@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008-2010 by Walter Brisken                             *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -148,11 +148,13 @@ int Mk5Daemon_getStreamstorVersions(Mk5Daemon *D)
 
 			return 2;
 		}
+		D->mk5ver.DB_SerialNum = dbInfo.SerialNum;
 		strcpy(D->mk5ver.DB_PCBVersion, dbInfo.PCBVersion);
 		strcpy(D->mk5ver.DB_PCBType, dbInfo.PCBType);
 		strcpy(D->mk5ver.DB_PCBSubType, dbInfo.PCBSubType);
 		strcpy(D->mk5ver.DB_FPGAConfig, dbInfo.FPGAConfig);
 		strcpy(D->mk5ver.DB_FPGAConfigVersion, dbInfo.FPGAConfigVersion);
+		D->mk5ver.DB_NumChannels = dbInfo.NumChannels;
 	}
 
 	XLRClose(xlrDevice);

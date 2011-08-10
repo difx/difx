@@ -47,7 +47,7 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110809";
+const char verdate[] = "20110810";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -155,6 +155,8 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	}
 	else
 	{
+		unsigned char *ptr;
+
 		if(mf->format == 0 || mf->format == 2)  /* VLBA or Mark5B format */
 		{
 			n = (mjdref - mf->mjd + 500) / 1000;
@@ -179,11 +181,11 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 		delete_mark5_format(mf);
 
 		byte = pos + mf->frameoffset;
+
+		ptr = (unsigned char *)buffer + mf->frameoffset;
+		frame = ptr[4] + 256*ptr[5];
 	}
 
-	unsigned char *ptr = (unsigned char *)buffer + mf->frameoffset;
-
-	frame = ptr[4] + 256*ptr[5];
 
 	if(verbose > 0)
 	{

@@ -29,9 +29,11 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include "mark5dir.h"
+#if SDKVERSION >= 9
+#include <unistd.h>
 #include <ctype.h>
 #include <string.h>
-#include <unistd.h>
 #include <ctype.h>
 #include <sys/time.h>
 #include <difxmessage.h>
@@ -40,7 +42,6 @@
 #include <xlrtypes.h>
 #include <xlrapi.h>
 #include "config.h"
-#include "mark5dir.h"
 #include "mark5directorystructs.h"
 #include "watchdog.h"
 #include "../config.h"
@@ -48,7 +49,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110806";
+const char verdate[] = "20110810";
 
 const int defaultPacketSize = 5008;
 const int defaultPayloadOffset = 40;
@@ -930,3 +931,15 @@ int main(int argc, char **argv)
 
 	return retval;
 }
+
+#else
+/* Just print nocando */
+
+int main()
+{
+	printf("Sorry, this only works on SDK9+ machines\n");
+
+	return EXIT_FAILURE;
+}
+
+#endif

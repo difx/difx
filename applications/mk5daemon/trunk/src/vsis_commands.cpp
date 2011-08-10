@@ -156,12 +156,14 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	if(strlen(D->mk5ver.DB_PCBVersion) > 0)
 	{
 		/* FIXME: get DBSerialNum and DBNumChannels */
-		sprintf(dbInfo, " : DBPCBVersion %s : DBPCBType %s : DBPCBSubType %s : DBFPGConfig %s : DBFPGAConfigVers %s",
+		sprintf(dbInfo, " : DBSerialNum %d : DBPCBVersion %s : DBPCBType %s : DBPCBSubType %s : DBFPGConfig %s : DBFPGAConfigVers %s : DBNumChannels %d",
+			D->mk5ver.DB_SerialNum,
 			D->mk5ver.DB_PCBVersion, 
 			D->mk5ver.DB_PCBType,
 			D->mk5ver.DB_PCBSubType,
 			D->mk5ver.DB_FPGAConfig,
-			D->mk5ver.DB_FPGAConfigVersion);
+			D->mk5ver.DB_FPGAConfigVersion,
+			D->mk5ver.DB_NumChannels);
 	}
 	else
 	{

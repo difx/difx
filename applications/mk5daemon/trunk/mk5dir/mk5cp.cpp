@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.8";
-const char verdate[] = "20110809";
+const char verdate[] = "20110810";
 
 const int defaultChunkSize = 50000000;
 
@@ -101,7 +101,7 @@ int usage(const char *pgm)
 	fprintf(stderr, "<vsn> is a valid module VSN (8 characters)\n\n");
 	fprintf(stderr, "<scans> is a string containing a list of scans to copy.  No whitespace\n    "
 		"is allowed.  Ranges are allowed.  Examples:  1  or  3,5  or  1,3,6-9\n");
-	fprintf(stderr, "The <scans> string can also be an MJD range to copy.\n  Example: 54321.112_54321_113\n");
+	fprintf(stderr, "The <scans> string can also be an MJD range to copy.\n  Example: 54321.112_54321.113\n");
 	fprintf(stderr, "The <scans> string can also be a byte range to copy.\n  Example: 38612201536_38619201536\n");
 	fprintf(stderr, "The byte range can be expressed as a start and length.\n  Example: 38612201536+7000000\n");
 	fprintf(stderr, "The <scans> string can also take the special values 'last' and 'all'\n");
