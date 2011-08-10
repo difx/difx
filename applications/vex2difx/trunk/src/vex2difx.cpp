@@ -1479,7 +1479,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 			ok = true;
 
-			// stop when readSize falls below specifed maximum (default to 50MB)
+			// stop when readSize falls below specifed maximum (default to 25MB)
 			if(readSize < P->readSize)
 			{
 				break;
@@ -2263,10 +2263,6 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 					
 					break;
 				}
-			}
-			if(D->source[s].spacecraftId < 0)
-			{
-				cerr << "Developer error: For source=" << D->source[s].name << " spacecraftId=" << D->source[s].spacecraftId << endl; 
 			}
 		}
 	}

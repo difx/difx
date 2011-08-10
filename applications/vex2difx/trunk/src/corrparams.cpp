@@ -1193,7 +1193,7 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	readSize = 50000000;		// Bytes
+	readSize = 25000000;		// Bytes	More and risk XLRRead problems
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 80;
 	v2dMode = V2D_MODE_NORMAL;
