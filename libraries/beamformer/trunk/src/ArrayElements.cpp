@@ -52,6 +52,8 @@ void ArrayElements::generateLinear(int Nant, double spacing)
    elems.x.zeros();
    elems.y.zeros();
    elems.z.zeros();
+   elems.flag.set_size(Nant);
+   elems.flag.fill(ArrayElements::POINT_ASTRO | ArrayElements::POL_LCP);
 
    // Center the elements around (0,0,0)
    double shift;
@@ -95,6 +97,8 @@ void ArrayElements::generateGrid(int Nant, double spacing)
    elems.x.zeros();
    elems.y.zeros();
    elems.z.zeros();
+   elems.flag.set_size(Nant);
+   elems.flag.fill(ArrayElements::POINT_ASTRO | ArrayElements::POL_LCP);
 
    // Center the elements around (0,0,0)
    double shift;
@@ -115,4 +119,19 @@ void ArrayElements::generateGrid(int Nant, double spacing)
    }
    
    return;
+}
+
+ 
+/**
+ * Set flags on element, overwrites earlier flags.
+ * @param[in] ielem The index of the element 0..N-1
+ * @param[in] flag  The value to set, consisting of OR'ed flags 
+ * Flags are POINT_ASTRO, POINT_RFI_REFERENCE, POL_LCP and POL_LCP.
+ */
+int ArrayElements::setFlags(int ielem, const int flags)
+{
+   if (unsigned(ielem) >= elems.flag.n_elem) { return -1; }
+   int old = elems.flag(ielem);
+   elems.flag(ielem) = flags;
+   return old;
 }

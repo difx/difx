@@ -39,6 +39,7 @@ typedef struct ElementXYZ_tt {
    arma::Col<double> x;
    arma::Col<double> y;
    arma::Col<double> z;
+   arma::Col<int> flag;
 } ElementXYZ_t;
 
 
@@ -47,6 +48,10 @@ typedef struct ElementXYZ_tt {
  * elements in a phased array.
  */
 class ArrayElements {
+
+   public:
+      enum Pointing { POINT_ASTRO=0, POINT_RFI_REFERENCE=128 };
+      enum Polarization { POL_LCP=0, POL_RCP=1 };
 
    public:
       /**
@@ -65,6 +70,15 @@ class ArrayElements {
        * @return ref to struct that contains antenna element coordinates
        */
       const ElementXYZ_t& getPositionSet() const { return elems; }
+
+      /**
+       * Set flags on element, overwrites earlier flags.
+       * @param[in] ielem The index of the element 0..N-1
+       * @param[in] flag  The value to set, consisting of OR'ed flags 
+       * @return Old flag value before it was overwritten or -1 on error
+       * Flags are POINT_ASTRO, POINT_RFI_REFERENCE, POL_LCP and POL_LCP.
+       */
+      int setFlags(int ielem, const int flags);
 
    public:
       /**

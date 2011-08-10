@@ -39,10 +39,15 @@ int main(int argc, char** argv)
 {
         const int    DIGESTIF_Nant = 4;       // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
-        const int    DIGESTIF_Nch = 1;        // 71 channels
+        const int    DIGESTIF_Nch = 2;        // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
 
+        //////////////////////////////////////////
+        // GENERATE STANDARD ARRAY LAYOUT
+        /////////////////////////////////////////
+
         ArrayElements ae;
+
         ae.generateGrid(DIGESTIF_Nant, DIGESTIF_spacing);
 
         const ElementXYZ_t xyz = ae.getPositionSet();
@@ -59,6 +64,9 @@ int main(int argc, char** argv)
            }
         }
 
+        ae.setFlags(0, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+        ae.setFlags(1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+
         // Load/generate covariance matrices. 
         // Note: all covariance matrices must be Hermitian!
 
@@ -69,7 +77,7 @@ int main(int argc, char** argv)
         Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
 
         //////////////////////////////////////////
-        // DECOMPOSITIONS
+        // DECOMPOSITIONS and RECOMPOSITIONS
         /////////////////////////////////////////
 
         // -- PASS --
@@ -105,11 +113,13 @@ int main(int argc, char** argv)
 
         int mdl_rank, aic_rank;
         double mdl, aic;
-        mdl = da.getMDL(0, mdl_rank);
-        aic = da.getAIC(0, aic_rank);
-        cout << "DecompositionAnalyzer returned channel 0 "
-             << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
-             << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
+        for (int cc=0; cc<DIGESTIF_Nch; cc++) {
+           mdl = da.getMDL(0, mdl_rank);
+           aic = da.getAIC(0, aic_rank);
+           cout << "DecompositionAnalyzer on channel " << cc << " returned "
+                << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
+                << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
+        }
 
         //////////////////////////////////////////
         // Reference
