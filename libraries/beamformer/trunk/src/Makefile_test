@@ -11,6 +11,8 @@ test: test.o
 
 Decomposition.o: Decomposition.cpp
 
+DecompositionModifier.o: DecompositionModifier.cpp
+
 Decompositions.o: Decompositions.cpp
 
 DecompositionAnalyzer.o: DecompositionAnalyzer.cpp
@@ -21,7 +23,7 @@ Covariance.o: Covariance.cpp
 
 analysis.o: analysis.cpp
 
-analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o
+analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o DecompositionModifier.o
 
 clean:
 	rm -f *.o analysis
