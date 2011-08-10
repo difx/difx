@@ -49,3 +49,18 @@ void Covariance::load(double* raw_data, int format)
 
 }
 
+
+/**   
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, Covariance c)
+{
+   os << "Covariance " << c.N_ant << "x" << c.N_ant << "x" << c.N_chan 
+      << ", M=" << c.M_smp << ", timestamp=" << c._timestamp << "\n";
+   for (unsigned int cc=0; cc<c._Rxx.n_slices; cc++) {
+      os << "Cov[" << cc << "] =\n"
+         << c._Rxx.slice(cc);
+   }
+   return os;
+}
+

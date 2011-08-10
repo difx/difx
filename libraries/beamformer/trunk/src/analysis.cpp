@@ -39,6 +39,7 @@ int main(int argc, char** argv)
 {
         const int    DIGESTIF_Nant = 4;       // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
+        const int    DIGESTIF_Msmp = 100;     // time slices averaged into one covariance matrix
         const int    DIGESTIF_Nch = 2;        // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
 
@@ -71,10 +72,10 @@ int main(int argc, char** argv)
         // Note: all covariance matrices must be Hermitian!
 
         srand(time(NULL));
-        Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
+        Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
         rxxDataBlock.load(NULL, 0);
 
-        Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, 0.0f, DIGESTIF_Tint);
+        Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
@@ -106,7 +107,9 @@ int main(int argc, char** argv)
         /////////////////////////////////////////
 
         SVDecomposition info(rxxDataBlock);
+        cout << info;
         info.decompose(rxxDataBlock);
+        cout << info;
 
         DecompositionAnalyzer da(info);
         da.utest();
@@ -120,6 +123,10 @@ int main(int argc, char** argv)
                 << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
                 << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
         }
+
+        DecompositionModifier dm(info, ae);
+        dm.interfererNulling(2, false, 0, DIGESTIF_Nch);
+        info.recompose(outDataBlock);
 
         //////////////////////////////////////////
         // Reference

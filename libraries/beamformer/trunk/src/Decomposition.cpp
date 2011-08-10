@@ -185,3 +185,13 @@ int Decomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double
    return 0;
 }
 
+
+/**   
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, Decomposition d)
+{
+   os << "Base class Decomposition without any data\n";
+   return os;
+}
+

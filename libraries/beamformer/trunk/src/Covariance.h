@@ -31,6 +31,7 @@
 #define _COVARIANCE_H
 
 #include <armadillo>
+#include <iostream>
 
 /** 
  * Storage for time-integrated covariance data in the
@@ -41,7 +42,10 @@
  */
 class Covariance {
 
+   friend std::ostream &operator<<(std::ostream&, Covariance);
+
    private:
+
       Covariance();
 
    public:
@@ -50,10 +54,11 @@ class Covariance {
        * as well as integration time.
        * @param[in]   Nant       Number of elements or antennas.
        * @param[in]   Nchannels  Number of frequency channels.
+       * @param[in]   Msmp       Number of sample vectors (x(t)'*x(t) matrices) that were averaged
        * @param[in]   timestamp  Starting time of the data cube.
        * @param[in]   Tint       Integration time used for the data cube.
        */
-      Covariance(int Nant, int Nchannels, double timestamp, double Tint) : N_ant(Nant), N_chan(Nchannels) { 
+      Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : N_ant(Nant), N_chan(Nchannels), M_smp(Msmp) { 
          _Rxx = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchannels);
          _timestamp = timestamp;
          _Tint = Tint;
@@ -103,11 +108,14 @@ class Covariance {
    public:
       const int N_ant;
       const int N_chan;
+      const int M_smp;
 
    private:
       arma::Cube<arma::cx_double> _Rxx;
       double _timestamp;
       double _Tint;
 };
+
+extern std::ostream &operator<<(std::ostream&, Covariance);
 
 #endif // _COVARIANCE_H

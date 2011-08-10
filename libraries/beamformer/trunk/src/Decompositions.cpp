@@ -48,30 +48,11 @@ int QRDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 {
    bool ok;
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "Before QRD:\n" << Rxx << std::endl;
-   #endif
-  
    if (sliceNr == 0) {
-
       ok = arma::qr(_single_out_matrices[0], _single_out_matrices[1], Rxx);
-
-      #ifdef _VERBOSE_DBG
-      std::cout << "QR return ok = " << ok << std::endl;
-      std::cout << "Q =\n" << _single_out_matrices[0];
-      std::cout << "R =\n" << _single_out_matrices[1];
-      #endif
-
    } else {
-
       int c = sliceNr - 1;
       ok = arma::qr(_batch_out_matrices[0].slice(c), _batch_out_matrices[1].slice(c), Rxx);
-
-      #ifdef _VERBOSE_DBG
-      std::cout << "QR return ok = " << ok << std::endl;
-      std::cout << "Q =\n" << _batch_out_matrices[0].slice(c);
-      std::cout << "R =\n" << _batch_out_matrices[1].slice(c);
-      #endif
    }
 
    return (ok ? 0 : -1);
@@ -96,10 +77,6 @@ int QRDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
       Rxx = _batch_out_matrices[0].slice(c) * _batch_out_matrices[1].slice(c);
    }
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "After QRD:\n" << Rxx;
-   #endif
-
    return 0;
 }
 
@@ -120,20 +97,8 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 {
    bool ok;
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "Before EVD:\n" << Rxx;
-   #endif
-
    if (sliceNr == 0) {
-
       ok = arma::eig_sym(_single_out_vector, _single_out_matrices[0], Rxx);
-
-      #ifdef _VERBOSE_DBG
-      std::cout << "Eig_Sym return ok = " << ok << std::endl;
-      std::cout << "EigVals =\n" << _single_out_vector;
-      std::cout << "EigVectors =\n" << _single_out_matrices[0];
-      #endif
-
    } else {
 
       int c = sliceNr - 1;
@@ -144,12 +109,6 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
       arma::Col<double> eigvals;
       ok = arma::eig_sym(eigvals, _batch_out_matrices[0].slice(c), Rxx);
       _batch_out_vectors.col(c) = eigvals;
-
-      #ifdef _VERBOSE_DBG
-      std::cout << "Eig_Sym return ok = " << ok << std::endl;
-      std::cout << "EigVals =\n" << _batch_out_vectors.col(c);
-      std::cout << "EigVectors =\n" << _batch_out_matrices[0].slice(c);
-      #endif
 
    }
 
@@ -175,10 +134,6 @@ int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
       Rxx = _batch_out_matrices[0].slice(c) * arma::diagmat(_batch_out_vectors.col(c)) * arma::inv(_batch_out_matrices[0].slice(c));
    }
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "After Inv(EVD):\n" << Rxx;
-   #endif
-
    return 0;
 }
 
@@ -199,21 +154,8 @@ int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 {
    bool ok;
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "Before SVD:\n" << Rxx;
-   #endif
-
    if (sliceNr == 0) {
-
       ok = arma::svd(_single_out_matrices[0], _single_out_vector, _single_out_matrices[1], Rxx);
-
-      #ifdef _VERBOSE_DBG
-      std::cout << "SVD return ok = " << ok << std::endl;
-      std::cout << "U = \n" << _single_out_matrices[0];
-      std::cout << "s = \n" << _single_out_vector;
-      std::cout << "V = \n" << _single_out_matrices[1];
-      #endif
-
    } else {
 
       int c = sliceNr - 1;
@@ -225,12 +167,6 @@ int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
       ok = arma::svd(_batch_out_matrices[0].slice(c), s, _batch_out_matrices[1].slice(c), Rxx);
       _batch_out_vectors.col(c) = s;
 
-      #ifdef _VERBOSE_DBG
-      std::cout << "SVD return ok = " << ok << std::endl;
-      std::cout << "U = \n" << _batch_out_matrices[0].slice(c);
-      std::cout << "s = \n" << _batch_out_vectors.col(c);
-      std::cout << "V = \n" << _batch_out_matrices[1].slice(c);
-      #endif
    }
 
    return (ok ? 0 : -1);
@@ -255,9 +191,65 @@ int SVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
       Rxx = _batch_out_matrices[0].slice(c) * arma::diagmat(_batch_out_vectors.col(c)) * arma::trans(_batch_out_matrices[1].slice(c));
    }
 
-   #ifdef _VERBOSE_DBG
-   std::cout << "After Inv(SVD):\n" << Rxx;
-   #endif
-
    return 0;
+}
+
+
+/**
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, QRDecomposition d)
+{
+   if (d.N_chan <= 1) {
+      os << "Single channel QR decomposition\n";
+      os << "Q=\n" << d._single_out_matrices[0]
+         << "R=\n" << d._single_out_matrices[1];
+   } else {
+      os << "Multi-channel QR decomposition with " << d.N_chan << " channels\n";
+      for (int cc=0; cc<d.N_chan; cc++) {
+         os << "Q[" << cc << "]=\n" << d._batch_out_matrices[0].slice(cc)
+            << "R[" << cc << "]=\n" << d._batch_out_matrices[1].slice(cc);
+      }
+   }
+   return os;
+}
+
+/**
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, EVDecomposition d)
+{
+   if (d.N_chan <= 1) {
+      os << "Single channel EVD decomposition\n";
+      os << "U=\n" << d._single_out_matrices[0]
+         << "l=\n" << arma::trans(d._single_out_vector);
+   } else {
+      os << "Multi-channel EVD decomposition with " << d.N_chan << " channels\n";
+      for (int cc=0; cc<d.N_chan; cc++) {
+         os << "U[" << cc << "]=\n" << d._batch_out_matrices[0].slice(cc)
+            << "l[" << cc << "]=\n" << arma::trans(d._batch_out_vectors.col(cc));
+      }
+   }
+   return os;
+}
+
+/**
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, SVDecomposition d)
+{
+   if (d.N_chan <= 1) {
+      os << "Single channel EVD decomposition\n";
+      os << "U=\n" << d._single_out_matrices[0]
+         << "V=\n" << d._single_out_matrices[1]
+         << "D=\n" << arma::trans(d._single_out_vector);
+   } else {
+      os << "Multi-channel EVD decomposition with " << d.N_chan << " channels\n";
+      for (int cc=0; cc<d.N_chan; cc++) {
+         os << "U[" << cc << "]=\n" << d._batch_out_matrices[0].slice(cc)
+            << "V[" << cc << "]=\n" << d._batch_out_matrices[1].slice(cc)
+            << "D[" << cc << "]=\n" << arma::trans(d._batch_out_vectors.col(cc));
+      }
+   }
+   return os;
 }

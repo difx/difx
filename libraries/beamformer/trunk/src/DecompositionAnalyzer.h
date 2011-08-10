@@ -42,7 +42,13 @@ class DecompositionAnalyzer {
 
    public:
 
-      /** 
+      /**
+       * C'stor
+       * @param[in] deco Reference to decomposition results to analyze
+       */
+      DecompositionAnalyzer(Decomposition const& deco);
+
+      /**
        * C'stor
        * @param[in] deco Reference to decomposition results to analyze
        */
@@ -83,11 +89,11 @@ class DecompositionAnalyzer {
        */
       double getAIC(int, const int, int&) const;
 
-      /** Wraps getMDL() call with default value of M=100 samples */
-      double getMDL(int c, int& ref) const { return getMDL(c, 100, ref); }
+      /** Wraps getMDL() call with M_smp stored in decomposition object */
+      double getMDL(int c, int& ref) const { return getMDL(c, _deco.M_smp, ref); }
 
-      /** Wraps getAIC() call with default value of M=100 samples */
-      double getAIC(int c, int& ref) const { return getAIC(c, 100, ref); }
+      /** Wraps getAIC() call with M_smp stored in decomposition object */
+      double getAIC(int c, int& ref) const { return getAIC(c, _deco.M_smp, ref); }
 
    public:
 
@@ -110,7 +116,6 @@ class DecompositionAnalyzer {
    private:
 
       Decomposition const& _deco;
-      int _deco_type;
 };
 
 #endif // _DECOMPOSITIONANALYZER_H

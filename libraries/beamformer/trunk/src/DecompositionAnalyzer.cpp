@@ -47,13 +47,24 @@
  * IEEE, Vol. ASSP-33, No. 2, April 1985, http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1164557
  */
 
+
+/**
+ * C'stor
+ * @param[in] deco Reference to decomposition results to analyze
+ */
+DecompositionAnalyzer::DecompositionAnalyzer(Decomposition const& deco) : _deco(deco)
+{
+   // generic
+}
+
+
 /**
  * C'stor
  * @param[in] deco Reference to decomposition results to analyze
  */
 DecompositionAnalyzer::DecompositionAnalyzer(SVDecomposition const& deco) : _deco(deco)
 {
-   _deco_type = 0;
+   // future special setups for SVD
 }
 
 
@@ -63,7 +74,7 @@ DecompositionAnalyzer::DecompositionAnalyzer(SVDecomposition const& deco) : _dec
  */
 DecompositionAnalyzer::DecompositionAnalyzer(EVDecomposition const& deco) : _deco(deco)
 {
-   _deco_type = 1;
+   // future special setups for EVD
 }
 
 
@@ -87,7 +98,7 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
    channel %= (_deco.N_chan + 1);
 
    /* Handle SVD and EVD */
-   if (_deco_type == 0 || _deco_type == 1) {
+   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
 
       // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
       if (_deco.N_chan <= 1) {
@@ -144,7 +155,7 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
    channel %= (_deco.N_chan + 1);
 
    /* Handle SVD and EVD */
-   if (_deco_type == 0 || _deco_type == 1) {
+   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
 
       // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
       if (_deco.N_chan <= 1) {

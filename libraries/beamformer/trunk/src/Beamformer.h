@@ -35,7 +35,9 @@
 #include "ArrayElements.h"
 #include "BeamformerData.h"
 #include "Covariance.h"
+#include "CovarianceModifier.h"
 #include "Decomposition.h"
+#include "DecompositionModifier.h"
 #include "Decompositions.h"
 #include "DecompositionAnalyzer.h"
 

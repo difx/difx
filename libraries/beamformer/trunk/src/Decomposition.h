@@ -32,6 +32,9 @@
 
 #include "Covariance.h"
 
+#include <armadillo>
+#include <iostream>
+
 /**
  * Base class for computing matrix decompositions of a 3D data cube or single 2D matrix.
  * The base class provides only the generic interface implementation and allocation functions,
@@ -40,9 +43,16 @@
 class Decomposition {
 
    friend class DecompositionAnalyzer;
+   friend class DecompositionModifier;
+   friend std::ostream &operator<<(std::ostream&, Decomposition);
 
    private:
+
       Decomposition();
+
+   public:
+
+      enum Type { None=-1, EVD=0, SVD=1, QR=2 };
 
    public:
 
@@ -53,8 +63,8 @@ class Decomposition {
        *
        * @param[in] Rxx Reference to covariance class
        */
-      Decomposition(Covariance& Rxx) : N_ant(Rxx.N_ant), N_chan(Rxx.N_chan) { 
-         /*derived should call: cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec);*/ 
+      Decomposition(Covariance& Rxx) : N_ant(Rxx.N_ant), N_chan(Rxx.N_chan), M_smp(Rxx.M_smp), _deco_type(Decomposition::None) { 
+         /*derived should call: cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec);*/
       }
 
       /**
@@ -62,9 +72,9 @@ class Decomposition {
        * to compute and store decomposition results of a single
        * covariance matrix Rxx.
        *
-       * @param[in] Rxx Reference to covariance class
+       * @param[in] Rxx Reference to raw covariance data
        */
-      Decomposition(arma::Mat<arma::cx_double>& Rxx) : N_ant(Rxx.n_cols), N_chan(1) { 
+      Decomposition(arma::Mat<arma::cx_double>& Rxx) : N_ant(Rxx.n_cols), N_chan(1), M_smp(1), _deco_type(Decomposition::None) { 
          /*derived should call: cstor_alloc(Rxx.n_cols, 1, numMat, numVec);*/ 
       }
 
@@ -73,7 +83,13 @@ class Decomposition {
        */
       ~Decomposition() { }
 
+      /**
+       * Accessors
+       */
+      void set_M_smp(int M_smp_new) { M_smp = M_smp_new; }
+
   protected:
+
        /**
         * Allocate output matrices or output cubes.
         * @param[in]  NdecoM  Number of matrices to store decomposition (1 for Eig, 2 for QR, 2 for SVD, etc)
@@ -177,7 +193,11 @@ class Decomposition {
 
       const int N_ant;
       const int N_chan;
+      int M_smp;
+      int _deco_type;
 
 };
+
+extern std::ostream &operator<<(std::ostream&, Decomposition);
 
 #endif // _DECOMPOSITION_H

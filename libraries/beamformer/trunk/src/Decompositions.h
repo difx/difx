@@ -32,10 +32,15 @@
 
 #include "Decomposition.h"
 
+#include <armadillo>
+#include <iostream>
+
 /**
  * Derived class for computing QR matrix decompositions of a 3D data cube or single 2D matrix.
  */
 class QRDecomposition : public Decomposition {
+
+   friend std::ostream &operator<<(std::ostream&, QRDecomposition);
 
    private:
       QRDecomposition();
@@ -44,14 +49,16 @@ class QRDecomposition : public Decomposition {
 
       /** C'stor. See parent class for documentation. */
       QRDecomposition(Covariance& Rxx) : Decomposition(Rxx) { 
+         _deco_type = Decomposition::QR;
          const int numMat=2, numVec=0; // X=Q_mat*R_mat
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       /** C'stor. See parent class for documentation. */
       QRDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+         _deco_type = Decomposition::QR;
          const int numMat=2, numVec=0; // X=Q_mat*R_mat
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       ~QRDecomposition() { }
@@ -82,6 +89,8 @@ class QRDecomposition : public Decomposition {
  */
 class EVDecomposition : public Decomposition {
 
+   friend std::ostream &operator<<(std::ostream&, EVDecomposition);
+
    private:
       EVDecomposition();
 
@@ -89,14 +98,16 @@ class EVDecomposition : public Decomposition {
 
       /** C'stor. See parent class for documentation. */
       EVDecomposition(Covariance& Rxx) : Decomposition(Rxx) { 
+         _deco_type = Decomposition::EVD;
          const int numMat=1, numVec=1; // X=E_mat*e_vec*inv(E_mat)
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       /** C'stor. See parent class for documentation. */
       EVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+         _deco_type = Decomposition::EVD;
          const int numMat=1, numVec=1; // X=E_mat*e_vec*inv(E_mat)
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       ~EVDecomposition() { }
@@ -127,6 +138,8 @@ class EVDecomposition : public Decomposition {
  */
 class SVDecomposition : public Decomposition {
 
+   friend std::ostream &operator<<(std::ostream&, SVDecomposition);
+
    private:
       SVDecomposition();
 
@@ -134,14 +147,16 @@ class SVDecomposition : public Decomposition {
 
       /** C'stor. See parent class for documentation. */
       SVDecomposition(Covariance& Rxx) : Decomposition(Rxx) {
+         _deco_type = Decomposition::SVD;
          const int numMat=2, numVec=1; // X=U_mat*s_vec*V_mat
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       /** C'stor. See parent class for documentation. */
       SVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+         _deco_type = Decomposition::SVD;
          const int numMat=2, numVec=1; // X=U_mat*s_vec*V_mat
-         cstor_alloc(numMat, numVec); 
+         cstor_alloc(numMat, numVec);
       }
 
       ~SVDecomposition() { }
@@ -166,5 +181,9 @@ class SVDecomposition : public Decomposition {
       int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
 
 };
+
+extern std::ostream &operator<<(std::ostream&, QRDecomposition);
+extern std::ostream &operator<<(std::ostream&, EVDecomposition);
+extern std::ostream &operator<<(std::ostream&, SVDecomposition);
 
 #endif // _DECOMPOSITIONS_H
