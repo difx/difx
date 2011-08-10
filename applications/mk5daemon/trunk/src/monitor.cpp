@@ -72,7 +72,7 @@ int messageForMe(const Mk5Daemon *D, const DifxMessageGeneric *G)
 	return 0;
 }
 
-static void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
+void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	/* only care if the message came from another process on same node */
 	if(strcmp(D->hostName, G->from) != 0)
@@ -236,7 +236,7 @@ static void umountdisk(Mk5Daemon *D)
 	}
 }
 
-static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
+void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	const char *cmd;
 	char message[DIFX_MESSAGE_LENGTH];
@@ -453,7 +453,7 @@ static void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G)
 	}
 }
 
-static void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
+void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
 {
 	char message[DIFX_MESSAGE_LENGTH];
 	const DifxMessageCondition *c;
@@ -467,78 +467,30 @@ static void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, 
 		"Condition report: from=%s identifier=%s disk=%s[%d]=%s\n", 
-		G->from, G->identifier, c->moduleVSN, c->moduleSlot, 
-		c->serialNumber);
+		G->from, G->identifier, c->moduleVSN, c->moduleSlot, c->serialNumber);
 	Logger_logData(D->log, message);
 }
 
-static void *monitorMultiListen(void *ptr)
+int Mk5Daemon_startMonitor(Mk5Daemon *D)
 {
-	Mk5Daemon *D;
-	int sock, n, v;
-	char message[DIFX_MESSAGE_LENGTH], from[20];
-	DifxMessageGeneric G;
+	Mk5Daemon_stopMonitor(D);
 
-	D = (Mk5Daemon *)ptr;
-
-	sock = difxMessageReceiveOpen();
+	D->difxSock = difxMessageReceiveOpen();
 	
-	if(sock < 0)
+	if(D->difxSock < 0)
+	{
+		return -1;
+	}
+	else
 	{
 		return 0;
 	}
-
-	while(!D->dieNow)
-	{
-		n = difxMessageReceive(sock, message, DIFX_MESSAGE_LENGTH-1, from);
-
-		if(n > 0)
-		{
-			message[n] = 0;
-			v = difxMessageParse(&G, message);
-			switch(G.type)
-			{
-			case DIFX_MESSAGE_MARK5STATUS:
-				handleMk5Status(D, &G);
-				break;
-			case DIFX_MESSAGE_COMMAND:
-				handleCommand(D, &G);
-				break;
-			case DIFX_MESSAGE_START:
-				Mk5Daemon_startMpifxcorr(D, &G);
-				break;
-			case DIFX_MESSAGE_CONDITION:
-				handleCondition(D, &G);
-				break;
-			default:
-				break;
-			}
-		}
-		if(D->processDone)
-		{
-			pthread_mutex_lock(&D->processLock);
-
-			pthread_join(D->processThread, 0);
-			D->process = PROCESS_NONE;
-			D->processDone = 0;
-			
-			pthread_mutex_unlock(&D->processLock);
-		}	
-	}
-
-	difxMessageReceiveClose(sock);
-
-	return 0;
-}
-
-void Mk5Daemon_startMonitor(Mk5Daemon *D)
-{
-	pthread_create(&D->monitorThread, 0, &monitorMultiListen, D);
 }
 
 void Mk5Daemon_stopMonitor(Mk5Daemon *D)
 {
-	pthread_join(D->monitorThread, 0);
+	difxMessageReceiveClose(D->difxSock);
+	D->difxSock = 0;
 }
 
 void Mk5Daemon_reboot(Mk5Daemon *D)

@@ -36,6 +36,8 @@
 #include <sys/stat.h>
 #include <expat.h>
 #include <difxmessage.h>
+#include <fcntl.h>
+#include <arpa/inet.h>
 #include "mk5daemon.h"
 #include "../config.h"
 #include "logger.h"
@@ -384,9 +386,15 @@ int main(int argc, char **argv)
 	const char *p, *u;
 	char userID[256];
 	double mjd;
+	fd_set socks;
+	struct sockaddr_in server_address;
+	struct timeval timeout;
+	int readSocks;
+	int highSock;
 #ifdef HAVE_XLRAPI_H
-	int ok=0;
+	int ok = 0;	/* FIXME: combine with D->ready? */
 	int justStarted = 1;
+	int recordFD;
 #endif
 
 	// Prevent any zombies
@@ -508,7 +516,7 @@ int main(int argc, char **argv)
 
 	halfInterval = D->loadMonInterval/2;
 
-	while(!D->dieNow)	/* program event loop */
+	while(!D->dieNow)
 	{
 		t = time(0);
 		mjd = 40587.0 + t/86400.0;
@@ -554,11 +562,256 @@ int main(int argc, char **argv)
 #endif
 		}
 
-		usleep(100000);
+		timeout.tv_sec = 1;
+		timeout.tv_usec = 0;
+
+		highSock = 0;
+		FD_ZERO(&socks);
+
+		if(D->acceptSock)
+		{
+			FD_SET(D->acceptSock, &socks);
+			if(D->acceptSock > highSock)
+			{
+				highSock = D->acceptSock;
+			}
+			for(int c = 0; c < MaxConnections; c++)
+			{
+				if(D->clientSocks[c] > 0)
+				{
+					FD_SET(D->clientSocks[c], &socks);
+					if(D->clientSocks[c] > highSock)
+					{
+						highSock = D->clientSocks[c];
+					}
+				}
+			}
+		}
+#ifdef HAVE_XLRAPI_H
+		if(D->recordPipe)
+		{
+			recordFD = fileno(D->recordPipe);
+			FD_SET(recordFD, &socks);
+			if(recordFD > highSock)
+			{
+				highSock = recordFD;
+			}
+		}
+		else
+		{
+			recordFD = -2;
+		}
+#endif
+		if(D->difxSock)
+		{
+			FD_SET(D->difxSock, &socks);
+			if(D->difxSock > highSock)
+			{
+				highSock = D->difxSock;
+			}
+		}
+
+		readSocks = select(highSock+1, &socks, 0, 0, &timeout);
+
+		if(readSocks < 0)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Select returned %d\n", readSocks);
+			Logger_logData(D->log, message);
+
+			D->dieNow = 1;
+		}
+
+		if(readSocks == 0)
+		{
+			continue;
+		}
+
+		if(D->acceptSock)
+		{
+			if(FD_ISSET(D->acceptSock, &socks))
+			{
+				int newSock = accept(D->acceptSock, 0, 0);
+				if(newSock < 0)
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure%d\n", newSock);
+					Logger_logData(D->log, message);
+				}
+				else
+				{
+					/* find a slot for it */
+					for(int c = 0; c < MaxConnections; c++)
+					{
+						if(D->clientSocks[c] == 0)
+						{
+							D->clientSocks[c] = newSock;
+							newSock = -1;
+
+							snprintf(message, DIFX_MESSAGE_LENGTH, "New VSI-S connection into slot %d of %d\n", c, MaxConnections);
+							Logger_logData(D->log, message);
+
+							break;
+						}
+					}
+					if(newSock != -1)
+					{
+						Logger_logData(D->log, "No room for new VSI-S connection\n");
+
+						close(newSock);
+					}
+				}
+			}
+
+			for(int c = 0; c < MaxConnections; c++)
+			{
+				if(FD_ISSET(D->clientSocks[c], &socks))
+				{
+					int v = handleVSIS(D, D->clientSocks[c]);
+					
+					if(v < 0) /* connection closed? */
+					{
+						close(D->clientSocks[c]);
+						D->clientSocks[c] = 0;
+						snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S connection on slot %d closed\n", c);
+						Logger_logData(D->log, message);
+					}
+				}
+			}
+		}
+#ifdef HAVE_XLRAPI_H
+		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
+		{
+			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
+			if(r)
+			{
+				char A[15][40];
+				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
+					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11], A[12], A[13], A[14]);
+				if(n > 0)
+				{
+					if(strcmp(A[0], "Pointer") == 0 && n > 2)
+					{
+						D->bytesUsed[D->activeBank] = atoll(A[1]);
+						D->recordRate = atof(A[2]);
+					}
+					else if(strcmp(A[0], "Stats") == 0 && n >= 10)
+					{
+						int drive = atoi(A[1]);
+						for(int b = 0; b < 8; b++)
+						{
+							D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
+						}
+					}
+					else if(strcmp(A[0], "Error") == 0)
+					{
+						D->errorFlag[D->activeBank] = 1;
+					}
+					else if(strcmp(A[0], "SystemError") == 0)
+					{
+						D->errorFlag[D->activeBank] = 1;
+					}
+					else if(strcmp(A[0], "Halted") == 0)
+					{
+						D->recordState = RECORD_HALTED;
+					}
+					else if(strcmp(A[0], "Overflow") == 0)
+					{
+						D->recordState = RECORD_OVERFLOW;
+					}
+					else if(strcmp(A[0], "Drive") == 0 && n == 3)
+					{
+						if(strcmp(A[2], "failed") == 0)
+						{
+							D->driveFail[D->activeBank] = atoi(A[1]);
+						}
+					}
+					else if(strcmp(A[0], "Bank") == 0 && n == 13)
+					{
+						/* new module inserted */
+						int bank = A[1][0]-'A';
+						if(bank >= 0 && bank < N_BANK && bank != D->activeBank)
+						{
+							clearModuleInfo(D, bank);
+							clearMk5Stats(D, bank);
+							if(strcmp(A[2], "none") == 0)
+							{
+								D->vsns[bank][0] = 0;
+							}
+							else
+							{
+								strncpy(D->vsns[bank], A[2], 8);
+								D->vsns[bank][8] = 0;
+							}
+						}
+					}
+				}
+			}
+			if(feof(D->recordPipe))
+			{
+				pclose(D->recordPipe);
+				D->recordPipe = 0;
+				D->recordState = RECORD_OFF;
+
+				clearModuleInfo(D, D->activeBank);
+				Mk5Daemon_getModules(D);
+			}
+		}
+#endif
+		if(D->difxSock && FD_ISSET(D->difxSock, &socks))
+		{
+			int n, v;
+			DifxMessageGeneric G;
+			char from[20];
+
+			n = difxMessageReceive(D->difxSock, message, DIFX_MESSAGE_LENGTH-1, from);
+
+			if(n > 0)
+			{
+				message[n] = 0;
+				v = difxMessageParse(&G, message);
+				switch(G.type)
+				{
+				case DIFX_MESSAGE_MARK5STATUS:
+					handleMk5Status(D, &G);
+					break;
+				case DIFX_MESSAGE_COMMAND:
+					handleCommand(D, &G);
+					break;
+				case DIFX_MESSAGE_START:
+					Mk5Daemon_startMpifxcorr(D, &G);
+					break;
+				case DIFX_MESSAGE_CONDITION:
+					handleCondition(D, &G);
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		if(D->processDone)
+		{
+			pthread_mutex_lock(&D->processLock);
+
+			pthread_join(D->processThread, 0);
+			D->process = PROCESS_NONE;
+			D->processDone = 0;
+			
+			pthread_mutex_unlock(&D->processLock);
+		}	
 	}
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Stopping %s ver. %s\n", 
-		program, version);
+#ifdef HAVE_XLRAPI_H
+	if(D->recordPipe > 0)
+	{
+		pclose(D->recordPipe);
+		D->recordPipe = 0;
+		D->recordState = RECORD_OFF;
+	}
+#endif
+
+	Mk5Daemon_stopMonitor(D);
+	Mk5Daemon_stopVSIS(D);
+
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Stopping %s ver. %s\n", program, version);
 	Logger_logData(D->log, message);
 
 	deleteMk5Daemon(D);

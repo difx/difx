@@ -41,7 +41,6 @@
 #include "config.h"
 #include "mk5daemon.h"
 
-const int MaxConnections = 8;
 const int MaxFields = 24;
 const unsigned short VSIS_PORT = 2620;
 
@@ -290,7 +289,7 @@ static int processVSIS(Mk5Daemon *D, char *message, char *response, int maxRespo
 	return v;
 }
 
-static int handleVSIS(Mk5Daemon *D, int sock)
+int handleVSIS(Mk5Daemon *D, int sock)
 {
 	int v;
 	char message[DIFX_MESSAGE_LENGTH];
@@ -345,270 +344,61 @@ static int handleVSIS(Mk5Daemon *D, int sock)
 	return 0;
 }
 
-static void *serveVSIS(void *ptr)
+int Mk5Daemon_startVSIS(Mk5Daemon *D)
 {
-	Mk5Daemon *D;
-	int acceptSock;
-	int clientSocks[MaxConnections];
-	struct sockaddr_in server_address;
-	struct timeval timeout;
-	int n, v;
-	int highSock;
-	int readSocks;
 	const int reuse_addr = 1;
-	char message[DIFX_MESSAGE_LENGTH];
-	fd_set socks;
-#ifdef HAVE_XLRAPI_H
-	int recordFD;
-#endif
+	struct sockaddr_in server_address;
 
-	D = (Mk5Daemon *)ptr;
+	Mk5Daemon_stopVSIS(D);
 
-	for(int c = 0; c < MaxConnections; c++)
-	{
-		clientSocks[c] = 0;
-	}
+	D->acceptSock = socket(AF_INET, SOCK_STREAM, 0);
 
-	acceptSock = socket(AF_INET, SOCK_STREAM, 0);
-
-	if(acceptSock < 0)
+	if(D->acceptSock < 0)
 	{
 		Logger_logData(D->log, "Cannot create accept socket for VSI-S\n");
 
-		pthread_exit(0);
+		return -1;
 	}
 
-	setsockopt(acceptSock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
+	setsockopt(D->acceptSock, SOL_SOCKET, SO_REUSEADDR, &reuse_addr, sizeof(reuse_addr));
 
-	if(setNonBlocking(acceptSock) < 0)
+	if(setNonBlocking(D->acceptSock) < 0)
 	{
 		Logger_logData(D->log, "Cannot non-block accept socket for VSI-S\n");
 
-		pthread_exit(0);
+		return -1;
 	}
 
 	memset((char *)(&server_address), 0, sizeof(server_address));
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server_address.sin_port = htons(VSIS_PORT);
-	if(bind(acceptSock, (struct sockaddr *)(&server_address), sizeof(server_address)) < 0 )
+	if(bind(D->acceptSock, (struct sockaddr *)(&server_address), sizeof(server_address)) < 0 )
 	{
 		Logger_logData(D->log, "Cannot bind accept socket for VSI-S\n");
 
-		pthread_exit(0);
+		return -1;
 	}
 
-	listen(acceptSock, MaxConnections);
+	listen(D->acceptSock, MaxConnections);
 
-	while(!D->dieNow)
-	{
-		timeout.tv_sec = 1;
-		timeout.tv_usec = 0;
-		FD_ZERO(&socks);
-		FD_SET(acceptSock, &socks);
-		highSock = acceptSock;
-		for(int c = 0; c < MaxConnections; c++)
-		{
-			if(clientSocks[c] > 0)
-			{
-				FD_SET(clientSocks[c], &socks);
-				if(clientSocks[c] > highSock)
-				{
-					highSock = clientSocks[c];
-				}
-			}
-		}
-#ifdef HAVE_XLRAPI_H
-		if(D->recordPipe)
-		{
-			recordFD = fileno(D->recordPipe);
-			FD_SET(recordFD, &socks);
-			if(recordFD > highSock)
-			{
-				highSock = recordFD;
-			}
-		}
-		else
-		{
-			recordFD = -2;
-		}
-#endif
-		readSocks = select(highSock+1, &socks, 0, 0, &timeout);
-
-		if(readSocks < 0)
-		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S select returned %d\n", readSocks);
-			Logger_logData(D->log, message);
-
-			pthread_exit(0);
-		}
-
-		if(readSocks == 0)
-		{
-			continue;
-		}
-
-		if(FD_ISSET(acceptSock, &socks))
-		{
-			int newSock = accept(acceptSock, 0, 0);
-			if(newSock < 0)
-			{
-				snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure%d\n", newSock);
-				Logger_logData(D->log, message);
-			}
-			else
-			{
-				/* find a slot for it */
-				for(int c = 0; c < MaxConnections; c++)
-				{
-					if(clientSocks[c] == 0)
-					{
-						clientSocks[c] = newSock;
-						newSock = -1;
-
-						snprintf(message, DIFX_MESSAGE_LENGTH, "New VSI-S connection into slot %d of %d\n", c, MaxConnections);
-						Logger_logData(D->log, message);
-
-						break;
-					}
-				}
-				if(newSock != -1)
-				{
-					Logger_logData(D->log, "No room for new VSI-S connection\n");
-
-					close(newSock);
-				}
-			}
-		}
-
-		for(int c = 0; c < MaxConnections; c++)
-		{
-			if(FD_ISSET(clientSocks[c], &socks))
-			{
-				v = handleVSIS(D, clientSocks[c]);
-				if(v < 0) /* connection closed? */
-				{
-					close(clientSocks[c]);
-					clientSocks[c] = 0;
-					snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S connection on slot %d closed\n", c);
-					Logger_logData(D->log, message);
-				}
-			}
-		}
-#ifdef HAVE_XLRAPI_H
-		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
-		{
-			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
-			if(r)
-			{
-				char A[15][40];
-				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
-					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11], A[12], A[13], A[14]);
-				if(n > 0)
-				{
-					if(strcmp(A[0], "Pointer") == 0 && n > 2)
-					{
-						D->bytesUsed[D->activeBank] = atoll(A[1]);
-						D->recordRate = atof(A[2]);
-					}
-					else if(strcmp(A[0], "Stats") == 0 && n >= 10)
-					{
-						int drive = atoi(A[1]);
-						for(int b = 0; b < 8; b++)
-						{
-							D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
-						}
-					}
-					else if(strcmp(A[0], "Error") == 0)
-					{
-						D->errorFlag[D->activeBank] = 1;
-					}
-					else if(strcmp(A[0], "SystemError") == 0)
-					{
-						D->errorFlag[D->activeBank] = 1;
-					}
-					else if(strcmp(A[0], "Halted") == 0)
-					{
-						D->recordState = RECORD_HALTED;
-					}
-					else if(strcmp(A[0], "Overflow") == 0)
-					{
-						D->recordState = RECORD_OVERFLOW;
-					}
-					else if(strcmp(A[0], "Drive") == 0 && n == 3)
-					{
-						if(strcmp(A[2], "failed") == 0)
-						{
-							D->driveFail[D->activeBank] = atoi(A[1]);
-						}
-					}
-					else if(strcmp(A[0], "Bank") == 0 && n == 13)
-					{
-						/* new module inserted */
-						int bank = A[1][0]-'A';
-						if(bank >= 0 && bank < N_BANK && bank != D->activeBank)
-						{
-							clearModuleInfo(D, bank);
-							clearMk5Stats(D, bank);
-							if(strcmp(A[2], "none") == 0)
-							{
-								D->vsns[bank][0] = 0;
-							}
-							else
-							{
-								strncpy(D->vsns[bank], A[2], 8);
-								D->vsns[bank][8] = 0;
-							}
-						}
-					}
-				}
-			}
-			if(feof(D->recordPipe))
-			{
-				pclose(D->recordPipe);
-				D->recordPipe = 0;
-				D->recordState = RECORD_OFF;
-
-				clearModuleInfo(D, D->activeBank);
-				Mk5Daemon_getModules(D);
-			}
-		}
-#endif
-	}
-
-#ifdef HAVE_XLRAPI_H
-	if(D->recordPipe > 0)
-	{
-		pclose(D->recordPipe);
-		D->recordPipe = 0;
-		D->recordState = RECORD_OFF;
-	}
-#endif
-
-	if(acceptSock > 0)
-	{
-		close(acceptSock);
-		acceptSock = 0;
-	}
-	for(int c = 0; c < MaxConnections; c++)
-	{
-		if(clientSocks[c] > 0)
-		{
-			close(clientSocks[c]);
-			clientSocks[c] = 0;
-		}
-	}
-
-	pthread_exit(0);
-}
-
-void Mk5Daemon_startVSIS(Mk5Daemon *D)
-{
-	pthread_create(&D->vsisThread, 0, &serveVSIS, D);
+	return 0;
 }
 
 void Mk5Daemon_stopVSIS(Mk5Daemon *D)
 {
-	pthread_join(D->vsisThread, 0);
+	if(D->acceptSock > 0)
+	{
+		close(D->acceptSock);
+		D->acceptSock = 0;
+	}
+	for(int c = 0; c < MaxConnections; c++)
+	{
+		if(D->clientSocks[c] > 0)
+		{
+			close(D->clientSocks[c]);
+			D->clientSocks[c] = 0;
+		}
+	}
 }
 

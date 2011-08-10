@@ -187,7 +187,7 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	FILE *pin;
-	int v;
+	int n, v;
 	const char command[] = "uname -rms";
 	char A[3][32];
 
@@ -200,10 +200,17 @@ int OS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	}
 	else
 	{
-		fscanf(pin, "%s%s%s", A[0], A[1], A[2]);
+		n = fscanf(pin, "%s%s%s", A[0], A[1], A[2]);
 		fclose(pin);
 
-		v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s : %s : %s;", fields[0], D->hostName, A[0], A[1], A[2]);
+		if(n == 3)
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %s : %s : %s : %s;", fields[0], D->hostName, A[0], A[1], A[2]);
+		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 4 : Unable to parse output of %s;", fields[0], command);
+		}
 	}
 
 	return v;

@@ -47,6 +47,7 @@
 
 
 extern const char difxUser[];
+const int MaxConnections = 8;
 
 #define MAX_COMMAND_SIZE	768
 #define N_BANK			2
@@ -124,6 +125,9 @@ typedef struct
 	char userID[256];
 	unsigned int fillPattern;
 
+	int difxSock;	/* for difxmessage receives */
+	int acceptSock;	/* for VSIS server */
+	int clientSocks[MaxConnections];
 	
 
 #ifdef HAVE_XLRAPI_H
@@ -168,9 +172,9 @@ typedef struct
 
 int Mk5Daemon_loadMon(Mk5Daemon *D, double mjd);
 int logStreamstorVersions(Mk5Daemon *D);
-void Mk5Daemon_startMonitor(Mk5Daemon *D);
+int Mk5Daemon_startMonitor(Mk5Daemon *D);
 void Mk5Daemon_stopMonitor(Mk5Daemon *D);
-void Mk5Daemon_startVSIS(Mk5Daemon *D);
+int Mk5Daemon_startVSIS(Mk5Daemon *D);
 void Mk5Daemon_stopVSIS(Mk5Daemon *D);
 void Mk5Daemon_resetStreamstor(Mk5Daemon *D);
 int mark5command(const char *outstr, char *instr, int maxlen);
@@ -208,7 +212,13 @@ int setScan(Mk5Daemon *D, int bank, int scanNum);
 int logMk5Smart(const Mk5Daemon *D, int bank);
 int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank);
 int extractSmartTemps(char *tempstr, const Mk5Daemon *D, int bank);
+int handleVSIS(Mk5Daemon *D, int sock);
 
 #endif
+
+int handleVSIS(Mk5Daemon *D, int sock);
+void handleMk5Status(Mk5Daemon *D, const DifxMessageGeneric *G);
+void handleCommand(Mk5Daemon *D, const DifxMessageGeneric *G);
+void handleCondition(Mk5Daemon *D, const DifxMessageGeneric *G);
 
 #endif
