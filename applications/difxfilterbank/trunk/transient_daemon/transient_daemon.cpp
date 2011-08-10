@@ -515,7 +515,7 @@ static int getDMGenCommand(const char *inputFile, char *command, const Transient
 	}
     /* need to add the bandwdith of the highest freq to overall freq span calculation*/
     /* try to retrieve the BW from the config file, but guess a default if not */
-    r = DifxParametersfind1(dp, r, "BW (MHZ) %d", maxfreq_ind);
+    r = DifxParametersfind1(dp, 0, "BW (MHZ) %d", maxfreq_ind);
     if (r < 0) {
         fprintf(stderr,"Warning: failed to find BW of freq index %d. Assuming %g MHz\n",nFreq-1,bw);
     }
