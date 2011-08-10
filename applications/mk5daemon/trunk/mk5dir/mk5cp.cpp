@@ -44,7 +44,7 @@
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.8";
-const char verdate[] = "20110715";
+const char verdate[] = "20110809";
 
 const int defaultChunkSize = 50000000;
 
@@ -188,6 +188,8 @@ int reportDriveStats(SSHANDLE xlrDevice, const char *vsn)
 	}
 
 	resetDriveStats(xlrDevice);
+
+	return 0;
 }
 
 static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, char bank)
@@ -1037,11 +1039,9 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 
 static int mk5cp_nodir(char *vsn, const char *scanList, const char *outPath, int force, enum Mark5ReadMode readMode, int chunkSize)
 {
-	const char *mk5dirpath;
 	int v;
-	int b, s, l, nGood, nBad;
+	int nGood, nBad;
 	int bank = -1;
-	float replacedFrac;
 	int bail = 0;
 	long long byteStart, byteStop;
 	char outName[DIFX_MESSAGE_FILENAME_LENGTH];

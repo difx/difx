@@ -151,7 +151,7 @@ int dirCallback(int scan, int nscan, int status, void *data)
 
 	if(verbose)
 	{
-		printf("%d/%d %d -> %s\n", scan, nscan, status);
+		printf("%d/%d -> %d\n", scan, nscan, status);
 	}
 
 	gettimeofday(&t, 0);

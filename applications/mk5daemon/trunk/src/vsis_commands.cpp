@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctype.h>
+#include <mark5ipc.h>
 #include "config.h"
 #include "vsis_commands.h"
 #include "../mk5dir/mark5directorystructs.h"
@@ -67,7 +68,7 @@ int packet_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 int bank_set_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int newBank = -1;
-	int v;
+	int v = 0;
 
 	if(nField < 2)
 	{
@@ -307,7 +308,7 @@ int protect_Query(Mk5Daemon *D, int nField, char **fields, char *response, int m
 
 	if(D->activeBank < 0)
 	{
-		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;");
+		v = snprintf(response, maxResponseLength, "!%s? 4 : No module mounted;", fields[0]);
 	}
 	else
 	{
@@ -570,7 +571,7 @@ int personality_Query(Mk5Daemon *D, int nField, char **fields, char *response, i
 
 int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	int v;
+	int v = 0;
 
 	if(nField != 2)
 	{
@@ -781,10 +782,16 @@ int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 	else
 	{
 		const S_DRIVESTATS *stats = D->driveStats[D->activeBank][D->driveStatsIndex[D->activeBank]];
-		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d : %d : %d;", fields[0],
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %lu : %lu : %lu : %lu : %lu : %lu : %lu : %lu;", fields[0],
 			D->driveStatsIndex[D->activeBank],
-			stats[0].count, stats[1].count, stats[2].count, stats[3].count,
-			stats[4].count, stats[5].count, stats[6].count, stats[7].count);
+			static_cast<unsigned long int>(stats[0].count),
+			static_cast<unsigned long int>(stats[1].count),
+			static_cast<unsigned long int>(stats[2].count),
+			static_cast<unsigned long int>(stats[3].count),
+			static_cast<unsigned long int>(stats[4].count),
+			static_cast<unsigned long int>(stats[5].count),
+			static_cast<unsigned long int>(stats[6].count),
+			static_cast<unsigned long int>(stats[7].count));
 		
 
 		D->driveStatsIndex[D->activeBank] = (D->driveStatsIndex[D->activeBank] + 1) % N_DRIVE;
@@ -804,9 +811,14 @@ int start_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, i
 #ifdef HAVE_XLRAPI_H
 	const S_DRIVESTATS *stats = D->driveStatsConfig;
 
-	v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %d : %d : %d : %d : %d : %d;", fields[0],
-		stats[0].range, stats[1].range, stats[2].range, stats[3].range,
-		stats[4].range, stats[5].range, stats[6].range);
+	v = snprintf(response, maxResponseLength, "!%s? 0 : %lu : %lu : %lu : %lu : %lu : %lu : %lu;", fields[0],
+		static_cast<unsigned long int>(stats[0].range),
+		static_cast<unsigned long int>(stats[1].range),
+		static_cast<unsigned long int>(stats[2].range),
+		static_cast<unsigned long int>(stats[3].range),
+		static_cast<unsigned long int>(stats[4].range),
+		static_cast<unsigned long int>(stats[5].range),
+		static_cast<unsigned long int>(stats[6].range));
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
@@ -900,7 +912,7 @@ int mode_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxR
 
 	//if(D->format = FORMAT_MARK5C
 	{
-		v = snprintf(response, maxResponseLength, "!%s? 0 : mark5b : 0x%08lx : %d;", fields[0],
+		v = snprintf(response, maxResponseLength, "!%s? 0 : mark5b : 0x%08x : %d;", fields[0],
 			D->bitstreamMask, D->decimationRatio);
 	}
 	//else
@@ -1145,7 +1157,7 @@ int record_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 
 int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	int v;
+	int v = 0;
 
 #ifdef HAVE_XLRAPI_H
 	char command[1000];
@@ -1529,7 +1541,7 @@ int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxRe
 	{
 		char label[XLR_LABEL_LENGTH+1];
 
-		strncpy(label, XLR_LABEL_LENGTH+1, "%s" D->bank_stat[D->activeBank].Label);
+		snprintf(label, XLR_LABEL_LENGTH+1, "%s", D->bank_stat[D->activeBank].Label);
 		if(D->bank_stat[D->activeBank].ErrorCode)
 		{
 			/* FIXME: add additional disk info in case of failure */

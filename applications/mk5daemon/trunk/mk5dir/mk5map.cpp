@@ -47,7 +47,7 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110715";
+const char verdate[] = "20110809";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
@@ -81,9 +81,7 @@ static void usage(const char *pgm)
 	printf("  -v             Be more verbose\n\n");
 	printf("  --quiet\n");
 	printf("  -q             Be more verbose\n\n");
-	printf("  --force\n");
-	printf("  -f             Reread directory even if not needed\n\n");
-	printf("  --rt           Use real-time mode when reading\n\n");
+	printf("  --realtime     Use real-time mode when reading\n\n");
 	printf("  --rate <R>\n");
 	printf("  -r <R>         Try to match a fixed rate of <R> bytes per second\n\n");
 	printf("  --precision <P>\n");
@@ -131,7 +129,6 @@ int Datum::populate(SSHANDLE *xlrDev, int64_t pos)
 	static streamstordatatype *buffer = 0;
 	static int mjdref = 0;
 	unsigned int a, b;
-	XLR_RETURN_CODE xlrRC;
 	struct mark5_format *mf;
 	int n;
 
@@ -267,7 +264,7 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t begin, int64_t end, enum Mark5ReadMode readMode)
+static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t begin, uint64_t end, enum Mark5ReadMode readMode)
 {
 	SSHANDLE xlrDevice;
 	S_DIR dir;
@@ -284,7 +281,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	int len;
 	char *dirData;
 	int n=0;
-	char outfile[32];
+	char outFile[32];
 	FILE *out;
 	int64_t lastnewpos;
 
@@ -294,7 +291,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
-	if(readMode = MARK5_READ_MODE_RT)
+	if(readMode == MARK5_READ_MODE_RT)
 	{
 		WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
 		WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
@@ -528,8 +525,8 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 	
 	printf("\n");
 
-	snprintf(outfile, 31, "%s.mk5map.dir", vsn);
-	out = fopen(outfile, "w");
+	snprintf(outFile, 31, "%s.mk5map.dir", vsn);
+	out = fopen(outFile, "w");
 	
 	if(out)
 	{
@@ -575,12 +572,12 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, int64_t b
 
 	if(out)
 	{
-		printf("--> Directory saved as %s\n\n", outfile);
+		printf("--> Directory saved as %s\n\n", outFile);
 		fclose(out);
 	}
 	else
 	{
-		printf("*** Warning: could not open output file %s.  You can cut and paste the above! ***\n\n");
+		printf("*** Warning: could not open output file %s.  You can cut and paste the above! ***\n\n", outFile);
 	}
 
 	if(die)
@@ -609,19 +606,15 @@ int main(int argc, char **argv)
 {
 	enum Mark5ReadMode readMode = MARK5_READ_MODE_NORMAL;
 	char vsn[16] = "";
-	int force=0;
-	int fast=0;
 	enum DMS_Mode dmsMode = DMS_MODE_FAIL_UNLESS_SAFE;
 	int v;
 	int grid = defaultGrid;
 	const char *dmsMaskStr;
 	int dmsMask = 7;
-	int startScan = -1;
-	int stopScan = -1;
 	double rate = 25600*10016;	// now hardcoded for Mark5B
 	int64_t precision = defaultPrecision;
-	int64_t begin = 0LL;
-	int64_t end = 0LL;
+	uint64_t begin = 0LL;
+	uint64_t end = 0LL;
 	int retval = EXIT_SUCCESS;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
@@ -677,7 +670,7 @@ int main(int argc, char **argv)
 		{
 			dmsMode = DMS_MODE_UPDATE;
 		}
-		else if(strcmp(argv[a], "--rt") == 0)
+		else if(strcmp(argv[a], "--realtime") == 0)
 		{
 			readMode = MARK5_READ_MODE_RT;
 		}

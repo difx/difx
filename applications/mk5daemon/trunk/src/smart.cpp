@@ -167,7 +167,7 @@ int setScan(Mk5Daemon *D, int bank, int scanNum)
 		D->stopPointer[bank] = scan->stopByte;
 		snprintf(D->scanLabel[bank], MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", expName, station, scanName);
 	}
-	else if(D->dirVersion[bank] = 0)
+	else if(D->dirVersion[bank] == 0)
 	{
 		const struct Mark5LegacyDirectory *legacyDir = (struct Mark5LegacyDirectory *)(D->dirData[bank]);
 
@@ -208,7 +208,6 @@ int getDirectoryInfo(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			}
 
 			const struct Mark5DirectoryHeaderVer1 *dirHeader = (struct Mark5DirectoryHeaderVer1 *)(D->dirData[bank]);
-			const struct Mark5DirectoryScanHeaderVer1 *lastScan = (struct Mark5DirectoryScanHeaderVer1 *)(D->dirData[bank] + len - 128);
 			D->diskModuleState[bank] = dirHeader->status & 0xFF;	/* don't include scan count here */
 			D->dirVersion[bank] = dirHeader->version;
 			D->dirLength[bank] = len;
@@ -405,6 +404,8 @@ int logMk5Smart(const Mk5Daemon *D, int bank)
 		}
 	}
 	Logger_logData(D->log, "\n");
+
+	return 0;
 }
 
 void Mk5Daemon_sendSmartData(Mk5Daemon *D)

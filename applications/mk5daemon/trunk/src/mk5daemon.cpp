@@ -387,7 +387,6 @@ int main(int argc, char **argv)
 	char userID[256];
 	double mjd;
 	fd_set socks;
-	struct sockaddr_in server_address;
 	struct timeval timeout;
 	int readSocks;
 	int highSock;

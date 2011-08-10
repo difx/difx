@@ -156,7 +156,7 @@ typedef struct
 	int driveStatsIndex[N_BANK];
 	double recordRate;	/* Mbps */
 	char dataSource[8];
-	unsigned long bitstreamMask;
+	int bitstreamMask;
 	int decimationRatio;
 	int unprotected;	/* set after protect=off */
 

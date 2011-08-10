@@ -403,13 +403,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	XLR_RETURN_CODE xlrRC;
 	S_BANKSTATUS bankStat, stat[N_BANK];
 	S_DRIVESTATS driveStats[XLR_MAXBINS];
-	S_READDESC readdesc;
 	S_DIR dir;
 	S_DEVSTATUS devStatus;
-	int go = 1;
 	int len;
-	char str[10];
-	char *rv;
 	char *dirData = 0;
 	char vsn[XLR_LABEL_LENGTH+1];
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
@@ -734,7 +730,6 @@ int main(int argc, char **argv)
 	int a, v, i;
 	int bank = -1;
 	int verbose = 0;
-	int force = 0;
 	int packetSize = defaultPacketSize;
 	int dataFrameOffset = defaultDataFrameOffset;
 	int payloadOffset = defaultPayloadOffset;
