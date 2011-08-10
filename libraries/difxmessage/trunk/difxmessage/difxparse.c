@@ -172,6 +172,13 @@ static void XMLCALL startElement(void *userData, const char *name,
 			}
 		}
 	}
+	else if(G->type == DIFX_MESSAGE_MARK5VERSION)
+	{
+		if(strcmp(name, "DaughterBoard") == 0)
+		{
+			G->_inDB = 1;
+		}
+	}
 
 	G->_xml_level++;
 	strcpy(G->_xml_element[G->_xml_level], name);
@@ -396,84 +403,102 @@ static void XMLCALL endElement(void *userData, const char *name)
 					}
 					break;
 				case DIFX_MESSAGE_MARK5VERSION:
-					if(strcmp(elem, "ApiVer") == 0)
+					if(strcmp(elem, "DaughterBoard") == 0)
 					{
-						strncpy(G->body.mk5version.ApiVersion, s, 7);
-						G->body.mk5version.ApiVersion[7] = 0;
+						G->_inDB = 0;
 					}
-					else if(strcmp(elem, "ApiDate") == 0)
+					else if(G->_inDB == 0)
 					{
-						strncpy(G->body.mk5version.ApiDateCode, s, 11);
-						G->body.mk5version.ApiDateCode[11] = 0;
+						if(strcmp(elem, "ApiVer") == 0)
+						{
+							strncpy(G->body.mk5version.ApiVersion, s, 7);
+							G->body.mk5version.ApiVersion[7] = 0;
+						}
+						else if(strcmp(elem, "ApiDate") == 0)
+						{
+							strncpy(G->body.mk5version.ApiDateCode, s, 11);
+							G->body.mk5version.ApiDateCode[11] = 0;
+						}
+						else if(strcmp(elem, "FirmVer") == 0)
+						{
+							strncpy(G->body.mk5version.FirmwareVersion, s, 7);
+							G->body.mk5version.FirmwareVersion[7] = 0;
+						}
+						else if(strcmp(elem, "FirmDate") == 0)
+						{
+							strncpy(G->body.mk5version.FirmDateCode, s, 11);
+							G->body.mk5version.FirmDateCode[11] = 0;
+						}
+						else if(strcmp(elem, "MonVer") == 0)
+						{
+							strncpy(G->body.mk5version.MonitorVersion, s, 7);
+							G->body.mk5version.MonitorVersion[7] = 0;
+						}
+						else if(strcmp(elem, "XbarVer") == 0)
+						{
+							strncpy(G->body.mk5version.XbarVersion, s, 7);
+							G->body.mk5version.XbarVersion[7] = 0;
+						}
+						else if(strcmp(elem, "AtaVer") == 0)
+						{
+							strncpy(G->body.mk5version.AtaVersion, s, 7);
+							G->body.mk5version.AtaVersion[7] = 0;
+						}
+						else if(strcmp(elem, "UAtaVer") == 0)
+						{
+							strncpy(G->body.mk5version.UAtaVersion, s, 7);
+							G->body.mk5version.UAtaVersion[7] = 0;
+						}
+						else if(strcmp(elem, "DriverVer") == 0)
+						{
+							strncpy(G->body.mk5version.DriverVersion, s, 7);
+							G->body.mk5version.DriverVersion[7] = 0;
+						}
+						else if(strcmp(elem, "BoardType") == 0)
+						{
+							strncpy(G->body.mk5version.BoardType, s, 12);
+							G->body.mk5version.BoardType[11] = 0;
+						}
+						else if(strcmp(elem, "SerialNum") == 0)
+						{
+							G->body.mk5version.SerialNum = atoi(s);
+						}
 					}
-					else if(strcmp(elem, "FirmVer") == 0)
+					else
 					{
-						strncpy(G->body.mk5version.FirmwareVersion, s, 7);
-						G->body.mk5version.FirmwareVersion[7] = 0;
-					}
-					else if(strcmp(elem, "FirmDate") == 0)
-					{
-						strncpy(G->body.mk5version.FirmDateCode, s, 11);
-						G->body.mk5version.FirmDateCode[11] = 0;
-					}
-					else if(strcmp(elem, "MonVer") == 0)
-					{
-						strncpy(G->body.mk5version.MonitorVersion, s, 7);
-						G->body.mk5version.MonitorVersion[7] = 0;
-					}
-					else if(strcmp(elem, "XbarVer") == 0)
-					{
-						strncpy(G->body.mk5version.XbarVersion, s, 7);
-						G->body.mk5version.XbarVersion[7] = 0;
-					}
-					else if(strcmp(elem, "AtaVer") == 0)
-					{
-						strncpy(G->body.mk5version.AtaVersion, s, 7);
-						G->body.mk5version.AtaVersion[7] = 0;
-					}
-					else if(strcmp(elem, "UAtaVer") == 0)
-					{
-						strncpy(G->body.mk5version.UAtaVersion, s, 7);
-						G->body.mk5version.UAtaVersion[7] = 0;
-					}
-					else if(strcmp(elem, "DriverVer") == 0)
-					{
-						strncpy(G->body.mk5version.DriverVersion, s, 7);
-						G->body.mk5version.DriverVersion[7] = 0;
-					}
-					else if(strcmp(elem, "BoardType") == 0)
-					{
-						strncpy(G->body.mk5version.BoardType, s, 12);
-						G->body.mk5version.BoardType[11] = 0;
-					}
-					else if(strcmp(elem, "SerialNum") == 0)
-					{
-						G->body.mk5version.SerialNum = atoi(s);
-					}
-					else if(strcmp(elem, "PCBType") == 0)
-					{
-						strncpy(G->body.mk5version.DB_PCBType, s, 12);
-						G->body.mk5version.DB_PCBType[11] = 0;
-					}
-					else if(strcmp(elem, "PCBSubType") == 0)
-					{
-						strncpy(G->body.mk5version.DB_PCBSubType, s, 12);
-						G->body.mk5version.DB_PCBSubType[11] = 0;
-					}
-					else if(strcmp(elem, "PCBVer") == 0)
-					{
-						strncpy(G->body.mk5version.DB_PCBVersion, s, 8);
-						G->body.mk5version.DB_PCBVersion[7] = 0;
-					}
-					else if(strcmp(elem, "DB_FPGAConfig") == 0)
-					{
-						strncpy(G->body.mk5version.DB_FPGAConfig, s, 12);
-						G->body.mk5version.DB_FPGAConfig[11] = 0;
-					}
-					else if(strcmp(elem, "DB_FPGAConfigVer") == 0)
-					{
-						strncpy(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
-						G->body.mk5version.DB_FPGAConfigVersion[7] = 0;
+						if(strcmp(elem, "PCBType") == 0)
+						{
+							strncpy(G->body.mk5version.DB_PCBType, s, 12);
+							G->body.mk5version.DB_PCBType[11] = 0;
+						}
+						else if(strcmp(elem, "PCBSubType") == 0)
+						{
+							strncpy(G->body.mk5version.DB_PCBSubType, s, 12);
+							G->body.mk5version.DB_PCBSubType[11] = 0;
+						}
+						else if(strcmp(elem, "PCBVer") == 0)
+						{
+							strncpy(G->body.mk5version.DB_PCBVersion, s, 8);
+							G->body.mk5version.DB_PCBVersion[7] = 0;
+						}
+						else if(strcmp(elem, "FPGAConfig") == 0)
+						{
+							strncpy(G->body.mk5version.DB_FPGAConfig, s, 12);
+							G->body.mk5version.DB_FPGAConfig[11] = 0;
+						}
+						else if(strcmp(elem, "FPGAConfigVer") == 0)
+						{
+							strncpy(G->body.mk5version.DB_FPGAConfigVersion, s, 8);
+							G->body.mk5version.DB_FPGAConfigVersion[7] = 0;
+						}
+						else if(strcmp(elem, "SerialNum") == 0)
+						{
+							G->body.mk5version.DB_SerialNum = atoi(s);
+						}
+						else if(strcmp(elem, "NumChannels") == 0)
+						{
+							G->body.mk5version.DB_NumChannels = atoi(s);
+						}
 					}
 					break;
 				case DIFX_MESSAGE_STATUS:
@@ -757,6 +782,9 @@ void difxMessageGenericPrint(const DifxMessageGeneric *G)
 			G->body.mk5version.SerialNum);
 		if(G->body.mk5version.DB_PCBVersion[0] != 0)
 		{
+			printf("    Daughter Board:  Serial number = %d  num channels = %d\n",
+				G->body.mk5version.DB_SerialNum,
+				G->body.mk5version.DB_NumChannels);
 			printf("    Daughter Board:  Type = %s  Subtype = %s  Version = %s\n",
 				G->body.mk5version.DB_PCBType,
 				G->body.mk5version.DB_PCBSubType,

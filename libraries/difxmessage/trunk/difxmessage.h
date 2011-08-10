@@ -216,6 +216,8 @@ typedef struct
 	char DB_PCBVersion[8];
 	char DB_FPGAConfig[12];
 	char DB_FPGAConfigVersion[8];
+	unsigned int DB_SerialNum;
+	unsigned int DB_NumChannels;
 } DifxMessageMk5Version;
 
 typedef struct
@@ -374,6 +376,7 @@ typedef struct
 	char _xml_element[5][32];
 	int _xml_error_count;
 	char _xml_string[1024];
+	int _inDB;
 } DifxMessageGeneric;
 
 /* Standard message "types" for STA and LTA data */

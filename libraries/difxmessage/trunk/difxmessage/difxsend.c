@@ -557,13 +557,17 @@ int difxMessageSendMk5Version(const DifxMessageMk5Version *mk5version)
 		    "<PCBSubType>%s</PCBSubType>"
 		    "<FPGAConfig>%s</FPGAConfig>"
 		    "<FPGAConfigVer>%s</FPGAConfigVer>"
+		    "<SerialNum>%d</SerialNum>"
+		    "<NumChannels>%d</NumChannels>"
 		  "</DaughterBoard>",
 
 		mk5version->DB_PCBVersion,
 		mk5version->DB_PCBType,
 		mk5version->DB_PCBSubType,
 		mk5version->DB_FPGAConfig,
-		mk5version->DB_FPGAConfigVersion);
+		mk5version->DB_FPGAConfigVersion,
+		mk5version->DB_SerialNum,
+		mk5version->DB_NumChannels);
 
 		if(v >= DIFX_MESSAGE_LENGTH)
 		{
