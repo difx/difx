@@ -268,7 +268,7 @@ int protect_Command(Mk5Daemon *D, int nField, char **fields, char *response, int
 	enum WriteProtectState state;
 	char msg[256];
 
-	if(nField != 1 || (strcmp(fields[1], "on") != 0 && strcmp(fields[1], "off") != 0))
+	if(nField != 2 || (strcmp(fields[1], "on") != 0 && strcmp(fields[1], "off") != 0))
 	{
 		v = snprintf(response, maxResponseLength, "!%s = 6 : on or off expected;", fields[0]);
 	}
@@ -1225,6 +1225,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			{
 				setlinebuf(D->recordPipe);
 				D->recordState = RECORD_ON;
+				D->recordT0 = time(0);
 				D->nScan[D->activeBank]++;
 				strcpy(D->scanLabel[D->activeBank], scanLabel);
 				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
@@ -1419,7 +1420,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	{
 		status |= 0x0001;
 	}
-	if(D->errorFlag)
+	if(D->errorFlag[0] || D->errorFlag[1])
 	{
 		status |= 0x0002;
 	}
@@ -1440,11 +1441,11 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->activeBank >= 0 && D->recordState == RECORD_OFF && D->errorFlag == 0)
+	if(D->activeBank >= 0 && D->recordState == RECORD_OFF && D->errorFlag[D->activeBank] == 0 && D->systemReady)
 	{
 		if(D->smartData[D->activeBank].mjd > 50000 && D->bank_stat[D->activeBank].WriteProtected == 0)
 		{
-			status |= 0x4000000;
+			status |= 0x40000;
 		}
 	}
 
@@ -1452,7 +1453,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	{
 		status |= 0x100000;
 	}
-	if(D->smartData[0].mjd > 50000)
+	if(D->smartData[0].mjd > 50000 && D->vsns[0][0])
 	{
 		status |= 0x200000;
 		if(D->bank_stat[0].MediaStatus == MEDIASTATUS_FULL || D->bank_stat[0].MediaStatus == MEDIASTATUS_FAULTED)
@@ -1469,7 +1470,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	{
 		status |= 0x1000000;
 	}
-	if(D->smartData[1].mjd > 50000)
+	if(D->smartData[1].mjd > 50000 && D->vsns[1][0])
 	{
 		status |= 0x2000000;
 		if(D->bank_stat[1].MediaStatus == MEDIASTATUS_FULL || D->bank_stat[1].MediaStatus == MEDIASTATUS_FAULTED)

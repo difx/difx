@@ -421,7 +421,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	int nPart = 0;
 	struct timeval tv;
 	struct timezone tz;
-	double t0, t, t_ref, t_next_ref, rate;
+	double t0, t=0, t_ref, t_next_ref, rate;
 	long long p_ref, p_next_ref;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
@@ -574,72 +574,71 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 				fflush(stdout);
 				die = 1;
 			}
-		}
-
-		if(n % 1000 == 0)
-		{
-			WATCHDOG( ptr = XLRGetLength(xlrDevice) );
-			if(ptr - startByte >= maxBytes)
+			if(n % 1000 == 0)
 			{
-				printf("Ending bytes\n");
-				fflush(stdout);
-				die = 1;
-			}
-
-
-			WATCHDOG( xlrRC = XLRGetDeviceStatus(xlrDevice, &devStatus) );
-
-			rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
-
-			printf("Pointer %Ld %4.2f\n", ptr, rate);
-			fflush(stdout);
-
-			if(!devStatus.Recording)
-			{
-				printf("Halted\n");
-				fflush(stdout);
-				die = 1;
-			}
-			if(devStatus.DriveFail)
-			{
-				printf("Drive %d failed\n", devStatus.DriveFailNumber);
-				fflush(stdout);
-				die = 1;
-			}
-			if(devStatus.SysError)
-			{
-				printf("SystemError %d\n", devStatus.SysErrorCode);
-				fflush(stdout);
-				die = 1;
-			}
-			if(devStatus.Overflow[0])
-			{
-				printf("Overflow\n");
-				fflush(stdout);
-				die = 1;
-			}
-
-			if(n % 10000 == 0)
-			{
-				p_ref = p_next_ref;
-				t_ref = t_next_ref;
-
-				p_next_ref = ptr;
-				t_next_ref = t;
-			}
-
-			/* If there is a change in any other bank, report it */
-			for(int b = 0; b < N_BANK; b++)
-			{
-				if(b == bank)
+				WATCHDOG( ptr = XLRGetLength(xlrDevice) );
+				if(ptr - startByte >= maxBytes)
 				{
-					continue;
+					printf("Ending bytes\n");
+					fflush(stdout);
+					die = 1;
 				}
-				WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, &bankStat) );
-				if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
+
+
+				WATCHDOG( xlrRC = XLRGetDeviceStatus(xlrDevice, &devStatus) );
+
+				rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
+
+				printf("Pointer %Ld %4.2f\n", ptr, rate);
+				fflush(stdout);
+
+				if(!devStatus.Recording)
 				{
-					memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
-					printBankStat(b, &bankStat);
+					printf("Halted\n");
+					fflush(stdout);
+					die = 1;
+				}
+				if(devStatus.DriveFail)
+				{
+					printf("Drive %d failed\n", devStatus.DriveFailNumber);
+					fflush(stdout);
+					die = 1;
+				}
+				if(devStatus.SysError)
+				{
+					printf("SystemError %d\n", devStatus.SysErrorCode);
+					fflush(stdout);
+					die = 1;
+				}
+				if(devStatus.Overflow[0])
+				{
+					printf("Overflow\n");
+					fflush(stdout);
+					die = 1;
+				}
+
+				if(n % 10000 == 0)
+				{
+					p_ref = p_next_ref;
+					t_ref = t_next_ref;
+
+					p_next_ref = ptr;
+					t_next_ref = t;
+				}
+
+				/* If there is a change in any other bank, report it */
+				for(int b = 0; b < N_BANK; b++)
+				{
+					if(b == bank)
+					{
+						continue;
+					}
+					WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, &bankStat) );
+					if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
+					{
+						memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
+						printBankStat(b, &bankStat);
+					}
 				}
 			}
 		}
@@ -674,45 +673,49 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	/* Update directory */
 	WATCHDOGTEST( XLRGetDirectory(xlrDevice, &dir) );
-	p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
-	p->frameLength = 10016;	/* FIXME */
-	switch(nPart)
+
+	if(dir.Length > startByte)	/* only bother if some data were recorded */
 	{
-		case 1:
-			strncpy(p->scanName, parts[0], MODULE_SCAN_NAME_LENGTH);
-			break;
-		case 2:
-			strncpy(p->expName, parts[0], 8);
-			strncpy(p->scanName, parts[1], MODULE_SCAN_NAME_LENGTH);
-			break;
-		case 3:
-			strncpy(p->expName, parts[0], 8);
-			strncpy(p->station, parts[1], 2);
-			strncpy(p->scanName, parts[2], MODULE_SCAN_NAME_LENGTH);
-			break;
-	}
-
-	decodeScan(xlrDevice, startByte, dir.Length, p, q);
-
-	dirHeader->status = MODULE_STATUS_RECORDED;
-
-	WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
-
-	for(int d = 0; d < 8; d++)
-	{
-		WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
-		if(xlrRC == XLR_SUCCESS)
+		p->typeNumber = 9 + (len/128)*256;	/* format and scan number */
+		p->frameLength = 10016;	/* FIXME */
+		switch(nPart)
 		{
-			printf("Stats %d %u %u %u %u %u %u %u %u\n", d,
-				(unsigned int)(driveStats[0].count),
-				(unsigned int)(driveStats[1].count),
-				(unsigned int)(driveStats[2].count),
-				(unsigned int)(driveStats[3].count),
-				(unsigned int)(driveStats[4].count),
-				(unsigned int)(driveStats[5].count),
-				(unsigned int)(driveStats[6].count),
-				(unsigned int)(driveStats[7].count));
-			fflush(stdout);
+			case 1:
+				strncpy(p->scanName, parts[0], MODULE_SCAN_NAME_LENGTH);
+				break;
+			case 2:
+				strncpy(p->expName, parts[0], 8);
+				strncpy(p->scanName, parts[1], MODULE_SCAN_NAME_LENGTH);
+				break;
+			case 3:
+				strncpy(p->expName, parts[0], 8);
+				strncpy(p->station, parts[1], 2);
+				strncpy(p->scanName, parts[2], MODULE_SCAN_NAME_LENGTH);
+				break;
+		}
+
+		decodeScan(xlrDevice, startByte, dir.Length, p, q);
+
+		dirHeader->status = MODULE_STATUS_RECORDED;
+
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, len+128) );
+
+		for(int d = 0; d < 8; d++)
+		{
+			WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
+			if(xlrRC == XLR_SUCCESS)
+			{
+				printf("Stats %d %u %u %u %u %u %u %u %u\n", d,
+					(unsigned int)(driveStats[0].count),
+					(unsigned int)(driveStats[1].count),
+					(unsigned int)(driveStats[2].count),
+					(unsigned int)(driveStats[3].count),
+					(unsigned int)(driveStats[4].count),
+					(unsigned int)(driveStats[5].count),
+					(unsigned int)(driveStats[6].count),
+					(unsigned int)(driveStats[7].count));
+				fflush(stdout);
+			}
 		}
 	}
 

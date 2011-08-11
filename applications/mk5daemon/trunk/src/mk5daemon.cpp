@@ -78,6 +78,7 @@ const char recordStateStrings[][10] =
 	"throttled",
 	"overflow",
 	"waiting",
+	"hung",
 
 	"error"	/* last entry */
 };
@@ -544,8 +545,7 @@ int main(int argc, char **argv)
 					Mk5Daemon_getModules(D);
 				}
 			}
-			if(t - firstTime > 15 && D->isMk5 &&
-				strncasecmp(D->hostName, "mark5", 5) == 0)
+			if(t - firstTime > 15 && D->isMk5 && isMk5)
 			{
 				if(justStarted)
 				{
@@ -748,11 +748,25 @@ int main(int argc, char **argv)
 			{
 				pclose(D->recordPipe);
 				D->recordPipe = 0;
+				D->recordT0 = D->recordLastMessage = 0;
 				D->recordState = RECORD_OFF;
 
 				clearModuleInfo(D, D->activeBank);
 				Mk5Daemon_getModules(D);
 			}
+		}
+
+		if(D->recordState == RECORD_ON && D->recordRate < 0.01 && t - D->recordT0 > 10)
+		{
+			D->recordState = RECORD_THROTTLED;
+		}
+		else if(D->recordState == RECORD_ON && t - D->recordLastMessage > 5)
+		{
+			D->recordState = RECORD_HUNG;
+		}
+		else if(D->recordState == RECORD_THROTTLED && D->recordRate > 1.0)
+		{
+			D->recordState = RECORD_ON;
 		}
 #endif
 		if(D->difxSock && FD_ISSET(D->difxSock, &socks))

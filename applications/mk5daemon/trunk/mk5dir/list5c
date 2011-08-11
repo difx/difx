@@ -1,0 +1,57 @@
+#!/bin/env python
+
+from glob import glob
+from os import getenv
+from sys import exit
+from string import split
+import datetime
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def mjd2str(mjd):
+	if mjd < 50001 or mjd > 99999:
+		return ''
+	md = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+	d = int(mjd)
+	s = int((mjd - d)*86400.0 + 0.5)
+	dt = datetime.timedelta(d, s)
+	t = mjd0 + dt
+	return '%04d/%02d/%02d' % (t.year, t.month, t.day)
+
+def getProjects(f):
+	d = open(f).readlines()
+	p = {}
+	date = -1
+	for ss in d:
+		s = split(ss)
+		if len(s) >= 12:
+			h = split(s[11], '_')
+			if s[10] == '2' and len(h) == 3 and h[2][0:2] == 'No':
+				p[h[0]] = 1
+				date = int(s[2])
+
+	return date, p.keys()
+
+path = getenv('MARK5_DIR_PATH')
+
+if path == None:
+	print 'please set env var MARK5_DIR_PATH'
+	exit(0)
+
+G = glob('%s/*.dir' % path)
+
+list = []
+
+for g in G:
+	module = split(g, '/')[-1][0:8]
+	if module[0:4] in ['NRAO', 'UNAM', 'LANL', 'PURD']:
+		date, plist = getProjects(g)
+		if len(plist) > 0:
+			list.append([date, module, plist])
+
+list.sort()
+for l in list:
+	p = '%s %s:' % (l[1], mjd2str(l[0]))
+	for q in l[2]:
+		p = '%s %-7s' % (p, q)
+	print p

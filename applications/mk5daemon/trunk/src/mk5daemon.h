@@ -57,10 +57,11 @@ enum RecordState
 {
 	RECORD_OFF = 0,
 	RECORD_ON,
-	RECORD_HALTED,
-	RECORD_THROTTLED,
+	RECORD_HALTED,		/* recording stopped; disk full? */
+	RECORD_THROTTLED,	/* no data being written (rate = 0) */
 	RECORD_OVERFLOW,
 	RECORD_WAITING,
+	RECORD_HUNG,		/* the recording process stopped sending status */
 
 	NUM_RECORD_STATES	/* must terminate list */
 };
@@ -142,6 +143,8 @@ typedef struct
 	FILE *recordPipe;
 	enum RecordState recordState;
 	int errorFlag[N_BANK];
+	time_t recordT0;		/* time at which recording started */
+	time_t recordLastMessage;	/* time when last message came from recording */
 	int driveFail[N_BANK];
 	long long bytesUsed[N_BANK];	/* same as record pointer */
 	long long bytesTotal[N_BANK];

@@ -488,7 +488,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"ERROR: Mk5Daemon_setProtect: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
+			"ERROR: XLR_setProtect: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
 			D->nXLROpen, xlrError, msg);
 		Logger_logData(D->log, message);
 
@@ -503,7 +503,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"ERROR: Mk5Daemon_setProtect: cannot select bank %d Error=%u (%s)\n",
+			"ERROR: XLR_setProtect: cannot select bank %d Error=%u (%s)\n",
 			D->activeBank, xlrError, msg);
 		Logger_logData(D->log, message);
 
@@ -531,7 +531,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 		xlrError = XLRGetLastError();
 		XLRGetErrorMessage(msg, xlrError);
 		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"ERROR: Mk5Daemon_setProtect: cannot set protect to %d Error=%u (%s)\n",
+			"ERROR: XLR_setProtect: cannot set protect to %d Error=%u (%s)\n",
 			state, xlrError, msg);
 		Logger_logData(D->log, message);
 
@@ -559,6 +559,10 @@ int Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 	if(D->process == PROCESS_NONE)
 	{
 		v = XLR_setProtect(D, state, msg);
+		if(v == 0)
+		{
+			D->bank_stat[D->activeBank].WriteProtected = state;
+		}
 	}
 	else
 	{
