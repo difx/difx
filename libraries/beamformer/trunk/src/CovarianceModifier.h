@@ -27,55 +27,38 @@
 //
 //============================================================================
 
-#ifndef _DECOMPOSITIONMODIFIER_H
-#define _DECOMPOSITIONMODIFIER_H
+#ifndef _COVARIANCEMODIFIER_H
+#define _COVARIANCEMODIFIER_H
 
-#include "Decomposition.h"
-#include "ArrayElements.h"
+#include "Covariance.h"
 
 /** 
  * Set of RFI mitigation algorithms that are applied to
- * the SVD/EVD/QR/... decomposed covariance data.
+ * the raw covariance data directly.
  */
-class DecompositionModifier {
+class CovarianceModifier {
 
    private:
-      DecompositionModifier();
+      CovarianceModifier();
 
    public:
       /**
-       * C'stor. Ties object to Decomposition class to be modified.
-       * @param[in] cov Decomposition class to modify
+       * C'stor. Ties object to Covariance class to be modified.
+       * @param[in] cov Covariance class to modify
        */
-      DecompositionModifier(Decomposition& dc, ArrayElements const& ae) : _ae(ae),_dc(dc) { }
+      CovarianceModifier(Covariance& cov) : _cov(cov) { }
 
       /**
        * D'stor
        */
-      ~DecompositionModifier() { }
+      ~CovarianceModifier() { }
 
    public:
 
-      /**
-       * Classic nulling of dominant eigenvalues of the decomposition. 
-       * Internally, DecompositionAnalyzer is run on each channel to estimate the
-       * number of interferers, whose corresponding eigenvalues are then
-       * replaced by an estimate of the average noise space power.
-       *
-       * In pulsar and fast transient observations you should take care to 
-       * null only channels that are not expected to contain the observable.
-       * @param[in] Nmax     Upper limit on detected interferers to null or <1 to null all
-       * @param[in] nodetect If true apply Nmax>0 directly and do not estimate interferer count
-       * @param[in] startch  First channel where to start nulling
-       * @param[in] endch    Last channel to null (inclusive)
-       */
-       void interfererNulling(const int Nmax, const bool nodetect, const int startch, const int endch);
+       void templateSubtraction() { }
 
    private:
-      ArrayElements const& _ae;
-      Decomposition& _dc;
-
+      Covariance& _cov;
 };
 
-#endif // _DECOMPOSITIONMODIFIER_H
-
+#endif // _COVARIANCEMODIFIER_H
