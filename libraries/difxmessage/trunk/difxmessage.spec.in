@@ -5,7 +5,7 @@ Release: 1
 License: GPL3
 Group: VLBI
 BuildRoot: /var/tmp/difxmessage-@version@-buildroot
-Requires: gcc >= 4.1.0
+Requires: gcc >= 4.1.0, expat
 Prefix: /usr
 Source: difxmessage-@version@.tar.gz
 
@@ -53,6 +53,9 @@ make
 /usr/bin/errormon2
 /usr/bin/statemon
 /usr/bin/mk5display
+/usr/bin/getsmart
+/usr/bin/sendsmart
+/usr/bin/smartmon
 
 %changelog
 * Fri Mar 11 2011 Walter Brisken <wbrisken@nrao.edu>
