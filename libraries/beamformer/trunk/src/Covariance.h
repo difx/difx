@@ -30,6 +30,8 @@
 #ifndef _COVARIANCE_H
 #define _COVARIANCE_H
 
+#include "ArrayElements.h"
+
 #include <armadillo>
 #include <iostream>
 
@@ -60,6 +62,7 @@ class Covariance {
        */
       Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : N_ant(Nant), N_chan(Nchannels), M_smp(Msmp) { 
          _Rxx = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchannels);
+         _freqs = arma::zeros<arma::Col<double> >(Nant);
          _timestamp = timestamp;
          _Tint = Tint;
       }
@@ -94,6 +97,21 @@ class Covariance {
       void load(double* raw_data, const int format);
 
    public:
+    
+      /**
+       * Add an artificial signal to the covariance matrix
+       * @param[in]  ch     Channel number
+       * @param[in]  lambda Wavelength in meters
+       * @param[in]  ae     ArrayElement object with element positions
+       * @param[in]  phi    Azimuth angle of signal
+       * @param[in]  theta  Tilt angle of plane wave normal from zenith
+       * @param[in]  p      Signal power
+       * @param[in]  Pna    Internal noise power (added to autocorrelations)
+       * @param[in]  Pnc    Correlated noise power (added to cross and auto)
+       */
+      void addSignal(int ch, double lambda, ArrayElements const& ae, double phi, double theta, double P, double Pna, double Pnc);
+
+   public:
 
       /**
        * Operator += for summing the data from another covariance
@@ -112,6 +130,7 @@ class Covariance {
 
    private:
       arma::Cube<arma::cx_double> _Rxx;
+      arma::Col<double> _freqs;
       double _timestamp;
       double _Tint;
 };
