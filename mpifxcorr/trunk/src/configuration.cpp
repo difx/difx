@@ -2074,6 +2074,18 @@ bool Configuration::consistencyCheck()
     }
   }
 
+  // check that if MODULE is the data source, that the data reads are not too large
+  // (otherwise a bug in the mk5 unit playback might be excited)
+  for(int i=0;i<numdatastreams;i++)
+  {
+    if(isNativeMk5(i))
+    {
+      int readbytes = (int)(((long long)databufferfactor)*getMaxDataBytes(i)/numdatasegments);
+      if(readbytes > 25000000 && mpiid == 0)
+        csevere << startl << "Read size for datastream " << i << " is " << readbytes/1000000 << "MB! Large read sizes (>25 MB) have been known to cause zero-weight playback from Mk5 modules, continuing but suggest you rerun with smaller readsize!" << endl;
+    }
+  }
+
   //check that for all configs, if a datastream is muxed in one it is muxed in all, and frame size / num bits stays the same
   for(int i=0;i<numdatastreams;i++)
   {
