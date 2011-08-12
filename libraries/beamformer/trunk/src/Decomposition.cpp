@@ -85,8 +85,8 @@ int Decomposition::decompose(Covariance const& cov)
  */
 int Decomposition::decompose(Covariance const& cov, const int startch, const int endch)
 {
+   int rc = 0;
    arma::Cube<arma::cx_double> const& allRxx = cov.get();
-   arma::Mat<arma::cx_double> Rxx;
  
    if (unsigned(startch) >= allRxx.n_slices) {
       return -1;
@@ -98,14 +98,13 @@ int Decomposition::decompose(Covariance const& cov, const int startch, const int
    
    for (unsigned int chan=startch; (chan<allRxx.n_slices) && (chan<=unsigned(endch)); chan++) {
       int sliceNr = chan + 1;
-      Rxx = allRxx.slice(chan);
-      int rc = this->do_decomposition(sliceNr, Rxx);
-      if (rc != 0) {
-         return rc;
+      int rcs = this->do_decomposition(sliceNr, allRxx.slice(chan));
+      if (rcs != 0) {
+         rc = rcs;
       }
    }
  
-   return 0;
+   return rc;
 }
 
 
@@ -134,8 +133,8 @@ int Decomposition::recompose(Covariance& cov)
  */
 int Decomposition::recompose(Covariance& cov, const int startch, const int endch)
 {
+   int rc = 0;
    arma::Cube<arma::cx_double>& allRxx = cov.getWriteable();
-   arma::Mat<arma::cx_double> Rxx;
 
    if (unsigned(startch) >= allRxx.n_slices) {
       return -1;
@@ -147,14 +146,13 @@ int Decomposition::recompose(Covariance& cov, const int startch, const int endch
 
    for (unsigned int chan=startch; (chan<allRxx.n_slices) && (chan<=unsigned(endch)); chan++) {
       int sliceNr = chan + 1;
-      Rxx = allRxx.slice(chan);
-      int rc = this->do_recomposition(sliceNr, Rxx);
-      if (rc != 0) {
-         return rc;
+      int rcs = this->do_recomposition(sliceNr, allRxx.slice(chan));
+      if (rcs != 0) {
+         rc = rcs;
       }
    }
 
-   return 0;
+   return rc;
 }
 
 
