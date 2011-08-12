@@ -2078,7 +2078,7 @@ bool Configuration::consistencyCheck()
   // (otherwise a bug in the mk5 unit playback might be excited)
   for(int i=0;i<numdatastreams;i++)
   {
-    if(isNativeMk5(i))
+    if(isNativeMkV(i))
     {
       int readbytes = (int)(((long long)databufferfactor)*getMaxDataBytes(i)/numdatasegments);
       if(readbytes > 25000000 && mpiid == 0)
