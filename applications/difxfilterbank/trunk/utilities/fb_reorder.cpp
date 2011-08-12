@@ -165,6 +165,16 @@ int main(const int argc, char * const argv[]) {
     // parse command-line
     parse_cmdline(argc, argv,&options);
 
+    // open files. Need to do this before everything else so that if something in the setup fails
+    // (like the Configuration object), then the output file still gets opened. This is important
+    // in the pipeline architecture because a pipe must get opened at both ends otherwise the
+    // process at the other end blocks forever.
+    status = openFiles(&fp_in, &fp_out);
+    if (status !=0) {
+        fprintf(stderr,"ERROR: openFiles returned %d\n",status);
+        exit(1);
+    }
+
     // init DiFX message
     difxMessageInit(-1, PROGNAME); 
 
@@ -179,13 +189,6 @@ int main(const int argc, char * const argv[]) {
     status = set_FB_Config(&fb_config);
     if (status !=0) {
         fprintf(stderr,"ERROR: read_FB_Config returned %d\n",status);
-        exit(1);
-    }
-
-    // open files
-    status = openFiles(&fp_in, &fp_out);
-    if (status !=0) {
-        fprintf(stderr,"ERROR: openFiles returned %d\n",status);
         exit(1);
     }
 
