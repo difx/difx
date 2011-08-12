@@ -32,14 +32,14 @@
 
 
 program = 'checkdir'
-version = '0.5'
+version = '0.6'
 author  = 'Walter Brisken'
-verdate = '20110421'
+verdate = '20110812'
 
 from sys import exit, argv
 from os.path import isfile, isdir
 from os import getenv, system
-from string import split, strip, upper
+from string import split, strip, upper, find
 from glob import glob
 from time import time
 import datetime
@@ -152,6 +152,11 @@ class Scan:
 	def checkLength(self):
 		if self.bytes == 0:
 			return "Zero length scan"
+		return None
+
+	def checkName(self):
+		if find(self.name, 'UKN') >= 0:
+			return "This scan was rescued and might consist of multiple scans.  mk5map can be used to dissect it (for Mark5B format only)"
 		return None
 
 	def checkTime(self):
@@ -290,6 +295,8 @@ def checkFile(module, histogram, verbose=1):
 			scan.error = scan.checkFormat()
 		if scan.error == None:
 			scan.error = scan.checkBytes()
+		if scan.error == None:
+			scan.error = scan.checkName()
 		if scan.startMJD < mjdStart:
 			mjdStart = scan.startMJD
 		if scan.stopMJD > mjdStop:

@@ -11,6 +11,7 @@ Version 1.4.2
 * vsn: show disk temperatures by default
 * mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
 * add stand alone Mark5C data recording program "record5c"
+* checkdir: add detection of UKN scans (those rescued by the recording system after a crash)
 
 Version 1.4.1
 ~~~~~~~~~~~~
