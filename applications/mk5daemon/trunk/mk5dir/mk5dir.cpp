@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.9";
-const char verdate[] = "20110730";
+const char version[] = "0.10";
+const char verdate[] = "20110813";
 
 enum DMS_Mode
 {
@@ -95,6 +95,8 @@ static void usage(const char *pgm)
 	printf("  -b <b>         Begin with scan number <b> (a 1-based number)\n\n");  
 	printf("  --end <e>\n");
 	printf("  -e <e>         End with scan number <e> (a 1-based number)\n\n");  
+	printf("  --write <file>\n");
+	printf("  -w <file>      Write directory listing in <file> to module instead of reading\n\n");
 	printf("<bank> is either A or B\n\n");
 	printf("<vsn> is a valid module VSN (8 characters)\n\n");
 	printf("Environment variable MARK5_DIR_PATH should point to the location of\n");
@@ -415,6 +417,95 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	return 0;
 }
 
+static int writeDir(char *vsn, int force, const char *filename)
+{
+	Mark5Module module;
+	DifxMessageMk5Status mk5status;
+	int v;
+
+	v = module.load(filename);
+
+	if(v != 0)
+	{
+		printf("Cannot load directory file %s\n", filename);
+
+		return -1;
+	}
+
+	if(module.dirVersion <= 0)
+	{
+		printf("Won't write a version 0 directory to a module\n");
+		
+		return -1;
+	}
+
+	if(verbose)
+	{
+		module.print();
+	}
+
+	memset(&mk5status, 0, sizeof(mk5status));
+
+	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
+	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
+	WATCHDOGTEST( XLRSetFillData(xlrDevice, MARK5_FILL_PATTERN) );
+	WATCHDOGTEST( XLRSetOption(xlrDevice, SS_OPT_SKIPCHECKDIR) );
+
+	v = getBankInfo(xlrDevice, &mk5status, ' ');
+	if(v < 0)
+	{
+		WATCHDOG( XLRClose(xlrDevice) );
+
+		return -1;
+	}
+
+	if(strncmp(mk5status.vsnA, vsn, 8) == 0)
+	{
+		mk5status.activeBank = 'A';
+		strcpy(vsn, mk5status.vsnA);
+		WATCHDOGTEST( XLRSelectBank(xlrDevice, BANK_A) );
+	}
+	else if(strncmp(mk5status.vsnB, vsn, 8) == 0)
+	{
+		mk5status.activeBank = 'B';
+		strcpy(vsn, mk5status.vsnB);
+		WATCHDOGTEST( XLRSelectBank(xlrDevice, BANK_B) );
+	}
+	else
+	{
+		if(strlen(vsn) == 8)
+		{
+			printf("Module %s not loaded\n", vsn);
+		}
+		else
+		{
+			printf("Explicit module name required for module writing\n");
+		}
+
+		return -1;
+	}
+
+	v = module.writeDirectory(xlrDevice);
+	if(v != 0)
+	{
+		return v;
+	}
+
+	mk5status.state = MARK5_STATE_GETDIR;
+	difxMessageSendMark5Status(&mk5status);
+
+	WATCHDOG( XLRClose(xlrDevice) );
+
+	mk5status.state = MARK5_STATE_IDLE;
+	mk5status.scanNumber = module.nScans();
+	mk5status.scanName[0] = 0;
+	mk5status.position = 0;
+	mk5status.activeBank = ' ';
+	difxMessageSendMark5Status(&mk5status);
+
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	char vsn[16] = "";
@@ -427,6 +518,7 @@ int main(int argc, char **argv)
 	int startScan = -1;
 	int stopScan = -1;
 	int retval = EXIT_SUCCESS;
+	const char *writeFile = 0;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
 	if(dmsMaskStr)
@@ -500,6 +592,12 @@ int main(int argc, char **argv)
 				a++;
 				stopScan = atoi(argv[a]);
 			}
+			else if(strcmp(argv[a], "-w") == 0 ||
+			   strcmp(argv[a], "--write") == 0)
+			{
+				a++;
+				writeFile = argv[a];
+			}
 			else
 			{
 				usage(argv[0]);
@@ -541,7 +639,14 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5dir(vsn, force, fast, dmsMode, startScan, stopScan);
+		if(writeFile == 0)
+		{
+			v = mk5dir(vsn, force, fast, dmsMode, startScan, stopScan);
+		}
+		else
+		{
+			v = writeDir(vsn, force, writeFile);
+		}
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

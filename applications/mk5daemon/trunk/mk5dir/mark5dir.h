@@ -122,6 +122,7 @@ public:
 	int getCachedDirectory(SSHANDLE xlrDevice, int mjdref, const char *vsn, 
 		const char *dir, int (*callback)(int, int, int, void *), void *data,
 		float *replacedFrac, int force, int optionFast, int cacheOnly, int startScan, int stopScan);
+	int writeDirectory(SSHANDLE xlrDevice) const;
 };
 
 
@@ -204,6 +205,8 @@ int setDiscModuleStateLegacy(SSHANDLE xlrDevice, int newState);
 int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState);
 
 int setDiscModuleVSNNew(SSHANDLE xlrDevice, int newStatus, const char *newVSN, int capacity, int rate);
+
+char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn);
 
 
 #endif

@@ -12,6 +12,7 @@ Version 1.4.2
 * mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
 * add stand alone Mark5C data recording program "record5c"
 * checkdir: add detection of UKN scans (those rescued by the recording system after a crash)
+* mk5dir: can now write a module directory to a module (Mark5B only and directory version 1 only)
 
 Version 1.4.1
 ~~~~~~~~~~~~

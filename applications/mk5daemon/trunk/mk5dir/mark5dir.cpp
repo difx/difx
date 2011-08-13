@@ -299,6 +299,40 @@ static void convertTimeBCD(const unsigned char *timeBCD, int *mjd, int *sec)
 	}
 }
 
+static void convertBCDTime(int mjd, int sec, unsigned char *timeBCD)
+{
+	const int secDivisors[] = {36000, 3600, 600, 60, 10, 1};
+	const int doyDivisors[] = {100, 10, 1};
+	const int yearDivisors[] = {1000, 100, 10, 1};
+	int nibbles[14];
+	int year, month, day, doy;
+
+	mjd2ymd(mjd, &year, &month, &day);
+	doy = ymd2doy(year, month, day);
+
+	for(int i = 0; i < 6; i++)
+	{
+		nibbles[5-i] =  sec / secDivisors[i];
+		sec -= nibbles[5-i] * secDivisors[i];
+	}
+	for(int i = 0; i < 3; i++)
+	{
+		nibbles[8-i] =  doy / doyDivisors[i];
+		doy -= nibbles[8-i] * doyDivisors[i];
+	}
+	for(int i = 0; i < 4; i++)
+	{
+		nibbles[12-i] =  year / yearDivisors[i];
+		year -= nibbles[12-i] * yearDivisors[i];
+	}
+	nibbles[13] = 0;	/* because it doesn't come out even */
+
+	for(int n = 0; n < 14; n+=2)
+	{
+		timeBCD[n/2] = nibbles[n] + (nibbles[n+1] << 4);
+	}
+}
+
 static void expandScanName1(string &dest, const struct Mark5DirectoryScanHeaderVer1 *scanHeader)
 {
 	char str1[MODULE_SCAN_NAME_LENGTH+1];
@@ -317,6 +351,52 @@ static void expandScanName1(string &dest, const struct Mark5DirectoryScanHeaderV
 
 	out << str3 << "_" << str2 << "_" << str1;
 	dest = out.str();
+}
+
+static void scanName2scanHeader(struct Mark5DirectoryScanHeaderVer1 *scanHeader, const char *scanName)
+{
+	int state = 0;
+	int start = 0;
+	int len;
+
+	for(int i = 0; ; i++)
+	{
+		if(scanName[i] == '_' || scanName[i] == 0)
+		{
+			len = i - start;
+			if(state == 0)
+			{
+				if(len > 8)
+				{
+					len = 8;
+				}
+				strncpy(scanHeader->expName, scanName+start, len);
+			}
+			else if(state == 1)
+			{
+				if(len > 2)
+				{
+					len = 2;
+				}
+				strncpy(scanHeader->station, scanName+start, len);
+			}
+			else if(state == 2)
+			{
+				if(len > MODULE_SCAN_NAME_LENGTH)
+				{
+					len = MODULE_SCAN_NAME_LENGTH;
+				}
+				strncpy(scanHeader->scanName, scanName+start, len);
+			}
+
+			start = i+1;
+			state++;
+		}
+		if(scanName[i] == 0 || state == 3)
+		{
+			break;
+		}
+	}
 }
 
 //------------------------- Mark5Scan ------------------------------
@@ -866,6 +946,136 @@ int Mark5BankSetByVSN(SSHANDLE xlrDevice, const char *vsn)
 	return b;
 }
 
+char *scans2newdir(const std::vector<Mark5Scan> &scans, const char *vsn)
+{
+	int totalScans = scans.size();
+	int dirLength = totalScans*128 + 128;
+	char *dirData;
+
+	dirData = (char *)calloc(dirLength, 1);
+	if(!dirData)
+	{
+		return 0;
+	}
+
+	struct Mark5DirectoryHeaderVer1 *header = (struct Mark5DirectoryHeaderVer1 *)dirData;
+	header->version = 1;
+	header->status = MODULE_STATUS_PLAYED;
+	strcpy(header->vsn, vsn);
+
+	for(int i = 0; i < totalScans; i++)
+	{
+		struct Mark5DirectoryScanHeaderVer1 *scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
+		struct Mark5DirectoryLegacyBodyVer1 *scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
+		const Mark5Scan &scan = scans[i];
+		int type;
+
+		scanName2scanHeader(scanHeader, scan.name.c_str());
+		scanHeader->startByte = scan.start;
+		scanHeader->stopByte = scan.start + scan.length;
+		scanHeader->frameLength = scan.framebytes;
+		if(scan.format == MK5_FORMAT_MARK5B) /* currently only handle Mark5B */
+		{
+			type = 8;
+			scanBody->byteOffset = scan.frameoffset;
+			convertBCDTime(scan.mjd, scan.sec, scanBody->timeBCD);
+			scanBody->nTrack = (1LL << scan.tracks) - 1;
+			scanBody->trackRate = 2*scan.framespersecond/(25*scan.tracks);
+			scanBody->firstFrame = scan.framenuminsecond;
+			
+		}
+		else
+		{
+			type = 1;
+		}
+		scanHeader->typeNumber = type + ((i+1) << 8);
+	}
+
+	return dirData;
+}
+
+/* Take the Mark5 User Directory as a binary record pointed to by dirData and decode into a vector of scan structures */
+int newdir2scans(std::vector<Mark5Scan> &scans, const unsigned char *dirData, int dirLength, int startScan, int stopScan)
+{
+	int totalScans = dirLength/128-1;
+	double overhead = 0.0;
+
+	if(startScan < 0)
+	{
+		startScan = 0;
+	}
+	if(stopScan > totalScans)
+	{
+		stopScan = totalScans;
+	}
+	if(startScan >= stopScan)
+	{
+		return -1;
+	}
+
+	for(int i = startScan; i < stopScan; i++)
+	{
+		const struct Mark5DirectoryScanHeaderVer1 *scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
+		const struct Mark5DirectoryLegacyBodyVer1 *scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
+		Mark5Scan &scan = scans[i];
+		int type = scanHeader->typeNumber & 0xFF;
+		
+		expandScanName1(scan.name, scanHeader);
+		scan.start  = scanHeader->startByte;
+		scan.length = scanHeader->stopByte - scanHeader->startByte;
+		scan.framebytes = scanHeader->frameLength;
+
+		if(type >= 3 && type <= 9)
+		{
+
+			switch(type)
+			{
+			case 3:
+				scan.format = MK5_FORMAT_VLBA;
+				overhead = 1.008;
+				break;
+			case 4:
+				scan.format = MK5_FORMAT_MARK4;
+				overhead = 1.0;
+				break;
+			case 8:
+			case 9:
+				scan.format = MK5_FORMAT_MARK5B;
+				scan.framebytes = 10016;
+				overhead = 1.0016;
+				break;
+			default:
+				scan.format = -1;
+				continue;
+			}
+			convertTimeBCD(scanBody->timeBCD, &scan.mjd, &scan.sec);
+			scan.frameoffset = scanBody->byteOffset;
+			if(scan.format == MK5_FORMAT_MARK5B)
+			{
+				scan.tracks = upround2(countbits(scanBody->nTrack));
+			}
+			else
+			{
+				scan.tracks = scanBody->nTrack;
+			}
+			scan.framespersecond = int(125000.0*(double)(scanBody->trackRate)*overhead*(double)(scan.tracks)/(double)(scan.framebytes) + 0.5);
+			scan.framenuminsecond = scanBody->firstFrame;
+			if(scan.framespersecond > 0)
+			{
+				scan.duration = (int)((scan.length - scan.frameoffset) / scan.framebytes)/(double)(scan.framespersecond);
+			}
+		}
+		else
+		{
+			/* Currently unsupported type */
+			scan.format = -SCAN_FORMAT_ERROR_UNSUPPORTED;
+		}
+	
+	}
+
+	return 0;
+}
+
 int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref, 
 	int (*callback)(int, int, int, void *), void *data,
 	float *replacedFrac, int cacheOnly, int startScan, int stopScan)
@@ -890,7 +1100,6 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	int oldLen1, oldLen2, oldLen3;
 	int start, stop;
 	int oldFast;
-	double overhead = 0.0;
 	int nscans;
 
 	streamstordatatype *buffer;
@@ -1057,71 +1266,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 	if(fast && dirVersion > 0)
 	{
-		for(int i = startScan; i < stopScan; i++)
-		{
-			struct Mark5DirectoryScanHeaderVer1 *scanHeader;
-			int type;
-
-			Mark5Scan &scan = scans[i];
-
-			scanHeader = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + 128*i + 128);
-			type = scanHeader->typeNumber & 0xFF;
-			
-			expandScanName1(scan.name, scanHeader);
-			scan.start  = scanHeader->startByte;
-			scan.length = scanHeader->stopByte - scanHeader->startByte;
-			scan.framebytes  = scanHeader->frameLength;
-
-			if(type >= 3 && type <= 9)
-			{
-				struct Mark5DirectoryLegacyBodyVer1 *scanBody;
-				scanBody = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + 128*i + 192);
-
-				switch(type)
-				{
-				case 3:
-					scan.format = MK5_FORMAT_VLBA;
-					overhead = 1.008;
-					break;
-				case 4:
-					scan.format = MK5_FORMAT_MARK4;
-					overhead = 1.0;
-					break;
-				case 8:
-				case 9:
-					scan.format = MK5_FORMAT_MARK5B;
-					scan.framebytes = 10016;
-					overhead = 1.0016;
-					break;
-				default:
-					scan.format = -1;
-					continue;
-				}
-				convertTimeBCD(scanBody->timeBCD, &scan.mjd, &scan.sec);
-				scan.frameoffset = scanBody->byteOffset;
-				if(scan.format == MK5_FORMAT_MARK5B)
-				{
-					scan.tracks = upround2(countbits(scanBody->nTrack));
-				}
-				else
-				{
-					scan.tracks = scanBody->nTrack;
-				}
-				scan.framespersecond = int(125000.0*(double)(scanBody->trackRate)*overhead*(double)(scan.tracks)/(double)(scan.framebytes) + 0.5);
-				scan.framenuminsecond = scanBody->firstFrame;
-				if(scan.framespersecond > 0)
-				{
-					scan.duration = (int)((scan.length - scan.frameoffset)
-						/ scan.framebytes)/(double)(scan.framespersecond);
-				}
-			}
-			else
-			{
-				/* Currently unsupported type */
-				scan.format = -SCAN_FORMAT_ERROR_UNSUPPORTED;
-			}
-		
-		}
+		newdir2scans(scans, dirData, len, startScan, stopScan);
 	}
 	else
 	{
@@ -1296,6 +1441,31 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 	return -die;
 }
+
+int Mark5Module::writeDirectory(SSHANDLE xlrDevice) const
+{
+	char *dirData;
+	int dirLength;
+	int v;
+
+	dirLength = scans.size()*128 + 128;
+	dirData = scans2newdir(scans, label.c_str());
+
+	if(dirData)
+	{
+		WATCHDOGTEST( XLRSetUserDir(xlrDevice, dirData, dirLength) );
+		free(dirData);
+	
+		v = 0;
+	}
+	else
+	{
+		v = -1;
+	}
+
+	return v;
+}
+
 
 /* retrieves directory (either from cache or module) and makes sure
  * desired module is the active one.  On any failure return < 0 
