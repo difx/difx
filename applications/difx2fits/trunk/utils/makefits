@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #**************************************************************************
-#   Copyright (C) 2009-2010 by Walter Brisken                             *
+#   Copyright (C) 2009-2011 by Walter Brisken                             *
 #                                                                         *
 #   This program is free software; you can redistribute it and/or modify  *
 #   it under the terms of the GNU General Public License as published by  *
@@ -38,9 +38,9 @@ from os.path import isfile, isdir, getsize
 from time import gmtime, time
 
 program = 'makefits'
-version = '0.5'
+version = '0.6'
 author  = 'Walter Brisken'
-verdate = '20100329'
+verdate = '20110813'
 
 calFiles = ['flag', 'pcal', 'tsys', 'weather']
 
@@ -489,14 +489,20 @@ for a in argv[1:]:
 			verbose = True
 		if a in ('-x', '--dont-sniff'):
 			sniff = False
+	elif isfile(a) or isfile(a + '.joblist'):
+			args.append(a)
 	else:
-		args.append(a)
+		opts = opts + ' ' + a
+
 
 if opts == '':
 	opts = '-v'
 
+print 'options: %s' % opts
+
 if len(args) < 1:
-	usage(argv[0])
+	print 'No pass names on command line.  Run with -h for help.'
+	euxt(0)
 
 gcFilesMissing = testgainfiles()
 

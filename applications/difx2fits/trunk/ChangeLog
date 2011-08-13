@@ -2,6 +2,7 @@ Version 3.0.2
 * Post DiFX-2.0.1
 * Improved reporting when weights go crazy (negative)
 * --zero (or -0) option: don't write visibilities
+* makefits: pass along non-dashed options to difx2fits
 
 Version 3.0.1
 * Post 2.0.0
