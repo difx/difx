@@ -24,7 +24,9 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         a2,
         ant,
         fr,
-        pol;
+        pol,
+        pol1,
+        pol2;
 
     double t,                       // time of current records
            factor,
@@ -47,12 +49,12 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
         polchar[0] = 0;             // initialize polarization mapping
         polchar[1] = 0; 
                                     // save time for this step
-        vr = (vis_record *)((char *) vrec + nbeg * vrsize);
+        vr = (vis_record *)((char *) vrec + (size_t) nbeg * vrsize);
         t = vr->iat;
                                     // find ending index for this time
         for (n=nbeg; n<nvrtot-1; n++)
             {
-            vr = (vis_record *)((char *) vrec + n * vrsize);
+            vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
             if (vr->iat != t)
                 break;
             }
@@ -61,7 +63,7 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                                     // by building a table of antenna powers from autos
         for (n=nbeg; n<=nend; n++)
             {
-            vr = (vis_record *)((char *) vrec + n * vrsize);
+            vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
                                     // decode antennas
             a1 = vr->baseline / 256 - 1; 
             a2 = vr->baseline % 256 - 1;
@@ -103,28 +105,41 @@ void normalize (struct CommandLineOptions *opts,  // array of command line optio
                                     // dividing by harmonic means
         for (n=nbeg; n<=nend; n++)
             {
-            vr = (vis_record *)((char *) vrec + n * vrsize);
+            vr = (vis_record *)((char *) vrec + (size_t) n * vrsize);
                                     // decode antennas
             a1 = vr->baseline / 256 - 1; 
             a2 = vr->baseline % 256 - 1;
 
             fr = vr->freq_index;
-            for (pol=0; pol<2; pol++)
+                                    // identify polarization for reference antenna
+            for (pol1=0; pol1<2; pol1++)
                 {
-                if (vr->pols[0] == polchar[pol])
+                if (vr->pols[0] == polchar[pol1])
                     break;
                 }
-            if (pol == 2)
+            if (pol1 == 2)
                 {
-                printf ("baseline %d not in polarization table, skipping record\n",
+                printf ("ref stn of baseline %d not in pol table, skipping record\n",
+                         vr->baseline);
+                continue;
+                }
+                                    // identify polarization for remote antenna
+            for (pol2=0; pol2<2; pol2++)
+                {
+                if (vr->pols[1] == polchar[pol2])
+                    break;
+                }
+            if (pol2 == 2)
+                {
+                printf ("rem stn of baseline %d not in pol table, skipping record\n",
                          vr->baseline);
                 continue;
                 }
                                     // ensure that there is no 0-divide
-            if (pant[a1][fr][pol] == 0.0 || pant[a2][fr][pol] == 0.0)
+            if (pant[a1][fr][pol1] == 0.0 || pant[a2][fr][pol2] == 0.0)
                 factor = 1.0;
             else
-                factor = 1.0 / (pant[a1][fr][pol] * pant[a2][fr][pol]);
+                factor = 1.0 / (pant[a1][fr][pol1] * pant[a2][fr][pol2]);
             for (i=0; i<nvis; i++)
                 {
                 vr->comp[i].real *= factor;

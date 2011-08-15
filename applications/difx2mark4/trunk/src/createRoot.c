@@ -206,8 +206,9 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // switch to proper context for current block
         switch (current_block)
             {
-            case ANTENNA:           // fix up the axis_offset stmt
-                if (strncmp (pst[0], "axis_offset", 11) == 0)
+            case ANTENNA:           // fix up the axis_offset stmt, iff necessary
+                if (strncmp (pst[0], "axis_offset", 11) == 0
+                 && strstr (line, "el:") == 0)
                     {
                     strcpy (buff, line);
                     pchar = strchr (line, '=') + 2;

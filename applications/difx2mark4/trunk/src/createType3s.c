@@ -117,6 +117,37 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // and at every continue
         if (stns[n].invis == 0)
             continue;
+printf("**** **** ****\n");
+printf ("n %d scanId %d configId %d\n", n, scanId, D->scan[scanId].configId); fflush(stdout);
+printf ("antennId %d pols %c %c %c %c %c %c %c %c\n",
+D->datastream[n].antennaId, 
+D->datastream[n].recBandPolName[0],
+D->datastream[n].recBandPolName[1],
+D->datastream[n].recBandPolName[2],
+D->datastream[n].recBandPolName[3],
+D->datastream[n].recBandPolName[4],
+D->datastream[n].recBandPolName[5],
+D->datastream[n].recBandPolName[6],
+D->datastream[n].recBandPolName[7]); fflush(stdout);
+printf ("recBandFreqId %d %d %d %d %d %d %d %d\n",
+D->datastream[n].recBandFreqId[0],
+D->datastream[n].recBandFreqId[1],
+D->datastream[n].recBandFreqId[2],
+D->datastream[n].recBandFreqId[3],
+D->datastream[n].recBandFreqId[4],
+D->datastream[n].recBandFreqId[5],
+D->datastream[n].recBandFreqId[6],
+D->datastream[n].recBandFreqId[7]);fflush(stdout);
+printf ("corresponding recFreqId %d %d %d %d %d %d %d %d\n",
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[0]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[1]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[2]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[3]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[4]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[5]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[6]],
+D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[7]]);fflush(stdout);
+
         strcpy (outname, node);     // form output file name
         strcat (outname, "/");
 
@@ -230,7 +261,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                     if (mjd > D->scan[scanId].mjdEnd)
                         {
                         if (opts->verbose > 1)
-                            printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdStart);
+                            printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdEnd);
                         break;
                         }
                                         // reject any pcal data for times in flag file
@@ -276,6 +307,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     jf = b / npol;
                                         // skip over non-matching polarizations
                                     if (np != b % npol)
+//                                  if (np != (b+1) % npol)
                                         continue;  
                                     isb = ((D->freq+jf)->sideband == 'U') ? 1 : -1;
                                     f_rel = isb * (freq - (D->freq+jf)->freq);

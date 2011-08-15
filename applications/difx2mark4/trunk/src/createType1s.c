@@ -210,7 +210,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 }
             if (opts->verbose > 0)
                 printf ("      get_vis read %d visibility records from \n       %s\n",
-                         nvrtot, inname);
+                         nvrtot, inname); fflush(stdout);
             nvr = -1;               // set index just prior to first record in buffer
                                     // unless raw mode requested, normalize visibilities
             if (opts->raw == 0)
@@ -231,7 +231,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 break;
                 }
                                     // form pointer to current vis. record
-            rec = (char *) vrec + nvr * vrsize;  
+            rec = (vis_record *) ((char *) vrec + nvr * vrsize);  
                                     // check for new scan
             oldScan = currentScan;
             currentScan = DifxInputGetScanIdByJobId (D, rec->mjd+rec->iat/8.64e4, *jobId);
@@ -424,7 +424,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     if (strncmp (poltab[i], rec->pols, 2) == 0)
                         u.t120.index += i;
 
-            u.t120.ap = n120[n] / t100.nindex;
+                                    // calculate accumulation period index from start of scan
+            u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
+                                 / D->config->tInt;
                                     // write a type 120 record to the appropriate file
             write_t120 (&u.t120, fout[n]);
             n120[n]++;

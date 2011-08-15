@@ -112,12 +112,9 @@ int get_vis (char *vf_name,                   // name of input file
                 fread (pv->comp,          sizeof (float),  2*nvis, vfile);
 
                 if (opts->verbose > 2)
-                    {
-                    printf ("valid read bl %x time %d %13.6f config %d source %d freq %d, pol %s pb %d\n",
+                    printf ("valid read bl %x time %d %13.6f config %d source %d freq %d, pol %c%c pb %d\n",
                     pv->baseline, pv->mjd, pv->iat, pv->config_index, pv->source_index, 
-                    pv->freq_index, pv->pols, pv->pulsar_bin);
-                    }
-
+                    pv->freq_index, pv->pols[0], pv->pols[1], pv->pulsar_bin);
                 }
             else
                 {
@@ -139,7 +136,21 @@ int get_vis (char *vf_name,                   // name of input file
                                     // if necessary, get another chunk's worth of ram
         if (*nvrec % CHUNK == 0)
             {
-            *vrec = realloc (*vrec, (*nvrec + CHUNK) * vrsize);
+            if (opts->verbose > 1)
+                {
+                if (sizeof(size_t) == 4)
+                    printf ("realloc another mem chunk for visibilities, nvrec %d size %u\n",
+                            *nvrec, (size_t) (*nvrec + CHUNK) * vrsize);
+                else
+                    printf ("realloc another mem chunk for visibilities, nvrec %d size %llu\n",
+                            *nvrec, (size_t) (*nvrec + CHUNK) * vrsize);
+                }
+            *vrec = realloc (*vrec, (size_t) (*nvrec + CHUNK) * vrsize);
+            if (*vrec == NULL)
+                {
+                printf ("error reallocating memory for %d records\n", *nvrec);
+                return -2;
+                }
             pch = (char *) *vrec + *nvrec * vrsize;
             pv = (vis_record *) pch;
             }
