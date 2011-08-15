@@ -49,7 +49,9 @@ typedef struct
 {
 	double mjd;
 	char vsn[10];
+#ifdef XLR_MAX_SMARTVALUES
 	S_SMARTVALUES smartXLR[N_SMART_DRIVES][XLR_MAX_SMARTVALUES];
+#endif
 	int id[N_SMART_DRIVES][XLR_MAX_SMARTVALUES];
 	long long value[N_SMART_DRIVES][XLR_MAX_SMARTVALUES];
 	int nValue[N_SMART_DRIVES];
