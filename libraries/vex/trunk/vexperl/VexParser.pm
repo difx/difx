@@ -65,7 +65,7 @@ require AutoLoader;
               T_VEX_REV T_VLBA_FRMTR_SYS_TRK T_VLBA_TRNSPRT_SYS_TRK
               T_VSN T_X_WOBBLE T_Y_WOBBLE T_ZEN_ATMOS);
 
-$VERSION = '0.4';
+$VERSION = '0.5';
 
 use Carp;
 

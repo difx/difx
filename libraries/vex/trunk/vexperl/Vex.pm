@@ -70,6 +70,10 @@ Astro::Vex - Perl interface to the Haystack VEX parser
   generally be called but is available to get direct access to the
   vexfile.
 
+=item B<file>
+
+  Returns the name of the vexfile parsed.
+
 =item B<exper>
 
   Returns a Astro::Vex::Exper object for access to the vex $EXPER block
@@ -1178,7 +1182,8 @@ sub new {
 	      SOURCE => undef,
 	      STATION => undef,
 	      CLOCK => undef,
-	      EOP => undef
+	      EOP => undef,
+	      VEXFILE => $vexfile
 	     };
   bless ($self, $class);
 
@@ -1190,6 +1195,11 @@ sub new {
 sub vexptr {
   my $self = shift;
   return $self->{VEXPTR};
+}
+
+sub file {
+  my $self = shift;
+  return $self->{VEXFILE};
 }
 
 sub exper {
@@ -1769,10 +1779,12 @@ sub das {
 					 'T_RECORD_DENSITY', $station);
       }
 
+      my $tape_length;
       $lowl = get_station_lowl($station, T_TAPE_LENGTH, B_DAS, $vexptr);
-      croak "Error reading T_TAPE_LENGTH for $station\n" if !$lowl;
-      my $tape_length = get_unit_field(T_TAPE_LENGTH, 1, $lowl, 'T_TAPE_LENGTH',
-				       $station);
+      if ($lowl) {
+	$tape_length = get_unit_field(T_TAPE_LENGTH, 1, $lowl, 'T_TAPE_LENGTH',
+				      $station);
+      }
 
       # Skip tape motion
       my $tape_motion = undef;
@@ -1792,12 +1804,12 @@ sub das {
     return @{$self->{DAS}};
   } else {
     if ($_[0] =~ /^\s*\d+\s*$/) { # Number, so we want nth station
-      return $self->{STATION}->[$_[0]];
+      return $self->{DAS}->[$_[0]];
     } else { # Return the named station
       # Loop through array - can probably improve this by using a hash
       # lookup - implement this later
-      foreach (@{$self->{STATION}}) {
-	if (uc($_->scanid) eq uc($_[0])) {
+      foreach (@{$self->{DAS}}) {
+	if (uc($_->station) eq uc($_[0])) {
 	  # This is the station we wanted, return it
 	  return $_;
 	}
