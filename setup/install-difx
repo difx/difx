@@ -385,6 +385,17 @@ if perl:
         run("make install")
         os.chdir(topdir)
 
+    print
+    print "************************************"
+    print "Building DIFX-Input Perl"
+    print
+    os.chdir("libraries/perl/"+difx_version+"/DIFX-Input")
+    run("perl Makefile.PL PREFIX="+difxroot)
+    run("make")
+    if not noinstall:
+        run("make install")
+        os.chdir(topdir)
+
 if rpfits:
     print
     print "************************************"
