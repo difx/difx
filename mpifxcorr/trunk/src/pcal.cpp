@@ -860,7 +860,7 @@ void PCalExtractorDummy::adjustSampleOffset(const size_t sampleoffset)
  * If extraction has been finalized by calling getFinalPCal() this function
  * returns False. You need to call clear() to reset.
  *
- * @paran samples Chunk of the input signal consisting of 'float' samples
+ * @param samples Chunk of the input signal consisting of 'float' samples
  * @param len     Length of the input signal chunk
  * @return true on success
  */
