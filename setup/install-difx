@@ -143,10 +143,10 @@ def run(cmd):
 def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
     if (doreconf and (reconf or os.system("autoreconf"))):
         print "reconfiguring"
-	if os.path.exists('m4'):
-	    run("aclocal -I m4")
-	else:
-	    run("aclocal")
+        if os.path.exists('m4'):
+            run("aclocal -I m4")
+        else:
+            run("aclocal")
         if dolibtoolize:
             run(LIBTOOLIZE+" --copy --force")
         run("autoconf")

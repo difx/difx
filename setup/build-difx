@@ -311,10 +311,10 @@ def auto_compile(doreconf, dolibtoolize, doautoheader, prefix, dompicxx):
             print "Re-using existing configuration"
         else:
             print "Reconfiguring step by step"
-	    if os.path.exists('m4'):
-		run("aclocal -I m4")
-	    else:
-		run("aclocal")
+            if os.path.exists('m4'):
+                run("aclocal -I m4")
+            else:
+                run("aclocal")
             if dolibtoolize:
                 run(LIBTOOLIZE+" --copy --force")
             run("autoconf")
@@ -527,6 +527,17 @@ if perl:
     if not noinstall:
         run("make install")
         os_chdir(topdir)
+
+    print
+    print "************************************"
+    print "Building DIFX-Input Perl"
+    print
+    os.chdir("libraries/perl/"+difx_version+"/DIFX-Input")
+    run("perl Makefile.PL PREFIX="+difxroot)
+    run("make")
+    if not noinstall:
+        run("make install")
+        os.chdir(topdir)
 
 if rpfits:
     print
