@@ -35,6 +35,11 @@
 #define N_SMART_DRIVES			8
 #define SMART_TEMP_STRING_LENGTH	32
 
+#ifdef XLR_MAX_SMARTVALUES
+#define HAS_SMART
+#else
+#define XLR_MAX_SMARTVALUES 1
+#endif
 
 typedef struct
 {
@@ -49,7 +54,7 @@ typedef struct
 {
 	double mjd;
 	char vsn[10];
-#ifdef XLR_MAX_SMARTVALUES
+#ifdef HAS_SMART
 	S_SMARTVALUES smartXLR[N_SMART_DRIVES][XLR_MAX_SMARTVALUES];
 #endif
 	int id[N_SMART_DRIVES][XLR_MAX_SMARTVALUES];

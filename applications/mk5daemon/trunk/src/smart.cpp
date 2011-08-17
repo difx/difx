@@ -318,7 +318,7 @@ int getMk5Smart(SSHANDLE xlrDevice, Mk5Daemon *D, int bank)
 			continue;
 		}
 
-#ifdef XLR_MAX_SMARTVALUES
+#ifdef HAS_SMART
 		xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smart->smartXLR[d], d/2, d%2);
 		if(xlrRC != XLR_SUCCESS)
 		{

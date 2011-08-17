@@ -78,8 +78,10 @@ static void usage(const char *pgm)
 	printf("  -w         Write protect the module\n\n");
 	printf("  --unwriteprotect\n");
 	printf("  -u         Unprotect the module against writing\n\n");
+#ifdef XLR_MAX_SMARTVALUES
 	printf("  --smart\n");
 	printf("  -s         Get S.M.A.R.T. data from disks (writes to file)\n\n");
+#endif
 	printf("<bank> should be either A or B.\n\n");
 	printf("<vsn> is the new module VSN (must be 8 characters long).\n");
 	printf("  If not provided, the existing VSN will be returned.\n\n");
@@ -97,6 +99,7 @@ int roundsize(int s)
 	return a*5;
 }
 
+#ifdef XLR_MAX_SMARTVALUES
 /* isCritical is set to 1 if a non-zero value indicates a critical issue */
 long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVALUES *smart, int *isCritical)
 {
@@ -183,6 +186,7 @@ long long interpretSMART(char *smartDescription, int maxLength, const S_SMARTVAL
 
 	return V;
 }
+#endif
 
 int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, int force, int verbose, int getSMART)
 {
@@ -191,8 +195,10 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	XLR_RETURN_CODE xlrRC;
 	S_BANKSTATUS bankStat;
 	S_DIR dir;
+#ifdef XLR_MAX_SMARTVALUES
 	S_SMARTVALUES smartValues[XLR_MAX_SMARTVALUES];
 	USHORT smartVersion;
+#endif
 	char label[XLR_LABEL_LENGTH+1];
 	char oldLabel[XLR_LABEL_LENGTH+1];
 	int dirVersion = -1;
@@ -242,6 +248,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 	label[XLR_LABEL_LENGTH] = 0;
 	strcpy(oldLabel, label);
 
+#ifdef XLR_MAX_SMARTVALUES
 	if(getSMART)
 	{
 		char SMARTfile[20];
@@ -268,6 +275,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 			printf("Writing S.M.A.R.T. data to file %s\n\n", SMARTfile);
 		}
 	}
+#endif
 
 	if(verbose > 0)
 	{
@@ -385,6 +393,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 				drive[d].failed ? "FAILED" : "OK");
 		}
 
+#ifdef XLR_MAX_SMARTVALUES
 		if(drive[d].smartCapable)
 		{
 			WATCHDOG( xlrRC = XLRReadSmartValues(xlrDevice, &smartVersion, smartValues, d/2, d%2) );
@@ -434,13 +443,13 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		{
 			fprintf(out, "Drive not SMART capable\n");
 		}
-
 		if(out)
 		{
 			fprintf(out, "\n\n");
 		}
+#endif
 	}
-
+#ifdef XLR_MAX_SMARTVALUES
 	if(out)
 	{
 		fprintf(out, "\nThe columns of the SMART data are:\n");
@@ -451,7 +460,10 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 		fprintf(out, "[5-10]. Raw data associated with this value\n");
 		fprintf(out, "... Comments and interpretation;  ** this field is a potential indicator of failure.\n");
 		fprintf(out, "\nInfo from: http://en.wikipedia.org/wiki/S.M.A.R.T.\n");
+
+		fclose(out);
 	}
+#endif
 
 	if(newVSN[0] || newStatus)
 	{
@@ -583,11 +595,6 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 
 	WATCHDOG( XLRClose(xlrDevice) );
 
-	if(out)
-	{
-		fclose(out);
-	}
-
 	return 0;
 }
 
@@ -692,7 +699,13 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-s") == 0 ||
 			   strcmp(argv[a], "--smart") == 0)
 			{
+#ifdef XLR_MAX_SMARTVALUES
 				getSMART = 1;
+#else
+				fprintf(stderr, "SMART is not enabled with this SDK version\n");
+
+				return EXIT_FAILURE;
+#endif
 			}
 			else
 			{
