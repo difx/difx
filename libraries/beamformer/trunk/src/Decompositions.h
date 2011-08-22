@@ -40,7 +40,7 @@
  */
 class QRDecomposition : public Decomposition {
 
-   friend std::ostream &operator<<(std::ostream&, QRDecomposition);
+   friend std::ostream &operator<<(std::ostream&, QRDecomposition const&);
 
    private:
       QRDecomposition();
@@ -89,7 +89,7 @@ class QRDecomposition : public Decomposition {
  */
 class EVDecomposition : public Decomposition {
 
-   friend std::ostream &operator<<(std::ostream&, EVDecomposition);
+   friend std::ostream &operator<<(std::ostream&, EVDecomposition const&);
 
    private:
       EVDecomposition();
@@ -138,7 +138,7 @@ class EVDecomposition : public Decomposition {
  */
 class SVDecomposition : public Decomposition {
 
-   friend std::ostream &operator<<(std::ostream&, SVDecomposition);
+   friend std::ostream &operator<<(std::ostream&, SVDecomposition const&);
 
    private:
       SVDecomposition();
@@ -182,8 +182,8 @@ class SVDecomposition : public Decomposition {
 
 };
 
-extern std::ostream &operator<<(std::ostream&, QRDecomposition);
-extern std::ostream &operator<<(std::ostream&, EVDecomposition);
-extern std::ostream &operator<<(std::ostream&, SVDecomposition);
+extern std::ostream &operator<<(std::ostream&, QRDecomposition const&);
+extern std::ostream &operator<<(std::ostream&, EVDecomposition const&);
+extern std::ostream &operator<<(std::ostream&, SVDecomposition const&);
 
 #endif // _DECOMPOSITIONS_H

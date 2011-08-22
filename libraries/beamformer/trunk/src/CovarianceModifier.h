@@ -40,6 +40,8 @@ class CovarianceModifier {
 
    private:
       CovarianceModifier();
+      CovarianceModifier(CovarianceModifier const&);
+      CovarianceModifier& operator= (CovarianceModifier const&);
 
    public:
       /**
@@ -55,7 +57,25 @@ class CovarianceModifier {
 
    public:
 
-       void templateSubtraction() { }
+       /**
+        * Tries to clean RFI from a Covariance data set.
+        * Uses two or more RFI reference antennas and subtracts
+        * the weaker RFI seen by the array elements themselves from
+        * the covariance matrix.
+        *
+        * The reference antennas need to be present in the 
+        * covariance matrix. The full cross-correlation / coherence
+        * data between the reference antenna and array elements must
+        * also be present in the covariance matrix.
+        *
+        * If interferers are not overlapping in frequency,
+        * there is at most one interferer per channel.
+        * 
+        * @param[in] cov  Covariance object to analyse and modify
+        * @param[in] Iref List of reference antenna indices between 0..Nant-1
+        * @return Returns 0 on success
+        */
+       int templateSubtraction(Covariance& cov, arma::Col<int> const& Iref);
 
    private:
       Covariance& _cov;

@@ -119,7 +119,7 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
          this->compute_IC_k(ii, M_smp, eigs, AIC, MDL);
 
          if (std::isnan(MDL) || std::isinf(MDL)) {
-            std::cout << "Warning: MDL(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
+//            std::cout << "Warning: MDL(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
             continue;
          }
          if (MDL < min_IC) {
@@ -176,7 +176,7 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
          this->compute_IC_k(ii, M_smp, eigs, AIC, MDL);
 
          if (std::isnan(AIC) || std::isinf(AIC)) {
-            std::cout << "Warning: AIC(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
+//            std::cout << "Warning: AIC(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
             continue;
          }
          if (AIC < min_IC) {

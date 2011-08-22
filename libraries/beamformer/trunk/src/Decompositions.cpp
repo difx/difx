@@ -198,7 +198,7 @@ int SVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
 /**
  * Human-readable data output to stream
  */
-std::ostream &operator<<(std::ostream& os, QRDecomposition d)
+std::ostream &operator<<(std::ostream& os, QRDecomposition const& d)
 {
    if (d.N_chan <= 1) {
       os << "Single channel QR decomposition\n";
@@ -217,7 +217,7 @@ std::ostream &operator<<(std::ostream& os, QRDecomposition d)
 /**
  * Human-readable data output to stream
  */
-std::ostream &operator<<(std::ostream& os, EVDecomposition d)
+std::ostream &operator<<(std::ostream& os, EVDecomposition const& d)
 {
    if (d.N_chan <= 1) {
       os << "Single channel EVD decomposition\n";
@@ -236,7 +236,7 @@ std::ostream &operator<<(std::ostream& os, EVDecomposition d)
 /**
  * Human-readable data output to stream
  */
-std::ostream &operator<<(std::ostream& os, SVDecomposition d)
+std::ostream &operator<<(std::ostream& os, SVDecomposition const& d)
 {
    if (d.N_chan <= 1) {
       os << "Single channel EVD decomposition\n";

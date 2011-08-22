@@ -31,9 +31,12 @@
 #include <armadillo>
 
 #include "Beamformer.h"
+#include <cmath>
 
 using namespace std;
 using namespace arma;
+
+inline double deg2rad(double d) { return M_PI*d/180.0; }
 
 int main(int argc, char** argv)
 {
@@ -50,42 +53,77 @@ int main(int argc, char** argv)
         ArrayElements ae;
 
         ae.generateGrid(DIGESTIF_Nant, DIGESTIF_spacing);
-
         const ElementXYZ_t xyz = ae.getPositionSet();
+
+        // Flag some elements as RFI reference antennas
+        ae.setFlags(0,          ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+        ae.setFlags(xyz.Nant-1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+
         cout << "Number of antennas = " << xyz.Nant << "\n";
+        std::cout << ae;
+
+        //////////////////////////////////////////
+        // PREPARE INPUT COVARIANCES
+        /////////////////////////////////////////
+
+        // Note: all covariance matrices must be Hermitian!
+
+        Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+
         if (0) {
-           cout << "Antenna layout:\n";
-           int antcount = 0;
-           for (int yy=0; yy<xyz.Ldim[1]; yy++) {
-              for (int xx=0; xx<xyz.Ldim[0]; xx++) {
-                 cout << antcount << "=(" << xyz.x(antcount) << "," << xyz.y(antcount) << "," << xyz.z(antcount) << ")\t\t";
-                 antcount++;
-              }
-              cout << "\n";
+
+           std::cout << "Data source = external virgoA_on.raw\n";
+
+           rxxDataBlock.load("virgoA_on.raw", 0);
+           rxxDataBlock.store("out.raw", 0); // for test
+
+        } else if (0) {
+
+           std::cout << "Data source = self-generated, array, no reference antennas, 1 astro and 3 RFI signals\n";
+
+           for (int ch=0; ch<DIGESTIF_Nch; ch++) {
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(10), deg2rad(25), 1, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(10), deg2rad(25), 1, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(40), deg2rad(25), 1, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(0),  deg2rad(0),  1e-3, 5e-5, 5e-11);
+           }
+
+        } else {
+
+           std::cout << "Data source = self-generated, array, 2 reference antennas, 1 astro and 1 RFI signal\n";
+
+           double Gref = 1e3;    // +30dB gain to RFI compared to sky-pointed array elements
+           arma::Col<int> Iref;  // reference antenna indices (2 refs at 0 and DIGESTIF_Nant-1)
+
+           Iref = ae.listReferenceAntennas();
+           std::cout << "List of detected reference antennas:\n" << Iref;
+
+           for (int ch=0; ch<DIGESTIF_Nch; ch++) {
+              // add astro signal and 1st RFI signal
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(0),  deg2rad(0),  1e-3, 5e-5, 5e-11);
+              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(30), deg2rad(-15), 2, 0, 0, Gref, Iref);
+
+              // add 2nd rfi signal; note that mitigation is not supported by Briggs-Kesteven method
+              //rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(40), deg2rad(-45), 3, 0, 0, Gref, Iref);
            }
         }
 
-        ae.setFlags(0, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
-        ae.setFlags(1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+        std::cout << rxxDataBlock;
+return 0;
 
-        // Load/generate covariance matrices. 
-        // Note: all covariance matrices must be Hermitian!
-
-        srand(time(NULL));
-        Covariance rxxDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
-        rxxDataBlock.load(NULL, 0);
-
-        Covariance outDataBlock(DIGESTIF_Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+        Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
         /////////////////////////////////////////
 
+#if 0
         // -- PASS --
         cout << "--------------------------------------------------------------------\n";
         SVDecomposition edc(rxxDataBlock);
         edc.decompose(rxxDataBlock);
         edc.recompose(outDataBlock);
+        std::cout << outDataBlock;
         cout << "--------------------------------------------------------------------\n";
 
         // -- PASS --
@@ -93,30 +131,33 @@ int main(int argc, char** argv)
         EVDecomposition edc2(rxxDataBlock);
         edc2.decompose(rxxDataBlock);
         edc2.recompose(outDataBlock);
+        std::cout << outDataBlock;
         cout << "--------------------------------------------------------------------\n";
 
         // -- PASS --
         cout << "--------------------------------------------------------------------\n";
         QRDecomposition edc3(rxxDataBlock);
         edc3.decompose(rxxDataBlock);
+        std::cout << edc3;
         edc3.recompose(outDataBlock);
+        std::cout << outDataBlock;
         cout << "--------------------------------------------------------------------\n";
+#endif
 
         //////////////////////////////////////////
         // ANALYZE SVD DECOMPOSITION
         /////////////////////////////////////////
 
         SVDecomposition info(rxxDataBlock);
-        cout << info;
         info.decompose(rxxDataBlock);
-        cout << info;
+        //cout << info;
 
         DecompositionAnalyzer da(info);
-        da.utest();
+        //da.utest();
 
         int mdl_rank, aic_rank;
         double mdl, aic;
-        for (int cc=0; cc<DIGESTIF_Nch; cc++) {
+        for (int cc=0; cc<rxxDataBlock.N_chan(); cc++) {
            mdl = da.getMDL(0, mdl_rank);
            aic = da.getAIC(0, aic_rank);
            cout << "DecompositionAnalyzer on channel " << cc << " returned "
@@ -124,8 +165,11 @@ int main(int argc, char** argv)
                 << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
         }
 
+        // Nulling with at most 2 interferers
         DecompositionModifier dm(info, ae);
-        dm.interfererNulling(2, false, 0, DIGESTIF_Nch);
+        dm.interfererNulling(2, false, 0, rxxDataBlock.N_chan());
+
+        // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);
 
         //////////////////////////////////////////

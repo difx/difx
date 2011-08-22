@@ -31,6 +31,7 @@
 #define _ARRAY_ELEMENTS_H
 
 #include <armadillo>
+#include <ostream>
 
 /** Phased array element positions */
 typedef struct ElementXYZ_tt {
@@ -49,11 +50,18 @@ typedef struct ElementXYZ_tt {
  */
 class ArrayElements {
 
+   friend std::ostream &operator<<(std::ostream&, ArrayElements const&);
+
    public:
       enum Pointing { POINT_ASTRO=0, POINT_RFI_REFERENCE=128 };
       enum Polarization { POL_LCP=0, POL_RCP=1 };
 
+   private:
+      ArrayElements(const ArrayElements&);
+      ArrayElements& operator= (const ArrayElements&);
+
    public:
+
       /**
        * C'stor for initialization.
        */
@@ -65,11 +73,18 @@ class ArrayElements {
       ~ArrayElements() { }
 
    public:
+
       /**
-       * Accessor function.
+       * Accessor function to element data struct
        * @return ref to struct that contains antenna element coordinates
        */
       const ElementXYZ_t& getPositionSet() const { return elems; }
+
+      /**
+       * Assemble and return a list of reference antenna indices.
+       * @return Column vector with indices of all antennas currently flagged as RFI reference.
+       */
+      arma::Col<int> listReferenceAntennas();
 
       /**
        * Set flags on element, overwrites earlier flags.
@@ -78,9 +93,17 @@ class ArrayElements {
        * @return Old flag value before it was overwritten or -1 on error
        * Flags are POINT_ASTRO, POINT_RFI_REFERENCE, POL_LCP and POL_LCP.
        */
-      int setFlags(int ielem, const int flags);
+      int setFlags(const int ielem, const int flags);
+
+      /**
+       * Accessor to array element flags
+       * @param[in] ielem The index of the element 0..N-1
+       * @return Flag value of the element or -1 on error
+       */
+      int getFlags(const int ielem);
 
    public:
+
       /**
        * Generate a 1D equispaced linear antenna array centered around origo
        * with antennas placed along the first dimension (x axis).
@@ -101,5 +124,6 @@ class ArrayElements {
       ElementXYZ_t elems;
 };
 
+extern std::ostream &operator<<(std::ostream&, ArrayElements const&);
 
 #endif // _ARRAY_ELEMENTS_H

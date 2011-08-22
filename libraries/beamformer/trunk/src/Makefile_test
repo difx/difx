@@ -1,7 +1,8 @@
+CC=g++
 CXX=g++
-LD=g++
+#LD=g++
+
 CXXFLAGS=-O2 -g -Wall -D_VERBOSE_DBG=1 
-# -fwhole-program
 LDFLAGS=-larmadillo -lblas -llapack
 
 all: analysis
@@ -10,6 +11,8 @@ test: test.o
 	g++ test.cpp $(CXXFLAGS) -o test $(LDFLAGS)
 
 Decomposition.o: Decomposition.cpp
+
+# g++ $(CXXFLAGS) $? -c -o $@
 
 DecompositionModifier.o: DecompositionModifier.cpp
 
@@ -24,6 +27,8 @@ Covariance.o: Covariance.cpp
 analysis.o: analysis.cpp
 
 analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o DecompositionModifier.o
+	g++ $+ -o analysis $(LDFLAGS)
+
 
 clean:
 	rm -f *.o analysis

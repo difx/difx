@@ -44,11 +44,13 @@ class Decomposition {
 
    friend class DecompositionAnalyzer;
    friend class DecompositionModifier;
-   friend std::ostream &operator<<(std::ostream&, Decomposition);
+   friend std::ostream &operator<<(std::ostream&, Decomposition const&);
 
    private:
 
       Decomposition();
+      Decomposition(const Decomposition&);
+      Decomposition& operator= (const Decomposition&);
 
    public:
 
@@ -63,7 +65,7 @@ class Decomposition {
        *
        * @param[in] Rxx Reference to covariance class
        */
-      Decomposition(Covariance& Rxx) : N_ant(Rxx.N_ant), N_chan(Rxx.N_chan), M_smp(Rxx.M_smp), _deco_type(Decomposition::None) { 
+      Decomposition(Covariance& Rxx) : N_ant(Rxx.N_ant()), N_chan(Rxx.N_chan()), M_smp(Rxx.M_smp()), _deco_type(Decomposition::None) { 
          /*derived should call: cstor_alloc(Rxx.N_ant, Rxx.N_chan, numMat, numVec);*/
       }
 
@@ -198,6 +200,6 @@ class Decomposition {
 
 };
 
-extern std::ostream &operator<<(std::ostream&, Decomposition);
+extern std::ostream &operator<<(std::ostream&, Decomposition const&);
 
 #endif // _DECOMPOSITION_H

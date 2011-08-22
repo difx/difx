@@ -35,8 +35,8 @@
 /** Phased array, steering angles of individual beams */
 typedef struct Beams_tt {
    int Nbeams;
-   arma::Col<double> phi;
-   arma::Col<double> theta;
+   arma::Col<double> phi;    // radian
+   arma::Col<double> theta;  // radian
 } Beams_t;
 
 #endif // _BEAMFORMER_DATA_H

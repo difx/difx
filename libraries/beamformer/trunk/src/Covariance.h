@@ -44,11 +44,13 @@
  */
 class Covariance {
 
-   friend std::ostream &operator<<(std::ostream&, Covariance);
+   friend std::ostream &operator<<(std::ostream&, Covariance const&);
 
    private:
 
       Covariance();
+      Covariance(const Covariance&);
+      Covariance& operator= (const Covariance&);
 
    public:
       /**
@@ -60,9 +62,9 @@ class Covariance {
        * @param[in]   timestamp  Starting time of the data cube.
        * @param[in]   Tint       Integration time used for the data cube.
        */
-      Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : N_ant(Nant), N_chan(Nchannels), M_smp(Msmp) { 
-         _Rxx = arma::zeros<arma::Cube<arma::cx_double> >(Nant,Nant, Nchannels);
-         _freqs = arma::zeros<arma::Col<double> >(Nant);
+      Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : _N_ant(Nant), _N_chan(Nchannels), _M_smp(Msmp) { 
+         _Rxx.zeros(Nant, Nant, Nchannels);
+         _freqs.zeros(Nant);
          _timestamp = timestamp;
          _Tint = Tint;
       }
@@ -96,6 +98,21 @@ class Covariance {
        */
       void load(double* raw_data, const int format);
 
+      /**
+       * Load data cube contents from a file and
+       * reorganize the memory layout if necessary.
+       * @param[in]  fn        Input file name and path
+       * @param[in]  format    Data format (0..N, to be defined)
+       */
+      void load(const char* fn, const int format);
+
+      /**
+       * Store data cube contents into a file.
+       * @param[in]  fn        Output file name and path
+       * @param[in]  format    Data format (0..N, to be defined)
+       */
+      void store(const char* fn, const int format) const;
+
    public:
     
       /**
@@ -111,6 +128,24 @@ class Covariance {
        */
       void addSignal(int ch, double lambda, ArrayElements const& ae, double phi, double theta, double P, double Pna, double Pnc);
 
+      /**
+       * Add an artificial signal to the covariance matrix, separating the
+       * array into a set of normal elements and a set of RFI-only reference
+       * antennas.
+       * @param[in]  ch     Channel number
+       * @param[in]  lambda Wavelength in meters
+       * @param[in]  ae     ArrayElement object with element positions
+       * @param[in]  phi    Azimuth angle of signal
+       * @param[in]  theta  Tilt angle of plane wave normal from zenith
+       * @param[in]  p      Signal power
+       * @param[in]  Pna    Internal noise power (added to autocorrelations)
+       * @param[in]  Pnc    Correlated noise power (added to cross and auto)
+       * @param[in]  Gref   Reference antenna gain over array element gain
+       * @param[in]  Iref   Vector with reference antenna indices between 0:(Nant-1)
+       */
+      void addSignal(int ch, double lambda, ArrayElements const& ae, double phi, double theta, double P, double Pna, double Pnc, 
+                     double Gref, arma::Col<int> const& Iref);
+
    public:
 
       /**
@@ -123,10 +158,15 @@ class Covariance {
          return *this;
       }
 
+   private:
+      int _N_ant;
+      int _N_chan;
+      int _M_smp;
+
    public:
-      const int N_ant;
-      const int N_chan;
-      const int M_smp;
+      const int N_ant(void)  const { return _N_ant; }
+      const int N_chan(void) const { return _N_chan; }
+      const int M_smp(void)  const { return _M_smp; }
 
    private:
       arma::Cube<arma::cx_double> _Rxx;
@@ -135,6 +175,6 @@ class Covariance {
       double _Tint;
 };
 
-extern std::ostream &operator<<(std::ostream&, Covariance);
+extern std::ostream &operator<<(std::ostream&, Covariance const&);
 
 #endif // _COVARIANCE_H

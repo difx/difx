@@ -121,17 +121,83 @@ void ArrayElements::generateGrid(int Nant, double spacing)
    return;
 }
 
+
+/**
+ * Assemble and return a list of reference antenna indices.
+ * @return Column vector with indices of all antennas currently flagged as RFI reference.
+ */
+arma::Col<int> ArrayElements::listReferenceAntennas()
+{
+   arma::Col<int> list;
+
+   int found = 0;
+   for (unsigned int ii=0; ii<elems.flag.n_elem; ii++) {
+      if (0 != (elems.flag(ii) & ArrayElements::POINT_RFI_REFERENCE)) { found++; }
+   }
+
+   if (found > 0) {
+
+      list.zeros(found);
+
+      int count = 0;
+      for (unsigned int ii=0; ii<elems.flag.n_elem; ii++) {
+         if (0 != (elems.flag(ii) & ArrayElements::POINT_RFI_REFERENCE)) { 
+            list(count) = ii;
+            count++;
+         }
+      }
+
+   }
+
+   return list;
+}
+
  
 /**
  * Set flags on element, overwrites earlier flags.
  * @param[in] ielem The index of the element 0..N-1
  * @param[in] flag  The value to set, consisting of OR'ed flags 
+ * @return Old flag value before it was overwritten or -1 on error
  * Flags are POINT_ASTRO, POINT_RFI_REFERENCE, POL_LCP and POL_LCP.
  */
-int ArrayElements::setFlags(int ielem, const int flags)
+int ArrayElements::setFlags(const int ielem, const int flags)
 {
    if (unsigned(ielem) >= elems.flag.n_elem) { return -1; }
    int old = elems.flag(ielem);
    elems.flag(ielem) = flags;
    return old;
 }
+
+
+/**
+ * Accessor to array element flags
+ * @param[in] ielem The index of the element 0..N-1
+ * @return Flag value of the element or -1 on error
+ */
+int ArrayElements::getFlags(const int ielem)
+{
+   if (unsigned(ielem) >= elems.flag.n_elem) { return -1; }
+   return elems.flag(ielem);
+}
+
+
+/**   
+ * Human-readable data output to stream
+ */
+std::ostream &operator<<(std::ostream& os, ArrayElements const& a)
+{
+   const int ae_mod = 5;
+   os << "Coordinates of " << a.elems.Nant << " antennas (nr,x,y,z) "
+      << "arranged as " << a.elems.Ldim[0] << "x" << a.elems.Ldim[1] << "x" << a.elems.Ldim[2] << "\n";
+   for (int i=0; i<a.elems.Nant; i++) {
+      os << "#" << i << " " << a.elems.x[i] << " " << a.elems.y[i] << " " << a.elems.z[i] << "\t\t\t";
+      if (((i+1) % ae_mod) == 0) {
+         os << "\n";
+      }
+   }
+   if ((a.elems.Nant % ae_mod) != 0) {
+      os << "\n";
+   }
+   return os;
+}
+
