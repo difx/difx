@@ -13,6 +13,7 @@
 #include <time.h>
 #include <difxio/difx_input.h>
 #include <errno.h>
+#include <math.h>
 #include "difx2mark4.h"
 
 #define XS_CONVENTION
@@ -34,7 +35,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     const int header_size = (8*sizeof(int)) + (5*sizeof(double)) + (2*sizeof(char)); 
 
     int i,
-        ch,
+        findex,
         n,
         nvis,
         vrsize,                     // size of vis. records in bytes
@@ -49,7 +50,8 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         n120_flipped,
         n120_tot,
         gv_stat,
-        oldScan;
+        oldScan,
+        cn_lab;                     // channel # used as a label in the channel name
 
     char inname[DIFXIO_FILENAME_LENGTH],    // file name of input data file
          dirname[DIFXIO_FILENAME_LENGTH],
@@ -57,7 +59,11 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
          blines[NUMFILS][3],        // null-terminated baselines list
          poltab [4][3] = {"LL", "RR", "LR", "RL"},
          lchan_id[5],
-         rchan_id[5];
+         rchan_id[5],
+         c;
+
+    DifxDatastream *pdsA,
+                   *pdsB;
                                     // variables that need persistence due to exit
                                     // up into caller over scan boundaries
     static char corrdate[16];
@@ -69,7 +75,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
     
     double q_factor,                // quantization correction factor
            scale_factor,            // scaling factor includes Van Vleck and SCALE
-           sb_factor[64];           // +1 | -1 for USB | LSB by channel
+           sb_factor[64],           // +1 | -1 for USB | LSB by channel
+           rscaled,
+           iscaled;
 
     FILE *fout[NUMFILS];
     DIR *pdir;
@@ -183,10 +191,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                                     // - multiple phase centres
             do
                 dent = readdir (pdir);
-            while                       // ignore ".", "..", and pcal file names
-                ((dent != NULL) && (strcmp (dent->d_name, ".") == 0 
-                                || strcmp (dent->d_name, "..") == 0
-                                || strncmp (dent->d_name, "PCAL", 4) == 0));
+            while                       // skip over all files not starting with DIFX_
+                (dent != NULL && strncmp (dent->d_name, "DIFX_", 5) != 0);
+
             if (dent == NULL)
                 {
                 if (errno)
@@ -347,23 +354,44 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                     t100.nindex = D->baseline[blind].nFreq * D->baseline[blind].nPolProd[0];
                     write_t100 (&t100, fout[n]);
 
-                                    // construct and write type 101 records
+                                    // determine index into frequency table which
+                                    // depends on the recorded subbands that are correlated
+
+                                    // point to reference/A and remote/B datastreams
+                    pdsA = &D->datastream[D->baseline[blind].dsA];
+                    pdsB = &D->datastream[D->baseline[blind].dsB];
+
+                                    // construct and write type 101 records for each chan
                     for (i=0; i<D->baseline[blind].nFreq; i++)
                         {
-                                    // generate index that is 10 * freq_index + pol
-                        t101.index = 10 * i;
-                                    // prepare ID strings for both pols, if there
-                        ch = (D->baseline[blind].nPolProd[i] > 1) ? 2 * i     : i;
-                        sprintf (lchan_id, "%c%02d?", getband (D->freq[i].freq), ch);
-                        lchan_id[3] = (D->freq+i)->sideband;
-
-                        ch = (D->baseline[blind].nPolProd[i] > 1) ? 2 * i + 1 : i;
-                        sprintf (rchan_id, "%c%02d?", getband (D->freq[i].freq), ch);
-                        rchan_id[3] = (D->freq+i)->sideband;
                                     // loop over 1, 2, or 4 pol'n. products
                         for (pol=0; pol<D->baseline[blind].nPolProd[i]; pol++)
                             {
-                            t101.index++;
+                                    // find actual freq index of this recorded band
+                            findex = pdsA->recBandFreqId[D->baseline[blind].bandA[i][pol]];
+                                    // sanity check that both stations refer to same freq
+                            if (findex != pdsB->recBandFreqId[D->baseline[blind].bandB[i][pol]])
+                                printf ("Warning, mismatching frequency indices!\n");
+                                    // generate index that is 10 * freq_index + pol + 1
+                            t101.index = 10 * findex + pol + 1;
+                            c = getband (D->freq[findex].freq);
+                                    // prepare ID strings for both pols, if there
+                            if (D->baseline[blind].nPolProd[i] > 1)
+                                {
+                                cn_lab = 2 * findex;
+                                sprintf (lchan_id, "%c%02d?", c, cn_lab);
+                                lchan_id[3] = (D->freq+findex)->sideband;
+                                cn_lab++; 
+                                sprintf (rchan_id, "%c%02d?", c, cn_lab);
+                                rchan_id[3] = (D->freq+findex)->sideband;
+                                }
+                            else    // both the same (only one used)
+                                {
+                                sprintf (lchan_id, "%c%02d?", c, findex);
+                                lchan_id[3] = (D->freq+findex)->sideband;
+                                strcpy (rchan_id, lchan_id);
+                                }
+
                             switch (pol)
                                 {
                                 case 0: // LL
@@ -397,26 +425,41 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 }
 
             if (base_index[n] < 0)
-                continue;               // to next record 
+                continue;           // to next record 
 
                                     // copy visibilities into type 120 record
             for (i=0; i<nvis; i++)
-                {                       // conjugate LSB for rotator direction difference
+                {                   
+                rscaled = rec->comp[i].real;
+                iscaled = rec->comp[i].imag;
+                if (fabs(rscaled) > MAGLIM || fabs (iscaled) > MAGLIM)
+                    {               // impossibly large values overwritten with 0
+                    printf ("Warning! Corrupt visibility %le %le for baseline %s in input file\n",
+                            rscaled, iscaled, blines[n]);
+                    rscaled = 0.0;
+                    iscaled = 0.0;
+                    }
+                else
+                    {
+                    rscaled = rec->comp[i].real * scale_factor;
+                    iscaled = rec->comp[i].imag * scale_factor;
+                    }
+
                 if (sb_factor[rec->freq_index] > 0)
                     {
-                    u.t120.ld.spec[i].re = rec->comp[i].real * scale_factor;
-                    u.t120.ld.spec[i].im = rec->comp[i].imag * scale_factor;
+                    u.t120.ld.spec[i].re = rscaled;
+                    u.t120.ld.spec[i].im = iscaled;
                     }
-                else                    // reverse order of points in LSB spectrum
-                    {
-                    u.t120.ld.spec[nvis-i-1].re =  rec->comp[i].real * scale_factor;
-                    u.t120.ld.spec[nvis-i-1].im = -rec->comp[i].imag * scale_factor;
+                else                // reverse order of points in LSB spectrum
+                    {               // and conjugate for rotator direction difference
+                    u.t120.ld.spec[nvis-i-1].re =  rscaled;
+                    u.t120.ld.spec[nvis-i-1].im = -iscaled;
                     }
                 }
             strncpy (u.t120.baseline, blines[n], 2);
                                     // FIXME (perhaps) -assumes all freqs have same PolProds as 0
                                     // insert index# for this channel
-            u.t120.index = 10 * (rec->freq_index % D->baseline[blind].nFreq) + 1;
+            u.t120.index = 10 * rec->freq_index + 1;
                                     // tack on offset that represents polarization
                                     // iff there is more than one polarization present
             if (D->baseline[blind].nPolProd[0] > 1)
