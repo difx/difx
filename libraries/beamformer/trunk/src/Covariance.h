@@ -45,6 +45,8 @@
 class Covariance {
 
    friend std::ostream &operator<<(std::ostream&, Covariance const&);
+   //friend int CovarianceModifier::templateSubtraction(Covariance&, arma::Col<int> const&, const int);
+   friend class CovarianceModifier;
 
    private:
 

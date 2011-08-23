@@ -36,7 +36,7 @@
 using namespace std;
 using namespace arma;
 
-inline double deg2rad(double d) { return M_PI*d/180.0; }
+inline double deg2rad(double d) { return (3.141592653589793238462643D/180.0D)*d; }
 
 int main(int argc, char** argv)
 {
@@ -56,19 +56,23 @@ int main(int argc, char** argv)
         const ElementXYZ_t xyz = ae.getPositionSet();
 
         // Flag some elements as RFI reference antennas
-        ae.setFlags(0,          ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
-        ae.setFlags(xyz.Nant-1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+        // Note: for efficiency, subtraction algorithm requires reference antennas
+        // reside at the beginning of the antenna element array.
+        ae.setFlags(0, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
+        ae.setFlags(1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
 
         cout << "Number of antennas = " << xyz.Nant << "\n";
         std::cout << ae;
 
         //////////////////////////////////////////
-        // PREPARE INPUT COVARIANCES
+        // PREPARE INPUT, OUTPUT COVARIANCES
         /////////////////////////////////////////
 
         // Note: all covariance matrices must be Hermitian!
 
+        int Nrfi = 1;
         Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+        Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         if (0) {
 
@@ -76,42 +80,46 @@ int main(int argc, char** argv)
 
            rxxDataBlock.load("virgoA_on.raw", 0);
            rxxDataBlock.store("out.raw", 0); // for test
+           Nrfi = 1;
 
         } else if (0) {
 
            std::cout << "Data source = self-generated, array, no reference antennas, 1 astro and 3 RFI signals\n";
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(10), deg2rad(25), 1, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(10), deg2rad(25), 1, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(40), deg2rad(25), 1, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(0),  deg2rad(0),  1e-3, 5e-5, 5e-11);
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(10.0D), deg2rad(25.0D), 1.0D, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(10.0D), deg2rad(25.0D), 1.0D, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(40.0D), deg2rad(25.0D), 1.0D, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(0.0D),  deg2rad(0.0D),  1e-3D, 5e-5D, 5e-11D);
            }
+           Nrfi = 3;
 
         } else {
 
            std::cout << "Data source = self-generated, array, 2 reference antennas, 1 astro and 1 RFI signal\n";
 
            double Gref = 1e3;    // +30dB gain to RFI compared to sky-pointed array elements
-           arma::Col<int> Iref;  // reference antenna indices (2 refs at 0 and DIGESTIF_Nant-1)
+           arma::Col<int> Iref;  // reference antenna indices (2 refs at 0 and 1)
 
            Iref = ae.listReferenceAntennas();
            std::cout << "List of detected reference antennas:\n" << Iref;
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
-              // add astro signal and 1st RFI signal
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(0),  deg2rad(0),  1e-3, 5e-5, 5e-11);
-              rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(30), deg2rad(-15), 2, 0, 0, Gref, Iref);
+              // add astro signal
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(45.0D), deg2rad(-90.0D), 1e-2D, 1e-7D, 0);
+
+              // add 1st RFI signal, with reference antennas specified
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(30.0D), deg2rad(-15.0D), 2.0D, 0, 0, Gref, Iref);
+              Nrfi = 1;
 
               // add 2nd rfi signal; note that mitigation is not supported by Briggs-Kesteven method
-              //rxxDataBlock.addSignal(ch, 0.2202, ae, deg2rad(40), deg2rad(-45), 3, 0, 0, Gref, Iref);
+              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(40.0D), deg2rad(-45.0D), 3.0D, 0, 0, Gref, Iref);
+              Nrfi = 2;
            }
         }
 
         std::cout << rxxDataBlock;
-return 0;
 
-        Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
@@ -145,9 +153,27 @@ return 0;
 #endif
 
         //////////////////////////////////////////
+        // REFERENCE ANTENNA METHODS
+        /////////////////////////////////////////
+
+        arma::Col<int> Iref;  // reference antenna indices
+        Iref = ae.listReferenceAntennas();
+
+        std::cout << "before=\n" << rxxDataBlock;
+
+        CovarianceModifier cm(rxxDataBlock);
+        if (cm.templateSubtraction(Iref, Nrfi) < 0) {
+           std::cout << "Template subtraction failed\n";
+        }
+
+        std::cout << "after_sub=\n" << rxxDataBlock;
+        
+
+        //////////////////////////////////////////
         // ANALYZE SVD DECOMPOSITION
         /////////////////////////////////////////
 
+#if 0
         SVDecomposition info(rxxDataBlock);
         info.decompose(rxxDataBlock);
         //cout << info;
@@ -171,41 +197,8 @@ return 0;
 
         // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);
-
-        //////////////////////////////////////////
-        // Reference
-        /////////////////////////////////////////
-
-	cx_mat A = randu<cx_mat>(DIGESTIF_Nant, DIGESTIF_Nant);
-
-#if 0
-        A = A * trans(A);
-
-	cx_mat eigvecs;
-	vec eigvals;
-	if (!eig_sym(eigvals, eigvecs, A)) cout << "-- EIG FAILED --\n";
-
-        cx_mat C = eigvecs * diagmat(eigvals) * inv(eigvecs);
-        cout << "Before EIG:\n" << A << "\n";
-        cout << "After EIG:\n"  << C << "\n";
-
 #endif
 
-#if 0
-	cx_mat U;
-	cx_mat V;
-	vec s;
-        if (!svd(U, s, V, A)) cout << "-- SVD FAILED --\n"; else cout << "SVD OK!\n";
-
-        // nulling
-        // s.set_size(s.n_elem + 1);
-        // s(s.n_elem-1) = 0;
-
-        cx_mat C = U * diagmat(s) * trans(V);
-        cout << "Before SVD:\n" << A << "\n";
-        cout << "After SVD:\n"  << C << "\n";
-#endif
-    
 	return 0;
 }
 

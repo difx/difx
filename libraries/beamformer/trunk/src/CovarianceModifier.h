@@ -71,11 +71,11 @@ class CovarianceModifier {
         * If interferers are not overlapping in frequency,
         * there is at most one interferer per channel.
         * 
-        * @param[in] cov  Covariance object to analyse and modify
         * @param[in] Iref List of reference antenna indices between 0..Nant-1
+        * @param[in] Nrfi Expected number of strong RFI signals per channel
         * @return Returns 0 on success
         */
-       int templateSubtraction(Covariance& cov, arma::Col<int> const& Iref);
+       int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi);
 
    private:
       Covariance& _cov;

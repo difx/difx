@@ -24,9 +24,11 @@ ArrayElements.o: ArrayElements.cpp
 
 Covariance.o: Covariance.cpp
 
+CovarianceModifier.o: CovarianceModifier.cpp
+
 analysis.o: analysis.cpp
 
-analysis: analysis.o Covariance.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o DecompositionModifier.o
+analysis: analysis.o Covariance.o CovarianceModifier.o ArrayElements.o Decomposition.o Decompositions.o DecompositionAnalyzer.o DecompositionModifier.o
 	g++ $+ -o analysis $(LDFLAGS)
 
 

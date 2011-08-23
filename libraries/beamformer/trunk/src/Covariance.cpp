@@ -186,21 +186,21 @@ void Covariance::addSignal
 (int ch, double lambda, ArrayElements const& ae, double phi, double theta, double P, double Pna, double Pnc, 
  double Gref, arma::Col<int> const& Iref)
 {
-   double K = 2*M_PI/lambda;
+   double K = 2*M_PI / lambda;
    double k_src[3] = { std::sin(theta)*std::cos(phi), std::sin(theta)*std::sin(phi), std::cos(theta) };
 
    const ElementXYZ_t xyz = ae.getPositionSet();
-   arma::Col<arma::cx_double> sigs = arma::zeros<arma::Col<arma::cx_double> >(xyz.Nant);
+   arma::Col<arma::cx_double> sigs;
+   sigs.zeros(xyz.Nant); 
 
    P = std::sqrt(P);
    Pna = std::sqrt(Pna);
    Pnc = std::sqrt(Pnc);
 
    for (int a=0; a<xyz.Nant; a++) {
-      double gain = 1.0; //cos(theta)*cos(theta);
       double phase = K * (k_src[0]*xyz.x[a] + k_src[1]*xyz.y[a] + k_src[2]*xyz.z[a]);
-      sigs(a) = std::complex<double>(cos(phase), -sin(phase)); // =exp(-i*xyz*k_src)
-      sigs(a) *= gain*P;
+      sigs(a) = std::complex<double>(std::cos(phase), -std::sin(phase)); // =exp(-i*xyz*k_src)
+      sigs(a) *= P;
    }
 
    // Apply additional gain to the reference antenna signals
@@ -209,16 +209,22 @@ void Covariance::addSignal
       sigs(a) *= Gref;
    }
 
-   _freqs(ch) = 299792458.0 / lambda;
-   _Rxx.slice(ch) += (sigs*arma::trans(sigs));
+   // Store frequency and accumulate covariance (use one of two options for handedness)
+   _freqs(ch) = 299792458.0D / lambda;
+   if (0) {
+      _Rxx.slice(ch) += (sigs * arma::trans(sigs));
+   } else {
+      _Rxx.slice(ch) += (arma::conj(sigs) * arma::strans(sigs));
+   }
 
+   // Add noise
    if (Pna>0) {
       _Rxx.slice(ch) += (arma::eye<arma::cx_mat>(xyz.Nant, xyz.Nant))*Pna;
    }
    if (Pnc>0) {
       // add Hermitian noise matrix
       arma::cx_mat noise = Pnc * arma::randu<arma::cx_mat>(_N_ant,_N_ant);
-      _Rxx.slice(ch) += trans(noise)*noise;
+      _Rxx.slice(ch) += arma::trans(noise)*noise;
    }
 }
 

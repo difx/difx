@@ -32,7 +32,8 @@
 #include <armadillo>
 
 /**
- * Tries to clean RFI from a Covariance data set. 
+ * Attempts to clean RFI from a Covariance data set. 
+ *
  * Uses two or more RFI reference antennas and subtracts
  * the weaker RFI seen by the array elements themselves from
  * the covariance matrix.
@@ -42,60 +43,183 @@
  * data between the reference antenna and array elements must
  * also be present in the covariance matrix.
  * 
+ * For efficiency, it is required that indexing of elements
+ * and hence the matrix layout is such that the RFI reference
+ * antennas are the lowest-index elements and the rest
+ * are array or astronomy signal elements.
+ *
+ * Hence the mapping between antenna index and antenna type
+ * should be similar to {0=ref_antA,1=ref_antB,2=astro,...,63=astro,...}
+ *
  * If interferers are not overlapping in frequency,
  * there is at most one interferer per channel.
+ *
+ * At cost of higher noise, more than one RFI per channel
+ * can be handled on the condition that Nrfi <= N_ref_antennas;
+ *
+ * If Nrfi > N_ref_antennas, no subtraction is possible.
  * 
- * @param[in] cov  Covariance object to analyse and modify
  * @param[in] Iref List of reference antenna indices between 0..Nant-1
+ * @param[in] Nrfi Expected number of strong RFI signals per channel
  * @return Returns 0 on success 
  */
-int CovarianceModifier::templateSubtraction(Covariance& cov, arma::Col<int> const& Iref)
+int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const int Nrfi)
 {
-   // *** IFF Nrfi==Nrefant Then ***
-   //
+   int Nant = _cov.N_ant();
+   int Nref = Iref.n_elem;
+   int Nast = Nant - Nref;
+   int Nch = _cov.N_chan();
+
+   // *** IFF Nrfi<=Nrefant Then ***
    // van der Veen, Boonstra, "Spatial filtering of RF interference in Radio
    // Astronomy using a reference antenna", 2004
-   //
-   // R00=chRxx(antIdx,antIdx);
-   // R11=chRxx(refIdx,refIdx);
-   // R01=chRxx(antIdx,refIdx);
-   // R10=chRxx(refIdx,antIdx);
-   // clean = R00 - (R01*(inv(R11)))*R10;
-   //
-   // *** IFF Nrfi=1 && Nrefant==2 Then ***
-   //
-   // Briggs-Kesteven, 2000
-   //
-   // Cn1 = transpose(chRxx(refant_idcs(1),:));
-   // Cn2 = transpose(chRxx(refant_idcs(2),:));
-   // C12 = chRxx(refant_idcs(1),refant_idcs(2));
-   //
-   // // Sanity check for RFI presence
-   // astro_ac_mean = mean(diag(chRxx(ant_idcs,ant_idcs)));
-   // ref_ac_mean = mean(diag(chRxx(refant_idcs,refant_idcs)));
-   // if (ref_ac_mean < 10*astro_ac_mean) {
-   //    fprintf(1, 'Reference AC average is below +10dB of array AC average, no RFI.\n');
-   //    continue;
-   // }
-   //     
-   // // [A] Direct method
-   // // This fails if noise>>RFI in the C<1,2>=C<ref1,ref2>
-   // autogains = (Cn1.*conj(Cn2)) ./ C12;
-   //
-   // // [B] Expanded method
-   // // 1) Plug in an estimate of correlated noise in C<ref1,ref2>
-   // powsqr = 1e-8;% 1e-8*mean(diag(chRxx(ant_idcs,ant_idcs)));
-   //
-   // // 2) Compute gains
-   // // Mistake in Kesteven paper, they miss nominator conj(C12)
-   // // and have: gains = (Cn1.*conj(Cn2).*C12) ./ (powsqr + C12.*conj(C12));
-   // crossgains = (Cn1 * conj(transpose(Cn2)) .* conj(C12)) ./ (powsqr + C12.*conj(C12));
-   // crossgains = conj(crossgains); // since we chose 1xN row vectors (not Nx1 col vecs)
-   //
-   // // 3)-4) sanity checks
-   //
-   // // 5) subtract
-   // cleanRxx = chRxx - crossgains;
 
-   return 0;
+   if ((Nrfi > Nref) || (Nrfi < 1) || (Nref < 1) || (Nref >= Nant)) {
+      return -1;
+   } 
+
+   if (!(Nrfi==1 && Nref==2)) {
+
+      std::cout << "CovarianceModifier::templateSubtraction generic\n";
+
+      // Matlab:
+      // R00=chRxx(antIdx,antIdx);
+      // R11=chRxx(refIdx,refIdx);
+      // R01=chRxx(antIdx,refIdx);
+      // R10=chRxx(refIdx,antIdx);
+      // clean = R00 - (R01*(inv(R11)))*R10;
+      //
+      // ATLAS/LAPACK:
+      // index spans of submatrix views must be
+      // continuos, e.g. chRxx([1 3 5], [1 3 5]) won't work,
+      // hence we require reference antennas be at the
+      // top-left corner of the covariance matricex
+      //
+      //       | R11 | R10 |
+      // Rxx = | ----+---- |
+      //       | R01 | R00 |
+
+      arma::cx_mat R00;
+      arma::cx_mat R11;
+      arma::cx_mat R01;
+      arma::cx_mat R10;
+      R00.zeros(Nast, Nast);
+      R11.zeros(Nref, Nref);
+      R01.zeros(Nast, Nref);
+      R10.zeros(Nref, Nast);
+
+      for (int cc=0; cc<Nch; cc++) {
+
+         R00 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) );
+         R11 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(0,    Nref-1) ); 
+
+         std::complex<double> astro_auto_mean = arma::mean(R00.diag());
+         std::complex<double> ref_auto_mean = arma::mean(R11.diag());
+         double avg_INR = std::abs(ref_auto_mean) / std::abs(astro_auto_mean);
+         if (avg_INR < 10) {
+            std::cout << "Channel " << cc << " mean auto-corr of reference antennas less than +10dB "
+                      << "from array, too low INR! Assuming no RFI!\n";
+            continue;
+         }
+
+         // Compute clean "R00 - (R01*(inv(R11)))*R10" where unfortunately the 2nd term is not 100% Hermitian
+         R01 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(0,    Nref-1) ); 
+         R10 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(Nref, Nant-1) ); 
+         _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) )     
+            -= (R01 * arma::inv(R11)) * R10;
+
+         // Note: instead of arma::inv(R11) inverse,
+         // may also use a pseudo-inverse e.g. SVD-based pseudo-inverse:
+         //    cx_mat U; vec s; cx_mat V;
+         //    svd(U,s,V, R11);
+         //    s_inv = strans ( diag( 1 / diag(s) ) );
+         //    R11psinv = V * s_inv * trans(U);
+         // resulting in subtracted template being
+         // -= (R01 * R11psinv) * R10;
+
+      }
+
+      return 0;
+   }
+
+
+   // *** IFF Nrfi=1 && Nrefant==2 Then ***
+   // Briggs-Kesteven, 2000
+
+   if (Nrfi==1 && Nref==2) {
+
+      std::cout << "CovarianceModifier::templateSubtraction Briggs\n";
+
+      // Matlab:
+      // Cn1 = chRxx(refant_idcs(1),:);
+      // Cn2 = chRxx(refant_idcs(2),:);
+      // C12 = chRxx(refant_idcs(1),refant_idcs(2));
+      //
+      // // [A1] Direct method -- fails if noise>>RFI in C<ref1,ref2>
+      // autogains = (Cn1.*conj(Cn2)) ./ C12;
+      //
+      // // [A2] Expanded method
+      // Plug in an estimate of correlated noise in C<ref1,ref2>
+      // powsqr = 1e-8; // 1e-8*mean(diag(chRxx(ant_idcs,ant_idcs)));
+      //
+      // // [B] Compute gains
+      // crossgains = (conj(transpose(Cn1)) * Cn2) .* C12) ./ (powsqr + C12.*conj(C12));
+      //
+      // // [C] Sanity checks : amplitude closure, real-valued zero-phase autocorrs 
+      // // ampl. closure: ForAll {src1,src2 ; src1!=src2} 1 == C<src1,ref1>*C<src2,ref2>/(C<src2,ref1>*C<src1,ref2>)
+      // // real-valued autocorr: abs(angle(diag(C-crossgains))) < err
+      // // [D] Subtraction
+      // chRxx = chRxx - crossgains;
+
+      arma::cx_mat R00;
+      arma::cx_mat R11;
+      arma::Row<arma::cx_double> Cn1;
+      arma::Row<arma::cx_double> Cn2;
+      arma::Row<arma::cx_double> C12;
+
+      R00.zeros(Nast, Nast);
+      R11.zeros(Nref, Nref);
+      Cn1.zeros(Nant);
+      Cn2.zeros(Nant);
+      C12.zeros(1);
+
+      for (int cc=0; cc<Nch; cc++) {
+
+         R00 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) );
+         R11 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(0,    Nref-1) ); 
+
+         double astro_auto_mean = std::abs( arma::mean(R00.diag()) );
+         double ref_auto_mean   = std::abs( arma::mean(R11.diag()) );
+         double avg_INR = ref_auto_mean / astro_auto_mean;
+         if (avg_INR < 10) {
+            std::cout << "Channel " << cc << " mean auto-corr of reference antennas less than +10dB "
+                      << "from array, too low INR! Assuming no RFI!\n";
+            continue;
+         }
+
+         Cn1 = _cov._Rxx.slice(cc).row(0); // Reference antenna 1
+         Cn2 = _cov._Rxx.slice(cc).row(1); // Reference antenna 2
+         C12 = _cov._Rxx.slice(cc)(0,1);   // Cross ref 1x2
+         double powsqr = 1e-8D * (astro_auto_mean/Nant); // Any small enough value
+
+         // Correction by subtracting cross-gains; it unfortunately is not precisely Hermitian
+
+         std::complex<double> scale12 = arma::as_scalar(C12 / (powsqr + C12*arma::conj(C12)));
+         arma::cx_mat crossgains = scale12 * (arma::trans(Cn1) * Cn2);
+
+         // _cov._Rxx.slice(cc) -= (crossgains);
+         _cov._Rxx.slice(cc) -= arma::trans(crossgains);
+
+         // TODO: somewhere along synthetic model 1xSrc+1xRFI construction, C12 ends up differing
+         // by error>1e-2 from the Matlab C12, and scale12 ends up with error>1e-15,
+         // after which the diagonal elements in the post-subtraction covariance matrix
+         // have error>1e-5 on the real and imag parts, though off-diagonal parts are fine(!?)
+
+      }
+
+      return 0;
+   }
+
+   std::cout << "CovarianceModifier::templateSubtraction(): no handler for case Nrfi=" << Nrfi << ", Nref=" << Nref << "\n";
+   return -1;
 }
