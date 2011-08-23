@@ -181,8 +181,7 @@ int main(const int argc, char * const argv[]) {
     // parse the DiFX configuration file
     difxconfig = new Configuration(options.configfilename, 0);
     if(!difxconfig->consistencyOK()) {
-      fprintf(stderr,"ERROR: failed consistency check for configuration file %s\n",options.configfilename);
-      return EXIT_FAILURE;
+      fprintf(stderr,"WARNING: failed consistency check for configuration file %s\n",options.configfilename);
     }
 
     // set output filterbank config
