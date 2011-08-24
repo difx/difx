@@ -57,25 +57,47 @@ class CovarianceModifier {
 
    public:
 
-       /**
-        * Tries to clean RFI from a Covariance data set.
-        * Uses two or more RFI reference antennas and subtracts
-        * the weaker RFI seen by the array elements themselves from
-        * the covariance matrix.
-        *
-        * The reference antennas need to be present in the 
-        * covariance matrix. The full cross-correlation / coherence
-        * data between the reference antenna and array elements must
-        * also be present in the covariance matrix.
-        *
-        * If interferers are not overlapping in frequency,
-        * there is at most one interferer per channel.
-        * 
-        * @param[in] Iref List of reference antenna indices between 0..Nant-1
-        * @param[in] Nrfi Expected number of strong RFI signals per channel
-        * @return Returns 0 on success
-        */
-       int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi);
+      /**
+       * Attempts to clean RFI from a Covariance data set.
+       *   
+       * Uses two or more RFI reference antennas and subtracts
+       * the weaker RFI seen by the array elements themselves from
+       * the covariance matrix.
+       *                                                                          
+       * The reference antennas need to be present in the
+       * covariance matrix. The full cross-correlation 
+       * data between reference antennas and array elements must
+       * be present in the covariance matrix.
+       * 
+       * For efficiency, cross-correlation matrix layout
+       * needs to be such that RFI reference antennas come first.
+       * Thus antennas with low indices (0, 1, 2, ...) must be
+       * the RFI reference antennas. All remaining antennas must be
+       * elements of the array.
+       * 
+       * If interferers are not overlapping in frequency,
+       * there is at most one interferer per channel.
+       * 
+       * At cost of higher noise, more than one RFI per channel
+       * can be handled, provided that Nrfi <= N_ref_antennas;
+       * 
+       * If Nrfi > N_ref_antennas, no subtraction is possible.
+       * 
+       * Correction bias: any correlated noise in the reference
+       * antenna data adds bias to the correction. This can be
+       * avoided by not spatially co-locating the reference antennas.
+       * 
+       * Toxicity: at low INR or no RFI presence, the correction reduces
+       * to zero, the used algorithms are safe.
+       * 
+       * Applicability: all RFI including sporadic, dynamic environments
+       * with beamformer adaptive nulling, but not for Pulsar observations.
+       * 
+       * @param[in] Iref List of reference antenna indices between 0..Nant-1
+       * @param[in] Nrfi Expected number of strong RFI signals per channel
+       * @return Returns 0 on success
+       */
+      int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi);
 
    private:
       Covariance& _cov;

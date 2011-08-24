@@ -39,25 +39,33 @@
  * the covariance matrix.
  * 
  * The reference antennas need to be present in the 
- * covariance matrix. The full cross-correlation / coherence
- * data between the reference antenna and array elements must
- * also be present in the covariance matrix.
+ * covariance matrix. The full cross-correlation
+ * data between reference antennas and array elements must
+ * be present in the covariance matrix.
  * 
- * For efficiency, it is required that indexing of elements
- * and hence the matrix layout is such that the RFI reference
- * antennas are the lowest-index elements and the rest
- * are array or astronomy signal elements.
- *
- * Hence the mapping between antenna index and antenna type
- * should be similar to {0=ref_antA,1=ref_antB,2=astro,...,63=astro,...}
+ * For efficiency, cross-correlation matrix layout
+ * needs to be such that RFI reference antennas come first.
+ * Thus antennas with low indices (0, 1, 2, ...) must be
+ * the RFI reference antennas. All remaining antennas must be
+ * elements of the array.
  *
  * If interferers are not overlapping in frequency,
  * there is at most one interferer per channel.
  *
  * At cost of higher noise, more than one RFI per channel
- * can be handled on the condition that Nrfi <= N_ref_antennas;
+ * can be handled, provided that Nrfi <= N_ref_antennas;
  *
  * If Nrfi > N_ref_antennas, no subtraction is possible.
+ * 
+ * Correction bias: any correlated noise in the reference
+ * antenna data adds bias to the correction. This can be
+ * avoided by not spatially co-locating the reference antennas.
+ *
+ * Toxicity: at low INR or no RFI presence, the correction reduces
+ * to zero, the used algorithms are safe.
+ *
+ * Applicability: all RFI including sporadic, dynamic environments
+ * with beamformer adaptive nulling, but not for Pulsar observations.
  * 
  * @param[in] Iref List of reference antenna indices between 0..Nant-1
  * @param[in] Nrfi Expected number of strong RFI signals per channel
@@ -214,6 +222,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
          // by error>1e-2 from the Matlab C12, and scale12 ends up with error>1e-15,
          // after which the diagonal elements in the post-subtraction covariance matrix
          // have error>1e-5 on the real and imag parts, though off-diagonal parts are fine(!?)
+         // => this leads to a slight difference in the Matlab result vs the C++ result
 
       }
 
