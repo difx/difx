@@ -210,7 +210,7 @@ void Covariance::addSignal
    }
 
    // Store frequency and accumulate covariance (use one of two options for handedness)
-   _freqs(ch) = 299792458.0D / lambda;
+   _freqs(ch) = 299792458.0 / lambda;
    if (0) {
       _Rxx.slice(ch) += (sigs * arma::trans(sigs));
    } else {

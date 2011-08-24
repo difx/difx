@@ -36,7 +36,7 @@
 using namespace std;
 using namespace arma;
 
-inline double deg2rad(double d) { return (3.141592653589793238462643D/180.0D)*d; }
+inline double deg2rad(double d) { return (3.141592653589793238462643/180.0)*d; }
 
 int main(int argc, char** argv)
 {
@@ -87,10 +87,10 @@ int main(int argc, char** argv)
            std::cout << "Data source = self-generated, array, no reference antennas, 1 astro and 3 RFI signals\n";
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(10.0D), deg2rad(25.0D), 1.0D, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(10.0D), deg2rad(25.0D), 1.0D, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(40.0D), deg2rad(25.0D), 1.0D, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(0.0D),  deg2rad(0.0D),  1e-3D, 5e-5D, 5e-11D);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(40.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(0.0),  deg2rad(0.0),  1e-3, 5e-5, 5e-11);
            }
            Nrfi = 3;
 
@@ -106,14 +106,14 @@ int main(int argc, char** argv)
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
               // add astro signal
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(45.0D), deg2rad(-90.0D), 1e-2D, 1e-7D, 0);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
 
               // add 1st RFI signal, with reference antennas specified
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(30.0D), deg2rad(-15.0D), 2.0D, 0, 0, Gref, Iref);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
               Nrfi = 1;
 
               // add 2nd rfi signal; note that mitigation is not supported by Briggs-Kesteven method
-              rxxDataBlock.addSignal(ch, 0.2021D, ae, deg2rad(40.0D), deg2rad(-45.0D), 3.0D, 0, 0, Gref, Iref);
+              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(40.0), deg2rad(-45.0), 3.0, 0, 0, Gref, Iref);
               Nrfi = 2;
            }
         }

@@ -208,7 +208,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
          Cn1 = _cov._Rxx.slice(cc).row(0); // Reference antenna 1
          Cn2 = _cov._Rxx.slice(cc).row(1); // Reference antenna 2
          C12 = _cov._Rxx.slice(cc)(0,1);   // Cross ref 1x2
-         double powsqr = 1e-8D * (astro_auto_mean/Nant); // Any small enough value
+         double powsqr = 1e-8 * (astro_auto_mean/Nant); // Any small enough value
 
          // Correction by subtracting cross-gains; it unfortunately is not precisely Hermitian
 
