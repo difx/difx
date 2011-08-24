@@ -31,6 +31,8 @@
 
 #include <armadillo>
 
+namespace bf {
+
 /**
  * Allocate output matrices or output cubes.
  * @param[in]  NdecoM  Number of matrices to store decomposition (1 for Eig, 2 for QR, 2 for SVD, etc)
@@ -192,4 +194,6 @@ std::ostream &operator<<(std::ostream& os, Decomposition const& d)
    os << "Base class Decomposition without any data\n";
    return os;
 }
+
+} // namespace bf
 

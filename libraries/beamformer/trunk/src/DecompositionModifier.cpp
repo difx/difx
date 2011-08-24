@@ -32,6 +32,8 @@
 
 #include <armadillo>
 
+namespace bf {
+
 /**
  * Classic nulling of dominant eigenvalues of the decomposition. 
  * Internally, DecompositionAnalyzer is run on each channel to estimate the
@@ -101,8 +103,11 @@ void DecompositionModifier::interfererNulling(const int Nmax, const bool nodetec
          }
 
       }
+
    } else {
-      // ...
+
+      std::cout << "DecompositionModifier::interfererNulling(): decomposition type not SVD nor EIG/EVD and currently unsupported\n";
+
    }
 }
 
@@ -124,3 +129,6 @@ getProjectionMatrix(bool noiseSpace)
    }
 }
 */
+
+} // namespace bf
+

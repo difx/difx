@@ -32,6 +32,8 @@
 
 #include "Covariance.h"
 
+namespace bf {
+
 /** 
  * Set of RFI mitigation algorithms that are applied to
  * the raw covariance data directly.
@@ -102,5 +104,7 @@ class CovarianceModifier {
    private:
       Covariance& _cov;
 };
+
+} // namespace bf
 
 #endif // _COVARIANCEMODIFIER_H

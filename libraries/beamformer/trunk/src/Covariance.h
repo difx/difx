@@ -35,6 +35,8 @@
 #include <armadillo>
 #include <iostream>
 
+namespace bf {
+
 /** 
  * Storage for time-integrated covariance data in the
  * form of a 3D data cube (Nantennas x Nantennas x Nchannels).
@@ -178,5 +180,7 @@ class Covariance {
 };
 
 extern std::ostream &operator<<(std::ostream&, Covariance const&);
+
+} // namespace bf
 
 #endif // _COVARIANCE_H

@@ -32,6 +32,8 @@
 
 #include "Decompositions.h"
 
+namespace bf {
+
 /**
  * Helper class to pull information out of a covariance matrix decomposition.
  */
@@ -117,5 +119,7 @@ class DecompositionAnalyzer {
 
       Decomposition const& _deco;
 };
+
+} // namespace bf
 
 #endif // _DECOMPOSITIONANALYZER_H

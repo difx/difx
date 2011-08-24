@@ -32,6 +32,8 @@
 
 #include "ArrayElements.h"
 
+namespace bf {
+
 /**
  * Generate a 1D equispaced linear antenna array centered around origo
  * with antennas placed along the first dimension (x axis).
@@ -200,4 +202,6 @@ std::ostream &operator<<(std::ostream& os, ArrayElements const& a)
    }
    return os;
 }
+
+} // namespace bf
 

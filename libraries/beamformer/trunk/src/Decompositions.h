@@ -35,6 +35,8 @@
 #include <armadillo>
 #include <iostream>
 
+namespace bf {
+
 /**
  * Derived class for computing QR matrix decompositions of a 3D data cube or single 2D matrix.
  */
@@ -185,5 +187,7 @@ class SVDecomposition : public Decomposition {
 extern std::ostream &operator<<(std::ostream&, QRDecomposition const&);
 extern std::ostream &operator<<(std::ostream&, EVDecomposition const&);
 extern std::ostream &operator<<(std::ostream&, SVDecomposition const&);
+
+} // namespace bf
 
 #endif // _DECOMPOSITIONS_H

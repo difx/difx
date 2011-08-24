@@ -32,11 +32,15 @@
 
 #include <armadillo>
 
+namespace bf {
+
 /** Phased array, steering angles of individual beams */
 typedef struct Beams_tt {
    int Nbeams;
    arma::Col<double> phi;    // radian
    arma::Col<double> theta;  // radian
 } Beams_t;
+
+} // namespace bf
 
 #endif // _BEAMFORMER_DATA_H

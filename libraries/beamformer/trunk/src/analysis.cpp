@@ -35,6 +35,7 @@
 
 using namespace std;
 using namespace arma;
+using namespace bf;
 
 inline double deg2rad(double d) { return (3.141592653589793238462643/180.0)*d; }
 

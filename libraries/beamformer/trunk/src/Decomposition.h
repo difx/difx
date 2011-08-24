@@ -35,6 +35,8 @@
 #include <armadillo>
 #include <iostream>
 
+namespace bf {
+
 /**
  * Base class for computing matrix decompositions of a 3D data cube or single 2D matrix.
  * The base class provides only the generic interface implementation and allocation functions,
@@ -201,5 +203,7 @@ class Decomposition {
 };
 
 extern std::ostream &operator<<(std::ostream&, Decomposition const&);
+
+} // namespace bf
 
 #endif // _DECOMPOSITION_H

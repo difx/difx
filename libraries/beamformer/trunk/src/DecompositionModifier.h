@@ -33,6 +33,8 @@
 #include "Decomposition.h"
 #include "ArrayElements.h"
 
+namespace bf {
+
 /** 
  * Set of RFI mitigation algorithms that are applied to
  * the SVD/EVD/QR/... decomposed covariance data.
@@ -76,6 +78,8 @@ class DecompositionModifier {
       Decomposition& _dc;
 
 };
+
+} // namespace bf
 
 #endif // _DECOMPOSITIONMODIFIER_H
 

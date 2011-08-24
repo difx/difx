@@ -32,6 +32,7 @@
 
 #include <armadillo>
 
+namespace bf {
 
 //////////////////////////////////////////////////////////////////////////////
 // QR DECOMPOSITION
@@ -253,3 +254,6 @@ std::ostream &operator<<(std::ostream& os, SVDecomposition const& d)
    }
    return os;
 }
+
+} // namespace bf
+

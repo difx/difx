@@ -34,6 +34,8 @@
 #include <limits>
 #include <cmath>
 
+namespace bf {
+
 /**
  * @file DecompositionAnalyzer.cpp
  * Class for analyzing array covariance matrix decompositions.
@@ -280,3 +282,6 @@ bool DecompositionAnalyzer::utest()
 
    return pass;
 }
+
+} // namespace bf
+

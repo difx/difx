@@ -33,6 +33,8 @@
 #include <armadillo>
 #include <ostream>
 
+namespace bf {
+
 /** Phased array element positions */
 typedef struct ElementXYZ_tt {
    int Nant;
@@ -125,5 +127,7 @@ class ArrayElements {
 };
 
 extern std::ostream &operator<<(std::ostream&, ArrayElements const&);
+
+} // namespace bf
 
 #endif // _ARRAY_ELEMENTS_H

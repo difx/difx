@@ -31,6 +31,8 @@
 
 #include <armadillo>
 
+namespace bf {
+
 /**
  * Attempts to clean RFI from a Covariance data set. 
  *
@@ -232,3 +234,6 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
    std::cout << "CovarianceModifier::templateSubtraction(): no handler for case Nrfi=" << Nrfi << ", Nref=" << Nref << "\n";
    return -1;
 }
+
+} // namespace bf
+

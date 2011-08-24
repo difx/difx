@@ -35,6 +35,8 @@
 #include <fstream>
 #include <iostream>
 
+namespace bf {
+
 /**
  * Load data cube contents from a memory location and
  * reorganize the memory layout if necessary.
@@ -241,4 +243,6 @@ std::ostream &operator<<(std::ostream& os, Covariance const& c)
    }
    return os;
 }
+
+} // namespace bf
 
