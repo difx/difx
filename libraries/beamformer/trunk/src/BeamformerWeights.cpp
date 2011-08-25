@@ -42,7 +42,7 @@ namespace bf {
  * @param[in] ae Array element positions
  * @return Steerings written back into the beams_t struct
  */
-void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& ae) 
+void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& ae) const
 {
    const ElementXYZ_t xyz = ae.getPositionSet();
 
@@ -104,38 +104,79 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
 
    _beamW.set_size(beams.Nbeams, beams.Nant, beams.Nchan);
 
-   for (int b=0; b<beams.Nbeams; b++) {
+   // Classical non-adaptive beamformer
+   if (b <= 0.0f) {
 
-      for (int cc=0; cc<beams.Nchan; cc++) {
+      std::complex<double> unitvec_scaling;
 
-         if (b == 0) {
+      for (int bb=0; bb<beams.Nbeams; bb++) {
+         for (int cc=0; cc<beams.Nchan; cc++) {
 
-            // Classical non-adaptive beamformer
-            arma::Row<arma::cx_double> const& steering = arma::strans( beams.steerings.slice(cc).row(b) );
-            _beamW.slice(cc).row(b) = steering;
+            arma::Row<arma::cx_double> const& steering = (beams.steerings.slice(cc)).row(bb);
+            unitvec_scaling = std::sqrt( arma::as_scalar(steering * arma::trans(steering)) );
 
-         } else {
-
-            arma::Mat<arma::cx_double> inverse = arma::inv(Rxx.slice(cc));
-            arma::Row<arma::cx_double> const& steering = arma::strans( beams.steerings.slice(cc).row(b) );
-            arma::Row<arma::cx_double> weights;
-
-            // MVDR
-            //std::complex<double> inv_power = arma::as_scalar(arma::conj(steering) * inverse * steering);
-            weights = (inverse*steering) / (arma::conj(steering) * inverse * steering);
-
-            // Cox Projection
-            if (b > 1) {
-               // modify weights into: weights = weights + b*w2
-               // where weights decomposed into w1,w2 
-               // the w1=w|parallel|s and w2=w/orthogonal\s projections
-            }
-
-            // Store result
-            _beamW.slice(cc).row(b) = arma::strans(weights);
-
+            _beamW.slice(cc).row(bb) = (beams.steerings.slice(cc)).row(bb) / unitvec_scaling;
          }
       }
+
+      return;
+   }
+
+   // MVDR beamformer: w = (R^-1 * s) / (s' * R^-1 * s)
+   if (b <= 1.0f) {
+
+      arma::Mat<arma::cx_double> inverse;
+      arma::Col<arma::cx_double> weights;
+      std::complex<double> inv_power;
+
+      for (int bb=0; bb<beams.Nbeams; bb++) {
+         for (int cc=0; cc<beams.Nchan; cc++) {
+
+            arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
+
+            inverse = arma::inv(Rxx.slice(cc));
+            inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);
+            weights = (inverse * steering) / inv_power;
+
+            _beamW.slice(cc).row(bb) = arma::strans(weights);
+         }
+      }
+
+      return;
+   }
+
+   // RB-MVDR beamformer with added Cox Projection
+   // first, w = (R^-1 * s) / (s' * R^-1 * s) is decomposed into s-parallel w1 and s-orthogonal w2
+   // finally, w = w1 + scalar(b) * w2
+   if (true) {
+
+      arma::Mat<arma::cx_double> inverse;
+      arma::Col<arma::cx_double> w_mvdr;
+      arma::Col<arma::cx_double> w1;
+      arma::Col<arma::cx_double> w2;
+      std::complex<double> inv_power;
+      std::complex<double> unitvec_scaling;
+
+      for (int bb=0; bb<beams.Nbeams; bb++) {
+         for (int cc=0; cc<beams.Nchan; cc++) {
+
+            arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
+
+            // normal MVDR
+            inverse = arma::inv(Rxx.slice(cc));
+            inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);
+            w_mvdr = (inverse * steering) / inv_power;
+
+            // decompose the weights into vector projection and vector rejection towards steering
+            unitvec_scaling = std::sqrt( arma::as_scalar(arma::trans(steering) * steering) );
+            w1 = (arma::conj(w_mvdr) * (steering/unitvec_scaling)) * (steering/unitvec_scaling);
+            w2 = w_mvdr - w1;
+
+            _beamW.slice(cc).row(bb) = arma::strans(w1 + b * w2);
+         }
+      }
+
+      return;
    }
 }
 
@@ -153,9 +194,27 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
  * @param[in] deco  Some decomposition of the covariance data.
  * @param[in] b     Factor for Cox Projection WNGC.
  */
-void generateMVDR(Beams_t const& beams, Decomposition const& deco, const double b)
+void BeamformerWeights::generateMVDR(Beams_t const& beams, Decomposition const& deco, const double b)
 {
 }
 
 
+/**
+ * Human-readable data output to stream
+ */
+
+std::ostream &operator<<(std::ostream& os, BeamformerWeights const& w)
+{
+   os << "Beamformer weights:\n";
+   for (unsigned cc=0; cc<w._beamW.n_slices; cc++) {
+      os << " channel#" << cc << "\n";
+      for (unsigned bb=0; bb<w._beamW.n_rows; bb++) {
+         os << "   W(beam#" << bb << ") = " << w._beamW.slice(cc).row(bb);
+      }
+   }
+   return os;
+}
+
+
 } // namespace bf
+

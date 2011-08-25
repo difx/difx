@@ -32,6 +32,8 @@
 
 #include <armadillo>
 
+#include <iostream>
+
 namespace bf {
 
 /** Phased array, steering angles of individual beams */
@@ -59,6 +61,8 @@ typedef struct Beams_tt {
    }
 
 } Beams_t;
+
+extern std::ostream &operator<<(std::ostream& os, Beams_t const& b);
 
 } // namespace bf
 

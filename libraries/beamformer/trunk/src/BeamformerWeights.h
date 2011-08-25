@@ -45,13 +45,12 @@ class BeamformerWeights {
 
    private:
 
-      BeamformerWeights();
       BeamformerWeights(const BeamformerWeights&);
       BeamformerWeights& operator= (const BeamformerWeights&);
 
    public:
 
-      BeamformerWeights(ArrayElements const& ae) : _ae(ae) {
+      BeamformerWeights() {
          _beamW.ones(1, 1, 1);
       }
 
@@ -68,16 +67,7 @@ class BeamformerWeights {
        * @param[in] ae Array element positions
        * @return Steerings written back into the beams_t struct
        */
-      void generateSteerings(Beams_t& beams, ArrayElements const& ae);
-
-      /**
-       * Calculate steering vectors for the angles of each beam in the beams list, using
-       * the array setup specified earlier in the BeamformerWeights() constructor.
-       *
-       * @param[inout] beams The Beams_t struct whose angles to convert into complex steerings
-       * @return Steerings written back into the beams_t struct
-       */
-      void generateSteerings(Beams_t& beams) { generateSteerings(beams, _ae); }
+      void generateSteerings(Beams_t& beams, ArrayElements const& ae) const;
 
 
       /**
@@ -122,11 +112,6 @@ class BeamformerWeights {
        */
       const arma::Mat<arma::cx_double>& getWeights(int beam) const { return _beamW.slice(beam); }
       
-
-   private:
-
-      ArrayElements const& _ae;
-
    private:
 
       arma::Cube<arma::cx_double> _beamW; // Nbeams x Nant x Nchan
