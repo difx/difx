@@ -102,7 +102,12 @@ class ArrayElements {
        * @param[in] ielem The index of the element 0..N-1
        * @return Flag value of the element or -1 on error
        */
-      int getFlags(const int ielem);
+      const int getFlags(const int ielem) const;
+
+      /**
+       * Accessor to get number of elements in array.
+       */
+      const int Nant() const { return elems.Nant; }
 
    public:
 

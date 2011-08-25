@@ -34,6 +34,7 @@
 
 #include "ArrayElements.h"
 #include "BeamformerData.h"
+#include "BeamformerWeights.h"
 #include "Covariance.h"
 #include "CovarianceModifier.h"
 #include "Decomposition.h"

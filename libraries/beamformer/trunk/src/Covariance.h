@@ -171,6 +171,7 @@ class Covariance {
       const int N_ant(void)  const { return _N_ant; }
       const int N_chan(void) const { return _N_chan; }
       const int M_smp(void)  const { return _M_smp; }
+      const double channel_freq(const int ch) { return _freqs(ch); }
 
    private:
       arma::Cube<arma::cx_double> _Rxx;

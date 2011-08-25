@@ -176,7 +176,7 @@ int ArrayElements::setFlags(const int ielem, const int flags)
  * @param[in] ielem The index of the element 0..N-1
  * @return Flag value of the element or -1 on error
  */
-int ArrayElements::getFlags(const int ielem)
+const int ArrayElements::getFlags(const int ielem) const
 {
    if (unsigned(ielem) >= elems.flag.n_elem) { return -1; }
    return elems.flag(ielem);

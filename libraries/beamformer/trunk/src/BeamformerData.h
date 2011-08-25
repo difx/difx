@@ -37,8 +37,27 @@ namespace bf {
 /** Phased array, steering angles of individual beams */
 typedef struct Beams_tt {
    int Nbeams;
+   int Nchan;
+   int Nant;
    arma::Col<double> phi;    // radian
    arma::Col<double> theta;  // radian
+   arma::Col<double> freqs;  // list of channel frequencies in Hertz
+   arma::Cube<arma::cx_double> steerings; // array steerings(Nbeams,Nant,Nchan)
+   
+   void init() {
+      phi.zeros(Nbeams);
+      theta.zeros(Nbeams);
+      freqs.zeros(Nchan);
+      steerings.zeros(Nbeams, Nant, Nchan);
+   }
+
+   void init(int Nb, int Na, int Nc) {
+      Nbeams = Nb;
+      Nant = Na;
+      Nchan = Nc;
+      init();
+   }
+
 } Beams_t;
 
 } // namespace bf
