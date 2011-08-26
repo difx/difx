@@ -169,7 +169,7 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
 
             // decompose the weights into vector projection and vector rejection towards steering
             unitvec_scaling = std::sqrt( arma::as_scalar(arma::trans(steering) * steering) );
-            w1 = (arma::conj(w_mvdr) * (steering/unitvec_scaling)) * (steering/unitvec_scaling);
+            w1 = (arma::as_scalar(arma::trans(w_mvdr) * (steering/unitvec_scaling))) * (steering/unitvec_scaling);
             w2 = w_mvdr - w1;
 
             _beamW.slice(cc).row(bb) = arma::strans(w1 + b * w2);
