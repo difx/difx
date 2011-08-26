@@ -210,7 +210,7 @@ int main(int argc, char** argv)
 
         // Nulling with at most Nrfi interferers (could also use std::max(mdl_rank, Nrfi))
         DecompositionModifier dm(info, ae);
-        dm.interfererNulling(Nrfi, /*nodetect=*/true, 0, rxxDataBlock.N_chan());
+        dm.interfererNulling(Nrfi, /*nodetect=*/ true, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
 
         // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);

@@ -1,6 +1,7 @@
 
 bin_PROGRAMS = \
-	analysis
+	analysis \
+	benchmark
 
 LDADD = \
 	$(top_builddir)/src/libbeamformer.la \
@@ -8,6 +9,8 @@ LDADD = \
 
 analysis_CPPFLAGS = -I../src/
 
-analysis_SOURCES = \
-	analysis.cpp
+analysis_SOURCES = analysis.cpp
 
+benchmark_CPPFLAGS = -I../src/
+
+benchmark_SOURCES = benchmark.cpp
