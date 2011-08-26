@@ -37,15 +37,22 @@ using namespace std;
 using namespace arma;
 using namespace bf;
 
+#define TEST_DECOMPOSITIONS      0
+#define TEST_INFOCRITERIA        0
+#define TEST_RFI_SUBTRACTION     0
+#define TEST_BEAMFORMING         1
+#define TEST_NULLED_BEAMFORMING  1
+
 inline double deg2rad(double d) { return (3.141592653589793238462643/180.0)*d; }
 
 int main(int argc, char** argv)
 {
-        const int    DIGESTIF_Nant = 4;       // 64 elements, 60 in use
+        const int    DIGESTIF_Nant = 4;        // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
-        const int    DIGESTIF_Msmp = 100;     // time slices averaged into one covariance matrix
-        const int    DIGESTIF_Nch = 2;        // 71 channels
+        const int    DIGESTIF_Msmp = 100;      // time slices averaged into one covariance matrix
+        const int    DIGESTIF_Nch = 2;         // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
+        const double C_LAMBDA = 0.2021;        // default wavelength in test code
 
         //////////////////////////////////////////
         // GENERATE STANDARD ARRAY LAYOUT
@@ -88,10 +95,10 @@ int main(int argc, char** argv)
            std::cout << "Data source = self-generated, array, no reference antennas, 1 astro and 3 RFI signals\n";
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(40.0), deg2rad(25.0), 1.0, 0, 0);
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(0.0),  deg2rad(0.0),  1e-3, 5e-5, 5e-11);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(10.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(40.0), deg2rad(25.0), 1.0, 0, 0);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(0.0),  deg2rad(0.0),  1e-3, 5e-5, 5e-11);
            }
            Nrfi = 3;
 
@@ -107,30 +114,35 @@ int main(int argc, char** argv)
 
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
               // add astro signal
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
+              Nrfi = 0;
 
               // add 1st RFI signal, with reference antennas specified
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
               Nrfi = 1;
 
+#if 0
               // add 2nd rfi signal; note that mitigation is not supported by Briggs-Kesteven method
-              rxxDataBlock.addSignal(ch, 0.2021, ae, deg2rad(40.0), deg2rad(-45.0), 3.0, 0, 0, Gref, Iref);
+              rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(40.0), deg2rad(-45.0), 3.0, 0, 0, Gref, Iref);
               Nrfi = 2;
+#endif
            }
         }
 
         std::cout << rxxDataBlock;
 
 
+
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
         /////////////////////////////////////////
 
-#if 0
+#if TEST_DECOMPOSITIONS
         // -- PASS --
         cout << "--------------------------------------------------------------------\n";
         SVDecomposition edc(rxxDataBlock);
         edc.decompose(rxxDataBlock);
+        std::cout << edc;
         edc.recompose(outDataBlock);
         std::cout << outDataBlock;
         cout << "--------------------------------------------------------------------\n";
@@ -139,6 +151,7 @@ int main(int argc, char** argv)
         cout << "--------------------------------------------------------------------\n";
         EVDecomposition edc2(rxxDataBlock);
         edc2.decompose(rxxDataBlock);
+        std::cout << edc2;
         edc2.recompose(outDataBlock);
         std::cout << outDataBlock;
         cout << "--------------------------------------------------------------------\n";
@@ -153,10 +166,12 @@ int main(int argc, char** argv)
         cout << "--------------------------------------------------------------------\n";
 #endif
 
+
         //////////////////////////////////////////
         // REFERENCE ANTENNA METHODS
         /////////////////////////////////////////
 
+#if TEST_RFI_SUBTRACTION
         arma::Col<int> Iref;  // reference antenna indices
         Iref = ae.listReferenceAntennas();
 
@@ -168,36 +183,90 @@ int main(int argc, char** argv)
         }
 
         std::cout << "after_sub=\n" << rxxDataBlock;
-        
+#endif
+
 
         //////////////////////////////////////////
         // ANALYZE SVD DECOMPOSITION
         /////////////////////////////////////////
 
-#if 0
         SVDecomposition info(rxxDataBlock);
         info.decompose(rxxDataBlock);
-        //cout << info;
 
         DecompositionAnalyzer da(info);
         //da.utest();
 
-        int mdl_rank, aic_rank;
-        double mdl, aic;
+#if TEST_INFOCRITERIA
         for (int cc=0; cc<rxxDataBlock.N_chan(); cc++) {
+           int mdl_rank, aic_rank;
+           double mdl, aic;
            mdl = da.getMDL(0, mdl_rank);
            aic = da.getAIC(0, aic_rank);
            cout << "DecompositionAnalyzer on channel " << cc << " returned "
                 << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
                 << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
         }
+#endif
 
-        // Nulling with at most 2 interferers
+        // Nulling with at most Nrfi interferers (could also use std::max(mdl_rank, Nrfi))
         DecompositionModifier dm(info, ae);
-        dm.interfererNulling(2, false, 0, rxxDataBlock.N_chan());
+        dm.interfererNulling(Nrfi, /*nodetect=*/true, 0, rxxDataBlock.N_chan());
 
         // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);
+
+
+        //////////////////////////////////////////
+        // BEAMFORMING
+        /////////////////////////////////////////
+
+        Beams_t beams;
+
+        // Configure the beams and channel frequencies
+        beams.init(/*beams*/2, rxxDataBlock.N_ant(), rxxDataBlock.N_chan());
+
+        beams.phi(0) = 0;  beams.theta(0) = 0;
+        beams.phi(1) = 45; beams.theta(1) = -90;
+        for (int cc=0; cc<rxxDataBlock.N_chan(); cc++) {
+           beams.freqs(cc) = rxxDataBlock.channel_freq(cc);
+        }
+
+        // Create steerings for all beams	
+        BeamformerWeights bw;
+        bw.generateSteerings(beams, ae);
+
+
+#if (TEST_BEAMFORMING||TEST_NULLED_BEAMFORMING)
+        std::cout << beams;
+#endif
+
+#if TEST_BEAMFORMING
+        // Original data: Compute classical beamformer weights, ignores covariances
+        bw.generateMVDR(beams, rxxDataBlock, 0.0f);
+        std::cout << "Classical non-adaptive beamformer: " << bw;
+
+        // Original data: Compute MVDR beamformer weights from (perhaps nulled) covariance matrix
+        bw.generateMVDR(beams, rxxDataBlock, 1.0f);
+        std::cout << "MVDR beamformer: " << bw;
+
+        // Original data: Compute RB-MVDR beamformer weights with Cox Projection WNGC
+        bw.generateMVDR(beams, rxxDataBlock, 1.0f + 1e-5);
+        std::cout << "RB-MVDR beamformer with factor b=" << (1.0f + 1e-5) << ": " << bw;
+#endif
+
+
+#if TEST_NULLED_BEAMFORMING
+        // Original data: Compute classical beamformer weights, ignores covariances
+        bw.generateMVDR(beams, outDataBlock, 0.0f);
+        std::cout << "Classical non-adaptive beamformer: " << bw;
+
+        // Original data: Compute MVDR beamformer weights from (perhaps nulled) covariance matrix
+        bw.generateMVDR(beams, outDataBlock, 1.0f);
+        std::cout << "MVDR beamformer: " << bw;
+
+        // Original data: Compute RB-MVDR beamformer weights with Cox Projection WNGC
+        bw.generateMVDR(beams, outDataBlock, 1.0f + 1e-5);
+        std::cout << "RB-MVDR beamformer with factor b=" << (1.0f + 1e-5) << ": " << bw;
 #endif
 
 	return 0;
