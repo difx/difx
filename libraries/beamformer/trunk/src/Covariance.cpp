@@ -34,6 +34,7 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <string>
 
 namespace bf {
 
@@ -69,6 +70,13 @@ void Covariance::load(const char* fn, const int format)
 {
    int Nch, Nant, Nmatrices, Ndummy;
    std::ifstream in(fn, std::ifstream::in | std::ifstream::binary);
+
+   if (!in.good()) {
+      std::string msg("Failed to open file!");
+      std::cout << msg << "\n";
+      throw msg;
+   }
+
    in.read((char*)&Nch, 4);
    in.read((char*)&Nant, 4);
    in.read((char*)&Nmatrices, 4);
