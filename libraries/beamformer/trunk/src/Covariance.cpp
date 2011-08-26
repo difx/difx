@@ -85,7 +85,7 @@ void Covariance::load(const char* fn, const int format)
    _N_chan = Nch;
 
    // Load frequencies
-   _freqs.zeros(_N_ant);
+   _freqs.zeros(_N_chan);
    for (int cc=0; cc<_N_chan; cc++) {
       double f;
       in.read((char*)&f, 8);

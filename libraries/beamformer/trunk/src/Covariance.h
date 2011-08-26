@@ -68,7 +68,7 @@ class Covariance {
        */
       Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : _N_ant(Nant), _N_chan(Nchannels), _M_smp(Msmp) { 
          _Rxx.zeros(Nant, Nant, Nchannels);
-         _freqs.zeros(Nant);
+         _freqs.zeros(Nchannels);
          _timestamp = timestamp;
          _Tint = Tint;
       }
