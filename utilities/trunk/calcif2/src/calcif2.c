@@ -94,7 +94,7 @@ static void usage()
 	fprintf(stderr, "  -n                      Don't do aberration, etc, corrections\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --noatmos\n");
-	fprintf(stderr, "  -a                      Don't include atmosphere in UVW calculations\n");
+	fprintf(stderr, "  -A                      Don't include atmosphere in UVW calculations\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --all\n");
 	fprintf(stderr, "  -a                      Do all calc files found\n");
@@ -186,7 +186,7 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 				opts->aberCorr = AberCorrUncorrected;
 				opts->delta = -1.0;
 			}
-			else if(strcmp(argv[i], "-a") == 0 ||
+			else if(strcmp(argv[i], "-A") == 0 ||
 				strcmp(argv[i], "--noatmos") == 0)
 			{
 				opts->aberCorr = AberCorrNoAtmos;
