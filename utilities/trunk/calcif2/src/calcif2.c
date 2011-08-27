@@ -47,7 +47,7 @@
 const char program[] = "calcif2";
 const char author[]  = "Walter Brisken <wbrisken@nrao.edu>";
 const char version[] = VERSION;
-const char verdate[] = "20110730";
+const char verdate[] = "20110827";
 
 typedef struct
 {
@@ -64,6 +64,7 @@ typedef struct
 	int allowNegDelay;
 	char *files[MAX_FILES];
 	int overrideVersion;
+	enum AberCorr aberCorr;
 } CommandLineOptions;
 
 static void usage()
@@ -91,6 +92,9 @@ static void usage()
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --noaber\n");
 	fprintf(stderr, "  -n                      Don't do aberration, etc, corrections\n");
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --noatmos\n");
+	fprintf(stderr, "  -a                      Don't include atmosphere in UVW calculations\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --all\n");
 	fprintf(stderr, "  -a                      Do all calc files found\n");
@@ -145,6 +149,7 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 	opts->delta = 0.0001;
 	opts->polyOrder = 5;
 	opts->polyInterval = 120;
+	opts->aberCorr = AberCorrExact;
 
 	for(i = 1; i < argc; i++)
 	{
@@ -178,7 +183,13 @@ static CommandLineOptions *newCommandLineOptions(int argc, char **argv)
 			else if(strcmp(argv[i], "-n") == 0 ||
 				strcmp(argv[i], "--noaber") == 0)
 			{
+				opts->aberCorr = AberCorrUncorrected;
 				opts->delta = -1.0;
+			}
+			else if(strcmp(argv[i], "-a") == 0 ||
+				strcmp(argv[i], "--noatmos") == 0)
+			{
+				opts->aberCorr = AberCorrNoAtmos;
 			}
 			else if(strcmp(argv[i], "-h") == 0 ||
 				strcmp(argv[i], "--help") == 0)
@@ -360,6 +371,7 @@ static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 	int nModified = 0;
 	int nModel = 0;
 	int nLine;
+	char *v;
 
 	in = fopen(tweakFile, "r");
 	if(!in)
@@ -373,8 +385,8 @@ static void tweakDelays(DifxInput *D, const char *tweakFile, int verbose)
 
 	for(nLine = 0; ; nLine++)
 	{
-		fgets(line, MaxLineSize-1, in);
-		if(feof(in))
+		v = fgets(line, MaxLineSize-1, in);
+		if(feof(in) || v == 0)
 		{
 			break;
 		}
@@ -580,6 +592,7 @@ CalcParams *newCalcParams(const CommandLineOptions *opts)
 	p->increment = opts->polyInterval;
 	p->order = opts->polyOrder;
 	p->delta = opts->delta;
+	p->aberCorr = opts->aberCorr;
 
 	/* We know that opts->calcServer is no more than DIFXIO_NAME_LENGTH-1 chars long */
 	strcpy(p->calcServer, opts->calcServer);

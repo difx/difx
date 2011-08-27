@@ -43,6 +43,7 @@ typedef struct
 	int calcVersion;
 	int allowNegDelay;
 	struct getCALC_arg request;
+	enum AberCorr aberCorr;
 	CLIENT *clnt;
 } CalcParams;
 

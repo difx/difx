@@ -41,6 +41,7 @@ static struct timeval TIMEOUT = {10, 0};
 
 struct CalcResults
 {
+	enum AberCorr aberCorr;
 	int nRes;	/* 3 if UVW to be calculated via tau derivatives */
 	double delta;
 	struct getCALC_res res[3];
@@ -136,6 +137,7 @@ static int callCalc(struct getCALC_arg *request, struct CalcResults *results, co
 	int i;
 	enum clnt_stat clnt_stat;
 
+	results->aberCorr = p->aberCorr;
 	if(p->delta > 0.0)
 	{
 		results->nRes = 3;
@@ -243,15 +245,32 @@ static int extractCalcResults(DifxPolyModel *im, int index, struct CalcResults *
 	if(results->nRes == 3)
 	{
 		/* compute u, v, w by taking angular derivative of geometric delay */
-		d =  res0->getCALC_res_u.record.delay[0] -
-		     res0->getCALC_res_u.record.wet_atmos[0] -
-		     res0->getCALC_res_u.record.dry_atmos[0];
-		dx = res1->getCALC_res_u.record.delay[0] -
-		     res1->getCALC_res_u.record.wet_atmos[0] -
-		     res1->getCALC_res_u.record.dry_atmos[0];
-		dy = res2->getCALC_res_u.record.delay[0] -
-		     res2->getCALC_res_u.record.wet_atmos[0] -
-		     res2->getCALC_res_u.record.dry_atmos[0];
+		if(results->aberCorr == AberCorrExact)
+		{
+			d =  res0->getCALC_res_u.record.delay[0] -
+			     res0->getCALC_res_u.record.wet_atmos[0] -
+			     res0->getCALC_res_u.record.dry_atmos[0];
+			dx = res1->getCALC_res_u.record.delay[0] -
+			     res1->getCALC_res_u.record.wet_atmos[0] -
+			     res1->getCALC_res_u.record.dry_atmos[0];
+			dy = res2->getCALC_res_u.record.delay[0] -
+			     res2->getCALC_res_u.record.wet_atmos[0] -
+			     res2->getCALC_res_u.record.dry_atmos[0];
+		}
+		else if(results->aberCorr == AberCorrNoAtmos)
+		{
+			d =  res0->getCALC_res_u.record.delay[0];
+			dx = res1->getCALC_res_u.record.delay[0];
+			dy = res2->getCALC_res_u.record.delay[0];
+		}
+		else
+		{
+			fprintf(stderr, "Developer error: nRes is 3 but aberCorr is not AberCorrExact or AberCorrNoAtmos!\n");
+
+			d = dx = dy = 0.0;
+
+			rv = 1;
+		}
 
 		im->u[index] = (C_LIGHT/results->delta)*(d-dx);
 		im->v[index] = (C_LIGHT/results->delta)*(dy-d);
@@ -488,14 +507,7 @@ int difxCalc(DifxInput *D, CalcParams *p)
 
 		job->polyOrder = p->order;
 		job->polyInterval = p->increment;
-		if(p->delta > 0.0)
-		{
-			job->aberCorr = AberCorrExact;
-		}
-		else
-		{
-			job->aberCorr = AberCorrUncorrected;
-		}
+		job->aberCorr = p->aberCorr;
 		if(scan->im)
 		{
 			fprintf(stderr, "Error: difxCalc: scan %d: model already exists\n", scanId);
