@@ -83,6 +83,7 @@ enum AberCorr
 	AberCorrUncorrected = 0,
 	AberCorrApproximate,
 	AberCorrExact,
+	AberCorrNoAtmos,
 	NumAberCorrOptions	/* must remain as last entry */
 };
 
