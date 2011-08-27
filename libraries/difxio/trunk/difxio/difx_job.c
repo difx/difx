@@ -37,7 +37,8 @@ const char aberCorrStrings[][MAX_ABER_CORR_STRING_LENGTH] =
 {
 	"UNCORRECTED",
 	"APPROXIMATE",
-	"EXACT"
+	"EXACT",
+	"NO ATMOS"
 };
 
 DifxJob *newDifxJobArray(int nJob)
