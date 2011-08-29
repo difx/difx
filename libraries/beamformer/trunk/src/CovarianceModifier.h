@@ -35,8 +35,12 @@
 namespace bf {
 
 /** 
- * Set of RFI mitigation algorithms that are applied to
- * the raw covariance data directly.
+ * Set of non-toxic RFI mitigation algorithms that are applied to
+ * the raw covariance data directly. Currently this
+ * includes two RFI reference antenna methods for
+ * RFI templating and subtraction. They are applicable for all RFI 
+ * types including sporadic, dynamic environments with beamformer 
+ * adaptive nulling, but might work less well in pulsar observations.
  */
 class CovarianceModifier {
 

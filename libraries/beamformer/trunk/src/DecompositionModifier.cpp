@@ -43,7 +43,7 @@ namespace bf {
  * In pulsar and fast transient observations you should take care to 
  * null only channels that are not expected to contain the observable.
  * @param[in] Nmax     Upper limit on detected interferers to null or <1 to null all
- * @param[in] nodetect If true apply Nmax>0 directly and do not estimate interferer count
+ * @param[in] nodetect If true, do not estimate interferer count from data, instead null Nmax>0 values directly
  * @param[in] startch  First channel where to start nulling
  * @param[in] endch    Last channel to null (inclusive)
  */

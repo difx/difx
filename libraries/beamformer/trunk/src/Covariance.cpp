@@ -40,7 +40,10 @@ namespace bf {
 
 /**
  * Load data cube contents from a memory location and
- * reorganize the memory layout if necessary.
+ * reorganize the memory layout if necessary. Currently a
+ * stub that generates test data.
+ * Modify this for your custom data e.g. for receiving GPU 
+ * beamforming cluster covariance output.
  * @param[in]  raw_data  Pointer to data to load
  * @param[in]  format    Data format (0..N, to be defined)
  */

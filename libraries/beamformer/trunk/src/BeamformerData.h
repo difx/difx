@@ -38,13 +38,27 @@ namespace bf {
 
 /** Phased array, steering angles of individual beams */
 typedef struct Beams_tt {
+
+   //! Number of beams. Equal to the expected number of items in the phi[], theta[] angles list.
    int Nbeams;
+
+   //! Number of channels in the data, must be at least 1 and each needs an entry in the freqs[] list
    int Nchan;
+
+   //! Number of antennas in the array, including RFI reference antennas
    int Nant;
-   arma::Col<double> phi;    // radian
-   arma::Col<double> theta;  // radian
-   arma::Col<double> freqs;  // list of channel frequencies in Hertz
-   arma::Cube<arma::cx_double> steerings; // array steerings(Nbeams,Nant,Nchan)
+
+   //! Beam steering angle phi in radians, azimuth angle of the signal
+   arma::Col<double> phi;
+
+   //! Beam steering angle theta in radians, tilt angle of plane wave normal from zenith
+   arma::Col<double> theta;
+
+   //! List of channel frequencies in Hertz
+   arma::Col<double> freqs;
+
+   //! Matrix with pre-computed steerings (Nbeams x Nant x Nchan) @see BeamformerWeights::generateSteerings()
+   arma::Cube<arma::cx_double> steerings;
 
    /**
     * Set all current data to zero.
@@ -58,8 +72,11 @@ typedef struct Beams_tt {
 
    /**
     * Change dimensions of the data storage and set all data to zero.
+    * @param[in] Nb Number of beams
+    * @param[in] Na Number of antennas
+    * @param[in] Nc Number of channels
     */
-   void init(int Nb, int Na, int Nc) {
+   void init(const int Nb, const int Na, const int Nc) {
       Nbeams = Nb;
       Nant = Na;
       Nchan = Nc;
@@ -68,6 +85,10 @@ typedef struct Beams_tt {
 
 } Beams_t;
 
+
+/**
+ * Human-readable data output to stream
+ */
 extern std::ostream &operator<<(std::ostream& os, Beams_t const& b);
 
 } // namespace bf

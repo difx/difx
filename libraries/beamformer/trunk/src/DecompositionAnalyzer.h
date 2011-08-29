@@ -68,7 +68,7 @@ class DecompositionAnalyzer {
    public:
 
       /** 
-       * An MDL detector that makes a guess on the number of eigenvalues
+       * An MDL detector that makes a guess at the number of eigenvalues
        * that are above an unknown noise power threshold. This can work 
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.
@@ -80,7 +80,7 @@ class DecompositionAnalyzer {
       double getMDL(int, const int, int&) const;
 
       /** 
-       * An AIC detector that makes a guess on the number of eigenvalues
+       * An AIC detector that makes a guess at the number of eigenvalues
        * that are above an unknown noise power threshold. This can work 
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.

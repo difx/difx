@@ -38,11 +38,16 @@
 namespace bf {
 
 /** 
- * Storage for time-integrated covariance data in the
+ * Provides storage for time-integrated covariance data in the
  * form of a 3D data cube (Nantennas x Nantennas x Nchannels).
- *
  * In case of Fourier domain data, the stored data would be
  * called spectral density matrices instead of covariances.
+ *
+ * The covariance data contained in this class can be
+ * analyzed and modified by other classes, for example
+ * for performing adaptive beamforming, RFI template subtraction,
+ * or decomposition-based RFI mitigation of the covariance
+ * data itself.
  */
 class Covariance {
 
@@ -96,7 +101,10 @@ class Covariance {
 
       /**
        * Load data cube contents from a memory location and
-       * reorganize the memory layout if necessary.
+       * reorganize the memory layout if necessary. Currently a
+       * stub that generates test data.
+       * Modify this for your custom data e.g. for receiving GPU  
+       * beamforming cluster covariance output.
        * @param[in]  raw_data  Pointer to data to load
        * @param[in]  format    Data format (0..N, to be defined)
        */
@@ -153,8 +161,7 @@ class Covariance {
    public:
 
       /**
-       * Operator += for summing the data from another covariance
-       * object into the data cube contained in this object.
+       * Sums the data of another covariance object into the data cube contained in this object.
        */
       Covariance& operator+= (const Covariance &rhs) {
          _Rxx += rhs._Rxx;
@@ -168,9 +175,20 @@ class Covariance {
       int _M_smp;
 
    public:
+      //! Accessor to get number of antennas in contained data
       const int N_ant(void)  const { return _N_ant; }
+
+      //! Accessor to get number of channels in contained data
       const int N_chan(void) const { return _N_chan; }
+
+      //! Accessor to get count of time-integrated covariances in contained data
       const int M_smp(void)  const { return _M_smp; }
+
+      /**
+       * Accessor to get frequency of one channel.
+       * @param[in] ch Number of channel 0..Nchan-1
+       * @return Frequency in Hertz
+       */
       const double channel_freq(const int ch) { return _freqs(ch); }
 
    private:

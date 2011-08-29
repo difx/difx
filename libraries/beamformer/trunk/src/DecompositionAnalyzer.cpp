@@ -81,7 +81,7 @@ DecompositionAnalyzer::DecompositionAnalyzer(EVDecomposition const& deco) : _dec
 
 
 /**
- * An MDL detector that makes a guess on the number of eigenvalues
+ * An MDL detector that makes a guess at the number of eigenvalues
  * that are above an unknown noise power threshold. This can work 
  * reasonably but requires more than N/2 of eigenvalues are indeed 
  * from noise space.
@@ -138,7 +138,7 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
 
 
 /**
- * An AIC detector that makes a guess on the number of eigenvalues
+ * An AIC detector that makes a guess at the number of eigenvalues
  * that are above an unknown noise power threshold. This can work 
  * reasonably but requires more than N/2 of eigenvalues are indeed 
  * from noise space.

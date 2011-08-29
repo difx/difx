@@ -40,7 +40,8 @@ namespace bf {
 /**
  * Base class for computing matrix decompositions of a 3D data cube or single 2D matrix.
  * The base class provides only the generic interface implementation and allocation functions,
- * it does not perform an actual matrix decomposition.
+ * it does not perform an actual matrix decomposition. Functions allow to process subsets of the 
+ * 3D data cube, this allows multithreading and threads to work on different subsets in parallel.
  */
 class Decomposition {
 
@@ -56,6 +57,7 @@ class Decomposition {
 
    public:
 
+      //! Identifier for type of decomposition (eigenvalue, singular value or QR decomposition)
       enum Type { None=-1, EVD=0, SVD=1, QR=2 };
 
    public:
