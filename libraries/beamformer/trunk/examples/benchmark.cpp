@@ -180,7 +180,7 @@ int main(int argc, char** argv)
         if (1) {
            std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
            SVDecomposition dec(rxxDataBlock);
-           DecompositionModifier dm(dec, ae);
+           DecompositionModifier dm(dec);
            Timing speed(Nelem*N_ITER);
            for (int i=0; i<N_ITER; i++) {
               dec.decompose(rxxDataBlock);
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
         if (0) {
            std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
            EVDecomposition dec(rxxDataBlock);
-           DecompositionModifier dm(dec, ae);
+           DecompositionModifier dm(dec);
            Timing speed(Nelem*N_ITER);
            for (int i=0; i<N_ITER; i++) {
               dec.decompose(rxxDataBlock);
