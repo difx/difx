@@ -157,7 +157,7 @@ class Decomposition {
        * Recompute one covariance matrix based on the
        * decomposition data stored internally in this object.
        * Internal and output object data cube sizes must be identical.
-       * @param[inout] cov  Output covariance class for the resulting matrices.
+       * @param[inout] Rxx  Output covariance class for the resulting matrices.
        * @return 0 on success
        */
       int recompose(arma::Mat<arma::cx_double>& Rxx) { 

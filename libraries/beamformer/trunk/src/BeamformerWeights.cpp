@@ -129,12 +129,11 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
       arma::Col<arma::cx_double> weights;
       std::complex<double> inv_power;
 
-      for (int bb=0; bb<beams.Nbeams; bb++) {
-         for (int cc=0; cc<beams.Nchan; cc++) {
+      for (int cc=0; cc<beams.Nchan; cc++) {
+         inverse = arma::inv(Rxx.slice(cc));
+         for (int bb=0; bb<beams.Nbeams; bb++) {
 
             arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
-
-            inverse = arma::inv(Rxx.slice(cc));
             inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);
             weights = (inverse * steering) / inv_power;
 
@@ -148,7 +147,7 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
    // RB-MVDR beamformer with added Cox Projection
    // first, w = (R^-1 * s) / (s' * R^-1 * s) is decomposed into s-parallel w1 and s-orthogonal w2
    // finally, w = w1 + scalar(b) * w2
-   if (true) {
+   if (b > 1.0f) {
 
       arma::Mat<arma::cx_double> inverse;
       arma::Col<arma::cx_double> w_mvdr;
@@ -157,13 +156,13 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
       std::complex<double> inv_power;
       std::complex<double> unitvec_scaling;
 
-      for (int bb=0; bb<beams.Nbeams; bb++) {
-         for (int cc=0; cc<beams.Nchan; cc++) {
+      for (int cc=0; cc<beams.Nchan; cc++) {
+         inverse = arma::inv(Rxx.slice(cc));
+         for (int bb=0; bb<beams.Nbeams; bb++) {
 
             arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
 
             // normal MVDR
-            inverse = arma::inv(Rxx.slice(cc));
             inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);
             w_mvdr = (inverse * steering) / inv_power;
 
