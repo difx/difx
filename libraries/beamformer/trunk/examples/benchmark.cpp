@@ -125,7 +125,7 @@ int main(int argc, char** argv)
         }
 
         if (1) {
-           std::cout << "\nTiming performance of { evd(),svd(),qr(); evd^-1(),svd^-1,qr^-1() } \n";
+           std::cout << "\nTiming performance of { evd(),svd(),qr(); evd^-1(),svd^-1,qr^-1() }, average de&recomposition speed of each:\n";
            EVDecomposition dec_EVD(rxxDataBlock);
            SVDecomposition dec_SVD(rxxDataBlock);
            QRDecomposition dec_QR(rxxDataBlock);
