@@ -47,9 +47,9 @@ class DecompositionModifier {
    public:
       /**
        * C'stor. Ties object to Decomposition class to be modified.
-       * @param[in] cov Decomposition class to modify
+       * @param[in] dc Decomposition class to modify
        */
-      DecompositionModifier(Decomposition& dc, ArrayElements const& ae) : _ae(ae),_dc(dc) { }
+      DecompositionModifier(Decomposition& dc) : _dc(dc) { }
 
       /**
        * D'stor
@@ -74,7 +74,6 @@ class DecompositionModifier {
        void interfererNulling(const int Nmax, const bool nodetect, const int startch, const int endch);
 
    private:
-      ArrayElements const& _ae;
       Decomposition& _dc;
 
 };

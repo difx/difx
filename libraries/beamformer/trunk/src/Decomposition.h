@@ -137,7 +137,7 @@ class Decomposition {
        * Perform batch recomposition of all covariance matrices based on the
        * decomposition data stored internally in this object.
        * Internal and output object data cube sizes must be identical.
-       * @param[inout] cov  Output covariance class for the resulting matrices.
+       * @param[in,out] cov  Output covariance class for the resulting matrices.
        * @return 0 on success
        */
       int recompose(Covariance& cov);
@@ -146,7 +146,7 @@ class Decomposition {
        * Perform batch recomposition of a range of main covariance matrice(s) based on the
        * decomposition data stored internally in this object.
        * Internal and output object data cube sizes must be identical.
-       * @param[inout] cov    Output covariance class for the resulting matrices.
+       * @param[in,out] cov   Output covariance class for the resulting matrices.
        * @param[in]  startch  Channel at which to start recomposition, 0 is first
        * @param[in]  endch    Last channel (inclusive) to recompose
        * @return 0 on success
@@ -154,10 +154,10 @@ class Decomposition {
       int recompose(Covariance& cov, const int startch, const int endch);
 
       /**
-       * Recompute one covariance matrix based on the
+       * Recompute one covariance matrix based on the first (0-channel)
        * decomposition data stored internally in this object.
        * Internal and output object data cube sizes must be identical.
-       * @param[inout] cov  Output covariance class for the resulting matrices.
+       * @param[in,out] Rxx  Output covariance matrix.
        * @return 0 on success
        */
       int recompose(arma::Mat<arma::cx_double>& Rxx) { 
@@ -178,7 +178,7 @@ class Decomposition {
        * Recompose covariance matrix and store results into output covariance, in the
        * subresult location specified by index 'sliceNr'. Dummy template function only.
        * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
-       * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+       * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
       virtual int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);

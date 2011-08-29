@@ -126,7 +126,7 @@ class Covariance {
        * @param[in]  ae     ArrayElement object with element positions
        * @param[in]  phi    Azimuth angle of signal
        * @param[in]  theta  Tilt angle of plane wave normal from zenith
-       * @param[in]  p      Signal power
+       * @param[in]  P      Signal power
        * @param[in]  Pna    Internal noise power (added to autocorrelations)
        * @param[in]  Pnc    Correlated noise power (added to cross and auto)
        */
@@ -141,7 +141,7 @@ class Covariance {
        * @param[in]  ae     ArrayElement object with element positions
        * @param[in]  phi    Azimuth angle of signal
        * @param[in]  theta  Tilt angle of plane wave normal from zenith
-       * @param[in]  p      Signal power
+       * @param[in]  P      Signal power
        * @param[in]  Pna    Internal noise power (added to autocorrelations)
        * @param[in]  Pnc    Correlated noise power (added to cross and auto)
        * @param[in]  Gref   Reference antenna gain over array element gain

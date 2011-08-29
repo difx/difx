@@ -37,9 +37,8 @@ namespace bf {
  * Calculate steering vectors for the angles of each beam in the beams list, using
  * the specified array element positions and channel frequencies. Steering vectors 
  * are the phase delay of a plane wave experienced at each individual element of the array.
- *
- * @param[inout] beams The Beams_t struct whose angles to convert into complex steerings
- * @param[in] ae Array element positions
+ * @param[in,out] beams The Beams_t struct whose angles to convert into complex steerings
+ * @param[in] ae        Array element positions
  * @return Steerings written back into the beams_t struct
  */
 void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& ae) const
@@ -83,7 +82,7 @@ void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& a
  * With b>1 weights are MVDR Cox Projection WNGC.
  *
  * @param[in] beams The Beams_t struct with beam steerings to use for MVDR weights
- * @param[in] deco  Some decomposition of the covariance data.
+ * @param[in] cov   The covariance data to use
  * @param[in] b     Factor for Cox Projection WNGC
  */
 void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov, const double b)

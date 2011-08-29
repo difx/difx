@@ -91,7 +91,7 @@ class ArrayElements {
       /**
        * Set flags on element, overwrites earlier flags.
        * @param[in] ielem The index of the element 0..N-1
-       * @param[in] flag  The value to set, consisting of OR'ed flags 
+       * @param[in] flags The value to set, consisting of OR'ed flags 
        * @return Old flag value before it was overwritten or -1 on error
        * Flags are POINT_ASTRO, POINT_RFI_REFERENCE, POL_LCP and POL_LCP.
        */

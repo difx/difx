@@ -162,10 +162,10 @@ void Covariance::store(const char* fn, const int format) const
  * Add an artificial signal to the covariance matrix
  * @param[in]  ch     Channel number
  * @param[in]  lambda Wavelength in meters
- * @param[in]  ar     ArrayElement object with element positions
+ * @param[in]  ae     ArrayElement object with element positions
  * @param[in]  phi    Azimuth angle of signal
  * @param[in]  theta  Tilt angle of plane wave normal from zenith
- * @param[in]  p      Signal power
+ * @param[in]  P      Signal power
  * @param[in]  Pna    Internal noise power (added to autocorrelations)
  * @param[in]  Pnc    Correlated noise power (added to cross and auto)
  */
@@ -186,7 +186,7 @@ void Covariance::addSignal(int ch, double lambda, ArrayElements const& ae, doubl
  * @param[in]  ae     ArrayElement object with element positions
  * @param[in]  phi    Azimuth angle of signal
  * @param[in]  theta  Tilt angle of plane wave normal from zenith
- * @param[in]  p      Signal power
+ * @param[in]  P      Signal power
  * @param[in]  Pna    Internal noise power (added to autocorrelations)
  * @param[in]  Pnc    Correlated noise power (added to cross and auto)
  * @param[in]  Gref   Reference antenna gain over array element gain

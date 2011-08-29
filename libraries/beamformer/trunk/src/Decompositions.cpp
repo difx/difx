@@ -63,7 +63,7 @@ int QRDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 /**
  * Revert QR decomposition and store results into input array specified by index 'slicenr'.
  * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
- * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+ * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
 int QRDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
@@ -120,7 +120,7 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 /**
  * Revert Eigenvalue decomposition and store results into input array specified by index 'slicenr'.
  * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
- * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+ * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
 int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
@@ -177,7 +177,7 @@ int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
 /**
  * Revert SV decomposition and store results into input array specified by index 'slicenr'.
  * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
- * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+ * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
 int SVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)

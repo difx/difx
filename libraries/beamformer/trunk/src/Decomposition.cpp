@@ -114,7 +114,7 @@ int Decomposition::decompose(Covariance const& cov, const int startch, const int
  * Perform batch recomposition of all covariance matrices based on the
  * decomposition data stored internally in this object.
  * Internal and output object data cube sizes must be identical.
- * @param[inout]  cov  Output covariance class for the resulting matrices.
+ * @param[in,out]  cov  Output covariance class for the resulting matrices.
  * @return 0 on success
  */
 int Decomposition::recompose(Covariance& cov)
@@ -128,7 +128,7 @@ int Decomposition::recompose(Covariance& cov)
  * Batch recompute a range of main covariance matrice(s) based on the
  * decomposition data stored internally in this object.
  * Internal and output object data cube sizes must be identical.
- * @param[inout] cov    Output covariance class for the resulting matrices.
+ * @param[in,out] cov   Output covariance class for the resulting matrices.
  * @param[in]  startch  Channel at which to start recomposition, 0 is first
  * @param[in]  endch    Last channel (inclusive) to recompose   
  * @return 0 on success
@@ -176,7 +176,7 @@ int Decomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double
  * Recompose covariance matrix and store results into output covariance, in the
  * subresult location specified by index 'sliceNr'. Dummy template function only.
  * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
- * @param[inout]  Rxx    Output matrix to overwrite with recomposed result
+ * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
 int Decomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)

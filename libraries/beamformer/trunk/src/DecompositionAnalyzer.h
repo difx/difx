@@ -74,7 +74,7 @@ class DecompositionAnalyzer {
        * from noise space.
        * @param[in]    channel   Which channel of multi-channel data to analyse
        * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
-       * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
+       * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
        * @return Returns the minimum detected MDL value.
        */
       double getMDL(int, const int, int&) const;
@@ -86,7 +86,7 @@ class DecompositionAnalyzer {
        * from noise space.
        * @param[in]    channel   Which channel of multi-channel data to analyse
        * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
-       * @param[inout] rank      Storage for final determined rank (1..N), 0 means not found
+       * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
        * @return Returns the minimum detected MDL value.
        */
       double getAIC(int, const int, int&) const;
@@ -109,8 +109,8 @@ class DecompositionAnalyzer {
        * @param[in]    k     Criterion parameter, must be 0 <= k < (N=len(eigs))
        * @param[in]    M_smp Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
        * @param[in]    eigs  Vector containing eigenvalues, pre-sorted descendingly, eigs(0)>=eigs(1)>=...>=eigs(N-1)
-       * @param[inout] AIC   Result of computing AIC(k)
-       * @param[inout] MDL   Result of computing MDL(k)
+       * @param[in,out] AIC  Result of computing AIC(k)
+       * @param[in,out] MDL  Result of computing MDL(k)
        * @return Criterion values by reference
        */
       void compute_IC_k(const unsigned int k, const int M_smp, arma::Col<double> const& eigs, double& AIC, double& MDL) const;
