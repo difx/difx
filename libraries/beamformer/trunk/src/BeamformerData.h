@@ -45,7 +45,10 @@ typedef struct Beams_tt {
    arma::Col<double> theta;  // radian
    arma::Col<double> freqs;  // list of channel frequencies in Hertz
    arma::Cube<arma::cx_double> steerings; // array steerings(Nbeams,Nant,Nchan)
-   
+
+   /**
+    * Set all current data to zero.
+    */   
    void init() {
       phi.zeros(Nbeams);
       theta.zeros(Nbeams);
@@ -53,6 +56,9 @@ typedef struct Beams_tt {
       steerings.zeros(Nbeams, Nant, Nchan);
    }
 
+   /**
+    * Change dimensions of the data storage and set all data to zero.
+    */
    void init(int Nb, int Na, int Nc) {
       Nbeams = Nb;
       Nant = Na;
