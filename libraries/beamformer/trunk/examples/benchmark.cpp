@@ -66,8 +66,7 @@ int main(int argc, char** argv)
         ae.setFlags(0, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
         ae.setFlags(1, ArrayElements::POL_LCP | ArrayElements::POINT_RFI_REFERENCE);
 
-        cout << "Number of antennas = " << xyz.Nant << "\n";
-        std::cout << ae;
+        cout << "Final number of antennas on square grid = " << xyz.Nant << "\n";
 
         //////////////////////////////////////////
         // PREPARE INPUT, OUTPUT COVARIANCES
@@ -98,18 +97,20 @@ int main(int argc, char** argv)
 
         }
 
-
+#if 1
         // Test the test
         if (1) {
            std::cout << "Testing the Timing() class with 5-second wait and 5 elements\n";
            Timing speed(5);
            usleep(5*1e6);
         }
+#endif
 
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
         /////////////////////////////////////////
 
+#if 1
         double Ncomplex = rxxDataBlock.N_ant() * rxxDataBlock.N_ant();
         double Nelem = rxxDataBlock.N_chan();
 
@@ -169,11 +170,13 @@ int main(int argc, char** argv)
               dec.recompose(outDataBlock);
            }
         }
+#endif
 
         /////////////////////////////////////////////
         // DECOMPOSITION, NULLING and RECOMPOSITION
         /////////////////////////////////////////////
 
+#if 1
         if (1) {
            std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
            SVDecomposition dec(rxxDataBlock);
@@ -186,7 +189,7 @@ int main(int argc, char** argv)
            }
         }
 
-        if (1) {
+        if (0) {
            std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
            EVDecomposition dec(rxxDataBlock);
            DecompositionModifier dm(dec, ae);
@@ -202,7 +205,54 @@ int main(int argc, char** argv)
            // ...
            // QRDecomposition: not yet supported by DecompositionModifier.interfererNulling()
         }
+#endif
+
+        ///////////////////////////////////////////////////////
+        // BEAMFORMING
+        //////////////////////////////////////////////////////
+
+        if (1) {
+           Beams_t beams;
+           BeamformerWeights bw;
+           const int Nbeams = 64;
+
+           std::cout << "\nTiming beams/sec performance of " << Nbeams << "-beam adaptive beamforming weights\n";
+
+           beams.init(Nbeams, rxxDataBlock.N_ant(), rxxDataBlock.N_chan());
+           for (int bb=0; bb<Nbeams; bb++) {
+              beams.phi(bb) = 0.0f + bb;  beams.theta(0) = 0.0f - bb;
+           }
+           for (int cc=0; cc<rxxDataBlock.N_chan(); cc++) {
+              beams.freqs(cc) = rxxDataBlock.channel_freq(0) + cc*16384.0f;
+           }
+
+           bw.generateSteerings(beams, ae);
+ 
+           if (1) {
+              std::cout << "Classic beamformer, b=0.0f\n";
+              Timing speed(Nbeams*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 bw.generateMVDR(beams, rxxDataBlock, 0.0f);
+              }
+           }
+
+           if (1) {
+              std::cout << "MVDR beamformer, b=1.0f\n";
+              Timing speed(Nbeams*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 bw.generateMVDR(beams, rxxDataBlock, 0.0f);
+              }
+           }
+
+           if (1) {
+              std::cout << "RB-MVDR beamformer, b=1.0f+1e-4\n";
+              Timing speed(Nbeams*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 bw.generateMVDR(beams, rxxDataBlock, 1.0f+1e-4);
+              }
+           }
+
+        }
 
 	return 0;
 }
-
