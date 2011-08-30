@@ -115,7 +115,8 @@ int main(int argc, char** argv)
         double Nelem = rxxDataBlock.N_chan();
 
         std::cout << "\nNOTE\n"
-                  << "Benchmark 'elements' are individual covariance matrices with " << Ncomplex << " complex values each.\n"
+                  << "Benchmark 'elements' are covariance matrices with " << Ncomplex << " complex values each.\n"
+                  << "Speeds should be interpreted as 'channels/second' for some set of processing steps.\n"
                   << "NOTE\n\n";
 
         if (1) {
@@ -189,8 +190,8 @@ int main(int argc, char** argv)
            }
         }
 
-        if (0) {
-           std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
+        if (1) {
+           std::cout << "\nTiming performance of EVD decomposition, RFI detection and nulling, recomposition\n";
            EVDecomposition dec(rxxDataBlock);
            DecompositionModifier dm(dec);
            Timing speed(Nelem*N_ITER);
