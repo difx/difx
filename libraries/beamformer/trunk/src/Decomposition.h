@@ -63,9 +63,13 @@ class Decomposition {
    public:
 
       /**
-       * C'stor for batch decomposition. Allocates sufficient internal space
-       * to compute and store decomposition results of multiple covariance
-       * matrices in Rxx data cube.
+       * Base class C'stor for batch decomposition. Allocates sufficient internal space
+       * to compute and store decomposition results of multiple covariance matrices
+       * that are found in the Rxx Covariance object. The dimensions and properties of the
+       * specified Rxx determine the required amount of internal memory.
+       *
+       * Calls to other member functions should either use the same Rxx passed to this
+       * c'stor, or must use some other Covariance data of equal size.
        *
        * @param[in] Rxx Reference to covariance class
        */
@@ -74,9 +78,11 @@ class Decomposition {
       }
 
       /**
-       * C'stor for decomposition. Allocates sufficient internal space
-       * to compute and store decomposition results of a single
-       * covariance matrix Rxx.
+       * Base class C'stor for decomposition. Allocates sufficient internal space
+       * to compute and store decomposition results of a single covariance matrix.
+       *
+       * Calls to other member functions should either use the same Rxx passed to this
+       * c'stor, or must use some other matrix of equal size.
        *
        * @param[in] Rxx Reference to raw covariance data
        */
@@ -85,7 +91,7 @@ class Decomposition {
       }
 
       /**
-       * D'stor to free internal allocations.
+       * Base class D'stor to free internal allocations.
        */
       ~Decomposition() { }
 
@@ -168,22 +174,24 @@ class Decomposition {
 
    private:
       /**
-       * Decompose covariance matrix and store results into output array
+       * Child classes need to implement this function.
+       * Decomposes covariance matrix and store results into output array
        * specified by index 'sliceNr'. Dummy template function only.
        * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      virtual int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+      virtual int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx) = 0;
 
       /**
-       * Recompose covariance matrix and store results into output covariance, in the
+       * Child classes need to implement this function.
+       * Recomposes covariance matrix and store results into output covariance, in the
        * subresult location specified by index 'sliceNr'. Dummy template function only.
        * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
        * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
-      virtual int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      virtual int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx) = 0;
 
    protected:
 

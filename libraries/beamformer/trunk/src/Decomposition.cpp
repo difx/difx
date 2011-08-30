@@ -158,34 +158,6 @@ int Decomposition::recompose(Covariance& cov, const int startch, const int endch
 }
 
 
-/**
- * Decompose covariance matrix and store results into output array
- * specified by index 'sliceNr'. Dummy template function only.
- * @param[in]  sliceNr   Index into output cube (0=single matrix, 1..N+1=cube storage)
- * @param[in]  Rxx       Matrix to decompose
- * @return 0 on success
- */
-int Decomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
-{
-   // DERIVED CLASS MUST IMPLEMENT THIS
-   return 0;
-}
-
-
-/**
- * Recompose covariance matrix and store results into output covariance, in the
- * subresult location specified by index 'sliceNr'. Dummy template function only.
- * @param[in]  sliceNr   Index into internal source data (0=single matrix, 1..N+1=cube storage)
- * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
- * @return 0 on success
- */
-int Decomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
-{
-   // DERIVED CLASS MUST IMPLEMENT THIS
-   return 0;
-}
-
-
 /**   
  * Human-readable data output to stream
  */
