@@ -981,6 +981,14 @@ public class ProjectManagerUI extends javax.swing.JFrame
          String jobLogFile = (mProjectPath + "/" + (jobsTable.getValueAt(row, 0).toString())).trim() + ".difxlog";
          thePDM.append(jobLogFile);
 
+         // check that log file exist
+         File logFile = new File(jobLogFile);
+         if (!logFile.exists())
+         {
+             thePDM.append ("Logfile for job: " + (jobsTable.getValueAt(row, 0).toString()).trim() + " does not exist");
+             return;
+         }
+
          // Read the resource config file into diFxMessage and process one line at a time
          Scanner s = null;
          try
