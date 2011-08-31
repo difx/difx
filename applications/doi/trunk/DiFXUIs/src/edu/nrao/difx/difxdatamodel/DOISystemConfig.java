@@ -32,6 +32,10 @@ public class DOISystemConfig extends DiFXObject
    public static String DOIVersion         = "2.0";
    
     private static String configFile = "";
+    
+   public static String DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+   public static String TIME_FORMAT      = "HH:mm:ss";
+   public static String DATE_FORMAT      = "yyyy-MM-dd";
 
     /**
      * Gets the path to the main configuration file.
