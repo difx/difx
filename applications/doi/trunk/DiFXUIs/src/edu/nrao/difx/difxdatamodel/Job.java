@@ -974,6 +974,7 @@ public class Job extends DiFXObject {
       return (verifyResources());
    }
 
+   
    public boolean verifyResources()
    {
       //System.out.println("***************** Job verify resources.");

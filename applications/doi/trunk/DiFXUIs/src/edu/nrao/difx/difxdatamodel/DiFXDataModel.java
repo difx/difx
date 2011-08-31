@@ -1748,6 +1748,11 @@ System.out.println("DifXDataModel job free resources complete.");
      }
    }
 
+   /**
+    * Reads the resources config file containing available
+    * mark5 units and processing nodes
+    * @param fileToOpen the path to the resource config file
+    */
    public void readResourcesConfig(String fileToOpen)
    {
       //System.out.printf("******** Data model read resources config file data. \n");
@@ -1787,7 +1792,8 @@ System.out.println("DifXDataModel job free resources complete.");
                strtok = s.next();
                resource.setType(Short.valueOf(strtok));
 
-               // this needs to be revisited...assume resource enabled
+            
+               // TODO this needs to be revisited...assume resource enabled
                resource.setEnabled(true);
 
                // set resource data into the body

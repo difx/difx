@@ -304,7 +304,7 @@ public class ErrorManagerUI extends javax.swing.JFrame
 
    private void completeButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_completeButtonActionPerformed
    {//GEN-HEADEREND:event_completeButtonActionPerformed
-      // TODO add your handling code here:
+     
       String jobName = "";
       String path    = "";
       Job job = mDataModel.getJob(jobName, path);
@@ -313,7 +313,7 @@ public class ErrorManagerUI extends javax.swing.JFrame
 
    private void failButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_failButtonActionPerformed
    {//GEN-HEADEREND:event_failButtonActionPerformed
-      // TODO add your handling code here:
+      
       String jobName = "";
       String path    = "";
       Job job = mDataModel.getJob(jobName, path);
@@ -322,7 +322,7 @@ public class ErrorManagerUI extends javax.swing.JFrame
 
    private void readyButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_readyButtonActionPerformed
    {//GEN-HEADEREND:event_readyButtonActionPerformed
-      // TODO add your handling code here:
+      
       String jobName = "";
       String path    = "";
       Job job = mDataModel.getJob(jobName, path);
@@ -331,7 +331,7 @@ public class ErrorManagerUI extends javax.swing.JFrame
 
    private void unknownButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_unknownButtonActionPerformed
    {//GEN-HEADEREND:event_unknownButtonActionPerformed
-      // TODO add your handling code here:
+      
       String jobName = "";
       String path    = "";
       Job job = mDataModel.getJob(jobName, path);

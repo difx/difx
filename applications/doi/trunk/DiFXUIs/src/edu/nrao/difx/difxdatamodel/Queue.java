@@ -902,9 +902,11 @@ System.out.printf("Add disjoint job ==> %s %s %s %s. \n", job.getObjName(), job.
       return null;
    }
 
-   //
-   // -- Start and stop job
-   //
+
+   /**
+    * Start a job
+    * @param job 
+    */
    public void runJob(Job job)
    {
       if (job != null)

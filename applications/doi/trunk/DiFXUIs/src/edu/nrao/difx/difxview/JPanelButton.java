@@ -56,7 +56,6 @@ public class JPanelButton extends javax.swing.JPanel {
 
     private void jTogglePanelButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jTogglePanelButtonActionPerformed
     {//GEN-HEADEREND:event_jTogglePanelButtonActionPerformed
-       // TODO add your handling code here:
        state = !state;
        
     }//GEN-LAST:event_jTogglePanelButtonActionPerformed

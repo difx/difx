@@ -2830,7 +2830,6 @@ public int expandJTreeNode (javax.swing.JTree tree,
 
     private void mouseDraggedHandler(java.awt.event.MouseEvent evt)//GEN-FIRST:event_mouseDraggedHandler
     {//GEN-HEADEREND:event_mouseDraggedHandler
-       // TODO add your handling code here:
        int fromRow = jobsTable.getSelectedRow();
        if (fromRow >= 0)
        {
@@ -2948,7 +2947,7 @@ public int expandJTreeNode (javax.swing.JTree tree,
 
     private void jobsTableMouseReleased(java.awt.event.MouseEvent evt)//GEN-FIRST:event_jobsTableMouseReleased
     {//GEN-HEADEREND:event_jobsTableMouseReleased
-       // TODO add your handling code here:
+      
        int row = jobsTable.rowAtPoint(evt.getPoint());
        int col = jobsTable.columnAtPoint(evt.getPoint());
 

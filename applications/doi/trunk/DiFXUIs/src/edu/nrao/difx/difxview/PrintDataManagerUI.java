@@ -91,7 +91,6 @@ public class PrintDataManagerUI extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_jMenuItem1ActionPerformed
     {//GEN-HEADEREND:event_jMenuItem1ActionPerformed
 
-      // TODO add your handling code here:
       PrinterJob printJob = PrinterJob.getPrinterJob();
       printJob.setPrintable(textArea.getPrintable(null, null));
       if (printJob.printDialog())
