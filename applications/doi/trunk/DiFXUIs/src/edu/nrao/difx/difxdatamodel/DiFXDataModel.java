@@ -1758,6 +1758,7 @@ System.out.println("DifXDataModel job free resources complete.");
     */
    public void readResourcesConfig(String fileToOpen)
    {
+       String line = "";
       //System.out.printf("******** Data model read resources config file data. \n");
 
       // Create factory to create messages
@@ -1769,45 +1770,55 @@ System.out.println("DifXDataModel job free resources complete.");
       {
          FileReader     fReader = new FileReader(fileToOpen);
          BufferedReader bReader = new BufferedReader(fReader);
-         s = new Scanner(bReader);
-         while (s.hasNext())
+         
+         while ((line = bReader.readLine()) != null)
          {
-            Header header = factory.createHeader();
-            header.setFrom("DOIView");
-            header.setTo("DOIModel");
-            header.setMpiProcessId("0");
-            header.setIdentifier("doi");
-            header.setType("DOIMessage");
+             // skip over comment lines
+             if (line.trim().startsWith("#"))
+                 continue;
+             
+             s = new Scanner (line);
+             
+             while (s.hasNext())
+             {
+  
+                Header header = factory.createHeader();
+                header.setFrom("DOIView");
+                header.setTo("DOIModel");
+                header.setMpiProcessId("0");
+                header.setIdentifier("doi");
+                header.setType("DOIMessage");
 
-            Body body = factory.createBody();
-            DoiResourceConfig resource = factory.createDoiResourceConfig();
+                Body body = factory.createBody();
+                DoiResourceConfig resource = factory.createDoiResourceConfig();
 
-            String strtok = s.next().trim();
-            if (strtok.contains("mark5fx") || strtok.contains("swc"))
-            {
-               resource.setName(strtok);
-               strtok = s.next();
-               resource.setNumCPUs(Short.valueOf(strtok));
-               strtok = s.next();
-               resource.setNumCores(Short.valueOf(strtok));
-               strtok = s.next();
-               resource.setBogusGHz(Float.valueOf(strtok));
-               strtok = s.next();
-               resource.setType(Short.valueOf(strtok));
 
-            
-               // TODO this needs to be revisited...assume resource enabled
-               resource.setEnabled(true);
+                String strtok = s.next().trim();
 
-               // set resource data into the body
-               body.setDoiResourceConfig(resource);
+                resource.setName(strtok);
+                strtok = s.next();
+                resource.setNumCPUs(Short.valueOf(strtok));
+                strtok = s.next();
+                resource.setNumCores(Short.valueOf(strtok));
+                strtok = s.next();
+                resource.setBogusGHz(Float.valueOf(strtok));
+                strtok = s.next();
+                resource.setType(Short.valueOf(strtok));
 
-               // update the data model with DifxMessage
-               DifxMessage difxMsg = factory.createDifxMessage();
-               difxMsg.setHeader(header);
-               difxMsg.setBody(body);
-               serviceDataModel(difxMsg);
-            }
+
+                // TODO this needs to be revisited...assume resource enabled
+                resource.setEnabled(true);
+
+                // set resource data into the body
+                body.setDoiResourceConfig(resource);
+
+                // update the data model with DifxMessage
+                DifxMessage difxMsg = factory.createDifxMessage();
+                difxMsg.setHeader(header);
+                difxMsg.setBody(body);
+                serviceDataModel(difxMsg);
+               
+             }
 
          } // -- while (s.hasNext())
       }
