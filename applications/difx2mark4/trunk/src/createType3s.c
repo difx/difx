@@ -53,6 +53,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
 
     double t,
            mjd,
+           mjd_latest,
            tint,
            cable_delay,
            freq,
@@ -117,36 +118,6 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                     // and at every continue
         if (stns[n].invis == 0)
             continue;
-printf("**** **** ****\n");
-printf ("n %d scanId %d configId %d\n", n, scanId, D->scan[scanId].configId); fflush(stdout);
-printf ("antennId %d pols %c %c %c %c %c %c %c %c\n",
-D->datastream[n].antennaId, 
-D->datastream[n].recBandPolName[0],
-D->datastream[n].recBandPolName[1],
-D->datastream[n].recBandPolName[2],
-D->datastream[n].recBandPolName[3],
-D->datastream[n].recBandPolName[4],
-D->datastream[n].recBandPolName[5],
-D->datastream[n].recBandPolName[6],
-D->datastream[n].recBandPolName[7]); fflush(stdout);
-printf ("recBandFreqId %d %d %d %d %d %d %d %d\n",
-D->datastream[n].recBandFreqId[0],
-D->datastream[n].recBandFreqId[1],
-D->datastream[n].recBandFreqId[2],
-D->datastream[n].recBandFreqId[3],
-D->datastream[n].recBandFreqId[4],
-D->datastream[n].recBandFreqId[5],
-D->datastream[n].recBandFreqId[6],
-D->datastream[n].recBandFreqId[7]);fflush(stdout);
-printf ("corresponding recFreqId %d %d %d %d %d %d %d %d\n",
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[0]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[1]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[2]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[3]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[4]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[5]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[6]],
-D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[7]]);fflush(stdout);
 
         strcpy (outname, node);     // form output file name
         strcat (outname, "/");
@@ -227,6 +198,7 @@ D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[7]]);fflush(stdout);
 
                                     // construct type 309 pcal records and write them
                                     // check to see if there is a input pcal file for this antenna
+        mjd_latest = 0.0;
         for (j = startJob; j <= endJob; j++)
             {
             strncpy (pcal_filnam, D->job[j].outputFile, 242);
@@ -264,6 +236,14 @@ D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[7]]);fflush(stdout);
                             printf("      pcal late %13.6f>%13.6f\n", t, D->scan[scanId].mjdEnd);
                         break;
                         }
+                                        // skip over any out of order mjd's
+                    if (mjd <= mjd_latest)
+                        {
+                        if (opts->verbose > 1)
+                            printf("      pcal out of order %13.6f<%13.6f\n", mjd, mjd_latest);
+                        continue;
+                        }
+
                                         // reject any pcal data for times in flag file
                     for (i=0; i < D->job[j].nFlag; i++)
                         {
@@ -277,6 +257,7 @@ D->datastream[n].recFreqId[D->datastream[n].recBandFreqId[7]]);fflush(stdout);
                             continue;
                             }
                         }
+                    mjd_latest = mjd;   // new "high-water mark"
 
                                         // calculate and insert rot start time of record
                     t309.rot = 3.2e7 * 8.64e4 * (t - 1.0);

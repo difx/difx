@@ -27,7 +27,7 @@
 #define MAX_FBANDS 20 
 #define EXP_CODE_LEN 4
                                     // threshold magnitude for vis. rejection
-#define MAGLIM 10.0
+#define MAGLIM 10000.0
 
 enum booleans {FALSE, TRUE};
 

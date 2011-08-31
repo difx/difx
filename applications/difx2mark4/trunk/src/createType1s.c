@@ -201,7 +201,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 fprintf (stderr, "problem finding data in %s\n", dirname);
                 return (-1);
                 }
-            free(pdir);
+            closedir (pdir);
 
             strcpy (inname, dirname);
             strcat (inname, "/");
