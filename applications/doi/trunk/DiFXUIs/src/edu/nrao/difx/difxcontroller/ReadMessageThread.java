@@ -5,7 +5,6 @@
 package edu.nrao.difx.difxcontroller;
 
 import edu.nrao.difx.difxdatamodel.DOISystemConfig;
-import edu.nrao.difx.difxdatamodel.DiFXSystemConfig;
 import java.net.*;
 import java.io.*;
 
