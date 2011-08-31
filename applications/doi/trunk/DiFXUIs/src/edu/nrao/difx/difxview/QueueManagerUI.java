@@ -507,7 +507,7 @@ public class QueueManagerUI extends javax.swing.JFrame
                // Update state and wall time, enable/disable Run/Stop button
                queueStateTextField.setText(DiFXSystemStatus.ConvertQueueStateIntoString(queue.getState()));
                Calendar cal = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.TIME_FORMAT);
                wallTimeTextField.setText(sdf.format(cal.getTime()));
               
                // Update the jobs available and queue tables
@@ -823,7 +823,7 @@ public class QueueManagerUI extends javax.swing.JFrame
                      startJD.add(timeOffset);
                      Date startDateTime = startJD.toDate();
 
-                     SimpleDateFormat dateFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                     SimpleDateFormat dateFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                      tableModel.setValueAt(dateFormat.format(startDateTime), tableRow, 5);  // start time
                      tableModel.setValueAt(job.getExecuteTimeSeconds(),      tableRow, 6);  // duration
                      tableModel.setValueAt(String.format("%.2f", job.getCompletion()),
@@ -937,7 +937,7 @@ public class QueueManagerUI extends javax.swing.JFrame
                      startJD.add(timeOffset);
                      Date startDateTime = startJD.toDate();
 
-                     SimpleDateFormat dateFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                     SimpleDateFormat dateFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                      tableModel.setValueAt(dateFormat.format(startDateTime), tableRow, 4);  // start time
                      float obsLHours = (float) (job.getExecuteTimeSeconds() / 3600.0);
                      tableModel.setValueAt(String.format("%.2f",obsLHours),  tableRow, 5);  // duration in hours

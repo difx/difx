@@ -13,7 +13,6 @@ package edu.nrao.difx.difxview;
 import edu.nrao.difx.difxcontroller.DiFXController;
 import edu.nrao.difx.difxdatamodel.DOISystemConfig;
 import edu.nrao.difx.difxdatamodel.DiFXDataModel;
-import edu.nrao.difx.difxdatamodel.DiFXSystemConfig;
 import edu.nrao.difx.difxdatamodel.Job;
 import edu.nrao.difx.difxdatamodel.MessageListener;
 import edu.nrao.difx.difxdatamodel.Queue;
@@ -199,7 +198,7 @@ public class MitigateErrorManagerUI extends javax.swing.JFrame
                         tableModel.setValueAt(String.format("%.2f", job.getCompletion()), // complete
                                                                     tableRow, 3);
                         Date stopDate = new Date(job.getCorrelationStopUTC());
-                        SimpleDateFormat dateFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                        SimpleDateFormat dateFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                         tableModel.setValueAt(dateFormat.format(stopDate), tableRow, 4);  // date complete
                         tableModel.setValueAt(job.getProjectPath(), tableRow, 5);         // project path
 

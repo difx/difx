@@ -25,7 +25,6 @@ import java.util.logging.Logger;
  */
 public class DiFXDataModel {
 
-   private DiFXSystemConfig    mSystemConfig   = new DiFXSystemConfig();
    private DiFXSystemStatus    mSystemStatus   = new DiFXSystemStatus();
 
    private List<Module>        mModules        = new ArrayList<Module>();
@@ -434,11 +433,6 @@ public class DiFXDataModel {
       this.mQueue = newQueue;
    }
 
-   // System get/set methods
-   public void setSystemConfig(DiFXSystemConfig sysConfig)
-   {
-      mSystemConfig = sysConfig;
-   }
 
    public void setSystemStatus(DiFXSystemStatus sysStatus)
    {
@@ -551,7 +545,7 @@ public class DiFXDataModel {
 
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp + " " +
@@ -703,7 +697,7 @@ System.out.println("DifXDataModel job free resources complete.");
             {
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp   + " "   +
@@ -722,7 +716,7 @@ System.out.println("DifXDataModel job free resources complete.");
             {
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp   + " "   +
@@ -738,7 +732,7 @@ System.out.println("DifXDataModel job free resources complete.");
             {
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp   + " "   +
@@ -754,7 +748,7 @@ System.out.println("DifXDataModel job free resources complete.");
             {
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp   + " "   +
@@ -779,7 +773,7 @@ System.out.println("DifXDataModel job free resources complete.");
             {
                String stateString   = difxMsg.getBody().getDifxStatus().getState();
                Calendar cal         = Calendar.getInstance();
-               SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+               SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                String timeStamp     = sdf.format(cal.getTime());
 
                String strToAdd = timeStamp   + " "   +
@@ -856,7 +850,7 @@ System.out.println("DifXDataModel job free resources complete.");
 
                   // create initial running message
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp + " " +
@@ -960,7 +954,7 @@ System.out.println("DifXDataModel job free resources complete.");
                      postUpdatesToDatabase(job);
                      String stateString   = difxMsg.getBody().getDifxStatus().getState();
                      Calendar cal         = Calendar.getInstance();
-                     SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                     SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                      String timeStamp     = sdf.format(cal.getTime());
 
                      String strToAdd = timeStamp   + " "   +
@@ -1001,7 +995,7 @@ System.out.println("DifXDataModel job free resources complete.");
                {
                   String stateString   = difxMsg.getBody().getDifxStatus().getState();
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp   + " "   +
@@ -1023,7 +1017,7 @@ System.out.println("DifXDataModel job free resources complete.");
                {
                   String stateString   = difxMsg.getBody().getDifxStatus().getState();
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp   + " "   +
@@ -1042,7 +1036,7 @@ System.out.println("DifXDataModel job free resources complete.");
                {
                   String stateString   = difxMsg.getBody().getDifxStatus().getState();
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp   + " "   +
@@ -1061,7 +1055,7 @@ System.out.println("DifXDataModel job free resources complete.");
                {
                   String stateString   = difxMsg.getBody().getDifxStatus().getState();
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp   + " "   +
@@ -1089,7 +1083,7 @@ System.out.println("DifXDataModel job free resources complete.");
                {
                   String stateString   = difxMsg.getBody().getDifxStatus().getState();
                   Calendar cal         = Calendar.getInstance();
-                  SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                  SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                   String timeStamp     = sdf.format(cal.getTime());
 
                   String strToAdd = timeStamp   + " "   +
@@ -1290,7 +1284,7 @@ System.out.println("DifXDataModel job free resources complete.");
             String alertString   = DiFXSystemStatus.ConvertDiFXAlertIntoString(
                                      DiFXSystemStatus.DiFXAlerts.convert(difxMsg.getBody().getDifxAlert().getSeverity()) );
             Calendar cal         = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+            SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
             String timeStamp     = sdf.format(cal.getTime());
 
             String strToAdd = timeStamp   + " "   +
@@ -1634,7 +1628,7 @@ System.out.println("DifXDataModel job free resources complete.");
             String alertString   = DiFXSystemStatus.ConvertDiFXAlertIntoString(
                                      DiFXSystemStatus.DiFXAlerts.convert(difxMsg.getBody().getDoiError().getSeverity()) );
             Calendar cal         = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+            SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
             String timeStamp     = sdf.format(cal.getTime());
 
             String strToAdd = timeStamp   + " "   +
@@ -1779,7 +1773,7 @@ System.out.println("DifXDataModel job free resources complete.");
             Body body = factory.createBody();
             DoiResourceConfig resource = factory.createDoiResourceConfig();
 
-            String strtok = s.next();
+            String strtok = s.next().trim();
             if (strtok.contains("mark5fx") || strtok.contains("swc"))
             {
                resource.setName(strtok);

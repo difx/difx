@@ -10,8 +10,8 @@ import edu.nrao.sss.measure.TimeDuration;
 import edu.nrao.sss.measure.TimeUnits;
 import edu.nrao.difx.difxdatabase.LoadDBThread;
 
+import edu.nrao.difx.difxdatamodel.DOISystemConfig;
 import edu.nrao.difx.difxdatamodel.DiFXDataModel;
-import edu.nrao.difx.difxdatamodel.DiFXSystemConfig;
 import edu.nrao.difx.difxdatamodel.Job;
 import edu.nrao.difx.difxdatamodel.Queue;
 
@@ -126,7 +126,7 @@ public class LoadProductionQueueThread extends Thread
                      startJD.add(timeOffset);
                      Date startDateTime = startJD.toDate();
 
-                     SimpleDateFormat dateFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+                     SimpleDateFormat dateFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
                      mTableModel.setValueAt(dateFormat.format(startDateTime), tableRow, 4);  // start time
                      float obsLHours = (float) (job.getExecuteTimeSeconds() / 3600.0);
                      mTableModel.setValueAt(String.format("%.2f",obsLHours),  tableRow, 5);  // duration in hours

@@ -204,7 +204,7 @@ public class JobManagerUI extends javax.swing.JFrame
          startJD.add(timeOffset);
 
          Date startDateTime          = startJD.toDate();
-         SimpleDateFormat dateFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+         SimpleDateFormat dateFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
          jobStartDateField.setText(dateFormat.format(startDateTime));
 
          // -- Job stop date time: add duration to start date.
@@ -221,7 +221,7 @@ public class JobManagerUI extends javax.swing.JFrame
          JulianDate currJD   = JulianDate.makeFromMjd(currMJD);
          Date       currDate = currJD.toDate();
 
-         SimpleDateFormat currFormat = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+         SimpleDateFormat currFormat = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
          currentTimeField.setText("");
 
          // -- Do not display the year 1858
@@ -232,7 +232,7 @@ public class JobManagerUI extends javax.swing.JFrame
          else // -- display current wall time
          {
             Calendar cal = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat(DiFXSystemConfig.DATE_TIME_FORMAT);
+            SimpleDateFormat sdf = new SimpleDateFormat(DOISystemConfig.DATE_TIME_FORMAT);
             currentTimeField.setText(sdf.format(cal.getTime()));
          }
 
