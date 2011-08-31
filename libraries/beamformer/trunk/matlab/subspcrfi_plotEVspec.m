@@ -15,11 +15,14 @@ function [pax]=subspcrfi_plotEVspec(espec, Ndom, heading, evspecAx)
     pax = [0, Nch, 10*log10(min(min(min(espec,[],2),[],3),[],1)), 10*log10(max(max(max(espec,[],2),[],3),[],1))];
   end
 
+  espec_sorted = espec; % Nsets x Nant x Nch
+  espec_sorted = sort(espec_sorted, 2, 'descend');
+  
   for pp=1:Nsets,
       subplot(Nsets,1,pp), hold on;
       for ii=1:Ndom,
         pcol = [0 0.2 0.2] + 0.8 * [1 0 0] * (Ndom-ii+1)/Ndom;
-        evalues = abs(squeeze(espec(pp,ii,1:Nch)));
+        evalues = abs(squeeze(espec_sorted(pp,ii,1:Nch)));
         plot((1:Nch), 10*log10(evalues), 'Color', pcol),
         axis(pax);
       end
@@ -28,10 +31,10 @@ function [pax]=subspcrfi_plotEVspec(espec, Ndom, heading, evspecAx)
       ylabel('[dB]'), xlabel('channel');
       
       % plot a curve of channel-medians
-      medcurve = squeeze(median(espec(pp,1:Ndom,1:Nch),2));
+      medcurve = squeeze(median(espec_sorted(pp,1:Ndom,1:Nch),2));
       semilogy((1:Nch), 10*log10(abs(medcurve)), 'Color',[0.2 0.8 0.2]);
       
       % plot a curve of channel-averages
-      avgcurve = squeeze(mean(espec(pp,1:Ndom,1:Nch),2));
+      avgcurve = squeeze(mean(espec_sorted(pp,1:Ndom,1:Nch),2));
       plot((1:Nch), 10*log10(abs(avgcurve)), 'Color',[0.2 0.2 0.8]);
   end
