@@ -1,10 +1,27 @@
-svn co []
+
+# --- prerequisites----------------------------------------------------------------------
+
+yum install cmake blas-devel, lapack-devel boost-devel
+
+yum install atlas-devel # version 3.8 or later, remove old versions first
+(yum install atlas-sse2  # SSE2 or other, depending on your system)
+
+yum install armadillo  # version 2.2.1 or later is required
+
+# If distro version of Armadillo Linear Algebra Library is outdated, you need to 
+# manually install version 2.2.1 or later: http://arma.sourceforge.net/download.html
+# Attempt to compile Armadillo only after you installed ATLAS and the others.
+
+# --- configure -------------------------------------------------------------------------
+
 aclocal
 autoconf
 autoheader
 automake -a
 ./configure --prefix=${DIFXROOT}
+
+# --- build -----------------------------------------------------------------------------
+
 make
 # (su root?)
 make install
-
