@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
+<?xml version="1.1" encoding="UTF-8" ?>
 
 <Form version="1.5" maxVersion="1.5" type="org.netbeans.modules.form.forminfo.JFrameFormInfo">
   <NonVisualComponents>
@@ -55,8 +55,8 @@
           <Group type="102" alignment="0" attributes="0">
               <Component id="projectToolBar" min="-2" max="-2" attributes="0"/>
               <EmptySpace min="-2" pref="30" max="-2" attributes="0"/>
-              <Component id="queueToolBar" min="-2" pref="179" max="-2" attributes="0"/>
-              <EmptySpace pref="180" max="32767" attributes="0"/>
+              <Component id="queueToolBar" min="-2" max="-2" attributes="0"/>
+              <EmptySpace pref="191" max="32767" attributes="0"/>
               <Component id="appsToolBar" min="-2" max="-2" attributes="0"/>
           </Group>
           <Component id="bottomPanel" alignment="1" max="32767" attributes="0"/>
@@ -68,10 +68,10 @@
       <Group type="103" groupAlignment="0" attributes="0">
           <Group type="102" alignment="0" attributes="0">
               <Group type="103" groupAlignment="0" attributes="0">
-                  <Component id="queueToolBar" max="32767" attributes="1"/>
+                  <Component id="queueToolBar" min="-2" max="-2" attributes="1"/>
                   <Group type="103" alignment="0" groupAlignment="1" max="-2" attributes="0">
-                      <Component id="projectToolBar" max="32767" attributes="1"/>
-                      <Component id="appsToolBar" alignment="0" max="32767" attributes="1"/>
+                      <Component id="projectToolBar" min="-2" max="-2" attributes="1"/>
+                      <Component id="appsToolBar" alignment="0" min="-2" max="-2" attributes="1"/>
                   </Group>
               </Group>
               <EmptySpace min="-2" max="-2" attributes="0"/>
