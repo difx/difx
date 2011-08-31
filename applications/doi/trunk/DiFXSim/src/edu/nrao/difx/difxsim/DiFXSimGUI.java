@@ -335,13 +335,13 @@ public class DiFXSimGUI extends javax.swing.JFrame {
 }//GEN-LAST:event_openButtonActionPerformed
 
     private void saveButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_saveButtonActionPerformed
-        // TODO add your handling code here:
+       
         String strToWrite = fileTextArea.getText();
         WriteStringToFile(strToWrite);
 }//GEN-LAST:event_saveButtonActionPerformed
 
     private void sendButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_sendButtonActionPerformed
-        // TODO add your handling code here:
+        
         try 
         {
             String strToSend = fileTextArea.getText();
@@ -407,7 +407,7 @@ public class DiFXSimGUI extends javax.swing.JFrame {
 
     private void multiSendButtonActionPerformed(java.awt.event.ActionEvent evt)//GEN-FIRST:event_multiSendButtonActionPerformed
     {//GEN-HEADEREND:event_multiSendButtonActionPerformed
-       // TODO add your handling code here:
+      
         try
         {
             String strToSend = fileTextArea.getText();
