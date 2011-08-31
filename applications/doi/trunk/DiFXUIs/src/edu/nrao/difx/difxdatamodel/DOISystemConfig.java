@@ -33,6 +33,17 @@ public class DOISystemConfig extends DiFXObject
    
     private static String configFile = "";
 
+    /**
+     * Gets the path to the main configuration file.
+     * By default the configuration file is expected to 
+     * be named DOISystemConfig.xml and is assumes to reside
+     * in the conf subdirectory under the directory pointed to 
+     * by the DIFXROOT environment variable.
+     * 
+     * @return the full path of the configuration file
+     * @throws Exception in case the DIFXROOT environment has not been set
+     * @throws Exception in case the configuration file does not exist
+     */
     public static String getConfigFile() throws Exception
     {   
         String difxRoot = "";
@@ -56,6 +67,10 @@ public class DOISystemConfig extends DiFXObject
         return configFile;
     }
 
+    /**
+     * Sets the path to the main configuration file
+     * @param ConfigFile 
+     */
     public static void setConfigFile(String ConfigFile)
     {
         DOISystemConfig.configFile = ConfigFile;
