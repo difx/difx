@@ -28,8 +28,8 @@ public class DiFXDataModel {
    private DiFXSystemStatus    mSystemStatus   = new DiFXSystemStatus();
 
    private List<Module>        mModules        = new ArrayList<Module>();
-   private List<Mark5Unit>     mMark5Units     = new ArrayList<Mark5Unit>(24);
-   private List<ProcessorNode> mProcessorNodes = new ArrayList<ProcessorNode>(10);
+   private List<Mark5Unit>     mMark5Units     = new ArrayList<Mark5Unit>();
+   private List<ProcessorNode> mProcessorNodes = new ArrayList<ProcessorNode>();
 
    private List<Job>           mJobs           = new ArrayList<Job>();
    private List<Project>       mProjects       = new ArrayList<Project>();
@@ -461,8 +461,10 @@ public class DiFXDataModel {
       mListeners.remove(l);
    }
 
-   // Process the DifxObjects into the Data Model
-   //    This method is always called via the Views
+   /**
+    * Process the DifxObjects into the Data Model
+    * This method is always called via the Views
+    */ 
    public synchronized void serviceDataModel(DiFXObject difxObj)
    {
       // -- just pass it through
@@ -1351,6 +1353,10 @@ System.out.println("DifXDataModel job free resources complete.");
       body = null;
    }
 
+   /**
+    * Parse DiFXMessages of type DOIResourceConfig.
+    * @param difxMsg 
+    */
    private void processDOIResourceConfigMessage(DifxMessage difxMsg)
    {
       String  name     = difxMsg.getBody().getDoiResourceConfig().getName();
@@ -1993,7 +1999,9 @@ System.out.println("DifXDataModel job free resources complete.");
       } // -- if ( (job != null) && (job.isDbJob()) )
     }
 
-   // Update the data structure in the Data Model
+   /**
+     * Update the data structure in the Data Model
+     */ 
    private synchronized void updateDataModel(DiFXObject difxObj)
    {
       // -- Store a DiFXObject into data model
