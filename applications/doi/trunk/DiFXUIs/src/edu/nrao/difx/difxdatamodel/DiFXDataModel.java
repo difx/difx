@@ -30,6 +30,9 @@ public class DiFXDataModel {
    private List<Module>        mModules        = new ArrayList<Module>();
    private List<Mark5Unit>     mMark5Units     = new ArrayList<Mark5Unit>();
    private List<ProcessorNode> mProcessorNodes = new ArrayList<ProcessorNode>();
+   private ProcessorNode       mManagerNode    = new ProcessorNode();
+
+
 
    private List<Job>           mJobs           = new ArrayList<Job>();
    private List<Project>       mProjects       = new ArrayList<Project>();
@@ -221,7 +224,7 @@ public class DiFXDataModel {
    }
 
    /**
-    * Returns the list of processinf nodes
+    * Returns the list of processing nodes
     * @return
     */
    public List<ProcessorNode> getProcessorNodes()
@@ -2088,6 +2091,10 @@ System.out.println("DifXDataModel job free resources complete.");
             addProcessorNode((ProcessorNode) difxObj);
          }
       }
+      else if (difxObj.getObjType().equalsIgnoreCase("manager"))
+      {
+          mManagerNode = (ProcessorNode) difxObj;
+      }
       else if (difxObj.getObjType().equalsIgnoreCase("project"))
       {
          // -- test, update existing or insert new object
@@ -2506,4 +2513,9 @@ System.out.println("DifXDataModel job free resources complete.");
 
       //System.out.println("******** Data model notify listeners complete. \n");
    }
+   
+    public ProcessorNode getManagerNode()
+    {
+        return mManagerNode;
+    }
 }
