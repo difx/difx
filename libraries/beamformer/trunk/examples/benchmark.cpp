@@ -76,7 +76,8 @@ int main(int argc, char** argv)
 
         int Nrfi = 0;
         Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
-        Covariance refDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+        Covariance refDataBlock_1RFI(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+        Covariance refDataBlock_2RFI(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
         Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         if (0) {
@@ -99,24 +100,22 @@ int main(int argc, char** argv)
         }
 
 
-        std::cout << "Data source II = self-generated, array, 2 reference antennas, 1 astro and 1 RFI signal\n";
+        std::cout << "Data source II = self-generated, array, 2 reference antennas, 1 astro and 1..2 RFI signals\n";
         arma::Col<int> Iref = ae.listReferenceAntennas();
         std::cout << "List of detected reference antennas: " << arma::trans(Iref);
-        int Nrfi_ref = 0;
 
         for (int ch=0; ch<DIGESTIF_Nch; ch++) {
            // add astro signal
-           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
+           refDataBlock_1RFI.addSignal(ch, C_LAMBDA, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
+           refDataBlock_2RFI.addSignal(ch, C_LAMBDA, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
 
            // add 1st RFI signal, with reference antennas specified
            double Gref = 1e3; // +30dB gain to RFI compared to sky-pointed array elements
-           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
-           Nrfi_ref = 1;
+           refDataBlock_1RFI.addSignal(ch, C_LAMBDA, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
+           refDataBlock_2RFI.addSignal(ch, C_LAMBDA, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
 
            // add 2nd RFI signal
-           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(10.0), deg2rad(-5.0), 2.1, 0, 0, Gref, Iref);
-           Nrfi_ref = 2;
-
+           refDataBlock_2RFI.addSignal(ch, C_LAMBDA, ae, deg2rad(10.0), deg2rad(-5.0), 2.1, 0, 0, Gref, Iref);
         }
 
 
@@ -136,7 +135,7 @@ int main(int argc, char** argv)
 
            std::cout << "\nTiming performance of channels/second for computing and time-integrating covariance of " << xyz.Nant << "-element signal\n";
 
-           arma::Col<arma::cx_double> random_signal;
+           arma::Col<bf::complex> random_signal;
 
            int Nch = outDataBlock.N_chan();
 
@@ -260,14 +259,34 @@ int main(int argc, char** argv)
 
         if (1) {
 
-           std::cout << "\nTiming performance of Covariance copying and CovarianceModofier::templateSubtraction()\n";
+           std::cout << "\nTiming performance of Covariance copying and Briggs CovarianceModofier::templateSubtraction() with 2 ant, 1 RFI\n";
 
-           double Nelem = refDataBlock.N_chan();
+           double Nelem = refDataBlock_1RFI.N_chan();
            arma::Col<int> Iref = ae.listReferenceAntennas();
+           int Nrfi_ref = 1;
 
            Timing speed(Nelem*N_ITER);
            for (int i=0; i<N_ITER; i++) {
-              Covariance temp_copy(refDataBlock);
+              Covariance temp_copy(refDataBlock_1RFI);
+              CovarianceModifier cm(temp_copy);
+              if (cm.templateSubtraction(Iref, Nrfi_ref) < 0) { 
+                 std::cout << "Some failure in templateSubtraction(), iteration=" << i << ", cancelling!\n";
+                 break; 
+              }
+           }
+        }
+
+        if (1) {
+
+           std::cout << "\nTiming performance of Covariance copying and Generic CovarianceModofier::templateSubtraction() with 2 ant, 2 RFI\n";
+
+           double Nelem = refDataBlock_2RFI.N_chan();
+           arma::Col<int> Iref = ae.listReferenceAntennas();
+           int Nrfi_ref = 2;
+
+           Timing speed(Nelem*N_ITER);
+           for (int i=0; i<N_ITER; i++) {
+              Covariance temp_copy(refDataBlock_2RFI);
               CovarianceModifier cm(temp_copy);
               if (cm.templateSubtraction(Iref, Nrfi_ref) < 0) { 
                  std::cout << "Some failure in templateSubtraction(), iteration=" << i << ", cancelling!\n";
