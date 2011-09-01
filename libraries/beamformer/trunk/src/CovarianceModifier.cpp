@@ -85,12 +85,13 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
    // Astronomy using a reference antenna", 2004
 
    if ((Nrfi > Nref) || (Nrfi < 1) || (Nref < 1) || (Nref >= Nant)) {
+      std::cout << "templateSubtraction: Nrfi=" << Nrfi << ", Nref=" << Nref << ", Nant=" << Nant << ": more RFI than references or all antennas are references!\n";
       return -1;
    } 
 
    if (!(Nrfi==1 && Nref==2)) {
 
-      std::cout << "CovarianceModifier::templateSubtraction generic\n";
+      // std::cout << "CovarianceModifier::templateSubtraction generic\n";
 
       // Matlab:
       // R00=chRxx(antIdx,antIdx);
@@ -158,7 +159,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
 
    if (Nrfi==1 && Nref==2) {
 
-      std::cout << "CovarianceModifier::templateSubtraction Briggs\n";
+      // std::cout << "CovarianceModifier::templateSubtraction Briggs\n";
 
       // Matlab:
       // Cn1 = chRxx(refant_idcs(1),:);
