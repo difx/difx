@@ -288,7 +288,7 @@ int main(int argc, char** argv)
               std::cout << "MVDR beamformer, b=1.0f\n";
               Timing speed(Nbeams*N_ITER);
               for (int i=0; i<N_ITER; i++) {
-                 bw.generateMVDR(beams, rxxDataBlock, 0.0f);
+                 bw.generateMVDR(beams, rxxDataBlock, 1.0f);
               }
            }
 
