@@ -75,10 +75,25 @@ namespace bf {
  */
 int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const int Nrfi)
 {
+   return templateSubtraction(Iref, Nrfi, 0, _cov.N_chan() - 1);
+}
+
+
+/**
+ * Attempts to clean RFI in a subset of channels of a Covariance data set.
+ * See templateSubtraction(arma::Col, in) for details on processing.
+ *
+ * @param[in] Iref    List of reference antenna indices between 0..Nant-1
+ * @param[in] Nrfi    Expected number of strong RFI signals per channel
+ * @param[in] startch First channel 0..Nch-1 to process
+ * @param[in] endch   Last channel 0..Nch-1 to process (inclusive)
+ * @return Returns 0 on success
+ */
+int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch)
+{
    int Nant = _cov.N_ant();
    int Nref = Iref.n_elem;
    int Nast = Nant - Nref;
-   int Nch = _cov.N_chan();
 
    // *** IFF Nrfi<=Nrefant Then ***
    // van der Veen, Boonstra, "Spatial filtering of RF interference in Radio
@@ -119,7 +134,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
       R01.zeros(Nast, Nref);
       R10.zeros(Nref, Nast);
 
-      for (int cc=0; cc<Nch; cc++) {
+      for (int cc=startch; cc<=endch; cc++) {
 
          R00 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) );
          R11 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(0,    Nref-1) ); 
@@ -194,7 +209,7 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
       Cn2.zeros(Nant);
       C12.zeros(1);
 
-      for (int cc=0; cc<Nch; cc++) {
+      for (int cc=startch; cc<=endch; cc++) {
 
          R00 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) );
          R11 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(0,    Nref-1) ); 

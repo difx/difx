@@ -105,6 +105,18 @@ class CovarianceModifier {
        */
       int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi);
 
+      /**
+       * Attempts to clean RFI in a subset of channels of a Covariance data set.
+       * See templateSubtraction(arma::Col, in) for details on processing.
+       *
+       * @param[in] Iref    List of reference antenna indices between 0..Nant-1
+       * @param[in] Nrfi    Expected number of strong RFI signals per channel
+       * @param[in] startch First channel 0..Nch-1 to process
+       * @param[in] endch   Last channel 0..Nch-1 to process (inclusive)
+       * @return Returns 0 on success
+       */
+      int templateSubtraction(arma::Col<int> const& Iref, const int Nrfi, const int startch, const int endch);
+
    private:
       Covariance& _cov;
 };
