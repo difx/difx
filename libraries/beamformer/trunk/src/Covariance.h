@@ -58,7 +58,6 @@ class Covariance {
    private:
 
       Covariance();
-      Covariance(const Covariance&);
       Covariance& operator= (const Covariance&);
 
    public:
@@ -82,6 +81,16 @@ class Covariance {
        * D'stor
        */
       ~Covariance() { }
+
+      /**
+       * Copy c'stor, make new covariance object with copy of data from another.
+       */
+      Covariance(const Covariance& o) : _N_ant(o._N_ant), _N_chan(o._N_chan), _M_smp(o._M_smp) {
+         _Rxx = o._Rxx;
+         _freqs = o._freqs;
+         _timestamp = o._timestamp;
+         _Tint = o._Tint;
+      }
 
    public:
 
