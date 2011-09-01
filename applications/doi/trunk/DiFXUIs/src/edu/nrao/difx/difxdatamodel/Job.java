@@ -882,6 +882,7 @@ public class Job extends DiFXObject {
     */
    public DifxMessage createDiFXStartMessage()
    {
+      String datastreams = "";
       ObjectFactory factory = new ObjectFactory();
 
       // Create header
@@ -901,25 +902,58 @@ public class Job extends DiFXObject {
       DifxStart.Manager manager = factory.createDifxStartManager();
       manager.setNode(this.getDataModel().getManagerNode().getObjName());
       jobStart.setManager(manager);
-
-      // Get a string of Mark5 Units
-      String mark5String = getStringOfMark5Units();
-
+      
       // -- set difx version to use
       jobStart.setDifxVersion(getDifxVersion());
+      
+
+      // Get a string of datastream units
+      try
+      {
+            datastreams = getDatastreamUnitsAsString();
+      }
+      catch (Exception ex)
+      {
+           // TODO do something sensible here
+      }
 
       // -- datastreams, enabled only
       DifxStart.Datastream dataStream = factory.createDifxStartDatastream();
-      dataStream.setNodes(mark5String);
+      dataStream.setNodes(datastreams);
       jobStart.setDatastream(dataStream);
 
-      // -- process and threads, enabled only
       DifxStart.Process process = factory.createDifxStartProcess();
-      DifxStart.Process process2 = factory.createDifxStartProcess();
-      process.setNodes(this.getDataModel().getProcessorNodesAsString());
+      
+      // -- processor nodes, ignore the ones already used as datastream nodes 
+      String availableNodes = "";
+      List<ProcessorNode> processingNodes = new ArrayList<ProcessorNode>(this.getDataModel().getProcessorNodes());
+      
+      String datastreamArray[] = datastreams.split(" ");
+      
+      for (ProcessorNode node : processingNodes)
+      {
+          boolean found = false;
+          
+          for (int i = 0; i < datastreamArray.length; i++)
+          {
+              if (node.getObjName().equals(datastreamArray[i]))
+              {
+                  found = true;
+                  break;
+              }     
+          }
+          
+          if (!found)
+              availableNodes += " " + node.getObjName();
+      }
+      
+      process.setNodes(availableNodes);
+      
       // TODO make number of threads configurable
       process.setThreads("7");
       jobStart.getProcess().add(process);
+      
+      //DifxStart.Process process2 = factory.createDifxStartProcess();
       //process2.setNodes("SWC000");
       //process2.setThreads("5");
       //jobStart.getProcess().add(process2);
@@ -936,7 +970,7 @@ public class Job extends DiFXObject {
       difxMsg.setBody(body);
 
       // -- return null if the message is invalid, otherwise return the message
-      if (mark5String.equals("") || mark5String.isEmpty())
+      if (datastreams.equals("") || datastreams.isEmpty())
       {
          return null; // did not create the proper list of mark units.
       }
@@ -1095,10 +1129,21 @@ public class Job extends DiFXObject {
       System.out.println("***************** Job generate files. \n");
    }
 
-   private String getStringOfMark5Units()
+   /**
+    * Loops over all modules (and file-based data sources) used for this job and determines the required 
+    * datastream nodes. Datstream nodes will be either mark5 units (for module based data sources) or
+    * processor nodes (for file-based data sources).
+    * @return a space-separated list of datastream nodes or empty string in case one or more of the modules were not found
+    * @throws IllegalArgumentException in case the module neither points to a valid VSN nor to a file
+    * @throws Exception
+    */
+   private String getDatastreamUnitsAsString() throws Exception, IllegalArgumentException
    {
       // Create string of mark5 units associated with this job
       String retStr = "";
+      
+      this.getDataModel().getProcessorNodes();
+     ArrayList<ProcessorNode> availableNodes = new ArrayList<ProcessorNode>(this.getDataModel().getProcessorNodes()) ;
 
       // Traverse the modules
       Iterator modIt = modules.iterator();
@@ -1106,17 +1151,47 @@ public class Job extends DiFXObject {
       {
          Module module = (Module) modIt.next();
 
-         String SVN = module.getModuleVSN();
-         Mark5Unit mark5 = (this.getDataModel()).getMark5UnitViaVSN(SVN);
-         if (mark5 != null)
+         String vsn = module.getModuleVSN();
+         
+         // check if datasource is file or module
+         if (module.isVSN())
          {
-            retStr = retStr + " " + mark5.getObjName();
+         
+             // TODO handle disabled mark5 units
+            Mark5Unit mark5 = (this.getDataModel()).getMark5UnitViaVSN(vsn);
+             if (mark5 != null)
+             {
+                retStr = retStr + " " + mark5.getObjName();
+             }
+             else
+             {
+                // invalid set of mark5s, so exit.
+                // TODO throw exception instead ?
+                retStr = "";
+                return retStr;
+             }
+         }
+         else if (module.isFile())
+         {
+             // use processing node for file-based correlation
+             try
+             {
+                ProcessorNode node = availableNodes.get(0);
+                retStr += " " + node.getObjName();
+                
+                // now remove this node from the list of available nodes
+                availableNodes.remove(node);
+                
+             }
+             catch (IndexOutOfBoundsException ex)
+             {
+                 throw new Exception ("No more processing nodes available");
+             }
+             
          }
          else
          {
-            // invalid set of mark5s, so exit.
-            retStr = "";
-            return retStr;
+             throw new IllegalArgumentException("Illegal datastream entry");
          }
 
       }

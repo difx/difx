@@ -5,6 +5,8 @@
 
 package edu.nrao.difx.difxdatamodel;
 
+import java.util.regex.*;
+
 /**
  *
  * @author mguerra
@@ -29,15 +31,42 @@ public class Module extends DiFXObject {
       weight    = 0.0f;      
    }
 
+   /**
+    * Checks whether the VSN is valid.
+    * @return true in case the VSN is valid, false otherwise
+    */
+   public boolean isVSN()
+   {
+       Pattern p = Pattern.compile("\\w+[+-]\\d+");
+       
+       if ((p.matcher(moduleVSN).matches() ) && (moduleVSN.length() == 8))
+           return(true);
+       else
+           return(false); 
+   }
+   
+   /**
+    * Check if the VSN points to a file datasource
+    * @return 
+    */
+   public boolean isFile()
+   {
+       if (moduleVSN.startsWith("/"))
+           return(true);
+       else
+           return(false);
+       
+   }
+   
    // Config methods
    public String getModuleVSN()
    {
       return moduleVSN;
    }
 
-   public void setModuleVSN(String val)
+   public void setModuleVSN(String val) throws IllegalArgumentException
    {
-      moduleVSN = val;
+           moduleVSN = val.trim();  
    }
 
    public String getShelf()

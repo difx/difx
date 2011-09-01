@@ -28,7 +28,11 @@ public class DiFXDataModel {
    private DiFXSystemStatus    mSystemStatus   = new DiFXSystemStatus();
 
    private List<Module>        mModules        = new ArrayList<Module>();
+   
+   //List of mark5 nodes that will be used as module-based datastream nodes
    private List<Mark5Unit>     mMark5Units     = new ArrayList<Mark5Unit>();
+  
+   
    private List<ProcessorNode> mProcessorNodes = new ArrayList<ProcessorNode>();
    private ProcessorNode       mManagerNode    = new ProcessorNode();
 
@@ -229,7 +233,7 @@ public class DiFXDataModel {
     */
    public List<ProcessorNode> getProcessorNodes()
    {
-      return this.mProcessorNodes;
+      return (this.mProcessorNodes);
    }
    
    /**
@@ -260,6 +264,15 @@ public class DiFXDataModel {
    public void addProcessorNode(ProcessorNode procNode)
    {
       mProcessorNodes.add(procNode);
+   }
+   
+   /**
+    * Removes a  node from the list of available processing nodes
+    * @param procNode 
+    */
+   public void removeProcessorNode(ProcessorNode procNode)
+   {
+       mProcessorNodes.remove(procNode);
    }
 
    /**
@@ -1493,7 +1506,7 @@ System.out.println("DifXDataModel job free resources complete.");
       mod.setModuleVSN(moduleVSN);
       mod.setShelf(shelf);
 
-      // This is a kluge until something better....
+      // TODO This is a kluge until something better....
       //
       // NOTE:
       // 2 step process.
