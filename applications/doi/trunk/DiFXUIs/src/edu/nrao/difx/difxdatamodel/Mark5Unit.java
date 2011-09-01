@@ -360,7 +360,7 @@ public class Mark5Unit extends DiFXObject {
       // Create header
       Header header = factory.createHeader();
       header.setFrom("doi");
-      header.setTo("swc000");
+      header.setTo(this.getDataModel().getManagerNode().getObjName());
       header.setMpiProcessId("-1");
       header.setIdentifier(getObjName());
       header.setType("DifxCommand");

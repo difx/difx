@@ -876,6 +876,10 @@ public class Job extends DiFXObject {
    }
 
    // Create various DiFX messages
+   /**
+    * Create DiFX start message
+    * @return 
+    */
    public DifxMessage createDiFXStartMessage()
    {
       ObjectFactory factory = new ObjectFactory();
@@ -883,7 +887,8 @@ public class Job extends DiFXObject {
       // Create header
       Header header = factory.createHeader();
       header.setFrom("doi");
-      header.setTo("swc000");
+      
+      header.setTo(this.getDataModel().getManagerNode().getObjName());
       header.setMpiProcessId("-1");
       header.setIdentifier(getObjName());
       header.setType("DifxStart");
@@ -894,7 +899,7 @@ public class Job extends DiFXObject {
 
       // -- manager, enabled only
       DifxStart.Manager manager = factory.createDifxStartManager();
-      manager.setNode("swc000");
+      manager.setNode(this.getDataModel().getManagerNode().getObjName());
       jobStart.setManager(manager);
 
       // Get a string of Mark5 Units
@@ -911,7 +916,8 @@ public class Job extends DiFXObject {
       // -- process and threads, enabled only
       DifxStart.Process process = factory.createDifxStartProcess();
       DifxStart.Process process2 = factory.createDifxStartProcess();
-      process.setNodes("SWC001 SWC002 SWC003 SWC004 SWC005 SWC006 SWC007 SWC008 SWC009 SWC010 MARK5FX23");
+      process.setNodes(this.getDataModel().getProcessorNodesAsString());
+      // TODO make number of threads configurable
       process.setThreads("7");
       jobStart.getProcess().add(process);
       //process2.setNodes("SWC000");
@@ -940,6 +946,10 @@ public class Job extends DiFXObject {
       }
    }
 
+   /**
+    * Returns a DiFX stop messages
+    * @return 
+    */
    public DifxMessage createDiFXStopMessage()
    {
       ObjectFactory factory = new ObjectFactory();
@@ -947,7 +957,7 @@ public class Job extends DiFXObject {
       // Create header
       Header header = factory.createHeader();
       header.setFrom("doi");
-      header.setTo("swc000");
+      header.setTo(this.getDataModel().getManagerNode().getObjName());
       header.setMpiProcessId("0");
       header.setIdentifier(getObjName());
       header.setType("DifxStop");
