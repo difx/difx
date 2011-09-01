@@ -76,15 +76,16 @@ int main(int argc, char** argv)
 
         int Nrfi = 0;
         Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
+        Covariance refDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
         Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
-        if (1) {
+        if (0) {
 
            std::cout << "Data source = external virgoA_on.raw\n";
            rxxDataBlock.load("virgoA_on.raw", 0);
            Nrfi = 3;
 
-        } else if (0) {
+        } else {
 
            std::cout << "Data source = self-generated, array, no reference antennas, 1 astro and 3 RFI signals\n";
            for (int ch=0; ch<DIGESTIF_Nch; ch++) {
@@ -97,116 +98,162 @@ int main(int argc, char** argv)
 
         }
 
-#if 1
+
+        std::cout << "Data source II = self-generated, array, 2 reference antennas, 1 astro and 1 RFI signal\n";
+        arma::Col<int> Iref = ae.listReferenceAntennas();
+        std::cout << "List of detected reference antennas:\n" << Iref;
+        int Nrfi_ref = 0;
+
+        for (int ch=0; ch<DIGESTIF_Nch; ch++) {
+           // add astro signal
+           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(45.0), deg2rad(-90.0), 1e-2, 1e-7, 0);
+
+           // add 1st RFI signal, with reference antennas specified
+           double Gref = 1e3; // +30dB gain to RFI compared to sky-pointed array elements
+           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(30.0), deg2rad(-15.0), 2.0, 0, 0, Gref, Iref);
+           Nrfi_ref = 1;
+
+           // add 2nd RFI signal
+           refDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(10.0), deg2rad(-5.0), 2.1, 0, 0, Gref, Iref);
+           Nrfi_ref = 2;
+
+        }
+
+
         // Test the test
         if (1) {
            std::cout << "Testing the Timing() class with 5-second wait and 5 elements\n";
            Timing speed(5);
            usleep(5*1e6);
         }
-#endif
 
         //////////////////////////////////////////
         // DECOMPOSITIONS and RECOMPOSITIONS
         /////////////////////////////////////////
 
-#if 1
-        double Ncomplex = rxxDataBlock.N_ant() * rxxDataBlock.N_ant();
-        double Nelem = rxxDataBlock.N_chan();
-
-        std::cout << "\nNOTE\n"
-                  << "Benchmark 'elements' are covariance matrices with " << Ncomplex << " complex values each.\n"
-                  << "Speeds should be interpreted as 'channels/second' for some set of processing steps.\n"
-                  << "NOTE\n\n";
-
         if (1) {
-           std::cout << "Timing performance of c'stor Decomposition(&cov) and d'stor of SVD, EVD and QR\n";
-           { Timing speed(Nelem); SVDecomposition decSVD(rxxDataBlock); }
-           { Timing speed(Nelem); EVDecomposition decEVD(rxxDataBlock); }
-           { Timing speed(Nelem); QRDecomposition decQR(rxxDataBlock); }
-        }
 
-        if (1) {
-           std::cout << "\nTiming performance of { evd(),svd(),qr(); evd^-1(),svd^-1,qr^-1() }, average de&recomposition speed of each:\n";
-           EVDecomposition dec_EVD(rxxDataBlock);
-           SVDecomposition dec_SVD(rxxDataBlock);
-           QRDecomposition dec_QR(rxxDataBlock);
-           Timing speed(3 * Nelem*int(1 + N_ITER/10)); // 3 ops (EVD,SVD,QR)
-           for (int i=0; i<(1 + N_ITER/10); i++) {
-              dec_EVD.decompose(rxxDataBlock);
-              dec_SVD.decompose(rxxDataBlock);
-              dec_QR.decompose(rxxDataBlock);
-              dec_QR.recompose(outDataBlock);
-              dec_SVD.recompose(outDataBlock);
-              dec_EVD.recompose(outDataBlock);
+           double Ncomplex = rxxDataBlock.N_ant() * rxxDataBlock.N_ant();
+           double Nelem = rxxDataBlock.N_chan();
+
+           std::cout << "\nNOTE\n"
+                     << "Decomposition benchmark 'elements' are covariance matrices with " << Ncomplex << " complex values each.\n"
+                     << "Speeds should be interpreted as 'channels/second' for some set of processing steps.\n"
+                     << "NOTE\n\n";
+
+           if (1) {
+              std::cout << "Timing performance of c'stor Decomposition(&cov) and d'stor of SVD, EVD and QR\n";
+              { Timing speed(Nelem); SVDecomposition decSVD(rxxDataBlock); }
+              { Timing speed(Nelem); EVDecomposition decEVD(rxxDataBlock); }
+              { Timing speed(Nelem); QRDecomposition decQR(rxxDataBlock); }
+            }
+
+           if (1) {
+              std::cout << "\nTiming performance of { evd(),svd(),qr(); evd^-1(),svd^-1,qr^-1() }, average de&recomposition speed of each:\n";
+              EVDecomposition dec_EVD(rxxDataBlock);
+              SVDecomposition dec_SVD(rxxDataBlock);
+              QRDecomposition dec_QR(rxxDataBlock);
+              Timing speed(3 * Nelem*int(1 + N_ITER/10)); // 3 ops (EVD,SVD,QR)
+              for (int i=0; i<(1 + N_ITER/10); i++) {
+                 dec_EVD.decompose(rxxDataBlock);
+                 dec_SVD.decompose(rxxDataBlock);
+                 dec_QR.decompose(rxxDataBlock);
+                 dec_QR.recompose(outDataBlock);
+                 dec_SVD.recompose(outDataBlock);
+                 dec_EVD.recompose(outDataBlock);
+              }
+           }
+
+           if (1) {
+              std::cout << "\nTiming performance of SVD decomposition and recomposition\n";
+              SVDecomposition dec(rxxDataBlock);
+              Timing speed(Nelem*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 dec.decompose(rxxDataBlock);
+                 dec.recompose(outDataBlock);
+              }
+           }
+
+           if (1) {
+              std::cout << "\nTiming performance of EVD decomposition and recomposition\n";
+              EVDecomposition dec(rxxDataBlock);
+              Timing speed(Nelem*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 dec.decompose(rxxDataBlock);
+                 dec.recompose(outDataBlock);
+              }
+           }
+
+           if (1) {
+              std::cout << "\nTiming performance of QR decomposition and recomposition\n";
+              QRDecomposition dec(rxxDataBlock);
+              Timing speed(Nelem*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 dec.decompose(rxxDataBlock);
+                 dec.recompose(outDataBlock);
+              }
            }
         }
-
-        if (1) {
-           std::cout << "\nTiming performance of SVD decomposition and recomposition\n";
-           SVDecomposition dec(rxxDataBlock);
-           Timing speed(Nelem*N_ITER);
-           for (int i=0; i<N_ITER; i++) {
-              dec.decompose(rxxDataBlock);
-              dec.recompose(outDataBlock);
-           }
-        }
-
-        if (1) {
-           std::cout << "\nTiming performance of EVD decomposition and recomposition\n";
-           EVDecomposition dec(rxxDataBlock);
-           Timing speed(Nelem*N_ITER);
-           for (int i=0; i<N_ITER; i++) {
-              dec.decompose(rxxDataBlock);
-              dec.recompose(outDataBlock);
-           }
-        }
-
-        if (1) {
-           std::cout << "\nTiming performance of QR decomposition and recomposition\n";
-           QRDecomposition dec(rxxDataBlock);
-           Timing speed(Nelem*N_ITER);
-           for (int i=0; i<N_ITER; i++) {
-              dec.decompose(rxxDataBlock);
-              dec.recompose(outDataBlock);
-           }
-        }
-#endif
 
         /////////////////////////////////////////////
         // DECOMPOSITION, NULLING and RECOMPOSITION
         /////////////////////////////////////////////
 
-#if 1
         if (1) {
-           std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
-           SVDecomposition dec(rxxDataBlock);
-           DecompositionModifier dm(dec);
-           Timing speed(Nelem*N_ITER);
-           for (int i=0; i<N_ITER; i++) {
-              dec.decompose(rxxDataBlock);
-              dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
-              dec.recompose(outDataBlock);
+           double Nelem = rxxDataBlock.N_chan();
+
+           if (1) {
+              std::cout << "\nTiming performance of SVD decomposition, RFI detection and nulling, recomposition\n";
+              SVDecomposition dec(rxxDataBlock);
+              DecompositionModifier dm(dec);
+              Timing speed(Nelem*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 dec.decompose(rxxDataBlock);
+                 dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
+                 dec.recompose(outDataBlock);
+              }
+           }
+
+           if (1) {
+              std::cout << "\nTiming performance of EVD decomposition, RFI detection and nulling, recomposition\n";
+              EVDecomposition dec(rxxDataBlock);
+              DecompositionModifier dm(dec);
+              Timing speed(Nelem*N_ITER);
+              for (int i=0; i<N_ITER; i++) {
+                 dec.decompose(rxxDataBlock);
+                 dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
+                 dec.recompose(outDataBlock);
+              }
+           }
+
+           if (1) {
+              // ...
+              // QRDecomposition: not yet supported by DecompositionModifier.interfererNulling()
            }
         }
 
+        ///////////////////////////////////////////////////////
+        // REFERENCE ANTENNA METHODS
+        //////////////////////////////////////////////////////
+
         if (1) {
-           std::cout << "\nTiming performance of EVD decomposition, RFI detection and nulling, recomposition\n";
-           EVDecomposition dec(rxxDataBlock);
-           DecompositionModifier dm(dec);
+
+           std::cout << "\nTiming performance of Covariance copying and CovarianceModofier::templateSubtraction()\n";
+
+           double Nelem = refDataBlock.N_chan();
+           arma::Col<int> Iref = ae.listReferenceAntennas();
+
            Timing speed(Nelem*N_ITER);
            for (int i=0; i<N_ITER; i++) {
-              dec.decompose(rxxDataBlock);
-              dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
-              dec.recompose(outDataBlock);
+              Covariance temp_copy(refDataBlock);
+              CovarianceModifier cm(temp_copy);
+              if (cm.templateSubtraction(Iref, Nrfi_ref) < 0) { 
+                 std::cout << "Some failure in templateSubtraction(), iteration=" << i << ", cancelling!\n";
+                 break; 
+              }
            }
         }
 
-        if (1) {
-           // ...
-           // QRDecomposition: not yet supported by DecompositionModifier.interfererNulling()
-        }
-#endif
 
         ///////////////////////////////////////////////////////
         // BEAMFORMING
