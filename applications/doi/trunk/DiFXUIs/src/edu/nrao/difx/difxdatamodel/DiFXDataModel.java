@@ -231,6 +231,27 @@ public class DiFXDataModel {
    {
       return this.mProcessorNodes;
    }
+   
+   /**
+    * Returns a space separated list of nodes contained in the mProcessorNodes
+    * arrayList.
+    * @return the list of processing nodes (space separated)
+    */
+   public String getProcessorNodesAsString()
+   {
+       String processorString = "";
+       
+       Iterator it = this.mProcessorNodes.iterator();
+       
+       while (it.hasNext())
+       {
+           ProcessorNode node = (ProcessorNode) it.next();
+           
+           processorString += node.getObjName() + " ";
+       }
+       
+       return(processorString.trim());
+   }
 
    /**
     * Appends a processing node to the current list of processing nodes
@@ -520,7 +541,7 @@ public class DiFXDataModel {
       header = null;
    }
 
-   private synchronized void processDifxStatusMessageOld(DifxMessage difxMsg)
+/*   private synchronized void processDifxStatusMessageOld(DifxMessage difxMsg)
    {
       // -- catch some exceptions and keep the program from terminating. . .
       // Message must originate from mpifxcorr or swc000
@@ -806,15 +827,15 @@ System.out.println("DifXDataModel job free resources complete.");
       } // -- if ( (difxMsg.getHeader().getFrom().substring(0, len).equalsIgnoreCase("mpifxcorr")) ||
         // --      (difxMsg.getHeader().getFrom().substring(0, len).equalsIgnoreCase("swc000"   )) )
 
-   }
+   }*/
 
    private synchronized void processDifxStatusMessage(DifxMessage difxMsg)
    {
       // -- catch some exceptions and keep the program from terminating. . .
-      // Message must originate from mpifxcorr or swc000
+      // Message must originate from mpifxcorr or manager node
       int len = (difxMsg.getHeader().getFrom().trim().length());
       if ( (difxMsg.getHeader().getFrom().substring(0, len).equalsIgnoreCase("mpifxcorr")) ||
-           (difxMsg.getHeader().getFrom().substring(0, len).equalsIgnoreCase("swc000"   )) )
+           (difxMsg.getHeader().getFrom().substring(0, len).equalsIgnoreCase(this.mManagerNode.getObjName() )) )
       {
 
          // -- Update the jobs status, no need to call UpdateDataModel()
@@ -1406,7 +1427,7 @@ System.out.println("DifXDataModel job free resources complete.");
          case 2: // Processor Manager
          {
             ProcessorNode manager = new ProcessorNode();
-            manager.setObjType("processor");
+            manager.setObjType("manager");
             manager.setObjName(name);
             manager.setObjId(0);
             manager.setNumCPUs(numCPUs);
