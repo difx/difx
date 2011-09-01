@@ -101,7 +101,7 @@ int main(int argc, char** argv)
 
         std::cout << "Data source II = self-generated, array, 2 reference antennas, 1 astro and 1 RFI signal\n";
         arma::Col<int> Iref = ae.listReferenceAntennas();
-        std::cout << "List of detected reference antennas:\n" << Iref;
+        std::cout << "List of detected reference antennas: " << arma::trans(Iref);
         int Nrfi_ref = 0;
 
         for (int ch=0; ch<DIGESTIF_Nch; ch++) {
@@ -121,10 +121,32 @@ int main(int argc, char** argv)
 
 
         // Test the test
-        if (1) {
+        if (0) {
            std::cout << "Testing the Timing() class with 5-second wait and 5 elements\n";
            Timing speed(5);
            usleep(5*1e6);
+        }
+
+
+        //////////////////////////////////////////
+        // COVARIANCE GENERATION
+        /////////////////////////////////////////
+     
+        if (1) {
+
+           std::cout << "\nTiming performance of channels/second for computing and time-integrating covariance of " << xyz.Nant << "-element signal\n";
+
+           arma::Col<arma::cx_double> random_signal;
+
+           int Nch = outDataBlock.N_chan();
+
+           Timing speed(Nch*N_ITER*256);
+           for (int i=0; i<N_ITER*256; i++) {
+              random_signal.randn(xyz.Nant);
+              for (int cc=0; cc<Nch; cc++) {
+                 outDataBlock.add(cc, random_signal);
+              }
+           }
         }
 
         //////////////////////////////////////////
