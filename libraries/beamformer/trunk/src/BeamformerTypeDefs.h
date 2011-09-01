@@ -27,22 +27,25 @@
 //
 //============================================================================
 
-#ifndef _BEAMFORMER_H
-#define _BEAMFORMER_H
+#ifndef _BF_TYPEDEFS_H
+#define _BF_TYPEDEFS_H
+
+// C++ Templates too messy for current implementation, using typedefs
+// to switch between double and single precision, fixed-compile modes
 
 #include <armadillo>
 
-#include "BeamformerTypeDefs.h"
-
-#include "ArrayElements.h"
-#include "BeamformerData.h"
-#include "BeamformerWeights.h"
-#include "Covariance.h"
-#include "CovarianceModifier.h"
-#include "Decomposition.h"
-#include "DecompositionModifier.h"
-#include "Decompositions.h"
-#include "DecompositionAnalyzer.h"
+#ifdef USE_SINGLE_PRECISION
+   namespace bf {
+      typedef arma::cx_float complex;
+      typedef float real;
+   }
+#else
+   namespace bf {
+      typedef arma::cx_double complex;
+      typedef double real;
+   }
+#endif
 
 #endif
 

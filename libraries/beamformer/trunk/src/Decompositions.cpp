@@ -45,7 +45,7 @@ namespace bf {
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
-int QRDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
+int QRDecomposition::do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx)
 {
    bool ok;
 
@@ -66,7 +66,7 @@ int QRDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
  * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
-int QRDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+int QRDecomposition::do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx)
 {
 
    // Rxx = Q * R
@@ -94,7 +94,7 @@ int QRDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
-int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
+int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx)
 {
    bool ok;
 
@@ -107,7 +107,7 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
       // Bug: no matching function for call to ‘eig_sym(arma::subview_col<double>, arma::Mat<std::complex<double> >&, const arma::Mat<std::complex<double> >&)’
       // ok = arma::eig_sym(_batch_out_vectors.col(c), _batch_out_matrices[0].slice(c), Rxx); 
 
-      arma::Col<double> eigvals;
+      arma::Col<bf::real> eigvals;
       ok = arma::eig_sym(eigvals, _batch_out_matrices[0].slice(c), Rxx);
       _batch_out_vectors.col(c) = eigvals;
 
@@ -123,7 +123,7 @@ int EVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
  * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
-int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx)
 {
 
    // Rxx = eigvecs * diagmat(eigvals) * inv(eigvecs)
@@ -151,7 +151,7 @@ int EVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_doub
  * @param[in]  Rxx       Matrix to decompose
  * @return 0 on success
  */
-int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx)
+int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx)
 {
    bool ok;
 
@@ -164,7 +164,7 @@ int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
       // Bug: no matching function for call to ‘svd(..., arma::subview_col<double>, ...)'
       // ok = arma::svd(_batch_out_matrices[0].slice(c), _batch_out_vectors.col(c), _batch_out_matrices[1].slice(c), Rxx);
 
-      arma::Col<double> s;
+      arma::Col<bf::real> s;
       ok = arma::svd(_batch_out_matrices[0].slice(c), s, _batch_out_matrices[1].slice(c), Rxx);
       _batch_out_vectors.col(c) = s;
 
@@ -180,7 +180,7 @@ int SVDecomposition::do_decomposition(const int sliceNr, arma::Mat<arma::cx_doub
  * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
  * @return 0 on success
  */
-int SVDecomposition::do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx)
+int SVDecomposition::do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx)
 {
 
    // Rxx = U * s * conjtrans(V)

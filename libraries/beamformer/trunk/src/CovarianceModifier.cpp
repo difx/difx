@@ -125,10 +125,10 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
       // Rxx = | ----+---- |
       //       | R01 | R00 |
 
-      arma::cx_mat R00;
-      arma::cx_mat R11;
-      arma::cx_mat R01;
-      arma::cx_mat R10;
+      arma::Mat<bf::complex> R00;
+      arma::Mat<bf::complex> R11;
+      arma::Mat<bf::complex> R01;
+      arma::Mat<bf::complex> R10;
       R00.zeros(Nast, Nast);
       R11.zeros(Nref, Nref);
       R01.zeros(Nast, Nref);
@@ -139,8 +139,8 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
          R00 = _cov._Rxx.slice(cc).submat( arma::span(Nref, Nant-1), arma::span(Nref, Nant-1) );
          R11 = _cov._Rxx.slice(cc).submat( arma::span(0,    Nref-1), arma::span(0,    Nref-1) ); 
 
-         std::complex<double> astro_auto_mean = arma::mean(R00.diag());
-         std::complex<double> ref_auto_mean = arma::mean(R11.diag());
+         std::complex<bf::real> astro_auto_mean = arma::mean(R00.diag());
+         std::complex<bf::real> ref_auto_mean = arma::mean(R11.diag());
          double avg_INR = std::abs(ref_auto_mean) / std::abs(astro_auto_mean);
          if (avg_INR < 10) {
             std::cout << "Channel " << cc << " mean auto-corr of reference antennas less than +10dB "
@@ -197,11 +197,11 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
       // // [D] Subtraction
       // chRxx = chRxx - crossgains;
 
-      arma::cx_mat R00;
-      arma::cx_mat R11;
-      arma::Row<arma::cx_double> Cn1;
-      arma::Row<arma::cx_double> Cn2;
-      arma::Row<arma::cx_double> C12;
+      arma::Mat<bf::complex> R00;
+      arma::Mat<bf::complex> R11;
+      arma::Row<bf::complex> Cn1;
+      arma::Row<bf::complex> Cn2;
+      arma::Row<bf::complex> C12;
 
       R00.zeros(Nast, Nast);
       R11.zeros(Nref, Nref);
@@ -230,8 +230,8 @@ int CovarianceModifier::templateSubtraction(arma::Col<int> const& Iref, const in
 
          // Correction by subtracting cross-gains; it unfortunately is not precisely Hermitian
 
-         std::complex<double> scale12 = arma::as_scalar(C12 / (powsqr + C12*arma::conj(C12)));
-         arma::cx_mat crossgains = scale12 * (arma::trans(Cn1) * Cn2);
+         std::complex<bf::real> scale12 = arma::as_scalar(C12 / (powsqr + C12*arma::conj(C12)));
+         arma::Mat<bf::complex> crossgains = scale12 * (arma::trans(Cn1) * Cn2);
 
          // _cov._Rxx.slice(cc) -= (crossgains);
          _cov._Rxx.slice(cc) -= arma::trans(crossgains);

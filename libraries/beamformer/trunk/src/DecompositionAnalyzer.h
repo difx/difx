@@ -30,6 +30,8 @@
 #ifndef _DECOMPOSITIONANALYZER_H
 #define _DECOMPOSITIONANALYZER_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Decompositions.h"
 
 namespace bf {
@@ -113,7 +115,7 @@ class DecompositionAnalyzer {
        * @param[in,out] MDL  Result of computing MDL(k)
        * @return Criterion values by reference
        */
-      void compute_IC_k(const unsigned int k, const int M_smp, arma::Col<double> const& eigs, double& AIC, double& MDL) const;
+      void compute_IC_k(const unsigned int k, const int M_smp, arma::Col<bf::real> const& eigs, double& AIC, double& MDL) const;
 
    private:
 

@@ -30,6 +30,8 @@
 #ifndef _COVARIANCE_H
 #define _COVARIANCE_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "ArrayElements.h"
 
 #include <armadillo>
@@ -98,13 +100,13 @@ class Covariance {
        * Const accessor to data cube.
        * @return  Const reference to covariance data cube.
        */
-      const arma::Cube<arma::cx_double>& get() const { return _Rxx; }
+      const arma::Cube<bf::complex>& get() const { return _Rxx; }
 
       /**
        * Writeable reference to data cube.
        * @return Reference to covariance data cube.
        */
-      arma::Cube<arma::cx_double>& getWriteable() { return _Rxx; }
+      arma::Cube<bf::complex>& getWriteable() { return _Rxx; }
  
    public:
 
@@ -185,7 +187,7 @@ class Covariance {
        * @param[in] ch Target covariance channel 0..Nch-1
        * @param[in] x  Column vector with data from Nant elements
        */
-      void add(const int ch, arma::Col<arma::cx_double> const& x) {
+      void add(const int ch, arma::Col<bf::complex> const& x) {
          if (0) {
             // Formal style
             _Rxx.slice(ch) += (x * arma::trans(x));
@@ -219,7 +221,7 @@ class Covariance {
       const double channel_freq(const int ch) { return _freqs(ch); }
 
    private:
-      arma::Cube<arma::cx_double> _Rxx;
+      arma::Cube<bf::complex> _Rxx;
       arma::Col<double> _freqs;
       double _timestamp;
       double _Tint;

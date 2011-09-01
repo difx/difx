@@ -93,8 +93,8 @@ DecompositionAnalyzer::DecompositionAnalyzer(EVDecomposition const& deco) : _dec
 double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) const
 {
    double min_IC = 1.0/0.0; //infinity();
-   arma::Col<double> eigs_unsorted;
-   arma::Col<double> eigs;
+   arma::Col<bf::real> eigs_unsorted;
+   arma::Col<bf::real> eigs;
 
    rank = 0;
    channel %= (_deco.N_chan + 1);
@@ -109,7 +109,7 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
          eigs_unsorted = _deco._batch_out_vectors.col(channel);
       }
       if (eigs_unsorted(0) <= eigs_unsorted(eigs_unsorted.n_elem-1)) {
-        eigs = arma::sort((arma::Col<double> const)eigs_unsorted, /*0=asc,1=desc*/1);
+        eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
       } else {
         eigs = eigs_unsorted;
       }
@@ -150,8 +150,8 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
 double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) const
 {
    double min_IC = 1.0/0.0; //infinity();
-   arma::Col<double> eigs_unsorted;
-   arma::Col<double> eigs;
+   arma::Col<bf::real> eigs_unsorted;
+   arma::Col<bf::real> eigs;
 
    rank = 0;
    channel %= (_deco.N_chan + 1);
@@ -166,7 +166,7 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
          eigs_unsorted = _deco._batch_out_vectors.col(channel);
       }
       if (eigs_unsorted(0) <= eigs_unsorted(eigs_unsorted.n_elem-1)) {
-        eigs = arma::sort((arma::Col<double> const)eigs_unsorted, /*0=asc,1=desc*/1);
+        eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
       } else {
         eigs = eigs_unsorted;
       }
@@ -203,7 +203,7 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
  * @param[in,out] MDL  Result of computing MDL(k)
  * @return Criterion values by reference
  */
-void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, arma::Col<double> const& eigs, double& AIC, double& MDL) const
+void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, arma::Col<bf::real> const& eigs, double& AIC, double& MDL) const
 {
    double arith = 0;
    double geo = 1.0f;
@@ -240,11 +240,11 @@ void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, 
 /** Unit test */
 bool DecompositionAnalyzer::utest()
 {
-   arma::Col<double> eigs("21.2359 2.1717 1.4279 1.0979 1.0544 0.9432 0.7324");
-   arma::Col<double> aics_exp("1180.8 100.5 71.4 75.5 86.8 93.2 96");
-   arma::Col<double> mdls_exp("590.4 67.2 66.9 80.7 95.5 105.2 110.5");
-   arma::Col<double> aics(eigs.n_elem);
-   arma::Col<double> mdls(eigs.n_elem);
+   arma::Col<bf::real> eigs("21.2359 2.1717 1.4279 1.0979 1.0544 0.9432 0.7324");
+   arma::Col<bf::real> aics_exp("1180.8 100.5 71.4 75.5 86.8 93.2 96");
+   arma::Col<bf::real> mdls_exp("590.4 67.2 66.9 80.7 95.5 105.2 110.5");
+   arma::Col<bf::real> aics(eigs.n_elem);
+   arma::Col<bf::real> mdls(eigs.n_elem);
    bool pass = true;
    const double ee = 1e-3; // error limit 0.1%
 

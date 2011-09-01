@@ -52,7 +52,9 @@ void Covariance::load(double* raw_data, int format)
 {
 
 #if 1
-   arma::cx_mat tmp = arma::randu<arma::cx_mat>(_N_ant,_N_ant);
+   arma::Mat<bf::complex> tmp;
+   tmp.randu(_N_ant, _N_ant);
+//   arma::cx_mat tmp = arma::randu<arma::cx_mat>(_N_ant,_N_ant);
    tmp = arma::trans(tmp) * tmp; // make symmetric
    for (unsigned int cc=0; cc<_Rxx.n_slices; cc++) {
       _Rxx.slice(cc) = tmp;
@@ -111,7 +113,7 @@ void Covariance::load(const char* fn, const int format)
             double re, im;
             in.read((char*)&re, sizeof(double));
             in.read((char*)&im, sizeof(double));
-            _Rxx(jj,ii,cc) = std::complex<double>(re, im);
+            _Rxx(jj,ii,cc) = std::complex<bf::real>(re, im);
             if (in.eof()) {
                std::cout << "Early EOF in file " << fn << " while reading channel " << cc << "\n";
                in.close();
@@ -148,7 +150,7 @@ void Covariance::store(const char* fn, const int format) const
    for (int cc=0; cc<_N_chan; cc++) {
       for (int ii=0; ii<_N_ant; ii++) {
          for (int jj=0; jj<_N_ant; jj++) {
-            std::complex<double> cx = _Rxx(jj,ii,cc);
+            std::complex<bf::real> cx = _Rxx(jj,ii,cc);
             double cr = cx.real();
             double ci = cx.imag();
             out.write((char*)&cr, sizeof(double));
@@ -203,7 +205,7 @@ void Covariance::addSignal
    double k_src[3] = { std::sin(theta)*std::cos(phi), std::sin(theta)*std::sin(phi), std::cos(theta) };
 
    const ElementXYZ_t xyz = ae.getPositionSet();
-   arma::Col<arma::cx_double> sigs;
+   arma::Col<bf::complex> sigs;
    sigs.zeros(xyz.Nant); 
 
    P = std::sqrt(P);
@@ -212,7 +214,7 @@ void Covariance::addSignal
 
    for (int a=0; a<xyz.Nant; a++) {
       double phase = K * (k_src[0]*xyz.x[a] + k_src[1]*xyz.y[a] + k_src[2]*xyz.z[a]);
-      sigs(a) = std::complex<double>(std::cos(phase), -std::sin(phase)); // =exp(-i*xyz*k_src)
+      sigs(a) = std::complex<bf::real>(std::cos(phase), -std::sin(phase)); // =exp(-i*xyz*k_src)
       sigs(a) *= P;
    }
 
@@ -232,12 +234,16 @@ void Covariance::addSignal
 
    // Add noise
    if (Pna>0) {
-      _Rxx.slice(ch) += (arma::eye<arma::cx_mat>(xyz.Nant, xyz.Nant))*Pna;
+      arma::Mat<bf::complex> noise;
+      noise.eye(xyz.Nant, xyz.Nant);
+      _Rxx.slice(ch) += (noise*Pna);
+       //or: _Rxx.slice(ch).diag() += Pna;
    }
    if (Pnc>0) {
       // add Hermitian noise matrix
-      arma::cx_mat noise = Pnc * arma::randu<arma::cx_mat>(_N_ant,_N_ant);
-      _Rxx.slice(ch) += arma::trans(noise)*noise;
+      arma::Mat<bf::complex> noise;
+      noise.randu(xyz.Nant, xyz.Nant);
+      _Rxx.slice(ch) += arma::trans(Pnc*noise)*(Pnc*noise);
    }
 }
 

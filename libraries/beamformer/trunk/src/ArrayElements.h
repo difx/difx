@@ -30,6 +30,8 @@
 #ifndef _ARRAY_ELEMENTS_H
 #define _ARRAY_ELEMENTS_H
 
+#include "BeamformerTypeDefs.h"
+
 #include <armadillo>
 #include <ostream>
 
@@ -39,9 +41,9 @@ namespace bf {
 typedef struct ElementXYZ_tt {
    int Nant;
    int Ldim[3];
-   arma::Col<double> x;
-   arma::Col<double> y;
-   arma::Col<double> z;
+   arma::Col<bf::real> x;
+   arma::Col<bf::real> y;
+   arma::Col<bf::real> z;
    arma::Col<int> flag;
 } ElementXYZ_t;
 

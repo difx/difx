@@ -30,6 +30,8 @@
 #ifndef _DECOMPOSITIONMODIFIER_H
 #define _DECOMPOSITIONMODIFIER_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Decomposition.h"
 #include "ArrayElements.h"
 

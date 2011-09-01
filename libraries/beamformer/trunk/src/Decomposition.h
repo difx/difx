@@ -30,6 +30,8 @@
 #ifndef _DECOMPOSITION_H
 #define _DECOMPOSITION_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Covariance.h"
 
 #include <armadillo>
@@ -86,7 +88,7 @@ class Decomposition {
        *
        * @param[in] Rxx Reference to raw covariance data
        */
-      Decomposition(arma::Mat<arma::cx_double>& Rxx) : N_ant(Rxx.n_cols), N_chan(1), M_smp(1), _deco_type(Decomposition::None) { 
+      Decomposition(arma::Mat<bf::complex>& Rxx) : N_ant(Rxx.n_cols), N_chan(1), M_smp(1), _deco_type(Decomposition::None) { 
          /*derived should call: cstor_alloc(Rxx.n_cols, 1, numMat, numVec);*/ 
       }
 
@@ -135,7 +137,7 @@ class Decomposition {
        * @param[in]  Rxx  The covariance matrix to decompose.
        * @return 0 on success.
        */
-      int decompose(arma::Mat<arma::cx_double> const& Rxx) {
+      int decompose(arma::Mat<bf::complex> const& Rxx) {
          return do_decomposition(0, Rxx);
       }
 
@@ -168,7 +170,7 @@ class Decomposition {
        * @param[in,out] Rxx  Output covariance matrix.
        * @return 0 on success
        */
-      int recompose(arma::Mat<arma::cx_double>& Rxx) { 
+      int recompose(arma::Mat<bf::complex>& Rxx) { 
          return do_recomposition(0, Rxx);
       }
 
@@ -181,7 +183,7 @@ class Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      virtual int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx) = 0;
+      virtual int do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx) = 0;
 
       /**
        * Child classes need to implement this function.
@@ -191,17 +193,17 @@ class Decomposition {
        * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
-      virtual int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx) = 0;
+      virtual int do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx) = 0;
 
    protected:
 
       // Storage when processing several decompositions
-      arma::Mat<double>           _batch_out_vectors;       // Nant x Nchannels
-      arma::Cube<arma::cx_double> _batch_out_matrices[3];  // Nant x Nant x Nchannels
+      arma::Mat<bf::real>     _batch_out_vectors;      // Nant x Nchannels
+      arma::Cube<bf::complex> _batch_out_matrices[3];  // Nant x Nant x Nchannels
 
       // Storage when processing only one decomposition
-      arma::Col<double>           _single_out_vector;       // Nant x 1
-      arma::Mat<arma::cx_double>  _single_out_matrices[3]; // Nant x Nant x 1
+      arma::Col<bf::real>     _single_out_vector;      // Nant x 1
+      arma::Mat<bf::complex>  _single_out_matrices[3]; // Nant x Nant x 1
 
    public:
 

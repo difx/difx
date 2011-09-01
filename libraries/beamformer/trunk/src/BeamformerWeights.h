@@ -30,6 +30,8 @@
 #ifndef _BEAMFORMERWEIGHTS_H
 #define _BEAMFORMERWEIGHTS_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Covariance.h"
 #include "Decomposition.h"
 #include "Decompositions.h"
@@ -103,18 +105,18 @@ class BeamformerWeights {
        * Accessor to computed weights.
        * @return reference to 3D cube of size Nbeams x Nant x Nchan
        */
-      const arma::Cube<arma::cx_double>& getWeights() const { return _beamW; }
+      const arma::Cube<bf::complex>& getWeights() const { return _beamW; }
 
       /**
        * Accessor to computed weights of one beam.
        * @param[in] beam Index of the beam in 0..Nbeams-1
        * @return reference to 2D matrix of size Nbeams x Nant
        */
-      const arma::Mat<arma::cx_double>& getWeights(int beam) const { return _beamW.slice(beam); }
+      const arma::Mat<bf::complex>& getWeights(int beam) const { return _beamW.slice(beam); }
       
    private:
 
-      arma::Cube<arma::cx_double> _beamW; // Nbeams x Nant x Nchan
+      arma::Cube<bf::complex> _beamW; // Nbeams x Nant x Nchan
 
 };
 

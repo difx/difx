@@ -61,7 +61,7 @@ void DecompositionModifier::interfererNulling(const int Nmax, const bool nodetec
          int Nrfi;
 
          // Get vector with eigenvalues
-         arma::Col<double>& ev = _dc._single_out_vector;
+         arma::Col<bf::real>& ev = _dc._single_out_vector;
          if (_dc.N_chan > 1) {
             ev = _dc._batch_out_vectors.col(ch);
          }

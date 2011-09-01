@@ -63,7 +63,7 @@ void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& a
 
             // plane-wave delay as a complex phase
             double phase = ((2*M_PI)/(299792458.0/beams.freqs[cc])) * k_proj;
-            std::complex<double> cxphase(std::cos(phase), -std::sin(phase)); // =exp(-i*xyz*k_src)
+            std::complex<bf::real> cxphase(std::cos(phase), -std::sin(phase)); // =exp(-i*xyz*k_src)
             beams.steerings(b,a,cc) = cxphase;
 
         }
@@ -87,7 +87,7 @@ void BeamformerWeights::generateSteerings(Beams_t& beams, ArrayElements const& a
  */
 void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov, const double b)
 {
-   arma::Cube<arma::cx_double> const& Rxx = cov.get();
+   arma::Cube<bf::complex> const& Rxx = cov.get();
 
    if (cov.N_chan() != beams.Nchan) {
       std::string err("BeamformerWeights::generateMVDR(): covariance and beam Nchan do not match");
@@ -106,12 +106,12 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
    // Classical non-adaptive beamformer
    if (b <= 0.0f) {
 
-      std::complex<double> unitvec_scaling;
+      std::complex<bf::real> unitvec_scaling;
 
       for (int bb=0; bb<beams.Nbeams; bb++) {
          for (int cc=0; cc<beams.Nchan; cc++) {
 
-            arma::Row<arma::cx_double> const& steering = (beams.steerings.slice(cc)).row(bb);
+            arma::Row<bf::complex> const& steering = (beams.steerings.slice(cc)).row(bb);
             unitvec_scaling = std::sqrt( arma::as_scalar(steering * arma::trans(steering)) );
 
             _beamW.slice(cc).row(bb) = (beams.steerings.slice(cc)).row(bb) / unitvec_scaling;
@@ -124,15 +124,15 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
    // MVDR beamformer: w = (R^-1 * s) / (s' * R^-1 * s)
    if (b <= 1.0f) {
 
-      arma::Mat<arma::cx_double> inverse;
-      arma::Col<arma::cx_double> weights;
-      std::complex<double> inv_power;
+      arma::Mat<bf::complex> inverse;
+      arma::Col<bf::complex> weights;
+      std::complex<bf::real> inv_power;
 
       for (int cc=0; cc<beams.Nchan; cc++) {
          inverse = arma::inv(Rxx.slice(cc));
          for (int bb=0; bb<beams.Nbeams; bb++) {
 
-            arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
+            arma::Col<bf::complex> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
             inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);
             weights = (inverse * steering) / inv_power;
 
@@ -148,18 +148,18 @@ void BeamformerWeights::generateMVDR(Beams_t const& beams, Covariance const& cov
    // finally, w = w1 + scalar(b) * w2
    if (b > 1.0f) {
 
-      arma::Mat<arma::cx_double> inverse;
-      arma::Col<arma::cx_double> w_mvdr;
-      arma::Col<arma::cx_double> w1;
-      arma::Col<arma::cx_double> w2;
-      std::complex<double> inv_power;
-      std::complex<double> unitvec_scaling;
+      arma::Mat<bf::complex> inverse;
+      arma::Col<bf::complex> w_mvdr;
+      arma::Col<bf::complex> w1;
+      arma::Col<bf::complex> w2;
+      std::complex<bf::real> inv_power;
+      std::complex<bf::real> unitvec_scaling;
 
       for (int cc=0; cc<beams.Nchan; cc++) {
          inverse = arma::inv(Rxx.slice(cc));
          for (int bb=0; bb<beams.Nbeams; bb++) {
 
-            arma::Col<arma::cx_double> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
+            arma::Col<bf::complex> const& steering = arma::strans((beams.steerings.slice(cc)).row(bb));
 
             // normal MVDR
             inv_power = arma::as_scalar(arma::trans(steering) * inverse * steering);

@@ -30,6 +30,8 @@
 #ifndef _COVARIANCEMODIFIER_H
 #define _COVARIANCEMODIFIER_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Covariance.h"
 
 namespace bf {

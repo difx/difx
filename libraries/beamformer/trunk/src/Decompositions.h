@@ -30,6 +30,8 @@
 #ifndef _DECOMPOSITIONS_H
 #define _DECOMPOSITIONS_H
 
+#include "BeamformerTypeDefs.h"
+
 #include "Decomposition.h"
 
 #include <armadillo>
@@ -57,7 +59,7 @@ class QRDecomposition : public Decomposition {
       }
 
       /** C'stor. See parent class for documentation. */
-      QRDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+      QRDecomposition(arma::Mat<bf::complex>& Rxx) : Decomposition(Rxx) { 
          _deco_type = Decomposition::QR;
          const int numMat=2, numVec=0; // X=Q_mat*R_mat
          cstor_alloc(numMat, numVec);
@@ -74,7 +76,7 @@ class QRDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx);
 
       /**
        * Revert QR decomposition and store results into input array specified by index 'slicenr'.
@@ -82,7 +84,7 @@ class QRDecomposition : public Decomposition {
        * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
-      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx);
 
 };
 
@@ -106,7 +108,7 @@ class EVDecomposition : public Decomposition {
       }
 
       /** C'stor. See parent class for documentation. */
-      EVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+      EVDecomposition(arma::Mat<bf::complex>& Rxx) : Decomposition(Rxx) { 
          _deco_type = Decomposition::EVD;
          const int numMat=1, numVec=1; // X=E_mat*e_vec*inv(E_mat)
          cstor_alloc(numMat, numVec);
@@ -123,7 +125,7 @@ class EVDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx);
 
       /**
        * Revert Eigenvalue decomposition and store results into input array specified by index 'slicenr'.
@@ -131,7 +133,7 @@ class EVDecomposition : public Decomposition {
        * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
-      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx);
 
 };
 
@@ -155,7 +157,7 @@ class SVDecomposition : public Decomposition {
       }
 
       /** C'stor. See parent class for documentation. */
-      SVDecomposition(arma::Mat<arma::cx_double>& Rxx) : Decomposition(Rxx) { 
+      SVDecomposition(arma::Mat<bf::complex>& Rxx) : Decomposition(Rxx) { 
          _deco_type = Decomposition::SVD;
          const int numMat=2, numVec=1; // X=U_mat*s_vec*V_mat
          cstor_alloc(numMat, numVec);
@@ -172,7 +174,7 @@ class SVDecomposition : public Decomposition {
        * @param[in]  Rxx       Matrix to decompose
        * @return 0 on success
        */
-      int do_decomposition(const int sliceNr, arma::Mat<arma::cx_double> const& Rxx);
+      int do_decomposition(const int sliceNr, arma::Mat<bf::complex> const& Rxx);
 
       /**
        * Revert SVD decomposition and store results into input array specified by index 'slicenr'.
@@ -180,7 +182,7 @@ class SVDecomposition : public Decomposition {
        * @param[in,out]  Rxx   Output matrix to overwrite with recomposed result
        * @return 0 on success
        */
-      int do_recomposition(const int sliceNr, arma::Mat<arma::cx_double>& Rxx);
+      int do_recomposition(const int sliceNr, arma::Mat<bf::complex>& Rxx);
 
 };
 

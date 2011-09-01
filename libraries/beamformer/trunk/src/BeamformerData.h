@@ -30,6 +30,8 @@
 #ifndef _BEAMFORMER_DATA_H
 #define _BEAMFORMER_DATA_H
 
+#include "BeamformerTypeDefs.h"
+
 #include <armadillo>
 
 #include <iostream>
@@ -58,7 +60,7 @@ typedef struct Beams_tt {
    arma::Col<double> freqs;
 
    //! Matrix with pre-computed steerings (Nbeams x Nant x Nchan) @see BeamformerWeights::generateSteerings()
-   arma::Cube<arma::cx_double> steerings;
+   arma::Cube<bf::complex> steerings;
 
    /**
     * Set all current data to zero.

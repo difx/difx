@@ -48,18 +48,18 @@ void Decomposition::cstor_alloc(const int NdecoM, const int NdecoV)
    // Matrice(s) with eigenvectors from decomposition
    for (int decoMat=0; (decoMat<NdecoM) && (decoMat<3); decoMat++) {
       if (N_chan <= 1) {
-         _single_out_matrices[decoMat] = arma::zeros<arma::Mat<arma::cx_double> >(N_ant,N_ant);
+         _single_out_matrices[decoMat] = arma::zeros<arma::Mat<bf::complex> >(N_ant,N_ant);
       } else {   
-         _batch_out_matrices[decoMat] = arma::zeros<arma::Cube<arma::cx_double> >(N_ant,N_ant, N_chan);
+         _batch_out_matrices[decoMat] = arma::zeros<arma::Cube<bf::complex> >(N_ant,N_ant, N_chan);
       }
    }
 
    // Vector(s) with the eigenvalues from diagonal of decomposition
    if (NdecoV >= 1) {
       if (N_chan <= 1) {
-         _single_out_vector = arma::zeros<arma::Col<double> >(N_ant);
+         _single_out_vector = arma::zeros<arma::Col<bf::real> >(N_ant);
       } else {
-         _batch_out_vectors = arma::zeros<arma::Mat<double> >(N_ant, N_chan);
+         _batch_out_vectors = arma::zeros<arma::Mat<bf::real> >(N_ant, N_chan);
       }
    }
 }
@@ -72,7 +72,7 @@ void Decomposition::cstor_alloc(const int NdecoM, const int NdecoV)
  */
 int Decomposition::decompose(Covariance const& cov)
 {
-   arma::Cube<arma::cx_double> const& allRxx = cov.get();
+   arma::Cube<bf::complex> const& allRxx = cov.get();
 
    return decompose(cov, 0, (allRxx.n_slices-1));
 }
@@ -88,7 +88,7 @@ int Decomposition::decompose(Covariance const& cov)
 int Decomposition::decompose(Covariance const& cov, const int startch, const int endch)
 {
    int rc = 0;
-   arma::Cube<arma::cx_double> const& allRxx = cov.get();
+   arma::Cube<bf::complex> const& allRxx = cov.get();
  
    if (unsigned(startch) >= allRxx.n_slices) {
       return -1;
@@ -119,7 +119,7 @@ int Decomposition::decompose(Covariance const& cov, const int startch, const int
  */
 int Decomposition::recompose(Covariance& cov)
 {
-   arma::Cube<arma::cx_double> const& allRxx = cov.get();       
+   arma::Cube<bf::complex> const& allRxx = cov.get();       
    return recompose(cov, 0, (allRxx.n_slices-1));
 }
 
@@ -136,7 +136,7 @@ int Decomposition::recompose(Covariance& cov)
 int Decomposition::recompose(Covariance& cov, const int startch, const int endch)
 {
    int rc = 0;
-   arma::Cube<arma::cx_double>& allRxx = cov.getWriteable();
+   arma::Cube<bf::complex>& allRxx = cov.getWriteable();
 
    if (unsigned(startch) >= allRxx.n_slices) {
       return -1;
