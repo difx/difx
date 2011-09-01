@@ -178,6 +178,24 @@ class Covariance {
          return *this;
       }
 
+      /**
+       * Given a signal vector of Nant elements, calculates covariances
+       * and integrates this into the current covariance data of the
+       * specified channel (Rxx[ch] = Rxx[ch] + x'*x).
+       * @param[in] ch Target covariance channel 0..Nch-1
+       * @param[in] x  Column vector with data from Nant elements
+       */
+      void add(const int ch, arma::Col<arma::cx_double> const& x) {
+         if (0) {
+            // Formal style
+            _Rxx.slice(ch) += (x * arma::trans(x));
+         } else {
+            // Matlab-style
+            _Rxx.slice(ch) += (arma::conj(x) * arma::strans(x));
+         }
+      }
+
+
    private:
       int _N_ant;
       int _N_chan;
