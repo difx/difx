@@ -2,13 +2,13 @@
 % Testing for the RFI Templating and subtraction method
 %
 
-do_subplot=1; % 1 to combine certain plots, 0 to use separate figures for each
+do_subplot=0; % 1 to combine certain plots, 0 to use separate figures for each
 
 %% Model input
 
 lambda=0.2021;     % wavelength in meters
 
-Nant=4;            % total number of antennas
+Nant=64+2;         % total number of antennas
 refIdx=[1 2];      % indices of the reference antennas
 
 % Model input data: sky source
@@ -17,10 +17,11 @@ srcDirPwr = [45 -90 1e-2];
 % Model input data: RFI, un-comment the suitable one
 % rfiDirPwr = [30 -15 0]; % no interferer (zero power), toxicity test
 % rfiDirPwr = [30 -15 2]; % single interferer in one frequency channel
- rfiDirPwr = [30 -15 2; 40 -45 3]; % two interferers in one freq channel (Kesteven subtraction will fail)
+rfiDirPwr = [10 -70 2]; % single interferer in one frequency channel, direction overlaps with source dir
+% rfiDirPwr = [30 -15 2; 40 -45 3]; % two interferers in one freq channel (Kesteven subtraction will fail)
 
 % Model input data: gain of RFI reference antenna and count of expected RFIs
-ref_ant_INR = 1e3;
+ref_ant_INR = 1e1;
 Nrfi = size(rfiDirPwr,1);
 
 % Model input data: antenna element noise and correlated noise
@@ -39,7 +40,15 @@ refIdxStr=regexprep(refIdxStr, ' *', ','); % for figure titles
 %% Generate data
 
 % Array element positions (for simplicity, assume reference antennas are inside array)
-[eps]=subspcrfi_elemXYZ(Nant, 10e-2);
+[eps_array]=subspcrfi_elemXYZ(Nant-Nref, 10e-2);
+if (Nref==1),
+    eps_ref=eps_array(:,ceil((Nant-Nref)/2));
+elseif (Nref==2),
+    eps_ref=[eps_array(:,1) , eps_array(:,end)];
+else
+    eps_ref=eps_array(:,1:Nref);
+end        
+eps = [eps_ref , eps_array];
 
 % Model 1 (no reference antennas) just for comparison
 nonref_eps = eps(:,antIdx); % discard positions of reference antennas
@@ -69,7 +78,7 @@ tRxxV3(1,:,:,2)=RxxV3;
 %% Apply the subtraction method to Model2 data
 
 [briggsResult,genericResult]=subspcrfi_subtraction(tRxxV2, refIdx);
-if 1, cRxxV2=genericResult; else cRxxV2=briggsResult; end
+if 0, cRxxV2=genericResult; else cRxxV2=briggsResult; end
 
 nonHerm_br=max(max(abs(squeeze(briggsResult(1,:,:,1)) - squeeze(briggsResult(1,:,:,1))')));
 nonHerm_gen=max(max(abs(squeeze(genericResult(1,:,:,1)) - squeeze(genericResult(1,:,:,1))')));
@@ -86,7 +95,7 @@ tRxxV2n(1,:,:,2)=RxxV2(antIdx,antIdx);
 [RxxV2nulled]=subspcrfi_nulling(tRxxV2n, rfi_evalues, rfi_evecsfull, Nrfi);   
 
 %% Imaging
-if 0,
+if 1,
     % Compute dirty image of Model1
     [uvd] = subspcrfi_RtoUV(RxxV1, fHz, eps);
     img_M1_dirty = abs(fft2(uvd));
