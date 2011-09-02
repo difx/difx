@@ -1,3 +1,6 @@
+% Exports multi-channel covariance data and frequency list into a file.
+% The C++ beamformer library can read these files.
+%
 function subspcrfi_writeRxxFile(fn, Rxx, freqs)
  Nant = size(Rxx,1);
  Nch = size(Rxx,3);
