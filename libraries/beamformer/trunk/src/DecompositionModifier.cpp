@@ -60,21 +60,36 @@ void DecompositionModifier::interfererNulling(const int Nmax, const bool nodetec
          bool sorted_decreasing;
          int Nrfi;
 
-         // Get vector with eigenvalues
+         // Get vector with sorted eigenvalues
          arma::Col<bf::real>& ev = _dc._single_out_vector;
          if (_dc.N_chan > 1) {
             ev = _dc._batch_out_vectors.col(ch);
          }
+
+         // Sort order may sometimes change, detect it
          sorted_decreasing = (ev(0) > ev(ev.n_elem-1));
 
          // Detect and limit the number of interferers
          if (nodetect) {
             Nrfi = std::abs(Nmax);
          } else {
-            da.getMDL(ch, Nrfi); // MDL or AIC; MDL tends to be "better"
+
+            int Nrfi_mdl, Nrfi_3sig;
+
+            // Use MDL to detect Nrfi; AIC also possible but MDL tends to be "better"
+            da.getMDL(ch, Nrfi_mdl);
+
+            // Also use thresholding to estimate Nrfi
+            da.get3Sigma(ch, Nrfi_3sig);
+            Nrfi = std::min(Nrfi_3sig, Nrfi_mdl);
+
+            // Clip to specified maximum interferers to null
             if (Nmax >= 1) {
                Nrfi = std::min(Nmax, Nrfi);
             }
+
+            //std::cout << "Ch " << ch << " detected Nrfi: 3sig=" << Nrfi_3sig << ", MDL=" << Nrfi_mdl << ", Nrfi=" << Nrfi << "\n";
+
          }
 
          if (Nrfi < 1) { continue; }
