@@ -72,9 +72,8 @@ class Covariance {
        * @param[in]   timestamp  Starting time of the data cube.
        * @param[in]   Tint       Integration time used for the data cube.
        */
-      Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : _N_ant(Nant), _N_chan(Nchannels), _M_smp(Msmp) { 
-         _Rxx.zeros(Nant, Nant, Nchannels);
-         _freqs.zeros(Nchannels);
+      Covariance(int Nant, int Nchannels, int Msmp, double timestamp, double Tint) : _N_ant(Nant), _N_chan(Nchannels), _M_smp(Msmp) {
+         this->resize(Nant, Nchannels);
          _timestamp = timestamp;
          _Tint = Tint;
       }
@@ -92,6 +91,20 @@ class Covariance {
          _freqs = o._freqs;
          _timestamp = o._timestamp;
          _Tint = o._Tint;
+      }
+
+   public:
+
+      /**
+       * Clear all contained data and set new size.
+       * @param[in]  Nant       Number of elements or antennas.
+       * @param[in]  Nchannels  Number of frequency channels.
+       */
+      void resize(const int Nant, const int Nchannels) {
+         _Rxx.zeros(Nant, Nant, Nchannels);
+         _freqs.zeros(Nchannels);
+         _timestamp = 0;
+         _Tint = 0;
       }
 
    public:
