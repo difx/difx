@@ -195,6 +195,43 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
 
 
 /**
+ * Three sigma thresholding detector to make a guess at the number of
+ * eigenvalues that are above an unknown noise power threshold.
+ * @param[in]      channel Which channel of multi-channel data to analyse 
+ * @param[in,out]  rank    Storage for detected number of interferers, 0 means none found
+ * @return Returns the estimated number of interferers.
+ */
+double DecompositionAnalyzer::get3Sigma(int channel, int& rank) const
+{
+   arma::Col<bf::real> eigs_unsorted;
+
+   rank = 0;
+   channel %= (_deco.N_chan + 1);
+
+   /* Handle SVD and EVD */
+   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
+
+      // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
+      if (_deco.N_chan <= 1) {
+         eigs_unsorted = _deco._single_out_vector;
+      } else {
+         eigs_unsorted = _deco._batch_out_vectors.col(channel);
+      }
+
+      // Count values that exceed 3sigma threshold
+      bf::real thresh = arma::mean(eigs_unsorted) + 3.0 * arma::stddev(eigs_unsorted);
+      arma::uvec ithresh = arma::find(eigs_unsorted > thresh, 0, "first"); // returns indices of all matching elems
+      rank = ithresh.n_elem;
+
+   } else {
+      // ...
+   }
+
+   return rank;
+}
+
+
+/**
  * Compute AIC and MDL information criterion for subset of eigenvalues.
  * @param[in]    k     Criterion parameter, must be 0 <= k < (N=len(eigs))
  * @param[in]    M_smp Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition

@@ -99,6 +99,15 @@ class DecompositionAnalyzer {
       /** Wraps getAIC() call with M_smp stored in decomposition object */
       double getAIC(int c, int& ref) const { return getAIC(c, _deco.M_smp, ref); }
 
+      /** 
+       * Three sigma thresholding detector to make a guess at the number of
+       * eigenvalues that are above an unknown noise power threshold.
+       * @param[in]      channel Which channel of multi-channel data to analyse
+       * @param[in,out]  rank    Storage for detected number of interferers, 0 means none found
+       * @return Returns the estimated number of interferers.
+       */
+      double get3Sigma(int channel, int& rank) const;
+
    public:
 
       /** Unit test */
