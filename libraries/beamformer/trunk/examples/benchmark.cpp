@@ -230,7 +230,7 @@ int main(int argc, char** argv)
               Timing speed(Nelem*N_ITER);
               for (int i=0; i<N_ITER; i++) {
                  dec.decompose(rxxDataBlock);
-                 dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
+                 dm.interfererNulling(Nrfi, true, 0, rxxDataBlock.N_chan()-1);
                  dec.recompose(outDataBlock);
               }
            }
@@ -242,7 +242,7 @@ int main(int argc, char** argv)
               Timing speed(Nelem*N_ITER);
               for (int i=0; i<N_ITER; i++) {
                  dec.decompose(rxxDataBlock);
-                 dm.interfererNulling(Nrfi, /*nodetect=*/ false, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
+                 dm.interfererNulling(Nrfi, true, 0, rxxDataBlock.N_chan()-1);
                  dec.recompose(outDataBlock);
               }
            }

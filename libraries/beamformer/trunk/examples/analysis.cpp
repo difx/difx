@@ -47,12 +47,14 @@ inline double deg2rad(double d) { return (3.141592653589793238462643/180.0)*d; }
 
 int main(int argc, char** argv)
 {
+        const double C_LAMBDA = 0.2021;        // default wavelength in test code
         const int    DIGESTIF_Nant = 4;        // 64 elements, 60 in use
         const double DIGESTIF_spacing = 10e-2; // element separation 10cm
-        const int    DIGESTIF_Msmp = 100;      // time slices averaged into one covariance matrix
+        const int    DIGESTIF_Msmp = 768;      // time slices averaged into one covariance matrix
         const int    DIGESTIF_Nch = 2;         // 71 channels
         const double DIGESTIF_Tint = 0.1;      // guessing 0.1s integration time for covariance matrices
-        const double C_LAMBDA = 0.2021;        // default wavelength in test code
+        const int    DIGESTIF_Ndisc = 5;       // number of discardable, disconnected antenna elements (required for MDL/AIC/3sig)
+        bool data_is_synthetic = false; // is updated later
 
         //////////////////////////////////////////
         // GENERATE STANDARD ARRAY LAYOUT
@@ -80,7 +82,6 @@ int main(int argc, char** argv)
 
         int Nrfi = 1;
         Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
-        Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
         if (0) {
 
@@ -88,7 +89,12 @@ int main(int argc, char** argv)
 
            rxxDataBlock.load("virgoA_on.raw", 0);
            rxxDataBlock.store("out.raw", 0); // for test
-           Nrfi = 1;
+
+           ae.generateGrid(rxxDataBlock.N_ant(), DIGESTIF_spacing);
+           cout << "Updated and generated uniform grid array for loaded data N_ant = " << ae.Nant() << "\n";
+
+           data_is_synthetic = false;
+           Nrfi = 3;
 
         } else if (0) {
 
@@ -100,7 +106,10 @@ int main(int argc, char** argv)
               rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(40.0), deg2rad(25.0), 1.0, 0, 0);
               rxxDataBlock.addSignal(ch, C_LAMBDA, ae, deg2rad(0.0),  deg2rad(0.0),  1e-3, 5e-5, 5e-11);
            }
+           data_is_synthetic = true;
            Nrfi = 3;
+
+           std::cout << rxxDataBlock;
 
         } else {
 
@@ -127,10 +136,14 @@ int main(int argc, char** argv)
               Nrfi = 2;
 #endif
            }
+
+           data_is_synthetic = true;
+
+           std::cout << rxxDataBlock;
         }
 
-        std::cout << rxxDataBlock;
-
+        // Output storage
+        Covariance outDataBlock(rxxDataBlock.N_ant(), rxxDataBlock.N_chan(), DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
 
         //////////////////////////////////////////
@@ -187,7 +200,7 @@ int main(int argc, char** argv)
 
 
         //////////////////////////////////////////
-        // ANALYZE SVD DECOMPOSITION
+        // ANALYZE EVD/SVD DECOMPOSITION
         /////////////////////////////////////////
 
         SVDecomposition info(rxxDataBlock);
@@ -208,9 +221,14 @@ int main(int argc, char** argv)
         }
 #endif
 
-        // Nulling with at most Nrfi interferers (could also use std::max(mdl_rank, Nrfi))
+        // Nulling with at most Nrfi interferers and autodetect=true
         DecompositionModifier dm(info);
-        dm.interfererNulling(Nrfi, /*nodetect=*/ true, /*start, stop channels:*/ 0, rxxDataBlock.N_chan()-1);
+        if (data_is_synthetic) {
+           dm.interfererNulling(Nrfi, true, 0, rxxDataBlock.N_chan()-1);
+        } else {
+           // Virgo A data set has 5 disconnected elements
+           dm.interfererNulling(Nrfi, true, 0, rxxDataBlock.N_chan()-1, DIGESTIF_Ndisc);
+        }
 
         // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);
