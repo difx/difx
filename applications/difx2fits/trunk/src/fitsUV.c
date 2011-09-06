@@ -1191,7 +1191,7 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 		}
 		else
 		{
-			fprintf(stdout, "Found an ok record\n");
+			//fprintf(stdout, "Found an ok record\n");
 #ifdef HAVE_FFTW
 			if(S)
 			{
