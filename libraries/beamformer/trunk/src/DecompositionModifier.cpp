@@ -90,7 +90,7 @@ void DecompositionModifier::interfererNulling(const int Nmax, const bool autodet
                Nrfi = std::min(Nmax, Nrfi);
             }
 
-            std::cout << "Ch " << ch << " detected Nrfi: 3sig=" << Nrfi_3sig << ", MDL=" << Nrfi_mdl << ", Nrfi=" << Nrfi << "\n";
+            // std::cout << "Ch " << ch << " detected Nrfi: 3sig=" << Nrfi_3sig << ", MDL=" << Nrfi_mdl << ", Nrfi=" << Nrfi << "\n";
 
          } else {
 
