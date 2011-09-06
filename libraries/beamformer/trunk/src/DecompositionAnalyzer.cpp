@@ -253,16 +253,15 @@ void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, 
    // Note2: k=0 to use all (N-k)=N smallest eigenvalues e(0..n_elem-1), k=1 to use eigs e(1..n_elem-1) and so on
    #if 0
    for (unsigned int i=k; i<eigs.n_elem; i++) {
-      arith += eigs(i);
-      geo *= eigs(i);
+      arith += (eigs(i)/Q);
+      geo *= std::pow(eigs(i), 1/Q);
    }
    #else
-   arith = arma::sum(eigs.rows(k, eigs.n_elem-1));
-   geo = arma::prod(eigs.rows(k, eigs.n_elem-1));
+   arma::Col<bf::real> eigsSqrt = pow(eigs.rows(k, eigs.n_elem-1), 1/Q);
+   arma::Col<bf::real> eigsNorml = eigs.rows(k, eigs.n_elem-1) / bf::real(Q);
+   arith = arma::sum(eigsNorml);
+   geo = arma::prod(eigsSqrt);
    #endif
-
-   arith /= Q;
-   geo = std::pow(geo, 1/Q);
 
    MDL = -Q*M*std::log(geo/arith) + 0.5*double(k)*double(2*eigs.n_elem - k)*std::log(M);
    AIC = -2*Q*M*std::log(geo/arith) + 2*double(k)*double(2*eigs.n_elem - k);
@@ -292,13 +291,11 @@ bool DecompositionAnalyzer::utest()
       aics(kk) = aic;
    }
 
-   #ifdef _VERBOSE_DBG
    std::cout << "DecompositionAnalyzer::utest\nUsing eigs=\n" << arma::trans(eigs);
    std::cout << "aics=\n" << arma::trans(aics);
    std::cout << "mdls=\n" << arma::trans(mdls);
    std::cout << "(aics-expected)=\n" << arma::trans(aics-aics_exp);
    std::cout << "(mdls-expected)=\n" << arma::trans(mdls-mdls_exp);
-   #endif
 
    for (int kk=0; kk<7; kk++) {
       double err1 = std::abs( (mdls_exp(kk)-mdls(kk))/mdls_exp(kk) );
@@ -313,9 +310,7 @@ bool DecompositionAnalyzer::utest()
       }
    }
 
-   #ifdef _VERBOSE_DBG
    std::cout << "DecompositionAnalyzer::utest " << (pass ? "PASS" : "FAIL") << "\n";
-   #endif
 
    return pass;
 }
