@@ -594,6 +594,7 @@ static int parseDifxPulseCal(const char *line,
 
 	for(pol = 0; pol < 2; pol++)
 	{
+#warning "FIXME these NaNs will infect entire average (default 30s) Change to zero instead?"
 		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
 		{
 			freqs[pol][toneIndex] = 0.0;
@@ -652,11 +653,11 @@ static int parseDifxPulseCal(const char *line,
 	{
 		return -6;
 	}
-	/* Read in pulse cal information */
         if(isAntennaFlagged(D->job + jobId, mjd, dd->antennaId))
 	{
 		return -7;
 	}
+	/* Read in pulse cal information */
 	for(pol = 0; pol < D->nPol; pol++)
 	{
 	//pol 0 is the polarisation of first recorded band of the first recorded datastream of the first config
@@ -715,10 +716,10 @@ static int parseDifxPulseCal(const char *line,
 						for(i = 0; i < nIF; i++)
 						{
 							toneIndex = IFs[i]*nTone + k;
-
+							freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
+#warning "FIXME Should check if any pcal value is > pcaltiny and if not return -7"
 							if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 							{
-								freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
 								pulseCalRe[pol][toneIndex] = B;
 								pulseCalIm[pol][toneIndex] = C;
 							}
@@ -946,6 +947,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			}
 		}
 		nWindow = 0;
+		nAccum = 0;
 
 		currentScanId = -1;
 		printf(" %s", D->antenna[a].name);
@@ -1251,7 +1253,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 						pulseCalImAcc[k][t] += pulseCalIm[k][t];
 					}
 				}
-				if(nAccum == 0);
+				if(nAccum == 0)
 				{
 					accumStart = time;
 				}
@@ -1268,7 +1270,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			rewind(in);
 		}
 
-		/* Dump any accumulations that have not been completed */
 
 	}/*end antenna loop*/
 	if(in)
