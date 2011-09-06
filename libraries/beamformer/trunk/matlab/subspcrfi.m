@@ -18,6 +18,8 @@
   src=load(fn);
   osrc=load(ofn);
   assert(max(abs(src.frequency-osrc.frequency))==0);
+  ignore_mask = [60 61 62 63 64]; % only array elements 1 to 60 are actually connected! (maybe 60 even not..)
+  
   fnr=1;
   
   %% APERTIF information
@@ -42,7 +44,7 @@
   Nch = size(src.ACM,3);
   Nant = size(src.ACM,1);
   Nsets = size(alldata, 1);
-  Nrfi = 8; % max. number of interferers to cancel
+  Nrfi = 2; % max. number of interferers to cancel
 
   %% Data Summary
   fprintf(1,'Data size: %d x %d, %d channels\n', size(src.ACM,1), size(src.ACM,2), size(src.ACM,3));
@@ -71,7 +73,7 @@
           ac_noise_pwr = mean(on_src_list(:,3))/(Nant^3);
           xc_noise_pwr = 1e-5*ac_noise_pwr;
       else
-          on_src_list = [0 0 1e-3; 100 40 1];
+          on_src_list = [45 -90 1e-3; 100 40 1; 15 -17 1];
           off_src_list = on_src_list;
           ac_noise_pwr = 0;
           xc_noise_pwr = 0;
@@ -176,7 +178,7 @@
   %% Process: nulling of RFI using eigenvalue decomposition
   if 1,
       fprintf(1, '%s\n', ['Trying to null ' int2str(Nrfi) ' RFI sources in channels where threshold exceeded.']);
-      [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evecsfull, Nrfi);      
+      [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evecsfull, Nrfi, ignore_mask);
   else
       fprintf(1, 'No nulling, output data is copy of input data\n');
       nulldata=alldata;
