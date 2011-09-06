@@ -45,7 +45,7 @@ function [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, 
         % be nulled, measured using only the non-ignored eigenvalues
         mdl_evalues = sort(evalues,2,'descend'); % these not used for nulling
         mdl_evalues(ignore_mask) = [];
-        [Nrfi_mdl] = subspcrfi_MDLrank(mdl_evalues, Mint);
+        [Nrfi_mdl,tmp,MDL_k] = subspcrfi_MDLrank(mdl_evalues, Mint);
         
         % Use thresholding: exact, estimate, or remove all dominant
         %rfi_thresh = sorted_evalues(min(Nrfi, det_Nrfi)); % exact/clipped
@@ -96,7 +96,7 @@ function [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, 
         % "null" via replacing by median/mean (real nulling with 0.0f is sub-optimal)
         null_evalues(null_idcs) = mm_post;
         null_evalues = diag(null_evalues);
-        
+
         if 0, %% debug
             % apply threshold to pruned input list of MDL
             thresh_evalues = mdl_evalues;
@@ -125,6 +125,7 @@ function [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evectors, Nrfi, 
             plot(abs(evalues),'g');
             plot(abs(diag(null_evalues)),'b-.');
             legend('Original eigenvalues (no sorting)', 'Nulled eigenvalues (no sorting)');            
+            %figure(2), plot(abs(MDL_k)), title('abs(MDL(k))');
             input('enter');
         end
 
