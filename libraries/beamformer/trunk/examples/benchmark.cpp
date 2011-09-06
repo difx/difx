@@ -52,6 +52,17 @@ int main(int argc, char** argv)
         const int    N_ITER = 10; // benchmark iterations
 
         //////////////////////////////////////////
+        // COMPILE INFO
+        //////////////////////////////////////////
+
+        std::cout << "\n --- Library and test program compiled for ";
+        if (sizeof(bf::real) >= 8) {
+           std::cout << "double-precision complex floating point arithmetic ---\n\n";
+        } else {
+           std::cout << "single-precision complex floating point arithmetic ---\n\n";
+        }
+
+        //////////////////////////////////////////
         // GENERATE STANDARD ARRAY LAYOUT
         /////////////////////////////////////////
 

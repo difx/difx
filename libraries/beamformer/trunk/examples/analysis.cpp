@@ -56,6 +56,18 @@ int main(int argc, char** argv)
         const int    DIGESTIF_Ndisc = 5;       // number of discardable, disconnected antenna elements (required for MDL/AIC/3sig)
         bool data_is_synthetic = false; // is updated later
 
+
+        //////////////////////////////////////////
+        // COMPILE INFO
+        //////////////////////////////////////////
+
+        std::cout << "\n --- Library and test program compiled for ";
+        if (sizeof(bf::real) >= 8) {
+           std::cout << "double-precision complex floating point arithmetic ---\n\n";
+        } else {
+           std::cout << "single-precision complex floating point arithmetic ---\n\n";
+        }
+
         //////////////////////////////////////////
         // GENERATE STANDARD ARRAY LAYOUT
         /////////////////////////////////////////
