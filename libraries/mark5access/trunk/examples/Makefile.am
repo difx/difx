@@ -18,6 +18,7 @@ endif
 
 bin_PROGRAMS = \
 	directory2filelist \
+	m5bstate \
 	m5d \
 	m5fold \
 	m5tsys \
@@ -30,6 +31,9 @@ bin_PROGRAMS = \
 
 directory2filelist_SOURCES = \
 	directory2filelist.c
+
+m5bstate_SOURCES = \
+	m5bstate.c
 
 m5d_SOURCES = \
 	m5d.c
