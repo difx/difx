@@ -74,24 +74,62 @@ class DecompositionAnalyzer {
        * that are above an unknown noise power threshold. This can work 
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.
+       * Finds rank = arg min(MDL(k)|k=0..Nant-1).
        * @param[in]    channel   Which channel of multi-channel data to analyse
        * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
-       * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
+       * @param[in,out] rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
        * @return Returns the minimum detected MDL value.
        */
-      double getMDL(int, const int, int&) const;
+      double getMDL(int channel, const int M_smp, int& rank) const { 
+         return getMDL(channel, M_smp, /*Ndiscard:*/ 0, rank);
+      }
 
       /** 
        * An AIC detector that makes a guess at the number of eigenvalues
        * that are above an unknown noise power threshold. This can work 
        * reasonably but requires more than N/2 of eigenvalues are indeed 
        * from noise space.
-       * @param[in]    channel   Which channel of multi-channel data to analyse
-       * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
-       * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
+       * Finds rank = arg min(AIC(k)|k=0..Nant-1).
+       * @param[in]     channel  Which channel of multi-channel data to analyse
+       * @param[in]     M_smp    Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
+       * @param[in,out] rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
        * @return Returns the minimum detected MDL value.
        */
-      double getAIC(int, const int, int&) const;
+      double getAIC(int channel, const int M_smp, int& rank) const {
+         return getAIC(channel, M_smp, /*Ndiscard:*/ 0, rank);
+      }
+
+      /** 
+       * An MDL detector that makes a guess at the number of eigenvalues
+       * that are above an unknown noise power threshold. This can work 
+       * reasonably but requires more than N/2 of eigenvalues are indeed 
+       * from noise space. When it is known that some elements of the array 
+       * have no signal, the corresponding lowest eigenvalues can be ignored
+       * using Ndiscard.
+       * Finds rank = arg min(MDL(k)|k=0..Nant-Ndiscard-1).
+       * @param[in]     channel   Which channel of multi-channel data to analyse
+       * @param[in]     M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
+       * @param[in]     Ndiscard  Number of smallest eigenvalues to ignore in MDL.
+       * @param[in,out] rank      Final determined interference space rank (0..Nch-1), 0 for no RFI found
+       * @return Returns the minimum detected MDL value.
+       */
+      double getMDL(int channel, const int M_smp, const int Ndiscard, int& rank) const;
+
+      /** 
+       * An AIC detector that makes a guess at the number of eigenvalues
+       * that are above an unknown noise power threshold. This can work 
+       * reasonably but requires more than N/2 of eigenvalues are indeed 
+       * from noise space. When it is known that some elements of the array
+       * have no signal, the corresponding lowest eigenvalues can be ignored   
+       * using Ndiscard.
+       * Finds rank = arg min(AIC(k)|k=0..Nant-Ndiscard-1).
+       * @param[in]     channel  Which channel of multi-channel data to analyse
+       * @param[in]     M_smp    Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
+       * @param[in]     Ndiscard Number of smallest eigenvalues to ignore in MDL.
+       * @param[in,out] rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
+       * @return Returns the minimum detected MDL value.
+       */
+      double getAIC(int channel, const int M_smp, const int Ndiscard, int& rank) const;
 
       /** Wraps getMDL() call with M_smp stored in decomposition object */
       double getMDL(int c, int& ref) const { return getMDL(c, _deco.M_smp, ref); }
@@ -103,10 +141,22 @@ class DecompositionAnalyzer {
        * Three sigma thresholding detector to make a guess at the number of
        * eigenvalues that are above an unknown noise power threshold.
        * @param[in]      channel Which channel of multi-channel data to analyse
-       * @param[in,out]  rank    Storage for detected number of interferers, 0 means none found
+       * @param[in,out]  rank    Final determined interference space rank (0..Nch-1), 0 for no RFI found
        * @return Returns the estimated number of interferers.
        */
-      double get3Sigma(int channel, int& rank) const;
+      double get3Sigma(int channel, int& rank) const {
+         return get3Sigma(channel, /*Ndiscard:*/ 0, rank);
+      }
+
+      /** 
+       * Three sigma thresholding detector to make a guess at the number of
+       * eigenvalues that are above an unknown noise power threshold.
+       * @param[in]      channel  Which channel of multi-channel data to analyse
+       * @param[in]      Ndiscard Number of smallest eigenvalues to ignore in 3sigma.
+       * @param[in,out]  rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
+       * @return Returns the estimated number of interferers.
+       */
+      double get3Sigma(int channel, const int Ndiscard, int& rank) const;
 
    public:
 

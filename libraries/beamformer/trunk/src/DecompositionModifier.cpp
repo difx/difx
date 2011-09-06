@@ -35,19 +35,26 @@
 namespace bf {
 
 /**
- * Classic nulling of dominant eigenvalues of the decomposition. 
- * Internally, DecompositionAnalyzer is run on each channel to estimate the
- * number of interferers, whose corresponding eigenvalues are then
- * replaced by an estimate of the average noise space power.
+ * Classic nulling of dominant eigenvalues of the decomposition.
+ * Each channel is checked with DecompositionAnalyzer using MDL and 3sigma.
+ * The initial interference count estimate is Nrfi=max(MDL,3sig).
+ * If Nmax>0 this estimate is clipped to Nrfi=min(Nrfi,Nmax).
+ * Finally the Nrfi largest eigenvalues are nulled.
+ * Nulling is done using median replacement.
  *
- * In pulsar and fast transient observations you should take care to 
+ * When original covariance data contains disconnected antennas,           
+ * you must specify the total number of disconnected antennas with Ndiscard.
+ * Otherwise the MDL estimate on Nrfi will be wrong.
+ *
+ * In pulsar and fast transient observations you should take care to
  * null only channels that are not expected to contain the observable.
  * @param[in] Nmax     Upper limit on detected interferers to null or <1 to null all
- * @param[in] nodetect If true, do not estimate interferer count from data, instead null Nmax>0 values directly
+ * @param[in] autodetect True to estimate Nrfi, false to apply Nrfi=Nmax>0 directly.
  * @param[in] startch  First channel where to start nulling
  * @param[in] endch    Last channel to null (inclusive)
+ * @param[in] Ndiscard Number of smallest eigenvalues to ignore in MDL and 3sigma estimation.
  */
-void DecompositionModifier::interfererNulling(const int Nmax, const bool nodetect, const int startch, const int endch)
+void DecompositionModifier::interfererNulling(const int Nmax, const bool autodetect, const int startch, const int endch, const int Ndiscard)
 {
    DecompositionAnalyzer da(_dc);
 
@@ -69,36 +76,36 @@ void DecompositionModifier::interfererNulling(const int Nmax, const bool nodetec
          // Sort order may sometimes change, detect it
          sorted_decreasing = (ev(0) > ev(ev.n_elem-1));
 
-         // Detect and limit the number of interferers
-         if (nodetect) {
-            Nrfi = std::abs(Nmax);
-         } else {
+         // Detect the number of interferers
+         if (autodetect) {
 
+            // Use combination of MDL and 3-sigma threshold
             int Nrfi_mdl, Nrfi_3sig;
+            da.getMDL(ch, _dc.M_smp, Ndiscard, Nrfi_mdl);
+            da.get3Sigma(ch, Ndiscard, Nrfi_3sig);
 
-            // Use MDL to detect Nrfi; AIC also possible but MDL tends to be "better"
-            da.getMDL(ch, Nrfi_mdl);
-
-            // Also use thresholding to estimate Nrfi
-            da.get3Sigma(ch, Nrfi_3sig);
-            Nrfi = std::min(Nrfi_3sig, Nrfi_mdl);
-
-            // Clip to specified maximum interferers to null
+            // Choose largest and clip to user limit
+            Nrfi = std::max(Nrfi_3sig, Nrfi_mdl);
             if (Nmax >= 1) {
                Nrfi = std::min(Nmax, Nrfi);
             }
 
-            //std::cout << "Ch " << ch << " detected Nrfi: 3sig=" << Nrfi_3sig << ", MDL=" << Nrfi_mdl << ", Nrfi=" << Nrfi << "\n";
+            std::cout << "Ch " << ch << " detected Nrfi: 3sig=" << Nrfi_3sig << ", MDL=" << Nrfi_mdl << ", Nrfi=" << Nrfi << "\n";
+
+         } else {
+
+            Nrfi = std::abs(Nmax);
 
          }
 
+         // No changes if no RFI
          if (Nrfi < 1) { continue; }
 
          // Estimate the noise power in channels without interferer
          if (sorted_decreasing) {
-            noise_pwr = arma::mean(ev.rows(Nrfi, ev.n_elem-1));
+            noise_pwr = arma::median(ev.rows(Nrfi, ev.n_elem-1));
          } else {
-            noise_pwr = arma::mean(ev.rows(0, ev.n_elem-Nrfi-1));
+            noise_pwr = arma::median(ev.rows(0, ev.n_elem-Nrfi-1));
          }
 
          // Nulling by overwriting with noise power estimate

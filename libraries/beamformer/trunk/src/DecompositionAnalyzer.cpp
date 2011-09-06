@@ -82,19 +82,24 @@ DecompositionAnalyzer::DecompositionAnalyzer(EVDecomposition const& deco) : _dec
 
 /**
  * An MDL detector that makes a guess at the number of eigenvalues
- * that are above an unknown noise power threshold. This can work 
- * reasonably but requires more than N/2 of eigenvalues are indeed 
- * from noise space.
- * @param[in]    channel   Which channel of multi-channel data to analyse
- * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
- * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
+ * that are above an unknown noise power threshold. This can work  
+ * reasonably but requires more than N/2 of eigenvalues are indeed    
+ * from noise space. When it is known that some elements of the array 
+ * have no signal, the corresponding lowest eigenvalues can be ignored 
+ * using Ndiscard.
+ * Finds rank = arg min(MDL(k)|k=0..Nant-Ndiscard-1).
+ * @param[in]     channel   Which channel of multi-channel data to analyse 
+ * @param[in]     M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
+ * @param[in]     Ndiscard  Number of smallest eigenvalues to ignore in MDL.
+ * @param[in,out] rank      Final determined interference space rank (0..Nch-1), 0 for no RFI found
  * @return Returns the minimum detected MDL value.
  */
-double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) const
+double DecompositionAnalyzer::getMDL(int channel, const int M_smp, const int Ndiscard, int& rank) const
 {
    double min_IC = 1.0/0.0; //infinity();
    arma::Col<bf::real> eigs_unsorted;
    arma::Col<bf::real> eigs;
+   arma::Col<double> MDL_k;
 
    rank = 0;
    channel %= (_deco.N_chan + 1);
@@ -108,27 +113,31 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
       } else {
          eigs_unsorted = _deco._batch_out_vectors.col(channel);
       }
-      if (eigs_unsorted(0) <= eigs_unsorted(eigs_unsorted.n_elem-1)) {
-        eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
-      } else {
-        eigs = eigs_unsorted;
+
+      eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
+      if (Ndiscard > 0) {
+         eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
       }
 
-      // Compute MDL for varying number of retained smallest elements
-      for (unsigned int ii=0; ii<eigs.n_elem; ii++) {
+      // Find k = arg min(MDL(k)|k=0..Nant-1)
+      MDL_k.zeros(eigs.n_elem);
+      for (unsigned int ii=0; ii<MDL_k.n_elem; ii++) {
 
          double AIC, MDL;
          this->compute_IC_k(ii, M_smp, eigs, AIC, MDL);
+         MDL_k(ii) = MDL;
 
          if (std::isnan(MDL) || std::isinf(MDL)) {
-//            std::cout << "Warning: MDL(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
             continue;
          }
          if (MDL < min_IC) {
             min_IC = MDL;
-            rank = ii + 1;
+            rank = ii;
          }
       }
+
+      // std::cout << "Ch " << channel << " MDL(M=" << M_smp << ") = " << arma::strans(MDL_k);
+
    } else {
       // ...
    }
@@ -141,15 +150,80 @@ double DecompositionAnalyzer::getMDL(int channel, const int M_smp, int& rank) co
  * An AIC detector that makes a guess at the number of eigenvalues
  * that are above an unknown noise power threshold. This can work 
  * reasonably but requires more than N/2 of eigenvalues are indeed 
- * from noise space.
- * @param[in]    channel   Which channel of multi-channel data to analyse
- * @param[in]    M_smp     Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
- * @param[in,out] rank     Storage for final determined rank (1..N), 0 means not found
+ * from noise space. When it is known that some elements of the array
+ * have no signal, the corresponding lowest eigenvalues can be ignored   
+ * using Ndiscard.
+ * Finds rank = arg min(AIC(k)|k=0..Nant-Ndiscard-1).
+ * @param[in]     channel  Which channel of multi-channel data to analyse
+ * @param[in]     M_smp    Number of samples (x(t)'*x(t) matrices) that were averaged before decomposition
+ * @param[in]     Ndiscard Number of smallest eigenvalues to ignore in MDL.
+ * @param[in,out] rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
  * @return Returns the minimum detected MDL value.
  */
-double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) const
+double DecompositionAnalyzer::getAIC(int channel, const int M_smp, const int Ndiscard, int& rank) const
 {
    double min_IC = 1.0/0.0; //infinity();
+   arma::Col<bf::real> eigs_unsorted;
+   arma::Col<bf::real> eigs;
+   arma::Col<double> AIC_k;
+
+   rank = 0;
+   channel %= (_deco.N_chan + 1);
+
+   /* Handle SVD and EVD */
+   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
+
+      // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
+      if (_deco.N_chan <= 1) {
+         eigs_unsorted = _deco._single_out_vector;
+      } else {
+         eigs_unsorted = _deco._batch_out_vectors.col(channel);
+      }
+
+      eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
+      if (Ndiscard > 0) {
+         eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
+      }
+
+      // Find k = arg min(AIC(k)|k=0..Nant-1)
+      AIC_k.zeros(eigs.n_elem);
+      for (unsigned int ii=0; ii<AIC_k.n_elem; ii++) {
+
+         double AIC, MDL;
+         this->compute_IC_k(ii, M_smp, eigs, AIC, MDL);
+         AIC_k(ii) = AIC;
+ 
+         if (std::isnan(AIC) || std::isinf(AIC)) {
+            continue;
+         }
+         if (AIC < min_IC) {
+            min_IC = AIC;
+            rank = ii;
+         }
+      }
+
+      // std::cout << "Ch " << channel << " AIC(M=" << M_smp << ") = " << arma::strans(AIC_k);
+
+   } else {
+      // ...
+   }
+
+   return min_IC;
+}
+
+
+/**
+ * Three sigma thresholding detector to make a guess at the number of
+ * eigenvalues that are above an unknown noise power threshold. When it 
+ * is known that some elements of the array have no signal, the corresponding 
+ * lowest eigenvalues can be ignored using Ndiscard.
+ * @param[in]      channel  Which channel of multi-channel data to analyse 
+ * @param[in]      Ndiscard Number of smallest eigenvalues to ignore in 3sigma.
+ * @param[in,out]  rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
+ * @return Returns the estimated number of interferers.
+ */
+double DecompositionAnalyzer::get3Sigma(int channel, const int Ndiscard, int& rank) const
+{
    arma::Col<bf::real> eigs_unsorted;
    arma::Col<bf::real> eigs;
 
@@ -165,63 +239,19 @@ double DecompositionAnalyzer::getAIC(int channel, const int M_smp, int& rank) co
       } else {
          eigs_unsorted = _deco._batch_out_vectors.col(channel);
       }
-      if (eigs_unsorted(0) <= eigs_unsorted(eigs_unsorted.n_elem-1)) {
-        eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
-      } else {
-        eigs = eigs_unsorted;
-      }
 
-      // Compute AIC for varying number of retained elements
-      for (unsigned int ii=0; ii<eigs.n_elem; ii++) {
-
-         double AIC, MDL;
-         this->compute_IC_k(ii, M_smp, eigs, AIC, MDL);
-
-         if (std::isnan(AIC) || std::isinf(AIC)) {
-//            std::cout << "Warning: AIC(k=" << ii << "/" << (eigs.n_elem-1) << ") is NaN or INF\n";
-            continue;
-         }
-         if (AIC < min_IC) {
-            min_IC = AIC;
-            rank = ii + 1;
-         }
-      }
-   } else {
-      // ...
-   }
-
-   return min_IC;
-}
-
-
-/**
- * Three sigma thresholding detector to make a guess at the number of
- * eigenvalues that are above an unknown noise power threshold.
- * @param[in]      channel Which channel of multi-channel data to analyse 
- * @param[in,out]  rank    Storage for detected number of interferers, 0 means none found
- * @return Returns the estimated number of interferers.
- */
-double DecompositionAnalyzer::get3Sigma(int channel, int& rank) const
-{
-   arma::Col<bf::real> eigs_unsorted;
-
-   rank = 0;
-   channel %= (_deco.N_chan + 1);
-
-   /* Handle SVD and EVD */
-   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
-
-      // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
-      if (_deco.N_chan <= 1) {
-         eigs_unsorted = _deco._single_out_vector;
-      } else {
-         eigs_unsorted = _deco._batch_out_vectors.col(channel);
+      // Sort and discard some of the lowest values if requested
+      eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
+      if (Ndiscard > 0) {
+         eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
       }
 
       // Count values that exceed 3sigma threshold
-      bf::real thresh = arma::mean(eigs_unsorted) + 3.0 * arma::stddev(eigs_unsorted);
-      arma::uvec ithresh = arma::find(eigs_unsorted > thresh, 0, "first"); // returns indices of all matching elems
-      rank = ithresh.n_elem;
+      arma::uvec ithresh;
+      bf::real thresh;
+      thresh  = arma::mean(eigs) + 3.0 * arma::stddev(eigs);
+      ithresh = arma::find(eigs > thresh, 0, "first"); // => indices of all matching elems
+      rank    = ithresh.n_elem;
 
    } else {
       // ...
@@ -244,27 +274,25 @@ void DecompositionAnalyzer::compute_IC_k(const unsigned int k, const int M_smp, 
 {
    double arith = 0;
    double geo = 1.0f;
-   double Q = double(eigs.n_elem - k);
-   const double M = double(M_smp);
 
-   // Arithmetic and geometric means
+   // MDL and AIC using likelihood L(k)=geo(k)/arith(k), the ratio of the means
+
    // Note1: geometric tends to overflow easily for large n_elem and RFI presence
    // Note2: eigenvalues must be sorted descendingly, e(0) >= e(1) >= ... >= e(n_elem-1)
    // Note2: k=0 to use all (N-k)=N smallest eigenvalues e(0..n_elem-1), k=1 to use eigs e(1..n_elem-1) and so on
-   #if 0
-   for (unsigned int i=k; i<eigs.n_elem; i++) {
-      arith += (eigs(i)/Q);
-      geo *= std::pow(eigs(i), 1/Q);
-   }
-   #else
-   arma::Col<bf::real> eigsSqrt = pow(eigs.rows(k, eigs.n_elem-1), 1/Q);
-   arma::Col<bf::real> eigsNorml = eigs.rows(k, eigs.n_elem-1) / bf::real(Q);
+
+   const double N = eigs.n_elem;
+   const double Q = double(eigs.n_elem - k);
+   const double M = double(M_smp);
+
+   arma::Col<bf::real> data = eigs.rows(k, eigs.n_elem-1);
+   arma::Col<bf::real> eigsSqrt = arma::pow(data, 1.0/Q);
+   arma::Col<bf::real> eigsNorml = data / bf::real(Q);
    arith = arma::sum(eigsNorml);
    geo = arma::prod(eigsSqrt);
-   #endif
 
-   MDL = -Q*M*std::log(geo/arith) + 0.5*double(k)*double(2*eigs.n_elem - k)*std::log(M);
-   AIC = -2*Q*M*std::log(geo/arith) + 2*double(k)*double(2*eigs.n_elem - k);
+   MDL = -Q*M*std::log(geo/arith) + 0.5*double(k)*double(2*N - k)*std::log(M);
+   AIC = -2*Q*M*std::log(geo/arith) + 2*double(k)*double(2*N - k);
 
    #ifdef _VERBOSE_DBG
    if (0) { std::cout << "IC(k=" << k << ") : MDL=" << MDL << " AIC=" << AIC << "\n"; }

@@ -61,19 +61,45 @@ class DecompositionModifier {
    public:
 
       /**
-       * Classic nulling of dominant eigenvalues of the decomposition. 
-       * Internally, DecompositionAnalyzer is run on each channel to estimate the
-       * number of interferers, whose corresponding eigenvalues are then
-       * replaced by an estimate of the average noise space power.
+       * Classic nulling of dominant eigenvalues of the decomposition.
+       * Each channel is checked with DecompositionAnalyzer using MDL and 3sigma.
+       * The initial interference count estimate is Nrfi=max(MDL,3sig).
+       * If Nmax>0 this estimate is clipped to Nrfi=min(Nrfi,Nmax).
+       * Finally the Nrfi largest eigenvalues are nulled.
+       * Nulling is done using median replacement.
        *
        * In pulsar and fast transient observations you should take care to 
        * null only channels that are not expected to contain the observable.
-       * @param[in] Nmax     Upper limit on detected interferers to null or <1 to null all
-       * @param[in] nodetect If true, do not estimate interferer count from data, instead null Nmax>0 values directly
-       * @param[in] startch  First channel where to start nulling
-       * @param[in] endch    Last channel to null (inclusive)
+       * @param[in] Nmax       Upper limit on detected interferers to null or <1 to null all
+       * @param[in] autodetect True to estimate Nrfi, false to apply Nrfi=Nmax>0 directly.
+       * @param[in] startch    First channel where to start nulling
+       * @param[in] endch      Last channel to null (inclusive)
        */
-       void interfererNulling(const int Nmax, const bool nodetect, const int startch, const int endch);
+       void interfererNulling(const int Nmax, const bool autodetect, const int startch, const int endch) {
+          interfererNulling(Nmax, autodetect, startch, endch, /*Ndiscard:*/ 0);
+       }
+
+      /**
+       * Classic nulling of dominant eigenvalues of the decomposition.
+       * Each channel is checked with DecompositionAnalyzer using MDL and 3sigma.
+       * The initial interference count estimate is Nrfi=max(MDL,3sig).
+       * If Nmax>0 this estimate is clipped to Nrfi=min(Nrfi,Nmax).
+       * Finally the Nrfi largest eigenvalues are nulled.
+       * Nulling is done using median replacement.
+       *
+       * When original covariance data contains disconnected antennas,
+       * you must specify the total number of disconnected antennas with Ndiscard.
+       * Otherwise the MDL estimate on Nrfi will be wrong.
+       *
+       * In pulsar and fast transient observations you should take care to 
+       * null only channels that are not expected to contain the observable.
+       * @param[in] Nmax       Upper limit on detected interferers to null or <1 to null all
+       * @param[in] autodetect True to estimate Nrfi, false to apply Nrfi=Nmax>0 directly.
+       * @param[in] startch    First channel where to start nulling
+       * @param[in] endch      Last channel to null (inclusive)
+       * @param[in] Ndiscard   Number of smallest eigenvalues to ignore in MDL and 3sigma estimation.
+       */
+       void interfererNulling(const int Nmax, const bool autodetect, const int startch, const int endch, const int Ndiscard);
 
    private:
       Decomposition& _dc;
