@@ -39,7 +39,8 @@ using namespace bf;
 
 #define TEST_DECOMPOSITIONS      0
 #define TEST_INFOCRITERIA        0
-#define TEST_RFI_SUBTRACTION     0
+#define TEST_NULLING             1
+#define TEST_RFI_SUBTRACTION     1
 #define TEST_BEAMFORMING         1
 #define TEST_NULLED_BEAMFORMING  1
 
@@ -100,7 +101,6 @@ int main(int argc, char** argv)
            std::cout << "Data source = external virgoA_on.raw\n";
 
            rxxDataBlock.load("virgoA_on.raw", 0);
-           rxxDataBlock.store("out.raw", 0); // for test
 
            ae.generateGrid(rxxDataBlock.N_ant(), DIGESTIF_spacing);
            cout << "Updated and generated uniform grid array for loaded data N_ant = " << ae.Nant() << "\n";
@@ -200,14 +200,23 @@ int main(int argc, char** argv)
         arma::Col<int> Iref;  // reference antenna indices
         Iref = ae.listReferenceAntennas();
 
-        std::cout << "before=\n" << rxxDataBlock;
+        if (data_is_synthetic) {
+           std::cout << "before_subtract=\n" << rxxDataBlock;
+        }
 
+        // Subtract RFI using reference antenna(s)
         CovarianceModifier cm(rxxDataBlock);
         if (cm.templateSubtraction(Iref, Nrfi) < 0) {
            std::cout << "Template subtraction failed\n";
         }
 
-        std::cout << "after_sub=\n" << rxxDataBlock;
+        if (data_is_synthetic) {
+           std::cout << "after_subtract=\n" << rxxDataBlock;
+        }
+
+        // Write to file
+        rxxDataBlock.store("rfi_subtracted.raw", 0);
+
 #endif
 
 
@@ -233,8 +242,15 @@ int main(int argc, char** argv)
         }
 #endif
 
-        // Nulling with at most Nrfi interferers and autodetect=true
+        //////////////////////////////////////////
+        // EVD/SVD DECOMPOSITION BASED NULLING
+        /////////////////////////////////////////
+
+#if TEST_NULLING
+
         DecompositionModifier dm(info);
+
+        // Null with at most Nrfi interferers, autodetect=true
         if (data_is_synthetic) {
            dm.interfererNulling(Nrfi, true, 0, rxxDataBlock.N_chan()-1);
         } else {
@@ -245,6 +261,10 @@ int main(int argc, char** argv)
         // Recompute the RFI-filtered covariance matrix
         info.recompose(outDataBlock);
 
+        // Write to file
+        outDataBlock.store("rfi_nulled.raw", 0);
+
+#endif
 
         //////////////////////////////////////////
         // BEAMFORMING
