@@ -563,6 +563,7 @@ static int parseDifxPulseCal(const char *line,
 	int toneIndex;
 	int pol, recFreq;
 	int freqId;
+	int nontiny = 0;
 	double A;
 	float B, C;
 	double mjd;
@@ -594,12 +595,11 @@ static int parseDifxPulseCal(const char *line,
 
 	for(pol = 0; pol < 2; pol++)
 	{
-#warning "FIXME these NaNs will infect entire average (default 30s) Change to zero instead?"
 		for(toneIndex = 0; toneIndex < array_MAX_TONES; toneIndex++)
 		{
 			freqs[pol][toneIndex] = 0.0;
-			pulseCalRe[pol][toneIndex] = nan.f;
-			pulseCalIm[pol][toneIndex] = nan.f;
+			pulseCalRe[pol][toneIndex] = 0.0;
+			pulseCalIm[pol][toneIndex] = 0.0;
 			pulseCalRate[pol][toneIndex] = 0.0;
 		}
 		for(i = 0; i < array_MAX_STATES*array_MAX_BANDS; i++)
@@ -717,9 +717,9 @@ static int parseDifxPulseCal(const char *line,
 						{
 							toneIndex = IFs[i]*nTone + k;
 							freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
-#warning "FIXME Should check if any pcal value is > pcaltiny and if not return -7"
 							if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 							{
+								nontiny++;
 								pulseCalRe[pol][toneIndex] = B;
 								pulseCalIm[pol][toneIndex] = C;
 							}
@@ -739,6 +739,10 @@ static int parseDifxPulseCal(const char *line,
 				}
 			}
 		}
+	}
+	if(nontiny == 0)
+	{
+		return -8;
 	}
 
 	return 0;
