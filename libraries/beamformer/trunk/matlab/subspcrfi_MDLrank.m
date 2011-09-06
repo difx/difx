@@ -31,7 +31,7 @@ function [det_Nrfi,sorted_evalues,MDL_k]=subspcrfi_MDLrank(evalues, M_samps)
     MDL_k = zeros(Nsig, 1);
     for kk=0:(Nsig-1),
         Q = Nsig - kk;
-        data = sorted_evalues((kk+1):end);
+        data = abs( sorted_evalues((kk+1):end) );
         arith = sum( data ./ Q);
         geo = prod( data .^ (1/Q));
         
