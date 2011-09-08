@@ -17,8 +17,8 @@ srcDirPwr = [45 -90 1e-2];
 % Model input data: RFI, un-comment the suitable one
 % rfiDirPwr = [30 -15 0]; % no interferer (zero power), toxicity test
 % rfiDirPwr = [30 -15 2]; % single interferer in one frequency channel
-rfiDirPwr = [10 -70 2]; % single interferer in one frequency channel, direction overlaps with source dir
-% rfiDirPwr = [30 -15 2; 40 -45 3]; % two interferers in one freq channel (Kesteven subtraction will fail)
+% rfiDirPwr = [10 -70 2]; % single interferer in one frequency channel, direction overlaps with source dir
+rfiDirPwr = [30 -15 2; 40 -45 3]; % two interferers in one freq channel (Kesteven subtraction will fail)
 
 % Model input data: gain of RFI reference antenna and count of expected RFIs
 ref_ant_INR = 1e1;
@@ -36,6 +36,8 @@ antIdx=1:Nant;
 antIdx(refIdx)=[];
 refIdxStr=int2str(refIdx);
 refIdxStr=regexprep(refIdxStr, ' *', ','); % for figure titles
+ignoreMask=[];
+Mint=Nant+1;
 
 %% Generate data
 
@@ -78,21 +80,23 @@ tRxxV3(1,:,:,2)=RxxV3;
 %% Apply the subtraction method to Model2 data
 
 [briggsResult,genericResult]=subspcrfi_subtraction(tRxxV2, refIdx);
-if 0, cRxxV2=genericResult; else cRxxV2=briggsResult; end
+if 1, cRxxV2=genericResult; else cRxxV2=briggsResult; end
 
-nonHerm_br=max(max(abs(squeeze(briggsResult(1,:,:,1)) - squeeze(briggsResult(1,:,:,1))')));
-nonHerm_gen=max(max(abs(squeeze(genericResult(1,:,:,1)) - squeeze(genericResult(1,:,:,1))')));
+sub_briggs = squeeze(briggsResult(1,:,:,1));
+sub_generic = squeeze(genericResult(1,:,:,1));
+error_br_vs_noRfi = abs(sub_briggs(antIdx,antIdx)) - abs(RxxV3);
+error_gen_vs_noRfi = abs(sub_generic(antIdx,antIdx)) - abs(RxxV3);
 
 %% Apply nulling to Model1 data, and Model2 excluding reference antennas
 
 [rfi_evalues,rfi_eterm1,rfi_evecsfull]=subspcrfi_getEV(tRxxV1);
-[RxxV1nulled]=subspcrfi_nulling(tRxxV1, rfi_evalues, rfi_evecsfull, Nrfi);
+[RxxV1nulled]=subspcrfi_nulling(tRxxV1, rfi_evalues, rfi_evecsfull, Nrfi, Mint, ignoreMask);
 
 tRxxV2n=zeros(1,Nant-Nref,Nant-Nref,2);
 tRxxV2n(1,:,:,1)=RxxV2(antIdx,antIdx);
 tRxxV2n(1,:,:,2)=RxxV2(antIdx,antIdx);
 [rfi_evalues,rfi_eterm1,rfi_evecsfull]=subspcrfi_getEV(tRxxV2n);
-[RxxV2nulled]=subspcrfi_nulling(tRxxV2n, rfi_evalues, rfi_evecsfull, Nrfi);   
+[RxxV2nulled]=subspcrfi_nulling(tRxxV2n, rfi_evalues, rfi_evecsfull, Nrfi, Mint, ignoreMask);
 
 %% Imaging
 if 1,
@@ -167,6 +171,18 @@ if 1,
         %axis(cscale);
     end
 
+    if 1,
+        figure(fnr);fnr=fnr+1;clf;
+        subplot(1,2,1),
+            surf(error_gen_vs_noRfi);
+            title('Covariance matrix error for Generic (abs(C_{cleaned})-abs(C_{norfi}))');
+            view([45 15]), axis tight, cax=caxis();
+        subplot(1,2,2),
+            surf(error_br_vs_noRfi);
+            title('Covariance matrix error for Kesteven-Briggs (abs(C_{cleaned})-abs(C_{norfi}))');
+            view([45 15]), axis tight, caxis(cax);
+    end
+    
     if 0,
         figure(fnr);fnr=fnr+1;clf;
         if (do_subplot), subplot(2,1,1); end
