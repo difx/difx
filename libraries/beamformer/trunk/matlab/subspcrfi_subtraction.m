@@ -34,7 +34,6 @@ function [cleandata,cleandata2]=subspcrfi_subtraction(Rxx, refant_idcs)
 
   if (Nref ~= 2),
       fprintf(1, 'Algorithm requires two reference antennas!\n');
-      return
   end
   
   for pp=1:Nsets,
@@ -50,49 +49,49 @@ function [cleandata,cleandata2]=subspcrfi_subtraction(Rxx, refant_idcs)
           end
 
           %% Briggs, Kesteven special case method
-          
-          Cn1 = chRxx(refant_idcs(1),:);
-          Cn2 = chRxx(refant_idcs(2),:);
-          C12 = chRxx(refant_idcs(1),refant_idcs(2));
+          if (Nref == 2),
+              Cn1 = chRxx(refant_idcs(1),:);
+              Cn2 = chRxx(refant_idcs(2),:);
+              C12 = chRxx(refant_idcs(1),refant_idcs(2));
 
-          % [A] Direct correction
-          % This fails if noise>>RFI in the C<1,2>=C<ref1,ref2>
-          %autogains = (Cn1.*conj(Cn2)) ./ C12;
+              % [A] Direct correction
+              % This fails if noise>>RFI in the C<1,2>=C<ref1,ref2>
+              %autogains = (Cn1.*conj(Cn2)) ./ C12;
 
-          % [B] Expanded correction
-          % 1) Plug in an estimate of correlated noise in C<ref1,ref2>
-          powsqr = 1e-8;% 1e-8*mean(diag(chRxx(ant_idcs,ant_idcs)));
-    
-          % 2) Compute gains
-          crossgains = (conj(transpose(Cn1)) * Cn2) .* C12 / (powsqr + C12*conj(C12));
-          
-          % 3) Check goodness of autocorrs: should be "practically" real-valued
-          autophases = angle(diag(crossgains))*(180/pi); % angle() does not do unwrap()
-          autophases_err = abs(autophases)>1e-5;
-          if (sum(autophases_err)>0),
-              fprintf(1, 'Warning: bad RFI estimates in autocorrs: phase()>1e-5 deg for %d elements!\n', ...
-                sum(autophases_err));
+              % [B] Expanded correction
+              % 1) Plug in an estimate of correlated noise in C<ref1,ref2>
+              powsqr = 1e-8;% 1e-8*mean(diag(chRxx(ant_idcs,ant_idcs)));
+
+              % 2) Compute gains
+              crossgains = (conj(transpose(Cn1)) * Cn2) .* C12 / (powsqr + C12*conj(C12));
+
+              % 3) Check goodness of autocorrs: should be "practically" real-valued
+              autophases = angle(diag(crossgains))*(180/pi); % angle() does not do unwrap()
+              autophases_err = abs(autophases)>1e-5;
+              if (sum(autophases_err)>0),
+                  fprintf(1, 'Warning: bad RFI estimates in autocorrs: phase()>1e-5 deg for %d elements!\n', ...
+                    sum(autophases_err));
+              end
+
+              % 4) Check amplitude closure
+              % should see 1 == C<src1,ref1>*C<src2,ref2>/(C<src2,ref1>*C<src1,ref2>)
+              ant_idcs1 = ant_idcs(1:(end-1));
+              ant_idcs2 = ant_idcs(2:end);
+              closure = chRxx(ant_idcs1,refant_idcs(1)) .* chRxx(ant_idcs2,refant_idcs(2)) ...
+                      ./ (chRxx(ant_idcs2,refant_idcs(1)) .* chRxx(ant_idcs1,refant_idcs(2)));
+              closure_err = abs(abs(closure)-1.0) > 1e-5;
+              if (sum(closure_err)>0),
+                  fprintf(1, 'Warning: bad RFI estimates in autocorrs: |closure-1.0|>1e-5 for %d elements!\n', ...
+                    sum(closure_err));
+              end
+
+              % 4) Subtract from original data
+              clean = chRxx - crossgains;
+
+              % Copy new data and remove reference antenna correlations
+              % note: the abs(diff(cleaned-nonRfi)) is slightly less "off" with conj.transp.
+              cleandata(pp,:,:,cc) = clean; 
           end
-          
-          % 4) Check amplitude closure
-          % should see 1 == C<src1,ref1>*C<src2,ref2>/(C<src2,ref1>*C<src1,ref2>)
-          ant_idcs1 = ant_idcs(1:(end-1));
-          ant_idcs2 = ant_idcs(2:end);
-          closure = chRxx(ant_idcs1,refant_idcs(1)) .* chRxx(ant_idcs2,refant_idcs(2)) ...
-                  ./ (chRxx(ant_idcs2,refant_idcs(1)) .* chRxx(ant_idcs1,refant_idcs(2)));
-          closure_err = abs(abs(closure)-1.0) > 1e-5;
-          if (sum(closure_err)>0),
-              fprintf(1, 'Warning: bad RFI estimates in autocorrs: |closure-1.0|>1e-5 for %d elements!\n', ...
-                sum(closure_err));
-          end
-              
-          % 4) Subtract from original data
-          clean = chRxx - crossgains;
-          
-          % Copy new data and remove reference antenna correlations
-          % note: the abs(diff(cleaned-nonRfi)) is slightly less "off" with conj.transp.
-          cleandata(pp,:,:,cc) = clean; 
-          
           
           %% General method
           % van der Veen, Boonstra, "Spatial filtering of RF interference in Radio
