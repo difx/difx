@@ -153,6 +153,12 @@ sub parseVex
 		
 		# remove leading whitespaces
 		$vexLine =~ s/^\s+//;
+
+		# skip comment lines
+		if ($vexLine =~ /^\*/)
+		{
+			next;
+		}
 		
 
 		# look for scan start
@@ -216,7 +222,8 @@ sub parseVex
 				$vexScans[$scanCount]{"SECOND"} = $5;
 			}	
 			# extract mode (if present)
-			elsif ($vexLine =~ /mode\s*=\s*(.*?);/)
+
+			if ($vexLine =~ /mode\s*=\s*(.*?);/)
 			{
 				$vexScans[$scanCount]{"MODE"} = $1;
 				if (length($1) > $maxModeName)
@@ -227,7 +234,7 @@ sub parseVex
 				#print "$1\n";
 			}
 			# extract source name (if present)
-			elsif ($vexLine =~ /source\s*=\s*(.*);/)
+			if ($vexLine =~ /source\s*=\s*(.*);/)
 			{
 				$vexScans[$scanCount]{"SOURCE"} = $1;
 				if (length($1) > $maxSourceName)
@@ -236,7 +243,7 @@ sub parseVex
 				}
 			}
 			# station statement in scan block
-			elsif ($vexLine =~ /^station\s*=\s*(\w+)\s*:\s*(\d+)\s+sec\s*:\s*(\d+)\s+sec/)
+			if ($vexLine =~ /^station\s*=\s*(\w+)\s*:\s*(\d+)\s+sec\s*:\s*(\d+)\s+sec/)
 			{
 				my $station = uc($1);
 				$vexScans[$scanCount]{"STATION_OFFSET"}{$station} = $2;
