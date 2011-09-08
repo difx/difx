@@ -28,26 +28,46 @@ for cc=1:Nch,
 end
 
 %% imaging of null(Ron)-null(Roff)
+% note: trying instead to null(Ron-Roff) would fail, the difference is not
+% Hermitian, so EVD and SVD nulling fail...
 if 1,
-    cc=20;
-    R_orig = squeeze(alldata(1,:,:,cc)) - squeeze(alldata(2,:,:,cc));
-    R_nulled = squeeze(nulldata(1,:,:,cc)) - squeeze(nulldata(2,:,:,cc));
-    [uvd_orig] = subspcrfi_RtoUV( R_orig, frequencies(cc), elem_positions );
-    [uvd_nulled] = subspcrfi_RtoUV( R_nulled, frequencies(cc), elem_positions );
-    img_orig = abs(fft2(uvd_orig));
-    img_nulled = abs(fft2(uvd_nulled));
+    [uvd_tmp] = subspcrfi_RtoUV( squeeze(alldata(1,:,:,1)), frequencies(1), elem_positions );
+    img_orig = zeros(size(uvd_tmp));
+    img_nulled = zeros(size(uvd_tmp));
+    chlist = 1:Nch;
+    for cc=chlist,
+        R_orig = 1*squeeze(alldata(1,:,:,cc)) - 1*squeeze(alldata(2,:,:,cc));
+        R_nulled = 1*squeeze(nulldata(1,:,:,cc)) - 1*squeeze(nulldata(2,:,:,cc));
+        [uvd_orig] = subspcrfi_RtoUV( R_orig, frequencies(cc), elem_positions );
+        [uvd_nulled] = subspcrfi_RtoUV( R_nulled, frequencies(cc), elem_positions );
+        img_orig = img_orig + abs(fft2(uvd_orig));
+        img_nulled = img_nulled + abs(fft2(uvd_nulled));
+        %img_orig = img_orig + uvd_orig;
+        %img_nulled = img_nulled + uvd_nulled;
+    end
+    %img_orig = abs(fft2(img_orig));
+    %img_nulled = abs(fft2(img_nulled));
+
     figure(fnr),fnr=fnr+1;
-    subplot(2,1,1),surf(img_orig), title(['UV image of original Ron-Roff data in channel ' num2str(cc)]), 
-        view([90 90]), axis equal, axis tight;
-    subplot(2,1,2),surf(img_nulled), title(['UV image of null(Ron)-null(Roff) data in channel ' num2str(cc)]),
-        view([90 90]), axis equal, axis tight;
+    subplot(1,2,1),surf(img_orig), title(['UV image of original Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]), 
+        view([90 90]);
+        axis equal, axis tight;
+        cax=caxis();
+    subplot(1,2,2),surf(img_nulled), title(['UV image of nulled Ron-Roff data stacked over channels ' num2str(chlist(1)) '-' num2str(chlist(end))]),
+        view([90 90]);
+        axis equal, axis tight;
+        caxis(cax);
 end
 
 %% plot diffs
 figure(fnr),fnr=fnr+1;
-subplot(1,2,1),surf(orig_spec),view([90 90]),title('Orignal data Ron-Roff'),
-subplot(1,2,2),surf(null_spec),view([90 90]),title('Nulled Ron - nulled Roff');
-
+subplot(1,2,1),surf(orig_spec),
+    view([90 90]),axis tight,title('Orignal data Ron-Roff');
+    cax=caxis();
+subplot(1,2,2),surf(null_spec),
+    view([90 90]),axis tight,title('Nulled Ron - nulled Roff');
+    caxis(cax);
+    
 % note: max power in (Ron-Roff) is in element 31
 pel=31;
 figure(fnr),fnr=fnr+1;
