@@ -37,14 +37,27 @@
 
 namespace bf {
 
-/** Phased array element positions */
+/** Phased array element positions, array dimensions and element properties */
 typedef struct ElementXYZ_tt {
+
+   //! Number of antenna positions stored
    int Nant;
+
+   //! Max nr of antennas along the dimensions x,y,z. For example 3x3x3 if 27-antenna cube.
    int Ldim[3];
+
+   //! X coordinates of the Nant antennas
    arma::Col<bf::real> x;
+
+   //! Y coordinates of the Nant antennas
    arma::Col<bf::real> y;
+
+   //! Z coordinates of the Nant antennas
    arma::Col<bf::real> z;
+
+   //! Flags are OR'red ArrayElement::Pointing and ArrayElement::Polarization values
    arma::Col<int> flag;
+
 } ElementXYZ_t;
 
 
