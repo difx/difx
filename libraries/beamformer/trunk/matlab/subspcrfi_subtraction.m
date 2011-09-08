@@ -12,7 +12,8 @@
 %   refant_idcs = 2 x 1 = indices of the reference antennas within 1:Nant
 %
 % Output:
-%   Nsets x Nant x Nant x Nchannels = cleaned covariance data
+%   Nsets x Nant x Nant x Nchannels = covariance cleaned with Nrfi=1,Nref=2
+%   Nsets x Nant x Nant x Nchannels = covariance cleaned with generic method
 %
 function [cleandata,cleandata2]=subspcrfi_subtraction(Rxx, refant_idcs)
   Nsets = size(Rxx, 1);
@@ -94,7 +95,8 @@ function [cleandata,cleandata2]=subspcrfi_subtraction(Rxx, refant_idcs)
           
           
           %% General method
-
+          % van der Veen, Boonstra, "Spatial filtering of RF interference in Radio
+          % Astronomy using a reference antenna", 2004
           R00=chRxx(ant_idcs,ant_idcs);
           R11=chRxx(refant_idcs,refant_idcs);
           R01=chRxx(ant_idcs,refant_idcs);
@@ -105,7 +107,7 @@ function [cleandata,cleandata2]=subspcrfi_subtraction(Rxx, refant_idcs)
           R11inv = v*s_inv*(u'); % pseudo-inverse
           
           genclean = R00 - (R01*inv(R11))*R10; % with inverse
-          % genclean = R00 - (R01*R11inv)*R10; % with pseudo-inverse
+          %genclean = R00 - (R01*R11inv)*R10; % with pseudo-inverse
 
           % note: the abs(diff(cleaned-nonRfi)) is slightly less "off" with conj.transp.
           cleandata2(pp,:,:,cc) = zeros(Nant,Nant);
