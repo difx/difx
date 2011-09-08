@@ -44,7 +44,8 @@
   Nch = size(src.ACM,3);
   Nant = size(src.ACM,1);
   Nsets = size(alldata, 1);
-  Nrfi = 2; % max. number of interferers to cancel
+  Nrfi = 4; % max. number of interferers to cancel
+  Mint = 12*Nant; % number of time-integrated covariances for 1 covariance (APERTIF)
 
   %% Data Summary
   fprintf(1,'Data size: %d x %d, %d channels\n', size(src.ACM,1), size(src.ACM,2), size(src.ACM,3));
@@ -178,7 +179,7 @@
   %% Process: nulling of RFI using eigenvalue decomposition
   if 1,
       fprintf(1, '%s\n', ['Trying to null ' int2str(Nrfi) ' RFI sources in channels where threshold exceeded.']);
-      [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evecsfull, Nrfi, ignore_mask);
+      [nulldata]=subspcrfi_nulling(alldata, rfi_evalues, rfi_evecsfull, Nrfi, Mint, ignore_mask);
   else
       fprintf(1, 'No nulling, output data is copy of input data\n');
       nulldata=alldata;
@@ -282,4 +283,4 @@
           end
       end
   end
-  
+
