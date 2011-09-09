@@ -1405,6 +1405,10 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	double minBW;		// [Hz]
 	double readTimeNS;
 	int f;
+	long long tintNS, testsubintNS, nscounter;
+	int max5div, max2div, nFFTsPerIntegration, divisor;
+	double msgSize, dataRate, readSize, floatFFTDurNS;
+
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
 	if(corrSetup == 0)
@@ -1459,10 +1463,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	else
 	{
-		long long tintNS, testsubintNS, nscounter;
-		int max5div, max2div, nFFTsPerIntegration, divisor;
-		double msgSize, dataRate, readSize, floatFFTDurNS;
-
 		tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
 		floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
 		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
@@ -1493,9 +1493,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			cerr << "Warning - a single FFT gives a read size of " << readSize << " bytes" << endl;
 			cerr << "The maximum read size has been set (or defaulted) to " << P->maxReadSize << endl;
 			cerr << "There are known problems with Mark5 module playback at large read sizes" << endl;
-			cerr << "If you want to try with the large read size, set readSize in the global area of the .v2d file" << endl;
-			cerr << "Or, you could try reducing dataBufferFactor and/or increasing nDataSegments" << endl;
-			return EXIT_FAILURE;
+			cerr << "If you want to try with the large read size, set maxReadSize in the global area of the .v2d file" << endl;
+			exit(EXIT_FAILURE);
 		}
 
 		nscounter = tintNS;
@@ -1516,7 +1515,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 		for(int i=max2div;i>=0;i--)
 		{
-			for(int j=max5div;j>=0;j++)
+			for(int j=max5div;j>=0;j--)
 			{
 				divisor = 1;
 				for(int k=0;k<i;k++)
@@ -1531,8 +1530,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
-                                   testsubintNS*D->dataBufferFactor/D->nDataSegments <= (1<<31) - 1 && 
-				   testsubintNS > config->subintNS)
+                                   testsubintNS <= 2140000000 && testsubintNS > config->subintNS && 
+				   testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
 				}
@@ -1548,11 +1547,11 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			cerr << "The minimum read size was set or defaulted to " << P->minReadSize << " B" << endl;
 			cerr << "Either decrease minReadSize (which may lead to slow correlation) or explicitly set subintNS" << endl;
 			cerr << "You may find it advantageous to tweak the tInt to a more power-of-2 friendly value" << endl;
-			return EXIT_FAILURE;
+			exit(EXIT_FAILURE);
 		}
 	}
 
-	// change dataBufferFactor if needed to get send sizes under 2^31 nanoseconds
+	// change nDataSegments if needed to get send sizes under 2^31 nanoseconds
 	readTimeNS = static_cast<double>(config->subintNS)*D->dataBufferFactor/D->nDataSegments;
 	if(readTimeNS > 2140000000.0)
 	{
@@ -1563,8 +1562,15 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 
 			exit(EXIT_FAILURE);
 		}
-		cout << "Changing dataBufferFactor from " << D->dataBufferFactor << " to " << (f*D->nDataSegments) << " in order to keep data send sizes below 2.14 seconds" << endl;
-		D->dataBufferFactor = f*D->nDataSegments;
+		cout << "Changing nDataSegments from " << D->nDataSegments << " to " << (D->dataBufferFactor/f) << " in order to keep data send sizes below 2.14 seconds" << endl;
+		D->nDataSegments = D->dataBufferFactor/f;
+		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
+		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
+		if(readSize < P->minReadSize)
+		{
+			cout << "This has lead to a read size smaller than the provided guideline: correlation may run more slowly" << endl;
+			cout << "But probably this is a low data rate experiment, so it won't matter" << endl;
+		}
 	}
 		
 	config->guardNS = corrSetup->guardNS;
@@ -2224,9 +2230,9 @@ static int writeJob(const VexJob& J, const VexData *V, const CorrParams *P, int 
 			}
 		}
 		worstcaseguardns = calculateWorstcaseGuardNS(mode->sampRate, D->config[c].subintNS);
-		if(corrSetup->guardNS < worstcaseguardns)
+		if(D->config[c].guardNS < worstcaseguardns)
 		{
-			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << corrSetup->guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
+			cerr << "vex2difx calculates the worst-case guardNS as " << worstcaseguardns << ", but you have explicitly set " << D->config[c].guardNS << ". It is possible that mpifxcorr will refuse to run! Unless you know what you are doing, you should probably set guardNS to " << worstcaseguardns << " or above, or just leave it unset!" << endl;
 			if(strict)
 			{
 				cerr << "\nExiting since strict mode was enabled" << endl;
