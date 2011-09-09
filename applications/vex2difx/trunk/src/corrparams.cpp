@@ -1193,7 +1193,8 @@ void CorrParams::defaults()
 	startSeries = 1;
 	dataBufferFactor = 32;
 	nDataSegments = 8;
-	readSize = 25000000;		// Bytes	More and risk XLRRead problems
+	maxReadSize = 25000000;		// Bytes	More and risk XLRRead problems
+	minReadSize = 10000000;		// Bytes	Less and inefficiency is likely
 	invalidMask = ~0;		// write flags for all types of invalidity
 	visBufferLength = 80;
 	v2dMode = V2D_MODE_NORMAL;
@@ -1336,9 +1337,13 @@ int CorrParams::setkv(const string &key, const string &value)
 	{
 		ss >> nDataSegments;
 	}
-	else if(key == "readSize")
+	else if(key == "maxReadSize")
 	{
-		ss >> readSize;
+		ss >> maxReadSize;
+	}
+	else if(key == "minReadSize")
+	{
+		ss >> minReadSize;
 	}
 	else if(key == "padScans")
 	{
@@ -1362,6 +1367,7 @@ int CorrParams::setkv(const string &key, const string &value)
 	else if(key == "tweakIntTime")
 	{
 		/* No longer does anything */
+		cerr << "tweakIntTime is deprecated - no effect" << endl;
 	}
 	else if(key == "antennas")
 	{
@@ -2299,7 +2305,8 @@ ostream& operator << (ostream &os, const CorrParams &x)
 	os << "startSeries=" << x.startSeries << endl;
 	os << "dataBufferFactor=" << x.dataBufferFactor << endl;
 	os << "nDataSegments=" << x.nDataSegments << endl;
-	os << "readSize=" << x.readSize << " # Bytes" << endl;
+	os << "maxReadSize=" << x.maxReadSize << " # Bytes" << endl;
+	os << "minReadSize=" << x.minReadSize << " # Bytes" << endl;
 	os << "overSamp=" << x.overSamp << endl;
 	os << "outputFormat=" << x.outputFormat << endl;
 	

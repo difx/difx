@@ -255,7 +255,8 @@ public:
 	int startSeries;	// start job series at this number
 	int dataBufferFactor;
 	int nDataSegments;
-	int readSize;           // (Bytes) amount of data to read into datastream at a time (overrides sendLength)
+	int maxReadSize;        // Max (Bytes) amount of data to read into datastream at a time 
+	int minReadSize;        // Min (Bytes) amount of data to read into datastream at a time
 	unsigned int invalidMask;
 	int visBufferLength;
 	int overSamp;		// A user supplied override to oversample factor

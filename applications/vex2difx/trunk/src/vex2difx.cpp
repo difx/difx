@@ -1459,49 +1459,96 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	else
 	{
-		int divisors[] = {1, 2, 5, 10, 25, 50, 125, 250, 625, 0};	// Must be 0 terminated
-		bool ok = false;
+		long long tintNS, testsubintNS, nscounter;
+		int max5div, max2div, nFFTsPerIntegration, divisor;
+		double msgSize, dataRate, readSize, floatFFTDurNS;
 
-		for(int d = 0; divisors[d]; d++)
+		tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
+		floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
+		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
+
+		// check that integration time is an integer number of FFTs
+		if(1e9*corrSetup->tInt/floatFFTDurNS - nFFTsPerIntegration > 1e-9)
 		{
-			double msgSize, dataRate, readSize;
-
-			if(corrSetup->tInt/divisors[d] > 2.14)
-			{
-				// This would make a subint > 2^31 seconds for any value of dataBufferSize
-				continue;
-			}
-
-			config->subintNS = static_cast<int>((corrSetup->tInt/divisors[d])*1000000000.0 + 0.5);
-			dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
-			msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
-			readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
-
-			ok = true;
-
-			// stop when readSize falls below specifed maximum (default to 25MB)
-			if(readSize < P->readSize)
-			{
-				break;
-			}
-		}
-
-		if(ok == false)
-		{
-			cerr << "Error: Integration time (" << corrSetup->tInt << " s) is too long for automatic subintNS determination.  You must manually set it in the .v2d file." << endl;
-
+			cerr << "Integration time is not an integer number of FFTs!" << endl;
+			cerr << "Please change tInt to a multiple of " << floatFFTDurNS << " nanoseconds." << endl;
+			cerr << "Try to use a number of FFTs which is factorable entirely by 2 and/or 5" << endl;
 			exit(EXIT_FAILURE);
 		}
 
-		if(config->subintNS % fftDurNS != 0)
+		//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
+		if(floatFFTDurNS*D->dataBufferFactor/D->nDataSegments > (1<<31) - 1)
 		{
-			int origSubintNS = config->subintNS;
-			config->subintNS -= (config->subintNS % fftDurNS);
-			if(config->subintNS <= 0)
+			cerr << "A single FFT is too long (" << floatFFTDurNS << " ns)!" << endl;
+			cerr << "The maximum duration of an FFT is 2^31 - 1 nanoseconds" << endl;
+			cerr << "Please reduce nFFTChan accordingly" << endl;
+			exit(EXIT_FAILURE);
+		}
+		dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
+		config->subintNS = fftDurNS;
+		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
+		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
+		if(readSize > P->maxReadSize)
+		{
+			cerr << "Warning - a single FFT gives a read size of " << readSize << " bytes" << endl;
+			cerr << "The maximum read size has been set (or defaulted) to " << P->maxReadSize << endl;
+			cerr << "There are known problems with Mark5 module playback at large read sizes" << endl;
+			cerr << "If you want to try with the large read size, set readSize in the global area of the .v2d file" << endl;
+			cerr << "Or, you could try reducing dataBufferFactor and/or increasing nDataSegments" << endl;
+			return EXIT_FAILURE;
+		}
+
+		nscounter = tintNS;
+		max5div = 0;
+	 	while(nscounter > 0 && nscounter % 5 == 0)
+		{
+			nscounter /= 5;
+			max5div++;
+		}
+
+		nscounter = tintNS;
+		max2div = 0;
+		while(nscounter > 0 && nscounter % 2 == 0)
+		{
+			nscounter /= 2;
+			max2div++;
+		}
+
+		for(int i=max2div;i>=0;i--)
+		{
+			for(int j=max5div;j>=0;j++)
 			{
-				config->subintNS = fftDurNS;
+				divisor = 1;
+				for(int k=0;k<i;k++)
+				{
+					divisor *= 2;
+				}
+				for(int l=0;l<j;l++)
+				{
+					divisor *= 5;
+				}
+				testsubintNS = tintNS / divisor;
+				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
+				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
+				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
+                                   testsubintNS*D->dataBufferFactor/D->nDataSegments <= (1<<31) - 1 && 
+				   testsubintNS > config->subintNS)
+				{
+					config->subintNS = testsubintNS;
+				}
 			}
-			cout << "Adjusting subintNS(" << origSubintNS << ") to " << config->subintNS << " since it was a non-integer multiple of fftDurNS (" << fftDurNS << ")" << endl;
+		}
+		//refuse to run if the generated read size is too small
+		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
+		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
+		if(readSize < P->minReadSize)
+		{
+			cerr << "Automatic subint duration selection generated " << config->subintNS << " nanoseconds" << endl;
+			cerr << "This leads to a read size of " << readSize << " B" << endl;
+			cerr << "The minimum read size was set or defaulted to " << P->minReadSize << " B" << endl;
+			cerr << "Either decrease minReadSize (which may lead to slow correlation) or explicitly set subintNS" << endl;
+			cerr << "You may find it advantageous to tweak the tInt to a more power-of-2 friendly value" << endl;
+			return EXIT_FAILURE;
 		}
 	}
 
