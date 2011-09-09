@@ -1468,7 +1468,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
 
 		// check that integration time is an integer number of FFTs
-		if(1e9*corrSetup->tInt/floatFFTDurNS - nFFTsPerIntegration > 1e-9)
+		if(fabs(1e9*corrSetup->tInt/floatFFTDurNS - nFFTsPerIntegration) > 1e-9)
 		{
 			cerr << "Integration time is not an integer number of FFTs!" << endl;
 			cerr << "Please change tInt to a multiple of " << floatFFTDurNS << " nanoseconds." << endl;
@@ -1497,17 +1497,17 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			exit(EXIT_FAILURE);
 		}
 
-		nscounter = tintNS;
+		nscounter = tintNS/5;
 		max5div = 0;
-	 	while(nscounter > 0 && nscounter % 5 == 0)
+	 	while(nscounter > 0 && fabs(nscounter/floatFFTDurNS - static_cast<int>(nscounter/floatFFTDurNS + 0.5)) < 1e-9)
 		{
 			nscounter /= 5;
 			max5div++;
 		}
 
-		nscounter = tintNS;
+		nscounter = tintNS/2;
 		max2div = 0;
-		while(nscounter > 0 && nscounter % 2 == 0)
+		while(nscounter > 0 && fabs(nscounter/floatFFTDurNS - static_cast<int>(nscounter/floatFFTDurNS + 0.5)) < 1e-9)
 		{
 			nscounter /= 2;
 			max2div++;
@@ -1531,7 +1531,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
                                    testsubintNS <= 2140000000 && testsubintNS > config->subintNS && 
-				   testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5) < 1e-9)
+				   fabs(testsubintNS/floatFFTDurNS - static_cast<int>(testsubintNS/floatFFTDurNS + 0.5)) < 1e-9)
 				{
 					config->subintNS = testsubintNS;
 				}
