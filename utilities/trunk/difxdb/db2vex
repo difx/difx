@@ -9,8 +9,8 @@ from string import upper, lower, strip, split
 
 program = 'db2vex'
 author = 'Walter Brisken'
-version = '0.6'
-verdate = '20101019'
+version = '0.7'
+verdate = '20110910'
 
 databaseName = getenv("VLBA_DB")
 
@@ -27,6 +27,8 @@ def usage(pgm):
 	print '  -v         print more diagnostics to screen\n'
 	print '  --force'
 	print '  -f         run even if means overwriting exisiting files\n'
+	print '  --preobs'
+	print '  -p         run in preobs mode: use projected clocks and no TAPELOG_OBS\n'
 	print '  --vsnProjectCode  <project code>'
 	print '             use provided project code in VSN DB queries\n'
 	print '<vex file> is a vex file produced by sched (usually ending in .skd)\n'
@@ -264,19 +266,22 @@ def getClockFromDB(db, stn, timerange, verbose):
 	allclocks = cursor.fetchall()
 	if len(allclocks) == 0:
 		return []
-	clocks = []
-	for c in allclocks:
-		if c[6] == None:
-			if calcMJD(c[1]) < 51544.0:
-				continue
-			else:
+	if preobs:
+		clocks = [allclocks[-1]]
+	else:
+		clocks = []
+		for c in allclocks:
+			if c[6] == None:
+				if calcMJD(c[1]) < 51544.0:
+					continue
+				else:
+					clocks.append(c)
+					break;
+			mjd = calcMJD(c[6])
+			if mjd > timerange[0]:
 				clocks.append(c)
-				break;
-		mjd = calcMJD(c[6])
-		if mjd > timerange[0]:
-			clocks.append(c)
-			if mjd > timerange[1]:
-				break;
+				if mjd > timerange[1]:
+					break;
 
 	v = []
 	start = timerange[0]
@@ -288,7 +293,7 @@ def getClockFromDB(db, stn, timerange, verbose):
 
 	return v
 
-def getEarthFromDBold(db, centerMJD, verbose):
+def getEarthFromDBold(db, centerMJD, verbose, preobs):
 	cursor = db.cursor()
 	startMJD = int(centerMJD+0.5) - 2
 	stopMJD  = int(centerMJD+0.5) + 2
@@ -342,12 +347,12 @@ def getEarthFromDBold(db, centerMJD, verbose):
 	eops.append(origin)
 	eops.append("enddef;\n")
 
-	if nPredict > 0:
+	if not preobs and nPredict > 0:
 		print 'Warning: %d of %d EOP data are PREDICTs' % (nPredict, stopMJD-startMJD+1)
 
 	return eops
 
-def getEarthFromDB(db, centerMJD, verbose):
+def getEarthFromDB(db, centerMJD, verbose, preobs):
 	cursor = db.cursor()
 	startMJD = int(centerMJD+0.5) - 2
 	stopMJD  = int(centerMJD+0.5) + 2
@@ -390,7 +395,7 @@ def getEarthFromDB(db, centerMJD, verbose):
 				nPredict += 1
 			eops.append("enddef;\n")
 		
-	if nPredict > 0:
+	if not preobs and nPredict > 0:
 		print 'Warning: %d of %d EOP data are PREDICTs' % (nPredict, stopMJD-startMJD+1)
 
 	return eops
@@ -508,12 +513,15 @@ def appendFSStations(stations, fsVSNs):
 			stations.append(f[0])
 	stations.sort()
 
-def processVexFile(vexFile, force, verbose, vsnProjectCode, fsVSNs=[]):
+def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, fsVSNs=[]):
 	if not isfile(vexFile):
 		print 'Error: cannot open file %s' % vexFile
 		exit(0)
 
-	outFile = vexFile + '.obs'
+	if preobs:
+		outFile = vexFile + '.preobs'
+	else:
+		outFile = vexFile + '.obs'
 	if isfile(outFile):
 		if force:
 			print 'Warning: overwriting old output because of --force option\n'
@@ -531,55 +539,58 @@ def processVexFile(vexFile, force, verbose, vsnProjectCode, fsVSNs=[]):
 	db = cx_Oracle.connect(databaseName)
 
 	# fetch a bunch of stuff from the database
-	shelves = getShelvesFromDB(db, verbose)
+	if not preobs:
+		shelves = getShelvesFromDB(db, verbose)
 	if vsnProjectCode != None:
 		c, s = splitobscode(vsnProjectCode)
 		if verbose:
 			print 'vsn project code and segment are', c, s
-		tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
-		motions = getTapeMotionFromDB(db, c, s, verbose)
+		if not preobs:
+			tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
+			motions = getTapeMotionFromDB(db, c, s, verbose)
 	else:
-		tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
-		motions = getTapeMotionFromDB(db, obsCode, obsSeg, verbose)
-	eops = getEarthFromDB(db, mjdCenter(stationTimes), verbose)
-
-	vsns = makeVSNDict(tapes)
+		if not preobs:
+			tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
+			motions = getTapeMotionFromDB(db, obsCode, obsSeg, verbose)
+	eops = getEarthFromDB(db, mjdCenter(stationTimes), verbose, preobs)
 
 	vexData = open(vexFile, "r").readlines()
+
+	stations = stationTimes.keys()
+	stations.sort()
 
 	vexData.append('*------------------------------------------------------------------------------\n')
 	vexData.append('*---- log data below was appended by %s ver %s ----\n' % (program, version))
 	vexData.append('*------------------------------------------------------------------------------\n')
 
-	shelfData = []
-	vexData.append('$TAPELOG_OBS;\n')
+	if not preobs:
+		vsns = makeVSNDict(tapes)
+		shelfData = []
+		vexData.append('$TAPELOG_OBS;\n')
 
-	stations = stationTimes.keys()
-	stations.sort()
+		for s in stations:
+			stn = upper(s)
+			scans = calcVSNList(motions, vsns, stn)
+			blocks = genBlocks(scans, experTimes)
+			if len(blocks) < 1:
+				blocks = getBlocksFromFS(fsVSNs, Ulow(stn))
+			if len(blocks) < 1:
+				print 'Warning: No media found for station %s' % stn
+				continue
+			vexData.append('def %s;\n' % Ulow(stn))
+			for b in blocks:
+				b.append(getShelf(shelves, b[2]))
+				vexData.append('  VSN = %d : %s : %s : %s;  * shelf = %s\n' % \
+					((b[3]+1), b[2], mjd2vex(b[0]), mjd2vex(b[1]), b[4]))
+				shelfData.append([stn, b[2], b[4]])
+			vexData.append('enddef;\n')
 
-	for s in stations:
-		stn = upper(s)
-		scans = calcVSNList(motions, vsns, stn)
-		blocks = genBlocks(scans, experTimes)
-		if len(blocks) < 1:
-			blocks = getBlocksFromFS(fsVSNs, Ulow(stn))
-		if len(blocks) < 1:
-			print 'Warning: No media found for station %s' % stn
-			continue
-		vexData.append('def %s;\n' % Ulow(stn))
-		for b in blocks:
-			b.append(getShelf(shelves, b[2]))
-			vexData.append('  VSN = %d : %s : %s : %s;  * shelf = %s\n' % \
-				((b[3]+1), b[2], mjd2vex(b[0]), mjd2vex(b[1]), b[4]))
-			shelfData.append([stn, b[2], b[4]])
-		vexData.append('enddef;\n')
+		shelfFile = vexFile + '.shelf'
+		if verbose > 0:
+			print 'Writing to file: %s' % shelfFile
+		writeShelfData(shelfData, shelfFile)
 
-	shelfFile = vexFile + '.shelf'
-	if verbose > 0:
-		print 'Writing to file: %s' % shelfFile
-	writeShelfData(shelfData, shelfFile)
-
-	vexData.append('*------------------------------------------------------------------------------\n')
+		vexData.append('*------------------------------------------------------------------------------\n')
 
 	timeRange = [1.0e9, -1.0e9]
 	for stn in stations:
@@ -629,6 +640,7 @@ print ''
 verbose = 0
 force = False
 stop = False
+preobs = False
 args = []
 fsVSNs = [] # VSN list from field system logs
 vsnProjectCode = None
@@ -643,6 +655,8 @@ for a in argv[1:]:
 			verbose += 1
 		elif a in ['-f', '--force']:
 			force = True
+		elif a in ['-p', '--preobs']:
+			preobs = True
 		elif a in ['--vsnProjectCode']:
 			vsnProjectCode = ''
 		else:
@@ -652,16 +666,20 @@ for a in argv[1:]:
 		args.append(a)
 
 if vsnProjectCode == '':
-	print 'Error: vsnProjectCode not specified'
+	print 'Error: vsnProjectCode not specified.'
 	stop = True
 
 if len(args) == 0:
 	print 'Error: no input files given.'
 	stop = True
 
-for a in args[1:]:
-	print 'Parsing Field System Log %s' % a
-	parseFSLog(a, fsVSNs)
+if preobs and len(args) > 1:
+	print 'Error: cannot pass FS logs when using preobs mode.'
+	stop = True
+else:
+	for a in args[1:]:
+		print 'Parsing Field System Log %s' % a
+		parseFSLog(a, fsVSNs)
 
 if stop:
 	print '\nRun with -h for help information.\n'
@@ -669,6 +687,6 @@ if stop:
 
 umask(02)
 
-processVexFile(args[0], force, verbose, vsnProjectCode, fsVSNs)
+processVexFile(args[0], force, verbose, preobs, vsnProjectCode, fsVSNs)
 
 print ''
