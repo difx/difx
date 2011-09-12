@@ -23,8 +23,8 @@ from time import asctime
 
 program = 'errormon'
 author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20100625'
+version = '0.4'
+verdate = '20110912'
 
 alertLevels = ['FATAL', 'SEVERE', 'ERROR', 'WARNING', 'INFO', 'VERBOSE', 'DEBUG']
 
@@ -114,6 +114,8 @@ def run(maxlevel):
 					print asctime(), info
 			except socket.timeout:
 				pass
+			except xml.parsers.expat.ExpatError:
+				print asctime(), '*** Unparsable message received ***'
 	except KeyboardInterrupt:
 		pass
 

@@ -25,9 +25,9 @@ from copy import deepcopy
 from time import asctime
 
 program = 'errormon2'
-author  = 'Walter Brisken'
-version = '0.3'
-verdate = '20101020'
+author  = 'Walter Brisken + ?'
+version = '0.4'
+verdate = '20110912'
 
 ##############################################################################
 # Parameters
@@ -197,6 +197,8 @@ def run():
 				log(alertLevels[level], info)
 		except socket.timeout:
 		    pass
+		except xml.parsers.expat.ExpatError:
+		    print asctime(), '*** Unparsable message received ***'
     except KeyboardInterrupt:
 	    pass
 

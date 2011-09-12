@@ -3,11 +3,11 @@
 #===========================================================================
 # SVN properties (DO NOT CHANGE)
 #
-# $Id:  $
+# $Id$
 # $HeadURL: $
-# $LastChangedRevision: $
-# $Author: $
-# $LastChangedDate: $
+# $LastChangedRevision$
+# $Author$
+# $LastChangedDate$
 #
 #============================================================================
 
@@ -23,8 +23,8 @@ from time import asctime
 
 program = 'statemon'
 author  = 'Walter Brisken'
-version = '0.2'
-verdate = '20110422'
+version = '0.3'
+verdate = '20110912'
 
 class Parser:
 
@@ -144,6 +144,8 @@ def run(maxlevel):
 					print asctime(), info
 			except socket.timeout:
 				pass
+			except xml.parsers.expat.ExpatError:
+				print asctime(), '*** Unparsable message received ***'
 	except KeyboardInterrupt:
 		pass
 
