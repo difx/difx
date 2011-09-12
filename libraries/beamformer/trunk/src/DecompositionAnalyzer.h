@@ -158,6 +158,29 @@ class DecompositionAnalyzer {
        */
       double get3Sigma(int channel, const int Ndiscard, int& rank) const;
 
+      /** 
+       * Three MAD thresholding detector to make a guess at the number of
+       * eigenvalues that are above an unknown noise power threshold.
+       * Uses median and three times median absolute deviation for the threshold.
+       * @param[in]      channel Which channel of multi-channel data to analyse
+       * @param[in,out]  rank    Final determined interference space rank (0..Nch-1), 0 for no RFI found
+       * @return Returns the estimated number of interferers.
+       */
+      double get3MAD(int channel, int& rank) const {
+         return get3MAD(channel, /*Ndiscard:*/ 0, rank);
+      }
+
+      /** 
+       * Three MAD thresholding detector to make a guess at the number of
+       * eigenvalues that are above an unknown noise power threshold.
+       * Uses median and three times median absolute deviation for the threshold.
+       * @param[in]      channel  Which channel of multi-channel data to analyse
+       * @param[in]      Ndiscard Number of smallest eigenvalues to ignore in 3sigma.
+       * @param[in,out]  rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
+       * @return Returns the estimated number of interferers.
+       */
+      double get3MAD(int channel, const int Ndiscard, int& rank) const;
+
    public:
 
       /** Unit test */

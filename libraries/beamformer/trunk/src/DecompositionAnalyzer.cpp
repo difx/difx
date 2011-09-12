@@ -246,12 +246,64 @@ double DecompositionAnalyzer::get3Sigma(int channel, const int Ndiscard, int& ra
          eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
       }
 
-      // Count values that exceed 3sigma threshold
+      // Count values that exceed 3sigma threshold above mean
       arma::uvec ithresh;
       bf::real thresh;
       thresh  = arma::mean(eigs) + 3.0 * arma::stddev(eigs);
       ithresh = arma::find(eigs > thresh, 0, "first"); // => indices of all matching elems
       rank    = ithresh.n_elem;
+
+   } else {
+      // ...
+   }
+
+   return rank;
+}
+
+
+/**
+ * Three MAD thresholding detector to make a guess at the number of
+ * eigenvalues that are above an unknown noise power threshold. When it 
+ * is known that some elements of the array have no signal, the corresponding 
+ * lowest eigenvalues can be ignored using Ndiscard.
+ * Uses median and three times median absolute deviation for the threshold.
+ * @param[in]      channel  Which channel of multi-channel data to analyse 
+ * @param[in]      Ndiscard Number of smallest eigenvalues to ignore in 3sigma.
+ * @param[in,out]  rank     Final determined interference space rank (0..Nch-1), 0 for no RFI found
+ * @return Returns the estimated number of interferers.
+ */
+double DecompositionAnalyzer::get3MAD(int channel, const int Ndiscard, int& rank) const
+{
+   arma::Col<bf::real> eigs_unsorted;
+   arma::Col<bf::real> eigs;
+
+   rank = 0;
+   channel %= (_deco.N_chan + 1);
+
+   /* Handle SVD and EVD */
+   if (_deco._deco_type == Decomposition::SVD || _deco._deco_type == Decomposition::EVD) {
+
+      // Get lambdas and make sure lamda(1)>lambda(2)>..>lambda(N)
+      if (_deco.N_chan <= 1) {
+         eigs_unsorted = _deco._single_out_vector;
+      } else {
+         eigs_unsorted = _deco._batch_out_vectors.col(channel);
+      }
+
+      // Sort and discard some of the lowest values if requested
+      eigs = arma::sort((arma::Col<bf::real> const)eigs_unsorted, /*0=asc,1=desc*/1);
+      if (Ndiscard > 0) {
+         eigs = eigs.subvec(0, eigs.n_elem - Ndiscard - 1);
+      }
+
+      // Count values that exceed 3MAD threshold above median
+      arma::uvec ithresh;
+      bf::real thresh;
+      bf::real medianval;
+      medianval = arma::median(eigs);
+      thresh    = medianval + 3.0 * arma::as_scalar(arma::median(arma::abs(eigs - medianval)));
+      ithresh   = arma::find(eigs > thresh, 0, "first"); // => indices of all matching elems
+      rank      = ithresh.n_elem;
 
    } else {
       // ...
