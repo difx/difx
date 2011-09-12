@@ -264,9 +264,22 @@ def getClockFromDB(db, stn, timerange, verbose):
 		print 'Executing database query: %s' % query
 	cursor.execute(query)
 	allclocks = cursor.fetchall()
+
+
+	# there has got to be a way to put this in the SQL query...
+	ac = allclocks
+	allclocks = []
+	for a in ac:
+		if a[-1] != None:
+			allclocks.append(a)
+
+
+
 	if len(allclocks) == 0:
 		return []
 	if preobs:
+		for a in allclocks:
+			print a
 		clocks = [allclocks[-1]]
 	else:
 		clocks = []
