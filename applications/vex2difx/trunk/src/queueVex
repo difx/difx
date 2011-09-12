@@ -1,0 +1,165 @@
+#!/bin/env python
+
+# TODO - change USNO processing to check if schedule only contains MK and PT antennas
+
+from sys import argv, exit
+from os import system, chdir, getcwd, environ, popen
+from os.path import isfile, isdir
+from string import replace, strip, split, lower, upper
+from glob import glob
+import datetime
+
+version = 1.1
+
+verbose = 1
+
+observTxFile = 'observ.tx'
+ccScriptDir = '/export/home/cc/vlba/scripts'
+prestartTime = 300	# seconds
+poststopTime = 30	# seconds
+difxPath = '/home/swc/DiFX-2.0.1-64/bin'
+difxbinpath = '/users/difx/bin'
+
+# ------------------
+
+mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
+
+def execute(cmd, nostdout=0):
+	if verbose > 0:
+		print 'About to execute: %s' % cmd
+	if nostdout == 0:
+		system(cmd)
+	else:
+		popen(cmd).readlines()
+
+def vexPeek(vexFile):
+	
+	cmd = '%s/vexpeek %s' % (difxPath, vexFile)
+	if verbose > 0:
+		print 'Executing command: %s' % cmd
+
+	p = popen(cmd)
+	data = p.readlines()
+
+	if len(data) == 0:
+		return 'Error', 'Error', 'Error'
+	
+	obsCode = upper(strip(data[0]))
+	obsSeg = ''
+
+	if obsCode[0:5] == 'ERROR':
+		return 'Error', 'Error', 'Error'
+
+	if len(obsCode) > 3:
+		if obsCode[0].isalpha() and obsCode[1].isalpha() and obsCode[2].isdigit():
+			for i in range(3, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		if obsCode[0].isalpha() and obsCode[1].isdigit():
+			for i in range(2, len(obsCode)):
+				if obsCode[i].isalpha():
+					obsSeg = obsCode[i:]
+					obsCode = obsCode[0:i]
+					break;
+		
+
+	stationTimes = {}
+	for d in data[1:]:
+		s = split(strip(d))
+		stationTimes[upper(s[0])] = [float(s[1])-prestartTime/86400.0, float(s[2])+poststopTime/86400.0]
+
+	print 'This is experiment %s %s' % (obsCode, obsSeg)
+
+	return obsCode, obsSeg, stationTimes
+
+def mjd2datetime(mjd):
+	mon = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	dt = datetime.timedelta(int(mjd), int((mjd - int(mjd))*86400.0 + 0.5))
+	t = mjd0 + dt
+	return '%04d%s%02d %02dh%02dm%02ds' % (t.year, mon[t.month-1], t.day, t.hour, t.minute, t.second)
+
+# -----------------
+
+if len(argv) != 2:
+	print 'Usage: %s <vexfile>' % argv[0]
+
+	exit(0)
+
+cwd = getcwd()
+
+vexFile = argv[1]
+
+if vexFile[0] != '/':
+	vexFile = '%s/%s' % (cwd, vexFile)
+
+obsCode, obsSeg, stationTimes = vexPeek(vexFile)
+
+tmpDir = '/tmp/' + replace(vexFile, '/', '-') + '.workdir'
+
+if isfile(tmpDir) or isdir(tmpDir):
+	print 'Error: cannot proceed as temporary directory %s already exists.  Delete and try again.' % tmpDir
+	exit(0)
+
+execute('mkdir -p %s' % tmpDir)
+
+chdir(tmpDir)
+
+execute('%s/vex2script %s' % (difxPath, vexFile))
+
+scripts = glob('*.??.py')
+scripts.sort()
+for script in scripts:
+	s = split(script, '.')
+	station = lower(s[-2])
+	expt = upper(s[0])
+	print '\n==========================================================================='
+	if station == 'gb':
+		cc = 'gb-cc.gb.nrao.edu'
+
+		#print 'Warning: files for GB are not yet handled by this script'
+		#print '\n==========================================================================='
+		#continue
+	else:
+		cc = '%s-cc' % station
+	
+	upperStation = upper(station)
+	timeRange = stationTimes[upperStation]
+	startDate = mjd2datetime(timeRange[0])
+	stopDate = mjd2datetime(timeRange[1])
+	print 'STATION %s : observing %s from %s to %s' % (upperStation, expt, startDate, stopDate)
+	print '===========================================================================\n'
+
+	if ( expt[0] == 'n' or expt[0] == 'N' ) and ( upperStation == 'MK' or upperStation == 'PT' ) :
+		print 'USNO Experiment %s' % (expt)
+		print 'Modifying script file for %s to use USNO equipment.' % (upperStation)
+		execute('%s/usnomod.sh %s %s' % (difxbinpath, expt, upperStation))
+		print 'Done.\n'
+
+	print 'Sending %s to %s' % (script, cc)
+	execute('scp vlbamon@%s:%s/%s . 2>&1' % (cc, ccScriptDir, observTxFile), 1)
+	if len(glob(observTxFile)) == 0:
+		execute('touch %s' % observTxFile)
+
+	observations = open(observTxFile).readlines()
+	f = open(observTxFile, 'w')
+	for o in observations:
+		s = split(strip(o))
+		if len(s) < 3:
+			continue
+		if s[0] == expt:
+			continue	# don't keep old entry for same expt
+		f.write(o)
+	f.write('%s %s %s > %s\n' % (expt, startDate, stopDate, station))
+	f.close()
+
+	print 'Contents of %s at %s:' % (observTxFile, upperStation)
+	system('cat %s' % observTxFile)
+	print ''
+	execute('scp %s %s vlbamon@%s:%s 2>&1' % (script, observTxFile, cc, ccScriptDir), 1)
+	execute('rm %s' % observTxFile)
+
+chdir(cwd)
+
+execute('rm -rf %s' % tmpDir);
