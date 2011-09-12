@@ -96,7 +96,7 @@ int main(int argc, char** argv)
         int Nrfi = 1;
         Covariance rxxDataBlock(xyz.Nant, DIGESTIF_Nch, DIGESTIF_Msmp, 0.0f, DIGESTIF_Tint);
 
-        if (0) {
+        if (1) {
 
            std::cout << "Data source = external virgoA_on.raw\n";
 
@@ -232,13 +232,24 @@ int main(int argc, char** argv)
 
 #if TEST_INFOCRITERIA
         for (int cc=0; cc<rxxDataBlock.N_chan(); cc++) {
-           int mdl_rank, aic_rank;
+           int mdl_rank, aic_rank, tsig_rank, tmad_rank;
            double mdl, aic;
-           mdl = da.getMDL(0, mdl_rank);
-           aic = da.getAIC(0, aic_rank);
+
+           int Ndisc = 0;
+           if (data_is_synthetic) {
+              Ndisc = DIGESTIF_Ndisc;
+           }
+
+           mdl = da.getMDL(0, Ndisc, mdl_rank);
+           aic = da.getAIC(0, Ndisc, aic_rank);
+           da.get3Sigma(0, Ndisc, tsig_rank);
+           da.get3MAD(0, Ndisc, tmad_rank);
+
            cout << "DecompositionAnalyzer on channel " << cc << " returned "
                 << "MDL={IC=" << mdl << ",rank=" << mdl_rank << "}, "
-                << "AIC={IC=" << aic << ",rank=" << aic_rank << "}\n";
+                << "AIC={IC=" << aic << ",rank=" << aic_rank << "}, "
+                << "3sigma={rank=" << tsig_rank << "}, "
+                << "3mad={rank=" << tmad_rank << "}\n";
         }
 #endif
 
