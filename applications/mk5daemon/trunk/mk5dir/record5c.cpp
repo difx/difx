@@ -149,6 +149,15 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 		pointer += (4 - rem);
 	}
 
+	/* This read from zero is to work around a streamstor bug */
+	readdesc.AddrLo = 0LL;
+	readdesc.AddrHi = 0LL;
+	readdesc.XferLength = bufferSize;
+	readdesc.BufferAddr = buffer;
+	printf("Read 0 %d\n", bufferSize);  fflush(stdout);
+	WATCHDOGTEST( XLRRead(xlrDevice, &readdesc) );
+	/* End bug work-around */
+
 	readdesc.AddrLo = pointer & 0xFFFFFFFF;
 	readdesc.AddrHi = pointer >> 32;
 	readdesc.XferLength = bufferSize;

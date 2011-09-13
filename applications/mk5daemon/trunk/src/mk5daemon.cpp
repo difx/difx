@@ -680,6 +680,12 @@ int main(int argc, char **argv)
 		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
 		{
 			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
+
+			/* FIXME: For debug purposes */
+			fprintf(stderr, "record: %s\n", message);
+
+			D->recordLastMessage = t;
+
 			if(r)
 			{
 				char A[15][40];
@@ -758,13 +764,17 @@ int main(int argc, char **argv)
 
 		if(D->recordState == RECORD_ON && D->recordRate < 0.01 && t - D->recordT0 > 10)
 		{
-			D->recordState = RECORD_THROTTLED;
+			D->recordState = RECORD_WAITING;
 		}
 		else if(D->recordState == RECORD_ON && t - D->recordLastMessage > 5)
 		{
 			D->recordState = RECORD_HUNG;
 		}
-		else if(D->recordState == RECORD_THROTTLED && D->recordRate > 1.0)
+		else if(D->recordState == RECORD_WAITING && D->recordRate > 1.0)
+		{
+			D->recordState = RECORD_ON;
+		}
+		else if(D->recordState == RECORD_HUNG && t - D->recordLastMessage < 5)
 		{
 			D->recordState = RECORD_ON;
 		}

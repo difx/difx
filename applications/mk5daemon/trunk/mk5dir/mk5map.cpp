@@ -47,10 +47,11 @@
 const char program[] = "mk5map";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.1";
-const char verdate[] = "20110810";
+const char verdate[] = "20110907";
 
 const int defaultGrid = 20;
 const int defaultPrecision = 1<<25;
+const double defaultFraction = 1.0e-6;
 const int BufferLength = 1<<20;	// 1 MiB
 
 enum DMS_Mode
@@ -84,6 +85,8 @@ static void usage(const char *pgm)
 	printf("  --realtime     Use real-time mode when reading\n\n");
 	printf("  --rate <R>\n");
 	printf("  -r <R>         Try to match a fixed rate of <R> bytes per second\n\n");
+	printf("  --fraction <f>\n");
+	printf("  -f <f>         Match rates to within <f>*rate of rate [%10.8f]\n\n", defaultFraction);
 	printf("  --precision <P>\n");
 	printf("  -p <P>         Determine the scan boundaries to <P> bytes or better [%d]\n\n", defaultPrecision);
 	printf("  --grid <G>\n");
@@ -266,7 +269,7 @@ static int getBankInfo(SSHANDLE xlrDevice, DifxMessageMk5Status * mk5status, cha
 	return 0;
 }
 
-static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t begin, uint64_t end, enum Mark5ReadMode readMode)
+static int mk5map(char *vsn, double rate, double fraction, int64_t precision, int grid, uint64_t begin, uint64_t end, enum Mark5ReadMode readMode)
 {
 	SSHANDLE xlrDevice;
 	S_DIR dir;
@@ -286,8 +289,9 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t 
 	char outFile[32];
 	FILE *out;
 	int64_t lastnewpos;
+	double r;
 
-	dRate = rate * 1.0e-6;	
+	dRate = rate * fraction;	
 
 	memset(&mk5status, 0, sizeof(mk5status));
 
@@ -393,7 +397,7 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t 
 
 	// Next, go through the list and densify as needed
 
-	printf("\nAllowed rate range = %10.0f to %10.0f\n\n", rate - dRate, rate + dRate);
+	printf("\nAllowed rate range = %10.0f to %10.0f bytes per second\n\n", rate - dRate, rate + dRate);
 
 	lastnewpos = 0LL;
 	for(std::list<Datum>::iterator d1 = data.begin(); ; d1++)
@@ -480,10 +484,35 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t 
 			double r2 = bytespersecond(*d2, *d3);
 			if(fabs(r - rate) <= dRate || (fabs(r1 - rate) > dRate && fabs(r2 - rate) > dRate))
 			{
+				if(verbose > 2)
+				{
+					if(fabs(r - rate) <= dRate)
+					{
+						printf("Removing point at %Ld because it is in the middle of a good period\n", d2->byte);
+					}
+					else
+					{
+						printf("Removing point at %Ld because it is in the middle of a bad period\n", d2->byte);
+					}
+					printf("Rates were %10.0f  (%10.0f %10.0f)  [%10.0f]\n", r, r1, r2, rate);
+					printf("Data were (%d %d  %Ld) (%d %d %Ld) (%d %d %Ld)\n\n",
+						d1->sec, d1->ns, d1->byte,
+						d2->sec, d2->ns, d2->byte,
+						d3->sec, d3->ns, d3->byte);
+				}
 				data.erase(d2);
 			}
 			else
 			{
+				if(verbose > 2)
+				{
+					printf("Keeping point at %Ld\n", d2->byte);
+					printf("Rates were %10.0f  (%10.0f %10.0f)  [%10.0f]\n", r, r1, r2, rate);
+					printf("Data were (%d %d  %Ld) (%d %d %Ld) (%d %d %Ld)\n\n",
+						d1->sec, d1->ns, d1->byte,
+						d2->sec, d2->ns, d2->byte,
+						d3->sec, d3->ns, d3->byte);
+				}
 				break;
 			}
 		}
@@ -499,21 +528,30 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t 
 		std::list<Datum>::iterator d1 = data.begin();
 		std::list<Datum>::iterator d2 = d1;
 		d2++;
-		if(fabs(bytespersecond(*d1, *d2) - rate) > dRate)
+		r = bytespersecond(*d1, *d2);
+		if(fabs(r - rate) > dRate)
 		{
 			data.erase(d1);
+			if(verbose > 1)
+			{
+				printf("Removing first point because rate = %10.0f\n", r);
+			}
 		}
 
 		d2 = data.end();
 		d2--;
 		d1 = d2;
 		d1--;
-		if(fabs(bytespersecond(*d1, *d2) - rate) > dRate)
+		r = bytespersecond(*d1, *d2);
+		if(fabs(r - rate) > dRate)
 		{
 			data.erase(d2);
+			if(verbose > 1)
+			{
+				printf("Removing last point because rate = %10.0f\n", r);
+			}
 		}
 	}
-	// And ends here
 
 	if(verbose > 1)
 	{
@@ -545,7 +583,8 @@ static int mk5map(char *vsn, double rate, int64_t precision, int grid, uint64_t 
 		d2++;
 		if(d2 == data.end())
 		{
-			printf("fractional number of scans not expected!\n");
+			printf("*** Developer error: fractional number of scans not expected!\n");
+			printf("*** This probably means the recovered directory is not right!\n");
 
 			break;
 		}
@@ -618,6 +657,7 @@ int main(int argc, char **argv)
 	uint64_t begin = 0LL;
 	uint64_t end = 0LL;
 	int retval = EXIT_SUCCESS;
+	double fraction = defaultFraction;
 
 	dmsMaskStr = getenv("DEFAULT_DMS_MASK");
 	if(dmsMaskStr)
@@ -657,6 +697,8 @@ int main(int argc, char **argv)
 		{
 			verbose--;
 		}
+/* the three options below are not yet implemented */
+#if 0
 		else if(strcmp(argv[a], "-n") == 0 ||
 			strcmp(argv[a], "--nodms") == 0)
 		{
@@ -672,6 +714,7 @@ int main(int argc, char **argv)
 		{
 			dmsMode = DMS_MODE_UPDATE;
 		}
+#endif
 		else if(strcmp(argv[a], "--realtime") == 0)
 		{
 			readMode = MARK5_READ_MODE_RT;
@@ -682,7 +725,13 @@ int main(int argc, char **argv)
 			   strcmp(argv[a], "--rate") == 0)
 			{
 				a++;
-				rate = atof(argv[a]) - 1;
+				rate = atof(argv[a]);
+			}
+			else if(strcmp(argv[a], "-f") == 0 ||
+				strcmp(argv[a], "--fraction") == 0)
+			{
+				a++;
+				fraction = atof(argv[a]);
 			}
 			else if(strcmp(argv[a], "-p") == 0 ||
 			        strcmp(argv[a], "--precision") == 0)
@@ -756,7 +805,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = mk5map(vsn, rate, precision, grid, begin, end, readMode);
+		v = mk5map(vsn, rate, fraction, precision, grid, begin, end, readMode);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

@@ -1206,10 +1206,10 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s", fields[2]);
 					break;
 				case 4:
-					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s", fields[2], fields[3]);
+					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_X_%s", fields[3], fields[2]);
 					break;
 				default:
-					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", fields[2], fields[3], fields[4]);
+					snprintf(scanLabel, MODULE_LEGACY_SCAN_LENGTH, "%s_%s_%s", fields[3], fields[4], fields[2]);
 					break;
 			}
 
