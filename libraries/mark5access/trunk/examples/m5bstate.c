@@ -1,13 +1,26 @@
+//===========================================================================
+// SVN properties (DO NOT CHANGE)
+//
+// $Id$
+// $HeadURL$
+// $LastChangedRevision$
+// $Author$
+// $LastChangedDate$
+//
+//============================================================================
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <math.h>
 #include "../mark5access/mark5_stream.h"
 
 const char program[] = "m5bstate";
 const char author[]  = "Alessandra Bertarini";
-const char version[] = "0.0";
-const char verdate[] = "2011 Jul 20";
+const char version[] = "1.1";
+const char verdate[] = "2011 Sep 12";
 
 int die = 0;
 
@@ -50,10 +63,16 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	struct mark5_stream *ms;
         double **data;
         long **bstate;
-	int i, j, k, status;
+	int c, i, j, k, status;
 	int chunk, nif, nstates;
 	long long total, unpacked;
+	double f, a, x;
         int sum;       
+        double *gfact;
+
+/* a is required for Haystack gain calculation*/
+        a = 8 * (M_PI - 3) / (3 * M_PI * (4 - M_PI));
+
 
 	total = unpacked = 0;
 
@@ -82,6 +101,8 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	nif = ms->nchan;
         data = (double **)malloc(nif*sizeof(double *));
         bstate = (long **)malloc(nif*sizeof(long *));
+        /*Haystack gain's calculation*/
+        gfact = (double *)malloc(nif*sizeof(double *));
 
         /* bstate 2nd dim. is either 2 for the 1bit: ++ -- or 4 for the 2 bits ++ + - -- */
         if(ms->nbit == 1) 
@@ -171,11 +192,11 @@ int bstate(const char *filename, const char *formatname, int nframes,
         /* header of the output bstate table based on Haystack bstate output*/
         if (ms->nbit == 1)
         {
-                 printf("\nCh    -      +         -      +     \n");
+                 printf("\nCh    -      +         -      +     gfact\n");
         }
         else if (ms->nbit == 2)
         {
-                 printf("\nCh    --      -     +     ++        --      -      +     ++\n");
+                 printf("\nCh    --      -     +     ++        --      -      +     ++     gfact\n");
         }
 
 	/* normalize */
@@ -189,13 +210,20 @@ int bstate(const char *filename, const char *formatname, int nframes,
 		}
                 for(j = 0; j < nstates; j++)
                 {
-                       printf("%7ld", bstate[i][j]);
+                       printf("%7d", bstate[i][j]);
                 }
                 printf("    ");
                 for(j = 0; j < nstates; j++)
                 {
                        printf("%5.1f  ", (float)bstate[i][j]/sum * 100.);
                 }
+/* Haystack gain correction calculation */
+
+                x = (double) (bstate[i][1] + bstate[i][2]) / sum;
+                gfact[i] = sqrt (-4 / (M_PI * a) - log (1 - x*x)
+                           + 2 * sqrt (pow (2 / (M_PI * a) + log (1 - x*x) / 2, 2)
+                           - log (1-x*x)/a)) / 0.91;
+                printf("%5.2lf", gfact[i]);  
                 printf("\n");
 	}
 
