@@ -301,6 +301,9 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                                     // chop off line just after = sign
                     *(strchr (line, '=')+2) = 0;
                     strcat (line, buff); 
+                                    // comment out freq channels that weren't correlated
+                    if (D->config[D->scan[scanId].configId].freqIdUsed[numchan-1] == 0)
+                        line[0] = '*';
                     }
                 break;
                                     
