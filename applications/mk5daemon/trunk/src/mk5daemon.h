@@ -99,6 +99,7 @@ extern const char netProtocolStrings[][10];
 
 typedef struct
 {
+	int isEmbedded;	/* true if commanded with the -e or --embedded options.  For use within a pipe */
 	Logger *log;
 	DifxMessageLoad load;
 	DifxMessageMk5Version mk5ver;

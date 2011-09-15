@@ -114,10 +114,13 @@ static void usage(const char *pgm)
 	fprintf(stderr, "  -l <path>      Put log files in <path>\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --user <user>\n");
-	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx') \n"); 
+	fprintf(stderr, "  -u <user>      use <user> when executing remote commands (default is 'difx')\n"); 
 	fprintf(stderr, "\n");
 	fprintf(stderr, "  --isMk5 \n");
-	fprintf(stderr, "  -m             force mk5daemon on this host to act as Mark5 regardless of hostname \n"); 
+	fprintf(stderr, "  -m             force mk5daemon on this host to act as Mark5 regardless of hostname\n"); 
+	fprintf(stderr, "\n");
+	fprintf(stderr, "  --embedded\n");
+	fprintf(stderr, "  -e             configure for running within a pipe and with messages to stdout\n");
 	fprintf(stderr, "\n");
 	fprintf(stderr, "Note: This program responds to the following "
 			"environment variables:\n");
@@ -144,7 +147,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->loadMonInterval = 10;	/* seconds */
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
-	if (isMk5)
+	if(isMk5)
 	{
 		D->isMk5 = 1;
 	}
@@ -380,6 +383,7 @@ int main(int argc, char **argv)
 	char message[DIFX_MESSAGE_LENGTH];
 	char str[16];
 	int isHeadNode = 0;
+	int isEmbedded = 0;
 	int isMk5 = 0;
 	int i;
 	int halfInterval;
@@ -395,6 +399,12 @@ int main(int argc, char **argv)
 	int ok = 0;	/* FIXME: combine with D->ready? */
 	int justStarted = 1;
 	int recordFD;
+#endif
+
+#ifdef HAVE_XLRAPI_H
+	isMk5 = 1;
+#else
+	isMk5 = 0;
 #endif
 
 	// Prevent any zombies
@@ -432,6 +442,12 @@ int main(int argc, char **argv)
 		   strcmp(argv[i], "--headnode") == 0)
 		{
 			isHeadNode = 1;
+		}
+		else if(strcmp(argv[i], "-e") == 0 ||
+		   strcmp(argv[i], "--embedded") == 0)
+		{
+			isEmbedded = 1;
+			logPath[0] = 0;
 		}
 		else if(strcmp(argv[i], "-h") == 0 ||
 		   strcmp(argv[i], "--help") == 0)
@@ -484,11 +500,18 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if(fork())
+	if(!isEmbedded)
 	{
-		printf("*** %s ver. %s spawned ***\n", program, version);
+		if(fork())
+		{
+			printf("*** %s ver. %s spawned ***\n", program, version);
 
-		return EXIT_SUCCESS;
+			return EXIT_SUCCESS;
+		}
+	}
+	else
+	{
+		printf("*** %s ver. %s starting ***\n", program, version);
 	}
 
 	/* the next line is so that later calls to fork() don't end up with defunct
@@ -505,6 +528,7 @@ int main(int argc, char **argv)
 
 	D = newMk5Daemon(logPath, userID, isMk5);
 	D->isHeadNode = isHeadNode;
+	D->isEmbedded = isEmbedded;
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", 
 		program, version);
@@ -680,9 +704,6 @@ int main(int argc, char **argv)
 		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
 		{
 			char *r = fgets(message, DIFX_MESSAGE_LENGTH-1, D->recordPipe);
-
-			/* FIXME: For debug purposes */
-			fprintf(stderr, "record: %s\n", message);
 
 			D->recordLastMessage = t;
 

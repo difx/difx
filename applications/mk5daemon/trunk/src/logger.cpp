@@ -43,10 +43,17 @@ static int Logger_newFile(Logger *log, int mjd)
 		fclose(log->out);
 	}
 
-	sprintf(filename, "%s/%s.%05d.log",
-		log->logPath, log->hostName, mjd);
+	if(mjd > 0)
+	{
+		sprintf(filename, "%s/%s.%05d.log",
+			log->logPath, log->hostName, mjd);
 
-	log->out = fopen(filename, "a");
+		log->out = fopen(filename, "a");
+	}
+	else
+	{
+		log->out = 0;
+	}
 
 	return 0;
 }
@@ -61,12 +68,24 @@ Logger *newLogger(const char *logPath)
 
 	log = (Logger *)calloc(1, sizeof(Logger));
 
-	strcpy(log->logPath, logPath);
+	if(logPath == 0)
+	{
+		log->logPath[0] = 0;
+	}
+	else
+	{
+		strcpy(log->logPath, logPath);
+	}
 	gethostname(log->hostName, 32);
 	log->hostName[31] = 0;
-
-	mjd = (int)(40587.0 + t/86400.0);
-
+	if(logPath && logPath[0])
+	{
+		mjd = (int)(40587.0 + t/86400.0);
+	}
+	else
+	{
+		mjd = -1;	/* use stdout */
+	}
 	Logger_newFile(log, mjd);
 
 	pthread_mutex_init(&log->lock, 0);
@@ -93,28 +112,36 @@ int Logger_logData(Logger *log, const char *message)
 	struct tm curTime;
 	double mjd;
 
-	t = time(0);
-	gmtime_r(&t, &curTime);
-	
 	pthread_mutex_lock(&log->lock);
-	
-	if(t != log->lastTime)
-	{
-		mjd = 40587.0 + t/86400.0;
 
-		if(t/86400 != log->lastTime/86400)
-		{
-			Logger_newFile(log, (int)(mjd+0.1));
-		}
-		log->lastTime = t;
-		fprintf(log->out, "\n");
-		fprintf(log->out, "%04d/%03d %02d:%02d:%02d = %13.7f\n",
-			curTime.tm_year+1900, curTime.tm_yday+1,
-			curTime.tm_hour, curTime.tm_min, curTime.tm_sec,
-			mjd);
+	if(!log->out)	/* i.e., if in embedded mode */
+	{
+		printf("%s", message);
+		fflush(stdout);
 	}
-	fputs(message, log->out);
-	fflush(log->out);
+	else
+	{
+		t = time(0);
+		gmtime_r(&t, &curTime);
+		
+		if(t != log->lastTime)
+		{
+			mjd = 40587.0 + t/86400.0;
+
+			if(t/86400 != log->lastTime/86400)
+			{
+				Logger_newFile(log, (int)(mjd+0.1));
+			}
+			log->lastTime = t;
+			fprintf(log->out, "\n");
+			fprintf(log->out, "%04d/%03d %02d:%02d:%02d = %13.7f\n",
+				curTime.tm_year+1900, curTime.tm_yday+1,
+				curTime.tm_hour, curTime.tm_min, curTime.tm_sec,
+				mjd);
+		}
+		fputs(message, log->out);
+		fflush(log->out);
+	}
 
 	pthread_mutex_unlock(&log->lock);
 

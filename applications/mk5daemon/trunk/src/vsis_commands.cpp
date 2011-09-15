@@ -575,7 +575,7 @@ int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 {
 	int v = 0;
 
-	if(nField != 2)
+	if(nField != 3)
 	{
 		 v = snprintf(response, maxResponseLength, "!%s = 6 : Two parameters must be supplied;", fields[0]);
 	}

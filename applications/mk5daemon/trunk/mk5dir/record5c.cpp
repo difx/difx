@@ -544,8 +544,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 	WATCHDOGTEST( XLRSetMode(xlrDevice, SS_MODE_SINGLE_CHANNEL) );
 	WATCHDOGTEST( XLRClearChannels(xlrDevice) );
-	WATCHDOGTEST( XLRBindInputChannel(xlrDevice, channel) );
 	WATCHDOGTEST( XLRSelectChannel(xlrDevice, channel) );
+	WATCHDOGTEST( XLRBindInputChannel(xlrDevice, channel) );
+	WATCHDOGTEST( XLRBindOutputChannel(xlrDevice, 0) );
 
 	/* configure 10G input daughter board */
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_PAYLD_OFFSET, payloadOffset) );
