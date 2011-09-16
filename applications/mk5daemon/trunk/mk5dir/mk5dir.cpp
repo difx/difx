@@ -42,8 +42,8 @@
 
 const char program[] = "mk5dir";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.10";
-const char verdate[] = "20110813";
+const char version[] = "0.11";
+const char verdate[] = "20110916";
 
 enum DMS_Mode
 {

@@ -1270,6 +1270,9 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 	}
 	else
 	{
+		/* Work around possible streamstor bug */
+		WATCHDOG( xlrRC = XLRReadData(xlrDevice, buffer, 0, 0, bufferlen) );
+
 		for(int i = 0; i < nScans(); i++)
 		{
 			Mark5Scan &scan = scans[i];

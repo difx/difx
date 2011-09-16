@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110730";
+const char verdate[] = "20110916";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -187,6 +187,9 @@ static long long readblock(SSHANDLE xlrDevice, int num, char *buffer1, char *buf
 
 	gettimeofday(&tv, 0);
 	startTime = tv.tv_sec + tv.tv_usec*1.0e-6;
+
+	/* Next line is to possibly avoid a stremstor bug */
+	WATCHDOGTEST( XLRReadData(xlrDevice, (streamstordatatype *)buffer2, 0, 0, size) );
 
 	printf("Reading ");
 	for(r = 0; r < nRep; r++)
