@@ -30,6 +30,7 @@
 #ifndef __MK5DAEMON_H__
 #define __MK5DAEMON_H__
 
+#include <map>
 #include <time.h>
 #include <difxmessage.h>
 #include "config.h"
@@ -52,6 +53,7 @@ const int MaxConnections = 8;
 #define MAX_COMMAND_SIZE	768
 #define N_BANK			2
 #define N_DRIVE			8
+#define MAX_MACLIST_LENGTH	16
 
 enum RecordState
 {
@@ -97,6 +99,31 @@ enum NetProtocolType
 
 extern const char netProtocolStrings[][10];
 
+enum MacListCommand
+{
+	MAC_LIST_FLUSH = 0,
+	MAC_LIST_ADD,
+	MAC_LIST_DELETE,
+	MAC_LIST_ENABLE,
+	MAC_LIST_DISABLE,
+
+	NUM_MAC_LIST_COMMANDS	/* must terminate list */
+};
+
+extern const char MacListCommandStrings[][10];
+
+
+class MAC
+{
+public:
+	long int address;
+public:
+	int parse(const char *str);
+	int toString(char *str) const;	/* returns number of characters written */
+	friend bool operator ==(const MAC &mac1, const MAC &mac2);
+	friend bool operator <(const MAC &mac1, const MAC &mac2);
+};
+
 typedef struct
 {
 	int isEmbedded;	/* true if commanded with the -e or --embedded options.  For use within a pipe */
@@ -131,7 +158,7 @@ typedef struct
 	int acceptSock;	/* for VSIS server */
 	int clientSocks[MaxConnections];
 	
-
+	std::map<MAC,bool> macList;	/* map from a MAC address to enable flag */
 #ifdef HAVE_XLRAPI_H
 	/* FIXME: make bank structure??? */
 	Mk5Smart smartData[N_BANK];

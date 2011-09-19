@@ -88,6 +88,7 @@ const Command commandSet[] =
 	{ "mode",		mode_Query,		mode_Command		},
 	{ "status",		status_Query,		noCommand		},
 	{ "personality",	personality_Query,	personality_Command	},
+	{ "MAC_list",		MAC_list_Query,		MAC_list_Command	},
 
 	/* Data checking */
 	{ "scan_set",		scan_set_Query,		scan_set_Command	},

@@ -27,13 +27,14 @@
 //
 //============================================================================
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <list>
 #include "mark5dir.h"
 #if SDKVERSION >= 9
 #include <unistd.h>
 #include <ctype.h>
-#include <string.h>
+#include <cstring>
 #include <ctype.h>
 #include <sys/time.h>
 #include <difxmessage.h>
@@ -59,6 +60,7 @@ const int defaultPSNOffset = 0;
 const int defaultMACFilterControl = 1;
 const unsigned int defaultStreamstorChannel = 28;
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
+const int MaxMacAddresses = 16;
 
 const int MaxLabelLength = 40;
 const int Mark5BFrameSize = 10016;
@@ -77,6 +79,7 @@ int die = 0;
 #define TOTAL_PACKETS		0x08
 #define ETH_FILTER		0x0C
 #define ETH_REJECT_PACKETS	0x11
+#define MAC_ADDR_BASE		0x12	/* Note: this is the start of a 2x16 block of addresses */
 
 #define N_BANK			2
 
@@ -106,6 +109,8 @@ static void usage(const char *pgm)
 	printf("  -b <b>     Stop recording after <b> bytes written\n\n");
 	printf("  --seconds <s>\n");
 	printf("  -t <s>     Stop recording after <s> seconds passed\n\n");
+	printf("  --mac <MAC>\n");
+	printf("  -m <MAC>   Accept data from supplied MAC address (up to 16\n\n");
 	printf("  --statsrange <list>\n");
 	printf("  -r <list>  Set Mark5 statistics histogram [default %d,%d,%d,%d,%d,%d,%d]\n\n",
 		defaultStatsRange[0], defaultStatsRange[1], defaultStatsRange[2], defaultStatsRange[3],
@@ -119,6 +124,31 @@ void siginthand(int j)
 {
 	die = 2;
 	signal(SIGINT, oldsiginthand);
+}
+
+long int parseMAC(const char *str)
+{
+	unsigned int n, p;
+	long int a, b, c, d, e, f;
+
+	n = sscanf(str, "%lx:%lx:%lx:%lx:%lx:%lx%n", &a, &b, &c, &d, &e, &f, &p);
+
+	if(strlen(str) != p)
+	{
+		return -1;
+	}
+
+	if(n != 6)
+	{
+		return -1;
+	}
+
+	if(a > 255 || b > 255 || c > 255 || d > 255 || e > 255 || f > 255)
+	{
+		return -1;
+	}
+
+	return (a << 40LL) | (b << 32LL) | (c << 24LL) | (d << 16LL) | (e << 8LL) | (f << 0LL);
 }
 
 /* decode5B was taken straight from the DRS source code.  This code is originally (C) 2010 Walter Brisken */
@@ -406,7 +436,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	return 0;
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, const int *statsRange, int verbose)
+static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, const int *statsRange, const list<long int> &macList, int verbose)
 {
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
@@ -554,6 +584,27 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
+
+	/* set MAC list here */
+	{
+		int i = 0;
+		for(list<long int>::const_iterator it = macList.begin(); it != macList.end(); it++)
+		{
+			/* low word of MAC */
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i,   (*it >> 32) & 0xFFFFFFFF ) );
+
+			/* high word of MAC */
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i+1, (*it >>  0) & 0xFFFFFFFF ) );
+			
+			i++;
+		}
+		for(; i < MaxMacAddresses; i++)
+		{
+			/* zero the rest */
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i,   0) );
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i+1, 0) );
+		}
+	}
 
 	printf("Record %s %Ld\n", label, ptr);
 	fflush(stdout);
@@ -755,6 +806,7 @@ int main(int argc, char **argv)
 	double maxSeconds = 1.0e12;
 	char label[MaxLabelLength] = "";
 	int statsRange[XLR_MAXBINS];
+	std::list<long int> macList;
 
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
@@ -813,6 +865,18 @@ int main(int argc, char **argv)
 				   strcmp(argv[a], "--bytes") == 0)
 				{
 					maxBytes = atoll(argv[a+1]);
+				}
+				else if(strcmp(argv[a], "-m") == 0 ||
+				   strcmp(argv[a], "--mac") == 0)
+				{
+					long int address = parseMAC(argv[a+1])
+					if(address < 0)
+					{
+						printf("Malformed MAC address (%s); use : separators\n", argv[a+1]);
+
+						return EXIT_FAILURE;
+					}
+					macList.push_back(address);
 				}
 				else if(strcmp(argv[a], "-t") == 0 ||
 				   strcmp(argv[a], "--seconds") == 0)
@@ -922,7 +986,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, statsRange, verbose);
+		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, statsRange, macList, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

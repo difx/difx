@@ -91,6 +91,16 @@ const char netProtocolStrings[][10] =
 	"Error"	/* last entry */
 };
 
+const char MacListCommandStrings[][10] =
+{
+	"flush",
+	"add",
+	"delete",
+	"enable",
+	"disable",
+
+	"illegal" /* last entry */
+};
 
 static void usage(const char *pgm)
 {
@@ -136,6 +146,60 @@ static void usage(const char *pgm)
 	fprintf(stderr, "\n");
 }
 
+
+/* MAC address stuff (should move to new file) */
+
+bool operator ==(const MAC &mac1, const MAC &mac2)
+{
+	return mac1.address == mac2.address;
+}
+bool operator <(const MAC &mac1, const MAC &mac2) 
+{
+	return mac1.address < mac2.address;
+}
+
+int MAC::parse(const char *str)
+{
+	unsigned int n, p;
+	long int a, b, c, d, e, f;
+
+	n = sscanf(str, "%lx.%lx.%lx.%lx.%lx.%lx%n", &a, &b, &c, &d, &e, &f, &p);
+
+	if(strlen(str) != p)
+	{
+		return -1;
+	}
+
+	if(n != 6)
+	{
+		return -1;
+	}
+
+	if(a > 255 || b > 255 || c > 255 || d > 255 || e > 255 || f > 255)
+	{
+		return -1;
+	}
+
+	address = (a << 40LL) | (b << 32LL) | (c << 24LL) | (d << 16LL) | (e << 8LL) | (f << 0LL);
+
+	return 0;
+}
+
+int MAC::toString(char *str) const
+{
+	int n;
+
+	n = sprintf(str, "%02lx.%02lx.%02lx.%02lx.%02lx.%02lx", 
+		(address >> 40) & 0xFF,
+		(address >> 32) & 0xFF,
+		(address >> 24) & 0xFF,
+		(address >> 16) & 0xFF,
+		(address >>  8) & 0xFF,
+		(address >>  0) & 0xFF);
+	
+	return n;
+}
+
 Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 {
 	Mk5Daemon *D;
@@ -145,6 +209,7 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->log = newLogger(logPath);
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 10;	/* seconds */
+	D->macList.clear();
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
 	if(isMk5)
@@ -494,9 +559,10 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if(setuid(0) != 0)
+	if(isHeadNode && setuid(0) != 0)
 	{
-		fprintf(stderr, "Needs to run with root permission.  Bailing.\n");
+		fprintf(stderr, "Head node status requires running as root.  Bailing.\n");
+
 		return EXIT_FAILURE;
 	}
 

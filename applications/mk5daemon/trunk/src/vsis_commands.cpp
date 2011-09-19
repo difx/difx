@@ -151,6 +151,8 @@ int bank_set_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v;
+
+#ifdef HAVE_XLRAPI_H
 	char dbInfo[DIFX_MESSAGE_LENGTH];
 
 	if(strlen(D->mk5ver.DB_PCBVersion) > 0)
@@ -183,6 +185,9 @@ int SS_rev_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 		D->mk5ver.UAtaVersion,
 		D->mk5ver.DriverVersion,
 		dbInfo);
+#else
+	v = snprintf(response, maxResponseLength, "!%s = 2 : Not implemented on this DTS;", fields[0]);
+#endif
 
 	return v;
 }
@@ -1558,6 +1563,139 @@ int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxRe
 #else
 	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
 #endif
+
+	return v;
+}
+
+int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+	std::map<MAC,bool> origMacList(D->macList);
+
+	if(nField < 2)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : At least one parameter required;", fields[0]);
+	}
+	else
+	{
+		int mc;
+
+		for(int p = 1; p < nField; p++)
+		{
+			for(mc = 0; mc < NUM_MAC_LIST_COMMANDS; mc++)
+			{
+				if(strcmp(fields[p], MacListCommandStrings[mc]) == 0)
+				{
+					break;
+				}
+			}
+			if(mc == NUM_MAC_LIST_COMMANDS)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 6 : Illegal MAC_list command '%s';", fields[0], fields[p]);
+				break;
+			}
+			else if(mc == MAC_LIST_FLUSH)
+			{
+				D->macList.clear();
+			}
+			else if(p >= nField - 1)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 6 : A MAC address is required for command '%s';", fields[0], fields[p]);
+				break;
+			}
+			else
+			{
+				MAC mac;
+				std::map<MAC,bool>::iterator it;
+
+				if(mac.parse(fields[p+1]) < 0)
+				{
+					v = snprintf(response, maxResponseLength, "!%s = 6 : Malformed MAC address %s;", fields[0], fields[p+1]);
+					break;
+				}
+
+				it = D->macList.find(mac);
+				
+				if(mc == MAC_LIST_ADD)
+				{
+					D->macList[mac] = true;	/* add and enable */
+				}
+				else if(mc == MAC_LIST_DELETE)
+				{
+					if(it != D->macList.end())
+					{
+						D->macList.erase(it);
+					}
+					else
+					{
+						v = snprintf(response, maxResponseLength, "!%s = 6 : MAC %s not in list;", fields[0], fields[p+1]);
+						break;
+					}
+				}
+				else if(mc == MAC_LIST_ENABLE)
+				{
+					if(it != D->macList.end())
+					{
+						it->second = true;
+					}
+					else
+					{
+						v = snprintf(response, maxResponseLength, "!%s = 6 : MAC %s not in list;", fields[0], fields[p+1]);
+						break;
+					}
+				}
+				else if(mc == MAC_LIST_DISABLE)
+				{
+					if(it != D->macList.end())
+					{
+						it->second = false;
+					}
+					else
+					{
+						v = snprintf(response, maxResponseLength, "!%s = 6 : MAC %s not in list;", fields[0], fields[p+1]);
+						break;
+					}
+				}
+				p++;	/* skip the MAC address and get to next arg */
+			}
+		}
+	}
+
+	if(D->macList.size() > MAX_MACLIST_LENGTH)
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 6 : Resultant MAC list too long (%d > %d);", fields[0], static_cast<int>(D->macList.size()), MAX_MACLIST_LENGTH);
+	}
+
+	if(v > 0)	/* something went wrong.  Undo all */
+	{
+		D->macList = origMacList;	
+	}
+	else
+	{
+		v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+	}
+
+	return v;
+}
+
+int MAC_list_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
+{
+	int v = 0;
+	std::map<MAC,bool>::const_iterator it;
+	char macStr[200];
+
+	v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
+
+	if(D->macList.size() > 0)
+	{
+		for(it = D->macList.begin(); it != D->macList.end(); it++)
+		{
+			it->first.toString(macStr);
+			v += snprintf(response+v, maxResponseLength-v, " : %s : %s", macStr, it->second ? "enabled" : "disabled");
+		}
+	}
+
+	v += snprintf(response+v, maxResponseLength-v, ";");
 
 	return v;
 }

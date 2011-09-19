@@ -75,4 +75,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 int VSN_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
 
+int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+int MAC_list_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength);
+
 #endif

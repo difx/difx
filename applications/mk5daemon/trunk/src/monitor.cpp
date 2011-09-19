@@ -166,6 +166,7 @@ static void reown_vfastr(Mk5Daemon *D, const char *path)
 {
 	char command[MAX_COMMAND_SIZE];
 	char message[DIFX_MESSAGE_LENGTH];
+	int v;
 
 	if(strcmp(D->hostName, "boom") != 0)
 	{
@@ -194,12 +195,20 @@ static void reown_vfastr(Mk5Daemon *D, const char *path)
 	snprintf(command, MAX_COMMAND_SIZE, "/bin/chgrp --recursive vlba_transient %s", path);
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
-	system(command);
+	v = system(command);
+	if(v < 0)
+	{
+		Logger_logData(D->log, "Execution failed.\n");
+	}
 
 	snprintf(command, MAX_COMMAND_SIZE, "/bin/chmod --recursive g+rw %s", path);
 	snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s\n", command);
 	Logger_logData(D->log, message);
-	system(command);
+	v = system(command);
+	if(v < 0)
+	{
+		Logger_logData(D->log, "Execution failed.\n");
+	}
 }
 
 static void umountdisk(Mk5Daemon *D)
