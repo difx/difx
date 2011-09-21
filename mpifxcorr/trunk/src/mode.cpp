@@ -584,6 +584,15 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
   if(nearestsample < -1 || (((nearestsample + fftchannels)/samplesperblock)*bytesperblocknumerator)/bytesperblockdenominator > datalengthbytes)
   {
     cerror << startl << "MODE error for datastream " << datastreamindex << " - trying to process data outside range - aborting!!! nearest sample was " << nearestsample << ", the max bytes should be " << datalengthbytes << ".  offsetseconds was " << offsetseconds << ", offsetns was " << offsetns << ", index was " << index << ", average delay was " << averagedelay << ", datasec was " << datasec << ", datans was " << datans << ", fftstartmicrosec was " << fftstartmicrosec << endl;
+    for(int i=0;i<numrecordedbands;i++)
+    {
+      status = vectorZero_cf32(fftoutputs[i][subloopindex], recordedbandchannels);
+      if(status != vecNoErr)
+        csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
+      status = vectorZero_cf32(conjfftoutputs[i][subloopindex], recordedbandchannels);
+      if(status != vecNoErr)
+        csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
+    }
     return 0.0;
   }
   if(nearestsample == -1)
@@ -595,8 +604,18 @@ float Mode::process(int index, int subloopindex)  //frac sample error, fringedel
     //need to unpack more data
     dataweight = unpack(nearestsample);
 
-  if(!(dataweight > 0.0))
+  if(!(dataweight > 0.0)) {
+    for(int i=0;i<numrecordedbands;i++)
+    {
+      status = vectorZero_cf32(fftoutputs[i][subloopindex], recordedbandchannels);
+      if(status != vecNoErr)
+        csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
+      status = vectorZero_cf32(conjfftoutputs[i][subloopindex], recordedbandchannels);
+      if(status != vecNoErr)
+        csevere << startl << "Error trying to zero fftoutputs when data is bad!" << endl;
+    }
     return 0.0;
+  }
 
   nearestsampletime = nearestsample*sampletime;
   fracsampleerror = float(starttime - nearestsampletime);
