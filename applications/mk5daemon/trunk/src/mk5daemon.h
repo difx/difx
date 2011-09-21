@@ -116,7 +116,7 @@ extern const char MacListCommandStrings[][10];
 class MAC
 {
 public:
-	long int address;
+	unsigned long long int address;
 public:
 	int parse(const char *str);
 	int toString(char *str) const;	/* returns number of characters written */

@@ -161,9 +161,9 @@ bool operator <(const MAC &mac1, const MAC &mac2)
 int MAC::parse(const char *str)
 {
 	unsigned int n, p;
-	long int a, b, c, d, e, f;
+	long long int a, b, c, d, e, f;
 
-	n = sscanf(str, "%lx.%lx.%lx.%lx.%lx.%lx%n", &a, &b, &c, &d, &e, &f, &p);
+	n = sscanf(str, "%Lx.%Lx.%Lx.%Lx.%Lx.%Lx%n", &a, &b, &c, &d, &e, &f, &p);
 
 	if(strlen(str) != p)
 	{
@@ -189,7 +189,7 @@ int MAC::toString(char *str) const
 {
 	int n;
 
-	n = sprintf(str, "%02lx.%02lx.%02lx.%02lx.%02lx.%02lx", 
+	n = sprintf(str, "%02Lx.%02Lx.%02Lx.%02Lx.%02Lx.%02Lx", 
 		(address >> 40) & 0xFF,
 		(address >> 32) & 0xFF,
 		(address >> 24) & 0xFF,

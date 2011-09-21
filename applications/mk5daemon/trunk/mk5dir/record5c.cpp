@@ -126,12 +126,12 @@ void siginthand(int j)
 	signal(SIGINT, oldsiginthand);
 }
 
-long int parseMAC(const char *str)
+long long int parseMAC(const char *str)
 {
 	unsigned int n, p;
-	long int a, b, c, d, e, f;
+	unsigned long long int a, b, c, d, e, f;
 
-	n = sscanf(str, "%lx:%lx:%lx:%lx:%lx:%lx%n", &a, &b, &c, &d, &e, &f, &p);
+	n = sscanf(str, "%Lx:%Lx:%Lx:%Lx:%Lx:%Lx%n", &a, &b, &c, &d, &e, &f, &p);
 
 	if(strlen(str) != p)
 	{
@@ -373,7 +373,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 	fflush(stdout);
 }
 
-static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByte,
+static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned long long stopByte,
 	struct Mark5DirectoryScanHeaderVer1 *p, struct Mark5DirectoryLegacyBodyVer1 *q)
 {
 	int frame, byteOffset;
@@ -436,7 +436,7 @@ static int decodeScan(SSHANDLE xlrDevice, long long startByte, long long stopByt
 	return 0;
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, long long maxBytes, double maxSeconds, const int *statsRange, const list<long int> &macList, int verbose)
+static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, unsigned long long maxBytes, double maxSeconds, const int *statsRange, const std::list<unsigned long long int> &macList, int verbose)
 {
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
@@ -450,8 +450,8 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	char vsn[XLR_LABEL_LENGTH+1];
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
-	long long ptr;	/* record pointer */
-	long long startByte;
+	unsigned long long ptr;	/* record pointer */
+	unsigned long long startByte;
 	struct Mark5DirectoryHeaderVer1 *dirHeader;
 	struct Mark5DirectoryScanHeaderVer1 *p;
 	struct Mark5DirectoryLegacyBodyVer1 *q;
@@ -588,7 +588,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	/* set MAC list here */
 	{
 		int i = 0;
-		for(list<long int>::const_iterator it = macList.begin(); it != macList.end(); it++)
+		for(std::list<unsigned long long int>::const_iterator it = macList.begin(); it != macList.end(); it++)
 		{
 			/* low word of MAC */
 			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i,   (*it >> 32) & 0xFFFFFFFF ) );
@@ -638,7 +638,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 			if(n % 1000 == 0)
 			{
 				WATCHDOG( ptr = XLRGetLength(xlrDevice) );
-				if(ptr - startByte >= maxBytes)
+				if(ptr >= startByte + maxBytes)
 				{
 					printf("Ending bytes\n");
 					fflush(stdout);
@@ -806,7 +806,7 @@ int main(int argc, char **argv)
 	double maxSeconds = 1.0e12;
 	char label[MaxLabelLength] = "";
 	int statsRange[XLR_MAXBINS];
-	std::list<long int> macList;
+	std::list<unsigned long long int> macList;
 
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
@@ -869,7 +869,7 @@ int main(int argc, char **argv)
 				else if(strcmp(argv[a], "-m") == 0 ||
 				   strcmp(argv[a], "--mac") == 0)
 				{
-					long int address = parseMAC(argv[a+1])
+					long long int address = parseMAC(argv[a+1]);
 					if(address < 0)
 					{
 						printf("Malformed MAC address (%s); use : separators\n", argv[a+1]);
