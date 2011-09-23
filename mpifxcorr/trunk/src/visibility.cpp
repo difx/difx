@@ -347,6 +347,8 @@ void Visibility::writedata()
         for(int k=0;k<config->getBNumPolProducts(currentconfigindex, i, j);k++) {
           if(binloop>1)
             baselineweights[i][j][b][k] = floatresults[resultindex]/(fftsperintegration*polyco->getBinWidth(b));
+          else if(config->pulsarBinOn(currentconfigindex))
+            baselineweights[i][j][b][k] = floatresults[resultindex]/(fftsperintegration*binweightdivisor[0]);
           else
             baselineweights[i][j][b][k] = floatresults[resultindex]/fftsperintegration;
           resultindex++;
@@ -1097,13 +1099,15 @@ void Visibility::changeConfig(int configindex)
     }
     //polyco->setTime(expermjd + (experseconds + currentstartseconds)/86400, double((experseconds + currentstartseconds)%86400)/86400.0);
     if(config->scrunchOutputOn(configindex)) {
+      //binweightdivisor is redundant except for scrunching now - should clean it up
       binweightdivisor = vectorAlloc_f32(1);
       binweightdivisor[0] = 0.0;
       for (int i=0;i<config->getNumPulsarBins(configindex);i++)
       {
-        binweightdivisor[0] += polyco->getBinWeightTimesWidth(i)*fftsperintegration;
+        //binweightdivisor[0] += polyco->getBinWeightTimesWidth(i)*fftsperintegration;
+        binweightdivisor[0] += polyco->getBinWeightTimesWidth(i);
       }
-      binweightdivisor[0] /= double(config->getNumPulsarBins(configindex));
+      //binweightdivisor[0] /= double(config->getNumPulsarBins(configindex));
     }
     else {
       binweightdivisor = vectorAlloc_f32(config->getNumPulsarBins(configindex));

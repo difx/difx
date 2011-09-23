@@ -637,6 +637,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   char papol;
   double offsetmins, blockns;
   f32 bweight;
+  f64 * binweights;
   Mode * m1, * m2;
   cf32 * vis1;
   cf32 * vis2;
@@ -653,6 +654,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
   binloop = 1;
   if(procslots[index].pulsarbin && !procslots[index].scrunchoutput)
     binloop = procslots[index].numpulsarbins;
+  if(procslots[index].pulsarbin)
+    binweights = currentpolyco->getBinWeights();
 
   //set up the mode objects that will do the station-based processing
   for(int j=0;j<numdatastreams;j++)
@@ -903,13 +906,15 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                     //if scrunching, add into temp accumulate space, otherwise add into normal space
                     if(procslots[index].scrunchoutput)
                     {
+                      bweight = scratchspace->dsweights[ds1index][fftsubloop]*scratchspace->dsweights[ds2index][fftsubloop]/(freqchannels);
                       destchan = xmacstart+outputoffset;
                       for(int l=0;l<xmacmullength;l++)
                       {
                         //the first zero (the source slot) is because we are limiting to one pulsar ephemeris for now
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
-                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][destchan].re += scratchspace->pulsarscratchspace[l].re;
-                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][destchan].im += scratchspace->pulsarscratchspace[l].im;
+                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l+outputoffset].re += scratchspace->pulsarscratchspace[l].re;
+                        scratchspace->pulsaraccumspace[f][x][j][0][p][destbin][l+outputoffset].im += scratchspace->pulsarscratchspace[l].im;
+                        scratchspace->baselineweight[f][0][j][p] += bweight*binweights[destbin];
                         destchan++;
                       }
                     }
@@ -921,7 +926,7 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
                       {
                         destbin = scratchspace->bins[fftsubloop][f][destchan];
                         //cindex = resultindex + (scratchspace->bins[freqindex][destchan]*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*(freqchannels+1) + destchan;
-                        cindex = resultindex + (destbin*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*xmacstridelength + destchan;
+                        cindex = resultindex + (destbin*config->getBNumPolProducts(procslots[index].configindex,j,localfreqindex) + p)*xmacstridelength + l + outputoffset;
                         scratchspace->threadcrosscorrs[cindex].re += scratchspace->pulsarscratchspace[l].re;
                         scratchspace->threadcrosscorrs[cindex].im += scratchspace->pulsarscratchspace[l].im;
                         scratchspace->baselineweight[f][destbin][j][p] += bweight;
@@ -970,8 +975,8 @@ void Core::processdata(int index, int threadid, int startblock, int numblocks, M
         modes[j]->zeroAutocorrelations();
     }
 
-    //finally, update the baselineweight if not doing any pulsar stuff or if scrunching
-    if(!procslots[index].pulsarbin || procslots[index].scrunchoutput)
+    //finally, update the baselineweight if not doing any pulsar stuff
+    if(!procslots[index].pulsarbin)
     {
       for(int fftsubloop=0;fftsubloop<config->getNumBufferedFFTs(procslots[index].configindex);fftsubloop++)
       {
@@ -1910,7 +1915,6 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
       {
         if(config->isFrequencyUsed(newconfigindex, f))
         {
-          freqchannels = config->getFNumChannels(f);
           pulsaraccumspace[f] = new cf32*****[config->getNumXmacStrides(newconfigindex, f)];
           for(int x=0;x<config->getNumXmacStrides(newconfigindex, f);x++)
           {
@@ -1930,13 +1934,13 @@ void Core::createPulsarVaryingSpace(cf32******* pulsaraccumspace, s32**** bins, 
                     pulsaraccumspace[f][x][i][s][j] = new cf32*[config->getNumPulsarBins(newconfigindex)];
                     for(int k=0;k<config->getNumPulsarBins(newconfigindex);k++)
                     {
-                      pulsaraccumspace[f][x][i][s][j][k] = vectorAlloc_cf32(freqchannels);
+                      pulsaraccumspace[f][x][i][s][j][k] = vectorAlloc_cf32(config->getXmacStrideLength(newconfigindex));
                       if(pulsaraccumspace[f][x][i][s][j][k] == NULL) {
                         cfatal << startl << "Could not allocate pulsar scratch space (out of memory?) - I must abort!" << endl;
                         MPI_Abort(MPI_COMM_WORLD, 1);
                       }
-                      threadbytes[threadid] += 8*freqchannels;
-                      status = vectorZero_cf32(pulsaraccumspace[f][x][i][s][j][k], freqchannels);
+                      threadbytes[threadid] += 8*config->getXmacStrideLength(newconfigindex);
+                      status = vectorZero_cf32(pulsaraccumspace[f][x][i][s][j][k], config->getXmacStrideLength(newconfigindex));
                       if(status != vecNoErr)
                         csevere << startl << "Error trying to zero pulsaraccumspace!!!" << endl;
                     }
