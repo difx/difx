@@ -54,7 +54,7 @@
  *      reg 0x0D, bit 0x80000000
  * 2. Why does packet length seem to have two registers:
  *      reg 0x06
- *      reg 0x0D, buts 15-0
+ *      reg 0x0D, bits 14-0
  * 3. Do the PSN bits really act independently, one per PSN mode?
  *      What if 0, 2 or 3 bits are set?
  */
@@ -64,7 +64,7 @@ const char version[] = "0.2 AMS-MSP edition";
 const char verdate[] = "20110925";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
-const unsigned int defaultPacketSize = 0;	/* 0x80000000 + 5008 for Mark5B */
+const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
 const int defaultPayloadOffset = 40;
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
@@ -97,7 +97,7 @@ int die = 0;
   /* 0x10 : set: Promiscuous mode; reset: filter on MAC */
 #define ETH_PACKET_LENGTH	0x0D
   /* 0x80000000 : set: enable packet length check FIXME: is this same as 0x10 for 0x02? */
-  /* 0x0000xxxx : bits 15-0 are packet length */
+  /* 0x0000xxxx : bits 14-0 are packet length */
 #define ETH_REJECT_PACKETS	0x11
 #define MAC_ADDR_BASE		0x12	/* Note: this is the start of a 2x16 block of addresses */
 
