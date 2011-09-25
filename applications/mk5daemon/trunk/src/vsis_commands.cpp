@@ -1167,6 +1167,8 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 	int v = 0;
 
 #ifdef HAVE_XLRAPI_H
+	char macFilterOptions[1000] = "";
+	char packetFilterOptions[1000] = "";
 	char command[1000];
 	char message[1200];
 
@@ -1218,22 +1220,49 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 					break;
 			}
 
-			snprintf(command, 1000, "record5c %c %s", 'A'+D->activeBank, scanLabel);
-			snprintf(message, 1200, "Executing into pipe: %s\n", command);
-			Logger_logData(D->log, message);
-			D->recordPipe = popen(command, "r");
-			if(!D->recordPipe)
+			if(D->packetSize == 0)
 			{
-				v = snprintf(response, maxResponseLength, "!%s = 4 : Execution of record5c failed;", fields[0]);
+				snprintf(packetFilterOptions, 1000, "--psnmode %d", D->psnMode);
 			}
 			else
 			{
-				setlinebuf(D->recordPipe);
-				D->recordState = RECORD_ON;
-				D->recordT0 = time(0);
-				D->nScan[D->activeBank]++;
-				strcpy(D->scanLabel[D->activeBank], scanLabel);
-				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+				snprintf(packetFilterOptions, 1000, "--psnmode %d --packetsize %d", D->psnMode, D->packetSize);
+			}
+			p = 0;
+			for(std::map<MAC,bool>::const_iterator it = D->macList.begin(); it != D->macList.end(); it++)
+			{
+				if(it->second)	/* if MAC is enabled */
+				{
+					char macStr[100];
+
+					it->first.toString(macStr);
+					p += snprintf(macFilterOptions+p, 1000-p, "--mac %s ", macStr);
+				}
+			}
+
+			if(p == 0 && D->macList.size() > 0)	/* filtering on, but all disabled */
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 4 : MAC filtering requested but all addresses are disabled;", fields[0]);
+			}
+			else
+			{
+				snprintf(command, 1000, "record5c %s %s %c %s", macFilterOptions, packetFilterOptions, 'A'+D->activeBank, scanLabel);
+				snprintf(message, 1200, "Executing into pipe: %s\n", command);
+				Logger_logData(D->log, message);
+				D->recordPipe = popen(command, "r");
+				if(!D->recordPipe)
+				{
+					v = snprintf(response, maxResponseLength, "!%s = 4 : Execution of record5c failed;", fields[0]);
+				}
+				else
+				{
+					setlinebuf(D->recordPipe);
+					D->recordState = RECORD_ON;
+					D->recordT0 = time(0);
+					D->nScan[D->activeBank]++;
+					strcpy(D->scanLabel[D->activeBank], scanLabel);
+					v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+				}
 			}
 		}
 	}

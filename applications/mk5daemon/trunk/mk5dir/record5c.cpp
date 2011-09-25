@@ -47,17 +47,29 @@
 #include "watchdog.h"
 #include "../config.h"
 
+/* Questions for Chet / Conduant:
+ *
+ * 1. Why does packet length enable seem to have two registers:
+ *      reg 0x02, bit 0x00000010
+ *      reg 0x0D, bit 0x80000000
+ * 2. Why does packet length seem to have two registers:
+ *      reg 0x06
+ *      reg 0x0D, buts 15-0
+ * 3. Do the PSN bits really act independently, one per PSN mode?
+ *      What if 0, 2 or 3 bits are set?
+ */
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.1";
-const char verdate[] = "20110810";
+const char version[] = "0.2 AMS-MSP edition";
+const char verdate[] = "20110925";
 
-const int defaultPacketSize = 5008;
+const psnMask[3] = { 0x01, 0x02, 0x04 };
+const unsigned int defaultPacketSize = 0;	/* 0x80000000 + 5008 for Mark5B */
 const int defaultPayloadOffset = 40;
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
 const int defaultPSNOffset = 0;
-const int defaultMACFilterControl = 1;
+const int defaultM5CFilterControl = psnMask[defaultPSNMode];
 const unsigned int defaultStreamstorChannel = 28;
 const int defaultStatsRange[] = { 75000, 150000, 300000, 600000, 1200000, 2400000, 4800000, -1 };
 const int MaxMacAddresses = 16;
@@ -71,6 +83,10 @@ sighandler_t oldsiginthand;
 int die = 0;
 
 #define MAC_FLTR_CTRL		0x02
+  /* 0x01 : set: PSN mode 0: serial number checking disabled */
+  /* 0x02 : set: PSN mode 1: reorder, replace missing packets */
+  /* 0x04 : set: PSN mode 2: don't replace missing packets; respect data invalid flag */
+  /* 0x10 : set: Packet length filtering enabled */
 #define DATA_PAYLD_OFFSET 	0x03
 #define DATA_FRAME_OFFSET	0x04
 #define PSN_OFFSET		0x05
@@ -78,12 +94,16 @@ int die = 0;
 #define FILL_PATTERN_ADDR	0x07
 #define TOTAL_PACKETS		0x08
 #define ETH_FILTER		0x0C
+  /* 0x10 : set: Promiscuous mode; reset: filter on MAC */
+#define ETH_PACKET_LENGTH	0x0D
+  /* 0x80000000 : set: enable packet length check FIXME: is this same as 0x10 for 0x02? */
+  /* 0x0000xxxx : bits 15-0 are packet length */
 #define ETH_REJECT_PACKETS	0x11
 #define MAC_ADDR_BASE		0x12	/* Note: this is the start of a 2x16 block of addresses */
 
 #define N_BANK			2
 
-/* Note that the text going to stdout is interpreted by other code, so change with caution */
+/* NOTE to developers: text going to stdout is interpreted by other code, so change with caution */
 
 static void usage(const char *pgm)
 {
@@ -99,18 +119,21 @@ static void usage(const char *pgm)
 	printf("  -s <s>     Set packet size to <s> [default %d]\n\n", defaultPacketSize);
 	printf("  --dataframeoffset <o>\n");
 	printf("  -d <o>     Set data frame offset to <o> [default %d]\n\n", defaultDataFrameOffset);
-	printf("  --payloadoffset <o>\n");
-	printf("  -p <o>     Set payload offset to <o> [default %d]\n\n", defaultPayloadOffset);
+	printf("  --psnmode <m>\n");
+	printf("  -m <m>     Set PSN mode to <m> [default %d]\n\n", defaultPSNMode);
 	printf("  --psnoffset <o>\n");
 	printf("  -o <o>     Set PSN offset to <o> [default %d]\n\n", defaultPSNOffset);
+	printf("  --payloadoffset <o>\n");
+	printf("  -p <o>     Set payload offset to <o> [default %d]\n\n", defaultPayloadOffset);
 	printf("  --filtercontrol <f>\n");
-	printf("  -f <f>     Set MAC filter control to <f> [default %d]\n\n", defaultMACFilterControl);
+	printf("  -f <f>     Set MAC filter control to <f> [default %d]\n", defaultM5CFilterControl);
+	printf("             Note: this parameter is best left unset.\n\n");
 	printf("  --bytes <b>\n");
 	printf("  -b <b>     Stop recording after <b> bytes written\n\n");
 	printf("  --seconds <s>\n");
 	printf("  -t <s>     Stop recording after <s> seconds passed\n\n");
 	printf("  --mac <MAC>\n");
-	printf("  -m <MAC>   Accept data from supplied MAC address (up to 16\n\n");
+	printf("  -M <MAC>   Accept data from supplied MAC address (up to 16\n\n");
 	printf("  --statsrange <list>\n");
 	printf("  -r <list>  Set Mark5 statistics histogram [default %d,%d,%d,%d,%d,%d,%d]\n\n",
 		defaultStatsRange[0], defaultStatsRange[1], defaultStatsRange[2], defaultStatsRange[3],
@@ -329,7 +352,7 @@ static int decode5B(SSHANDLE xlrDevice, unsigned long long pointer, int framesTo
 	return returnValue;
 }
 
-static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
+static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5Status *mk5status)
 {
 	const char *vsn = bankStat->Label;
 	const char noVSN[] = "none";
@@ -352,6 +375,18 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 		vsn = noVSN;
 	}
 
+	if(strcmp(vsn, noVSN) == 0)
+	{
+		if(bank == BANK_A)
+		{
+			strncpy(mk5status.vsnA, vsn, 8);
+		}
+		else if(bank == BANK_B)
+		{
+			strncpy(mk5status.vsnB, vsn, 8);
+		}
+	}
+
 	printf("Bank %c %s %d %d %d %d %d %d %d %d %Ld %Ld\n",
 		'A' + bank,
 		vsn,
@@ -364,11 +399,7 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat)
 		bankStat->ErrorCode,
 		bankStat->ErrorData,
 		bankStat->Length,
-#if SDKVERSION >= 9
 		bankStat->TotalCapacityBytes
-#else
-		bankStat->TotalCapacity*512LL
-#endif
 		);
 	fflush(stdout);
 }
@@ -436,7 +467,7 @@ static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned
 	return 0;
 }
 
-static int record(int bank, const char *label, int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int macFilterControl, unsigned long long maxBytes, double maxSeconds, const int *statsRange, const std::list<unsigned long long int> &macList, int verbose)
+static int record(int bank, const char *label, unsigned int packetSize, int payloadOffset, int dataFrameOffset, int psnOffset, int psnMode, int m5cFilterControl, unsigned long long maxBytes, double maxSeconds, const int *statsRange, const std::list<unsigned long long int> &macList, DifxMessageMk5Status *mk5status, int verbose)
 {
 	unsigned int channel = defaultStreamstorChannel;
 	SSHANDLE xlrDevice;
@@ -462,6 +493,25 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	struct timezone tz;
 	double t0, t=0, t_ref, t_next_ref, rate;
 	long long p_ref, p_next_ref;
+	UINT32 nReject = 0;
+
+	if(bank == BANK_A)
+	{
+		mk5status->activeBank = 'A';
+	}
+	else if(bank == BANK_B)
+	{
+		mk5status->activeBank = 'B';
+	}
+	else
+	{
+		printf("Error: only bank A = %d and bank B = %d supported!\n", BANK_A, BANK_B);
+
+		return -1;
+	}
+
+	mk5status->state = MARK5_STATE_OPENING;
+	difxMessageSendMark5Status(mk5status);
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -509,8 +559,11 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	for(int b = 0; b < N_BANK; b++)
 	{
 		WATCHDOGTEST( XLRGetBankStatus(xlrDevice, b, stat+b) );
-		printBankStat(b, stat+b);
+		printBankStat(b, stat+b, mk5status);
 	}
+
+	mk5status->state = MARK5_STATE_OPEN;
+	difxMessageSendMark5Status(mk5status);
 
 	startByte = dir.Length;
 	printf("Used %Ld %Ld\n", startByte, 0LL);	/* FIXME: 0-> disk size */
@@ -564,6 +617,9 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		}
 	}
 
+	mk5status->scanNumber = len/128 + 1;
+	snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", label);
+
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
 		driveStats[b].range = statsRange[b];
@@ -583,7 +639,8 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, DATA_FRAME_OFFSET, dataFrameOffset) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, BYTE_LENGTH, packetSize) );
 	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, PSN_OFFSET, psnOffset) );
-	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, macFilterControl) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_FLTR_CTRL, m5cFilterControl) );
+	WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, ETH_PACKET_LENGTH, packetSize) );
 
 	/* set MAC list here */
 	{
@@ -606,6 +663,7 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 		}
 	}
 
+	mk5status->state = MARK5_STATE_RECORD;
 	printf("Record %s %Ld\n", label, ptr);
 	fflush(stdout);
 	if(startByte == 0LL)
@@ -645,12 +703,16 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 					die = 1;
 				}
 
-
 				WATCHDOG( xlrRC = XLRGetDeviceStatus(xlrDevice, &devStatus) );
 
 				rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
 
-				printf("Pointer %Ld %4.2f\n", ptr, rate);
+				/* FIXME: not tested.  I think this reads number of rejected packets, but I am not sure. */
+				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, ETH_REJECT_PACKETS, &nReject) );
+
+				printf("Pointer %Ld %4.2f %ud\n", ptr, rate, nReject);
+				mk5status->position = ptr;
+				mk5status->rate = rate;
 				fflush(stdout);
 
 				if(!devStatus.Recording)
@@ -698,9 +760,10 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 					if(memcmp(stat+b, &bankStat, sizeof(S_BANKSTATUS)) != 0)
 					{
 						memcpy(stat+b, &bankStat, sizeof(S_BANKSTATUS));
-						printBankStat(b, &bankStat);
+						printBankStat(b, &bankStat, mk5status);
 					}
 				}
+				difxMessageSendMark5Status(&mk5status);
 			}
 		}
 	}
@@ -792,21 +855,24 @@ static int record(int bank, const char *label, int packetSize, int payloadOffset
 
 int main(int argc, char **argv)
 {
+	DifxMessageMk5Status mk5status;
 	int a, v, i;
 	int bank = -1;
 	int verbose = 0;
-	int packetSize = defaultPacketSize;
+	unsigned packetSize = defaultPacketSize;
 	int dataFrameOffset = defaultDataFrameOffset;
 	int payloadOffset = defaultPayloadOffset;
 	int psnOffset = defaultPSNOffset;
 	int psnMode = defaultPSNMode;
-	int macFilterControl = defaultMACFilterControl;
+	int m5cFilterControl = defaultM5CFilterControl;
 	int retval = EXIT_SUCCESS;
 	long long maxBytes = 1LL<<60;
 	double maxSeconds = 1.0e12;
 	char label[MaxLabelLength] = "";
 	int statsRange[XLR_MAXBINS];
 	std::list<unsigned long long int> macList;
+
+	memset((char *)(&mk5status), 0, sizeof(mk5status));
 
 	for(int b = 0; b < XLR_MAXBINS; b++)
 	{
@@ -834,7 +900,8 @@ int main(int argc, char **argv)
 				if(strcmp(argv[a], "-s") == 0 ||
 				   strcmp(argv[a], "--packetsize") == 0)
 				{
-					packetSize = atoi(argv[a+1]);
+					packetSize = 0x8000000 + atoi(argv[a+1]);
+					m5cFilterControl |= 0x10;	/* enable packet length filter */
 				}
 				else if(strcmp(argv[a], "-d") == 0 ||
 				   strcmp(argv[a], "--dataframeoffset") == 0)
@@ -855,18 +922,26 @@ int main(int argc, char **argv)
 				   strcmp(argv[a], "--psnmode") == 0)
 				{
 					psnMode = atoi(argv[a+1]);
+					if(psnMode < 0 || psnMode > 2)
+					{
+						printf("Illegal PSN mode.  must be 0, 1 or 2\n");
+
+						return EXIT_FAILURE;
+					}
+					m5cFilterControl &= ~0x07;
+					m5cFilterControl |= psnMask[psnMode];
 				}
 				else if(strcmp(argv[a], "-f") == 0 ||
 				   strcmp(argv[a], "--filtercontrol") == 0)
 				{
-					macFilterControl = atoi(argv[a+1]);
+					m5cFilterControl = atoi(argv[a+1]);
 				}
 				else if(strcmp(argv[a], "-b") == 0 ||
 				   strcmp(argv[a], "--bytes") == 0)
 				{
 					maxBytes = atoll(argv[a+1]);
 				}
-				else if(strcmp(argv[a], "-m") == 0 ||
+				else if(strcmp(argv[a], "-M") == 0 ||
 				   strcmp(argv[a], "--mac") == 0)
 				{
 					long long int address = parseMAC(argv[a+1]);
@@ -877,6 +952,8 @@ int main(int argc, char **argv)
 						return EXIT_FAILURE;
 					}
 					macList.push_back(address);
+					/* if a single MAC address is supplied, assume filtering */
+					m5cFilterControl |= 0x10;
 				}
 				else if(strcmp(argv[a], "-t") == 0 ||
 				   strcmp(argv[a], "--seconds") == 0)
@@ -971,8 +1048,9 @@ int main(int argc, char **argv)
 
 	/* 60 seconds should be enough to complete any XLR command */
 	setWatchdogTimeout(60);
-
 	setWatchdogVerbosity(verbose);
+
+	difxMessageInit(-1, program);
 
 	/* *********** */
 
@@ -986,7 +1064,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, macFilterControl, maxBytes, maxSeconds, statsRange, macList, verbose);
+		v = record(bank, label, packetSize, payloadOffset, dataFrameOffset, psnOffset, psnMode, m5cFilterControl, maxBytes, maxSeconds, statsRange, macList, &mk5status, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)
@@ -998,6 +1076,20 @@ int main(int argc, char **argv)
 
 			retval = EXIT_FAILURE;
 		}
+
+		if(retval == EXIT_FAILURE)
+		{
+			mk5status.state = MARK5_STATE_ERROR;
+		}
+		else
+		{
+			mk5status.state = MARK5_STATE_IDLE;
+		}
+		mk5status.scanName[0] = 0;
+		mk5status.rate = 0;
+		mk5status.position = 0;
+		mk5status.activeBank = ' ';
+		difxMessageSendMark5Status(&mk5status);
 	}
 
 	unlockMark5();

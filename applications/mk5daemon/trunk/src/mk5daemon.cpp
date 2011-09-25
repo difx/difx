@@ -56,7 +56,7 @@ const char difxUser[] = "difx";
 const int maxIdle = 25;		/* if streamstor card is idle this long */
 				/* set current process to NONE */
 
-const int defaultPacketSize = 5008;
+const int defaultPacketSize = 0;
 const int defaultPayloadOffset = 40;
 const int defaultDataFrameOffset = 0;
 const int defaultPSNMode = 0;
