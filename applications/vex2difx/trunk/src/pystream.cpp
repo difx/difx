@@ -320,9 +320,7 @@ int pystream::writeLoifTable(const VexData *V)
                         if(m == 0) {
                             init_channels = F.channels.size();
                         } else if( init_channels != F.channels.size() ) {
-                            cerr << "number of channels deviates from init" << init_channels
-                                 << " vs " << F.channels.size() << endl;
-
+                            cerr << "number of channels from " << init_channels << " initially to " << F.channels.size() << " which is currently not supported." << endl; 
                             exit(EXIT_FAILURE);
                         }
 
