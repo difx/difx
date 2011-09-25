@@ -110,6 +110,7 @@ enum Mk5State
 	MARK5_STATE_TESTWRITE,
 	MARK5_STATE_TESTREAD,
 	MARK5_STATE_BOOTING,
+	MARK5_STATE_RECORDING,
 	NUM_MARK5_STATES	/* this needs to be the last line of enum */
 };
 
