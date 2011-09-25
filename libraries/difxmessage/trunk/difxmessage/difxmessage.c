@@ -59,7 +59,7 @@ const char Mk5StateStrings[][24] =
 	"Test",
 	"TestWrite",
 	"TestRead",
-	"Booting".
+	"Booting",
 	"Recording"
 };
 
