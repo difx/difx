@@ -63,7 +63,7 @@ const char author[]  = "Walter Brisken";
 const char version[] = "0.2 AMS-MSP edition";
 const char verdate[] = "20110925";
 
-const psnMask[3] = { 0x01, 0x02, 0x04 };
+const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 + 5008 for Mark5B */
 const int defaultPayloadOffset = 40;
 const int defaultDataFrameOffset = 0;
@@ -379,11 +379,11 @@ static void printBankStat(int bank, const S_BANKSTATUS *bankStat, DifxMessageMk5
 	{
 		if(bank == BANK_A)
 		{
-			strncpy(mk5status.vsnA, vsn, 8);
+			strncpy(mk5status->vsnA, vsn, 8);
 		}
 		else if(bank == BANK_B)
 		{
-			strncpy(mk5status.vsnB, vsn, 8);
+			strncpy(mk5status->vsnB, vsn, 8);
 		}
 	}
 
@@ -763,7 +763,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 						printBankStat(b, &bankStat, mk5status);
 					}
 				}
-				difxMessageSendMark5Status(&mk5status);
+				difxMessageSendMark5Status(mk5status);
 			}
 		}
 	}

@@ -1171,6 +1171,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 	char packetFilterOptions[1000] = "";
 	char command[1000];
 	char message[1200];
+	int p;
 
 	if(nField < 2)
 	{
@@ -1228,6 +1229,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			{
 				snprintf(packetFilterOptions, 1000, "--psnmode %d --packetsize %d", D->psnMode, D->packetSize);
 			}
+
 			p = 0;
 			for(std::map<MAC,bool>::const_iterator it = D->macList.begin(); it != D->macList.end(); it++)
 			{
