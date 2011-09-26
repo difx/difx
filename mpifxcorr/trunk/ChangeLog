@@ -1,6 +1,10 @@
 Version 2.0.2
 ~~~~~~~~~~~~~
 * Add collection of drive statistics to native Mark5
+* guardns was incorrectly (overzealously) calculated in mpifxcorr
+* "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes" bug fixed
+* Low weight reads could result in uninitialized memory
+* Streamstor XLRRead() bug work-around installed several places (read at position 0 before reading at position > 0)
 
 Version 2.0.1, 2011 June 12
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
