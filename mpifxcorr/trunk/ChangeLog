@@ -1,5 +1,7 @@
 Version 2.0.2
 ~~~~~~~~~~~~~
+* Correctly scale LBA format visibilities, reducing the size of ACCOR corrections
+* Fix bug when pulsar binning/gating and xmaclength > nfftchan
 * Add collection of drive statistics to native Mark5
 * guardns was incorrectly (overzealously) calculated in mpifxcorr
 * "Mk5DataStream::calculateControlParams: bufferindex>=bufferbytes" bug fixed
