@@ -439,8 +439,13 @@ void Visibility::writedata()
             {
               //We want normalised correlation coefficients, so scale by number of contributing
               //samples rather than datastream tsys and decorrelation correction
-              if(baselineweights[i][j][b][k] > 0.0)
+              if(baselineweights[i][j][b][k] > 0.0) {
                 scale = 1.0/(baselineweights[i][j][b][k]*meansubintsperintegration*((float)(config->getBlocksPerSend(currentconfigindex)*2*freqchannels*config->getFChannelsToAverage(freqindex))));
+                if(config->getDataFormat(currentconfigindex, ds1) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds1) == Configuration::LBAVSOP)
+                  scale *= 4.0;
+                if(config->getDataFormat(currentconfigindex, ds2) == Configuration::LBASTD || config->getDataFormat(currentconfigindex, ds2) == Configuration::LBAVSOP)
+                  scale *= 4.0;
+              }
               else
                 scale = 0.0;
             }
