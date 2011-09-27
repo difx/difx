@@ -49,18 +49,15 @@
 
 /* Questions for Chet / Conduant:
  *
- * 1. Why does packet length enable seem to have two registers:
- *      reg 0x02, bit 0x00000010
- *      reg 0x0D, bit 0x80000000
- * 2. Why does packet length seem to have two registers:
+ * 1. Why does packet length seem to have two registers:
  *      reg 0x06
- *      reg 0x0D, bits 14-0
- * 3. Do the PSN bits really act independently, one per PSN mode?
+ *      reg 0x0D, bits 15-0
+ * 2. Do the PSN bits really act independently, one per PSN mode?
  *      What if 0, 2 or 3 bits are set?
  */
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.2 AMS-MSP edition";
+const char version[] = "0.2";
 const char verdate[] = "20110925";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
@@ -96,10 +93,11 @@ int die = 0;
 #define ETH_FILTER		0x0C
   /* 0x10 : set: Promiscuous mode; reset: filter on MAC */
 #define ETH_PACKET_LENGTH	0x0D
-  /* 0x80000000 : set: enable packet length check FIXME: is this same as 0x10 for 0x02? */
-  /* 0x0000xxxx : bits 14-0 are packet length */
+  /* 0x0000xxxx : bits 15-0 are packet length */
 #define ETH_REJECT_PACKETS	0x11
 #define MAC_ADDR_BASE		0x12	/* Note: this is the start of a 2x16 block of addresses */
+  /* Even addresses are low portion of address, odd addresses are high portion of addresses */
+  /* bit 0x80000000 of the high portion enables checking. */
 
 #define N_BANK			2
 
@@ -648,10 +646,10 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 		for(std::list<unsigned long long int>::const_iterator it = macList.begin(); it != macList.end(); it++)
 		{
 			/* low word of MAC */
-			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i,   (*it >> 32) & 0xFFFFFFFF ) );
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i, (*it) & 0xFFFFFFFF ) );
 
 			/* high word of MAC */
-			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i+1, (*it >>  0) & 0xFFFFFFFF ) );
+			WATCHDOGTEST( XLRWriteDBReg32(xlrDevice, MAC_ADDR_BASE + 2*i+1, ((*it >> 32) & 0xFFFFFFFF) | 0x80000000) );
 			
 			i++;
 		}

@@ -702,7 +702,7 @@ int main(int argc, char **argv)
 
 		readSocks = select(highSock+1, &socks, 0, 0, &timeout);
 
-		if(readSocks < 0)
+		if(readSocks < 0 || *signalDie)
 		{
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Select returned %d\n", readSocks);
 			Logger_logData(D->log, message);
