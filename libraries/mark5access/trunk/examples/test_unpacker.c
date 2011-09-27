@@ -32,7 +32,7 @@
 #include <string.h>
 #include "../mark5access/mark5_stream.h"
 
-static int usage(const char *pgm)
+static void usage(const char *pgm)
 {
 	printf("Usage : %s <format> [<n> [<offset>] ]\n", pgm);
 	printf("\n  <format> is something like VLBA1_4-128-8-2\n");

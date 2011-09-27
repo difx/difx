@@ -39,7 +39,7 @@
 const char program[] = "zerocorr";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110730";
+const char verdate[] = "20110926";
 
 const int MaxLineLen = 256;
 
@@ -640,6 +640,8 @@ static int zerocorr(const char *confFile, int verbose)
 	}
 
 	deleteBaseline(B);
+
+	signal(SIGINT, oldsiginthand);
 
 	return EXIT_SUCCESS;
 }
