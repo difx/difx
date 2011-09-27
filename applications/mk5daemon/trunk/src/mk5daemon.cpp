@@ -704,10 +704,12 @@ int main(int argc, char **argv)
 
 		if(readSocks < 0 || *signalDie)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "Select returned %d\n", readSocks);
+			snprintf(message, DIFX_MESSAGE_LENGTH, "select returned %d\n", readSocks);
 			Logger_logData(D->log, message);
 
 			D->dieNow = 1;
+
+			break;
 		}
 
 		if(readSocks == 0)
@@ -878,22 +880,32 @@ int main(int argc, char **argv)
 			{
 				message[n] = 0;
 				v = difxMessageParse(&G, message);
-				switch(G.type)
+				if(v == 0)
 				{
-				case DIFX_MESSAGE_MARK5STATUS:
-					handleMk5Status(D, &G);
-					break;
-				case DIFX_MESSAGE_COMMAND:
-					handleCommand(D, &G);
-					break;
-				case DIFX_MESSAGE_START:
-					Mk5Daemon_startMpifxcorr(D, &G);
-					break;
-				case DIFX_MESSAGE_CONDITION:
-					handleCondition(D, &G);
-					break;
-				default:
-					break;
+					switch(G.type)
+					{
+					case DIFX_MESSAGE_MARK5STATUS:
+						handleMk5Status(D, &G);
+						break;
+					case DIFX_MESSAGE_COMMAND:
+						handleCommand(D, &G);
+						break;
+					case DIFX_MESSAGE_START:
+						Mk5Daemon_startMpifxcorr(D, &G);
+						break;
+					case DIFX_MESSAGE_CONDITION:
+						handleCondition(D, &G);
+						break;
+					default:
+						break;
+					}
+				}
+				else
+				{
+					char message2[DIFX_MESSAGE_LENGTH+100];
+
+					snprintf(message2, DIFX_MESSAGE_LENGTH+100, "Error: Unparsable message received: %s\n", message);
+					Logger_logData(D->log, message2);
 				}
 			}
 		}
