@@ -1144,12 +1144,9 @@ static void populateBaselineTable(DifxInput *D, const CorrParams *P, const CorrS
 					npol = 0;
 					for(int u = 0; u < n1; u++)
 					{
-						if(corrSetup->doPolar)
-						{
-							bl->bandA[nFreq][npol] = a1c[u];
-							bl->bandB[nFreq][npol] = a1c[u];
-							npol++;
-						}
+						bl->bandA[nFreq][npol] = a1c[u];
+						bl->bandB[nFreq][npol] = a1c[u];
+						npol++;
 					}
 					bl->nPolProd[nFreq] = npol;
 
