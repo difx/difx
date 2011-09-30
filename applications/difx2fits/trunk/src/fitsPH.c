@@ -555,16 +555,16 @@ static int parseDifxPulseCal(const char *line,
 	const DifxFreq *df;
 	const DifxDatastream *dd;
 	int np, nb, nt, ns;
-	int nRecBand, nIF, recBand, nRecTone;
+	int nRecBand, nIF, difxPol, nRecTone;
 	double toneFreq[array_MAX_TONES];
 	int IFs[array_MAX_BANDS];
-	int n, p, i, k;
+	int n, p, i, k, v;
 	int tone;
 	int toneIndex;
-	int pol, recFreq;
+	int band, pol, bandpol, recFreq;
 	int freqId;
 	int nontiny = 0;
-	double A;
+	int A;
 	float B, C;
 	double mjd;
 	char antName[DIFXIO_NAME_LENGTH];
@@ -660,35 +660,39 @@ static int parseDifxPulseCal(const char *line,
 	/* Read in pulse cal information */
 	for(pol = 0; pol < D->nPol; pol++)
 	{
-	//pol 0 is the polarisation of first recorded band of the first recorded datastream of the first config
-#warning "FIXME: double-check there's no possibility of pols getting swapped"
-		/* Here we procede with confidence that there are the correct number of recFreqs and tones within each */
-		for(recFreq = 0; recFreq < dd->nRecFreq; recFreq++)
+		for(band = 0; band < dd->nRecBand; band++)
 		{
-			if(recFreq >= nBand)
+			v = DifxConfigRecBand2FreqPol(D, *configId, dd->antennaId, band, &recFreq, &bandpol);
+			if(v < 0)
 			{
-				printf("Warning: parseDifxPulseCal: trying to read too many bands in pol %d recFreq %d\n", pol, recFreq);
-				
-				break;
+				//band unused for this antenna
+				continue;
 			}
+			if(pol != bandpol)
+			{
+				//band doesn't match
+				continue;
+			}
+			//printf("recFreq=%d pol=%d\n", recFreq, pol);
 
 			freqId = dd->recFreqId[recFreq];
 			df = D->freq + freqId;
 
-			/* set up pcal information for this recFreq */
-			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, array_MAX_TONES);
+			
+			/* set up pcal information for this recFreq (only up to nRecTones)*/
+			nRecTone = DifxDatastreamGetPhasecalTones(toneFreq, dd, df, nt);
 
 			if(nRecTone > 0)
 			{
 				k = 0; /* tone index within freqs, pulseCalRe and pulseCalIm */
-				for(tone = 0; tone < nt; tone++)
+				for(tone = 0; tone < nt; tone++)/*nt is taken from line header and is max number of tones*/
 				{
-					n = sscanf(line, "%d%lf%f%f%n", &recBand, &A, &B, &C, &p);
+					n = sscanf(line, "%d%d%f%f%n", &difxPol, &A, &B, &C, &p);
 					if(n < 4)
 					{
 						printf("Warning: parseDifxPulseCal: Error scanning line\n");
 						
-						return -6;
+						return -8;
 					}
 					line += p;
 
@@ -696,6 +700,12 @@ static int parseDifxPulseCal(const char *line,
 					if(toneFreq[tone] < 0.0)
 					{
 						continue;
+					}
+
+					/*Check that frequency is correct*/
+					if(A != (int)(toneFreq[tone]+0.5))
+					{
+						printf("\nWarning: parseDifxPulseCal: tone frequency in PCAL file %d doesn't match expected %g for antenna %d, mjd %12.6f\n", A, toneFreq[tone], dd->antennaId, mjd);
 					}
 
 					if(k >= nTone)
@@ -715,7 +725,14 @@ static int parseDifxPulseCal(const char *line,
 					{
 						for(i = 0; i < nIF; i++)
 						{
-							toneIndex = IFs[i]*nTone + k;
+							if(df->sideband == 'U')
+							{
+							      toneIndex = IFs[i]*nTone + k;
+							}
+							else
+							{
+								toneIndex = (IFs[i]+1)*nTone - k - 1;/*make LSB ascend in frequency*/
+							}
 							freqs[pol][toneIndex] = toneFreq[tone]*1.0e6;	/* MHz to Hz */
 							if(fabs(B) > pcaltiny || fabs(C) > pcaltiny)
 							{
@@ -735,7 +752,7 @@ static int parseDifxPulseCal(const char *line,
 					}
 					tooFew[pol][recFreq]++;
 					
-					break;
+					continue;
 				}
 			}
 		}
@@ -1076,7 +1093,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							s = time;	/* time of first pcal record */
 							e = scan->mjdEnd - (int)(D->mjdStart);
 
-							nWindow = (int)((e - s)/(avgSeconds/86400.0) + 0.5);
+							nWindow = (int)((e - s + (0.5*D->config[configId].tInt/86400.))/(avgSeconds/86400.0) + 0.5);
 
 							if(nWindow < 1)
 							{
