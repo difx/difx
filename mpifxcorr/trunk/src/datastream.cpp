@@ -292,6 +292,7 @@ void DataStream::execute()
 int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 {
   int firstoffsetns, lastoffsetns, bufferindex, perr, blockbytes, segoffbytes, segoffns, srcindex;
+  long long nsdifference, validns;
   double delayus1, delayus2;
   bool foundok;
 
@@ -352,13 +353,16 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     return 0; //note exit here!!!!
   }
 
-  if(scan == bufferinfo[atsegment].scan && offsetsec < bufferinfo[atsegment].scanseconds - 1) //coarse test to see if its all bad
+  if(scan == bufferinfo[atsegment].scan && offsetsec < bufferinfo[atsegment].scanseconds - 3) //coarse test to see if its all bad
   {
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
   }
 
-  while((scan > bufferinfo[(atsegment+1)%numdatasegments].scan || (scan == bufferinfo[(atsegment+1)%numdatasegments].scan && (offsetsec > bufferinfo[(atsegment+1)%numdatasegments].scanseconds + 1 || ((offsetsec - bufferinfo[(atsegment+1)%numdatasegments].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[(atsegment+1)%numdatasegments].scanns) >= 0)))) && (keepreading || (atsegment != lastvalidsegment)))
+  nsdifference = ((long long)(offsetsec - bufferinfo[atsegment].scanseconds))*1000000000 + firstoffsetns - bufferinfo[atsegment].scanns;
+  validns = (((long long)(bufferinfo[atsegment].validbytes))*bufferinfo[atsegment].nsinc)/readbytes;
+  while((scan > bufferinfo[atsegment].scan || (scan == bufferinfo[atsegment].scan && nsdifference >= validns)) && (keepreading || (atsegment != lastvalidsegment)))
+  //while((scan > bufferinfo[(atsegment+1)%numdatasegments].scan || (scan == bufferinfo[(atsegment+1)%numdatasegments].scan && (offsetsec > bufferinfo[(atsegment+1)%numdatasegments].scanseconds + 1 || ((offsetsec - bufferinfo[(atsegment+1)%numdatasegments].scanseconds)*1000000000 + (firstoffsetns - bufferinfo[(atsegment+1)%numdatasegments].scanns) >= 0)))) && (keepreading || (atsegment != lastvalidsegment)))
   {
     //cout << "Going to wait since next segment has scan " << bufferinfo[(atsegment+1)%numdatasegments].scan << ", sec " << bufferinfo[(atsegment+1)%numdatasegments].scanseconds << ", ns " << bufferinfo[(atsegment+1)%numdatasegments].scanns << endl;
     //test the to see if sends have completed from the wait segment
@@ -374,6 +378,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     if(perr != 0)
       csevere << startl << "Error in telescope mainthread unlock of buffer section!!!" << atsegment << endl;
     atsegment = (atsegment+1)%numdatasegments;
+    nsdifference = ((long long)(offsetsec - bufferinfo[atsegment].scanseconds))*1000000000 + firstoffsetns - bufferinfo[atsegment].scanns;
+    validns = (((long long)(bufferinfo[atsegment].validbytes))*bufferinfo[atsegment].nsinc)/readbytes;
   }
 
   //in case the atsegment has changed...
@@ -381,7 +387,8 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
 
   //look at the segment we are in now - if we want to look wholly before this or the buffer segment is bad then 
   //can't continue, fill control buffer with -1 and bail out
-  if((scan < bufferinfo[atsegment].scan) || (offsetsec < bufferinfo[atsegment].scanseconds - 1) || ((offsetsec - bufferinfo[atsegment].scanseconds < 2) && ((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + lastoffsetns - bufferinfo[atsegment].scanns < 0)))
+  if((scan < bufferinfo[atsegment].scan) || nsdifference < -bufferinfo[atsegment].nsinc)
+  //if((scan < bufferinfo[atsegment].scan) || (offsetsec < bufferinfo[atsegment].scanseconds - 1) || ((offsetsec - bufferinfo[atsegment].scanseconds < 2) && ((offsetsec - bufferinfo[atsegment].scanseconds)*1000000000 + lastoffsetns - bufferinfo[atsegment].scanns < 0)))
   {
     //if(mpiid == 1)
     //  cout << "Bailing out: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
@@ -389,14 +396,14 @@ int DataStream::calculateControlParams(int scan, int offsetsec, int offsetns)
     return 0; //note exit here!!!!
   }
 
-  // FIXME -- talk to Adam about this next check.  -WFB
+  /*// FIXME -- talk to Adam about this next check.  -WFB
   if(offsetsec > bufferinfo[atsegment].scanseconds + bufferinfo[atsegment].nsinc/1000000000 + 1)
   {
     //if(mpiid == 1)
     //  cout << "Bailing out2: was asked for scan " << scan << ", offset " << offsetsec << "/" << lastoffsetns << " and the segment I'm at is scan " << bufferinfo[atsegment].scan << ", offset " << bufferinfo[atsegment].scanseconds << "/" << bufferinfo[atsegment].scanns << endl;
     bufferinfo[atsegment].controlbuffer[bufferinfo[atsegment].numsent][1] = Mode::INVALID_SUBINT;
     return 0; //note exit here!!!!
-  }
+  }*/
 
   //now that we obviously have a lock on all the data we need, fill the control buffer
   blockbytes = (bufferinfo[atsegment].numchannels*2*bufferinfo[atsegment].bytespersamplenum)/bufferinfo[atsegment].bytespersampledenom;
