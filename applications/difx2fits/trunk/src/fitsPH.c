@@ -1125,6 +1125,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 					{
 						dumpTime = (accumStart + accumEnd)*0.5;
 						dumpTimeInt = nAccum*D->config[configId].tInt/86400;
+						/* Divide pcals through by integration time in seconds */
+						for(k=0; k < nPol; k++)
+						{
+							for(t=0; t<nTone*nBand; t++)
+							{
+								pulseCalReAcc[k][t] /= dumpTimeInt*86400;
+								pulseCalImAcc[k][t] /= dumpTimeInt*86400;
+							}
+						}
 						if(in)
 						{
 							while(nextCableTime < dumpTime || lineCableScanId < 0)
