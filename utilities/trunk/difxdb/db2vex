@@ -3,16 +3,30 @@
 import datetime
 import cx_Oracle
 from sys import argv, exit
-from os import getenv, popen, umask
+from os import getenv, popen, umask, getcwd
 from os.path import isfile
-from string import upper, lower, strip, split
+from string import find, upper, lower, strip, split
+
+newDB = True
+try:
+	import psycopg2
+except:
+	newDB = False
+	print 'psycopg2 not found.  Processing Mark5C data not possible'
+	
 
 program = 'db2vex'
 author = 'Walter Brisken'
-version = '0.7'
-verdate = '20110910'
+version = '0.8'
+verdate = '20111001'
 
+# Name of the Oracle VLBA legacy database
 databaseName = getenv("VLBA_DB")
+
+# Name of the Postgres VLBA database based on EVLA
+newDatabaseName = getenv("VLBAMPTS_DB")
+if(newDatabaseName == None):
+	newDB = False
 
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
 
@@ -29,6 +43,12 @@ def usage(pgm):
 	print '  -f         run even if means overwriting exisiting files\n'
 	print '  --preobs'
 	print '  -p         run in preobs mode: use projected clocks and no TAPELOG_OBS\n'
+	print '  --mark5a'
+	print '  -a         force to run in Mark5A mode'
+	print '  --mark5c'
+	print '  -c         force to run in Mark5C mode'
+	print '  --usno'
+	print '  -u         force to run in USNO Mark5C mode'
 	print '  --vsnProjectCode  <project code>'
 	print '             use provided project code in VSN DB queries\n'
 	print '<vex file> is a vex file produced by sched (usually ending in .skd)\n'
@@ -36,8 +56,16 @@ def usage(pgm):
 	print 'Example:  db2vex bj061h.skd\n'
 	exit(0)
 
-# Splits a combined obs code into its proposal and segment portions
+def getIsMark5C():
+	ldir = lower(getcwd())
+	if find(ldir, 'mark5a') >= 0:
+		return 0
+	elif find(ldir, 'mark5c') >= 0:
+		return 1
+	else:
+		return -1;
 
+# Splits a combined obs code into its proposal and segment portions
 def splitobscode(exper):
 	obsSeg = ''
 	proposal = exper[:]
@@ -149,6 +177,10 @@ def Ulow(s):
 	return upper(s[0]) + lower(s[1:])
 
 def calcMJD(t):
+	if type(t) == type(1.1):
+		return t	# must already be an mjd
+	
+	# otherwise assume it is a unix time
 	dt = t - mjd0
 	mjd = dt.days + dt.seconds/86400.0
 	return mjd
@@ -222,6 +254,106 @@ def getTapesFromDBbyTime(db, startMJD, stopMJD, verbose):
 	tapes = cursor.fetchall()
 	return tapes
 
+def getTapesFromNewDBbyTime(newDb, startMJD, stopMJD, isMark5C, verbose):
+
+	# select time range that encompases a bit more than the whole experiment
+	# better to be overly inclusive here!
+	unitName = ['A', '1', '2', 'usno'][isMark5C]
+	
+	start = startMJD - 0.1
+	stop  = stopMJD  + 0.1
+	
+	cursor = newDb.cursor()
+	query = "select * from mcdata where monpointname='VSN' and timestamp > %10.4f and timestamp < %10.4f order by timestamp" % (start, stop)
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	tapes = []
+	list = cursor.fetchall()
+	nbad = 0
+	for l in list:
+		if l[1] == 'BANK0':
+			unit = 0
+		elif l[1] == 'BANK1':
+			unit = 1
+		else:
+			nbad += 1;
+			continue
+		s = split(l[0], '-')
+		if len(s) != 3:		# hostname should look something like nl-mark5c-1
+			nbad += 1
+			continue
+		stn = s[0]
+
+# below here: implement the 1-6 bank system.  Maybe use this in the future
+#		if s[2] == '1':
+#			pass
+#		elif s[2] == '2':
+#			unit += 2
+#		elif lower(s[2]) == 'usno':
+#			unit += 4
+#		else:
+#			nbad += 1
+#			continue
+		
+# for now, just assign 0 or 1, but only look at relevant units
+		if s[2] != unitName:
+			continue
+
+		# make old database entry look like a new one
+		row = ['', '', upper(stn), l[3], l[6], unit + 4]	# add 4 to match old nomenclature
+		tapes.append(row)
+
+	if nbad > 0:
+		print 'Warning: getTapesFromNewDBbyTime: %d records had something wrong with them!' % nbad
+	
+	return tapes
+
+def getActiveBankFromNewDB(newDb, startMJD, stopMJD, isMark5C, verbose):
+	unitName = ['A', '1', '2', 'usno'][isMark5C]
+
+	start = startMJD - 0.1
+	stop  = stopMJD  + 0.1
+
+	cursor = newDb.cursor()
+	query = "select * from mcdata where devicename='MARK5C' and monpointname='ActiveBank' and timestamp > %10.4f and timestamp < %10.4f order by timestamp limit 20" % (start, stop)
+	if verbose > 0:
+		print 'Executing database query: %s' % query
+	cursor.execute(query)
+	activeBanks = []
+	nbad = 0
+	list = cursor.fetchall()
+	for l in list:
+		s = split(l[0], '-')
+		if len(s) != 3:		# hostname should look something like nl-mark5c-1
+			nbad += 1
+			continue
+		stn = s[0]
+
+# for now, just assign 0 or 1, but only look at relevant units
+		if s[2] != unitName:
+			continue
+
+		row = [upper(stn), l[3], l[5]]
+		activeBanks.append(row)
+
+	if nbad > 0:
+		print 'Warning: getActiveBankFromNewDB: %d records had something wrong with them!' % nbad
+	
+	return activeBanks
+
+# A block is [startMjd, stopMJD, VSN, recorder]
+def genMark5CBlocks(stn, tapes, activeBanks):
+	blocks = []
+
+	for t in tapes:
+		if t[2] == stn and len(t[4]) > 0:
+			return [[tapes[0][3], tapes[-1][3], t[4], t[5]]]
+
+	return blocks
+		
+
+
 def getVSN(vsns, stn, unitNumber, t):
 	vsn = 'none'
 	if not vsns.has_key(stn):
@@ -278,8 +410,6 @@ def getClockFromDB(db, stn, timerange, verbose):
 	if len(allclocks) == 0:
 		return []
 	if preobs:
-		for a in allclocks:
-			print a
 		clocks = [allclocks[-1]]
 	else:
 		clocks = []
@@ -424,6 +554,7 @@ def makeVSNDict(tapes):
 		if not td.has_key(stn):
 			td[stn] = []
 		td[stn].append(row)
+
 	return td
 
 def calcVSNList(motions, vsns, stn):
@@ -526,7 +657,7 @@ def appendFSStations(stations, fsVSNs):
 			stations.append(f[0])
 	stations.sort()
 
-def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, fsVSNs=[]):
+def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs=[]):
 	if not isfile(vexFile):
 		print 'Error: cannot open file %s' % vexFile
 		exit(0)
@@ -551,20 +682,15 @@ def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, fsVSNs=[]):
 
 	db = cx_Oracle.connect(databaseName)
 
+	if isMark5C:
+		newDb = psycopg2.connect(newDatabaseName)
+	
 	# fetch a bunch of stuff from the database
-	if not preobs:
-		shelves = getShelvesFromDB(db, verbose)
 	if vsnProjectCode != None:
-		c, s = splitobscode(vsnProjectCode)
+		obsCode, obsSeg = splitobscode(vsnProjectCode)
 		if verbose:
 			print 'vsn project code and segment are', c, s
-		if not preobs:
-			tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
-			motions = getTapeMotionFromDB(db, c, s, verbose)
-	else:
-		if not preobs:
-			tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
-			motions = getTapeMotionFromDB(db, obsCode, obsSeg, verbose)
+
 	eops = getEarthFromDB(db, mjdCenter(stationTimes), verbose, preobs)
 
 	vexData = open(vexFile, "r").readlines()
@@ -577,14 +703,26 @@ def processVexFile(vexFile, force, verbose, preobs, vsnProjectCode, fsVSNs=[]):
 	vexData.append('*------------------------------------------------------------------------------\n')
 
 	if not preobs:
+		if isMark5C:
+			tapes = getTapesFromNewDBbyTime(newDb, experTimes[0], experTimes[1], isMark5C, verbose)
+			activeBanks = getActiveBankFromNewDB(newDb, experTimes[0], experTimes[1], isMark5C, verbose)
+		else:
+			tapes = getTapesFromDBbyTime(db, experTimes[0], experTimes[1], verbose)
+		motions = getTapeMotionFromDB(db, obsCode, obsSeg, verbose)
 		vsns = makeVSNDict(tapes)
+		shelves = getShelvesFromDB(db, verbose)
 		shelfData = []
 		vexData.append('$TAPELOG_OBS;\n')
 
 		for s in stations:
 			stn = upper(s)
 			scans = calcVSNList(motions, vsns, stn)
-			blocks = genBlocks(scans, experTimes)
+
+			# A block is [startMjd, stopMJD, VSN, recorder]
+			if isMark5C:
+				blocks = genMark5CBlocks(stn, tapes, activeBanks)
+			else:
+				blocks = genBlocks(scans, experTimes)
 			if len(blocks) < 1:
 				blocks = getBlocksFromFS(fsVSNs, Ulow(stn))
 			if len(blocks) < 1:
@@ -657,6 +795,7 @@ preobs = False
 args = []
 fsVSNs = [] # VSN list from field system logs
 vsnProjectCode = None
+isMark5C = -1
 
 for a in argv[1:]:
 	if vsnProjectCode == '':
@@ -672,11 +811,32 @@ for a in argv[1:]:
 			preobs = True
 		elif a in ['--vsnProjectCode']:
 			vsnProjectCode = ''
+		elif upper(a) in ['--MARK5A', '-A']:
+			isMark5C = 0
+		elif upper(a) in ['--MARK5C', '-C']:
+			isMark5C = 1
+		elif upper(a) in ['--MARK5C-2', '-2']:
+			isMark5C = 2
+		elif a in ['--usno', '-u']:
+			isMark5C = 3
 		else:
 			print 'Error: unknown command line option: %s' % a
 			stop = True
 	else:
 		args.append(a)
+
+if isMark5C < 0:
+	isMark5C = getIsMark5C()
+
+if isMark5C < 0:
+	print 'Cannot determine if this is Mark5A or Mark5C.  Assuming Mark5A'
+	isMark5C = 0;
+else:
+	if isMark5C and not newDB:
+		print 'Error: Mark5C processing is to be done but the VLBAMPTS database is not accessable'
+		stop = True
+
+	print 'Proceeding as a %s project.  Please rerun and force project type if this not what you want.' % (['Mark5A', 'Mark5C', 'Mark5C-2', 'USNO'][isMark5C])
 
 if vsnProjectCode == '':
 	print 'Error: vsnProjectCode not specified.'
@@ -700,6 +860,6 @@ if stop:
 
 umask(02)
 
-processVexFile(args[0], force, verbose, preobs, vsnProjectCode, fsVSNs)
+processVexFile(args[0], force, verbose, preobs, vsnProjectCode, isMark5C, fsVSNs)
 
 print ''
