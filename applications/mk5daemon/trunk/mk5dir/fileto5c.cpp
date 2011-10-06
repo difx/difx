@@ -79,7 +79,7 @@ static void usage(const char *pgm)
 	printf("  --bytes <b>\n");
 	printf("  -b <b>     Stop copying after <b> bytes written\n\n");
 	printf("  --chunk <c>\n");
-	printf("  -c <c>     Set copy chunk size to %u MB\n\n", defaultChunkSize);
+	printf("  -c <c>     Set copy chunk size to %u MB\n\n", defaultChunkSizeMB);
 	printf("  --seconds <s>\n");
 	printf("  -t <s>     Stop copying after <s> seconds passed\n\n");
 	printf("  --statsrange <list>\n");
@@ -392,8 +392,7 @@ static int decodeScan(SSHANDLE xlrDevice, unsigned long long startByte, unsigned
 
 static int fileto(const char *filename, int bank, const char *label, unsigned int chunkSizeMB, unsigned long long maxBytes, double maxSeconds, const int *statsRange, DifxMessageMk5Status *mk5status, int verbose)
 {
-	FILE *int;
-	unsigned int channel = defaultStreamstorChannel;
+	FILE *in;
 	SSHANDLE xlrDevice;
 	XLR_RETURN_CODE xlrRC;
 	S_BANKSTATUS bankStat, stat[N_BANK];
@@ -419,7 +418,8 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	long long p_ref, p_next_ref;
 	UINT32 nReject = 0;
 	char *buffer = 0;
-	unsigned int chunkSize = chunkSizeMB * 1000000;
+	unsigned int chunkSize = chunkSizeMB * 1024*1024;
+	__time_t lastsec;
 
 	if(bank == BANK_A)
 	{
@@ -436,7 +436,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		return -1;
 	}
 
-	buffer = (char *)malloc(chunk);
+	buffer = (char *)malloc(chunkSize);
 	if(buffer == 0)
 	{
 		printf("Error 9 Bank %c not ready\n", 'A'+bank);
@@ -596,12 +596,12 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	}
 
 	gettimeofday(&tv, &tz);
-	lastsec = tv_tv_sec;
+	lastsec = tv.tv_sec;
 	t_ref = t_next_ref = t0 = tv.tv_sec + tv.tv_usec*1.0e-6;
 	p_ref = p_next_ref = ptr;
 	while(!die)
 	{
-		n = fread(buffer, 1, chunkSize, in);
+		unsigned int n = fread(buffer, 1, chunkSize, in);
 		if(n < chunkSize)
 		{
 			printf("Ending eof\n");
@@ -831,6 +831,12 @@ int main(int argc, char **argv)
 				   strcmp(argv[a], "--chunk") == 0)
 				{
 					chunkSizeMB = atoi(argv[a+1]);
+					if(chunkSizeMB > 1024)
+					{
+						printf("Read sizes exceeding 1 GB are not permitted\n");
+
+						return EXIT_FAILURE;
+					}
 				}
 				else if(strcmp(argv[a], "-t") == 0 ||
 				   strcmp(argv[a], "--seconds") == 0)
@@ -939,7 +945,7 @@ int main(int argc, char **argv)
 			gettimeofday(&tv, &tz);
 			gethostname(hostName, MaxHostNameLength);
 			hostName[MaxHostNameLength] = 0;
-			snprintf(label, MaxLabelLength, "stdin-%s-%Ld", static_cast<long long>(tv.tv_sec));
+			snprintf(label, MaxLabelLength, "stdin-%s-%Ld", hostName, static_cast<long long>(tv.tv_sec));
 		}
 		else
 		{
@@ -965,7 +971,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		v = fileto(filename, bank, label, maxBytes, maxSeconds, statsRange, &mk5status, verbose);
+		v = fileto(filename, bank, label, chunkSizeMB, maxBytes, maxSeconds, statsRange, &mk5status, verbose);
 		if(v < 0)
 		{
 			if(watchdogXLRError[0] != 0)

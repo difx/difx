@@ -708,7 +708,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 				/* FIXME: not tested.  I think this reads number of rejected packets, but I am not sure. */
 				WATCHDOG( xlrRC = XLRReadDBReg32(xlrDevice, ETH_REJECT_PACKETS, &nReject) );
 
-				printf("Pointer %Ld %4.2f %ud\n", ptr, rate, nReject);
+				printf("Pointer %Ld %4.2f %u\n", ptr, rate, nReject);
 				mk5status->position = ptr;
 				mk5status->rate = rate;
 				fflush(stdout);

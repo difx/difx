@@ -554,7 +554,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	if(fork() == 0)
 	{
 		snprintf(command, MAX_COMMAND_SIZE,
-			"su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d\"'",
+			"su - %s -c 'ssh -x %s \"difxlog %s %s.difxlog 4 %d &> /dev/null\"'",
 			user, S->headNode, jobName, filebase, childPid);
 		Mk5Daemon_system(D, command, 1);
 
