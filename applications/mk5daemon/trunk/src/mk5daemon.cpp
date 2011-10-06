@@ -444,14 +444,13 @@ void sigintHandler(int j)
 int main(int argc, char **argv)
 {
 	Mk5Daemon *D;
-	time_t t, lastTime, firstTime;
+	time_t t, lastTime;
 	char message[DIFX_MESSAGE_LENGTH];
 	char str[16];
 	int isHeadNode = 0;
 	int isEmbedded = 0;
 	int isMk5 = 0;
 	int i;
-	int halfInterval;
 	char logPath[256];
 	const char *p, *u;
 	char userID[256];
@@ -461,6 +460,8 @@ int main(int argc, char **argv)
 	int readSocks;
 	int highSock;
 #ifdef HAVE_XLRAPI_H
+	time_t firstTime;
+	int halfInterval;
 	int ok = 0;	/* FIXME: combine with D->ready? */
 	int justStarted = 1;
 	int recordFD;
@@ -602,9 +603,12 @@ int main(int argc, char **argv)
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
 
-	firstTime = lastTime = time(0);
+	lastTime = time(0);
 
+#ifdef HAVE_XLRAPI_H
+	firstTime = lastTime;
 	halfInterval = D->loadMonInterval/2;
+#endif
 
 	while(!D->dieNow)
 	{
@@ -704,9 +708,6 @@ int main(int argc, char **argv)
 
 		if(readSocks < 0 || *signalDie)
 		{
-			snprintf(message, DIFX_MESSAGE_LENGTH, "select returned %d\n", readSocks);
-			Logger_logData(D->log, message);
-
 			D->dieNow = 1;
 
 			break;

@@ -113,7 +113,17 @@ void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options)
 
 void Mk5Daemon_stopCondition(Mk5Daemon *D)
 {
+	char command[MAX_COMMAND_SIZE];
 	int v;
 	
-	v = system("killall -s SIGINT mk5erase");
+	snprintf(command, MAX_COMMAND_SIZE, "killall -s SIGINT mk5erase");
+	v = system(command);
+
+	if(v == -1)
+	{
+		char message[DIFX_MESSAGE_LENGTH];
+
+		snprintf(message, DIFX_MESSAGE_LENGTH, "system(%s) returned %d\n", command, v);
+		Logger_logData(D->log, message);
+	}
 }

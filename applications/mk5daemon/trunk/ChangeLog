@@ -7,12 +7,13 @@ Version 1.4.2
 * mk5cp: the --no-dir option allows copying a byte range without reference to a module directory
 * mk5cp: some control over the read chunk size is now given to the user
 * mk5cp: treat "real time" mode the same way as it is treated in mpifxcorr
-* complete wrapping of XLR calls into WATCHDOG macro statements
+* Complete wrapping of XLR calls into WATCHDOG macro statements
 * vsn: show disk temperatures by default
 * mk5daemon: collect SMART information.  (currently incomplete; information logged upon installation of modules)
-* add stand alone Mark5C data recording program "record5c"
+* Add stand alone Mark5C data recording program "record5c"
 * checkdir: add detection of UKN scans (those rescued by the recording system after a crash)
 * mk5dir: can now write a module directory to a module (Mark5B only and directory version 1 only)
+* Add fileto5c program which copies a file from the OS filesystem to the Mark5 module
 
 Version 1.4.1
 ~~~~~~~~~~~~

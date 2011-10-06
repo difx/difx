@@ -1,5 +1,6 @@
 if WITH_STREAMSTOR
 bin_PROGRAMS = \
+	fileto5c \
 	mk5cat \
 	mk5cp \
 	mk5dir \
@@ -18,6 +19,14 @@ bin_PROGRAMS =
 dist_bin_SCRIPTS = 
 endif
 
+
+fileto5c_SOURCES = \
+	watchdog.cpp \
+	watchdog.h \
+	mark5dir.cpp \
+	mark5dir.h \
+	mark5directorystructs.h \
+	fileto5c.cpp
 
 mk5cat_LDADD = \
 	${M5ACCESS_LIBS}
