@@ -60,7 +60,8 @@ const char Mk5StateStrings[][24] =
 	"TestWrite",
 	"TestRead",
 	"Booting",
-	"Recording"
+	"Recording",
+	"CopyTo"
 };
 
 /* Note! Keep this in sync with enum DifxStatus in difxmessage.h */
