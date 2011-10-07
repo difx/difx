@@ -331,20 +331,49 @@ int protect_Query(Mk5Daemon *D, int nField, char **fields, char *response, int m
 
 int error_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
-	int v;
+	int v = 0;
+	const int MaxErrorLength=256;
+	char msg[MaxErrorLength];
+	int n;	/* Number of errors left on stack */
 
+	/* Errors are shown with the following priority 
+	 * 1. anything in the D->errors list
+	 * 2. Mk5Daemon_error() (Mark5 only)
+	 * 3. if #2 returns 5 (system busy), then report a possible openStreamstorError (Mark5 only)
+	 * 4. report no error
+	 *
+	 * A final response field returns the number of unread errors
+	 */
+
+	n = Mk5Daemon_popVSIError(D, msg, MaxErrorLength);
+	if(n > 0)
+	{
+		n--;
+
+		v = snprintf(response, maxResponseLength, "!%s? 0 : -1 : %s : %d;", fields[0], msg, n);
+	}
 #ifdef HAVE_XLRAPI_H
-	char msg[256];
-	unsigned int xlrError;
-	int p;
+	else
+	{
+		unsigned int xlrError;
+		int p;
 
-	p = Mk5Daemon_error(D, &xlrError , msg);
+		p = Mk5Daemon_error(D, &xlrError , msg);
 
-	v = snprintf(response, maxResponseLength, "!%s? %d : %u : %s", fields[0], p, xlrError, msg);
-
-#else
-	v = snprintf(response, maxResponseLength, "!%s? 2 : Not implemented on this DTS;", fields[0]);
+		if(p != 5)
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : %u : %s : 0;", fields[0], xlrError, msg);
+		}
+		else if(D->openStreamstorError)
+		{
+			v = snprintf(response, maxResponseLength, "!%s? 0 : -1 : Error opening streamstor : 0;", fields[0]);
+		}
+	}
 #endif
+	if(v == 0)
+	{
+		v = snprintf(response, maxResponseLength, "!%s? 0 : 0 : : 0;", fields[0]);
+	}
 
 	return v;
 }
@@ -1065,11 +1094,7 @@ int disk_state_Query(Mk5Daemon *D, int nField, char **fields, char *response, in
 
 		if(D->vsns[bank][0])
 		{
-			if(D->errorFlag[bank])
-			{
-				sprintf(bankStr[b], "%c : error", 'A'+bank);
-			}
-			else if(smart->mjd >= 50000.0)
+			if(smart->mjd >= 50000.0)
 			{
 				sprintf(bankStr[b], "%c : %s", 'A'+bank, moduleStatusName(D->diskModuleState[bank]));
 			}
@@ -1231,7 +1256,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 			}
 
 			p = 0;
-			for(std::map<MAC,bool>::const_iterator it = D->macList.begin(); it != D->macList.end(); it++)
+			for(std::map<MAC,bool>::const_iterator it = D->macList->begin(); it != D->macList->end(); it++)
 			{
 				if(it->second)	/* if MAC is enabled */
 				{
@@ -1242,7 +1267,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 				}
 			}
 
-			if(p == 0 && D->macList.size() > 0)	/* filtering on, but all disabled */
+			if(p == 0 && D->macList->size() > 0)	/* filtering on, but all disabled */
 			{
 				v = snprintf(response, maxResponseLength, "!%s = 4 : MAC filtering requested but all addresses are disabled;", fields[0]);
 			}
@@ -1456,11 +1481,15 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	{
 		status |= 0x0001;
 	}
-	if(D->errorFlag[0] || D->errorFlag[1])
+	if(D->errors->size() > 0)
 	{
 		status |= 0x0002;
 	}
 #ifdef HAVE_XLRAPI_H
+	if(D->openStreamstorError)
+	{
+		status |= 0x0002;
+	}
 	if(getMark5LockValue())
 	{
 		status |= 0x0004;
@@ -1477,7 +1506,7 @@ int status_Query(Mk5Daemon *D, int nField, char **fields, char *response, int ma
 	}
 
 #ifdef HAVE_XLRAPI_H
-	if(D->activeBank >= 0 && D->recordState == RECORD_OFF && D->errorFlag[D->activeBank] == 0 && D->systemReady)
+	if(D->activeBank >= 0 && D->recordState == RECORD_OFF && (status | 0x0002) && D->systemReady)
 	{
 		if(D->smartData[D->activeBank].mjd > 50000 && D->bank_stat[D->activeBank].WriteProtected == 0)
 		{
@@ -1601,7 +1630,7 @@ int VSN_Query(Mk5Daemon *D, int nField, char **fields, char *response, int maxRe
 int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, int maxResponseLength)
 {
 	int v = 0;
-	std::map<MAC,bool> origMacList(D->macList);
+	std::map<MAC,bool> origMacList(*(D->macList));
 
 	if(nField < 2)
 	{
@@ -1627,7 +1656,7 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 			}
 			else if(mc == MAC_LIST_FLUSH)
 			{
-				D->macList.clear();
+				D->macList->clear();
 			}
 			else if(p >= nField - 1)
 			{
@@ -1645,17 +1674,17 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 					break;
 				}
 
-				it = D->macList.find(mac);
+				it = D->macList->find(mac);
 				
 				if(mc == MAC_LIST_ADD)
 				{
-					D->macList[mac] = true;	/* add and enable */
+					(*(D->macList))[mac] = true;	/* add and enable */
 				}
 				else if(mc == MAC_LIST_DELETE)
 				{
-					if(it != D->macList.end())
+					if(it != D->macList->end())
 					{
-						D->macList.erase(it);
+						D->macList->erase(it);
 					}
 					else
 					{
@@ -1665,7 +1694,7 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 				}
 				else if(mc == MAC_LIST_ENABLE)
 				{
-					if(it != D->macList.end())
+					if(it != D->macList->end())
 					{
 						it->second = true;
 					}
@@ -1677,7 +1706,7 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 				}
 				else if(mc == MAC_LIST_DISABLE)
 				{
-					if(it != D->macList.end())
+					if(it != D->macList->end())
 					{
 						it->second = false;
 					}
@@ -1692,14 +1721,14 @@ int MAC_list_Command(Mk5Daemon *D, int nField, char **fields, char *response, in
 		}
 	}
 
-	if(D->macList.size() > MAX_MACLIST_LENGTH)
+	if(D->macList->size() > MAX_MACLIST_LENGTH)
 	{
-		v = snprintf(response, maxResponseLength, "!%s = 6 : Resultant MAC list too long (%d > %d);", fields[0], static_cast<int>(D->macList.size()), MAX_MACLIST_LENGTH);
+		v = snprintf(response, maxResponseLength, "!%s = 6 : Resultant MAC list too long (%d > %d);", fields[0], static_cast<int>(D->macList->size()), MAX_MACLIST_LENGTH);
 	}
 
 	if(v > 0)	/* something went wrong.  Undo all */
 	{
-		D->macList = origMacList;	
+		*(D->macList) = origMacList;	
 	}
 	else
 	{
@@ -1717,9 +1746,9 @@ int MAC_list_Query(Mk5Daemon *D, int nField, char **fields, char *response, int 
 
 	v = snprintf(response, maxResponseLength, "!%s? 0", fields[0]);
 
-	if(D->macList.size() > 0)
+	if(D->macList->size() > 0)
 	{
-		for(it = D->macList.begin(); it != D->macList.end(); it++)
+		for(it = D->macList->begin(); it != D->macList->end(); it++)
 		{
 			it->first.toString(macStr);
 			v += snprintf(response+v, maxResponseLength-v, " : %s : %s", macStr, it->second ? "enabled" : "disabled");

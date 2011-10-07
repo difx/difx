@@ -118,7 +118,7 @@ static int XLR_get_modules(Mk5Daemon *D)
 	{
 		return 0;
 	}
-	
+
 	xlrRC = XLROpen(1, &xlrDevice);
 	D->nXLROpen++;
 	if(xlrRC != XLR_SUCCESS)
@@ -131,6 +131,8 @@ static int XLR_get_modules(Mk5Daemon *D)
 		Logger_logData(D->log, message);
 
 		unlockStreamstor(D, id);
+
+		D->openStreamstorError = true;
 
 		return 1;
 	}
@@ -150,6 +152,9 @@ static int XLR_get_modules(Mk5Daemon *D)
 			unlockStreamstor(D, id);
 
 			Logger_logData(D->log, message);
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Setting SS_OPT_SKIPCHECKDIR failed");
+			Mk5Daemon_addVSIError(D, message);
 		
 			return 1;
 		}
@@ -170,6 +175,9 @@ static int XLR_get_modules(Mk5Daemon *D)
 			Logger_logData(D->log, message);
 			clearModuleInfo(D, bank);
 			clearMk5Stats(D, bank);
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "XLRGetBankStatus failed for bank %c", 'A' + bank);
+			Mk5Daemon_addVSIError(D, message);
 		}
 		else if(strncmp(D->vsns[bank], D->bank_stat[bank].Label, 8) != 0)
 		{
@@ -216,11 +224,15 @@ static int XLR_get_modules(Mk5Daemon *D)
 	for(int bank = 0; bank < N_BANK; bank++)
 	{
 		extractSmartTemps(temp[bank], D, bank);
+
+#warning "FIXME: compare inventory of disks to expected number"
 	}
 
 	snprintf(message, DIFX_MESSAGE_LENGTH, "XLR VSNs: <%s> %s  <%s> %s  N=%d\n",
 		D->vsns[0], temp[0], D->vsns[1], temp[1], D->nXLROpen);
 	Logger_logData(D->log, message);
+
+	D->openStreamstorError = false;
 
 	return 0;
 }
@@ -357,6 +369,8 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 
 		unlockStreamstor(D, id);
 
+		D->openStreamstorError = true;
+
 		return 1;
 	}
 
@@ -393,6 +407,9 @@ static int XLR_disc_power(Mk5Daemon *D, const char *banks, int on)
 				"XLR_disc_power: error for bank=%c on=%d Error=%u (%s)\n",
 				banks[i], on, xlrError, xlrErrorStr);
 			Logger_logData(D->log, message);
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "%s failed for bank %c", (on ? "XLRMountBank" : "XLRDismountBank"), 'A' + bank);
+			Mk5Daemon_addVSIError(D, message);
 		}
 	}
 
@@ -453,10 +470,12 @@ static int XLR_error(Mk5Daemon *D, unsigned int *xlrError , char *msg)
 	{
 		*xlrError = XLRGetLastError();
 		XLRGetErrorMessage(msg, *xlrError);
+		D->openStreamstorError = true;
 	}
 	else
 	{
 		XLRClose(xlrDevice);
+		D->openStreamstorError = false;
 	}
 
 	unlockStreamstor(D, id);
@@ -491,6 +510,7 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 			"ERROR: XLR_setProtect: Cannot open streamstor card.  N=%d Error=%u (%s)\n",
 			D->nXLROpen, xlrError, msg);
 		Logger_logData(D->log, message);
+		D->openStreamstorError = true;
 
 		unlockStreamstor(D, id);
 
@@ -537,6 +557,9 @@ static int XLR_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg)
 
 		XLRClose(xlrDevice);
 		unlockStreamstor(D, id);
+
+		snprintf(message, DIFX_MESSAGE_LENGTH, "%s failed for bank %c", (state == PROTECT_ON ? "XLRSetWriteProtect" : "XLRClearWriteProtect"), 'A' + D->activeBank);
+		Mk5Daemon_addVSIError(D, message);
 
 		return 4;	/* error */
 	}

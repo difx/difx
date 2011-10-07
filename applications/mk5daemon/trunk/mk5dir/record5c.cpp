@@ -503,7 +503,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	}
 	else
 	{
-		printf("Error: only bank A = %d and bank B = %d supported!\n", BANK_A, BANK_B);
+		printf("Error 9 Only bank A = %d and bank B = %d supported not %d\n", BANK_A, BANK_B, bank);
 
 		return -1;
 	}
@@ -992,7 +992,7 @@ int main(int argc, char **argv)
 		{
 			if(strlen(argv[a]) != 1)
 			{
-				printf("Error 1 bank parameter (%s) not understood.\n", argv[a]);
+				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
 				
 				return EXIT_FAILURE;
 			}
@@ -1006,7 +1006,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				printf("Error 1 bank parameter (%s) not understood.\n", argv[a]);
+				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
 				
 				return EXIT_FAILURE;
 			}
@@ -1016,14 +1016,14 @@ int main(int argc, char **argv)
 			i = snprintf(label, MaxLabelLength, "%s", argv[a]);
 			if(i >= MaxLabelLength)
 			{
-				printf("Error scan name too long (%d > %d)\n", i, MaxLabelLength-1);
+				printf("Error 10 scan name too long (%d > %d)\n", i, MaxLabelLength-1);
 
 				return EXIT_FAILURE;
 			}
 		}
 		else
 		{
-			printf("Error 2 too many arguments given.\n");
+			printf("Error 2 too many arguments given\n");
 
 			return EXIT_FAILURE;
 		}
@@ -1039,7 +1039,7 @@ int main(int argc, char **argv)
 	v = initWatchdog();
 	if(v < 0)
 	{
-		printf("Error 4 initWatchdog() failed.\n");
+		printf("Error 4 initWatchdog() failed\n");
 
 		return EXIT_FAILURE;
 	}

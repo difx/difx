@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
@@ -209,7 +210,8 @@ Mk5Daemon *newMk5Daemon(const char *logPath, const char *userID, int isMk5)
 	D->log = newLogger(logPath);
 	D->process = PROCESS_NONE;
 	D->loadMonInterval = 10;	/* seconds */
-	D->macList.clear();
+	D->macList = new std::map<MAC,bool>;
+	D->errors = new std::list<std::string>;
 	gethostname(D->hostName, 32);
 	D->isMk5 = strncasecmp(D->hostName, "mark5", 5) == 0 ? 1 : 0;
 	if(isMk5)
@@ -299,6 +301,8 @@ void deleteMk5Daemon(Mk5Daemon *D)
 		Mk5Daemon_stopMonitor(D);
 		Mk5Daemon_stopVSIS(D);
 		deleteLogger(D->log);
+		delete D->macList;
+		delete D->errors;
 		free(D);
 	}
 }
@@ -439,6 +443,57 @@ void sigintHandler(int j)
 		*signalDie = 1;
 	}
 	signal(SIGINT, oldsigintHandler);
+}
+
+void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	int i;
+
+	/* First replace special characters */
+	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; i++)
+	{
+		if(errorMessage[i] < ' ')
+		{
+			message[i] = ' ';
+		}
+		else if(errorMessage[i] == ':')
+		{
+			message[i] = '|';
+		}
+		else if(errorMessage[i] == ';' || errorMessage[i] == '=' || errorMessage[i] == '?' || errorMessage[i] == '!')
+		{
+			message[i] = '~';
+		}
+		else
+		{
+			message[i] = errorMessage[i];
+		}
+	}
+	message[i] = 0;
+
+	std::string errString(message);
+
+	/* Don't add a duplicate message to list */
+	if(find(D->errors->begin(), D->errors->end(), message) == D->errors->end())
+	{
+		D->errors->push_back(errString);
+	}
+}
+
+int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength)
+{
+	int n;
+
+	n = D->errors->size();
+
+	if(n > 0)
+	{
+		snprintf(errorMessage, maxLength, "%s", D->errors->front().c_str());
+		D->errors->pop_front();
+	}
+
+	return n;
 }
 
 int main(int argc, char **argv)
@@ -778,6 +833,7 @@ int main(int argc, char **argv)
 
 			if(r)
 			{
+				char errorMessage[DIFX_MESSAGE_LENGTH];
 				char A[15][40];
 				int n = sscanf(message, "%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s", 
 					A[0], A[1], A[2], A[3], A[4], A[5], A[6], A[7], A[8], A[9], A[10], A[11], A[12], A[13], A[14]);
@@ -798,11 +854,13 @@ int main(int argc, char **argv)
 					}
 					else if(strcmp(A[0], "Error") == 0)
 					{
-						D->errorFlag[D->activeBank] = 1;
+						snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Record %s", message);
+						Mk5Daemon_addVSIError(D, errorMessage);
 					}
 					else if(strcmp(A[0], "SystemError") == 0)
 					{
-						D->errorFlag[D->activeBank] = 1;
+						snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Streamstor System Error %s during record", A[1]);
+						Mk5Daemon_addVSIError(D, errorMessage);
 					}
 					else if(strcmp(A[0], "Halted") == 0)
 					{
@@ -817,6 +875,8 @@ int main(int argc, char **argv)
 						if(strcmp(A[2], "failed") == 0)
 						{
 							D->driveFail[D->activeBank] = atoi(A[1]);
+							snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Drive %s failed during record", A[1]);
+							Mk5Daemon_addVSIError(D, errorMessage);
 						}
 					}
 					else if(strcmp(A[0], "Bank") == 0 && n == 13)

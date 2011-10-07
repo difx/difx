@@ -31,6 +31,7 @@
 #define __MK5DAEMON_H__
 
 #include <map>
+#include <list>
 #include <time.h>
 #include <difxmessage.h>
 #include "config.h"
@@ -158,7 +159,7 @@ typedef struct
 	int acceptSock;	/* for VSIS server */
 	int clientSocks[MaxConnections];
 	
-	std::map<MAC,bool> macList;	/* map from a MAC address to enable flag */
+	std::map<MAC,bool> *macList;	/* map from a MAC address to enable flag */
 #ifdef HAVE_XLRAPI_H
 	/* FIXME: make bank structure??? */
 	Mk5Smart smartData[N_BANK];
@@ -166,11 +167,12 @@ typedef struct
 	S_DIR dir_info[N_BANK];
 	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
 	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
+	bool openStreamstorError;
 #endif
 	int systemReady;
 	FILE *recordPipe;
 	enum RecordState recordState;
-	int errorFlag[N_BANK];
+	std::list<std::string> *errors;
 	time_t recordT0;		/* time at which recording started */
 	time_t recordLastMessage;	/* time when last message came from recording */
 	int driveFail[N_BANK];
@@ -213,6 +215,10 @@ int Mk5Daemon_system(const Mk5Daemon *D, const char *command, int verbose);
 void Mk5Daemon_reboot(Mk5Daemon *D);
 void Mk5Daemon_poweroff(Mk5Daemon *D);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
+
+void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
+int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
+
 #ifdef HAVE_XLRAPI_H
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
 int unlockStreamstor(Mk5Daemon *D, const char *identifier);

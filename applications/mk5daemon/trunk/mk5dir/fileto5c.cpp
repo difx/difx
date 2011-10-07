@@ -599,12 +599,22 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	lastsec = tv.tv_sec;
 	t_ref = t_next_ref = t0 = tv.tv_sec + tv.tv_usec*1.0e-6;
 	p_ref = p_next_ref = ptr;
+
+	
+
 	while(!die)
 	{
 		unsigned int n = fread(buffer, 1, chunkSize, in);
 		if(n < chunkSize)
 		{
 			printf("Ending eof\n");
+			fflush(stdout);
+			die = 1;
+		}
+		if(ptr + n >= startByte + maxBytes)
+		{
+			n = startByte + maxBytes - ptr;
+			printf("Ending bytes\n");
 			fflush(stdout);
 			die = 1;
 		}
@@ -634,18 +644,11 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		{
 			lastsec = tv.tv_sec;
 			
-			if(ptr >= startByte + maxBytes)
-			{
-				printf("Ending bytes\n");
-				fflush(stdout);
-				die = 1;
-			}
-
 			WATCHDOG( xlrRC = XLRGetDeviceStatus(xlrDevice, &devStatus) );
 
 			rate = 8.0e-6*(ptr - p_ref) / (t - t_ref);
 
-			printf("Pointer %Ld %4.2f %ud\n", ptr, rate, nReject);
+			printf("Pointer %Ld %4.2f %u\n", ptr, rate, nReject);
 			mk5status->position = ptr;
 			mk5status->rate = rate;
 			fflush(stdout);
@@ -701,7 +704,10 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 		fflush(stdout);
 	}
 
+	WATCHDOGTEST( XLRStop(xlrDevice) );
+
 	printf("Stop %s %Ld\n", label, ptr);
+
 	fflush(stdout);
 	if(strcmp(filename, "-") != 0)
 	{
