@@ -12,7 +12,9 @@ parser.add_option("-f", "--freq", dest="freq", metavar="FREQ", default="-1",
 parser.add_option("-b", "--baseline", dest="baseline", metavar="BASELINE", default="-1",
                   help="Only look at visibilities from this BASELINE num")
 parser.add_option("-t", "--threshold", dest="threshold", metavar="THRESHOLD", default="0.0005",
-                  help="Display any difference that exceeds THRESHOLD")
+                  help="Display any difference that exceeds THRESHOLD percent")
+parser.add_option("-e", "--epsilon", dest="epsilon", metavar="EPSILON", default="-1",
+                  help="Display any difference that exceeds allowed numerical error EPSILON")
 parser.add_option("-s", "--skiprecords", dest="skiprecords", metavar="SKIPRECORDS",
                   default="0", help="Skip SKIPRECORDS records before starting comparison")
 parser.add_option("-m", "--maxrecords", dest="maxrecords", metavar="MAXRECORDS",
@@ -36,6 +38,7 @@ numfiles = len(args)
 targetbaseline = int(options.baseline)
 targetfreq     = int(options.freq)
 threshold      = float(options.threshold)
+epsilon        = float(options.epsilon)
 skiprecords    = int(options.skiprecords)
 maxrecords     = int(options.maxrecords)
 printinterval  = int(options.printinterval)
@@ -114,8 +117,11 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
         meandiffavg = 0.0
         refavg = 0.0
 	if recordcount >= skiprecords:
+	    nonequalchanslist = []
             for j in range(nchan[0]):
                 diff = vis[1][j] - vis[0][j]
+	        if (epsilon > 0 and abs(diff) > epsilon):
+	            nonequalchanslist.append(j)
                 absdiffavg  = absdiffavg + abs(diff)/nchan[0]
 	        meandiffavg = meandiffavg + diff/nchan[0]
                 refavg = refavg + abs(vis[0][j])/nchan[0]
@@ -123,6 +129,14 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
 	    longtermmeandiff += meandiffavg/refavg
             if 100.0*absdiffavg/refavg > threshold:
                 print "THRESHOLD EXCEEDED! The percentage absolute difference on baseline %d, freq %d at MJD/sec %d/%7.2f is %10.8f, and the percentage mean difference is %10.8f + %10.8f i" % (baseline[0], freqindex[0], mjd[0], seconds[0], 100.0*absdiffavg/refavg, 100.0*meandiffavg.real/refavg, 100.0*meandiffavg.imag/refavg)
+	    if nonequalchanslist:
+	        print "EPSILON EXCEEDED! Numerically distinct data on baseline %d, freq %d at MJD/sec %d/%7.2f found in %d/%d channels according to specified numerical precision." % (baseline[0], freqindex[0], mjd[0], seconds[0], len(nonequalchanslist), nchan[0])
+	        if verbose:
+	           print "Data that follows: [chX]={leftfile re,im + rightfile residual re,im}:"
+	           for c in nonequalchanslist:
+	              v0 = vis[0][c]
+	              v1 = vis[1][c]
+	              print '[ch%d]={%e,%e + %e,%e}  ' % (c, v0.real, v0.imag, (v1-v0).real, (v1-v0).imag)
     if (targetbaseline < 0 or targetbaseline == baseline[0]) and \
             (targetfreq < 0 or targetfreq == freqindex[0]):
         recordcount += 1
