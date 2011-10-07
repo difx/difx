@@ -184,7 +184,11 @@ if savednchan > 0:
             ax.yaxis.set_major_locator(MaxNLocator(4))
 	    pylab.ylabel("Freq (MHz)")
 	    pylab.imshow(numpyamp, aspect='auto', origin='lower')
-	if targetbaseline < 0:
-	    pylab.savefig("dynamicspectra.bscrunch.png", format="png")
+
+	if toscreen:
+	    pylab.show()
 	else:
-	    pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
+	    if targetbaseline < 0:
+	        pylab.savefig("dynamicspectra.bscrunch.png", format="png")
+	    else:
+	        pylab.savefig("dynamicspectra.b%d.png" % (targetbaseline), format="png")
