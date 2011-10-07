@@ -432,7 +432,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 {                   
                 rscaled = rec->comp[i].real;
                 iscaled = rec->comp[i].imag;
-                if (fabs(rscaled) > MAGLIM || fabs (iscaled) > MAGLIM)
+                if (fabs(rscaled) > MAGLIM || fabs (iscaled) > MAGLIM
+                        || isinf (rscaled) || isinf (iscaled) 
+                        || isnan (rscaled) || isnan (iscaled))
                     {               // impossibly large values overwritten with 0
                     printf ("Warning! Corrupt visibility %le %le for baseline %s in input file\n",
                             rscaled, iscaled, blines[n]);
