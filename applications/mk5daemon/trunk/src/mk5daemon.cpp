@@ -481,6 +481,38 @@ void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage)
 	}
 }
 
+void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage)
+{
+	char message[DIFX_MESSAGE_LENGTH];
+	int i;
+
+	/* First replace special characters */
+	for(i = 0; i < DIFX_MESSAGE_LENGTH-1 && errorMessage[i]; i++)
+	{
+		if(errorMessage[i] < ' ')
+		{
+			message[i] = ' ';
+		}
+		else if(errorMessage[i] == ':')
+		{
+			message[i] = '|';
+		}
+		else if(errorMessage[i] == ';' || errorMessage[i] == '=' || errorMessage[i] == '?' || errorMessage[i] == '!')
+		{
+			message[i] = '~';
+		}
+		else
+		{
+			message[i] = errorMessage[i];
+		}
+	}
+	message[i] = 0;
+
+	std::string errString(message);
+
+	D->errors->remove(errString);
+}
+
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength)
 {
 	int n;
@@ -707,6 +739,13 @@ int main(int argc, char **argv)
 				}
 				justStarted = 0;
 			}
+
+			/* if record=off was requested but never completed after 5 seconds, raise an error */
+			if(D->recordPipe && D->stopRecordRequestTime > 0 && time(0) - D->stopRecordRequestTime > 5)
+			{
+				Mk5Daemon_addVSIError(D, "Recording hung during stop request");
+				D->recordState = RECORD_HUNG;
+			}
 #endif
 		}
 
@@ -747,6 +786,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
+			D->stopRecordRequestTime = 0;
 			recordFD = -2;
 		}
 #endif
@@ -773,57 +813,6 @@ int main(int argc, char **argv)
 			continue;
 		}
 
-		if(D->acceptSock)
-		{
-			if(FD_ISSET(D->acceptSock, &socks))
-			{
-				int newSock = accept(D->acceptSock, 0, 0);
-				if(newSock < 0)
-				{
-					snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure%d\n", newSock);
-					Logger_logData(D->log, message);
-				}
-				else
-				{
-					/* find a slot for it */
-					for(int c = 0; c < MaxConnections; c++)
-					{
-						if(D->clientSocks[c] == 0)
-						{
-							D->clientSocks[c] = newSock;
-							newSock = -1;
-
-							snprintf(message, DIFX_MESSAGE_LENGTH, "New VSI-S connection into slot %d of %d\n", c, MaxConnections);
-							Logger_logData(D->log, message);
-
-							break;
-						}
-					}
-					if(newSock != -1)
-					{
-						Logger_logData(D->log, "No room for new VSI-S connection\n");
-
-						close(newSock);
-					}
-				}
-			}
-
-			for(int c = 0; c < MaxConnections; c++)
-			{
-				if(FD_ISSET(D->clientSocks[c], &socks))
-				{
-					int v = handleVSIS(D, D->clientSocks[c]);
-					
-					if(v < 0) /* connection closed? */
-					{
-						close(D->clientSocks[c]);
-						D->clientSocks[c] = 0;
-						snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S connection on slot %d closed\n", c);
-						Logger_logData(D->log, message);
-					}
-				}
-			}
-		}
 #ifdef HAVE_XLRAPI_H
 		if(recordFD >= 0 && FD_ISSET(recordFD, &socks))
 		{
@@ -850,6 +839,14 @@ int main(int argc, char **argv)
 						for(int b = 0; b < 8; b++)
 						{
 							D->driveStats[D->activeBank][drive][b].count += atoi(A[2+b]);
+						}
+						if(n >= 11)
+						{
+							D->driveStatsReplaced[D->activeBank][drive] = atoi(A[10]);
+						}
+						else
+						{
+							D->driveStatsReplaced[D->activeBank][drive] = 0;
 						}
 					}
 					else if(strcmp(A[0], "Error") == 0)
@@ -919,6 +916,7 @@ int main(int argc, char **argv)
 		else if(D->recordState == RECORD_ON && t - D->recordLastMessage > 5)
 		{
 			D->recordState = RECORD_HUNG;
+			Mk5Daemon_addVSIError(D, "Recording program has hung");
 		}
 		else if(D->recordState == RECORD_WAITING && D->recordRate > 1.0)
 		{
@@ -927,8 +925,61 @@ int main(int argc, char **argv)
 		else if(D->recordState == RECORD_HUNG && t - D->recordLastMessage < 5)
 		{
 			D->recordState = RECORD_ON;
+			Mk5Daemon_delVSIError(D, "Recording program has hung");
 		}
 #endif
+
+		if(D->acceptSock)
+		{
+			if(FD_ISSET(D->acceptSock, &socks))
+			{
+				int newSock = accept(D->acceptSock, 0, 0);
+				if(newSock < 0)
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S accept failure%d\n", newSock);
+					Logger_logData(D->log, message);
+				}
+				else
+				{
+					/* find a slot for it */
+					for(int c = 0; c < MaxConnections; c++)
+					{
+						if(D->clientSocks[c] == 0)
+						{
+							D->clientSocks[c] = newSock;
+							newSock = -1;
+
+							snprintf(message, DIFX_MESSAGE_LENGTH, "New VSI-S connection into slot %d of %d\n", c, MaxConnections);
+							Logger_logData(D->log, message);
+
+							break;
+						}
+					}
+					if(newSock != -1)
+					{
+						Logger_logData(D->log, "No room for new VSI-S connection\n");
+
+						close(newSock);
+					}
+				}
+			}
+
+			for(int c = 0; c < MaxConnections; c++)
+			{
+				if(FD_ISSET(D->clientSocks[c], &socks))
+				{
+					int v = handleVSIS(D, D->clientSocks[c]);
+					
+					if(v < 0) /* connection closed? */
+					{
+						close(D->clientSocks[c]);
+						D->clientSocks[c] = 0;
+						snprintf(message, DIFX_MESSAGE_LENGTH, "VSI-S connection on slot %d closed\n", c);
+						Logger_logData(D->log, message);
+					}
+				}
+			}
+		}
 		if(D->difxSock && FD_ISSET(D->difxSock, &socks))
 		{
 			int n, v;

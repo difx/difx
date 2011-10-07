@@ -45,7 +45,7 @@
 const char program[] = "testmod";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110916";
+const char verdate[] = "20111007";
 
 const int defaultBlockSize = 10000000;
 const int defaultNBlock = 50;
@@ -577,13 +577,16 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 			for(d = 0; d < 8; d++)
 			{
+				DWORD nReplaced;
+
+				WATCHDOG( nReplaced = XLRDiskRepBlkCount(xlrDevice, d/2, d%2) );
 				WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 				if(xlrRC != XLR_SUCCESS)
 				{
 					fprintf(stderr, "XLRGetDriveStats failed for drive %d\n", d);
 					continue;
 				}
-				printf("Stats[%d] = %u %u %u %u %u %u %u %u\n", d,
+				printf("Stats[%d] = %u %u %u %u %u %u %u %u  %u\n", d,
 					(unsigned int)(driveStats[0].count), 
 					(unsigned int)(driveStats[1].count),
 					(unsigned int)(driveStats[2].count), 
@@ -591,7 +594,8 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 					(unsigned int)(driveStats[4].count), 
 					(unsigned int)(driveStats[5].count),
 					(unsigned int)(driveStats[6].count), 
-					(unsigned int)(driveStats[7].count));
+					(unsigned int)(driveStats[7].count),
+					(unsigned int)nReplaced);
 			}
 
 			if(die)
@@ -724,13 +728,16 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 
 		for(d = 0; d < 8; d++)
 		{
+			DWORD nReplaced;
+
+			WATCHDOG( nReplaced = XLRDiskRepBlkCount(xlrDevice, d/2, d%2) );
 			WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 			if(xlrRC != XLR_SUCCESS)
 			{
 				fprintf(stderr, "XLRGetDriveStats failed for drive %d\n", d);
 				continue;
 			}
-			printf("Stats[%d] = %u %u %u %u %u %u %u %u\n", d,
+			printf("Stats[%d] = %u %u %u %u %u %u %u %u  %u\n", d,
 				(unsigned int)(driveStats[0].count), 
 				(unsigned int)(driveStats[1].count),
 				(unsigned int)(driveStats[2].count), 
@@ -738,7 +745,8 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 				(unsigned int)(driveStats[4].count), 
 				(unsigned int)(driveStats[5].count),
 				(unsigned int)(driveStats[6].count), 
-				(unsigned int)(driveStats[7].count));
+				(unsigned int)(driveStats[7].count),
+				(unsigned int)nReplaced);
 		}
 
 		if(die)

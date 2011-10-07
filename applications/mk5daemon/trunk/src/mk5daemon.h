@@ -167,10 +167,12 @@ typedef struct
 	S_DIR dir_info[N_BANK];
 	S_DRIVESTATS driveStatsConfig[XLR_MAXBINS];
 	S_DRIVESTATS driveStats[N_BANK][N_DRIVE][XLR_MAXBINS];
+	unsigned int driveStatsReplaced[N_BANK][N_DRIVE];
 	bool openStreamstorError;
 #endif
 	int systemReady;
 	FILE *recordPipe;
+	time_t stopRecordRequestTime;
 	enum RecordState recordState;
 	std::list<std::string> *errors;
 	time_t recordT0;		/* time at which recording started */
@@ -217,6 +219,7 @@ void Mk5Daemon_poweroff(Mk5Daemon *D);
 void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G);
 
 void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
+void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
 
 #ifdef HAVE_XLRAPI_H

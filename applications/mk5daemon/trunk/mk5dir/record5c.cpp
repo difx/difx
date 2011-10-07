@@ -58,7 +58,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110925";
+const char verdate[] = "20111007";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
@@ -153,7 +153,10 @@ long long int parseMAC(const char *str)
 	unsigned long long int a, b, c, d, e, f;
 
 	n = sscanf(str, "%Lx:%Lx:%Lx:%Lx:%Lx:%Lx%n", &a, &b, &c, &d, &e, &f, &p);
-
+	if(n != 6)
+	{
+		n = sscanf(str, "%Lx.%Lx.%Lx.%Lx.%Lx.%Lx%n", &a, &b, &c, &d, &e, &f, &p);
+	}
 	if(strlen(str) != p)
 	{
 		return -1;
@@ -491,6 +494,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	struct timezone tz;
 	double t0, t=0, t_ref, t_next_ref, rate;
 	long long p_ref, p_next_ref;
+	long long totalChunks = 0LL;
 	UINT32 nReject = 0;
 
 	if(bank == BANK_A)
@@ -504,6 +508,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	else
 	{
 		printf("Error 9 Only bank A = %d and bank B = %d supported not %d\n", BANK_A, BANK_B, bank);
+		fflush(stdout);
 
 		return -1;
 	}
@@ -824,10 +829,13 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 
 		for(int d = 0; d < 8; d++)
 		{
+			DWORD nReplaced;
+
+			WATCHDOG( nReplaced = XLRDiskRepBlkCount(xlrDevice, d/2, d%2) );
 			WATCHDOG( xlrRC = XLRGetDriveStats(xlrDevice, d/2, d%2, driveStats) );
 			if(xlrRC == XLR_SUCCESS)
 			{
-				printf("Stats %d %u %u %u %u %u %u %u %u\n", d,
+				printf("Stats %d  %u %u %u %u %u %u %u %u  %u\n", d,
 					(unsigned int)(driveStats[0].count),
 					(unsigned int)(driveStats[1].count),
 					(unsigned int)(driveStats[2].count),
@@ -835,10 +843,21 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 					(unsigned int)(driveStats[4].count),
 					(unsigned int)(driveStats[5].count),
 					(unsigned int)(driveStats[6].count),
-					(unsigned int)(driveStats[7].count));
+					(unsigned int)(driveStats[7].count),
+					(unsigned int)nReplaced);
 				fflush(stdout);
 			}
+			for(int b = 0; b < 8; b++)
+			{
+				totalChunks += driveStats[b].count + nReplaced;
+			}
 		}
+	}
+	printf("Sum %Ld %Ld %Ld\n", totalChunks, startByte, ptr);
+	if(ptr > startByte && totalChunks == 0)
+	{
+		printf("Error 11 no data recorded");
+		fflush(stdout);
 	}
 
 	WATCHDOG( XLRClose(xlrDevice) );
@@ -993,6 +1012,7 @@ int main(int argc, char **argv)
 			if(strlen(argv[a]) != 1)
 			{
 				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
+				fflush(stdout);
 				
 				return EXIT_FAILURE;
 			}
@@ -1007,6 +1027,7 @@ int main(int argc, char **argv)
 			else
 			{
 				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
+				fflush(stdout);
 				
 				return EXIT_FAILURE;
 			}
@@ -1017,6 +1038,7 @@ int main(int argc, char **argv)
 			if(i >= MaxLabelLength)
 			{
 				printf("Error 10 scan name too long (%d > %d)\n", i, MaxLabelLength-1);
+				fflush(stdout);
 
 				return EXIT_FAILURE;
 			}
@@ -1024,6 +1046,7 @@ int main(int argc, char **argv)
 		else
 		{
 			printf("Error 2 too many arguments given\n");
+			fflush(stdout);
 
 			return EXIT_FAILURE;
 		}
@@ -1032,6 +1055,7 @@ int main(int argc, char **argv)
 	if(bank < 0)
 	{
 		printf("Error 3 incomplete command line\n");
+		fflush(stdout);
 		
 		return EXIT_FAILURE;
 	}
@@ -1040,6 +1064,7 @@ int main(int argc, char **argv)
 	if(v < 0)
 	{
 		printf("Error 4 initWatchdog() failed\n");
+		fflush(stdout);
 
 		return EXIT_FAILURE;
 	}
@@ -1059,6 +1084,7 @@ int main(int argc, char **argv)
 	if(v < 0)
 	{
 		printf("Error 5 Another process (pid=%d) has a lock on this Mark5 unit\n", getMark5LockPID());
+		fflush(stdout);
 	}
 	else
 	{

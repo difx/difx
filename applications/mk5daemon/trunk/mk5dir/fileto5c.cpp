@@ -30,7 +30,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mark5dir.h"
-#if SDKVERSION >= 9
 #include <unistd.h>
 #include <ctype.h>
 #include <cstring>
@@ -600,8 +599,6 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 	t_ref = t_next_ref = t0 = tv.tv_sec + tv.tv_usec*1.0e-6;
 	p_ref = p_next_ref = ptr;
 
-	
-
 	while(!die)
 	{
 		unsigned int n = fread(buffer, 1, chunkSize, in);
@@ -1014,14 +1011,3 @@ int main(int argc, char **argv)
 	return retval;
 }
 
-#else
-/* Just print nocando */
-
-int main()
-{
-	printf("Sorry, this only works on SDK9+ machines\n");
-
-	return EXIT_FAILURE;
-}
-
-#endif

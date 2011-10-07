@@ -818,7 +818,7 @@ int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 	else
 	{
 		const S_DRIVESTATS *stats = D->driveStats[D->activeBank][D->driveStatsIndex[D->activeBank]];
-		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %lu : %lu : %lu : %lu : %lu : %lu : %lu : %lu;", fields[0],
+		v = snprintf(response, maxResponseLength, "!%s? 0 : %d : %lu : %lu : %lu : %lu : %lu : %lu : %lu : %lu : %lu;", fields[0],
 			D->driveStatsIndex[D->activeBank],
 			static_cast<unsigned long int>(stats[0].count),
 			static_cast<unsigned long int>(stats[1].count),
@@ -827,7 +827,8 @@ int get_stats_Query(Mk5Daemon *D, int nField, char **fields, char *response, int
 			static_cast<unsigned long int>(stats[4].count),
 			static_cast<unsigned long int>(stats[5].count),
 			static_cast<unsigned long int>(stats[6].count),
-			static_cast<unsigned long int>(stats[7].count));
+			static_cast<unsigned long int>(stats[7].count),
+			static_cast<unsigned long int>(D->driveStatsReplaced[D->activeBank][D->driveStatsIndex[D->activeBank]]));
 		
 
 		D->driveStatsIndex[D->activeBank] = (D->driveStatsIndex[D->activeBank] + 1) % N_DRIVE;
@@ -1303,6 +1304,7 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 		{
 			system("killall -INT record5c");
 			v = snprintf(response, maxResponseLength, "!%s = 1;", fields[0]);
+			D->stopRecordRequestTime = time(0);
 		}
 	}
 	else if(strcmp(fields[1], "kill") == 0)
