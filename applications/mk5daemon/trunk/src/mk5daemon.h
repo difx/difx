@@ -32,6 +32,7 @@
 
 #include <map>
 #include <list>
+#include <string>
 #include <time.h>
 #include <difxmessage.h>
 #include "config.h"

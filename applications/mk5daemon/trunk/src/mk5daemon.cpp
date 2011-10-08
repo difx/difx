@@ -31,6 +31,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <algorithm>
 #include <unistd.h>
 #include <time.h>
 #include <signal.h>
