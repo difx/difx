@@ -1302,8 +1302,18 @@ int record_Command(Mk5Daemon *D, int nField, char **fields, char *response, int 
 		}
 		else
 		{
+			int r;
+
 			system("killall -INT record5c");
-			v = snprintf(response, maxResponseLength, "!%s = 1;", fields[0]);
+			r = Mk5Daemon_stopRecord(D);
+			if(r == 0)
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+			}
+			else
+			{
+				v = snprintf(response, maxResponseLength, "!%s = 4 : Record stop not complete;", fields[0]);
+			}
 			D->stopRecordRequestTime = time(0);
 		}
 	}

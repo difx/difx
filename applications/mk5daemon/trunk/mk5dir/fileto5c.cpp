@@ -952,7 +952,24 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			snprintf(label, MaxLabelLength, "%s", filename);
+			const char *p;
+			int nUnderscore = 0;
+
+			/* If the filename has more than 2 underscores, take only the portion after the third-to-last */
+			for(p = filename + strlen(filename) - 1; p > filename; p--)
+			{
+				if(*p == '_')
+				{
+					nUnderscore++;
+					if(nUnderscore >= 3)
+					{
+						p++;
+						break;
+					}
+				}
+			}
+
+			snprintf(label, MaxLabelLength, "%s", p);
 		}
 	}
 
