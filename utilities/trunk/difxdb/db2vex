@@ -186,18 +186,10 @@ def calcMJD(t):
 	return mjd
 
 def day2mjd(year, doy):
-	NYR = int(year)
-	NYRD = int(doy)
-	# L2 IS -1 IF LEAP YEAR, -2 IF NOT.
-	L2 = NYR/4-(NYR+7)/4-NYR/100+(NYR+99)/100+NYR/400-(NYR+399)/400
-	MO = (12*NYRD+356+(NYRD+322)/367*(6-12*L2))/367
-	NDA = NYRD-(367*MO-362)/12-(MO+9)/12*L2
-	NYR1 = NYR-1
-	MJD = NYRD-678576+365*NYR1+NYR1/4-NYR1/100+NYR1/400
-	return MJD
+	return (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(doy)-1) - mjd0).days
 
 def getFSTime(str):
-	if str[0:2] != '20':
+	if str[0:2] != '20':	# work for years >= 2000, < 2100
 		return -1.0
 	if str[14] != ':':
 		return -1.0
@@ -334,7 +326,7 @@ def getActiveBankFromNewDB(newDb, startMJD, stopMJD, isMark5C, verbose):
 		if s[2] != unitName:
 			continue
 
-		row = [upper(stn), l[3], l[5]]
+		row = [upper(stn), l[3], l[5]]		# station, time, bank
 		activeBanks.append(row)
 
 	if nbad > 0:
@@ -343,15 +335,58 @@ def getActiveBankFromNewDB(newDb, startMJD, stopMJD, isMark5C, verbose):
 	return activeBanks
 
 # A block is [startMjd, stopMJD, VSN, recorder]
-def genMark5CBlocks(stn, tapes, activeBanks):
+def genMark5CBlocks_old(stn, tapes, activeBanks):
 	blocks = []
 
-	for t in tapes:
+	for t in tapes[len(tapes)/3:]:
 		if t[2] == stn and len(t[4]) > 0:
 			return [[tapes[0][3], tapes[-1][3], t[4], t[5]]]
 
 	return blocks
 		
+def genMark5CBlocks(stn, tapes, banks):
+	blocks = []
+
+	recorder = -1
+	VSN = {-1:'', 0:'', 1:'', 2:'', 3:'', 4:'', 5:''}
+
+	nTape = len(tapes)
+	nBank = len(banks)
+
+	t = 0
+	b = 0
+
+	while(1):
+		if t == nTape and b == nBank:
+			break
+		if b == nBank or (t < nTape and tapes[t][3] < banks[b][1]):	# time to handle a tape row
+			if tapes[t][2] == stn and recorder >= 0:
+				if tapes[t][4] != VSN[recorder]:
+					if recorder == tapes[t][5] and len(VSN[recorder]) == 8:	# set end time for the last entry
+						blocks[-1][1] = tapes[t][3]
+					VSN[tapes[t][5]] = tapes[t][4]
+					if recorder == tapes[t][5] and len(VSN[recorder]) == 8:	# start new entry
+						blocks.append([tapes[t][3], 0, VSN[recorder], recorder])
+				elif len(VSN[recorder]) == 8:
+					blocks[-1][1] = tapes[t][3]
+			t += 1
+		else:								# time to handle a bank row
+			if banks[b][0] == stn:
+				if int(banks[b][2])+4 != recorder:
+					if recorder == tapes[t][5] and len(VSN[recorder]) == 8:	# set end time for the last entry
+						blocks[-1][1] = banks[b][1]
+					recorder = int(banks[b][2])+4
+					if recorder == tapes[t][5] and len(VSN[recorder]) == 8:	# start new entry
+						blocks.append([banks[b][1], 0, VSN[recorder], recorder])
+				elif len(VSN[recorder]) == 8:
+					blocks[-1][1] = tapes[t][3]
+			b += 1
+	
+	# if no end time was set, set it here
+	if len(blocks) > 0 and blocks[-1][2] == 0:
+		blocks.pop()
+
+	return blocks
 
 
 def getVSN(vsns, stn, unitNumber, t):
