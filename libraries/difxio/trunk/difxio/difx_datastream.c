@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "difxio/difx_write.h"
 
 /* Note: these values cannot have whitespace */
