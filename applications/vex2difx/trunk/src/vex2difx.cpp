@@ -1448,6 +1448,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	config->tInt = corrSetup->tInt;
 	minBW = mode->sampRate/2.0;
 	fftDurNS = static_cast<int>(corrSetup->fftSize()*(0.5/minBW)*1000000000.0 + 0.5);
+	dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
 	if(corrSetup->subintNS > 0)
 	{
 		config->subintNS = corrSetup->subintNS;
@@ -1474,14 +1475,13 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 
 		//first test how big a single FFT is - if it is too big, fail with a warning and a suggestion
-		if(floatFFTDurNS*D->dataBufferFactor/D->nDataSegments > (1<<31) - 1)
+		if(floatFFTDurNS*D->dataBufferFactor/D->nDataSegments > (1LL<<31) - 1)
 		{
 			cerr << "A single FFT is too long (" << floatFFTDurNS << " ns)!" << endl;
 			cerr << "The maximum duration of an FFT is 2^31 - 1 nanoseconds" << endl;
 			cerr << "Please reduce nFFTChan accordingly" << endl;
 			exit(EXIT_FAILURE);
 		}
-		dataRate = (mode->sampRate*mode->getBits()*mode->subbands.size());
 		config->subintNS = fftDurNS;
 		msgSize = (config->subintNS*1.0e-9)*dataRate/8.0;
 		readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
