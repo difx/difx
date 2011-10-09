@@ -223,8 +223,6 @@ void Mk5Daemon_addVSIError(Mk5Daemon *D, const char *errorMessage);
 void Mk5Daemon_delVSIError(Mk5Daemon *D, const char *errorMessage);
 int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength);
 
-int Mk5Daemon_stopRecord(Mk5Daemon *D);
-
 #ifdef HAVE_XLRAPI_H
 int lockStreamstor(Mk5Daemon *D, const char *identifier, int wait);
 int unlockStreamstor(Mk5Daemon *D, const char *identifier);
@@ -237,6 +235,7 @@ void Mk5Daemon_startMk5Copy(Mk5Daemon *D, const char *bank);
 void Mk5Daemon_stopMk5Copy(Mk5Daemon *D);
 void Mk5Daemon_startCondition(Mk5Daemon *D, const char *options);
 void Mk5Daemon_stopCondition(Mk5Daemon *D);
+int Mk5Daemon_stopRecord(Mk5Daemon *D);
 void Mk5Daemon_setBank(Mk5Daemon *D, int bank);
 int Mk5Daemon_setProtect(Mk5Daemon *D, enum WriteProtectState state, char *msg);
 int Mk5Daemon_error(Mk5Daemon *D, unsigned int *xlrError , char *msg);

@@ -49,6 +49,7 @@ extern int watchdogVerbose;
 extern char watchdogStatement[256];
 extern pthread_mutex_t watchdogLock;
 extern char watchdogXLRError[XLR_ERROR_LENGTH+1];
+extern int watchdogXLRErrorCode;
 
 /* Macro to run "statement" but set a thread to watch to make sure it doesn't take too long */
 #define WATCHDOG(statement) \
@@ -88,7 +89,8 @@ extern char watchdogXLRError[XLR_ERROR_LENGTH+1];
 	pthread_mutex_unlock(&watchdogLock); \
 	if(watchdogRC != XLR_SUCCESS) \
 	{ \
-		XLRGetErrorMessage(watchdogXLRError, XLRGetLastError( )); \
+		watchdogXLRErrorCode = XLRGetLastError(); \
+		XLRGetErrorMessage(watchdogXLRError, watchdogXLRErrorCode); \
 		fprintf(stderr, "%s failed.\nError: %s\n", #statement, watchdogXLRError); \
 		return -1; \
 	} \

@@ -529,6 +529,7 @@ int Mk5Daemon_popVSIError(Mk5Daemon *D, char *errorMessage, int maxLength)
 	return n;
 }
 
+#ifdef HAVE_XLRAPI_H
 void handleRecordMessage(Mk5Daemon *D, time_t t)
 {
 	char message[DIFX_MESSAGE_LENGTH];
@@ -624,6 +625,7 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 		Mk5Daemon_getModules(D);
 	}
 }
+#endif
 
 void handleDifxMessage(Mk5Daemon *D)
 {
@@ -703,6 +705,7 @@ void handleAcceptMessage(Mk5Daemon *D)
 	}
 }
 
+#ifdef HAVE_XLRAPI_H
 int Mk5Daemon_stopRecord(Mk5Daemon *D)
 {
 	int recordFD;
@@ -740,6 +743,7 @@ int Mk5Daemon_stopRecord(Mk5Daemon *D)
 
 	return 0;
 }
+#endif
 
 int main(int argc, char **argv)
 {

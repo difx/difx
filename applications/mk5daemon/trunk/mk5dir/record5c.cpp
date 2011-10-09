@@ -507,7 +507,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	}
 	else
 	{
-		printf("Error 9 Only bank A = %d and bank B = %d supported not %d\n", BANK_A, BANK_B, bank);
+		printf("Error 1009 Only bank A = %d and bank B = %d supported not %d\n", BANK_A, BANK_B, bank);
 		fflush(stdout);
 
 		return -1;
@@ -522,7 +522,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	WATCHDOGTEST( XLRGetBankStatus(xlrDevice, bank, &bankStat) );
 	if(bankStat.State != STATE_READY)
 	{
-		printf("Error 6 Bank %c not ready\n", 'A'+bank);
+		printf("Error 1006 Bank %c not ready\n", 'A'+bank);
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 		
@@ -552,7 +552,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	}
 	else
 	{
-		printf("Error 7 No VSN set\n");
+		printf("Error 1007 No VSN set\n");
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 
@@ -575,7 +575,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	WATCHDOG( len = XLRGetUserDirLength(xlrDevice) );
 	if((len < 128 && len != 0) || len % 128 != 0)
 	{
-		printf("Error 8 directory format problem\n");
+		printf("Error 1008 directory format problem\n");
 		fflush(stdout);
 		WATCHDOG( XLRClose(xlrDevice) );
 
@@ -856,7 +856,7 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 	printf("Sum %Ld %Ld %Ld\n", totalChunks, startByte, ptr);
 	if(ptr > startByte && totalChunks == 0)
 	{
-		printf("Error 11 no data recorded");
+		printf("Error 1011 no data recorded");
 		fflush(stdout);
 	}
 
@@ -1011,7 +1011,7 @@ int main(int argc, char **argv)
 		{
 			if(strlen(argv[a]) != 1)
 			{
-				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
+				printf("Error 1001 bank parameter (%s) not understood\n", argv[a]);
 				fflush(stdout);
 				
 				return EXIT_FAILURE;
@@ -1026,7 +1026,7 @@ int main(int argc, char **argv)
 			}
 			else
 			{
-				printf("Error 1 bank parameter (%s) not understood\n", argv[a]);
+				printf("Error 1001 bank parameter (%s) not understood\n", argv[a]);
 				fflush(stdout);
 				
 				return EXIT_FAILURE;
@@ -1037,7 +1037,7 @@ int main(int argc, char **argv)
 			i = snprintf(label, MaxLabelLength, "%s", argv[a]);
 			if(i >= MaxLabelLength)
 			{
-				printf("Error 10 scan name too long (%d > %d)\n", i, MaxLabelLength-1);
+				printf("Error 1010 scan name too long (%d > %d)\n", i, MaxLabelLength-1);
 				fflush(stdout);
 
 				return EXIT_FAILURE;
@@ -1045,7 +1045,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			printf("Error 2 too many arguments given\n");
+			printf("Error 1002 too many arguments given\n");
 			fflush(stdout);
 
 			return EXIT_FAILURE;
@@ -1054,7 +1054,7 @@ int main(int argc, char **argv)
 
 	if(bank < 0)
 	{
-		printf("Error 3 incomplete command line\n");
+		printf("Error 1003 incomplete command line\n");
 		fflush(stdout);
 		
 		return EXIT_FAILURE;
@@ -1063,7 +1063,7 @@ int main(int argc, char **argv)
 	v = initWatchdog();
 	if(v < 0)
 	{
-		printf("Error 4 initWatchdog() failed\n");
+		printf("Error 1004 initWatchdog() failed\n");
 		fflush(stdout);
 
 		return EXIT_FAILURE;
@@ -1083,7 +1083,7 @@ int main(int argc, char **argv)
 
 	if(v < 0)
 	{
-		printf("Error 5 Another process (pid=%d) has a lock on this Mark5 unit\n", getMark5LockPID());
+		printf("Error 1005 Another process (pid=%d) has a lock on this Mark5 unit\n", getMark5LockPID());
 		fflush(stdout);
 	}
 	else
@@ -1096,6 +1096,8 @@ int main(int argc, char **argv)
 				char message[DIFX_MESSAGE_LENGTH];
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Streamstor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				printf("Error %d %s\n", watchdogXLRErrorCode, watchdogXLRError);
+				fflush(stdout);
 			}
 
 			retval = EXIT_FAILURE;

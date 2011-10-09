@@ -40,6 +40,7 @@ pthread_mutex_t watchdogLock;
 int watchdogTimeout = 20;
 pthread_t watchdogThread;
 char watchdogXLRError[XLR_ERROR_LENGTH+1];
+int watchdogXLRErrorCode;
 
 void setWatchdogVerbosity(int v)
 {
@@ -99,6 +100,7 @@ int initWatchdog()
 	pthread_mutex_init(&watchdogLock, NULL);
 	watchdogStatement[0] = 0;
 	watchdogXLRError[0] = 0;
+	watchdogXLRErrorCode = 0;
 	watchdogTime = 0;
 	perr = pthread_create(&watchdogThread, NULL, watchdogFunction, 0);
 
