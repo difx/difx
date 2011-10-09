@@ -230,7 +230,6 @@ static int parseGN(const char *filename, int row, GainRow *G)
 	float *val = 0;
 	int action = 0;	/* State variable : 0= set LHS, 1= set RHS */
 	int v;
-	char *rv;
 
 	if(row < 0)
 	{
@@ -295,7 +294,7 @@ static int parseGN(const char *filename, int row, GainRow *G)
 		else if(c == '!') /* handle comment */
 		{
 			/* get rest of line */
-			rv = fgets(token, MAXTOKEN, in);
+			(void)fgets(token, MAXTOKEN, in);
 			token[0] = 0;
 			action = 0;
 			c = 0;

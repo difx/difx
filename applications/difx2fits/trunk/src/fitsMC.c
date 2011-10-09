@@ -79,13 +79,12 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	float dispDelayRate;
 	const DifxConfig *config;
 	const DifxScan *scan;
-	const DifxJob *job;
 	const DifxPolyModel *P;
 	double time, deltat, deltat2, deltatn;      
 	double delay, delayRate;
 	double atmosDelay, atmosRate;
 	double clock, clockRate, c1, c2;
-	int configId, jobId, dsId, antId;
+	int configId, dsId, antId;
 	int *skip;
 	int skipped=0;
 	int printed=0;
@@ -161,8 +160,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 	   config = D->config + configId;
 	   freqId1 = config->fitsFreqId + 1;
 	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
-	   jobId = D->scan[s].jobId;
-	   job = D->job + jobId;
 
 	   if(scan->im)
 	   {

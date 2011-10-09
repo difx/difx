@@ -649,7 +649,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	int antId, jobId;
 	int nRecBand;
 	int v, n;
-	double f;
 	double time, mjd;
 	float timeInt;
 	const DifxScan *scan;
@@ -674,9 +673,6 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	sprintf(bandFormFloat, "%dE", nBand);
 
 	mjd2dayno((int)(D->mjdStart), &refDay);
-
-	/* get the maximum dimensions possibly needed */
-	f = D->mjdStart - (int)(D->mjdStart);
 
 	if(nPol == 2)
 	{

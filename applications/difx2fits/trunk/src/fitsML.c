@@ -106,7 +106,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	const DifxPolyModel *P;
 	float dispDelay;
 	float dispDelayRate;
-	double start;
 	double deltat;
 	double freq;
 	int *skip;
@@ -200,7 +199,6 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   config = D->config + configId;
 	   freqId1 = config->fitsFreqId + 1;
 	   sourceId1 = D->source[scan->phsCentreSrcs[phasecentre]].fitsSourceIds[configId] + 1;
-	   start = D->scan[s].mjdStart - (int)(D->mjdStart);
 	   
 	   if(scan->im)
 	   {
