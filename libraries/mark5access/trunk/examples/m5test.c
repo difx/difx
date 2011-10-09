@@ -37,7 +37,7 @@ const char author[]  = "Walter Brisken";
 const char version[] = "1.1";
 const char verdate[] = "2010 Aug 08";
 
-const int ChunkSize = 1024;
+const int ChunkSize = 10000;
 
 int die = 0;
 
@@ -91,6 +91,7 @@ int verify(const char *filename, const char *formatname, long long offset)
 	if(!ms)
 	{
 		printf("problem opening %s\n", filename);
+
 		return 0;
 	}
 
@@ -120,7 +121,7 @@ int verify(const char *filename, const char *formatname, long long offset)
 			total += ChunkSize;
 			unpacked += status;
 		}
-		if(i%1024 == 0)
+		if(i%1 == 0)
 		{
 			int mjd, sec;
 			double ns;

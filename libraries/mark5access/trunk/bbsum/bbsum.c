@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2007 by Walter Brisken                                  *
+ *   Copyright (C) 2007-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -54,7 +54,7 @@
 const char program[] = "bbsum";
 const char author[]  = "Walter Brisken";
 const char version[] = "1.0";
-const char verdate[] = "20080115";
+const char verdate[] = "20111008";
 
 int usage(const char *pgm)
 {
@@ -193,7 +193,7 @@ int main(int argc, char **argv)
 
 	for(f = 0; f < files.gl_pathc; f++)
 	{
-		summarize(files.gl_pathv[f], 55240);
+		summarize(files.gl_pathv[f], (int)mjd);
 	}
 	
 	return 0;

@@ -133,7 +133,6 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 {
 	struct mark5_format_vdif *v;
 	unsigned int *headerwords, word0, word1;
-	unsigned char *headerbytes;
 	int seconds, days;
 	int refepoch;
 
@@ -160,18 +159,20 @@ static int mark5_stream_frame_time_vdif(const struct mark5_stream *ms,
 	headerwords = (unsigned int *)(ms->frame);
 
 #ifdef WORDS_BIGENDIAN
-	/* Motorola byte order requires some fiddling */
-	headerbytes = ms->frame + 0;
-	word0 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
-	headerbytes = ms->frame + 4;
-	word1 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
+	{
+		unsigned char *headerbytes;
+
+		/* Motorola byte order requires some fiddling */
+		headerbytes = ms->frame;
+		word0 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
+		headerbytes = ms->frame + 4;
+		word1 = (headerbytes[0] << 24) | (headerbytes[1] << 16) | (headerbytes[2] << 8) | headerbytes[3];
+	}
 #else
 	/* Intel byte order does not */
 	word0 = headerwords[0];
 	word1 = headerwords[1];
 #endif
-
-	headerbytes = ms->frame;
 
 	seconds = word0 & 0x3FFFFFFF;	/* bits 0 to 29 */
 	refepoch = (word1 >> 24) & 0x3F;

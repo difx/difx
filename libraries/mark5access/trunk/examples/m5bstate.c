@@ -63,10 +63,10 @@ int bstate(const char *filename, const char *formatname, int nframes,
 	struct mark5_stream *ms;
         double **data;
         long **bstate;
-	int c, i, j, k, status;
+	int i, j, k, status;
 	int chunk, nif, nstates;
 	long long total, unpacked;
-	double f, a, x;
+	double a, x;
         int sum;       
         double *gfact;
 
@@ -210,7 +210,7 @@ int bstate(const char *filename, const char *formatname, int nframes,
 		}
                 for(j = 0; j < nstates; j++)
                 {
-                       printf("%7d", bstate[i][j]);
+                       printf("%7ld", bstate[i][j]);
                 }
                 printf("    ");
                 for(j = 0; j < nstates; j++)

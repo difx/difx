@@ -150,7 +150,7 @@ int verify(const char *filename, const char *formatname, int refMJD)
 
 
 	long endSec = skipNs / 1e9;
-	double endNs = skipNs - endSec*1e9;	/* FIXME: variable set but not used */
+	/* double endNs = skipNs - endSec*1e9; */	/* FIXME: variable set but not used */
 
 	status = mark5_stream_seek(ms, mjd, sec+endSec-1, ns);
 
