@@ -13,3 +13,6 @@
 dist_bin_SCRIPTS = \
 	padCalcScans \
 	oms2v2d
+noinst_SCRIPTS = \
+	queueVex \
+	goUSNO
