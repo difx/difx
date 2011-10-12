@@ -46,6 +46,7 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
         record_chan,
         once = FALSE,
         refDay,
+        configId,
         nclock;
 
         size_t linemax = 10000;
@@ -262,7 +263,8 @@ int createType3s (DifxInput *D,     // difx input structure, already filled
                                         // calculate and insert rot start time of record
                     t309.rot = 3.2e7 * 8.64e4 * (t - 1.0);
                                         // pcal integration period same as main AP
-                    t309.acc_period =  D->config->tInt;
+                    configId = D->scan[scanId].configId;
+                    t309.acc_period =  D->config[configId].tInt;
                                         // debug print
                     if (opts->verbose > 2)
                         printf ("      pcal record ant %s t %lf tint %lf cable_delay %lf"

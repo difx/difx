@@ -28,7 +28,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
         nant = 0,
         scan_found = FALSE,
         tarco = FALSE,              // true iff target_correlator = has been done
-        sourceId;
+        sourceId,
+        configId;
 
 
     char s[256],
@@ -96,7 +97,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     FILE *fin,
          *fout;
                                     // function prototypes
-    void fake_bocf_period(char [256], DifxInput *);
+    void fake_bocf_period(char [256], DifxConfig *);
     int isValidAntenna(const DifxInput *, char *, int);
 
                                     // initialize memory as necessary
@@ -110,6 +111,12 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     if (sourceId < 0 || sourceId > D->nSource)
         {
         printf("sourceId %d out of range\n", sourceId);
+        return (-1);
+        }
+    configId = D->scan[scanId].configId;
+    if (configId < 0)
+        {
+        printf("No config for scan %d\n", scanId);
         return (-1);
         }
 
@@ -302,7 +309,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     *(strchr (line, '=')+2) = 0;
                     strcat (line, buff); 
                                     // comment out freq channels that weren't correlated
-                    if (D->config[D->scan[scanId].configId].freqIdUsed[numchan-1] == 0)
+                    if (D->config[configId].freqIdUsed[numchan-1] == 0)
                         line[0] = '*';
                     }
                 break;
@@ -575,12 +582,12 @@ int createRoot (DifxInput *D,       // difx input structure pointer
             {
             if (strncmp (extra_lines[i], " AP_length", 10) == 0)
                 {
-                sprintf (buff, " AP_length = %7.4lf sec;\n", D->config->tInt);
+                sprintf (buff, " AP_length = %7.4lf sec;\n", D->config[configId].tInt);
                 fputs (buff, fout);
                 }
             else if (strncmp (extra_lines[i], " bocf_period", 12) == 0)
                 {
-                fake_bocf_period(buff, D);
+                fake_bocf_period(buff, D->config + configId);
                 fputs (buff, fout);
                 }
             else
@@ -606,7 +613,7 @@ char getband (double freq)
     }
 
 /*
- * fourfit requires that the AP (D->config->tInt) be an integral
+ * fourfit requires that the AP (D->config[configId].tInt) be an integral
  * number of bocf periods.  There is no bocf period in the s/w
  * correlator, but the subintNS period is perhaps similar.
  * If it isn't suitable, we'll just quarter the AP and move on.
@@ -616,16 +623,16 @@ char getband (double freq)
  *
  * bocf units are 32e6/s == 32e-3/ns
  */
-void fake_bocf_period(char buff[256], DifxInput *D)
+void fake_bocf_period(char buff[256], DifxConfig *config)
     {
     unsigned long ap_in_sysclks, bocf_period;
-    ap_in_sysclks = rint((double)D->config->tInt * 32e6 / 1.0);
-    bocf_period = (D->config->subintNS * 32) / 1000;
+    ap_in_sysclks = rint((double)config->tInt * 32e6 / 1.0);
+    bocf_period = (config->subintNS * 32) / 1000;
     if (ap_in_sysclks % bocf_period != 0)
     bocf_period = ap_in_sysclks / 4;
 
     sprintf (buff, " bocf_period = %lu;\n*subintNS = %d;\n",
-    bocf_period, D->config->subintNS);
+    bocf_period, config->subintNS);
     }
 
 int isValidAntenna(const DifxInput *D, char *antName, int scanId)

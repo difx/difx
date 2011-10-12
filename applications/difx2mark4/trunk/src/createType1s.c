@@ -51,6 +51,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
         n120_tot,
         gv_stat,
         oldScan,
+        configId,
         cn_lab;                     // channel # used as a label in the channel name
 
     char inname[DIFXIO_FILENAME_LENGTH],    // file name of input data file
@@ -261,6 +262,9 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
                 nread--;
                 break;              // exit out of job loop
                 }
+                                    // get configId for this scan
+            configId = D->scan[scanId].configId;
+
                                     // compute antenna indices for this record
             if (D->job->antennaIdRemap)
                 {
@@ -471,7 +475,7 @@ int createType1s (DifxInput *D,     // ptr to a filled-out difx input structure
 
                                     // calculate accumulation period index from start of scan
             u.t120.ap = (8.64e4 * (rec->mjd - D->scan[scanId].mjdStart) + rec->iat)
-                                 / D->config->tInt;
+                                 / D->config[configId].tInt;
                                     // write a type 120 record to the appropriate file
             write_t120 (&u.t120, fout[n]);
             n120[n]++;
