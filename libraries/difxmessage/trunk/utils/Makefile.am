@@ -15,7 +15,8 @@ bin_PROGRAMS = \
 	sendtransient \
 	sendsmart \
 	updatedifxclock \
-	difxlog
+	difxlog \
+	probemachine
 
 dist_bin_SCRIPTS = \
 	cpumon \
@@ -26,6 +27,11 @@ dist_bin_SCRIPTS = \
 	smartmon \
 	statemon \
 	mk5display
+
+probemachine_SOURCES = \
+	probemachine.c \
+	testmachine.c \
+	testmachine.h
 
 testdifxmessagesend_SOURCES = \
 	testdifxmessagesend.c
