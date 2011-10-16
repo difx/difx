@@ -14,6 +14,8 @@ parser.add_option("-b", "--baseline", dest="baseline", metavar="targetbaseline",
 parser.add_option("-c", "--maxchannels", dest="maxchannels", metavar="MAXCHANNELS",
                   default="33000",
                   help="The length of the array that will be allocated to hold vis results")
+parser.add_option("-p", "--pols", dest="pollist", default="RR,RL,LR,LL,YY,YX,XY,XX",
+                  help="Only display polarization pairs from this comma-separated list")
 parser.add_option("-v", "--verbose", dest="verbose", action="store_true", default=False,
                   help="Turn verbose printing on")
 parser.add_option("-i", "--inputfile", dest="inputfile", default="",
@@ -32,6 +34,7 @@ numfiles = len(args)
 targetbaseline = int(options.baseline)
 targetfreq = int(options.freq)
 maxchannels    = int(options.maxchannels)
+pollist        = options.pollist.upper().split(",")
 verbose        = options.verbose
 inputfile      = options.inputfile
 toscreen       = options.toscreen
@@ -125,7 +128,7 @@ while not len(nextheader[0]) == 0:
             phase[i][j] = math.atan2(cvis[1], cvis[0])
 	phase[i] = (numpy.unwrap(phase[i]))*180.0/math.pi
 	if (targetbaseline < 0 or targetbaseline == baseline[i]) and \
-	    (targetfreq < 0 or targetfreq == freqindex[i]):
+	    (targetfreq < 0 or targetfreq == freqindex[i]) and (polpair[i] in pollist):
             lag[i] = fft.ifft(vis[i], nchan[i])
             for j in range(nchan[i]/2):
                 lagamp[i][j+nchan[i]/2] = abs(lag[i][j])
@@ -140,7 +143,7 @@ while not len(nextheader[0]) == 0:
                             print nextheader[i]
                         break
             if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
-               (targetfreq < 0 or freqindex[0] == targetfreq):
+               (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist):
                 maxlag = max(lagamp[i])
                 maxindex = lagamp[i].index(maxlag)
                 delayoffsetus = (maxindex - nchan[i]/2) * 1.0/(freqs[freqindex[0]].bandwidth*2)
@@ -160,7 +163,7 @@ while not len(nextheader[0]) == 0:
                 print snr
                 print maxlag
     if (targetbaseline < 0 or baseline[0] == targetbaseline) and \
-       (targetfreq < 0 or freqindex[0] == targetfreq):
+       (targetfreq < 0 or freqindex[0] == targetfreq) and (polpair[0] in pollist):
         pylab.subplot(311)
         ant1index = baseline[0] / 256 - 1
         ant2index = baseline[0] % 256 - 1
