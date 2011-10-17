@@ -97,8 +97,8 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
         mjd[i] = nextheader[i][1]
         seconds[i] = nextheader[i][2]
         buffer = difxinputs[i].read(8*nchan[i])
-        if nchan[i] >= maxchannels:
-            print "How embarrassing - you have tried to diff files with more than " + \
+        if nchan[i] > maxchannels:
+            print "How embarrassing - you have tried to read files with more than " + \
                 str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
             sys.exit()
         for j in range(nchan[i]):
@@ -137,6 +137,9 @@ while not len(nextheader[0]) == 0 and not len(nextheader[1]) == 0:
 	              v0 = vis[0][c]
 	              v1 = vis[1][c]
 	              print '[ch%d]={%e,%e + %e,%e}  ' % (c, v0.real, v0.imag, (v1-v0).real, (v1-v0).imag)
+	    else:
+	        if (epsilon > 0) and verbose:
+	            print "Record: baseline %d, freq %d at MJD/sec %d/%7.2f: data identical to numerical precision" % (baseline[0], freqindex[0], mjd[0], seconds[0])
     if (targetbaseline < 0 or targetbaseline == baseline[0]) and \
             (targetfreq < 0 or targetfreq == freqindex[0]):
         recordcount += 1

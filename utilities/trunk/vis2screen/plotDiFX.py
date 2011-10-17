@@ -117,8 +117,8 @@ while not len(nextheader[0]) == 0:
         polpair[i] = nextheader[i][6]
         nchan[i] = freqs[freqindex[i]].numchan/freqs[freqindex[i]].specavg
         buffer = difxinputs[i].read(8*nchan[i])
-        if nchan[i] >= maxchannels:
-            print "How embarrassing - you have tried to diff files with more than " + \
+        if nchan[i] > maxchannels:
+            print "How embarrassing - you have tried to read files with more than " + \
                 str(maxchannels) + " channels.  Please rerun with --maxchannels=<bigger number>!"
             sys.exit()
         for j in range(nchan[i]):
