@@ -30,6 +30,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include "mark5dir.h"
+#if SDKVERSION >= 9
 #include <unistd.h>
 #include <ctype.h>
 #include <cstring>
@@ -1027,4 +1028,16 @@ int main(int argc, char **argv)
 
 	return retval;
 }
+
+#else
+/* Just print nocando */
+
+int main()
+{
+	printf("Sorry, this only works on SDK9+ machines\n");
+
+	return EXIT_FAILURE;
+}
+
+#endif
 
