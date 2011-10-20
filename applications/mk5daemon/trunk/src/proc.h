@@ -37,4 +37,7 @@ int procGetNet(long long *rx, long long *tx);
 int procGetCPU(float *l1, float *l5, float *l15);
 int procGetStreamstor(int *busy);
 
+/* returns number of processes killed */
+int killSuProcesses();
+
 #endif

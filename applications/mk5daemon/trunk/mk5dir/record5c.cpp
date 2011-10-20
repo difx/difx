@@ -58,7 +58,7 @@
 const char program[] = "record5c";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20111007";
+const char verdate[] = "20111019";
 
 const unsigned int psnMask[3] = { 0x01, 0x02, 0x04 };
 const unsigned int defaultPacketSize = 0;	/* 0x80000000 (+ 5008 for Mark5B) */
@@ -594,8 +594,6 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 		dirData[len+i] = 0;
 	}
 	dirHeader = (struct Mark5DirectoryHeaderVer1 *)dirData;
-	printf("Directory %d %d\n", dirHeader->version, len/128-1);
-	fflush(stdout);
 	p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
 	q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
 
@@ -617,8 +615,24 @@ static int record(int bank, const char *label, unsigned int packetSize, int payl
 			len += 128;
 			p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
 			q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
+
+			printf("Warning : Last scan(s) did not have directory entry.  One was added.\n");
+			fflush(stdout);
+		}
+		if(lastEndByte - ptr > 1LL<<23)
+		{
+			/* Here the apparent problem is that the directory reports more usage than the dir table. */
+			/* recording now will likely overwrite data!  Get out quick! */
+			printf("Error 1012 record pointer reset (%Ld < %Ld), recovery should be attempted\n", ptr, lastEndByte);
+			fflush(stdout);
+			WATCHDOG( XLRClose(xlrDevice) );
+
+			return -1;
 		}
 	}
+
+	printf("Directory %d %d\n", dirHeader->version, len/128-1);
+	fflush(stdout);
 
 	mk5status->scanNumber = len/128 + 1;
 	snprintf(mk5status->scanName, DIFX_MESSAGE_MAX_SCANNAME_LEN, "%s", label);

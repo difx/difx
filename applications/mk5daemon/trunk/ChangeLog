@@ -14,6 +14,7 @@ Version 1.4.2
 * checkdir: add detection of UKN scans (those rescued by the recording system after a crash)
 * mk5dir: can now write a module directory to a module (Mark5B only and directory version 1 only)
 * Add fileto5c program which copies a file from the OS filesystem to the Mark5 module
+* Add su killer: kills su processes that go rampant
 
 Version 1.4.1
 ~~~~~~~~~~~~

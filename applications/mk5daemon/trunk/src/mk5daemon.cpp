@@ -576,6 +576,10 @@ void handleRecordMessage(Mk5Daemon *D, time_t t)
 				snprintf(errorMessage, DIFX_MESSAGE_LENGTH, "Streamstor System Error %s during record", A[1]);
 				Mk5Daemon_addVSIError(D, errorMessage);
 			}
+			else if(strncmp(A[0], "Warning", 7) == 0)
+			{
+				Logger_logData(D->log, message);
+			}
 			else if(strcmp(A[0], "Halted") == 0)
 			{
 				D->recordState = RECORD_HALTED;
@@ -901,8 +905,7 @@ int main(int argc, char **argv)
 	D->isHeadNode = isHeadNode;
 	D->isEmbedded = isEmbedded;
 
-	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", 
-		program, version);
+	snprintf(message, DIFX_MESSAGE_LENGTH, "Starting %s ver. %s\n", program, version);
 	Logger_logData(D->log, message);
 
 	oldsigintHandler = signal(SIGINT, sigintHandler);
@@ -929,6 +932,16 @@ int main(int argc, char **argv)
 
 			if( (t % D->loadMonInterval) == 0)
 			{
+				if(D->isHeadNode)
+				{
+					int nKill = killSuProcesses();
+					if(nKill > 0)
+					{
+						snprintf(message, DIFX_MESSAGE_LENGTH, "Killed %d rogue su processes\n", nKill);
+						Logger_logData(D->log, message);
+					}
+				}
+
 				Mk5Daemon_loadMon(D, mjd);
 			}
 #ifdef HAVE_XLRAPI_H

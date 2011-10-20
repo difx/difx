@@ -29,6 +29,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <cstdlib>
 #include "proc.h"
 
 /* routines to get useful information from /proc */
@@ -203,4 +204,75 @@ int procGetStreamstor(int *busy)
 	fclose(in);
 
 	return 0;
+}
+
+/* returns number of processes killed */
+int killSuProcesses()
+{
+	const int MaxStrLen=256;
+	const int MaxCmdLen=64;
+	FILE *p;
+	char cmd[] = "ps aux | grep su | grep difxlog";
+	char str[MaxStrLen];
+	char *r;
+	char owner[16], timestr[16];
+	int pid;
+	float pcpu;
+	int nKill=0;
+	int n, t;
+
+	n = snprintf(cmd, MaxCmdLen, "ps -C su -o user,pid,pcpu,time");
+	if(n >= MaxCmdLen)
+	{
+		fprintf(stderr, "Warning: MaxCmdLen too small = %d vs. %d\n", MaxCmdLen, n);
+
+		return -1;
+	}
+	p = popen(cmd, "r");
+
+	str[MaxStrLen-1] = 0;
+	for(;;)
+	{
+		r = fgets(str, MaxStrLen-1, p);
+		if(!r)
+		{
+			break;
+		}
+		n = sscanf(str, "%s %d %f %s", owner, &pid, &pcpu, timestr);
+
+		if(n < 4)
+		{
+			return -2;
+		}
+		if(strcmp(owner, "root") != 0)
+		{
+			continue;
+		}
+		if(pcpu < 90)
+		{
+			continue;
+		}
+		if(strlen(timestr) != 8 || timestr[2] != ':' || timestr[5] != ':')
+		{
+			continue;
+		}
+		timestr[2] = timestr[5] = 0;
+		t = 3600*atoi(timestr) + 60*atoi(timestr+2) + atoi(timestr+5);
+		if(t > 100)
+		{
+			n = snprintf(cmd, MaxCmdLen, "kill -9 %d", pid);
+			if(n >= MaxCmdLen)
+			{
+				fprintf(stderr, "Warning: MaxCmdLen too small = %d vs. %d\n", MaxCmdLen, n);
+
+				return -1;
+			}
+			if(system(cmd) != -1)
+			{
+				nKill++;
+			}
+		}
+	}
+
+	return nKill;
 }
