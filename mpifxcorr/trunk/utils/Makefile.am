@@ -1,4 +1,4 @@
-bin_PROGRAMS = checkmpifxcorr dedisperse_difx
+bin_PROGRAMS = checkmpifxcorr dedisperse_difx mpispeed
 
 AM_CXXFLAGS = -I$(srcdir)/../src/
 
@@ -7,6 +7,9 @@ checkmpifxcorr_SOURCES = \
 
 dedisperse_difx_SOURCES = \
 	dedisperse_difx.cpp
+
+mpispeed_SOURCES = \
+	mpispeed.cpp
 
 checkmpifxcorr_LDADD = ../src/libmpifxcorr.a
 
