@@ -627,6 +627,10 @@ int personality_Command(Mk5Daemon *D, int nField, char **fields, char *response,
 		{
 			v = snprintf(response, maxResponseLength, "!%s = 4 : Only bank-mode is supported;", fields[0]);
 		}
+		else
+		{
+			v = snprintf(response, maxResponseLength, "!%s = 0;", fields[0]);
+		}
 	}
 
 	return v;
@@ -990,7 +994,16 @@ int rtime_Query(Mk5Daemon *D, int nField, char **fields, char *response, int max
 				left = 0.0;
 			}
 			double percent = 100.0*left/D->bytesTotal[D->activeBank];
-			double rtime = (left/1.0e6)/(D->recordRate/8.0);
+			double rtime;
+			
+			if(D->recordRate > 0.0)
+			{
+				rtime = (left/1.0e6)/(D->recordRate/8.0);
+			}
+			else
+			{
+				rtime = 0.0;
+			}
 		
 			v = snprintf(response, maxResponseLength, "!%s? 0 : %3.1f : %4.2f : %5.3f : %s : 0x%08x : %d : %3.1f;", fields[0],
 				rtime, left*1.0e-9, percent, D->dataSource, D->bitstreamMask, D->decimationRatio, D->recordRate);
