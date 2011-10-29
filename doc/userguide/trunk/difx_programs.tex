@@ -1588,6 +1588,7 @@ There is a danger that if this is done with an SDK~9 unit and the disk is later 
 \item[] {\tt -d} or {\tt --dmsforce} : proceed with change of module state even if this makes module unreadable in SDK~8 units
 \item[] {\tt -b} {\em b} or {\tt --begin} {\em b} : begin with scan number {\em b}
 \item[] {\tt -e} {\em e} or {\tt --end} {\em e} : end with scan number {\em b}
+\item[] {\tt -w} {\em file} or {\tt --write} {\em file} : write directory file {\em file} to the module
 \end{itemize}
 \item[] {\em bank} is one of {\tt A}, {\tt B} or {\tt AB}
 \item[] {\em VSN} is a valid 8-character VSN of a loaded module
@@ -1595,6 +1596,14 @@ There is a danger that if this is done with an SDK~9 unit and the disk is later 
 
 \noindent
 The resultant directory file will be saved in a file called {\em VSN}{\tt .dir} in the directory pointed to by environment variable {\tt MARK5\_DIR\_PATH} .
+
+This program responds to the value of environment variable {\tt DEFAULT\_DMS\_MASK}.
+This variable should be an integer representing the state of three bits.
+{\tt mk5dir} only responds to the setting of bit 1 (value 2); if this bit is set, the disk module state will not be updated on directory reading.
+It is recommended to set this environment variable at recording stations so auto-erasure of modules does not occur.
+
+A new option to write a {\tt .dir} file to the module has been introduced in DiFX 2.0.2. 
+To use, the VSN has to be written explicitly on the command line (i.e., bank letter cannot be used).
 
 
 
