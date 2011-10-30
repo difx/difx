@@ -88,6 +88,8 @@ public:
 	double duration_seconds() const { return 86400.0*(mjdStop-mjdStart); }
 	double overlap(const VexInterval &v) const;
 	double overlap_seconds(const VexInterval &v) const { return 86400.0*overlap(v); }
+	double center() const { return 0.5*(mjdStart+mjdStop); }
+	void shift(double deltaT) { mjdStart += deltaT; mjdStop += deltaT; }
 	void setTimeRange(double start, double stop) { mjdStart = start; mjdStop = stop; }
 	void setTimeRange(const VexInterval &v) { mjdStart = v.mjdStart; mjdStop = v.mjdStop; }
 	void logicalAnd(double start, double stop);

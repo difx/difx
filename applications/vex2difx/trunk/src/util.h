@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -21,17 +21,22 @@
  *
  * $Id$
  * $HeadURL$
- * $LastChangedRevision:$
- * $Author:$
- * $LastChangedDate:$
+ * $LastChangedRevision$
+ * $Author$
+ * $LastChangedDate$
  *
  *==========================================================================*/
 
 #ifndef __UTIL_H__
 #define __UTIL_H__
 
+#include <algorithm>
+
 // To capitalize a string
 #define Upper(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))toupper)
+
+// To uncapitalize a string
+#define Lower(s) transform(s.begin(), s.end(), s.begin(), (int(*)(int))tolower)
 
 extern "C" {
 int fvex_double(char **field, char **units, double *d);

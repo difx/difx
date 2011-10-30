@@ -1,6 +1,7 @@
 bin_PROGRAMS = \
 	vex2difx \
 	vex2script \
+	rdbetsys \
 	vexpeek
 
 LDADD = \
@@ -15,6 +16,15 @@ vex2difx_SOURCES = \
 	corrparams.h \
 	corrparams.cpp \
 	vex2difx.cpp 
+
+rdbetsys_SOURCES = \
+	vextables.h \
+	vextables.cpp \
+	vexload.h \
+	vexload.cpp \
+	corrparams.h \
+	corrparams.cpp \
+	rdbetsys.cpp
 
 vex2script_SOURCES = \
 	vextables.h \
