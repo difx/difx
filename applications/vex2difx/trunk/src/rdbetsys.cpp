@@ -123,16 +123,156 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 	return fileList;
 }
 
+
+
+
+typedef struct
+{
+	char antenna[8];
+	char receiver[8];
+	float freq, tcalR, tcalL;
+} TCal;
+
+
+/* This is somewhat ugly.  Perhaps move these internal to some function? */
+TCal *tCals = 0;
+int nTcal;
+
+
+int loadTcals()
+{
+	const int MaxLineLength = 100;
+	char line[MaxLineLength];
+	const char *tcalFilename;
+	char *rv;
+	FILE *in;
+	int i;
+	int nAlloc = 0;
+
+	tcalFilename = getenv("TCAL_FILE");
+	if(tcalFilename == 0)
+	{
+		return -1;
+	}
+	in = fopen(tcalFilename, "r");
+	if(!in)
+	{
+		return -2;
+	}
+
+	nAlloc = 4000;
+	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
+
+	for(i = nTcal = 0; ; i++)
+	{
+		rv = fgets(line, MaxLineLength, in);
+		if(!rv)
+		{
+			break;
+		}
+		if(line[0] == '#')
+		{
+			continue;
+		}
+		if(nTcal >= nAlloc)
+		{
+			nAlloc += 1000;
+			tCals = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
+		}
+		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
+			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
+		nTcal++;
+	}
+
+	fclose(in);
+
+	return 0;
+}
+
+float getTcalValue(const char *antname, float freq, char pol)
+{
+	int i;
+	int besti;
+	int secondbesti;
+	float bestf, w1, w2, df;
+
+	if(nTcal == 0)
+	{
+		return 1.0;
+	}
+
+	besti = -1;
+	bestf = 1e9;
+	df = 1e9;
+	for(i = 0; i < nTcal; i++)
+	{
+		df = fabs(freq - tCals[i].freq);
+		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
+		{
+			bestf = df;
+			besti = i;
+		}
+	}
+	
+	if(besti < 0)
+	{
+		return 1.0;
+	}
+
+	bestf = tCals[besti].freq;
+
+	secondbesti = -1;
+	if(besti > 0 && bestf > freq && 
+	   strcmp(tCals[besti].antenna, tCals[besti-1].antenna) == 0 &&
+	   strcmp(tCals[besti].receiver, tCals[besti-1].receiver) == 0)
+	{
+		secondbesti = besti - 1;
+	}
+	else if(besti < nTcal-1 && bestf < freq && 
+	        strcmp(tCals[besti].antenna, tCals[besti+1].antenna) == 0 &&
+	        strcmp(tCals[besti].receiver, tCals[besti+1].receiver) == 0)
+	{
+		secondbesti = besti + 1;
+	}
+
+	if(secondbesti >= 0)
+	{
+		w1 = fabs( (tCals[secondbesti].freq - freq)/(tCals[secondbesti].freq - bestf) );
+		w2 = fabs( (tCals[besti].freq - freq)/(tCals[secondbesti].freq - bestf) );
+	}
+	else
+	{
+		secondbesti = besti;
+		w1 = 1.0;
+		w2 = 0.0;
+	}
+
+	if(pol == 'r' || pol == 'R')
+	{
+		return w1*tCals[besti].tcalR + w2*tCals[secondbesti].tcalR;
+	}
+	else if(pol == 'l' || pol == 'L')
+	{
+		return w1*tCals[besti].tcalL + w2*tCals[secondbesti].tcalL;
+	}
+	else
+	{
+		return 1.0;
+	}
+}
+
+
 class TsysAverager
 {
 public:
 	TsysAverager() : pOn(0.0), pOff(0.0), n(0), receiver("0cm") {}
 	void reset() { pOn = pOff = 0.0; n = 0; }
-	double ratio() const { return (n > 0) ? (0.5*(pOn + pOff)/(pOn - pOff)) : 999.0; }
+	double Tsys() const { return (n > 0) ? (0.5*tCal*(pOn + pOff)/(pOn - pOff)) : 999.0; }
 	void set(const VexChannel &vc);
 	void print() const;
 	double freq;	// signed, in MHz
 	double bw;	// MHz
+	double tCal;
 	double pOn;
 	double pOff;
 	int n;
@@ -158,7 +298,7 @@ public:
 	~TsysAccumulator();
 	void setOutput(FILE *outFile);
 	void setStation(const std::string &stnName);
-	void setup(const VexSetup &vexSetup);
+	void setup(const VexSetup &vexSetup, const string &str);
 	void flush();
 	void feed(const VexInterval &lineTimeRange, const char *data);
 };
@@ -184,8 +324,9 @@ void TsysAccumulator::setStation(const std::string &stnName)
 	Upper(stn);
 }
 
-void TsysAccumulator::setup(const VexSetup &vexSetup)
+void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 {
+	double midFreq;
 	std::vector<TsysAverager>::iterator ta;
 	std::vector<VexChannel>::const_iterator vc;
 	const VexFormat &format = vexSetup.format;
@@ -195,18 +336,28 @@ void TsysAccumulator::setup(const VexSetup &vexSetup)
 	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); vc++, ta++)
 	{
 		ta->reset();
-		ta->freq = vc->bbcFreq;
+
+		ta->bw = vc->bbcBandwidth/1000000.0;
+		ta->freq = vc->bbcFreq/1000000.0;
+		midFreq = ta->freq;
 		if(vc->bbcSideBand == 'L')
 		{
 			ta->freq = -ta->freq;
+			midFreq -= ta->bw/2.0;
+
+			ta->freq -= 32;
 		}
-		ta->bw = vc->bbcBandwidth;
+		else
+		{
+			midFreq += ta->bw/2.0;
+
+			ta->freq += 32;
+		}
 		ta->pol = vexSetup.getIF(vc->ifname)->pol;
+		ta->tCal = getTcalValue(stn.c_str(), midFreq, ta->pol);
 
 		ta->print();
 	}
-
-	std::cout << "New Setup" << endl;
 }
 
 void TsysAccumulator::flush()
@@ -226,7 +377,7 @@ void TsysAccumulator::flush()
 		fprintf(out, "%s %12.8f %10.8f %i", stn.c_str(), day, accumTimeRange.duration(), chans.size());
 		for(ta = chans.begin(); ta != chans.end(); ta++)
 		{
-			fprintf(out, " %5.2f %s", ta->ratio(), ta->receiver.c_str());
+			fprintf(out, " %5.2f %s", ta->Tsys(), ta->receiver.c_str());
 		}
 		fprintf(out, "\n");
 		nAccum = 0;
@@ -235,6 +386,13 @@ void TsysAccumulator::flush()
 
 void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 {
+	std::vector<TsysAverager>::iterator ta;
+	double pOn, pOff;
+	double freq, bw;
+	char pol[100];
+	int pos;
+	int n;
+
 	if(nAccum == 0)
 	{
 		accumTimeRange = lineTimeRange;
@@ -244,6 +402,35 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 		accumTimeRange.logicalOr(lineTimeRange);
 	}
 	nAccum++;
+
+	while(*data)
+	{
+		n = sscanf(data, "%lf%lf%s%lf%lf%n", &freq, &bw, pol, &pOn, &pOff, &pos);
+		if(n != 5)
+		{
+			break;
+		}
+		data += pos;
+
+		if(pol[0] == '.')
+		{
+			continue;
+		}
+
+		for(ta = chans.begin(); ta != chans.end(); ta++)
+		{
+//printf("%f %f   %f %f   %c %c\n", 
+//	freq, ta->freq, bw, ta->bw, pol[0], ta->pol);
+			if(ta->pol == pol[0] && 
+			   fabs(ta->freq - freq) < 0.005 && 
+			   fabs(ta->bw - bw) < 0.0001)
+			{
+				ta->pOn += pOn;
+				ta->pOff += pOff;
+				ta->n++;
+			}
+		}
+	}
 }
 
 int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval stnTimeRange, double nominalTsysInterval)
@@ -363,7 +550,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				break;
 			}
 
-			TA.setup(*setup);  // also flushes
+			TA.setup(*setup, stn);  // also flushes
 			
 			fprintf(out, "# Scan %s\n", scan->defName.c_str());
 
@@ -450,6 +637,8 @@ int main(int argc, char **argv)
 
 		return EXIT_FAILURE;
 	}
+
+	loadTcals();
 
 	strcpy(vexFilename, argv[1]);
 	strcpy(tsysFilename, argv[2]);
