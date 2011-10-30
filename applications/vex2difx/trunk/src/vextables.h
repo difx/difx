@@ -185,7 +185,7 @@ public:
 	friend bool operator ==(const VexFormat &f1, const VexFormat &f2);
 };
 
-class VexIF	// Note: the old "VexIF" is now called "VexChannel"
+class VexIF
 {
 public:
 	VexIF() : ifSSLO(0.0), ifSideBand(' '), pol(' '), phaseCalIntervalMHz(0) {}

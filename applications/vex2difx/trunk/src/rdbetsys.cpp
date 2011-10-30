@@ -4,6 +4,7 @@
 #include <ctime>
 #include <glob.h>
 #include <string>
+#include <vector>
 #include "vextables.h"
 #include "vexload.h"
 #include "util.h"
@@ -122,6 +123,28 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 	return fileList;
 }
 
+class TsysAverager
+{
+public:
+	TsysAverager() : pOn(0.0), pOff(0.0), n(0), receiver("0cm") {}
+	void reset() { pOn = pOff = 0.0; n = 0; }
+	double ratio() const { return (n > 0) ? (0.5*(pOn + pOff)/(pOn - pOff)) : 999.0; }
+	void set(const VexChannel &vc);
+	void print() const;
+	double freq;	// signed, in MHz
+	double bw;	// MHz
+	double pOn;
+	double pOff;
+	int n;
+	std::string receiver;
+	char pol;
+};
+
+void TsysAverager::print() const
+{
+	std::cout << "freq=" << freq << " bw=" << bw << " pol=" << pol << std::endl;
+}
+
 class TsysAccumulator
 {
 private:
@@ -129,11 +152,13 @@ private:
 	int nAccum;
 	FILE *out;
 	std::string stn;
+	std::vector<TsysAverager> chans;
 public:
 	TsysAccumulator();
 	~TsysAccumulator();
 	void setOutput(FILE *outFile);
 	void setStation(const std::string &stnName);
+	void setup(const VexSetup &vexSetup);
 	void flush();
 	void feed(const VexInterval &lineTimeRange, const char *data);
 };
@@ -159,11 +184,51 @@ void TsysAccumulator::setStation(const std::string &stnName)
 	Upper(stn);
 }
 
+void TsysAccumulator::setup(const VexSetup &vexSetup)
+{
+	std::vector<TsysAverager>::iterator ta;
+	std::vector<VexChannel>::const_iterator vc;
+	const VexFormat &format = vexSetup.format;
+	flush();
+
+	chans.resize(format.channels.size());
+	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); vc++, ta++)
+	{
+		ta->reset();
+		ta->freq = vc->bbcFreq;
+		if(vc->bbcSideBand == 'L')
+		{
+			ta->freq = -ta->freq;
+		}
+		ta->bw = vc->bbcBandwidth;
+		ta->pol = vexSetup.getIF(vc->ifname)->pol;
+
+		ta->print();
+	}
+
+	std::cout << "New Setup" << endl;
+}
+
 void TsysAccumulator::flush()
 {
+	int doy;
+	int mjd;
+	double day;
+	std::vector<TsysAverager>::const_iterator ta;
+
 	if(nAccum > 0)
 	{
-		fprintf(out, "%s %14.8f %14.8f %d\n", stn.c_str(), accumTimeRange.mjdStart, accumTimeRange.mjdStop, nAccum);
+		mjd = static_cast<int>(accumTimeRange.center());
+		mjd2yearday(mjd, 0, &doy);
+
+		day = accumTimeRange.center() - mjd + doy;
+
+		fprintf(out, "%s %12.8f %10.8f %i", stn.c_str(), day, accumTimeRange.duration(), chans.size());
+		for(ta = chans.begin(); ta != chans.end(); ta++)
+		{
+			fprintf(out, " %5.2f %s", ta->ratio(), ta->receiver.c_str());
+		}
+		fprintf(out, "\n");
 		nAccum = 0;
 	}
 }
@@ -200,6 +265,8 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	unsigned int nSlot = 0;
 	double slotDeltaT = 0.0;
 	TsysAccumulator TA;
+	const VexMode *mode = 0;
+	const VexSetup *setup = 0;
 
 	command = "zcat " + fileList;
 	if(verbose > 0)
@@ -262,6 +329,26 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 					break;
 				}
 				scan = V.getScan(scanNum);
+				if(!scan)
+				{
+					printf("Error: scan %d does not exist\n", scanNum);
+
+					return -1;
+				}
+				mode = V.getModeByDefName(scan->modeDefName);
+				if(!mode)
+				{
+					printf("Error: mode %s does not exist\n", scan->modeDefName.c_str());
+
+					continue;
+				}
+				setup = mode->getSetup(stn);
+				if(!setup)
+				{
+					printf("Error: mode %s not implemented for station %s\n", scan->modeDefName.c_str(), stn.c_str());
+
+					continue;
+				}
 				for(it = scan->stations.begin(); it != scan->stations.end(); it++)
 				{
 					if(it->first == stn)
@@ -276,6 +363,10 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 				break;
 			}
 
+			TA.setup(*setup);  // also flushes
+			
+			fprintf(out, "# Scan %s\n", scan->defName.c_str());
+
 			// set up averaging slots
 			nSlot = static_cast<int>(scanTimeRange.duration_seconds() / nominalTsysInterval);
 			if(nSlot == 0)
@@ -284,8 +375,6 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 			}
 			slotDeltaT = scanTimeRange.duration() / nSlot;
 			slotTimeRange.setTimeRange(scanTimeRange.mjdStart, scanTimeRange.mjdStart + slotDeltaT);
-
-			// .setup(scan->setup[ant]);  // also flushes
 
 			std::cout << "New Scan: " << scanTimeRange << "  nSlot=" << nSlot << "  slotDeltaT=" << slotDeltaT << std::endl;
 		}
