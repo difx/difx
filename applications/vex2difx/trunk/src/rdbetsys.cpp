@@ -18,12 +18,27 @@ const char defaultSwitchedPowerPath[] = "/home/wbrisken/bd152i0";
 const double defaultTsysInterval = 20.0;	// Seconds
 const int MaxFilenameLength = 256;
 
+static void usage(const char *pgm)
+{
+	printf("\n%s ver. %s   %s  %s\n\n", program, version, author, verdate);
+	printf("Usage: %s [options] <input vex file> <output tsys file>\n\n", pgm);
+	printf("where options can include:\n\n");
+	printf("  --help\n");
+	printf("  -h          print help info and quit\n\n");
+	printf("  --verbose\n");
+	printf("  -v          be more verbose in operation\n\n");
+	printf("  --quiet\n");
+	printf("  -q          be less verbose in operation\n\n");
+	printf("Note that env. var. TCAL_FILE must be set to point to TCal data\n\n");
+}
+
 void mjd2yearday(int mjd, int *year, int *doy)
 {
+	const long long mjdAtUnix0 = 40587LL;
 	time_t t;
 	struct tm tt;
 
-	t = (mjd-40587LL)*86400LL;
+	t = (mjd-mjdAtUnix0)*86400LL;
 	gmtime_r(&t, &tt);
 
 	if(year)
@@ -82,7 +97,6 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 
 		mjd2yearday(mjd, &year, &doy);
 		snprintf(match, MaxFilenameLength, "%s/%s_%d_%03d_*.switched_power.gz", switchedPowerPath, stn, year, doy);
-		printf("Matching against: %s\n", match);
 
 		if(glob(match, 0, 0, &globbuf) == 0)
 		{
@@ -103,10 +117,8 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 						fileRange.mjdStop = 1.0 + mjd;
 					}
 
-					printf(" -> %s %f %f\n", globbuf.gl_pathv[i], fileRange.mjdStart, fileRange.mjdStop);
 					if(timeRange.overlap(fileRange))
 					{
-						printf("*\n");
 						if(fileList.length() > 0)
 						{
 							fileList += " ";
@@ -139,17 +151,15 @@ TCal *tCals = 0;
 int nTcal;
 
 
-int loadTcals()
+int loadTcals(const char *tcalFilename)
 {
 	const int MaxLineLength = 100;
 	char line[MaxLineLength];
-	const char *tcalFilename;
 	char *rv;
 	FILE *in;
 	int i;
 	int nAlloc = 0;
 
-	tcalFilename = getenv("TCAL_FILE");
 	if(tcalFilename == 0)
 	{
 		return -1;
@@ -309,7 +319,6 @@ TsysAccumulator::TsysAccumulator() : nAccum(0), out(0)
 
 TsysAccumulator::~TsysAccumulator()
 {
-	std::cout << "destructor " << stn << std::endl;
 	flush();
 }
 
@@ -355,8 +364,6 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 		}
 		ta->pol = vexSetup.getIF(vc->ifname)->pol;
 		ta->tCal = getTcalValue(stn.c_str(), midFreq, ta->pol);
-
-		ta->print();
 	}
 }
 
@@ -374,7 +381,7 @@ void TsysAccumulator::flush()
 
 		day = accumTimeRange.center() - mjd + doy;
 
-		fprintf(out, "%s %12.8f %10.8f %i", stn.c_str(), day, accumTimeRange.duration(), chans.size());
+		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
 		for(ta = chans.begin(); ta != chans.end(); ta++)
 		{
 			fprintf(out, " %5.2f %s", ta->Tsys(), ta->receiver.c_str());
@@ -419,8 +426,6 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 
 		for(ta = chans.begin(); ta != chans.end(); ta++)
 		{
-//printf("%f %f   %f %f   %c %c\n", 
-//	freq, ta->freq, bw, ta->bw, pol[0], ta->pol);
 			if(ta->pol == pol[0] && 
 			   fabs(ta->freq - freq) < 0.005 && 
 			   fabs(ta->bw - bw) < 0.0001)
@@ -433,11 +438,10 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval stnTimeRange, double nominalTsysInterval)
+int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval stnTimeRange, double nominalTsysInterval, int verbose)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
-	int verbose = 1;
 	FILE *p;
 	string command;
 	int nRecord = 0;
@@ -447,8 +451,8 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 	VexInterval lineTimeRange;
 	VexInterval scanTimeRange;
 	VexInterval slotTimeRange;
-	int scanNum = -1;
-	const VexScan *scan;
+	unsigned int scanNum = 0;
+	const VexScan *scan = 0;
 	unsigned int nSlot = 0;
 	double slotDeltaT = 0.0;
 	TsysAccumulator TA;
@@ -503,14 +507,16 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 		}
 		else if(lineTimeRange.mjdStop > scanTimeRange.mjdStop)
 		{
-			cout << "nRecord=" << nRecord << "  nSkip=" << nSkip << endl;
 			TA.flush();
 			
 			do
 			{
 				map<string,VexInterval>::const_iterator it;
 
-				scanNum++;
+				if(scan)
+				{
+					scanNum++;
+				}
 				if(scanNum >= V.nScan())
 				{
 					break;
@@ -562,8 +568,6 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 			}
 			slotDeltaT = scanTimeRange.duration() / nSlot;
 			slotTimeRange.setTimeRange(scanTimeRange.mjdStart, scanTimeRange.mjdStart + slotDeltaT);
-
-			std::cout << "New Scan: " << scanTimeRange << "  nSlot=" << nSlot << "  slotDeltaT=" << slotDeltaT << std::endl;
 		}
 		if(lineTimeRange.mjdStart >= scanTimeRange.mjdStart &&
 		   lineTimeRange.mjdStop  <= scanTimeRange.mjdStop)
@@ -625,24 +629,76 @@ int main(int argc, char **argv)
 	int nWarn = 0;
 	std::string fileList;
 	map<string,VexInterval> as;
-	char vexFilename[MaxFilenameLength];
-	char tsysFilename[MaxFilenameLength];
+	const char *vexFilename = 0;
+	const char *tsysFilename = 0;
 	FILE *out;
 	double nominalTsysInterval = defaultTsysInterval;
 	int p;
+	int verbose = 1;
+	const char *tcalFilename;
 
-	if(argc != 3)
+	for(int a = 1; a < argc; a++)
 	{
-		printf("Usage: %s vexFile tsysFile\n", program);
+		if(argv[a][0] == '-')
+		{
+			if(strcmp(argv[a], "-h") == 0 ||
+			   strcmp(argv[a], "--help") == 0)
+			{
+				usage(argv[0]);
+
+				return EXIT_SUCCESS;
+			}
+			else if(strcmp(argv[a], "-v") == 0 ||
+			   strcmp(argv[a], "--verbose") == 0)
+			{
+				verbose++;
+			}
+			else if(strcmp(argv[a], "-q") == 0 ||
+			   strcmp(argv[a], "--quiet") == 0)
+			{
+				verbose--;
+			}
+			else
+			{
+				printf("Unknown command line option %s\n", argv[a]);
+
+				return EXIT_FAILURE;
+			}
+		}
+		else if(vexFilename == 0)
+		{
+			vexFilename = argv[a];
+		}
+		else if(tsysFilename == 0)
+		{
+			tsysFilename = argv[a];
+		}
+		else
+		{
+			printf("Extra command line parameter : %s\n", argv[a]);
+
+			return EXIT_FAILURE;
+		}
+	}
+
+	if(tsysFilename == 0)
+	{
+		printf("Incomplete command line.  Run with -h for help.\n\n");
 
 		return EXIT_FAILURE;
 	}
 
-	loadTcals();
+	tcalFilename = getenv("TCAL_FILE");
 
-	strcpy(vexFilename, argv[1]);
-	strcpy(tsysFilename, argv[2]);
+	if(tcalFilename == 0)
+	{
+		printf("Environment variable TCAL_FILE must exist\n");
 
+		return EXIT_FAILURE;
+	}
+
+
+	loadTcals(tcalFilename);
 
 	P = new CorrParams();
 	P->defaultSetup();
@@ -664,7 +720,6 @@ int main(int argc, char **argv)
 
 	antennaSummary(*V, as);
 
-
 	cout.precision(13);
 
 	// Loop over antennas first
@@ -684,7 +739,7 @@ int main(int argc, char **argv)
 		fileList = genFileList(defaultSwitchedPowerPath, stn.c_str(), it->second);
 		printf("FL=%s\n", fileList.c_str());
 
-		processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval);
+		processStation(out, *V, it->first, fileList, it->second, nominalTsysInterval, verbose);
 	}
 
 	fclose(out);
