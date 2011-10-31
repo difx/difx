@@ -34,6 +34,7 @@ my $monitor = undef;
 my $offset = 30; # Offset in seconds for start time
 my $debug = 0;
 my $mk5debug = 1;
+my $bynode = 0;
 
 # Machines which are not really Mark5
 my @LBADR = ('hovsi', 'cavsi1-ext', 'cavsi2-ext',
@@ -43,9 +44,11 @@ my @LBADR = ('hovsi', 'cavsi1-ext', 'cavsi2-ext',
 
 #my @CURTINDAS = ('202.9.14.20');
 my @CURTINDAS = ('');
-GetOptions('-machinefile=s'=>\$machinefile, 
+
+GetOptions('-machinefile=s'=>\$machinefile, '-bynode'=>\$bynode,
            'np=i'=>\$numproc, 'evlbi'=>\$evlbi, 'offset=i'=>\$offset,
-	   'monitor=s'=>\$monitor, 'debug'=>\$debug, 'hosts=s'=>\$recorder_hosts);
+	   'monitor=s'=>\$monitor, 'debug'=>\$debug, 
+	   'hosts=s'=>\$recorder_hosts);
 
 # Check passed files exist etc
 
@@ -242,6 +245,8 @@ if (defined $recorder_hosts && $evlbi) {
 # mpifxcorr options
 
 my  $mpioptions = "-machinefile $machinefile -np $numproc";
+
+$mpioptions .= ' --bynode' if ($bynode);
 
 my $difx_options = '';
 if ($monitor) {
