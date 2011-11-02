@@ -384,7 +384,7 @@ This is the main worker function. It reads a packet, then:
 int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
     uint64_t n_bytes_total = 0;
     size_t n_read;
-    int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots;
+    int done=0, buf_ind=0,n_chunks_to_add,data_offset,res,offset,n_time_slots,n_bad_times=0;
     ChunkHeader header;
     float *chanvals=NULL,timeslot_frac[MAX_TIMESLOTS],tcal_frac=0.0,pkt_weight;
     int64_t this_time,last_time=-1,last_stream=-1,timeslots[MAX_TIMESLOTS];
@@ -475,7 +475,12 @@ int doReorder(FB_Config *fb_config, BufInfo *bufinfo, FILE *fpin, FILE *fpout) {
                 fprintf(stderr,"Current buffer end time: %g\n",bufinfo->endtime*1e-9);
                 fprintf(stderr,"have processed %lld bytes. printing header\n",(long long)n_bytes_total);
                 printChunkHeader(&header,stderr);
-                //return 1;
+                /* we want to be tolerant to one or two subints that might be out of range without generating
+                    massive logs for some special cases which often generate lots of out of range packets.
+                    For normal VLBA jobs, there are 80 packets per time and about 50 per subint, so that is
+                    4000 packets.
+                */
+                if (n_bad_times++ > 5000) return 1;
                 continue;
             }
             for(int i=0; i <offset; i++) {
