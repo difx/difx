@@ -162,6 +162,9 @@ static int XLR_get_modules(Mk5Daemon *D)
 	
 	for(int bank = N_BANK-1; bank >= 0; bank--)
 	{
+		bool updateModule = false;
+		bool newModule = false;
+
 		xlrRC = XLRGetBankStatus(xlrDevice, bank, &(D->bank_stat[bank]));
 		if(xlrRC != XLR_SUCCESS)
 		{
@@ -193,8 +196,8 @@ static int XLR_get_modules(Mk5Daemon *D)
 				strncpy(D->vsns[bank], D->bank_stat[bank].Label, 8);
 				D->vsns[bank][8] = 0;
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Module %s inserted into bank %c", D->vsns[bank], 'A'+bank);
-				getModuleInfo(xlrDevice, D, bank);
-				logMk5Smart(D, BANK_A);
+				updateModule = true;
+				newModule = true;
 			}
 			else
 			{
@@ -211,9 +214,29 @@ static int XLR_get_modules(Mk5Daemon *D)
 			}
 */
 		}
+		if(D->bank_stat[bank].Selected)
+		{
+			long long bu;
+			
+			bu = XLRGetLength(xlrDevice);
+			if(bu != D->bytesUsed[bank])	/* something changed unexpectedly!  Update it! */
+			{
+				D->bytesUsed[bank] = bu;
+
+				updateModule = true;
+			}
+		}
 		if(D->vsns[bank][0] && D->smartData[bank].mjd < 50000)
 		{
+			updateModule = true;
+		}
+		if(updateModule)
+		{
 			getModuleInfo(xlrDevice, D, bank);
+			if(newModule)
+			{
+				logMk5Smart(D, BANK_A);
+			}
 		}
 	}
 
