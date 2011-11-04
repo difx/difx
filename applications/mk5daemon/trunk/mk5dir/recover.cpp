@@ -45,7 +45,7 @@
 const char program[] = "recover";
 const char author[]  = "Walter Brisken";
 const char version[] = "0.2";
-const char verdate[] = "20110730";
+const char verdate[] = "20111103";
 
 static void usage(const char *pgm)
 {
@@ -80,6 +80,9 @@ static int recoverModule(int type, int bank, int force)
 	char *rv;
 	int moduleStatus = MODULE_STATUS_UNKNOWN;
 	int v;
+	char vsn[10];
+	int totalCapacity;
+	int rate;
 
 	WATCHDOGTEST( XLROpen(1, &xlrDevice) );
 	WATCHDOGTEST( XLRSetBankMode(xlrDevice, SS_BANKMODE_NORMAL) );
@@ -102,7 +105,7 @@ static int recoverModule(int type, int bank, int force)
 	WATCHDOGTEST( XLRGetLabel(xlrDevice, label) );
 	label[XLR_LABEL_LENGTH] = 0;
 
-	v = parseModuleLabel(label, 0, 0, 0, &moduleStatus);
+	v = parseModuleLabel(label, vsn, &totalCapacity, &rate, &moduleStatus);
 	if(v >= 0)
 	{
 		printf("\nCurrent extended VSN is %s\n", label);
@@ -116,9 +119,7 @@ static int recoverModule(int type, int bank, int force)
 		printf("\nNo valid VSN currently set on module\n");
 	}
 
-	printf("%lld bytes are apparently recorded on this module\n", dir.Length);
-
-	printf("\n");
+	printf("%lld bytes are apparently recorded on this module\n\n", dir.Length);
 
 	if(!force)
 	{
@@ -162,7 +163,20 @@ static int recoverModule(int type, int bank, int force)
 
 		if(xlrRC == XLR_SUCCESS)
 		{
+			int dmsMask = 7;
+			const char *dmsMaskStr;
+
 			printf("Recovery appears to be successful!\n");
+			
+			dmsMaskStr = getenv("DEFAULT_DMS_MASK");
+			if(dmsMaskStr)
+			{
+				dmsMask = atoi(dmsMaskStr);
+			}
+			if(dmsMask & MODULE_STATUS_RECORDED > 0)
+			{
+				v = resetModuleDirectory(xlrDevice, vsn, MODULE_STATUS_RECORDED, 1, totalCapacity, rate);
+			}
 		}
 		else
 		{
@@ -222,7 +236,7 @@ int main(int argc, char **argv)
 			i = sscanf(argv[a], "%d", &type);
 			if(i < 0 || type < 0 || type > 2)
 			{
-				fprintf(stderr, "Error: type %s not recognized.  Want 0, 1, or 2",
+				fprintf(stderr, "Error: type %s not recognized.  Want 0, 1, or 2\n",
 					argv[a]);
 				fprintf(stderr, "Run with -h for help info\n");
 				
@@ -298,9 +312,7 @@ int main(int argc, char **argv)
 			if(watchdogXLRError[0] != 0)
 			{
 				char message[DIFX_MESSAGE_LENGTH];
-				snprintf(message, DIFX_MESSAGE_LENGTH, 
-					"Streamstor error executing: %s : %s",
-					watchdogStatement, watchdogXLRError);
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Streamstor error executing: %s : %s", watchdogStatement, watchdogXLRError);
 				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 			}
 

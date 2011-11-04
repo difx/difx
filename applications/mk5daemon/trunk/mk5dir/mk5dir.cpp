@@ -392,7 +392,6 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 				strcpy(modules, vsn);
 			}
 		}
-
 	}
 
 	if(die)

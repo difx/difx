@@ -2033,7 +2033,7 @@ int setDiscModuleStateNew(SSHANDLE xlrDevice, int newState)
 
 	if(dirLength < 128 || dirLength % 128 != 0)
 	{
-		// Version must not be > 1!
+		// Version must be > 0!
 		return -1;
 	}
 

@@ -415,7 +415,7 @@ int setvsn(int bank, char *newVSN, int newStatus, enum WriteProtectAction wpa, i
 					if(smartValues[v].ID > 0)
 					{
 						V = interpretSMART(smartDescription, MaxSmartDescriptionLen, smartValues+v, &isCritical);
-						if((isCritical && V > 0LL) || smartValues[v].ID == 194)
+						if(isCritical && V > 0LL)
 						{
 							printf("  * %s\n", smartDescription);
 						}

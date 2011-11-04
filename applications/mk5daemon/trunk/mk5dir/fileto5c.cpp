@@ -553,7 +553,7 @@ static int fileto(const char *filename, int bank, const char *label, unsigned in
 			p = (struct Mark5DirectoryScanHeaderVer1 *)(dirData + len);
 			q = (struct Mark5DirectoryLegacyBodyVer1 *)(dirData + len + sizeof(struct Mark5DirectoryScanHeaderVer1));
 		}
-		if(lastEndByte - ptr > 1LL<<23)
+		else if(lastEndByte - ptr > 1LL<<23)
 		{
 			printf("Error 12 record pointer less than directory indicates (%Ld < %Ld).  Operation aborted.  Perhaps try to recover disk!\n", ptr, lastEndByte);
 
