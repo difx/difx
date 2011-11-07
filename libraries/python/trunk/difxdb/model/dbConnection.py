@@ -30,6 +30,7 @@ class Schema(object):
     def loadSchema(self):
              
         self.experimentTable = Table("Experiment", self.metadata__, autoload=True)
+        self.experimentStatusTable = Table("ExperimentStatus", self.metadata__, autoload=True)
         self.slotTable = Table("Slot", self.metadata__, autoload=True)
         self.moduleTable = Table("Module", self.metadata__, autoload=True)
         
@@ -50,7 +51,8 @@ class Schema(object):
     def createMappers(self):
         
         clear_mappers()
-        mapper(Experiment, self.experimentTable)
+        mapper(ExperimentStatus, self.experimentStatusTable)
+        mapper(Experiment, self.experimentTable,properties={'status':relation(ExperimentStatus, uselist = False)})
         mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID])})
         mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref='slot')})
         

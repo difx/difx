@@ -1,7 +1,3 @@
-#from sqlalchemy import Table, Column, Integer, ForeignKey
-#from sqlalchemy.orm import relation, backref
-
-
 class Module(object):
     pass
     #__tablename__ = 'Module'
@@ -20,5 +16,8 @@ class Slot (object):
     
     
 class Experiment(object):
+    pass
+
+class ExperimentStatus(object):
     pass
 
