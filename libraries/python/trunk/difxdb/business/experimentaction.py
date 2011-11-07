@@ -1,6 +1,3 @@
-# To change this template, choose Tools | Templates
-# and open the template in the editor.
-
 from difxdb.model import model
 
 def experimentExists(session, code):
@@ -21,7 +18,7 @@ def getActiveExperimentCodes(session):
     '''
     result = []
     
-    for instance in  session.query(model.Experiment.code).order_by(model.Experiment.code):
+    for instance in  session.query(model.Experiment).join(model.ExperimentStatus).filter(model.ExperimentStatus.statuscode<100).order_by(model.Experiment.code):
         result.append(instance.code)
         
     return(result)
