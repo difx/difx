@@ -10,8 +10,6 @@ class Schema(object):
     
     def __init__(self, connection):
         
-        #self.engine__ = create_engine('mysql://difxdb_admin:RvtfuKC2mdwyrxCsP2vF@127.0.0.1:3306/difxdb', echo=True) 
-        
         connStr = connection.getConnectionString()
         self.engine__ = create_engine(connStr, echo=connection.echo) 
         self.connection__ = self.engine__.connect()
@@ -56,16 +54,6 @@ class Schema(object):
         mapper(Module, self.moduleTable, properties={'experiments': relation(Experiment, secondary=self.experimentModuleTable, primaryjoin=self.experimentModuleTable.c.moduleID==self.moduleTable.c.id, secondaryjoin=self.experimentModuleTable.c.experimentID==self.experimentTable.c.id, foreign_keys = [self.experimentModuleTable.c.experimentID, self.experimentModuleTable.c.moduleID])})
         mapper(Slot, self.slotTable,properties={'module': relation(Module, uselist = False, backref='slot')})
         
-        #mapper(Slot, self.slotTable)
-        
-        #mapper(Slot, self.slotTable, properties={'module': relation(Module,  primaryjoin=Slot.module_id == Module.id),})
-
-        
-        #sa.orm.mapper(models.User, self.users_table, properties={
-        #    'emails': sa.orm.relation(models.Email, lazy=False),
-        #    'phone_numbers': sa.orm.relation(models.PhoneNumber, lazy=True)})
-        #sa.orm.mapper(models.Email, self.emails_table)
-        #sa.orm.mapper(models.PhoneNumber, self.phone_numbers_table)
 
 class Connection(object):
     
