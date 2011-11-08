@@ -1,4 +1,5 @@
 from difxdb.model import model
+import os
 
 def moduleExists(session, vsn):
     
@@ -30,5 +31,27 @@ def isCheckOutAllowed(session, vsn):
 
     return(True)
            
+def hasDir(vsn, dirPath=None):
+    '''
+    Checks whether a .dir file exists for the module with the given vsn.
+    If the optional dirPath is set the .dir file will be searched under that path.
+    Otherwise the MARK5_DIR_PATH environment is evaluated.
+    '''
+    if (dirPath == None):
+        dirPath = os.getenv("MARK5_DIR_PATH")
+        if (dirPath == None):
+            return(False)
+             
+        if (os.path.isfile(dirPath + "/" + vsn + ".dir")):
+            return(True)
+    
+        
+    return(False)
     
     
+def getUnscannedModules(session):
+    '''
+    Returns a collection of Module objects that have not been scanned 
+    '''
+    
+    return(session.query(model.Module).filter(model.Module.numScans == None).all())

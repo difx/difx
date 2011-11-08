@@ -11,6 +11,10 @@ def experimentExists(session, code):
     else:
         return(False)
     
+def getExperimentByCode(session, code):
+    
+    return(session.query(model.Experiment).filter_by(code=code).one())
+    
 def getActiveExperimentCodes(session):
     '''
     Determines all active experiments. Experiments are considered to be active if their state is not "released". 
