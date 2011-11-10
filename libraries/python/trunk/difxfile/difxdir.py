@@ -7,6 +7,10 @@ import os.path
 from collections import deque
 from string import upper
 
+def buildDirFilename(dirPath, vsn):
+    
+    return(dirPath + "/" + vsn + ".dir")
+    
 class DifxDir(object):
     
     def __init__(self, dirPath, vsn):
@@ -14,13 +18,14 @@ class DifxDir(object):
         self.dirPath = dirPath
         self.vsn = vsn
         self.scanCount = 0
+        self.stationCode = ""
         self.scans = deque()
         self.experiments = deque()
         
         if (not os.path.isdir(self.dirPath)):
             raise IOError("DiFX directory path: %s does not exist. " % self.dirPath)
         
-        self.filename = dirPath + "/" + vsn + ".dir"
+        self.filename = buildDirFilename(dirPath, vsn)
         
         self._parse()
       
@@ -35,6 +40,7 @@ class DifxDir(object):
         file = open(self.filename, "r")
         
         for line in file:
+            
             fields = line.split()
             
             #extract header fields
@@ -60,14 +66,21 @@ class DifxDir(object):
                     scan.frameOffset = fields[8]
                     scan.tracks = fields[9]
                     scan.format = fields[10]
-                    scan.scanName = fields[11]
+                    #scan.scanName = fields[11]
                     
-                    nameSplit = scan.scanName.split("_")
-                    if (len(nameSplit) > 0):
-                        expName = upper(nameSplit[0])
-                        
-                    if (expName not in self.experiments):
-                        self.experiments.append(expName)
+                    nameSplit = fields[11].split("_")
+                    if (len(nameSplit) == 3):
+                        scan.expName = upper(nameSplit[0])
+                        scan.stationCode = upper(nameSplit[1])
+                        scan.scanName = upper(nameSplit[2])
+                   
+                  
+                    if (scan.expName != ""):
+                        if (scan.expName not in self.experiments):
+                            self.experiments.append(scan.expName)
+                    
+                    if (len(scan.stationCode) == 2):
+                        self.stationCode = scan.stationCode
                     
 
                     self.scans.append(scan)
@@ -90,6 +103,10 @@ class DifxDir(object):
     def getScanCount(self):
         
         return(len(self.scans))
+    
+    def getStationCode(self):
+        
+        return(self.stationCode)
         
     def getExperiments(self):
         
@@ -112,6 +129,8 @@ class DifxDir(object):
             self.frameOffset = 0
             self.tracks = 0
             self.format = 0
+            self.expName = ""
+            self.stationCode = ""
             self.scanName = ""
             
     
