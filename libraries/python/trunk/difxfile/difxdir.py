@@ -22,14 +22,14 @@ class DifxDir(object):
         self.stationCode = ""
         self.scans = deque()
         self.experiments = deque()
-        self.fileDate = 0
+        self.fileDate = 0.0
         
         if (not os.path.isdir(self.dirPath)):
             raise IOError("DiFX directory path: %s does not exist. " % self.dirPath)
         
         self.filename = buildDirFilename(dirPath, vsn)
         
-        if (not self.filename.exists()):
+        if (not os.path.isfile(self.filename)):
             return
         
         self.fileDate = os.path.getmtime(self.filename)
@@ -100,6 +100,9 @@ class DifxDir(object):
     def getFileDate(self):
         
         return(self.fileDate)
+    
+    def getFilename(self):
+        return(self.filename)
     
     def exists(self):
         '''
