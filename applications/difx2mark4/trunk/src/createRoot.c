@@ -21,6 +21,7 @@ int createRoot (DifxInput *D,       // difx input structure pointer
     {
     int i,
         n,
+        ifr,
         match,
         current_block,
         numchan = 0,
@@ -45,6 +46,8 @@ int createRoot (DifxInput *D,       // difx input structure pointer
          current_site[3],
          line[30000],
          def_block[30000];
+
+    double freak;
 
     struct date caltime,
                 valtime;
@@ -298,9 +301,11 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                 else if (strncmp (pst[0], "chan_def", 8) == 0)
                     {
                     if(pst[2][0] == '&')
-                        sprintf (buff, "%c%02dU :", getband (atof (pst[3])), numchan++);
+                        freak = atof (pst[3]);
                     else
-                        sprintf (buff, "%c%02dU :", getband (atof (pst[2])), numchan++);
+                        freak = atof (pst[2]);
+                    sprintf (buff, "%c%02dU :", getband (freak), numchan++);
+
                     if (*pst[5] == 'L')
                         buff[3] = 'L';
 
@@ -309,7 +314,14 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                     *(strchr (line, '=')+2) = 0;
                     strcat (line, buff); 
                                     // comment out freq channels that weren't correlated
-                    if (D->config[configId].freqIdUsed[numchan-1] == 0)
+                                    // look for matching frequency and sideband
+                    for (i=0; i<D->nFreq; i++)
+                        if (fabs (D->freq[i].freq - freak) < 1e-6
+                         && D->freq[i].sideband == buff[3])
+                            break;
+                                    // if freq/sb not there, or is unused, comment it out
+                    if (i == D->nFreq ||
+                            D->config[D->scan[scanId].configId].freqIdUsed[i] <= 0)
                         line[0] = '*';
                     }
                 break;
