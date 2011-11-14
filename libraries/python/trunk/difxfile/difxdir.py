@@ -15,17 +15,24 @@ class DifxDir(object):
     
     def __init__(self, dirPath, vsn):
         
+    
         self.dirPath = dirPath
         self.vsn = vsn
         self.scanCount = 0
         self.stationCode = ""
         self.scans = deque()
         self.experiments = deque()
+        self.fileDate = 0
         
         if (not os.path.isdir(self.dirPath)):
             raise IOError("DiFX directory path: %s does not exist. " % self.dirPath)
         
         self.filename = buildDirFilename(dirPath, vsn)
+        
+        if (not self.filename.exists()):
+            return
+        
+        self.fileDate = os.path.getmtime(self.filename)
         
         self._parse()
       
@@ -33,9 +40,6 @@ class DifxDir(object):
         
         scanCount = 0
         lineCount = 0
-        
-        if (not self.exists()):
-            return
         
         file = open(self.filename, "r")
         
@@ -93,7 +97,10 @@ class DifxDir(object):
         if (scanCount != (lineCount -1)):
             raise Exception("Scan mismatch. File %s contains %s scans, but header claims it should be: %s" % (self.filename, lineCount-1, scanCount))
      
+    def getFileDate(self):
         
+        return(self.fileDate)
+    
     def exists(self):
         '''
         Checks whether the .dir file exists for the given vsn
