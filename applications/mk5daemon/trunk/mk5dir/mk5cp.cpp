@@ -56,6 +56,8 @@ typedef void (*sighandler_t)(int);
 
 sighandler_t oldsiginthand;
 
+const int MaxCommandLength = 400;
+
 enum CopyMode
 {
 	COPY_MODE_NORMAL = 0,
@@ -137,25 +139,26 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
-int parsescp(char *login, char *dest, const char *path)
+int parsescp(char *sshLogin, char *sshDest, const char *path)
 {
 	regex_t scpMatch;
 	regmatch_t matchPtr[2];
+	int v;
 
 	regcomp(&scpMatch, "\\([^:]+)\\:\\([^:]*)\\", 0);
 
-	v = regmatch(&scpMatch, path, 2, matchPtr, 0);
+	v = regexec(&scpMatch, path, 2, matchPtr, 0);
 
 	if(v == 0)
 	{
 		/* matched */
-		strncp(login, matchPtr[0].rm_so, matchPtr[0].rm_eo-matchPtr[0].rm_so);
-		strncp(dest,  matchPtr[1].rm_so, matchPtr[1].rm_eo-matchPtr[1].rm_so);
+		strncpy(sshLogin, path+matchPtr[0].rm_so, matchPtr[0].rm_eo-matchPtr[0].rm_so);
+		strncpy(sshDest,  path+matchPtr[1].rm_so, matchPtr[1].rm_eo-matchPtr[1].rm_so);
 	}
 	else
 	{
-		login[0] = 0;
-		dest[0] = 0;
+		sshLogin[0] = 0;
+		sshDest[0] = 0;
 	}
 
 	regfree(&scpMatch);
@@ -303,17 +306,15 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	}
 	else if(scpLogin[0])
 	{
-		char cmd[COMMAND_LENGTH];
-
-		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
+		char cmd[MaxCommandLength];
 
 		if(scpDest[0])
 		{
-			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, outName);
 		}
 		else
 		{
-			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s'", scpLogin, filename);
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s'", scpLogin, outName);
 		}
 		out = popen(cmd, "w");
 		if(!out)
@@ -507,17 +508,17 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	}
 	else if(scpLogin[0])
 	{
-		char cmd[COMMAND_LENGTH];
+		char cmd[MaxCommandLength];
 
 		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
 
 		if(scpDest[0])
 		{
-			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
 		}
 		else
 		{
-			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s'", scpLogin, filename);
+			snprintf(cmd, MaxCommandLength, "ssh %s 'cat - > %s'", scpLogin, filename);
 		}
 		out = popen(cmd, "w");
 		if(!out)
