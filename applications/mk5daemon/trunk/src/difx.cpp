@@ -243,9 +243,7 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	returnValue = checkDiskFree(destdir, 100000000);
 	if(returnValue < 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"The output directory %s is full, mpifxcorr will not be started.", 
-			destdir);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "The output directory %s is full, mpifxcorr will not be started.", destdir);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
 		return;
@@ -289,14 +287,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	if(access(S->inputFilename, F_OK) != 0)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Input file %s does not exist.  Aborting correlation.",
-			S->inputFilename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Input file %s does not exist.  Aborting correlation.", S->inputFilename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
-		snprintf(message, DIFX_MESSAGE_LENGTH,
-			"Mk5Daemon_startMpifxcorr: input file %s does not exist\n", 
-			S->inputFilename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: input file %s does not exist\n", S->inputFilename);
 		Logger_logData(D->log, message);
 
 		return;
@@ -384,12 +378,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 
 	fclose(out);
 	/* change ownership and permissions to match the input file */
-	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", 
-		S->inputFilename, filename);
+	snprintf(command, MAX_COMMAND_SIZE, "chown --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 	
-	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", 
-		S->inputFilename, filename);
+	snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s", S->inputFilename, filename);
 	Mk5Daemon_system(D, command, 1);
 
 
@@ -399,13 +391,10 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	out = fopen(filename, "w");
 	if(!out)
 	{
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", 
-			filename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open %s for write", filename);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 		
-		snprintf(message, DIFX_MESSAGE_LENGTH, 
-			"Mk5Daemon_startMpifxcorr: cannot open %s for write\n", 
-			filename);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Mk5Daemon_startMpifxcorr: cannot open %s for write\n", filename);
 
 		Logger_logData(D->log, message);
 		pthread_mutex_unlock(&D->processLock);
@@ -494,20 +483,27 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 	/* here is where the spawning of mpifxcorr happens... */
 	if(childPid == 0)
 	{
+
+		/* This is the child process.  Don't use Mk5Daemon_system or Logger_logData or anything
+		 * else that writes to an already open file for fear of all sorts of weirdness */
+
+		FILE *difxPipe = 0;
+
+		difxMessageInit(-1, jobName);
+
 		if(S->force && outputExists)
 		{
-			snprintf(command, MAX_COMMAND_SIZE, 
-				"/bin/rm -rf %s.difx/", filebase);
+			snprintf(command, MAX_COMMAND_SIZE, "/bin/rm -rf %s.difx/", filebase);
 
 			snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 		
-			Mk5Daemon_system(D, command, 1);
+			system(command);
 		}
 
 		difxMessageSendDifxAlert("mk5daemon spawning mpifxcorr process", DIFX_ALERT_LEVEL_INFO);
 
-		snprintf(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s\"'", 
+		snprintf(command, MAX_COMMAND_SIZE, "su - %s -c 'ssh -x %s \"%s -np %d --bynode --hostfile %s.machines %s %s %s\"' 2>&1", 
 			user,
 			S->headNode,
 			mpiWrapper,
@@ -520,33 +516,64 @@ void Mk5Daemon_startMpifxcorr(Mk5Daemon *D, const DifxMessageGeneric *G)
 		snprintf(message, DIFX_MESSAGE_LENGTH, "Executing: %s", command);
 		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
 
-		snprintf(message, DIFX_MESSAGE_LENGTH, "Spawning %d processes", 
-			1 + S->nDatastream + S->nProcess);
-		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, 
-			message);
+		snprintf(message, DIFX_MESSAGE_LENGTH, "Spawning %d processes", 1 + S->nDatastream + S->nProcess);
+		difxMessageSendDifxStatus2(jobName, DIFX_STATE_SPAWNING, message);
 
-#warning FIXME: make use of this return value
-		returnValue = Mk5Daemon_system(D, command, 1);
+		difxPipe = popen(command, "r");
+		if(!difxPipe)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "mpifxcorr process not started for job %s; popen returned NULL", jobName);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
 
-		difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
-		difxMessageSendDifxAlert("mpifxcorr process done", DIFX_ALERT_LEVEL_INFO);
+			exit(EXIT_FAILURE);
+		}
+		else
+		{
+			char line[DIFX_MESSAGE_LENGTH];
 
-		/* change ownership to match input file */
-		snprintf(command, MAX_COMMAND_SIZE, 
-			"chown --recursive --reference=%s %s.difx", 
-			S->inputFilename, filebase);
-		Mk5Daemon_system(D, command, 1);
+			for(;;)
+			{
+				const char *rv;
 
-		snprintf(command, MAX_COMMAND_SIZE,
-			"chmod g+w %s.difx", filebase);
-		Mk5Daemon_system(D, command, 1);
+				rv = fgets(line, DIFX_MESSAGE_LENGTH, difxPipe);
+				if(!rv)	/* eof, probably */
+				{
+					break;
+				}
 
-		snprintf(command, MAX_COMMAND_SIZE, 
-			"chmod --reference=%s %s.difx/*", 
-			S->inputFilename, filebase);
-		Mk5Daemon_system(D, command, 1);
+				for(int i = 0; line[i]; i++)
+				{
+					if(line[i] == '\n')
+					{
+						line[i] = ' ';
+					}
+				}
 
-		exit(EXIT_SUCCESS);
+				if(line[0] == '[')	/* likely an mpi error */
+				{
+					snprintf(message, DIFX_MESSAGE_LENGTH, "MPI Error: %s", line);
+					difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				}
+			}
+			returnValue = pclose(difxPipe);
+
+			difxMessageSendDifxStatus2(jobName, DIFX_STATE_MPIDONE, "");
+
+			snprintf(message, DIFX_MESSAGE_LENGTH, "mpifxcorr process done; return value = %d", returnValue);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_INFO);
+
+			/* change ownership to match input file */
+			snprintf(command, MAX_COMMAND_SIZE, "chown --recursive --reference=%s %s.difx", S->inputFilename, filebase);
+			returnValue = system(command);
+
+			snprintf(command, MAX_COMMAND_SIZE, "chmod g+w %s.difx", filebase);
+			returnValue = system(command);
+
+			snprintf(command, MAX_COMMAND_SIZE, "chmod --reference=%s %s.difx/*", S->inputFilename, filebase);
+			returnValue = system(command);
+
+			exit(EXIT_SUCCESS);
+		}
 	}
 
 	/* if we got here, we are the parent process */
