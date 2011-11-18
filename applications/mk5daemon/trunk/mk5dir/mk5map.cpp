@@ -75,7 +75,7 @@ static void usage(const char *pgm)
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to extract Mark5 module directory information via XLR calls\n");
 	printf("\nUsage : %s [<options>] { <bank> | <vsn> }\n\n", pgm);
-	printf("options can include:\n");
+	printf("<options> can include:\n");
 	printf("  --help\n");
 	printf("  -h             Print this help message\n\n");
 	printf("  --verbose\n");

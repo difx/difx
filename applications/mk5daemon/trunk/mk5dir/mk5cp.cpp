@@ -35,6 +35,7 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/time.h>
+#include <regex.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include "config.h"
@@ -43,8 +44,8 @@
 
 const char program[] = "mk5cp";
 const char author[]  = "Walter Brisken";
-const char version[] = "0.8";
-const char verdate[] = "20110810";
+const char version[] = "0.9";
+const char verdate[] = "20111118";
 
 const int defaultChunkSize = 50000000;
 
@@ -113,6 +114,7 @@ int usage(const char *pgm)
 		fprintf(stderr, "  $MARK5_DIR_PATH/<vsn>.dir\n");
 		fprintf(stderr, "If <output path> is the hyphen (-), then all output goes to stdout\n\n");
 	}
+	fprintf(stderr, "<output path> can also be of the form [user@]host:directory in which case scp will be used\n\n");
 
 	return 0;
 }
@@ -135,6 +137,31 @@ int dirCallback(int scan, int nscan, int status, void *data)
 	return die;
 }
 
+int parsescp(char *login, char *dest, const char *path)
+{
+	regex_t scpMatch;
+	regmatch_t matchPtr[2];
+
+	regcomp(&scpMatch, "\\([^:]+)\\:\\([^:]*)\\", 0);
+
+	v = regmatch(&scpMatch, path, 2, matchPtr, 0);
+
+	if(v == 0)
+	{
+		/* matched */
+		strncp(login, matchPtr[0].rm_so, matchPtr[0].rm_eo-matchPtr[0].rm_so);
+		strncp(dest,  matchPtr[1].rm_so, matchPtr[1].rm_eo-matchPtr[1].rm_so);
+	}
+	else
+	{
+		login[0] = 0;
+		dest[0] = 0;
+	}
+
+	regfree(&scpMatch);
+
+	return v;
+}
 
 int resetDriveStats(SSHANDLE xlrDevice)
 {
@@ -249,6 +276,10 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
 	int skip = 0;
+	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
+	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
+
+	parsescp(scpLogin, scpDest, outPath);
 
 	if(byteStart % 8 != 0)
 	{
@@ -269,6 +300,30 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 	{
 		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%s", outName); 
 		out = stdout;
+	}
+	else if(scpLogin[0])
+	{
+		char cmd[COMMAND_LENGTH];
+
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
+
+		if(scpDest[0])
+		{
+			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
+		}
+		else
+		{
+			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s'", scpLogin, filename);
+		}
+		out = popen(cmd, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open pipe %s for write.  Check permissions!", cmd);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
 	}
 	else
 	{
@@ -347,6 +402,12 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 			{
 				fprintf(stderr, "mk5cp: Broken pipe.\n");
 			}
+			else if(scpLogin[0])
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Bad password or broken scp pipe.");
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
 			else
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outPath);
@@ -383,7 +444,11 @@ int copyByteRange(SSHANDLE xlrDevice, const char *outPath, const char *outName, 
 		skip = 0;
 	}
 
-	if(out != stdout)
+	if(scpLogin[0])
+	{
+		pclose(out);
+	}
+	else if(out != stdout)
 	{
 		fclose(out);
 	}
@@ -430,11 +495,39 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 	double rate;
 	char message[DIFX_MESSAGE_LENGTH];
 	long long wGood=0, wBad=0;
+	char scpLogin[DIFX_MESSAGE_FILENAME_LENGTH];
+	char scpDest[DIFX_MESSAGE_FILENAME_LENGTH];
+
+	parsescp(scpLogin, scpDest, outPath);
 
 	if(strcmp(outPath, "-") == 0)
 	{
 		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
 		out = stdout;
+	}
+	else if(scpLogin[0])
+	{
+		char cmd[COMMAND_LENGTH];
+
+		snprintf(filename, DIFX_MESSAGE_FILENAME_LENGTH, "%8s_%03d_%s", vsn, scanNum+1, scan->name.c_str()); 
+
+		if(scpDest[0])
+		{
+			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s/%s'", scpLogin, scpDest, filename);
+		}
+		else
+		{
+			snprintf(cmd, COMMAND_LENGTH, "ssh %s 'cat - > %s'", scpLogin, filename);
+		}
+		out = popen(cmd, "w");
+		if(!out)
+		{
+			snprintf(message, DIFX_MESSAGE_LENGTH, "Cannot open pipe %s for write.  Check permissions!", cmd);
+			difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+			fprintf(stderr, "Error: %s\n", message);
+
+			return -1;
+		}
 	}
 	else
 	{
@@ -517,6 +610,12 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 			{
 				fprintf(stderr, "mk5cp: Broken pipe.\n");
 			}
+			else if(scpLogin[0])
+			{
+				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Bad password or broken scp pipe.");
+				difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+				fprintf(stderr, "Error: %s\n", message);
+			}
 			else
 			{
 				snprintf(message, DIFX_MESSAGE_LENGTH, "Incomplete write.  Disk full?  path=%s", outPath);
@@ -552,7 +651,11 @@ int copyScan(SSHANDLE xlrDevice, const char *vsn, const char *outPath, int scanN
 		togo -= len;
 	}
 
-	if(out != stdout)
+	if(scpLogin[0])
+	{
+		pclose(out);
+	}
+	else if(out != stdout)
 	{
 		fclose(out);
 	}
@@ -657,7 +760,6 @@ static int mk5cp(char *vsn, const char *scanList, const char *outPath, int force
 	Mark5Scan *scan;
 	char outName[DIFX_MESSAGE_FILENAME_LENGTH];
 	char scanrangestr[DIFX_MESSAGE_PARAM_LENGTH];
-
 	char message[DIFX_MESSAGE_LENGTH];
 	Mark5Module module;
 	SSHANDLE xlrDevice;

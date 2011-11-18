@@ -1,8 +1,7 @@
 mk5daemon
 ~~~~~~~~~
-* Integrate mk5cp?
 ? Fix reboot->busy or condition->busy state changes
-* ssopen bug?
+x ssopen bug?
 * Add IPMI support
 
 mk5cp
@@ -11,6 +10,7 @@ x Listen for multicast "stop" message
 * Allow max file size to be specified
 * Allow scan subsets to be specified
 x Watch for disk changes in other bank
+x "mk5scp" mode
 
 mk5dir
 ~~~~~~

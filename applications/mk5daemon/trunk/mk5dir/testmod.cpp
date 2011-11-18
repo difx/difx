@@ -72,7 +72,7 @@ static void usage(const char *pgm)
 	printf("\n%s ver. %s   %s %s\n\n", program, version, author, verdate);
 	printf("A program to test Mark5 modules\n\n");
 	printf("Usage: %s <options> <bank>\n\n", pgm);
-	printf("Where <options> can include:\n\n");
+	printf("<options> can include:\n\n");
 	printf("  --verbose\n");
 	printf("  -v         Increase the verbosity\n\n");
 	printf("  --force\n");
