@@ -259,7 +259,7 @@ static int getFreeMB(const char *path)
 			}
 		}
 
-		fclose(pin);
+		pclose(pin);
 	}
 
 	return size;
