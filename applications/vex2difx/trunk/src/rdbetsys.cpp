@@ -14,8 +14,8 @@ const char version[] = "0.1";
 const char author[]  = "Walter Brisken";
 const char verdate[] = "20111130";
 
-const char defaultSwitchedPowerPath[] = "/home/wbrisken/bd152i0";
-const double defaultTsysInterval = 20.0;	// Seconds
+const char defaultSwitchedPowerPath[] = "/home/swc/difx/tsys";
+const double defaultTsysInterval = 15.0;	// Seconds
 const int MaxFilenameLength = 256;
 
 static void usage(const char *pgm)
@@ -353,14 +353,10 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 		{
 			ta->freq = -ta->freq;
 			midFreq -= ta->bw/2.0;
-
-			ta->freq -= 32;
 		}
 		else
 		{
 			midFreq += ta->bw/2.0;
-
-			ta->freq += 32;
 		}
 		ta->pol = vexSetup.getIF(vc->ifname)->pol;
 		ta->tCal = getTcalValue(stn.c_str(), midFreq, ta->pol);

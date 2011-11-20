@@ -2637,7 +2637,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	// force program to work in Univeral Time
+	// force program to work in Universal Time
 	setenv("TZ", "", 1);
 	tzset();
 

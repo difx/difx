@@ -1,6 +1,8 @@
 #!/bin/env python
 
-from sys import argv, exit
+# TODO - change USNO processing to check if schedule only contains MK and PT antennas
+
+from sys import argv, exit, stdin
 from os import system, chdir, getcwd, environ, popen
 from os.path import isfile, isdir
 from string import replace, strip, split, lower, upper, find
@@ -8,7 +10,9 @@ from glob import glob
 import datetime
 
 program = 'queueVex'
-version = '1.2'
+version = 1.4
+verdate = '20111025'
+author  = 'Walter Brisken'
 
 verbose = 1
 
@@ -21,16 +25,20 @@ difxbinpath = '/users/difx/bin'
 
 # ------------------
 
+def usage():
+	print '\n%s ver. %s  %s  %s\n' % (program, version, verdate, author)
+	print 'Usage: %s [options] <vexfile>\n' % argv[0]
+	print 'options can be:\n'
+	print '  -h or --help       print help info and quit.'
+	print '  -v or --verbose    make more verbose.'
+	print '  -q or --quiet      make less verbose.'
+	print '  -p or --priority   interrupt a conflicting obs.'
+	print '  -u or --usno       convert scripts to use USNO devices'
+	print '  -e or --edit       allow time to edit the files\n'
+	print ''
+
+
 mjd0 = datetime.datetime(1858, 11, 17, 0, 0)
-
-
-def usage(cmd):
-	print '\n%s version %s\n' % (program, version)
-	print 'Usage: %s [options] <vexfile>\n' % cmd
-	print 'Options can be:\n'
-	print '-h or --help : print help info\n'
-	print '-u or --usno : convert scripts to use USNO devices\n'
-	exit(0)
 
 def execute(cmd, nostdout=0):
 	if verbose > 0:
@@ -88,29 +96,92 @@ def mjd2datetime(mjd):
 	t = mjd0 + dt
 	return '%04d%s%02d %02dh%02dm%02ds' % (t.year, mon[t.month-1], t.day, t.hour, t.minute, t.second)
 
-def age(str):
-	return 0
+# take string date (d) and time (t), as formatted above, and return MJD
+def vlba2mjd(d, t):
+	monnames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+	yr = int(d[0:4])
+	monname = d[4:7]
+	mn = 0
+	for m in range(len(monnames)):
+		if monname == monnames[m]:
+			mn = m+1
+	da = int(d[7:9])
+	hr = int(t[0:2])
+	mi = int(t[3:5])
+	se = int(t[6:8])
+	mjd = (datetime.datetime(yr, mn, da, 0, 0) - mjd0).days + hr/24.0 + mi/1440.0 + se/86400.0
+
+	return mjd
+
+def addObservation(orig, expt, startMJD, stopMJD, station):
+	startDate = mjd2datetime(startMJD)
+	stopDate = mjd2datetime(stopMJD)
+	
+	observations = []
+
+	for o in orig:
+		# calc time
+		# keep only obs from last 7 days and beyond
+		v = split(strip(o), '>')
+		s = split(v[0])
+		if len(s) < 5 or len(v) < 2:
+			observations.append(o)
+			continue
+		expt0 = s[0]
+		if expt0 == expt:
+			continue	# don't keep old entry for same expt
+		startDate0 = s[1]
+		startMJD0 = vlba2mjd(s[1], s[2])
+		stopMJD0 = vlba2mjd(s[3], s[4])
+		station0 = v[1]
+		if startMJD < stopMJD0 and stopMJD > startMJD0:	# some overlap condition exists!
+			if startMJD0 < startMJD:	# original project starts first
+				newobs = '%s %s %s > %s\n' % (expt0, mjd2datetime(startMJD0), startDate, station0)
+				observations.append(newobs)
+			if stopMJD0 > stopMJD:		# original projects ends last
+				newobs = '%s %s %s > %s\n' % (expt0, stopDate, mjd2datetime(stopMJD0), station0)
+				observations.append(newobs)
+		else:	# no overlap, so this is easy!
+			observations.append(o)
+	newobs = '%s %s %s > %s\n' % (expt, startDate, stopDate, station)
+	observations.append(newobs)
+
+	return observations
 
 # -----------------
 
+vexFile = None
+priority = 0
 usnoConvert = False
-
-
-args = []
+edit = False
 
 for a in argv[1:]:
-	if a in ['-u', '--usno']:
-		usnoConvert = True
-	elif a in ['-h', '--help']:
-		usage(argv[0])
-	elif a[0] == '-':
-		print 'Unknown option %s' % a
-		exit(0)
+	if a[0] == '-':
+		if a in ['-h', '--help']:
+			usage()
+			exit(1)
+		elif a in ['-p', '--priority']:
+			priority += 1
+		elif a in ['-v', '--verbose']:
+			verbose += 1
+		elif a in ['-q', '--quiet']:
+			verbose -= 1
+		elif a in ['-u', '--usno']:
+			usnoConvert = True
+		elif a in ['-e', '--edit']:
+			edit = True
+		else:
+			print 'Unknown option "%s"\n' % a
+			exit(1)
+	elif vexFile == None:
+		vexFile = a
 	else:
-		args.append(a)
+		print 'Unexpected parameter "%s"' % a
+		exit(1)
 
-if len(args) != 1:
-	usage(argv[0])
+if vexFile == None:
+	usage();
+	exit(0)
 
 cwd = getcwd()
 
@@ -118,14 +189,12 @@ if find(upper(cwd), 'MARK5C') < 0:
 	print '\nError: you must run this from within a MARK5C subdirectory\n'
 	exit(0)
 
-vexFile = args[0]
-
 if vexFile[0] != '/':
 	vexFile = '%s/%s' % (cwd, vexFile)
 
 obsCode, obsSeg, stationTimes = vexPeek(vexFile)
 
-tmpDir = '/tmp/' + replace(vexFile, '/', '-') + '.workdir'
+tmpDir = '/tmp/' + replace(vexFile, '/', ',') + '.workdir'
 
 if isfile(tmpDir) or isdir(tmpDir):
 	print 'Error: cannot proceed as temporary directory %s already exists.  Delete and try again.' % tmpDir
@@ -139,6 +208,12 @@ execute('%s/vex2script %s' % (difxPath, vexFile))
 
 scripts = glob('*.??.py')
 scripts.sort()
+
+if edit:
+	print '\nNow you can edit the .py files in %s before they are sent to the stations.' % tmpDir
+	print '\nPress enter to continue'
+	stdin.readline()
+
 for script in scripts:
 	s = split(script, '.')
 	station = lower(s[-2])
@@ -162,14 +237,12 @@ for script in scripts:
 	print 'STATION %s : observing %s from %s to %s' % (upperStation, expt, startDate, stopDate)
 	print '===========================================================================\n'
 
-	if usnoConvert and ( upperStation == 'MK' or upperStation == 'PT' ) :
+	if usnoConvert and (upperStation == 'MK' or upperStation == 'PT'):
 		print 'USNO Experiment %s' % (expt)
 		print 'Modifying script file for %s to use USNO equipment.' % upperStation
-
 		execute("mv %s %s.tmp" % (script, script))
-		execute("""sed -e "s/recorder0[ ]*=[ ]*Mark5C('-1')/recorder0 = Mark5C('usno')/" -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb')/dbe0 = RDBE(2, 'pfb')/" -e "s/subarray.set4x4Switch('1/subarray.set4x4Switch('2/" <%s.tmp >%s""" % (script, script))
+		execute("""sed -e "s/recorder0[ ]*=[ ]*Mark5C('-1')/recorder0 = Mark5C('usno')/" -e "s/dbe0[ ]*=[ ]*RDBE(0,[ ]*'pfb'/dbe0 = RDBE(2, 'pfb'/" -e "s/subarray.set4x4Switch('1/subarray.set4x4Switch('2/" <%s.tmp >%s""" % (script, script))
 		execute("rm %s.tmp" % script)
-
 		print 'Done.\n'
 
 	print 'Sending %s to %s' % (script, cc)
@@ -178,17 +251,10 @@ for script in scripts:
 		execute('touch %s' % observTxFile)
 
 	observations = open(observTxFile).readlines()
+	observations = addObservation(observations, expt, timeRange[0], timeRange[1], station)
 	f = open(observTxFile, 'w')
 	for o in observations:
-		s = split(strip(o))
-		if len(s) < 3:
-			continue
-		if age(s[1]) > 60:	# don't let observ.tx grow too large; delete entries after 60 days
-			continue
-		if s[0] == expt:
-			continue	# don't keep old entry for same expt
 		f.write(o)
-	f.write('%s %s %s > %s\n' % (expt, startDate, stopDate, station))
 	f.close()
 
 	print 'Contents of %s at %s:' % (observTxFile, upperStation)

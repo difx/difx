@@ -2,12 +2,12 @@
 
 # update the version when significant changes are made
 program = 'goUSNO'
-version = '0.10'
+version = '0.12'
 
 
 from sys import exit, argv, stdin
 from time import gmtime, strftime
-from string import split, lower, find
+from string import strip, split, lower, find
 from os import system, chdir, environ, popen
 from datetime import datetime
 
@@ -67,6 +67,11 @@ now = gmtime()	# format: (2011, 9, 12, 15, 47, 47, 0, 255, 0)
 
 force = False
 testmode = False
+edit = False
+
+if strip(popen('uname -s').readline()) != 'Linux':
+	print 'Must be run on a Linux machine'
+	exit(0)
 
 args = []
 for a in argv[1:]:
@@ -78,6 +83,8 @@ for a in argv[1:]:
 		verbose -= 1
 	elif a in ['-t', '--test']:
 		testmode = True
+	elif a in ['-e', '--edit']:
+		edit = True
 	else:
 		args.append(a)
 
@@ -88,7 +95,8 @@ if len(args) != 4:
 	print '  -f or --force    : proceed even if this project has already been queued'
 	print '  -v or --verbose  : print more output'
 	print '  -q or --quiet    : print less output'
-	print '  -t or --test     : schedule project as test\n'
+	print '  -t or --test     : schedule project as test'
+	print '  -e or --edit     : allow .py files to be edited\n'
 	exit(0)
 
 start = args2time(args[1:], now)
@@ -133,6 +141,8 @@ newFile = '%s.key' % projectCode
 
 execute('mkdir -p %s' % outDir)
 chdir(outDir)
+execute('mkdir -p %s/sniffer' % outDir)
+execute('chmod a+w %s/sniffer' % outDir)
 
 execute("sed -e 's/%%year%%/%d/' -e 's/%%month%%/%d/' -e 's/%%day%%/%d/' -e 's/%%utc%%/%d:%02d:%02d/' -e 's/%%expcode%%/%s/' <%s >%s" % (start[0], start[1], start[2], start[3], start[4], start[5], projectCode, templateFile, newFile) )
 
@@ -140,7 +150,12 @@ execute("%s < %s" % (sched, newFile) )
 
 execute('db2vex --preobs --force %s.vex' % projectCode)
 
-execute("%s --usno %s.vex" % (queueVex, projectCode) )
+options = "--usno"
+
+if edit:
+	options += " --edit"
+
+execute("%s %s %s.vex" % (queueVex, options, projectCode) )
 
 if email != None:
 	cmd = "mail -s '%s scheduled' %s" % (projectCode, email)
@@ -153,5 +168,9 @@ if email != None:
 	out.close()
 
 print '\nFinished.\n'
-print "*** Don't forget to copy crd files to legacy systems and update observ.tx"
-print '\nFiles are in %s\n' % outDir
+print "*** Don't forget to: ***"
+print "1. copy crd files to legacy systems"
+print "2. update observ.tx on legacy systems"
+print "3. update OMS as necessary"
+print "************************"
+print '\nArchive files are in: %s\n' % outDir

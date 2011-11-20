@@ -61,7 +61,7 @@ Version 2.0
 * Fix convergence problem when there is no time gap between modules
 * Force v2d file to start with a letter
 * oms2v2d: warn if both .skd and .vex are found; default to .vex
-* Source names were confused: no distiction was made between the vex "def" name and the source name.  Fixed.
+* Source names were confused: no distinction was made between the vex "def" name and the source name.  Fixed.
 * Check for sources with illegal names
 * Improved function/variable naming to indicate explicitly where some def names are used
 * Vex loading error messages are slightly more useful
