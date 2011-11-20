@@ -225,7 +225,7 @@ A decode function loops starts decoding at the read pointer
 arrays pointed to by "data".  "data" should be a two dimensional matrix
 with minimum size ms->nchan by nsamp.  Decode functions must detect end
 of frames and request a call of the next function (with a call of
-mark5_stream_next_frame(ms) ).  Note that this funtion may change
+mark5_stream_next_frame(ms) ).  Note that this function may change
 the location of ms->payload so this will need to be updated after each
 call.  Note also that mark5_stream_next_frame() may return -1 indicating
 end of data.  It is crutial that this function sets the value of

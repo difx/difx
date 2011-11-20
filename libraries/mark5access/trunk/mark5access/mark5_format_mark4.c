@@ -131,7 +131,7 @@ static void initluts()
 	}
 }
 
-/* Look for the first occurance (lowest offset >= 0) of the following pattern:
+/* Look for the first occurence (lowest offset >= 0) of the following pattern:
  *
  * 32*tracks bits set at offset bytes
  * 32*tracks bits set at offset+2500*tracks bytes

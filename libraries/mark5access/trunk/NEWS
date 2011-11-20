@@ -29,5 +29,5 @@ unpack the tar file
 make
 make install
 
-It is likely that some embarrasing bugs exist in this first release.  Please 
+It is likely that some embarrassing bugs exist in this first release.  Please 
 send any bug reports to Walter Brisken <wbrisken@nrao.edu>

@@ -199,7 +199,7 @@ The structure maintains a current read pointer, initially set to the
 beginning of the stream and incremented with decoding and copying 
 functions.  The general structure assumes a frame-based packaging of
 VLBI data.  For data formats that do not have periodic inserted 
-headers the decoder will optionally allow an artifical frame size to
+headers the decoder will optionally allow an artificial frame size to
 be specified.  The implications of the choice of of frame size is
 mostly in the granularity of the seek function and the minimum 
 resident data size.  Reasonalble frame sizes might be 1k to 1M.

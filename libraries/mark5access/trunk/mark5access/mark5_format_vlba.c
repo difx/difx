@@ -209,7 +209,7 @@ int countbits32(unsigned int v)
 	return c;
 }
 
-/* Look for the first occurance (lowest offset >= 0) of the following pattern:
+/* Look for the first occurence (lowest offset >= 0) of the following pattern:
  *
  * 32*tracks bits set at offset bytes
  * 32*tracks bits set at offset+2520*tracks bytes

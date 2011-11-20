@@ -78,7 +78,7 @@ static void usage(const char *pgm)
 	printf("  <offset> is number of bytes into file to start decoding\n\n");
 	printf("Example: look for the 80 Hz switched power:\n\n");
 	printf("  m5fold 2bit.data.vlba VLBA1_1-128-8-2 128 10000 80 switched_power.out\n\n");
-	printf("Output: A file witn <nchan>+1 columns.  First column is time [s].\n");
+	printf("Output: A file with <nchan>+1 columns.  First column is time [s].\n");
 	printf("  Each remaining column is folded power for that baseband channel.\n");
 	printf("  If nbin is positive, the scaling is such that <v^2> = 1 yields a\n");
 	printf("  power reading of 1.0.  Optimal S/N occurs for power ~= 1.03\n\n");
