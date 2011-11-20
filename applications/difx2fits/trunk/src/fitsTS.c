@@ -93,8 +93,19 @@ int loadTcals()
 		}
 		if(nTcal >= nAlloc)
 		{
+			TCal *p = tCals;
+
 			nAlloc += 1000;
 			tCals = (TCal *)realloc(tCals, nAlloc*sizeof(TCal));
+			if(tCals == 0)
+			{
+				free(p);
+				tCals = 0;
+
+				fprintf(stderr, "Error: cannot realloc tCals for %d elements\n", nAlloc);
+
+				exit(EXIT_FAILURE);
+			}
 		}
 		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
 			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
@@ -666,6 +677,12 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	nanify(tAnt);
 
 	hasDifxTsys = (int *)calloc(D->nAntenna, sizeof(int));
+	if(hasDifxTsys == 0)
+	{
+		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d integers for hasDifxTsys\n", D->nAntenna);
+
+		exit(EXIT_FAILURE);
+	}
 
 	nBand = D->nIF;
 	nPol = D->nPol;
@@ -689,7 +706,11 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-		return 0;
+		fprintf(stderr, "Error: DifxInput2FitsTS: Cannot allocate %d bytes for fitsbuf\n", nRowBytes);
+
+		free(hasDifxTsys);
+
+		exit(EXIT_FAILURE);
 	}
 
 	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "SYSTEM_TEMPERATURE");

@@ -941,10 +941,14 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	if(nTone*nBand > array_MAX_TONES)
 	{
-		printf("Developer Error: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n",
-			nTone, nBand, array_MAX_TONES);
+		printf("Developer Error: nTone(=%d)*nBand(=%d) exceeds array_MAX_TONES(=%d).  No pulse cal data will be enFITSulated.\n", nTone, nBand, array_MAX_TONES);
 
-		return D;
+		if(in)
+		{
+			fclose(in);
+		}
+
+		exit(EXIT_FAILURE);
 	}
 	if(nTone < 1)
 	{
@@ -1202,7 +1206,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 									nextCableCal = lineCableCal;
 								}
 							}
-							//fprintf(stderr, ".");
 							/*next choose which cable cal value to use (if any)*/
 							nextCableSigma = 2*fabs(dumpTime - nextCableTime)/(nextCablePeriod);
 							cableSigma = 2*fabs(dumpTime - cableTime)/(cablePeriod);
@@ -1329,8 +1332,8 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 			rewind(in);
 		}
 
-
 	}/*end antenna loop*/
+
 	if(in)
 	{
 		fclose(in);
@@ -1344,10 +1347,6 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	free(fitsbuf);
 
-	//if(nDifxTone > 0)
-	//{	
-	//	printf("\n");
-	//}
 	printf("\n");
 
 	return D;

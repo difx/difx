@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009 by Walter Brisken                                  *
+ *   Copyright (C) 2009-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -94,8 +94,9 @@ void writeJobMatrix(JobMatrix *jm)
 	v = snprintf(outname, DIFXIO_FILENAME_LENGTH, "%s.jobmatrix", jm->filebase);
 	if(v >= DIFXIO_FILENAME_LENGTH)
 	{
-		fprintf(stderr, "Developer error: writeJobMatrix: outname wants %d bytes, not %d\n",
-			v, DIFXIO_FILENAME_LENGTH);
+		fprintf(stderr, "Developer error: writeJobMatrix: outname wants %d bytes, not %d\n", v, DIFXIO_FILENAME_LENGTH);
+
+		free(jobList);
 		
 		return;
 	}
