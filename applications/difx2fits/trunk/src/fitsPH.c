@@ -952,6 +952,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	}
 	if(nTone < 1)
 	{
+		if(in)
+		{
+			fclose(in);
+		}
+
 		return D;
 	}
 
@@ -974,7 +979,10 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	fitsbuf = (char *)calloc(nRowBytes, 1);
 	if(fitsbuf == 0)
 	{
-	        fclose(in);
+		if(in)
+		{
+	        	fclose(in);
+		}
 		fprintf(stderr, "Error: DifxInput2FitsPH: Memory allocation failure\n");
 
 		exit(EXIT_FAILURE);
