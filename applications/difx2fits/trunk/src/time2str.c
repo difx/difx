@@ -32,7 +32,7 @@ char *timeMjd2str
  *   "1991JAN01 12h00m00.00s".
  */
 {
-    return (time2str (inTime, "", pOutStr));
+    return time2str(inTime, "", pOutStr);
 }
 
 /*******************************************************************************
@@ -57,7 +57,7 @@ char *time2str
  *   "0.0"          --  1991JAN01 06h00m00s
  */
 {
-    char *poriginal = pOutStr;  /* hold output string address for return */
+    char *pOriginal = pOutStr;  /* hold output string address for return */
     long mjd;
     double rads;
     char formatStr[40];
@@ -78,7 +78,7 @@ char *time2str
     rad2str (rads, formatStr, tempStr);
     strcat (pOutStr, tempStr);
 
-    return (poriginal);
+    return pOriginal;
 }
 /*******************************************************************************
 */
@@ -93,7 +93,7 @@ char *srvMjd2str
  * Output format:   54235 07h00m02.5s
  */
 {
-    char *poriginal = pOutStr;  /* hold output string address for return */
+    char *pOriginal = pOutStr;  /* hold output string address for return */
     int mjd;
     double rads;
     char tempStr[40];
@@ -107,7 +107,7 @@ char *srvMjd2str
     rad2str (rads, "h", tempStr);
     strcat (pOutStr, tempStr);
 
-    return (poriginal);
+    return pOriginal;
 }
 
 /*******************************************************************************
@@ -125,7 +125,7 @@ char *rad2str		/* convert radians to string */
  * careful, this sometimes produces unexpected results.
  */
 {
-    return (rad2strg (angle, pFormat, pOutStr, 1));
+    return rad2strg(angle, pFormat, pOutStr, 1);
 }
 
 /*******************************************************************************
@@ -177,7 +177,7 @@ char *rad2strg
  *   "d03.2"        --  001d22'33.33"
  */
 {
-    char *poriginal = pOutStr;  /* hold output string address for return */
+    char *pOriginal = pOutStr;  /* hold output string address for return */
     char units_char[4];         /* field separation chars (d'" or hms) */
     int m;                      /* degrees/hours field width */
     int n;                      /* fractional seconds field width */
@@ -287,7 +287,7 @@ char *rad2strg
     *pOutStr++ = units_char[2];
     *pOutStr++ = '\0';
  
-    return (poriginal);
+    return pOriginal;
 }
 
 /*******************************************************************************
@@ -312,15 +312,15 @@ static int ltostr		/* convert long to string */
  * A minus sign is prefixed if either 'number' or 'sign' is negative.  This 
  * permits a 'signed zero' to be generated.  The minus sign is the first 
  * character in the string if leading zeros are requested, else it is the 
- * character immediately preceeding the most significant digit.
+ * character immediately preceding the most significant digit.
  *
  * The output string DOES NOT have a terminating null.
  */
 {
-    char *preverse;
-    char fillchar;
+    char *pReverse;
+    char fillChar;
     char tempch;
-    int nochar = 0;
+    int noChar = 0;
  
     /* if input number is negative ... */
     if (number < 0)
@@ -329,61 +329,61 @@ static int ltostr		/* convert long to string */
         number = -number;
 	}
  
-    /* set fillchar = proper fill character */
+    /* set fillChar = proper fill character */
     if (width < 0)
 	{
         width = -width;
-        fillchar = '0';
+        fillChar = '0';
 	}
     else
-        fillchar = ' ';
+        fillChar = ' ';
 
     /* if input number is negative with leading zeroes fill,
        insert minus sign in first character of string */
-    if (sign < 0 && fillchar == '0')
+    if (sign < 0 && fillChar == '0')
 	{
         *pOutStr++ = '-';
-        nochar++;
+        noChar++;
         sign = 0;
 	}
  
     /* record pointer where string reversal will begin */
-    preverse = pOutStr;
+    pReverse = pOutStr;
 
     /* convert input number to ascii in reverse order */
     do 
 	{
         *pOutStr++ = '0' + number % 10;
-        nochar++;
+        noChar++;
 	} while ((number /= 10) > 0);
 
     /* if input number is negative with leading blank fill,
        insert minus sign in front of most significant digit */
-    if (sign < 0 && fillchar == ' ')
+    if (sign < 0 && fillChar == ' ')
 	{
         *pOutStr++ = '-';
-        nochar++;
+        noChar++;
 	}
 
     /* insert enough fill characters to fill minimum field width */
-    while (nochar < width)
+    while (noChar < width)
 	{
-        *pOutStr++ = fillchar;
-        nochar++;
+        *pOutStr++ = fillChar;
+        noChar++;
 	}
 
     /* point to last inserted character */
     pOutStr--;
 
     /* digits were generated in reverse order, so re-reverse them */
-    while (preverse < pOutStr)
+    while (pReverse < pOutStr)
 	{
-        tempch = *preverse;
-        *preverse++ = *pOutStr;
+        tempch = *pReverse;
+        *pReverse++ = *pOutStr;
         *pOutStr-- = tempch;
 	}
 
     /* return number of characters inserted */
-    return (nochar);
+    return noChar;
 }
 

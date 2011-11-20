@@ -138,8 +138,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	nRowBytes = FitsBinTableSize(columns, nColumn);
 
 	/* write "binary file extension description" to output file */
-	fitsWriteBinTable(out, nColumn, columns, nRowBytes,
-		     "INTERFEROMETER_MODEL");
+	fitsWriteBinTable(out, nColumn, columns, nRowBytes, "INTERFEROMETER_MODEL");
   
 	/* calloc space for storing table in FITS order */
 	fitsbuf = (char *)calloc(nRowBytes, 1);
@@ -192,8 +191,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   }
 	   if(phasecentre >= scan->nPhaseCentres)
 	   {
-	     printf("Skipping scan %d as the requested phase centre was not used\n", s);
-	     continue;
+	   	printf("Skipping scan %d as the requested phase centre was not used\n", s);
+
+	  	continue;
 	   }
 
 	   config = D->config + configId;
@@ -202,12 +202,12 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 	   
 	   if(scan->im)
 	   {
-	   	np = scan->nPoly;
+	  	np = scan->nPoly;
 		timeInt = job->polyInterval / 86400.0;
 	   }
 	   else
 	   {
-		fprintf(stderr, "No IM info available - skipping generation of ML table\n");
+		fprintf(stderr, "No IM info available: skipping generation of ML table\n");
 		continue;
 	   }
 
@@ -237,8 +237,7 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 		{
 		  if(skip[antId] == 0)
 		  {
-		    printf("\n    Polynomial model error : skipping antId %d = %s",
-		        antId, da->name);
+		    printf("\n    Polynomial model error: skipping antId %d = %s", antId, da->name);
 		    skip[antId]++;
 		    printed++;
 		    skipped++;
@@ -293,11 +292,9 @@ const DifxInput *DifxInput2FitsML(const DifxInput *D,
 
 		for(i = 0; i < nPol; i++)
 		{
-			FITS_WRITE_ARRAY(ppoly[0], p_fitsbuf,
-				nBand*array_N_POLY);
+			FITS_WRITE_ARRAY(ppoly[0], p_fitsbuf, nBand*array_N_POLY);
 			FITS_WRITE_ARRAY(gpoly, p_fitsbuf, array_N_POLY);
-			FITS_WRITE_ARRAY(prate[0], p_fitsbuf,
-				nBand*array_N_POLY);
+			FITS_WRITE_ARRAY(prate[0], p_fitsbuf, nBand*array_N_POLY);
 			FITS_WRITE_ARRAY(grate, p_fitsbuf, array_N_POLY);
 			FITS_WRITE_ITEM (dispDelay, p_fitsbuf);
 			FITS_WRITE_ITEM (dispDelayRate, p_fitsbuf);

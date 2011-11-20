@@ -96,6 +96,10 @@ const DifxInput *DifxInput2FitsUV(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, 
 	struct CommandLineOptions *opts);
 
+const DifxInput *dummy_DifxInput2FitsUV(const DifxInput *D,
+        struct fits_keywords *p_fits_keys,
+	struct fitsPrivate *out, struct CommandLineOptions *opts);
+
 const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);
 
@@ -103,7 +107,7 @@ const DifxInput *DifxInput2FitsTS(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds);
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
-	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds);
+	struct fits_keywords *p_fits_keys, struct fitsPrivate *out, int phasecentre, double DifxTcalAvgSeconds, int verbose);
 
 const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out);

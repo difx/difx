@@ -233,11 +233,12 @@ int getDifxPcalFile(const DifxInput *D, int antId, int jobId, FILE **file)
  * so the output should only be used to set an upper limit on array sizes and
  * things of that ilk.
  */
-static int getNTone(const char *filename, double t1, double t2)
+static int getNTone(const char *filename, double t1, double t2, int verbose)
 {
 	FILE *in;
 	char line[MaxLineLength+1];
 	int n, nTone, maxnTone=0;
+	int maxnToneNearby = 0;
 	double t;
 	char *rv;
 	char antName1[DIFXIO_NAME_LENGTH];
@@ -256,6 +257,10 @@ static int getNTone(const char *filename, double t1, double t2)
 			break;
 		}
 		n = sscanf(line, "%s%lf%*f%*f%*d%*d%d", antName1, &t, &nTone);
+		if(verbose > 2)
+		{
+			printf("ant %s, nTone %d\n", antName1, nTone);
+		}
 		if(n != 3)
 		{
 			continue;
@@ -267,9 +272,16 @@ static int getNTone(const char *filename, double t1, double t2)
 				maxnTone = nTone;
 			}
 		}
-		
+		else if (nTone > maxnToneNearby)
+		{
+			maxnToneNearby = nTone;
+		}
 	}
 	fclose(in);
+	if(maxnTone == 0)
+	{
+		maxnTone = -maxnToneNearby;
+	}
 
 	return maxnTone;
 }
@@ -293,7 +305,7 @@ static int parsePulseCal(const char *line,
 	float stateCount[2][array_MAX_STATES*array_MAX_BANDS],
 	float pulseCalRate[2][array_MAX_TONES],
 	int refDay, const DifxInput *D, int *configId, 
-	int phasecentre)
+	int phasecentre, int doAll)
 {
 	int IFs[array_MAX_BANDS];
 	int states[array_MAX_STATES];
@@ -358,15 +370,22 @@ static int parsePulseCal(const char *line,
 	*time -= refDay;
 	mjd = *time + (int)(D->mjdStart);
 
-	if(mjd < D->mjdStart || mjd > D->mjdStop)
+	if((mjd < D->mjdStart || mjd > D->mjdStop) && (doAll == 0))
 	{
 		return -1;
 	}
 
 	scanId = DifxInputGetScanIdByAntennaId(D, mjd, antId);
 	if(scanId < 0)
-	{	
-		return -3;
+	{
+		if(doAll)
+		{
+			scanId = 0;
+		}
+		else
+		{
+			return -3;
+		}
 	}
 
         if(phasecentre >= D->scan[scanId].nPhaseCentres)
@@ -783,7 +802,7 @@ int countTones(const DifxDatastream *dd)
 
 const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	struct fits_keywords *p_fits_keys, struct fitsPrivate *out,
-	int phasecentre, double avgSeconds)
+	int phasecentre, double avgSeconds, int verbose)
 {
 	char stateFormFloat[8];
 	char toneFormDouble[8];
@@ -839,6 +858,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	int refDay;
 	int i, a, dsId, j, k, t, n, v;
 	int doDump = 0;
+	int doAll = 0;
 	int nWindow;
 	double start, stop;
 	double windowDuration=0.0, dumpWindow=0.0;
@@ -885,7 +905,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 		{
 			if(D->datastream[i].phaseCalIntervalMHz < 1)
 			{
-				nTone = getNTone("pcal", refDay + start, refDay + stop);
+				nTone = getNTone("pcal", refDay + start, refDay + stop, verbose);
 				break;
 			}
 		}
@@ -894,7 +914,15 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 	{
 		printf("    Station pcal file not found. No station pcal or cable cal measurements available\n");
 	}
-
+	if(nTone < 0)
+	{
+		nTone = -nTone;
+		doAll = 1;
+	}
+	if(verbose)
+	{
+		printf("    Number of tones: %d\n", nTone);
+	}
 
 	nDifxTone = DifxInputGetMaxTones(D);
 	if(nDifxTone == 0)
@@ -957,6 +985,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	arrayId1 = 1;
 
+	printf("   ");
 	for(a = 0; a < D->nAntenna; a++)
 	{
 		for(k = 0; k < 2; k++)
@@ -1043,7 +1072,7 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 							}
 							v = parsePulseCal(line, a, &sourceId, &time, &timeInt, 
 								&cableCal, freqs, pulseCalReAcc, pulseCalImAcc,
-								stateCount, pulseCalRate, refDay, D, &configId, phasecentre);
+								stateCount, pulseCalRate, refDay, D, &configId, phasecentre, doAll);
 							if(v < 0)
 							{
 								continue;/*to next line in file*/
@@ -1315,10 +1344,11 @@ const DifxInput *DifxInput2FitsPH(const DifxInput *D,
 
 	free(fitsbuf);
 
-	if(nDifxTone > 0)
-	{	
-		printf("\n");
-	}
+	//if(nDifxTone > 0)
+	//{	
+	//	printf("\n");
+	//}
+	printf("\n");
 
 	return D;
 }

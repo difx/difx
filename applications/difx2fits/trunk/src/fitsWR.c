@@ -192,7 +192,7 @@ const DifxInput *DifxInput2FitsWR(const DifxInput *D,
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf[antId]);
 #endif
 
-		/* write this record if it is withing the timerange or
+		/* write this record if it is within the timerange or
 		   the record immediately after the timerange */
 		if( (mjd >= D->mjdStart && mjd <= D->mjdStop) ||
 		    (mjd > D->mjdStop && mjdLast[antId] < D->mjdStop) )

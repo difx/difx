@@ -51,18 +51,14 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		{"GRATE", "1D", "CALC geometric delay rate", "SEC/SEC"},
 		{"CLOCK_1", "1D", "electronic delay", "SECONDS"},
 		{"DCLOCK_1", "1D", "electronic delay rate", "SEC/SEC"},
-		{"LO_OFFSET_1", bandFormFloat, 
-			"station lo_offset for polar. 1", "HZ"},
-		{"DLO_OFFSET_1", bandFormFloat, 
-			"station lo_offset rate for polar. 1", "HZ/SEC"},
+		{"LO_OFFSET_1", bandFormFloat, "station lo_offset for polar. 1", "HZ"},
+		{"DLO_OFFSET_1", bandFormFloat, "station lo_offset rate for polar. 1", "HZ/SEC"},
 		{"DISP_1", "1E", "dispersive delay", "SECONDS"},
 		{"DDISP_1", "1E", "dispersive delay rate", "SEC/SEC"},
 		{"CLOCK_2", "1D", "electronic delay", "SECONDS"},
 		{"DCLOCK_2", "1D", "electronic delay rate", "SEC/SEC"},
-		{"LO_OFFSET_2", bandFormFloat, 
-			"station lo_offset for polar. 2", "HZ"},
-		{"DLO_OFFSET_2", bandFormFloat, 
-			"station lo_offset rate for polar. 2", "HZ/SEC"},
+		{"LO_OFFSET_2", bandFormFloat, "station lo_offset for polar. 2", "HZ"},
+		{"DLO_OFFSET_2", bandFormFloat, "station lo_offset rate for polar. 2", "HZ/SEC"},
 		{"DISP_2", "1E", "dispersive delay for polar 2", "SECONDS"},
 		{"DDISP_2", "1E", "dispersive delay rate for polar 2", 
 			"SEC/SEC"}
@@ -127,6 +123,8 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		"Version of FFT twiddle table used");
 	fitsWriteString(out, "TAPER_FN", D->job->taperFunction, "");
 	fitsWriteInteger(out, "TABREV", 1, "");
+#warning "populate the new keyword below"
+	//fitsWriteDouble(out, "DELTAT", , "DAYS");
 	
 	fitsWriteEnd(out);
 
@@ -266,7 +264,6 @@ const DifxInput *DifxInput2FitsMC(const DifxInput *D,
 		FitsBinRowByteSwap(columns, nColumn, fitsbuf);
 #endif
 		fitsWriteBinRow(out, fitsbuf);
-		
 	      } /* Antenna loop */
 	   } /* Intervals in scan loop */
 	} /* Scan loop */

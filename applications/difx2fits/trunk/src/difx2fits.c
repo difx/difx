@@ -581,6 +581,11 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 	else
 	{
 		printf("  *** No visibility data being written to file ***\n");
+		D = dummy_DifxInput2FitsUV(D, &keys, out, opts);
+		printf("  UV -- visibility          \n");
+		fflush(stdout);
+		printf("%lld bytes\n", out->bytes_written - last_bytes);
+		last_bytes = out->bytes_written;
 	}
 
 	printf("  FL -- flag                ");
@@ -597,7 +602,7 @@ static const DifxInput *DifxInput2FitsTables(const DifxInput *D,
 
 	printf("  PH -- phase cal           ");
 	fflush(stdout);
-	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre, opts->DifxPcalAvgSeconds);
+	D = DifxInput2FitsPH(D, &keys, out, opts->phaseCentre, opts->DifxPcalAvgSeconds, opts->verbose);
 	printf("                            ");
 	printf("%lld bytes\n", out->bytes_written - last_bytes);
 	last_bytes = out->bytes_written;

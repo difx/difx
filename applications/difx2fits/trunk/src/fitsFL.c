@@ -361,7 +361,7 @@ const DifxInput *DifxInput2FitsFL(const DifxInput *D,
 		ds = D->datastream + dc->datastreamId[d];
 		FL.baselineId1[0] = ds->antennaId + 1;
 
-		/* populate a "presense" matrix. */
+		/* populate a "presence" matrix. */
 		for(p = 0; p < dc->nPol; p++)
 		{
 			for(i = 0; i < dc->nIF; i++)
