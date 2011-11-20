@@ -48,9 +48,9 @@ struct getCALC_arg {
         double ypole[5];        /* earth pole offset, y (arcsecs) */
      
         double pressure_a;      /* surface pressure stna (millibars) 
-                                 * enter 0.0 for none availiable */
+                                 * enter 0.0 for none available */
         double pressure_b;      /* surface pressure stnb (millibars) 
-                                 * enter 0.0 for none availiable */
+                                 * enter 0.0 for none available */
 
         char  *station_a;       /* station A name */
         char  *axis_type_a;     /* station A mount type, 'altz', 'equa',
