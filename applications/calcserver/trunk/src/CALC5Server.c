@@ -120,7 +120,7 @@ STATUS loadOcean(p_stn_name, jrow)
 	}
     }
 
-    return (ERROR);
+    return ERROR;
 }
 /*  @(#)d_fetch.c  version 1.11  created 93/10/17 23:09:23
                 fetched from SCCS 95/06/26 14:13:46
@@ -144,7 +144,7 @@ double         ast_dopplr (mjdtime, u, v, w)
     int    i;
 
     if (n_Horizons_rows == 0)
-      return (0.0);
+      return 0.0;
 
     outval = 0.0;
     for (i = 1; i < n_Horizons_rows; i++)
@@ -257,7 +257,7 @@ double         ast_dopplr (mjdtime, u, v, w)
            break;
 	}
     }
-    return (outval);
+    return outval;
 }
 
 /*******************************************************************************
@@ -302,7 +302,7 @@ SVCXPRT *pTransport;
        if (itoday != ilogdate)
        {
           gethostname(hostname, 23);
-          sprintf (filename,"%s%02d%02d%02d:%02d%02d%02d.log", hostname, 
+          snprintf (filename, 256, "%s%02d%02d%02d:%02d%02d%02d.log", hostname, 
              timeptr->tm_year-100,
              timeptr->tm_mon+1, timeptr->tm_mday, timeptr->tm_hour,
              timeptr->tm_min, timeptr->tm_sec);
@@ -310,7 +310,7 @@ SVCXPRT *pTransport;
          if ((flog = fopen (filename, "w")) == NULL)
          {
             printf ("ERROR: cannot open log file %s\n", filename);
-            exit (0);
+            exit(EXIT_FAILURE);
          }
          printf ("opened new CALCServer log file : %s\n", filename);
          fprintf (flog, "%s Started : %s", Version, spawn_time);
@@ -482,7 +482,7 @@ SVCXPRT *pTransport;
     if (!svc_freeargs (pTransport, xdr_getCALC_arg, (char *)&argument))
 	{
 	syslog (LOG_ERR, "unable to free arguments %m\n");
-	exit (1);
+	exit(EXIT_FAILURE);
 	}
 }
 
@@ -498,7 +498,8 @@ int main (int argc, char *argv[])
 {
     SVCXPRT *pTransport;    /* transport handle */
     time_t  timep, *tp;
-    char    filename[256], card[200], word[20], *cp, *b_ptr;
+    char    card[200], word[20], *cp, *b_ptr;
+    const char *filename;
     int     i, nbytes, ilength, irow;
     double  rarad, decrad, rahr, ramn, rasc, decdeg, decmn, decsc, decsign;
     FILE    *fp;
@@ -516,13 +517,13 @@ int main (int argc, char *argv[])
     * logfile name that is opened later in the program */
     if (argc > 1)
     {
-       strcpy (filename, argv[1]);
+       filename = argv[1];
        if ((flog = fopen (filename, "w")) == NULL)
        {
           printf ("ERROR: cannot open log file %s\n", filename);
-          exit (0);
+          exit(EXIT_FAILURE);
        }
-       printf ("opened new CALCServer log file : %s\n", filename);
+       printf ("opened new CALCServer log file %s\n", filename);
        ilogdate = 0;
     }
     /* print to the console the values of the environment variables */
@@ -540,7 +541,7 @@ int main (int argc, char *argv[])
     if ((pTransport = svctcp_create (RPC_ANYSOCK, 0, 0)) == NULL)
 	{
 	syslog (LOG_ERR, "cannot create tcp service %m\n");
-	exit (1);
+	exit(EXIT_FAILURE);
 	}
 
     /* register service with portmapper */
@@ -548,7 +549,7 @@ int main (int argc, char *argv[])
 		      calcprog_1, IPPROTO_TCP) == 0)
 	{
 	syslog (LOG_ERR, "unable to register service %m\n");
-	exit (1);
+	exit(EXIT_FAILURE);
 	}
 
     /* load the planet or asteroid positions here */
@@ -614,6 +615,7 @@ int main (int argc, char *argv[])
        }
        printf ("loaded nrows for solar system body ephemeris table : %d %s\n", 
                 n_Horizons_rows, Horizons_filename);
+       fclose(fp);
     }
     /*    */
 
@@ -626,7 +628,7 @@ int main (int argc, char *argv[])
     svc_destroy (pTransport);
     syslog (LOG_ERR, "svc_run returned %m\n");
 
-    return 0;
+    return EXIT_SUCCESS;
 }
 
 /*++***********************************************************************/
