@@ -127,6 +127,12 @@ static int recoverModule(int type, int bank, int force)
 		{
 			printf("About to attempt recover=%d on this module.  Continue? [y/n]", type);
 			rv = fgets(str, 9, stdin);
+			if(rv == 0)
+			{
+				/* must be ^D or similar */
+
+				go = 0;
+			}
 			if(str[0] == 'y')
 			{
 				go = 1;

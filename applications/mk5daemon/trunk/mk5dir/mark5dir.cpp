@@ -727,10 +727,11 @@ int Mark5Module::sanityCheck()
 
 int Mark5Module::uniquifyScanNames()
 {
+	const int MaxExtensionLength = 8;
 	vector<string> scanNames;
 	vector<int> nameCount;
 	vector<int> origIndex;
-	char extension[8];
+	char extension[MaxExtensionLength];
 	int i, j, n=0;
 
 	if(nScans() < 2)
@@ -754,7 +755,7 @@ int Mark5Module::uniquifyScanNames()
 			if(scanNames[j] == scans[i].name)
 			{
 				nameCount[j]++;
-				snprintf(extension, MODULE_SCAN_NAME_LENGTH, "_%04d", nameCount[j]);
+				snprintf(extension, MaxExtensionLength, "_%04d", nameCount[j]);
 				scans[i].name += extension;
 				break;
 			}
@@ -1431,7 +1432,7 @@ int Mark5Module::readDirectory(SSHANDLE xlrDevice, int mjdref,
 
 		if(replacedFrac)
 		{
-			*replacedFrac = (double)wBad/(double)wGood;
+			*replacedFrac = (double)wBadSum/(double)wGoodSum;
 		}
 	}
 

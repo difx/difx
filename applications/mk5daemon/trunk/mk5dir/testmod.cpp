@@ -275,7 +275,6 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 	char label[XLR_LABEL_LENGTH+1];
 	char oldLabel[XLR_LABEL_LENGTH+1];
 	int labelLength = 0;
-	int badLabel = 0;
 	int dirLen;
 	int nDrive;
 	int n, d, v, i;
@@ -347,7 +346,6 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 		fprintf(stderr, "Warning: module label is not terminated!");
 		label[XLR_LABEL_LENGTH-1] = 0;
 		labelLength = XLR_LABEL_LENGTH-1;
-		badLabel = 1;
 	}
 
 	strcpy(oldLabel, label);
@@ -414,6 +412,12 @@ int testModule(int bank, int mode, int nWrite, int bufferSize, int nRep, int opt
 			printf("This test will erase all data on this module!\n");
 			printf("Do you wish to continue? [y|n]\n");
 			rv = fgets(resp, 8, stdin);
+			if(rv == 0)
+			{
+				/* Must be ^D or similar */
+
+				strcpy(resp, "n");
+			}
 		}
 		else
 		{

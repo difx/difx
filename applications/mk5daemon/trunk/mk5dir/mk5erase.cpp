@@ -716,6 +716,12 @@ int main(int argc, char **argv)
 		for(;;)
 		{
 			rv = fgets(resp, 10, stdin);
+			if(!rv)
+			{
+				/* must be ^D or similar */
+
+				return EXIT_SUCCESS;
+			}
 			if(strcmp(resp, "Y\n") == 0 || strcmp(resp, "y\n") == 0)
 			{
 				if(verbose)
@@ -728,7 +734,7 @@ int main(int argc, char **argv)
 			{
 				printf("Module erasure cancelled.\n\n");
 				
-				return EXIT_FAILURE;
+				return EXIT_SUCCESS;
 			}
 			else
 			{
