@@ -28,6 +28,7 @@
  *==========================================================================*/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include "difxio/parsedifx.h"
 
 int main(int argc, char **argv)
@@ -38,7 +39,8 @@ int main(int argc, char **argv)
 	if(argc < 2)
 	{
 		fprintf(stderr, "Usage : %s <input file>\n", argv[0]);
-		return 0;
+		
+		return EXIT_SUCCESS;
 	}
 	
 	/*** First demonstrate parsing on an input file ***/
@@ -55,17 +57,25 @@ int main(int argc, char **argv)
 	i = DifxParametersfind(dp, 0, "OUTPUT FORMAT");
 	printf("i = %d\n", i); 
 	if(i >= 0)
-	    printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	{
+		printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	}
 	else
-	    printf("key not found\n");
+	{
+		printf("key not found\n");
+	}
 	
 	/* Look for key with one index, print if found */
 	i = DifxParametersfind1(dp, 0, "DATASTREAM %d INDEX", 3);
 	printf("i = %d\n", i); 
 	if(i >= 0)
-	    printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	{
+		printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	}
 	else
-	    printf("key not found\n");
+	{
+		printf("key not found\n");
+	}
 	
 	/* free from memory */
 	deleteDifxParameters(dp);
@@ -86,21 +96,26 @@ int main(int argc, char **argv)
 	i = DifxParametersfind(dp, 0, "MJD");
 	printf("i = %d\n", i);
 	if(i >= 0)
-	    printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	{
+		printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	}
 	else
-	    printf("key not found\n");
+	{
+		printf("key not found\n");
+	}
 
-	/* searching for an non-existant parameter */
+	/* searching for an non-existent parameter */
 	i = DifxParametersfind(dp, 0, "NOT HERE");
 	if(i >= 0)
-	    printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	{
+		printf("%s = %s\n", dp->rows[i].key, DifxParametersvalue(dp, i));
+	}
 	else
-	    printf("key not found\n");
-
-	
+	{
+		printf("key not found\n");
+	}
 	/* free from memory */
 	deleteDifxParameters(dp);
-
 	
-	return 0;
+	return EXIT_SUCCESS;
 }

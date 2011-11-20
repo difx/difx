@@ -49,6 +49,7 @@ double roundSeconds(double mjd)
 	return intmjd + intsec/86400.0;
 }
 
+#warning "FIXME: make use of libc functions here"
 static int mjd2date(long mjd, int *pYear, int *pMonth, int *pDay)
 /*
  * RETURNS OK = 0 | ERROR = -1
@@ -148,7 +149,7 @@ int writeDifxLine1(FILE *out, const char *key, int i1, const char *value)
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
 	
 	return writeDifxLine(out, k, value);
 }
@@ -158,7 +159,7 @@ int writeDifxLine2(FILE *out, const char *key, int i1, int i2,
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1, i2);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1, i2);
 	
 	return writeDifxLine(out, k, value);
 }
@@ -168,7 +169,7 @@ int writeDifxLine3(FILE *out, const char *key, int i1, int i2, int i3,
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1, i2, i3);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1, i2, i3);
 	
 	return writeDifxLine(out, k, value);
 }
@@ -201,7 +202,7 @@ int writeDifxLineInt1(FILE *out, const char *key, int i1, int value)
 
 	sprintf(v, "%d", value);
 
-	sprintf(k, key, i1);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
 	
 	return writeDifxLine(out, k, v);
 }
@@ -213,7 +214,7 @@ int writeDifxLineInt2(FILE *out, const char *key, int i1, int i2, int value)
 
 	sprintf(v, "%d", value);
 
-	sprintf(k, key, i1, i2);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1, i2);
 	
 	return writeDifxLine(out, k, v);
 }
@@ -254,7 +255,7 @@ int writeDifxLineDouble1(FILE *out, const char *key, int i1,
 
 	sprintf(v, format, value);
 
-	sprintf(k, key, i1);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
 	
 	return writeDifxLine(out, k, v);
 }
@@ -276,7 +277,7 @@ int writeDifxLineDouble2(FILE *out, const char *key, int i1, int i2,
 
 	sprintf(v, format, value);
 
-	sprintf(k, key, i1, i2);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1, i2);
 	
 	return writeDifxLine(out, k, v);
 }
@@ -300,23 +301,21 @@ int writeDifxLineArray1(FILE *out, const char *key, int i1,
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
 	
 	return writeDifxLineArray(out, k, array, n);
 }
 
-int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2,
-	const double *array, int n)
+int writeDifxLineArray2(FILE *out, const char *key, int i1, int i2, const double *array, int n)
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1, i2);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1, i2);
 	
 	return writeDifxLineArray(out, k, array, n);
 }
 
-int writeDifxLineStringArray(FILE *out, const char *key,
-	const DifxStringArray *sa)
+int writeDifxLineStringArray(FILE *out, const char *key, const DifxStringArray *sa)
 {
 	int i;
 
@@ -342,19 +341,17 @@ int writeDifxLineStringArray(FILE *out, const char *key,
 	return 0;
 }
 
-int writeDifxLineStringArray1(FILE *out, const char *key,
-	int i1, const DifxStringArray *sa)
+int writeDifxLineStringArray1(FILE *out, const char *key, int i1, const DifxStringArray *sa)
 {
 	char k[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(k, key, i1);
+	snprintf(k, MAX_DIFX_KEY_LEN+1, key, i1);
 
 	return writeDifxLineStringArray(out, k, sa);
 }
 
 int writeDifxDateLines(FILE *out, double mjd)
 {
-	//printf("Writing out mjd %15.8f\n", mjd);
 	int yr=0, mo=0, da=0, hr, mi, se;
 	int mjdint;
 	double mjdfrac;

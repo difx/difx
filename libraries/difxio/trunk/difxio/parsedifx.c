@@ -184,6 +184,7 @@ void resetDifxParameters(DifxParameters *dp)
 	if(!dp)
 	{
 		fprintf(stderr, "resetDifxParameters : dp = 0\n");
+
 		return;
 	}
 
@@ -302,8 +303,7 @@ void printDifxParameters(const DifxParameters *dp)
 	}
 }
 
-int DifxParametersfind(const DifxParameters *dp, int start_row,
-	const char *key)
+int DifxParametersfind(const DifxParameters *dp, int start_row, const char *key)
 {
 	int i;
 
@@ -339,22 +339,20 @@ int DifxParametersfind(const DifxParameters *dp, int start_row,
 	return -1;
 }
 
-int DifxParametersfind1(const DifxParameters *dp, int start_row,
-	const char *key, int index1)
+int DifxParametersfind1(const DifxParameters *dp, int start_row, const char *key, int index1)
 {
-	char newkey[1000];
+	char newkey[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(newkey, key, index1);
+	snprintf(newkey, MAX_DIFX_KEY_LEN+1, key, index1);
 
 	return DifxParametersfind(dp, start_row, newkey);
 }
 
-int DifxParametersfind2(const DifxParameters *dp, int start_row,
-	const char *key, int index1, int index2)
+int DifxParametersfind2(const DifxParameters *dp, int start_row, const char *key, int index1, int index2)
 {
-	char newkey[1000];
+	char newkey[MAX_DIFX_KEY_LEN+1];
 
-	sprintf(newkey, key, index1, index2);
+	snprintf(newkey, MAX_DIFX_KEY_LEN+1, key, index1, index2);
 
 	return DifxParametersfind(dp, start_row, newkey);
 }
@@ -364,6 +362,7 @@ const char *DifxParametersvalue(const DifxParameters *dp, int row)
 	if(!dp)
 	{
 		fprintf(stderr, "DifxParametersvalue : dp = 0\n");
+
 		return 0;
 	}
 	
@@ -388,8 +387,8 @@ int DifxParametersbatchfind(const DifxParameters *dp, int start,
 		rows[i] = DifxParametersfind(dp, s, keys[i]);
 		if(rows[i] < 0)
 		{
-			fprintf(stderr, "Parameter not found: %s\n",
-				keys[i]);
+			fprintf(stderr, "Parameter not found: %s\n", keys[i]);
+
 			return i;
 		}
 		s = rows[i] + 1;
@@ -414,6 +413,7 @@ int DifxParametersbatchfind1(const DifxParameters *dp, int start,
 			fprintf(stderr, "Parameter not found: ");
 			fprintf(stderr, keys[i], index1);
 			fprintf(stderr, "\n");
+
 			return i;
 		}
 		s = rows[i] + 1;
@@ -439,6 +439,7 @@ int DifxParametersbatchfind2(const DifxParameters *dp, int start,
 			fprintf(stderr, "Parameter not found: ");
 			fprintf(stderr, keys[i], index1, index2);
 			fprintf(stderr, "\n");
+
 			return i;
 		}
 		s = rows[i] + 1;
