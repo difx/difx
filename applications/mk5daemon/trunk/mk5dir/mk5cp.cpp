@@ -145,8 +145,7 @@ int parsescp(char *sshLogin, char *sshDest, const char *path)
 	regmatch_t matchPtr[2];
 	int v;
 
-	regcomp(&scpMatch, "\\([^:]+)\\:\\([^:]*)\\", 0);
-
+	regcomp(&scpMatch, "\\([^:]+\\):\\([^:]*\\)", 0);
 	v = regexec(&scpMatch, path, 2, matchPtr, 0);
 
 	if(v == 0)
