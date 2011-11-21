@@ -35,7 +35,6 @@
 #include <ctype.h>
 #include <time.h>
 #include <sys/time.h>
-#include <regex.h>
 #include <difxmessage.h>
 #include <mark5ipc.h>
 #include "config.h"
@@ -141,28 +140,33 @@ int dirCallback(int scan, int nscan, int status, void *data)
 
 int parsescp(char *sshLogin, char *sshDest, const char *path)
 {
-	regex_t scpMatch;
-	regmatch_t matchPtr[2];
-	int v;
+	int colon = -1;
 
-	regcomp(&scpMatch, "\\([^:]+\\):\\([^:]*\\)", 0);
-	v = regexec(&scpMatch, path, 2, matchPtr, 0);
+	sshLogin[0] = 0;
+	sshDest[0] = 0;
 
-	if(v == 0)
+	for(int i = 0; path[i]; ++i)
 	{
-		/* matched */
-		strncpy(sshLogin, path+matchPtr[0].rm_so, matchPtr[0].rm_eo-matchPtr[0].rm_so);
-		strncpy(sshDest,  path+matchPtr[1].rm_so, matchPtr[1].rm_eo-matchPtr[1].rm_so);
-	}
-	else
-	{
-		sshLogin[0] = 0;
-		sshDest[0] = 0;
+		if(path[i] == ':')
+		{
+			if(colon >= 0 || i == 0)
+			{
+				return -1;
+			}
+			colon = i;
+		}
 	}
 
-	regfree(&scpMatch);
+	if(colon == -1)
+	{
+		return 0;
+	}
 
-	return v;
+	strncpy(sshLogin, path, colon);
+	sshLogin[colon] = 0;
+	strcpy(sshDest, path+colon+1);
+
+	return 0;
 }
 
 int resetDriveStats(SSHANDLE xlrDevice)

@@ -416,11 +416,21 @@ static int mk5dir(char *vsn, int force, int fast, enum DMS_Mode dmsMode, int sta
 	return 0;
 }
 
-static int writeDir(char *vsn, int force, const char *filename)
+static int writeDir(char *vsn, int force, const char *filename, enum DMS_Mode dmsMode)
 {
 	Mark5Module module;
 	DifxMessageMk5Status mk5status;
+	char message[DIFX_MESSAGE_LENGTH];
+	int dmsUpdate = 0;
 	int v;
+
+	if(dmsMode == DMS_MODE_FAIL_UNLESS_SAFE)
+	{
+		printf("Not proceeding since dmsMode is DMS_MODE_FAIL_UNLESS_SAFE\n");
+		printf("and the safety of the operation cannot be determined.\n\n");
+
+		return -1;
+	}
 
 	v = module.load(filename);
 
@@ -433,9 +443,9 @@ static int writeDir(char *vsn, int force, const char *filename)
 
 	if(module.dirVersion <= 0)
 	{
-		printf("Won't write a version 0 directory to a module\n");
+		printf("Promoting the directory version to 1\n");
 		
-		return -1;
+		module.dirVersion = 1;
 	}
 
 	if(verbose)
@@ -488,6 +498,33 @@ static int writeDir(char *vsn, int force, const char *filename)
 	if(v != 0)
 	{
 		return v;
+	}
+
+	switch(dmsMode)
+	{
+	case DMS_MODE_NO_UPDATE:
+		fprintf(stderr, "FYI: Not setting disk module state to Recorded for %s\n\n", vsn);
+		dmsUpdate = 0;
+		break;
+	case DMS_MODE_UPDATE:
+		dmsUpdate = 1;
+		break;
+	case DMS_MODE_UPDATE_IF_SAFE:
+	case DMS_MODE_FAIL_UNLESS_SAFE:
+		dmsUpdate = 0;
+		snprintf(message, DIFX_MESSAGE_LENGTH,
+			"Not setting disk module state of %s to Recorded because "
+			"the safety of the operation cannot be guaranteed.", vsn);
+		fprintf(stderr, "Warning: %s\n\n", message);
+		difxMessageSendDifxAlert(message, DIFX_ALERT_LEVEL_ERROR);
+		break;
+	}
+	if(dmsUpdate)
+	{
+		setDiscModuleStateNew(xlrDevice, MODULE_STATUS_RECORDED);
+
+		printf("Note: the Disk Module State has been changed to Recorded.\n");
+		printf("Use program vsn to change this if you would like to set it differently\n\n");
 	}
 
 	mk5status.state = MARK5_STATE_GETDIR;
@@ -644,7 +681,7 @@ int main(int argc, char **argv)
 		}
 		else
 		{
-			v = writeDir(vsn, force, writeFile);
+			v = writeDir(vsn, force, writeFile, dmsMode);
 		}
 		if(v < 0)
 		{
