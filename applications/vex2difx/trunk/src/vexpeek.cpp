@@ -61,12 +61,11 @@ void antennaSummary(const VexData *V)
 {
 	map<string,VexInterval> as;
 
-	for(unsigned int s = 0; s < V->nScan(); s++)
+	for(unsigned int s = 0; s < V->nScan(); ++s)
 	{
 		const VexScan *scan = V->getScan(s);
-		map<string,VexInterval>::const_iterator it;
 
-		for(it = scan->stations.begin(); it != scan->stations.end(); it++)
+		for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
 			const VexInterval &vi = it->second;
 
@@ -92,8 +91,7 @@ void antennaSummary(const VexData *V)
 
 	cout.precision(13);
 
-	map<string,VexInterval>::const_iterator it;
-	for(it = as.begin(); it != as.end(); it++)
+	for(map<string,VexInterval>::const_iterator it = as.begin(); it != as.end(); ++it)
 	{
 		cout << it->first << " " << it->second.mjdStart << " " << it->second.mjdStop << endl;
 	}

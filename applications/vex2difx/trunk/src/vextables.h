@@ -158,7 +158,7 @@ public:
 class VexChannel		// Antenna-specific baseband channel details
 {
 public:
-	VexChannel() : recordChan(0), subbandId(-1) {}
+	VexChannel() : recordChan(0), subbandId(-1), bbcFreq(0.0), bbcBandwidth(0.0), bbcSideBand(' ') {}
 	void selectTones(int toneIntervalMHz, enum ToneSelection selection, double guardBandMHz);
 	friend bool operator ==(const VexChannel &c1, const VexChannel &c2);
 
@@ -248,7 +248,7 @@ public:
 class VexAntenna
 {
 public:
-	VexAntenna() : x(0.0), y(0.0), z(0.0), axisOffset(0.0), dataSource(DataSourceNone) {}
+	VexAntenna() : x(0.0), y(0.0), z(0.0), dx(0.0), dy(0.0), dz(0.0), posEpoch(0.0), axisOffset(0.0), dataSource(DataSourceNone) {}
 
 	double getVexClocks(double mjd, double * coeffs) const;
 
@@ -289,7 +289,7 @@ public:
 class VexJob : public VexInterval
 {
 public:
-	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dataSize(0.0) {}
+	VexJob() : VexInterval(0.0, 1000000.0), jobSeries("Bogus"), jobId(-1), dutyCycle(1.0), dataSize(0.0) {}
 
 	void assignVSNs(const VexData &V);
 	string getVSN(const string &antName) const;
@@ -315,7 +315,7 @@ public:
 	static const unsigned int JOB_FLAG_POINT  = 1 << 1;
 	static const unsigned int JOB_FLAG_TIME   = 1 << 2;
 	static const unsigned int JOB_FLAG_SCAN   = 1 << 3;
-	VexJobFlag() {}
+	VexJobFlag() : antId(-1) {}
 	VexJobFlag(double start, double stop, int ant) : VexInterval(start, stop), antId(ant) {}
 
 	int antId;
@@ -430,6 +430,6 @@ ostream& operator << (ostream &os, const VexJobGroup &x);
 ostream& operator << (ostream &os, const VexEvent &x);
 ostream& operator << (ostream &os, const VexJobFlag &x);
 ostream& operator << (ostream &os, const VexData &x);
-bool operator == (VexSubband &s1, VexSubband &s2);
+bool operator == (const VexSubband &s1, const VexSubband &s2);
 
 #endif

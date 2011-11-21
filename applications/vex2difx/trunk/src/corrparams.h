@@ -219,7 +219,7 @@ public:
 	void defaultRule();
 	void example();
 	int sanityCheck();
-	void addSourceSetup(SourceSetup toadd);
+	void addSourceSetup(const SourceSetup &toAdd);
 
 	bool useAntenna(const string &antName) const;
 	bool useBaseline(const string &ant1, const string &ant2) const;
