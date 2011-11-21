@@ -1375,7 +1375,7 @@ const VexEOP *VexData::getEOP(unsigned int num) const
 
 bool VexData::usesAntenna(const string &antennaName) const
 {
-	int n = nAntenna();
+	unsigned int n = nAntenna();
 
 	for(unsigned int i = 0; i < n; ++i)
 	{
@@ -1390,7 +1390,7 @@ bool VexData::usesAntenna(const string &antennaName) const
 
 bool VexData::usesMode(const string &modeDefName) const
 {
-	int n = nScan();
+	unsigned int n = nScan();
 
 	for(unsigned int i = 0; i < n; ++i)
 	{

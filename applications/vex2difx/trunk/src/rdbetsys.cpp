@@ -90,7 +90,7 @@ double filename2fracday(const char *fn)
 
 	f = strdup(fn);
 
-	for(int i = 0; f[i] && n < 5; i++)
+	for(int i = 0; f[i] && n < 5; ++i)
 	{
 		if(f[i] == '_' || f[i] == '.')
 		{
@@ -98,7 +98,7 @@ double filename2fracday(const char *fn)
 			if(start >= 0)
 			{
 				num[n] = atoi(f+start);
-				n++;
+				++n;
 			}
 			start = i+1;
 		}
@@ -119,7 +119,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 	std::string fileList = "";
 	glob_t globbuf;
 
-	for(int mjd = static_cast<int>(timeRange.mjdStart); mjd < timeRange.mjdStop; mjd++)
+	for(int mjd = static_cast<int>(timeRange.mjdStart); mjd < timeRange.mjdStop; ++mjd)
 	{
 		int year, doy;
 		char match[MaxFilenameLength];
@@ -134,7 +134,7 @@ std::string genFileList(const char *switchedPowerPath, const char *stn, const Ve
 				VexInterval fileRange;
 
 				fileRange.mjdStop = filename2fracday(globbuf.gl_pathv[0]) + mjd;
-				for(unsigned int i = 0; i < globbuf.gl_pathc; i++)
+				for(unsigned int i = 0; i < globbuf.gl_pathc; ++i)
 				{
 					fileRange.mjdStart = fileRange.mjdStop;
 					if(i+1 < globbuf.gl_pathc)
@@ -186,7 +186,6 @@ int loadTcals(const char *tcalFilename)
 	char line[MaxLineLength];
 	char *rv;
 	FILE *in;
-	int i;
 	int nAlloc = 0;
 
 	if(tcalFilename == 0)
@@ -202,7 +201,7 @@ int loadTcals(const char *tcalFilename)
 	nAlloc = 4000;
 	tCals = (TCal *)malloc(nAlloc*sizeof(TCal));
 
-	for(i = nTcal = 0; ; i++)
+	for(int i = nTcal = 0; ; ++i)
 	{
 		rv = fgets(line, MaxLineLength, in);
 		if(!rv)
@@ -220,7 +219,7 @@ int loadTcals(const char *tcalFilename)
 		}
 		sscanf(line, "%7s%7s%f%f%f", tCals[nTcal].antenna, tCals[nTcal].receiver,
 			&tCals[nTcal].freq, &tCals[nTcal].tcalR, &tCals[nTcal].tcalL);
-		nTcal++;
+		++nTcal;
 	}
 
 	fclose(in);
@@ -243,7 +242,7 @@ float getTcalValue(const char *antname, float freq, char pol)
 	besti = -1;
 	bestf = 1e9;
 	df = 1e9;
-	for(i = 0; i < nTcal; i++)
+	for(i = 0; i < nTcal; ++i)
 	{
 		df = fabs(freq - tCals[i].freq);
 		if(strcasecmp(antname, tCals[i].antenna) == 0 && df < bestf)
@@ -371,7 +370,7 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 	flush();
 
 	chans.resize(format.channels.size());
-	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); vc++, ta++)
+	for(vc = format.channels.begin(), ta = chans.begin(); vc != format.channels.end(); ++vc, ++ta)
 	{
 		ta->reset();
 
@@ -397,7 +396,6 @@ void TsysAccumulator::flush()
 	int doy;
 	int mjd;
 	double day;
-	std::vector<TsysAverager>::const_iterator ta;
 
 	if(nAccum > 0)
 	{
@@ -407,7 +405,7 @@ void TsysAccumulator::flush()
 		day = accumTimeRange.center() - mjd + doy;
 
 		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
-		for(ta = chans.begin(); ta != chans.end(); ta++)
+		for(std::vector<TsysAverager>::const_iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
 			fprintf(out, " %5.2f %s", ta->Tsys(), ta->receiver.c_str());
 		}
@@ -418,7 +416,6 @@ void TsysAccumulator::flush()
 
 void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 {
-	std::vector<TsysAverager>::iterator ta;
 	double pOn, pOff;
 	double freq, bw;
 	char pol[100];
@@ -433,7 +430,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	{
 		accumTimeRange.logicalOr(lineTimeRange);
 	}
-	nAccum++;
+	++nAccum;
 
 	while(*data)
 	{
@@ -449,7 +446,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 			continue;
 		}
 
-		for(ta = chans.begin(); ta != chans.end(); ta++)
+		for(std::vector<TsysAverager>::iterator ta = chans.begin(); ta != chans.end(); ++ta)
 		{
 			if(ta->pol == pol[0] && 
 			   fabs(ta->freq - freq) < 0.005 && 
@@ -457,7 +454,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 			{
 				ta->pOn += pOn;
 				ta->pOff += pOff;
-				ta->n++;
+				++ta->n;
 			}
 		}
 	}
@@ -527,7 +524,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 		if(lineTimeRange.mjdStart < scanTimeRange.mjdStart)
 		{
 			// We're not yet at the time of scan start
-			nSkip++;
+			++nSkip;
 			continue;
 		}
 		else if(lineTimeRange.mjdStop > scanTimeRange.mjdStop)
@@ -540,7 +537,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 				if(scan)
 				{
-					scanNum++;
+					++scanNum;
 				}
 				if(scanNum >= V.nScan())
 				{
@@ -567,7 +564,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 					continue;
 				}
-				for(it = scan->stations.begin(); it != scan->stations.end(); it++)
+				for(it = scan->stations.begin(); it != scan->stations.end(); ++it)
 				{
 					if(it->first == stn)
 					{
@@ -608,7 +605,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 			TA.feed(lineTimeRange, line+pos);
 
-			nRecord++;
+			++nRecord;
 		}
 	}
 
@@ -619,12 +616,11 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 
 void antennaSummary(const VexData &V, map<std::string,VexInterval> &as)
 {
-	for(unsigned int s = 0; s < V.nScan(); s++)
+	for(unsigned int s = 0; s < V.nScan(); ++s)
 	{
 		const VexScan *scan = V.getScan(s);
-		map<string,VexInterval>::const_iterator it;
 
-		for(it = scan->stations.begin(); it != scan->stations.end(); it++)
+		for(map<string,VexInterval>::const_iterator it = scan->stations.begin(); it != scan->stations.end(); ++it)
 		{
 			const VexInterval &vi = it->second;
 
@@ -662,7 +658,7 @@ int main(int argc, char **argv)
 	int verbose = 1;
 	const char *tcalFilename;
 
-	for(int a = 1; a < argc; a++)
+	for(int a = 1; a < argc; ++a)
 	{
 		if(argv[a][0] == '-')
 		{
@@ -676,12 +672,12 @@ int main(int argc, char **argv)
 			else if(strcmp(argv[a], "-v") == 0 ||
 			   strcmp(argv[a], "--verbose") == 0)
 			{
-				verbose++;
+				++verbose;
 			}
 			else if(strcmp(argv[a], "-q") == 0 ||
 			   strcmp(argv[a], "--quiet") == 0)
 			{
-				verbose--;
+				--verbose;
 			}
 			else
 			{
@@ -749,7 +745,7 @@ int main(int argc, char **argv)
 
 	// Loop over antennas first
 	map<string,VexInterval>::const_iterator it;
-	for(it = as.begin(); it != as.end(); it++)
+	for(it = as.begin(); it != as.end(); ++it)
 	{
 		// it->first is the station name
 		// it->second is the VexInterval for that station's involvement

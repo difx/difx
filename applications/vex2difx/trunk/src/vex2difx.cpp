@@ -1019,7 +1019,7 @@ static void populateFreqTable(DifxInput *D, const vector<freq>& freqs, const vec
 
 	D->nFreq = freqs.size();
 	D->freq = newDifxFreqArray(D->nFreq);
-	for(unsigned int f = 0; f < D->nFreq; ++f)
+	for(int f = 0; f < D->nFreq; ++f)
 	{
 		df = D->freq + f;
 
@@ -1432,7 +1432,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 
 	nConfig = configs.size();
-	for(unsigned int i = 0; i < nConfig; ++i)
+	for(int i = 0; i < nConfig; ++i)
 	{
 		if(configs[i].first  == S->modeDefName &&
 		   configs[i].second == S->corrSetupName)
