@@ -167,7 +167,7 @@ int ruleAppliesToScanSource(const DifxRule *dr, const DifxScan *ds, const DifxSo
 	   (strcmp(dr->calCode, "") != 0 && strcmp(src->calCode, dr->calCode) != 0) ||
 	   (dr->qual >= 0 && src->qual != dr->qual) ||
 	   (dr->mjdStart > 0.0 && ds->mjdStart < dr->mjdStart) || 
-	   (dr->mjdStop > 0.0 && ds->mjdEnd > ds->mjdEnd))
+	   (dr->mjdStop > 0.0 && ds->mjdEnd > dr->mjdStop))
 	{
 		return 0;
 	}

@@ -53,10 +53,9 @@ void deleteDifxPolycoInternals(DifxPolyco *dp)
 
 void deleteDifxPolycoArray(DifxPolyco *dp, int nPolyco)
 {
-	int p;
-
 	if(dp)
 	{
+		int p;
 		for(p = 0; p < nPolyco; p++)
 		{
 			deleteDifxPolycoInternals(dp + p);
@@ -116,8 +115,6 @@ int DifxPolycoArrayGetMaxPolyOrder(const DifxPolyco *dp, int nPolyco)
 
 void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
 {
-	int c;
-
 	snprintf(dest->fileName, DIFXIO_FILENAME_LENGTH, "%s", src->fileName);
 	if(dest->coef)
 	{
@@ -127,6 +124,8 @@ void copyDifxPolyco(DifxPolyco *dest, const DifxPolyco *src)
 	}
 	if(src->coef)
 	{
+		int c;
+
 		dest->nCoef = src->nCoef;
 		dest->coef = (double *)malloc(dest->nCoef*sizeof(double));
 		for(c = 0; c < dest->nCoef; c++)
@@ -170,6 +169,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 	if(!in)
 	{
 		fprintf(stderr, "Cannot open %s for read\n", filename);
+
 		return -1;
 	}
 
@@ -183,6 +183,7 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 				fprintf(stderr, "Early EOF in %s\n", filename);
 			}
 			fclose(in);
+
 			return *nPolyco;
 		}
 
@@ -235,13 +236,16 @@ int loadPulsarPolycoFile(DifxPolyco **dpArray, int *nPolyco, const char *filenam
 
 		for(c = 0; c < dp->nCoef; c++)
 		{
-			n = fscanf(in, "%s", buffer);
-			if(n == 0)
+			char *rv;
+			rv = fgets(buffer, BufferSize-1, in);
+			if(!rv)
 			{
 				fprintf(stderr, "Early EOF in %s\n", filename);
 				fclose(in);
+
 				return -1;
 			}
+			buffer[BufferSize-1] = 0;	/* just to be sure */
 			len = strlen(buffer);
 			if(buffer[len-4] == 'D')
 			{
