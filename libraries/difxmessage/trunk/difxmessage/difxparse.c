@@ -65,7 +65,6 @@ static void XMLCALL startElement(void *userData, const char *name,
 	const char **atts)
 {
 	DifxMessageGeneric *G;
-	int nThread = 1;
 	int i, j, n;
 
 	G = (DifxMessageGeneric *)userData;
@@ -75,6 +74,7 @@ static void XMLCALL startElement(void *userData, const char *name,
 	if(G->type == DIFX_MESSAGE_START)
 	{
 		DifxMessageStart *S;
+		int nThread = 1;
 		
 		S = &G->body.start;
 		for(i = 0; atts[i]; i+=2)
@@ -123,11 +123,12 @@ static void XMLCALL startElement(void *userData, const char *name,
 	else if(G->type == DIFX_MESSAGE_STATUS)
 	{
 		DifxMessageStatus *S;
-		int ds = -1;
 
 		S = &G->body.status;
 		if(strcmp(name, "weight") == 0)
 		{
+			int ds = -1;
+
 			for(i = 0; atts[i]; i+=2)
 			{
 				if(strcmp(atts[i], "ant") == 0)
@@ -552,7 +553,7 @@ static void XMLCALL endElement(void *userData, const char *name)
 					{
 						int p;
 						p = atoi(elem+5);
-						if(p > 1 || p < DIFX_MESSAGE_MAX_INDEX)
+						if(p > 1 && p < DIFX_MESSAGE_MAX_INDEX)
 						{
 							int i;
 							i = atoi(s);

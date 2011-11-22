@@ -83,7 +83,6 @@ int difxMessageSend(const char *message)
 	static struct timeval tv0;
 
 	struct timeval tv;
-	int dt;
 
 	if(difxMessagePort < 0)
 	{
@@ -97,6 +96,8 @@ int difxMessageSend(const char *message)
 	}
 	else
 	{
+		int dt;
+
 		gettimeofday(&tv, 0);
 		dt = 1000000*(tv.tv_sec - tv0.tv_sec) + (tv.tv_usec - tv0.tv_usec);
 		if(dt < MIN_SEND_GAP && dt > 0)

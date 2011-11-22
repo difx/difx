@@ -45,8 +45,7 @@ int difxMessageInit(int mpiId, const char *identifier)
 	difxMessageSequenceNumber = 0;
 	difxMessageInUse = 1;
 	
-	snprintf(difxMessageIdentifier, DIFX_MESSAGE_IDENTIFIER_LENGTH,
-		"%s", identifier);
+	snprintf(difxMessageIdentifier, DIFX_MESSAGE_IDENTIFIER_LENGTH, "%s", identifier);
 
 	difxMessageMpiProcessId = mpiId;
 
@@ -60,6 +59,7 @@ int difxMessageInit(int mpiId, const char *identifier)
 		if(v >= MAX_GROUP_SIZE)
 		{
 			fprintf(stderr, "Error: difxMessageInit: env var DIFX_MESSAGE_GROUP too long\n");
+
 			return -1;
 		}
 	}
@@ -122,8 +122,10 @@ int difxMessageInit(int mpiId, const char *identifier)
 	if(v >= DIFX_MESSAGE_FORMAT_LENGTH)
 	{
 		fprintf(stderr, "Error: difxMessageInit: format string overflow\n");
+
 		return -1;
 	}
+	
 	return 0;
 }
 
@@ -139,6 +141,7 @@ int difxMessageInitBinary()
 		if(v >= MAX_GROUP_SIZE)
 		{
 			fprintf(stderr, "Error: difxMessageInitBinary: env var DIFX_BINARY_GROUP too long\n");
+			
 			return -1;
 		}
 	}
@@ -157,8 +160,7 @@ void difxMessagePrint()
 	printf("difxMessage: %s\n", difxMessageIdentifier);
 	printf("  group/port = %s/%d\n", difxMessageGroup, difxMessagePort);
 	printf("  hostname = %s\n", difxMessageHostname);
-	printf("  identifier = %s / %d\n", difxMessageIdentifier, 
-		difxMessageMpiProcessId);
+	printf("  identifier = %s / %d\n", difxMessageIdentifier, difxMessageMpiProcessId);
 }
 
 void difxMessageGetMulticastGroupPort(char *group, int *port)
