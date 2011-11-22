@@ -301,13 +301,16 @@ int createRoot (DifxInput *D,       // difx input structure pointer
                 else if (strncmp (pst[0], "chan_def", 8) == 0)
                     {
                     if(pst[2][0] == '&')
+                        {
                         freak = atof (pst[3]);
-                    else
+                        c = *pst[5]; // sideband: 'U' or 'L'
+                        }
+                    else            // band_id field not present, indices different
+                        {
                         freak = atof (pst[2]);
-                    sprintf (buff, "%c%02dU :", getband (freak), numchan++);
-
-                    if (*pst[5] == 'L')
-                        buff[3] = 'L';
+                        c = *pst[4];
+                        }
+                    sprintf (buff, "%c%02d%c :", getband (freak), numchan++, c);
 
                     strcat (buff, strchr (line, '=') + 1);
                                     // chop off line just after = sign
