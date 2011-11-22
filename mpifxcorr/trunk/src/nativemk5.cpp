@@ -740,7 +740,7 @@ void NativeMk5DataStream::moduleToMemory(int buffersegment)
 	lastval = buf[bytes/4-1];
 
 	// Check for validity
-	mark5stream->frame = (uint8_t *)data;
+	mark5stream->frame = (unsigned char *)data;
 	mark5_stream_get_frame_time(mark5stream, &mjd, &sec, &ns);
 	sec += intclockseconds;
 	mark5stream->frame = 0;
