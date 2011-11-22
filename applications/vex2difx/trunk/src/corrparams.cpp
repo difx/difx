@@ -92,7 +92,6 @@ double parseTime(const string &timeStr)
 	double mjd;
 	char str[TimeLength];
 	char *p;
-	double t;
 	int n;
 	struct tm tm;
 	char dummy;
@@ -113,10 +112,7 @@ double parseTime(const string &timeStr)
 	}
 	if(p)
 	{
-		t = mktime(&tm);
-		mjd = t/86400.0 + MJD_UNIX0;
-
-		return mjd;
+		return mktime(&tm)/86400.0 + MJD_UNIX0;
 	}
 
 	n = sscanf(str, "%lf%c", &mjd, &dummy);

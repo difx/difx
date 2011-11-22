@@ -303,7 +303,7 @@ float getTcalValue(const char *antname, float freq, char pol)
 class TsysAverager
 {
 public:
-	TsysAverager() : pOn(0.0), pOff(0.0), n(0), receiver("0cm") {}
+	TsysAverager() : freq(0.0), bw(0.0), tCal(0.0), pOn(0.0), pOff(0.0), n(0), receiver("0cm"), pol(' ') {}
 	void reset() { pOn = pOff = 0.0; n = 0; }
 	double Tsys() const { return (n > 0) ? (0.5*tCal*(pOn + pOff)/(pOn - pOff)) : 999.0; }
 	void set(const VexChannel &vc);
@@ -393,15 +393,13 @@ void TsysAccumulator::setup(const VexSetup &vexSetup, const string &stn)
 
 void TsysAccumulator::flush()
 {
-	int doy;
-	int mjd;
-	double day;
-
 	if(nAccum > 0)
 	{
+		double day;
+		int doy, mjd;
+		
 		mjd = static_cast<int>(accumTimeRange.center());
 		mjd2yearday(mjd, 0, &doy);
-
 		day = accumTimeRange.center() - mjd + doy;
 
 		fprintf(out, "%s %12.8f %10.8f %d", stn.c_str(), day, accumTimeRange.duration(), static_cast<int>(chans.size()));
@@ -410,6 +408,7 @@ void TsysAccumulator::flush()
 			fprintf(out, " %5.2f %s", ta->Tsys(), ta->receiver.c_str());
 		}
 		fprintf(out, "\n");
+
 		nAccum = 0;
 	}
 }
@@ -460,7 +459,7 @@ void TsysAccumulator::feed(const VexInterval &lineTimeRange, const char *data)
 	}
 }
 
-int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval stnTimeRange, double nominalTsysInterval, int verbose)
+int processStation(FILE *out, const VexData &V, const string &stn, const string &fileList, const VexInterval &stnTimeRange, double nominalTsysInterval, int verbose)
 {
 	const int MaxLineLength = 32768;	// make sure it is large enough!
 	char line[MaxLineLength];
@@ -609,7 +608,7 @@ int processStation(FILE *out, const VexData &V, const string &stn, const string 
 		}
 	}
 
-	fclose(p);
+	pclose(p);
 
 	return nRecord;
 }

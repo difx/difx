@@ -138,7 +138,7 @@ void pystream::calcIfIndex(const VexData *V)
 			continue;
 		}
 
-		for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
+		for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 		{
 			ifIndex[m][it->second.name] = nif;
 			nif++;
@@ -330,7 +330,7 @@ int pystream::writeLoifTable(const VexData *V)
 			}
 
 			*this << "loif" << m << " = VLBALoIfSetup()" << endl;
-			for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
+			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
 				const VexIF &i = it->second;
 				*this << "loif" << m << ".setIf('" << i.name << "', '" << i.VLBABandName() << "', '" << i.pol << "', " << (i.ifSSLO/1.0e6) << ", '" << i.ifSideBand << "')" << endl;
@@ -383,11 +383,11 @@ int pystream::writeLoifTable(const VexData *V)
 				*this << " \\" << endl;
 			}
 			*this << "  ]" << endl;
-			if(implicitConversions.size() > 0)
+			if(!implicitConversions.empty())
 			{
 				*this << "# implicit conversion performed on basebands:";
 				for(vector<unsigned int>::const_iterator uit = implicitConversions.begin();
-					uit != implicitConversions.end(); uit++)
+					uit != implicitConversions.end(); ++uit)
 				{
 					*this << " " << *uit;
 				}
@@ -410,7 +410,7 @@ int pystream::writeLoifTable(const VexData *V)
 				exit(EXIT_FAILURE);
 			}
 			//better be two dual pol, otherwise abort
-			for(it = setup->ifs.begin(); it != setup->ifs.end(); it++)
+			for(it = setup->ifs.begin(); it != setup->ifs.end(); ++it)
 			{
 				const VexIF &i = it->second;
 				if(freq1 < 0)
@@ -584,7 +584,7 @@ int pystream::writeScans(const VexData *V)
 					*this << "subarray.setVLBALoIfSetup(loif" << modeId << ")" << endl;
 
 					map<string,unsigned int>::const_iterator ifit;
-					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ifit++)
+					for(ifit = ifIndex[modeId].begin(); ifit != ifIndex[modeId].end(); ++ifit)
 					{
 						if(ifit->first != sw[ifit->second])
 						{
@@ -592,7 +592,6 @@ int pystream::writeScans(const VexData *V)
 							*this << "subarray.set4x4Switch('" << switchOutput[ifit->second] << "', " << switchPosition(ifit->first.c_str()) << ")" << endl;
 						}
 					}
-
 
 					*this << "dbe0.setChannels(channelSet" << modeId << ")" << endl;
 				}

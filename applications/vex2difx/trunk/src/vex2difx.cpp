@@ -768,7 +768,7 @@ static int getBand(vector<pair<int,int> >& bandMap, int fqId)
 
 static int getToneSetId(vector<vector<int> > &toneSets, const vector<int> &tones)
 {
-	for(vector<vector<int> >::const_iterator it = toneSets.begin(); it != toneSets.end(); it++)
+	for(vector<vector<int> >::const_iterator it = toneSets.begin(); it != toneSets.end(); ++it)
 	{
 		if(*it == tones)
 		{
@@ -1409,10 +1409,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	string configName;
 	double minBW;		// [Hz]
 	double readTimeNS;
-	int f;
-	long long tintNS, testsubintNS, nscounter;
-	int max5div, max2div, nFFTsPerIntegration, divisor;
-	double msgSize, dataRate, readSize, floatFFTDurNS;
+	double msgSize, dataRate, readSize;
 
 
 	corrSetup = P->getCorrSetup(S->corrSetupName);
@@ -1469,9 +1466,12 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	}
 	else
 	{
-		tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
-		floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
-		nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
+		long long tintNS = static_cast<long long>(1e9*corrSetup->tInt + 0.5);
+		long long nscounter = tintNS/5;
+		double floatFFTDurNS = corrSetup->fftSize()*(0.5/minBW)*1000000000.0;
+		int nFFTsPerIntegration = static_cast<int>(1e9*corrSetup->tInt/floatFFTDurNS + 0.5);
+		int max5div = 0;
+		int max2div = 0;
 
 		// check that integration time is an integer number of FFTs
 		if(fabs(1e9*corrSetup->tInt/floatFFTDurNS - nFFTsPerIntegration) > 1e-9)
@@ -1505,8 +1505,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			exit(EXIT_FAILURE);
 		}
 
-		nscounter = tintNS/5;
-		max5div = 0;
 	 	while(nscounter > 0 && fabs(nscounter/floatFFTDurNS - static_cast<int>(nscounter/floatFFTDurNS + 0.5)) < 1e-9)
 		{
 			nscounter /= 5;
@@ -1514,7 +1512,6 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		}
 
 		nscounter = tintNS/2;
-		max2div = 0;
 		while(nscounter > 0 && fabs(nscounter/floatFFTDurNS - static_cast<int>(nscounter/floatFFTDurNS + 0.5)) < 1e-9)
 		{
 			nscounter /= 2;
@@ -1525,7 +1522,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 		{
 			for(int j = max5div; j >= 0; --j)
 			{
-				divisor = 1;
+				int divisor = 1;
 				for(int k = 0; k < i; ++k)
 				{
 					divisor *= 2;
@@ -1534,7 +1531,8 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 				{
 					divisor *= 5;
 				}
-				testsubintNS = tintNS / divisor;
+
+				long long testsubintNS = tintNS / divisor;
 				msgSize = (testsubintNS*1.0e-9)*dataRate/8.0;
 				readSize = msgSize*D->dataBufferFactor/D->nDataSegments;
 				if(readSize > P->minReadSize && readSize < P->maxReadSize && 
@@ -1555,6 +1553,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 			cerr << "The minimum read size was set or defaulted to " << P->minReadSize << " B" << endl;
 			cerr << "Either decrease minReadSize (which may lead to slow correlation) or explicitly set subintNS" << endl;
 			cerr << "You may find it advantageous to tweak the tInt to a more power-of-2 friendly value" << endl;
+
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -1563,7 +1562,7 @@ static int getConfigIndex(vector<pair<string,string> >& configs, DifxInput *D, c
 	readTimeNS = static_cast<double>(config->subintNS)*D->dataBufferFactor/D->nDataSegments;
 	if(readTimeNS > 2140000000.0)
 	{
-		f = static_cast<int>(2140000000.0/config->subintNS);
+		int f = static_cast<int>(2140000000.0/config->subintNS);
 		if(f < 1)
 		{
 			cerr << "Error: There is no way to change dataBufferFactor to keep send sizes below 2^31 seconds" << endl;

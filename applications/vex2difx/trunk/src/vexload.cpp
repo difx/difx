@@ -1064,8 +1064,6 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 			p = get_all_lowl(antName.c_str(), modeDefName, T_S2_RECORDING_MODE, B_TRACKS, v);
 			if(p)
 			{
-				size_t f, g;
-
 				vex_field(T_S2_RECORDING_MODE, p, 1, &link, &name, &value, &units);
 				string s2mode(value);
 				if(F.format == "")
@@ -1075,10 +1073,10 @@ static int getModes(VexData *V, Vex *v, const CorrParams &params)
 
 				if (s2mode != "none")
 				{
-					f = s2mode.find_last_of("x");
-					g = s2mode.find_last_of("-");
+					size_t f = s2mode.find_last_of("x");
+					size_t g = s2mode.find_last_of("-");
 
-					if(f < 0 || g < 0 || f > g)
+					if(f == string::npos || g == string::npos || f > g)
 					{
 						cerr << "Error: Antenna=" << antName << " malformed S2 mode : " << string(value) << endl;
 					
@@ -1340,14 +1338,12 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams &params)
 	llist *block;
 	Llist *defs;
 	Llist *lowls, *refs;
-	int statement;
 	int link, name;
 	char *value, *units;
 	void *p;
 	dvalue *r;
 	double tai_utc, ut1_utc, x_wobble, y_wobble;
-	int nEop;
-	double refEpoch, interval;
+	double interval;
 	VexEOP *E;
 	int N = 0;
 	int nWarn = 0;
@@ -1360,7 +1356,12 @@ static int getEOPs(VexData *V, Vex *v, const CorrParams &params)
 	   	    defs;
 	    	    defs=defs->next)
 		{
+			int nEop;
+			int statement;
+			double refEpoch;
+			
 			statement = ((Lowl *)defs->ptr)->statement;
+
 			if(statement == T_COMMENT || statement == T_COMMENT_TRAILING)
 			{
 				continue;

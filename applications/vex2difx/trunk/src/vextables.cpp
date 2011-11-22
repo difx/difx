@@ -654,18 +654,18 @@ void VexJob::assignVSNs(const VexData &V)
 		}
 	}
 	
-	for(list<string>::const_iterator i = antennas.begin(); i != antennas.end(); i++)
+	for(list<string>::const_iterator a = antennas.begin(); a != antennas.end(); ++a)
 	{
-		if(V.getAntenna(*i)->dataSource != DataSourceModule)
+		if(V.getAntenna(*a)->dataSource != DataSourceModule)
 		{
-			vsns[*i] = "None";
+			vsns[*a] = "None";
 		}
 		else
 		{
-			const string &vsn = V.getVSN(*i, *this);
+			const string &vsn = V.getVSN(*a, *this);
 			if(vsn != "None")
 			{
-				vsns[*i] = vsn;
+				vsns[*a] = vsn;
 			}
 		}
 	}
@@ -673,7 +673,7 @@ void VexJob::assignVSNs(const VexData &V)
 
 string VexJob::getVSN(const string &antName) const
 {
-	for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); a++)
+	for(map<string,string>::const_iterator a = vsns.begin(); a != vsns.end(); ++a)
 	{
 		if(a->first == antName)
 		{
