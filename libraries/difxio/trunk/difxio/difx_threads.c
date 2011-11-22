@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2010 by Walter Brisken                                  *
+ *   Copyright (C) 2010-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -111,6 +111,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	if(strncmp(line, "NUMBER OF CORES:    ", 20) != 0 || strlen(line) < 21)
 	{
 		fprintf(stderr, "Line %d of %s : format error\n", 1, D->job->threadsFile);
+		fclose(in);
 		
 		return -2;
 	}
@@ -119,6 +120,7 @@ int DifxInputLoadThreads(DifxInput *D)
 	if(n != 1)
 	{
 		fprintf(stderr, "Line %d of %s : format error\n", 1, D->job->threadsFile);
+		fclose(in);
 		
 		return -2;
 	}

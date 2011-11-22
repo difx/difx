@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2008 by Walter Brisken                                  *
+ *   Copyright (C) 2008-2011 by Walter Brisken                             *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
  *   it under the terms of the GNU General Public License as published by  *
@@ -58,15 +58,16 @@ void deleteDifxEOPArray(DifxEOP *de)
 
 void fprintDifxEOP(FILE *fp, const DifxEOP *de)
 {
-	fprintf(fp, "  DifxEOP [%d] : %p\n", (int)(de->mjd + 0.5), de);
 	if(!de)
 	{
+		fprintf(fp, "  DifxEOP [] : %p\n", de);
+
 		return;
 	}
+	fprintf(fp, "  DifxEOP [%d] : %p\n", (int)(de->mjd + 0.5), de);
 	fprintf(fp, "    TAI - UTC = %d sec\n", de->tai_utc);
 	fprintf(fp, "    UT1 - UTC = %9.6f sec\n", de->ut1_utc);
-	fprintf(fp, "    Pole X, Y = %8.6f, %8.6f arcsec\n", 
-		de->xPole, de->yPole);
+	fprintf(fp, "    Pole X, Y = %8.6f, %8.6f arcsec\n", de->xPole, de->yPole);
 }
 
 void printDifxEOP(const DifxEOP *de)
@@ -76,10 +77,8 @@ void printDifxEOP(const DifxEOP *de)
 
 void fprintDifxEOPSummary(FILE *fp, const DifxEOP *de)
 {
-	fprintf(fp, "  EOP mjd=%5d  TAI-UTC=%d  UT1-UTC=%9.6f  "
-		"X=%8.6f\"  Y=%8.6f\"\n",
-		(int)(de->mjd + 0.5), de->tai_utc, de->ut1_utc,
-		de->xPole, de->yPole);
+	fprintf(fp, "  EOP mjd=%5d  TAI-UTC=%d  UT1-UTC=%9.6f  X=%8.6f\"  Y=%8.6f\"\n",
+		(int)(de->mjd + 0.5), de->tai_utc, de->ut1_utc, de->xPole, de->yPole);
 }
 
 void printDifxEOPSummary(const DifxEOP *de)
@@ -105,6 +104,7 @@ DifxEOP *mergeDifxEOPArrays(const DifxEOP *de1, int nde1,
 	if(nde1 == 0 && nde2 == 0)
 	{
 		*nde = 0;
+
 		return 0;
 	}
 
@@ -216,16 +216,11 @@ int writeDifxEOPArray(FILE *out, int nEOP, const DifxEOP *de)
 	writeDifxLineInt(out, "NUM EOPS", nEOP);
 	for(i = 0; i < nEOP; i++)
 	{
-		writeDifxLineInt1(out, "EOP %d TIME (mjd)", i, 
-			de[i].mjd);
-		writeDifxLineInt1(out, "EOP %d TAI_UTC (sec)", i, 
-			de[i].tai_utc);
-		writeDifxLineDouble1(out, "EOP %d UT1_UTC (sec)", i,
-			"%8.6f", de[i].ut1_utc);
-		writeDifxLineDouble1(out, "EOP %d XPOLE (arcsec)", i,
-			"%8.6f", de[i].xPole);
-		writeDifxLineDouble1(out, "EOP %d YPOLE (arcsec)", i,
-			"%8.6f", de[i].yPole);
+		writeDifxLineInt1(out, "EOP %d TIME (mjd)", i, de[i].mjd);
+		writeDifxLineInt1(out, "EOP %d TAI_UTC (sec)", i, de[i].tai_utc);
+		writeDifxLineDouble1(out, "EOP %d UT1_UTC (sec)", i, "%8.6f", de[i].ut1_utc);
+		writeDifxLineDouble1(out, "EOP %d XPOLE (arcsec)", i, "%8.6f", de[i].xPole);
+		writeDifxLineDouble1(out, "EOP %d YPOLE (arcsec)", i, "%8.6f", de[i].yPole);
 	}
 
 	return 5*nEOP + 1;
